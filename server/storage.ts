@@ -34,8 +34,14 @@ const getDatabaseUrl = (): string => {
   return url;
 };
 
+const dbUrl = getDatabaseUrl();
 const pool = new Pool({
-  connectionString: getDatabaseUrl(),
+  connectionString: dbUrl,
+  ssl: (dbUrl.includes('render.com') || dbUrl.includes('neon.tech'))
+    ? { rejectUnauthorized: false }
+    : false,
+  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: 30000,
 });
 
 const DEFAULT_USER_CREDITS = Number(process.env.DEFAULT_BLOOD_CREDITS ?? "5");
