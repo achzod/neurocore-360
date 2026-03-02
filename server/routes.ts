@@ -411,15 +411,29 @@ export async function registerRoutes(
         await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
         res.json(audit);
 
+        const DISCOVERY_GENERATION_TIMEOUT = 5 * 60 * 1000; // 5 minutes max
         (async () => {
           try {
-            const result = await analyzeDiscoveryScan(mergedResponses as any);
-            const narrativeReport = await convertToNarrativeReport(result, mergedResponses as any);
+            console.log(`[Discovery Scan] Starting report generation for audit ${audit.id}`);
+            const generationPromise = (async () => {
+              const result = await analyzeDiscoveryScan(mergedResponses as any);
+              console.log(`[Discovery Scan] Analysis complete for ${audit.id}, generating narrative...`);
+              const narrativeReport = await convertToNarrativeReport(result, mergedResponses as any);
+              console.log(`[Discovery Scan] Narrative generated for ${audit.id} (${JSON.stringify(narrativeReport).length} chars)`);
+              return narrativeReport;
+            })();
+
+            const timeoutPromise = new Promise<never>((_, reject) => {
+              setTimeout(() => reject(new Error(`Discovery Scan generation timed out after ${DISCOVERY_GENERATION_TIMEOUT / 1000}s`)), DISCOVERY_GENERATION_TIMEOUT);
+            });
+
+            const narrativeReport = await Promise.race([generationPromise, timeoutPromise]);
 
             await storage.updateAudit(audit.id, {
               narrativeReport,
               reportDeliveryStatus: "READY",
             });
+            console.log(`[Discovery Scan] Report READY for audit ${audit.id}`);
 
             const baseUrl = getBaseUrl();
             const emailSent = await sendReportReadyEmail(audit.email, audit.id, audit.type, baseUrl);
@@ -428,11 +442,17 @@ export async function registerRoutes(
               const clientName = (mergedResponses as any)?.prenom || data.email.split("@")[0];
               await sendAdminEmailNewAudit(audit.email, clientName, audit.type, audit.id);
             }
-          } catch (error) {
-            console.error("[Discovery Scan] Generation error:", error);
-            await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" });
+          } catch (error: any) {
+            console.error(`[Discovery Scan] Generation FAILED for audit ${audit.id}:`, error?.message || error);
+            try {
+              await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" });
+            } catch (updateErr) {
+              console.error(`[Discovery Scan] Failed to update status for ${audit.id}:`, updateErr);
+            }
           }
-        })();
+        })().catch((unhandled) => {
+          console.error(`[Discovery Scan] UNHANDLED error for audit ${audit.id}:`, unhandled);
+        });
 
         return;
       }

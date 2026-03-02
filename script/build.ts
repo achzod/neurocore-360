@@ -36,6 +36,15 @@ const allowlist = [
 async function buildAll() {
   await rm("dist", { recursive: true, force: true });
 
+  // Generate blog-articles.json before Vite build so it's included in public/
+  console.log("generating blog-articles.json...");
+  const { getAllArticles } = await import("../client/src/data/blogArticles");
+  const { writeFile } = await import("fs/promises");
+  const { resolve } = await import("path");
+  const articles = getAllArticles();
+  await writeFile(resolve("client", "public", "blog-articles.json"), JSON.stringify(articles));
+  console.log(`blog-articles.json: ${articles.length} articles`);
+
   console.log("building client...");
   await viteBuild();
 
