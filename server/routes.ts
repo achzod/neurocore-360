@@ -2471,6 +2471,57 @@ export async function registerRoutes(
     }
   });
 
+  // DB connectivity diagnostic
+  app.get("/api/admin/db-diag", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    const results: Record<string, any> = {};
+    const databaseUrl = process.env.DATABASE_URL || "";
+    results.dbUrlPrefix = databaseUrl.substring(0, 30) + "...";
+    results.hasRenderInUrl = databaseUrl.includes("render.com");
+
+    // Test 1: main storage pool
+    try {
+      const t0 = Date.now();
+      const r = await storage.getAllAudits();
+      results.storagePool = { ok: true, ms: Date.now() - t0, count: r.length };
+    } catch (e: any) {
+      results.storagePool = { ok: false, error: e.message };
+    }
+
+    // Test 2: fresh pool with SSL
+    try {
+      const { Pool } = await import("pg");
+      const freshPool = new Pool({
+        connectionString: databaseUrl,
+        ssl: databaseUrl.includes("render.com") ? { rejectUnauthorized: false } : false,
+      });
+      const t0 = Date.now();
+      const r = await freshPool.query("SELECT 1 as ok");
+      results.freshPool = { ok: true, ms: Date.now() - t0, rows: r.rows };
+      await freshPool.end();
+    } catch (e: any) {
+      results.freshPool = { ok: false, error: e.message };
+    }
+
+    // Test 3: fresh pool WITHOUT SSL
+    try {
+      const { Pool } = await import("pg");
+      const noSslPool = new Pool({
+        connectionString: databaseUrl,
+        ssl: false,
+        connectionTimeoutMillis: 5000,
+      });
+      const t0 = Date.now();
+      const r = await noSslPool.query("SELECT 1 as ok");
+      results.noSslPool = { ok: true, ms: Date.now() - t0, rows: r.rows };
+      await noSslPool.end();
+    } catch (e: any) {
+      results.noSslPool = { ok: false, error: e.message };
+    }
+
+    res.json(results);
+  });
+
   // Endpoint admin pour initialiser la base de données
   app.post("/api/admin/init-db", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
