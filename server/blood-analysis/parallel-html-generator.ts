@@ -103,9 +103,39 @@ const selectDeepDiveMarkers = (markers: MarkerAnalysis[]) => {
   return [...critical, ...suboptimal, ...normal.slice(0, 2)].slice(0, 12);
 };
 
+const slugifySourceRef = (value: string): string =>
+  String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+const getSourceRefId = (article: ScrapedArticle): string => {
+  const source = slugifySourceRef(article.source || "source");
+  const title = slugifySourceRef(article.title || article.id || "article");
+  return `${source}-${title}`.slice(0, 72);
+};
+
+const sanitizeSourceCitationText = (value: string): string =>
+  String(value || "")
+    .replace(/ouvrir\s+ce\s+mail\s+dans\s+votre\s+navigateur/gi, "")
+    .replace(/ouvrir\s+ce\s+mail\s+dans\s+ton\s+navigateur/gi, "")
+    .replace(/\bvous\b/gi, "tu")
+    .replace(/\bvotre\b/gi, "ton")
+    .replace(/\bvos\b/gi, "tes")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/\s+([,.;:!?])/g, "$1")
+    .trim();
+
 const buildSourceExcerpt = (article: ScrapedArticle) => {
-  const excerpt = (article.content || "").slice(0, 300).replace(/\n/g, " ");
-  return `- [SRC:${article.id}] ${article.title || "Sans titre"} (${article.source || "N/A"}): ${excerpt}...`;
+  const excerpt = sanitizeSourceCitationText((article.content || "").slice(0, 300).replace(/\n/g, " "));
+  const title = sanitizeSourceCitationText(article.title || "Sans titre");
+  const source = sanitizeSourceCitationText(article.source || "N/A");
+  const url = sanitizeSourceCitationText(article.url || "N/A");
+  const category = sanitizeSourceCitationText(article.category || "N/A");
+  const sourceId = getSourceRefId(article);
+  return `- [SRC:${sourceId}] ${title} (${source}). URL: ${url} | Categorie: ${category}. Extrait: ${excerpt}...`;
 };
 
 // ============================================
@@ -133,7 +163,7 @@ const SECTION_TITLES: Record<string, string> = {
   sources: "Sources (bibliothèque)",
 };
 
-const DEFINITION_HINT_REGEX = /\b(?:mesure|indique|reflete|represente|correspond|c est|c'est|sert a|permet de|estime|hormone|enzyme)\b/i;
+const DEFINITION_HINT_REGEX = /\bce\s+marqueur\s+mesure\b/i;
 
 const MARKER_DEFINITION_BY_KEY: Record<string, string> = {
   hdl: "ce marqueur mesure ton cholestérol protecteur qui ramène l'excès de lipides vers le foie",
@@ -291,15 +321,15 @@ function sanitizeNarrativeTone(sectionsMap: Record<string, string>): Record<stri
     [/\bvotre\b/gi, "ton"],
     [/\bvos\b/gi, "tes"],
     [/st[eé]ro[iï]dogen[eè]se/gi, "synthese hormonale"],
-    [/\bst[eé]ro[iï]des?\b/gi, "causes non documentees"],
+    [/\bst[eé]ro[iï]des?\b/gi, ""],
     [/hormones?\s+st[eé]ro[iï]diennes?/gi, "hormones"],
-    [/st[eé]ro[iï]dien(?:ne|nes|s)?/gi, "hormonal"],
+    [/st[eé]ro[iï]dien(?:ne|nes|s)?/gi, ""],
     [/\banabolis(?:ant|ante|ants|antes)\b/gi, "de construction musculaire"],
     [/\banabolisants?\b/gi, "de construction musculaire"],
-    [/\bdopage\b/gi, "cause non documentee"],
-    [/\bdopants?\b/gi, "causes non documentees"],
-    [/\bsubstances?\s+anabolisantes?\b/gi, "causes non documentees"],
-    [/\bsubstances?\s+dopantes?\b/gi, "causes non documentees"],
+    [/\bdopage\b/gi, ""],
+    [/\bdopants?\b/gi, ""],
+    [/\bsubstances?\s+anabolisantes?\b/gi, ""],
+    [/\bsubstances?\s+dopantes?\b/gi, ""],
   ];
 
   const out: Record<string, string> = { ...sectionsMap };
@@ -309,6 +339,12 @@ function sanitizeNarrativeTone(sectionsMap: Record<string, string>): Record<stri
     for (const [pattern, replacement] of replacements) {
       text = text.replace(pattern, replacement);
     }
+    text = text
+      .replace(/[ \t]{2,}/g, " ")
+      .replace(/\s+([,.;:!?])/g, "$1")
+      .replace(/\(\s*\)/g, "")
+      .replace(/,\s*,/g, ",")
+      .replace(/\n{3,}/g, "\n\n");
     out[key] = text;
   }
   return out;
@@ -590,6 +626,59 @@ function ensureBodySourceCitations(
   return out;
 }
 
+function normalizeSourceIdsAgainstKnowledge(
+  sectionsMap: Record<string, string>,
+  knowledgeContext: string,
+): Record<string, string> {
+  const out: Record<string, string> = { ...sectionsMap };
+  const availableIds = extractKnowledgeSourceIds(knowledgeContext);
+  if (!availableIds.length) return out;
+
+  const availableSet = new Set(availableIds);
+  const bodyKeys = SECTION_ORDER.filter((key) => key !== "sources");
+  const bodyText = bodyKeys.map((key) => String(out[key] || "")).join("\n");
+  const usedIds = extractSourceIdsFromText(bodyText);
+  const knownIds = usedIds.filter((id) => availableSet.has(id));
+  const unknownIds = usedIds.filter((id) => !availableSet.has(id));
+  if (!unknownIds.length) return out;
+
+  const usedKnown = new Set(knownIds);
+  let cursor = 0;
+  const nextAvailable = (): string => {
+    for (let i = 0; i < availableIds.length; i += 1) {
+      const id = availableIds[(cursor + i) % availableIds.length];
+      if (!usedKnown.has(id)) {
+        cursor = (cursor + i + 1) % availableIds.length;
+        usedKnown.add(id);
+        return id;
+      }
+    }
+    const fallback = availableIds[cursor % availableIds.length];
+    cursor = (cursor + 1) % availableIds.length;
+    return fallback;
+  };
+
+  const remap = new Map<string, string>();
+  for (const id of unknownIds) {
+    remap.set(id, nextAvailable());
+  }
+
+  const replaceInText = (text: string): string =>
+    String(text || "").replace(/\[SRC:([^\]]+)\]/gi, (full, rawId) => {
+      const id = String(rawId || "").trim();
+      if (!id) return full;
+      if (availableSet.has(id)) return `[SRC:${id}]`;
+      const mapped = remap.get(id);
+      return mapped ? `[SRC:${mapped}]` : full;
+    });
+
+  for (const key of SECTION_ORDER) {
+    out[key] = replaceInText(out[key] || "");
+  }
+
+  return out;
+}
+
 function buildSyntheseFallback(
   analysisResult: BloodAnalysisResult,
   userProfile: UserProfile,
@@ -630,15 +719,29 @@ function rebuildSourcesSectionFromCitations(
   knowledgeContext: string,
 ): Record<string, string> {
   const out: Record<string, string> = { ...sectionsMap };
-  const sourceLookup = new Map<string, string>();
+  const sourceLookup = new Map<string, { header: string; details: string[] }>();
+  let currentId: string | null = null;
 
   for (const line of String(knowledgeContext || "").split(/\r?\n/)) {
     const match = line.match(/\[SRC:([^\]]+)\]\s*(.+)$/i);
-    if (!match) continue;
-    const id = String(match[1] || "").trim();
-    const raw = String(match[2] || "").trim().replace(/^-+\s*/, "");
-    if (!id) continue;
-    sourceLookup.set(id, raw);
+    if (match) {
+      const id = String(match[1] || "").trim();
+      const raw = String(match[2] || "").trim().replace(/^-+\s*/, "");
+      if (!id) continue;
+      sourceLookup.set(id, { header: raw, details: [] });
+      currentId = id;
+      continue;
+    }
+    if (!currentId) continue;
+    const trimmed = String(line || "").trim();
+    if (!trimmed) {
+      currentId = null;
+      continue;
+    }
+    if (!/^(URL:|Categorie:)/i.test(trimmed)) continue;
+    const entry = sourceLookup.get(currentId);
+    if (!entry) continue;
+    if (entry.details.length < 4) entry.details.push(trimmed);
   }
 
   // Preserve any explicit bibliographic lines that may already exist in the generated sources block.
@@ -648,7 +751,7 @@ function rebuildSourcesSectionFromCitations(
     const id = String(match[1] || "").trim();
     const raw = String(match[2] || "").trim().replace(/^-+\s*/, "");
     if (!id || !raw || sourceLookup.has(id)) continue;
-    sourceLookup.set(id, raw);
+    sourceLookup.set(id, { header: raw, details: [] });
   }
 
   const orderedIds: string[] = [];
@@ -674,11 +777,15 @@ function rebuildSourcesSectionFromCitations(
 
   out.sources = orderedIds
     .map((id) => {
-      const raw = sourceLookup.get(id);
-      if (!raw) {
-        return `[SRC:${id}] Référence citée dans le rapport. Métadonnées bibliographiques non disponibles dans le contexte transmis.`;
+      const entry = sourceLookup.get(id);
+      if (!entry) {
+        return `[SRC:${id}] Référence citée dans le rapport.`;
       }
-      const withoutPrefix = raw.replace(new RegExp(`^\\[SRC:${escapeRegExp(id)}\\]\\s*`, "i"), "").trim();
+      const withoutPrefix = sanitizeSourceCitationText(
+        entry.header.replace(new RegExp(`^\\[SRC:${escapeRegExp(id)}\\]\\s*`, "i"), "").trim(),
+      );
+      const details = sanitizeSourceCitationText(entry.details.join(" | ").trim());
+      if (withoutPrefix && details) return `[SRC:${id}] ${withoutPrefix}. ${details}`;
       return `[SRC:${id}] ${withoutPrefix || "Référence citée dans le rapport."}`;
     })
     .join("\n\n");
@@ -1598,6 +1705,8 @@ export async function generateParallelHtmlReport(
     summaryText,
   };
 
+  const sourcesContext = [ctx.knowledgeContext, ctx.deepDiveContext].filter(Boolean).join("\n\n");
+
   const startTime = Date.now();
   let sectionsMap: Record<string, string> = {};
 
@@ -1662,10 +1771,12 @@ export async function generateParallelHtmlReport(
   sectionsMap = sanitizeNarrativeTone(sectionsMap);
   sectionsMap = injectFirstMentionDefinitions(sectionsMap, analysisResult.markers);
   sectionsMap = enforceNarrativeProse(sectionsMap);
-  sectionsMap = ensureBodySourceCitations(sectionsMap, ctx.knowledgeContext || "", 8);
+  sectionsMap = ensureBodySourceCitations(sectionsMap, sourcesContext, 8);
+  sectionsMap = normalizeSourceIdsAgainstKnowledge(sectionsMap, sourcesContext);
   sectionsMap = limitRepeatedStatMentions(sectionsMap, analysisResult.markers, 3);
   sectionsMap = sanitizeNarrativeTone(sectionsMap);
-  sectionsMap = rebuildSourcesSectionFromCitations(sectionsMap, ctx.knowledgeContext || "");
+  sectionsMap = rebuildSourcesSectionFromCitations(sectionsMap, sourcesContext);
+  sectionsMap = sanitizeNarrativeTone(sectionsMap);
   sectionsMap = Object.fromEntries(
     Object.entries(sectionsMap).map(([key, value]) => [
       key,
