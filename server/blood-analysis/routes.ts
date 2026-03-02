@@ -52,6 +52,7 @@ import pdf from "pdf-parse";
 import {
   withAIGenerationTimeout,
   isAIGenerationTimeoutError,
+  BLOOD_AI_ASYNC_TIMEOUT_MS,
 } from "./ai-timeout";
 import { listBloodEmailDeliveries } from "./delivery-log";
 
@@ -204,13 +205,15 @@ const generateAiReportWithAttempts = async (
   profile: Record<string, unknown>,
   knowledgeContext: string,
   contextLabel: string,
-  maxAttempts = 3
+  maxAttempts = 3,
+  timeoutMs?: number
 ): Promise<string> => {
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
       const candidate = await withAIGenerationTimeout(
         () => generateAIBloodAnalysis(analysisResult, profile as any, knowledgeContext),
-        `${contextLabel} attempt-${attempt}`
+        `${contextLabel} attempt-${attempt}`,
+        timeoutMs
       );
       const normalizedCandidate = canonicalizeBloodReport(candidate);
       if (isDeliverableAiReport(normalizedCandidate)) {
@@ -834,7 +837,8 @@ export function registerBloodAnalysisRoutes(app: Express): void {
               profileWithAge as any,
               knowledgeContext,
               `blood-analysis/submit async report ${reportRecord.id}`,
-              3
+              3,
+              BLOOD_AI_ASYNC_TIMEOUT_MS
             );
             if (enrichedCandidate === AI_CREDIT_BALANCE_LOW_SENTINEL) {
               console.error(
@@ -1002,7 +1006,8 @@ export function registerBloodAnalysisRoutes(app: Express): void {
           normalizedProfile,
           knowledgeContext,
           "blood-analysis/admin-regenerate",
-          3
+          3,
+          BLOOD_AI_ASYNC_TIMEOUT_MS
         );
         if (aiReportCandidate === AI_CREDIT_BALANCE_LOW_SENTINEL) {
           throw new Error("AI_CREDIT_BALANCE_LOW");
@@ -1177,7 +1182,8 @@ export function registerBloodAnalysisRoutes(app: Express): void {
               { ...(rawProfile as any), gender } as any,
               knowledgeContext,
               `blood-analysis/report background ${reportId}`,
-              3
+              3,
+              BLOOD_AI_ASYNC_TIMEOUT_MS
             );
             if (aiReportCandidate === AI_CREDIT_BALANCE_LOW_SENTINEL) {
               const aiError = "AI_CREDIT_BALANCE_LOW";
@@ -2022,7 +2028,8 @@ export function registerBloodAnalysisRoutes(app: Express): void {
           profileWithAge,
           knowledgeContext,
           "blood-analysis/full-analysis",
-          2
+          2,
+          BLOOD_AI_ASYNC_TIMEOUT_MS
         );
         if (aiCandidate === AI_CREDIT_BALANCE_LOW_SENTINEL) {
           aiCreditBalanceLow = true;
@@ -2179,7 +2186,8 @@ export function registerBloodAnalysisRoutes(app: Express): void {
           profileWithAge,
           knowledgeContext,
           "blood-analysis/comprehensive-report",
-          2
+          2,
+          BLOOD_AI_ASYNC_TIMEOUT_MS
         );
         if (aiCandidate === AI_CREDIT_BALANCE_LOW_SENTINEL) {
           aiCreditBalanceLow = true;

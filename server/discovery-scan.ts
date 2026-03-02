@@ -1772,12 +1772,7 @@ RAPPELS CRITIQUES:
     }
 
     return cleanMarkdownToHTML(
-      ensureSynthesisLength(
-        buildSynthesisFallback(responses, scores, blocages),
-        responses,
-        scores,
-        blocages
-      )
+      buildSynthesisFallback(responses, scores, blocages)
     );
   }
 }
