@@ -722,7 +722,7 @@ const roundValue = (value: number, decimals = 2): number => {
   return Math.round(value * factor) / factor;
 };
 
-const normalizeMarkerValue = (markerId: string, value: number, unit?: string): number => {
+export const normalizeMarkerValue = (markerId: string, value: number, unit?: string): number => {
   if (!Number.isFinite(value)) return value;
 
   const sourceUnit = normalizeUnit(unit);

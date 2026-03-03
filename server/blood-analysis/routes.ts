@@ -11,6 +11,7 @@ import {
   generateAIBloodAnalysis,
   getBloodworkKnowledgeContext,
   normalizeMarkerName,
+  normalizeMarkerValue,
   BIOMARKER_RANGES,
   DIAGNOSTIC_PATTERNS,
   BloodMarkerInput,
@@ -313,38 +314,54 @@ const getGlobalLevel = (score: number): "excellent" | "bon" | "moyen" | "faible"
 
 const normalizeLegacyReportMarker = (
   marker: Record<string, unknown>,
-  analysisByMarkerId: Map<string, { status: MarkerStatus; interpretation?: string; name?: string }>
+  analysisByMarkerId: Map<string, { status: MarkerStatus; interpretation?: string; name?: string }>,
+  gender?: "homme" | "femme"
 ) => {
-  const markerId = normalizeMarkerName(String(marker.markerId || marker.code || marker.name || ""));
+  let markerId = normalizeMarkerName(String(marker.markerId || marker.code || marker.name || ""));
   if (!markerId) return null;
-  const value = Number(marker.value);
-  if (!Number.isFinite(value)) return null;
+  const rawValue = Number(marker.value);
+  if (!Number.isFinite(rawValue)) return null;
+  const inputUnit = typeof marker.unit === "string" ? marker.unit : undefined;
+
+  // Normalize value to the canonical unit (e.g., ng/mL→ng/dL, mmol/L→mg/dL)
+  const normalizedValue = normalizeMarkerValue(markerId, rawValue, inputUnit);
+
+  // Route to gender-specific / measurement-specific range
+  if (markerId === "testosterone_total" && gender === "femme") {
+    markerId = "testosterone_total_femme";
+  }
+  if ((markerId === "magnesium_rbc" || markerId === "magnesium") && normalizedValue < 4) {
+    markerId = "magnesium_serum";
+  }
+
   const range = BIOMARKER_RANGES[markerId];
-  const analysis = analysisByMarkerId.get(markerId);
+  // For display, use canonical markerId (not internal routing ID)
+  const displayId = markerId === "testosterone_total_femme" ? "testosterone_total"
+    : markerId === "magnesium_serum" ? "magnesium"
+    : markerId;
+  const analysis = analysisByMarkerId.get(displayId);
 
   return {
-    markerId,
-    name: String(marker.name || analysis?.name || range?.name || markerId),
-    value,
-    unit: String(marker.unit || range?.unit || ""),
+    markerId: displayId,
+    name: String(marker.name || analysis?.name || range?.name || displayId),
+    value: normalizedValue,
+    unit: String(range?.unit || marker.unit || ""),
     status: analysis?.status || normalizeMarkerStatus(marker.status),
-    normalRange:
-      marker.refMin != null && marker.refMax != null
+    normalRange: range
+      ? `${range.normalMin} - ${range.normalMax}`
+      : marker.refMin != null && marker.refMax != null
         ? `${marker.refMin} - ${marker.refMax}`
-        : range
-        ? `${range.normalMin} - ${range.normalMax}`
         : undefined,
-    optimalRange:
-      marker.optimalMin != null && marker.optimalMax != null
+    optimalRange: range
+      ? `${range.optimalMin} - ${range.optimalMax}`
+      : marker.optimalMin != null && marker.optimalMax != null
         ? `${marker.optimalMin} - ${marker.optimalMax}`
-        : range
-        ? `${range.optimalMin} - ${range.optimalMax}`
         : undefined,
     interpretation:
       String(marker.interpretation || analysis?.interpretation || "").trim(),
     category:
       String(marker.category || "").trim() ||
-      CATEGORY_BY_MARKER[markerId] ||
+      CATEGORY_BY_MARKER[displayId] ||
       "general",
   };
 };
@@ -1318,11 +1335,15 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         );
 
         const normalizedMarkers = reportMarkers
-          .map((marker) => normalizeLegacyReportMarker(marker, analysisByMarkerId))
+          .map((marker) => normalizeLegacyReportMarker(marker, analysisByMarkerId, reportGender as "homme" | "femme"))
           .filter((marker): marker is NonNullable<ReturnType<typeof normalizeLegacyReportMarker>> => Boolean(marker));
 
         const fallbackMarkers = recomputedAnalysis.markers.map((marker) => {
-          const range = BIOMARKER_RANGES[marker.markerId];
+          // Route markerId for correct range lookup (e.g., testosterone_total_femme, magnesium_serum)
+          let rangeId = marker.markerId;
+          if (rangeId === "testosterone_total" && reportGender === "femme") rangeId = "testosterone_total_femme";
+          if ((rangeId === "magnesium_rbc" || rangeId === "magnesium") && marker.value < 4) rangeId = "magnesium_serum";
+          const range = BIOMARKER_RANGES[rangeId] || BIOMARKER_RANGES[marker.markerId];
           return {
             markerId: marker.markerId,
             name: marker.name,
@@ -1436,43 +1457,38 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 
         let formattedMarkers = markers
           .map((marker) => {
-            const markerId = normalizeMarkerName(String(marker.markerId || marker.code || marker.name || ""));
+            let markerId = normalizeMarkerName(String(marker.markerId || marker.code || marker.name || ""));
             if (!markerId) return null;
-            const value = Number(marker.value);
-            if (!Number.isFinite(value)) return null;
-            const range = BIOMARKER_RANGES[markerId];
-            const recomputed = recomputedByMarkerId.get(markerId);
+            const rawValue = Number(marker.value);
+            if (!Number.isFinite(rawValue)) return null;
+            const inputUnit = typeof marker.unit === "string" ? marker.unit : undefined;
+
+            // Normalize value and route markerId for correct range lookup
+            const normalizedValue = normalizeMarkerValue(markerId, rawValue, inputUnit);
+            let rangeId = markerId;
+            if (rangeId === "testosterone_total" && profileGender === "femme") rangeId = "testosterone_total_femme";
+            if ((rangeId === "magnesium_rbc" || rangeId === "magnesium") && normalizedValue < 4) rangeId = "magnesium_serum";
+
+            const range = BIOMARKER_RANGES[rangeId] || BIOMARKER_RANGES[markerId];
+            const displayId = rangeId === "testosterone_total_femme" ? "testosterone_total"
+              : rangeId === "magnesium_serum" ? "magnesium"
+              : markerId;
+            const recomputed = recomputedByMarkerId.get(displayId);
             const status = recomputed?.status || normalizeMarkerStatus(marker.status);
             return {
               name:
                 String(marker.name || "").trim() ||
                 recomputed?.name ||
                 range?.name ||
-                markerId,
-              code: markerId,
-              category: CATEGORY_BY_MARKER[markerId] || "general",
-              value,
-              unit:
-                String(marker.unit || "").trim() ||
-                recomputed?.unit ||
-                range?.unit ||
-                "",
-              refMin:
-                marker.refMin != null
-                  ? Number(marker.refMin)
-                  : range?.normalMin ?? null,
-              refMax:
-                marker.refMax != null
-                  ? Number(marker.refMax)
-                  : range?.normalMax ?? null,
-              optimalMin:
-                marker.optimalMin != null
-                  ? Number(marker.optimalMin)
-                  : range?.optimalMin ?? null,
-              optimalMax:
-                marker.optimalMax != null
-                  ? Number(marker.optimalMax)
-                  : range?.optimalMax ?? null,
+                displayId,
+              code: displayId,
+              category: CATEGORY_BY_MARKER[displayId] || "general",
+              value: normalizedValue,
+              unit: range?.unit || recomputed?.unit || "",
+              refMin: range?.normalMin ?? null,
+              refMax: range?.normalMax ?? null,
+              optimalMin: range?.optimalMin ?? null,
+              optimalMax: range?.optimalMax ?? null,
               status,
               interpretation:
                 String(marker.interpretation || "").trim() ||
@@ -1496,7 +1512,11 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 
         if (!formattedMarkers.length && recomputedAnalysis) {
           formattedMarkers = recomputedAnalysis.markers.map((marker) => {
-            const range = BIOMARKER_RANGES[marker.markerId];
+            // Route markerId for correct range lookup
+            let rangeId = marker.markerId;
+            if (rangeId === "testosterone_total" && profileGender === "femme") rangeId = "testosterone_total_femme";
+            if ((rangeId === "magnesium_rbc" || rangeId === "magnesium") && marker.value < 4) rangeId = "magnesium_serum";
+            const range = BIOMARKER_RANGES[rangeId] || BIOMARKER_RANGES[marker.markerId];
             return {
               name: marker.name,
               code: marker.markerId,
