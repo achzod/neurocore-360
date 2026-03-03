@@ -53,14 +53,14 @@ declare module "http" {
 
 app.use(
   express.json({
-    limit: '50mb',
+    limit: '5mb',
     verify: (req, _res, buf) => {
       req.rawBody = buf;
     },
   }),
 );
 
-app.use(express.urlencoded({ extended: false, limit: '50mb' }));
+app.use(express.urlencoded({ extended: false, limit: '5mb' }));
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -99,6 +99,21 @@ app.use((req, res, next) => {
   next();
 });
 
+// Startup env validation
+if (process.env.NODE_ENV === "production") {
+  const required = ["DATABASE_URL", "SESSION_SECRET"];
+  const missing = required.filter((k) => !process.env[k]);
+  if (missing.length > 0) {
+    console.error(`[FATAL] Missing required env vars: ${missing.join(", ")}`);
+    process.exit(1);
+  }
+  const recommended = ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "ADMIN_SECRET", "APP_URL"];
+  const missingRec = recommended.filter((k) => !process.env[k]);
+  if (missingRec.length > 0) {
+    console.warn(`[WARN] Missing recommended env vars: ${missingRec.join(", ")}`);
+  }
+}
+
 (async () => {
   await registerRoutes(httpServer, app);
 
@@ -106,11 +121,9 @@ app.use((req, res, next) => {
     if (sentryEnabled) {
       Sentry.captureException(err);
     }
+    console.error("[Global Error Handler]", err);
     const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
-    res.status(status).json({ message });
-    throw err;
+    res.status(status).json({ error: "Erreur serveur" });
   });
 
   // importantly only setup vite in development and after

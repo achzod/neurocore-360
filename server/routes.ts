@@ -70,24 +70,13 @@ export async function registerRoutes(
     next();
   });
 
-  // Helper function to get base URL
-  function getBaseUrl(req?: Request): string {
-    const host =
-      req?.get("x-forwarded-host") ||
-      req?.get("host") ||
-      "";
-    const proto =
-      req?.get("x-forwarded-proto") ||
-      (req?.secure ? "https" : "") ||
-      "";
-
-    if (host) {
-      const scheme = proto || (host.includes("localhost") ? "http" : "https");
-      return `${scheme}://${host}`;
+  // Helper function to get base URL — prefer env vars over request headers
+  function getBaseUrl(_req?: Request): string {
+    if (process.env.APP_URL) {
+      return process.env.APP_URL.replace(/\/+$/, "");
     }
-
     if (process.env.RENDER_EXTERNAL_URL) {
-      return process.env.RENDER_EXTERNAL_URL;
+      return process.env.RENDER_EXTERNAL_URL.replace(/\/+$/, "");
     }
     if (process.env.REPLIT_DOMAINS) {
       const replitDomain = process.env.REPLIT_DOMAINS.split(",")[0];
@@ -369,7 +358,7 @@ export async function registerRoutes(
       console.error("[Test Claude] Error:", error);
       res.status(500).json({
         status: "error",
-        message: error?.message || "Unknown error",
+        message: "Erreur test Claude",
       });
     }
   });
@@ -477,7 +466,10 @@ export async function registerRoutes(
 
       await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
       await startReportGeneration(audit.id, audit.responses, audit.scores || {}, audit.type);
-      processReportAndSendEmail(audit.id, audit.email, audit.type);
+      processReportAndSendEmail(audit.id, audit.email, audit.type).catch((err) => {
+        console.error(`[processReportAndSendEmail] Unhandled error for audit ${audit.id}:`, err);
+        storage.updateAudit(audit.id, { reportDeliveryStatus: "EMAIL_FAILED" }).catch(() => {});
+      });
 
       res.json(audit);
     } catch (error) {
@@ -1327,12 +1319,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/admin/process-pending-reports", async (req, res) => {
-    const { adminKey } = req.body;
-    
-    if (!process.env.ADMIN_KEY || adminKey !== process.env.ADMIN_KEY) {
-      res.status(401).json({ error: "Non autorise" });
-      return;
-    }
+    if (!requireAdminAuth(req, res)) return;
 
     try {
       const pendingAudits = await storage.getPendingAudits();
@@ -1344,7 +1331,10 @@ export async function registerRoutes(
         await startReportGeneration(audit.id, audit.responses, audit.scores, audit.type);
         queued.push(audit.id);
 
-        processReportAsync(audit.id, audit.email, audit.type);
+        processReportAsync(audit.id, audit.email, audit.type).catch((err) => {
+          console.error(`[processReportAsync] Unhandled error for audit ${audit.id}:`, err);
+          storage.updateAudit(audit.id, { reportDeliveryStatus: "EMAIL_FAILED" }).catch(() => {});
+        });
       }
 
       res.json({ 
@@ -1434,7 +1424,7 @@ export async function registerRoutes(
       console.error("[Admin Blog Translate] Error:", error);
       res.status(500).json({
         success: false,
-        error: error?.message || "Erreur serveur",
+        error: "Erreur serveur",
       });
     }
   });
@@ -2179,7 +2169,7 @@ export async function registerRoutes(
       res.json({ sessionId: session.id, url: session.url });
     } catch (error: any) {
       console.error("Stripe checkout error:", error);
-      res.status(500).json({ error: error.message || "Erreur création session" });
+      res.status(500).json({ error: "Erreur création session" });
     }
   });
 
@@ -2293,12 +2283,15 @@ export async function registerRoutes(
 
       await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
       await startReportGeneration(audit.id, audit.responses, audit.scores || {}, normalizedPlanType);
-      processReportAndSendEmail(audit.id, audit.email, normalizedPlanType);
+      processReportAndSendEmail(audit.id, audit.email, normalizedPlanType).catch((err) => {
+        console.error(`[processReportAndSendEmail] Unhandled error for audit ${audit.id}:`, err);
+        storage.updateAudit(audit.id, { reportDeliveryStatus: "EMAIL_FAILED" }).catch(() => {});
+      });
 
       res.json({ success: true, auditId: audit.id, auditType: audit.type });
     } catch (error: any) {
       console.error("Stripe confirmation error:", error);
-      res.status(500).json({ error: error.message || "Erreur confirmation paiement" });
+      res.status(500).json({ error: "Erreur confirmation paiement" });
     }
   });
 
@@ -2610,7 +2603,7 @@ export async function registerRoutes(
       console.error("[Claude Opus 4.6] Erreur generation audit:", error);
       res.status(500).json({
         success: false,
-        error: error.message || "Erreur serveur interne"
+        error: "Erreur serveur interne"
       });
     }
   });
@@ -2832,7 +2825,7 @@ export async function registerRoutes(
       }
     } catch (error: any) {
       console.error('[Init DB] Error:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Erreur initialisation base de données" });
     }
   });
 
@@ -3030,7 +3023,7 @@ export async function registerRoutes(
           stripeRefundId = refund.id;
         } catch (stripeErr: any) {
           console.error("[Admin Orders] Stripe refund error:", stripeErr);
-          res.status(500).json({ success: false, error: `Erreur Stripe: ${stripeErr.message}` });
+          res.status(500).json({ success: false, error: "Erreur Stripe lors du remboursement" });
           return;
         }
       }
@@ -3384,7 +3377,7 @@ export async function registerRoutes(
       res.json({ success: true, results });
     } catch (error: any) {
       console.error("[Test Data] Error:", error);
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json({ success: false, error: "Erreur création données test" });
     }
   });
 
@@ -3462,7 +3455,7 @@ export async function registerRoutes(
       console.error("[Discovery Scan] Error:", error);
       res.status(500).json({
         success: false,
-        error: error.message || "Erreur analyse Discovery Scan"
+        error: "Erreur analyse Discovery Scan"
       });
     }
   });
@@ -3520,7 +3513,7 @@ export async function registerRoutes(
       console.error("[Discovery Scan] Create error:", error);
       res.status(500).json({
         success: false,
-        error: error.message || "Erreur création Discovery Scan"
+        error: "Erreur création Discovery Scan"
       });
     }
   });
@@ -3608,7 +3601,7 @@ export async function registerRoutes(
       console.error("[Discovery Scan] Fetch error:", error);
       res.status(500).json({
         success: false,
-        error: error.message || "Erreur récupération Discovery Scan"
+        error: "Erreur récupération Discovery Scan"
       });
     }
   });
@@ -3819,7 +3812,8 @@ export async function registerRoutes(
         subscribers: result.rows
       });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      console.error("[Waitlist] Error:", error);
+      res.status(500).json({ error: "Erreur serveur" });
     }
   });
 
@@ -3908,8 +3902,8 @@ export async function registerRoutes(
         totalBooks: books.length,
       });
     } catch (error: any) {
-      console.error("[SendPulse Admin] Error:", error.message);
-      res.json({ success: false, error: error.message || "Erreur SendPulse" });
+      console.error("[SendPulse Admin] Error:", error);
+      res.json({ success: false, error: "Erreur SendPulse" });
     }
   });
 
@@ -3953,8 +3947,8 @@ export async function registerRoutes(
         count: subscribers.length,
       });
     } catch (error: any) {
-      console.error("[SendPulse Subscribers] Error:", error.message);
-      res.json({ success: false, error: error.message || "Erreur SendPulse" });
+      console.error("[SendPulse Subscribers] Error:", error);
+      res.json({ success: false, error: "Erreur SendPulse" });
     }
   });
 
@@ -4006,7 +4000,8 @@ export async function registerRoutes(
         await pool.end();
       }
     } catch (error: any) {
-      res.json({ success: false, error: error.message, hasDbUrl: true });
+      console.error("[DB Check] Error:", error);
+      res.json({ success: false, error: "Erreur vérification base de données", hasDbUrl: true });
     }
   });
 
@@ -4044,7 +4039,8 @@ export async function registerRoutes(
         await pool.end();
       }
     } catch (error: any) {
-      res.json({ success: false, error: error.message });
+      console.error("[DB Migrate] Error:", error);
+      res.json({ success: false, error: "Erreur migration base de données" });
     }
   });
 

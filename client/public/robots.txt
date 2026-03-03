@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api/
+Disallow: /test
+
+Sitemap: https://apexlabs.onrender.com/sitemap.xml

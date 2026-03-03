@@ -38,6 +38,7 @@ export const ReportDeliveryStatus = {
   READY: "READY",
   SENT: "SENT",
   FAILED: "FAILED",
+  EMAIL_FAILED: "EMAIL_FAILED",
   NEEDS_REVIEW: "NEEDS_REVIEW",
   NEED_PHOTOS: "NEED_PHOTOS",
 } as const;
