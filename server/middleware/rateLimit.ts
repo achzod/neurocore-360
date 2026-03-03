@@ -17,6 +17,20 @@ export function createRateLimiter(options: RateLimitOptions) {
   const max = options.max;
   const keyGenerator = options.keyGenerator ?? ((req) => req.ip || "unknown");
 
+  // Proactive cleanup every 5 minutes to prevent memory leaks
+  const cleanupInterval = setInterval(() => {
+    const now = Date.now();
+    for (const [key, entry] of hits) {
+      if (entry.resetAt <= now) {
+        hits.delete(key);
+      }
+    }
+  }, 5 * 60 * 1000);
+  // Allow the process to exit without waiting for the interval
+  if (cleanupInterval.unref) {
+    cleanupInterval.unref();
+  }
+
   return (req: Request, res: Response, next: NextFunction) => {
     const now = Date.now();
     const key = keyGenerator(req);
@@ -44,15 +58,6 @@ export function createRateLimiter(options: RateLimitOptions) {
         message: "Trop de requêtes. Réessaie plus tard.",
       });
       return;
-    }
-
-    // Simple cleanup to avoid unbounded growth.
-    if (hits.size > 10000) {
-      for (const [entryKey, entry] of hits) {
-        if (entry.resetAt <= now) {
-          hits.delete(entryKey);
-        }
-      }
     }
 
     next();

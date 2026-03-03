@@ -211,12 +211,13 @@ export interface IStorage {
   // Orders
   createOrder(input: CreateOrderInput): Promise<Order>;
   getOrder(id: string): Promise<Order | undefined>;
-  getOrderByStripeSession(sessionId: string): Promise<Order | undefined>;
+  getOrderByStripeSession(sessionId: string, forUpdate?: boolean): Promise<Order | undefined>;
   getOrderByPaymentIntent(paymentIntentId: string): Promise<Order | undefined>;
   getOrdersByUserId(userId: string): Promise<Order[]>;
   getOrdersByEmail(email: string): Promise<Order[]>;
   getAllOrders(opts?: { limit?: number; offset?: number; status?: OrderStatusEnum; productType?: ProductTypeEnum; email?: string }): Promise<{ orders: Order[]; total: number }>;
   updateOrder(id: string, data: Partial<Order>): Promise<Order | undefined>;
+  claimOrderForAudit(orderId: string, auditId: string): Promise<boolean>;
 
   // Promo code usages
   createPromoCodeUsage(input: Omit<PromoCodeUsage, "id" | "usedAt">): Promise<PromoCodeUsage>;
@@ -729,7 +730,7 @@ export class MemStorage implements IStorage {
     return order;
   }
   async getOrder(id: string): Promise<Order | undefined> { return this.memOrders.get(id); }
-  async getOrderByStripeSession(sessionId: string): Promise<Order | undefined> {
+  async getOrderByStripeSession(sessionId: string, _forUpdate?: boolean): Promise<Order | undefined> {
     return Array.from(this.memOrders.values()).find(o => o.stripeCheckoutSessionId === sessionId);
   }
   async getOrderByPaymentIntent(paymentIntentId: string): Promise<Order | undefined> {
@@ -759,6 +760,13 @@ export class MemStorage implements IStorage {
     const updated = { ...order, ...data, updatedAt: new Date() };
     this.memOrders.set(id, updated);
     return updated;
+  }
+  async claimOrderForAudit(orderId: string, auditId: string): Promise<boolean> {
+    const order = this.memOrders.get(orderId);
+    if (!order || order.auditId) return false;
+    order.auditId = auditId;
+    order.updatedAt = new Date();
+    return true;
   }
   async createPromoCodeUsage(input: Omit<PromoCodeUsage, "id" | "usedAt">): Promise<PromoCodeUsage> {
     const usage: PromoCodeUsage = { ...input, id: randomUUID(), usedAt: new Date() };
@@ -2266,12 +2274,12 @@ export class PgStorage implements IStorage {
     return this.rowToOrder(result.rows[0]);
   }
 
-  async getOrderByStripeSession(sessionId: string): Promise<Order | undefined> {
+  async getOrderByStripeSession(sessionId: string, forUpdate = false): Promise<Order | undefined> {
     await this.ensureOrdersTableCreated();
-    const result = await pool.query(
-      "SELECT * FROM orders WHERE stripe_checkout_session_id = $1",
-      [sessionId]
-    );
+    const sql = forUpdate
+      ? "SELECT * FROM orders WHERE stripe_checkout_session_id = $1 FOR UPDATE"
+      : "SELECT * FROM orders WHERE stripe_checkout_session_id = $1";
+    const result = await pool.query(sql, [sessionId]);
     if (result.rows.length === 0) return undefined;
     return this.rowToOrder(result.rows[0]);
   }
@@ -2385,6 +2393,16 @@ export class PgStorage implements IStorage {
     );
     if (result.rows.length === 0) return undefined;
     return this.rowToOrder(result.rows[0]);
+  }
+
+  // Atomically link audit to order (prevents race conditions on confirm-session double-clicks)
+  async claimOrderForAudit(orderId: string, auditId: string): Promise<boolean> {
+    await this.ensureOrdersTableCreated();
+    const result = await pool.query(
+      "UPDATE orders SET audit_id = $1, updated_at = NOW() WHERE id = $2 AND audit_id IS NULL RETURNING id",
+      [auditId, orderId]
+    );
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Promo code usage tracking

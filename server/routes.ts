@@ -693,6 +693,11 @@ export async function registerRoutes(
         return;
       }
 
+      // Cache completed reports for 5 minutes (private — user-specific data)
+      if (audit.reportDeliveryStatus === "READY" || audit.reportDeliveryStatus === "SENT") {
+        res.setHeader("Cache-Control", "private, max-age=300");
+      }
+
       // Discovery Scan (GRATUIT) returns { sections, metrics, globalScore, clientName }
       if (narrativeReport.sections && Array.isArray(narrativeReport.sections)) {
         const category = req.query.category as string;
@@ -802,6 +807,11 @@ export async function registerRoutes(
       if (!audit) {
         res.status(404).json({ error: "Audit non trouve" });
         return;
+      }
+
+      // Cache completed reports for 5 minutes
+      if (audit.reportDeliveryStatus === "READY" || audit.reportDeliveryStatus === "SENT") {
+        res.setHeader("Cache-Control", "private, max-age=300");
       }
 
       const generationStart = audit.reportScheduledFor
@@ -1270,6 +1280,36 @@ export async function registerRoutes(
       res.json({ success: true, orders: safeOrders });
     } catch (error) {
       console.error("[User Orders] Error:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
+  // ==================== USER RECEIPT ====================
+
+  app.get("/api/user/receipts/:orderId", async (req, res) => {
+    try {
+      const payload = getAuthPayload(req);
+      if (!payload) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+      const order = await storage.getOrder(req.params.orderId);
+      if (!order) {
+        res.status(404).json({ error: "Commande non trouvée" });
+        return;
+      }
+      // Ownership check
+      if (order.email.toLowerCase() !== payload.email.toLowerCase()) {
+        res.status(403).json({ error: "Accès interdit" });
+        return;
+      }
+      const { generateReceiptHTML } = await import("./receiptGenerator");
+      const html = generateReceiptHTML(order);
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Content-Disposition", `inline; filename="recu-${order.id.slice(0, 8)}.html"`);
+      res.send(html);
+    } catch (error) {
+      console.error("[User Receipt] Error:", error);
       res.status(500).json({ error: "Erreur serveur" });
     }
   });
@@ -2238,9 +2278,17 @@ export async function registerRoutes(
         responses: responses as Record<string, unknown>,
       });
 
-      // Link order to audit
+      // Atomically link order to audit (prevents race on double-click)
       if (existingOrder) {
-        await storage.updateOrder(existingOrder.id, { auditId: audit.id });
+        const claimed = await storage.claimOrderForAudit(existingOrder.id, audit.id);
+        if (!claimed) {
+          // Another request already claimed this order — return the existing audit
+          const refreshed = await storage.getOrder(existingOrder.id);
+          if (refreshed?.auditId) {
+            res.json({ success: true, auditId: refreshed.auditId, auditType: planType, existing: true });
+            return;
+          }
+        }
       }
 
       await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
