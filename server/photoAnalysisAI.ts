@@ -211,36 +211,66 @@ export async function analyzeBodyPhotosWithAI(
 
     const resp = await client.messages.create({
       model: ANTHROPIC_CONFIG.ANTHROPIC_MODEL,
-      max_tokens: 2500,
-      temperature: 0.5,
+      max_tokens: 4096,
+      temperature: 0.3,
       messages: [{ role: "user", content: blocks }],
     } as any);
 
     const textContent = (resp as any).content?.find((c: any) => c.type === "text");
     const text = textContent?.text || "";
-    const jsonMatch = String(text).match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
+
+    // Try multiple extraction strategies for JSON
+    let jsonStr: string | null = null;
+
+    // Strategy 1: Extract from ```json blocks
+    const codeBlockMatch = String(text).match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+    if (codeBlockMatch) {
+      jsonStr = codeBlockMatch[1];
+    }
+
+    // Strategy 2: Find the largest JSON object
+    if (!jsonStr) {
+      const jsonMatch = String(text).match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        jsonStr = jsonMatch[0];
+      }
+    }
+
+    if (!jsonStr) {
       console.error("[PhotoAnalysis Claude] No JSON found in response:", String(text).slice(0, 500));
       return getDefaultAnalysis("JSON non trouve dans la reponse");
     }
 
-    let jsonStr = jsonMatch[0];
+    // Clean common JSON issues
     jsonStr = jsonStr.replace(/,(\s*[}\]])/g, "$1");
     jsonStr = jsonStr.replace(/```json\s*/g, "").replace(/```\s*/g, "");
+    // Fix unescaped newlines in string values
+    jsonStr = jsonStr.replace(/:\s*"([^"]*)\n([^"]*?)"/g, (_, a, b) => `: "${a} ${b}"`);
 
     let parsed: Record<string, unknown>;
     try {
       parsed = JSON.parse(jsonStr);
     } catch (e) {
-      console.error("[PhotoAnalysis Claude] JSON parse failed:", e);
-      return getDefaultAnalysis("Erreur parsing JSON");
+      // Try one more time with aggressive cleanup
+      try {
+        jsonStr = jsonStr.replace(/[\x00-\x1F\x7F]/g, " ");
+        parsed = JSON.parse(jsonStr);
+      } catch (e2) {
+        console.error("[PhotoAnalysis Claude] JSON parse failed:", e, "\nJSON snippet:", jsonStr.slice(0, 300));
+        return getDefaultAnalysis("Erreur parsing JSON");
+      }
     }
 
     console.log(`[PhotoAnalysis Claude] Analysis complete - confidence: ${(parsed as any).confidenceLevel || 70}%`);
     return normalizeAnalysisResult(parsed);
   } catch (err: any) {
-    console.error("[PhotoAnalysis Claude] Error:", err?.message || err);
-    return getDefaultAnalysis(err?.message || "Erreur API Claude");
+    const msg = err?.message || String(err);
+    console.error("[PhotoAnalysis Claude] Error:", msg);
+    // If it's a 400 error, the image might be too large or invalid
+    if (msg.includes("400") || msg.includes("Could not process")) {
+      console.warn("[PhotoAnalysis Claude] Image processing error - this usually means the image is too large, corrupt, or in an unsupported format.");
+    }
+    return getDefaultAnalysis(msg || "Erreur API Claude");
   }
 }
 

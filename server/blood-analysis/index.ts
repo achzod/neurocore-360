@@ -730,8 +730,11 @@ const normalizeMarkerValue = (markerId: string, value: number, unit?: string): n
     if (value > 20) return roundValue(value / 88.4, 2);
   }
 
-  if (markerId === "testosterone_total" && sourceUnit === "nmol/L") {
-    return roundValue(value * 28.84, 1);
+  if (markerId === "testosterone_total") {
+    if (sourceUnit === "nmol/L") return roundValue(value * 28.84, 1);
+    if (sourceUnit === "ng/mL") return roundValue(value * 100, 1); // ng/mL -> ng/dL
+    // Heuristic: if value < 40, likely nmol/L (French labs)
+    if (!sourceUnit && value > 0 && value < 40) return roundValue(value * 28.84, 1);
   }
   if (markerId === "testosterone_libre" && sourceUnit === "pmol/L") {
     return roundValue(value / 3.47, 2);
@@ -765,6 +768,14 @@ const normalizeMarkerValue = (markerId: string, value: number, unit?: string): n
   }
   if (markerId === "zinc" && sourceUnit === "µmol/L") {
     return roundValue(value * 6.538, 1);
+  }
+
+  // Magnesium RBC: target is mg/dL
+  if (markerId === "magnesium_rbc" || markerId === "magnesium") {
+    if (sourceUnit === "mmol/L") return roundValue(value * 2.43, 1); // 1 mmol/L = 2.43 mg/dL
+    if (sourceUnit === "mg/L") return roundValue(value / 10, 1); // mg/L -> mg/dL
+    // Heuristic: French labs often report in mg/L (18-25 range) vs mg/dL (1.8-2.5)
+    if (!sourceUnit && value > 10 && value < 30) return roundValue(value / 10, 1);
   }
 
   const lipidMmolToMg = 38.67;

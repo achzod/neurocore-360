@@ -695,7 +695,7 @@ export function formatSupplementForReport(supp: SupplementProtocolAdvanced): {
 } {
   return {
     name: `${supp.ingredient} (${supp.form})`,
-    dosage: `${supp.dose.daily_amount} ${supp.dose.units}`,
+    dosage: supp.dose.daily_amount.toLowerCase().includes(supp.dose.units.toLowerCase().replace(/\s.*$/, "")) ? supp.dose.daily_amount : `${supp.dose.daily_amount} ${supp.dose.units}`,
     timing: supp.timing,
     duration: supp.cycle,
     why: supp.mechanism,
@@ -1233,7 +1233,7 @@ export async function generateEnhancedSupplementsHTML(input: {
           <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
             <div style="background: var(--surface-1); border-radius: 8px; padding: 12px;">
               <span style="font-size: 0.7rem; font-weight: 700; color: var(--accent-ok); text-transform: uppercase;">Dosage</span>
-              <p style="font-size: 0.95rem; font-weight: 600; color: var(--text); margin: 6px 0 0 0;">${supp.dose.daily_amount} ${supp.dose.units}</p>
+              <p style="font-size: 0.95rem; font-weight: 600; color: var(--text); margin: 6px 0 0 0;">${supp.dose.daily_amount.toLowerCase().includes(supp.dose.units.toLowerCase().replace(/\s.*$/, "")) ? supp.dose.daily_amount : `${supp.dose.daily_amount} ${supp.dose.units}`}</p>
             </div>
             <div style="background: var(--surface-1); border-radius: 8px; padding: 12px;">
               <span style="font-size: 0.7rem; font-weight: 700; color: var(--primary); text-transform: uppercase;">Timing</span>
@@ -1408,8 +1408,12 @@ export function generateSupplementsSectionText(input: {
     paragraphs.push(
       `Mecanisme cle: ${mechanism}`
     );
+    // Avoid "Dose 3g g" when daily_amount already contains the unit
+    const doseStr = supp.dose.daily_amount.toLowerCase().includes(supp.dose.units.toLowerCase().replace(/\s.*$/, ""))
+      ? supp.dose.daily_amount
+      : `${supp.dose.daily_amount} ${supp.dose.units}`;
     paragraphs.push(
-      `Protocole concret: ${protocol ? `${protocol} ` : ""}Dose ${supp.dose.daily_amount} ${supp.dose.units} par jour, ${supp.dose.split}. Prends le ${supp.timing}. Cycle ${supp.cycle}. ${supp.dose.scaling_note ? `${supp.dose.scaling_note}.` : ""}`.trim()
+      `Protocole concret: ${protocol ? `${protocol} ` : ""}Dose ${doseStr} par jour, ${supp.dose.split}. Prends le ${supp.timing}. Cycle ${supp.cycle}. ${supp.dose.scaling_note ? `${supp.dose.scaling_note}.` : ""}`.trim()
     );
     paragraphs.push(
       `Qualite du produit: ${labelTips} ${checks} ${synergies} ${risks}`.trim()

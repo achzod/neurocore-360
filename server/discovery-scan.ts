@@ -341,35 +341,47 @@ const openai = OPENAI_CONFIG.OPENAI_API_KEY
 function scoreSommeil(responses: DiscoveryResponses): number {
   let score = 100;
 
-  // Heures de sommeil
+  // questionnaire: heures-sommeil → moins-5/5-6/6-7/7-8/8-9/9+
   const heures = responses['heures-sommeil'];
   if (heures === 'moins-5') score -= 40;
   else if (heures === '5-6') score -= 25;
   else if (heures === '6-7') score -= 10;
 
-  // Qualité
+  // questionnaire: qualite-sommeil → mauvaise/moyenne/bonne/excellente
   const qualite = responses['qualite-sommeil'];
   if (qualite === 'mauvaise') score -= 30;
   else if (qualite === 'moyenne') score -= 15;
 
-  // Endormissement
+  // questionnaire: endormissement → rapide/normal/long/tres-long
   const endormissement = responses['endormissement'];
-  if (endormissement === 'toujours') score -= 20;
+  if (endormissement === 'tres-long') score -= 20;
+  else if (endormissement === 'long') score -= 10;
+  // Legacy values from Premium questionnaire
+  else if (endormissement === 'toujours') score -= 20;
   else if (endormissement === 'souvent') score -= 10;
 
-  // Réveils nocturnes
+  // questionnaire: reveils-nocturnes → jamais/parfois/souvent
   const reveils = responses['reveils-nocturnes'];
-  if (reveils === 'chaque-nuit') score -= 20;
-  else if (reveils === 'souvent') score -= 10;
+  if (reveils === 'souvent' || reveils === 'chaque-nuit') score -= 20;
+  else if (reveils === 'parfois') score -= 10;
 
-  // Réveil fatigué
+  // questionnaire: reveil-repose → jamais/rarement/parfois/souvent/toujours (aliased to reveil-fatigue)
+  // "jamais reposé" = toujours fatigué; "rarement reposé" = souvent fatigué
+  const reveilRepose = responses['reveil-repose'];
   const reveilFatigue = responses['reveil-fatigue'];
-  if (reveilFatigue === 'toujours') score -= 25;
-  else if (reveilFatigue === 'souvent') score -= 15;
+  if (reveilRepose) {
+    if (reveilRepose === 'jamais') score -= 25;
+    else if (reveilRepose === 'rarement') score -= 15;
+    else if (reveilRepose === 'parfois') score -= 5;
+  } else if (reveilFatigue) {
+    if (reveilFatigue === 'toujours') score -= 25;
+    else if (reveilFatigue === 'souvent') score -= 15;
+  }
 
-  // Heure de coucher tardive
+  // questionnaire: heure-coucher → avant-22h/22h-23h/23h-00h/00h-1h/apres-1h
   const heureCoucher = responses['heure-coucher'];
-  if (heureCoucher === 'apres-00h') score -= 15;
+  if (heureCoucher === 'apres-1h') score -= 20;
+  else if (heureCoucher === '00h-1h' || heureCoucher === 'apres-00h') score -= 15;
   else if (heureCoucher === '23h-00h') score -= 5;
 
   return Math.max(0, score);
@@ -378,26 +390,31 @@ function scoreSommeil(responses: DiscoveryResponses): number {
 function scoreStress(responses: DiscoveryResponses): number {
   let score = 100;
 
-  const niveauStress = responses['niveau-stress'];
-  if (niveauStress === 'tres-eleve') score -= 35;
+  // questionnaire: niveau-stress → aucun/leger/modere/eleve/extreme
+  const niveauStress = responses['niveau-stress'] || responses['stress-niveau'];
+  if (niveauStress === 'extreme' || niveauStress === 'tres-eleve') score -= 35;
   else if (niveauStress === 'eleve') score -= 20;
   else if (niveauStress === 'modere') score -= 10;
 
+  // questionnaire: anxiete → aucune/legere/moderee/forte
   const anxiete = responses['anxiete'];
-  if (anxiete === 'souvent') score -= 25;
-  else if (anxiete === 'parfois') score -= 10;
+  if (anxiete === 'forte') score -= 25;
+  else if (anxiete === 'moderee' || anxiete === 'parfois') score -= 10;
 
+  // questionnaire: concentration → mauvaise/moyenne/bonne/excellente
   const concentration = responses['concentration'];
-  if (concentration === 'difficile') score -= 20;
+  if (concentration === 'mauvaise' || concentration === 'difficile') score -= 20;
   else if (concentration === 'moyenne') score -= 10;
 
-  const irritabilite = responses['irritabilite'];
-  if (irritabilite === 'tres-souvent') score -= 20;
-  else if (irritabilite === 'souvent') score -= 10;
-
+  // questionnaire: humeur-fluctuation → stable/parfois/souvent/constamment
   const humeur = responses['humeur-fluctuation'];
   if (humeur === 'constamment') score -= 20;
   else if (humeur === 'souvent') score -= 10;
+
+  // Use depression/estime-soi as additional stress indicators
+  const depression = responses['depression-vecu'];
+  if (depression === 'modere-actuel') score -= 15;
+  else if (depression === 'leger-actuel') score -= 5;
 
   return Math.max(0, score);
 }
@@ -405,27 +422,35 @@ function scoreStress(responses: DiscoveryResponses): number {
 function scoreEnergie(responses: DiscoveryResponses): number {
   let score = 100;
 
-  const energieMatin = responses['energie-matin'];
-  if (energieMatin === 'tres-faible') score -= 30;
-  else if (energieMatin === 'faible') score -= 20;
-  else if (energieMatin === 'moyenne') score -= 10;
+  // questionnaire: niveau-energie-matin → tres-bas/bas/moyen/bon/excellent (aliased to energie-matin)
+  const energieMatin = responses['energie-matin'] || responses['niveau-energie-matin'];
+  if (energieMatin === 'tres-bas' || energieMatin === 'tres-faible') score -= 30;
+  else if (energieMatin === 'bas' || energieMatin === 'faible') score -= 20;
+  else if (energieMatin === 'moyen' || energieMatin === 'moyenne') score -= 10;
 
-  const energieAprem = responses['energie-aprem'];
-  if (energieAprem === 'crash') score -= 25;
-  else if (energieAprem === 'baisse-moderee') score -= 15;
+  // questionnaire: niveau-energie-aprem → tres-bas/bas/moyen/bon/excellent (aliased to energie-aprem)
+  const energieAprem = responses['energie-aprem'] || responses['niveau-energie-aprem'];
+  if (energieAprem === 'tres-bas' || energieAprem === 'crash') score -= 25;
+  else if (energieAprem === 'bas' || energieAprem === 'baisse-moderee') score -= 15;
+  else if (energieAprem === 'moyen') score -= 5;
 
-  const coupFatigue = responses['coup-fatigue'];
-  if (coupFatigue === 'quotidien') score -= 25;
+  // questionnaire: coup-fatigue → jamais/parfois/souvent/toujours
+  const coupFatigue = responses['coup-fatigue'] || responses['coups-fatigue'];
+  if (coupFatigue === 'toujours' || coupFatigue === 'quotidien') score -= 25;
   else if (coupFatigue === 'souvent') score -= 15;
 
+  // questionnaire: envies-sucre → jamais/rarement/parfois/souvent/constamment
   const enviesSucre = responses['envies-sucre'];
-  if (enviesSucre === 'souvent') score -= 20;
+  if (enviesSucre === 'constamment') score -= 25;
+  else if (enviesSucre === 'souvent') score -= 20;
   else if (enviesSucre === 'parfois') score -= 10;
 
+  // questionnaire: motivation → tres-bas/bas/moyen/bon/excellent
   const motivation = responses['motivation'];
   if (motivation === 'tres-bas') score -= 20;
   else if (motivation === 'bas') score -= 10;
 
+  // questionnaire: thermogenese → jamais/parfois/souvent/toujours
   const thermogenese = responses['thermogenese'];
   if (thermogenese === 'toujours') score -= 15;
   else if (thermogenese === 'souvent') score -= 10;
@@ -436,28 +461,35 @@ function scoreEnergie(responses: DiscoveryResponses): number {
 function scoreDigestion(responses: DiscoveryResponses): number {
   let score = 100;
 
-  const digestion = responses['digestion-qualite'];
+  // questionnaire: digestion-qualite → mauvaise/moyenne/bonne/excellente
+  const digestion = responses['digestion-qualite'] || responses['digestion-generale'];
   if (digestion === 'mauvaise') score -= 30;
   else if (digestion === 'moyenne') score -= 15;
 
+  // questionnaire: ballonnements → jamais/parfois/souvent/toujours
   const ballonnements = responses['ballonnements'];
-  if (ballonnements === 'apres-repas') score -= 25;
+  if (ballonnements === 'toujours' || ballonnements === 'apres-repas') score -= 25;
   else if (ballonnements === 'souvent') score -= 15;
+  else if (ballonnements === 'parfois') score -= 5;
 
+  // questionnaire: transit → constipation/normal/rapide/irregulier
   const transit = responses['transit'];
-  if (transit === 'constipe' || transit === 'diarrhee') score -= 25;
-  else if (transit === 'variable') score -= 15;
+  if (transit === 'constipation' || transit === 'constipe' || transit === 'rapide' || transit === 'diarrhee') score -= 25;
+  else if (transit === 'irregulier' || transit === 'variable') score -= 15;
 
+  // questionnaire: reflux → jamais/rarement/parfois/souvent
   const reflux = responses['reflux'];
   if (reflux === 'souvent') score -= 20;
   else if (reflux === 'parfois') score -= 10;
 
+  // questionnaire: intolerance → lactose/gluten/fodmap/histamine/aucune (checkbox)
   const intolerances = responses['intolerance'] || [];
-  if (intolerances.includes('lactose') || intolerances.includes('gluten')) score -= 10;
+  if (Array.isArray(intolerances) && (intolerances.includes('lactose') || intolerances.includes('gluten'))) score -= 10;
 
-  const energiePostRepas = responses['energie-post-repas'];
-  if (energiePostRepas === 'crash') score -= 25;
-  else if (energiePostRepas === 'somnolence') score -= 15;
+  // questionnaire: douleurs-abdominales → jamais/rarement/parfois/souvent
+  const douleursAbdo = responses['douleurs-abdominales'];
+  if (douleursAbdo === 'souvent') score -= 20;
+  else if (douleursAbdo === 'parfois') score -= 10;
 
   return Math.max(0, score);
 }
@@ -465,21 +497,26 @@ function scoreDigestion(responses: DiscoveryResponses): number {
 function scoreTraining(responses: DiscoveryResponses): number {
   let score = 100;
 
+  // questionnaire: sport-frequence → 0/1-2/3-4/5+
   const frequence = responses['sport-frequence'];
   if (frequence === '0') score -= 30;
   else if (frequence === '1-2') score -= 15;
 
-  const intensite = responses['intensite'];
+  // questionnaire: intensite-entrainement → leger/modere/intense/extreme (aliased to intensite)
+  const intensite = responses['intensite-entrainement'] || responses['intensite'];
   if (intensite === 'leger') score -= 15;
 
+  // questionnaire: recuperation → mauvaise/moyenne/bonne/excellente
   const recuperation = responses['recuperation'];
   if (recuperation === 'mauvaise') score -= 25;
   else if (recuperation === 'moyenne') score -= 15;
 
+  // questionnaire: courbatures → jamais/parfois/souvent/toujours
   const courbatures = responses['courbatures'];
   if (courbatures === 'toujours') score -= 20;
   else if (courbatures === 'souvent') score -= 10;
 
+  // questionnaire: performance-evolution → progression/stagnation/regression
   const evolution = responses['performance-evolution'];
   if (evolution === 'regression') score -= 25;
   else if (evolution === 'stagnation') score -= 15;
@@ -490,27 +527,33 @@ function scoreTraining(responses: DiscoveryResponses): number {
 function scoreNutrition(responses: DiscoveryResponses): number {
   let score = 100;
 
-  const nbRepas = responses['nb-repas'];
+  // questionnaire: nb-repas → 1-2/3/4-5/6+
+  const nbRepas = responses['nb-repas'] || responses['repas-jour'];
   if (nbRepas === '1-2') score -= 20;
 
-  const proteines = responses['proteines-jour'];
+  // questionnaire: proteines-jour → faible/moyenne/bonne/haute/inconnu
+  const proteines = responses['proteines-jour'] || responses['proteines-repas'];
   if (proteines === 'faible') score -= 25;
-  else if (proteines === 'moyen') score -= 10;
+  else if (proteines === 'moyenne' || proteines === 'moyen') score -= 10;
 
-  const eau = responses['eau-jour'];
+  // questionnaire: eau-jour → moins-1L/1-1.5L/1.5-2L/2-3L/3L+
+  const eau = responses['eau-jour'] || responses['hydratation'];
   if (eau === 'moins-1L') score -= 25;
   else if (eau === '1-1.5L') score -= 15;
 
+  // questionnaire: aliments-transformes → jamais/rarement/parfois/souvent
   const alimentsTransformes = responses['aliments-transformes'];
   if (alimentsTransformes === 'souvent') score -= 25;
   else if (alimentsTransformes === 'parfois') score -= 10;
 
+  // questionnaire: sucres-ajoutes → zero/faible/moderee/elevee
   const sucresAjoutes = responses['sucres-ajoutes'];
-  if (sucresAjoutes === 'eleve') score -= 25;
-  else if (sucresAjoutes === 'modere') score -= 10;
+  if (sucresAjoutes === 'elevee' || sucresAjoutes === 'eleve') score -= 25;
+  else if (sucresAjoutes === 'moderee' || sucresAjoutes === 'modere') score -= 10;
 
-  const alcool = responses['alcool'];
-  if (alcool === '8+') score -= 25;
+  // questionnaire: alcool-semaine → 0/1-3/4-7/8-14/15+ (aliased to alcool)
+  const alcool = responses['alcool-semaine'] || responses['alcool'];
+  if (alcool === '15+' || alcool === '8-14' || alcool === '8+') score -= 25;
   else if (alcool === '4-7') score -= 15;
 
   return Math.max(0, score);
@@ -519,24 +562,33 @@ function scoreNutrition(responses: DiscoveryResponses): number {
 function scoreLifestyle(responses: DiscoveryResponses): number {
   let score = 100;
 
+  // questionnaire: cafe-jour → 0/1-2/3-4/5+
   const cafe = responses['cafe-jour'];
   if (cafe === '5+') score -= 20;
   else if (cafe === '3-4') score -= 10;
 
+  // questionnaire: tabac → non/ex-fumeur/occasionnel/quotidien
   const tabac = responses['tabac'];
   if (tabac === 'quotidien') score -= 30;
   else if (tabac === 'occasionnel') score -= 15;
 
+  // questionnaire: temps-ecran → moins-1h/1-2h/2-4h/4-6h/6h+
   const tempsEcran = responses['temps-ecran'];
   if (tempsEcran === '6h+') score -= 20;
   else if (tempsEcran === '4-6h') score -= 10;
 
+  // questionnaire: exposition-soleil → rare/parfois/regulier
   const soleil = responses['exposition-soleil'];
-  if (soleil === 'rare') score -= 20;
+  if (soleil === 'rare' || soleil === 'rarement') score -= 20;
 
+  // questionnaire: heures-assis → moins-4h/4-6h/6-8h/8-10h/10h+
   const heuresAssis = responses['heures-assis'];
-  if (heuresAssis === '8h+') score -= 25;
+  if (heuresAssis === '10h+' || heuresAssis === '8-10h' || heuresAssis === '8h+') score -= 25;
   else if (heuresAssis === '6-8h') score -= 15;
+
+  // questionnaire: cannabis → non/occasionnel/regulier
+  const cannabis = responses['cannabis'];
+  if (cannabis === 'regulier') score -= 15;
 
   return Math.max(0, score);
 }
@@ -544,21 +596,36 @@ function scoreLifestyle(responses: DiscoveryResponses): number {
 function scoreMindset(responses: DiscoveryResponses): number {
   let score = 100;
 
+  // questionnaire: estime-soi → tres-basse/basse/moyenne/bonne/excellente
+  const estimesSoi = responses['estime-soi'];
+  if (estimesSoi === 'tres-basse') score -= 30;
+  else if (estimesSoi === 'basse') score -= 20;
+  else if (estimesSoi === 'moyenne') score -= 5;
+
+  // questionnaire: relation-nourriture → saine/complexe/difficile/toxique
+  const relationNourriture = responses['relation-nourriture'];
+  if (relationNourriture === 'toxique') score -= 25;
+  else if (relationNourriture === 'difficile') score -= 15;
+  else if (relationNourriture === 'complexe') score -= 5;
+
+  // questionnaire: procrastination → jamais/parfois/souvent/toujours
+  const procrastination = responses['procrastination'];
+  if (procrastination === 'toujours') score -= 20;
+  else if (procrastination === 'souvent') score -= 10;
+
+  // questionnaire: soutien-social → pas-du-tout/peu/moyennement/bien/tres-bien
+  const soutien = responses['soutien-social'];
+  if (soutien === 'pas-du-tout') score -= 15;
+  else if (soutien === 'peu') score -= 10;
+
+  // questionnaire: blocages-perso (checkbox) — count active blockers
+  const blocages = responses['blocages-perso'];
+  if (Array.isArray(blocages) && !blocages.includes('aucun') && blocages.length >= 3) score -= 15;
+  else if (Array.isArray(blocages) && !blocages.includes('aucun') && blocages.length >= 1) score -= 5;
+
+  // Legacy keys (for backward compat)
   const engagement = responses['engagement-niveau'];
-  if (engagement === '1-3') score -= 30;
-  else if (engagement === '4-5') score -= 15;
-
-  const consignes = responses['consignes-strictes'];
-  if (consignes === 'non') score -= 15;
-
-  const tempsTraining = responses['temps-training-semaine'];
-  if (tempsTraining === 'moins-2h') score -= 20;
-
-  // Analyse qualitative des réponses textuelles
-  const frustration = responses['frustration-passee'] || '';
-  if (frustration.toLowerCase().includes('abandon') || frustration.toLowerCase().includes('echec')) {
-    score -= 10;
-  }
+  if (engagement === '1-3') score -= 10;
 
   return Math.max(0, score);
 }
@@ -2369,25 +2436,32 @@ ${expansion}`;
     }
 
     case 'nutrition': {
-      const nbRepas = responses['nb-repas'];
+      const nbRepas = responses['nb-repas'] || responses['repas-jour'];
       const petitDej = responses['petit-dejeuner'];
-      const proteines = responses['proteines-jour'];
-      const eau = responses['eau-jour'];
+      const proteines = responses['proteines-jour'] || responses['proteines-repas'];
+      const eau = responses['eau-jour'] || responses['hydratation'];
       const regime = responses['regime-alimentaire'];
       const transformes = responses['aliments-transformes'];
       const sucres = responses['sucres-ajoutes'];
-      const alcool = responses['alcool'];
+      const alcool = responses['alcool-semaine'] || responses['alcool'];
+
+      // Map questionnaire values to display labels
+      const repasLabel = nbRepas === '1-2' ? '1-2 repas' : nbRepas === '3' ? '3 repas' : nbRepas === '4-5' ? '4-5 repas' : nbRepas === '6+' ? '6+ repas' : '3-4 repas';
+      const proteinesInsuffisant = proteines === 'faible' || proteines === 'insuffisant';
+      const proteinesCorrect = proteines === 'moyenne' || proteines === 'correct' || proteines === 'moyen';
+      const proteinesEleve = proteines === 'haute' || proteines === 'bonne' || proteines === 'eleve';
+      const proteinesLabel = proteinesInsuffisant ? 'insuffisant' : proteinesCorrect ? 'correct' : proteinesEleve ? 'eleve' : 'non renseigne';
 
       return `
 <p class="mt-6"><strong>Analyse de ta nutrition</strong></p>
 
-<p>${prenom}, ton score nutrition de ${score}/100 est ${scoreLabel}. Avec ${nbRepas === '1-2' ? '1-2 repas' : nbRepas === '3' ? '3 repas' : '4+ repas'} par jour et un apport proteique ${proteines === 'insuffisant' ? 'insuffisant' : proteines === 'correct' ? 'correct' : 'eleve'}, ton alimentation joue un role central dans ta composition corporelle.</p>
+<p>${prenom}, ton score nutrition de ${score}/100 est ${scoreLabel}. Avec ${repasLabel} par jour et un apport proteique ${proteinesLabel}, ton alimentation joue un role central dans ta composition corporelle.</p>
 
-<p>Les proteines sont le macronutriment le plus important pour la recomposition corporelle. ${proteines === 'insuffisant' || proteines === 'faible' ? 'Ton apport proteique insuffisant (probablement <1.6g/kg) limite ta synthese proteique musculaire (MPS), reduit ta satiete (les proteines ont l\'effet thermic le plus eleve), et diminue ta thermogenese alimentaire de 20-30%. C\'est le frein numero un a la construction musculaire et a la perte de gras.' : proteines === 'correct' ? 'Ton apport proteique correct est une base, mais pour optimiser la MPS, viser 2-2.2g/kg en periode de recomposition serait ideal.' : 'Ton apport proteique eleve est optimal pour maximiser la MPS et la satiete.'}</p>
+<p>Les proteines sont le macronutriment le plus important pour la recomposition corporelle. ${proteinesInsuffisant ? 'Ton apport proteique insuffisant (probablement <1.6g/kg) limite ta synthese proteique musculaire (MPS), reduit ta satiete (les proteines ont l\'effet thermic le plus eleve), et diminue ta thermogenese alimentaire de 20-30%. C\'est le frein numero un a la construction musculaire et a la perte de gras.' : proteinesCorrect ? 'Ton apport proteique correct est une base, mais pour optimiser la MPS, viser 2-2.2g/kg en periode de recomposition serait ideal.' : 'Ton apport proteique eleve est optimal pour maximiser la MPS et la satiete.'}</p>
 
 <p>${eau === 'moins-1L' || eau === '1-1.5L' ? 'Ta consommation d\'eau insuffisante (<2L/jour) impacte directement tes performances (-10-20%), ton metabolisme, et toutes tes reactions enzymatiques. L\'eau est le solvant universel de ton corps : deshydrate, chaque fonction cellulaire est compromise.' : 'Ton hydratation correcte soutient tes fonctions metaboliques et ta performance.'} ${transformes === 'souvent' ? 'Ta consommation elevee d\'aliments transformes apporte des huiles vegetales pro-inflammatoires (omega-6), des sucres caches, des additifs qui perturbent ton microbiome, et des calories vides sans micronutriments.' : ''}</p>
 
-<p>${sucres === 'eleve' ? 'Ta consommation elevee de sucres ajoutes maintient ton insuline chroniquement elevee, bloquant la lipolyse et favorisant le stockage. Les pics glycemiques repetitifs creent une inflammation systemique et accelerent la resistance a l\'insuline.' : ''} ${alcool === '8+' || alcool === '4-7' ? 'Ta consommation d\'alcool est problematique. L\'ethanol est metabolise en priorite par le foie, mettant en pause l\'oxidation des graisses. Il perturbe le sommeil profond, reduit la testosterone de 20-30%, et apporte des calories vides. Chaque verre est un frein direct a ta progression.' : 'Ta consommation d\'alcool limitee preserve ton metabolisme hepatique et ta qualite de sommeil.'}</p>
+<p>${sucres === 'elevee' || sucres === 'eleve' ? 'Ta consommation elevee de sucres ajoutes maintient ton insuline chroniquement elevee, bloquant la lipolyse et favorisant le stockage. Les pics glycemiques repetitifs creent une inflammation systemique et accelerent la resistance a l\'insuline.' : ''} ${alcool === '15+' || alcool === '8-14' || alcool === '8+' || alcool === '4-7' ? 'Ta consommation d\'alcool est problematique. L\'ethanol est metabolise en priorite par le foie, mettant en pause l\'oxidation des graisses. Il perturbe le sommeil profond, reduit la testosterone de 20-30%, et apporte des calories vides. Chaque verre est un frein direct a ta progression.' : 'Ta consommation d\'alcool limitee preserve ton metabolisme hepatique et ta qualite de sommeil.'}</p>
 
 <p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Ton alimentation actuelle cree un environnement inflammatoire et insulino-resistant qui bloque la perte de gras malgre un eventuel deficit calorique. Les carences en micronutriments (magnesium, zinc, D3) amplifient ces dysfonctionnements.' : 'Ta nutrition est une base solide. Des ajustements sur le timing proteique et la densite nutritionnelle pourraient optimiser ta recomposition.'}</p>
 ${expansion}`;

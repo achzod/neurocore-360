@@ -473,9 +473,11 @@ ${dataStr}
       // Stack supplements: generated from library (not via AI)
       if (section === "Stack Supplements Optimise" && tier !== "GRATUIT") {
         const scores = calculateScoresFromResponses(clientData as any);
+        const clientFirstName = (clientData as any)?.prenom || (clientData as any)?.["prenom"] || "";
         const generated = generateSupplementsSectionText({
           responses: clientData as any,
           globalScore: typeof scores?.global === "number" ? scores.global : undefined,
+          firstName: clientFirstName || undefined,
         });
 
         cachedSections[section] = generated;
