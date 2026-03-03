@@ -16,4 +16,8 @@ export const pool = new Pool({
   idleTimeoutMillis: 30000,
 });
 
+pool.on("error", (err) => {
+  console.error("[DB Pool] Unexpected error on idle client:", err.message);
+});
+
 export const db = drizzle(pool, { schema });

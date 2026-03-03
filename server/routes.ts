@@ -3109,6 +3109,35 @@ export async function registerRoutes(
     }
   });
 
+  // Admin email trackings list
+  app.get("/api/admin/email-trackings", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const limit = Math.min(Number(req.query.limit) || 50, 200);
+      const offset = Number(req.query.offset) || 0;
+      const result = await pool.query(
+        "SELECT * FROM email_tracking ORDER BY sent_at DESC LIMIT $1 OFFSET $2",
+        [limit, offset]
+      );
+      const countResult = await pool.query("SELECT COUNT(*) FROM email_tracking");
+      res.json({
+        success: true,
+        trackings: result.rows.map((r: any) => ({
+          id: r.id,
+          auditId: r.audit_id,
+          emailType: r.email_type,
+          sentAt: r.sent_at,
+          openedAt: r.opened_at,
+          clickedAt: r.clicked_at,
+        })),
+        total: Number(countResult.rows[0].count),
+      });
+    } catch (error) {
+      console.error("[Admin Email Trackings] Error:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
   // Validate promo code (Public - for checkout)
   app.post("/api/promo-codes/validate", async (req, res) => {
     try {
@@ -4020,9 +4049,7 @@ export async function registerRoutes(
           const charge = event.data.object;
           const paymentIntentId = charge.payment_intent;
           if (paymentIntentId) {
-            // Find order by payment intent
-            const { orders } = await storage.getAllOrders({ limit: 1000 });
-            const order = orders.find(o => o.stripePaymentIntentId === paymentIntentId);
+            const order = await storage.getOrderByPaymentIntent(paymentIntentId);
             if (order && order.status !== "refunded") {
               const refundedAmount = charge.amount_refunded || 0;
               const isFullRefund = refundedAmount >= order.finalAmountCents;

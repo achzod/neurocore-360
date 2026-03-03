@@ -44,6 +44,11 @@ const pool = new Pool({
   idleTimeoutMillis: 30000,
 });
 
+// Handle unexpected pool errors to prevent crashes
+pool.on("error", (err) => {
+  console.error("[DB Pool] Unexpected error on idle client:", err.message);
+});
+
 const DEFAULT_USER_CREDITS = Number(process.env.DEFAULT_BLOOD_CREDITS ?? "5");
 
 export interface MagicToken {
@@ -207,6 +212,7 @@ export interface IStorage {
   createOrder(input: CreateOrderInput): Promise<Order>;
   getOrder(id: string): Promise<Order | undefined>;
   getOrderByStripeSession(sessionId: string): Promise<Order | undefined>;
+  getOrderByPaymentIntent(paymentIntentId: string): Promise<Order | undefined>;
   getOrdersByUserId(userId: string): Promise<Order[]>;
   getOrdersByEmail(email: string): Promise<Order[]>;
   getAllOrders(opts?: { limit?: number; offset?: number; status?: OrderStatusEnum; productType?: ProductTypeEnum; email?: string }): Promise<{ orders: Order[]; total: number }>;
@@ -725,6 +731,9 @@ export class MemStorage implements IStorage {
   async getOrder(id: string): Promise<Order | undefined> { return this.memOrders.get(id); }
   async getOrderByStripeSession(sessionId: string): Promise<Order | undefined> {
     return Array.from(this.memOrders.values()).find(o => o.stripeCheckoutSessionId === sessionId);
+  }
+  async getOrderByPaymentIntent(paymentIntentId: string): Promise<Order | undefined> {
+    return Array.from(this.memOrders.values()).find(o => o.stripePaymentIntentId === paymentIntentId);
   }
   async getOrdersByUserId(userId: string): Promise<Order[]> {
     return Array.from(this.memOrders.values()).filter(o => o.userId === userId).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -2124,6 +2133,7 @@ export class PgStorage implements IStorage {
       await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_stripe_session ON orders(stripe_checkout_session_id)`);
       await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC)`);
       await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_audit_id ON orders(audit_id)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_payment_intent ON orders(stripe_payment_intent_id)`);
       this.ensuredOrdersTable = true;
     } catch (err) {
       console.error("[Storage] Error creating orders table:", err);
@@ -2261,6 +2271,16 @@ export class PgStorage implements IStorage {
     const result = await pool.query(
       "SELECT * FROM orders WHERE stripe_checkout_session_id = $1",
       [sessionId]
+    );
+    if (result.rows.length === 0) return undefined;
+    return this.rowToOrder(result.rows[0]);
+  }
+
+  async getOrderByPaymentIntent(paymentIntentId: string): Promise<Order | undefined> {
+    await this.ensureOrdersTableCreated();
+    const result = await pool.query(
+      "SELECT * FROM orders WHERE stripe_payment_intent_id = $1",
+      [paymentIntentId]
     );
     if (result.rows.length === 0) return undefined;
     return this.rowToOrder(result.rows[0]);
