@@ -12,8 +12,8 @@ const RESPONSE_ALIASES: Record<string, string[]> = {
   "energie-apres-midi": ["niveau-energie-aprem", "energie-aprem"],
   "energie-soir": ["niveau-energie-soir"],
   "niveau-energie-soir": ["energie-soir"],
-  "digestion-generale": ["digestion-qualite"],
-  "digestion-qualite": ["digestion-generale"],
+  "digestion-generale": ["digestion-qualite", "digestion"],
+  "digestion-qualite": ["digestion-generale", "digestion"],
   "historique-medical": ["diagnostic-medical"],
   "diagnostic-medical": ["historique-medical"],
   "hydratation": ["eau-jour"],
@@ -51,6 +51,14 @@ const RESPONSE_ALIASES: Record<string, string[]> = {
   "intensite-entrainement": ["intensite"],
   "reveil-fatigue": ["reveil-repose"],
   "reveil-repose": ["reveil-fatigue"],
+  // Additional edge-case aliases (simplified questionnaire formats)
+  "reveils-nocturnes": ["reveil-nocturne"],
+  "reveil-nocturne": ["reveils-nocturnes"],
+  "sport-frequence": ["frequence-training"],
+  "frequence-training": ["sport-frequence"],
+  "digestion": ["digestion-qualite", "digestion-generale"],
+  "heures-sommeil": ["duree-sommeil"],
+  "duree-sommeil": ["heures-sommeil"],
 };
 
 function hasValue(value: unknown): boolean {

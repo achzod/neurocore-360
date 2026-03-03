@@ -34,6 +34,14 @@ export const BIOMARKER_RANGES: Record<string, BiomarkerRange> = {
     context: "<500 = suboptimal pour muscu",
     genderSpecific: "homme"
   },
+  testosterone_total_femme: {
+    name: "Testostérone totale",
+    unit: "ng/dL",
+    normalMin: 15, normalMax: 70,
+    optimalMin: 20, optimalMax: 50,
+    context: "Équilibre hormonal féminin",
+    genderSpecific: "femme"
+  },
   testosterone_libre: {
     name: "Testostérone libre",
     unit: "pg/mL",
@@ -287,6 +295,13 @@ export const BIOMARKER_RANGES: Record<string, BiomarkerRange> = {
     normalMin: 4.2, normalMax: 6.8,
     optimalMin: 5.5, optimalMax: 6.5,
     context: "Récup musculaire"
+  },
+  magnesium_serum: {
+    name: "Magnésium sérique",
+    unit: "mg/dL",
+    normalMin: 1.7, normalMax: 2.5,
+    optimalMin: 2.0, optimalMax: 2.3,
+    context: "Fonction neuromusculaire"
   },
   zinc: {
     name: "Zinc",
@@ -2212,7 +2227,21 @@ export async function analyzeBloodwork(
     if (!rawMarkerId) continue;
 
     // Normalize the marker name to match BIOMARKER_RANGES keys
-    const markerId = normalizeMarkerName(rawMarkerId);
+    let markerId = normalizeMarkerName(rawMarkerId);
+
+    // Normalize marker value to the expected unit FIRST (handles ng/mL→ng/dL, mmol/L→mg/dL, etc.)
+    const normalizedValue = normalizeMarkerValue(markerId, input.value, input.unit);
+
+    // Route testosterone to gender-specific range for women
+    if (markerId === "testosterone_total" && userProfile.gender === "femme") {
+      markerId = "testosterone_total_femme";
+    }
+
+    // Route magnesium: if normalized value looks like serum (< 4 mg/dL), use serum ranges
+    if ((markerId === "magnesium_rbc" || markerId === "magnesium") && normalizedValue < 4) {
+      markerId = "magnesium_serum";
+    }
+
     const range = BIOMARKER_RANGES[markerId];
     if (!range) {
       console.log(`[analyzeBloodwork] Unknown marker: "${rawMarkerId}" (normalized: "${markerId}")`);
@@ -2222,11 +2251,11 @@ export async function analyzeBloodwork(
     // Skip gender-specific markers for wrong gender
     if (range.genderSpecific && range.genderSpecific !== userProfile.gender) continue;
 
-    const status = getMarkerStatus(input.value, range);
+    const status = getMarkerStatus(normalizedValue, range);
     const analysis: MarkerAnalysis = {
-      markerId: markerId,
+      markerId: markerId === "testosterone_total_femme" ? "testosterone_total" : markerId === "magnesium_serum" ? "magnesium" : markerId,
       name: range.name,
-      value: input.value,
+      value: normalizedValue,
       unit: range.unit,
       normalRange: `${range.normalMin}-${range.normalMax}`,
       optimalRange: `${range.optimalMin}-${range.optimalMax}`,
