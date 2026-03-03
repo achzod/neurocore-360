@@ -2254,12 +2254,12 @@ function generateDomainHTML(domain: string, score: number, responses: DiscoveryR
 
   switch (domain) {
     case 'sommeil': {
-      const heures = responses['heures-sommeil'];
-      const qualite = responses['qualite-sommeil'];
-      const reveilFatigue = responses['reveil-fatigue'];
-      const endormissement = responses['endormissement'];
-      const reveils = responses['reveils-nocturnes'];
-      const heureCoucher = responses['heure-coucher'];
+      const heures = responses['heures-sommeil'] || '6-7';
+      const qualite = responses['qualite-sommeil'] || 'moyenne';
+      const reveilFatigue = responses['reveil-fatigue'] || 'parfois';
+      const endormissement = responses['endormissement'] || 'parfois';
+      const reveils = responses['reveils-nocturnes'] || 'parfois';
+      const heureCoucher = responses['heure-coucher'] || '23h-00h';
 
       return `
 <p class="mt-6"><strong>Analyse de ton sommeil</strong></p>
@@ -2277,10 +2277,10 @@ ${expansion}`;
     }
 
     case 'stress': {
-      const niveauStress = responses['niveau-stress'];
-      const anxiete = responses['anxiete'];
-      const concentration = responses['concentration'];
-      const irritabilite = responses['irritabilite'];
+      const niveauStress = responses['niveau-stress'] || 'modere';
+      const anxiete = responses['anxiete'] || 'parfois';
+      const concentration = responses['concentration'] || 'normale';
+      const irritabilite = responses['irritabilite'] || 'parfois';
       const gestionStress = responses['gestion-stress'];
       const hasNoStressManagement = Array.isArray(gestionStress) && (gestionStress.includes('rien') || gestionStress.length === 0);
 
@@ -2300,12 +2300,12 @@ ${expansion}`;
     }
 
     case 'energie': {
-      const energieMatin = responses['energie-matin'];
-      const energieAprem = responses['energie-aprem'];
-      const coupFatigue = responses['coup-fatigue'];
-      const enviesSucre = responses['envies-sucre'];
-      const motivation = responses['motivation'];
-      const thermogenese = responses['thermogenese'];
+      const energieMatin = responses['energie-matin'] || responses['niveau-energie-matin'] || 'variable';
+      const energieAprem = responses['energie-aprem'] || responses['niveau-energie-aprem'] || 'variable';
+      const coupFatigue = responses['coup-fatigue'] || 'parfois';
+      const enviesSucre = responses['envies-sucre'] || 'parfois';
+      const motivation = responses['motivation'] || 'moyen';
+      const thermogenese = responses['thermogenese'] || 'parfois';
 
       return `
 <p class="mt-6"><strong>Analyse de ton energie</strong></p>
@@ -2323,12 +2323,12 @@ ${expansion}`;
     }
 
     case 'digestion': {
-      const digestQualite = responses['digestion-qualite'];
-      const ballonnements = responses['ballonnements'];
-      const transit = responses['transit'];
-      const reflux = responses['reflux'];
+      const digestQualite = responses['digestion-qualite'] || 'moyenne';
+      const ballonnements = responses['ballonnements'] || 'parfois';
+      const transit = responses['transit'] || 'normal';
+      const reflux = responses['reflux'] || 'jamais';
       const intolerance = responses['intolerance'] || [];
-      const energiePostRepas = responses['energie-post-repas'];
+      const energiePostRepas = responses['energie-post-repas'] || 'normal';
 
       return `
 <p class="mt-6"><strong>Analyse de ta digestion</strong></p>
@@ -2346,12 +2346,12 @@ ${expansion}`;
     }
 
     case 'training': {
-      const frequence = responses['sport-frequence'];
+      const frequence = responses['sport-frequence'] || '1-2';
       const typeSport = responses['type-sport'] || [];
-      const intensite = responses['intensite'];
-      const recuperation = responses['recuperation'];
-      const courbatures = responses['courbatures'];
-      const evolution = responses['performance-evolution'];
+      const intensite = responses['intensite'] || 'modere';
+      const recuperation = responses['recuperation'] || 'moyenne';
+      const courbatures = responses['courbatures'] || 'parfois';
+      const evolution = responses['performance-evolution'] || 'stagnation';
 
       return `
 <p class="mt-6"><strong>Analyse de ton entrainement</strong></p>

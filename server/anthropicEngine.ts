@@ -656,12 +656,17 @@ ${PROMPT_SECTION.replace("{section}", section)
     return null;
   }
 
-  // Assemble in original order
+  // Assemble in original order (strip AI-generated title to avoid duplication)
   sectionsToGenerate.forEach((section) => {
     const res = results.find((r) => r.section === section);
     if (res && res.text) {
       auditParts.push(`\n${section.toUpperCase()}\n`);
-      auditParts.push(res.text);
+      // Remove leading duplicate title if AI already included it
+      let cleaned = res.text.replace(
+        new RegExp(`^\\s*${section.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').toUpperCase()}\\s*\\n`, 'i'),
+        ''
+      );
+      auditParts.push(cleaned);
     }
   });
 
