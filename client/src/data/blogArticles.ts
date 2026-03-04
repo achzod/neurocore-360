@@ -1,6 +1,5 @@
 // Blog articles data - ACHZOD 
 import { SARMS_ARTICLES } from "./sarmsArticles";
-import { ultrahuman_ARTICLES } from "./ultrahumanArticles";
 import { ACHZOD_ARTICLES as MUSCLEPHD_ARTICLES } from "./musclephdArticles";
 import { ACHZODArticles as YAMAMOTO_ARTICLES } from "./yamamotoArticles";
 
@@ -31858,8 +31857,7 @@ Ajouter de la K2 MK-7 est simple, sûr et peut avoir des bénéfices significati
 // Combine all articles (base + SARMS + Ultrahuman)
 const ALL_ARTICLES: BlogArticle[] = [
   ...BLOG_ARTICLES, 
-  ...SARMS_ARTICLES, 
-  ...ultrahuman_ARTICLES,
+  ...SARMS_ARTICLES,
   ...MUSCLEPHD_ARTICLES,
   ...YAMAMOTO_ARTICLES
 ];

@@ -32,8 +32,9 @@ En conclusion, la créatine augmente les performances dans presque toutes les co
 ---`,
     author: "ACHZOD",
     date: `2025-01-10`,
-    category: `Nutrition`,
-    imageUrl: `https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=800`
+    readTime: "6 min",
+    category: "nutrition",
+    image: `https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=800`
   },
   {
     id: `yam-2`,
@@ -54,8 +55,9 @@ Bêta-Alanine : le supplément d'endurance La bêta-alanine est un acide aminé 
 ---`,
     author: "ACHZOD",
     date: `2025-01-10`,
-    category: `Nutrition`,
-    imageUrl: `https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800`
+    readTime: "6 min",
+    category: "nutrition",
+    image: `https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800`
   },
   {
     id: `yam-3`,
@@ -76,8 +78,9 @@ L'un des éléments nutraceutiques phytothérapeutiques qui m'a le plus fasciné
 ---`,
     author: "ACHZOD",
     date: `2025-01-10`,
-    category: `Nutrition`,
-    imageUrl: `https://images.unsplash.com/photo-1611241893603-3c359704e0ee?w=800`
+    readTime: "6 min",
+    category: "nutrition",
+    image: `https://images.unsplash.com/photo-1611241893603-3c359704e0ee?w=800`
   },
   {
     id: `yam-4`,
@@ -98,8 +101,9 @@ Ce qu'on appelle communément guaranàest une boisson obtenue à partir des grai
 ---`,
     author: "ACHZOD",
     date: `2025-01-10`,
-    category: `Nutrition`,
-    imageUrl: `https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800`
+    readTime: "6 min",
+    category: "nutrition",
+    image: `https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800`
   },
   {
     id: `yam-5`,
@@ -120,8 +124,9 @@ Le corps humain est une machine extraordinaire, en constante évolution. Certain
 ---`,
     author: "ACHZOD",
     date: `2025-01-10`,
-    category: `Nutrition`,
-    imageUrl: `https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?w=800`
+    readTime: "6 min",
+    category: "nutrition",
+    image: `https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?w=800`
   },
   {
     id: `yam-6`,
@@ -142,8 +147,9 @@ Parlons de santé intestinale On entend souvent parler de suppléments d'acide l
 ---`,
     author: "ACHZOD",
     date: `2025-01-10`,
-    category: `Nutrition`,
-    imageUrl: `https://images.unsplash.com/photo-1563213126-a4273aed2016?w=800`
+    readTime: "6 min",
+    category: "nutrition",
+    image: `https://images.unsplash.com/photo-1563213126-a4273aed2016?w=800`
   },
   {
     id: `yam-7`,
@@ -164,8 +170,9 @@ MCU-20® ACHZOD® est la formulation innovante de supplément qui garantit l'ass
 ---`,
     author: "ACHZOD",
     date: `2025-01-10`,
-    category: `Nutrition`,
-    imageUrl: `https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800`
+    readTime: "6 min",
+    category: "nutrition",
+    image: `https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800`
   },
   {
     id: `yam-8`,
@@ -186,8 +193,9 @@ Les glucides : notre principale source d’énergie Ils contribuent à la récup
 ---`,
     author: "ACHZOD",
     date: `2025-01-10`,
-    category: `Nutrition`,
-    imageUrl: `https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800`
+    readTime: "6 min",
+    category: "nutrition",
+    image: `https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800`
   },
   {
     id: `yam-9`,
@@ -208,8 +216,9 @@ Les glucides, également appelés sucres, glucides, saccharides ou hydrates chim
 ---`,
     author: "ACHZOD",
     date: `2025-01-10`,
-    category: `Nutrition`,
-    imageUrl: `https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800`
+    readTime: "6 min",
+    category: "nutrition",
+    image: `https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800`
   },
   {
     id: `yam-10`,
@@ -230,8 +239,9 @@ Lorsqu'il s'agit de sports d'endurance, on a tendance à se concentrer uniquemen
 ---`,
     author: "ACHZOD",
     date: `2025-01-10`,
-    category: `Nutrition`,
-    imageUrl: `https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=800`
+    readTime: "6 min",
+    category: "nutrition",
+    image: `https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=800`
   },
   {
     id: `yam-11`,
@@ -252,8 +262,9 @@ L'hydratation a toujours joué un rôle important dans la performance sportive, 
 ---`,
     author: "ACHZOD",
     date: `2025-01-10`,
-    category: `Nutrition`,
-    imageUrl: `https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=800`
+    readTime: "6 min",
+    category: "nutrition",
+    image: `https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=800`
   },
   {
     id: `yam-12`,
@@ -274,8 +285,9 @@ La capacité à faire des efforts à long terme est déterminée dans une large 
 ---`,
     author: "ACHZOD",
     date: `2025-01-10`,
-    category: `Nutrition`,
-    imageUrl: `https://images.unsplash.com/photo-1541625602330-2277a4c46182?w=800`
+    readTime: "6 min",
+    category: "nutrition",
+    image: `https://images.unsplash.com/photo-1541625602330-2277a4c46182?w=800`
   },
   {
     id: `yam-13`,
@@ -296,8 +308,9 @@ Le tennis est un sport très apprécié et répandu, qui demande une énorme qua
 ---`,
     author: "ACHZOD",
     date: `2025-01-10`,
-    category: `Nutrition`,
-    imageUrl: `https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800`
+    readTime: "6 min",
+    category: "nutrition",
+    image: `https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800`
   },
   {
     id: `yam-14`,
@@ -318,8 +331,9 @@ Nutrition du sportif : focus sur le sprinter L'athlétisme est un sport olympiqu
 ---`,
     author: "ACHZOD",
     date: `2025-01-10`,
-    category: `Nutrition`,
-    imageUrl: `https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=800`
+    readTime: "6 min",
+    category: "nutrition",
+    image: `https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=800`
   },
   {
     id: `yam-15`,
@@ -340,8 +354,9 @@ Par « sports d'hiver », nous entendons tous les sports qui se pratiquent sur l
 ---`,
     author: "ACHZOD",
     date: `2025-01-10`,
-    category: `Nutrition`,
-    imageUrl: `https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800`
+    readTime: "6 min",
+    category: "nutrition",
+    image: `https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800`
   },
   {
     id: `yam-16`,
@@ -362,8 +377,9 @@ Les sports d'endurance représentent un grand défi tant pour l'athlète que pou
 ---`,
     author: "ACHZOD",
     date: `2025-01-10`,
-    category: `Nutrition`,
-    imageUrl: `https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800`
+    readTime: "6 min",
+    category: "nutrition",
+    image: `https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800`
   },
   {
     id: `yam-17`,
@@ -384,8 +400,9 @@ L'entraînement en surcharge, utilisé dans de nombreuses disciplines comme le b
 ---`,
     author: "ACHZOD",
     date: `2025-01-10`,
-    category: `Nutrition`,
-    imageUrl: `https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=800`
+    readTime: "6 min",
+    category: "nutrition",
+    image: `https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=800`
   },
   {
     id: `yam-18`,
@@ -406,8 +423,9 @@ Il est crucial de connaître et de comprendre quels processus physiologiques et 
 ---`,
     author: "ACHZOD",
     date: `2025-01-10`,
-    category: `Nutrition`,
-    imageUrl: `https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800`
+    readTime: "6 min",
+    category: "nutrition",
+    image: `https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800`
   },
   {
     id: `yam-19`,
@@ -428,8 +446,9 @@ Le deltoïde est le muscle principal de l'épaule et est anatomiquement divisé 
 ---`,
     author: "ACHZOD",
     date: `2025-01-10`,
-    category: `Nutrition`,
-    imageUrl: `https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800`
+    readTime: "6 min",
+    category: "nutrition",
+    image: `https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800`
   },
   {
     id: `yam-20`,
@@ -450,8 +469,9 @@ La phrase d'Arnold où il compare les pompes musculaires pendant l'entraînement
 ---`,
     author: "ACHZOD",
     date: `2025-01-10`,
-    category: `Nutrition`,
-    imageUrl: `https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=800`
+    readTime: "6 min",
+    category: "nutrition",
+    image: `https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=800`
   },
   {
     id: `yam-21`,
@@ -486,8 +506,9 @@ En conclusion, cet article démontre qu'il n'y a pas de réponse unique à la qu
 ---`,
     author: "ACHZOD",
     date: `2025-01-10`,
-    category: `Nutrition`,
-    imageUrl: `https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800`
+    readTime: "6 min",
+    category: "nutrition",
+    image: `https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800`
   },
   {
     id: `yam-22`,
@@ -508,8 +529,9 @@ Ces dernières années, le cross Training est une discipline sportive très popu
 ---`,
     author: "ACHZOD",
     date: `2025-01-10`,
-    category: `Nutrition`,
-    imageUrl: `https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800`
+    readTime: "6 min",
+    category: "nutrition",
+    image: `https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800`
   },
   {
     id: `yam-23`,
@@ -530,8 +552,9 @@ Le triathlon, le sport du « surhomme », est dans l'imaginaire commun, à tel p
 ---`,
     author: "ACHZOD",
     date: `2025-01-10`,
-    category: `Nutrition`,
-    imageUrl: `https://images.unsplash.com/photo-1530549387789-4c1017266635?w=800`
+    readTime: "6 min",
+    category: "nutrition",
+    image: `https://images.unsplash.com/photo-1530549387789-4c1017266635?w=800`
   },
   {
     id: `yam-24`,
@@ -552,8 +575,9 @@ La nage de fond comprend toutes les épreuves de natation qui se déroulent en e
 ---`,
     author: "ACHZOD",
     date: `2025-01-10`,
-    category: `Nutrition`,
-    imageUrl: `https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800`
+    readTime: "6 min",
+    category: "nutrition",
+    image: `https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800`
   },
   {
     id: `yam-25`,
@@ -574,8 +598,9 @@ Padel : entre mode, entraînement et nutrition Le padel est un sport qui se joue
 ---`,
     author: "ACHZOD",
     date: `2025-01-10`,
-    category: `Nutrition`,
-    imageUrl: `https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800`
+    readTime: "6 min",
+    category: "nutrition",
+    image: `https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800`
   },
   {
     id: `yam-26`,
@@ -596,8 +621,9 @@ Pour les athlètes d'endurance, les températures extrêmes et l'altitude peuven
 ---`,
     author: "ACHZOD",
     date: `2025-01-10`,
-    category: `Nutrition`,
-    imageUrl: `https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800`
+    readTime: "6 min",
+    category: "nutrition",
+    image: `https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800`
   },
   {
     id: `yam-27`,
@@ -618,8 +644,9 @@ La vie moderne dans les pays les plus avancés est souvent très stressante et i
 ---`,
     author: "ACHZOD",
     date: `2025-01-10`,
-    category: `Nutrition`,
-    imageUrl: `https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800`
+    readTime: "6 min",
+    category: "nutrition",
+    image: `https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800`
   },
   {
     id: `yam-28`,
@@ -640,7 +667,8 @@ La réponse pour nous est très simple : pouvoir vivre pleinement chaque instant
 ---`,
     author: "ACHZOD",
     date: `2025-01-10`,
-    category: `Nutrition`,
-    imageUrl: `https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800`
+    readTime: "6 min",
+    category: "nutrition",
+    image: `https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800`
   }
 ];

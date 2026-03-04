@@ -193,10 +193,12 @@ export default function BlogArticlePage() {
                 <span className="inline-block px-2 py-1 text-xs font-mono uppercase tracking-wider text-[#FCDD00] bg-[#FCDD00]/10 border border-[#FCDD00]/20 rounded-sm">
                   {categoryLabel}
                 </span>
+                {article.readTime && (
                 <span className="flex items-center gap-1 text-sm text-white/50">
                   <Clock className="h-4 w-4" />
                   {article.readTime}
                 </span>
+                )}
                 <span className="flex items-center gap-1 text-sm text-white/50">
                   <Calendar className="h-4 w-4" />
                   {new Date(article.date).toLocaleDateString("fr-FR", {
@@ -337,8 +339,9 @@ export default function BlogArticlePage() {
                     <div className="group h-full cursor-pointer overflow-hidden rounded-sm bg-white/[0.03] border border-white/10 hover:border-[#FCDD00]/30 transition-all duration-300 hover:-translate-y-1">
                       <div className="aspect-video overflow-hidden">
                         <img
-                          src={relatedArticle.image}
+                          src={relatedArticle.image || (relatedArticle as any).imageUrl}
                           alt={relatedArticle.title}
+                          loading="lazy"
                           className="h-full w-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 group-hover:scale-105"
                         />
                       </div>

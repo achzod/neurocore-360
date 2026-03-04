@@ -182,8 +182,9 @@ export default function Blog() {
                       <div className="group h-full cursor-pointer overflow-hidden rounded-sm bg-white/[0.03] border border-white/10 hover:border-[#FCDD00]/30 transition-all duration-300 hover:-translate-y-1">
                         <div className="aspect-video overflow-hidden">
                           <img
-                            src={article.image}
+                            src={article.image || (article as any).imageUrl}
                             alt={article.title}
+                            loading="lazy"
                             className="h-full w-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 group-hover:scale-105"
                           />
                         </div>
@@ -280,8 +281,9 @@ export default function Blog() {
                         <div className="group h-full cursor-pointer overflow-hidden rounded-sm bg-white/[0.03] border border-white/10 hover:border-[#FCDD00]/30 transition-all duration-300 hover:-translate-y-1">
                           <div className="aspect-video overflow-hidden">
                             <img
-                              src={article.image}
+                              src={article.image || (article as any).imageUrl}
                               alt={article.title}
+                              loading="lazy"
                               className="h-full w-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 group-hover:scale-105"
                             />
                           </div>
@@ -297,10 +299,12 @@ export default function Blog() {
                             </p>
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-4 text-xs text-white/40">
+                                {article.readTime && (
                                 <span className="flex items-center gap-1">
                                   <Clock className="h-3 w-3" />
                                   {article.readTime}
                                 </span>
+                                )}
                               </div>
                               <span className="flex items-center gap-1 text-sm font-medium text-[#FCDD00] opacity-0 group-hover:opacity-100 transition-opacity">
                                 Lire <ArrowRight className="h-3 w-3" />
