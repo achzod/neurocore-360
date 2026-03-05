@@ -3,12 +3,55 @@
  * TRUE Ultrahuman Design - 66 questions, 10 domaines
  */
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
-import { ArrowRight, Check, Brain, Activity, Gauge, FileText } from "lucide-react";
+import { ArrowRight, Check, Brain, Activity, Gauge, FileText, ChevronDown } from "lucide-react";
+
+// ============================================================================
+// FAQ ACCORDION ITEM
+// ============================================================================
+function FAQItem({ q, a, index }: { q: string; a: string; index: number }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay: index * 0.05 }}
+      className="border-b border-white/10"
+    >
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-start justify-between gap-8 py-8 text-left transition-colors hover:text-[#FCDD00]"
+      >
+        <h3 className="text-lg font-semibold text-white">{q}</h3>
+        <motion.div
+          animate={{ rotate: open ? 180 : 0 }}
+          transition={{ duration: 0.3 }}
+          className="shrink-0 pt-1"
+        >
+          <ChevronDown className="h-5 w-5 text-[#FCDD00]" />
+        </motion.div>
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <p className="pb-8 text-base leading-relaxed text-white/60">{a}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
 
 // ============================================================================
 // ANIMATED VISUALIZATION - Brain Scan (Detection)
@@ -637,6 +680,34 @@ export default function AuditGratuit() {
                 </button>
               </Link>
             </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="py-32 px-6 border-t border-white/5">
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em]">
+              Questions frequentes
+            </h2>
+          </motion.div>
+
+          <div className="space-y-0">
+            {[
+              { q: "C'est vraiment gratuit ?", a: "Oui, 100% gratuit, sans engagement et sans carte bancaire. Tu reponds aux 66 questions, tu recois ton diagnostic complet avec score global et identification des blocages. Si tu veux aller plus loin avec des protocoles d'action, tu peux upgrader vers l'Anabolic Bioscan (59€) ou l'Ultimate Scan (79€)." },
+              { q: "Combien de temps ca prend ?", a: "Entre 5 et 15 minutes selon ton rythme. Tu peux sauvegarder ta progression et reprendre plus tard. Le rapport est genere automatiquement des que tu termines le questionnaire." },
+              { q: "Qu'est-ce que je recois exactement ?", a: "Un rapport de 5-7 pages avec : ton score global sur 100, l'analyse de 10 domaines (sommeil, stress, energie, digestion, hormones, entrainement, nutrition, lifestyle, mindset, biomecanique), et l'identification de tes blocages prioritaires." },
+              { q: "Quelle est la difference avec les offres payantes ?", a: "Le Discovery Scan identifie TES blocages. L'Anabolic Bioscan (59€) ajoute 16 sections, des protocoles d'action concrets, un stack supplements personnalise et un plan 30-60-90 jours. L'Ultimate Scan (79€) integre en plus l'analyse photo posturale et les wearables sur 22 sections." },
+              { q: "Mes donnees sont-elles securisees ?", a: "Absolument. Donnees chiffrees (SSL/TLS), serveurs europeens conformes RGPD. Je ne vends jamais tes donnees a des tiers. Tu peux demander la suppression complete a tout moment." },
+            ].map((item, i) => (
+              <FAQItem key={i} q={item.q} a={item.a} index={i} />
+            ))}
           </div>
         </div>
       </section>

@@ -13,11 +13,11 @@ interface FAQItem {
 const faqs: FAQItem[] = [
   {
     question: "Qu'est-ce que APEXLABS exactement ?",
-    answer: "APEXLABS est mon système d'analyse métabolique complet que j'ai développé après des années de coaching individuel. Il couvre 15+ domaines : sommeil, hormones, digestion, stress, nutrition, entraînement, biomécanique, neurotransmetteurs... Selon l'offre choisie (Discovery Scan gratuit, Anabolic Bioscan 59€, Ultimate Scan 79€, Blood Analysis 99€), tu reçois un rapport de 5 à 50+ pages avec des protocoles que j'ai créés et testés sur des centaines de clients."
+    answer: "APEXLABS est mon système d'analyse métabolique complet que j'ai développé après des années de coaching individuel. Il couvre 22+ domaines : sommeil, hormones, digestion, stress, nutrition, entraînement, biomécanique, neurotransmetteurs... Selon l'offre choisie (Discovery Scan gratuit, Anabolic Bioscan 59€, Ultimate Scan 79€, Blood Analysis 99€), tu reçois un rapport de 5 à 50+ pages avec des protocoles que j'ai créés et testés sur des centaines de clients."
   },
   {
     question: "Quelle est la différence entre les différentes offres ?",
-    answer: "DISCOVERY SCAN (Gratuit) : ~66 questions, diagnostic global, dashboard interactif. Tu identifies tes blocages sans engagement. ANABOLIC BIOSCAN (59€) : 16 sections d'analyse, protocoles 30-60-90 jours, stack suppléments optimisé. Mon best-seller. ULTIMATE SCAN (79€) : Tout l'Anabolic + analyse photo (posture, composition corporelle) + wearables, 18 sections, rapport 40-50 pages. L'analyse la plus complète. BLOOD ANALYSIS (99€) : Upload ton bilan sanguin, je l'analyse avec des ranges optimaux de performance."
+    answer: "DISCOVERY SCAN (Gratuit) : ~66 questions, diagnostic global, dashboard interactif. Tu identifies tes blocages sans engagement. ANABOLIC BIOSCAN (59€) : 16 sections d'analyse, protocoles 30-60-90 jours, stack suppléments optimisé. Mon best-seller. ULTIMATE SCAN (79€) : Tout l'Anabolic + analyse photo (posture, composition corporelle) + wearables, 22 sections, rapport 40-50 pages. L'analyse la plus complète. BLOOD ANALYSIS (99€) : Upload ton bilan sanguin, je l'analyse avec des ranges optimaux de performance."
   },
   {
     question: "Comment fonctionne la synchronisation des wearables ?",

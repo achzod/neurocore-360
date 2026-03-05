@@ -152,7 +152,7 @@ export default function TestAudit() {
                   className="flex-1"
                   data-testid="button-plan-ultimate"
                 >
-                  Ultimate (18 sections)
+                  Ultimate (22 sections)
                 </Button>
               </div>
             </div>

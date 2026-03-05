@@ -3,12 +3,55 @@
  * Anabolic Bioscan Design with React Animations - 59€
  */
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
-import { ArrowRight, Check, Zap, Moon, Pill, Calendar, Watch, TrendingUp } from "lucide-react";
+import { ArrowRight, Check, Zap, Moon, Pill, Calendar, Watch, TrendingUp, ChevronDown } from "lucide-react";
+
+// ============================================================================
+// FAQ ACCORDION ITEM
+// ============================================================================
+function FAQItem({ q, a, index }: { q: string; a: string; index: number }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay: index * 0.05 }}
+      className="border-b border-white/10"
+    >
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-start justify-between gap-8 py-8 text-left transition-colors hover:text-[#FCDD00]"
+      >
+        <h3 className="text-lg font-semibold text-white">{q}</h3>
+        <motion.div
+          animate={{ rotate: open ? 180 : 0 }}
+          transition={{ duration: 0.3 }}
+          className="shrink-0 pt-1"
+        >
+          <ChevronDown className="h-5 w-5 text-[#FCDD00]" />
+        </motion.div>
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <p className="pb-8 text-base leading-relaxed text-white/60">{a}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
 
 // ============================================================================
 // ANIMATED VISUALIZATION - Protocol Cards Animation
@@ -523,6 +566,34 @@ export default function AuditPremium() {
               </Link>
             </div>
           </motion.div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="py-32 px-6 border-t border-white/5">
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em]">
+              Questions frequentes
+            </h2>
+          </motion.div>
+
+          <div className="space-y-0">
+            {[
+              { q: "Qu'est-ce que l'Anabolic Bioscan apporte de plus que le Discovery Scan ?", a: "Le Discovery Scan identifie tes blocages. L'Anabolic Bioscan va beaucoup plus loin : 137 questions sur 16 sections (nutrition detaillee, profil hormonal, axes cliniques, biomarqueurs, composition corporelle), 4 protocoles d'action personnalises, un stack supplements optimise pour TON profil, et un plan 30-60-90 jours semaine par semaine." },
+              { q: "Les protocoles sont-ils vraiment personnalises ?", a: "Oui. Chaque protocole (Matin Anti-Cortisol, Soir Sommeil, Digestion 14 Jours, Stack Supplements) est genere a partir de TES reponses. Pas de template generique. Si tu as un stress chronique, ton protocole matin sera different de quelqu'un qui a un probleme de sommeil." },
+              { q: "Combien de temps prend le questionnaire ?", a: "Entre 15 et 25 minutes. Tu peux sauvegarder ta progression et reprendre plus tard. Le rapport est genere automatiquement et envoye par email sous 24-48h." },
+              { q: "C'est un paiement unique ?", a: "Oui. 59€ une fois, pas d'abonnement cache, pas de frais recurrents. Tu gardes acces a ton rapport a vie." },
+              { q: "Le rapport remplace-t-il un avis medical ?", a: "Non. C'est un outil d'optimisation et de prevention base sur mes 11 certifications internationales et mon experience terrain. Pour toute pathologie ou symptome inquietant, consulte toujours un professionnel de sante." },
+            ].map((item, i) => (
+              <FAQItem key={i} q={item.q} a={item.a} index={i} />
+            ))}
+          </div>
         </div>
       </section>
 
