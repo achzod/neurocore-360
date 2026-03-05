@@ -12,7 +12,7 @@ export const ACHZOD_ARTICLES: BlogArticle[] = [
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "11 min",
-    image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1594737625785-a6cbdabd333c?w=800&auto=format&fit=crop",
     content: `# Stratégies stimulant le métabolisme
 
 -Facebook
@@ -117,7 +117,7 @@ Le Dr Jacob Wilson est PDG du laboratoire de performance humaine de l'Applied Sc
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "12 min",
-    image: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop",
     content: `# Mésaventures de musculation
 
 -Facebook
@@ -227,7 +227,7 @@ Le Dr Jacob Wilson est PDG du laboratoire de performance humaine de l'Applied Sc
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "11 min",
-    image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800&auto=format&fit=crop",
     content: `# Erreurs courantes liées aux suppléments
 
 -Facebook
@@ -327,7 +327,7 @@ Le Dr Jacob Wilson est PDG du laboratoire de performance humaine de l'Applied Sc
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "19 min",
-    image: "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1486218119243-13883505764c?w=800&auto=format&fit=crop",
     content: `# Qu’est-ce qui cause la croissance ?
 
 -Facebook
@@ -473,7 +473,7 @@ Ceci est un résumé de nos connaissances scientifiques actuelles sur ce qui fai
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "8 min",
-    image: "https://images.unsplash.com/photo-1581009146145-b5ef050c149a?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1538805060514-97d9090d1361?w=800&auto=format&fit=crop",
     content: `# La connexion esprit-muscle
 
 -Facebook
@@ -551,7 +551,7 @@ En fin de compte, vos objectifs n’ont pas nécessairement d’importance, car 
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "7 min",
-    image: "https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1502904550040-7534597429ae?w=800&auto=format&fit=crop",
     content: `# Les squats sont-ils mauvais pour vos genoux ?
 
 -Facebook
@@ -619,7 +619,7 @@ Si les squats vous inquiètent toujours, cherchez un bon entraîneur ou un entra
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "16 min",
-    image: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=800&auto=format&fit=crop",
     content: `# Entraînement des types de fibres musculaires
 
 -Facebook
@@ -869,7 +869,7 @@ Si vous souhaitez une discussion encore plus approfondie sur ce sujet, consultez
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "14 min",
-    image: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=800&auto=format&fit=crop",
     content: `# Biomécanique et croissance
 
 -Facebook
@@ -992,7 +992,7 @@ Nous n’avons pas besoin de résumer l’intégralité de l’article ici, mais
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "9 min",
-    image: "https://images.unsplash.com/photo-1550345332-09e3ac987658?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=800&auto=format&fit=crop",
     content: `# Fréquence des repas
 
 -Facebook
@@ -1102,7 +1102,7 @@ Dans l’ensemble, la fréquence des repas a peu d’effet sur la composition co
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "12 min",
-    image: "https://images.unsplash.com/photo-1593079831268-3381b0db4a77?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1590239926044-4131f572f21e?w=800&auto=format&fit=crop",
     content: `# Potentiel génétique
 
 -Facebook
@@ -1219,7 +1219,7 @@ Alors oui, je vois des gens cesser de faire des progrès après 5 à 6 ans de ca
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "19 min",
-    image: "https://images.unsplash.com/photo-1581009137042-c552e485697a?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1544717305-996b815c338c?w=800&auto=format&fit=crop",
     content: `# Surcharge progressive
 
 -Facebook
@@ -1369,7 +1369,7 @@ En fin de compte, il existe plusieurs façons de planifier une surcharge progres
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "16 min",
-    image: "https://images.unsplash.com/photo-1532384748853-8f54a8f476e2?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=800&auto=format&fit=crop",
     content: `# Formation à la maison
 
 -Facebook
@@ -1489,7 +1489,7 @@ Si vous ne choisissez pas de tout mettre en œuvre et de vous procurer un ensemb
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "16 min",
-    image: "https://images.unsplash.com/photo-1558611848-73f7eb4001a1?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1505576399279-0d309256e28e?w=800&auto=format&fit=crop",
     content: `# Périodisation en musculation
 
 -Facebook
@@ -1709,7 +1709,7 @@ Les maladies graves nécessitent de prendre quelques jours de congé, car il est
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "16 min",
-    image: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1490818387583-1baba5e638af?w=800&auto=format&fit=crop",
     content: `# Apport en protéines et bodybuilders
 
 -Facebook
@@ -1849,7 +1849,7 @@ En fin de compte, 1,6 g/kg de protéines convient aux personnes normales. Mais e
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "9 min",
-    image: "https://images.unsplash.com/photo-1576678927484-cc907957088c?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1494597564530-871f2b93ac55?w=800&auto=format&fit=crop",
     content: `# Science musculaire pour les réducteurs
 
 -Facebook
@@ -1944,7 +1944,7 @@ Donc, cela ne représente pas vraiment un scénario « comment faire » dans leq
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "20 min",
-    image: "https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&auto=format&fit=crop",
     content: `# Hormèse
 
 -Facebook
@@ -2137,7 +2137,7 @@ L'exercice et l'hormèse sont encore un sujet relativement nouveau, alors restez
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "5 min",
-    image: "https://images.unsplash.com/photo-1549060279-7e168fcee0c2?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1543362906-acfc16c67564?w=800&auto=format&fit=crop",
     content: `# Un secret de motivation : La science derrière une discipline durable
 
 ## Introduction : Le mythe de la motivation
@@ -2249,7 +2249,7 @@ Mais l'amour pour ceux qui comptent dans votre vie ? Cette motivation ne s'étei
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "15 min",
-    image: "https://images.unsplash.com/photo-1507398941214-572c25f4b1dc?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=800&auto=format&fit=crop",
     content: `# Sommeil et musculation
 
 -Facebook
@@ -2392,7 +2392,7 @@ Au moment de la publication, le numéro de référence 15 (Gunning, 2001) n'éta
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "23 min",
-    image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1478145046317-39f10e56b5e9?w=800&auto=format&fit=crop",
     content: `# Protéines végétales ou animales
 
 -Facebook
@@ -2589,7 +2589,7 @@ Nous comprenons qu’il s’agit d’un long examen de cet article, mais il est 
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "14 min",
-    image: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=800&auto=format&fit=crop",
     content: `# Calendrier des nutriments
 
 -Facebook
@@ -2727,7 +2727,7 @@ Pour les haltérophiles qui cherchent simplement à augmenter leur force ou leur
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "10 min",
-    image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1585435557343-3b092031a831?w=800&auto=format&fit=crop",
     content: `# La salle d
 
 -Facebook
@@ -2887,7 +2887,7 @@ Si vous êtes convoqué au tribunal des gains, comment plaiderez-vous ? Et dans
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "11 min",
-    image: "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1556742031-c6961e8560b0?w=800&auto=format&fit=crop",
     content: `# Alcool et gains
 
 -Facebook
@@ -3003,7 +3003,7 @@ Dans l’ensemble, personne n’est ici pour prêcher sur la méchanceté de l�
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "33 min",
-    image: "https://images.unsplash.com/photo-1581009146145-b5ef050c149a?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1631549916768-4d8ba73be57b?w=800&auto=format&fit=crop",
     content: `# Variation d
 
 -Facebook
@@ -3262,7 +3262,7 @@ En fin de compte, ajouter de la variation à votre programme peut empêcher les 
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "17 min",
-    image: "https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1577174881658-0f30ed549adc?w=800&auto=format&fit=crop",
     content: `# Le pouvoir de la musculation
 
 -Facebook
@@ -3384,7 +3384,7 @@ C'est le pouvoir du bodybuilding.
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "24 min",
-    image: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1607613009820-a29f7bb81c04?w=800&auto=format&fit=crop",
     content: `# Calories et bilan énergétique
 
 -Facebook
@@ -3582,7 +3582,7 @@ Nous savons que cet article contient probablement des passages ambigus – princ
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "20 min",
-    image: "https://images.unsplash.com/photo-1598971639058-fab3c3109a00?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=800&auto=format&fit=crop",
     content: `# Cyclisme des glucides
 
 -Facebook
@@ -3744,7 +3744,7 @@ Nous savons depuis au moins 1887 que la nutrition peut fortement influencer à l
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "19 min",
-    image: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1584017911766-d451b3d0e843?w=800&auto=format&fit=crop",
     content: `# Un « bref » guide de la coupe
 
 -Facebook
@@ -3900,7 +3900,7 @@ Si vous souhaitez lire l’un de ces sujets plus en détail, consultez les analy
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "10 min",
-    image: "https://images.unsplash.com/photo-1550345332-09e3ac987658?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1562771379-b5ba25198b44?w=800&auto=format&fit=crop",
     content: `# Mémoire musculaire
 
 -Facebook
@@ -4010,7 +4010,7 @@ Du coup, après une discussion longue et complexe, il semble y avoir de bonnes r
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "18 min",
-    image: "https://images.unsplash.com/photo-1593079831268-3381b0db4a77?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1587909209111-5097ee578ec3?w=800&auto=format&fit=crop",
     content: `# Génétique et athlètes d
 
 -Facebook
@@ -4156,7 +4156,7 @@ En fin de compte, il y a plusieurs facteurs qui font des athlètes d’élite ce
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "10 min",
-    image: "https://images.unsplash.com/photo-1581009137042-c552e485697a?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1455203027-060348d99d6f?w=800&auto=format&fit=crop",
     content: `# Entraînement à jeun
 
 -Facebook
@@ -4248,7 +4248,7 @@ Alors si vous préférez vous entraîner à jeun, quelle est la meilleure façon
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "22 min",
-    image: "https://images.unsplash.com/photo-1532384748853-8f54a8f476e2?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1571172964276-91faaa704e1f?w=800&auto=format&fit=crop",
     content: `# Fatigue du SNC
 
 -Facebook
@@ -4458,7 +4458,7 @@ Si vous souhaitez une discussion plus approfondie, consultez ces articles du Dr 
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "15 min",
-    image: "https://images.unsplash.com/photo-1558611848-73f7eb4001a1?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1504439468489-c8920d796a29?w=800&auto=format&fit=crop",
     content: `# Analgésiques et gains
 
 -Facebook
@@ -4611,7 +4611,7 @@ Puisque ni le Dr Wilson ni moi-même ne sommes médecins, nous n’allons pas pa
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "15 min",
-    image: "https://images.unsplash.com/photo-1577221084712-45b0445d2b00?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop",
     content: `# Science musculaire : une histoire
 
 -Facebook
@@ -4764,7 +4764,7 @@ Remarque : La plupart des anciennes références utilisées  ne sont plus dispo
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "15 min",
-    image: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop",
     content: `# Hypertrophie vs hyperplasie
 
 -Facebook
@@ -4902,7 +4902,7 @@ Nous ne savons toujours pas si l’hyperplasie est isolée ou non pour les bodyb
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "16 min",
-    image: "https://images.unsplash.com/photo-1576678927484-cc907957088c?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1530497610245-94d3c16cda28?w=800&auto=format&fit=crop",
     content: `# Squats vs poussées de hanche
 
 -Facebook
@@ -5015,7 +5015,7 @@ L'équipe à l'origine du livre blanc a demandé le retrait ieurs articles de Ba
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "14 min",
-    image: "https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1551076805-e1869033e561?w=800&auto=format&fit=crop",
     content: `# Les soulevés de terre sont-ils dangereux ?
 
 -Facebook
@@ -5126,7 +5126,7 @@ Si vous savez ce que vous faites et disposez d’une forme de levage décente, l
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "5 min",
-    image: "https://images.unsplash.com/photo-1549060279-7e168fcee0c2?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?w=800&auto=format&fit=crop",
     content: `# Nids-de-poule : Gérer les blessures
 
 -Facebook
@@ -5192,7 +5192,7 @@ Département des nombres. (2017). Revenu du ménage à Muncie, IN. Extrait de :
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "7 min",
-    image: "https://images.unsplash.com/photo-1507398941214-572c25f4b1dc?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1579165466949-3180a3d056d5?w=800&auto=format&fit=crop",
     content: `# La règle des 3 %
 
 -Facebook
@@ -5288,7 +5288,7 @@ Dans une grande partie de mes propres entraînements et prescriptions d’entra�
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "19 min",
-    image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=800&auto=format&fit=crop",
     content: `# Tout sur la créatine
 
 -Facebook
@@ -5454,7 +5454,7 @@ Espérons que cet article réponde à toutes vos questions brûlantes sur la sup
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "15 min",
-    image: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1575052814086-f385e2e2ad1b?w=800&auto=format&fit=crop",
     content: `# Tout sur la caféine
 
 -Facebook
@@ -5572,7 +5572,7 @@ Dans l’ensemble, la caféine est l’un des compléments les plus efficaces po
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "16 min",
-    image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1599447421416-3414500d18a5?w=800&auto=format&fit=crop",
     content: `# Lats dans le développé couché
 
 -Facebook
@@ -5710,7 +5710,7 @@ Les dorsaux échouent tous les trois pour le développé couché.
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "39 min",
-    image: "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1545389336-cf090694435e?w=800&auto=format&fit=crop",
     content: `# Fréquence de formation
 
 -Facebook
@@ -6022,7 +6022,7 @@ Puisque nous disposons de suffisamment de données, nous inclurons un graphique 
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "21 min",
-    image: "https://images.unsplash.com/photo-1581009146145-b5ef050c149a?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1588286840104-8957b019727f?w=800&auto=format&fit=crop",
     content: `# Différences entre les sexes dans la formation
 
 -Facebook
@@ -6183,7 +6183,7 @@ Dans l’ensemble, il n’y a vraiment aucune raison de penser que les hommes et
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "13 min",
-    image: "https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1516726817505-f5ed825624d8?w=800&auto=format&fit=crop",
     content: `# Méthodes d
 
 -Facebook
@@ -6302,7 +6302,7 @@ Les méthodes d’intensification peuvent être un excellent moyen de pousser vo
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "17 min",
-    image: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1580281657527-a4d26d012254?w=800&auto=format&fit=crop",
     content: `# S
 
 -Facebook
@@ -6458,7 +6458,7 @@ Nous résumerons l’intégralité de l’article avec la meilleure citation en 
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "21 min",
-    image: "https://images.unsplash.com/photo-1598971639058-fab3c3109a00?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1551601651-2a8555f1a136?w=800&auto=format&fit=crop",
     content: `# Des soulevés de terre le jour de l
 
 -Facebook
@@ -6631,7 +6631,7 @@ Alors, pouvez-vous faire des soulevés de terre le jour de l'arrière ? Bien sû
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "14 min",
-    image: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1582719471384-894fbb16564e?w=800&auto=format&fit=crop",
     content: `# Déchargements
 
 -Facebook
@@ -6758,7 +6758,7 @@ Est-ce que tout le monde devra éventuellement se décharger ? Probablement pas.
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "12 min",
-    image: "https://images.unsplash.com/photo-1550345332-09e3ac987658?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1581093577421-f561a654a353?w=800&auto=format&fit=crop",
     content: `# Ischio-jambiers dans le squat
 
 -Facebook
@@ -6892,7 +6892,7 @@ Voilà pourquoi c’est important de concevoir votre formation autour de ces con
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "16 min",
-    image: "https://images.unsplash.com/photo-1593079831268-3381b0db4a77?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1608138404239-d2f557515ecb?w=800&auto=format&fit=crop",
     content: `# Entraînement thoracique 101
 
 -Facebook
@@ -7035,7 +7035,7 @@ Le Dr Jacob Wilson est PDG du laboratoire de performance humaine de l'Applied Sc
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "28 min",
-    image: "https://images.unsplash.com/photo-1581009137042-c552e485697a?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1517931524326-bdd55a541177?w=800&auto=format&fit=crop",
     content: `# Quantification de la tension mécanique
 
 -Facebook
@@ -7262,7 +7262,7 @@ Nous utilisons généralement simplement un système de numérotation pour nos c
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "8 min",
-    image: "https://images.unsplash.com/photo-1532384748853-8f54a8f476e2?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1573384666979-2b1e4e6e3e3d?w=800&auto=format&fit=crop",
     content: `# Hydratation
 
 -Facebook
@@ -7338,7 +7338,7 @@ Si vous vous entraînez le matin, buvez de l'eau avant de vous coucher le soir. 
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "5 min",
-    image: "https://images.unsplash.com/photo-1558611848-73f7eb4001a1?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800&auto=format&fit=crop",
     content: `# La boîte à lunch : Une leçon de responsabilité personnelle
 
 ## Introduction : Qui prépare votre déjeuner ?
@@ -7455,7 +7455,7 @@ Vous êtes le chef cuisinier de votre existence. Si le menu ne vous plaît pas, 
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "12 min",
-    image: "https://images.unsplash.com/photo-1577221084712-45b0445d2b00?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1552196563-55cd4e45efb3?w=800&auto=format&fit=crop",
     content: `# S
 
 -Facebook
@@ -7564,7 +7564,7 @@ Remarque : Au moment de la publication, les articles originaux des numéros cit�
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "10 min",
-    image: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1590487988256-9ed24133863e?w=800&auto=format&fit=crop",
     content: `# Le livre de règles du partenaire de formation
 
 -Facebook
@@ -7687,7 +7687,7 @@ J'espère que vous faites déjà toutes les choses de cette liste, et sinon, ess
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "16 min",
-    image: "https://images.unsplash.com/photo-1576678927484-cc907957088c?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1546483875-ad9014c88eba?w=800&auto=format&fit=crop",
     content: `# Ce que je ferais différemment
 
 -Facebook
@@ -7790,7 +7790,7 @@ Nous espérons que cet article offrira un aperçu unique de la formation à long
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "11 min",
-    image: "https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1583454155184-1eebc0be3425?w=800&auto=format&fit=crop",
     content: `# [Quelques] Physique du bodybuilding
 
 -Facebook
@@ -7885,7 +7885,7 @@ Comme toujours, la connaissance, c'est le pouvoir !
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "8 min",
-    image: "https://images.unsplash.com/photo-1549060279-7e168fcee0c2?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1520948013839-62020f374478?w=800&auto=format&fit=crop",
     content: `# Soyez excité
 
 -Facebook
@@ -7985,7 +7985,7 @@ The Eternal – Bury Tomorrow (métal)
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "15 min",
-    image: "https://images.unsplash.com/photo-1507398941214-572c25f4b1dc?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1598289431512-b97b0917affc?w=800&auto=format&fit=crop",
     content: `# Recomposition corporelle
 
 -Facebook
@@ -8119,7 +8119,7 @@ Dans l’ensemble, la recomposition corporelle est certainement une possibilité
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "10 min",
-    image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1517130038641-a774d04afb3c?w=800&auto=format&fit=crop",
     content: `# Écrire votre propre programme, partie 2
 
 -Facebook
@@ -8220,7 +8220,7 @@ Bien que chaque section individuelle ici puisse probablement utiliser à elle se
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "8 min",
-    image: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1600881333168-2ef49b341f30?w=800&auto=format&fit=crop",
     content: `# Écrire votre propre programme, partie 1
 
 -Facebook
@@ -8300,7 +8300,7 @@ Réfléchissez de manière critique à votre programme de formation actuel, que 
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "19 min",
-    image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1605296867424-35fc25c9212a?w=800&auto=format&fit=crop",
     content: `# Micronutriments
 
 -Facebook
@@ -8464,7 +8464,7 @@ Au moment de la publication, la référence n° 17 n'était plus disponible sous
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "28 min",
-    image: "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1597075998525-83524f28a017?w=800&auto=format&fit=crop",
     content: `# Musculation vs dynamophilie
 
 -Facebook
@@ -8680,7 +8680,7 @@ C’est une autre pièce que nous mettrons probablement à jour au fil du temps.
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "11 min",
-    image: "https://images.unsplash.com/photo-1581009146145-b5ef050c149a?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1574226516831-e1dff420e562?w=800&auto=format&fit=crop",
     content: `# Écrire votre propre programme, partie 3
 
 -Facebook
@@ -8786,7 +8786,7 @@ Merci d'avoir lu jusqu'ici la série et nous aurons un autre épisode sous peu !
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "12 min",
-    image: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1607962837359-5e7e89f86776?w=800&auto=format&fit=crop",
     content: `# Excentriques et croissance
 
 -Facebook
@@ -8896,7 +8896,7 @@ En fin de compte, les parties excentriques et concentriques d’un ascenseur son
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "22 min",
-    image: "https://images.unsplash.com/photo-1598971639058-fab3c3109a00?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1519505907962-0a6cb0167c73?w=800&auto=format&fit=crop",
     content: `# Entraînement des mollets 101
 
 -Facebook
@@ -9093,7 +9093,7 @@ Mec, nous avons presque parcouru tout l’article sans un jeu de mots sur la vac
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "30 min",
-    image: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1612872087720-bb876e2e67f1?w=800&auto=format&fit=crop",
     content: `# La taille = la force ?
 
 -Facebook
@@ -9302,7 +9302,7 @@ Comme pour toute théorie scientifique, nous continuons à façonner celle-ci et
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "16 min",
-    image: "https://images.unsplash.com/photo-1550345332-09e3ac987658?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1598632468037-1117b29d9dd5?w=800&auto=format&fit=crop",
     content: `# Inconvénient nutritionnel
 
 -Facebook
@@ -9415,7 +9415,7 @@ En fin de compte, tout plan de régime sera difficile à suivre. Aucun objectif 
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "31 min",
-    image: "https://images.unsplash.com/photo-1593079831268-3381b0db4a77?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1603503364272-6e4a31ad1af0?w=800&auto=format&fit=crop",
     content: `# Amplitude de mouvement et croissance
 
 -Facebook
@@ -9633,7 +9633,7 @@ Pour l’instant, amusez-vous à lire – nous avons certainement aimé collecte
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "9 min",
-    image: "https://images.unsplash.com/photo-1581009137042-c552e485697a?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1583187914249-3d8c7b93a4a6?w=800&auto=format&fit=crop",
     content: `# Qu’est-ce que la Broscience ?
 
 -Facebook
@@ -9713,7 +9713,7 @@ Intéressé à devenir un frère basé sur des preuves ? Eh bien, nous avons ex
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "27 min",
-    image: "https://images.unsplash.com/photo-1532384748853-8f54a8f476e2?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1625937286990-28df23b34f62?w=800&auto=format&fit=crop",
     content: `# BCAA : pomper ou vider ?
 
 -Facebook
@@ -9931,7 +9931,7 @@ Les deux côtés de l’argument BCAA sont présentés , mais le véritable poin
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "11 min",
-    image: "https://images.unsplash.com/photo-1558611848-73f7eb4001a1?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1567013127542-490d757e51fc?w=800&auto=format&fit=crop",
     content: `# S
 
 -Facebook
@@ -10031,7 +10031,7 @@ En fin de compte, les masques n’amélioreront probablement aucun aspect de vot
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "14 min",
-    image: "https://images.unsplash.com/photo-1577221084712-45b0445d2b00?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1528720208104-3d1da71d1b4e?w=800&auto=format&fit=crop",
     content: `# Mode Bête
 
 -Facebook
@@ -10182,7 +10182,7 @@ Soyez simplement heureux que nous soyons l’animal le plus intelligent de la pl
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "14 min",
-    image: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1603455778956-d71ea4f47bcf?w=800&auto=format&fit=crop",
     content: `# Nutrition post-entraînement
 
 -Facebook
@@ -10310,7 +10310,7 @@ En fin de compte, la nutrition après l’entraînement est l’une des meilleur
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "13 min",
-    image: "https://images.unsplash.com/photo-1576678927484-cc907957088c?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1571731956672-f2b94d7dd0d6?w=800&auto=format&fit=crop",
     content: `# Une histoire de trois bodybuilders
 
 -Facebook
@@ -10427,7 +10427,7 @@ Heureusement, c’est exactement à cela que sert ACHZOD. Vous apportez la déte
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "9 min",
-    image: "https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1598971457999-ca4ef48a9a71?w=800&auto=format&fit=crop",
     content: `# Étirement et performance
 
 -Facebook
@@ -10525,7 +10525,7 @@ Donc, si l’un de vos objectifs d’entraînement est d’améliorer la flexibi
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "9 min",
-    image: "https://images.unsplash.com/photo-1507398941214-572c25f4b1dc?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?w=800&auto=format&fit=crop",
     content: `# Ischio-jambiers et force de squat
 
 -Facebook
@@ -10629,7 +10629,7 @@ Le domaine de la résistance et du conditionnement est un domaine intéressant d
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "14 min",
-    image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1594911772125-07fc7a2d8d9f?w=800&auto=format&fit=crop",
     content: `# Écrire votre propre programme, partie 4
 
 -Facebook

@@ -9643,7 +9643,7 @@ N'ayez pas peur de consommer beaucoup de protéines. Votre croissance musculaire
     author: "ACHZOD",
     date: "2024-09-22",
     readTime: "5 min",
-    image: "https://images.unsplash.com/photo-1550345332-09e3ac987658?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=800&auto=format&fit=crop",
     content: `# Mémoire musculaire : La science derrière le comeback
 
 ## Qu'est-ce que la mémoire musculaire ?

@@ -72,12 +72,24 @@ const AuditPremium = lazy(() => import("@/pages/offers/AuditPremium"));
 const BloodAnalysisOffer = lazy(() => import("@/pages/offers/BloodAnalysisOffer"));
 const ProPanel = lazy(() => import("@/pages/offers/ProPanel"));
 
-// Scroll to top on route change
+// Scroll to top + dynamic canonical URL on route change
 function ScrollToTop() {
   const [location] = useLocation();
 
   useEffect(() => {
     window.scrollTo(0, 0);
+
+    // Update canonical URL dynamically
+    const canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (canonical) {
+      canonical.href = `https://apexlabs.onrender.com${location === "/" ? "" : location}`;
+    }
+
+    // Update og:url
+    const ogUrl = document.querySelector('meta[property="og:url"]');
+    if (ogUrl) {
+      ogUrl.setAttribute("content", `https://apexlabs.onrender.com${location === "/" ? "" : location}`);
+    }
   }, [location]);
 
   return null;

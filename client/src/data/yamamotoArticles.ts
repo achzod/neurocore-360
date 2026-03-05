@@ -356,7 +356,7 @@ Par « sports d'hiver », nous entendons tous les sports qui se pratiquent sur l
     date: `2025-01-10`,
     readTime: "6 min",
     category: "nutrition",
-    image: `https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800`
+    image: `https://images.unsplash.com/photo-1584592487914-a0f97e01a0c0?w=800&auto=format&fit=crop`
   },
   {
     id: `yam-16`,
@@ -425,7 +425,7 @@ Il est crucial de connaître et de comprendre quels processus physiologiques et 
     date: `2025-01-10`,
     readTime: "6 min",
     category: "nutrition",
-    image: `https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800`
+    image: `https://images.unsplash.com/photo-1558017487-06bf9f82613a?w=800&auto=format&fit=crop`
   },
   {
     id: `yam-19`,
@@ -448,7 +448,7 @@ Le deltoïde est le muscle principal de l'épaule et est anatomiquement divisé 
     date: `2025-01-10`,
     readTime: "6 min",
     category: "nutrition",
-    image: `https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800`
+    image: `https://images.unsplash.com/photo-1606902965551-dce093cda7b1?w=800&auto=format&fit=crop`
   },
   {
     id: `yam-20`,
@@ -471,7 +471,7 @@ La phrase d'Arnold où il compare les pompes musculaires pendant l'entraînement
     date: `2025-01-10`,
     readTime: "6 min",
     category: "nutrition",
-    image: `https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=800`
+    image: `https://images.unsplash.com/photo-1609899464726-09ec71bfce30?w=800&auto=format&fit=crop`
   },
   {
     id: `yam-21`,
@@ -531,7 +531,7 @@ Ces dernières années, le cross Training est une discipline sportive très popu
     date: `2025-01-10`,
     readTime: "6 min",
     category: "nutrition",
-    image: `https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800`
+    image: `https://images.unsplash.com/photo-1560348509-f2e5ff21fc3f?w=800&auto=format&fit=crop`
   },
   {
     id: `yam-23`,
@@ -577,7 +577,7 @@ La nage de fond comprend toutes les épreuves de natation qui se déroulent en e
     date: `2025-01-10`,
     readTime: "6 min",
     category: "nutrition",
-    image: `https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800`
+    image: `https://images.unsplash.com/photo-1533560904424-a0aa61a284c5?w=800&auto=format&fit=crop`
   },
   {
     id: `yam-25`,
@@ -600,7 +600,7 @@ Padel : entre mode, entraînement et nutrition Le padel est un sport qui se joue
     date: `2025-01-10`,
     readTime: "6 min",
     category: "nutrition",
-    image: `https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800`
+    image: `https://images.unsplash.com/photo-1581368135153-a0b23fdfab99?w=800&auto=format&fit=crop`
   },
   {
     id: `yam-26`,
@@ -623,7 +623,7 @@ Pour les athlètes d'endurance, les températures extrêmes et l'altitude peuven
     date: `2025-01-10`,
     readTime: "6 min",
     category: "nutrition",
-    image: `https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800`
+    image: `https://images.unsplash.com/photo-1601993091522-8e45a3f0acfa?w=800&auto=format&fit=crop`
   },
   {
     id: `yam-27`,
@@ -646,7 +646,7 @@ La vie moderne dans les pays les plus avancés est souvent très stressante et i
     date: `2025-01-10`,
     readTime: "6 min",
     category: "nutrition",
-    image: `https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800`
+    image: `https://images.unsplash.com/photo-1595841696677-6489ff4f1cb4?w=800&auto=format&fit=crop`
   },
   {
     id: `yam-28`,
@@ -669,6 +669,6 @@ La réponse pour nous est très simple : pouvoir vivre pleinement chaque instant
     date: `2025-01-10`,
     readTime: "6 min",
     category: "nutrition",
-    image: `https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800`
+    image: `https://images.unsplash.com/photo-1600026453346-09da44df3e1d?w=800&auto=format&fit=crop`
   }
 ];

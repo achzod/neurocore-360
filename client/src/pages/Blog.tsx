@@ -15,6 +15,18 @@ export default function Blog() {
   const [sortBy, setSortBy] = useState<"recent" | "popular">("popular");
 
   useEffect(() => {
+    document.title = "Blog ACHZOD | Articles Musculation, Nutrition & Performance";
+    const meta = document.querySelector('meta[name="description"]');
+    if (meta) {
+      meta.setAttribute("content", "Blog ACHZOD — articles, guides et insights sur la musculation, nutrition, hormones, biohacking et performance. Par Achzod.");
+    }
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) ogTitle.setAttribute("content", "Blog ACHZOD | Articles Musculation, Nutrition & Performance");
+    const ogDesc = document.querySelector('meta[property="og:description"]');
+    if (ogDesc) ogDesc.setAttribute("content", "Blog ACHZOD — articles, guides et insights sur la musculation, nutrition, hormones, biohacking et performance.");
+  }, []);
+
+  useEffect(() => {
     let active = true;
     setIsLoading(true);
     fetch("/blog-articles.json")
