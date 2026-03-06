@@ -13,7 +13,7 @@ interface FAQItem {
 const faqs: FAQItem[] = [
   {
     question: "Qu'est-ce que APEXLABS exactement ?",
-    answer: "APEXLABS est mon système d'analyse métabolique complet que j'ai développé après des années de coaching individuel. Il couvre 15+ domaines : sommeil, hormones, digestion, stress, nutrition, entraînement, biomécanique, neurotransmetteurs... Selon l'offre choisie (Discovery Scan gratuit, Anabolic Bioscan 59€, Ultimate Scan 79€, Blood Analysis 99€), tu reçois un rapport de 5 à 50+ pages avec des protocoles que j'ai créés et testés sur des centaines de clients."
+    answer: "APEXLABS est mon système d'analyse métabolique complet que j'ai développé après des années de coaching individuel. Il couvre 10+ domaines : sommeil, hormones, digestion, stress, nutrition, entraînement, biomécanique, neurotransmetteurs... Selon l'offre choisie (Discovery Scan gratuit, Anabolic Bioscan 59€, Ultimate Scan 79€, Blood Analysis 99€), tu reçois un rapport de 5 à 50+ pages avec des protocoles que j'ai créés et testés sur des centaines de clients."
   },
   {
     question: "Quelle est la différence entre les différentes offres ?",
