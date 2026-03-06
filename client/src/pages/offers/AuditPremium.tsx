@@ -8,7 +8,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
-import { ArrowRight, Check, Zap, Moon, Pill, Calendar, Watch, TrendingUp, ChevronDown } from "lucide-react";
+import { ArrowRight, Check, Zap, Moon, Pill, Calendar, Watch, TrendingUp, ChevronDown, Activity } from "lucide-react";
 
 // ============================================================================
 // FAQ ACCORDION ITEM
@@ -51,14 +51,15 @@ function ProtocolVisual() {
     { icon: Zap, label: "CORTISOL", color: "#FCDD00" },
     { icon: Moon, label: "SOMMEIL", color: "#8B5CF6" },
     { icon: Pill, label: "DIGESTION", color: "#10B981" },
-    { icon: TrendingUp, label: "STACK", color: "#3B82F6" },
+    { icon: Calendar, label: "BUREAU", color: "#F97316" },
+    { icon: Activity, label: "TRAINING", color: "#3B82F6" },
   ];
 
   return (
     <div className="relative w-full h-full bg-gradient-to-br from-[#FCDD00]/10 via-black to-[#FCDD00]/5 flex items-center justify-center overflow-hidden rounded-sm border border-white/5">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(252,221,0,0.1)_0%,_transparent_70%)]" />
 
-      <div className="grid grid-cols-2 gap-4 p-6">
+      <div className="grid grid-cols-3 gap-3 p-6">
         {protocols.map((item, i) => (
           <motion.div
             key={i}
@@ -76,7 +77,7 @@ function ProtocolVisual() {
       </div>
 
       <div className="absolute bottom-4 left-4 text-xs font-mono text-[#FCDD00]/80">
-        <div>4 PROTOCOLES</div>
+        <div>5 PROTOCOLES</div>
         <motion.div
           className="text-white/60"
           animate={{ opacity: [0.5, 1, 0.5] }}
@@ -249,9 +250,10 @@ export default function AuditPremium() {
 
   const protocols = [
     { name: "Protocole Matin Anti-Cortisol", desc: "Ta routine du matin pour reduire le cortisol et maximiser ton energie", icon: Zap },
-    { name: "Protocole Soir Sommeil", desc: "Ta sequence de relaxation pour un sommeil profond et reparateur", icon: Moon },
+    { name: "Protocole Soir Verrouillage Sommeil", desc: "Ta sequence de relaxation pour un sommeil profond et reparateur", icon: Moon },
     { name: "Protocole Digestion 14 Jours", desc: "Ton reset digestif complet pour optimiser l'absorption", icon: Pill },
-    { name: "Stack Supplements", desc: "Ta selection personnalisee basee sur tes desequilibres", icon: TrendingUp },
+    { name: "Protocole Bureau Anti-Sedentarite", desc: "Tes micro-routines anti-sedentarite pour contrer les heures assis", icon: Calendar },
+    { name: "Protocole Entrainement Personnalise", desc: "Ton programme adapte a tes objectifs, ton niveau et ta recuperation", icon: TrendingUp },
   ];
 
   return (
@@ -357,7 +359,7 @@ export default function AuditPremium() {
               viewport={{ once: true }}
             >
               <p className="text-[#FCDD00] text-sm font-medium tracking-[0.2em] uppercase mb-6">
-                4 Protocoles Inclus
+                5 Protocoles Inclus
               </p>
               <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6 leading-tight">
                 Pas juste un diagnostic.
@@ -525,16 +527,18 @@ export default function AuditPremium() {
           >
             <div className="grid sm:grid-cols-2 gap-6">
               {[
-                "Analyse complete 16 sections",
-                "137 questions personnalisees",
-                "Integration wearables",
+                "Rapport 16 sections, 20+ pages",
+                "Score global sur 100",
+                "Integration wearables (optionnel)",
                 "Protocole Matin Anti-Cortisol",
-                "Protocole Soir Sommeil",
+                "Protocole Soir Verrouillage Sommeil",
                 "Protocole Digestion 14 Jours",
-                "Stack Supplements personnalise",
-                "Plan 30-60-90 jours",
-                "Rapport 20+ pages PDF",
-                "Livraison sous 24-48h",
+                "Protocole Bureau Anti-Sedentarite",
+                "Protocole Entrainement Personnalise",
+                "Stack Supplements optimise",
+                "Plan semaine par semaine 30-60-90",
+                "KPI et Tableau de Bord",
+                "Synthese et Prochaines Etapes",
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <Check className="w-5 h-5 text-[#FCDD00] flex-shrink-0" />
@@ -568,10 +572,10 @@ export default function AuditPremium() {
           </motion.div>
           <div className="divide-y divide-white/10">
             {[
-              { q: "Combien de temps prend le questionnaire Anabolic Bioscan ?", a: "Environ 15-20 minutes. Le questionnaire couvre 16 domaines avec ~137 questions. Tes reponses sont sauvegardees automatiquement, tu peux reprendre a tout moment." },
-              { q: "Que contient le rapport de 20+ pages ?", a: "Le rapport comprend 16 sections: executive summary avec score global, 6 analyses approfondies (energie, metabolisme, hormones, sommeil, stress, nutrition), 3 protocoles d'action (matin anti-cortisol, soir sommeil, digestion 14j), stack supplements personnalise, plan 30-60-90 jours, KPI de suivi et synthese." },
-              { q: "Quelle est la difference avec l'Ultimate Scan ?", a: "L'Anabolic Bioscan couvre 16 sections de rapport. L'Ultimate Scan (79\u20ac) ajoute l'analyse photo posturale et biomecanique (3 photos: face, dos, profil) pour un total de 18 sections de rapport, 183 questions et un rapport de 40-50 pages." },
-              { q: "Les protocoles sont-ils vraiment personnalises ?", a: "Oui, chaque protocole est genere par notre IA en fonction de TES reponses. Le protocole matin anti-cortisol, le protocole soir sommeil, le protocole digestion 14 jours et le stack supplements sont tous adaptes a ton profil, tes desequilibres et tes objectifs." },
+              { q: "Combien de temps prend le questionnaire ?", a: "Environ 15-20 minutes. 137 questions sur 16 domaines : profil, sante, sommeil, stress, energie, digestion, entrainement, nutrition de base, lifestyle, mindset, nutrition detaillee, hormones, axes cliniques, supplements, biomarqueurs, composition corporelle. Ta progression est sauvegardee automatiquement — tu peux fermer et reprendre plus tard." },
+              { q: "Que contient le rapport de 20+ pages ?", a: "16 sections completes : executive summary avec score global, 6 analyses approfondies (entrainement et periodisation, systeme cardiovasculaire, metabolisme et nutrition, sommeil et recuperation, digestion et microbiote, axes hormonaux), 5 protocoles d'action (matin anti-cortisol, soir verrouillage sommeil, digestion 14 jours, bureau anti-sedentarite, entrainement personnalise), stack supplements optimise, plan semaine par semaine 30-60-90 jours, KPI et tableau de bord, synthese et prochaines etapes." },
+              { q: "Quelle est la difference avec l'Ultimate Scan ?", a: "L'Anabolic Bioscan couvre 16 sections de rapport sans photos. L'Ultimate Scan (79\u20ac) ajoute 2 sections exclusives basees sur 3 photos (face, dos, profil) : analyse visuelle et posturale complete + analyse biomecanique et sangle profonde. Total : 18 sections, ~183 questions, rapport de 40-50 pages." },
+              { q: "Les 5 protocoles sont-ils vraiment personnalises ?", a: "Oui. Chaque protocole est genere par mon moteur IA en fonction de TES reponses. Le protocole matin anti-cortisol, le protocole soir verrouillage sommeil, le protocole digestion 14 jours, le protocole bureau anti-sedentarite et le protocole entrainement personnalise sont tous adaptes a ton profil, tes desequilibres et tes objectifs specifiques." },
               { q: "L'integration wearables est-elle obligatoire ?", a: "Non, c'est optionnel. Si tu as un Oura, Whoop, Garmin, Apple Watch ou Fitbit, tes donnees HRV, sommeil et activite enrichiront l'analyse. Sans wearable, le rapport reste complet et personnalise grace aux 137 questions du questionnaire." },
             ].map((faq, i) => (
               <FAQItem key={i} q={faq.q} a={faq.a} index={i} />

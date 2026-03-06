@@ -13,51 +13,55 @@ interface FAQItem {
 const faqs: FAQItem[] = [
   {
     question: "Qu'est-ce que APEXLABS exactement ?",
-    answer: "APEXLABS est mon système d'analyse métabolique complet que j'ai développé après des années de coaching individuel. Il couvre 10+ domaines : sommeil, hormones, digestion, stress, nutrition, entraînement, biomécanique, neurotransmetteurs... Selon l'offre choisie (Discovery Scan gratuit, Anabolic Bioscan 59€, Ultimate Scan 79€, Blood Analysis 99€), tu reçois un rapport de 5 à 50+ pages avec des protocoles que j'ai créés et testés sur des centaines de clients."
+    answer: "APEXLABS est mon système d'analyse métabolique et de performance que j'ai construit après des années de coaching individuel et 11 certifications internationales (NASM, ISSA, Precision Nutrition, Pre-Script). Selon l'offre choisie, je couvre sommeil, hormones, digestion, stress, nutrition, entraînement, biomécanique, cardiovasculaire... et tu reçois un rapport de 5 à 50 pages avec des protocoles concrets, pas des conseils génériques."
   },
   {
-    question: "Quelle est la différence entre les différentes offres ?",
-    answer: "DISCOVERY SCAN (Gratuit) : ~66 questions, diagnostic global, dashboard interactif. Tu identifies tes blocages sans engagement. ANABOLIC BIOSCAN (59€) : 16 sections d'analyse, protocoles 30-60-90 jours, stack suppléments optimisé. Mon best-seller. ULTIMATE SCAN (79€) : Tout l'Anabolic + analyse photo (posture, composition corporelle) + wearables, 18 sections, rapport 40-50 pages. L'analyse la plus complète. BLOOD ANALYSIS (99€) : Upload ton bilan sanguin, je l'analyse avec des ranges optimaux de performance."
+    question: "Quelle est la différence entre les 4 offres ?",
+    answer: "DISCOVERY SCAN (Gratuit) : ~66 questions sur 10 domaines, rapport 5-7 pages avec 4 sections (executive summary, énergie, métabolisme, synthèse) + sections verrouillées qui te montrent ce que tu débloques en passant à l'Anabolic. ANABOLIC BIOSCAN (59€) : ~137 questions, rapport 20+ pages avec 16 sections complètes — 6 analyses approfondies + 5 protocoles d'action (matin anti-cortisol, soir sommeil, digestion 14j, bureau anti-sédentarité, entraînement personnalisé) + stack suppléments + plan 30-60-90 jours + KPI. Mon best-seller. ULTIMATE SCAN (79€) : tout l'Anabolic + analyse photo posturale et biomécanique (3 photos : face, dos, profil) pour 18 sections et un rapport de 40-50 pages. L'analyse la plus complète. BLOOD ANALYSIS (99€) : tu uploades ton bilan sanguin PDF, j'analyse 39 biomarqueurs avec des ranges optimaux de performance — pas les ranges \"normaux\" des labos."
   },
   {
-    question: "Comment fonctionne la synchronisation des wearables ?",
-    answer: "Tu peux connecter Oura, Garmin, Fitbit, Apple Health, Google Fit, Samsung Health, Withings et Ultrahuman. WHOOP arrive bientôt. La connexion se fait en 1 clic pour la plupart des appareils. Je récupère tes données de HRV, sommeil (profond/REM/léger), fréquence cardiaque, SpO2 et activité. Ces données enrichissent ton analyse pour des recommandations ultra-précises basées sur ta biologie réelle, pas sur des moyennes génériques."
-  },
-  {
-    question: "L'analyse photo, ça marche comment ?",
-    answer: "Disponible avec l'Ultimate Scan. Tu uploades 2-3 photos (face, profil, dos) et j'analyse ta posture (épaules, bassin, lordose), j'estime ta composition corporelle, j'identifie les asymétries musculaires et les points de tension. Le rapport intègre ensuite des recommandations correctives personnalisées pour corriger tes déséquilibres posturaux et améliorer ta biomécanique."
-  },
-  {
-    question: "Ai-je besoin d'une prise de sang ?",
-    answer: "Non, le questionnaire suffit pour la plupart des offres. Si tu as des bilans récents, tu peux utiliser le Blood Analysis (99€) et je les décoderai avec des ranges optimaux de performance - pas les ranges 'normaux' des labos qui sont souvent trop larges. Sinon, selon ton profil, je te recommanderai les analyses pertinentes à demander à ton médecin."
+    question: "Combien de temps prend le questionnaire ?",
+    answer: "Discovery Scan : ~5 minutes (66 questions). Anabolic Bioscan : ~15-20 minutes (137 questions). Ultimate Scan : ~20-25 minutes (183 questions). Ta progression est sauvegardée automatiquement — tu peux fermer et reprendre plus tard sans rien perdre."
   },
   {
     question: "Combien de temps pour recevoir mon rapport ?",
-    answer: "Le questionnaire prend 15-45 minutes selon l'offre choisie. Tu peux sauvegarder ta progression et reprendre plus tard. Le rapport est généré automatiquement dès que tu termines - tu le reçois en quelques minutes par email. Pour les offres payantes (Ultimate Scan, Blood Analysis), je révise personnellement chaque rapport avant envoi, donc compte 24-48h maximum."
+    answer: "Le rapport est généré automatiquement par mon moteur IA dès que tu termines le questionnaire. Tu le reçois en quelques minutes directement dans ton dashboard. Pour le Blood Analysis, le traitement du PDF prend un peu plus de temps mais reste automatique."
+  },
+  {
+    question: "L'analyse photo, ça marche comment ?",
+    answer: "Disponible uniquement avec l'Ultimate Scan (79€). Tu uploades 3 photos (face, dos, profil) pendant le questionnaire. Mon IA analyse ta posture (épaules, bassin, lordose, cyphose), ta composition corporelle visible, les asymétries musculaires et les compensations biomécaniques. Tu reçois 2 sections dédiées dans ton rapport : \"Analyse visuelle et posturale complète\" et \"Analyse biomécanique et sangle profonde\" avec des protocoles correctifs personnalisés."
+  },
+  {
+    question: "Comment fonctionne l'intégration wearables ?",
+    answer: "Optionnel sur Anabolic et Ultimate. Si tu as un Oura, Whoop, Garmin, Apple Watch ou Fitbit, tu peux renseigner tes données HRV, sommeil et activité dans le questionnaire. Ça enrichit l'analyse pour des recommandations plus précises basées sur ta biologie réelle. Sans wearable, le rapport reste complet grâce au questionnaire."
   },
   {
     question: "Qui es-tu exactement, Achzod ?",
-    answer: "Je suis coach certifié avec 11 certifications internationales : NASM (CPT, CES, PES, FNS, WFS), ISSA (CPT, Nutritionist, Bodybuilding Specialist), Precision Nutrition (Level 1, Sleep & Recovery) et Pre-Script (Movement Assessment, Corrective Exercise). J'ai accompagné des centaines de clients en coaching individuel pendant des années. APEXLABS est l'aboutissement de toute cette expérience : chaque protocole, chaque recommandation vient de mon expérience terrain, pas d'un template générique."
+    answer: "Coach certifié avec 11 certifications internationales : NASM (CPT, CES, PES, FNS, WFS), ISSA (CPT, Nutritionist, Bodybuilding Specialist), Precision Nutrition (Level 1, Sleep & Recovery) et Pre-Script (Movement Assessment, Corrective Exercise). J'ai accompagné des centaines de clients en coaching individuel. APEXLABS est l'aboutissement de toute cette expérience : chaque protocole, chaque recommandation vient de mon expertise terrain."
   },
   {
     question: "Est-ce adapté aux débutants ?",
-    answer: "Absolument. Le questionnaire détecte automatiquement ton niveau et ton contexte. Si tu débutes → je te donne des fondations solides (routine simple, nutrition de base, hygiène de sommeil). Si tu es avancé → optimisations fines (timing péri-workout, cycling glucidique, protocoles HRV). Le Discovery Scan gratuit est parfait pour commencer et voir si ça te correspond."
+    answer: "Oui. Le questionnaire détecte automatiquement ton niveau et ton contexte. Si tu débutes → fondations solides (routine simple, nutrition de base, hygiène de sommeil). Si tu es avancé → optimisations fines (timing péri-workout, cycling glucidique, protocoles HRV). Le Discovery Scan gratuit est parfait pour commencer."
   },
   {
     question: "Les suppléments sont-ils obligatoires ?",
-    answer: "Absolument pas. Je te recommande uniquement ce qui est pertinent pour TON profil. Si tu n'as pas besoin de suppléments, je te le dis clairement. Quand je recommande des suppléments, je te donne les dosages précis, les meilleures marques et le timing optimal. Exemple : stress chronique + sommeil perturbé → Magnésium Bisglycinate 400mg + Glycine 3g avant le coucher. Budget estimé : 30-80€/mois selon les besoins."
+    answer: "Non. Le stack suppléments est personnalisé selon TON profil. Si tu n'as pas besoin de suppléments, je te le dis clairement. Quand j'en recommande, je te donne les dosages précis, les formes optimales et le timing. Exemple : stress chronique + sommeil perturbé → Magnésium Bisglycinate 400mg + Glycine 3g avant le coucher."
+  },
+  {
+    question: "Ai-je besoin d'une prise de sang ?",
+    answer: "Non, pas pour le Discovery, l'Anabolic ou l'Ultimate — le questionnaire suffit. Si tu as un bilan sanguin récent, le Blood Analysis (99€) te permet de l'uploader pour une lecture avec des ranges optimaux de performance. Sinon, selon ton profil, je te recommande les analyses pertinentes à demander à ton médecin."
   },
   {
     question: "C'est un paiement unique ou un abonnement ?",
-    answer: "Paiement unique. Pas d'abonnement caché, pas de frais récurrents. Tu paies une fois et tu gardes accès à ton rapport à vie. Discovery Scan = Gratuit pour toujours. Anabolic Bioscan = 59€ une fois. Ultimate Scan = 79€ une fois. Blood Analysis = 99€ une fois."
+    answer: "Paiement unique. Pas d'abonnement, pas de frais cachés. Discovery Scan = Gratuit pour toujours. Anabolic Bioscan = 59€ une fois. Ultimate Scan = 79€ une fois. Blood Analysis = 99€ une fois. Tu gardes accès à ton rapport et ton dashboard à vie."
   },
   {
     question: "Le rapport remplace-t-il un médecin ?",
-    answer: "Non, et ce n'est pas le but. Mon rapport est un outil d'optimisation et de prévention basé sur mes 11 certifications et mon expérience terrain. Je t'aide à identifier ce qui pourrait être amélioré AVANT que ça devienne un problème médical. Pour toute pathologie, symptôme inquiétant ou question de santé, consulte toujours un professionnel de santé. Mon travail vient en complément, pas en remplacement."
+    answer: "Non. Mon rapport est un outil d'optimisation et de prévention basé sur mes certifications et mon expérience. Je t'aide à identifier ce qui peut être amélioré AVANT que ça devienne un problème médical. Pour toute pathologie ou symptôme inquiétant, consulte un professionnel de santé. Mon travail vient en complément, pas en remplacement."
   },
   {
     question: "Mes données sont-elles sécurisées ?",
-    answer: "Absolument. Tes données sont chiffrées (SSL/TLS) et stockées sur des serveurs européens conformes au RGPD. Je ne vends JAMAIS tes données à des tiers - c'est une ligne rouge pour moi. Tu peux demander la suppression complète de tes données à tout moment par simple email. Ta vie privée n'est pas négociable."
+    answer: "Oui. Tes données sont chiffrées (SSL/TLS) et stockées sur des serveurs sécurisés. Je ne vends jamais tes données à des tiers. Les photos (Ultimate Scan) sont traitées de manière sécurisée. Tu peux demander la suppression complète de tes données à tout moment."
   }
 ];
 

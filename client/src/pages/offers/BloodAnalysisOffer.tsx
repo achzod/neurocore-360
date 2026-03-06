@@ -63,24 +63,24 @@ const SOURCES = [
 
 const FAQ = [
   {
-    q: "Pourquoi payer 99€ alors que mon labo me donne des resultats gratuits ?",
-    a: "Ton labo te donne des ranges normaux (moyenne population). Ici, tu obtiens des ranges optimaux (performance/longevite), une lecture par systeme et un plan d'action priorise.",
+    q: "Pourquoi payer 99\u20ac alors que mon labo me donne des resultats gratuits ?",
+    a: "Ton labo te donne des ranges \"normaux\" bases sur la moyenne de la population — y compris des gens malades. Ici, j'utilise des ranges optimaux de performance et de longevite issus de la litterature scientifique (Huberman, Attia, Examine.com). Tu recois une lecture par systeme (hormones, thyroide, metabolisme, inflammation, vitamines, foie/rein) avec un plan d'action priorise.",
   },
   {
     q: "Combien de biomarqueurs sont analyses ?",
-    a: "Phase 1: 39 biomarqueurs realistes pour un PDF standard. Roadmap: +11 (NFS + ionogramme + 3 ajouts) pour atteindre 50 en Phase 2.",
+    a: "39 biomarqueurs repartis sur 6 panels : hormones anaboliques (testosterone, cortisol, IGF-1...), thyroide (TSH, T3, T4, anti-TPO), metabolisme et lipides (glycemie, HbA1c, insuline, ApoB, Lp(a)), inflammation et fer (CRP-us, ferritine, homocysteine), vitamines et mineraux (vitamine D, B12, magnesium, zinc), et hepatique/renal (ALT, AST, creatinine, eGFR).",
   },
   {
-    q: "Est-ce que c'est medical ?",
-    a: "C'est un compte-rendu educatif et actionnable, base sur des ranges numeriques et de la litterature. Si un marqueur est critique, tu dois consulter un medecin.",
+    q: "Est-ce que ca remplace un medecin ?",
+    a: "Non. C'est un compte-rendu educatif et actionnable base sur des ranges numeriques et de la litterature scientifique. Si un marqueur est hors des ranges critiques, je te le signale clairement et tu dois consulter un professionnel de sante. Mon analyse vient en complement de ton suivi medical, pas en remplacement.",
   },
   {
-    q: "Mon PDF est protege, je fais quoi ?",
-    a: "Il faut un PDF deverrouille. Si le labo protege le fichier, convertis-le en PDF standard (ex: via un outil de deblocage) puis re-uploade.",
+    q: "Mon PDF de labo est protege, je fais quoi ?",
+    a: "Il faut un PDF non-verrouille pour que l'extraction des valeurs fonctionne. Si ton labo protege le fichier, tu peux le convertir en PDF standard via un outil de deblocage en ligne, puis le re-uploader. La plupart des labos fournissent directement un PDF non-protege.",
   },
   {
     q: "Je peux suivre l'evolution dans le temps ?",
-    a: "Oui. Chaque upload cree un bilan historise. Des que tu as plusieurs bilans completes, tu vois les tendances et la trajectoire.",
+    a: "Oui. Chaque upload cree un bilan historise dans ton dashboard. Des que tu as plusieurs bilans, tu vois les tendances et la trajectoire de chaque marqueur. C'est la meilleure facon de mesurer l'impact de tes changements d'hygiene de vie sur ta biologie reelle.",
   },
 ];
 

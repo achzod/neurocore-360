@@ -711,18 +711,18 @@ export default function ProPanel() {
           >
             <div className="grid sm:grid-cols-2 gap-6">
               {[
-                "Questionnaire 18 sections",
-                "Analyse photo posturale",
-                "Integration wearables",
+                "Rapport 18 sections, 40-50 pages",
+                "Analyse photo posturale + biomecanique",
+                "Integration wearables (optionnel)",
                 "Score global sur 100",
                 "Protocole Matin Anti-Cortisol",
-                "Protocole Soir Sommeil",
+                "Protocole Soir Verrouillage Sommeil",
                 "Protocole Digestion 14 Jours",
-                "Stack Supplements personnalise",
-                "Analyse biomecanique",
-                "Plan 30-60-90 jours",
-                "Rapport 40-50 pages PDF",
-                "Support prioritaire",
+                "Protocole Bureau Anti-Sedentarite",
+                "Protocole Entrainement Personnalise",
+                "Stack Supplements optimise",
+                "Plan semaine par semaine 30-60-90",
+                "KPI et Tableau de Bord",
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <Check className="w-5 h-5 text-[#FCDD00] flex-shrink-0" />
@@ -756,11 +756,11 @@ export default function ProPanel() {
           </motion.div>
           <div className="divide-y divide-white/10">
             {[
-              { q: "Quelle est la difference entre l'Anabolic Bioscan et l'Ultimate Scan ?", a: "L'Anabolic Bioscan couvre 16 sections de rapport avec ~137 questions. L'Ultimate Scan ajoute l'analyse photo posturale et biomecanique (3 photos: face, dos, profil) pour un total de 18 sections de rapport et ~183 questions. C'est l'analyse la plus complete disponible." },
-              { q: "Combien de temps prend le questionnaire Ultimate Scan ?", a: "Environ 20-25 minutes. Le questionnaire couvre 18 domaines avec ~183 questions. Tes reponses sont sauvegardees automatiquement, tu peux reprendre a tout moment." },
-              { q: "Comment fonctionne l'analyse photo ?", a: "Tu envoies 3 photos (face, dos, profil) lors du questionnaire. Notre IA analyse ta morphologie, ta posture et ta biomecanique pour detecter les desequilibres invisibles. Les photos sont traitees de maniere securisee et supprimees apres analyse." },
-              { q: "Que contient le rapport de 40-50 pages ?", a: "Le rapport comprend 18 sections: executive summary, 6 analyses approfondies (energie, metabolisme, hormones, sommeil, stress, nutrition), 3 protocoles d'action (matin anti-cortisol, soir sommeil, digestion 14j), analyse photo et biomecanique, stack supplements, plan 30-60-90 jours, KPI de suivi." },
-              { q: "L'integration wearables est-elle obligatoire ?", a: "Non, l'integration wearables est optionnelle. Si tu as un Oura, Whoop, Garmin, Apple Watch ou Fitbit, tes donnees HRV, sommeil et activite enrichiront l'analyse. Sans wearable, le rapport reste complet grace au questionnaire et aux photos." },
+              { q: "Quelle est la difference avec l'Anabolic Bioscan ?", a: "L'Anabolic Bioscan (59\u20ac) couvre 16 sections de rapport avec ~137 questions, sans photos. L'Ultimate Scan ajoute 2 sections exclusives basees sur tes 3 photos : \"Analyse visuelle et posturale complete\" et \"Analyse biomecanique et sangle profonde\". Total : 18 sections, ~183 questions, rapport de 40-50 pages au lieu de 20+." },
+              { q: "Combien de temps prend le questionnaire ?", a: "Environ 20-25 minutes. ~183 questions couvrant tous les domaines : profil, sante, sommeil, stress, energie, digestion, entrainement, nutrition, lifestyle, mindset, hormones, axes cliniques, supplements, biomarqueurs, composition corporelle, cardio, HRV, blessures, mobilite, psychologie. Ta progression est sauvegardee automatiquement." },
+              { q: "Comment fonctionne l'analyse photo ?", a: "Tu uploades 3 photos (face, dos, profil) pendant le questionnaire. Mon IA analyse ta posture (epaules, bassin, lordose, cyphose), ta composition corporelle visible, les asymetries musculaires et les compensations biomecaniques (psoas, diaphragme, tensegrite myofasciale). Tu recois des protocoles correctifs personnalises dans le rapport." },
+              { q: "Que contient le rapport de 40-50 pages ?", a: "18 sections : executive summary avec score global, 2 analyses photo (posturale + biomecanique), 6 analyses approfondies (entrainement, cardiovasculaire, metabolisme, sommeil, digestion, axes hormonaux), 5 protocoles d'action (matin anti-cortisol, soir verrouillage sommeil, digestion 14j, bureau anti-sedentarite, entrainement personnalise), stack supplements optimise, plan semaine par semaine 30-60-90, KPI et tableau de bord, synthese." },
+              { q: "L'integration wearables est-elle obligatoire ?", a: "Non, c'est optionnel. Si tu as un Oura, Whoop, Garmin, Apple Watch ou Fitbit, tes donnees HRV, sommeil et activite enrichiront l'analyse. Sans wearable, le rapport reste complet et ultra-detaille grace aux 183 questions et aux 3 photos." },
             ].map((faq, i) => (
               <FAQItem key={i} q={faq.q} a={faq.a} index={i} />
             ))}
