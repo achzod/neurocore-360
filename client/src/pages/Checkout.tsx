@@ -81,7 +81,7 @@ const PRICING_PLANS: PricingPlan[] = [
     priceLabel: "79€",
     features: [
       "183 questions ultra-détaillées",
-      "Rapport 22 sections",
+      "Rapport 18 sections",
       "Wearables (Oura, Whoop, Garmin...)",
       "Analyse photo posturale",
       "Nutrition timing + cardio avancé",

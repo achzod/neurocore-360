@@ -61,8 +61,8 @@ const OFFERS: Offer[] = [
     id: 'ultimate-scan',
     title: "ULTIMATE SCAN",
     subtitle: "L'Analyse Complète",
-    description: "Le scan le plus complet du marché. 183 questions sur 22 sections + analyse photo posturale (face, dos, profil) + intégration de tes données wearables (Oura, Whoop, Garmin, Apple Watch). On couvre tout: nutrition timing, cardio & performance Zone 2, analyse HRV, blessures & mobilité, psychologie du mindset. Je croise 3 sources de données pour générer le rapport le plus précis possible. 40-50 pages de protocoles personnalisés.",
-    features: ["22 sections d'analyse", "Analyse photo posturale", "Intégration wearables", "Protocole 30-60-90 jours"],
+    description: "Le scan le plus complet du marché. 183 questions sur 18 sections + analyse photo posturale (face, dos, profil) + intégration de tes données wearables (Oura, Whoop, Garmin, Apple Watch). On couvre tout: nutrition timing, cardio & performance Zone 2, analyse HRV, blessures & mobilité, psychologie du mindset. Je croise 3 sources de données pour générer le rapport le plus précis possible. 40-50 pages de protocoles personnalisés.",
+    features: ["18 sections d'analyse", "Analyse photo posturale", "Intégration wearables", "Protocole 30-60-90 jours"],
     price: "79€",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/cno_pro.png",
     reverse: true
