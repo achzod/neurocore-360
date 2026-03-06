@@ -3,12 +3,45 @@
  * TRUE Ultrahuman Design - 66 questions, 10 domaines
  */
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
-import { ArrowRight, Check, Brain, Activity, Gauge, FileText } from "lucide-react";
+import { ArrowRight, Check, Brain, Activity, Gauge, FileText, ChevronDown } from "lucide-react";
+
+// ============================================================================
+// FAQ ACCORDION ITEM
+// ============================================================================
+function FAQItem({ q, a, index }: { q: string; a: string; index: number }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay: index * 0.05 }}
+      className="border-b border-white/10"
+    >
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-start justify-between gap-8 py-8 text-left transition-colors hover:text-[#FCDD00]"
+      >
+        <h3 className="text-lg font-semibold text-white">{q}</h3>
+        <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.3 }} className="shrink-0 pt-1">
+          <ChevronDown className="h-5 w-5 text-[#FCDD00]" />
+        </motion.div>
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3 }} className="overflow-hidden">
+            <p className="pb-8 text-base leading-relaxed text-white/60">{a}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
 
 // ============================================================================
 // ANIMATED VISUALIZATION - Brain Scan (Detection)
@@ -637,6 +670,27 @@ export default function AuditGratuit() {
                 </button>
               </Link>
             </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="py-32 px-6 border-t border-white/5">
+        <div className="max-w-3xl mx-auto">
+          <motion.div initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
+            <p className="text-[#FCDD00] text-sm font-medium tracking-[0.2em] uppercase mb-6">FAQ</p>
+            <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em]">Questions frequentes</h2>
+          </motion.div>
+          <div className="divide-y divide-white/10">
+            {[
+              { q: "Combien de temps prend le Discovery Scan ?", a: "Environ 5 minutes. Le questionnaire couvre 10 domaines essentiels avec ~66 questions ciblees. Tes reponses sont sauvegardees automatiquement." },
+              { q: "Que contient le rapport gratuit ?", a: "Le rapport de 5-7 pages comprend 4 sections: un executive summary avec ton score global sur 100, l'analyse energie et recuperation, l'analyse metabolisme et nutrition, et une synthese avec les prochaines etapes recommandees." },
+              { q: "C'est vraiment 100% gratuit ?", a: "Oui, le Discovery Scan est entierement gratuit, sans engagement. Tu recois un vrai diagnostic personnalise. Si tu veux aller plus loin avec des protocoles d'action et un plan complet, les offres Anabolic Bioscan (59\u20ac) et Ultimate Scan (79\u20ac) sont disponibles." },
+              { q: "Quelle est la difference avec les offres payantes ?", a: "Le Discovery Scan te donne le diagnostic (tes blocages, ton score). L'Anabolic Bioscan ajoute 16 sections de rapport avec protocoles d'action, stack supplements et plan 30-60-90 jours. L'Ultimate Scan ajoute l'analyse photo posturale et biomecanique pour 18 sections au total." },
+              { q: "Comment est genere le rapport ?", a: "Ton rapport est genere par notre moteur IA qui croise tes reponses pour identifier les patterns et desequilibres. Chaque rapport est unique et personnalise selon tes donnees. Il est disponible sous quelques minutes apres la soumission." },
+            ].map((faq, i) => (
+              <FAQItem key={i} q={faq.q} a={faq.a} index={i} />
+            ))}
           </div>
         </div>
       </section>

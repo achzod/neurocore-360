@@ -3,12 +3,45 @@
  * Anabolic Bioscan Design with React Animations - 59€
  */
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
-import { ArrowRight, Check, Zap, Moon, Pill, Calendar, Watch, TrendingUp } from "lucide-react";
+import { ArrowRight, Check, Zap, Moon, Pill, Calendar, Watch, TrendingUp, ChevronDown } from "lucide-react";
+
+// ============================================================================
+// FAQ ACCORDION ITEM
+// ============================================================================
+function FAQItem({ q, a, index }: { q: string; a: string; index: number }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay: index * 0.05 }}
+      className="border-b border-white/10"
+    >
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-start justify-between gap-8 py-8 text-left transition-colors hover:text-[#FCDD00]"
+      >
+        <h3 className="text-lg font-semibold text-white">{q}</h3>
+        <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.3 }} className="shrink-0 pt-1">
+          <ChevronDown className="h-5 w-5 text-[#FCDD00]" />
+        </motion.div>
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3 }} className="overflow-hidden">
+            <p className="pb-8 text-base leading-relaxed text-white/60">{a}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
 
 // ============================================================================
 // ANIMATED VISUALIZATION - Protocol Cards Animation
@@ -523,6 +556,27 @@ export default function AuditPremium() {
               </Link>
             </div>
           </motion.div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="py-32 px-6 border-t border-white/5">
+        <div className="max-w-3xl mx-auto">
+          <motion.div initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
+            <p className="text-[#FCDD00] text-sm font-medium tracking-[0.2em] uppercase mb-6">FAQ</p>
+            <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em]">Questions frequentes</h2>
+          </motion.div>
+          <div className="divide-y divide-white/10">
+            {[
+              { q: "Combien de temps prend le questionnaire Anabolic Bioscan ?", a: "Environ 15-20 minutes. Le questionnaire couvre 16 domaines avec ~137 questions. Tes reponses sont sauvegardees automatiquement, tu peux reprendre a tout moment." },
+              { q: "Que contient le rapport de 20+ pages ?", a: "Le rapport comprend 16 sections: executive summary avec score global, 6 analyses approfondies (energie, metabolisme, hormones, sommeil, stress, nutrition), 3 protocoles d'action (matin anti-cortisol, soir sommeil, digestion 14j), stack supplements personnalise, plan 30-60-90 jours, KPI de suivi et synthese." },
+              { q: "Quelle est la difference avec l'Ultimate Scan ?", a: "L'Anabolic Bioscan couvre 16 sections de rapport. L'Ultimate Scan (79\u20ac) ajoute l'analyse photo posturale et biomecanique (3 photos: face, dos, profil) pour un total de 18 sections de rapport, 183 questions et un rapport de 40-50 pages." },
+              { q: "Les protocoles sont-ils vraiment personnalises ?", a: "Oui, chaque protocole est genere par notre IA en fonction de TES reponses. Le protocole matin anti-cortisol, le protocole soir sommeil, le protocole digestion 14 jours et le stack supplements sont tous adaptes a ton profil, tes desequilibres et tes objectifs." },
+              { q: "L'integration wearables est-elle obligatoire ?", a: "Non, c'est optionnel. Si tu as un Oura, Whoop, Garmin, Apple Watch ou Fitbit, tes donnees HRV, sommeil et activite enrichiront l'analyse. Sans wearable, le rapport reste complet et personnalise grace aux 137 questions du questionnaire." },
+            ].map((faq, i) => (
+              <FAQItem key={i} q={faq.q} a={faq.a} index={i} />
+            ))}
+          </div>
         </div>
       </section>
 

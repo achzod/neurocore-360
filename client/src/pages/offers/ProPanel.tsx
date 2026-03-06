@@ -3,12 +3,45 @@
  * Full Animations - 79€
  */
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
-import { ArrowRight, Check, Camera, Activity, Watch, User, Zap, Brain, Heart } from "lucide-react";
+import { ArrowRight, Check, Camera, Activity, Watch, User, Zap, Brain, Heart, ChevronDown } from "lucide-react";
+
+// ============================================================================
+// FAQ ACCORDION ITEM
+// ============================================================================
+function FAQItem({ q, a, index }: { q: string; a: string; index: number }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay: index * 0.05 }}
+      className="border-b border-white/10"
+    >
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-start justify-between gap-8 py-8 text-left transition-colors hover:text-[#FCDD00]"
+      >
+        <h3 className="text-lg font-semibold text-white">{q}</h3>
+        <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.3 }} className="shrink-0 pt-1">
+          <ChevronDown className="h-5 w-5 text-[#FCDD00]" />
+        </motion.div>
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3 }} className="overflow-hidden">
+            <p className="pb-8 text-base leading-relaxed text-white/60">{a}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
 
 // ============================================================================
 // ANIMATED VISUALIZATION - Photo Analysis (Face, Dos, Profil)
@@ -203,14 +236,15 @@ function WearablesOrbitVisual() {
 }
 
 // ============================================================================
-// ANIMATED VISUALIZATION - 22 Sections Grid
+// ANIMATED VISUALIZATION - 18 Report Sections Grid
 // ============================================================================
 function SectionsGridVisual() {
   const sections = [
-    "Profil", "Sante", "Sommeil", "Stress", "Energie", "Digestion",
-    "Training", "Nutrition", "Lifestyle", "Mindset", "Hormones",
-    "Clinique", "Supps", "Bio", "Compo", "Timing",
-    "Cardio", "HRV", "Blessures", "Psy", "Photo", "+"
+    "Executive", "Energie", "Metabolisme", "Hormones",
+    "Sommeil", "Mental", "Protocole AM", "Protocole PM",
+    "Digestion", "Supplements", "Plan 30-60-90", "KPI",
+    "Nutrition", "Clinique", "Compo", "Photo",
+    "Biomeca", "Synthese"
   ];
 
   return (
@@ -246,7 +280,7 @@ function SectionsGridVisual() {
           animate={{ opacity: [0.7, 1, 0.7] }}
           transition={{ duration: 2, repeat: Infinity }}
         >
-          22
+          18
         </motion.div>
         <div className="text-[10px] font-mono text-white/40">SECTIONS</div>
       </div>
@@ -342,12 +376,12 @@ export default function ProPanel() {
   const heroScale = useTransform(scrollYProgress, [0, 0.3], [1, 0.95]);
 
   const sections = [
-    "Profil de Base", "Sante & Historique", "Sommeil", "Stress & Nerveux",
-    "Energie", "Digestion", "Entrainement", "Nutrition Base",
-    "Lifestyle", "Mindset", "Nutrition Detaillee", "Hormones",
-    "Axes Cliniques", "Supplements", "Biomarqueurs", "Composition Corporelle",
-    "Nutrition Timing", "Cardio & Performance", "HRV & Cardiaque",
-    "Blessures & Douleurs", "Psychologie & Mental", "Analyse Photo"
+    "Executive Summary", "Analyse Energie & Recuperation", "Analyse Metabolisme & Nutrition",
+    "Analyse Hormonale", "Analyse Sommeil & Rythme Circadien", "Analyse Stress & Systeme Nerveux",
+    "Protocole Matin Anti-Cortisol", "Protocole Soir Sommeil", "Protocole Digestion 14 Jours",
+    "Analyse Nutrition Detaillee", "Analyse Axes Cliniques", "Analyse Composition Corporelle",
+    "Plan 30-60-90 Jours", "KPI & Suivi", "Stack Supplements",
+    "Analyse Visuelle & Posturale", "Analyse Biomecanique", "Synthese & Prochaines Etapes"
   ];
 
   return (
@@ -597,7 +631,7 @@ export default function ProPanel() {
         </div>
       </section>
 
-      {/* 22 SECTIONS */}
+      {/* 18 SECTIONS */}
       <section className="py-32 px-6 border-t border-white/5">
         <div className="max-w-6xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
@@ -621,7 +655,7 @@ export default function ProPanel() {
               className="order-1 lg:order-2"
             >
               <p className="text-[#FCDD00] text-sm font-medium tracking-[0.2em] uppercase mb-6">
-                22 Sections
+                18 Sections
               </p>
               <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6 leading-tight">
                 L'analyse la plus
@@ -647,7 +681,7 @@ export default function ProPanel() {
                   </motion.span>
                 ))}
                 <span className="px-3 py-1 text-xs font-mono bg-[#FCDD00]/10 border border-[#FCDD00]/30 rounded-sm text-[#FCDD00]">
-                  +10 autres
+                  +6 autres
                 </span>
               </div>
             </motion.div>
@@ -710,6 +744,27 @@ export default function ProPanel() {
               </Link>
             </div>
           </motion.div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="py-32 px-6 border-t border-white/5">
+        <div className="max-w-3xl mx-auto">
+          <motion.div initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
+            <p className="text-[#FCDD00] text-sm font-medium tracking-[0.2em] uppercase mb-6">FAQ</p>
+            <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em]">Questions frequentes</h2>
+          </motion.div>
+          <div className="divide-y divide-white/10">
+            {[
+              { q: "Quelle est la difference entre l'Anabolic Bioscan et l'Ultimate Scan ?", a: "L'Anabolic Bioscan couvre 16 sections de rapport avec ~137 questions. L'Ultimate Scan ajoute l'analyse photo posturale et biomecanique (3 photos: face, dos, profil) pour un total de 18 sections de rapport et ~183 questions. C'est l'analyse la plus complete disponible." },
+              { q: "Combien de temps prend le questionnaire Ultimate Scan ?", a: "Environ 20-25 minutes. Le questionnaire couvre 18 domaines avec ~183 questions. Tes reponses sont sauvegardees automatiquement, tu peux reprendre a tout moment." },
+              { q: "Comment fonctionne l'analyse photo ?", a: "Tu envoies 3 photos (face, dos, profil) lors du questionnaire. Notre IA analyse ta morphologie, ta posture et ta biomecanique pour detecter les desequilibres invisibles. Les photos sont traitees de maniere securisee et supprimees apres analyse." },
+              { q: "Que contient le rapport de 40-50 pages ?", a: "Le rapport comprend 18 sections: executive summary, 6 analyses approfondies (energie, metabolisme, hormones, sommeil, stress, nutrition), 3 protocoles d'action (matin anti-cortisol, soir sommeil, digestion 14j), analyse photo et biomecanique, stack supplements, plan 30-60-90 jours, KPI de suivi." },
+              { q: "L'integration wearables est-elle obligatoire ?", a: "Non, l'integration wearables est optionnelle. Si tu as un Oura, Whoop, Garmin, Apple Watch ou Fitbit, tes donnees HRV, sommeil et activite enrichiront l'analyse. Sans wearable, le rapport reste complet grace au questionnaire et aux photos." },
+            ].map((faq, i) => (
+              <FAQItem key={i} q={faq.q} a={faq.a} index={i} />
+            ))}
+          </div>
         </div>
       </section>
 
