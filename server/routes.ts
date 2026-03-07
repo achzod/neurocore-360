@@ -2218,6 +2218,9 @@ export async function registerRoutes(
       }
     }
 
+    // Clean up questionnaire progress now that audit is created
+    await storage.deleteProgress(email).catch(() => {});
+
     await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
     await startReportGeneration(audit.id, audit.responses, audit.scores || {}, planType);
     processReportAndSendEmail(audit.id, audit.email, planType).catch((err) => {
@@ -2397,7 +2400,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/paypal/capture-order", async (req, res) => {
+  app.post("/api/paypal/capture-order", checkoutLimiter, async (req, res) => {
     try {
       const { paypalOrderId } = req.body;
       if (!paypalOrderId || typeof paypalOrderId !== "string") {
@@ -2419,6 +2422,16 @@ export async function registerRoutes(
       if (capture.status !== "COMPLETED") {
         res.status(402).json({ error: "PAYMENT_NOT_COMPLETED", status: capture.status });
         return;
+      }
+
+      // Validate captured amount matches expected
+      if (existingOrder) {
+        const expectedEur = (existingOrder.finalAmountCents / 100).toFixed(2);
+        if (capture.amountValue !== expectedEur) {
+          console.error(`[PayPal] Amount mismatch: captured ${capture.amountValue} ${capture.amountCurrency}, expected ${expectedEur} EUR for order ${existingOrder.id}`);
+          res.status(400).json({ error: "AMOUNT_MISMATCH", message: "Le montant capturé ne correspond pas" });
+          return;
+        }
       }
 
       // Mark order as paid

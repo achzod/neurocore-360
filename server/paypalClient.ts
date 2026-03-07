@@ -131,6 +131,8 @@ interface CaptureResult {
   status: string; // "COMPLETED"
   payerEmail: string;
   captureId: string;
+  amountValue: string; // e.g. "59.00"
+  amountCurrency: string; // e.g. "EUR"
 }
 
 export async function capturePayPalOrder(
@@ -166,6 +168,8 @@ export async function capturePayPalOrder(
     payerEmail:
       data.payer?.email_address || data.payment_source?.paypal?.email_address || "",
     captureId: capture?.id || "",
+    amountValue: capture?.amount?.value || "0.00",
+    amountCurrency: capture?.amount?.currency_code || "EUR",
   };
 }
 

@@ -242,6 +242,12 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
         window.location.href = data.url; // Stripe redirect
       } else if (data?.approvalUrl) {
         window.location.href = data.approvalUrl; // PayPal redirect
+      } else {
+        toast({
+          title: "Erreur",
+          description: "Impossible de rediriger vers le paiement. Réessaie.",
+          variant: "destructive",
+        });
       }
     },
     onError: () => {
