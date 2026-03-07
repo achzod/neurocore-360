@@ -2101,7 +2101,7 @@ export async function registerRoutes(
         : `${baseUrl}/audit-complet/checkout?cancelled=true`;
 
       const sessionParams: any = {
-        payment_method_types: ['card'],
+        payment_method_types: ['card', 'paypal'],
         line_items: [
           {
             price: priceId,
