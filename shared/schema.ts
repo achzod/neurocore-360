@@ -450,6 +450,7 @@ export interface Order {
   stripeCheckoutSessionId: string | null;
   stripePaymentIntentId: string | null;
   stripeCustomerId: string | null;
+  paypalOrderId: string | null;
   status: OrderStatusEnum;
   refundAmountCents: number;
   refundReason: string | null;
@@ -478,6 +479,7 @@ export interface CreateOrderInput {
   promoCodeId?: string | null;
   finalAmountCents?: number;
   stripeCheckoutSessionId?: string | null;
+  paypalOrderId?: string | null;
   ipAddress?: string | null;
   userAgent?: string | null;
   metadata?: Record<string, unknown> | null;

@@ -213,6 +213,7 @@ export interface IStorage {
   getOrder(id: string): Promise<Order | undefined>;
   getOrderByStripeSession(sessionId: string, forUpdate?: boolean): Promise<Order | undefined>;
   getOrderByPaymentIntent(paymentIntentId: string): Promise<Order | undefined>;
+  getOrderByPaypalOrderId(paypalOrderId: string): Promise<Order | undefined>;
   getOrdersByUserId(userId: string): Promise<Order[]>;
   getOrdersByEmail(email: string): Promise<Order[]>;
   getAllOrders(opts?: { limit?: number; offset?: number; status?: OrderStatusEnum; productType?: ProductTypeEnum; email?: string }): Promise<{ orders: Order[]; total: number }>;
@@ -720,6 +721,7 @@ export class MemStorage implements IStorage {
       currency: input.currency || "eur", discountCents, promoCode: input.promoCode || null,
       promoCodeId: input.promoCodeId || null, finalAmountCents,
       stripeCheckoutSessionId: input.stripeCheckoutSessionId || null,
+      paypalOrderId: input.paypalOrderId || null,
       stripePaymentIntentId: null, stripeCustomerId: null, status: "pending",
       refundAmountCents: 0, refundReason: null, refundStripeId: null,
       refundedAt: null, refundedBy: null, auditId: null, bloodReportId: null,
@@ -735,6 +737,9 @@ export class MemStorage implements IStorage {
   }
   async getOrderByPaymentIntent(paymentIntentId: string): Promise<Order | undefined> {
     return Array.from(this.memOrders.values()).find(o => o.stripePaymentIntentId === paymentIntentId);
+  }
+  async getOrderByPaypalOrderId(paypalOrderId: string): Promise<Order | undefined> {
+    return Array.from(this.memOrders.values()).find(o => o.paypalOrderId === paypalOrderId);
   }
   async getOrdersByUserId(userId: string): Promise<Order[]> {
     return Array.from(this.memOrders.values()).filter(o => o.userId === userId).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -2118,6 +2123,7 @@ export class PgStorage implements IStorage {
           stripe_checkout_session_id VARCHAR(255),
           stripe_payment_intent_id VARCHAR(255),
           stripe_customer_id VARCHAR(255),
+          paypal_order_id VARCHAR(255),
           status VARCHAR(30) NOT NULL DEFAULT 'pending',
           refund_amount_cents INTEGER NOT NULL DEFAULT 0,
           refund_reason TEXT,
@@ -2142,6 +2148,8 @@ export class PgStorage implements IStorage {
       await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC)`);
       await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_audit_id ON orders(audit_id)`);
       await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_payment_intent ON orders(stripe_payment_intent_id)`);
+      await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS paypal_order_id VARCHAR(255)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_paypal_order ON orders(paypal_order_id)`);
       this.ensuredOrdersTable = true;
     } catch (err) {
       console.error("[Storage] Error creating orders table:", err);
@@ -2215,6 +2223,7 @@ export class PgStorage implements IStorage {
       stripeCheckoutSessionId: row.stripe_checkout_session_id,
       stripePaymentIntentId: row.stripe_payment_intent_id,
       stripeCustomerId: row.stripe_customer_id,
+      paypalOrderId: row.paypal_order_id || null,
       status: row.status,
       refundAmountCents: Number(row.refund_amount_cents),
       refundReason: row.refund_reason,
@@ -2243,8 +2252,8 @@ export class PgStorage implements IStorage {
     const result = await pool.query(
       `INSERT INTO orders (id, user_id, email, product_type, product_name, amount_cents, currency,
         discount_cents, promo_code, promo_code_id, final_amount_cents, stripe_checkout_session_id,
-        ip_address, user_agent, metadata, status, created_at, updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'pending',NOW(),NOW())
+        paypal_order_id, ip_address, user_agent, metadata, status, created_at, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,'pending',NOW(),NOW())
        RETURNING *`,
       [
         id,
@@ -2259,6 +2268,7 @@ export class PgStorage implements IStorage {
         input.promoCodeId || null,
         finalAmountCents,
         input.stripeCheckoutSessionId || null,
+        input.paypalOrderId || null,
         input.ipAddress || null,
         input.userAgent || null,
         input.metadata ? JSON.stringify(input.metadata) : null,
@@ -2289,6 +2299,16 @@ export class PgStorage implements IStorage {
     const result = await pool.query(
       "SELECT * FROM orders WHERE stripe_payment_intent_id = $1",
       [paymentIntentId]
+    );
+    if (result.rows.length === 0) return undefined;
+    return this.rowToOrder(result.rows[0]);
+  }
+
+  async getOrderByPaypalOrderId(paypalOrderId: string): Promise<Order | undefined> {
+    await this.ensureOrdersTableCreated();
+    const result = await pool.query(
+      "SELECT * FROM orders WHERE paypal_order_id = $1",
+      [paypalOrderId]
     );
     if (result.rows.length === 0) return undefined;
     return this.rowToOrder(result.rows[0]);
@@ -2364,6 +2384,7 @@ export class PgStorage implements IStorage {
       status: "status",
       stripePaymentIntentId: "stripe_payment_intent_id",
       stripeCustomerId: "stripe_customer_id",
+      paypalOrderId: "paypal_order_id",
       auditId: "audit_id",
       bloodReportId: "blood_report_id",
       paidAt: "paid_at",

@@ -592,7 +592,47 @@ export default function Dashboard() {
     const urlParams = new URLSearchParams(window.location.search);
     const sessionId = urlParams.get("session_id");
     const success = urlParams.get("success");
+    const isPaypal = urlParams.get("paypal") === "true";
+    const paypalToken = urlParams.get("token"); // PayPal appends token=ORDER_ID
 
+    // PayPal return flow
+    if (isPaypal && paypalToken && success) {
+      setConfirmingCheckout(true);
+      setCheckoutError(null);
+      window.history.replaceState({}, "", "/dashboard");
+
+      (async () => {
+        try {
+          const response = await fetch("/api/paypal/capture-order", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paypalOrderId: paypalToken }),
+          });
+          const data = await response.json();
+
+          if (response.ok && data.success && data.auditId) {
+            const target = getReportPath(data.auditType || "", data.auditId);
+            navigate(target);
+            return;
+          }
+
+          if (data?.error === "QUESTIONNAIRE_MISSING") {
+            setCheckoutError("Questionnaire manquant. Reprends le questionnaire pour finaliser ton audit.");
+          } else if (data?.error === "NEED_PHOTOS") {
+            setCheckoutError("Photos manquantes pour l'Ultimate Scan. Ajoute les 3 photos (face, profil, dos).");
+          } else {
+            setCheckoutError(data?.error || "Erreur de confirmation du paiement PayPal.");
+          }
+        } catch {
+          setCheckoutError("Erreur de confirmation du paiement PayPal.");
+        } finally {
+          setConfirmingCheckout(false);
+        }
+      })();
+      return;
+    }
+
+    // Stripe return flow
     if (sessionId && success) {
       setConfirmingCheckout(true);
       setCheckoutError(null);

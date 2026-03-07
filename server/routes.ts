@@ -26,6 +26,7 @@ import { formatTxtToDashboard, formatSectionToHTML, getSectionsByCategory } from
 import { ClientData, PhotoAnalysis } from "./types";
 import { generateEnhancedSupplementsHTML, generateSupplementStack } from "./supplementEngine";
 import { streamAuditZip } from "./exportZipService";
+import { createPayPalOrder, capturePayPalOrder, isPayPalConfigured } from "./paypalClient";
 import { isAnthropicAvailable } from "./anthropicEngine";
 import { validateAnthropicConfig, ANTHROPIC_CONFIG } from "./anthropicConfig";
 import {
@@ -2101,7 +2102,7 @@ export async function registerRoutes(
         : `${baseUrl}/audit-complet/checkout?cancelled=true`;
 
       const sessionParams: any = {
-        payment_method_types: ['card', 'paypal'],
+        payment_method_types: ['card'],
         line_items: [
           {
             price: priceId,
@@ -2173,6 +2174,60 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== SHARED AUDIT CREATION HELPER ====================
+  // Used by both Stripe confirm-session and PayPal capture-order
+  async function createAuditFromPaidOrder(
+    email: string,
+    planType: "GRATUIT" | "PREMIUM" | "ELITE",
+    order?: { id: string; auditId: string | null } | null
+  ): Promise<{ success: true; auditId: string; auditType: string; existing?: boolean } | { success: false; error: string; message?: string }> {
+    // Check if an audit is already linked to this order
+    if (order?.auditId) {
+      return { success: true, auditId: order.auditId, auditType: planType, existing: true };
+    }
+
+    const progress = await storage.getProgress(email);
+    let responses = progress?.responses as Record<string, unknown> | string | undefined;
+    if (typeof responses === "string") {
+      try { responses = JSON.parse(responses); } catch { responses = undefined; }
+    }
+
+    if (!responses || Object.keys(responses).length === 0) {
+      return { success: false, error: "QUESTIONNAIRE_MISSING" };
+    }
+
+    if (planType === "ELITE" && !hasThreePhotos(responses as Record<string, unknown>)) {
+      return { success: false, error: "NEED_PHOTOS", message: "3 photos obligatoires pour Ultimate Scan (face, profil, dos)" };
+    }
+
+    const audit = await storage.createAudit({
+      userId: "",
+      type: planType,
+      email,
+      responses: responses as Record<string, unknown>,
+    });
+
+    // Atomically link order to audit (prevents race on double-click)
+    if (order) {
+      const claimed = await storage.claimOrderForAudit(order.id, audit.id);
+      if (!claimed) {
+        const refreshed = await storage.getOrder(order.id);
+        if (refreshed?.auditId) {
+          return { success: true, auditId: refreshed.auditId, auditType: planType, existing: true };
+        }
+      }
+    }
+
+    await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
+    await startReportGeneration(audit.id, audit.responses, audit.scores || {}, planType);
+    processReportAndSendEmail(audit.id, audit.email, planType).catch((err) => {
+      console.error(`[processReportAndSendEmail] Unhandled error for audit ${audit.id}:`, err);
+      storage.updateAudit(audit.id, { reportDeliveryStatus: "EMAIL_FAILED" }).catch(() => {});
+    });
+
+    return { success: true, auditId: audit.id, auditType: audit.type };
+  }
+
   app.post("/api/stripe/confirm-session", async (req, res) => {
     try {
       const sessionId = req.body?.sessionId || req.query?.session_id;
@@ -2212,7 +2267,6 @@ export async function registerRoutes(
       // Update order to paid if exists
       const existingOrder = await storage.getOrderByStripeSession(sessionId);
       if (existingOrder && existingOrder.status === "paid" && existingOrder.auditId) {
-        // Idempotency: already processed
         res.json({ success: true, auditId: existingOrder.auditId, auditType: planType, existing: true });
         return;
       }
@@ -2235,63 +2289,175 @@ export async function registerRoutes(
 
       const normalizedPlanType = planType as "GRATUIT" | "PREMIUM" | "ELITE";
 
-      // Check if an audit is already linked to this order (prevents duplicate creation on double-click / retry)
-      if (existingOrder?.auditId) {
-        res.json({ success: true, auditId: existingOrder.auditId, auditType: planType, existing: true });
+      const result = await createAuditFromPaidOrder(email, normalizedPlanType, existingOrder || null);
+      if (!result.success) {
+        res.status(400).json(result);
         return;
       }
-
-      const progress = await storage.getProgress(email);
-      let responses = progress?.responses as Record<string, unknown> | string | undefined;
-      if (typeof responses === "string") {
-        try {
-          responses = JSON.parse(responses);
-        } catch {
-          responses = undefined;
-        }
-      }
-
-      if (!responses || Object.keys(responses).length === 0) {
-        res.status(400).json({ error: "QUESTIONNAIRE_MISSING" });
-        return;
-      }
-
-      if (normalizedPlanType === "ELITE" && !hasThreePhotos(responses as Record<string, unknown>)) {
-        res.status(400).json({ error: "NEED_PHOTOS", message: "3 photos obligatoires pour Ultimate Scan (face, profil, dos)" });
-        return;
-      }
-
-      const audit = await storage.createAudit({
-        userId: "",
-        type: normalizedPlanType,
-        email,
-        responses: responses as Record<string, unknown>,
-      });
-
-      // Atomically link order to audit (prevents race on double-click)
-      if (existingOrder) {
-        const claimed = await storage.claimOrderForAudit(existingOrder.id, audit.id);
-        if (!claimed) {
-          // Another request already claimed this order — return the existing audit
-          const refreshed = await storage.getOrder(existingOrder.id);
-          if (refreshed?.auditId) {
-            res.json({ success: true, auditId: refreshed.auditId, auditType: planType, existing: true });
-            return;
-          }
-        }
-      }
-
-      await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
-      await startReportGeneration(audit.id, audit.responses, audit.scores || {}, normalizedPlanType);
-      processReportAndSendEmail(audit.id, audit.email, normalizedPlanType).catch((err) => {
-        console.error(`[processReportAndSendEmail] Unhandled error for audit ${audit.id}:`, err);
-        storage.updateAudit(audit.id, { reportDeliveryStatus: "EMAIL_FAILED" }).catch(() => {});
-      });
-
-      res.json({ success: true, auditId: audit.id, auditType: audit.type });
+      res.json(result);
     } catch (error: any) {
       console.error("Stripe confirmation error:", error);
       res.status(500).json({ error: "Erreur confirmation paiement" });
+    }
+  });
+
+  // ==================== PAYPAL ENDPOINTS ====================
+
+  app.post("/api/paypal/create-order", checkoutLimiter, async (req, res) => {
+    try {
+      if (!isPayPalConfigured()) {
+        res.status(503).json({ error: "PayPal non configuré" });
+        return;
+      }
+
+      const { email, planType, responses, promoCode } = req.body;
+      if (!email || !planType) {
+        res.status(400).json({ error: "email et planType requis" });
+        return;
+      }
+
+      const pType = planType as ProductTypeEnum;
+      const baseCents = ProductPriceCents[pType] ?? 0;
+      if (baseCents === 0) {
+        res.status(400).json({ error: "INVALID_PLAN", message: `Plan invalide: ${planType}` });
+        return;
+      }
+
+      // Validate and apply promo code
+      let validatedPromoCode: string | null = null;
+      let promoObj: any = null;
+      let discountCents = 0;
+
+      if (promoCode) {
+        const validation = await storage.validatePromoCode(promoCode, planType);
+        if (validation.valid) {
+          validatedPromoCode = promoCode;
+          promoObj = await storage.getPromoCode(promoCode);
+          discountCents = promoObj ? Math.round(baseCents * promoObj.discountPercent / 100) : 0;
+        }
+      }
+
+      const finalCents = Math.max(0, baseCents - discountCents);
+      const amountEur = (finalCents / 100).toFixed(2);
+
+      const baseUrl = getBaseUrl();
+      const isBloodAnalysis = planType === "BLOOD_ANALYSIS";
+      const returnUrl = isBloodAnalysis
+        ? `${baseUrl}/blood-analysis?paypal=true`
+        : `${baseUrl}/dashboard?success=true&paypal=true`;
+      const cancelUrl = isBloodAnalysis
+        ? `${baseUrl}/offers/blood-analysis?cancelled=true`
+        : `${baseUrl}/audit-complet/checkout?cancelled=true`;
+
+      const productName = ProductDisplayNames[pType] || planType;
+
+      const { paypalOrderId, approvalUrl } = await createPayPalOrder({
+        amountEur,
+        description: `${productName} - APEXLABS`,
+        returnUrl,
+        cancelUrl,
+      });
+
+      // Create pending order in DB
+      try {
+        const order = await storage.createOrder({
+          email,
+          productType: pType,
+          amountCents: baseCents,
+          discountCents,
+          promoCode: validatedPromoCode,
+          promoCodeId: promoObj?.id || null,
+          finalAmountCents: finalCents,
+          paypalOrderId,
+          ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null,
+          userAgent: req.headers["user-agent"] || null,
+          metadata: { planType, paymentMethod: "paypal", responsesPreview: responses ? JSON.stringify(responses).substring(0, 200) : '' },
+        });
+
+        if (validatedPromoCode && promoObj) {
+          await storage.incrementPromoCodeUse(validatedPromoCode);
+          await storage.createPromoCodeUsage({
+            promoCodeId: promoObj.id,
+            promoCode: validatedPromoCode,
+            userId: null,
+            email,
+            orderId: order.id,
+            discountPercent: promoObj.discountPercent,
+            discountAmountCents: discountCents,
+          });
+        }
+      } catch (orderErr) {
+        console.error("[PayPal Orders] Error creating pending order:", orderErr);
+      }
+
+      res.json({ paypalOrderId, approvalUrl });
+    } catch (error: any) {
+      console.error("PayPal create order error:", error);
+      res.status(500).json({ error: "Erreur création commande PayPal" });
+    }
+  });
+
+  app.post("/api/paypal/capture-order", async (req, res) => {
+    try {
+      const { paypalOrderId } = req.body;
+      if (!paypalOrderId || typeof paypalOrderId !== "string") {
+        res.status(400).json({ error: "paypalOrderId requis" });
+        return;
+      }
+
+      // Look up our order
+      const existingOrder = await storage.getOrderByPaypalOrderId(paypalOrderId);
+
+      // Idempotency: already processed
+      if (existingOrder && existingOrder.status === "paid" && existingOrder.auditId) {
+        res.json({ success: true, auditId: existingOrder.auditId, auditType: existingOrder.productType, existing: true });
+        return;
+      }
+
+      // Capture payment on PayPal
+      const capture = await capturePayPalOrder(paypalOrderId);
+      if (capture.status !== "COMPLETED") {
+        res.status(402).json({ error: "PAYMENT_NOT_COMPLETED", status: capture.status });
+        return;
+      }
+
+      // Mark order as paid
+      if (existingOrder && existingOrder.status !== "paid") {
+        await storage.updateOrder(existingOrder.id, {
+          status: "paid",
+          paidAt: new Date(),
+          metadata: {
+            ...(existingOrder.metadata as Record<string, unknown> || {}),
+            paypalCaptureId: capture.captureId,
+            payerEmail: capture.payerEmail,
+          },
+        });
+      }
+
+      const email = existingOrder?.email || capture.payerEmail;
+      const planType = existingOrder?.productType || ((existingOrder?.metadata as any)?.planType);
+
+      // BLOOD_ANALYSIS: just mark paid, no audit to create
+      if (planType === "BLOOD_ANALYSIS") {
+        res.json({ success: true, auditId: "", auditType: "BLOOD_ANALYSIS", email });
+        return;
+      }
+
+      if (planType !== "PREMIUM" && planType !== "ELITE" && planType !== "GRATUIT") {
+        res.status(400).json({ error: "PLAN_INVALID" });
+        return;
+      }
+
+      const normalizedPlanType = planType as "GRATUIT" | "PREMIUM" | "ELITE";
+      const result = await createAuditFromPaidOrder(email, normalizedPlanType, existingOrder || null);
+      if (!result.success) {
+        res.status(400).json(result);
+        return;
+      }
+      res.json(result);
+    } catch (error: any) {
+      console.error("PayPal capture error:", error);
+      res.status(500).json({ error: "Erreur capture paiement PayPal" });
     }
   });
 
