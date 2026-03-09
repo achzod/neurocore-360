@@ -2341,6 +2341,48 @@ export async function registerRoutes(
       }
 
       const finalCents = Math.max(0, baseCents - discountCents);
+
+      // 100% discount: skip PayPal entirely, create audit directly
+      if (finalCents === 0) {
+        const order = await storage.createOrder({
+          email,
+          productType: pType,
+          amountCents: baseCents,
+          discountCents,
+          promoCode: validatedPromoCode,
+          promoCodeId: promoObj?.id || null,
+          finalAmountCents: 0,
+          status: "paid" as any,
+          ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null,
+          userAgent: req.headers["user-agent"] || null,
+          metadata: { planType, paymentMethod: "promo_100", freeViaPromo: true },
+        });
+        if (validatedPromoCode && promoObj) {
+          await storage.incrementPromoCodeUse(validatedPromoCode);
+          await storage.createPromoCodeUsage({
+            promoCodeId: promoObj.id,
+            promoCode: validatedPromoCode,
+            userId: null,
+            email,
+            orderId: order.id,
+            discountPercent: promoObj.discountPercent,
+            discountAmountCents: discountCents,
+          });
+        }
+        if (planType === "BLOOD_ANALYSIS") {
+          res.json({ success: true, free: true, auditId: "", auditType: "BLOOD_ANALYSIS", email });
+          return;
+        }
+        const normalizedPlanType = planType as "GRATUIT" | "PREMIUM" | "ELITE";
+        const result = await createAuditFromPaidOrder(email, normalizedPlanType, order);
+        if (!result.success) {
+          res.status(400).json(result);
+          return;
+        }
+        res.json({ ...result, free: true });
+        return;
+      }
+
       const amountEur = (finalCents / 100).toFixed(2);
 
       const baseUrl = getBaseUrl();
@@ -2403,17 +2445,28 @@ export async function registerRoutes(
   app.post("/api/paypal/capture-order", checkoutLimiter, async (req, res) => {
     try {
       const { paypalOrderId } = req.body;
-      if (!paypalOrderId || typeof paypalOrderId !== "string") {
-        res.status(400).json({ error: "paypalOrderId requis" });
+      if (!paypalOrderId || typeof paypalOrderId !== "string" || !/^[A-Z0-9]+$/.test(paypalOrderId)) {
+        res.status(400).json({ error: "paypalOrderId invalide" });
         return;
       }
 
       // Look up our order
       const existingOrder = await storage.getOrderByPaypalOrderId(paypalOrderId);
 
-      // Idempotency: already processed
-      if (existingOrder && existingOrder.status === "paid" && existingOrder.auditId) {
-        res.json({ success: true, auditId: existingOrder.auditId, auditType: existingOrder.productType, existing: true });
+      // Require a matching DB order (prevents rogue capture calls)
+      if (!existingOrder) {
+        res.status(404).json({ error: "ORDER_NOT_FOUND", message: "Commande introuvable" });
+        return;
+      }
+
+      // Idempotency: already processed (works for ALL product types including BLOOD_ANALYSIS)
+      if (existingOrder.status === "paid") {
+        if (existingOrder.auditId) {
+          res.json({ success: true, auditId: existingOrder.auditId, auditType: existingOrder.productType, existing: true });
+        } else {
+          // BLOOD_ANALYSIS or other product without auditId
+          res.json({ success: true, auditId: "", auditType: existingOrder.productType, email: existingOrder.email, existing: true });
+        }
         return;
       }
 
@@ -2425,17 +2478,10 @@ export async function registerRoutes(
       }
 
       // Validate captured amount matches expected
-      if (existingOrder) {
-        const expectedEur = (existingOrder.finalAmountCents / 100).toFixed(2);
-        if (capture.amountValue !== expectedEur) {
-          console.error(`[PayPal] Amount mismatch: captured ${capture.amountValue} ${capture.amountCurrency}, expected ${expectedEur} EUR for order ${existingOrder.id}`);
-          res.status(400).json({ error: "AMOUNT_MISMATCH", message: "Le montant capturé ne correspond pas" });
-          return;
-        }
-      }
-
-      // Mark order as paid
-      if (existingOrder && existingOrder.status !== "paid") {
+      const expectedEur = (existingOrder.finalAmountCents / 100).toFixed(2);
+      if (capture.amountValue !== expectedEur) {
+        console.error(`[PayPal] Amount mismatch: captured ${capture.amountValue} ${capture.amountCurrency}, expected ${expectedEur} EUR for order ${existingOrder.id}. Payment was captured — needs manual refund.`);
+        // Still mark as paid to track the charge, but flag for review
         await storage.updateOrder(existingOrder.id, {
           status: "paid",
           paidAt: new Date(),
@@ -2443,12 +2489,28 @@ export async function registerRoutes(
             ...(existingOrder.metadata as Record<string, unknown> || {}),
             paypalCaptureId: capture.captureId,
             payerEmail: capture.payerEmail,
+            amountMismatch: true,
+            capturedAmount: capture.amountValue,
+            expectedAmount: expectedEur,
           },
         });
+        res.status(400).json({ error: "AMOUNT_MISMATCH", message: "Le montant capturé ne correspond pas. Contacte le support." });
+        return;
       }
 
-      const email = existingOrder?.email || capture.payerEmail;
-      const planType = existingOrder?.productType || ((existingOrder?.metadata as any)?.planType);
+      // Mark order as paid
+      await storage.updateOrder(existingOrder.id, {
+        status: "paid",
+        paidAt: new Date(),
+        metadata: {
+          ...(existingOrder.metadata as Record<string, unknown> || {}),
+          paypalCaptureId: capture.captureId,
+          payerEmail: capture.payerEmail,
+        },
+      });
+
+      const email = existingOrder.email;
+      const planType = existingOrder.productType;
 
       // BLOOD_ANALYSIS: just mark paid, no audit to create
       if (planType === "BLOOD_ANALYSIS") {
@@ -2462,7 +2524,7 @@ export async function registerRoutes(
       }
 
       const normalizedPlanType = planType as "GRATUIT" | "PREMIUM" | "ELITE";
-      const result = await createAuditFromPaidOrder(email, normalizedPlanType, existingOrder || null);
+      const result = await createAuditFromPaidOrder(email, normalizedPlanType, existingOrder);
       if (!result.success) {
         res.status(400).json(result);
         return;

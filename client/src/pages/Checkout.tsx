@@ -238,6 +238,21 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
         localStorage.removeItem("neurocore_responses");
         localStorage.removeItem("neurocore_section");
         navigate("/auth/check-email");
+      } else if (data?.free && data?.success && data?.auditId) {
+        // 100% promo: audit created directly without payment
+        toast({
+          title: "Code promo 100% appliqué !",
+          description: "Ton audit a été créé gratuitement.",
+        });
+        localStorage.removeItem("neurocore_responses");
+        localStorage.removeItem("neurocore_section");
+        navigate(`/audit/${data.auditId}`);
+      } else if (data?.free && data?.auditType === "BLOOD_ANALYSIS") {
+        toast({
+          title: "Code promo 100% appliqué !",
+          description: "Accède au dashboard Blood Analysis.",
+        });
+        navigate("/auth/login?next=/blood-dashboard&paid=true");
       } else if (data?.url) {
         window.location.href = data.url; // Stripe redirect
       } else if (data?.approvalUrl) {
