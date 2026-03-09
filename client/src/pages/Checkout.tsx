@@ -246,7 +246,12 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
         });
         localStorage.removeItem("neurocore_responses");
         localStorage.removeItem("neurocore_section");
-        navigate(`/audit/${data.auditId}`);
+        // Map auditType to the correct report route
+        const reportPath =
+          data.auditType === "ELITE" ? `/ultimate/${data.auditId}` :
+          data.auditType === "PREMIUM" ? `/anabolic/${data.auditId}` :
+          `/scan/${data.auditId}`;
+        navigate(reportPath);
       } else if (data?.free && data?.auditType === "BLOOD_ANALYSIS") {
         toast({
           title: "Code promo 100% appliqué !",
