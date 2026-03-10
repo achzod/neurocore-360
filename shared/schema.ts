@@ -432,7 +432,7 @@ export const ProductPriceCents: Record<ProductTypeEnum, number> = {
   PREMIUM: 5900,
   ELITE: 7900,
   BURNOUT: 3900,
-  BLOOD_ANALYSIS: 19900,
+  BLOOD_ANALYSIS: 9900,
 };
 
 export interface Order {

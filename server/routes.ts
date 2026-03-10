@@ -2093,6 +2093,51 @@ export async function registerRoutes(
         }
       }
 
+      // 100% discount: skip Stripe entirely, create audit directly (same as PayPal path)
+      if (validatedPromoCode) {
+        const promoObjCheck = await storage.getPromoCode(validatedPromoCode);
+        if (promoObjCheck && promoObjCheck.discountPercent >= 100) {
+          const pType = (planType as ProductTypeEnum) || "PREMIUM";
+          const baseCents = ProductPriceCents[pType] ?? 0;
+          const discountCents = baseCents;
+          const order = await storage.createOrder({
+            email,
+            productType: pType,
+            amountCents: baseCents,
+            discountCents,
+            promoCode: validatedPromoCode,
+            promoCodeId: promoObjCheck.id || null,
+            finalAmountCents: 0,
+            status: "paid" as any,
+            ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null,
+            userAgent: req.headers["user-agent"] || null,
+            metadata: { planType, paymentMethod: "promo_100", freeViaPromo: true },
+          });
+          await storage.incrementPromoCodeUse(validatedPromoCode);
+          await storage.createPromoCodeUsage({
+            promoCodeId: promoObjCheck.id,
+            promoCode: validatedPromoCode,
+            userId: null,
+            email,
+            orderId: order.id,
+            discountPercent: promoObjCheck.discountPercent,
+            discountAmountCents: discountCents,
+          });
+          if (planType === "BLOOD_ANALYSIS") {
+            res.json({ success: true, free: true, auditId: "", auditType: "BLOOD_ANALYSIS", email });
+            return;
+          }
+          const normalizedPlanType = planType as "GRATUIT" | "PREMIUM" | "ELITE";
+          const result = await createAuditFromPaidOrder(email, normalizedPlanType, order);
+          if (!result.success) {
+            res.status(400).json(result);
+            return;
+          }
+          res.json({ ...result, free: true });
+          return;
+        }
+      }
+
       const isBloodAnalysis = planType === "BLOOD_ANALYSIS";
       const successUrl = isBloodAnalysis
         ? `${baseUrl}/blood-analysis?session_id={CHECKOUT_SESSION_ID}`
