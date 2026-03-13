@@ -8,6 +8,7 @@ import { createServer } from "http";
 import { resumePendingJobs } from "./reportJobManager";
 import { storage } from "./storage";
 import { sendReportReadyEmail, sendAdminEmailNewAudit } from "./emailService";
+import { sendScheduledBloodEmail } from "./blood-analysis/routes";
 
 const app = express();
 const httpServer = createServer(app);
@@ -163,9 +164,26 @@ if (process.env.NODE_ENV === "production") {
 
       // Internal cron: deliver scheduled reports every 5 minutes
       const CRON_INTERVAL_MS = 5 * 60 * 1000;
+      let cronRunning = false;
+
+      function getBaseUrl(): string {
+        if (process.env.APP_URL) return process.env.APP_URL.replace(/\/+$/, "");
+        if (process.env.RENDER_EXTERNAL_URL) return process.env.RENDER_EXTERNAL_URL.replace(/\/+$/, "");
+        if (process.env.REPLIT_DOMAINS) {
+          const replitDomain = process.env.REPLIT_DOMAINS.split(",")[0];
+          return `https://${replitDomain}`;
+        }
+        return `http://localhost:${port}`;
+      }
+
       const runScheduledDelivery = async () => {
+        if (cronRunning) {
+          log("Cron: skipping — previous run still in progress");
+          return;
+        }
+        cronRunning = true;
         try {
-          const baseUrl = process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${port}`;
+          const baseUrl = getBaseUrl();
           let delivered = 0;
 
           // Audits (Anabolic 24h, Ultimate 48h)
@@ -193,7 +211,6 @@ if (process.env.NODE_ENV === "production") {
           for (const report of scheduledBlood) {
             try {
               await storage.updateBloodReport(report.id, { deliveryStatus: "READY" });
-              const { sendScheduledBloodEmail } = await import("./blood-analysis/routes");
               const sent = await sendScheduledBloodEmail(report, baseUrl);
               if (sent) {
                 await storage.updateBloodReport(report.id, { deliveryStatus: "SENT", emailSentAt: new Date() });
@@ -214,6 +231,8 @@ if (process.env.NODE_ENV === "production") {
           }
         } catch (err) {
           console.error("[Cron] Scheduled delivery error:", err);
+        } finally {
+          cronRunning = false;
         }
       };
 
