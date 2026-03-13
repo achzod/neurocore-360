@@ -6,6 +6,8 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { resumePendingJobs } from "./reportJobManager";
+import { storage } from "./storage";
+import { sendReportReadyEmail, sendAdminEmailNewAudit } from "./emailService";
 
 const app = express();
 const httpServer = createServer(app);
@@ -158,6 +160,65 @@ if (process.env.NODE_ENV === "production") {
       } catch (error) {
         console.error("[Boot] Error resuming pending jobs:", error);
       }
+
+      // Internal cron: deliver scheduled reports every 5 minutes
+      const CRON_INTERVAL_MS = 5 * 60 * 1000;
+      const runScheduledDelivery = async () => {
+        try {
+          const baseUrl = process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${port}`;
+          let delivered = 0;
+
+          // Audits (Anabolic 24h, Ultimate 48h)
+          const scheduledAudits = await storage.getScheduledAuditsForDelivery();
+          for (const audit of scheduledAudits) {
+            try {
+              await storage.updateAudit(audit.id, { reportDeliveryStatus: "READY" });
+              const sent = await sendReportReadyEmail(audit.email, audit.id, audit.type, baseUrl);
+              if (sent) {
+                await storage.updateAudit(audit.id, { reportDeliveryStatus: "SENT", reportSentAt: new Date() });
+                const name = (audit as any)?.narrativeReport?.clientName || audit.email.split("@")[0];
+                await sendAdminEmailNewAudit(audit.email, name, audit.type, audit.id);
+                delivered++;
+              } else {
+                await storage.updateAudit(audit.id, { reportDeliveryStatus: "SCHEDULED" });
+              }
+            } catch (e) {
+              await storage.updateAudit(audit.id, { reportDeliveryStatus: "SCHEDULED" }).catch(() => {});
+              console.error(`[Cron] Audit ${audit.id} delivery error:`, e);
+            }
+          }
+
+          // Blood reports (24h)
+          const scheduledBlood = await storage.getScheduledBloodReportsForDelivery();
+          for (const report of scheduledBlood) {
+            try {
+              await storage.updateBloodReport(report.id, { deliveryStatus: "READY" });
+              const { sendScheduledBloodEmail } = await import("./blood-analysis/routes");
+              const sent = await sendScheduledBloodEmail(report, baseUrl);
+              if (sent) {
+                await storage.updateBloodReport(report.id, { deliveryStatus: "SENT", emailSentAt: new Date() });
+                const name = (report.profile as any)?.prenom || report.email.split("@")[0];
+                await sendAdminEmailNewAudit(report.email, name, "BLOOD_ANALYSIS", report.id);
+                delivered++;
+              } else {
+                await storage.updateBloodReport(report.id, { deliveryStatus: "SCHEDULED" });
+              }
+            } catch (e) {
+              await storage.updateBloodReport(report.id, { deliveryStatus: "SCHEDULED" }).catch(() => {});
+              console.error(`[Cron] Blood ${report.id} delivery error:`, e);
+            }
+          }
+
+          if (delivered > 0) {
+            log(`Cron: delivered ${delivered} scheduled report(s)`);
+          }
+        } catch (err) {
+          console.error("[Cron] Scheduled delivery error:", err);
+        }
+      };
+
+      setInterval(runScheduledDelivery, CRON_INTERVAL_MS);
+      log("Scheduled delivery cron started (every 5 min)");
     },
   );
 })();
