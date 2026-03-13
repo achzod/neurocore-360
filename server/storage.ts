@@ -124,6 +124,9 @@ export interface BloodReportRecord {
   markers: unknown[];
   analysis: unknown;
   aiReport: string;
+  deliveryStatus?: string;
+  reportScheduledFor?: Date | string | null;
+  emailSentAt?: Date | string | null;
   createdAt: Date | string;
 }
 
@@ -155,6 +158,7 @@ export interface IStorage {
   getAuditsByEmail(email: string): Promise<Audit[]>;
   getPendingAudits(): Promise<Audit[]>;
   getAllAudits(): Promise<Audit[]>;
+  getScheduledAuditsForDelivery(): Promise<Audit[]>;
   createAudit(audit: InsertAudit & { email: string; responses: Record<string, unknown> }): Promise<Audit>;
   updateAudit(id: string, data: Partial<Audit>): Promise<Audit | undefined>;
 
@@ -174,6 +178,7 @@ export interface IStorage {
   getBloodReport(id: string): Promise<BloodReportRecord | undefined>;
   updateBloodReport(id: string, data: Partial<BloodReportRecord>): Promise<BloodReportRecord | undefined>;
   getAllBloodReports(): Promise<BloodReportRecord[]>;
+  getScheduledBloodReportsForDelivery(): Promise<BloodReportRecord[]>;
 
   createBloodTest(input: Omit<BloodTestRecord, "id" | "createdAt"> & { createdAt?: Date }): Promise<BloodTestRecord>;
   updateBloodTest(id: string, data: Partial<BloodTestRecord>): Promise<BloodTestRecord | undefined>;
@@ -344,6 +349,16 @@ export class MemStorage implements IStorage {
     });
   }
 
+  async getScheduledAuditsForDelivery(): Promise<Audit[]> {
+    const now = new Date();
+    return Array.from(this.audits.values()).filter(
+      (a) =>
+        a.reportDeliveryStatus === "SCHEDULED" &&
+        a.reportScheduledFor &&
+        new Date(a.reportScheduledFor) <= now
+    );
+  }
+
   async createAudit(
     input: InsertAudit & { email: string; responses: Record<string, unknown> }
   ): Promise<Audit> {
@@ -355,9 +370,16 @@ export class MemStorage implements IStorage {
     const id = randomUUID();
     const scores = this.calculateScores(input.responses);
 
-    const isDelayedMode = process.env.DELIVERY_MODE === "delayed";
-    const deliveryDelay = input.type === "GRATUIT" ? 24 : 48;
-    const scheduledDate = new Date(Date.now() + deliveryDelay * 60 * 60 * 1000);
+    const DELIVERY_DELAYS_HOURS: Record<string, number> = {
+      GRATUIT: 0,
+      PREMIUM: 24,
+      ELITE: 48,
+      BLOOD_ANALYSIS: 24,
+    };
+    const delayHours = DELIVERY_DELAYS_HOURS[input.type] || 24;
+    const scheduledDate = delayHours > 0
+      ? new Date(Date.now() + delayHours * 60 * 60 * 1000)
+      : null;
 
     const audit: Audit = {
       id,
@@ -367,8 +389,8 @@ export class MemStorage implements IStorage {
       status: "COMPLETED",
       responses: input.responses,
       scores,
-      reportDeliveryStatus: isDelayedMode ? "PENDING" : "PENDING",
-      reportScheduledFor: isDelayedMode ? scheduledDate : undefined,
+      reportDeliveryStatus: "PENDING",
+      reportScheduledFor: scheduledDate,
       createdAt: new Date(),
       completedAt: new Date(),
     };
@@ -491,6 +513,9 @@ export class MemStorage implements IStorage {
       markers: input.markers,
       analysis: input.analysis,
       aiReport: input.aiReport,
+      deliveryStatus: "PENDING",
+      reportScheduledFor: null,
+      emailSentAt: null,
       createdAt: new Date(),
     };
     this.bloodReports.set(id, record);
@@ -521,6 +546,17 @@ export class MemStorage implements IStorage {
       const dateB = new Date(b.createdAt).getTime();
       return dateB - dateA;
     });
+  }
+
+  async getScheduledBloodReportsForDelivery(): Promise<BloodReportRecord[]> {
+    const now = new Date();
+    return Array.from(this.bloodReports.values()).filter(
+      (r) =>
+        r.deliveryStatus === "SCHEDULED" &&
+        r.reportScheduledFor &&
+        new Date(r.reportScheduledFor) <= now &&
+        r.aiReport
+    );
   }
 
   async createBloodTest(
@@ -1002,6 +1038,13 @@ export class PgStorage implements IStorage {
     return result.rows.map(row => this.rowToAudit(row));
   }
 
+  async getScheduledAuditsForDelivery(): Promise<Audit[]> {
+    const result = await pool.query(
+      "SELECT * FROM audits WHERE report_delivery_status = 'SCHEDULED' AND report_scheduled_for <= NOW()"
+    );
+    return result.rows.map(row => this.rowToAudit(row));
+  }
+
   async createAudit(input: InsertAudit & { email: string; responses: Record<string, unknown> }): Promise<Audit> {
     let user = await this.getUserByEmail(input.email);
     if (!user) {
@@ -1011,9 +1054,16 @@ export class PgStorage implements IStorage {
     const id = randomUUID();
     const scores = this.calculateScores(input.responses);
 
-    const isDelayedMode = process.env.DELIVERY_MODE === "delayed";
-    const deliveryDelay = input.type === "GRATUIT" ? 24 : 48;
-    const scheduledDate = isDelayedMode ? new Date(Date.now() + deliveryDelay * 60 * 60 * 1000) : null;
+    const DELIVERY_DELAYS_HOURS: Record<string, number> = {
+      GRATUIT: 0,
+      PREMIUM: 24,
+      ELITE: 48,
+      BLOOD_ANALYSIS: 24,
+    };
+    const delayHours = DELIVERY_DELAYS_HOURS[input.type] || 24;
+    const scheduledDate = delayHours > 0
+      ? new Date(Date.now() + delayHours * 60 * 60 * 1000)
+      : null;
 
     const result = await pool.query(
       `INSERT INTO audits (id, user_id, email, type, status, responses, scores, report_delivery_status, report_scheduled_for, completed_at)
@@ -1342,6 +1392,9 @@ export class PgStorage implements IStorage {
       markers: row.markers || [],
       analysis: row.analysis || {},
       aiReport: row.ai_report || "",
+      deliveryStatus: row.delivery_status || "PENDING",
+      reportScheduledFor: row.report_scheduled_for || null,
+      emailSentAt: row.email_sent_at || null,
       createdAt: row.created_at,
     };
   }
@@ -1358,6 +1411,9 @@ export class PgStorage implements IStorage {
       markers: row.markers || [],
       analysis: row.analysis || {},
       aiReport: row.ai_report || "",
+      deliveryStatus: row.delivery_status || "PENDING",
+      reportScheduledFor: row.report_scheduled_for || null,
+      emailSentAt: row.email_sent_at || null,
       createdAt: row.created_at,
     };
   }
@@ -1381,6 +1437,9 @@ export class PgStorage implements IStorage {
     if (data.markers !== undefined) push("markers", JSON.stringify(data.markers));
     if (data.analysis !== undefined) push("analysis", JSON.stringify(data.analysis));
     if (data.aiReport !== undefined) push("ai_report", data.aiReport ?? "");
+    if (data.deliveryStatus !== undefined) push("delivery_status", data.deliveryStatus);
+    if (data.reportScheduledFor !== undefined) push("report_scheduled_for", data.reportScheduledFor);
+    if (data.emailSentAt !== undefined) push("email_sent_at", data.emailSentAt);
 
     if (updates.length === 0) return this.getBloodReport(id);
     values.push(id);
@@ -1398,6 +1457,9 @@ export class PgStorage implements IStorage {
       markers: row.markers || [],
       analysis: row.analysis || {},
       aiReport: row.ai_report || "",
+      deliveryStatus: row.delivery_status || "PENDING",
+      reportScheduledFor: row.report_scheduled_for || null,
+      emailSentAt: row.email_sent_at || null,
       createdAt: row.created_at,
     };
   }
@@ -1412,6 +1474,28 @@ export class PgStorage implements IStorage {
       markers: row.markers || [],
       analysis: row.analysis || {},
       aiReport: row.ai_report || "",
+      deliveryStatus: row.delivery_status || "PENDING",
+      reportScheduledFor: row.report_scheduled_for || null,
+      emailSentAt: row.email_sent_at || null,
+      createdAt: row.created_at,
+    }));
+  }
+
+  async getScheduledBloodReportsForDelivery(): Promise<BloodReportRecord[]> {
+    await this.ensureBloodReportsTable();
+    const result = await pool.query(
+      "SELECT * FROM blood_reports WHERE delivery_status = 'SCHEDULED' AND report_scheduled_for <= NOW() AND ai_report IS NOT NULL AND ai_report != ''"
+    );
+    return result.rows.map(row => ({
+      id: row.id,
+      email: row.email,
+      profile: row.profile || {},
+      markers: row.markers || [],
+      analysis: row.analysis || {},
+      aiReport: row.ai_report || "",
+      deliveryStatus: row.delivery_status || "PENDING",
+      reportScheduledFor: row.report_scheduled_for || null,
+      emailSentAt: row.email_sent_at || null,
       createdAt: row.created_at,
     }));
   }
@@ -2001,6 +2085,10 @@ export class PgStorage implements IStorage {
       `);
       await pool.query(`CREATE INDEX IF NOT EXISTS idx_blood_reports_email ON blood_reports(email)`);
       await pool.query(`CREATE INDEX IF NOT EXISTS idx_blood_reports_created_at ON blood_reports(created_at)`);
+      // Add delivery scheduling columns if missing
+      await pool.query(`ALTER TABLE blood_reports ADD COLUMN IF NOT EXISTS delivery_status VARCHAR(32) DEFAULT 'PENDING'`);
+      await pool.query(`ALTER TABLE blood_reports ADD COLUMN IF NOT EXISTS report_scheduled_for TIMESTAMP`);
+      await pool.query(`ALTER TABLE blood_reports ADD COLUMN IF NOT EXISTS email_sent_at TIMESTAMP`);
       this.ensuredBloodReportsTable = true;
     } catch (err) {
       console.error("[Storage] Error creating blood_reports table:", err);

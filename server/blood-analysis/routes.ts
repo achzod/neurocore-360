@@ -182,6 +182,21 @@ const sendBloodClientDeliveryEmail = async (
   });
 };
 
+// Exported for cron delivery of scheduled blood reports
+export async function sendScheduledBloodEmail(
+  report: { id: string; email: string; aiReport: string; markers: unknown[]; profile: Record<string, unknown> },
+  baseUrl: string
+): Promise<boolean> {
+  return sendBloodClientDeliveryEmail(
+    report.email,
+    report.id,
+    report.aiReport,
+    baseUrl,
+    report.markers as MarkerAnalysis[],
+    report.profile,
+  );
+}
+
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const AI_CREDIT_BALANCE_LOW_SENTINEL = "__AI_CREDIT_BALANCE_LOW__";
 
@@ -824,29 +839,12 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         !aiCreditBalanceLow &&
         (shouldAsyncAI || syncAiNeedsBackgroundRetry);
 
-      const baseUrl = getBaseUrl();
-      const shouldDeferEmailToBackground = shouldQueueBackgroundAI;
-      if (aiAnalysis && !shouldDeferEmailToBackground) {
-        const emailSent = await sendBloodClientDeliveryEmail(
-          recipientEmail,
-          reportRecord.id,
-          aiAnalysis,
-          baseUrl,
-          analysisResult.markers,
-          profileWithAge as Record<string, unknown>,
-          { orderRef: sessionId },
-        );
-        if (emailSent) {
-          await sendAdminEmailNewAudit(
-            recipientEmail,
-            recipientEmail.split("@")[0],
-            "BLOOD_ANALYSIS",
-            reportRecord.id
-          );
-        }
-      }
+      // Schedule email for 24h later instead of sending immediately
+      const BLOOD_DELIVERY_DELAY_HOURS = 24;
+      const scheduledFor = new Date(Date.now() + BLOOD_DELIVERY_DELAY_HOURS * 60 * 60 * 1000);
 
       if (shouldQueueBackgroundAI) {
+        // AI report still needs async generation — schedule delivery after it completes
         setImmediate(async () => {
           try {
             const enrichedCandidate = await generateAiReportWithAttempts(
@@ -863,38 +861,38 @@ export function registerBloodAnalysisRoutes(app: Express): void {
               );
               await storage.updateBloodReport(reportRecord.id, {
                 aiError: "AI_CREDIT_BALANCE_LOW",
+                deliveryStatus: "FAILED",
               } as any);
               return;
             }
             const enriched = enrichedCandidate;
             if (!enriched) {
               console.warn(
-                `[BloodAnalysis] Async submit generation exhausted retries for ${reportRecord.id}; keeping processing state.`
+                `[BloodAnalysis] Async submit generation exhausted retries for ${reportRecord.id}; marking FAILED.`
               );
+              await storage.updateBloodReport(reportRecord.id, {
+                deliveryStatus: "FAILED",
+              });
               return;
             }
-            await storage.updateBloodReport(reportRecord.id, { aiReport: enriched });
-            const emailSent = await sendBloodClientDeliveryEmail(
-              recipientEmail,
-              reportRecord.id,
-              enriched,
-              baseUrl,
-              analysisResult.markers,
-              profileWithAge as Record<string, unknown>,
-              { orderRef: sessionId },
-            );
-            if (emailSent) {
-              await sendAdminEmailNewAudit(
-                recipientEmail,
-                recipientEmail.split("@")[0],
-                "BLOOD_ANALYSIS",
-                reportRecord.id
-              );
-            }
+            await storage.updateBloodReport(reportRecord.id, {
+              aiReport: enriched,
+              deliveryStatus: "SCHEDULED",
+              reportScheduledFor: scheduledFor,
+            });
+            console.log(`[BloodAnalysis] Report ${reportRecord.id} generated (async), SCHEDULED for ${scheduledFor.toISOString()} — email deferred`);
           } catch (err) {
             console.error("[BloodAnalysis] async AI failed:", err);
+            await storage.updateBloodReport(reportRecord.id, { deliveryStatus: "FAILED" }).catch(() => {});
           }
         });
+      } else if (aiAnalysis) {
+        // AI report ready synchronously — schedule for later delivery
+        await storage.updateBloodReport(reportRecord.id, {
+          deliveryStatus: "SCHEDULED",
+          reportScheduledFor: scheduledFor,
+        });
+        console.log(`[BloodAnalysis] Report ${reportRecord.id} generated, SCHEDULED for ${scheduledFor.toISOString()} — email deferred`);
       }
 
       const status =

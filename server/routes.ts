@@ -508,11 +508,14 @@ export async function registerRoutes(
       const baseUrl = getBaseUrl();
       console.log(`[Email] Using baseUrl: ${baseUrl} for audit ${auditId}`);
 
-      // Récupérer l'audit pour vérifier la validation
       const completedAudit = await storage.getAudit(auditId);
+      if (!completedAudit) {
+        console.error(`[Email] Audit ${auditId} not found after generation — skipping email`);
+        return;
+      }
       const clientName = (completedAudit as any)?.narrativeReport?.clientName || email.split('@')[0];
       const validationResult = (completedAudit as any)?.narrativeReport?.validationResult;
-      const deliveryStatus = (completedAudit as any)?.reportDeliveryStatus;
+      const deliveryStatus = completedAudit.reportDeliveryStatus;
 
       // ============================================
       // CHECK: Ne pas envoyer si validation échouée
@@ -531,6 +534,14 @@ export async function registerRoutes(
         return;
       }
 
+      // Check if delivery is scheduled for later
+      const scheduledFor = completedAudit?.reportScheduledFor;
+      if (scheduledFor && new Date(scheduledFor) > new Date()) {
+        await storage.updateAudit(auditId, { reportDeliveryStatus: "SCHEDULED" });
+        console.log(`[Delivery] Report for ${auditId} generated but SCHEDULED for ${new Date(scheduledFor).toISOString()} — email deferred`);
+        return;
+      }
+
       await storage.updateAudit(auditId, { reportDeliveryStatus: "READY" });
 
       console.log(`[Email] ✅ Validation OK (score: ${validationResult?.score || 'N/A'}/100) - Sending email to ${email}`);
@@ -538,7 +549,7 @@ export async function registerRoutes(
       if (emailSent) {
         await storage.updateAudit(auditId, { reportDeliveryStatus: "SENT", reportSentAt: new Date() });
         console.log(`[Email] ✅ Report ready email sent successfully to ${email} for audit ${auditId}`);
-        
+
         // Envoyer email admin en copie
         console.log(`[Email] Sending admin notification email for audit ${auditId}`);
         const adminEmailSent = await sendAdminEmailNewAudit(email, clientName, auditType, auditId);
@@ -557,7 +568,11 @@ export async function registerRoutes(
     }
     } catch (error) {
       console.error(`[Email] ❌ Error in processReportAndSendEmail for audit ${auditId}:`, error);
-      await storage.updateAudit(auditId, { reportDeliveryStatus: "READY" });
+      // Don't overwrite SCHEDULED status on error — let cron handle delivery
+      const currentAudit = await storage.getAudit(auditId).catch(() => null);
+      if (currentAudit?.reportDeliveryStatus !== "SCHEDULED") {
+        await storage.updateAudit(auditId, { reportDeliveryStatus: "READY" }).catch(() => {});
+      }
     }
   }
 
@@ -581,6 +596,13 @@ export async function registerRoutes(
       const audit = await storage.getAudit(req.params.id);
       if (!audit) {
         res.status(404).json({ error: "Audit non trouvé" });
+        return;
+      }
+      // Block report content if scheduled for future delivery
+      if (audit.reportScheduledFor && new Date(audit.reportScheduledFor) > new Date()) {
+        const sanitized = { ...audit, narrativeReport: null, reportTxt: undefined, reportHtml: undefined };
+        const light = req.query.light === "1";
+        res.json(light ? sanitizeAuditPayload(sanitized) : sanitized);
         return;
       }
       const light = req.query.light === "1";
@@ -677,6 +699,16 @@ export async function registerRoutes(
       const audit = await storage.getAudit(req.params.id);
       if (!audit) {
         res.status(404).json({ error: "Audit non trouvé" });
+        return;
+      }
+
+      // Block report content if scheduled for future delivery
+      if (audit.reportScheduledFor && new Date(audit.reportScheduledFor) > new Date()) {
+        res.status(202).json({
+          status: "scheduled",
+          scheduledFor: audit.reportScheduledFor,
+          message: "Ton analyse approfondie est en cours de rédaction. Tu recevras ton rapport complet par email.",
+        });
         return;
       }
 
@@ -799,6 +831,16 @@ export async function registerRoutes(
       const audit = await storage.getAudit(req.params.id);
       if (!audit) {
         res.status(404).json({ error: "Audit non trouve" });
+        return;
+      }
+
+      // Block report content if scheduled for future delivery
+      if (audit.reportScheduledFor && new Date(audit.reportScheduledFor) > new Date()) {
+        res.status(202).json({
+          status: "scheduled",
+          scheduledFor: audit.reportScheduledFor,
+          message: "Ton analyse approfondie est en cours de rédaction. Tu recevras ton rapport complet par email.",
+        });
         return;
       }
 
@@ -3569,6 +3611,87 @@ export async function registerRoutes(
     } catch (error) {
       console.error("[Cron] Error processing email sequences:", error);
       res.status(500).json({ success: false, error: "Erreur traitement sequences" });
+    }
+  });
+
+  // ==================== SCHEDULED DELIVERY CRON ====================
+
+  // Cron endpoint to deliver reports whose scheduled time has elapsed
+  // Call every 5 minutes via external cron service (e.g., cron-job.org, Render Cron)
+  app.post("/api/cron/deliver-scheduled-reports", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const baseUrl = getBaseUrl();
+      const now = new Date();
+      const results = { auditsDelivered: 0, bloodDelivered: 0, errors: 0, details: [] as string[] };
+
+      // ---- 1. Process scheduled AUDITS (targeted SQL query, no LIMIT) ----
+      const scheduledAudits = await storage.getScheduledAuditsForDelivery();
+
+      for (const audit of scheduledAudits) {
+        try {
+          await storage.updateAudit(audit.id, { reportDeliveryStatus: "READY" });
+
+          const emailSent = await sendReportReadyEmail(audit.email, audit.id, audit.type, baseUrl);
+          if (emailSent) {
+            await storage.updateAudit(audit.id, { reportDeliveryStatus: "SENT", reportSentAt: new Date() });
+            results.auditsDelivered++;
+            results.details.push(`Audit ${audit.id} (${audit.type}) -> ${audit.email}`);
+
+            const clientName = (audit as any)?.narrativeReport?.clientName || audit.email.split('@')[0];
+            await sendAdminEmailNewAudit(audit.email, clientName, audit.type, audit.id);
+          } else {
+            // Revert to SCHEDULED so cron retries next run
+            await storage.updateAudit(audit.id, { reportDeliveryStatus: "SCHEDULED" });
+            results.errors++;
+            results.details.push(`Email failed for audit ${audit.id}`);
+          }
+        } catch (err) {
+          // Revert to SCHEDULED on error for retry
+          await storage.updateAudit(audit.id, { reportDeliveryStatus: "SCHEDULED" }).catch(() => {});
+          console.error(`[Cron Delivery] Error processing audit ${audit.id}:`, err);
+          results.errors++;
+          results.details.push(`Error for audit ${audit.id}: ${(err as Error).message}`);
+        }
+      }
+
+      // ---- 2. Process scheduled BLOOD REPORTS (targeted SQL query) ----
+      const scheduledBlood = await storage.getScheduledBloodReportsForDelivery();
+
+      for (const report of scheduledBlood) {
+        try {
+          await storage.updateBloodReport(report.id, { deliveryStatus: "READY" });
+
+          const { sendScheduledBloodEmail } = await import("./blood-analysis/routes");
+          const emailSent = await sendScheduledBloodEmail(report, baseUrl);
+          if (emailSent) {
+            await storage.updateBloodReport(report.id, {
+              deliveryStatus: "SENT",
+              emailSentAt: new Date(),
+            });
+            results.bloodDelivered++;
+            results.details.push(`Blood ${report.id} -> ${report.email}`);
+
+            const clientName = (report.profile as any)?.prenom || report.email.split('@')[0];
+            await sendAdminEmailNewAudit(report.email, clientName, "BLOOD_ANALYSIS", report.id);
+          } else {
+            await storage.updateBloodReport(report.id, { deliveryStatus: "SCHEDULED" });
+            results.errors++;
+            results.details.push(`Email failed for blood ${report.id}`);
+          }
+        } catch (err) {
+          await storage.updateBloodReport(report.id, { deliveryStatus: "SCHEDULED" }).catch(() => {});
+          console.error(`[Cron Delivery] Error processing blood report ${report.id}:`, err);
+          results.errors++;
+          results.details.push(`Error for blood ${report.id}: ${(err as Error).message}`);
+        }
+      }
+
+      console.log(`[Cron Delivery] Results: ${results.auditsDelivered} audits, ${results.bloodDelivered} blood, ${results.errors} errors`);
+      res.json({ success: true, ...results, processedAt: now.toISOString() });
+    } catch (error) {
+      console.error("[Cron Delivery] Error:", error);
+      res.status(500).json({ success: false, error: "Erreur traitement livraisons programmees" });
     }
   });
 

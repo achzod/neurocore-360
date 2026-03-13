@@ -32,7 +32,8 @@ import {
   CheckCircle2,
   Send,
   Camera,
-  AlertTriangle
+  AlertTriangle,
+  Clock
 } from 'lucide-react';
 
 const THEMES: Theme[] = ULTRAHUMAN_THEMES;
@@ -250,6 +251,7 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
   const [generationStatus, setGenerationStatus] = useState<string>("");
   const [generationProgress, setGenerationProgress] = useState<number>(0);
   const [generationSection, setGenerationSection] = useState<string>("");
+  const [scheduledFor, setScheduledFor] = useState<string | null>(null);
   const pollTimer = useRef<number | null>(null);
   const mainContentRef = useRef<HTMLDivElement>(null);
 
@@ -267,6 +269,12 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
 
     const loadNarrativeReport = async () => {
       const reportRes = await fetch(`/api/audits/${auditId}/narrative`);
+      if (reportRes.status === 202) {
+        const scheduled = await reportRes.json();
+        setScheduledFor(scheduled.scheduledFor || new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString());
+        setLoading(false);
+        return;
+      }
       if (!reportRes.ok) {
         throw new Error('Erreur chargement rapport');
       }
@@ -330,6 +338,13 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
         const auditData = await auditRes.json();
         setClientName(formatName(auditData.responses?.prenom || auditData.email?.split('@')[0] || 'Profil'));
         setReviewEmail(auditData.email || '');
+
+        // Check if report is scheduled for later delivery
+        if (auditData.reportDeliveryStatus === 'SCHEDULED' && auditData.reportScheduledFor) {
+          setScheduledFor(auditData.reportScheduledFor);
+          setLoading(false);
+          return;
+        }
 
         if (auditData.reportDeliveryStatus !== 'READY' && auditData.reportDeliveryStatus !== 'SENT') {
           setGenerationStatus("generating");
@@ -674,6 +689,45 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
       setReviewSubmitting(false);
     }
   };
+
+  // Scheduled waiting screen
+  if (scheduledFor && !report) {
+    const scheduledDate = new Date(scheduledFor);
+    const formattedDate = scheduledDate.toLocaleString("fr-FR", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: currentTheme.colors.background, color: currentTheme.colors.text }}>
+        <div className="text-center max-w-lg px-6">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center" style={{ backgroundColor: currentTheme.colors.surface, border: `2px solid ${currentTheme.colors.border}` }}>
+            <Clock className="w-10 h-10" style={{ color: currentTheme.colors.primary }} />
+          </div>
+          <h2 className="text-2xl font-bold mb-3">Analyse approfondie en cours</h2>
+          <p className="mb-6" style={{ color: currentTheme.colors.textMuted }}>
+            Ton rapport est en cours de finalisation.
+            Tu recevras un email des qu'il sera pret.
+          </p>
+          <div className="rounded-lg p-4 mb-6" style={{ backgroundColor: currentTheme.colors.surface, border: `1px solid ${currentTheme.colors.border}` }}>
+            <p className="text-sm" style={{ color: currentTheme.colors.textMuted }}>
+              Livraison estimee : <span className="font-semibold" style={{ color: currentTheme.colors.text }}>{formattedDate}</span>
+            </p>
+          </div>
+          <Link href="/dashboard">
+            <button
+              className="px-6 py-3 font-bold rounded-lg transition"
+              style={{ backgroundColor: currentTheme.colors.primary, color: currentTheme.type === 'dark' ? '#000' : '#fff' }}
+            >
+              Retour au dashboard
+            </button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

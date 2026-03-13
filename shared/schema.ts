@@ -35,6 +35,7 @@ export const AuditStatus = {
 export const ReportDeliveryStatus = {
   PENDING: "PENDING",
   GENERATING: "GENERATING",
+  SCHEDULED: "SCHEDULED",
   READY: "READY",
   SENT: "SENT",
   FAILED: "FAILED",
@@ -103,7 +104,7 @@ export interface Audit {
   reportHtml?: string;
   reportGeneratedAt?: string | Date | null;
   reportDeliveryStatus: ReportDeliveryStatusEnum;
-  reportScheduledFor?: string | Date;
+  reportScheduledFor?: string | Date | null;
   reportSentAt?: string | Date;
   createdAt: string | Date;
   completedAt?: string | Date;

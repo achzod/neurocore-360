@@ -456,6 +456,8 @@ function SectionScoresGrid({ scores, cardStyle, mutedStyle }: { scores: Record<s
 
 function AuditCard({ audit, index, themeColors }: { audit: Audit; index: number; themeColors?: Theme["colors"] }) {
   const isCompleted = audit.status === "COMPLETED";
+  const isScheduled = audit.reportScheduledFor && new Date(audit.reportScheduledFor) > new Date();
+  const isReportReady = isCompleted && !isScheduled;
   const globalScore = audit.scores?.global || 0;
   const level = getScoreLevel(globalScore);
   const surfaceStyle = themeColors
@@ -490,7 +492,12 @@ function AuditCard({ audit, index, themeColors }: { audit: Audit; index: number;
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            {isCompleted ? (
+            {isScheduled ? (
+              <>
+                <Clock className="h-4 w-4 text-amber-500" />
+                <span className="text-amber-500">Analyse approfondie en cours</span>
+              </>
+            ) : isCompleted ? (
               <>
                 <CheckCircle2 className="h-4 w-4 text-primary" />
                 <span>Analyse completee</span>
@@ -503,7 +510,17 @@ function AuditCard({ audit, index, themeColors }: { audit: Audit; index: number;
             )}
           </div>
 
-          {isCompleted && audit.scores && (
+          {isScheduled && (
+            <div className="mt-4 rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
+              <p className="text-sm text-amber-200/80">
+                Ton analyse approfondie est en cours de redaction.
+                Tu recevras ton rapport complet par email sous{" "}
+                {audit.type === "ELITE" ? "48h" : "24h"}.
+              </p>
+            </div>
+          )}
+
+          {isReportReady && audit.scores && (
             <div className="mt-6 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="text-center">
@@ -525,12 +542,18 @@ function AuditCard({ audit, index, themeColors }: { audit: Audit; index: number;
           )}
 
           <div className="mt-6">
-            <Link href={getReportPath(audit.type, audit.id)}>
-              <Button className="w-full" data-testid={`button-view-${audit.id}`}>
-                <Eye className="mr-2 h-4 w-4" />
-                Consulter le rapport complet
-              </Button>
-            </Link>
+            {isScheduled ? (
+              <Badge variant="outline" className="w-full justify-center py-2 border-amber-500/30 text-amber-500">
+                En preparation
+              </Badge>
+            ) : (
+              <Link href={getReportPath(audit.type, audit.id)}>
+                <Button className="w-full" data-testid={`button-view-${audit.id}`}>
+                  <Eye className="mr-2 h-4 w-4" />
+                  Consulter le rapport complet
+                </Button>
+              </Link>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -834,12 +857,19 @@ export default function Dashboard() {
                         </div>
                       </div>
                       <div className="flex flex-col sm:flex-row gap-3">
-                        <Link href={getReportPath(latestAudit.type, latestAudit.id)}>
-                          <Button size="lg" data-testid="button-view-report-complet">
-                            <Sparkles className="mr-2 h-4 w-4" />
-                            Rapport complet
-                          </Button>
-                        </Link>
+                        {latestAudit.reportScheduledFor && new Date(latestAudit.reportScheduledFor) > new Date() ? (
+                          <Badge variant="outline" className="px-4 py-2 border-amber-500/30 text-amber-500">
+                            <Clock className="mr-2 h-4 w-4" />
+                            Analyse approfondie en cours
+                          </Badge>
+                        ) : (
+                          <Link href={getReportPath(latestAudit.type, latestAudit.id)}>
+                            <Button size="lg" data-testid="button-view-report-complet">
+                              <Sparkles className="mr-2 h-4 w-4" />
+                              Rapport complet
+                            </Button>
+                          </Link>
+                        )}
                       </div>
                     </div>
                   </div>
