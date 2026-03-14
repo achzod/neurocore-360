@@ -7,7 +7,6 @@ import { useRef, useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
-import { Link } from "wouter";
 import { ArrowRight, Check, ChevronDown, Smartphone, MessageCircle, FileText, Target, Ruler, Dumbbell, X } from "lucide-react";
 
 const ACCENT = "#25D366";
@@ -456,10 +455,10 @@ export default function FormCheck() {
             transition={{ duration: 0.6, delay: 0.4 }}
             className="flex items-center justify-center gap-4 mb-12"
           >
-            <span className="text-white text-5xl sm:text-6xl font-bold tracking-[-0.04em]">19.99€</span>
+            <span className="text-white text-5xl sm:text-6xl font-bold tracking-[-0.04em]">Gratuit</span>
             <div className="text-left">
-              <span className="text-white/40 block text-sm">a partir de</span>
-              <span className="text-white/40 block text-sm">5 analyses</span>
+              <span className="text-white/40 block text-sm">ta premiere analyse</span>
+              <span style={{ color: ACCENT }} className="block text-sm font-semibold">puis a partir de 19.99€</span>
             </div>
           </motion.div>
 
@@ -469,15 +468,14 @@ export default function FormCheck() {
             transition={{ duration: 0.6, delay: 0.5 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
-            <Link href="#packs">
-              <button
-                className="group inline-flex items-center gap-3 text-white font-semibold text-base px-8 py-4 rounded-sm transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5"
-                style={{ background: ACCENT, boxShadow: `0 0 40px ${ACCENT}4D` }}
-              >
-                Decouvrir les packs
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </button>
-            </Link>
+            <button
+              onClick={() => document.getElementById('packs')?.scrollIntoView({ behavior: 'smooth' })}
+              className="group inline-flex items-center gap-3 text-white font-semibold text-base px-8 py-4 rounded-sm transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5"
+              style={{ background: ACCENT, boxShadow: `0 0 40px ${ACCENT}4D` }}
+            >
+              Decouvrir les packs
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </button>
           </motion.div>
         </motion.div>
 
@@ -688,14 +686,23 @@ export default function FormCheck() {
             </h2>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
+              {
+                name: "Essai",
+                price: "0€",
+                period: "",
+                analyses: "1 analyse gratuite",
+                features: ["Score de forme 0-100", "Detection d'exercice auto", "Corrections prioritaires", "Rapport HTML premium"],
+                badge: "GRATUIT",
+                highlight: false,
+              },
               {
                 name: "Essentials",
                 price: "19.99€",
                 period: "",
                 analyses: "5 analyses",
-                features: ["Score de forme 0-100", "Detection d'exercice auto", "Corrections prioritaires", "Rapport HTML premium"],
+                features: ["Tout Essai inclus", "5 analyses au total", "Historique des scores", "Exercices correctifs"],
                 badge: null,
                 highlight: false,
               },
@@ -814,8 +821,8 @@ export default function FormCheck() {
 
             <div className="mt-10 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-6">
               <div>
-                <span className="text-white text-5xl font-bold tracking-[-0.04em]">19.99€</span>
-                <span className="text-white/40 ml-2">a partir de</span>
+                <span className="text-white text-5xl font-bold tracking-[-0.04em]">Gratuit</span>
+                <span className="text-white/40 ml-2">ta 1ere analyse</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="aspect-square w-10 rounded-sm flex items-center justify-center" style={{ background: `${ACCENT}1A`, border: `1px solid ${ACCENT}33` }}>

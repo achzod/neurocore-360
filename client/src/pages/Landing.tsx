@@ -73,7 +73,7 @@ const OFFERS: Offer[] = [
     subtitle: "Analyse Biomécanique par WhatsApp",
     description: "Envoie une vidéo de ton exercice par WhatsApp et reçois une analyse biomécanique complète en quelques minutes. Score de forme 0-100, détection automatique de l'exercice, corrections prioritaires avec angles articulaires, exercices correctifs personnalisés et rapport HTML premium. Plus de 20 exercices supportés: squat, bench press, deadlift, overhead press, row, et bien plus.",
     features: ["Score de forme 0-100", "Détection automatique d'exercice", "Corrections prioritaires", "20+ exercices supportés"],
-    price: "À partir de 19.99€",
+    price: "1ere analyse gratuite",
     imageUrl: "",
     reverse: false,
     useCustomVisual: true
