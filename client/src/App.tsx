@@ -71,6 +71,7 @@ const AuditGratuit = lazy(() => import("@/pages/offers/AuditGratuit"));
 const AuditPremium = lazy(() => import("@/pages/offers/AuditPremium"));
 const BloodAnalysisOffer = lazy(() => import("@/pages/offers/BloodAnalysisOffer"));
 const ProPanel = lazy(() => import("@/pages/offers/ProPanel"));
+const FormCheck = lazy(() => import("@/pages/offers/FormCheck"));
 
 // Scroll to top + dynamic canonical URL on route change
 function ScrollToTop() {
@@ -115,6 +116,7 @@ function Router() {
         <Route path="/offers/anabolic-bioscan" component={AuditPremium} />
         <Route path="/offers/blood-analysis" component={BloodAnalysisOffer} />
         <Route path="/offers/ultimate-scan" component={ProPanel} />
+        <Route path="/offers/formcheck" component={FormCheck} />
 
         {/* Legacy routes - redirects */}
         <Route path="/offers/audit-gratuit" component={AuditGratuit} />

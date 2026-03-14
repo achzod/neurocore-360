@@ -67,6 +67,17 @@ const OFFERS: Offer[] = [
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/cno_pro.png",
     reverse: true
   },
+  {
+    id: 'formcheck',
+    title: "FORMCHECK",
+    subtitle: "Analyse Biomécanique par WhatsApp",
+    description: "Envoie une vidéo de ton exercice par WhatsApp et reçois une analyse biomécanique complète en quelques minutes. Score de forme 0-100, détection automatique de l'exercice, corrections prioritaires avec angles articulaires, exercices correctifs personnalisés et rapport HTML premium. Plus de 20 exercices supportés: squat, bench press, deadlift, overhead press, row, et bien plus.",
+    features: ["Score de forme 0-100", "Détection automatique d'exercice", "Corrections prioritaires", "20+ exercices supportés"],
+    price: "À partir de 19.99€",
+    imageUrl: "",
+    reverse: false,
+    useCustomVisual: true
+  },
 ];
 
 // ============================================================================
@@ -190,6 +201,121 @@ function DNAHelix() {
       {/* Scan line */}
       <motion.div
         className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent"
+        animate={{ top: ['0%', '100%', '0%'] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+      />
+    </div>
+  );
+}
+
+// ============================================================================
+// FORMCHECK VISUAL (for FormCheck card)
+// ============================================================================
+function FormCheckVisual() {
+  const exercises = [
+    "SQUAT", "BENCH", "DEADLIFT", "OHP",
+    "ROW", "CURL", "LUNGE", "PULLUP",
+    "DIP", "PRESS", "RDL", "SHRUG",
+  ];
+
+  return (
+    <div className="relative w-full h-full bg-gradient-to-br from-green-950 via-black to-emerald-900 flex items-center justify-center overflow-hidden">
+      {/* Background glow */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(37,211,102,0.12)_0%,_transparent_70%)]" />
+
+      {/* Stick figure with angle arcs */}
+      <svg viewBox="0 0 200 280" className="relative w-[160px] h-[220px]" fill="none">
+        {/* Head */}
+        <circle cx="100" cy="40" r="14" stroke="#25D366" strokeWidth="2" fill="none" />
+        {/* Torso */}
+        <line x1="100" y1="54" x2="100" y2="140" stroke="#25D366" strokeWidth="2" />
+        {/* Arms */}
+        <line x1="100" y1="75" x2="60" y2="110" stroke="#25D366" strokeWidth="2" />
+        <line x1="100" y1="75" x2="140" y2="110" stroke="#25D366" strokeWidth="2" />
+        {/* Legs - squat position */}
+        <line x1="100" y1="140" x2="70" y2="200" stroke="#25D366" strokeWidth="2" />
+        <line x1="100" y1="140" x2="130" y2="200" stroke="#25D366" strokeWidth="2" />
+        <line x1="70" y1="200" x2="55" y2="260" stroke="#25D366" strokeWidth="2" />
+        <line x1="130" y1="200" x2="145" y2="260" stroke="#25D366" strokeWidth="2" />
+
+        {/* Angle arc - knee */}
+        <motion.path
+          d="M 85 170 A 30 30 0 0 1 70 200"
+          stroke="#ef4444"
+          strokeWidth="2"
+          fill="none"
+          animate={{ opacity: [0.4, 1, 0.4] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        />
+        <motion.text x="58" y="178" fill="#ef4444" fontSize="10" fontFamily="monospace"
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          72°
+        </motion.text>
+
+        {/* Angle arc - hip */}
+        <motion.path
+          d="M 100 120 A 25 25 0 0 0 85 140"
+          stroke="#22c55e"
+          strokeWidth="2"
+          fill="none"
+          animate={{ opacity: [0.4, 1, 0.4] }}
+          transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+        />
+        <motion.text x="108" y="132" fill="#22c55e" fontSize="10" fontFamily="monospace"
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+        >
+          95°
+        </motion.text>
+
+        {/* Joint dots */}
+        {[[100, 75], [70, 200], [130, 200], [100, 140]].map(([cx, cy], i) => (
+          <motion.circle
+            key={i}
+            cx={cx}
+            cy={cy}
+            r="4"
+            fill="#25D366"
+            animate={{ scale: [1, 1.4, 1], opacity: [0.6, 1, 0.6] }}
+            transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.2 }}
+          />
+        ))}
+      </svg>
+
+      {/* Exercise tiles */}
+      <div className="absolute bottom-4 left-4 right-4 grid grid-cols-4 gap-1">
+        {exercises.map((ex, i) => (
+          <motion.div
+            key={ex}
+            className="text-center py-1 px-0.5 bg-green-900/40 border border-green-700/30 rounded-sm"
+            animate={{
+              borderColor: ['rgba(34,197,94,0.3)', 'rgba(37,211,102,0.8)', 'rgba(34,197,94,0.3)'],
+              backgroundColor: ['rgba(20,83,45,0.4)', 'rgba(20,83,45,0.7)', 'rgba(20,83,45,0.4)'],
+            }}
+            transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
+          >
+            <span className="font-mono text-[7px] text-green-400/80">{ex}</span>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Labels */}
+      <div className="absolute top-4 right-4 text-right">
+        <motion.div
+          className="font-mono text-xs text-green-400 font-bold"
+          animate={{ opacity: [0.6, 1, 0.6] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          SCORE: 87/100
+        </motion.div>
+        <div className="font-mono text-[8px] text-green-500/60 mt-1">FORM ANALYSIS</div>
+      </div>
+
+      {/* Scan line */}
+      <motion.div
+        className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-green-400 to-transparent"
         animate={{ top: ['0%', '100%', '0%'] }}
         transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
       />
@@ -568,7 +694,9 @@ function OfferCard({ offer, index }: { offer: Offer; index: number }) {
             )}
 
             {/* Main Image or Custom Visual */}
-            {useCustomVisual ? (
+            {useCustomVisual && offer.id === 'formcheck' ? (
+              <FormCheckVisual />
+            ) : useCustomVisual ? (
               <DNAHelix />
             ) : (
               <img
@@ -622,18 +750,28 @@ function OfferCard({ offer, index }: { offer: Offer; index: number }) {
                   {price}
                 </div>
               </div>
-              {/* CTA Button - Scroll to waitlist */}
-              <button
-                onClick={() => document.getElementById('hero-form')?.scrollIntoView({ behavior: 'smooth' })}
-                className="px-6 py-4 bg-[#FCDD00] text-black font-mono text-xs uppercase tracking-widest hover:bg-[#FCDD00]/80 transition-colors flex items-center gap-2"
-              >
-                Réserver ma place
-                <span>&gt;</span>
-              </button>
+              {/* CTA Button */}
+              {offer.id === 'formcheck' ? (
+                <a
+                  href="/offers/formcheck"
+                  className="px-6 py-4 bg-[#25D366] text-black font-mono text-xs uppercase tracking-widest hover:bg-[#25D366]/80 transition-colors flex items-center gap-2"
+                >
+                  Découvrir FormCheck
+                  <span>&gt;</span>
+                </a>
+              ) : (
+                <button
+                  onClick={() => document.getElementById('hero-form')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="px-6 py-4 bg-[#FCDD00] text-black font-mono text-xs uppercase tracking-widest hover:bg-[#FCDD00]/80 transition-colors flex items-center gap-2"
+                >
+                  Réserver ma place
+                  <span>&gt;</span>
+                </button>
+              )}
             </div>
 
-            {/* Deduction Badge - Only for paid offers */}
-            {price !== "Gratuit" && (
+            {/* Deduction Badge - Only for paid offers (not FormCheck) */}
+            {price !== "Gratuit" && offer.id !== 'formcheck' && (
               <div className="inline-block px-4 py-2 bg-[#FCDD00]/10 border border-[#FCDD00]/30 rounded-sm">
                 <span className="font-mono text-xs text-[#FCDD00] font-bold tracking-wide">
                   💯 100% DÉDUIT SI TU PRENDS UN COACHING

@@ -1,0 +1,1003 @@
+/**
+ * APEXLABS - FormCheck
+ * Biomechanical Analysis via WhatsApp - Showcase Page
+ */
+
+import { useRef, useState } from "react";
+import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { Link } from "wouter";
+import { ArrowRight, Check, ChevronDown, Smartphone, MessageCircle, FileText, Target, Ruler, Dumbbell, X } from "lucide-react";
+
+const ACCENT = "#25D366";
+
+// ============================================================================
+// FAQ ACCORDION ITEM
+// ============================================================================
+function FAQItem({ q, a, index }: { q: string; a: string; index: number }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay: index * 0.05 }}
+      className="border-b border-white/10"
+    >
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-start justify-between gap-8 py-8 text-left transition-colors"
+        style={{ ["--hover-color" as string]: ACCENT }}
+      >
+        <h3 className="text-lg font-semibold text-white">{q}</h3>
+        <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.3 }} className="shrink-0 pt-1">
+          <ChevronDown className="h-5 w-5" style={{ color: ACCENT }} />
+        </motion.div>
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3 }} className="overflow-hidden">
+            <p className="pb-8 text-base leading-relaxed text-white/60">{a}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+// ============================================================================
+// ANIMATED VISUALIZATION - How It Works (3 Steps Flow)
+// ============================================================================
+function HowItWorksVisual() {
+  const steps = [
+    { icon: Smartphone, label: "FILME" },
+    { icon: MessageCircle, label: "ENVOIE" },
+    { icon: FileText, label: "REÇOIS" },
+  ];
+
+  return (
+    <div className="relative w-full h-full bg-gradient-to-br from-[#25D366]/10 via-black to-[#25D366]/5 flex items-center justify-center overflow-hidden rounded-sm border border-white/5">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(37,211,102,0.1)_0%,_transparent_70%)]" />
+
+      <div className="flex items-center gap-4 px-6">
+        {steps.map((step, i) => (
+          <div key={i} className="flex items-center gap-4">
+            <motion.div
+              className="flex flex-col items-center justify-center p-5 bg-black/40 border border-white/10 rounded-sm"
+              animate={{
+                scale: [1, 1.08, 1],
+                borderColor: [`rgba(255,255,255,0.1)`, `${ACCENT}60`, `rgba(255,255,255,0.1)`],
+              }}
+              transition={{ duration: 2, repeat: Infinity, delay: i * 0.6 }}
+            >
+              <step.icon className="w-8 h-8 mb-2" style={{ color: ACCENT }} />
+              <span className="text-[10px] font-mono text-white/60">{step.label}</span>
+            </motion.div>
+            {i < steps.length - 1 && (
+              <motion.div
+                className="flex items-center"
+                animate={{ opacity: [0.3, 1, 0.3] }}
+                transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.6 }}
+              >
+                <ArrowRight className="w-5 h-5" style={{ color: `${ACCENT}80` }} />
+              </motion.div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className="absolute bottom-4 left-4 text-xs font-mono" style={{ color: `${ACCENT}CC` }}>
+        <div>3 ETAPES</div>
+        <motion.div
+          className="text-white/60"
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          SIMPLE & RAPIDE
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// ANIMATED VISUALIZATION - Stick Figure with Joint Angles
+// ============================================================================
+function AngleAnalysisVisual() {
+  return (
+    <div className="relative w-full h-full bg-gradient-to-br from-[#25D366]/10 via-black to-[#25D366]/5 flex items-center justify-center overflow-hidden rounded-sm border border-white/5">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(37,211,102,0.1)_0%,_transparent_70%)]" />
+
+      {/* Grid background */}
+      <div
+        className="absolute inset-0 opacity-[0.04]"
+        style={{
+          backgroundImage: `linear-gradient(rgba(37,211,102,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(37,211,102,0.5) 1px, transparent 1px)`,
+          backgroundSize: '30px 30px'
+        }}
+      />
+
+      {/* Stick figure in squat position */}
+      <svg viewBox="0 0 200 260" className="w-48 h-60 relative z-10">
+        {/* Body lines */}
+        <g stroke="white" strokeWidth="2.5" strokeLinecap="round" opacity="0.7">
+          {/* Torso */}
+          <line x1="100" y1="60" x2="100" y2="130" />
+          {/* Head */}
+          <circle cx="100" cy="45" r="15" fill="none" />
+          {/* Left arm */}
+          <line x1="100" y1="80" x2="65" y2="120" />
+          {/* Right arm */}
+          <line x1="100" y1="80" x2="135" y2="120" />
+          {/* Left thigh */}
+          <line x1="100" y1="130" x2="70" y2="175" />
+          {/* Right thigh */}
+          <line x1="100" y1="130" x2="130" y2="175" />
+          {/* Left shin */}
+          <line x1="70" y1="175" x2="60" y2="230" />
+          {/* Right shin */}
+          <line x1="130" y1="175" x2="140" y2="230" />
+        </g>
+
+        {/* Joint circles */}
+        {[
+          { cx: 100, cy: 130, label: "HIP" },
+          { cx: 70, cy: 175, label: "KNEE" },
+          { cx: 130, cy: 175, label: "KNEE" },
+          { cx: 100, cy: 80, label: "SHOULDER" },
+        ].map((joint, i) => (
+          <g key={i}>
+            <motion.circle
+              cx={joint.cx}
+              cy={joint.cy}
+              r="5"
+              fill={ACCENT}
+              animate={{ r: [4, 6, 4], opacity: [0.6, 1, 0.6] }}
+              transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.3 }}
+            />
+          </g>
+        ))}
+
+        {/* Angle arcs */}
+        <motion.path
+          d="M 100,115 Q 85,130 70,145"
+          fill="none"
+          stroke={ACCENT}
+          strokeWidth="1.5"
+          strokeDasharray="4 2"
+          animate={{ opacity: [0.3, 1, 0.3] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        />
+        <motion.path
+          d="M 100,115 Q 115,130 130,145"
+          fill="none"
+          stroke={ACCENT}
+          strokeWidth="1.5"
+          strokeDasharray="4 2"
+          animate={{ opacity: [0.3, 1, 0.3] }}
+          transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+        />
+
+        {/* Angle labels */}
+        <motion.text
+          x="42" y="170"
+          fill={ACCENT}
+          fontSize="11"
+          fontFamily="monospace"
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          92°
+        </motion.text>
+        <motion.text
+          x="145" y="170"
+          fill={ACCENT}
+          fontSize="11"
+          fontFamily="monospace"
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+        >
+          89°
+        </motion.text>
+        <motion.text
+          x="108" y="125"
+          fill="#FCDD00"
+          fontSize="11"
+          fontFamily="monospace"
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2, repeat: Infinity, delay: 1 }}
+        >
+          78°
+        </motion.text>
+      </svg>
+
+      {/* Score badge */}
+      <motion.div
+        className="absolute top-4 right-4 bg-black/60 border rounded-sm px-3 py-2 text-center"
+        style={{ borderColor: `${ACCENT}40` }}
+        animate={{ scale: [1, 1.05, 1] }}
+        transition={{ duration: 3, repeat: Infinity }}
+      >
+        <div className="text-xs font-mono text-white/50">SCORE</div>
+        <motion.div
+          className="text-2xl font-bold font-mono"
+          style={{ color: ACCENT }}
+          animate={{ opacity: [0.7, 1, 0.7] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          87
+        </motion.div>
+        <div className="text-[8px] font-mono text-white/40">/ 100</div>
+      </motion.div>
+
+      {/* Scanning line */}
+      <motion.div
+        className="absolute left-0 right-0 h-[1px]"
+        style={{ background: `linear-gradient(90deg, transparent, ${ACCENT}60, transparent)` }}
+        animate={{ top: ['10%', '90%', '10%'] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+      />
+
+      <div className="absolute bottom-4 left-4 text-xs font-mono" style={{ color: `${ACCENT}CC` }}>
+        <div>MEDIAIPE + IA</div>
+        <motion.div
+          className="text-white/60"
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          33 POINTS ARTICULAIRES
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// ANIMATED VISUALIZATION - Exercise Grid
+// ============================================================================
+function ExerciseGridVisual() {
+  const exercises = [
+    "SQUAT", "DEADLIFT", "BENCH", "OHP",
+    "ROW", "PULL-UP", "LUNGE", "RDL",
+    "CURL", "PRESS", "DIP", "THRUSTER",
+    "CLEAN", "SNATCH", "SWING", "PLANK",
+  ];
+
+  return (
+    <div className="relative w-full h-full bg-gradient-to-br from-[#25D366]/10 via-black to-[#25D366]/5 overflow-hidden rounded-sm border border-white/5 p-4">
+      <div className="grid grid-cols-4 gap-2 h-full">
+        {exercises.map((exercise, i) => (
+          <motion.div
+            key={i}
+            className="flex items-center justify-center bg-black/40 border border-white/10 rounded text-[8px] sm:text-[9px] font-mono text-white/50"
+            animate={{
+              borderColor: [`rgba(255,255,255,0.1)`, `${ACCENT}60`, `rgba(255,255,255,0.1)`],
+              color: [`rgba(255,255,255,0.5)`, `${ACCENT}CC`, `rgba(255,255,255,0.5)`],
+            }}
+            transition={{ duration: 2, repeat: Infinity, delay: i * 0.15 }}
+          >
+            {exercise}
+          </motion.div>
+        ))}
+      </div>
+
+      <div className="absolute bottom-4 right-4 text-xs font-mono text-right" style={{ color: `${ACCENT}CC` }}>
+        <motion.div
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+        >
+          20+ EXERCICES
+        </motion.div>
+        <div className="text-white/40">SUPPORTES</div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// ANIMATED VISUALIZATION - Score Gauge
+// ============================================================================
+function ScoreGaugeVisual() {
+  return (
+    <div className="relative w-full h-full bg-gradient-to-br from-[#25D366]/10 via-black to-[#25D366]/5 flex items-center justify-center overflow-hidden rounded-sm border border-white/5">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(37,211,102,0.1)_0%,_transparent_70%)]" />
+
+      <div className="flex flex-col items-center">
+        {/* Semi-circular gauge */}
+        <svg viewBox="0 0 200 120" className="w-48">
+          {/* Background arc */}
+          <path
+            d="M 20 110 A 80 80 0 0 1 180 110"
+            fill="none"
+            stroke="rgba(255,255,255,0.1)"
+            strokeWidth="8"
+            strokeLinecap="round"
+          />
+          {/* Animated progress arc */}
+          <motion.path
+            d="M 20 110 A 80 80 0 0 1 180 110"
+            fill="none"
+            stroke={ACCENT}
+            strokeWidth="8"
+            strokeLinecap="round"
+            strokeDasharray="252"
+            animate={{ strokeDashoffset: [252, 33, 252] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          />
+          {/* Center score */}
+          <motion.text
+            x="100" y="95"
+            textAnchor="middle"
+            fill="white"
+            fontSize="36"
+            fontWeight="bold"
+            fontFamily="monospace"
+            animate={{ opacity: [0.7, 1, 0.7] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            87
+          </motion.text>
+          <text
+            x="100" y="112"
+            textAnchor="middle"
+            fill="rgba(255,255,255,0.4)"
+            fontSize="10"
+            fontFamily="monospace"
+          >
+            / 100
+          </text>
+        </svg>
+
+        {/* Sub-scores */}
+        <div className="flex gap-4 mt-4">
+          {[
+            { label: "SECURITE", value: 92 },
+            { label: "EFFICACITE", value: 85 },
+            { label: "CONTROLE", value: 88 },
+            { label: "SYMETRIE", value: 81 },
+          ].map((sub, i) => (
+            <motion.div
+              key={i}
+              className="text-center"
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
+            >
+              <div className="text-sm font-bold font-mono" style={{ color: ACCENT }}>{sub.value}</div>
+              <div className="text-[7px] font-mono text-white/40">{sub.label}</div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      <div className="absolute bottom-4 left-4 text-xs font-mono" style={{ color: `${ACCENT}CC` }}>
+        <div>FORM SCORE</div>
+        <motion.div
+          className="text-white/60"
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          4 SOUS-SCORES
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
+export default function FormCheck() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end start"]
+  });
+
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.3], [1, 0]);
+  const heroScale = useTransform(scrollYProgress, [0, 0.3], [1, 0.95]);
+
+  return (
+    <div ref={containerRef} className="bg-[#050505] min-h-screen">
+      <Header />
+
+      {/* HERO */}
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-b from-[#050505] via-[#050505] to-[#050505]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full blur-[150px]" style={{ background: `${ACCENT}08` }} />
+          <div
+            className="absolute inset-0 opacity-[0.03]"
+            style={{
+              backgroundImage: `linear-gradient(${ACCENT}4D 1px, transparent 1px), linear-gradient(90deg, ${ACCENT}4D 1px, transparent 1px)`,
+              backgroundSize: '60px 60px'
+            }}
+          />
+        </div>
+
+        <motion.div
+          style={{ opacity: heroOpacity, scale: heroScale }}
+          className="relative z-10 max-w-5xl mx-auto px-6 text-center"
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="inline-flex items-center gap-2 rounded-sm px-4 py-2 mb-8"
+            style={{ background: `${ACCENT}1A`, border: `1px solid ${ACCENT}33` }}
+          >
+            <span className="text-xs font-mono uppercase tracking-widest" style={{ color: ACCENT }}>[ NOUVEAU — 100% WHATSAPP ]</span>
+          </motion.div>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.1 }}
+            className="text-white text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black leading-[0.9] tracking-tighter mb-8"
+          >
+            Form
+            <br />
+            <span style={{ color: ACCENT }}>Check.</span>
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="text-white/60 text-lg sm:text-xl max-w-2xl mx-auto mb-8 leading-relaxed"
+          >
+            Envoie ta video d'exercice par WhatsApp. Recois une analyse biomecanique
+            complete avec score, corrections et exercices correctifs. En quelques minutes.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="flex items-center justify-center gap-4 mb-12"
+          >
+            <span className="text-white text-5xl sm:text-6xl font-bold tracking-[-0.04em]">19.99€</span>
+            <div className="text-left">
+              <span className="text-white/40 block text-sm">a partir de</span>
+              <span className="text-white/40 block text-sm">5 analyses</span>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+            className="flex flex-col sm:flex-row items-center justify-center gap-4"
+          >
+            <Link href="#packs">
+              <button
+                className="group inline-flex items-center gap-3 text-white font-semibold text-base px-8 py-4 rounded-sm transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5"
+                style={{ background: ACCENT, boxShadow: `0 0 40px ${ACCENT}4D` }}
+              >
+                Decouvrir les packs
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </Link>
+          </motion.div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1 }}
+          className="absolute bottom-12 left-1/2 -translate-x-1/2"
+        >
+          <div className="w-6 h-10 rounded-full border-2 border-white/20 flex items-start justify-center p-2">
+            <motion.div
+              animate={{ y: [0, 12, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              className="w-1.5 h-1.5 bg-white/60 rounded-full"
+            />
+          </div>
+        </motion.div>
+      </section>
+
+      {/* HOW IT WORKS */}
+      <section className="py-32 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <p className="text-sm font-medium tracking-[0.2em] uppercase mb-6" style={{ color: ACCENT }}>
+                Simple & Rapide
+              </p>
+              <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6 leading-tight">
+                Filme. Envoie.
+                <br />
+                <span style={{ color: ACCENT }}>Analyse.</span>
+              </h2>
+              <p className="text-white/50 text-lg leading-relaxed mb-8">
+                Pas d'app a telecharger. Pas de capteur a porter. Juste ton telephone et WhatsApp.
+                Tu filmes ton set, tu envoies la video, et tu recois ton analyse biomecanique complete.
+              </p>
+              <div className="space-y-4">
+                {[
+                  { icon: Smartphone, title: "1. Filme ton set", desc: "Place ton telephone en face, a 2-3 metres, et filme ta serie complete" },
+                  { icon: MessageCircle, title: "2. Envoie sur WhatsApp", desc: "Envoie la video au numero FormCheck. L'exercice est detecte automatiquement" },
+                  { icon: FileText, title: "3. Recois ton rapport", desc: "En quelques minutes, tu recois ton analyse complete avec score et corrections" },
+                ].map((step, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1 }}
+                    className="flex items-start gap-4 p-4 bg-white/[0.02] border border-white/5 rounded-sm"
+                  >
+                    <div
+                      className="w-10 h-10 rounded-sm flex items-center justify-center flex-shrink-0"
+                      style={{ background: `${ACCENT}1A`, border: `1px solid ${ACCENT}33` }}
+                    >
+                      <step.icon className="w-5 h-5" style={{ color: ACCENT }} />
+                    </div>
+                    <div>
+                      <h3 className="text-white font-semibold mb-1">{step.title}</h3>
+                      <p className="text-white/40 text-sm">{step.desc}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="relative"
+            >
+              <div className="aspect-square">
+                <HowItWorksVisual />
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* BIOMECHANICS ANALYSIS */}
+      <section className="py-32 px-6 border-t border-white/5">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="order-2 lg:order-1"
+            >
+              <div className="aspect-[4/3]">
+                <AngleAnalysisVisual />
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="order-1 lg:order-2"
+            >
+              <p className="text-sm font-medium tracking-[0.2em] uppercase mb-6" style={{ color: ACCENT }}>
+                MediaPipe + IA
+              </p>
+              <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6 leading-tight">
+                Chaque angle.
+                <br />
+                <span style={{ color: ACCENT }}>Chaque erreur.</span>
+              </h2>
+              <p className="text-white/50 text-lg leading-relaxed mb-8">
+                L'IA detecte 33 points articulaires sur ton corps, mesure les angles en temps reel,
+                et compare ta forme avec les references optimales pour chaque exercice.
+              </p>
+              <ul className="space-y-4">
+                {[
+                  "Detection automatique de l'exercice",
+                  "Analyse des angles articulaires en temps reel",
+                  "Score de forme 0-100 avec 4 sous-scores",
+                  "Corrections classees par priorite d'impact",
+                  "Comparaison avec la forme optimale",
+                ].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-white/70">
+                    <Check className="w-5 h-5" style={{ color: ACCENT }} />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* EXERCISES SUPPORTED */}
+      <section className="py-32 px-6 border-t border-white/5">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <p className="text-sm font-medium tracking-[0.2em] uppercase mb-6" style={{ color: ACCENT }}>
+                20+ Exercices
+              </p>
+              <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6 leading-tight">
+                Tous tes lifts.
+                <br />
+                <span style={{ color: ACCENT }}>Couverts.</span>
+              </h2>
+              <p className="text-white/50 text-lg leading-relaxed mb-8">
+                Squat, deadlift, bench press, overhead press, barbell row, et bien plus.
+                Chaque exercice a ses propres references biomecaniques et criteres d'evaluation.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { icon: Dumbbell, label: "Squat (back, front, goblet)" },
+                  { icon: Dumbbell, label: "Deadlift (conv, sumo, RDL)" },
+                  { icon: Dumbbell, label: "Bench Press & OHP" },
+                  { icon: Target, label: "Barbell Row & Pull-up" },
+                  { icon: Ruler, label: "Lunge & Hip Thrust" },
+                  { icon: Dumbbell, label: "Clean, Snatch, Swing..." },
+                ].map((item, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1 }}
+                    className="flex items-center gap-2 text-sm text-white/60"
+                  >
+                    <item.icon className="w-4 h-4 flex-shrink-0" style={{ color: ACCENT }} />
+                    {item.label}
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <div className="aspect-square">
+                <ExerciseGridVisual />
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* PACKS & PRICING */}
+      <section id="packs" className="py-32 px-6 border-t border-white/5">
+        <div className="max-w-5xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <p className="text-sm font-medium tracking-[0.2em] uppercase mb-6" style={{ color: ACCENT }}>
+              Packs & Tarifs
+            </p>
+            <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em]">
+              Choisis ton pack.
+            </h2>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                name: "Essentials",
+                price: "19.99€",
+                period: "",
+                analyses: "5 analyses",
+                features: ["Score de forme 0-100", "Detection d'exercice auto", "Corrections prioritaires", "Rapport HTML premium"],
+                badge: null,
+                highlight: false,
+              },
+              {
+                name: "Performance",
+                price: "49.99€",
+                period: "",
+                analyses: "15 analyses",
+                features: ["Tout Essentials inclus", "Profil morphologique", "Historique & progression", "Support prioritaire"],
+                badge: "POPULAIRE",
+                highlight: true,
+              },
+              {
+                name: "Elite",
+                price: "29.99€",
+                period: "/mois",
+                analyses: "Illimite",
+                features: ["Tout Performance inclus", "Analyses illimitees", "Acces coach prioritaire", "Nouvelles features en avant-premiere"],
+                badge: "MEILLEURE VALEUR",
+                highlight: false,
+              },
+            ].map((pack, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className={`relative rounded-sm p-8 ${
+                  pack.highlight
+                    ? "border-2 scale-[1.02]"
+                    : "border border-white/10 bg-white/[0.02]"
+                }`}
+                style={pack.highlight ? {
+                  borderColor: `${ACCENT}50`,
+                  background: `linear-gradient(to bottom, ${ACCENT}1A, transparent)`,
+                  boxShadow: `0 0 60px ${ACCENT}1A`,
+                } : {}}
+              >
+                {pack.badge && (
+                  <div
+                    className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 text-[10px] font-mono uppercase tracking-widest rounded-sm text-white"
+                    style={{ background: ACCENT }}
+                  >
+                    {pack.badge}
+                  </div>
+                )}
+                <div className="text-center mb-6">
+                  <h3 className="text-white text-xl font-bold mb-2">{pack.name}</h3>
+                  <div className="flex items-baseline justify-center gap-1">
+                    <span className="text-white text-4xl font-bold">{pack.price}</span>
+                    {pack.period && <span className="text-white/40 text-sm">{pack.period}</span>}
+                  </div>
+                  <div className="text-sm mt-1" style={{ color: ACCENT }}>{pack.analyses}</div>
+                </div>
+                <ul className="space-y-3 mb-8">
+                  {pack.features.map((feat, j) => (
+                    <li key={j} className="flex items-center gap-2 text-sm text-white/70">
+                      <Check className="w-4 h-4 flex-shrink-0" style={{ color: ACCENT }} />
+                      {feat}
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* WHAT'S INCLUDED */}
+      <section className="py-32 px-6 border-t border-white/5">
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em]">
+              Tout ce qui est inclus.
+            </h2>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="rounded-sm backdrop-blur-xl p-10"
+            style={{
+              border: `1px solid ${ACCENT}4D`,
+              background: `linear-gradient(to bottom, ${ACCENT}1A, transparent)`,
+              boxShadow: `0 0 60px ${ACCENT}1A`,
+            }}
+          >
+            <div className="grid sm:grid-cols-2 gap-6">
+              {[
+                "Score de forme 0-100",
+                "4 sous-scores (securite, efficacite, controle, symetrie)",
+                "Detection automatique d'exercice",
+                "Analyse des angles articulaires",
+                "Corrections prioritaires personnalisees",
+                "Exercices correctifs recommandes",
+                "Rapport HTML premium interactif",
+                "Profil morphologique personnalise",
+                "Comptage des repetitions",
+                "Analyse du tempo",
+                "Detection des asymetries",
+                "20+ exercices supportes",
+              ].map((item, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <Check className="w-5 h-5 flex-shrink-0" style={{ color: ACCENT }} />
+                  <span className="text-white/80">{item}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-10 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-6">
+              <div>
+                <span className="text-white text-5xl font-bold tracking-[-0.04em]">19.99€</span>
+                <span className="text-white/40 ml-2">a partir de</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="aspect-square w-10 rounded-sm flex items-center justify-center" style={{ background: `${ACCENT}1A`, border: `1px solid ${ACCENT}33` }}>
+                  <MessageCircle className="w-5 h-5" style={{ color: ACCENT }} />
+                </div>
+                <span className="text-white/60 text-sm">Tout se passe sur WhatsApp</span>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* COMPARISON: YouTube vs FormCheck */}
+      <section className="py-32 px-6 border-t border-white/5">
+        <div className="max-w-5xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em]">
+              Conseils YouTube <span className="text-white/30">vs</span> <span style={{ color: ACCENT }}>FormCheck</span>
+            </h2>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* YouTube */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="rounded-sm border border-white/10 bg-white/[0.03] p-8"
+            >
+              <div className="text-white/40 text-sm font-medium uppercase tracking-widest mb-6">Conseils YouTube</div>
+              <ul className="space-y-4">
+                {[
+                  "Generiques, pas adaptes a toi",
+                  "Pas de mesure objective",
+                  "Tu ne vois pas tes propres erreurs",
+                  "Pas de suivi dans le temps",
+                  "Informations contradictoires",
+                ].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-white/50">
+                    <X className="w-5 h-5 text-red-500/60 flex-shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+
+            {/* FormCheck */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="rounded-sm p-8"
+              style={{
+                border: `1px solid ${ACCENT}4D`,
+                background: `linear-gradient(to bottom, ${ACCENT}1A, transparent)`,
+                boxShadow: `0 0 60px ${ACCENT}1A`,
+              }}
+            >
+              <div className="text-sm font-medium uppercase tracking-widest mb-6" style={{ color: ACCENT }}>FormCheck</div>
+              <ul className="space-y-4">
+                {[
+                  "Analyse de TES angles, TES erreurs",
+                  "Score objectif 0-100 mesurable",
+                  "Corrections classees par priorite",
+                  "Exercices correctifs personnalises",
+                  "Historique et progression dans le temps",
+                ].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-white/80">
+                    <Check className="w-5 h-5 flex-shrink-0" style={{ color: ACCENT }} />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* SCORE GAUGE SECTION */}
+      <section className="py-32 px-6 border-t border-white/5">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="order-2 lg:order-1"
+            >
+              <div className="aspect-[4/3]">
+                <ScoreGaugeVisual />
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="order-1 lg:order-2"
+            >
+              <p className="text-sm font-medium tracking-[0.2em] uppercase mb-6" style={{ color: ACCENT }}>
+                Score & Feedback
+              </p>
+              <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6 leading-tight">
+                Un score.
+                <br />
+                <span style={{ color: ACCENT }}>Des reponses.</span>
+              </h2>
+              <p className="text-white/50 text-lg leading-relaxed mb-8">
+                Chaque analyse te donne un score global 0-100 decompose en 4 axes:
+                securite articulaire, efficacite du mouvement, controle moteur et symetrie.
+                Tu sais exactement ou tu en es et quoi corriger en premier.
+              </p>
+              <ul className="space-y-4">
+                {[
+                  "Score global composite 0-100",
+                  "4 sous-scores pour cibler les faiblesses",
+                  "Rep par rep: identification des meilleurs et pires reps",
+                  "Exercices correctifs adaptes a TES compensations",
+                ].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-white/70">
+                    <div className="w-1.5 h-1.5 rounded-full" style={{ background: ACCENT }} />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="py-32 px-6 border-t border-white/5">
+        <div className="max-w-3xl mx-auto">
+          <motion.div initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
+            <p className="text-sm font-medium tracking-[0.2em] uppercase mb-6" style={{ color: ACCENT }}>FAQ</p>
+            <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em]">Questions frequentes</h2>
+          </motion.div>
+          <div className="divide-y divide-white/10">
+            {[
+              { q: "Comment envoyer ma video ?", a: "Ouvre WhatsApp, envoie ta video d'exercice au numero FormCheck. L'IA detecte automatiquement l'exercice et analyse ta forme. Tu recois ton rapport en quelques minutes. Filme de face ou de profil, a 2-3 metres, en format portrait ou paysage." },
+              { q: "Quels exercices sont supportes ?", a: "20+ exercices: squat (back, front, goblet), deadlift (conventionnel, sumo, roumain), bench press, overhead press, barbell row, pull-up, lunge, hip thrust, curl, dip, clean, snatch, kettlebell swing, et plus. La liste s'agrandit regulierement." },
+              { q: "Comment le score est-il calcule ?", a: "L'IA utilise MediaPipe pour detecter 33 points articulaires et mesurer les angles en temps reel. Le score 0-100 est base sur la comparaison avec les angles optimaux pour chaque exercice, pondere par la gravite de chaque deviation. 4 sous-scores: securite, efficacite, controle, symetrie." },
+              { q: "C'est quoi le rapport HTML premium ?", a: "Un rapport interactif avec tes angles mesures, les corrections prioritaires classees par impact, des exercices correctifs recommandes, le comptage des reps (completes vs partielles), l'analyse du tempo, et ton profil morphologique. Tu peux le consulter sur n'importe quel appareil, meme hors ligne." },
+              { q: "Est-ce que ca remplace un coach ?", a: "Non. FormCheck est un outil d'analyse objective qui complete le travail d'un coach. C'est un miroir intelligent qui te montre ce que tu ne peux pas voir seul. Ideal entre tes seances de coaching, pour valider ta technique en autonomie, ou pour progresser plus vite." },
+            ].map((faq, i) => (
+              <FAQItem key={i} q={faq.q} a={faq.a} index={i} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FINAL CTA */}
+      <section className="py-32 px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="max-w-4xl mx-auto text-center"
+        >
+          <h2 className="text-white text-4xl sm:text-5xl md:text-6xl font-bold tracking-[-0.04em] mb-8">
+            Pret a corriger
+            <br />
+            <span style={{ color: ACCENT }}>ta forme ?</span>
+          </h2>
+          <p className="text-white/50 text-lg mb-12 max-w-xl mx-auto">
+            Une video. Un score. Des corrections. C'est tout ce qu'il te faut pour progresser.
+          </p>
+          <div className="flex items-center justify-center gap-3">
+            <div className="aspect-square w-12 rounded-sm flex items-center justify-center" style={{ background: `${ACCENT}1A`, border: `1px solid ${ACCENT}33` }}>
+              <MessageCircle className="w-6 h-6" style={{ color: ACCENT }} />
+            </div>
+            <span className="text-white/60">100% via WhatsApp — aucune app a telecharger</span>
+          </div>
+        </motion.div>
+      </section>
+
+      <Footer />
+    </div>
+  );
+}

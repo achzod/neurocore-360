@@ -70,6 +70,11 @@ export function Footer() {
                   Ultimate Scan
                 </Link>
               </li>
+              <li>
+                <Link href="/offers/formcheck" className="hover:text-white transition-colors">
+                  FormCheck
+                </Link>
+              </li>
             </ul>
           </div>
 

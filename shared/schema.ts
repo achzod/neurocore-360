@@ -349,6 +349,28 @@ export const PRICING_PLANS = [
     popular: false,
     cta: "Choisir Ultimate Scan",
   },
+  {
+    id: "formcheck",
+    name: "FormCheck",
+    price: 19.99,
+    priceLabel: "A partir de 19.99€",
+    subtitle: "WhatsApp Bot",
+    description: "Analyse biomecanique par video WhatsApp",
+    icon: "Video",
+    color: "green",
+    href: "/offers/formcheck",
+    features: [
+      "Score de forme 0-100",
+      "Detection automatique d'exercice",
+      "Corrections prioritaires personnalisees",
+      "Exercices correctifs recommandes",
+      "Rapport HTML premium",
+      "20+ exercices supportes",
+    ],
+    lockedFeatures: [],
+    popular: false,
+    cta: "Decouvrir FormCheck",
+  },
 ] as const;
 
 // Review system

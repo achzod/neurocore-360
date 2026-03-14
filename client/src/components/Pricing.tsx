@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { Check, X, Sparkles, Zap, Crown, Watch, Camera, FileText, Brain, ArrowRight } from "lucide-react";
+import { Check, X, Sparkles, Zap, Crown, Watch, Camera, FileText, Brain, ArrowRight, MessageCircle } from "lucide-react";
 
 interface PricingTier {
   name: string;
@@ -83,6 +83,27 @@ const tiers: PricingTier[] = [
     icon: <Crown className="w-5 h-5" />,
     gradient: "from-violet-500 to-purple-500",
   },
+  {
+    name: "FormCheck",
+    price: "19.99",
+    period: "",
+    description: "Analyse biomécanique de tes exercices par vidéo WhatsApp",
+    badge: "NOUVEAU",
+    features: [
+      { text: "Score de forme 0-100", included: true },
+      { text: "Détection auto d'exercice", included: true },
+      { text: "Corrections prioritaires", included: true },
+      { text: "Exercices correctifs", included: true },
+      { text: "Rapport HTML premium", included: true },
+      { text: "20+ exercices supportés", included: true },
+      { text: "Profil morphologique", included: true },
+      { text: "100% via WhatsApp", included: true },
+    ],
+    cta: "Découvrir FormCheck",
+    href: "/offers/formcheck",
+    icon: <MessageCircle className="w-5 h-5" />,
+    gradient: "from-green-500 to-emerald-500",
+  },
 ];
 
 export function Pricing() {
@@ -106,7 +127,7 @@ export function Pricing() {
             </span>
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4">
-            3 formules, un objectif:{" "}
+            Nos formules, un objectif:{" "}
             <span className="bg-gradient-to-r from-primary to-emerald-400 bg-clip-text text-transparent">
               t'optimiser
             </span>
@@ -117,7 +138,7 @@ export function Pricing() {
         </motion.div>
 
         {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
           {tiers.map((tier, index) => (
             <motion.div
               key={tier.name}
@@ -138,6 +159,8 @@ export function Pricing() {
                     className={`px-4 py-1 rounded-full text-xs font-bold tracking-wider ${
                       tier.popular
                         ? "bg-primary text-black"
+                        : tier.name === "FormCheck"
+                        ? "bg-emerald-500 text-white"
                         : "bg-violet-500 text-white"
                     }`}
                   >
