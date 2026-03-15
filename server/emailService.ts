@@ -2197,6 +2197,9 @@ export async function sendBloodAnalysisHtmlEmail(
   try {
     const token = await getAccessToken();
     void baseUrl;
+    // Strip forbidden dashes/emojis from the report markdown BEFORE rendering HTML
+    // and BEFORE the quality gate checks — otherwise the gate blocks on raw AI em-dashes.
+    reportMarkdown = stripBloodForbiddenFormatting(reportMarkdown);
     const fallbackNameFromEmail = String(email || "")
       .split("@")[0]
       .replace(/[._-]+/g, " ")
