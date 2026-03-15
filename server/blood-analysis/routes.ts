@@ -1058,6 +1058,52 @@ export function registerBloodAnalysisRoutes(app: Express): void {
   });
 
   /**
+   * POST /api/admin/blood-analysis/report/:id/force-send
+   * Force immediate email delivery of a blood report (admin only)
+   */
+  app.post("/api/admin/blood-analysis/report/:id/force-send", async (req, res) => {
+    try {
+      const adminKey = req.headers["x-admin-key"] || req.query.key || (req.body as any)?.adminKey;
+      const validKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY;
+      if (!validKey || adminKey !== validKey) {
+        res.status(401).json({ error: "Unauthorized - admin key required" });
+        return;
+      }
+
+      const report = await storage.getBloodReport(req.params.id);
+      if (!report) {
+        res.status(404).json({ error: "Rapport introuvable" });
+        return;
+      }
+
+      if (!report.aiReport) {
+        res.status(400).json({ error: "AI report not yet generated" });
+        return;
+      }
+
+      const baseUrl = process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || "https://apexlabs.onrender.com";
+      const sent = await sendBloodClientDeliveryEmail(
+        report.email,
+        report.id,
+        report.aiReport,
+        baseUrl,
+        report.markers as MarkerAnalysis[],
+        report.profile as Record<string, unknown>,
+      );
+
+      if (sent) {
+        await storage.updateBloodReport(report.id, { deliveryStatus: "SENT", emailSentAt: new Date() });
+        res.json({ success: true, reportId: report.id, email: report.email, status: "sent" });
+      } else {
+        res.json({ success: false, reportId: report.id, error: "Email delivery blocked by quality gate" });
+      }
+    } catch (error) {
+      console.error("[BloodAnalysis] Force-send error:", error);
+      res.status(500).json({ error: "Erreur envoi" });
+    }
+  });
+
+  /**
    * GET /api/blood-analysis/report/:id
    * Fetch stored blood analysis report
    */
