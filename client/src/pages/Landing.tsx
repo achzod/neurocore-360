@@ -1004,7 +1004,12 @@ function ReviewsSection() {
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.reviews?.length) {
-          setRealReviews(data.reviews.map(mapDbReview));
+          // Filter out internal/test reviews (owner emails)
+          const EXCLUDED_EMAILS = ["achkou@gmail.com", "coaching@achzodcoaching.com"];
+          const filtered = data.reviews.filter(
+            (r: { email: string }) => !EXCLUDED_EMAILS.includes(r.email.toLowerCase())
+          );
+          setRealReviews(filtered.map(mapDbReview));
         }
       })
       .catch(() => {});
