@@ -604,7 +604,7 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
           </div>
           <div className="flex items-center gap-2">
             <Gift className="h-4 w-4" />
-            Garantie satisfait
+            100% deductible du coaching
           </div>
         </div>
       </div>

@@ -1289,7 +1289,7 @@ const AnabolicScanReportInner: React.FC<AnabolicScanReportProps> = ({ auditId })
             Debloquer l'Ultimate Scan
           </a>
           <p className="mt-4 text-sm" style={{ color: currentTheme.colors.textMuted }}>
-            Garantie satisfait ou rembourse 30 jours
+            100% deductible de ton coaching Achzod
           </p>
         </div>
       );
