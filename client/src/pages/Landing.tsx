@@ -863,7 +863,7 @@ function CoachingDeductionBanner() {
           >
             <div className="px-5 py-3 bg-white/5 border border-white/10 rounded-sm">
               <span className="font-mono text-sm text-white/40">Audit</span>
-              <span className="block text-2xl font-black text-white">59-149€</span>
+              <span className="block text-2xl font-black text-white">59-99€</span>
             </div>
             <span className="text-[#FCDD00] text-2xl font-bold">→</span>
             <div className="px-5 py-3 bg-[#FCDD00]/10 border border-[#FCDD00]/30 rounded-sm">
@@ -1041,7 +1041,7 @@ function ReviewsSection() {
         {/* Header with Stroke Text Effect */}
         <div className="text-center mb-16">
           <span className="font-mono text-[10px] sm:text-xs text-neuro-accent uppercase tracking-[0.3em] block mb-3">
-            {realReviews.length > 0 ? `${realReviews.length} avis vérifiés` : `${BETA_REVIEWS.length}+ avis`} • 4.9/5 ★
+            {allReviews.length}+ avis vérifiés • 4.9/5 ★
           </span>
           <h2 className="font-sans font-black text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white uppercase tracking-tighter mb-2">
             RÉSULTATS
