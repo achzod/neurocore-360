@@ -274,6 +274,18 @@ if (process.env.NODE_ENV === "production") {
 
       setInterval(runScheduledDelivery, CRON_INTERVAL_MS);
       log("Scheduled delivery cron started (every 5 min)");
+
+      // Self-ping to prevent Render cold starts (every 4 min)
+      if (process.env.NODE_ENV === "production") {
+        const selfPingUrl = `${getBaseUrl()}/api/health`;
+        const pingInterval = setInterval(async () => {
+          try {
+            await fetch(selfPingUrl);
+          } catch {}
+        }, 4 * 60 * 1000);
+        pingInterval.unref();
+        log("Self-ping anti cold start enabled (every 4 min)");
+      }
     },
   );
 

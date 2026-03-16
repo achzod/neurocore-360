@@ -109,6 +109,62 @@ export async function registerRoutes(
     });
   });
 
+  // Pre-launch diagnostic — checks all critical services
+  app.get("/api/admin/launch-check", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    const checks: Record<string, { ok: boolean; detail?: string }> = {};
+
+    // 1. Database
+    try {
+      const r = await pool.query("SELECT COUNT(*) FROM audits");
+      checks.database = { ok: true, detail: `${r.rows[0].count} audits in DB` };
+    } catch (e: any) {
+      checks.database = { ok: false, detail: e.message };
+    }
+
+    // 2. Stripe
+    checks.stripe = {
+      ok: Boolean(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_WEBHOOK_SECRET),
+      detail: !process.env.STRIPE_SECRET_KEY ? "STRIPE_SECRET_KEY missing" :
+              !process.env.STRIPE_WEBHOOK_SECRET ? "STRIPE_WEBHOOK_SECRET missing" :
+              process.env.STRIPE_SECRET_KEY.startsWith("sk_live_") ? "LIVE mode" : "TEST mode",
+    };
+
+    // 3. Email (SMTP)
+    checks.email = {
+      ok: Boolean(process.env.SMTP_USER && process.env.SMTP_PASS),
+      detail: !process.env.SMTP_USER ? "SMTP_USER missing" :
+              !process.env.SMTP_PASS ? "SMTP_PASS missing" : "configured",
+    };
+
+    // 4. AI (Gemini)
+    checks.gemini = {
+      ok: Boolean(process.env.GEMINI_API_KEY),
+      detail: process.env.GEMINI_API_KEY ? `model: ${process.env.GEMINI_MODEL || "default"}` : "GEMINI_API_KEY missing",
+    };
+
+    // 5. Sentry
+    checks.sentry = {
+      ok: Boolean(process.env.SENTRY_DSN),
+      detail: process.env.SENTRY_DSN ? "enabled" : "NOT configured — errors invisible",
+    };
+
+    // 6. Admin
+    checks.admin = {
+      ok: Boolean(process.env.ADMIN_SECRET),
+      detail: process.env.ADMIN_SECRET ? "configured" : "ADMIN_SECRET missing",
+    };
+
+    // 7. APP_URL
+    checks.appUrl = {
+      ok: Boolean(process.env.APP_URL),
+      detail: process.env.APP_URL || "NOT SET — emails will use fallback URL",
+    };
+
+    const allOk = Object.values(checks).every((c) => c.ok);
+    res.json({ ready: allOk, checks });
+  });
+
   const PHOTO_FIELD_VARIANTS: string[][] = [
     ["photoFront", "photo-front"],
     ["photoSide", "photo-side"],
