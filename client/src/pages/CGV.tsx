@@ -87,6 +87,19 @@ export default function CGV() {
                   protocoles avances 30-60-90 jours.
                 </p>
               </div>
+              <div className="rounded-sm border border-white/10 bg-[#0F0F0F] p-4">
+                <h4 className="font-semibold text-white">Blood Analysis (99€ - Paiement unique)</h4>
+                <p className="mt-1 text-sm text-white/50">
+                  Analyse complete de bilan sanguin avec rapport personnalise, protocoles d'optimisation et
+                  suivi des marqueurs biologiques.
+                </p>
+              </div>
+              <div className="rounded-sm border border-white/10 bg-[#0F0F0F] p-4">
+                <h4 className="font-semibold text-white">FormCheck (Bientot disponible)</h4>
+                <p className="mt-1 text-sm text-white/50">
+                  Analyse video de la technique d'exercice avec corrections personnalisees et protocoles de mobilite.
+                </p>
+              </div>
             </div>
           </section>
 
@@ -136,8 +149,8 @@ export default function CGV() {
             <h2 className="mb-4 text-xl font-bold text-white">Article 5 - Prix et Paiement</h2>
             <p className="text-white/60 leading-relaxed">
               Les prix indiques en euros sont TTC. Le paiement est exigible immediatement a la commande
-              via Stripe (carte bancaire). Le paiement securise en ligne est realise par l'intermediaire
-              de Stripe. Les informations transmises sont chiffrees selon les standards de securite les
+              via Stripe (carte bancaire) ou PayPal. Le paiement securise en ligne est realise par l'intermediaire
+              de Stripe ou PayPal. Les informations transmises sont chiffrees selon les standards de securite les
               plus eleves.
             </p>
             <p className="mt-3 text-white/60 leading-relaxed">
@@ -155,17 +168,23 @@ export default function CGV() {
           </section>
 
           <section className="rounded-sm border border-red-500/30 bg-red-500/10 p-6 md:p-8">
-            <h2 className="mb-4 text-xl font-bold text-red-400">Article 7 - Politique de Non-Remboursement</h2>
-            <div className="rounded-sm border border-red-500/20 bg-red-500/5 p-4 mb-4">
-              <h4 className="font-semibold text-red-400">Absence de droit de retractation</h4>
+            <h2 className="mb-4 text-xl font-bold text-red-400">Article 7 - Droit de Retractation</h2>
+            <p className="text-white/60 leading-relaxed">
+              Conformement aux articles L221-18 et suivants du Code de la consommation, le client dispose d'un delai
+              de 14 jours a compter de la conclusion du contrat pour exercer son droit de retractation, sans avoir a
+              justifier de motifs ni a payer de penalites.
+            </p>
+            <div className="rounded-sm border border-red-500/20 bg-red-500/5 p-4 mt-4 mb-4">
+              <h4 className="font-semibold text-red-400">Exception pour les contenus numeriques</h4>
               <p className="mt-2 text-sm text-white/60">
-                AchzodCoaching est une societe etablie a Dubai, Emirats arabes unis. Les lois locales
-                applicables ne prevoient aucun droit de retractation de 14 jours comme en France ou
-                dans l'Union europeenne.
+                Conformement a l'article L221-28 du Code de la consommation, le droit de retractation ne peut etre
+                exerce pour les contrats de fourniture de contenu numerique non fourni sur support materiel dont
+                l'execution a commence avec l'accord prealable expres du consommateur et son renoncement expres a son
+                droit de retractation.
               </p>
             </div>
             <p className="text-white/60 leading-relaxed">
-              En validant sa commande et en procedant au paiement, le client :
+              En validant sa commande et en cochant la case dediee, le client :
             </p>
             <ul className="mt-4 space-y-2 text-white/60">
               <li className="flex items-start gap-2">
@@ -174,16 +193,16 @@ export default function CGV() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-400 mt-2 flex-shrink-0" />
-                <span>Reconnait que les prestations fournies sont des contenus numeriques delivres integralement des validation.</span>
+                <span>Reconnait que les prestations fournies sont des contenus numeriques delivres integralement des validation du paiement.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-400 mt-2 flex-shrink-0" />
-                <span>Accepte et confirme renoncer irrevocablement a toute possibilite d'annulation ou de remboursement.</span>
+                <span>Renonce expressement a son droit de retractation conformement a l'article L221-28 du Code de la consommation.</span>
               </li>
             </ul>
             <p className="mt-4 text-white/60 leading-relaxed">
-              <strong className="text-red-400">Aucune exception :</strong> Aucun remboursement ne sera accorde en cas de changement
-              d'avis, insatisfaction subjective, difficultes personnelles ou absence d'utilisation.
+              Pour exercer votre droit de retractation (avant generation du rapport), envoyez un email a{" "}
+              <a href="mailto:coaching@achzodcoaching.com" className="text-[#FCDD00] hover:underline">coaching@achzodcoaching.com</a>.
             </p>
           </section>
 
@@ -199,7 +218,7 @@ export default function CGV() {
             <ul className="mt-4 space-y-2 text-white/60">
               <li className="flex items-start gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#FCDD00] mt-2 flex-shrink-0" />
-                <span>Les prestations sont fournies par une societe etablie a Dubai, ou aucun droit legal de retractation n'existe.</span>
+                <span>Le droit de retractation ne s'applique pas une fois le contenu numerique genere, conformement a l'article L221-28 du Code de la consommation.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#FCDD00] mt-2 flex-shrink-0" />
@@ -255,14 +274,22 @@ export default function CGV() {
           </section>
 
           <section className="rounded-sm bg-white/[0.03] border border-white/10 p-6 md:p-8">
-            <h2 className="mb-4 text-xl font-bold text-white">Article 12 - Droit Applicable</h2>
+            <h2 className="mb-4 text-xl font-bold text-white">Article 12 - Droit Applicable et Litiges</h2>
             <p className="text-white/60 leading-relaxed">
-              Les presentes conditions sont regies par les lois en vigueur a Dubai, Emirats arabes unis.
-              Tout litige sera soumis a la competence exclusive des tribunaux de Dubai.
+              Les presentes conditions sont soumises au droit francais. Pour les consommateurs residant dans l'Union
+              europeenne, les dispositions imperatives du droit de la consommation de leur pays de residence s'appliquent.
             </p>
             <p className="mt-3 text-white/60 leading-relaxed">
               En cas de litige, le client s'adressera en priorite a AchzodCoaching pour obtenir une
-              solution amiable par email a : <a href="mailto:achzodyt@gmail.com" className="text-[#FCDD00] hover:underline">achzodyt@gmail.com</a>
+              solution amiable par email a : <a href="mailto:coaching@achzodcoaching.com" className="text-[#FCDD00] hover:underline">coaching@achzodcoaching.com</a>
+            </p>
+            <p className="mt-3 text-white/60 leading-relaxed">
+              Conformement aux articles L611-1 et suivants du Code de la consommation, en cas d'echec de la tentative de
+              resolution amiable, le client peut recourir gratuitement au service de mediation. Le client peut egalement
+              utiliser la plateforme de reglement en ligne des litiges de la Commission europeenne :{" "}
+              <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener noreferrer" className="text-[#FCDD00] hover:underline">
+                https://ec.europa.eu/consumers/odr
+              </a>
             </p>
           </section>
 

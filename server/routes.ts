@@ -89,6 +89,8 @@ export async function registerRoutes(
   const auditCreateLimiter = createRateLimiter({ windowMs: 60_000, max: 5 });
   const discoveryLimiter = createRateLimiter({ windowMs: 60_000, max: 5 });
   const checkoutLimiter = createRateLimiter({ windowMs: 60_000, max: 5 });
+  const magicLinkLimiter = createRateLimiter({ windowMs: 15 * 60_000, max: 5 }); // 5 per 15min per IP
+  const adminLimiter = createRateLimiter({ windowMs: 60_000, max: 20 }); // 20 per min per IP
 
   app.get("/api/health", async (_req, res) => {
     try {
@@ -231,6 +233,9 @@ export async function registerRoutes(
     const responses = parseResponsesRecord(rawResponses) || {};
     return calculateScoresFromResponses(responses);
   };
+
+  // Rate limit all admin endpoints
+  app.use("/api/admin", adminLimiter);
 
   // Admin auth helper - checks ADMIN_SECRET or ADMIN_KEY (header only)
   function requireAdminAuth(req: any, res: any, silent?: boolean): boolean {
@@ -1162,7 +1167,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/auth/magic-link", async (req, res) => {
+  app.post("/api/auth/magic-link", magicLinkLimiter, async (req, res) => {
     try {
       const { email } = req.body;
       const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";

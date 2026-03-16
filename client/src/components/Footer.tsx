@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { SiInstagram, SiYoutube, SiFacebook } from "react-icons/si";
+import { resetCookieConsent } from "@/components/CookieConsent";
 
 export function Footer() {
   return (
@@ -130,6 +131,9 @@ export function Footer() {
               <Link href="/politique-confidentialite" className="hover:text-white transition-colors">
                 Confidentialite
               </Link>
+              <button onClick={resetCookieConsent} className="hover:text-white transition-colors">
+                Gerer mes cookies
+              </button>
             </div>
           </div>
         </div>

@@ -381,6 +381,7 @@ function QuestionnaireContent() {
   const [photoData, setPhotoData] = useState<Record<string, string>>({});
   const [email, setEmail] = useState("");
   const [emailSubmitted, setEmailSubmitted] = useState(false);
+  const [rgpdConsent, setRgpdConsent] = useState(false);
 
   // Lire le plan depuis l'URL (anabolic/ultimate/gratuit)
   const [selectedPlan] = useState<PlanId>(() => {
@@ -876,7 +877,20 @@ function QuestionnaireContent() {
                       data-testid="input-email"
                     />
                   </div>
-                  <Button type="submit" className="w-full" data-testid="button-start-questionnaire">
+                  <div className="flex items-start gap-2">
+                    <Checkbox
+                      id="rgpd-consent"
+                      checked={rgpdConsent}
+                      onCheckedChange={(checked) => setRgpdConsent(checked === true)}
+                      data-testid="checkbox-rgpd-consent"
+                    />
+                    <Label htmlFor="rgpd-consent" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
+                      J'accepte que mes donnees de sante soient collectees et traitees par APEXLABS dans le cadre de mon audit personnalise, conformement a la{" "}
+                      <a href="/politique-confidentialite" target="_blank" className="text-primary underline">politique de confidentialite</a>.
+                      <span className="ml-1 text-destructive">*</span>
+                    </Label>
+                  </div>
+                  <Button type="submit" className="w-full" disabled={!rgpdConsent} data-testid="button-start-questionnaire">
                     Commencer le questionnaire
                   </Button>
                   <p className="text-center text-xs text-muted-foreground">

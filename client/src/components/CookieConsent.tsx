@@ -93,3 +93,9 @@ function loadGA() {
 export function hasAnalyticsConsent(): boolean {
   return localStorage.getItem(CONSENT_KEY) === "all";
 }
+
+/** Reset cookie consent to re-show the banner */
+export function resetCookieConsent() {
+  localStorage.removeItem(CONSENT_KEY);
+  window.location.reload();
+}

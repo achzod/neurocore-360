@@ -91,7 +91,9 @@ export default function MentionsLegales() {
             <div className="mt-4 rounded-sm border border-white/10 bg-[#0F0F0F] p-4">
               <p className="text-white/60">
                 <strong className="text-white">Hebergeur :</strong><br />
-                Replit, Inc.<br />
+                Render Services, Inc.<br />
+                525 Brannan St, Suite 300, San Francisco, CA 94107, USA<br />
+                <a href="https://render.com" target="_blank" rel="noopener noreferrer" className="text-[#FCDD00] hover:underline">render.com</a><br />
                 Les donnees sont stockees sur des serveurs securises proteges par un pare-feu.
               </p>
             </div>

@@ -19,6 +19,8 @@ import {
   CreditCard,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -119,6 +121,7 @@ export default function Checkout() {
   const [validatedPromo, setValidatedPromo] = useState<{ code: string; discount: number } | null>(null);
   const [promoError, setPromoError] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"stripe" | "paypal">("stripe");
+  const [cgvAccepted, setCgvAccepted] = useState(false);
 
   useEffect(() => {
     const savedEmail = localStorage.getItem("neurocore_email");
@@ -507,6 +510,39 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
           </motion.div>
         )}
 
+        {/* CGV + Retractation acceptance */}
+        {selectedPlan && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.38 }}
+            className="mt-6 max-w-md mx-auto"
+          >
+            <Card>
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-start gap-2">
+                  <Checkbox
+                    id="cgv-accept"
+                    checked={cgvAccepted}
+                    onCheckedChange={(checked) => setCgvAccepted(checked === true)}
+                    data-testid="checkbox-cgv"
+                  />
+                  <Label htmlFor="cgv-accept" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
+                    J'ai lu et j'accepte les{" "}
+                    <a href="/cgv" target="_blank" className="text-primary underline">Conditions Generales de Vente</a>
+                    {selectedPlan !== "gratuit" && (
+                      <>
+                        {" "}et je demande l'execution immediate du service. Je reconnais perdre mon droit de retractation une fois le rapport genere.
+                      </>
+                    )}
+                    <span className="ml-1 text-destructive">*</span>
+                  </Label>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -536,7 +572,7 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
               </div>
               <Button
                 size="lg"
-                disabled={!selectedPlan || createAuditMutation.isPending}
+                disabled={!selectedPlan || !cgvAccepted || createAuditMutation.isPending}
                 onClick={handleConfirm}
                 className="w-full sm:w-auto"
                 data-testid="button-confirm-plan"
