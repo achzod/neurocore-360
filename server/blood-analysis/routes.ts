@@ -43,6 +43,7 @@ import {
   searchKnowledgeForRisk
 } from "./recommendations-engine";
 import { storage } from "../storage";
+import { createRateLimiter } from "../middleware/rateLimit";
 import {
   sendAdminEmailNewAudit,
   sendBloodAnalysisHtmlEmail,
@@ -382,6 +383,8 @@ const normalizeLegacyReportMarker = (
 };
 
 export function registerBloodAnalysisRoutes(app: Express): void {
+  const bloodUploadLimiter = createRateLimiter({ windowMs: 60_000, max: 3 });
+  const bloodPurchaseLimiter = createRateLimiter({ windowMs: 60_000, max: 5 });
   /**
    * GET /api/blood-analysis/biomarkers
    * Get all available biomarkers with their ranges
@@ -583,7 +586,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
    * POST /api/blood-analysis/purchase
    * Create Stripe payment intent for Blood Analysis
    */
-  app.post("/api/blood-analysis/purchase", async (req, res) => {
+  app.post("/api/blood-analysis/purchase", bloodPurchaseLimiter, async (req, res) => {
     try {
       const { userId, email, priceId } = req.body as {
         userId?: string;
@@ -649,7 +652,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
    * POST /api/blood-analysis/upload
    * Upload blood test results (manual input for MVP)
    */
-  app.post("/api/blood-analysis/upload", async (req, res) => {
+  app.post("/api/blood-analysis/upload", bloodUploadLimiter, async (req, res) => {
     try {
       const { pdfBase64, pdfName } = req.body as {
         pdfBase64?: string;
@@ -696,7 +699,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
    * POST /api/blood-analysis/submit
    * Submit complete blood analysis (markers + questionnaire)
    */
-  app.post("/api/blood-analysis/submit", async (req, res) => {
+  app.post("/api/blood-analysis/submit", bloodUploadLimiter, async (req, res) => {
     try {
       const { userId, email, markers, profile, pdfBase64, pdfName, sessionId, asyncAI, includeAI } = req.body as {
         userId?: string;

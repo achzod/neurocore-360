@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
+import { CookieConsent } from "@/components/CookieConsent";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   constructor(props: { children: ReactNode }) {
@@ -51,6 +52,7 @@ const MentionsLegales = lazy(() => import("@/pages/MentionsLegales"));
 const CGV = lazy(() => import("@/pages/CGV"));
 const TestAudit = lazy(() => import("@/pages/TestAudit"));
 const FAQ = lazy(() => import("@/pages/FAQ"));
+const PolitiqueConfidentialite = lazy(() => import("@/pages/PolitiqueConfidentialite"));
 const Report = lazy(() => import("@/pages/Report"));
 const BloodAnalysisDashboard = lazy(() => import("@/pages/BloodAnalysisDashboard"));
 const BloodReportModern = lazy(() => import("@/pages/BloodReportModern"));
@@ -138,6 +140,7 @@ function Router() {
         <Route path="/auth/verify" component={Verify} />
         <Route path="/mentions-legales" component={MentionsLegales} />
         <Route path="/cgv" component={CGV} />
+        <Route path="/politique-confidentialite" component={PolitiqueConfidentialite} />
         <Route path="/faq" component={FAQ} />
         <Route path="/blog" component={Blog} />
         <Route path="/blog/:slug" component={BlogArticle} />
@@ -163,6 +166,7 @@ function App() {
             <ScrollToTop />
             <Toaster />
             <Router />
+            <CookieConsent />
           </TooltipProvider>
         </ThemeProvider>
       </QueryClientProvider>

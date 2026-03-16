@@ -784,6 +784,100 @@ function OfferCard({ offer, index }: { offer: Offer; index: number }) {
 }
 
 // ============================================================================
+// COACHING DEDUCTION BANNER — animated highlight
+// ============================================================================
+function CoachingDeductionBanner() {
+  return (
+    <section className="relative py-16 overflow-hidden bg-gradient-to-b from-[#050505] via-[#0A0800] to-[#050505]">
+      {/* Animated glow background */}
+      <motion.div
+        className="absolute inset-0 pointer-events-none"
+        animate={{
+          background: [
+            "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(252,221,0,0.06) 0%, transparent 70%)",
+            "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(252,221,0,0.12) 0%, transparent 70%)",
+            "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(252,221,0,0.06) 0%, transparent 70%)",
+          ]
+        }}
+        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+      />
+
+      <div className="container mx-auto px-6 relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="max-w-3xl mx-auto text-center"
+        >
+          {/* Highlight badge */}
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            whileInView={{ scale: 1, opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ type: "spring", damping: 15, delay: 0.2 }}
+            className="inline-block mb-6"
+          >
+            <span className="px-6 py-2 rounded-full bg-[#FCDD00]/10 border border-[#FCDD00]/30 font-mono text-[10px] uppercase tracking-[0.3em] text-[#FCDD00]">
+              Offre Coaching
+            </span>
+          </motion.div>
+
+          {/* Main text */}
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.3 }}
+            className="text-3xl md:text-5xl lg:text-6xl font-black text-white uppercase tracking-tighter mb-4"
+          >
+            <span className="relative inline-block">
+              <span className="relative z-10">100% DEDUIT</span>
+              <motion.span
+                className="absolute inset-0 bg-[#FCDD00]/20 -skew-x-3 rounded-sm"
+                initial={{ scaleX: 0 }}
+                whileInView={{ scaleX: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.6, duration: 0.5, ease: "easeOut" }}
+                style={{ transformOrigin: "left" }}
+              />
+            </span>
+          </motion.h2>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.5 }}
+            className="text-lg md:text-xl text-white/60 mb-8 max-w-xl mx-auto"
+          >
+            Le montant de ton audit est <span className="text-[#FCDD00] font-bold">integralement deduit</span> si tu prends un coaching avec moi. Tu ne paies qu'une seule fois.
+          </motion.p>
+
+          {/* Visual proof: price flow */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.7 }}
+            className="flex items-center justify-center gap-4 flex-wrap"
+          >
+            <div className="px-5 py-3 bg-white/5 border border-white/10 rounded-sm">
+              <span className="font-mono text-sm text-white/40">Audit</span>
+              <span className="block text-2xl font-black text-white">59-149€</span>
+            </div>
+            <span className="text-[#FCDD00] text-2xl font-bold">→</span>
+            <div className="px-5 py-3 bg-[#FCDD00]/10 border border-[#FCDD00]/30 rounded-sm">
+              <span className="font-mono text-sm text-[#FCDD00]/60">Avec coaching</span>
+              <span className="block text-2xl font-black text-[#FCDD00]">0€</span>
+            </div>
+          </motion.div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
 // OFFERS SECTION - Design System
 // ============================================================================
 function OffersSection() {
@@ -1195,6 +1289,7 @@ export default function Landing() {
       <ECGSection />
       <CertificationsSection />
       <OffersSection />
+      <CoachingDeductionBanner />
       <ReviewsSection />
       <PressSection />
       <VisionSection />

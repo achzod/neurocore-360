@@ -20,11 +20,17 @@ services:
       - key: SMTP_FROM_EMAIL
         value: coaching@achzodcoaching.com
       # À configurer manuellement dans Render Dashboard :
-      # - DATABASE_URL (copie depuis Replit ou crée une DB sur Render)
-      # - GEMINI_API_KEY (optionnel, seulement si tu utilises Gemini)
-      # - SESSION_SECRET (généré automatiquement ou random string)
+      # - DATABASE_URL
+      # - GEMINI_API_KEY
+      # - SESSION_SECRET
       # - SENTRY_DSN (optionnel)
       # - VITE_SENTRY_DSN (optionnel)
-      # - SMTP_USER (ton email SendPulse)
-      # - SMTP_PASS (ton pass SendPulse)
-      # - STRIPE_PEPTIDES_PRICE_ID (price_id Stripe pour Peptides Engine)
+      # - SMTP_USER (SendPulse)
+      # - SMTP_PASS (SendPulse)
+      # - STRIPE_SECRET_KEY
+      # - STRIPE_WEBHOOK_SECRET
+      # - STRIPE_PEPTIDES_PRICE_ID
+      # - ADMIN_SECRET
+      # - ADMIN_NOTIFICATION_EMAIL (default: coaching@achzodcoaching.com)
+      # - APP_URL (ex: https://apexlabs.onrender.com)
+      # - VITE_GA_MEASUREMENT_ID (Google Analytics 4, ex: G-XXXXXXXXXX)
