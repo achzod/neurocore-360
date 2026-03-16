@@ -1307,8 +1307,6 @@ const ReviewRequest = ({ color }: { color: string }) => {
 
   const handleSubmit = () => {
     if (rating > 0) {
-      // Here you would send the review to your backend
-      console.log('Review submitted:', { rating, comment });
       setSubmitted(true);
     }
   };

@@ -4,7 +4,7 @@ import { resetCookieConsent } from "@/components/CookieConsent";
 
 export function Footer() {
   return (
-    <footer className="border-t border-[#333333] bg-[#000000]">
+    <footer className="border-t border-[#333333] bg-[#000000]" role="contentinfo">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid gap-8 md:grid-cols-4">
           <div className="md:col-span-2">
@@ -23,6 +23,7 @@ export function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[#9CA3AF] transition-colors hover:text-[#FCDD00]"
+                aria-label="Instagram"
                 data-testid="link-instagram"
               >
                 <SiInstagram className="h-5 w-5" />
@@ -32,6 +33,7 @@ export function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[#9CA3AF] transition-colors hover:text-[#FCDD00]"
+                aria-label="YouTube"
                 data-testid="link-youtube"
               >
                 <SiYoutube className="h-5 w-5" />
@@ -41,6 +43,7 @@ export function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[#9CA3AF] transition-colors hover:text-[#FCDD00]"
+                aria-label="Facebook"
                 data-testid="link-facebook"
               >
                 <SiFacebook className="h-5 w-5" />

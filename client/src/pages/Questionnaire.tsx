@@ -446,7 +446,7 @@ function QuestionnaireContent() {
           return false;
         }
         if (data && data.responses && Object.keys(data.responses).length > 0) {
-          console.log("[Questionnaire] Loaded progress from DB:", Object.keys(data.responses).length, "responses");
+          // Progress loaded from DB
           setResponses(prev => ({ ...prev, ...data.responses }));
           if (data.currentSection !== undefined) {
             setCurrentSectionIndex(data.currentSection);
@@ -596,12 +596,12 @@ function QuestionnaireContent() {
                 // Pre-fill responses with wearable data
                 if (data.answers && Object.keys(data.answers).length > 0) {
                   setResponses(prev => ({ ...prev, ...data.answers }));
-                  console.log("[Terra] Pre-filled", Object.keys(data.answers).length, "answers from wearable");
+                  // Terra answers pre-filled
                 }
                 // Store skipped questions
                 if (data.skippedQuestions && data.skippedQuestions.length > 0) {
                   setTerraSkippedQuestions(data.skippedQuestions);
-                  console.log("[Terra] Will skip", data.skippedQuestions.length, "questions");
+                  // Terra skipped questions set
                 } else {
                   setTerraSkippedQuestions([]);
                 }

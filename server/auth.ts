@@ -22,7 +22,7 @@ const getAuthSecret = (): string => {
 };
 
 export const signAuthToken = (payload: AuthPayload): string => {
-  return jwt.sign(payload, getAuthSecret(), { expiresIn: "30d" });
+  return jwt.sign(payload, getAuthSecret(), { expiresIn: "7d" });
 };
 
 export const verifyAuthToken = (token: string): AuthPayload | null => {

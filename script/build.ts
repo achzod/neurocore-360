@@ -54,9 +54,12 @@ async function buildAll() {
     { loc: "/offers/anabolic-bioscan", priority: "0.9", changefreq: "monthly" },
     { loc: "/offers/ultimate-scan", priority: "0.9", changefreq: "monthly" },
     { loc: "/offers/blood-analysis", priority: "0.9", changefreq: "monthly" },
+    { loc: "/offers/formcheck", priority: "0.8", changefreq: "monthly" },
     { loc: "/blog", priority: "0.8", changefreq: "daily" },
     { loc: "/faq", priority: "0.7", changefreq: "monthly" },
     { loc: "/press", priority: "0.6", changefreq: "monthly" },
+    { loc: "/deduction-coaching", priority: "0.6", changefreq: "monthly" },
+    { loc: "/politique-confidentialite", priority: "0.3", changefreq: "yearly" },
     { loc: "/mentions-legales", priority: "0.3", changefreq: "yearly" },
     { loc: "/cgv", priority: "0.3", changefreq: "yearly" },
   ];

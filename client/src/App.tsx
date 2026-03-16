@@ -75,12 +75,41 @@ const BloodAnalysisOffer = lazy(() => import("@/pages/offers/BloodAnalysisOffer"
 const ProPanel = lazy(() => import("@/pages/offers/ProPanel"));
 const FormCheck = lazy(() => import("@/pages/offers/FormCheck"));
 
-// Scroll to top + dynamic canonical URL on route change
+const PAGE_TITLES: Record<string, string> = {
+  "/": "APEXLABS by Achzod | Optimisation Humaine & Bio-Data",
+  "/offers/discovery-scan": "Discovery Scan Gratuit | APEXLABS",
+  "/offers/anabolic-bioscan": "Anabolic Bioscan — Audit Complet | APEXLABS",
+  "/offers/blood-analysis": "Blood Analysis — Analyse Sanguine | APEXLABS",
+  "/offers/ultimate-scan": "Ultimate Scan — Le Plus Complet | APEXLABS",
+  "/offers/formcheck": "FormCheck — Analyse Video | APEXLABS",
+  "/questionnaire": "Questionnaire | APEXLABS",
+  "/audit-complet/questionnaire": "Questionnaire | APEXLABS",
+  "/audit-complet/checkout": "Checkout | APEXLABS",
+  "/blood-analysis": "Blood Analysis | APEXLABS",
+  "/blood-dashboard": "Dashboard Blood | APEXLABS",
+  "/dashboard": "Mes Audits | APEXLABS",
+  "/blog": "Blog | APEXLABS by Achzod",
+  "/press": "Presse | APEXLABS",
+  "/faq": "FAQ | APEXLABS",
+  "/login": "Connexion | APEXLABS",
+  "/auth/login": "Connexion | APEXLABS",
+  "/auth/check-email": "Verifie ton email | APEXLABS",
+  "/mentions-legales": "Mentions Legales | APEXLABS",
+  "/cgv": "Conditions Generales de Vente | APEXLABS",
+  "/politique-confidentialite": "Politique de Confidentialite | APEXLABS",
+  "/deduction-coaching": "Deduction Coaching | APEXLABS",
+};
+
+// Scroll to top + dynamic title + canonical URL on route change
 function ScrollToTop() {
   const [location] = useLocation();
 
   useEffect(() => {
     window.scrollTo(0, 0);
+
+    // Update page title
+    const title = PAGE_TITLES[location] || "APEXLABS by Achzod";
+    document.title = title;
 
     // Update canonical URL dynamically
     const canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;

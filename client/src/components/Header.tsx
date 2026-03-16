@@ -36,7 +36,7 @@ export function Header() {
   const isDashboard = location.startsWith("/dashboard");
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-[#333333] bg-[#000000]">
+    <header className="sticky top-0 z-50 w-full border-b border-[#333333] bg-[#000000]" role="banner">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between gap-4">
           {/* Logo - APEXLABS Design System */}
@@ -50,7 +50,7 @@ export function Header() {
           </Link>
 
           {/* Desktop Navigation - Inter Bold, uppercase, gray */}
-          <nav className="hidden items-center gap-6 lg:flex">
+          <nav className="hidden items-center gap-6 lg:flex" aria-label="Navigation principale">
             {PRODUCTS.map((product) => (
               <Link
                 key={product.name}
@@ -126,6 +126,8 @@ export function Header() {
             <button
               className="lg:hidden p-2 text-[#9CA3AF] hover:text-white transition-colors"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+              aria-expanded={mobileMenuOpen}
               data-testid="button-mobile-menu"
             >
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -135,7 +137,7 @@ export function Header() {
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <nav className="border-t border-[#333333] py-4 lg:hidden bg-[#000000]">
+          <nav className="border-t border-[#333333] py-4 lg:hidden bg-[#000000]" aria-label="Navigation mobile">
             <div className="flex flex-col gap-1">
               {PRODUCTS.map((product) => (
                 <Link
