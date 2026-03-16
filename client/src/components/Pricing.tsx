@@ -85,10 +85,10 @@ const tiers: PricingTier[] = [
   },
   {
     name: "FormCheck",
-    price: "19.99",
+    price: "Bientot",
     period: "",
     description: "Analyse biomécanique de tes exercices par vidéo WhatsApp",
-    badge: "NOUVEAU",
+    badge: "BIENTOT",
     features: [
       { text: "Score de forme 0-100", included: true },
       { text: "Détection auto d'exercice", included: true },
@@ -99,10 +99,10 @@ const tiers: PricingTier[] = [
       { text: "Profil morphologique", included: true },
       { text: "100% via WhatsApp", included: true },
     ],
-    cta: "Découvrir FormCheck",
+    cta: "Bientot disponible",
     href: "/offers/formcheck",
     icon: <MessageCircle className="w-5 h-5" />,
-    gradient: "from-green-500 to-emerald-500",
+    gradient: "from-gray-500 to-gray-600",
   },
 ];
 
@@ -160,7 +160,7 @@ export function Pricing() {
                       tier.popular
                         ? "bg-primary text-black"
                         : tier.name === "FormCheck"
-                        ? "bg-emerald-500 text-white"
+                        ? "bg-gray-500 text-white"
                         : "bg-violet-500 text-white"
                     }`}
                   >
@@ -215,20 +215,28 @@ export function Pricing() {
               </ul>
 
               {/* CTA */}
-              <Link href={tier.href}>
-                <button
-                  className={`w-full py-4 rounded font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2 ${
-                    tier.popular
-                      ? "bg-primary text-black hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/20"
-                      : tier.name === "Ultimate Scan"
-                      ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white hover:opacity-90"
-                      : "bg-white/10 text-white hover:bg-white/20"
-                  }`}
+              {tier.name === "FormCheck" ? (
+                <span
+                  className="w-full py-4 rounded font-semibold text-sm flex items-center justify-center gap-2 bg-white/5 text-white/40 cursor-not-allowed"
                 >
                   {tier.cta}
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </Link>
+                </span>
+              ) : (
+                <Link href={tier.href}>
+                  <button
+                    className={`w-full py-4 rounded font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2 ${
+                      tier.popular
+                        ? "bg-primary text-black hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/20"
+                        : tier.name === "Ultimate Scan"
+                        ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white hover:opacity-90"
+                        : "bg-white/10 text-white hover:bg-white/20"
+                    }`}
+                  >
+                    {tier.cta}
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </Link>
+              )}
             </motion.div>
           ))}
         </div>

@@ -125,6 +125,7 @@ export interface BloodReportRecord {
   analysis: unknown;
   aiReport: string;
   deliveryStatus?: string;
+  deliveryRetries?: number;
   reportScheduledFor?: Date | string | null;
   emailSentAt?: Date | string | null;
   createdAt: Date | string;
@@ -371,9 +372,10 @@ export class MemStorage implements IStorage {
     const scores = this.calculateScores(input.responses);
 
     const DELIVERY_DELAYS_HOURS: Record<string, number> = {
-      GRATUIT: 0,
+      GRATUIT: 24,
       PREMIUM: 24,
       ELITE: 48,
+      BURNOUT: 24,
       BLOOD_ANALYSIS: 24,
     };
     const delayHours = DELIVERY_DELAYS_HOURS[input.type] || 24;
@@ -1055,9 +1057,10 @@ export class PgStorage implements IStorage {
     const scores = this.calculateScores(input.responses);
 
     const DELIVERY_DELAYS_HOURS: Record<string, number> = {
-      GRATUIT: 0,
+      GRATUIT: 24,
       PREMIUM: 24,
       ELITE: 48,
+      BURNOUT: 24,
       BLOOD_ANALYSIS: 24,
     };
     const delayHours = DELIVERY_DELAYS_HOURS[input.type] || 24;
@@ -1393,6 +1396,7 @@ export class PgStorage implements IStorage {
       analysis: row.analysis || {},
       aiReport: row.ai_report || "",
       deliveryStatus: row.delivery_status || "PENDING",
+      deliveryRetries: Number(row.delivery_retries) || 0,
       reportScheduledFor: row.report_scheduled_for || null,
       emailSentAt: row.email_sent_at || null,
       createdAt: row.created_at,
@@ -1412,6 +1416,7 @@ export class PgStorage implements IStorage {
       analysis: row.analysis || {},
       aiReport: row.ai_report || "",
       deliveryStatus: row.delivery_status || "PENDING",
+      deliveryRetries: Number(row.delivery_retries) || 0,
       reportScheduledFor: row.report_scheduled_for || null,
       emailSentAt: row.email_sent_at || null,
       createdAt: row.created_at,
@@ -1438,6 +1443,7 @@ export class PgStorage implements IStorage {
     if (data.analysis !== undefined) push("analysis", JSON.stringify(data.analysis));
     if (data.aiReport !== undefined) push("ai_report", data.aiReport ?? "");
     if (data.deliveryStatus !== undefined) push("delivery_status", data.deliveryStatus);
+    if (data.deliveryRetries !== undefined) push("delivery_retries", data.deliveryRetries);
     if (data.reportScheduledFor !== undefined) push("report_scheduled_for", data.reportScheduledFor);
     if (data.emailSentAt !== undefined) push("email_sent_at", data.emailSentAt);
 
@@ -1458,6 +1464,7 @@ export class PgStorage implements IStorage {
       analysis: row.analysis || {},
       aiReport: row.ai_report || "",
       deliveryStatus: row.delivery_status || "PENDING",
+      deliveryRetries: Number(row.delivery_retries) || 0,
       reportScheduledFor: row.report_scheduled_for || null,
       emailSentAt: row.email_sent_at || null,
       createdAt: row.created_at,
@@ -1475,6 +1482,7 @@ export class PgStorage implements IStorage {
       analysis: row.analysis || {},
       aiReport: row.ai_report || "",
       deliveryStatus: row.delivery_status || "PENDING",
+      deliveryRetries: Number(row.delivery_retries) || 0,
       reportScheduledFor: row.report_scheduled_for || null,
       emailSentAt: row.email_sent_at || null,
       createdAt: row.created_at,
@@ -1494,6 +1502,7 @@ export class PgStorage implements IStorage {
       analysis: row.analysis || {},
       aiReport: row.ai_report || "",
       deliveryStatus: row.delivery_status || "PENDING",
+      deliveryRetries: Number(row.delivery_retries) || 0,
       reportScheduledFor: row.report_scheduled_for || null,
       emailSentAt: row.email_sent_at || null,
       createdAt: row.created_at,
@@ -2087,6 +2096,7 @@ export class PgStorage implements IStorage {
       await pool.query(`CREATE INDEX IF NOT EXISTS idx_blood_reports_created_at ON blood_reports(created_at)`);
       // Add delivery scheduling columns if missing
       await pool.query(`ALTER TABLE blood_reports ADD COLUMN IF NOT EXISTS delivery_status VARCHAR(32) DEFAULT 'PENDING'`);
+      await pool.query(`ALTER TABLE blood_reports ADD COLUMN IF NOT EXISTS delivery_retries INTEGER DEFAULT 0`);
       await pool.query(`ALTER TABLE blood_reports ADD COLUMN IF NOT EXISTS report_scheduled_for TIMESTAMP`);
       await pool.query(`ALTER TABLE blood_reports ADD COLUMN IF NOT EXISTS email_sent_at TIMESTAMP`);
       this.ensuredBloodReportsTable = true;

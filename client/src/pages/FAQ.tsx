@@ -25,7 +25,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: "Combien de temps pour recevoir mon rapport ?",
-    answer: "Le rapport est généré automatiquement par mon moteur IA dès que tu termines le questionnaire. Tu le reçois en quelques minutes directement dans ton dashboard. Pour le Blood Analysis, le traitement du PDF prend un peu plus de temps mais reste automatique."
+    answer: "Discovery Scan : rapport delivre sous 24h par email. Anabolic Bioscan : rapport complet de 20+ pages delivre sous 24h par email. Ultimate Scan : rapport de 40-50 pages delivre sous 48h par email (analyse photo + questionnaire). Blood Analysis : rapport delivre sous 24h par email apres upload de ton PDF. Pour chaque offre, tu recois un email des que ton rapport est pret avec un lien direct vers ton dashboard."
   },
   {
     question: "L'analyse photo, ça marche comment ?",

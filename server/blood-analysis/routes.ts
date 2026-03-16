@@ -70,7 +70,7 @@ const getBaseUrl = (): string => {
 };
 
 const isAdminRequestAuthorized = (req: any): boolean => {
-  const adminKey = req.headers["x-admin-key"] || req.query.key || req.body?.adminKey;
+  const adminKey = req.headers["x-admin-key"];
   const validKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY;
   return Boolean(validKey && adminKey && adminKey === validKey);
 };
@@ -962,7 +962,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
    */
   app.post("/api/admin/blood-analysis/report/:id/regenerate", async (req, res) => {
     try {
-      const adminKey = req.headers["x-admin-key"] || req.query.key || (req.body as any)?.adminKey;
+      const adminKey = req.headers["x-admin-key"];
       const validKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY;
       if (!validKey || adminKey !== validKey) {
         res.status(401).json({ error: "Unauthorized - admin key required" });
@@ -1063,7 +1063,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
    */
   app.post("/api/admin/blood-analysis/report/:id/force-send", async (req, res) => {
     try {
-      const adminKey = req.headers["x-admin-key"] || req.query.key || (req.body as any)?.adminKey;
+      const adminKey = req.headers["x-admin-key"];
       const validKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY;
       if (!validKey || adminKey !== validKey) {
         res.status(401).json({ error: "Unauthorized - admin key required" });

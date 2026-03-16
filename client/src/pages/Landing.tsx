@@ -73,7 +73,7 @@ const OFFERS: Offer[] = [
     subtitle: "Analyse Biomécanique par WhatsApp",
     description: "Envoie une vidéo de ton exercice par WhatsApp et reçois une analyse biomécanique complète en quelques minutes. Score de forme 0-100, détection automatique de l'exercice, corrections prioritaires avec angles articulaires, exercices correctifs personnalisés et rapport HTML premium. Plus de 20 exercices supportés: squat, bench press, deadlift, overhead press, row, et bien plus.",
     features: ["Score de forme 0-100", "Détection automatique d'exercice", "Corrections prioritaires", "20+ exercices supportés"],
-    price: "1ere analyse gratuite",
+    price: "Bientot disponible",
     imageUrl: "",
     reverse: false,
     useCustomVisual: true
@@ -752,13 +752,11 @@ function OfferCard({ offer, index }: { offer: Offer; index: number }) {
               </div>
               {/* CTA Button */}
               {offer.id === 'formcheck' ? (
-                <a
-                  href="/offers/formcheck"
-                  className="px-6 py-4 bg-[#25D366] text-black font-mono text-xs uppercase tracking-widest hover:bg-[#25D366]/80 transition-colors flex items-center gap-2"
+                <span
+                  className="px-6 py-4 bg-[#25D366]/30 text-white/50 font-mono text-xs uppercase tracking-widest flex items-center gap-2 cursor-not-allowed"
                 >
-                  Découvrir FormCheck
-                  <span>&gt;</span>
-                </a>
+                  Bientot disponible
+                </span>
               ) : (
                 <button
                   onClick={() => document.getElementById('hero-form')?.scrollIntoView({ behavior: 'smooth' })}
@@ -860,14 +858,70 @@ function CertificationsSection() {
 
 
 // ============================================================================
-// BETA TESTERS REVIEWS SECTION WITH PAGINATION
+// REVIEWS SECTION — real approved reviews first, then BETA_REVIEWS fallback
 // ============================================================================
+
+interface DisplayReview {
+  name: string;
+  role: string;
+  rating: number;
+  text: string;
+  metric: string;
+  metricLabel: string;
+  date: string;
+}
+
+const AUDIT_TYPE_LABELS: Record<string, string> = {
+  DISCOVERY: "Discovery Audit",
+  ANABOLIC_BIOSCAN: "Anabolic Bioscan",
+  ULTIMATE_SCAN: "Ultimate Scan",
+  BLOOD_ANALYSIS: "Blood Analysis",
+};
+
+function mapDbReview(r: {
+  email: string;
+  auditType: string;
+  rating: number;
+  comment: string;
+  createdAt: string | Date;
+}): DisplayReview {
+  // Anonymise: "jean.dupont@…" → "Jean D."
+  const local = r.email.split("@")[0] || "Client";
+  const parts = local.replace(/[._-]/g, " ").split(" ").filter(Boolean);
+  const first = parts[0] ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase() : "Client";
+  const lastInitial = parts.length > 1 ? ` ${parts[parts.length - 1].charAt(0).toUpperCase()}.` : "";
+  return {
+    name: `${first}${lastInitial}`,
+    role: AUDIT_TYPE_LABELS[r.auditType] || r.auditType,
+    rating: r.rating,
+    text: r.comment,
+    metric: "★",
+    metricLabel: "vérifié",
+    date: typeof r.createdAt === "string" ? r.createdAt : new Date(r.createdAt).toISOString(),
+  };
+}
+
 function ReviewsSection() {
   const [currentPage, setCurrentPage] = useState(0);
-  const reviewsPerPage = 3;
-  const totalPages = Math.ceil(BETA_REVIEWS.length / reviewsPerPage);
+  const [realReviews, setRealReviews] = useState<DisplayReview[]>([]);
 
-  const currentReviews = BETA_REVIEWS.slice(
+  useEffect(() => {
+    fetch("/api/reviews")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.reviews?.length) {
+          setRealReviews(data.reviews.map(mapDbReview));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Real approved reviews first, then fill with beta reviews
+  const allReviews: DisplayReview[] = [...realReviews, ...BETA_REVIEWS];
+  const reviewsPerPage = 3;
+  const totalPages = Math.ceil(allReviews.length / reviewsPerPage);
+
+  const currentReviews = allReviews.slice(
     currentPage * reviewsPerPage,
     (currentPage + 1) * reviewsPerPage
   );
@@ -893,7 +947,7 @@ function ReviewsSection() {
         {/* Header with Stroke Text Effect */}
         <div className="text-center mb-16">
           <span className="font-mono text-[10px] sm:text-xs text-neuro-accent uppercase tracking-[0.3em] block mb-3">
-            Beta Testers • {BETA_REVIEWS.length}+ avis • 4.9/5 ★
+            {realReviews.length > 0 ? `${realReviews.length} avis vérifiés` : `${BETA_REVIEWS.length}+ avis`} • 4.9/5 ★
           </span>
           <h2 className="font-sans font-black text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white uppercase tracking-tighter mb-2">
             RÉSULTATS

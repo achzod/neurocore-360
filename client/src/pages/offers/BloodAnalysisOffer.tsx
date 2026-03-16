@@ -79,6 +79,10 @@ const FAQ = [
     a: "Il faut un PDF non-verrouille pour que l'extraction des valeurs fonctionne. Si ton labo protege le fichier, tu peux le convertir en PDF standard via un outil de deblocage en ligne, puis le re-uploader. La plupart des labos fournissent directement un PDF non-protege.",
   },
   {
+    q: "Combien de temps pour recevoir mon rapport ?",
+    a: "Ton rapport est genere automatiquement et delivre sous 24h par email apres l'upload de ton PDF. Tu recois un email des que ton rapport est pret avec un lien direct vers ton dashboard.",
+  },
+  {
     q: "Je peux suivre l'evolution dans le temps ?",
     a: "Oui. Chaque upload cree un bilan historise dans ton dashboard. Des que tu as plusieurs bilans, tu vois les tendances et la trajectoire de chaque marqueur. C'est la meilleure facon de mesurer l'impact de tes changements d'hygiene de vie sur ta biologie reelle.",
   },

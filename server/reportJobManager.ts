@@ -195,6 +195,9 @@ async function generateReportAsync(
 
     // ⚠️ FIX: Récupérer les photos depuis audit.photos (tableau) ou responses
     const audit = await storage.getAudit(auditId);
+    if (!audit) {
+      throw new Error(`Audit ${auditId} not found — cannot generate report`);
+    }
     const auditResponses = (audit as any)?.responses || {};
 
     const pickPhoto = (source: any, keys: string[]): string | null => {

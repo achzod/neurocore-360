@@ -2455,7 +2455,7 @@ export async function sendAdminEmailNewAudit(
   auditId: string
 ): Promise<boolean> {
   try {
-    const adminEmail = "achzodyt@gmail.com";
+    const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
     const token = await getAccessToken();
     const planLabel =
       auditType === "GRATUIT"
@@ -2922,7 +2922,7 @@ export async function sendAdminReviewNotification(
   comment: string
 ): Promise<boolean> {
   try {
-    const adminEmail = "achzodyt@gmail.com";
+    const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
     const token = await getAccessToken();
     const ratingLabel = `${rating}/5`;
 

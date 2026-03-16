@@ -12,6 +12,7 @@ export const pool = new Pool({
   ssl: (dbUrl.includes('render.com') || dbUrl.includes('neon.tech'))
     ? { rejectUnauthorized: false }
     : false,
+  max: 20,
   connectionTimeoutMillis: 10000,
   idleTimeoutMillis: 30000,
 });

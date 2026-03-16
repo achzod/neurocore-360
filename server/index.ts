@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import * as Sentry from "@sentry/node";
 import helmet from "helmet";
+import compression from "compression";
 import cors from "cors";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
@@ -22,11 +23,25 @@ if (sentryEnabled) {
   });
 }
 
+// Global safety nets — prevent silent crashes in production
+process.on("unhandledRejection", (reason) => {
+  console.error("[FATAL] Unhandled Promise Rejection:", reason);
+  if (sentryEnabled) Sentry.captureException(reason);
+});
+process.on("uncaughtException", (error) => {
+  console.error("[FATAL] Uncaught Exception:", error);
+  if (sentryEnabled) Sentry.captureException(error);
+  process.exit(1);
+});
+
 // Security headers
 app.use(helmet({
   contentSecurityPolicy: false, // Let Vite handle CSP in dev
   crossOriginEmbedderPolicy: false,
 }));
+
+// Gzip compression for all responses
+app.use(compression());
 
 // CORS
 const allowedOrigins = [
@@ -207,10 +222,17 @@ if (process.env.NODE_ENV === "production") {
           }
 
           // Blood reports (24h)
+          const BLOOD_MAX_DELIVERY_RETRIES = 5;
           const scheduledBlood = await storage.getScheduledBloodReportsForDelivery();
           for (const report of scheduledBlood) {
+            const retries = (report as any).deliveryRetries ?? 0;
+            if (retries >= BLOOD_MAX_DELIVERY_RETRIES) {
+              console.error(`[Cron] Blood ${report.id} exceeded max retries (${retries}), marking DELIVERY_BLOCKED`);
+              await storage.updateBloodReport(report.id, { deliveryStatus: "DELIVERY_BLOCKED" }).catch(() => {});
+              continue;
+            }
             try {
-              await storage.updateBloodReport(report.id, { deliveryStatus: "READY" });
+              await storage.updateBloodReport(report.id, { deliveryStatus: "SENDING", deliveryRetries: retries + 1 });
               const sent = await sendScheduledBloodEmail(report, baseUrl);
               if (sent) {
                 await storage.updateBloodReport(report.id, { deliveryStatus: "SENT", emailSentAt: new Date() });
@@ -218,12 +240,26 @@ if (process.env.NODE_ENV === "production") {
                 await sendAdminEmailNewAudit(report.email, name, "BLOOD_ANALYSIS", report.id);
                 delivered++;
               } else {
+                // Quality gate blocked — keep SCHEDULED but increment retries so we eventually give up
                 await storage.updateBloodReport(report.id, { deliveryStatus: "SCHEDULED" });
+                console.warn(`[Cron] Blood ${report.id} quality gate blocked (retry ${retries + 1}/${BLOOD_MAX_DELIVERY_RETRIES})`);
               }
             } catch (e) {
               await storage.updateBloodReport(report.id, { deliveryStatus: "SCHEDULED" }).catch(() => {});
-              console.error(`[Cron] Blood ${report.id} delivery error:`, e);
+              console.error(`[Cron] Blood ${report.id} delivery error (retry ${retries + 1}):`, e);
             }
+          }
+
+          // Recover orphaned reports stuck in READY or SENDING (crash recovery, bug #9)
+          try {
+            const { pool } = await import("./db.js");
+            await pool.query(
+              `UPDATE blood_reports SET delivery_status = 'SCHEDULED'
+               WHERE delivery_status IN ('READY', 'SENDING')
+                 AND report_scheduled_for <= NOW() - INTERVAL '10 minutes'`
+            );
+          } catch (_recoveryErr) {
+            // Non-critical — silently ignore if DB unavailable
           }
 
           if (delivered > 0) {
@@ -240,4 +276,22 @@ if (process.env.NODE_ENV === "production") {
       log("Scheduled delivery cron started (every 5 min)");
     },
   );
+
+  // Graceful shutdown: close HTTP server and DB pool
+  const gracefulShutdown = async (signal: string) => {
+    console.log(`[Shutdown] ${signal} received, closing server...`);
+    httpServer.close(async () => {
+      try {
+        const { pool } = await import("./db.js");
+        await pool.end();
+        console.log("[Shutdown] DB pool closed");
+      } catch {}
+      process.exit(0);
+    });
+    // Force exit after 10s if graceful shutdown hangs
+    setTimeout(() => process.exit(1), 10_000).unref();
+  };
+
+  process.on("SIGTERM", () => void gracefulShutdown("SIGTERM"));
+  process.on("SIGINT", () => void gracefulShutdown("SIGINT"));
 })();

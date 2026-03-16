@@ -754,8 +754,9 @@ export const normalizeMarkerValue = (markerId: string, value: number, unit?: str
   if (markerId === "testosterone_libre" && sourceUnit === "pmol/L") {
     return roundValue(value / 3.47, 2);
   }
-  if (markerId === "estradiol" && sourceUnit === "pmol/L") {
-    return roundValue(value / 3.67, 1);
+  if (markerId === "estradiol") {
+    if (sourceUnit === "pmol/L") return roundValue(value / 3.67, 1);
+    if (sourceUnit === "nmol/L") return roundValue(value * 272.4, 1);
   }
   if (markerId === "t4_libre" && sourceUnit === "pmol/L") {
     return roundValue(value / 12.87, 2);
@@ -765,6 +766,10 @@ export const normalizeMarkerValue = (markerId: string, value: number, unit?: str
   }
   if (markerId === "cortisol" && sourceUnit === "nmol/L") {
     return roundValue(value / 27.59, 2);
+  }
+  // Prolactine: French labs report mIU/L (mUI/L), target is ng/mL. 1 ng/mL ≈ 21.2 mIU/L
+  if (markerId === "prolactine" && (sourceUnit === "mIU/L" || sourceUnit === "IU/L")) {
+    return roundValue(value / 21.2, 1);
   }
   if (markerId === "igf1" && sourceUnit === "nmol/L") {
     return roundValue(value * 7.65, 1);
@@ -800,64 +805,66 @@ export const normalizeMarkerValue = (markerId: string, value: number, unit?: str
     if (sourceUnit === "mmol/L") return Math.round(value * lipidMmolToMg);
     if (sourceUnit === "g/L") return Math.round(value * 100);
     if (sourceUnit === "mg/L") return Math.round(value / 10);
-    if (value <= 1.9) return Math.round(value * 100);
-    if (value < 10) return Math.round(value * lipidMmolToMg);
+    // Heuristic only when NO unit provided: value <=1.9 → likely g/L, <10 → likely mmol/L
+    // Only apply if no sourceUnit, to avoid misinterpreting actual low mg/dL values
+    if (!sourceUnit && value <= 1.9) return Math.round(value * 100);
+    if (!sourceUnit && value < 10) return Math.round(value * lipidMmolToMg);
   }
 
   if (markerId === "triglycerides") {
     if (sourceUnit === "mmol/L") return Math.round(value * trigMmolToMg);
     if (sourceUnit === "g/L") return Math.round(value * 100);
     if (sourceUnit === "mg/L") return Math.round(value / 10);
-    if (value <= 1.9) return Math.round(value * 100);
-    if (value < 10) return Math.round(value * trigMmolToMg);
+    if (!sourceUnit && value <= 1.9) return Math.round(value * 100);
+    if (!sourceUnit && value < 10) return Math.round(value * trigMmolToMg);
   }
 
   return value;
 };
 
 const MARKER_SYNONYMS: Record<string, RegExp[]> = {
-  testosterone_total: [/^testost[ée]rone\s*$/i, /testost[ée]rone\s*tot/i, /testost[ée]rone\s*totale/i, /testost[ée]rone\s*\(\d\)/i],
+  testosterone_total: [/(?:^|[^\w])testost[ée]rone\s*$/i, /testost[ée]rone\s*tot/i, /testost[ée]rone\s*totale/i, /testost[ée]rone\s*\(\d\)/i, /✔\s*testost[ée]rone\s*$/i, /(?:^|\s)testost[ée]rone(?:\s*$)/i],
   testosterone_libre: [/testost[ée]rone\s*libre/i, /free\s*testosterone/i],
-  shbg: [/shbg/i, /globuline.*sex/i],
-  estradiol: [/estradiol/i, /\be2\b/i],
+  shbg: [/shbg/i, /globuline[^\\n]{0,60}sex/i, /tebg/i, /\bsbp\b[^\\n]{0,40}testost/i, /prot[ée]ine\s*liant\s*la\s*testost/i],
+  estradiol: [/estradiol\s*(?:\(|homme|femme|r\.?i\.?a|eclia)/i, /estradiol/i, /\be2\b/i],
   lh: [/\blh\b/i, /luteinis/i],
   fsh: [/\bfsh\b/i, /folliculo/i],
   prolactine: [/prolactine/i],
-  dhea_s: [/dhea[-\s]?s/i],
+  dhea_s: [/dhea[-\s]?s(?!t)/i, /\bs\.?\s*d\.?\s*h\.?\s*e?\.?\s*a\.?\s*[\s(]/i, /sulfate\s*de\s*d[ée]hydro[ée]?piandrost[ée]rone/i],
   cortisol: [/cortisol/i],
-  igf1: [/igf[-\s]?1/i],
+  igf1: [/igf[-\s]?1/i, /somat[oó]m[ée]dine\s*c/i],
   tsh: [/t\.?\s*s\.?\s*h\.?/i, /thyr[eé]o?stim/i],
   t4_libre: [/t4\s*libre/i, /ft4/i, /thyroxine\s*libre/i],
   t3_libre: [/t3\s*libre/i, /ft3/i, /triiodothyronine\s*libre/i],
   t3_reverse: [/t3\s*reverse/i, /\brt3\b/i],
   anti_tpo: [/anti[-\s]?tpo/i, /anti[-\s]?thyro/i],
-  glycemie_jeun: [/glyc[ée]mie.*je[uû]n/i, /glucose.*je[uû]n/i, /glyc[ée]mie\s*à\s*jeun/i],
+  glycemie_jeun: [/glyc[ée]mie[^\\n]{0,30}je[uû]n/i, /glucose[^\\n]{0,30}je[uû]n/i, /glyc[ée]mie\s*à\s*jeun/i],
   hba1c: [/hba1c/i, /hba\s*1c/i, /h[ée]moglobine\s*gly/i, /h[ée]moglobine\s*a1c/i],
-  insuline_jeun: [/insuline.*je[uû]n/i],
+  insuline_jeun: [/insuline[^\\n]{0,30}je[uû]n/i],
   homa_ir: [/homa[-\s]?ir/i, /indice\s*de\s*homa/i],
   fructosamine: [/fructosamine/i],
   triglycerides: [/triglyc[ée]rides/i],
   hdl: [/cholest[ée]rol\s*h\.?d\.?l/i, /\bh\.?d\.?l\b/i, /\bhdl[-\s]?c\b/i],
-  ldl: [/cholest[ée]rol\s*l\.?d\.?l.*mesur[eé]/i, /\bl\.?d\.?l\s+mesur[eé]/i],
-  apob: [/apolipoprot[ée]ine.*b/i, /apo\s*b/i],
+  ldl: [/cholest[ée]rol\s*l\.?d\.?l[^\\n]{0,30}mesur[eé]/i, /cholest[ée]rol\s*l\.?d\.?l/i, /\bl\.?d\.?l\s+mesur[eé]/i, /\bl\.?d\.?l[-\s]?c?\b/i],
+  apob: [/apolipoprot[ée]ine[^\\n]{0,30}b/i, /apo\s*b/i],
   lpa: [/lp\s*\(?a\)?/i, /lipoprot[ée]ine\s*\(a\)/i],
   cholesterol_total: [/cholest[ée]rol\s*total/i],
-  apo_a1: [/apolipoprot[ée]ine.*a1/i, /apo\s*a1/i],
-  crp_us: [/crp.*(us|ultra)/i, /crp\s*hs/i, /c[-\s]?r[ée]active/i],
+  apo_a1: [/apolipoprot[ée]ine[^\\n]{0,30}a1/i, /apo\s*a1/i],
+  crp_us: [/crp[^\\n]{0,30}(us|ultra)/i, /crp\s*hs/i, /c[-\s]?r[ée]active/i],
   homocysteine: [/homocyst[ée]ine/i],
   ferritine: [/ferritine/i],
-  fer_serique: [/fer\s*s[ée]rique/i, /sid[ée]r[ée]mie/i],
-  transferrine_sat: [/saturation.*transferrine/i, /coef.*saturation/i],
+  fer_serique: [/fer\s*s[ée]rique/i, /sid[ée]r[ée]mie/i, /^fer$/i],
+  transferrine_sat: [/coefficient\s*de\s*saturation(?!\s*en\s*fer)\s*\(cs/i, /coefficient\s*de\s*saturation(?!\s*en\s*fer)/i, /saturation(?!\s*en\s*fer)[^\\n]{0,40}transferrine/i, /coef[^\\n]{0,30}saturation(?!\s*en\s*fer)/i],
   vitamine_d: [/vitamine\s*d\s*25\s*oh/i, /25[-\s]?oh\s*vit/i, /vitamine\s*d/i],
   b12: [/vitamine\s*b12/i, /cobalamine/i],
   folate: [/folate/i, /vitamine\s*b9/i],
-  magnesium_rbc: [/magn[eé]sium.*rbc/i, /magn[eé]sium.*intra/i],
+  magnesium_rbc: [/magn[eé]sium[^\\n]{0,30}rbc/i, /magn[eé]sium[^\\n]{0,30}intra/i],
   zinc: [/\bzinc\b/i],
   alt: [/\balt\b/i, /\balat\b/i, /\bsgpt\b/i],
   ast: [/\bast\b/i, /\basat\b/i, /\bsgot\b/i],
   ggt: [/\bggt\b/i, /gamma[-\s]*gt/i],
   creatinine: [/cr[ée]atinine/i],
-  egfr: [/\begfr\b/i, /d[ée]bit.*filtration/i, /d\.?\s*f\.?\s*g\.?/i],
+  egfr: [/\begfr\b/i, /d[ée]bit[^\\n]{0,40}filtration/i, /dfg\s*calcul[ée]/i, /d\.?\s*f\.?\s*g\.?\s*calcul/i, /ckd[-\s]?epi/i],
 };
 
 const extractFirstNumber = (line: string): number | null => {
@@ -875,7 +882,7 @@ const UNIT_REGEX =
   /(mmol\/l|nmol\/l|mg\/dl|mg\/l|g\/l|ng\/ml|ng\/l|pg\/ml|ng\/dl|pmol\/l|umol\/l|µmol\/l|mui\/l|ui\/l|u\/l|ml\/min|%)/i;
 
 const SKIP_LINE_REGEX =
-  /(objectif|recommand|valeur|référence|reference|score|esc|risque|guide|interpret|evaluation|page|\bhas\b)/i;
+  /(objectif|recommand|valeur|référence|reference|score|esc|risque|guide|interpret|evaluation|page|\bhas\b|consid[ée]r[ée]|est\s+normal|en\s*faveur|17\s*alpha|hydroxy[-\s]?prog[ée]st[ée]rone|transmis\s+au|envoy[ée]s?\s+au|examen[s]?\s+transmis|pr[ée]l[èe]vement\s*:|valid[ée]\s*(le|par)|seuil\s*de\s*d[ée]tection)/i;
 
 const DATE_LINE_REGEX = /^\d{2}[\/-]\d{2}[\/-]\d{2,4}$/;
 const RANGE_LINE_REGEX = /\d+(?:[.,]\d+)?\s*(?:à|a|–|-)\s*\d+(?:[.,]\d+)?/i;
@@ -961,11 +968,19 @@ const extractNumberFromSnippet = (snippet: string): number | null => {
     end: (match.index ?? 0) + match[0].length,
   }));
 
+  // Also filter time patterns like "08H52", "08h 52", "à 08H52"
+  const timeMatches = Array.from(
+    snippet.matchAll(/\d{1,2}\s*[hH]\s*\d{2}/g)
+  ).map((match) => ({
+    start: match.index ?? 0,
+    end: (match.index ?? 0) + match[0].length,
+  }));
+
   const matches = snippet.matchAll(/[<>]?\s*\d+(?:[.,]\d+)?/g);
   for (const match of matches) {
     const raw = match[0].replace(/[<>]/g, "").replace(",", ".").trim();
     const value = Number(raw);
-    if (Number.isNaN(value)) continue;
+    if (Number.isNaN(value) || !Number.isFinite(value)) continue;
     const start = match.index ?? 0;
     const end = start + match[0].length;
     const beforeChar = snippet[start - 1] || "";
@@ -978,13 +993,19 @@ const extractNumberFromSnippet = (snippet: string): number | null => {
     if (beforeChar === "(" || afterChar === ")") continue;
 
     if ((/[A-Za-zÀ-ÿ]/.test(beforeChar) || /[A-Za-zÀ-ÿ]/.test(afterChar)) && !hasAttachedUnit) continue;
-    if (dateMatches.some((range) => start >= range.start && end <= range.end)) continue;
+    // Use digit start position (not match start which may include leading whitespace)
+    const digitStart = start + (match[0].length - match[0].replace(/^[<>]?\s*/, "").length);
+    if (dateMatches.some((range) => digitStart >= range.start && end <= range.end)) continue;
+    if (timeMatches.some((range) => digitStart >= range.start && end <= range.end)) continue;
     if (isYearLike(value, raw) || isHugeNumber(raw, value)) continue;
     const before = snippet.slice(Math.max(0, start - 3), start);
     const after = snippet.slice(end, end + 3);
     if (before.includes("-") || after.includes("-") || before.includes("–") || after.includes("–")) {
       continue;
     }
+    // Skip numbers that are part of compound marker names like "17 ALPHA HYDROXY"
+    const afterWord = snippet.slice(end, end + 20).replace(/^\s+/, "");
+    if (/^alpha/i.test(afterWord) || /^hydroxy/i.test(afterWord)) continue;
     return value;
   }
   return null;
@@ -1018,6 +1039,7 @@ const MARKER_VALIDATION_RANGES: Record<string, { min: number; max: number }> = {
   lh: { min: 0.5, max: 12 },
   fsh: { min: 0.5, max: 15 },
   prolactine: { min: 2, max: 30 },
+  shbg: { min: 8, max: 120 },
   dhea_s: { min: 40, max: 700 },
   cortisol: { min: 1, max: 50 },
   igf1: { min: 60, max: 450 },
@@ -1076,6 +1098,9 @@ const extractMarkersFromText = (pdfText: string): BloodMarkerInput[] => {
   const results = new Map<string, { value: number; unit?: string }>();
   const entries = Object.entries(MARKER_SYNONYMS);
 
+  // Skip matches inside "examens transmis" listing sections (no actual values)
+  const TRANSMIS_CONTEXT_REGEX = /examen[s]?\s+transmis|ci[-\s]?dessous\s+ont\s+[ée]t[ée]\s+transmis/i;
+
   for (const [markerId, patterns] of entries) {
     for (const pattern of patterns) {
       const regex = new RegExp(pattern.source, "gi");
@@ -1083,7 +1108,10 @@ const extractMarkersFromText = (pdfText: string): BloodMarkerInput[] => {
       while ((match = regex.exec(cleaned)) !== null) {
         const start = match.index;
         const end = start + match[0].length;
-        const after = cleaned.slice(end, end + 55);
+        // Skip matches inside transmitted exams sections (listing without values)
+        const widerBefore = cleaned.slice(Math.max(0, start - 200), start);
+        if (TRANSMIS_CONTEXT_REGEX.test(widerBefore)) continue;
+        const after = cleaned.slice(end, end + 80);
         const before = cleaned.slice(Math.max(0, start - 55), start);
         const value = extractNumberFromSnippet(after) ?? extractNumberFromSnippet(before);
         if (value === null) continue;
@@ -1141,7 +1169,7 @@ export const extractPatientInfoFromPdfText = (pdfText: string): PatientInfo => {
     }
   }
 
-  const nomLine = findLine(/nom\s*de\s*naissance/i) || findLine(/\bnom\s*[:]/i);
+  const nomLine = findLine(/(?<!pr[ée])nom\s*de\s*naissance/i) || findLine(/\bn[ée]e?\s*\(?e?\)?\s*:\s*[A-ZÀ-Ÿ]/i) || findLine(/\bnom\s*[:]/i);
   if (!nom && nomLine) {
     nom = cleanName(extractAfter(nomLine));
   }
@@ -1169,7 +1197,7 @@ export const extractPatientInfoFromPdfText = (pdfText: string): PatientInfo => {
   }
 
   const emailRegex = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
-  const blockedEmail = /(labo|biogroup|laboratoire|rgpd|eurofins|biomnis|contact)/i;
+  const blockedEmail = /(labo|biogroup|laboratoire|rgpd|eurofins|biomnis|contact|cerba|cerballiance|rpd\.|src@|cofrac|accredit)/i;
   const preferredEmailLine = lines.find(
     (line) =>
       emailRegex.test(line) &&
@@ -1522,11 +1550,11 @@ const GENERIC_PHRASES = [
 const formatPercentDelta = (value: number, min: number, max: number) => {
   if (!Number.isFinite(value) || !Number.isFinite(min) || !Number.isFinite(max)) return "N/A";
   if (value < min) {
-    const pct = Math.round(((min - value) / min) * 100);
+    const pct = min !== 0 ? Math.round(((min - value) / min) * 100) : 0;
     return `-${pct}% (sous la limite)`;
   }
   if (value > max) {
-    const pct = Math.round(((value - max) / max) * 100);
+    const pct = max !== 0 ? Math.round(((value - max) / max) * 100) : 0;
     return `+${pct}% (au-dessus de la limite)`;
   }
   return "0% (dans la plage)";

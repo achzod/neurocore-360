@@ -455,10 +455,10 @@ export default function FormCheck() {
             transition={{ duration: 0.6, delay: 0.4 }}
             className="flex items-center justify-center gap-4 mb-12"
           >
-            <span className="text-white text-5xl sm:text-6xl font-bold tracking-[-0.04em]">Gratuit</span>
-            <div className="text-left">
-              <span className="text-white/40 block text-sm">ta premiere analyse</span>
-              <span style={{ color: ACCENT }} className="block text-sm font-semibold">puis a partir de 19.99€</span>
+            <div className="text-center">
+              <span className="inline-block px-6 py-3 rounded-sm text-xl sm:text-2xl font-bold uppercase tracking-widest text-white border-2" style={{ borderColor: ACCENT, background: `${ACCENT}1A` }}>
+                Bientot disponible
+              </span>
             </div>
           </motion.div>
 
@@ -468,14 +468,12 @@ export default function FormCheck() {
             transition={{ duration: 0.6, delay: 0.5 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
-            <button
-              onClick={() => document.getElementById('packs')?.scrollIntoView({ behavior: 'smooth' })}
-              className="group inline-flex items-center gap-3 text-white font-semibold text-base px-8 py-4 rounded-sm transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5"
-              style={{ background: ACCENT, boxShadow: `0 0 40px ${ACCENT}4D` }}
+            <span
+              className="inline-flex items-center gap-3 text-white/50 font-semibold text-base px-8 py-4 rounded-sm cursor-not-allowed"
+              style={{ background: `${ACCENT}33` }}
             >
-              Decouvrir les packs
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </button>
+              Bientot disponible
+            </span>
           </motion.div>
         </motion.div>
 
@@ -669,7 +667,7 @@ export default function FormCheck() {
         </div>
       </section>
 
-      {/* PACKS & PRICING */}
+      {/* PACKS & PRICING — Coming Soon */}
       <section id="packs" className="py-32 px-6 border-t border-white/5">
         <div className="max-w-5xl mx-auto">
           <motion.div
@@ -682,8 +680,11 @@ export default function FormCheck() {
               Packs & Tarifs
             </p>
             <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em]">
-              Choisis ton pack.
+              Bientot disponible.
             </h2>
+            <p className="text-white/50 mt-4 max-w-lg mx-auto">
+              FormCheck arrive tres bientot. Les packs ci-dessous seront disponibles au lancement.
+            </p>
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">

@@ -90,8 +90,13 @@ export async function registerRoutes(
   const discoveryLimiter = createRateLimiter({ windowMs: 60_000, max: 5 });
   const checkoutLimiter = createRateLimiter({ windowMs: 60_000, max: 5 });
 
-  app.get("/api/health", (_req, res) => {
-    res.json({ status: "ok", timestamp: new Date().toISOString() });
+  app.get("/api/health", async (_req, res) => {
+    try {
+      await pool.query("SELECT 1");
+      res.json({ status: "ok", db: "connected", timestamp: new Date().toISOString() });
+    } catch (err) {
+      res.status(503).json({ status: "unhealthy", db: "disconnected", timestamp: new Date().toISOString() });
+    }
   });
 
   app.get("/api/version", (_req, res) => {
@@ -227,12 +232,12 @@ export async function registerRoutes(
     return calculateScoresFromResponses(responses);
   };
 
-  // Admin auth helper - checks ADMIN_SECRET or ADMIN_KEY
-  function requireAdminAuth(req: any, res: any): boolean {
-    const adminKey = req.headers["x-admin-key"] || req.query.key || req.body?.adminKey;
+  // Admin auth helper - checks ADMIN_SECRET or ADMIN_KEY (header only)
+  function requireAdminAuth(req: any, res: any, silent?: boolean): boolean {
+    const adminKey = req.headers["x-admin-key"];
     const validKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY;
     if (!validKey || adminKey !== validKey) {
-      res.status(401).json({ error: "Unauthorized - admin key required" });
+      if (!silent) res.status(401).json({ error: "Unauthorized - admin key required" });
       return false;
     }
     return true;
@@ -513,7 +518,7 @@ export async function registerRoutes(
         console.error(`[Email] Audit ${auditId} not found after generation — skipping email`);
         return;
       }
-      const clientName = (completedAudit as any)?.narrativeReport?.clientName || email.split('@')[0];
+      const clientName = (completedAudit as any)?.narrativeReport?.clientName || (email ? email.split('@')[0] : 'User');
       const validationResult = (completedAudit as any)?.narrativeReport?.validationResult;
       const deliveryStatus = completedAudit.reportDeliveryStatus;
 
@@ -547,7 +552,11 @@ export async function registerRoutes(
       console.log(`[Email] ✅ Validation OK (score: ${validationResult?.score || 'N/A'}/100) - Sending email to ${email}`);
       const emailSent = await sendReportReadyEmail(email, auditId, auditType, baseUrl);
       if (emailSent) {
-        await storage.updateAudit(auditId, { reportDeliveryStatus: "SENT", reportSentAt: new Date() });
+        try {
+          await storage.updateAudit(auditId, { reportDeliveryStatus: "SENT", reportSentAt: new Date() });
+        } catch (dbErr) {
+          console.error(`[Email] CRITICAL: Email sent but DB update failed for ${auditId}:`, dbErr);
+        }
         console.log(`[Email] ✅ Report ready email sent successfully to ${email} for audit ${auditId}`);
 
         // Envoyer email admin en copie
@@ -582,6 +591,15 @@ export async function registerRoutes(
       if (!email) {
         res.status(400).json({ error: "Email requis" });
         return;
+      }
+      // Require auth: user can only query their own audits (or admin)
+      const payload = getAuthPayload(req);
+      const isAdmin = requireAdminAuth(req, res, true);
+      if (!isAdmin) {
+        if (!payload || payload.email.toLowerCase() !== email.trim().toLowerCase()) {
+          res.status(401).json({ error: "Unauthorized" });
+          return;
+        }
       }
       const audits = await storage.getAuditsByEmail(email);
       const light = req.query.light === "1";
@@ -1175,13 +1193,8 @@ export async function registerRoutes(
       }
       res.json({ success: true, message: "Lien magique envoyé" });
     } catch (error) {
-      console.error("[Auth] Error:", error);
-      const adminKey = String(req.headers["x-admin-key"] || "");
-      const expectedKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY || "";
-      const detail = adminKey && expectedKey && adminKey === expectedKey
-        ? (error instanceof Error ? error.message : String(error))
-        : undefined;
-      res.status(500).json({ error: "Erreur serveur", ...(detail ? { detail } : {}) });
+      console.error("[Auth] Magic link error:", error);
+      res.status(500).json({ error: "Erreur serveur" });
     }
   });
 
@@ -1350,13 +1363,15 @@ export async function registerRoutes(
   });
 
   app.get("/api/config/delivery-mode", async (req, res) => {
-    const mode = process.env.DELIVERY_MODE || "instant";
-    res.json({ 
+    const mode = process.env.DELIVERY_MODE || "scheduled";
+    res.json({
       mode,
       delays: {
-        GRATUIT: 24,
-        PREMIUM: 48,
-        ELITE: 48
+        GRATUIT: 0,
+        PREMIUM: 24,
+        ELITE: 48,
+        BURNOUT: 24,
+        BLOOD_ANALYSIS: 24,
       }
     });
   });
@@ -2150,11 +2165,11 @@ export async function registerRoutes(
             promoCode: validatedPromoCode,
             promoCodeId: promoObjCheck.id || null,
             finalAmountCents: 0,
-            status: "paid" as any,
             ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null,
             userAgent: req.headers["user-agent"] || null,
             metadata: { planType, paymentMethod: "promo_100", freeViaPromo: true },
           });
+          await storage.updateOrder(order.id, { status: "paid", paidAt: new Date() });
           await storage.incrementPromoCodeUse(validatedPromoCode);
           await storage.createPromoCodeUsage({
             promoCodeId: promoObjCheck.id,
@@ -2439,11 +2454,11 @@ export async function registerRoutes(
           promoCode: validatedPromoCode,
           promoCodeId: promoObj?.id || null,
           finalAmountCents: 0,
-          status: "paid" as any,
           ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null,
           userAgent: req.headers["user-agent"] || null,
           metadata: { planType, paymentMethod: "promo_100", freeViaPromo: true },
         });
+        await storage.updateOrder(order.id, { status: "paid", paidAt: new Date() });
         if (validatedPromoCode && promoObj) {
           await storage.incrementPromoCodeUse(validatedPromoCode);
           await storage.createPromoCodeUsage({
@@ -3545,6 +3560,7 @@ export async function registerRoutes(
   // Cron endpoint to process scheduled email sequences
   // Call this endpoint every hour via external cron service (e.g., cron-job.org)
   app.post("/api/cron/process-email-sequences", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
     try {
       const baseUrl = getBaseUrl();
       const now = new Date();
@@ -4382,6 +4398,15 @@ export async function registerRoutes(
   registerBloodTestsRoutes(app);
 
   // ==================== STRIPE WEBHOOK ====================
+  // Idempotency guard: track recently processed Stripe event IDs (TTL 1h)
+  const processedWebhookEvents = new Map<string, number>();
+  setInterval(() => {
+    const cutoff = Date.now() - 60 * 60 * 1000;
+    for (const [id, ts] of processedWebhookEvents) {
+      if (ts < cutoff) processedWebhookEvents.delete(id);
+    }
+  }, 10 * 60 * 1000).unref();
+
   app.post("/api/stripe/webhook", async (req, res) => {
     const sig = req.headers["stripe-signature"];
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -4398,6 +4423,13 @@ export async function registerRoutes(
     } catch (err: any) {
       console.error("[Webhook] Signature verification failed:", err.message);
       res.status(400).json({ error: "Invalid signature" });
+      return;
+    }
+
+    // Idempotency: skip already-processed events
+    if (processedWebhookEvents.has(event.id)) {
+      console.log(`[Webhook] Skipping duplicate event ${event.id}`);
+      res.json({ received: true });
       return;
     }
 
@@ -4445,6 +4477,8 @@ export async function registerRoutes(
           break;
         }
       }
+      // Mark as processed AFTER successful handling (allows retry on failure)
+      processedWebhookEvents.set(event.id, Date.now());
       res.json({ received: true });
     } catch (error) {
       console.error("[Webhook] Processing error:", error);
@@ -4499,6 +4533,56 @@ export async function registerRoutes(
     } catch (error) {
       console.error("[Admin Cleanup] Error:", error);
       res.status(500).json({ error: "Erreur nettoyage" });
+    }
+  });
+
+  // ==================== GDPR DATA DELETION ====================
+  app.post("/api/admin/gdpr/delete-user-data", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { email } = req.body;
+      if (!email || typeof email !== "string") {
+        res.status(400).json({ error: "Email requis" });
+        return;
+      }
+      const normalizedEmail = email.trim().toLowerCase();
+      const deleted: Record<string, number> = {};
+
+      // Delete across all tables with email column
+      const tables = [
+        "audits", "orders", "blood_reports", "blood_tests",
+        "reviews", "email_tracking", "questionnaire_progress",
+        "burnout_progress", "burnout_reports", "terra_data",
+        "magic_tokens", "promo_code_usages",
+      ];
+      for (const table of tables) {
+        try {
+          const result = await pool.query(
+            `DELETE FROM ${table} WHERE LOWER(email) = $1`,
+            [normalizedEmail]
+          );
+          deleted[table] = result.rowCount ?? 0;
+        } catch {
+          // Table may not exist — skip
+        }
+      }
+
+      // Delete user record
+      try {
+        const result = await pool.query(
+          `DELETE FROM users WHERE LOWER(email) = $1`,
+          [normalizedEmail]
+        );
+        deleted.users = result.rowCount ?? 0;
+      } catch {
+        // users table may not exist
+      }
+
+      console.log(`[GDPR] Deleted data for ${normalizedEmail}:`, deleted);
+      res.json({ success: true, email: normalizedEmail, deleted });
+    } catch (error) {
+      console.error("[GDPR] Deletion error:", error);
+      res.status(500).json({ error: "Erreur suppression GDPR" });
     }
   });
 
