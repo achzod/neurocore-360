@@ -487,18 +487,30 @@ export async function registerRoutes(
 
             const narrativeReport = await Promise.race([generationPromise, timeoutPromise]);
 
-            await storage.updateAudit(audit.id, {
-              narrativeReport,
-              reportDeliveryStatus: "READY",
-            });
-            console.log(`[Discovery Scan] Report READY for audit ${audit.id}`);
+            // Check if delivery should be delayed (scheduled)
+            const scheduledFor = audit.reportScheduledFor ? new Date(audit.reportScheduledFor) : null;
+            const shouldDelay = scheduledFor && scheduledFor > new Date();
 
-            const baseUrl = getBaseUrl();
-            const emailSent = await sendReportReadyEmail(audit.email, audit.id, audit.type, baseUrl);
-            if (emailSent) {
-              await storage.updateAudit(audit.id, { reportDeliveryStatus: "SENT", reportSentAt: new Date() });
-              const clientName = (mergedResponses as any)?.prenom || data.email.split("@")[0];
-              await sendAdminEmailNewAudit(audit.email, clientName, audit.type, audit.id);
+            if (shouldDelay) {
+              await storage.updateAudit(audit.id, {
+                narrativeReport,
+                reportDeliveryStatus: "SCHEDULED",
+              });
+              console.log(`[Discovery Scan] Report SCHEDULED for audit ${audit.id} — delivery at ${scheduledFor.toISOString()}`);
+            } else {
+              await storage.updateAudit(audit.id, {
+                narrativeReport,
+                reportDeliveryStatus: "READY",
+              });
+              console.log(`[Discovery Scan] Report READY for audit ${audit.id}`);
+
+              const baseUrl = getBaseUrl();
+              const emailSent = await sendReportReadyEmail(audit.email, audit.id, audit.type, baseUrl);
+              if (emailSent) {
+                await storage.updateAudit(audit.id, { reportDeliveryStatus: "SENT", reportSentAt: new Date() });
+                const clientName = (mergedResponses as any)?.prenom || data.email.split("@")[0];
+                await sendAdminEmailNewAudit(audit.email, clientName, audit.type, audit.id);
+              }
             }
           } catch (error: any) {
             console.error(`[Discovery Scan] Generation FAILED for audit ${audit.id}:`, error?.message || error);
@@ -1430,7 +1442,7 @@ export async function registerRoutes(
     res.json({
       mode,
       delays: {
-        GRATUIT: 0,
+        GRATUIT: 24,
         PREMIUM: 24,
         ELITE: 48,
         BURNOUT: 24,
