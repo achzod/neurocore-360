@@ -137,10 +137,10 @@ export async function registerRoutes(
               !process.env.SMTP_PASS ? "SMTP_PASS missing" : "configured",
     };
 
-    // 4. AI (Gemini)
-    checks.gemini = {
-      ok: Boolean(process.env.GEMINI_API_KEY),
-      detail: process.env.GEMINI_API_KEY ? `model: ${process.env.GEMINI_MODEL || "default"}` : "GEMINI_API_KEY missing",
+    // 4. AI (Anthropic Claude)
+    checks.anthropic = {
+      ok: Boolean(process.env.ANTHROPIC_API_KEY),
+      detail: process.env.ANTHROPIC_API_KEY ? "configured" : "ANTHROPIC_API_KEY missing — reports won't generate",
     };
 
     // 5. Sentry

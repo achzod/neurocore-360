@@ -125,7 +125,7 @@ if (process.env.NODE_ENV === "production") {
     console.error(`[FATAL] Missing required env vars: ${missing.join(", ")}`);
     process.exit(1);
   }
-  const recommended = ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "ADMIN_SECRET", "APP_URL"];
+  const recommended = ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "ADMIN_SECRET", "APP_URL", "ANTHROPIC_API_KEY", "SMTP_USER"];
   const missingRec = recommended.filter((k) => !process.env[k]);
   if (missingRec.length > 0) {
     console.warn(`[WARN] Missing recommended env vars: ${missingRec.join(", ")}`);
