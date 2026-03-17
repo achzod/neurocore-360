@@ -17,6 +17,7 @@ interface Offer {
   imageUrl: string;
   reverse?: boolean;
   useCustomVisual?: boolean;
+  href?: string;
 }
 
 // ============================================================================
@@ -34,7 +35,8 @@ const OFFERS: Offer[] = [
     features: ["10 domaines analysés", "Score global sur 100", "Identification des blocages", "Audit complet section par section"],
     price: "Gratuit",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/hr_hrv.png",
-    reverse: false
+    reverse: false,
+    href: "/offers/discovery-scan"
   },
   {
     id: 'anabolic-bioscan',
@@ -44,7 +46,8 @@ const OFFERS: Offer[] = [
     features: ["16 sections d'analyse", "Profil hormonal complet", "Axes cliniques", "Stack suppléments personnalisé"],
     price: "59€",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/bmi_stress_activity.png",
-    reverse: true
+    reverse: true,
+    href: "/offers/anabolic-bioscan"
   },
   {
     id: 'blood-analysis',
@@ -55,7 +58,8 @@ const OFFERS: Offer[] = [
     price: "99€",
     imageUrl: "",
     reverse: false,
-    useCustomVisual: true
+    useCustomVisual: true,
+    href: "/offers/blood-analysis"
   },
   {
     id: 'ultimate-scan',
@@ -65,7 +69,8 @@ const OFFERS: Offer[] = [
     features: ["18 sections d'analyse", "Analyse photo posturale", "Intégration wearables", "Protocole 30-60-90 jours"],
     price: "79€",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/cno_pro.png",
-    reverse: true
+    reverse: true,
+    href: "/offers/ultimate-scan"
   },
   {
     id: 'formcheck',
@@ -76,7 +81,8 @@ const OFFERS: Offer[] = [
     price: "Bientot disponible",
     imageUrl: "",
     reverse: false,
-    useCustomVisual: true
+    useCustomVisual: true,
+    href: "/offers/formcheck"
   },
 ];
 
@@ -752,19 +758,21 @@ function OfferCard({ offer, index }: { offer: Offer; index: number }) {
               </div>
               {/* CTA Button */}
               {offer.id === 'formcheck' ? (
-                <span
-                  className="px-6 py-4 bg-[#25D366]/30 text-white/50 font-mono text-xs uppercase tracking-widest flex items-center gap-2 cursor-not-allowed"
+                <a
+                  href={offer.href || "/offers/formcheck"}
+                  className="px-6 py-4 bg-[#25D366]/30 text-white/50 font-mono text-xs uppercase tracking-widest flex items-center gap-2 hover:text-white hover:bg-[#25D366]/50 transition-colors"
                 >
                   Bientot disponible
-                </span>
+                  <span>&gt;</span>
+                </a>
               ) : (
-                <button
-                  onClick={() => document.getElementById('hero-form')?.scrollIntoView({ behavior: 'smooth' })}
+                <a
+                  href={offer.href || "/"}
                   className="px-6 py-4 bg-[#FCDD00] text-black font-mono text-xs uppercase tracking-widest hover:bg-[#FCDD00]/80 transition-colors flex items-center gap-2"
                 >
-                  Réserver ma place
+                  {offer.price === "Gratuit" ? "Commencer gratuitement" : "Decouvrir l'offre"}
                   <span>&gt;</span>
-                </button>
+                </a>
               )}
             </div>
 
