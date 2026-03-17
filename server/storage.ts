@@ -2632,9 +2632,9 @@ export interface InsertReview {
 // Promo codes mapping by audit type
 export const PROMO_CODES_BY_AUDIT_TYPE: Record<ReviewAuditTypeEnum, { code: string; description: string }> = {
   'DISCOVERY': { code: 'DISCOVERY20', description: '-20% sur le coaching Achzod' },
-  'ANABOLIC_BIOSCAN': { code: 'ANABOLICBIOSCAN', description: '59€ déduits du coaching' },
-  'ULTIMATE_SCAN': { code: 'ULTIMATESCAN', description: '79€ déduits du coaching' },
-  'BLOOD_ANALYSIS': { code: 'BLOOD', description: '99€ déduits du coaching' },
+  'ANABOLIC_BIOSCAN': { code: 'BIOSCAN59', description: '59€ déduits du coaching' },
+  'ULTIMATE_SCAN': { code: 'ULTIMATE79', description: '79€ déduits du coaching' },
+  'BLOOD_ANALYSIS': { code: 'BLOOD99', description: '99€ déduits du coaching' },
 };
 
 export interface IReviewStorage {

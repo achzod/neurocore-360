@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { useBloodTheme } from "../BloodThemeContext";
 import { ProtocolStepper } from "../ProtocolStepper";
 import ReactMarkdown from "react-markdown";
-import { Clipboard, Apple, Pill, Calendar } from "lucide-react";
+import { Clipboard, Apple, Pill, Calendar, ArrowRight } from "lucide-react";
 
 interface ProtocolsTabProps {
   aiSections: {
@@ -211,6 +211,86 @@ export function ProtocolsTab({ aiSections, protocolPhases }: ProtocolsTabProps) 
           </p>
         </div>
       )}
+
+      {/* Coaching CTA */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="rounded-2xl border p-6"
+        style={{
+          borderColor: `${theme.status.critical}40`,
+          background: `linear-gradient(135deg, ${theme.status.critical}10 0%, ${theme.surface} 100%)`,
+        }}
+      >
+        <div className="text-center mb-4">
+          <span
+            className="inline-block px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider"
+            style={{ backgroundColor: theme.status.critical, color: "#fff" }}
+          >
+            Passe a l'action
+          </span>
+        </div>
+        <h3 className="text-lg font-bold text-center mb-2" style={{ color: theme.textPrimary }}>
+          Coaching APEXLABS
+        </h3>
+        <p className="text-sm text-center mb-4" style={{ color: theme.textSecondary }}>
+          Tu as ton analyse sanguine complete. Pour passer a l'action avec un suivi personnalise :
+        </p>
+        <ul className="space-y-2 mb-5 text-sm" style={{ color: theme.textSecondary }}>
+          <li className="flex items-start gap-2">
+            <span style={{ color: theme.status.critical }}>-</span>
+            Protocoles adaptes a tes marqueurs sanguins
+          </li>
+          <li className="flex items-start gap-2">
+            <span style={{ color: theme.status.critical }}>-</span>
+            Ajustements hebdo sur tes retours
+          </li>
+          <li className="flex items-start gap-2">
+            <span style={{ color: theme.status.critical }}>-</span>
+            Suivi des KPIs et corrections de trajectoire
+          </li>
+          <li className="flex items-start gap-2">
+            <span style={{ color: theme.status.critical }}>-</span>
+            Acces direct pour accelerer les decisions
+          </li>
+        </ul>
+
+        <div
+          className="rounded-xl border-2 border-dashed p-4 text-center mb-4"
+          style={{ borderColor: theme.status.critical, backgroundColor: `${theme.status.critical}08` }}
+        >
+          <p className="text-xs uppercase tracking-widest mb-1" style={{ color: theme.textTertiary }}>
+            Ton code promo
+          </p>
+          <p className="text-2xl font-bold tracking-wider" style={{ color: theme.status.critical }}>
+            BLOOD99
+          </p>
+          <p className="text-xs mt-1" style={{ color: theme.textPrimary }}>
+            -99EUR deduits sur ton coaching
+          </p>
+        </div>
+
+        <p className="text-xs text-center mb-4" style={{ color: theme.textTertiary }}>
+          Le montant de ta Blood Analysis (99 EUR) est deduit a 100% du prix du coaching.
+          Utilise ce code sur achzodcoaching.com pour deduire 99EUR de ta formule.
+        </p>
+
+        <div className="text-center">
+          <a
+            href="https://www.achzodcoaching.com/formules-coaching"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90"
+            style={{ backgroundColor: theme.status.critical, color: "#fff" }}
+          >
+            Decouvrir les formules coaching
+            <ArrowRight className="h-4 w-4" />
+          </a>
+        </div>
+        <p className="text-xs text-center mt-3" style={{ color: theme.textTertiary }}>
+          coaching@achzodcoaching.com · achzodcoaching.com
+        </p>
+      </motion.div>
     </motion.div>
   );
 }

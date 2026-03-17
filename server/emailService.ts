@@ -78,6 +78,18 @@ const DEDUCTION_BY_AUDIT_TYPE: Record<string, number> = {
   BLOOD_ANALYSIS: 99,
 };
 
+const PROMO_CODE_BY_AUDIT_TYPE: Record<string, { code: string; amount: number }> = {
+  PREMIUM: { code: "BIOSCAN59", amount: 59 },
+  ANABOLIC_BIOSCAN: { code: "BIOSCAN59", amount: 59 },
+  ELITE: { code: "ULTIMATE79", amount: 79 },
+  ULTIMATE_SCAN: { code: "ULTIMATE79", amount: 79 },
+  BLOOD_ANALYSIS: { code: "BLOOD99", amount: 99 },
+};
+
+const getPromoCodeForAuditType = (auditType: string): { code: string; amount: number } | null => {
+  return PROMO_CODE_BY_AUDIT_TYPE[auditType] || null;
+};
+
 const formatEuro = (value: number): string => {
   const formatted = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(value);
   return `${formatted}€`;
@@ -298,6 +310,17 @@ function getReviewSection(dashboardLink: string): string {
 function getCoachingSection(auditType: string, color: string = COLORS.purple): string {
   const coachingLink = "https://www.achzodcoaching.com/formules-coaching";
   const deductionAmount = getDeductionAmount(auditType);
+  const promo = getPromoCodeForAuditType(auditType);
+  const promoSection = promo ? `
+      <div style="margin: 20px 0; padding: 16px; border: 2px dashed ${color}; border-radius: 12px; text-align: center; background: ${color}10;">
+        <p style="color: ${COLORS.textMuted}; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 6px;">Ton code promo</p>
+        <p style="color: ${color}; font-size: 28px; font-weight: 700; letter-spacing: 3px; margin: 0;">${promo.code}</p>
+        <p style="color: ${COLORS.text}; font-size: 13px; margin: 8px 0 0;">-${promo.amount}EUR deduits sur ton coaching</p>
+      </div>
+      <p style="color: ${COLORS.textMuted}; font-size: 12px; text-align: center; margin: 0 0 16px;">
+        Utilise ce code sur achzodcoaching.com pour deduire ${promo.amount}EUR de ta formule coaching.
+      </p>
+  ` : "";
   return `
     <div style="padding: 28px; background: linear-gradient(135deg, ${color}15 0%, ${color}08 100%); border-radius: 12px; border: 1px solid ${color}30;">
       <div style="text-align: center; margin-bottom: 20px;">
@@ -311,6 +334,8 @@ function getCoachingSection(auditType: string, color: string = COLORS.purple): s
       <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.7; margin: 0 0 20px; text-align: center;">
         Ce rapport trace la trajectoire. L'accompagnement Achzod accelere l'execution et les ajustements.
       </p>
+
+      ${promoSection}
 
       ${renderCoachingOffersTable(deductionAmount, color)}
 
@@ -402,6 +427,8 @@ export async function sendReportReadyEmail(
       ${getPrimaryButton('Consulter le rapport', reportLink)}
 
       ${getReviewSection(reviewLink)}
+
+      ${auditType !== "GRATUIT" ? getCoachingSection(auditType, planColor) : ""}
 
       <div style="margin-top: 24px; padding: 20px; background-color: ${COLORS.background}; border-radius: 8px; border: 1px solid ${COLORS.border};">
         <p style="color: ${COLORS.textMuted}; font-size: 12px; margin: 0 0 8px; text-align: center;">
@@ -2256,6 +2283,16 @@ export async function sendBloodAnalysisHtmlEmail(
         <p style="margin:0;color:${CLAUDE_THEME.muted};font-size:14px;line-height:1.65;">Priorites visibles sur cette extraction: ${escapeHtml(topPriorityText)}.</p>
       </div>
 
+      <div style="margin:20px 0;padding:20px;border:2px dashed ${CLAUDE_THEME.accent};border-radius:12px;text-align:center;background:${CLAUDE_THEME.accentSoft};">
+        <p style="color:${CLAUDE_THEME.muted};font-size:11px;text-transform:uppercase;letter-spacing:2px;margin:0 0 6px;">Ton code promo</p>
+        <p style="color:${CLAUDE_THEME.accent};font-size:28px;font-weight:700;letter-spacing:3px;margin:0;">BLOOD99</p>
+        <p style="color:${CLAUDE_THEME.ink};font-size:13px;margin:8px 0 0;">-99EUR deduits sur ton coaching Achzod</p>
+      </div>
+      <p style="color:${CLAUDE_THEME.muted};font-size:13px;line-height:1.65;margin:0 0 8px;text-align:center;">
+        Le montant de ta Blood Analysis (99 EUR) est deduit a 100% si tu passes au coaching.<br/>
+        Utilise ce code sur <a href="https://www.achzodcoaching.com/formules-coaching" style="color:${CLAUDE_THEME.accent};text-decoration:underline;">achzodcoaching.com</a> pour deduire 99EUR de ta formule coaching.
+      </p>
+
       <div style="margin-top:14px;padding-top:14px;border-top:1px solid ${CLAUDE_THEME.border};text-align:center;">
         <p style="margin:0;color:${CLAUDE_THEME.muted};font-size:12px;">Pièce jointe: <strong style="color:${CLAUDE_THEME.ink};">Blood_Analysis_${escapeHtml(
           reportId
@@ -2693,15 +2730,11 @@ export async function sendPremiumJ7Email(
 
       ${getCoachingSection(auditType, COLORS.purple)}
 
-      <div style="text-align: center; margin-top: 24px;">
-        <span style="display: inline-block; background: ${COLORS.purple}; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: 700;">
-          -20% avec le code NEUROCORE20
-        </span>
-      </div>
-
       <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
     `;
 
+    const promoJ7 = getPromoCodeForAuditType(auditType);
+    const promoJ7Label = promoJ7 ? `${promoJ7.code} (-${promoJ7.amount}EUR)` : "deduction coaching";
     const emailContent = getEmailWrapper(content, `linear-gradient(135deg, ${COLORS.purple} 0%, #7c3aed 100%)`);
 
     const response = await fetch("https://api.sendpulse.com/smtp/emails", {
@@ -2713,8 +2746,8 @@ export async function sendPremiumJ7Email(
       body: JSON.stringify({
         email: {
           html: encodeBase64(emailContent),
-          text: `Ca fait une semaine ! Pret a passer a l'action ? Decouvre le coaching personnalise avec -20% : code NEUROCORE20`,
-          subject: "Pret a transformer ta sante ? (-20% coaching)",
+          text: `Ca fait une semaine ! Pret a passer a l'action ? Ton code promo : ${promoJ7Label}. Decouvre le coaching personnalise.`,
+          subject: `Pret a transformer ta sante ? (${promoJ7Label})`,
           from: { name: SENDER_NAME, email: SENDER_EMAIL },
           to: [{ email }],
         },
@@ -2744,7 +2777,7 @@ export async function sendPremiumJ14Email(
 
     const content = `
       <h2 style="color: ${COLORS.text}; margin: 0 0 16px; font-size: 26px; text-align: center; font-weight: 700; letter-spacing: -1px;">
-        Coaching Achzod -20%
+        Coaching Achzod
       </h2>
 
       <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 28px; text-align: center;">
@@ -2753,12 +2786,6 @@ export async function sendPremiumJ14Email(
 
       ${getCoachingSection(auditType, COLORS.warning)}
 
-      <div style="text-align: center; margin-top: 24px;">
-        <span style="display: inline-block; background: ${COLORS.warning}; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: 700;">
-          -20% avec le code NEUROCORE20
-        </span>
-      </div>
-
       <p style="color: #525252; font-size: 12px; line-height: 1.6; margin: 28px 0 0; text-align: center;">
         Pour arreter ces emails, reponds simplement "STOP".
       </p>
@@ -2766,6 +2793,8 @@ export async function sendPremiumJ14Email(
       <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
     `;
 
+    const promoJ14 = getPromoCodeForAuditType(auditType);
+    const promoJ14Label = promoJ14 ? `${promoJ14.code} (-${promoJ14.amount}EUR)` : "deduction coaching";
     const emailContent = getEmailWrapper(content, `linear-gradient(135deg, ${COLORS.warning} 0%, #d97706 100%)`);
 
     const response = await fetch("https://api.sendpulse.com/smtp/emails", {
@@ -2777,8 +2806,8 @@ export async function sendPremiumJ14Email(
       body: JSON.stringify({
         email: {
           html: encodeBase64(emailContent),
-          text: "Coaching Achzod -20%. Code NEUROCORE20, reduction 20%, valable 30 jours.",
-          subject: "Coaching Achzod -20% (code NEUROCORE20)",
+          text: `Coaching Achzod. Ton code promo : ${promoJ14Label}. Utilise-le sur achzodcoaching.com.`,
+          subject: `Coaching Achzod - code ${promoJ14Label}`,
           from: { name: SENDER_NAME, email: SENDER_EMAIL },
           to: [{ email }],
         },
