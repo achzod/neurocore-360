@@ -130,11 +130,13 @@ export async function registerRoutes(
               process.env.STRIPE_SECRET_KEY.startsWith("sk_live_") ? "LIVE mode" : "TEST mode",
     };
 
-    // 3. Email (SMTP)
+    // 3. Email (SendPulse API)
+    const spUser = process.env.SENDPULSE_USER_ID || process.env.SENDPULSE_API_USER_ID;
+    const spSecret = process.env.SENDPULSE_SECRET || process.env.SENDPULSE_API_SECRET;
     checks.email = {
-      ok: Boolean(process.env.SMTP_USER && process.env.SMTP_PASS),
-      detail: !process.env.SMTP_USER ? "SMTP_USER missing" :
-              !process.env.SMTP_PASS ? "SMTP_PASS missing" : "configured",
+      ok: Boolean(spUser && spSecret),
+      detail: !spUser ? "SENDPULSE_USER_ID missing" :
+              !spSecret ? "SENDPULSE_SECRET missing" : "SendPulse configured",
     };
 
     // 4. AI (Anthropic Claude)
