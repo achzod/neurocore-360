@@ -116,11 +116,11 @@ export function Header() {
               </Link>
             )}
 
-            <Link href="/offers/discovery-scan">
+            <a href="/#offers">
               <button className="px-5 py-2.5 text-xs font-black uppercase tracking-wide bg-[#FCDD00] text-black rounded-sm transition-all duration-300 hover:bg-[#FCDD00]/90" data-testid="button-start-audit">
                 Commencer
               </button>
-            </Link>
+            </a>
 
             {/* Mobile menu toggle */}
             <button
