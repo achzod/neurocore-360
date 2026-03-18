@@ -253,11 +253,26 @@ if (process.env.NODE_ENV === "production") {
           // Recover orphaned reports stuck in READY or SENDING (crash recovery, bug #9)
           try {
             const { pool } = await import("./db.js");
+
+            // Recovery for blood_reports
             await pool.query(
               `UPDATE blood_reports SET delivery_status = 'SCHEDULED'
                WHERE delivery_status IN ('READY', 'SENDING')
                  AND report_scheduled_for <= NOW() - INTERVAL '10 minutes'`
             );
+
+            // SECURITY FIX: Recovery for audits (prevents orphaned reports)
+            const auditRecoveryResult = await pool.query(
+              `UPDATE audits SET report_delivery_status = 'SCHEDULED'
+               WHERE report_delivery_status IN ('READY', 'SENDING')
+                 AND report_scheduled_for <= NOW() - INTERVAL '10 minutes'
+               RETURNING id`
+            );
+
+            if (auditRecoveryResult.rows.length > 0) {
+              const recoveredIds = auditRecoveryResult.rows.map((r: any) => r.id).join(', ');
+              log(`Recovered ${auditRecoveryResult.rows.length} orphaned audits: ${recoveredIds}`);
+            }
           } catch (_recoveryErr) {
             // Non-critical — silently ignore if DB unavailable
           }

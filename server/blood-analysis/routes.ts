@@ -44,6 +44,8 @@ import {
 } from "./recommendations-engine";
 import { storage } from "../storage";
 import { createRateLimiter } from "../middleware/rateLimit";
+import { getAuthPayload, type AuthPayload } from "../auth";
+import crypto from "crypto";
 import {
   sendAdminEmailNewAudit,
   sendBloodAnalysisHtmlEmail,
@@ -69,6 +71,73 @@ const getBaseUrl = (): string => {
     "http://localhost:10000"
   );
 };
+
+// SECURITY: Admin auth with constant-time comparison (timing attack prevention)
+function requireAdminAuth(req: any, res: any, silent?: boolean): boolean {
+  const adminKey = req.headers["x-admin-key"];
+  const validKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY;
+
+  if (!validKey || !adminKey) {
+    if (!silent) res.status(401).json({ error: "Unauthorized - admin key required" });
+    return false;
+  }
+
+  try {
+    const valid = crypto.timingSafeEqual(
+      Buffer.from(String(adminKey)),
+      Buffer.from(validKey)
+    );
+    if (!valid && !silent) {
+      res.status(401).json({ error: "Unauthorized - admin key required" });
+    }
+    return valid;
+  } catch {
+    if (!silent) res.status(401).json({ error: "Unauthorized - admin key required" });
+    return false;
+  }
+}
+
+// SECURITY: Check if user owns the blood report (prevents IDOR vulnerability)
+async function checkBloodReportOwnership(req: any, res: any, reportId: string, silent?: boolean): Promise<boolean> {
+  // First try blood_reports table
+  let report = await storage.getBloodReport(reportId);
+  let email: string | null = null;
+
+  if (report) {
+    email = report.email;
+  } else {
+    // Try blood_tests table
+    try {
+      const { db } = await import("../db.js");
+      const { bloodTests } = await import("../../shared/drizzle-schema.js");
+      const { eq } = await import("drizzle-orm");
+      const results = await db.select().from(bloodTests).where(eq(bloodTests.id, reportId));
+      if (results.length > 0) {
+        email = results[0].email;
+      }
+    } catch (error) {
+      console.error("[Security] Error checking blood test ownership:", error);
+    }
+  }
+
+  if (!email) {
+    if (!silent) res.status(404).json({ error: "Rapport non trouvé" });
+    return false;
+  }
+
+  // Allow admin access
+  const isAdmin = requireAdminAuth(req, res, true);
+  if (isAdmin) return true;
+
+  // Check user ownership via JWT
+  const payload = getAuthPayload(req);
+  if (!payload || payload.email.toLowerCase() !== email.toLowerCase()) {
+    if (!silent) res.status(403).json({ error: "Accès non autorisé à ce rapport" });
+    return false;
+  }
+
+  return true;
+}
 
 const isAdminRequestAuthorized = (req: any): boolean => {
   const adminKey = req.headers["x-admin-key"];
@@ -1112,6 +1181,11 @@ export function registerBloodAnalysisRoutes(app: Express): void {
    */
   app.get("/api/blood-analysis/report/:id", async (req, res) => {
     try {
+      // SECURITY: Verify user owns this blood report (IDOR protection)
+      if (!(await checkBloodReportOwnership(req, res, req.params.id))) {
+        return;
+      }
+
       // First try blood_reports table (legacy storage)
       let report = await storage.getBloodReport(req.params.id);
       const reportId = req.params.id;
@@ -1454,11 +1528,16 @@ export function registerBloodAnalysisRoutes(app: Express): void {
    */
   app.get("/api/blood-tests/:id", async (req, res, next) => {
     try {
-      // First try blood-analysis report (no auth required for these)
+      // SECURITY: Verify user owns this blood report (IDOR protection)
       const report = await storage.getBloodReport(req.params.id);
       if (!report) {
         // Fall through to the authenticated blood-tests route
         return next();
+      }
+
+      // Verify ownership
+      if (!(await checkBloodReportOwnership(req, res, req.params.id))) {
+        return;
       }
 
         console.log(`[BloodAnalysis] Serving report ${req.params.id} via bridge endpoint`);

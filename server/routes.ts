@@ -28,6 +28,8 @@ import { generateEnhancedSupplementsHTML, generateSupplementStack } from "./supp
 import { streamAuditZip } from "./exportZipService";
 import { createPayPalOrder, capturePayPalOrder, isPayPalConfigured } from "./paypalClient";
 import { isAnthropicAvailable } from "./anthropicEngine";
+import { getAuthPayload, type AuthPayload } from "./auth";
+import crypto from "crypto";
 import { validateAnthropicConfig, ANTHROPIC_CONFIG } from "./anthropicConfig";
 import {
   generateTerraWidget,
@@ -296,13 +298,51 @@ export async function registerRoutes(
   app.use("/api/admin", adminLimiter);
 
   // Admin auth helper - checks ADMIN_SECRET or ADMIN_KEY (header only)
+  // SECURITY: Uses constant-time comparison to prevent timing attacks
   function requireAdminAuth(req: any, res: any, silent?: boolean): boolean {
     const adminKey = req.headers["x-admin-key"];
     const validKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY;
-    if (!validKey || adminKey !== validKey) {
+
+    if (!validKey || !adminKey) {
       if (!silent) res.status(401).json({ error: "Unauthorized - admin key required" });
       return false;
     }
+
+    // Constant-time comparison to prevent timing attacks
+    try {
+      const valid = crypto.timingSafeEqual(
+        Buffer.from(String(adminKey)),
+        Buffer.from(validKey)
+      );
+      if (!valid && !silent) {
+        res.status(401).json({ error: "Unauthorized - admin key required" });
+      }
+      return valid;
+    } catch {
+      if (!silent) res.status(401).json({ error: "Unauthorized - admin key required" });
+      return false;
+    }
+  }
+
+  // SECURITY: Check if user owns the audit (prevents IDOR vulnerability)
+  async function checkAuditOwnership(req: any, res: any, auditId: string, silent?: boolean): Promise<boolean> {
+    const audit = await storage.getAudit(auditId);
+    if (!audit) {
+      if (!silent) res.status(404).json({ error: "Audit non trouvé" });
+      return false;
+    }
+
+    // Allow admin access
+    const isAdmin = requireAdminAuth(req, res, true);
+    if (isAdmin) return true;
+
+    // Check user ownership via JWT
+    const payload = getAuthPayload(req);
+    if (!payload || payload.email.toLowerCase() !== audit.email.toLowerCase()) {
+      if (!silent) res.status(403).json({ error: "Accès non autorisé à ce rapport" });
+      return false;
+    }
+
     return true;
   }
 
@@ -686,6 +726,11 @@ export async function registerRoutes(
 
   app.get("/api/audits/:id", async (req, res) => {
     try {
+      // SECURITY: Verify user owns this audit (IDOR protection)
+      if (!(await checkAuditOwnership(req, res, req.params.id))) {
+        return;
+      }
+
       const audit = await storage.getAudit(req.params.id);
       if (!audit) {
         res.status(404).json({ error: "Audit non trouvé" });
@@ -707,6 +752,11 @@ export async function registerRoutes(
 
   app.get("/api/audits/:id/analysis", async (req, res) => {
     try {
+      // SECURITY: Verify user owns this audit (IDOR protection)
+      if (!(await checkAuditOwnership(req, res, req.params.id))) {
+        return;
+      }
+
       const audit = await storage.getAudit(req.params.id);
       if (!audit) {
         res.status(404).json({ error: "Audit non trouvé" });
@@ -721,6 +771,11 @@ export async function registerRoutes(
 
   app.post("/api/audits/:id/generate-narrative", async (req, res) => {
     try {
+      // SECURITY: Verify user owns this audit (IDOR protection)
+      if (!(await checkAuditOwnership(req, res, req.params.id))) {
+        return;
+      }
+
       const audit = await storage.getAudit(req.params.id);
       if (!audit) {
         res.status(404).json({ error: "Audit non trouvé" });
@@ -745,6 +800,11 @@ export async function registerRoutes(
 
   app.get("/api/audits/:id/narrative-status", async (req, res) => {
     try {
+      // SECURITY: Verify user owns this audit (IDOR protection)
+      if (!(await checkAuditOwnership(req, res, req.params.id))) {
+        return;
+      }
+
       const job = await getJobStatus(req.params.id);
       const jobReferenceTime = job?.lastProgressAt
         ? new Date(job.lastProgressAt).getTime()
@@ -789,6 +849,11 @@ export async function registerRoutes(
 
   app.get("/api/audits/:id/dashboard", async (req, res) => {
     try {
+      // SECURITY: Verify user owns this audit (IDOR protection)
+      if (!(await checkAuditOwnership(req, res, req.params.id))) {
+        return;
+      }
+
       const audit = await storage.getAudit(req.params.id);
       if (!audit) {
         res.status(404).json({ error: "Audit non trouvé" });
@@ -921,6 +986,11 @@ export async function registerRoutes(
 
   app.get("/api/audits/:id/narrative", async (req, res) => {
     try {
+      // SECURITY: Verify user owns this audit (IDOR protection)
+      if (!(await checkAuditOwnership(req, res, req.params.id))) {
+        return;
+      }
+
       const audit = await storage.getAudit(req.params.id);
       if (!audit) {
         res.status(404).json({ error: "Audit non trouve" });
@@ -2009,6 +2079,11 @@ export async function registerRoutes(
 
   app.get("/api/audits/:id/export/pdf", async (req, res) => {
     try {
+      // SECURITY: Verify user owns this audit (IDOR protection)
+      if (!(await checkAuditOwnership(req, res, req.params.id))) {
+        return;
+      }
+
       const auditId = req.params.id;
       const audit = await storage.getAudit(auditId);
       if (!audit) {
@@ -2037,6 +2112,11 @@ export async function registerRoutes(
 
   app.get("/api/audits/:id/export/html", async (req, res) => {
     try {
+      // SECURITY: Verify user owns this audit (IDOR protection)
+      if (!(await checkAuditOwnership(req, res, req.params.id))) {
+        return;
+      }
+
       const auditId = req.params.id;
       const audit = await storage.getAudit(auditId);
       if (!audit) {
@@ -2137,6 +2217,11 @@ export async function registerRoutes(
 
   app.get("/api/audits/:id/export/zip", async (req, res) => {
     try {
+      // SECURITY: Verify user owns this audit (IDOR protection)
+      if (!(await checkAuditOwnership(req, res, req.params.id))) {
+        return;
+      }
+
       const auditId = req.params.id;
       const audit = await storage.getAudit(auditId);
       if (!audit) {
