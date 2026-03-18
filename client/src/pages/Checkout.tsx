@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import { trackBeginCheckout, trackAddPaymentInfo, trackPurchase, trackDiscoveryScanLead } from "@/lib/analytics";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -234,6 +235,7 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
     },
     onSuccess: (data: any) => {
       if (selectedPlan === "gratuit") {
+        trackDiscoveryScanLead(data?.auditId || 'free');
         toast({
           title: "Audit créé avec succès !",
           description: "Tu vas recevoir un email avec tes résultats.",
@@ -243,6 +245,7 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
         navigate("/auth/check-email");
       } else if (data?.free && data?.success && data?.auditId) {
         // 100% promo: audit created directly without payment
+        trackPurchase(data.auditId || 'promo-100', type || 'audit', type || 'Audit', 0);
         toast({
           title: "Code promo 100% appliqué !",
           description: "Ton audit a été créé gratuitement.",
@@ -262,8 +265,10 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
         });
         navigate("/auth/login?next=/blood-dashboard&paid=true");
       } else if (data?.url) {
+        trackBeginCheckout(type || 'audit', type || 'Audit', selectedPlanData?.price || 0);
         window.location.href = data.url; // Stripe redirect
       } else if (data?.approvalUrl) {
+        trackBeginCheckout(type || 'audit', type || 'Audit', selectedPlanData?.price || 0);
         window.location.href = data.approvalUrl; // PayPal redirect
       } else {
         toast({

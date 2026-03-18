@@ -100,7 +100,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/deduction-coaching": "Deduction Coaching | APEXLABS",
 };
 
-// Scroll to top + dynamic title + canonical URL on route change
+// Scroll to top + dynamic title + canonical URL + analytics on route change
 function ScrollToTop() {
   const [location] = useLocation();
 
@@ -110,6 +110,15 @@ function ScrollToTop() {
     // Update page title
     const title = PAGE_TITLES[location] || "APEXLABS by Achzod";
     document.title = title;
+
+    // Track page view in GA4
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'page_view', {
+        page_path: location,
+        page_title: title,
+        page_location: window.location.href,
+      });
+    }
 
     // Update canonical URL dynamically
     const canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
