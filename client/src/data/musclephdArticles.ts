@@ -7,27 +7,13 @@ export const ACHZOD_ARTICLES: BlogArticle[] = [
     priority: 11,
     slug: "strategies-stimulant-le-metabolisme",
     title: "Stratégies stimulant le métabolisme",
-    excerpt: "Pour ceux d’entre vous qui ne sont pas au courant, je me suis récemment associé au Conseil de bien-être de Vitamin Shoppe pour aider à fournir à leurs lecteurs des recommandations de formation et de ...",
+    excerpt: "Le métabolisme englobe tous les processus cellulaires de production d'énergie. Découvrez les méthodes d'entraînement, de nutrition et de supplémentation pour stimuler naturellement votre taux métabolique.",
     category: "supplements",
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "11 min",
     image: "https://images.unsplash.com/photo-1594737625785-a6cbdabd333c?w=800&auto=format&fit=crop",
     content: `# Stratégies stimulant le métabolisme
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
-
-Pour ceux d’entre vous qui ne sont pas au courant, je me suis récemment associé au Conseil de bien-être de Vitamin Shoppe pour aider à fournir à leurs lecteurs des recommandations de formation et de nutrition plus fondées sur des données probantes. The Vitamin Shoppe est une entreprise fantastique qui se consacre à aider les gens à atteindre leurs objectifs de forme physique et de santé et je vous recommande fortement de la consulter pour tous vos besoins en suppléments (ici). En attendant, je publierai également ici les articles que j’écris pour eux afin que tous les lecteurs de la plateforme ACHZOD puissent également bénéficier de ce partenariat. Restez à l’écoute, de grandes choses vont venir du Conseil du bien-être de Vitamin Shoppe !
-
-Cela étant dit, abordons le sujet d’aujourd’hui : les moyens naturels de stimuler votre métabolisme. Le métabolisme fait essentiellement référence à tous les processus qui se produisent au sein d’une cellule afin de créer et de maintenir l’énergie nécessaire au fonctionnement cellulaire. Ces processus nécessitent les composants énergétiques des aliments, que nous appelons macronutriments ; ce sont des graisses, des glucides et des protéines. Stimuler le métabolisme est donc d’un grand intérêt pour les amateurs de fitness, car une augmentation du taux métabolique augmentera la quantité de calories que vous brûlez au repos et à la salle de sport et peut aider à optimiser la composition corporelle. De quelles manières pouvez-vous augmenter votre métabolisme ?
 
 
 ## Méthodes de formation
@@ -112,7 +98,7 @@ Le Dr Jacob Wilson est PDG du laboratoire de performance humaine de l'Applied Sc
     priority: 30,
     slug: "mesaventures-de-musculation",
     title: "Mésaventures de musculation",
-    excerpt: "Pour ceux d’entre vous qui ne sont pas au courant, je me suis récemment associé au Conseil de bien-être de Vitamin Shoppe pour aider à fournir à leurs lecteurs des recommandations de formation et de ...",
+    excerpt: "Blessures, erreurs de programmation, ego lifting : retour sur les mésaventures les plus courantes en musculation et comment les éviter pour progresser durablement.",
     category: "stress",
     author: "ACHZOD",
     date: "2025-01-10",
@@ -120,17 +106,6 @@ Le Dr Jacob Wilson est PDG du laboratoire de performance humaine de l'Applied Sc
     image: "https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop",
     content: `# Mésaventures de musculation
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
-
-Pour ceux d’entre vous qui ne sont pas au courant, je me suis récemment associé au Conseil de bien-être de Vitamin Shoppe pour aider à fournir à leurs lecteurs des recommandations de formation et de nutrition plus fondées sur des données probantes. The Vitamin Shoppe est une entreprise fantastique qui se consacre à aider les gens à atteindre leurs objectifs de forme physique et de santé et je vous recommande fortement de la consulter pour tous vos besoins en suppléments (ici). En attendant, je publierai également ici les articles que j’écris pour eux afin que tous les lecteurs de la plateforme ACHZOD puissent également bénéficier de ce partenariat. Restez à l’écoute, de grandes choses vont venir du Conseil du bien-être de Vitamin Shoppe !
 
 Passons maintenant au sujet de cet article : les mésaventures en musculation. À première vue, développer ses muscles semble être un processus simple. Il suffit de ramasser les choses et de les poser, n'est-ce pas ? Bien que cette simplicité fonctionne très bien pour les débutants, passer aux niveaux de formation intermédiaire et avancé nécessite une approche beaucoup plus intelligente. Voyons quelques-unes des erreurs les plus courantes commises au cours de ce processus et comment vous pouvez éviter ces problèmes dans votre propre formation.
 
@@ -222,7 +197,7 @@ Le Dr Jacob Wilson est PDG du laboratoire de performance humaine de l'Applied Sc
     priority: 56,
     slug: "erreurs-courantes-liees-aux-supplements",
     title: "Erreurs courantes liées aux suppléments",
-    excerpt: "Pour ceux d’entre vous qui ne sont pas au courant, je me suis récemment associé au Conseil de bien-être de Vitamin Shoppe pour aider à fournir à leurs lecteurs des recommandations de formation et de ...",
+    excerpt: "Surdosage, mauvais timing, produits inutiles : les erreurs de supplémentation les plus fréquentes décryptées par la science, et comment optimiser votre stack.",
     category: "hormones",
     author: "ACHZOD",
     date: "2025-01-10",
@@ -230,17 +205,6 @@ Le Dr Jacob Wilson est PDG du laboratoire de performance humaine de l'Applied Sc
     image: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800&auto=format&fit=crop",
     content: `# Erreurs courantes liées aux suppléments
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
-
-Pour ceux d’entre vous qui ne sont pas au courant, je me suis récemment associé au Conseil de bien-être de Vitamin Shoppe pour aider à fournir à leurs lecteurs des recommandations de formation et de nutrition plus fondées sur des données probantes. The Vitamin Shoppe est une entreprise fantastique qui se consacre à aider les gens à atteindre leurs objectifs de forme physique et de santé et je vous recommande fortement de la consulter pour tous vos besoins en suppléments (ici). En attendant, je publierai également ici les articles que j’écris pour eux afin que tous les lecteurs de la plateforme ACHZOD puissent également bénéficier de ce partenariat. Restez à l’écoute, de grandes choses vont venir du Conseil du bien-être de Vitamin Shoppe !
 
 Cela étant dit, passons ici à l’un de ces articles. Quelles sont les erreurs les plus courantes que je constate lors de l’utilisation de compléments alimentaires ?
 
@@ -329,15 +293,6 @@ Le Dr Jacob Wilson est PDG du laboratoire de performance humaine de l'Applied Sc
     readTime: "19 min",
     image: "https://images.unsplash.com/photo-1486218119243-13883505764c?w=800&auto=format&fit=crop",
     content: `# Qu’est-ce qui cause la croissance ?
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 , nous allons couvrir un article récent de Wackerhage et al. (2018) intitulé « Stimuli et capteurs qui déclenchent une hypertrophie des muscles squelettiques après un exercice de résistance. » Cet article constitue l'examen le plus récent de la façon dont et pourquoi un muscle se développe en réponse à un entraînement en résistance. Avec cet article, notre objectif est de le décomposer et de diffuser certaines informations pour les rendre plus digestes pour le profane. Si vous êtes intéressé par l’article complet, vous pouvez le lire ici.
@@ -476,12 +431,6 @@ Ceci est un résumé de nos connaissances scientifiques actuelles sur ce qui fai
     image: "https://images.unsplash.com/photo-1538805060514-97d9090d1361?w=800&auto=format&fit=crop",
     content: `# La connexion esprit-muscle
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
 La connexion esprit-muscle est devenue un élément important de la musculation et de nombreux entraîneurs ne jurent que par son efficacité. L’idée est que vous utilisez une « concentration interne » dans laquelle vous vous concentrez spécifiquement sur la contraction du muscle qui travaille tout en effectuant un levage donné. Par exemple, lors d’une flexion des biceps, on se concentrerait attentivement sur l’action de compression de son biceps pendant le levage. Ce type de concentration semble extrêmement efficace pour augmenter l'activation musculaire (2,3,4,5,6,10,11,12,17) mais est-il optimal pour les athlètes de toutes forces ?
 
 La « concentration interne » fait référence à la connexion esprit-muscle. L'autre type de concentration souvent prôné pour le levage est une « concentration externe », dans laquelle vous mettez l'accent sur le mouvement du poids ou de votre environnement plutôt que sur le mouvement de votre corps/muscles (10,17). Dans ce cas, dire à quelqu’un de « serrer ses fessiers » pendant un squat lui donne une concentration interne, mais dire à quelqu’un de « repousser le sol » pendant un squat crée une concentration externe. Chose intéressante, des études ont montré que l'adoption d'une concentration interne n'augmente l'activation musculaire que jusqu'à environ 60 % de la force maximale (3). Ce pourcentage représente la différence maximale d’activation musculaire par rapport à l’absence de concentration/concentration externe, mais cette activation diminue lentement entre 60 % et 80 % jusqu’à ce qu’il n’y ait finalement plus de différence d’activation(3). Ce marqueur de 80 % représente le point où trop de force musculaire est nécessaire pour créer une connexion esprit-muscle (3,10,11). une concentration interne peut ne pas être avantageuse pour les athlètes de force autres que les bodybuilders qui dépassent souvent les 80 % à l’entraînement.
@@ -554,15 +503,6 @@ En fin de compte, vos objectifs n’ont pas nécessairement d’importance, car 
     image: "https://images.unsplash.com/photo-1502904550040-7534597429ae?w=800&auto=format&fit=crop",
     content: `# Les squats sont-ils mauvais pour vos genoux ?
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 Le squat. Le seul exercice sur lequel les entraîneurs de force et les programmes de renforcement des fesses d’Instagram s’accordent le plus. C’est aussi l’un des exercices les plus controversés : chaque frère ayant des problèmes de genoux et chaque médecin qui n’a jamais touché un poids semble avoir une opinion sur les raisons pour lesquelles vous ne devriez pas les faire et encore plus de raisons pour lesquelles vous ne devriez JAMAIS vous accroupir en dessous du parallèle. Malheureusement pour nos frères de gym aux cuisses de poulet et nos médecins maigres, nous avons quelques très bonnes raisons pour lesquelles les squats sont parfaitement sûrs – en particulier au-delà du parallèle.
 
@@ -621,15 +561,6 @@ Si les squats vous inquiètent toujours, cherchez un bon entraîneur ou un entra
     readTime: "16 min",
     image: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=800&auto=format&fit=crop",
     content: `# Entraînement des types de fibres musculaires
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Au fil des années, de nombreuses personnes ont discuté de la possibilité d’isoler différents types de fibres musculaires avec des stratégies d’entraînement spécifiques – c’est-à-dire des répétitions élevées/un poids faible pour les fibres à contraction lente et des répétitions plus faibles/un poids plus élevé pour les fibres à contraction rapide. Qu’est-ce que cela signifie exactement ? Et est-ce réellement possible ?
@@ -774,15 +705,6 @@ Ces résultats expliquent pourquoi il est important d’inclure à la fois des j
     image: "https://images.unsplash.com/photo-1598971639058-fab3c3109a00?w=800&auto=format&fit=crop",
     content: `# Temps sous tension
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 Le temps sous tension est un terme très à la mode dans la communauté du bodybuilding. Tout ce qui concerne les gains doit traiter du temps sous tension (TUT) et presque tous les gourous vous diront que vous devez effectuer des répétitions lentes et contrôlées à des poids sous-maximaux pour maximiser le TUT. Le TUT est-il le principal moteur de la croissance musculaire ? Discutons-en.
 
@@ -871,15 +793,6 @@ Si vous souhaitez une discussion encore plus approfondie sur ce sujet, consultez
     readTime: "14 min",
     image: "https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=800&auto=format&fit=crop",
     content: `# Biomécanique et croissance
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Aujourd’hui, nous allons discuter d’une poignée de propriétés biomécaniques musculaires très populaires qui sont enseignées dans presque tous les cours de sciences de l’exercice, mais jamais appliquées à la croissance musculaire. Nous faisons bien sûr référence à la « courbe force-vitesse » et à la « courbe longueur-tension » et à toutes leurs composantes associées. Les enseignants les présentent souvent comme des mesures applicables pour aider les élèves à comprendre la production de force musculaire et d’autres mesures, mais la réalité est qu’elles sont bien plus applicables à l’hypertrophie musculaire que quiconque ne le croit. Alors creusons.
@@ -995,15 +908,6 @@ Nous n’avons pas besoin de résumer l’intégralité de l’article ici, mais
     image: "https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=800&auto=format&fit=crop",
     content: `# Fréquence des repas
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 Passez du temps à discuter d’idées de régime avec d’autres membres de la communauté du fitness et le sujet de la fréquence des repas finira par se poser. Les mecs avec des T-shirts coupés qui dévoilent presque tout leur torse seront probablement les premiers à vous dire que vous devez manger plusieurs petits repas espacés uniformément tout au long de la journée. L’idée derrière cette méthode est que vous maintenez votre métabolisme en combustion continue et que vous perdrez lentement de la graisse et gagnerez du muscle en même temps. Certains chercheurs ont également fait écho à cette théorie(17), mais cette philosophie résiste-t-elle à la science ?
 
@@ -1104,15 +1008,6 @@ Dans l’ensemble, la fréquence des repas a peu d’effet sur la composition co
     readTime: "12 min",
     image: "https://images.unsplash.com/photo-1590239926044-4131f572f21e?w=800&auto=format&fit=crop",
     content: `# Potentiel génétique
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 L’idée d’un « potentiel génétique » ou d’une « limite génétique » est l’un des sujets les plus polarisants en matière de musculation, en particulier dans le domaine sans drogue. La théorie est que chaque individu a une « limite » prédéterminée quant à la quantité de muscle ou de force qu’il peut naturellement développer et, pour l’essentiel, cette théorie semble avoir des preuves solides. Avant d’approfondir ce sujet, je suggère fortement de lire nos articles sur la mémoire musculaire (ici) et sur la génétique et les athlètes d’élite (ici), car ils discutent également d’une grande partie de ce que nous aborderons ici.
@@ -1221,15 +1116,6 @@ Alors oui, je vois des gens cesser de faire des progrès après 5 à 6 ans de ca
     readTime: "19 min",
     image: "https://images.unsplash.com/photo-1544717305-996b815c338c?w=800&auto=format&fit=crop",
     content: `# Surcharge progressive
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Comme dirait David Letterman : « Mon prochain invité n’a pas besoin d’être présenté. » Presque tout le monde a une compréhension générale de la surcharge progressive et de la nécessité d’un programme d’entraînement. Or, il existe plusieurs subtilités différentes qui tourbillonnent autour du sujet et qui peuvent facilement dérouter une lecture légère d’un après-midi. Résultat : avant d’approfondir la discussion sur les méthodes de surcharge progressive, nous devons différencier certains termes spécifiques :
@@ -1372,15 +1258,6 @@ En fin de compte, il existe plusieurs façons de planifier une surcharge progres
     image: "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=800&auto=format&fit=crop",
     content: `# Formation à la maison
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 Nous n’abordons généralement pas beaucoup l’entraînement au poids corporel sur ce site Web car, franchement, ce n’est pas le mode d’entraînement optimal pour gagner énormément de taille et de force. Mais en raison des circonstances actuelles, beaucoup d’entre nous sont coincés chez eux sans beaucoup d’équipement, voire aucun. Avec la pandémie de COVID-19 en tête, comment s’entraîner à la maison afin de conserver le plus de muscle possible ?
 
@@ -1492,15 +1369,6 @@ Si vous ne choisissez pas de tout mettre en œuvre et de vous procurer un ensemb
     image: "https://images.unsplash.com/photo-1505576399279-0d309256e28e?w=800&auto=format&fit=crop",
     content: `# Périodisation en musculation
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 La « périodisation » est un terme souvent utilisé de manière vague, sans contexte ni objectif. D’après mon expérience dans le domaine de la force et du conditionnement physique, la plupart des entraîneurs ont peu ou pas de compréhension de la théorie de la périodisation, et encore moins de la manière d’appliquer ces théories à l’entraînement des athlètes. Il existe une multitude d’informations disponibles sur la périodisation, depuis les manuels jusqu’aux cadres théoriques et même aux études de recherche individuelles. Sauf que nous allons surtout passer sous silence l’essentiel car (vous le verrez bientôt) cela n’est peut-être pas très utile pour la musculation.
 
@@ -1551,7 +1419,6 @@ En fin de compte, l’objectif de tout plan de périodisation est de garantir qu
 
 
 ## Quel est le rapport avec la musculation ?
-
 
 
 ### Parlons d’abord de la musculation compétitive :
@@ -1608,15 +1475,6 @@ Gardez les yeux ouverts car nous rédigerons probablement et (espérons-le) publ
     readTime: "11 min",
     image: "https://images.unsplash.com/photo-1577221084712-45b0445d2b00?w=800&auto=format&fit=crop",
     content: `# Entraînement pendant la maladie
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Au moment d’écrire ces lignes, la saison du rhume et de la grippe bat son plein et vous ne l’auriez pas deviné, j’ai attrapé un rhume. Cela m’a fait réfléchir à faire des recherches supplémentaires sur la façon de m’entraîner pendant que vous êtes malade, car dans le passé, je me suis toujours frayé un chemin à travers n’importe quelle maladie. Après avoir lu un peu et pris quelques notes, j'ai décidé de modifier mon plan d'entraînement lorsque je rencontre un bug, et voici pourquoi vous devriez aussi le faire.
@@ -1711,15 +1569,6 @@ Les maladies graves nécessitent de prendre quelques jours de congé, car il est
     readTime: "16 min",
     image: "https://images.unsplash.com/photo-1490818387583-1baba5e638af?w=800&auto=format&fit=crop",
     content: `# Apport en protéines et bodybuilders
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Nous avons récemment posé une question sur Instagram demandant si les gens pensaient que la recommandation actuelle de manger 1,6 g/kg de poids corporel de protéines par jour était suffisante pour maximiser la croissance musculaire. Les résultats ont été, étonnamment, presque partagés. De nombreuses personnes semblaient penser que ce niveau d'apport en protéines était suffisant pour maximiser la croissance. Toutefois, un groupe de taille égale semblait penser que des niveaux de protéines beaucoup plus élevés étaient nécessaires pour optimiser les gains. Étant donné que la majorité des personnes qui lisent ces articles sont plus que probablement intéressées à maximiser leur croissance, passons en revue ce que dit la science sur les protéines et les bodybuilders.
@@ -1852,15 +1701,6 @@ En fin de compte, 1,6 g/kg de protéines convient aux personnes normales. Mais e
     image: "https://images.unsplash.com/photo-1494597564530-871f2b93ac55?w=800&auto=format&fit=crop",
     content: `# Science musculaire pour les réducteurs
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 Le sujet de discussion  n’aura pas beaucoup d’applications en salle de sport. Il s’agit plus ou moins d’un « hé, c’est une chose qui arrive » plutôt que d’un « voici un peu de science et comment l’appliquer », comme nous le faisons habituellement. Quoi qu’il en soit, il s’agit d’un sujet incroyablement intéressant qui, un jour, pourrait développer une application utile dans le gymnase. Nous ne disposons toujours pas de suffisamment d’informations sur le sujet pour développer une tonne de points à retenir pour le profane, mais néanmoins, la connaissance, c’est le pouvoir et nous sommes tous là pour devenir plus forts.
 
@@ -1946,15 +1786,6 @@ Donc, cela ne représente pas vraiment un scénario « comment faire » dans leq
     readTime: "20 min",
     image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&auto=format&fit=crop",
     content: `# Hormèse
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 À travers plusieurs articles sur ce site, nous discutons de l’importance d’un programme d’entraînement optimal – essentiellement un plan d’entraînement solide tenant compte à la fois d’un régime alimentaire et d’un repos adéquat. Toutefois, nous n’avons pas vraiment discuté des bases biologiques expliquant pourquoi il existe une quantité optimale de toutes ces choses, alors approfondissons cette discussion un peu plus cette fois.
@@ -2252,15 +2083,6 @@ Mais l'amour pour ceux qui comptent dans votre vie ? Cette motivation ne s'étei
     image: "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=800&auto=format&fit=crop",
     content: `# Sommeil et musculation
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 Si vous lisez n’importe quel article de formation sur ce site Web, vous verrez les mots « dormir » ou « se reposer » répétés plusieurs fois. Nous insistons constamment sur l’importance du sommeil pour l’athlète ou le bodybuilder, alors évitons les ennuis cette fois-ci et allons droit au but.
 
@@ -2394,15 +2216,6 @@ Au moment de la publication, le numéro de référence 15 (Gunning, 2001) n'éta
     readTime: "23 min",
     image: "https://images.unsplash.com/photo-1478145046317-39f10e56b5e9?w=800&auto=format&fit=crop",
     content: `# Protéines végétales ou animales
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Étant donné que la comparaison entre les régimes alimentaires à base de plantes et ceux qui incluent des animaux peut rapidement devenir incontrôlable, cela vaut la peine de prendre une seconde pour apaiser les esprits des deux côtés avant d’approfondir. Ceci n’est pas un article d’éthique. Il ne s’agit pas d’un article rempli de données triées sur le volet pour soutenir un certain point de vue. Il s'agit simplement d'une discussion objective sur les découvertes scientifiques sur la différence entre les protéines végétales et animales et sur la manière dont elles affectent la croissance musculaire. Pas de marqueurs potentiels de santé, pas de spiritualité, pas de changement climatique, juste une croissance musculaire. Tous les autres facteurs concernent des arguments qui dépassent largement la portée de cet article. Comme toujours, nous encourageons une discussion saine et fondée sur des données probantes et apprécions grandement tous les commentaires. Toutefois, si vous êtes convaincu par ce qui est présenté ici, assurez-vous de prendre le temps de rédiger une déclaration claire et concise, dépourvue d'opinion personnelle, de croyance ou de données de mauvaise source. Personne n’est là pour changer d’avis sur quoi que ce soit, nous voulons juste parler de faits.
@@ -2592,15 +2405,6 @@ Nous comprenons qu’il s’agit d’un long examen de cet article, mais il est 
     image: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=800&auto=format&fit=crop",
     content: `# Calendrier des nutriments
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 Il y a plusieurs facteurs à prendre en compte lors de la conception d’un régime visant à maximiser la croissance ou la perte de graisse ou quels que soient vos objectifs personnels. Le timing des nutriments est l’un de ces éléments qui est devenu un peu plus controversé au cours des dernières années, de nombreux acteurs du domaine affirmant que le timing n’est vraiment pas si important. Or, cela peut être une façon à courte vue d’envisager la situation dans son ensemble, alors plongeons-nous dans les détails.
 
@@ -2729,15 +2533,6 @@ Pour les haltérophiles qui cherchent simplement à augmenter leur force ou leur
     readTime: "10 min",
     image: "https://images.unsplash.com/photo-1585435557343-3b092031a831?w=800&auto=format&fit=crop",
     content: `# La salle d
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Dans le système de justice pénale, les infractions liées à la musculation sont considérées comme particulièrement odieuses. À Tampa, en Floride, les détectives dévoués qui enquêtent sur ces crimes odieux sont membres d'une équipe d'élite connue sous le nom de Swole Victims Unit. C'est l'histoire de Joe Obtus, qui a été accusé de squattage répété à plusieurs reprises malgré les avertissements préalables des responsables du gymnase.
@@ -2890,15 +2685,6 @@ Si vous êtes convoqué au tribunal des gains, comment plaiderez-vous ? Et dans
     image: "https://images.unsplash.com/photo-1556742031-c6961e8560b0?w=800&auto=format&fit=crop",
     content: `# Alcool et gains
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 Nous avons reçu la question de l'alcool à plusieurs reprises sur les réseaux sociaux, il semble donc certainement utile de prendre une minute et d'approfondir les effets que l'alcool peut avoir sur les gains et/ou la croissance musculaire. Il va sans dire qu’il s’agit d’une revue de littérature purement objective – nous ne tolérons certainement aucune sorte de manigances impliquant la consommation d’alcool. L’éthique et la moralité de l’alcool sortent bien du cadre de cette discussion, alors ne vous attendez pas à voir quoi que ce soit de tout cela inclus ici.
 
@@ -3005,15 +2791,6 @@ Dans l’ensemble, personne n’est ici pour prêcher sur la méchanceté de l�
     readTime: "33 min",
     image: "https://images.unsplash.com/photo-1631549916768-4d8ba73be57b?w=800&auto=format&fit=crop",
     content: `# Variation d
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Nous avons évoqué à plusieurs reprises le concept de variations d’exercices sur les réseaux sociaux et nous obtenons toujours un résultat intéressant. Les réponses sont généralement partagées, la moitié des répondants affirmant que la variation est inutile et l'autre moitié ne jurant que par son importance. Le groupe qui n’est pas fan de la variation affirme souvent que la surcharge progressive est la seule nécessité pour réaliser des gains et citent toutes sortes de sites Web ou d’entraîneurs de fitness pour étayer leur affirmation. Et cette affirmation n’est certainement pas fausse. Or, ils ne disposent pas de la définition complète de la surcharge progressive, alors commençons la discussion par là.
@@ -3265,16 +3042,7 @@ En fin de compte, ajouter de la variation à votre programme peut empêcher les 
     image: "https://images.unsplash.com/photo-1577174881658-0f30ed549adc?w=800&auto=format&fit=crop",
     content: `# Le pouvoir de la musculation
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
 Avant de commencer, je dois rendre hommage à Dave Tate et à son histoire, « L'éducation d'un haltérophile » (partie 1 ici ; partie 2 ici). Ce qui suit est inspiré des paroles de Dave et de sa capacité à raconter le parcours d’un seul haltérophile à nous tous. Il s’agit peut-être d’une faible tentative de recréer la pièce pour un public de culturistes, mais voyons ce qui se passe.
-
-
-##Présentation
 
 
 C'est l'histoire d'un homme que nous appellerons Pete. Pete n'est aucun de nous et Pete est nous tous, alors suivons son voyage dans le monde du bodybuilding.
@@ -3386,15 +3154,6 @@ C'est le pouvoir du bodybuilding.
     readTime: "24 min",
     image: "https://images.unsplash.com/photo-1607613009820-a29f7bb81c04?w=800&auto=format&fit=crop",
     content: `# Calories et bilan énergétique
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Il est  temps de discuter de la question séculaire : toutes les calories sont-elles égales ? Et la question sœur, est-ce que « les calories entrantes par rapport aux calories dépensées » sont tout ce qui compte pour perdre du poids ? Je pense qu’il y a eu suffisamment de bruit et de cris sur les réseaux sociaux ces dernières années pour que ce problème doive absolument être abordé d’un point de vue scientifique.
@@ -3585,15 +3344,6 @@ Nous savons que cet article contient probablement des passages ambigus – princ
     image: "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=800&auto=format&fit=crop",
     content: `# Cyclisme des glucides
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 , nous allons offrir un aperçu général du cycle des glucides, car il y a une tonne de variables en jeu et nous n’avons tout simplement pas le temps d’approfondir chaque composant. La nutrition est toujours un sujet délicat, il vaut donc la peine de s’en tenir autant que possible à un point de vue objectif pour donner les informations les plus complètes. Nous aborderons un peu différentes stratégies pour le cyclisme et nous expliquerons également certaines lacunes dans la recherche qui vous laissent une grande partie de la prise de décision.
 
@@ -3617,7 +3367,6 @@ Ces stratégies peuvent être parfaites pour les personnes qui périodisent leur
 
 
 ## Méthodes de cyclisme des glucides
-
 
 
 ## 1. Entraînez-vous haut, dormez bas, entraînez-vous bas, répétez
@@ -3746,15 +3495,6 @@ Nous savons depuis au moins 1887 que la nutrition peut fortement influencer à l
     readTime: "19 min",
     image: "https://images.unsplash.com/photo-1584017911766-d451b3d0e843?w=800&auto=format&fit=crop",
     content: `# Un « bref » guide de la coupe
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Ah oui, le printemps est dans l'air et tous les bodybuilders du nord de la Floride et de SoCal envisagent leur coupe estivale annuelle pour afficher leur meilleur physique sur la plage. Tout leur hiver s’est déroulé en sueurs intenses, à force de poids et à écraser des tonnes de nourriture. Il est désormais temps de tailler ce bloc de marbre proverbial pour montrer tout le dur labeur de l’hiver. Une bonne coupe éblouit à la plage et amène immédiatement les hommes à vous demander à quel point vous êtes assis (pendant que les dames continuent de vous ignorer). Eh bien, au moins tu es déchiré, non ?
@@ -3903,15 +3643,6 @@ Si vous souhaitez lire l’un de ces sujets plus en détail, consultez les analy
     image: "https://images.unsplash.com/photo-1562771379-b5ba25198b44?w=800&auto=format&fit=crop",
     content: `# Mémoire musculaire
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 Le concept de mémoire musculaire semble avoir une large portée tant chez les scientifiques que chez les amateurs de gym. La façon la plus précise de décrire la mémoire musculaire est la récupération rapide de la force et de la taille des muscles précédemment entraînés après une période de désentraînement. Aussi verbeuse que soit cette description, il s’agit d’une désignation importante car nous devons distinguer quelques termes et processus différents pour isoler ce phénomène et, bien sûr, voir s’il existe réellement.
 
@@ -4012,15 +3743,6 @@ Du coup, après une discussion longue et complexe, il semble y avoir de bonnes r
     readTime: "18 min",
     image: "https://images.unsplash.com/photo-1587909209111-5097ee578ec3?w=800&auto=format&fit=crop",
     content: `# Génétique et athlètes d
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Nous connaissons tous un gars dans le gymnase – celui qui se vante de la façon dont il faisait du développé couché sur 500 livres et courait un sprint de 40 mètres en 4,3 secondes. Le directeur de la force et du conditionnement physique de l'Université Ball State, Jason Roberson, résume bien cette bêtise : "Êtes-vous déjà resté dans la même pièce que quelqu'un qui peut développer un développé couché de 500 livres ou courir un sous-4,4 40 ? Ils n'ont pas besoin de vous dire qu'ils peuvent le faire. Vous le savez simplement en étant près d'eux. "
@@ -4159,15 +3881,6 @@ En fin de compte, il y a plusieurs facteurs qui font des athlètes d’élite ce
     image: "https://images.unsplash.com/photo-1455203027-060348d99d6f?w=800&auto=format&fit=crop",
     content: `# Entraînement à jeun
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 Demandez à n’importe quel bodybuilder quelle est sa stratégie de perte de graisse et beaucoup d’entre eux vous diront qu’ils préfèrent le cardio à jeun dès le matin. En plus de cette stratégie de perte de graisse souvent utilisée, nous recevons une tonne de questions sur l’entraînement en résistance à jeun et sur la façon dont cela peut affecter les gains de force et de taille. Maintenant, nous n’allons pas faire ici un article « comment faire » avec toutes sortes d’informations sur le jeûne. , nous allons simplement examiner la littérature sur l’entraînement à jeun. Examinons ce que dit la science sur ce sujet et comment vous pourriez utiliser certaines de ces stratégies dans votre propre formation.
 
@@ -4250,15 +3963,6 @@ Alors si vous préférez vous entraîner à jeun, quelle est la meilleure façon
     readTime: "22 min",
     image: "https://images.unsplash.com/photo-1571172964276-91faaa704e1f?w=800&auto=format&fit=crop",
     content: `# Fatigue du SNC
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Si vous avez passé ne serait-ce qu'un minimum de temps à la salle de sport au cours des dernières années, je suis certain que vous avez entendu quelqu'un se plaindre que son système nerveux central (SNC) était fatigué, épuisé, épuisé, etc. Qu'est-ce que cela signifie exactement ? Ces frères de gym dramatiques souffrent-ils réellement de fatigue du SNC ?
@@ -4461,15 +4165,6 @@ Si vous souhaitez une discussion plus approfondie, consultez ces articles du Dr 
     image: "https://images.unsplash.com/photo-1504439468489-c8920d796a29?w=800&auto=format&fit=crop",
     content: `# Analgésiques et gains
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 Une question courante que l’on nous pose sur les réseaux sociaux est la suivante : « Est-ce que [x médicament] ruinera mes gains si je le prends après une séance d’entraînement ? De nombreux haltérophiles aiment utiliser des analgésiques et des anti-inflammatoires non stéroïdiens (AINS) après leurs entraînements pour tenter de soulager la douleur et les courbatures musculaires. Est-ce une bonne pratique ? Ou est-ce préjudiciable aux gains ? Voyons ce que dit la science et si nous pouvons utiliser la réponse de manière applicable.
 
@@ -4613,15 +4308,6 @@ Puisque ni le Dr Wilson ni moi-même ne sommes médecins, nous n’allons pas pa
     readTime: "15 min",
     image: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop",
     content: `# Science musculaire : une histoire
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Aujourd’hui, nous allons aborder des sujets incroyablement complexes qui pourraient répondre à une tonne de questions que vous ne saviez pas avoir sur la science du muscle. À la fin de cela, vous comprendrez vraiment pourquoi la première répétition d’un ensemble de soulevé de terre est plus difficile que les autres et pourquoi l’entraînement complet de l’amplitude des mouvements est si important pour des gains optimaux.
@@ -4767,15 +4453,6 @@ Remarque : La plupart des anciennes références utilisées  ne sont plus dispo
     image: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop",
     content: `# Hypertrophie vs hyperplasie
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 Nous savons que les muscles se développent selon un processus appelé « hypertrophie ». Mais il y a aussi ce processus fantaisiste appelé « hyperplasie », qui est entouré d’une tornade de controverses. C’est l’un des sujets sur lesquels nous recevons une tonne de questions, cela vaut donc la peine de prendre le temps d’y consacrer un article complet et de dissiper toute confusion restante.
 
@@ -4905,15 +4582,6 @@ Nous ne savons toujours pas si l’hyperplasie est isolée ou non pour les bodyb
     image: "https://images.unsplash.com/photo-1530497610245-94d3c16cda28?w=800&auto=format&fit=crop",
     content: `# Squats vs poussées de hanche
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 , nous allons couvrir une étude qui vient tout juste de sortir de presse : « Programmes d’entraînement en résistance au squat du dos contre la poussée de la hanche chez les femmes bien entraînées » par Barbalho et al. (2020). Ces auteurs ont conçu un programme d'entraînement de 12 semaines avec des sujets féminins entraînés comparant les poussées de hanche aux squats arrière et ont examiné les gains de force et de muscles fessiers de chaque exercice respectif.
 
@@ -5018,15 +4686,6 @@ L'équipe à l'origine du livre blanc a demandé le retrait ieurs articles de Ba
     image: "https://images.unsplash.com/photo-1551076805-e1869033e561?w=800&auto=format&fit=crop",
     content: `# Les soulevés de terre sont-ils dangereux ?
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 Les soulevés de terre sont un exercice assez courant dans les programmes de musculation et de musculation et de conditionnement physique. Bon sang, ils représentent 1/3 des événements de dynamophilie et sont occasionnellement un événement dans de nombreuses compétitions d'hommes forts. Les soulevés de terre sont souvent salués comme le roi de tous les exercices car ils activent une grande variété de groupes musculaires et suscitent un sentiment de masculinité rivalisé par peu de choses sur cette planète.
 
@@ -5129,15 +4788,6 @@ Si vous savez ce que vous faites et disposez d’une forme de levage décente, l
     image: "https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?w=800&auto=format&fit=crop",
     content: `# Nids-de-poule : Gérer les blessures
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 Non, non, sortez votre esprit du caniveau. Le titre de celui-ci fait référence aux imperfections de la route. Si vous recherchez des informations sur une certaine plante psychédélique ou une multitude d’insinuations, vous pourriez être un peu déçu par celle-ci.
 
@@ -5194,15 +4844,6 @@ Département des nombres. (2017). Revenu du ménage à Muncie, IN. Extrait de :
     readTime: "7 min",
     image: "https://images.unsplash.com/photo-1579165466949-3180a3d056d5?w=800&auto=format&fit=crop",
     content: `# La règle des 3 %
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 L’intensité de l’entraînement est un terme un peu abusif. Demandez à 10 bodybuilders comment ils définissent l’intensité et je parierais que 7 à 8 d’entre eux la décriraient comme l’effort qu’ils déploient lors d’une séance d’entraînement. Or, l'intensité est en réalité définie comme le poids que vous utilisez et est généralement décrite en % de votre 1RM – c'est-à-dire que vous pouvez faire 3 séries de 10 répétitions à 65 % de votre 1RM – ce 65 % correspond à l'intensité de l'exercice.
@@ -5290,15 +4931,6 @@ Dans une grande partie de mes propres entraînements et prescriptions d’entra�
     readTime: "19 min",
     image: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=800&auto=format&fit=crop",
     content: `# Tout sur la créatine
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Nous recevons une tonne de questions sur les suppléments, il vaut donc la peine de consacrer un article entier à l’un des ingrédients les plus populaires : la créatine. Il a été démontré à plusieurs reprises que la créatine est efficace pour augmenter la force, les performances et même la taille musculaire. Au fil des années, cependant, la créatine a également été critiquée par les mères de banlieue qui insistaient sur sa sécurité, par les hommes déjà chauves inquiets de la perte de cheveux provoquée par la créatine et même par les médecins dénonçant l'utilisation de la créatine en raison de problèmes rénaux ou hépatiques.
@@ -5457,15 +5089,6 @@ Espérons que cet article réponde à toutes vos questions brûlantes sur la sup
     image: "https://images.unsplash.com/photo-1575052814086-f385e2e2ad1b?w=800&auto=format&fit=crop",
     content: `# Tout sur la caféine
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 La caféine est de loin la drogue la plus consommée dans le monde, des boissons comme le café, les sodas, les boissons énergisantes et l'espresso étant monnaie courante dans nos dépanneurs et nos cuisines. Alors que la plupart des gens dépendent d’une boisson contenant de la caféine comme « jus à emporter », les athlètes dépendent depuis longtemps de la caféine pour améliorer leurs performances et leur concentration pendant l’entraînement et la compétition. , nous verrons ce qu’est la caféine, comment elle peut améliorer les performances et s’il existe une forme ou une source spécifique de caféine qui pourrait être la meilleure pour vos objectifs. Commençons.
 
@@ -5574,15 +5197,6 @@ Dans l’ensemble, la caféine est l’un des compléments les plus efficaces po
     readTime: "16 min",
     image: "https://images.unsplash.com/photo-1599447421416-3414500d18a5?w=800&auto=format&fit=crop",
     content: `# Lats dans le développé couché
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Nous entendons souvent la communauté des haltérophiles et d’autres amateurs de gym parler de l’importance des dorsaux dans le développé couché. À première vue, cela semble un peu rétrospectif. Les dorsaux tirent essentiellement des muscles tandis que le banc est un exercice de pressage. Alors, qu'est-ce qui donne ici ? Les dorsaux sont-ils réellement importants pour un gros développé couché ? Vérifions-le.
@@ -5712,15 +5326,6 @@ Les dorsaux échouent tous les trois pour le développé couché.
     readTime: "39 min",
     image: "https://images.unsplash.com/photo-1545389336-cf090694435e?w=800&auto=format&fit=crop",
     content: `# Fréquence de formation
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 La fréquence des formations est une variable importante à prendre en compte lors de la conception d’un programme de formation. Cela fait essentiellement référence à la fréquence à laquelle vous entraînez un groupe musculaire et elle est souvent mesurée sur une base hebdomadaire – c'est-à-dire 1x/semaine, 2x/semaine, etc. La pratique typique de musculation consiste à entraîner chaque groupe musculaire deux fois par semaine et, franchement, c'est une pratique assez décente qui fonctionnera probablement pour la plupart des gens. Mais est-ce optimal pour tous les groupes musculaires ? Vérifions-le.
@@ -6025,15 +5630,6 @@ Puisque nous disposons de suffisamment de données, nous inclurons un graphique 
     image: "https://images.unsplash.com/photo-1588286840104-8957b019727f?w=800&auto=format&fit=crop",
     content: `# Différences entre les sexes dans la formation
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 Presque chaque fois que nous publions une étude sur les réseaux sociaux, nous recevons des questions sur la population concernée, son sexe, son niveau de formation, etc. La première chose qu'il convient de comprendre est que les populations concernées ne constituent généralement que le groupe de personnes le plus pratique que l'on puisse étudier. Il s’agit donc le plus souvent d’hommes non formés. Malheureusement, nous aurons une personne extrêmement qualifiée dans la section des commentaires et disant que les résultats de l’étude ne s’appliquent pas à eux parce que les sujets n’étaient pas formés. L’idée que les populations étudiées ne correspondent pas exactement à qui vous êtes est un autre argument pour une autre époque, mais il convient de garder à l’esprit l’idée que même si la population étudiée peut être un type d’athlète différent du vôtre, il s’agit toujours de la même espèce. Les fonctions biologiques et physiologiques sont très similaires et permettront des applications à votre propre mode de vie.
 
@@ -6186,15 +5782,6 @@ Dans l’ensemble, il n’y a vraiment aucune raison de penser que les hommes et
     image: "https://images.unsplash.com/photo-1516726817505-f5ed825624d8?w=800&auto=format&fit=crop",
     content: `# Méthodes d
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 Les méthodes d’intensification impliquent toute stratégie d’entraînement conçue pour pousser un muscle au-delà de l’échec. Cela inclut les ensembles de dépôts, les ensembles de repos-pause, les ensembles de clusters, les négatifs forcés et tout ce qui fait couler des larmes sur votre visage. Ces méthodes peuvent être d’excellents moyens d’augmenter le nombre de répétitions stimulantes que vous effectuez au cours d’une séance d’entraînement, mais ne les faites pas tout le temps. Les effectuer trop souvent peut causer de graves dommages musculaires qui peuvent altérer votre capacité à soulever des poids lors de votre prochain entraînement (2), ce qui va essentiellement à l'encontre de l'objectif de l'entraînement.
 
@@ -6304,15 +5891,6 @@ Les méthodes d’intensification peuvent être un excellent moyen de pousser vo
     readTime: "17 min",
     image: "https://images.unsplash.com/photo-1580281657527-a4d26d012254?w=800&auto=format&fit=crop",
     content: `# S
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Nous allons diviser cet article en deux parties car les sujets qu'il contient sont très liés. La première partie couvrira la formation jusqu’à l’échec et si elle est importante ou non pour réaliser des gains. La seconde moitié se concentrera sur un sous-produit direct de l’entraînement jusqu’à l’échec : les douleurs musculaires à apparition retardée, ou DOMS. Attachez-vous, ce sera amusant.
@@ -6460,15 +6038,6 @@ Nous résumerons l’intégralité de l’article avec la meilleure citation en 
     readTime: "21 min",
     image: "https://images.unsplash.com/photo-1551601651-2a8555f1a136?w=800&auto=format&fit=crop",
     content: `# Des soulevés de terre le jour de l
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Nous sommes à un point intéressant dans les communautés de bodybuilding et de dynamophilie. Il semble y avoir de nombreuses controverses quant à savoir si le soulevé de terre est ou non un exercice pour le dos. Je pense que presque tout le monde sait que les soulevés de terre sont excellents pour les ischio-jambiers, les fessiers et le bas du dos, mais nous avons ensuite des camps très divisés lorsque nous nous dirigeons vers le haut du dos, à savoir les dorsaux et les pièges.
@@ -6634,15 +6203,6 @@ Alors, pouvez-vous faire des soulevés de terre le jour de l'arrière ? Bien sû
     image: "https://images.unsplash.com/photo-1582719471384-894fbb16564e?w=800&auto=format&fit=crop",
     content: `# Déchargements
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 Chaque fois que vous écoutez un expert parler de programmes de formation à long terme, il évoque presque toujours la notion de décharges. Que sont les déchargements ? Pourquoi en avons-nous besoin ? Quand en avons-nous besoin ? Comment on décharge ? Comme vous pouvez le constater, de nombreuses questions tournent autour du thème des décharges. Du coup, allons-y.
 
@@ -6760,15 +6320,6 @@ Est-ce que tout le monde devra éventuellement se décharger ? Probablement pas.
     readTime: "12 min",
     image: "https://images.unsplash.com/photo-1581093577421-f561a654a353?w=800&auto=format&fit=crop",
     content: `# Ischio-jambiers dans le squat
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Au cours des 20 dernières années,  de nombreuses études rapporter une activation minime des ischio-jambiers lors du squat (2,3,5,13,14,15,17,18,19,20). Toutefois, nous continuons de voir des professionnels du fitness et des gourous affirmer que les squats sont excellents pour le développement des ischio-jambiers et que le développement des ischio-jambiers est important pour la performance des squats. Quelle est donc la vérité ici ? Allons-y.
@@ -6894,15 +6445,6 @@ Voilà pourquoi c’est important de concevoir votre formation autour de ces con
     readTime: "16 min",
     image: "https://images.unsplash.com/photo-1608138404239-d2f557515ecb?w=800&auto=format&fit=crop",
     content: `# Entraînement thoracique 101
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Soyons réalistes, les hommes ont tendance à entraîner davantage leur poitrine et leurs bras que toute autre partie du corps. Même avec cet enthousiasme ambitieux, il est important de garder à l’esprit que la fréquence des entraînements n’est pas la seule clé du développement. Il s’agit de bien comprendre le fonctionnement d’un muscle afin de pouvoir le cibler efficacement lors de votre entraînement. , je vais décomposer le développement thoracique en questions les plus fréquemment posées.
@@ -7037,15 +6579,6 @@ Le Dr Jacob Wilson est PDG du laboratoire de performance humaine de l'Applied Sc
     readTime: "28 min",
     image: "https://images.unsplash.com/photo-1517931524326-bdd55a541177?w=800&auto=format&fit=crop",
     content: `# Quantification de la tension mécanique
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Les chercheurs et les bodybuilders recherchent depuis longtemps les meilleurs moyens de favoriser la croissance musculaire. Les 20 dernières années ont été marquées par un changement de paradigme, passant de l’hypothèse des lésions musculaires à l’hypothèse des tensions mécaniques. Essentiellement, nous pensions que les muscles se développaient suite à une réparation suite à un entraînement dommageable, mais nous pensons désormais que la tension qui provoque les dommages musculaires est le principal stimulus de la croissance. Consultez notre article Quelles sont les causes de la croissance ici pour un rappel sur l’ensemble du sujet – cet article particulier est une dissection rapide d’une étude beaucoup plus approfondie de Wackerhage et al. (2019).
@@ -7265,15 +6798,6 @@ Nous utilisons généralement simplement un système de numérotation pour nos c
     image: "https://images.unsplash.com/photo-1573384666979-2b1e4e6e3e3d?w=800&auto=format&fit=crop",
     content: `# Hydratation
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 L’un des éléments majeurs de la planification nutritionnelle pour l’optimisation des performances et du physique est un sujet que les gens n’abordent pas assez : l’hydratation. S'hydrater n'est ni sexy ni amusant, et vendre de l'eau comme complément améliorant les performances n'est pas le plan marketing le plus brillant. Résultat : nous n’entendons pas beaucoup parler de l’eau et de son impact sur vos performances. Sauf que comme Bobby Boucher aimerait que vous le sachiez, l’eau peut avoir un impact majeur sur tout ce qui concerne l’exercice.
 
@@ -7458,15 +6982,6 @@ Vous êtes le chef cuisinier de votre existence. Si le menu ne vous plaît pas, 
     image: "https://images.unsplash.com/photo-1552196563-55cd4e45efb3?w=800&auto=format&fit=crop",
     content: `# S
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 Nous savons tous que les bracelets et les chaînes sont les accessoires de gym les plus cool et les plus hardcore, mais sont-ils réellement efficaces ? Que font-ils concrètement ? Vérifions-le.
 
@@ -7566,15 +7081,6 @@ Remarque : Au moment de la publication, les articles originaux des numéros cit�
     readTime: "10 min",
     image: "https://images.unsplash.com/photo-1590487988256-9ed24133863e?w=800&auto=format&fit=crop",
     content: `# Le livre de règles du partenaire de formation
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Lorsqu’il s’agit d’être un bon partenaire d’entraînement, certaines personnes ne comprennent tout simplement pas. La règle d’or consistant à traiter les autres comme vous souhaitez être traité s’applique très bien dans presque toutes les situations – et être un bon partenaire d’entraînement n’est pas différent. Soyez le genre de partenaire d’entraînement que vous aimeriez avoir ! Malheureusement, cela n’est pas encore assez spécifique pour beaucoup de gens, passons donc en revue un ensemble de règles supplémentaires qui peuvent vous aider à devenir un meilleur partenaire d’entraînement.
@@ -7690,15 +7196,6 @@ J'espère que vous faites déjà toutes les choses de cette liste, et sinon, ess
     image: "https://images.unsplash.com/photo-1546483875-ad9014c88eba?w=800&auto=format&fit=crop",
     content: `# Ce que je ferais différemment
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 Le vénérable magazine automobile Car and Driver avait l'habitude de publier une section à la fin de chaque numéro intitulée «Ce que je ferais différemment». Dans ce segment, des personnalités publiques de l'industrie automobile ou des courses automobiles subissaient une brève interview au cours de laquelle elles discutaient de la façon dont elles se comportaient dans les affaires ou dans les courses et comment elles auraient pu faire les choses différemment s'elles avaient eu une autre chance. C'était souvent un élément intéressant lorsque des icônes de l'automobile, telles que Lee Iacocca, étaient interviewées. Cela nous a permis, à nous, lecteurs, d’avoir un rare aperçu des échecs reconnus d’un développeur de produits à succès. M. Iacocca compte clairement de nombreuses victoires dans le domaine automobile, notamment la Ford Mustang d'origine et la Lamborghini Diablo, pour n'en nommer que quelques-unes. Sauf que Lee a également contribué au développement de la Ford Pinto, qui avait une réputation plutôt explosive. Inutile de dire que même les meilleurs parmi les meilleurs auraient pu faire les choses différemment s’ils avaient eu un second tour.
 
@@ -7793,15 +7290,6 @@ Nous espérons que cet article offrira un aperçu unique de la formation à long
     image: "https://images.unsplash.com/photo-1583454155184-1eebc0be3425?w=800&auto=format&fit=crop",
     content: `# [Quelques] Physique du bodybuilding
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 , nous allons aborder quelques notions de physique simplifiées qui pourraient vous aider à améliorer votre compréhension de quelques composants du levage. À savoir, nous allons aborder quelques termes biomécaniques différents et comment ils peuvent affecter votre capacité à effectuer un certain levage – ainsi que la façon dont vous pourriez optimiser ces connaissances pour améliorer vos gains de force.
 
@@ -7887,15 +7375,6 @@ Comme toujours, la connaissance, c'est le pouvoir !
     readTime: "8 min",
     image: "https://images.unsplash.com/photo-1520948013839-62020f374478?w=800&auto=format&fit=crop",
     content: `# Soyez excité
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Peu importe combien de temps vous avez passé dans le jeu de fer, vous avez probablement vécu un moment où vous deviez vraiment vous motiver pour quelque chose. Qu'il s'agisse d'une tentative de 1RM, d'un sprint chronométré de 40 mètres ou même de rassembler le courage de parler à votre amoureux du gymnase, vous deviez être motivé pour le faire. Les gens sont souvent plus performants lorsqu’ils sont excités, en particulier dans les domaines qui nécessitent de la puissance musculaire, de la force ou de l’endurance. Résultat : cet article vise à expliquer la physiologie de l'excitation et à expliquer comment utiliser ces informations dans votre propre entraînement pour améliorer vos entraînements.
@@ -7987,15 +7466,6 @@ The Eternal – Bury Tomorrow (métal)
     readTime: "15 min",
     image: "https://images.unsplash.com/photo-1598289431512-b97b0917affc?w=800&auto=format&fit=crop",
     content: `# Recomposition corporelle
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Au moment de la rédaction de cet article, nous sommes à quelques semaines du printemps et de nombreux frères et brodettes de gym se préparent à se débarrasser de leur volume hivernal pour afficher leur physique nouvellement ciselé. Nous recevons souvent des questions sur la recomposition corporelle à cette période de l’année ; tout le monde a passé trois mois d’hiver difficiles à développer des muscles dans la salle de sport et la plupart d’entre nous ne veulent pas se retourner et perdre ce précieux tissu musculaire pendant notre coupe d’été.
@@ -8122,15 +7592,6 @@ Dans l’ensemble, la recomposition corporelle est certainement une possibilité
     image: "https://images.unsplash.com/photo-1517130038641-a774d04afb3c?w=800&auto=format&fit=crop",
     content: `# Écrire votre propre programme, partie 2
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 Bienvenue dans la deuxième partie de notre série sur l'écriture de votre propre programme. Si vous n'avez pas encore lu la première partie, lisez-la ici avant d'aller plus loin. Tout comme la série Harry Potter, ces articles s’appuient les uns sur les autres et il est important de les lire afin de mieux comprendre ce qui se passe. Remplacez les baguettes par des poids et c’est fondamentalement la même chose, non ?
 
@@ -8223,15 +7684,6 @@ Bien que chaque section individuelle ici puisse probablement utiliser à elle se
     image: "https://images.unsplash.com/photo-1600881333168-2ef49b341f30?w=800&auto=format&fit=crop",
     content: `# Écrire votre propre programme, partie 1
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 Bienvenue dans notre série sur l'écriture de votre propre programme ! Ceci est le premier volet de ce qui devrait être (au moins) 3-4 articles différents. Nous allons diviser chaque section pour réduire l'empreinte typographique de la série globale, car toutes ces éléments combinés constitueraient un véritable marathon de lecture.
 
@@ -8302,15 +7754,6 @@ Réfléchissez de manière critique à votre programme de formation actuel, que 
     readTime: "19 min",
     image: "https://images.unsplash.com/photo-1605296867424-35fc25c9212a?w=800&auto=format&fit=crop",
     content: `# Micronutriments
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Demandez à n’importe quelle personne compétente dans l’industrie du fitness quel est le complément alimentaire le plus important et elle vous indiquera probablement une multivitamine comme réponse. Les vitamines et les minéraux sont certainement importants pour la santé globale, en particulier dans les régimes alimentaires restreints ou manquant de variété. Le terme que nous utilisons collectivement pour désigner les vitamines et les minéraux est « micronutriments », car ils sont nécessaires à des doses beaucoup plus faibles que les macronutriments comme les glucides ou les protéines et ils ne contiennent aucune calorie.
@@ -8466,15 +7909,6 @@ Au moment de la publication, la référence n° 17 n'était plus disponible sous
     readTime: "28 min",
     image: "https://images.unsplash.com/photo-1597075998525-83524f28a017?w=800&auto=format&fit=crop",
     content: `# Musculation vs dynamophilie
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Modérons rapidement les attentes : nous ne livrons pas une pièce aussi théâtrale que le suggère le titre Godzilla-esque. Les principaux objectifs de cet article sont plutôt de A) définir clairement la ou les différences entre la musculation et la dynamophilie et B) déterminer comment ces différences [devraient] affecter les plans d'entraînement ou de nutrition pour chaque sport. Et, soyons honnêtes, aucun des deux n’est vraiment un sport, mais nous n’avons pas besoin de suivre cette voie aujourd’hui.
@@ -8683,15 +8117,6 @@ C’est une autre pièce que nous mettrons probablement à jour au fil du temps.
     image: "https://images.unsplash.com/photo-1574226516831-e1dff420e562?w=800&auto=format&fit=crop",
     content: `# Écrire votre propre programme, partie 3
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 Bienvenue dans la troisième partie de notre série Écrire votre propre programme. Si vous n'avez pas parcouru les parties 1 (ici) et 2 (ici), faites-le avant d'aller plus loin dans celle-ci. Cette série s’appuie sur elle-même et il est important de les lire dans l’ordre afin que vous ne vous demandiez pas de quoi nous parlons dans certaines parties.
 
@@ -8788,15 +8213,6 @@ Merci d'avoir lu jusqu'ici la série et nous aurons un autre épisode sous peu !
     readTime: "12 min",
     image: "https://images.unsplash.com/photo-1607962837359-5e7e89f86776?w=800&auto=format&fit=crop",
     content: `# Excentriques et croissance
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Un refrain populaire dans la communauté du fitness est que les contractions excentriques sont plus importantes pour la croissance musculaire que les contractions concentriques. Nous entendons souvent les entraîneurs et les entraîneurs vanter l’importance du « négatif » pendant les levées de poids et comment le contrôler lentement améliorera la croissance. Il est facile de convaincre les gens d’adhérer à cette théorie, car les contractions excentriques induisent généralement davantage de lésions musculaires (19) et davantage de douleurs, ce que les gens associent souvent à des gains. La partie excentrique d’un ascenseur est-elle vraiment plus efficace pour les gains ? Vérifions-le.
@@ -8898,15 +8314,6 @@ En fin de compte, les parties excentriques et concentriques d’un ascenseur son
     readTime: "22 min",
     image: "https://images.unsplash.com/photo-1519505907962-0a6cb0167c73?w=800&auto=format&fit=crop",
     content: `# Entraînement des mollets 101
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Les mollets sont probablement le groupe musculaire le plus difficile à développer pour la plupart des bodybuilders. Cela a rejeté de nombreuses tendances sur les réseaux sociaux, telles que #teamnocalves, etc. Nous entendons même de nombreuses personnes jeter l’éponge sur l’entraînement des mollets, affirmant qu’elles n’ont tout simplement pas la génétique des gros mollets. Bien que la génétique puisse jouer un rôle majeur dans le développement musculaire, il existe encore quelques secrets dans l’entraînement des mollets qui méritent d’être discutés plus en détail.
@@ -9095,15 +8502,6 @@ Mec, nous avons presque parcouru tout l’article sans un jeu de mots sur la vac
     readTime: "30 min",
     image: "https://images.unsplash.com/photo-1612872087720-bb876e2e67f1?w=800&auto=format&fit=crop",
     content: `# La taille = la force ?
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Bienvenue dans ce qui devrait être un article amusant et passionnant pour nous tous. C’est une question courante qui nous vient tous à l’esprit : un muscle plus gros est-il un muscle plus fort ? Si quelqu’un a des quads plus gros que vous, peut-il s’accroupir avec plus de poids que vous ? Si un frère a des pectoraux énormes, peut-il utiliser un chariot élévateur ? Vous voyez l'idée.
@@ -9305,15 +8703,6 @@ Comme pour toute théorie scientifique, nous continuons à façonner celle-ci et
     image: "https://images.unsplash.com/photo-1598632468037-1117b29d9dd5?w=800&auto=format&fit=crop",
     content: `# Inconvénient nutritionnel
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 Pour la plupart des bodybuilders, aller régulièrement à la salle de sport est la partie la plus facile du mode de vie de renforcement musculaire. D’un autre côté, de nombreuses personnes ont du mal à définir correctement leur alimentation. Comme vous le savez probablement, nous avons sur ce site de nombreuses informations sur la nutrition et même des dizaines de conférences sur la nutrition sur ACHZOD Academy (ici) si vous avez besoin d'aide supplémentaire pour optimiser votre alimentation en vue de la croissance musculaire et/ou de la perte de graisse.
 
@@ -9417,15 +8806,6 @@ En fin de compte, tout plan de régime sera difficile à suivre. Aucun objectif 
     readTime: "31 min",
     image: "https://images.unsplash.com/photo-1603503364272-6e4a31ad1af0?w=800&auto=format&fit=crop",
     content: `# Amplitude de mouvement et croissance
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Nous entendons souvent dire que l’utilisation d’une gamme complète de mouvements (ROM) dans un exercice donné est nécessaire à la croissance. Dans cet esprit, les quarter squatters se moquent du rack à squats et les frères maigres qui trichent à travers des séries infinies de boucles ne font jamais de gains. Sauf que est-ce réellement le cas ? Avez-vous besoin d’entraîner chaque muscle sur une gamme complète de mouvements pour réaliser des gains ?
@@ -9636,15 +9016,6 @@ Pour l’instant, amusez-vous à lire – nous avons certainement aimé collecte
     image: "https://images.unsplash.com/photo-1583187914249-3d8c7b93a4a6?w=800&auto=format&fit=crop",
     content: `# Qu’est-ce que la Broscience ?
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 Broscience est l’un de ces termes qui sont utilisés de manière assez vague par les frères et les scientifiques. C’est aussi une de ces phrases assez difficiles à décrire – mais on le sait quand on le voit. Cette idée de choses difficiles à décrire, mais faciles à souligner, persiste depuis une affaire bien connue de la Cour suprême de 1964 impliquant, euh, du matériel pour adultes.
 
@@ -9715,15 +9086,6 @@ Intéressé à devenir un frère basé sur des preuves ? Eh bien, nous avons ex
     readTime: "27 min",
     image: "https://images.unsplash.com/photo-1625937286990-28df23b34f62?w=800&auto=format&fit=crop",
     content: `# BCAA : pomper ou vider ?
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Pour une raison inconnue de notre équipe de ACHZOD, les acides aminés à chaîne ramifiée (BCAA) sont vraiment devenus un sujet de débat brûlant dans la communauté du fitness. Presque chaque fois que nous publions ou voyons une publication sur les réseaux sociaux à propos des BCAA, environ 50 % des commentaires et/ou réactions sont extrêmement négatifs. « Les BCAA sont des déchets », nous verrons. "La meilleure façon d'utiliser les BCAA ? Jetez-les à la poubelle LOL", fut une autre réponse solide. Et  « les BCAA sont inutiles avec un régime riche en protéines ». Celui-ci pourrait avoir le plus de mérite lorsque toutes les conditions sont optimales, nous en discuterons donc plus en détail plus tard.
@@ -9934,16 +9296,7 @@ Les deux côtés de l’argument BCAA sont présentés , mais le véritable poin
     image: "https://images.unsplash.com/photo-1567013127542-490d757e51fc?w=800&auto=format&fit=crop",
     content: `# S
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
 *Révisé de manière indépendante par une infirmière clinicienne (RN, BSN) pour connaître les terminologies précises. Les masques ne sont pas des muscles.*
-
-
-##Présentation
 
 
 Ah, oui. 2020. L’année en ébullition où à peu près tout ce qui pouvait mal tourner a mal tourné – sans parler de bien d’autres choses dont nous ignorions même qu’elles pourraient être un problème. Comme des frelons meurtriers… vous vous en souvenez ? Même si l’année 2020 n’a pas manqué de gros titres choquants ou éblouissants, l’une des principales choses dont nous nous souviendrons de cette année sera la pandémie de Covid-19. De nombreuses personnes ont été touchées par cette pandémie de multiples manières, mais presque tous ceux qui parcourent la section Articles de ce site Web ont une plainte en commun : la fermeture des gymnases et les gymnases exigeant le port du masque pendant les entraînements.
@@ -10034,18 +9387,7 @@ En fin de compte, les masques n’amélioreront probablement aucun aspect de vot
     image: "https://images.unsplash.com/photo-1528720208104-3d1da71d1b4e?w=800&auto=format&fit=crop",
     content: `# Mode Bête
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
 #### Table des matières
-
-
-
-##Présentation
 
 
 Êtes-vous déjà passé en mode bête à la salle de sport ? Je sais que oui. Je sais que presque tous les frères qui ont déjà enfilé un débardeur sont définitivement passés en mode bête. Que signifie le mode bête ? Je suppose que cela signifie que vous vous entraînez comme une bête ; un animal sauvage qui ne peut être apprivoisé. Tellement majestueux.
@@ -10185,15 +9527,6 @@ Soyez simplement heureux que nous soyons l’animal le plus intelligent de la pl
     image: "https://images.unsplash.com/photo-1603455778956-d71ea4f47bcf?w=800&auto=format&fit=crop",
     content: `# Nutrition post-entraînement
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 Ah, oui. Le repas classique après l'entraînement. La proverbiale tarte refroidissant sur le rebord de la fenêtre anabolisante. Les constituants de ce repas peuvent avoir un impact considérable sur votre récupération et vous préparer au succès lors de votre prochain entraînement s’il est effectué correctement. Sauf que une nutrition médiocre à ce moment-là peut altérer la synthèse des protéines musculaires et la reconstitution du glycogène et peut vous rendre paresseux et démotivé lors de votre prochaine séance de gym. Prenons une fourchette et voyons à quoi devrait ressembler un buffet post-entraînement.
 
@@ -10313,15 +9646,6 @@ En fin de compte, la nutrition après l’entraînement est l’une des meilleur
     image: "https://images.unsplash.com/photo-1571731956672-f2b94d7dd0d6?w=800&auto=format&fit=crop",
     content: `# Une histoire de trois bodybuilders
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 C'est l'histoire de 3 bodybuilders – les traductions de leurs noms de naissance ont été perdues dans les sables du temps, nous nous en tiendrons donc aux surnoms de leurs équipes respectives de ballon chasseur de la ligue récréative : Blazer, Lazer et Fran Stalinovskovichdavidovitchsky – ou simplement « Fran », pour faire court.
 
@@ -10430,15 +9754,6 @@ Heureusement, c’est exactement à cela que sert ACHZOD. Vous apportez la déte
     image: "https://images.unsplash.com/photo-1598971457999-ca4ef48a9a71?w=800&auto=format&fit=crop",
     content: `# Étirement et performance
 
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
-
 
 Presque tous ceux qui commencent un programme d’exercice ont des curiosités concernant la flexibilité ou la mobilité et la meilleure façon d’améliorer ces aspects de la condition physique. Les étirements statiques sont probablement la méthode la plus populaire et sont clairement efficaces pour augmenter l'amplitude de mouvement d'une articulation donnée (2), mais sont-ils optimaux pour le bodybuilder ou l'athlète de force ? Examinons ce sujet et voyons si nous ne pouvons pas dissiper une partie de la confusion et vous aider sur la voie d'un mouvement fluide et soyeux.
 
@@ -10527,15 +9842,6 @@ Donc, si l’un de vos objectifs d’entraînement est d’améliorer la flexibi
     readTime: "9 min",
     image: "https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?w=800&auto=format&fit=crop",
     content: `# Ischio-jambiers et force de squat
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Il est désormais bien établi que le groupe musculaire des ischio-jambiers est très peu impliqué dans l’exercice de squat lorsqu’on considère l’activation musculaire – plusieurs études ont montré une activation minimale des ischio-jambiers pendant les squats (3,8,9,12,15). Entrons dans le vif du sujet, expliquant pourquoi cela peut se produire et pourquoi les ischio-jambiers sont toujours extrêmement importants pour les squats.
@@ -10631,15 +9937,6 @@ Le domaine de la résistance et du conditionnement est un domaine intéressant d
     readTime: "14 min",
     image: "https://images.unsplash.com/photo-1594911772125-07fc7a2d8d9f?w=800&auto=format&fit=crop",
     content: `# Écrire votre propre programme, partie 4
-
--Facebook
-
--Twitter
-
-- LinkedIn
-
-
-##Présentation
 
 
 Bienvenue dans le dernier volet de la série Écrire votre propre programme ! Si vous n'avez pas parcouru les autres pièces de cette série, consultez-les ici, ici et ici afin que nous soyons tous sur la même longueur d'onde au moment où vous arriverez à celle-ci.
