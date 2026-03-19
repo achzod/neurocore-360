@@ -209,8 +209,7 @@ if (process.env.NODE_ENV === "production") {
               const sent = await sendReportReadyEmail(audit.email, audit.id, audit.type, baseUrl);
               if (sent) {
                 await storage.updateAudit(audit.id, { reportDeliveryStatus: "SENT", reportSentAt: new Date() });
-                const name = (audit as any)?.narrativeReport?.clientName || audit.email.split("@")[0];
-                await sendAdminEmailNewAudit(audit.email, name, audit.type, audit.id);
+                // Note: Admin notification already sent at audit creation
                 delivered++;
               } else {
                 await storage.updateAudit(audit.id, { reportDeliveryStatus: "SCHEDULED" });
@@ -236,8 +235,7 @@ if (process.env.NODE_ENV === "production") {
               const sent = await sendScheduledBloodEmail(report, baseUrl);
               if (sent) {
                 await storage.updateBloodReport(report.id, { deliveryStatus: "SENT", emailSentAt: new Date() });
-                const name = (report.profile as any)?.prenom || report.email.split("@")[0];
-                await sendAdminEmailNewAudit(report.email, name, "BLOOD_ANALYSIS", report.id);
+                // Note: Admin notification already sent at blood report creation
                 delivered++;
               } else {
                 // Quality gate blocked — keep SCHEDULED but increment retries so we eventually give up

@@ -905,6 +905,13 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         aiReport: aiAnalysis,
       });
 
+      // Envoyer notification admin immédiatement à la création
+      const clientName = (profileWithAge as any)?.prenom || (profileWithAge as any)?.name || recipientEmail.split('@')[0];
+      sendAdminEmailNewAudit(recipientEmail, clientName, "BLOOD_ANALYSIS", reportRecord.id).catch((err) => {
+        console.error(`[Admin Email] Failed to send immediate notification for blood report ${reportRecord.id}:`, err);
+      });
+      console.log(`[Admin Email] Sent immediate notification for new blood report ${reportRecord.id}`);
+
       const shouldQueueBackgroundAI =
         shouldIncludeAI &&
         hasAnthropicKey &&

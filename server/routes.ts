@@ -674,14 +674,7 @@ export async function registerRoutes(
         }
         console.log(`[Email] ✅ Report ready email sent successfully to ${email} for audit ${auditId}`);
 
-        // Envoyer email admin en copie
-        console.log(`[Email] Sending admin notification email for audit ${auditId}`);
-        const adminEmailSent = await sendAdminEmailNewAudit(email, clientName, auditType, auditId);
-        if (adminEmailSent) {
-          console.log(`[Email] ✅ Admin notification email sent successfully for audit ${auditId}`);
-        } else {
-          console.error(`[Email] ❌ Admin notification email FAILED for audit ${auditId}`);
-        }
+        // Note: Admin notification email already sent at audit creation (immediate notification)
       } else {
         console.error(`[Email] ❌ Report ready email FAILED for audit ${auditId} - check SendPulse config`);
         await storage.updateAudit(auditId, { reportDeliveryStatus: "READY" });
@@ -2482,6 +2475,13 @@ export async function registerRoutes(
 
     // Clean up questionnaire progress now that audit is created
     await storage.deleteProgress(email).catch(() => {});
+
+    // Envoyer notification admin immédiatement à la création (pas à la livraison)
+    const clientName = (responses as any)?.prenom || (responses as any)?.name || email.split('@')[0];
+    sendAdminEmailNewAudit(email, clientName, planType, audit.id).catch((err) => {
+      console.error(`[Admin Email] Failed to send immediate notification for ${audit.id}:`, err);
+    });
+    console.log(`[Admin Email] Sent immediate notification for new audit ${audit.id}`);
 
     await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
     await startReportGeneration(audit.id, audit.responses, audit.scores || {}, planType);
