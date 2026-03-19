@@ -1610,6 +1610,62 @@ export async function registerRoutes(
     }
   });
 
+  // Export tracking data for Google Sheets (CSV format)
+  app.get("/api/admin/export/tracking-csv", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { generateCSV } = await import("./googleSheetsTracking.js");
+      const csv = await generateCSV();
+
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="apexlabs-tracking-${new Date().toISOString().split("T")[0]}.csv"`
+      );
+      res.send("\uFEFF" + csv); // BOM for Excel UTF-8 compatibility
+    } catch (error) {
+      console.error("[Admin] Error generating CSV:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  // Get tracking stats (for Google Sheets dashboard)
+  app.get("/api/admin/export/tracking-stats", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { generateStats } = await import("./googleSheetsTracking.js");
+      const stats = await generateStats();
+
+      res.json({
+        success: true,
+        stats,
+        updatedAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("[Admin] Error generating stats:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  // Get tracking data as JSON (for Google Sheets Apps Script import)
+  app.get("/api/admin/export/tracking-json", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { generateTrackingData } = await import("./googleSheetsTracking.js");
+      const data = await generateTrackingData();
+
+      res.json({
+        success: true,
+        data,
+        total: data.length,
+        updatedAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("[Admin] Error generating JSON:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
   // Get detailed validation info for NEEDS_REVIEW audits
   app.get("/api/admin/audits/:id/validation-details", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
