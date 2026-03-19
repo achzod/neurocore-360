@@ -5,14 +5,14 @@ const SENDPULSE_USER_ID =
   process.env.SENDPULSE_USER_ID || process.env.SENDPULSE_API_USER_ID || "";
 const SENDPULSE_SECRET =
   process.env.SENDPULSE_SECRET || process.env.SENDPULSE_API_SECRET || "";
-const SENDER_EMAIL = process.env.SENDER_EMAIL || "coaching@achzodcoaching.com";
-const SENDER_NAME = process.env.SENDER_NAME || "ApexLabs by Achzod";
+export const SENDER_EMAIL = process.env.SENDER_EMAIL || "coaching@achzodcoaching.com";
+export const SENDER_NAME = process.env.SENDER_NAME || "ApexLabs by Achzod";
 
 // SendPulse Address Book IDs - configure in env or hardcode after creating in SendPulse
 const SENDPULSE_APEXLABS_BOOK_ID = process.env.SENDPULSE_APEXLABS_BOOK_ID || "";
 
 // ApexLabs Design System (Ultrahuman style)
-const COLORS = {
+export const COLORS = {
   primary: '#FCDD00',
   background: '#000000',
   surface: '#0a0a0a',
@@ -103,7 +103,7 @@ const getDeductionAmount = (auditType?: string): number => {
 let accessToken: string | null = null;
 let tokenExpiry: number = 0;
 
-async function getAccessToken(): Promise<string> {
+export async function getAccessToken(): Promise<string> {
   if (!SENDPULSE_USER_ID || !SENDPULSE_SECRET) {
     console.error(
       "[SendPulse] MISSING CREDENTIALS - configure SENDPULSE_USER_ID/SENDPULSE_SECRET or SENDPULSE_API_USER_ID/SENDPULSE_API_SECRET",
