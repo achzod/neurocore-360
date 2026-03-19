@@ -203,69 +203,40 @@ function formatDate(isoDate: string): string {
 }
 
 /**
- * FUTURE: Intégration Google Sheets API directe
+ * Webhook Google Sheets - Appelle le Apps Script web app pour mettre à jour le sheet
  *
- * Pour activer l'écriture automatique dans le sheet :
- * 1. Créer un service account Google Cloud
- * 2. Activer Google Sheets API
- * 3. Partager le sheet avec le service account email
- * 4. Ajouter les credentials dans .env:
- *    GOOGLE_SERVICE_ACCOUNT_EMAIL=xxx@xxx.iam.gserviceaccount.com
- *    GOOGLE_PRIVATE_KEY=xxx
- * 5. Uncomment le code ci-dessous
+ * Setup:
+ * 1. Déployer le Apps Script (voir GOOGLE_SHEETS_WEBHOOK.md)
+ * 2. Ajouter l'URL webhook dans .env: GOOGLE_SHEETS_WEBHOOK_URL=https://script.google.com/macros/s/.../exec
  */
 
-/*
-import { google } from 'googleapis';
+export async function notifyGoogleSheetUpdate(): Promise<boolean> {
+  const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL;
 
-export async function writeToGoogleSheet(spreadsheetId: string): Promise<boolean> {
+  if (!webhookUrl) {
+    console.log('[GoogleSheets] Webhook URL not configured, skipping update');
+    return false;
+  }
+
   try {
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    console.log('[GoogleSheets] Calling webhook to update sheet...');
+
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+      body: JSON.stringify({ timestamp: new Date().toISOString() }),
     });
 
-    const sheets = google.sheets({ version: 'v4', auth });
-    const data = await generateTrackingData();
+    if (!response.ok) {
+      throw new Error(`Webhook returned ${response.status}`);
+    }
 
-    // Clear existing data
-    await sheets.spreadsheets.values.clear({
-      spreadsheetId,
-      range: 'Feuille 1!A1:Z1000',
-    });
-
-    // Write headers and data
-    const values = [
-      ['ID', 'Email', 'Type', 'Status', 'Créé le', 'Généré le', 'Programmé pour', 'Envoyé le', 'Score', 'Tentatives', 'Erreur'],
-      ...data.map(row => [
-        row.id.substring(0, 8),
-        row.email,
-        row.type,
-        row.status,
-        formatDate(row.createdAt),
-        formatDate(row.generatedAt),
-        formatDate(row.scheduledFor),
-        formatDate(row.sentAt),
-        row.validationScore,
-        row.attemptCount,
-        row.errorMessage,
-      ]),
-    ];
-
-    await sheets.spreadsheets.values.update({
-      spreadsheetId,
-      range: 'Feuille 1!A1',
-      valueInputOption: 'RAW',
-      requestBody: { values },
-    });
-
+    console.log('[GoogleSheets] ✅ Sheet updated successfully via webhook');
     return true;
   } catch (error) {
-    console.error('[GoogleSheets] Error writing to sheet:', error);
+    console.error('[GoogleSheets] ❌ Error calling webhook:', error);
     return false;
   }
 }
-*/

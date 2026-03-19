@@ -2759,6 +2759,12 @@ export async function registerRoutes(
     });
     console.log(`[Admin Email] Sent immediate notification for new audit ${audit.id}`);
 
+    // Mettre à jour Google Sheet automatiquement via webhook
+    const { notifyGoogleSheetUpdate } = await import("./googleSheetsTracking.js");
+    notifyGoogleSheetUpdate().catch((err) => {
+      console.error(`[GoogleSheets] Failed to update sheet for ${audit.id}:`, err);
+    });
+
     await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
     await startReportGeneration(audit.id, audit.responses, audit.scores || {}, planType);
     processReportAndSendEmail(audit.id, audit.email, planType).catch((err) => {

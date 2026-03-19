@@ -912,6 +912,12 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       });
       console.log(`[Admin Email] Sent immediate notification for new blood report ${reportRecord.id}`);
 
+      // Mettre à jour Google Sheet automatiquement via webhook
+      const { notifyGoogleSheetUpdate } = await import("../googleSheetsTracking.js");
+      notifyGoogleSheetUpdate().catch((err) => {
+        console.error(`[GoogleSheets] Failed to update sheet for blood report ${reportRecord.id}:`, err);
+      });
+
       const shouldQueueBackgroundAI =
         shouldIncludeAI &&
         hasAnthropicKey &&

@@ -1,0 +1,47 @@
+1
+00:00:00,000 --> 00:00:02,967
+Initialisation du systeme...
+
+2
+00:00:03,000 --> 00:00:05,633
+Ton corps est un systeme de donnees.
+
+3
+00:00:05,667 --> 00:00:06,967
+La plupart le font tourner a l'aveugle. Moi, je le decode.
+
+4
+00:00:07,000 --> 00:00:09,967
+APEXLABS by Achzod. Optimisation humaine et bio-data.
+
+5
+00:00:10,000 --> 00:00:13,567
+Discovery Scan. Gratuit. 66 questions, 10 domaines, un score sur 100.
+
+6
+00:00:13,600 --> 00:00:17,167
+Anabolic Bioscan. 59 euros. 137 questions, profil hormonal, protocoles 90 jours.
+
+7
+00:00:17,200 --> 00:00:20,767
+Blood Analysis. 99 euros. Upload ton bilan, 39 biomarqueurs, les vrais ranges optimaux.
+
+8
+00:00:20,800 --> 00:00:24,367
+Ultimate Scan. 79 euros. 183 questions, analyse posturale, wearables connectes integres.
+
+9
+00:00:24,400 --> 00:00:27,967
+FormCheck. Premiere analyse gratuite. Envoie ta video, recois ton score.
+
+10
+00:00:28,000 --> 00:00:32,967
+39 biomarqueurs. 183 questions. 11 certifications internationales.
+
+11
+00:00:33,000 --> 00:00:37,967
+Choisis ton scan. 100% deduit si tu prends un coaching.
+
+12
+00:00:38,000 --> 00:00:39,967
+APEXLABS by Achzod.
