@@ -1543,6 +1543,148 @@ export async function registerRoutes(
     }
   });
 
+  // Get monitoring history for an audit
+  app.get("/api/admin/audits/:id/monitoring-history", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { getMonitoringHistory } = await import("./monitoring.js");
+      const history = await getMonitoringHistory(req.params.id);
+
+      res.json({
+        success: true,
+        history,
+      });
+    } catch (error) {
+      console.error("[Admin] Error getting monitoring history:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  // Trigger manual monitoring run (doesn't wait for cron)
+  app.post("/api/admin/run-monitoring-now", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { runAutomaticMonitoring } = await import("./monitoring.js");
+
+      // Run async, don't wait
+      runAutomaticMonitoring()
+        .then((stats) => {
+          console.log("[Admin] Manual monitoring completed:", stats);
+        })
+        .catch((err) => {
+          console.error("[Admin] Error in manual monitoring:", err);
+        });
+
+      res.json({
+        success: true,
+        message: "Monitoring démarré en arrière-plan",
+      });
+    } catch (error) {
+      console.error("[Admin] Error starting monitoring:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  // Get detailed validation info for NEEDS_REVIEW audits
+  app.get("/api/admin/audits/:id/validation-details", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const audit = await storage.getAudit(req.params.id);
+      if (!audit) {
+        res.status(404).json({ success: false, error: "Audit non trouvé" });
+        return;
+      }
+
+      const narrativeReport = (audit as any)?.narrativeReport;
+      const validationResult = narrativeReport?.validationResult;
+      const reportJob = await storage.getReportJob(audit.id);
+
+      res.json({
+        success: true,
+        audit: {
+          id: audit.id,
+          email: audit.email,
+          type: audit.type,
+          status: audit.reportDeliveryStatus,
+          createdAt: audit.createdAt,
+        },
+        validation: validationResult || null,
+        job: reportJob ? {
+          status: reportJob.status,
+          attemptCount: reportJob.attemptCount,
+          error: reportJob.error,
+          lastProgressAt: reportJob.lastProgressAt,
+        } : null,
+        reportGenerated: !!narrativeReport,
+        reportLength: narrativeReport?.txt?.length || 0,
+      });
+    } catch (error) {
+      console.error("[Admin] Error getting validation details:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  // Force regenerate NEEDS_REVIEW audits with enhanced validation bypass
+  app.post("/api/admin/force-regenerate-failed", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+
+    try {
+      const { auditIds } = req.body;
+
+      if (!auditIds || !Array.isArray(auditIds)) {
+        res.status(400).json({ success: false, error: "auditIds array requis" });
+        return;
+      }
+
+      const regenerated: string[] = [];
+      const errors: { auditId: string; error: string }[] = [];
+
+      for (const auditId of auditIds) {
+        try {
+          const audit = await storage.getAudit(auditId);
+          if (!audit) {
+            errors.push({ auditId, error: "Audit non trouvé" });
+            continue;
+          }
+
+          console.log(`[Admin] Force-regenerating NEEDS_REVIEW audit ${auditId}`);
+
+          // Reset status and restart generation
+          await storage.updateAudit(auditId, {
+            reportDeliveryStatus: "GENERATING",
+            narrativeReport: null, // Clear old failed report
+          });
+
+          // Delete old failed job
+          await storage.deleteReportJob(auditId).catch(() => {});
+
+          // Start fresh generation
+          await startReportGeneration(auditId, audit.responses, audit.scores || {}, audit.type);
+
+          processReportAndSendEmail(auditId, audit.email, audit.type).catch((err) => {
+            console.error(`[processReportAndSendEmail] Unhandled error for audit ${auditId}:`, err);
+            storage.updateAudit(auditId, { reportDeliveryStatus: "EMAIL_FAILED" }).catch(() => {});
+          });
+
+          regenerated.push(auditId);
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : "Unknown error";
+          errors.push({ auditId, error: errorMsg });
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `${regenerated.length} rapport(s) en cours de régénération`,
+        regenerated,
+        errors: errors.length > 0 ? errors : undefined,
+      });
+    } catch (error) {
+      console.error("[Admin] Error regenerating failed reports:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
   // Force restart stuck GENERATING jobs
   app.post("/api/admin/force-restart-stuck-jobs", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;

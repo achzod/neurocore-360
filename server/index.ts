@@ -288,6 +288,40 @@ if (process.env.NODE_ENV === "production") {
       setInterval(runScheduledDelivery, CRON_INTERVAL_MS);
       log("Scheduled delivery cron started (every 5 min)");
 
+      // Automatic monitoring: detect and restart stuck/failed jobs (every 10 min)
+      const { runAutomaticMonitoring, ensureMonitoringTable } = await import("./monitoring.js");
+      await ensureMonitoringTable(); // Create monitoring_logs table if needed
+
+      const MONITORING_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
+      let monitoringRunning = false;
+
+      const runMonitoringWithGuard = async () => {
+        if (monitoringRunning) return;
+        monitoringRunning = true;
+        try {
+          const stats = await runAutomaticMonitoring();
+          if (stats.generatingStuck > 0 || stats.needsReviewFixed > 0 || stats.failedRetried > 0) {
+            log(
+              `Monitoring: Fixed ${stats.generatingStuck} stuck, ${stats.needsReviewFixed} needs_review, ${stats.failedRetried} failed`,
+              "monitoring"
+            );
+          }
+          if (stats.errors.length > 0) {
+            console.error(
+              `[Monitoring] ${stats.errors.length} errors during auto-recovery:`,
+              stats.errors.slice(0, 3)
+            );
+          }
+        } catch (err) {
+          console.error("[Monitoring] Unhandled error in automatic monitoring:", err);
+        } finally {
+          monitoringRunning = false;
+        }
+      };
+
+      setInterval(runMonitoringWithGuard, MONITORING_INTERVAL_MS);
+      log("Automatic job monitoring started (every 10 min)");
+
       // Self-ping to prevent Render cold starts (every 4 min)
       if (process.env.NODE_ENV === "production") {
         const selfPingUrl = `${getBaseUrl()}/api/health`;
