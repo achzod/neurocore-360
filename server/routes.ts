@@ -1585,6 +1585,31 @@ export async function registerRoutes(
     }
   });
 
+  // Trigger manual 6h report (for testing)
+  app.post("/api/admin/send-report-now", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { sendManualReport } = await import("./automaticReports.js");
+
+      // Run async, don't wait
+      sendManualReport()
+        .then((result) => {
+          console.log("[Admin] Manual report result:", result);
+        })
+        .catch((err) => {
+          console.error("[Admin] Error in manual report:", err);
+        });
+
+      res.json({
+        success: true,
+        message: "Rapport en cours d'envoi par email...",
+      });
+    } catch (error) {
+      console.error("[Admin] Error starting report:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
   // Get detailed validation info for NEEDS_REVIEW audits
   app.get("/api/admin/audits/:id/validation-details", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;

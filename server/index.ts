@@ -322,6 +322,33 @@ if (process.env.NODE_ENV === "production") {
       setInterval(runMonitoringWithGuard, MONITORING_INTERVAL_MS);
       log("Automatic job monitoring started (every 10 min)");
 
+      // Automatic reports: send detailed email report every 6 hours
+      const { sendAutomaticReport } = await import("./automaticReports.js");
+      const REPORT_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
+      let reportRunning = false;
+
+      const runReportWithGuard = async () => {
+        if (reportRunning) return;
+        reportRunning = true;
+        try {
+          const success = await sendAutomaticReport();
+          if (success) {
+            log("Automatic 6h report sent successfully", "reports");
+          } else {
+            console.error("[Reports] Failed to send automatic 6h report");
+          }
+        } catch (err) {
+          console.error("[Reports] Unhandled error in automatic reports:", err);
+        } finally {
+          reportRunning = false;
+        }
+      };
+
+      // Send first report immediately on startup (then every 6h)
+      runReportWithGuard();
+      setInterval(runReportWithGuard, REPORT_INTERVAL_MS);
+      log("Automatic 6h reports started (sent to admin email)");
+
       // Self-ping to prevent Render cold starts (every 4 min)
       if (process.env.NODE_ENV === "production") {
         const selfPingUrl = `${getBaseUrl()}/api/health`;
