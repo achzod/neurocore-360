@@ -1543,6 +1543,59 @@ export async function registerRoutes(
     }
   });
 
+  // Force restart stuck GENERATING jobs
+  app.post("/api/admin/force-restart-stuck-jobs", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+
+    try {
+      // Find audits stuck in GENERATING for more than 2 hours
+      const { db } = await import("./db.js");
+      const { audits } = await import("../shared/drizzle-schema.js");
+      const { eq, and, lt } = await import("drizzle-orm");
+
+      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+
+      const stuckAudits = await db
+        .select()
+        .from(audits)
+        .where(
+          and(
+            eq(audits.reportDeliveryStatus, "GENERATING"),
+            lt(audits.createdAt, twoHoursAgo)
+          )
+        );
+
+      const restarted: string[] = [];
+
+      for (const audit of stuckAudits) {
+        console.log(`[Admin] Force-restarting stuck audit ${audit.id} (created ${audit.createdAt})`);
+
+        // Reset to PENDING so it can be picked up by process-pending-reports
+        await storage.updateAudit(audit.id, { reportDeliveryStatus: "PENDING" });
+
+        // Immediately restart generation
+        await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
+        await startReportGeneration(audit.id, audit.responses, audit.scores || {}, audit.type);
+
+        processReportAndSendEmail(audit.id, audit.email, audit.type).catch((err) => {
+          console.error(`[processReportAndSendEmail] Unhandled error for audit ${audit.id}:`, err);
+          storage.updateAudit(audit.id, { reportDeliveryStatus: "EMAIL_FAILED" }).catch(() => {});
+        });
+
+        restarted.push(audit.id);
+      }
+
+      res.json({
+        success: true,
+        message: `${restarted.length} rapport(s) bloqué(s) relancé(s)`,
+        restarted
+      });
+    } catch (error) {
+      console.error("[Admin] Error restarting stuck jobs:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
   // ==================== BLOG IMPORT / TRANSLATION ====================
 
   /**
