@@ -1,6 +1,7 @@
 import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { storage, reviewStorage, PROMO_CODES_BY_AUDIT_TYPE } from "./storage";
+import { autoSendAbandonmentReminders, sendDailyReport } from "./abandonmentReminders";
 import { pool } from "./db";
 import { saveProgressSchema, insertAuditSchema, insertReviewSchema, ProductPriceCents, ProductDisplayNames, type ProductTypeEnum } from "@shared/schema";
 import { z } from "zod";
@@ -413,6 +414,58 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error fetching incomplete questionnaires:", error);
       res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
+  // Admin: Auto-send abandonment reminders
+  app.post("/api/admin/send-abandonment-reminders", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { dryRun = false, maxToSend = 50 } = req.body;
+
+      console.log(`[API] Lancement auto-send abandonment reminders (dryRun: ${dryRun}, max: ${maxToSend})`);
+
+      const stats = await autoSendAbandonmentReminders(storage, {
+        dryRun,
+        maxToSend,
+        notifyAdmin: true,
+      });
+
+      res.json({
+        success: true,
+        stats,
+        message: dryRun
+          ? `[DRY RUN] ${stats.sent} relances auraient été envoyées`
+          : `${stats.sent} relances envoyées avec succès`
+      });
+    } catch (error: any) {
+      console.error("[API] Error sending abandonment reminders:", error);
+      res.status(500).json({ error: error.message || "Erreur serveur" });
+    }
+  });
+
+  // Admin: Get abandonment stats
+  app.get("/api/admin/abandonment-stats", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const days = parseInt(req.query.days as string) || 7;
+      const stats = await storage.getAbandonmentStats(days);
+      res.json({ success: true, stats });
+    } catch (error: any) {
+      console.error("[API] Error fetching abandonment stats:", error);
+      res.status(500).json({ error: error.message || "Erreur serveur" });
+    }
+  });
+
+  // Admin: Send daily report
+  app.post("/api/admin/send-daily-report", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      await sendDailyReport(storage);
+      res.json({ success: true, message: "Rapport quotidien envoyé" });
+    } catch (error: any) {
+      console.error("[API] Error sending daily report:", error);
+      res.status(500).json({ error: error.message || "Erreur serveur" });
     }
   });
 

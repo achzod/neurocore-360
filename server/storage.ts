@@ -230,6 +230,22 @@ export interface IStorage {
   createPromoCodeUsage(input: Omit<PromoCodeUsage, "id" | "usedAt">): Promise<PromoCodeUsage>;
   getPromoCodeUsagesByCode(promoCode: string): Promise<PromoCodeUsage[]>;
   getPromoCodeUsagesByEmail(email: string): Promise<PromoCodeUsage[]>;
+
+  // Abandonment reminders
+  getIncompleteQuestionnaires(): Promise<QuestionnaireProgress[]>;
+  hasRecentReminder(email: string, hours: number): Promise<boolean>;
+  logAbandonmentReminder(data: {
+    email: string;
+    percentComplete: number;
+    hoursSinceStart: number;
+    priorityScore: number;
+  }): Promise<void>;
+  getAbandonmentStats(days: number): Promise<{
+    last24h: { sent: number; openRate: number; clickRate: number; conversions: number };
+    last7days: { sent: number; openRate: number; conversions: number; revenue: number };
+    pending: { count: number; highPriority: number; mediumPriority: number; lastChance: number };
+    recommendations: string[];
+  }>;
 }
 
 export class MemStorage implements IStorage {
@@ -824,6 +840,73 @@ export class MemStorage implements IStorage {
   }
   async getPromoCodeUsagesByEmail(email: string): Promise<PromoCodeUsage[]> {
     return this.memPromoUsages.filter(u => u.email === email.trim().toLowerCase());
+  }
+
+  // Abandonment reminders (in-memory implementation)
+  private memAbandonmentReminders: Array<{
+    id: string;
+    email: string;
+    percentComplete: number;
+    hoursSinceStart: number;
+    priorityScore: number;
+    sentAt: Date;
+  }> = [];
+
+  async getIncompleteQuestionnaires(): Promise<QuestionnaireProgress[]> {
+    return Array.from(this.progress.values()).filter(p => p.status === 'STARTED');
+  }
+
+  async hasRecentReminder(email: string, hours: number): Promise<boolean> {
+    const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
+    return this.memAbandonmentReminders.some(
+      r => r.email.toLowerCase() === email.toLowerCase() && r.sentAt >= cutoff
+    );
+  }
+
+  async logAbandonmentReminder(data: {
+    email: string;
+    percentComplete: number;
+    hoursSinceStart: number;
+    priorityScore: number;
+  }): Promise<void> {
+    this.memAbandonmentReminders.push({
+      id: randomUUID(),
+      ...data,
+      sentAt: new Date(),
+    });
+  }
+
+  async getAbandonmentStats(days: number): Promise<{
+    last24h: { sent: number; openRate: number; clickRate: number; conversions: number };
+    last7days: { sent: number; openRate: number; conversions: number; revenue: number };
+    pending: { count: number; highPriority: number; mediumPriority: number; lastChance: number };
+    recommendations: string[];
+  }> {
+    // Simple mock for in-memory storage
+    const cutoff24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const cutoff7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    const sent24h = this.memAbandonmentReminders.filter(r => r.sentAt >= cutoff24h).length;
+    const sent7d = this.memAbandonmentReminders.filter(r => r.sentAt >= cutoff7d).length;
+
+    const incomplete = await this.getIncompleteQuestionnaires();
+    const highPriority = incomplete.filter(q => parseInt(q.percentComplete) >= 75).length;
+    const mediumPriority = incomplete.filter(q => {
+      const pct = parseInt(q.percentComplete);
+      return pct >= 25 && pct < 75;
+    }).length;
+
+    return {
+      last24h: { sent: sent24h, openRate: 0, clickRate: 0, conversions: 0 },
+      last7days: { sent: sent7d, openRate: 0, conversions: 0, revenue: 0 },
+      pending: {
+        count: incomplete.length,
+        highPriority,
+        mediumPriority,
+        lastChance: incomplete.length - highPriority - mediumPriority,
+      },
+      recommendations: ['Activer le système automatique pour de vraies stats'],
+    };
   }
 }
 
@@ -2606,6 +2689,172 @@ export class PgStorage implements IStorage {
       discountAmountCents: Number(row.discount_amount_cents),
       usedAt: row.used_at,
     }));
+  }
+
+  // ==================== ABANDONMENT REMINDERS ====================
+
+  private abandonmentRemindersTableCreated = false;
+
+  private async ensureAbandonmentRemindersTableCreated(): Promise<void> {
+    if (this.abandonmentRemindersTableCreated) return;
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS abandonment_reminders (
+        id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+        email VARCHAR(255) NOT NULL,
+        percent_complete INTEGER NOT NULL,
+        hours_since_start INTEGER NOT NULL,
+        priority_score INTEGER NOT NULL,
+        sent_at TIMESTAMP DEFAULT NOW() NOT NULL,
+        opened_at TIMESTAMP DEFAULT NULL,
+        clicked_at TIMESTAMP DEFAULT NULL,
+        converted_at TIMESTAMP DEFAULT NULL,
+        audit_id VARCHAR(36),
+        created_at TIMESTAMP DEFAULT NOW() NOT NULL
+      )
+    `);
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_abandonment_reminders_email
+      ON abandonment_reminders(email)
+    `);
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_abandonment_reminders_sent_at
+      ON abandonment_reminders(sent_at)
+    `);
+
+    this.abandonmentRemindersTableCreated = true;
+  }
+
+  async getIncompleteQuestionnaires(): Promise<QuestionnaireProgress[]> {
+    await this.ensureQuestionnaireProgressTableCreated();
+    const result = await pool.query(
+      "SELECT * FROM questionnaire_progress WHERE status = 'STARTED' ORDER BY last_activity_at DESC"
+    );
+    return result.rows.map((row: any) => ({
+      id: row.id,
+      email: row.email,
+      currentSection: row.current_section,
+      totalSections: row.total_sections,
+      percentComplete: row.percent_complete,
+      responses: row.responses,
+      status: row.status,
+      startedAt: row.started_at,
+      lastActivityAt: row.last_activity_at,
+    }));
+  }
+
+  async hasRecentReminder(email: string, hours: number): Promise<boolean> {
+    await this.ensureAbandonmentRemindersTableCreated();
+    const result = await pool.query(
+      `SELECT COUNT(*) as count FROM abandonment_reminders
+       WHERE LOWER(email) = $1 AND sent_at >= NOW() - INTERVAL '${hours} hours'`,
+      [email.toLowerCase()]
+    );
+    return parseInt(result.rows[0]?.count || '0') > 0;
+  }
+
+  async logAbandonmentReminder(data: {
+    email: string;
+    percentComplete: number;
+    hoursSinceStart: number;
+    priorityScore: number;
+  }): Promise<void> {
+    await this.ensureAbandonmentRemindersTableCreated();
+    await pool.query(
+      `INSERT INTO abandonment_reminders (email, percent_complete, hours_since_start, priority_score)
+       VALUES ($1, $2, $3, $4)`,
+      [data.email.toLowerCase(), data.percentComplete, data.hoursSinceStart, data.priorityScore]
+    );
+  }
+
+  async getAbandonmentStats(days: number): Promise<{
+    last24h: { sent: number; openRate: number; clickRate: number; conversions: number };
+    last7days: { sent: number; openRate: number; conversions: number; revenue: number };
+    pending: { count: number; highPriority: number; mediumPriority: number; lastChance: number };
+    recommendations: string[];
+  }> {
+    await this.ensureAbandonmentRemindersTableCreated();
+
+    // Stats dernières 24h
+    const last24hResult = await pool.query(`
+      SELECT
+        COUNT(*) as sent,
+        COUNT(opened_at) as opened,
+        COUNT(clicked_at) as clicked,
+        COUNT(converted_at) as conversions
+      FROM abandonment_reminders
+      WHERE sent_at >= NOW() - INTERVAL '24 hours'
+    `);
+
+    const last24h = last24hResult.rows[0];
+    const sent24h = parseInt(last24h.sent || '0');
+    const openRate24h = sent24h > 0 ? Math.round((parseInt(last24h.opened || '0') / sent24h) * 100) : 0;
+    const clickRate24h = sent24h > 0 ? Math.round((parseInt(last24h.clicked || '0') / sent24h) * 100) : 0;
+
+    // Stats derniers 7 jours
+    const last7dResult = await pool.query(`
+      SELECT
+        COUNT(*) as sent,
+        COUNT(opened_at) as opened,
+        COUNT(converted_at) as conversions
+      FROM abandonment_reminders
+      WHERE sent_at >= NOW() - INTERVAL '7 days'
+    `);
+
+    const last7d = last7dResult.rows[0];
+    const sent7d = parseInt(last7d.sent || '0');
+    const openRate7d = sent7d > 0 ? Math.round((parseInt(last7d.opened || '0') / sent7d) * 100) : 0;
+    const conversions7d = parseInt(last7d.conversions || '0');
+
+    // Revenue estimé (TODO: lier avec orders table)
+    const revenue = conversions7d * 59; // Estimation moyenne
+
+    // Pending abandons
+    const incomplete = await this.getIncompleteQuestionnaires();
+    const launchDate = new Date('2026-03-17T00:00:00Z');
+    const realIncomplete = incomplete.filter(q => new Date(q.startedAt) >= launchDate);
+
+    const highPriority = realIncomplete.filter(q => parseInt(q.percentComplete) >= 75).length;
+    const mediumPriority = realIncomplete.filter(q => {
+      const pct = parseInt(q.percentComplete);
+      return pct >= 25 && pct < 75;
+    }).length;
+
+    // Recommandations
+    const recommendations: string[] = [];
+    if (highPriority > 0) {
+      recommendations.push(`${highPriority} abandons haute priorité (>75%) à relancer en urgence`);
+    }
+    if (openRate24h < 20 && sent24h > 10) {
+      recommendations.push('Taux d\'ouverture faible (<20%) - tester un nouveau sujet');
+    }
+    if (conversions7d === 0 && sent7d > 20) {
+      recommendations.push('Aucune conversion sur 7j - revoir le message et l\'offre');
+    }
+
+    return {
+      last24h: {
+        sent: sent24h,
+        openRate: openRate24h,
+        clickRate: clickRate24h,
+        conversions: parseInt(last24h.conversions || '0'),
+      },
+      last7days: {
+        sent: sent7d,
+        openRate: openRate7d,
+        conversions: conversions7d,
+        revenue,
+      },
+      pending: {
+        count: realIncomplete.length,
+        highPriority,
+        mediumPriority,
+        lastChance: realIncomplete.length - highPriority - mediumPriority,
+      },
+      recommendations,
+    };
   }
 }
 

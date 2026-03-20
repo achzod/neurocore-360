@@ -134,6 +134,21 @@ CREATE TABLE IF NOT EXISTS email_tracking (
   clicked_at TIMESTAMP DEFAULT NULL
 );
 
+-- Table: abandonment_reminders (suivi automatique des relances d'abandon)
+CREATE TABLE IF NOT EXISTS abandonment_reminders (
+  id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+  email VARCHAR(255) NOT NULL,
+  percent_complete INTEGER NOT NULL,
+  hours_since_start INTEGER NOT NULL,
+  priority_score INTEGER NOT NULL, -- calculé selon progression + timing
+  sent_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  opened_at TIMESTAMP DEFAULT NULL,
+  clicked_at TIMESTAMP DEFAULT NULL,
+  converted_at TIMESTAMP DEFAULT NULL,
+  audit_id VARCHAR(36), -- si converti, référence à l'audit créé
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
 -- Insert default promo codes
 INSERT INTO promo_codes (code, discount_percent, description, valid_for)
 VALUES ('ANALYSE20', 20, 'Code promo 20% sur toutes les analyses APEXLABS', 'ALL')
@@ -169,5 +184,7 @@ CREATE INDEX IF NOT EXISTS idx_reviews_audit_id ON reviews(audit_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_status ON reviews(status);
 CREATE INDEX IF NOT EXISTS idx_cta_history_audit_id ON cta_history(audit_id);
 CREATE INDEX IF NOT EXISTS idx_report_jobs_status ON report_jobs(status);
+CREATE INDEX IF NOT EXISTS idx_abandonment_reminders_email ON abandonment_reminders(email);
+CREATE INDEX IF NOT EXISTS idx_abandonment_reminders_sent_at ON abandonment_reminders(sent_at);
 -- Note: Si certaines tables existent déjà, certaines erreurs peuvent apparaître.
 -- C'est normal, le script utilise CREATE TABLE IF NOT EXISTS pour éviter les doublons.

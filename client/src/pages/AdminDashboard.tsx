@@ -32,6 +32,8 @@ import {
   Gift,
   Crown,
   Timer,
+  Zap,
+  AlertCircle,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
@@ -171,6 +173,11 @@ export default function AdminDashboard() {
     expiresAt: "",
   });
   const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
+
+  // Auto-abandonment system
+  const [abandonmentStats, setAbandonmentStats] = useState<any>(null);
+  const [autoSendLoading, setAutoSendLoading] = useState(false);
+  const [autoSendResult, setAutoSendResult] = useState<any>(null);
 
   const validateAdminKey = async (key: string): Promise<boolean> => {
     try {
@@ -353,6 +360,47 @@ export default function AdminDashboard() {
       const data = await handleAdminResponse(response);
       setOrderStats(data.stats);
     } catch {}
+  };
+
+  const fetchAbandonmentStats = async () => {
+    if (!adminKey) return;
+    try {
+      const response = await fetch("/api/admin/abandonment-stats", {
+        headers: { "x-admin-key": adminKey },
+      });
+      const data = await handleAdminResponse(response);
+      setAbandonmentStats(data.stats);
+    } catch {}
+  };
+
+  const sendAutoReminders = async (dryRun: boolean = false) => {
+    if (!adminKey) return;
+    setAutoSendLoading(true);
+    setAutoSendResult(null);
+    try {
+      const response = await fetch("/api/admin/send-abandonment-reminders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
+        body: JSON.stringify({ dryRun, maxToSend: 50 }),
+      });
+      const data = await handleAdminResponse(response);
+      setAutoSendResult(data);
+      toast({
+        title: dryRun ? "Simulation réussie" : "Relances envoyées",
+        description: data.message,
+      });
+      // Rafraîchir les stats
+      fetchAbandonmentStats();
+      fetchIncompleteQuestionnaires();
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Erreur lors de l'envoi automatique",
+        variant: "destructive",
+      });
+    } finally {
+      setAutoSendLoading(false);
+    }
   };
 
   const handleRefund = async () => {
@@ -540,6 +588,7 @@ export default function AdminDashboard() {
       fetchPromoCodes();
       fetchOrders();
       fetchOrderStats();
+      fetchAbandonmentStats();
     }
   }, [isAuthenticated, adminKey]);
 
@@ -789,6 +838,121 @@ export default function AdminDashboard() {
           {/* Tab: Relances */}
           <TabsContent value="relances">
             <div className="space-y-8">
+              {/* Section: Système automatique de relances */}
+              <Card className="border-2 border-blue-500/20 bg-blue-500/5">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2 rounded-lg bg-blue-500/10">
+                      <Zap className="w-5 h-5 text-blue-500" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold">Système automatique de relances</h3>
+                      <p className="text-sm text-muted-foreground">Envoi intelligent avec segmentation par priorité</p>
+                    </div>
+                  </div>
+
+                  {abandonmentStats && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                      <Card>
+                        <CardContent className="py-3">
+                          <div className="text-2xl font-bold text-blue-600">{abandonmentStats.pending.count}</div>
+                          <div className="text-xs text-muted-foreground">Abandons en attente</div>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardContent className="py-3">
+                          <div className="text-2xl font-bold text-green-600">{abandonmentStats.last24h.sent}</div>
+                          <div className="text-xs text-muted-foreground">Envoyés (24h)</div>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardContent className="py-3">
+                          <div className="text-2xl font-bold text-purple-600">{abandonmentStats.last24h.openRate}%</div>
+                          <div className="text-xs text-muted-foreground">Taux d'ouverture</div>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardContent className="py-3">
+                          <div className="text-2xl font-bold text-orange-600">{abandonmentStats.last24h.conversions}</div>
+                          <div className="text-xs text-muted-foreground">Conversions (24h)</div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
+
+                  {abandonmentStats?.pending.count > 0 && (
+                    <div className="mb-6 p-4 bg-orange-500/10 rounded-lg border border-orange-500/20">
+                      <div className="flex items-start gap-3">
+                        <AlertCircle className="w-5 h-5 text-orange-500 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="font-medium text-sm mb-2">Abandons à relancer :</p>
+                          <ul className="text-sm space-y-1">
+                            {abandonmentStats.pending.highPriority > 0 && (
+                              <li>🔥 <strong>{abandonmentStats.pending.highPriority}</strong> haute priorité (&gt;75% complété)</li>
+                            )}
+                            {abandonmentStats.pending.mediumPriority > 0 && (
+                              <li>⚡ <strong>{abandonmentStats.pending.mediumPriority}</strong> priorité moyenne (25-75%)</li>
+                            )}
+                            {abandonmentStats.pending.lastChance > 0 && (
+                              <li>❄️ <strong>{abandonmentStats.pending.lastChance}</strong> dernière chance (&gt;48h)</li>
+                            )}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={() => sendAutoReminders(false)}
+                      disabled={autoSendLoading || !abandonmentStats || abandonmentStats.pending.count === 0}
+                      className="flex-1"
+                    >
+                      {autoSendLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Envoi en cours...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4 mr-2" />
+                          Envoyer les relances (max 50)
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => sendAutoReminders(true)}
+                      disabled={autoSendLoading}
+                    >
+                      <Eye className="w-4 h-4 mr-2" />
+                      Tester (dry run)
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={fetchAbandonmentStats}
+                      disabled={autoSendLoading}
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  {autoSendResult && (
+                    <div className="mt-4 p-4 bg-green-500/10 rounded-lg border border-green-500/20">
+                      <p className="text-sm font-medium text-green-700">
+                        ✅ {autoSendResult.message}
+                      </p>
+                      {autoSendResult.stats && (
+                        <div className="mt-2 text-xs text-muted-foreground">
+                          <p>Total abandons: {autoSendResult.stats.totalAbandoned}</p>
+                          <p>Envoyés: {autoSendResult.stats.sent} | Échecs: {autoSendResult.stats.failed}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
               {/* Section: Abandons questionnaire */}
               <div>
                 <div className="flex items-center gap-3 mb-4">
