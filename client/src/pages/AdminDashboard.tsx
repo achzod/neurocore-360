@@ -797,7 +797,7 @@ export default function AdminDashboard() {
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold">Abandons questionnaire</h3>
-                    <p className="text-sm text-muted-foreground">Relancer pour compléter le questionnaire</p>
+                    <p className="text-sm text-muted-foreground">Relancer avec code ANALYSE20 (-20%)</p>
                   </div>
                   <Badge variant="secondary" className="ml-auto">{incompleteQuestionnaires.length}</Badge>
                 </div>
@@ -816,8 +816,8 @@ export default function AdminDashboard() {
                             size="sm"
                             onClick={() => {
                               setSelectedAuditId(q.id);
-                              setCtaSubject("Ton audit APEXLABS t'attend !");
-                              setCtaMessage(`Salut !\n\nJ'ai vu que tu avais commencé ton questionnaire APEXLABS mais que tu ne l'as pas terminé.\n\nTu en étais à ${q.percentComplete}% - plus que quelques questions et tu auras accès à ton analyse personnalisée complète !\n\nClique ici pour reprendre où tu en étais : ${window.location.origin}/audit-complet/questionnaire\n\nÀ très vite,\nAchzod`);
+                              setCtaSubject("Ton audit APEXLABS t'attend + Code -20% !");
+                              setCtaMessage(`Salut !\n\nJ'ai vu que tu avais commencé ton questionnaire APEXLABS mais que tu ne l'as pas terminé.\n\nTu en étais à ${q.percentComplete}% - plus que quelques questions et tu auras accès à ton analyse personnalisée complète !\n\nEn bonus, utilise le code ANALYSE20 pour -20% sur toutes les analyses !\n\nClique ici pour reprendre où tu en étais : ${window.location.origin}/audit-complet/questionnaire\n\nÀ très vite,\nAchzod`);
                               setShowCtaModal(true);
                             }}
                           >
@@ -839,7 +839,7 @@ export default function AdminDashboard() {
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold">Analyses GRATUITES</h3>
-                    <p className="text-sm text-muted-foreground">Upsell Anabolic Bioscan</p>
+                    <p className="text-sm text-muted-foreground">Upsell Anabolic avec code ANALYSE20 (-20%)</p>
                   </div>
                   <Badge variant="secondary" className="ml-auto">
                     {audits.filter(a => a.type === "GRATUIT" && a.reportDeliveryStatus === "SENT").length}
@@ -891,7 +891,7 @@ export default function AdminDashboard() {
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold">PREMIUM J+7</h3>
-                    <p className="text-sm text-muted-foreground">Demande avis + CTA coaching NEUROCORE20 (-20%)</p>
+                    <p className="text-sm text-muted-foreground">Demande avis + CTA coaching ANALYSE20 (-20%)</p>
                   </div>
                   <Badge variant="secondary" className="ml-auto">
                     {audits.filter(a => (a.type === "PREMIUM" || a.type === "ELITE") && a.reportDeliveryStatus === "SENT" && getDaysSinceSent(a.reportSentAt) !== null && getDaysSinceSent(a.reportSentAt)! >= 7).length}
@@ -1307,8 +1307,8 @@ export default function AdminDashboard() {
                               className="flex-1"
                               onClick={() => {
                                 setSelectedAuditId(q.id);
-                                setCtaSubject("Ton audit APEXLABS t'attend !");
-                                setCtaMessage(`Salut !\n\nJ'ai vu que tu avais commencé ton questionnaire APEXLABS mais que tu ne l'as pas terminé.\n\nTu en étais à ${q.percentComplete}% - plus que quelques questions et tu auras accès à ton analyse personnalisée complète !\n\nClique ici pour reprendre où tu en étais : ${window.location.origin}/audit-complet/questionnaire\n\nÀ très vite,\nAchzod`);
+                                setCtaSubject("Ton audit APEXLABS t'attend + Code -20% !");
+                                setCtaMessage(`Salut !\n\nJ'ai vu que tu avais commencé ton questionnaire APEXLABS mais que tu ne l'as pas terminé.\n\nTu en étais à ${q.percentComplete}% - plus que quelques questions et tu auras accès à ton analyse personnalisée complète !\n\nEn bonus, utilise le code ANALYSE20 pour -20% sur toutes les analyses !\n\nClique ici pour reprendre où tu en étais : ${window.location.origin}/audit-complet/questionnaire\n\nÀ très vite,\nAchzod`);
                                 setShowCtaModal(true);
                               }}
                             >

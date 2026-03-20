@@ -135,9 +135,8 @@ CREATE TABLE IF NOT EXISTS email_tracking (
 );
 
 -- Insert default promo codes
--- Note: ANALYSE20 est pour achzodcoaching.com uniquement, pas APEXLABS
 INSERT INTO promo_codes (code, discount_percent, description, valid_for)
-VALUES ('NEUROCORE20', 20, 'Code promo 20% coaching Achzod', 'ALL')
+VALUES ('ANALYSE20', 20, 'Code promo 20% sur toutes les analyses APEXLABS', 'ALL')
 ON CONFLICT (code) DO NOTHING;
 
 -- Promo codes for review rewards (audit type specific)

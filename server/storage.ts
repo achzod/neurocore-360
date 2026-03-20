@@ -259,13 +259,11 @@ export class MemStorage implements IStorage {
     this.emailTrackings = new Map();
 
     // Default promo codes
-    // Note: ANALYSE20 est pour achzodcoaching.com uniquement, pas APEXLABS
-    // APEXLABS ne propose AUCUNE réduction sur les analyses
-    const neurocore20: PromoCode = {
+    const analyse20: PromoCode = {
       id: randomUUID(),
-      code: "NEUROCORE20",
+      code: "ANALYSE20",
       discountPercent: 20,
-      description: "Code promo 20% coaching Achzod",
+      description: "Code promo 20% sur toutes les analyses APEXLABS",
       validFor: "ALL",
       maxUses: null,
       currentUses: 0,
@@ -273,7 +271,7 @@ export class MemStorage implements IStorage {
       expiresAt: null,
       createdAt: new Date(),
     };
-    this.promoCodes.set("NEUROCORE20", neurocore20);
+    this.promoCodes.set("ANALYSE20", analyse20);
   }
 
   async getUser(id: string): Promise<User | undefined> {
