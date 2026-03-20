@@ -2,6 +2,7 @@ import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { storage, reviewStorage, PROMO_CODES_BY_AUDIT_TYPE } from "./storage";
 import { autoSendAbandonmentReminders, sendDailyReport } from "./abandonmentReminders";
+import { startMonitoring, generateMonitoringReport, checkNewConversions } from "./abandonmentMonitor";
 import { pool } from "./db";
 import { saveProgressSchema, insertAuditSchema, insertReviewSchema, ProductPriceCents, ProductDisplayNames, type ProductTypeEnum } from "@shared/schema";
 import { z } from "zod";
@@ -465,6 +466,30 @@ export async function registerRoutes(
       res.json({ success: true, message: "Rapport quotidien envoyé" });
     } catch (error: any) {
       console.error("[API] Error sending daily report:", error);
+      res.status(500).json({ error: error.message || "Erreur serveur" });
+    }
+  });
+
+  // Admin: Get monitoring report
+  app.get("/api/admin/monitoring-report", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const report = await generateMonitoringReport(storage);
+      res.json({ success: true, report });
+    } catch (error: any) {
+      console.error("[API] Error generating monitoring report:", error);
+      res.status(500).json({ error: error.message || "Erreur serveur" });
+    }
+  });
+
+  // Admin: Check new conversions
+  app.get("/api/admin/check-conversions", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const result = await checkNewConversions(storage);
+      res.json({ success: true, ...result });
+    } catch (error: any) {
+      console.error("[API] Error checking conversions:", error);
       res.status(500).json({ error: error.message || "Erreur serveur" });
     }
   });
@@ -5118,6 +5143,13 @@ export async function registerRoutes(
       res.status(500).json({ error: "Erreur suppression GDPR" });
     }
   });
+
+  // Démarrer la surveillance automatique des relances d'abandons
+  // Check toutes les 30 minutes pour détecter ouvertures, conversions, etc.
+  startMonitoring(storage, 30).catch(err => {
+    console.error('[Monitor] Erreur démarrage surveillance:', err);
+  });
+  console.log('[Monitor] 🎯 Surveillance automatique activée (check toutes les 30min)');
 
   return httpServer;
 }
