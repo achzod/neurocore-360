@@ -3594,6 +3594,9 @@ export async function registerRoutes(
         `INSERT INTO promo_codes (code, discount_percent, description, valid_for)
          VALUES ('ANALYSE20', 20, 'Code promo 20% sur toutes les analyses APEXLABS', 'ALL')
          ON CONFLICT (code) DO NOTHING`,
+        `INSERT INTO promo_codes (code, discount_percent, description, valid_for)
+         VALUES ('RETOUR30', 30, 'Code promo 30% abandons - Anabolic/Ultimate/Blood uniquement', 'PREMIUM')
+         ON CONFLICT (code) DO NOTHING`,
 
         // Index
         `CREATE INDEX IF NOT EXISTS idx_audits_email ON audits(email)`,

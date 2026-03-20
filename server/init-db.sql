@@ -139,6 +139,10 @@ INSERT INTO promo_codes (code, discount_percent, description, valid_for)
 VALUES ('ANALYSE20', 20, 'Code promo 20% sur toutes les analyses APEXLABS', 'ALL')
 ON CONFLICT (code) DO NOTHING;
 
+INSERT INTO promo_codes (code, discount_percent, description, valid_for)
+VALUES ('RETOUR30', 30, 'Code promo 30% abandons - Anabolic/Ultimate/Blood uniquement', 'PREMIUM')
+ON CONFLICT (code) DO NOTHING;
+
 -- Promo codes for review rewards (audit type specific)
 INSERT INTO promo_codes (code, discount_percent, description, valid_for)
 VALUES ('DISCOVERY20', 20, 'Code Discovery Scan - 20% coaching Achzod', 'ALL')

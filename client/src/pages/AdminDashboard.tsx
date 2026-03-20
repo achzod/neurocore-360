@@ -797,7 +797,7 @@ export default function AdminDashboard() {
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold">Abandons questionnaire</h3>
-                    <p className="text-sm text-muted-foreground">Relancer avec code ANALYSE20 (-20%)</p>
+                    <p className="text-sm text-muted-foreground">Relancer avec code RETOUR30 (-30%)</p>
                   </div>
                   <Badge variant="secondary" className="ml-auto">{incompleteQuestionnaires.length}</Badge>
                 </div>
@@ -816,8 +816,8 @@ export default function AdminDashboard() {
                             size="sm"
                             onClick={() => {
                               setSelectedAuditId(q.id);
-                              setCtaSubject("Ton audit APEXLABS t'attend + Code -20% !");
-                              setCtaMessage(`Salut !\n\nJ'ai vu que tu avais commencé ton questionnaire APEXLABS mais que tu ne l'as pas terminé.\n\nTu en étais à ${q.percentComplete}% - plus que quelques questions et tu auras accès à ton analyse personnalisée complète !\n\nEn bonus, utilise le code ANALYSE20 pour -20% sur toutes les analyses !\n\nClique ici pour reprendre où tu en étais : ${window.location.origin}/audit-complet/questionnaire\n\nÀ très vite,\nAchzod`);
+                              setCtaSubject("Ton audit APEXLABS t'attend + Offre exclusive -30% !");
+                              setCtaMessage(`Salut !\n\nJ'ai vu que tu avais commencé ton questionnaire APEXLABS mais que tu ne l'as pas terminé.\n\nTu en étais à ${q.percentComplete}% - plus que quelques questions et tu auras accès à ton analyse personnalisée complète !\n\n🎁 Offre exclusive pour toi : -30% avec le code RETOUR30 sur les analyses Anabolic Bioscan, Ultimate Scan et Blood Analysis.\n\nCes analyses sont beaucoup plus précises et complètes que le Discovery Scan gratuit - tu obtiendras des protocoles personnalisés détaillés.\n\n💡 Bonus : Le montant de ton analyse est 100% déduit si tu prends un coaching avec moi (sauf formule Starter).\n\nClique ici pour reprendre où tu en étais : ${window.location.origin}/audit-complet/questionnaire\n\nÀ très vite,\nAchzod`);
                               setShowCtaModal(true);
                             }}
                           >
@@ -1307,8 +1307,8 @@ export default function AdminDashboard() {
                               className="flex-1"
                               onClick={() => {
                                 setSelectedAuditId(q.id);
-                                setCtaSubject("Ton audit APEXLABS t'attend + Code -20% !");
-                                setCtaMessage(`Salut !\n\nJ'ai vu que tu avais commencé ton questionnaire APEXLABS mais que tu ne l'as pas terminé.\n\nTu en étais à ${q.percentComplete}% - plus que quelques questions et tu auras accès à ton analyse personnalisée complète !\n\nEn bonus, utilise le code ANALYSE20 pour -20% sur toutes les analyses !\n\nClique ici pour reprendre où tu en étais : ${window.location.origin}/audit-complet/questionnaire\n\nÀ très vite,\nAchzod`);
+                                setCtaSubject("Ton audit APEXLABS t'attend + Offre exclusive -30% !");
+                                setCtaMessage(`Salut !\n\nJ'ai vu que tu avais commencé ton questionnaire APEXLABS mais que tu ne l'as pas terminé.\n\nTu en étais à ${q.percentComplete}% - plus que quelques questions et tu auras accès à ton analyse personnalisée complète !\n\n🎁 Offre exclusive pour toi : -30% avec le code RETOUR30 sur les analyses Anabolic Bioscan, Ultimate Scan et Blood Analysis.\n\nCes analyses sont beaucoup plus précises et complètes que le Discovery Scan gratuit - tu obtiendras des protocoles personnalisés détaillés.\n\n💡 Bonus : Le montant de ton analyse est 100% déduit si tu prends un coaching avec moi (sauf formule Starter).\n\nClique ici pour reprendre où tu en étais : ${window.location.origin}/audit-complet/questionnaire\n\nÀ très vite,\nAchzod`);
                                 setShowCtaModal(true);
                               }}
                             >

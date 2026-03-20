@@ -115,6 +115,7 @@ const CTA_MARKERS = [
   "achzodcoaching",
   "neurocore20",
   "analyse20",
+  "retour30",
   "promo",
   "réduction",
 ];

@@ -271,7 +271,23 @@ export class MemStorage implements IStorage {
       expiresAt: null,
       createdAt: new Date(),
     };
+
+    // Code promo spécial abandons -30% (offres payantes uniquement)
+    const retour30: PromoCode = {
+      id: randomUUID(),
+      code: "RETOUR30",
+      discountPercent: 30,
+      description: "Code promo 30% abandons - Anabolic/Ultimate/Blood uniquement",
+      validFor: "PREMIUM", // On va gérer ELITE et BLOOD_ANALYSIS manuellement
+      maxUses: null,
+      currentUses: 0,
+      isActive: true,
+      expiresAt: null,
+      createdAt: new Date(),
+    };
+
     this.promoCodes.set("ANALYSE20", analyse20);
+    this.promoCodes.set("RETOUR30", retour30);
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -1934,6 +1950,16 @@ export class PgStorage implements IStorage {
     if (promo.maxUses !== null && promo.currentUses >= promo.maxUses) {
       return { valid: false, discount: 0, error: "Ce code promo a atteint son nombre maximum d'utilisations" };
     }
+
+    // RETOUR30: valide uniquement pour PREMIUM, ELITE, BLOOD_ANALYSIS (pas GRATUIT)
+    if (promo.code === "RETOUR30") {
+      if (auditType === "GRATUIT") {
+        return { valid: false, discount: 0, error: "Ce code promo est réservé aux analyses Anabolic, Ultimate et Blood" };
+      }
+      return { valid: true, discount: promo.discountPercent };
+    }
+
+    // Standard validation
     if (promo.validFor !== "ALL" && promo.validFor !== auditType) {
       return { valid: false, discount: 0, error: `Ce code promo n'est pas valide pour l'analyse ${auditType}` };
     }
