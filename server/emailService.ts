@@ -2629,7 +2629,7 @@ export async function sendCTAEmail(
   }
 }
 
-// Email GRATUIT: demande avis + upsell Anabolic Bioscan avec code ANALYSE20
+// Email GRATUIT: demande avis + upsell Anabolic Bioscan (SANS réduction - APEX ne fait pas de promo)
 export async function sendGratuitUpsellEmail(
   email: string,
   auditId: string,
@@ -2639,7 +2639,7 @@ export async function sendGratuitUpsellEmail(
   try {
     const token = await getAccessToken();
     const dashboardLink = `${baseUrl}/dashboard/${auditId}`;
-    const checkoutLink = `${baseUrl}/questionnaire?plan=anabolic&promo=ANALYSE20`;
+    const checkoutLink = `${baseUrl}/questionnaire?plan=anabolic`;
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
 
     const content = `
@@ -2662,17 +2662,12 @@ export async function sendGratuitUpsellEmail(
           Tu as eu un apercu de ton profil. Avec l'<strong style="color: ${COLORS.text};">Anabolic Bioscan</strong>, decouvre :
         </p>
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 20px;">
-          <tr><td style="padding: 8px 0; color: ${COLORS.textMuted}; font-size: 14px;">- Analyse approfondie sur 16 domaines</td></tr>
-          <tr><td style="padding: 8px 0; color: ${COLORS.textMuted}; font-size: 14px;">- Protocole de supplements personnalise</td></tr>
-          <tr><td style="padding: 8px 0; color: ${COLORS.textMuted}; font-size: 14px;">- Protocoles nutrition et entrainement</td></tr>
-          <tr><td style="padding: 8px 0; color: ${COLORS.textMuted}; font-size: 14px;">- Plan d'action 30/60/90 jours</td></tr>
+          <tr><td style="padding: 8px 0; color: ${COLORS.textMuted}; font-size: 14px;">✓ Analyse approfondie sur 16 domaines</td></tr>
+          <tr><td style="padding: 8px 0; color: ${COLORS.textMuted}; font-size: 14px;">✓ Protocole de supplements personnalise</td></tr>
+          <tr><td style="padding: 8px 0; color: ${COLORS.textMuted}; font-size: 14px;">✓ Protocoles nutrition et entrainement</td></tr>
+          <tr><td style="padding: 8px 0; color: ${COLORS.textMuted}; font-size: 14px;">✓ Plan d'action 30/60/90 jours</td></tr>
         </table>
-        <div style="text-align: center; margin-bottom: 20px;">
-          <span style="display: inline-block; background: ${COLORS.primary}; color: ${COLORS.background}; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: 700;">
-            -20% avec le code ANALYSE20
-          </span>
-        </div>
-        ${getPrimaryButton('Passer a l\'Anabolic Bioscan (-20%)', checkoutLink)}
+        ${getPrimaryButton('Passer a l\'Anabolic Bioscan', checkoutLink)}
       </div>
 
       <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
@@ -2689,8 +2684,8 @@ export async function sendGratuitUpsellEmail(
       body: JSON.stringify({
         email: {
           html: encodeBase64(emailContent),
-          text: `Merci d'avoir teste ApexLabs ! Laisse ton avis et decouvre l'Anabolic Bioscan avec -20% : code ANALYSE20`,
-          subject: "Ton avis compte + Offre speciale -20%",
+          text: `Merci d'avoir teste ApexLabs ! Laisse ton avis et decouvre l'Anabolic Bioscan pour aller plus loin.`,
+          subject: "Ton avis compte + Decouvre l'Anabolic Bioscan",
           from: { name: SENDER_NAME, email: SENDER_EMAIL },
           to: [{ email }],
         },

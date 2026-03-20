@@ -259,18 +259,8 @@ export class MemStorage implements IStorage {
     this.emailTrackings = new Map();
 
     // Default promo codes
-    const analyse20: PromoCode = {
-      id: randomUUID(),
-      code: "ANALYSE20",
-      discountPercent: 20,
-      description: "Code promo 20% sur Anabolic Bioscan",
-      validFor: "PREMIUM",
-      maxUses: null,
-      currentUses: 0,
-      isActive: true,
-      expiresAt: null,
-      createdAt: new Date(),
-    };
+    // Note: ANALYSE20 est pour achzodcoaching.com uniquement, pas APEXLABS
+    // APEXLABS ne propose AUCUNE réduction sur les analyses
     const neurocore20: PromoCode = {
       id: randomUUID(),
       code: "NEUROCORE20",
@@ -283,7 +273,6 @@ export class MemStorage implements IStorage {
       expiresAt: null,
       createdAt: new Date(),
     };
-    this.promoCodes.set("ANALYSE20", analyse20);
     this.promoCodes.set("NEUROCORE20", neurocore20);
   }
 

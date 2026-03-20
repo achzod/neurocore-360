@@ -114,7 +114,7 @@ const CTA_MARKERS = [
   "programme",
   "achzodcoaching",
   "neurocore20",
-  "analyse20",
+  // "analyse20" retiré - code promo pour achzodcoaching.com uniquement, pas APEXLABS
   "promo",
   "réduction",
 ];

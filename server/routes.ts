@@ -3591,9 +3591,7 @@ export async function registerRoutes(
         )`,
 
         // Default promo codes
-        `INSERT INTO promo_codes (code, discount_percent, description, valid_for)
-         VALUES ('ANALYSE20', 20, 'Code promo 20% sur Anabolic Bioscan', 'PREMIUM')
-         ON CONFLICT (code) DO NOTHING`,
+        // Note: ANALYSE20 est pour achzodcoaching.com uniquement, pas APEXLABS
         `INSERT INTO promo_codes (code, discount_percent, description, valid_for)
          VALUES ('NEUROCORE20', 20, 'Code promo 20% coaching Achzod', 'ALL')
          ON CONFLICT (code) DO NOTHING`,
