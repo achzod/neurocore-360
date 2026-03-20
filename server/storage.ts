@@ -919,6 +919,7 @@ export class PgStorage implements IStorage {
   private ensuredMagicTokensTable = false;
   private ensuredOrdersTable = false;
   private ensuredPromoCodeUsagesTable = false;
+  private ensuredQuestionnaireProgressTable = false;
   private ensuredExistingIndexes = false;
 
   private async ensureAuditColumnsLoaded(): Promise<Set<string>> {
@@ -1018,6 +1019,29 @@ export class PgStorage implements IStorage {
     } catch (err) {
       console.error("[Storage] Error ensuring magic_tokens table:", err);
       this.ensuredMagicTokensTable = true;
+    }
+  }
+
+  private async ensureQuestionnaireProgressTableCreated(): Promise<void> {
+    if (this.ensuredQuestionnaireProgressTable) return;
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS questionnaire_progress (
+          id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+          email VARCHAR(255) NOT NULL UNIQUE,
+          current_section TEXT NOT NULL DEFAULT '0',
+          total_sections TEXT NOT NULL DEFAULT '14',
+          percent_complete TEXT NOT NULL DEFAULT '0',
+          responses JSONB NOT NULL DEFAULT '{}'::jsonb,
+          status VARCHAR(20) NOT NULL DEFAULT 'STARTED',
+          started_at TIMESTAMP DEFAULT NOW() NOT NULL,
+          last_activity_at TIMESTAMP DEFAULT NOW() NOT NULL
+        )
+      `);
+      this.ensuredQuestionnaireProgressTable = true;
+    } catch (err) {
+      console.error("[Storage] Error ensuring questionnaire_progress table:", err);
+      this.ensuredQuestionnaireProgressTable = true;
     }
   }
 
