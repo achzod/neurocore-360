@@ -1005,12 +1005,55 @@ function CertificationsSection() {
 // ============================================================================
 // BETA TESTERS REVIEWS SECTION WITH PAGINATION
 // ============================================================================
+
+// Map audit type to offer name for badge display
+function mapAuditTypeToOffer(auditType: string): string {
+  const mapping: Record<string, string> = {
+    'GRATUIT': 'DISCOVERY SCAN',
+    'PREMIUM': 'ANABOLIC BIOSCAN',
+    'ELITE': 'ULTIMATE SCAN',
+    'BLOOD_ANALYSIS': 'BLOOD ANALYSIS'
+  };
+  return mapping[auditType] || auditType;
+}
+
 function ReviewsSection() {
   const [currentPage, setCurrentPage] = useState(0);
-  const reviewsPerPage = 3;
-  const totalPages = Math.ceil(BETA_REVIEWS.length / reviewsPerPage);
+  const [realReviews, setRealReviews] = useState<any[]>([]);
+  const [totalReviews, setTotalReviews] = useState(BETA_REVIEWS.length);
 
-  const currentReviews = BETA_REVIEWS.slice(
+  // Load real approved reviews from API
+  useEffect(() => {
+    fetch('/api/reviews/approved')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.reviews) {
+          // Transform real reviews to match beta reviews format
+          const transformed = data.reviews.map((r: any) => ({
+            name: r.name || r.email.split('@')[0],
+            role: mapAuditTypeToOffer(r.auditType || 'GRATUIT'),
+            rating: r.rating,
+            text: r.comment,
+            metric: "✓",
+            metricLabel: "vérifié",
+            date: r.createdAt,
+            auditType: r.auditType || 'GRATUIT',
+            isReal: true
+          }));
+          setRealReviews(transformed);
+          setTotalReviews(BETA_REVIEWS.length + transformed.length);
+        }
+      })
+      .catch(err => console.error('Failed to load reviews:', err));
+  }, []);
+
+  // Merge beta + real reviews (real reviews first for visibility)
+  const allReviews = [...realReviews, ...BETA_REVIEWS];
+
+  const reviewsPerPage = 3;
+  const totalPages = Math.ceil(allReviews.length / reviewsPerPage);
+
+  const currentReviews = allReviews.slice(
     currentPage * reviewsPerPage,
     (currentPage + 1) * reviewsPerPage
   );
@@ -1036,7 +1079,7 @@ function ReviewsSection() {
         {/* Header with Stroke Text Effect */}
         <div className="text-center mb-16">
           <span className="font-mono text-[10px] sm:text-xs text-neuro-accent uppercase tracking-[0.3em] block mb-3">
-            Beta Testers • {BETA_REVIEWS.length}+ avis • 4.9/5 ★
+            Beta Testers • {totalReviews}+ avis • 4.9/5 ★
           </span>
           <h2 className="font-sans font-black text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white uppercase tracking-tighter mb-2">
             RÉSULTATS
@@ -1095,7 +1138,9 @@ function ReviewsSection() {
                   animate={{ opacity: [1, 0.5, 1] }}
                   transition={{ duration: 2, repeat: Infinity }}
                 />
-                <span className="font-mono text-[9px] text-neuro-signal uppercase tracking-widest">Résultat vérifié</span>
+                <span className="font-mono text-[9px] text-neuro-signal uppercase tracking-widest">
+                  {review.isReal ? review.auditType : 'BETA TESTER'}
+                </span>
               </div>
             </motion.div>
           ))}

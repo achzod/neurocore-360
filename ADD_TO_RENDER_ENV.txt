@@ -1,0 +1,12 @@
+🔧 AJOUTE CETTE VARIABLE D'ENVIRONNEMENT SUR RENDER
+
+Va sur Render.com → Service apexlabs → Environment
+
+Ajoute cette nouvelle variable:
+
+Clé: GOOGLE_SHEETS_WEBHOOK_URL
+Valeur: https://script.google.com/macros/s/AKfycbyK7UlJBYQQ_CSwgEt3hFZModzd5JNT9zLYFnc3AxQHndComARtnSEpffU33zP263fp/exec
+
+Puis clique "Save Changes" → Render va redéployer automatiquement
+
+Après ça, à chaque nouvelle commande, le Google Sheet se mettra à jour automatiquement ! 🚀

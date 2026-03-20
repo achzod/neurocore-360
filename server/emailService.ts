@@ -2491,9 +2491,12 @@ export async function sendAdminEmailNewAudit(
   auditType: string,
   auditId: string
 ): Promise<boolean> {
+  console.log(`[Admin Email] 🚀 Starting admin notification for audit ${auditId}`);
   try {
     const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
+    console.log(`[Admin Email] Target admin email: ${adminEmail}`);
     const token = await getAccessToken();
+    console.log(`[Admin Email] Access token obtained, preparing email...`);
     const planLabel =
       auditType === "GRATUIT"
         ? "Discovery Scan"
@@ -2532,6 +2535,7 @@ export async function sendAdminEmailNewAudit(
 
     const emailContent = getEmailWrapper(content);
 
+    console.log(`[Admin Email] Calling SendPulse API for ${adminEmail}...`);
     const response = await fetch("https://api.sendpulse.com/smtp/emails", {
       method: "POST",
       headers: {
@@ -2552,11 +2556,12 @@ export async function sendAdminEmailNewAudit(
       }),
     });
 
+    console.log(`[Admin Email] SendPulse API response status: ${response.status}`);
     const result = await response.json() as { result: boolean };
     console.log(`[SendPulse] Admin email sent to ${adminEmail}:`, result);
     return result.result === true;
   } catch (error) {
-    console.error("[SendPulse] Error sending admin email:", error);
+    console.error("[SendPulse] ❌ Error sending admin email:", error);
     return false;
   }
 }

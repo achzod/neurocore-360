@@ -506,6 +506,21 @@ export async function registerRoutes(
           console.warn("[Questionnaire] Unable to clear progress after audit creation:", err);
         }
 
+        // Envoyer notification admin pour GRATUIT
+        const clientName = (mergedResponses as any)?.prenom || (mergedResponses as any)?.name || data.email.split('@')[0];
+        console.log(`[Admin Email] 📧 Triggering admin notification for GRATUIT audit ${audit.id}...`);
+        sendAdminEmailNewAudit(data.email, clientName, data.type, audit.id)
+          .then((success) => {
+            if (success) {
+              console.log(`[Admin Email] ✅ Admin notification sent successfully for ${audit.id}`);
+            } else {
+              console.error(`[Admin Email] ❌ Admin notification failed for ${audit.id}`);
+            }
+          })
+          .catch((err) => {
+            console.error(`[Admin Email] ❌ Error in admin notification for ${audit.id}:`, err);
+          });
+
         await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
         res.json(audit);
 
@@ -584,6 +599,21 @@ export async function registerRoutes(
       } catch (err) {
         console.warn("[Questionnaire] Unable to clear progress after audit creation:", err);
       }
+
+      // Envoyer notification admin pour PREMIUM/ELITE
+      const clientName = (data.responses as any)?.prenom || (data.responses as any)?.name || data.email.split('@')[0];
+      console.log(`[Admin Email] 📧 Triggering admin notification for ${data.type} audit ${audit.id}...`);
+      sendAdminEmailNewAudit(data.email, clientName, data.type, audit.id)
+        .then((success) => {
+          if (success) {
+            console.log(`[Admin Email] ✅ Admin notification sent successfully for ${audit.id}`);
+          } else {
+            console.error(`[Admin Email] ❌ Admin notification failed for ${audit.id}`);
+          }
+        })
+        .catch((err) => {
+          console.error(`[Admin Email] ❌ Error in admin notification for ${audit.id}:`, err);
+        });
 
       await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
       await startReportGeneration(audit.id, audit.responses, audit.scores || {}, audit.type);
@@ -2754,10 +2784,18 @@ export async function registerRoutes(
 
     // Envoyer notification admin immédiatement à la création (pas à la livraison)
     const clientName = (responses as any)?.prenom || (responses as any)?.name || email.split('@')[0];
-    sendAdminEmailNewAudit(email, clientName, planType, audit.id).catch((err) => {
-      console.error(`[Admin Email] Failed to send immediate notification for ${audit.id}:`, err);
-    });
-    console.log(`[Admin Email] Sent immediate notification for new audit ${audit.id}`);
+    console.log(`[Admin Email] 📧 Triggering admin notification for audit ${audit.id}...`);
+    sendAdminEmailNewAudit(email, clientName, planType, audit.id)
+      .then((success) => {
+        if (success) {
+          console.log(`[Admin Email] ✅ Admin notification sent successfully for ${audit.id}`);
+        } else {
+          console.error(`[Admin Email] ❌ Admin notification failed for ${audit.id}`);
+        }
+      })
+      .catch((err) => {
+        console.error(`[Admin Email] ❌ Error in admin notification for ${audit.id}:`, err);
+      });
 
     // Mettre à jour Google Sheet automatiquement via webhook
     const { notifyGoogleSheetUpdate } = await import("./googleSheetsTracking.js");
