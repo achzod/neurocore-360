@@ -225,7 +225,7 @@ Please see the 3.x to 4.x migration guide for details on how to update your app.
     `),await V.query(`
       CREATE INDEX IF NOT EXISTS idx_abandonment_reminders_sent_at
       ON abandonment_reminders(sent_at)
-    `),this.abandonmentRemindersTableCreated=!0)}async getIncompleteQuestionnaires(){return await this.ensureQuestionnaireProgressTableCreated(),(await V.query("SELECT * FROM questionnaire_progress WHERE status = 'STARTED' ORDER BY last_activity_at DESC")).rows.map(r=>({id:r.id,email:r.email,currentSection:r.current_section,totalSections:r.total_sections,percentComplete:r.percent_complete,responses:r.responses,status:r.status,startedAt:r.started_at,lastActivityAt:r.last_activity_at}))}async hasRecentReminder(e,r){await this.ensureAbandonmentRemindersTableCreated();let n=await V.query(`SELECT COUNT(*) as count FROM abandonment_reminders
+    `),this.abandonmentRemindersTableCreated=!0)}async getIncompleteQuestionnaires(){return this.getAllIncompleteProgress()}async hasRecentReminder(e,r){await this.ensureAbandonmentRemindersTableCreated();let n=await V.query(`SELECT COUNT(*) as count FROM abandonment_reminders
        WHERE LOWER(email) = $1 AND sent_at >= NOW() - INTERVAL '${r} hours'`,[e.toLowerCase()]);return parseInt(n.rows[0]?.count||"0")>0}async logAbandonmentReminder(e){await this.ensureAbandonmentRemindersTableCreated(),await V.query(`INSERT INTO abandonment_reminders (email, percent_complete, hours_since_start, priority_score)
        VALUES ($1, $2, $3, $4)`,[e.email.toLowerCase(),e.percentComplete,e.hoursSinceStart,e.priorityScore])}async getAbandonmentStats(e){await this.ensureAbandonmentRemindersTableCreated();let n=(await V.query(`
       SELECT

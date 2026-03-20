@@ -2752,21 +2752,8 @@ export class PgStorage implements IStorage {
   }
 
   async getIncompleteQuestionnaires(): Promise<QuestionnaireProgress[]> {
-    await this.ensureQuestionnaireProgressTableCreated();
-    const result = await pool.query(
-      "SELECT * FROM questionnaire_progress WHERE status = 'STARTED' ORDER BY last_activity_at DESC"
-    );
-    return result.rows.map((row: any) => ({
-      id: row.id,
-      email: row.email,
-      currentSection: row.current_section,
-      totalSections: row.total_sections,
-      percentComplete: row.percent_complete,
-      responses: row.responses,
-      status: row.status,
-      startedAt: row.started_at,
-      lastActivityAt: row.last_activity_at,
-    }));
+    // Use the existing getAllIncompleteProgress which has the correct status filter
+    return this.getAllIncompleteProgress();
   }
 
   async hasRecentReminder(email: string, hours: number): Promise<boolean> {
