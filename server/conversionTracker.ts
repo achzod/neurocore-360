@@ -204,23 +204,89 @@ function getEmptyMetaStats(): ConversionStats['meta'] {
  * - Stocker dans: process.env.GOOGLE_ADS_*
  */
 export async function fetchGoogleAdsConversions(days: number = 1): Promise<ConversionStats['google']> {
-  const clientId = process.env.GOOGLE_ADS_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_ADS_CLIENT_SECRET;
-  const refreshToken = process.env.GOOGLE_ADS_REFRESH_TOKEN;
-  const customerId = process.env.GOOGLE_ADS_CUSTOMER_ID;
+  // Utilise Google Analytics 4 Data API au lieu de Google Ads API
+  // Plus simple: une seule clé API pour tout
+  const ga4PropertyId = process.env.GA4_PROPERTY_ID;
+  const ga4ApiKey = process.env.GA4_API_KEY;
 
-  if (!clientId || !clientSecret || !refreshToken || !customerId) {
-    console.warn('[ConversionTracker] Google Ads credentials non configurées - retour données vides');
+  if (!ga4ApiKey || !ga4PropertyId) {
+    console.warn('[ConversionTracker] GA4_API_KEY ou GA4_PROPERTY_ID non configurée - retour données vides');
+    console.warn('[ConversionTracker] 1. Property ID: Google Analytics > Admin > Property Settings');
+    console.warn('[ConversionTracker] 2. API Key: https://console.cloud.google.com/apis/credentials');
     return getEmptyGoogleStats();
   }
 
   try {
-    // Pour l'instant, on retourne des données vides
-    // TODO: Implémenter l'API Google Ads quand les credentials seront configurées
-    console.warn('[ConversionTracker] Google Ads API non encore implémentée - utiliser Google Analytics 4 en attendant');
-    return getEmptyGoogleStats();
+    const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const endDate = new Date().toISOString().split('T')[0];
+
+    // Google Analytics 4 Data API v1
+    // https://developers.google.com/analytics/devguides/reporting/data/v1
+    const url = `https://analyticsdata.googleapis.com/v1beta/properties/${ga4PropertyId}:runReport?key=${ga4ApiKey}`;
+
+    const body = {
+      dateRanges: [{ startDate, endDate }],
+      metrics: [
+        { name: 'sessions' },
+        { name: 'conversions' },
+        { name: 'totalRevenue' },
+        { name: 'purchaseRevenue' }
+      ],
+      dimensions: [
+        { name: 'sessionSource' }
+      ]
+    };
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[ConversionTracker] GA4 API error:', response.status, errorText);
+      return getEmptyGoogleStats();
+    }
+
+    const data = await response.json();
+
+    // Parser les données GA4
+    let totalSessions = 0;
+    let totalConversions = 0;
+    let totalRevenue = 0;
+
+    if (data.rows) {
+      for (const row of data.rows) {
+        totalSessions += parseInt(row.metricValues[0]?.value || '0');
+        totalConversions += parseInt(row.metricValues[1]?.value || '0');
+        totalRevenue += parseFloat(row.metricValues[3]?.value || '0');
+      }
+    }
+
+    // Estimation des stats (on n'a pas toutes les données dans GA4)
+    // En attendant d'avoir les vraies dépenses Google Ads
+    const estimatedSpend = 0; // TODO: récupérer via Google Ads API ou manuellement
+    const leads = Math.round(totalConversions * 0.7); // Estimation 70% leads
+    const purchases = Math.round(totalConversions * 0.3); // Estimation 30% purchases
+
+    return {
+      spend: estimatedSpend,
+      impressions: 0,
+      clicks: totalSessions,
+      ctr: 0,
+      cpc: 0,
+      leads,
+      purchases,
+      revenue: totalRevenue,
+      roas: estimatedSpend > 0 ? totalRevenue / estimatedSpend : 0,
+      costPerLead: leads > 0 && estimatedSpend > 0 ? estimatedSpend / leads : 0,
+      costPerPurchase: purchases > 0 && estimatedSpend > 0 ? estimatedSpend / purchases : 0,
+    };
   } catch (error: any) {
-    console.error('[ConversionTracker] Erreur Google Ads API:', error.message);
+    console.error('[ConversionTracker] Erreur GA4 API:', error.message);
     return getEmptyGoogleStats();
   }
 }
