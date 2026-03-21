@@ -7,12 +7,19 @@ declare global {
   interface Window {
     gtag: (...args: any[]) => void;
     dataLayer: any[];
+    fbq: (...args: any[]) => void;
   }
 }
 
 function gtag(...args: any[]) {
   if (typeof window !== 'undefined' && window.gtag) {
     window.gtag(...args);
+  }
+}
+
+function fbq(...args: any[]) {
+  if (typeof window !== 'undefined' && window.fbq) {
+    window.fbq(...args);
   }
 }
 
@@ -38,6 +45,15 @@ export function trackViewItem(itemId: string, itemName: string, price: number, c
       quantity: 1,
     }],
   });
+
+  // Meta Pixel ViewContent
+  fbq('track', 'ViewContent', {
+    content_ids: [itemId],
+    content_name: itemName,
+    content_type: 'product',
+    value: price,
+    currency,
+  });
 }
 
 // Track CTA / button clicks
@@ -56,6 +72,12 @@ export function trackFormSubmit(formName: string) {
     event_label: formName,
     currency: 'EUR',
     value: 0,
+  });
+
+  // Meta Pixel Lead for form submissions
+  fbq('track', 'Lead', {
+    content_name: formName,
+    content_category: 'form_submission',
   });
 }
 
@@ -76,6 +98,15 @@ export function trackBeginCheckout(itemId: string, itemName: string, price: numb
   // Google Ads conversion for begin_checkout
   gtag('event', 'conversion', {
     send_to: 'AW-706806863/begin_checkout',
+    value: price,
+    currency,
+  });
+
+  // Meta Pixel InitiateCheckout
+  fbq('track', 'InitiateCheckout', {
+    content_ids: [itemId],
+    content_name: itemName,
+    content_type: 'product',
     value: price,
     currency,
   });
@@ -119,6 +150,15 @@ export function trackPurchase(transactionId: string, itemId: string, itemName: s
     currency,
     transaction_id: transactionId,
   });
+
+  // Meta Pixel Purchase
+  fbq('track', 'Purchase', {
+    content_ids: [itemId],
+    content_name: itemName,
+    content_type: 'product',
+    value: price,
+    currency,
+  });
 }
 
 // Track Discovery Scan (free) submission as a lead
@@ -133,6 +173,14 @@ export function trackDiscoveryScanLead(auditId: string) {
   // Google Ads conversion for Discovery Scan lead
   gtag('event', 'conversion', {
     send_to: 'AW-706806863/lead',
+    value: 0,
+    currency: 'EUR',
+  });
+
+  // Meta Pixel Lead
+  fbq('track', 'Lead', {
+    content_name: 'Discovery Scan',
+    content_category: 'free_audit',
     value: 0,
     currency: 'EUR',
   });
