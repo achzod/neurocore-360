@@ -204,89 +204,81 @@ function getEmptyMetaStats(): ConversionStats['meta'] {
  * - Stocker dans: process.env.GOOGLE_ADS_*
  */
 export async function fetchGoogleAdsConversions(days: number = 1): Promise<ConversionStats['google']> {
-  // Utilise Google Analytics 4 Data API au lieu de Google Ads API
-  // Plus simple: une seule clé API pour tout
-  const ga4PropertyId = process.env.GA4_PROPERTY_ID;
-  const ga4ApiKey = process.env.GA4_API_KEY;
-
-  if (!ga4ApiKey || !ga4PropertyId) {
-    console.warn('[ConversionTracker] GA4_API_KEY ou GA4_PROPERTY_ID non configurée - retour données vides');
-    console.warn('[ConversionTracker] 1. Property ID: Google Analytics > Admin > Property Settings');
-    console.warn('[ConversionTracker] 2. API Key: https://console.cloud.google.com/apis/credentials');
-    return getEmptyGoogleStats();
-  }
+  // Utilise la base de données PostgreSQL locale au lieu de Google Ads API
+  // On récupère les vraies conversions APEX depuis les tables audits et blood_reports
 
   try {
-    const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    const endDate = new Date().toISOString().split('T')[0];
+    const { pool } = await import('./db.js');
 
-    // Google Analytics 4 Data API v1
-    // https://developers.google.com/analytics/devguides/reporting/data/v1
-    const url = `https://analyticsdata.googleapis.com/v1beta/properties/${ga4PropertyId}:runReport?key=${ga4ApiKey}`;
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const launchDate = new Date('2026-03-17T00:00:00Z'); // Lancement officiel APEX
 
-    const body = {
-      dateRanges: [{ startDate, endDate }],
-      metrics: [
-        { name: 'sessions' },
-        { name: 'conversions' },
-        { name: 'totalRevenue' },
-        { name: 'purchaseRevenue' }
-      ],
-      dimensions: [
-        { name: 'sessionSource' }
-      ]
-    };
+    // 1. Récupérer les audits (Discovery Scan = leads, Anabolic/Ultimate = purchases)
+    // IMPORTANT: Seulement depuis le 17 mars 2026 (lancement)
+    const auditsResult = await pool.query(`
+      SELECT
+        type,
+        "createdAt",
+        CASE
+          WHEN type = 'GRATUIT' THEN 0
+          WHEN type = 'PREMIUM' THEN 37
+          WHEN type = 'ELITE' THEN 67
+          ELSE 0
+        END as price
+      FROM audits
+      WHERE "createdAt" >= $1
+        AND "createdAt" >= $2
+    `, [since, launchDate]);
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body)
-    });
+    // 2. Récupérer les blood reports (depuis le 17 mars)
+    const bloodResult = await pool.query(`
+      SELECT
+        "createdAt",
+        47 as price
+      FROM blood_reports
+      WHERE "createdAt" >= $1
+        AND "createdAt" >= $2
+        AND delivery_status IN ('SENT', 'SCHEDULED', 'READY')
+    `, [since, launchDate]);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('[ConversionTracker] GA4 API error:', response.status, errorText);
-      return getEmptyGoogleStats();
-    }
+    // Calculer les stats
+    let leads = 0;
+    let purchases = 0;
+    let revenue = 0;
 
-    const data = await response.json();
-
-    // Parser les données GA4
-    let totalSessions = 0;
-    let totalConversions = 0;
-    let totalRevenue = 0;
-
-    if (data.rows) {
-      for (const row of data.rows) {
-        totalSessions += parseInt(row.metricValues[0]?.value || '0');
-        totalConversions += parseInt(row.metricValues[1]?.value || '0');
-        totalRevenue += parseFloat(row.metricValues[3]?.value || '0');
+    // Compter les audits
+    for (const audit of auditsResult.rows) {
+      if (audit.type === 'GRATUIT') {
+        leads++;
+      } else {
+        purchases++;
+        revenue += audit.price;
       }
     }
 
-    // Estimation des stats (on n'a pas toutes les données dans GA4)
-    // En attendant d'avoir les vraies dépenses Google Ads
-    const estimatedSpend = 0; // TODO: récupérer via Google Ads API ou manuellement
-    const leads = Math.round(totalConversions * 0.7); // Estimation 70% leads
-    const purchases = Math.round(totalConversions * 0.3); // Estimation 30% purchases
+    // Compter les blood reports
+    purchases += bloodResult.rows.length;
+    revenue += bloodResult.rows.length * 47;
+
+    // Dépenses estimées (à ajuster manuellement si besoin)
+    // Par défaut: 0€ (à configurer manuellement dans l'env ou la DB)
+    const estimatedSpend = parseFloat(process.env.ESTIMATED_AD_SPEND_PER_DAY || '0') * days;
 
     return {
       spend: estimatedSpend,
       impressions: 0,
-      clicks: totalSessions,
+      clicks: 0,
       ctr: 0,
       cpc: 0,
       leads,
       purchases,
-      revenue: totalRevenue,
-      roas: estimatedSpend > 0 ? totalRevenue / estimatedSpend : 0,
+      revenue,
+      roas: estimatedSpend > 0 ? revenue / estimatedSpend : 0,
       costPerLead: leads > 0 && estimatedSpend > 0 ? estimatedSpend / leads : 0,
       costPerPurchase: purchases > 0 && estimatedSpend > 0 ? estimatedSpend / purchases : 0,
     };
   } catch (error: any) {
-    console.error('[ConversionTracker] Erreur GA4 API:', error.message);
+    console.error('[ConversionTracker] Erreur récupération DB:', error.message);
     return getEmptyGoogleStats();
   }
 }
