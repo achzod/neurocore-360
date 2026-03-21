@@ -1052,7 +1052,7 @@ function ReviewsSection() {
             rating: r.rating,
             text: r.comment,
             metric: "✓",
-            metricLabel: "vérifié",
+            metricLabel: "client",
             date: r.createdAt,
             auditType: r.auditType || 'GRATUIT',
             isReal: true

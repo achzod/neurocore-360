@@ -1015,7 +1015,7 @@ function mapDbReview(r: {
     rating: r.rating,
     text: r.comment,
     metric: "★",
-    metricLabel: "vérifié",
+    metricLabel: "client",
     date: typeof r.createdAt === "string" ? r.createdAt : new Date(r.createdAt).toISOString(),
   };
 }
@@ -1071,7 +1071,7 @@ function ReviewsSection() {
         {/* Header with Stroke Text Effect */}
         <div className="text-center mb-16">
           <span className="font-mono text-[10px] sm:text-xs text-neuro-accent uppercase tracking-[0.3em] block mb-3">
-            {allReviews.length}+ avis vérifiés • 4.9/5 ★
+            {allReviews.length}+ avis clients • 4.9/5 ★
           </span>
           <h2 className="font-sans font-black text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white uppercase tracking-tighter mb-2">
             RÉSULTATS
@@ -1123,14 +1123,14 @@ function ReviewsSection() {
                 "{review.text}"
               </p>
 
-              {/* Verified badge */}
+              {/* Client badge */}
               <div className="mt-4 flex items-center gap-2">
                 <motion.span
                   className="w-1.5 h-1.5 bg-neuro-signal rounded-full"
                   animate={{ opacity: [1, 0.5, 1] }}
                   transition={{ duration: 2, repeat: Infinity }}
                 />
-                <span className="font-mono text-[9px] text-neuro-signal uppercase tracking-widest">Résultat vérifié</span>
+                <span className="font-mono text-[9px] text-neuro-signal uppercase tracking-widest">CLIENT APEXLABS</span>
               </div>
             </motion.div>
           ))}
