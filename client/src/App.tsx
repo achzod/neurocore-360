@@ -67,6 +67,7 @@ const DiscoveryScanReport = lazy(() => import("@/pages/DiscoveryScanReport"));
 const AnabolicScanReport = lazy(() => import("@/pages/AnabolicScanReport"));
 const UltimateScanReport = lazy(() => import("@/pages/UltimateScanReport"));
 const BloodClientDashboard = lazy(() => import("@/pages/BloodClientDashboard"));
+const ConversionsPublic = lazy(() => import("@/pages/ConversionsPublic"));
 
 // Offer Pages
 const AuditGratuit = lazy(() => import("@/pages/offers/AuditGratuit"));
@@ -190,6 +191,7 @@ function Router() {
         <Route path="/admin" component={AdminDashboard} />
         <Route path="/admin/reviews" component={AdminReviews} />
         <Route path="/admin/conversions-tracker" component={lazy(() => import("@/pages/ConversionsTracker"))} />
+        <Route path="/conversions" component={ConversionsPublic} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>

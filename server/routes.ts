@@ -472,6 +472,26 @@ export async function registerRoutes(
     }
   });
 
+  // Public: Get conversion stats with secret key (no login required)
+  app.get("/api/conversions", async (req, res) => {
+    const key = req.query.key;
+    const adminSecret = process.env.ADMIN_SECRET || "your_admin_secret";
+
+    if (key !== adminSecret) {
+      return res.status(403).json({ error: "Invalid key" });
+    }
+
+    try {
+      const { getConversionStats } = await import('./conversionTracker');
+      const period = (req.query.period as '24h' | '7d' | '30d') || '24h';
+      const stats = await getConversionStats(period);
+      res.json({ success: true, stats });
+    } catch (error: any) {
+      console.error("[API] Error fetching conversion stats:", error);
+      res.status(500).json({ error: error.message || "Erreur serveur" });
+    }
+  });
+
   // Admin: Send daily conversion report
   app.post("/api/admin/send-conversion-report", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
