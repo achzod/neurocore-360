@@ -189,6 +189,7 @@ function Router() {
         <Route path="/report/:auditId" component={Report} />
         <Route path="/admin" component={AdminDashboard} />
         <Route path="/admin/reviews" component={AdminReviews} />
+        <Route path="/admin/conversions-tracker" component={lazy(() => import("@/pages/ConversionsTracker"))} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>

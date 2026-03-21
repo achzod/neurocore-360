@@ -458,6 +458,33 @@ export async function registerRoutes(
     }
   });
 
+  // Admin: Get conversion stats (Meta + Google Ads)
+  app.get("/api/admin/conversion-stats", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { getConversionStats } = await import('./conversionTracker');
+      const period = (req.query.period as '24h' | '7d' | '30d') || '24h';
+      const stats = await getConversionStats(period);
+      res.json({ success: true, stats });
+    } catch (error: any) {
+      console.error("[API] Error fetching conversion stats:", error);
+      res.status(500).json({ error: error.message || "Erreur serveur" });
+    }
+  });
+
+  // Admin: Send daily conversion report
+  app.post("/api/admin/send-conversion-report", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { sendDailyConversionReport } = await import('./conversionTracker');
+      await sendDailyConversionReport();
+      res.json({ success: true, message: "Rapport conversions envoyé" });
+    } catch (error: any) {
+      console.error("[API] Error sending conversion report:", error);
+      res.status(500).json({ error: error.message || "Erreur serveur" });
+    }
+  });
+
   // Admin: Send daily report
   app.post("/api/admin/send-daily-report", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;

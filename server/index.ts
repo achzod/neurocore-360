@@ -349,6 +349,36 @@ if (process.env.NODE_ENV === "production") {
       setInterval(runReportWithGuard, REPORT_INTERVAL_MS);
       log("Automatic 6h reports started (sent to admin email)");
 
+      // Conversion tracking: daily report every day at 9:00 AM
+      const { sendDailyConversionReport } = await import("./conversionTracker.js");
+      const scheduleDailyConversionReport = () => {
+        const now = new Date();
+        const next9AM = new Date(now);
+        next9AM.setHours(9, 0, 0, 0);
+
+        if (next9AM <= now) {
+          // If it's past 9 AM today, schedule for 9 AM tomorrow
+          next9AM.setDate(next9AM.getDate() + 1);
+        }
+
+        const msUntil9AM = next9AM.getTime() - now.getTime();
+
+        setTimeout(() => {
+          sendDailyConversionReport().catch(err => {
+            console.error("[Cron] Error sending daily conversion report:", err);
+          });
+          // Reschedule for next day
+          setInterval(() => {
+            sendDailyConversionReport().catch(err => {
+              console.error("[Cron] Error sending daily conversion report:", err);
+            });
+          }, 24 * 60 * 60 * 1000); // 24 hours
+        }, msUntil9AM);
+      };
+
+      scheduleDailyConversionReport();
+      log("Daily conversion report scheduled (9:00 AM every day)");
+
       // Self-ping to prevent Render cold starts (every 4 min)
       if (process.env.NODE_ENV === "production") {
         const selfPingUrl = `${getBaseUrl()}/api/health`;
