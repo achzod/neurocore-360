@@ -418,6 +418,7 @@ function Hero() {
   const [objective, setObjective] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error' | 'already'>('idle');
   const [spotsLeft, setSpotsLeft] = useState(199);
+  const [totalReviews, setTotalReviews] = useState(BETA_REVIEWS.length);
 
   // Fetch real spots count from API on mount
   useEffect(() => {
@@ -429,6 +430,22 @@ function Hero() {
         }
       })
       .catch(() => {/* Keep default 199 on error */});
+  }, []);
+
+  // Fetch approved reviews count
+  useEffect(() => {
+    fetch("/api/reviews")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.success && data.reviews?.length) {
+          const EXCLUDED_EMAILS = ["achkou@gmail.com", "coaching@achzodcoaching.com"];
+          const filtered = data.reviews.filter(
+            (r: { email: string }) => !EXCLUDED_EMAILS.includes(r.email?.toLowerCase() || '')
+          );
+          setTotalReviews(BETA_REVIEWS.length + filtered.length);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const objectives = [
@@ -510,7 +527,7 @@ function Hero() {
           ))}
         </motion.div>
         <span className="text-[#FCDD00] font-bold text-sm">4.9/5</span>
-        <span className="text-white font-bold text-lg">{BETA_REVIEWS.length}</span>
+        <span className="text-white font-bold text-lg">{totalReviews}</span>
         <span className="text-gray-400 text-[10px] uppercase tracking-wider">avis</span>
         <motion.div
           className="w-4 h-4 mt-1"

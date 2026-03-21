@@ -38,9 +38,9 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[#333333] bg-[#000000]" role="banner">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between gap-4">
+        <div className="flex h-16 items-center gap-4">
           {/* Logo - APEXLABS Design System */}
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2 flex-shrink-0">
             <div className="flex flex-col leading-none">
               <span className="text-xl font-black tracking-tighter text-white" data-testid="text-brand-name">
                 APEX<span className="text-[#FCDD00]">LABS</span>
@@ -50,7 +50,7 @@ export function Header() {
           </Link>
 
           {/* Desktop Navigation - Inter Bold, uppercase, gray */}
-          <nav className="hidden items-center gap-6 lg:flex" aria-label="Navigation principale">
+          <nav className="hidden items-center gap-6 lg:flex flex-1" aria-label="Navigation principale">
             {PRODUCTS.map((product) => (
               <Link
                 key={product.name}
