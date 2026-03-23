@@ -45,7 +45,7 @@ import {
 import { registerKnowledgeRoutes } from "./knowledge";
 import { registerBloodAnalysisRoutes } from "./blood-analysis/routes";
 import { registerBloodTestsRoutes } from "./blood-tests/routes";
-import { getAuthPayload, signAuthToken } from "./auth";
+import { signAuthToken } from "./auth";
 import { analyzeDiscoveryScan, convertToNarrativeReport } from "./discovery-scan";
 import { createRateLimiter } from "./middleware/rateLimit";
 import {
@@ -4098,31 +4098,71 @@ export async function registerRoutes(
     }
   });
 
-  // Admin email trackings list
+  // Admin email trackings list - NEW SYSTEM with full tracking
   app.get("/api/admin/email-trackings", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
       const limit = Math.min(Number(req.query.limit) || 50, 200);
-      const offset = Number(req.query.offset) || 0;
-      const result = await pool.query(
-        "SELECT * FROM email_tracking ORDER BY sent_at DESC LIMIT $1 OFFSET $2",
-        [limit, offset]
-      );
-      const countResult = await pool.query("SELECT COUNT(*) FROM email_tracking");
+      const { getRecentEmails } = await import("./emailTracking");
+      const emails = await getRecentEmails(limit);
+
       res.json({
         success: true,
-        trackings: result.rows.map((r: any) => ({
-          id: r.id,
-          auditId: r.audit_id,
-          emailType: r.email_type,
-          sentAt: r.sent_at,
-          openedAt: r.opened_at,
-          clickedAt: r.clicked_at,
-        })),
-        total: Number(countResult.rows[0].count),
+        trackings: emails,
+        total: emails.length,
       });
     } catch (error) {
       console.error("[Admin Email Trackings] Error:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  // Admin email tracking stats
+  app.get("/api/admin/email-trackings/stats", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { getEmailTrackingStats } = await import("./emailTracking");
+      const stats = await getEmailTrackingStats();
+
+      res.json({
+        success: true,
+        stats,
+      });
+    } catch (error) {
+      console.error("[Admin Email Tracking Stats] Error:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  // Admin email tracking CSV export
+  app.get("/api/admin/email-trackings/export/csv", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { exportEmailTrackingCSV } = await import("./emailTracking");
+      const csv = await exportEmailTrackingCSV();
+
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", "attachment; filename=email-trackings.csv");
+      res.send(csv);
+    } catch (error) {
+      console.error("[Admin Email Tracking CSV] Error:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  // Admin combined tracking (audits + emails)
+  app.get("/api/admin/tracking/combined-stats", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { getCombinedStats } = await import("./googleSheetsTracking");
+      const stats = await getCombinedStats();
+
+      res.json({
+        success: true,
+        stats,
+      });
+    } catch (error) {
+      console.error("[Admin Combined Stats] Error:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
     }
   });

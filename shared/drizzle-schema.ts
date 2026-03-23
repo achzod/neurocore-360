@@ -120,3 +120,39 @@ export const bloodAnalysisPurchases = pgTable("blood_analysis_purchases", {
   reportId: varchar("report_id", { length: 36 }).references(() => bloodAnalysisReports.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+// Email Tracking - Track all automated emails sent
+export const emailTracking = pgTable("email_tracking", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+
+  // Email details
+  emailType: varchar("email_type", { length: 50 }).notNull(), // sendReportReadyEmail, sendCTAEmail, etc.
+  recipientEmail: varchar("recipient_email", { length: 255 }).notNull(),
+  recipientName: varchar("recipient_name", { length: 255 }),
+
+  // Associated audit/report
+  auditId: varchar("audit_id", { length: 36 }),
+  auditType: varchar("audit_type", { length: 50 }),
+
+  // Email content metadata
+  subject: text("subject"),
+  previewText: text("preview_text"),
+
+  // SendPulse tracking
+  sendpulseTaskId: varchar("sendpulse_task_id", { length: 255 }),
+  sendpulseStatus: varchar("sendpulse_status", { length: 50 }), // success | failed | pending
+  sendpulseError: text("sendpulse_error"),
+
+  // Engagement tracking (via UTM / webhooks)
+  opened: timestamp("opened"),
+  clicked: timestamp("clicked"),
+  converted: timestamp("converted"),
+  conversionType: varchar("conversion_type", { length: 50 }), // ultimate_purchase | anabolic_purchase | coaching_purchase
+
+  // Metadata
+  metadata: jsonb("metadata"), // Store any additional context (promo codes, etc.)
+
+  // Timestamps
+  sentAt: timestamp("sent_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});

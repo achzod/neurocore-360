@@ -203,6 +203,61 @@ function formatDate(isoDate: string): string {
 }
 
 /**
+ * Génère un CSV combiné avec audits + emails pour Google Sheets
+ */
+export async function generateCombinedCSV(): Promise<{
+  auditsCSV: string;
+  emailsCSV: string;
+}> {
+  const auditsCSV = await generateCSV();
+
+  // Import email tracking data
+  const { exportEmailTrackingCSV } = await import("./emailTracking");
+  const emailsCSV = await exportEmailTrackingCSV();
+
+  return {
+    auditsCSV,
+    emailsCSV,
+  };
+}
+
+/**
+ * Génère des stats combinées (audits + emails) pour le dashboard
+ */
+export async function getCombinedStats(): Promise<{
+  audits: {
+    totalAudits: number;
+    byStatus: Record<string, number>;
+    byType: Record<string, number>;
+    generated: number;
+    sent: number;
+    averageValidationScore: number;
+    failureRate: number;
+  };
+  emails: {
+    totalSent: number;
+    byType: Record<string, number>;
+    successRate: number;
+    openRate: number;
+    clickRate: number;
+    conversionRate: number;
+    last24h: number;
+    last7d: number;
+  };
+}> {
+  const auditStats = await generateStats();
+
+  // Import email tracking stats
+  const { getEmailTrackingStats } = await import("./emailTracking");
+  const emailStats = await getEmailTrackingStats();
+
+  return {
+    audits: auditStats,
+    emails: emailStats,
+  };
+}
+
+/**
  * Webhook Google Sheets - Appelle le Apps Script web app pour mettre à jour le sheet
  *
  * Setup:

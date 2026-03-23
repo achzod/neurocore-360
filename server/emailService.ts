@@ -1,5 +1,6 @@
 import type { ComprehensiveRiskProfile, RiskScore } from "./blood-analysis/risk-scores";
 import { logBloodEmailDelivery } from "./blood-analysis/delivery-log";
+import { logEmail, ADMIN_EMAIL_CC, type EmailTrackingData } from "./emailTracking";
 
 const SENDPULSE_USER_ID =
   process.env.SENDPULSE_USER_ID || process.env.SENDPULSE_API_USER_ID || "";
@@ -140,6 +141,90 @@ export async function getAccessToken(): Promise<string> {
 
 function encodeBase64(str: string): string {
   return Buffer.from(str).toString("base64");
+}
+
+/**
+ * Send email via SendPulse with automatic tracking and CC to admin
+ *
+ * @param emailPayload - SendPulse email payload
+ * @param trackingData - Tracking metadata
+ * @returns SendPulse response
+ */
+async function sendEmailWithTracking(
+  emailPayload: {
+    html: string;
+    text: string;
+    subject: string;
+    from: { name: string; email: string };
+    to: Array<{ email: string; name?: string }>;
+    attachments_binary?: Record<string, string>;
+  },
+  trackingData: {
+    emailType: string;
+    recipientEmail: string;
+    recipientName?: string;
+    auditId?: string;
+    auditType?: string;
+    metadata?: Record<string, any>;
+  }
+): Promise<{ result: boolean; error?: any; message?: any }> {
+  try {
+    const token = await getAccessToken();
+
+    // Add BCC to admin email for all outgoing emails
+    const payloadWithBcc = {
+      ...emailPayload,
+      bcc: [{ email: ADMIN_EMAIL_CC, name: "Admin APEXLABS" }],
+    };
+
+    console.log(`[SendPulse] Sending ${trackingData.emailType} to ${trackingData.recipientEmail} (BCC: ${ADMIN_EMAIL_CC})`);
+
+    const response = await fetch("https://api.sendpulse.com/smtp/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ email: payloadWithBcc }),
+    });
+
+    const result = (await response.json()) as { result: boolean; error?: any; message?: any };
+
+    // Log to tracking system
+    await logEmail({
+      emailType: trackingData.emailType,
+      recipientEmail: trackingData.recipientEmail,
+      recipientName: trackingData.recipientName,
+      auditId: trackingData.auditId,
+      auditType: trackingData.auditType,
+      subject: emailPayload.subject,
+      previewText: emailPayload.text.substring(0, 100),
+      sendpulseStatus: result.result ? "success" : "failed",
+      sendpulseError: result.error ? JSON.stringify(result.error) : undefined,
+      metadata: trackingData.metadata,
+    });
+
+    console.log(`[SendPulse] Email ${result.result ? "✅ sent" : "❌ failed"}:`, result);
+    return result;
+  } catch (error) {
+    console.error(`[SendPulse] Error sending ${trackingData.emailType}:`, error);
+
+    // Log failed attempt
+    await logEmail({
+      emailType: trackingData.emailType,
+      recipientEmail: trackingData.recipientEmail,
+      recipientName: trackingData.recipientName,
+      auditId: trackingData.auditId,
+      auditType: trackingData.auditType,
+      subject: emailPayload.subject,
+      previewText: emailPayload.text.substring(0, 100),
+      sendpulseStatus: "failed",
+      sendpulseError: String(error),
+      metadata: trackingData.metadata,
+    });
+
+    return { result: false, error: String(error) };
+  }
 }
 
 function renderCoachingOffersTable(deductionAmount: number, accentColor: string): string {
@@ -442,30 +527,27 @@ export async function sendReportReadyEmail(
 
     const emailContent = getEmailWrapper(content, `linear-gradient(135deg, ${planColor} 0%, ${planColor}dd 100%)`, headerTitle, headerSubtitle);
 
-    const response = await fetch("https://api.sendpulse.com/smtp/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        email: {
-          html: encodeBase64(emailContent),
-          text: `Ton ${planLabel} ApexLabs est pret. Consulte ton rapport ici : ${reportLink}`,
-          subject: `Ton ${planLabel} est pret`,
-          from: {
-            name: "ApexLabs by Achzod",
-            email: SENDER_EMAIL,
-          },
-          to: [{ email }],
+    const result = await sendEmailWithTracking(
+      {
+        html: encodeBase64(emailContent),
+        text: `Ton ${planLabel} ApexLabs est pret. Consulte ton rapport ici : ${reportLink}`,
+        subject: `Ton ${planLabel} est pret`,
+        from: {
+          name: "ApexLabs by Achzod",
+          email: SENDER_EMAIL,
         },
-      }),
-    });
+        to: [{ email }],
+      },
+      {
+        emailType: "sendReportReadyEmail",
+        recipientEmail: email,
+        auditId,
+        auditType,
+        metadata: { reportLink, planLabel },
+      }
+    );
 
-    const result = await response.json() as { result: boolean; error?: any; message?: any };
-    console.log(`[SendPulse] Report ready email sent to ${email}:`, result);
     if (result.result === true) return true;
-    // Fallback log + tolerate non-true with warning
     console.warn("[SendPulse] Report email not confirmed sent:", result);
     return false;
   } catch (error) {
@@ -2222,7 +2304,6 @@ export async function sendBloodAnalysisHtmlEmail(
   },
 ): Promise<boolean> {
   try {
-    const token = await getAccessToken();
     void baseUrl;
     // Strip forbidden dashes/emojis from the report markdown BEFORE rendering HTML
     // and BEFORE the quality gate checks — otherwise the gate blocks on raw AI em-dashes.
@@ -2334,34 +2415,50 @@ export async function sendBloodAnalysisHtmlEmail(
         email: SENDER_EMAIL,
       },
       to: [{ email }],
-    };
-
-    const postEmail = async (payload: Record<string, unknown>) => {
-      const response = await fetch("https://api.sendpulse.com/smtp/emails", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ email: payload }),
-      });
-      return (await response.json()) as { result: boolean; error?: any; message?: any };
-    };
-
-    const attachmentPayload = {
-      ...baseEmailPayload,
       attachments_binary: {
         [attachmentName]: encodeBase64(standaloneReportHtml),
       },
     };
-    let result = await postEmail(attachmentPayload);
+
+    let result = await sendEmailWithTracking(
+      baseEmailPayload,
+      {
+        emailType: "sendBloodAnalysisHtmlEmail",
+        recipientEmail: email,
+        recipientName: clientName,
+        auditId: reportId,
+        auditType: "BLOOD_ANALYSIS",
+        metadata: {
+          reportId,
+          markerCount,
+          orderRef: meta?.orderRef,
+          attachmentName,
+        },
+      }
+    );
 
     if (result.result !== true) {
       console.warn(
         `[SendPulse] Blood HTML attachment send failed for ${email}, retrying with attachment.`,
         result
       );
-      result = await postEmail(attachmentPayload);
+      result = await sendEmailWithTracking(
+        baseEmailPayload,
+        {
+          emailType: "sendBloodAnalysisHtmlEmail",
+          recipientEmail: email,
+          recipientName: clientName,
+          auditId: reportId,
+          auditType: "BLOOD_ANALYSIS",
+          metadata: {
+            reportId,
+            markerCount,
+            orderRef: meta?.orderRef,
+            attachmentName,
+            retry: true,
+          },
+        }
+      );
     }
 
     console.log(`[SendPulse] Blood HTML email sent to ${email}:`, result);
@@ -2412,7 +2509,6 @@ export async function sendMagicLinkEmail(
   baseUrl: string
 ): Promise<boolean> {
   try {
-    const token_ = await getAccessToken();
     const magicLink = `${baseUrl}/auth/verify?token=${token}&email=${encodeURIComponent(email)}`;
 
     const content = `
@@ -2456,27 +2552,24 @@ export async function sendMagicLinkEmail(
       "Lien personnel"
     );
 
-    const response = await fetch("https://api.sendpulse.com/smtp/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token_}`,
-      },
-      body: JSON.stringify({
-        email: {
-          subject: "Acces a ton espace ApexLabs",
-          from: {
-            name: SENDER_NAME,
-            email: SENDER_EMAIL,
-          },
-          to: [{ email }],
-          html: encodeBase64(emailContent),
-          text: `Acces ApexLabs - Clique sur ce lien pour acceder a ton espace client : ${magicLink}`,
+    const result = await sendEmailWithTracking(
+      {
+        subject: "Acces a ton espace ApexLabs",
+        from: {
+          name: SENDER_NAME,
+          email: SENDER_EMAIL,
         },
-      }),
-    });
+        to: [{ email }],
+        html: encodeBase64(emailContent),
+        text: `Acces ApexLabs - Clique sur ce lien pour acceder a ton espace client : ${magicLink}`,
+      },
+      {
+        emailType: "sendMagicLinkEmail",
+        recipientEmail: email,
+        metadata: { magicLinkToken: token, baseUrl },
+      }
+    );
 
-    const result = await response.json() as { result: boolean };
     console.log(`[SendPulse] Email sent to ${email}:`, result);
     return result.result === true;
   } catch (error) {
@@ -2495,8 +2588,7 @@ export async function sendAdminEmailNewAudit(
   try {
     const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
     console.log(`[Admin Email] Target admin email: ${adminEmail}`);
-    const token = await getAccessToken();
-    console.log(`[Admin Email] Access token obtained, preparing email...`);
+    console.log(`[Admin Email] Preparing email...`);
     const planLabel =
       auditType === "GRATUIT"
         ? "Discovery Scan"
@@ -2536,28 +2628,26 @@ export async function sendAdminEmailNewAudit(
     const emailContent = getEmailWrapper(content);
 
     console.log(`[Admin Email] Calling SendPulse API for ${adminEmail}...`);
-    const response = await fetch("https://api.sendpulse.com/smtp/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        email: {
-          html: encodeBase64(emailContent),
-          text: `Nouvelle analyse ${planLabel} generee pour ${clientName} (${clientEmail}) - Audit ID: ${auditId}`,
-          subject: `[ApexLabs] Nouvelle analyse ${planLabel} - ${clientName}`,
-          from: {
-            name: SENDER_NAME,
-            email: SENDER_EMAIL,
-          },
-          to: [{ email: adminEmail }],
+    const result = await sendEmailWithTracking(
+      {
+        html: encodeBase64(emailContent),
+        text: `Nouvelle analyse ${planLabel} generee pour ${clientName} (${clientEmail}) - Audit ID: ${auditId}`,
+        subject: `[ApexLabs] Nouvelle analyse ${planLabel} - ${clientName}`,
+        from: {
+          name: SENDER_NAME,
+          email: SENDER_EMAIL,
         },
-      }),
-    });
+        to: [{ email: adminEmail }],
+      },
+      {
+        emailType: "sendAdminEmailNewAudit",
+        recipientEmail: adminEmail,
+        auditId,
+        auditType,
+        metadata: { clientEmail, clientName, planLabel },
+      }
+    );
 
-    console.log(`[Admin Email] SendPulse API response status: ${response.status}`);
-    const result = await response.json() as { result: boolean };
     console.log(`[SendPulse] Admin email sent to ${adminEmail}:`, result);
     return result.result === true;
   } catch (error) {
@@ -2572,7 +2662,6 @@ export async function sendCTAEmail(
   message: string
 ): Promise<boolean> {
   try {
-    const token = await getAccessToken();
     const content = `
       <h2 style="color: ${COLORS.text}; margin: 0 0 12px; font-size: 24px; text-align: center; font-weight: 700; letter-spacing: -0.5px;">
         Message important
@@ -2600,28 +2689,24 @@ export async function sendCTAEmail(
       "Message personnalisé"
     );
 
-    const response = await fetch("https://api.sendpulse.com/smtp/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        email: {
-          subject,
-          from: {
-            name: SENDER_NAME,
-            email: SENDER_EMAIL,
-          },
-          to: [{ email }],
-          html: encodeBase64(emailContent),
-          text: message,
+    const result = await sendEmailWithTracking(
+      {
+        subject,
+        from: {
+          name: SENDER_NAME,
+          email: SENDER_EMAIL,
         },
-      }),
-    });
+        to: [{ email }],
+        html: encodeBase64(emailContent),
+        text: message,
+      },
+      {
+        emailType: "sendCTAEmail",
+        recipientEmail: email,
+        metadata: { customMessage: message.substring(0, 100) },
+      }
+    );
 
-    const result = (await response.json()) as { result: boolean };
-    console.log(`[SendPulse] CTA email sent to ${email}:`, result);
     return result.result === true;
   } catch (error) {
     console.error("[SendPulse] Error sending CTA email:", error);
@@ -2637,7 +2722,6 @@ export async function sendGratuitUpsellEmail(
   trackingId: string
 ): Promise<boolean> {
   try {
-    const token = await getAccessToken();
     const dashboardLink = `${baseUrl}/dashboard/${auditId}`;
     const checkoutLink = `${baseUrl}/questionnaire?plan=anabolic&promo=ANALYSE20`;
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
@@ -2680,25 +2764,23 @@ export async function sendGratuitUpsellEmail(
 
     const emailContent = getEmailWrapper(content);
 
-    const response = await fetch("https://api.sendpulse.com/smtp/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+    const result = await sendEmailWithTracking(
+      {
+        html: encodeBase64(emailContent),
+        text: `Merci d'avoir teste ApexLabs ! Laisse ton avis et decouvre l'Anabolic Bioscan avec -20% : code ANALYSE20`,
+        subject: "Ton avis compte + Offre speciale -20%",
+        from: { name: SENDER_NAME, email: SENDER_EMAIL },
+        to: [{ email }],
       },
-      body: JSON.stringify({
-        email: {
-          html: encodeBase64(emailContent),
-          text: `Merci d'avoir teste ApexLabs ! Laisse ton avis et decouvre l'Anabolic Bioscan avec -20% : code ANALYSE20`,
-          subject: "Ton avis compte + Offre speciale -20%",
-          from: { name: SENDER_NAME, email: SENDER_EMAIL },
-          to: [{ email }],
-        },
-      }),
-    });
+      {
+        emailType: "sendGratuitUpsellEmail",
+        recipientEmail: email,
+        auditId,
+        auditType: "GRATUIT",
+        metadata: { promoCode: "ANALYSE20", dashboardLink, checkoutLink, trackingId },
+      }
+    );
 
-    const result = await response.json() as { result: boolean };
-    console.log(`[SendPulse] Gratuit upsell email sent to ${email}:`, result);
     return result.result === true;
   } catch (error) {
     console.error("[SendPulse] Error sending gratuit upsell email:", error);
@@ -2716,7 +2798,6 @@ export async function sendPremiumJ7Email(
   hasLeftReview: boolean
 ): Promise<boolean> {
   try {
-    const token = await getAccessToken();
     const dashboardLink = `${baseUrl}/dashboard/${auditId}`;
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
 
@@ -2742,24 +2823,23 @@ export async function sendPremiumJ7Email(
     const promoJ7Label = promoJ7 ? `${promoJ7.code} (-${promoJ7.amount}EUR)` : "deduction coaching";
     const emailContent = getEmailWrapper(content, `linear-gradient(135deg, ${COLORS.purple} 0%, #7c3aed 100%)`);
 
-    const response = await fetch("https://api.sendpulse.com/smtp/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+    const result = await sendEmailWithTracking(
+      {
+        html: encodeBase64(emailContent),
+        text: `Ca fait une semaine ! Pret a passer a l'action ? Ton code promo : ${promoJ7Label}. Decouvre le coaching personnalise.`,
+        subject: `Pret a transformer ta sante ? (${promoJ7Label})`,
+        from: { name: SENDER_NAME, email: SENDER_EMAIL },
+        to: [{ email }],
       },
-      body: JSON.stringify({
-        email: {
-          html: encodeBase64(emailContent),
-          text: `Ca fait une semaine ! Pret a passer a l'action ? Ton code promo : ${promoJ7Label}. Decouvre le coaching personnalise.`,
-          subject: `Pret a transformer ta sante ? (${promoJ7Label})`,
-          from: { name: SENDER_NAME, email: SENDER_EMAIL },
-          to: [{ email }],
-        },
-      }),
-    });
+      {
+        emailType: "sendPremiumJ7Email",
+        recipientEmail: email,
+        auditId,
+        auditType,
+        metadata: { trackingId, hasLeftReview, promoCode: promoJ7?.code, dashboardLink },
+      }
+    );
 
-    const result = await response.json() as { result: boolean };
     console.log(`[SendPulse] Audit J+7 email sent to ${email}:`, result);
     return result.result === true;
   } catch (error) {
@@ -2777,7 +2857,6 @@ export async function sendPremiumJ14Email(
   trackingId: string
 ): Promise<boolean> {
   try {
-    const token = await getAccessToken();
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
 
     const content = `
@@ -2802,24 +2881,23 @@ export async function sendPremiumJ14Email(
     const promoJ14Label = promoJ14 ? `${promoJ14.code} (-${promoJ14.amount}EUR)` : "deduction coaching";
     const emailContent = getEmailWrapper(content, `linear-gradient(135deg, ${COLORS.warning} 0%, #d97706 100%)`);
 
-    const response = await fetch("https://api.sendpulse.com/smtp/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+    const result = await sendEmailWithTracking(
+      {
+        html: encodeBase64(emailContent),
+        text: `Coaching Achzod. Ton code promo : ${promoJ14Label}. Utilise-le sur achzodcoaching.com.`,
+        subject: `Coaching Achzod - code ${promoJ14Label}`,
+        from: { name: SENDER_NAME, email: SENDER_EMAIL },
+        to: [{ email }],
       },
-      body: JSON.stringify({
-        email: {
-          html: encodeBase64(emailContent),
-          text: `Coaching Achzod. Ton code promo : ${promoJ14Label}. Utilise-le sur achzodcoaching.com.`,
-          subject: `Coaching Achzod - code ${promoJ14Label}`,
-          from: { name: SENDER_NAME, email: SENDER_EMAIL },
-          to: [{ email }],
-        },
-      }),
-    });
+      {
+        emailType: "sendPremiumJ14Email",
+        recipientEmail: email,
+        auditId,
+        auditType,
+        metadata: { trackingId, promoCode: promoJ14?.code },
+      }
+    );
 
-    const result = await response.json() as { result: boolean };
     console.log(`[SendPulse] Audit J+14 email sent to ${email}:`, result);
     return result.result === true;
   } catch (error) {
@@ -2873,7 +2951,6 @@ export async function sendPromoCodeEmail(
   promoCode: string
 ): Promise<boolean> {
   try {
-    const token = await getAccessToken();
     const config = PROMO_EMAIL_CONFIG[auditType] || PROMO_EMAIL_CONFIG.GRATUIT;
 
     const content = `
@@ -2921,24 +2998,23 @@ export async function sendPromoCodeEmail(
 
     const htmlContent = getEmailWrapper(content, config.gradient, config.title, config.subtitle);
 
-    const response = await fetch("https://api.sendpulse.com/smtp/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
+    const result = await sendEmailWithTracking(
+      {
+        html: encodeBase64(htmlContent),
+        text: `${prenom}, voici ton code promo : ${promoCode}. ${config.discount}. Utilise-le sur achzodcoaching.com/formules-coaching`,
+        subject: `${config.title} - ${promoCode}`,
+        from: { name: "Achzod Coaching", email: SENDER_EMAIL },
+        to: [{ email }],
       },
-      body: JSON.stringify({
-        email: {
-          html: encodeBase64(htmlContent),
-          text: `${prenom}, voici ton code promo : ${promoCode}. ${config.discount}. Utilise-le sur achzodcoaching.com/formules-coaching`,
-          subject: `${config.title} - ${promoCode}`,
-          from: { name: "Achzod Coaching", email: SENDER_EMAIL },
-          to: [{ email }],
-        },
-      }),
-    });
+      {
+        emailType: "sendPromoCodeEmail",
+        recipientEmail: email,
+        recipientName: prenom,
+        auditType,
+        metadata: { promoCode, discount: config.discount },
+      }
+    );
 
-    const result = await response.json() as { result: boolean };
     console.log(`[SendPulse] Promo code email sent to ${email} (${auditType}):`, result);
     return result.result === true;
   } catch (error) {
@@ -2957,7 +3033,6 @@ export async function sendAdminReviewNotification(
 ): Promise<boolean> {
   try {
     const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
-    const token = await getAccessToken();
     const ratingLabel = `${rating}/5`;
 
     const content = `
@@ -2992,27 +3067,26 @@ export async function sendAdminReviewNotification(
 
     const emailContent = getEmailWrapper(content);
 
-    const response = await fetch("https://api.sendpulse.com/smtp/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        email: {
-          html: encodeBase64(emailContent),
-          text: `Nouvel avis ${rating}/5 pour ${auditType}: "${comment.substring(0, 100)}..." - A valider dans le dashboard admin.`,
-          subject: `[ApexLabs] Nouvel avis ${ratingLabel} a valider`,
-          from: {
-            name: SENDER_NAME,
-            email: SENDER_EMAIL,
-          },
-          to: [{ email: adminEmail }],
+    const result = await sendEmailWithTracking(
+      {
+        html: encodeBase64(emailContent),
+        text: `Nouvel avis ${rating}/5 pour ${auditType}: "${comment.substring(0, 100)}..." - A valider dans le dashboard admin.`,
+        subject: `[ApexLabs] Nouvel avis ${ratingLabel} a valider`,
+        from: {
+          name: SENDER_NAME,
+          email: SENDER_EMAIL,
         },
-      }),
-    });
+        to: [{ email: adminEmail }],
+      },
+      {
+        emailType: "sendAdminReviewNotification",
+        recipientEmail: adminEmail,
+        auditId,
+        auditType,
+        metadata: { reviewerEmail, rating, commentPreview: comment.substring(0, 100) },
+      }
+    );
 
-    const result = await response.json() as { result: boolean };
     console.log(`[SendPulse] Admin review notification sent:`, result);
     return result.result === true;
   } catch (error) {
@@ -3024,8 +3098,6 @@ export async function sendAdminReviewNotification(
 // ApexLabs Welcome Email - sent when someone joins the waitlist
 export async function sendApexLabsWelcomeEmail(email: string): Promise<boolean> {
   try {
-    const token = await getAccessToken();
-
     // ApexLabs Design System - Black/Yellow
     const APEX_COLORS = {
       primary: '#FCDD00', // Yellow
@@ -3120,27 +3192,24 @@ export async function sendApexLabsWelcomeEmail(email: string): Promise<boolean> 
 </body>
 </html>`;
 
-    const response = await fetch("https://api.sendpulse.com/smtp/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        email: {
-          html: encodeBase64(htmlContent),
-          text: "Bienvenue dans l'élite ApexLabs ! Tu fais partie des premiers à avoir accès à la nouvelle génération d'optimisation humaine. Je te contacterai dès que les portes s'ouvriront. - Achzod",
-          subject: "Bienvenue dans l'élite ApexLabs",
-          from: {
-            name: "Achzod | ApexLabs",
-            email: SENDER_EMAIL,
-          },
-          to: [{ email }],
+    const result = await sendEmailWithTracking(
+      {
+        html: encodeBase64(htmlContent),
+        text: "Bienvenue dans l'élite ApexLabs ! Tu fais partie des premiers à avoir accès à la nouvelle génération d'optimisation humaine. Je te contacterai dès que les portes s'ouvriront. - Achzod",
+        subject: "Bienvenue dans l'élite ApexLabs",
+        from: {
+          name: "Achzod | ApexLabs",
+          email: SENDER_EMAIL,
         },
-      }),
-    });
+        to: [{ email }],
+      },
+      {
+        emailType: "sendApexLabsWelcomeEmail",
+        recipientEmail: email,
+        metadata: { source: "waitlist" },
+      }
+    );
 
-    const result = await response.json() as { result: boolean };
     console.log(`[SendPulse] ✅ ApexLabs welcome email sent to ${email}:`, result);
     return result.result === true;
   } catch (error) {
