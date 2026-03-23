@@ -5,7 +5,7 @@ const puppeteer = require('puppeteer');
   const page = await browser.newPage();
   await page.setViewport({ width: 1280, height: 900 });
 
-  const BASE = 'https://apexlabs.onrender.com';
+  const BASE = 'https://apexlabs.achzodcoaching.com';
   let passed = 0, failed = 0;
 
   async function test(name, fn) {

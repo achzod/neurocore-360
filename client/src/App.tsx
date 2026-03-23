@@ -126,13 +126,13 @@ function ScrollToTop() {
     // Update canonical URL dynamically
     const canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
     if (canonical) {
-      canonical.href = `https://apexlabs.onrender.com${location === "/" ? "" : location}`;
+      canonical.href = `https://apexlabs.achzodcoaching.com${location === "/" ? "" : location}`;
     }
 
     // Update og:url
     const ogUrl = document.querySelector('meta[property="og:url"]');
     if (ogUrl) {
-      ogUrl.setAttribute("content", `https://apexlabs.onrender.com${location === "/" ? "" : location}`);
+      ogUrl.setAttribute("content", `https://apexlabs.achzodcoaching.com${location === "/" ? "" : location}`);
     }
   }, [location]);
 

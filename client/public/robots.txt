@@ -4,4 +4,4 @@ Disallow: /admin
 Disallow: /api/
 Disallow: /test
 
-Sitemap: https://apexlabs.onrender.com/sitemap.xml
+Sitemap: https://apexlabs.achzodcoaching.com/sitemap.xml

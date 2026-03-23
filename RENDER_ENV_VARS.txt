@@ -70,9 +70,9 @@ VITE_ADMIN_KEY = (optionnel, pour features admin frontend)
 🌐 URLs PUBLIQUES
 ═══════════════════════════════════════════════════════════
 
-APP_URL = https://apexlabs.onrender.com
-RENDER_EXTERNAL_URL = https://apexlabs.onrender.com
-PUBLIC_BASE_URL = https://apexlabs.onrender.com
+APP_URL = https://apexlabs.achzodcoaching.com
+RENDER_EXTERNAL_URL = https://apexlabs.achzodcoaching.com
+PUBLIC_BASE_URL = https://apexlabs.achzodcoaching.com
 
 ═══════════════════════════════════════════════════════════
 🤖 AI MODELS (optionnel, a des valeurs par défaut)

@@ -20,7 +20,7 @@ Supprime tout ce qu'il y a (Ctrl+A puis Suppr), et colle :
  * Se met à jour toutes les heures automatiquement
  */
 
-const API_URL = 'https://apexlabs.onrender.com/api/export/emails-for-sheets';
+const API_URL = 'https://apexlabs.achzodcoaching.com/api/export/emails-for-sheets';
 const READ_TOKEN = 'apexlabs_sheets_readonly_2026';
 
 /**

@@ -47,7 +47,7 @@ async function buildAll() {
 
   // Generate sitemap.xml with all blog articles
   console.log("generating sitemap.xml...");
-  const BASE = "https://apexlabs.onrender.com";
+  const BASE = "https://apexlabs.achzodcoaching.com";
   const staticPages = [
     { loc: "/", priority: "1.0", changefreq: "weekly" },
     { loc: "/offers/discovery-scan", priority: "0.9", changefreq: "monthly" },

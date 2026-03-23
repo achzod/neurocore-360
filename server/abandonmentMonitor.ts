@@ -120,7 +120,7 @@ ${alerts.map(a => `  ${a}`).join('\n')}
 
 💰 Revenue 7j: ${stats.last7days.revenue}€
 
-Dashboard: https://apexlabs.onrender.com/admin`;
+Dashboard: https://apexlabs.achzodcoaching.com/admin`;
 
   try {
     await sendCTAEmail(SENDER_EMAIL, subject, message);

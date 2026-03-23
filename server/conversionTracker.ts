@@ -6,7 +6,7 @@
  * - Google Ads (Account ID: AW-706806863)
  *
  * For both sites:
- * - apexlabs.onrender.com
+ * - apexlabs.achzodcoaching.com
  * - achzodcoaching.com
  */
 
@@ -442,7 +442,7 @@ ${getRecommendations(stats24h, stats7d)}
 
 ═══════════════════════════════════════════════════════════
 
-🔗 Dashboard: https://apexlabs.onrender.com/admin/conversions-tracker
+🔗 Dashboard: https://apexlabs.achzodcoaching.com/admin/conversions-tracker
 
 📊 Ce rapport est envoyé automatiquement tous les jours à 9h00.
 `;

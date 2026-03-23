@@ -286,7 +286,7 @@ function generateReportHTML(stats: ReportStats): string {
     <div style="margin-top: 40px; padding-top: 24px; border-top: 1px solid ${
       COLORS.border
     }; text-align: center;">
-      <a href="https://apexlabs.onrender.com/admin" style="display: inline-block; background: ${
+      <a href="https://apexlabs.achzodcoaching.com/admin" style="display: inline-block; background: ${
         COLORS.primary
       }; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px;">
         Accéder au Dashboard Admin
@@ -497,7 +497,7 @@ REVENUS:
 - 24h: ${(stats.revenue.last24hCents / 100).toFixed(2)}€
 
 ---
-Dashboard admin: https://apexlabs.onrender.com/admin
+Dashboard admin: https://apexlabs.achzodcoaching.com/admin
 `;
 }
 

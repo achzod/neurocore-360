@@ -1,7 +1,7 @@
 # 🚀 NEWSLETTER PROMO - LANCEMENT APEXLABS
 
 **Date de lancement :** 17 mars 2026
-**Plateforme :** https://apexlabs.onrender.com
+**Plateforme :** https://apexlabs.achzodcoaching.com
 
 ---
 
@@ -121,7 +121,7 @@ Valable jusqu'au **31 mars 2026**
 ### 🚀 Prêt à optimiser ta performance ?
 
 **Étape 1 :** Commence par le Discovery Scan GRATUIT
-👉 https://apexlabs.onrender.com/offers/discovery-scan
+👉 https://apexlabs.achzodcoaching.com/offers/discovery-scan
 
 **Étape 2 :** Identifie tes blocages en 10 minutes
 
@@ -146,19 +146,19 @@ Valable jusqu'au **31 mars 2026**
 
 - **Email :** coaching@achzodcoaching.com
 - **Site principal :** https://achzodcoaching.com
-- **APEXLABS :** https://apexlabs.onrender.com
+- **APEXLABS :** https://apexlabs.achzodcoaching.com
 - **Instagram :** @achzod
 
 ---
 
 ## 🔗 LIENS UTILES
 
-- **Discovery Scan (Gratuit) :** https://apexlabs.onrender.com/offers/discovery-scan
-- **Anabolic Bioscan (59€ → 41€) :** https://apexlabs.onrender.com/offers/anabolic-bioscan
-- **Blood Analysis (47€ → 33€) :** https://apexlabs.onrender.com/offers/blood-analysis
-- **Ultimate Scan (97€ → 68€) :** https://apexlabs.onrender.com/offers/ultimate-scan
-- **Blog :** https://apexlabs.onrender.com/blog
-- **FAQ :** https://apexlabs.onrender.com/faq
+- **Discovery Scan (Gratuit) :** https://apexlabs.achzodcoaching.com/offers/discovery-scan
+- **Anabolic Bioscan (59€ → 41€) :** https://apexlabs.achzodcoaching.com/offers/anabolic-bioscan
+- **Blood Analysis (47€ → 33€) :** https://apexlabs.achzodcoaching.com/offers/blood-analysis
+- **Ultimate Scan (97€ → 68€) :** https://apexlabs.achzodcoaching.com/offers/ultimate-scan
+- **Blog :** https://apexlabs.achzodcoaching.com/blog
+- **FAQ :** https://apexlabs.achzodcoaching.com/faq
 
 ---
 
@@ -192,7 +192,7 @@ Valable jusqu'au **31 mars 2026**
 
 **🎯 PRÊT À COMMENCER ?**
 
-👉 **https://apexlabs.onrender.com**
+👉 **https://apexlabs.achzodcoaching.com**
 
 Code promo : **RETOUR30** (-30% jusqu'au 31 mars)
 

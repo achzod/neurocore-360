@@ -2613,7 +2613,7 @@ export async function registerRoutes(
     ${sectionsHtml}
 
     <footer style="text-align: center; padding: 2rem 0; margin-top: 2rem; border-top: 1px solid #222; color: #555; font-size: 0.8rem;">
-      <p>APEXLABS by Achzod &mdash; apexlabs.onrender.com</p>
+      <p>APEXLABS by Achzod &mdash; apexlabs.achzodcoaching.com</p>
     </footer>
   </div>
 </body>

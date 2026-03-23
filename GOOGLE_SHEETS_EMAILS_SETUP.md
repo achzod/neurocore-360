@@ -68,7 +68,7 @@ Colonnes existantes (tracking audits)
  * Fetch les emails depuis l'API et met à jour le sheet automatiquement
  */
 
-const API_BASE_URL = 'https://apexlabs.onrender.com';
+const API_BASE_URL = 'https://apexlabs.achzodcoaching.com';
 const ADMIN_AUTH_TOKEN = 'YOUR_ADMIN_SESSION_TOKEN_HERE'; // À remplacer
 
 /**
@@ -207,7 +207,7 @@ function onOpen() {
 
 1. Dans le script, remplacer `YOUR_ADMIN_SESSION_TOKEN_HERE` par ton token admin
 2. Pour obtenir le token:
-   - Aller sur https://apexlabs.onrender.com/admin
+   - Aller sur https://apexlabs.achzodcoaching.com/admin
    - DevTools → Application → Cookies
    - Copier la valeur de `session_token`
 
@@ -322,7 +322,7 @@ function onOpen() {
 
 ### Données manquantes
 - Vérifier l'endpoint API retourne bien les données
-- Test manuel: `curl -H "Cookie: session_token=..." https://apexlabs.onrender.com/api/admin/email-trackings/export/sheets`
+- Test manuel: `curl -H "Cookie: session_token=..." https://apexlabs.achzodcoaching.com/api/admin/email-trackings/export/sheets`
 
 ---
 

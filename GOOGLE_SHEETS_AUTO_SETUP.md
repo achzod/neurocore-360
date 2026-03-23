@@ -19,7 +19,7 @@ Sélectionne TOUT le code existant (Ctrl+A), supprime-le, et colle ce code :
  * TU CLIQUES JUSTE SUR "INSTALLER" DANS LE MENU ET C'EST FINI
  */
 
-const API_BASE_URL = 'https://apexlabs.onrender.com';
+const API_BASE_URL = 'https://apexlabs.achzodcoaching.com';
 
 /**
  * MENU AUTOMATIQUE qui apparaît au chargement du sheet
@@ -43,7 +43,7 @@ function installAutoUpdate() {
   // 1. Demander le token admin (UNE SEULE FOIS)
   const result = ui.prompt(
     '🔑 Token Admin requis',
-    '1. Va sur https://apexlabs.onrender.com/admin\n' +
+    '1. Va sur https://apexlabs.achzodcoaching.com/admin\n' +
     '2. Ouvre DevTools (F12) → Application → Cookies\n' +
     '3. Copie la valeur de "session_token"\n' +
     '4. Colle-la ci-dessous:\n',
@@ -332,10 +332,10 @@ Clique dessus → **✅ INSTALLER (1 clic = tout automatique)**
 Une fenêtre s'ouvre qui te demande ton token admin.
 
 **Comment avoir ton token (30 secondes):**
-1. Ouvre https://apexlabs.onrender.com/admin dans un nouvel onglet
+1. Ouvre https://apexlabs.achzodcoaching.com/admin dans un nouvel onglet
 2. Fais clic droit → **Inspecter** (ou F12)
 3. En haut, clique sur **Application** (ou **Storage**)
-4. Dans la barre de gauche : **Cookies** → **https://apexlabs.onrender.com**
+4. Dans la barre de gauche : **Cookies** → **https://apexlabs.achzodcoaching.com**
 5. Clique sur la ligne **session_token**
 6. **Copie** la valeur (c'est un long texte genre a1b2c3d4...)
 7. **Colle** dans la fenêtre du Google Sheet

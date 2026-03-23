@@ -16,8 +16,8 @@
 ### Variables dynamiques à injecter:
 - `{firstName}` - Prénom du user
 - `{discoveryLink}` - Lien vers le rapport Discovery
-- `{ultimateLink}` - https://apexlabs.onrender.com/offers/ultimate-scan
-- `{anabolicLink}` - https://apexlabs.onrender.com/offers/anabolic-bioscan
+- `{ultimateLink}` - https://apexlabs.achzodcoaching.com/offers/ultimate-scan
+- `{anabolicLink}` - https://apexlabs.achzodcoaching.com/offers/anabolic-bioscan
 - `{promoCode}` - DISCOVERY20 (pour J+7)
 
 ---

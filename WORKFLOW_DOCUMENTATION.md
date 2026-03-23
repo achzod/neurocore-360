@@ -411,7 +411,7 @@ CREATE INDEX idx_monitoring_logs_audit_id ON monitoring_logs(audit_id);
 
 ## Dashboard Admin
 
-**URL**: https://apexlabs.onrender.com/admin
+**URL**: https://apexlabs.achzodcoaching.com/admin
 **Auth**: Clé admin dans sessionStorage
 
 **Fonctionnalités:**
@@ -432,16 +432,16 @@ CREATE INDEX idx_monitoring_logs_audit_id ON monitoring_logs(audit_id);
 ```bash
 # 1. Récupérer l'audit
 curl -H "x-admin-key: <SECRET>" \
-  "https://apexlabs.onrender.com/api/admin/audits?limit=1000" \
+  "https://apexlabs.achzodcoaching.com/api/admin/audits?limit=1000" \
   | jq '.audits[] | select(.id == "AUDIT_ID")'
 
 # 2. Voir détails de validation
 curl -H "x-admin-key: <SECRET>" \
-  "https://apexlabs.onrender.com/api/admin/audits/AUDIT_ID/validation-details"
+  "https://apexlabs.achzodcoaching.com/api/admin/audits/AUDIT_ID/validation-details"
 
 # 3. Voir historique monitoring
 curl -H "x-admin-key: <SECRET>" \
-  "https://apexlabs.onrender.com/api/admin/audits/AUDIT_ID/monitoring-history"
+  "https://apexlabs.achzodcoaching.com/api/admin/audits/AUDIT_ID/monitoring-history"
 ```
 
 ### Forcer la régénération
@@ -451,7 +451,7 @@ curl -H "x-admin-key: <SECRET>" \
 curl -X POST -H "x-admin-key: <SECRET>" \
   -H "Content-Type: application/json" \
   -d '{"auditIds": ["AUDIT_ID"]}' \
-  "https://apexlabs.onrender.com/api/admin/force-regenerate-failed"
+  "https://apexlabs.achzodcoaching.com/api/admin/force-regenerate-failed"
 ```
 
 ### Logs en temps réel

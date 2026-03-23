@@ -1330,7 +1330,7 @@ export async function generateExportHTMLFromTxt(
           Connecte-toi a ton dashboard pour laisser ton avis
         </p>
         <p style="color: var(--text-muted); font-size: 0.85rem; margin: 8px 0 0;">
-          apexlabs.onrender.com/dashboard
+          apexlabs.achzodcoaching.com/dashboard
         </p>
       </div>
     </div>
@@ -1683,7 +1683,7 @@ export async function generateExportHTMLFromTxt(
         let baseUrl = window.location.origin;
         if (baseUrl === 'null' || baseUrl.startsWith('file://')) {
           // Si fichier ouvert localement, utiliser l'URL du serveur
-          baseUrl = 'https://apexlabs.onrender.com';
+          baseUrl = 'https://apexlabs.achzodcoaching.com';
         }
         
         const formData = {

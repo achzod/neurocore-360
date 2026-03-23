@@ -395,7 +395,7 @@ if (result.result) {
 **Via API:**
 ```bash
 curl -H "Cookie: session_token=..." \
-  https://apexlabs.onrender.com/api/admin/email-trackings?limit=50
+  https://apexlabs.achzodcoaching.com/api/admin/email-trackings?limit=50
 ```
 
 **Via Google Sheets:**

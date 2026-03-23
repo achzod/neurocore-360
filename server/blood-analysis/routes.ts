@@ -1166,7 +1166,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         return;
       }
 
-      const baseUrl = process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || "https://apexlabs.onrender.com";
+      const baseUrl = process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || "https://apexlabs.achzodcoaching.com";
       const sent = await sendBloodClientDeliveryEmail(
         report.email,
         report.id,

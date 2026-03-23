@@ -11,7 +11,7 @@ https://docs.google.com/spreadsheets/d/1DihvbVfke7wFtmHN7N2Q9gEicIN9bnzGTZEqhXXw
 
 ```bash
 curl -H "x-admin-key: e9dadaff6333c1312109117c9eb747503e41079c863997ad6ff0d0dad5a2803e" \
-  "https://apexlabs.onrender.com/api/admin/export/tracking-csv" \
+  "https://apexlabs.achzodcoaching.com/api/admin/export/tracking-csv" \
   -o tracking.csv
 ```
 
@@ -41,7 +41,7 @@ curl -H "x-admin-key: e9dadaff6333c1312109117c9eb747503e41079c863997ad6ff0d0dad5
  * Mise à jour toutes les heures
  */
 
-const API_URL = 'https://apexlabs.onrender.com/api/admin/export/tracking-json';
+const API_URL = 'https://apexlabs.achzodcoaching.com/api/admin/export/tracking-json';
 const ADMIN_KEY = 'e9dadaff6333c1312109117c9eb747503e41079c863997ad6ff0d0dad5a2803e';
 
 /**

@@ -8,7 +8,7 @@ import sys
 
 # Configuration
 SHEET_ID = "1DihvbVfke7wFtmHN7N2Q9gEicIN9bnzGTZEqhXXwQRQ"
-API_URL = "https://apexlabs.onrender.com/api/admin/export/tracking-json"
+API_URL = "https://apexlabs.achzodcoaching.com/api/admin/export/tracking-json"
 ADMIN_KEY = "e9dadaff6333c1312109117c9eb747503e41079c863997ad6ff0d0dad5a2803e"
 
 def fetch_data():

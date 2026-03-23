@@ -47,7 +47,7 @@ async function pickRichestPdf() {
 
 async function main() {
   const to = String(process.env.BLOOD_REPORT_TO || "achkou@gmail.com").trim();
-  const baseUrl = String(process.env.PUBLIC_BASE_URL || "https://apexlabs.onrender.com").trim();
+  const baseUrl = String(process.env.PUBLIC_BASE_URL || "https://apexlabs.achzodcoaching.com").trim();
   const reportId = `richest-${new Date().toISOString().replace(/[:.]/g, "-")}`;
   const orderRef = `manual-richest-${Date.now()}`;
 

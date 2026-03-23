@@ -108,7 +108,7 @@ Ces analyses sont beaucoup plus précises et complètes que le Discovery Scan gr
 
 💡 Bonus : Le montant de ton analyse est 100% déduit si tu prends un coaching avec moi (sauf formule Starter).
 
-Clique ici pour reprendre où tu en étais : https://apexlabs.onrender.com/audit-complet/questionnaire
+Clique ici pour reprendre où tu en étais : https://apexlabs.achzodcoaching.com/audit-complet/questionnaire
 
 À très vite,
 Achzod`;
@@ -132,7 +132,7 @@ Achzod`;
       <p>💡 <strong>Bonus</strong> : Le montant de ton analyse est <strong>100% déduit</strong> si tu prends un coaching avec moi (sauf formule Starter).</p>
 
       <div style="text-align: center; margin: 30px 0;">
-        <a href="https://apexlabs.onrender.com/audit-complet/questionnaire"
+        <a href="https://apexlabs.achzodcoaching.com/audit-complet/questionnaire"
            style="background: #0066cc; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
           Reprendre mon questionnaire
         </a>
