@@ -75,10 +75,12 @@ const AuditPremium = lazy(() => import("@/pages/offers/AuditPremium"));
 const BloodAnalysisOffer = lazy(() => import("@/pages/offers/BloodAnalysisOffer"));
 const ProPanel = lazy(() => import("@/pages/offers/ProPanel"));
 const FormCheck = lazy(() => import("@/pages/offers/FormCheck"));
+const DiscoveryScanAds = lazy(() => import("@/pages/DiscoveryScanAds"));
 
 const PAGE_TITLES: Record<string, string> = {
   "/": "APEXLABS by Achzod | Optimisation Humaine & Bio-Data",
   "/offers/discovery-scan": "Discovery Scan Gratuit | APEXLABS",
+  "/ads/discovery-scan": "Discovery Scan - Questionnaire Gratuit | APEXLABS",
   "/offers/anabolic-bioscan": "Anabolic Bioscan — Audit Complet | APEXLABS",
   "/offers/blood-analysis": "Blood Analysis — Analyse Sanguine | APEXLABS",
   "/offers/ultimate-scan": "Ultimate Scan — Le Plus Complet | APEXLABS",
@@ -158,6 +160,9 @@ function Router() {
         <Route path="/offers/blood-analysis" component={BloodAnalysisOffer} />
         <Route path="/offers/ultimate-scan" component={ProPanel} />
         <Route path="/offers/formcheck" component={FormCheck} />
+
+        {/* Google Ads Landing Page - Compliant */}
+        <Route path="/ads/discovery-scan" component={DiscoveryScanAds} />
 
         {/* Legacy routes - redirects */}
         <Route path="/offers/audit-gratuit" component={AuditGratuit} />
