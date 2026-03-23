@@ -4261,6 +4261,116 @@ export async function registerRoutes(
     }
   });
 
+  // Admin - Analyse Discovery scans pour conversion
+  app.get("/api/admin/discovery/analyze-conversions", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      console.log("[Admin] Analyzing Discovery scans for conversions...");
+
+      // Récupérer tous les audits GRATUIT depuis le 17 mars
+      const startDate = new Date("2026-03-17");
+      const { db } = await import("./db");
+      const { audits: auditsTable } = await import("../shared/drizzle-schema");
+      const { eq, gte, and } = await import("drizzle-orm");
+
+      const discoveryAudits = await db
+        .select()
+        .from(auditsTable)
+        .where(
+          and(
+            eq(auditsTable.type, "GRATUIT"),
+            gte(auditsTable.createdAt, startDate)
+          )
+        );
+
+      console.log(`[Admin] Found ${discoveryAudits.length} Discovery scans since 17/03`);
+
+      const stats = {
+        total: discoveryAudits.length,
+        sent: 0,
+        scheduled: 0,
+        failed: 0,
+        needsJ2Relance: [] as any[],
+        needsJ7Relance: [] as any[],
+      };
+
+      const now = new Date();
+
+      for (const audit of discoveryAudits) {
+        // Status du rapport
+        if (audit.reportDeliveryStatus === "SENT") stats.sent++;
+        else if (audit.reportDeliveryStatus === "SCHEDULED") stats.scheduled++;
+        else if (audit.reportDeliveryStatus === "FAILED") stats.failed++;
+
+        // Vérifier emails de relance déjà envoyés (nouveau système)
+        const { emailTracking: emailTrackingTable } = await import("../shared/drizzle-schema");
+        const emailTracking = await db
+          .select()
+          .from(emailTrackingTable)
+          .where(eq(emailTrackingTable.auditId, audit.id));
+
+        const hasJ2Email = emailTracking.some(t => t.emailType === "sendGratuitUpsellEmail");
+        const hasJ7Email = emailTracking.some(t => t.emailType === "sendPremiumJ7Email");
+
+        const reportSentAt = (audit as any).reportSentAt;
+        if (reportSentAt) {
+          const sentDate = new Date(reportSentAt);
+          const daysSinceSent = Math.floor((now.getTime() - sentDate.getTime()) / (1000 * 60 * 60 * 24));
+
+          // J+2: Upsell Discovery → Ultimate/Anabolic
+          if (daysSinceSent >= 2 && daysSinceSent < 30 && !hasJ2Email) {
+            stats.needsJ2Relance.push({
+              id: audit.id,
+              email: audit.email,
+              daysSinceSent,
+              createdAt: audit.createdAt,
+              reportSentAt,
+            });
+          }
+
+          // J+7: Dernière chance (normalement pour Premium/Elite, mais on peut l'utiliser pour Discovery aussi)
+          if (daysSinceSent >= 7 && daysSinceSent < 30 && !hasJ7Email && !hasJ2Email) {
+            stats.needsJ7Relance.push({
+              id: audit.id,
+              email: audit.email,
+              daysSinceSent,
+              createdAt: audit.createdAt,
+              reportSentAt,
+            });
+          }
+        }
+      }
+
+      const totalOpportunities = stats.needsJ2Relance.length + stats.needsJ7Relance.length;
+      const estimatedConversionRate = 0.05; // 5% conservateur
+      const avgOrderValue = 69; // Moyenne Anabolic/Ultimate
+      const estimatedRevenue = totalOpportunities * estimatedConversionRate * avgOrderValue;
+
+      res.json({
+        success: true,
+        stats: {
+          total: stats.total,
+          sent: stats.sent,
+          scheduled: stats.scheduled,
+          failed: stats.failed,
+          needsJ2Relance: stats.needsJ2Relance.length,
+          needsJ7Relance: stats.needsJ7Relance.length,
+          totalOpportunities,
+          estimatedConversionRate: (estimatedConversionRate * 100).toFixed(1) + "%",
+          avgOrderValue: avgOrderValue + "€",
+          estimatedRevenue: Math.round(estimatedRevenue) + "€",
+        },
+        relanceLists: {
+          j2: stats.needsJ2Relance,
+          j7: stats.needsJ7Relance,
+        },
+      });
+    } catch (error) {
+      console.error("[Admin Discovery Analysis] Error:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
   // Validate promo code (Public - for checkout)
   app.post("/api/promo-codes/validate", async (req, res) => {
     try {
