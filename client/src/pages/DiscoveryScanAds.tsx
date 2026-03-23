@@ -76,43 +76,47 @@ export default function DiscoveryScanAds() {
 
   return (
     <div className="min-h-screen bg-[#050505]">
-      {/* Simplified Navbar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#050505]/95 backdrop-blur-sm border-b border-white/10">
+      {/* Navbar - APEXLABS Design System */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#000000] border-b border-[#333333]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            {/* Logo */}
+            {/* Logo - Format APEXLABS */}
             <Link href="/">
-              <a className="flex items-center gap-2">
-                <span className="text-xl font-bold text-white">APEXLABS</span>
-                <span className="text-sm text-white/60">by Achzod</span>
+              <a className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex flex-col leading-none">
+                  <span className="text-xl font-black tracking-tighter text-white">
+                    APEX<span className="text-[#FCDD00]">LABS</span>
+                  </span>
+                  <span className="font-mono text-[10px] text-[#525252] tracking-widest uppercase">by Achzod</span>
+                </div>
               </a>
             </Link>
 
-            {/* Nav Links */}
-            <div className="hidden md:flex items-center gap-8">
-              <a href="#hero" className="text-white/80 hover:text-white transition-colors">
+            {/* Nav Links - Desktop */}
+            <div className="hidden md:flex items-center gap-6">
+              <a href="#hero" className="text-xs font-bold uppercase text-[#9CA3AF] transition-colors hover:text-white">
                 Discovery Scan
               </a>
-              <a href="#offres" className="text-white/80 hover:text-white transition-colors">
-                Nos Offres
+              <a href="#offres" className="text-xs font-bold uppercase text-[#9CA3AF] transition-colors hover:text-white">
+                Mes Offres
               </a>
               <Link href="/blog">
-                <a className="text-white/80 hover:text-white transition-colors">Blog</a>
+                <a className="text-xs font-bold uppercase text-[#9CA3AF] transition-colors hover:text-white">Blog</a>
               </Link>
               <a
                 href="https://www.achzodcoaching.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-white/80 hover:text-white transition-colors"
+                className="text-xs font-bold uppercase text-[#9CA3AF] transition-colors hover:text-white"
               >
-                Accompagnement
+                Coaching
               </a>
             </div>
 
             {/* CTA Button */}
             <Link href="/questionnaire">
-              <a className="bg-[#FCDD00] text-black font-semibold px-6 py-2.5 rounded-lg hover:bg-[#FCDD00]/90 transition-all">
-                COMMENCER
+              <a className="px-5 py-2.5 text-xs font-black uppercase tracking-wide bg-[#FCDD00] text-black rounded-sm transition-all duration-300 hover:bg-[#FCDD00]/90">
+                Commencer
               </a>
             </Link>
           </div>
@@ -290,7 +294,7 @@ export default function DiscoveryScanAds() {
               Envie d'aller plus loin ?
             </h2>
             <p className="text-xl text-white/60 max-w-3xl mx-auto">
-              Le questionnaire gratuit te donne ton profil. Nos offres premium te donnent un plan d'action complet et personnalisé.
+              Le questionnaire gratuit te donne ton profil. Mes offres premium te donnent un plan d'action complet et personnalisé.
             </p>
           </div>
 
