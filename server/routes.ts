@@ -16,6 +16,7 @@ import {
   sendGratuitUpsellEmail,
   sendPremiumJ7Email,
   sendPremiumJ14Email,
+  sendDiscoveryJ14CoachingEmail,
   sendPromoCodeEmail,
   sendAdminReviewNotification,
   sendCTAEmail,
@@ -4442,6 +4443,23 @@ export async function registerRoutes(
             }
           }
 
+          // GRATUIT audits: J+14 Coaching email (if no conversion)
+          if (audit.type === "GRATUIT" && daysSinceSent >= 14 && daysSinceSent < 30) {
+            if (!trackingTypes.includes("sendDiscoveryJ14CoachingEmail")) {
+              // Check if they've converted (purchased Ultimate/Anabolic)
+              const hasConverted = await storage.hasUserPurchased(audit.email);
+
+              if (!hasConverted) {
+                const sent = await sendDiscoveryJ14CoachingEmail(audit.email, audit.id, baseUrl, "auto-sequence");
+                if (sent) {
+                  results.gratuitJ14 = (results.gratuitJ14 || 0) + 1;
+                } else {
+                  results.errors++;
+                }
+              }
+            }
+          }
+
           // PREMIUM/ELITE audits: J+7 and J+14 sequences
           if (audit.type === "PREMIUM" || audit.type === "ELITE") {
             // J+7: Send if 7+ days and no J+7 email sent yet
@@ -4609,6 +4627,9 @@ export async function registerRoutes(
           break;
         case "PREMIUM_J14":
           sent = await sendPremiumJ14Email(audit.email, audit.id, audit.type, baseUrl, tracking.id);
+          break;
+        case "DISCOVERY_J14_COACHING":
+          sent = await sendDiscoveryJ14CoachingEmail(audit.email, audit.id, baseUrl, tracking.id);
           break;
         default:
           res.status(400).json({ success: false, error: "Type d'email invalide" });
