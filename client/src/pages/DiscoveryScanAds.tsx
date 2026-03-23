@@ -19,22 +19,57 @@ export default function DiscoveryScanAds() {
     // Set page title
     document.title = "Discovery Scan - Questionnaire Gratuit | APEXLABS";
 
+    // CRITICAL: Override meta tags with Google Ads compliant content
+    // Description - NO medical/hormonal terms
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', 'Questionnaire gratuit en 5 minutes. Découvre ton profil performance et reçois un rapport personnalisé. Par APEXLABS.');
+    }
+
+    // Keywords - NO medical/hormonal terms
+    const metaKeywords = document.querySelector('meta[name="keywords"]');
+    if (metaKeywords) {
+      metaKeywords.setAttribute('content', 'questionnaire gratuit, profil performance, rapport personnalisé, coaching, optimisation, apexlabs');
+    }
+
+    // Open Graph description - NO medical/hormonal terms
+    const ogDescription = document.querySelector('meta[property="og:description"]');
+    if (ogDescription) {
+      ogDescription.setAttribute('content', 'Questionnaire gratuit. Découvre ton profil performance et reçois un rapport personnalisé en 24h.');
+    }
+
     // Add noindex meta tag
     const metaRobots = document.querySelector('meta[name="robots"]');
     if (metaRobots) {
-      metaRobots.setAttribute('content', 'noindex');
+      metaRobots.setAttribute('content', 'noindex, nofollow');
     } else {
       const meta = document.createElement('meta');
       meta.name = 'robots';
-      meta.content = 'noindex';
+      meta.content = 'noindex, nofollow';
       document.head.appendChild(meta);
     }
 
+    // Store original values for cleanup
+    const originalDescription = metaDescription?.getAttribute('content');
+    const originalKeywords = metaKeywords?.getAttribute('content');
+    const originalOgDescription = ogDescription?.getAttribute('content');
+
     return () => {
-      // Remove noindex on unmount
+      // Restore original meta tags on unmount
+      if (metaDescription && originalDescription) {
+        metaDescription.setAttribute('content', originalDescription);
+      }
+      if (metaKeywords && originalKeywords) {
+        metaKeywords.setAttribute('content', originalKeywords);
+      }
+      if (ogDescription && originalOgDescription) {
+        ogDescription.setAttribute('content', originalOgDescription);
+      }
+
+      // Remove noindex
       const metaToRemove = document.querySelector('meta[name="robots"]');
-      if (metaToRemove && metaToRemove.getAttribute('content') === 'noindex') {
-        metaToRemove.remove();
+      if (metaToRemove && metaToRemove.getAttribute('content') === 'noindex, nofollow') {
+        metaToRemove.setAttribute('content', 'index, follow');
       }
     };
   }, []);
