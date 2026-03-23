@@ -4193,6 +4193,57 @@ export async function registerRoutes(
     }
   });
 
+  // PUBLIC endpoint for Google Sheets (read-only, avec token fixe)
+  // Ce endpoint permet au Apps Script de récupérer les emails automatiquement
+  app.get("/api/export/emails-for-sheets", async (req, res) => {
+    try {
+      // Token fixe pour Google Sheets (read-only access)
+      const SHEETS_READ_TOKEN = process.env.GOOGLE_SHEETS_READ_TOKEN || "apexlabs_sheets_readonly_2026";
+      const providedToken = req.query.token || req.headers['x-sheets-token'];
+
+      if (providedToken !== SHEETS_READ_TOKEN) {
+        return res.status(401).json({ success: false, error: "Invalid token" });
+      }
+
+      const { getRecentEmails, getEmailTrackingStats } = await import("./emailTracking");
+
+      // Get all emails (no limit)
+      const emails = await getRecentEmails(1000);
+      const stats = await getEmailTrackingStats();
+
+      res.json({
+        success: true,
+        emails: emails.map(email => ({
+          id: email.id,
+          emailType: email.emailType,
+          recipientEmail: email.recipientEmail,
+          recipientName: email.recipientName,
+          auditId: email.auditId,
+          auditType: email.auditType,
+          subject: email.subject,
+          sendpulseStatus: email.sendpulseStatus,
+          sentAt: email.sentAt,
+          opened: email.opened,
+          clicked: email.clicked,
+          converted: email.converted,
+          conversionType: email.conversionType,
+        })),
+        stats: {
+          totalSent: stats.totalSent,
+          successRate: Math.round(stats.successRate * 10) / 10,
+          openRate: Math.round(stats.openRate * 10) / 10,
+          clickRate: Math.round(stats.clickRate * 10) / 10,
+          conversionRate: Math.round(stats.conversionRate * 10) / 10,
+          byType: stats.byType,
+        },
+        exportedAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("[Sheets Export] Error:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
   // Admin combined tracking (audits + emails)
   app.get("/api/admin/tracking/combined-stats", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
