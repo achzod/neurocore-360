@@ -7,6 +7,15 @@ import { ULTRAHUMAN_THEMES } from '@/components/ultrahuman/themes';
 import { Theme, ReportData } from '@/components/ultrahuman/types';
 import { Button } from '@/components/ui/button';
 import {
+  UpgradeHero,
+  ComparisonTable,
+  SocialProofBlock,
+  UpgradeTeaser,
+  StickyCTA,
+  FinalCTA
+} from '@/components/UpgradeComponents';
+import { ExitIntentPopup } from '@/components/ExitIntentPopup';
+import {
   Menu,
   ArrowUp,
   ArrowDown,
@@ -79,6 +88,7 @@ const DiscoveryScanReport: React.FC = () => {
   const [regenAttempts, setRegenAttempts] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [showStickyCTA, setShowStickyCTA] = useState(false);
   const mainContentRef = useRef<HTMLDivElement>(null);
   const regenTimer = useRef<number | null>(null);
   const displayName = reportData ? formatName(reportData.clientName) : "Profil";
@@ -224,6 +234,9 @@ const DiscoveryScanReport: React.FC = () => {
       const totalHeight = container.scrollHeight - windowHeight;
       const progress = totalHeight > 0 ? (totalScroll / totalHeight) * 100 : 0;
       setScrollProgress(progress);
+
+      // Show sticky CTA after scrolling 30% of the page
+      setShowStickyCTA(progress > 30);
 
       // Scroll spy
       const headings = reportData.sections.map(s => document.getElementById(s.id));
@@ -574,55 +587,111 @@ const DiscoveryScanReport: React.FC = () => {
             </section>
           </div>
 
+          {/* Upgrade Hero - CTA top */}
+          <UpgradeHero theme={currentTheme} />
+
           {/* Content Sections */}
           <div className="space-y-0 relative">
             <div className="absolute left-0 lg:left-[240px] top-0 bottom-0 w-[1px] hidden lg:block" style={{ backgroundColor: 'var(--color-border)' }}></div>
 
             {reportData.sections.map((section, idx) => (
-              <section key={section.id} id={section.id} className="scroll-mt-32 group relative pb-24 lg:pb-32">
-                <div className="flex flex-col lg:flex-row gap-8 lg:gap-24">
-                  {/* Section Header */}
-                  <div className="lg:w-[240px] flex-shrink-0">
-                    <div className="sticky top-24 pr-8 lg:text-right">
-                      <span className="font-mono text-4xl lg:text-5xl font-bold group-hover:opacity-50 transition-colors block mb-2 opacity-20" style={{ color: 'var(--color-border)' }}>
-                        {idx + 1 < 10 ? `0${idx + 1}` : idx + 1}
-                      </span>
-                      <h2 className="text-xl font-bold tracking-tight mb-2 leading-tight" style={{ color: 'var(--color-text)' }}>
-                        {section.title}
-                      </h2>
-                      {section.subtitle && (
-                        <p className="text-xs font-mono uppercase tracking-widest mb-4" style={{ color: currentTheme.colors.primary }}>
-                          {section.subtitle}
-                        </p>
-                      )}
-                      {section.chips && section.chips.length > 0 && (
-                        <div className="flex flex-wrap lg:justify-end gap-2 mt-4">
-                          {section.chips.map(chip => (
-                            <span key={chip} className="px-2 py-1 text-[9px] font-mono uppercase rounded" style={{ border: `1px solid var(--color-border)`, color: 'var(--color-text-muted)' }}>
-                              {chip}
-                            </span>
-                          ))}
-                        </div>
-                      )}
+              <React.Fragment key={section.id}>
+                <section id={section.id} className="scroll-mt-32 group relative pb-24 lg:pb-32">
+                  <div className="flex flex-col lg:flex-row gap-8 lg:gap-24">
+                    {/* Section Header */}
+                    <div className="lg:w-[240px] flex-shrink-0">
+                      <div className="sticky top-24 pr-8 lg:text-right">
+                        <span className="font-mono text-4xl lg:text-5xl font-bold group-hover:opacity-50 transition-colors block mb-2 opacity-20" style={{ color: 'var(--color-border)' }}>
+                          {idx + 1 < 10 ? `0${idx + 1}` : idx + 1}
+                        </span>
+                        <h2 className="text-xl font-bold tracking-tight mb-2 leading-tight" style={{ color: 'var(--color-text)' }}>
+                          {section.title}
+                        </h2>
+                        {section.subtitle && (
+                          <p className="text-xs font-mono uppercase tracking-widest mb-4" style={{ color: currentTheme.colors.primary }}>
+                            {section.subtitle}
+                          </p>
+                        )}
+                        {section.chips && section.chips.length > 0 && (
+                          <div className="flex flex-wrap lg:justify-end gap-2 mt-4">
+                            {section.chips.map(chip => (
+                              <span key={chip} className="px-2 py-1 text-[9px] font-mono uppercase rounded" style={{ border: `1px solid var(--color-border)`, color: 'var(--color-text-muted)' }}>
+                                {chip}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Section Content */}
+                    <div className="flex-1 min-w-0">
+                      <div
+                        className={`prose prose-lg max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''} prose-p:text-[var(--color-text)] prose-p:leading-relaxed prose-headings:text-[var(--color-text)] prose-strong:text-[var(--color-text)] prose-ul:text-[var(--color-text-muted)]`}
+                        style={{
+                          color: currentTheme.colors.text,
+                          '--tw-prose-body': currentTheme.colors.text,
+                          '--tw-prose-headings': currentTheme.colors.text,
+                          '--tw-prose-strong': currentTheme.colors.text,
+                          '--tw-prose-bullets': currentTheme.colors.primary,
+                        } as React.CSSProperties}
+                        dangerouslySetInnerHTML={{ __html: stripCitationHtml(section.content) }}
+                      />
                     </div>
                   </div>
+                </section>
 
-                  {/* Section Content */}
-                  <div className="flex-1 min-w-0">
-                    <div
-                      className={`prose prose-lg max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''} prose-p:text-[var(--color-text)] prose-p:leading-relaxed prose-headings:text-[var(--color-text)] prose-strong:text-[var(--color-text)] prose-ul:text-[var(--color-text-muted)]`}
-                      style={{
-                        color: currentTheme.colors.text,
-                        '--tw-prose-body': currentTheme.colors.text,
-                        '--tw-prose-headings': currentTheme.colors.text,
-                        '--tw-prose-strong': currentTheme.colors.text,
-                        '--tw-prose-bullets': currentTheme.colors.primary,
-                      } as React.CSSProperties}
-                      dangerouslySetInnerHTML={{ __html: stripCitationHtml(section.content) }}
-                    />
-                  </div>
-                </div>
-              </section>
+                {/* Insert upgrade teasers and social proof after specific sections */}
+                {idx === 1 && (
+                  <SocialProofBlock
+                    theme={currentTheme}
+                    context="CLIENT ULTIMATE SCAN"
+                    quote="J'ai fait des études de biologie et je ne peux que vous dire que ces analyses sont juste impressionnantes, la qualité de ces analyses et sa connaissance sur la biologie et le métabolisme c'est dingue. Je recommande fortement, pour moi le numéro un et loin devant les autres."
+                    author="Magroud W., étudiant en biologie"
+                  />
+                )}
+
+                {idx === 2 && (
+                  <UpgradeTeaser
+                    theme={currentTheme}
+                    title="Tu veux aller 10x plus loin ?"
+                    description="Ton Discovery a détecté tes blocages. L'Ultimate Scan te donne les protocoles EXACTS + analyse en temps réel."
+                    features={[
+                      'Analyse posturale 3D (upload 3 photos)',
+                      'Intégration Apple Watch / Garmin (HRV, récupération, sommeil)',
+                      'Protocoles Matin Anti-Cortisol + Soir Sommeil personnalisés',
+                      'Stack Suppléments basé sur TES données exactes',
+                      'Plan d\'action 30-60-90 jours avec milestones',
+                      'Dashboard temps réel à vie'
+                    ]}
+                  />
+                )}
+
+                {idx === 4 && (
+                  <SocialProofBlock
+                    theme={currentTheme}
+                    context="CLIENT ULTIMATE SCAN"
+                    quote="La version 2 du scan est incroyable, avoir autant d'informations et de déchiffrement des réponses apportées est d'une prousse inouïe. Bravo pour ces semaines de travail sur l'outil."
+                    author="Ksalex74"
+                  />
+                )}
+
+                {idx === 5 && (
+                  <UpgradeTeaser
+                    theme={currentTheme}
+                    title="Ce que Discovery ne peut PAS analyser"
+                    description="Ces données avancées sont réservées à Ultimate Scan pour garantir la précision maximale."
+                    features={[
+                      'Ton HRV réel (récupération jour par jour)',
+                      'Tes cycles de sommeil profond',
+                      'Ta posture exacte (asymétries, compensations)',
+                      'Ton niveau de stress en temps réel',
+                      'Ta composition corporelle précise'
+                    ]}
+                    ctaText="Débloquer Ultimate (79€)"
+                  />
+                )}
+              </React.Fragment>
             ))}
           </div>
 
@@ -749,35 +818,11 @@ const DiscoveryScanReport: React.FC = () => {
             </div>
           </section>
 
-          {/* CTA Upgrade */}
-          <section className="mb-16">
-            <div
-              className="rounded-sm p-8 text-center"
-              style={{
-                background: `linear-gradient(135deg, ${currentTheme.colors.primary}15 0%, ${currentTheme.colors.surface} 100%)`,
-                border: `1px solid ${currentTheme.colors.primary}30`
-              }}
-            >
-              <h2 className="text-2xl font-bold mb-4">Passe au niveau superieur</h2>
-              <p className="mb-6 max-w-xl mx-auto" style={{ color: currentTheme.colors.textMuted }}>
-                Ce Discovery Scan t'a donne un apercu de ton potentiel. L'Anabolic Bioscan va 10x plus loin avec des protocoles precis, un stack supplements personnalise, et un plan d'action semaine par semaine.
-              </p>
-              <a
-                href="/offers/anabolic-bioscan"
-                className="inline-flex items-center gap-2 px-8 py-4 rounded font-semibold text-lg transition-all hover:scale-105"
-                style={{
-                  backgroundColor: currentTheme.colors.primary,
-                  color: currentTheme.type === 'dark' ? '#000' : '#FFF'
-                }}
-              >
-                <Zap className="w-5 h-5" />
-                Debloquer l'Anabolic Bioscan
-              </a>
-              <p className="mt-4 text-sm" style={{ color: currentTheme.colors.textMuted }}>
-                100% deductible de ton coaching Achzod
-              </p>
-            </div>
-          </section>
+          {/* Comparison Table */}
+          <ComparisonTable theme={currentTheme} />
+
+          {/* Final CTA with urgency/timer */}
+          <FinalCTA theme={currentTheme} />
 
           {/* Footer */}
           <footer className="py-24 flex flex-col md:flex-row justify-between items-start gap-8" style={{ borderTop: `1px solid var(--color-border)` }}>
@@ -795,6 +840,12 @@ const DiscoveryScanReport: React.FC = () => {
           </footer>
         </div>
       </main>
+
+      {/* Sticky CTA */}
+      <StickyCTA theme={currentTheme} show={showStickyCTA} />
+
+      {/* Exit Intent Popup */}
+      <ExitIntentPopup theme={currentTheme} userName={displayName} />
 
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
