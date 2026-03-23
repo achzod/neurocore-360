@@ -4150,6 +4150,49 @@ export async function registerRoutes(
     }
   });
 
+  // Admin email tracking export for Google Sheets (JSON format)
+  app.get("/api/admin/email-trackings/export/sheets", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { getRecentEmails, getEmailTrackingStats } = await import("./emailTracking");
+
+      // Get all emails (no limit for Google Sheets)
+      const emails = await getRecentEmails(1000);
+      const stats = await getEmailTrackingStats();
+
+      res.json({
+        success: true,
+        emails: emails.map(email => ({
+          id: email.id,
+          emailType: email.emailType,
+          recipientEmail: email.recipientEmail,
+          recipientName: email.recipientName,
+          auditId: email.auditId,
+          auditType: email.auditType,
+          subject: email.subject,
+          sendpulseStatus: email.sendpulseStatus,
+          sentAt: email.sentAt,
+          opened: email.opened,
+          clicked: email.clicked,
+          converted: email.converted,
+          conversionType: email.conversionType,
+        })),
+        stats: {
+          totalSent: stats.totalSent,
+          successRate: Math.round(stats.successRate * 10) / 10,
+          openRate: Math.round(stats.openRate * 10) / 10,
+          clickRate: Math.round(stats.clickRate * 10) / 10,
+          conversionRate: Math.round(stats.conversionRate * 10) / 10,
+          byType: stats.byType,
+        },
+        exportedAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("[Admin Email Tracking Sheets] Error:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
   // Admin combined tracking (audits + emails)
   app.get("/api/admin/tracking/combined-stats", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
@@ -4220,15 +4263,19 @@ export async function registerRoutes(
           const sentAt = new Date(audit.reportSentAt!);
           const daysSinceSent = Math.floor((now.getTime() - sentAt.getTime()) / (1000 * 60 * 60 * 24));
 
-          // Get existing email tracking for this audit
-          const emailTracking = await storage.getEmailTrackingForAudit(audit.id);
+          // Get existing email tracking for this audit (NEW SYSTEM)
+          const { db } = await import("./db");
+          const { emailTracking: emailTrackingTable } = await import("../shared/drizzle-schema");
+          const { eq } = await import("drizzle-orm");
+
+          const emailTracking = await db.select().from(emailTrackingTable).where(eq(emailTrackingTable.auditId, audit.id));
           const trackingTypes = emailTracking.map(t => t.emailType);
 
           // GRATUIT audits: Send upsell email after 2 days
           if (audit.type === "GRATUIT" && daysSinceSent >= 2 && daysSinceSent < 30) {
-            if (!trackingTypes.includes("GRATUIT_UPSELL")) {
-              const tracking = await storage.createEmailTracking(audit.id, "GRATUIT_UPSELL");
-              const sent = await sendGratuitUpsellEmail(audit.email, audit.id, baseUrl, tracking.id);
+            if (!trackingTypes.includes("sendGratuitUpsellEmail")) {
+              // sendGratuitUpsellEmail uses sendEmailWithTracking which logs automatically
+              const sent = await sendGratuitUpsellEmail(audit.email, audit.id, baseUrl, "auto-sequence");
               if (sent) results.gratuitUpsell++;
               else results.errors++;
             }
@@ -4238,10 +4285,10 @@ export async function registerRoutes(
           if (audit.type === "PREMIUM" || audit.type === "ELITE") {
             // J+7: Send if 7+ days and no J+7 email sent yet
             if (daysSinceSent >= 7 && daysSinceSent < 14) {
-              if (!trackingTypes.includes("PREMIUM_J7")) {
+              if (!trackingTypes.includes("sendPremiumJ7Email")) {
                 const hasReview = await storage.hasUserLeftReview(audit.id);
-                const tracking = await storage.createEmailTracking(audit.id, "PREMIUM_J7");
-                const sent = await sendPremiumJ7Email(audit.email, audit.id, audit.type, baseUrl, tracking.id, hasReview);
+                // sendPremiumJ7Email uses sendEmailWithTracking which logs automatically
+                const sent = await sendPremiumJ7Email(audit.email, audit.id, audit.type, baseUrl, "auto-sequence", hasReview);
                 if (sent) results.premiumJ7++;
                 else results.errors++;
               }
@@ -4249,13 +4296,13 @@ export async function registerRoutes(
 
             // J+14: Send ONLY if J+7 email was NOT opened
             if (daysSinceSent >= 14 && daysSinceSent < 30) {
-              const j7Email = emailTracking.find(t => t.emailType === "PREMIUM_J7");
-              const j14Sent = trackingTypes.includes("PREMIUM_J14");
+              const j7Email = emailTracking.find(t => t.emailType === "sendPremiumJ7Email");
+              const j14Sent = trackingTypes.includes("sendPremiumJ14Email");
 
               // Only send J+14 if J+7 was sent but NOT opened
-              if (j7Email && !j7Email.openedAt && !j14Sent) {
-                const tracking = await storage.createEmailTracking(audit.id, "PREMIUM_J14");
-                const sent = await sendPremiumJ14Email(audit.email, audit.id, audit.type, baseUrl, tracking.id);
+              if (j7Email && !j7Email.opened && !j14Sent) {
+                // sendPremiumJ14Email uses sendEmailWithTracking which logs automatically
+                const sent = await sendPremiumJ14Email(audit.email, audit.id, audit.type, baseUrl, "auto-sequence");
                 if (sent) results.premiumJ14++;
                 else results.errors++;
               }

@@ -21,7 +21,7 @@ export const TERRA_CONFIG = {
   API_KEY: process.env.TERRA_API_KEY || "",
   DEV_ID: process.env.TERRA_DEV_ID || "",
   WEBHOOK_SECRET: process.env.TERRA_WEBHOOK_SECRET || "",
-  BASE_URL: "https://api.tryterra.co/v2",
+  BASE_URL: "https://access.tryterra.co/api/v2",
 };
 
 /**
