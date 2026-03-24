@@ -5950,26 +5950,47 @@ export async function registerRoutes(
       const tokenData = await tokenRes.json();
       const accessToken = tokenData.access_token;
 
-      // 2. Get email history from SendPulse (depuis le 17 mars 2026)
+      // 2. Get ALL emails from SendPulse with pagination (depuis le 17 mars 2026)
       const since17mars = "2026-03-17T00:00:00Z";
-      const limit = 1000;
+      const limit = 100; // SendPulse max per request
+      let allEmails: any[] = [];
+      let offset = 0;
+      let hasMore = true;
 
-      const emailsRes = await fetch(
-        `https://api.sendpulse.com/smtp/emails?limit=${limit}&from_date=${since17mars}`,
-        {
-          headers: {
-            "Authorization": `Bearer ${accessToken}`,
-            "Content-Type": "application/json"
+      console.log("[EmailStats] Fetching emails from SendPulse with pagination...");
+
+      while (hasMore && allEmails.length < 500) { // Max 500 to avoid timeout
+        const emailsRes = await fetch(
+          `https://api.sendpulse.com/smtp/emails?limit=${limit}&offset=${offset}&from_date=${since17mars}`,
+          {
+            headers: {
+              "Authorization": `Bearer ${accessToken}`,
+              "Content-Type": "application/json"
+            }
           }
-        }
-      );
+        );
 
-      if (!emailsRes.ok) {
-        throw new Error(`SendPulse emails fetch failed: ${emailsRes.statusText}`);
+        if (!emailsRes.ok) {
+          console.error(`[EmailStats] Failed at offset ${offset}:`, emailsRes.statusText);
+          break;
+        }
+
+        const emailsData = await emailsRes.json();
+        const emails = Array.isArray(emailsData) ? emailsData : (emailsData.data || []);
+
+        console.log(`[EmailStats] Fetched ${emails.length} emails at offset ${offset}`);
+
+        if (emails.length === 0) {
+          hasMore = false;
+        } else {
+          allEmails = allEmails.concat(emails);
+          offset += limit;
+        }
       }
 
-      const emailsData = await emailsRes.json();
-      const emails = Array.isArray(emailsData) ? emailsData : (emailsData.data || []);
+      console.log(`[EmailStats] Total emails fetched: ${allEmails.length}`);
+
+      const emails = allEmails;
 
       // Get audits for pending/ready count
       const allAudits = await storage.getAllAudits();
@@ -6168,32 +6189,49 @@ export async function registerRoutes(
         return;
       }
 
-      // 2. Get email history from SendPulse (depuis le 17 mars 2026)
+      // 2. Get ALL emails from SendPulse with pagination (depuis le 17 mars 2026)
       const since17mars = "2026-03-17T00:00:00Z";
-      const limit = 1000;
+      const limit = 100; // SendPulse max per request
+      let allEmails: any[] = [];
+      let offset = 0;
+      let hasMore = true;
 
-      const emailsRes = await fetch(
-        `https://api.sendpulse.com/smtp/emails?limit=${limit}&from_date=${since17mars}`,
-        {
-          headers: {
-            "Authorization": `Bearer ${accessToken}`,
-            "Content-Type": "application/json"
+      console.log("[SendPulseLiveStats] Starting pagination...");
+
+      while (hasMore && allEmails.length < 500) { // Max 500 emails to avoid timeout
+        const emailsRes = await fetch(
+          `https://api.sendpulse.com/smtp/emails?limit=${limit}&offset=${offset}&from_date=${since17mars}`,
+          {
+            headers: {
+              "Authorization": `Bearer ${accessToken}`,
+              "Content-Type": "application/json"
+            }
           }
-        }
-      );
+        );
 
-      if (!emailsRes.ok) {
-        const errorText = await emailsRes.text();
-        console.error("[SendPulseLiveStats] Failed to fetch emails:", errorText);
-        res.json({ success: false, error: "Failed to fetch SendPulse emails" });
-        return;
+        if (!emailsRes.ok) {
+          const errorText = await emailsRes.text();
+          console.error(`[SendPulseLiveStats] Failed at offset ${offset}:`, errorText);
+          break;
+        }
+
+        const emailsData = await emailsRes.json();
+        const emails = Array.isArray(emailsData) ? emailsData : (emailsData.data || []);
+
+        console.log(`[SendPulseLiveStats] Fetched ${emails.length} emails at offset ${offset}`);
+
+        if (emails.length === 0) {
+          hasMore = false;
+        } else {
+          allEmails = allEmails.concat(emails);
+          offset += limit;
+        }
       }
 
-      const emailsData = await emailsRes.json();
-      console.log("[SendPulseLiveStats] Received data:", JSON.stringify(emailsData).substring(0, 500));
+      console.log(`[SendPulseLiveStats] Total emails fetched: ${allEmails.length}`);
 
       // Parse SendPulse response
-      const emails = Array.isArray(emailsData) ? emailsData : (emailsData.data || []);
+      const emails = allEmails;
 
       // Calculate stats
       const totalSent = emails.length;
