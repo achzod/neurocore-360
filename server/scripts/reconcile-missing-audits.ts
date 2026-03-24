@@ -19,7 +19,7 @@ async function reconcileMissingAudits() {
     WHERE o.status = 'paid'
       AND o.audit_id IS NULL
       AND o.product_type IN ('GRATUIT', 'PREMIUM', 'ELITE')
-      AND o.created_at > NOW() - INTERVAL '90 days'
+      AND o.created_at >= '2026-03-17'
     ORDER BY o.created_at ASC
   `);
 

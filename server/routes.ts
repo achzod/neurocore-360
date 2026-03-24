@@ -177,30 +177,30 @@ export async function registerRoutes(
     if (!requireAdminAuth(req, res)) return;
 
     try {
-      // Count paid orders without audit_id
+      // Count paid orders without audit_id (only real clients since launch)
       const missingResult = await pool.query(`
         SELECT COUNT(*) as missing_count
         FROM orders
         WHERE status = 'paid'
           AND audit_id IS NULL
           AND product_type IN ('GRATUIT', 'PREMIUM', 'ELITE')
-          AND created_at > NOW() - INTERVAL '90 days'
+          AND created_at >= '2026-03-17'
       `);
 
-      // Count total paid orders
+      // Count total paid orders (only real clients since launch)
       const totalPaidResult = await pool.query(`
         SELECT COUNT(*) as total_paid
         FROM orders
         WHERE status = 'paid'
           AND product_type IN ('GRATUIT', 'PREMIUM', 'ELITE')
-          AND created_at > NOW() - INTERVAL '90 days'
+          AND created_at >= '2026-03-17'
       `);
 
-      // Count audits created
+      // Count audits created (only real clients since launch)
       const auditsResult = await pool.query(`
         SELECT COUNT(*) as total_audits
         FROM audits
-        WHERE created_at > NOW() - INTERVAL '90 days'
+        WHERE created_at >= '2026-03-17'
       `);
 
       const missingCount = parseInt(missingResult.rows[0].missing_count);
@@ -5523,7 +5523,7 @@ export async function registerRoutes(
         WHERE o.status = 'paid'
           AND o.audit_id IS NULL
           AND o.product_type IN ('GRATUIT', 'PREMIUM', 'ELITE')
-          AND o.created_at > NOW() - INTERVAL '90 days'
+          AND o.created_at >= '2026-03-17'
         ORDER BY o.created_at ASC
       `);
 

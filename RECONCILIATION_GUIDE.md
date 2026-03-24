@@ -1,7 +1,8 @@
-# 🚨 GUIDE RÉCONCILIATION URGENTE - 302 AUDITS MANQUANTS
+# 🚨 GUIDE RÉCONCILIATION URGENTE - AUDITS MANQUANTS
 
 **Status:** ✅ Déployé en production
 **Date:** 24 mars 2026
+**Launch date:** 17 mars 2026 (tout avant = tests internes)
 **Commits:**
 - `59e49219` - Endpoints admin réconciliation
 - `cf12b8b1` - Fix webhook Stripe (création automatique audits)
@@ -10,7 +11,9 @@
 
 ## 🎯 OBJECTIF
 
-Récupérer les **302 audits manquants** pour les clients ayant payé mais n'ayant jamais reçu leur rapport.
+Récupérer les **audits manquants** pour les **VRAIS clients** ayant payé depuis le lancement (≥ 17 mars 2026) mais n'ayant jamais reçu leur rapport.
+
+**IMPORTANT:** Les requêtes filtrent automatiquement `created_at >= '2026-03-17'` pour exclure tous les tests internes avant le lancement officiel.
 
 ---
 
@@ -236,14 +239,15 @@ Le script de monitoring quotidien (à venir) enverra un email admin chaque jour 
 
 ## 📈 MÉTRIQUES DE SUCCÈS
 
-**Avant fix:**
-- 378 commandes payées
-- 76 analyses envoyées
-- **Gap: 302 (79.9%)**
+**Note:** Les chiffres initiaux de 378/76/302 incluaient les tests internes avant le 17 mars.
+
+**Avec filtre clients réels uniquement (≥ 17 mars):**
+- Utilise `/api/admin/reconciliation-stats` pour voir les vrais chiffres
+- Check le script `server/scripts/check-real-gap.ts` pour analyse détaillée
 
 **Objectif après réconciliation:**
-- Gap < 50 (clients sans données réelles)
-- Taux de livraison > 85%
+- Gap < 10 (seulement clients sans questionnaire ou photos)
+- Taux de livraison > 90%
 - Temps de livraison < 10 minutes
 
 **Monitoring:**
