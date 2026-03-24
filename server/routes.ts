@@ -3907,7 +3907,7 @@ export async function registerRoutes(
   app.get("/api/admin/orders", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
-      const limit = Math.min(Number(req.query.limit) || 50, 200);
+      const limit = Math.min(Number(req.query.limit) || 50, 1000);
       const offset = Number(req.query.offset) || 0;
       const status = (req.query.status as string) || undefined;
       const productType = (req.query.productType as string) || undefined;

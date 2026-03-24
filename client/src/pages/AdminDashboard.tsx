@@ -162,6 +162,7 @@ export default function AdminDashboard() {
   const [ordersTotal, setOrdersTotal] = useState(0);
   const [orderStatusFilter, setOrderStatusFilter] = useState("");
   const [orderProductFilter, setOrderProductFilter] = useState("");
+  const [orderPage, setOrderPage] = useState(0);
   const [showRefundModal, setShowRefundModal] = useState<AdminOrder | null>(null);
   const [refundReason, setRefundReason] = useState("");
   const [refundLoading, setRefundLoading] = useState(false);
@@ -348,7 +349,8 @@ export default function AdminDashboard() {
       const params = new URLSearchParams();
       if (orderStatusFilter) params.set("status", orderStatusFilter);
       if (orderProductFilter) params.set("productType", orderProductFilter);
-      params.set("limit", "100");
+      params.set("limit", "50");
+      params.set("offset", String(orderPage * 50));
       const response = await fetch(`/api/admin/orders?${params}`, {
         headers: { "x-admin-key": adminKey },
       });
@@ -655,11 +657,16 @@ export default function AdminDashboard() {
     }
   }, [activeTab, isAuthenticated, adminKey]);
 
-  // Refetch orders when filters change
+  // Refetch orders when filters or page change
   useEffect(() => {
     if (isAuthenticated && activeTab === "orders") {
       fetchOrders();
     }
+  }, [orderStatusFilter, orderProductFilter, orderPage]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setOrderPage(0);
   }, [orderStatusFilter, orderProductFilter]);
 
   const handleApprove = async (reviewId: string) => {
@@ -1604,6 +1611,33 @@ export default function AdminDashboard() {
                 <RefreshCw className="w-4 h-4 mr-1" /> Rafraîchir
               </Button>
             </div>
+
+            {/* Pagination */}
+            {ordersTotal > 0 && (
+              <div className="flex items-center justify-between mb-4 p-3 bg-muted/30 rounded-md">
+                <div className="text-sm text-muted-foreground">
+                  Affichage {orderPage * 50 + 1}-{Math.min((orderPage + 1) * 50, ordersTotal)} sur {ordersTotal} commandes
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setOrderPage(orderPage - 1)}
+                    disabled={orderPage === 0}
+                  >
+                    ← Précédent
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setOrderPage(orderPage + 1)}
+                    disabled={(orderPage + 1) * 50 >= ordersTotal}
+                  >
+                    Suivant →
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {/* Orders Table */}
             {orders.length === 0 ? (
