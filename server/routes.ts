@@ -5899,6 +5899,58 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== EMAIL STATS DEBUG: unique recipients ====================
+  app.get("/api/admin/email-stats/debug", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { Pool } = await import("pg");
+      const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+      if (!databaseUrl) { res.json({ error: "no db" }); return; }
+      const pool = new Pool({
+        connectionString: databaseUrl,
+        ssl: databaseUrl.includes("render.com") ? { rejectUnauthorized: false } : false,
+      });
+      try {
+        // Total rows
+        const total = await pool.query("SELECT COUNT(*) as c FROM email_tracking");
+        // Reports only (subject contains 'est pret')
+        const reports = await pool.query("SELECT COUNT(*) as c FROM email_tracking WHERE LOWER(subject) LIKE '%est pret%'");
+        // UNIQUE recipients with reports
+        const uniqueReports = await pool.query("SELECT COUNT(DISTINCT recipient_email) as c FROM email_tracking WHERE LOWER(subject) LIKE '%est pret%'");
+        // All email types breakdown
+        const byType = await pool.query("SELECT email_type, COUNT(*) as c FROM email_tracking GROUP BY email_type ORDER BY c DESC");
+        // Top duplicated recipients (reports only)
+        const dupes = await pool.query(`
+          SELECT recipient_email, COUNT(*) as c
+          FROM email_tracking
+          WHERE LOWER(subject) LIKE '%est pret%'
+          GROUP BY recipient_email
+          HAVING COUNT(*) > 1
+          ORDER BY c DESC
+          LIMIT 10
+        `);
+        // Unique recipients per audit_type
+        const uniqueByAuditType = await pool.query(`
+          SELECT audit_type, COUNT(DISTINCT recipient_email) as c
+          FROM email_tracking
+          WHERE LOWER(subject) LIKE '%est pret%'
+          GROUP BY audit_type
+        `);
+
+        res.json({
+          totalRows: parseInt(total.rows[0].c),
+          totalReportEmails: parseInt(reports.rows[0].c),
+          uniqueRecipientsWithReports: parseInt(uniqueReports.rows[0].c),
+          emailTypeBreakdown: byType.rows.map((r: any) => ({ type: r.email_type, count: parseInt(r.c) })),
+          duplicatedRecipients: dupes.rows.map((r: any) => ({ email: r.recipient_email, count: parseInt(r.c) })),
+          uniqueByAuditType: uniqueByAuditType.rows.map((r: any) => ({ type: r.audit_type, count: parseInt(r.c) })),
+        });
+      } finally { await pool.end(); }
+    } catch (error) {
+      res.status(500).json({ error: String(error) });
+    }
+  });
+
   // ==================== EMAIL STATS (from DB email_tracking) ====================
   app.get("/api/admin/email-stats", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
