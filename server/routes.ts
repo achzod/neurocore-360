@@ -6111,8 +6111,23 @@ export async function registerRoutes(
 
       console.log("[ImportSP] 📥 Starting SendPulse history import...");
 
+      const { Pool } = await import("pg");
       const { db } = await import("./db.js");
       const { emailTracking: emailTrackingTable } = await import("../shared/drizzle-schema.js");
+
+      // Create pool connection for querying orders
+      const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+      if (!databaseUrl) {
+        res.status(500).json({ error: 'DATABASE_URL not configured' });
+        return;
+      }
+
+      const pool = new Pool({
+        connectionString: databaseUrl,
+        ssl: databaseUrl.includes("render.com") || databaseUrl.includes("neon.tech")
+          ? { rejectUnauthorized: false }
+          : false,
+      });
 
       // Parse CSV (separator is ;)
       const lines = csvData.split('\n').filter(l => l.trim());
@@ -6232,6 +6247,8 @@ export async function registerRoutes(
 
       console.log("[ImportSP] ✅ Import complete:", summary);
       res.json(summary);
+
+      await pool.end();
 
     } catch (error) {
       console.error("[ImportSP] Fatal error:", error);
