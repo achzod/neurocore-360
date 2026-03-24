@@ -11,6 +11,7 @@ import {
   ComparisonTable,
   SocialProofBlock,
   UpgradeTeaser,
+  SmartRecommendation,
   StickyCTA,
   FinalCTA
 } from '@/components/UpgradeComponents';
@@ -588,7 +589,11 @@ const DiscoveryScanReport: React.FC = () => {
           </div>
 
           {/* Upgrade Hero - CTA top */}
-          <UpgradeHero theme={currentTheme} />
+          <UpgradeHero
+            theme={currentTheme}
+            sections={reportData.sections}
+            globalScore={displayGlobalScore}
+          />
 
           {/* Content Sections */}
           <div className="space-y-0 relative">
@@ -661,9 +666,12 @@ const DiscoveryScanReport: React.FC = () => {
                       'Intégration Apple Watch / Garmin (HRV, récupération, sommeil)',
                       'Protocoles Matin Anti-Cortisol + Soir Sommeil personnalisés',
                       'Stack Suppléments basé sur TES données exactes',
-                      'Plan d\'action 30-60-90 jours avec milestones',
+                      "Plan d'action 30-60-90 jours avec milestones",
                       'Dashboard temps réel à vie'
                     ]}
+                    sections={reportData.sections}
+                    globalScore={displayGlobalScore}
+                    context="energy"
                   />
                 )}
 
@@ -688,12 +696,21 @@ const DiscoveryScanReport: React.FC = () => {
                       'Ton niveau de stress en temps réel',
                       'Ta composition corporelle précise'
                     ]}
-                    ctaText="Débloquer Ultimate (79€)"
+                    sections={reportData.sections}
+                    globalScore={displayGlobalScore}
+                    context="training"
                   />
                 )}
               </React.Fragment>
             ))}
           </div>
+
+          {/* Smart Recommendation - personalized scan suggestion */}
+          <SmartRecommendation
+            theme={currentTheme}
+            sections={reportData.sections}
+            globalScore={displayGlobalScore}
+          />
 
           {/* Review Section */}
           <section id="review" className="py-16" style={{ borderTop: `1px solid var(--color-border)` }}>

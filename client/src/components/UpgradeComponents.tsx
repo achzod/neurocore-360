@@ -1,6 +1,104 @@
 import React, { useState, useEffect } from 'react';
-import { Zap, Check, X, Clock, TrendingUp, Star } from 'lucide-react';
-import { Theme } from './ultrahuman/types';
+import { Zap, Check, X, Clock, TrendingUp, Star, AlertTriangle, Target } from 'lucide-react';
+import { Theme, SectionContent } from './ultrahuman/types';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SCAN RECOMMENDATION LOGIC
+// ═══════════════════════════════════════════════════════════════════════════════
+
+type ScanRecommendation = 'ultimate' | 'anabolic' | 'default';
+
+interface RecommendationAnalysis {
+  type: ScanRecommendation;
+  hasHormonalIssues: boolean;
+  hasMultipleWeakAreas: boolean;
+  weakDomains: string[];
+}
+
+const HORMONAL_KEYWORDS = [
+  'hormonal', 'hormone', 'testostérone', 'testosterone', 'cortisol',
+  'anabolique', 'anabolic', 'métabolisme', 'metabolism', 'thyroïde', 'thyroid',
+  'insuline', 'insulin', 'oestrogène', 'estrogen', 'androgène', 'androgen',
+  'libido', 'récupération musculaire', 'muscle', 'masse musculaire',
+  'prise de masse', 'perte de poids', 'adipeux', 'adiposité', 'gras',
+  'énergie matinale', 'fatigue chronique'
+];
+
+const MULTI_WEAK_KEYWORDS = [
+  'sommeil', 'sleep', 'stress', 'digestion', 'intestin', 'microbiome',
+  'posture', 'biomécanique', 'entraînement', 'training', 'récupération',
+  'nutrition', 'hydratation', 'mental', 'mindset', 'cognition'
+];
+
+function analyzeWeakAreas(sections: SectionContent[], globalScore: number): RecommendationAnalysis {
+  const allText = sections
+    .map(s => `${s.title} ${s.subtitle ?? ''} ${s.content}`.toLowerCase())
+    .join(' ');
+
+  const hasHormonalIssues = HORMONAL_KEYWORDS.some(kw => allText.includes(kw.toLowerCase()));
+
+  const weakDomains = MULTI_WEAK_KEYWORDS.filter(kw => allText.includes(kw.toLowerCase()));
+  const hasMultipleWeakAreas = weakDomains.length >= 3 || globalScore < 5;
+
+  let type: ScanRecommendation = 'default';
+  if (globalScore < 5 || hasMultipleWeakAreas) {
+    type = 'ultimate';
+  } else if (hasHormonalIssues) {
+    type = 'anabolic';
+  } else {
+    type = 'ultimate';
+  }
+
+  return { type, hasHormonalIssues, hasMultipleWeakAreas, weakDomains };
+}
+
+function getHeroText(analysis: RecommendationAnalysis, globalScore: number): {
+  label: string;
+  headline: string;
+  subline: string;
+  primaryCta: string;
+  primaryLink: string;
+  secondaryCta: string;
+  secondaryLink: string;
+  features: string[];
+} {
+  if (analysis.type === 'anabolic') {
+    return {
+      label: 'Déséquilibre hormonal détecté',
+      headline: 'Ton profil hormonal suggère des blocages anaboliques',
+      subline: "L'Anabolic Bioscan identifie exactement ton potentiel anabolique, tes axes hormonaux et tes protocoles de correction.",
+      primaryCta: 'Anabolic Bioscan - 59€',
+      primaryLink: '/offers/anabolic-bioscan',
+      secondaryCta: 'Ultimate Scan - 79€',
+      secondaryLink: '/offers/ultimate-scan',
+      features: ['Profil hormonal complet', 'Stack suppléments personnalisé', 'Protocoles Matin/Soir anti-cortisol', 'Plan 30-60-90j']
+    };
+  }
+
+  if (analysis.type === 'ultimate' && globalScore < 5) {
+    return {
+      label: 'Blocages multiples détectés',
+      headline: `Ton score global (${globalScore}/10) révèle des blocages sur plusieurs fronts`,
+      subline: "L'Ultimate Scan est le plus adapté : 18 domaines analysés + posture 3D + wearables + dashboard temps réel.",
+      primaryCta: 'Ultimate Scan - 79€',
+      primaryLink: '/offers/ultimate-scan',
+      secondaryCta: 'Anabolic Bioscan - 59€',
+      secondaryLink: '/offers/anabolic-bioscan',
+      features: ['18 sections d\'analyse', 'Analyse posturale 3D', 'Wearables Apple/Garmin', 'Dashboard temps réel à vie']
+    };
+  }
+
+  return {
+    label: 'Upgrade Disponible',
+    headline: 'Ton Discovery a détecté tes blocages',
+    subline: 'Tu veux les corriger avec des protocoles exacts + analyse en temps réel ?',
+    primaryCta: 'Ultimate Scan - 79€',
+    primaryLink: '/offers/ultimate-scan',
+    secondaryCta: 'Anabolic Bioscan - 59€',
+    secondaryLink: '/offers/anabolic-bioscan',
+    features: ['Protocoles personnalisés', 'Wearables (Apple/Garmin)', 'Posture 3D']
+  };
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // UPGRADE HERO - CTA en haut du rapport avant le contenu
@@ -8,9 +106,14 @@ import { Theme } from './ultrahuman/types';
 
 interface UpgradeHeroProps {
   theme: Theme;
+  sections?: SectionContent[];
+  globalScore?: number;
 }
 
-export const UpgradeHero: React.FC<UpgradeHeroProps> = ({ theme }) => {
+export const UpgradeHero: React.FC<UpgradeHeroProps> = ({ theme, sections = [], globalScore = 5 }) => {
+  const analysis = analyzeWeakAreas(sections, globalScore);
+  const text = getHeroText(analysis, globalScore);
+
   return (
     <div
       className="rounded-sm p-6 md:p-8 mb-12 relative overflow-hidden"
@@ -31,46 +134,48 @@ export const UpgradeHero: React.FC<UpgradeHeroProps> = ({ theme }) => {
       <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-3">
-            <Zap size={20} style={{ color: theme.colors.primary }} />
+            {analysis.type === 'ultimate' && globalScore < 5
+              ? <AlertTriangle size={20} style={{ color: theme.colors.primary }} />
+              : <Zap size={20} style={{ color: theme.colors.primary }} />
+            }
             <span
               className="text-xs font-bold uppercase tracking-widest"
               style={{ color: theme.colors.primary }}
             >
-              Upgrade Disponible
+              {text.label}
             </span>
           </div>
           <h3 className="text-xl md:text-2xl font-bold mb-2" style={{ color: theme.colors.text }}>
-            Ton Discovery va te montrer tes blocages
+            {text.headline}
           </h3>
           <p className="text-sm md:text-base" style={{ color: theme.colors.textMuted }}>
-            Tu veux les corriger avec des protocoles exacts + analyse en temps réel ?
+            {text.subline}
           </p>
           <div className="flex flex-wrap items-center gap-3 mt-4 text-xs" style={{ color: theme.colors.textMuted }}>
-            <span className="flex items-center gap-1">
-              <Check size={14} style={{ color: theme.colors.primary }} /> Protocoles personnalisés
-            </span>
-            <span className="flex items-center gap-1">
-              <Check size={14} style={{ color: theme.colors.primary }} /> Wearables (Apple/Garmin)
-            </span>
-            <span className="flex items-center gap-1">
-              <Check size={14} style={{ color: theme.colors.primary }} /> Posture 3D
-            </span>
+            {text.features.map((feature, i) => (
+              <span key={i} className="flex items-center gap-1">
+                <Check size={14} style={{ color: theme.colors.primary }} /> {feature}
+              </span>
+            ))}
           </div>
+          <p className="text-xs mt-3 font-medium" style={{ color: theme.colors.textMuted }}>
+            100% déduit de ton coaching Achzod
+          </p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
           <a
-            href="/offers/ultimate-scan"
+            href={text.primaryLink}
             className="px-6 py-3 rounded font-bold text-sm transition-all hover:scale-105 text-center whitespace-nowrap"
             style={{
               backgroundColor: theme.colors.primary,
               color: theme.type === 'dark' ? '#000' : '#FFF'
             }}
           >
-            Ultimate Scan - 79€
+            {text.primaryCta}
           </a>
           <a
-            href="/offers/anabolic-bioscan"
+            href={text.secondaryLink}
             className="px-6 py-3 rounded font-bold text-sm transition-all hover:scale-105 text-center whitespace-nowrap"
             style={{
               backgroundColor: 'transparent',
@@ -78,7 +183,7 @@ export const UpgradeHero: React.FC<UpgradeHeroProps> = ({ theme }) => {
               color: theme.colors.text
             }}
           >
-            Anabolic Bioscan - 59€
+            {text.secondaryCta}
           </a>
         </div>
       </div>
@@ -263,6 +368,8 @@ export const SocialProofBlock: React.FC<SocialProofBlockProps> = ({ theme, quote
 // UPGRADE TEASER - Bloc entre les sections
 // ═══════════════════════════════════════════════════════════════════════════════
 
+type TeaserContext = 'energy' | 'training' | 'generic';
+
 interface UpgradeTeaserProps {
   theme: Theme;
   title: string;
@@ -270,6 +377,9 @@ interface UpgradeTeaserProps {
   features: string[];
   ctaText?: string;
   ctaLink?: string;
+  sections?: SectionContent[];
+  globalScore?: number;
+  context?: TeaserContext;
 }
 
 export const UpgradeTeaser: React.FC<UpgradeTeaserProps> = ({
@@ -277,9 +387,46 @@ export const UpgradeTeaser: React.FC<UpgradeTeaserProps> = ({
   title,
   description,
   features,
-  ctaText = "Débloquer Ultimate (79€)",
-  ctaLink = "/offers/ultimate-scan"
+  ctaText,
+  ctaLink,
+  sections = [],
+  globalScore = 5,
+  context = 'generic'
 }) => {
+  // Derive smart CTA based on context + scores when no explicit override is provided
+  const analysis = analyzeWeakAreas(sections, globalScore);
+
+  let resolvedCtaText: string;
+  let resolvedCtaLink: string;
+  let secondaryCtaText: string;
+  let secondaryCtaLink: string;
+  let contextNote: string;
+
+  if (context === 'energy') {
+    // After energy/metabolism sections → lean toward Anabolic
+    const preferAnabolic = analysis.hasHormonalIssues || analysis.type === 'anabolic';
+    resolvedCtaText = ctaText ?? (preferAnabolic ? 'Anabolic Bioscan - 59€' : 'Ultimate Scan - 79€');
+    resolvedCtaLink = ctaLink ?? (preferAnabolic ? '/offers/anabolic-bioscan' : '/offers/ultimate-scan');
+    secondaryCtaText = preferAnabolic ? 'Ultimate Scan - 79€' : 'Anabolic Bioscan - 59€';
+    secondaryCtaLink = preferAnabolic ? '/offers/ultimate-scan' : '/offers/anabolic-bioscan';
+    contextNote = 'Ton profil hormonal détaillé avec l\'Anabolic Bioscan';
+  } else if (context === 'training') {
+    // After training/recovery sections → lean toward Ultimate
+    resolvedCtaText = ctaText ?? 'Ultimate Scan - 79€';
+    resolvedCtaLink = ctaLink ?? '/offers/ultimate-scan';
+    secondaryCtaText = 'Anabolic Bioscan - 59€';
+    secondaryCtaLink = '/offers/anabolic-bioscan';
+    contextNote = 'Analyse posturale 3D + wearables avec l\'Ultimate Scan';
+  } else {
+    // Generic: use analysis-driven recommendation
+    const primaryIsUltimate = analysis.type !== 'anabolic';
+    resolvedCtaText = ctaText ?? (primaryIsUltimate ? 'Débloquer Ultimate (79€)' : 'Anabolic Bioscan - 59€');
+    resolvedCtaLink = ctaLink ?? (primaryIsUltimate ? '/offers/ultimate-scan' : '/offers/anabolic-bioscan');
+    secondaryCtaText = primaryIsUltimate ? 'Anabolic (59€)' : 'Ultimate (79€)';
+    secondaryCtaLink = primaryIsUltimate ? '/offers/anabolic-bioscan' : '/offers/ultimate-scan';
+    contextNote = '';
+  }
+
   return (
     <div
       className="rounded-sm p-6 md:p-8 my-12"
@@ -299,6 +446,12 @@ export const UpgradeTeaser: React.FC<UpgradeTeaserProps> = ({
         {description}
       </p>
 
+      {contextNote && (
+        <p className="text-xs font-bold uppercase tracking-wider mb-4" style={{ color: theme.colors.primary }}>
+          {contextNote}
+        </p>
+      )}
+
       <div className="space-y-2 mb-6">
         {features.map((feature, idx) => (
           <div key={idx} className="flex items-center gap-2 text-sm" style={{ color: theme.colors.text }}>
@@ -310,17 +463,17 @@ export const UpgradeTeaser: React.FC<UpgradeTeaserProps> = ({
 
       <div className="flex flex-col sm:flex-row gap-3">
         <a
-          href={ctaLink}
+          href={resolvedCtaLink}
           className="flex-1 px-6 py-3 rounded font-bold text-sm transition-all hover:scale-105 text-center"
           style={{
             backgroundColor: theme.colors.primary,
             color: theme.type === 'dark' ? '#000' : '#FFF'
           }}
         >
-          {ctaText}
+          {resolvedCtaText}
         </a>
         <a
-          href="/offers/anabolic-bioscan"
+          href={secondaryCtaLink}
           className="px-6 py-3 rounded font-bold text-sm transition-all hover:scale-105 text-center whitespace-nowrap"
           style={{
             backgroundColor: 'transparent',
@@ -328,8 +481,142 @@ export const UpgradeTeaser: React.FC<UpgradeTeaserProps> = ({
             color: theme.colors.text
           }}
         >
-          Anabolic (59€)
+          {secondaryCtaText}
         </a>
+      </div>
+
+      <p className="text-xs mt-4" style={{ color: theme.colors.textMuted }}>
+        100% déduit de ton coaching Achzod
+      </p>
+    </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SMART RECOMMENDATION - Boîte de recommandation personnalisée
+// ═══════════════════════════════════════════════════════════════════════════════
+
+interface SmartRecommendationProps {
+  theme: Theme;
+  sections?: SectionContent[];
+  globalScore?: number;
+}
+
+export const SmartRecommendation: React.FC<SmartRecommendationProps> = ({
+  theme,
+  sections = [],
+  globalScore = 5
+}) => {
+  const analysis = analyzeWeakAreas(sections, globalScore);
+
+  let headline: string;
+  let bodyText: string;
+  let primaryCta: string;
+  let primaryLink: string;
+  let secondaryCta: string;
+  let secondaryLink: string;
+  let icon: React.ReactNode;
+
+  if (globalScore < 5 || analysis.hasMultipleWeakAreas) {
+    headline = 'Analyse complète recommandée';
+    bodyText = `Tes résultats montrent des blocages importants sur plusieurs fronts. L'Ultimate Scan (79€) est le plus adapté car il couvre les 18 domaines + posture + wearables + biomécanique.`;
+    primaryCta = 'Ultimate Scan - 79€';
+    primaryLink = '/offers/ultimate-scan';
+    secondaryCta = 'Anabolic Bioscan - 59€';
+    secondaryLink = '/offers/anabolic-bioscan';
+    icon = <AlertTriangle size={22} style={{ color: theme.colors.primary }} />;
+  } else if (analysis.hasHormonalIssues) {
+    headline = 'Profil hormonal à optimiser';
+    bodyText = "Ton profil suggère un déséquilibre hormonal. L'Anabolic Bioscan (59€) va identifier ton potentiel anabolique, tes axes hormonaux et les protocoles de correction associés.";
+    primaryCta = 'Anabolic Bioscan - 59€';
+    primaryLink = '/offers/anabolic-bioscan';
+    secondaryCta = 'Ultimate Scan - 79€';
+    secondaryLink = '/offers/ultimate-scan';
+    icon = <Target size={22} style={{ color: theme.colors.primary }} />;
+  } else {
+    headline = "Choisis l'analyse adaptée";
+    bodyText = "Pour aller plus loin, choisis l'analyse adaptée à tes besoins. L'Ultimate Scan couvre 18 domaines pour une vue complète. L'Anabolic Bioscan cible spécifiquement ton profil hormonal et ton potentiel.";
+    primaryCta = 'Ultimate Scan - 79€';
+    primaryLink = '/offers/ultimate-scan';
+    secondaryCta = 'Anabolic Bioscan - 59€';
+    secondaryLink = '/offers/anabolic-bioscan';
+    icon = <Zap size={22} style={{ color: theme.colors.primary }} />;
+  }
+
+  return (
+    <div
+      className="rounded-sm p-6 md:p-8 my-10 relative overflow-hidden"
+      style={{
+        backgroundColor: theme.colors.surface,
+        border: `2px solid ${theme.colors.primary}`
+      }}
+    >
+      {/* Accent top line */}
+      <div
+        className="absolute top-0 left-0 right-0 h-1"
+        style={{ backgroundColor: theme.colors.primary }}
+      />
+
+      <div className="flex items-start gap-4 mb-5">
+        <div
+          className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
+          style={{ backgroundColor: `${theme.colors.primary}20` }}
+        >
+          {icon}
+        </div>
+        <div>
+          <p
+            className="text-[10px] font-bold uppercase tracking-widest mb-1"
+            style={{ color: theme.colors.primary }}
+          >
+            Recommandation personnalisée — basée sur tes résultats Discovery
+          </p>
+          <h4 className="text-lg font-bold" style={{ color: theme.colors.text }}>
+            {headline}
+          </h4>
+        </div>
+      </div>
+
+      <p className="text-sm mb-6 leading-relaxed" style={{ color: theme.colors.textMuted }}>
+        {bodyText}
+      </p>
+
+      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <a
+          href={primaryLink}
+          className="flex-1 px-6 py-3 rounded font-bold text-sm transition-all hover:scale-105 text-center"
+          style={{
+            backgroundColor: theme.colors.primary,
+            color: theme.type === 'dark' ? '#000' : '#FFF'
+          }}
+        >
+          <span className="flex items-center justify-center gap-2">
+            <Zap size={16} />
+            {primaryCta}
+          </span>
+        </a>
+        <a
+          href={secondaryLink}
+          className="flex-1 px-6 py-3 rounded font-bold text-sm transition-all hover:scale-105 text-center"
+          style={{
+            backgroundColor: 'transparent',
+            border: `1px solid ${theme.colors.border}`,
+            color: theme.colors.text
+          }}
+        >
+          {secondaryCta}
+        </a>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-4 text-xs" style={{ color: theme.colors.textMuted }}>
+        <span className="flex items-center gap-1">
+          <Check size={12} style={{ color: theme.colors.primary }} />
+          100% déduit de ton coaching Achzod
+        </span>
+        <span className="flex items-center gap-1">
+          <Check size={12} style={{ color: theme.colors.primary }} />
+          Rapport livré en 24-48h
+        </span>
       </div>
     </div>
   );
@@ -403,34 +690,49 @@ export const StickyCTA: React.FC<StickyCTAProps> = ({ theme, show }) => {
 
 interface FinalCTAProps {
   theme: Theme;
+  auditId?: string;
 }
 
-export const FinalCTA: React.FC<FinalCTAProps> = ({ theme }) => {
-  // Timer countdown (24h from first visit)
-  const [timeLeft, setTimeLeft] = useState({ hours: 23, minutes: 47, seconds: 12 });
+export const FinalCTA: React.FC<FinalCTAProps> = ({ theme, auditId }) => {
+  const OFFER_DURATION_MS = 48 * 60 * 60 * 1000; // 48 hours
+
+  const getOrInitStartTime = (): number => {
+    const key = `apexlabs_offer_start_${auditId || 'default'}`;
+    const stored = localStorage.getItem(key);
+    if (stored) {
+      return parseInt(stored, 10);
+    }
+    const now = Date.now();
+    localStorage.setItem(key, String(now));
+    return now;
+  };
+
+  const computeTimeLeft = (startTime: number) => {
+    const elapsed = Date.now() - startTime;
+    const remaining = Math.max(0, OFFER_DURATION_MS - elapsed);
+    const totalSeconds = Math.floor(remaining / 1000);
+    return {
+      hours: Math.floor(totalSeconds / 3600),
+      minutes: Math.floor((totalSeconds % 3600) / 60),
+      seconds: totalSeconds % 60,
+      expired: remaining === 0,
+    };
+  };
+
+  const [startTime] = useState<number>(() => getOrInitStartTime());
+  const [timeLeft, setTimeLeft] = useState(() => computeTimeLeft(startTime));
 
   useEffect(() => {
+    if (timeLeft.expired) return;
+
     const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        let { hours, minutes, seconds } = prev;
-
-        if (seconds > 0) {
-          seconds--;
-        } else if (minutes > 0) {
-          minutes--;
-          seconds = 59;
-        } else if (hours > 0) {
-          hours--;
-          minutes = 59;
-          seconds = 59;
-        }
-
-        return { hours, minutes, seconds };
-      });
+      const next = computeTimeLeft(startTime);
+      setTimeLeft(next);
+      if (next.expired) clearInterval(timer);
     }, 1000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [startTime, timeLeft.expired]);
 
   return (
     <div
@@ -456,12 +758,20 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({ theme }) => {
           }}
         >
           <Clock size={16} style={{ color: theme.colors.primary }} />
-          <span className="text-xs font-bold uppercase tracking-wider" style={{ color: theme.colors.primary }}>
-            Offre limitée - Expire dans
-          </span>
-          <span className="font-mono font-bold" style={{ color: theme.colors.primary }}>
-            {String(timeLeft.hours).padStart(2, '0')}:{String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
-          </span>
+          {timeLeft.expired ? (
+            <span className="text-xs font-bold uppercase tracking-wider" style={{ color: theme.colors.primary }}>
+              Offre expirée
+            </span>
+          ) : (
+            <>
+              <span className="text-xs font-bold uppercase tracking-wider" style={{ color: theme.colors.primary }}>
+                Offre spéciale - Expire dans
+              </span>
+              <span className="font-mono font-bold" style={{ color: theme.colors.primary }}>
+                {String(timeLeft.hours).padStart(2, '0')}:{String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
+              </span>
+            </>
+          )}
         </div>
 
         {/* Title */}

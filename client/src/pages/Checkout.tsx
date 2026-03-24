@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   XCircle,
   CreditCard,
+  X,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -109,6 +110,145 @@ const normalizePlan = (plan: string | null | undefined): PlanId | null => {
   if (normalized === "ultimate" || normalized === "elite") return "ultimate";
   return null;
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Inline comparison table — no Theme dependency, pure Tailwind + shadcn
+// ─────────────────────────────────────────────────────────────────────────────
+
+type CellValue = boolean | string;
+
+const COMPARISON_FEATURES: {
+  label: string;
+  discovery: CellValue;
+  anabolic: CellValue;
+  ultimate: CellValue;
+}[] = [
+  { label: "Domaines analysés", discovery: "10", anabolic: "16", ultimate: "18" },
+  { label: "Score global 0-100", discovery: true, anabolic: true, ultimate: true },
+  { label: "Recommandations", discovery: "Générales", anabolic: "Personnalisées", ultimate: "Personnalisées" },
+  { label: "Stack Suppléments", discovery: false, anabolic: "Personnalisé", ultimate: "Personnalisé" },
+  {
+    label: "5 Protocoles (Matin/Soir/Digestion/Bureau/Training)",
+    discovery: false,
+    anabolic: true,
+    ultimate: true,
+  },
+  { label: "Plan 30-60-90 jours", discovery: false, anabolic: true, ultimate: true },
+  { label: "Profil hormonal détaillé", discovery: false, anabolic: true, ultimate: true },
+  { label: "Analyse posturale 3D (photos)", discovery: false, anabolic: false, ultimate: true },
+  {
+    label: "Intégration Wearables (Apple/Garmin/Oura)",
+    discovery: false,
+    anabolic: false,
+    ultimate: true,
+  },
+  { label: "Dashboard temps réel", discovery: false, anabolic: false, ultimate: "À vie" },
+];
+
+function ComparisonCell({ value }: { value: CellValue }) {
+  if (value === true) {
+    return (
+      <span className="inline-flex items-center justify-center">
+        <Check className="h-4 w-4 text-emerald-500" aria-label="Inclus" />
+      </span>
+    );
+  }
+  if (value === false) {
+    return (
+      <span className="inline-flex items-center justify-center">
+        <X className="h-4 w-4 text-muted-foreground/40" aria-label="Non inclus" />
+      </span>
+    );
+  }
+  return <span className="text-xs font-medium text-foreground">{value}</span>;
+}
+
+function CheckoutComparisonTable() {
+  return (
+    <section aria-labelledby="comparison-heading" className="mt-12">
+      <div className="text-center mb-6">
+        <h2
+          id="comparison-heading"
+          className="text-2xl font-bold tracking-tight sm:text-3xl"
+        >
+          Compare les niveaux d'analyse
+        </h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Choisis en connaissance de cause — chaque scan est différent, pas juste "plus cher".
+        </p>
+      </div>
+
+      {/* Scrollable wrapper for mobile */}
+      <div className="overflow-x-auto rounded-lg border border-border">
+        <table className="w-full min-w-[560px] border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-border bg-muted/40">
+              <th
+                scope="col"
+                className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground w-[40%]"
+              >
+                Fonctionnalité
+              </th>
+              <th
+                scope="col"
+                className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground w-[20%]"
+              >
+                <div className="font-bold text-foreground">Discovery</div>
+                <div className="text-muted-foreground font-normal normal-case tracking-normal">Gratuit</div>
+              </th>
+              <th
+                scope="col"
+                className="relative px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider w-[20%] bg-primary/5 border-x border-primary/20"
+              >
+                <div className="absolute -top-2.5 left-1/2 -translate-x-1/2">
+                  <Badge className="text-[10px] px-2 py-0.5 whitespace-nowrap">
+                    <Star className="h-2.5 w-2.5 mr-1" />
+                    Populaire
+                  </Badge>
+                </div>
+                <div className="font-bold text-foreground">Anabolic</div>
+                <div className="text-primary font-bold normal-case tracking-normal">59€</div>
+              </th>
+              <th
+                scope="col"
+                className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground w-[20%]"
+              >
+                <div className="font-bold text-foreground">Ultimate</div>
+                <div className="text-muted-foreground font-normal normal-case tracking-normal">79€</div>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {COMPARISON_FEATURES.map((feature, idx) => (
+              <tr
+                key={feature.label}
+                className={`border-b border-border last:border-0 ${
+                  idx % 2 === 0 ? "bg-background" : "bg-muted/20"
+                }`}
+              >
+                <td className="px-4 py-3 text-sm text-foreground">{feature.label}</td>
+                <td className="px-3 py-3 text-center">
+                  <ComparisonCell value={feature.discovery} />
+                </td>
+                <td className="px-3 py-3 text-center bg-primary/5 border-x border-primary/20">
+                  <ComparisonCell value={feature.anabolic} />
+                </td>
+                <td className="px-3 py-3 text-center">
+                  <ComparisonCell value={feature.ultimate} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Coaching note */}
+      <p className="mt-4 text-center text-sm text-muted-foreground italic">
+        Le montant de ton scan est intégralement déduit si tu prends un coaching Achzod. C'est un acompte, pas une dépense.
+      </p>
+    </section>
+  );
+}
 
 export default function Checkout() {
   const [, navigate] = useLocation();
@@ -324,6 +464,9 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
             d'analyse qui te convient.
           </p>
         </motion.div>
+
+        {/* Comparison table — only shown when all plans are visible (not locked to one) */}
+        {!lockedPlan && <CheckoutComparisonTable />}
 
         <div className="mt-12 grid gap-6 lg:grid-cols-2 items-stretch max-w-4xl mx-auto">
           {visiblePlans.map((plan, index) => (

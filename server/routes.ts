@@ -14,6 +14,8 @@ import {
   sendReportReadyEmail,
   sendAdminEmailNewAudit,
   sendGratuitUpsellEmail,
+  sendGratuitJ5Email,
+  sendGratuitJ7Email,
   sendPremiumJ7Email,
   sendPremiumJ14Email,
   sendDiscoveryJ14CoachingEmail,
@@ -4466,7 +4468,7 @@ export async function registerRoutes(
     try {
       const baseUrl = getBaseUrl();
       const now = new Date();
-      const results = { gratuitUpsell: 0, premiumJ7: 0, premiumJ14: 0, errors: 0 };
+      const results = { gratuitUpsell: 0, gratuitJ5: 0, gratuitJ7: 0, premiumJ7: 0, premiumJ14: 0, errors: 0 };
 
       // Get all SENT audits
       const allAudits = await storage.getAllAudits();
@@ -4492,6 +4494,30 @@ export async function registerRoutes(
               const sent = await sendGratuitUpsellEmail(audit.email, audit.id, baseUrl, "auto-sequence");
               if (sent) results.gratuitUpsell++;
               else results.errors++;
+            }
+          }
+
+          // GRATUIT audits: J+5 email "Ce que ton Discovery ne peut pas te donner"
+          if (audit.type === "GRATUIT" && daysSinceSent >= 5 && daysSinceSent < 30) {
+            if (!trackingTypes.includes("sendGratuitJ5Email")) {
+              const hasConverted = await storage.hasUserPurchased(audit.email);
+              if (!hasConverted) {
+                const sent = await sendGratuitJ5Email(audit.email, audit.id, baseUrl, "auto-sequence");
+                if (sent) results.gratuitJ5++;
+                else results.errors++;
+              }
+            }
+          }
+
+          // GRATUIT audits: J+7 email "Offre limitee -40% cette semaine"
+          if (audit.type === "GRATUIT" && daysSinceSent >= 7 && daysSinceSent < 30) {
+            if (!trackingTypes.includes("sendGratuitJ7Email")) {
+              const hasConverted = await storage.hasUserPurchased(audit.email);
+              if (!hasConverted) {
+                const sent = await sendGratuitJ7Email(audit.email, audit.id, baseUrl, "auto-sequence");
+                if (sent) results.gratuitJ7++;
+                else results.errors++;
+              }
             }
           }
 

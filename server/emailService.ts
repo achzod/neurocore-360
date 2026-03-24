@@ -3026,6 +3026,269 @@ export async function sendDiscoveryJ14CoachingEmail(
   }
 }
 
+// Email Discovery J+5: "Ce que ton Discovery ne peut pas te donner"
+export async function sendGratuitJ5Email(
+  email: string,
+  auditId: string,
+  baseUrl: string,
+  trackingId: string
+): Promise<boolean> {
+  try {
+    const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
+    const primaryCtaLink = `https://apexlabs.achzodcoaching.com/offers/anabolic-bioscan`;
+    const secondaryCtaLink = `https://apexlabs.achzodcoaching.com/offers/ultimate-scan`;
+
+    const content = `
+      <h2 style="color: ${COLORS.text}; margin: 0 0 16px; font-size: 28px; text-align: center; font-weight: 700; letter-spacing: -1px;">
+        3 protocoles que ton Discovery ne peut pas generer
+      </h2>
+
+      <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 28px; text-align: center;">
+        Ton Discovery Scan t'a montre tes blocages metaboliques.<br/>
+        <strong style="color: ${COLORS.text};">Mais certains protocoles ne peuvent pas etre generes depuis un scan gratuit.</strong>
+      </p>
+
+      <!-- Les 3 protocoles bloqués -->
+      <div style="padding: 28px; background: ${COLORS.surface}; border-radius: 12px; border: 1px solid ${COLORS.border}; margin-bottom: 28px;">
+        <p style="color: ${COLORS.textMuted}; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 20px; font-weight: 600; text-align: center;">
+          Disponible uniquement dans les scans payants
+        </p>
+
+        <!-- Protocole 1 -->
+        <div style="padding: 16px; background: ${COLORS.background}; border-radius: 8px; border-left: 3px solid ${COLORS.primary}; margin-bottom: 12px;">
+          <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <span style="color: ${COLORS.primary}; font-size: 18px; font-weight: 700; min-width: 24px;">1.</span>
+            <div>
+              <p style="color: ${COLORS.text}; font-size: 15px; font-weight: 600; margin: 0 0 4px;">
+                Protocole Matin Anti-Cortisol personnalise
+              </p>
+              <p style="color: ${COLORS.textMuted}; font-size: 13px; margin: 0; line-height: 1.6;">
+                Sequence matinale calibree sur ton profil hormonal exact pour reguler le cortisol et maximiser l'energie.
+              </p>
+              <p style="color: ${COLORS.primary}; font-size: 11px; font-weight: 600; margin: 6px 0 0; text-transform: uppercase; letter-spacing: 1px;">
+                Disponible : Anabolic + Ultimate
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Protocole 2 -->
+        <div style="padding: 16px; background: ${COLORS.background}; border-radius: 8px; border-left: 3px solid ${COLORS.primary}; margin-bottom: 12px;">
+          <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <span style="color: ${COLORS.primary}; font-size: 18px; font-weight: 700; min-width: 24px;">2.</span>
+            <div>
+              <p style="color: ${COLORS.text}; font-size: 15px; font-weight: 600; margin: 0 0 4px;">
+                Stack Supplements base sur TES donnees exactes
+              </p>
+              <p style="color: ${COLORS.textMuted}; font-size: 13px; margin: 0; line-height: 1.6;">
+                Pas de liste generique. Un stack de supplements construit molecule par molecule a partir de tes reponses.
+              </p>
+              <p style="color: ${COLORS.primary}; font-size: 11px; font-weight: 600; margin: 6px 0 0; text-transform: uppercase; letter-spacing: 1px;">
+                Disponible : Anabolic + Ultimate
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Protocole 3 -->
+        <div style="padding: 16px; background: ${COLORS.background}; border-radius: 8px; border-left: 3px solid ${COLORS.purple};">
+          <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <span style="color: ${COLORS.purple}; font-size: 18px; font-weight: 700; min-width: 24px;">3.</span>
+            <div>
+              <p style="color: ${COLORS.text}; font-size: 15px; font-weight: 600; margin: 0 0 4px;">
+                Analyse posturale 3D avec tes photos
+              </p>
+              <p style="color: ${COLORS.textMuted}; font-size: 13px; margin: 0; line-height: 1.6;">
+                Analyse de ta posture en 3 axes (sagittal, frontal, transversal) avec recommandations correctrices ciblees.
+              </p>
+              <p style="color: ${COLORS.purple}; font-size: 11px; font-weight: 600; margin: 6px 0 0; text-transform: uppercase; letter-spacing: 1px;">
+                Disponible : Ultimate uniquement
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CTA Principal -->
+      <div style="padding: 28px; background: linear-gradient(135deg, ${COLORS.primary}20 0%, ${COLORS.primary}05 100%); border-radius: 12px; border: 2px solid ${COLORS.primary}; margin-bottom: 20px; text-align: center;">
+        <h3 style="color: ${COLORS.primary}; font-size: 20px; font-weight: 700; margin: 0 0 8px;">
+          Debloque tes protocoles
+        </h3>
+        <p style="color: ${COLORS.textMuted}; font-size: 14px; margin: 0 0 20px; line-height: 1.6;">
+          Anabolic Bioscan — 59EUR<br/>
+          <span style="font-size: 12px;">Protocole matin anti-cortisol + Stack supplements personnalise + Rapport 20+ pages</span>
+        </p>
+        ${getPrimaryButton('Debloquer mes protocoles', primaryCtaLink)}
+      </div>
+
+      <!-- CTA Secondaire -->
+      <div style="text-align: center; margin-bottom: 24px;">
+        <a href="${secondaryCtaLink}" style="color: ${COLORS.textMuted}; font-size: 14px; text-decoration: underline;">
+          Voir l'Ultimate Scan (le plus complet) — 79EUR
+        </a>
+      </div>
+
+      <!-- Footer note -->
+      <div style="padding: 16px; background: ${COLORS.surface}; border-radius: 8px; border: 1px solid ${COLORS.border}; text-align: center;">
+        <p style="color: ${COLORS.textMuted}; font-size: 13px; margin: 0; line-height: 1.6;">
+          <strong style="color: ${COLORS.text};">100% deduit si tu prends un coaching Achzod.</strong><br/>
+          C'est un acompte — pas une depense, un investissement qui se rembourse.
+        </p>
+      </div>
+
+      <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
+    `;
+
+    const emailContent = getEmailWrapper(
+      content,
+      `linear-gradient(135deg, ${COLORS.primary} 0%, #d4af37 100%)`,
+      "Discovery Scan",
+      "Ce que tu n'as pas encore"
+    );
+
+    const result = await sendEmailWithTracking(
+      {
+        html: encodeBase64(emailContent),
+        text: `3 protocoles que ton Discovery Scan ne peut pas generer : Protocole Matin Anti-Cortisol, Stack Supplements personnalise, Analyse posturale 3D. Debloque-les avec l'Anabolic Bioscan (59EUR) : ${primaryCtaLink}`,
+        subject: "3 protocoles que ton Discovery Scan ne peut pas generer",
+        from: { name: SENDER_NAME, email: SENDER_EMAIL },
+        to: [{ email }],
+      },
+      {
+        emailType: "sendGratuitJ5Email",
+        recipientEmail: email,
+        auditId,
+        auditType: "GRATUIT",
+        metadata: { primaryCtaLink, secondaryCtaLink, trackingId },
+      }
+    );
+
+    console.log(`[SendPulse] Discovery J+5 email sent to ${email}:`, result);
+    return result.result === true;
+  } catch (error) {
+    console.error("[SendPulse] Error sending Discovery J+5 email:", error);
+    return false;
+  }
+}
+
+// Email Discovery J+7: "Offre limitée -40% cette semaine"
+export async function sendGratuitJ7Email(
+  email: string,
+  auditId: string,
+  baseUrl: string,
+  trackingId: string
+): Promise<boolean> {
+  try {
+    const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
+    const checkoutLink = `https://apexlabs.achzodcoaching.com/questionnaire?plan=anabolic&promo=WELCOME40`;
+
+    const content = `
+      <h2 style="color: ${COLORS.text}; margin: 0 0 16px; font-size: 28px; text-align: center; font-weight: 700; letter-spacing: -1px;">
+        Offre limitee -40% cette semaine
+      </h2>
+
+      <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 28px; text-align: center;">
+        Ca fait une semaine que tu as tes resultats Discovery.<br/>
+        <strong style="color: ${COLORS.text};">Pour passer a l'action, profite de -40% sur l'Anabolic Bioscan.</strong>
+      </p>
+
+      <!-- Offre principale -->
+      <div style="padding: 32px; background: linear-gradient(135deg, ${COLORS.primary}20 0%, ${COLORS.primary}05 100%); border-radius: 12px; border: 2px solid ${COLORS.primary}; margin-bottom: 28px; text-align: center;">
+
+        <!-- Prix barré -->
+        <div style="margin-bottom: 16px;">
+          <span style="color: ${COLORS.textMuted}; font-size: 22px; text-decoration: line-through; font-weight: 600;">59EUR</span>
+          <span style="color: ${COLORS.text}; font-size: 16px; margin: 0 12px;">→</span>
+          <span style="color: ${COLORS.primary}; font-size: 40px; font-weight: 700; letter-spacing: -1px;">35EUR</span>
+        </div>
+
+        <!-- Badge réduction -->
+        <div style="display: inline-block; background: ${COLORS.primary}; color: ${COLORS.background}; padding: 6px 20px; border-radius: 20px; font-size: 13px; font-weight: 700; letter-spacing: 1px; margin-bottom: 20px; text-transform: uppercase;">
+          -40% cette semaine
+        </div>
+
+        <!-- Code promo -->
+        <div style="background: ${COLORS.background}; border-radius: 10px; padding: 20px; border: 2px dashed ${COLORS.primary}; margin-bottom: 24px;">
+          <p style="color: ${COLORS.textMuted}; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 8px; font-weight: 600;">
+            Code promo a utiliser au checkout
+          </p>
+          <p style="color: ${COLORS.primary}; font-size: 36px; font-weight: 700; letter-spacing: 4px; margin: 0 0 8px;">
+            WELCOME40
+          </p>
+          <p style="color: ${COLORS.textMuted}; font-size: 12px; margin: 0;">
+            Applique automatiquement lors du paiement
+          </p>
+        </div>
+
+        ${getPrimaryButton('Obtenir Anabolic Bioscan (-40%)', checkoutLink)}
+
+        <!-- Urgence -->
+        <p style="color: ${COLORS.textMuted}; font-size: 13px; margin: 16px 0 0; font-weight: 500;">
+          Cette offre est valable <strong style="color: ${COLORS.text};">48h</strong>
+        </p>
+      </div>
+
+      <!-- Ce qui est inclus -->
+      <div style="padding: 24px; background: ${COLORS.surface}; border-radius: 12px; border: 1px solid ${COLORS.border}; margin-bottom: 24px;">
+        <p style="color: ${COLORS.text}; font-size: 14px; font-weight: 600; margin: 0 0 16px; text-align: center; text-transform: uppercase; letter-spacing: 1px;">
+          Inclus dans l'Anabolic Bioscan
+        </p>
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+          <tr><td style="padding: 8px 0; color: ${COLORS.text}; font-size: 14px; font-weight: 500;">✓ Analyse approfondie sur 16 domaines metaboliques</td></tr>
+          <tr><td style="padding: 8px 0; color: ${COLORS.text}; font-size: 14px; font-weight: 500;">✓ Protocole Matin Anti-Cortisol personnalise</td></tr>
+          <tr><td style="padding: 8px 0; color: ${COLORS.text}; font-size: 14px; font-weight: 500;">✓ Stack Supplements calibre sur tes donnees</td></tr>
+          <tr><td style="padding: 8px 0; color: ${COLORS.text}; font-size: 14px; font-weight: 500;">✓ Plan d'action 30/60/90 jours</td></tr>
+          <tr><td style="padding: 8px 0; color: ${COLORS.text}; font-size: 14px; font-weight: 500;">✓ Rapport PDF 20+ pages</td></tr>
+        </table>
+      </div>
+
+      <!-- Footer note -->
+      <div style="padding: 16px; background: ${COLORS.surface}; border-radius: 8px; border: 1px solid ${COLORS.border}; text-align: center; margin-bottom: 16px;">
+        <p style="color: ${COLORS.textMuted}; font-size: 13px; margin: 0; line-height: 1.6;">
+          Et rappelle-toi : <strong style="color: ${COLORS.text};">ce montant est deduit si tu prends un coaching Achzod.</strong><br/>
+          35EUR aujourd'hui = 0EUR net si tu continues en coaching.
+        </p>
+      </div>
+
+      <p style="color: ${COLORS.textMuted}; font-size: 12px; line-height: 1.6; margin: 0; text-align: center;">
+        Pour arreter ces emails, reponds simplement "STOP".
+      </p>
+
+      <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
+    `;
+
+    const emailContent = getEmailWrapper(
+      content,
+      `linear-gradient(135deg, ${COLORS.primary} 0%, #f59e0b 100%)`,
+      "Offre Limitee",
+      "Anabolic Bioscan a -40%"
+    );
+
+    const result = await sendEmailWithTracking(
+      {
+        html: encodeBase64(emailContent),
+        text: `Ca fait une semaine que tu as tes resultats Discovery. Profite de -40% sur l'Anabolic Bioscan : 59EUR → 35EUR avec le code WELCOME40. Offre valable 48h : ${checkoutLink}`,
+        subject: "Offre limitee : Anabolic Bioscan a 35EUR (au lieu de 59EUR)",
+        from: { name: SENDER_NAME, email: SENDER_EMAIL },
+        to: [{ email }],
+      },
+      {
+        emailType: "sendGratuitJ7Email",
+        recipientEmail: email,
+        auditId,
+        auditType: "GRATUIT",
+        metadata: { promoCode: "WELCOME40", checkoutLink, trackingId },
+      }
+    );
+
+    console.log(`[SendPulse] Discovery J+7 email sent to ${email}:`, result);
+    return result.result === true;
+  } catch (error) {
+    console.error("[SendPulse] Error sending Discovery J+7 email:", error);
+    return false;
+  }
+}
+
 // Promo code email templates by audit type
 const PROMO_EMAIL_CONFIG: Record<string, {
   title: string;
