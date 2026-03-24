@@ -5372,6 +5372,54 @@ export async function registerRoutes(
               stripeCustomerId: session.customer || null,
             });
             console.log(`[Webhook] Order ${order.id} marked as paid via webhook`);
+
+            // ✅ FIX: Create audit automatically in webhook (prevents missing audits)
+            const email = session.customer_details?.email || session.customer_email || session.metadata?.email || order.email;
+            const planType = order.productType;
+
+            // Only create audit if:
+            // 1. Order doesn't already have an audit
+            // 2. Product type is one that needs an audit (not BLOOD_ANALYSIS or FORMCHECK)
+            if (email && planType && !order.auditId && ["GRATUIT", "PREMIUM", "ELITE"].includes(planType)) {
+              console.log(`[Webhook] Creating audit automatically for order ${order.id} (${email}, ${planType})`);
+
+              try {
+                const progress = await storage.getProgress(email);
+                let responses = progress?.responses as Record<string, unknown> | string | undefined;
+
+                if (typeof responses === "string") {
+                  try { responses = JSON.parse(responses); } catch { responses = undefined; }
+                }
+
+                if (responses && Object.keys(responses).length > 0) {
+                  // Check for 3 photos if ELITE
+                  if (planType === "ELITE" && !hasThreePhotos(responses as Record<string, unknown>)) {
+                    console.warn(`[Webhook] ⚠️  3 photos obligatoires pour Ultimate Scan: ${email}`);
+                  } else {
+                    // Create audit
+                    const audit = await storage.createAudit({
+                      userId: "",
+                      type: planType as any,
+                      email,
+                      responses: responses as Record<string, unknown>,
+                    });
+
+                    // Link order to audit
+                    await storage.claimOrderForAudit(order.id, audit.id);
+
+                    // Clean up questionnaire progress
+                    await storage.deleteProgress(email).catch(() => {});
+
+                    console.log(`[Webhook] ✅ Audit ${audit.id} created automatically for order ${order.id}`);
+                  }
+                } else {
+                  console.warn(`[Webhook] ⚠️  No questionnaire data found for ${email}, audit not created`);
+                }
+              } catch (auditError) {
+                console.error(`[Webhook] ❌ Failed to create audit for order ${order.id}:`, auditError);
+                // Don't fail the webhook, just log the error
+              }
+            }
           }
           break;
         }
