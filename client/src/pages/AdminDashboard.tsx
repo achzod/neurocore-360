@@ -868,7 +868,7 @@ export default function AdminDashboard() {
             </TabsTrigger>
             <TabsTrigger value="audits" className="gap-2">
               <FileText className="w-4 h-4" />
-              Analyses envoyées ({audits.filter(a => a.reportDeliveryStatus === "SENT").length})
+              Analyses envoyées ({emailStats?.totalSent || audits.filter(a => a.reportDeliveryStatus === "SENT").length})
             </TabsTrigger>
             <TabsTrigger value="incomplete" className="gap-2">
               <UserX className="w-4 h-4" />
