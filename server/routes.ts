@@ -5842,6 +5842,132 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== EMAIL STATS V2 (with DB correlation) ====================
+  app.get("/api/admin/email-stats", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+
+    try {
+      const { emailTracking: emailTrackingTable } = await import("../shared/drizzle-schema.js");
+
+      // Get all email tracking data
+      const allEmails = await db.select().from(emailTrackingTable);
+
+      // Get all audits for correlation
+      const allAudits = await storage.getAllAudits();
+
+      // Calculate stats
+      const totalSent = allEmails.length;
+      const delivered = allEmails.filter(e => e.sendpulseStatus === 'success').length;
+      const failed = allEmails.filter(e => e.sendpulseStatus === 'failed').length;
+
+      // By audit type
+      const byType: Record<string, number> = {};
+      allEmails.forEach(e => {
+        if (e.auditType) {
+          byType[e.auditType] = (byType[e.auditType] || 0) + 1;
+        }
+      });
+
+      // Pending/Ready audits
+      const pending = allAudits.filter(a => a.reportDeliveryStatus === 'SCHEDULED').length;
+      const ready = allAudits.filter(a => a.reportDeliveryStatus === 'READY').length;
+      const sent = allAudits.filter(a => a.reportDeliveryStatus === 'SENT').length;
+
+      // Last 24h and 7d
+      const now = new Date();
+      const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const last7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+      const last24hCount = allEmails.filter(e => e.sentAt && new Date(e.sentAt) >= last24h).length;
+      const last7dCount = allEmails.filter(e => e.sentAt && new Date(e.sentAt) >= last7d).length;
+
+      res.json({
+        success: true,
+        stats: {
+          totalSent,
+          delivered,
+          failed,
+          pending,
+          ready,
+          sent,
+          byType,
+          last24h: last24hCount,
+          last7d: last7dCount,
+          deliveryRate: totalSent > 0 ? ((delivered / totalSent) * 100).toFixed(1) : '0.0'
+        }
+      });
+
+    } catch (error) {
+      console.error("[EmailStats] Error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Erreur stats emails",
+        message: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // ==================== AUDITS PENDING ====================
+  app.get("/api/admin/audits-pending", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+
+    try {
+      const allAudits = await storage.getAllAudits();
+
+      const scheduled = allAudits.filter(a => a.reportDeliveryStatus === 'SCHEDULED');
+      const ready = allAudits.filter(a => a.reportDeliveryStatus === 'READY');
+
+      // Find stuck (SCHEDULED > 48h)
+      const now = new Date();
+      const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+
+      const stuck = scheduled.filter(a => {
+        const createdAt = new Date(a.createdAt);
+        return createdAt < fortyEightHoursAgo;
+      });
+
+      res.json({
+        success: true,
+        scheduled: scheduled.map(a => ({
+          id: a.id,
+          email: a.email,
+          type: a.type,
+          status: a.reportDeliveryStatus,
+          createdAt: a.createdAt,
+          hoursSinceCreation: Math.floor((now.getTime() - new Date(a.createdAt).getTime()) / (1000 * 60 * 60))
+        })),
+        ready: ready.map(a => ({
+          id: a.id,
+          email: a.email,
+          type: a.type,
+          status: a.reportDeliveryStatus,
+          createdAt: a.createdAt
+        })),
+        stuck: stuck.map(a => ({
+          id: a.id,
+          email: a.email,
+          type: a.type,
+          status: a.reportDeliveryStatus,
+          createdAt: a.createdAt,
+          hoursSinceCreation: Math.floor((now.getTime() - new Date(a.createdAt).getTime()) / (1000 * 60 * 60))
+        })),
+        counts: {
+          scheduled: scheduled.length,
+          ready: ready.length,
+          stuck: stuck.length
+        }
+      });
+
+    } catch (error) {
+      console.error("[AuditsPending] Error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Erreur audits pending",
+        message: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   // ==================== FORCE SEND EMAIL ====================
   app.post("/api/admin/force-send-email", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
