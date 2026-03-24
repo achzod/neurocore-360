@@ -5842,6 +5842,244 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== FORCE SEND EMAIL ====================
+  app.post("/api/admin/force-send-email", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+
+    try {
+      const { email, auditId } = req.body;
+
+      if (!email && !auditId) {
+        res.status(400).json({ error: "Email ou auditId requis" });
+        return;
+      }
+
+      console.log(`[ForceSend] 🚀 Forcing email send for ${email || auditId}`);
+
+      // Find audit
+      let audit;
+      if (auditId) {
+        audit = await storage.getAuditById(auditId);
+      } else if (email) {
+        const normalizedEmail = email.trim().toLowerCase();
+        const allAudits = await storage.getAllAudits();
+        audit = allAudits.find(a => a.email.toLowerCase() === normalizedEmail &&
+          (a.reportDeliveryStatus === "SCHEDULED" || a.reportDeliveryStatus === "READY"));
+      }
+
+      if (!audit) {
+        res.status(404).json({ error: "Audit non trouvé ou déjà envoyé" });
+        return;
+      }
+
+      // Check status
+      if (audit.reportDeliveryStatus === "SENT") {
+        res.json({
+          success: true,
+          alreadySent: true,
+          message: "Email déjà envoyé",
+          sentAt: audit.reportSentAt
+        });
+        return;
+      }
+
+      if (audit.reportDeliveryStatus !== "SCHEDULED" && audit.reportDeliveryStatus !== "READY") {
+        res.status(400).json({
+          error: `Cannot force send: status is ${audit.reportDeliveryStatus}`,
+          status: audit.reportDeliveryStatus
+        });
+        return;
+      }
+
+      // Force send
+      const { sendReportReadyEmail } = await import("./emailService.js");
+      const baseUrl = getBaseUrl();
+
+      console.log(`[ForceSend] Sending to ${audit.email} (audit: ${audit.id}, type: ${audit.type})`);
+
+      const sent = await sendReportReadyEmail(audit.email, audit.id, audit.type, baseUrl);
+
+      if (sent) {
+        await storage.updateAudit(audit.id, {
+          reportDeliveryStatus: "SENT",
+          reportSentAt: new Date()
+        });
+
+        console.log(`[ForceSend] ✅ Email sent successfully to ${audit.email}`);
+
+        res.json({
+          success: true,
+          sent: true,
+          email: audit.email,
+          auditId: audit.id,
+          auditType: audit.type,
+          sentAt: new Date()
+        });
+      } else {
+        console.error(`[ForceSend] ❌ Failed to send email to ${audit.email}`);
+        res.json({
+          success: false,
+          sent: false,
+          error: "SendPulse API returned false",
+          email: audit.email,
+          auditId: audit.id
+        });
+      }
+
+    } catch (error) {
+      console.error("[ForceSend] Error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Erreur envoi forcé",
+        message: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // ==================== IMPORT SENDPULSE HISTORY ====================
+  app.post("/api/admin/import-sendpulse-history", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+
+    try {
+      const { csvData } = req.body;
+
+      if (!csvData || typeof csvData !== "string") {
+        res.status(400).json({ error: "csvData requis (CSV format SendPulse)" });
+        return;
+      }
+
+      console.log("[ImportSP] 📥 Starting SendPulse history import...");
+
+      const { emailTracking: emailTrackingTable } = await import("../shared/drizzle-schema.js");
+
+      // Parse CSV (separator is ;)
+      const lines = csvData.split('\n').filter(l => l.trim());
+
+      if (lines.length < 2) {
+        res.status(400).json({ error: "CSV vide ou invalide" });
+        return;
+      }
+
+      let imported = 0;
+      let skipped = 0;
+      let errors = 0;
+      const errorDetails: Array<{ line: number; email: string; error: string }> = [];
+
+      // Skip header (line 0)
+      for (let i = 1; i < lines.length; i++) {
+        try {
+          const cols = lines[i].split(';');
+
+          if (cols.length < 7) {
+            skipped++;
+            continue;
+          }
+
+          const recipientEmail = cols[3]?.toLowerCase().trim();
+          const subject = cols[4] || '';
+          const status = cols[6] || '';
+          const dateStr = cols[1] || '';
+
+          // Skip admin/test emails
+          if (!recipientEmail ||
+              recipientEmail.includes('achzodcoaching.com') ||
+              recipientEmail.includes('@test.com') ||
+              recipientEmail === 'achzodyt@gmail.com' ||
+              recipientEmail === 'achkou@gmail.com') {
+            skipped++;
+            continue;
+          }
+
+          // Only import audit report emails
+          const isAuditReport = subject.includes('Discovery Scan') ||
+                                subject.includes('Scan Anabolique') ||
+                                subject.includes('Ultimate Scan');
+
+          if (!isAuditReport) {
+            skipped++;
+            continue;
+          }
+
+          // Determine audit type from subject
+          let auditType = 'GRATUIT';
+          if (subject.includes('Scan Anabolique')) {
+            auditType = 'PREMIUM';
+          } else if (subject.includes('Ultimate Scan')) {
+            auditType = 'ELITE';
+          }
+
+          // Find corresponding order/audit
+          const orders = await pool.query(
+            `SELECT id, audit_id FROM orders WHERE LOWER(email) = $1 AND product_type = $2 LIMIT 1`,
+            [recipientEmail, auditType]
+          );
+
+          const auditId = orders.rows[0]?.audit_id || null;
+
+          // Parse date (format: 2026-03-17 10:30:21)
+          const sentAt = new Date(dateStr);
+
+          // Insert into email_tracking
+          const sendpulseStatus = status.toLowerCase().includes('delivered') ? 'success' : 'failed';
+
+          await db.insert(emailTrackingTable).values({
+            emailType: 'sendReportReadyEmail',
+            recipientEmail,
+            recipientName: null,
+            auditId,
+            auditType,
+            subject,
+            previewText: null,
+            sendpulseTaskId: null,
+            sendpulseStatus,
+            sendpulseError: sendpulseStatus === 'failed' ? status : null,
+            metadata: { importedFromSendPulse: true, originalDate: dateStr },
+            sentAt,
+            createdAt: new Date(),
+          }).onConflictDoNothing();
+
+          imported++;
+
+          if (imported % 50 === 0) {
+            console.log(`[ImportSP] Progress: ${imported} imported, ${skipped} skipped`);
+          }
+
+        } catch (err) {
+          errors++;
+          errorDetails.push({
+            line: i + 1,
+            email: cols[3] || 'unknown',
+            error: err instanceof Error ? err.message : String(err)
+          });
+
+          if (errors <= 10) {
+            console.error(`[ImportSP] Error at line ${i + 1}:`, err);
+          }
+        }
+      }
+
+      const summary = {
+        success: true,
+        imported,
+        skipped,
+        errors,
+        totalLines: lines.length - 1,
+        errorDetails: errorDetails.slice(0, 20)
+      };
+
+      console.log("[ImportSP] ✅ Import complete:", summary);
+      res.json(summary);
+
+    } catch (error) {
+      console.error("[ImportSP] Fatal error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Erreur import SendPulse",
+        message: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   // Démarrer la surveillance automatique des relances d'abandons
   // Check toutes les 30 minutes pour détecter ouvertures, conversions, etc.
   startMonitoring(storage, 30).catch(err => {
