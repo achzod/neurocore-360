@@ -5884,6 +5884,7 @@ export async function registerRoutes(
     if (!requireAdminAuth(req, res)) return;
 
     try {
+      const { db } = await import("./db.js");
       const { emailTracking: emailTrackingTable } = await import("../shared/drizzle-schema.js");
 
       // Get all email tracking data
