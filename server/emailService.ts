@@ -185,7 +185,7 @@ async function sendEmailWithTracking(
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ email: payloadWithBcc }),
+      body: JSON.stringify({ email: payloadWithBcc, track_opens: 1, track_clicks: 1 }),
     });
 
     const result = (await response.json()) as { result: boolean; error?: any; message?: any };
@@ -491,6 +491,11 @@ export async function sendReportReadyEmail(
         ? "biomarqueurs clés"
         : "18 domaines de santé";
 
+    // Generate a tracking ID for the open pixel
+    const { randomUUID } = await import("crypto");
+    const pixelTrackingId = randomUUID();
+    const trackingPixel = `${baseUrl}/api/track/email/${pixelTrackingId}/open.gif`;
+
     const content = `
       <div style="text-align: center; margin-bottom: 28px;">
         <span style="display: inline-block; background: ${planColor}20; color: ${planColor}; padding: 8px 20px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; border: 1px solid ${planColor}40;">
@@ -523,6 +528,7 @@ export async function sendReportReadyEmail(
           <a href="${reportLink}" style="color: ${COLORS.primary}; font-size: 11px; word-break: break-all;">${reportLink}</a>
         </p>
       </div>
+      <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
     `;
 
     const emailContent = getEmailWrapper(content, `linear-gradient(135deg, ${planColor} 0%, ${planColor}dd 100%)`, headerTitle, headerSubtitle);
@@ -543,7 +549,7 @@ export async function sendReportReadyEmail(
         recipientEmail: email,
         auditId,
         auditType,
-        metadata: { reportLink, planLabel },
+        metadata: { reportLink, planLabel, trackingId: pixelTrackingId },
       }
     );
 

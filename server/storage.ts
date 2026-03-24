@@ -2096,7 +2096,7 @@ export class PgStorage implements IStorage {
 
   async markEmailOpened(trackingId: string): Promise<void> {
     await pool.query(
-      "UPDATE email_tracking SET opened_at = NOW() WHERE id = $1 AND opened_at IS NULL",
+      "UPDATE email_tracking SET opened = NOW() WHERE id = $1 AND opened IS NULL",
       [trackingId]
     );
   }
