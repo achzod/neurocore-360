@@ -5959,7 +5959,7 @@ export async function registerRoutes(
 
       console.log("[EmailStats] Fetching emails from SendPulse with pagination...");
 
-      while (hasMore && allEmails.length < 2000) { // Max 2000 emails
+      while (hasMore) { // No limit - fetch ALL emails
         const emailsRes = await fetch(
           `https://api.sendpulse.com/smtp/emails?limit=${limit}&offset=${offset}&from_date=${since17mars}`,
           {
@@ -6198,7 +6198,7 @@ export async function registerRoutes(
 
       console.log("[SendPulseLiveStats] Starting pagination...");
 
-      while (hasMore && allEmails.length < 2000) { // Max 2000 emails
+      while (hasMore) { // No limit - fetch ALL emails
         const emailsRes = await fetch(
           `https://api.sendpulse.com/smtp/emails?limit=${limit}&offset=${offset}&from_date=${since17mars}`,
           {
@@ -6321,89 +6321,88 @@ export async function registerRoutes(
     if (!requireAdminAuth(req, res)) return;
 
     try {
-      const { Pool } = await import("pg");
-      const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+      const SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID;
+      const SENDPULSE_SECRET = process.env.SENDPULSE_SECRET;
 
-      if (!databaseUrl) {
-        res.status(500).json({ error: 'DATABASE_URL not configured' });
+      if (!SENDPULSE_USER_ID || !SENDPULSE_SECRET) {
+        res.json({ success: false, error: "SendPulse credentials not configured" });
         return;
       }
 
-      const pool = new Pool({
-        connectionString: databaseUrl,
-        ssl: databaseUrl.includes("render.com") || databaseUrl.includes("neon.tech")
-          ? { rejectUnauthorized: false }
-          : false,
+      // 1. Get SendPulse OAuth token
+      const tokenRes = await fetch("https://api.sendpulse.com/oauth/access_token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          grant_type: "client_credentials",
+          client_id: SENDPULSE_USER_ID,
+          client_secret: SENDPULSE_SECRET,
+        }),
       });
 
-      try {
-        // Get total emails sent
-        const totalResult = await pool.query(`SELECT COUNT(*) FROM email_tracking`);
-        const totalSent = parseInt(totalResult.rows[0].count);
-
-        // Get open count
-        const openResult = await pool.query(`SELECT COUNT(*) FROM email_tracking WHERE opened IS NOT NULL`);
-        const opened = parseInt(openResult.rows[0].count);
-
-        // Get click count
-        const clickResult = await pool.query(`SELECT COUNT(*) FROM email_tracking WHERE clicked IS NOT NULL`);
-        const clicked = parseInt(clickResult.rows[0].count);
-
-        // Get CTA events by type
-        const eventResult = await pool.query(`
-          SELECT event_type, COUNT(*) as count
-          FROM cta_tracking
-          GROUP BY event_type
-          ORDER BY count DESC
-        `);
-
-        const byEventType: Record<string, number> = {};
-        eventResult.rows.forEach(row => {
-          byEventType[row.event_type] = parseInt(row.count);
-        });
-
-        // Get clicked URLs
-        const urlResult = await pool.query(`
-          SELECT url, COUNT(*) as count
-          FROM cta_tracking
-          WHERE event_type = 'click' AND url IS NOT NULL
-          GROUP BY url
-          ORDER BY count DESC
-          LIMIT 10
-        `);
-
-        const byUrl: Record<string, number> = {};
-        urlResult.rows.forEach(row => {
-          byUrl[row.url] = parseInt(row.count);
-        });
-
-        // Get recent events
-        const recentResult = await pool.query(`
-          SELECT ct.event_type, ct.url, ct.created_at, et.recipient_email
-          FROM cta_tracking ct
-          LEFT JOIN email_tracking et ON ct.email_tracking_id = et.id
-          ORDER BY ct.created_at DESC
-          LIMIT 20
-        `);
-
-        res.json({
-          success: true,
-          stats: {
-            totalSent,
-            opened,
-            clicked,
-            openRate: totalSent > 0 ? ((opened / totalSent) * 100).toFixed(1) : '0.0',
-            clickRate: totalSent > 0 ? ((clicked / totalSent) * 100).toFixed(1) : '0.0',
-            clickToOpenRate: opened > 0 ? ((clicked / opened) * 100).toFixed(1) : '0.0',
-            byEventType,
-            byUrl,
-            recentEvents: recentResult.rows
-          }
-        });
-
-      } finally {
-        await pool.end();
+      if (!tokenRes.ok) {
+        throw new Error(`SendPulse auth failed: ${tokenRes.statusText}`);
       }
+
+      const tokenData = await tokenRes.json();
+      const accessToken = tokenData.access_token;
+
+      // 2. Get ALL emails from SendPulse with pagination
+      const since17mars = "2026-03-17T00:00:00Z";
+      const limit = 100;
+      let allEmails: any[] = [];
+      let offset = 0;
+      let hasMore = true;
+
+      console.log("[CTAStats] Fetching emails from SendPulse...");
+
+      while (hasMore) {
+        const emailsRes = await fetch(
+          `https://api.sendpulse.com/smtp/emails?limit=${limit}&offset=${offset}&from_date=${since17mars}`,
+          {
+            headers: {
+              "Authorization": `Bearer ${accessToken}`,
+              "Content-Type": "application/json"
+            }
+          }
+        );
+
+        if (!emailsRes.ok) {
+          console.error(`[CTAStats] Failed at offset ${offset}`);
+          break;
+        }
+
+        const emailsData = await emailsRes.json();
+        const emails = Array.isArray(emailsData) ? emailsData : (emailsData.data || []);
+
+        if (emails.length === 0) {
+          hasMore = false;
+        } else {
+          allEmails = allEmails.concat(emails);
+          offset += limit;
+        }
+      }
+
+      console.log(`[CTAStats] Total emails fetched: ${allEmails.length}`);
+
+      const totalSent = allEmails.length;
+      const opened = allEmails.filter((e: any) => e.opens && e.opens > 0).length;
+      const clicked = allEmails.filter((e: any) => e.clicks && e.clicks > 0).length;
+
+      res.json({
+        success: true,
+        stats: {
+          totalSent,
+          opened,
+          clicked,
+          openRate: totalSent > 0 ? ((opened / totalSent) * 100).toFixed(1) + '%' : '0.0%',
+          clickRate: totalSent > 0 ? ((clicked / totalSent) * 100).toFixed(1) + '%' : '0.0%',
+          clickToOpenRate: opened > 0 ? ((clicked / opened) * 100).toFixed(1) + '%' : '0.0%',
+          byEventType: {},
+          byUrl: {},
+          recentEvents: []
+        }
+      });
 
     } catch (error) {
       console.error("[CTAStats] Error:", error);
