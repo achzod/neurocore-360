@@ -6260,6 +6260,64 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== DEBUG: Check email_tracking table structure ====================
+  app.get("/api/admin/check-email-tracking-table", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+
+    try {
+      const { Pool } = await import("pg");
+      const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+
+      if (!databaseUrl) {
+        res.status(500).json({ error: 'DATABASE_URL not configured' });
+        return;
+      }
+
+      const pool = new Pool({
+        connectionString: databaseUrl,
+        ssl: databaseUrl.includes("render.com") || databaseUrl.includes("neon.tech")
+          ? { rejectUnauthorized: false }
+          : false,
+      });
+
+      try {
+        // Check if table exists and get columns
+        const result = await pool.query(`
+          SELECT column_name, data_type, character_maximum_length, is_nullable
+          FROM information_schema.columns
+          WHERE table_name = 'email_tracking'
+          ORDER BY ordinal_position;
+        `);
+
+        // Also try to count rows
+        let count = 0;
+        try {
+          const countResult = await pool.query(`SELECT COUNT(*) FROM email_tracking`);
+          count = parseInt(countResult.rows[0].count);
+        } catch (e) {
+          // Ignore count errors
+        }
+
+        res.json({
+          success: true,
+          tableExists: result.rows.length > 0,
+          columns: result.rows,
+          rowCount: count
+        });
+      } finally {
+        await pool.end();
+      }
+
+    } catch (error) {
+      console.error("[CheckTable] Error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Erreur vérification table",
+        message: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   // Démarrer la surveillance automatique des relances d'abandons
   // Check toutes les 30 minutes pour détecter ouvertures, conversions, etc.
   startMonitoring(storage, 30).catch(err => {
