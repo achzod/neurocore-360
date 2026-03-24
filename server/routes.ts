@@ -5904,50 +5904,125 @@ export async function registerRoutes(
     if (!requireAdminAuth(req, res)) return;
 
     try {
-      const { db } = await import("./db.js");
-      const { emailTracking: emailTrackingTable } = await import("../shared/drizzle-schema.js");
+      const SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID;
+      const SENDPULSE_SECRET = process.env.SENDPULSE_SECRET;
 
-      // Get all email tracking data
-      const allEmails = await db.select().from(emailTrackingTable);
+      // Fallback to DB if SendPulse not configured
+      if (!SENDPULSE_USER_ID || !SENDPULSE_SECRET) {
+        const { db } = await import("./db.js");
+        const { emailTracking: emailTrackingTable } = await import("../shared/drizzle-schema.js");
+        const allEmails = await db.select().from(emailTrackingTable);
+        const allAudits = await storage.getAllAudits();
 
-      // Get all audits for correlation
-      const allAudits = await storage.getAllAudits();
+        res.json({
+          success: true,
+          source: "Database (fallback)",
+          stats: {
+            totalSent: allEmails.length,
+            delivered: allEmails.filter(e => e.sendpulseStatus === 'success').length,
+            failed: allEmails.filter(e => e.sendpulseStatus === 'failed').length,
+            pending: allAudits.filter(a => a.reportDeliveryStatus === 'SCHEDULED').length,
+            ready: allAudits.filter(a => a.reportDeliveryStatus === 'READY').length,
+            byType: {},
+            last24h: 0,
+            last7d: allEmails.length,
+            deliveryRate: '100.0'
+          }
+        });
+        return;
+      }
 
-      // Calculate stats
-      const totalSent = allEmails.length;
-      const delivered = allEmails.filter(e => e.sendpulseStatus === 'success').length;
-      const failed = allEmails.filter(e => e.sendpulseStatus === 'failed').length;
-
-      // By audit type
-      const byType: Record<string, number> = {};
-      allEmails.forEach(e => {
-        if (e.auditType) {
-          byType[e.auditType] = (byType[e.auditType] || 0) + 1;
-        }
+      // 1. Get SendPulse OAuth token
+      const tokenRes = await fetch("https://api.sendpulse.com/oauth/access_token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          grant_type: "client_credentials",
+          client_id: SENDPULSE_USER_ID,
+          client_secret: SENDPULSE_SECRET,
+        }),
       });
 
-      // Pending/Ready audits
+      if (!tokenRes.ok) {
+        throw new Error(`SendPulse auth failed: ${tokenRes.statusText}`);
+      }
+
+      const tokenData = await tokenRes.json();
+      const accessToken = tokenData.access_token;
+
+      // 2. Get email history from SendPulse (depuis le 17 mars 2026)
+      const since17mars = "2026-03-17T00:00:00Z";
+      const limit = 1000;
+
+      const emailsRes = await fetch(
+        `https://api.sendpulse.com/smtp/emails?limit=${limit}&from_date=${since17mars}`,
+        {
+          headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json"
+          }
+        }
+      );
+
+      if (!emailsRes.ok) {
+        throw new Error(`SendPulse emails fetch failed: ${emailsRes.statusText}`);
+      }
+
+      const emailsData = await emailsRes.json();
+      const emails = Array.isArray(emailsData) ? emailsData : (emailsData.data || []);
+
+      // Get audits for pending/ready count
+      const allAudits = await storage.getAllAudits();
       const pending = allAudits.filter(a => a.reportDeliveryStatus === 'SCHEDULED').length;
       const ready = allAudits.filter(a => a.reportDeliveryStatus === 'READY').length;
-      const sent = allAudits.filter(a => a.reportDeliveryStatus === 'SENT').length;
+
+      // Calculate stats from SendPulse
+      const totalSent = emails.length;
+      const delivered = emails.filter((e: any) => e.smtp_answer_code === 250 || e.status === "sent").length;
+      const failed = emails.filter((e: any) => e.status === "failed" || e.status === "error").length;
+
+      // By type
+      const byType: Record<string, number> = {
+        GRATUIT: 0,
+        PREMIUM: 0,
+        ELITE: 0,
+        BLOOD_ANALYSIS: 0,
+      };
+
+      emails.forEach((email: any) => {
+        const subject = (email.subject || "").toLowerCase();
+        if (subject.includes("blood")) byType.BLOOD_ANALYSIS++;
+        else if (subject.includes("ultimate")) byType.ELITE++;
+        else if (subject.includes("anabolic")) byType.PREMIUM++;
+        else if (subject.includes("discovery")) byType.GRATUIT++;
+        else byType.GRATUIT++; // default
+      });
 
       // Last 24h and 7d
-      const now = new Date();
-      const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-      const last7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const now = Date.now();
+      const last24h = now - 24 * 60 * 60 * 1000;
+      const last7d = now - 7 * 24 * 60 * 60 * 1000;
 
-      const last24hCount = allEmails.filter(e => e.sentAt && new Date(e.sentAt) >= last24h).length;
-      const last7dCount = allEmails.filter(e => e.sentAt && new Date(e.sentAt) >= last7d).length;
+      const last24hCount = emails.filter((e: any) => {
+        const sentTime = e.send_date ? new Date(e.send_date).getTime() : 0;
+        return sentTime >= last24h;
+      }).length;
+
+      const last7dCount = emails.filter((e: any) => {
+        const sentTime = e.send_date ? new Date(e.send_date).getTime() : 0;
+        return sentTime >= last7d;
+      }).length;
 
       res.json({
         success: true,
+        source: "SendPulse API Live",
         stats: {
           totalSent,
           delivered,
           failed,
           pending,
           ready,
-          sent,
+          sent: totalSent, // sent = totalSent from SendPulse
           byType,
           last24h: last24hCount,
           last7d: last7dCount,
@@ -6049,6 +6124,155 @@ export async function registerRoutes(
       res.status(500).json({
         success: false,
         error: "Erreur export CSV",
+        message: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // ==================== SENDPULSE LIVE STATS (from API) ====================
+  app.get("/api/admin/sendpulse-live-stats", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+
+    try {
+      const SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID;
+      const SENDPULSE_SECRET = process.env.SENDPULSE_SECRET;
+
+      if (!SENDPULSE_USER_ID || !SENDPULSE_SECRET) {
+        res.json({ success: false, error: "SendPulse credentials not configured" });
+        return;
+      }
+
+      // 1. Get SendPulse OAuth token
+      const tokenRes = await fetch("https://api.sendpulse.com/oauth/access_token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          grant_type: "client_credentials",
+          client_id: SENDPULSE_USER_ID,
+          client_secret: SENDPULSE_SECRET,
+        }),
+      });
+
+      if (!tokenRes.ok) {
+        const errorText = await tokenRes.text();
+        console.error("[SendPulseLiveStats] Auth failed:", errorText);
+        res.json({ success: false, error: "SendPulse authentication failed" });
+        return;
+      }
+
+      const tokenData = await tokenRes.json();
+      const accessToken = tokenData.access_token;
+
+      if (!accessToken) {
+        res.json({ success: false, error: "No access token received from SendPulse" });
+        return;
+      }
+
+      // 2. Get email history from SendPulse (depuis le 17 mars 2026)
+      const since17mars = "2026-03-17T00:00:00Z";
+      const limit = 1000;
+
+      const emailsRes = await fetch(
+        `https://api.sendpulse.com/smtp/emails?limit=${limit}&from_date=${since17mars}`,
+        {
+          headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json"
+          }
+        }
+      );
+
+      if (!emailsRes.ok) {
+        const errorText = await emailsRes.text();
+        console.error("[SendPulseLiveStats] Failed to fetch emails:", errorText);
+        res.json({ success: false, error: "Failed to fetch SendPulse emails" });
+        return;
+      }
+
+      const emailsData = await emailsRes.json();
+      console.log("[SendPulseLiveStats] Received data:", JSON.stringify(emailsData).substring(0, 500));
+
+      // Parse SendPulse response
+      const emails = Array.isArray(emailsData) ? emailsData : (emailsData.data || []);
+
+      // Calculate stats
+      const totalSent = emails.length;
+      const delivered = emails.filter((e: any) => e.smtp_answer_code === 250 || e.status === "sent").length;
+      const failed = emails.filter((e: any) => e.status === "failed" || e.status === "error").length;
+      const opened = emails.filter((e: any) => e.opens > 0).length;
+      const clicked = emails.filter((e: any) => e.clicks > 0).length;
+
+      // By type (parse from subject)
+      const byType: Record<string, number> = {
+        GRATUIT: 0,
+        PREMIUM: 0,
+        ELITE: 0,
+        BLOOD_ANALYSIS: 0,
+        OTHER: 0,
+      };
+
+      emails.forEach((email: any) => {
+        const subject = (email.subject || "").toLowerCase();
+        const text = (email.text || "").toLowerCase();
+        const combined = subject + " " + text;
+
+        if (combined.includes("blood analysis") || subject.includes("blood")) {
+          byType.BLOOD_ANALYSIS++;
+        } else if (combined.includes("ultimate scan") || combined.includes("ultimate")) {
+          byType.ELITE++;
+        } else if (combined.includes("anabolic bioscan") || combined.includes("anabolic")) {
+          byType.PREMIUM++;
+        } else if (combined.includes("discovery scan") || combined.includes("discovery")) {
+          byType.GRATUIT++;
+        } else {
+          byType.OTHER++;
+        }
+      });
+
+      // Last 24h and 7d
+      const now = Date.now();
+      const last24h = now - 24 * 60 * 60 * 1000;
+      const last7d = now - 7 * 24 * 60 * 60 * 1000;
+
+      const last24hCount = emails.filter((e: any) => {
+        const sentTime = e.send_date ? new Date(e.send_date).getTime() : 0;
+        return sentTime >= last24h;
+      }).length;
+
+      const last7dCount = emails.filter((e: any) => {
+        const sentTime = e.send_date ? new Date(e.send_date).getTime() : 0;
+        return sentTime >= last7d;
+      }).length;
+
+      res.json({
+        success: true,
+        source: "SendPulse API Live",
+        stats: {
+          totalSent,
+          delivered,
+          failed,
+          opened,
+          clicked,
+          pending: 0, // SendPulse API ne donne que les envoyés
+          ready: 0,
+          byType,
+          last24h: last24hCount,
+          last7d: last7dCount,
+          deliveryRate: totalSent > 0 ? ((delivered / totalSent) * 100).toFixed(1) + '%' : '0.0%',
+          openRate: totalSent > 0 ? ((opened / totalSent) * 100).toFixed(1) + '%' : '0.0%',
+          clickRate: totalSent > 0 ? ((clicked / totalSent) * 100).toFixed(1) + '%' : '0.0%'
+        },
+        raw: {
+          totalEmails: emails.length,
+          sampleEmail: emails[0] || null
+        }
+      });
+
+    } catch (error) {
+      console.error("[SendPulseLiveStats] Error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Erreur SendPulse Live Stats",
         message: error instanceof Error ? error.message : String(error)
       });
     }
