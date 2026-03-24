@@ -315,7 +315,7 @@ export default function AuditPremium() {
             className="flex items-center justify-center gap-4 mb-12"
           >
             <span className="text-white text-6xl font-bold tracking-[-0.04em]">59€</span>
-            <span className="text-white/40">one-time</span>
+            <span className="text-white/40">d'acompte coaching</span>
           </motion.div>
 
           <motion.div
@@ -550,7 +550,7 @@ export default function AuditPremium() {
             <div className="mt-10 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-6">
               <div>
                 <span className="text-white text-5xl font-bold tracking-[-0.04em]">59€</span>
-                <span className="text-white/40 ml-2">one-time</span>
+                <span className="text-white/40 ml-2">d'acompte coaching</span>
               </div>
               <Link href="/questionnaire?plan=anabolic">
                 <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(252,221,0,0.3)]">
@@ -603,7 +603,7 @@ export default function AuditPremium() {
           </p>
           <Link href="/questionnaire?plan=anabolic">
             <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(252,221,0,0.3)]">
-              Lancer mon Anabolic Bioscan — 59€
+              Lancer mon Anabolic Bioscan — 59€ d'acompte
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
           </Link>

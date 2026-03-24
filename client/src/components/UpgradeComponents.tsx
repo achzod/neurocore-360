@@ -67,9 +67,9 @@ function getHeroText(analysis: RecommendationAnalysis, globalScore: number): {
       label: 'Déséquilibre hormonal détecté',
       headline: 'Ton profil hormonal suggère des blocages anaboliques',
       subline: "L'Anabolic Bioscan identifie exactement ton potentiel anabolique, tes axes hormonaux et tes protocoles de correction.",
-      primaryCta: 'Anabolic Bioscan - 59€',
+      primaryCta: 'Anabolic Bioscan - 59€ (acompte coaching)',
       primaryLink: '/offers/anabolic-bioscan',
-      secondaryCta: 'Ultimate Scan - 79€',
+      secondaryCta: 'Ultimate Scan - 79€ (acompte coaching)',
       secondaryLink: '/offers/ultimate-scan',
       features: ['Profil hormonal complet', 'Stack suppléments personnalisé', 'Protocoles Matin/Soir anti-cortisol', 'Plan 30-60-90j']
     };
@@ -80,9 +80,9 @@ function getHeroText(analysis: RecommendationAnalysis, globalScore: number): {
       label: 'Blocages multiples détectés',
       headline: `Ton score global (${globalScore}/10) révèle des blocages sur plusieurs fronts`,
       subline: "L'Ultimate Scan est le plus adapté : 18 domaines analysés + posture 3D + wearables + dashboard temps réel.",
-      primaryCta: 'Ultimate Scan - 79€',
+      primaryCta: 'Ultimate Scan - 79€ (acompte coaching)',
       primaryLink: '/offers/ultimate-scan',
-      secondaryCta: 'Anabolic Bioscan - 59€',
+      secondaryCta: 'Anabolic Bioscan - 59€ (acompte coaching)',
       secondaryLink: '/offers/anabolic-bioscan',
       features: ['18 sections d\'analyse', 'Analyse posturale 3D', 'Wearables Apple/Garmin', 'Dashboard temps réel à vie']
     };
@@ -92,9 +92,9 @@ function getHeroText(analysis: RecommendationAnalysis, globalScore: number): {
     label: 'Upgrade Disponible',
     headline: 'Ton Discovery a détecté tes blocages',
     subline: 'Tu veux les corriger avec des protocoles exacts + analyse en temps réel ?',
-    primaryCta: 'Ultimate Scan - 79€',
+    primaryCta: 'Ultimate Scan - 79€ (acompte coaching)',
     primaryLink: '/offers/ultimate-scan',
-    secondaryCta: 'Anabolic Bioscan - 59€',
+    secondaryCta: 'Anabolic Bioscan - 59€ (acompte coaching)',
     secondaryLink: '/offers/anabolic-bioscan',
     features: ['Protocoles personnalisés', 'Wearables (Apple/Garmin)', 'Posture 3D']
   };
@@ -405,22 +405,22 @@ export const UpgradeTeaser: React.FC<UpgradeTeaserProps> = ({
   if (context === 'energy') {
     // After energy/metabolism sections → lean toward Anabolic
     const preferAnabolic = analysis.hasHormonalIssues || analysis.type === 'anabolic';
-    resolvedCtaText = ctaText ?? (preferAnabolic ? 'Anabolic Bioscan - 59€' : 'Ultimate Scan - 79€');
+    resolvedCtaText = ctaText ?? (preferAnabolic ? 'Anabolic Bioscan - 59€ (acompte coaching)' : 'Ultimate Scan - 79€ (acompte coaching)');
     resolvedCtaLink = ctaLink ?? (preferAnabolic ? '/offers/anabolic-bioscan' : '/offers/ultimate-scan');
-    secondaryCtaText = preferAnabolic ? 'Ultimate Scan - 79€' : 'Anabolic Bioscan - 59€';
+    secondaryCtaText = preferAnabolic ? 'Ultimate Scan - 79€ (acompte coaching)' : 'Anabolic Bioscan - 59€ (acompte coaching)';
     secondaryCtaLink = preferAnabolic ? '/offers/ultimate-scan' : '/offers/anabolic-bioscan';
     contextNote = 'Ton profil hormonal détaillé avec l\'Anabolic Bioscan';
   } else if (context === 'training') {
     // After training/recovery sections → lean toward Ultimate
-    resolvedCtaText = ctaText ?? 'Ultimate Scan - 79€';
+    resolvedCtaText = ctaText ?? 'Ultimate Scan - 79€ (acompte coaching)';
     resolvedCtaLink = ctaLink ?? '/offers/ultimate-scan';
-    secondaryCtaText = 'Anabolic Bioscan - 59€';
+    secondaryCtaText = 'Anabolic Bioscan - 59€ (acompte coaching)';
     secondaryCtaLink = '/offers/anabolic-bioscan';
     contextNote = 'Analyse posturale 3D + wearables avec l\'Ultimate Scan';
   } else {
     // Generic: use analysis-driven recommendation
     const primaryIsUltimate = analysis.type !== 'anabolic';
-    resolvedCtaText = ctaText ?? (primaryIsUltimate ? 'Débloquer Ultimate (79€)' : 'Anabolic Bioscan - 59€');
+    resolvedCtaText = ctaText ?? (primaryIsUltimate ? 'Débloquer Ultimate (79€)' : 'Anabolic Bioscan - 59€ (acompte coaching)');
     resolvedCtaLink = ctaLink ?? (primaryIsUltimate ? '/offers/ultimate-scan' : '/offers/anabolic-bioscan');
     secondaryCtaText = primaryIsUltimate ? 'Anabolic (59€)' : 'Ultimate (79€)';
     secondaryCtaLink = primaryIsUltimate ? '/offers/anabolic-bioscan' : '/offers/ultimate-scan';
@@ -520,25 +520,25 @@ export const SmartRecommendation: React.FC<SmartRecommendationProps> = ({
   if (globalScore < 5 || analysis.hasMultipleWeakAreas) {
     headline = 'Analyse complète recommandée';
     bodyText = `Tes résultats montrent des blocages importants sur plusieurs fronts. L'Ultimate Scan (79€) est le plus adapté car il couvre les 18 domaines + posture + wearables + biomécanique.`;
-    primaryCta = 'Ultimate Scan - 79€';
+    primaryCta = 'Ultimate Scan - 79€ (acompte coaching)';
     primaryLink = '/offers/ultimate-scan';
-    secondaryCta = 'Anabolic Bioscan - 59€';
+    secondaryCta = 'Anabolic Bioscan - 59€ (acompte coaching)';
     secondaryLink = '/offers/anabolic-bioscan';
     icon = <AlertTriangle size={22} style={{ color: theme.colors.primary }} />;
   } else if (analysis.hasHormonalIssues) {
     headline = 'Profil hormonal à optimiser';
     bodyText = "Ton profil suggère un déséquilibre hormonal. L'Anabolic Bioscan (59€) va identifier ton potentiel anabolique, tes axes hormonaux et les protocoles de correction associés.";
-    primaryCta = 'Anabolic Bioscan - 59€';
+    primaryCta = 'Anabolic Bioscan - 59€ (acompte coaching)';
     primaryLink = '/offers/anabolic-bioscan';
-    secondaryCta = 'Ultimate Scan - 79€';
+    secondaryCta = 'Ultimate Scan - 79€ (acompte coaching)';
     secondaryLink = '/offers/ultimate-scan';
     icon = <Target size={22} style={{ color: theme.colors.primary }} />;
   } else {
     headline = "Choisis l'analyse adaptée";
     bodyText = "Pour aller plus loin, choisis l'analyse adaptée à tes besoins. L'Ultimate Scan couvre 18 domaines pour une vue complète. L'Anabolic Bioscan cible spécifiquement ton profil hormonal et ton potentiel.";
-    primaryCta = 'Ultimate Scan - 79€';
+    primaryCta = 'Ultimate Scan - 79€ (acompte coaching)';
     primaryLink = '/offers/ultimate-scan';
-    secondaryCta = 'Anabolic Bioscan - 59€';
+    secondaryCta = 'Anabolic Bioscan - 59€ (acompte coaching)';
     secondaryLink = '/offers/anabolic-bioscan';
     icon = <Zap size={22} style={{ color: theme.colors.primary }} />;
   }

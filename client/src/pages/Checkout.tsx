@@ -62,10 +62,10 @@ const PRICING_PLANS: PricingPlan[] = [
   {
     id: "anabolic",
     name: "Anabolic Bioscan",
-    subtitle: "Audit complet sur-mesure",
-    priceLabel: "59€",
+    subtitle: "Focus hormonal & protocoles",
+    priceLabel: "59€ d'acompte",
     popular: true,
-    coachingNote: "Le meilleur équilibre profondeur / prix",
+    coachingNote: "100% déduit de ton coaching Achzod",
     features: [
       "137 questions approfondies",
       "Rapport 16 sections",
@@ -82,8 +82,8 @@ const PRICING_PLANS: PricingPlan[] = [
   {
     id: "ultimate",
     name: "Ultimate Scan",
-    subtitle: "Le scan le plus complet",
-    priceLabel: "79€",
+    subtitle: "L'analyse la plus complète du marché",
+    priceLabel: "79€ d'acompte",
     features: [
       "183 questions ultra-détaillées",
       "Rapport 18 sections",
@@ -207,14 +207,14 @@ function CheckoutComparisonTable() {
                   </Badge>
                 </div>
                 <div className="font-bold text-foreground">Anabolic</div>
-                <div className="text-primary font-bold normal-case tracking-normal">59€</div>
+                <div className="text-primary font-bold normal-case tracking-normal">59€ d'acompte</div>
               </th>
               <th
                 scope="col"
                 className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground w-[20%]"
               >
                 <div className="font-bold text-foreground">Ultimate</div>
-                <div className="text-muted-foreground font-normal normal-case tracking-normal">79€</div>
+                <div className="text-muted-foreground font-normal normal-case tracking-normal">79€ d'acompte</div>
               </th>
             </tr>
           </thead>
@@ -438,9 +438,8 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
     }
   };
 
-  const visiblePlans = lockedPlan
-    ? PRICING_PLANS.filter((plan) => plan.id === lockedPlan)
-    : PRICING_PLANS;
+  // Always show all plans - never hide paid options from free users
+  const visiblePlans = PRICING_PLANS;
 
   return (
     <div className="min-h-screen bg-background">
@@ -465,8 +464,8 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
           </p>
         </motion.div>
 
-        {/* Comparison table — only shown when all plans are visible (not locked to one) */}
-        {!lockedPlan && <CheckoutComparisonTable />}
+        {/* Comparison table — always visible so users see what they're missing */}
+        <CheckoutComparisonTable />
 
         <div className="mt-12 grid gap-6 lg:grid-cols-2 items-stretch max-w-4xl mx-auto">
           {visiblePlans.map((plan, index) => (

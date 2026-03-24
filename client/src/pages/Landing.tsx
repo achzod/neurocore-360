@@ -44,7 +44,7 @@ const OFFERS: Offer[] = [
     subtitle: "Analyse Approfondie",
     description: "L'analyse complète pour ceux qui veulent des réponses. 137 questions sur 16 sections: profil hormonal détaillé (testostérone, cortisol, thyroïde), axes cliniques (diabète, SII, fatigue surrénalienne), nutrition avancée, suppléments et composition corporelle. Tu reçois un protocole Matin Anti-Cortisol, un protocole Soir Sommeil, un reset digestif 14 jours, un stack suppléments personnalisé et un plan d'action 30-60-90 jours. Rapport de 20+ pages.",
     features: ["16 sections d'analyse", "Profil hormonal complet", "Axes cliniques", "Stack suppléments personnalisé"],
-    price: "59€",
+    price: "59€ d'acompte",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/bmi_stress_activity.png",
     reverse: true,
     href: "/offers/anabolic-bioscan"
@@ -55,7 +55,7 @@ const OFFERS: Offer[] = [
     subtitle: "La Vérité Biologique",
     description: "Ton médecin te dit que tout est 'normal' mais tu te sens toujours mal? Normal ≠ Optimal. Upload ton bilan sanguin et j'analyse 39 biomarqueurs sur 6 panels (hormonal, thyroïdien, métabolique, inflammatoire, vitamines, hépatique/rénal) avec des ranges OPTIMAUX. Je détecte les patterns invisibles, les corrélations entre marqueurs, et je te donne des protocoles de correction ciblés. Radars visuels + rapport complet.",
     features: ["39 biomarqueurs analysés", "6 panels complets", "Ranges optimaux", "Protocoles personnalisés"],
-    price: "99€",
+    price: "99€ d'acompte",
     imageUrl: "",
     reverse: false,
     useCustomVisual: true,
@@ -67,7 +67,7 @@ const OFFERS: Offer[] = [
     subtitle: "L'Analyse Complète",
     description: "Le scan le plus complet du marché. 183 questions sur 18 sections + analyse photo posturale (face, dos, profil) + intégration de tes données wearables (Oura, Whoop, Garmin, Apple Watch). On couvre tout: nutrition timing, cardio & performance Zone 2, analyse HRV, blessures & mobilité, psychologie du mindset. Je croise 3 sources de données pour générer le rapport le plus précis possible. 40-50 pages de protocoles personnalisés.",
     features: ["18 sections d'analyse", "Analyse photo posturale", "Intégration wearables", "Protocole 30-60-90 jours"],
-    price: "79€",
+    price: "79€ d'acompte",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/cno_pro.png",
     reverse: true,
     href: "/offers/ultimate-scan"
