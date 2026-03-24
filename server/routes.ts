@@ -5990,27 +5990,13 @@ export async function registerRoutes(
 
       console.log(`[EmailStats] Total emails fetched: ${allEmails.length}`);
 
-      // FILTER: Only count REPORT emails (not reminders, promos, etc.)
-      const reportEmails = allEmails.filter((e: any) => {
-        const subject = (e.subject || "").toLowerCase();
-        return subject.includes("est pret") || subject.includes("est prêt");
-      });
+      // Get ALL orders (paid) to correlate with SendPulse emails
+      const { orders: allOrders } = await storage.getAllOrders({ limit: 10000 });
+      const paidOrders = allOrders.filter(o => o.status === "paid" || o.status === "refunded" || o.status === "partial_refund");
 
-      console.log(`[EmailStats] Filtered to ${reportEmails.length} report emails (from ${allEmails.length} total)`);
+      console.log(`[EmailStats] Found ${paidOrders.length} paid orders`);
 
-      const emails = reportEmails;
-
-      // Get audits for pending/ready count
-      const allAudits = await storage.getAllAudits();
-      const pending = allAudits.filter(a => a.reportDeliveryStatus === 'SCHEDULED').length;
-      const ready = allAudits.filter(a => a.reportDeliveryStatus === 'READY').length;
-
-      // Calculate stats from SendPulse
-      const totalSent = emails.length;
-      const delivered = emails.filter((e: any) => e.smtp_answer_code === 250 || e.status === "sent").length;
-      const failed = emails.filter((e: any) => e.status === "failed" || e.status === "error").length;
-
-      // By type
+      // For each paid order, check if an email was sent to that email address
       const byType: Record<string, number> = {
         GRATUIT: 0,
         PREMIUM: 0,
@@ -6018,29 +6004,77 @@ export async function registerRoutes(
         BLOOD_ANALYSIS: 0,
       };
 
-      emails.forEach((email: any) => {
-        const subject = (email.subject || "").toLowerCase();
-        if (subject.includes("blood")) byType.BLOOD_ANALYSIS++;
-        else if (subject.includes("ultimate")) byType.ELITE++;
-        else if (subject.includes("anabolic")) byType.PREMIUM++;
-        else if (subject.includes("discovery")) byType.GRATUIT++;
-        else byType.GRATUIT++; // default
+      let totalSent = 0;
+      let delivered = 0;
+      let failed = 0;
+
+      const emailMap = new Map<string, any[]>();
+      allEmails.forEach((e: any) => {
+        const email = (e.email || "").toLowerCase().trim();
+        if (!emailMap.has(email)) {
+          emailMap.set(email, []);
+        }
+        emailMap.get(email)!.push(e);
       });
 
-      // Last 24h and 7d
+      paidOrders.forEach((order: any) => {
+        const orderEmail = (order.email || "").toLowerCase().trim();
+        const sentEmails = emailMap.get(orderEmail) || [];
+
+        // Filter to only report emails (exclude reminders/promos)
+        const reportEmails = sentEmails.filter((e: any) => {
+          const subject = (e.subject || "").toLowerCase();
+          return subject.includes("est pret") || subject.includes("est prêt");
+        });
+
+        if (reportEmails.length > 0) {
+          // This order has a report sent
+          totalSent++;
+          byType[order.productType] = (byType[order.productType] || 0) + 1;
+
+          // Check delivery status
+          const lastEmail = reportEmails[reportEmails.length - 1]; // most recent
+          if (lastEmail.smtp_answer_code === 250 || lastEmail.status === "sent") {
+            delivered++;
+          } else if (lastEmail.status === "failed" || lastEmail.status === "error") {
+            failed++;
+          }
+        }
+      });
+
+      console.log(`[EmailStats] Matched ${totalSent} orders with sent reports`);
+      console.log(`[EmailStats] By type:`, byType);
+
+      // Get audits for pending/ready count
+      const allAudits = await storage.getAllAudits();
+      const pending = allAudits.filter(a => a.reportDeliveryStatus === 'SCHEDULED').length;
+      const ready = allAudits.filter(a => a.reportDeliveryStatus === 'READY').length;
+
+      // Last 24h and 7d - count orders with reports sent in timeframe
       const now = Date.now();
       const last24h = now - 24 * 60 * 60 * 1000;
       const last7d = now - 7 * 24 * 60 * 60 * 1000;
 
-      const last24hCount = emails.filter((e: any) => {
-        const sentTime = e.send_date ? new Date(e.send_date).getTime() : 0;
-        return sentTime >= last24h;
-      }).length;
+      let last24hCount = 0;
+      let last7dCount = 0;
 
-      const last7dCount = emails.filter((e: any) => {
-        const sentTime = e.send_date ? new Date(e.send_date).getTime() : 0;
-        return sentTime >= last7d;
-      }).length;
+      paidOrders.forEach((order: any) => {
+        const orderEmail = (order.email || "").toLowerCase().trim();
+        const sentEmails = emailMap.get(orderEmail) || [];
+
+        const reportEmails = sentEmails.filter((e: any) => {
+          const subject = (e.subject || "").toLowerCase();
+          return subject.includes("est pret") || subject.includes("est prêt");
+        });
+
+        if (reportEmails.length > 0) {
+          const lastEmail = reportEmails[reportEmails.length - 1];
+          const sentTime = lastEmail.send_date ? new Date(lastEmail.send_date).getTime() : 0;
+
+          if (sentTime >= last24h) last24hCount++;
+          if (sentTime >= last7d) last7dCount++;
+        }
+      });
 
       res.json({
         success: true,
