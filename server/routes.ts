@@ -6262,6 +6262,100 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== FIX: Recreate email_tracking table ====================
+  app.post("/api/admin/fix-email-tracking-table", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+
+    try {
+      const { Pool } = await import("pg");
+      const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+
+      if (!databaseUrl) {
+        res.status(500).json({ error: 'DATABASE_URL not configured' });
+        return;
+      }
+
+      const pool = new Pool({
+        connectionString: databaseUrl,
+        ssl: databaseUrl.includes("render.com") || databaseUrl.includes("neon.tech")
+          ? { rejectUnauthorized: false }
+          : false,
+      });
+
+      const steps: string[] = [];
+
+      try {
+        // Step 1: Drop old table
+        console.log("[FixTable] Step 1: Dropping old email_tracking table...");
+        await pool.query(`DROP TABLE IF EXISTS email_tracking CASCADE;`);
+        steps.push("✅ Dropped old email_tracking table");
+
+        // Step 2: Create new table with correct schema
+        console.log("[FixTable] Step 2: Creating new email_tracking table...");
+        await pool.query(`
+          CREATE TABLE email_tracking (
+            id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+            email_type VARCHAR(50) NOT NULL,
+            recipient_email VARCHAR(255) NOT NULL,
+            recipient_name VARCHAR(255),
+            audit_id VARCHAR(36),
+            audit_type VARCHAR(50),
+            subject TEXT,
+            preview_text TEXT,
+            sendpulse_task_id VARCHAR(255),
+            sendpulse_status VARCHAR(50),
+            sendpulse_error TEXT,
+            opened TIMESTAMP,
+            clicked TIMESTAMP,
+            converted TIMESTAMP,
+            conversion_type VARCHAR(50),
+            metadata JSONB,
+            sent_at TIMESTAMP NOT NULL,
+            created_at TIMESTAMP DEFAULT NOW(),
+            updated_at TIMESTAMP DEFAULT NOW()
+          );
+        `);
+        steps.push("✅ Created new email_tracking table with correct schema");
+
+        // Step 3: Create indexes
+        console.log("[FixTable] Step 3: Creating indexes...");
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_email_tracking_recipient ON email_tracking(recipient_email);`);
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_email_tracking_audit ON email_tracking(audit_id);`);
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_email_tracking_sent_at ON email_tracking(sent_at);`);
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_email_tracking_status ON email_tracking(sendpulse_status);`);
+        steps.push("✅ Created indexes");
+
+        // Step 4: Verify
+        console.log("[FixTable] Step 4: Verifying table structure...");
+        const verify = await pool.query(`
+          SELECT column_name
+          FROM information_schema.columns
+          WHERE table_name = 'email_tracking'
+          ORDER BY ordinal_position;
+        `);
+        steps.push(`✅ Verified ${verify.rows.length} columns exist`);
+
+        res.json({
+          success: true,
+          steps,
+          columns: verify.rows.map(r => r.column_name)
+        });
+
+      } finally {
+        await pool.end();
+      }
+
+    } catch (error) {
+      console.error("[FixTable] Error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Erreur fix table",
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
+    }
+  });
+
   // ==================== DEBUG: Check email_tracking table structure ====================
   app.get("/api/admin/check-email-tracking-table", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
