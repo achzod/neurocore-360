@@ -6088,7 +6088,8 @@ export async function registerRoutes(
           const emailType = getEmailType(subject);
           const auditType = getAuditType(subject);
           const sentAt = email.send_date ? new Date(email.send_date) : new Date();
-          const status = email.smtp_answer_code === 250 ? "success" : "failed";
+          const code = parseInt(String(email.smtp_answer_code || 0));
+          const status = (code >= 200 && code < 300) ? "success" : "failed";
 
           try {
             await pool.query(
