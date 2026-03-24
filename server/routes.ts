@@ -5990,7 +5990,15 @@ export async function registerRoutes(
 
       console.log(`[EmailStats] Total emails fetched: ${allEmails.length}`);
 
-      const emails = allEmails;
+      // FILTER: Only count REPORT emails (not reminders, promos, etc.)
+      const reportEmails = allEmails.filter((e: any) => {
+        const subject = (e.subject || "").toLowerCase();
+        return subject.includes("est pret") || subject.includes("est prêt");
+      });
+
+      console.log(`[EmailStats] Filtered to ${reportEmails.length} report emails (from ${allEmails.length} total)`);
+
+      const emails = reportEmails;
 
       // Get audits for pending/ready count
       const allAudits = await storage.getAllAudits();

@@ -1298,7 +1298,7 @@ FORMAT OBLIGATOIRE:
     try {
       const response = await withTimeout(
         anthropic.messages.create({
-          model: 'claude-opus-4-6',
+          model: 'claude-sonnet-4-5',
           max_tokens: 5000, // Longer content
           system: SECTION_SYSTEM_PROMPT,
           messages: [{ role: 'user', content: buildPrompt(attempt) }]
@@ -1760,7 +1760,7 @@ RAPPELS CRITIQUES:
     for (let attempt = 1; attempt <= 2; attempt++) {
       const response = await withTimeout(
         anthropic.messages.create({
-          model: 'claude-opus-4-6',
+          model: 'claude-sonnet-4-5',
           max_tokens: 4000,
           system: DISCOVERY_SYSTEM_PROMPT,
           messages: [{ role: 'user', content: userPrompt }]
