@@ -5341,7 +5341,27 @@ export async function registerRoutes(
           CREATE INDEX IF NOT EXISTS idx_email_tracking_status ON email_tracking(sendpulse_status);
         `);
 
-        res.json({ success: true, message: "Tables created/verified: waitlist_subscribers, email_tracking" });
+        // Migrate cta_tracking
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS cta_tracking (
+            id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+            email_tracking_id VARCHAR(36),
+            event_type VARCHAR(50) NOT NULL,
+            url TEXT,
+            user_agent TEXT,
+            ip_address VARCHAR(50),
+            metadata JSONB,
+            created_at TIMESTAMP DEFAULT NOW()
+          );
+        `);
+
+        await pool.query(`
+          CREATE INDEX IF NOT EXISTS idx_cta_tracking_email ON cta_tracking(email_tracking_id);
+          CREATE INDEX IF NOT EXISTS idx_cta_tracking_event ON cta_tracking(event_type);
+          CREATE INDEX IF NOT EXISTS idx_cta_tracking_created ON cta_tracking(created_at);
+        `);
+
+        res.json({ success: true, message: "Tables created/verified: waitlist_subscribers, email_tracking, cta_tracking" });
       } finally {
         await pool.end();
       }
@@ -5945,6 +5965,105 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== CTA STATS ====================
+  app.get("/api/admin/cta-stats", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+
+    try {
+      const { Pool } = await import("pg");
+      const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+
+      if (!databaseUrl) {
+        res.status(500).json({ error: 'DATABASE_URL not configured' });
+        return;
+      }
+
+      const pool = new Pool({
+        connectionString: databaseUrl,
+        ssl: databaseUrl.includes("render.com") || databaseUrl.includes("neon.tech")
+          ? { rejectUnauthorized: false }
+          : false,
+      });
+
+      try {
+        // Get total emails sent
+        const totalResult = await pool.query(`SELECT COUNT(*) FROM email_tracking`);
+        const totalSent = parseInt(totalResult.rows[0].count);
+
+        // Get open count
+        const openResult = await pool.query(`SELECT COUNT(*) FROM email_tracking WHERE opened IS NOT NULL`);
+        const opened = parseInt(openResult.rows[0].count);
+
+        // Get click count
+        const clickResult = await pool.query(`SELECT COUNT(*) FROM email_tracking WHERE clicked IS NOT NULL`);
+        const clicked = parseInt(clickResult.rows[0].count);
+
+        // Get CTA events by type
+        const eventResult = await pool.query(`
+          SELECT event_type, COUNT(*) as count
+          FROM cta_tracking
+          GROUP BY event_type
+          ORDER BY count DESC
+        `);
+
+        const byEventType: Record<string, number> = {};
+        eventResult.rows.forEach(row => {
+          byEventType[row.event_type] = parseInt(row.count);
+        });
+
+        // Get clicked URLs
+        const urlResult = await pool.query(`
+          SELECT url, COUNT(*) as count
+          FROM cta_tracking
+          WHERE event_type = 'click' AND url IS NOT NULL
+          GROUP BY url
+          ORDER BY count DESC
+          LIMIT 10
+        `);
+
+        const byUrl: Record<string, number> = {};
+        urlResult.rows.forEach(row => {
+          byUrl[row.url] = parseInt(row.count);
+        });
+
+        // Get recent events
+        const recentResult = await pool.query(`
+          SELECT ct.event_type, ct.url, ct.created_at, et.recipient_email
+          FROM cta_tracking ct
+          LEFT JOIN email_tracking et ON ct.email_tracking_id = et.id
+          ORDER BY ct.created_at DESC
+          LIMIT 20
+        `);
+
+        res.json({
+          success: true,
+          stats: {
+            totalSent,
+            opened,
+            clicked,
+            openRate: totalSent > 0 ? ((opened / totalSent) * 100).toFixed(1) : '0.0',
+            clickRate: totalSent > 0 ? ((clicked / totalSent) * 100).toFixed(1) : '0.0',
+            clickToOpenRate: opened > 0 ? ((clicked / opened) * 100).toFixed(1) : '0.0',
+            byEventType,
+            byUrl,
+            recentEvents: recentResult.rows
+          }
+        });
+
+      } finally {
+        await pool.end();
+      }
+
+    } catch (error) {
+      console.error("[CTAStats] Error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Erreur stats CTA",
+        message: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   // ==================== AUDITS PENDING ====================
   app.get("/api/admin/audits-pending", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
@@ -6353,6 +6472,104 @@ export async function registerRoutes(
         error: "Erreur fix table",
         message: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined
+      });
+    }
+  });
+
+  // ==================== SENDPULSE WEBHOOK - Track CTA clicks ====================
+  app.post("/api/webhooks/sendpulse", async (req, res) => {
+    try {
+      console.log("[SendPulseWebhook] Received webhook:", JSON.stringify(req.body, null, 2));
+
+      const { event, email, task_id, url, timestamp, user_agent, ip } = req.body;
+
+      if (!event || !email) {
+        console.log("[SendPulseWebhook] ❌ Missing required fields");
+        res.status(400).json({ error: "Missing required fields: event, email" });
+        return;
+      }
+
+      const { Pool } = await import("pg");
+      const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+
+      if (!databaseUrl) {
+        res.status(500).json({ error: 'DATABASE_URL not configured' });
+        return;
+      }
+
+      const pool = new Pool({
+        connectionString: databaseUrl,
+        ssl: databaseUrl.includes("render.com") || databaseUrl.includes("neon.tech")
+          ? { rejectUnauthorized: false }
+          : false,
+      });
+
+      try {
+        const normalizedEmail = email.toLowerCase().trim();
+
+        // Find email_tracking record
+        const emailResult = await pool.query(
+          `SELECT id FROM email_tracking WHERE LOWER(recipient_email) = $1 ORDER BY sent_at DESC LIMIT 1`,
+          [normalizedEmail]
+        );
+
+        if (emailResult.rows.length === 0) {
+          console.log(`[SendPulseWebhook] ⚠️  Email tracking not found for: ${normalizedEmail}`);
+          // Still record the event
+        }
+
+        const emailTrackingId = emailResult.rows[0]?.id || null;
+
+        // Determine event type
+        let eventType = event.toLowerCase();
+        if (eventType.includes('open')) eventType = 'open';
+        else if (eventType.includes('click')) eventType = 'click';
+        else if (eventType.includes('unsub')) eventType = 'unsubscribe';
+        else if (eventType.includes('bounce')) eventType = 'bounce';
+
+        // Insert into cta_tracking
+        await pool.query(
+          `INSERT INTO cta_tracking (email_tracking_id, event_type, url, user_agent, ip_address, metadata, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+          [
+            emailTrackingId,
+            eventType,
+            url || null,
+            user_agent || null,
+            ip || null,
+            JSON.stringify(req.body)
+          ]
+        );
+
+        // Update email_tracking table
+        if (emailTrackingId) {
+          if (eventType === 'open') {
+            await pool.query(
+              `UPDATE email_tracking SET opened = NOW() WHERE id = $1 AND opened IS NULL`,
+              [emailTrackingId]
+            );
+          } else if (eventType === 'click') {
+            await pool.query(
+              `UPDATE email_tracking SET clicked = NOW() WHERE id = $1 AND clicked IS NULL`,
+              [emailTrackingId]
+            );
+          }
+        }
+
+        console.log(`[SendPulseWebhook] ✅ Tracked ${eventType} for ${normalizedEmail}`);
+
+        res.json({ success: true, message: "Event tracked" });
+
+      } finally {
+        await pool.end();
+      }
+
+    } catch (error) {
+      console.error("[SendPulseWebhook] Error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Erreur webhook",
+        message: error instanceof Error ? error.message : String(error)
       });
     }
   });
