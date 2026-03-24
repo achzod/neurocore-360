@@ -6093,8 +6093,9 @@ export async function registerRoutes(
 
       // Skip header (line 0)
       for (let i = 1; i < lines.length; i++) {
+        let cols: string[] = [];
         try {
-          const cols = lines[i].split(';');
+          cols = lines[i].split(';');
 
           if (cols.length < 7) {
             skipped++;
