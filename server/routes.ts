@@ -6085,7 +6085,14 @@ export async function registerRoutes(
 
         for (const email of apexEmails) {
           const recipient = (email.recipient || "").toLowerCase().trim();
-          if (!recipient || recipient.includes("achkou@") || recipient.includes("test@")) {
+          if (!recipient || recipient.includes("achkou@") || recipient.includes("test@") || recipient.includes("achzod")) {
+            skipped++;
+            continue;
+          }
+
+          // Skip emails before launch date (17 mars 2026)
+          const sentDate = email.send_date ? new Date(email.send_date) : null;
+          if (!sentDate || sentDate < new Date("2026-03-17T00:00:00Z")) {
             skipped++;
             continue;
           }
