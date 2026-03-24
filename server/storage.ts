@@ -1146,7 +1146,7 @@ export class PgStorage implements IStorage {
   }
 
   async getAllAudits(): Promise<Audit[]> {
-    const result = await pool.query("SELECT * FROM audits ORDER BY created_at DESC LIMIT 100");
+    const result = await pool.query("SELECT * FROM audits ORDER BY created_at DESC");
     return result.rows.map(row => this.rowToAudit(row));
   }
 
