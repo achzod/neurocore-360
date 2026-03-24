@@ -649,7 +649,8 @@ export default function AuditGratuit() {
               className="rounded-sm border border-[#FCDD00]/30 bg-gradient-to-b from-[#FCDD00]/10 to-transparent backdrop-blur-xl p-8 hover:border-[#FCDD00]/50 transition-all duration-300 shadow-[0_0_60px_rgba(252,221,0,0.1)]"
             >
               <div className="text-[#FCDD00] text-sm font-medium tracking-[0.15em] uppercase mb-4">Anabolic Bioscan</div>
-              <div className="text-white text-5xl font-bold tracking-[-0.04em] mb-6">59€</div>
+              <div className="text-white text-5xl font-bold tracking-[-0.04em] mb-2">59€</div>
+              <div className="text-white/50 text-sm mb-6">d'acompte coaching (100% déduit)</div>
               <ul className="space-y-4">
                 {[
                   "Tout le Discovery Scan",
