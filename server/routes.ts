@@ -172,6 +172,58 @@ export async function registerRoutes(
     res.json({ ready: allOk, checks });
   });
 
+  // ==================== ADMIN RECONCILIATION STATS ====================
+  app.get("/api/admin/reconciliation-stats", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+
+    try {
+      // Count paid orders without audit_id
+      const missingResult = await pool.query(`
+        SELECT COUNT(*) as missing_count
+        FROM orders
+        WHERE status = 'paid'
+          AND audit_id IS NULL
+          AND product_type IN ('GRATUIT', 'PREMIUM', 'ELITE')
+          AND created_at > NOW() - INTERVAL '90 days'
+      `);
+
+      // Count total paid orders
+      const totalPaidResult = await pool.query(`
+        SELECT COUNT(*) as total_paid
+        FROM orders
+        WHERE status = 'paid'
+          AND product_type IN ('GRATUIT', 'PREMIUM', 'ELITE')
+          AND created_at > NOW() - INTERVAL '90 days'
+      `);
+
+      // Count audits created
+      const auditsResult = await pool.query(`
+        SELECT COUNT(*) as total_audits
+        FROM audits
+        WHERE created_at > NOW() - INTERVAL '90 days'
+      `);
+
+      const missingCount = parseInt(missingResult.rows[0].missing_count);
+      const totalPaid = parseInt(totalPaidResult.rows[0].total_paid);
+      const totalAudits = parseInt(auditsResult.rows[0].total_audits);
+
+      res.json({
+        success: true,
+        gap: missingCount,
+        totalPaidOrders: totalPaid,
+        totalAudits,
+        ordersWithAudit: totalPaid - missingCount,
+        needsReconciliation: missingCount > 0,
+      });
+    } catch (error) {
+      console.error("[Reconciliation Stats] Error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Erreur récupération stats",
+      });
+    }
+  });
+
   const PHOTO_FIELD_VARIANTS: string[][] = [
     ["photoFront", "photo-front"],
     ["photoSide", "photo-side"],
@@ -5407,6 +5459,107 @@ export async function registerRoutes(
     } catch (error) {
       console.error("[Admin Cleanup] Error:", error);
       res.status(500).json({ error: "Erreur nettoyage" });
+    }
+  });
+
+  // ==================== ADMIN RECONCILE MISSING AUDITS ====================
+  app.post("/api/admin/reconcile-missing-audits", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+
+    try {
+      console.log("[Reconcile] 🔍 Recherche commandes payées sans audit...");
+
+      const result = await pool.query(`
+        SELECT o.id, o.email, o.product_type, o.created_at
+        FROM orders o
+        WHERE o.status = 'paid'
+          AND o.audit_id IS NULL
+          AND o.product_type IN ('GRATUIT', 'PREMIUM', 'ELITE')
+          AND o.created_at > NOW() - INTERVAL '90 days'
+        ORDER BY o.created_at ASC
+      `);
+
+      const ordersToReconcile = result.rows;
+      console.log(`[Reconcile] 📊 Trouvé ${ordersToReconcile.length} commandes sans audit`);
+
+      let created = 0;
+      let failed = 0;
+      let noData = 0;
+      let needPhotos = 0;
+      const errors: Array<{ orderId: string; email: string; error: string }> = [];
+
+      for (const row of ordersToReconcile) {
+        const progress = await storage.getProgress(row.email);
+
+        let responses = progress?.responses as Record<string, unknown> | string | undefined;
+        if (typeof responses === "string") {
+          try { responses = JSON.parse(responses); } catch { responses = undefined; }
+        }
+
+        if (!responses || Object.keys(responses).length === 0) {
+          console.warn(`[Reconcile] ⚠️  Pas de données questionnaire pour ${row.email}`);
+          noData++;
+          errors.push({ orderId: row.id, email: row.email, error: "QUESTIONNAIRE_MISSING" });
+          continue;
+        }
+
+        // Check for 3 photos if ELITE
+        if (row.product_type === "ELITE" && !hasThreePhotos(responses as Record<string, unknown>)) {
+          console.warn(`[Reconcile] ⚠️  3 photos obligatoires pour Ultimate Scan: ${row.email}`);
+          needPhotos++;
+          errors.push({ orderId: row.id, email: row.email, error: "NEED_PHOTOS" });
+          continue;
+        }
+
+        try {
+          // Create audit
+          const audit = await storage.createAudit({
+            userId: "",
+            type: row.product_type,
+            email: row.email,
+            responses: responses as Record<string, unknown>,
+          });
+
+          // Link order to audit
+          await storage.claimOrderForAudit(row.id, audit.id);
+
+          // Clean up questionnaire progress
+          await storage.deleteProgress(row.email).catch(() => {});
+
+          console.log(`[Reconcile] ✅ Audit ${audit.id} créé pour commande ${row.id} (${row.email})`);
+          created++;
+
+        } catch (err) {
+          console.error(`[Reconcile] ❌ Erreur pour commande ${row.id}:`, err);
+          failed++;
+          errors.push({
+            orderId: row.id,
+            email: row.email,
+            error: err instanceof Error ? err.message : String(err)
+          });
+        }
+      }
+
+      const summary = {
+        success: true,
+        totalFound: ordersToReconcile.length,
+        created,
+        failed,
+        noData,
+        needPhotos,
+        errors: errors.slice(0, 50), // Limit to first 50 errors
+      };
+
+      console.log(`[Reconcile] 📈 RÉSUMÉ:`, summary);
+      res.json(summary);
+
+    } catch (error) {
+      console.error("[Reconcile] Erreur fatale:", error);
+      res.status(500).json({
+        success: false,
+        error: "Erreur reconciliation",
+        message: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
