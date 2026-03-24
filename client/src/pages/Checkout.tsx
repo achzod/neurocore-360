@@ -112,6 +112,108 @@ const normalizePlan = (plan: string | null | undefined): PlanId | null => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Social proof — 3 curated reviews shown between comparison table and plan cards
+// ─────────────────────────────────────────────────────────────────────────────
+
+type CheckoutReview = {
+  name: string;
+  role: string;
+  rating: number;
+  excerpt: string;
+  metric: string;
+  metricLabel: string;
+};
+
+const CHECKOUT_REVIEWS: CheckoutReview[] = [
+  {
+    name: "Antoine B.",
+    role: "Dev backend, 29 ans",
+    rating: 5,
+    excerpt: "2 ans que je dormais mal. L'audit a montré que mon timing caféine était pourri et mon magnésium au ras des pâquerettes.",
+    metric: "+2h",
+    metricLabel: "deep sleep",
+  },
+  {
+    name: "Marc D.",
+    role: "Cadre sup', 42 ans",
+    rating: 5,
+    excerpt: "J'étais en pré-burnout sans le savoir. Mon HRV était dans les choux. Achzod me l'a montré noir sur blanc avec des données que même mon médecin n'avait pas.",
+    metric: "HRV +40%",
+    metricLabel: "récupération",
+  },
+  {
+    name: "Pierre L.",
+    role: "Avocat, 45 ans",
+    rating: 5,
+    excerpt: "L'audit a détecté mon pré-diabète. Mon médecin traitant n'avait rien vu sur mes analyses standards. Achzod regarde les valeurs optimales.",
+    metric: "HbA1c 5.2%",
+    metricLabel: "normalisé",
+  },
+];
+
+function StarRow({ rating }: { rating: number }) {
+  return (
+    <div className="flex items-center gap-0.5" aria-label={`${rating} étoiles sur 5`}>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <Star
+          key={i}
+          className="h-3.5 w-3.5 fill-current"
+          style={{ color: i < rating ? "#FCDD00" : undefined }}
+          aria-hidden="true"
+        />
+      ))}
+    </div>
+  );
+}
+
+function CheckoutSocialProof() {
+  return (
+    <section aria-labelledby="social-proof-heading" className="mt-10">
+      <div className="flex flex-col items-center gap-2 mb-5 sm:flex-row sm:justify-center sm:gap-4">
+        <h2
+          id="social-proof-heading"
+          className="text-sm font-semibold text-muted-foreground uppercase tracking-wider"
+        >
+          Ce que disent nos utilisateurs
+        </h2>
+        <Badge
+          variant="secondary"
+          className="gap-1.5 text-xs font-medium"
+          aria-label="10 avis vérifiés, note moyenne 5 sur 5"
+        >
+          <Star className="h-3 w-3 fill-current" style={{ color: "#FCDD00" }} aria-hidden="true" />
+          10 avis — 5.0 / 5 moyenne
+        </Badge>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        {CHECKOUT_REVIEWS.map((review) => (
+          <Card
+            key={review.name}
+            className="flex flex-col gap-3 p-4 border-border/60 bg-muted/20"
+          >
+            <div className="flex items-center justify-between">
+              <StarRow rating={review.rating} />
+              <span className="text-xs font-semibold text-primary tabular-nums">
+                {review.metric}{" "}
+                <span className="text-muted-foreground font-normal">{review.metricLabel}</span>
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed flex-1">
+              &ldquo;{review.excerpt}&rdquo;
+            </p>
+            <div>
+              <p className="text-sm font-semibold text-foreground">{review.name}</p>
+              <p className="text-xs text-muted-foreground">{review.role}</p>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Inline comparison table — no Theme dependency, pure Tailwind + shadcn
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -466,6 +568,9 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
 
         {/* Comparison table — always visible so users see what they're missing */}
         <CheckoutComparisonTable />
+
+        {/* Social proof — reinforces buying decision before plan selection */}
+        <CheckoutSocialProof />
 
         <div className="mt-12 grid gap-6 lg:grid-cols-2 items-stretch max-w-4xl mx-auto">
           {visiblePlans.map((plan, index) => (
