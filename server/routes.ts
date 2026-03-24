@@ -5730,6 +5730,68 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== DEBUG MISSING AUDITS ====================
+  app.get("/api/admin/debug-missing-audits", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+
+    try {
+      // Sample 10 orders with audit_id
+      const orders = await pool.query(`
+        SELECT id, email, audit_id, product_type, created_at
+        FROM orders
+        WHERE status = 'paid'
+          AND audit_id IS NOT NULL
+          AND created_at >= '2026-03-17'
+        ORDER BY created_at ASC
+        LIMIT 10
+      `);
+
+      const debug = [];
+      for (const order of orders.rows) {
+        // Check if audit exists
+        const auditCheck = await pool.query(`
+          SELECT id, report_delivery_status
+          FROM audits
+          WHERE id = $1
+        `, [order.audit_id]);
+
+        debug.push({
+          order_id: order.id,
+          email: order.email,
+          audit_id: order.audit_id,
+          audit_exists: auditCheck.rows.length > 0,
+          audit_status: auditCheck.rows[0]?.report_delivery_status || null,
+          created_at: order.created_at
+        });
+      }
+
+      // Also run the LEFT JOIN query
+      const leftJoinResult = await pool.query(`
+        SELECT COUNT(*) as count
+        FROM orders o
+        LEFT JOIN audits a ON o.audit_id = a.id
+        WHERE o.status = 'paid'
+          AND o.audit_id IS NOT NULL
+          AND a.id IS NULL
+          AND o.product_type IN ('GRATUIT', 'PREMIUM', 'ELITE')
+          AND o.created_at >= '2026-03-17'
+      `);
+
+      res.json({
+        success: true,
+        sample_orders: debug,
+        left_join_count: parseInt(leftJoinResult.rows[0].count),
+        total_orders_checked: orders.rows.length
+      });
+    } catch (error) {
+      console.error("[Debug] Error:", error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   // ==================== GDPR DATA DELETION ====================
   app.post("/api/admin/gdpr/delete-user-data", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
