@@ -6570,11 +6570,12 @@ export async function registerRoutes(
     try {
       console.log("[SendPulseWebhook] Received webhook:", JSON.stringify(req.body, null, 2));
 
-      const { event, email, task_id, url, timestamp, user_agent, ip } = req.body;
+      // SendPulse sends array of events
+      const events = Array.isArray(req.body) ? req.body : [req.body];
 
-      if (!event || !email) {
-        console.log("[SendPulseWebhook] ❌ Missing required fields");
-        res.status(400).json({ error: "Missing required fields: event, email" });
+      if (events.length === 0) {
+        console.log("[SendPulseWebhook] ❌ Empty events array");
+        res.status(400).json({ error: "Empty events array" });
         return;
       }
 
@@ -6593,61 +6594,89 @@ export async function registerRoutes(
           : false,
       });
 
+      let processed = 0;
+      let errors = 0;
+
       try {
-        const normalizedEmail = email.toLowerCase().trim();
+        for (const eventData of events) {
+          try {
+            const { event, email, task_id, link_url, timestamp } = eventData;
 
-        // Find email_tracking record
-        const emailResult = await pool.query(
-          `SELECT id FROM email_tracking WHERE LOWER(recipient_email) = $1 ORDER BY sent_at DESC LIMIT 1`,
-          [normalizedEmail]
-        );
+            if (!event || !email) {
+              console.log("[SendPulseWebhook] ⚠️  Skipping event, missing required fields");
+              errors++;
+              continue;
+            }
 
-        if (emailResult.rows.length === 0) {
-          console.log(`[SendPulseWebhook] ⚠️  Email tracking not found for: ${normalizedEmail}`);
-          // Still record the event
-        }
+            const normalizedEmail = email.toLowerCase().trim();
 
-        const emailTrackingId = emailResult.rows[0]?.id || null;
-
-        // Determine event type
-        let eventType = event.toLowerCase();
-        if (eventType.includes('open')) eventType = 'open';
-        else if (eventType.includes('click')) eventType = 'click';
-        else if (eventType.includes('unsub')) eventType = 'unsubscribe';
-        else if (eventType.includes('bounce')) eventType = 'bounce';
-
-        // Insert into cta_tracking
-        await pool.query(
-          `INSERT INTO cta_tracking (email_tracking_id, event_type, url, user_agent, ip_address, metadata, created_at)
-           VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
-          [
-            emailTrackingId,
-            eventType,
-            url || null,
-            user_agent || null,
-            ip || null,
-            JSON.stringify(req.body)
-          ]
-        );
-
-        // Update email_tracking table
-        if (emailTrackingId) {
-          if (eventType === 'open') {
-            await pool.query(
-              `UPDATE email_tracking SET opened = NOW() WHERE id = $1 AND opened IS NULL`,
-              [emailTrackingId]
+            // Find email_tracking record
+            const emailResult = await pool.query(
+              `SELECT id FROM email_tracking WHERE LOWER(recipient_email) = $1 ORDER BY sent_at DESC LIMIT 1`,
+              [normalizedEmail]
             );
-          } else if (eventType === 'click') {
+
+            if (emailResult.rows.length === 0) {
+              console.log(`[SendPulseWebhook] ⚠️  Email tracking not found for: ${normalizedEmail}`);
+              // Still record the event with null email_tracking_id
+            }
+
+            const emailTrackingId = emailResult.rows[0]?.id || null;
+
+            // Determine event type (SendPulse format)
+            let eventType = event.toLowerCase().replace(/\s+/g, '_');
+
+            // Normalize event names
+            if (eventType.includes('open')) eventType = 'open';
+            else if (eventType.includes('click')) eventType = 'click';
+            else if (eventType.includes('unsub')) eventType = 'unsubscribe';
+            else if (eventType.includes('bounce')) eventType = 'bounce';
+            else if (eventType.includes('deliver')) eventType = 'delivered';
+            else if (eventType.includes('spam')) eventType = 'spam';
+
+            // Insert into cta_tracking
             await pool.query(
-              `UPDATE email_tracking SET clicked = NOW() WHERE id = $1 AND clicked IS NULL`,
-              [emailTrackingId]
+              `INSERT INTO cta_tracking (email_tracking_id, event_type, url, metadata, created_at)
+               VALUES ($1, $2, $3, $4, NOW())`,
+              [
+                emailTrackingId,
+                eventType,
+                link_url || null,
+                JSON.stringify(eventData)
+              ]
             );
+
+            // Update email_tracking table
+            if (emailTrackingId) {
+              if (eventType === 'open') {
+                await pool.query(
+                  `UPDATE email_tracking SET opened = NOW() WHERE id = $1 AND opened IS NULL`,
+                  [emailTrackingId]
+                );
+              } else if (eventType === 'click') {
+                await pool.query(
+                  `UPDATE email_tracking SET clicked = NOW() WHERE id = $1 AND clicked IS NULL`,
+                  [emailTrackingId]
+                );
+              }
+            }
+
+            console.log(`[SendPulseWebhook] ✅ Tracked ${eventType} for ${normalizedEmail}`);
+            processed++;
+
+          } catch (err) {
+            console.error("[SendPulseWebhook] Error processing event:", err);
+            errors++;
           }
         }
 
-        console.log(`[SendPulseWebhook] ✅ Tracked ${eventType} for ${normalizedEmail}`);
-
-        res.json({ success: true, message: "Event tracked" });
+        res.json({
+          success: true,
+          message: "Events processed",
+          processed,
+          errors,
+          total: events.length
+        });
 
       } finally {
         await pool.end();
