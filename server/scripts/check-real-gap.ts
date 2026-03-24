@@ -1,5 +1,4 @@
 // Quick script to check REAL missing audits (only clients since launch 2026-03-17)
-import "dotenv/config";
 import { pool } from "../db.js";
 
 async function checkRealGap() {

@@ -5611,6 +5611,125 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== RECOVER LOST AUDITS ====================
+  app.post("/api/admin/recover-lost-audits", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+
+    try {
+      console.log("[Recover] 🔍 Recherche audits perdus...");
+
+      // Find orders with audit_id but no corresponding audit in audits table
+      const result = await pool.query(`
+        SELECT
+          o.id as order_id,
+          o.email,
+          o.product_type,
+          o.audit_id,
+          o.created_at
+        FROM orders o
+        LEFT JOIN audits a ON o.audit_id = a.id
+        WHERE o.status = 'paid'
+          AND o.audit_id IS NOT NULL
+          AND a.id IS NULL
+          AND o.product_type IN ('GRATUIT', 'PREMIUM', 'ELITE')
+          AND o.created_at >= '2026-03-17'
+        ORDER BY o.created_at ASC
+      `);
+
+      const missingOrders = result.rows;
+      console.log(`[Recover] 📊 Trouvé ${missingOrders.length} audits perdus`);
+
+      let recovered = 0;
+      let noData = 0;
+      let needPhotos = 0;
+      let alreadyExists = 0;
+      const errors: Array<{ email: string; orderId: string; reason: string }> = [];
+
+      for (const order of missingOrders) {
+        const progress = await storage.getProgress(order.email);
+        let responses = progress?.responses as Record<string, unknown> | string | undefined;
+
+        if (typeof responses === "string") {
+          try { responses = JSON.parse(responses); } catch { responses = undefined; }
+        }
+
+        if (!responses || Object.keys(responses).length === 0) {
+          console.warn(`[Recover] ⚠️  ${order.email} - Pas de données questionnaire`);
+          noData++;
+          errors.push({ email: order.email, orderId: order.order_id, reason: "NO_QUESTIONNAIRE_DATA" });
+          continue;
+        }
+
+        // Check for 3 photos if ELITE
+        if (order.product_type === "ELITE" && !hasThreePhotos(responses as Record<string, unknown>)) {
+          console.warn(`[Recover] 📸 ${order.email} - Photos manquantes`);
+          needPhotos++;
+          errors.push({ email: order.email, orderId: order.order_id, reason: "NEED_3_PHOTOS" });
+          continue;
+        }
+
+        try {
+          // Recreate audit with ORIGINAL audit_id from order!
+          const insertResult = await pool.query(`
+            INSERT INTO audits (id, user_id, type, email, responses, created_at, updated_at, report_delivery_status)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            ON CONFLICT (id) DO NOTHING
+            RETURNING id
+          `, [
+            order.audit_id,
+            "",
+            order.product_type,
+            order.email,
+            JSON.stringify(responses),
+            order.created_at,
+            new Date(),
+            "PENDING"
+          ]);
+
+          if (insertResult.rows.length > 0) {
+            console.log(`[Recover] ✅ ${order.email} - Audit ${order.audit_id} récupéré !`);
+            recovered++;
+
+            // Clean up questionnaire progress
+            await storage.deleteProgress(order.email).catch(() => {});
+          } else {
+            console.log(`[Recover] ⚠️  ${order.email} - Audit ${order.audit_id} déjà existant`);
+            alreadyExists++;
+          }
+
+        } catch (err) {
+          console.error(`[Recover] ❌ ${order.email} - Erreur:`, err);
+          errors.push({
+            email: order.email,
+            orderId: order.order_id,
+            reason: err instanceof Error ? err.message : String(err)
+          });
+        }
+      }
+
+      const summary = {
+        success: true,
+        totalFound: missingOrders.length,
+        recovered,
+        noData,
+        needPhotos,
+        alreadyExists,
+        errors: errors.slice(0, 50),
+      };
+
+      console.log(`[Recover] 📈 RÉSUMÉ:`, summary);
+      res.json(summary);
+
+    } catch (error) {
+      console.error("[Recover] Erreur fatale:", error);
+      res.status(500).json({
+        success: false,
+        error: "Erreur récupération audits",
+        message: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   // ==================== GDPR DATA DELETION ====================
   app.post("/api/admin/gdpr/delete-user-data", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
