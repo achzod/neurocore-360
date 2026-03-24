@@ -5295,6 +5295,7 @@ export async function registerRoutes(
       });
 
       try {
+        // Migrate waitlist_subscribers
         await pool.query(`
           CREATE TABLE IF NOT EXISTS waitlist_subscribers (
             id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -5304,7 +5305,41 @@ export async function registerRoutes(
             created_at TIMESTAMP DEFAULT NOW() NOT NULL
           );
         `);
-        res.json({ success: true, message: "Table waitlist_subscribers created/verified" });
+
+        // Migrate email_tracking
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS email_tracking (
+            id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+            email_type VARCHAR(50) NOT NULL,
+            recipient_email VARCHAR(255) NOT NULL,
+            recipient_name VARCHAR(255),
+            audit_id VARCHAR(36),
+            audit_type VARCHAR(50),
+            subject TEXT,
+            preview_text TEXT,
+            sendpulse_task_id VARCHAR(255),
+            sendpulse_status VARCHAR(50),
+            sendpulse_error TEXT,
+            opened TIMESTAMP,
+            clicked TIMESTAMP,
+            converted TIMESTAMP,
+            conversion_type VARCHAR(50),
+            metadata JSONB,
+            sent_at TIMESTAMP NOT NULL,
+            created_at TIMESTAMP DEFAULT NOW(),
+            updated_at TIMESTAMP DEFAULT NOW()
+          );
+        `);
+
+        // Create indexes
+        await pool.query(`
+          CREATE INDEX IF NOT EXISTS idx_email_tracking_recipient ON email_tracking(recipient_email);
+          CREATE INDEX IF NOT EXISTS idx_email_tracking_audit ON email_tracking(audit_id);
+          CREATE INDEX IF NOT EXISTS idx_email_tracking_sent_at ON email_tracking(sent_at);
+          CREATE INDEX IF NOT EXISTS idx_email_tracking_status ON email_tracking(sendpulse_status);
+        `);
+
+        res.json({ success: true, message: "Tables created/verified: waitlist_subscribers, email_tracking" });
       } finally {
         await pool.end();
       }
