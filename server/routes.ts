@@ -5965,6 +5965,95 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== EXPORT CSV COMPLET (pour Google Sheets) ====================
+  app.get("/api/admin/export-csv", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+
+    try {
+      const { Pool } = await import("pg");
+      const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+
+      if (!databaseUrl) {
+        res.status(500).json({ error: 'DATABASE_URL not configured' });
+        return;
+      }
+
+      const pool = new Pool({
+        connectionString: databaseUrl,
+        ssl: databaseUrl.includes("render.com") || databaseUrl.includes("neon.tech")
+          ? { rejectUnauthorized: false }
+          : false,
+      });
+
+      try {
+        // Get all data
+        const emailsResult = await pool.query(`
+          SELECT
+            recipient_email,
+            email_type,
+            audit_type,
+            sendpulse_status,
+            opened,
+            clicked,
+            sent_at,
+            created_at
+          FROM email_tracking
+          ORDER BY sent_at DESC
+        `);
+
+        const ctaResult = await pool.query(`
+          SELECT
+            ct.event_type,
+            ct.url,
+            ct.created_at,
+            et.recipient_email
+          FROM cta_tracking ct
+          LEFT JOIN email_tracking et ON ct.email_tracking_id = et.id
+          ORDER BY ct.created_at DESC
+        `);
+
+        // Generate CSV for emails
+        const emailsCSV = [
+          'Email,Type,Audit Type,Status,Opened,Clicked,Sent At',
+          ...emailsResult.rows.map(row =>
+            `"${row.recipient_email}","${row.email_type}","${row.audit_type || ''}","${row.sendpulse_status}","${row.opened ? 'Yes' : 'No'}","${row.clicked ? 'Yes' : 'No'}","${row.sent_at}"`
+          )
+        ].join('\n');
+
+        // Generate CSV for CTA events
+        const ctaCSV = [
+          'Email,Event Type,URL,Date',
+          ...ctaResult.rows.map(row =>
+            `"${row.recipient_email || 'N/A'}","${row.event_type}","${row.url || ''}","${row.created_at}"`
+          )
+        ].join('\n');
+
+        res.json({
+          success: true,
+          data: {
+            emailsCSV,
+            ctaCSV,
+            stats: {
+              totalEmails: emailsResult.rows.length,
+              totalCTAEvents: ctaResult.rows.length
+            }
+          }
+        });
+
+      } finally {
+        await pool.end();
+      }
+
+    } catch (error) {
+      console.error("[ExportCSV] Error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Erreur export CSV",
+        message: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   // ==================== CTA STATS ====================
   app.get("/api/admin/cta-stats", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
