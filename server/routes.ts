@@ -5977,6 +5977,15 @@ export async function registerRoutes(
         (e.subject || "").toLowerCase().includes("est prêt")
       );
 
+      // Deduplicate: count unique recipients only
+      const uniqueRecipients = new Map<string, typeof reportEmails[0]>();
+      reportEmails.forEach(e => {
+        const email = (e.recipientEmail || "").toLowerCase().trim();
+        if (!uniqueRecipients.has(email)) {
+          uniqueRecipients.set(email, e);
+        }
+      });
+
       const byType: Record<string, number> = {
         GRATUIT: 0,
         PREMIUM: 0,
@@ -5984,7 +5993,7 @@ export async function registerRoutes(
         BLOOD_ANALYSIS: 0,
       };
 
-      reportEmails.forEach(e => {
+      uniqueRecipients.forEach(e => {
         const type = e.auditType || "GRATUIT";
         byType[type] = (byType[type] || 0) + 1;
       });
@@ -5993,32 +6002,35 @@ export async function registerRoutes(
       const last24h = now - 24 * 60 * 60 * 1000;
       const last7d = now - 7 * 24 * 60 * 60 * 1000;
 
-      const last24hCount = reportEmails.filter(e =>
+      const uniqueArr = Array.from(uniqueRecipients.values());
+      const totalUnique = uniqueArr.length;
+
+      const last24hCount = uniqueArr.filter(e =>
         e.sentAt && new Date(e.sentAt).getTime() >= last24h
       ).length;
 
-      const last7dCount = reportEmails.filter(e =>
+      const last7dCount = uniqueArr.filter(e =>
         e.sentAt && new Date(e.sentAt).getTime() >= last7d
       ).length;
 
-      const delivered = reportEmails.filter(e => e.sendpulseStatus === 'success').length;
-      const failed = reportEmails.filter(e => e.sendpulseStatus === 'failed').length;
+      const delivered = uniqueArr.filter(e => e.sendpulseStatus === 'success').length;
+      const failed = uniqueArr.filter(e => e.sendpulseStatus === 'failed').length;
 
       res.json({
         success: true,
         source: "Database",
         stats: {
-          totalSent: reportEmails.length,
+          totalSent: totalUnique,
           delivered,
           failed,
           pending,
           ready,
-          sent: reportEmails.length,
+          sent: totalUnique,
           byType,
           last24h: last24hCount,
           last7d: last7dCount,
-          deliveryRate: reportEmails.length > 0
-            ? ((delivered / reportEmails.length) * 100).toFixed(1)
+          deliveryRate: totalUnique > 0
+            ? ((delivered / totalUnique) * 100).toFixed(1)
             : '0.0',
           totalTracked: allEmails.length,
           openRate: stats.openRate.toFixed(1),
