@@ -6076,6 +6076,7 @@ export async function registerRoutes(
 
       console.log("[ImportSP] 📥 Starting SendPulse history import...");
 
+      const { db } = await import("./db.js");
       const { emailTracking: emailTrackingTable } = await import("../shared/drizzle-schema.js");
 
       // Parse CSV (separator is ;)
