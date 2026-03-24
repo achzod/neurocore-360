@@ -5306,9 +5306,11 @@ export async function registerRoutes(
           );
         `);
 
-        // Migrate email_tracking
+        // Migrate email_tracking (DROP old schema first)
+        await pool.query(`DROP TABLE IF EXISTS email_tracking CASCADE;`);
+
         await pool.query(`
-          CREATE TABLE IF NOT EXISTS email_tracking (
+          CREATE TABLE email_tracking (
             id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
             email_type VARCHAR(50) NOT NULL,
             recipient_email VARCHAR(255) NOT NULL,
