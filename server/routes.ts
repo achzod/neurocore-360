@@ -6031,10 +6031,16 @@ export async function registerRoutes(
 
       console.log(`[Backfill] Fetched ${allEmails.length} emails from SendPulse`);
 
-      // 3. Filter ONLY ApexLabs emails (by sender)
+      // 3. Filter ONLY ApexLabs emails (by subject keywords)
       const apexEmails = allEmails.filter((e: any) => {
-        const sender = (e.sender || "").toLowerCase();
-        return sender.includes("achzodcoaching") || sender.includes("apexlabs");
+        const subject = (e.subject || "").toLowerCase();
+        return (
+          subject.includes("est pret") || subject.includes("est prêt") ||  // reports
+          subject.includes("discovery scan") || subject.includes("anabolic") ||
+          subject.includes("ultimate scan") || subject.includes("blood analysis") ||
+          subject.includes("questionnaire") || subject.includes("apex") ||
+          subject.includes("relance") || subject.includes("rapport")
+        );
       });
 
       console.log(`[Backfill] Filtered to ${apexEmails.length} ApexLabs emails`);
