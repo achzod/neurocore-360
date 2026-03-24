@@ -5959,7 +5959,7 @@ export async function registerRoutes(
 
       console.log("[EmailStats] Fetching emails from SendPulse with pagination...");
 
-      while (hasMore && allEmails.length < 500) { // Max 500 to avoid timeout
+      while (hasMore && allEmails.length < 2000) { // Max 2000 emails
         const emailsRes = await fetch(
           `https://api.sendpulse.com/smtp/emails?limit=${limit}&offset=${offset}&from_date=${since17mars}`,
           {
@@ -6198,7 +6198,7 @@ export async function registerRoutes(
 
       console.log("[SendPulseLiveStats] Starting pagination...");
 
-      while (hasMore && allEmails.length < 500) { // Max 500 emails to avoid timeout
+      while (hasMore && allEmails.length < 2000) { // Max 2000 emails
         const emailsRes = await fetch(
           `https://api.sendpulse.com/smtp/emails?limit=${limit}&offset=${offset}&from_date=${since17mars}`,
           {
