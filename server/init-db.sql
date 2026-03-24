@@ -175,6 +175,10 @@ INSERT INTO promo_codes (code, discount_percent, description, valid_for)
 VALUES ('BLOOD', 0, 'Code Blood Analysis - 99€ déduits du coaching', 'ALL')
 ON CONFLICT (code) DO NOTHING;
 
+INSERT INTO promo_codes (code, discount_percent, description, valid_for)
+VALUES ('WELCOME20', 20, 'Code bienvenue -20% sur Anabolic, Ultimate et Blood (email relance J+7 post-Discovery)', 'ALL')
+ON CONFLICT (code) DO NOTHING;
+
 -- Index pour améliorer les performances
 CREATE INDEX IF NOT EXISTS idx_audits_email ON audits(email);
 CREATE INDEX IF NOT EXISTS idx_audits_user_id ON audits(user_id);

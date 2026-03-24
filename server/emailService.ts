@@ -3177,7 +3177,7 @@ export async function sendGratuitJ5Email(
   }
 }
 
-// Email Discovery J+7: "Offre limitée -40% cette semaine"
+// Email Discovery J+7: "Offre limitée -20% cette semaine"
 export async function sendGratuitJ7Email(
   email: string,
   auditId: string,
@@ -3186,77 +3186,91 @@ export async function sendGratuitJ7Email(
 ): Promise<boolean> {
   try {
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
-    const checkoutLink = `https://apexlabs.achzodcoaching.com/questionnaire?plan=anabolic&promo=WELCOME40`;
+    const anabolicLink = `https://apexlabs.achzodcoaching.com/questionnaire?plan=anabolic&promo=WELCOME20`;
+    const ultimateLink = `https://apexlabs.achzodcoaching.com/questionnaire?plan=ultimate&promo=WELCOME20`;
+    const bloodLink = `https://apexlabs.achzodcoaching.com/offers/blood-analysis?promo=WELCOME20`;
 
     const content = `
       <h2 style="color: ${COLORS.text}; margin: 0 0 16px; font-size: 28px; text-align: center; font-weight: 700; letter-spacing: -1px;">
-        Offre limitee -40% cette semaine
+        -20% sur toutes nos analyses cette semaine
       </h2>
 
       <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 28px; text-align: center;">
         Ca fait une semaine que tu as tes resultats Discovery.<br/>
-        <strong style="color: ${COLORS.text};">Pour passer a l'action, profite de -40% sur l'Anabolic Bioscan.</strong>
+        <strong style="color: ${COLORS.text};">Pour passer a l'action, profite de -20% sur nos 3 analyses.</strong>
       </p>
 
-      <!-- Offre principale -->
-      <div style="padding: 32px; background: linear-gradient(135deg, ${COLORS.primary}20 0%, ${COLORS.primary}05 100%); border-radius: 12px; border: 2px solid ${COLORS.primary}; margin-bottom: 28px; text-align: center;">
-
-        <!-- Prix barré -->
-        <div style="margin-bottom: 16px;">
-          <span style="color: ${COLORS.textMuted}; font-size: 22px; text-decoration: line-through; font-weight: 600;">59EUR</span>
-          <span style="color: ${COLORS.text}; font-size: 16px; margin: 0 12px;">→</span>
-          <span style="color: ${COLORS.primary}; font-size: 40px; font-weight: 700; letter-spacing: -1px;">35EUR</span>
-        </div>
-
-        <!-- Badge réduction -->
-        <div style="display: inline-block; background: ${COLORS.primary}; color: ${COLORS.background}; padding: 6px 20px; border-radius: 20px; font-size: 13px; font-weight: 700; letter-spacing: 1px; margin-bottom: 20px; text-transform: uppercase;">
-          -40% cette semaine
-        </div>
-
-        <!-- Code promo -->
-        <div style="background: ${COLORS.background}; border-radius: 10px; padding: 20px; border: 2px dashed ${COLORS.primary}; margin-bottom: 24px;">
-          <p style="color: ${COLORS.textMuted}; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 8px; font-weight: 600;">
-            Code promo a utiliser au checkout
-          </p>
-          <p style="color: ${COLORS.primary}; font-size: 36px; font-weight: 700; letter-spacing: 4px; margin: 0 0 8px;">
-            WELCOME40
-          </p>
-          <p style="color: ${COLORS.textMuted}; font-size: 12px; margin: 0;">
-            Applique automatiquement lors du paiement
-          </p>
-        </div>
-
-        ${getPrimaryButton('Obtenir Anabolic Bioscan (-40%)', checkoutLink)}
-
-        <!-- Urgence -->
-        <p style="color: ${COLORS.textMuted}; font-size: 13px; margin: 16px 0 0; font-weight: 500;">
-          Cette offre est valable <strong style="color: ${COLORS.text};">48h</strong>
+      <!-- Code promo -->
+      <div style="background: ${COLORS.background}; border-radius: 10px; padding: 20px; border: 2px dashed ${COLORS.primary}; margin-bottom: 28px; text-align: center;">
+        <p style="color: ${COLORS.textMuted}; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 8px; font-weight: 600;">
+          Code promo a utiliser au checkout
+        </p>
+        <p style="color: ${COLORS.primary}; font-size: 36px; font-weight: 700; letter-spacing: 4px; margin: 0 0 8px;">
+          WELCOME20
+        </p>
+        <p style="color: ${COLORS.textMuted}; font-size: 12px; margin: 0;">
+          Valable sur Anabolic Bioscan, Ultimate Scan et Analyse Sanguine
         </p>
       </div>
 
-      <!-- Ce qui est inclus -->
-      <div style="padding: 24px; background: ${COLORS.surface}; border-radius: 12px; border: 1px solid ${COLORS.border}; margin-bottom: 24px;">
-        <p style="color: ${COLORS.text}; font-size: 14px; font-weight: 600; margin: 0 0 16px; text-align: center; text-transform: uppercase; letter-spacing: 1px;">
-          Inclus dans l'Anabolic Bioscan
-        </p>
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-          <tr><td style="padding: 8px 0; color: ${COLORS.text}; font-size: 14px; font-weight: 500;">✓ Analyse approfondie sur 16 domaines metaboliques</td></tr>
-          <tr><td style="padding: 8px 0; color: ${COLORS.text}; font-size: 14px; font-weight: 500;">✓ Protocole Matin Anti-Cortisol personnalise</td></tr>
-          <tr><td style="padding: 8px 0; color: ${COLORS.text}; font-size: 14px; font-weight: 500;">✓ Stack Supplements calibre sur tes donnees</td></tr>
-          <tr><td style="padding: 8px 0; color: ${COLORS.text}; font-size: 14px; font-weight: 500;">✓ Plan d'action 30/60/90 jours</td></tr>
-          <tr><td style="padding: 8px 0; color: ${COLORS.text}; font-size: 14px; font-weight: 500;">✓ Rapport PDF 20+ pages</td></tr>
-        </table>
+      <!-- Offre 1: Anabolic Bioscan -->
+      <div style="padding: 24px; background: linear-gradient(135deg, ${COLORS.primary}20 0%, ${COLORS.primary}05 100%); border-radius: 12px; border: 2px solid ${COLORS.primary}; margin-bottom: 16px; text-align: center;">
+        <div style="display: inline-block; background: ${COLORS.primary}; color: ${COLORS.background}; padding: 4px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1px; margin-bottom: 12px; text-transform: uppercase;">
+          Best-seller
+        </div>
+        <p style="color: ${COLORS.text}; font-size: 20px; font-weight: 700; margin: 0 0 8px;">Anabolic Bioscan</p>
+        <p style="color: ${COLORS.textMuted}; font-size: 14px; margin: 0 0 12px;">137 questions • 16 sections • Protocoles 90 jours</p>
+        <div style="margin-bottom: 16px;">
+          <span style="color: ${COLORS.textMuted}; font-size: 18px; text-decoration: line-through;">59EUR</span>
+          <span style="color: ${COLORS.text}; margin: 0 8px;">→</span>
+          <span style="color: ${COLORS.primary}; font-size: 32px; font-weight: 700;">47EUR</span>
+        </div>
+        ${getPrimaryButton('Obtenir Anabolic Bioscan (-20%)', anabolicLink)}
+      </div>
+
+      <!-- Offre 2: Ultimate Scan -->
+      <div style="padding: 24px; background: ${COLORS.surface}; border-radius: 12px; border: 1px solid ${COLORS.border}; margin-bottom: 16px; text-align: center;">
+        <div style="display: inline-block; background: #8b5cf6; color: white; padding: 4px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1px; margin-bottom: 12px; text-transform: uppercase;">
+          Premium
+        </div>
+        <p style="color: ${COLORS.text}; font-size: 20px; font-weight: 700; margin: 0 0 8px;">Ultimate Scan</p>
+        <p style="color: ${COLORS.textMuted}; font-size: 14px; margin: 0 0 12px;">183 questions • 18 sections • Analyse posturale • Wearables</p>
+        <div style="margin-bottom: 16px;">
+          <span style="color: ${COLORS.textMuted}; font-size: 18px; text-decoration: line-through;">79EUR</span>
+          <span style="color: ${COLORS.text}; margin: 0 8px;">→</span>
+          <span style="color: #8b5cf6; font-size: 32px; font-weight: 700;">63EUR</span>
+        </div>
+        ${getPrimaryButton('Obtenir Ultimate Scan (-20%)', ultimateLink)}
+      </div>
+
+      <!-- Offre 3: Blood Analysis -->
+      <div style="padding: 24px; background: ${COLORS.surface}; border-radius: 12px; border: 1px solid ${COLORS.border}; margin-bottom: 28px; text-align: center;">
+        <div style="display: inline-block; background: #06b6d4; color: white; padding: 4px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1px; margin-bottom: 12px; text-transform: uppercase;">
+          Medical
+        </div>
+        <p style="color: ${COLORS.text}; font-size: 20px; font-weight: 700; margin: 0 0 8px;">Analyse Sanguine</p>
+        <p style="color: ${COLORS.textMuted}; font-size: 14px; margin: 0 0 12px;">39 biomarqueurs • 6 panels • Ranges performance optimale</p>
+        <div style="margin-bottom: 16px;">
+          <span style="color: ${COLORS.textMuted}; font-size: 18px; text-decoration: line-through;">99EUR</span>
+          <span style="color: ${COLORS.text}; margin: 0 8px;">→</span>
+          <span style="color: #06b6d4; font-size: 32px; font-weight: 700;">79EUR</span>
+        </div>
+        ${getPrimaryButton('Obtenir Analyse Sanguine (-20%)', bloodLink)}
       </div>
 
       <!-- Footer note -->
       <div style="padding: 16px; background: ${COLORS.surface}; border-radius: 8px; border: 1px solid ${COLORS.border}; text-align: center; margin-bottom: 16px;">
         <p style="color: ${COLORS.textMuted}; font-size: 13px; margin: 0; line-height: 1.6;">
-          Et rappelle-toi : <strong style="color: ${COLORS.text};">ce montant est deduit si tu prends un coaching Achzod.</strong><br/>
-          35EUR aujourd'hui = 0EUR net si tu continues en coaching.
+          Rappelle-toi : <strong style="color: ${COLORS.text};">100% du montant est deduit si tu prends un coaching Achzod.</strong><br/>
+          Tu ne paies jamais deux fois.
         </p>
       </div>
 
-      <p style="color: ${COLORS.textMuted}; font-size: 12px; line-height: 1.6; margin: 0; text-align: center;">
+      <p style="color: ${COLORS.textMuted}; font-size: 13px; margin: 16px 0 0; font-weight: 500; text-align: center;">
+        Cette offre est valable <strong style="color: ${COLORS.text};">48h</strong>
+      </p>
+
+      <p style="color: ${COLORS.textMuted}; font-size: 12px; line-height: 1.6; margin: 16px 0 0; text-align: center;">
         Pour arreter ces emails, reponds simplement "STOP".
       </p>
 
@@ -3267,14 +3281,14 @@ export async function sendGratuitJ7Email(
       content,
       `linear-gradient(135deg, ${COLORS.primary} 0%, #f59e0b 100%)`,
       "Offre Limitee",
-      "Anabolic Bioscan a -40%"
+      "-20% sur toutes les analyses"
     );
 
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
-        text: `Ca fait une semaine que tu as tes resultats Discovery. Profite de -40% sur l'Anabolic Bioscan : 59EUR → 35EUR avec le code WELCOME40. Offre valable 48h : ${checkoutLink}`,
-        subject: "Offre limitee : Anabolic Bioscan a 35EUR (au lieu de 59EUR)",
+        text: `Ca fait une semaine que tu as tes resultats Discovery. Profite de -20% sur l'Anabolic Bioscan (47EUR), Ultimate Scan (63EUR) ou Analyse Sanguine (79EUR) avec le code WELCOME20. Offre valable 48h.`,
+        subject: "-20% sur toutes nos analyses : Anabolic, Ultimate et Blood",
         from: { name: SENDER_NAME, email: SENDER_EMAIL },
         to: [{ email }],
       },
@@ -3283,7 +3297,7 @@ export async function sendGratuitJ7Email(
         recipientEmail: email,
         auditId,
         auditType: "GRATUIT",
-        metadata: { promoCode: "WELCOME40", checkoutLink, trackingId },
+        metadata: { promoCode: "WELCOME20", checkoutLink: anabolicLink, trackingId },
       }
     );
 

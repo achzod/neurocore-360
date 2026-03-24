@@ -302,8 +302,22 @@ export class MemStorage implements IStorage {
       createdAt: new Date(),
     };
 
+    const welcome20: PromoCode = {
+      id: randomUUID(),
+      code: "WELCOME20",
+      discountPercent: 20,
+      description: "Code bienvenue -20% sur Anabolic, Ultimate et Blood (email relance J+7 post-Discovery)",
+      validFor: "ALL",
+      maxUses: null,
+      currentUses: 0,
+      isActive: true,
+      expiresAt: null,
+      createdAt: new Date(),
+    };
+
     this.promoCodes.set("ANALYSE20", analyse20);
     this.promoCodes.set("RETOUR30", retour30);
+    this.promoCodes.set("WELCOME20", welcome20);
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -2056,6 +2070,14 @@ export class PgStorage implements IStorage {
     }
     if (promo.maxUses !== null && promo.currentUses >= promo.maxUses) {
       return { valid: false, discount: 0, error: "Ce code promo a atteint son nombre maximum d'utilisations" };
+    }
+
+    // WELCOME20: valide uniquement pour les analyses payantes (pas GRATUIT)
+    if (promo.code === "WELCOME20") {
+      if (auditType === "GRATUIT") {
+        return { valid: false, discount: 0, error: "Ce code promo est réservé aux analyses payantes" };
+      }
+      return { valid: true, discount: promo.discountPercent };
     }
 
     // RETOUR30: valide uniquement pour PREMIUM, ELITE, BLOOD_ANALYSIS (pas GRATUIT)
