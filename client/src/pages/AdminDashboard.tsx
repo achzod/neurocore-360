@@ -34,8 +34,6 @@ import {
   Timer,
   Zap,
   AlertCircle,
-  TrendingUp,
-  MousePointerClick,
   Download,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -185,7 +183,6 @@ export default function AdminDashboard() {
 
   // Email tracking stats
   const [emailStats, setEmailStats] = useState<any>(null);
-  const [ctaStats, setCtaStats] = useState<any>(null);
 
   const validateAdminKey = async (key: string): Promise<boolean> => {
     try {
@@ -394,23 +391,6 @@ export default function AdminDashboard() {
       toast({
         title: "Erreur",
         description: "Impossible de charger les stats emails",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const fetchCtaStats = async () => {
-    if (!adminKey) return;
-    try {
-      const response = await fetch("/api/admin/cta-stats", {
-        headers: { "x-admin-key": adminKey },
-      });
-      const data = await handleAdminResponse(response);
-      setCtaStats(data.stats);
-    } catch (error) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger les stats CTA",
         variant: "destructive",
       });
     }
@@ -633,7 +613,6 @@ export default function AdminDashboard() {
       fetchOrderStats();
       fetchAbandonmentStats();
       fetchEmailStats();
-      fetchCtaStats();
     }
   }, [isAuthenticated, adminKey]);
 
@@ -651,9 +630,8 @@ export default function AdminDashboard() {
     } else if (activeTab === "orders") {
       fetchOrders();
       fetchOrderStats();
-    } else if (activeTab === "tracking") {
+    } else if (activeTab === "audits") {
       fetchEmailStats();
-      fetchCtaStats();
     }
   }, [activeTab, isAuthenticated, adminKey]);
 

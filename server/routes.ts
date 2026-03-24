@@ -5899,40 +5899,105 @@ export async function registerRoutes(
     }
   });
 
-  // ==================== EMAIL STATS V2 (with DB correlation) ====================
+  // ==================== EMAIL STATS (from DB email_tracking) ====================
   app.get("/api/admin/email-stats", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+
+    try {
+      const { getEmailTrackingStats } = await import("./emailTracking.js");
+
+      // Get stats from our own DB (fast, reliable)
+      const stats = await getEmailTrackingStats();
+
+      // Get pending/ready from audits
+      const allAudits = await storage.getAllAudits();
+      const pending = allAudits.filter(a => a.reportDeliveryStatus === 'SCHEDULED').length;
+      const ready = allAudits.filter(a => a.reportDeliveryStatus === 'READY').length;
+
+      // Count reports specifically (emailType = sendReportReadyEmail)
+      const { db } = await import("./db.js");
+      const { emailTracking: emailTrackingTable } = await import("../shared/drizzle-schema.js");
+      const allEmails = await db.select().from(emailTrackingTable);
+
+      const reportEmails = allEmails.filter(e =>
+        e.emailType === "sendReportReadyEmail" ||
+        (e.subject || "").toLowerCase().includes("est pret") ||
+        (e.subject || "").toLowerCase().includes("est prêt")
+      );
+
+      const byType: Record<string, number> = {
+        GRATUIT: 0,
+        PREMIUM: 0,
+        ELITE: 0,
+        BLOOD_ANALYSIS: 0,
+      };
+
+      reportEmails.forEach(e => {
+        const type = e.auditType || "GRATUIT";
+        byType[type] = (byType[type] || 0) + 1;
+      });
+
+      const now = Date.now();
+      const last24h = now - 24 * 60 * 60 * 1000;
+      const last7d = now - 7 * 24 * 60 * 60 * 1000;
+
+      const last24hCount = reportEmails.filter(e =>
+        e.sentAt && new Date(e.sentAt).getTime() >= last24h
+      ).length;
+
+      const last7dCount = reportEmails.filter(e =>
+        e.sentAt && new Date(e.sentAt).getTime() >= last7d
+      ).length;
+
+      const delivered = reportEmails.filter(e => e.sendpulseStatus === 'success').length;
+      const failed = reportEmails.filter(e => e.sendpulseStatus === 'failed').length;
+
+      res.json({
+        success: true,
+        source: "Database",
+        stats: {
+          totalSent: reportEmails.length,
+          delivered,
+          failed,
+          pending,
+          ready,
+          sent: reportEmails.length,
+          byType,
+          last24h: last24hCount,
+          last7d: last7dCount,
+          deliveryRate: reportEmails.length > 0
+            ? ((delivered / reportEmails.length) * 100).toFixed(1)
+            : '0.0',
+          totalTracked: allEmails.length,
+          openRate: stats.openRate.toFixed(1),
+          clickRate: stats.clickRate.toFixed(1),
+        }
+      });
+
+    } catch (error) {
+      console.error("[EmailStats] Error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Erreur stats emails",
+        message: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // ==================== BACKFILL: Sync SendPulse → email_tracking ====================
+  app.post("/api/admin/backfill-email-tracking", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
 
     try {
       const SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID;
       const SENDPULSE_SECRET = process.env.SENDPULSE_SECRET;
 
-      // Fallback to DB if SendPulse not configured
       if (!SENDPULSE_USER_ID || !SENDPULSE_SECRET) {
-        const { db } = await import("./db.js");
-        const { emailTracking: emailTrackingTable } = await import("../shared/drizzle-schema.js");
-        const allEmails = await db.select().from(emailTrackingTable);
-        const allAudits = await storage.getAllAudits();
-
-        res.json({
-          success: true,
-          source: "Database (fallback)",
-          stats: {
-            totalSent: allEmails.length,
-            delivered: allEmails.filter(e => e.sendpulseStatus === 'success').length,
-            failed: allEmails.filter(e => e.sendpulseStatus === 'failed').length,
-            pending: allAudits.filter(a => a.reportDeliveryStatus === 'SCHEDULED').length,
-            ready: allAudits.filter(a => a.reportDeliveryStatus === 'READY').length,
-            byType: {},
-            last24h: 0,
-            last7d: allEmails.length,
-            deliveryRate: '100.0'
-          }
-        });
+        res.json({ success: false, error: "SendPulse credentials not configured" });
         return;
       }
 
-      // 1. Get SendPulse OAuth token
+      // 1. Get token
       const tokenRes = await fetch("https://api.sendpulse.com/oauth/access_token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -5943,161 +6008,118 @@ export async function registerRoutes(
         }),
       });
 
-      if (!tokenRes.ok) {
-        throw new Error(`SendPulse auth failed: ${tokenRes.statusText}`);
-      }
+      if (!tokenRes.ok) throw new Error("SendPulse auth failed");
+      const { access_token: accessToken } = await tokenRes.json();
 
-      const tokenData = await tokenRes.json();
-      const accessToken = tokenData.access_token;
-
-      // 2. Get ALL emails from SendPulse with pagination (depuis le 17 mars 2026)
-      const since17mars = "2026-03-17T00:00:00Z";
-      const limit = 100; // SendPulse max per request
+      // 2. Fetch ALL emails from SendPulse with pagination
+      const since = "2026-03-17T00:00:00Z";
       let allEmails: any[] = [];
       let offset = 0;
-      let hasMore = true;
 
-      console.log("[EmailStats] Fetching emails from SendPulse with pagination...");
-
-      while (hasMore) { // No limit - fetch ALL emails
-        const emailsRes = await fetch(
-          `https://api.sendpulse.com/smtp/emails?limit=${limit}&offset=${offset}&from_date=${since17mars}`,
-          {
-            headers: {
-              "Authorization": `Bearer ${accessToken}`,
-              "Content-Type": "application/json"
-            }
-          }
+      while (true) {
+        const r = await fetch(
+          `https://api.sendpulse.com/smtp/emails?limit=100&offset=${offset}&from_date=${since}`,
+          { headers: { "Authorization": `Bearer ${accessToken}` } }
         );
-
-        if (!emailsRes.ok) {
-          console.error(`[EmailStats] Failed at offset ${offset}:`, emailsRes.statusText);
-          break;
-        }
-
-        const emailsData = await emailsRes.json();
-        const emails = Array.isArray(emailsData) ? emailsData : (emailsData.data || []);
-
-        console.log(`[EmailStats] Fetched ${emails.length} emails at offset ${offset}`);
-
-        if (emails.length === 0) {
-          hasMore = false;
-        } else {
-          allEmails = allEmails.concat(emails);
-          offset += limit;
-        }
+        if (!r.ok) break;
+        const data = await r.json();
+        const batch = Array.isArray(data) ? data : (data.data || []);
+        if (batch.length === 0) break;
+        allEmails = allEmails.concat(batch);
+        offset += 100;
       }
 
-      console.log(`[EmailStats] Total emails fetched: ${allEmails.length}`);
+      console.log(`[Backfill] Fetched ${allEmails.length} emails from SendPulse`);
 
-      // Get ALL orders (paid) to correlate with SendPulse emails
-      const { orders: allOrders } = await storage.getAllOrders({ limit: 10000 });
-      const paidOrders = allOrders.filter(o => o.status === "paid" || o.status === "refunded" || o.status === "partial_refund");
-
-      console.log(`[EmailStats] Found ${paidOrders.length} paid orders`);
-
-      // For each paid order, check if an email was sent to that email address
-      const byType: Record<string, number> = {
-        GRATUIT: 0,
-        PREMIUM: 0,
-        ELITE: 0,
-        BLOOD_ANALYSIS: 0,
-      };
-
-      let totalSent = 0;
-      let delivered = 0;
-      let failed = 0;
-
-      const emailMap = new Map<string, any[]>();
-      allEmails.forEach((e: any) => {
-        const email = (e.email || "").toLowerCase().trim();
-        if (!emailMap.has(email)) {
-          emailMap.set(email, []);
-        }
-        emailMap.get(email)!.push(e);
+      // 3. Filter ONLY ApexLabs emails (by sender)
+      const apexEmails = allEmails.filter((e: any) => {
+        const sender = (e.sender || "").toLowerCase();
+        return sender.includes("achzodcoaching") || sender.includes("apexlabs");
       });
 
-      paidOrders.forEach((order: any) => {
-        const orderEmail = (order.email || "").toLowerCase().trim();
-        const sentEmails = emailMap.get(orderEmail) || [];
+      console.log(`[Backfill] Filtered to ${apexEmails.length} ApexLabs emails`);
 
-        // Filter to only report emails (exclude reminders/promos)
-        const reportEmails = sentEmails.filter((e: any) => {
-          const subject = (e.subject || "").toLowerCase();
-          return subject.includes("est pret") || subject.includes("est prêt");
-        });
+      // 4. Clear old imported data and insert fresh
+      const { Pool } = await import("pg");
+      const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+      if (!databaseUrl) throw new Error("DATABASE_URL not configured");
 
-        if (reportEmails.length > 0) {
-          // This order has a report sent
-          totalSent++;
-          byType[order.productType] = (byType[order.productType] || 0) + 1;
+      const pool = new Pool({
+        connectionString: databaseUrl,
+        ssl: databaseUrl.includes("render.com") || databaseUrl.includes("neon.tech")
+          ? { rejectUnauthorized: false } : false,
+      });
 
-          // Check delivery status
-          const lastEmail = reportEmails[reportEmails.length - 1]; // most recent
-          if (lastEmail.smtp_answer_code === 250 || lastEmail.status === "sent") {
-            delivered++;
-          } else if (lastEmail.status === "failed" || lastEmail.status === "error") {
-            failed++;
+      try {
+        // Clear old data
+        await pool.query("DELETE FROM email_tracking");
+        console.log("[Backfill] Cleared old email_tracking data");
+
+        // Determine emailType from subject
+        function getEmailType(subject: string): string {
+          const s = subject.toLowerCase();
+          if (s.includes("est pret") || s.includes("est prêt")) return "sendReportReadyEmail";
+          if (s.includes("questionnaire") || s.includes("terminé") || s.includes("relance")) return "sendAbandonmentReminder";
+          if (s.includes("upgrade") || s.includes("découv") || s.includes("offre")) return "sendCTAEmail";
+          return "other";
+        }
+
+        // Determine auditType from subject
+        function getAuditType(subject: string): string | null {
+          const s = subject.toLowerCase();
+          if (s.includes("blood")) return "BLOOD_ANALYSIS";
+          if (s.includes("ultimate")) return "ELITE";
+          if (s.includes("anabolic")) return "PREMIUM";
+          if (s.includes("discovery")) return "GRATUIT";
+          return null;
+        }
+
+        let inserted = 0;
+        let skipped = 0;
+
+        for (const email of apexEmails) {
+          const recipient = (email.recipient || "").toLowerCase().trim();
+          if (!recipient || recipient.includes("achkou@") || recipient.includes("test@")) {
+            skipped++;
+            continue;
+          }
+
+          const subject = email.subject || "";
+          const emailType = getEmailType(subject);
+          const auditType = getAuditType(subject);
+          const sentAt = email.send_date ? new Date(email.send_date) : new Date();
+          const status = email.smtp_answer_code === 250 ? "success" : "failed";
+
+          try {
+            await pool.query(
+              `INSERT INTO email_tracking (id, email_type, recipient_email, subject, audit_type, sendpulse_status, sent_at, created_at)
+               VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, NOW())`,
+              [emailType, recipient, subject, auditType, status, sentAt]
+            );
+            inserted++;
+          } catch (err) {
+            skipped++;
           }
         }
-      });
 
-      console.log(`[EmailStats] Matched ${totalSent} orders with sent reports`);
-      console.log(`[EmailStats] By type:`, byType);
+        console.log(`[Backfill] Done: ${inserted} inserted, ${skipped} skipped`);
 
-      // Get audits for pending/ready count
-      const allAudits = await storage.getAllAudits();
-      const pending = allAudits.filter(a => a.reportDeliveryStatus === 'SCHEDULED').length;
-      const ready = allAudits.filter(a => a.reportDeliveryStatus === 'READY').length;
-
-      // Last 24h and 7d - count orders with reports sent in timeframe
-      const now = Date.now();
-      const last24h = now - 24 * 60 * 60 * 1000;
-      const last7d = now - 7 * 24 * 60 * 60 * 1000;
-
-      let last24hCount = 0;
-      let last7dCount = 0;
-
-      paidOrders.forEach((order: any) => {
-        const orderEmail = (order.email || "").toLowerCase().trim();
-        const sentEmails = emailMap.get(orderEmail) || [];
-
-        const reportEmails = sentEmails.filter((e: any) => {
-          const subject = (e.subject || "").toLowerCase();
-          return subject.includes("est pret") || subject.includes("est prêt");
+        res.json({
+          success: true,
+          totalFetched: allEmails.length,
+          apexLabsEmails: apexEmails.length,
+          inserted,
+          skipped,
         });
-
-        if (reportEmails.length > 0) {
-          const lastEmail = reportEmails[reportEmails.length - 1];
-          const sentTime = lastEmail.send_date ? new Date(lastEmail.send_date).getTime() : 0;
-
-          if (sentTime >= last24h) last24hCount++;
-          if (sentTime >= last7d) last7dCount++;
-        }
-      });
-
-      res.json({
-        success: true,
-        source: "SendPulse API Live",
-        stats: {
-          totalSent,
-          delivered,
-          failed,
-          pending,
-          ready,
-          sent: totalSent, // sent = totalSent from SendPulse
-          byType,
-          last24h: last24hCount,
-          last7d: last7dCount,
-          deliveryRate: totalSent > 0 ? ((delivered / totalSent) * 100).toFixed(1) : '0.0'
-        }
-      });
+      } finally {
+        await pool.end();
+      }
 
     } catch (error) {
-      console.error("[EmailStats] Error:", error);
+      console.error("[Backfill] Error:", error);
       res.status(500).json({
         success: false,
-        error: "Erreur stats emails",
+        error: "Erreur backfill",
         message: error instanceof Error ? error.message : String(error)
       });
     }
