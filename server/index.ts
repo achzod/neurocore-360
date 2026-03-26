@@ -47,6 +47,9 @@ app.use(compression());
 const allowedOrigins = [
   process.env.APP_URL,
   process.env.RENDER_EXTERNAL_URL,
+  process.env.PUBLIC_BASE_URL,
+  "https://apexlabs.achzodcoaching.com",
+  "https://www.nopainnogain.fr",
   "http://localhost:5000",
   "http://localhost:3000",
 ].filter(Boolean) as string[];
