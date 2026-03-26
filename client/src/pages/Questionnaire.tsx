@@ -293,9 +293,29 @@ function QuestionField({
             onError?.("Fichier trop volumineux (max 10 Mo). Compresse ton image ou prends une photo de moindre qualite.");
             return;
           }
+          // Compress image to max 1200px width and 0.7 quality to fit sessionStorage
+          const img = new Image();
           const reader = new FileReader();
           reader.onloadend = () => {
-            onChange(reader.result as string);
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              const MAX_W = 1200;
+              const scale = Math.min(1, MAX_W / img.width);
+              canvas.width = img.width * scale;
+              canvas.height = img.height * scale;
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                const compressed = canvas.toDataURL('image/jpeg', 0.7);
+                onChange(compressed);
+              } else {
+                onChange(reader.result as string);
+              }
+            };
+            img.onerror = () => {
+              onChange(reader.result as string);
+            };
+            img.src = reader.result as string;
           };
           reader.readAsDataURL(file);
         }
@@ -747,7 +767,11 @@ function QuestionnaireContent() {
     if (PHOTO_FIELDS.includes(questionId)) {
       const newPhotoData = { ...photoData, [questionId]: value as string };
       setPhotoData(newPhotoData);
-      sessionStorage.setItem("neurocore_photos", JSON.stringify(newPhotoData));
+      try {
+        sessionStorage.setItem("neurocore_photos", JSON.stringify(newPhotoData));
+      } catch (e) {
+        console.warn("[Photos] sessionStorage full, photos kept in memory only");
+      }
     }
     setResponses((prev) => ({ ...prev, [questionId]: value }));
   };
