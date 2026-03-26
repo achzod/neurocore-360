@@ -16,6 +16,7 @@ import {
   sendGratuitUpsellEmail,
   sendGratuitJ5Email,
   sendGratuitJ7Email,
+  sendReviewRequestJ3Email,
   sendPremiumJ7Email,
   sendPremiumJ14Email,
   sendDiscoveryJ14CoachingEmail,
@@ -3386,6 +3387,75 @@ export async function registerRoutes(
       res.json({ success: true, message: "CTA envoyé avec succès" });
     } catch (error) {
       console.error("[Admin Send CTA] Error:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  // Admin: Send review request J+3 to all eligible audits
+  app.post("/api/admin/send-review-requests", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const dryRun = req.body.dryRun === true;
+      const maxToSend = req.body.maxToSend || 50;
+      const baseUrl = process.env.PUBLIC_BASE_URL || process.env.RENDER_EXTERNAL_URL || `${req.protocol}://${req.get("host")}`;
+
+      // Get all completed audits with reports sent
+      const allAudits = await storage.getAllAudits();
+      const now = new Date();
+      const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
+
+      // Filter: report sent 3+ days ago, no review left yet
+      const eligible: typeof allAudits = [];
+      for (const audit of allAudits) {
+        if (!audit.email) continue;
+        if (audit.createdAt && new Date(audit.createdAt) < new Date('2026-03-17')) continue; // Only post-launch
+
+        // Check if report was sent (has reportSentAt or status SENT)
+        const sentAt = (audit as any).reportSentAt || audit.createdAt;
+        if (!sentAt) continue;
+        const daysSinceSent = (now.getTime() - new Date(sentAt).getTime()) / (24 * 60 * 60 * 1000);
+        if (daysSinceSent < 3 || daysSinceSent > 14) continue; // Between 3 and 14 days
+
+        // Check if already left a review
+        const existingReview = await storage.getReviewByAuditId?.(audit.id);
+        if (existingReview) continue;
+
+        // Check if review request already sent
+        const emailHistory = await storage.getEmailTrackingByAuditId?.(audit.id);
+        const alreadySent = emailHistory?.some((e: any) => e.emailType === 'sendReviewRequestJ3Email');
+        if (alreadySent) continue;
+
+        eligible.push(audit);
+        if (eligible.length >= maxToSend) break;
+      }
+
+      if (dryRun) {
+        res.json({ success: true, dryRun: true, eligible: eligible.length, emails: eligible.map(a => a.email) });
+        return;
+      }
+
+      let sent = 0;
+      let errors = 0;
+      for (const audit of eligible) {
+        try {
+          const trackingRecord = await storage.createEmailTracking(audit.id, "sendReviewRequestJ3Email");
+          const result = await sendReviewRequestJ3Email(
+            audit.email,
+            audit.id,
+            audit.auditType || "GRATUIT",
+            baseUrl,
+            trackingRecord.id
+          );
+          if (result) sent++;
+          else errors++;
+        } catch (e) {
+          errors++;
+        }
+      }
+
+      res.json({ success: true, eligible: eligible.length, sent, errors });
+    } catch (error) {
+      console.error("[Admin] Error sending review requests:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
     }
   });
