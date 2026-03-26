@@ -288,37 +288,65 @@ function QuestionField({
       const photoUrl = (value as string) || "";
       const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-          if (file.size > 10 * 1024 * 1024) {
-            onError?.("Fichier trop volumineux (max 10 Mo). Compresse ton image ou prends une photo de moindre qualite.");
-            return;
-          }
-          // Compress image to max 1200px width and 0.7 quality to fit sessionStorage
-          const img = new Image();
-          const reader = new FileReader();
-          reader.onloadend = () => {
+        if (!file) return;
+
+        // No size limit — we compress everything automatically
+        const compressImage = (dataUrl: string): Promise<string> => {
+          return new Promise((resolve) => {
+            const img = new Image();
             img.onload = () => {
-              const canvas = document.createElement('canvas');
-              const MAX_W = 1200;
-              const scale = Math.min(1, MAX_W / img.width);
-              canvas.width = img.width * scale;
-              canvas.height = img.height * scale;
-              const ctx = canvas.getContext('2d');
-              if (ctx) {
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                const compressed = canvas.toDataURL('image/jpeg', 0.7);
-                onChange(compressed);
-              } else {
-                onChange(reader.result as string);
+              try {
+                const canvas = document.createElement('canvas');
+                // Max 800px for storage efficiency while keeping enough detail for analysis
+                const MAX_DIM = 800;
+                let w = img.width;
+                let h = img.height;
+                if (w > MAX_DIM || h > MAX_DIM) {
+                  const ratio = Math.min(MAX_DIM / w, MAX_DIM / h);
+                  w = Math.round(w * ratio);
+                  h = Math.round(h * ratio);
+                }
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                  ctx.drawImage(img, 0, 0, w, h);
+                  // Try progressively lower quality until under 500KB
+                  for (const q of [0.7, 0.5, 0.3]) {
+                    const result = canvas.toDataURL('image/jpeg', q);
+                    if (result.length < 500000) {
+                      resolve(result);
+                      return;
+                    }
+                  }
+                  resolve(canvas.toDataURL('image/jpeg', 0.3));
+                } else {
+                  resolve(dataUrl);
+                }
+              } catch {
+                resolve(dataUrl);
               }
             };
-            img.onerror = () => {
-              onChange(reader.result as string);
-            };
-            img.src = reader.result as string;
-          };
-          reader.readAsDataURL(file);
-        }
+            img.onerror = () => resolve(dataUrl);
+            img.src = dataUrl;
+          });
+        };
+
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          try {
+            const raw = reader.result as string;
+            const compressed = await compressImage(raw);
+            onChange(compressed);
+          } catch {
+            // Fallback: use raw if compression fails
+            onChange(reader.result as string);
+          }
+        };
+        reader.onerror = () => {
+          onError?.("Erreur de lecture du fichier. Reessaie ou prends une nouvelle photo.");
+        };
+        reader.readAsDataURL(file);
       };
       return (
         <div className="space-y-4">
@@ -487,7 +515,7 @@ function QuestionnaireContent() {
       const savedEmail = localStorage.getItem("neurocore_email");
       const savedResponses = localStorage.getItem("neurocore_responses");
       const savedSection = localStorage.getItem("neurocore_section");
-      const savedPhotos = sessionStorage.getItem("neurocore_photos");
+      const savedPhotos: string | null = null; // Photos are no longer stored in sessionStorage
 
       if (savedEmail) {
         setEmail(savedEmail);
@@ -509,7 +537,7 @@ function QuestionnaireContent() {
         parsedPhotos = savedPhotos ? JSON.parse(savedPhotos) : {};
       } catch {
         console.error("[Questionnaire] Invalid photos, clearing");
-        sessionStorage.removeItem("neurocore_photos");
+        try { localStorage.removeItem("neurocore_photos"); } catch {}
       }
 
       if (Object.keys(parsedPhotos).length > 0) {
@@ -767,11 +795,8 @@ function QuestionnaireContent() {
     if (PHOTO_FIELDS.includes(questionId)) {
       const newPhotoData = { ...photoData, [questionId]: value as string };
       setPhotoData(newPhotoData);
-      try {
-        sessionStorage.setItem("neurocore_photos", JSON.stringify(newPhotoData));
-      } catch (e) {
-        console.warn("[Photos] sessionStorage full, photos kept in memory only");
-      }
+      // Don't store photos in sessionStorage — they stay in React state only
+      // This prevents quota exceeded errors on all browsers
     }
     setResponses((prev) => ({ ...prev, [questionId]: value }));
   };
@@ -810,7 +835,12 @@ function QuestionnaireContent() {
       const responsesToSave = { ...responses };
       PHOTO_FIELDS.forEach((f) => delete responsesToSave[f]);
       localStorage.setItem("neurocore_responses", JSON.stringify(responsesToSave));
-      sessionStorage.setItem("neurocore_photos", JSON.stringify(photoData));
+      // Photos stored in localStorage instead of sessionStorage (more reliable)
+      try {
+        localStorage.setItem("neurocore_photos", JSON.stringify(photoData));
+      } catch {
+        console.warn("[Photos] localStorage full, photos will be in memory for checkout");
+      }
       navigate(`/audit-complet/checkout?plan=${selectedPlan}`);
     }
   };
