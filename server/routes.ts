@@ -81,6 +81,9 @@ export async function registerRoutes(
 
   // Helper function to get base URL — prefer env vars over request headers
   function getBaseUrl(_req?: Request): string {
+    if (process.env.PUBLIC_BASE_URL) {
+      return process.env.PUBLIC_BASE_URL.replace(/\/+$/, "");
+    }
     if (process.env.APP_URL) {
       return process.env.APP_URL.replace(/\/+$/, "");
     }
