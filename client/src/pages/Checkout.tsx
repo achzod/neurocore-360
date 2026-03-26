@@ -465,14 +465,19 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
         return response.json();
       }
 
-      // Default: Stripe
-      const response = await apiRequest("POST", "/api/stripe/create-checkout-session", {
-        priceId: STRIPE_PRICE_IDS[planId],
+      // Default: Stripe — server has fallback price IDs if frontend VITE vars are missing
+      const checkoutPayload: Record<string, unknown> = {
         email,
         planType: type,
         responses,
         promoCode: validatedPromo?.code || null,
-      });
+      };
+      // Only send priceId if it's actually defined (VITE vars may be missing from build)
+      const clientPriceId = STRIPE_PRICE_IDS[planId as keyof typeof STRIPE_PRICE_IDS];
+      if (clientPriceId) {
+        checkoutPayload.priceId = clientPriceId;
+      }
+      const response = await apiRequest("POST", "/api/stripe/create-checkout-session", checkoutPayload);
       return response.json();
     },
     onSuccess: (data: any) => {
