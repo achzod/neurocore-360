@@ -10,6 +10,7 @@ import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
 import { ArrowRight, Check, ChevronDown, Smartphone, MessageCircle, FileText, Target, Ruler, Dumbbell, X } from "lucide-react";
 
 const ACCENT = "#25D366";
+const WA_NUMBER = "15557636881"; // WhatsApp number for wa.me links
 
 // ============================================================================
 // FAQ ACCORDION ITEM
@@ -469,7 +470,7 @@ export default function FormCheck() {
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
             <a
-              href="https://wa.me/15557636881?text=menu"
+              href={`https://wa.me/${WA_NUMBER}?text=menu`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-3 text-white font-semibold text-base px-8 py-4 rounded-sm transition-all hover:scale-105"
@@ -884,7 +885,7 @@ export default function FormCheck() {
                 badge: "GRATUIT",
                 highlight: false,
                 cta: "Essayer maintenant",
-                ctaHref: "https://wa.me/15557636881?text=menu",
+                ctaHref: `https://wa.me/${WA_NUMBER}?text=menu`,
               },
               {
                 name: "Solo",
@@ -895,7 +896,7 @@ export default function FormCheck() {
                 badge: "LANCEMENT",
                 highlight: true,
                 cta: "Commencer",
-                ctaHref: "https://wa.me/15557636881?text=forfaits",
+                ctaHref: `https://wa.me/${WA_NUMBER}?text=forfaits`,
               },
               {
                 name: "Coach",
@@ -906,7 +907,7 @@ export default function FormCheck() {
                 badge: "MULTI-CLIENTS",
                 highlight: false,
                 cta: "Commencer",
-                ctaHref: "https://wa.me/15557636881?text=forfaits",
+                ctaHref: `https://wa.me/${WA_NUMBER}?text=forfaits`,
               },
             ].map((pack, i) => (
               <motion.div
