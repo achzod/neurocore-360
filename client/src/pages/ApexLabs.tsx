@@ -65,6 +65,17 @@ const OFFERS: Offer[] = [
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/cno_pro.png",
     reverse: true
   },
+  {
+    id: 'peptides-engine',
+    title: "PEPTIDES ENGINE",
+    subtitle: "Ton Protocole Sur-Mesure",
+    description: "Tu veux prendre des peptides mais tu sais pas par ou commencer? 35 questions sur tes objectifs, ta sante et tes contraintes. Tu recois un protocole personnalise: molecules, dosages exacts en mcg/jour, timing, guide de reconstitution, liens fournisseur verifie avec COA. Et 2 Blood Analyses incluses pour verifier tes marqueurs avant et pendant le cycle. Recuperation, GH, fat loss, sommeil, cognition — chaque objectif a son stack.",
+    features: ["Protocole 2-4 peptides", "Dosages et timing precis", "2 Blood Analyses incluses", "Fournisseur verifie COA -60%"],
+    price: "149€",
+    imageUrl: "",
+    reverse: false,
+    useCustomVisual: true
+  },
 ];
 
 // ============================================================================
