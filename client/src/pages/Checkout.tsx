@@ -482,7 +482,7 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
     },
     onSuccess: (data: any) => {
       if (selectedPlan === "gratuit") {
-        trackDiscoveryScanLead(data?.auditId || 'free');
+        try { trackDiscoveryScanLead(data?.auditId || 'free'); } catch {}
         toast({
           title: "Audit créé avec succès !",
           description: "Tu vas recevoir un email avec tes résultats.",
@@ -492,7 +492,7 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
         navigate("/auth/check-email");
       } else if (data?.free && data?.success && data?.auditId) {
         // 100% promo: audit created directly without payment
-        trackPurchase(data.auditId || 'promo-100', type || 'audit', type || 'Audit', 0);
+        try { trackPurchase(data.auditId || 'promo-100', type || 'audit', type || 'Audit', 0); } catch {}
         toast({
           title: "Code promo 100% appliqué !",
           description: "Ton audit a été créé gratuitement.",
@@ -512,10 +512,10 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
         });
         navigate("/auth/login?next=/blood-dashboard&paid=true");
       } else if (data?.url) {
-        trackBeginCheckout(type || 'audit', type || 'Audit', selectedPlanData?.price || 0);
+        try { trackBeginCheckout(type || 'audit', type || 'Audit', selectedPlanData?.price || 0); } catch {}
         window.location.href = data.url; // Stripe redirect
       } else if (data?.approvalUrl) {
-        trackBeginCheckout(type || 'audit', type || 'Audit', selectedPlanData?.price || 0);
+        try { trackBeginCheckout(type || 'audit', type || 'Audit', selectedPlanData?.price || 0); } catch {}
         window.location.href = data.approvalUrl; // PayPal redirect
       } else {
         toast({
