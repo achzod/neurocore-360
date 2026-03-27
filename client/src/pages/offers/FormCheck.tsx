@@ -680,14 +680,14 @@ export default function FormCheck() {
               Packs & Tarifs
             </p>
             <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em]">
-              Bientot disponible.
+              Abonnements mensuels.
             </h2>
             <p className="text-white/50 mt-4 max-w-lg mx-auto">
-              FormCheck arrive tres bientot. Les packs ci-dessous seront disponibles au lancement.
+              1ere analyse gratuite. Choisis ton plan et commence sur WhatsApp.
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-3 gap-6">
             {[
               {
                 name: "Essai",
@@ -697,33 +697,30 @@ export default function FormCheck() {
                 features: ["Score de forme 0-100", "Detection d'exercice auto", "Corrections prioritaires", "Rapport HTML premium"],
                 badge: "GRATUIT",
                 highlight: false,
+                cta: "Essayer maintenant",
+                ctaHref: "https://wa.me/15557636881?text=menu",
               },
               {
-                name: "Essentials",
-                price: "19.99€",
-                period: "",
-                analyses: "5 analyses",
-                features: ["Tout Essai inclus", "5 analyses au total", "Historique des scores", "Exercices correctifs"],
-                badge: null,
-                highlight: false,
-              },
-              {
-                name: "Performance",
-                price: "49.99€",
-                period: "",
-                analyses: "15 analyses",
-                features: ["Tout Essentials inclus", "Profil morphologique", "Historique & progression", "Support prioritaire"],
-                badge: "POPULAIRE",
+                name: "Solo",
+                price: "4.99€",
+                period: "1er mois",
+                analyses: "15 analyses/mois",
+                features: ["Tout Essai inclus", "15 analyses par mois", "Historique & progression", "Puis 14.99€/mois, sans engagement"],
+                badge: "LANCEMENT",
                 highlight: true,
+                cta: "Commencer",
+                ctaHref: "https://wa.me/15557636881?text=forfaits",
               },
               {
-                name: "Elite",
-                price: "29.99€",
-                period: "/mois",
-                analyses: "Illimite",
-                features: ["Tout Performance inclus", "Analyses illimitees", "Acces coach prioritaire", "Nouvelles features en avant-premiere"],
-                badge: "MEILLEURE VALEUR",
+                name: "Coach",
+                price: "19.99€",
+                period: "1er mois",
+                analyses: "60 analyses/mois",
+                features: ["Tout Solo inclus", "60 analyses pour tes clients", "Rapports partageables", "Puis 39.99€/mois, sans engagement"],
+                badge: "MULTI-CLIENTS",
                 highlight: false,
+                cta: "Commencer",
+                ctaHref: "https://wa.me/15557636881?text=forfaits",
               },
             ].map((pack, i) => (
               <motion.div
@@ -767,6 +764,23 @@ export default function FormCheck() {
                     </li>
                   ))}
                 </ul>
+                {pack.cta && (
+                  <a
+                    href={pack.ctaHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full text-center py-3 rounded-sm text-sm font-bold uppercase tracking-wider transition-all"
+                    style={pack.highlight ? {
+                      background: ACCENT,
+                      color: '#fff',
+                    } : {
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      color: '#fff',
+                    }}
+                  >
+                    {pack.cta}
+                  </a>
+                )}
               </motion.div>
             ))}
           </div>
