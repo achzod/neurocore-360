@@ -3,10 +3,10 @@
  * Biomechanical Analysis via WhatsApp - Showcase Page
  */
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { motion, useScroll, useTransform, useMotionValue, animate, AnimatePresence } from "framer-motion";
 import { ArrowRight, Check, ChevronDown, Smartphone, MessageCircle, FileText, Target, Ruler, Dumbbell, X } from "lucide-react";
 
 const ACCENT = "#25D366";
@@ -104,150 +104,135 @@ function HowItWorksVisual() {
 // ============================================================================
 // ANIMATED VISUALIZATION - Stick Figure with Joint Angles
 // ============================================================================
+function calculateAngle(p1x: number, p1y: number, p2x: number, p2y: number, p3x: number, p3y: number) {
+  const bax = p1x - p2x;
+  const bay = p1y - p2y;
+  const bcx = p3x - p2x;
+  const bcy = p3y - p2y;
+  const dot = bax * bcx + bay * bcy;
+  const magBA = Math.sqrt(bax * bax + bay * bay);
+  const magBC = Math.sqrt(bcx * bcx + bcy * bcy);
+  const angle = Math.acos(dot / (magBA * magBC)) * (180 / Math.PI);
+  return `${Math.round(angle)}°`;
+}
+
+function BiomechanicFigure() {
+  const progress = useMotionValue(0);
+
+  useEffect(() => {
+    const controls = animate(progress, 1, {
+      duration: 2,
+      repeat: Infinity,
+      repeatType: "reverse",
+      ease: "easeInOut",
+    });
+    return controls.stop;
+  }, [progress]);
+
+  const headY = useTransform(progress, [0, 1], [100, 180]);
+  const neckY = useTransform(progress, [0, 1], [130, 210]);
+  const hipsY = useTransform(progress, [0, 1], [230, 310]);
+  const hipsX = useMotionValue(250);
+
+  const lKneeX = useTransform(progress, [0, 1], [220, 180]);
+  const lKneeY = useTransform(progress, [0, 1], [310, 330]);
+  const lAnkleX = useMotionValue(220);
+  const lAnkleY = useMotionValue(400);
+
+  const rKneeX = useTransform(progress, [0, 1], [280, 320]);
+  const rKneeY = useTransform(progress, [0, 1], [310, 330]);
+  const rAnkleX = useMotionValue(280);
+  const rAnkleY = useMotionValue(400);
+
+  const lShoulderX = useMotionValue(210);
+  const rShoulderX = useMotionValue(290);
+  const elbowY = useTransform(progress, [0, 1], [180, 250]);
+  const handY = useTransform(progress, [0, 1], [230, 270]);
+  const lHandX = useTransform(progress, [0, 1], [200, 230]);
+  const rHandX = useTransform(progress, [0, 1], [300, 270]);
+
+  const lKneeAngle = useTransform(
+    [hipsX, hipsY, lKneeX, lKneeY, lAnkleX, lAnkleY] as any,
+    ([hx, hy, kx, ky, ax, ay]: number[]) => calculateAngle(hx, hy, kx, ky, ax, ay)
+  );
+  const rKneeAngle = useTransform(
+    [hipsX, hipsY, rKneeX, rKneeY, rAnkleX, rAnkleY] as any,
+    ([hx, hy, kx, ky, ax, ay]: number[]) => calculateAngle(hx, hy, kx, ky, ax, ay)
+  );
+  const hipAngle = useTransform(
+    [hipsX, neckY, hipsX, hipsY, lKneeX, lKneeY] as any,
+    ([nx, ny, hx, hy, kx, ky]: number[]) => calculateAngle(nx, ny, hx, hy, kx, ky)
+  );
+
+  return (
+    <svg viewBox="0 0 500 500" className="w-full h-full max-w-[400px] overflow-visible">
+      <defs>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+          <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <line x1="100" y1="400" x2="400" y2="400" stroke="#333" strokeWidth="2" strokeDasharray="4 4" />
+      <g stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" opacity="0.7">
+        <motion.line x1={250} y1={neckY} x2={hipsX} y2={hipsY} />
+        <motion.line x1={lShoulderX} y1={neckY} x2={rShoulderX} y2={neckY} />
+        <motion.line x1={lShoulderX} y1={neckY} x2={200} y2={elbowY} />
+        <motion.line x1={200} y1={elbowY} x2={lHandX} y2={handY} />
+        <motion.line x1={rShoulderX} y1={neckY} x2={300} y2={elbowY} />
+        <motion.line x1={300} y1={elbowY} x2={rHandX} y2={handY} />
+        <motion.line x1={hipsX} y1={hipsY} x2={lKneeX} y2={lKneeY} />
+        <motion.line x1={lKneeX} y1={lKneeY} x2={lAnkleX} y2={lAnkleY} />
+        <motion.line x1={hipsX} y1={hipsY} x2={rKneeX} y2={rKneeY} />
+        <motion.line x1={rKneeX} y1={rKneeY} x2={rAnkleX} y2={rAnkleY} />
+      </g>
+      <motion.circle cx={250} cy={headY} r={16} stroke="#ffffff" strokeWidth="3" fill="none" opacity="0.8" />
+      <g fill={ACCENT} filter="url(#glow)">
+        <motion.circle cx={hipsX} cy={hipsY} r={5} />
+        <motion.circle cx={lKneeX} cy={lKneeY} r={5} />
+        <motion.circle cx={rKneeX} cy={rKneeY} r={5} />
+      </g>
+      <g className="font-mono text-xs font-bold" fill={ACCENT}>
+        <motion.text x={lKneeX} y={lKneeY} dx="-25" dy="5" textAnchor="end">{lKneeAngle}</motion.text>
+        <motion.text x={rKneeX} y={rKneeY} dx="25" dy="5" textAnchor="start">{rKneeAngle}</motion.text>
+        <motion.text x={hipsX} y={hipsY} dx="15" dy="-15" fill="#EAB308" textAnchor="start">{hipAngle}</motion.text>
+      </g>
+      <motion.line x1={hipsX} y1={hipsY} x2={lKneeX} y2={lKneeY} stroke="#EAB308" strokeWidth="1" strokeDasharray="3 3" opacity="0.5" />
+      <motion.line x1={hipsX} y1={hipsY} x2={250} y2={useTransform(hipsY, y => y - 50)} stroke="#EAB308" strokeWidth="1" strokeDasharray="3 3" opacity="0.5" />
+    </svg>
+  );
+}
+
 function AngleAnalysisVisual() {
   return (
-    <div className="relative w-full h-full bg-gradient-to-br from-[#25D366]/10 via-black to-[#25D366]/5 flex items-center justify-center overflow-hidden rounded-sm border border-white/5">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(37,211,102,0.1)_0%,_transparent_70%)]" />
-
-      {/* Grid background */}
+    <div className="relative w-full h-full bg-[#0A0A0A] rounded-2xl border border-white/10 overflow-hidden shadow-2xl" style={{ boxShadow: `0 0 60px ${ACCENT}08` }}>
+      {/* Background Grid */}
       <div
-        className="absolute inset-0 opacity-[0.04]"
+        className="absolute inset-0 opacity-20"
         style={{
-          backgroundImage: `linear-gradient(rgba(37,211,102,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(37,211,102,0.5) 1px, transparent 1px)`,
-          backgroundSize: '30px 30px'
+          backgroundImage: `linear-gradient(to right, #333 1px, transparent 1px), linear-gradient(to bottom, #333 1px, transparent 1px)`,
+          backgroundSize: '40px 40px'
         }}
       />
-
-      {/* Stick figure in squat position */}
-      <svg viewBox="0 0 200 260" className="w-48 h-60 relative z-10">
-        {/* Body lines */}
-        <g stroke="white" strokeWidth="2.5" strokeLinecap="round" opacity="0.7">
-          {/* Torso */}
-          <line x1="100" y1="60" x2="100" y2="130" />
-          {/* Head */}
-          <circle cx="100" cy="45" r="15" fill="none" />
-          {/* Left arm */}
-          <line x1="100" y1="80" x2="65" y2="120" />
-          {/* Right arm */}
-          <line x1="100" y1="80" x2="135" y2="120" />
-          {/* Left thigh */}
-          <line x1="100" y1="130" x2="70" y2="175" />
-          {/* Right thigh */}
-          <line x1="100" y1="130" x2="130" y2="175" />
-          {/* Left shin */}
-          <line x1="70" y1="175" x2="60" y2="230" />
-          {/* Right shin */}
-          <line x1="130" y1="175" x2="140" y2="230" />
-        </g>
-
-        {/* Joint circles */}
-        {[
-          { cx: 100, cy: 130, label: "HIP" },
-          { cx: 70, cy: 175, label: "KNEE" },
-          { cx: 130, cy: 175, label: "KNEE" },
-          { cx: 100, cy: 80, label: "SHOULDER" },
-        ].map((joint, i) => (
-          <g key={i}>
-            <motion.circle
-              cx={joint.cx}
-              cy={joint.cy}
-              r="5"
-              fill={ACCENT}
-              animate={{ r: [4, 6, 4], opacity: [0.6, 1, 0.6] }}
-              transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.3 }}
-            />
-          </g>
-        ))}
-
-        {/* Angle arcs */}
-        <motion.path
-          d="M 100,115 Q 85,130 70,145"
-          fill="none"
-          stroke={ACCENT}
-          strokeWidth="1.5"
-          strokeDasharray="4 2"
-          animate={{ opacity: [0.3, 1, 0.3] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        />
-        <motion.path
-          d="M 100,115 Q 115,130 130,145"
-          fill="none"
-          stroke={ACCENT}
-          strokeWidth="1.5"
-          strokeDasharray="4 2"
-          animate={{ opacity: [0.3, 1, 0.3] }}
-          transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
-        />
-
-        {/* Angle labels */}
-        <motion.text
-          x="42" y="170"
-          fill={ACCENT}
-          fontSize="11"
-          fontFamily="monospace"
-          animate={{ opacity: [0.5, 1, 0.5] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        >
-          92°
-        </motion.text>
-        <motion.text
-          x="145" y="170"
-          fill={ACCENT}
-          fontSize="11"
-          fontFamily="monospace"
-          animate={{ opacity: [0.5, 1, 0.5] }}
-          transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
-        >
-          89°
-        </motion.text>
-        <motion.text
-          x="108" y="125"
-          fill="#FCDD00"
-          fontSize="11"
-          fontFamily="monospace"
-          animate={{ opacity: [0.5, 1, 0.5] }}
-          transition={{ duration: 2, repeat: Infinity, delay: 1 }}
-        >
-          78°
-        </motion.text>
-      </svg>
-
-      {/* Score badge */}
+      {/* Scanner Line */}
       <motion.div
-        className="absolute top-4 right-4 bg-black/60 border rounded-sm px-3 py-2 text-center"
-        style={{ borderColor: `${ACCENT}40` }}
-        animate={{ scale: [1, 1.05, 1] }}
-        transition={{ duration: 3, repeat: Infinity }}
-      >
-        <div className="text-xs font-mono text-white/50">SCORE</div>
-        <motion.div
-          className="text-2xl font-bold font-mono"
-          style={{ color: ACCENT }}
-          animate={{ opacity: [0.7, 1, 0.7] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        >
-          87
-        </motion.div>
-        <div className="text-[8px] font-mono text-white/40">/ 100</div>
-      </motion.div>
-
-      {/* Scanning line */}
-      <motion.div
-        className="absolute left-0 right-0 h-[1px]"
-        style={{ background: `linear-gradient(90deg, transparent, ${ACCENT}60, transparent)` }}
-        animate={{ top: ['10%', '90%', '10%'] }}
-        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+        className="absolute left-0 right-0 h-48 bg-gradient-to-b from-transparent via-[#00E55B]/5 to-[#00E55B]/20 border-b border-[#00E55B]/40 z-10"
+        animate={{ top: ['-30%', '110%'] }}
+        transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
       />
-
-      <div className="absolute bottom-4 left-4 text-xs font-mono" style={{ color: `${ACCENT}CC` }}>
-        <div>ANALYSE VIDEO</div>
-        <motion.div
-          className="text-white/60"
-          animate={{ opacity: [0.5, 1, 0.5] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        >
-          33 POINTS ARTICULAIRES
-        </motion.div>
+      {/* Score Box */}
+      <div className="absolute top-6 right-6 border border-white/10 bg-[#050505]/80 backdrop-blur-md rounded-lg p-4 text-center z-20">
+        <div className="text-[10px] text-gray-400 tracking-widest uppercase mb-1">Score</div>
+        <div className="text-4xl font-mono font-bold leading-none" style={{ color: ACCENT }}>87</div>
+        <div className="text-[10px] text-gray-500 mt-1">/ 100</div>
+      </div>
+      {/* Bottom Left Info */}
+      <div className="absolute bottom-6 left-6 z-20">
+        <div className="text-sm font-mono tracking-widest mb-1" style={{ color: ACCENT }}>ANALYSE BIOMECANIQUE</div>
+        <div className="text-gray-400 text-xs font-mono tracking-widest uppercase">33 Points Articulaires</div>
+      </div>
+      {/* Biomechanical SVG Animation */}
+      <div className="absolute inset-0 flex items-center justify-center z-10">
+        <BiomechanicFigure />
       </div>
     </div>
   );
