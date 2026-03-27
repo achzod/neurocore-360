@@ -51,6 +51,7 @@ import { registerBloodAnalysisRoutes } from "./blood-analysis/routes";
 import { registerBloodTestsRoutes } from "./blood-tests/routes";
 import { signAuthToken } from "./auth";
 import { analyzeDiscoveryScan, convertToNarrativeReport } from "./discovery-scan";
+import { generatePeptidesProtocol, checkPeptidesSafetyGate } from "./peptidesEngine";
 import { createRateLimiter } from "./middleware/rateLimit";
 import {
   scrapeArticleFromUrl,
@@ -7270,6 +7271,214 @@ export async function registerRoutes(
         error: "Erreur vérification table",
         message: error instanceof Error ? error.message : String(error)
       });
+    }
+  });
+
+  // ==================== PEPTIDES ENGINE ROUTES ====================
+
+  const peptidesLimiter = createRateLimiter({ windowMs: 60_000, max: 10 });
+
+  // 1. Save questionnaire progress
+  app.post("/api/peptides-engine/save-progress", peptidesLimiter, async (req, res) => {
+    try {
+      const schema = z.object({
+        email: z.string().email(),
+        currentSection: z.number().min(0).max(50),
+        totalSections: z.number().min(1).max(50).optional(),
+        responses: z.record(z.unknown()),
+      });
+      const data = schema.parse(req.body);
+
+      const progress = await storage.saveBurnoutProgress({
+        email: `peptides::${data.email}`,
+        currentSection: data.currentSection,
+        totalSections: data.totalSections,
+        responses: data.responses,
+      });
+
+      res.json({ success: true, progress });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Données invalides", details: error.errors });
+        return;
+      }
+      console.error("[PeptidesEngine] save-progress error:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
+  // 2. Create order and trigger protocol generation
+  app.post("/api/peptides-engine/create", peptidesLimiter, async (req, res) => {
+    try {
+      const schema = z.object({
+        email: z.string().email(),
+        responses: z.record(z.unknown()),
+        stripeSessionId: z.string().optional(),
+        skipPaymentCheck: z.boolean().optional(),
+      });
+      const { email, responses, stripeSessionId, skipPaymentCheck } = schema.parse(req.body);
+
+      if (!responses || Object.keys(responses).length < 3) {
+        res.status(400).json({ error: "Réponses insuffisantes pour générer un protocole" });
+        return;
+      }
+
+      // Safety gate: hard block on cancer history
+      const safetyCheck = checkPeptidesSafetyGate(responses);
+      if (!safetyCheck.safe) {
+        console.warn(`[PeptidesEngine] Safety gate triggered for ${email}: ${safetyCheck.reason}`);
+        res.status(422).json({
+          error: "safety_gate",
+          message: safetyCheck.reason,
+        });
+        return;
+      }
+
+      // Create order record
+      let order;
+      try {
+        order = await storage.createOrder({
+          email,
+          productType: "PEPTIDES_ENGINE",
+          productName: "Peptides Engine",
+          amountCents: 14900,
+          currency: "eur",
+          stripeCheckoutSessionId: stripeSessionId ?? null,
+          ipAddress: (req as any).ip ?? null,
+          userAgent: req.headers["user-agent"] ?? null,
+          metadata: { responsesCount: Object.keys(responses).length },
+        });
+        console.log(`[PeptidesEngine] Order created: ${order.id} for ${email}`);
+      } catch (orderErr) {
+        console.error("[PeptidesEngine] Order creation failed:", orderErr);
+        // Continue — don't block generation if order recording fails
+      }
+
+      // Check payment confirmation (Stripe session or explicit override)
+      let paymentConfirmed = Boolean(skipPaymentCheck);
+      if (!paymentConfirmed && stripeSessionId) {
+        try {
+          const existingOrder = await storage.getOrderByStripeSession(stripeSessionId);
+          paymentConfirmed = existingOrder?.status === "paid";
+        } catch {
+          // Non-blocking
+        }
+      }
+
+      if (!paymentConfirmed) {
+        res.status(202).json({
+          success: true,
+          status: "pending_payment",
+          message: "Paiement en attente — le protocole sera généré après confirmation.",
+          orderId: order?.id ?? null,
+        });
+        return;
+      }
+
+      // Generate protocol (fire-and-forget for long operations, but we await here
+      // since we need the report ID for the response)
+      let reportId: string | null = null;
+      try {
+        const report = await generatePeptidesProtocol(responses, email);
+
+        // Store report using burnout_reports table as generic JSON store
+        const record = await storage.createBurnoutReport({
+          email: `peptides::${email}`,
+          responses,
+          report,
+        });
+        reportId = record.id;
+
+        // Link order to report if order was created
+        if (order) {
+          await storage.updateOrder(order.id, {
+            status: "paid",
+            metadata: {
+              ...(order.metadata as object ?? {}),
+              peptidesReportId: reportId,
+            },
+          }).catch(() => {});
+        }
+
+        // Deliver via email
+        const promoCodesBlock =
+          report.promoCodesGenerated?.length > 0
+            ? `\n\nTes 2 codes Blood Analysis offerts (100% de réduction, usage unique):\n${report.promoCodesGenerated.join("\n")}`
+            : "";
+
+        const peptidesNames = report.peptides?.map((p) => p.name).join(", ") ?? "voir rapport";
+        const deliveryMessage =
+          `Ton protocole peptides est prêt.\n\n` +
+          `Peptides recommandés : ${peptidesNames}\n\n` +
+          `Accède à ton rapport complet ici :\n${getBaseUrl(req)}/peptides-engine/report/${reportId}` +
+          promoCodesBlock +
+          `\n\nConserve ce lien — il est personnel et unique.`;
+
+        await sendCTAEmail(
+          email,
+          "Ton protocole peptides personnalisé est prêt",
+          deliveryMessage
+        ).catch((err) => {
+          console.error("[PeptidesEngine] Delivery email failed:", err);
+        });
+
+        // Clean up progress
+        await storage.saveBurnoutProgress({
+          email: `peptides::${email}`,
+          currentSection: 99,
+          totalSections: 38,
+          responses: {},
+        }).catch(() => {});
+
+        res.json({
+          success: true,
+          status: "generated",
+          reportId,
+          peptideCount: report.peptides?.length ?? 0,
+        });
+      } catch (genErr: any) {
+        console.error("[PeptidesEngine] Generation error:", genErr);
+        res.status(500).json({
+          error: "Erreur lors de la génération du protocole. Réessaie dans quelques minutes.",
+          orderId: order?.id ?? null,
+        });
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Données invalides", details: error.errors });
+        return;
+      }
+      console.error("[PeptidesEngine] create error:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
+  // 3. Get generated report by ID
+  app.get("/api/peptides-engine/report/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const record = await storage.getBurnoutReport(id);
+
+      if (!record) {
+        res.status(404).json({ error: "Rapport introuvable" });
+        return;
+      }
+
+      // Ensure it's a peptides report (email prefixed with peptides::)
+      if (!String(record.email ?? "").startsWith("peptides::")) {
+        res.status(404).json({ error: "Rapport introuvable" });
+        return;
+      }
+
+      res.json({
+        success: true,
+        id: record.id,
+        createdAt: record.createdAt,
+        report: record.report,
+      });
+    } catch (error) {
+      console.error("[PeptidesEngine] report fetch error:", error);
+      res.status(500).json({ error: "Erreur serveur" });
     }
   });
 
