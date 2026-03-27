@@ -60,6 +60,7 @@ const BloodAnalysisStart = lazy(() => import("@/pages/BloodAnalysisStart"));
 const BloodAnalysisLegacyRedirect = lazy(() => import("@/pages/BloodAnalysisLegacyRedirect"));
 const PeptidesEngineOffer = lazy(() => import("@/pages/offers/PeptidesEngineOffer"));
 const PeptidesEnginePage = lazy(() => import("@/pages/PeptidesEnginePage"));
+const PeptidesEngineReport = lazy(() => import("@/pages/PeptidesEngineReport"));
 const Blog = lazy(() => import("@/pages/Blog"));
 const BlogArticle = lazy(() => import("@/pages/BlogArticle"));
 const Press = lazy(() => import("@/pages/Press"));
@@ -164,6 +165,7 @@ function Router() {
         <Route path="/offers/formcheck" component={FormCheck} />
         <Route path="/offers/peptides-engine" component={PeptidesEngineOffer} />
         <Route path="/peptides-engine" component={PeptidesEnginePage} />
+        <Route path="/peptides/:id" component={PeptidesEngineReport} />
 
         {/* Google Ads Landing Page - Compliant */}
         <Route path="/ads/discovery-scan" component={DiscoveryScanAds} />
