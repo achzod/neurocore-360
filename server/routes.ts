@@ -5529,6 +5529,26 @@ export async function registerRoutes(
             });
             console.log(`[Webhook] Order ${order.id} marked as paid via webhook`);
 
+            // Admin notification for PAID orders
+            try {
+              const clientEmail = session.customer_details?.email || session.customer_email || order.email;
+              const clientName = session.customer_details?.name || clientEmail?.split("@")[0] || "Client";
+              const planLabel = order.productType === "PREMIUM" ? "Anabolic Bioscan (59EUR)" :
+                               order.productType === "ELITE" ? "Ultimate Scan (79EUR)" :
+                               order.productType === "BLOOD_ANALYSIS" ? "Blood Analysis (99EUR)" : order.productName;
+              const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
+              const amount = (order.finalAmountCents / 100).toFixed(2);
+
+              await sendCTAEmail(
+                adminEmail,
+                `PAIEMENT ${amount}EUR — ${planLabel} — ${clientName}`,
+                `PAIEMENT RECU!\n\nProduit: ${planLabel}\nClient: ${clientName}\nEmail: ${clientEmail}\nMontant: ${amount}EUR\nPromo: ${order.promoCode || "aucun"}\n\nOrder ID: ${order.id}`
+              );
+              console.log(`[Webhook] Admin payment notification sent for order ${order.id}`);
+            } catch (notifErr) {
+              console.error(`[Webhook] Admin payment notification failed:`, notifErr);
+            }
+
             // ✅ FIX: Create audit automatically in webhook (prevents missing audits)
             const email = session.customer_details?.email || session.customer_email || session.metadata?.email || order.email;
             const planType = order.productType;
