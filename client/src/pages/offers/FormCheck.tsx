@@ -239,7 +239,7 @@ function AngleAnalysisVisual() {
       />
 
       <div className="absolute bottom-4 left-4 text-xs font-mono" style={{ color: `${ACCENT}CC` }}>
-        <div>MEDIAIPE + IA</div>
+        <div>ANALYSE VIDEO</div>
         <motion.div
           className="text-white/60"
           animate={{ opacity: [0.5, 1, 0.5] }}
@@ -457,7 +457,7 @@ export default function FormCheck() {
           >
             <div className="text-center">
               <span className="inline-block px-6 py-3 rounded-sm text-xl sm:text-2xl font-bold uppercase tracking-widest text-white border-2" style={{ borderColor: ACCENT, background: `${ACCENT}1A` }}>
-                Bientot disponible
+                1ere analyse gratuite
               </span>
             </div>
           </motion.div>
@@ -468,12 +468,22 @@ export default function FormCheck() {
             transition={{ duration: 0.6, delay: 0.5 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
-            <span
-              className="inline-flex items-center gap-3 text-white/50 font-semibold text-base px-8 py-4 rounded-sm cursor-not-allowed"
-              style={{ background: `${ACCENT}33` }}
+            <a
+              href="https://wa.me/15557636881?text=menu"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-3 text-white font-semibold text-base px-8 py-4 rounded-sm transition-all hover:scale-105"
+              style={{ background: ACCENT }}
             >
-              Bientot disponible
-            </span>
+              <MessageCircle className="w-5 h-5" />
+              Commencer sur WhatsApp
+            </a>
+            <a
+              href="#packs"
+              className="inline-flex items-center gap-2 text-white/60 font-semibold text-base px-8 py-4 rounded-sm border border-white/20 hover:border-white/40 transition-all"
+            >
+              Voir les offres
+            </a>
           </motion.div>
         </motion.div>
 
@@ -491,6 +501,182 @@ export default function FormCheck() {
             />
           </div>
         </motion.div>
+      </section>
+
+      {/* REPORT SHOWCASE — Animated scroll */}
+      <section className="py-32 px-6 border-t border-white/5">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <p className="text-sm font-medium tracking-[0.2em] uppercase mb-6" style={{ color: ACCENT }}>
+                Le rapport
+              </p>
+              <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6 leading-tight">
+                Pas un simple score.
+                <br />
+                <span style={{ color: ACCENT }}>Un vrai rapport.</span>
+              </h2>
+              <p className="text-white/50 text-lg leading-relaxed mb-8">
+                Chaque video genere un rapport HTML complet, consultable sur mobile ou desktop.
+                Score global, corrections prioritaires, analyse rep par rep, decomposition du score
+                et plan d'action concret.
+              </p>
+              <ul className="space-y-4">
+                {[
+                  "Score global sur 100 avec jauge visuelle",
+                  "4 sous-scores : securite, efficacite, controle, symetrie",
+                  "Corrections classees par impact biomecanique",
+                  "Analyse detaillee de chaque repetition",
+                  "Point biomecanique educatif",
+                  "Plan d'action en 3 points",
+                ].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-white/70">
+                    <Check className="w-4 h-4 flex-shrink-0" style={{ color: ACCENT }} />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              {/* Phone mockup with scrolling report */}
+              <div className="relative mx-auto" style={{ maxWidth: 320 }}>
+                {/* Phone frame */}
+                <div className="rounded-[2.5rem] border-[3px] border-white/20 bg-black p-2 shadow-2xl" style={{ boxShadow: `0 0 80px ${ACCENT}1A` }}>
+                  {/* Notch */}
+                  <div className="relative rounded-[2rem] overflow-hidden bg-[#0a0a0a]" style={{ height: 560 }}>
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-6 bg-black rounded-b-2xl z-10" />
+                    {/* Scrolling report content */}
+                    <div className="absolute inset-0 overflow-hidden">
+                      <motion.div
+                        animate={{ y: [0, -1200, -1200, 0] }}
+                        transition={{ duration: 20, repeat: Infinity, ease: "easeInOut", times: [0, 0.45, 0.55, 1] }}
+                        className="px-4 pt-10 pb-8"
+                      >
+                        {/* Report header */}
+                        <div className="text-center mb-6">
+                          <div className="text-[10px] font-mono uppercase tracking-widest text-white/40 mb-2">FORMCHECK</div>
+                          <div className="text-white font-bold text-sm mb-1">Developpe incline machine</div>
+                          <div className="text-white/40 text-xs">27 mars 2026</div>
+                        </div>
+                        {/* Score gauge */}
+                        <div className="flex justify-center mb-6">
+                          <div className="relative w-28 h-28">
+                            <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                              <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="8" />
+                              <circle cx="50" cy="50" r="42" fill="none" stroke={ACCENT} strokeWidth="8" strokeDasharray={`${75 * 2.64} ${264 - 75 * 2.64}`} strokeLinecap="round" />
+                            </svg>
+                            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                              <span className="text-white text-2xl font-black">75</span>
+                              <span className="text-white/40 text-[10px]">/100</span>
+                            </div>
+                          </div>
+                        </div>
+                        {/* Sub-scores */}
+                        <div className="grid grid-cols-4 gap-1 mb-6">
+                          {[{l:"SEC",v:32,m:40},{l:"EFF",v:22,m:30},{l:"CTR",v:15,m:20},{l:"SYM",v:6,m:10}].map((s,i) => (
+                            <div key={i} className="text-center p-2 rounded bg-white/5">
+                              <div className="text-[9px] font-mono text-white/40">{s.l}</div>
+                              <div className="text-white font-bold text-sm">{s.v}<span className="text-white/30 text-[10px]">/{s.m}</span></div>
+                            </div>
+                          ))}
+                        </div>
+                        {/* Section: Synthese */}
+                        <div className="mb-5">
+                          <div className="text-[10px] font-mono uppercase tracking-widest mb-2" style={{ color: ACCENT }}>Synthese</div>
+                          <div className="text-white/60 text-xs leading-relaxed">
+                            Tu effectues 15 repetitions en developpe incline convergent unilateral. L'execution est globalement solide avec une bonne amplitude articulaire. La fatigue se manifeste a partir de la 12eme repetition avec rotation du tronc.
+                          </div>
+                        </div>
+                        {/* Section: Points Forts */}
+                        <div className="mb-5">
+                          <div className="text-[10px] font-mono uppercase tracking-widest mb-2" style={{ color: ACCENT }}>Points Forts</div>
+                          <div className="space-y-2">
+                            {["Stabilite du buste remarquable", "Amplitude complete respectee", "Controle excentrique maitrise"].map((p,i) => (
+                              <div key={i} className="flex gap-2 text-xs text-white/60">
+                                <Check className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: ACCENT }} />
+                                <span>{p}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        {/* Section: Corrections */}
+                        <div className="mb-5">
+                          <div className="text-[10px] font-mono uppercase tracking-widest mb-2 text-orange-400">Corrections Prioritaires</div>
+                          <div className="space-y-3">
+                            {[
+                              {n:1, t:"Rotation du tronc", d:"Compensation de fatigue sur l'axe longitudinal"},
+                              {n:2, t:"Elevation scapulaire", d:"Engagement compensatoire du trapeze superieur"},
+                              {n:3, t:"Verrouillage coudes", d:"Lockout incomplet en fin de serie"},
+                            ].map((c) => (
+                              <div key={c.n} className="flex gap-2">
+                                <div className="w-5 h-5 rounded-full bg-orange-400/20 text-orange-400 text-[10px] flex items-center justify-center flex-shrink-0 font-bold">{c.n}</div>
+                                <div>
+                                  <div className="text-white text-xs font-semibold">{c.t}</div>
+                                  <div className="text-white/40 text-[10px]">{c.d}</div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        {/* Section: Rep par Rep */}
+                        <div className="mb-5">
+                          <div className="text-[10px] font-mono uppercase tracking-widest mb-2" style={{ color: ACCENT }}>Analyse Rep par Rep</div>
+                          <div className="space-y-1">
+                            {[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15].map((r) => (
+                              <div key={r} className="flex items-center gap-2 py-1 border-b border-white/5">
+                                <span className="w-5 h-5 rounded-full text-[10px] flex items-center justify-center font-bold" style={{ background: r <= 12 ? `${ACCENT}20` : 'rgba(251,146,60,0.2)', color: r <= 12 ? ACCENT : '#fb923c' }}>{r}</span>
+                                <span className="text-white/50 text-[10px] font-mono">{`0:${String((r-1)*3).padStart(2,'0')} - 0:${String(r*3).padStart(2,'0')}`}</span>
+                                <span className="text-white/40 text-[10px] flex-1 truncate">{r <= 8 ? 'Execution propre' : r <= 12 ? 'Fatigue visible' : 'Compensation'}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        {/* Section: Score Detaille */}
+                        <div className="mb-5">
+                          <div className="text-[10px] font-mono uppercase tracking-widest mb-2" style={{ color: ACCENT }}>Score Detaille</div>
+                          {[{l:"Securite",v:32,m:40},{l:"Efficacite technique",v:22,m:30},{l:"Controle et tempo",v:15,m:20},{l:"Symetrie",v:6,m:10}].map((s,i) => (
+                            <div key={i} className="mb-3">
+                              <div className="flex justify-between text-[10px] mb-1">
+                                <span className="text-white/60">{s.l}</span>
+                                <span className="text-white font-bold">{s.v}/{s.m}</span>
+                              </div>
+                              <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                <div className="h-full rounded-full" style={{ width: `${(s.v/s.m)*100}%`, background: ACCENT }} />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        {/* Section: Plan Action */}
+                        <div className="mb-5">
+                          <div className="text-[10px] font-mono uppercase tracking-widest mb-2" style={{ color: ACCENT }}>Plan d'Action</div>
+                          <div className="space-y-2">
+                            {["Reduis la charge de 10% pour eliminer les compensations", "Ajoute une pre-activation scapulaire avant chaque rep", "Filme-toi de 3/4 arriere pour le prochain rapport"].map((a,i) => (
+                              <div key={i} className="flex gap-2 text-xs text-white/60">
+                                <div className="w-4 h-4 rounded-full text-[9px] flex items-center justify-center flex-shrink-0 font-bold" style={{ background: `${ACCENT}20`, color: ACCENT }}>{i+1}</div>
+                                <span>{a}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </motion.div>
+                    </div>
+                  </div>
+                </div>
+                {/* Glow effect */}
+                <div className="absolute -inset-8 -z-10 rounded-[3rem] blur-3xl" style={{ background: `${ACCENT}08` }} />
+              </div>
+            </motion.div>
+          </div>
+        </div>
       </section>
 
       {/* HOW IT WORKS */}
@@ -579,7 +765,7 @@ export default function FormCheck() {
               className="order-1 lg:order-2"
             >
               <p className="text-sm font-medium tracking-[0.2em] uppercase mb-6" style={{ color: ACCENT }}>
-                MediaPipe + IA
+                Analyse de mouvement
               </p>
               <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6 leading-tight">
                 Chaque angle.
@@ -587,8 +773,8 @@ export default function FormCheck() {
                 <span style={{ color: ACCENT }}>Chaque erreur.</span>
               </h2>
               <p className="text-white/50 text-lg leading-relaxed mb-8">
-                L'IA detecte 33 points articulaires sur ton corps, mesure les angles en temps reel,
-                et compare ta forme avec les references optimales pour chaque exercice.
+                33 points articulaires detectes sur ton corps, angles mesures en temps reel,
+                et comparaison avec les references optimales pour chaque exercice.
               </p>
               <ul className="space-y-4">
                 {[
@@ -982,11 +1168,12 @@ export default function FormCheck() {
           </motion.div>
           <div className="divide-y divide-white/10">
             {[
-              { q: "Comment envoyer ma video ?", a: "Ouvre WhatsApp, envoie ta video d'exercice au numero FormCheck. L'IA detecte automatiquement l'exercice et analyse ta forme. Tu recois ton rapport en quelques minutes. Filme de face ou de profil, a 2-3 metres, en format portrait ou paysage." },
+              { q: "Comment envoyer ma video ?", a: "Ouvre WhatsApp, envoie ta video d'exercice au numero FormCheck. L'exercice est detecte automatiquement et ta forme est analysee. Tu recois ton rapport en quelques minutes. Filme de face ou de profil, a 2-3 metres, en format portrait ou paysage." },
               { q: "Quels exercices sont supportes ?", a: "20+ exercices: squat (back, front, goblet), deadlift (conventionnel, sumo, roumain), bench press, overhead press, barbell row, pull-up, lunge, hip thrust, curl, dip, clean, snatch, kettlebell swing, et plus. La liste s'agrandit regulierement." },
-              { q: "Comment le score est-il calcule ?", a: "L'IA utilise MediaPipe pour detecter 33 points articulaires et mesurer les angles en temps reel. Le score 0-100 est base sur la comparaison avec les angles optimaux pour chaque exercice, pondere par la gravite de chaque deviation. 4 sous-scores: securite, efficacite, controle, symetrie." },
-              { q: "C'est quoi le rapport HTML premium ?", a: "Un rapport interactif avec tes angles mesures, les corrections prioritaires classees par impact, des exercices correctifs recommandes, le comptage des reps (completes vs partielles), l'analyse du tempo, et ton profil morphologique. Tu peux le consulter sur n'importe quel appareil, meme hors ligne." },
-              { q: "Est-ce que ca remplace un coach ?", a: "Non. FormCheck est un outil d'analyse objective qui complete le travail d'un coach. C'est un miroir intelligent qui te montre ce que tu ne peux pas voir seul. Ideal entre tes seances de coaching, pour valider ta technique en autonomie, ou pour progresser plus vite." },
+              { q: "Comment le score est-il calcule ?", a: "33 points articulaires sont detectes sur ton corps et les angles sont mesures en temps reel. Le score 0-100 est base sur la comparaison avec les angles optimaux pour chaque exercice, pondere par la gravite de chaque deviation. 4 sous-scores: securite, efficacite, controle, symetrie." },
+              { q: "C'est quoi le rapport HTML ?", a: "Un rapport detaille avec score global, corrections prioritaires classees par impact, analyse rep par rep, decomposition du score (securite, efficacite, controle, symetrie), point biomecanique et plan d'action concret. Consultable sur n'importe quel appareil." },
+              { q: "Est-ce que ca remplace un coach ?", a: "Non. FormCheck est un outil d'analyse objective qui complete le travail d'un coach. C'est un miroir qui te montre ce que tu ne peux pas voir seul. Ideal entre tes seances de coaching, pour valider ta technique en autonomie." },
+              { q: "Combien ca coute ?", a: "1ere analyse gratuite. Ensuite, abonnement Solo a 4.99 EUR le 1er mois puis 14.99 EUR/mois (15 analyses). Plan Coach a 19.99 EUR le 1er mois puis 39.99 EUR/mois (60 analyses). Sans engagement, resiliable a tout moment." },
             ].map((faq, i) => (
               <FAQItem key={i} q={faq.q} a={faq.a} index={i} />
             ))}
