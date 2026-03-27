@@ -859,39 +859,57 @@ export default function FormCheck() {
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
             {[
               {
                 name: "Essai",
                 price: "0€",
                 period: "",
-                analyses: "1 analyse gratuite",
-                features: ["Score de forme 0-100", "Detection d'exercice auto", "Corrections prioritaires", "Rapport HTML premium"],
+                analyses: "1 analyse offerte",
+                subtitle: "Decouvre le niveau de tes mouvements",
+                features: ["Score de forme 0-100", "Detection d'exercice auto", "Corrections prioritaires", "Rapport HTML complet"],
                 badge: "GRATUIT",
                 highlight: false,
-                cta: "Essayer maintenant",
+                cta: "Tester gratuitement",
                 ctaHref: `https://wa.me/${WA_NUMBER}?text=menu`,
               },
               {
                 name: "Solo",
-                price: "4.99€",
-                period: "1er mois",
-                analyses: "15 analyses/mois",
-                features: ["Tout Essai inclus", "15 analyses par mois", "Historique & progression", "Puis 14.99€/mois, sans engagement"],
-                badge: "LANCEMENT",
+                price: "9,90€",
+                period: "/1er mois",
+                priceAfter: "puis 14,90€/mois",
+                analyses: "10 analyses/mois",
+                subtitle: "Corrige ta technique chaque semaine",
+                features: ["Tout l'Essai inclus", "10 analyses par mois", "Historique et progression", "Sans engagement"],
+                badge: null,
+                highlight: false,
+                cta: "Commencer a 9,90€",
+                ctaHref: `https://wa.me/${WA_NUMBER}?text=forfaits`,
+              },
+              {
+                name: "Pro",
+                price: "29,90€",
+                period: "/1er mois",
+                priceAfter: "puis 39,90€/mois",
+                analyses: "30 analyses/mois",
+                subtitle: "Pour ceux qui ne veulent plus deviner",
+                features: ["Tout le Solo inclus", "30 analyses par mois", "Rapports partageables", "Ideal athletes serieux"],
+                badge: "LE + POPULAIRE",
                 highlight: true,
-                cta: "Commencer",
+                cta: "Passer Pro maintenant",
                 ctaHref: `https://wa.me/${WA_NUMBER}?text=forfaits`,
               },
               {
                 name: "Coach",
-                price: "19.99€",
-                period: "1er mois",
-                analyses: "60 analyses/mois",
-                features: ["Tout Solo inclus", "60 analyses pour tes clients", "Rapports partageables", "Puis 39.99€/mois, sans engagement"],
-                badge: "MULTI-CLIENTS",
+                price: "99€",
+                period: "/mois",
+                priceAfter: "",
+                analyses: "Analyses illimitees",
+                subtitle: "L'outil de tes seances et de tes clients",
+                features: ["Tout le Pro inclus", "Volume illimite", "Multi-athletes", "Support prioritaire"],
+                badge: "ILLIMITE",
                 highlight: false,
-                cta: "Commencer",
+                cta: "Devenir Coach",
                 ctaHref: `https://wa.me/${WA_NUMBER}?text=forfaits`,
               },
             ].map((pack, i) => (
@@ -921,12 +939,14 @@ export default function FormCheck() {
                   </div>
                 )}
                 <div className="text-center mb-6">
-                  <h3 className="text-white text-xl font-bold mb-2">{pack.name}</h3>
+                  <h3 className="text-white text-xl font-bold mb-1">{pack.name}</h3>
+                  <p className="text-white/40 text-xs mb-3">{pack.subtitle}</p>
                   <div className="flex items-baseline justify-center gap-1">
                     <span className="text-white text-4xl font-bold">{pack.price}</span>
                     {pack.period && <span className="text-white/40 text-sm">{pack.period}</span>}
                   </div>
-                  <div className="text-sm mt-1" style={{ color: ACCENT }}>{pack.analyses}</div>
+                  {pack.priceAfter && <div className="text-white/30 text-xs mt-1">{pack.priceAfter}</div>}
+                  <div className="text-sm mt-2 font-semibold" style={{ color: ACCENT }}>{pack.analyses}</div>
                 </div>
                 <ul className="space-y-3 mb-8">
                   {pack.features.map((feat, j) => (
@@ -1159,7 +1179,7 @@ export default function FormCheck() {
               { q: "Comment le score est-il calcule ?", a: "33 points articulaires sont detectes sur ton corps et les angles sont mesures en temps reel. Le score 0-100 est base sur la comparaison avec les angles optimaux pour chaque exercice, pondere par la gravite de chaque deviation. 4 sous-scores: securite, efficacite, controle, symetrie." },
               { q: "C'est quoi le rapport HTML ?", a: "Un rapport detaille avec score global, corrections prioritaires classees par impact, analyse rep par rep, decomposition du score (securite, efficacite, controle, symetrie), point biomecanique et plan d'action concret. Consultable sur n'importe quel appareil." },
               { q: "Est-ce que ca remplace un coach ?", a: "Non. FormCheck est un outil d'analyse objective qui complete le travail d'un coach. C'est un miroir qui te montre ce que tu ne peux pas voir seul. Ideal entre tes seances de coaching, pour valider ta technique en autonomie." },
-              { q: "Combien ca coute ?", a: "1ere analyse gratuite. Ensuite, abonnement Solo a 4.99 EUR le 1er mois puis 14.99 EUR/mois (15 analyses). Plan Coach a 19.99 EUR le 1er mois puis 39.99 EUR/mois (60 analyses). Sans engagement, resiliable a tout moment." },
+              { q: "Combien ca coute ?", a: "1ere analyse gratuite. Ensuite : Solo a 9,90 EUR le 1er mois puis 14,90 EUR/mois (10 analyses). Pro a 29,90 EUR le 1er mois puis 39,90 EUR/mois (30 analyses). Coach a 99 EUR/mois illimite. Sans engagement, resiliable a tout moment." },
             ].map((faq, i) => (
               <FAQItem key={i} q={faq.q} a={faq.a} index={i} />
             ))}
