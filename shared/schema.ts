@@ -438,6 +438,7 @@ export const ProductType = {
   ELITE: "ELITE",
   BURNOUT: "BURNOUT",
   BLOOD_ANALYSIS: "BLOOD_ANALYSIS",
+  PEPTIDES_ENGINE: "PEPTIDES_ENGINE",
 } as const;
 
 export type ProductTypeEnum = (typeof ProductType)[keyof typeof ProductType];
@@ -448,6 +449,7 @@ export const ProductDisplayNames: Record<ProductTypeEnum, string> = {
   ELITE: "Ultimate Scan",
   BURNOUT: "Burnout Engine",
   BLOOD_ANALYSIS: "Blood Analysis",
+  PEPTIDES_ENGINE: "Peptides Engine",
 };
 
 export const ProductPriceCents: Record<ProductTypeEnum, number> = {
@@ -456,6 +458,7 @@ export const ProductPriceCents: Record<ProductTypeEnum, number> = {
   ELITE: 7900,
   BURNOUT: 3900,
   BLOOD_ANALYSIS: 9900,
+  PEPTIDES_ENGINE: 14900,
 };
 
 export interface Order {
