@@ -291,36 +291,12 @@ function BiomechanicFigure() {
 
 function AngleAnalysisVisual() {
   return (
-    <div className="relative w-full h-full bg-[#0A0A0A] rounded-2xl border border-white/10 overflow-hidden shadow-2xl" style={{ boxShadow: `0 0 60px ${ACCENT}08` }}>
+    <div className="relative w-full h-full bg-[#0A0A0A] rounded-2xl border border-white/10 overflow-hidden shadow-2xl" style={{ boxShadow: `0 0 60px ${ACCENT}08`, minHeight: '400px' }}>
       {/* Background Grid */}
-      <div
-        className="absolute inset-0 opacity-20"
-        style={{
-          backgroundImage: `linear-gradient(to right, #333 1px, transparent 1px), linear-gradient(to bottom, #333 1px, transparent 1px)`,
-          backgroundSize: '40px 40px'
-        }}
-      />
-      {/* Scanner Line */}
-      <motion.div
-        className="absolute left-0 right-0 h-48 bg-gradient-to-b from-transparent via-[#00E55B]/5 to-[#00E55B]/20 border-b border-[#00E55B]/40 z-10"
-        animate={{ top: ['-30%', '110%'] }}
-        transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
-      />
-      {/* Score Box */}
-      <div className="absolute top-6 right-6 border border-white/10 bg-[#050505]/80 backdrop-blur-md rounded-lg p-4 text-center z-20">
-        <div className="text-[10px] text-gray-400 tracking-widest uppercase mb-1">Score</div>
-        <div className="text-4xl font-mono font-bold leading-none" style={{ color: ACCENT }}>87</div>
-        <div className="text-[10px] text-gray-500 mt-1">/ 100</div>
-      </div>
-      {/* Bottom Left Info */}
-      <div className="absolute bottom-6 left-6 z-20">
-        <div className="text-sm font-mono tracking-widest mb-1" style={{ color: ACCENT }}>ANALYSE BIOMECANIQUE</div>
-        <div className="text-gray-400 text-xs font-mono tracking-widest uppercase">33 Points Articulaires</div>
-      </div>
-      {/* Biomechanical SVG Animation */}
-      <div className="absolute inset-0 flex items-center justify-center z-10">
-        <BiomechanicFigure />
-      </div>
+      <div className="absolute inset-0 opacity-20"
+        style={{ backgroundImage: `linear-gradient(to right, #333 1px, transparent 1px), linear-gradient(to bottom, #333 1px, transparent 1px)`, backgroundSize: '40px 40px' }} />
+      {/* Full animated figure with auto-cycle exercises */}
+      <BiomechanicFigure />
     </div>
   );
 }
