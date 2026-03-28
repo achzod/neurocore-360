@@ -362,6 +362,57 @@ export default function BlogArticlePage() {
           </section>
         )}
 
+        {/* CTA Peptides Engine — shown on peptide/SARMs articles */}
+        {(article.category === "sarms" || /peptid|bpc.?157|tb.?500|ghk|ipamorelin|semaglutide|tirzepatide|retatrutide|sarm|gh.?secretagogue|tesamorelin|sermorelin|melanotan|pt.?141|epitalon|semax|selank|aod.?9604/i.test(article.title + " " + (article.content || "").slice(0, 500))) && (
+          <section className="py-16 border-t border-amber-500/10 bg-amber-500/[0.02]">
+            <div className="mx-auto max-w-4xl px-4">
+              <div className="flex flex-col md:flex-row items-center gap-10 bg-black/40 border border-amber-500/20 p-8 md:p-12 rounded-sm relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-40 h-40 bg-amber-500/10 blur-[80px] -translate-y-1/2 -translate-x-1/2" />
+
+                <div className="flex-1 text-center md:text-left relative z-10">
+                  <p className="text-amber-500 text-xs font-mono tracking-[0.3em] uppercase mb-4">
+                    [ PEPTIDES ENGINE ]
+                  </p>
+                  <h2 className="mb-4 text-2xl md:text-3xl font-black text-white tracking-tighter uppercase">
+                    TON PROTOCOLE PEPTIDES<br />
+                    <span className="text-amber-500">PERSONNALISE</span>
+                  </h2>
+                  <p className="mb-6 text-base text-white/60">
+                    35 questions. Un protocole sur mesure avec dosages exacts, guide de reconstitution,
+                    calendrier hebdo et acces a ma source secrete ou les peptides coutent 60-90% moins cher.
+                    2 Blood Analyses incluses.
+                  </p>
+                  <div className="flex flex-col sm:flex-row items-center gap-4">
+                    <a
+                      href="/offers/peptides-engine"
+                      className="inline-flex items-center gap-3 px-8 py-4 bg-amber-500 text-black text-xs font-black uppercase tracking-[0.2em] hover:bg-amber-400 transition-all rounded-sm shadow-[0_0_20px_rgba(245,158,11,0.2)]"
+                    >
+                      Decouvrir — 299€
+                      <ArrowRight className="h-4 w-4" />
+                    </a>
+                    <span className="text-white/30 text-xs font-mono">100% deductible du coaching</span>
+                  </div>
+                </div>
+                <div className="hidden md:flex flex-col items-center gap-3 w-1/4">
+                  <div className="grid grid-cols-2 gap-2 text-center">
+                    {[
+                      { val: "74", label: "molecules" },
+                      { val: "-90%", label: "vs revendeurs" },
+                      { val: "2", label: "blood analyses" },
+                      { val: "48h", label: "livraison" },
+                    ].map((s) => (
+                      <div key={s.label} className="bg-white/5 border border-white/10 rounded-lg p-3">
+                        <div className="text-amber-500 font-bold text-lg">{s.val}</div>
+                        <div className="text-white/40 text-[9px] font-mono uppercase">{s.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* CTA Section - Traffic to AchzodCoaching */}
         <section className="py-24 border-t border-white/5 bg-[#FCDD00]/[0.02]">
           <div className="mx-auto max-w-4xl px-4">

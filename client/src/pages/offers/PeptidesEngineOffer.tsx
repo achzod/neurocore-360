@@ -299,6 +299,17 @@ function CTAButton({ children, href = "/peptides-engine", large = false }: { chi
 // PRICE COMPARISON
 // ============================================================================
 
+const PRICE_TABLE = [
+  { name: "BPC-157 (5mg)", reseller: "45-80€", source: "$9.65", sourceEur: "~9€", savings: "80-88%", tag: "Recovery" },
+  { name: "TB-500 (5mg)", reseller: "50-90€", source: "$10.37", sourceEur: "~10€", savings: "80-89%", tag: "Recovery" },
+  { name: "GHK-Cu (50mg)", reseller: "60-120€", source: "$7.64", sourceEur: "~7€", savings: "88-94%", tag: "Skin" },
+  { name: "Ipamorelin (5mg)", reseller: "40-70€", source: "$8.92", sourceEur: "~8€", savings: "80-89%", tag: "GH" },
+  { name: "CJC-1295 (2mg)", reseller: "50-85€", source: "$18.02", sourceEur: "~17€", savings: "66-80%", tag: "GH" },
+  { name: "Retatrutide (10mg)", reseller: "150-300€", source: "$13.65", sourceEur: "~13€", savings: "91-96%", tag: "GLP-1" },
+  { name: "Semaglutide (5mg)", reseller: "80-200€", source: "$5.64", sourceEur: "~5€", savings: "94-97%", tag: "GLP-1" },
+  { name: "Tirzepatide (10mg)", reseller: "100-250€", source: "$9.65", sourceEur: "~9€", savings: "91-96%", tag: "GLP-1" },
+];
+
 function PriceComparison() {
   return (
     <section className="py-24 px-6">
@@ -311,69 +322,88 @@ function PriceComparison() {
         >
           <SectionLabel>La verite sur les prix</SectionLabel>
           <h2 className="mt-4 text-3xl font-bold text-white md:text-4xl">
-            Ce que tu paies ailleurs vs via ton protocole
+            Ce que tu paies ailleurs vs via ma source
           </h2>
+          <p className="mt-4 text-white/50 max-w-2xl mx-auto">
+            Prix reels compares. Revendeurs FR/EU vs source directe laboratoire avec COA (Certificat d'Analyse) par lot.
+          </p>
         </motion.div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          {/* LEFT — classique */}
+        {/* Per-peptide comparison table */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="rounded-2xl border border-white/10 bg-[#0a0a0a] overflow-hidden mb-6"
+        >
+          {/* Header */}
+          <div className="grid grid-cols-4 gap-4 px-6 py-4 border-b border-white/10 bg-white/5">
+            <span className="text-xs font-mono uppercase tracking-wider text-white/40">Peptide</span>
+            <span className="text-xs font-mono uppercase tracking-wider text-white/40 text-center">Revendeur FR/EU</span>
+            <span className="text-xs font-mono uppercase tracking-wider text-center" style={{ color: PRIMARY }}>Ma source</span>
+            <span className="text-xs font-mono uppercase tracking-wider text-right" style={{ color: PRIMARY }}>Economie</span>
+          </div>
+
+          {/* Rows */}
+          {PRICE_TABLE.map((row, i) => (
+            <motion.div
+              key={row.name}
+              initial={{ opacity: 0, x: -10 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.05 }}
+              className={`grid grid-cols-4 gap-4 px-6 py-4 items-center ${i < PRICE_TABLE.length - 1 ? "border-b border-white/5" : ""}`}
+            >
+              <div>
+                <span className="text-sm font-medium text-white">{row.name}</span>
+                <span className="ml-2 text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/5 text-white/40">{row.tag}</span>
+              </div>
+              <span className="text-sm text-white/40 text-center line-through">{row.reseller}</span>
+              <span className="text-sm font-bold text-center" style={{ color: PRIMARY }}>{row.sourceEur}</span>
+              <div className="text-right">
+                <span className="text-sm font-bold text-emerald-400">-{row.savings}</span>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* Cycle cost comparison */}
+        <div className="grid gap-4 md:grid-cols-2 mb-6">
           <motion.div
             initial={{ opacity: 0, x: -24 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
             className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-8"
           >
             <p className="mb-1 font-mono text-xs uppercase tracking-wider text-white/40">Revendeur classique</p>
-            <p className="mb-6 text-4xl font-bold text-white/50">1 200€<span className="text-lg font-normal">/cycle</span></p>
-            <ul className="space-y-3">
-              {[
-                "Prix gonfles par la chaine de distribution",
-                "Delai 7-14 jours (stock, douane)",
-                "Pas de COA systematique",
-                "Aucune personnalisation du protocole",
-                "Tu ne sais pas ce que tu achetes vraiment",
-              ].map((item) => (
-                <li key={item} className="flex items-start gap-3 text-sm text-white/50">
-                  <span className="mt-0.5 h-4 w-4 shrink-0 rounded-full border border-white/20 flex items-center justify-center text-[10px] text-white/30">✕</span>
-                  {item}
+            <p className="mb-2 text-4xl font-bold text-white/40">1 200€<span className="text-lg font-normal">/cycle</span></p>
+            <p className="text-sm text-white/30">3 peptides × 8 vials × 50€ en moyenne</p>
+            <ul className="mt-4 space-y-2">
+              {["Prix gonfles x3-x10", "Pas de COA", "Aucune personnalisation"].map((item) => (
+                <li key={item} className="flex items-start gap-2 text-sm text-white/40">
+                  <span className="text-red-500 mt-0.5">✕</span> {item}
                 </li>
               ))}
             </ul>
           </motion.div>
 
-          {/* RIGHT — APEXLABS */}
           <motion.div
             initial={{ opacity: 0, x: 24 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
             className="relative rounded-2xl border bg-[#0a0a0a] p-8"
             style={{ borderColor: PRIMARY }}
           >
-            <div
-              className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-4 py-1 text-xs font-semibold"
-              style={{ backgroundColor: PRIMARY, color: "#000" }}
-            >
-              Recommande
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-4 py-1 text-xs font-semibold" style={{ backgroundColor: PRIMARY, color: "#000" }}>
+              Via ton protocole
             </div>
-            <p className="mb-1 font-mono text-xs uppercase tracking-wider" style={{ color: PRIMARY }}>
-              Via ton protocole APEXLABS
-            </p>
-            <p className="mb-6 text-4xl font-bold text-white">
-              ~280€<span className="text-lg font-normal text-white/60">/cycle</span>
-            </p>
-            <ul className="space-y-3">
-              {[
-                "Prix direct laboratoire (-60-90%)",
-                "Livraison rapide depuis sources verifiees",
-                "COA par lot, labo tiers independant",
-                "Protocole 100% personnalise a ton profil",
-                "Tu sais exactement ce que tu prends et pourquoi",
-              ].map((item) => (
-                <li key={item} className="flex items-start gap-3 text-sm text-white">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" style={{ color: PRIMARY }} />
-                  {item}
+            <p className="mb-1 font-mono text-xs uppercase tracking-wider" style={{ color: PRIMARY }}>Ma source (dans ton protocole)</p>
+            <p className="mb-2 text-4xl font-bold text-white">~280€<span className="text-lg font-normal text-white/60">/cycle</span></p>
+            <p className="text-sm text-white/50">3 peptides × 8 vials × ~$12 direct labo</p>
+            <ul className="mt-4 space-y-2">
+              {["Prix direct laboratoire", "COA par lot, labo tiers", "Protocole personnalise"].map((item) => (
+                <li key={item} className="flex items-start gap-2 text-sm text-white">
+                  <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" style={{ color: PRIMARY }} /> {item}
                 </li>
               ))}
             </ul>
@@ -384,15 +414,13 @@ function PriceComparison() {
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ delay: 0.3 }}
-          className="mt-8 rounded-xl border border-white/10 bg-[#0a0a0a] px-8 py-5 text-center"
+          className="rounded-xl border px-8 py-5 text-center"
+          style={{ borderColor: `${PRIMARY}40`, backgroundColor: `${PRIMARY}08` }}
         >
-          <p className="text-base text-white/70">
+          <p className="text-lg text-white">
             Tu economises{" "}
-            <span className="font-bold text-white" style={{ color: PRIMARY }}>
-              920€ des le 1er cycle.
-            </span>{" "}
-            Et chaque cycle apres.
+            <span className="font-black text-2xl" style={{ color: PRIMARY }}>920€</span>{" "}
+            des le 1er cycle. Et chaque cycle apres. Le protocole se rembourse en <span className="font-bold" style={{ color: PRIMARY }}>une seule commande</span>.
           </p>
         </motion.div>
       </div>
