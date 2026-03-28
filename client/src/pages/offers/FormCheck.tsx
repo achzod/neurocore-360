@@ -290,13 +290,138 @@ function BiomechanicFigure() {
 }
 
 function AngleAnalysisVisual() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [fakeMetric, setFakeMetric] = useState(85);
+  const activeExercise = FC_EXERCISES[activeIndex];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveIndex((current) => (current + 1) % FC_EXERCISES.length);
+    }, FC_EXERCISES[activeIndex].duration);
+    return () => clearInterval(interval);
+  }, [activeIndex]);
+
+  useEffect(() => {
+    const dataInterval = setInterval(() => {
+      setFakeMetric(Math.floor(Math.random() * 15) + 80);
+    }, 500);
+    return () => clearInterval(dataInterval);
+  }, []);
+
   return (
-    <div className="relative w-full h-full bg-[#0A0A0A] rounded-2xl border border-white/10 overflow-hidden shadow-2xl" style={{ boxShadow: `0 0 60px ${ACCENT}08`, minHeight: '400px' }}>
-      {/* Background Grid */}
-      <div className="absolute inset-0 opacity-20"
-        style={{ backgroundImage: `linear-gradient(to right, #333 1px, transparent 1px), linear-gradient(to bottom, #333 1px, transparent 1px)`, backgroundSize: '40px 40px' }} />
-      {/* Full animated figure with auto-cycle exercises */}
-      <BiomechanicFigure />
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+      {/* Left: Animation Display */}
+      <div className="lg:col-span-8 h-[500px] relative rounded-2xl border border-white/10 bg-[#0a0a0a] overflow-hidden flex flex-col">
+        {/* Top overlay */}
+        <div className="absolute top-4 left-4 right-4 flex justify-between items-start z-20">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Target className="w-4 h-4" style={{ color: activeExercise.color }} />
+              <span className="font-mono text-xs text-gray-300">CIBLE: {activeExercise.target.toUpperCase()}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Dumbbell className="w-4 h-4 text-gray-400" />
+              <span className="font-mono text-xs text-gray-300">PRECISION: {fakeMetric}%</span>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="font-mono text-2xl font-light text-white tracking-tighter">
+              00:{Math.floor(fakeMetric / 2)}
+            </div>
+            <div className="text-[10px] text-gray-500 font-mono uppercase tracking-widest">Temps d'analyse</div>
+          </div>
+        </div>
+
+        {/* Animation */}
+        <div className="flex-1 relative flex items-center justify-center p-8">
+          <motion.div className="absolute inset-0 m-auto w-3/4 h-3/4 rounded-full blur-[100px] pointer-events-none z-0"
+            style={{ backgroundColor: activeExercise.color }}
+            animate={{ scale: [0.8, 1.1, 0.8], opacity: [0.05, 0.2, 0.05] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} />
+          <ParticleSystem color={activeExercise.color} />
+          <motion.div className="absolute left-0 right-0 h-1 blur-sm z-10"
+            style={{ backgroundColor: `${activeExercise.color}40` }}
+            animate={{ top: ['10%', '90%', '10%'] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "linear" }} />
+          <div className="w-full max-w-xs aspect-square relative z-10">
+            <AnimatePresence mode="wait">
+              <motion.div key={activeExercise.id}
+                initial={{ opacity: 0, scale: 0.9, filter: 'blur(10px)' }}
+                animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                exit={{ opacity: 0, scale: 1.1, filter: 'blur(10px)' }}
+                transition={{ duration: 0.5 }}
+                className="absolute inset-0">
+                {activeExercise.id === 'squat' && <SquatAnim color={activeExercise.color} />}
+                {activeExercise.id === 'deadlift' && <DeadliftAnim color={activeExercise.color} />}
+                {activeExercise.id === 'bench' && <BenchAnim color={activeExercise.color} />}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* Bottom overlay */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black to-transparent z-20">
+          <AnimatePresence mode="wait">
+            <motion.div key={activeExercise.id}
+              initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }}
+              transition={{ duration: 0.3 }}>
+              <h3 className="text-xl font-bold text-white mb-1 tracking-tight">{activeExercise.name}</h3>
+              <p className="text-gray-400 text-sm">{activeExercise.description}</p>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* Right: Exercise Sequence */}
+      <div className="lg:col-span-4 space-y-3">
+        <div className="mb-6">
+          <h4 className="text-xs font-mono text-gray-400 uppercase tracking-widest mb-1">Sequence en cours</h4>
+          <p className="text-white font-medium text-sm">Analyse automatique (3 exercices)</p>
+        </div>
+
+        {FC_EXERCISES.map((exercise, index) => {
+          const isActive = index === activeIndex;
+          return (
+            <div key={exercise.id}
+              className={`relative overflow-hidden rounded-xl border transition-all duration-500 ${
+                isActive ? 'bg-[#0a0a0a] border-white/20 shadow-lg' : 'bg-[#0a0a0a]/30 border-white/5 opacity-60'
+              }`}>
+              {isActive && (
+                <motion.div className="absolute inset-y-0 left-0 z-0"
+                  style={{ backgroundColor: `${exercise.color}15` }}
+                  initial={{ width: '0%' }} animate={{ width: '100%' }}
+                  transition={{ duration: exercise.duration / 1000, ease: "linear" }} />
+              )}
+              <div className="relative z-10 p-4 flex items-center gap-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center border ${
+                  isActive ? 'border-white/20' : 'border-white/5'
+                }`} style={isActive ? { backgroundColor: `${exercise.color}20` } : {}}>
+                  <Dumbbell className="w-4 h-4" style={{ color: isActive ? exercise.color : '#666' }} />
+                </div>
+                <div className="flex-1">
+                  <h5 className={`font-semibold text-sm ${isActive ? 'text-white' : 'text-gray-400'}`}>{exercise.name}</h5>
+                  <p className="text-[10px] text-gray-500 font-mono mt-0.5">
+                    {isActive ? 'ANALYSE EN COURS...' : index < activeIndex ? 'TERMINE' : 'EN ATTENTE'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+
+        {/* System Status */}
+        <div className="mt-6 p-4 rounded-xl border border-white/5 bg-[#0a0a0a]/50">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-mono text-gray-400">ETAT DU CAPTEUR</span>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded" style={{ color: ACCENT, backgroundColor: `${ACCENT}15` }}>OPTIMAL</span>
+          </div>
+          <div className="space-y-1.5">
+            <div className="flex justify-between text-[10px] font-mono"><span className="text-gray-500">LATENCE</span><span className="text-white">12ms</span></div>
+            <div className="flex justify-between text-[10px] font-mono"><span className="text-gray-500">IPS</span><span className="text-white">60</span></div>
+            <div className="flex justify-between text-[10px] font-mono"><span className="text-gray-500">POINTS SUIVIS</span><span className="text-white">33</span></div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -795,16 +920,13 @@ export default function FormCheck() {
       {/* BIOMECHANICS ANALYSIS */}
       <section className="py-32 px-6 border-t border-white/5">
         <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <div className="space-y-16">
             <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="order-2 lg:order-1"
             >
-              <div className="aspect-[4/3]">
-                <AngleAnalysisVisual />
-              </div>
+              <AngleAnalysisVisual />
             </motion.div>
 
             <motion.div
