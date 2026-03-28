@@ -5,8 +5,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "wouter";
 import { motion } from "framer-motion";
 import { Shield, Syringe, Clock, FlaskConical, Pill, Activity, AlertTriangle, ExternalLink, ChevronDown, FileText } from "lucide-react";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
 
 const AMBER = "#F59E0B";
 
