@@ -1,7 +1,7 @@
-import { useMemo, useRef } from "react";
+import React, { useMemo, useRef, useState, useEffect } from "react";
 import { Link } from "wouter";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { ArrowRight, Beaker, Check, FileText, FlaskConical, Shield, Target, Upload, Zap } from "lucide-react";
+import { ArrowRight, Beaker, Check, FileText, FlaskConical, Shield, Target, Upload, Zap, Activity, Dna, Flame } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -96,6 +96,428 @@ function BadgePill({ children }: { children: string }) {
   );
 }
 
+// --- Background Effects ---
+
+const ParticleSystem = () => {
+  const particles = useMemo(() => {
+    return Array.from({ length: 60 }).map((_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: Math.random() * 3 + 1,
+      duration: Math.random() * 20 + 10,
+      delay: Math.random() * 5,
+    }));
+  }, []);
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+      {particles.map((p) => (
+        <motion.div
+          key={p.id}
+          className="absolute rounded-full bg-red-500/30 blur-[1px]"
+          style={{ width: p.size, height: p.size, left: `${p.x}%`, top: `${p.y}%` }}
+          animate={{ y: [0, -1000], x: [0, Math.sin(p.id) * 50], opacity: [0, 0.8, 0] }}
+          transition={{ duration: p.duration, repeat: Infinity, delay: p.delay, ease: "linear" }}
+        />
+      ))}
+    </div>
+  );
+};
+
+const LiquidGlassBackground = () => (
+  <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 bg-[#020202]">
+    <div className="absolute inset-0 bg-[linear-gradient(to_right,#ef444405_1px,transparent_1px),linear-gradient(to_bottom,#ef444405_1px,transparent_1px)] bg-[size:3rem_3rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
+    <motion.div
+      animate={{ scale: [1, 1.1, 1], opacity: [0.15, 0.3, 0.15], rotate: [0, 45, 0] }}
+      transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+      className="absolute -top-[20%] -left-[10%] w-[70vw] h-[70vw] rounded-full bg-red-900/20 mix-blend-screen blur-[120px]"
+    />
+    <motion.div
+      animate={{ scale: [1, 1.3, 1], opacity: [0.1, 0.25, 0.1], rotate: [0, -45, 0] }}
+      transition={{ duration: 30, repeat: Infinity, ease: "easeInOut" }}
+      className="absolute top-[30%] -right-[20%] w-[60vw] h-[60vw] rounded-full bg-yellow-900/20 mix-blend-screen blur-[120px]"
+    />
+    <ParticleSystem />
+  </div>
+);
+
+// --- Shared Animation Wrapper ---
+
+const AnimationWrapper = ({
+  children,
+  title,
+  value,
+  status,
+  extraUI,
+  color = "red",
+}: {
+  children: React.ReactNode;
+  title: string;
+  value: string;
+  status: string;
+  extraUI?: React.ReactNode;
+  color?: string;
+}) => {
+  const colorMap: Record<string, string> = {
+    cyan: "border-yellow-500/20 shadow-[0_0_50px_rgba(234,179,8,0.1)]",
+    red: "border-red-500/20 shadow-[0_0_50px_rgba(239,68,68,0.1)]",
+    green: "border-green-500/20 shadow-[0_0_50px_rgba(34,197,94,0.1)]",
+    yellow: "border-yellow-500/20 shadow-[0_0_50px_rgba(234,179,8,0.1)]",
+  };
+  const scanlineMap: Record<string, string> = {
+    cyan: "bg-yellow-400/50 shadow-[0_0_20px_rgba(234,179,8,1)]",
+    red: "bg-red-400/50 shadow-[0_0_20px_rgba(239,68,68,1)]",
+    green: "bg-green-400/50 shadow-[0_0_20px_rgba(34,197,94,1)]",
+    yellow: "bg-yellow-400/50 shadow-[0_0_20px_rgba(234,179,8,1)]",
+  };
+  const textMap: Record<string, string> = {
+    cyan: "text-yellow-500",
+    red: "text-red-500",
+    green: "text-green-500",
+    yellow: "text-yellow-500",
+  };
+  const dotMap: Record<string, string> = {
+    cyan: "bg-yellow-500",
+    red: "bg-red-500",
+    green: "bg-green-500",
+    yellow: "bg-yellow-500",
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95, y: 20 }}
+      whileInView={{ opacity: 1, scale: 1, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+      className={`relative w-full max-w-lg aspect-square md:aspect-[4/5] rounded-3xl border bg-black/50 backdrop-blur-2xl overflow-hidden flex items-center justify-center group ${colorMap[color] ?? colorMap["red"]}`}
+    >
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:1.5rem_1.5rem]" />
+      <motion.div
+        className={`absolute top-0 left-0 w-full h-[2px] z-20 ${scanlineMap[color] ?? scanlineMap["red"]}`}
+        animate={{ y: ["0%", "400%", "0%"] }}
+        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+      />
+      {children}
+      <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-md border border-white/10 rounded-lg p-3 flex flex-col gap-1 z-30">
+        <div className="flex items-center gap-2 mb-1">
+          <div className={`w-2 h-2 rounded-full animate-pulse ${dotMap[color] ?? dotMap["red"]}`} />
+          <span className={`text-[10px] font-mono uppercase tracking-wider ${textMap[color] ?? textMap["red"]}`}>{title}</span>
+        </div>
+        <span className="text-3xl font-bold text-white tracking-tighter">{value}</span>
+        <span className="text-xs text-slate-400">{status}</span>
+      </div>
+      {extraUI}
+    </motion.div>
+  );
+};
+
+// --- 1. PDF Extraction Animation ---
+const PDFExtractionAnimation = () => {
+  const t = { duration: 2, repeat: Infinity, ease: "easeInOut" as const };
+  const molecules = ["TESTO", "E2", "SHBG", "IGF-1", "HBA1C", "T3L", "CORTISOL"];
+
+  return (
+    <AnimationWrapper
+      title="Extraction IA"
+      value="39/39"
+      status="Biomarqueurs detectes"
+      color="cyan"
+      extraUI={
+        <div className="absolute bottom-4 right-4 bg-black/80 backdrop-blur-md border border-cyan-500/30 rounded-lg p-3 flex flex-col gap-1 z-30 items-end">
+          <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">Precision</span>
+          <motion.span className="text-xl font-bold text-cyan-400" animate={{ opacity: [0.5, 1, 0.5] }} transition={t}>99.9%</motion.span>
+        </div>
+      }
+    >
+      <svg viewBox="0 0 100 100" className="w-full h-full absolute inset-0 overflow-visible p-8 z-10">
+        <motion.rect x="30" y="20" width="40" height="50" rx="2" fill="rgba(6,182,212,0.05)" stroke="#06b6d4" strokeWidth="0.5" animate={{ y: [20, 18, 20] }} transition={t} />
+        <motion.line x1="35" y1="30" x2="60" y2="30" stroke="#06b6d4" strokeWidth="1" strokeLinecap="round" animate={{ opacity: [0.2, 0.8, 0.2] }} transition={{ ...t, delay: 0.1 }} />
+        <motion.line x1="35" y1="40" x2="65" y2="40" stroke="#06b6d4" strokeWidth="1" strokeLinecap="round" animate={{ opacity: [0.2, 0.8, 0.2] }} transition={{ ...t, delay: 0.2 }} />
+        <motion.line x1="35" y1="50" x2="55" y2="50" stroke="#06b6d4" strokeWidth="1" strokeLinecap="round" animate={{ opacity: [0.2, 0.8, 0.2] }} transition={{ ...t, delay: 0.3 }} />
+        {molecules.map((mol, i) => (
+          <motion.text
+            key={i}
+            x={50}
+            y={45}
+            fill="#fff"
+            fontSize="4"
+            className="font-mono font-bold drop-shadow-[0_0_5px_rgba(6,182,212,0.8)]"
+            initial={{ opacity: 0, scale: 0.5, x: 50, y: 45 }}
+            animate={{
+              opacity: [0, 1, 0],
+              scale: [0.5, 1.2, 0.8],
+              x: 50 + (Math.random() * 60 - 30),
+              y: 20 + (Math.random() * 60 - 10),
+            }}
+            transition={{ duration: 2.5, repeat: Infinity, delay: i * 0.4, ease: "easeOut" }}
+          >
+            {mol}
+          </motion.text>
+        ))}
+        <motion.line x1="20" y1="20" x2="80" y2="20" stroke="#fff" strokeWidth="0.5" className="drop-shadow-[0_0_8px_#06b6d4]" animate={{ y1: [15, 75, 15], y2: [15, 75, 15] }} transition={t} />
+      </svg>
+    </AnimationWrapper>
+  );
+};
+
+// --- 2. Anabolic Score Animation ---
+const AnabolicScoreAnimation = () => {
+  const t = { duration: 3, repeat: Infinity, ease: "easeInOut" as const };
+  return (
+    <AnimationWrapper
+      title="Profil Hormonal"
+      value="94/100"
+      status="Score Anabolique"
+      color="yellow"
+      extraUI={
+        <div className="absolute bottom-4 left-4 flex flex-col gap-2 z-30">
+          <div className="bg-black/80 backdrop-blur-md border border-yellow-500/30 rounded p-2 flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse" />
+            <span className="text-[10px] text-white font-mono uppercase">Testo Libre: <span className="text-yellow-400 font-bold">OPTIMAL</span></span>
+          </div>
+          <div className="bg-black/80 backdrop-blur-md border border-green-500/30 rounded p-2 flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+            <span className="text-[10px] text-white font-mono uppercase">Ratio T/E2: <span className="text-green-400 font-bold">PARFAIT</span></span>
+          </div>
+        </div>
+      }
+    >
+      <svg viewBox="0 0 100 100" className="w-full h-full absolute inset-0 overflow-visible p-8 z-10">
+        <circle cx="50" cy="50" r="35" fill="none" stroke="#333" strokeWidth="2" strokeDasharray="2 4" />
+        <circle cx="50" cy="50" r="28" fill="none" stroke="#222" strokeWidth="6" />
+        <motion.circle
+          cx="50" cy="50" r="28" fill="none" stroke="#f59e0b" strokeWidth="6" strokeLinecap="round"
+          strokeDasharray="175"
+          className="drop-shadow-[0_0_15px_rgba(245,158,11,0.6)]"
+          initial={{ strokeDashoffset: 175 }}
+          animate={{ strokeDashoffset: [175, 20, 20] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "circOut" }}
+          transform="rotate(-90 50 50)"
+        />
+        <motion.circle cx="50" cy="50" r="20" fill="rgba(245,158,11,0.1)" animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.6, 0.3] }} transition={t} />
+        <text x="50" y="52" fill="#fff" fontSize="12" textAnchor="middle" className="font-black tracking-tighter">94</text>
+        <text x="50" y="58" fill="#f59e0b" fontSize="4" textAnchor="middle" className="font-mono uppercase tracking-widest">Apex</text>
+        <motion.g animate={{ rotate: 360 }} transition={{ duration: 10, repeat: Infinity, ease: "linear" }} style={{ transformOrigin: "50px 50px" }}>
+          <circle cx="50" cy="15" r="3" fill="#f59e0b" className="drop-shadow-[0_0_5px_#f59e0b]" />
+          <text x="50" y="10" fill="#94a3b8" fontSize="3" textAnchor="middle" className="font-mono">Free T</text>
+          <circle cx="80" cy="70" r="2" fill="#10b981" />
+          <text x="86" y="72" fill="#94a3b8" fontSize="3" textAnchor="start" className="font-mono">E2</text>
+          <circle cx="20" cy="70" r="2.5" fill="#0ea5e9" />
+          <text x="14" y="72" fill="#94a3b8" fontSize="3" textAnchor="end" className="font-mono">SHBG</text>
+        </motion.g>
+      </svg>
+    </AnimationWrapper>
+  );
+};
+
+// --- 3. Insulin Resistance Animation ---
+const InsulinResistanceAnimation = () => {
+  return (
+    <AnimationWrapper
+      title="Score Metabolique"
+      value="0.8"
+      status="HOMA-IR (Sensibilite Max)"
+      color="red"
+      extraUI={
+        <div className="absolute top-4 right-4 bg-black/80 backdrop-blur-md border border-red-500/30 rounded-lg p-3 flex flex-col gap-1 z-30 items-end">
+          <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">Resistance Insuline</span>
+          <span className="text-sm font-bold text-red-400">NEGATIVE</span>
+        </div>
+      }
+    >
+      <svg viewBox="0 0 100 100" className="w-full h-full absolute inset-0 overflow-visible p-8 z-10">
+        <line x1="10" y1="80" x2="90" y2="80" stroke="#333" strokeWidth="1" />
+        <line x1="10" y1="20" x2="10" y2="80" stroke="#333" strokeWidth="1" />
+        <rect x="10" y="20" width="80" height="30" fill="rgba(239,68,68,0.05)" />
+        <text x="88" y="35" fill="#ef4444" fontSize="3" textAnchor="end" className="font-mono opacity-50">Zone de Resistance</text>
+        <rect x="10" y="50" width="80" height="30" fill="rgba(34,197,94,0.05)" />
+        <text x="88" y="75" fill="#22c55e" fontSize="3" textAnchor="end" className="font-mono opacity-50">Zone Apex (Sensible)</text>
+        <motion.path d="M 10 70 C 30 70, 40 25, 50 25 C 60 25, 70 65, 90 65" fill="none" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="2 2" className="opacity-40" />
+        <motion.path
+          d="M 10 70 C 30 70, 40 60, 50 60 C 60 60, 70 68, 90 68"
+          fill="none" stroke="#22c55e" strokeWidth="3" strokeLinecap="round"
+          className="drop-shadow-[0_0_10px_rgba(34,197,94,0.8)]"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: [0, 1, 1] }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.g animate={{ x: [10, 90, 10], y: [70, 68, 70] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}>
+          <circle cx="0" cy="0" r="3" fill="#fff" className="drop-shadow-[0_0_8px_#fff]" />
+          <circle cx="0" cy="0" r="8" fill="none" stroke="#22c55e" strokeWidth="0.5" />
+        </motion.g>
+        <text x="10" y="85" fill="#64748b" fontSize="3" className="font-mono">Glucose</text>
+        <text x="50" y="85" fill="#64748b" fontSize="3" textAnchor="middle" className="font-mono">Insuline</text>
+        <text x="90" y="85" fill="#64748b" fontSize="3" textAnchor="end" className="font-mono">HbA1c</text>
+      </svg>
+    </AnimationWrapper>
+  );
+};
+
+// --- 4. Biomarker Matrix Animation ---
+const BiomarkerMatrixAnimation = () => {
+  const biomarkers = [
+    "Testosterone Totale", "Testosterone Libre", "SHBG", "Estradiol (E2)", "Prolactine",
+    "IGF-1", "DHEA-S", "Cortisol", "TSH", "T3 Libre", "T4 Libre", "Insuline", "HbA1c",
+    "Vitamine D3", "Zinc", "Magnesium", "Ferritine", "hs-CRP", "Homocysteine", "ALAT", "ASAT", "GGT",
+  ];
+  const [activeIndices, setActiveIndices] = useState<number[]>([]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const next: number[] = [];
+      for (let i = 0; i < 5; i++) next.push(Math.floor(Math.random() * biomarkers.length));
+      setActiveIndices(next);
+    }, 800);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <AnimationWrapper
+      title="Panel Complet"
+      value="39"
+      status="Molecules Analysees"
+      color="green"
+      extraUI={
+        <div className="absolute bottom-4 right-4 bg-black/80 backdrop-blur-md border border-green-500/30 rounded-lg p-3 flex flex-col gap-1 z-30 items-end">
+          <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">Profondeur</span>
+          <span className="text-sm font-bold text-green-400">Niveau Cellulaire</span>
+        </div>
+      }
+    >
+      <div className="absolute inset-0 p-8 pt-24 pb-16 overflow-hidden flex flex-wrap gap-2 justify-center items-center content-center z-10">
+        {biomarkers.map((marker, i) => {
+          const isActive = activeIndices.includes(i);
+          return (
+            <motion.div
+              key={i}
+              animate={{
+                color: isActive ? "#4ade80" : "#475569",
+                textShadow: isActive ? "0 0 10px rgba(74,222,128,0.8)" : "none",
+                scale: isActive ? 1.05 : 1,
+              }}
+              transition={{ duration: 0.3 }}
+              className="text-[9px] sm:text-[11px] font-mono uppercase px-2 py-1 border border-white/5 rounded bg-black/20"
+            >
+              {marker}
+            </motion.div>
+          );
+        })}
+      </div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_30%,rgba(0,0,0,0.8)_100%)] z-20 pointer-events-none" />
+    </AnimationWrapper>
+  );
+};
+
+// --- 5. Body Map Animation ---
+const BodyMapAnimation = () => (
+  <AnimationWrapper
+    title="Bilan Global"
+    value="APEX"
+    status="Potentiel Debloque"
+    color="red"
+    extraUI={
+      <div className="absolute top-1/2 left-4 -translate-y-1/2 flex flex-col gap-3 z-30">
+        <div className="bg-black/80 backdrop-blur-md border border-red-500/30 rounded p-2 flex flex-col gap-0.5">
+          <span className="text-[9px] text-slate-400 font-mono uppercase">Potentiel Hypertrophie</span>
+          <span className="text-xs font-bold text-red-400">MAXIMISE</span>
+        </div>
+        <div className="bg-black/80 backdrop-blur-md border border-yellow-500/30 rounded p-2 flex flex-col gap-0.5">
+          <span className="text-[9px] text-slate-400 font-mono uppercase">Drive Dopaminergique</span>
+          <span className="text-xs font-bold text-yellow-400">OPTIMISE</span>
+        </div>
+        <div className="bg-black/80 backdrop-blur-md border border-green-500/30 rounded p-2 flex flex-col gap-0.5">
+          <span className="text-[9px] text-slate-400 font-mono uppercase">Oxydation Graisses</span>
+          <span className="text-xs font-bold text-green-400">ACTIVE</span>
+        </div>
+      </div>
+    }
+  >
+    <svg viewBox="0 0 100 100" className="w-full h-full absolute inset-0 overflow-visible p-8 pl-24 z-10">
+      <path d="M 50 15 C 43 15 43 28 50 28 C 57 28 57 15 50 15 Z M 35 40 C 35 32 65 32 65 40 L 70 85 L 60 85 L 55 60 L 45 60 L 40 85 L 30 85 Z" fill="none" stroke="#334155" strokeWidth="1.5" strokeLinejoin="round" />
+      <motion.circle cx="50" cy="21" r="3" fill="#eab308" className="drop-shadow-[0_0_12px_rgba(234,179,8,1)]" animate={{ opacity: [0.5, 1, 0.5], scale: [1, 1.3, 1] }} transition={{ duration: 1.5, repeat: Infinity, delay: 0 }} />
+      <motion.line x1="50" y1="21" x2="70" y2="15" stroke="#eab308" strokeWidth="0.5" className="opacity-50" />
+      <text x="72" y="16" fill="#eab308" fontSize="3" className="font-mono font-bold">NEURO</text>
+      <motion.circle cx="53" cy="45" r="3" fill="#ef4444" className="drop-shadow-[0_0_12px_rgba(239,68,68,1)]" animate={{ opacity: [0.5, 1, 0.5], scale: [1, 1.2, 1] }} transition={{ duration: 1.2, repeat: Infinity, delay: 0.5 }} />
+      <motion.line x1="53" y1="45" x2="75" y2="40" stroke="#ef4444" strokeWidth="0.5" className="opacity-50" />
+      <text x="77" y="41" fill="#ef4444" fontSize="3" className="font-mono font-bold">hs-CRP</text>
+      <motion.circle cx="50" cy="60" r="3" fill="#22c55e" className="drop-shadow-[0_0_12px_rgba(34,197,94,1)]" animate={{ opacity: [0.5, 1, 0.5], scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity, delay: 1 }} />
+      <motion.line x1="50" y1="60" x2="75" y2="65" stroke="#22c55e" strokeWidth="0.5" className="opacity-50" />
+      <text x="77" y="66" fill="#22c55e" fontSize="3" className="font-mono font-bold">METABOLISME</text>
+      <motion.circle cx="38" cy="45" r="2.5" fill="#ef4444" className="drop-shadow-[0_0_10px_rgba(239,68,68,1)]" animate={{ opacity: [0.5, 1, 0.5], scale: [1, 1.4, 1] }} transition={{ duration: 1.8, repeat: Infinity, delay: 1.5 }} />
+      <motion.circle cx="62" cy="45" r="2.5" fill="#ef4444" className="drop-shadow-[0_0_10px_rgba(239,68,68,1)]" animate={{ opacity: [0.5, 1, 0.5], scale: [1, 1.4, 1] }} transition={{ duration: 1.8, repeat: Infinity, delay: 1.5 }} />
+      <motion.line x1="62" y1="45" x2="80" y2="50" stroke="#ef4444" strokeWidth="0.5" className="opacity-50" />
+      <text x="82" y="51" fill="#ef4444" fontSize="3" className="font-mono font-bold">ANABOLISME</text>
+    </svg>
+  </AnimationWrapper>
+);
+
+// --- Feature Row Layout ---
+
+type FeatureRowProps = {
+  title: string;
+  description: string;
+  icon: React.ElementType;
+  animation: React.ComponentType;
+  reverse?: boolean;
+  color?: "red" | "green" | "yellow";
+};
+
+const FeatureRow = ({ title, description, icon: Icon, animation: AnimationComponent, reverse = false, color = "red" }: FeatureRowProps) => {
+  const colorMap = {
+    red: {
+      border: "border-red-900/30",
+      shadow: "shadow-[0_0_30px_rgba(239,68,68,0.1)]",
+      hoverShadow: "group-hover:shadow-[0_0_50px_rgba(239,68,68,0.2)]",
+      hoverBorder: "group-hover:border-red-500/50",
+      iconBg: "bg-red-500/10",
+      iconColor: "text-red-500",
+      gradient: "from-red-500/5",
+    },
+    green: {
+      border: "border-green-900/30",
+      shadow: "shadow-[0_0_30px_rgba(34,197,94,0.1)]",
+      hoverShadow: "group-hover:shadow-[0_0_50px_rgba(34,197,94,0.2)]",
+      hoverBorder: "group-hover:border-green-500/50",
+      iconBg: "bg-green-500/10",
+      iconColor: "text-green-500",
+      gradient: "from-green-500/5",
+    },
+    yellow: {
+      border: "border-yellow-900/30",
+      shadow: "shadow-[0_0_30px_rgba(234,179,8,0.1)]",
+      hoverShadow: "group-hover:shadow-[0_0_50px_rgba(234,179,8,0.2)]",
+      hoverBorder: "group-hover:border-yellow-500/50",
+      iconBg: "bg-yellow-500/10",
+      iconColor: "text-yellow-500",
+      gradient: "from-yellow-500/5",
+    },
+  };
+  const theme = colorMap[color];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 0.7, ease: "easeOut" }}
+      className={`flex flex-col ${reverse ? "lg:flex-row-reverse" : "lg:flex-row"} items-center gap-8 lg:gap-16 p-8 lg:p-12 w-full rounded-3xl bg-black/40 backdrop-blur-sm border ${theme.border} ${theme.shadow} ${theme.hoverShadow} ${theme.hoverBorder} transition-all duration-500 group mb-16 relative overflow-hidden`}
+    >
+      <div className={`absolute inset-0 bg-gradient-to-br ${theme.gradient} to-transparent opacity-50 pointer-events-none`} />
+      <div className="flex-1 flex flex-col items-center lg:items-start text-center lg:text-left relative z-10">
+        <div className={`w-16 h-16 rounded-2xl ${theme.iconBg} border ${theme.border} flex items-center justify-center mb-8 ${theme.iconColor} transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3`}>
+          <Icon size={32} />
+        </div>
+        <h2 className="text-3xl md:text-4xl font-black mb-6 tracking-tighter uppercase text-white">{title}</h2>
+        <p className="text-lg text-slate-300 leading-relaxed font-light">{description}</p>
+      </div>
+      <div className="flex-1 w-full flex justify-center relative z-10">
+        <AnimationComponent />
+      </div>
+    </motion.div>
+  );
+};
+
 export default function BloodAnalysisOffer() {
   const exampleRef = useRef<HTMLDivElement | null>(null);
   const panelsRef = useRef<HTMLDivElement | null>(null);
@@ -114,10 +536,11 @@ export default function BloodAnalysisOffer() {
   );
 
   return (
-    <div className="blood-uh min-h-screen bg-black text-white">
+    <div className="blood-uh min-h-screen bg-[#020202] text-white relative overflow-x-hidden">
+      <LiquidGlassBackground />
       <Header />
 
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-hidden z-10">
         <motion.div
           className="pointer-events-none absolute inset-0"
           style={{
@@ -199,17 +622,52 @@ export default function BloodAnalysisOffer() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.65, ease: "easeOut", delay: 0.1 }}
-              className="h-[360px] md:h-[440px]"
+              className="flex items-center justify-center"
             >
-              <div className="h-full rounded-2xl border border-white/15 bg-[#0a0a0a] p-4">
-                <BloodVisionVisual />
-              </div>
+              <PDFExtractionAnimation />
             </motion.div>
           </div>
         </div>
       </section>
 
-      <section className="bg-[#0a0a0a] py-24 px-6">
+      <section className="relative z-10 bg-gradient-to-b from-transparent via-[#050505] to-[#020202] py-20 px-6">
+        <div className="mx-auto max-w-7xl">
+          <FeatureRow
+            title="Score Anabolique"
+            description="La testosterone totale ne veut rien dire seule. J'analyse ta Testosterone Libre, ta SHBG, ton Estradiol (E2) et ta Prolactine pour calculer ton veritable potentiel anabolique et ta capacite a construire du muscle."
+            icon={Flame}
+            animation={AnabolicScoreAnimation}
+            reverse={true}
+            color="yellow"
+          />
+          <FeatureRow
+            title="Resistance a l'Insuline"
+            description="La fatigue chronique et le stockage de gras abdominal proviennent souvent d'une sensibilite a l'insuline detruite. Je traque ton HOMA-IR, ton HbA1c et ta glycemie a jeun pour relancer ton moteur metabolique."
+            icon={Activity}
+            animation={InsulinResistanceAnimation}
+            reverse={false}
+            color="red"
+          />
+          <FeatureRow
+            title="39 Molecules Decryptees"
+            description="Un panel sanguin d'elite. De la fonction thyroidienne (TSH, T3L, T4L) aux marqueurs d'inflammation silencieuse (hs-CRP, Homocysteine) en passant par les carences critiques (D3, Zinc, Magnesium)."
+            icon={Dna}
+            animation={BiomarkerMatrixAnimation}
+            reverse={true}
+            color="green"
+          />
+          <FeatureRow
+            title="Plan d'Action Personnalise"
+            description="Ton sang ne ment pas. Recois un protocole exact : nutrition ciblee, supplementation millimetree et ajustements d'entrainement bases sur TES datas pour debloquer ton drive et ton hypertrophie."
+            icon={Shield}
+            animation={BodyMapAnimation}
+            reverse={false}
+            color="red"
+          />
+        </div>
+      </section>
+
+      <section className="relative z-10 bg-[#0a0a0a] py-24 px-6">
         <div className="mx-auto max-w-7xl">
           <div className="text-center">
             <p className="text-sm font-medium tracking-[0.2em] uppercase" style={{ color: PRIMARY_BLUE }}>
@@ -502,45 +960,3 @@ export default function BloodAnalysisOffer() {
   );
 }
 
-function BloodVisionVisual() {
-  return (
-    <div className="relative w-full h-full rounded-xl border border-white/15 bg-[radial-gradient(ellipse_at_top,_rgba(2,121,232,0.10)_0%,_transparent_55%)] overflow-hidden">
-      <div className="absolute inset-0 bg-[#0a0a0a]" />
-      <div
-        className="absolute inset-0 opacity-35"
-        style={{
-          backgroundImage:
-            "linear-gradient(to right, rgba(15, 23, 42, 0.06) 1px, transparent 1px), linear-gradient(to bottom, rgba(15, 23, 42, 0.06) 1px, transparent 1px)",
-          backgroundSize: "48px 48px",
-        }}
-      />
-      <div className="relative z-10 p-6 h-full flex flex-col justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-white/40">Apercu dashboard</p>
-          <p className="mt-3 text-white text-2xl font-semibold tracking-tight">Un dashboard. 39 biomarqueurs.</p>
-          <p className="mt-2 text-white/50 text-sm leading-relaxed">
-            Tu lis tes panels comme une carte: points forts, points d'attention, et actions immediates.
-          </p>
-        </div>
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { label: "Hormones", Icon: Zap },
-            { label: "Thyroide", Icon: Target },
-            { label: "Metabo", Icon: Beaker },
-            { label: "Inflamm", Icon: Shield },
-            { label: "Vitamines", Icon: FileText },
-            { label: "Foie/Rein", Icon: FlaskConical },
-          ].map((item) => (
-            <div key={item.label} className="rounded-lg border border-white/15 bg-[#0a0a0a] px-3 py-3">
-              <item.Icon className="h-4 w-4" style={{ color: PRIMARY_BLUE }} />
-              <p className="mt-2 text-xs text-white/70">{item.label}</p>
-              <div className="mt-2 h-1.5 w-full rounded-full bg-white/10">
-                <div className="h-1.5 rounded-full" style={{ width: "72%", backgroundColor: PRIMARY_BLUE }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
