@@ -88,7 +88,7 @@ const OFFERS: Offer[] = [
     id: 'peptides-engine',
     title: "PEPTIDES ENGINE",
     subtitle: "La source secrete que personne ne partage",
-    description: "35 questions. Un protocole peptides sur mesure genere par IA avec dosages exacts ajustes a ton poids, guide de reconstitution calcule par molecule (BAC water, ml, unites seringue), calendrier hebdomadaire AM/PM, et acces direct a ma source labo ou BPC-157 coute $9.65 au lieu de 80€, Retatrutide $13.65 au lieu de 300€, Semaglutide $5.64 au lieu de 200€. Tu economises 920€ des le 1er cycle. 2 Blood Analyses incluses. 74 molecules disponibles. 15 protocoles/mois max.",
+    description: "35 questions. Un protocole peptides sur mesure avec dosages exacts ajustes a ton poids, guide de reconstitution calcule par molecule (BAC water, ml, unites seringue), calendrier hebdomadaire AM/PM, et acces direct a ma source labo ou BPC-157 coute $9.65 au lieu de 80€, Retatrutide $13.65 au lieu de 300€, Semaglutide $5.64 au lieu de 200€. Tu economises 920€ des le 1er cycle. 2 Blood Analyses incluses. 74 molecules disponibles. 15 protocoles/mois max.",
     features: ["74 molecules au catalogue", "Economie 60-90% vs revendeurs", "2 Blood Analyses incluses", "Guide reconstitution calcule"],
     price: "299€",
     imageUrl: "",

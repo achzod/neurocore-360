@@ -2841,11 +2841,16 @@ export async function registerRoutes(
       }
 
       const isBloodAnalysis = planType === "BLOOD_ANALYSIS";
+      const isPeptides = planType === "PEPTIDES_ENGINE";
       const successUrl = isBloodAnalysis
         ? `${baseUrl}/blood-analysis?session_id={CHECKOUT_SESSION_ID}`
+        : isPeptides
+        ? `${baseUrl}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}&product=peptides`
         : `${baseUrl}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`;
       const cancelUrl = isBloodAnalysis
         ? `${baseUrl}/offers/blood-analysis?cancelled=true`
+        : isPeptides
+        ? `${baseUrl}/offers/peptides-engine?cancelled=true`
         : `${baseUrl}/audit-complet/checkout?cancelled=true`;
 
       const sessionParams: any = {
@@ -5558,6 +5563,29 @@ export async function registerRoutes(
             // Only create audit if:
             // 1. Order doesn't already have an audit
             // 2. Product type is one that needs an audit (not BLOOD_ANALYSIS or FORMCHECK)
+            // Auto-trigger Peptides Engine protocol generation
+            if (email && planType === "PEPTIDES_ENGINE") {
+              console.log(`[Webhook] Triggering Peptides Engine protocol for ${email}`);
+              try {
+                const { generatePeptidesProtocol } = await import("./peptidesEngine");
+                const progress = await storage.getProgress(email);
+                let responses = progress?.responses as Record<string, unknown> | string | undefined;
+                if (typeof responses === "string") {
+                  try { responses = JSON.parse(responses); } catch { responses = undefined; }
+                }
+                if (responses && Object.keys(responses).length >= 3) {
+                  const report = await generatePeptidesProtocol(responses, email);
+                  const reportData = { email: `peptides::${email}`, type: "peptides", responses: report as any };
+                  const saved = await storage.createBurnoutReport(reportData);
+                  console.log(`[Webhook] ✅ Peptides protocol generated: ${saved.id}`);
+                } else {
+                  console.warn(`[Webhook] ⚠️  No peptides questionnaire data for ${email}`);
+                }
+              } catch (pepErr) {
+                console.error(`[Webhook] ❌ Peptides protocol generation failed:`, pepErr);
+              }
+            }
+
             if (email && planType && !order.auditId && ["GRATUIT", "PREMIUM", "ELITE"].includes(planType)) {
               console.log(`[Webhook] Creating audit automatically for order ${order.id} (${email}, ${planType})`);
 
@@ -7410,7 +7438,7 @@ export async function registerRoutes(
         const deliveryMessage =
           `Ton protocole peptides est prêt.\n\n` +
           `Peptides recommandés : ${peptidesNames}\n\n` +
-          `Accède à ton rapport complet ici :\n${getBaseUrl(req)}/peptides-engine/report/${reportId}` +
+          `Accède à ton rapport complet ici :\n${getBaseUrl(req)}/peptides/${reportId}` +
           promoCodesBlock +
           `\n\nConserve ce lien — il est personnel et unique.`;
 

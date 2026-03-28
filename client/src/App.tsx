@@ -88,6 +88,8 @@ const PAGE_TITLES: Record<string, string> = {
   "/offers/blood-analysis": "Blood Analysis — Analyse Sanguine | APEXLABS",
   "/offers/ultimate-scan": "Ultimate Scan — Le Plus Complet | APEXLABS",
   "/offers/formcheck": "FormCheck — Analyse Video | APEXLABS",
+  "/offers/peptides-engine": "Peptides Engine — Protocole Personnalise | APEXLABS",
+  "/peptides-engine": "Questionnaire Peptides | APEXLABS",
   "/questionnaire": "Questionnaire | APEXLABS",
   "/audit-complet/questionnaire": "Questionnaire | APEXLABS",
   "/audit-complet/checkout": "Checkout | APEXLABS",

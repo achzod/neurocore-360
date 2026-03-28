@@ -63,7 +63,11 @@ export default function PeptidesEngineReport() {
       .then(res => res.json())
       .then(data => {
         if (data.report) {
-          setReport(data.report);
+          const r = data.report;
+          // Normalize field names from backend
+          r.promoCodes = r.promoCodes || r.promoCodesGenerated || [];
+          r.generatedAt = r.generatedAt || data.createdAt || new Date().toISOString();
+          setReport(r);
         } else {
           setError(data.error || "Rapport non trouve");
         }
