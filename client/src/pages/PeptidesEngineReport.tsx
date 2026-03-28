@@ -1,10 +1,11 @@
 /**
- * Peptides Engine Report — Display the generated protocol
+ * Peptides Engine Report v2 — Full protocol display
+ * Reconstitution guide, weekly schedule, shopping list, NDA gate
  */
 import { useEffect, useState } from "react";
 import { useParams } from "wouter";
 import { motion } from "framer-motion";
-import { Shield, Syringe, Clock, FlaskConical, Pill, Activity, AlertTriangle, ExternalLink, ChevronDown, FileText } from "lucide-react";
+import { Shield, Syringe, FlaskConical, Activity, AlertTriangle, ExternalLink, ChevronDown, ShoppingCart, Calendar, Lock } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 
@@ -19,6 +20,9 @@ interface PeptideRec {
   cycleDuration: string;
   purchaseUrl: string;
   priceEstimate: string;
+  reconstitution?: string;
+  whyThisPeptide?: string;
+  vialsNeeded?: string;
 }
 
 interface ReportSection {
@@ -29,9 +33,12 @@ interface ReportSection {
 
 interface PeptidesReport {
   clientName: string;
+  tier?: string;
   sections: ReportSection[];
   peptides: PeptideRec[];
   bloodMarkers: string[];
+  weeklySchedule?: string;
+  shoppingList?: string;
   promoCodes: string[];
   generatedAt: string;
 }
@@ -41,10 +48,17 @@ export default function PeptidesEngineReport() {
   const [report, setReport] = useState<PeptidesReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["intro", "peptides"]));
+  const [ndaAccepted, setNdaAccepted] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(
+    new Set(["profil-synthese", "rationale", "reconstitution-guide", "protocole-pratique", "shopping-list"])
+  );
 
   useEffect(() => {
     if (!id) return;
+    // Check if NDA was already accepted for this report
+    const stored = localStorage.getItem(`nda_accepted_${id}`);
+    if (stored === "true") setNdaAccepted(true);
+
     fetch(`/api/peptides-engine/report/${id}`)
       .then(res => res.json())
       .then(data => {
@@ -57,6 +71,11 @@ export default function PeptidesEngineReport() {
       .catch(() => setError("Erreur de chargement"))
       .finally(() => setLoading(false));
   }, [id]);
+
+  const acceptNda = () => {
+    setNdaAccepted(true);
+    if (id) localStorage.setItem(`nda_accepted_${id}`, "true");
+  };
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections(prev => {
@@ -86,6 +105,49 @@ export default function PeptidesEngineReport() {
           <h1 className="text-xl font-bold mb-2">Rapport non disponible</h1>
           <p className="text-white/60">{error || "Le rapport est en cours de generation. Reviens dans quelques minutes."}</p>
         </div>
+      </div>
+    );
+  }
+
+  // NDA Gate
+  if (!ndaAccepted) {
+    return (
+      <div className="min-h-screen bg-black text-white">
+        <Header />
+        <div className="max-w-2xl mx-auto px-6 py-24">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-[#0a0a0a] border border-amber-500/20 rounded-2xl p-8"
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <Lock className="w-8 h-8" style={{ color: AMBER }} />
+              <h1 className="text-2xl font-bold">Clause de Confidentialite</h1>
+            </div>
+
+            <div className="space-y-4 text-white/70 text-sm leading-relaxed mb-8">
+              <p>Avant d'acceder a ton protocole personnalise, tu dois accepter les conditions suivantes :</p>
+
+              <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
+                <p><strong className="text-white">1. Usage strictement personnel</strong> — Ce protocole est genere exclusivement pour toi. Il ne peut etre partage, reproduit, publie ou distribue sous quelque forme que ce soit.</p>
+                <p><strong className="text-white">2. Interdiction de diffusion</strong> — Toute publication sur internet (reseaux sociaux, forums, YouTube, blogs, groupes Telegram/Discord) est strictement interdite.</p>
+                <p><strong className="text-white">3. Propriete intellectuelle</strong> — Le contenu du protocole, incluant les recommandations, dosages et guides, est la propriete intellectuelle d'APEXLABS by Achzod.</p>
+                <p><strong className="text-white">4. Usage educatif</strong> — Ce protocole est fourni a titre educatif et informatif. Il ne constitue pas un avis medical. Consulte un medecin avant toute supplementation.</p>
+                <p><strong className="text-white">5. Violation</strong> — Toute violation de ces conditions entrainera la resiliation immediate de l'acces au protocole et pourra donner lieu a des <span className="text-amber-400">poursuites judiciaires</span> (dommages et interets). Juridiction : Tribunaux de Paris.</p>
+              </div>
+            </div>
+
+            <button
+              onClick={acceptNda}
+              className="w-full py-4 rounded-xl font-bold text-sm text-black flex items-center justify-center gap-2"
+              style={{ background: AMBER }}
+            >
+              <Shield className="w-4 h-4" />
+              J'accepte les conditions — Acceder a mon protocole
+            </button>
+          </motion.div>
+        </div>
+        <Footer />
       </div>
     );
   }
@@ -132,19 +194,28 @@ export default function PeptidesEngineReport() {
           <div className="grid gap-4">
             {report.peptides.map((pep, i) => (
               <div key={i} className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-6 hover:border-amber-500/30 transition-colors">
-                <div className="flex justify-between items-start mb-4">
+                <div className="flex justify-between items-start mb-3">
                   <div>
                     <h3 className="text-lg font-bold" style={{ color: AMBER }}>{pep.name}</h3>
                     <p className="text-white/50 text-sm">{pep.purpose}</p>
                   </div>
                   {pep.purchaseUrl && (
                     <a href={pep.purchaseUrl} target="_blank" rel="noopener noreferrer"
-                       className="flex items-center gap-1 text-xs font-mono px-3 py-1.5 rounded-full border border-amber-500/30 hover:bg-amber-500/10 transition-colors" style={{ color: AMBER }}>
-                      Acheter <ExternalLink className="w-3 h-3" />
+                       className="flex items-center gap-1 text-xs font-mono px-3 py-1.5 rounded-full border border-amber-500/30 hover:bg-amber-500/10 transition-colors flex-shrink-0" style={{ color: AMBER }}>
+                      Acheter sur Peptaura <ExternalLink className="w-3 h-3" />
                     </a>
                   )}
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+
+                {/* Why this peptide */}
+                {pep.whyThisPeptide && (
+                  <div className="bg-amber-500/5 border border-amber-500/10 rounded-xl p-3 mb-3">
+                    <p className="text-[10px] font-mono uppercase tracking-widest text-amber-500/60 mb-1">Pourquoi ce peptide pour toi</p>
+                    <p className="text-white/60 text-sm">{pep.whyThisPeptide}</p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
                   <div className="bg-white/5 rounded-xl p-3">
                     <p className="text-white/40 text-[10px] font-mono uppercase tracking-widest mb-1">Dosage</p>
                     <p className="text-sm font-medium">{pep.dosage}</p>
@@ -162,15 +233,34 @@ export default function PeptidesEngineReport() {
                     <p className="text-sm font-medium">{pep.cycleDuration}</p>
                   </div>
                 </div>
-                {pep.priceEstimate && (
-                  <p className="text-white/30 text-xs font-mono mt-3">Prix estime: {pep.priceEstimate}</p>
-                )}
+
+                {/* Reconstitution + Vials + Price */}
+                <div className="grid md:grid-cols-3 gap-3">
+                  {pep.reconstitution && (
+                    <div className="bg-white/5 rounded-xl p-3">
+                      <p className="text-white/40 text-[10px] font-mono uppercase tracking-widest mb-1">Reconstitution</p>
+                      <p className="text-sm font-medium text-white/80">{pep.reconstitution}</p>
+                    </div>
+                  )}
+                  {pep.vialsNeeded && (
+                    <div className="bg-white/5 rounded-xl p-3">
+                      <p className="text-white/40 text-[10px] font-mono uppercase tracking-widest mb-1">Vials necessaires</p>
+                      <p className="text-sm font-medium">{pep.vialsNeeded}</p>
+                    </div>
+                  )}
+                  {pep.priceEstimate && (
+                    <div className="bg-white/5 rounded-xl p-3">
+                      <p className="text-white/40 text-[10px] font-mono uppercase tracking-widest mb-1">Cout estime</p>
+                      <p className="text-sm font-medium" style={{ color: AMBER }}>{pep.priceEstimate}</p>
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
         </motion.div>
 
-        {/* Report Sections */}
+        {/* Report Sections (collapsible) */}
         <div className="space-y-4 mb-12">
           {report.sections.map((section, i) => (
             <motion.div
@@ -184,7 +274,13 @@ export default function PeptidesEngineReport() {
                 onClick={() => toggleSection(section.id)}
                 className="w-full flex items-center justify-between p-6 text-left hover:bg-white/5 transition-colors"
               >
-                <h3 className="font-bold">{section.title}</h3>
+                <h3 className="font-bold flex items-center gap-2">
+                  {section.id === "reconstitution-guide" && <Syringe className="w-4 h-4" style={{ color: AMBER }} />}
+                  {section.id === "protocole-pratique" && <Calendar className="w-4 h-4" style={{ color: AMBER }} />}
+                  {section.id === "shopping-list" && <ShoppingCart className="w-4 h-4" style={{ color: AMBER }} />}
+                  {section.id === "securite-surveillance" && <Shield className="w-4 h-4" style={{ color: AMBER }} />}
+                  {section.title}
+                </h3>
                 <motion.div animate={{ rotate: expandedSections.has(section.id) ? 180 : 0 }}>
                   <ChevronDown className="w-5 h-5 text-white/40" />
                 </motion.div>
@@ -199,7 +295,7 @@ export default function PeptidesEngineReport() {
         </div>
 
         {/* Blood Markers */}
-        {report.bloodMarkers.length > 0 && (
+        {report.bloodMarkers && report.bloodMarkers.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
