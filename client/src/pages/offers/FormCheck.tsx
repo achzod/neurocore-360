@@ -3,7 +3,7 @@
  * Biomechanical Analysis via WhatsApp - Showcase Page
  */
 
-import { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { motion, useScroll, useTransform, useMotionValue, animate, AnimatePresence } from "framer-motion";
@@ -116,89 +116,176 @@ function calculateAngle(p1x: number, p1y: number, p2x: number, p2y: number, p3x:
   return `${Math.round(angle)}°`;
 }
 
+// --- FORMCHECK ANIMATION COMPONENTS (from formcccc reference) ---
+
+const FC_EXERCISES = [
+  { id: 'squat', name: 'Squat', target: 'Quadriceps, Fessiers', description: "Analyse de la flexion et de l'extension de la hanche et du genou.", duration: 6000, color: '#10b981' },
+  { id: 'deadlift', name: 'Souleve de terre', target: 'Ischio-jambiers, Dos', description: 'Controle de la charniere de hanche et du maintien de la colonne.', duration: 6000, color: '#3b82f6' },
+  { id: 'bench', name: 'Developpe couche', target: 'Pectoraux, Triceps', description: "Suivi de la trajectoire de la barre et de l'angle du coude.", duration: 6000, color: '#8b5cf6' },
+];
+
+const ParticleSystem = ({ color }: { color: string }) => {
+  const particles = React.useMemo(() => Array.from({ length: 30 }).map((_, i) => ({
+    id: i, x: Math.random() * 100, y: Math.random() * 100, size: Math.random() * 3 + 1, duration: Math.random() * 2 + 2, delay: Math.random() * 2,
+  })), []);
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+      {particles.map((p) => (
+        <motion.div key={p.id} className="absolute rounded-full"
+          style={{ backgroundColor: color, width: p.size, height: p.size, left: `${p.x}%`, top: `${p.y}%`, boxShadow: `0 0 ${p.size * 2}px ${color}` }}
+          animate={{ y: [0, -80], opacity: [0, 0.8, 0], scale: [0.5, 1.2, 0.5] }}
+          transition={{ duration: p.duration, repeat: Infinity, delay: p.delay, ease: "easeInOut" }}
+        />
+      ))}
+    </div>
+  );
+};
+
+const Bone = ({ x1, y1, x2, y2, color }: any) => (
+  <motion.line animate={{ x1, y1, x2, y2, opacity: [0.6, 1, 0.6] }}
+    transition={{ duration: 1.5, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+    stroke={color} strokeWidth="6" strokeLinecap="round" className="drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]" />
+);
+
+const FcJoint = ({ cx, cy, color }: any) => (
+  <motion.circle animate={{ cx, cy, opacity: [0.7, 1, 0.7] }}
+    transition={{ duration: 1.5, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+    r="5" fill="#fff" stroke={color} strokeWidth="3" className="drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]" />
+);
+
+const SquatAnim = ({ color }: { color: string }) => {
+  const t = { duration: 1.5, repeat: Infinity, repeatType: "reverse" as const, ease: "easeInOut" };
+  return (
+    <svg viewBox="0 0 200 200" className="w-full h-full overflow-visible">
+      <motion.line animate={{ x1: [70, 70], y1: [60, 100], x2: [130, 130], y2: [60, 100] }} transition={t} stroke="#94a3b8" strokeWidth="4" />
+      <Bone x1={[100, 100]} y1={[60, 100]} x2={[100, 80]} y2={[120, 150]} color={color} />
+      <Bone x1={[100, 80]} y1={[120, 150]} x2={[100, 120]} y2={[160, 150]} color={color} />
+      <Bone x1={[100, 120]} y1={[160, 150]} x2={[100, 100]} y2={[190, 190]} color={color} />
+      <Bone x1={[100, 100]} y1={[60, 100]} x2={[110, 110]} y2={[80, 120]} color={color} />
+      <Bone x1={[110, 110]} y1={[80, 120]} x2={[120, 120]} y2={[60, 100]} color={color} />
+      <FcJoint cx={[100, 100]} cy={[60, 100]} color={color} />
+      <FcJoint cx={[100, 80]} cy={[120, 150]} color={color} />
+      <FcJoint cx={[100, 120]} cy={[160, 150]} color={color} />
+      <FcJoint cx={[100, 100]} cy={[190, 190]} color={color} />
+      <FcJoint cx={[110, 110]} cy={[80, 120]} color={color} />
+      <motion.circle animate={{ cx: [100, 100], cy: [40, 80] }} transition={t} r="12" fill="transparent" stroke={color} strokeWidth="4" />
+    </svg>
+  );
+};
+
+const DeadliftAnim = ({ color }: { color: string }) => {
+  const t = { duration: 1.5, repeat: Infinity, repeatType: "reverse" as const, ease: "easeInOut" };
+  return (
+    <svg viewBox="0 0 200 200" className="w-full h-full overflow-visible">
+      <motion.line animate={{ x1: [70, 70], y1: [160, 120], x2: [130, 130], y2: [160, 120] }} transition={t} stroke="#94a3b8" strokeWidth="4" />
+      <motion.circle animate={{ cx: [70, 70], cy: [160, 120] }} transition={t} r="8" fill="#64748b" />
+      <motion.circle animate={{ cx: [130, 130], cy: [160, 120] }} transition={t} r="8" fill="#64748b" />
+      <Bone x1={[130, 100]} y1={[100, 60]} x2={[70, 100]} y2={[140, 120]} color={color} />
+      <Bone x1={[70, 100]} y1={[140, 120]} x2={[100, 100]} y2={[160, 160]} color={color} />
+      <Bone x1={[100, 100]} y1={[160, 160]} x2={[100, 100]} y2={[190, 190]} color={color} />
+      <Bone x1={[130, 100]} y1={[100, 60]} x2={[100, 100]} y2={[160, 120]} color={color} />
+      <FcJoint cx={[130, 100]} cy={[100, 60]} color={color} />
+      <FcJoint cx={[70, 100]} cy={[140, 120]} color={color} />
+      <FcJoint cx={[100, 100]} cy={[160, 160]} color={color} />
+      <FcJoint cx={[100, 100]} cy={[190, 190]} color={color} />
+      <motion.circle animate={{ cx: [145, 100], cy: [80, 40] }} transition={t} r="12" fill="transparent" stroke={color} strokeWidth="4" />
+    </svg>
+  );
+};
+
+const BenchAnim = ({ color }: { color: string }) => {
+  const t = { duration: 1.5, repeat: Infinity, repeatType: "reverse" as const, ease: "easeInOut" };
+  return (
+    <svg viewBox="0 0 200 200" className="w-full h-full overflow-visible">
+      <line x1="30" y1="160" x2="150" y2="160" stroke="#334155" strokeWidth="8" strokeLinecap="round" />
+      <line x1="50" y1="160" x2="50" y2="190" stroke="#334155" strokeWidth="6" />
+      <line x1="130" y1="160" x2="130" y2="190" stroke="#334155" strokeWidth="6" />
+      <motion.line animate={{ x1: [50, 50], y1: [140, 70], x2: [110, 110], y2: [140, 70] }} transition={t} stroke="#94a3b8" strokeWidth="6" />
+      <Bone x1={[80, 80]} y1={[150, 150]} x2={[130, 130]} y2={[150, 150]} color={color} />
+      <Bone x1={[130, 130]} y1={[150, 150]} x2={[160, 160]} y2={[130, 130]} color={color} />
+      <Bone x1={[160, 160]} y1={[130, 130]} x2={[160, 160]} y2={[190, 190]} color={color} />
+      <Bone x1={[80, 80]} y1={[150, 150]} x2={[80, 80]} y2={[180, 110]} color={color} />
+      <Bone x1={[80, 80]} y1={[180, 110]} x2={[80, 80]} y2={[140, 70]} color={color} />
+      <FcJoint cx={[80, 80]} cy={[150, 150]} color={color} />
+      <FcJoint cx={[130, 130]} cy={[150, 150]} color={color} />
+      <FcJoint cx={[160, 160]} cy={[130, 130]} color={color} />
+      <FcJoint cx={[80, 80]} cy={[180, 110]} color={color} />
+      <FcJoint cx={[80, 80]} cy={[140, 70]} color={color} />
+      <motion.circle animate={{ cx: [50, 50], cy: [150, 150] }} transition={t} r="12" fill="transparent" stroke={color} strokeWidth="4" />
+    </svg>
+  );
+};
+
 function BiomechanicFigure() {
-  const progress = useMotionValue(0);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [metric, setMetric] = useState(85);
+  const ex = FC_EXERCISES[activeIdx];
 
   useEffect(() => {
-    const controls = animate(progress, 1, {
-      duration: 2,
-      repeat: Infinity,
-      repeatType: "reverse",
-      ease: "easeInOut",
-    });
-    return controls.stop;
-  }, [progress]);
+    const interval = setInterval(() => setActiveIdx(c => (c + 1) % FC_EXERCISES.length), ex.duration);
+    return () => clearInterval(interval);
+  }, [activeIdx, ex.duration]);
 
-  const headY = useTransform(progress, [0, 1], [100, 180]);
-  const neckY = useTransform(progress, [0, 1], [130, 210]);
-  const hipsY = useTransform(progress, [0, 1], [230, 310]);
-  const hipsX = useMotionValue(250);
-
-  const lKneeX = useTransform(progress, [0, 1], [220, 180]);
-  const lKneeY = useTransform(progress, [0, 1], [310, 330]);
-  const lAnkleX = useMotionValue(220);
-  const lAnkleY = useMotionValue(400);
-
-  const rKneeX = useTransform(progress, [0, 1], [280, 320]);
-  const rKneeY = useTransform(progress, [0, 1], [310, 330]);
-  const rAnkleX = useMotionValue(280);
-  const rAnkleY = useMotionValue(400);
-
-  const lShoulderX = useMotionValue(210);
-  const rShoulderX = useMotionValue(290);
-  const elbowY = useTransform(progress, [0, 1], [180, 250]);
-  const handY = useTransform(progress, [0, 1], [230, 270]);
-  const lHandX = useTransform(progress, [0, 1], [200, 230]);
-  const rHandX = useTransform(progress, [0, 1], [300, 270]);
-
-  const lKneeAngle = useTransform(
-    [hipsX, hipsY, lKneeX, lKneeY, lAnkleX, lAnkleY] as any,
-    ([hx, hy, kx, ky, ax, ay]: number[]) => calculateAngle(hx, hy, kx, ky, ax, ay)
-  );
-  const rKneeAngle = useTransform(
-    [hipsX, hipsY, rKneeX, rKneeY, rAnkleX, rAnkleY] as any,
-    ([hx, hy, kx, ky, ax, ay]: number[]) => calculateAngle(hx, hy, kx, ky, ax, ay)
-  );
-  const hipAngle = useTransform(
-    [hipsX, neckY, hipsX, hipsY, lKneeX, lKneeY] as any,
-    ([nx, ny, hx, hy, kx, ky]: number[]) => calculateAngle(nx, ny, hx, hy, kx, ky)
-  );
+  useEffect(() => {
+    const di = setInterval(() => setMetric(Math.floor(Math.random() * 15) + 80), 500);
+    return () => clearInterval(di);
+  }, []);
 
   return (
-    <svg viewBox="0 0 500 500" className="w-full h-full max-w-[400px] overflow-visible">
-      <defs>
-        <filter id="glow">
-          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-          <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
-      </defs>
-      <line x1="100" y1="400" x2="400" y2="400" stroke="#333" strokeWidth="2" strokeDasharray="4 4" />
-      <g stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" opacity="0.7">
-        <motion.line x1={250} y1={neckY} x2={hipsX} y2={hipsY} />
-        <motion.line x1={lShoulderX} y1={neckY} x2={rShoulderX} y2={neckY} />
-        <motion.line x1={lShoulderX} y1={neckY} x2={200} y2={elbowY} />
-        <motion.line x1={200} y1={elbowY} x2={lHandX} y2={handY} />
-        <motion.line x1={rShoulderX} y1={neckY} x2={300} y2={elbowY} />
-        <motion.line x1={300} y1={elbowY} x2={rHandX} y2={handY} />
-        <motion.line x1={hipsX} y1={hipsY} x2={lKneeX} y2={lKneeY} />
-        <motion.line x1={lKneeX} y1={lKneeY} x2={lAnkleX} y2={lAnkleY} />
-        <motion.line x1={hipsX} y1={hipsY} x2={rKneeX} y2={rKneeY} />
-        <motion.line x1={rKneeX} y1={rKneeY} x2={rAnkleX} y2={rAnkleY} />
-      </g>
-      <motion.circle cx={250} cy={headY} r={16} stroke="#ffffff" strokeWidth="3" fill="none" opacity="0.8" />
-      <g fill={ACCENT} filter="url(#glow)">
-        <motion.circle cx={hipsX} cy={hipsY} r={5} />
-        <motion.circle cx={lKneeX} cy={lKneeY} r={5} />
-        <motion.circle cx={rKneeX} cy={rKneeY} r={5} />
-      </g>
-      <g className="font-mono text-xs font-bold" fill={ACCENT}>
-        <motion.text x={lKneeX} y={lKneeY} dx="-25" dy="5" textAnchor="end">{lKneeAngle}</motion.text>
-        <motion.text x={rKneeX} y={rKneeY} dx="25" dy="5" textAnchor="start">{rKneeAngle}</motion.text>
-        <motion.text x={hipsX} y={hipsY} dx="15" dy="-15" fill="#EAB308" textAnchor="start">{hipAngle}</motion.text>
-      </g>
-      <motion.line x1={hipsX} y1={hipsY} x2={lKneeX} y2={lKneeY} stroke="#EAB308" strokeWidth="1" strokeDasharray="3 3" opacity="0.5" />
-      <motion.line x1={hipsX} y1={hipsY} x2={250} y2={useTransform(hipsY, y => y - 50)} stroke="#EAB308" strokeWidth="1" strokeDasharray="3 3" opacity="0.5" />
-    </svg>
+    <div className="relative w-full h-full">
+      {/* Ambient glow */}
+      <motion.div className="absolute inset-0 m-auto w-3/4 h-3/4 rounded-full blur-[100px] pointer-events-none z-0"
+        style={{ backgroundColor: ex.color }}
+        animate={{ scale: [0.8, 1.1, 0.8], opacity: [0.05, 0.2, 0.05] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} />
+
+      {/* Particles */}
+      <ParticleSystem color={ex.color} />
+
+      {/* Scanning line */}
+      <motion.div className="absolute left-0 right-0 h-1 blur-sm z-10"
+        style={{ backgroundColor: `${ex.color}30` }}
+        animate={{ top: ['10%', '90%', '10%'] }}
+        transition={{ duration: 3, repeat: Infinity, ease: "linear" }} />
+
+      {/* Top overlay */}
+      <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
+        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+        <span className="font-mono text-[10px] text-green-400 uppercase tracking-widest">Online</span>
+      </div>
+      <div className="absolute top-4 right-4 z-20 text-right">
+        <div className="font-mono text-sm text-white">SCORE: <span style={{ color: ACCENT }}>{metric}</span>/100</div>
+        <div className="font-mono text-[10px] text-gray-500 uppercase tracking-widest">Form Analysis</div>
+      </div>
+
+      {/* Animation */}
+      <div className="absolute inset-0 flex items-center justify-center p-8 z-10">
+        <div className="w-full max-w-[250px] aspect-square">
+          <AnimatePresence mode="wait">
+            <motion.div key={ex.id}
+              initial={{ opacity: 0, scale: 0.9, filter: 'blur(10px)' }}
+              animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, scale: 1.1, filter: 'blur(10px)' }}
+              transition={{ duration: 0.5 }}
+              className="w-full h-full">
+              {ex.id === 'squat' && <SquatAnim color={ex.color} />}
+              {ex.id === 'deadlift' && <DeadliftAnim color={ex.color} />}
+              {ex.id === 'bench' && <BenchAnim color={ex.color} />}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* Bottom overlay */}
+      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent z-20">
+        <AnimatePresence mode="wait">
+          <motion.div key={ex.id} initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -10, opacity: 0 }} transition={{ duration: 0.3 }}>
+            <div className="font-mono text-xs text-gray-400 mb-1">{ex.target.toUpperCase()}</div>
+            <div className="text-white font-bold text-sm">{ex.name}</div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </div>
   );
 }
 
