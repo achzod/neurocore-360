@@ -476,6 +476,78 @@ function ECGSection() {
 }
 
 // ============================================================================
+// COACHING DEDUCTION BLOCK — "100% DÉDUIT"
+// ============================================================================
+function CoachingDeductionBlock() {
+  return (
+    <section className="relative overflow-hidden py-16 md:py-20">
+      {/* Dark gradient background with subtle yellow glow */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black via-[#0a0800] to-black" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_50%,rgba(252,221,0,0.06),transparent)]" />
+
+      <div className="relative max-w-3xl mx-auto px-6 text-center">
+        {/* Badge */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-[#FCDD00]/30 bg-[#FCDD00]/10 mb-6"
+        >
+          <span className="font-mono text-xs text-[#FCDD00] uppercase tracking-[0.15em] font-semibold">Offre Coaching</span>
+        </motion.div>
+
+        {/* Main Title */}
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="text-5xl md:text-7xl font-black text-white uppercase tracking-tighter mb-5"
+        >
+          100% <span className="bg-[#FCDD00] text-black px-3 py-1 inline-block -skew-x-3">DÉDUIT</span>
+        </motion.h2>
+
+        {/* Description */}
+        <motion.p
+          initial={{ opacity: 0, y: 15 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="text-gray-400 text-base md:text-lg mb-10 max-w-xl mx-auto leading-relaxed"
+        >
+          Le montant de ton audit est <strong className="text-[#FCDD00] font-semibold">intégralement déduit</strong> si tu prends un coaching avec moi. Tu ne paies qu'une seule fois.
+        </motion.p>
+
+        {/* Price Comparison */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="flex items-center justify-center gap-4 md:gap-6"
+        >
+          {/* Audit Price */}
+          <div className="px-8 py-5 bg-white/5 border border-white/10 rounded-lg text-center min-w-[140px]">
+            <span className="block text-gray-500 text-xs font-mono uppercase tracking-widest mb-2">Audit</span>
+            <span className="block text-white text-2xl md:text-3xl font-black tracking-tight">59-99€</span>
+          </div>
+
+          {/* Arrow */}
+          <div className="text-[#FCDD00] text-2xl font-bold">→</div>
+
+          {/* Coaching Price */}
+          <div className="px-8 py-5 border border-[#FCDD00]/30 bg-[#FCDD00]/5 rounded-lg text-center min-w-[140px]">
+            <span className="block text-[#FCDD00]/70 text-xs font-mono uppercase tracking-widest mb-2">Avec coaching</span>
+            <span className="block text-[#FCDD00] text-2xl md:text-3xl font-black tracking-tight">0€</span>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
 // HERO COMPONENT
 // ============================================================================
 function Hero() {
@@ -1307,6 +1379,7 @@ export default function Landing() {
       <style>{customStyles}</style>
       <Header />
       <Hero />
+      <CoachingDeductionBlock />
       <ECGSection />
       <CertificationsSection />
       <OffersSection />
