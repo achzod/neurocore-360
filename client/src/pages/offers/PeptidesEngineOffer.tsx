@@ -103,8 +103,8 @@ const STEPS = [
   {
     step: "02",
     icon: TestTube,
-    title: "On genere ton protocole",
-    desc: "IA + expertise manuelle. Molecules, dosages en mcg/kg, timing, reconstitution. Verifie manuellement avant envoi.",
+    title: "Je genere ton protocole",
+    desc: "Analyse de ton profil, selection des molecules, dosages en mcg/kg, timing, reconstitution. Verifie et valide avant envoi.",
     time: "48h",
   },
   {
@@ -676,7 +676,7 @@ function ScarcityGuarantee() {
               Ton protocole refait gratuitement
             </p>
             <p className="text-sm leading-relaxed text-white/55">
-              Si ton bilan mi-cycle ne montre aucune amelioration sur tes marqueurs cibles, on refait ton protocole gratuitement. Les 2 bilans sanguins inclus servent precisement a le mesurer objectivement.
+              Si ton bilan mi-cycle ne montre aucune amelioration sur tes marqueurs cibles, je refais ton protocole gratuitement. Les 2 bilans sanguins inclus servent precisement a le mesurer objectivement.
             </p>
             <div className="mt-6 flex items-center gap-2">
               <Check className="h-4 w-4" style={{ color: PRIMARY }} />

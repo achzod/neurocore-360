@@ -15,6 +15,7 @@ const PRODUCTS = [
   { name: "Blood Analysis", href: "/offers/blood-analysis" },
   { name: "Ultimate Scan", href: "/offers/ultimate-scan" },
   { name: "FormCheck", href: "/offers/formcheck" },
+  { name: "Peptides Engine", href: "/offers/peptides-engine" },
 ];
 
 export function Header() {
