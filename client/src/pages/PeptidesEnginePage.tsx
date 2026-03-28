@@ -36,7 +36,6 @@ import { trackBeginCheckout } from "@/lib/analytics";
 import { useToast } from "@/hooks/use-toast";
 import {
   PEPTIDES_SECTIONS,
-  PEPTIDES_QUESTIONS,
   shouldShowQuestion,
   shouldBlockPurchase,
   getQuestionsForSection,
@@ -46,7 +45,7 @@ import {
 // ─── Constants ──────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = "peptides_engine_responses";
-const PRICE_EUR = 149;
+const PRICE_EUR = 299;
 
 const SECTION_ICONS: Record<string, React.ElementType> = {
   profil: User,
@@ -274,9 +273,10 @@ function CheckoutCard({
   const safetyCheck = shouldBlockPurchase(responses);
 
   const valueItems = [
-    { label: "Protocole peptides personnalise", value: "197€" },
-    { label: "2 bilans sanguins inclus", value: "150€" },
-    { label: "Total valeur", value: "347€" },
+    { label: "Protocole personnalise (2-5 peptides)", value: "297€" },
+    { label: "2 Blood Analyses incluses", value: "198€" },
+    { label: "Acces source premium (-60% vs revendeurs)", value: "200€+" },
+    { label: "Total valeur", value: "697€+" },
   ];
 
   return (
@@ -484,9 +484,6 @@ export default function PeptidesEnginePage() {
     },
     onSuccess: (data: any) => {
       try {
-        // trackBeginCheckout wrapped in try/catch per project convention
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const { trackBeginCheckout } = require("@/lib/analytics");
         trackBeginCheckout("PEPTIDES_ENGINE", "Peptides Engine", PRICE_EUR);
       } catch {
         // analytics failure must never block redirect

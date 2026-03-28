@@ -326,7 +326,7 @@ const InsulinResistanceAnimation = () => {
         </div>
       }
     >
-      <svg viewBox="0 0 100 100" className="w-full h-full absolute inset-0 overflow-visible p-8 z-10">
+      <svg viewBox="0 0 100 100" className="w-full h-full absolute inset-0 overflow-hidden p-8 z-10">
         <line x1="10" y1="80" x2="90" y2="80" stroke="#333" strokeWidth="1" />
         <line x1="10" y1="20" x2="10" y2="80" stroke="#333" strokeWidth="1" />
         <rect x="10" y="20" width="80" height="30" fill="rgba(239,68,68,0.05)" />
@@ -342,9 +342,9 @@ const InsulinResistanceAnimation = () => {
           animate={{ pathLength: [0, 1, 1] }}
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
         />
-        <motion.g animate={{ x: [10, 90, 10], y: [70, 68, 70] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}>
+        <motion.g animate={{ x: [15, 85, 15], y: [70, 68, 70] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}>
           <circle cx="0" cy="0" r="3" fill="#fff" className="drop-shadow-[0_0_8px_#fff]" />
-          <circle cx="0" cy="0" r="8" fill="none" stroke="#22c55e" strokeWidth="0.5" />
+          <circle cx="0" cy="0" r="6" fill="none" stroke="#22c55e" strokeWidth="0.5" />
         </motion.g>
         <text x="10" y="85" fill="#64748b" fontSize="3" className="font-mono">Glucose</text>
         <text x="50" y="85" fill="#64748b" fontSize="3" textAnchor="middle" className="font-mono">Insuline</text>

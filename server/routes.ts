@@ -7341,7 +7341,7 @@ export async function registerRoutes(
           email,
           productType: "PEPTIDES_ENGINE",
           productName: "Peptides Engine",
-          amountCents: 14900,
+          amountCents: 29900,
           currency: "eur",
           stripeCheckoutSessionId: stripeSessionId ?? null,
           ipAddress: (req as any).ip ?? null,

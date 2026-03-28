@@ -1,11 +1,11 @@
 /**
- * APEXLABS - Peptides Engine
- * Protocole peptides personnalise — 149€
+ * APEXLABS - Peptides Engine Offer
+ * Protocole peptides personnalise — 299€
  */
 
 import { useState } from "react";
 import { Link } from "wouter";
-import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight,
   Check,
@@ -20,6 +20,15 @@ import {
   Activity,
   TestTube,
   Syringe,
+  FlaskConical,
+  Calendar,
+  ShoppingCart,
+  Mail,
+  Eye,
+  AlertTriangle,
+  Pill,
+  Users,
+  Clock,
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -34,70 +43,53 @@ type FAQEntry = { q: string; a: string };
 
 const FAQ: FAQEntry[] = [
   {
-    q: "Les peptides sont-ils legaux en France ?",
-    a: "Les peptides de recherche ne sont pas approuves pour usage humain en France et sont vendus a des fins de recherche uniquement. Ce protocole est informatif et educatif. Tu es responsable de te renseigner sur la legislation de ton pays avant tout achat ou usage.",
+    q: "Pourquoi 299€ ?",
+    a: "Tu economises 920€ des le 1er cycle. Le protocole + 2 blood analyses (valeur 198€) + acces source a prix labo = 697€ de valeur reelle. A 299€, c'est un investissement qui se rembourse en une seule commande de peptides au bon prix.",
   },
   {
-    q: "Pourquoi 2 bilans sanguins sont inclus ?",
-    a: "Un bilan avant le protocole etablit ta baseline (IGF-1, glycemie, marqueurs hepatiques). Un bilan apres 8-12 semaines mesure l'impact reel. C'est la seule facon de savoir si ton stack fonctionne et si tes organes repondent bien. Sans bilan, tu navigues a l'aveugle.",
+    q: "C'est quoi la source premium ?",
+    a: "Un marketplace avec 74 peptides a prix laboratoire, 13 fournisseurs certifies COA, testes par labo independant. Les prix sont 60-90% moins chers que les revendeurs classiques que tu trouves sur Google. C'est la source que j'utilise personnellement depuis plusieurs annees.",
   },
   {
-    q: "Comment se deroule la reconstitution des peptides ?",
-    a: "Le guide de reconstitution fourni couvre chaque etape: quantite de BAC water (eau bacteriostatique), calcul de la concentration en mcg/UI, technique d'injection sous-cutanee, conditions de stockage (refrigerateur 2-8°C), et duree de conservation une fois reconstitue (generalement 28-30 jours).",
+    q: "C'est legal ?",
+    a: "Les peptides de recherche ne sont pas approuves pour usage humain et sont vendus a des fins de recherche uniquement. Ce protocole est informatif et educatif. Tu es responsable de te renseigner sur la legislation de ton pays avant tout achat ou usage.",
   },
   {
-    q: "Combien de molecules vais-je recevoir dans mon protocole ?",
-    a: "Entre 2 et 4 molecules selon tes objectifs et ton profil de risque. Le principe directeur est le minimum efficace: un stack surchargee augmente les couts, les risques et la complexite sans ameliorer les resultats. Chaque molecule est justifiee par rapport a ton objectif principal.",
+    q: "Pourquoi 2 bilans sanguins ?",
+    a: "Pre-cycle (baseline): IGF-1, glycemie, marqueurs hepatiques, hormones. Mi-cycle (mesurer l'impact reel): on compare avec ta baseline pour valider que ton protocole fonctionne sur tes marqueurs cibles. Sans bilan, tu navigues a l'aveugle.",
   },
   {
-    q: "Faut-il une experience prealable avec les peptides ?",
-    a: "Non. Le questionnaire evalue ton niveau et le protocole est adapte en consequence. Si tu es debutant, les molecules choisies sont celles avec le meilleur profil tolerance/efficacite et les dosages retenus sont conservatives. Le guide de reconstitution ne presuppose aucune experience.",
+    q: "Comment je reconstitue mes peptides ?",
+    a: "Le guide calcule dans ton rapport te donne: vial Xmg + Yml BAC water = Zmcg/ml, tire N unites par injection. Chaque molecule a sa fiche avec concentration cible, volume BAC water recommande, et calcul seringue adapte a ton dosage exact.",
   },
   {
-    q: "Pourquoi Peptaura et pas un autre fournisseur ?",
-    a: "Peptaura fournit un certificat d'analyse (COA) par lot, teste par un laboratoire tiers independant. Les prix sont 50-60% inferieurs aux revendeurs classiques. C'est le fournisseur que j'utilise personnellement et que je recommande depuis plusieurs annees a ma communaute.",
+    q: "Combien de molecules vais-je recevoir ?",
+    a: "Entre 2 et 5 selon ton profil et tes objectifs. Le principe: minimum effective dose, pas de surcharge. Chaque molecule est justifiee par rapport a ton objectif principal. Un stack surchargee augmente couts, risques et complexite sans ameliorer les resultats.",
   },
   {
-    q: "Combien de temps avant de recevoir mon protocole ?",
-    a: "Apres avoir complete le questionnaire de 35 questions, ton protocole est genere et livre par email sous 48h ouvrables. Tu recois le document peptides, le guide de reconstitution, les 2 codes Blood Analysis, et les liens Peptaura directement dans ta boite mail.",
+    q: "Faut-il de l'experience avec les peptides ?",
+    a: "Non. Le questionnaire de 35 questions evalue ton niveau et adapte le protocole en consequence. Si tu es debutant, les molecules sont choisies pour leur profil tolerance/efficacite favorable, et les dosages sont conservatives. Le guide ne presuppose aucune experience.",
   },
   {
-    q: "Est-ce que ce protocole remplace un suivi medical ?",
-    a: "Non. C'est un guide educatif base sur la litterature scientifique et les pratiques de la communaute de recherche sur les peptides. Si tu as une pathologie ou prends des medicaments, consulte un medecin avant d'utiliser des peptides. Les 2 bilans sanguins inclus sont la pour securiser ta demarche, pas pour remplacer un avis medical.",
+    q: "Quel est le delai de livraison ?",
+    a: "48h apres paiement, par email. Tu recois: le rapport protocole complet, le guide de reconstitution calcule, le calendrier hebdomadaire, les 2 codes Blood Analysis, la liste de courses avec liens directs, et les guides injection et securite.",
+  },
+  {
+    q: "C'est deductible du coaching ?",
+    a: "Oui. Les 299€ sont 100% deductibles si tu prends un coaching Achzod. Le montant est credite integralement sur ton acompte coaching.",
+  },
+  {
+    q: "Je peux revenir pour un autre cycle ?",
+    a: "Oui. Un protocole update pour un deuxieme cycle (ajustements selon tes bilans mi-cycle) sera disponible a 99€. La source premium reste accessible indefiniment via les liens de ton rapport.",
   },
 ];
 
 const CREDIBILITY = [
-  {
-    stat: "500+",
-    label: "bilans sanguins analyses",
-    desc: "Je lis des analyses de sang tous les jours.",
-  },
-  {
-    stat: "86K",
-    label: "abonnes YouTube",
-    desc: "Ma communaute me fait confiance depuis des annees.",
-  },
-  {
-    stat: "12",
-    label: "masterclass peptides publiees",
-    desc: "BPC-157, CJC-1295, TB-500... tout couvert en profondeur.",
-  },
-  {
-    stat: "COA",
-    label: "fournisseur verifie",
-    desc: "Chaque lot teste avec certificat d'analyse independant.",
-  },
-  {
-    stat: "min",
-    label: "reduction des risques",
-    desc: "Le minimum efficace, pas le maximum dangereux.",
-  },
-  {
-    stat: "60%",
-    label: "moins cher",
-    desc: "Prix Peptaura vs revendeurs classiques sur le marche.",
-  },
+  { stat: "500+", label: "bilans sanguins analyses" },
+  { stat: "86K", label: "abonnes YouTube" },
+  { stat: "12", label: "masterclasses peptides" },
+  { stat: "74", label: "molecules dans le catalogue" },
+  { stat: "COA", label: "verifie par labo independant" },
 ];
 
 const STEPS = [
@@ -105,21 +97,21 @@ const STEPS = [
     step: "01",
     icon: Brain,
     title: "Reponds au questionnaire",
-    desc: "35 questions sur tes objectifs, ton historique, ta biologie et ta tolerance. Environ 10-15 minutes.",
+    desc: "35 questions sur tes objectifs, ton historique, ta biologie et ta tolerance. Sauvegarde auto.",
     time: "10-15 min",
   },
   {
     step: "02",
     icon: TestTube,
-    title: "Ton protocole est genere",
-    desc: "Molecules retenues, dosages en mcg/jour, timing d'injection, reconstitution, et liens fournisseur.",
-    time: "48h ouvrables",
+    title: "On genere ton protocole",
+    desc: "IA + expertise manuelle. Molecules, dosages en mcg/kg, timing, reconstitution. Verifie manuellement avant envoi.",
+    time: "48h",
   },
   {
     step: "03",
-    icon: Syringe,
-    title: "Recois tout par email",
-    desc: "Protocole complet + 2 codes Blood Analysis offerts pour valider ta baseline et tes resultats.",
+    icon: Mail,
+    title: "Tu recois tout par email",
+    desc: "Rapport complet + codes Blood Analysis + liens directs source + guides injection et securite.",
     time: "Email direct",
   },
 ];
@@ -127,64 +119,79 @@ const STEPS = [
 const DELIVERABLES = [
   {
     icon: Syringe,
-    title: "Protocole peptides",
-    desc: "2 a 4 molecules, dosages precis en mcg/jour, timing d'injection, cycle et post-cycle.",
+    title: "Protocole personnalise 2-5 peptides",
+    desc: "Dosages ajustes a ton poids en mcg/kg, timing AM/PM, duree et structure du cycle.",
   },
   {
-    icon: TestTube,
-    title: "Guide reconstitution",
-    desc: "BAC water, calcul concentration, technique sous-cutanee, stockage refrigerateur.",
+    icon: FlaskConical,
+    title: "Guide de reconstitution CALCULE",
+    desc: "BAC water en ml, concentration cible, unites seringue par peptide. Zero calcul de ta part.",
+  },
+  {
+    icon: Calendar,
+    title: "Calendrier hebdomadaire AM/PM",
+    desc: "Jour par jour, sites de rotation, timing precis. Imprimable et pret a l'emploi.",
+  },
+  {
+    icon: ShoppingCart,
+    title: "Liste de courses complete",
+    desc: "Liens directs fournisseur + cout total estime. Tu sais exactement ce que le cycle va couter.",
   },
   {
     icon: Activity,
     title: "2 Blood Analyses incluses",
-    desc: "Valeur 198 EUR. Bilans avant et apres pour mesurer l'impact reel sur tes biomarqueurs.",
+    desc: "Valeur 198€. Pre-cycle (baseline) + mi-cycle (mesurer l'impact reel sur tes marqueurs cibles).",
   },
   {
-    icon: Shield,
-    title: "Liens Peptaura verifies",
-    desc: "Acces direct au fournisseur COA. Prix -60% vs revendeurs. Lots verifies par labo tiers.",
+    icon: Eye,
+    title: "Guide injection SC",
+    desc: "Technique sous-cutanee, sites d'injection, rotation, choix des aiguilles. Avec illustrations.",
   },
   {
-    icon: Zap,
-    title: "Guide effets secondaires",
-    desc: "Signaux d'alerte, cas de reduction de dose, et quand stopper immediatement.",
+    icon: AlertTriangle,
+    title: "Guide securite",
+    desc: "Red flags a surveiller, quand reduire la dose, quand stopper immediatement.",
   },
   {
-    icon: CheckCircle2,
+    icon: Pill,
     title: "Stack supplements complementaire",
-    desc: "Nutrients de support (zinc, magnesium, vitamine D) pour optimiser la reponse peptidique.",
+    desc: "Zinc, magnesium, B6, D3. Les nutrients de support pour optimiser la reponse peptidique.",
+  },
+  {
+    icon: Mail,
+    title: "Support email 30 jours",
+    desc: "Questions post-livraison sur ton protocole. Reponse sous 48h ouvrables.",
   },
 ];
 
 const OBJECTIVES = [
   {
     icon: Heart,
-    title: "Recuperation & guerison",
+    title: "Recovery & Healing",
     peptides: "BPC-157, TB-500",
     detail: "Reparation tendineuse, cicatrisation, reduction inflammation chronique.",
   },
   {
     icon: Zap,
-    title: "GH & anti-aging",
+    title: "GH & Anti-aging",
     peptides: "CJC-1295, Ipamorelin",
     detail: "Stimulation naturelle de la GH, composition corporelle, sommeil profond.",
   },
   {
     icon: Flame,
-    title: "Perte de graisse",
-    peptides: "Tesamorelin, AOD-9604",
-    detail: "Lipolyse ciblée, reduction graisse viscerale, preservation musculaire.",
+    title: "Fat Loss",
+    peptides: "Tesamorelin, AOD-9604, Semaglutide",
+    detail: "Lipolyse ciblee, reduction graisse viscerale, preservation musculaire.",
   },
   {
     icon: Moon,
-    title: "Sommeil profond",
-    peptides: "DSIP, Epitalon",
+    title: "Deep Sleep",
+    peptides: "DSIP",
     detail: "Qualite du sommeil, recuperation nocturne, reset circadien.",
   },
   {
     icon: Brain,
-    title: "Performance cognitive",
+    title: "Cognitive",
     peptides: "Semax, Selank",
     detail: "Focus, reduction anxiete, neuroprotection et memoire de travail.",
   },
@@ -196,27 +203,16 @@ const OBJECTIVES = [
   },
   {
     icon: Shield,
-    title: "Peau & cheveux",
+    title: "Skin & Hair",
     peptides: "GHK-Cu",
     detail: "Synthese collagene, epaississement cheveux, cicatrisation cutanee.",
   },
   {
     icon: Zap,
     title: "Endurance",
-    peptides: "SS-31",
+    peptides: "SS-31, MOTS-c",
     detail: "Protection mitochondriale, reduction stress oxydatif, performance cardio.",
   },
-];
-
-const CHECKLIST = [
-  "Protocole 2-4 molecules avec dosages exacts (mcg/jour)",
-  "Guide de reconstitution etape par etape",
-  "2 Blood Analyses incluses (valeur 198 EUR)",
-  "Liens Peptaura COA verifie (prix -60%)",
-  "Timing d'injection et duree du cycle",
-  "Guide effets secondaires et signaux d'alerte",
-  "Stack supplements complementaire",
-  "Support email 30 jours post-livraison",
 ];
 
 // ============================================================================
@@ -230,17 +226,17 @@ function FAQItem({ q, a, index }: { q: string; a: string; index: number }) {
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      transition={{ delay: index * 0.05 }}
+      transition={{ delay: index * 0.04 }}
       className="border-b border-white/10"
     >
       <button
         onClick={() => setOpen(!open)}
-        className="flex w-full items-start justify-between gap-8 py-7 text-left transition-colors hover:text-amber-400"
+        className="flex w-full items-start justify-between gap-8 py-6 text-left transition-colors hover:text-amber-400"
       >
         <h3 className="text-base font-semibold text-white">{q}</h3>
         <motion.div
           animate={{ rotate: open ? 180 : 0 }}
-          transition={{ duration: 0.3 }}
+          transition={{ duration: 0.25 }}
           className="shrink-0 pt-0.5"
         >
           <ChevronDown className="h-5 w-5" style={{ color: PRIMARY }} />
@@ -252,10 +248,10 @@ function FAQItem({ q, a, index }: { q: string; a: string; index: number }) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.25 }}
             className="overflow-hidden"
           >
-            <p className="pb-7 text-base leading-relaxed text-white/60">{a}</p>
+            <p className="pb-6 text-sm leading-relaxed text-white/60">{a}</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -264,636 +260,629 @@ function FAQItem({ q, a, index }: { q: string; a: string; index: number }) {
 }
 
 // ============================================================================
-// BADGE PILL
+// SECTION LABEL
 // ============================================================================
 
-function BadgePill({ children }: { children: string }) {
+function SectionLabel({ children }: { children: string }) {
   return (
-    <span className="inline-flex items-center rounded-full border border-white/15 bg-[#0a0a0a] px-3 py-1 text-xs text-white/70">
+    <span className="font-mono text-xs uppercase tracking-widest" style={{ color: PRIMARY }}>
       {children}
     </span>
   );
 }
 
 // ============================================================================
-// HERO VISUAL — Vial Reconstitution Animation
+// AMBER CTA BUTTON
 // ============================================================================
 
-function VialReconstitutionVisual() {
+function CTAButton({ children, href = "/peptides-engine", large = false }: { children: React.ReactNode; href?: string; large?: boolean }) {
   return (
-    <div className="relative w-full h-full bg-[#0a0a0a] rounded-xl border border-white/10 overflow-hidden flex flex-col items-center justify-center gap-6">
-      {/* Ambient glow */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background: "radial-gradient(ellipse at center, rgba(245,158,11,0.10) 0%, transparent 65%)",
-        }}
-      />
-      {/* Grid */}
-      <div
-        className="absolute inset-0 opacity-[0.04]"
-        style={{
-          backgroundImage: `linear-gradient(rgba(245,158,11,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(245,158,11,0.6) 1px, transparent 1px)`,
-          backgroundSize: "24px 24px",
-        }}
-      />
-
-      {/* Vial group */}
-      <div className="relative z-10 flex items-end gap-8">
-        {/* BAC water vial */}
-        <motion.div
-          className="flex flex-col items-center gap-2"
-          animate={{ y: [0, -4, 0] }}
-          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <div className="relative w-12 h-28 rounded-t-full rounded-b-sm overflow-hidden border border-amber-500/30 bg-black/60">
-            {/* Fill level */}
-            <motion.div
-              className="absolute bottom-0 left-0 right-0"
-              style={{ backgroundColor: "rgba(245,158,11,0.15)" }}
-              animate={{ height: ["55%", "45%", "55%"] }}
-              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-            />
-            {/* Shimmer */}
-            <motion.div
-              className="absolute left-1 w-1.5 rounded-full bg-white/20"
-              style={{ bottom: "10%" }}
-              animate={{ height: ["50%", "40%", "50%"], opacity: [0.4, 0.7, 0.4] }}
-              transition={{ duration: 3, repeat: Infinity }}
-            />
-            {/* Cap */}
-            <div
-              className="absolute top-0 left-0 right-0 h-4 rounded-t-full"
-              style={{ backgroundColor: "rgba(245,158,11,0.4)" }}
-            />
-          </div>
-          <span className="text-[10px] font-mono" style={{ color: PRIMARY }}>BAC WATER</span>
-        </motion.div>
-
-        {/* Arrow / transfer pulse */}
-        <motion.div
-          className="mb-6 flex flex-col gap-1 items-center"
-          animate={{ opacity: [0.3, 1, 0.3] }}
-          transition={{ duration: 1.2, repeat: Infinity }}
-        >
-          {[0, 1, 2].map((i) => (
-            <motion.div
-              key={i}
-              className="w-1.5 h-1.5 rounded-full"
-              style={{ backgroundColor: PRIMARY }}
-              animate={{ opacity: [0.2, 1, 0.2] }}
-              transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }}
-            />
-          ))}
-        </motion.div>
-
-        {/* Peptide vial */}
-        <motion.div
-          className="flex flex-col items-center gap-2"
-          animate={{ y: [0, -6, 0] }}
-          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 0.4 }}
-        >
-          <div className="relative w-12 h-28 rounded-t-full rounded-b-sm overflow-hidden border border-amber-500/40 bg-black/70">
-            {/* Powder residue + reconstituting fill */}
-            <motion.div
-              className="absolute bottom-0 left-0 right-0"
-              style={{ background: "linear-gradient(to top, rgba(245,158,11,0.35), rgba(245,158,11,0.08))" }}
-              animate={{ height: ["15%", "60%", "15%"] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-            />
-            {/* Bubbles */}
-            {[0, 1].map((i) => (
-              <motion.div
-                key={i}
-                className="absolute w-1.5 h-1.5 rounded-full"
-                style={{ backgroundColor: "rgba(245,158,11,0.5)", left: i === 0 ? "25%" : "55%" }}
-                animate={{ bottom: ["5%", "75%"], opacity: [0.8, 0] }}
-                transition={{ duration: 2, repeat: Infinity, delay: i * 0.7, ease: "easeOut" }}
-              />
-            ))}
-            {/* Cap */}
-            <div
-              className="absolute top-0 left-0 right-0 h-4 rounded-t-full"
-              style={{ backgroundColor: "rgba(245,158,11,0.55)" }}
-            />
-          </div>
-          <span className="text-[10px] font-mono" style={{ color: PRIMARY }}>PEPTIDE</span>
-        </motion.div>
-
-        {/* Syringe */}
-        <motion.div
-          className="flex flex-col items-center gap-2"
-          animate={{ y: [0, -3, 0], rotate: [0, -4, 0] }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}
-        >
-          <div
-            className="relative w-5 h-28 rounded-t-sm rounded-b-sm border overflow-hidden bg-black/50 flex flex-col"
-            style={{ borderColor: "rgba(245,158,11,0.35)" }}
-          >
-            {/* Plunger */}
-            <motion.div
-              className="absolute top-0 left-0 right-0 h-3"
-              style={{ backgroundColor: "rgba(245,158,11,0.5)" }}
-              animate={{ top: ["0%", "30%", "0%"] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-            />
-            {/* Graduation marks */}
-            {[20, 35, 50, 65, 80].map((pct) => (
-              <div
-                key={pct}
-                className="absolute right-0 w-2 h-px bg-amber-500/30"
-                style={{ top: `${pct}%` }}
-              />
-            ))}
-            {/* Fill */}
-            <motion.div
-              className="absolute bottom-0 left-0 right-0"
-              style={{ backgroundColor: "rgba(245,158,11,0.2)" }}
-              animate={{ height: ["10%", "45%", "10%"] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-            />
-          </div>
-          <span className="text-[10px] font-mono" style={{ color: PRIMARY }}>SERINGUE</span>
-        </motion.div>
-      </div>
-
-      {/* Status bar */}
-      <div className="relative z-10 flex flex-col items-center gap-1">
-        <motion.p
-          className="text-xs font-mono font-semibold tracking-widest"
-          style={{ color: PRIMARY }}
-          animate={{ opacity: [0.5, 1, 0.5] }}
-          transition={{ duration: 1.8, repeat: Infinity }}
-        >
-          RECONSTITUTION EN COURS
-        </motion.p>
-        <div className="w-40 h-1 rounded-full bg-white/10 overflow-hidden">
-          <motion.div
-            className="h-full rounded-full"
-            style={{ backgroundColor: PRIMARY }}
-            animate={{ width: ["0%", "100%", "0%"] }}
-            transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
-          />
-        </div>
-        <p className="text-[10px] text-white/40 font-mono mt-1">DOSAGE CALCULE PAR OBJECTIF</p>
-      </div>
-
-      {/* Corner decorations */}
-      <div className="absolute top-4 left-4 text-xs font-mono text-white/20">PE-PROTOCOL</div>
-      <div className="absolute top-4 right-4 text-xs font-mono" style={{ color: `${PRIMARY}80` }}>
-        APEXLABS
-      </div>
-    </div>
+    <Link href={href}>
+      <motion.a
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        className={`inline-flex cursor-pointer items-center gap-2 rounded-lg font-semibold transition-all ${
+          large
+            ? "px-10 py-5 text-lg"
+            : "px-7 py-4 text-base"
+        }`}
+        style={{ backgroundColor: PRIMARY, color: "#000" }}
+      >
+        {children}
+        <ArrowRight className="h-5 w-5" />
+      </motion.a>
+    </Link>
   );
 }
 
 // ============================================================================
-// MAIN PAGE
+// PRICE COMPARISON
+// ============================================================================
+
+function PriceComparison() {
+  return (
+    <section className="py-24 px-6">
+      <div className="mx-auto max-w-5xl">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mb-14 text-center"
+        >
+          <SectionLabel>La verite sur les prix</SectionLabel>
+          <h2 className="mt-4 text-3xl font-bold text-white md:text-4xl">
+            Ce que tu paies ailleurs vs via ton protocole
+          </h2>
+        </motion.div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          {/* LEFT — classique */}
+          <motion.div
+            initial={{ opacity: 0, x: -24 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-8"
+          >
+            <p className="mb-1 font-mono text-xs uppercase tracking-wider text-white/40">Revendeur classique</p>
+            <p className="mb-6 text-4xl font-bold text-white/50">1 200€<span className="text-lg font-normal">/cycle</span></p>
+            <ul className="space-y-3">
+              {[
+                "Prix gonfles par la chaine de distribution",
+                "Delai 7-14 jours (stock, douane)",
+                "Pas de COA systematique",
+                "Aucune personnalisation du protocole",
+                "Tu ne sais pas ce que tu achetes vraiment",
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-3 text-sm text-white/50">
+                  <span className="mt-0.5 h-4 w-4 shrink-0 rounded-full border border-white/20 flex items-center justify-center text-[10px] text-white/30">✕</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+
+          {/* RIGHT — APEXLABS */}
+          <motion.div
+            initial={{ opacity: 0, x: 24 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+            className="relative rounded-2xl border bg-[#0a0a0a] p-8"
+            style={{ borderColor: PRIMARY }}
+          >
+            <div
+              className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-4 py-1 text-xs font-semibold"
+              style={{ backgroundColor: PRIMARY, color: "#000" }}
+            >
+              Recommande
+            </div>
+            <p className="mb-1 font-mono text-xs uppercase tracking-wider" style={{ color: PRIMARY }}>
+              Via ton protocole APEXLABS
+            </p>
+            <p className="mb-6 text-4xl font-bold text-white">
+              ~280€<span className="text-lg font-normal text-white/60">/cycle</span>
+            </p>
+            <ul className="space-y-3">
+              {[
+                "Prix direct laboratoire (-60-90%)",
+                "Livraison rapide depuis sources verifiees",
+                "COA par lot, labo tiers independant",
+                "Protocole 100% personnalise a ton profil",
+                "Tu sais exactement ce que tu prends et pourquoi",
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-3 text-sm text-white">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" style={{ color: PRIMARY }} />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.3 }}
+          className="mt-8 rounded-xl border border-white/10 bg-[#0a0a0a] px-8 py-5 text-center"
+        >
+          <p className="text-base text-white/70">
+            Tu economises{" "}
+            <span className="font-bold text-white" style={{ color: PRIMARY }}>
+              920€ des le 1er cycle.
+            </span>{" "}
+            Et chaque cycle apres.
+          </p>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// DELIVERABLES GRID
+// ============================================================================
+
+function DeliverablesSection() {
+  return (
+    <section className="py-24 px-6 bg-[#050505]">
+      <div className="mx-auto max-w-5xl">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mb-14 text-center"
+        >
+          <SectionLabel>Ce que tu recois</SectionLabel>
+          <h2 className="mt-4 text-3xl font-bold text-white md:text-4xl">
+            9 livrables. Tout ce qu'il faut. Rien de superflu.
+          </h2>
+        </motion.div>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {DELIVERABLES.map((item, i) => {
+            const Icon = item.icon;
+            return (
+              <motion.div
+                key={item.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.05 }}
+                className="rounded-xl border border-white/8 bg-[#0a0a0a] p-6"
+              >
+                <div
+                  className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg"
+                  style={{ backgroundColor: "rgba(245,158,11,0.1)" }}
+                >
+                  <Icon className="h-5 w-5" style={{ color: PRIMARY }} />
+                </div>
+                <h3 className="mb-2 text-sm font-semibold text-white">{item.title}</h3>
+                <p className="text-sm leading-relaxed text-white/50">{item.desc}</p>
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// HOW IT WORKS
+// ============================================================================
+
+function HowItWorks() {
+  return (
+    <section className="py-24 px-6">
+      <div className="mx-auto max-w-4xl">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mb-14 text-center"
+        >
+          <SectionLabel>Processus</SectionLabel>
+          <h2 className="mt-4 text-3xl font-bold text-white md:text-4xl">3 etapes, 48h</h2>
+        </motion.div>
+
+        <div className="relative">
+          {/* Connecting line */}
+          <div className="absolute left-[28px] top-10 bottom-10 w-px bg-white/8 md:left-1/2 md:-translate-x-px hidden md:block" />
+
+          <div className="space-y-8">
+            {STEPS.map((step, i) => {
+              const Icon = step.icon;
+              return (
+                <motion.div
+                  key={step.step}
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.12 }}
+                  className={`flex items-start gap-6 md:gap-10 ${i % 2 === 1 ? "md:flex-row-reverse" : ""}`}
+                >
+                  <div className="relative shrink-0">
+                    <div
+                      className="flex h-14 w-14 items-center justify-center rounded-full border-2 bg-[#0a0a0a]"
+                      style={{ borderColor: PRIMARY }}
+                    >
+                      <Icon className="h-6 w-6" style={{ color: PRIMARY }} />
+                    </div>
+                  </div>
+                  <div className="flex-1 rounded-xl border border-white/8 bg-[#0a0a0a] p-6">
+                    <div className="mb-1 flex items-center gap-3">
+                      <span className="font-mono text-xs" style={{ color: PRIMARY }}>{step.step}</span>
+                      <span className="rounded-full border border-white/10 px-2 py-0.5 font-mono text-xs text-white/40">
+                        {step.time}
+                      </span>
+                    </div>
+                    <h3 className="mb-2 text-base font-semibold text-white">{step.title}</h3>
+                    <p className="text-sm leading-relaxed text-white/55">{step.desc}</p>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// OBJECTIVES
+// ============================================================================
+
+function ObjectivesSection() {
+  return (
+    <section className="py-24 px-6 bg-[#050505]">
+      <div className="mx-auto max-w-5xl">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mb-14 text-center"
+        >
+          <SectionLabel>Objectifs couverts</SectionLabel>
+          <h2 className="mt-4 text-3xl font-bold text-white md:text-4xl">
+            8 categories. 74 molecules disponibles.
+          </h2>
+          <p className="mt-4 text-white/50">
+            Le questionnaire identifie ton objectif principal et adapte le stack en consequence.
+          </p>
+        </motion.div>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {OBJECTIVES.map((obj, i) => {
+            const Icon = obj.icon;
+            return (
+              <motion.div
+                key={obj.title}
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.06 }}
+                className="group rounded-xl border border-white/8 bg-[#0a0a0a] p-5 transition-colors hover:border-amber-500/30"
+              >
+                <div
+                  className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-lg"
+                  style={{ backgroundColor: "rgba(245,158,11,0.1)" }}
+                >
+                  <Icon className="h-4 w-4" style={{ color: PRIMARY }} />
+                </div>
+                <h3 className="mb-1 text-sm font-semibold text-white">{obj.title}</h3>
+                <p className="mb-2 font-mono text-[11px]" style={{ color: PRIMARY }}>{obj.peptides}</p>
+                <p className="text-xs leading-relaxed text-white/45">{obj.detail}</p>
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// CREDIBILITY BAR
+// ============================================================================
+
+function CredibilityBar() {
+  return (
+    <section className="py-16 px-6 border-y border-white/8">
+      <div className="mx-auto max-w-5xl">
+        <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-8">
+          {CREDIBILITY.map((item, i) => (
+            <motion.div
+              key={item.label}
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.08 }}
+              className="text-center"
+            >
+              <p className="text-2xl font-bold" style={{ color: PRIMARY }}>{item.stat}</p>
+              <p className="mt-1 text-xs text-white/45">{item.label}</p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// SCARCITY + GUARANTEE
+// ============================================================================
+
+function ScarcityGuarantee() {
+  return (
+    <section className="py-24 px-6">
+      <div className="mx-auto max-w-4xl">
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Scarcity */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="rounded-2xl border bg-[#0a0a0a] p-8"
+            style={{ borderColor: "rgba(245,158,11,0.3)" }}
+          >
+            <div className="mb-4 flex items-center gap-3">
+              <Users className="h-5 w-5" style={{ color: PRIMARY }} />
+              <SectionLabel>Disponibilite</SectionLabel>
+            </div>
+            <p className="mb-3 text-2xl font-bold text-white">15 protocoles par mois</p>
+            <p className="mb-6 text-sm text-white/55">
+              Chaque protocole est verifie manuellement avant envoi. La limite mensuelle garantit la qualite de chaque livrable.
+            </p>
+            {/* Visual counter */}
+            <div className="flex gap-2 flex-wrap">
+              {Array.from({ length: 15 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="h-3 w-3 rounded-sm"
+                  style={{
+                    backgroundColor: i < 9 ? PRIMARY : "rgba(255,255,255,0.1)",
+                  }}
+                />
+              ))}
+            </div>
+            <p className="mt-3 font-mono text-xs text-white/35">9/15 protocoles livres ce mois</p>
+          </motion.div>
+
+          {/* Guarantee */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-8"
+          >
+            <div className="mb-4 flex items-center gap-3">
+              <Shield className="h-5 w-5" style={{ color: PRIMARY }} />
+              <SectionLabel>Garantie resultats</SectionLabel>
+            </div>
+            <p className="mb-3 text-xl font-bold text-white leading-snug">
+              Ton protocole refait gratuitement
+            </p>
+            <p className="text-sm leading-relaxed text-white/55">
+              Si ton bilan mi-cycle ne montre aucune amelioration sur tes marqueurs cibles, on refait ton protocole gratuitement. Les 2 bilans sanguins inclus servent precisement a le mesurer objectivement.
+            </p>
+            <div className="mt-6 flex items-center gap-2">
+              <Check className="h-4 w-4" style={{ color: PRIMARY }} />
+              <p className="text-sm font-semibold text-white">Resultat mesurable ou protocole offert</p>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// FAQ SECTION
+// ============================================================================
+
+function FAQSection() {
+  return (
+    <section className="py-24 px-6 bg-[#050505]">
+      <div className="mx-auto max-w-3xl">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mb-14 text-center"
+        >
+          <SectionLabel>Questions frequentes</SectionLabel>
+          <h2 className="mt-4 text-3xl font-bold text-white md:text-4xl">
+            Tout ce que tu veux savoir
+          </h2>
+        </motion.div>
+
+        <div>
+          {FAQ.map((item, i) => (
+            <FAQItem key={item.q} q={item.q} a={item.a} index={i} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// FINAL CTA
+// ============================================================================
+
+function FinalCTA() {
+  return (
+    <section className="py-32 px-6">
+      <div className="mx-auto max-w-3xl text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 32 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
+          <SectionLabel>Acces immediat</SectionLabel>
+          <h2 className="mt-6 text-4xl font-bold text-white md:text-5xl leading-tight">
+            Ton protocole peptides personnalise.{" "}
+            <span style={{ color: PRIMARY }}>Livré en 48h.</span>
+          </h2>
+          <p className="mt-6 text-lg text-white/55 max-w-xl mx-auto">
+            35 questions. Un protocole sur mesure. La source ou les peptides coutent 60-90% moins cher. 2 bilans sanguins inclus.
+          </p>
+
+          {/* Value breakdown */}
+          <div className="mt-10 inline-flex flex-col items-center gap-2 rounded-2xl border border-white/10 bg-[#0a0a0a] px-10 py-7">
+            <p className="font-mono text-xs uppercase tracking-wider text-white/40">Valeur totale</p>
+            <p className="text-3xl font-bold text-white/30 line-through">697€</p>
+            <p className="text-5xl font-bold text-white">299€</p>
+            <p className="font-mono text-xs text-white/40">TVA incluse • Paiement securise</p>
+          </div>
+
+          <div className="mt-8 flex flex-col items-center gap-4">
+            <CTAButton href="/peptides-engine" large>
+              Acceder a mon protocole — 299€
+            </CTAButton>
+            <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-white/35">
+              <span className="flex items-center gap-1.5">
+                <Check className="h-3 w-3" style={{ color: PRIMARY }} />
+                15 protocoles/mois max
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Check className="h-3 w-3" style={{ color: PRIMARY }} />
+                Livraison email 48h
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Check className="h-3 w-3" style={{ color: PRIMARY }} />
+                100% deductible du coaching
+              </span>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// HERO
+// ============================================================================
+
+function Hero() {
+  return (
+    <section className="relative overflow-hidden px-6 pb-24 pt-32">
+      {/* Ambient glow */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: "radial-gradient(ellipse 60% 50% at 50% 0%, rgba(245,158,11,0.08) 0%, transparent 70%)",
+        }}
+      />
+      {/* Grid */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.03]"
+        style={{
+          backgroundImage: `linear-gradient(rgba(245,158,11,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(245,158,11,0.8) 1px, transparent 1px)`,
+          backgroundSize: "40px 40px",
+        }}
+      />
+
+      <div className="relative mx-auto max-w-4xl text-center">
+        {/* Badge */}
+        <motion.div
+          initial={{ opacity: 0, y: -12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/12 bg-[#0a0a0a] px-4 py-2"
+        >
+          <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: PRIMARY }} />
+          <span className="font-mono text-xs uppercase tracking-widest text-white/60">
+            Protocole exclusif — 74 molecules disponibles
+          </span>
+        </motion.div>
+
+        {/* Title */}
+        <motion.h1
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="text-5xl font-bold leading-tight text-white md:text-6xl lg:text-7xl"
+        >
+          Ton protocole peptides.{" "}
+          <span style={{ color: PRIMARY }}>Ta source secrete.</span>
+        </motion.h1>
+
+        {/* Subtitle */}
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="mx-auto mt-8 max-w-2xl text-lg leading-relaxed text-white/60 md:text-xl"
+        >
+          Reponds a 35 questions. Recois un protocole personnalise avec dosages exacts, guide de reconstitution calcule, calendrier hebdo, et acces direct a la source ou les peptides coutent{" "}
+          <span className="font-semibold text-white">60-90% moins cher</span> que partout ailleurs.
+        </motion.p>
+
+        {/* Pricing */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="mt-10 flex items-center justify-center gap-4"
+        >
+          <span className="text-2xl font-bold text-white/30 line-through">697€</span>
+          <span className="text-5xl font-bold text-white">299€</span>
+        </motion.div>
+
+        {/* CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="mt-8 flex flex-col items-center gap-4"
+        >
+          <CTAButton href="/peptides-engine" large>
+            Acceder a mon protocole — 299€
+          </CTAButton>
+
+          <div className="flex flex-wrap items-center justify-center gap-5 text-xs text-white/35">
+            <span className="flex items-center gap-1.5">
+              <Clock className="h-3 w-3" />
+              15 protocoles par mois maximum
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Check className="h-3 w-3" style={{ color: PRIMARY }} />
+              100% deductible du coaching Achzod
+            </span>
+          </div>
+        </motion.div>
+
+        {/* Trust indicators */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.6 }}
+          className="mt-14 flex flex-wrap items-center justify-center gap-6"
+        >
+          {[
+            "Protocole verifie manuellement",
+            "2 bilans sanguins inclus (198€)",
+            "Support email 30 jours",
+            "Garantie resultats",
+          ].map((t) => (
+            <div key={t} className="flex items-center gap-2 text-xs text-white/40">
+              <CheckCircle2 className="h-3.5 w-3.5" style={{ color: PRIMARY }} />
+              {t}
+            </div>
+          ))}
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// PAGE
 // ============================================================================
 
 export default function PeptidesEngineOffer() {
-  const { scrollYProgress } = useScroll();
-  const heroGlow = useTransform(scrollYProgress, [0, 0.25], [0.9, 0.2]);
-
-  const ctaHref = "/peptides-engine";
-  const [hoveredObj, setHoveredObj] = useState<number | null>(null);
-
-  const trustRow = ["Fournisseur verifie COA", "60% moins cher", "500+ bilans analyses"];
-
   return (
     <div className="min-h-screen bg-black text-white">
       <Header />
 
-      {/* ================================================================ */}
-      {/* HERO */}
-      {/* ================================================================ */}
-      <section className="relative overflow-hidden">
-        <motion.div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            opacity: heroGlow,
-            background: "radial-gradient(circle at 50% 0%, rgba(245,158,11,0.10) 0%, transparent 55%)",
-          }}
-        />
-        <div
-          className="pointer-events-none absolute inset-0 opacity-25"
-          style={{
-            backgroundImage:
-              "linear-gradient(to right, rgba(15, 23, 42, 0.06) 1px, transparent 1px), linear-gradient(to bottom, rgba(15, 23, 42, 0.06) 1px, transparent 1px)",
-            backgroundSize: "60px 60px",
-          }}
-        />
-
-        <div className="relative mx-auto max-w-7xl px-6 pt-20 pb-16">
-          <div className="grid gap-12 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
-            <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="space-y-7"
-            >
-              <div className="flex flex-wrap items-center gap-2">
-                <BadgePill>NOUVEAU</BadgePill>
-                <BadgePill>PERSONNALISE</BadgePill>
-                <BadgePill>2 BILANS SANGUINS INCLUS</BadgePill>
-              </div>
-
-              <h1 className="text-5xl md:text-7xl font-semibold tracking-tight leading-[0.95]">
-                Peptides Engine.
-                <br />
-                <span style={{ color: PRIMARY }}>Ton protocole sur-mesure.</span>
-              </h1>
-
-              <p className="text-white/70 text-lg leading-relaxed max-w-2xl">
-                Reponds a 35 questions. Recois ton stack peptides personnalise avec dosages exacts, guide de
-                reconstitution, et 2 bilans sanguins inclus pour verifier que tout fonctionne.
-              </p>
-
-              <div className="flex flex-wrap items-center gap-5 text-sm text-white/50">
-                {trustRow.map((item) => (
-                  <div key={item} className="inline-flex items-center gap-2">
-                    <Check className="h-4 w-4" style={{ color: PRIMARY }} />
-                    <span>{item}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3 pt-2">
-                <Link href={ctaHref}>
-                  <a
-                    className="group inline-flex items-center gap-3 rounded-full px-7 py-3 text-sm font-semibold text-white transition-all hover:scale-[1.02]"
-                    style={{ backgroundColor: PRIMARY }}
-                  >
-                    Obtenir mon protocole — 149 EUR
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                  </a>
-                </Link>
-              </div>
-
-              <div className="pt-3 text-xs text-white/40">
-                Paiement securise (Stripe) · Livraison par email sous 48h · Valeur totale: 347 EUR
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.65, ease: "easeOut", delay: 0.1 }}
-              className="h-[360px] md:h-[440px]"
-            >
-              <VialReconstitutionVisual />
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* ================================================================ */}
-      {/* WHY ACHZOD — CREDIBILITY */}
-      {/* ================================================================ */}
-      <section className="bg-[#0a0a0a] py-24 px-6">
-        <div className="mx-auto max-w-7xl">
-          <div className="text-center">
-            <p
-              className="text-sm font-medium tracking-[0.2em] uppercase"
-              style={{ color: PRIMARY }}
-            >
-              POURQUOI ME FAIRE CONFIANCE
-            </p>
-            <h2 className="mt-5 text-4xl md:text-5xl font-semibold tracking-tight">
-              Pas un vendeur de peptides.
-              <br />
-              Un coach qui connait la science.
-            </h2>
-          </div>
-
-          <div className="mt-14 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {CREDIBILITY.map((item, idx) => (
-              <motion.div
-                key={item.label}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, ease: "easeOut", delay: idx * 0.06 }}
-                className="rounded-xl border border-white/10 bg-black p-8 hover:border-amber-500/25 transition-colors"
-              >
-                <p
-                  className="text-3xl font-bold tracking-tight"
-                  style={{ color: PRIMARY }}
-                >
-                  {item.stat}
-                </p>
-                <p className="mt-1 text-base font-semibold text-white">{item.label}</p>
-                <p className="mt-3 text-sm text-white/60 leading-relaxed">{item.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ================================================================ */}
-      {/* HOW IT WORKS — 3 STEPS */}
-      {/* ================================================================ */}
-      <section className="py-24 px-6">
-        <div className="mx-auto max-w-7xl">
-          <div className="text-center">
-            <p
-              className="text-sm font-medium tracking-[0.2em] uppercase"
-              style={{ color: PRIMARY }}
-            >
-              Comment ca marche
-            </p>
-            <h2 className="mt-5 text-4xl md:text-5xl font-semibold tracking-tight">3 etapes. C'est tout.</h2>
-          </div>
-
-          <div className="mt-14 grid gap-6 md:grid-cols-3">
-            {STEPS.map((item, idx) => (
-              <motion.div
-                key={item.step}
-                initial={{ opacity: 0, y: 14 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.45, ease: "easeOut", delay: idx * 0.06 }}
-                className="relative overflow-hidden rounded-xl border border-white/10 bg-[#0a0a0a] p-10"
-              >
-                <div className="absolute right-4 top-2 text-7xl font-semibold text-white/[0.05]">
-                  {item.step}
-                </div>
-                <div className="relative z-10">
-                  <div className="h-12 w-12 rounded-lg border border-white/10 bg-black flex items-center justify-center">
-                    <item.icon className="h-6 w-6" style={{ color: PRIMARY }} />
-                  </div>
-                  <p className="mt-6 text-2xl font-semibold tracking-tight">{item.title}</p>
-                  <p className="mt-3 text-white/70 leading-relaxed">{item.desc}</p>
-                  <p className="mt-6 text-sm text-white/40">Duree: {item.time}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ================================================================ */}
-      {/* WHAT YOU GET — DELIVERABLES */}
-      {/* ================================================================ */}
-      <section className="bg-[#0a0a0a] py-24 px-6">
-        <div className="mx-auto max-w-7xl">
-          <div className="text-center">
-            <p
-              className="text-sm font-medium tracking-[0.2em] uppercase"
-              style={{ color: PRIMARY }}
-            >
-              CE QUE TU RECOIS
-            </p>
-            <h2 className="mt-5 text-4xl md:text-5xl font-semibold tracking-tight">Tout ce qu'il faut. Rien de superflu.</h2>
-            <p className="mt-4 text-white/50 max-w-2xl mx-auto">
-              Six livrables concrets. Pas une note de cours, pas un PDF genere automatiquement. Un protocole actionnable.
-            </p>
-          </div>
-
-          <div className="mt-14 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {DELIVERABLES.map((item, idx) => (
-              <motion.div
-                key={item.title}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, ease: "easeOut", delay: idx * 0.06 }}
-                className="rounded-xl border border-white/10 bg-black p-8 hover:border-amber-500/20 transition-colors group"
-              >
-                <div
-                  className="h-11 w-11 rounded-lg border border-white/10 bg-[#0a0a0a] flex items-center justify-center group-hover:border-amber-500/30 transition-colors"
-                >
-                  <item.icon className="h-5 w-5" style={{ color: PRIMARY }} />
-                </div>
-                <p className="mt-5 text-lg font-semibold tracking-tight">{item.title}</p>
-                <p className="mt-3 text-sm text-white/60 leading-relaxed">{item.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ================================================================ */}
-      {/* OBJECTIVES GRID */}
-      {/* ================================================================ */}
-      <section className="py-24 px-6">
-        <div className="mx-auto max-w-7xl">
-          <div className="text-center">
-            <p
-              className="text-sm font-medium tracking-[0.2em] uppercase"
-              style={{ color: PRIMARY }}
-            >
-              OBJECTIFS
-            </p>
-            <h2 className="mt-5 text-4xl md:text-5xl font-semibold tracking-tight">
-              Quel est ton objectif ?
-            </h2>
-            <p className="mt-4 text-white/50 max-w-2xl mx-auto">
-              Le questionnaire identifie ta priorite. Le protocole est construit autour de 1 objectif principal.
-            </p>
-          </div>
-
-          <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {OBJECTIVES.map((obj, idx) => (
-              <motion.div
-                key={obj.title}
-                initial={{ opacity: 0, y: 14 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, ease: "easeOut", delay: idx * 0.05 }}
-                onMouseEnter={() => setHoveredObj(idx)}
-                onMouseLeave={() => setHoveredObj(null)}
-                className="relative rounded-xl border border-white/10 bg-[#0a0a0a] p-6 cursor-default overflow-hidden transition-all hover:border-amber-500/30"
-                style={{
-                  boxShadow: hoveredObj === idx ? `0 0 20px rgba(245,158,11,0.08)` : "none",
-                }}
-              >
-                <div className="flex items-start justify-between">
-                  <div
-                    className="h-10 w-10 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)" }}
-                  >
-                    <obj.icon className="h-5 w-5" style={{ color: PRIMARY }} />
-                  </div>
-                </div>
-                <p className="mt-4 text-base font-semibold tracking-tight">{obj.title}</p>
-                <p
-                  className="mt-1.5 text-xs font-mono tracking-wide"
-                  style={{ color: PRIMARY }}
-                >
-                  {obj.peptides}
-                </p>
-
-                <AnimatePresence>
-                  {hoveredObj === idx && (
-                    <motion.p
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 4 }}
-                      transition={{ duration: 0.2 }}
-                      className="mt-3 text-xs text-white/55 leading-relaxed"
-                    >
-                      {obj.detail}
-                    </motion.p>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ================================================================ */}
-      {/* PRICING CARD */}
-      {/* ================================================================ */}
-      <section className="bg-[#0a0a0a] py-24 px-6">
-        <div className="mx-auto max-w-lg">
-          <div className="text-center mb-10">
-            <p
-              className="text-sm font-medium tracking-[0.2em] uppercase"
-              style={{ color: PRIMARY }}
-            >
-              TARIF
-            </p>
-            <h2 className="mt-5 text-4xl md:text-5xl font-semibold tracking-tight">
-              Un protocole. Un prix.
-            </h2>
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="rounded-2xl border bg-black p-8 md:p-10"
-            style={{
-              borderColor: "rgba(245,158,11,0.35)",
-              boxShadow: "0 0 40px rgba(245,158,11,0.07), 0 0 0 1px rgba(245,158,11,0.10)",
-            }}
-          >
-            {/* Header */}
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-mono tracking-[0.25em] text-white/50">PEPTIDES ENGINE</p>
-                <div className="mt-3 flex items-end gap-2">
-                  <span className="text-5xl font-bold tracking-tight" style={{ color: PRIMARY }}>
-                    149
-                  </span>
-                  <span className="text-2xl font-semibold text-white/80 mb-1">EUR</span>
-                </div>
-                <p className="mt-1 text-sm text-white/40">paiement unique</p>
-              </div>
-              <div
-                className="rounded-full px-3 py-1 text-xs font-semibold"
-                style={{ backgroundColor: "rgba(245,158,11,0.12)", color: PRIMARY, border: "1px solid rgba(245,158,11,0.3)" }}
-              >
-                MEILLEURE VALEUR
-              </div>
-            </div>
-
-            {/* Crossed out value */}
-            <p className="mt-4 text-sm text-white/40">
-              Valeur totale:{" "}
-              <span className="line-through">347 EUR</span>
-            </p>
-
-            {/* Divider */}
-            <div className="my-7 border-t border-white/10" />
-
-            {/* Checklist */}
-            <ul className="space-y-3.5">
-              {CHECKLIST.map((item) => (
-                <li key={item} className="flex items-start gap-3 text-sm text-white/80">
-                  <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" style={{ color: PRIMARY }} />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-
-            {/* CTA */}
-            <div className="mt-8">
-              <Link href={ctaHref}>
-                <a
-                  className="group flex w-full items-center justify-center gap-3 rounded-full py-4 text-sm font-semibold text-white transition-all hover:scale-[1.01]"
-                  style={{ backgroundColor: PRIMARY }}
-                >
-                  Obtenir mon protocole — 149 EUR
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                </a>
-              </Link>
-            </div>
-
-            {/* Fine print */}
-            <p className="mt-4 text-center text-xs text-white/35">
-              100% deductible du coaching · Paiement securise Stripe
-            </p>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ================================================================ */}
-      {/* FAQ */}
-      {/* ================================================================ */}
-      <section className="py-24 px-6">
-        <div className="mx-auto max-w-3xl">
-          <div className="text-center">
-            <p
-              className="text-sm font-medium tracking-[0.2em] uppercase"
-              style={{ color: PRIMARY }}
-            >
-              FAQ
-            </p>
-            <h2 className="mt-5 text-4xl md:text-5xl font-semibold tracking-tight">Questions frequentes</h2>
-          </div>
-
-          <div className="mt-12 rounded-xl border border-white/10 bg-[#0a0a0a] px-8">
-            {FAQ.map((item, idx) => (
-              <FAQItem key={item.q} q={item.q} a={item.a} index={idx} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ================================================================ */}
-      {/* FINAL CTA */}
-      {/* ================================================================ */}
-      <section className="bg-[#0a0a0a] py-24 px-6">
-        <div className="mx-auto max-w-4xl text-center">
-          <motion.blockquote
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="text-2xl md:text-3xl font-medium leading-snug text-white/90 tracking-tight"
-          >
-            "Tu sais deja ce que tu veux prendre. Ce qu'il te manque, c'est le dosage exact
-            <br className="hidden md:block" />
-            et la certitude que tu ne fais pas de connerie."
-          </motion.blockquote>
-
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="mt-10"
-          >
-            <Link href={ctaHref}>
-              <a
-                className="group inline-flex items-center gap-3 rounded-full px-8 py-4 text-sm font-semibold text-white transition-all hover:scale-[1.02]"
-                style={{ backgroundColor: PRIMARY }}
-              >
-                Obtenir mon protocole — 149 EUR
-                <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
-              </a>
-            </Link>
-          </motion.div>
-
-          <p className="mt-5 text-xs text-white/35">
-            Livraison par email sous 48h · 2 bilans sanguins inclus · Paiement securise Stripe
-          </p>
-        </div>
-      </section>
+      <main>
+        <Hero />
+        <PriceComparison />
+        <DeliverablesSection />
+        <HowItWorks />
+        <ObjectivesSection />
+        <CredibilityBar />
+        <ScarcityGuarantee />
+        <FAQSection />
+        <FinalCTA />
+      </main>
 
       <Footer />
     </div>

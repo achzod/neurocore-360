@@ -353,13 +353,13 @@ export default function PeptidesEngineReport() {
           className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-8 text-center"
         >
           <h2 className="text-xl font-bold mb-2">Tu veux un suivi personnalise?</h2>
-          <p className="text-white/50 mb-4">Tes 149 EUR sont 100% deductibles du coaching Achzod.</p>
+          <p className="text-white/50 mb-4">Tes 299 EUR sont 100% deductibles du coaching Achzod.</p>
           <a href="https://www.achzodcoaching.com/formules-coaching"
              className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm text-black"
              style={{ background: AMBER }}>
             Voir le coaching
           </a>
-          <p className="text-white/30 text-xs font-mono mt-3">Code: PEPTIDES149</p>
+          <p className="text-white/30 text-xs font-mono mt-3">Code: PEPTIDES299</p>
         </motion.div>
       </div>
 
