@@ -430,11 +430,13 @@ function AngleAnalysisVisual() {
 // ANIMATED VISUALIZATION - Exercise Grid
 // ============================================================================
 function ExerciseGridVisual() {
-  const exercises = [
-    "SQUAT", "DEADLIFT", "BENCH", "OHP",
-    "ROW", "PULL-UP", "LUNGE", "RDL",
-    "CURL", "PRESS", "DIP", "THRUSTER",
-    "CLEAN", "SNATCH", "SWING", "PLANK",
+  const HYROX_COLOR = "#FF6B00";
+  const exercises: { name: string; hyrox?: boolean }[] = [
+    { name: "SQUAT" }, { name: "DEADLIFT" }, { name: "BENCH" }, { name: "OHP" },
+    { name: "ROW" }, { name: "PULL-UP" }, { name: "LUNGE" }, { name: "RDL" },
+    { name: "CURL" }, { name: "PRESS" }, { name: "DIP" }, { name: "THRUSTER" },
+    { name: "CLEAN" }, { name: "SNATCH" }, { name: "SWING" }, { name: "PLANK" },
+    { name: "WALL BALL", hyrox: true }, { name: "SKI ERG", hyrox: true }, { name: "SLED PUSH", hyrox: true }, { name: "BURPEE B.O.", hyrox: true },
   ];
 
   return (
@@ -443,16 +445,26 @@ function ExerciseGridVisual() {
         {exercises.map((exercise, i) => (
           <motion.div
             key={i}
-            className="flex items-center justify-center bg-black/40 border border-white/10 rounded text-[8px] sm:text-[9px] font-mono text-white/50"
+            className={`flex items-center justify-center bg-black/40 border rounded text-[8px] sm:text-[9px] font-mono ${exercise.hyrox ? 'border-[#FF6B00]/30' : 'border-white/10'} text-white/50`}
             animate={{
-              borderColor: [`rgba(255,255,255,0.1)`, `${ACCENT}60`, `rgba(255,255,255,0.1)`],
-              color: [`rgba(255,255,255,0.5)`, `${ACCENT}CC`, `rgba(255,255,255,0.5)`],
+              borderColor: exercise.hyrox
+                ? [`${HYROX_COLOR}30`, `${HYROX_COLOR}AA`, `${HYROX_COLOR}30`]
+                : [`rgba(255,255,255,0.1)`, `${ACCENT}60`, `rgba(255,255,255,0.1)`],
+              color: exercise.hyrox
+                ? [`${HYROX_COLOR}80`, `${HYROX_COLOR}`, `${HYROX_COLOR}80`]
+                : [`rgba(255,255,255,0.5)`, `${ACCENT}CC`, `rgba(255,255,255,0.5)`],
             }}
-            transition={{ duration: 2, repeat: Infinity, delay: i * 0.15 }}
+            transition={{ duration: 2, repeat: Infinity, delay: i * 0.12 }}
           >
-            {exercise}
+            {exercise.name}
           </motion.div>
         ))}
+      </div>
+
+      {/* Hyrox badge */}
+      <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2 py-1 rounded bg-[#FF6B00]/15 border border-[#FF6B00]/30">
+        <div className="w-1.5 h-1.5 rounded-full bg-[#FF6B00] animate-pulse" />
+        <span className="text-[8px] font-mono font-bold text-[#FF6B00] tracking-widest">HYROX</span>
       </div>
 
       <div className="absolute bottom-4 right-4 text-xs font-mono text-right" style={{ color: `${ACCENT}CC` }}>
@@ -460,7 +472,7 @@ function ExerciseGridVisual() {
           animate={{ opacity: [0.5, 1, 0.5] }}
           transition={{ duration: 1.5, repeat: Infinity }}
         >
-          20+ EXERCICES
+          TOUS EXERCICES
         </motion.div>
         <div className="text-white/40">SUPPORTES</div>
       </div>
@@ -976,7 +988,7 @@ export default function FormCheck() {
               viewport={{ once: true }}
             >
               <p className="text-sm font-medium tracking-[0.2em] uppercase mb-6" style={{ color: ACCENT }}>
-                20+ Exercices
+                Exercices supportes
               </p>
               <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6 leading-tight">
                 Tous tes lifts.
@@ -987,7 +999,7 @@ export default function FormCheck() {
                 Squat, deadlift, bench press, overhead press, barbell row, et bien plus.
                 Chaque exercice a ses propres references biomecaniques et criteres d'evaluation.
               </p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 mb-6">
                 {[
                   { icon: Dumbbell, label: "Squat (back, front, goblet)" },
                   { icon: Dumbbell, label: "Deadlift (conv, sumo, RDL)" },
@@ -1009,6 +1021,23 @@ export default function FormCheck() {
                   </motion.div>
                 ))}
               </div>
+
+              {/* Hyrox highlight */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.6 }}
+                className="p-4 rounded-lg border border-[#FF6B00]/30 bg-[#FF6B00]/5"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-2 h-2 rounded-full bg-[#FF6B00] animate-pulse" />
+                  <span className="text-xs font-mono font-bold text-[#FF6B00] uppercase tracking-widest">Hyrox Ready</span>
+                </div>
+                <p className="text-white/50 text-sm">
+                  Wall ball, ski erg, sled push, burpee broad jump — tous les exos Hyrox sont supportes avec leurs propres criteres.
+                </p>
+              </motion.div>
             </motion.div>
 
             <motion.div
