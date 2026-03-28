@@ -75,10 +75,10 @@ const OFFERS: Offer[] = [
   {
     id: 'formcheck',
     title: "FORMCHECK",
-    subtitle: "Analyse Biomécanique par WhatsApp",
-    description: "Envoie une vidéo de ton exercice par WhatsApp et reçois une analyse biomécanique complète en quelques minutes. Score de forme 0-100, détection automatique de l'exercice, corrections prioritaires avec angles articulaires, exercices correctifs personnalisés et rapport HTML premium. Plus de 20 exercices supportés: squat, bench press, deadlift, overhead press, row, et bien plus.",
-    features: ["Score de forme 0-100", "Détection automatique d'exercice", "Corrections prioritaires", "20+ exercices supportés"],
-    price: "1 analyse gratuite",
+    subtitle: "L'analyse biomecanique que tu aurais voulu avoir a chaque serie",
+    description: "Tu filmes ta serie. Tu envoies sur WhatsApp. Tu recois un rapport que meme ton kine du sport ne te ferait pas entre deux rendez-vous. Score sur 100, corrections biomecaniques avec mecanismes articulaires, analyse rep par rep, tempo et controle, compensations detectees, plan d'action en 3 points. Tous les exercices de ta salle supportes — squat, bench, deadlift, row, pull-up, et 50+ autres. Detection automatique.",
+    features: ["Corrections biomecaniques precisees", "Analyse rep par rep", "Compensations detectees", "50+ exercices supportes"],
+    price: "1ere analyse gratuite",
     imageUrl: "",
     reverse: false,
     useCustomVisual: true,
@@ -215,116 +215,107 @@ function DNAHelix() {
 }
 
 // ============================================================================
-// FORMCHECK VISUAL (for FormCheck card)
+// FORMCHECK VISUAL (from formcheckhomepage)
 // ============================================================================
+const FC_TRANSITION = { duration: 1.5, repeat: Infinity, repeatType: "reverse" as const, ease: "easeInOut" };
+
 function FormCheckVisual() {
-  const exercises = [
-    "SQUAT", "BENCH", "DEADLIFT", "OHP",
-    "ROW", "CURL", "LUNGE", "PULLUP",
-    "DIP", "PRESS", "RDL", "SHRUG",
-  ];
-
   return (
-    <div className="relative w-full h-full bg-gradient-to-br from-green-950 via-black to-emerald-900 flex items-center justify-center overflow-hidden">
-      {/* Background glow */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(37,211,102,0.12)_0%,_transparent_70%)]" />
+    <div className="relative w-full h-full bg-black/40 overflow-hidden flex items-center justify-center">
+      {/* Grid background */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#10b98110_1px,transparent_1px),linear-gradient(to_bottom,#10b98110_1px,transparent_1px)] bg-[size:2rem_2rem]" />
 
-      {/* Stick figure with angle arcs */}
-      <svg viewBox="0 0 200 280" className="relative w-[160px] h-[220px]" fill="none">
-        {/* Head */}
-        <circle cx="100" cy="40" r="14" stroke="#25D366" strokeWidth="2" fill="none" />
-        {/* Torso */}
-        <line x1="100" y1="54" x2="100" y2="140" stroke="#25D366" strokeWidth="2" />
-        {/* Arms */}
-        <line x1="100" y1="75" x2="60" y2="110" stroke="#25D366" strokeWidth="2" />
-        <line x1="100" y1="75" x2="140" y2="110" stroke="#25D366" strokeWidth="2" />
-        {/* Legs - squat position */}
-        <line x1="100" y1="140" x2="70" y2="200" stroke="#25D366" strokeWidth="2" />
-        <line x1="100" y1="140" x2="130" y2="200" stroke="#25D366" strokeWidth="2" />
-        <line x1="70" y1="200" x2="55" y2="260" stroke="#25D366" strokeWidth="2" />
-        <line x1="130" y1="200" x2="145" y2="260" stroke="#25D366" strokeWidth="2" />
-
-        {/* Angle arc - knee */}
-        <motion.path
-          d="M 85 170 A 30 30 0 0 1 70 200"
-          stroke="#ef4444"
-          strokeWidth="2"
-          fill="none"
-          animate={{ opacity: [0.4, 1, 0.4] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        />
-        <motion.text x="58" y="178" fill="#ef4444" fontSize="10" fontFamily="monospace"
-          animate={{ opacity: [0.5, 1, 0.5] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        >
-          72°
-        </motion.text>
-
-        {/* Angle arc - hip */}
-        <motion.path
-          d="M 100 120 A 25 25 0 0 0 85 140"
-          stroke="#22c55e"
-          strokeWidth="2"
-          fill="none"
-          animate={{ opacity: [0.4, 1, 0.4] }}
-          transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
-        />
-        <motion.text x="108" y="132" fill="#22c55e" fontSize="10" fontFamily="monospace"
-          animate={{ opacity: [0.5, 1, 0.5] }}
-          transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
-        >
-          95°
-        </motion.text>
-
-        {/* Joint dots */}
-        {[[100, 75], [70, 200], [130, 200], [100, 140]].map(([cx, cy], i) => (
-          <motion.circle
-            key={i}
-            cx={cx}
-            cy={cy}
-            r="4"
-            fill="#25D366"
-            animate={{ scale: [1, 1.4, 1], opacity: [0.6, 1, 0.6] }}
-            transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.2 }}
-          />
-        ))}
-      </svg>
-
-      {/* Exercise tiles */}
-      <div className="absolute bottom-4 left-4 right-4 grid grid-cols-4 gap-1">
-        {exercises.map((ex, i) => (
-          <motion.div
-            key={ex}
-            className="text-center py-1 px-0.5 bg-green-900/40 border border-green-700/30 rounded-sm"
-            animate={{
-              borderColor: ['rgba(34,197,94,0.3)', 'rgba(37,211,102,0.8)', 'rgba(34,197,94,0.3)'],
-              backgroundColor: ['rgba(20,83,45,0.4)', 'rgba(20,83,45,0.7)', 'rgba(20,83,45,0.4)'],
-            }}
-            transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
-          >
-            <span className="font-mono text-[7px] text-green-400/80">{ex}</span>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Labels */}
-      <div className="absolute top-4 right-4 text-right">
-        <motion.div
-          className="font-mono text-xs text-green-400 font-bold"
-          animate={{ opacity: [0.6, 1, 0.6] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        >
-          SCORE: 87/100
-        </motion.div>
-        <div className="font-mono text-[8px] text-green-500/60 mt-1">FORM ANALYSIS</div>
-      </div>
-
-      {/* Scan line */}
+      {/* Scanning line */}
       <motion.div
-        className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-green-400 to-transparent"
-        animate={{ top: ['0%', '100%', '0%'] }}
+        className="absolute top-0 left-0 w-full h-[2px] bg-emerald-400/50 z-20"
+        style={{ boxShadow: '0 0 20px rgba(52,211,153,1)' }}
+        animate={{ y: ['0%', '400%', '0%'] }}
         transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
       />
+
+      {/* SVG Animation */}
+      <svg viewBox="0 0 100 100" className="w-full h-full absolute inset-0 overflow-visible p-8 z-10">
+        {/* Balance Line */}
+        <line x1="54" y1="5" x2="54" y2="95" stroke="#10b981" strokeWidth="0.5" strokeDasharray="2 2" className="opacity-40" />
+
+        {/* Trajectory Path (Hip) */}
+        <path d="M 50 40 Q 45 55 40 70" fill="none" stroke="#10b981" strokeWidth="0.5" strokeDasharray="1 2" className="opacity-50" />
+
+        {/* Barbell */}
+        <motion.line
+          stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round"
+          animate={{ x1: [30, 35, 30], y1: [15, 50, 15], x2: [70, 75, 70], y2: [15, 50, 15] }}
+          transition={FC_TRANSITION}
+        />
+
+        {/* Spine */}
+        <motion.line stroke="#10b981" strokeWidth="2" strokeLinecap="round"
+          animate={{ x1: [50, 55, 50], y1: [15, 50, 15], x2: [50, 40, 50], y2: [40, 70, 40] }} transition={FC_TRANSITION} />
+        {/* Thigh */}
+        <motion.line stroke="#10b981" strokeWidth="2" strokeLinecap="round"
+          animate={{ x1: [50, 40, 50], y1: [40, 70, 40], x2: [50, 65, 50], y2: [65, 70, 65] }} transition={FC_TRANSITION} />
+        {/* Calf */}
+        <motion.line stroke="#10b981" strokeWidth="2" strokeLinecap="round"
+          animate={{ x1: [50, 65, 50], y1: [65, 70, 65], x2: [50, 50, 50], y2: [90, 90, 90] }} transition={FC_TRANSITION} />
+        {/* Foot */}
+        <motion.line stroke="#10b981" strokeWidth="2" strokeLinecap="round"
+          animate={{ x1: [50, 50, 50], y1: [90, 90, 90], x2: [58, 58, 58], y2: [90, 90, 90] }} transition={FC_TRANSITION} />
+
+        {/* Arm (Upper) */}
+        <motion.line stroke="#059669" strokeWidth="1.5" strokeLinecap="round"
+          animate={{ x1: [50, 55, 50], y1: [15, 50, 15], x2: [55, 60, 55], y2: [25, 60, 25] }} transition={FC_TRANSITION} />
+        {/* Arm (Lower) */}
+        <motion.line stroke="#059669" strokeWidth="1.5" strokeLinecap="round"
+          animate={{ x1: [55, 60, 55], y1: [25, 60, 25], x2: [60, 65, 60], y2: [15, 50, 15] }} transition={FC_TRANSITION} />
+
+        {/* Head */}
+        <motion.circle r="4" fill="#050505" stroke="#10b981" strokeWidth="1.5"
+          animate={{ cx: [50, 60, 50], cy: [5, 40, 5] }} transition={FC_TRANSITION} />
+        {/* Shoulder */}
+        <motion.circle r="1.5" fill="#fff" animate={{ cx: [50, 55, 50], cy: [15, 50, 15] }} transition={FC_TRANSITION} />
+        {/* Hip */}
+        <motion.circle r="1.5" fill="#fff" animate={{ cx: [50, 40, 50], cy: [40, 70, 40] }} transition={FC_TRANSITION} />
+        {/* Knee */}
+        <motion.circle r="1.5" fill="#fff" animate={{ cx: [50, 65, 50], cy: [65, 70, 65] }} transition={FC_TRANSITION} />
+        {/* Ankle */}
+        <motion.circle r="1.5" fill="#fff" animate={{ cx: [50, 50, 50], cy: [90, 90, 90] }} transition={FC_TRANSITION} />
+
+        {/* Dynamic Angle Arc (Knee) */}
+        <motion.circle
+          r="6" fill="none" stroke="rgba(16,185,129,0.4)" strokeWidth="1" strokeDasharray="2 4"
+          animate={{ cx: [50, 65, 50], cy: [65, 70, 65], scale: [1, 1.5, 1], opacity: [0, 1, 0] }}
+          transition={FC_TRANSITION}
+        />
+      </svg>
+
+      {/* UI Overlays */}
+      <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md border border-emerald-500/30 rounded-lg p-2.5 flex flex-col gap-0.5 z-30">
+        <div className="flex items-center gap-1.5 mb-0.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-[8px] text-emerald-500 font-mono uppercase tracking-wider">Analyse en cours</span>
+        </div>
+        <span className="text-2xl font-bold text-white tracking-tighter">98<span className="text-xs text-slate-400 font-normal">/100</span></span>
+        <span className="text-[10px] text-emerald-400">Excellente posture</span>
+      </div>
+
+      <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-md border border-emerald-500/30 rounded-lg p-2.5 flex flex-col gap-0.5 z-30 items-end">
+        <span className="text-[8px] text-slate-400 font-mono uppercase tracking-wider">Angle Genou</span>
+        <div className="relative h-6 w-14 flex items-center justify-end">
+          <motion.span className="text-lg font-bold text-white absolute" animate={{ opacity: [0, 1, 0] }} transition={FC_TRANSITION}>85°</motion.span>
+          <motion.span className="text-lg font-bold text-white absolute" animate={{ opacity: [1, 0, 1] }} transition={FC_TRANSITION}>175°</motion.span>
+        </div>
+      </div>
+
+      <div className="absolute top-1/2 right-3 -translate-y-1/2 flex flex-col gap-1.5 z-30">
+        <div className="bg-black/60 backdrop-blur-md border border-emerald-500/30 rounded p-1.5 flex items-center gap-1.5">
+          <div className="w-1 h-1 rounded-full bg-emerald-500" />
+          <span className="text-[7px] text-white font-mono uppercase">Dos droit</span>
+        </div>
+        <div className="bg-black/60 backdrop-blur-md border border-emerald-500/30 rounded p-1.5 flex items-center gap-1.5">
+          <div className="w-1 h-1 rounded-full bg-emerald-500" />
+          <span className="text-[7px] text-white font-mono uppercase">Profondeur OK</span>
+        </div>
+      </div>
     </div>
   );
 }
