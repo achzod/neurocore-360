@@ -57,64 +57,129 @@ export interface PeptaurProduct {
   cheapestPriceUSD: number; // lowest single vial
   supplierCount: number;
   formFactor: "vial" | "cartridge";
-  category: "recovery" | "gh-secretagogue" | "fat-loss" | "sleep" | "cognitive" | "libido" | "skin" | "longevity" | "endurance" | "glp1" | "blend";
+  category: "recovery" | "gh-secretagogue" | "fat-loss" | "sleep" | "cognitive" | "libido" | "skin" | "longevity" | "endurance" | "glp1" | "blend" | "supplies" | "other";
 }
 
 export const PEPTAURA_CATALOG: PeptaurProduct[] = [
-  // ── Recovery ──
+  // ══════════════════════════════════════════════════════════════════════════════
+  // RECOVERY & HEALING
+  // ══════════════════════════════════════════════════════════════════════════════
   { name: "BPC-157", slug: "BPC157", dosages: ["5mg", "10mg"], priceRangeUSD: "$9.65 - $266", cheapestSupplier: "Lumira", cheapestPriceUSD: 9.65, supplierCount: 13, formFactor: "vial", category: "recovery" },
   { name: "TB-500", slug: "TB500", dosages: ["5mg", "10mg"], priceRangeUSD: "$10.37 - $434", cheapestSupplier: "Lumira", cheapestPriceUSD: 10.37, supplierCount: 12, formFactor: "vial", category: "recovery" },
-  { name: "BPC-157 + TB-500 Blend", slug: "BPC157+TB500", dosages: ["combo"], priceRangeUSD: "$22.93 - $450", cheapestSupplier: "Lumira", cheapestPriceUSD: 22.93, supplierCount: 12, formFactor: "vial", category: "recovery" },
+  { name: "BPC-157 + TB-500 Blend", slug: "BPC157+TB500", dosages: ["combo"], priceRangeUSD: "$22.93 - $450", cheapestSupplier: "Lumira", cheapestPriceUSD: 22.93, supplierCount: 12, formFactor: "vial", category: "blend" },
   { name: "LL-37", slug: "LL-37", dosages: ["5mg", "10mg"], priceRangeUSD: "$20.38 - $210", cheapestSupplier: "Lumira", cheapestPriceUSD: 20.38, supplierCount: 11, formFactor: "vial", category: "recovery" },
   { name: "Thymosin Alpha-1", slug: "Thymosin Alpha-1", dosages: ["5mg", "10mg"], priceRangeUSD: "$19.66 - $280", cheapestSupplier: "Lumira", cheapestPriceUSD: 19.66, supplierCount: 11, formFactor: "vial", category: "recovery" },
+  { name: "KPV", slug: "KPV", dosages: ["10mg"], priceRangeUSD: "$12.38 - $112", cheapestSupplier: "Lumira", cheapestPriceUSD: 12.38, supplierCount: 10, formFactor: "vial", category: "recovery" },
+  { name: "VIP", slug: "VIP", dosages: ["5mg", "10mg"], priceRangeUSD: "$19.11 - $266", cheapestSupplier: "Lumira", cheapestPriceUSD: 19.11, supplierCount: 12, formFactor: "vial", category: "recovery" },
+  { name: "HCG", slug: "HCG", dosages: ["5000IU", "10000IU"], priceRangeUSD: "$18.02 - $239", cheapestSupplier: "Lumira", cheapestPriceUSD: 18.02, supplierCount: 11, formFactor: "vial", category: "recovery" },
+  { name: "Ara-290", slug: "Ara-290", dosages: ["5mg", "10mg"], priceRangeUSD: "$14.01 - $112", cheapestSupplier: "Lumira", cheapestPriceUSD: 14.01, supplierCount: 10, formFactor: "vial", category: "recovery" },
+  { name: "Cerebrolysin", slug: "Cerebrolysin", dosages: ["5ml", "10ml"], priceRangeUSD: "$15.11 - $116", cheapestSupplier: "Lumira", cheapestPriceUSD: 15.11, supplierCount: 11, formFactor: "vial", category: "recovery" },
+  { name: "Dermorphin", slug: "Dermorphin", dosages: ["5mg"], priceRangeUSD: "$54.60 - $105", cheapestSupplier: "VialForge", cheapestPriceUSD: 54.60, supplierCount: 7, formFactor: "vial", category: "recovery" },
 
-  // ── GH Secretagogues ──
+  // ══════════════════════════════════════════════════════════════════════════════
+  // GH SECRETAGOGUES
+  // ══════════════════════════════════════════════════════════════════════════════
   { name: "CJC-1295 (no DAC)", slug: "CJC-1295", dosages: ["2mg", "5mg", "10mg"], priceRangeUSD: "$18.02 - $228", cheapestSupplier: "Lumira", cheapestPriceUSD: 18.02, supplierCount: 12, formFactor: "vial", category: "gh-secretagogue" },
   { name: "CJC-1295 (with DAC)", slug: "CJC-1295 (DAC)", dosages: ["2mg", "5mg"], priceRangeUSD: "$33.67 - $420", cheapestSupplier: "Lumira", cheapestPriceUSD: 33.67, supplierCount: 11, formFactor: "vial", category: "gh-secretagogue" },
+  { name: "CJC-1295 + Ipamorelin Blend", slug: "CJC-1295 (no DAC) + Ipamorelin", dosages: ["combo"], priceRangeUSD: "$23.30 - $210", cheapestSupplier: "Lumira", cheapestPriceUSD: 23.30, supplierCount: 12, formFactor: "vial", category: "blend" },
   { name: "Ipamorelin", slug: "Ipamorelin", dosages: ["5mg", "10mg"], priceRangeUSD: "$8.92 - $210", cheapestSupplier: "Lumira", cheapestPriceUSD: 8.92, supplierCount: 13, formFactor: "vial", category: "gh-secretagogue" },
   { name: "Tesamorelin", slug: "Tesamorelin", dosages: ["2mg", "5mg", "10mg", "20mg"], priceRangeUSD: "$23.30 - $588", cheapestSupplier: "Lumira", cheapestPriceUSD: 23.30, supplierCount: 12, formFactor: "vial", category: "gh-secretagogue" },
   { name: "Sermorelin", slug: "Sermorelin", dosages: ["5mg", "10mg"], priceRangeUSD: "$54.60 - $232", cheapestSupplier: "VialForge", cheapestPriceUSD: 54.60, supplierCount: 3, formFactor: "vial", category: "gh-secretagogue" },
+  { name: "Sermorelin Acetate", slug: "Sermorelin Acetate", dosages: ["5mg", "10mg"], priceRangeUSD: "$17.11 - $266", cheapestSupplier: "Lumira", cheapestPriceUSD: 17.11, supplierCount: 8, formFactor: "vial", category: "gh-secretagogue" },
   { name: "Hexarelin", slug: "Hexarelin Acetate", dosages: ["5mg", "10mg"], priceRangeUSD: "$63.34 - $238", cheapestSupplier: "Lumira", cheapestPriceUSD: 63.34, supplierCount: 7, formFactor: "vial", category: "gh-secretagogue" },
+  { name: "GHRP-2", slug: "GHRP-2 Acetate", dosages: ["5mg", "10mg"], priceRangeUSD: "$36.40 - $98", cheapestSupplier: "NovaVial", cheapestPriceUSD: 36.40, supplierCount: 10, formFactor: "vial", category: "gh-secretagogue" },
+  { name: "GHRP-6", slug: "GHRP-6 Acetate", dosages: ["5mg", "10mg"], priceRangeUSD: "$7.64 - $98", cheapestSupplier: "Lumira", cheapestPriceUSD: 7.64, supplierCount: 10, formFactor: "vial", category: "gh-secretagogue" },
   { name: "HGH (Somatropin)", slug: "Somatropin (HGH)", dosages: ["6IU", "10IU", "12IU", "15IU", "24IU", "36IU"], priceRangeUSD: "$12.92 - $490", cheapestSupplier: "Lumira", cheapestPriceUSD: 12.92, supplierCount: 10, formFactor: "vial", category: "gh-secretagogue" },
+  { name: "HGH Fragment 176-191", slug: "HGH Fragment 176-191", dosages: ["5mg", "10mg"], priceRangeUSD: "$21.29 - $259", cheapestSupplier: "Lumira", cheapestPriceUSD: 21.29, supplierCount: 7, formFactor: "vial", category: "gh-secretagogue" },
   { name: "IGF-1 LR3", slug: "IGF-1LR3", dosages: ["1mg"], priceRangeUSD: "$8.92 - $360", cheapestSupplier: "Lumira", cheapestPriceUSD: 8.92, supplierCount: 10, formFactor: "vial", category: "gh-secretagogue" },
+  { name: "PEG-MGF", slug: "PEG MGF", dosages: ["2mg", "5mg"], priceRangeUSD: "$112 - $140", cheapestSupplier: "Ultrapept", cheapestPriceUSD: 112.00, supplierCount: 5, formFactor: "vial", category: "gh-secretagogue" },
+  { name: "HMG", slug: "HMG", dosages: ["75IU", "150IU"], priceRangeUSD: "$13.83 - $106", cheapestSupplier: "Lumira", cheapestPriceUSD: 13.83, supplierCount: 9, formFactor: "vial", category: "gh-secretagogue" },
 
-  // ── Fat Loss ──
+  // ══════════════════════════════════════════════════════════════════════════════
+  // FAT LOSS & GLP-1
+  // ══════════════════════════════════════════════════════════════════════════════
   { name: "AOD-9604", slug: "AOD-9604", dosages: ["5mg", "10mg"], priceRangeUSD: "$23.84 - $319", cheapestSupplier: "Lumira", cheapestPriceUSD: 23.84, supplierCount: 9, formFactor: "vial", category: "fat-loss" },
   { name: "5-Amino-1MQ", slug: "5-AMINO-1MQ", dosages: ["50mg", "100mg"], priceRangeUSD: "$10.37 - $252", cheapestSupplier: "Lumira", cheapestPriceUSD: 10.37, supplierCount: 12, formFactor: "vial", category: "fat-loss" },
   { name: "Semaglutide", slug: "Semaglutide", dosages: ["5mg", "10mg", "15mg", "20mg", "30mg"], priceRangeUSD: "$5.64 - $266", cheapestSupplier: "Lumira", cheapestPriceUSD: 5.64, supplierCount: 13, formFactor: "vial", category: "glp1" },
   { name: "Tirzepatide", slug: "Tirzepatide", dosages: ["5mg", "10mg", "15mg", "20mg", "30mg", "60mg", "100mg"], priceRangeUSD: "$9.65 - $671", cheapestSupplier: "Lumira", cheapestPriceUSD: 9.65, supplierCount: 13, formFactor: "vial", category: "glp1" },
-  { name: "Retatrutide", slug: "Retatrutide", dosages: ["5mg", "10mg", "15mg", "20mg", "30mg", "50mg"], priceRangeUSD: "$63 - $696", cheapestSupplier: "Lumira", cheapestPriceUSD: 63.00, supplierCount: 13, formFactor: "vial", category: "glp1" },
+  { name: "Retatrutide", slug: "Retatrutide", dosages: ["5mg", "10mg", "15mg", "20mg", "30mg", "50mg"], priceRangeUSD: "$13.65 - $735", cheapestSupplier: "Lumira", cheapestPriceUSD: 13.65, supplierCount: 13, formFactor: "vial", category: "glp1" },
   { name: "Cagrilintide", slug: "Cagrilintide", dosages: ["5mg", "10mg"], priceRangeUSD: "$30.76 - $389", cheapestSupplier: "Lumira", cheapestPriceUSD: 30.76, supplierCount: 13, formFactor: "vial", category: "glp1" },
+  { name: "Cagrilintide + Semaglutide Blend", slug: "Cagrilintide+Semaglutide", dosages: ["combo"], priceRangeUSD: "$193.70 - $350", cheapestSupplier: "Pepturion", cheapestPriceUSD: 193.70, supplierCount: 9, formFactor: "vial", category: "glp1" },
+  { name: "Mazdutide", slug: "Mazdutide", dosages: ["5mg", "10mg"], priceRangeUSD: "$154 - $322", cheapestSupplier: "Ultrapept", cheapestPriceUSD: 154.00, supplierCount: 6, formFactor: "vial", category: "glp1" },
+  { name: "Survodutide", slug: "Survodutide", dosages: ["5mg", "10mg"], priceRangeUSD: "$294 - $521", cheapestSupplier: "HelixBridge", cheapestPriceUSD: 294.00, supplierCount: 9, formFactor: "vial", category: "glp1" },
+  { name: "L-Carnitine", slug: "L-Carnitine", dosages: ["500mg", "1000mg"], priceRangeUSD: "$10.37 - $126", cheapestSupplier: "Lumira", cheapestPriceUSD: 10.37, supplierCount: 3, formFactor: "vial", category: "fat-loss" },
+  { name: "Lipo-C", slug: "Lipo c", dosages: ["10ml"], priceRangeUSD: "$12.92 - $136", cheapestSupplier: "Lumira", cheapestPriceUSD: 12.92, supplierCount: 6, formFactor: "vial", category: "fat-loss" },
 
-  // ── Sleep ──
+  // ══════════════════════════════════════════════════════════════════════════════
+  // SLEEP
+  // ══════════════════════════════════════════════════════════════════════════════
   { name: "DSIP", slug: "DSIP", dosages: ["5mg", "10mg"], priceRangeUSD: "$6.55 - $154", cheapestSupplier: "Lumira", cheapestPriceUSD: 6.55, supplierCount: 12, formFactor: "vial", category: "sleep" },
+  { name: "Melatonin", slug: "Melatonin", dosages: ["10mg"], priceRangeUSD: "$13.65 - $182", cheapestSupplier: "Lumira", cheapestPriceUSD: 13.65, supplierCount: 4, formFactor: "vial", category: "sleep" },
 
-  // ── Cognitive ──
+  // ══════════════════════════════════════════════════════════════════════════════
+  // COGNITIVE & NEUROPROTECTION
+  // ══════════════════════════════════════════════════════════════════════════════
   { name: "Semax", slug: "Semax", dosages: ["10mg", "30mg"], priceRangeUSD: "$9.65 - $266", cheapestSupplier: "Lumira", cheapestPriceUSD: 9.65, supplierCount: 13, formFactor: "vial", category: "cognitive" },
   { name: "Selank", slug: "Selank", dosages: ["10mg"], priceRangeUSD: "$9.28 - $252", cheapestSupplier: "Lumira", cheapestPriceUSD: 9.28, supplierCount: 10, formFactor: "vial", category: "cognitive" },
+  { name: "Adamax", slug: "Adamax", dosages: ["10mg"], priceRangeUSD: "$18.02 - $259", cheapestSupplier: "Lumira", cheapestPriceUSD: 18.02, supplierCount: 8, formFactor: "vial", category: "cognitive" },
   { name: "Pinealon", slug: "Pinealon", dosages: ["10mg", "20mg"], priceRangeUSD: "$9.46 - $203", cheapestSupplier: "Lumira", cheapestPriceUSD: 9.46, supplierCount: 8, formFactor: "vial", category: "cognitive" },
+  { name: "P21", slug: "P21", dosages: ["10mg", "20mg"], priceRangeUSD: "$56 - $539", cheapestSupplier: "Ultrapept", cheapestPriceUSD: 56.00, supplierCount: 6, formFactor: "vial", category: "cognitive" },
+  { name: "PE 22-28", slug: "PE 22-28", dosages: ["10mg"], priceRangeUSD: "$106 - $126", cheapestSupplier: "VialForge", cheapestPriceUSD: 106.40, supplierCount: 5, formFactor: "vial", category: "cognitive" },
+  { name: "Oxytocin", slug: "Oxytocin Acetate", dosages: ["5mg", "10mg"], priceRangeUSD: "$8.92 - $126", cheapestSupplier: "Lumira", cheapestPriceUSD: 8.92, supplierCount: 8, formFactor: "vial", category: "cognitive" },
+  { name: "KissPeptin-10", slug: "KissPeptin-10", dosages: ["5mg", "10mg"], priceRangeUSD: "$12.74 - $172", cheapestSupplier: "Lumira", cheapestPriceUSD: 12.74, supplierCount: 12, formFactor: "vial", category: "cognitive" },
 
-  // ── Libido ──
+  // ══════════════════════════════════════════════════════════════════════════════
+  // LIBIDO & SEXUAL
+  // ══════════════════════════════════════════════════════════════════════════════
   { name: "PT-141", slug: "PT-141", dosages: ["10mg"], priceRangeUSD: "$14.38 - $111", cheapestSupplier: "Lumira", cheapestPriceUSD: 14.38, supplierCount: 11, formFactor: "vial", category: "libido" },
   { name: "Melanotan II", slug: "MT-2", dosages: ["10mg"], priceRangeUSD: "$10.74 - $84", cheapestSupplier: "Lumira", cheapestPriceUSD: 10.74, supplierCount: 12, formFactor: "vial", category: "libido" },
+  { name: "Melanotan I", slug: "MT-1", dosages: ["10mg"], priceRangeUSD: "$10.74 - $84", cheapestSupplier: "Lumira", cheapestPriceUSD: 10.74, supplierCount: 7, formFactor: "vial", category: "skin" },
 
-  // ── Skin / Anti-aging ──
+  // ══════════════════════════════════════════════════════════════════════════════
+  // SKIN, HAIR & ANTI-AGING
+  // ══════════════════════════════════════════════════════════════════════════════
   { name: "GHK-Cu", slug: "GHK-Cu", dosages: ["50mg", "100mg"], priceRangeUSD: "$7.64 - $126", cheapestSupplier: "Lumira", cheapestPriceUSD: 7.64, supplierCount: 13, formFactor: "vial", category: "skin" },
-  { name: "Epitalon", slug: "Epitalon", dosages: ["10mg", "50mg"], priceRangeUSD: "$9.65 - $294", cheapestSupplier: "Lumira", cheapestPriceUSD: 9.65, supplierCount: 13, formFactor: "vial", category: "longevity" },
+  { name: "GHK", slug: "GHK", dosages: ["50mg", "100mg"], priceRangeUSD: "$70 - $83", cheapestSupplier: "Ultrapept", cheapestPriceUSD: 70.00, supplierCount: 2, formFactor: "vial", category: "skin" },
+  { name: "AHK-Cu", slug: "AHK-Cu", dosages: ["50mg", "100mg"], priceRangeUSD: "$10.01 - $129", cheapestSupplier: "Lumira", cheapestPriceUSD: 10.01, supplierCount: 9, formFactor: "vial", category: "skin" },
+  { name: "Snap-8", slug: "Snap-8", dosages: ["50mg", "100mg"], priceRangeUSD: "$9.65 - $318", cheapestSupplier: "Lumira", cheapestPriceUSD: 9.65, supplierCount: 10, formFactor: "vial", category: "skin" },
+  { name: "Hyaluronic Acid", slug: "Hyaluronic Acid", dosages: ["100mg"], priceRangeUSD: "$29.41 - $259", cheapestSupplier: "Ultrapept", cheapestPriceUSD: 29.41, supplierCount: 7, formFactor: "vial", category: "skin" },
 
-  // ── Endurance / Mitochondria ──
+  // ══════════════════════════════════════════════════════════════════════════════
+  // LONGEVITY & MITOCHONDRIA
+  // ══════════════════════════════════════════════════════════════════════════════
+  { name: "Epitalon", slug: "Epitalon", dosages: ["10mg", "50mg"], priceRangeUSD: "$9.65 - $294", cheapestSupplier: "Lumira", cheapestPriceUSD: 9.65, supplierCount: 13, formFactor: "vial", category: "longevity" },
   { name: "SS-31 (Elamipretide)", slug: "SS-31", dosages: ["50mg"], priceRangeUSD: "$11.28 - $647", cheapestSupplier: "Lumira", cheapestPriceUSD: 11.28, supplierCount: 12, formFactor: "vial", category: "endurance" },
   { name: "MOTS-c", slug: "MOTS-c", dosages: ["10mg"], priceRangeUSD: "$15.83 - $336", cheapestSupplier: "Lumira", cheapestPriceUSD: 15.83, supplierCount: 10, formFactor: "vial", category: "longevity" },
   { name: "NAD+", slug: "NAD+", dosages: ["100mg", "250mg", "500mg"], priceRangeUSD: "$16.56 - $448", cheapestSupplier: "Lumira", cheapestPriceUSD: 16.56, supplierCount: 11, formFactor: "vial", category: "longevity" },
-
-  // ── Other ──
-  { name: "KPV", slug: "KPV", dosages: ["10mg"], priceRangeUSD: "$12.38 - $112", cheapestSupplier: "Lumira", cheapestPriceUSD: 12.38, supplierCount: 10, formFactor: "vial", category: "recovery" },
+  { name: "NAD+ (buffered)", slug: "NAD (buffered)", dosages: ["100mg", "250mg"], priceRangeUSD: "$10.01 - $133", cheapestSupplier: "Lumira", cheapestPriceUSD: 10.01, supplierCount: 2, formFactor: "vial", category: "longevity" },
   { name: "Glutathione", slug: "Glutathione", dosages: ["200mg", "500mg"], priceRangeUSD: "$7.10 - $196", cheapestSupplier: "Lumira", cheapestPriceUSD: 7.10, supplierCount: 8, formFactor: "vial", category: "longevity" },
-  { name: "HCG", slug: "HCG", dosages: ["5000IU", "10000IU"], priceRangeUSD: "$18.02 - $239", cheapestSupplier: "Lumira", cheapestPriceUSD: 18.02, supplierCount: 11, formFactor: "vial", category: "recovery" },
-  { name: "Oxytocin", slug: "Oxytocin Acetate", dosages: ["5mg", "10mg"], priceRangeUSD: "$8.92 - $126", cheapestSupplier: "Lumira", cheapestPriceUSD: 8.92, supplierCount: 8, formFactor: "vial", category: "cognitive" },
-  { name: "VIP (Vasoactive Intestinal Peptide)", slug: "VIP", dosages: ["5mg", "10mg"], priceRangeUSD: "$19.11 - $266", cheapestSupplier: "Lumira", cheapestPriceUSD: 19.11, supplierCount: 12, formFactor: "vial", category: "recovery" },
-  { name: "Snap-8", slug: "Snap-8", dosages: ["50mg", "100mg"], priceRangeUSD: "$9.65 - $318", cheapestSupplier: "Lumira", cheapestPriceUSD: 9.65, supplierCount: 10, formFactor: "vial", category: "skin" },
+  { name: "FOX04-DRI", slug: "FOX04-DRI", dosages: ["5mg", "10mg"], priceRangeUSD: "$952+", cheapestSupplier: "Ultrapept", cheapestPriceUSD: 952.00, supplierCount: 13, formFactor: "vial", category: "longevity" },
+  { name: "FOX04", slug: "FOX04", dosages: ["5mg", "10mg"], priceRangeUSD: "$231 - $952", cheapestSupplier: "Hebei Ktc", cheapestPriceUSD: 231.00, supplierCount: 7, formFactor: "vial", category: "longevity" },
+  { name: "SLU-PP-332", slug: "SLU-PP-332", dosages: ["50mg", "100mg"], priceRangeUSD: "$28.76 - $221", cheapestSupplier: "Lumira", cheapestPriceUSD: 28.76, supplierCount: 4, formFactor: "vial", category: "endurance" },
+  { name: "PNC-27", slug: "PNC-27", dosages: ["5mg", "10mg"], priceRangeUSD: "$126 - $280", cheapestSupplier: "Ultrapept", cheapestPriceUSD: 126.00, supplierCount: 4, formFactor: "vial", category: "longevity" },
+  { name: "GDF-8 (Myostatin inhibitor)", slug: "GDF-8", dosages: ["1mg"], priceRangeUSD: "$280 - $343", cheapestSupplier: "Hebei Ktc", cheapestPriceUSD: 280.00, supplierCount: 6, formFactor: "vial", category: "longevity" },
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // IMMUNE & THYMIC
+  // ══════════════════════════════════════════════════════════════════════════════
+  { name: "Thymalin", slug: "Thymalin", dosages: ["10mg", "20mg"], priceRangeUSD: "$15.11 - $448", cheapestSupplier: "Lumira", cheapestPriceUSD: 15.11, supplierCount: 13, formFactor: "vial", category: "recovery" },
+  { name: "Testagen", slug: "Testagen", dosages: ["10mg", "20mg"], priceRangeUSD: "$168 - $322", cheapestSupplier: "Ultrapept", cheapestPriceUSD: 168.00, supplierCount: 4, formFactor: "vial", category: "other" },
+  { name: "Vilon", slug: "Vilon", dosages: ["10mg", "20mg"], priceRangeUSD: "$168 - $179", cheapestSupplier: "Hebei Ktc", cheapestPriceUSD: 168.00, supplierCount: 6, formFactor: "vial", category: "longevity" },
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // BLENDS & PROPRIETARY
+  // ══════════════════════════════════════════════════════════════════════════════
+  { name: "GLOW (blend)", slug: "GLOW", dosages: ["combo"], priceRangeUSD: "$240.50 - $347", cheapestSupplier: "Railion Tech", cheapestPriceUSD: 240.50, supplierCount: 10, formFactor: "vial", category: "blend" },
+  { name: "KLOW (blend)", slug: "KLOW", dosages: ["combo"], priceRangeUSD: "$54.05 - $432", cheapestSupplier: "Lumira", cheapestPriceUSD: 54.05, supplierCount: 10, formFactor: "vial", category: "blend" },
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // SUPPLIES & EQUIPMENT
+  // ══════════════════════════════════════════════════════════════════════════════
+  { name: "BAC Water", slug: "BAC Water", dosages: ["10ml"], priceRangeUSD: "$2 - $24", cheapestSupplier: "Lumira", cheapestPriceUSD: 2.00, supplierCount: 11, formFactor: "vial", category: "supplies" },
+  { name: "Acetic Acid", slug: "Acetic Acid", dosages: ["10ml"], priceRangeUSD: "$3.46 - $31", cheapestSupplier: "Lumira", cheapestPriceUSD: 3.46, supplierCount: 7, formFactor: "vial", category: "supplies" },
+  { name: "B12", slug: "B12", dosages: ["5mg", "10mg"], priceRangeUSD: "$9.80 - $160", cheapestSupplier: "NovaVial", cheapestPriceUSD: 9.80, supplierCount: 4, formFactor: "vial", category: "other" },
 ];
+// Total: 74 products synced from peptaura.com (2026-03-28)
 
 // Build catalog summary for Claude prompt
 function buildCatalogForPrompt(): string {
