@@ -84,6 +84,18 @@ const OFFERS: Offer[] = [
     useCustomVisual: true,
     href: "/offers/formcheck"
   },
+  {
+    id: 'peptides-engine',
+    title: "PEPTIDES ENGINE",
+    subtitle: "La source secrete que personne ne partage",
+    description: "35 questions. Un protocole peptides sur mesure genere par IA avec dosages exacts ajustes a ton poids, guide de reconstitution calcule par molecule (BAC water, ml, unites seringue), calendrier hebdomadaire AM/PM, et acces direct a ma source labo ou BPC-157 coute $9.65 au lieu de 80€, Retatrutide $13.65 au lieu de 300€, Semaglutide $5.64 au lieu de 200€. Tu economises 920€ des le 1er cycle. 2 Blood Analyses incluses. 74 molecules disponibles. 15 protocoles/mois max.",
+    features: ["74 molecules au catalogue", "Economie 60-90% vs revendeurs", "2 Blood Analyses incluses", "Guide reconstitution calcule"],
+    price: "299€",
+    imageUrl: "",
+    reverse: true,
+    useCustomVisual: true,
+    href: "/offers/peptides-engine"
+  },
 ];
 
 // ============================================================================
@@ -314,6 +326,75 @@ function FormCheckVisual() {
         <div className="bg-black/60 backdrop-blur-md border border-emerald-500/30 rounded p-1.5 flex items-center gap-1.5">
           <div className="w-1 h-1 rounded-full bg-emerald-500" />
           <span className="text-[7px] text-white font-mono uppercase">Profondeur OK</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// PEPTIDES ENGINE VISUAL (for homepage card)
+// ============================================================================
+function PeptidesEngineVisual() {
+  const MOLECULES = [
+    { name: "BPC-157", price: "$9.65", savings: "-88%", y: 15 },
+    { name: "TB-500", price: "$10.37", savings: "-89%", y: 30 },
+    { name: "GHK-Cu", price: "$7.64", savings: "-94%", y: 45 },
+    { name: "SEMA", price: "$5.64", savings: "-97%", y: 60 },
+    { name: "RETA", price: "$13.65", savings: "-96%", y: 75 },
+  ];
+
+  return (
+    <div className="relative w-full h-full bg-[#050505] overflow-hidden">
+      {/* Amber grid bg */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#f59e0b08_1px,transparent_1px),linear-gradient(to_bottom,#f59e0b08_1px,transparent_1px)] bg-[size:2rem_2rem]" />
+      {/* Glow */}
+      <motion.div className="absolute inset-0 m-auto w-3/4 h-3/4 rounded-full blur-[80px] pointer-events-none bg-amber-500"
+        animate={{ scale: [0.8,1.1,0.8], opacity: [0.04,0.12,0.04] }}
+        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }} />
+      {/* Scan line */}
+      <motion.div className="absolute left-0 right-0 h-[2px] bg-amber-500/50 z-20"
+        style={{ boxShadow: '0 0 15px rgba(245,158,11,0.8)' }}
+        animate={{ top: ['5%','95%','5%'] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "linear" }} />
+
+      {/* Top labels */}
+      <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5">
+        <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+        <span className="font-mono text-[9px] text-amber-500 uppercase tracking-widest">74 Molecules</span>
+      </div>
+      <div className="absolute top-3 right-3 z-20 text-right">
+        <div className="font-mono text-[10px] text-amber-400">SOURCE SECRETE</div>
+        <div className="font-mono text-[8px] text-gray-500">PEPTAURA.COM</div>
+      </div>
+
+      {/* Molecule price ticker */}
+      <div className="absolute inset-0 flex flex-col justify-center px-4 z-10 gap-1">
+        {MOLECULES.map((mol, i) => (
+          <motion.div key={mol.name}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: [0.4, 1, 0.4], x: 0 }}
+            transition={{ duration: 3, repeat: Infinity, delay: i * 0.6, ease: "easeInOut" }}
+            className="flex items-center justify-between bg-black/60 backdrop-blur border border-amber-500/20 rounded px-3 py-1.5"
+          >
+            <span className="font-mono text-[10px] text-white font-bold">{mol.name}</span>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-[10px] text-amber-400 font-bold">{mol.price}</span>
+              <span className="font-mono text-[9px] text-emerald-400 font-bold">{mol.savings}</span>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Bottom */}
+      <div className="absolute bottom-3 left-3 right-3 z-20 flex justify-between items-end">
+        <div>
+          <div className="font-mono text-[8px] text-gray-500">ECONOMIE 1er CYCLE</div>
+          <div className="font-mono text-sm text-amber-400 font-bold">920€</div>
+        </div>
+        <div className="text-right">
+          <div className="font-mono text-[8px] text-gray-500">PROTOCOLE</div>
+          <div className="font-mono text-sm text-white font-bold">299€</div>
         </div>
       </div>
     </div>
@@ -782,6 +863,8 @@ function OfferCard({ offer, index }: { offer: Offer; index: number }) {
             {/* Main Image or Custom Visual */}
             {useCustomVisual && offer.id === 'formcheck' ? (
               <FormCheckVisual />
+            ) : useCustomVisual && offer.id === 'peptides-engine' ? (
+              <PeptidesEngineVisual />
             ) : useCustomVisual ? (
               <DNAHelix />
             ) : (

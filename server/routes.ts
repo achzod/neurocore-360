@@ -2757,7 +2757,7 @@ export async function registerRoutes(
         ELITE: process.env.VITE_STRIPE_PRICE_ULTIMATE,
         BURNOUT: process.env.STRIPE_BURNOUT_PRICE_ID,
         BLOOD_ANALYSIS: process.env.BLOOD_ANALYSIS_PRICE_ID || process.env.VITE_STRIPE_PRICE_BLOOD_ANALYSIS,
-        PEPTIDES_ENGINE: process.env.STRIPE_PEPTIDES_ENGINE_PRICE_ID,
+        PEPTIDES_ENGINE: process.env.STRIPE_PEPTIDES_ENGINE_PRICE_ID || "price_1TFzR9BTm0rdlVFq7HZDJQHs",
       };
       const priceId = clientPriceId || PRICE_ID_MAP[planType];
       if (!priceId) {
