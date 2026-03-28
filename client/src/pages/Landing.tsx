@@ -78,7 +78,7 @@ const OFFERS: Offer[] = [
     subtitle: "Analyse Biomécanique par WhatsApp",
     description: "Envoie une vidéo de ton exercice par WhatsApp et reçois une analyse biomécanique complète en quelques minutes. Score de forme 0-100, détection automatique de l'exercice, corrections prioritaires avec angles articulaires, exercices correctifs personnalisés et rapport HTML premium. Plus de 20 exercices supportés: squat, bench press, deadlift, overhead press, row, et bien plus.",
     features: ["Score de forme 0-100", "Détection automatique d'exercice", "Corrections prioritaires", "20+ exercices supportés"],
-    price: "Bientot disponible",
+    price: "1 analyse gratuite",
     imageUrl: "",
     reverse: false,
     useCustomVisual: true,
@@ -777,9 +777,9 @@ function OfferCard({ offer, index }: { offer: Offer; index: number }) {
               {offer.id === 'formcheck' ? (
                 <a
                   href={offer.href || "/offers/formcheck"}
-                  className="px-6 py-4 bg-[#25D366]/30 text-white/50 font-mono text-xs uppercase tracking-widest flex items-center gap-2 hover:text-white hover:bg-[#25D366]/50 transition-colors"
+                  className="px-6 py-4 bg-[#25D366] text-black font-mono text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-[#25D366]/80 transition-colors font-bold"
                 >
-                  Bientot disponible
+                  Commencer sur WhatsApp
                   <span>&gt;</span>
                 </a>
               ) : (
