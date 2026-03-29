@@ -620,9 +620,9 @@ async function callClaudeForPeptides(
   userPrompt: string
 ): Promise<string> {
   const client = getClient();
-  // Use configured model with sonnet fallback
-  const model = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5-20241022";
-  const fallback = "claude-sonnet-4-5-20241022";
+  // Use Sonnet 4.6 for peptides (fast, capable, cost-effective)
+  const model = "claude-sonnet-4-6";
+  const fallback = "claude-opus-4-6";
 
   for (let attempt = 1; attempt <= PEPTIDES_MAX_RETRIES; attempt++) {
     try {
