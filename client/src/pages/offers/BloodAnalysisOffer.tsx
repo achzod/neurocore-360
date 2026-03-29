@@ -219,7 +219,7 @@ const PDFExtractionAnimation = () => {
 
   return (
     <AnimationWrapper
-      title="Extraction IA"
+      title="Extraction PDF"
       value="39/39"
       status="Biomarqueurs detectes"
       color="cyan"
@@ -525,7 +525,7 @@ export default function BloodAnalysisOffer() {
   const { scrollYProgress } = useScroll();
   const heroGlow = useTransform(scrollYProgress, [0, 0.25], [0.9, 0.2]);
 
-  const ctaHref = "/auth/login?next=/blood-dashboard";
+  const ctaHref = "/blood-analysis";
   const trustRow = useMemo(
     () => [
       "Ranges numeriques precis",
@@ -720,6 +720,47 @@ export default function BloodAnalysisOffer() {
               </motion.div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* What to ask your doctor */}
+      <section className="py-20 px-6 border-t border-white/5">
+        <div className="mx-auto max-w-4xl">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-10">
+            <h2 className="text-3xl md:text-4xl font-semibold tracking-tight mb-4">Quoi demander a ton medecin ?</h2>
+            <p className="text-white/50 max-w-2xl mx-auto">Avant de payer, assure-toi d'avoir les bons marqueurs sur ton bilan. Voici ce que tu dois demander a ton medecin ou au laboratoire pour que l'analyse soit complete.</p>
+          </motion.div>
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-8">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="font-semibold text-white mb-3" style={{ color: PRIMARY_BLUE }}>Bilan hormonal</h3>
+                <p className="text-white/60 text-sm leading-relaxed">Testosterone totale et libre, SHBG, estradiol (E2), LH, FSH, prolactine, DHEA-S, cortisol matin, IGF-1.</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-white mb-3" style={{ color: PRIMARY_BLUE }}>Thyroide</h3>
+                <p className="text-white/60 text-sm leading-relaxed">TSH, T3 libre, T4 libre. Idealement aussi T3 reverse et anticorps anti-TPO.</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-white mb-3" style={{ color: PRIMARY_BLUE }}>Metabolisme</h3>
+                <p className="text-white/60 text-sm leading-relaxed">Glycemie a jeun, HbA1c, insuline a jeun (pour calculer le HOMA-IR). Triglycerides, HDL, LDL, ApoB.</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-white mb-3" style={{ color: PRIMARY_BLUE }}>Inflammation + fer</h3>
+                <p className="text-white/60 text-sm leading-relaxed">CRP ultrasensible, homocysteine, ferritine, fer serique, saturation de la transferrine.</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-white mb-3" style={{ color: PRIMARY_BLUE }}>Vitamines</h3>
+                <p className="text-white/60 text-sm leading-relaxed">Vitamine D (25-OH), vitamine B12, folates (B9), magnesium erythrocytaire, zinc.</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-white mb-3" style={{ color: PRIMARY_BLUE }}>Foie + reins</h3>
+                <p className="text-white/60 text-sm leading-relaxed">ALAT, ASAT, GGT (foie). Creatinine et DFG estime (reins).</p>
+              </div>
+            </div>
+            <div className="mt-6 p-4 bg-white/5 rounded-xl">
+              <p className="text-white/50 text-xs leading-relaxed"><strong className="text-white/70">Astuce :</strong> Imprime cette liste et montre-la a ton medecin. Dis-lui que tu veux un bilan complet pour optimisation de la sante. La plupart des marqueurs sont rembourses par la Secu sur prescription.</p>
+            </div>
+          </motion.div>
         </div>
       </section>
 
