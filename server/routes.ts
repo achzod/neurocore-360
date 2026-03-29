@@ -1508,7 +1508,6 @@ export async function registerRoutes(
                 }));
 
           const mappedReport = {
-            _version: "2026-03-29-html-fallback",
             global: globalScore,
             heroSummary: dashboard.resumeExecutif || "",
             executiveNarrative: dashboard.resumeExecutif || "",
