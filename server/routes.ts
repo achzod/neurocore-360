@@ -2049,6 +2049,19 @@ export async function registerRoutes(
     }
   });
 
+  // Admin: reset scheduledFor on an audit (force immediate delivery)
+  app.post("/api/admin/reset-scheduled", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { auditId } = req.body;
+      if (!auditId) { res.status(400).json({ error: "auditId requis" }); return; }
+      await storage.updateAudit(auditId, { reportScheduledFor: null as any });
+      res.json({ success: true, message: `scheduledFor reset for ${auditId}` });
+    } catch (error) {
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
   // Force restart stuck GENERATING jobs
   app.post("/api/admin/force-restart-stuck-jobs", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
