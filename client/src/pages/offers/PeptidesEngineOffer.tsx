@@ -29,6 +29,10 @@ import {
   Pill,
   Users,
   Clock,
+  Network,
+  ShieldCheck,
+  Calculator,
+  GitMerge,
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -423,6 +427,439 @@ function PriceComparison() {
             des le 1er cycle. Et chaque cycle apres. Le protocole se rembourse en <span className="font-bold" style={{ color: PRIMARY }}>une seule commande</span>.
           </p>
         </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// ANIMATED FEATURE CARDS — components adapted from peptides-ref/src/App.tsx
+// ============================================================================
+
+const AnimationWrapper = ({ children, title, value, status, extraUI, color = "cyan" }: {
+  children: React.ReactNode;
+  title: string;
+  value: string;
+  status: string;
+  extraUI?: React.ReactNode;
+  color?: "cyan" | "red" | "green" | "yellow";
+}) => {
+  const colorMap: Record<string, string> = {
+    cyan: "border-cyan-500/20 shadow-[0_0_50px_rgba(6,182,212,0.1)]",
+    red: "border-red-500/20 shadow-[0_0_50px_rgba(239,68,68,0.1)]",
+    green: "border-green-500/20 shadow-[0_0_50px_rgba(34,197,94,0.1)]",
+    yellow: "border-yellow-500/20 shadow-[0_0_50px_rgba(234,179,8,0.1)]",
+  };
+  const scanlineMap: Record<string, string> = {
+    cyan: "bg-cyan-400/50 shadow-[0_0_20px_rgba(6,182,212,1)]",
+    red: "bg-red-400/50 shadow-[0_0_20px_rgba(239,68,68,1)]",
+    green: "bg-green-400/50 shadow-[0_0_20px_rgba(34,197,94,1)]",
+    yellow: "bg-yellow-400/50 shadow-[0_0_20px_rgba(234,179,8,1)]",
+  };
+  const textMap: Record<string, string> = {
+    cyan: "text-cyan-500",
+    red: "text-red-500",
+    green: "text-green-500",
+    yellow: "text-yellow-500",
+  };
+  const dotMap: Record<string, string> = {
+    cyan: "bg-cyan-500",
+    red: "bg-red-500",
+    green: "bg-green-500",
+    yellow: "bg-yellow-500",
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95, y: 20 }}
+      whileInView={{ opacity: 1, scale: 1, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+      className={`relative w-full max-w-lg aspect-square md:aspect-[4/5] rounded-3xl border bg-black/50 backdrop-blur-2xl overflow-hidden flex items-center justify-center group ${colorMap[color]}`}
+    >
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:1.5rem_1.5rem]" />
+      <motion.div
+        className={`absolute top-0 left-0 w-full h-[2px] z-20 ${scanlineMap[color]}`}
+        animate={{ y: ["0%", "400%", "0%"] }}
+        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+      />
+
+      {children}
+
+      <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-md border border-white/10 rounded-lg p-3 flex flex-col gap-1 z-30">
+        <div className="flex items-center gap-2 mb-1">
+          <div className={`w-2 h-2 rounded-full animate-pulse ${dotMap[color]}`} />
+          <span className={`text-[10px] font-mono uppercase tracking-wider ${textMap[color]}`}>{title}</span>
+        </div>
+        <span className="text-3xl font-bold text-white tracking-tighter">{value}</span>
+        <span className="text-xs text-slate-400">{status}</span>
+      </div>
+
+      {extraUI}
+    </motion.div>
+  );
+};
+
+const ArsenalAnimation = () => {
+  const peptides = [
+    { name: "BPC-157", x: 20, y: 20, color: "#06b6d4", val: "100%" },
+    { name: "TB-500", x: 80, y: 20, color: "#ef4444", val: "98%" },
+    { name: "RETATRUTIDE", x: 20, y: 80, color: "#eab308", val: "99%" },
+    { name: "GHK-CU", x: 80, y: 80, color: "#22c55e", val: "95%" },
+  ];
+
+  return (
+    <AnimationWrapper title="Arsenal" value="4" status="Composés Majeurs" color="cyan"
+      extraUI={
+        <div className="absolute bottom-4 left-4 bg-black/80 backdrop-blur-md border border-cyan-500/30 rounded p-2">
+          <span className="text-[10px] text-cyan-400 font-mono uppercase">Analyse: <span className="text-white font-bold">MULTI-CIBLES</span></span>
+        </div>
+      }
+    >
+      <svg viewBox="0 0 100 100" className="w-full h-full absolute inset-0 overflow-visible p-8 z-10">
+        {/* Radar Sweep */}
+        <motion.g animate={{ rotate: 360 }} transition={{ duration: 4, repeat: Infinity, ease: "linear" }} style={{ transformOrigin: "50px 50px" }}>
+          <path d="M 50 50 L 50 10 A 40 40 0 0 1 90 50 Z" fill="url(#radar-grad-arsenal)" className="opacity-30" />
+        </motion.g>
+        <defs>
+          <linearGradient id="radar-grad-arsenal" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="rgba(6,182,212,0.8)" />
+            <stop offset="100%" stopColor="rgba(6,182,212,0)" />
+          </linearGradient>
+        </defs>
+
+        {/* Center Crosshair */}
+        <circle cx="50" cy="50" r="10" fill="none" stroke="#06b6d4" strokeWidth="0.5" className="opacity-50" />
+        <circle cx="50" cy="50" r="2" fill="#06b6d4" className="drop-shadow-[0_0_5px_#06b6d4]" />
+        <line x1="50" y1="35" x2="50" y2="45" stroke="#06b6d4" strokeWidth="1" />
+        <line x1="50" y1="55" x2="50" y2="65" stroke="#06b6d4" strokeWidth="1" />
+        <line x1="35" y1="50" x2="45" y2="50" stroke="#06b6d4" strokeWidth="1" />
+        <line x1="55" y1="50" x2="65" y2="50" stroke="#06b6d4" strokeWidth="1" />
+
+        {/* Quadrant Targets */}
+        {peptides.map((pep, i) => (
+          <g key={i}>
+            <rect x={pep.x - 15} y={pep.y - 12} width="30" height="24" fill="rgba(0,0,0,0.6)" stroke={pep.color} strokeWidth="0.5" className="opacity-80" />
+            <path d={`M ${pep.x - 15} ${pep.y - 8} L ${pep.x - 15} ${pep.y - 12} L ${pep.x - 11} ${pep.y - 12}`} fill="none" stroke={pep.color} strokeWidth="1" />
+            <path d={`M ${pep.x + 15} ${pep.y - 8} L ${pep.x + 15} ${pep.y - 12} L ${pep.x + 11} ${pep.y - 12}`} fill="none" stroke={pep.color} strokeWidth="1" />
+            <path d={`M ${pep.x - 15} ${pep.y + 8} L ${pep.x - 15} ${pep.y + 12} L ${pep.x - 11} ${pep.y + 12}`} fill="none" stroke={pep.color} strokeWidth="1" />
+            <path d={`M ${pep.x + 15} ${pep.y + 8} L ${pep.x + 15} ${pep.y + 12} L ${pep.x + 11} ${pep.y + 12}`} fill="none" stroke={pep.color} strokeWidth="1" />
+            <text x={pep.x} y={pep.y - 2} fill="#fff" fontSize="3.5" textAnchor="middle" className="font-mono font-bold">{pep.name}</text>
+            <rect x={pep.x - 10} y={pep.y + 4} width="20" height="2" fill="rgba(255,255,255,0.1)" />
+            <motion.rect
+              x={pep.x - 10} y={pep.y + 4} height="2" fill={pep.color}
+              animate={{ width: [0, 20, 15, 20] }}
+              transition={{ duration: 3, repeat: Infinity, delay: i * 0.5 }}
+            />
+            <text x={pep.x} y={pep.y + 9} fill={pep.color} fontSize="2.5" textAnchor="middle" className="font-mono">{pep.val} PURITY</text>
+            <motion.line
+              x1="50" y1="50" x2={pep.x} y2={pep.y}
+              stroke={pep.color} strokeWidth="0.5" strokeDasharray="2 2"
+              animate={{ strokeDashoffset: [0, -20], opacity: [0.2, 0.8, 0.2] }}
+              transition={{ duration: 2, repeat: Infinity, delay: i * 0.2, ease: "linear" }}
+            />
+          </g>
+        ))}
+      </svg>
+    </AnimationWrapper>
+  );
+};
+
+const SourcingAnimation = () => {
+  return (
+    <AnimationWrapper title="Sourcing" value="99.9%" status="Pureté HPLC" color="green"
+      extraUI={
+        <div className="absolute bottom-4 right-4 bg-black/80 backdrop-blur-md border border-green-500/30 rounded p-2 flex flex-col items-end">
+          <span className="text-[10px] text-green-400 font-mono uppercase">Statut Fournisseur</span>
+          <span className="text-sm font-bold text-white">VÉRIFIÉ ACHZOD</span>
+        </div>
+      }
+    >
+      <svg viewBox="0 0 100 100" className="w-full h-full absolute inset-0 overflow-visible p-8 z-10">
+        {/* Network Map */}
+        <circle cx="50" cy="55" r="35" fill="none" stroke="#22c55e" strokeWidth="0.2" strokeDasharray="1 3" className="opacity-30" />
+        <circle cx="50" cy="55" r="20" fill="none" stroke="#22c55e" strokeWidth="0.2" strokeDasharray="1 3" className="opacity-30" />
+
+        {/* Scam Nodes (Red) */}
+        <circle cx="25" cy="35" r="2" fill="#ef4444" className="opacity-50" />
+        <text x="25" y="31" fill="#ef4444" fontSize="2.5" textAnchor="middle" className="font-mono">FAKE</text>
+        <circle cx="75" cy="75" r="2" fill="#ef4444" className="opacity-50" />
+        <text x="75" y="71" fill="#ef4444" fontSize="2.5" textAnchor="middle" className="font-mono">UNDERDOSED</text>
+
+        {/* Verified Node (Green) */}
+        <motion.circle cx="75" cy="35" r="4" fill="rgba(34,197,94,0.2)" stroke="#22c55e" strokeWidth="1" animate={{ scale: [1, 1.5, 1] }} transition={{ duration: 2, repeat: Infinity }} />
+        <circle cx="75" cy="35" r="2" fill="#22c55e" className="drop-shadow-[0_0_10px_#22c55e]" />
+        <text x="75" y="28" fill="#22c55e" fontSize="3" textAnchor="middle" className="font-mono font-bold">LABO PRIVÉ</text>
+
+        {/* User Node */}
+        <circle cx="25" cy="75" r="3" fill="#fff" />
+        <text x="25" y="82" fill="#fff" fontSize="3" textAnchor="middle" className="font-mono font-bold">TOI</text>
+
+        {/* Secure Connection Line */}
+        <motion.path
+          d="M 25 75 Q 50 55 75 35"
+          fill="none" stroke="#22c55e" strokeWidth="1.5" strokeDasharray="4 4"
+          animate={{ strokeDashoffset: [0, -20] }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+          className="drop-shadow-[0_0_5px_#22c55e]"
+        />
+
+        {/* Blocked Connection */}
+        <line x1="25" y1="75" x2="25" y2="35" stroke="#ef4444" strokeWidth="0.5" strokeDasharray="1 2" className="opacity-50" />
+        <line x1="22" y1="55" x2="28" y2="55" stroke="#ef4444" strokeWidth="1" />
+      </svg>
+    </AnimationWrapper>
+  );
+};
+
+const ReconstitutionAnimation = () => {
+  return (
+    <AnimationWrapper title="Mathématiques" value="0.01ml" status="Précision Requise" color="yellow"
+      extraUI={
+        <div className="absolute bottom-4 left-4 bg-black/80 backdrop-blur-md border border-yellow-500/30 rounded p-2">
+          <span className="text-[10px] text-yellow-400 font-mono uppercase">Calculateur: <span className="text-white font-bold">INTÉGRÉ</span></span>
+        </div>
+      }
+    >
+      <svg viewBox="0 0 100 100" className="w-full h-full absolute inset-0 overflow-visible p-8 z-10">
+        {/* Syringe Body */}
+        <rect x="40" y="20" width="20" height="50" rx="2" fill="rgba(255,255,255,0.05)" stroke="#eab308" strokeWidth="1" />
+        <rect x="48" y="70" width="4" height="15" fill="#eab308" />
+        <rect x="35" y="20" width="30" height="3" fill="#eab308" />
+
+        {/* Graduations */}
+        {[30, 40, 50, 60].map((y, i) => (
+          <line key={i} x1="40" y1={y} x2="45" y2={y} stroke="#eab308" strokeWidth="0.5" />
+        ))}
+
+        {/* Plunger & Liquid */}
+        <motion.rect
+          x="42" y="25" width="16" height="40" fill="rgba(234,179,8,0.3)"
+          animate={{ height: [40, 10, 40], y: [25, 55, 25] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.rect
+          x="42" y="23" width="16" height="2" fill="#eab308"
+          animate={{ y: [23, 53, 23] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        />
+
+        {/* Math Equations */}
+        <motion.text x="70" y="35" fill="#eab308" fontSize="4" className="font-mono font-bold" animate={{ opacity: [0, 1, 0] }} transition={{ duration: 2, repeat: Infinity, delay: 0 }}>10mg Vial</motion.text>
+        <motion.text x="70" y="45" fill="#fff" fontSize="4" className="font-mono" animate={{ opacity: [0, 1, 0] }} transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}>+ 2ml BAC</motion.text>
+        <motion.line x1="70" y1="50" x2="95" y2="50" stroke="#eab308" strokeWidth="0.5" animate={{ opacity: [0, 1, 0] }} transition={{ duration: 2, repeat: Infinity, delay: 1 }} />
+        <motion.text x="70" y="60" fill="#eab308" fontSize="4" className="font-mono font-bold drop-shadow-[0_0_5px_#eab308]" animate={{ opacity: [0, 1, 0] }} transition={{ duration: 2, repeat: Infinity, delay: 1.5 }}>= 500mcg/0.1ml</motion.text>
+      </svg>
+    </AnimationWrapper>
+  );
+};
+
+const SynergyAnimation = () => {
+  return (
+    <AnimationWrapper title="Pharmacocinétique" value="24/7" status="Couverture Récepteurs" color="red"
+      extraUI={
+        <div className="absolute bottom-4 right-4 bg-black/80 backdrop-blur-md border border-red-500/30 rounded p-2 flex flex-col items-end">
+          <span className="text-[10px] text-red-400 font-mono uppercase">Saturation</span>
+          <span className="text-sm font-bold text-white">OPTIMALE</span>
+        </div>
+      }
+    >
+      <svg viewBox="0 0 100 100" className="w-full h-full absolute inset-0 overflow-visible p-8 z-10">
+        {/* Grid */}
+        {[20, 40, 60, 80].map(y => (
+          <line key={`h-${y}`} x1="10" y1={y} x2="90" y2={y} stroke="#334155" strokeWidth="0.5" className="opacity-30" />
+        ))}
+        {[20, 40, 60, 80].map(x => (
+          <line key={`v-${x}`} x1={x} y1="10" x2={x} y2="90" stroke="#334155" strokeWidth="0.5" className="opacity-30" />
+        ))}
+
+        {/* Axes */}
+        <line x1="10" y1="90" x2="90" y2="90" stroke="#64748b" strokeWidth="1" />
+        <line x1="10" y1="90" x2="10" y2="10" stroke="#64748b" strokeWidth="1" />
+
+        {/* Optimal Zone */}
+        <rect x="10" y="30" width="80" height="30" fill="rgba(239,68,68,0.1)" />
+        <text x="88" y="45" fill="#ef4444" fontSize="3" className="font-mono font-bold" textAnchor="end">THERAPEUTIC WINDOW</text>
+
+        {/* Curve 1: Fast Acting (Red) */}
+        <path d="M 10 90 Q 20 20 30 60 T 50 80 T 70 85 T 90 90" fill="none" stroke="#ef4444" strokeWidth="1.5" className="drop-shadow-[0_0_5px_#ef4444]" />
+
+        {/* Curve 2: Slow Acting (Cyan) */}
+        <path d="M 10 90 Q 30 80 50 40 T 90 45" fill="none" stroke="#06b6d4" strokeWidth="1.5" className="drop-shadow-[0_0_5px_#06b6d4]" />
+
+        {/* Animated Playhead */}
+        <motion.g animate={{ x: [10, 90] }} transition={{ duration: 5, repeat: Infinity, ease: "linear" }}>
+          <line x1="0" y1="10" x2="0" y2="90" stroke="#fff" strokeWidth="0.5" className="drop-shadow-[0_0_5px_#fff]" />
+          <polygon points="-2,10 2,10 0,14" fill="#fff" />
+          <polygon points="-2,90 2,90 0,86" fill="#fff" />
+        </motion.g>
+
+        {/* Animated Intersection Dots */}
+        <motion.circle cx="10" cy="90" r="2" fill="#ef4444" className="drop-shadow-[0_0_5px_#ef4444]"
+          animate={{
+            cx: [10, 20, 30, 50, 70, 90],
+            cy: [90, 35, 60, 80, 85, 90],
+          }}
+          transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
+        />
+        <motion.circle cx="10" cy="90" r="2" fill="#06b6d4" className="drop-shadow-[0_0_5px_#06b6d4]"
+          animate={{
+            cx: [10, 30, 50, 70, 90],
+            cy: [90, 60, 40, 42.5, 45],
+          }}
+          transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
+        />
+
+        {/* Data Readout */}
+        <motion.g animate={{ opacity: [0.5, 1, 0.5] }} transition={{ duration: 2, repeat: Infinity }}>
+          <rect x="15" y="15" width="35" height="15" fill="rgba(0,0,0,0.8)" stroke="#334155" strokeWidth="0.5" rx="2" />
+          <text x="18" y="21" fill="#ef4444" fontSize="3" className="font-mono">PEAK: 2H</text>
+          <text x="18" y="26" fill="#06b6d4" fontSize="3" className="font-mono">HALF-LIFE: 48H</text>
+        </motion.g>
+      </svg>
+    </AnimationWrapper>
+  );
+};
+
+// ============================================================================
+// ANIMATED FEATURE SECTION
+// ============================================================================
+
+const FEATURE_CARDS = [
+  {
+    id: "arsenal",
+    title: "L'ARSENAL CHIMIQUE",
+    description:
+      "BPC-157 et TB-500 pour reparer tes tissus a une vitesse surhumaine. Retatrutide pour une fonte adipeuse extreme sans perte musculaire. GHK-Cu pour inverser le vieillissement cellulaire. Je te donne acces aux molecules les plus puissantes du marche.",
+    icon: Network,
+    animation: ArsenalAnimation,
+    color: "cyan" as const,
+    reverse: false,
+  },
+  {
+    id: "sourcing",
+    title: "SOURCING UNDERGROUND",
+    description:
+      "Le marche est rempli de fakes et de sous-dosages dangereux. Ne te fais plus arnaquer. Je te donne l'acces direct a mes fournisseurs prives, testes par spectrometrie de masse (HPLC). Economise des centaines d'euros en achetant a la source avec une purete garantie a 99%.",
+    icon: ShieldCheck,
+    animation: SourcingAnimation,
+    color: "green" as const,
+    reverse: true,
+  },
+  {
+    id: "reconstitution",
+    title: "PROTOCOLES & RECONSTITUTION",
+    description:
+      "Une erreur de calcul et tu ruines ton cycle. Fini les calculs hasardeux. Je te fournis les calculateurs exacts : volume d'eau bacteriostatique precis, conversion mg/mcg, et graduation millimetree sur seringue a insuline pour chaque peptide.",
+    icon: Calculator,
+    animation: ReconstitutionAnimation,
+    color: "yellow" as const,
+    reverse: false,
+  },
+  {
+    id: "synergy",
+    title: "SYNERGIE & TIMINGS",
+    description:
+      "Savoir quoi prendre ne suffit pas. Il faut savoir QUAND. Protocoles a jeun, fenetres post-workout, gestion stricte de la demi-vie et cycles de desensibilisation pour eviter la saturation des recepteurs. Je supervise tes cycles pour maximiser tes resultats.",
+    icon: GitMerge,
+    animation: SynergyAnimation,
+    color: "red" as const,
+    reverse: true,
+  },
+];
+
+const colorThemes = {
+  cyan: {
+    border: "border-cyan-900/30",
+    iconBg: "bg-cyan-500/10",
+    iconColor: "text-cyan-500",
+    shadow: "shadow-[0_0_30px_rgba(6,182,212,0.08)]",
+    hoverBorder: "hover:border-cyan-500/40",
+    gradient: "from-cyan-500/5",
+  },
+  green: {
+    border: "border-green-900/30",
+    iconBg: "bg-green-500/10",
+    iconColor: "text-green-500",
+    shadow: "shadow-[0_0_30px_rgba(34,197,94,0.08)]",
+    hoverBorder: "hover:border-green-500/40",
+    gradient: "from-green-500/5",
+  },
+  yellow: {
+    border: "border-yellow-900/30",
+    iconBg: "bg-yellow-500/10",
+    iconColor: "text-yellow-500",
+    shadow: "shadow-[0_0_30px_rgba(234,179,8,0.08)]",
+    hoverBorder: "hover:border-yellow-500/40",
+    gradient: "from-yellow-500/5",
+  },
+  red: {
+    border: "border-red-900/30",
+    iconBg: "bg-red-500/10",
+    iconColor: "text-red-500",
+    shadow: "shadow-[0_0_30px_rgba(239,68,68,0.08)]",
+    hoverBorder: "hover:border-red-500/40",
+    gradient: "from-red-500/5",
+  },
+};
+
+function AnimatedFeaturesSection() {
+  return (
+    <section className="py-24 px-6 bg-[#050505]">
+      <div className="mx-auto max-w-6xl">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mb-16 text-center"
+        >
+          <SectionLabel>Ce que contient ton protocole</SectionLabel>
+          <h2 className="mt-4 text-3xl font-bold text-white md:text-4xl">
+            La science derriere chaque decision
+          </h2>
+          <p className="mt-4 text-white/50 max-w-2xl mx-auto">
+            Chaque element de ton protocole est documente, calcule et verifie. Pas d'improvisation.
+          </p>
+        </motion.div>
+
+        <div className="space-y-10">
+          {FEATURE_CARDS.map((card, index) => {
+            const AnimComp = card.animation;
+            const IconComp = card.icon;
+            const theme = colorThemes[card.color];
+            return (
+              <motion.div
+                key={card.id}
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{ duration: 0.7, ease: "easeOut", delay: 0.1 }}
+                className={`relative flex flex-col ${card.reverse ? "lg:flex-row-reverse" : "lg:flex-row"} items-center gap-8 lg:gap-14 p-8 lg:p-12 rounded-3xl bg-black/40 backdrop-blur-sm border ${theme.border} ${theme.shadow} ${theme.hoverBorder} transition-all duration-500 overflow-hidden`}
+              >
+                {/* Background gradient */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${theme.gradient} to-transparent opacity-40 pointer-events-none`} />
+
+                {/* Text side */}
+                <div className="flex-1 flex flex-col items-center lg:items-start text-center lg:text-left relative z-10">
+                  <div className={`w-14 h-14 rounded-2xl ${theme.iconBg} border ${theme.border} flex items-center justify-center mb-6 ${theme.iconColor}`}>
+                    <IconComp size={28} />
+                  </div>
+                  <h3 className="text-2xl md:text-3xl font-black mb-4 tracking-tight uppercase text-white">
+                    {card.title}
+                  </h3>
+                  <p className="text-base text-white/65 leading-relaxed">
+                    {card.description}
+                  </p>
+                </div>
+
+                {/* Animation side */}
+                <div className="flex-1 w-full flex justify-center relative z-10">
+                  <AnimComp />
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
       </div>
     </section>
   );
@@ -904,6 +1341,7 @@ export default function PeptidesEngineOffer() {
         <Hero />
         <PriceComparison />
         <DeliverablesSection />
+        <AnimatedFeaturesSection />
         <HowItWorks />
         <ObjectivesSection />
         <CredibilityBar />
