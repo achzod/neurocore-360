@@ -1234,6 +1234,13 @@ export async function registerRoutes(
         console.log(`[Narrative-v2] audit=${req.params.id} hasTxt=${!!report.txt} txtLen=${report.txt?.length || 0} hasSections=${!!report.sections} sectionsLen=${report.sections?.length || 0}`);
         // Si c'est le nouveau format TXT (V4 Pro), on le convertit au format dashboard
         // pour que le frontend puisse l'afficher sans tout casser
+        // Prefer reportTxt (dedicated TEXT column) over narrativeReport.txt (JSONB — may be truncated)
+        if ((audit as any).reportTxt && (audit as any).reportTxt.length > 100) {
+          report.txt = (audit as any).reportTxt;
+        }
+        if ((audit as any).reportHtml && (audit as any).reportHtml.length > 100) {
+          report.html = (audit as any).reportHtml;
+        }
         if (report.txt) {
           let dashboard: any;
           let filledCount = 0;

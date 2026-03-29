@@ -460,13 +460,15 @@ async function generateReportAsync(
     }
     console.log(`[ReportJobManager] ✅ Content check passed: TXT=${txtContent.length} chars, HTML=${reportHtml.length} chars`);
 
+    // IMPORTANT: Do NOT store txt/html in narrativeReport JSONB — too large (400K+ chars)
+    // Store them in dedicated TEXT columns (report_txt, report_html) instead
     const report = {
-      txt: result.txt,
-      html: reportHtml,
       clientName: result.clientName,
       metadata: result.metadata,
       validationResult: validation,
-      photoAnalysis: photoAnalysis, // Include photo analysis for frontend display
+      photoAnalysis: photoAnalysis,
+      txt: result.txt,
+      html: reportHtml,
     };
 
     // Sauvegarder le rapport dans l'audit AVANT de marquer comme COMPLETED

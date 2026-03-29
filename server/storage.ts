@@ -938,10 +938,20 @@ export class PgStorage implements IStorage {
 
   private async ensureAuditColumnsLoaded(): Promise<Set<string>> {
     if (this.auditColumnsCache) return this.auditColumnsCache;
+    // Auto-create missing columns for report storage
+    const migrations = [
+      `ALTER TABLE audits ADD COLUMN IF NOT EXISTS report_txt TEXT`,
+      `ALTER TABLE audits ADD COLUMN IF NOT EXISTS report_html TEXT`,
+      `ALTER TABLE audits ADD COLUMN IF NOT EXISTS report_generated_at TIMESTAMP`,
+    ];
+    for (const sql of migrations) {
+      try { await pool.query(sql); } catch { /* column might already exist */ }
+    }
     const res = await pool.query(
       `SELECT column_name FROM information_schema.columns WHERE table_name = 'audits'`
     );
     this.auditColumnsCache = new Set((res.rows || []).map((r: any) => String(r.column_name)));
+    console.log(`[Storage] Audit columns: ${[...this.auditColumnsCache].filter(c => c.startsWith('report')).join(', ')}`);
     return this.auditColumnsCache;
   }
 
