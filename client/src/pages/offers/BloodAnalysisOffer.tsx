@@ -525,7 +525,7 @@ export default function BloodAnalysisOffer() {
   const { scrollYProgress } = useScroll();
   const heroGlow = useTransform(scrollYProgress, [0, 0.25], [0.9, 0.2]);
 
-  const ctaHref = "/blood-analysis";
+  const ctaHref = "/audit-complet/checkout?plan=BLOOD_ANALYSIS";
   const trustRow = useMemo(
     () => [
       "Ranges numeriques precis",
@@ -667,37 +667,112 @@ export default function BloodAnalysisOffer() {
         </div>
       </section>
 
+      {/* Pricing Card */}
+      <section className="relative z-10 bg-[#0a0a0a] py-20 px-6">
+        <div className="mx-auto max-w-2xl">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="rounded-2xl border border-white/15 bg-black/60 backdrop-blur-sm p-10"
+            style={{ boxShadow: "0 0 60px rgba(2,121,232,0.12)" }}
+          >
+            <div className="flex items-end gap-2 mb-2">
+              <span className="text-5xl font-black text-white tracking-tighter">99€</span>
+              <span className="text-white/40 text-sm mb-2">acompte — deductible du coaching</span>
+            </div>
+            <p className="text-white/50 text-sm mb-8">Acces immediat apres paiement. Rapport livre sous 24h.</p>
+            <ul className="space-y-3 mb-10">
+              {[
+                "39 biomarqueurs analyses sur 6 panels",
+                "Ranges optimaux vs normaux (pas juste \u00abnormal\u00bb)",
+                "Plan d\u2019action personnalise et priorise",
+                "Dashboard interactif + export PDF",
+                "Historique et suivi dans le temps",
+                "100% deductible du coaching Achzod",
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-3 text-sm text-white/80">
+                  <Check className="h-4 w-4 mt-0.5 shrink-0" style={{ color: PRIMARY_BLUE }} />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+            <Link href={ctaHref}>
+              <a
+                className="group w-full inline-flex items-center justify-center gap-3 rounded-full px-7 py-4 text-sm font-semibold text-white transition-all hover:scale-[1.02]"
+                style={{ backgroundColor: PRIMARY_BLUE }}
+              >
+                Analyser mon bilan — 99€
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </a>
+            </Link>
+            <p className="mt-4 text-center text-xs text-white/30">Paiement securise par Stripe · Carte ou PayPal</p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Marqueurs card */}
+      <section className="relative z-10 bg-[#0a0a0a] pb-16 px-6">
+        <div className="mx-auto max-w-2xl">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="rounded-2xl border px-8 py-7 flex gap-5 items-start"
+            style={{ borderColor: "rgba(2,121,232,0.35)", background: "rgba(2,121,232,0.06)" }}
+          >
+            <FlaskConical className="h-6 w-6 shrink-0 mt-0.5" style={{ color: PRIMARY_BLUE }} />
+            <div>
+              <p className="font-semibold text-white mb-2">La liste exacte des marqueurs a demander</p>
+              <p className="text-white/60 text-sm leading-relaxed">
+                Apres ton achat, je t'envoie la liste EXACTE des marqueurs a demander a ton medecin pour que ton rapport soit le plus complet possible. 39 marqueurs sur 6 panels — hormones, thyroide, metabolisme, inflammation, vitamines, foie/reins.
+              </p>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Comment ca marche */}
       <section className="relative z-10 bg-[#0a0a0a] py-24 px-6">
         <div className="mx-auto max-w-7xl">
           <div className="text-center">
             <p className="text-sm font-medium tracking-[0.2em] uppercase" style={{ color: PRIMARY_BLUE }}>
               Comment ca marche
             </p>
-            <h2 className="mt-6 text-4xl md:text-5xl font-semibold tracking-tight">3 etapes. C'est tout.</h2>
+            <h2 className="mt-6 text-4xl md:text-5xl font-semibold tracking-tight">4 etapes. Simple.</h2>
           </div>
 
-          <div className="mt-14 grid gap-6 md:grid-cols-3">
+          <div className="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {[
               {
                 step: "01",
-                icon: Upload,
-                title: "Upload ton PDF",
-                desc: "Depose tes resultats de laboratoire (PDF deverrouille).",
-                time: "10 sec",
+                icon: Zap,
+                title: "Achete ton analyse",
+                desc: "Paiement securise 99\u20ac par carte ou PayPal. Tu recois immediatement l'acces au dashboard.",
+                time: "< 1 min",
               },
               {
                 step: "02",
-                icon: Beaker,
-                title: "OCR + analyse",
-                desc: "Extraction des biomarqueurs puis lecture evidence-based.",
-                time: "2-5 min",
+                icon: FlaskConical,
+                title: "Fais ta prise de sang",
+                desc: "Demande les marqueurs listes ci-dessous a ton medecin ou labo. Je t'envoie la liste complete apres l'achat.",
+                time: "Selon ton labo",
               },
               {
                 step: "03",
+                icon: Upload,
+                title: "Upload ton PDF",
+                desc: "Depose tes resultats (PDF non-verrouille) sur ton dashboard client.",
+                time: "10 sec",
+              },
+              {
+                step: "04",
                 icon: Check,
-                title: "Rapport + protocoles",
-                desc: "Dashboard interactif + plan d'action priorise.",
-                time: "Instantane",
+                title: "Recois ton rapport",
+                desc: "Dashboard interactif + ranges optimaux + plan d'action priorise. Livre sous 24h.",
+                time: "Sous 24h",
               },
             ].map((item, idx) => (
               <motion.div
@@ -705,16 +780,16 @@ export default function BloodAnalysisOffer() {
                 initial={{ opacity: 0, y: 14 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.45, ease: "easeOut", delay: idx * 0.05 }}
-                className="relative overflow-hidden rounded-xl border border-white/15 bg-[#0a0a0a] p-10"
+                transition={{ duration: 0.45, ease: "easeOut", delay: idx * 0.07 }}
+                className="relative overflow-hidden rounded-xl border border-white/15 bg-[#0a0a0a] p-8"
               >
                 <div className="absolute right-4 top-2 text-7xl font-semibold text-white/[0.06]">{item.step}</div>
                 <div className="relative z-10">
                   <div className="h-12 w-12 rounded-lg border border-white/15 bg-[#0a0a0a] flex items-center justify-center">
                     <item.icon className="h-6 w-6" style={{ color: PRIMARY_BLUE }} />
                   </div>
-                  <p className="mt-6 text-2xl font-semibold tracking-tight">{item.title}</p>
-                  <p className="mt-3 text-white/70 leading-relaxed">{item.desc}</p>
+                  <p className="mt-6 text-xl font-semibold tracking-tight">{item.title}</p>
+                  <p className="mt-3 text-white/70 leading-relaxed text-sm">{item.desc}</p>
                   <p className="mt-6 text-sm text-white/40">Duree: {item.time}</p>
                 </div>
               </motion.div>
@@ -723,46 +798,6 @@ export default function BloodAnalysisOffer() {
         </div>
       </section>
 
-      {/* What to ask your doctor */}
-      <section className="py-20 px-6 border-t border-white/5">
-        <div className="mx-auto max-w-4xl">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-10">
-            <h2 className="text-3xl md:text-4xl font-semibold tracking-tight mb-4">Quoi demander a ton medecin ?</h2>
-            <p className="text-white/50 max-w-2xl mx-auto">Avant de payer, assure-toi d'avoir les bons marqueurs sur ton bilan. Voici ce que tu dois demander a ton medecin ou au laboratoire pour que l'analyse soit complete.</p>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-8">
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="font-semibold text-white mb-3" style={{ color: PRIMARY_BLUE }}>Bilan hormonal</h3>
-                <p className="text-white/60 text-sm leading-relaxed">Testosterone totale et libre, SHBG, estradiol (E2), LH, FSH, prolactine, DHEA-S, cortisol matin, IGF-1.</p>
-              </div>
-              <div>
-                <h3 className="font-semibold text-white mb-3" style={{ color: PRIMARY_BLUE }}>Thyroide</h3>
-                <p className="text-white/60 text-sm leading-relaxed">TSH, T3 libre, T4 libre. Idealement aussi T3 reverse et anticorps anti-TPO.</p>
-              </div>
-              <div>
-                <h3 className="font-semibold text-white mb-3" style={{ color: PRIMARY_BLUE }}>Metabolisme</h3>
-                <p className="text-white/60 text-sm leading-relaxed">Glycemie a jeun, HbA1c, insuline a jeun (pour calculer le HOMA-IR). Triglycerides, HDL, LDL, ApoB.</p>
-              </div>
-              <div>
-                <h3 className="font-semibold text-white mb-3" style={{ color: PRIMARY_BLUE }}>Inflammation + fer</h3>
-                <p className="text-white/60 text-sm leading-relaxed">CRP ultrasensible, homocysteine, ferritine, fer serique, saturation de la transferrine.</p>
-              </div>
-              <div>
-                <h3 className="font-semibold text-white mb-3" style={{ color: PRIMARY_BLUE }}>Vitamines</h3>
-                <p className="text-white/60 text-sm leading-relaxed">Vitamine D (25-OH), vitamine B12, folates (B9), magnesium erythrocytaire, zinc.</p>
-              </div>
-              <div>
-                <h3 className="font-semibold text-white mb-3" style={{ color: PRIMARY_BLUE }}>Foie + reins</h3>
-                <p className="text-white/60 text-sm leading-relaxed">ALAT, ASAT, GGT (foie). Creatinine et DFG estime (reins).</p>
-              </div>
-            </div>
-            <div className="mt-6 p-4 bg-white/5 rounded-xl">
-              <p className="text-white/50 text-xs leading-relaxed"><strong className="text-white/70">Astuce :</strong> Imprime cette liste et montre-la a ton medecin. Dis-lui que tu veux un bilan complet pour optimisation de la sante. La plupart des marqueurs sont rembourses par la Secu sur prescription.</p>
-            </div>
-          </motion.div>
-        </div>
-      </section>
 
       <section ref={panelsRef} className="py-24 px-6">
         <div className="mx-auto max-w-7xl">
