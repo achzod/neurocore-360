@@ -7468,6 +7468,7 @@ export async function registerRoutes(
         console.error("[PeptidesEngine] Generation error:", genErr);
         res.status(500).json({
           error: "Erreur lors de la génération du protocole. Réessaie dans quelques minutes.",
+          debug: String(genErr?.message || genErr).slice(0, 500),
           orderId: order?.id ?? null,
         });
       }
