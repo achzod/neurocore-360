@@ -2012,10 +2012,11 @@ export async function registerRoutes(
 
           console.log(`[Admin] Force-regenerating NEEDS_REVIEW audit ${auditId}`);
 
-          // Reset status and restart generation
+          // Reset EVERYTHING and restart generation
           await storage.updateAudit(auditId, {
             reportDeliveryStatus: "GENERATING",
             narrativeReport: null, // Clear old failed report
+            reportScheduledFor: null, // Clear scheduled delivery — deliver immediately
           });
 
           // Delete old failed job
