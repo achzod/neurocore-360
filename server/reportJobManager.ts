@@ -110,8 +110,14 @@ export async function getJobStatus(auditId: string): Promise<ReportJob | null> {
 export async function forceRegenerate(auditId: string): Promise<void> {
   deleteGeminiCache(auditId);
   deleteAnthropicCache(auditId);
+  activeGenerations.delete(auditId);
   await storage.deleteReportJob(auditId);
-  console.log(`[ReportJobManager] Force deleted job for audit ${auditId}`);
+  // Reset narrative report so the job doesn't think it's already done
+  await storage.updateAudit(auditId, {
+    narrativeReport: null as any,
+    reportDeliveryStatus: "GENERATING",
+  });
+  console.log(`[ReportJobManager] Force deleted job + reset narrative for audit ${auditId}`);
 }
 
 export async function startReportGeneration(
