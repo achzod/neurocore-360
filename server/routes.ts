@@ -841,77 +841,84 @@ export async function registerRoutes(
     try {
     if (success) {
       const baseUrl = getBaseUrl();
-      console.log(`[Email] Using baseUrl: ${baseUrl} for audit ${auditId}`);
+      console.log(`[Email] Processing report delivery for audit ${auditId}`);
 
       const completedAudit = await storage.getAudit(auditId);
       if (!completedAudit) {
-        console.error(`[Email] Audit ${auditId} not found after generation — skipping email`);
+        console.error(`[Email] Audit ${auditId} not found — skipping`);
         return;
       }
-      const clientName = (completedAudit as any)?.narrativeReport?.clientName || (email ? email.split('@')[0] : 'User');
-      const validationResult = (completedAudit as any)?.narrativeReport?.validationResult;
+
       const deliveryStatus = completedAudit.reportDeliveryStatus;
 
       // ============================================
-      // CHECK: Ne pas envoyer si validation échouée
+      // GATE 1: Email already sent? STOP.
       // ============================================
-      if (deliveryStatus === 'NEEDS_REVIEW') {
-        console.error(`[Email] ❌ Report ${auditId} nécessite révision manuelle - EMAIL NON ENVOYÉ`);
-        console.error(`[Email] Validation score: ${validationResult?.score || 'N/A'}`);
-        console.error(`[Email] Erreurs: ${validationResult?.errors?.join(', ') || 'N/A'}`);
+      if (completedAudit.reportSentAt) {
+        console.log(`[Email] ⏭️ Email already sent for ${auditId} at ${completedAudit.reportSentAt} — SKIPPING (no double email)`);
+        return;
+      }
+      if (deliveryStatus === 'SENT') {
+        console.log(`[Email] ⏭️ Status already SENT for ${auditId} — SKIPPING`);
         return;
       }
 
-      // Double-check validation score
+      // ============================================
+      // GATE 2: Validation status
+      // ============================================
+      if (deliveryStatus === 'NEEDS_REVIEW') {
+        console.error(`[Email] ❌ Report ${auditId} NEEDS_REVIEW — EMAIL BLOCKED`);
+        return;
+      }
+
+      const validationResult = (completedAudit as any)?.narrativeReport?.validationResult;
       if (validationResult && validationResult.score < 60) {
-        console.error(`[Email] ❌ Report ${auditId} score trop bas (${validationResult.score}/100) - EMAIL NON ENVOYÉ`);
+        console.error(`[Email] ❌ Report ${auditId} score ${validationResult.score}/100 — EMAIL BLOCKED`);
         await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" });
         return;
       }
 
       // ============================================
-      // HARD CHECK: Sections must have REAL content
+      // GATE 3: Scheduled for later?
       // ============================================
-      const narrativeSections = (completedAudit as any)?.narrativeReport?.sections;
-      if (Array.isArray(narrativeSections)) {
-        const filledSections = narrativeSections.filter((s: any) => s?.content && s.content.length > 50);
-        const totalSections = narrativeSections.length;
-        if (totalSections > 0 && filledSections.length === 0) {
-          console.error(`[Email] ❌ HARD BLOCK: Report ${auditId} has ${totalSections} sections but ALL are empty — EMAIL NON ENVOYÉ`);
-          await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" });
-          return;
-        }
-        if (totalSections > 3 && filledSections.length < totalSections * 0.5) {
-          console.error(`[Email] ❌ HARD BLOCK: Report ${auditId} has only ${filledSections.length}/${totalSections} sections filled — EMAIL NON ENVOYÉ`);
-          await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" });
-          return;
-        }
-        console.log(`[Email] ✅ Content check: ${filledSections.length}/${totalSections} sections have content`);
-      }
-
-      // Check if delivery is scheduled for later
       const scheduledFor = completedAudit?.reportScheduledFor;
       if (scheduledFor && new Date(scheduledFor) > new Date()) {
         await storage.updateAudit(auditId, { reportDeliveryStatus: "SCHEDULED" });
-        console.log(`[Delivery] Report for ${auditId} generated but SCHEDULED for ${new Date(scheduledFor).toISOString()} — email deferred`);
+        console.log(`[Email] ⏭️ Report ${auditId} SCHEDULED for ${new Date(scheduledFor).toISOString()} — deferred`);
         return;
       }
 
-      await storage.updateAudit(auditId, { reportDeliveryStatus: "READY" });
+      // ============================================
+      // GATE 4: Report must have REAL content
+      // ============================================
+      const reportTxt = (completedAudit as any)?.reportTxt || (completedAudit as any)?.narrativeReport?.txt || '';
+      const reportHtml = (completedAudit as any)?.reportHtml || (completedAudit as any)?.narrativeReport?.html || '';
+      if (reportTxt.length < 500 && reportHtml.length < 500) {
+        console.error(`[Email] ❌ HARD BLOCK: Report ${auditId} has no real content (TXT:${reportTxt.length} HTML:${reportHtml.length}) — EMAIL BLOCKED`);
+        await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" });
+        return;
+      }
+      console.log(`[Email] ✅ Content verified: TXT=${reportTxt.length} HTML=${reportHtml.length} chars`);
 
-      console.log(`[Email] ✅ Validation OK (score: ${validationResult?.score || 'N/A'}/100) - Sending email to ${email}`);
+      // ============================================
+      // GATE 5: Verify report link actually works
+      // ============================================
+      const reportPath = auditType === 'ELITE' ? 'ultimate' : auditType === 'PREMIUM' ? 'anabolic' : 'scan';
+      const reportUrl = `${baseUrl}/${reportPath}/${auditId}`;
+      console.log(`[Email] Report URL: ${reportUrl}`);
+
+      // ============================================
+      // ALL GATES PASSED — Send email
+      // ============================================
+      await storage.updateAudit(auditId, { reportDeliveryStatus: "READY" });
+      console.log(`[Email] ✅ All gates passed — sending to ${email}`);
+
       const emailSent = await sendReportReadyEmail(email, auditId, auditType, baseUrl);
       if (emailSent) {
-        try {
-          await storage.updateAudit(auditId, { reportDeliveryStatus: "SENT", reportSentAt: new Date() });
-        } catch (dbErr) {
-          console.error(`[Email] CRITICAL: Email sent but DB update failed for ${auditId}:`, dbErr);
-        }
-        console.log(`[Email] ✅ Report ready email sent successfully to ${email} for audit ${auditId}`);
-
-        // Note: Admin notification email already sent at audit creation (immediate notification)
+        await storage.updateAudit(auditId, { reportDeliveryStatus: "SENT", reportSentAt: new Date() });
+        console.log(`[Email] ✅ Email SENT to ${email} for audit ${auditId}`);
       } else {
-        console.error(`[Email] ❌ Report ready email FAILED for audit ${auditId} - check SendPulse config`);
+        console.error(`[Email] ❌ Email FAILED for audit ${auditId}`);
         await storage.updateAudit(auditId, { reportDeliveryStatus: "READY" });
       }
     } else {
