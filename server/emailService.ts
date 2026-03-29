@@ -36,11 +36,6 @@ type CoachingOfferTier = {
 
 const COACHING_OFFER_TIERS: CoachingOfferTier[] = [
   {
-    label: "Starter",
-    href: "https://www.achzodcoaching.com/coaching-starter",
-    offers: [{ duration: "8 semaines", price: 199 }],
-  },
-  {
     label: "Essential",
     href: "https://www.achzodcoaching.com/coaching-essential",
     offers: [
