@@ -525,7 +525,7 @@ export default function BloodAnalysisOffer() {
   const { scrollYProgress } = useScroll();
   const heroGlow = useTransform(scrollYProgress, [0, 0.25], [0.9, 0.2]);
 
-  const ctaHref = "/audit-complet/checkout?plan=BLOOD_ANALYSIS";
+  const ctaHref = "/blood-analysis";
   const trustRow = useMemo(
     () => [
       "Ranges numeriques precis",
