@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 import {
   Shield, Syringe, FlaskConical, Activity, AlertTriangle, ExternalLink,
   ChevronDown, ShoppingCart, Calendar, Lock, User, Brain, ArrowRight,
-  CheckCircle2,
+  CheckCircle2, Globe, Droplets, HelpCircle,
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -239,11 +239,15 @@ function ShoppingListCards({ list }: { list: string }) {
 const SECTION_ICONS: Record<string, typeof Syringe> = {
   "profil-synthese": User,
   "rationale": Brain,
-  "reconstitution-guide": Syringe,
+  "guide-peptaura": Globe,
+  "reconstitution-guide": FlaskConical,
+  "guide-injection": Syringe,
   "protocole-pratique": Calendar,
   "shopping-list": ShoppingCart,
+  "hygiene-conservation": Droplets,
   "securite-surveillance": Shield,
   "prochaines-etapes": ArrowRight,
+  "faq": HelpCircle,
 };
 
 // ============================================================================
@@ -256,7 +260,7 @@ export default function PeptidesEngineReport() {
   const [error, setError] = useState<string | null>(null);
   const [ndaAccepted, setNdaAccepted] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    new Set(["profil-synthese", "rationale", "reconstitution-guide", "protocole-pratique", "shopping-list"])
+    new Set(["profil-synthese", "rationale", "guide-peptaura", "reconstitution-guide", "guide-injection", "protocole-pratique", "shopping-list"])
   );
 
   useEffect(() => {
