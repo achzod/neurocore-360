@@ -623,8 +623,9 @@ async function callClaudeForPeptides(
   userPrompt: string
 ): Promise<string> {
   const client = getClient();
-  const model = ANTHROPIC_CONFIG.ANTHROPIC_MODEL;
-  const fallback = ANTHROPIC_CONFIG.ANTHROPIC_FALLBACK_MODEL;
+  // Force Sonnet for peptides (faster, cheaper, sufficient for protocol generation)
+  const model = "claude-sonnet-4-6";
+  const fallback = "claude-sonnet-4-6";
 
   for (let attempt = 1; attempt <= PEPTIDES_MAX_RETRIES; attempt++) {
     try {
