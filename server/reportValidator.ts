@@ -225,9 +225,12 @@ export function validateReport(
     const sectionContent = reportTxt.substring(startIndex, endIndex);
     const sectionLength = sectionContent.length;
 
-    if (sectionLength < minSectionLength) {
+    // Supplements/Stack sections are naturally shorter — use lower threshold
+    const isSupplementSection = section.toLowerCase().includes('supplement') || section.toLowerCase().includes('stack');
+    const effectiveMinLength = isSupplementSection ? 500 : minSectionLength;
+    if (sectionLength < effectiveMinLength) {
       shortSections.push(`${section} (${sectionLength} chars)`);
-      errors.push(`Section trop courte: "${section}" - ${sectionLength} chars (minimum: ${minSectionLength})`);
+      errors.push(`Section trop courte: "${section}" - ${sectionLength} chars (minimum: ${effectiveMinLength})`);
     }
   }
 
