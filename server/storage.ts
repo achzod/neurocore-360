@@ -1239,6 +1239,10 @@ export class PgStorage implements IStorage {
       updates.push(`report_sent_at = $${paramIndex++}`);
       values.push(data.reportSentAt);
     }
+    if ((data as any).reportScheduledFor !== undefined) {
+      updates.push(`report_scheduled_for = $${paramIndex++}`);
+      values.push((data as any).reportScheduledFor);
+    }
     if ((data as any).narrativeReport !== undefined) {
       updates.push(`narrative_report = $${paramIndex++}`);
       values.push(JSON.stringify((data as any).narrativeReport));
