@@ -1259,55 +1259,52 @@ export async function registerRoutes(
           const filledCount = dashboard.sections.filter((s: any) => s.content && s.content.length > 50).length;
           console.log(`[Narrative] formatTxtToDashboard: ${dashboard.sections.length} sections, ${filledCount} filled (TXT: ${report.txt.length} chars)`);
 
-          // FALLBACK: If parsing produced empty sections, do a raw split
-          if (filledCount === 0 && report.txt.length > 1000) {
-            console.warn(`[Narrative] ⚠️ formatTxtToDashboard returned empty sections. Applying raw fallback parser.`);
-            const rawSections: any[] = [];
-            const lines = report.txt.split('\n');
-            const HEADERS = [
-              "EXECUTIVE SUMMARY", "ANALYSE ENTRAINEMENT", "ANALYSE SYSTEME CARDIOVASCULAIRE",
-              "ANALYSE METABOLISME", "ANALYSE SOMMEIL", "ANALYSE DIGESTION", "ANALYSE AXES HORMONAUX",
-              "PROTOCOLE MATIN", "PROTOCOLE SOIR", "PROTOCOLE DIGESTION", "PROTOCOLE BUREAU",
-              "PROTOCOLE ENTRAINEMENT", "PLAN SEMAINE", "KPI ET TABLEAU", "SYNTHESE ET PROCHAINES",
-              "STACK SUPPLEMENTS", "ANALYSE VISUELLE", "ANALYSE BIOMECANIQUE",
-            ];
-            let currentTitle = "";
-            let currentContent: string[] = [];
-            for (const line of lines) {
-              const trimmed = line.trim();
-              const matchedHeader = HEADERS.find(h => trimmed.toUpperCase().startsWith(h));
-              if (matchedHeader && trimmed.length < 60 && trimmed === trimmed.toUpperCase()) {
-                if (currentTitle && currentContent.length > 0) {
-                  rawSections.push({
-                    id: currentTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
-                    title: currentTitle,
-                    score: 0,
-                    content: currentContent.join('\n').trim(),
-                    order: rawSections.length,
-                    category: currentTitle.includes('PROTOCOLE') || currentTitle.includes('PLAN') ? 'action' : 'analysis',
-                  });
-                }
-                currentTitle = trimmed;
-                currentContent = [];
-              } else if (currentTitle) {
-                currentContent.push(line);
+          // FALLBACK: If TXT parsing produced empty sections, parse from HTML instead
+          if (filledCount === 0 && report.html && report.html.length > 2000) {
+            console.warn(`[Narrative] ⚠️ TXT parser returned empty sections. Falling back to HTML parser.`);
+            const htmlSections: any[] = [];
+            // Split HTML by <h2> tags to extract sections
+            const h2Regex = /<h2[^>]*>(.*?)<\/h2>/gs;
+            const htmlParts = report.html.split(h2Regex);
+            // htmlParts: [before_first_h2, title1, content1, title2, content2, ...]
+            for (let p = 1; p < htmlParts.length; p += 2) {
+              const rawTitle = htmlParts[p].replace(/<[^>]+>/g, '').trim();
+              const rawHtmlContent = htmlParts[p + 1] || '';
+              // Strip HTML tags to get plain text content
+              const plainContent = rawHtmlContent
+                .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+                .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                .replace(/<br\s*\/?>/gi, '\n')
+                .replace(/<\/p>/gi, '\n\n')
+                .replace(/<\/li>/gi, '\n')
+                .replace(/<li[^>]*>/gi, '• ')
+                .replace(/<\/h[1-6]>/gi, '\n')
+                .replace(/<[^>]+>/g, '')
+                .replace(/&nbsp;/g, ' ')
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&#39;/g, "'")
+                .replace(/&quot;/g, '"')
+                .replace(/\n{3,}/g, '\n\n')
+                .trim();
+              if (rawTitle && plainContent.length > 20) {
+                const sectionId = rawTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                htmlSections.push({
+                  id: sectionId,
+                  title: rawTitle,
+                  score: 0,
+                  content: plainContent,
+                  order: htmlSections.length,
+                  category: rawTitle.includes('PROTOCOLE') || rawTitle.includes('PLAN') ? 'action' : 'analysis',
+                });
               }
             }
-            if (currentTitle && currentContent.length > 0) {
-              rawSections.push({
-                id: currentTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
-                title: currentTitle,
-                score: 0,
-                content: currentContent.join('\n').trim(),
-                order: rawSections.length,
-                category: currentTitle.includes('PROTOCOLE') || currentTitle.includes('PLAN') ? 'action' : 'analysis',
-              });
-            }
-            const rawFilled = rawSections.filter((s: any) => s.content.length > 50).length;
-            console.log(`[Narrative] Raw fallback: ${rawSections.length} sections, ${rawFilled} filled`);
-            if (rawFilled > filledCount) {
-              dashboard = { ...dashboard, sections: rawSections };
-              console.log(`[Narrative] ✅ Fallback parser used successfully (${rawFilled} sections)`);
+            const htmlFilled = htmlSections.filter((s: any) => s.content.length > 50).length;
+            console.log(`[Narrative] HTML fallback: ${htmlSections.length} sections, ${htmlFilled} filled`);
+            if (htmlFilled > filledCount) {
+              dashboard = { ...dashboard, sections: htmlSections };
+              console.log(`[Narrative] ✅ HTML fallback parser used successfully (${htmlFilled} sections)`);
             }
           }
           const auditScores = ensureAuditScores(audit.scores, audit.responses);
