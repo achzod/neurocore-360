@@ -182,24 +182,21 @@ export const PEPTAURA_CATALOG: PeptaurProduct[] = [
 // Total: 74 products synced from peptaura.com (2026-03-28)
 
 // Build catalog summary for Claude prompt
-function buildCatalogForPrompt(): string {
-  const lines: string[] = [];
-  lines.push("CATALOGUE PEPTAURA (peptaura.com) — PRIX RÉELS EN USD — Données synchronisées");
-  lines.push("Marketplace de 13 fournisseurs chinois. Paiement CB (KYC) ou crypto. Escrow.");
-  lines.push("Meilleur fournisseur rapport qualité/prix: Lumira (4.82/5, 100% recommandé)");
-  lines.push("MOQ le plus bas: Pepturion ($260). Lumira: $1120 avec livraison gratuite.");
-  lines.push("TOUS les produits sont des vials lyophilisés (poudre à reconstituer avec BAC water).\n");
+// Only inject protocol-relevant peptides into the prompt (not supplies/blends/niche)
+const PROMPT_CATEGORIES = new Set(["recovery", "gh-secretagogue", "fat-loss", "sleep", "cognitive", "libido", "skin", "longevity", "endurance", "glp1"]);
 
-  for (const p of PEPTAURA_CATALOG) {
-    lines.push(`• ${p.name} — Dosages: ${p.dosages.join(", ")} — À partir de $${p.cheapestPriceUSD}/vial (${p.cheapestSupplier}) — ${p.supplierCount} fournisseurs — URL: peptaura.com/catalog/${p.slug}`);
+function buildCatalogForPrompt(): string {
+  const relevant = PEPTAURA_CATALOG.filter(p => PROMPT_CATEGORIES.has(p.category));
+  const lines: string[] = [];
+  lines.push("CATALOGUE PEPTAURA (peptaura.com) — PRIX RÉELS EN USD");
+  lines.push("Marketplace, 13 fournisseurs COA-verifies. Lumira = meilleur prix. Pepturion = MOQ le plus bas ($260).");
+  lines.push("Tous les produits: vials lyophilises (reconstituer avec BAC water).\n");
+
+  for (const p of relevant) {
+    lines.push(`• ${p.name} | ${p.dosages.join("/")} | $${p.cheapestPriceUSD} (${p.cheapestSupplier}) | peptaura.com/catalog/${p.slug}`);
   }
 
-  lines.push("\nÉQUIPEMENT NÉCESSAIRE (le client doit aussi commander):");
-  lines.push("• BAC water (eau bactériostatique) — disponible sur Peptaura ou Amazon");
-  lines.push("• Seringues insuline U-100 (31G × 8mm) pour injections SC");
-  lines.push("• Tampons alcool pour antisepsie");
-  lines.push("• Container sharps pour aiguilles usagées");
-
+  lines.push("\nEquipement: BAC water ($2/vial sur Peptaura), seringues insuline U-100 31G, tampons alcool, container sharps.");
   return lines.join("\n");
 }
 
@@ -623,9 +620,9 @@ async function callClaudeForPeptides(
   userPrompt: string
 ): Promise<string> {
   const client = getClient();
-  // Force Sonnet for peptides (faster, cheaper, sufficient for protocol generation)
-  const model = "claude-sonnet-4-6";
-  const fallback = "claude-sonnet-4-6";
+  // Use configured model with sonnet fallback
+  const model = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5-20241022";
+  const fallback = "claude-sonnet-4-5-20241022";
 
   for (let attempt = 1; attempt <= PEPTIDES_MAX_RETRIES; attempt++) {
     try {
