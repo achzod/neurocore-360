@@ -5651,15 +5651,27 @@ export async function registerRoutes(
             const email = session.customer_details?.email || session.customer_email || session.metadata?.email || order.email;
             const planType = order.productType;
 
-            // Only create audit if:
-            // 1. Order doesn't already have an audit
-            // 2. Product type is one that needs an audit (not BLOOD_ANALYSIS or FORMCHECK)
+            // Blood Analysis: add +1 credit on payment
+            if (email && planType === "BLOOD_ANALYSIS") {
+              try {
+                const user = await storage.getUserByEmail(email);
+                if (user) {
+                  const currentCredits = (user as any).blood_credits || 0;
+                  await pool.query("UPDATE users SET blood_credits = blood_credits + 1 WHERE email = $1", [email]);
+                  console.log(`[Webhook] ✅ Blood credit added for ${email} (${currentCredits} → ${currentCredits + 1})`);
+                }
+              } catch (creditErr) {
+                console.error(`[Webhook] Blood credit update failed:`, creditErr);
+              }
+            }
+
             // Auto-trigger Peptides Engine protocol generation
             if (email && planType === "PEPTIDES_ENGINE") {
               console.log(`[Webhook] Triggering Peptides Engine protocol for ${email}`);
               try {
                 const { generatePeptidesProtocol } = await import("./peptidesEngine");
-                const progress = await storage.getProgress(email);
+                // Peptides progress is stored with prefix "peptides::{email}"
+                const progress = await storage.getProgress(`peptides::${email}`) || await storage.getProgress(email);
                 let responses = progress?.responses as Record<string, unknown> | string | undefined;
                 if (typeof responses === "string") {
                   try { responses = JSON.parse(responses); } catch { responses = undefined; }
