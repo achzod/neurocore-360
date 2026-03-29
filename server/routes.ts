@@ -1255,9 +1255,17 @@ export async function registerRoutes(
         // Si c'est le nouveau format TXT (V4 Pro), on le convertit au format dashboard
         // pour que le frontend puisse l'afficher sans tout casser
         if (report.txt) {
-          let dashboard = formatTxtToDashboard(report.txt);
-          const filledCount = dashboard.sections.filter((s: any) => s.content && s.content.length > 50).length;
-          console.log(`[Narrative] formatTxtToDashboard: ${dashboard.sections.length} sections, ${filledCount} filled (TXT: ${report.txt.length} chars)`);
+          let dashboard: any;
+          let filledCount = 0;
+          try {
+            dashboard = formatTxtToDashboard(report.txt);
+            filledCount = dashboard.sections.filter((s: any) => s.content && s.content.length > 50).length;
+            console.log(`[Narrative] formatTxtToDashboard: ${dashboard.sections.length} sections, ${filledCount} filled (TXT: ${report.txt.length} chars)`);
+          } catch (parseErr: any) {
+            console.error(`[Narrative] ❌ formatTxtToDashboard CRASHED: ${parseErr.message}`);
+            dashboard = { sections: [], clientName: '', generatedAt: '', global: 0 };
+            filledCount = 0;
+          }
 
           // FALLBACK: If TXT parsing produced empty sections, parse from HTML instead
           if (filledCount === 0 && report.html && report.html.length > 2000) {
