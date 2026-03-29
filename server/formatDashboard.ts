@@ -425,20 +425,22 @@ export function formatTxtToDashboard(txtContent: string): AuditDashboardFormat {
   );
 
   let currentPos = 0;
+  let matchCount = 0;
   for (let i = 0; i < sectionLines.length; i++) {
     const line = sectionLines[i].trim();
     const lineFull = sectionLines[i];
-    
+
     // IGNORER les lignes qui ne sont clairement PAS des titres principaux
     if (line.startsWith('#') || line.startsWith('Absolument') || line.startsWith('===') || line.startsWith('---')) {
       continue;
     }
-    
+
     const normalizedLine = normalizeTitle(line);
     const matchedTitle = normalizedTitles.get(normalizedLine);
     const isKnownTitle = Boolean(matchedTitle);
-    
+
     if (isKnownTitle) {
+      matchCount++;
       const resolvedTitle = matchedTitle as string;
       // Vérifier qu'on n'a pas déjà cette section (éviter les doublons)
       const alreadyExists = sectionMatches.some(s => 
@@ -470,17 +472,25 @@ export function formatTxtToDashboard(txtContent: string): AuditDashboardFormat {
     }
   }
   
+  console.log(`[formatTxtToDashboard] Matched ${matchCount} title lines → ${sectionMatches.length} unique sections (TXT: ${txtContent.length} chars)`);
+  for (const sm of sectionMatches.slice(0, 3)) {
+    console.log(`[formatTxtToDashboard]   "${sm.title}" start=${sm.startIndex} end=${sm.endIndex} rawLen=${sm.endIndex - sm.startIndex}`);
+  }
+
   let resumeExecutif: string | undefined;
-  
+
   for (let i = 0; i < sectionMatches.length; i++) {
     const { title, startIndex, endIndex } = sectionMatches[i];
     let rawContent = txtContent.substring(startIndex, endIndex).trim();
+    const rawLen = rawContent.length;
     if (ctaFin) {
       rawContent = rawContent.replace(ctaFin, '').trim();
     }
     rawContent = stripCtaFromContent(rawContent);
+    const afterStripLen = rawContent.length;
     const extractedScore = extractSectionScoreFromContent(rawContent);
     const content = cleanSectionContent(rawContent);
+    console.log(`[formatTxtToDashboard]   Section "${title}": raw=${rawLen} → afterStrip=${afterStripLen} → cleaned=${content.length} chars`);
     
     const normalizedTitle = normalizeTitle(title);
     const category =
