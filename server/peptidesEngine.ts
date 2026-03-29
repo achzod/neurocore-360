@@ -653,7 +653,7 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
 
 // ─── Claude call with retry ───────────────────────────────────────────────────
 
-const PEPTIDES_MAX_TOKENS = 12000;
+const PEPTIDES_MAX_TOKENS = 16000;
 const PEPTIDES_TEMPERATURE = 0.3;
 const PEPTIDES_MAX_RETRIES = 3;
 
