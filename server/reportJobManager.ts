@@ -470,15 +470,36 @@ async function generateReportAsync(
     };
 
     // Sauvegarder le rapport dans l'audit AVANT de marquer comme COMPLETED
-    await storage.updateAudit(auditId, {
-      narrativeReport: report,
-      reportTxt: result.txt || '',
-      reportHtml: reportHtml,
-      reportGeneratedAt: new Date(),
-      reportDeliveryStatus: "READY",
-    });
+    console.log(`[ReportJobManager] Saving report to DB: TXT=${(result.txt || '').length} HTML=${reportHtml.length} chars`);
+    try {
+      await storage.updateAudit(auditId, {
+        narrativeReport: report,
+        reportTxt: result.txt || '',
+        reportHtml: reportHtml,
+        reportGeneratedAt: new Date(),
+        reportDeliveryStatus: "READY",
+      });
+    } catch (saveErr: any) {
+      console.error(`[ReportJobManager] ❌ DB SAVE FAILED for ${auditId}: ${saveErr.message}`);
+      // Try saving without the large HTML in narrativeReport (keep reportTxt/reportHtml separate)
+      console.log(`[ReportJobManager] Retrying with minimal narrativeReport...`);
+      await storage.updateAudit(auditId, {
+        narrativeReport: { clientName: result.clientName, metadata: result.metadata, validationResult: validation, photoAnalysis: photoAnalysis },
+        reportTxt: result.txt || '',
+        reportHtml: reportHtml,
+        reportGeneratedAt: new Date(),
+        reportDeliveryStatus: "READY",
+      });
+    }
 
-    console.log(`[ReportJobManager] Report saved to audit ${auditId}`);
+    // Verify the save worked
+    const verifyAudit = await storage.getAudit(auditId);
+    const savedTxt = (verifyAudit as any)?.reportTxt || (verifyAudit as any)?.narrativeReport?.txt || '';
+    if (typeof savedTxt === 'string' && savedTxt.length < 100) {
+      console.error(`[ReportJobManager] ❌ SAVE VERIFICATION FAILED: reportTxt is ${savedTxt.length} chars after save!`);
+      throw new Error(`DB save verification failed — content not persisted (${savedTxt.length} chars)`);
+    }
+    console.log(`[ReportJobManager] ✅ Report saved and verified: ${savedTxt.length} chars in DB`);
 
     // Traçabilité: conserver CHAQUE version générée (TXT + HTML) dans une table dédiée
     await storage.createReportArtifact({
