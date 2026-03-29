@@ -2055,9 +2055,12 @@ export async function registerRoutes(
     try {
       const { auditId } = req.body;
       if (!auditId) { res.status(400).json({ error: "auditId requis" }); return; }
-      await storage.updateAudit(auditId, { reportScheduledFor: null as any });
-      res.json({ success: true, message: `scheduledFor reset for ${auditId}` });
+      // Direct SQL — bypass updateAudit which may not handle reportScheduledFor
+      const { pool } = await import("./db");
+      await pool.query("UPDATE audits SET report_scheduled_for = NULL WHERE id = $1", [auditId]);
+      res.json({ success: true, message: `scheduledFor reset via direct SQL for ${auditId}` });
     } catch (error) {
+      console.error("[Admin] reset-scheduled error:", error);
       res.status(500).json({ error: "Erreur serveur" });
     }
   });
