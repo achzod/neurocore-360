@@ -118,7 +118,7 @@ function FormatSectionContent({ content }: { content: string }) {
     // Normal paragraph
     flushList();
     elements.push(
-      <p key={key++} className="text-sm text-white/65 leading-relaxed my-1.5">
+      <p key={key++} className="text-[15px] text-white/70 leading-[1.8] my-2">
         {trimmed}
       </p>
     );
@@ -400,13 +400,15 @@ export default function PeptidesEngineReport() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
-                  className="bg-[#0a0a0a] border border-amber-500/10 rounded-2xl p-8 mb-8"
+                  className="mb-10"
                 >
-                  <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                    <User className="w-5 h-5" style={{ color: AMBER }} />
-                    {introSection.title}
-                  </h2>
-                  <div className="text-white/70">
+                  <div className="flex items-center gap-2 mb-6">
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: `${AMBER}15` }}>
+                      <User className="w-4 h-4" style={{ color: AMBER }} />
+                    </div>
+                    <h2 className="text-xl font-bold">{introSection.title}</h2>
+                  </div>
+                  <div className="bg-gradient-to-br from-[#0a0a0a] to-[#0f0f0f] border border-amber-500/10 rounded-2xl p-8 md:p-10">
                     <FormatSectionContent content={introSection.content} />
                   </div>
                 </motion.div>
@@ -416,13 +418,15 @@ export default function PeptidesEngineReport() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.15 }}
-                  className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-8 mb-12"
+                  className="mb-12"
                 >
-                  <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                    <Brain className="w-5 h-5" style={{ color: AMBER }} />
-                    {rationaleSection.title}
-                  </h2>
-                  <div className="text-white/70">
+                  <div className="flex items-center gap-2 mb-6">
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: `${AMBER}15` }}>
+                      <Brain className="w-4 h-4" style={{ color: AMBER }} />
+                    </div>
+                    <h2 className="text-xl font-bold">{rationaleSection.title}</h2>
+                  </div>
+                  <div className="bg-gradient-to-br from-[#0a0a0a] to-[#0f0f0f] border border-white/8 rounded-2xl p-8 md:p-10">
                     <FormatSectionContent content={rationaleSection.content} />
                   </div>
                 </motion.div>
@@ -575,7 +579,7 @@ export default function PeptidesEngineReport() {
                   </motion.div>
                 </button>
                 {expandedSections.has(section.id) && (
-                  <div className="px-6 pb-6">
+                  <div className="px-6 md:px-8 pb-8">
                     <FormatSectionContent content={section.content} />
                   </div>
                 )}
