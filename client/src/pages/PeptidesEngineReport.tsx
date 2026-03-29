@@ -389,11 +389,53 @@ export default function PeptidesEngineReport() {
           </p>
         </motion.div>
 
+        {/* Intro — Profile Synthesis (pulled out of collapsible sections) */}
+        {(() => {
+          const introSection = report.sections.find(s => s.id === "profil-synthese");
+          const rationaleSection = report.sections.find(s => s.id === "rationale");
+          return (
+            <>
+              {introSection && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="bg-[#0a0a0a] border border-amber-500/10 rounded-2xl p-8 mb-8"
+                >
+                  <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                    <User className="w-5 h-5" style={{ color: AMBER }} />
+                    {introSection.title}
+                  </h2>
+                  <div className="text-white/70">
+                    <FormatSectionContent content={introSection.content} />
+                  </div>
+                </motion.div>
+              )}
+              {rationaleSection && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15 }}
+                  className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-8 mb-12"
+                >
+                  <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                    <Brain className="w-5 h-5" style={{ color: AMBER }} />
+                    {rationaleSection.title}
+                  </h2>
+                  <div className="text-white/70">
+                    <FormatSectionContent content={rationaleSection.content} />
+                  </div>
+                </motion.div>
+              )}
+            </>
+          );
+        })()}
+
         {/* Peptides Stack */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          transition={{ delay: 0.2 }}
           className="mb-12"
         >
           <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
@@ -508,9 +550,9 @@ export default function PeptidesEngineReport() {
           </motion.div>
         )}
 
-        {/* Report Sections (collapsible, parsed) */}
+        {/* Report Sections (collapsible, parsed) — skip intro sections already shown above */}
         <div className="space-y-4 mb-12">
-          {report.sections.map((section, i) => {
+          {report.sections.filter(s => s.id !== "profil-synthese" && s.id !== "rationale").map((section, i) => {
             const Icon = SECTION_ICONS[section.id] || FlaskConical;
             return (
               <motion.div
@@ -609,13 +651,12 @@ export default function PeptidesEngineReport() {
           className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-8 text-center"
         >
           <h2 className="text-xl font-bold mb-2">Tu veux un suivi personnalise?</h2>
-          <p className="text-white/50 mb-4">Tes 299 EUR sont 100% deductibles du coaching Achzod.</p>
+          <p className="text-white/50 mb-4">Un coaching Achzod pour optimiser tes resultats et ajuster ton protocole en temps reel.</p>
           <a href="https://www.achzodcoaching.com/formules-coaching"
              className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm text-black"
              style={{ background: AMBER }}>
-            Voir le coaching
+            Decouvrir le coaching
           </a>
-          <p className="text-white/30 text-xs font-mono mt-3">Code: PEPTIDES299</p>
         </motion.div>
       </div>
 
