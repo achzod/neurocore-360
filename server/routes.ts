@@ -1251,6 +1251,7 @@ export async function registerRoutes(
 
       if (audit.narrativeReport) {
         const report = audit.narrativeReport as any;
+        console.log(`[Narrative-v2] audit=${req.params.id} hasTxt=${!!report.txt} txtLen=${report.txt?.length || 0} hasSections=${!!report.sections} sectionsLen=${report.sections?.length || 0}`);
         // Si c'est le nouveau format TXT (V4 Pro), on le convertit au format dashboard
         // pour que le frontend puisse l'afficher sans tout casser
         if (report.txt) {
