@@ -1254,7 +1254,61 @@ export async function registerRoutes(
         // Si c'est le nouveau format TXT (V4 Pro), on le convertit au format dashboard
         // pour que le frontend puisse l'afficher sans tout casser
         if (report.txt) {
-          const dashboard = formatTxtToDashboard(report.txt);
+          let dashboard = formatTxtToDashboard(report.txt);
+          const filledCount = dashboard.sections.filter((s: any) => s.content && s.content.length > 50).length;
+          console.log(`[Narrative] formatTxtToDashboard: ${dashboard.sections.length} sections, ${filledCount} filled (TXT: ${report.txt.length} chars)`);
+
+          // FALLBACK: If parsing produced empty sections, do a raw split
+          if (filledCount === 0 && report.txt.length > 1000) {
+            console.warn(`[Narrative] ⚠️ formatTxtToDashboard returned empty sections. Applying raw fallback parser.`);
+            const rawSections: any[] = [];
+            const lines = report.txt.split('\n');
+            const HEADERS = [
+              "EXECUTIVE SUMMARY", "ANALYSE ENTRAINEMENT", "ANALYSE SYSTEME CARDIOVASCULAIRE",
+              "ANALYSE METABOLISME", "ANALYSE SOMMEIL", "ANALYSE DIGESTION", "ANALYSE AXES HORMONAUX",
+              "PROTOCOLE MATIN", "PROTOCOLE SOIR", "PROTOCOLE DIGESTION", "PROTOCOLE BUREAU",
+              "PROTOCOLE ENTRAINEMENT", "PLAN SEMAINE", "KPI ET TABLEAU", "SYNTHESE ET PROCHAINES",
+              "STACK SUPPLEMENTS", "ANALYSE VISUELLE", "ANALYSE BIOMECANIQUE",
+            ];
+            let currentTitle = "";
+            let currentContent: string[] = [];
+            for (const line of lines) {
+              const trimmed = line.trim();
+              const matchedHeader = HEADERS.find(h => trimmed.toUpperCase().startsWith(h));
+              if (matchedHeader && trimmed.length < 60 && trimmed === trimmed.toUpperCase()) {
+                if (currentTitle && currentContent.length > 0) {
+                  rawSections.push({
+                    id: currentTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+                    title: currentTitle,
+                    score: 0,
+                    content: currentContent.join('\n').trim(),
+                    order: rawSections.length,
+                    category: currentTitle.includes('PROTOCOLE') || currentTitle.includes('PLAN') ? 'action' : 'analysis',
+                  });
+                }
+                currentTitle = trimmed;
+                currentContent = [];
+              } else if (currentTitle) {
+                currentContent.push(line);
+              }
+            }
+            if (currentTitle && currentContent.length > 0) {
+              rawSections.push({
+                id: currentTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+                title: currentTitle,
+                score: 0,
+                content: currentContent.join('\n').trim(),
+                order: rawSections.length,
+                category: currentTitle.includes('PROTOCOLE') || currentTitle.includes('PLAN') ? 'action' : 'analysis',
+              });
+            }
+            const rawFilled = rawSections.filter((s: any) => s.content.length > 50).length;
+            console.log(`[Narrative] Raw fallback: ${rawSections.length} sections, ${rawFilled} filled`);
+            if (rawFilled > filledCount) {
+              dashboard = { ...dashboard, sections: rawSections };
+              console.log(`[Narrative] ✅ Fallback parser used successfully (${rawFilled} sections)`);
+            }
+          }
           const auditScores = ensureAuditScores(audit.scores, audit.responses);
           const globalScore =
             typeof auditScores.global === "number"
