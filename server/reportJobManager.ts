@@ -41,6 +41,7 @@ const AI_CALL_TIMEOUT_MS = 45 * 60 * 1000;
 const MAX_RETRY_ATTEMPTS = 3;
 
 const activeGenerations = new Set<string>();
+const MAX_CONCURRENT_GENERATIONS = 1; // 1 rapport à la fois — stabilité > vitesse
 let shutdownHooksInstalled = false;
 
 function installShutdownHooksOnce() {
@@ -121,7 +122,23 @@ export async function startReportGeneration(
 ): Promise<ReportJob> {
   console.log(`[ReportJobManager] startReportGeneration called for audit ${auditId}`);
   installShutdownHooksOnce();
-  
+
+  // ============================================
+  // CONCURRENCY LIMIT: 1 rapport à la fois
+  // ============================================
+  if (activeGenerations.size >= MAX_CONCURRENT_GENERATIONS && !activeGenerations.has(auditId)) {
+    console.log(`[ReportJobManager] ⏳ Queue full (${activeGenerations.size}/${MAX_CONCURRENT_GENERATIONS} active). Scheduling ${auditId} for later.`);
+    const queuedJob = await storage.createOrUpdateReportJob({
+      auditId,
+      status: "pending" as ReportJobStatusEnum,
+      progress: 0,
+      currentSection: "En attente — un autre rapport est en cours de generation...",
+      error: null,
+      attemptCount: 0,
+    });
+    return queuedJob;
+  }
+
   if (activeGenerations.has(auditId)) {
     console.log(`[ReportJobManager] Job ${auditId} already running in-memory, returning existing`);
     const existingJob = await storage.getReportJob(auditId);
@@ -431,6 +448,18 @@ async function generateReportAsync(
 
     console.log(`[ReportJobManager] ✅ VALIDATION PASSED for ${auditId} (score: ${validation.score}/100)`);
 
+    // ============================================
+    // HARD CHECK: TXT content must exist and be substantial
+    // ============================================
+    const txtContent = result.txt || '';
+    if (txtContent.length < 500) {
+      throw new Error(`HARD BLOCK: TXT content too short (${txtContent.length} chars). Generation likely failed silently.`);
+    }
+    if (reportHtml.length < 2000) {
+      throw new Error(`HARD BLOCK: HTML content too short (${reportHtml.length} chars). HTML conversion likely failed.`);
+    }
+    console.log(`[ReportJobManager] ✅ Content check passed: TXT=${txtContent.length} chars, HTML=${reportHtml.length} chars`);
+
     const report = {
       txt: result.txt,
       html: reportHtml,
@@ -478,6 +507,25 @@ async function generateReportAsync(
     });
   } finally {
     activeGenerations.delete(auditId);
+
+    // ============================================
+    // QUEUE PROCESSING: Pick up next pending job
+    // ============================================
+    try {
+      const pendingJobs = await storage.getActiveReportJobs();
+      const nextPending = pendingJobs.find(j => j.status === "pending" && !activeGenerations.has(j.auditId));
+      if (nextPending && activeGenerations.size < MAX_CONCURRENT_GENERATIONS) {
+        console.log(`[ReportJobManager] 🔄 Processing next queued job: ${nextPending.auditId}`);
+        const audit = await storage.getAudit(nextPending.auditId);
+        if (audit) {
+          const responses = (audit as any)?.responses || {};
+          const scores = (audit as any)?.scores || {};
+          startReportGeneration(nextPending.auditId, responses, scores, audit.type);
+        }
+      }
+    } catch (queueErr) {
+      console.error(`[ReportJobManager] Queue processing error:`, queueErr);
+    }
   }
 }
 

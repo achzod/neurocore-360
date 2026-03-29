@@ -869,6 +869,26 @@ export async function registerRoutes(
         return;
       }
 
+      // ============================================
+      // HARD CHECK: Sections must have REAL content
+      // ============================================
+      const narrativeSections = (completedAudit as any)?.narrativeReport?.sections;
+      if (Array.isArray(narrativeSections)) {
+        const filledSections = narrativeSections.filter((s: any) => s?.content && s.content.length > 50);
+        const totalSections = narrativeSections.length;
+        if (totalSections > 0 && filledSections.length === 0) {
+          console.error(`[Email] ❌ HARD BLOCK: Report ${auditId} has ${totalSections} sections but ALL are empty — EMAIL NON ENVOYÉ`);
+          await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" });
+          return;
+        }
+        if (totalSections > 3 && filledSections.length < totalSections * 0.5) {
+          console.error(`[Email] ❌ HARD BLOCK: Report ${auditId} has only ${filledSections.length}/${totalSections} sections filled — EMAIL NON ENVOYÉ`);
+          await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" });
+          return;
+        }
+        console.log(`[Email] ✅ Content check: ${filledSections.length}/${totalSections} sections have content`);
+      }
+
       // Check if delivery is scheduled for later
       const scheduledFor = completedAudit?.reportScheduledFor;
       if (scheduledFor && new Date(scheduledFor) > new Date()) {
