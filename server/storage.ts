@@ -49,7 +49,7 @@ pool.on("error", (err) => {
   console.error("[DB Pool] Unexpected error on idle client:", err.message);
 });
 
-const DEFAULT_USER_CREDITS = Number(process.env.DEFAULT_BLOOD_CREDITS ?? "5");
+const DEFAULT_USER_CREDITS = Number(process.env.DEFAULT_BLOOD_CREDITS ?? "0");
 
 export interface MagicToken {
   token: string;

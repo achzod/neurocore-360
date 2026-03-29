@@ -1663,7 +1663,7 @@ export async function registerRoutes(
 
       let user = await storage.getUserByEmail(normalizedEmail);
       if (!user) {
-        const defaultCredits = Number(process.env.DEFAULT_BLOOD_CREDITS ?? "5");
+        const defaultCredits = Number(process.env.DEFAULT_BLOOD_CREDITS ?? "0");
         user = await storage.createUser({ email: normalizedEmail, credits: defaultCredits });
       }
 

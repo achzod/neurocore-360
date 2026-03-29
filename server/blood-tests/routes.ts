@@ -519,7 +519,7 @@ export function registerBloodTestsRoutes(app: Express): void {
 
       let user = await storage.getUserByEmail(seedEmail);
       if (!user) {
-        const defaultCredits = Number(process.env.DEFAULT_BLOOD_CREDITS ?? "5");
+        const defaultCredits = Number(process.env.DEFAULT_BLOOD_CREDITS ?? "0");
         user = await storage.createUser({ email: seedEmail, credits: defaultCredits });
       }
 

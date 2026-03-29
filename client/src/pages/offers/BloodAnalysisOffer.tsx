@@ -799,7 +799,7 @@ export default function BloodAnalysisOffer() {
       </section>
 
 
-      <section ref={panelsRef} className="py-24 px-6">
+      <section ref={panelsRef} className="py-24 px-6 bg-[#020202]">
         <div className="mx-auto max-w-7xl">
           <div className="text-center">
             <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">39 biomarqueurs · 6 panels</h2>
@@ -917,7 +917,7 @@ export default function BloodAnalysisOffer() {
         </div>
       </section>
 
-      <section className="py-24 px-6">
+      <section className="py-24 px-6 bg-[#020202]">
         <div className="mx-auto max-w-7xl">
           <div className="text-center">
             <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">Bibliotheque de connaissances</h2>
@@ -987,7 +987,7 @@ export default function BloodAnalysisOffer() {
         </div>
       </section>
 
-      <section className="py-24 px-6">
+      <section className="py-24 px-6 bg-[#020202]">
         <div className="mx-auto max-w-4xl">
           <div className="text-center">
             <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">Questions frequentes</h2>
