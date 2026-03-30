@@ -3257,6 +3257,34 @@ export async function registerRoutes(
         return;
       }
 
+      // PEPTIDES_ENGINE: if already paid, DO NOT create another PayPal order
+      if (planType === "PEPTIDES_ENGINE" && email) {
+        const existingOrders = await storage.getOrdersByEmail(email);
+        const paidPeptides = existingOrders.find((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid");
+        if (paidPeptides) {
+          console.log(`[PayPal] Peptides Engine already paid for ${email} — blocking re-payment`);
+          if (responses && Object.keys(responses).length >= 3) {
+            try {
+              await storage.saveBurnoutProgress({ email: `peptides::${email}`, currentSection: 6, totalSections: 6, responses });
+            } catch { /* best effort */ }
+            (async () => {
+              try {
+                const { generatePeptidesProtocol } = await import("./peptidesEngine");
+                const report = await generatePeptidesProtocol(responses, email);
+                const saved = await storage.createBurnoutReport({ email: `peptides::${email}`, type: "peptides", responses: report as any });
+                console.log(`[PayPal] ✅ Peptides protocol generated for already-paid ${email}: ${saved.id}`);
+                const baseUrl = getBaseUrl();
+                await sendCTAEmail(email, "Ton protocole Peptides Engine est pret", `Ton protocole personnalise est pret !\n\nAccede a ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}\n\nAchzod`).catch(() => {});
+              } catch (genErr) {
+                console.error(`[PayPal] Background peptides generation failed for ${email}:`, genErr);
+              }
+            })();
+          }
+          res.json({ success: true, alreadyPaid: true, redirect: "/dashboard?success=true&generating=peptides" });
+          return;
+        }
+      }
+
       const pType = planType as ProductTypeEnum;
       const baseCents = ProductPriceCents[pType] ?? 0;
       if (baseCents === 0) {
@@ -3332,6 +3360,14 @@ export async function registerRoutes(
         }
         res.json({ ...result, free: true });
         return;
+      }
+
+      // Save peptides responses server-side before PayPal
+      if (planType === "PEPTIDES_ENGINE" && responses && Object.keys(responses).length >= 3) {
+        try {
+          await storage.saveBurnoutProgress({ email: `peptides::${email}`, currentSection: 6, totalSections: 6, responses });
+          console.log(`[PayPal] ✅ Peptides responses saved for ${email}`);
+        } catch { /* best effort */ }
       }
 
       const amountEur = (finalCents / 100).toFixed(2);
