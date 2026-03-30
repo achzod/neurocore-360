@@ -10,7 +10,7 @@ import { motion, useScroll, useTransform, useMotionValue, animate, AnimatePresen
 import { ArrowRight, Check, ChevronDown, Smartphone, MessageCircle, FileText, Target, Ruler, Dumbbell, X } from "lucide-react";
 
 const ACCENT = "#25D366";
-const WA_NUMBER = "15557636881"; // WhatsApp number for wa.me links
+const WA_NUMBER = "33787746578"; // WhatsApp Achzod
 
 // ============================================================================
 // FAQ ACCORDION ITEM
