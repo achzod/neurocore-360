@@ -603,39 +603,39 @@ export default function AuditGratuit() {
             className="text-center mb-16"
           >
             <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6">
-              Gratuit vs Anabolic
+              Gratuit vs Anabolic vs Ultimate
             </h2>
             <p className="text-white/50 text-lg">
               Le Discovery Scan te donne le diagnostic. Les offres payantes te donnent les solutions.
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-3 gap-5">
             {/* Free */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="rounded-sm border border-white/10 bg-white/[0.03] backdrop-blur-xl p-8 hover:border-white/20 transition-all duration-300"
+              className="rounded-sm border border-white/10 bg-white/[0.03] backdrop-blur-xl p-7 hover:border-white/20 transition-all duration-300"
             >
-              <div className="text-[#FCDD00] text-sm font-medium tracking-[0.15em] uppercase mb-4">Discovery Scan</div>
-              <div className="text-white text-5xl font-bold tracking-[-0.04em] mb-6">Gratuit</div>
-              <ul className="space-y-4">
+              <div className="text-[#FCDD00] text-xs font-medium tracking-[0.15em] uppercase mb-3">Discovery Scan</div>
+              <div className="text-white text-4xl font-bold tracking-[-0.04em] mb-5">Gratuit</div>
+              <ul className="space-y-3">
                 {[
-                  "Diagnostic complet 10 domaines",
+                  "Diagnostic 10 domaines",
                   "Score global sur 100",
                   "Identification des blocages",
                   "Rapport 5-7 pages",
                 ].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 text-white/70">
-                    <Check className="w-5 h-5 text-[#FCDD00]" />
+                  <li key={i} className="flex items-center gap-2.5 text-white/70 text-sm">
+                    <Check className="w-4 h-4 text-[#FCDD00] shrink-0" />
                     {item}
                   </li>
                 ))}
               </ul>
               <Link href="/questionnaire?plan=gratuit">
-                <button className="w-full mt-8 bg-[#FCDD00] text-black font-semibold py-4 rounded-sm hover:bg-[#FCDD00]/90 transition-all">
-                  Commencer
+                <button className="w-full mt-6 bg-[#FCDD00] text-black font-semibold py-3.5 rounded-sm hover:bg-[#FCDD00]/90 transition-all text-sm">
+                  Commencer gratuitement
                 </button>
               </Link>
             </motion.div>
@@ -646,12 +646,12 @@ export default function AuditGratuit() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="rounded-sm border border-[#FCDD00]/30 bg-gradient-to-b from-[#FCDD00]/10 to-transparent backdrop-blur-xl p-8 hover:border-[#FCDD00]/50 transition-all duration-300 shadow-[0_0_60px_rgba(252,221,0,0.1)]"
+              className="rounded-sm border border-[#FCDD00]/30 bg-gradient-to-b from-[#FCDD00]/10 to-transparent backdrop-blur-xl p-7 hover:border-[#FCDD00]/50 transition-all duration-300 shadow-[0_0_60px_rgba(252,221,0,0.1)]"
             >
-              <div className="text-[#FCDD00] text-sm font-medium tracking-[0.15em] uppercase mb-4">Anabolic Bioscan</div>
-              <div className="text-white text-5xl font-bold tracking-[-0.04em] mb-2">59€</div>
-              <div className="text-white/50 text-sm mb-6">d'acompte coaching (100% déduit)</div>
-              <ul className="space-y-4">
+              <div className="text-[#FCDD00] text-xs font-medium tracking-[0.15em] uppercase mb-3">Anabolic Bioscan</div>
+              <div className="text-white text-4xl font-bold tracking-[-0.04em] mb-1">59€</div>
+              <div className="text-white/50 text-xs mb-5">d'acompte</div>
+              <ul className="space-y-3">
                 {[
                   "Tout le Discovery Scan",
                   "Protocoles d'action personnalises",
@@ -659,14 +659,49 @@ export default function AuditGratuit() {
                   "Plan 30-60-90 jours",
                   "16 sections d'analyse",
                 ].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 text-white/70">
-                    <Check className="w-5 h-5 text-[#FCDD00]" />
+                  <li key={i} className="flex items-center gap-2.5 text-white/70 text-sm">
+                    <Check className="w-4 h-4 text-[#FCDD00] shrink-0" />
                     {item}
                   </li>
                 ))}
               </ul>
               <Link href="/offers/anabolic-bioscan">
-                <button className="w-full mt-8 bg-white/10 text-white font-semibold py-4 rounded-sm border border-white/10 hover:bg-white/20 transition-all">
+                <button className="w-full mt-6 bg-white/10 text-white font-semibold py-3.5 rounded-sm border border-white/10 hover:bg-white/20 transition-all text-sm">
+                  En savoir plus
+                </button>
+              </Link>
+            </motion.div>
+
+            {/* Ultimate */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              className="rounded-sm border border-white/20 bg-gradient-to-b from-white/10 to-transparent backdrop-blur-xl p-7 hover:border-white/30 transition-all duration-300"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <div className="text-[#FCDD00] text-xs font-medium tracking-[0.15em] uppercase">Ultimate Scan</div>
+                <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#FCDD00] text-black uppercase tracking-wider">Complet</span>
+              </div>
+              <div className="text-white text-4xl font-bold tracking-[-0.04em] mb-1">79€</div>
+              <div className="text-white/50 text-xs mb-5">d'acompte</div>
+              <ul className="space-y-3">
+                {[
+                  "Tout l'Anabolic Bioscan",
+                  "Analyse photo posturale (3 photos)",
+                  "Integration wearables (Oura, Whoop...)",
+                  "18 sections d'analyse",
+                  "Rapport 40-50 pages",
+                ].map((item, i) => (
+                  <li key={i} className="flex items-center gap-2.5 text-white/70 text-sm">
+                    <Check className="w-4 h-4 text-[#FCDD00] shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <Link href="/offers/ultimate-scan">
+                <button className="w-full mt-6 bg-white/10 text-white font-semibold py-3.5 rounded-sm border border-white/10 hover:bg-white/20 transition-all text-sm">
                   En savoir plus
                 </button>
               </Link>
