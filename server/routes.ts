@@ -3000,6 +3000,23 @@ export async function registerRoutes(
         ? `${baseUrl}/offers/peptides-engine?cancelled=true`
         : `${baseUrl}/audit-complet/checkout?cancelled=true`;
 
+      // CRITICAL: Save responses to DB BEFORE creating Stripe session
+      // This ensures the webhook can find them even if the frontend save-progress fails
+      if (planType === "PEPTIDES_ENGINE" && responses && Object.keys(responses).length >= 3) {
+        try {
+          await storage.saveBurnoutProgress({
+            email: `peptides::${email}`,
+            currentSection: 6,
+            totalSections: 6,
+            responses,
+          });
+          console.log(`[Checkout] ✅ Peptides responses saved server-side for ${email} (${Object.keys(responses).length} fields)`);
+        } catch (saveErr) {
+          console.error(`[Checkout] ⚠️ Failed to save peptides responses for ${email}:`, saveErr);
+          // Don't block checkout — continue anyway
+        }
+      }
+
       const sessionParams: any = {
         payment_method_types: ['card'],
         line_items: [
