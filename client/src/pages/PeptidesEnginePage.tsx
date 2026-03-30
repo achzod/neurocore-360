@@ -479,6 +479,9 @@ export default function PeptidesEnginePage() {
         // Best effort — continue to checkout even if save fails
       }
 
+      // Capture referrer from URL
+      const urlRef = new URLSearchParams(window.location.search).get("ref") || "";
+
       if (method === "paypal") {
         const res = await apiRequest("POST", "/api/paypal/create-order", {
           email,
@@ -492,6 +495,7 @@ export default function PeptidesEnginePage() {
         email,
         planType: "PEPTIDES_ENGINE",
         responses,
+        referrer: urlRef || undefined,
       });
       return res.json();
     },

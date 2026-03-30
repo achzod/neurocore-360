@@ -2840,7 +2840,7 @@ export async function registerRoutes(
 
   app.post("/api/stripe/create-checkout-session", checkoutLimiter, async (req, res) => {
     try {
-      const { priceId: clientPriceId, email, planType, responses, promoCode } = req.body;
+      const { priceId: clientPriceId, email, planType, responses, promoCode, referrer } = req.body;
 
       // PEPTIDES_ENGINE: if already paid, skip checkout and trigger generation
       if (planType === "PEPTIDES_ENGINE" && email) {
@@ -3001,6 +3001,7 @@ export async function registerRoutes(
           planType,
           responses: responses ? JSON.stringify(responses).substring(0, 500) : '',
           promoCode: validatedPromoCode || '',
+          referrer: referrer || '',
         },
       };
 
@@ -4832,12 +4833,12 @@ export async function registerRoutes(
               }
             }
 
-            // S8 (56 jours) — Fin de cycle: bilan et prochaines etapes
+            // S8 (56 jours) — Fin de cycle + demande avis + incentive Blood Analysis
             if (daysSincePaid >= 56 && daysSincePaid < 70 && !types.includes("peptidesS8")) {
               const sent = await sendCTAEmail(
                 email,
-                "Fin de ton cycle peptides - Bilan",
-                `Salut,\n\nTon cycle de 8 semaines touche a sa fin (ou est deja termine). C'est le moment de faire le point.\n\nAs-tu fait ton bilan sanguin mi-cycle? Si oui, compare tes marqueurs avec ta baseline. Si non, utilise ton 2eme code Blood Analysis maintenant — c'est important pour mesurer l'impact reel de ton protocole.\n\nRappel de tes codes Blood Analysis (inclus dans ton protocole) :\nAccede a Blood Analysis ici : https://apexlabs.achzodcoaching.com/offers/blood-analysis\n\nSi tu veux un deuxieme cycle adapte a tes resultats, reponds a cet email et on en discute.\n\nAchzod`
+                "Fin de ton cycle - J'ai besoin de ton retour",
+                `Salut,\n\nTon cycle de 8 semaines touche a sa fin. C'est le moment de faire le point.\n\nJ'ai 2 choses a te demander :\n\n1. TON BILAN SANGUIN\nAs-tu fait ton bilan mi-cycle avec ton code Blood Analysis? Si non, fais-le maintenant — c'est le seul moyen de mesurer l'impact reel de ton protocole sur tes marqueurs.\nAccede a Blood Analysis : https://apexlabs.achzodcoaching.com/offers/blood-analysis\n\n2. TON AVIS (30 secondes)\nTon retour m'aide enormement a ameliorer le service. En echange de ton avis, je t'offre 1 Blood Analysis supplementaire gratuite.\nLaisse ton avis ici : https://apexlabs.achzodcoaching.com/peptides/${order.id}#review\n\nSi tu veux un deuxieme cycle adapte a tes resultats, reponds directement a cet email.\n\n3. PARRAINAGE\nTu connais quelqu'un qui pourrait beneficier d'un protocole peptides? Envoie-lui ce lien et s'il achete, tu recois 1 Blood Analysis gratuite :\nhttps://apexlabs.achzodcoaching.com/offers/peptides-engine?ref=${encodeURIComponent(email)}\n\nAchzod`
               );
               if (sent) {
                 peptidesS8++;
@@ -4845,12 +4846,12 @@ export async function registerRoutes(
               }
             }
 
-            // S12 (84 jours) — Relance: nouveau cycle ou coaching?
+            // S12 (84 jours) — Coaching upsell ciblé + nouveau protocole
             if (daysSincePaid >= 84 && daysSincePaid < 100 && !types.includes("peptidesS12")) {
               const sent = await sendCTAEmail(
                 email,
-                "Pret pour la suite?",
-                `Salut,\n\nCa fait 3 mois depuis ton protocole Peptides Engine. J'espere que les resultats sont la.\n\nSi tu veux continuer a progresser, deux options :\n\n1. Un nouveau protocole Peptides Engine adapte a tes nouveaux objectifs (nouveau cycle, nouvelles molecules) : https://apexlabs.achzodcoaching.com/offers/peptides-engine\n\n2. Un coaching complet avec suivi personnalise pour optimiser tes resultats sur le long terme : https://www.achzodcoaching.com/formules-coaching\n\nDans les deux cas, je suis la pour t'accompagner.\n\nAchzod`
+                "Tes resultats meritent un suivi",
+                `Salut,\n\nCa fait 3 mois depuis ton protocole Peptides Engine. A ce stade, tu as probablement vu des resultats concrets — et c'est exactement la ou la plupart des gens stagnent.\n\nPourquoi? Parce qu'un protocole peptides sans suivi, c'est comme un plan d'entrainement sans coach. Ca marche au debut, puis tu plafonnes.\n\nC'est pour ca que je te propose 2 options pour continuer a progresser :\n\nOPTION 1 : COACHING ACHZOD\nUn suivi personnalise ou j'ajuste ton protocole en temps reel selon tes bilans sanguins, ta progression et tes objectifs. On travaille ensemble sur la nutrition, l'entrainement et la supplementation.\nFormule Essential (4 sem) : 249EUR\nFormule Elite (4 sem) : 399EUR\nDecouvrir : https://www.achzodcoaching.com/formules-coaching\n\nOPTION 2 : NOUVEAU PROTOCOLE\nSi tu veux juste un nouveau cycle avec de nouvelles molecules (objectif different, ajustements post-bilan), un nouveau Peptides Engine a 299EUR.\nCommander : https://apexlabs.achzodcoaching.com/offers/peptides-engine\n\nN'oublie pas : tu as encore tes codes Blood Analysis pour verifier tes marqueurs avant de demarrer un nouveau cycle.\n\nAchzod`
               );
               if (sent) {
                 peptidesS12++;
@@ -5788,6 +5789,28 @@ export async function registerRoutes(
             // ✅ FIX: Create audit automatically in webhook (prevents missing audits)
             const email = session.customer_details?.email || session.customer_email || session.metadata?.email || order.email;
             const planType = order.productType;
+
+            // REFERRAL: if this order has a referrer, reward them with 1 Blood Analysis credit
+            const referrerEmail = session.metadata?.referrer;
+            if (referrerEmail && referrerEmail.includes("@") && planType === "PEPTIDES_ENGINE") {
+              try {
+                let referrerUser = await storage.getUserByEmail(referrerEmail);
+                if (!referrerUser) {
+                  referrerUser = await storage.createUser({ email: referrerEmail, credits: 1 });
+                } else {
+                  await pool.query("UPDATE users SET blood_credits = blood_credits + 1 WHERE email = $1", [referrerEmail]);
+                }
+                console.log(`[Webhook] ✅ Referral reward: +1 Blood credit for ${referrerEmail} (referred by ${email})`);
+                // Notify the referrer
+                await sendCTAEmail(
+                  referrerEmail,
+                  "Tu as gagne 1 Blood Analysis gratuite !",
+                  `Bonne nouvelle !\n\nQuelqu'un a achete Peptides Engine grace a ton lien de parrainage. Tu recois 1 Blood Analysis gratuite en recompense.\n\nAccede a Blood Analysis : https://apexlabs.achzodcoaching.com/offers/blood-analysis\n\nMerci pour ta confiance.\n\nAchzod`
+                ).catch(() => {});
+              } catch (refErr) {
+                console.error(`[Webhook] Referral error:`, refErr);
+              }
+            }
 
             // Blood Analysis: add +1 credit on payment
             if (email && planType === "BLOOD_ANALYSIS") {
