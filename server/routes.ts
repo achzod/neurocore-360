@@ -4768,6 +4768,91 @@ export async function registerRoutes(
         }
       }
 
+      // ════════════════════════════════════════════════════════════════
+      // PEPTIDES ENGINE SEQUENCES (S4, S8, S12, S16)
+      // Based on paid orders, not audits
+      // ════════════════════════════════════════════════════════════════
+      let peptidesS4 = 0, peptidesS8 = 0, peptidesS12 = 0, peptidesS16 = 0;
+
+      try {
+        const allOrders = await storage.getAllOrders?.() || [];
+        const peptidesOrders = allOrders.filter((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid" && o.paidAt);
+
+        for (const order of peptidesOrders) {
+          try {
+            const paidAt = new Date(order.paidAt);
+            const daysSincePaid = Math.floor((now.getTime() - paidAt.getTime()) / (1000 * 60 * 60 * 24));
+            const email = order.email;
+            if (!email || email.includes("test") || email.includes("debug") || email.includes("audit.final")) continue;
+
+            // Get tracking for this order
+            const { db } = await import("./db");
+            const { emailTracking: emailTrackingTable } = await import("../shared/drizzle-schema");
+            const { eq, and } = await import("drizzle-orm");
+            const tracking = await db.select().from(emailTrackingTable).where(eq(emailTrackingTable.email, email));
+            const types = tracking.map((t: any) => t.emailType);
+
+            // S4 (28 jours) — Check-in: comment se passe le cycle?
+            if (daysSincePaid >= 28 && daysSincePaid < 42 && !types.includes("peptidesS4")) {
+              const sent = await sendCTAEmail(
+                email,
+                "Comment se passe ton cycle peptides?",
+                `Salut,\n\nCa fait maintenant 4 semaines que tu as recu ton protocole Peptides Engine. Je voulais prendre de tes nouvelles.\n\nComment se passent les injections? As-tu rencontre des difficultes? Est-ce que tu sens deja des effets?\n\nN'oublie pas de faire ton bilan sanguin mi-cycle avec ton code Blood Analysis inclus dans ton rapport. C'est le moment ideal pour comparer avec ta baseline.\n\nSi tu as la moindre question sur ton protocole, reponds directement a cet email.\n\nAchzod`
+              );
+              if (sent) {
+                peptidesS4++;
+                await db.insert(emailTrackingTable).values({ email, emailType: "peptidesS4", auditId: order.id, sentAt: new Date() }).catch(() => {});
+              }
+            }
+
+            // S8 (56 jours) — Fin de cycle: bilan et prochaines etapes
+            if (daysSincePaid >= 56 && daysSincePaid < 70 && !types.includes("peptidesS8")) {
+              const sent = await sendCTAEmail(
+                email,
+                "Fin de ton cycle peptides - Bilan",
+                `Salut,\n\nTon cycle de 8 semaines touche a sa fin (ou est deja termine). C'est le moment de faire le point.\n\nAs-tu fait ton bilan sanguin mi-cycle? Si oui, compare tes marqueurs avec ta baseline. Si non, utilise ton 2eme code Blood Analysis maintenant — c'est important pour mesurer l'impact reel de ton protocole.\n\nRappel de tes codes Blood Analysis (inclus dans ton protocole) :\nAccede a Blood Analysis ici : https://apexlabs.achzodcoaching.com/offers/blood-analysis\n\nSi tu veux un deuxieme cycle adapte a tes resultats, reponds a cet email et on en discute.\n\nAchzod`
+              );
+              if (sent) {
+                peptidesS8++;
+                await db.insert(emailTrackingTable).values({ email, emailType: "peptidesS8", auditId: order.id, sentAt: new Date() }).catch(() => {});
+              }
+            }
+
+            // S12 (84 jours) — Relance: nouveau cycle ou coaching?
+            if (daysSincePaid >= 84 && daysSincePaid < 100 && !types.includes("peptidesS12")) {
+              const sent = await sendCTAEmail(
+                email,
+                "Pret pour la suite?",
+                `Salut,\n\nCa fait 3 mois depuis ton protocole Peptides Engine. J'espere que les resultats sont la.\n\nSi tu veux continuer a progresser, deux options :\n\n1. Un nouveau protocole Peptides Engine adapte a tes nouveaux objectifs (nouveau cycle, nouvelles molecules) : https://apexlabs.achzodcoaching.com/offers/peptides-engine\n\n2. Un coaching complet avec suivi personnalise pour optimiser tes resultats sur le long terme : https://www.achzodcoaching.com/formules-coaching\n\nDans les deux cas, je suis la pour t'accompagner.\n\nAchzod`
+              );
+              if (sent) {
+                peptidesS12++;
+                await db.insert(emailTrackingTable).values({ email, emailType: "peptidesS12", auditId: order.id, sentAt: new Date() }).catch(() => {});
+              }
+            }
+
+            // S16 (112 jours) — Dernier rappel: Blood Analysis + coaching CTA
+            if (daysSincePaid >= 112 && daysSincePaid < 130 && !types.includes("peptidesS16")) {
+              const sent = await sendCTAEmail(
+                email,
+                "Tes 2 Blood Analyses t'attendent",
+                `Salut,\n\nJe vois que tu n'as peut-etre pas encore utilise tes 2 codes Blood Analysis inclus dans ton protocole Peptides Engine.\n\nCes bilans sanguins sont essentiels pour mesurer l'impact de ton cycle sur tes marqueurs (IGF-1, glycemie, hormones, inflammation). Sans bilan, impossible de savoir si ton protocole a fonctionne.\n\nAccede a Blood Analysis : https://apexlabs.achzodcoaching.com/offers/blood-analysis\n\nEt si tu veux passer au niveau superieur avec un accompagnement coaching personnalise :\nhttps://www.achzodcoaching.com/formules-coaching\n\nJe suis dispo si tu as des questions.\n\nAchzod`
+              );
+              if (sent) {
+                peptidesS16++;
+                await db.insert(emailTrackingTable).values({ email, emailType: "peptidesS16", auditId: order.id, sentAt: new Date() }).catch(() => {});
+              }
+            }
+          } catch (orderErr) {
+            console.error(`[Cron] Peptides sequence error for order ${order.id}:`, orderErr);
+          }
+        }
+      } catch (pepErr) {
+        console.error("[Cron] Peptides sequences error:", pepErr);
+      }
+
+      results = { ...results, peptidesS4, peptidesS8, peptidesS12, peptidesS16 } as any;
+
       console.log(`[Cron] Email sequences processed:`, results);
       res.json({ success: true, ...results, processedAt: new Date().toISOString() });
     } catch (error) {
