@@ -1,5 +1,5 @@
 /**
- * Peptides Engine Report v3 — Structured protocol display
+ * Peptides Engine Report v3 :Structured protocol display
  * Parsed sections, weekly schedule table, shopping list cards
  */
 import { useEffect, useState } from "react";
@@ -48,7 +48,7 @@ interface PeptidesReport {
 }
 
 // ============================================================================
-// CONTENT PARSER — converts raw text to structured JSX
+// CONTENT PARSER :converts raw text to structured JSX
 // ============================================================================
 function FormatSectionContent({ content }: { content: string }) {
   if (!content) return null;
@@ -140,19 +140,33 @@ function WeeklyScheduleTable({ schedule }: { schedule: string }) {
   const DAY_ORDER = ["LUNDI", "MARDI", "MERCREDI", "JEUDI", "VENDREDI", "SAMEDI", "DIMANCHE"];
 
   for (const entry of entries) {
-    const match = entry.match(/^(LUNDI|MARDI|MERCREDI|JEUDI|VENDREDI|SAMEDI|DIMANCHE)\s+(AM|PM):\s*(.+)$/i);
+    // Flexible matching: LUNDI AM/PM/MATIN/SOIR/À JEUN/etc.
+    const match = entry.match(/^(LUNDI|MARDI|MERCREDI|JEUDI|VENDREDI|SAMEDI|DIMANCHE)\s+(.+?):\s*(.+)$/i);
     if (match) {
       const day = match[1].toUpperCase();
-      const period = match[2].toUpperCase() as "AM" | "PM";
+      const periodRaw = match[2].toUpperCase();
       const content = match[3].trim();
+      const isAM = /AM|MATIN|JEUN|REVEIL/.test(periodRaw);
       if (!days[day]) days[day] = { am: "", pm: "" };
-      if (period === "AM") days[day].am = content;
+      if (isAM) days[day].am = content;
       else days[day].pm = content;
     }
   }
 
   const sortedDays = DAY_ORDER.filter(d => days[d]);
-  if (sortedDays.length === 0) return null;
+
+  // Fallback: if parsing failed, show raw text
+  if (sortedDays.length === 0) {
+    return (
+      <div className="mt-4 space-y-2">
+        {entries.map((e, i) => (
+          <div key={i} className="bg-white/5 rounded-lg p-3">
+            <p className="text-sm text-white/70">{e}</p>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="overflow-x-auto mt-4">
@@ -339,11 +353,11 @@ export default function PeptidesEngineReport() {
             <div className="space-y-4 text-white/70 text-sm leading-relaxed mb-8">
               <p>Avant d'acceder a ton protocole personnalise, tu dois accepter les conditions suivantes :</p>
               <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
-                <p><strong className="text-white">1. Usage strictement personnel</strong> — Ce protocole est genere exclusivement pour toi. Il ne peut etre partage, reproduit, publie ou distribue sous quelque forme que ce soit.</p>
-                <p><strong className="text-white">2. Interdiction de diffusion</strong> — Toute publication sur internet (reseaux sociaux, forums, YouTube, blogs, groupes Telegram/Discord) est strictement interdite.</p>
-                <p><strong className="text-white">3. Propriete intellectuelle</strong> — Le contenu du protocole, incluant les recommandations, dosages et guides, est la propriete intellectuelle d'APEXLABS by Achzod.</p>
-                <p><strong className="text-white">4. Usage educatif</strong> — Ce protocole est fourni a titre educatif et informatif. Il ne constitue pas un avis medical. Consulte un medecin avant toute supplementation.</p>
-                <p><strong className="text-white">5. Violation</strong> — Toute violation de ces conditions entrainera la resiliation immediate de l'acces au protocole et pourra donner lieu a des <span className="text-amber-400">poursuites judiciaires</span> (dommages et interets). Juridiction : Tribunaux de Paris.</p>
+                <p><strong className="text-white">1. Usage strictement personnel</strong> :Ce protocole est genere exclusivement pour toi. Il ne peut etre partage, reproduit, publie ou distribue sous quelque forme que ce soit.</p>
+                <p><strong className="text-white">2. Interdiction de diffusion</strong> :Toute publication sur internet (reseaux sociaux, forums, YouTube, blogs, groupes Telegram/Discord) est strictement interdite.</p>
+                <p><strong className="text-white">3. Propriete intellectuelle</strong> :Le contenu du protocole, incluant les recommandations, dosages et guides, est la propriete intellectuelle d'APEXLABS by Achzod.</p>
+                <p><strong className="text-white">4. Usage educatif</strong> :Ce protocole est fourni a titre educatif et informatif. Il ne constitue pas un avis medical. Consulte un medecin avant toute supplementation.</p>
+                <p><strong className="text-white">5. Violation</strong> :Toute violation de ces conditions entrainera la resiliation immediate de l'acces au protocole et pourra donner lieu a des <span className="text-amber-400">poursuites judiciaires</span> (dommages et interets). Juridiction : Tribunaux de Paris.</p>
               </div>
             </div>
             <button
@@ -352,7 +366,7 @@ export default function PeptidesEngineReport() {
               style={{ background: AMBER }}
             >
               <Shield className="w-4 h-4" />
-              J'accepte les conditions — Acceder a mon protocole
+              J'accepte les conditions :Acceder a mon protocole
             </button>
           </motion.div>
         </div>
@@ -389,7 +403,7 @@ export default function PeptidesEngineReport() {
           </p>
         </motion.div>
 
-        {/* Intro — Profile Synthesis (pulled out of collapsible sections) */}
+        {/* Intro :Profile Synthesis (pulled out of collapsible sections) */}
         {(() => {
           const introSection = report.sections.find(s => s.id === "profil-synthese");
           const rationaleSection = report.sections.find(s => s.id === "rationale");
@@ -532,7 +546,7 @@ export default function PeptidesEngineReport() {
               <Calendar className="w-5 h-5" style={{ color: AMBER }} />
               Calendrier Hebdomadaire
             </h2>
-            <p className="text-white/40 text-xs font-mono mb-3">Semaine type — rotation des sites d'injection</p>
+            <p className="text-white/40 text-xs font-mono mb-3">Semaine type, rotation des sites d'injection</p>
             <WeeklyScheduleTable schedule={report.weeklySchedule} />
           </motion.div>
         )}
@@ -554,7 +568,7 @@ export default function PeptidesEngineReport() {
           </motion.div>
         )}
 
-        {/* Report Sections (collapsible, parsed) — skip intro sections already shown above */}
+        {/* Report Sections (collapsible, parsed) :skip intro sections already shown above */}
         <div className="space-y-4 mb-12">
           {report.sections.filter(s => s.id !== "profil-synthese" && s.id !== "rationale").map((section, i) => {
             const Icon = SECTION_ICONS[section.id] || FlaskConical;
