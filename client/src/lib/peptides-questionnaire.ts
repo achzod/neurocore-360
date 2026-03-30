@@ -221,6 +221,7 @@ export const PEPTIDES_QUESTIONS: PeptidesQuestion[] = [
     { value: "maybe", label: "Peut-etre plus tard" },
     { value: "no", label: "Non, le protocole me suffit" },
   ]},
+  { id: "pep_requested_peptides", sectionId: "attentes", type: "textarea", label: "Tu as des peptides specifiques en tete?", placeholder: "Optionnel — ecris les noms exacts des peptides que tu veux dans ton protocole (ex: BPC-157, Retatrutide, Semaglutide...)" },
   { id: "pep_questions", sectionId: "attentes", type: "textarea", label: "Questions ou precisions?", placeholder: "Optionnel — ajoute tout ce que tu veux que je sache" },
 ];
 

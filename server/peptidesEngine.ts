@@ -282,6 +282,7 @@ function buildResponsesSummary(responses: Record<string, unknown>): string {
     pep_start_when: "Quand commencer",
     pep_blood_commit: "Engagement bilan sanguin",
     pep_coaching_interest: "Intérêt coaching",
+    pep_requested_peptides: "Peptides specifiquement demandes par le client",
     pep_questions: "Questions additionnelles",
     // Legacy field names
     prenom: "Prénom",
@@ -533,6 +534,9 @@ RÈGLES DE SÉCURITÉ (non négociables)
 7. MALADIE HÉPATIQUE SÉVÈRE → prudence générale
 8. Budget < 200 EUR/mois → prioriser 1-2 peptides max
 9. Débutant (jamais injecté) → commencer par 1-2 peptides simples, dosages bas
+
+PEPTIDES DEMANDÉS PAR LE CLIENT (PRIORITÉ ABSOLUE)
+Si le client a rempli le champ "Peptides specifiquement demandes par le client", tu DOIS les inclure dans le stack. C'est non négociable — le client paie 299 euros, s'il veut un peptide en particulier, tu l'incorpores. Tu peux ajouter d'autres peptides en complement, mais ceux demandés doivent TOUJOURS etre presents. Si un peptide demandé est contre-indiqué pour son profil (cancer, grossesse), explique pourquoi tu ne peux pas l'inclure et propose une alternative.
 
 RETATRUTIDE (RÈGLE SPÉCIALE)
 Si le client a un objectif perte de poids, fat loss, recomposition, sèche, ou perte de gras — tu DOIS inclure Retatrutide dans le stack. C'est le triple agoniste GLP-1/GIP/Glucagon le plus puissant du marché pour la perte de masse grasse. Montée progressive de dose obligatoire (on commence bas et on augmente chaque semaine pour éviter les nausées) : 1mg/semaine → 2mg → 4mg → 8mg → 12mg sur 5 semaines. Injection SC 1x/semaine. Effets secondaires possibles : nausées (titration lente les minimise), satiété accrue, ralentissement gastrique. Disponible sur Peptaura à ~$13.65/vial (Lumira). C'est le peptide star pour la perte de poids — ne le laisse pas de côté si l'objectif du client est lié au gras.
