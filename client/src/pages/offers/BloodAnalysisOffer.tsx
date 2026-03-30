@@ -2,6 +2,7 @@ import React, { useMemo, useRef, useState, useEffect } from "react";
 import { Link } from "wouter";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { ArrowRight, Beaker, Check, FileText, FlaskConical, Shield, Target, Upload, Zap, Activity, Dna, Flame } from "lucide-react";
+import { AnimatedReportPreview } from "@/components/AnimatedReportPreview";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -957,130 +958,42 @@ export default function BloodAnalysisOffer() {
             </p>
           </div>
 
-          {/* Auto-scrolling report preview */}
-          <div className="relative rounded-2xl border border-white/15 overflow-hidden" style={{ height: "520px" }}>
-            {/* Top fade */}
-            <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-[#0a0a0a] to-transparent z-20 pointer-events-none" />
-            {/* Bottom fade */}
-            <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#0a0a0a] to-transparent z-20 pointer-events-none" />
-            {/* Browser chrome */}
-            <div className="absolute top-0 left-0 right-0 h-10 bg-[#1a1a1a] border-b border-white/10 z-30 flex items-center px-4 gap-2">
-              <div className="w-3 h-3 rounded-full bg-red-500/60" />
-              <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
-              <div className="w-3 h-3 rounded-full bg-green-500/60" />
-              <div className="ml-4 flex-1 h-6 rounded bg-white/5 flex items-center px-3">
-                <span className="text-[10px] text-white/30 font-mono">apexlabs.achzodcoaching.com/analysis/rapport-demo</span>
-              </div>
-            </div>
-
-            {/* Scrolling content */}
-            <div className="pt-10 animate-[autoScroll_25s_ease-in-out_infinite]">
-              <div className="bg-[#0a0a0a] p-8 space-y-8">
-                {/* Score header */}
-                <div className="border border-white/10 rounded-xl p-8">
-                  <p className="text-xs uppercase tracking-[0.3em] text-white/40 mb-2">Blood Analysis Report</p>
-                  <div className="flex items-end gap-4 mb-4">
-                    <span className="text-6xl font-black" style={{ color: PRIMARY_BLUE }}>78</span>
-                    <span className="text-2xl text-white/40 mb-2">/100</span>
-                  </div>
-                  <p className="text-white/60 text-sm leading-relaxed max-w-xl">
-                    Ton profil montre un axe cardio-metabolique a optimiser (TG/HDL elevé), un levier hormonal clair
-                    (testosterone libre basse), et des carences en vitamine D et magnesium. Plan en 3 phases.
-                  </p>
-                </div>
-
-                {/* Radar / Panels */}
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { name: "Hormones", score: 72, color: "#f59e0b" },
-                    { name: "Thyroide", score: 88, color: "#22c55e" },
-                    { name: "Metabolisme", score: 61, color: "#ef4444" },
-                    { name: "Inflammation", score: 65, color: "#f59e0b" },
-                    { name: "Vitamines", score: 90, color: "#22c55e" },
-                    { name: "Foie/Rein", score: 92, color: "#22c55e" },
-                  ].map((p) => (
-                    <div key={p.name} className="border border-white/10 rounded-lg p-4">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-xs font-semibold text-white/80">{p.name}</span>
-                        <span className="text-sm font-bold" style={{ color: p.color }}>{p.score}</span>
-                      </div>
-                      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full" style={{ width: `${p.score}%`, backgroundColor: p.color }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Alert */}
-                <div className="border border-red-500/30 bg-red-500/5 rounded-xl p-5">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                    <span className="text-xs font-semibold text-red-400 uppercase tracking-wider">Alerte prioritaire</span>
-                  </div>
-                  <p className="text-sm text-white/70">Testosterone libre: <strong className="text-white">8.2 pg/mL</strong> — Range optimal: 15-25 pg/mL. Sous le seuil optimal de 40%. Action recommandee.</p>
-                </div>
-
-                {/* Biomarker detail */}
-                <div className="border border-white/10 rounded-xl p-5">
-                  <p className="text-xs uppercase tracking-wider text-white/40 mb-4">Panel hormonal — Detail</p>
-                  {[
-                    { name: "Testosterone totale", value: "485 ng/dL", range: "600-900", status: "low" },
-                    { name: "Testosterone libre", value: "8.2 pg/mL", range: "15-25", status: "critical" },
-                    { name: "SHBG", value: "62 nmol/L", range: "20-50", status: "high" },
-                    { name: "Estradiol (E2)", value: "28 pg/mL", range: "20-35", status: "optimal" },
-                    { name: "Cortisol matin", value: "18.5 µg/dL", range: "10-20", status: "optimal" },
-                    { name: "IGF-1", value: "195 ng/mL", range: "200-350", status: "low" },
-                  ].map((m) => (
-                    <div key={m.name} className="flex items-center justify-between py-2.5 border-b border-white/5 last:border-0">
-                      <span className="text-sm text-white/70">{m.name}</span>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-mono text-white">{m.value}</span>
-                        <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
-                          m.status === "critical" ? "bg-red-500/20 text-red-400" :
-                          m.status === "low" ? "bg-yellow-500/20 text-yellow-400" :
-                          m.status === "high" ? "bg-orange-500/20 text-orange-400" :
-                          "bg-green-500/20 text-green-400"
-                        }`}>{m.range}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Protocol */}
-                <div className="border border-white/10 rounded-xl p-5">
-                  <p className="text-xs uppercase tracking-wider mb-3" style={{ color: PRIMARY_BLUE }}>Plan d'action — Phase 1 (Semaines 1-4)</p>
-                  <div className="space-y-3">
-                    {[
-                      "Supplementation Vitamine D3: 4000 UI/jour avec repas gras",
-                      "Magnesium bisglycinate: 400mg au coucher",
-                      "Zinc picolinate: 30mg avec diner",
-                      "Reduire stress chronique: protocole HRV + respiration",
-                      "Optimiser sommeil: 7-8h, coucher avant 23h",
-                    ].map((a) => (
-                      <div key={a} className="flex items-start gap-2">
-                        <Check className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: PRIMARY_BLUE }} />
-                        <span className="text-sm text-white/60">{a}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Spacer for scroll */}
-                <div className="h-40" />
-              </div>
-            </div>
-          </div>
+          <AnimatedReportPreview
+            score={78}
+            scoreColor={PRIMARY_BLUE}
+            urlBar="apexlabs.achzodcoaching.com/analysis/rapport-demo"
+            panels={[
+              { name: "Hormones", score: 72 },
+              { name: "Thyroide", score: 88 },
+              { name: "Metabolisme", score: 61 },
+              { name: "Inflammation", score: 65 },
+              { name: "Vitamines", score: 90 },
+              { name: "Foie/Rein", score: 92 },
+            ]}
+            alert={{
+              title: "Testosterone libre: 8.2 pg/mL",
+              detail: "Range optimal: 15-25 pg/mL. Sous le seuil optimal de 40%. Action recommandee.",
+            }}
+            biomarkers={[
+              { name: "Testosterone totale", value: "485 ng/dL", range: "600-900", status: "low" },
+              { name: "Testosterone libre", value: "8.2 pg/mL", range: "15-25", status: "critical" },
+              { name: "SHBG", value: "62 nmol/L", range: "20-50", status: "high" },
+              { name: "Estradiol (E2)", value: "28 pg/mL", range: "20-35", status: "optimal" },
+              { name: "Cortisol matin", value: "18.5 µg/dL", range: "10-20", status: "optimal" },
+              { name: "IGF-1", value: "195 ng/mL", range: "200-350", status: "low" },
+            ]}
+            protocol={{
+              title: "Phase 1 — Semaines 1-4",
+              items: [
+                "Supplementation Vitamine D3: 4000 UI/jour avec repas gras",
+                "Magnesium bisglycinate: 400mg au coucher",
+                "Zinc picolinate: 30mg avec diner",
+                "Reduire stress chronique: protocole HRV + respiration",
+                "Optimiser sommeil: 7-8h, coucher avant 23h",
+              ],
+            }}
+          />
         </div>
-
-        <style>{`
-          @keyframes autoScroll {
-            0%, 8% { transform: translateY(0); }
-            25% { transform: translateY(-200px); }
-            45% { transform: translateY(-500px); }
-            65% { transform: translateY(-800px); }
-            85%, 100% { transform: translateY(-1050px); }
-          }
-        `}</style>
       </section>
 
       <section className="relative z-10 py-24 px-6 bg-[#0a0a0a]">
