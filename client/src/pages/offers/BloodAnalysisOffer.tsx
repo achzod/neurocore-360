@@ -712,23 +712,31 @@ export default function BloodAnalysisOffer() {
         </div>
       </section>
 
-      {/* Marqueurs card */}
+      {/* Marqueurs à demander — section complète */}
       <section className="relative z-10 bg-[#0a0a0a] pb-16 px-6">
-        <div className="mx-auto max-w-2xl">
+        <div className="mx-auto max-w-4xl">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, ease: "easeOut" }}
-            className="rounded-2xl border px-8 py-7 flex gap-5 items-start"
-            style={{ borderColor: "rgba(2,121,232,0.35)", background: "rgba(2,121,232,0.06)" }}
           >
-            <FlaskConical className="h-6 w-6 shrink-0 mt-0.5" style={{ color: PRIMARY_BLUE }} />
-            <div>
-              <p className="font-semibold text-white mb-2">La liste exacte des marqueurs a demander</p>
-              <p className="text-white/60 text-sm leading-relaxed">
-                Apres ton achat, je t'envoie la liste EXACTE des marqueurs a demander a ton medecin pour que ton rapport soit le plus complet possible. 39 marqueurs sur 6 panels — hormones, thyroide, metabolisme, inflammation, vitamines, foie/reins.
-              </p>
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-semibold tracking-tight mb-3">Quels marqueurs demander a ton medecin ?</h2>
+              <p className="text-white/50 text-sm max-w-2xl mx-auto">Montre cette liste a ton medecin ou demande-la directement au laboratoire. La plupart sont rembourses sur prescription.</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-black/40 p-8">
+              <div className="grid md:grid-cols-2 gap-6">
+                {PANELS.map((panel) => (
+                  <div key={panel.title}>
+                    <h3 className="font-semibold text-sm mb-2" style={{ color: PRIMARY_BLUE }}>{panel.title} ({panel.count} marqueurs)</h3>
+                    <p className="text-white/50 text-xs leading-relaxed">{panel.bullets.join(". ")}.</p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6 p-4 rounded-xl" style={{ background: "rgba(2,121,232,0.06)", borderColor: "rgba(2,121,232,0.2)" }}>
+                <p className="text-white/60 text-xs"><strong className="text-white/80">Astuce :</strong> Imprime cette page ou fais une capture d'ecran. Dis a ton medecin que tu veux un bilan complet pour optimisation de sante. Apres l'achat, je t'envoie aussi la liste par email.</p>
+              </div>
             </div>
           </motion.div>
         </div>
@@ -799,7 +807,7 @@ export default function BloodAnalysisOffer() {
       </section>
 
 
-      <section ref={panelsRef} className="py-24 px-6 bg-[#020202]">
+      <section ref={panelsRef} className="py-24 px-6 bg-[#0a0a0a]">
         <div className="mx-auto max-w-7xl">
           <div className="text-center">
             <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">39 biomarqueurs · 6 panels</h2>
@@ -917,7 +925,7 @@ export default function BloodAnalysisOffer() {
         </div>
       </section>
 
-      <section className="py-24 px-6 bg-[#020202]">
+      <section className="py-24 px-6 bg-[#0a0a0a]">
         <div className="mx-auto max-w-7xl">
           <div className="text-center">
             <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">Bibliotheque de connaissances</h2>
@@ -987,7 +995,7 @@ export default function BloodAnalysisOffer() {
         </div>
       </section>
 
-      <section className="py-24 px-6 bg-[#020202]">
+      <section className="py-24 px-6 bg-[#0a0a0a]">
         <div className="mx-auto max-w-4xl">
           <div className="text-center">
             <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">Questions frequentes</h2>
