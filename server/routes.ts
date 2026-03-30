@@ -2943,6 +2943,20 @@ export async function registerRoutes(
             discountAmountCents: discountCents,
           });
           if (planType === "BLOOD_ANALYSIS") {
+            // Add +1 blood credit (promo 100% = free, but still needs credit to upload)
+            try {
+              const { pool } = await import("./db");
+              let user = await storage.getUserByEmail(email);
+              if (!user) {
+                user = await storage.createUser({ email, credits: 1 });
+                console.log(`[Checkout] Created user ${email} with 1 blood credit (promo 100%)`);
+              } else {
+                await pool.query("UPDATE users SET blood_credits = blood_credits + 1 WHERE email = $1", [email]);
+                console.log(`[Checkout] +1 blood credit for ${email} (promo 100%)`);
+              }
+            } catch (creditErr) {
+              console.error(`[Checkout] Blood credit error for ${email}:`, creditErr);
+            }
             res.json({ success: true, free: true, auditId: "", auditType: "BLOOD_ANALYSIS", email });
             return;
           }
@@ -3260,6 +3274,19 @@ export async function registerRoutes(
           });
         }
         if (planType === "BLOOD_ANALYSIS") {
+          // Add +1 blood credit (PayPal promo 100%)
+          try {
+            const { pool } = await import("./db");
+            let user = await storage.getUserByEmail(email);
+            if (!user) {
+              user = await storage.createUser({ email, credits: 1 });
+            } else {
+              await pool.query("UPDATE users SET blood_credits = blood_credits + 1 WHERE email = $1", [email]);
+            }
+            console.log(`[PayPal] +1 blood credit for ${email} (promo 100%)`);
+          } catch (creditErr) {
+            console.error(`[PayPal] Blood credit error:`, creditErr);
+          }
           res.json({ success: true, free: true, auditId: "", auditType: "BLOOD_ANALYSIS", email });
           return;
         }
