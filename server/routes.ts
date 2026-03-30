@@ -2842,28 +2842,44 @@ export async function registerRoutes(
     try {
       const { priceId: clientPriceId, email, planType, responses, promoCode, referrer } = req.body;
 
-      // PEPTIDES_ENGINE: if already paid, skip checkout and trigger generation
+      // PEPTIDES_ENGINE: if already paid, skip checkout and trigger generation in background
       if (planType === "PEPTIDES_ENGINE" && email) {
         const existingOrders = await storage.getOrdersByEmail(email);
         const paidPeptides = existingOrders.find((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid");
         if (paidPeptides) {
-          console.log(`[Checkout] Peptides Engine already paid for ${email} — generating protocol directly`);
-          // Save responses and trigger generation
+          console.log(`[Checkout] Peptides Engine already paid for ${email} — saving responses and generating in background`);
+          // Save responses to server
           if (responses && Object.keys(responses).length >= 3) {
             try {
-              const { generatePeptidesProtocol } = await import("./peptidesEngine");
-              const report = await generatePeptidesProtocol(responses, email);
-              const reportData = { email: `peptides::${email}`, type: "peptides", responses: report as any };
-              const saved = await storage.createBurnoutReport(reportData);
-              console.log(`[Checkout] ✅ Peptides protocol generated for already-paid ${email}: ${saved.id}`);
-              res.json({ success: true, alreadyPaid: true, reportId: saved.id, url: null, redirect: `/peptides/${saved.id}` });
-            } catch (genErr) {
-              console.error(`[Checkout] Peptides generation failed for ${email}:`, genErr);
-              res.json({ success: true, alreadyPaid: true, url: null, redirect: "/dashboard?success=true" });
-            }
-          } else {
-            res.json({ success: true, alreadyPaid: true, url: null, redirect: "/dashboard?success=true" });
+              await storage.saveBurnoutProgress({
+                email: `peptides::${email}`,
+                currentSection: 6,
+                totalSections: 6,
+                responses,
+              });
+            } catch { /* best effort */ }
+            // Generate in BACKGROUND (don't block the response)
+            (async () => {
+              try {
+                const { generatePeptidesProtocol } = await import("./peptidesEngine");
+                const report = await generatePeptidesProtocol(responses, email);
+                const reportData = { email: `peptides::${email}`, type: "peptides", responses: report as any };
+                const saved = await storage.createBurnoutReport(reportData);
+                console.log(`[Checkout] ✅ Peptides protocol generated for already-paid ${email}: ${saved.id}`);
+                // Send email with report link
+                const baseUrl = getBaseUrl();
+                await sendCTAEmail(
+                  email,
+                  "Ton protocole Peptides Engine est pret",
+                  `Ton protocole personnalise est pret !\n\nAccede a ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}\n\nAchzod`
+                ).catch(() => {});
+              } catch (genErr) {
+                console.error(`[Checkout] Background peptides generation failed for ${email}:`, genErr);
+              }
+            })();
           }
+          // Respond IMMEDIATELY — don't wait for generation
+          res.json({ success: true, alreadyPaid: true, url: null, redirect: "/dashboard?success=true&generating=peptides" });
           return;
         }
       }
