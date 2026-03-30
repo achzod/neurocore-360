@@ -867,7 +867,7 @@ export default function BloodAnalysisOffer() {
           <div className="text-center">
             <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">Ranges optimaux vs normaux</h2>
             <p className="mt-4 text-white/50 max-w-3xl mx-auto">
-              “Normal” ne veut pas dire “optimal” si ton objectif est performance, composition corporelle, energie et longevite.
+              "Normal" ne veut pas dire "optimal" si ton objectif est performance, composition corporelle, energie et longevite.
             </p>
           </div>
 
@@ -886,7 +886,7 @@ export default function BloodAnalysisOffer() {
                 <p className="text-sm font-semibold">Exemple: testosterone totale</p>
                 <p className="mt-2 text-sm text-white/70">Normal labo: 300–1000 ng/dL</p>
                 <p className="mt-4 text-sm text-white/70">
-                  350 = “normal”, mais souvent associe a fatigue, libido basse, progression lente.
+                  350 = "normal", mais souvent associe a fatigue, libido basse, progression lente.
                 </p>
               </div>
             </div>
@@ -948,98 +948,98 @@ export default function BloodAnalysisOffer() {
         </div>
       </section>
 
-      <section ref={exampleRef} className=”relative z-10 bg-[#0a0a0a] py-24 px-6”>
-        <div className=”mx-auto max-w-5xl”>
-          <div className=”text-center mb-14”>
-            <h2 className=”text-4xl md:text-5xl font-semibold tracking-tight”>Exemple de rapport</h2>
-            <p className=”mt-4 text-white/50 max-w-3xl mx-auto”>
+      <section ref={exampleRef} className="relative z-10 bg-[#0a0a0a] py-24 px-6">
+        <div className="mx-auto max-w-5xl">
+          <div className="text-center mb-14">
+            <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">Exemple de rapport</h2>
+            <p className="mt-4 text-white/50 max-w-3xl mx-auto">
               Voici a quoi ressemble ton rapport. Score global, breakdown par panels, alertes, protocoles et plan d'action.
             </p>
           </div>
 
           {/* Auto-scrolling report preview */}
-          <div className=”relative rounded-2xl border border-white/15 overflow-hidden” style={{ height: “520px” }}>
+          <div className="relative rounded-2xl border border-white/15 overflow-hidden" style={{ height: "520px" }}>
             {/* Top fade */}
-            <div className=”absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-[#0a0a0a] to-transparent z-20 pointer-events-none” />
+            <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-[#0a0a0a] to-transparent z-20 pointer-events-none" />
             {/* Bottom fade */}
-            <div className=”absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#0a0a0a] to-transparent z-20 pointer-events-none” />
+            <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#0a0a0a] to-transparent z-20 pointer-events-none" />
             {/* Browser chrome */}
-            <div className=”absolute top-0 left-0 right-0 h-10 bg-[#1a1a1a] border-b border-white/10 z-30 flex items-center px-4 gap-2”>
-              <div className=”w-3 h-3 rounded-full bg-red-500/60” />
-              <div className=”w-3 h-3 rounded-full bg-yellow-500/60” />
-              <div className=”w-3 h-3 rounded-full bg-green-500/60” />
-              <div className=”ml-4 flex-1 h-6 rounded bg-white/5 flex items-center px-3”>
-                <span className=”text-[10px] text-white/30 font-mono”>apexlabs.achzodcoaching.com/analysis/rapport-demo</span>
+            <div className="absolute top-0 left-0 right-0 h-10 bg-[#1a1a1a] border-b border-white/10 z-30 flex items-center px-4 gap-2">
+              <div className="w-3 h-3 rounded-full bg-red-500/60" />
+              <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
+              <div className="w-3 h-3 rounded-full bg-green-500/60" />
+              <div className="ml-4 flex-1 h-6 rounded bg-white/5 flex items-center px-3">
+                <span className="text-[10px] text-white/30 font-mono">apexlabs.achzodcoaching.com/analysis/rapport-demo</span>
               </div>
             </div>
 
             {/* Scrolling content */}
-            <div className=”pt-10 animate-[autoScroll_25s_ease-in-out_infinite]”>
-              <div className=”bg-[#0a0a0a] p-8 space-y-8”>
+            <div className="pt-10 animate-[autoScroll_25s_ease-in-out_infinite]">
+              <div className="bg-[#0a0a0a] p-8 space-y-8">
                 {/* Score header */}
-                <div className=”border border-white/10 rounded-xl p-8”>
-                  <p className=”text-xs uppercase tracking-[0.3em] text-white/40 mb-2”>Blood Analysis Report</p>
-                  <div className=”flex items-end gap-4 mb-4”>
-                    <span className=”text-6xl font-black” style={{ color: PRIMARY_BLUE }}>78</span>
-                    <span className=”text-2xl text-white/40 mb-2”>/100</span>
+                <div className="border border-white/10 rounded-xl p-8">
+                  <p className="text-xs uppercase tracking-[0.3em] text-white/40 mb-2">Blood Analysis Report</p>
+                  <div className="flex items-end gap-4 mb-4">
+                    <span className="text-6xl font-black" style={{ color: PRIMARY_BLUE }}>78</span>
+                    <span className="text-2xl text-white/40 mb-2">/100</span>
                   </div>
-                  <p className=”text-white/60 text-sm leading-relaxed max-w-xl”>
+                  <p className="text-white/60 text-sm leading-relaxed max-w-xl">
                     Ton profil montre un axe cardio-metabolique a optimiser (TG/HDL elevé), un levier hormonal clair
                     (testosterone libre basse), et des carences en vitamine D et magnesium. Plan en 3 phases.
                   </p>
                 </div>
 
                 {/* Radar / Panels */}
-                <div className=”grid grid-cols-3 gap-3”>
+                <div className="grid grid-cols-3 gap-3">
                   {[
-                    { name: “Hormones”, score: 72, color: “#f59e0b” },
-                    { name: “Thyroide”, score: 88, color: “#22c55e” },
-                    { name: “Metabolisme”, score: 61, color: “#ef4444” },
-                    { name: “Inflammation”, score: 65, color: “#f59e0b” },
-                    { name: “Vitamines”, score: 90, color: “#22c55e” },
-                    { name: “Foie/Rein”, score: 92, color: “#22c55e” },
+                    { name: "Hormones", score: 72, color: "#f59e0b" },
+                    { name: "Thyroide", score: 88, color: "#22c55e" },
+                    { name: "Metabolisme", score: 61, color: "#ef4444" },
+                    { name: "Inflammation", score: 65, color: "#f59e0b" },
+                    { name: "Vitamines", score: 90, color: "#22c55e" },
+                    { name: "Foie/Rein", score: 92, color: "#22c55e" },
                   ].map((p) => (
-                    <div key={p.name} className=”border border-white/10 rounded-lg p-4”>
-                      <div className=”flex justify-between items-center mb-2”>
-                        <span className=”text-xs font-semibold text-white/80”>{p.name}</span>
-                        <span className=”text-sm font-bold” style={{ color: p.color }}>{p.score}</span>
+                    <div key={p.name} className="border border-white/10 rounded-lg p-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-xs font-semibold text-white/80">{p.name}</span>
+                        <span className="text-sm font-bold" style={{ color: p.color }}>{p.score}</span>
                       </div>
-                      <div className=”h-1.5 bg-white/10 rounded-full overflow-hidden”>
-                        <div className=”h-full rounded-full” style={{ width: `${p.score}%`, backgroundColor: p.color }} />
+                      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full" style={{ width: `${p.score}%`, backgroundColor: p.color }} />
                       </div>
                     </div>
                   ))}
                 </div>
 
                 {/* Alert */}
-                <div className=”border border-red-500/30 bg-red-500/5 rounded-xl p-5”>
-                  <div className=”flex items-center gap-2 mb-2”>
-                    <div className=”w-2 h-2 rounded-full bg-red-500 animate-pulse” />
-                    <span className=”text-xs font-semibold text-red-400 uppercase tracking-wider”>Alerte prioritaire</span>
+                <div className="border border-red-500/30 bg-red-500/5 rounded-xl p-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                    <span className="text-xs font-semibold text-red-400 uppercase tracking-wider">Alerte prioritaire</span>
                   </div>
-                  <p className=”text-sm text-white/70”>Testosterone libre: <strong className=”text-white”>8.2 pg/mL</strong> — Range optimal: 15-25 pg/mL. Sous le seuil optimal de 40%. Action recommandee.</p>
+                  <p className="text-sm text-white/70">Testosterone libre: <strong className="text-white">8.2 pg/mL</strong> — Range optimal: 15-25 pg/mL. Sous le seuil optimal de 40%. Action recommandee.</p>
                 </div>
 
                 {/* Biomarker detail */}
-                <div className=”border border-white/10 rounded-xl p-5”>
-                  <p className=”text-xs uppercase tracking-wider text-white/40 mb-4”>Panel hormonal — Detail</p>
+                <div className="border border-white/10 rounded-xl p-5">
+                  <p className="text-xs uppercase tracking-wider text-white/40 mb-4">Panel hormonal — Detail</p>
                   {[
-                    { name: “Testosterone totale”, value: “485 ng/dL”, range: “600-900”, status: “low” },
-                    { name: “Testosterone libre”, value: “8.2 pg/mL”, range: “15-25”, status: “critical” },
-                    { name: “SHBG”, value: “62 nmol/L”, range: “20-50”, status: “high” },
-                    { name: “Estradiol (E2)”, value: “28 pg/mL”, range: “20-35”, status: “optimal” },
-                    { name: “Cortisol matin”, value: “18.5 µg/dL”, range: “10-20”, status: “optimal” },
-                    { name: “IGF-1”, value: “195 ng/mL”, range: “200-350”, status: “low” },
+                    { name: "Testosterone totale", value: "485 ng/dL", range: "600-900", status: "low" },
+                    { name: "Testosterone libre", value: "8.2 pg/mL", range: "15-25", status: "critical" },
+                    { name: "SHBG", value: "62 nmol/L", range: "20-50", status: "high" },
+                    { name: "Estradiol (E2)", value: "28 pg/mL", range: "20-35", status: "optimal" },
+                    { name: "Cortisol matin", value: "18.5 µg/dL", range: "10-20", status: "optimal" },
+                    { name: "IGF-1", value: "195 ng/mL", range: "200-350", status: "low" },
                   ].map((m) => (
-                    <div key={m.name} className=”flex items-center justify-between py-2.5 border-b border-white/5 last:border-0”>
-                      <span className=”text-sm text-white/70”>{m.name}</span>
-                      <div className=”flex items-center gap-3”>
-                        <span className=”text-sm font-mono text-white”>{m.value}</span>
+                    <div key={m.name} className="flex items-center justify-between py-2.5 border-b border-white/5 last:border-0">
+                      <span className="text-sm text-white/70">{m.name}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-mono text-white">{m.value}</span>
                         <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
-                          m.status === “critical” ? “bg-red-500/20 text-red-400” :
-                          m.status === “low” ? “bg-yellow-500/20 text-yellow-400” :
-                          m.status === “high” ? “bg-orange-500/20 text-orange-400” :
-                          “bg-green-500/20 text-green-400”
+                          m.status === "critical" ? "bg-red-500/20 text-red-400" :
+                          m.status === "low" ? "bg-yellow-500/20 text-yellow-400" :
+                          m.status === "high" ? "bg-orange-500/20 text-orange-400" :
+                          "bg-green-500/20 text-green-400"
                         }`}>{m.range}</span>
                       </div>
                     </div>
@@ -1047,26 +1047,26 @@ export default function BloodAnalysisOffer() {
                 </div>
 
                 {/* Protocol */}
-                <div className=”border border-white/10 rounded-xl p-5”>
-                  <p className=”text-xs uppercase tracking-wider mb-3” style={{ color: PRIMARY_BLUE }}>Plan d'action — Phase 1 (Semaines 1-4)</p>
-                  <div className=”space-y-3”>
+                <div className="border border-white/10 rounded-xl p-5">
+                  <p className="text-xs uppercase tracking-wider mb-3" style={{ color: PRIMARY_BLUE }}>Plan d'action — Phase 1 (Semaines 1-4)</p>
+                  <div className="space-y-3">
                     {[
-                      “Supplementation Vitamine D3: 4000 UI/jour avec repas gras”,
-                      “Magnesium bisglycinate: 400mg au coucher”,
-                      “Zinc picolinate: 30mg avec diner”,
-                      “Reduire stress chronique: protocole HRV + respiration”,
-                      “Optimiser sommeil: 7-8h, coucher avant 23h”,
+                      "Supplementation Vitamine D3: 4000 UI/jour avec repas gras",
+                      "Magnesium bisglycinate: 400mg au coucher",
+                      "Zinc picolinate: 30mg avec diner",
+                      "Reduire stress chronique: protocole HRV + respiration",
+                      "Optimiser sommeil: 7-8h, coucher avant 23h",
                     ].map((a) => (
-                      <div key={a} className=”flex items-start gap-2”>
-                        <Check className=”w-3.5 h-3.5 mt-0.5 shrink-0” style={{ color: PRIMARY_BLUE }} />
-                        <span className=”text-sm text-white/60”>{a}</span>
+                      <div key={a} className="flex items-start gap-2">
+                        <Check className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: PRIMARY_BLUE }} />
+                        <span className="text-sm text-white/60">{a}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
                 {/* Spacer for scroll */}
-                <div className=”h-40” />
+                <div className="h-40" />
               </div>
             </div>
           </div>

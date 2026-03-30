@@ -675,6 +675,122 @@ export default function AuditGratuit() {
         </div>
       </section>
 
+      {/* Report Preview */}
+      <section className="relative z-10 bg-[#0a0a0a] py-24 px-6">
+        <div className="mx-auto max-w-5xl">
+          <div className="text-center mb-14">
+            <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">Exemple de rapport</h2>
+            <p className="mt-4 text-white/50 max-w-3xl mx-auto">
+              Voici a quoi ressemble ton rapport Discovery. Score global, breakdown par domaine, blocages identifies et prochaines etapes.
+            </p>
+          </div>
+
+          {/* Auto-scrolling report preview */}
+          <div className="relative rounded-2xl border border-white/15 overflow-hidden" style={{ height: "520px" }}>
+            {/* Top fade */}
+            <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-[#0a0a0a] to-transparent z-20 pointer-events-none" />
+            {/* Bottom fade */}
+            <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#0a0a0a] to-transparent z-20 pointer-events-none" />
+            {/* Browser chrome */}
+            <div className="absolute top-0 left-0 right-0 h-10 bg-[#1a1a1a] border-b border-white/10 z-30 flex items-center px-4 gap-2">
+              <div className="w-3 h-3 rounded-full bg-red-500/60" />
+              <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
+              <div className="w-3 h-3 rounded-full bg-green-500/60" />
+              <div className="ml-4 flex-1 h-6 rounded bg-white/5 flex items-center px-3">
+                <span className="text-[10px] text-white/30 font-mono">apexlabs.achzodcoaching.com/scan/rapport-demo</span>
+              </div>
+            </div>
+
+            {/* Scrolling content */}
+            <div className="pt-10 animate-[autoScrollDiscovery_20s_ease-in-out_infinite]">
+              <div className="bg-[#0a0a0a] p-8 space-y-8">
+                {/* Score header */}
+                <div className="border border-white/10 rounded-xl p-8">
+                  <p className="text-xs uppercase tracking-[0.3em] text-white/40 mb-2">Discovery Scan Report</p>
+                  <div className="flex items-end gap-4 mb-4">
+                    <span className="text-6xl font-black" style={{ color: "#FCDD00" }}>64</span>
+                    <span className="text-2xl text-white/40 mb-2">/100</span>
+                  </div>
+                  <p className="text-white/60 text-sm leading-relaxed max-w-xl">
+                    Ton profil revele un deficit de sommeil chronique et un stress eleve qui impactent tes hormones et ton energie. 3 blocages prioritaires identifies.
+                  </p>
+                </div>
+
+                {/* 10 domain scores grid */}
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { name: "Sommeil", score: 45, color: "#ef4444" },
+                    { name: "Stress", score: 58, color: "#f59e0b" },
+                    { name: "Energie", score: 62, color: "#f59e0b" },
+                    { name: "Digestion", score: 71, color: "#22c55e" },
+                    { name: "Entrainement", score: 78, color: "#22c55e" },
+                    { name: "Nutrition", score: 55, color: "#f59e0b" },
+                    { name: "Lifestyle", score: 68, color: "#f59e0b" },
+                    { name: "Hormones", score: 52, color: "#f59e0b" },
+                    { name: "Mindset", score: 73, color: "#22c55e" },
+                    { name: "Recovery", score: 60, color: "#f59e0b" },
+                  ].map((p) => (
+                    <div key={p.name} className="border border-white/10 rounded-lg p-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-xs font-semibold text-white/80">{p.name}</span>
+                        <span className="text-sm font-bold" style={{ color: p.color }}>{p.score}</span>
+                      </div>
+                      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full" style={{ width: `${p.score}%`, backgroundColor: p.color }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Blocages identifies */}
+                <div className="border border-red-500/30 bg-red-500/5 rounded-xl p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                    <span className="text-xs font-semibold text-red-400 uppercase tracking-wider">Blocages identifies</span>
+                  </div>
+                  {["Deficit de sommeil chronique", "Cortisol eleve", "Apports proteiques insuffisants"].map((b) => (
+                    <div key={b} className="flex items-start gap-2 mt-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-red-400 mt-1.5 shrink-0" />
+                      <span className="text-sm text-white/70">{b}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Prochaines etapes */}
+                <div className="border border-white/10 rounded-xl p-5">
+                  <p className="text-xs uppercase tracking-wider mb-3" style={{ color: "#FCDD00" }}>Prochaines etapes recommandees</p>
+                  <div className="space-y-3">
+                    {[
+                      "Instaurer un rituel sommeil: coucher avant 23h, pas d'ecran 1h avant",
+                      "Integrer 30g de proteines au petit-dejeuner pour stabiliser le cortisol matin",
+                      "Completer avec l'Anabolic Bioscan pour les protocoles d'action complets",
+                    ].map((a) => (
+                      <div key={a} className="flex items-start gap-2">
+                        <Check className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "#FCDD00" }} />
+                        <span className="text-sm text-white/60">{a}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Spacer for scroll */}
+                <div className="h-40" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <style>{`
+          @keyframes autoScrollDiscovery {
+            0%, 8% { transform: translateY(0); }
+            25% { transform: translateY(-180px); }
+            45% { transform: translateY(-450px); }
+            65% { transform: translateY(-750px); }
+            85%, 100% { transform: translateY(-950px); }
+          }
+        `}</style>
+      </section>
+
       {/* FAQ */}
       <section className="py-32 px-6 border-t border-white/5">
         <div className="max-w-3xl mx-auto">

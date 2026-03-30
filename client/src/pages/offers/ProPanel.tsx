@@ -747,6 +747,140 @@ export default function ProPanel() {
         </div>
       </section>
 
+      {/* Report Preview */}
+      <section className="relative z-10 bg-[#0a0a0a] py-24 px-6">
+        <div className="mx-auto max-w-5xl">
+          <div className="text-center mb-14">
+            <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">Exemple de rapport</h2>
+            <p className="mt-4 text-white/50 max-w-3xl mx-auto">
+              Voici a quoi ressemble ton rapport Ultimate Scan. 18 sections, analyse posturale, donnees wearables et protocoles en profondeur.
+            </p>
+          </div>
+
+          {/* Auto-scrolling report preview */}
+          <div className="relative rounded-2xl border border-white/15 overflow-hidden" style={{ height: "520px" }}>
+            {/* Top fade */}
+            <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-[#0a0a0a] to-transparent z-20 pointer-events-none" />
+            {/* Bottom fade */}
+            <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#0a0a0a] to-transparent z-20 pointer-events-none" />
+            {/* Browser chrome */}
+            <div className="absolute top-0 left-0 right-0 h-10 bg-[#1a1a1a] border-b border-white/10 z-30 flex items-center px-4 gap-2">
+              <div className="w-3 h-3 rounded-full bg-red-500/60" />
+              <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
+              <div className="w-3 h-3 rounded-full bg-green-500/60" />
+              <div className="ml-4 flex-1 h-6 rounded bg-white/5 flex items-center px-3">
+                <span className="text-[10px] text-white/30 font-mono">apexlabs.achzodcoaching.com/ultimate/rapport-demo</span>
+              </div>
+            </div>
+
+            {/* Scrolling content */}
+            <div className="pt-10 animate-[autoScrollUltimate_25s_ease-in-out_infinite]">
+              <div className="bg-[#0a0a0a] p-8 space-y-8">
+                {/* Score header */}
+                <div className="border border-white/10 rounded-xl p-8">
+                  <p className="text-xs uppercase tracking-[0.3em] text-white/40 mb-2">Ultimate Scan Report</p>
+                  <div className="flex items-end gap-4 mb-4">
+                    <span className="text-6xl font-black" style={{ color: "#FCDD00" }}>72</span>
+                    <span className="text-2xl text-white/40 mb-2">/100</span>
+                  </div>
+                  <p className="text-white/60 text-sm leading-relaxed max-w-xl">
+                    Profil complet analyse sur 18 sections. Asymetries posturales detectees, donnees wearables integrees. Plan correctif en 3 phases.
+                  </p>
+                </div>
+
+                {/* 8 analysis sections */}
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { name: "Posture", score: 68, color: "#f59e0b" },
+                    { name: "Biomecanique", score: 71, color: "#22c55e" },
+                    { name: "Entrainement", score: 82, color: "#22c55e" },
+                    { name: "Cardio", score: 77, color: "#22c55e" },
+                    { name: "Metabolisme", score: 76, color: "#22c55e" },
+                    { name: "Sommeil", score: 55, color: "#f59e0b" },
+                    { name: "Digestion", score: 78, color: "#22c55e" },
+                    { name: "Hormones", score: 85, color: "#22c55e" },
+                  ].map((p) => (
+                    <div key={p.name} className="border border-white/10 rounded-lg p-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-xs font-semibold text-white/80">{p.name}</span>
+                        <span className="text-sm font-bold" style={{ color: p.color }}>{p.score}</span>
+                      </div>
+                      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full" style={{ width: `${p.score}%`, backgroundColor: p.color }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Photo analysis card */}
+                <div className="border border-purple-500/30 bg-purple-500/5 rounded-xl p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
+                    <span className="text-xs font-semibold text-purple-400 uppercase tracking-wider">Analyse Posturale</span>
+                  </div>
+                  {["Antéversion bassin detectee", "Epaule droite plus haute de 2cm"].map((f) => (
+                    <div key={f} className="flex items-start gap-2 mt-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-purple-400 mt-1.5 shrink-0" />
+                      <span className="text-sm text-white/70">{f}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Wearable data card */}
+                <div className="border border-white/10 rounded-xl p-5">
+                  <p className="text-xs uppercase tracking-wider text-white/40 mb-3">Donnees Oura Ring</p>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { label: "HRV", value: "45ms" },
+                      { label: "RHR", value: "58 bpm" },
+                      { label: "Sleep Score", value: "72" },
+                    ].map((d) => (
+                      <div key={d.label} className="text-center">
+                        <div className="text-lg font-bold text-white">{d.value}</div>
+                        <div className="text-[10px] text-white/40 mt-1">{d.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Protocol card */}
+                <div className="border border-white/10 rounded-xl p-5">
+                  <p className="text-xs uppercase tracking-wider mb-3" style={{ color: "#FCDD00" }}>Protocole Correctif — Phase 1</p>
+                  <div className="space-y-3">
+                    {[
+                      "Exercices de correction posturale: hip flexor stretch 2x/jour",
+                      "Renforcement trapeze inferieur: face pull 3x15 avant chaque seance",
+                      "Exposition lumiere naturelle 30min apres le reveil",
+                      "Magnesium Bisglycinate 300mg au coucher pour ameliorer HRV",
+                      "Cardio zone 2 — 3x45min/semaine pour optimiser RHR",
+                    ].map((a) => (
+                      <div key={a} className="flex items-start gap-2">
+                        <Check className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "#FCDD00" }} />
+                        <span className="text-sm text-white/60">{a}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Spacer for scroll */}
+                <div className="h-40" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <style>{`
+          @keyframes autoScrollUltimate {
+            0%, 8% { transform: translateY(0); }
+            20% { transform: translateY(-180px); }
+            38% { transform: translateY(-450px); }
+            55% { transform: translateY(-720px); }
+            72% { transform: translateY(-980px); }
+            88%, 100% { transform: translateY(-1200px); }
+          }
+        `}</style>
+      </section>
+
       {/* FAQ */}
       <section className="py-32 px-6 border-t border-white/5">
         <div className="max-w-3xl mx-auto">
