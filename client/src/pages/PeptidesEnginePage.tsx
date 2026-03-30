@@ -466,6 +466,19 @@ export default function PeptidesEnginePage() {
     mutationFn: async (method: "stripe" | "paypal") => {
       const email = (responses["pep_email"] as string) || "";
 
+      // CRITICAL: Save responses to server BEFORE checkout
+      // So the webhook can find them after payment
+      try {
+        await apiRequest("POST", "/api/peptides-engine/save-progress", {
+          email,
+          currentSection: 6,
+          totalSections: 6,
+          responses,
+        });
+      } catch {
+        // Best effort — continue to checkout even if save fails
+      }
+
       if (method === "paypal") {
         const res = await apiRequest("POST", "/api/paypal/create-order", {
           email,
@@ -490,10 +503,9 @@ export default function PeptidesEnginePage() {
       }
 
       if (data?.url) {
-        localStorage.removeItem(STORAGE_KEY);
+        // Do NOT clear localStorage — keep responses as backup until report is generated
         window.location.href = data.url;
       } else if (data?.approvalUrl) {
-        localStorage.removeItem(STORAGE_KEY);
         window.location.href = data.approvalUrl;
       } else {
         toast({
