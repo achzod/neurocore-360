@@ -5812,6 +5812,22 @@ export async function registerRoutes(
               }
             }
 
+            // Peptides Engine: add 2 blood credits directly on payment
+            if (email && planType === "PEPTIDES_ENGINE") {
+              try {
+                let user = await storage.getUserByEmail(email);
+                if (!user) {
+                  user = await storage.createUser({ email, credits: 2 });
+                  console.log(`[Webhook] ✅ Created user ${email} with 2 blood credits (Peptides Engine)`);
+                } else {
+                  await pool.query("UPDATE users SET blood_credits = blood_credits + 2 WHERE email = $1", [email]);
+                  console.log(`[Webhook] ✅ +2 blood credits for ${email} (Peptides Engine)`);
+                }
+              } catch (creditErr) {
+                console.error(`[Webhook] Peptides blood credit error:`, creditErr);
+              }
+            }
+
             // Blood Analysis: add +1 credit on payment
             if (email && planType === "BLOOD_ANALYSIS") {
               try {
