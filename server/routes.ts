@@ -4879,7 +4879,10 @@ export async function registerRoutes(
         console.error("[Cron] Peptides sequences error:", pepErr);
       }
 
-      results = { ...results, peptidesS4, peptidesS8, peptidesS12, peptidesS16 } as any;
+      (results as any).peptidesS4 = peptidesS4;
+      (results as any).peptidesS8 = peptidesS8;
+      (results as any).peptidesS12 = peptidesS12;
+      (results as any).peptidesS16 = peptidesS16;
 
       console.log(`[Cron] Email sequences processed:`, results);
       res.json({ success: true, ...results, processedAt: new Date().toISOString() });
