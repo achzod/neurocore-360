@@ -518,7 +518,7 @@ ${buildCatalogForPrompt()}
 RECONSTITUTION ET STOCKAGE
 - BAC water (eau bactériostatique): solvant standard pour lyophilisats
 - Volume BAC: typiquement 1-2 mL pour vials 2-5 mg
-- FORMULE DE CALCUL: (dose voulue en mcg / concentration en mcg par mL) × 100 = unités sur seringue U-100
+FORMULE DE CALCUL: (dose voulue en mcg / concentration en mcg par mL) × 100 = unités sur seringue U-100. IMPORTANT: donne TOUJOURS l'équivalent en ml en plus des unités. Exemple: "10 unités (soit 0.10 ml)" car beaucoup de clients comprennent mieux les ml que les unités. 100 unités = 1 ml, donc 10 unités = 0.10 ml, 25 unités = 0.25 ml, etc.
 - Seringues: insuline U-100 (31G × 8mm) pour SC; 25-27G pour IM
 - Injection SC: ventre (2 cm autour du nombril), cuisse externe, flanc — angle 45° ou pli cutané
 - Rotation des sites d'injection: ne jamais piquer 2 fois au même endroit consécutif
@@ -668,7 +668,7 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
       "timing": "Horaire précis et conditions",
       "route": "SC / IM / Intranasal",
       "cycleDuration": "X semaines, pause Y semaines",
-      "reconstitution": "Vial [Xmg] + [Y]ml BAC water = [Z]mcg/ml → [N] unités U-100 pour [dose]mcg",
+      "reconstitution": "Vial [Xmg] + [Y]ml BAC water = [Z]mcg/ml → [N] unités (soit [X.XX] ml) pour [dose]mcg",
       "vialsNeeded": "X vials pour le cycle complet",
       "purchaseUrl": "https://www.peptaura.com/catalog/[SLUG_EXACT]",
       "priceEstimate": "~$XX/vial × Y vials = $ZZ total (~€WW)"
