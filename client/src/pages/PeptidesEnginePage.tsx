@@ -502,8 +502,12 @@ export default function PeptidesEnginePage() {
         // analytics failure must never block redirect
       }
 
-      if (data?.url) {
-        // Do NOT clear localStorage — keep responses as backup until report is generated
+      if (data?.alreadyPaid && data?.redirect) {
+        // Already paid — redirect to report or dashboard
+        localStorage.removeItem(STORAGE_KEY);
+        window.location.href = data.redirect;
+      } else if (data?.url) {
+        // Stripe checkout redirect
         window.location.href = data.url;
       } else if (data?.approvalUrl) {
         window.location.href = data.approvalUrl;

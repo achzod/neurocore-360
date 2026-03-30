@@ -2842,6 +2842,32 @@ export async function registerRoutes(
     try {
       const { priceId: clientPriceId, email, planType, responses, promoCode } = req.body;
 
+      // PEPTIDES_ENGINE: if already paid, skip checkout and trigger generation
+      if (planType === "PEPTIDES_ENGINE" && email) {
+        const existingOrders = await storage.getOrdersByEmail(email);
+        const paidPeptides = existingOrders.find((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid");
+        if (paidPeptides) {
+          console.log(`[Checkout] Peptides Engine already paid for ${email} — generating protocol directly`);
+          // Save responses and trigger generation
+          if (responses && Object.keys(responses).length >= 3) {
+            try {
+              const { generatePeptidesProtocol } = await import("./peptidesEngine");
+              const report = await generatePeptidesProtocol(responses, email);
+              const reportData = { email: `peptides::${email}`, type: "peptides", responses: report as any };
+              const saved = await storage.createBurnoutReport(reportData);
+              console.log(`[Checkout] ✅ Peptides protocol generated for already-paid ${email}: ${saved.id}`);
+              res.json({ success: true, alreadyPaid: true, reportId: saved.id, url: null, redirect: `/peptides/${saved.id}` });
+            } catch (genErr) {
+              console.error(`[Checkout] Peptides generation failed for ${email}:`, genErr);
+              res.json({ success: true, alreadyPaid: true, url: null, redirect: "/dashboard?success=true" });
+            }
+          } else {
+            res.json({ success: true, alreadyPaid: true, url: null, redirect: "/dashboard?success=true" });
+          }
+          return;
+        }
+      }
+
       // Server-side price ID lookup as fallback when frontend doesn't send priceId
       const PRICE_ID_MAP: Record<string, string | undefined> = {
         PREMIUM: process.env.VITE_STRIPE_PRICE_ANABOLIC,
