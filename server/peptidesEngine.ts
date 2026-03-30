@@ -901,9 +901,69 @@ export async function generatePeptidesProtocol(
   const firstName = extractFirstName(responses, email);
   const userPrompt = buildUserPrompt(responses, firstName);
 
-  // Generate protocol
-  const rawResponse = await callClaudeForPeptides(SYSTEM_PROMPT, userPrompt);
-  let report = extractJsonFromResponse(rawResponse);
+  // Generate with retry (up to 2 attempts)
+  let report: PeptidesReport | null = null;
+  let lastError = "";
+
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      console.log(`[PeptidesEngine] Attempt ${attempt}/2 for ${email}`);
+      const rawResponse = await callClaudeForPeptides(SYSTEM_PROMPT, userPrompt);
+      report = extractJsonFromResponse(rawResponse);
+
+      // ════════════════════════════════════════════════════════════
+      // VALIDATION BETON — ne rien laisser passer
+      // ════════════════════════════════════════════════════════════
+
+      // CHECK 1: sections exist and have content
+      if (!report.sections || report.sections.length < 5) {
+        throw new Error(`VALIDATION: seulement ${report.sections?.length ?? 0} sections (min 5)`);
+      }
+      const emptySections = report.sections.filter(s => !s.content || s.content.length < 100);
+      if (emptySections.length > 2) {
+        throw new Error(`VALIDATION: ${emptySections.length} sections vides ou trop courtes`);
+      }
+
+      // CHECK 2: peptides exist
+      if (!report.peptides || report.peptides.length === 0) {
+        throw new Error("VALIDATION: 0 peptides dans le rapport");
+      }
+
+      // CHECK 3: each peptide has required fields
+      for (const pep of report.peptides) {
+        if (!pep.name || !pep.dosage || !pep.route) {
+          throw new Error(`VALIDATION: peptide incomplet — name=${pep.name} dosage=${pep.dosage}`);
+        }
+      }
+
+      // CHECK 4: total content length
+      const totalContent = report.sections.reduce((sum, s) => sum + (s.content?.length ?? 0), 0);
+      if (totalContent < 5000) {
+        throw new Error(`VALIDATION: contenu total trop court (${totalContent} chars, min 5000)`);
+      }
+
+      // CHECK 5: client name present
+      if (!report.clientName || report.clientName === "Profil") {
+        report.clientName = firstName;
+      }
+
+      console.log(`[PeptidesEngine] ✅ Validation OK: ${report.sections.length} sections, ${report.peptides.length} peptides, ${totalContent} chars`);
+      break; // Success — exit retry loop
+
+    } catch (err: any) {
+      lastError = err.message || String(err);
+      console.error(`[PeptidesEngine] ❌ Attempt ${attempt} failed: ${lastError}`);
+      report = null;
+      if (attempt < 2) {
+        console.log(`[PeptidesEngine] Retrying in 3s...`);
+        await sleep(3000);
+      }
+    }
+  }
+
+  if (!report) {
+    throw new Error(`[PeptidesEngine] Generation failed after 2 attempts: ${lastError}`);
+  }
 
   // Validate and fix Peptaura URLs (never trust Claude's URLs)
   report = validateAndFixPeptauraUrls(report);
@@ -915,9 +975,12 @@ export async function generatePeptidesProtocol(
   // Normalize
   report.clientName = firstName;
 
-  console.log(
-    `[PeptidesEngine] Done for ${email} — ${report.peptides?.length ?? 0} peptides, ${report.sections?.length ?? 0} sections`
-  );
+  // FINAL CHECK — log everything
+  console.log(`[PeptidesEngine] ✅ FINAL: ${email}`);
+  console.log(`[PeptidesEngine]   Sections: ${report.sections.length}`);
+  console.log(`[PeptidesEngine]   Peptides: ${report.peptides.map(p => p.name).join(", ")}`);
+  console.log(`[PeptidesEngine]   Promos: ${report.promoCodesGenerated.join(", ")}`);
+  console.log(`[PeptidesEngine]   Content: ${report.sections.reduce((s, sec) => s + (sec.content?.length ?? 0), 0)} chars`);
 
   return report;
 }
