@@ -548,6 +548,16 @@ Chaque protocole DOIT inclure des recommandations nutritionnelles poussées et p
 - Aliments à éviter pendant le cycle : alcool (bloque la GH nocturne), excès de sucres rapides (résistance insulinique)
 - Adapte les conseils au profil du client (son type d'entraînement, sa nutrition actuelle, ses contraintes)
 
+GESTION DE L'ARRÊT DES PEPTIDES COUPE-FAIM (Semaglutide, Tirzepatide, Retatrutide)
+Si le protocole inclut un agoniste GLP-1/GIP, tu DOIS inclure une section sur la gestion de l'arrêt dans "securite-surveillance" ou "prochaines-etapes". C'est CRITIQUE car l'effet rebond est le problème numéro 1. Explique :
+- Ne JAMAIS arrêter d'un coup. Réduction progressive sur 4-6 semaines (dose cible → 50% → 25% → arrêt)
+- Pendant la descente : mettre en place les habitudes alimentaires AVANT l'arrêt complet. Le peptide donne un filet de sécurité pendant que le client installe ses nouveaux comportements.
+- Objectif : que le client mange naturellement à sa dose de maintien AVANT d'arrêter le peptide
+- L'effet rebond arrive quand on arrête brutalement sans avoir changé ses habitudes. Le peptide supprime l'appétit artificiellement — si tu n'as pas appris à manger correctement pendant le cycle, tu reprends tout.
+- Stratégie anti-rebond : tracking calorique pendant les 4 dernières semaines du cycle, mise en place d'un plan alimentaire de maintien, augmentation progressive du volume alimentaire à base de protéines et fibres (satiété naturelle)
+- Recommander un suivi Blood Analysis post-cycle pour vérifier que les marqueurs métaboliques (HbA1c, insuline, TG) restent stables après l'arrêt
+- Si rechute : possibilité de refaire un cycle court (4-6 semaines) à dose réduite pour stabiliser
+
 FORMAT DE RÉPONSE
 Tu dois répondre UNIQUEMENT avec un objet JSON valide (pas de markdown, pas de texte autour).
 Le JSON doit respecter exactement la structure demandée dans le prompt utilisateur.`;
