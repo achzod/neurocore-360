@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation } from "@tanstack/react-query";
@@ -398,7 +398,7 @@ export default function PeptidesEnginePage() {
   const isLastSection = sectionIndex === totalSections - 1;
   const progress = showCheckout ? 100 : Math.round(((sectionIndex + 1) / totalSections) * 100);
 
-  // Load from localStorage on mount
+  // Load from localStorage on mount + recovery save to server
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -407,6 +407,17 @@ export default function PeptidesEnginePage() {
         if (parsed.responses) setResponses(parsed.responses);
         if (typeof parsed.sectionIndex === "number") setSectionIndex(parsed.sectionIndex);
         if (parsed.showCheckout) setShowCheckout(true);
+
+        // Recovery: if responses have email, send to server as backup
+        const email = parsed.responses?.pep_email as string;
+        if (email && email.includes("@") && Object.keys(parsed.responses).length >= 5) {
+          apiRequest("POST", "/api/peptides-engine/save-progress", {
+            email,
+            currentSection: parsed.sectionIndex ?? 0,
+            totalSections: PEPTIDES_SECTIONS.length,
+            responses: parsed.responses,
+          }).catch(() => {});
+        }
       }
     } catch {
       // Corrupted storage — start fresh
@@ -429,11 +440,29 @@ export default function PeptidesEnginePage() {
     setResponses((prev) => ({ ...prev, [id]: value }));
   };
 
+  // Auto-save responses server-side on section change (fire-and-forget)
+  const saveToServer = useCallback(async (section: number, currentResponses: Record<string, unknown>) => {
+    const email = currentResponses["pep_email"] as string;
+    if (!email || !email.includes("@")) return;
+    try {
+      await apiRequest("POST", "/api/peptides-engine/save-progress", {
+        email,
+        currentSection: section,
+        totalSections: PEPTIDES_SECTIONS.length,
+        responses: currentResponses,
+      });
+    } catch {
+      // Auto-save is best-effort during questionnaire
+    }
+  }, []);
+
   const handleNext = () => {
     if (isLastSection) {
       setShowCheckout(true);
+      saveToServer(sectionIndex + 1, responses);
     } else {
       setSectionIndex((i) => Math.min(i + 1, totalSections - 1));
+      saveToServer(sectionIndex + 1, responses);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
@@ -466,17 +495,23 @@ export default function PeptidesEnginePage() {
     mutationFn: async (method: "stripe" | "paypal") => {
       const email = (responses["pep_email"] as string) || "";
 
-      // CRITICAL: Save responses to server BEFORE checkout
-      // So the webhook can find them after payment
-      try {
-        await apiRequest("POST", "/api/peptides-engine/save-progress", {
-          email,
-          currentSection: 6,
-          totalSections: 6,
-          responses,
-        });
-      } catch {
-        // Best effort — continue to checkout even if save fails
+      // CRITICAL: Save responses to server BEFORE checkout — MANDATORY
+      // If this fails, abort checkout. A client must never pay without responses saved.
+      const saveRes = await apiRequest("POST", "/api/peptides-engine/save-progress", {
+        email,
+        currentSection: PEPTIDES_SECTIONS.length,
+        totalSections: PEPTIDES_SECTIONS.length,
+        responses,
+      });
+      if (!saveRes.ok) {
+        throw new Error("Impossible de sauvegarder tes reponses. Reessaie.");
+      }
+
+      // Verify responses exist server-side (double-check)
+      const verifyRes = await apiRequest("GET", `/api/peptides-engine/verify-responses?email=${encodeURIComponent(email)}`);
+      const verifyData = await verifyRes.json();
+      if (!verifyData.verified) {
+        throw new Error("Verification echouee. Reessaie dans quelques secondes.");
       }
 
       // Capture referrer from URL
@@ -523,10 +558,10 @@ export default function PeptidesEnginePage() {
         });
       }
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue. Reessaie.",
+        description: error?.message || "Une erreur est survenue. Reessaie.",
         variant: "destructive",
       });
     },

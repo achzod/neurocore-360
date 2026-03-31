@@ -3064,7 +3064,7 @@ export async function registerRoutes(
           stripeCheckoutSessionId: session.id,
           ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null,
           userAgent: req.headers["user-agent"] || null,
-          metadata: { planType, responsesPreview: responses ? JSON.stringify(responses).substring(0, 200) : '' },
+          metadata: { planType, peptidesResponses: planType === "PEPTIDES_ENGINE" ? responses : undefined },
         });
 
         // Track promo code usage on the order
@@ -3404,7 +3404,7 @@ export async function registerRoutes(
           paypalOrderId,
           ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null,
           userAgent: req.headers["user-agent"] || null,
-          metadata: { planType, paymentMethod: "paypal", responsesPreview: responses ? JSON.stringify(responses).substring(0, 200) : '' },
+          metadata: { planType, paymentMethod: "paypal", peptidesResponses: planType === "PEPTIDES_ENGINE" ? responses : undefined },
         });
 
         if (validatedPromoCode && promoObj) {
@@ -3536,18 +3536,39 @@ export async function registerRoutes(
           console.error(`[PayPal] Blood credit error:`, creditErr);
         }
 
-        // Generate protocol in background
+        // Generate protocol in background with waterfall recovery
         (async () => {
           try {
+            let responses: Record<string, unknown> | undefined;
+
+            // Source 1: burnout_progress (primary)
             const progress = await storage.getBurnoutProgress(`peptides::${email}`);
-            const responses = progress?.responses;
+            if (progress?.responses && Object.keys(progress.responses).length >= 3) {
+              responses = progress.responses as Record<string, unknown>;
+              console.log(`[PayPal] Responses found in burnout_progress (${Object.keys(responses).length} fields)`);
+            }
+
+            // Source 2: order metadata (backup)
+            if (!responses) {
+              const meta = existingOrder.metadata as any;
+              if (meta?.peptidesResponses && Object.keys(meta.peptidesResponses).length >= 3) {
+                responses = meta.peptidesResponses;
+                console.log(`[PayPal] Responses RECOVERED from order metadata (${Object.keys(responses!).length} fields)`);
+              }
+            }
+
             if (!responses || Object.keys(responses).length < 3) {
-              console.error(`[PayPal] No saved responses for ${email} — cannot generate`);
+              console.error(`[PayPal] CRITICAL: No responses for ${email} — alerting admin`);
+              const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
+              await sendCTAEmail(adminEmail, `ALERTE: Reponses peptides manquantes — ${email}`,
+                `URGENT: Client a paye 299EUR via PayPal mais aucune reponse trouvee.\n\nEmail: ${email}\nOrder: ${existingOrder.id}\n\nAction: contacter le client.`
+              ).catch(() => {});
               return;
             }
+
             const { generatePeptidesProtocol } = await import("./peptidesEngine");
             const report = await generatePeptidesProtocol(responses, email);
-            const saved = await storage.createBurnoutReport({ email: `peptides::${email}`, responses: responses || {}, report });
+            const saved = await storage.createBurnoutReport({ email: `peptides::${email}`, responses, report });
             console.log(`[PayPal] Peptides protocol generated for ${email}: ${saved.id}`);
 
             // Link report to order
@@ -3645,6 +3666,39 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("[Admin] Peptides generate error:", error);
       res.status(500).json({ error: error.message || "Erreur generation" });
+    }
+  });
+
+  // Admin: inject responses manually for a paid peptides client (last resort recovery)
+  app.post("/api/admin/peptides-inject-responses", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { email, responses } = req.body;
+      if (!email || !responses || Object.keys(responses).length < 3) {
+        res.status(400).json({ error: "email et responses (min 3 champs) requis" });
+        return;
+      }
+
+      await storage.saveBurnoutProgress({
+        email: `peptides::${email}`,
+        currentSection: 6,
+        totalSections: 6,
+        responses,
+      });
+
+      // Also save to order metadata as backup
+      const orders = await storage.getOrdersByEmail(email);
+      const pepOrder = orders.find((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid");
+      if (pepOrder) {
+        await storage.updateOrder(pepOrder.id, {
+          metadata: { ...(pepOrder.metadata as object ?? {}), peptidesResponses: responses, injectedByAdmin: true },
+        }).catch(() => {});
+      }
+
+      res.json({ success: true, responseCount: Object.keys(responses).length });
+    } catch (error: any) {
+      console.error("[Admin] Inject responses error:", error);
+      res.status(500).json({ error: error.message || "Erreur" });
     }
   });
 
@@ -6075,19 +6129,64 @@ export async function registerRoutes(
               console.log(`[Webhook] Triggering Peptides Engine protocol for ${email}`);
               try {
                 const { generatePeptidesProtocol } = await import("./peptidesEngine");
-                // Peptides progress is stored with prefix "peptides::{email}"
-                const progress = await storage.getProgress(`peptides::${email}`) || await storage.getProgress(email);
-                let responses = progress?.responses as Record<string, unknown> | string | undefined;
-                if (typeof responses === "string") {
-                  try { responses = JSON.parse(responses); } catch { responses = undefined; }
+
+                // WATERFALL RECOVERY: try multiple sources for responses
+                let responses: Record<string, unknown> | undefined;
+
+                // Source 1: burnout_progress table (primary — correct table)
+                const progress = await storage.getBurnoutProgress(`peptides::${email}`);
+                if (progress?.responses && Object.keys(progress.responses).length >= 3) {
+                  responses = progress.responses as Record<string, unknown>;
+                  console.log(`[Webhook] Responses found in burnout_progress (${Object.keys(responses).length} fields)`);
                 }
+
+                // Source 2: order metadata (backup — full responses saved at checkout)
+                if (!responses) {
+                  const pepOrders = await storage.getOrdersByEmail(email);
+                  const pepOrder = pepOrders.find((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid");
+                  const meta = pepOrder?.metadata as any;
+                  if (meta?.peptidesResponses && Object.keys(meta.peptidesResponses).length >= 3) {
+                    responses = meta.peptidesResponses;
+                    console.log(`[Webhook] Responses RECOVERED from order metadata (${Object.keys(responses!).length} fields)`);
+                  }
+                }
+
+                // Source 3: Stripe session metadata (last resort, may be truncated)
+                if (!responses && session.metadata?.responses) {
+                  try {
+                    const parsed = JSON.parse(session.metadata.responses);
+                    if (parsed && typeof parsed === "object" && Object.keys(parsed).length >= 3) {
+                      responses = parsed;
+                      console.log(`[Webhook] Responses RECOVERED from Stripe metadata (${Object.keys(responses!).length} fields, may be truncated)`);
+                    }
+                  } catch {}
+                }
+
                 if (responses && Object.keys(responses).length >= 3) {
                   const report = await generatePeptidesProtocol(responses, email);
-                  const reportData = { email: `peptides::${email}`, type: "peptides", responses: report as any };
-                  const saved = await storage.createBurnoutReport(reportData);
+                  const saved = await storage.createBurnoutReport({ email: `peptides::${email}`, responses, report });
                   console.log(`[Webhook] ✅ Peptides protocol generated: ${saved.id}`);
+
+                  // Link to order
+                  await storage.updateOrder(order.id, {
+                    metadata: { ...(order.metadata as object ?? {}), peptidesReportId: saved.id },
+                  }).catch(() => {});
+
+                  // Send delivery email
+                  const baseUrl = getBaseUrl();
+                  const peptidesNames = report.peptides?.map((p: any) => p.name).join(", ") ?? "voir rapport";
+                  const promoBlock = report.promoCodesGenerated?.length > 0
+                    ? `\n\nTes 2 codes Blood Analysis offerts:\n${report.promoCodesGenerated.join("\n")}`
+                    : "";
+                  await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
+                    `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}\n\nConserve ce lien — il est personnel et unique.`
+                  ).catch((err) => console.error(`[Webhook] Delivery email failed:`, err));
                 } else {
-                  console.warn(`[Webhook] ⚠️  No peptides questionnaire data for ${email}`);
+                  console.error(`[Webhook] CRITICAL: No responses found for ${email} in ANY source`);
+                  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
+                  await sendCTAEmail(adminEmail, `ALERTE: Reponses peptides manquantes — ${email}`,
+                    `URGENT: Un client a paye 299EUR mais aucune reponse n'a ete trouvee.\n\nEmail: ${email}\nSources verifiees: burnout_progress, order metadata, stripe metadata\n\nAction requise: contacter le client pour recuperer les reponses.`
+                  ).catch(() => {});
                 }
               } catch (pepErr) {
                 console.error(`[Webhook] ❌ Peptides protocol generation failed:`, pepErr);
@@ -7840,6 +7939,25 @@ export async function registerRoutes(
       }
       console.error("[PeptidesEngine] save-progress error:", error);
       res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
+  // Verify responses exist server-side before allowing checkout
+  app.get("/api/peptides-engine/verify-responses", async (req, res) => {
+    try {
+      const email = req.query.email as string;
+      if (!email) { res.json({ verified: false, responseCount: 0 }); return; }
+
+      const progress = await storage.getBurnoutProgress(`peptides::${email}`);
+      if (!progress || !progress.responses || Object.keys(progress.responses).length < 3) {
+        res.json({ verified: false, responseCount: Object.keys(progress?.responses || {}).length });
+        return;
+      }
+
+      res.json({ verified: true, responseCount: Object.keys(progress.responses).length });
+    } catch (error) {
+      console.error("[PeptidesEngine] verify-responses error:", error);
+      res.json({ verified: false, responseCount: 0 });
     }
   });
 
