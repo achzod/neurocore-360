@@ -3500,6 +3500,19 @@ export async function registerRoutes(
       const email = existingOrder.email;
       const planType = existingOrder.productType;
 
+      // Admin notification for ALL PayPal payments
+      try {
+        const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
+        const amount = (existingOrder.finalAmountCents / 100).toFixed(2);
+        const productLabel = existingOrder.productName || planType;
+        await sendCTAEmail(adminEmail, `PAIEMENT ${amount}EUR — ${productLabel} (PayPal) — ${email}`,
+          `PAIEMENT RECU (PayPal)!\n\nProduit: ${productLabel}\nEmail: ${email}\nMontant: ${amount}EUR\nPromo: ${existingOrder.promoCode || "aucun"}\n\nOrder ID: ${existingOrder.id}`
+        );
+        console.log(`[PayPal] Admin payment notification sent for order ${existingOrder.id}`);
+      } catch (notifErr) {
+        console.error(`[PayPal] Admin notification failed:`, notifErr);
+      }
+
       // BLOOD_ANALYSIS: just mark paid, no audit to create
       if (planType === "BLOOD_ANALYSIS") {
         res.json({ success: true, auditId: "", auditType: "BLOOD_ANALYSIS", email });
@@ -3581,6 +3594,59 @@ export async function registerRoutes(
   });
 
   // ==================== ADMIN ENDPOINTS ====================
+
+  // Admin: force generate peptides report for a paid client
+  app.post("/api/admin/peptides-generate", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { email } = req.body;
+      if (!email) { res.status(400).json({ error: "email requis" }); return; }
+
+      // Get saved responses
+      const progress = await storage.getBurnoutProgress(`peptides::${email}`);
+      const responses = progress?.responses;
+      if (!responses || Object.keys(responses).length < 3) {
+        res.status(404).json({ error: "Aucune reponse sauvegardee pour cet email", keys: Object.keys(responses || {}).length });
+        return;
+      }
+
+      console.log(`[Admin] Force generating peptides for ${email} (${Object.keys(responses).length} responses)`);
+      const { generatePeptidesProtocol } = await import("./peptidesEngine");
+      const report = await generatePeptidesProtocol(responses, email);
+      const saved = await storage.createBurnoutReport({ email: `peptides::${email}`, type: "peptides", responses: report as any });
+      console.log(`[Admin] Peptides protocol generated for ${email}: ${saved.id}`);
+
+      // Link to order if exists
+      const orders = await storage.getOrdersByEmail(email);
+      const pepOrder = orders.find((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid");
+      if (pepOrder) {
+        await storage.updateOrder(pepOrder.id, {
+          metadata: { ...(pepOrder.metadata as object ?? {}), peptidesReportId: saved.id },
+        }).catch(() => {});
+      }
+
+      // Send delivery email
+      const baseUrl = getBaseUrl();
+      const peptidesNames = report.peptides?.map((p: any) => p.name).join(", ") ?? "voir rapport";
+      const promoBlock = report.promoCodesGenerated?.length > 0
+        ? `\n\nTes 2 codes Blood Analysis offerts (100% de réduction, usage unique):\n${report.promoCodesGenerated.join("\n")}`
+        : "";
+      await sendCTAEmail(
+        email,
+        "Ton protocole peptides personnalisé est prêt",
+        `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}\n\nConserve ce lien — il est personnel et unique.`
+      ).catch((err) => console.error(`[Admin] Delivery email failed:`, err));
+
+      // Notify admin
+      const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
+      await sendCTAEmail(adminEmail, `PEPTIDES GENERE — ${email}`, `Rapport genere pour ${email}\nReport ID: ${saved.id}\nPeptides: ${peptidesNames}\nLien: ${baseUrl}/peptides/${saved.id}`).catch(() => {});
+
+      res.json({ success: true, reportId: saved.id, peptideCount: report.peptides?.length ?? 0, link: `${baseUrl}/peptides/${saved.id}` });
+    } catch (error: any) {
+      console.error("[Admin] Peptides generate error:", error);
+      res.status(500).json({ error: error.message || "Erreur generation" });
+    }
+  });
 
   app.get("/api/admin/audits", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
