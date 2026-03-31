@@ -220,6 +220,61 @@ function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+/**
+ * Post-processing: remove all dashes/em-dashes from report content
+ * and fix 3rd person references to direct "tu" form
+ */
+function cleanReportContent(report: PeptidesReport, firstName: string): PeptidesReport {
+  const cleanText = (text: string): string => {
+    if (!text) return text;
+    // Replace em dash / en dash with comma or colon
+    let cleaned = text.replace(/ — /g, ", ").replace(/ – /g, ", ");
+    cleaned = cleaned.replace(/—/g, ", ").replace(/–/g, ", ");
+    // Fix double commas from replacement
+    cleaned = cleaned.replace(/,\s*,/g, ",");
+    // Fix 3rd person: "Prénom cherche" → "Tu cherches"
+    const namePattern = new RegExp(`${firstName}\\s+(cherche|veut|souhaite|a besoin|desire|préfère|prefere|fait|pratique|s'entraîne|s'entraine)`, "gi");
+    cleaned = cleaned.replace(namePattern, (_match, verb) => {
+      const verbMap: Record<string, string> = {
+        "cherche": "Tu cherches",
+        "veut": "Tu veux",
+        "souhaite": "Tu souhaites",
+        "a besoin": "Tu as besoin",
+        "desire": "Tu desires",
+        "désire": "Tu désires",
+        "préfère": "Tu préfères",
+        "prefere": "Tu preferes",
+        "fait": "Tu fais",
+        "pratique": "Tu pratiques",
+        "s'entraîne": "Tu t'entraînes",
+        "s'entraine": "Tu t'entraines",
+      };
+      return verbMap[verb.toLowerCase()] || `Tu ${verb}s`;
+    });
+    // Fix "Prénom va" → "Tu vas"
+    cleaned = cleaned.replace(new RegExp(`${firstName} va `, "gi"), "Tu vas ");
+    // Fix "Prénom est" → "Tu es"
+    cleaned = cleaned.replace(new RegExp(`${firstName} est `, "gi"), "Tu es ");
+    // Fix "Prénom a " → "Tu as "
+    cleaned = cleaned.replace(new RegExp(`${firstName} a (un|une|des|le|la|les|besoin|deja|déjà)`, "gi"), "Tu as $1");
+    return cleaned;
+  };
+
+  // Clean all sections
+  for (const section of report.sections) {
+    section.content = cleanText(section.content);
+    if (section.title) section.title = section.title.replace(/—/g, ":").replace(/–/g, ":");
+  }
+
+  // Clean peptide descriptions
+  for (const pep of report.peptides) {
+    if (pep.purpose) pep.purpose = cleanText(pep.purpose);
+    if (pep.whyThisPeptide) pep.whyThisPeptide = cleanText(pep.whyThisPeptide);
+  }
+
+  return report;
+}
+
 function generatePromoCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code = "";
@@ -328,12 +383,13 @@ TON ET STYLE — ABSOLUMENT CRITIQUE
 Tu écris comme si le client était assis en face de toi dans ton bureau. Tu lui parles, tu lui expliques, tu prends ton temps. Ce rapport vaut 299 euros — chaque section doit être une masterclass.
 
 INTERDIT (VIOLATION = RAPPORT REJETÉ):
-Tu ne dois JAMAIS utiliser les caractères suivants en début de ligne : - ou • ou * ou – ou — ou >>
+Tu ne dois JAMAIS utiliser les caractères suivants : - ou • ou * ou – ou — ou >> NI EN DÉBUT DE LIGNE, NI EN MILIEU DE PHRASE. Le tiret long — est INTERDIT PARTOUT. Utilise des virgules, des points, des deux-points, ou reformule la phrase.
 Tu ne dois JAMAIS faire de listes à puces. JAMAIS. Ni avec des tirets, ni avec des points, ni avec des étoiles, ni avec des numéros secs.
 Tu ne dois JAMAIS écrire dans un style "fiche technique" ou "notice médicale".
 Tu ne dois JAMAIS utiliser de phrases génériques type IA comme "Il est important de noter que...", "N'hésitez pas à...", "En conclusion...", "Voici les points clés...".
 Tu ne dois JAMAIS avoir un ton impersonnel ou distant.
-Chaque information doit être intégrée dans une PHRASE COMPLÈTE à l'intérieur d'un PARAGRAPHE. Pas de raccourcis, pas de listes, pas de tirets.
+Tu ne dois JAMAIS parler du client à la 3ème personne ("Sofiane cherche à...", "Le client veut..."). Tu t'adresses DIRECTEMENT au client avec "tu" et "toi". C'est "Tu cherches à perdre du gras" et NON "Sofiane cherche à perdre du gras".
+Chaque information doit être intégrée dans une PHRASE COMPLÈTE à l'intérieur d'un PARAGRAPHE. Pas de raccourcis, pas de listes, pas de tirets, pas de —.
 
 OBLIGATOIRE:
 Des PARAGRAPHES de 3 à 5 phrases minimum. Tu développes, tu expliques, tu contextualises.
@@ -343,10 +399,10 @@ Tu anticipes ses questions : "Tu te demandes sûrement pourquoi...", "La questio
 Tu rassures : "C'est plus simple que ça en a l'air", "Des milliers de personnes font ça chaque jour".
 Chaque terme technique est IMMÉDIATEMENT suivi d'une explication simple entre parenthèses ou dans la phrase suivante.
 Tu donnes des analogies concrètes pour que le client visualise.
-RAPPEL: AUCUN tiret, aucun bullet point, aucune liste à puces. Que des phrases et des paragraphes.
+RAPPEL FINAL: AUCUN tiret (ni -, ni —, ni –), aucun bullet point, aucune liste à puces. Le caractère — est INTERDIT même en milieu de phrase. Utilise une virgule ou un deux-points à la place. Tu TUTOIES le client directement ("tu", "toi", "ton"), jamais la 3ème personne.
 
 EXEMPLE DE CE QUE JE VEUX:
-"Lucas, la reconstitution c'est l'étape qui impressionne le plus les débutants, mais en réalité c'est aussi simple que de préparer un café. Ton flacon de BPC-157 contient une poudre blanche lyophilisée — c'est simplement le peptide qui a été déshydraté pour le conserver. Pour le réactiver, tu vas ajouter de l'eau bactériostatique, qu'on appelle BAC water. C'est de l'eau stérile avec une infime quantité d'alcool benzylique qui empêche les bactéries de s'y développer. C'est ce qui te permet de garder ton flacon au frigo pendant plusieurs semaines sans qu'il se dégrade."
+"Lucas, la reconstitution c'est l'étape qui impressionne le plus les débutants, mais en réalité c'est aussi simple que de préparer un café. Ton flacon de BPC-157 contient une poudre blanche lyophilisée, c'est simplement le peptide qui a été déshydraté pour le conserver. Pour le réactiver, tu vas ajouter de l'eau bactériostatique, qu'on appelle BAC water. C'est de l'eau stérile avec une infime quantité d'alcool benzylique qui empêche les bactéries de s'y développer. C'est ce qui te permet de garder ton flacon au frigo pendant plusieurs semaines sans qu'il se dégrade."
 
 EXEMPLE DE CE QUE JE NE VEUX PAS:
 "BPC-157: Vial 5mg + 2ml BAC water = 2500 mcg/ml → 10 unités U-100 pour 250 mcg. Stockage: 2-8°C."
@@ -975,6 +1031,9 @@ export async function generatePeptidesProtocol(
 
   // Validate and fix Peptaura URLs (never trust Claude's URLs)
   report = validateAndFixPeptauraUrls(report);
+
+  // POST-PROCESSING: clean dashes and 3rd person references
+  report = cleanReportContent(report, firstName);
 
   // Create promo codes and inject into report
   const promoCodes = await createBloodAnalysisPromoCodes(email);
