@@ -3272,7 +3272,7 @@ export async function registerRoutes(
               try {
                 const { generatePeptidesProtocol } = await import("./peptidesEngine");
                 const report = await generatePeptidesProtocol(responses, email);
-                const saved = await storage.createBurnoutReport({ email: `peptides::${email}`, type: "peptides", responses: report as any });
+                const saved = await storage.createBurnoutReport({ email: `peptides::${email}`, responses: responses || {}, report });
                 console.log(`[PayPal] ✅ Peptides protocol generated for already-paid ${email}: ${saved.id}`);
                 const baseUrl = getBaseUrl();
                 await sendCTAEmail(email, "Ton protocole Peptides Engine est pret", `Ton protocole personnalise est pret !\n\nAccede a ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}\n\nAchzod`).catch(() => {});
@@ -3547,7 +3547,7 @@ export async function registerRoutes(
             }
             const { generatePeptidesProtocol } = await import("./peptidesEngine");
             const report = await generatePeptidesProtocol(responses, email);
-            const saved = await storage.createBurnoutReport({ email: `peptides::${email}`, type: "peptides", responses: report as any });
+            const saved = await storage.createBurnoutReport({ email: `peptides::${email}`, responses: responses || {}, report });
             console.log(`[PayPal] Peptides protocol generated for ${email}: ${saved.id}`);
 
             // Link report to order
@@ -3613,7 +3613,7 @@ export async function registerRoutes(
       console.log(`[Admin] Force generating peptides for ${email} (${Object.keys(responses).length} responses)`);
       const { generatePeptidesProtocol } = await import("./peptidesEngine");
       const report = await generatePeptidesProtocol(responses, email);
-      const saved = await storage.createBurnoutReport({ email: `peptides::${email}`, type: "peptides", responses: report as any });
+      const saved = await storage.createBurnoutReport({ email: `peptides::${email}`, responses: responses || {}, report });
       console.log(`[Admin] Peptides protocol generated for ${email}: ${saved.id}`);
 
       // Link to order if exists
