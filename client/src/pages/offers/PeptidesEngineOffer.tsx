@@ -1113,7 +1113,7 @@ function ScarcityGuarantee() {
               Chaque protocole est verifie manuellement
             </p>
             <p className="text-sm leading-relaxed text-white/55">
-              Ton protocole est genere par IA puis relu et valide par mes soins avant livraison. Les 2 bilans sanguins inclus te permettent de suivre tes marqueurs objectivement et d'ajuster si besoin avec mon support.
+              Chaque protocole est relu et valide par mes soins avant livraison. Les 2 bilans sanguins inclus te permettent de suivre tes marqueurs objectivement et d'ajuster si besoin avec mon support.
             </p>
             <div className="mt-6 flex items-center gap-2">
               <Check className="h-4 w-4" style={{ color: PRIMARY }} />
