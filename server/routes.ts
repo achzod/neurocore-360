@@ -3506,6 +3506,62 @@ export async function registerRoutes(
         return;
       }
 
+      // PEPTIDES_ENGINE: trigger background generation from saved responses
+      if (planType === "PEPTIDES_ENGINE") {
+        console.log(`[PayPal] Peptides Engine paid for ${email} — triggering generation`);
+        // Add +2 blood credits
+        try {
+          const { pool: dbPool } = await import("./db");
+          let user = await storage.getUserByEmail(email);
+          if (!user) {
+            user = await storage.createUser({ email, credits: 2 });
+          } else {
+            await dbPool.query("UPDATE users SET blood_credits = blood_credits + 2 WHERE email = $1", [email]);
+          }
+          console.log(`[PayPal] +2 blood credits for ${email} (Peptides Engine)`);
+        } catch (creditErr) {
+          console.error(`[PayPal] Blood credit error:`, creditErr);
+        }
+
+        // Generate protocol in background
+        (async () => {
+          try {
+            const progress = await storage.getBurnoutProgress(`peptides::${email}`);
+            const responses = progress?.responses;
+            if (!responses || Object.keys(responses).length < 3) {
+              console.error(`[PayPal] No saved responses for ${email} — cannot generate`);
+              return;
+            }
+            const { generatePeptidesProtocol } = await import("./peptidesEngine");
+            const report = await generatePeptidesProtocol(responses, email);
+            const saved = await storage.createBurnoutReport({ email: `peptides::${email}`, type: "peptides", responses: report as any });
+            console.log(`[PayPal] Peptides protocol generated for ${email}: ${saved.id}`);
+
+            // Link report to order
+            await storage.updateOrder(existingOrder.id, {
+              metadata: { ...(existingOrder.metadata as object ?? {}), peptidesReportId: saved.id },
+            }).catch(() => {});
+
+            // Send delivery email
+            const baseUrl = getBaseUrl();
+            const peptidesNames = report.peptides?.map((p: any) => p.name).join(", ") ?? "voir rapport";
+            const promoBlock = report.promoCodesGenerated?.length > 0
+              ? `\n\nTes 2 codes Blood Analysis offerts (100% de réduction, usage unique):\n${report.promoCodesGenerated.join("\n")}`
+              : "";
+            await sendCTAEmail(
+              email,
+              "Ton protocole peptides personnalisé est prêt",
+              `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}\n\nConserve ce lien — il est personnel et unique.`
+            ).catch((err) => console.error(`[PayPal] Delivery email failed:`, err));
+          } catch (genErr) {
+            console.error(`[PayPal] Peptides generation failed for ${email}:`, genErr);
+          }
+        })();
+
+        res.json({ success: true, auditId: "", auditType: "PEPTIDES_ENGINE", email });
+        return;
+      }
+
       if (planType !== "PREMIUM" && planType !== "ELITE" && planType !== "GRATUIT") {
         res.status(400).json({ error: "PLAN_INVALID" });
         return;
