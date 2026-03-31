@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 import {
   Shield, Syringe, FlaskConical, Activity, AlertTriangle, ExternalLink,
   ChevronDown, ShoppingCart, Calendar, Lock, User, Brain, ArrowRight,
-  CheckCircle2, Globe, Droplets, HelpCircle,
+  CheckCircle2, Globe, Droplets, HelpCircle, Star, Send, Loader2,
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -276,6 +276,12 @@ export default function PeptidesEngineReport() {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(["profil-synthese", "rationale", "guide-peptaura", "reconstitution-guide", "guide-injection", "protocole-pratique", "shopping-list"])
   );
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewEmail, setReviewEmail] = useState("");
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -661,21 +667,141 @@ export default function PeptidesEngineReport() {
           </motion.div>
         )}
 
-        {/* CTA Coaching */}
+        {/* Review Section */}
         <motion.div
+          id="review"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-8 text-center"
+          transition={{ delay: 0.7 }}
+          className="bg-[#0a0a0a] border border-amber-500/20 rounded-2xl p-8"
         >
-          <h2 className="text-xl font-bold mb-2">Tu veux un suivi personnalise?</h2>
-          <p className="text-white/50 mb-4">Un coaching Achzod pour optimiser tes resultats et ajuster ton protocole en temps reel.</p>
-          <a href="https://www.achzodcoaching.com/formules-coaching"
-             className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm text-black"
-             style={{ background: AMBER }}>
-            Decouvrir le coaching
-          </a>
+          <div className="text-center mb-6">
+            <Star className="w-8 h-8 mx-auto mb-3" style={{ color: AMBER }} />
+            <h2 className="text-xl font-bold mb-2">Ton avis compte</h2>
+            <p className="text-white/50 text-sm">
+              30 secondes pour noter ton experience Peptides Engine.
+            </p>
+          </div>
+
+          {reviewSubmitted ? (
+            <div className="text-center p-8 rounded-xl bg-white/5 border border-white/10">
+              <CheckCircle2 className="w-14 h-14 mx-auto mb-4 text-green-500" />
+              <h4 className="text-lg font-bold mb-2">Merci pour ton avis !</h4>
+              <p className="text-sm text-white/50">Ton retour m'aide a ameliorer le service pour tous les clients.</p>
+            </div>
+          ) : (
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!id || reviewRating === 0 || reviewComment.length < 10 || !reviewEmail) {
+                  setReviewError("Remplis tous les champs (commentaire 10 caracteres minimum)");
+                  return;
+                }
+                setReviewSubmitting(true);
+                setReviewError(null);
+                try {
+                  const res = await fetch("/api/submit-review", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      auditId: id,
+                      email: reviewEmail,
+                      auditType: "PEPTIDES_ENGINE",
+                      rating: reviewRating,
+                      comment: reviewComment,
+                    }),
+                  });
+                  const data = await res.json();
+                  if (data.success) {
+                    setReviewSubmitted(true);
+                  } else {
+                    setReviewError(data.error || "Erreur");
+                  }
+                } catch {
+                  setReviewError("Erreur de connexion");
+                } finally {
+                  setReviewSubmitting(false);
+                }
+              }}
+              className="space-y-5"
+            >
+              <div className="text-center">
+                <p className="text-xs text-white/40 mb-3 uppercase tracking-widest font-mono">Ta note</p>
+                <div className="flex justify-center gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setReviewRating(star)}
+                      className="p-1 transition-transform hover:scale-110"
+                    >
+                      <Star
+                        size={28}
+                        className={star <= reviewRating ? "fill-yellow-400 text-yellow-400" : "text-gray-500"}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs text-white/40 block mb-2 font-mono uppercase tracking-widest">
+                  Ton email
+                </label>
+                <input
+                  type="email"
+                  value={reviewEmail}
+                  onChange={(e) => setReviewEmail(e.target.value)}
+                  placeholder="ton@email.com"
+                  required
+                  className="w-full px-4 py-3 rounded-lg text-sm bg-black/50 border border-white/10 text-white focus:outline-none focus:border-amber-500/50 transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-white/40 block mb-2 font-mono uppercase tracking-widest">
+                  Ton commentaire (min. 10 caracteres)
+                </label>
+                <textarea
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  placeholder="Ton retour sur Peptides Engine..."
+                  rows={4}
+                  required
+                  minLength={10}
+                  className="w-full px-4 py-3 rounded-lg text-sm bg-black/50 border border-white/10 text-white focus:outline-none focus:border-amber-500/50 transition-colors resize-none"
+                />
+                <p className="text-xs text-white/30 mt-1">{reviewComment.length}/10 caracteres minimum</p>
+              </div>
+
+              {reviewError && (
+                <div className="text-red-400 text-sm text-center p-3 rounded-lg bg-red-500/10">
+                  {reviewError}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={reviewSubmitting}
+                className="w-full py-3 rounded-lg font-bold text-sm text-black transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ background: AMBER }}
+              >
+                {reviewSubmitting ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Envoi...
+                  </span>
+                ) : (
+                  <span className="flex items-center justify-center gap-2">
+                    <Send className="w-4 h-4" />
+                    Envoyer mon avis
+                  </span>
+                )}
+              </button>
+            </form>
+          )}
         </motion.div>
+
       </div>
 
       <Footer />

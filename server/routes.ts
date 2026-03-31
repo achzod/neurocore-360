@@ -25,6 +25,7 @@ import {
   sendCTAEmail,
   addSubscriberToList,
   sendApexLabsWelcomeEmail,
+  sendPeptidesReviewEmail,
 } from "./emailService";
 import { generateExportHTML, generateExportPDF } from "./exportService";
 import { generateAndConvertAuditWithClaude } from "./anthropicEngine";
@@ -3714,10 +3715,20 @@ export async function registerRoutes(
   app.post("/api/submit-review", async (req, res) => {
     try {
       const parsed = insertReviewSchema.parse(req.body);
-      const audit = await storage.getAudit(parsed.auditId);
-      if (!audit) {
-        res.status(404).json({ success: false, error: "Audit non trouvé" });
-        return;
+
+      // Peptides Engine: auditId is the report ID (burnout_reports), not an audit
+      if (parsed.auditType === "PEPTIDES_ENGINE") {
+        const report = await storage.getBurnoutReport(parsed.auditId);
+        if (!report) {
+          res.status(404).json({ success: false, error: "Rapport introuvable" });
+          return;
+        }
+      } else {
+        const audit = await storage.getAudit(parsed.auditId);
+        if (!audit) {
+          res.status(404).json({ success: false, error: "Audit non trouvé" });
+          return;
+        }
       }
       const data = {
         ...parsed,
@@ -3788,9 +3799,12 @@ export async function registerRoutes(
       const promoConfig = PROMO_CODES_BY_AUDIT_TYPE[review.auditType as keyof typeof PROMO_CODES_BY_AUDIT_TYPE];
 
       if (promoConfig && review.email) {
-        // Get client name from audit
-        const audit = await storage.getAudit(review.auditId);
-        const clientName = (audit?.responses as any)?.prenom || review.email.split('@')[0];
+        // Get client name from audit (or email for peptides which have no audit)
+        let clientName = review.email.split('@')[0];
+        if (review.auditType !== "PEPTIDES_ENGINE") {
+          const audit = await storage.getAudit(review.auditId);
+          clientName = (audit?.responses as any)?.prenom || clientName;
+        }
         const promoCode = promoConfig.code;
 
         console.log(`[Review] Sending promo code ${promoCode} to ${review.email} (${review.auditType})`);
@@ -4869,7 +4883,7 @@ export async function registerRoutes(
       // PEPTIDES ENGINE SEQUENCES (S4, S8, S12, S16)
       // Based on paid orders, not audits
       // ════════════════════════════════════════════════════════════════
-      let peptidesS4 = 0, peptidesS8 = 0, peptidesS12 = 0, peptidesS16 = 0;
+      let peptidesReviewJ3 = 0, peptidesS4 = 0, peptidesS8 = 0, peptidesS12 = 0, peptidesS16 = 0;
 
       try {
         const allOrders = await storage.getAllOrders?.() || [];
@@ -4888,6 +4902,25 @@ export async function registerRoutes(
             const { eq, and } = await import("drizzle-orm");
             const tracking = await db.select().from(emailTrackingTable).where(eq(emailTrackingTable.email, email));
             const types = tracking.map((t: any) => t.emailType);
+
+            // Review J+3 — Demande d'avis 3 jours apres paiement
+            if (daysSincePaid >= 3 && daysSincePaid < 14 && !types.includes("peptidesReviewJ3")) {
+              // Find the report ID from order metadata
+              const reportId = (order.metadata as any)?.peptidesReportId;
+              if (reportId) {
+                const trackingRecord = await storage.createEmailTracking(order.id, "peptidesReviewJ3");
+                const sent = await sendPeptidesReviewEmail(
+                  email,
+                  reportId,
+                  baseUrl,
+                  trackingRecord.id
+                );
+                if (sent) {
+                  peptidesReviewJ3++;
+                  await db.insert(emailTrackingTable).values({ email, emailType: "peptidesReviewJ3", auditId: order.id, sentAt: new Date() }).catch(() => {});
+                }
+              }
+            }
 
             // S4 (28 jours) — Check-in: comment se passe le cycle?
             if (daysSincePaid >= 28 && daysSincePaid < 42 && !types.includes("peptidesS4")) {
@@ -4948,6 +4981,7 @@ export async function registerRoutes(
         console.error("[Cron] Peptides sequences error:", pepErr);
       }
 
+      (results as any).peptidesReviewJ3 = peptidesReviewJ3;
       (results as any).peptidesS4 = peptidesS4;
       (results as any).peptidesS8 = peptidesS8;
       (results as any).peptidesS12 = peptidesS12;

@@ -48,7 +48,7 @@ type FAQEntry = { q: string; a: string };
 const FAQ: FAQEntry[] = [
   {
     q: "Pourquoi 299€ ?",
-    a: "Tu economises 920€ des le 1er cycle. Le protocole + 2 blood analyses (valeur 198€) + acces source a prix labo = 697€ de valeur reelle. A 299€, c'est un investissement qui se rembourse en une seule commande de peptides au bon prix.",
+    a: "Tu economises des centaines d'euros des le 1er cycle. Le protocole inclut 2 blood analyses (valeur 198€), l'acces direct a la source a prix labo, et un suivi complet. A 299€, c'est un investissement qui se rembourse en une seule commande de peptides au bon prix.",
   },
   {
     q: "C'est quoi la source premium ?",
@@ -79,8 +79,8 @@ const FAQ: FAQEntry[] = [
     a: "48h apres paiement, par email. Tu recois: le rapport protocole complet, le guide de reconstitution calcule, le calendrier hebdomadaire, les 2 codes Blood Analysis, la liste de courses avec liens directs, et les guides injection et securite.",
   },
   {
-    q: "C'est deductible du coaching ?",
-    a: "Oui. Les 299€ sont 100% deductibles si tu prends un coaching Achzod. Le montant est credite integralement sur ton acompte coaching.",
+    q: "Je peux combiner avec un coaching ?",
+    a: "Oui. Si tu prends un coaching Achzod, ton coach integre ton protocole peptides dans ton suivi personnalise (nutrition, entrainement, supplementation). Les deux se completent parfaitement.",
   },
   {
     q: "Je peux revenir pour un autre cycle ?",
@@ -1107,17 +1107,17 @@ function ScarcityGuarantee() {
           >
             <div className="mb-4 flex items-center gap-3">
               <Shield className="h-5 w-5" style={{ color: PRIMARY }} />
-              <SectionLabel>Garantie resultats</SectionLabel>
+              <SectionLabel>Gage de qualite</SectionLabel>
             </div>
             <p className="mb-3 text-xl font-bold text-white leading-snug">
-              Ton protocole refait gratuitement
+              Chaque protocole est verifie manuellement
             </p>
             <p className="text-sm leading-relaxed text-white/55">
-              Si ton bilan mi-cycle ne montre aucune amelioration sur tes marqueurs cibles, je refais ton protocole gratuitement. Les 2 bilans sanguins inclus servent precisement a le mesurer objectivement.
+              Ton protocole est genere par IA puis relu et valide par mes soins avant livraison. Les 2 bilans sanguins inclus te permettent de suivre tes marqueurs objectivement et d'ajuster si besoin avec mon support.
             </p>
             <div className="mt-6 flex items-center gap-2">
               <Check className="h-4 w-4" style={{ color: PRIMARY }} />
-              <p className="text-sm font-semibold text-white">Resultat mesurable ou protocole offert</p>
+              <p className="text-sm font-semibold text-white">Qualite verifiee, suivi mesurable</p>
             </div>
           </motion.div>
         </div>
@@ -1178,12 +1178,10 @@ function FinalCTA() {
             35 questions. Un protocole sur mesure. La source ou les peptides coutent 60-90% moins cher. 2 bilans sanguins inclus.
           </p>
 
-          {/* Value breakdown */}
+          {/* Price */}
           <div className="mt-10 inline-flex flex-col items-center gap-2 rounded-2xl border border-white/10 bg-[#0a0a0a] px-10 py-7">
-            <p className="font-mono text-xs uppercase tracking-wider text-white/40">Valeur totale</p>
-            <p className="text-3xl font-bold text-white/30 line-through">697€</p>
             <p className="text-5xl font-bold text-white">299€</p>
-            <p className="font-mono text-xs text-white/40">TVA incluse • Paiement securise</p>
+            <p className="font-mono text-xs text-white/40">TVA incluse · Paiement securise</p>
           </div>
 
           <div className="mt-8 flex flex-col items-center gap-4">
@@ -1201,7 +1199,7 @@ function FinalCTA() {
               </span>
               <span className="flex items-center gap-1.5">
                 <Check className="h-3 w-3" style={{ color: PRIMARY }} />
-                100% deductible du coaching
+                2 bilans sanguins inclus
               </span>
             </div>
           </div>
@@ -1244,7 +1242,7 @@ function Hero() {
         >
           <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: PRIMARY }} />
           <span className="font-mono text-xs uppercase tracking-widest text-white/60">
-            Protocole exclusif — 74 molecules disponibles
+            Protocole exclusif · 74 molecules disponibles
           </span>
         </motion.div>
 
@@ -1277,7 +1275,6 @@ function Hero() {
           transition={{ duration: 0.6, delay: 0.3 }}
           className="mt-10 flex items-center justify-center gap-4"
         >
-          <span className="text-2xl font-bold text-white/30 line-through">697€</span>
           <span className="text-5xl font-bold text-white">299€</span>
         </motion.div>
 
@@ -1299,7 +1296,7 @@ function Hero() {
             </span>
             <span className="flex items-center gap-1.5">
               <Check className="h-3 w-3" style={{ color: PRIMARY }} />
-              100% deductible du coaching Achzod
+              Support email 30 jours
             </span>
           </div>
         </motion.div>
@@ -1315,7 +1312,7 @@ function Hero() {
             "Protocole verifie manuellement",
             "2 bilans sanguins inclus (198€)",
             "Support email 30 jours",
-            "Garantie resultats",
+            "Qualite verifiee manuellement",
           ].map((t) => (
             <div key={t} className="flex items-center gap-2 text-xs text-white/40">
               <CheckCircle2 className="h-3.5 w-3.5" style={{ color: PRIMARY }} />

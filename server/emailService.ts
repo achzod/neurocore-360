@@ -2867,6 +2867,83 @@ export async function sendReviewRequestJ3Email(
   }
 }
 
+// Email Peptides Engine J+3: demande avis apres livraison rapport
+export async function sendPeptidesReviewEmail(
+  email: string,
+  reportId: string,
+  baseUrl: string,
+  trackingId: string
+): Promise<boolean> {
+  try {
+    const reportLink = `${baseUrl}/peptides/${reportId}`;
+    const reviewLink = `${reportLink}#review`;
+    const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
+
+    const content = `
+      <h2 style="color: ${COLORS.text}; margin: 0 0 16px; font-size: 24px; text-align: center; font-weight: 700; letter-spacing: -0.5px;">
+        Comment se passe ton protocole ?
+      </h2>
+
+      <p style="color: ${COLORS.textMuted}; font-size: 15px; line-height: 1.7; margin: 0 0 28px; text-align: center;">
+        Ca fait quelques jours que tu as recu ton protocole Peptides Engine.<br/>
+        <strong style="color: ${COLORS.text};">30 secondes pour laisser ton avis ?</strong>
+      </p>
+
+      <div style="padding: 32px; background: linear-gradient(135deg, rgba(245,158,11,0.12) 0%, rgba(245,158,11,0.05) 100%); border-radius: 16px; border: 2px solid rgba(245,158,11,0.25); margin-bottom: 28px; text-align: center;">
+        <div style="font-size: 36px; margin-bottom: 12px;">&#9733; &#9733; &#9733; &#9733; &#9733;</div>
+        <p style="color: ${COLORS.text}; font-size: 16px; font-weight: 600; margin: 0 0 8px;">Note ton experience sur 5</p>
+        <p style="color: ${COLORS.textMuted}; font-size: 13px; margin: 0 0 20px; line-height: 1.6;">
+          Ton avis aide d'autres personnes a faire le bon choix.<br/>
+          Chaque retour compte pour ameliorer Peptides Engine.
+        </p>
+        ${getPrimaryButton('Laisser mon avis', reviewLink, COLORS.warning)}
+      </div>
+
+      <div style="padding: 16px; background: ${COLORS.surface}; border-radius: 8px; border: 1px solid ${COLORS.border}; text-align: center; margin-bottom: 16px;">
+        <p style="color: ${COLORS.textMuted}; font-size: 13px; margin: 0; line-height: 1.6;">
+          <strong style="color: ${COLORS.text};">Besoin d'aide ?</strong> Reponds directement a cet email si tu as une question sur ton protocole.
+        </p>
+      </div>
+
+      <p style="color: ${COLORS.textMuted}; font-size: 12px; line-height: 1.6; margin: 0; text-align: center;">
+        Pour arreter ces emails, reponds simplement "STOP".
+      </p>
+
+      <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
+    `;
+
+    const emailContent = getEmailWrapper(
+      content,
+      `linear-gradient(135deg, ${COLORS.warning} 0%, #f59e0b 100%)`,
+      "Peptides Engine",
+      "Ton avis compte"
+    );
+
+    const result = await sendEmailWithTracking(
+      {
+        html: encodeBase64(emailContent),
+        text: `Ca fait quelques jours que tu as recu ton protocole Peptides Engine. Laisse ton avis en 30 secondes : ${reviewLink}. Reponds directement si tu as une question.`,
+        subject: "Ton avis sur Peptides Engine ? (30 secondes)",
+        from: { name: SENDER_NAME, email: SENDER_EMAIL },
+        to: [{ email }],
+      },
+      {
+        emailType: "peptidesReviewJ3",
+        recipientEmail: email,
+        auditId: reportId,
+        auditType: "PEPTIDES_ENGINE",
+        metadata: { reviewLink, trackingId },
+      }
+    );
+
+    console.log(`[SendPulse] Peptides review J+3 email sent to ${email}:`, result);
+    return result.result === true;
+  } catch (error) {
+    console.error("[SendPulse] Error sending peptides review J+3 email:", error);
+    return false;
+  }
+}
+
 // Email PREMIUM J+7: demande avis + CTA coaching avec code ANALYSE20
 export async function sendPremiumJ7Email(
   email: string,

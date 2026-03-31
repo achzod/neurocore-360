@@ -2944,6 +2944,7 @@ export const PROMO_CODES_BY_AUDIT_TYPE: Record<ReviewAuditTypeEnum, { code: stri
   'ANABOLIC_BIOSCAN': { code: 'BIOSCAN59', description: '59€ déduits du coaching' },
   'ULTIMATE_SCAN': { code: 'ULTIMATE79', description: '79€ déduits du coaching' },
   'BLOOD_ANALYSIS': { code: 'BLOOD99', description: '99€ déduits du coaching' },
+  'PEPTIDES_ENGINE': { code: 'PEPTIDES20', description: '-20% sur le coaching Achzod' },
 };
 
 export interface IReviewStorage {

@@ -387,6 +387,7 @@ export const ReviewAuditType = {
   ANABOLIC_BIOSCAN: "ANABOLIC_BIOSCAN",
   ULTIMATE_SCAN: "ULTIMATE_SCAN",
   BLOOD_ANALYSIS: "BLOOD_ANALYSIS",
+  PEPTIDES_ENGINE: "PEPTIDES_ENGINE",
 } as const;
 
 export type ReviewAuditTypeEnum = (typeof ReviewAuditType)[keyof typeof ReviewAuditType];
@@ -412,7 +413,7 @@ export const insertReviewSchema = z.object({
   auditId: z.string(),
   userId: z.string().optional(),
   email: z.string().email("Email invalide"),
-  auditType: z.enum(["DISCOVERY", "ANABOLIC_BIOSCAN", "ULTIMATE_SCAN", "BLOOD_ANALYSIS"]),
+  auditType: z.enum(["DISCOVERY", "ANABOLIC_BIOSCAN", "ULTIMATE_SCAN", "BLOOD_ANALYSIS", "PEPTIDES_ENGINE"]),
   rating: z.number().min(1).max(5),
   comment: z.string().min(10, "Le commentaire doit contenir au moins 10 caractères"),
 });

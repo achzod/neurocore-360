@@ -45,6 +45,7 @@ import { Textarea } from "@/components/ui/textarea";
 interface Review {
   id: string;
   auditId: string;
+  auditType?: string;
   userId?: string;
   email?: string;
   rating: number;
@@ -1356,7 +1357,7 @@ export default function AdminDashboard() {
                               </Badge>
                             </div>
                             <p className="text-sm text-muted-foreground">
-                              Audit: {review.auditId.substring(0, 8)}... | 
+                              {review.auditType === "PEPTIDES_ENGINE" ? "Peptides Engine" : `Audit: ${review.auditId.substring(0, 8)}...`} |
                               {review.email && ` ${review.email} | `}
                               {new Date(review.createdAt).toLocaleDateString("fr-FR")}
                             </p>
