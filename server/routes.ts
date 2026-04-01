@@ -471,6 +471,52 @@ export async function registerRoutes(
     }
   });
 
+  // Admin: Broadcast email to all Discovery Scan clients
+  app.post("/api/admin/broadcast-discovery", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { dryRun = false, maxToSend = 50, subject, message } = req.body;
+      if (!subject || !message) {
+        res.status(400).json({ error: "subject et message requis" });
+        return;
+      }
+
+      const allAudits = await storage.getAllAudits();
+      const discovery = allAudits.filter((a: any) => a.type === "GRATUIT" && a.email && !a.email.includes("test") && !a.email.includes("debug") && !a.email.includes("achzodcoaching") && !a.email.includes("achkou"));
+
+      // Unique emails only
+      const seen = new Set<string>();
+      const unique: string[] = [];
+      for (const a of discovery) {
+        const email = a.email.toLowerCase();
+        if (!seen.has(email)) {
+          seen.add(email);
+          unique.push(a.email);
+        }
+      }
+
+      if (dryRun) {
+        res.json({ success: true, dryRun: true, totalEmails: unique.length, preview: unique.slice(0, 10) });
+        return;
+      }
+
+      const toSend = unique.slice(0, maxToSend);
+      let sent = 0, errors = 0;
+      for (const email of toSend) {
+        try {
+          const ok = await sendCTAEmail(email, subject, message);
+          if (ok) sent++;
+          else errors++;
+        } catch { errors++; }
+      }
+
+      res.json({ success: true, totalEligible: unique.length, sent, errors, maxToSend });
+    } catch (error) {
+      console.error("[Admin] Broadcast error:", error);
+      res.status(500).json({ error: "Erreur broadcast" });
+    }
+  });
+
   // Admin: Auto-send abandonment reminders
   app.post("/api/admin/send-abandonment-reminders", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
