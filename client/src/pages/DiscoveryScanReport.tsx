@@ -663,7 +663,7 @@ const DiscoveryScanReport: React.FC = () => {
                     description="Ton Discovery a détecté tes blocages. L'Ultimate Scan te donne les protocoles EXACTS + analyse en temps réel."
                     features={[
                       'Analyse posturale 3D (upload 3 photos)',
-                      'Intégration Apple Watch / Garmin (HRV, récupération, sommeil)',
+                      'Analyse HRV & récupération avancée',
                       'Protocoles Matin Anti-Cortisol + Soir Sommeil personnalisés',
                       'Stack Suppléments basé sur TES données exactes',
                       "Plan d'action 30-60-90 jours avec milestones",

@@ -442,7 +442,6 @@ function QuestionnaireContent() {
   });
 
   const selectedTier = PLAN_TIER_MAP[selectedPlan];
-  const allowWearables = selectedPlan === "ultimate";
   const allQuestions = getQuestionsForTier(selectedTier);
   const filteredSections = getSectionsForTier(selectedTier);
 
@@ -452,10 +451,6 @@ function QuestionnaireContent() {
   const userSex = responses["sexe"] as string | undefined;
   const [sexConfirmed, setSexConfirmed] = useState(false);
   const [prenomConfirmed, setPrenomConfirmed] = useState(false);
-  const [wearablesSyncShown, setWearablesSyncShown] = useState(false);
-  const [terraConnecting, setTerraConnecting] = useState(false);
-  const [terraConnected, setTerraConnected] = useState(false);
-  const [terraSkippedQuestions, setTerraSkippedQuestions] = useState<string[]>([]);
   const loadNonceRef = useRef(0);
   const normalizedSex = userSex === "homme" || userSex === "femme" ? userSex : undefined;
   const sectionQuestions = currentSection
@@ -566,129 +561,6 @@ function QuestionnaireContent() {
         setPrenomConfirmed(true);
       }
 
-      if (!allowWearables) {
-        return;
-      }
-
-      // Check URL params for Terra callback
-      const urlParams = new URLSearchParams(window.location.search);
-      const terraSuccess = urlParams.get("terra_success");
-      const terraError = urlParams.get("terra_error");
-
-      // Clean URL params after reading
-      if (terraSuccess || terraError) {
-        const cleanUrl = window.location.pathname;
-        window.history.replaceState({}, "", cleanUrl);
-      }
-
-      // Handle Terra error (SDK provider selected or connection failed)
-      if (terraError === "true") {
-        setWearablesSyncShown(true);
-        toast({
-          title: "Connexion non finalisee",
-          description: "Si tu as choisi Samsung Health ou Huawei, installe l'app Terra Avengers sur ton telephone pour synchroniser.",
-          variant: "destructive",
-          duration: 10000,
-        });
-      }
-
-      // Check if returning from Terra widget
-      const wasConnecting = sessionStorage.getItem("terraConnecting");
-      if (terraSuccess === "true" || terraError === "true") {
-        sessionStorage.removeItem("terraConnecting");
-        setWearablesSyncShown(true);
-
-        const emailToCheck = savedEmail || localStorage.getItem("neurocore_email");
-        const referenceId =
-          sessionStorage.getItem("terraReferenceId") ||
-          localStorage.getItem("terraReferenceId") ||
-          "";
-        const startedAtRaw =
-          sessionStorage.getItem("terraStartedAt") ||
-          localStorage.getItem("terraStartedAt") ||
-          "";
-        const startedAtMs = startedAtRaw ? Number(startedAtRaw) : NaN;
-        const startedAtValid = Number.isFinite(startedAtMs);
-        const maxSyncWindowMs = 6 * 60 * 60 * 1000;
-        const isStale = startedAtValid ? Date.now() - startedAtMs > maxSyncWindowMs : true;
-
-        if (!emailToCheck || !referenceId || !startedAtValid || isStale) {
-          setTerraConnected(false);
-          setTerraSkippedQuestions([]);
-          sessionStorage.removeItem("terraReferenceId");
-          sessionStorage.removeItem("terraStartedAt");
-          localStorage.removeItem("terraReferenceId");
-          localStorage.removeItem("terraStartedAt");
-          if (terraSuccess === "true" || terraError === "true") {
-            toast({
-              title: "Connexion expiree",
-              description: "Ta tentative de synchronisation a expire. Reconnecte ton wearable pour pre-remplir les questions.",
-              variant: "destructive",
-              duration: 8000,
-            });
-          }
-          return;
-        }
-
-        if (emailToCheck) {
-          const query = new URLSearchParams();
-          query.set("referenceId", referenceId);
-          query.set("since", String(startedAtMs));
-
-          // Fetch mapped wearable answers
-          fetch(`/api/terra/answers/${encodeURIComponent(emailToCheck)}?${query.toString()}`)
-            .then(res => res.json())
-            .then(data => {
-              if (data.success && data.hasData) {
-                setTerraConnected(true);
-                // Pre-fill responses with wearable data
-                if (data.answers && Object.keys(data.answers).length > 0) {
-                  setResponses(prev => ({ ...prev, ...data.answers }));
-                  // Terra answers pre-filled
-                }
-                // Store skipped questions
-                if (data.skippedQuestions && data.skippedQuestions.length > 0) {
-                  setTerraSkippedQuestions(data.skippedQuestions);
-                  // Terra skipped questions set
-                } else {
-                  setTerraSkippedQuestions([]);
-                }
-                sessionStorage.removeItem("terraReferenceId");
-                sessionStorage.removeItem("terraStartedAt");
-                localStorage.removeItem("terraReferenceId");
-                localStorage.removeItem("terraStartedAt");
-                toast({
-                  title: "Wearable synchronise !",
-                  description: `${Object.keys(data.answers || {}).length} reponses pre-remplies automatiquement.`,
-                });
-              } else if (terraSuccess === "true") {
-                setTerraConnected(false);
-                setTerraSkippedQuestions([]);
-                // User connected but no data yet - might be SDK provider
-                toast({
-                  title: "Connexion en cours...",
-                  description: "Si tu utilises Samsung Health ou Apple Health, ouvre l'app Terra Avengers pour finaliser la sync.",
-                  duration: 8000,
-                });
-                // Reset any previous skips/state to avoid stale prefill
-                setTerraConnected(false);
-                setTerraSkippedQuestions([]);
-              }
-            })
-          .catch(err => console.error("[Terra] Sync check failed:", err));
-        }
-      } else if (wasConnecting === "true") {
-        sessionStorage.removeItem("terraConnecting");
-        setWearablesSyncShown(true);
-        setTerraConnected(false);
-        setTerraSkippedQuestions([]);
-        toast({
-          title: "Connexion non confirmee",
-          description: "Je n'ai pas reçu de confirmation Terra. Si tu veux la sync, relance la connexion.",
-          variant: "destructive",
-          duration: 8000,
-        });
-      }
     } catch (e) {
       console.error("[Questionnaire] Init error:", e);
     }
@@ -892,9 +764,6 @@ function QuestionnaireContent() {
     setCurrentSectionIndex(0);
     setSexConfirmed(false);
     setPrenomConfirmed(false);
-    setWearablesSyncShown(false);
-    setTerraConnected(false);
-    setTerraSkippedQuestions([]);
   };
 
   if (!emailSubmitted) {
@@ -1172,186 +1041,11 @@ function QuestionnaireContent() {
                       </Button>
                     )}
                   </motion.div>
-                ) : allowWearables && currentSectionIndex === 0 && prenomConfirmed && !wearablesSyncShown ? (
-                  /* WEARABLES SYNC SCREEN */
-                  <motion.div
-                    key="wearables-sync"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="space-y-6"
-                  >
-                    <div className="text-center space-y-4">
-                      <div className="w-16 h-16 mx-auto rounded-sm bg-primary/10 flex items-center justify-center">
-                        <Watch className="w-8 h-8 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-bold text-foreground">
-                          Synchronise tes données santé
-                        </h3>
-                        <p className="text-muted-foreground mt-2">
-                          Connecte ton wearable pour un audit plus précis et un questionnaire plus court.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Wearables Grid */}
-                    <div className="grid grid-cols-4 gap-2">
-                      {[
-                        { name: "Apple", Icon: Apple },
-                        { name: "Oura", Icon: Activity },
-                        { name: "Whoop", Icon: Watch },
-                        { name: "Garmin", Icon: Activity },
-                        { name: "Fitbit", Icon: Heart },
-                        { name: "Samsung", Icon: Smartphone },
-                        { name: "Polar", Icon: Heart },
-                        { name: "Autre", Icon: Link2 },
-                      ].map((w, i) => (
-                        <div
-                          key={i}
-                          className="flex flex-col items-center p-3 rounded bg-muted/50 border border-border/50 hover:border-primary/30 transition-colors cursor-pointer"
-                        >
-                          <w.Icon className="w-5 h-5 mb-1 text-muted-foreground" />
-                          <span className="text-[10px] text-muted-foreground">{w.name}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Data types */}
-                    <div className="bg-muted/30 rounded p-4 border border-border/50">
-                      <p className="text-xs font-medium text-muted-foreground mb-3 text-center">
-                        DONNÉES AUTO-SYNCHRONISÉES
-                      </p>
-                      <div className="grid grid-cols-3 gap-3">
-                        {[
-                          { Icon: Activity, label: "HRV" },
-                          { Icon: Moon, label: "Sommeil" },
-                          { Icon: Heart, label: "FC repos" },
-                          { Icon: Zap, label: "Activité" },
-                          { Icon: Timer, label: "SpO2" },
-                          { Icon: Thermometer, label: "Temp." },
-                        ].map((d, i) => (
-                          <div key={i} className="text-center">
-                            <d.Icon className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
-                            <p className="text-[10px] text-muted-foreground">{d.label}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Benefits */}
-                    <div className="space-y-2">
-                      {[
-                        { icon: CheckCircle2, text: "Data exacte (pas d'estimation)" },
-                        { icon: Clock, text: "Questionnaire 2x plus rapide" },
-                        { icon: Brain, text: "Analyse plus précise" },
-                      ].map((b, i) => (
-                        <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <b.icon className="w-4 h-4 text-primary" />
-                          <span>{b.text}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* SDK Provider Note */}
-                    <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
-                      <p className="text-xs text-amber-200">
-                        <strong>Samsung Health / Apple Health :</strong> Ces apps nécessitent l'installation de <strong>Terra Avengers</strong> (gratuit) sur ton téléphone pour synchroniser les données.
-                      </p>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="space-y-3">
-                      <Button
-                        onClick={async () => {
-                          setTerraConnecting(true);
-                          try {
-                            const res = await apiRequest("POST", "/api/terra/connect", {
-                              userId: email || `guest-${Date.now()}`,
-                            });
-                            const data = await res.json();
-                            if (data.widgetUrl) {
-                              // Stocker l'état avant de quitter la page
-                              sessionStorage.setItem("terraConnecting", "true");
-                              sessionStorage.setItem("questionnaireProgress", JSON.stringify(responses));
-                              if (data.referenceId) {
-                                const now = String(Date.now());
-                                sessionStorage.setItem("terraReferenceId", data.referenceId);
-                                sessionStorage.setItem("terraStartedAt", now);
-                                localStorage.setItem("terraReferenceId", data.referenceId);
-                                localStorage.setItem("terraStartedAt", now);
-                              }
-                              // Rediriger vers Terra (fonctionne sur mobile)
-                              window.location.href = data.widgetUrl;
-                            } else {
-                              throw new Error(data.error || "Widget URL non reçue");
-                            }
-                          } catch (error: any) {
-                            setTerraConnecting(false);
-                            console.error("[Terra] Connection error:", error);
-                            const errorMsg = error?.message || error?.error || "Erreur de connexion";
-                            toast({
-                              title: "Erreur de connexion",
-                              description: `${errorMsg}. Réessaie ou passe cette étape.`,
-                              variant: "destructive",
-                            });
-                          }
-                        }}
-                        className="w-full"
-                        disabled={terraConnecting}
-                      >
-                        {terraConnecting ? (
-                          <>
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-                            Connexion...
-                          </>
-                        ) : terraConnected ? (
-                          <>
-                            <CheckCircle2 className="w-4 h-4 mr-2" />
-                            Connecté ! Continuer
-                          </>
-                        ) : (
-                          <>
-                            <Link2 className="w-4 h-4 mr-2" />
-                            Connecter mon wearable
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        onClick={() => setWearablesSyncShown(true)}
-                        className="w-full text-muted-foreground"
-                      >
-                        Passer cette étape
-                      </Button>
-                    </div>
-
-                    <p className="text-[10px] text-center text-muted-foreground">
-                      Connexion sécurisée • 100+ appareils supportés
-                    </p>
-                  </motion.div>
                 ) : (
                   <>
-                    {/* Show badge if some questions were auto-filled */}
-                    {allowWearables && terraSkippedQuestions.length > 0 && sectionQuestions.some(q => terraSkippedQuestions.includes(q.id)) && (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="mb-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg"
-                      >
-                        <div className="flex items-center gap-2 text-green-400 text-sm">
-                          <CheckCircle2 className="w-4 h-4" />
-                          <span>
-                            {sectionQuestions.filter(q => terraSkippedQuestions.includes(q.id)).length} question(s)
-                            pre-remplie(s) par ton wearable
-                          </span>
-                        </div>
-                      </motion.div>
-                    )}
                     {sectionQuestions
                       .filter(q => q.id !== "sexe" && q.id !== "prenom" && q.id !== "email")
                       .filter(shouldShowQuestion)
-                      .filter(q => !allowWearables || !terraSkippedQuestions.includes(q.id))
                       .map((question, index) => (
                       <motion.div
                         key={question.id}

@@ -83,7 +83,7 @@ export default function CGV() {
               <div className="rounded-sm border border-white/10 bg-[#0F0F0F] p-4">
                 <h4 className="font-semibold text-white">Audit Ultimate Scan (79€ - Paiement unique)</h4>
                 <p className="mt-1 text-sm text-white/50">
-                  Tous les avantages Anabolic Bioscan + analyse photo posturale complete + integration wearables +
+                  Tous les avantages Anabolic Bioscan + analyse photo posturale complete +
                   protocoles avances 30-60-90 jours.
                 </p>
               </div>

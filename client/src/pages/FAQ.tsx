@@ -32,10 +32,6 @@ const faqs: FAQItem[] = [
     answer: "Disponible uniquement avec l'Ultimate Scan (79€). Tu uploades 3 photos (face, dos, profil) pendant le questionnaire. Mon IA analyse ta posture (épaules, bassin, lordose, cyphose), ta composition corporelle visible, les asymétries musculaires et les compensations biomécaniques. Tu reçois 2 sections dédiées dans ton rapport : \"Analyse visuelle et posturale complète\" et \"Analyse biomécanique et sangle profonde\" avec des protocoles correctifs personnalisés."
   },
   {
-    question: "Comment fonctionne l'intégration wearables ?",
-    answer: "Optionnel sur Anabolic et Ultimate. Si tu as un Oura, Whoop, Garmin, Apple Watch ou Fitbit, tu peux renseigner tes données HRV, sommeil et activité dans le questionnaire. Ça enrichit l'analyse pour des recommandations plus précises basées sur ta biologie réelle. Sans wearable, le rapport reste complet grâce au questionnaire."
-  },
-  {
     question: "Qui es-tu exactement, Achzod ?",
     answer: "Coach certifié avec 11 certifications internationales : NASM (CPT, CES, PES, FNS, WFS), ISSA (CPT, Nutritionist, Bodybuilding Specialist), Precision Nutrition (Level 1, Sleep & Recovery) et Pre-Script (Movement Assessment, Corrective Exercise). J'ai accompagné des centaines de clients en coaching individuel. APEXLABS est l'aboutissement de toute cette expérience : chaque protocole, chaque recommandation vient de mon expertise terrain."
   },

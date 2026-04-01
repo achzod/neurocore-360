@@ -207,7 +207,7 @@ export function serveStatic(app: Express) {
     },
     "ultimate-scan": {
       title: "Ultimate Scan - L'Analyse La Plus Complète | APEXLABS",
-      desc: "18 sections + analyse posturale 3D + wearables. Le diagnostic le plus complet du marché. 79€ d'acompte coaching.",
+      desc: "18 sections + analyse posturale 3D. Le diagnostic le plus complet du marché. 79€ d'acompte coaching.",
     },
     "blood-analysis": {
       title: "Blood Analysis - Bilan Sanguin Optimisé | APEXLABS",

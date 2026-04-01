@@ -56,7 +56,7 @@ const PRICING_PLANS: PricingPlan[] = [
       "Rapport complet 16 sections",
       "Protocoles 90 jours",
       "Stack suppléments",
-      "Wearables & analyse photo",
+      "Analyse photo posturale",
     ],
   },
   {
@@ -74,7 +74,7 @@ const PRICING_PLANS: PricingPlan[] = [
       "Stack suppléments personnalisé",
     ],
     lockedFeatures: [
-      "Wearables & analyse photo",
+      "Analyse photo posturale",
       "Nutrition timing avancé",
       "HRV & performance cardio",
     ],
@@ -87,7 +87,6 @@ const PRICING_PLANS: PricingPlan[] = [
     features: [
       "183 questions ultra-détaillées",
       "Rapport 18 sections",
-      "Wearables (Oura, Whoop, Garmin...)",
       "Analyse photo posturale",
       "Nutrition timing + cardio avancé",
       "HRV & performance",
@@ -238,12 +237,6 @@ const COMPARISON_FEATURES: {
   { label: "Plan 30-60-90 jours", discovery: false, anabolic: true, ultimate: true },
   { label: "Profil hormonal détaillé", discovery: false, anabolic: true, ultimate: true },
   { label: "Analyse posturale 3D (photos)", discovery: false, anabolic: false, ultimate: true },
-  {
-    label: "Intégration Wearables (Apple/Garmin/Oura)",
-    discovery: false,
-    anabolic: false,
-    ultimate: true,
-  },
   { label: "Dashboard temps réel", discovery: false, anabolic: false, ultimate: "À vie" },
 ];
 

@@ -79,12 +79,12 @@ function getHeroText(analysis: RecommendationAnalysis, globalScore: number): {
     return {
       label: 'Blocages multiples détectés',
       headline: `Ton score global (${globalScore}/10) révèle des blocages sur plusieurs fronts`,
-      subline: "L'Ultimate Scan est le plus adapté : 18 domaines analysés + posture 3D + wearables + dashboard temps réel.",
+      subline: "L'Ultimate Scan est le plus adapté : 18 domaines analysés + posture 3D + dashboard temps réel.",
       primaryCta: 'Ultimate Scan - 79€ (acompte coaching)',
       primaryLink: '/offers/ultimate-scan',
       secondaryCta: 'Anabolic Bioscan - 59€ (acompte coaching)',
       secondaryLink: '/offers/anabolic-bioscan',
-      features: ['18 sections d\'analyse', 'Analyse posturale 3D', 'Wearables Apple/Garmin', 'Dashboard temps réel à vie']
+      features: ['18 sections d\'analyse', 'Analyse posturale 3D', 'Dashboard temps réel à vie']
     };
   }
 
@@ -96,7 +96,7 @@ function getHeroText(analysis: RecommendationAnalysis, globalScore: number): {
     primaryLink: '/offers/ultimate-scan',
     secondaryCta: 'Anabolic Bioscan - 59€ (acompte coaching)',
     secondaryLink: '/offers/anabolic-bioscan',
-    features: ['Protocoles personnalisés', 'Wearables (Apple/Garmin)', 'Posture 3D']
+    features: ['Protocoles personnalisés', 'Posture 3D', 'Dashboard temps réel']
   };
 }
 
@@ -206,7 +206,6 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ theme }) => {
     { label: 'Stack Suppléments', discovery: false, anabolic: 'Personnalisé', ultimate: 'Personnalisé' },
     { label: 'Protocoles Matin/Soir', discovery: false, anabolic: true, ultimate: true },
     { label: 'Reset Digestif 14j', discovery: false, anabolic: true, ultimate: true },
-    { label: 'Intégration Wearables', discovery: false, anabolic: false, ultimate: 'Apple/Garmin' },
     { label: 'Analyse Posturale 3D', discovery: false, anabolic: false, ultimate: true },
     { label: 'Dashboard Temps Réel', discovery: false, anabolic: false, ultimate: 'À vie' },
     { label: 'Rapport PDF', discovery: '10 pages', anabolic: '20+ pages', ultimate: '25+ pages' },
@@ -416,7 +415,7 @@ export const UpgradeTeaser: React.FC<UpgradeTeaserProps> = ({
     resolvedCtaLink = ctaLink ?? '/offers/ultimate-scan';
     secondaryCtaText = 'Anabolic Bioscan - 59€ (acompte coaching)';
     secondaryCtaLink = '/offers/anabolic-bioscan';
-    contextNote = 'Analyse posturale 3D + wearables avec l\'Ultimate Scan';
+    contextNote = 'Analyse posturale 3D avec l\'Ultimate Scan';
   } else {
     // Generic: use analysis-driven recommendation
     const primaryIsUltimate = analysis.type !== 'anabolic';
@@ -519,7 +518,7 @@ export const SmartRecommendation: React.FC<SmartRecommendationProps> = ({
 
   if (globalScore < 5 || analysis.hasMultipleWeakAreas) {
     headline = 'Analyse complète recommandée';
-    bodyText = `Tes résultats montrent des blocages importants sur plusieurs fronts. L'Ultimate Scan (79€) est le plus adapté car il couvre les 18 domaines + posture + wearables + biomécanique.`;
+    bodyText = `Tes résultats montrent des blocages importants sur plusieurs fronts. L'Ultimate Scan (79€) est le plus adapté car il couvre les 18 domaines + posture + biomécanique.`;
     primaryCta = 'Ultimate Scan - 79€ (acompte coaching)';
     primaryLink = '/offers/ultimate-scan';
     secondaryCta = 'Anabolic Bioscan - 59€ (acompte coaching)';

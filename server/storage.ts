@@ -2158,36 +2158,9 @@ export class PgStorage implements IStorage {
     }
   }
 
-  // ==================== TERRA DATA STORAGE ====================
-
-  private ensuredTerraTable = false;
   private ensuredBurnoutProgressTable = false;
   private ensuredBurnoutReportsTable = false;
   private ensuredBloodReportsTable = false;
-
-  private async ensureTerraDataTable(): Promise<void> {
-    if (this.ensuredTerraTable) return;
-    try {
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS terra_data (
-          id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
-          reference_id VARCHAR(255) NOT NULL,
-          terra_user_id VARCHAR(255),
-          provider VARCHAR(50),
-          event_type VARCHAR(50) NOT NULL,
-          data JSONB NOT NULL,
-          created_at TIMESTAMP DEFAULT NOW() NOT NULL
-        )
-      `);
-      await pool.query(`CREATE INDEX IF NOT EXISTS idx_terra_data_reference_id ON terra_data(reference_id)`);
-      await pool.query(`CREATE INDEX IF NOT EXISTS idx_terra_data_terra_user_id ON terra_data(terra_user_id)`);
-      await pool.query(`CREATE INDEX IF NOT EXISTS idx_terra_data_created_at ON terra_data(created_at)`);
-      this.ensuredTerraTable = true;
-    } catch (err) {
-      console.error("[Storage] Error creating terra_data table:", err);
-      this.ensuredTerraTable = true;
-    }
-  }
 
   private async ensureBurnoutProgressTable(): Promise<void> {
     if (this.ensuredBurnoutProgressTable) return;
@@ -2259,101 +2232,6 @@ export class PgStorage implements IStorage {
     } catch (err) {
       console.error("[Storage] Error creating blood_reports table:", err);
     }
-  }
-
-  async saveTerraData(
-    referenceId: string,
-    terraUserId: string | null,
-    provider: string | null,
-    eventType: string,
-    data: unknown
-  ): Promise<void> {
-    await this.ensureTerraDataTable();
-    try {
-      await pool.query(
-        `INSERT INTO terra_data (reference_id, terra_user_id, provider, event_type, data)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [referenceId, terraUserId, provider, eventType, JSON.stringify(data)]
-      );
-      console.log(`[Storage] Saved Terra ${eventType} data for ${referenceId}`);
-    } catch (err) {
-      console.error("[Storage] Error saving Terra data:", err);
-      throw err;
-    }
-  }
-
-  async getTerraDataByReference(referenceId: string): Promise<any[]> {
-    await this.ensureTerraDataTable();
-    const result = await pool.query(
-      `SELECT * FROM terra_data WHERE reference_id = $1 ORDER BY created_at DESC`,
-      [referenceId]
-    );
-    return result.rows.map(row => ({
-      id: row.id,
-      referenceId: row.reference_id,
-      terraUserId: row.terra_user_id,
-      provider: row.provider,
-      eventType: row.event_type,
-      data: row.data,
-      createdAt: row.created_at,
-    }));
-  }
-
-  async getTerraDataByEmail(email: string): Promise<any[]> {
-    await this.ensureTerraDataTable();
-    // Le reference_id contient l'email sanitisé (ex: neurocore_user_gmail_com)
-    const sanitizedEmail = email.replace(/[^a-zA-Z0-9-_]/g, '_');
-    const result = await pool.query(
-      `SELECT * FROM terra_data WHERE reference_id LIKE $1 ORDER BY created_at DESC`,
-      [`%${sanitizedEmail}%`]
-    );
-    return result.rows.map(row => ({
-      id: row.id,
-      referenceId: row.reference_id,
-      terraUserId: row.terra_user_id,
-      provider: row.provider,
-      eventType: row.event_type,
-      data: row.data,
-      createdAt: row.created_at,
-    }));
-  }
-
-  async getLatestTerraData(referenceId: string, eventType?: string): Promise<any | null> {
-    await this.ensureTerraDataTable();
-    const query = eventType
-      ? `SELECT * FROM terra_data WHERE reference_id = $1 AND event_type = $2 ORDER BY created_at DESC LIMIT 1`
-      : `SELECT * FROM terra_data WHERE reference_id = $1 ORDER BY created_at DESC LIMIT 1`;
-    const params = eventType ? [referenceId, eventType] : [referenceId];
-    const result = await pool.query(query, params);
-    if (result.rows.length === 0) return null;
-    const row = result.rows[0];
-    return {
-      id: row.id,
-      referenceId: row.reference_id,
-      terraUserId: row.terra_user_id,
-      provider: row.provider,
-      eventType: row.event_type,
-      data: row.data,
-      createdAt: row.created_at,
-    };
-  }
-
-  async getAllTerraData(limit: number = 100): Promise<any[]> {
-    await this.ensureTerraDataTable();
-    const result = await pool.query(
-      `SELECT id, reference_id, terra_user_id, provider, event_type, created_at, data
-       FROM terra_data ORDER BY created_at DESC LIMIT $1`,
-      [limit]
-    );
-    return result.rows.map(row => ({
-      id: row.id,
-      referenceId: row.reference_id,
-      terraUserId: row.terra_user_id,
-      provider: row.provider,
-      eventType: row.event_type,
-      data: row.data,
-      createdAt: row.created_at,
-    }));
   }
 
   // ==================== ORDERS ====================

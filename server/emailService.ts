@@ -3384,7 +3384,7 @@ export async function sendGratuitJ7Email(
           Premium
         </div>
         <p style="color: ${COLORS.text}; font-size: 20px; font-weight: 700; margin: 0 0 8px;">Ultimate Scan</p>
-        <p style="color: ${COLORS.textMuted}; font-size: 14px; margin: 0 0 12px;">183 questions • 18 sections • Analyse posturale • Wearables</p>
+        <p style="color: ${COLORS.textMuted}; font-size: 14px; margin: 0 0 12px;">183 questions • 18 sections • Analyse posturale</p>
         <div style="margin-bottom: 16px;">
           <span style="color: ${COLORS.textMuted}; font-size: 18px; text-decoration: line-through;">79EUR</span>
           <span style="color: ${COLORS.text}; margin: 0 8px;">→</span>
