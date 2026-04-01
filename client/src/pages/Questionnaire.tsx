@@ -665,12 +665,14 @@ function QuestionnaireContent() {
     return `~${remainingMinutes} min`;
   };
 
-  const handleEmailSubmit = (e: React.FormEvent) => {
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (email && email.includes("@")) {
       setEmailSubmitted(true);
       localStorage.setItem("neurocore_email", email);
       setResponses((prev) => ({ ...prev, email }));
+      // Load existing progress from DB (returning user on new device)
+      await loadProgressFromDB(email);
     }
   };
 
