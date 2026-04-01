@@ -471,6 +471,38 @@ export async function registerRoutes(
     }
   });
 
+  // Admin: Contacts - single source of truth
+  app.post("/api/admin/contacts/sync", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const result = await storage.syncContacts();
+      res.json({ success: true, ...result });
+    } catch (error: any) {
+      console.error("[Admin] Contacts sync error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/admin/contacts", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const contacts = await storage.getAllContacts();
+      res.json({ success: true, total: contacts.length, contacts });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/admin/contacts/stats", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const stats = await storage.getContactStats();
+      res.json({ success: true, stats });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Admin: Broadcast email to all Discovery Scan clients
   app.post("/api/admin/broadcast-discovery", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;

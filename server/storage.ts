@@ -935,6 +935,7 @@ export class PgStorage implements IStorage {
   private ensuredPromoCodeUsagesTable = false;
   private ensuredQuestionnaireProgressTable = false;
   private ensuredExistingIndexes = false;
+  private ensuredContactsTable = false;
 
   private async ensureAuditColumnsLoaded(): Promise<Set<string>> {
     if (this.auditColumnsCache) return this.auditColumnsCache;
@@ -2232,6 +2233,115 @@ export class PgStorage implements IStorage {
     } catch (err) {
       console.error("[Storage] Error creating blood_reports table:", err);
     }
+  }
+
+  // ==================== CONTACTS (single source of truth) ====================
+
+  private async ensureContactsTableCreated(): Promise<void> {
+    if (this.ensuredContactsTable) return;
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS contacts (
+          id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+          email VARCHAR(255) NOT NULL UNIQUE,
+          name VARCHAR(255),
+          source VARCHAR(50) NOT NULL DEFAULT 'discovery',
+          products TEXT[] DEFAULT '{}',
+          total_spent_cents INTEGER DEFAULT 0,
+          has_discovery BOOLEAN DEFAULT FALSE,
+          has_anabolic BOOLEAN DEFAULT FALSE,
+          has_ultimate BOOLEAN DEFAULT FALSE,
+          has_blood BOOLEAN DEFAULT FALSE,
+          has_peptides BOOLEAN DEFAULT FALSE,
+          has_coaching BOOLEAN DEFAULT FALSE,
+          last_activity_at TIMESTAMP DEFAULT NOW(),
+          created_at TIMESTAMP DEFAULT NOW(),
+          updated_at TIMESTAMP DEFAULT NOW()
+        )
+      `);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_contacts_email ON contacts (email)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_contacts_source ON contacts (source)`);
+      this.ensuredContactsTable = true;
+    } catch (err) {
+      console.error("[Storage] Error creating contacts table:", err);
+      this.ensuredContactsTable = true;
+    }
+  }
+
+  async syncContacts(): Promise<{ total: number; new: number }> {
+    await this.ensureContactsTableCreated();
+    let newContacts = 0;
+
+    // Source 1: audits table
+    const audits = await this.getAllAudits();
+    for (const audit of audits) {
+      if (!audit.email || audit.email.includes("test") || audit.email.includes("debug") || audit.email.includes("achzodcoaching")) continue;
+      const name = (audit.responses as any)?.prenom || null;
+      const type = audit.type;
+      const productFlag = type === "GRATUIT" ? "has_discovery" : type === "PREMIUM" ? "has_anabolic" : type === "ELITE" ? "has_ultimate" : type === "BLOOD_ANALYSIS" ? "has_blood" : null;
+
+      try {
+        await pool.query(`
+          INSERT INTO contacts (email, name, source, ${productFlag ? productFlag + "," : ""} last_activity_at)
+          VALUES ($1, $2, 'discovery', ${productFlag ? "TRUE," : ""} COALESCE($3, NOW()))
+          ON CONFLICT (email) DO UPDATE SET
+            name = COALESCE(contacts.name, EXCLUDED.name),
+            ${productFlag ? productFlag + " = TRUE," : ""}
+            last_activity_at = GREATEST(contacts.last_activity_at, EXCLUDED.last_activity_at),
+            updated_at = NOW()
+        `, [audit.email.toLowerCase(), name, audit.createdAt]);
+        newContacts++;
+      } catch { /* skip errors */ }
+    }
+
+    // Source 2: orders table (paid)
+    const orders = await this.getAllOrders();
+    for (const order of orders) {
+      if (!order.email || order.status !== "paid") continue;
+      if (order.email.includes("test") || order.email.includes("debug") || order.email.includes("achzodcoaching")) continue;
+      const type = order.productType;
+      const productFlag = type === "PEPTIDES_ENGINE" ? "has_peptides" : type === "BLOOD_ANALYSIS" ? "has_blood" : type === "PREMIUM" ? "has_anabolic" : type === "ELITE" ? "has_ultimate" : null;
+
+      try {
+        await pool.query(`
+          INSERT INTO contacts (email, source, total_spent_cents, ${productFlag ? productFlag + "," : ""} last_activity_at)
+          VALUES ($1, 'order', $2, ${productFlag ? "TRUE," : ""} COALESCE($3, NOW()))
+          ON CONFLICT (email) DO UPDATE SET
+            total_spent_cents = contacts.total_spent_cents + EXCLUDED.total_spent_cents,
+            ${productFlag ? productFlag + " = TRUE," : ""}
+            last_activity_at = GREATEST(contacts.last_activity_at, EXCLUDED.last_activity_at),
+            updated_at = NOW()
+        `, [order.email.toLowerCase(), order.finalAmountCents || 0, order.paidAt]);
+      } catch { /* skip */ }
+    }
+
+    // Get total
+    const res = await pool.query("SELECT COUNT(*) as count FROM contacts");
+    const total = parseInt(res.rows[0]?.count || "0");
+
+    return { total, new: newContacts };
+  }
+
+  async getAllContacts(): Promise<any[]> {
+    await this.ensureContactsTableCreated();
+    const res = await pool.query("SELECT * FROM contacts ORDER BY last_activity_at DESC");
+    return res.rows;
+  }
+
+  async getContactStats(): Promise<any> {
+    await this.ensureContactsTableCreated();
+    const res = await pool.query(`
+      SELECT
+        COUNT(*) as total,
+        COUNT(*) FILTER (WHERE has_discovery) as discovery,
+        COUNT(*) FILTER (WHERE has_anabolic) as anabolic,
+        COUNT(*) FILTER (WHERE has_ultimate) as ultimate,
+        COUNT(*) FILTER (WHERE has_blood) as blood,
+        COUNT(*) FILTER (WHERE has_peptides) as peptides,
+        SUM(total_spent_cents) as total_revenue_cents
+      FROM contacts
+    `);
+    return res.rows[0];
   }
 
   // ==================== ORDERS ====================
