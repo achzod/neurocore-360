@@ -2649,25 +2649,9 @@ export async function registerRoutes(
                 responses,
               });
             } catch { /* best effort */ }
-            // Generate in BACKGROUND (don't block the response)
-            (async () => {
-              try {
-                const { generatePeptidesProtocol } = await import("./peptidesEngine");
-                const report = await generatePeptidesProtocol(responses, email);
-                const reportData = { email: `peptides::${email}`, type: "peptides", responses: report as any };
-                const saved = await storage.createBurnoutReport(reportData);
-                console.log(`[Checkout] ✅ Peptides protocol generated for already-paid ${email}: ${saved.id}`);
-                // Send email with report link
-                const baseUrl = getBaseUrl();
-                await sendCTAEmail(
-                  email,
-                  "Ton protocole Peptides Engine est pret",
-                  `Ton protocole personnalise est pret !\n\nAccede a ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}\n\nAchzod`
-                ).catch(() => {});
-              } catch (genErr) {
-                console.error(`[Checkout] Background peptides generation failed for ${email}:`, genErr);
-              }
-            })();
+            // DO NOT generate in background — Render kills process after HTTP response.
+            // Auto-recovery cron will detect and generate.
+            console.log(`[Checkout] Peptides already paid for ${email}, cron will generate`);
           }
           // Respond IMMEDIATELY — don't wait for generation
           res.json({ success: true, alreadyPaid: true, url: null, redirect: "/dashboard?success=true&generating=peptides" });
@@ -3058,18 +3042,8 @@ export async function registerRoutes(
             try {
               await storage.saveBurnoutProgress({ email: `peptides::${email}`, currentSection: 6, totalSections: 6, responses });
             } catch { /* best effort */ }
-            (async () => {
-              try {
-                const { generatePeptidesProtocol } = await import("./peptidesEngine");
-                const report = await generatePeptidesProtocol(responses, email);
-                const saved = await storage.createBurnoutReport({ email: `peptides::${email}`, responses: responses || {}, report });
-                console.log(`[PayPal] ✅ Peptides protocol generated for already-paid ${email}: ${saved.id}`);
-                const baseUrl = getBaseUrl();
-                await sendCTAEmail(email, "Ton protocole Peptides Engine est pret", `Ton protocole personnalise est pret !\n\nAccede a ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}\n\nAchzod`).catch(() => {});
-              } catch (genErr) {
-                console.error(`[PayPal] Background peptides generation failed for ${email}:`, genErr);
-              }
-            })();
+            // Cron auto-recovery will handle generation
+            console.log(`[PayPal] Peptides already paid for ${email}, cron will generate`);
           }
           res.json({ success: true, alreadyPaid: true, redirect: "/dashboard?success=true&generating=peptides" });
           return;
@@ -3326,63 +3300,12 @@ export async function registerRoutes(
           console.error(`[PayPal] Blood credit error:`, creditErr);
         }
 
-        // Generate protocol in background with waterfall recovery
-        (async () => {
-          try {
-            let responses: Record<string, unknown> | undefined;
+        // DO NOT generate in background here — Render kills the process after HTTP response.
+        // The auto-recovery cron will detect this order (paid, no reportId) and generate.
+        // Respond immediately so the client gets redirected.
+        console.log(`[PayPal] Peptides Engine: order marked paid, cron will generate report for ${email}`);
 
-            // Source 1: burnout_progress (primary)
-            const progress = await storage.getBurnoutProgress(`peptides::${email}`);
-            if (progress?.responses && Object.keys(progress.responses).length >= 3) {
-              responses = progress.responses as Record<string, unknown>;
-              console.log(`[PayPal] Responses found in burnout_progress (${Object.keys(responses).length} fields)`);
-            }
-
-            // Source 2: order metadata (backup)
-            if (!responses) {
-              const meta = existingOrder.metadata as any;
-              if (meta?.peptidesResponses && Object.keys(meta.peptidesResponses).length >= 3) {
-                responses = meta.peptidesResponses;
-                console.log(`[PayPal] Responses RECOVERED from order metadata (${Object.keys(responses!).length} fields)`);
-              }
-            }
-
-            if (!responses || Object.keys(responses).length < 3) {
-              console.error(`[PayPal] CRITICAL: No responses for ${email} — alerting admin`);
-              const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
-              await sendCTAEmail(adminEmail, `ALERTE: Reponses peptides manquantes — ${email}`,
-                `URGENT: Client a paye 299EUR via PayPal mais aucune reponse trouvee.\n\nEmail: ${email}\nOrder: ${existingOrder.id}\n\nAction: contacter le client.`
-              ).catch(() => {});
-              return;
-            }
-
-            const { generatePeptidesProtocol } = await import("./peptidesEngine");
-            const report = await generatePeptidesProtocol(responses, email);
-            const saved = await storage.createBurnoutReport({ email: `peptides::${email}`, responses, report });
-            console.log(`[PayPal] Peptides protocol generated for ${email}: ${saved.id}`);
-
-            // Link report to order
-            await storage.updateOrder(existingOrder.id, {
-              metadata: { ...(existingOrder.metadata as object ?? {}), peptidesReportId: saved.id },
-            }).catch(() => {});
-
-            // Send delivery email
-            const baseUrl = getBaseUrl();
-            const peptidesNames = report.peptides?.map((p: any) => p.name).join(", ") ?? "voir rapport";
-            const promoBlock = report.promoCodesGenerated?.length > 0
-              ? `\n\nTes 2 codes Blood Analysis offerts (100% de réduction, usage unique):\n${report.promoCodesGenerated.join("\n")}`
-              : "";
-            await sendCTAEmail(
-              email,
-              "Ton protocole peptides personnalisé est prêt",
-              `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}\n\nConserve ce lien — il est personnel et unique.`
-            ).catch((err) => console.error(`[PayPal] Delivery email failed:`, err));
-          } catch (genErr) {
-            console.error(`[PayPal] Peptides generation failed for ${email}:`, genErr);
-          }
-        })();
-
-        res.json({ success: true, auditId: "", auditType: "PEPTIDES_ENGINE", email });
+        res.json({ success: true, auditId: "", auditType: "PEPTIDES_ENGINE", email, generating: true });
         return;
       }
 
@@ -4856,8 +4779,10 @@ export async function registerRoutes(
         const allOrders = await storage.getAllOrders?.() || [];
         const peptidesOrders = allOrders.filter((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid" && o.paidAt);
 
-        // AUTO-RECOVERY: detect paid orders without report and generate
+        // AUTO-RECOVERY: detect paid orders without report and generate (1 per cron run to avoid timeout)
+        let autoRecoveryDone = false;
         for (const order of peptidesOrders) {
+          if (autoRecoveryDone) break; // Only 1 per cron run
           const meta = order.metadata as any;
           const email = order.email;
           if (!email || email.includes("test") || email.includes("debug")) continue;
@@ -4868,6 +4793,7 @@ export async function registerRoutes(
           if (hoursSincePaid < 0.1 || hoursSincePaid > 168) continue; // Skip if < 5 min or > 7 days old
 
           console.log(`[Cron] AUTO-RECOVERY: Paid peptides order ${order.id} for ${email} has no report (paid ${Math.round(hoursSincePaid)}h ago)`);
+          autoRecoveryDone = true;
           try {
             // Waterfall: burnout_progress → order metadata
             let responses: Record<string, unknown> | undefined;
