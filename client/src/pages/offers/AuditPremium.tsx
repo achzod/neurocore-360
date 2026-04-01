@@ -8,7 +8,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
-import { ArrowRight, Check, Zap, Moon, Pill, Calendar, Watch, TrendingUp, ChevronDown, Activity } from "lucide-react";
+import { ArrowRight, Check, Zap, Moon, Pill, Calendar, TrendingUp, ChevronDown, Activity } from "lucide-react";
 import { AnimatedReportPreview } from "@/components/AnimatedReportPreview";
 
 // ============================================================================
@@ -140,69 +140,6 @@ function TimelineVisual() {
           ROADMAP
         </motion.div>
         <div className="text-white/40">Semaine par semaine</div>
-      </div>
-    </div>
-  );
-}
-
-// ============================================================================
-// ANIMATED VISUALIZATION - Wearables Sync
-// ============================================================================
-function WearablesVisual() {
-  const devices = ["OURA", "WHOOP", "GARMIN", "APPLE", "FITBIT"];
-
-  return (
-    <div className="relative w-full h-full bg-gradient-to-br from-[#FCDD00]/10 via-black to-[#FCDD00]/5 flex items-center justify-center overflow-hidden rounded-sm border border-white/5">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(252,221,0,0.1)_0%,_transparent_70%)]" />
-
-      {/* Central watch icon */}
-      <motion.div
-        className="absolute"
-        animate={{ scale: [1, 1.1, 1] }}
-        transition={{ duration: 3, repeat: Infinity }}
-      >
-        <Watch className="w-16 h-16 text-[#FCDD00]/40" />
-      </motion.div>
-
-      {/* Orbiting device names */}
-      {devices.map((device, i) => {
-        const angle = (i / devices.length) * Math.PI * 2;
-        const radius = 80;
-        return (
-          <motion.div
-            key={i}
-            className="absolute px-3 py-1 bg-[#FCDD00]/10 border border-[#FCDD00]/20 rounded text-xs font-mono text-[#FCDD00]/80"
-            animate={{
-              x: [Math.cos(angle) * radius, Math.cos(angle + Math.PI * 2) * radius],
-              y: [Math.sin(angle) * radius, Math.sin(angle + Math.PI * 2) * radius],
-              opacity: [0.5, 1, 0.5],
-            }}
-            transition={{ duration: 10, repeat: Infinity, ease: "linear", delay: i * 0.2 }}
-          >
-            {device}
-          </motion.div>
-        );
-      })}
-
-      {/* Pulse rings */}
-      {[0, 1, 2].map((i) => (
-        <motion.div
-          key={i}
-          className="absolute w-24 h-24 rounded-full border border-[#FCDD00]/20"
-          animate={{ scale: [1, 2, 2.5], opacity: [0.4, 0.1, 0] }}
-          transition={{ duration: 3, repeat: Infinity, delay: i * 1 }}
-        />
-      ))}
-
-      <div className="absolute bottom-4 left-4 text-xs font-mono text-[#FCDD00]/80">
-        <div>SYNC DATA</div>
-        <motion.div
-          className="text-white/60"
-          animate={{ opacity: [0.5, 1, 0.5] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        >
-          HRV + SOMMEIL + ACTIVITE
-        </motion.div>
       </div>
     </div>
   );
@@ -457,55 +394,6 @@ export default function AuditPremium() {
         </div>
       </section>
 
-      {/* WEARABLES */}
-      <section className="py-32 px-6 border-t border-white/5">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-            >
-              <p className="text-[#FCDD00] text-sm font-medium tracking-[0.2em] uppercase mb-6">
-                Integration Wearables
-              </p>
-              <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6 leading-tight">
-                Sync ta montre.
-                <br />
-                <span className="text-[#FCDD00]">J'affine le diagnostic.</span>
-              </h2>
-              <p className="text-white/50 text-lg leading-relaxed mb-8">
-                Connecte ton wearable. Je croise tes donnees de sommeil, HRV et activite
-                avec tes reponses pour des recommandations ultra-precises.
-              </p>
-              <ul className="space-y-4">
-                {[
-                  "Analyse HRV pour evaluer ton stress reel",
-                  "Detection des troubles du sommeil caches",
-                  "Correlation activite / fatigue / performance",
-                  "Recommandations adaptees a tes donnees",
-                ].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 text-white/70">
-                    <Check className="w-5 h-5 text-[#FCDD00]" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-            >
-              <div className="aspect-square">
-                <WearablesVisual />
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
       {/* WHAT'S INCLUDED */}
       <section className="py-32 px-6 border-t border-white/5">
         <div className="max-w-4xl mx-auto">
@@ -530,7 +418,6 @@ export default function AuditPremium() {
               {[
                 "Rapport 16 sections, 20+ pages",
                 "Score global sur 100",
-                "Integration wearables (optionnel)",
                 "Protocole Matin Anti-Cortisol",
                 "Protocole Soir Verrouillage Sommeil",
                 "Protocole Digestion 14 Jours",
@@ -623,7 +510,6 @@ export default function AuditPremium() {
               { q: "Quelle est la difference avec l'Ultimate Scan ?", a: "L'Anabolic Bioscan couvre 16 sections de rapport sans photos. L'Ultimate Scan (79\u20ac) ajoute 2 sections exclusives basees sur 3 photos (face, dos, profil) : analyse visuelle et posturale complete + analyse biomecanique et sangle profonde. Total : 18 sections, ~183 questions, rapport de 40-50 pages." },
               { q: "Les 5 protocoles sont-ils vraiment personnalises ?", a: "Oui. Chaque protocole est genere par mon moteur IA en fonction de TES reponses. Le protocole matin anti-cortisol, le protocole soir verrouillage sommeil, le protocole digestion 14 jours, le protocole bureau anti-sedentarite et le protocole entrainement personnalise sont tous adaptes a ton profil, tes desequilibres et tes objectifs specifiques." },
               { q: "Combien de temps pour recevoir mon rapport ?", a: "Ton rapport complet de 20+ pages est genere par mon moteur IA et delivre sous 24h par email. Tu recois un email des que ton rapport est pret avec un lien direct vers ton dashboard." },
-              { q: "L'integration wearables est-elle obligatoire ?", a: "Non, c'est optionnel. Si tu as un Oura, Whoop, Garmin, Apple Watch ou Fitbit, tes donnees HRV, sommeil et activite enrichiront l'analyse. Sans wearable, le rapport reste complet et personnalise grace aux 137 questions du questionnaire." },
             ].map((faq, i) => (
               <FAQItem key={i} q={faq.q} a={faq.a} index={i} />
             ))}

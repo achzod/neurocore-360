@@ -1572,7 +1572,7 @@ function extractDomainResponses(domain: string, responses: DiscoveryResponses): 
     sommeil: ['heures-sommeil', 'qualite-sommeil', 'reveil-fatigue', 'endormissement', 'reveils-nocturnes', 'heure-coucher', 'heure-reveil', 'sieste'],
 
     // HRV & Cardiaque
-    'hrv-cardiaque': ['hrv-mesure', 'hrv-moyenne', 'fc-repos', 'variabilite-fc', 'wearable-utilise'],
+    'hrv-cardiaque': ['hrv-mesure', 'hrv-moyenne', 'fc-repos', 'variabilite-fc'],
 
     // Cardio & Endurance
     'cardio-endurance': ['cardio-frequence', 'type-cardio', 'zone-2-temps', 'essoufflement', 'vo2max-estime', 'fcmax-connue'],
@@ -2215,7 +2215,7 @@ export async function convertToNarrativeReport(
       <li>- Tout l'Anabolic Bioscan inclus</li>
       <li>- Analyse photo posturale (face/profil/dos)</li>
       <li>- Diagnostic biomecanique + correctifs</li>
-      <li>- Wearables & HRV avancee</li>
+      <li>- HRV & cardio avancee</li>
       <li>- Protocoles rehab + performance</li>
     </ul>
     <a href="/offers/ultimate-scan" class="block w-full py-3 rounded-lg text-center font-bold transition-all hover:bg-white/10" style="border: 1px solid var(--color-primary); color: var(--color-primary);">

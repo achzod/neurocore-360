@@ -37,7 +37,7 @@ async function createProducts() {
   if (!ultimateExists) {
     const ultimateProduct = await stripe.products.create({
       name: 'Ultimate Scan',
-      description: 'Ultimate Scan avec analyse photo posturale complète, intégration wearables et protocoles avancés 30-60-90 jours.',
+      description: 'Ultimate Scan avec analyse photo posturale complète et protocoles avancés 30-60-90 jours.',
       metadata: {
         type: 'ELITE',
         category: 'audit',

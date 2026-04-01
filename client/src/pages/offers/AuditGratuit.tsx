@@ -691,7 +691,6 @@ export default function AuditGratuit() {
                 {[
                   "Tout l'Anabolic Bioscan",
                   "Analyse photo posturale (3 photos)",
-                  "Integration wearables (Oura, Whoop...)",
                   "18 sections d'analyse",
                   "Rapport 40-50 pages",
                 ].map((item, i) => (

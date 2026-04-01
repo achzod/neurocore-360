@@ -3,7 +3,7 @@
  *
  * GRATUIT (Discovery Scan, 0€): ~66 questions - Dashboard basique
  * ANABOLIC BIOSCAN (59€): ~137 questions - Rapport Achzod 16 sections
- * ULTIMATE SCAN (79€): ~183 questions - Rapport 18 sections + Wearables + Analyse Photo
+ * ULTIMATE SCAN (79€): ~183 questions - Rapport 18 sections + Analyse Photo
  *
  * Chaque question a un champ `tier`:
  * - "free" = disponible pour tous
@@ -297,7 +297,6 @@ export const QUESTIONS_ELITE: Question[] = [
   { id: "hrv-mesure", sectionId: "hrv-cardiaque", type: "select", label: "Mesures-tu ta HRV ?", tier: "elite", options: [{ value: "non", label: "Non" }, { value: "parfois", label: "Parfois" }, { value: "regulierement", label: "Régulièrement" }] },
   { id: "hrv-valeur", sectionId: "hrv-cardiaque", type: "select", label: "HRV moyenne ?", tier: "elite", options: [{ value: "moins-30", label: "<30 ms" }, { value: "30-50", label: "30-50 ms" }, { value: "50-70", label: "50-70 ms" }, { value: "70+", label: "70+ ms" }, { value: "ne-sais-pas", label: "Je ne sais pas" }] },
   { id: "fc-repos", sectionId: "hrv-cardiaque", type: "select", label: "FC au repos ?", tier: "elite", options: [{ value: "moins-50", label: "<50 bpm" }, { value: "50-60", label: "50-60 bpm" }, { value: "60-70", label: "60-70 bpm" }, { value: "70-80", label: "70-80 bpm" }, { value: "80+", label: "80+ bpm" }] },
-  { id: "montre-connectee", sectionId: "hrv-cardiaque", type: "select", label: "Montre connectée ?", tier: "elite", options: [{ value: "non", label: "Non" }, { value: "apple", label: "Apple Watch" }, { value: "garmin", label: "Garmin" }, { value: "oura", label: "Oura Ring" }, { value: "whoop", label: "WHOOP" }, { value: "autre", label: "Autre" }] },
   { id: "palpitations", sectionId: "hrv-cardiaque", type: "select", label: "Palpitations ?", tier: "elite", options: [{ value: "jamais", label: "Jamais" }, { value: "rarement", label: "Rarement" }, { value: "parfois", label: "Parfois" }, { value: "souvent", label: "Souvent" }] },
 
   // BLESSURES & DOULEURS (15 questions)

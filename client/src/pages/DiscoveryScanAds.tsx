@@ -379,7 +379,6 @@ export default function DiscoveryScanAds() {
                 {[
                   "Tout le Rapport Avancé inclus",
                   "183 questions sur 18 domaines",
-                  "Intégration données wearables",
                   "Analyse photo posturale incluse",
                   "Rapport de 40-50 pages avec protocoles",
                 ].map((item, idx) => (

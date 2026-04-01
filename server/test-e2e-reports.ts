@@ -129,8 +129,6 @@ const baseResponses = {
   "hrv-valeur": "70+",
   "fc-repos": "50-60",
   "tension-arterielle": "normale",
-  "montre-connectee": "oui",
-  "type-montre": "apple",
   palpitations: "jamais",
   essoufflement: "effort-intense",
 

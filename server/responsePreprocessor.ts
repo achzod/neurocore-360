@@ -163,8 +163,6 @@ const SECTION_QUESTIONS: Record<string, Array<{ id: string; label: string; optio
     { id: "hrv-valeur", label: "Valeur HRV moyenne" },
     { id: "fc-repos", label: "Frequence cardiaque repos" },
     { id: "tension-arterielle", label: "Tension arterielle" },
-    { id: "montre-connectee", label: "Montre connectee" },
-    { id: "type-montre", label: "Type de montre" },
     { id: "palpitations", label: "Palpitations" },
     { id: "essoufflement", label: "Essoufflement" },
   ],

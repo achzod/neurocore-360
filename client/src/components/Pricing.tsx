@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { Check, X, Sparkles, Zap, Crown, Watch, Camera, FileText, Brain, ArrowRight, MessageCircle } from "lucide-react";
+import { Check, X, Sparkles, Zap, Crown, Camera, FileText, Brain, ArrowRight, MessageCircle } from "lucide-react";
 
 interface PricingTier {
   name: string;
@@ -69,7 +69,6 @@ const tiers: PricingTier[] = [
       { text: "183 questions ultra-détaillées", included: true },
       { text: "Dashboard avancé temps réel", included: true },
       { text: "Rapport complet 18 sections", included: true },
-      { text: "Sync Apple Watch, Oura, Garmin...", included: true },
       { text: "Analyse photo (posture, composition)", included: true },
       { text: "Nutrition timing avancé", included: true },
       { text: "HRV & performance cardio", included: true },

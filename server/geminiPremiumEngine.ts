@@ -606,7 +606,6 @@ DONNÉES QUESTIONNAIRE ELITE À EXPLOITER (si disponibles):
 - hrv-mesure : Mesure de HRV (non, parfois, régulièrement)
 - hrv-valeur : HRV moyenne (<30ms, 30-50ms, 50-70ms, 70+ms)
 - fc-repos : FC au repos (<50, 50-60, 60-70, 70-80, 80+ bpm)
-- montre-connectee : Type de montre (Apple, Garmin, Oura, Whoop, autre)
 - palpitations : Fréquence des palpitations
 
 STRUCTURE :

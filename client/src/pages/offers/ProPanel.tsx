@@ -8,7 +8,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
-import { ArrowRight, Check, Camera, Activity, Watch, User, Zap, Brain, Heart, ChevronDown } from "lucide-react";
+import { ArrowRight, Check, Camera, User, Zap, Brain, Heart, ChevronDown } from "lucide-react";
 import { AnimatedReportPreview } from "@/components/AnimatedReportPreview";
 
 // ============================================================================
@@ -119,122 +119,7 @@ function PhotoAnalysisVisual() {
   );
 }
 
-// ============================================================================
-// ANIMATED VISUALIZATION - Wearables Orbit
-// ============================================================================
-function WearablesOrbitVisual() {
-  const devices = [
-    { name: "OURA", angle: 0 },
-    { name: "WHOOP", angle: 72 },
-    { name: "GARMIN", angle: 144 },
-    { name: "APPLE", angle: 216 },
-    { name: "FITBIT", angle: 288 },
-  ];
-
-  return (
-    <div className="relative w-full h-full bg-gradient-to-br from-cyan-500/10 via-black to-cyan-500/5 flex items-center justify-center overflow-hidden rounded-sm border border-white/5">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(34,211,238,0.1)_0%,_transparent_70%)]" />
-
-      {/* Central watch icon */}
-      <motion.div
-        className="relative z-10 w-20 h-20 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center"
-        animate={{ scale: [1, 1.1, 1], borderColor: ['rgba(34,211,238,0.3)', 'rgba(34,211,238,0.6)', 'rgba(34,211,238,0.3)'] }}
-        transition={{ duration: 3, repeat: Infinity }}
-      >
-        <Watch className="w-10 h-10 text-cyan-400" />
-      </motion.div>
-
-      {/* Orbiting devices */}
-      {devices.map((device, i) => {
-        const radius = 90;
-        const angleRad = (device.angle * Math.PI) / 180;
-
-        return (
-          <motion.div
-            key={i}
-            className="absolute px-2 py-1 bg-cyan-500/10 border border-cyan-500/30 rounded text-[10px] font-mono text-cyan-400"
-            style={{
-              left: '50%',
-              top: '50%',
-            }}
-            animate={{
-              x: [
-                Math.cos(angleRad) * radius - 20,
-                Math.cos(angleRad + Math.PI * 2) * radius - 20,
-              ],
-              y: [
-                Math.sin(angleRad) * radius - 10,
-                Math.sin(angleRad + Math.PI * 2) * radius - 10,
-              ],
-              opacity: [0.6, 1, 0.6],
-            }}
-            transition={{
-              duration: 12,
-              repeat: Infinity,
-              ease: "linear",
-              delay: i * 0.2,
-            }}
-          >
-            {device.name}
-          </motion.div>
-        );
-      })}
-
-      {/* Pulse rings */}
-      {[0, 1, 2].map((i) => (
-        <motion.div
-          key={i}
-          className="absolute w-20 h-20 rounded-full border border-cyan-400/30"
-          style={{ left: '50%', top: '50%', marginLeft: '-40px', marginTop: '-40px' }}
-          animate={{
-            scale: [1, 2.5, 3],
-            opacity: [0.4, 0.1, 0],
-          }}
-          transition={{
-            duration: 3,
-            repeat: Infinity,
-            delay: i * 1,
-            ease: "easeOut",
-          }}
-        />
-      ))}
-
-      {/* Connection lines */}
-      <svg className="absolute inset-0 w-full h-full">
-        {devices.map((device, i) => {
-          const angleRad = (device.angle * Math.PI) / 180;
-          const x = 50 + Math.cos(angleRad) * 30;
-          const y = 50 + Math.sin(angleRad) * 30;
-          return (
-            <motion.line
-              key={i}
-              x1="50%"
-              y1="50%"
-              x2={`${x}%`}
-              y2={`${y}%`}
-              stroke="rgba(34,211,238,0.2)"
-              strokeWidth="1"
-              animate={{ opacity: [0.2, 0.5, 0.2] }}
-              transition={{ duration: 2, repeat: Infinity, delay: i * 0.2 }}
-            />
-          );
-        })}
-      </svg>
-
-      {/* Status */}
-      <div className="absolute bottom-4 right-4 text-xs font-mono text-right">
-        <motion.div
-          className="text-cyan-400"
-          animate={{ opacity: [0.5, 1, 0.5] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-        >
-          DATA SYNC
-        </motion.div>
-        <div className="text-white/40">5 appareils</div>
-      </div>
-    </div>
-  );
-}
+// (WearablesOrbitVisual removed)
 
 // ============================================================================
 // ANIMATED VISUALIZATION - 18 Report Sections Grid
@@ -296,7 +181,6 @@ function IntegrationVisual() {
   const sources = [
     { icon: Brain, label: "QUESTIONNAIRE", color: "#FCDD00" },
     { icon: Camera, label: "PHOTOS", color: "#A855F7" },
-    { icon: Activity, label: "WEARABLES", color: "#22D3EE" },
   ];
 
   return (
@@ -434,7 +318,7 @@ export default function ProPanel() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="text-white/60 text-lg sm:text-xl max-w-2xl mx-auto mb-8 leading-relaxed"
           >
-            ~183 questions sur 18 sections + analyse photo posturale + integration wearables.
+            ~183 questions sur 18 sections + analyse photo posturale.
             Nutrition timing, cardio & performance (Zone 2, HRV), blessures & mobilite, psychologie.
           </motion.p>
 
@@ -489,19 +373,19 @@ export default function ProPanel() {
               transition={{ duration: 0.8 }}
             >
               <p className="text-[#FCDD00] text-sm font-medium tracking-[0.2em] uppercase mb-6">
-                Triple Source
+                Double Source
               </p>
               <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6 leading-tight">
-                3 sources de donnees.
+                2 sources de donnees.
                 <br />
                 <span className="text-white/50">Precision maximale.</span>
               </h2>
               <p className="text-white/50 text-lg leading-relaxed mb-8">
-                Je croise les donnees de ton questionnaire, tes photos et tes wearables
+                Je croise les donnees de ton questionnaire et tes photos
                 pour generer le rapport le plus complet et precis possible.
               </p>
               <ul className="space-y-4">
-                {["183 questions sur 18 sections", "Analyse photo posturale et biomecanique", "Integration donnees wearables (HRV, sommeil, activite)"].map((item, i) => (
+                {["183 questions sur 18 sections", "Analyse photo posturale et biomecanique"].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-white/70">
                     <Check className="w-5 h-5 text-[#FCDD00]" />
                     {item}
@@ -574,59 +458,6 @@ export default function ProPanel() {
                   </li>
                 ))}
               </ul>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* WEARABLES */}
-      <section className="py-32 px-6 border-t border-white/5">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
-            >
-              <p className="text-cyan-400 text-sm font-medium tracking-[0.2em] uppercase mb-6">
-                Integration Wearables
-              </p>
-              <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6 leading-tight">
-                Tes donnees,
-                <br />
-                <span className="text-cyan-400">amplifiees.</span>
-              </h2>
-              <p className="text-white/50 text-lg leading-relaxed mb-8">
-                Connecte ta montre ou ton tracker. Je croise tes donnees de sommeil,
-                HRV, frequence cardiaque et activite avec ton questionnaire pour
-                detecter des patterns invisibles.
-              </p>
-              <ul className="space-y-4">
-                {[
-                  "Analyse HRV et detection du surmenage",
-                  "Correlation sommeil / energie / performance",
-                  "Detection precoce du surentrainement",
-                  "Recommandations de recuperation"
-                ].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 text-white/70">
-                    <Check className="w-5 h-5 text-cyan-400" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="relative"
-            >
-              <div className="aspect-square">
-                <WearablesOrbitVisual />
-              </div>
             </motion.div>
           </div>
         </div>
@@ -714,7 +545,6 @@ export default function ProPanel() {
               {[
                 "Rapport 18 sections, 40-50 pages",
                 "Analyse photo posturale + biomecanique",
-                "Integration wearables (optionnel)",
                 "Score global sur 100",
                 "Protocole Matin Anti-Cortisol",
                 "Protocole Soir Verrouillage Sommeil",
@@ -754,7 +584,7 @@ export default function ProPanel() {
           <div className="text-center mb-14">
             <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">Exemple de rapport</h2>
             <p className="mt-4 text-white/50 max-w-3xl mx-auto">
-              Voici a quoi ressemble ton rapport Ultimate Scan. 18 sections, analyse posturale, donnees wearables et protocoles en profondeur.
+              Voici a quoi ressemble ton rapport Ultimate Scan. 18 sections, analyse posturale et protocoles en profondeur.
             </p>
           </div>
 
@@ -791,10 +621,6 @@ export default function ProPanel() {
                 title: "Analyse Posturale",
                 detail: "3 photos analysees — 4 corrections identifiees",
               },
-              {
-                title: "Oura Ring",
-                detail: "HRV: 45ms, RHR: 58 bpm, Sleep Score: 72",
-              },
             ]}
           />
         </div>
@@ -814,7 +640,6 @@ export default function ProPanel() {
               { q: "Comment fonctionne l'analyse photo ?", a: "Tu uploades 3 photos (face, dos, profil) pendant le questionnaire. Mon IA analyse ta posture (epaules, bassin, lordose, cyphose), ta composition corporelle visible, les asymetries musculaires et les compensations biomecaniques (psoas, diaphragme, tensegrite myofasciale). Tu recois des protocoles correctifs personnalises dans le rapport." },
               { q: "Que contient le rapport de 40-50 pages ?", a: "18 sections : executive summary avec score global, 2 analyses photo (posturale + biomecanique), 6 analyses approfondies (entrainement, cardiovasculaire, metabolisme, sommeil, digestion, axes hormonaux), 5 protocoles d'action (matin anti-cortisol, soir verrouillage sommeil, digestion 14j, bureau anti-sedentarite, entrainement personnalise), stack supplements optimise, plan semaine par semaine 30-60-90, KPI et tableau de bord, synthese." },
               { q: "Combien de temps pour recevoir mon rapport ?", a: "Ton rapport complet de 40-50 pages est genere par mon moteur IA et delivre sous 48h par email. L'analyse photo et le croisement de 183 reponses demandent un traitement approfondi pour garantir la qualite. Tu recois un email des que ton rapport est pret." },
-              { q: "L'integration wearables est-elle obligatoire ?", a: "Non, c'est optionnel. Si tu as un Oura, Whoop, Garmin, Apple Watch ou Fitbit, tes donnees HRV, sommeil et activite enrichiront l'analyse. Sans wearable, le rapport reste complet et ultra-detaille grace aux 183 questions et aux 3 photos." },
             ].map((faq, i) => (
               <FAQItem key={i} q={faq.q} a={faq.a} index={i} />
             ))}
@@ -836,7 +661,7 @@ export default function ProPanel() {
             <span className="text-[#FCDD00]">la plus complete.</span>
           </h2>
           <p className="text-white/50 text-lg mb-12 max-w-xl mx-auto">
-            Questionnaire + photos + wearables. 18 sections. 183 questions.
+            Questionnaire + photos. 18 sections. 183 questions.
             Le maximum de donnees pour le maximum de resultats.
           </p>
           <Link href="/questionnaire?plan=ultimate">

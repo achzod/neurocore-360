@@ -325,7 +325,7 @@ export function AnimatedReportPreview({
           )}
 
           {/* ----------------------------------------------------------------
-              Extras (photo analysis, wearable data, supplement stack)
+              Extras (photo analysis, supplement stack, etc.)
               Rendered before protocol so protocol is always last (most readable)
           ---------------------------------------------------------------- */}
           {extras && extras.map((extra, i) => (
