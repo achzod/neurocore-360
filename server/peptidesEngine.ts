@@ -439,6 +439,12 @@ Si Peptaura est en rupture totale sur une molécule ou si le client veut compare
 5. Shangye : https://shangye.manufacturer.globalsources.com/homepage_6003002363391.htm
 Explique au client que ces fournisseurs sont contactables directement via WhatsApp (bouton sur leur page GlobalSources), que les échanges sont rapides, et qu'il peut demander le COA (certificat d'analyse) avant de commander. Précise que c'est un plan B et que Peptaura reste la méthode la plus simple pour un débutant.
 
+PLAN C FOURNISSEURS EUROPE/UK (section "disclaimer-support")
+Pour les clients qui veulent une livraison rapide (2-5 jours au lieu de 7-14 depuis la Chine), il existe des fournisseurs basés au Royaume-Uni. Les prix sont plus élevés que Peptaura ou les fournisseurs chinois, mais la livraison est beaucoup plus rapide et il n'y a pas de risque douane. Mentionne ces 2 sources dans la section "disclaimer-support" comme plan C :
+1. Peptiology UK : https://peptiology.co.uk/ (basé au Royaume-Uni, large catalogue de peptides, livraison rapide Europe)
+2. UK Peptides : https://www.uk-peptides.com/ (basé au Royaume-Uni, peptides de recherche, livraison express)
+Précise que ces sources sont plus chères que Peptaura (environ 2 à 3 fois le prix) mais que la livraison est en 2-5 jours ouvrés au lieu de 7-14 jours. C'est une option pour ceux qui veulent commencer rapidement ou qui ne veulent pas attendre la livraison depuis la Chine.
+
 CONNAISSANCES PEPTIDES (base complète, INJECTABLES UNIQUEMENT)
 
 BPC-157 (Body Protection Compound 157)
