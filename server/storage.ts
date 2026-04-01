@@ -2270,57 +2270,57 @@ export class PgStorage implements IStorage {
 
   async syncContacts(): Promise<{ total: number; new: number }> {
     await this.ensureContactsTableCreated();
-    let newContacts = 0;
 
-    // Source 1: audits table
-    const audits = await this.getAllAudits();
-    for (const audit of audits) {
-      if (!audit.email || audit.email.includes("test") || audit.email.includes("debug") || audit.email.includes("achzodcoaching")) continue;
-      const name = (audit.responses as any)?.prenom || null;
-      const type = audit.type;
-      const productFlag = type === "GRATUIT" ? "has_discovery" : type === "PREMIUM" ? "has_anabolic" : type === "ELITE" ? "has_ultimate" : type === "BLOOD_ANALYSIS" ? "has_blood" : null;
+    // Batch sync via single SQL statements
+    // Source 1: audits → contacts
+    await pool.query(`
+      INSERT INTO contacts (email, name, source, has_discovery, has_anabolic, has_ultimate, has_blood, last_activity_at)
+      SELECT LOWER(a.email), (a.responses->>'prenom')::VARCHAR(255), 'discovery',
+        CASE WHEN a.type = 'GRATUIT' THEN TRUE ELSE FALSE END,
+        CASE WHEN a.type = 'PREMIUM' THEN TRUE ELSE FALSE END,
+        CASE WHEN a.type = 'ELITE' THEN TRUE ELSE FALSE END,
+        CASE WHEN a.type = 'BLOOD_ANALYSIS' THEN TRUE ELSE FALSE END,
+        COALESCE(a.created_at, NOW())
+      FROM audits a
+      WHERE a.email IS NOT NULL
+        AND a.email NOT LIKE '%test%' AND a.email NOT LIKE '%debug%'
+        AND a.email NOT LIKE '%achzodcoaching%' AND a.email NOT LIKE '%achkou%'
+      ON CONFLICT (email) DO UPDATE SET
+        name = COALESCE(contacts.name, EXCLUDED.name),
+        has_discovery = contacts.has_discovery OR EXCLUDED.has_discovery,
+        has_anabolic = contacts.has_anabolic OR EXCLUDED.has_anabolic,
+        has_ultimate = contacts.has_ultimate OR EXCLUDED.has_ultimate,
+        has_blood = contacts.has_blood OR EXCLUDED.has_blood,
+        last_activity_at = GREATEST(contacts.last_activity_at, EXCLUDED.last_activity_at),
+        updated_at = NOW()
+    `).catch(err => console.error("[Contacts] Audit sync error:", err.message));
 
-      try {
-        await pool.query(`
-          INSERT INTO contacts (email, name, source, ${productFlag ? productFlag + "," : ""} last_activity_at)
-          VALUES ($1, $2, 'discovery', ${productFlag ? "TRUE," : ""} COALESCE($3, NOW()))
-          ON CONFLICT (email) DO UPDATE SET
-            name = COALESCE(contacts.name, EXCLUDED.name),
-            ${productFlag ? productFlag + " = TRUE," : ""}
-            last_activity_at = GREATEST(contacts.last_activity_at, EXCLUDED.last_activity_at),
-            updated_at = NOW()
-        `, [audit.email.toLowerCase(), name, audit.createdAt]);
-        newContacts++;
-      } catch { /* skip errors */ }
-    }
+    // Source 2: paid orders → contacts
+    await pool.query(`
+      INSERT INTO contacts (email, source, total_spent_cents, has_peptides, has_blood, has_anabolic, has_ultimate, last_activity_at)
+      SELECT LOWER(o.email), 'order', COALESCE(o.final_amount_cents, 0),
+        CASE WHEN o.product_type = 'PEPTIDES_ENGINE' THEN TRUE ELSE FALSE END,
+        CASE WHEN o.product_type = 'BLOOD_ANALYSIS' THEN TRUE ELSE FALSE END,
+        CASE WHEN o.product_type = 'PREMIUM' THEN TRUE ELSE FALSE END,
+        CASE WHEN o.product_type = 'ELITE' THEN TRUE ELSE FALSE END,
+        COALESCE(o.paid_at, NOW())
+      FROM orders o
+      WHERE o.status = 'paid' AND o.email IS NOT NULL
+        AND o.email NOT LIKE '%test%' AND o.email NOT LIKE '%debug%'
+        AND o.email NOT LIKE '%achzodcoaching%'
+      ON CONFLICT (email) DO UPDATE SET
+        total_spent_cents = contacts.total_spent_cents + EXCLUDED.total_spent_cents,
+        has_peptides = contacts.has_peptides OR EXCLUDED.has_peptides,
+        has_blood = contacts.has_blood OR EXCLUDED.has_blood,
+        has_anabolic = contacts.has_anabolic OR EXCLUDED.has_anabolic,
+        has_ultimate = contacts.has_ultimate OR EXCLUDED.has_ultimate,
+        last_activity_at = GREATEST(contacts.last_activity_at, EXCLUDED.last_activity_at),
+        updated_at = NOW()
+    `).catch(err => console.error("[Contacts] Orders sync error:", err.message));
 
-    // Source 2: orders table (paid)
-    const ordersResult = await this.getAllOrders();
-    const orders = ordersResult.orders || [];
-    for (const order of orders) {
-      if (!order.email || order.status !== "paid") continue;
-      if (order.email.includes("test") || order.email.includes("debug") || order.email.includes("achzodcoaching")) continue;
-      const type = order.productType;
-      const productFlag = type === "PEPTIDES_ENGINE" ? "has_peptides" : type === "BLOOD_ANALYSIS" ? "has_blood" : type === "PREMIUM" ? "has_anabolic" : type === "ELITE" ? "has_ultimate" : null;
-
-      try {
-        await pool.query(`
-          INSERT INTO contacts (email, source, total_spent_cents, ${productFlag ? productFlag + "," : ""} last_activity_at)
-          VALUES ($1, 'order', $2, ${productFlag ? "TRUE," : ""} COALESCE($3, NOW()))
-          ON CONFLICT (email) DO UPDATE SET
-            total_spent_cents = contacts.total_spent_cents + EXCLUDED.total_spent_cents,
-            ${productFlag ? productFlag + " = TRUE," : ""}
-            last_activity_at = GREATEST(contacts.last_activity_at, EXCLUDED.last_activity_at),
-            updated_at = NOW()
-        `, [order.email.toLowerCase(), order.finalAmountCents || 0, order.paidAt]);
-      } catch { /* skip */ }
-    }
-
-    // Get total
     const res = await pool.query("SELECT COUNT(*) as count FROM contacts");
     const total = parseInt(res.rows[0]?.count || "0");
-
-    return { total, new: newContacts };
+    return { total, new: total };
   }
 
   async getAllContacts(): Promise<any[]> {
