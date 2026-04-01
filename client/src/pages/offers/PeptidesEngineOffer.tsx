@@ -1110,14 +1110,14 @@ function ScarcityGuarantee() {
               <SectionLabel>Gage de qualite</SectionLabel>
             </div>
             <p className="mb-3 text-xl font-bold text-white leading-snug">
-              Chaque protocole est verifie manuellement
+              Je construis ton protocole personnellement
             </p>
             <p className="text-sm leading-relaxed text-white/55">
-              Chaque protocole est relu et valide par mes soins avant livraison. Les 2 bilans sanguins inclus te permettent de suivre tes marqueurs objectivement et d'ajuster si besoin avec mon support.
+              C'est moi, Achzod, qui analyse ton profil et qui valide chaque protocole avant de te l'envoyer. Les 2 bilans sanguins inclus te permettent de suivre tes marqueurs objectivement et de me contacter pour ajuster si besoin.
             </p>
             <div className="mt-6 flex items-center gap-2">
               <Check className="h-4 w-4" style={{ color: PRIMARY }} />
-              <p className="text-sm font-semibold text-white">Qualite verifiee, suivi mesurable</p>
+              <p className="text-sm font-semibold text-white">Mon expertise, ton suivi mesurable</p>
             </div>
           </motion.div>
         </div>
