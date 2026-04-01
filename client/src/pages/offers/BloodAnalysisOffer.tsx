@@ -529,8 +529,8 @@ export default function BloodAnalysisOffer() {
   const ctaHref = "/blood-analysis";
   const trustRow = useMemo(
     () => [
-      "Ranges numeriques precis",
-      "Approche evidence-based",
+      "Liste des marqueurs fournie apres achat",
+      "Ranges optimaux evidence-based",
       "Dashboard + export PDF",
     ],
     []
@@ -616,6 +616,10 @@ export default function BloodAnalysisOffer() {
 
               <div className="pt-3 text-xs text-white/40">
                 Paiement securise (Stripe) · RGPD · Analyse basee sur ton PDF (pas un service labo proprietaire).
+              </div>
+              <div className="pt-2 flex items-center gap-2 text-xs font-medium" style={{ color: PRIMARY_BLUE }}>
+                <FlaskConical className="h-3.5 w-3.5" />
+                Apres achat, tu recois la liste exacte des marqueurs a demander a ton medecin ou labo.
               </div>
             </motion.div>
 
@@ -765,8 +769,8 @@ export default function BloodAnalysisOffer() {
               {
                 step: "02",
                 icon: FlaskConical,
-                title: "Fais ta prise de sang",
-                desc: "Demande les marqueurs listes ci-dessous a ton medecin ou labo. Je t'envoie la liste complete apres l'achat.",
+                title: "Recois ta liste de marqueurs",
+                desc: "Apres ton achat, je t'envoie la liste exacte des 39 marqueurs a demander a ton medecin ou directement au laboratoire. Tu n'as qu'a montrer la liste.",
                 time: "Selon ton labo",
               },
               {
