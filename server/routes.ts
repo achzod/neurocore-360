@@ -484,19 +484,24 @@ export async function registerRoutes(
       const allAudits = await storage.getAllAudits();
       const discovery = allAudits.filter((a: any) => a.type === "GRATUIT" && a.email && !a.email.includes("test") && !a.email.includes("debug") && !a.email.includes("achzodcoaching") && !a.email.includes("achkou"));
 
-      // Unique emails only
+      // Unique emails only, skip already sent (tracked via emailTracking)
+      const { db } = await import("./db");
+      const { emailTracking: emailTrackingTable } = await import("../shared/drizzle-schema");
+      const allTracking = await db.select().from(emailTrackingTable);
+      const alreadySent = new Set(allTracking.filter((t: any) => t.emailType === "broadcastDiscovery").map((t: any) => t.email?.toLowerCase()));
+
       const seen = new Set<string>();
       const unique: string[] = [];
       for (const a of discovery) {
         const email = a.email.toLowerCase();
-        if (!seen.has(email)) {
+        if (!seen.has(email) && !alreadySent.has(email)) {
           seen.add(email);
           unique.push(a.email);
         }
       }
 
       if (dryRun) {
-        res.json({ success: true, dryRun: true, totalEmails: unique.length, preview: unique.slice(0, 10) });
+        res.json({ success: true, dryRun: true, totalEmails: unique.length, alreadySent: alreadySent.size, preview: unique.slice(0, 10) });
         return;
       }
 
@@ -505,7 +510,10 @@ export async function registerRoutes(
       for (const email of toSend) {
         try {
           const ok = await sendCTAEmail(email, subject, message);
-          if (ok) sent++;
+          if (ok) {
+            sent++;
+            await db.insert(emailTrackingTable).values({ email: email.toLowerCase(), emailType: "broadcastDiscovery", sentAt: new Date() }).catch(() => {});
+          }
           else errors++;
         } catch { errors++; }
       }
