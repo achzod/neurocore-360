@@ -2295,7 +2295,8 @@ export class PgStorage implements IStorage {
     }
 
     // Source 2: orders table (paid)
-    const orders = await this.getAllOrders();
+    const ordersResult = await this.getAllOrders();
+    const orders = ordersResult.orders || [];
     for (const order of orders) {
       if (!order.email || order.status !== "paid") continue;
       if (order.email.includes("test") || order.email.includes("debug") || order.email.includes("achzodcoaching")) continue;
