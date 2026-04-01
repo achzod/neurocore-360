@@ -2141,12 +2141,28 @@ export async function registerRoutes(
     try {
       const { auditId } = req.body;
       if (!auditId) { res.status(400).json({ error: "auditId requis" }); return; }
-      // Direct SQL — bypass updateAudit which may not handle reportScheduledFor
       const { pool } = await import("./db");
       await pool.query("UPDATE audits SET report_scheduled_for = NULL WHERE id = $1", [auditId]);
       res.json({ success: true, message: `scheduledFor reset via direct SQL for ${auditId}` });
     } catch (error) {
       console.error("[Admin] reset-scheduled error:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
+  // Admin: set scheduledFor on an audit (delay delivery)
+  app.post("/api/admin/set-scheduled", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { auditId, delayHours } = req.body;
+      if (!auditId) { res.status(400).json({ error: "auditId requis" }); return; }
+      const hours = delayHours || 24;
+      const scheduledFor = new Date(Date.now() + hours * 60 * 60 * 1000);
+      const { pool } = await import("./db");
+      await pool.query("UPDATE audits SET report_scheduled_for = $1, report_delivery_status = 'SCHEDULED' WHERE id = $2", [scheduledFor, auditId]);
+      res.json({ success: true, scheduledFor: scheduledFor.toISOString() });
+    } catch (error) {
+      console.error("[Admin] set-scheduled error:", error);
       res.status(500).json({ error: "Erreur serveur" });
     }
   });
@@ -2919,12 +2935,26 @@ export async function registerRoutes(
       }
     }
 
+    // Schedule delivery 24h later for paid products (gives Achzod time to review)
+    const scheduledFor = ["PREMIUM", "ELITE"].includes(planType)
+      ? new Date(Date.now() + 24 * 60 * 60 * 1000)
+      : undefined;
+
     const audit = await storage.createAudit({
       userId: "",
       type: planType,
       email,
       responses: responses as Record<string, unknown>,
+      ...(scheduledFor ? { reportScheduledFor: scheduledFor } : {}),
     });
+
+    if (scheduledFor) {
+      console.log(`[Audit] Report scheduled for ${email} at ${scheduledFor.toISOString()} (+24h)`);
+      try {
+        const { pool: dbPool } = await import("./db");
+        await dbPool.query("UPDATE audits SET report_scheduled_for = $1, report_delivery_status = 'SCHEDULED' WHERE id = $2", [scheduledFor, audit.id]);
+      } catch {}
+    }
 
     // Atomically link order to audit (prevents race on double-click)
     if (order) {
