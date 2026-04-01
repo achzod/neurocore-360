@@ -7961,6 +7961,59 @@ export async function registerRoutes(
 
   // Démarrer la surveillance automatique des relances d'abandons
   // Check toutes les 30 minutes pour détecter ouvertures, conversions, etc.
+  // Auto-recovery: generate missing peptides reports every 5 minutes
+  setInterval(async () => {
+    try {
+      const allOrders = await storage.getAllOrders?.() || { orders: [] };
+      const orders = allOrders.orders || allOrders || [];
+      const peptidesOrders = orders.filter((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid" && o.paidAt);
+      const now = new Date();
+
+      for (const order of peptidesOrders) {
+        const meta = order.metadata as any;
+        const email = order.email;
+        if (!email || email.includes("test") || email.includes("debug")) continue;
+        if (meta?.peptidesReportId) continue;
+
+        const hoursSincePaid = (now.getTime() - new Date(order.paidAt).getTime()) / (1000 * 60 * 60);
+        if (hoursSincePaid < 0.05 || hoursSincePaid > 168) continue;
+
+        console.log(`[AutoGen] Generating peptides report for ${email} (paid ${Math.round(hoursSincePaid * 60)}min ago)`);
+
+        let responses: Record<string, unknown> | undefined;
+        const progress = await storage.getBurnoutProgress(`peptides::${email}`);
+        if (progress?.responses && Object.keys(progress.responses).length >= 3) {
+          responses = progress.responses as Record<string, unknown>;
+        } else if (meta?.peptidesResponses && Object.keys(meta.peptidesResponses).length >= 3) {
+          responses = meta.peptidesResponses;
+        }
+
+        if (!responses) {
+          console.error(`[AutoGen] No responses for ${email}`);
+          break;
+        }
+
+        const { generatePeptidesProtocol } = await import("./peptidesEngine");
+        const report = await generatePeptidesProtocol(responses, email);
+        const saved = await storage.createBurnoutReport({ email: `peptides::${email}`, responses, report });
+        await storage.updateOrder(order.id, { metadata: { ...(meta ?? {}), peptidesReportId: saved.id } }).catch(() => {});
+
+        const baseUrl = getBaseUrl();
+        const peptidesNames = report.peptides?.map((p: any) => p.name).join(", ") ?? "voir rapport";
+        const promoBlock = report.promoCodesGenerated?.length > 0
+          ? `\n\nTes 2 codes Blood Analysis offerts:\n${report.promoCodesGenerated.join("\n")}` : "";
+        await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
+          `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}\n\nConserve ce lien — il est personnel et unique.`
+        ).catch(() => {});
+
+        console.log(`[AutoGen] ✅ Report ${saved.id} generated and sent to ${email}`);
+        break; // 1 per cycle
+      }
+    } catch (err) {
+      console.error("[AutoGen] Error:", err);
+    }
+  }, 5 * 60 * 1000).unref(); // Every 5 minutes
+
   startMonitoring(storage, 30).catch(err => {
     console.error('[Monitor] Erreur démarrage surveillance:', err);
   });
