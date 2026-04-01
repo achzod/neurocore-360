@@ -2633,6 +2633,28 @@ export async function registerRoutes(
     try {
       const { priceId: clientPriceId, email, planType, responses, promoCode, referrer } = req.body;
 
+      // Already paid check for ALL product types (prevents double charge)
+      if (email && planType && planType !== "GRATUIT") {
+        const existingOrders = await storage.getOrdersByEmail(email);
+        const alreadyPaid = existingOrders.find((o: any) => o.productType === planType && o.status === "paid");
+        if (alreadyPaid && planType !== "PEPTIDES_ENGINE") {
+          console.log(`[Checkout] ${planType} already paid for ${email} — blocking re-payment`);
+          // Create audit if missing
+          if (!alreadyPaid.auditId && ["PREMIUM", "ELITE"].includes(planType)) {
+            try {
+              const normalizedPlan = planType as "PREMIUM" | "ELITE";
+              const result = await createAuditFromPaidOrder(email, normalizedPlan, alreadyPaid);
+              if (result.success) {
+                res.json({ ...result, alreadyPaid: true });
+                return;
+              }
+            } catch {}
+          }
+          res.json({ success: true, alreadyPaid: true, url: null, redirect: "/dashboard?success=true" });
+          return;
+        }
+      }
+
       // PEPTIDES_ENGINE: if already paid, skip checkout and trigger generation in background
       if (planType === "PEPTIDES_ENGINE" && email) {
         const existingOrders = await storage.getOrdersByEmail(email);
@@ -3035,6 +3057,23 @@ export async function registerRoutes(
       if (!email || !planType) {
         res.status(400).json({ error: "email et planType requis" });
         return;
+      }
+
+      // Already paid check for ALL product types (prevents double charge via PayPal)
+      if (email && planType && planType !== "GRATUIT") {
+        const existingOrders = await storage.getOrdersByEmail(email);
+        const alreadyPaid = existingOrders.find((o: any) => o.productType === planType && o.status === "paid");
+        if (alreadyPaid && planType !== "PEPTIDES_ENGINE" && ["PREMIUM", "ELITE", "BLOOD_ANALYSIS"].includes(planType)) {
+          console.log(`[PayPal] ${planType} already paid for ${email} — blocking re-payment`);
+          if (!alreadyPaid.auditId && ["PREMIUM", "ELITE"].includes(planType)) {
+            try {
+              const normalizedPlan = planType as "PREMIUM" | "ELITE";
+              await createAuditFromPaidOrder(email, normalizedPlan, alreadyPaid);
+            } catch {}
+          }
+          res.json({ success: true, alreadyPaid: true, redirect: "/dashboard?success=true" });
+          return;
+        }
       }
 
       // PEPTIDES_ENGINE: if already paid, DO NOT create another PayPal order
