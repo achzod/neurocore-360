@@ -496,6 +496,17 @@ function QuestionnaireContent() {
           }
           if (data.responses["sexe"]) setSexConfirmed(true);
           if (data.responses["prenom"]) setPrenomConfirmed(true);
+          // Restore photos from DB responses into photoData state
+          const restoredPhotos: Record<string, string> = {};
+          for (const field of PHOTO_FIELDS) {
+            const val = data.responses[field];
+            if (val && typeof val === "string" && val.startsWith("data:image")) {
+              restoredPhotos[field] = val;
+            }
+          }
+          if (Object.keys(restoredPhotos).length > 0) {
+            setPhotoData(prev => ({ ...prev, ...restoredPhotos }));
+          }
           return true;
         }
       }
@@ -510,7 +521,7 @@ function QuestionnaireContent() {
       const savedEmail = localStorage.getItem("neurocore_email");
       const savedResponses = localStorage.getItem("neurocore_responses");
       const savedSection = localStorage.getItem("neurocore_section");
-      const savedPhotos: string | null = null; // Photos are no longer stored in sessionStorage
+      const savedPhotos: string | null = localStorage.getItem("neurocore_photos");
 
       if (savedEmail) {
         setEmail(savedEmail);
