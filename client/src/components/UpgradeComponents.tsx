@@ -64,39 +64,39 @@ function getHeroText(analysis: RecommendationAnalysis, globalScore: number): {
 } {
   if (analysis.type === 'anabolic') {
     return {
-      label: 'Déséquilibre hormonal détecté',
-      headline: 'Ton profil hormonal suggère des blocages anaboliques',
-      subline: "L'Anabolic Bioscan identifie exactement ton potentiel anabolique, tes axes hormonaux et tes protocoles de correction.",
-      primaryCta: 'Anabolic Bioscan - 59€ (acompte coaching)',
-      primaryLink: '/offers/anabolic-bioscan',
-      secondaryCta: 'Ultimate Scan - 79€ (acompte coaching)',
-      secondaryLink: '/offers/ultimate-scan',
-      features: ['Profil hormonal complet', 'Stack suppléments personnalisé', 'Protocoles Matin/Soir anti-cortisol', 'Plan 30-60-90j']
+      label: 'Optimisation hormonale possible',
+      headline: 'Ton profil suggere un potentiel de progression hormonal',
+      subline: "Peptides Engine te donne un protocole peptides personnalise avec dosages exacts, acces a la source a prix labo, et 2 bilans sanguins inclus pour suivre tes marqueurs.",
+      primaryCta: 'Peptides Engine · 299€',
+      primaryLink: '/offers/peptides-engine',
+      secondaryCta: 'Coaching Achzod',
+      secondaryLink: 'https://www.achzodcoaching.com/formules-coaching',
+      features: ['Protocole personnalise', 'Source peptides -90%', '2 Blood Analyses incluses', 'Support email 30j']
     };
   }
 
   if (analysis.type === 'ultimate' && globalScore < 5) {
     return {
-      label: 'Blocages multiples détectés',
-      headline: `Ton score global (${globalScore}/10) révèle des blocages sur plusieurs fronts`,
-      subline: "L'Ultimate Scan est le plus adapté : 18 domaines analysés + posture 3D + dashboard temps réel.",
-      primaryCta: 'Ultimate Scan - 79€ (acompte coaching)',
-      primaryLink: '/offers/ultimate-scan',
-      secondaryCta: 'Anabolic Bioscan - 59€ (acompte coaching)',
-      secondaryLink: '/offers/anabolic-bioscan',
-      features: ['18 sections d\'analyse', 'Analyse posturale 3D', 'Dashboard temps réel à vie']
+      label: 'Blocages detectes',
+      headline: `Ton score (${globalScore}/10) revele des axes d'amelioration`,
+      subline: "Un protocole peptides cible peut debloquer ta progression. Dosages ajustes a ton poids, guide complet, et acces a la source 60-90% moins chere.",
+      primaryCta: 'Peptides Engine · 299€',
+      primaryLink: '/offers/peptides-engine',
+      secondaryCta: 'Coaching Achzod',
+      secondaryLink: 'https://www.achzodcoaching.com/formules-coaching',
+      features: ['74 molecules disponibles', 'Dosages ajustes a ton poids', '2 Blood Analyses incluses', 'Guide injection complet']
     };
   }
 
   return {
-    label: 'Upgrade Disponible',
-    headline: 'Ton Discovery a détecté tes blocages',
-    subline: 'Tu veux les corriger avec des protocoles exacts + analyse en temps réel ?',
-    primaryCta: 'Ultimate Scan - 79€ (acompte coaching)',
-    primaryLink: '/offers/ultimate-scan',
-    secondaryCta: 'Anabolic Bioscan - 59€ (acompte coaching)',
-    secondaryLink: '/offers/anabolic-bioscan',
-    features: ['Protocoles personnalisés', 'Posture 3D', 'Dashboard temps réel']
+    label: 'Passe au niveau superieur',
+    headline: 'Ton Discovery a identifie tes leviers de progression',
+    subline: 'Un protocole peptides personnalise peut accelerer tes resultats. 35 questions, dosages exacts, et acces a la source la moins chere du marche.',
+    primaryCta: 'Peptides Engine · 299€',
+    primaryLink: '/offers/peptides-engine',
+    secondaryCta: 'Coaching Achzod',
+    secondaryLink: 'https://www.achzodcoaching.com/formules-coaching',
+    features: ['Protocole sur mesure', 'Source peptides -90%', '2 bilans sanguins inclus', 'Livraison 48h']
   };
 }
 
@@ -402,27 +402,22 @@ export const UpgradeTeaser: React.FC<UpgradeTeaserProps> = ({
   let contextNote: string;
 
   if (context === 'energy') {
-    // After energy/metabolism sections → lean toward Anabolic
-    const preferAnabolic = analysis.hasHormonalIssues || analysis.type === 'anabolic';
-    resolvedCtaText = ctaText ?? (preferAnabolic ? 'Anabolic Bioscan - 59€ (acompte coaching)' : 'Ultimate Scan - 79€ (acompte coaching)');
-    resolvedCtaLink = ctaLink ?? (preferAnabolic ? '/offers/anabolic-bioscan' : '/offers/ultimate-scan');
-    secondaryCtaText = preferAnabolic ? 'Ultimate Scan - 79€ (acompte coaching)' : 'Anabolic Bioscan - 59€ (acompte coaching)';
-    secondaryCtaLink = preferAnabolic ? '/offers/ultimate-scan' : '/offers/anabolic-bioscan';
-    contextNote = 'Ton profil hormonal détaillé avec l\'Anabolic Bioscan';
+    resolvedCtaText = ctaText ?? 'Peptides Engine · 299€';
+    resolvedCtaLink = ctaLink ?? '/offers/peptides-engine';
+    secondaryCtaText = 'Coaching Achzod (-20%)';
+    secondaryCtaLink = 'https://www.achzodcoaching.com/formules-coaching';
+    contextNote = 'Protocole peptides personnalise pour ton profil hormonal';
   } else if (context === 'training') {
-    // After training/recovery sections → lean toward Ultimate
-    resolvedCtaText = ctaText ?? 'Ultimate Scan - 79€ (acompte coaching)';
-    resolvedCtaLink = ctaLink ?? '/offers/ultimate-scan';
-    secondaryCtaText = 'Anabolic Bioscan - 59€ (acompte coaching)';
-    secondaryCtaLink = '/offers/anabolic-bioscan';
-    contextNote = 'Analyse posturale 3D avec l\'Ultimate Scan';
+    resolvedCtaText = ctaText ?? 'Peptides Engine · 299€';
+    resolvedCtaLink = ctaLink ?? '/offers/peptides-engine';
+    secondaryCtaText = 'Coaching Achzod (-20%)';
+    secondaryCtaLink = 'https://www.achzodcoaching.com/formules-coaching';
+    contextNote = 'Peptides pour la recuperation et la performance';
   } else {
-    // Generic: use analysis-driven recommendation
-    const primaryIsUltimate = analysis.type !== 'anabolic';
-    resolvedCtaText = ctaText ?? (primaryIsUltimate ? 'Débloquer Ultimate (79€)' : 'Anabolic Bioscan - 59€ (acompte coaching)');
-    resolvedCtaLink = ctaLink ?? (primaryIsUltimate ? '/offers/ultimate-scan' : '/offers/anabolic-bioscan');
-    secondaryCtaText = primaryIsUltimate ? 'Anabolic (59€)' : 'Ultimate (79€)';
-    secondaryCtaLink = primaryIsUltimate ? '/offers/anabolic-bioscan' : '/offers/ultimate-scan';
+    resolvedCtaText = ctaText ?? 'Peptides Engine · 299€';
+    resolvedCtaLink = ctaLink ?? '/offers/peptides-engine';
+    secondaryCtaText = 'Coaching (-20% : ANALYSE20)';
+    secondaryCtaLink = 'https://www.achzodcoaching.com/formules-coaching';
     contextNote = '';
   }
 
@@ -645,29 +640,31 @@ export const StickyCTA: React.FC<StickyCTAProps> = ({ theme, show }) => {
       <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
         <div className="hidden md:block">
           <p className="text-sm font-bold" style={{ color: theme.colors.text }}>
-            Prêt à débloquer tes protocoles ?
+            Ton protocole peptides personnalise
           </p>
           <p className="text-xs" style={{ color: theme.colors.textMuted }}>
-            Ultimate (79€) ou Anabolic (59€)
+            Dosages exacts, source -90%, 2 bilans sanguins inclus
           </p>
         </div>
 
         <div className="flex gap-3 w-full md:w-auto">
           <a
-            href="/offers/ultimate-scan"
+            href="/offers/peptides-engine"
             className="flex-1 md:flex-initial px-6 py-3 rounded font-bold text-sm transition-all hover:scale-105 text-center whitespace-nowrap"
             style={{
-              backgroundColor: theme.colors.primary,
-              color: theme.type === 'dark' ? '#000' : '#FFF'
+              backgroundColor: '#F59E0B',
+              color: '#000'
             }}
           >
             <span className="flex items-center justify-center gap-2">
               <Zap size={16} />
-              Ultimate 79€
+              Peptides Engine · 299€
             </span>
           </a>
           <a
-            href="/offers/anabolic-bioscan"
+            href="https://www.achzodcoaching.com/formules-coaching"
+            target="_blank"
+            rel="noopener noreferrer"
             className="flex-1 md:flex-initial px-6 py-3 rounded font-bold text-sm transition-all hover:scale-105 text-center whitespace-nowrap"
             style={{
               backgroundColor: 'transparent',
@@ -675,7 +672,7 @@ export const StickyCTA: React.FC<StickyCTAProps> = ({ theme, show }) => {
               color: theme.colors.text
             }}
           >
-            Anabolic 59€
+            Coaching
           </a>
         </div>
       </div>
@@ -775,55 +772,56 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({ theme, auditId }) => {
 
         {/* Title */}
         <h2 className="text-3xl md:text-5xl font-bold mb-4" style={{ color: theme.colors.text }}>
-          Prêt à passer au niveau Elite ?
+          Passe a l'action
         </h2>
 
         <p className="text-base md:text-lg mb-8" style={{ color: theme.colors.textMuted }}>
-          Tu as vu tes blocages dans ce Discovery Scan.<br />
-          Maintenant tu as 2 options.
+          Tu as identifie tes blocages.<br />
+          Maintenant il faut les corriger.
         </p>
 
         {/* Options */}
         <div className="grid md:grid-cols-2 gap-6 mb-10">
-          {/* Option 1 */}
-          <div
-            className="p-6 rounded-sm text-left"
-            style={{
-              backgroundColor: theme.colors.surface,
-              border: `1px solid ${theme.colors.border}`,
-              opacity: 0.6
-            }}
-          >
-            <div className="flex items-center gap-2 mb-3">
-              <X size={20} style={{ color: theme.colors.textMuted }} />
-              <h4 className="font-bold" style={{ color: theme.colors.textMuted }}>Option 1</h4>
-            </div>
-            <p className="text-sm" style={{ color: theme.colors.textMuted }}>
-              Tu restes avec ce rapport gratuit → Tu sais ce qui cloche → Mais pas comment le corriger précisément → Tu continues à essayer au hasard
-            </p>
-          </div>
-
-          {/* Option 2 */}
+          {/* Peptides Engine */}
           <div
             className="p-6 rounded-sm text-left relative"
             style={{
               backgroundColor: theme.colors.surface,
-              border: `2px solid ${theme.colors.primary}`
+              border: '2px solid #F59E0B'
             }}
           >
-            <div className="absolute -top-3 right-4 px-3 py-1 rounded-full text-[10px] font-bold uppercase" style={{ backgroundColor: theme.colors.primary, color: theme.type === 'dark' ? '#000' : '#FFF' }}>
-              Recommandé
+            <div className="absolute -top-3 right-4 px-3 py-1 rounded-full text-[10px] font-bold uppercase" style={{ backgroundColor: '#F59E0B', color: '#000' }}>
+              Best-seller
             </div>
             <div className="flex items-center gap-2 mb-3">
-              <Check size={20} style={{ color: theme.colors.primary }} />
-              <h4 className="font-bold" style={{ color: theme.colors.text }}>Option 2</h4>
+              <Zap size={20} style={{ color: '#F59E0B' }} />
+              <h4 className="font-bold" style={{ color: theme.colors.text }}>Peptides Engine</h4>
             </div>
             <p className="text-sm mb-4" style={{ color: theme.colors.text }}>
-              Tu passes à Ultimate ou Anabolic → Protocoles exacts → Stack suppléments → Plan d'action 30-60-90j → Dashboard temps réel
+              Protocole peptides personnalise avec dosages exacts, acces a la source -90%, guide complet, 2 bilans sanguins inclus
             </p>
-            <div className="flex items-center gap-2 text-xs" style={{ color: theme.colors.textMuted }}>
-              <Star size={12} className="fill-yellow-400 text-yellow-400" />
-              <span>52 personnes ont upgradé cette semaine</span>
+            <div className="text-xs" style={{ color: '#F59E0B' }}>
+              299€ · Livraison 48h par email
+            </div>
+          </div>
+
+          {/* Coaching */}
+          <div
+            className="p-6 rounded-sm text-left"
+            style={{
+              backgroundColor: theme.colors.surface,
+              border: `1px solid ${theme.colors.border}`
+            }}
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <Check size={20} style={{ color: theme.colors.primary }} />
+              <h4 className="font-bold" style={{ color: theme.colors.text }}>Coaching Achzod</h4>
+            </div>
+            <p className="text-sm mb-4" style={{ color: theme.colors.textMuted }}>
+              Suivi personnalise : nutrition, entrainement, supplementation. Ajustements en temps reel selon tes bilans.
+            </p>
+            <div className="text-xs" style={{ color: theme.colors.primary }}>
+              A partir de 249€ · Code ANALYSE20 = -20%
             </div>
           </div>
         </div>
@@ -831,24 +829,26 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({ theme, auditId }) => {
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
           <a
-            href="/offers/ultimate-scan"
+            href="/offers/peptides-engine"
             className="px-10 py-5 rounded font-bold text-lg transition-all hover:scale-105 shadow-lg"
             style={{
-              backgroundColor: theme.colors.primary,
-              color: theme.type === 'dark' ? '#000' : '#FFF',
-              boxShadow: `0 10px 40px ${theme.colors.primary}40`
+              backgroundColor: '#F59E0B',
+              color: '#000',
+              boxShadow: '0 10px 40px rgba(245,158,11,0.3)'
             }}
           >
             <div className="flex items-center justify-center gap-3">
               <Zap size={22} />
               <div className="text-left">
-                <div className="text-xs opacity-80 uppercase tracking-wider">Ultimate Scan</div>
-                <div className="font-black">59€ au lieu de 79€</div>
+                <div className="text-xs opacity-80 uppercase tracking-wider">Peptides Engine</div>
+                <div className="font-black">299€</div>
               </div>
             </div>
           </a>
           <a
-            href="/offers/anabolic-bioscan"
+            href="https://www.achzodcoaching.com/formules-coaching"
+            target="_blank"
+            rel="noopener noreferrer"
             className="px-10 py-5 rounded font-bold text-lg transition-all hover:scale-105"
             style={{
               backgroundColor: 'transparent',
@@ -857,8 +857,8 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({ theme, auditId }) => {
             }}
           >
             <div className="text-left">
-              <div className="text-xs opacity-60 uppercase tracking-wider">Anabolic Bioscan</div>
-              <div className="font-black">59€</div>
+              <div className="text-xs opacity-60 uppercase tracking-wider">Coaching Achzod</div>
+              <div className="font-black">-20% : ANALYSE20</div>
             </div>
           </a>
         </div>
