@@ -259,9 +259,13 @@ const SECTION_ICONS: Record<string, typeof Syringe> = {
   "protocole-pratique": Calendar,
   "shopping-list": ShoppingCart,
   "hygiene-conservation": Droplets,
+  "nutrition-protocole": Activity,
+  "checklist-demarrage": CheckCircle2,
+  "effets-secondaires": AlertTriangle,
   "securite-surveillance": Shield,
   "prochaines-etapes": ArrowRight,
   "faq": HelpCircle,
+  "disclaimer-support": HelpCircle,
 };
 
 // ============================================================================
@@ -274,7 +278,7 @@ export default function PeptidesEngineReport() {
   const [error, setError] = useState<string | null>(null);
   const [ndaAccepted, setNdaAccepted] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    new Set(["profil-synthese", "rationale", "guide-peptaura", "reconstitution-guide", "guide-injection", "protocole-pratique", "shopping-list"])
+    new Set(["profil-synthese", "rationale", "guide-peptaura", "reconstitution-guide", "guide-injection", "protocole-pratique", "nutrition-protocole", "shopping-list", "checklist-demarrage"])
   );
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewComment, setReviewComment] = useState("");

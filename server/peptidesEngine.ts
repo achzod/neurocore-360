@@ -611,16 +611,40 @@ Tu dois TOUJOURS penser à inclure un peptide orienté prise de masse musculaire
 PEPTIDE BONUS (RÈGLE OBLIGATOIRE)
 Tu dois TOUJOURS inclure un peptide BONUS en plus du stack recommandé. Ce peptide bonus est un "extra" qui dépasse légèrement le budget du client mais qui apporte un bénéfice supplémentaire significatif. Présente-le clairement comme bonus : "Si tu veux aller encore plus loin, j'ajouterais un peptide en bonus qui dépasse un peu ton budget initial mais qui peut vraiment faire la différence". Le peptide bonus ne doit PAS être un doublon du stack principal. Il doit apporter une dimension complémentaire (ex: si le stack est orienté fat loss, le bonus peut être orienté récupération ou masse musculaire, et vice-versa). Inclus-le dans la liste des peptides avec la mention "BONUS" dans le champ purpose.
 
-RECOMMANDATIONS DIÉTÉTIQUES (OBLIGATOIRE)
-Chaque protocole DOIT inclure des recommandations nutritionnelles poussées et personnalisées dans la section "protocole pratique" ou dans une sous-section dédiée. Tu dois couvrir :
-- Apport protéique cible (minimum 1.8g/kg pour préserver la masse musculaire, idéalement 2.2g/kg si objectif recomposition)
-- Timing nutritionnel autour des injections (à jeun pour certains peptides, post-prandial pour d'autres)
-- Hydratation (minimum 2.5L/jour, critique pour la reconstitution et l'élimination)
+RECOMMANDATIONS DIÉTÉTIQUES (OBLIGATOIRE, section dédiée "nutrition-protocole")
+Chaque protocole DOIT inclure une section nutrition complète et personnalisée. Voici les règles par objectif :
+
+POUR TOUS LES PROFILS :
+- Apport protéique cible : minimum 1.8g/kg, idéalement 2.2g/kg si recomposition ou hypertrophie
+- Sources protéiques de qualité : viande maigre (poulet, dinde, boeuf maigre), oeufs de qualité (plein air/bio), poisson
+- Produits laitiers autorisés : lait cru ou microfiltré, skyr, fromage blanc 0%, pas de lait UHT industriel
+- Fruits autorisés avec modération (2-3 portions/jour max)
+- Hydratation minimum 2.5L/jour (critique pour le métabolisme et l'élimination)
+- INTERDIT : blé (gluten inflammatoire), aliments industriels/transformés, alcool (bloque la GH nocturne)
 - Micronutriments de support : zinc (30mg), magnésium bisglycinate (400mg), vitamine D3 (4000 UI), oméga-3 (2g EPA/DHA)
-- Si objectif perte de poids : déficit calorique modéré (-300 à -500 kcal), jamais drastique avec les peptides
-- Si objectif récupération/GH : surplus léger (+200 kcal), focus sur le sommeil et le timing protéique (40g caséine au coucher)
-- Aliments à éviter pendant le cycle : alcool (bloque la GH nocturne), excès de sucres rapides (résistance insulinique)
-- Adapte les conseils au profil du client (son type d'entraînement, sa nutrition actuelle, ses contraintes)
+- Timing injections : respecter les consignes à jeun pour certains peptides (CJC+Ipa, Retatrutide)
+
+SI OBJECTIF PERTE DE POIDS / FAT LOSS / RECOMPOSITION (CRITIQUE) :
+- Pas de glucides dans les 4 premières heures après le réveil (cortisol matinal + sensibilité insulinique)
+- Carb cycling obligatoire :
+  * Jour HAUT en glucides : jours d'entraînement hypertrophie (1.5-2g/kg de glucides)
+  * Jour MOYEN : jours cardio, abdos (0.8-1g/kg)
+  * Jour LOW : jours de repos (0.3-0.5g/kg max)
+- Glucides de qualité UNIQUEMENT : patate douce, pomme de terre, riz brun, avoine (quantité limitée), quinoa
+- Maximum 30g de glucides au dîner
+- Avant de dormir si besoin : 1 cuillère à café de miel dans 200g de fromage blanc 0% (aide au sommeil + GH nocturne)
+- Glucides rapides uniquement INTRA-WORKOUT en hypertrophie (cluster dextrin, dextrose, ou banane)
+- BCAA et HMB pre et post workout pour limiter le catabolisme musculaire en déficit
+- Si cardio à jeun : stack brûleur Yohimbine + Synéphrine + Caféine (doses adaptées au poids, commencer bas)
+- Déficit calorique modéré (-300 à -500 kcal), jamais drastique avec les peptides (sinon perte de masse maigre)
+- Tracking calorique recommandé au moins les 4 premières semaines pour calibrer les quantités
+
+SI OBJECTIF RÉCUPÉRATION / GH / ANTI-AGING :
+- Surplus léger (+200 kcal), focus sur le sommeil et le timing protéique
+- 40g caséine ou fromage blanc au coucher (synthèse protéique nocturne)
+- Pas de glucides rapides avant le coucher (pic insuline bloque la GH nocturne)
+
+ADAPTE les conseils au profil exact du client (son type d'entraînement, sa nutrition actuelle, ses contraintes, son budget).
 
 GESTION DE L'ARRÊT DES PEPTIDES COUPE-FAIM (Semaglutide, Tirzepatide, Retatrutide)
 Si le protocole inclut un agoniste GLP-1/GIP, tu DOIS inclure une section sur la gestion de l'arrêt dans "securite-surveillance" ou "prochaines-etapes". C'est CRITIQUE car l'effet rebond est le problème numéro 1. Explique :
@@ -722,9 +746,29 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
       "content": "${firstName}, avant de commencer quoi que ce soit, tu dois faire un bilan sanguin. C'est non négociable — sans bilan, tu navigues à l'aveugle.\\n\\nBILAN PRÉ-CYCLE (avant de commencer)\\nTu as 2 codes Blood Analysis APEXLABS inclus dans ton protocole. Utilise le premier pour faire ton bilan de base. Voici les marqueurs à tester: [liste adaptée]\\n\\nBILAN MI-CYCLE (semaine 4-6)\\nUtilise ton deuxième code pour refaire les mêmes marqueurs. On compare avec ta baseline pour vérifier que tout va dans le bon sens.\\n\\nFIN DE CYCLE\\nExplique comment arrêter progressivement, la durée de pause minimale avant le prochain cycle, et les signes qui indiquent qu'on peut reprendre."
     },
     {
+      "id": "nutrition-protocole",
+      "title": "Nutrition et diete pendant ton cycle",
+      "content": "${firstName}, les peptides sans une nutrition adaptée c'est comme un moteur de course avec du mauvais carburant. Voici exactement ce que tu dois manger et quand, adapté à tes objectifs.\\n\\n[Applique les règles diététiques du prompt système : carb cycling si fat loss, timing des glucides, sources protéiques, interdits alimentaires, stack brûleur si cardio à jeun, BCAA/HMB, etc. Personnalise selon le profil du client.]"
+    },
+    {
+      "id": "checklist-demarrage",
+      "title": "Checklist avant de commencer",
+      "content": "${firstName}, avant ta première injection, assure-toi d'avoir coché chaque étape.\\n\\nETAPE 1 : BILAN SANGUIN PRE-CYCLE\\nUtilise ton premier code Blood Analysis APEXLABS pour faire ton bilan de base. C'est non négociable, sans bilan tu navigues à l'aveugle.\\n\\nETAPE 2 : PHOTOS ET MESURES\\nPrend une photo de face, de profil et de dos en sous-vêtements. Note ton poids, ton tour de taille, ton tour de bras, ton tour de cuisse. Tu te remercieras dans 8 semaines quand tu compareras.\\n\\nETAPE 3 : COMMANDER SUR PEPTAURA\\nCommande tous tes peptides, la BAC water, les seringues et les tampons en une seule fois. Regroupe pour optimiser les frais de port.\\n\\nETAPE 4 : RECEPTION ET PREPARATION\\nQuand tu reçois ton colis, vérifie que chaque vial est intact et scellé. Stocke les vials lyophilisés à température ambiante ou au frigo. Ne reconstitue que le premier vial de chaque peptide.\\n\\nETAPE 5 : PREMIERE INJECTION\\nRelis le guide d'injection et le guide de reconstitution. Commence à 50% de la dose cible pendant la première semaine. C'est ta phase de test."
+    },
+    {
+      "id": "effets-secondaires",
+      "title": "Effets secondaires : normal vs alerte",
+      "content": "${firstName}, ton corps va réagir aux peptides et c'est normal. Voici ce qui est attendu et ce qui doit t'alerter.\\n\\nEFFETS NORMAUX (pas d'inquiétude)\\nPour chaque peptide du stack, détaille les effets secondaires courants et bénins : rougeur au site d'injection (disparaît en 30 min), légère fatigue les premiers jours, nausée légère avec Retatrutide (la titration progressive minimise ça), flush cutané avec certains peptides, augmentation de l'appétit avec les sécrétagogues GH, rêves plus vivides avec DSIP, etc.\\n\\nSIGNAUX D'ALERTE (stoppe et consulte)\\nAdapte selon les peptides sélectionnés : gonflement persistant au site d'injection, douleur thoracique, vertiges sévères, réaction allergique (urticaire, difficulté respiratoire), nausées persistantes malgré titration, hypoglycémie (tremblements, sueurs froides), changement de grain de peau/naevi avec Melanotan. Précise pour CHAQUE peptide du stack."
+    },
+    {
       "id": "faq",
       "title": "Questions frequentes",
-      "content": "${firstName}, voici les réponses aux questions que tu te poses sûrement.\\n\\nET SI JE RATE MON INJECTION ?\\n[réponse rassurante et pratique]\\n\\nJE PEUX VOYAGER AVEC MES PEPTIDES ?\\n[réponse pratique — poudre lyophilisée OK, reconstitué = glacière]\\n\\nCOMBIEN DE TEMPS AVANT DE VOIR DES RÉSULTATS ?\\n[réponse adaptée aux peptides sélectionnés — ex: BPC-157 = 1-2 semaines pour les premiers effets]\\n\\nJE PEUX MÉLANGER 2 PEPTIDES DANS LA MÊME SERINGUE ?\\n[réponse — oui pour certains combos comme CJC+Ipa, non pour d'autres]\\n\\nQUE FAIRE SI J'OUBLIE UNE DOSE ?\\n[réponse — ne pas doubler, reprendre normalement le lendemain]\\n\\nLES PEPTIDES SONT-ILS LÉGAUX ?\\n[réponse — recherche uniquement, pas approuvés usage humain, responsabilité individuelle]\\n\\nCOMMENT SAVOIR SI MES PEPTIDES SONT AUTHENTIQUES ?\\n[réponse — COA (Certificate of Analysis), vérifier sur le site du labo tiers, Peptaura les fournit]\\n\\nAdapte les questions et réponses au profil du client (débutant = plus de questions basiques, avancé = questions techniques)."
+      "content": "${firstName}, voici les réponses aux questions que tu te poses sûrement.\\n\\nET SI JE RATE MON INJECTION ?\\n[réponse rassurante et pratique]\\n\\nJE PEUX VOYAGER AVEC MES PEPTIDES ?\\n[réponse pratique, poudre lyophilisée OK, reconstitué = glacière]\\n\\nCOMBIEN DE TEMPS AVANT DE VOIR DES RÉSULTATS ?\\n[réponse adaptée aux peptides sélectionnés, ex: BPC-157 = 1-2 semaines pour les premiers effets]\\n\\nJE PEUX MÉLANGER 2 PEPTIDES DANS LA MÊME SERINGUE ?\\n[réponse, oui pour certains combos comme CJC+Ipa, non pour d'autres]\\n\\nQUE FAIRE SI J'OUBLIE UNE DOSE ?\\n[réponse, ne pas doubler, reprendre normalement le lendemain]\\n\\nLES PEPTIDES SONT-ILS LÉGAUX ?\\n[réponse, recherche uniquement, pas approuvés usage humain, responsabilité individuelle]\\n\\nCOMMENT SAVOIR SI MES PEPTIDES SONT AUTHENTIQUES ?\\n[réponse, COA (Certificate of Analysis), vérifier sur le site du labo tiers, Peptaura les fournit]\\n\\nAdapte les questions et réponses au profil du client (débutant = plus de questions basiques, avancé = questions techniques)."
+    },
+    {
+      "id": "disclaimer-support",
+      "title": "Support et informations importantes",
+      "content": "${firstName}, quelques points importants pour terminer.\\n\\nSTOCKS ET DISPONIBILITE\\nJe ne suis pas responsable des stocks des fournisseurs sur Peptaura. Les peptides sont produits par des laboratoires tiers et leur disponibilité peut varier. Si un produit de ton protocole est en rupture chez le fournisseur recommandé, choisis simplement un autre fournisseur sur Peptaura qui vend la même molécule (même pureté, même COA). Les prix peuvent varier légèrement.\\n\\nSAV PEPTAURA\\nPour toute question concernant ta commande (suivi de livraison, problème de paiement, produit manquant, remboursement), contacte directement le service client Peptaura : https://www.peptaura.com/contact. Ils répondent généralement sous 24-48h.\\n\\nSUPPORT ACHZOD\\nPour toute question sur ton PROTOCOLE (dosages, timing, effets secondaires, ajustements), tu peux me contacter directement par email : coaching@achzodcoaching.com. Je reponds personnellement a chaque message.\\n\\nCOUT MENSUEL ESTIME\\nDétaille le coût total du cycle divisé par le nombre de mois. Exemple : si le cycle coûte $180 sur 8 semaines, ça revient à environ $90/mois (~85EUR/mois).\\n\\nCE PROTOCOLE EST FOURNI A TITRE EDUCATIF ET INFORMATIF. Il ne constitue pas un avis médical. Consulte un professionnel de santé avant toute supplémentation, surtout si tu prends des médicaments."
     }
   ],
   "peptides": [
@@ -751,7 +795,7 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
 
 // ─── Claude call with retry ───────────────────────────────────────────────────
 
-const PEPTIDES_MAX_TOKENS = 16000;
+const PEPTIDES_MAX_TOKENS = 20000;
 const PEPTIDES_TEMPERATURE = 0.3;
 const PEPTIDES_MAX_RETRIES = 3;
 
