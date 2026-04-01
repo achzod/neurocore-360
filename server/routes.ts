@@ -2889,7 +2889,12 @@ export async function registerRoutes(
     }
 
     if (planType === "ELITE" && !hasThreePhotos(responses as Record<string, unknown>)) {
-      return { success: false, error: "NEED_PHOTOS", message: "3 photos obligatoires pour Ultimate Scan (face, profil, dos)" };
+      // Don't block if already paid — create audit anyway and warn
+      if (order && (order as any).status === "paid") {
+        console.warn(`[Audit] ⚠️ ELITE audit created for ${email} WITHOUT all 3 photos (already paid)`);
+      } else {
+        return { success: false, error: "NEED_PHOTOS", message: "3 photos obligatoires pour Ultimate Scan (face, profil, dos)" };
+      }
     }
 
     const audit = await storage.createAudit({
