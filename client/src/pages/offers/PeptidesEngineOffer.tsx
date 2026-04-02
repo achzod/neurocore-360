@@ -3,7 +3,7 @@
  * Protocole peptides personnalise — 299€
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -33,6 +33,10 @@ import {
   ShieldCheck,
   Calculator,
   GitMerge,
+  Star,
+  Lock,
+  CheckCircle,
+  ExternalLink,
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -1228,6 +1232,130 @@ function FAQSection() {
 // FINAL CTA
 // ============================================================================
 
+// ============================================================================
+// REVIEWS SECTION
+// ============================================================================
+
+function ReviewsSection() {
+  const [reviews, setReviews] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch("/api/reviews")
+      .then(r => r.json())
+      .then(d => setReviews(d.reviews || []))
+      .catch(() => {});
+  }, []);
+
+  if (reviews.length === 0) return null;
+
+  return (
+    <section className="py-20 px-6 bg-[#050505]">
+      <div className="mx-auto max-w-5xl">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-10"
+        >
+          <p className="text-xs font-mono uppercase tracking-[0.3em] mb-3" style={{ color: PRIMARY }}>Avis clients</p>
+          <h2 className="text-2xl md:text-3xl font-black text-white mb-2">
+            Ce qu'en pensent mes clients
+          </h2>
+          <div className="flex items-center justify-center gap-1 mb-2">
+            {[1,2,3,4,5].map(i => (
+              <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+            ))}
+            <span className="text-white/50 text-sm ml-2">{reviews.length} avis</span>
+          </div>
+        </motion.div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {reviews.slice(0, 6).map((r, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.08 }}
+              className="bg-white/[0.03] border border-white/10 rounded-xl p-5"
+            >
+              <div className="flex items-center gap-1 mb-3">
+                {[1,2,3,4,5].map(s => (
+                  <Star key={s} className={`w-3.5 h-3.5 ${s <= r.rating ? "fill-yellow-400 text-yellow-400" : "text-white/20"}`} />
+                ))}
+              </div>
+              <p className="text-white/70 text-sm leading-relaxed mb-3">
+                "{r.comment?.length > 120 ? r.comment.slice(0, 120) + "..." : r.comment}"
+              </p>
+              <p className="text-white/30 text-xs font-mono">
+                {r.auditType === "PEPTIDES_ENGINE" ? "Peptides Engine" : r.auditType === "ANABOLIC_BIOSCAN" ? "Anabolic Bioscan" : "Discovery Scan"}
+              </p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// TRUST SECTION (Garantie + Logos)
+// ============================================================================
+
+function TrustSection() {
+  return (
+    <section className="py-16 px-6 bg-[#0a0a0a]">
+      <div className="mx-auto max-w-5xl">
+        {/* Garantie reponse */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="bg-white/[0.02] border border-white/10 rounded-2xl p-8 mb-8 text-center"
+        >
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
+            <Mail className="w-7 h-7 text-amber-500" />
+          </div>
+          <h3 className="text-xl font-bold text-white mb-2">Je reponds personnellement a chaque message</h3>
+          <p className="text-white/50 text-sm max-w-lg mx-auto mb-4">
+            Une question sur ton protocole, un doute sur un dosage, besoin d'un ajustement ? Ecris-moi directement.
+            Je reponds sous 24h, personnellement. Pas un assistant, pas un bot. Moi.
+          </p>
+          <a href="mailto:coaching@achzodcoaching.com" className="text-amber-500 font-mono text-sm hover:underline">
+            coaching@achzodcoaching.com
+          </a>
+        </motion.div>
+
+        {/* Logos de confiance */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.2 }}
+          className="flex flex-wrap items-center justify-center gap-8 text-white/30 text-xs font-mono uppercase tracking-widest"
+        >
+          <div className="flex items-center gap-2">
+            <Lock className="w-4 h-4" />
+            <span>Paiement securise Stripe</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Shield className="w-4 h-4" />
+            <span>PayPal Buyer Protection</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4" />
+            <span>COA verifie par labo HPLC</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <CheckCircle className="w-4 h-4" />
+            <span>RGPD conforme</span>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
 function FinalCTA() {
   return (
     <section className="py-32 px-6">
@@ -1412,6 +1540,8 @@ export default function PeptidesEngineOffer() {
         <ObjectivesSection />
         <CredibilityBar />
         <ScarcityGuarantee />
+        <ReviewsSection />
+        <TrustSection />
         <FAQSection />
         <FinalCTA />
       </main>
