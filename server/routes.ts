@@ -26,6 +26,8 @@ import {
   addSubscriberToList,
   sendApexLabsWelcomeEmail,
   sendPeptidesReviewEmail,
+  sendPeptidesReviewS5Email,
+  sendPeptidesReviewS12Email,
 } from "./emailService";
 import { generateExportHTML, generateExportPDF } from "./exportService";
 import { generateAndConvertAuditWithClaude } from "./anthropicEngine";
@@ -4940,15 +4942,12 @@ export async function registerRoutes(
               }
             }
 
-            // Review S5 (35 jours / 5 semaines) — 2eme demande d'avis mi-cycle
+            // Review S5 (35 jours / 5 semaines) — 2eme demande d'avis mi-cycle (design email)
             if (daysSincePaid >= 35 && daysSincePaid < 49 && !types.includes("peptidesReviewS5")) {
               const reportId = (order.metadata as any)?.peptidesReportId;
               if (reportId) {
-                const sent = await sendCTAEmail(
-                  email,
-                  "5 semaines de cycle, ton retour ?",
-                  `Salut,\n\nCa fait 5 semaines que tu as recu ton protocole Peptides Engine. Tu as maintenant assez de recul pour juger.\n\nComment se passent les resultats ? Les dosages te conviennent ? Tu as des effets secondaires ?\n\nTon avis m'aide enormement a ameliorer le service. 30 secondes pour noter ton experience :\n${baseUrl}/peptides/${reportId}#review\n\nSi tu as besoin d'un ajustement de protocole, reponds directement a cet email.\n\nAchzod`
-                );
+                const trackingRecord = await storage.createEmailTracking(order.id, "peptidesReviewS5");
+                const sent = await sendPeptidesReviewS5Email(email, reportId, baseUrl, trackingRecord.id);
                 if (sent) {
                   peptidesReviewS5++;
                   await db.insert(emailTrackingTable).values({ email, emailType: "peptidesReviewS5", auditId: order.id, sentAt: new Date() }).catch(() => {});
@@ -4956,15 +4955,12 @@ export async function registerRoutes(
               }
             }
 
-            // Review S12 (84 jours / 12 semaines) — 3eme demande d'avis fin de cycle
+            // Review S12 (84 jours / 12 semaines) — 3eme demande d'avis fin de cycle (design email)
             if (daysSincePaid >= 84 && daysSincePaid < 98 && !types.includes("peptidesReviewS12")) {
               const reportId = (order.metadata as any)?.peptidesReportId;
               if (reportId) {
-                const sent = await sendCTAEmail(
-                  email,
-                  "Fin de cycle, bilan et avis ?",
-                  `Salut,\n\nTon cycle de 12 semaines touche a sa fin. C'est le moment de faire le bilan.\n\nAs-tu fait ton bilan sanguin mi-cycle ? Les resultats sont-ils a la hauteur de tes attentes ?\n\nTon retour est precieux, il aide d'autres personnes a se lancer en confiance. 30 secondes :\n${baseUrl}/peptides/${reportId}#review\n\nSi tu veux un deuxieme cycle adapte a tes resultats, reponds directement a cet email.\n\nAchzod`
-                );
+                const trackingRecord = await storage.createEmailTracking(order.id, "peptidesReviewS12");
+                const sent = await sendPeptidesReviewS12Email(email, reportId, baseUrl, trackingRecord.id);
                 if (sent) {
                   peptidesReviewS12++;
                   await db.insert(emailTrackingTable).values({ email, emailType: "peptidesReviewS12", auditId: order.id, sentAt: new Date() }).catch(() => {});

@@ -2868,6 +2868,80 @@ export async function sendReviewRequestJ3Email(
 }
 
 // Email Peptides Engine J+3: demande avis apres livraison rapport
+// ── Peptides Engine Review Email Builder ──────────────────────────────
+function buildPeptidesReviewContent(opts: {
+  title: string;
+  bodyText: string;
+  reviewLink: string;
+  trackingPixel: string;
+}): string {
+  const { title, bodyText, reviewLink, trackingPixel } = opts;
+  const amber = COLORS.warning; // #f59e0b
+
+  return `
+    <!-- Eyebrow -->
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+      <tr>
+        <td align="center" style="padding-bottom: 8px;">
+          <span style="display: inline-block; background: ${amber}18; color: ${amber}; padding: 6px 18px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; border: 1px solid ${amber}30;">
+            PEPTIDES ENGINE
+          </span>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Title -->
+    <h2 style="color: ${COLORS.text}; margin: 16px 0 20px; font-size: 26px; text-align: center; font-weight: 700; letter-spacing: -0.5px; line-height: 1.3;">
+      ${title}
+    </h2>
+
+    <!-- Star rating card -->
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 28px;">
+      <tr>
+        <td style="padding: 32px 24px; background: linear-gradient(135deg, rgba(245,158,11,0.12) 0%, rgba(245,158,11,0.04) 100%); border-radius: 16px; border: 1px solid rgba(245,158,11,0.2); text-align: center;">
+          <!-- Stars -->
+          <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto 16px auto;">
+            <tr>
+              <td style="font-size: 32px; color: ${amber}; letter-spacing: 6px; line-height: 1;">&#9733;&#9733;&#9733;&#9733;&#9733;</td>
+            </tr>
+          </table>
+          <!-- Body text -->
+          <p style="color: ${COLORS.textMuted}; font-size: 15px; line-height: 1.7; margin: 0 0 24px; max-width: 440px; display: inline-block;">
+            ${bodyText}
+          </p>
+          <!-- CTA -->
+          ${getPrimaryButton('Laisser mon avis', reviewLink, amber)}
+        </td>
+      </tr>
+    </table>
+
+    <!-- Secondary note -->
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 20px;">
+      <tr>
+        <td style="padding: 16px 20px; background: ${COLORS.surface}; border-radius: 10px; border: 1px solid ${COLORS.border}; text-align: center;">
+          <p style="color: ${COLORS.textMuted}; font-size: 13px; margin: 0; line-height: 1.6;">
+            Reponds directement a cet email si tu as une question sur ton protocole.
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    <!-- STOP footer -->
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+      <tr>
+        <td align="center">
+          <p style="color: #525252; font-size: 11px; margin: 0; line-height: 1.5;">
+            Pour arreter ces emails, reponds STOP.
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Tracking pixel -->
+    <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
+  `;
+}
+
 export async function sendPeptidesReviewEmail(
   email: string,
   reportId: string,
@@ -2879,42 +2953,16 @@ export async function sendPeptidesReviewEmail(
     const reviewLink = `${reportLink}#review`;
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
 
-    const content = `
-      <h2 style="color: ${COLORS.text}; margin: 0 0 16px; font-size: 24px; text-align: center; font-weight: 700; letter-spacing: -0.5px;">
-        Comment se passe ton protocole ?
-      </h2>
-
-      <p style="color: ${COLORS.textMuted}; font-size: 15px; line-height: 1.7; margin: 0 0 28px; text-align: center;">
-        Ca fait quelques jours que tu as recu ton protocole Peptides Engine.<br/>
-        <strong style="color: ${COLORS.text};">30 secondes pour laisser ton avis ?</strong>
-      </p>
-
-      <div style="padding: 32px; background: linear-gradient(135deg, rgba(245,158,11,0.12) 0%, rgba(245,158,11,0.05) 100%); border-radius: 16px; border: 2px solid rgba(245,158,11,0.25); margin-bottom: 28px; text-align: center;">
-        <div style="font-size: 36px; margin-bottom: 12px;">&#9733; &#9733; &#9733; &#9733; &#9733;</div>
-        <p style="color: ${COLORS.text}; font-size: 16px; font-weight: 600; margin: 0 0 8px;">Note ton experience sur 5</p>
-        <p style="color: ${COLORS.textMuted}; font-size: 13px; margin: 0 0 20px; line-height: 1.6;">
-          Ton avis aide d'autres personnes a faire le bon choix.<br/>
-          Chaque retour compte pour ameliorer Peptides Engine.
-        </p>
-        ${getPrimaryButton('Laisser mon avis', reviewLink, COLORS.warning)}
-      </div>
-
-      <div style="padding: 16px; background: ${COLORS.surface}; border-radius: 8px; border: 1px solid ${COLORS.border}; text-align: center; margin-bottom: 16px;">
-        <p style="color: ${COLORS.textMuted}; font-size: 13px; margin: 0; line-height: 1.6;">
-          <strong style="color: ${COLORS.text};">Besoin d'aide ?</strong> Reponds directement a cet email si tu as une question sur ton protocole.
-        </p>
-      </div>
-
-      <p style="color: ${COLORS.textMuted}; font-size: 12px; line-height: 1.6; margin: 0; text-align: center;">
-        Pour arreter ces emails, reponds simplement "STOP".
-      </p>
-
-      <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
-    `;
+    const content = buildPeptidesReviewContent({
+      title: "Comment se passe ton protocole ?",
+      bodyText: "Ca fait quelques jours que tu as recu ton protocole. Ton avis m'aide a ameliorer le service et aide d'autres personnes a faire le bon choix.",
+      reviewLink,
+      trackingPixel,
+    });
 
     const emailContent = getEmailWrapper(
       content,
-      `linear-gradient(135deg, ${COLORS.warning} 0%, #f59e0b 100%)`,
+      `linear-gradient(135deg, ${COLORS.warning} 0%, #d97706 100%)`,
       "Peptides Engine",
       "Ton avis compte"
     );
@@ -2922,8 +2970,8 @@ export async function sendPeptidesReviewEmail(
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
-        text: `Ca fait quelques jours que tu as recu ton protocole Peptides Engine. Laisse ton avis en 30 secondes : ${reviewLink}. Reponds directement si tu as une question.`,
-        subject: "Ton avis sur Peptides Engine ? (30 secondes)",
+        text: `Ca fait quelques jours que tu as recu ton protocole Peptides Engine. Laisse ton avis : ${reviewLink}. Reponds directement si tu as une question.`,
+        subject: "Ton avis sur Peptides Engine ?",
         from: { name: SENDER_NAME, email: SENDER_EMAIL },
         to: [{ email }],
       },
@@ -2940,6 +2988,106 @@ export async function sendPeptidesReviewEmail(
     return result.result === true;
   } catch (error) {
     console.error("[SendPulse] Error sending peptides review J+3 email:", error);
+    return false;
+  }
+}
+
+export async function sendPeptidesReviewS5Email(
+  email: string,
+  reportId: string,
+  baseUrl: string,
+  trackingId: string
+): Promise<boolean> {
+  try {
+    const reportLink = `${baseUrl}/peptides/${reportId}`;
+    const reviewLink = `${reportLink}#review`;
+    const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
+
+    const content = buildPeptidesReviewContent({
+      title: "5 semaines de cycle, ton retour ?",
+      bodyText: "Tu as maintenant assez de recul pour juger de l'efficacite de ton protocole. Ton avis compte enormement.",
+      reviewLink,
+      trackingPixel,
+    });
+
+    const emailContent = getEmailWrapper(
+      content,
+      `linear-gradient(135deg, ${COLORS.warning} 0%, #d97706 100%)`,
+      "Peptides Engine",
+      "Semaine 5 \u2014 Retour d'experience"
+    );
+
+    const result = await sendEmailWithTracking(
+      {
+        html: encodeBase64(emailContent),
+        text: `5 semaines de cycle. Tu as assez de recul pour juger de l'efficacite de ton protocole. Laisse ton avis : ${reviewLink}`,
+        subject: "5 semaines de cycle \u2014 ton retour ?",
+        from: { name: SENDER_NAME, email: SENDER_EMAIL },
+        to: [{ email }],
+      },
+      {
+        emailType: "peptidesReviewS5",
+        recipientEmail: email,
+        auditId: reportId,
+        auditType: "PEPTIDES_ENGINE",
+        metadata: { reviewLink, trackingId },
+      }
+    );
+
+    console.log(`[SendPulse] Peptides review S5 email sent to ${email}:`, result);
+    return result.result === true;
+  } catch (error) {
+    console.error("[SendPulse] Error sending peptides review S5 email:", error);
+    return false;
+  }
+}
+
+export async function sendPeptidesReviewS12Email(
+  email: string,
+  reportId: string,
+  baseUrl: string,
+  trackingId: string
+): Promise<boolean> {
+  try {
+    const reportLink = `${baseUrl}/peptides/${reportId}`;
+    const reviewLink = `${reportLink}#review`;
+    const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
+
+    const content = buildPeptidesReviewContent({
+      title: "Fin de cycle, bilan ?",
+      bodyText: "Ton cycle touche a sa fin. C'est le moment ideal pour partager ton experience et aider d'autres athletes.",
+      reviewLink,
+      trackingPixel,
+    });
+
+    const emailContent = getEmailWrapper(
+      content,
+      `linear-gradient(135deg, ${COLORS.warning} 0%, #d97706 100%)`,
+      "Peptides Engine",
+      "Fin de cycle \u2014 Bilan"
+    );
+
+    const result = await sendEmailWithTracking(
+      {
+        html: encodeBase64(emailContent),
+        text: `Ton cycle touche a sa fin. C'est le moment ideal pour partager ton experience. Laisse ton avis : ${reviewLink}`,
+        subject: "Fin de cycle Peptides Engine \u2014 ton bilan ?",
+        from: { name: SENDER_NAME, email: SENDER_EMAIL },
+        to: [{ email }],
+      },
+      {
+        emailType: "peptidesReviewS12",
+        recipientEmail: email,
+        auditId: reportId,
+        auditType: "PEPTIDES_ENGINE",
+        metadata: { reviewLink, trackingId },
+      }
+    );
+
+    console.log(`[SendPulse] Peptides review S12 email sent to ${email}:`, result);
+    return result.result === true;
+  } catch (error) {
+    console.error("[SendPulse] Error sending peptides review S12 email:", error);
     return false;
   }
 }
