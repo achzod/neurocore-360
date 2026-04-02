@@ -866,6 +866,74 @@ function AnimatedFeaturesSection() {
 }
 
 // ============================================================================
+// COA EXAMPLES
+// ============================================================================
+
+function COASection() {
+  return (
+    <section className="py-20 px-6 bg-[#060606]">
+      <div className="mx-auto max-w-5xl">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-10"
+        >
+          <p className="text-xs font-mono uppercase tracking-[0.3em] text-green-500 mb-3">Transparence totale</p>
+          <h2 className="text-2xl md:text-3xl font-black text-white mb-3">
+            Chaque lot est teste par un labo independant
+          </h2>
+          <p className="text-white/50 text-sm max-w-xl mx-auto">
+            Les fournisseurs Peptaura fournissent un COA (Certificate of Analysis) pour chaque lot produit. Purete verifiee par spectrometrie de masse (HPLC), generalement 98-99%.
+          </p>
+        </motion.div>
+
+        <div className="grid md:grid-cols-2 gap-6">
+          <motion.a
+            href="https://www.peptaura.com/coas/0f216e6b9a6c700dcf11bb051f6f7acf31ff0ac79d0230a572e2ee07f3558fbd.png"
+            target="_blank"
+            rel="noopener noreferrer"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            className="group rounded-2xl border border-green-900/30 bg-black/40 p-4 hover:border-green-500/40 transition-all overflow-hidden"
+          >
+            <img
+              src="https://www.peptaura.com/coas/0f216e6b9a6c700dcf11bb051f6f7acf31ff0ac79d0230a572e2ee07f3558fbd.png"
+              alt="Exemple COA - Certificat d'Analyse peptide"
+              className="w-full rounded-lg opacity-80 group-hover:opacity-100 transition-opacity"
+              loading="lazy"
+            />
+            <p className="text-center text-xs text-white/40 mt-3 font-mono">Exemple de COA (cliquer pour agrandir)</p>
+          </motion.a>
+
+          <motion.a
+            href="https://www.peptaura.com/coas/32001f878ccdf779123172f705efb48db899480894340e0e32c2cef3bcc621f5.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+            className="group rounded-2xl border border-green-900/30 bg-black/40 p-6 hover:border-green-500/40 transition-all flex flex-col items-center justify-center gap-4"
+          >
+            <div className="w-20 h-20 rounded-2xl bg-green-500/10 flex items-center justify-center">
+              <ExternalLink className="w-8 h-8 text-green-500" />
+            </div>
+            <div className="text-center">
+              <p className="text-white font-bold mb-1">COA complet (PDF)</p>
+              <p className="text-white/40 text-xs">Rapport HPLC avec chromatogramme, purete, identite moleculaire</p>
+            </div>
+            <p className="text-xs text-green-500 font-mono">Cliquer pour telecharger</p>
+          </motion.a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
 // DELIVERABLES GRID
 // ============================================================================
 
@@ -1339,6 +1407,7 @@ export default function PeptidesEngineOffer() {
         <PriceComparison />
         <DeliverablesSection />
         <AnimatedFeaturesSection />
+        <COASection />
         <HowItWorks />
         <ObjectivesSection />
         <CredibilityBar />
