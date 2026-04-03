@@ -1566,10 +1566,10 @@ function Hero() {
           className="mt-14 flex flex-wrap items-center justify-center gap-6"
         >
           {[
-            "Protocole verifie manuellement",
+            "Protocole realise manuellement",
             "2 bilans sanguins inclus (198€)",
             "Support email 30 jours",
-            "Qualite verifiee manuellement",
+            "Explications inegalables",
           ].map((t) => (
             <div key={t} className="flex items-center gap-2 text-xs text-white/40">
               <CheckCircle2 className="h-3.5 w-3.5" style={{ color: PRIMARY }} />
