@@ -1205,7 +1205,7 @@ function ScarcityGuarantee() {
           <div className="flex flex-col md:flex-row md:items-center gap-6">
             <div className="flex-1">
               <p className="text-xs font-mono uppercase tracking-widest text-amber-500 mb-2">Peptides + Coaching</p>
-              <p className="text-xl font-bold text-white mb-3">150€ deduits de ton coaching 12 semaines</p>
+              <p className="text-xl font-bold text-white mb-3">150€ deduits de ton coaching 12 semaines (Essential/Elite)</p>
               <p className="text-sm text-white/55 leading-relaxed mb-4">
                 Tu peux commander tes peptides maintenant, prendre un coaching Achzod, et commencer le suivi une fois que tu as recu tes peptides. Pas besoin d'attendre pour s'organiser.
               </p>
@@ -1216,7 +1216,7 @@ function ScarcityGuarantee() {
                 </div>
                 <div className="flex items-center gap-2 text-sm text-white/70">
                   <Check className="h-3.5 w-3.5 flex-shrink-0" style={{ color: PRIMARY }} />
-                  <span>Prends ta formule coaching 12 semaines</span>
+                  <span>Prends ta formule coaching 12 semaines (Essential ou Elite)</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-white/70">
                   <Check className="h-3.5 w-3.5 flex-shrink-0" style={{ color: PRIMARY }} />
