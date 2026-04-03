@@ -2987,6 +2987,16 @@ export async function registerRoutes(
         console.error(`[Admin Email] ❌ Error in admin notification for ${audit.id}:`, err);
       });
 
+    // Send order confirmation email to client (don't leave them in the dark)
+    const promoByType: Record<string, { code: string; label: string }> = {
+      ELITE: { code: "ULTIMATE79", label: "79€ deduits de ton coaching (Essential/Elite 12 semaines)" },
+      PREMIUM: { code: "ANABOLIC59", label: "59€ deduits de ton coaching (Essential/Elite 12 semaines)" },
+    };
+    const promo = promoByType[planType];
+    const productLabel = planType === "ELITE" ? "Ultimate Scan" : planType === "PREMIUM" ? "Anabolic Bioscan" : "Analyse";
+    const confirmMsg = `Salut ${clientName},\n\nMerci pour ta commande ${productLabel}. Ton paiement est bien recu et toutes tes reponses sont enregistrees.\n\nTon rapport est en cours de generation. Tu le recevras par email d'ici 24h.\n\n${promo ? `En attendant, voici ton code promo : ${promo.code}\n${promo.label}\nUtilise-le sur achzodcoaching.com/formules-coaching\n\n` : ""}Si tu as des questions, reponds directement a cet email.\n\nAchzod`;
+    sendCTAEmail(email, `${productLabel} : commande recue, rapport sous 24h`, confirmMsg).catch(() => {});
+
     // Mettre à jour Google Sheet automatiquement via webhook
     const { notifyGoogleSheetUpdate } = await import("./googleSheetsTracking.js");
     notifyGoogleSheetUpdate().catch((err) => {
@@ -3355,6 +3365,10 @@ export async function registerRoutes(
 
       // BLOOD_ANALYSIS: just mark paid, no audit to create
       if (planType === "BLOOD_ANALYSIS") {
+        // Send confirmation email
+        sendCTAEmail(email, "Blood Analysis : paiement recu",
+          `Salut,\n\nMerci pour ta commande Blood Analysis. Ton paiement est bien recu.\n\nProchaine etape : fais ta prise de sang en laboratoire avec les marqueurs indiques, puis uploade ton PDF de resultats sur ton dashboard APEXLABS. Tu recevras ton analyse complete sous 24h.\n\nVoici ton code promo : BLOOD99\n99€ deduits de ton coaching (Essential/Elite 12 semaines)\nUtilise-le sur achzodcoaching.com/formules-coaching\n\nSi tu as des questions, reponds directement a cet email.\n\nAchzod`
+        ).catch(() => {});
         res.json({ success: true, auditId: "", auditType: "BLOOD_ANALYSIS", email });
         return;
       }
@@ -5994,6 +6008,24 @@ export async function registerRoutes(
             } catch (notifErr) {
               console.error(`[Webhook] Admin payment notification failed:`, notifErr);
             }
+
+            // Send confirmation email to client (Stripe webhook = payment confirmed)
+            try {
+              const clientEmail2 = session.customer_details?.email || session.customer_email || order.email;
+              const clientName2 = session.customer_details?.name || clientEmail2?.split("@")[0] || "Client";
+              const promoByType2: Record<string, { code: string; label: string }> = {
+                ELITE: { code: "ULTIMATE79", label: "79€ deduits de ton coaching" },
+                PREMIUM: { code: "ANABOLIC59", label: "59€ deduits de ton coaching" },
+                BLOOD_ANALYSIS: { code: "BLOOD99", label: "99€ deduits de ton coaching" },
+              };
+              const promo2 = promoByType2[order.productType];
+              const prodLabel2 = order.productType === "ELITE" ? "Ultimate Scan" : order.productType === "PREMIUM" ? "Anabolic Bioscan" : order.productType === "BLOOD_ANALYSIS" ? "Blood Analysis" : order.productName;
+              if (["ELITE", "PREMIUM", "BLOOD_ANALYSIS"].includes(order.productType)) {
+                const isBlood = order.productType === "BLOOD_ANALYSIS";
+                const msg = `Salut ${clientName2},\n\nMerci pour ta commande ${prodLabel2}. Ton paiement est bien recu.\n\n${isBlood ? "Prochaine etape : fais ta prise de sang en laboratoire avec les marqueurs indiques, puis uploade ton PDF de resultats sur ton dashboard APEXLABS." : "Ton rapport est en cours de generation. Tu le recevras par email d'ici 24h."}\n\n${promo2 ? `Ton code promo : ${promo2.code}\n${promo2.label} (Essential/Elite 12 semaines)\nachzodcoaching.com/formules-coaching\n\n` : ""}Si tu as des questions, reponds directement a cet email.\n\nAchzod`;
+                sendCTAEmail(clientEmail2!, `${prodLabel2} : commande recue`, msg).catch(() => {});
+              }
+            } catch {}
 
             // ✅ FIX: Create audit automatically in webhook (prevents missing audits)
             const email = session.customer_details?.email || session.customer_email || session.metadata?.email || order.email;
