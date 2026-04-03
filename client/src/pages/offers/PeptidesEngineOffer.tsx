@@ -1425,7 +1425,12 @@ function FinalCTA() {
               <p className="text-5xl font-bold text-white">299€</p>
             </div>
             <p className="font-mono text-xs text-white/40">TVA incluse · Paiement securise</p>
-            <p className="font-mono text-xs text-amber-500/80 mt-1">150€ deduits de tout coaching Elite/Private Lab 8 ou 12 semaines</p>
+            <motion.p
+              animate={{ opacity: [0.6, 1, 0.6] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              className="font-mono text-xs font-bold mt-2 tracking-wide"
+              style={{ color: "#00E5FF" }}
+            >150€ deduits de tout coaching Elite/Private Lab 8 ou 12 semaines</motion.p>
           </div>
 
           <div className="mt-8 flex flex-col items-center gap-4">
@@ -1523,7 +1528,12 @@ function Hero() {
           <span className="text-5xl font-bold text-white">299€</span>
           <span className="text-xs font-mono uppercase tracking-widest text-amber-500">Prix de lancement</span>
         </motion.div>
-        <p className="mt-3 font-mono text-xs text-amber-500/70 text-center">150€ deduits de tout coaching Elite/Private Lab 8 ou 12 semaines</p>
+        <motion.p
+          animate={{ opacity: [0.6, 1, 0.6] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          className="mt-3 font-mono text-xs font-bold text-center tracking-wide"
+          style={{ color: "#00E5FF" }}
+        >150€ deduits de tout coaching Elite/Private Lab 8 ou 12 semaines</motion.p>
 
         {/* CTA */}
         <motion.div
