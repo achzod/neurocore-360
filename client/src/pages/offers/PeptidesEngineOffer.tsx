@@ -51,8 +51,8 @@ type FAQEntry = { q: string; a: string };
 
 const FAQ: FAQEntry[] = [
   {
-    q: "Pourquoi 299€ ?",
-    a: "Tu economises des centaines d'euros des le 1er cycle. Le protocole inclut 2 blood analyses (valeur 198€), l'acces direct a la source a prix labo, et un suivi complet. A 299€, c'est un investissement qui se rembourse en une seule commande de peptides au bon prix.",
+    q: "Pourquoi 299€ au lieu de 399€ ?",
+    a: "C'est le prix de lancement. Le protocole inclut 2 blood analyses (valeur 198€), l'acces direct a la source a prix labo, et un suivi complet. A 299€, c'est un investissement qui se rembourse en une seule commande de peptides au bon prix. Et si tu prends un coaching 12 semaines, 150€ sont deduits de ta formule.",
   },
   {
     q: "C'est quoi la source premium ?",
@@ -1193,6 +1193,49 @@ function ScarcityGuarantee() {
             </div>
           </motion.div>
         </div>
+
+        {/* Coaching combo */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.2 }}
+          className="mt-6 rounded-2xl border border-amber-500/20 bg-[#0a0a0a] p-8"
+        >
+          <div className="flex flex-col md:flex-row md:items-center gap-6">
+            <div className="flex-1">
+              <p className="text-xs font-mono uppercase tracking-widest text-amber-500 mb-2">Peptides + Coaching</p>
+              <p className="text-xl font-bold text-white mb-3">150€ deduits de ton coaching 12 semaines</p>
+              <p className="text-sm text-white/55 leading-relaxed mb-4">
+                Tu peux commander tes peptides maintenant, prendre un coaching Achzod, et commencer le suivi une fois que tu as recu tes peptides. Pas besoin d'attendre pour s'organiser.
+              </p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm text-white/70">
+                  <Check className="h-3.5 w-3.5 flex-shrink-0" style={{ color: PRIMARY }} />
+                  <span>Commande tes peptides sur Peptaura</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-white/70">
+                  <Check className="h-3.5 w-3.5 flex-shrink-0" style={{ color: PRIMARY }} />
+                  <span>Prends ta formule coaching 12 semaines</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-white/70">
+                  <Check className="h-3.5 w-3.5 flex-shrink-0" style={{ color: PRIMARY }} />
+                  <span>Commence le coaching des que tu recois tes peptides</span>
+                </div>
+              </div>
+            </div>
+            <a
+              href="https://www.achzodcoaching.com/formules-coaching"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm text-black whitespace-nowrap"
+              style={{ background: PRIMARY }}
+            >
+              Voir les formules coaching
+              <ArrowRight className="h-4 w-4" />
+            </a>
+          </div>
+        </motion.div>
       </div>
     </section>
   );
@@ -1376,7 +1419,11 @@ function FinalCTA() {
 
           {/* Price */}
           <div className="mt-10 inline-flex flex-col items-center gap-2 rounded-2xl border border-white/10 bg-[#0a0a0a] px-10 py-7">
-            <p className="text-5xl font-bold text-white">299€</p>
+            <p className="font-mono text-xs uppercase tracking-widest text-amber-500 mb-1">Prix de lancement</p>
+            <div className="flex items-center gap-3">
+              <p className="text-2xl font-bold text-white/30 line-through">399€</p>
+              <p className="text-5xl font-bold text-white">299€</p>
+            </div>
             <p className="font-mono text-xs text-white/40">TVA incluse · Paiement securise</p>
           </div>
 
@@ -1471,7 +1518,9 @@ function Hero() {
           transition={{ duration: 0.6, delay: 0.3 }}
           className="mt-10 flex items-center justify-center gap-4"
         >
+          <span className="text-2xl font-bold text-white/30 line-through">399€</span>
           <span className="text-5xl font-bold text-white">299€</span>
+          <span className="text-xs font-mono uppercase tracking-widest text-amber-500">Prix de lancement</span>
         </motion.div>
 
         {/* CTA */}
