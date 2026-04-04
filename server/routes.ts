@@ -7948,13 +7948,25 @@ export async function registerRoutes(
           promoCodesBlock +
           `\n\nConserve ce lien — il est personnel et unique.`;
 
-        await sendCTAEmail(
-          email,
-          "Ton protocole peptides personnalisé est prêt",
-          deliveryMessage
-        ).catch((err) => {
-          console.error("[PeptidesEngine] Delivery email failed:", err);
-        });
+        // Dedup: only send if not already sent
+        const { db: createDb } = await import("./db");
+        const { emailTracking: createTrackingTable } = await import("../shared/drizzle-schema");
+        const { eq: createEq } = await import("drizzle-orm");
+        const createTracking = await createDb.select().from(createTrackingTable).where(createEq(createTrackingTable.email, email));
+        const createAlreadySent = createTracking.some((t: any) => t.emailType === "peptidesDelivery");
+
+        if (!createAlreadySent) {
+          await sendCTAEmail(
+            email,
+            "Ton protocole peptides personnalisé est prêt",
+            deliveryMessage
+          ).catch((err) => {
+            console.error("[PeptidesEngine] Delivery email failed:", err);
+          });
+          await createDb.insert(createTrackingTable).values({ email, emailType: "peptidesDelivery", auditId: order?.id || reportId, sentAt: new Date() }).catch(() => {});
+        } else {
+          console.log(`[PeptidesEngine] Delivery email already sent to ${email} — skipping`);
+        }
 
         // Clean up progress
         await storage.saveBurnoutProgress({
