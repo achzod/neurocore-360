@@ -147,19 +147,33 @@ function normalizeAnalysisResult(obj: Record<string, unknown>): PhotoAnalysisRes
   return merged as PhotoAnalysisResult;
 }
 
+const MAX_PHOTO_BASE64_SIZE = 500_000; // ~375KB decoded, plenty for Claude vision
+
 function parsePhotoToBase64(photo: string): { mediaType: string; data: string } | null {
   const trimmed = String(photo || "").trim();
   if (!trimmed) return null;
+
+  let mediaType = "image/jpeg";
+  let data = "";
 
   // data URL
   if (trimmed.startsWith("data:image/")) {
     const m = trimmed.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.*)$/);
     if (!m) return null;
-    return { mediaType: m[1], data: m[2] };
+    mediaType = m[1];
+    data = m[2];
+  } else {
+    // raw base64 -> assume jpeg
+    data = trimmed.replace(/\s/g, "");
   }
 
-  // raw base64 -> assume jpeg
-  return { mediaType: "image/jpeg", data: trimmed.replace(/\s/g, "") };
+  // If image is too large, log warning but still send (Claude can handle up to ~5MB)
+  // The real fix is frontend compression before upload
+  if (data.length > MAX_PHOTO_BASE64_SIZE) {
+    console.warn(`[PhotoAnalysis] Image too large: ${(data.length / 1024).toFixed(0)}KB base64 (${(data.length * 0.75 / 1024 / 1024).toFixed(1)}MB decoded). May cause API errors.`);
+  }
+
+  return { mediaType, data };
 }
 
 function getAnthropicClient(): Anthropic {
@@ -182,6 +196,14 @@ export async function analyzeBodyPhotosWithAI(
     if (!raw) return;
     const parsed = parsePhotoToBase64(raw);
     if (!parsed) return;
+
+    // Skip images that are way too large (>4MB base64 = ~3MB decoded)
+    // These will cause Claude API "Could not process image" errors
+    if (parsed.data.length > 4_000_000) {
+      console.warn(`[PhotoAnalysis] SKIPPING ${label}: ${(parsed.data.length / 1024 / 1024).toFixed(1)}MB base64 — too large for API`);
+      return;
+    }
+
     blocks.push({
       type: "image",
       source: {
@@ -266,9 +288,36 @@ export async function analyzeBodyPhotosWithAI(
   } catch (err: any) {
     const msg = err?.message || String(err);
     console.error("[PhotoAnalysis Claude] Error:", msg);
-    // If it's a 400 error, the image might be too large or invalid
-    if (msg.includes("400") || msg.includes("Could not process")) {
-      console.warn("[PhotoAnalysis Claude] Image processing error - this usually means the image is too large, corrupt, or in an unsupported format.");
+
+    // If image processing failed, retry with fewer/smaller images
+    if ((msg.includes("400") || msg.includes("Could not process")) && blocks.length > 2) {
+      console.warn("[PhotoAnalysis Claude] Retrying with smaller image set...");
+      // Remove the largest image block and retry
+      const imageBlocks = blocks.filter((b: any) => b.type === "image");
+      const textBlock = blocks.find((b: any) => b.type === "text");
+      if (imageBlocks.length > 1 && textBlock) {
+        // Sort by data size, remove the largest
+        imageBlocks.sort((a: any, b: any) => (b.source?.data?.length || 0) - (a.source?.data?.length || 0));
+        const smallerBlocks = [...imageBlocks.slice(1), textBlock];
+        try {
+          console.log(`[PhotoAnalysis Claude] Retry with ${imageBlocks.length - 1} photos...`);
+          const retryResp = await client.messages.create({
+            model: ANTHROPIC_CONFIG.ANTHROPIC_MODEL,
+            max_tokens: 4096,
+            temperature: 0.3,
+            messages: [{ role: "user", content: smallerBlocks }],
+          } as any);
+          const retryText = (retryResp as any).content?.find((c: any) => c.type === "text")?.text || "";
+          const retryJson = String(retryText).match(/\{[\s\S]*\}/);
+          if (retryJson) {
+            const parsed = JSON.parse(retryJson[0].replace(/,(\s*[}\]])/g, "$1"));
+            console.log("[PhotoAnalysis Claude] Retry succeeded with fewer photos");
+            return normalizeAnalysisResult(parsed);
+          }
+        } catch (retryErr) {
+          console.error("[PhotoAnalysis Claude] Retry also failed:", retryErr);
+        }
+      }
     }
     return getDefaultAnalysis(msg || "Erreur API Claude");
   }
