@@ -982,7 +982,25 @@ export async function registerRoutes(
       console.log(`[Email] ✅ Content verified: TXT=${reportTxt.length} HTML=${reportHtml.length} chars`);
 
       // ============================================
-      // GATE 5: Verify report link actually works
+      // GATE 5: ELITE must have valid photo analysis
+      // ============================================
+      if (auditType === "ELITE") {
+        const photoAnalysis = (completedAudit as any)?.narrativeReport?.photoAnalysis;
+        const summary = photoAnalysis?.summary || "";
+        const posture = photoAnalysis?.posture || {};
+        const allNonVisible = posture.headPosition === "non visible" && posture.spineAlignment === "non visible" && posture.shoulderAlignment === "non visible";
+        const hasError = summary.includes("error") || summary.includes("400") || summary.includes("non disponible");
+
+        if (!photoAnalysis || hasError || allNonVisible) {
+          console.error(`[Email] ❌ ELITE report ${auditId} has FAILED photo analysis — EMAIL BLOCKED. Summary: ${summary.slice(0, 200)}`);
+          await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" });
+          return;
+        }
+        console.log(`[Email] ✅ ELITE photo analysis verified: posture score ${posture.overallScore || "?"}`);
+      }
+
+      // ============================================
+      // GATE 6: Verify report link actually works
       // ============================================
       const reportPath = auditType === 'ELITE' ? 'ultimate' : auditType === 'PREMIUM' ? 'anabolic' : 'scan';
       const reportUrl = `${baseUrl}/${reportPath}/${auditId}`;
