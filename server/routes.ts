@@ -3467,17 +3467,27 @@ export async function registerRoutes(
         }).catch(() => {});
       }
 
-      // Send delivery email
+      // Send delivery email (with dedup tracking)
       const baseUrl = getBaseUrl();
       const peptidesNames = report.peptides?.map((p: any) => p.name).join(", ") ?? "voir rapport";
       const promoBlock = report.promoCodesGenerated?.length > 0
         ? `\n\nTes 2 codes Blood Analysis offerts (100% de réduction, usage unique):\n${report.promoCodesGenerated.join("\n")}`
         : "";
-      await sendCTAEmail(
-        email,
-        "Ton protocole peptides personnalisé est prêt",
-        `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}\n\nConserve ce lien — il est personnel et unique.`
-      ).catch((err) => console.error(`[Admin] Delivery email failed:`, err));
+      const { db: adminDb } = await import("./db");
+      const { emailTracking: adminTrackingTable } = await import("../shared/drizzle-schema");
+      const { eq: adminEq } = await import("drizzle-orm");
+      const adminTracking = await adminDb.select().from(adminTrackingTable).where(adminEq(adminTrackingTable.email, email));
+      const adminAlreadySent = adminTracking.some((t: any) => t.emailType === "peptidesDelivery");
+      if (!adminAlreadySent) {
+        await sendCTAEmail(
+          email,
+          "Ton protocole peptides personnalisé est prêt",
+          `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}\n\nConserve ce lien — il est personnel et unique.`
+        ).catch((err) => console.error(`[Admin] Delivery email failed:`, err));
+        await adminDb.insert(adminTrackingTable).values({ email, emailType: "peptidesDelivery", auditId: pepOrder?.id || saved.id, sentAt: new Date() }).catch(() => {});
+      } else {
+        console.log(`[Admin] Delivery email already sent to ${email} — skipping`);
+      }
 
       // Notify admin
       const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
@@ -4887,59 +4897,8 @@ export async function registerRoutes(
         const allOrders = await storage.getAllOrders?.() || [];
         const peptidesOrders = allOrders.filter((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid" && o.paidAt);
 
-        // AUTO-RECOVERY: detect paid orders without report and generate (1 per cron run to avoid timeout)
-        let autoRecoveryDone = false;
-        for (const order of peptidesOrders) {
-          if (autoRecoveryDone) break; // Only 1 per cron run
-          const meta = order.metadata as any;
-          const email = order.email;
-          if (!email || email.includes("test") || email.includes("debug")) continue;
-          if (meta?.peptidesReportId) continue; // Already has report
-
-          const paidAt = new Date(order.paidAt);
-          const hoursSincePaid = (now.getTime() - paidAt.getTime()) / (1000 * 60 * 60);
-          if (hoursSincePaid < 0.1 || hoursSincePaid > 168) continue; // Skip if < 5 min or > 7 days old
-
-          console.log(`[Cron] AUTO-RECOVERY: Paid peptides order ${order.id} for ${email} has no report (paid ${Math.round(hoursSincePaid)}h ago)`);
-          autoRecoveryDone = true;
-          try {
-            // Waterfall: burnout_progress → order metadata
-            let responses: Record<string, unknown> | undefined;
-            const progress = await storage.getBurnoutProgress(`peptides::${email}`);
-            if (progress?.responses && Object.keys(progress.responses).length >= 3) {
-              responses = progress.responses as Record<string, unknown>;
-            } else if (meta?.peptidesResponses && Object.keys(meta.peptidesResponses).length >= 3) {
-              responses = meta.peptidesResponses;
-            }
-
-            if (responses) {
-              const { generatePeptidesProtocol } = await import("./peptidesEngine");
-              const report = await generatePeptidesProtocol(responses, email);
-              const saved = await storage.createBurnoutReport({ email: `peptides::${email}`, responses, report });
-              await storage.updateOrder(order.id, {
-                metadata: { ...(meta ?? {}), peptidesReportId: saved.id },
-              }).catch(() => {});
-
-              const peptidesNames = report.peptides?.map((p: any) => p.name).join(", ") ?? "voir rapport";
-              const promoBlock = report.promoCodesGenerated?.length > 0
-                ? `\n\nTes 2 codes Blood Analysis offerts:\n${report.promoCodesGenerated.join("\n")}` : "";
-              await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
-                `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}\n\nConserve ce lien — il est personnel et unique.`
-              ).catch(() => {});
-
-              console.log(`[Cron] AUTO-RECOVERY: Generated report ${saved.id} for ${email}`);
-              peptidesAutoGenerated++;
-            } else {
-              console.error(`[Cron] AUTO-RECOVERY: No responses found for ${email}`);
-              const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
-              await sendCTAEmail(adminEmail, `ALERTE: Peptides non genere — ${email}`,
-                `Client a paye 299EUR mais aucune reponse trouvee pour generer le rapport.\n\nEmail: ${email}\nOrder: ${order.id}\nPaye il y a: ${Math.round(hoursSincePaid)}h\n\nAction: utiliser /api/admin/peptides-generate`
-              ).catch(() => {});
-            }
-          } catch (autoErr) {
-            console.error(`[Cron] AUTO-RECOVERY error for ${email}:`, autoErr);
-          }
-        }
+        // Peptides auto-recovery REMOVED from cron — handled exclusively by setInterval (5min)
+        // This prevents double generation and double email sends
 
         for (const order of peptidesOrders) {
           try {
@@ -6108,73 +6067,10 @@ export async function registerRoutes(
               }
             }
 
-            // Auto-trigger Peptides Engine protocol generation
+            // Peptides Engine: DO NOT generate here — setInterval handles it
+            // Generating in webhook causes double reports (webhook + setInterval race condition)
             if (email && planType === "PEPTIDES_ENGINE") {
-              console.log(`[Webhook] Triggering Peptides Engine protocol for ${email}`);
-              try {
-                const { generatePeptidesProtocol } = await import("./peptidesEngine");
-
-                // WATERFALL RECOVERY: try multiple sources for responses
-                let responses: Record<string, unknown> | undefined;
-
-                // Source 1: burnout_progress table (primary — correct table)
-                const progress = await storage.getBurnoutProgress(`peptides::${email}`);
-                if (progress?.responses && Object.keys(progress.responses).length >= 3) {
-                  responses = progress.responses as Record<string, unknown>;
-                  console.log(`[Webhook] Responses found in burnout_progress (${Object.keys(responses).length} fields)`);
-                }
-
-                // Source 2: order metadata (backup — full responses saved at checkout)
-                if (!responses) {
-                  const pepOrders = await storage.getOrdersByEmail(email);
-                  const pepOrder = pepOrders.find((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid");
-                  const meta = pepOrder?.metadata as any;
-                  if (meta?.peptidesResponses && Object.keys(meta.peptidesResponses).length >= 3) {
-                    responses = meta.peptidesResponses;
-                    console.log(`[Webhook] Responses RECOVERED from order metadata (${Object.keys(responses!).length} fields)`);
-                  }
-                }
-
-                // Source 3: Stripe session metadata (last resort, may be truncated)
-                if (!responses && session.metadata?.responses) {
-                  try {
-                    const parsed = JSON.parse(session.metadata.responses);
-                    if (parsed && typeof parsed === "object" && Object.keys(parsed).length >= 3) {
-                      responses = parsed;
-                      console.log(`[Webhook] Responses RECOVERED from Stripe metadata (${Object.keys(responses!).length} fields, may be truncated)`);
-                    }
-                  } catch {}
-                }
-
-                if (responses && Object.keys(responses).length >= 3) {
-                  const report = await generatePeptidesProtocol(responses, email);
-                  const saved = await storage.createBurnoutReport({ email: `peptides::${email}`, responses, report });
-                  console.log(`[Webhook] ✅ Peptides protocol generated: ${saved.id}`);
-
-                  // Link to order
-                  await storage.updateOrder(order.id, {
-                    metadata: { ...(order.metadata as object ?? {}), peptidesReportId: saved.id },
-                  }).catch(() => {});
-
-                  // Send delivery email
-                  const baseUrl = getBaseUrl();
-                  const peptidesNames = report.peptides?.map((p: any) => p.name).join(", ") ?? "voir rapport";
-                  const promoBlock = report.promoCodesGenerated?.length > 0
-                    ? `\n\nTes 2 codes Blood Analysis offerts:\n${report.promoCodesGenerated.join("\n")}`
-                    : "";
-                  await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
-                    `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}\n\nConserve ce lien — il est personnel et unique.`
-                  ).catch((err) => console.error(`[Webhook] Delivery email failed:`, err));
-                } else {
-                  console.error(`[Webhook] CRITICAL: No responses found for ${email} in ANY source`);
-                  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
-                  await sendCTAEmail(adminEmail, `ALERTE: Reponses peptides manquantes — ${email}`,
-                    `URGENT: Un client a paye 299EUR mais aucune reponse n'a ete trouvee.\n\nEmail: ${email}\nSources verifiees: burnout_progress, order metadata, stripe metadata\n\nAction requise: contacter le client pour recuperer les reponses.`
-                  ).catch(() => {});
-                }
-              } catch (pepErr) {
-                console.error(`[Webhook] ❌ Peptides protocol generation failed:`, pepErr);
-              }
+              console.log(`[Webhook] Peptides Engine paid for ${email} — setInterval will generate`);
             }
 
             if (email && planType && !order.auditId && ["GRATUIT", "PREMIUM", "ELITE"].includes(planType)) {
@@ -8157,20 +8053,40 @@ export async function registerRoutes(
           break;
         }
 
+        // Double-check: re-read order to confirm reportId still missing (prevent race condition)
+        const freshOrder = await storage.getOrder(order.id);
+        const freshMeta = freshOrder?.metadata as any;
+        if (freshMeta?.peptidesReportId) {
+          console.log(`[AutoGen] Report already exists for ${email} (race condition avoided)`);
+          break;
+        }
+
         const { generatePeptidesProtocol } = await import("./peptidesEngine");
         const report = await generatePeptidesProtocol(responses, email);
         const saved = await storage.createBurnoutReport({ email: `peptides::${email}`, responses, report });
-        await storage.updateOrder(order.id, { metadata: { ...(meta ?? {}), peptidesReportId: saved.id } }).catch(() => {});
+        await storage.updateOrder(order.id, { metadata: { ...(freshMeta ?? meta ?? {}), peptidesReportId: saved.id } }).catch(() => {});
 
-        const baseUrl = getBaseUrl();
-        const peptidesNames = report.peptides?.map((p: any) => p.name).join(", ") ?? "voir rapport";
-        const promoBlock = report.promoCodesGenerated?.length > 0
-          ? `\n\nTes 2 codes Blood Analysis offerts:\n${report.promoCodesGenerated.join("\n")}` : "";
-        await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
-          `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}\n\nConserve ce lien — il est personnel et unique.`
-        ).catch(() => {});
+        // Check email tracking to avoid sending delivery email twice
+        const { db: autogenDb } = await import("./db");
+        const { emailTracking: autogenTrackingTable } = await import("../shared/drizzle-schema");
+        const { eq: autogenEq } = await import("drizzle-orm");
+        const existingTracking = await autogenDb.select().from(autogenTrackingTable).where(autogenEq(autogenTrackingTable.email, email));
+        const alreadySentDelivery = existingTracking.some((t: any) => t.emailType === "peptidesDelivery");
 
-        console.log(`[AutoGen] ✅ Report ${saved.id} generated and sent to ${email}`);
+        if (!alreadySentDelivery) {
+          const baseUrl = getBaseUrl();
+          const peptidesNames = report.peptides?.map((p: any) => p.name).join(", ") ?? "voir rapport";
+          const promoBlock = report.promoCodesGenerated?.length > 0
+            ? `\n\nTes 2 codes Blood Analysis offerts:\n${report.promoCodesGenerated.join("\n")}` : "";
+          await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
+            `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}\n\nConserve ce lien — il est personnel et unique.`
+          ).catch(() => {});
+          // Track that delivery email was sent
+          await autogenDb.insert(autogenTrackingTable).values({ email, emailType: "peptidesDelivery", auditId: order.id, sentAt: new Date() }).catch(() => {});
+          console.log(`[AutoGen] ✅ Report ${saved.id} generated and delivered to ${email}`);
+        } else {
+          console.log(`[AutoGen] ✅ Report ${saved.id} generated for ${email} (delivery email already sent)`);
+        }
         break; // 1 per cycle
       }
     } catch (err) {
