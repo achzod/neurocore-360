@@ -6032,15 +6032,22 @@ export async function registerRoutes(
               const clientEmail2 = session.customer_details?.email || session.customer_email || order.email;
               const clientName2 = session.customer_details?.name || clientEmail2?.split("@")[0] || "Client";
               const promoByType2: Record<string, { code: string; label: string }> = {
-                ELITE: { code: "ULTIMATE79", label: "79€ deduits de ton coaching" },
-                PREMIUM: { code: "ANABOLIC59", label: "59€ deduits de ton coaching" },
-                BLOOD_ANALYSIS: { code: "BLOOD99", label: "99€ deduits de ton coaching" },
+                ELITE: { code: "ULTIMATE79", label: "79€ deduits de ton coaching Elite/Private Lab 8 ou 12 semaines" },
+                PREMIUM: { code: "ANABOLIC59", label: "59€ deduits de ton coaching Elite/Private Lab 8 ou 12 semaines" },
+                BLOOD_ANALYSIS: { code: "BLOOD99", label: "99€ deduits de ton coaching Elite/Private Lab 8 ou 12 semaines" },
+                PEPTIDES_ENGINE: { code: "PEPTIDES150", label: "150€ deduits de ton coaching Elite/Private Lab 8 ou 12 semaines" },
               };
               const promo2 = promoByType2[order.productType];
-              const prodLabel2 = order.productType === "ELITE" ? "Ultimate Scan" : order.productType === "PREMIUM" ? "Anabolic Bioscan" : order.productType === "BLOOD_ANALYSIS" ? "Blood Analysis" : order.productName;
-              if (["ELITE", "PREMIUM", "BLOOD_ANALYSIS"].includes(order.productType)) {
+              const prodLabel2 = order.productType === "ELITE" ? "Ultimate Scan" : order.productType === "PREMIUM" ? "Anabolic Bioscan" : order.productType === "BLOOD_ANALYSIS" ? "Blood Analysis" : order.productType === "PEPTIDES_ENGINE" ? "Peptides Engine" : order.productName;
+              if (["ELITE", "PREMIUM", "BLOOD_ANALYSIS", "PEPTIDES_ENGINE"].includes(order.productType)) {
+                const isPeptides = order.productType === "PEPTIDES_ENGINE";
                 const isBlood = order.productType === "BLOOD_ANALYSIS";
-                const msg = `Salut ${clientName2},\n\nMerci pour ta commande ${prodLabel2}. Ton paiement est bien recu.\n\n${isBlood ? "Prochaine etape : fais ta prise de sang en laboratoire avec les marqueurs indiques, puis uploade ton PDF de resultats sur ton dashboard APEXLABS." : "Ton rapport est en cours de generation. Tu le recevras par email d'ici 24h."}\n\n${promo2 ? `Ton code promo : ${promo2.code}\n${promo2.label} (Essential/Elite 12 semaines)\nachzodcoaching.com/formules-coaching\n\n` : ""}Si tu as des questions, reponds directement a cet email.\n\nAchzod`;
+                const deliveryMsg = isBlood
+                  ? "Prochaine etape : fais ta prise de sang en laboratoire avec les marqueurs indiques, puis uploade ton PDF de resultats sur ton dashboard APEXLABS."
+                  : isPeptides
+                  ? "Ton protocole est en cours de generation. Tu le recevras par email dans les prochaines minutes."
+                  : "Ton rapport est en cours de generation. Tu le recevras par email d'ici 24h.";
+                const msg = `Salut ${clientName2},\n\nMerci pour ta commande ${prodLabel2}. Ton paiement est bien recu.\n\n${deliveryMsg}\n\n${promo2 ? `Ton code promo : ${promo2.code}\n${promo2.label}\nachzodcoaching.com/formules-coaching\n\n` : ""}Si tu as des questions, reponds directement a cet email.\n\nAchzod`;
                 sendCTAEmail(clientEmail2!, `${prodLabel2} : commande recue`, msg).catch(() => {});
               }
             } catch {}
@@ -8116,7 +8123,10 @@ export async function registerRoutes(
   // Démarrer la surveillance automatique des relances d'abandons
   // Check toutes les 30 minutes pour détecter ouvertures, conversions, etc.
   // Auto-recovery: generate missing peptides reports every 5 minutes
+  let autoGenRunning = false;
   setInterval(async () => {
+    if (autoGenRunning) return; // Prevent concurrent runs
+    autoGenRunning = true;
     try {
       const allOrders = await storage.getAllOrders?.() || { orders: [] };
       const orders = allOrders.orders || allOrders || [];
@@ -8165,6 +8175,8 @@ export async function registerRoutes(
       }
     } catch (err) {
       console.error("[AutoGen] Error:", err);
+    } finally {
+      autoGenRunning = false;
     }
   }, 5 * 60 * 1000).unref(); // Every 5 minutes
 
