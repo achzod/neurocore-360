@@ -3007,8 +3007,8 @@ export async function registerRoutes(
 
     // Send order confirmation email to client (don't leave them in the dark)
     const promoByType: Record<string, { code: string; label: string }> = {
-      ELITE: { code: "ULTIMATE79", label: "79€ deduits de ton coaching (Essential/Elite 12 semaines)" },
-      PREMIUM: { code: "ANABOLIC59", label: "59€ deduits de ton coaching (Essential/Elite 12 semaines)" },
+      ELITE: { code: "ULTIMATE79", label: "79€ deduits de ton coaching Elite/Private Lab 8 ou 12 semaines" },
+      PREMIUM: { code: "ANABOLIC59", label: "59€ deduits de ton coaching Elite/Private Lab 8 ou 12 semaines" },
     };
     const promo = promoByType[planType];
     const productLabel = planType === "ELITE" ? "Ultimate Scan" : planType === "PREMIUM" ? "Anabolic Bioscan" : "Analyse";
@@ -3385,7 +3385,7 @@ export async function registerRoutes(
       if (planType === "BLOOD_ANALYSIS") {
         // Send confirmation email
         sendCTAEmail(email, "Blood Analysis : paiement recu",
-          `Salut,\n\nMerci pour ta commande Blood Analysis. Ton paiement est bien recu.\n\nProchaine etape : fais ta prise de sang en laboratoire avec les marqueurs indiques, puis uploade ton PDF de resultats sur ton dashboard APEXLABS. Tu recevras ton analyse complete sous 24h.\n\nVoici ton code promo : BLOOD99\n99€ deduits de ton coaching (Essential/Elite 12 semaines)\nUtilise-le sur achzodcoaching.com/formules-coaching\n\nSi tu as des questions, reponds directement a cet email.\n\nAchzod`
+          `Salut,\n\nMerci pour ta commande Blood Analysis. Ton paiement est bien recu.\n\nProchaine etape : fais ta prise de sang en laboratoire avec les marqueurs indiques, puis uploade ton PDF de resultats sur ton dashboard APEXLABS. Tu recevras ton analyse complete sous 24h.\n\nVoici ton code promo : BLOOD99\n99€ deduits de ton coaching Elite/Private Lab 8 ou 12 semaines\nUtilise-le sur achzodcoaching.com/formules-coaching\n\nSi tu as des questions, reponds directement a cet email.\n\nAchzod`
         ).catch(() => {});
         res.json({ success: true, auditId: "", auditType: "BLOOD_ANALYSIS", email });
         return;
