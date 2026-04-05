@@ -3479,12 +3479,14 @@ export async function registerRoutes(
       const adminTracking = await adminDb.select().from(adminTrackingTable).where(adminEq(adminTrackingTable.email, email));
       const adminAlreadySent = adminTracking.some((t: any) => t.emailType === "peptidesDelivery");
       if (!adminAlreadySent) {
-        await sendCTAEmail(
+        const adminEmailSent = await sendCTAEmail(
           email,
           "Ton protocole peptides personnalisé est prêt",
           `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}\n\nConserve ce lien — il est personnel et unique.`
-        ).catch((err) => console.error(`[Admin] Delivery email failed:`, err));
-        await adminDb.insert(adminTrackingTable).values({ email, emailType: "peptidesDelivery", auditId: pepOrder?.id || saved.id, sentAt: new Date() }).catch(() => {});
+        ).catch(() => false);
+        if (adminEmailSent !== false) {
+          await adminDb.insert(adminTrackingTable).values({ email, emailType: "peptidesDelivery", auditId: pepOrder?.id || saved.id, sentAt: new Date() }).catch(() => {});
+        }
       } else {
         console.log(`[Admin] Delivery email already sent to ${email} — skipping`);
       }
@@ -7956,14 +7958,16 @@ export async function registerRoutes(
         const createAlreadySent = createTracking.some((t: any) => t.emailType === "peptidesDelivery");
 
         if (!createAlreadySent) {
-          await sendCTAEmail(
+          const createEmailSent = await sendCTAEmail(
             email,
             "Ton protocole peptides personnalisé est prêt",
             deliveryMessage
-          ).catch((err) => {
-            console.error("[PeptidesEngine] Delivery email failed:", err);
-          });
-          await createDb.insert(createTrackingTable).values({ email, emailType: "peptidesDelivery", auditId: order?.id || reportId, sentAt: new Date() }).catch(() => {});
+          ).catch(() => false);
+          if (createEmailSent !== false) {
+            await createDb.insert(createTrackingTable).values({ email, emailType: "peptidesDelivery", auditId: order?.id || reportId, sentAt: new Date() }).catch(() => {});
+          } else {
+            console.error(`[PeptidesEngine] Delivery email FAILED for ${email} — no tracking inserted, will retry`);
+          }
         } else {
           console.log(`[PeptidesEngine] Delivery email already sent to ${email} — skipping`);
         }
@@ -8090,12 +8094,16 @@ export async function registerRoutes(
           const peptidesNames = report.peptides?.map((p: any) => p.name).join(", ") ?? "voir rapport";
           const promoBlock = report.promoCodesGenerated?.length > 0
             ? `\n\nTes 2 codes Blood Analysis offerts:\n${report.promoCodesGenerated.join("\n")}` : "";
-          await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
+          const emailSent = await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
             `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}\n\nConserve ce lien — il est personnel et unique.`
-          ).catch(() => {});
-          // Track that delivery email was sent
-          await autogenDb.insert(autogenTrackingTable).values({ email, emailType: "peptidesDelivery", auditId: order.id, sentAt: new Date() }).catch(() => {});
-          console.log(`[AutoGen] ✅ Report ${saved.id} generated and delivered to ${email}`);
+          ).catch(() => false);
+          // Track ONLY if email actually sent (prevents blocking retries on failure)
+          if (emailSent !== false) {
+            await autogenDb.insert(autogenTrackingTable).values({ email, emailType: "peptidesDelivery", auditId: order.id, sentAt: new Date() }).catch(() => {});
+            console.log(`[AutoGen] ✅ Report ${saved.id} generated and delivered to ${email}`);
+          } else {
+            console.error(`[AutoGen] ⚠️ Report ${saved.id} generated but EMAIL FAILED for ${email} — will retry next cycle`);
+          }
         } else {
           console.log(`[AutoGen] ✅ Report ${saved.id} generated for ${email} (delivery email already sent)`);
         }
