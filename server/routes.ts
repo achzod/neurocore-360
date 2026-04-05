@@ -8100,6 +8100,12 @@ export async function registerRoutes(
           // Track ONLY if email actually sent (prevents blocking retries on failure)
           if (emailSent !== false) {
             await autogenDb.insert(autogenTrackingTable).values({ email, emailType: "peptidesDelivery", auditId: order.id, sentAt: new Date() }).catch(() => {});
+            // Notify admin
+            const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
+            const pepNames = report.peptides?.map((p: any) => p.name).join(", ") ?? "voir rapport";
+            await sendCTAEmail(adminEmail, `RAPPORT GENERE — Peptides Engine — ${email}`,
+              `Rapport Peptides Engine genere et livre.\n\nClient: ${email}\nPeptides: ${pepNames}\nSections: ${report.sections?.length ?? 0}\nLien: ${baseUrl}/peptides/${saved.id}`
+            ).catch(() => {});
             console.log(`[AutoGen] ✅ Report ${saved.id} generated and delivered to ${email}`);
           } else {
             console.error(`[AutoGen] ⚠️ Report ${saved.id} generated but EMAIL FAILED for ${email} — will retry next cycle`);
