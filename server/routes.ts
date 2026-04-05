@@ -2170,6 +2170,21 @@ export async function registerRoutes(
     }
   });
 
+  // Admin: update audit responses (e.g. inject new photos)
+  app.post("/api/admin/update-audit-responses", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { auditId, responses } = req.body;
+      if (!auditId || !responses) { res.status(400).json({ error: "auditId et responses requis" }); return; }
+      const { pool } = await import("./db");
+      await pool.query("UPDATE audits SET responses = $1 WHERE id = $2", [JSON.stringify(responses), auditId]);
+      res.json({ success: true, fieldCount: Object.keys(responses).length });
+    } catch (error: any) {
+      console.error("[Admin] Update audit responses error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Admin: set scheduledFor on an audit (delay delivery)
   app.post("/api/admin/set-scheduled", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
