@@ -297,8 +297,8 @@ function QuestionField({
             img.onload = () => {
               try {
                 const canvas = document.createElement('canvas');
-                // Max 800px for storage efficiency while keeping enough detail for analysis
-                const MAX_DIM = 800;
+                // Max 1200px to keep enough detail for Claude photo analysis
+                const MAX_DIM = 1200;
                 let w = img.width;
                 let h = img.height;
                 if (w > MAX_DIM || h > MAX_DIM) {
@@ -311,15 +311,15 @@ function QuestionField({
                 const ctx = canvas.getContext('2d');
                 if (ctx) {
                   ctx.drawImage(img, 0, 0, w, h);
-                  // Try progressively lower quality until under 500KB
-                  for (const q of [0.7, 0.5, 0.3]) {
+                  // Compress to under 800KB but never below quality 0.5
+                  for (const q of [0.85, 0.7, 0.5]) {
                     const result = canvas.toDataURL('image/jpeg', q);
-                    if (result.length < 500000) {
+                    if (result.length < 800000) {
                       resolve(result);
                       return;
                     }
                   }
-                  resolve(canvas.toDataURL('image/jpeg', 0.3));
+                  resolve(canvas.toDataURL('image/jpeg', 0.5));
                 } else {
                   resolve(dataUrl);
                 }
