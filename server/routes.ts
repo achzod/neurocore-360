@@ -8116,10 +8116,11 @@ export async function registerRoutes(
     }
   }, 5 * 60 * 1000).unref(); // Every 5 minutes
 
-  startMonitoring(storage, 30).catch(err => {
-    console.error('[Monitor] Erreur démarrage surveillance:', err);
-  });
-  console.log('[Monitor] 🎯 Surveillance automatique activée (check toutes les 30min)');
+  // startMonitoring DISABLED — daily reports and abandonment alerts turned off
+  // startMonitoring(storage, 30).catch(err => {
+  //   console.error('[Monitor] Erreur démarrage surveillance:', err);
+  // });
+  console.log('[Monitor] Surveillance automatique DESACTIVEE');
 
   return httpServer;
 }
