@@ -263,23 +263,58 @@ export async function analyzeBodyPhotosWithAI(
       return getDefaultAnalysis("JSON non trouve dans la reponse");
     }
 
-    // Clean common JSON issues
-    jsonStr = jsonStr.replace(/,(\s*[}\]])/g, "$1");
+    // Aggressive JSON cleanup
     jsonStr = jsonStr.replace(/```json\s*/g, "").replace(/```\s*/g, "");
-    // Fix unescaped newlines in string values
-    jsonStr = jsonStr.replace(/:\s*"([^"]*)\n([^"]*?)"/g, (_, a, b) => `: "${a} ${b}"`);
+    jsonStr = jsonStr.replace(/,(\s*[}\]])/g, "$1"); // trailing commas
+    jsonStr = jsonStr.replace(/[\x00-\x1F\x7F]/g, " "); // control chars
+    // Fix multiline strings (newlines inside JSON string values)
+    jsonStr = jsonStr.replace(/\n/g, " ").replace(/\r/g, " ");
+    // Fix single quotes used instead of double
+    // Fix unescaped quotes inside strings
+    jsonStr = jsonStr.replace(/\\'/g, "'");
+    // Remove any BOM
+    jsonStr = jsonStr.replace(/^\uFEFF/, "");
 
     let parsed: Record<string, unknown>;
     try {
       parsed = JSON.parse(jsonStr);
     } catch (e) {
-      // Try one more time with aggressive cleanup
+      // Strategy 3: try to extract a smaller valid JSON
       try {
-        jsonStr = jsonStr.replace(/[\x00-\x1F\x7F]/g, " ");
-        parsed = JSON.parse(jsonStr);
+        // Remove everything before first { and after last }
+        const firstBrace = jsonStr.indexOf("{");
+        const lastBrace = jsonStr.lastIndexOf("}");
+        if (firstBrace >= 0 && lastBrace > firstBrace) {
+          const trimmed = jsonStr.substring(firstBrace, lastBrace + 1);
+          parsed = JSON.parse(trimmed);
+        } else {
+          throw e;
+        }
       } catch (e2) {
-        console.error("[PhotoAnalysis Claude] JSON parse failed:", e, "\nJSON snippet:", jsonStr.slice(0, 300));
-        return getDefaultAnalysis("Erreur parsing JSON");
+        // Strategy 4: retry API call with stricter prompt
+        console.error("[PhotoAnalysis Claude] JSON parse failed, retrying with strict prompt...");
+        console.error("[PhotoAnalysis Claude] Snippet:", jsonStr.slice(0, 500));
+        try {
+          const retryBlocks = blocks.filter((b: any) => b.type === "image").slice(0, 2);
+          retryBlocks.push({ type: "text", text: "Analyse ces photos. Reponds UNIQUEMENT avec un JSON valide, sans texte avant ou apres, sans markdown. Le JSON doit contenir: fatDistribution, muscularBalance, posture, confidenceLevel, summary, recommendations, medicalObservations." });
+          const retryResp = await client.messages.create({
+            model: ANTHROPIC_CONFIG.ANTHROPIC_MODEL,
+            max_tokens: 4096,
+            temperature: 0.1,
+            messages: [{ role: "user", content: retryBlocks }],
+          } as any);
+          const retryText = (retryResp as any).content?.find((c: any) => c.type === "text")?.text || "";
+          const retryJson = retryText.replace(/[\x00-\x1F\x7F\n\r]/g, " ").match(/\{[\s\S]*\}/);
+          if (retryJson) {
+            parsed = JSON.parse(retryJson[0].replace(/,(\s*[}\]])/g, "$1"));
+            console.log("[PhotoAnalysis Claude] Retry with strict prompt succeeded");
+          } else {
+            throw new Error("Retry also failed");
+          }
+        } catch (retryErr) {
+          console.error("[PhotoAnalysis Claude] All parse attempts failed");
+          return getDefaultAnalysis("Erreur parsing JSON");
+        }
       }
     }
 
