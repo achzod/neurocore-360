@@ -139,12 +139,70 @@ function getDefaultAnalysis(reason: string): PhotoAnalysisResult {
 }
 
 function normalizeAnalysisResult(obj: Record<string, unknown>): PhotoAnalysisResult {
-  // Minimal shape normalization to avoid frontend crashes.
   const base = getDefaultAnalysis("normalisation");
-  const merged = { ...base, ...(obj as any) };
-  merged.confidenceLevel = Number((merged as any).confidenceLevel ?? 70);
-  if (!Number.isFinite(merged.confidenceLevel)) merged.confidenceLevel = 70;
-  return merged as PhotoAnalysisResult;
+  const raw = obj as any;
+
+  // Normalize posture (Claude may return different formats)
+  const posture = raw.posture || {};
+  base.posture = {
+    headPosition: posture.headPosition || posture.details?.tete_cou || posture.tete_cou || JSON.stringify(posture.details || {}).slice(0, 200) || "non visible",
+    shoulderAlignment: posture.shoulderAlignment || posture.details?.epaules || "non visible",
+    spineAlignment: posture.spineAlignment || posture.details?.alignement_vertebral || "non visible",
+    pelvicTilt: posture.pelvicTilt || posture.details?.bassin || "non visible",
+    kneesAlignment: posture.kneesAlignment || posture.details?.genoux || "non visible",
+    overallScore: Number(posture.overallScore || posture.score || 50),
+    issues: posture.issues || [],
+  };
+
+  // Normalize summary (Claude may return object or string)
+  base.summary = typeof raw.summary === "string" ? raw.summary
+    : raw.summary ? JSON.stringify(raw.summary) : "Analyse completee";
+
+  // Normalize fatDistribution
+  const fat = raw.fatDistribution || raw.fat_distribution || {};
+  base.fatDistribution = {
+    visceral: fat.visceral || fat.overall || "modere",
+    subcutaneous: fat.subcutaneous || "modere",
+    zones: Array.isArray(fat.zones) ? fat.zones : (typeof fat.zones === "object" ? Object.values(fat.zones || {}) : []),
+    estimatedBF: fat.estimatedBF || fat.estimated_body_fat_percentage || raw.summary?.estimated_body_fat_percentage || "non determine",
+    waistToHipRatio: fat.waistToHipRatio || "non visible",
+    hormonalPattern: fat.hormonalPattern || fat.pattern || "non determine",
+    inflammationSigns: fat.inflammationSigns || "non determine",
+  } as any;
+
+  // Normalize muscularBalance
+  const muscle = raw.muscularBalance || raw.muscular_balance || {};
+  base.muscularBalance = {
+    upperBody: muscle.upperBody || muscle.observations?.epaules || muscle.overall || "non visible",
+    lowerBody: muscle.lowerBody || muscle.observations?.membres_inferieurs || "non visible",
+    leftRightSymmetry: muscle.leftRightSymmetry || "non visible",
+    anteriorPosterior: muscle.anteriorPosterior || muscle.observations?.posture_musculaire || "non visible",
+    weakAreas: muscle.weakAreas || [],
+    strongAreas: muscle.strongAreas || [],
+  };
+
+  // Normalize recommendations
+  const recs = raw.recommendations || {};
+  base.recommendations = {
+    posturalCorrections: recs.posturalCorrections || recs.exercice || [],
+    muscleGroupsToTarget: recs.muscleGroupsToTarget || [],
+    mobilityWork: recs.mobilityWork || [],
+    medicalFollowUp: recs.medicalFollowUp || recs.suivi_medical || [],
+  };
+
+  // Normalize medical
+  const med = raw.medicalObservations || raw.medical_observations || {};
+  base.medicalObservations = {
+    skinCondition: med.skinCondition || med.peau || [],
+    edemaPresence: med.edemaPresence || "non visible",
+    vascularSigns: med.vascularSigns || [],
+    potentialConcerns: med.potentialConcerns || med.principal_concerns || raw.summary?.principal_concerns || [],
+  };
+
+  base.confidenceLevel = Number(raw.confidenceLevel || raw.confidence_level || 70);
+  if (!Number.isFinite(base.confidenceLevel)) base.confidenceLevel = 70;
+
+  return base as PhotoAnalysisResult;
 }
 
 const MAX_PHOTO_BASE64_SIZE = 500_000; // ~375KB decoded, plenty for Claude vision
