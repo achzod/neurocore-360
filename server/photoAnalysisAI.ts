@@ -144,14 +144,24 @@ function normalizeAnalysisResult(obj: Record<string, unknown>): PhotoAnalysisRes
 
   // Normalize posture (Claude may return different formats)
   const posture = raw.posture || {};
+  const postureDetails = posture.details || {};
+  const toStr = (v: unknown): string => {
+    if (!v) return "";
+    if (typeof v === "string") return v;
+    if (typeof v === "object") {
+      const s = JSON.stringify(v);
+      return s === "{}" || s === "[]" ? "" : s;
+    }
+    return String(v);
+  };
   base.posture = {
-    headPosition: posture.headPosition || posture.details?.tete_cou || posture.tete_cou || JSON.stringify(posture.details || {}).slice(0, 200) || "non visible",
-    shoulderAlignment: posture.shoulderAlignment || posture.details?.epaules || "non visible",
-    spineAlignment: posture.spineAlignment || posture.details?.alignement_vertebral || "non visible",
-    pelvicTilt: posture.pelvicTilt || posture.details?.bassin || "non visible",
-    kneesAlignment: posture.kneesAlignment || posture.details?.genoux || "non visible",
-    overallScore: Number(posture.overallScore || posture.score || 50),
-    issues: posture.issues || [],
+    headPosition: toStr(posture.headPosition) || toStr(postureDetails.tete_cou) || toStr(posture.tete) || toStr(posture.head) || toStr(posture.overall) || "non visible",
+    shoulderAlignment: toStr(posture.shoulderAlignment) || toStr(postureDetails.epaules) || toStr(posture.shoulders) || "non visible",
+    spineAlignment: toStr(posture.spineAlignment) || toStr(postureDetails.alignement_vertebral) || toStr(posture.spine) || toStr(posture.colonne) || "non visible",
+    pelvicTilt: toStr(posture.pelvicTilt) || toStr(postureDetails.bassin) || toStr(posture.pelvis) || "non visible",
+    kneesAlignment: toStr(posture.kneesAlignment) || toStr(postureDetails.genoux) || toStr(posture.knees) || "non visible",
+    overallScore: Number(posture.overallScore || posture.score || posture.note || 50),
+    issues: Array.isArray(posture.issues) ? posture.issues : [],
   };
 
   // Normalize summary (Claude may return object or string)
