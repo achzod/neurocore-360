@@ -8093,11 +8093,11 @@ export async function registerRoutes(
     }
     autoGenRunning = true;
     try {
-      const allOrders = await storage.getAllOrders?.() || { orders: [] };
-      const orders = (allOrders as any).orders || allOrders || [];
+      const allOrdersResult = await storage.getAllOrders();
+      const orders = allOrdersResult.orders || [];
       const peptidesOrders = orders.filter((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid" && o.paidAt);
       const missing = peptidesOrders.filter((o: any) => !(o.metadata as any)?.peptidesReportId && !o.email?.includes("test") && !o.email?.includes("debug"));
-      console.log(`[AutoGen] Cycle: ${peptidesOrders.length} paid, ${missing.length} missing reports`);
+      console.log(`[AutoGen] Cycle: ${orders.length} total orders, ${peptidesOrders.length} peptides paid, ${missing.length} missing reports`);
       const now = new Date();
 
       for (const order of peptidesOrders) {
