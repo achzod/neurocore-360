@@ -822,8 +822,8 @@ async function callClaudeForPeptides(
   userPrompt: string
 ): Promise<string> {
   const client = getClient();
-  // Use Sonnet 4.6 for peptides (fast, capable, cost-effective)
-  const model = "claude-opus-4-6";
+  // Sonnet 4.6 for peptides (Opus too slow, causes timeout on Render)
+  const model = "claude-sonnet-4-6";
   const fallback = "claude-opus-4-6";
 
   for (let attempt = 1; attempt <= PEPTIDES_MAX_RETRIES; attempt++) {
