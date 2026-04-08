@@ -8085,13 +8085,19 @@ export async function registerRoutes(
   // Check toutes les 30 minutes pour détecter ouvertures, conversions, etc.
   // Auto-recovery: generate missing peptides reports every 5 minutes
   let autoGenRunning = false;
+  console.log("[AutoGen] ✅ setInterval registered (5min cycle)");
   setInterval(async () => {
-    if (autoGenRunning) return; // Prevent concurrent runs
+    if (autoGenRunning) {
+      console.log("[AutoGen] ⏭️ Skipped — already running");
+      return;
+    }
     autoGenRunning = true;
     try {
       const allOrders = await storage.getAllOrders?.() || { orders: [] };
-      const orders = allOrders.orders || allOrders || [];
+      const orders = (allOrders as any).orders || allOrders || [];
       const peptidesOrders = orders.filter((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid" && o.paidAt);
+      const missing = peptidesOrders.filter((o: any) => !(o.metadata as any)?.peptidesReportId && !o.email?.includes("test") && !o.email?.includes("debug"));
+      console.log(`[AutoGen] Cycle: ${peptidesOrders.length} paid, ${missing.length} missing reports`);
       const now = new Date();
 
       for (const order of peptidesOrders) {
