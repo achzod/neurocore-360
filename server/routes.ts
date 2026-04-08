@@ -2181,7 +2181,7 @@ export async function registerRoutes(
       if (!user) {
         user = await storage.createUser({ email, credits: Math.max(0, credits) });
       } else {
-        await pool.query("UPDATE users SET blood_credits = blood_credits + $1 WHERE email = $2", [credits, email]);
+        await pool.query("UPDATE users SET credits = credits + $1 WHERE email = $2", [credits, email]);
       }
       const updated = await storage.getUserByEmail(email);
       res.json({ success: true, email, newCredits: (updated as any)?.credits ?? (updated as any)?.bloodCredits ?? 0 });
