@@ -827,6 +827,40 @@ export function registerBloodTestsRoutes(app: Express): void {
         return;
       }
 
+      // Parse PDF BEFORE debiting credit (don't charge for unreadable PDFs)
+      let pdfText = "";
+      try {
+        const parsed = await pdf(req.file.buffer);
+        pdfText = parsed.text || "";
+      } catch (pdfErr) {
+        console.error(`[BloodTests] PDF parse failed for ${req.file.originalname}:`, pdfErr);
+        res.status(400).json({
+          error: "Impossible de lire le PDF. Il est probablement protege par un mot de passe. Deprotege-le avec un outil en ligne (smallpdf.com/unlock-pdf) puis re-uploade. Ton credit n'a pas ete debite.",
+        });
+        return;
+      }
+
+      if (!pdfText.trim() || pdfText.trim().length < 50) {
+        res.status(400).json({
+          error: "Le PDF semble vide ou scanne (image). Il faut un PDF avec du texte selectionnable. Si ton labo t'a fourni un scan, demande-leur la version numerique. Ton credit n'a pas ete debite.",
+        });
+        return;
+      }
+
+      const extractedMarkers = await extractMarkersFromPdfText(pdfText, req.file.originalname);
+      if (!extractedMarkers.length) {
+        const likelyNonLabUploadFile = /(prd|requirements?|spec(?:s|ification)?|product|manual)/i.test(
+          req.file.originalname
+        );
+        res.status(400).json({
+          error: likelyNonLabUploadFile
+            ? "Ce document ne semble pas etre un bilan sanguin. Uploade ton PDF de resultats de laboratoire. Ton credit n'a pas ete debite."
+            : "Aucun biomarqueur detecte dans le PDF. Verifie que c'est bien ton bilan sanguin de laboratoire (pas une ordonnance ou facture). Si le probleme persiste, envoie ton PDF a coaching@achzodcoaching.com. Ton credit n'a pas ete debite.",
+        });
+        return;
+      }
+
+      // PDF is valid and markers found — NOW debit credit
       const updatedUser = await storage.adjustUserCredits(user.id, -1);
       if (!updatedUser) {
         res.status(500).json({ error: "Impossible de debiter les credits" });
@@ -847,26 +881,6 @@ export function registerBloodTestsRoutes(app: Express): void {
         globalLevel: null,
         createdAt: new Date(),
       });
-
-      const parsed = await pdf(req.file.buffer);
-      const pdfText = parsed.text || "";
-      const extractedMarkers = await extractMarkersFromPdfText(pdfText, req.file.originalname);
-      if (!extractedMarkers.length) {
-        const likelyNonLabUploadFile = /(prd|requirements?|spec(?:s|ification)?|product|manual)/i.test(
-          req.file.originalname
-        );
-        const updated = await storage.updateBloodTest(baseRecord.id, {
-          status: "error",
-          error: likelyNonLabUploadFile
-            ? "Document non medical detecte (PDF de spec/contenu)."
-            : "Aucun biomarqueur detecte dans le PDF.",
-        });
-        res.json({
-          bloodTest: updated || baseRecord,
-          remainingCredits: updatedUser.credits ?? 0,
-        });
-        return;
-      }
 
       const pdfProfile = extractPatientInfoFromPdfText(pdfText);
       const bodyGender = String(req.body.gender || "").trim().toLowerCase();

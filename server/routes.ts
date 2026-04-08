@@ -2170,6 +2170,26 @@ export async function registerRoutes(
     }
   });
 
+  // Admin: adjust blood credits for a user
+  app.post("/api/admin/adjust-credits", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { email, credits } = req.body;
+      if (!email || credits === undefined) { res.status(400).json({ error: "email et credits requis" }); return; }
+      const { pool } = await import("./db");
+      let user = await storage.getUserByEmail(email);
+      if (!user) {
+        user = await storage.createUser({ email, credits: Math.max(0, credits) });
+      } else {
+        await pool.query("UPDATE users SET blood_credits = blood_credits + $1 WHERE email = $2", [credits, email]);
+      }
+      const updated = await storage.getUserByEmail(email);
+      res.json({ success: true, email, newCredits: (updated as any)?.credits ?? (updated as any)?.bloodCredits ?? 0 });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Admin: update audit responses (e.g. inject new photos)
   app.post("/api/admin/update-audit-responses", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
