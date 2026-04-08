@@ -823,7 +823,7 @@ async function callClaudeForPeptides(
 ): Promise<string> {
   const client = getClient();
   // Use Sonnet 4.6 for peptides (fast, capable, cost-effective)
-  const model = "claude-sonnet-4-6";
+  const model = "claude-opus-4-6";
   const fallback = "claude-opus-4-6";
 
   for (let attempt = 1; attempt <= PEPTIDES_MAX_RETRIES; attempt++) {

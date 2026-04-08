@@ -6,7 +6,7 @@
 
 export const ANTHROPIC_CONFIG = {
   ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || "",
-  ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6",
+  ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL || "claude-opus-4-6",
   ANTHROPIC_FALLBACK_MODEL: process.env.ANTHROPIC_FALLBACK_MODEL || "claude-opus-4-6",
   ANTHROPIC_TEMPERATURE: Number(process.env.ANTHROPIC_TEMPERATURE ?? "0.7"),
   // Max tokens par section - augmenté pour 40-50 pages PREMIUM
