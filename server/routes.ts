@@ -3400,7 +3400,7 @@ export async function registerRoutes(
       if (planType === "BLOOD_ANALYSIS") {
         // Send confirmation email
         sendCTAEmail(email, "Blood Analysis : paiement recu",
-          `Salut,\n\nMerci pour ta commande Blood Analysis. Ton paiement est bien recu.\n\nProchaine etape : fais ta prise de sang en laboratoire avec les marqueurs indiques, puis uploade ton PDF de resultats sur ton dashboard APEXLABS. Tu recevras ton analyse complete sous 24h.\n\nVoici ton code promo : BLOOD99\n99€ deduits de ton coaching Elite/Private Lab 8 ou 12 semaines\nUtilise-le sur achzodcoaching.com/formules-coaching\n\nSi tu as des questions, reponds directement a cet email.\n\nAchzod`
+          `Salut,\n\nMerci pour ta commande Blood Analysis. Ton paiement est bien recu.\n\nVoici la liste exacte des marqueurs a demander a ton medecin ou directement au laboratoire. Tu peux te presenter dans n'importe quel labo d'analyses (Cerba, Biogroup, ou ton labo habituel) avec cette liste. La plupart des labos acceptent sans ordonnance (tu paies de ta poche). Sinon, un passage chez ton generaliste pour l'ordonnance et c'est rembourse.\n\nPANEL 1 : HORMONES ANABOLIQUES\nTestosterone totale, Testosterone libre, SHBG, Cortisol (matin a jeun), DHEA-S, IGF-1, LH, FSH, Estradiol\n\nPANEL 2 : THYROIDE\nTSH, T3 libre, T4 libre, Anti-TPO\n\nPANEL 3 : METABOLISME ET LIPIDES\nGlycemie a jeun, HbA1c, Insuline a jeun, Cholesterol total, HDL, LDL, Triglycerides, ApoB, Lp(a)\n\nPANEL 4 : INFLAMMATION ET FER\nCRP ultra-sensible, Ferritine, Homocysteine, Vitesse de sedimentation\n\nPANEL 5 : VITAMINES ET MINERAUX\nVitamine D (25-OH), Vitamine B12, Magnesium, Zinc, Folates\n\nPANEL 6 : HEPATIQUE ET RENAL\nALAT, ASAT, Gamma-GT, Creatinine, DFG (eGFR), Acide urique\n\nNFS (Numeration Formule Sanguine) complete\n\nUne fois ta prise de sang faite, uploade ton PDF de resultats sur ton dashboard APEXLABS :\nhttps://apexlabs.achzodcoaching.com/blood-analysis\n\nTu recevras ton analyse complete sous 24h.\n\nTon code promo : BLOOD99\n99€ deduits de ton coaching Elite/Private Lab 8 ou 12 semaines\nachzodcoaching.com/formules-coaching\n\nSi tu as des questions, reponds directement a cet email.\n\nAchzod`
         ).catch(() => {});
         res.json({ success: true, auditId: "", auditType: "BLOOD_ANALYSIS", email });
         return;
@@ -6018,12 +6018,15 @@ export async function registerRoutes(
               if (["ELITE", "PREMIUM", "BLOOD_ANALYSIS", "PEPTIDES_ENGINE"].includes(order.productType)) {
                 const isPeptides = order.productType === "PEPTIDES_ENGINE";
                 const isBlood = order.productType === "BLOOD_ANALYSIS";
-                const deliveryMsg = isBlood
-                  ? "Prochaine etape : fais ta prise de sang en laboratoire avec les marqueurs indiques, puis uploade ton PDF de resultats sur ton dashboard APEXLABS."
-                  : isPeptides
-                  ? "Ton protocole est en cours de generation. Tu le recevras par email dans les prochaines minutes."
-                  : "Ton rapport est en cours de generation. Tu le recevras par email d'ici 24h.";
-                const msg = `Salut ${clientName2},\n\nMerci pour ta commande ${prodLabel2}. Ton paiement est bien recu.\n\n${deliveryMsg}\n\n${promo2 ? `Ton code promo : ${promo2.code}\n${promo2.label}\nachzodcoaching.com/formules-coaching\n\n` : ""}Si tu as des questions, reponds directement a cet email.\n\nAchzod`;
+                let msg: string;
+                if (isBlood) {
+                  msg = `Salut ${clientName2},\n\nMerci pour ta commande Blood Analysis. Ton paiement est bien recu.\n\nVoici la liste des marqueurs a demander a ton medecin ou directement au laboratoire :\n\nPANEL 1 : HORMONES\nTestosterone totale, Testosterone libre, SHBG, Cortisol, DHEA-S, IGF-1, LH, FSH, Estradiol\n\nPANEL 2 : THYROIDE\nTSH, T3 libre, T4 libre, Anti-TPO\n\nPANEL 3 : METABOLISME\nGlycemie a jeun, HbA1c, Insuline a jeun, Cholesterol total, HDL, LDL, Triglycerides, ApoB\n\nPANEL 4 : INFLAMMATION\nCRP ultra-sensible, Ferritine, Homocysteine\n\nPANEL 5 : VITAMINES\nVitamine D, Vitamine B12, Magnesium, Zinc\n\nPANEL 6 : FOIE ET REINS\nALAT, ASAT, Gamma-GT, Creatinine, DFG\n\n+ NFS complete\n\nPresente-toi dans n'importe quel labo avec cette liste. La plupart acceptent sans ordonnance. Sinon, ton generaliste te fait l'ordonnance.\n\nUne fois ta prise de sang faite, uploade ton PDF sur : https://apexlabs.achzodcoaching.com/blood-analysis\n\n${promo2 ? `Ton code promo : ${promo2.code}\n${promo2.label}\nachzodcoaching.com/formules-coaching\n\n` : ""}Achzod`;
+                } else {
+                  const deliveryMsg = isPeptides
+                    ? "Ton protocole est en cours de generation. Tu le recevras par email dans les prochaines minutes."
+                    : "Ton rapport est en cours de generation. Tu le recevras par email d'ici 24h.";
+                  msg = `Salut ${clientName2},\n\nMerci pour ta commande ${prodLabel2}. Ton paiement est bien recu.\n\n${deliveryMsg}\n\n${promo2 ? `Ton code promo : ${promo2.code}\n${promo2.label}\nachzodcoaching.com/formules-coaching\n\n` : ""}Si tu as des questions, reponds directement a cet email.\n\nAchzod`;
+                }
                 sendCTAEmail(clientEmail2!, `${prodLabel2} : commande recue`, msg).catch(() => {});
               }
             } catch {}
