@@ -8085,6 +8085,16 @@ export async function registerRoutes(
   // Check toutes les 30 minutes pour détecter ouvertures, conversions, etc.
   // Auto-recovery: generate missing peptides reports every 5 minutes
   let autoGenRunning = false;
+  let autoGenCycleCount = 0;
+  let autoGenLastRun = "never";
+  let autoGenLastResult = "none";
+
+  // Diagnostic endpoint
+  app.get("/api/admin/autogen-status", (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    res.json({ cycles: autoGenCycleCount, lastRun: autoGenLastRun, lastResult: autoGenLastResult, running: autoGenRunning });
+  });
+
   console.log("[AutoGen] ✅ setInterval registered (5min cycle)");
   setInterval(async () => {
     if (autoGenRunning) {
@@ -8093,11 +8103,13 @@ export async function registerRoutes(
     }
     autoGenRunning = true;
     try {
-      const allOrdersResult = await storage.getAllOrders();
+      const allOrdersResult = await storage.getAllOrders({ limit: 500 });
       const orders = allOrdersResult.orders || [];
       const peptidesOrders = orders.filter((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid" && o.paidAt);
       const missing = peptidesOrders.filter((o: any) => !(o.metadata as any)?.peptidesReportId && !o.email?.includes("test") && !o.email?.includes("debug"));
-      console.log(`[AutoGen] Cycle: ${orders.length} total orders, ${peptidesOrders.length} peptides paid, ${missing.length} missing reports`);
+      autoGenCycleCount++;
+      autoGenLastRun = new Date().toISOString();
+      console.log(`[AutoGen] Cycle #${autoGenCycleCount}: ${orders.length} total orders, ${peptidesOrders.length} peptides paid, ${missing.length} missing reports`);
       const now = new Date();
 
       for (const order of peptidesOrders) {
