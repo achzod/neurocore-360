@@ -3488,10 +3488,17 @@ export async function registerRoutes(
       }
 
       console.log(`[Admin] Force generating peptides for ${email} (${Object.keys(responses).length} responses)`);
-      const { generatePeptidesProtocol } = await import("./peptidesEngine");
-      const report = await generatePeptidesProtocol(responses, email);
-      const saved = await storage.createBurnoutReport({ email: `peptides::${email}`, responses: responses || {}, report });
-      console.log(`[Admin] Peptides protocol generated for ${email}: ${saved.id}`);
+
+      // Respond immediately — generation runs in background via setTimeout
+      res.json({ success: true, status: "generating", message: `Generation lancee pour ${email}. Le setInterval finalisera l'envoi.` });
+
+      // Generate in background (setTimeout keeps process alive unlike async IIFE)
+      setTimeout(async () => {
+        try {
+          const { generatePeptidesProtocol } = await import("./peptidesEngine");
+          const report = await generatePeptidesProtocol(responses, email);
+          const saved = await storage.createBurnoutReport({ email: `peptides::${email}`, responses: responses || {}, report });
+          console.log(`[Admin] Peptides protocol generated for ${email}: ${saved.id}`);
 
       // Link to order if exists
       const orders = await storage.getOrdersByEmail(email);
@@ -3527,10 +3534,14 @@ export async function registerRoutes(
       }
 
       // Notify admin
-      const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
-      await sendCTAEmail(adminEmail, `PEPTIDES GENERE — ${email}`, `Rapport genere pour ${email}\nReport ID: ${saved.id}\nPeptides: ${peptidesNames}\nLien: ${baseUrl}/peptides/${saved.id}`).catch(() => {});
+      const adminNotifEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
+      await sendCTAEmail(adminNotifEmail, `PEPTIDES GENERE — ${email}`, `Rapport genere pour ${email}\nReport ID: ${saved.id}\nPeptides: ${peptidesNames}\nLien: ${baseUrl}/peptides/${saved.id}`).catch(() => {});
 
-      res.json({ success: true, reportId: saved.id, peptideCount: report.peptides?.length ?? 0, link: `${baseUrl}/peptides/${saved.id}` });
+        } catch (bgErr: any) {
+          console.error("[Admin] Background generation failed:", bgErr);
+        }
+      }, 100);
+      return; // Already responded above
     } catch (error: any) {
       console.error("[Admin] Peptides generate error:", error);
       res.status(500).json({ error: error.message || "Erreur generation" });
