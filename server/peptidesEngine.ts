@@ -448,6 +448,10 @@ Pour les clients qui veulent une livraison rapide (2-5 jours au lieu de 7-14 dep
 2. UK Peptides : https://www.uk-peptides.com/ (basé au Royaume-Uni, peptides de recherche, livraison express)
 Précise que ces sources sont plus chères que Peptaura (environ 2 à 3 fois le prix) mais que la livraison est en 2-5 jours ouvrés au lieu de 7-14 jours. C'est une option pour ceux qui veulent commencer rapidement ou qui ne veulent pas attendre la livraison depuis la Chine.
 
+PLAN D FOURNISSEUR PREMIUM EUROPE (section "disclaimer-support")
+Pour les clients qui veulent la meilleure fiabilité possible avec livraison Europe et paiement simple par virement bancaire :
+1. Receptor Chem : https://receptorchem.co.uk/ (basé au Royaume-Uni, excellente qualité, livraison fiable en Europe, paiement par virement bancaire). Plus cher que Peptaura mais reconnu pour la fiabilité et la qualité constante. C'est une source premium pour ceux qui préfèrent la simplicité d'un virement bancaire et ne veulent pas passer par une plateforme marketplace.
+
 CONNAISSANCES PEPTIDES (base complète, INJECTABLES UNIQUEMENT)
 
 BPC-157 (Body Protection Compound 157)
