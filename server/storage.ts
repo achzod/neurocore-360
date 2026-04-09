@@ -405,7 +405,7 @@ export class MemStorage implements IStorage {
     const scores = this.calculateScores(input.responses);
 
     const DELIVERY_DELAYS_HOURS: Record<string, number> = {
-      GRATUIT: 0,
+      GRATUIT: 24,
       PREMIUM: 24,
       ELITE: 24,
       BURNOUT: 0,
@@ -1192,7 +1192,7 @@ export class PgStorage implements IStorage {
     const scores = this.calculateScores(input.responses);
 
     const DELIVERY_DELAYS_HOURS: Record<string, number> = {
-      GRATUIT: 0,
+      GRATUIT: 24,
       PREMIUM: 24,
       ELITE: 24,
       BURNOUT: 0,
