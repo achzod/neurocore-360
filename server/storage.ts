@@ -411,7 +411,7 @@ export class MemStorage implements IStorage {
       BURNOUT: 0,
       BLOOD_ANALYSIS: 0,
     };
-    const delayHours = DELIVERY_DELAYS_HOURS[input.type] || 24;
+    const delayHours = DELIVERY_DELAYS_HOURS[input.type] ?? 24;
     const scheduledDate = delayHours > 0
       ? new Date(Date.now() + delayHours * 60 * 60 * 1000)
       : null;
@@ -1198,7 +1198,7 @@ export class PgStorage implements IStorage {
       BURNOUT: 0,
       BLOOD_ANALYSIS: 0,
     };
-    const delayHours = DELIVERY_DELAYS_HOURS[input.type] || 24;
+    const delayHours = DELIVERY_DELAYS_HOURS[input.type] ?? 24;
     const scheduledDate = delayHours > 0
       ? new Date(Date.now() + delayHours * 60 * 60 * 1000)
       : null;
