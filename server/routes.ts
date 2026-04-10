@@ -8145,6 +8145,51 @@ export async function registerRoutes(
     }
   }, 5 * 60 * 1000).unref(); // Every 5 minutes
 
+  // Auto-send READY/SCHEDULED reports (Discovery, Anabolic, Ultimate)
+  setInterval(async () => {
+    try {
+      const allAudits = await storage.getAllAudits();
+      const now = new Date();
+      let sent = 0;
+
+      for (const audit of allAudits) {
+        if (!audit.email || audit.email.includes("test") || audit.email.includes("debug") || audit.email.includes("achzodcoaching")) continue;
+        if (audit.reportSentAt) continue; // Already sent
+
+        const status = audit.reportDeliveryStatus;
+
+        // READY: send immediately
+        if (status === "READY") {
+          try {
+            const baseUrl = getBaseUrl();
+            const emailSent = await sendReportReadyEmail(audit.email, audit.id, audit.type, baseUrl);
+            if (emailSent) {
+              await storage.updateAudit(audit.id, { reportDeliveryStatus: "SENT", reportSentAt: new Date() });
+              console.log(`[AutoSend] ✅ Report ${audit.id} sent to ${audit.email} (${audit.type})`);
+              sent++;
+            }
+          } catch (err) {
+            console.error(`[AutoSend] Error sending ${audit.id}:`, err);
+          }
+          if (sent >= 3) break; // Max 3 per cycle to avoid timeout
+        }
+
+        // SCHEDULED: check if scheduledFor has passed
+        if (status === "SCHEDULED" && audit.reportScheduledFor) {
+          const scheduledFor = new Date(audit.reportScheduledFor);
+          if (scheduledFor <= now) {
+            await storage.updateAudit(audit.id, { reportDeliveryStatus: "READY" });
+            console.log(`[AutoSend] Report ${audit.id} scheduled time passed, set to READY`);
+          }
+        }
+      }
+
+      if (sent > 0) console.log(`[AutoSend] Sent ${sent} reports this cycle`);
+    } catch (err) {
+      console.error("[AutoSend] Error:", err);
+    }
+  }, 3 * 60 * 1000).unref(); // Every 3 minutes
+
   // startMonitoring DISABLED — daily reports and abandonment alerts turned off
   // startMonitoring(storage, 30).catch(err => {
   //   console.error('[Monitor] Erreur démarrage surveillance:', err);
