@@ -1249,9 +1249,11 @@ export function registerBloodAnalysisRoutes(app: Express): void {
           }
           const markers = Array.isArray(bloodTestRow.markers) ? bloodTestRow.markers : [];
           const analysis = typeof bloodTestRow.analysis === "object" ? bloodTestRow.analysis as any : {};
+          const patientProfile = typeof bloodTestRow.patientProfile === "object" ? bloodTestRow.patientProfile as any : {};
           report = {
             id: bloodTestRow.id,
-            email: "",
+            email: patientProfile.email || "",
+            profile: patientProfile,
             markers: markers.map((m: any) => ({
               markerId: m.code || m.markerId || "",
               name: m.name || "",
@@ -1259,10 +1261,14 @@ export function registerBloodAnalysisRoutes(app: Express): void {
               unit: m.unit || "",
               status: m.status || "normal",
               normalRange: (m.refMin != null && m.refMax != null) ? `${m.refMin} - ${m.refMax}` : undefined,
+              optimalRange: (m.optimalMin != null && m.optimalMax != null) ? `${m.optimalMin} - ${m.optimalMax}` : undefined,
+              interpretation: m.interpretation || "",
             })),
             globalScore: bloodTestRow.globalScore,
             globalLevel: bloodTestRow.globalLevel,
             analysis: analysis,
+            aiReport: analysis.aiReport || "",
+            aiMeta: { status: "completed", generatedAt: bloodTestRow.completedAt || bloodTestRow.createdAt },
             sections: analysis.sections || [],
             createdAt: bloodTestRow.createdAt,
           } as any;
