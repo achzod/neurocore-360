@@ -794,12 +794,14 @@ export const normalizeMarkerValue = (markerId: string, value: number, unit?: str
     return roundValue(value * 6.538, 1);
   }
 
-  // Magnesium RBC: target is mg/dL
-  if (markerId === "magnesium_rbc" || markerId === "magnesium") {
+  // Magnesium (RBC or serum): target is mg/dL
+  if (markerId === "magnesium_rbc" || markerId === "magnesium" || markerId === "magnesium_serum") {
     if (sourceUnit === "mmol/L") return roundValue(value * 2.43, 1); // 1 mmol/L = 2.43 mg/dL
     if (sourceUnit === "mg/L") return roundValue(value / 10, 1); // mg/L -> mg/dL
     // Heuristic: French labs often report in mg/L (18-25 range) vs mg/dL (1.8-2.5)
     if (!sourceUnit && value > 10 && value < 30) return roundValue(value / 10, 1);
+    // Heuristic: value < 1.5 with no unit is likely mmol/L (French labs: 0.66-1.07 mmol/L)
+    if (!sourceUnit && value < 1.5 && value > 0.5) return roundValue(value * 2.43, 1);
   }
 
   const lipidMmolToMg = 38.67;
