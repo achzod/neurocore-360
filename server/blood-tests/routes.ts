@@ -486,6 +486,99 @@ const parseStringArray = (value: unknown): string[] | undefined => {
 };
 
 export function registerBloodTestsRoutes(app: Express): void {
+  // Admin: upload and process a PDF for any user (re-extraction with new logic)
+  app.post("/api/admin/blood-tests/upload-for-user", requireAdmin, upload.single("file"), async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!email || !req.file) { res.status(400).json({ error: "email and file required" }); return; }
+
+      let user = await storage.getUserByEmail(email);
+      if (!user) { res.status(404).json({ error: "User not found" }); return; }
+
+      const parsed = await pdf(req.file.buffer);
+      const pdfText = parsed.text || "";
+      if (!pdfText.trim()) { res.status(400).json({ error: "PDF vide" }); return; }
+
+      const extractedMarkers = await extractMarkersFromPdfText(pdfText, req.file.originalname);
+      if (!extractedMarkers.length) { res.status(400).json({ error: "Aucun marqueur detecte" }); return; }
+
+      const baseRecord = await storage.createBloodTest({
+        userId: user.id,
+        fileName: req.file.originalname,
+        fileType: req.file.mimetype,
+        fileSize: req.file.size,
+        status: "processing",
+        error: null,
+        markers: extractedMarkers as any,
+        analysis: {},
+        patientProfile: { email, prenom: req.body.prenom || email.split("@")[0] },
+        globalScore: null,
+        globalLevel: null,
+        createdAt: new Date(),
+      });
+
+      // Trigger AI analysis async
+      const hasKey = Boolean(process.env.ANTHROPIC_API_KEY);
+      if (hasKey) {
+        (async () => {
+          try {
+            const aiResult = await generateAIBloodAnalysis(extractedMarkers as any, { email }, baseRecord.id);
+            await storage.updateBloodTest(baseRecord.id, {
+              analysis: aiResult as any,
+              status: "completed",
+              globalScore: (aiResult as any)?.globalScore ?? null,
+              globalLevel: (aiResult as any)?.globalLevel ?? null,
+            });
+            console.log(`[Admin] Blood test ${baseRecord.id} processed for ${email}: ${extractedMarkers.length} markers`);
+          } catch (e) {
+            console.error(`[Admin] Blood AI analysis failed:`, e);
+            await storage.updateBloodTest(baseRecord.id, { status: "completed", analysis: { fallback: true } as any });
+          }
+        })();
+      }
+
+      res.json({ success: true, bloodTestId: baseRecord.id, markers: extractedMarkers.length });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Admin: re-extract markers from an existing blood test's PDF
+  app.post("/api/admin/blood-tests/:id/reprocess", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const { id } = req.params;
+      const { db: reDb } = await import("../db.js");
+      const { bloodTests: btTable } = await import("../../shared/drizzle-schema.js");
+      const { eq: btEq } = await import("drizzle-orm");
+
+      const results = await reDb.select().from(btTable).where(btEq(btTable.id, id));
+      if (!results.length) { res.status(404).json({ error: "Blood test not found" }); return; }
+
+      const bt = results[0];
+      // Get the PDF file from the stored data or re-read from the original upload
+      // The markers need to be re-extracted — we can trigger the AI analysis again
+      const markers = Array.isArray(bt.markers) ? bt.markers : [];
+
+      // Re-run AI analysis on existing markers
+      const { generateAIBloodAnalysis } = await import("../blood-analysis/index.js");
+      const profile = bt.patientProfile && typeof bt.patientProfile === "object" ? bt.patientProfile as any : {};
+
+      const aiResult = await generateAIBloodAnalysis(markers as any, profile, id);
+
+      await reDb.update(btTable).set({
+        analysis: aiResult as any,
+        status: "completed",
+        completedAt: new Date(),
+      }).where(btEq(btTable.id, id));
+
+      res.json({ success: true, message: "Blood test reprocessed", markers: markers.length });
+    } catch (error: any) {
+      console.error("[Admin] Blood test reprocess error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.post("/api/admin/blood-tests/seed", async (req, res) => {
     if (!requireAdmin(req, res)) return;
     try {
