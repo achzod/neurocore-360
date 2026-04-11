@@ -8204,6 +8204,59 @@ export async function registerRoutes(
     }
   }, 3 * 60 * 1000).unref(); // Every 3 minutes
 
+  // Auto-process email sequences every 30 minutes
+  setInterval(async () => {
+    try {
+      const baseUrl = getBaseUrl();
+      const allAudits = await storage.getAllAudits();
+      const now = new Date();
+      let sent = 0;
+
+      for (const audit of allAudits) {
+        if (!audit.email || audit.email.includes("test") || audit.email.includes("debug") || audit.email.includes("achzodcoaching") || audit.email.includes("achkou")) continue;
+        if (!audit.reportSentAt) continue;
+
+        const sentAt = new Date(audit.reportSentAt);
+        const daysSinceSent = (now.getTime() - sentAt.getTime()) / (24 * 60 * 60 * 1000);
+
+        const trackingHistory = await storage.getEmailTrackingByAuditId?.(audit.id) || [];
+        const trackingTypes = trackingHistory.map((t: any) => t.emailType);
+
+        // GRATUIT sequences
+        if (audit.type === "GRATUIT") {
+          if (daysSinceSent >= 3 && daysSinceSent < 7 && !trackingTypes.includes("sendGratuitUpsellEmail")) {
+            const emailSent = await sendGratuitUpsellEmail(audit.email, audit.id, baseUrl, "auto-sequence");
+            if (emailSent) { sent++; if (sent >= 5) break; }
+          }
+          if (daysSinceSent >= 5 && daysSinceSent < 10 && !trackingTypes.includes("sendGratuitJ5Email")) {
+            const hasConverted = await storage.hasUserPurchased?.(audit.email);
+            if (!hasConverted) {
+              const emailSent = await sendGratuitJ5Email(audit.email, audit.id, baseUrl, "auto-sequence");
+              if (emailSent) { sent++; if (sent >= 5) break; }
+            }
+          }
+          if (daysSinceSent >= 7 && daysSinceSent < 14 && !trackingTypes.includes("sendGratuitJ7Email")) {
+            const hasConverted = await storage.hasUserPurchased?.(audit.email);
+            if (!hasConverted) {
+              const emailSent = await sendGratuitJ7Email(audit.email, audit.id, baseUrl, "auto-sequence");
+              if (emailSent) { sent++; if (sent >= 5) break; }
+            }
+          }
+          if (daysSinceSent >= 14 && daysSinceSent < 30 && !trackingTypes.includes("sendDiscoveryJ14CoachingEmail")) {
+            const hasConverted = await storage.hasUserPurchased?.(audit.email);
+            if (!hasConverted) {
+              const emailSent = await sendDiscoveryJ14CoachingEmail(audit.email, audit.id, baseUrl, "auto-sequence");
+              if (emailSent) { sent++; if (sent >= 5) break; }
+            }
+          }
+        }
+      }
+      if (sent > 0) console.log(`[AutoSequence] Sent ${sent} sequence emails this cycle`);
+    } catch (err) {
+      console.error("[AutoSequence] Error:", err);
+    }
+  }, 30 * 60 * 1000).unref(); // Every 30 minutes
+
   // startMonitoring DISABLED — daily reports and abandonment alerts turned off
   // startMonitoring(storage, 30).catch(err => {
   //   console.error('[Monitor] Erreur démarrage surveillance:', err);
