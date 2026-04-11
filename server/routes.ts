@@ -4216,6 +4216,20 @@ export async function registerRoutes(
   });
 
   // Update promo code (Admin)
+  // Reset promo code usage by code name
+  app.post("/api/admin/promo-codes/reset-usage", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { code } = req.body;
+      if (!code) { res.status(400).json({ error: "code requis" }); return; }
+      const { pool } = await import("./db");
+      await pool.query("UPDATE promo_codes SET current_uses = 0 WHERE UPPER(code) = $1", [code.toUpperCase()]);
+      res.json({ success: true, message: `Usage reset for ${code}` });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.put("/api/admin/promo-codes/:id", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
