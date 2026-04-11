@@ -499,9 +499,7 @@ export function registerBloodTestsRoutes(app: Express): void {
       const pdfText = parsed.text || "";
       if (!pdfText.trim()) { res.status(400).json({ error: "PDF vide" }); return; }
 
-      const extractedMarkers = await extractMarkersFromPdfText(pdfText, req.file.originalname);
-      if (!extractedMarkers.length) { res.status(400).json({ error: "Aucun marqueur detecte" }); return; }
-
+      // Create record immediately, process in background
       const baseRecord = await storage.createBloodTest({
         userId: user.id,
         fileName: req.file.originalname,
@@ -509,7 +507,7 @@ export function registerBloodTestsRoutes(app: Express): void {
         fileSize: req.file.size,
         status: "processing",
         error: null,
-        markers: extractedMarkers as any,
+        markers: [],
         analysis: {},
         patientProfile: { email, prenom: req.body.prenom || email.split("@")[0] },
         globalScore: null,
@@ -517,27 +515,35 @@ export function registerBloodTestsRoutes(app: Express): void {
         createdAt: new Date(),
       });
 
-      // Trigger AI analysis async
-      const hasKey = Boolean(process.env.ANTHROPIC_API_KEY);
-      if (hasKey) {
-        (async () => {
-          try {
-            const aiResult = await generateAIBloodAnalysis(extractedMarkers as any, { email }, baseRecord.id);
-            await storage.updateBloodTest(baseRecord.id, {
-              analysis: aiResult as any,
-              status: "completed",
-              globalScore: (aiResult as any)?.globalScore ?? null,
-              globalLevel: (aiResult as any)?.globalLevel ?? null,
-            });
-            console.log(`[Admin] Blood test ${baseRecord.id} processed for ${email}: ${extractedMarkers.length} markers`);
-          } catch (e) {
-            console.error(`[Admin] Blood AI analysis failed:`, e);
-            await storage.updateBloodTest(baseRecord.id, { status: "completed", analysis: { fallback: true } as any });
-          }
-        })();
-      }
+      // Respond immediately
+      res.json({ success: true, bloodTestId: baseRecord.id, status: "processing" });
 
-      res.json({ success: true, bloodTestId: baseRecord.id, markers: extractedMarkers.length });
+      // Process in background (extraction + AI analysis)
+      const pdfBuffer = req.file.buffer;
+      const fileName = req.file.originalname;
+      setTimeout(async () => {
+        try {
+          const extractedMarkers = await extractMarkersFromPdfText(pdfText, fileName);
+          if (!extractedMarkers.length) {
+            await storage.updateBloodTest(baseRecord.id, { status: "error", error: "Aucun marqueur detecte" });
+            return;
+          }
+          await storage.updateBloodTest(baseRecord.id, { markers: extractedMarkers as any });
+          console.log(`[Admin] ${extractedMarkers.length} markers extracted for ${email}`);
+
+          const aiResult = await generateAIBloodAnalysis(extractedMarkers as any, { email }, baseRecord.id);
+          await storage.updateBloodTest(baseRecord.id, {
+            analysis: aiResult as any,
+            status: "completed",
+            globalScore: (aiResult as any)?.globalScore ?? null,
+            globalLevel: (aiResult as any)?.globalLevel ?? null,
+          });
+          console.log(`[Admin] Blood test ${baseRecord.id} completed for ${email}`);
+        } catch (e) {
+          console.error(`[Admin] Blood processing failed:`, e);
+          await storage.updateBloodTest(baseRecord.id, { status: "error", error: String(e) }).catch(() => {});
+        }
+      }, 100);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
