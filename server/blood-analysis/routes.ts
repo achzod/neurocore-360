@@ -99,48 +99,47 @@ function requireAdminAuth(req: any, res: any, silent?: boolean): boolean {
 
 // SECURITY: Check if user owns the blood report (prevents IDOR vulnerability)
 async function checkBloodReportOwnership(req: any, res: any, reportId: string, silent?: boolean): Promise<boolean> {
-  // First try blood_reports table
-  let report = await storage.getBloodReport(reportId);
-  let email: string | null = null;
-
-  if (report) {
-    email = report.email;
-  } else {
-    // Try blood_tests table (has userId, not email — resolve via users table)
-    try {
-      const { db } = await import("../db.js");
-      const { bloodTests } = await import("../../shared/drizzle-schema.js");
-      const { eq } = await import("drizzle-orm");
-      const results = await db.select().from(bloodTests).where(eq(bloodTests.id, reportId));
-      if (results.length > 0) {
-        const userId = results[0].userId;
-        if (userId) {
-          const user = await storage.getUser(userId);
-          email = user?.email || null;
-        }
-      }
-    } catch (error) {
-      console.error("[Security] Error checking blood test ownership:", error);
-    }
-  }
-
-  if (!email) {
-    if (!silent) res.status(404).json({ error: "Rapport non trouvé" });
-    return false;
-  }
-
-  // Allow admin access
+  // Allow admin access first
   const isAdmin = requireAdminAuth(req, res, true);
   if (isAdmin) return true;
 
-  // Check user ownership via JWT
   const payload = getAuthPayload(req);
-  if (!payload || payload.email.toLowerCase() !== email.toLowerCase()) {
+  if (!payload) {
     if (!silent) res.status(403).json({ error: "Accès non autorisé à ce rapport" });
     return false;
   }
 
-  return true;
+  // First try blood_reports table (has email directly)
+  let report = await storage.getBloodReport(reportId);
+  if (report) {
+    if (report.email && report.email.toLowerCase() === payload.email.toLowerCase()) return true;
+    if (!silent) res.status(403).json({ error: "Accès non autorisé à ce rapport" });
+    return false;
+  }
+
+  // Try blood_tests table (has userId — compare with JWT userId directly)
+  try {
+    const { db } = await import("../db.js");
+    const { bloodTests } = await import("../../shared/drizzle-schema.js");
+    const { eq } = await import("drizzle-orm");
+    const results = await db.select().from(bloodTests).where(eq(bloodTests.id, reportId));
+    if (results.length > 0) {
+      const testUserId = results[0].userId;
+      // Match by userId (most reliable) OR by email via user lookup
+      if (testUserId === payload.userId) return true;
+      // Fallback: resolve userId to email
+      const user = await storage.getUser(testUserId);
+      if (user?.email?.toLowerCase() === payload.email.toLowerCase()) return true;
+      // Fallback 2: check if JWT email matches any user with this userId
+      const userByEmail = await storage.getUserByEmail(payload.email);
+      if (userByEmail && userByEmail.id === testUserId) return true;
+    }
+  } catch (error) {
+    console.error("[Security] Error checking blood test ownership:", error);
+  }
+
+  if (!silent) res.status(403).json({ error: "Accès non autorisé à ce rapport" });
+  return false;
 }
 
 const isAdminRequestAuthorized = (req: any): boolean => {
