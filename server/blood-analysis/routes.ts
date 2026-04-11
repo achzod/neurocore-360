@@ -106,14 +106,18 @@ async function checkBloodReportOwnership(req: any, res: any, reportId: string, s
   if (report) {
     email = report.email;
   } else {
-    // Try blood_tests table
+    // Try blood_tests table (has userId, not email — resolve via users table)
     try {
       const { db } = await import("../db.js");
       const { bloodTests } = await import("../../shared/drizzle-schema.js");
       const { eq } = await import("drizzle-orm");
       const results = await db.select().from(bloodTests).where(eq(bloodTests.id, reportId));
       if (results.length > 0) {
-        email = results[0].email;
+        const userId = results[0].userId;
+        if (userId) {
+          const user = await storage.getUser(userId);
+          email = user?.email || null;
+        }
       }
     } catch (error) {
       console.error("[Security] Error checking blood test ownership:", error);
