@@ -1384,32 +1384,40 @@ export async function extractMarkersFromPdfText(
     .map(([id, range]) => `${id} (${range.name}, ${range.unit})`)
     .join(", ");
 
-  const userPrompt = `Tu recois le texte extrait d'un bilan sanguin PDF (${fileName}).
-Ta mission: extraire les valeurs numeriques et les associer aux biomarqueurs autorises.
+  const userPrompt = `Tu recois le texte extrait d'un bilan sanguin PDF de laboratoire francais (${fileName}).
+Ta mission: extraire UNIQUEMENT les RESULTATS DU PATIENT (pas les valeurs de reference, pas les anteriorites, pas les seuils).
 
-Liste autorisee: ${markerList}
+REGLES CRITIQUES:
+- Chaque marqueur a UNE SEULE valeur : celle du prelevement le plus recent
+- IGNORE les colonnes "Anteriorites" ou les resultats dates d'un prelevement precedent
+- IGNORE les "Valeurs de reference", "N:", "Valeurs normales", seuils ESC
+- Si un marqueur apparait en DEUX unites (ex: nmol/l ET ng/ml), prends l'unite qui correspond a la liste autorisee
+- Pour la testosterone LIBRE (pg/ml) et la testosterone TOTALE (ng/ml ou ng/dL) : ce sont DEUX marqueurs DIFFERENTS, ne les confonds pas
+- Pour les valeurs avec virgule francaise (ex: 6,7) interprete comme 6.7 (point decimal)
 
-Regles:
-- Retourne UNIQUEMENT un JSON array (sans markdown).
-- Chaque element: {"markerId": "...", "value": number}
-- Utilise seulement les markerId de la liste autorisee.
-- Convertis dans l'unite attendue (celle de la liste autorisee).
+Liste autorisee (markerId, nom, unite attendue):
+${markerList}
 
-Conversions utiles:
-- Cholesterol / HDL / LDL / ApoB / Lp(a): mmol/L -> mg/dL (x38.67), g/L -> mg/dL (x100)
-- Triglycerides: mmol/L -> mg/dL (x88.57), g/L -> mg/dL (x100)
-- Glycemie: mmol/L -> mg/dL (x18)
+Conversions (UNIQUEMENT si l'unite du PDF differe de l'unite attendue):
+- Cholesterol/HDL/LDL: g/L -> mg/dL (x100), mmol/L -> mg/dL (x38.67)
+- Triglycerides: g/L -> mg/dL (x100), mmol/L -> mg/dL (x88.57)
+- Glycemie: mmol/L -> mg/dL (x18), g/L -> mg/dL (x100)
 - Vitamine D: nmol/L -> ng/mL (÷2.5)
 - Creatinine: µmol/L -> mg/dL (÷88.4)
+- Testosterone totale: nmol/L -> ng/dL (x28.84)
+- NE PAS convertir si l'unite du PDF correspond deja a l'unite attendue
+
+Retourne UNIQUEMENT un JSON array (sans markdown, sans texte):
+[{"markerId": "...", "value": number, "unit_source": "unite du PDF", "unit_target": "unite convertie"}]
 
 TEXTE PDF:
-${cleaned.slice(0, 12000)}`;
+${cleaned.slice(0, 20000)}`;
 
   try {
     const response = await anthropic.messages.create({
       model: "claude-opus-4-6",
-      max_tokens: 1200,
-      system: "Tu es un extracteur strict de biomarqueurs. Tu ne renvoies que du JSON valide.",
+      max_tokens: 4000,
+      system: "Tu es un extracteur strict de biomarqueurs sanguins. Tu ne renvoies que du JSON valide. ZERO erreur toleree. Chaque valeur doit correspondre EXACTEMENT au resultat du patient dans le PDF, pas aux valeurs de reference ni aux anteriorites.",
       messages: [{ role: "user", content: userPrompt }],
     });
 
@@ -1426,12 +1434,12 @@ ${cleaned.slice(0, 12000)}`;
       .filter((item) => Boolean(BIOMARKER_RANGES[item.markerId]))
       .filter((item) => isPlausibleMarkerValue(item.markerId, item.value));
 
+    // Claude extraction OVERRIDES regex extraction (more accurate for French lab formats)
     for (const item of extracted) {
-      if (!hasMarkerValueInText(cleaned, item.markerId)) continue;
-      if (!unique.has(item.markerId)) {
-        unique.set(item.markerId, item);
-      }
+      unique.set(item.markerId, item); // Override regex values with Claude values
     }
+    console.log(`[BloodAnalysis] Claude extracted ${extracted.length} markers (overriding regex)`);
+
   } catch (error) {
     if (isAnthropicLowCreditError(error)) {
       console.warn(
