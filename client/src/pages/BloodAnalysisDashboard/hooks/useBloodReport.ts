@@ -41,7 +41,10 @@ export const useBloodReport = (reportId: string | undefined) => {
         throw new Error('Report ID is required');
       }
 
-      const response = await fetch(`/api/blood-analysis/report/${reportId}`);
+      const token = localStorage.getItem("apexlabs_token");
+      const response = await fetch(`/api/blood-analysis/report/${reportId}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
       const data = await response.json();
 
       if (!response.ok || !data?.success || !data?.report) {
