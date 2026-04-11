@@ -827,8 +827,8 @@ export const normalizeMarkerValue = (markerId: string, value: number, unit?: str
 };
 
 const MARKER_SYNONYMS: Record<string, RegExp[]> = {
-  testosterone_total: [/(?:^|[^\w])testost[ée]rone\s*$/i, /testost[ée]rone\s*tot/i, /testost[ée]rone\s*totale/i, /testost[ée]rone\s*\(\d\)/i, /✔\s*testost[ée]rone\s*$/i, /(?:^|\s)testost[ée]rone(?:\s*$)/i],
-  testosterone_libre: [/testost[ée]rone\s*libre/i, /free\s*testosterone/i],
+  testosterone_total: [/(?:^|[^\w])testost[ée]rone\s*$/i, /testost[ée]rone\s*tot/i, /testost[ée]rone\s*totale/i, /testost[ée]rone\s*\(\d\)/i, /testost[ée]rone\s*\(eclia\)/i, /✔\s*testost[ée]rone\s*$/i, /(?:^|\s)testost[ée]rone(?:\s*$)/i],
+  testosterone_libre: [/testost[ée]rone\s*libre/i, /testost[ée]rone\s*libre\s*\(r\.?i\.?a/i, /free\s*testosterone/i],
   shbg: [/shbg/i, /globuline[^\\n]{0,60}sex/i, /tebg/i, /\bsbp\b[^\\n]{0,40}testost/i, /prot[ée]ine\s*liant\s*la\s*testost/i],
   estradiol: [/estradiol\s*(?:\(|homme|femme|r\.?i\.?a|eclia)/i, /estradiol/i, /\be2\b/i],
   lh: [/\blh\b/i, /luteinis/i],
