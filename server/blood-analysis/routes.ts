@@ -1229,6 +1229,58 @@ export function registerBloodAnalysisRoutes(app: Express): void {
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
+  // Public direct link (UUID = unguessable, same as Peptides Engine reports)
+  app.get("/api/blood-analysis/report/:id/public", async (req, res) => {
+    try {
+      const reportId = req.params.id;
+      let report = await storage.getBloodReport(reportId);
+      let bloodTestRow: any = null;
+
+      if (!report) {
+        const { db } = await import("../db.js");
+        const { bloodTests } = await import("../../shared/drizzle-schema.js");
+        const { eq } = await import("drizzle-orm");
+        const results = await db.select().from(bloodTests).where(eq(bloodTests.id, reportId));
+        if (results.length > 0) {
+          bloodTestRow = results[0];
+          if (bloodTestRow.status !== "completed") {
+            res.status(404).json({ error: "Rapport non encore disponible" });
+            return;
+          }
+          const markers = Array.isArray(bloodTestRow.markers) ? bloodTestRow.markers : [];
+          const analysis = typeof bloodTestRow.analysis === "object" ? bloodTestRow.analysis as any : {};
+          report = {
+            id: bloodTestRow.id,
+            email: "",
+            markers: markers.map((m: any) => ({
+              markerId: m.code || m.markerId || "",
+              name: m.name || "",
+              value: m.value,
+              unit: m.unit || "",
+              status: m.status || "normal",
+              normalRange: (m.refMin != null && m.refMax != null) ? `${m.refMin} - ${m.refMax}` : undefined,
+            })),
+            globalScore: bloodTestRow.globalScore,
+            globalLevel: bloodTestRow.globalLevel,
+            analysis: analysis,
+            sections: analysis.sections || [],
+            createdAt: bloodTestRow.createdAt,
+          } as any;
+        }
+      }
+
+      if (!report) {
+        res.status(404).json({ error: "Rapport non trouvé" });
+        return;
+      }
+
+      res.json({ success: true, report });
+    } catch (error) {
+      console.error("[BloodAnalysis] Public report error:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
   app.get("/api/blood-analysis/report/:id", async (req, res) => {
     try {
       // SECURITY: Verify user owns this blood report (IDOR protection)
