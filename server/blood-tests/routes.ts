@@ -519,9 +519,9 @@ export function registerBloodTestsRoutes(app: Express): void {
       // Respond immediately
       res.json({ success: true, bloodTestId: baseRecord.id, status: "processing" });
 
-      // Process in background (extraction + AI analysis)
-      const pdfBuffer = req.file.buffer;
+      // Process in background (extraction + full analysis pipeline)
       const fileName = req.file.originalname;
+      const pdfProfile = extractPatientInfoFromPdfText(pdfText);
       setTimeout(async () => {
         try {
           const extractedMarkers = await extractMarkersFromPdfText(pdfText, fileName);
@@ -529,15 +529,46 @@ export function registerBloodTestsRoutes(app: Express): void {
             await storage.updateBloodTest(baseRecord.id, { status: "error", error: "Aucun marqueur detecte" });
             return;
           }
-          await storage.updateBloodTest(baseRecord.id, { markers: extractedMarkers as any });
           console.log(`[Admin] ${extractedMarkers.length} markers extracted for ${email}`);
 
-          const aiResult = await generateAIBloodAnalysis(extractedMarkers as any, { email }, baseRecord.id);
+          // Run full analysis pipeline (same as regular upload)
+          const gender = (pdfProfile.gender || req.body.gender || "homme") as "homme" | "femme";
+          const age = pdfProfile.dob ? getAgeFromDob(pdfProfile.dob) : req.body.age || undefined;
+          const analysisResult = await analyzeBloodwork(extractedMarkers, { gender, age });
+
+          const knowledgeContext = await getBloodworkKnowledgeContext(
+            analysisResult.markers,
+            analysisResult.patterns
+          );
+
+          const aiProfile = {
+            gender,
+            age,
+            prenom: req.body.prenom || pdfProfile.prenom,
+            nom: req.body.nom || pdfProfile.nom,
+          };
+
+          // Store markers + analysis immediately
           await storage.updateBloodTest(baseRecord.id, {
-            analysis: aiResult as any,
+            markers: extractedMarkers as any,
+            analysis: analysisResult as any,
+            patientProfile: { ...pdfProfile, email, prenom: aiProfile.prenom, nom: aiProfile.nom } as any,
+            globalScore: analysisResult.globalScore ?? null,
+            globalLevel: analysisResult.globalLevel ?? null,
+          });
+
+          // Generate AI report
+          let aiReport = "";
+          try {
+            aiReport = await generateAIBloodAnalysis(analysisResult, aiProfile, knowledgeContext);
+          } catch (aiErr) {
+            console.warn(`[Admin] AI report generation failed, using fallback:`, aiErr);
+            aiReport = buildFallbackAnalysis(analysisResult, { gender, age });
+          }
+
+          await storage.updateBloodTest(baseRecord.id, {
+            analysis: { ...analysisResult, aiReport } as any,
             status: "completed",
-            globalScore: (aiResult as any)?.globalScore ?? null,
-            globalLevel: (aiResult as any)?.globalLevel ?? null,
           });
           console.log(`[Admin] Blood test ${baseRecord.id} completed for ${email}`);
         } catch (e) {

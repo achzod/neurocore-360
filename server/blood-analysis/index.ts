@@ -751,8 +751,12 @@ export const normalizeMarkerValue = (markerId: string, value: number, unit?: str
     // Heuristic: if value < 40, likely nmol/L (French labs)
     if (!sourceUnit && value > 0 && value < 40) return roundValue(value * 28.84, 1);
   }
-  if (markerId === "testosterone_libre" && sourceUnit === "pmol/L") {
-    return roundValue(value / 3.47, 2);
+  if (markerId === "testosterone_libre") {
+    if (sourceUnit === "pmol/L") return roundValue(value / 3.47, 2);
+    // If pg/mL or already target unit — no conversion needed
+    if (sourceUnit === "pg/mL") return roundValue(value, 1);
+    // Heuristic: if value > 15 and no unit, likely pmol/L (French labs give 20-90 pmol/L)
+    if (!sourceUnit && value > 15) return roundValue(value / 3.47, 2);
   }
   if (markerId === "estradiol") {
     if (sourceUnit === "pmol/L") return roundValue(value / 3.67, 1);
@@ -923,7 +927,18 @@ const extractMarkersFromLines = (pdfText: string): BloodMarkerInput[] => {
       if (value === null) {
         for (let offset = 1; offset <= 4; offset += 1) {
           const nextLine = lines[i + offset];
-          if (!nextLine || DATE_LINE_REGEX.test(nextLine) || SKIP_LINE_REGEX.test(nextLine) || RANGE_LINE_REGEX.test(nextLine)) {
+          if (!nextLine || DATE_LINE_REGEX.test(nextLine) || SKIP_LINE_REGEX.test(nextLine)) continue;
+          // Handle combined lines like "6,7 pg/mlN: 8,7 à 25,0pg/ml" where value + range are on same line
+          if (RANGE_LINE_REGEX.test(nextLine)) {
+            const beforeN = nextLine.split(/\bN\s*:/)[0];
+            if (beforeN && beforeN !== nextLine) {
+              const combinedValue = extractFirstNumber(beforeN);
+              if (combinedValue !== null) {
+                value = combinedValue;
+                unit = unit || findUnit(beforeN);
+                break;
+              }
+            }
             continue;
           }
           const nextValue = extractFirstNumber(nextLine);
@@ -1100,6 +1115,8 @@ const extractMarkersFromText = (pdfText: string): BloodMarkerInput[] => {
 
   // Skip matches inside "examens transmis" listing sections (no actual values)
   const TRANSMIS_CONTEXT_REGEX = /examen[s]?\s+transmis|ci[-\s]?dessous\s+ont\s+[ée]t[ée]\s+transmis/i;
+  // Skip page headers that mention marker names without actual results
+  const HEADER_CONTEXT_REGEX = /page\s+\d+\s+sur\s+\d+|biologiste|cerballiance|lbm\s/i;
 
   for (const [markerId, patterns] of entries) {
     for (const pattern of patterns) {
@@ -1112,10 +1129,14 @@ const extractMarkersFromText = (pdfText: string): BloodMarkerInput[] => {
         const widerBefore = cleaned.slice(Math.max(0, start - 200), start);
         if (TRANSMIS_CONTEXT_REGEX.test(widerBefore)) continue;
         const after = cleaned.slice(end, end + 80);
+        // Skip page header matches (marker name in header, no actual results)
+        if (HEADER_CONTEXT_REGEX.test(after)) continue;
         const before = cleaned.slice(Math.max(0, start - 55), start);
         const value = extractNumberFromSnippet(after) ?? extractNumberFromSnippet(before);
         if (value === null) continue;
         const unit = findUnit(after) || findUnit(before);
+        // Require a unit in the after text for the value to be valid (lab results always have units)
+        if (!unit && !findUnit(cleaned.slice(end, end + 120))) continue;
         const normalized = normalizeMarkerValue(markerId, value, unit);
         if (!isPlausibleMarkerValue(markerId, normalized)) continue;
         results.set(markerId, { value: normalized, unit });
@@ -1390,25 +1411,23 @@ Ta mission: extraire UNIQUEMENT les RESULTATS DU PATIENT (pas les valeurs de ref
 REGLES CRITIQUES:
 - Chaque marqueur a UNE SEULE valeur : celle du prelevement le plus recent
 - IGNORE les colonnes "Anteriorites" ou les resultats dates d'un prelevement precedent
-- IGNORE les "Valeurs de reference", "N:", "Valeurs normales", seuils ESC
-- Si un marqueur apparait en DEUX unites (ex: nmol/l ET ng/ml), prends l'unite qui correspond a la liste autorisee
-- Pour la testosterone LIBRE (pg/ml) et la testosterone TOTALE (ng/ml ou ng/dL) : ce sont DEUX marqueurs DIFFERENTS, ne les confonds pas
+- IGNORE les "Valeurs de reference", "N:", "Valeurs normales", seuils ESC, les chiffres apres "N:" ou "N :"
+- NE FAIS AUCUNE CONVERSION D'UNITE. Retourne la valeur BRUTE exactement comme elle apparait dans le PDF.
+- Pour la testosterone LIBRE (pg/ml) et la testosterone TOTALE (ng/ml ou ng/dL) : ce sont DEUX marqueurs DIFFERENTS
+  * TESTOSTERONE (ECLIA) = testosterone_total
+  * TESTOSTERONE LIBRE (R.I.A.) = testosterone_libre → prends la valeur en pg/ml (PAS pmol/l)
+- Si un marqueur apparait en DEUX unites (ex: nmol/l ET pg/ml), prends l'unite listee ci-dessous comme unite attendue
 - Pour les valeurs avec virgule francaise (ex: 6,7) interprete comme 6.7 (point decimal)
+- ATTENTION aux en-tetes de page (ex: "TESTOSTERONE LIBRE" suivi de "TESTOSTERONE HOMME") : ce ne sont PAS des resultats, ignore-les
 
 Liste autorisee (markerId, nom, unite attendue):
 ${markerList}
 
-Conversions (UNIQUEMENT si l'unite du PDF differe de l'unite attendue):
-- Cholesterol/HDL/LDL: g/L -> mg/dL (x100), mmol/L -> mg/dL (x38.67)
-- Triglycerides: g/L -> mg/dL (x100), mmol/L -> mg/dL (x88.57)
-- Glycemie: mmol/L -> mg/dL (x18), g/L -> mg/dL (x100)
-- Vitamine D: nmol/L -> ng/mL (÷2.5)
-- Creatinine: µmol/L -> mg/dL (÷88.4)
-- Testosterone totale: nmol/L -> ng/dL (x28.84)
-- NE PAS convertir si l'unite du PDF correspond deja a l'unite attendue
+IMPORTANT: NE CONVERTIS PAS les valeurs. Retourne la valeur BRUTE du PDF dans l'unite qui correspond a l'unite attendue ci-dessus.
+Si le PDF donne la valeur dans une autre unite que l'unite attendue, retourne quand meme la valeur BRUTE avec son unite source — la conversion sera faite automatiquement.
 
 Retourne UNIQUEMENT un JSON array (sans markdown, sans texte):
-[{"markerId": "...", "value": number, "unit_source": "unite du PDF", "unit_target": "unite convertie"}]
+[{"markerId": "...", "value": number_brut, "unit_source": "unite exacte du PDF"}]
 
 TEXTE PDF:
 ${cleaned.slice(0, 20000)}`;
@@ -1422,14 +1441,17 @@ ${cleaned.slice(0, 20000)}`;
     });
 
     const textContent = response.content.find((c) => c.type === "text");
-    const extracted = extractJsonArray(textContent?.text || "")
-      .map((item) => ({
-        markerId: String((item as any).markerId || "").trim(),
-        value: normalizeMarkerValue(
-          String((item as any).markerId || "").trim(),
-          Number((item as any).value)
-        ),
-      }))
+    const rawItems = extractJsonArray(textContent?.text || "");
+    console.log(`[BloodAnalysis] Claude raw extraction: ${JSON.stringify(rawItems.filter((i: any) => /testost/i.test(i.markerId)).slice(0, 5))}`);
+    const extracted = rawItems
+      .map((item) => {
+        const markerId = String((item as any).markerId || "").trim();
+        const unitSource = String((item as any).unit_source || (item as any).unit || "").trim();
+        return {
+          markerId,
+          value: normalizeMarkerValue(markerId, Number((item as any).value), unitSource || undefined),
+        };
+      })
       .filter((item) => item.markerId && !Number.isNaN(item.value))
       .filter((item) => Boolean(BIOMARKER_RANGES[item.markerId]))
       .filter((item) => isPlausibleMarkerValue(item.markerId, item.value));
