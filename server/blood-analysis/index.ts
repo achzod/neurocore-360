@@ -1415,7 +1415,7 @@ ${cleaned.slice(0, 20000)}`;
 
   try {
     const response = await anthropic.messages.create({
-      model: "claude-opus-4-6",
+      model: "claude-sonnet-4-6",
       max_tokens: 4000,
       system: "Tu es un extracteur strict de biomarqueurs sanguins. Tu ne renvoies que du JSON valide. ZERO erreur toleree. Chaque valeur doit correspondre EXACTEMENT au resultat du patient dans le PDF, pas aux valeurs de reference ni aux anteriorites.",
       messages: [{ role: "user", content: userPrompt }],
