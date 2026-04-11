@@ -13,6 +13,7 @@ export default function BloodAnalysisStart() {
   const [confirming, setConfirming] = useState(false);
   const [confirmError, setConfirmError] = useState<string | null>(null);
   const [email, setEmail] = useState("");
+  const [promoCode, setPromoCode] = useState("");
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   useEffect(() => {
@@ -93,7 +94,7 @@ export default function BloodAnalysisStart() {
       const res = await fetch("/api/stripe/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, planType: "BLOOD_ANALYSIS" }),
+        body: JSON.stringify({ email, planType: "BLOOD_ANALYSIS", promoCode: promoCode.trim() || undefined }),
       });
       const data = await res.json();
       if (data.url) {
@@ -172,6 +173,18 @@ export default function BloodAnalysisStart() {
             />
           </div>
 
+          {/* Promo code */}
+          <div>
+            <label className="text-xs text-white/40 block mb-1.5">Code promo (optionnel)</label>
+            <input
+              type="text"
+              value={promoCode}
+              onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+              placeholder="Ex: PEPBLOOD-XXXXXX"
+              className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-blue-500 transition-colors font-mono"
+            />
+          </div>
+
           {confirmError && (
             <p className="text-sm text-red-400 text-center">{confirmError}</p>
           )}
@@ -187,7 +200,7 @@ export default function BloodAnalysisStart() {
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <>
-                Payer 99€ et analyser mon bilan
+                {promoCode.trim() ? "Utiliser mon code promo" : "Payer 99€ et analyser mon bilan"}
                 <ArrowRight className="h-4 w-4" />
               </>
             )}
