@@ -1195,6 +1195,40 @@ export function registerBloodAnalysisRoutes(app: Express): void {
    * GET /api/blood-analysis/report/:id
    * Fetch stored blood analysis report
    */
+  // Debug endpoint: trace ownership check for a blood test
+  app.get("/api/admin/debug-blood-ownership/:id", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const reportId = req.params.id;
+      const email = req.query.email as string;
+      const { db } = await import("../db.js");
+      const { bloodTests } = await import("../../shared/drizzle-schema.js");
+      const { eq } = await import("drizzle-orm");
+
+      // Step 1: Find blood_test
+      const results = await db.select().from(bloodTests).where(eq(bloodTests.id, reportId));
+      if (!results.length) { res.json({ error: "blood_test not found" }); return; }
+      const bt = results[0];
+
+      // Step 2: Get user by userId
+      const userById = await storage.getUser(bt.userId);
+
+      // Step 3: Get user by email
+      const userByEmail = email ? await storage.getUserByEmail(email) : null;
+
+      res.json({
+        bloodTest: { id: bt.id, userId: bt.userId, status: bt.status },
+        userById: userById ? { id: userById.id, email: userById.email } : null,
+        userByEmail: userByEmail ? { id: userByEmail.id, email: userByEmail.email } : null,
+        match: {
+          byUserId: userById?.email?.toLowerCase() === email?.toLowerCase(),
+          byEmail: userByEmail?.id === bt.userId,
+          directUserId: bt.userId === userByEmail?.id,
+        }
+      });
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
   app.get("/api/blood-analysis/report/:id", async (req, res) => {
     try {
       // SECURITY: Verify user owns this blood report (IDOR protection)
