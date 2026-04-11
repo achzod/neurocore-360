@@ -487,7 +487,8 @@ const parseStringArray = (value: unknown): string[] | undefined => {
 
 export function registerBloodTestsRoutes(app: Express): void {
   // Admin: upload and process a PDF for any user (re-extraction with new logic)
-  app.post("/api/admin/blood-tests/upload-for-user", requireAdmin, upload.single("file"), async (req, res) => {
+  app.post("/api/admin/blood-tests/upload-for-user", upload.single("file"), async (req, res) => {
+    if (!requireAdmin(req, res)) return;
     try {
       const { email } = req.body;
       if (!email || !req.file) { res.status(400).json({ error: "email and file required" }); return; }
