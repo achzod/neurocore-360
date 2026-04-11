@@ -41,11 +41,18 @@ export const useBloodReport = (reportId: string | undefined) => {
         throw new Error('Report ID is required');
       }
 
+      // Try auth'd endpoint first, fallback to public (direct link without login)
       const token = localStorage.getItem("apexlabs_token");
-      const response = await fetch(`/api/blood-analysis/report/${reportId}`, {
+      let response = await fetch(`/api/blood-analysis/report/${reportId}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
-      const data = await response.json();
+      let data = await response.json();
+
+      // If auth fails, try public endpoint (UUID = unguessable)
+      if (!response.ok || !data?.success) {
+        response = await fetch(`/api/blood-analysis/report/${reportId}/public`);
+        data = await response.json();
+      }
 
       if (!response.ok || !data?.success || !data?.report) {
         throw new Error(data?.error || 'Impossible de charger le rapport');
