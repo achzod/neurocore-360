@@ -1158,7 +1158,32 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         return;
       }
 
-      const report = await storage.getBloodReport(req.params.id);
+      let report = await storage.getBloodReport(req.params.id);
+      let fromBloodTests = false;
+
+      // If not found in blood_reports, check blood_tests table
+      if (!report) {
+        const { db: fsDb } = await import("../db.js");
+        const { bloodTests: fsBt } = await import("../../shared/drizzle-schema.js");
+        const { eq: fsEq } = await import("drizzle-orm");
+        const results = await fsDb.select().from(fsBt).where(fsEq(fsBt.id, req.params.id));
+        if (results.length > 0) {
+          const bt = results[0];
+          const analysis = typeof bt.analysis === "object" ? bt.analysis as any : {};
+          const profile = typeof bt.patientProfile === "object" ? bt.patientProfile as any : {};
+          const userRow = await storage.getUser(bt.userId);
+          report = {
+            id: bt.id,
+            email: profile.email || userRow?.email || req.body.email || "",
+            profile,
+            markers: Array.isArray(bt.markers) ? bt.markers : [],
+            aiReport: analysis.aiReport || "",
+            createdAt: bt.createdAt,
+          } as any;
+          fromBloodTests = true;
+        }
+      }
+
       if (!report) {
         res.status(404).json({ error: "Rapport introuvable" });
         return;
@@ -1180,7 +1205,9 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       );
 
       if (sent) {
-        await storage.updateBloodReport(report.id, { deliveryStatus: "SENT", emailSentAt: new Date() });
+        if (!fromBloodTests) {
+          await storage.updateBloodReport(report.id, { deliveryStatus: "SENT", emailSentAt: new Date() });
+        }
         res.json({ success: true, reportId: report.id, email: report.email, status: "sent" });
       } else {
         res.json({ success: false, reportId: report.id, error: "Email delivery blocked by quality gate" });
