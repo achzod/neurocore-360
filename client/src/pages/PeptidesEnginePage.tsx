@@ -262,6 +262,8 @@ function CheckoutCard({
   isLoading,
   paymentMethod,
   onPaymentMethodChange,
+  promoCode,
+  onPromoCodeChange,
 }: {
   responses: Record<string, unknown>;
   onConfirmStripe: () => void;
@@ -269,6 +271,8 @@ function CheckoutCard({
   isLoading: boolean;
   paymentMethod: "stripe" | "paypal";
   onPaymentMethodChange: (m: "stripe" | "paypal") => void;
+  promoCode: string;
+  onPromoCodeChange: (v: string) => void;
 }) {
   const safetyCheck = shouldBlockPurchase(responses);
 
@@ -352,6 +356,19 @@ function CheckoutCard({
         </div>
       )}
 
+      {/* Promo code */}
+      {!safetyCheck.blocked && (
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={promoCode}
+            onChange={(e) => onPromoCodeChange(e.target.value.toUpperCase())}
+            placeholder="Code promo (optionnel)"
+            className="flex-1 h-10 rounded-lg border border-white/10 bg-white/5 px-3 text-sm text-white placeholder:text-white/30 focus:border-amber-500/50 focus:outline-none"
+          />
+        </div>
+      )}
+
       {/* CTA */}
       <Button
         onClick={paymentMethod === "paypal" ? onConfirmPaypal : onConfirmStripe}
@@ -369,6 +386,8 @@ function CheckoutCard({
             <Lock className="h-4 w-4" aria-hidden="true" />
             Achat desactive
           </span>
+        ) : promoCode.trim() ? (
+          `Utiliser mon code promo`
         ) : (
           `Confirmer — ${PRICE_EUR}€`
         )}
@@ -393,6 +412,7 @@ export default function PeptidesEnginePage() {
   const [responses, setResponses] = useState<Record<string, unknown>>({});
   const [paymentMethod, setPaymentMethod] = useState<"stripe" | "paypal">("stripe");
   const [showCheckout, setShowCheckout] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
 
   const totalSections = PEPTIDES_SECTIONS.length;
   const isLastSection = sectionIndex === totalSections - 1;
@@ -522,6 +542,7 @@ export default function PeptidesEnginePage() {
           email,
           planType: "PEPTIDES_ENGINE",
           responses,
+          promoCode: promoCode.trim() || undefined,
         });
         return res.json();
       }
@@ -531,6 +552,7 @@ export default function PeptidesEnginePage() {
         planType: "PEPTIDES_ENGINE",
         responses,
         referrer: urlRef || undefined,
+        promoCode: promoCode.trim() || undefined,
       });
       return res.json();
     },
@@ -691,6 +713,8 @@ export default function PeptidesEnginePage() {
                 isLoading={checkoutMutation.isPending}
                 paymentMethod={paymentMethod}
                 onPaymentMethodChange={setPaymentMethod}
+                promoCode={promoCode}
+                onPromoCodeChange={setPromoCode}
               />
             </motion.div>
           )}
