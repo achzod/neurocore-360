@@ -3668,7 +3668,8 @@ export async function registerRoutes(
         const sentAt = (audit as any).reportSentAt || audit.createdAt;
         if (!sentAt) continue;
         const daysSinceSent = (now.getTime() - new Date(sentAt).getTime()) / (24 * 60 * 60 * 1000);
-        if (daysSinceSent < 3 || daysSinceSent > 14) continue; // Between 3 and 14 days
+        const maxDays = req.body.catchUp ? 90 : 14; // catchUp=true → rattrapage tous les anciens clients
+        if (daysSinceSent < 3 || daysSinceSent > maxDays) continue;
 
         // Check if already left a review
         const existingReview = await storage.getReviewByAuditId?.(audit.id);
