@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { ReconstitutionStepByStep, FiveReconstitutionErrors, DoseCalculatorVisual } from "@/components/peptides/ReconstitutionVisualGuide";
 
 const AMBER = "#F59E0B";
 
@@ -577,6 +578,54 @@ export default function PeptidesEngineReport() {
             <ShoppingListCards list={report.shoppingList} />
           </motion.div>
         )}
+
+        {/* ══════════════════════════════════════════════════════════════════ */}
+        {/* VISUAL GUIDES — Reconstitution, Erreurs, Calcul de dose        */}
+        {/* ══════════════════════════════════════════════════════════════════ */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="mb-12"
+        >
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: `#06b6d415` }}>
+              <FlaskConical className="w-4 h-4" style={{ color: "#06b6d4" }} />
+            </div>
+            <h2 className="text-xl font-bold">Guide Visuel — Reconstitution</h2>
+          </div>
+          <ReconstitutionStepByStep />
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mb-12"
+        >
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: `#ef444415` }}>
+              <AlertTriangle className="w-4 h-4" style={{ color: "#ef4444" }} />
+            </div>
+            <h2 className="text-xl font-bold">Les 5 erreurs a eviter</h2>
+          </div>
+          <FiveReconstitutionErrors />
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+          className="mb-12"
+        >
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: `${AMBER}15` }}>
+              <Syringe className="w-4 h-4" style={{ color: AMBER }} />
+            </div>
+            <h2 className="text-xl font-bold">Calcule ta dose en 30 secondes</h2>
+          </div>
+          <DoseCalculatorVisual />
+        </motion.div>
 
         {/* Report Sections (collapsible, parsed) :skip intro sections already shown above */}
         <div className="space-y-4 mb-12">
