@@ -3693,7 +3693,7 @@ export async function registerRoutes(
       const errorDetails: string[] = [];
       for (const audit of eligible) {
         try {
-          const trackingRecord = await storage.createEmailTracking(audit.id, "sendReviewRequestJ3Email");
+          const trackingRecord = await storage.createEmailTracking(audit.id, "sendReviewRequestJ3Email", audit.email);
           const result = await sendReviewRequestJ3Email(
             audit.email,
             audit.id,
@@ -4962,7 +4962,7 @@ export async function registerRoutes(
               // Find the report ID from order metadata
               const reportId = (order.metadata as any)?.peptidesReportId;
               if (reportId) {
-                const trackingRecord = await storage.createEmailTracking(order.id, "peptidesReviewJ3");
+                const trackingRecord = await storage.createEmailTracking(order.id, "peptidesReviewJ3", email);
                 const sent = await sendPeptidesReviewEmail(
                   email,
                   reportId,
@@ -4980,7 +4980,7 @@ export async function registerRoutes(
             if (daysSincePaid >= 35 && daysSincePaid < 49 && !types.includes("peptidesReviewS5")) {
               const reportId = (order.metadata as any)?.peptidesReportId;
               if (reportId) {
-                const trackingRecord = await storage.createEmailTracking(order.id, "peptidesReviewS5");
+                const trackingRecord = await storage.createEmailTracking(order.id, "peptidesReviewS5", email);
                 const sent = await sendPeptidesReviewS5Email(email, reportId, baseUrl, trackingRecord.id);
                 if (sent) {
                   peptidesReviewS5++;
@@ -4993,7 +4993,7 @@ export async function registerRoutes(
             if (daysSincePaid >= 84 && daysSincePaid < 98 && !types.includes("peptidesReviewS12")) {
               const reportId = (order.metadata as any)?.peptidesReportId;
               if (reportId) {
-                const trackingRecord = await storage.createEmailTracking(order.id, "peptidesReviewS12");
+                const trackingRecord = await storage.createEmailTracking(order.id, "peptidesReviewS12", email);
                 const sent = await sendPeptidesReviewS12Email(email, reportId, baseUrl, trackingRecord.id);
                 if (sent) {
                   peptidesReviewS12++;
@@ -5245,7 +5245,7 @@ export async function registerRoutes(
       }
 
       const baseUrl = getBaseUrl();
-      const tracking = await storage.createEmailTracking(audit.id, emailType);
+      const tracking = await storage.createEmailTracking(audit.id, emailType, audit.email);
       let sent = false;
 
       switch (emailType) {
@@ -8085,7 +8085,7 @@ export async function registerRoutes(
         const alreadySent = emailHistory?.some((e: any) => e.emailType === 'sendReviewRequestJ3Email');
         if (alreadySent) continue;
         try {
-          const trackingRecord = await storage.createEmailTracking(audit.id, "sendReviewRequestJ3Email");
+          const trackingRecord = await storage.createEmailTracking(audit.id, "sendReviewRequestJ3Email", audit.email);
           await sendReviewRequestJ3Email(audit.email, audit.id, audit.auditType || "GRATUIT", baseUrl, trackingRecord.id);
           sent++;
           console.log(`[ReviewCron] Sent review request to ${audit.email} (audit ${audit.id})`);

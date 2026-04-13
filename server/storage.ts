@@ -2122,11 +2122,11 @@ export class PgStorage implements IStorage {
     };
   }
 
-  async createEmailTracking(auditId: string, emailType: string): Promise<EmailTracking> {
+  async createEmailTracking(auditId: string, emailType: string, recipientEmail?: string): Promise<EmailTracking> {
     const id = randomUUID();
     const result = await pool.query(
-      `INSERT INTO email_tracking (id, audit_id, email_type) VALUES ($1, $2, $3) RETURNING *`,
-      [id, auditId, emailType]
+      `INSERT INTO email_tracking (id, audit_id, email_type, recipient_email) VALUES ($1, $2, $3, $4) RETURNING *`,
+      [id, auditId, emailType, recipientEmail || ""]
     );
     return this.rowToEmailTracking(result.rows[0]);
   }
