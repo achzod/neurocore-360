@@ -3675,7 +3675,7 @@ export async function registerRoutes(
         if (existingReview) continue;
 
         // Check if review request already sent
-        const emailHistory = await storage.getEmailTrackingByAuditId?.(audit.id);
+        const emailHistory = await storage.getEmailTrackingForAudit(audit.id);
         const alreadySent = emailHistory?.some((e: any) => e.emailType === 'sendReviewRequestJ3Email');
         if (alreadySent) continue;
 
@@ -3690,6 +3690,7 @@ export async function registerRoutes(
 
       let sent = 0;
       let errors = 0;
+      const errorDetails: string[] = [];
       for (const audit of eligible) {
         try {
           const trackingRecord = await storage.createEmailTracking(audit.id, "sendReviewRequestJ3Email");
@@ -3700,14 +3701,20 @@ export async function registerRoutes(
             baseUrl,
             trackingRecord.id
           );
-          if (result) sent++;
-          else errors++;
-        } catch (e) {
+          if (result) {
+            sent++;
+            console.log(`[ReviewRequest] Sent to ${audit.email}`);
+          } else {
+            errors++;
+            errorDetails.push(`${audit.email}: sendReviewRequestJ3Email returned false`);
+          }
+        } catch (e: any) {
           errors++;
+          errorDetails.push(`${audit.email}: ${e.message || String(e)}`);
         }
       }
 
-      res.json({ success: true, eligible: eligible.length, sent, errors });
+      res.json({ success: true, eligible: eligible.length, sent, errors, errorDetails: errorDetails.slice(0, 10) });
     } catch (error) {
       console.error("[Admin] Error sending review requests:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
@@ -8074,7 +8081,7 @@ export async function registerRoutes(
         if (daysSinceSent < 3 || daysSinceSent > 14) continue;
         const existingReview = await storage.getReviewByAuditId?.(audit.id);
         if (existingReview) continue;
-        const emailHistory = await storage.getEmailTrackingByAuditId?.(audit.id);
+        const emailHistory = await storage.getEmailTrackingForAudit(audit.id);
         const alreadySent = emailHistory?.some((e: any) => e.emailType === 'sendReviewRequestJ3Email');
         if (alreadySent) continue;
         try {
@@ -8259,7 +8266,7 @@ export async function registerRoutes(
         const sentAt = new Date(audit.reportSentAt);
         const daysSinceSent = (now.getTime() - sentAt.getTime()) / (24 * 60 * 60 * 1000);
 
-        const trackingHistory = await storage.getEmailTrackingByAuditId?.(audit.id) || [];
+        const trackingHistory = await storage.getEmailTrackingForAudit(audit.id) || [];
         const trackingTypes = trackingHistory.map((t: any) => t.emailType);
 
         // GRATUIT sequences
