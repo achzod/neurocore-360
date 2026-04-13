@@ -164,6 +164,18 @@ async function sendEmailWithTracking(
   }
 ): Promise<{ result: boolean; error?: any; message?: any }> {
   try {
+    // Check unsubscribe before sending
+    const { storage } = await import("./storage");
+    if (await storage.isEmailUnsubscribed(trackingData.recipientEmail)) {
+      console.log(`[SendPulse] BLOCKED — ${trackingData.recipientEmail} is unsubscribed`);
+      return { result: false, error: "unsubscribed" };
+    }
+
+    // Replace unsubscribe placeholder with actual link
+    const unsubLink = `https://apexlabs.achzodcoaching.com/api/unsubscribe?email=${Buffer.from(trackingData.recipientEmail).toString("base64")}`;
+    emailPayload.html = emailPayload.html.replace(/\{\{UNSUB_LINK\}\}/g, unsubLink);
+    emailPayload.text = emailPayload.text.replace(/\{\{UNSUB_LINK\}\}/g, unsubLink);
+
     const token = await getAccessToken();
 
     // Add BCC to admin email for all outgoing emails
@@ -343,8 +355,11 @@ function getEmailWrapper(
               <p style="color: ${COLORS.textMuted}; font-size: 11px; margin: 0 0 8px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;">
                 Achzod Coaching
               </p>
-              <p style="color: #404040; font-size: 10px; margin: 0;">
+              <p style="color: #404040; font-size: 10px; margin: 0 0 8px;">
                 Excellence · Science · Transformation
+              </p>
+              <p style="margin: 0;">
+                <a href="{{UNSUB_LINK}}" style="color: #404040; font-size: 10px; text-decoration: underline;">Se desabonner</a>
               </p>
             </td>
           </tr>
@@ -2829,7 +2844,7 @@ export async function sendReviewRequestJ3Email(
       </div>
 
       <p style="color: ${COLORS.textMuted}; font-size: 12px; line-height: 1.6; margin: 0; text-align: center;">
-        Pour arreter ces emails, reponds simplement "STOP".
+        <a href="{{UNSUB_LINK}}" style="color: #525252; text-decoration: underline;">Se desabonner</a>
       </p>
 
       <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
@@ -2926,12 +2941,12 @@ function buildPeptidesReviewContent(opts: {
       </tr>
     </table>
 
-    <!-- STOP footer -->
+    <!-- Unsubscribe footer -->
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
       <tr>
         <td align="center">
           <p style="color: #525252; font-size: 11px; margin: 0; line-height: 1.5;">
-            Pour arreter ces emails, reponds STOP.
+            <a href="{{UNSUB_LINK}}" style="color: #525252; text-decoration: underline;">Se desabonner</a>
           </p>
         </td>
       </tr>
@@ -3175,7 +3190,7 @@ export async function sendPremiumJ14Email(
       ${getCoachingSection(auditType, COLORS.warning)}
 
       <p style="color: #525252; font-size: 12px; line-height: 1.6; margin: 28px 0 0; text-align: center;">
-        Pour arreter ces emails, reponds simplement "STOP".
+        <a href="{{UNSUB_LINK}}" style="color: #525252; text-decoration: underline;">Se desabonner</a>
       </p>
 
       <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
@@ -3569,7 +3584,7 @@ export async function sendGratuitJ7Email(
       </p>
 
       <p style="color: ${COLORS.textMuted}; font-size: 12px; line-height: 1.6; margin: 16px 0 0; text-align: center;">
-        Pour arreter ces emails, reponds simplement "STOP".
+        <a href="{{UNSUB_LINK}}" style="color: #525252; text-decoration: underline;">Se desabonner</a>
       </p>
 
       <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />

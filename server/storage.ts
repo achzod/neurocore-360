@@ -936,6 +936,7 @@ export class PgStorage implements IStorage {
   private ensuredQuestionnaireProgressTable = false;
   private ensuredExistingIndexes = false;
   private ensuredContactsTable = false;
+  private ensuredUnsubscribesTable = false;
 
   private async ensureAuditColumnsLoaded(): Promise<Set<string>> {
     if (this.auditColumnsCache) return this.auditColumnsCache;
@@ -954,6 +955,66 @@ export class PgStorage implements IStorage {
     this.auditColumnsCache = new Set((res.rows || []).map((r: any) => String(r.column_name)));
     console.log(`[Storage] Audit columns: ${[...this.auditColumnsCache].filter(c => c.startsWith('report')).join(', ')}`);
     return this.auditColumnsCache;
+  }
+
+  private async ensureUnsubscribesTable(): Promise<void> {
+    if (this.ensuredUnsubscribesTable) return;
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS email_unsubscribes (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          email VARCHAR(255) NOT NULL UNIQUE,
+          reason VARCHAR(500),
+          unsubscribed_at TIMESTAMP DEFAULT NOW()
+        )
+      `);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_email_unsubscribes_email ON email_unsubscribes(email)`);
+      this.ensuredUnsubscribesTable = true;
+    } catch (err) {
+      console.error("[Storage] Error ensuring email_unsubscribes table:", err);
+      this.ensuredUnsubscribesTable = true;
+    }
+  }
+
+  async isEmailUnsubscribed(email: string): Promise<boolean> {
+    await this.ensureUnsubscribesTable();
+    const result = await pool.query(
+      "SELECT 1 FROM email_unsubscribes WHERE LOWER(email) = $1 LIMIT 1",
+      [email.trim().toLowerCase()]
+    );
+    return result.rows.length > 0;
+  }
+
+  async unsubscribeEmail(email: string, reason?: string): Promise<void> {
+    await this.ensureUnsubscribesTable();
+    await pool.query(
+      `INSERT INTO email_unsubscribes (email, reason) VALUES ($1, $2)
+       ON CONFLICT (email) DO UPDATE SET reason = COALESCE($2, email_unsubscribes.reason), unsubscribed_at = NOW()`,
+      [email.trim().toLowerCase(), reason || null]
+    );
+    console.log(`[Unsubscribe] ${email} unsubscribed${reason ? ` (reason: ${reason})` : ""}`);
+  }
+
+  async resubscribeEmail(email: string): Promise<void> {
+    await this.ensureUnsubscribesTable();
+    await pool.query(
+      "DELETE FROM email_unsubscribes WHERE LOWER(email) = $1",
+      [email.trim().toLowerCase()]
+    );
+    console.log(`[Unsubscribe] ${email} resubscribed by admin`);
+  }
+
+  async getAllUnsubscribes(): Promise<Array<{ id: string; email: string; reason: string | null; unsubscribedAt: Date }>> {
+    await this.ensureUnsubscribesTable();
+    const result = await pool.query(
+      "SELECT id, email, reason, unsubscribed_at FROM email_unsubscribes ORDER BY unsubscribed_at DESC"
+    );
+    return result.rows.map((row: any) => ({
+      id: row.id,
+      email: row.email,
+      reason: row.reason,
+      unsubscribedAt: row.unsubscribed_at,
+    }));
   }
 
   private async ensureReportArtifactsTable(): Promise<void> {

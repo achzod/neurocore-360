@@ -4607,6 +4607,169 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== EMAIL UNSUBSCRIBE ====================
+
+  // GET /api/unsubscribe — Public page: shows confirmation + auto-processes unsubscribe
+  app.get("/api/unsubscribe", async (req, res) => {
+    try {
+      const emailB64 = req.query.email as string;
+      if (!emailB64) {
+        return res.status(400).send("Missing email parameter");
+      }
+      const email = Buffer.from(emailB64, "base64").toString("utf-8");
+      if (!email || !email.includes("@")) {
+        return res.status(400).send("Invalid email");
+      }
+
+      // Auto-unsubscribe on page load
+      await storage.unsubscribeEmail(email);
+
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.send(`<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Desabonnement - APEXLABS</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #0a0b0d;
+      color: #ffffff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      max-width: 480px;
+      width: 100%;
+      background: #111113;
+      border: 1px solid rgba(252, 221, 0, 0.15);
+      border-radius: 16px;
+      padding: 48px 32px;
+      text-align: center;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 32px;
+    }
+    .brand-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #FCDD00;
+    }
+    .brand-text {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #FCDD00;
+    }
+    .icon {
+      font-size: 48px;
+      margin-bottom: 24px;
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      letter-spacing: -0.5px;
+    }
+    .message {
+      color: #a1a1aa;
+      font-size: 15px;
+      line-height: 1.7;
+      margin-bottom: 32px;
+    }
+    .contact {
+      color: #525252;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .contact a {
+      color: #FCDD00;
+      text-decoration: none;
+    }
+    .contact a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand">
+      <div class="brand-dot"></div>
+      <span class="brand-text">APEXLABS BY ACHZOD</span>
+    </div>
+    <div class="icon">&#9993;</div>
+    <h1>Desabonnement confirme</h1>
+    <p class="message">
+      Tu as ete desabonne des emails APEXLABS.<br>
+      Tu ne recevras plus d'emails de notre part.
+    </p>
+    <p class="contact">
+      Si c'est une erreur, contacte<br>
+      <a href="mailto:coaching@achzodcoaching.com">coaching@achzodcoaching.com</a>
+    </p>
+  </div>
+</body>
+</html>`);
+    } catch (error) {
+      console.error("[Unsubscribe] Error:", error);
+      res.status(500).send("Erreur serveur");
+    }
+  });
+
+  // POST /api/unsubscribe — Process unsubscribe (API)
+  app.post("/api/unsubscribe", async (req, res) => {
+    try {
+      const { email, reason } = req.body || {};
+      if (!email || !email.includes("@")) {
+        return res.status(400).json({ success: false, error: "Email invalide" });
+      }
+      await storage.unsubscribeEmail(email, reason);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("[Unsubscribe] POST Error:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  // GET /api/admin/unsubscribes — Admin: list all unsubscribed emails
+  app.get("/api/admin/unsubscribes", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const unsubscribes = await storage.getAllUnsubscribes();
+      res.json({ success: true, unsubscribes, total: unsubscribes.length });
+    } catch (error) {
+      console.error("[Admin Unsubscribes] Error:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  // POST /api/admin/resubscribe — Admin: re-subscribe an email
+  app.post("/api/admin/resubscribe", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { email } = req.body || {};
+      if (!email || !email.includes("@")) {
+        return res.status(400).json({ success: false, error: "Email invalide" });
+      }
+      await storage.resubscribeEmail(email);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("[Admin Resubscribe] Error:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
   // PUBLIC endpoint for Google Sheets (read-only, avec token fixe)
   // Ce endpoint permet au Apps Script de récupérer les emails automatiquement
   app.get("/api/export/emails-for-sheets", async (req, res) => {
