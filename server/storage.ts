@@ -2125,7 +2125,7 @@ export class PgStorage implements IStorage {
   async createEmailTracking(auditId: string, emailType: string, recipientEmail?: string): Promise<EmailTracking> {
     const id = randomUUID();
     const result = await pool.query(
-      `INSERT INTO email_tracking (id, audit_id, email_type, recipient_email) VALUES ($1, $2, $3, $4) RETURNING *`,
+      `INSERT INTO email_tracking (id, audit_id, email_type, recipient_email, sent_at) VALUES ($1, $2, $3, $4, NOW()) RETURNING *`,
       [id, auditId, emailType, recipientEmail || ""]
     );
     return this.rowToEmailTracking(result.rows[0]);
