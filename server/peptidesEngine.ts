@@ -119,8 +119,8 @@ export const PEPTAURA_CATALOG: PeptaurProduct[] = [
   // ══════════════════════════════════════════════════════════════════════════════
   // COGNITIVE & NEUROPROTECTION
   // ══════════════════════════════════════════════════════════════════════════════
-  { name: "Semax", slug: "Semax", dosages: ["10mg", "30mg"], priceRangeUSD: "$9.65 - $266", cheapestSupplier: "Lumira", cheapestPriceUSD: 9.65, supplierCount: 13, formFactor: "vial", category: "cognitive" },
-  { name: "Selank", slug: "Selank", dosages: ["10mg"], priceRangeUSD: "$9.28 - $252", cheapestSupplier: "Lumira", cheapestPriceUSD: 9.28, supplierCount: 10, formFactor: "vial", category: "cognitive" },
+  { name: "Semax", slug: "Semax", dosages: ["10mg", "30mg"], priceRangeUSD: "$9.65 - $266", cheapestSupplier: "Lumira", cheapestPriceUSD: 9.65, supplierCount: 13, formFactor: "nasal spray", category: "cognitive" },
+  { name: "Selank", slug: "Selank", dosages: ["10mg"], priceRangeUSD: "$9.28 - $252", cheapestSupplier: "Lumira", cheapestPriceUSD: 9.28, supplierCount: 10, formFactor: "nasal spray", category: "cognitive" },
   { name: "Adamax", slug: "Adamax", dosages: ["10mg"], priceRangeUSD: "$18.02 - $259", cheapestSupplier: "Lumira", cheapestPriceUSD: 18.02, supplierCount: 8, formFactor: "vial", category: "cognitive" },
   { name: "Pinealon", slug: "Pinealon", dosages: ["10mg", "20mg"], priceRangeUSD: "$9.46 - $203", cheapestSupplier: "Lumira", cheapestPriceUSD: 9.46, supplierCount: 8, formFactor: "vial", category: "cognitive" },
   { name: "P21", slug: "P21", dosages: ["10mg", "20mg"], priceRangeUSD: "$56 - $539", cheapestSupplier: "Ultrapept", cheapestPriceUSD: 56.00, supplierCount: 6, formFactor: "vial", category: "cognitive" },
@@ -540,17 +540,22 @@ Epitalon (Epithalon)
 
 Semax
 - Mécanisme: analogue ACTH(4-7), neuroprotecteur, BDNF upregulation
-- Dosage: 200-600 mcg intranasal 1-3x/jour
-- Route: intranasal (reconstituer puis spray nasal)
+- Dosage: 200-600 mcg intranasal 1-3x/jour (1 spray = ~100 mcg typiquement, vérifier le dosage par spray du fournisseur)
+- Route: spray nasal (vendu prêt à l'emploi, PAS besoin de reconstitution)
+- Posologie: commencer à 1 spray par narine le matin (200 mcg), augmenter progressivement jusqu'à 3 sprays 2x/jour si toléré
 - Indication: cognition, focus, anxiété, neuroprotection
-- Cycle: 2-4 semaines
+- Cycle: 2-4 semaines, pause 2 semaines, peut être répété
+- Conservation: réfrigérer après ouverture
 
 Selank
 - Mécanisme: analogue tuftsin, anxiolytique, BDNF, immunomodulateur
-- Dosage: 200-300 mcg intranasal 2x/jour
-- Route: intranasal
-- Indication: anxiété, stress chronique, cognition
-- Cycle: 2-4 semaines; peut être prolongé
+- Dosage: 200-300 mcg intranasal 2x/jour (1 spray = ~75-100 mcg typiquement)
+- Route: spray nasal (vendu prêt à l'emploi, PAS besoin de reconstitution)
+- Posologie: 1 spray par narine matin et soir (total ~200-300 mcg/jour)
+- Indication: anxiété, stress chronique, cognition, immunité
+- Cycle: 2-4 semaines; peut être prolongé jusqu'à 3 mois si bien toléré
+- Conservation: réfrigérer après ouverture
+- Note: peut être combiné avec Semax (Semax le matin pour le focus, Selank le soir pour l'anxiolyse)
 
 PT-141 (Bremelanotide)
 - Mécanisme: agoniste MCR (mélanokortine), stimulation centrale libido
