@@ -8055,6 +8055,46 @@ export async function registerRoutes(
 
   // Démarrer la surveillance automatique des relances d'abandons
   // Check toutes les 30 minutes pour détecter ouvertures, conversions, etc.
+  // ─── Auto review requests: every 6 hours, send J+3 review request emails ───
+  let reviewCronRunning = false;
+  setInterval(async () => {
+    if (reviewCronRunning) return;
+    reviewCronRunning = true;
+    try {
+      const baseUrl = process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || "https://apexlabs.achzodcoaching.com";
+      const allAudits = await storage.getAllAudits();
+      const now = new Date();
+      let sent = 0;
+      for (const audit of allAudits) {
+        if (!audit.email || sent >= 20) break;
+        if (audit.createdAt && new Date(audit.createdAt) < new Date('2026-03-17')) continue;
+        const sentAt = (audit as any).reportSentAt || audit.createdAt;
+        if (!sentAt) continue;
+        const daysSinceSent = (now.getTime() - new Date(sentAt).getTime()) / (24 * 60 * 60 * 1000);
+        if (daysSinceSent < 3 || daysSinceSent > 14) continue;
+        const existingReview = await storage.getReviewByAuditId?.(audit.id);
+        if (existingReview) continue;
+        const emailHistory = await storage.getEmailTrackingByAuditId?.(audit.id);
+        const alreadySent = emailHistory?.some((e: any) => e.emailType === 'sendReviewRequestJ3Email');
+        if (alreadySent) continue;
+        try {
+          const trackingRecord = await storage.createEmailTracking(audit.id, "sendReviewRequestJ3Email");
+          await sendReviewRequestJ3Email(audit.email, audit.id, audit.auditType || "GRATUIT", baseUrl, trackingRecord.id);
+          sent++;
+          console.log(`[ReviewCron] Sent review request to ${audit.email} (audit ${audit.id})`);
+        } catch (e) {
+          console.error(`[ReviewCron] Failed for ${audit.email}:`, e);
+        }
+      }
+      if (sent > 0) console.log(`[ReviewCron] Sent ${sent} review request emails`);
+    } catch (e) {
+      console.error("[ReviewCron] Error:", e);
+    } finally {
+      reviewCronRunning = false;
+    }
+  }, 6 * 60 * 60 * 1000); // Every 6 hours
+  console.log("[ReviewCron] ✅ setInterval registered (6h cycle)");
+
   // Auto-recovery: generate missing peptides reports every 5 minutes
   let autoGenRunning = false;
   let autoGenCycleCount = 0;
