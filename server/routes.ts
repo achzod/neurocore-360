@@ -2708,7 +2708,7 @@ export async function registerRoutes(
       if (email && planType && planType !== "GRATUIT") {
         const existingOrders = await storage.getOrdersByEmail(email);
         const alreadyPaid = existingOrders.find((o: any) => o.productType === planType && o.status === "paid");
-        if (alreadyPaid && planType !== "PEPTIDES_ENGINE") {
+        if (alreadyPaid && planType !== "PEPTIDES_ENGINE" && planType !== "BLOOD_ANALYSIS") {
           console.log(`[Checkout] ${planType} already paid for ${email} — blocking re-payment`);
           // Create audit if missing
           if (!alreadyPaid.auditId && ["PREMIUM", "ELITE"].includes(planType)) {
