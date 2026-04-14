@@ -2835,7 +2835,7 @@ export async function registerRoutes(
                 user = await storage.createUser({ email, credits: 1 });
                 console.log(`[Checkout] Created user ${email} with 1 blood credit (promo 100%)`);
               } else {
-                await pool.query("UPDATE users SET blood_credits = blood_credits + 1 WHERE email = $1", [email]);
+                await pool.query("UPDATE users SET credits = credits + 1 WHERE email = $1", [email]);
                 console.log(`[Checkout] +1 blood credit for ${email} (promo 100%)`);
               }
             } catch (creditErr) {

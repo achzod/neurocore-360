@@ -770,7 +770,7 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
     {
       "id": "prochaines-etapes",
       "title": "Prochaines etapes",
-      "content": "${firstName}, avant de commencer quoi que ce soit, tu dois faire un bilan sanguin. C'est non negociable, sans bilan tu navigues a l'aveugle.\\n\\nBILAN PRE-CYCLE (avant de commencer)\\nTu as 2 codes Blood Analysis APEXLABS inclus dans ton protocole. Utilise le premier pour faire ton bilan de base AVANT ta premiere injection.\\n\\nIMPORTANT : cette section doit etre TRES CLAIRE et ACTIONNABLE. Le client doit pouvoir montrer cette liste a son labo ou medecin directement.\\n\\nPresente-toi dans n'importe quel laboratoire d'analyses (Cerba, Biogroup, ou ton labo habituel) avec cette liste. La plupart des labos en France acceptent sans ordonnance (tu paies de ta poche). Sinon, passe chez ton generaliste pour l'ordonnance et c'est rembourse.\\n\\nMARQUEURS A DEMANDER :\\n\\nHormones : Testosterone totale, Testosterone libre, SHBG, Cortisol (matin a jeun), DHEA-S, IGF-1\\nThyroide : TSH, T3 libre, T4 libre\\nMetabolisme : Glycemie a jeun, HbA1c, Insuline a jeun, Cholesterol total, HDL, LDL, Triglycerides\\nInflammation : CRP ultra-sensible, Ferritine, Homocysteine\\nVitamines : Vitamine D (25-OH), Vitamine B12, Magnesium, Zinc\\nFoie et reins : ALAT, ASAT, Gamma-GT, Creatinine, DFG\\nNFS complete\\n\\nAjoute les marqueurs specifiques a TON protocole en fonction des peptides selectionnes. Explique POURQUOI chaque marqueur supplementaire est important pour le client.\\n\\nCOMMENT UTILISER TON CODE BLOOD ANALYSIS\\nVa sur https://apexlabs.achzodcoaching.com/offers/blood-analysis, entre ton code promo lors du paiement (il passera a 0EUR), uploade ton PDF de resultats, et tu recevras une analyse complete de tes marqueurs.\\n\\nBILAN MI-CYCLE (semaine 4-6)\\nUtilise ton deuxieme code pour refaire exactement les memes marqueurs. Je compare avec ta baseline pour verifier que tout evolue dans le bon sens et ajuster si besoin.\\n\\nFIN DE CYCLE\\nExplique comment arreter progressivement, la duree de pause minimale avant le prochain cycle, et les signes qui indiquent qu'on peut reprendre."
+      "content": "${firstName}, avant de commencer quoi que ce soit, tu dois faire un bilan sanguin. C'est non negociable, sans bilan tu navigues a l'aveugle.\\n\\nBILAN PRE-CYCLE (avant de commencer)\\nTu as 2 Blood Analyses APEXLABS incluses dans ton protocole. Les credits sont deja sur ton compte, pas besoin de code promo. Utilise la premiere pour faire ton bilan de base AVANT ta premiere injection.\\n\\nIMPORTANT : cette section doit etre TRES CLAIRE et ACTIONNABLE. Le client doit pouvoir montrer cette liste a son labo ou medecin directement.\\n\\nPresente-toi dans n'importe quel laboratoire d'analyses (Cerba, Biogroup, ou ton labo habituel) avec cette liste. La plupart des labos en France acceptent sans ordonnance (tu paies de ta poche). Sinon, passe chez ton generaliste pour l'ordonnance et c'est rembourse.\\n\\nMARQUEURS A DEMANDER :\\n\\nHormones : Testosterone totale, Testosterone libre, SHBG, Cortisol (matin a jeun), DHEA-S, IGF-1\\nThyroide : TSH, T3 libre, T4 libre\\nMetabolisme : Glycemie a jeun, HbA1c, Insuline a jeun, Cholesterol total, HDL, LDL, Triglycerides\\nInflammation : CRP ultra-sensible, Ferritine, Homocysteine\\nVitamines : Vitamine D (25-OH), Vitamine B12, Magnesium, Zinc\\nFoie et reins : ALAT, ASAT, Gamma-GT, Creatinine, DFG\\nNFS complete\\n\\nAjoute les marqueurs specifiques a TON protocole en fonction des peptides selectionnes. Explique POURQUOI chaque marqueur supplementaire est important pour le client.\\n\\nCOMMENT UTILISER TA BLOOD ANALYSIS\\nVa sur https://apexlabs.achzodcoaching.com/blood-dashboard, connecte-toi avec ton email, et uploade ton PDF de resultats. Tu as 2 credits — un pour le bilan pre-cycle, un pour le bilan mi-cycle. Tu recevras une analyse complete de tes marqueurs.\\n\\nBILAN MI-CYCLE (semaine 4-6)\\nUtilise ton deuxieme credit pour refaire exactement les memes marqueurs. Je compare avec ta baseline pour verifier que tout evolue dans le bon sens et ajuster si besoin.\\n\\nFIN DE CYCLE\\nExplique comment arreter progressivement, la duree de pause minimale avant le prochain cycle, et les signes qui indiquent qu'on peut reprendre."
     },
     {
       "id": "nutrition-protocole",
@@ -954,30 +954,22 @@ function validateAndFixPeptauraUrls(report: PeptidesReport): PeptidesReport {
 
 // ─── Promo code creator ───────────────────────────────────────────────────────
 
-async function createBloodAnalysisPromoCodes(email: string): Promise<string[]> {
-  const codes: string[] = [];
-
-  for (let i = 0; i < 2; i++) {
-    const code = generatePromoCode();
-    try {
-      await storage.createPromoCode({
-        code,
-        discountPercent: 100,
-        description: `Blood Analysis offert — Peptides Engine (${email})`,
-        validFor: "BLOOD_ANALYSIS",
-        maxUses: 1,
-        isActive: true,
-        expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
-      });
-      codes.push(code);
-      console.log(`[PeptidesEngine] Promo code created: ${code}`);
-    } catch (err) {
-      console.error(`[PeptidesEngine] Failed to create promo code ${code}:`, err);
-      codes.push(code);
+async function addBloodAnalysisCredits(email: string): Promise<string[]> {
+  // Add 2 blood analysis credits directly to the user account (no promo codes needed)
+  try {
+    const { pool } = await import("./db");
+    let user = await storage.getUserByEmail(email);
+    if (!user) {
+      user = await storage.createUser({ email, credits: 2 });
+      console.log(`[PeptidesEngine] Created user ${email} with 2 blood credits`);
+    } else {
+      await pool.query("UPDATE users SET credits = credits + 2 WHERE email = $1", [email]);
+      console.log(`[PeptidesEngine] +2 blood credits for ${email}`);
     }
+  } catch (err) {
+    console.error(`[PeptidesEngine] Failed to add blood credits for ${email}:`, err);
   }
-
-  return codes;
+  return ["2 credits Blood Analysis ajoutes a ton compte"];
 }
 
 // ─── Safety gate ──────────────────────────────────────────────────────────────
@@ -1113,7 +1105,7 @@ export async function generatePeptidesProtocol(
   report = cleanReportContent(report, firstName);
 
   // Create promo codes and inject into report
-  const promoCodes = await createBloodAnalysisPromoCodes(email);
+  const promoCodes = await addBloodAnalysisCredits(email);
   report.promoCodesGenerated = promoCodes;
 
   // Normalize
