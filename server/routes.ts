@@ -8271,6 +8271,7 @@ export async function registerRoutes(
   let autoGenCycleCount = 0;
   let autoGenLastRun = "never";
   let autoGenLastResult = "none";
+  let autoGenStartedAt = 0;
 
   // Diagnostic endpoint
   app.get("/api/admin/autogen-status", (req, res) => {
@@ -8280,11 +8281,17 @@ export async function registerRoutes(
 
   console.log("[AutoGen] ✅ setInterval registered (5min cycle)");
   setInterval(async () => {
+    // Safety timeout: if running for more than 5 minutes, force reset
+    if (autoGenRunning && autoGenStartedAt > 0 && (Date.now() - autoGenStartedAt) > 5 * 60 * 1000) {
+      console.warn("[AutoGen] ⚠️ Force-resetting stuck autoGenRunning flag (>5 min)");
+      autoGenRunning = false;
+    }
     if (autoGenRunning) {
       console.log("[AutoGen] ⏭️ Skipped — already running");
       return;
     }
     autoGenRunning = true;
+    autoGenStartedAt = Date.now();
     try {
       const allOrdersResult = await storage.getAllOrders({ limit: 500 });
       const orders = allOrdersResult.orders || [];
