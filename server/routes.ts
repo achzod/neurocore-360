@@ -8311,7 +8311,9 @@ export async function registerRoutes(
         if (meta?.peptidesReportId) continue;
 
         const hoursSincePaid = (now.getTime() - new Date(order.paidAt).getTime()) / (1000 * 60 * 60);
-        if (hoursSincePaid < 0.05 || hoursSincePaid > 168) continue;
+        // Wait at least 10 min before autogen kicks in — gives the inline generation pipeline
+        // time to finish first. Prevents double report generation (race condition).
+        if (hoursSincePaid < 0.17 || hoursSincePaid > 168) continue;
 
         console.log(`[AutoGen] Generating peptides report for ${email} (paid ${Math.round(hoursSincePaid * 60)}min ago)`);
 
