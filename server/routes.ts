@@ -3706,23 +3706,35 @@ export async function registerRoutes(
   app.post("/api/admin/send-cta", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
-      const { auditId, subject, message } = req.body;
-      
-      if (!auditId || !subject || !message) {
-        res.status(400).json({ success: false, error: "Paramètres manquants" });
+      const { auditId, subject, message, toEmail } = req.body;
+
+      if (!subject || !message) {
+        res.status(400).json({ success: false, error: "subject et message requis" });
         return;
       }
 
-      const audit = await storage.getAudit(auditId);
-      if (!audit) {
-        res.status(404).json({ success: false, error: "Audit non trouvé" });
+      // Two modes:
+      //   - auditId: lookup audit → use audit.email (classic)
+      //   - toEmail: direct send (for peptides clients who have no audit row)
+      let targetEmail: string | null = null;
+      if (auditId) {
+        const audit = await storage.getAudit(auditId);
+        if (!audit) {
+          res.status(404).json({ success: false, error: "Audit non trouvé" });
+          return;
+        }
+        targetEmail = audit.email;
+      } else if (toEmail) {
+        targetEmail = String(toEmail);
+      } else {
+        res.status(400).json({ success: false, error: "auditId ou toEmail requis" });
         return;
       }
 
-      console.log(`[Admin CTA] Envoi CTA à ${audit.email} pour audit ${auditId}`);
+      console.log(`[Admin CTA] Envoi CTA à ${targetEmail}${auditId ? ` pour audit ${auditId}` : " (direct)"}`);
       console.log(`Sujet: ${subject}`);
       console.log(`Message: ${message}`);
-      const sent = await sendCTAEmail(audit.email, subject, message);
+      const sent = await sendCTAEmail(targetEmail, subject, message);
       if (!sent) {
         res.status(500).json({ success: false, error: "Echec envoi CTA" });
         return;
