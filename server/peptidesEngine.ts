@@ -828,12 +828,14 @@ const PEPTIDES_MAX_RETRIES = 3;
 
 async function callClaudeForPeptides(
   systemPrompt: string,
-  userPrompt: string
+  userPrompt: string,
+  opts?: { forceOpus?: boolean }
 ): Promise<string> {
   const client = getClient();
-  // Sonnet 4.6 for peptides (Opus too slow, causes timeout on Render)
-  const model = "claude-sonnet-4-6";
-  const fallback = "claude-opus-4-6";
+  // When forceOpus=true, skip Sonnet entirely and go directly to Opus.
+  // Used on retry after Sonnet produced malformed JSON.
+  const model = opts?.forceOpus ? "claude-opus-4-6" : "claude-sonnet-4-6";
+  const fallback = opts?.forceOpus ? "claude-sonnet-4-6" : "claude-opus-4-6";
 
   for (let attempt = 1; attempt <= PEPTIDES_MAX_RETRIES; attempt++) {
     try {
@@ -1059,8 +1061,12 @@ export async function generatePeptidesProtocol(
 
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
-      console.log(`[PeptidesEngine] Attempt ${attempt}/2 for ${email}`);
-      const rawResponse = await callClaudeForPeptides(SYSTEM_PROMPT, userPrompt);
+      // On retry, force Opus — Sonnet has shown systematic JSON corruption for certain
+      // complex profiles (~55K char outputs with missing array commas). Opus is more
+      // reliable at large structured JSON output.
+      const forceOpus = attempt > 1;
+      console.log(`[PeptidesEngine] Attempt ${attempt}/2 for ${email}${forceOpus ? " (forcing Opus)" : ""}`);
+      const rawResponse = await callClaudeForPeptides(SYSTEM_PROMPT, userPrompt, { forceOpus });
       report = await extractJsonFromResponse(rawResponse);
 
       // ════════════════════════════════════════════════════════════
@@ -1088,19 +1094,52 @@ export async function generatePeptidesProtocol(
         }
       }
 
-      // CHECK 3b: peptides array must cover peptides mentioned in weeklySchedule
-      // Detects jsonrepair truncation (narrative references 5 peptides but array only has 1)
+      // CHECK 3b: peptides array must cover peptides mentioned in the FULL narrative
+      // (sections + weeklySchedule + shoppingList). Detects jsonrepair silently truncating the
+      // peptides array — e.g., narrative discusses CJC-1295/Ipamorelin/Retatrutide in depth
+      // but array only has BPC-157 + TB-500.
+      const sectionsText = (report.sections || []).map((s: any) => String(s.content ?? "")).join(" ");
       const scheduleText = typeof report.weeklySchedule === "string" ? report.weeklySchedule : JSON.stringify(report.weeklySchedule ?? "");
       const shoppingText = typeof report.shoppingList === "string" ? report.shoppingList : JSON.stringify(report.shoppingList ?? "");
-      const combinedText = (scheduleText + " " + shoppingText).toLowerCase();
-      const knownPeptides = ["bpc-157", "bpc157", "tb-500", "tb500", "cjc-1295", "ipamorelin", "retatrutide", "mk-677", "mk677", "epitalon", "ghk-cu", "semax", "selank", "dsip", "melanotan", "hexarelin", "tesamorelin", "sermorelin", "hgh fragment"];
-      const peptidesInArray = new Set((report.peptides || []).map((p: any) => String(p.name || "").toLowerCase()));
-      const mentionedInNarrative = knownPeptides.filter(p => combinedText.includes(p));
-      const missingFromArray = mentionedInNarrative.filter(p => {
-        return !Array.from(peptidesInArray).some(arrName => arrName.includes(p) || p.includes(arrName.split(" ")[0]));
-      });
-      if (missingFromArray.length >= 2) {
-        throw new Error(`VALIDATION: peptides array incomplete — narrative references ${mentionedInNarrative.join(", ")} but array only has ${Array.from(peptidesInArray).join(", ")} (missing: ${missingFromArray.join(", ")})`);
+      const combinedText = (sectionsText + " " + scheduleText + " " + shoppingText).toLowerCase();
+      // Known peptides with thresholds — if the narrative mentions a peptide > N times,
+      // it's genuinely part of the protocol and must be in the array.
+      const knownPeptides: Array<[string, number]> = [
+        ["bpc-157", 5], ["bpc157", 5],
+        ["tb-500", 5], ["tb500", 5],
+        ["cjc-1295", 5], ["cjc1295", 5],
+        ["ipamorelin", 5],
+        ["retatrutide", 5],
+        ["mk-677", 5], ["mk677", 5], ["ibutamoren", 5],
+        ["epitalon", 5],
+        ["ghk-cu", 5], ["ghkcu", 5],
+        ["semax", 5], ["selank", 5], ["dsip", 5],
+        ["melanotan", 5], ["hexarelin", 5],
+        ["tesamorelin", 5], ["sermorelin", 5],
+        ["semaglutide", 5], ["tirzepatide", 5],
+      ];
+      const peptidesInArray = (report.peptides || []).map((p: any) => String(p.name || "").toLowerCase());
+      const countInText = (needle: string) => {
+        let count = 0; let idx = 0;
+        while ((idx = combinedText.indexOf(needle, idx)) !== -1) { count++; idx += needle.length; }
+        return count;
+      };
+      const mentionedFeatures = knownPeptides
+        .map(([name, threshold]) => ({ name, count: countInText(name), threshold }))
+        .filter(x => x.count >= x.threshold);
+      // Deduplicate (e.g., bpc-157 and bpc157 are the same peptide)
+      const featureKey = (name: string) => name.replace(/-/g, "").toLowerCase();
+      const mentionedFeatureSet = new Set(mentionedFeatures.map(x => featureKey(x.name)));
+      const coveredByArray = new Set(
+        peptidesInArray.flatMap((arrName: string) => {
+          const key = featureKey(arrName);
+          // Match array peptide against feature (e.g., "CJC-1295 sans DAC" covers "cjc1295")
+          return Array.from(mentionedFeatureSet).filter(f => key.includes(f) || f.includes(key.split(" ")[0] || ""));
+        })
+      );
+      const missingFromArray = Array.from(mentionedFeatureSet).filter(f => !coveredByArray.has(f));
+      if (missingFromArray.length >= 1) {
+        throw new Error(`VALIDATION: peptides array incomplete — narrative deeply covers ${Array.from(mentionedFeatureSet).join(", ")} but array has only ${peptidesInArray.join(", ")} (missing: ${missingFromArray.join(", ")}). Likely jsonrepair truncation.`);
       }
 
       // CHECK 4: total content length
