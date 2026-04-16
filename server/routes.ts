@@ -3247,7 +3247,7 @@ export async function registerRoutes(
             if (!user) {
               user = await storage.createUser({ email, credits: 1 });
             } else {
-              await pool.query("UPDATE users SET blood_credits = blood_credits + 1 WHERE email = $1", [email]);
+              await pool.query("UPDATE users SET credits = credits + 1 WHERE email = $1", [email]);
             }
             console.log(`[PayPal] +1 blood credit for ${email} (promo 100%)`);
           } catch (creditErr) {
@@ -3436,7 +3436,7 @@ export async function registerRoutes(
           if (!user) {
             user = await storage.createUser({ email, credits: 2 });
           } else {
-            await dbPool.query("UPDATE users SET blood_credits = blood_credits + 2 WHERE email = $1", [email]);
+            await dbPool.query("UPDATE users SET credits = credits + 2 WHERE email = $1", [email]);
           }
           console.log(`[PayPal] +2 blood credits for ${email} (Peptides Engine)`);
         } catch (creditErr) {
@@ -6233,7 +6233,7 @@ export async function registerRoutes(
                 if (!referrerUser) {
                   referrerUser = await storage.createUser({ email: referrerEmail, credits: 1 });
                 } else {
-                  await pool.query("UPDATE users SET blood_credits = blood_credits + 1 WHERE email = $1", [referrerEmail]);
+                  await pool.query("UPDATE users SET credits = credits + 1 WHERE email = $1", [referrerEmail]);
                 }
                 console.log(`[Webhook] ✅ Referral reward: +1 Blood credit for ${referrerEmail} (referred by ${email})`);
                 // Notify the referrer
@@ -6255,7 +6255,7 @@ export async function registerRoutes(
                   user = await storage.createUser({ email, credits: 2 });
                   console.log(`[Webhook] ✅ Created user ${email} with 2 blood credits (Peptides Engine)`);
                 } else {
-                  await pool.query("UPDATE users SET blood_credits = blood_credits + 2 WHERE email = $1", [email]);
+                  await pool.query("UPDATE users SET credits = credits + 2 WHERE email = $1", [email]);
                   console.log(`[Webhook] ✅ +2 blood credits for ${email} (Peptides Engine)`);
                 }
               } catch (creditErr) {
@@ -6266,11 +6266,13 @@ export async function registerRoutes(
             // Blood Analysis: add +1 credit on payment
             if (email && planType === "BLOOD_ANALYSIS") {
               try {
-                const user = await storage.getUserByEmail(email);
-                if (user) {
-                  const currentCredits = (user as any).blood_credits || 0;
-                  await pool.query("UPDATE users SET blood_credits = blood_credits + 1 WHERE email = $1", [email]);
-                  console.log(`[Webhook] ✅ Blood credit added for ${email} (${currentCredits} → ${currentCredits + 1})`);
+                let user = await storage.getUserByEmail(email);
+                if (!user) {
+                  user = await storage.createUser({ email, credits: 1 });
+                  console.log(`[Webhook] ✅ Created user ${email} with 1 blood credit`);
+                } else {
+                  await pool.query("UPDATE users SET credits = credits + 1 WHERE email = $1", [email]);
+                  console.log(`[Webhook] ✅ +1 blood credit for ${email}`);
                 }
               } catch (creditErr) {
                 console.error(`[Webhook] Blood credit update failed:`, creditErr);
