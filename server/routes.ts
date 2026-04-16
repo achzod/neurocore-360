@@ -6337,6 +6337,23 @@ export async function registerRoutes(
                     await storage.deleteProgress(email).catch(() => {});
 
                     console.log(`[Webhook] ✅ Audit ${audit.id} created automatically for order ${order.id}`);
+
+                    // Trigger report generation + email for PREMIUM/ELITE
+                    // (If /api/audit/create was called first, startReportGeneration is idempotent
+                    // and will detect the existing job — see reportJobManager L149-181)
+                    if (planType === "PREMIUM" || planType === "ELITE") {
+                      try {
+                        await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
+                        await startReportGeneration(audit.id, responses as Record<string, unknown>, {}, planType);
+                        processReportAndSendEmail(audit.id, email, planType).catch((err) => {
+                          console.error(`[Webhook] processReportAndSendEmail failed for ${audit.id}:`, err);
+                          storage.updateAudit(audit.id, { reportDeliveryStatus: "EMAIL_FAILED" }).catch(() => {});
+                        });
+                        console.log(`[Webhook] ✅ Report generation triggered for ${audit.id} (${planType})`);
+                      } catch (genErr) {
+                        console.error(`[Webhook] ❌ Failed to trigger generation for ${audit.id}:`, genErr);
+                      }
+                    }
                   }
                 } else {
                   console.warn(`[Webhook] ⚠️  No questionnaire data found for ${email}, audit not created`);
