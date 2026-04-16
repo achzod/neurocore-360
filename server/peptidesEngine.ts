@@ -822,7 +822,7 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
 
 // ─── Claude call with retry ───────────────────────────────────────────────────
 
-const PEPTIDES_MAX_TOKENS = 20000;
+const PEPTIDES_MAX_TOKENS = 32000; // Sonnet 4.6 supports up to 64K output — give more room for verbose profiles
 const PEPTIDES_TEMPERATURE = 0.3;
 const PEPTIDES_MAX_RETRIES = 3;
 

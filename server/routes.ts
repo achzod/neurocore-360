@@ -3494,10 +3494,12 @@ export async function registerRoutes(
   // ==================== ADMIN ENDPOINTS ====================
 
   // Admin: force generate peptides report for a paid client
+  // Accepts optional skipEmail=true to generate without sending (for validation before delivery)
+  // Accepts optional replaceReportId to update an existing report in-place (same URL)
   app.post("/api/admin/peptides-generate", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
-      const { email } = req.body;
+      const { email, skipEmail, replaceReportId } = req.body;
       if (!email) { res.status(400).json({ error: "email requis" }); return; }
 
       // Get saved responses
@@ -3513,30 +3515,55 @@ export async function registerRoutes(
       // Generate synchronously (admin endpoint = manual trigger, can wait)
       const { generatePeptidesProtocol } = await import("./peptidesEngine");
       const report = await generatePeptidesProtocol(responses, email);
-      const saved = await storage.createBurnoutReport({ email: `peptides::${email}`, responses: responses || {}, report });
-      console.log(`[Admin] Peptides protocol generated for ${email}: ${saved.id}`);
 
-      // Link to order
-      const orders = await storage.getOrdersByEmail(email);
-      const pepOrder = orders.find((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid");
-      if (pepOrder) {
-        await storage.updateOrder(pepOrder.id, {
-          metadata: { ...(pepOrder.metadata as object ?? {}), peptidesReportId: saved.id },
-        }).catch(() => {});
+      let saved;
+      if (replaceReportId) {
+        // Update existing report in-place — keeps same URL
+        const updated = await storage.updateBurnoutReport(replaceReportId, report);
+        if (!updated) {
+          res.status(404).json({ error: `Report ${replaceReportId} not found for in-place update` });
+          return;
+        }
+        saved = updated;
+        console.log(`[Admin] Peptides protocol UPDATED in-place for ${email}: ${saved.id}`);
+      } else {
+        saved = await storage.createBurnoutReport({ email: `peptides::${email}`, responses: responses || {}, report });
+        console.log(`[Admin] Peptides protocol generated for ${email}: ${saved.id}`);
+
+        // Link to order (only on new report, skip if replacing)
+        const orders = await storage.getOrdersByEmail(email);
+        const pepOrder = orders.find((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid");
+        if (pepOrder) {
+          await storage.updateOrder(pepOrder.id, {
+            metadata: { ...(pepOrder.metadata as object ?? {}), peptidesReportId: saved.id },
+          }).catch(() => {});
+        }
       }
 
-      // Send emails directly (no dedup, no tracking — admin is manual override)
       const baseUrl = getBaseUrl();
       const peptidesNames = report.peptides?.map((p: any) => p.name).join(", ") ?? "voir rapport";
-      const promoBlock = report.promoCodesGenerated?.length > 0
-        ? `\n\nTes 2 codes Blood Analysis offerts:\n${report.promoCodesGenerated.join("\n")}` : "";
-      await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
-        `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}\n\nConserve ce lien — il est personnel et unique.`
-      ).catch(() => {});
-      const adminNotifEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
-      await sendCTAEmail(adminNotifEmail, `PEPTIDES GENERE — ${email}`, `Rapport genere pour ${email}\nReport ID: ${saved.id}\nPeptides: ${peptidesNames}\nLien: ${baseUrl}/peptides/${saved.id}`).catch(() => {});
 
-      res.json({ success: true, reportId: saved.id, peptideCount: report.peptides?.length ?? 0, link: `${baseUrl}/peptides/${saved.id}` });
+      if (!skipEmail) {
+        const promoBlock = report.promoCodesGenerated?.length > 0
+          ? `\n\nTes 2 codes Blood Analysis offerts:\n${report.promoCodesGenerated.join("\n")}` : "";
+        await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
+          `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}\n\nConserve ce lien — il est personnel et unique.`
+        ).catch(() => {});
+        const adminNotifEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
+        await sendCTAEmail(adminNotifEmail, `PEPTIDES GENERE — ${email}`, `Rapport genere pour ${email}\nReport ID: ${saved.id}\nPeptides: ${peptidesNames}\nLien: ${baseUrl}/peptides/${saved.id}`).catch(() => {});
+      } else {
+        console.log(`[Admin] skipEmail=true — report generated but no email sent for ${email}`);
+      }
+
+      res.json({
+        success: true,
+        reportId: saved.id,
+        peptideCount: report.peptides?.length ?? 0,
+        sectionCount: report.sections?.length ?? 0,
+        link: `${baseUrl}/peptides/${saved.id}`,
+        emailSent: !skipEmail,
+        replaced: !!replaceReportId,
+      });
     } catch (error: any) {
       console.error("[Admin] Peptides generate error:", error);
       res.status(500).json({ error: error.message || "Erreur generation" });
