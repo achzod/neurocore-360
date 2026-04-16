@@ -8347,8 +8347,8 @@ export async function registerRoutes(
         }
 
         if (!responses) {
-          console.error(`[AutoGen] No responses for ${email}`);
-          break;
+          console.error(`[AutoGen] No responses for ${email} — skipping, will retry next cycle`);
+          continue;
         }
 
         // Double-check: re-read order to confirm reportId still missing (prevent race condition)
@@ -8356,7 +8356,7 @@ export async function registerRoutes(
         const freshMeta = freshOrder?.metadata as any;
         if (freshMeta?.peptidesReportId) {
           console.log(`[AutoGen] Report already exists for ${email} (race condition avoided)`);
-          break;
+          continue;
         }
 
         const { generatePeptidesProtocol } = await import("./peptidesEngine");
