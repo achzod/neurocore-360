@@ -3512,11 +3512,42 @@ export async function registerRoutes(
 
       console.log(`[Admin] Force generating peptides for ${email} (${Object.keys(responses).length} responses)`);
 
+      // Find the paid order for this email up-front (needed for CAS)
+      const orders = await storage.getOrdersByEmail(email);
+      const pepOrder = orders.find((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid");
+
+      // SAFETY PRE-CHECK: if a non-replaceReportId request and a report already exists, refuse
+      // (caller must use replaceReportId explicitly to overwrite — prevents accidental double generation)
+      if (!replaceReportId && pepOrder) {
+        const existingReportId = (pepOrder.metadata as any)?.peptidesReportId;
+        if (existingReportId) {
+          res.status(409).json({
+            error: "Un rapport peptides existe déjà pour ce client",
+            existingReportId,
+            hint: "Utilise replaceReportId: '<id>' pour regénérer en place, ou supprime d'abord",
+          });
+          return;
+        }
+      }
+
+      // SAFETY: email dedup (if not explicit replace, block re-send to same client)
+      if (!replaceReportId && !skipEmail) {
+        const alreadyEmailed = await storage.hasPeptidesDeliveryEmailBeenSent(email).catch(() => false);
+        if (alreadyEmailed) {
+          res.status(409).json({
+            error: "Un email de livraison peptides a déjà été envoyé à ce client",
+            hint: "Utilise skipEmail: true pour regénérer silencieusement",
+          });
+          return;
+        }
+      }
+
       // Generate synchronously (admin endpoint = manual trigger, can wait)
       const { generatePeptidesProtocol } = await import("./peptidesEngine");
       const report = await generatePeptidesProtocol(responses, email);
 
       let saved;
+      let claimed = true;
       if (replaceReportId) {
         // Update existing report in-place — keeps same URL
         const updated = await storage.updateBurnoutReport(replaceReportId, report);
@@ -3530,13 +3561,18 @@ export async function registerRoutes(
         saved = await storage.createBurnoutReport({ email: `peptides::${email}`, responses: responses || {}, report });
         console.log(`[Admin] Peptides protocol generated for ${email}: ${saved.id}`);
 
-        // Link to order (only on new report, skip if replacing)
-        const orders = await storage.getOrdersByEmail(email);
-        const pepOrder = orders.find((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid");
+        // Atomic CAS — if another process (autogen) already claimed, we become orphan
         if (pepOrder) {
-          await storage.updateOrder(pepOrder.id, {
-            metadata: { ...(pepOrder.metadata as object ?? {}), peptidesReportId: saved.id },
-          }).catch(() => {});
+          claimed = await storage.claimPeptidesReportSlot(pepOrder.id, saved.id);
+          if (!claimed) {
+            console.warn(`[Admin] ⚠️ CAS lost — another process already delivered for ${email}. Report ${saved.id} is orphan, NO email sent.`);
+            res.status(409).json({
+              error: "Race condition: un autre processus a livré pendant la génération",
+              orphanReportId: saved.id,
+              hint: "Vérifie les orders — peptidesReportId est déjà set",
+            });
+            return;
+          }
         }
       }
 
@@ -3544,13 +3580,19 @@ export async function registerRoutes(
       const peptidesNames = report.peptides?.map((p: any) => p.name).join(", ") ?? "voir rapport";
 
       if (!skipEmail) {
-        const promoBlock = report.promoCodesGenerated?.length > 0
-          ? `\n\nTes 2 codes Blood Analysis offerts:\n${report.promoCodesGenerated.join("\n")}` : "";
-        await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
-          `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}\n\nConserve ce lien — il est personnel et unique.`
-        ).catch(() => {});
-        const adminNotifEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
-        await sendCTAEmail(adminNotifEmail, `PEPTIDES GENERE — ${email}`, `Rapport genere pour ${email}\nReport ID: ${saved.id}\nPeptides: ${peptidesNames}\nLien: ${baseUrl}/peptides/${saved.id}`).catch(() => {});
+        // Final dedup check right before send
+        const stillNotEmailed = !(await storage.hasPeptidesDeliveryEmailBeenSent(email).catch(() => false));
+        if (stillNotEmailed) {
+          const promoBlock = report.promoCodesGenerated?.length > 0
+            ? `\n\nTes 2 codes Blood Analysis offerts:\n${report.promoCodesGenerated.join("\n")}` : "";
+          await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
+            `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}\n\nConserve ce lien — il est personnel et unique.`
+          ).catch(() => {});
+          const adminNotifEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
+          await sendCTAEmail(adminNotifEmail, `PEPTIDES GENERE — ${email}`, `Rapport genere pour ${email}\nReport ID: ${saved.id}\nPeptides: ${peptidesNames}\nLien: ${baseUrl}/peptides/${saved.id}`).catch(() => {});
+        } else {
+          console.warn(`[Admin] Delivery email already sent for ${email} (last-moment dedup) — skipping`);
+        }
       } else {
         console.log(`[Admin] skipEmail=true — report generated but no email sent for ${email}`);
       }
@@ -8395,36 +8437,55 @@ export async function registerRoutes(
           continue;
         }
 
-        // Double-check: re-read order to confirm reportId still missing (prevent race condition)
+        // SAFETY #1: Re-read order immediately to confirm reportId still missing (guards against 60s-stale snapshot)
         const freshOrder = await storage.getOrder(order.id);
         const freshMeta = freshOrder?.metadata as any;
         if (freshMeta?.peptidesReportId) {
-          console.log(`[AutoGen] Report already exists for ${email} (race condition avoided)`);
+          console.log(`[AutoGen] Report already exists for ${email} (race avoided pre-gen)`);
+          continue;
+        }
+
+        // SAFETY #2: Email dedup — if a peptides delivery email was already sent to this recipient, skip entirely
+        const alreadyEmailed = await storage.hasPeptidesDeliveryEmailBeenSent(email).catch(() => false);
+        if (alreadyEmailed) {
+          console.log(`[AutoGen] Peptides delivery email already sent to ${email} (dedup via email_tracking)`);
           continue;
         }
 
         const { generatePeptidesProtocol } = await import("./peptidesEngine");
         const report = await generatePeptidesProtocol(responses, email);
         const saved = await storage.createBurnoutReport({ email: `peptides::${email}`, responses, report });
-        await storage.updateOrder(order.id, { metadata: { ...(freshMeta ?? meta ?? {}), peptidesReportId: saved.id } }).catch(() => {});
 
-        // Send delivery email + admin notification (NO dedup — just send it)
+        // SAFETY #3: Atomic CAS — "first writer wins". If another process already set peptidesReportId
+        // during our 60s+ generation, our report becomes orphan and we DO NOT send any email.
+        const claimed = await storage.claimPeptidesReportSlot(order.id, saved.id);
+        if (!claimed) {
+          console.warn(`[AutoGen] ⚠️ Lost CAS race for ${email} — another process already claimed the slot. Report ${saved.id} is orphan, NO email sent.`);
+          autoGenLastResult = `RACE_LOST: ${email} → orphan report ${saved.id}`;
+          continue;
+        }
+
+        // SAFETY #4: Final email dedup check right before send (in case tracking was recorded after our earlier check)
+        const stillNotEmailed = !(await storage.hasPeptidesDeliveryEmailBeenSent(email).catch(() => false));
+
         const baseUrl = getBaseUrl();
         const peptidesNames = report.peptides?.map((p: any) => p.name).join(", ") ?? "voir rapport";
         const promoBlock = report.promoCodesGenerated?.length > 0
           ? `\n\nTes 2 codes Blood Analysis offerts:\n${report.promoCodesGenerated.join("\n")}` : "";
 
-        // Send to client
-        try {
-          await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
-            `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}\n\nConserve ce lien — il est personnel et unique.`
-          );
-          console.log(`[AutoGen] ✅ Delivery email sent to ${email}`);
-        } catch (emailErr) {
-          console.error(`[AutoGen] ⚠️ Delivery email FAILED for ${email}:`, emailErr);
+        if (stillNotEmailed) {
+          try {
+            await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
+              `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}\n\nConserve ce lien — il est personnel et unique.`
+            );
+            console.log(`[AutoGen] ✅ Delivery email sent to ${email}`);
+          } catch (emailErr) {
+            console.error(`[AutoGen] ⚠️ Delivery email FAILED for ${email}:`, emailErr);
+          }
+        } else {
+          console.warn(`[AutoGen] ⚠️ Delivery email already sent to ${email} (last-moment check) — skipping`);
         }
 
-        // Send admin notification
         try {
           const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
           await sendCTAEmail(adminEmail, `RAPPORT GENERE — Peptides Engine — ${email}`,
