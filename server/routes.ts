@@ -473,6 +473,27 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/admin/stripe-account", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const stripe = await getUncachableStripeClient();
+      const account = await stripe.accounts.retrieve();
+      res.json({
+        success: true,
+        id: account.id,
+        email: account.email,
+        country: account.country,
+        business_profile: account.business_profile,
+        company: account.company,
+        individual: (account as any).individual,
+        settings: account.settings,
+      });
+    } catch (error: any) {
+      console.error("[Admin] Stripe account error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Admin: Contacts - single source of truth
   app.post("/api/admin/contacts/sync", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
