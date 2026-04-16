@@ -822,7 +822,7 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
 
 // ─── Claude call with retry ───────────────────────────────────────────────────
 
-const PEPTIDES_MAX_TOKENS = 24000; // Below 32K streaming-required threshold, but enough headroom for verbose profiles
+const PEPTIDES_MAX_TOKENS = 20000; // Anthropic requires streaming for max_tokens > ~20K — keep at safe threshold
 const PEPTIDES_TEMPERATURE = 0.3;
 const PEPTIDES_MAX_RETRIES = 3;
 
