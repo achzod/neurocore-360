@@ -2184,7 +2184,7 @@ export async function registerRoutes(
         await pool.query("UPDATE users SET credits = credits + $1 WHERE email = $2", [credits, email]);
       }
       const updated = await storage.getUserByEmail(email);
-      res.json({ success: true, email, newCredits: (updated as any)?.credits ?? (updated as any)?.bloodCredits ?? 0 });
+      res.json({ success: true, email, newCredits: (updated as any)?.credits ?? 0 });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
