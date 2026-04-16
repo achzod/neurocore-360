@@ -822,7 +822,7 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
 
 // ─── Claude call with retry ───────────────────────────────────────────────────
 
-const PEPTIDES_MAX_TOKENS = 32000; // Sonnet 4.6 supports up to 64K output — give more room for verbose profiles
+const PEPTIDES_MAX_TOKENS = 24000; // Below 32K streaming-required threshold, but enough headroom for verbose profiles
 const PEPTIDES_TEMPERATURE = 0.3;
 const PEPTIDES_MAX_RETRIES = 3;
 
@@ -1076,9 +1076,9 @@ export async function generatePeptidesProtocol(
         throw new Error(`VALIDATION: ${emptySections.length} sections vides ou trop courtes`);
       }
 
-      // CHECK 2: peptides exist
-      if (!report.peptides || report.peptides.length === 0) {
-        throw new Error("VALIDATION: 0 peptides dans le rapport");
+      // CHECK 2: peptides exist (min 2 — a stack should always have at least 2)
+      if (!report.peptides || report.peptides.length < 2) {
+        throw new Error(`VALIDATION: seulement ${report.peptides?.length ?? 0} peptide(s) (min 2) — probable truncation`);
       }
 
       // CHECK 3: each peptide has required fields
@@ -1086,6 +1086,21 @@ export async function generatePeptidesProtocol(
         if (!pep.name || !pep.dosage || !pep.route) {
           throw new Error(`VALIDATION: peptide incomplet — name=${pep.name} dosage=${pep.dosage}`);
         }
+      }
+
+      // CHECK 3b: peptides array must cover peptides mentioned in weeklySchedule
+      // Detects jsonrepair truncation (narrative references 5 peptides but array only has 1)
+      const scheduleText = typeof report.weeklySchedule === "string" ? report.weeklySchedule : JSON.stringify(report.weeklySchedule ?? "");
+      const shoppingText = typeof report.shoppingList === "string" ? report.shoppingList : JSON.stringify(report.shoppingList ?? "");
+      const combinedText = (scheduleText + " " + shoppingText).toLowerCase();
+      const knownPeptides = ["bpc-157", "bpc157", "tb-500", "tb500", "cjc-1295", "ipamorelin", "retatrutide", "mk-677", "mk677", "epitalon", "ghk-cu", "semax", "selank", "dsip", "melanotan", "hexarelin", "tesamorelin", "sermorelin", "hgh fragment"];
+      const peptidesInArray = new Set((report.peptides || []).map((p: any) => String(p.name || "").toLowerCase()));
+      const mentionedInNarrative = knownPeptides.filter(p => combinedText.includes(p));
+      const missingFromArray = mentionedInNarrative.filter(p => {
+        return !Array.from(peptidesInArray).some(arrName => arrName.includes(p) || p.includes(arrName.split(" ")[0]));
+      });
+      if (missingFromArray.length >= 2) {
+        throw new Error(`VALIDATION: peptides array incomplete — narrative references ${mentionedInNarrative.join(", ")} but array only has ${Array.from(peptidesInArray).join(", ")} (missing: ${missingFromArray.join(", ")})`);
       }
 
       // CHECK 4: total content length
