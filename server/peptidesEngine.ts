@@ -905,7 +905,7 @@ async function callClaudeForPeptides(
 
 // ─── JSON extractor ───────────────────────────────────────────────────────────
 
-function extractJsonFromResponse(raw: string): PeptidesReport {
+async function extractJsonFromResponse(raw: string): Promise<PeptidesReport> {
   let cleaned = raw.trim();
   const fenceMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (fenceMatch) {
@@ -918,13 +918,32 @@ function extractJsonFromResponse(raw: string): PeptidesReport {
     cleaned = cleaned.slice(firstBrace, lastBrace + 1);
   }
 
+  // First attempt: strict JSON.parse
   try {
-    const parsed = JSON.parse(cleaned);
-    return parsed as PeptidesReport;
+    return JSON.parse(cleaned) as PeptidesReport;
   } catch (err) {
-    console.error("[PeptidesEngine] JSON parse error:", err);
-    console.error("[PeptidesEngine] Raw response preview:", raw.slice(0, 500));
-    throw new Error("Could not parse Claude response as JSON");
+    const errMsg = err instanceof Error ? err.message : String(err);
+    console.error("[PeptidesEngine] JSON parse error:", errMsg);
+    console.error("[PeptidesEngine] Cleaned length:", cleaned.length);
+
+    // Second attempt: jsonrepair (fixes missing commas, trailing commas, unescaped chars)
+    try {
+      // @ts-ignore — jsonrepair has no types shipped with it, loaded at runtime on Render
+      const { jsonrepair } = await import("jsonrepair");
+      const repaired = jsonrepair(cleaned);
+      console.log("[PeptidesEngine] ✅ jsonrepair succeeded, repaired length:", repaired.length);
+      return JSON.parse(repaired) as PeptidesReport;
+    } catch (repairErr) {
+      const repairMsg = repairErr instanceof Error ? repairErr.message : String(repairErr);
+      console.error("[PeptidesEngine] jsonrepair also failed:", repairMsg);
+      // Log context around the error position to help debug
+      const posMatch = errMsg.match(/position (\d+)/);
+      if (posMatch) {
+        const pos = parseInt(posMatch[1], 10);
+        console.error(`[PeptidesEngine] Context around position ${pos}:`, cleaned.slice(Math.max(0, pos - 100), pos + 100));
+      }
+      throw new Error("Could not parse Claude response as JSON (even with repair)");
+    }
   }
 }
 
@@ -1042,7 +1061,7 @@ export async function generatePeptidesProtocol(
     try {
       console.log(`[PeptidesEngine] Attempt ${attempt}/2 for ${email}`);
       const rawResponse = await callClaudeForPeptides(SYSTEM_PROMPT, userPrompt);
-      report = extractJsonFromResponse(rawResponse);
+      report = await extractJsonFromResponse(rawResponse);
 
       // ════════════════════════════════════════════════════════════
       // VALIDATION BETON — ne rien laisser passer
