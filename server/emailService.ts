@@ -4035,3 +4035,111 @@ export async function addSubscriberToList(
     return { success: false, error: error.message || "Unknown error" };
   }
 }
+
+// Peptides Engine — Cycle 2 re-order email (J+60 post-delivery).
+// Sent once to clients whose first Peptides protocol was delivered ~60 days ago,
+// roughly the end of a typical 8-12 week cycle. Offers a loyalty discount for
+// re-ordering. Revenue retention play on existing client base.
+export async function sendPeptidesCycle2ReorderEmail(
+  email: string,
+  reportId: string,
+  baseUrl: string,
+  trackingId: string
+): Promise<boolean> {
+  try {
+    const reportLink = `${baseUrl}/peptides/${reportId}`;
+    const orderLink = `${baseUrl}/offers/peptides-engine?code=CYCLE2&utm_source=apexlabs&utm_medium=email&utm_campaign=peptides_j60_reorder`;
+    const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
+
+    const content = `
+      <h2 style="color: ${COLORS.text}; margin: 0 0 16px; font-size: 26px; text-align: center; font-weight: 700; letter-spacing: -0.5px;">
+        Ton cycle 1 touche à sa fin
+      </h2>
+
+      <p style="color: ${COLORS.textMuted}; font-size: 15px; line-height: 1.7; margin: 0 0 24px; text-align: center;">
+        Ça fait environ 2 mois que tu as reçu ton premier protocole peptides.<br/>
+        <strong style="color: ${COLORS.text};">C'est le bon moment pour parler de la suite.</strong>
+      </p>
+
+      <div style="padding: 24px; background: ${COLORS.surface}; border-radius: 12px; border-left: 4px solid ${COLORS.primary}; margin-bottom: 24px;">
+        <p style="color: ${COLORS.text}; font-size: 15px; font-weight: 600; margin: 0 0 10px;">
+          Pourquoi un cycle 2 ?
+        </p>
+        <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.7; margin: 0 0 10px;">
+          Ton corps s'est adapté aux peptides du cycle 1. Les résultats sont là mais les gains marginaux ralentissent — c'est biologiquement normal. Un cycle 2 recalibré sur tes nouveaux objectifs (consolidation, progression, switch de stack) permet de repartir sur du neuf sans perdre l'acquis.
+        </p>
+        <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.7; margin: 0;">
+          Si tu as fait un Blood Analysis mi-cycle (tes 2 crédits offerts) — c'est exactement les marqueurs à regarder pour guider le cycle 2.
+        </p>
+      </div>
+
+      <div style="padding: 28px; background: linear-gradient(135deg, rgba(251,191,36,0.12) 0%, rgba(245,158,11,0.05) 100%); border-radius: 12px; border: 2px solid ${COLORS.warning}; margin-bottom: 24px; text-align: center;">
+        <p style="color: ${COLORS.textMuted}; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 6px; font-weight: 600;">
+          Tarif clients existants
+        </p>
+        <p style="color: ${COLORS.warning}; font-size: 36px; font-weight: 700; letter-spacing: -1px; margin: 0 0 4px;">
+          199€
+        </p>
+        <p style="color: ${COLORS.textMuted}; font-size: 13px; text-decoration: line-through; margin: 0 0 12px;">
+          au lieu de 299€
+        </p>
+        <div style="background: ${COLORS.background}; border-radius: 8px; padding: 14px 18px; display: inline-block; margin-bottom: 16px; border: 1px dashed ${COLORS.warning};">
+          <p style="color: ${COLORS.textMuted}; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; margin: 0 0 4px; font-weight: 600;">
+            Code exclusif
+          </p>
+          <p style="color: ${COLORS.warning}; font-size: 22px; font-weight: 700; letter-spacing: 3px; margin: 0;">
+            CYCLE2
+          </p>
+        </div>
+        <p style="color: ${COLORS.textMuted}; font-size: 13px; line-height: 1.6; margin: 0 0 18px;">
+          Bonus : 2 crédits Blood Analysis à nouveau offerts<br/>pour piloter ton cycle 2 avec des données réelles.
+        </p>
+        ${getPrimaryButton('Relancer mon protocole', orderLink, COLORS.warning)}
+      </div>
+
+      <div style="padding: 18px; background: ${COLORS.surface}; border-radius: 8px; border: 1px solid ${COLORS.border}; text-align: center; margin-bottom: 20px;">
+        <p style="color: ${COLORS.textMuted}; font-size: 13px; line-height: 1.6; margin: 0 0 10px;">
+          Besoin de relire ton protocole cycle 1 avant de choisir ?
+        </p>
+        <a href="${reportLink}" style="color: ${COLORS.primary}; font-size: 13px; text-decoration: underline; font-weight: 600;">
+          Revoir mon rapport peptides →
+        </a>
+      </div>
+
+      <p style="color: ${COLORS.textMuted}; font-size: 12px; line-height: 1.6; margin: 0; text-align: center;">
+        Pas envie de relancer ? Pas de souci — je ne renverrai plus cet email.<br/>
+        <a href="{{UNSUB_LINK}}" style="color: #525252; text-decoration: underline;">Se désabonner</a>
+      </p>
+
+      <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
+    `;
+
+    const emailContent = getEmailWrapper(
+      content,
+      `linear-gradient(135deg, ${COLORS.warning} 0%, #f59e0b 100%)`,
+      "Cycle 2",
+      "Prêt pour la suite ?"
+    );
+
+    const result = await sendEmailWithTracking(
+      {
+        html: encodeBase64(emailContent),
+        text: `Ton cycle 1 Peptides Engine touche a sa fin. Pret pour le cycle 2 ?\n\nTarif clients existants : 199€ (au lieu de 299€). Code CYCLE2.\n2 credits Blood Analysis offerts a nouveau.\n\nCommander : ${orderLink}\nRevoir le rapport cycle 1 : ${reportLink}\n\nAchzod`,
+        subject: "Ton cycle 1 touche à sa fin — prêt pour le cycle 2 ? (-100€ clients existants)",
+        from: { name: SENDER_NAME, email: SENDER_EMAIL },
+        to: [{ email }],
+      },
+      {
+        emailType: "sendPeptidesCycle2ReorderEmail",
+        recipientEmail: email,
+        auditId: reportId,
+        metadata: { trackingId },
+      }
+    );
+
+    return result.result === true;
+  } catch (error) {
+    console.error("[SendPulse] Error sending peptides cycle2 reorder email:", error);
+    return false;
+  }
+}

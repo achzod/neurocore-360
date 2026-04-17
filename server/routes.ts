@@ -28,6 +28,7 @@ import {
   sendPeptidesReviewEmail,
   sendPeptidesReviewS5Email,
   sendPeptidesReviewS12Email,
+  sendPeptidesCycle2ReorderEmail,
 } from "./emailService";
 import { generateExportHTML, generateExportPDF } from "./exportService";
 import { generateAndConvertAuditWithClaude } from "./anthropicEngine";
@@ -8887,6 +8888,64 @@ export async function registerRoutes(
       console.error("[AutoSequence] Error:", err);
     }
   }, 30 * 60 * 1000).unref(); // Every 30 minutes
+
+  // Peptides Engine — cycle 2 re-order email at J+60.
+  // Runs every 12h, sends at most 20 emails per cycle. Per-email dedup via
+  // email_tracking (emailType = sendPeptidesCycle2ReorderEmail) so a client
+  // is only asked to re-order once. Applies only to reports >= 60 days old
+  // and <= 120 days old (no point emailing year-old clients at full cadence).
+  let peptidesReorderCronRunning = false;
+  setInterval(async () => {
+    if (peptidesReorderCronRunning) return;
+    peptidesReorderCronRunning = true;
+    try {
+      const baseUrl = getBaseUrl();
+      const peptidesReports = await storage.getAllBurnoutReports();
+      const now = new Date();
+      let sent = 0;
+
+      for (const report of peptidesReports || []) {
+        if (sent >= 20) break;
+        if (!report) continue;
+        const email = String((report as any).email || "").replace(/^peptides::/, "");
+        if (!email) continue;
+        if (email.includes("test") || email.includes("debug") || email.includes("achzodcoaching") || email.includes("achkou")) continue;
+        const createdAt = new Date((report as any).createdAt);
+        if (Number.isNaN(createdAt.getTime())) continue;
+        if (createdAt < new Date("2026-03-17")) continue;
+        const daysSince = (now.getTime() - createdAt.getTime()) / (24 * 60 * 60 * 1000);
+        if (daysSince < 60 || daysSince > 120) continue;
+
+        // Dedup — has this email already been sent?
+        const history = await storage.getEmailTrackingForAudit(report.id).catch(() => []);
+        const already = (history || []).some((t: any) => t.emailType === "sendPeptidesCycle2ReorderEmail");
+        if (already) continue;
+
+        try {
+          const trackingRecord = await storage.createEmailTracking(
+            report.id,
+            "sendPeptidesCycle2ReorderEmail",
+            email,
+          );
+          const ok = await sendPeptidesCycle2ReorderEmail(email, report.id, baseUrl, trackingRecord.id);
+          if (ok) {
+            sent++;
+            console.log(`[PeptidesReorderCron] Sent cycle-2 reorder to ${email} (report ${report.id}, ${Math.round(daysSince)}d)`);
+          } else {
+            console.error(`[PeptidesReorderCron] sendPeptidesCycle2ReorderEmail returned false for ${email}`);
+          }
+        } catch (e) {
+          console.error(`[PeptidesReorderCron] Failed for ${email}:`, e);
+        }
+      }
+      if (sent > 0) console.log(`[PeptidesReorderCron] ✅ Sent ${sent} cycle-2 reorder emails`);
+    } catch (err) {
+      console.error("[PeptidesReorderCron] Error:", err);
+    } finally {
+      peptidesReorderCronRunning = false;
+    }
+  }, 12 * 60 * 60 * 1000).unref(); // Every 12 hours
+  console.log("[PeptidesReorderCron] ✅ setInterval registered (12h cycle)");
 
   // startMonitoring DISABLED — daily reports and abandonment alerts turned off
   // startMonitoring(storage, 30).catch(err => {
