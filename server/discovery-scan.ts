@@ -2257,7 +2257,7 @@ export async function convertToNarrativeReport(
     chips: ["-20% Coaching", "Code Promo", "Avis"]
   });
 
-  return {
+  const report: ReportData = {
     globalScore: globalScore10,
     metrics,
     sections,
@@ -2265,6 +2265,63 @@ export async function convertToNarrativeReport(
     generatedAt: new Date().toISOString(),
     auditType: "GRATUIT"
   };
+
+  // ════════════════════════════════════════════════════════════
+  // VALIDATION PRE-DELIVERY — fail-closed, no bad report ever shipped
+  // ════════════════════════════════════════════════════════════
+  // Any failure throws, caller's try/catch marks audit as NEEDS_REVIEW,
+  // no email sent, admin reviews manually.
+
+  // CHECK 1: sections — Discovery has intro + global + 8 domains + 2 CTA = 12 expected
+  if (!Array.isArray(report.sections) || report.sections.length < 10) {
+    throw new Error(`[Discovery Validation] sections invalid: got ${report.sections?.length ?? 0}, expected >= 10`);
+  }
+
+  // CHECK 2: content length — each section must have real body (strip HTML, min 80 chars)
+  const stripHtml = (s: string) => String(s ?? "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  const weakSections = report.sections.filter(s => stripHtml(s.content).length < 80);
+  if (weakSections.length > 2) {
+    const names = weakSections.map(s => s.id || s.title || "?").join(", ");
+    throw new Error(`[Discovery Validation] ${weakSections.length} sections trop courtes (< 80 chars après strip HTML): ${names}`);
+  }
+  const totalContent = report.sections.reduce((sum, s) => sum + stripHtml(s.content).length, 0);
+  if (totalContent < 3000) {
+    throw new Error(`[Discovery Validation] contenu narratif total trop court: ${totalContent} chars (min 3000)`);
+  }
+
+  // CHECK 3: globalScore — must be a finite number in [0, 10] (we're on the /10 scale)
+  if (typeof report.globalScore !== "number" || !Number.isFinite(report.globalScore) || report.globalScore < 0 || report.globalScore > 10) {
+    throw new Error(`[Discovery Validation] globalScore invalide: ${report.globalScore}`);
+  }
+
+  // CHECK 4: metrics — must have exactly 8 domains, each with valid value in [0, 10]
+  if (!Array.isArray(report.metrics) || report.metrics.length !== 8) {
+    throw new Error(`[Discovery Validation] metrics invalid: got ${report.metrics?.length ?? 0}, expected 8 domains`);
+  }
+  for (const m of report.metrics) {
+    if (typeof m.value !== "number" || !Number.isFinite(m.value) || m.value < 0 || m.value > 10) {
+      throw new Error(`[Discovery Validation] metric ${m.key ?? m.label} invalide: value=${m.value}`);
+    }
+    if (!m.label) {
+      throw new Error(`[Discovery Validation] metric sans label`);
+    }
+  }
+
+  // CHECK 5: clientName — must be present and not a fallback/template value
+  if (!report.clientName || /^(profil|client|prenom|utilisateur)$/i.test(report.clientName.trim())) {
+    throw new Error(`[Discovery Validation] clientName invalide ou template: "${report.clientName}"`);
+  }
+
+  // CHECK 6: prénom client présent dans au moins une section (détecte template non personnalisé)
+  const firstNameLower = report.clientName.toLowerCase();
+  const hasPersonalization = report.sections.some(s => stripHtml(s.content).toLowerCase().includes(firstNameLower));
+  if (!hasPersonalization) {
+    throw new Error(`[Discovery Validation] prenom "${report.clientName}" absent de toutes les sections — report non personnalisé`);
+  }
+
+  console.log(`[Discovery Validation] ✅ OK: ${report.sections.length} sections, ${totalContent} chars, global=${report.globalScore}/10, ${report.metrics.length} metrics`);
+
+  return report;
 }
 
 function getDomainExpansion(
