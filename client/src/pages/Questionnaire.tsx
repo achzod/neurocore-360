@@ -671,6 +671,20 @@ function QuestionnaireContent() {
       setEmailSubmitted(true);
       localStorage.setItem("neurocore_email", email);
       setResponses((prev) => ({ ...prev, email }));
+
+      // Immediately persist a progress row so the abandonment-recovery cron
+      // can pick up this user even if they close the tab before answering
+      // the first question. Without this, the first save wouldn't happen
+      // until the 3s-debounced response-change effect fires — anyone who
+      // bails in the first 3 seconds would be invisible to the abandon cron.
+      // Fire-and-forget, best-effort.
+      apiRequest("POST", "/api/questionnaire/save-progress", {
+        email,
+        responses: { email },
+        currentSection: 0,
+        totalSections: filteredSections.length,
+      }).catch(() => { /* best-effort */ });
+
       // Load existing progress from DB (returning user on new device)
       await loadProgressFromDB(email);
     }
