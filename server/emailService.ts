@@ -3284,10 +3284,10 @@ export async function sendDiscoveryJ14CoachingEmail(
             Code promo exclusif
           </p>
           <p style="color: ${COLORS.primary}; font-size: 40px; font-weight: 700; letter-spacing: 4px; margin: 0 0 8px;">
-            ANALYSE20
+            DISCOVERY20
           </p>
           <p style="color: ${COLORS.text}; font-size: 15px; margin: 0; font-weight: 600;">
-            -20% sur tous les suivis<br/><span style="font-size: 13px; color: ${COLORS.textMuted};">(sauf formule Starter)</span>
+            -20% sur toutes les formules coaching<br/><span style="font-size: 13px; color: ${COLORS.textMuted};">(sauf formule Starter)</span>
           </p>
         </div>
 
@@ -3323,7 +3323,7 @@ export async function sendDiscoveryJ14CoachingEmail(
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
-        text: `L'analyse seule ne suffit pas. Coaching personnalisé basé sur ton Discovery Scan avec code ANALYSE20 (-20%). Voir les formules: ${coachingLink}`,
+        text: `L'analyse seule ne suffit pas. Coaching personnalisé basé sur ton Discovery Scan avec code DISCOVERY20 (-20% sur toutes les formules sauf Starter). Voir les formules: ${coachingLink}`,
         subject: "Tu as les donnees. Maintenant passe a l'action",
         from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
@@ -3333,7 +3333,7 @@ export async function sendDiscoveryJ14CoachingEmail(
         recipientEmail: email,
         auditId,
         auditType: "GRATUIT",
-        metadata: { promoCode: "ANALYSE20", coachingLink, trackingId },
+        metadata: { promoCode: "DISCOVERY20", coachingLink, trackingId },
       }
     );
 
@@ -4037,9 +4037,9 @@ export async function addSubscriberToList(
 }
 
 // Discovery J+30 — long-tail nurture for Discovery Scan recipients who haven't
-// upgraded after the existing J+3 / J+7 / J+14 sequence has run its course.
-// Emphasizes "the analysis was free, now go deeper" with a real price cut on
-// Anabolic Bioscan. One-shot per client, dedup via email_tracking.
+// upgraded. Pushes COACHING directly (not more audits) since coaching is the
+// real revenue. Uses DISCOVERY20 code (20% off all formules except Starter).
+// One-shot per client, dedup via email_tracking.
 export async function sendDiscoveryJ30NurtureEmail(
   email: string,
   auditId: string,
@@ -4048,50 +4048,57 @@ export async function sendDiscoveryJ30NurtureEmail(
 ): Promise<boolean> {
   try {
     const reportLink = `${baseUrl}/analysis/${auditId}`;
-    const anabolicLink = `${baseUrl}/offers/anabolic-bioscan?code=J30ANABOLIC&utm_source=apexlabs&utm_medium=email&utm_campaign=discovery_j30_nurture`;
+    const coachingLink = `https://www.achzodcoaching.com/formules-coaching?utm_source=apexlabs&utm_medium=email&utm_campaign=discovery_j30_nurture`;
+    const essentialLink = `https://www.achzodcoaching.com/coaching-essential?utm_source=apexlabs&utm_medium=email&utm_campaign=discovery_j30_nurture`;
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
 
     const content = `
       <h2 style="color: ${COLORS.text}; margin: 0 0 16px; font-size: 26px; text-align: center; font-weight: 700; letter-spacing: -0.5px;">
-        Un mois depuis ton Discovery Scan
+        Un mois depuis ton Discovery
       </h2>
 
       <p style="color: ${COLORS.textMuted}; font-size: 15px; line-height: 1.7; margin: 0 0 24px; text-align: center;">
-        Tu as reçu tes scores globaux et tes blocages principaux.<br/>
-        <strong style="color: ${COLORS.text};">Mais tu n'as toujours pas de protocole pour agir.</strong>
+        Tu as reçu tes scores et tes blocages.<br/>
+        <strong style="color: ${COLORS.text};">Maintenant la vraie question : qu'est-ce que tu en fais ?</strong>
       </p>
 
       <div style="padding: 24px; background: ${COLORS.surface}; border-radius: 12px; border-left: 4px solid ${COLORS.warning}; margin-bottom: 24px;">
         <p style="color: ${COLORS.text}; font-size: 15px; font-weight: 600; margin: 0 0 10px;">
-          Le Discovery Scan t'a dit QUOI corriger.
+          Un audit ne transforme pas. Le suivi, oui.
         </p>
         <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.7; margin: 0;">
-          L'Anabolic Bioscan te dit COMMENT — avec un protocole chiffré par domaine (sommeil, stress, énergie, digestion, hormones) + les suppléments, dosages et timings précis pour ton profil. C'est l'étape 2 logique, construite directement sur les données de ton Discovery.
+          Le Discovery te dit où tu bloques. Mais pour corriger durablement sommeil / stress / nutrition / énergie, il faut un protocole ajusté semaine après semaine selon tes retours. C'est ce que fait le coaching — je te construis un plan, tu m'envoies tes bilans hebdos, j'ajuste.
         </p>
       </div>
 
       <div style="padding: 28px; background: linear-gradient(135deg, ${COLORS.primary}20 0%, ${COLORS.primary}05 100%); border-radius: 12px; border: 2px solid ${COLORS.primary}; margin-bottom: 24px; text-align: center;">
-        <p style="color: ${COLORS.textMuted}; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 6px; font-weight: 600;">
+        <p style="color: ${COLORS.textMuted}; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 10px; font-weight: 600;">
           Offre clients Discovery
         </p>
-        <p style="color: ${COLORS.primary}; font-size: 36px; font-weight: 700; letter-spacing: -1px; margin: 0 0 4px;">
-          35€
-        </p>
-        <p style="color: ${COLORS.textMuted}; font-size: 13px; text-decoration: line-through; margin: 0 0 12px;">
-          au lieu de 59€
+        <p style="color: ${COLORS.text}; font-size: 16px; font-weight: 600; margin: 0 0 16px;">
+          -20% sur toutes les formules coaching<br/><span style="font-size: 13px; color: ${COLORS.textMuted};">(sauf Starter)</span>
         </p>
         <div style="background: ${COLORS.background}; border-radius: 8px; padding: 14px 18px; display: inline-block; margin-bottom: 16px; border: 1px dashed ${COLORS.primary};">
           <p style="color: ${COLORS.textMuted}; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; margin: 0 0 4px; font-weight: 600;">
-            Code exclusif
+            Ton code
           </p>
           <p style="color: ${COLORS.primary}; font-size: 22px; font-weight: 700; letter-spacing: 3px; margin: 0;">
-            J30ANABOLIC
+            DISCOVERY20
           </p>
         </div>
         <p style="color: ${COLORS.textMuted}; font-size: 13px; line-height: 1.6; margin: 0 0 18px;">
-          Basé sur ton Discovery — pas un nouveau questionnaire à refaire.
+          Je construis ton plan à partir des données de ton Discovery — pas de questionnaire à refaire.
         </p>
-        ${getPrimaryButton('Voir Anabolic Bioscan →', anabolicLink)}
+        ${getPrimaryButton('Voir les formules coaching →', coachingLink)}
+      </div>
+
+      <div style="padding: 14px 18px; background: ${COLORS.surface}; border-radius: 8px; border: 1px solid ${COLORS.border}; text-align: center; margin-bottom: 8px;">
+        <p style="color: ${COLORS.textMuted}; font-size: 13px; margin: 0 0 6px;">
+          Pas sûr du niveau de coaching adapté ?
+        </p>
+        <a href="${essentialLink}" style="color: ${COLORS.primary}; font-size: 13px; text-decoration: underline; font-weight: 600;">
+          Commence par Essential (4/8/12 sem, à partir de 249€) →
+        </a>
       </div>
 
       <div style="padding: 14px 18px; background: ${COLORS.surface}; border-radius: 8px; border: 1px solid ${COLORS.border}; text-align: center; margin-bottom: 20px;">
@@ -4111,23 +4118,23 @@ export async function sendDiscoveryJ30NurtureEmail(
     const emailContent = getEmailWrapper(
       content,
       `linear-gradient(135deg, ${COLORS.primary} 0%, #0b0b0f 100%)`,
-      "Étape 2",
+      "Coaching Achzod",
       "Un mois après ton Discovery"
     );
 
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
-        text: `Un mois depuis ton Discovery Scan. L'étape logique : Anabolic Bioscan — le protocole construit sur tes données.\n\nOffre clients Discovery : 35€ (au lieu de 59€), code J30ANABOLIC.\n\nCommander : ${anabolicLink}\nRelire le Discovery : ${reportLink}\n\nAchzod`,
-        subject: "Un mois depuis ton Discovery — passe à l'étape 2 (-24€)",
-        from: { name: SENDER_NAME, email: SENDER_EMAIL },
+        text: `Un mois depuis ton Discovery. Un audit ne transforme pas — le suivi, oui.\n\nOffre clients Discovery : -20% sur toutes les formules coaching (sauf Starter), code DISCOVERY20.\n\nVoir les formules : ${coachingLink}\nCoaching Essential (à partir de 249€, 4-8-12 sem) : ${essentialLink}\nRelire le Discovery : ${reportLink}\n\nAchzod`,
+        subject: "Un mois depuis ton Discovery — -20% sur ton coaching",
+        from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
       },
       {
         emailType: "sendDiscoveryJ30NurtureEmail",
         recipientEmail: email,
         auditId,
-        metadata: { trackingId },
+        metadata: { promoCode: "DISCOVERY20", coachingLink, trackingId },
       }
     );
 

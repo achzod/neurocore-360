@@ -3196,8 +3196,8 @@ export async function registerRoutes(
 
     // Send order confirmation email to client (don't leave them in the dark)
     const promoByType: Record<string, { code: string; label: string }> = {
-      ELITE: { code: "ULTIMATE79", label: "79€ deduits de ton coaching Elite/Private Lab 8 ou 12 semaines" },
-      PREMIUM: { code: "ANABOLIC59", label: "59€ deduits de ton coaching Elite/Private Lab 8 ou 12 semaines" },
+      ELITE: { code: "ULTIMATE79", label: "79€ déduits de ta formule coaching (Essential/Elite/Private Lab)" },
+      PREMIUM: { code: "BIOSCAN59", label: "59€ déduits de ta formule coaching (Essential/Elite/Private Lab)" },
     };
     const promo = promoByType[planType];
     const productLabel = planType === "ELITE" ? "Ultimate Scan" : planType === "PREMIUM" ? "Anabolic Bioscan" : "Analyse";
@@ -3755,9 +3755,10 @@ export async function registerRoutes(
         const stillNotEmailed = !(await storage.hasPeptidesDeliveryEmailBeenSent(email).catch(() => false));
         if (stillNotEmailed) {
           const promoBlock = report.promoCodesGenerated?.length > 0
-            ? `\n\nTes 2 codes Blood Analysis offerts:\n${report.promoCodesGenerated.join("\n")}` : "";
+            ? `\n\nTes 2 Blood Analysis offertes (codes):\n${report.promoCodesGenerated.join("\n")}` : "";
+          const coachingBlock = `\n\n——————————————————————\nTON BONUS COACHING\n——————————————————————\nCode : PEPTIDES150\n→ 150€ déduits sur ton coaching Elite ou Private Lab.\nValable sur n'importe quelle durée (4/8/12 sem).\n\nTu veux passer au coaching personnalisé après ton protocole ?\n• Coaching Elite — https://www.achzodcoaching.com/coaching-elite\n• Private Lab — https://www.achzodcoaching.com/coaching-achzod-private-lab\n\nColle le code PEPTIDES150 dans le champ promo au checkout.`;
           await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
-            `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}\n\nConserve ce lien — il est personnel et unique.`
+            `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}${coachingBlock}\n\nConserve ce lien — il est personnel et unique.\n\nAchzod`
           ).catch(() => {});
           const adminNotifEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
           await sendCTAEmail(adminNotifEmail, `PEPTIDES GENERE — ${email}`, `Rapport genere pour ${email}\nReport ID: ${saved.id}\nPeptides: ${peptidesNames}\nLien: ${baseUrl}/peptides/${saved.id}`).catch(() => {});
@@ -6507,10 +6508,10 @@ export async function registerRoutes(
               const clientEmail2 = session.customer_details?.email || session.customer_email || order.email;
               const clientName2 = session.customer_details?.name || clientEmail2?.split("@")[0] || "Client";
               const promoByType2: Record<string, { code: string; label: string }> = {
-                ELITE: { code: "ULTIMATE79", label: "79€ deduits de ton coaching Elite/Private Lab 8 ou 12 semaines" },
-                PREMIUM: { code: "ANABOLIC59", label: "59€ deduits de ton coaching Elite/Private Lab 8 ou 12 semaines" },
-                BLOOD_ANALYSIS: { code: "BLOOD99", label: "99€ deduits de ton coaching Elite/Private Lab 8 ou 12 semaines" },
-                PEPTIDES_ENGINE: { code: "PEPTIDES150", label: "150€ deduits de ton coaching Elite/Private Lab 8 ou 12 semaines" },
+                ELITE: { code: "ULTIMATE79", label: "79€ déduits de ta formule coaching (Essential/Elite/Private Lab)" },
+                PREMIUM: { code: "BIOSCAN59", label: "59€ déduits de ta formule coaching (Essential/Elite/Private Lab)" },
+                BLOOD_ANALYSIS: { code: "BLOOD99", label: "99€ déduits de ta formule coaching (Essential/Elite/Private Lab)" },
+                PEPTIDES_ENGINE: { code: "PEPTIDES150", label: "150€ déduits sur ta formule Elite ou Private Lab" },
               };
               const promo2 = promoByType2[order.productType];
               const prodLabel2 = order.productType === "ELITE" ? "Ultimate Scan" : order.productType === "PREMIUM" ? "Anabolic Bioscan" : order.productType === "BLOOD_ANALYSIS" ? "Blood Analysis" : order.productType === "PEPTIDES_ENGINE" ? "Peptides Engine" : order.productName;
@@ -8475,8 +8476,17 @@ export async function registerRoutes(
         // Deliver via email
         const promoCodesBlock =
           report.promoCodesGenerated?.length > 0
-            ? `\n\nTes 2 codes Blood Analysis offerts (100% de réduction, usage unique):\n${report.promoCodesGenerated.join("\n")}`
+            ? `\n\nTes 2 Blood Analysis offertes (codes, usage unique):\n${report.promoCodesGenerated.join("\n")}`
             : "";
+        const coachingBlock =
+          `\n\n——————————————————————\nTON BONUS COACHING\n——————————————————————\n` +
+          `Code : PEPTIDES150\n` +
+          `→ 150€ déduits sur ton coaching Elite ou Private Lab.\n` +
+          `Valable sur n'importe quelle durée (4/8/12 sem).\n\n` +
+          `Tu veux passer au coaching personnalisé après ton protocole ?\n` +
+          `• Coaching Elite — https://www.achzodcoaching.com/coaching-elite\n` +
+          `• Private Lab — https://www.achzodcoaching.com/coaching-achzod-private-lab\n\n` +
+          `Colle le code PEPTIDES150 dans le champ promo au checkout.`;
 
         const peptidesNames = report.peptides?.map((p) => p.name).join(", ") ?? "voir rapport";
         const deliveryMessage =
@@ -8484,7 +8494,8 @@ export async function registerRoutes(
           `Peptides recommandés : ${peptidesNames}\n\n` +
           `Accède à ton rapport complet ici :\n${getBaseUrl(req)}/peptides/${reportId}` +
           promoCodesBlock +
-          `\n\nConserve ce lien — il est personnel et unique.`;
+          coachingBlock +
+          `\n\nConserve ce lien — il est personnel et unique.\n\nAchzod`;
 
         await sendCTAEmail(
           email,
@@ -8749,13 +8760,14 @@ export async function registerRoutes(
         const baseUrl = getBaseUrl();
         const peptidesNames = report.peptides?.map((p: any) => p.name).join(", ") ?? "voir rapport";
         const promoBlock = report.promoCodesGenerated?.length > 0
-          ? `\n\nTes 2 codes Blood Analysis offerts:\n${report.promoCodesGenerated.join("\n")}` : "";
+          ? `\n\nTes 2 Blood Analysis offertes (codes, usage unique):\n${report.promoCodesGenerated.join("\n")}` : "";
+        const coachingBlock = `\n\n——————————————————————\nTON BONUS COACHING\n——————————————————————\nCode : PEPTIDES150\n→ 150€ déduits sur ton coaching Elite ou Private Lab.\nValable sur n'importe quelle durée (4/8/12 sem).\n\nTu veux passer au coaching personnalisé après ton protocole ?\n• Coaching Elite — https://www.achzodcoaching.com/coaching-elite\n• Private Lab — https://www.achzodcoaching.com/coaching-achzod-private-lab\n\nColle le code PEPTIDES150 dans le champ promo au checkout.`;
 
         let clientEmailSent = false;
         if (stillNotEmailed) {
           try {
             clientEmailSent = await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
-              `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}\n\nConserve ce lien — il est personnel et unique.`
+              `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}${coachingBlock}\n\nConserve ce lien — il est personnel et unique.\n\nAchzod`
             );
             if (clientEmailSent) {
               console.log(`[AutoGen] ✅ Delivery email sent to ${email}`);
