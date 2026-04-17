@@ -280,6 +280,30 @@ export default function BlogArticlePage() {
                 </ReactMarkdown>
               </div>
 
+              {/* End-of-article CTA — converts SEO readers into Discovery leads */}
+              <div className="mt-10 rounded-sm border border-[#FCDD00]/40 bg-gradient-to-br from-[#FCDD00]/5 to-transparent p-6 sm:p-8">
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FCDD00] mb-2">
+                  Va plus loin
+                </p>
+                <h3 className="text-xl sm:text-2xl font-bold text-white mb-3 tracking-tight">
+                  Tu veux savoir où tu en es sur tous les axes ?
+                </h3>
+                <p className="text-sm sm:text-base text-white/70 leading-relaxed mb-5">
+                  Le Discovery Scan APEXLABS analyse gratuitement 8 domaines (sommeil, stress, énergie, digestion, entraînement, nutrition, style de vie, mental) à partir d'un questionnaire de ~7 minutes. Tu reçois tes scores, tes blocages prioritaires et un plan clair en moins de 5 minutes.
+                </p>
+                <div className="flex flex-wrap items-center gap-3">
+                  <a
+                    href="/audit-complet?plan=gratuit"
+                    className="inline-flex items-center gap-2 bg-[#FCDD00] text-black px-5 py-3 rounded-sm font-bold text-sm hover:bg-[#fce844] transition-colors"
+                  >
+                    Faire mon Discovery Scan (gratuit)
+                  </a>
+                  <span className="text-xs text-white/40">
+                    Sans carte bancaire · Résultats immédiats
+                  </span>
+                </div>
+              </div>
+
               {/* Share */}
               <div className="mt-10 pt-8 border-t border-white/10">
                 <div className="flex items-center justify-between">
