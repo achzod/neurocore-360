@@ -6,6 +6,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Loader2, ArrowRight, Check, Shield } from "lucide-react";
 import { getMetaAttribution } from "@/lib/analytics";
+import { LiveStatsBar } from "@/components/LiveStatsBar";
 
 const PRIMARY_BLUE = "rgb(2,121,232)";
 
@@ -145,6 +146,9 @@ export default function BloodAnalysisStart() {
             <p className="text-4xl font-bold text-white">99€</p>
             <p className="text-white/40 text-xs mt-1">Paiement unique — 1 analyse complete</p>
           </div>
+
+          {/* Live social proof */}
+          <LiveStatsBar variant="blood" />
 
           {/* Features */}
           <div className="space-y-2.5">

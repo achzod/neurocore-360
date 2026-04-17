@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Header } from "@/components/Header";
+import { LiveStatsBar } from "@/components/LiveStatsBar";
 import { apiRequest } from "@/lib/queryClient";
 import { trackBeginCheckout, getMetaAttribution } from "@/lib/analytics";
 import { useToast } from "@/hooks/use-toast";
@@ -322,6 +323,9 @@ function CheckoutCard({
           </div>
         </div>
       </div>
+
+      {/* Live social proof — real counters from DB, empty-state safe */}
+      <LiveStatsBar variant="peptides" />
 
       {/* Safety gate */}
       {safetyCheck.blocked && safetyCheck.reason && (

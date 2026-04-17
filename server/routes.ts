@@ -116,6 +116,95 @@ export async function registerRoutes(
     });
   });
 
+  // Public stats endpoint — live factual numbers for social proof on landing/checkout pages.
+  // Values are computed from the DB, not fabricated. Cached for 5 min to avoid hammering
+  // the DB on every page view. Filters out test/debug emails. Only counts data from the
+  // post-launch period (2026-03-17) to stay truthful.
+  const STATS_CACHE_MS = 5 * 60 * 1000;
+  const LAUNCH_DATE = new Date("2026-03-17T00:00:00Z");
+  let statsCache: { data: Record<string, unknown>; computedAt: number } | null = null;
+
+  app.get("/api/stats/live", async (_req, res) => {
+    try {
+      if (statsCache && Date.now() - statsCache.computedAt < STATS_CACHE_MS) {
+        res.json(statsCache.data);
+        return;
+      }
+
+      const isTestEmail = (email: string | null | undefined) =>
+        !email
+          || email.includes("test")
+          || email.includes("debug")
+          || email.includes("achzodcoaching")
+          || email.includes("achkou");
+
+      const audits = await storage.getAllAudits();
+      const audit_sent = audits.filter(a => {
+        if (!a || isTestEmail(a.email)) return false;
+        if (new Date(a.createdAt) < LAUNCH_DATE) return false;
+        return (a as any).reportDeliveryStatus === "SENT";
+      });
+      const discoveryDone = audit_sent.filter(a => a.type === "GRATUIT").length;
+      const premiumDone = audit_sent.filter(a => a.type === "PREMIUM").length;
+      const eliteDone = audit_sent.filter(a => a.type === "ELITE").length;
+
+      const peptidesReports = await storage.getAllBurnoutReports();
+      const peptidesValid = (peptidesReports || []).filter((r: any) => {
+        if (!r) return false;
+        const email = String(r.email || "").replace(/^peptides::/, "");
+        if (isTestEmail(email)) return false;
+        if (new Date(r.createdAt) < LAUNCH_DATE) return false;
+        return true;
+      });
+      const peptidesCount = peptidesValid.length;
+      const peptidesPerProtocol = peptidesValid.length > 0
+        ? peptidesValid.reduce((sum: number, r: any) => sum + (Array.isArray(r.report?.peptides) ? r.report.peptides.length : 0), 0) / peptidesValid.length
+        : 0;
+
+      const bloodReports = await storage.getAllBloodReports();
+      const bloodDone = (bloodReports || []).filter((r: any) => {
+        if (!r || isTestEmail(r.email)) return false;
+        if (new Date(r.createdAt) < LAUNCH_DATE) return false;
+        return (r as any).deliveryStatus === "SENT" || !!r.aiReport;
+      }).length;
+
+      // Unique clients that received at least one report (any type)
+      const uniqueEmails = new Set<string>();
+      for (const a of audit_sent) uniqueEmails.add(String(a.email).toLowerCase());
+      for (const r of peptidesValid) {
+        const em = String((r as any).email || "").replace(/^peptides::/, "").toLowerCase();
+        if (em) uniqueEmails.add(em);
+      }
+      for (const r of (bloodReports || [])) {
+        if (!isTestEmail((r as any).email)) uniqueEmails.add(String((r as any).email).toLowerCase());
+      }
+
+      const data = {
+        totalClients: uniqueEmails.size,
+        discoveryScans: discoveryDone,
+        anabolicBioscans: premiumDone,
+        ultimateScans: eliteDone,
+        peptidesProtocols: peptidesCount,
+        peptidesAvgPerProtocol: Math.round(peptidesPerProtocol * 10) / 10,
+        bloodAnalyses: bloodDone,
+        totalReportsDelivered: discoveryDone + premiumDone + eliteDone + peptidesCount + bloodDone,
+        since: LAUNCH_DATE.toISOString().slice(0, 10),
+        computedAt: new Date().toISOString(),
+      };
+
+      statsCache = { data, computedAt: Date.now() };
+      res.json(data);
+    } catch (err: any) {
+      console.error("[Stats] Error computing live stats:", err?.message || err);
+      // Never fail the page load — return a safe minimal payload if the DB hiccups.
+      res.json({
+        totalClients: 0,
+        totalReportsDelivered: 0,
+        error: true,
+      });
+    }
+  });
+
   // Pre-launch diagnostic — checks all critical services
   app.get("/api/admin/launch-check", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;

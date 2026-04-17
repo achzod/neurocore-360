@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Header } from "@/components/Header";
+import { LiveStatsBar } from "@/components/LiveStatsBar";
 import {
   Check,
   Lock,
@@ -847,6 +848,11 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
             </CardContent>
           </Card>
         </motion.div>
+
+        {/* Live social proof — real counters from DB */}
+        <div className="mt-8">
+          <LiveStatsBar variant="checkout" />
+        </div>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
