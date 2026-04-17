@@ -3227,6 +3227,19 @@ export async function registerRoutes(
         res.status(400).json({ error: "sessionId requis" });
         return;
       }
+      // Reject un-interpolated templates like "$", "${CHECKOUT_SESSION_ID}", "{id}".
+      // Without this, Stripe returns "No such checkout.session: $" which pollutes
+      // logs and surfaces a confusing error to the client.
+      if (
+        sessionId.length < 10 ||
+        sessionId === "$" ||
+        sessionId.includes("{") ||
+        sessionId.includes("}")
+      ) {
+        console.warn(`[confirm-session] Rejected malformed sessionId: "${sessionId}" — template not interpolated`);
+        res.status(400).json({ error: "sessionId_malformed" });
+        return;
+      }
 
       const stripe = await getUncachableStripeClient();
       const session = await stripe.checkout.sessions.retrieve(sessionId, {
@@ -3251,8 +3264,26 @@ export async function registerRoutes(
         return;
       }
 
+      // PEPTIDES_ENGINE is a valid plan; the webhook + autogen handle its
+      // generation separately from the audit pipeline. Confirm-session should
+      // acknowledge the payment and redirect without trying to create an audit.
+      if (planType === "PEPTIDES_ENGINE") {
+        const existingOrder = await storage.getOrderByStripeSession(sessionId);
+        if (existingOrder && existingOrder.status !== "paid") {
+          await storage.updateOrder(existingOrder.id, {
+            status: "paid",
+            paidAt: new Date(),
+            stripePaymentIntentId: (session as any).payment_intent || null,
+            stripeCustomerId: (session as any).customer || null,
+          });
+        }
+        res.json({ success: true, auditId: "", auditType: "PEPTIDES_ENGINE", email, generating: true });
+        return;
+      }
+
       if (planType !== "GRATUIT" && planType !== "PREMIUM" && planType !== "ELITE" && planType !== "BLOOD_ANALYSIS") {
-        res.status(400).json({ error: "PLAN_INVALID" });
+        console.warn(`[confirm-session] Unknown planType: "${planType}" for session ${sessionId} (email=${email})`);
+        res.status(400).json({ error: "PLAN_INVALID", receivedPlanType: planType });
         return;
       }
 
@@ -3645,7 +3676,8 @@ export async function registerRoutes(
       }
 
       if (planType !== "PREMIUM" && planType !== "ELITE" && planType !== "GRATUIT") {
-        res.status(400).json({ error: "PLAN_INVALID" });
+        console.warn(`[PayPal capture] Unknown planType reached audit creation: "${planType}" (email=${email})`);
+        res.status(400).json({ error: "PLAN_INVALID", receivedPlanType: planType });
         return;
       }
 

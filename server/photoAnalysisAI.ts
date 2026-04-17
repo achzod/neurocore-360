@@ -260,6 +260,18 @@ export async function analyzeBodyPhotosWithAI(
   const blocks: any[] = [];
   const labels: string[] = [];
 
+  // Claude Vision only accepts JPEG/PNG/GIF/WebP. HEIC/HEIF (iOS Safari default
+   // for newer iPhones) triggers a 400 "Could not process image" that cascades
+   // into a blocked ELITE email delivery. Reject these upstream with a clear log
+   // so the admin can manually follow-up.
+  const CLAUDE_SUPPORTED_MEDIA = new Set([
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+  ]);
+
   const add = (label: string, raw?: string) => {
     if (!raw) return;
     const parsed = parsePhotoToBase64(raw);
@@ -269,6 +281,14 @@ export async function analyzeBodyPhotosWithAI(
     // These will cause Claude API "Could not process image" errors
     if (parsed.data.length > 4_000_000) {
       console.warn(`[PhotoAnalysis] SKIPPING ${label}: ${(parsed.data.length / 1024 / 1024).toFixed(1)}MB base64 — too large for API`);
+      return;
+    }
+
+    // Reject unsupported MIME types before hitting Claude Vision — fails
+    // gracefully instead of producing a vague 400.
+    const mt = parsed.mediaType.toLowerCase();
+    if (!CLAUDE_SUPPORTED_MEDIA.has(mt)) {
+      console.warn(`[PhotoAnalysis] SKIPPING ${label}: unsupported media type "${mt}" — needs JPEG/PNG/GIF/WebP. Likely iPhone HEIC — ask the client to re-upload or enable client-side HEIC→JPEG conversion.`);
       return;
     }
 

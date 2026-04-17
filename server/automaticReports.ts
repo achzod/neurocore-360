@@ -91,9 +91,13 @@ export async function sendAutomaticReport(): Promise<boolean> {
  * Collecte toutes les stats nécessaires
  */
 async function gatherStats(): Promise<ReportStats> {
-  const { db } = await import("./db.js");
-  const { audits, orders } = await import("../shared/drizzle-schema.js");
-  const { eq, and, gte, lt } = await import("drizzle-orm");
+  const { db, pool } = await import("./db.js");
+  const schema = await import("../shared/drizzle-schema.js");
+  // `orders` is not defined in drizzle-schema.ts — storage.ts manages the
+  // orders table via raw SQL. Guard against the undefined import (used to
+  // throw "Cannot read properties of undefined (reading 'Symbol(drizzle:Columns)')").
+  const audits = (schema as any).audits;
+  if (!audits) throw new Error("[Reports] drizzle schema missing: audits");
 
   const now = new Date();
   const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
@@ -157,13 +161,24 @@ async function gatherStats(): Promise<ReportStats> {
       new Date(a.reportSentAt) >= sixHoursAgo
   ).length;
 
-  // Revenus
-  const allOrders = await db.select().from(orders);
-  const paidOrders = allOrders.filter((o) => o.status === "paid");
-  const totalCents = paidOrders.reduce((sum, o) => sum + o.finalAmountCents, 0);
-  const last24hCents = paidOrders
-    .filter((o) => new Date(o.createdAt) >= twentyFourHoursAgo)
-    .reduce((sum, o) => sum + o.finalAmountCents, 0);
+  // Revenus — orders table managed by raw SQL in storage.ts (no drizzle model),
+  // so query directly via pg pool. Filter in SQL to avoid loading every row's
+  // metadata blob into Node.
+  let totalCents = 0;
+  let last24hCents = 0;
+  try {
+    const totalRes = await pool.query(
+      "SELECT COALESCE(SUM(final_amount_cents), 0)::bigint AS total FROM orders WHERE status = 'paid'"
+    );
+    totalCents = Number(totalRes.rows[0]?.total ?? 0);
+    const last24Res = await pool.query(
+      "SELECT COALESCE(SUM(final_amount_cents), 0)::bigint AS total FROM orders WHERE status = 'paid' AND created_at >= $1",
+      [twentyFourHoursAgo]
+    );
+    last24hCents = Number(last24Res.rows[0]?.total ?? 0);
+  } catch (err) {
+    console.error("[Reports] Revenue query failed (non-fatal):", err);
+  }
 
   // Santé du système
   let healthStatus: "GOOD" | "WARNING" | "CRITICAL" = "GOOD";
