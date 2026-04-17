@@ -128,8 +128,63 @@ export function trackAddPaymentInfo(itemId: string, itemName: string, price: num
   });
 }
 
+/**
+ * Read `_fbp` / `_fbc` cookies set by the Meta Pixel + current user agent + source url.
+ * Forward these with every checkout request so the server-side CAPI Purchase event
+ * can match the same user/browser — without this, CAPI can't deduplicate with the
+ * client Pixel and match quality stays low.
+ */
+function readCookie(name: string): string | undefined {
+  if (typeof document === 'undefined') return undefined;
+  const pair = document.cookie.split('; ').find(c => c.startsWith(`${name}=`));
+  return pair ? decodeURIComponent(pair.split('=').slice(1).join('=')) : undefined;
+}
+
+export function getMetaAttribution(): {
+  fbp?: string;
+  fbc?: string;
+  userAgent?: string;
+  sourceUrl?: string;
+} {
+  if (typeof window === 'undefined') return {};
+  const fbp = readCookie('_fbp');
+  // _fbc is only set when the user arrived from a Meta ad (query ?fbclid=…).
+  // If absent but fbclid is present in the URL, Meta says you can synthesize:
+  //   fbc = fb.1.<timestamp_ms>.<fbclid>
+  let fbc = readCookie('_fbc');
+  if (!fbc) {
+    try {
+      const fbclid = new URLSearchParams(window.location.search).get('fbclid');
+      if (fbclid) fbc = `fb.1.${Date.now()}.${fbclid}`;
+    } catch {}
+  }
+  return {
+    fbp,
+    fbc,
+    userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
+    sourceUrl: window.location.href,
+  };
+}
+
+// Build a deterministic event_id for a Stripe/PayPal Purchase. Must match the
+// server's event_id in the CAPI call so Meta dedups the client Pixel event and
+// the server CAPI event into a single Purchase.
+export function buildPurchaseEventId(provider: 'stripe' | 'paypal', externalId: string): string {
+  return `${provider}_${externalId}`;
+}
+
 // Track successful purchase
-export function trackPurchase(transactionId: string, itemId: string, itemName: string, price: number, currency = 'EUR') {
+export function trackPurchase(
+  transactionId: string,
+  itemId: string,
+  itemName: string,
+  price: number,
+  currency = 'EUR',
+  opts?: { provider?: 'stripe' | 'paypal' }
+) {
+  const provider = opts?.provider ?? 'stripe';
+  const eventId = buildPurchaseEventId(provider, transactionId);
+
   gtag('event', 'purchase', {
     transaction_id: transactionId,
     currency,
@@ -151,14 +206,15 @@ export function trackPurchase(transactionId: string, itemId: string, itemName: s
     transaction_id: transactionId,
   });
 
-  // Meta Pixel Purchase
+  // Meta Pixel Purchase — pass eventID matching the server-side CAPI event_id
+  // so Meta deduplicates the Pixel + CAPI pair into one Purchase.
   fbq('track', 'Purchase', {
     content_ids: [itemId],
     content_name: itemName,
     content_type: 'product',
     value: price,
     currency,
-  });
+  }, { eventID: eventId });
 }
 
 // Track Discovery Scan (free) submission as a lead

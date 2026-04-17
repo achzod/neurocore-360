@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/select";
 import { Header } from "@/components/Header";
 import { apiRequest } from "@/lib/queryClient";
-import { trackBeginCheckout } from "@/lib/analytics";
+import { trackBeginCheckout, getMetaAttribution } from "@/lib/analytics";
 import { useToast } from "@/hooks/use-toast";
 import {
   PEPTIDES_SECTIONS,
@@ -537,12 +537,15 @@ export default function PeptidesEnginePage() {
       // Capture referrer from URL
       const urlRef = new URLSearchParams(window.location.search).get("ref") || "";
 
+      const metaAttr = getMetaAttribution();
+
       if (method === "paypal") {
         const res = await apiRequest("POST", "/api/paypal/create-order", {
           email,
           planType: "PEPTIDES_ENGINE",
           responses,
           promoCode: promoCode.trim() || undefined,
+          ...metaAttr,
         });
         return res.json();
       }
@@ -553,6 +556,7 @@ export default function PeptidesEnginePage() {
         responses,
         referrer: urlRef || undefined,
         promoCode: promoCode.trim() || undefined,
+        ...metaAttr,
       });
       return res.json();
     },

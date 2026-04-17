@@ -2723,7 +2723,7 @@ export async function registerRoutes(
 
   app.post("/api/stripe/create-checkout-session", checkoutLimiter, async (req, res) => {
     try {
-      const { priceId: clientPriceId, email, planType, responses, promoCode, referrer } = req.body;
+      const { priceId: clientPriceId, email, planType, responses, promoCode, referrer, fbp, fbc, userAgent, sourceUrl } = req.body;
 
       // Already paid check for ALL product types (prevents double charge)
       if (email && planType && planType !== "GRATUIT") {
@@ -2924,6 +2924,14 @@ export async function registerRoutes(
           responses: responses ? JSON.stringify(responses).substring(0, 500) : '',
           promoCode: validatedPromoCode || '',
           referrer: referrer || '',
+          // Meta CAPI attribution: forwarded from the browser so the webhook
+          // handler can send these with the Purchase event for better match quality.
+          // Stripe metadata values must be strings <= 500 chars.
+          fbp: (fbp || '').toString().slice(0, 500),
+          fbc: (fbc || '').toString().slice(0, 500),
+          user_agent: (userAgent || req.get('user-agent') || '').toString().slice(0, 500),
+          client_ip: (req.ip || '').toString().slice(0, 45),
+          source_url: (sourceUrl || referrer || '').toString().slice(0, 500),
         },
       };
 
@@ -3169,7 +3177,7 @@ export async function registerRoutes(
         return;
       }
 
-      const { email, planType, responses, promoCode } = req.body;
+      const { email, planType, responses, promoCode, fbp, fbc, userAgent, sourceUrl } = req.body;
       if (!email || !planType) {
         res.status(400).json({ error: "email et planType requis" });
         return;
@@ -3328,7 +3336,17 @@ export async function registerRoutes(
           paypalOrderId,
           ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null,
           userAgent: req.headers["user-agent"] || null,
-          metadata: { planType, paymentMethod: "paypal", peptidesResponses: planType === "PEPTIDES_ENGINE" ? responses : undefined },
+          metadata: {
+            planType,
+            paymentMethod: "paypal",
+            peptidesResponses: planType === "PEPTIDES_ENGINE" ? responses : undefined,
+            // Meta CAPI attribution — read by the capture handler to send Purchase CAPI event
+            fbp: fbp || undefined,
+            fbc: fbc || undefined,
+            user_agent: userAgent || req.get("user-agent") || undefined,
+            client_ip: req.ip || undefined,
+            source_url: sourceUrl || undefined,
+          },
         });
 
         if (validatedPromoCode && promoObj) {
@@ -3423,6 +3441,34 @@ export async function registerRoutes(
 
       const email = existingOrder.email;
       const planType = existingOrder.productType;
+
+      // Meta CAPI — server-side Purchase event for PayPal flow
+      // event_id uses the PayPal order id so the client-side Pixel can dedup with the same value.
+      try {
+        const { sendMetaPurchase } = await import("./metaCapi.js");
+        const existingMeta = (existingOrder.metadata ?? {}) as Record<string, string | undefined>;
+        const valueEUR = (existingOrder.finalAmountCents ?? 0) / 100;
+        const eventSourceUrl = existingMeta.source_url || `${getBaseUrl()}/`;
+        await sendMetaPurchase({
+          eventId: `paypal_${paypalOrderId}`,
+          eventSourceUrl,
+          valueEUR,
+          currency: "EUR",
+          contentIds: [planType || "unknown"],
+          contentName: existingOrder.productName || planType || undefined,
+          orderId: existingOrder.id,
+          userData: {
+            email: email || capture.payerEmail || undefined,
+            fbp: existingMeta.fbp,
+            fbc: existingMeta.fbc,
+            ip: existingMeta.client_ip || req.ip,
+            userAgent: existingMeta.user_agent || req.get("user-agent") || undefined,
+            externalId: email || undefined,
+          },
+        });
+      } catch (capiErr) {
+        console.error(`[PayPal] Meta CAPI Purchase failed (non-blocking):`, capiErr);
+      }
 
       // Admin notification for ALL PayPal payments
       try {
@@ -6274,6 +6320,42 @@ export async function registerRoutes(
               stripeCustomerId: session.customer || null,
             });
             console.log(`[Webhook] Order ${order.id} marked as paid via webhook`);
+
+            // Meta CAPI — server-side Purchase event (recovers 30-50% lost to ITP/adblockers)
+            // event_id must match the client-side Pixel eventID for Meta to dedup correctly.
+            // Any failure is swallowed — CAPI must never block the webhook response.
+            try {
+              const { sendMetaPurchase } = await import("./metaCapi.js");
+              const stripeMeta = (session.metadata ?? {}) as Record<string, string | undefined>;
+              const sessionEmail = session.customer_details?.email || session.customer_email || order.email || undefined;
+              const sessionPhone = session.customer_details?.phone || undefined;
+              const fullName = session.customer_details?.name || "";
+              const [firstName, ...lastParts] = fullName.trim().split(/\s+/);
+              const valueEUR = (order.finalAmountCents ?? 0) / 100;
+              const eventSourceUrl = session.success_url || stripeMeta.source_url || `${getBaseUrl()}/`;
+              await sendMetaPurchase({
+                eventId: `stripe_${session.id}`,
+                eventSourceUrl,
+                valueEUR,
+                currency: (session.currency || "eur").toUpperCase(),
+                contentIds: [order.productType || "unknown"],
+                contentName: order.productName || order.productType || undefined,
+                orderId: order.id,
+                userData: {
+                  email: sessionEmail,
+                  phone: sessionPhone,
+                  firstName: firstName || undefined,
+                  lastName: lastParts.join(" ") || undefined,
+                  fbp: stripeMeta.fbp,
+                  fbc: stripeMeta.fbc,
+                  ip: stripeMeta.client_ip,
+                  userAgent: stripeMeta.user_agent,
+                  externalId: sessionEmail,
+                },
+              });
+            } catch (capiErr) {
+              console.error(`[Webhook] Meta CAPI Purchase (stripe) failed (non-blocking):`, capiErr);
+            }
 
             // Admin notification for PAID orders
             try {

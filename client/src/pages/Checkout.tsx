@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { trackBeginCheckout, trackAddPaymentInfo, trackPurchase, trackDiscoveryScanLead } from "@/lib/analytics";
+import { trackBeginCheckout, trackAddPaymentInfo, trackPurchase, trackDiscoveryScanLead, getMetaAttribution } from "@/lib/analytics";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -448,12 +448,15 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
         });
       }
 
+      const metaAttr = getMetaAttribution();
+
       if (paymentMethod === "paypal") {
         const response = await apiRequest("POST", "/api/paypal/create-order", {
           email,
           planType: type,
           responses,
           promoCode: validatedPromo?.code || null,
+          ...metaAttr,
         });
         return response.json();
       }
@@ -464,6 +467,7 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
         planType: type,
         responses,
         promoCode: validatedPromo?.code || null,
+        ...metaAttr,
       };
       // Only send priceId if it's actually defined (VITE vars may be missing from build)
       const clientPriceId = STRIPE_PRICE_IDS[planId as keyof typeof STRIPE_PRICE_IDS];

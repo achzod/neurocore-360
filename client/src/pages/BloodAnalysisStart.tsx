@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Loader2, ArrowRight, Check, Shield } from "lucide-react";
+import { getMetaAttribution } from "@/lib/analytics";
 
 const PRIMARY_BLUE = "rgb(2,121,232)";
 
@@ -94,7 +95,7 @@ export default function BloodAnalysisStart() {
       const res = await fetch("/api/stripe/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, planType: "BLOOD_ANALYSIS", promoCode: promoCode.trim() || undefined }),
+        body: JSON.stringify({ email, planType: "BLOOD_ANALYSIS", promoCode: promoCode.trim() || undefined, ...getMetaAttribution() }),
       });
       const data = await res.json();
       if (data.url) {
