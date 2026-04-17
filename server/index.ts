@@ -356,6 +356,37 @@ if (process.env.NODE_ENV === "production") {
       // To re-enable: uncomment and import sendDailyConversionReport from conversionTracker
       log("Daily conversion report DISABLED (no ads running)");
 
+      // Automatic abandonment recovery — sends reminder emails to users who started a
+      // questionnaire but didn't finish. Was only available as an admin endpoint, never
+      // ran on its own. Now scheduled every 6h so abandons actually get recovered.
+      // Respects the built-in min-6h wait + per-email dedup via logAbandonmentReminder.
+      const { autoSendAbandonmentReminders } = await import("./abandonmentReminders.js");
+      const ABANDON_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
+      let abandonRunning = false;
+
+      const runAbandonRecovery = async () => {
+        if (abandonRunning) return;
+        abandonRunning = true;
+        try {
+          const stats = await autoSendAbandonmentReminders(storage, {
+            dryRun: false,
+            maxToSend: 50,
+            notifyAdmin: true,
+          });
+          if (stats.sent > 0) {
+            log(`Abandon recovery: ${stats.sent} reminders sent (${stats.failed} failed)`, "abandon");
+          }
+        } catch (err) {
+          console.error("[AbandonRecovery] Unhandled error:", err);
+        } finally {
+          abandonRunning = false;
+        }
+      };
+
+      // Don't run on startup — wait one interval so the service is settled.
+      setInterval(runAbandonRecovery, ABANDON_INTERVAL_MS);
+      log("Abandonment recovery cron started (every 6h, max 50 reminders/cycle)");
+
       // Self-ping to prevent Render cold starts (every 4 min)
       if (process.env.NODE_ENV === "production") {
         const selfPingUrl = `${getBaseUrl()}/api/health`;
