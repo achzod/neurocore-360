@@ -72,6 +72,7 @@ const DEDUCTION_BY_AUDIT_TYPE: Record<string, number> = {
   ELITE: 79,
   ULTIMATE_SCAN: 79,
   BLOOD_ANALYSIS: 99,
+  PEPTIDES_ENGINE: 150,
 };
 
 const PROMO_CODE_BY_AUDIT_TYPE: Record<string, { code: string; amount: number }> = {
@@ -80,6 +81,7 @@ const PROMO_CODE_BY_AUDIT_TYPE: Record<string, { code: string; amount: number }>
   ELITE: { code: "ULTIMATE79", amount: 79 },
   ULTIMATE_SCAN: { code: "ULTIMATE79", amount: 79 },
   BLOOD_ANALYSIS: { code: "BLOOD99", amount: 99 },
+  PEPTIDES_ENGINE: { code: "PEPTIDES150", amount: 150 },
 };
 
 const getPromoCodeForAuditType = (auditType: string): { code: string; amount: number } | null => {
@@ -234,15 +236,24 @@ async function sendEmailWithTracking(
   }
 }
 
-function renderCoachingOffersTable(deductionAmount: number, accentColor: string): string {
-  const hasDeduction = deductionAmount > 0;
-  const headerNote = hasDeduction
+function renderCoachingOffersTable(
+  deduction: { amount?: number; percent?: number },
+  accentColor: string
+): string {
+  const deductionAmount = deduction.amount ?? 0;
+  const deductionPercent = deduction.percent ?? 0;
+  const hasDeduction = deductionAmount > 0 || deductionPercent > 0;
+  const headerNote = deductionPercent > 0
+    ? `Deduction appliquee : -${deductionPercent}% (sauf Starter)`
+    : deductionAmount > 0
     ? `Deduction appliquee : -${formatEuro(deductionAmount)}`
     : "Aucune deduction appliquee sur ce rapport";
   const rowBorder = `1px solid ${COLORS.border}`;
   const rows = COACHING_OFFER_TIERS.flatMap((tier) =>
     tier.offers.map((offer) => {
-      const after = Math.max(0, offer.price - deductionAmount);
+      const after = deductionPercent > 0
+        ? Math.max(0, Math.round(offer.price * (1 - deductionPercent / 100)))
+        : Math.max(0, offer.price - deductionAmount);
       return `
         <tr>
           <td style="padding: 10px 12px; border-top: ${rowBorder}; font-weight: 600;">
@@ -406,6 +417,13 @@ function getCoachingSection(auditType: string, color: string = COLORS.purple): s
   const coachingLink = "https://www.achzodcoaching.com/formules-coaching";
   const deductionAmount = getDeductionAmount(auditType);
   const promo = getPromoCodeForAuditType(auditType);
+
+  // GRATUIT / DISCOVERY uses DISCOVERY20 (-20% percent on all formules except Starter)
+  const isDiscovery = auditType === "GRATUIT" || auditType === "DISCOVERY";
+  const discoveryPromo = isDiscovery
+    ? { code: "DISCOVERY20", percent: 20 }
+    : null;
+
   const promoSection = promo ? `
       <div style="margin: 20px 0; padding: 16px; border: 2px dashed ${color}; border-radius: 12px; text-align: center; background: ${color}10;">
         <p style="color: ${COLORS.textMuted}; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 6px;">Ton code promo</p>
@@ -413,9 +431,23 @@ function getCoachingSection(auditType: string, color: string = COLORS.purple): s
         <p style="color: ${COLORS.text}; font-size: 13px; margin: 8px 0 0;">-${promo.amount}EUR deduits sur ton coaching</p>
       </div>
       <p style="color: ${COLORS.textMuted}; font-size: 12px; text-align: center; margin: 0 0 16px;">
-        Utilise ce code sur achzodcoaching.com pour deduire ${promo.amount}EUR de ta formule coaching.
+        Colle ce code au checkout sur achzodcoaching.com pour deduire ${promo.amount}EUR de ta formule.
+      </p>
+  ` : discoveryPromo ? `
+      <div style="margin: 20px 0; padding: 16px; border: 2px dashed ${color}; border-radius: 12px; text-align: center; background: ${color}10;">
+        <p style="color: ${COLORS.textMuted}; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 6px;">Ton code Discovery</p>
+        <p style="color: ${color}; font-size: 28px; font-weight: 700; letter-spacing: 3px; margin: 0;">${discoveryPromo.code}</p>
+        <p style="color: ${COLORS.text}; font-size: 13px; margin: 8px 0 0;">-${discoveryPromo.percent}% sur toutes les formules (sauf Starter)</p>
+      </div>
+      <p style="color: ${COLORS.textMuted}; font-size: 12px; text-align: center; margin: 0 0 16px;">
+        Colle ce code au checkout sur achzodcoaching.com pour appliquer la reduction.
       </p>
   ` : "";
+
+  const deductionArg = discoveryPromo
+    ? { percent: discoveryPromo.percent }
+    : { amount: deductionAmount };
+
   return `
     <div style="padding: 28px; background: linear-gradient(135deg, ${color}15 0%, ${color}08 100%); border-radius: 12px; border: 1px solid ${color}30;">
       <div style="text-align: center; margin-bottom: 20px;">
@@ -432,7 +464,7 @@ function getCoachingSection(auditType: string, color: string = COLORS.purple): s
 
       ${promoSection}
 
-      ${renderCoachingOffersTable(deductionAmount, color)}
+      ${renderCoachingOffersTable(deductionArg, color)}
 
       ${getPrimaryButton('Decouvrir les formules', coachingLink, color)}
     </div>
@@ -528,7 +560,7 @@ export async function sendReportReadyEmail(
 
       ${getReviewSection(reviewLink)}
 
-      ${auditType !== "GRATUIT" ? getCoachingSection(auditType, planColor) : ""}
+      ${getCoachingSection(auditType, planColor)}
 
       <div style="margin-top: 24px; padding: 20px; background-color: ${COLORS.background}; border-radius: 8px; border: 1px solid ${COLORS.border};">
         <p style="color: ${COLORS.textMuted}; font-size: 12px; margin: 0 0 8px; text-align: center;">
