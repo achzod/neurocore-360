@@ -189,7 +189,7 @@ function buildCatalogForPrompt(): string {
   const relevant = PEPTAURA_CATALOG.filter(p => PROMPT_CATEGORIES.has(p.category));
   const lines: string[] = [];
   lines.push("CATALOGUE PEPTAURA (peptaura.com) — PRIX RÉELS EN USD");
-  lines.push("Marketplace, 13 fournisseurs COA-verifies. Lumira = meilleur prix. Pepturion = MOQ le plus bas ($260).");
+  lines.push("Marketplace, 13 fournisseurs COA-verifies. Client FRANCE : Lumira = meilleur prix + livre France. Apexion Labs = MOQ $24 + livre France. Pepturion NE LIVRE PAS EN FRANCE (jamais recommander).");
   lines.push("Tous les produits: vials lyophilises (reconstituer avec BAC water).\n");
 
   for (const p of relevant) {
@@ -418,20 +418,40 @@ CADRE DE TRAVAIL
 - IMPORTANT: Recommande UNIQUEMENT des produits disponibles sur Peptaura
 - IMPORTANT: Pas de voie orale. SC (sous-cutané), IM (intramusculaire), ou intranasal uniquement
 
-CHOIX DU FOURNISSEUR (CRITIQUE)
-Peptaura est un marketplace avec plusieurs fournisseurs. Le choix dépend du BUDGET du client :
-- Si le coût total du cycle est < $300 → recommande PEPTURION (MOQ $260, 4.80/5 étoiles, 148 avis). Les prix sont légèrement plus élevés mais le minimum de commande est accessible.
-- Si le coût total est $300-$1200 → recommande LUMIRA (MOQ $1120, 4.82/5, meilleurs prix unitaires). Le client peut atteindre le minimum en ajoutant BAC water et seringues.
-- Si le coût total est > $1200 → recommande LUMIRA (livraison gratuite au-dessus de $1120).
-- EXPLIQUE TOUJOURS au client pourquoi tu recommandes ce fournisseur plutôt qu'un autre.
-- Mentionne le MOQ (minimum de commande) pour que le client ne soit pas surpris.
-- PRIX: utilise UNIQUEMENT les prix du catalogue fourni (cheapestPriceUSD). N'INVENTE JAMAIS un prix. Si tu recommandes Pepturion mais que le catalogue n'a que le prix Lumira, donne une fourchette: "entre $X et $Y/vial (prix exact à vérifier sur peptaura.com)". Le client vérifiera le prix final sur le site.
+CHOIX DU FOURNISSEUR (CRITIQUE — LIVRAISON FRANCE/EUROPE)
+Le client est en France/Europe. Peptaura est un marketplace mais TOUS les fournisseurs ne livrent PAS en France.
+
+⚠️ INTERDICTION ABSOLUE — NE JAMAIS RECOMMANDER :
+- Pepturion : NE LIVRE PAS EN FRANCE. Même si le catalogue indique "cheapestSupplier: Pepturion" pour certaines molécules, NE LE RECOMMANDE JAMAIS. C'est une erreur terrain confirmée.
+
+FOURNISSEURS QUI LIVRENT EN FRANCE (hiérarchie à suivre selon budget) :
+
+1. **LUMIRA** (fournisseur principal par défaut — recommander en PREMIER choix)
+   - Livre en France, pas de MOQ bloquant, 4.82/5, meilleurs prix unitaires du marketplace
+   - Convient pour TOUS les budgets (petits et gros)
+   - URL catalogue : peptaura.com/catalog/[SLUG]
+   - C'est le fournisseur que tu recommandes par défaut, sauf rupture de stock sur la molécule
+
+2. **APEXION LABS** (fallback petit budget / produit rupture Lumira)
+   - Livre en France, MOQ très bas ($24), bon rapport qualité/prix
+   - Utile si Lumira est en rupture sur une molécule spécifique
+   - Ou si le client veut commander petit et tester avant de scaler
+
+3. **HANG SCIENCES, RAILION TECH, ARCADIA BIOLABS, HEBEI KTC, HELIXBRIDGE, NOVAVIAL, SOLVION, VIALFORGE**
+   - Tous livrent en France aussi, disponibles comme alternatives si rupture sur Lumira/Apexion
+   - Mentionne-les en fallback dans la section "rupture de stock"
+
+RÈGLES :
+- Par DÉFAUT : recommande LUMIRA en premier choix, avec explication "meilleurs prix + livraison France confirmée".
+- Si le catalogue indique "cheapestSupplier: Pepturion" : DIS AU CLIENT DE NE PAS UTILISER PEPTURION (pas de livraison France), et recommande Lumira ou Apexion Labs à la place. Utilise le prix "priceRangeUSD" du catalogue comme fourchette indicative.
+- Mentionne toujours : "vérifie la disponibilité sur peptaura.com/shipping?country=France avant de commander, certains fournisseurs peuvent être temporairement hors stock".
+- PRIX : utilise UNIQUEMENT le catalogue (cheapestPriceUSD ou priceRangeUSD). N'INVENTE JAMAIS un prix. Si tu n'as que le prix Pepturion en cheapestPriceUSD, donne une fourchette réaliste basée sur priceRangeUSD et précise "prix Lumira à vérifier sur le site".
 
 QUANTITES ET PRIX DEGRESSIFS
 Quand tu calcules le nombre de vials necessaires pour le cycle, mentionne TOUJOURS au client que commander en lot de 10 vials est generalement plus economique (prix degressif) et que les fournisseurs ont plus de stock disponible sur les commandes groupees. Par exemple, si le client a besoin de 4 vials de BPC-157 pour un cycle de 8 semaines, suggere-lui de commander 10 vials d'un coup : ca couvre 2 cycles, le prix unitaire baisse, et il n'aura pas a recommander entre deux cycles. Precise que les vials lyophilises (non reconstitues) se conservent des mois voire des annees a temperature ambiante, donc pas de risque de gaspillage. Integre ce conseil dans la section "Liste de courses Peptaura" ou "Comment commander sur Peptaura".
 
 RUPTURE DE STOCK / PRODUIT INDISPONIBLE
-Dans la section "Comment commander sur Peptaura", tu DOIS expliquer au client ce qu'il doit faire si le fournisseur recommandé n'a pas le produit en stock. Explique-lui que Peptaura est un marketplace avec 13 fournisseurs différents qui vendent les mêmes molécules. Si le fournisseur recommandé est en rupture, il suffit de cliquer sur le même produit et de choisir un autre fournisseur dans la liste. Le peptide est le même (même molécule, même pureté COA), seul le prix peut varier légèrement. Recommande en fallback : Pepturion ou Lumira selon disponibilité. Rassure le client : ce n'est pas un problème, c'est comme acheter le même produit chez un autre vendeur sur Amazon.
+Dans la section "Comment commander sur Peptaura", tu DOIS expliquer au client ce qu'il doit faire si le fournisseur recommandé n'a pas le produit en stock. Explique-lui que Peptaura est un marketplace avec plusieurs fournisseurs qui vendent les mêmes molécules, MAIS que seulement certains livrent en France. Si Lumira (fournisseur par défaut) est en rupture, bascule vers Apexion Labs, Hang Sciences, Railion Tech, Arcadia BioLabs, Hebei KTC, HelixBridge, NovaVial, Solvion ou VialForge — ils livrent tous en France. NE JAMAIS suggérer Pepturion (ne livre PAS en France). Le peptide est le même (même molécule, même pureté COA), seul le prix peut varier légèrement. Lien de vérification : peptaura.com/shipping?country=France pour voir qui est en stock et livre en France au moment de la commande.
 
 PLAN B FOURNISSEURS (section "disclaimer-support")
 Si Peptaura est en rupture totale sur une molécule ou si le client veut comparer les prix, il existe des fournisseurs chinois directs avec lesquels on peut échanger rapidement sur WhatsApp. Ce sont des manufacturers vérifiés sur GlobalSources. Mentionne ces 5 fournisseurs dans la section "disclaimer-support" comme plan B :
@@ -713,7 +733,7 @@ RÈGLES ABSOLUES:
 3. Ajuste les dosages au poids (${weight} kg) en mcg/kg.
 4. Sélectionne 2 à 4 peptides dans le stack principal + 1 peptide BONUS qui dépasse le budget.
 5. Utilise UNIQUEMENT le catalogue Peptaura. URLs réelles.
-6. Pour le choix du fournisseur: le client a un ${budgetNote}. Choisis le fournisseur adapté au MOQ (Pepturion si < $300 de commande, Lumira si > $1120). EXPLIQUE pourquoi dans la shopping list.
+6. Pour le choix du fournisseur (client en FRANCE — ${budgetNote}) : recommande LUMIRA par défaut (livre en France, meilleurs prix, pas de MOQ bloquant). Si Lumira n'est pas disponible sur une molécule, recommande APEXION LABS (livre en France, MOQ $24). NE JAMAIS recommander PEPTURION (ne livre PAS en France). EXPLIQUE clairement dans la shopping list pourquoi tu choisis Lumira (ou Apexion en fallback) et rappelle que le client peut vérifier la dispo sur peptaura.com/shipping?country=France.
 7. Le rapport doit faire au moins 4000 caractères au total. Chaque section doit être substantielle.
 
 Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
