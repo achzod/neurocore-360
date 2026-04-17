@@ -8894,17 +8894,30 @@ export async function registerRoutes(
           if (daysSinceSent >= 14 && daysSinceSent < 30 && !trackingTypes.includes("sendDiscoveryJ14CoachingEmail")) {
             const hasConverted = await storage.hasUserPurchased?.(audit.email);
             if (!hasConverted) {
-              const emailSent = await sendDiscoveryJ14CoachingEmail(audit.email, audit.id, baseUrl, "auto-sequence");
+              // Compute per-profile coaching tier recommendation from the audit's
+              // scores + questionnaire responses so the email CTA points to the
+              // right formule (Essential/Elite/PrivateLab) with a personalized reason.
+              const { recommendCoachingTier } = await import("./coachingRecommendation.js");
+              const recommendation = recommendCoachingTier({
+                responses: (audit.responses as Record<string, unknown>) ?? null,
+                scores: (audit.scores as any) ?? null,
+              });
+              const emailSent = await sendDiscoveryJ14CoachingEmail(audit.email, audit.id, baseUrl, "auto-sequence", recommendation);
               if (emailSent) { sent++; if (sent >= 5) break; }
             }
           }
-          // J+30 nurture — pushes Anabolic Bioscan with dedicated loyalty code J30ANABOLIC
+          // J+30 nurture — pushes the profile-matched coaching formule with DISCOVERY20
           if (daysSinceSent >= 30 && daysSinceSent < 60 && !trackingTypes.includes("sendDiscoveryJ30NurtureEmail")) {
             const hasConverted = await storage.hasUserPurchased?.(audit.email);
             if (!hasConverted) {
               try {
                 const trackingRecord = await storage.createEmailTracking(audit.id, "sendDiscoveryJ30NurtureEmail", audit.email);
-                const emailSent = await sendDiscoveryJ30NurtureEmail(audit.email, audit.id, baseUrl, trackingRecord.id);
+                const { recommendCoachingTier } = await import("./coachingRecommendation.js");
+                const recommendation = recommendCoachingTier({
+                  responses: (audit.responses as Record<string, unknown>) ?? null,
+                  scores: (audit.scores as any) ?? null,
+                });
+                const emailSent = await sendDiscoveryJ30NurtureEmail(audit.email, audit.id, baseUrl, trackingRecord.id, recommendation);
                 if (emailSent) { sent++; if (sent >= 5) break; }
               } catch (e) {
                 console.error(`[AutoSequence] J30 nurture failed for ${audit.email}:`, e);
