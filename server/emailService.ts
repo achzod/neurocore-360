@@ -4036,6 +4036,108 @@ export async function addSubscriberToList(
   }
 }
 
+// Discovery J+30 — long-tail nurture for Discovery Scan recipients who haven't
+// upgraded after the existing J+3 / J+7 / J+14 sequence has run its course.
+// Emphasizes "the analysis was free, now go deeper" with a real price cut on
+// Anabolic Bioscan. One-shot per client, dedup via email_tracking.
+export async function sendDiscoveryJ30NurtureEmail(
+  email: string,
+  auditId: string,
+  baseUrl: string,
+  trackingId: string
+): Promise<boolean> {
+  try {
+    const reportLink = `${baseUrl}/analysis/${auditId}`;
+    const anabolicLink = `${baseUrl}/offers/anabolic-bioscan?code=J30ANABOLIC&utm_source=apexlabs&utm_medium=email&utm_campaign=discovery_j30_nurture`;
+    const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
+
+    const content = `
+      <h2 style="color: ${COLORS.text}; margin: 0 0 16px; font-size: 26px; text-align: center; font-weight: 700; letter-spacing: -0.5px;">
+        Un mois depuis ton Discovery Scan
+      </h2>
+
+      <p style="color: ${COLORS.textMuted}; font-size: 15px; line-height: 1.7; margin: 0 0 24px; text-align: center;">
+        Tu as reçu tes scores globaux et tes blocages principaux.<br/>
+        <strong style="color: ${COLORS.text};">Mais tu n'as toujours pas de protocole pour agir.</strong>
+      </p>
+
+      <div style="padding: 24px; background: ${COLORS.surface}; border-radius: 12px; border-left: 4px solid ${COLORS.warning}; margin-bottom: 24px;">
+        <p style="color: ${COLORS.text}; font-size: 15px; font-weight: 600; margin: 0 0 10px;">
+          Le Discovery Scan t'a dit QUOI corriger.
+        </p>
+        <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.7; margin: 0;">
+          L'Anabolic Bioscan te dit COMMENT — avec un protocole chiffré par domaine (sommeil, stress, énergie, digestion, hormones) + les suppléments, dosages et timings précis pour ton profil. C'est l'étape 2 logique, construite directement sur les données de ton Discovery.
+        </p>
+      </div>
+
+      <div style="padding: 28px; background: linear-gradient(135deg, ${COLORS.primary}20 0%, ${COLORS.primary}05 100%); border-radius: 12px; border: 2px solid ${COLORS.primary}; margin-bottom: 24px; text-align: center;">
+        <p style="color: ${COLORS.textMuted}; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 6px; font-weight: 600;">
+          Offre clients Discovery
+        </p>
+        <p style="color: ${COLORS.primary}; font-size: 36px; font-weight: 700; letter-spacing: -1px; margin: 0 0 4px;">
+          35€
+        </p>
+        <p style="color: ${COLORS.textMuted}; font-size: 13px; text-decoration: line-through; margin: 0 0 12px;">
+          au lieu de 59€
+        </p>
+        <div style="background: ${COLORS.background}; border-radius: 8px; padding: 14px 18px; display: inline-block; margin-bottom: 16px; border: 1px dashed ${COLORS.primary};">
+          <p style="color: ${COLORS.textMuted}; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; margin: 0 0 4px; font-weight: 600;">
+            Code exclusif
+          </p>
+          <p style="color: ${COLORS.primary}; font-size: 22px; font-weight: 700; letter-spacing: 3px; margin: 0;">
+            J30ANABOLIC
+          </p>
+        </div>
+        <p style="color: ${COLORS.textMuted}; font-size: 13px; line-height: 1.6; margin: 0 0 18px;">
+          Basé sur ton Discovery — pas un nouveau questionnaire à refaire.
+        </p>
+        ${getPrimaryButton('Voir Anabolic Bioscan →', anabolicLink)}
+      </div>
+
+      <div style="padding: 14px 18px; background: ${COLORS.surface}; border-radius: 8px; border: 1px solid ${COLORS.border}; text-align: center; margin-bottom: 20px;">
+        <a href="${reportLink}" style="color: ${COLORS.textMuted}; font-size: 13px; text-decoration: underline;">
+          Relire mon Discovery Scan
+        </a>
+      </div>
+
+      <p style="color: ${COLORS.textMuted}; font-size: 12px; line-height: 1.6; margin: 0; text-align: center;">
+        Pas intéressé ? Pas de problème.<br/>
+        <a href="{{UNSUB_LINK}}" style="color: #525252; text-decoration: underline;">Se désabonner</a>
+      </p>
+
+      <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
+    `;
+
+    const emailContent = getEmailWrapper(
+      content,
+      `linear-gradient(135deg, ${COLORS.primary} 0%, #0b0b0f 100%)`,
+      "Étape 2",
+      "Un mois après ton Discovery"
+    );
+
+    const result = await sendEmailWithTracking(
+      {
+        html: encodeBase64(emailContent),
+        text: `Un mois depuis ton Discovery Scan. L'étape logique : Anabolic Bioscan — le protocole construit sur tes données.\n\nOffre clients Discovery : 35€ (au lieu de 59€), code J30ANABOLIC.\n\nCommander : ${anabolicLink}\nRelire le Discovery : ${reportLink}\n\nAchzod`,
+        subject: "Un mois depuis ton Discovery — passe à l'étape 2 (-24€)",
+        from: { name: SENDER_NAME, email: SENDER_EMAIL },
+        to: [{ email }],
+      },
+      {
+        emailType: "sendDiscoveryJ30NurtureEmail",
+        recipientEmail: email,
+        auditId,
+        metadata: { trackingId },
+      }
+    );
+
+    return result.result === true;
+  } catch (error) {
+    console.error("[SendPulse] Error sending discovery J30 nurture email:", error);
+    return false;
+  }
+}
+
 // Peptides Engine — Cycle 2 re-order email (J+60 post-delivery).
 // Sent once to clients whose first Peptides protocol was delivered ~60 days ago,
 // roughly the end of a typical 8-12 week cycle. Offers a loyalty discount for
