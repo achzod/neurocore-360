@@ -26,6 +26,7 @@ import { containerVariants, itemVariants } from "@/lib/motion-variants";
 import { calculateGlobalScore, calculateMarkerScore } from "@/lib/bloodScores";
 import { calculatePercentile } from "@/lib/percentileCalculator";
 import type { BloodMarker, PanelKey } from "@/types/blood";
+import { CoachingPromoBanner } from "@/components/CoachingPromoBanner";
 
 class ApiError extends Error {
   status: number;
@@ -612,6 +613,7 @@ function BloodAnalysisReportInner() {
       >
         Aller au contenu principal
       </a>
+      <CoachingPromoBanner auditType="BLOOD_ANALYSIS" />
       <header className="sticky top-0 z-20 border-b border-[--border-primary] bg-[--bg-secondary]/90 backdrop-blur relative overflow-hidden">
         <AnimatedGradientMesh />
         <div className="relative mx-auto flex max-w-6xl items-center justify-between px-6 py-4 font-body">

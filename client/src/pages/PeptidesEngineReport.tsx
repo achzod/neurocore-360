@@ -11,6 +11,7 @@ import {
   CheckCircle2, Globe, Droplets, HelpCircle, Star, Send, Loader2,
 } from "lucide-react";
 import { Header } from "@/components/Header";
+import { CoachingPromoBanner } from "@/components/CoachingPromoBanner";
 import { Footer } from "@/components/Footer";
 import { ReconstitutionStepByStep, FiveReconstitutionErrors, DoseCalculatorVisual } from "@/components/peptides/ReconstitutionVisualGuide";
 
@@ -389,6 +390,7 @@ export default function PeptidesEngineReport() {
   return (
     <div className="min-h-screen bg-black text-white">
       <Header />
+      <CoachingPromoBanner auditType="PEPTIDES_ENGINE" />
 
       <div className="max-w-4xl mx-auto px-6 py-24">
         {/* Header */}

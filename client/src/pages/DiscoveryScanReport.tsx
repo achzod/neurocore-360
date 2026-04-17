@@ -16,6 +16,7 @@ import {
   FinalCTA
 } from '@/components/UpgradeComponents';
 import { ExitIntentPopup } from '@/components/ExitIntentPopup';
+import { CoachingPromoBanner } from '@/components/CoachingPromoBanner';
 import {
   Menu,
   ArrowUp,
@@ -476,6 +477,9 @@ const DiscoveryScanReport: React.FC = () => {
         </div>
 
         <div className="max-w-[1200px] mx-auto p-6 lg:p-12 space-y-12 lg:space-y-32">
+          {/* Coaching bonus banner — stays visible so client never loses their code */}
+          <CoachingPromoBanner auditType="GRATUIT" className="-mx-6 lg:-mx-12 mb-6" />
+
           {/* Hero Section */}
           <div id="dashboard" className="pt-8 lg:pt-12">
             <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-12">

@@ -12,6 +12,7 @@ import { ULTRAHUMAN_THEMES } from '@/components/ultrahuman/themes';
 import { Theme, SectionContent, Metric } from '@/components/ultrahuman/types';
 import { COACHING_OFFER_TIERS, formatEuro, getDeductionAmount } from '@/components/ultrahuman/coachingOffers';
 import { ReportErrorBoundary } from '@/components/ultrahuman/ReportErrorBoundary';
+import { CoachingPromoBanner } from '@/components/CoachingPromoBanner';
 import {
   Menu,
   ArrowUp,
@@ -1380,6 +1381,7 @@ const AnabolicScanReportInner: React.FC<AnabolicScanReportProps> = ({ auditId })
           </div>
 
           <div className="max-w-[1200px] mx-auto p-6 lg:p-12 space-y-12 lg:space-y-32">
+            <CoachingPromoBanner auditType="PREMIUM" className="-mx-6 lg:-mx-12 mb-6" />
             <div id="dashboard" className="pt-8 lg:pt-12">
               <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-12">
                 <div className="space-y-6 max-w-2xl">
