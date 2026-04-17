@@ -8579,6 +8579,65 @@ export async function registerRoutes(
           console.error(`[ReviewCron] Failed for ${audit.email}:`, e);
         }
       }
+      // Peptides Engine clients — burnout_reports table, not in allAudits
+      try {
+        const peptidesReports = await storage.getAllBurnoutReports();
+        for (const report of peptidesReports || []) {
+          if (!report || sent >= 30) break;
+          const email = String((report as any).email || "").replace(/^peptides::/, "");
+          if (!email || email.includes("test") || email.includes("debug") || email.includes("achzodcoaching") || email.includes("achkou")) continue;
+          if (new Date(report.createdAt) < new Date('2026-03-17')) continue;
+          const daysSinceSent = (now.getTime() - new Date(report.createdAt).getTime()) / (24 * 60 * 60 * 1000);
+          if (daysSinceSent < 3 || daysSinceSent > 14) continue;
+          // Check if a review for this peptides report already exists (auditId = report.id in our schema)
+          const existingReview = await storage.getReviewByAuditId?.(report.id);
+          if (existingReview) continue;
+          const emailHistory = await storage.getEmailTrackingForAudit(report.id).catch(() => []);
+          const alreadySent = emailHistory?.some((e: any) => e.emailType === 'sendReviewRequestJ3Email');
+          if (alreadySent) continue;
+          try {
+            const trackingRecord = await storage.createEmailTracking(report.id, "sendReviewRequestJ3Email", email);
+            await sendReviewRequestJ3Email(email, report.id, "PEPTIDES_ENGINE", baseUrl, trackingRecord.id);
+            sent++;
+            console.log(`[ReviewCron] Peptides review request to ${email} (report ${report.id})`);
+          } catch (e) {
+            console.error(`[ReviewCron] Peptides failed for ${email}:`, e);
+          }
+        }
+      } catch (e) {
+        console.error("[ReviewCron] Peptides iteration failed:", e);
+      }
+
+      // Blood Analysis clients — blood_reports table
+      try {
+        const bloodReports = await storage.getAllBloodReports();
+        for (const report of bloodReports || []) {
+          if (!report || sent >= 30) break;
+          const email = String((report as any).email || "");
+          if (!email || email.includes("test") || email.includes("debug") || email.includes("achzodcoaching") || email.includes("achkou")) continue;
+          if (new Date((report as any).createdAt) < new Date('2026-03-17')) continue;
+          const sentAt = (report as any).emailSentAt || (report as any).createdAt;
+          if (!sentAt) continue;
+          const daysSinceSent = (now.getTime() - new Date(sentAt).getTime()) / (24 * 60 * 60 * 1000);
+          if (daysSinceSent < 3 || daysSinceSent > 14) continue;
+          const existingReview = await storage.getReviewByAuditId?.(report.id);
+          if (existingReview) continue;
+          const emailHistory = await storage.getEmailTrackingForAudit(report.id).catch(() => []);
+          const alreadySent = emailHistory?.some((e: any) => e.emailType === 'sendReviewRequestJ3Email');
+          if (alreadySent) continue;
+          try {
+            const trackingRecord = await storage.createEmailTracking(report.id, "sendReviewRequestJ3Email", email);
+            await sendReviewRequestJ3Email(email, report.id, "BLOOD_ANALYSIS", baseUrl, trackingRecord.id);
+            sent++;
+            console.log(`[ReviewCron] Blood review request to ${email} (report ${report.id})`);
+          } catch (e) {
+            console.error(`[ReviewCron] Blood failed for ${email}:`, e);
+          }
+        }
+      } catch (e) {
+        console.error("[ReviewCron] Blood iteration failed:", e);
+      }
+
       if (sent > 0) console.log(`[ReviewCron] Sent ${sent} review request emails`);
     } catch (e) {
       console.error("[ReviewCron] Error:", e);
