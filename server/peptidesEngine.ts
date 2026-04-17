@@ -1173,6 +1173,34 @@ export async function generatePeptidesProtocol(
         report.clientName = firstName;
       }
 
+      // CHECK 6: dosages not placeholders/zeros/empty
+      // Reject strings that look like templates (e.g., "[X mcg]", "TBD", "?mcg", "X mg/kg"),
+      // or that have no digit at all, or dosages of 0.
+      const placeholderPattern = /^\s*$|\[|\]|TBD|\bX\b|XXX|\?\?\?|^\?/i;
+      for (const pep of report.peptides) {
+        const dose = String(pep.dosage || "");
+        if (placeholderPattern.test(dose)) {
+          throw new Error(`VALIDATION: dosage template non rempli pour ${pep.name} — "${dose}"`);
+        }
+        // Must contain at least one digit
+        if (!/\d/.test(dose)) {
+          throw new Error(`VALIDATION: dosage sans valeur numérique pour ${pep.name} — "${dose}"`);
+        }
+        // Extract the first number and ensure it's non-zero
+        const firstNum = parseFloat(dose.replace(",", "."));
+        if (Number.isFinite(firstNum) && firstNum === 0) {
+          throw new Error(`VALIDATION: dosage à zéro pour ${pep.name} — "${dose}"`);
+        }
+      }
+
+      // CHECK 7: personnalisation — le prénom du client doit apparaître dans au moins
+      // une section. Détecte les sorties "template" où le prompt n'a pas été interpolé.
+      const fnLower = firstName.toLowerCase();
+      const hasPersonalization = report.sections.some((s: any) => String(s.content ?? "").toLowerCase().includes(fnLower));
+      if (!hasPersonalization && firstName.length >= 2 && firstName.toLowerCase() !== "client") {
+        throw new Error(`VALIDATION: prénom "${firstName}" absent de toutes les sections — rapport non personnalisé`);
+      }
+
       console.log(`[PeptidesEngine] ✅ Validation OK: ${report.sections.length} sections, ${report.peptides.length} peptides, ${totalContent} chars`);
       break; // Success — exit retry loop
 

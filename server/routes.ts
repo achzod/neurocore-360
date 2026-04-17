@@ -8485,14 +8485,19 @@ export async function registerRoutes(
         const promoBlock = report.promoCodesGenerated?.length > 0
           ? `\n\nTes 2 codes Blood Analysis offerts:\n${report.promoCodesGenerated.join("\n")}` : "";
 
+        let clientEmailSent = false;
         if (stillNotEmailed) {
           try {
-            await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
+            clientEmailSent = await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
               `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}\n\nConserve ce lien — il est personnel et unique.`
             );
-            console.log(`[AutoGen] ✅ Delivery email sent to ${email}`);
+            if (clientEmailSent) {
+              console.log(`[AutoGen] ✅ Delivery email sent to ${email}`);
+            } else {
+              console.error(`[AutoGen] ⚠️ Delivery email returned false for ${email} — SendPulse probable issue`);
+            }
           } catch (emailErr) {
-            console.error(`[AutoGen] ⚠️ Delivery email FAILED for ${email}:`, emailErr);
+            console.error(`[AutoGen] ⚠️ Delivery email THREW for ${email}:`, emailErr);
           }
         } else {
           console.warn(`[AutoGen] ⚠️ Delivery email already sent to ${email} (last-moment check) — skipping`);
@@ -8500,16 +8505,22 @@ export async function registerRoutes(
 
         try {
           const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
-          await sendCTAEmail(adminEmail, `RAPPORT GENERE — Peptides Engine — ${email}`,
-            `Rapport Peptides Engine genere et livre.\n\nClient: ${email}\nPeptides: ${peptidesNames}\nSections: ${report.sections?.length ?? 0}\nLien: ${baseUrl}/peptides/${saved.id}`
-          );
+          const adminSubject = clientEmailSent
+            ? `RAPPORT GENERE — Peptides Engine — ${email}`
+            : `⚠️ RAPPORT GENERE MAIS EMAIL CLIENT ECHOUE — ${email}`;
+          const adminBody = clientEmailSent
+            ? `Rapport Peptides Engine genere et livre.\n\nClient: ${email}\nPeptides: ${peptidesNames}\nSections: ${report.sections?.length ?? 0}\nLien: ${baseUrl}/peptides/${saved.id}`
+            : `Rapport Peptides Engine genere, MAIS l'email de livraison au client a echoue (SendPulse).\n\nAction requise: renvoyer manuellement via admin dashboard ou /api/admin/send-cta.\n\nClient: ${email}\nPeptides: ${peptidesNames}\nSections: ${report.sections?.length ?? 0}\nLien: ${baseUrl}/peptides/${saved.id}`;
+          await sendCTAEmail(adminEmail, adminSubject, adminBody);
           console.log(`[AutoGen] ✅ Admin notification sent`);
         } catch (adminErr) {
           console.error(`[AutoGen] ⚠️ Admin notification FAILED:`, adminErr);
         }
 
-        autoGenLastResult = `OK: ${email} → ${saved.id}`;
-        console.log(`[AutoGen] ✅ Report ${saved.id} generated and delivered to ${email}`);
+        autoGenLastResult = clientEmailSent
+          ? `OK: ${email} → ${saved.id}`
+          : `SAVED_BUT_EMAIL_FAILED: ${email} → ${saved.id}`;
+        console.log(`[AutoGen] ${clientEmailSent ? "✅" : "⚠️"} Report ${saved.id} for ${email} — client email ${clientEmailSent ? "sent" : "FAILED"}`);
         break; // 1 per cycle
       }
     } catch (err) {
