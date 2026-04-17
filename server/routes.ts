@@ -133,56 +133,60 @@ export async function registerRoutes(
         return;
       }
 
-      const isTestEmail = (email: string | null | undefined) =>
-        !email
-          || email.includes("test")
-          || email.includes("debug")
-          || email.includes("achzodcoaching")
-          || email.includes("achkou");
+      // Raw SQL COUNT queries — avoids loading full row payloads (narrativeReport,
+      // report JSON, etc. — can be MBs per row). Filters test/debug emails and
+      // pre-launch data directly in SQL. All queries run in parallel.
+      const launchIso = LAUNCH_DATE.toISOString();
+      const emailFilter = `
+        AND email NOT ILIKE '%test%'
+        AND email NOT ILIKE '%debug%'
+        AND email NOT ILIKE '%achzodcoaching%'
+        AND email NOT ILIKE '%achkou%'
+      `;
 
-      const audits = await storage.getAllAudits();
-      const audit_sent = audits.filter(a => {
-        if (!a || isTestEmail(a.email)) return false;
-        if (new Date(a.createdAt) < LAUNCH_DATE) return false;
-        return (a as any).reportDeliveryStatus === "SENT";
-      });
-      const discoveryDone = audit_sent.filter(a => a.type === "GRATUIT").length;
-      const premiumDone = audit_sent.filter(a => a.type === "PREMIUM").length;
-      const eliteDone = audit_sent.filter(a => a.type === "ELITE").length;
+      const [
+        discoveryResult,
+        premiumResult,
+        eliteResult,
+        peptidesResult,
+        peptidesAvgResult,
+        bloodResult,
+        uniqueResult,
+      ] = await Promise.all([
+        pool.query(`SELECT COUNT(*)::int AS c FROM audits WHERE type = 'GRATUIT' AND report_delivery_status = 'SENT' AND created_at >= $1 ${emailFilter}`, [launchIso]),
+        pool.query(`SELECT COUNT(*)::int AS c FROM audits WHERE type = 'PREMIUM' AND report_delivery_status = 'SENT' AND created_at >= $1 ${emailFilter}`, [launchIso]),
+        pool.query(`SELECT COUNT(*)::int AS c FROM audits WHERE type = 'ELITE' AND report_delivery_status = 'SENT' AND created_at >= $1 ${emailFilter}`, [launchIso]),
+        pool.query(`SELECT COUNT(*)::int AS c FROM burnout_reports WHERE created_at >= $1 AND email NOT ILIKE '%test%' AND email NOT ILIKE '%debug%' AND email NOT ILIKE '%achzodcoaching%' AND email NOT ILIKE '%achkou%'`, [launchIso]),
+        // Average peptides per protocol — extract jsonb array length on the fly
+        pool.query(`SELECT COALESCE(ROUND(AVG(jsonb_array_length(report->'peptides')) * 10) / 10, 0)::float AS avg FROM burnout_reports WHERE created_at >= $1 AND jsonb_typeof(report->'peptides') = 'array' AND email NOT ILIKE '%test%' AND email NOT ILIKE '%debug%' AND email NOT ILIKE '%achzodcoaching%' AND email NOT ILIKE '%achkou%'`, [launchIso]).catch(() => ({ rows: [{ avg: 0 }] } as any)),
+        pool.query(`SELECT COUNT(*)::int AS c FROM blood_reports WHERE created_at >= $1 AND ai_report IS NOT NULL AND ai_report != '' ${emailFilter}`, [launchIso]).catch(() => ({ rows: [{ c: 0 }] } as any)),
+        // Unique emails across all three tables
+        pool.query(`
+          SELECT COUNT(DISTINCT LOWER(email))::int AS c FROM (
+            SELECT email FROM audits WHERE report_delivery_status = 'SENT' AND created_at >= $1
+            UNION ALL
+            SELECT REPLACE(email, 'peptides::', '') AS email FROM burnout_reports WHERE created_at >= $1
+            UNION ALL
+            SELECT email FROM blood_reports WHERE created_at >= $1 AND ai_report IS NOT NULL AND ai_report != ''
+          ) u
+          WHERE email IS NOT NULL
+            AND email NOT ILIKE '%test%'
+            AND email NOT ILIKE '%debug%'
+            AND email NOT ILIKE '%achzodcoaching%'
+            AND email NOT ILIKE '%achkou%'
+        `, [launchIso]).catch(() => ({ rows: [{ c: 0 }] } as any)),
+      ]);
 
-      const peptidesReports = await storage.getAllBurnoutReports();
-      const peptidesValid = (peptidesReports || []).filter((r: any) => {
-        if (!r) return false;
-        const email = String(r.email || "").replace(/^peptides::/, "");
-        if (isTestEmail(email)) return false;
-        if (new Date(r.createdAt) < LAUNCH_DATE) return false;
-        return true;
-      });
-      const peptidesCount = peptidesValid.length;
-      const peptidesPerProtocol = peptidesValid.length > 0
-        ? peptidesValid.reduce((sum: number, r: any) => sum + (Array.isArray(r.report?.peptides) ? r.report.peptides.length : 0), 0) / peptidesValid.length
-        : 0;
-
-      const bloodReports = await storage.getAllBloodReports();
-      const bloodDone = (bloodReports || []).filter((r: any) => {
-        if (!r || isTestEmail(r.email)) return false;
-        if (new Date(r.createdAt) < LAUNCH_DATE) return false;
-        return (r as any).deliveryStatus === "SENT" || !!r.aiReport;
-      }).length;
-
-      // Unique clients that received at least one report (any type)
-      const uniqueEmails = new Set<string>();
-      for (const a of audit_sent) uniqueEmails.add(String(a.email).toLowerCase());
-      for (const r of peptidesValid) {
-        const em = String((r as any).email || "").replace(/^peptides::/, "").toLowerCase();
-        if (em) uniqueEmails.add(em);
-      }
-      for (const r of (bloodReports || [])) {
-        if (!isTestEmail((r as any).email)) uniqueEmails.add(String((r as any).email).toLowerCase());
-      }
+      const discoveryDone = discoveryResult.rows[0]?.c ?? 0;
+      const premiumDone = premiumResult.rows[0]?.c ?? 0;
+      const eliteDone = eliteResult.rows[0]?.c ?? 0;
+      const peptidesCount = peptidesResult.rows[0]?.c ?? 0;
+      const peptidesPerProtocol = Number(peptidesAvgResult.rows[0]?.avg ?? 0);
+      const bloodDone = bloodResult.rows[0]?.c ?? 0;
+      const totalClients = uniqueResult.rows[0]?.c ?? 0;
 
       const data = {
-        totalClients: uniqueEmails.size,
+        totalClients,
         discoveryScans: discoveryDone,
         anabolicBioscans: premiumDone,
         ultimateScans: eliteDone,
