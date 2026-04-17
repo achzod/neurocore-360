@@ -440,15 +440,16 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
     mutationFn: async (planId: PlanId) => {
       const type = PLAN_ID_TO_AUDIT_TYPE[planId];
 
+      const metaAttr = getMetaAttribution();
+
       if (planId === "gratuit") {
         return apiRequest("POST", "/api/audit/create", {
           email,
           type,
           responses,
+          ...metaAttr,
         });
       }
-
-      const metaAttr = getMetaAttribution();
 
       if (paymentMethod === "paypal") {
         const response = await apiRequest("POST", "/api/paypal/create-order", {

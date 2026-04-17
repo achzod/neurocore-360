@@ -786,6 +786,36 @@ export async function registerRoutes(
           console.error("[Orders] Error creating free audit order:", orderErr);
         }
 
+        // Meta CAPI — server-side Lead event for Discovery Scan (free top-of-funnel)
+        // Recovers 30–50% of leads lost to Safari ITP / ad-blockers on the client Pixel.
+        // event_id uses the audit id so a future client-side Pixel Lead can dedup.
+        try {
+          const { sendMetaLead } = await import("./metaCapi.js");
+          const body = req.body ?? {};
+          const clientNameForCapi = (mergedResponses as any)?.prenom || (mergedResponses as any)?.name || "";
+          const [firstName, ...lastParts] = String(clientNameForCapi).trim().split(/\s+/);
+          await sendMetaLead({
+            eventId: `audit_${audit.id}`,
+            eventSourceUrl: String(body.sourceUrl || body.referrer || `${getBaseUrl()}/`),
+            valueEUR: 0,
+            currency: "EUR",
+            contentName: "Discovery Scan",
+            category: "free_audit",
+            userData: {
+              email: data.email,
+              firstName: firstName || undefined,
+              lastName: lastParts.join(" ") || undefined,
+              fbp: body.fbp,
+              fbc: body.fbc,
+              ip: req.ip,
+              userAgent: body.userAgent || req.get("user-agent") || undefined,
+              externalId: data.email,
+            },
+          });
+        } catch (capiErr) {
+          console.error(`[Discovery] Meta CAPI Lead failed (non-blocking):`, capiErr);
+        }
+
         // Nettoie la progression une fois l'audit crée pour éviter les pre-remplissages obsoletes.
         try {
           await storage.deleteProgress(data.email);
