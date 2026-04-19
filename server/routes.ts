@@ -95,6 +95,61 @@ export async function registerRoutes(
     return `http://localhost:${process.env.PORT || 5000}`;
   }
 
+  // Centralized, race-safe wrapper around sendReportReadyEmail. Guarantees a
+  // given audit can never receive two delivery emails — even if multiple paths
+  // (inline create, Stripe webhook, admin resend, scheduled cron) try to send
+  // concurrently.
+  //
+  // Safety layers (in order):
+  //   1. claimAuditForSending — atomic SQL CAS on report_delivery_status
+  //      (READY|SCHEDULED → SENDING). If the UPDATE hits 0 rows, another
+  //      caller is already sending (or it was already sent).
+  //   2. hasReportReadyEmailBeenSent — check email_tracking as a secondary
+  //      guard in case the DB state got out of sync (manual edits, etc.).
+  //   3. finalizeAuditSend — on SendPulse success, moves to SENT + stamps
+  //      report_sent_at. On failure, reverts SENDING → READY so a retry path
+  //      can pick it up.
+  async function safeSendReportReadyEmail(
+    auditId: string,
+    email: string,
+    auditType: string,
+    baseUrl: string,
+    opts?: { logPrefix?: string; bypassClaim?: boolean }
+  ): Promise<{ sent: boolean; skipped?: string }> {
+    const prefix = opts?.logPrefix || "[SafeSend]";
+
+    if (!opts?.bypassClaim) {
+      const alreadyTracked = await storage.hasReportReadyEmailBeenSent(auditId).catch(() => false);
+      if (alreadyTracked) {
+        console.log(`${prefix} ⏭️ Report email already in email_tracking for audit ${auditId} — SKIP (no double send)`);
+        // Normalize audit state so UI shows SENT rather than stuck READY
+        await storage.finalizeAuditSend(auditId, true).catch(() => {});
+        return { sent: false, skipped: "already_in_tracking" };
+      }
+
+      const claimed = await storage.claimAuditForSending(auditId).catch(() => false);
+      if (!claimed) {
+        console.log(`${prefix} ⏭️ Could not claim audit ${auditId} for sending — another process owns it or already SENT`);
+        return { sent: false, skipped: "claim_failed" };
+      }
+    }
+
+    try {
+      const ok = await sendReportReadyEmail(email, auditId, auditType, baseUrl);
+      await storage.finalizeAuditSend(auditId, ok);
+      if (ok) {
+        console.log(`${prefix} ✅ Email delivered for audit ${auditId} to ${email}`);
+      } else {
+        console.error(`${prefix} ❌ sendReportReadyEmail returned false for audit ${auditId}`);
+      }
+      return { sent: ok };
+    } catch (err) {
+      console.error(`${prefix} ❌ sendReportReadyEmail THREW for audit ${auditId}:`, err);
+      await storage.finalizeAuditSend(auditId, false).catch(() => {});
+      return { sent: false, skipped: "threw" };
+    }
+  }
+
   const auditCreateLimiter = createRateLimiter({ windowMs: 60_000, max: 5 });
   const discoveryLimiter = createRateLimiter({ windowMs: 60_000, max: 5 });
   const checkoutLimiter = createRateLimiter({ windowMs: 60_000, max: 5 });
@@ -861,6 +916,18 @@ export async function registerRoutes(
         const progress = await storage.getProgress(data.email);
         const progressResponses = parseResponsesRecord(progress?.responses);
         const mergedResponses = mergeResponses(data.responses, progressResponses);
+
+        // IDEMPOTENCY: same email + same type within 10 min → return existing audit.
+        // Protects against double-clicks, network retries, and the browser re-firing
+        // the POST on connection reset. Without this, two audits get created and two
+        // different reports are generated/sent.
+        const existingRecent = await storage.findRecentAuditByEmailAndType(data.email, data.type, 10).catch(() => undefined);
+        if (existingRecent) {
+          console.warn(`[Audit Create] ⏭️ Idempotency hit — returning existing audit ${existingRecent.id} for ${data.email} (${data.type}) created ${existingRecent.createdAt}`);
+          res.json(existingRecent);
+          return;
+        }
+
         const audit = await storage.createAudit({
           userId: "",
           type: data.type,
@@ -933,7 +1000,14 @@ export async function registerRoutes(
             console.error(`[Admin Email] ❌ Error in admin notification for ${audit.id}:`, err);
           });
 
-        await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
+        // Atomic claim — if another process already claimed this audit (e.g. idempotency
+        // window collided, or webhook raced), we skip generation to avoid duplicate work.
+        const claimedForGen = await storage.claimAuditForGeneration(audit.id).catch(() => false);
+        if (!claimedForGen) {
+          console.warn(`[Discovery Scan] ⏭️ Could not claim audit ${audit.id} for generation — already in progress or done`);
+          res.json(audit);
+          return;
+        }
         res.json(audit);
 
         const DISCOVERY_GENERATION_TIMEOUT = 5 * 60 * 1000; // 5 minutes max
@@ -972,9 +1046,8 @@ export async function registerRoutes(
               console.log(`[Discovery Scan] Report READY for audit ${audit.id}`);
 
               const baseUrl = getBaseUrl();
-              const emailSent = await sendReportReadyEmail(audit.email, audit.id, audit.type, baseUrl);
+              const { sent: emailSent } = await safeSendReportReadyEmail(audit.id, audit.email, audit.type, baseUrl, { logPrefix: "[Discovery Scan]" });
               if (emailSent) {
-                await storage.updateAudit(audit.id, { reportDeliveryStatus: "SENT", reportSentAt: new Date() });
                 const clientName = (mergedResponses as any)?.prenom || data.email.split("@")[0];
                 await sendAdminEmailNewAudit(audit.email, clientName, audit.type, audit.id);
               }
@@ -998,6 +1071,17 @@ export async function registerRoutes(
         res.status(400).json({ error: "NEED_PHOTOS", message: "3 photos obligatoires pour Ultimate Scan (face, profil, dos)" });
         return;
       }
+
+      // IDEMPOTENCY: same email + same type within 15 min → return existing audit.
+      // For PREMIUM/ELITE the questionnaire is longer but the double-submit risk is
+      // still real (page refresh after payment, network retry, etc.).
+      const existingPaidRecent = await storage.findRecentAuditByEmailAndType(data.email, data.type, 15).catch(() => undefined);
+      if (existingPaidRecent) {
+        console.warn(`[Audit Create] ⏭️ Idempotency hit — returning existing audit ${existingPaidRecent.id} for ${data.email} (${data.type})`);
+        res.json(existingPaidRecent);
+        return;
+      }
+
       const audit = await storage.createAudit({
         userId: "",
         type: data.type,
@@ -1027,12 +1111,20 @@ export async function registerRoutes(
           console.error(`[Admin Email] ❌ Error in admin notification for ${audit.id}:`, err);
         });
 
-      await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
-      await startReportGeneration(audit.id, audit.responses, audit.scores || {}, audit.type);
-      processReportAndSendEmail(audit.id, audit.email, audit.type).catch((err) => {
-        console.error(`[processReportAndSendEmail] Unhandled error for audit ${audit.id}:`, err);
-        storage.updateAudit(audit.id, { reportDeliveryStatus: "EMAIL_FAILED" }).catch(() => {});
-      });
+      // Atomic generation claim — CAS transitions PENDING → GENERATING. If it fails,
+      // another caller is already generating this audit (e.g. Stripe webhook beat us
+      // to it). We skip kicking off a second generator to prevent two different
+      // reports from being produced for the same client.
+      const claimedForGenPaid = await storage.claimAuditForGeneration(audit.id).catch(() => false);
+      if (!claimedForGenPaid) {
+        console.warn(`[Audit Create] ⏭️ Could not claim audit ${audit.id} for generation — another process owns it`);
+      } else {
+        await startReportGeneration(audit.id, audit.responses, audit.scores || {}, audit.type);
+        processReportAndSendEmail(audit.id, audit.email, audit.type).catch((err) => {
+          console.error(`[processReportAndSendEmail] Unhandled error for audit ${audit.id}:`, err);
+          storage.updateAudit(audit.id, { reportDeliveryStatus: "EMAIL_FAILED" }).catch(() => {});
+        });
+      }
 
       res.json(audit);
     } catch (error) {
@@ -1153,18 +1245,14 @@ export async function registerRoutes(
       console.log(`[Email] Report URL: ${reportUrl}`);
 
       // ============================================
-      // ALL GATES PASSED — Send email
+      // ALL GATES PASSED — Send email (race-safe)
       // ============================================
       await storage.updateAudit(auditId, { reportDeliveryStatus: "READY" });
       console.log(`[Email] ✅ All gates passed — sending to ${email}`);
 
-      const emailSent = await sendReportReadyEmail(email, auditId, auditType, baseUrl);
-      if (emailSent) {
-        await storage.updateAudit(auditId, { reportDeliveryStatus: "SENT", reportSentAt: new Date() });
-        console.log(`[Email] ✅ Email SENT to ${email} for audit ${auditId}`);
-      } else {
+      const { sent: emailSent, skipped } = await safeSendReportReadyEmail(auditId, email, auditType, baseUrl, { logPrefix: "[Email]" });
+      if (!emailSent && !skipped) {
         console.error(`[Email] ❌ Email FAILED for audit ${auditId}`);
-        await storage.updateAudit(auditId, { reportDeliveryStatus: "READY" });
       }
     } else {
       await storage.updateAudit(auditId, { reportDeliveryStatus: "PENDING" });
@@ -2586,14 +2674,37 @@ export async function registerRoutes(
 
       const baseUrl = getBaseUrl();
       console.log(`[Resend] Sending email to ${audit.email} for audit ${auditId} (baseUrl: ${baseUrl})`);
-      
-      const emailSent = await sendReportReadyEmail(audit.email, auditId, audit.type, baseUrl);
-      
-      if (emailSent) {
-        await storage.updateAudit(auditId, { 
-          reportDeliveryStatus: "SENT", 
-          reportSentAt: new Date() 
+
+      // Admin resend — block if already sent unless caller passes ?force=1
+      const forceResend = req.query.force === "1" || (req.body as any)?.force === true;
+      if (audit.reportSentAt && !forceResend) {
+        res.status(409).json({
+          error: "Report déjà envoyé — pass ?force=1 pour renvoyer volontairement",
+          sentAt: audit.reportSentAt
         });
+        return;
+      }
+
+      // Pré-flight: si email_tracking contient déjà un sendReportReadyEmail OK, abort
+      const alreadyTracked = await storage.hasReportReadyEmailBeenSent(auditId).catch(() => false);
+      if (alreadyTracked && !forceResend) {
+        res.status(409).json({
+          error: "Email déjà tracé comme envoyé — pass ?force=1 pour renvoyer volontairement"
+        });
+        return;
+      }
+
+      // Bypass atomic claim only for explicit force (admin already opted in)
+      const { sent: emailSent } = await safeSendReportReadyEmail(auditId, audit.email, audit.type, baseUrl, {
+        logPrefix: "[Resend]",
+        bypassClaim: forceResend,
+      });
+
+      if (emailSent) {
+        if (forceResend) {
+          // bypassClaim path didn't finalize — ensure DB reflects reality
+          await storage.updateAudit(auditId, { reportDeliveryStatus: "SENT", reportSentAt: new Date() }).catch(() => {});
+        }
         console.log(`[Resend] Email sent successfully to ${audit.email}`);
 
         // Copie admin (trace + monitoring)
@@ -2643,16 +2754,10 @@ export async function registerRoutes(
     if (success) {
       const baseUrl = getBaseUrl();
       console.log(`[Admin] Sending email to ${email} for audit ${auditId} (baseUrl: ${baseUrl})`);
-      const emailSent = await sendReportReadyEmail(email, auditId, auditType, baseUrl);
-      if (emailSent) {
-        await storage.updateAudit(auditId, {
-          reportDeliveryStatus: "SENT",
-          reportSentAt: new Date(),
-        });
-        console.log(`[Admin] Report sent for audit ${auditId} to ${email}`);
-      } else {
+      await storage.updateAudit(auditId, { reportDeliveryStatus: "READY" }).catch(() => {});
+      const { sent: emailSent } = await safeSendReportReadyEmail(auditId, email, auditType, baseUrl, { logPrefix: "[Admin]" });
+      if (!emailSent) {
         console.error(`[Admin] Report ready but email FAILED for audit ${auditId} - check SendPulse config`);
-        await storage.updateAudit(auditId, { reportDeliveryStatus: "READY" });
       }
     } else {
       await storage.updateAudit(auditId, { reportDeliveryStatus: "PENDING" });
@@ -5848,6 +5953,21 @@ export async function registerRoutes(
         return;
       }
 
+      // IDEMPOTENCY: same email + GRATUIT within 10 min → return existing audit + narrative.
+      // This endpoint is particularly exposed to double-submit because the landing funnel
+      // re-submits on navigation back/forward and on network retries.
+      const existingRecent = await storage.findRecentAuditByEmailAndType(email, "GRATUIT", 10).catch(() => undefined);
+      if (existingRecent) {
+        console.warn(`[Discovery Scan] ⏭️ Idempotency hit — returning existing audit ${existingRecent.id} for ${email}`);
+        res.json({
+          success: true,
+          auditId: existingRecent.id,
+          narrativeReport: (existingRecent as any).narrativeReport ?? null,
+          idempotent: true,
+        });
+        return;
+      }
+
       // Create audit record
       const audit = await storage.createAudit({
         userId: "",
@@ -5855,6 +5975,22 @@ export async function registerRoutes(
         email,
         responses,
       });
+
+      // Atomic generation claim — if we lose the CAS, another process is already
+      // generating this audit's report. We serve the existing state instead of
+      // kicking off a parallel generator.
+      const claimedGen = await storage.claimAuditForGeneration(audit.id).catch(() => false);
+      if (!claimedGen) {
+        const fresh = await storage.getAudit(audit.id).catch(() => undefined);
+        console.warn(`[Discovery Scan] ⏭️ Could not claim audit ${audit.id} for generation — returning current state`);
+        res.json({
+          success: true,
+          auditId: audit.id,
+          narrativeReport: (fresh as any)?.narrativeReport ?? null,
+          idempotent: true,
+        });
+        return;
+      }
 
       try {
         // Generate analysis and convert to NarrativeReport format with AI content
@@ -5870,9 +6006,8 @@ export async function registerRoutes(
         console.log(`[Discovery Scan] Audit ${audit.id} created for ${email}`);
 
         const baseUrl = getBaseUrl();
-        const emailSent = await sendReportReadyEmail(email, audit.id, audit.type, baseUrl);
+        const { sent: emailSent } = await safeSendReportReadyEmail(audit.id, email, audit.type, baseUrl, { logPrefix: "[Discovery Scan create]" });
         if (emailSent) {
-          await storage.updateAudit(audit.id, { reportDeliveryStatus: "SENT", reportSentAt: new Date() });
           const clientName = (responses as any)?.prenom || email.split("@")[0];
           await sendAdminEmailNewAudit(email, clientName, audit.type, audit.id);
         }
@@ -6702,36 +6837,47 @@ export async function registerRoutes(
                   if (planType === "ELITE" && !hasThreePhotos(responses as Record<string, unknown>)) {
                     console.warn(`[Webhook] ⚠️  3 photos obligatoires pour Ultimate Scan: ${email}`);
                   } else {
-                    // Create audit
-                    const audit = await storage.createAudit({
+                    // IDEMPOTENCY: if /api/audit/create already ran, or the webhook fires
+                    // twice (Stripe retries), we reuse the recent audit. Prevents two
+                    // audits → two generations → two different reports landing in inbox.
+                    const recent = await storage.findRecentAuditByEmailAndType(email, planType as any, 30).catch(() => undefined);
+                    const audit = recent ?? await storage.createAudit({
                       userId: "",
                       type: planType as any,
                       email,
                       responses: responses as Record<string, unknown>,
                     });
 
-                    // Link order to audit
+                    if (recent) {
+                      console.log(`[Webhook] ♻️  Reusing recent audit ${audit.id} for ${email} (${planType}) — no duplicate creation`);
+                    } else {
+                      console.log(`[Webhook] ✅ Audit ${audit.id} created automatically for order ${order.id}`);
+                    }
+
+                    // Link order to audit (CAS-style: sets audit_id only if currently NULL)
                     await storage.claimOrderForAudit(order.id, audit.id);
 
                     // Clean up questionnaire progress
                     await storage.deleteProgress(email).catch(() => {});
 
-                    console.log(`[Webhook] ✅ Audit ${audit.id} created automatically for order ${order.id}`);
-
-                    // Trigger report generation + email for PREMIUM/ELITE
-                    // (If /api/audit/create was called first, startReportGeneration is idempotent
-                    // and will detect the existing job — see reportJobManager L149-181)
+                    // Trigger report generation + email for PREMIUM/ELITE, but only if we
+                    // win the atomic CAS on report_delivery_status. Losing the CAS means
+                    // another caller (inline create, prior webhook fire) already has it.
                     if (planType === "PREMIUM" || planType === "ELITE") {
-                      try {
-                        await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
-                        await startReportGeneration(audit.id, responses as Record<string, unknown>, {}, planType);
-                        processReportAndSendEmail(audit.id, email, planType).catch((err) => {
-                          console.error(`[Webhook] processReportAndSendEmail failed for ${audit.id}:`, err);
-                          storage.updateAudit(audit.id, { reportDeliveryStatus: "EMAIL_FAILED" }).catch(() => {});
-                        });
-                        console.log(`[Webhook] ✅ Report generation triggered for ${audit.id} (${planType})`);
-                      } catch (genErr) {
-                        console.error(`[Webhook] ❌ Failed to trigger generation for ${audit.id}:`, genErr);
+                      const claimed = await storage.claimAuditForGeneration(audit.id).catch(() => false);
+                      if (!claimed) {
+                        console.warn(`[Webhook] ⏭️ Could not claim audit ${audit.id} for generation — another process owns it, NOT triggering parallel gen`);
+                      } else {
+                        try {
+                          await startReportGeneration(audit.id, responses as Record<string, unknown>, {}, planType);
+                          processReportAndSendEmail(audit.id, email, planType).catch((err) => {
+                            console.error(`[Webhook] processReportAndSendEmail failed for ${audit.id}:`, err);
+                            storage.updateAudit(audit.id, { reportDeliveryStatus: "EMAIL_FAILED" }).catch(() => {});
+                          });
+                          console.log(`[Webhook] ✅ Report generation triggered for ${audit.id} (${planType})`);
+                        } catch (genErr) {
+                          console.error(`[Webhook] ❌ Failed to trigger generation for ${audit.id}:`, genErr);
+                        }
                       }
                     }
                   }
@@ -7932,19 +8078,32 @@ export async function registerRoutes(
         return;
       }
 
-      // Force send
-      const { sendReportReadyEmail } = await import("./emailService.js");
+      // Force send — admin-initiated. Still dedup via email_tracking unless caller opts out.
       const baseUrl = getBaseUrl();
+      const forceRawSend = req.query.force === "1" || (req.body as any)?.force === true;
 
-      console.log(`[ForceSend] Sending to ${audit.email} (audit: ${audit.id}, type: ${audit.type})`);
+      console.log(`[ForceSend] Sending to ${audit.email} (audit: ${audit.id}, type: ${audit.type}, force=${forceRawSend})`);
 
-      const sent = await sendReportReadyEmail(audit.email, audit.id, audit.type, baseUrl);
+      if (!forceRawSend) {
+        const alreadyTracked = await storage.hasReportReadyEmailBeenSent(audit.id).catch(() => false);
+        if (alreadyTracked) {
+          res.status(409).json({
+            error: "Email déjà tracé comme envoyé — pass ?force=1 pour renvoyer volontairement",
+            auditId: audit.id
+          });
+          return;
+        }
+      }
+
+      const { sent } = await safeSendReportReadyEmail(audit.id, audit.email, audit.type, baseUrl, {
+        logPrefix: "[ForceSend]",
+        bypassClaim: forceRawSend,
+      });
 
       if (sent) {
-        await storage.updateAudit(audit.id, {
-          reportDeliveryStatus: "SENT",
-          reportSentAt: new Date()
-        });
+        if (forceRawSend) {
+          await storage.updateAudit(audit.id, { reportDeliveryStatus: "SENT", reportSentAt: new Date() }).catch(() => {});
+        }
 
         console.log(`[ForceSend] ✅ Email sent successfully to ${audit.email}`);
 
@@ -8912,13 +9071,12 @@ export async function registerRoutes(
 
         const status = audit.reportDeliveryStatus;
 
-        // READY: send immediately
+        // READY: send immediately (race-safe — CAS + email_tracking dedup)
         if (status === "READY") {
           try {
             const baseUrl = getBaseUrl();
-            const emailSent = await sendReportReadyEmail(audit.email, audit.id, audit.type, baseUrl);
+            const { sent: emailSent } = await safeSendReportReadyEmail(audit.id, audit.email, audit.type, baseUrl, { logPrefix: "[AutoSend]" });
             if (emailSent) {
-              await storage.updateAudit(audit.id, { reportDeliveryStatus: "SENT", reportSentAt: new Date() });
               console.log(`[AutoSend] ✅ Report ${audit.id} sent to ${audit.email} (${audit.type})`);
               sent++;
             }

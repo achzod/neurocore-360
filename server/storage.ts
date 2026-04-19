@@ -229,6 +229,16 @@ export interface IStorage {
   claimOrderForAudit(orderId: string, auditId: string): Promise<boolean>;
   /** Atomic CAS: set metadata.peptidesReportId only if currently null/absent. Returns true if we won the race. */
   claimPeptidesReportSlot(orderId: string, reportId: string): Promise<boolean>;
+  /** Atomic CAS: transition audit to GENERATING iff current status allows. Prevents two concurrent generators. */
+  claimAuditForGeneration(auditId: string): Promise<boolean>;
+  /** Atomic CAS: transition audit to SENDING iff reportSentAt IS NULL and status in (READY,SCHEDULED). Prevents two concurrent senders. */
+  claimAuditForSending(auditId: string): Promise<boolean>;
+  /** Finalize send: success => SENT + reportSentAt=NOW(); failure => revert SENDING → READY. */
+  finalizeAuditSend(auditId: string, sent: boolean): Promise<void>;
+  /** Returns true if a sendReportReadyEmail row exists in email_tracking with non-failed status. */
+  hasReportReadyEmailBeenSent(auditId: string): Promise<boolean>;
+  /** Idempotency: find an existing audit for same (email, type) created in the last `minutes` minutes. */
+  findRecentAuditByEmailAndType(email: string, type: string, minutes: number): Promise<Audit | undefined>;
 
   // Promo code usages
   createPromoCodeUsage(input: Omit<PromoCodeUsage, "id" | "usedAt">): Promise<PromoCodeUsage>;
@@ -864,6 +874,53 @@ export class MemStorage implements IStorage {
     order.metadata = { ...meta, peptidesReportId: reportId } as any;
     order.updatedAt = new Date();
     return true;
+  }
+
+  async claimAuditForGeneration(auditId: string): Promise<boolean> {
+    const audit = this.audits.get(auditId);
+    if (!audit) return false;
+    const s = audit.reportDeliveryStatus as any;
+    if (s && !["PENDING", "NEEDS_REVIEW", "EMAIL_FAILED", "FAILED"].includes(s)) return false;
+    audit.reportDeliveryStatus = "GENERATING" as any;
+    return true;
+  }
+
+  async claimAuditForSending(auditId: string): Promise<boolean> {
+    const audit = this.audits.get(auditId);
+    if (!audit) return false;
+    if ((audit as any).reportSentAt) return false;
+    if (!["READY", "SCHEDULED"].includes(audit.reportDeliveryStatus as any)) return false;
+    audit.reportDeliveryStatus = "SENDING" as any;
+    return true;
+  }
+
+  async finalizeAuditSend(auditId: string, sent: boolean): Promise<void> {
+    const audit = this.audits.get(auditId);
+    if (!audit) return;
+    if (sent) {
+      if (!(audit as any).reportSentAt) {
+        audit.reportDeliveryStatus = "SENT" as any;
+        (audit as any).reportSentAt = new Date();
+      }
+    } else if (audit.reportDeliveryStatus === ("SENDING" as any) && !(audit as any).reportSentAt) {
+      audit.reportDeliveryStatus = "READY" as any;
+    }
+  }
+
+  async hasReportReadyEmailBeenSent(auditId: string): Promise<boolean> {
+    return Array.from(this.emailTrackings.values()).some(
+      (t: any) => t.auditId === auditId && t.emailType === "sendReportReadyEmail"
+    );
+  }
+
+  async findRecentAuditByEmailAndType(email: string, type: string, minutes: number): Promise<Audit | undefined> {
+    const cutoff = Date.now() - minutes * 60 * 1000;
+    const normalized = email.trim().toLowerCase();
+    return Array.from(this.audits.values())
+      .filter(a => a.email.trim().toLowerCase() === normalized
+        && a.type === type
+        && new Date(a.createdAt).getTime() > cutoff)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
   }
   async createPromoCodeUsage(input: Omit<PromoCodeUsage, "id" | "usedAt">): Promise<PromoCodeUsage> {
     const usage: PromoCodeUsage = { ...input, id: randomUUID(), usedAt: new Date() };
@@ -2785,6 +2842,93 @@ export class PgStorage implements IStorage {
       [reportId, orderId]
     );
     return (result.rowCount ?? 0) > 0;
+  }
+
+  // Atomic CAS for audit report generation — transition to GENERATING only if the audit is
+  // in a terminal-failure or initial state. Prevents two concurrent generators (e.g. inline
+  // create + Stripe webhook, or admin regenerate + scheduled cron) from producing two
+  // different reports for the same client.
+  async claimAuditForGeneration(auditId: string): Promise<boolean> {
+    const result = await pool.query(
+      `UPDATE audits
+          SET report_delivery_status = 'GENERATING'
+        WHERE id = $1
+          AND (report_delivery_status IS NULL
+               OR report_delivery_status IN ('PENDING','NEEDS_REVIEW','EMAIL_FAILED','FAILED'))
+        RETURNING id`,
+      [auditId]
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Atomic CAS for audit email send — transition to SENDING only if not already sent.
+  // Prevents the same audit from being emailed twice concurrently (inline send + admin
+  // resend + scheduled delivery cron all racing).
+  async claimAuditForSending(auditId: string): Promise<boolean> {
+    const result = await pool.query(
+      `UPDATE audits
+          SET report_delivery_status = 'SENDING'
+        WHERE id = $1
+          AND report_sent_at IS NULL
+          AND report_delivery_status IN ('READY','SCHEDULED')
+        RETURNING id`,
+      [auditId]
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async finalizeAuditSend(auditId: string, sent: boolean): Promise<void> {
+    if (sent) {
+      await pool.query(
+        `UPDATE audits
+            SET report_delivery_status = 'SENT',
+                report_sent_at = NOW()
+          WHERE id = $1
+            AND report_sent_at IS NULL`,
+        [auditId]
+      );
+    } else {
+      await pool.query(
+        `UPDATE audits
+            SET report_delivery_status = 'READY'
+          WHERE id = $1
+            AND report_delivery_status = 'SENDING'
+            AND report_sent_at IS NULL`,
+        [auditId]
+      );
+    }
+  }
+
+  async hasReportReadyEmailBeenSent(auditId: string): Promise<boolean> {
+    try {
+      const result = await pool.query(
+        `SELECT 1 FROM email_tracking
+          WHERE audit_id = $1
+            AND email_type = 'sendReportReadyEmail'
+            AND (sendpulse_status IS NULL
+                 OR sendpulse_status NOT IN ('failed','auth_failed','unsubscribed'))
+          LIMIT 1`,
+        [auditId]
+      );
+      return (result.rowCount ?? 0) > 0;
+    } catch (err) {
+      console.warn("[EmailTracking] hasReportReadyEmailBeenSent query failed — defaulting to false:", err);
+      return false;
+    }
+  }
+
+  async findRecentAuditByEmailAndType(email: string, type: string, minutes: number): Promise<Audit | undefined> {
+    const result = await pool.query(
+      `SELECT * FROM audits
+        WHERE LOWER(email) = LOWER($1)
+          AND type = $2
+          AND created_at > NOW() - ($3 || ' minutes')::interval
+        ORDER BY created_at DESC
+        LIMIT 1`,
+      [email, type, String(minutes)]
+    );
+    if (result.rows.length === 0) return undefined;
+    return this.rowToAudit(result.rows[0]);
   }
 
   // Promo code usage tracking
