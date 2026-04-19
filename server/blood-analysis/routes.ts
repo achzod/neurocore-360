@@ -1194,6 +1194,24 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         return;
       }
 
+      // Dedup guard — admin force-send is a common source of accidental double
+      // emails (rapid double-click on the dashboard, or racing with the scheduled
+      // delivery cron). Require ?force=1 to override if the report was already
+      // emailed, so an accidental click can't re-notify the client.
+      const forceRaw = req.query.force === "1" || (req.body as any)?.force === true;
+      if (!fromBloodTests && !forceRaw) {
+        const existingSentAt = (report as any).emailSentAt;
+        const deliveryStatus = (report as any).deliveryStatus;
+        if (existingSentAt || deliveryStatus === "SENT") {
+          res.status(409).json({
+            error: "Rapport déjà envoyé — pass ?force=1 pour renvoyer volontairement",
+            reportId: report.id,
+            emailSentAt: existingSentAt ?? null,
+          });
+          return;
+        }
+      }
+
       const baseUrl = process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || "https://apexlabs.achzodcoaching.com";
       const sent = await sendBloodClientDeliveryEmail(
         report.email,

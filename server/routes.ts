@@ -2606,7 +2606,15 @@ export async function registerRoutes(
       if (audit.type === "GRATUIT") {
         console.log(`[Regenerate] Regenerating Discovery Scan for audit ${auditId}...`);
 
-        await storage.updateAudit(auditId, { reportDeliveryStatus: "GENERATING" });
+        // Admin regenerate is an intentional action — reset delivery state so CAS
+        // can claim fresh ownership. Without this reset, an audit already in
+        // GENERATING from a prior crash would block admin retries forever.
+        await storage.updateAudit(auditId, { reportDeliveryStatus: "PENDING" });
+        const claimed = await storage.claimAuditForGeneration(auditId).catch(() => false);
+        if (!claimed) {
+          res.status(409).json({ error: "Regeneration déjà en cours" });
+          return;
+        }
 
         try {
           // Generate new Discovery Scan report with AI content
@@ -2637,7 +2645,16 @@ export async function registerRoutes(
       // For PREMIUM/ELITE audits - async generation
       await forceRegenerate(auditId);
 
-      await storage.updateAudit(auditId, { reportDeliveryStatus: "GENERATING", narrativeReport: null });
+      // Reset to PENDING so the CAS can claim; narrative wiped so stale content
+      // never leaks into an email. Note: reportSentAt is preserved on purpose so
+      // processReportAndSendEmail bails at Gate 1 (admin must use resend-email
+      // with ?force=1 to email the fresh report).
+      await storage.updateAudit(auditId, { reportDeliveryStatus: "PENDING", narrativeReport: null });
+      const claimedPaid = await storage.claimAuditForGeneration(auditId).catch(() => false);
+      if (!claimedPaid) {
+        res.status(409).json({ error: "Regeneration déjà en cours" });
+        return;
+      }
       await startReportGeneration(auditId, audit.responses, audit.scores || {}, audit.type);
 
       // Lancer le workflow complet (attente + email + admin notification)
@@ -3824,15 +3841,18 @@ export async function registerRoutes(
       const orders = await storage.getOrdersByEmail(email);
       const pepOrder = orders.find((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid");
 
-      // SAFETY PRE-CHECK: if a non-replaceReportId request and a report already exists, refuse
-      // (caller must use replaceReportId explicitly to overwrite — prevents accidental double generation)
-      if (!replaceReportId && pepOrder) {
-        const existingReportId = (pepOrder.metadata as any)?.peptidesReportId;
-        if (existingReportId) {
+      // CROSS-ORDER PROTECTION: if the client paid twice (2 distinct orders), scan
+      // ALL paid orders of the same email — not just the first. Without this, the
+      // CAS below runs against a DIFFERENT order.id and succeeds, even though
+      // another order already has a generated report.
+      if (!replaceReportId) {
+        const cross = await storage.hasAnyPeptidesReportForEmail(email).catch(() => ({ exists: false } as any));
+        if (cross.exists) {
           res.status(409).json({
-            error: "Un rapport peptides existe déjà pour ce client",
-            existingReportId,
-            hint: "Utilise replaceReportId: '<id>' pour regénérer en place, ou supprime d'abord",
+            error: "Un rapport peptides existe déjà pour ce client (scan multi-orders)",
+            existingOrderId: cross.existingOrderId,
+            existingReportId: cross.existingReportId,
+            hint: "Utilise replaceReportId pour regénérer, ou rembourse l'order en double",
           });
           return;
         }
@@ -6135,12 +6155,19 @@ export async function registerRoutes(
         return;
       }
 
-      // Mark as generating and clear cached report to avoid stale content
+      // Reset state + atomic claim so two concurrent regenerate clicks can't
+      // both kick off parallel generations (which would race to write to the
+      // same audit record).
       await storage.updateAudit(audit.id, {
-        reportDeliveryStatus: "GENERATING",
+        reportDeliveryStatus: "PENDING",
         narrativeReport: null,
         reportGeneratedAt: null,
       });
+      const claimedDisc = await storage.claimAuditForGeneration(audit.id).catch(() => false);
+      if (!claimedDisc) {
+        res.status(409).json({ success: false, error: "Regeneration déjà en cours" });
+        return;
+      }
 
       // Fire-and-forget regeneration to avoid blocking the UI
       res.json({ success: true, auditId: audit.id, started: true });
@@ -8698,6 +8725,24 @@ export async function registerRoutes(
         return;
       }
 
+      // CROSS-ORDER PROTECTION: before firing a 60s AI generation, check if ANY
+      // other paid Peptides order for this email already has a reportId. If yes,
+      // short-circuit with the existing report — prevents the inline path from
+      // racing with the autogen cron or a prior confirm-session call.
+      {
+        const cross = await storage.hasAnyPeptidesReportForEmail(email).catch(() => ({ exists: false } as any));
+        if (cross.exists) {
+          console.warn(`[PeptidesEngine inline] ⏭️ Existing report for ${email} → reusing ${cross.existingReportId}, NOT regenerating`);
+          res.json({
+            success: true,
+            reportId: cross.existingReportId,
+            reused: true,
+            existingOrderId: cross.existingOrderId,
+          });
+          return;
+        }
+      }
+
       // Generate protocol (fire-and-forget for long operations, but we await here
       // since we need the report ID for the response)
       let reportId: string | null = null;
@@ -8981,6 +9026,15 @@ export async function registerRoutes(
         const freshMeta = freshOrder?.metadata as any;
         if (freshMeta?.peptidesReportId) {
           console.log(`[AutoGen] Report already exists for ${email} (race avoided pre-gen)`);
+          continue;
+        }
+
+        // SAFETY #1b (CROSS-ORDER): if the client has another paid Peptides order that
+        // already has a reportId, skip this one entirely. Prevents duplicate generation
+        // when Stripe creates two orders from a double-click (alexm2220 incident).
+        const cross = await storage.hasAnyPeptidesReportForEmail(email).catch(() => ({ exists: false } as any));
+        if (cross.exists) {
+          console.warn(`[AutoGen] ⏭️ Cross-order duplicate detected for ${email}: existing report ${cross.existingReportId} on order ${cross.existingOrderId}. This order (${order.id}) skipped — consider refunding.`);
           continue;
         }
 

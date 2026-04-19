@@ -229,6 +229,10 @@ export interface IStorage {
   claimOrderForAudit(orderId: string, auditId: string): Promise<boolean>;
   /** Atomic CAS: set metadata.peptidesReportId only if currently null/absent. Returns true if we won the race. */
   claimPeptidesReportSlot(orderId: string, reportId: string): Promise<boolean>;
+  /** Cross-order protection: true if ANY paid Peptides order for this email already has a reportId.
+   *  Catches duplicate-payment case (2 orders same email) — without this, each order wins its own
+   *  CAS and generates a separate report (alexm2220 incident 2026-03-30). */
+  hasAnyPeptidesReportForEmail(email: string): Promise<{ exists: boolean; existingOrderId?: string; existingReportId?: string }>;
   /** Atomic CAS: transition audit to GENERATING iff current status allows. Prevents two concurrent generators. */
   claimAuditForGeneration(auditId: string): Promise<boolean>;
   /** Atomic CAS: transition audit to SENDING iff reportSentAt IS NULL and status in (READY,SCHEDULED). Prevents two concurrent senders. */
@@ -874,6 +878,18 @@ export class MemStorage implements IStorage {
     order.metadata = { ...meta, peptidesReportId: reportId } as any;
     order.updatedAt = new Date();
     return true;
+  }
+
+  async hasAnyPeptidesReportForEmail(email: string): Promise<{ exists: boolean; existingOrderId?: string; existingReportId?: string }> {
+    const norm = email.trim().toLowerCase();
+    for (const order of this.memOrders.values()) {
+      if (order.productType !== "PEPTIDES_ENGINE") continue;
+      if (order.status !== "paid") continue;
+      if (order.email.trim().toLowerCase() !== norm) continue;
+      const rid = (order.metadata as any)?.peptidesReportId;
+      if (rid) return { exists: true, existingOrderId: order.id, existingReportId: rid };
+    }
+    return { exists: false };
   }
 
   async claimAuditForGeneration(auditId: string): Promise<boolean> {
@@ -2842,6 +2858,35 @@ export class PgStorage implements IStorage {
       [reportId, orderId]
     );
     return (result.rowCount ?? 0) > 0;
+  }
+
+  // Cross-order protection for Peptides — returns true if ANY paid Peptides order of the same
+  // email already has a peptidesReportId. The alexm2220 incident (2026-03-30) shipped two
+  // reports because the client paid twice (two Stripe orders 5 min apart) and each order
+  // independently won its own per-order CAS. Email dedup via email_tracking would normally
+  // catch this at send time, but the dedup query depends on the tracking row being present
+  // and non-failed — a SendPulse outage or a purged tracking table opens the same hole.
+  // Checking at generation-time, before the 60s AI call, is cheap and closes it permanently.
+  async hasAnyPeptidesReportForEmail(email: string): Promise<{ exists: boolean; existingOrderId?: string; existingReportId?: string }> {
+    await this.ensureOrdersTableCreated();
+    const result = await pool.query(
+      `SELECT id, metadata->>'peptidesReportId' AS report_id
+         FROM orders
+        WHERE product_type = 'PEPTIDES_ENGINE'
+          AND status = 'paid'
+          AND LOWER(email) = LOWER($1)
+          AND metadata->>'peptidesReportId' IS NOT NULL
+          AND metadata->>'peptidesReportId' <> ''
+        ORDER BY created_at ASC
+        LIMIT 1`,
+      [email]
+    );
+    if ((result.rowCount ?? 0) === 0) return { exists: false };
+    return {
+      exists: true,
+      existingOrderId: result.rows[0].id,
+      existingReportId: result.rows[0].report_id,
+    };
   }
 
   // Atomic CAS for audit report generation — transition to GENERATING only if the audit is
