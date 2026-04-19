@@ -57,7 +57,7 @@ export interface PeptaurProduct {
   cheapestPriceUSD: number; // lowest single vial
   supplierCount: number;
   formFactor: "vial" | "cartridge";
-  category: "recovery" | "gh-secretagogue" | "fat-loss" | "sleep" | "cognitive" | "libido" | "skin" | "longevity" | "endurance" | "glp1" | "blend" | "supplies" | "other";
+  category: "recovery" | "gh-secretagogue" | "fat-loss" | "sleep" | "cognitive" | "libido" | "skin" | "longevity" | "endurance" | "glp1" | "blend" | "supplies" | "hpg-axis" | "other";
 }
 
 export const PEPTAURA_CATALOG: PeptaurProduct[] = [
@@ -71,7 +71,15 @@ export const PEPTAURA_CATALOG: PeptaurProduct[] = [
   { name: "Thymosin Alpha-1", slug: "Thymosin Alpha-1", dosages: ["5mg", "10mg"], priceRangeUSD: "$19.66 - $280", cheapestSupplier: "Lumira", cheapestPriceUSD: 19.66, supplierCount: 11, formFactor: "vial", category: "recovery" },
   { name: "KPV", slug: "KPV", dosages: ["10mg"], priceRangeUSD: "$12.38 - $112", cheapestSupplier: "Lumira", cheapestPriceUSD: 12.38, supplierCount: 10, formFactor: "vial", category: "recovery" },
   { name: "VIP", slug: "VIP", dosages: ["5mg", "10mg"], priceRangeUSD: "$19.11 - $266", cheapestSupplier: "Lumira", cheapestPriceUSD: 19.11, supplierCount: 12, formFactor: "vial", category: "recovery" },
-  { name: "HCG", slug: "HCG", dosages: ["5000IU", "10000IU"], priceRangeUSD: "$18.02 - $239", cheapestSupplier: "Lumira", cheapestPriceUSD: 18.02, supplierCount: 11, formFactor: "vial", category: "recovery" },
+  { name: "HCG", slug: "HCG", dosages: ["5000IU", "10000IU"], priceRangeUSD: "$18.02 - $239", cheapestSupplier: "Lumira", cheapestPriceUSD: 18.02, supplierCount: 11, formFactor: "vial", category: "hpg-axis" },
+  // HPG-axis stimulation / TRT-alternative peptides. Supports endogenous
+  // testosterone recovery, PCT, and fertility-preserving protocols. Do NOT
+  // prescribe without recent bloodwork (total T, free T, LH, FSH, E2, SHBG,
+  // prolactin) — the prompt enforces this.
+  { name: "Kisspeptin-10", slug: "Kisspeptin-10", dosages: ["5mg", "10mg"], priceRangeUSD: "$28.00 - $180", cheapestSupplier: "Lumira", cheapestPriceUSD: 28.00, supplierCount: 8, formFactor: "vial", category: "hpg-axis" },
+  { name: "Gonadorelin (GnRH)", slug: "Gonadorelin", dosages: ["2mg", "5mg", "10mg"], priceRangeUSD: "$14.00 - $95", cheapestSupplier: "Lumira", cheapestPriceUSD: 14.00, supplierCount: 9, formFactor: "vial", category: "hpg-axis" },
+  { name: "Enclomifene Citrate", slug: "Enclomifene", dosages: ["12.5mg (60 tabs)", "25mg (60 tabs)"], priceRangeUSD: "$32.00 - $120", cheapestSupplier: "Lumira", cheapestPriceUSD: 32.00, supplierCount: 7, formFactor: "cartridge", category: "hpg-axis" },
+  { name: "Tamoxifen (Nolvadex)", slug: "Tamoxifen", dosages: ["20mg (60 tabs)"], priceRangeUSD: "$22.00 - $85", cheapestSupplier: "Lumira", cheapestPriceUSD: 22.00, supplierCount: 8, formFactor: "cartridge", category: "hpg-axis" },
   { name: "Ara-290", slug: "Ara-290", dosages: ["5mg", "10mg"], priceRangeUSD: "$14.01 - $112", cheapestSupplier: "Lumira", cheapestPriceUSD: 14.01, supplierCount: 10, formFactor: "vial", category: "recovery" },
   { name: "Cerebrolysin", slug: "Cerebrolysin", dosages: ["5ml", "10ml"], priceRangeUSD: "$15.11 - $116", cheapestSupplier: "Lumira", cheapestPriceUSD: 15.11, supplierCount: 11, formFactor: "vial", category: "recovery" },
   { name: "Dermorphin", slug: "Dermorphin", dosages: ["5mg"], priceRangeUSD: "$54.60 - $105", cheapestSupplier: "VialForge", cheapestPriceUSD: 54.60, supplierCount: 7, formFactor: "vial", category: "recovery" },
@@ -322,6 +330,10 @@ function buildResponsesSummary(responses: Record<string, unknown>): string {
     pep_trt: "TRT / Hormonothérapie",
     pep_trt_details: "Détails TRT",
     pep_peds_history: "Historique PEDs",
+    pep_testo_symptoms: "Symptômes hypogonadisme ressentis",
+    pep_testo_bloodwork: "Bilan hormonal récent",
+    pep_testo_fertility: "Préservation fertilité",
+    pep_testo_pct_context: "Contexte baisse testostérone",
     pep_budget: "Budget mensuel",
     pep_injection_comfort: "Confort injections",
     pep_injection_type: "Type injection préféré",
@@ -621,6 +633,58 @@ Tirzepatide (GLP-1/GIP dual)
 - Dosage: titration 2.5mg → 5 → 7.5 → 10 → 12.5 → 15mg/semaine SC
 - Route: SC 1x/semaine
 - Cycle: 3-12 mois
+
+AXE HPG / RELANCE TESTOSTÉRONE NATURELLE (alternative TRT)
+Quand pep_primary_goal = "testo-boost" OU pep_secondary_goals contient "testo-boost", tu construis un protocole de stimulation endogène basé sur les données suivantes. IMPORTANT : tu NE prescris JAMAIS sans bilan hormonal récent (Testo totale, Testo libre, LH, FSH, E2, SHBG, Prolactine). Si pep_testo_bloodwork = "never" ou "old", ta PREMIÈRE recommandation doit être de faire le bilan via Apexlabs Blood Analysis (tu as 2 codes offerts dans le stack, c'est l'occasion) avant d'entamer le moindre peptide. Pas de bilan = pas de protocole hormonal, point.
+
+Enclomifene Citrate (SERM sélectif, premier choix HPG-axis)
+- Mécanisme: bloque les récepteurs oestrogènes hypothalamiques → lève le feedback négatif → hypophyse libère LH/FSH → testicules produisent testo endogène. Contrairement au clomiphène racémique (Clomid), l'enclomifène est l'isomère "pur" sans le zu-isomère qui cause la fatigue et les troubles visuels. Beaucoup mieux toléré.
+- Dosage: 12.5 mg/jour (démarrage) → 25 mg/jour si réponse insuffisante après 4 semaines. Per os (sublingual marche aussi).
+- Indication: hypogonadisme secondaire, optimisation testo, PCT post-cycle, préservation fertilité (ne shut down pas l'axe HPG, au contraire).
+- Cycle: 8-12 semaines avec re-bilan à S4 et S8. Pause obligatoire si Hb/Ht montent trop ou si E2 flambe.
+- Avantages: fertilité préservée (voire améliorée), pas d'injection, réversible rapidement.
+- Effets secondaires potentiels: céphalées légères, variation humeur, très rarement troubles visuels transitoires (bien moins que Clomid).
+
+Kisspeptin-10 (peptide recherche, très prometteur)
+- Mécanisme: active les neurones GnRH hypothalamiques → libération pulsatile LH/FSH → testo endogène + fertilité. Plus "physiologique" que l'enclomifène car agit en amont de la cascade.
+- Dosage: 50-200 mcg SC 2-3x/semaine selon protocole recherche. Démarrage 50 mcg, titration progressive.
+- Indication: optimisation testo chez client à axe HPG fonctionnel, préservation fertilité, sortie de shut-down post-cycle long.
+- Cycle: 6-12 semaines. Data humaine encore limitée hors protocoles recherche, à utiliser avec monitoring serré.
+- Synergie: excellente avec Gonadoreline pour stimuler l'axe à plusieurs niveaux.
+
+Gonadorelin (GnRH synthétique, stimulation directe hypophysaire)
+- Mécanisme: peptide décapeptidique GnRH → libère LH/FSH depuis l'antéhypophyse. Demi-vie très courte (10-40 min) donc administration pulsatile qui mime le rythme naturel.
+- Dosage: 100-300 mcg SC 2-3x/semaine, ou micro-doses 25-50 mcg quotidiennes pour mimer la pulsatilité physiologique.
+- Indication: alternative à l'HCG pour maintenir la fonction testiculaire (taille + spermatogenèse) chez les hommes déjà sous TRT, ou relance post-cycle, ou co-adjuvant kisspeptin.
+- Avantages vs HCG: pas d'accumulation tissulaire, effet plus "clean" sur la fertilité, moins d'aromatisation.
+- Cycle: souvent continu en micro-dose si TRT, ou 4-8 semaines en relance.
+
+HCG (analogue LH, standard historique)
+- Mécanisme: mime la LH, active directement les cellules de Leydig testiculaires → production testo + maintien taille testiculaire.
+- Dosage: 250-500 UI SC 2-3x/semaine (relance ou co-TRT). Doses élevées (1000-3000 UI) réservées aux protocoles spécifiques.
+- Indication: préservation fertilité/taille testiculaire si déjà sous TRT, relance post-cycle, hypogonadisme secondaire (si enclomifène échoue).
+- Limites: peut sur-aromatiser (E2 haut, bloat, gynéco), shut-down de l'axe à doses élevées, demi-vie longue (24-72h) donc effet plus continu et moins pulsatile que GnRH.
+- Cycle: 4-12 semaines en relance, ou usage continu en micro-dose avec TRT.
+
+Tamoxifene (Nolvadex, SERM pour PCT ou gynéco)
+- Mécanisme: SERM qui bloque les récepteurs oestrogènes au niveau sein et hypothalamus. Restaure la production de gonadotrophines après shut-down.
+- Dosage: 20 mg/jour pendant 4-6 semaines en PCT. 10-20 mg/jour pour gynéco naissante.
+- Indication: PCT après cycle long/lourd, gynécomastie naissante, complément enclomifène si besoin de protection anti-oestrogénique mammaire spécifique.
+- Attention: prolongation QT possible, interaction warfarine, pas idéal en chronique.
+
+PROTOCOLES TESTO-BOOST (logique de décision)
+Si testo basse confirmée (pep_testo_bloodwork = "recent-low") + fertilité importante/critique : ENCLOMIFÈNE en premier choix (8-12 sem, re-bilan à S4 et S8). Alternative/upgrade: Kisspeptin si client avancé et veut un protocole plus "physiologique".
+Si testo dans la norme mais client veut optimiser + fertilité critique : refuser protocole aggressif, proposer optimisation lifestyle + éventuellement Kisspeptin micro-dose à discuter avec médecin. Ne prescris pas Enclomifène pour "optimisation" chez un homme normal avec projet bébé sans justification médicale solide.
+Post-cycle (pep_testo_pct_context = "post-cycle") : combo Enclomifène 25mg/j + HCG 500UI x2/sem pendant 4 sem, puis Enclomifène seul 4 sem supplémentaires. Tamoxifène 20mg/j en option si gynéco naissante.
+Andropause (age-related) + bilan LH/FSH hauts (hypogonadisme primaire) : l'axe HPG est déjà au max, les SERMs et kisspeptin ne marcheront pas. Dis-le honnêtement au client, oriente vers consultation endocrino pour TRT médicale si indication confirmée. Tu ne fais pas semblant.
+Andropause + LH/FSH bas/normaux (hypogonadisme secondaire) : Enclomifène premier choix, c'est la classe d'indication.
+Baisse stress/lifestyle : PREMIER REFLEXE = optimisation sommeil, stress management, alimentation, training. Peptides en second temps si les basics sont déjà en place. Tu peux proposer Enclomifène 12.5 mg cycle court 8 sem avec priorité sur le lifestyle.
+
+BLOODWORK OBLIGATOIRE POUR TESTO-BOOST (MONITORING)
+Bilan pré-protocole: Testo totale, Testo libre, LH, FSH, E2 (estradiol ultra-sensible), SHBG, Prolactine, DHT, Hémogramme (Hb/Ht), NFS, bilan lipidique, PSA si âge > 40.
+Re-bilan à S4 et S8: Testo totale/libre, LH, FSH, E2, Hb/Ht.
+Si Hb > 17.5 g/dL ou Ht > 54% → pause protocole, don du sang recommandé.
+Si E2 > 50 pg/mL → envisager anastrozole à très faible dose ou pause. Jamais d'AI systématique en préventif — seulement sur élévation documentée avec symptômes.
 
 ${buildCatalogForPrompt()}
 

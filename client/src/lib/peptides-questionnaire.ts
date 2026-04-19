@@ -64,6 +64,7 @@ export const PEPTIDES_QUESTIONS: PeptidesQuestion[] = [
     { value: "sleep", label: "Sommeil profond" },
     { value: "cognitive", label: "Performance cognitive (focus, memoire)" },
     { value: "libido", label: "Libido / performance sexuelle" },
+    { value: "testo-boost", label: "Booster ma testosterone naturellement (alternative TRT)" },
     { value: "skin-hair", label: "Peau / cheveux / anti-age" },
     { value: "endurance", label: "Endurance / cardio" },
   ]},
@@ -74,6 +75,7 @@ export const PEPTIDES_QUESTIONS: PeptidesQuestion[] = [
     { value: "sleep", label: "Sommeil profond" },
     { value: "cognitive", label: "Performance cognitive" },
     { value: "libido", label: "Libido" },
+    { value: "testo-boost", label: "Booster testosterone naturellement" },
     { value: "skin-hair", label: "Peau / cheveux" },
     { value: "endurance", label: "Endurance" },
   ]},
@@ -97,6 +99,40 @@ export const PEPTIDES_QUESTIONS: PeptidesQuestion[] = [
     { value: "quality", label: "Sommeil non reparateur" },
     { value: "chronic", label: "Insomnie chronique" },
     { value: "circadian", label: "Decalage circadien" },
+  ]},
+
+  // Testosterone-boost sub-questions — only shown if user picked testo-boost as primary goal.
+  // These drive the protocol choice (enclomifene vs HCG+kisspeptin vs gonadorelin pulsatile).
+  // Without them we'd be prescribing blind; with them the engine can tailor safely.
+  { id: "pep_testo_symptoms", sectionId: "objectifs", type: "checkbox", label: "Symptômes ressentis (coche tout ce qui s'applique)", conditionalOn: "pep_primary_goal:testo-boost", options: [
+    { value: "low-libido", label: "Baisse de libido" },
+    { value: "erectile", label: "Difficultés érectiles" },
+    { value: "fatigue", label: "Fatigue chronique, manque d'énergie" },
+    { value: "muscle-loss", label: "Perte de muscle / récupération lente" },
+    { value: "fat-gain", label: "Prise de gras (ventre notamment)" },
+    { value: "mood", label: "Humeur basse, irritabilité, motivation à zéro" },
+    { value: "brainfog", label: "Brain fog, concentration dégradée" },
+    { value: "morning-wood", label: "Plus d'érections matinales" },
+    { value: "none-symptoms", label: "Aucun symptôme (optimisation proactive)" },
+  ]},
+  { id: "pep_testo_bloodwork", sectionId: "objectifs", type: "select", label: "Bilan hormonal récent (Testo totale, LH, FSH, E2) ?", conditionalOn: "pep_primary_goal:testo-boost", required: true, options: [
+    { value: "recent-low", label: "Oui, < 3 mois, testo basse confirmée" },
+    { value: "recent-normal", label: "Oui, < 3 mois, testo dans la norme mais je veux optimiser" },
+    { value: "old", label: "Oui, > 3 mois (je vais en refaire un)" },
+    { value: "never", label: "Jamais fait — je vais en faire un avant" },
+  ]},
+  { id: "pep_testo_fertility", sectionId: "objectifs", type: "select", label: "Préserver la fertilité (projet bébé actuel ou futur) ?", conditionalOn: "pep_primary_goal:testo-boost", required: true, options: [
+    { value: "critical", label: "Oui, critique — je veux concevoir bientôt" },
+    { value: "important", label: "Oui, important — à moyen terme (1-3 ans)" },
+    { value: "nice", label: "Préférable, mais pas urgent" },
+    { value: "no", label: "Non, fertilité pas un enjeu" },
+  ]},
+  { id: "pep_testo_pct_context", sectionId: "objectifs", type: "select", label: "Contexte", conditionalOn: "pep_primary_goal:testo-boost", options: [
+    { value: "natural-low", label: "Production naturelle basse (jamais de cycle)" },
+    { value: "post-cycle", label: "Post-cycle (relance après SARM ou stéroïdes)" },
+    { value: "age-related", label: "Baisse liée à l'âge (andropause)" },
+    { value: "stress-lifestyle", label: "Baisse liée au stress / lifestyle" },
+    { value: "other", label: "Autre" },
   ]},
 
   // === SECTION 3: SANTE ===
