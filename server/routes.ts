@@ -8211,12 +8211,13 @@ export async function registerRoutes(
         return;
       }
 
-      // Check status
-      if (audit.reportDeliveryStatus === "SENT") {
+      // Check status — block silently unless admin explicitly opts in with ?force=1.
+      const forceRawSend = req.query.force === "1" || (req.body as any)?.force === true;
+      if (audit.reportDeliveryStatus === "SENT" && !forceRawSend) {
         res.json({
           success: true,
           alreadySent: true,
-          message: "Email déjà envoyé",
+          message: "Email déjà envoyé — pass ?force=1 pour renvoyer volontairement",
           sentAt: audit.reportSentAt
         });
         return;
