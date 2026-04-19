@@ -4837,6 +4837,65 @@ export async function registerRoutes(
     }
   });
 
+  // Admin: clean up failed-auth email_tracking rows so the automated crons
+  // re-attempt the emails on the next cycle. Use after a credentials outage
+  // like the 2026-04-19 SendPulse auth window: once the new creds work, run
+  // POST /api/admin/email-trackings/purge-failed?since=<ISO> (defaults to
+  // 48h ago) and the AutoSequence/Review/Abandon/Reorder crons will send
+  // fresh emails the next time they tick.
+  app.post("/api/admin/email-trackings/purge-failed", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const sinceParam = (req.query.since as string) || (req.body as any)?.since;
+      const since = sinceParam ? new Date(sinceParam) : new Date(Date.now() - 48 * 60 * 60 * 1000);
+      if (Number.isNaN(since.getTime())) {
+        res.status(400).json({ error: "invalid `since` — must be ISO date" });
+        return;
+      }
+
+      // Conservative filter: only rows flagged failed due to auth/credentials
+      // errors during the window. Doesn't touch delivered-but-unopened rows.
+      const resBefore = await pool.query(
+        `SELECT email_type, COUNT(*)::int AS c
+           FROM email_tracking
+          WHERE sendpulse_status = 'failed'
+            AND sent_at >= $1
+            AND (sendpulse_error ILIKE '%auth%' OR sendpulse_error ILIKE '%credentials%' OR sendpulse_error ILIKE '%invalid_client%')
+          GROUP BY email_type
+          ORDER BY c DESC`,
+        [since.toISOString()]
+      );
+
+      const toPurge = resBefore.rows;
+      const totalToPurge = toPurge.reduce((sum: number, r: any) => sum + Number(r.c ?? 0), 0);
+
+      if (totalToPurge === 0) {
+        res.json({ success: true, purged: 0, message: "No failed-auth rows in window — nothing to do.", since: since.toISOString() });
+        return;
+      }
+
+      const purgeRes = await pool.query(
+        `DELETE FROM email_tracking
+          WHERE sendpulse_status = 'failed'
+            AND sent_at >= $1
+            AND (sendpulse_error ILIKE '%auth%' OR sendpulse_error ILIKE '%credentials%' OR sendpulse_error ILIKE '%invalid_client%')
+          RETURNING id`,
+        [since.toISOString()]
+      );
+
+      res.json({
+        success: true,
+        since: since.toISOString(),
+        purged: purgeRes.rowCount ?? 0,
+        byType: toPurge,
+        note: "Failed tracking rows deleted. Auto-sequence crons (30 min), review cron (6h), abandon cron (6h), peptides reorder cron (12h) will retry eligible recipients on their next tick. No user is double-emailed because crons re-evaluate windows + dedup.",
+      });
+    } catch (err: any) {
+      console.error("[Admin] purge-failed email tracking error:", err);
+      res.status(500).json({ error: err?.message || "Erreur serveur" });
+    }
+  });
+
   // Admin email tracking stats
   app.get("/api/admin/email-trackings/stats", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
