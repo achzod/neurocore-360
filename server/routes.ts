@@ -1969,6 +1969,7 @@ export async function registerRoutes(
       const normalizedEmail = String(email).trim().toLowerCase();
       const verifiedEmail = await storage.verifyMagicToken(token as string);
       if (!verifiedEmail || verifiedEmail.trim().toLowerCase() !== normalizedEmail) {
+        console.warn(`[Auth verify] fail token=${String(token).slice(0,8)}.. email=${normalizedEmail} found=${verifiedEmail}`);
         res.status(401).json({ error: "Lien invalide ou expiré" });
         return;
       }
@@ -1976,6 +1977,37 @@ export async function registerRoutes(
       res.json({ success: true, email: normalizedEmail });
     } catch (error) {
       res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
+  // Admin diagnostic: introspect magic_tokens table health. Quick check to see
+  // whether magic-link generation is actually persisting rows — a schema drift
+  // (wrong column name, missing NOT NULL satisfied, etc.) would mean createMagicToken
+  // inserts but the SELECT in verifyMagicToken never finds the row.
+  app.get("/api/admin/debug-magic-tokens", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const cols = await pool.query(
+        "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'magic_tokens' ORDER BY ordinal_position"
+      );
+      const count = await pool.query("SELECT COUNT(*)::int AS c FROM magic_tokens");
+      const recent = await pool.query(
+        "SELECT * FROM magic_tokens ORDER BY COALESCE(expires_at, NOW()) DESC LIMIT 5"
+      ).catch(() => ({ rows: [] }));
+      // Redact token values, just show prefix
+      const redacted = recent.rows.map((r: any) => ({
+        id: r.id,
+        email: r.email,
+        tokenPrefix: r.token ? String(r.token).slice(0, 8) : null,
+        expires_at: r.expires_at,
+      }));
+      res.json({
+        columns: cols.rows,
+        rowCount: count.rows[0]?.c ?? 0,
+        recent: redacted,
+      });
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
     }
   });
 
