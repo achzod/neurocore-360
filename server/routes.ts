@@ -159,7 +159,19 @@ export async function registerRoutes(
   app.get("/api/health", async (_req, res) => {
     try {
       await pool.query("SELECT 1");
-      res.json({ status: "ok", db: "connected", timestamp: new Date().toISOString() });
+      const mem = process.memoryUsage();
+      const rssMb = Math.round(mem.rss / 1024 / 1024);
+      const heapUsedMb = Math.round(mem.heapUsed / 1024 / 1024);
+      const heapTotalMb = Math.round(mem.heapTotal / 1024 / 1024);
+      // Render starter tier has 512MB RAM. Flag if we're approaching the wall.
+      const memStatus = rssMb > 440 ? "critical" : rssMb > 380 ? "warning" : "ok";
+      res.json({
+        status: "ok",
+        db: "connected",
+        memory: { rssMb, heapUsedMb, heapTotalMb, status: memStatus },
+        uptimeSec: Math.round(process.uptime()),
+        timestamp: new Date().toISOString(),
+      });
     } catch (err) {
       res.status(503).json({ status: "unhealthy", db: "disconnected", timestamp: new Date().toISOString() });
     }
@@ -8993,8 +9005,19 @@ export async function registerRoutes(
     if (reviewCronRunning) return;
     reviewCronRunning = true;
     try {
+      // Memory guard — skip cycle if heap pressure is critical (prevents the
+      // 2026-04-19 SIGABRT crash). Render container is 512MB; 440MB RSS means
+      // GC can't keep up.
+      const memRssMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
+      if (memRssMb > 440) {
+        console.warn(`[ReviewCron] ⚠️ Skipping cycle — RSS ${memRssMb}MB > 440MB threshold`);
+        return;
+      }
+
       const baseUrl = process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || "https://apexlabs.achzodcoaching.com";
-      const allAudits = await storage.getAllAudits();
+      // Use light variant — this cron only needs metadata (id, email, dates, status).
+      // Full JSONB columns (narrative_report, responses, scores) would add ~90MB to heap.
+      const allAudits = await storage.getAllAuditsLight();
       const now = new Date();
       let sent = 0;
       for (const audit of allAudits) {
@@ -9108,6 +9131,14 @@ export async function registerRoutes(
     }
     if (autoGenRunning) {
       console.log("[AutoGen] ⏭️ Skipped — already running");
+      return;
+    }
+    // Memory guard — Peptides generation loads a large Sonnet response (~300KB)
+    // and writes it back to DB. Combined with other in-flight work it can push
+    // past the 400MB heap limit. Skip the cycle if we're already near the wall.
+    const memRssMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
+    if (memRssMb > 440) {
+      console.warn(`[AutoGen] ⚠️ Skipping cycle — RSS ${memRssMb}MB > 440MB threshold`);
       return;
     }
     autoGenRunning = true;
@@ -9242,7 +9273,14 @@ export async function registerRoutes(
   // Auto-send READY/SCHEDULED reports (Discovery, Anabolic, Ultimate)
   setInterval(async () => {
     try {
-      const allAudits = await storage.getAllAudits();
+      const memRssMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
+      if (memRssMb > 440) {
+        console.warn(`[AutoSend] ⚠️ Skipping cycle — RSS ${memRssMb}MB > 440MB threshold`);
+        return;
+      }
+
+      // Light variant: we only need id/email/type/status/timestamps here.
+      const allAudits = await storage.getAllAuditsLight();
       const now = new Date();
       let sent = 0;
 
@@ -9286,8 +9324,15 @@ export async function registerRoutes(
   // Auto-process email sequences every 30 minutes
   setInterval(async () => {
     try {
+      // Memory guard
+      const memRssMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
+      if (memRssMb > 440) {
+        console.warn(`[AutoSequence] ⚠️ Skipping cycle — RSS ${memRssMb}MB > 440MB threshold`);
+        return;
+      }
+
       const baseUrl = getBaseUrl();
-      const allAudits = await storage.getAllAudits();
+      const allAudits = await storage.getAllAuditsLight();
       const now = new Date();
       let sent = 0;
 

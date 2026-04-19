@@ -91,13 +91,7 @@ export async function sendAutomaticReport(): Promise<boolean> {
  * Collecte toutes les stats nécessaires
  */
 async function gatherStats(): Promise<ReportStats> {
-  const { db, pool } = await import("./db.js");
-  const schema = await import("../shared/drizzle-schema.js");
-  // `orders` is not defined in drizzle-schema.ts — storage.ts manages the
-  // orders table via raw SQL. Guard against the undefined import (used to
-  // throw "Cannot read properties of undefined (reading 'Symbol(drizzle:Columns)')").
-  const audits = (schema as any).audits;
-  if (!audits) throw new Error("[Reports] drizzle schema missing: audits");
+  const { pool } = await import("./db.js");
 
   const now = new Date();
   const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
@@ -106,60 +100,57 @@ async function gatherStats(): Promise<ReportStats> {
   const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   const dayAfterTomorrow = new Date(now.getTime() + 48 * 60 * 60 * 1000);
 
-  // Tous les audits
-  const allAudits = await db.select().from(audits);
+  // Memory-safe: aggregate in SQL instead of loading every audit's narrative_report
+  // + responses + scores JSONB columns into Node. Loading all rows with their
+  // JSONBs pushed the process past the 400MB heap ceiling on 2026-04-19 (exit
+  // 134 / SIGABRT). SQL COUNT + SUM is constant memory regardless of table size.
+  const totalRes = await pool.query("SELECT COUNT(*)::int AS c FROM audits");
+  const totalAudits = Number(totalRes.rows[0]?.c ?? 0);
 
-  // Nouveaux audits (6 dernières heures)
-  const newAudits = allAudits.filter(
-    (a) => new Date(a.createdAt) >= sixHoursAgo
+  const newRes = await pool.query(
+    "SELECT COUNT(*)::int AS c FROM audits WHERE created_at >= $1",
+    [sixHoursAgo]
   );
+  const newAuditsCount = Number(newRes.rows[0]?.c ?? 0);
 
-  // Par statut
+  const byStatusRes = await pool.query(
+    "SELECT COALESCE(report_delivery_status, 'UNKNOWN') AS status, COUNT(*)::int AS c FROM audits GROUP BY 1"
+  );
   const byStatus: Record<string, number> = {};
-  allAudits.forEach((a) => {
-    const status = a.reportDeliveryStatus || "UNKNOWN";
-    byStatus[status] = (byStatus[status] || 0) + 1;
-  });
+  for (const row of byStatusRes.rows) byStatus[row.status] = Number(row.c);
 
-  // Par type
+  const byTypeRes = await pool.query(
+    "SELECT type, COUNT(*)::int AS c FROM audits GROUP BY 1"
+  );
   const byType: Record<string, number> = {};
-  allAudits.forEach((a) => {
-    byType[a.type] = (byType[a.type] || 0) + 1;
-  });
+  for (const row of byTypeRes.rows) byType[row.type] = Number(row.c);
 
-  // Alertes
   const needsReview = byStatus["NEEDS_REVIEW"] || 0;
   const failed = byStatus["FAILED"] || 0;
-  const generatingStuck = allAudits.filter(
-    (a) =>
-      a.reportDeliveryStatus === "GENERATING" &&
-      new Date(a.createdAt) < twoHoursAgo
-  ).length;
 
-  // Livraisons programmées
-  const scheduledToday = allAudits.filter(
-    (a) =>
-      a.reportDeliveryStatus === "SCHEDULED" &&
-      a.reportScheduledFor &&
-      new Date(a.reportScheduledFor) >= now &&
-      new Date(a.reportScheduledFor) < tomorrow
-  ).length;
+  const stuckRes = await pool.query(
+    "SELECT COUNT(*)::int AS c FROM audits WHERE report_delivery_status = 'GENERATING' AND created_at < $1",
+    [twoHoursAgo]
+  );
+  const generatingStuck = Number(stuckRes.rows[0]?.c ?? 0);
 
-  const scheduledTomorrow = allAudits.filter(
-    (a) =>
-      a.reportDeliveryStatus === "SCHEDULED" &&
-      a.reportScheduledFor &&
-      new Date(a.reportScheduledFor) >= tomorrow &&
-      new Date(a.reportScheduledFor) < dayAfterTomorrow
-  ).length;
+  const schedTodayRes = await pool.query(
+    "SELECT COUNT(*)::int AS c FROM audits WHERE report_delivery_status = 'SCHEDULED' AND report_scheduled_for >= $1 AND report_scheduled_for < $2",
+    [now, tomorrow]
+  );
+  const scheduledToday = Number(schedTodayRes.rows[0]?.c ?? 0);
 
-  // Envois récents (6h)
-  const sentLast6h = allAudits.filter(
-    (a) =>
-      a.reportDeliveryStatus === "SENT" &&
-      a.reportSentAt &&
-      new Date(a.reportSentAt) >= sixHoursAgo
-  ).length;
+  const schedTomorrowRes = await pool.query(
+    "SELECT COUNT(*)::int AS c FROM audits WHERE report_delivery_status = 'SCHEDULED' AND report_scheduled_for >= $1 AND report_scheduled_for < $2",
+    [tomorrow, dayAfterTomorrow]
+  );
+  const scheduledTomorrow = Number(schedTomorrowRes.rows[0]?.c ?? 0);
+
+  const sentRes = await pool.query(
+    "SELECT COUNT(*)::int AS c FROM audits WHERE report_delivery_status = 'SENT' AND report_sent_at >= $1",
+    [sixHoursAgo]
+  );
+  const sentLast6h = Number(sentRes.rows[0]?.c ?? 0);
 
   // Revenus — orders table managed by raw SQL in storage.ts (no drizzle model),
   // so query directly via pg pool. Filter in SQL to avoid loading every row's
@@ -189,8 +180,8 @@ async function gatherStats(): Promise<ReportStats> {
   }
 
   return {
-    totalAudits: allAudits.length,
-    newAuditsLast6h: newAudits.length,
+    totalAudits,
+    newAuditsLast6h: newAuditsCount,
     byStatus,
     byType,
     alerts: {

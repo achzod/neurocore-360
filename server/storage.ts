@@ -159,6 +159,8 @@ export interface IStorage {
   getAuditsByEmail(email: string): Promise<Audit[]>;
   getPendingAudits(): Promise<Audit[]>;
   getAllAudits(): Promise<Audit[]>;
+  /** Memory-safe variant of getAllAudits that omits heavy JSONB columns (narrative_report, responses, scores). Use in long-running crons. */
+  getAllAuditsLight(): Promise<Audit[]>;
   getScheduledAuditsForDelivery(): Promise<Audit[]>;
   createAudit(audit: InsertAudit & { email: string; responses: Record<string, unknown> }): Promise<Audit>;
   updateAudit(id: string, data: Partial<Audit>): Promise<Audit | undefined>;
@@ -399,6 +401,11 @@ export class MemStorage implements IStorage {
       const dateB = new Date(b.createdAt).getTime();
       return dateB - dateA;
     });
+  }
+
+  async getAllAuditsLight(): Promise<Audit[]> {
+    // MemStorage fallback — no JSONB in memory, return full rows
+    return this.getAllAudits();
   }
 
   async getScheduledAuditsForDelivery(): Promise<Audit[]> {
@@ -1328,6 +1335,36 @@ export class PgStorage implements IStorage {
   async getAllAudits(): Promise<Audit[]> {
     const result = await pool.query("SELECT * FROM audits ORDER BY created_at DESC");
     return result.rows.map(row => this.rowToAudit(row));
+  }
+
+  // Memory-safe variant: drops narrative_report / responses / scores JSONB columns.
+  // Use in long-running crons (setInterval callbacks) where callers only need
+  // lifecycle metadata (id, email, type, status, timestamps). Prevents heap
+  // pressure from 461+ audits × ~200KB JSONB each = 90MB per tick that was
+  // triggering SIGABRT crashes on Render's 512MB tier.
+  async getAllAuditsLight(): Promise<Audit[]> {
+    const result = await pool.query(
+      `SELECT id, user_id, email, type, status, report_delivery_status,
+              report_scheduled_for, report_sent_at, report_generated_at,
+              created_at, completed_at
+         FROM audits ORDER BY created_at DESC`
+    );
+    return result.rows.map((row: any): Audit => ({
+      id: row.id,
+      userId: row.user_id,
+      email: row.email,
+      type: row.type,
+      status: row.status,
+      responses: {},
+      scores: {},
+      reportDeliveryStatus: row.report_delivery_status,
+      reportScheduledFor: row.report_scheduled_for,
+      reportSentAt: row.report_sent_at,
+      reportGeneratedAt: row.report_generated_at ?? undefined,
+      narrativeReport: null as any,
+      createdAt: row.created_at,
+      completedAt: row.completed_at,
+    }));
   }
 
   async getScheduledAuditsForDelivery(): Promise<Audit[]> {
