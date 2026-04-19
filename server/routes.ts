@@ -8223,7 +8223,9 @@ export async function registerRoutes(
         return;
       }
 
-      if (audit.reportDeliveryStatus !== "SCHEDULED" && audit.reportDeliveryStatus !== "READY") {
+      // Bypass the SCHEDULED/READY gate when force=1 (admin explicitly re-sending
+      // an audit in SENT or other terminal state).
+      if (!forceRawSend && audit.reportDeliveryStatus !== "SCHEDULED" && audit.reportDeliveryStatus !== "READY") {
         res.status(400).json({
           error: `Cannot force send: status is ${audit.reportDeliveryStatus}`,
           status: audit.reportDeliveryStatus
@@ -8233,7 +8235,6 @@ export async function registerRoutes(
 
       // Force send — admin-initiated. Still dedup via email_tracking unless caller opts out.
       const baseUrl = getBaseUrl();
-      const forceRawSend = req.query.force === "1" || (req.body as any)?.force === true;
 
       console.log(`[ForceSend] Sending to ${audit.email} (audit: ${audit.id}, type: ${audit.type}, force=${forceRawSend})`);
 
