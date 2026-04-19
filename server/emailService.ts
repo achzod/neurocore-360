@@ -14,15 +14,17 @@ const SENDPULSE_APEXLABS_BOOK_ID = process.env.SENDPULSE_APEXLABS_BOOK_ID || "";
 
 // ApexLabs Design System (Ultrahuman style)
 export const COLORS = {
-  primary: '#FCDD00',
+  primary: '#FCDD00',       // APEXLABS yellow (brand)
   background: '#000000',
   surface: '#0a0a0a',
   border: 'rgba(252, 221, 0, 0.15)',
   text: '#FFFFFF',
   textMuted: '#a1a1aa',
   warning: '#f59e0b',
-  purple: '#8b5cf6',
-  blood: '#ef4444',
+  purple: '#8b5cf6',        // ELITE / Ultimate
+  blood: '#ef4444',         // BLOOD_ANALYSIS
+  discovery: '#22d3ee',     // Cyan for GRATUIT Discovery (NOT gray anymore)
+  anabolic: '#22c55e',      // Green for PREMIUM Anabolic
 };
 
 type CoachingOfferTier = {
@@ -318,60 +320,48 @@ function getEmailWrapper(
   headerTitle: string = "Audit Métabolique",
   headerSubtitle: string = "Analyse Personnalisée"
 ): string {
-  return `
-<!DOCTYPE html>
-<html>
+  // Gmail-safe template. Changes vs the previous version:
+  //   - Replaced `display: inline-flex` (Gmail strips it and renders a "..."
+  //     placeholder where the badge should be) with a plain inline table.
+  //   - Header uses mso + Outlook-safe HTML table layout instead of div/flex.
+  //   - All `@import` and external fonts removed — Gmail blocks them,
+  //     which was also contributing to the layout shift.
+  //   - Removed the decorative circle div that gmail was rendering as bullet.
+  //   - Added wider Outlook fallback so padding/gradients degrade gracefully.
+  return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-  </style>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="only" />
+  <meta name="supported-color-schemes" content="only" />
+  <title>APEXLABS</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: ${COLORS.background};">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: ${COLORS.background}; padding: 40px 20px;">
+<body style="margin:0;padding:0;background-color:${COLORS.background};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:${COLORS.text};">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${COLORS.background};">
     <tr>
-      <td align="center">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: ${COLORS.surface}; border-radius: 16px; overflow: hidden; border: 1px solid ${COLORS.border};">
-          <!-- Header -->
+      <td align="center" style="padding:32px 16px;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;width:100%;background-color:${COLORS.surface};border-radius:16px;overflow:hidden;border:1px solid ${COLORS.border};">
+          <!-- Header (background gradient, text in black for contrast on bright gradients) -->
           <tr>
-            <td style="background: ${headerGradient}; padding: 40px 30px; text-align: center;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-                <tr>
-                  <td align="center">
-                    <div style="display: inline-flex; align-items: center; gap: 8px; margin-bottom: 16px;">
-                      <div style="width: 8px; height: 8px; border-radius: 50%; background-color: ${COLORS.background};"></div>
-                      <span style="color: ${COLORS.background}; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;">APEXLABS BY ACHZOD</span>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td align="center">
-                    <h1 style="color: ${COLORS.background}; margin: 0; font-size: 32px; font-weight: 700; letter-spacing: -1px;">${headerTitle}</h1>
-                    <p style="color: rgba(0,0,0,0.7); margin: 8px 0 0; font-size: 14px; font-weight: 500;">${headerSubtitle}</p>
-                  </td>
-                </tr>
-              </table>
+            <td align="center" style="background:${headerGradient};padding:44px 24px 40px 24px;text-align:center;">
+              <p style="margin:0 0 14px 0;color:#000000;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">APEXLABS BY ACHZOD</p>
+              <h1 style="margin:0;color:#000000;font-size:32px;line-height:1.15;font-weight:800;letter-spacing:-0.5px;">${headerTitle}</h1>
+              <p style="margin:10px 0 0 0;color:rgba(0,0,0,0.72);font-size:14px;font-weight:500;">${headerSubtitle}</p>
             </td>
           </tr>
           <!-- Content -->
           <tr>
-            <td style="padding: 40px 30px;">
+            <td style="padding:40px 28px;color:${COLORS.text};">
               ${content}
             </td>
           </tr>
           <!-- Footer -->
           <tr>
-            <td style="background-color: ${COLORS.background}; padding: 24px 30px; text-align: center; border-top: 1px solid ${COLORS.border};">
-              <p style="color: ${COLORS.textMuted}; font-size: 11px; margin: 0 0 8px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;">
-                Achzod Coaching
-              </p>
-              <p style="color: #404040; font-size: 10px; margin: 0 0 8px;">
-                Excellence · Science · Transformation
-              </p>
-              <p style="margin: 0;">
-                <a href="{{UNSUB_LINK}}" style="color: #404040; font-size: 10px; text-decoration: underline;">Se desabonner</a>
-              </p>
+            <td align="center" style="background-color:${COLORS.background};padding:26px 24px;border-top:1px solid ${COLORS.border};text-align:center;">
+              <p style="margin:0 0 8px 0;color:${COLORS.textMuted};font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;">Achzod Coaching</p>
+              <p style="margin:0 0 10px 0;color:#505050;font-size:10px;">Excellence &middot; Science &middot; Transformation</p>
+              <p style="margin:0;"><a href="{{UNSUB_LINK}}" style="color:#606060;font-size:10px;text-decoration:underline;">Se desabonner</a></p>
             </td>
           </tr>
         </table>
@@ -382,16 +372,26 @@ function getEmailWrapper(
 </html>`;
 }
 
-// Primary CTA Button
+// Primary CTA Button — Gmail + Outlook bulletproof (VML fallback for Outlook 07+).
+// Uses nested <table> + mso-padding-alt for Outlook, fallback inline-block for
+// everything else. Never relies on CSS that Gmail strips (inline-flex, gap,
+// display:flex). White text on dark colors, black text on bright brand colors.
 function getPrimaryButton(text: string, href: string, color: string = COLORS.primary): string {
-  const textColor = color === COLORS.primary || color === COLORS.warning ? COLORS.background : '#ffffff';
+  const brightBackgrounds = [COLORS.primary, COLORS.warning, COLORS.discovery, COLORS.anabolic];
+  const textColor = brightBackgrounds.includes(color) ? '#000000' : '#ffffff';
   return `
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:24px 0;">
       <tr>
         <td align="center">
-          <a href="${href}" style="display: inline-block; background: ${color}; color: ${textColor}; text-decoration: none; padding: 16px 48px; border-radius: 8px; font-size: 14px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
-            ${text}
-          </a>
+          <!--[if mso]>
+          <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${href}" style="height:52px;v-text-anchor:middle;width:280px;" arcsize="15%" fillcolor="${color}" stroke="f">
+            <w:anchorlock/>
+            <center style="color:${textColor};font-family:Arial,sans-serif;font-size:14px;font-weight:bold;text-transform:uppercase;letter-spacing:0.5px;">${text}</center>
+          </v:roundrect>
+          <![endif]-->
+          <!--[if !mso]><!-->
+          <a href="${href}" target="_blank" style="background-color:${color};background:${color};border:0;border-radius:8px;color:${textColor};display:inline-block;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:14px;font-weight:700;line-height:52px;min-width:220px;padding:0 28px;text-align:center;text-decoration:none;text-transform:uppercase;letter-spacing:0.6px;mso-hide:all;">${text}</a>
+          <!--<![endif]-->
         </td>
       </tr>
     </table>
@@ -507,8 +507,10 @@ export async function sendReportReadyEmail(
         : auditType === "ELITE"
         ? COLORS.purple
         : auditType === "PREMIUM"
-        ? COLORS.primary
-        : COLORS.textMuted;
+        ? COLORS.anabolic
+        : auditType === "GRATUIT"
+        ? COLORS.discovery
+        : COLORS.primary;
 
     // Dynamic titles based on audit type
     const headerTitle = planLabel;
@@ -539,38 +541,34 @@ export async function sendReportReadyEmail(
     const trackingPixel = `${baseUrl}/api/track/email/${pixelTrackingId}/open.gif`;
 
     const content = `
-      <div style="text-align: center; margin-bottom: 28px;">
-        <span style="display: inline-block; background: ${planColor}20; color: ${planColor}; padding: 8px 20px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; border: 1px solid ${planColor}40;">
-          ${planLabel}
-        </span>
-      </div>
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 24px 0;">
+        <tr>
+          <td align="center">
+            <span style="display:inline-block;background-color:${planColor};color:#000000;padding:7px 18px;border-radius:999px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;">${planLabel}</span>
+          </td>
+        </tr>
+      </table>
 
-      <h2 style="color: ${COLORS.text}; margin: 0 0 16px; font-size: 28px; text-align: center; font-weight: 700; letter-spacing: -1px;">
-        Ton rapport est pret !
-      </h2>
+      <h2 style="color:${COLORS.text};margin:0 0 18px 0;font-size:28px;line-height:1.2;text-align:center;font-weight:700;letter-spacing:-0.8px;">Ton rapport est prêt</h2>
 
-      <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 12px; text-align: center;">
-        J'ai termine l'analyse complete de ton profil a travers les <strong style="color: ${COLORS.text};">${domainsCount}</strong>.
-      </p>
-      <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 32px; text-align: center;">
-        Decouvre tes scores, recommandations personnalisees et protocoles.
-      </p>
+      <p style="color:${COLORS.textMuted};font-size:16px;line-height:1.65;margin:0 0 10px 0;text-align:center;">J'ai terminé l'analyse complète de ton profil à travers les <strong style="color:${COLORS.text};">${domainsCount}</strong>.</p>
+      <p style="color:${COLORS.textMuted};font-size:16px;line-height:1.65;margin:0 0 8px 0;text-align:center;">Tu vas y trouver tes scores par domaine, tes axes à corriger en priorité, et les recommandations que j'aurais faites en face à face.</p>
 
-      ${getPrimaryButton('Consulter le rapport', reportLink)}
+      ${getPrimaryButton('Consulter le rapport', reportLink, planColor)}
 
       ${getReviewSection(reviewLink)}
 
       ${getCoachingSection(auditType, planColor)}
 
-      <div style="margin-top: 24px; padding: 20px; background-color: ${COLORS.background}; border-radius: 8px; border: 1px solid ${COLORS.border};">
-        <p style="color: ${COLORS.textMuted}; font-size: 12px; margin: 0 0 8px; text-align: center;">
-          Si le bouton ne fonctionne pas, copie ce lien :
-        </p>
-        <p style="margin: 0; text-align: center;">
-          <a href="${reportLink}" style="color: ${COLORS.primary}; font-size: 11px; word-break: break-all;">${reportLink}</a>
-        </p>
-      </div>
-      <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top:28px;">
+        <tr>
+          <td style="padding:18px 20px;background-color:${COLORS.background};border-radius:8px;border:1px solid ${COLORS.border};text-align:center;">
+            <p style="color:${COLORS.textMuted};font-size:12px;margin:0 0 6px 0;">Si le bouton ne fonctionne pas, copie ce lien :</p>
+            <p style="margin:0;"><a href="${reportLink}" style="color:${planColor};font-size:11px;word-break:break-all;text-decoration:underline;">${reportLink}</a></p>
+          </td>
+        </tr>
+      </table>
+      <img src="${trackingPixel}" width="1" height="1" alt="" style="display:block;border:0;outline:none;" />
     `;
 
     const emailContent = getEmailWrapper(content, `linear-gradient(135deg, ${planColor} 0%, ${planColor}dd 100%)`, headerTitle, headerSubtitle);
