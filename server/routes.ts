@@ -8057,6 +8057,99 @@ export async function registerRoutes(
   });
 
   // ==================== FORCE SEND EMAIL ====================
+  // Reconcile audits stuck in READY/SCHEDULED that have never been moved to SENT,
+  // but may already have been emailed (crashed between SendPulse success and the
+  // status UPDATE, or SendPulse auth outage that returned false-negative failures).
+  //
+  // For each stuck audit, classify by what email_tracking says:
+  //   - "already_sent": at least one sendReportReadyEmail row with non-failed status
+  //                     → client received. Just fix DB state to SENT (NO email).
+  //   - "failed_only":  only failed rows. Client did NOT receive.
+  //   - "never_tried":  no sendReportReadyEmail row at all. Client did NOT receive.
+  //
+  // Modes:
+  //   ?mode=dry-run      → returns analysis only (DEFAULT, zero side effects)
+  //   ?mode=fix-state    → updates already_sent to SENT. NO email sent. Safe.
+  //   ?mode=send-missing → sends email for failed_only + never_tried. DANGEROUS,
+  //                        explicitly opt-in. Uses safeSendReportReadyEmail so
+  //                        the dedup CAS still guards against any race.
+  app.get("/api/admin/reconcile-ready-audits", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const mode = (req.query.mode as string) || "dry-run";
+      if (!["dry-run", "fix-state", "send-missing"].includes(mode)) {
+        res.status(400).json({ error: "mode invalide", allowed: ["dry-run", "fix-state", "send-missing"] });
+        return;
+      }
+
+      const allAudits = await storage.getAllAudits();
+      const stuck = allAudits.filter(a =>
+        (a.reportDeliveryStatus === "READY" || a.reportDeliveryStatus === "SCHEDULED") &&
+        !a.reportSentAt &&
+        !!(a as any).narrativeReport
+      );
+
+      const results: Array<{
+        auditId: string; email: string; type: string; ageDays: number;
+        classification: "already_sent" | "failed_only" | "never_tried";
+        trackingRows: number;
+        action: "none" | "fixed_state" | "email_sent" | "email_failed" | "skipped";
+      }> = [];
+
+      for (const a of stuck) {
+        const rows = await pool.query(
+          `SELECT sendpulse_status FROM email_tracking
+            WHERE audit_id = $1 AND email_type = 'sendReportReadyEmail'`,
+          [a.id]
+        );
+        const hasSuccess = rows.rows.some(r => {
+          const s = String(r.sendpulse_status ?? "").toLowerCase();
+          return s !== "failed" && s !== "auth_failed" && s !== "unsubscribed";
+        });
+        const hasAny = rows.rows.length > 0;
+        const classification = hasSuccess ? "already_sent" : hasAny ? "failed_only" : "never_tried";
+
+        let action: typeof results[number]["action"] = "none";
+        const ageDays = Math.floor((Date.now() - new Date(a.createdAt).getTime()) / 86400000);
+
+        if (mode === "fix-state" && classification === "already_sent") {
+          await storage.finalizeAuditSend(a.id, true).catch(() => {});
+          action = "fixed_state";
+        } else if (mode === "send-missing" && classification !== "already_sent") {
+          const baseUrl = getBaseUrl();
+          const out = await safeSendReportReadyEmail(a.id, a.email, a.type, baseUrl, { logPrefix: "[Reconcile]" });
+          action = out.sent ? "email_sent" : "email_failed";
+        }
+
+        results.push({
+          auditId: a.id,
+          email: a.email,
+          type: a.type,
+          ageDays,
+          classification,
+          trackingRows: rows.rows.length,
+          action,
+        });
+      }
+
+      const summary = results.reduce((acc: any, r) => {
+        acc[r.classification] = (acc[r.classification] ?? 0) + 1;
+        if (r.action !== "none") acc[`action_${r.action}`] = (acc[`action_${r.action}`] ?? 0) + 1;
+        return acc;
+      }, {});
+
+      res.json({
+        mode,
+        total: stuck.length,
+        summary,
+        items: results.sort((a, b) => b.ageDays - a.ageDays),
+      });
+    } catch (error) {
+      console.error("[Reconcile] error:", error);
+      res.status(500).json({ error: "Erreur serveur", message: error instanceof Error ? error.message : String(error) });
+    }
+  });
+
   app.post("/api/admin/force-send-email", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
 
@@ -8073,7 +8166,7 @@ export async function registerRoutes(
       // Find audit
       let audit;
       if (auditId) {
-        audit = await storage.getAuditById(auditId);
+        audit = await storage.getAudit(auditId);
       } else if (email) {
         const normalizedEmail = email.trim().toLowerCase();
         const allAudits = await storage.getAllAudits();
