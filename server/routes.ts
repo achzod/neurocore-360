@@ -2372,6 +2372,73 @@ export async function registerRoutes(
   });
 
   // Force regenerate NEEDS_REVIEW audits with enhanced validation bypass
+  // Purge orders that pollute the admin dashboard. Two categories:
+  //   - cancelled: client abandoned the checkout, Stripe session expired.
+  //   - before launch (2026-03-17): test orders from dev period.
+  //
+  // Keeps: paid (revenue), pending (in-progress checkout that could still
+  // convert), refunded (accounting trail). Default mode is dry-run — pass
+  // ?confirm=1 to actually delete.
+  app.post("/api/admin/purge-noise-orders", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const confirm = req.query.confirm === "1" || (req.body as any)?.confirm === true;
+      const launch = new Date("2026-03-17T00:00:00Z");
+
+      // Count what would be deleted — NEVER touch paid/refunded, ever.
+      const countPreLaunch = await pool.query(
+        `SELECT COUNT(*)::int AS c, COALESCE(status,'?') AS status
+           FROM orders
+          WHERE created_at < $1 AND status NOT IN ('paid','refunded')
+          GROUP BY status`,
+        [launch]
+      );
+      const countCancelled = await pool.query(
+        `SELECT COUNT(*)::int AS c
+           FROM orders
+          WHERE status = 'cancelled' AND created_at >= $1`,
+        [launch]
+      );
+
+      const breakdown = {
+        preLaunch: countPreLaunch.rows,
+        cancelledSinceLaunch: Number(countCancelled.rows[0]?.c ?? 0),
+      };
+
+      if (!confirm) {
+        res.json({
+          mode: "dry-run",
+          message: "Pass ?confirm=1 to execute deletion",
+          wouldDelete: breakdown,
+        });
+        return;
+      }
+
+      // Execute the deletions. Paid + refunded are never touched.
+      const delPre = await pool.query(
+        `DELETE FROM orders WHERE created_at < $1 AND status NOT IN ('paid','refunded') RETURNING id`,
+        [launch]
+      );
+      const delCanc = await pool.query(
+        `DELETE FROM orders WHERE status = 'cancelled' AND created_at >= $1 RETURNING id`,
+        [launch]
+      );
+
+      res.json({
+        mode: "executed",
+        deleted: {
+          preLaunchNonPaid: delPre.rowCount ?? 0,
+          cancelledSinceLaunch: delCanc.rowCount ?? 0,
+          total: (delPre.rowCount ?? 0) + (delCanc.rowCount ?? 0),
+        },
+        wouldDeleteBreakdown: breakdown,
+      });
+    } catch (err) {
+      console.error("[PurgeNoise] error:", err);
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+    }
+  });
+
   app.post("/api/admin/force-regenerate-failed", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
 
