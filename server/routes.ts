@@ -5146,11 +5146,16 @@ export async function registerRoutes(
   // GET /api/unsubscribe — Public page: shows confirmation + auto-processes unsubscribe
   app.get("/api/unsubscribe", async (req, res) => {
     try {
-      const emailB64 = req.query.email as string;
-      if (!emailB64) {
+      const emailToken = req.query.email as string;
+      if (!emailToken) {
         return res.status(400).send("Missing email parameter");
       }
-      const email = Buffer.from(emailB64, "base64").toString("utf-8");
+      // Accept both legacy base64 (with +/=) and new base64url (-_ no padding).
+      // Gmail/iCloud sometimes swallow the trailing = padding, so base64url is
+      // now the default — this branch keeps old links in circulation working.
+      const normalized = emailToken.replace(/-/g, "+").replace(/_/g, "/");
+      const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
+      const email = Buffer.from(padded, "base64").toString("utf-8");
       if (!email || !email.includes("@")) {
         return res.status(400).send("Invalid email");
       }

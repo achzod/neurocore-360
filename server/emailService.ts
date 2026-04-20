@@ -175,9 +175,39 @@ async function sendEmailWithTracking(
       return { result: false, error: "unsubscribed" };
     }
 
-    // Replace unsubscribe placeholder with actual link
-    const unsubLink = `https://apexlabs.achzodcoaching.com/api/unsubscribe?email=${Buffer.from(trackingData.recipientEmail).toString("base64")}`;
-    emailPayload.html = emailPayload.html.replace(/\{\{UNSUB_LINK\}\}/g, unsubLink);
+    // Replace unsubscribe placeholder with the actual link.
+    //
+    // IMPORTANT: callers encode the HTML with encodeBase64() BEFORE handing it
+    // to us (SendPulse accepts a base64-encoded html field). That means when
+    // we arrive here, the `{{UNSUB_LINK}}` literal is no longer visible in
+    // emailPayload.html — it's been shuffled away in the base64. A plain
+    // string .replace() ran against base64 text can't match it, and the
+    // "Se désabonner" link reaches the user as literal {{UNSUB_LINK}} text
+    // (reported 2026-04-20 by Achzod). Fix: decode, replace, re-encode.
+    //
+    // Use base64url for the email token so Gmail's auto-linker doesn't trip
+    // on the trailing `==` padding chars.
+    const recipientB64Url = Buffer.from(trackingData.recipientEmail)
+      .toString("base64")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
+    const unsubLink = `https://apexlabs.achzodcoaching.com/api/unsubscribe?email=${recipientB64Url}`;
+
+    const looksLikeBase64 = (s: string): boolean =>
+      typeof s === "string" && s.length > 40 && /^[A-Za-z0-9+/=\r\n]+$/.test(s.trim());
+
+    if (looksLikeBase64(emailPayload.html)) {
+      try {
+        const decoded = Buffer.from(emailPayload.html, "base64").toString("utf8");
+        const replaced = decoded.replace(/\{\{UNSUB_LINK\}\}/g, unsubLink);
+        emailPayload.html = Buffer.from(replaced).toString("base64");
+      } catch {
+        // Fall through — at worst the link stays broken, but we don't crash the send.
+      }
+    } else {
+      emailPayload.html = emailPayload.html.replace(/\{\{UNSUB_LINK\}\}/g, unsubLink);
+    }
     emailPayload.text = emailPayload.text.replace(/\{\{UNSUB_LINK\}\}/g, unsubLink);
 
     const token = await getAccessToken();
