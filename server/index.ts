@@ -398,6 +398,40 @@ if (process.env.NODE_ENV === "production") {
         pingInterval.unref();
         log("Self-ping anti cold start enabled (every 4 min)");
       }
+
+      // RSS watchdog — graceful restart before Render container OOM-kills us
+      // with SIGABRT (exit 134). Render container is 512MB. max-old-space-size
+      // limits the V8 JS heap only; RSS also counts native memory (pdf-parse,
+      // puppeteer, sharp, node_modules buffers) which doesn't respect that
+      // flag. If RSS climbs above 460MB we're minutes from a container-level
+      // SIGABRT — better to exit cleanly ourselves, let Render auto-restart
+      // with a warm pool, and emit a log we can grep on.
+      //
+      // Triggers 2026-04-19T22:58Z and 2026-04-20T13:34Z were both
+      // container-OS SIGABRT, not V8 OOM. This prevents the 3rd one.
+      if (process.env.NODE_ENV === "production") {
+        let highRssStreak = 0;
+        const watchdog = setInterval(() => {
+          const rssMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
+          if (rssMb > 460) {
+            highRssStreak += 1;
+            console.warn(`[Watchdog] RSS=${rssMb}MB > 460MB (streak=${highRssStreak})`);
+            // Three consecutive high readings = real pressure, not a spike.
+            if (highRssStreak >= 3) {
+              console.error(`[Watchdog] 🚨 RSS=${rssMb}MB sustained, triggering graceful restart to avoid container SIGABRT`);
+              clearInterval(watchdog);
+              void gracefulShutdown("WATCHDOG_RSS");
+            }
+          } else {
+            if (highRssStreak > 0) {
+              console.log(`[Watchdog] RSS=${rssMb}MB normal, resetting streak`);
+            }
+            highRssStreak = 0;
+          }
+        }, 30_000);
+        watchdog.unref();
+        log("RSS watchdog enabled (restart at sustained RSS > 460MB)");
+      }
     },
   );
 
