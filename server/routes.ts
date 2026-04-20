@@ -77,7 +77,7 @@ export async function registerRoutes(
     next();
   });
 
-  // Helper function to get base URL — prefer env vars over request headers
+  // Helper function to get base URL , prefer env vars over request headers
   function getBaseUrl(_req?: Request): string {
     if (process.env.PUBLIC_BASE_URL) {
       return process.env.PUBLIC_BASE_URL.replace(/\/+$/, "");
@@ -96,17 +96,17 @@ export async function registerRoutes(
   }
 
   // Centralized, race-safe wrapper around sendReportReadyEmail. Guarantees a
-  // given audit can never receive two delivery emails — even if multiple paths
+  // given audit can never receive two delivery emails , even if multiple paths
   // (inline create, Stripe webhook, admin resend, scheduled cron) try to send
   // concurrently.
   //
   // Safety layers (in order):
-  //   1. claimAuditForSending — atomic SQL CAS on report_delivery_status
+  //   1. claimAuditForSending , atomic SQL CAS on report_delivery_status
   //      (READY|SCHEDULED → SENDING). If the UPDATE hits 0 rows, another
   //      caller is already sending (or it was already sent).
-  //   2. hasReportReadyEmailBeenSent — check email_tracking as a secondary
+  //   2. hasReportReadyEmailBeenSent , check email_tracking as a secondary
   //      guard in case the DB state got out of sync (manual edits, etc.).
-  //   3. finalizeAuditSend — on SendPulse success, moves to SENT + stamps
+  //   3. finalizeAuditSend , on SendPulse success, moves to SENT + stamps
   //      report_sent_at. On failure, reverts SENDING → READY so a retry path
   //      can pick it up.
   async function safeSendReportReadyEmail(
@@ -121,7 +121,7 @@ export async function registerRoutes(
     if (!opts?.bypassClaim) {
       const alreadyTracked = await storage.hasReportReadyEmailBeenSent(auditId).catch(() => false);
       if (alreadyTracked) {
-        console.log(`${prefix} ⏭️ Report email already in email_tracking for audit ${auditId} — SKIP (no double send)`);
+        console.log(`${prefix} ⏭️ Report email already in email_tracking for audit ${auditId} , SKIP (no double send)`);
         // Normalize audit state so UI shows SENT rather than stuck READY
         await storage.finalizeAuditSend(auditId, true).catch(() => {});
         return { sent: false, skipped: "already_in_tracking" };
@@ -129,7 +129,7 @@ export async function registerRoutes(
 
       const claimed = await storage.claimAuditForSending(auditId).catch(() => false);
       if (!claimed) {
-        console.log(`${prefix} ⏭️ Could not claim audit ${auditId} for sending — another process owns it or already SENT`);
+        console.log(`${prefix} ⏭️ Could not claim audit ${auditId} for sending , another process owns it or already SENT`);
         return { sent: false, skipped: "claim_failed" };
       }
     }
@@ -185,7 +185,7 @@ export async function registerRoutes(
     });
   });
 
-  // Public stats endpoint — live factual numbers for social proof on landing/checkout pages.
+  // Public stats endpoint , live factual numbers for social proof on landing/checkout pages.
   // Values are computed from the DB, not fabricated. Cached for 5 min to avoid hammering
   // the DB on every page view. Filters out test/debug emails. Only counts data from the
   // post-launch period (2026-03-17) to stay truthful.
@@ -200,8 +200,8 @@ export async function registerRoutes(
         return;
       }
 
-      // Raw SQL COUNT queries — avoids loading full row payloads (narrativeReport,
-      // report JSON, etc. — can be MBs per row). Filters test/debug emails and
+      // Raw SQL COUNT queries , avoids loading full row payloads (narrativeReport,
+      // report JSON, etc. , can be MBs per row). Filters test/debug emails and
       // pre-launch data directly in SQL. All queries run in parallel.
       const launchIso = LAUNCH_DATE.toISOString();
       const emailFilter = `
@@ -224,7 +224,7 @@ export async function registerRoutes(
         pool.query(`SELECT COUNT(*)::int AS c FROM audits WHERE type = 'PREMIUM' AND report_delivery_status = 'SENT' AND created_at >= $1 ${emailFilter}`, [launchIso]),
         pool.query(`SELECT COUNT(*)::int AS c FROM audits WHERE type = 'ELITE' AND report_delivery_status = 'SENT' AND created_at >= $1 ${emailFilter}`, [launchIso]),
         pool.query(`SELECT COUNT(*)::int AS c FROM burnout_reports WHERE created_at >= $1 AND email NOT ILIKE '%test%' AND email NOT ILIKE '%debug%' AND email NOT ILIKE '%achzodcoaching%' AND email NOT ILIKE '%achkou%'`, [launchIso]),
-        // Average peptides per protocol — extract jsonb array length on the fly
+        // Average peptides per protocol , extract jsonb array length on the fly
         pool.query(`SELECT COALESCE(ROUND(AVG(jsonb_array_length(report->'peptides')) * 10) / 10, 0)::float AS avg FROM burnout_reports WHERE created_at >= $1 AND jsonb_typeof(report->'peptides') = 'array' AND email NOT ILIKE '%test%' AND email NOT ILIKE '%debug%' AND email NOT ILIKE '%achzodcoaching%' AND email NOT ILIKE '%achkou%'`, [launchIso]).catch(() => ({ rows: [{ avg: 0 }] } as any)),
         pool.query(`SELECT COUNT(*)::int AS c FROM blood_reports WHERE created_at >= $1 AND ai_report IS NOT NULL AND ai_report != '' ${emailFilter}`, [launchIso]).catch(() => ({ rows: [{ c: 0 }] } as any)),
         // Unique emails across all three tables
@@ -269,7 +269,7 @@ export async function registerRoutes(
       res.json(data);
     } catch (err: any) {
       console.error("[Stats] Error computing live stats:", err?.message || err);
-      // Never fail the page load — return a safe minimal payload if the DB hiccups.
+      // Never fail the page load , return a safe minimal payload if the DB hiccups.
       res.json({
         totalClients: 0,
         totalReportsDelivered: 0,
@@ -278,7 +278,7 @@ export async function registerRoutes(
     }
   });
 
-  // Pre-launch diagnostic — checks all critical services
+  // Pre-launch diagnostic , checks all critical services
   app.get("/api/admin/launch-check", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     const checks: Record<string, { ok: boolean; detail?: string }> = {};
@@ -311,13 +311,13 @@ export async function registerRoutes(
     // 4. AI (Anthropic Claude)
     checks.anthropic = {
       ok: Boolean(process.env.ANTHROPIC_API_KEY),
-      detail: process.env.ANTHROPIC_API_KEY ? "configured" : "ANTHROPIC_API_KEY missing — reports won't generate",
+      detail: process.env.ANTHROPIC_API_KEY ? "configured" : "ANTHROPIC_API_KEY missing , reports won't generate",
     };
 
     // 5. Sentry
     checks.sentry = {
       ok: Boolean(process.env.SENTRY_DSN),
-      detail: process.env.SENTRY_DSN ? "enabled" : "NOT configured — errors invisible",
+      detail: process.env.SENTRY_DSN ? "enabled" : "NOT configured , errors invisible",
     };
 
     // 6. Admin
@@ -329,7 +329,7 @@ export async function registerRoutes(
     // 7. APP_URL
     checks.appUrl = {
       ok: Boolean(process.env.APP_URL),
-      detail: process.env.APP_URL || "NOT SET — emails will use fallback URL",
+      detail: process.env.APP_URL || "NOT SET , emails will use fallback URL",
     };
 
     const allOk = Object.values(checks).every((c) => c.ok);
@@ -935,7 +935,7 @@ export async function registerRoutes(
         // different reports are generated/sent.
         const existingRecent = await storage.findRecentAuditByEmailAndType(data.email, data.type, 10).catch(() => undefined);
         if (existingRecent) {
-          console.warn(`[Audit Create] ⏭️ Idempotency hit — returning existing audit ${existingRecent.id} for ${data.email} (${data.type}) created ${existingRecent.createdAt}`);
+          console.warn(`[Audit Create] ⏭️ Idempotency hit , returning existing audit ${existingRecent.id} for ${data.email} (${data.type}) created ${existingRecent.createdAt}`);
           res.json(existingRecent);
           return;
         }
@@ -960,7 +960,7 @@ export async function registerRoutes(
           console.error("[Orders] Error creating free audit order:", orderErr);
         }
 
-        // Meta CAPI — server-side Lead event for Discovery Scan (free top-of-funnel)
+        // Meta CAPI , server-side Lead event for Discovery Scan (free top-of-funnel)
         // Recovers 30–50% of leads lost to Safari ITP / ad-blockers on the client Pixel.
         // event_id uses the audit id so a future client-side Pixel Lead can dedup.
         try {
@@ -1012,11 +1012,11 @@ export async function registerRoutes(
             console.error(`[Admin Email] ❌ Error in admin notification for ${audit.id}:`, err);
           });
 
-        // Atomic claim — if another process already claimed this audit (e.g. idempotency
+        // Atomic claim , if another process already claimed this audit (e.g. idempotency
         // window collided, or webhook raced), we skip generation to avoid duplicate work.
         const claimedForGen = await storage.claimAuditForGeneration(audit.id).catch(() => false);
         if (!claimedForGen) {
-          console.warn(`[Discovery Scan] ⏭️ Could not claim audit ${audit.id} for generation — already in progress or done`);
+          console.warn(`[Discovery Scan] ⏭️ Could not claim audit ${audit.id} for generation , already in progress or done`);
           res.json(audit);
           return;
         }
@@ -1049,7 +1049,7 @@ export async function registerRoutes(
                 narrativeReport,
                 reportDeliveryStatus: "SCHEDULED",
               });
-              console.log(`[Discovery Scan] Report SCHEDULED for audit ${audit.id} — delivery at ${scheduledFor.toISOString()}`);
+              console.log(`[Discovery Scan] Report SCHEDULED for audit ${audit.id} , delivery at ${scheduledFor.toISOString()}`);
             } else {
               await storage.updateAudit(audit.id, {
                 narrativeReport,
@@ -1089,7 +1089,7 @@ export async function registerRoutes(
       // still real (page refresh after payment, network retry, etc.).
       const existingPaidRecent = await storage.findRecentAuditByEmailAndType(data.email, data.type, 15).catch(() => undefined);
       if (existingPaidRecent) {
-        console.warn(`[Audit Create] ⏭️ Idempotency hit — returning existing audit ${existingPaidRecent.id} for ${data.email} (${data.type})`);
+        console.warn(`[Audit Create] ⏭️ Idempotency hit , returning existing audit ${existingPaidRecent.id} for ${data.email} (${data.type})`);
         res.json(existingPaidRecent);
         return;
       }
@@ -1123,13 +1123,13 @@ export async function registerRoutes(
           console.error(`[Admin Email] ❌ Error in admin notification for ${audit.id}:`, err);
         });
 
-      // Atomic generation claim — CAS transitions PENDING → GENERATING. If it fails,
+      // Atomic generation claim , CAS transitions PENDING → GENERATING. If it fails,
       // another caller is already generating this audit (e.g. Stripe webhook beat us
       // to it). We skip kicking off a second generator to prevent two different
       // reports from being produced for the same client.
       const claimedForGenPaid = await storage.claimAuditForGeneration(audit.id).catch(() => false);
       if (!claimedForGenPaid) {
-        console.warn(`[Audit Create] ⏭️ Could not claim audit ${audit.id} for generation — another process owns it`);
+        console.warn(`[Audit Create] ⏭️ Could not claim audit ${audit.id} for generation , another process owns it`);
       } else {
         await startReportGeneration(audit.id, audit.responses, audit.scores || {}, audit.type);
         processReportAndSendEmail(audit.id, audit.email, audit.type).catch((err) => {
@@ -1176,7 +1176,7 @@ export async function registerRoutes(
 
       const completedAudit = await storage.getAudit(auditId);
       if (!completedAudit) {
-        console.error(`[Email] Audit ${auditId} not found — skipping`);
+        console.error(`[Email] Audit ${auditId} not found , skipping`);
         return;
       }
 
@@ -1186,11 +1186,11 @@ export async function registerRoutes(
       // GATE 1: Email already sent? STOP.
       // ============================================
       if (completedAudit.reportSentAt) {
-        console.log(`[Email] ⏭️ Email already sent for ${auditId} at ${completedAudit.reportSentAt} — SKIPPING (no double email)`);
+        console.log(`[Email] ⏭️ Email already sent for ${auditId} at ${completedAudit.reportSentAt} , SKIPPING (no double email)`);
         return;
       }
       if (deliveryStatus === 'SENT') {
-        console.log(`[Email] ⏭️ Status already SENT for ${auditId} — SKIPPING`);
+        console.log(`[Email] ⏭️ Status already SENT for ${auditId} , SKIPPING`);
         return;
       }
 
@@ -1198,13 +1198,13 @@ export async function registerRoutes(
       // GATE 2: Validation status
       // ============================================
       if (deliveryStatus === 'NEEDS_REVIEW') {
-        console.error(`[Email] ❌ Report ${auditId} NEEDS_REVIEW — EMAIL BLOCKED`);
+        console.error(`[Email] ❌ Report ${auditId} NEEDS_REVIEW , EMAIL BLOCKED`);
         return;
       }
 
       const validationResult = (completedAudit as any)?.narrativeReport?.validationResult;
       if (validationResult && validationResult.score < 60) {
-        console.error(`[Email] ❌ Report ${auditId} score ${validationResult.score}/100 — EMAIL BLOCKED`);
+        console.error(`[Email] ❌ Report ${auditId} score ${validationResult.score}/100 , EMAIL BLOCKED`);
         await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" });
         return;
       }
@@ -1215,7 +1215,7 @@ export async function registerRoutes(
       const scheduledFor = completedAudit?.reportScheduledFor;
       if (scheduledFor && new Date(scheduledFor) > new Date()) {
         await storage.updateAudit(auditId, { reportDeliveryStatus: "SCHEDULED" });
-        console.log(`[Email] ⏭️ Report ${auditId} SCHEDULED for ${new Date(scheduledFor).toISOString()} — deferred`);
+        console.log(`[Email] ⏭️ Report ${auditId} SCHEDULED for ${new Date(scheduledFor).toISOString()} , deferred`);
         return;
       }
 
@@ -1225,7 +1225,7 @@ export async function registerRoutes(
       const reportTxt = (completedAudit as any)?.reportTxt || (completedAudit as any)?.narrativeReport?.txt || '';
       const reportHtml = (completedAudit as any)?.reportHtml || (completedAudit as any)?.narrativeReport?.html || '';
       if (reportTxt.length < 500 && reportHtml.length < 500) {
-        console.error(`[Email] ❌ HARD BLOCK: Report ${auditId} has no real content (TXT:${reportTxt.length} HTML:${reportHtml.length}) — EMAIL BLOCKED`);
+        console.error(`[Email] ❌ HARD BLOCK: Report ${auditId} has no real content (TXT:${reportTxt.length} HTML:${reportHtml.length}) , EMAIL BLOCKED`);
         await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" });
         return;
       }
@@ -1242,7 +1242,7 @@ export async function registerRoutes(
         const hasError = summary.includes("error") || summary.includes("400") || summary.includes("non disponible");
 
         if (!photoAnalysis || hasError || allNonVisible) {
-          console.error(`[Email] ❌ ELITE report ${auditId} has FAILED photo analysis — EMAIL BLOCKED. Summary: ${summary.slice(0, 200)}`);
+          console.error(`[Email] ❌ ELITE report ${auditId} has FAILED photo analysis , EMAIL BLOCKED. Summary: ${summary.slice(0, 200)}`);
           await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" });
           return;
         }
@@ -1257,10 +1257,10 @@ export async function registerRoutes(
       console.log(`[Email] Report URL: ${reportUrl}`);
 
       // ============================================
-      // ALL GATES PASSED — Send email (race-safe)
+      // ALL GATES PASSED , Send email (race-safe)
       // ============================================
       await storage.updateAudit(auditId, { reportDeliveryStatus: "READY" });
-      console.log(`[Email] ✅ All gates passed — sending to ${email}`);
+      console.log(`[Email] ✅ All gates passed , sending to ${email}`);
 
       const { sent: emailSent, skipped } = await safeSendReportReadyEmail(auditId, email, auditType, baseUrl, { logPrefix: "[Email]" });
       if (!emailSent && !skipped) {
@@ -1272,7 +1272,7 @@ export async function registerRoutes(
     }
     } catch (error) {
       console.error(`[Email] ❌ Error in processReportAndSendEmail for audit ${auditId}:`, error);
-      // Don't overwrite SCHEDULED status on error — let cron handle delivery
+      // Don't overwrite SCHEDULED status on error , let cron handle delivery
       const currentAudit = await storage.getAudit(auditId).catch(() => null);
       if (currentAudit?.reportDeliveryStatus !== "SCHEDULED") {
         await storage.updateAudit(auditId, { reportDeliveryStatus: "READY" }).catch(() => {});
@@ -1306,7 +1306,7 @@ export async function registerRoutes(
 
   app.get("/api/audits/:id", async (req, res) => {
     try {
-      // UUID audit IDs are unguessable — allow direct access for report viewing
+      // UUID audit IDs are unguessable , allow direct access for report viewing
       const audit = await storage.getAudit(req.params.id);
       if (!audit) {
         res.status(404).json({ error: "Audit non trouvé" });
@@ -1367,7 +1367,7 @@ export async function registerRoutes(
 
   app.get("/api/audits/:id/narrative-status", async (req, res) => {
     try {
-      // UUID audit IDs are unguessable — allow direct access
+      // UUID audit IDs are unguessable , allow direct access
       const job = await getJobStatus(req.params.id);
       const jobReferenceTime = job?.lastProgressAt
         ? new Date(job.lastProgressAt).getTime()
@@ -1439,7 +1439,7 @@ export async function registerRoutes(
         return;
       }
 
-      // Cache completed reports for 5 minutes (private — user-specific data)
+      // Cache completed reports for 5 minutes (private , user-specific data)
       if (audit.reportDeliveryStatus === "READY" || audit.reportDeliveryStatus === "SENT") {
         res.setHeader("Cache-Control", "private, max-age=300");
       }
@@ -1549,7 +1549,7 @@ export async function registerRoutes(
 
   app.get("/api/audits/:id/narrative", async (req, res) => {
     try {
-      // UUID audit IDs are unguessable — allow direct access for report viewing
+      // UUID audit IDs are unguessable , allow direct access for report viewing
       // This matches the Blood Analysis pattern where reports are accessed via unique links
       const audit = await storage.getAudit(req.params.id);
       if (!audit) {
@@ -1586,7 +1586,7 @@ export async function registerRoutes(
         console.log(`[Narrative-v2] audit=${req.params.id} hasTxt=${!!report.txt} txtLen=${report.txt?.length || 0} hasSections=${!!report.sections} sectionsLen=${report.sections?.length || 0}`);
         // Si c'est le nouveau format TXT (V4 Pro), on le convertit au format dashboard
         // pour que le frontend puisse l'afficher sans tout casser
-        // Prefer reportTxt (dedicated TEXT column) over narrativeReport.txt (JSONB — may be truncated)
+        // Prefer reportTxt (dedicated TEXT column) over narrativeReport.txt (JSONB , may be truncated)
         if ((audit as any).reportTxt && (audit as any).reportTxt.length > 100) {
           report.txt = (audit as any).reportTxt;
         }
@@ -1993,7 +1993,7 @@ export async function registerRoutes(
   });
 
   // Admin diagnostic: introspect magic_tokens table health. Quick check to see
-  // whether magic-link generation is actually persisting rows — a schema drift
+  // whether magic-link generation is actually persisting rows , a schema drift
   // (wrong column name, missing NOT NULL satisfied, etc.) would mean createMagicToken
   // inserts but the SELECT in verifyMagicToken never finds the row.
   app.get("/api/admin/debug-magic-tokens", async (req, res) => {
@@ -2400,7 +2400,7 @@ export async function registerRoutes(
           await storage.updateAudit(auditId, {
             reportDeliveryStatus: "GENERATING",
             narrativeReport: null, // Clear old failed report
-            reportScheduledFor: null, // Clear scheduled delivery — deliver immediately
+            reportScheduledFor: null, // Clear scheduled delivery , deliver immediately
           });
 
           // Delete old failed job
@@ -2650,7 +2650,7 @@ export async function registerRoutes(
       if (audit.type === "GRATUIT") {
         console.log(`[Regenerate] Regenerating Discovery Scan for audit ${auditId}...`);
 
-        // Admin regenerate is an intentional action — reset delivery state so CAS
+        // Admin regenerate is an intentional action , reset delivery state so CAS
         // can claim fresh ownership. Without this reset, an audit already in
         // GENERATING from a prior crash would block admin retries forever.
         await storage.updateAudit(auditId, { reportDeliveryStatus: "PENDING" });
@@ -2736,11 +2736,11 @@ export async function registerRoutes(
       const baseUrl = getBaseUrl();
       console.log(`[Resend] Sending email to ${audit.email} for audit ${auditId} (baseUrl: ${baseUrl})`);
 
-      // Admin resend — block if already sent unless caller passes ?force=1
+      // Admin resend , block if already sent unless caller passes ?force=1
       const forceResend = req.query.force === "1" || (req.body as any)?.force === true;
       if (audit.reportSentAt && !forceResend) {
         res.status(409).json({
-          error: "Report déjà envoyé — pass ?force=1 pour renvoyer volontairement",
+          error: "Report déjà envoyé , pass ?force=1 pour renvoyer volontairement",
           sentAt: audit.reportSentAt
         });
         return;
@@ -2750,7 +2750,7 @@ export async function registerRoutes(
       const alreadyTracked = await storage.hasReportReadyEmailBeenSent(auditId).catch(() => false);
       if (alreadyTracked && !forceResend) {
         res.status(409).json({
-          error: "Email déjà tracé comme envoyé — pass ?force=1 pour renvoyer volontairement"
+          error: "Email déjà tracé comme envoyé , pass ?force=1 pour renvoyer volontairement"
         });
         return;
       }
@@ -2763,7 +2763,7 @@ export async function registerRoutes(
 
       if (emailSent) {
         if (forceResend) {
-          // bypassClaim path didn't finalize — ensure DB reflects reality
+          // bypassClaim path didn't finalize , ensure DB reflects reality
           await storage.updateAudit(auditId, { reportDeliveryStatus: "SENT", reportSentAt: new Date() }).catch(() => {});
         }
         console.log(`[Resend] Email sent successfully to ${audit.email}`);
@@ -3021,7 +3021,7 @@ export async function registerRoutes(
         const existingOrders = await storage.getOrdersByEmail(email);
         const alreadyPaid = existingOrders.find((o: any) => o.productType === planType && o.status === "paid");
         if (alreadyPaid && planType !== "PEPTIDES_ENGINE" && planType !== "BLOOD_ANALYSIS") {
-          console.log(`[Checkout] ${planType} already paid for ${email} — blocking re-payment`);
+          console.log(`[Checkout] ${planType} already paid for ${email} , blocking re-payment`);
           // Create audit if missing
           if (!alreadyPaid.auditId && ["PREMIUM", "ELITE"].includes(planType)) {
             try {
@@ -3043,7 +3043,7 @@ export async function registerRoutes(
         const existingOrders = await storage.getOrdersByEmail(email);
         const paidPeptides = existingOrders.find((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid");
         if (paidPeptides) {
-          console.log(`[Checkout] Peptides Engine already paid for ${email} — saving responses and generating in background`);
+          console.log(`[Checkout] Peptides Engine already paid for ${email} , saving responses and generating in background`);
           // Save responses to server
           if (responses && Object.keys(responses).length >= 3) {
             try {
@@ -3054,11 +3054,11 @@ export async function registerRoutes(
                 responses,
               });
             } catch { /* best effort */ }
-            // DO NOT generate in background — Render kills process after HTTP response.
+            // DO NOT generate in background , Render kills process after HTTP response.
             // Auto-recovery cron will detect and generate.
             console.log(`[Checkout] Peptides already paid for ${email}, cron will generate`);
           }
-          // Respond IMMEDIATELY — don't wait for generation
+          // Respond IMMEDIATELY , don't wait for generation
           res.json({ success: true, alreadyPaid: true, url: null, redirect: "/dashboard?success=true&generating=peptides" });
           return;
         }
@@ -3193,7 +3193,7 @@ export async function registerRoutes(
           console.log(`[Checkout] ✅ Peptides responses saved server-side for ${email} (${Object.keys(responses).length} fields)`);
         } catch (saveErr) {
           console.error(`[Checkout] ⚠️ Failed to save peptides responses for ${email}:`, saveErr);
-          // Don't block checkout — continue anyway
+          // Don't block checkout , continue anyway
         }
       }
 
@@ -3302,7 +3302,7 @@ export async function registerRoutes(
     }
 
     if (planType === "ELITE" && !hasThreePhotos(responses as Record<string, unknown>)) {
-      // Don't block if already paid — create audit anyway and warn
+      // Don't block if already paid , create audit anyway and warn
       if (order && (order as any).status === "paid") {
         console.warn(`[Audit] ⚠️ ELITE audit created for ${email} WITHOUT all 3 photos (already paid)`);
       } else {
@@ -3402,7 +3402,7 @@ export async function registerRoutes(
         sessionId.includes("{") ||
         sessionId.includes("}")
       ) {
-        console.warn(`[confirm-session] Rejected malformed sessionId: "${sessionId}" — template not interpolated`);
+        console.warn(`[confirm-session] Rejected malformed sessionId: "${sessionId}" , template not interpolated`);
         res.status(400).json({ error: "sessionId_malformed" });
         return;
       }
@@ -3510,7 +3510,7 @@ export async function registerRoutes(
         const existingOrders = await storage.getOrdersByEmail(email);
         const alreadyPaid = existingOrders.find((o: any) => o.productType === planType && o.status === "paid");
         if (alreadyPaid && planType !== "PEPTIDES_ENGINE" && ["PREMIUM", "ELITE", "BLOOD_ANALYSIS"].includes(planType)) {
-          console.log(`[PayPal] ${planType} already paid for ${email} — blocking re-payment`);
+          console.log(`[PayPal] ${planType} already paid for ${email} , blocking re-payment`);
           if (!alreadyPaid.auditId && ["PREMIUM", "ELITE"].includes(planType)) {
             try {
               const normalizedPlan = planType as "PREMIUM" | "ELITE";
@@ -3527,7 +3527,7 @@ export async function registerRoutes(
         const existingOrders = await storage.getOrdersByEmail(email);
         const paidPeptides = existingOrders.find((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid");
         if (paidPeptides) {
-          console.log(`[PayPal] Peptides Engine already paid for ${email} — blocking re-payment`);
+          console.log(`[PayPal] Peptides Engine already paid for ${email} , blocking re-payment`);
           if (responses && Object.keys(responses).length >= 3) {
             try {
               await storage.saveBurnoutProgress({ email: `peptides::${email}`, currentSection: 6, totalSections: 6, responses });
@@ -3662,7 +3662,7 @@ export async function registerRoutes(
             planType,
             paymentMethod: "paypal",
             peptidesResponses: planType === "PEPTIDES_ENGINE" ? responses : undefined,
-            // Meta CAPI attribution — read by the capture handler to send Purchase CAPI event
+            // Meta CAPI attribution , read by the capture handler to send Purchase CAPI event
             fbp: fbp || undefined,
             fbc: fbc || undefined,
             user_agent: userAgent || req.get("user-agent") || undefined,
@@ -3732,7 +3732,7 @@ export async function registerRoutes(
       // Validate captured amount matches expected
       const expectedEur = (existingOrder.finalAmountCents / 100).toFixed(2);
       if (capture.amountValue !== expectedEur) {
-        console.error(`[PayPal] Amount mismatch: captured ${capture.amountValue} ${capture.amountCurrency}, expected ${expectedEur} EUR for order ${existingOrder.id}. Payment was captured — needs manual refund.`);
+        console.error(`[PayPal] Amount mismatch: captured ${capture.amountValue} ${capture.amountCurrency}, expected ${expectedEur} EUR for order ${existingOrder.id}. Payment was captured , needs manual refund.`);
         // Still mark as paid to track the charge, but flag for review
         await storage.updateOrder(existingOrder.id, {
           status: "paid",
@@ -3764,7 +3764,7 @@ export async function registerRoutes(
       const email = existingOrder.email;
       const planType = existingOrder.productType;
 
-      // Meta CAPI — server-side Purchase event for PayPal flow
+      // Meta CAPI , server-side Purchase event for PayPal flow
       // event_id uses the PayPal order id so the client-side Pixel can dedup with the same value.
       try {
         const { sendMetaPurchase } = await import("./metaCapi.js");
@@ -3797,7 +3797,7 @@ export async function registerRoutes(
         const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
         const amount = (existingOrder.finalAmountCents / 100).toFixed(2);
         const productLabel = existingOrder.productName || planType;
-        await sendCTAEmail(adminEmail, `PAIEMENT ${amount}EUR — ${productLabel} (PayPal) — ${email}`,
+        await sendCTAEmail(adminEmail, `PAIEMENT ${amount}EUR , ${productLabel} (PayPal) , ${email}`,
           `PAIEMENT RECU (PayPal)!\n\nProduit: ${productLabel}\nEmail: ${email}\nMontant: ${amount}EUR\nPromo: ${existingOrder.promoCode || "aucun"}\n\nOrder ID: ${existingOrder.id}`
         );
         console.log(`[PayPal] Admin payment notification sent for order ${existingOrder.id}`);
@@ -3817,7 +3817,7 @@ export async function registerRoutes(
 
       // PEPTIDES_ENGINE: trigger background generation from saved responses
       if (planType === "PEPTIDES_ENGINE") {
-        console.log(`[PayPal] Peptides Engine paid for ${email} — triggering generation`);
+        console.log(`[PayPal] Peptides Engine paid for ${email} , triggering generation`);
         // Add +2 blood credits
         try {
           const { pool: dbPool } = await import("./db");
@@ -3832,7 +3832,7 @@ export async function registerRoutes(
           console.error(`[PayPal] Blood credit error:`, creditErr);
         }
 
-        // DO NOT generate in background here — Render kills the process after HTTP response.
+        // DO NOT generate in background here , Render kills the process after HTTP response.
         // The auto-recovery cron will detect this order (paid, no reportId) and generate.
         // Respond immediately so the client gets redirected.
         console.log(`[PayPal] Peptides Engine: order marked paid, cron will generate report for ${email}`);
@@ -3886,7 +3886,7 @@ export async function registerRoutes(
       const pepOrder = orders.find((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid");
 
       // CROSS-ORDER PROTECTION: if the client paid twice (2 distinct orders), scan
-      // ALL paid orders of the same email — not just the first. Without this, the
+      // ALL paid orders of the same email , not just the first. Without this, the
       // CAS below runs against a DIFFERENT order.id and succeeds, even though
       // another order already has a generated report.
       if (!replaceReportId) {
@@ -3921,7 +3921,7 @@ export async function registerRoutes(
       let saved;
       let claimed = true;
       if (replaceReportId) {
-        // Update existing report in-place — keeps same URL
+        // Update existing report in-place , keeps same URL
         const updated = await storage.updateBurnoutReport(replaceReportId, report);
         if (!updated) {
           res.status(404).json({ error: `Report ${replaceReportId} not found for in-place update` });
@@ -3933,15 +3933,15 @@ export async function registerRoutes(
         saved = await storage.createBurnoutReport({ email: `peptides::${email}`, responses: responses || {}, report });
         console.log(`[Admin] Peptides protocol generated for ${email}: ${saved.id}`);
 
-        // Atomic CAS — if another process (autogen) already claimed, we become orphan
+        // Atomic CAS , if another process (autogen) already claimed, we become orphan
         if (pepOrder) {
           claimed = await storage.claimPeptidesReportSlot(pepOrder.id, saved.id);
           if (!claimed) {
-            console.warn(`[Admin] ⚠️ CAS lost — another process already delivered for ${email}. Report ${saved.id} is orphan, NO email sent.`);
+            console.warn(`[Admin] ⚠️ CAS lost , another process already delivered for ${email}. Report ${saved.id} is orphan, NO email sent.`);
             res.status(409).json({
               error: "Race condition: un autre processus a livré pendant la génération",
               orphanReportId: saved.id,
-              hint: "Vérifie les orders — peptidesReportId est déjà set",
+              hint: "Vérifie les orders , peptidesReportId est déjà set",
             });
             return;
           }
@@ -3957,17 +3957,17 @@ export async function registerRoutes(
         if (stillNotEmailed) {
           const promoBlock = report.promoCodesGenerated?.length > 0
             ? `\n\nTes 2 Blood Analysis offertes (codes):\n${report.promoCodesGenerated.join("\n")}` : "";
-          const coachingBlock = `\n\n——————————————————————\nTON BONUS COACHING\n——————————————————————\nCode : PEPTIDES150\n→ 150€ déduits sur ton coaching Elite ou Private Lab.\nValable sur n'importe quelle durée (4/8/12 sem).\n\nTu veux passer au coaching personnalisé après ton protocole ?\n• Coaching Elite — https://www.achzodcoaching.com/coaching-elite\n• Private Lab — https://www.achzodcoaching.com/coaching-achzod-private-lab\n\nColle le code PEPTIDES150 dans le champ promo au checkout.`;
+          const coachingBlock = `\n\n,,,,,,,,,,,,,,,,,,,,,,\nTON BONUS COACHING\n,,,,,,,,,,,,,,,,,,,,,,\nCode : PEPTIDES150\n→ 150€ déduits sur ton coaching Elite ou Private Lab.\nValable sur n'importe quelle durée (4/8/12 sem).\n\nTu veux passer au coaching personnalisé après ton protocole ?\n• Coaching Elite , https://www.achzodcoaching.com/coaching-elite\n• Private Lab , https://www.achzodcoaching.com/coaching-achzod-private-lab\n\nColle le code PEPTIDES150 dans le champ promo au checkout.`;
           await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
-            `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}${coachingBlock}\n\nConserve ce lien — il est personnel et unique.\n\nAchzod`
+            `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`
           ).catch(() => {});
           const adminNotifEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
-          await sendCTAEmail(adminNotifEmail, `PEPTIDES GENERE — ${email}`, `Rapport genere pour ${email}\nReport ID: ${saved.id}\nPeptides: ${peptidesNames}\nLien: ${baseUrl}/peptides/${saved.id}`).catch(() => {});
+          await sendCTAEmail(adminNotifEmail, `PEPTIDES GENERE , ${email}`, `Rapport genere pour ${email}\nReport ID: ${saved.id}\nPeptides: ${peptidesNames}\nLien: ${baseUrl}/peptides/${saved.id}`).catch(() => {});
         } else {
-          console.warn(`[Admin] Delivery email already sent for ${email} (last-moment dedup) — skipping`);
+          console.warn(`[Admin] Delivery email already sent for ${email} (last-moment dedup) , skipping`);
         }
       } else {
-        console.log(`[Admin] skipEmail=true — report generated but no email sent for ${email}`);
+        console.log(`[Admin] skipEmail=true , report generated but no email sent for ${email}`);
       }
 
       res.json({
@@ -5018,7 +5018,7 @@ export async function registerRoutes(
       const sinceParam = (req.query.since as string) || (req.body as any)?.since;
       const since = sinceParam ? new Date(sinceParam) : new Date(Date.now() - 48 * 60 * 60 * 1000);
       if (Number.isNaN(since.getTime())) {
-        res.status(400).json({ error: "invalid `since` — must be ISO date" });
+        res.status(400).json({ error: "invalid `since` , must be ISO date" });
         return;
       }
 
@@ -5039,7 +5039,7 @@ export async function registerRoutes(
       const totalToPurge = toPurge.reduce((sum: number, r: any) => sum + Number(r.c ?? 0), 0);
 
       if (totalToPurge === 0) {
-        res.json({ success: true, purged: 0, message: "No failed-auth rows in window — nothing to do.", since: since.toISOString() });
+        res.json({ success: true, purged: 0, message: "No failed-auth rows in window , nothing to do.", since: since.toISOString() });
         return;
       }
 
@@ -5143,7 +5143,7 @@ export async function registerRoutes(
 
   // ==================== EMAIL UNSUBSCRIBE ====================
 
-  // GET /api/unsubscribe — Public page: shows confirmation + auto-processes unsubscribe
+  // GET /api/unsubscribe , Public page: shows confirmation + auto-processes unsubscribe
   app.get("/api/unsubscribe", async (req, res) => {
     try {
       const emailToken = req.query.email as string;
@@ -5152,7 +5152,7 @@ export async function registerRoutes(
       }
       // Accept both legacy base64 (with +/=) and new base64url (-_ no padding).
       // Gmail/iCloud sometimes swallow the trailing = padding, so base64url is
-      // now the default — this branch keeps old links in circulation working.
+      // now the default , this branch keeps old links in circulation working.
       const normalized = emailToken.replace(/-/g, "+").replace(/_/g, "/");
       const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
       const email = Buffer.from(padded, "base64").toString("utf-8");
@@ -5266,7 +5266,7 @@ export async function registerRoutes(
     }
   });
 
-  // POST /api/unsubscribe — Process unsubscribe (API)
+  // POST /api/unsubscribe , Process unsubscribe (API)
   app.post("/api/unsubscribe", async (req, res) => {
     try {
       const { email, reason } = req.body || {};
@@ -5281,7 +5281,7 @@ export async function registerRoutes(
     }
   });
 
-  // GET /api/admin/unsubscribes — Admin: list all unsubscribed emails
+  // GET /api/admin/unsubscribes , Admin: list all unsubscribed emails
   app.get("/api/admin/unsubscribes", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
@@ -5293,7 +5293,7 @@ export async function registerRoutes(
     }
   });
 
-  // POST /api/admin/resubscribe — Admin: re-subscribe an email
+  // POST /api/admin/resubscribe , Admin: re-subscribe an email
   app.post("/api/admin/resubscribe", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
@@ -5643,7 +5643,7 @@ export async function registerRoutes(
         const allOrders = await storage.getAllOrders?.() || [];
         const peptidesOrders = allOrders.filter((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid" && o.paidAt);
 
-        // Peptides auto-recovery REMOVED from cron — handled exclusively by setInterval (5min)
+        // Peptides auto-recovery REMOVED from cron , handled exclusively by setInterval (5min)
         // This prevents double generation and double email sends
 
         for (const order of peptidesOrders) {
@@ -5660,7 +5660,7 @@ export async function registerRoutes(
             const tracking = await db.select().from(emailTrackingTable).where(eq(emailTrackingTable.email, email));
             const types = tracking.map((t: any) => t.emailType);
 
-            // Review J+3 — Demande d'avis 3 jours apres paiement
+            // Review J+3 , Demande d'avis 3 jours apres paiement
             if (daysSincePaid >= 3 && daysSincePaid < 14 && !types.includes("peptidesReviewJ3")) {
               // Find the report ID from order metadata
               const reportId = (order.metadata as any)?.peptidesReportId;
@@ -5679,7 +5679,7 @@ export async function registerRoutes(
               }
             }
 
-            // Review S5 (35 jours / 5 semaines) — 2eme demande d'avis mi-cycle (design email)
+            // Review S5 (35 jours / 5 semaines) , 2eme demande d'avis mi-cycle (design email)
             if (daysSincePaid >= 35 && daysSincePaid < 49 && !types.includes("peptidesReviewS5")) {
               const reportId = (order.metadata as any)?.peptidesReportId;
               if (reportId) {
@@ -5692,7 +5692,7 @@ export async function registerRoutes(
               }
             }
 
-            // Review S12 (84 jours / 12 semaines) — 3eme demande d'avis fin de cycle (design email)
+            // Review S12 (84 jours / 12 semaines) , 3eme demande d'avis fin de cycle (design email)
             if (daysSincePaid >= 84 && daysSincePaid < 98 && !types.includes("peptidesReviewS12")) {
               const reportId = (order.metadata as any)?.peptidesReportId;
               if (reportId) {
@@ -5705,7 +5705,7 @@ export async function registerRoutes(
               }
             }
 
-            // S4 (28 jours) — Check-in: comment se passe le cycle?
+            // S4 (28 jours) , Check-in: comment se passe le cycle?
             if (daysSincePaid >= 28 && daysSincePaid < 42 && !types.includes("peptidesS4")) {
               const sent = await sendCTAEmail(
                 email,
@@ -5718,12 +5718,12 @@ export async function registerRoutes(
               }
             }
 
-            // S8 (56 jours) — Fin de cycle + demande avis + incentive Blood Analysis
+            // S8 (56 jours) , Fin de cycle + demande avis + incentive Blood Analysis
             if (daysSincePaid >= 56 && daysSincePaid < 70 && !types.includes("peptidesS8")) {
               const sent = await sendCTAEmail(
                 email,
                 "Fin de ton cycle - J'ai besoin de ton retour",
-                `Salut,\n\nTon cycle de 8 semaines touche a sa fin. C'est le moment de faire le point.\n\nJ'ai 2 choses a te demander :\n\n1. TON BILAN SANGUIN\nAs-tu fait ton bilan mi-cycle avec ton code Blood Analysis? Si non, fais-le maintenant — c'est le seul moyen de mesurer l'impact reel de ton protocole sur tes marqueurs.\nAccede a Blood Analysis : https://apexlabs.achzodcoaching.com/offers/blood-analysis\n\n2. TON AVIS (30 secondes)\nTon retour m'aide enormement a ameliorer le service. En echange de ton avis, je t'offre 1 Blood Analysis supplementaire gratuite.\nLaisse ton avis ici : https://apexlabs.achzodcoaching.com/peptides/${order.id}#review\n\nSi tu veux un deuxieme cycle adapte a tes resultats, reponds directement a cet email.\n\n3. PARRAINAGE\nTu connais quelqu'un qui pourrait beneficier d'un protocole peptides? Envoie-lui ce lien et s'il achete, tu recois 1 Blood Analysis gratuite :\nhttps://apexlabs.achzodcoaching.com/offers/peptides-engine?ref=${encodeURIComponent(email)}\n\nAchzod`
+                `Salut,\n\nTon cycle de 8 semaines touche a sa fin. C'est le moment de faire le point.\n\nJ'ai 2 choses a te demander :\n\n1. TON BILAN SANGUIN\nAs-tu fait ton bilan mi-cycle avec ton code Blood Analysis? Si non, fais-le maintenant , c'est le seul moyen de mesurer l'impact reel de ton protocole sur tes marqueurs.\nAccede a Blood Analysis : https://apexlabs.achzodcoaching.com/offers/blood-analysis\n\n2. TON AVIS (30 secondes)\nTon retour m'aide enormement a ameliorer le service. En echange de ton avis, je t'offre 1 Blood Analysis supplementaire gratuite.\nLaisse ton avis ici : https://apexlabs.achzodcoaching.com/peptides/${order.id}#review\n\nSi tu veux un deuxieme cycle adapte a tes resultats, reponds directement a cet email.\n\n3. PARRAINAGE\nTu connais quelqu'un qui pourrait beneficier d'un protocole peptides? Envoie-lui ce lien et s'il achete, tu recois 1 Blood Analysis gratuite :\nhttps://apexlabs.achzodcoaching.com/offers/peptides-engine?ref=${encodeURIComponent(email)}\n\nAchzod`
               );
               if (sent) {
                 peptidesS8++;
@@ -5731,12 +5731,12 @@ export async function registerRoutes(
               }
             }
 
-            // S12 (84 jours) — Coaching upsell ciblé + nouveau protocole
+            // S12 (84 jours) , Coaching upsell ciblé + nouveau protocole
             if (daysSincePaid >= 84 && daysSincePaid < 100 && !types.includes("peptidesS12")) {
               const sent = await sendCTAEmail(
                 email,
                 "Tes resultats meritent un suivi",
-                `Salut,\n\nCa fait 3 mois depuis ton protocole Peptides Engine. A ce stade, tu as probablement vu des resultats concrets — et c'est exactement la ou la plupart des gens stagnent.\n\nPourquoi? Parce qu'un protocole peptides sans suivi, c'est comme un plan d'entrainement sans coach. Ca marche au debut, puis tu plafonnes.\n\nC'est pour ca que je te propose 2 options pour continuer a progresser :\n\nOPTION 1 : COACHING ACHZOD\nUn suivi personnalise ou j'ajuste ton protocole en temps reel selon tes bilans sanguins, ta progression et tes objectifs. On travaille ensemble sur la nutrition, l'entrainement et la supplementation.\nFormule Essential (4 sem) : 249EUR\nFormule Elite (4 sem) : 399EUR\nDecouvrir : https://www.achzodcoaching.com/formules-coaching\n\nOPTION 2 : NOUVEAU PROTOCOLE\nSi tu veux juste un nouveau cycle avec de nouvelles molecules (objectif different, ajustements post-bilan), un nouveau Peptides Engine a 299EUR.\nCommander : https://apexlabs.achzodcoaching.com/offers/peptides-engine\n\nN'oublie pas : tu as encore tes codes Blood Analysis pour verifier tes marqueurs avant de demarrer un nouveau cycle.\n\nAchzod`
+                `Salut,\n\nCa fait 3 mois depuis ton protocole Peptides Engine. A ce stade, tu as probablement vu des resultats concrets , et c'est exactement la ou la plupart des gens stagnent.\n\nPourquoi? Parce qu'un protocole peptides sans suivi, c'est comme un plan d'entrainement sans coach. Ca marche au debut, puis tu plafonnes.\n\nC'est pour ca que je te propose 2 options pour continuer a progresser :\n\nOPTION 1 : COACHING ACHZOD\nUn suivi personnalise ou j'ajuste ton protocole en temps reel selon tes bilans sanguins, ta progression et tes objectifs. On travaille ensemble sur la nutrition, l'entrainement et la supplementation.\nFormule Essential (4 sem) : 249EUR\nFormule Elite (4 sem) : 399EUR\nDecouvrir : https://www.achzodcoaching.com/formules-coaching\n\nOPTION 2 : NOUVEAU PROTOCOLE\nSi tu veux juste un nouveau cycle avec de nouvelles molecules (objectif different, ajustements post-bilan), un nouveau Peptides Engine a 299EUR.\nCommander : https://apexlabs.achzodcoaching.com/offers/peptides-engine\n\nN'oublie pas : tu as encore tes codes Blood Analysis pour verifier tes marqueurs avant de demarrer un nouveau cycle.\n\nAchzod`
               );
               if (sent) {
                 peptidesS12++;
@@ -5744,7 +5744,7 @@ export async function registerRoutes(
               }
             }
 
-            // S16 (112 jours) — Dernier rappel: Blood Analysis + coaching CTA
+            // S16 (112 jours) , Dernier rappel: Blood Analysis + coaching CTA
             if (daysSincePaid >= 112 && daysSincePaid < 130 && !types.includes("peptidesS16")) {
               const sent = await sendCTAEmail(
                 email,
@@ -6027,7 +6027,7 @@ export async function registerRoutes(
       // re-submits on navigation back/forward and on network retries.
       const existingRecent = await storage.findRecentAuditByEmailAndType(email, "GRATUIT", 10).catch(() => undefined);
       if (existingRecent) {
-        console.warn(`[Discovery Scan] ⏭️ Idempotency hit — returning existing audit ${existingRecent.id} for ${email}`);
+        console.warn(`[Discovery Scan] ⏭️ Idempotency hit , returning existing audit ${existingRecent.id} for ${email}`);
         res.json({
           success: true,
           auditId: existingRecent.id,
@@ -6045,13 +6045,13 @@ export async function registerRoutes(
         responses,
       });
 
-      // Atomic generation claim — if we lose the CAS, another process is already
+      // Atomic generation claim , if we lose the CAS, another process is already
       // generating this audit's report. We serve the existing state instead of
       // kicking off a parallel generator.
       const claimedGen = await storage.claimAuditForGeneration(audit.id).catch(() => false);
       if (!claimedGen) {
         const fresh = await storage.getAudit(audit.id).catch(() => undefined);
-        console.warn(`[Discovery Scan] ⏭️ Could not claim audit ${audit.id} for generation — returning current state`);
+        console.warn(`[Discovery Scan] ⏭️ Could not claim audit ${audit.id} for generation , returning current state`);
         res.json({
           success: true,
           auditId: audit.id,
@@ -6749,9 +6749,9 @@ export async function registerRoutes(
             });
             console.log(`[Webhook] Order ${order.id} marked as paid via webhook`);
 
-            // Meta CAPI — server-side Purchase event (recovers 30-50% lost to ITP/adblockers)
+            // Meta CAPI , server-side Purchase event (recovers 30-50% lost to ITP/adblockers)
             // event_id must match the client-side Pixel eventID for Meta to dedup correctly.
-            // Any failure is swallowed — CAPI must never block the webhook response.
+            // Any failure is swallowed , CAPI must never block the webhook response.
             try {
               const { sendMetaPurchase } = await import("./metaCapi.js");
               const stripeMeta = (session.metadata ?? {}) as Record<string, string | undefined>;
@@ -6797,7 +6797,7 @@ export async function registerRoutes(
 
               await sendCTAEmail(
                 adminEmail,
-                `PAIEMENT ${amount}EUR — ${planLabel} — ${clientName}`,
+                `PAIEMENT ${amount}EUR , ${planLabel} , ${clientName}`,
                 `PAIEMENT RECU!\n\nProduit: ${planLabel}\nClient: ${clientName}\nEmail: ${clientEmail}\nMontant: ${amount}EUR\nPromo: ${order.promoCode || "aucun"}\n\nOrder ID: ${order.id}`
               );
               console.log(`[Webhook] Admin payment notification sent for order ${order.id}`);
@@ -6891,10 +6891,10 @@ export async function registerRoutes(
               }
             }
 
-            // Peptides Engine: DO NOT generate here — setInterval handles it
+            // Peptides Engine: DO NOT generate here , setInterval handles it
             // Generating in webhook causes double reports (webhook + setInterval race condition)
             if (email && planType === "PEPTIDES_ENGINE") {
-              console.log(`[Webhook] Peptides Engine paid for ${email} — setInterval will generate`);
+              console.log(`[Webhook] Peptides Engine paid for ${email} , setInterval will generate`);
             }
 
             if (email && planType && !order.auditId && ["GRATUIT", "PREMIUM", "ELITE"].includes(planType)) {
@@ -6925,7 +6925,7 @@ export async function registerRoutes(
                     });
 
                     if (recent) {
-                      console.log(`[Webhook] ♻️  Reusing recent audit ${audit.id} for ${email} (${planType}) — no duplicate creation`);
+                      console.log(`[Webhook] ♻️  Reusing recent audit ${audit.id} for ${email} (${planType}) , no duplicate creation`);
                     } else {
                       console.log(`[Webhook] ✅ Audit ${audit.id} created automatically for order ${order.id}`);
                     }
@@ -6942,7 +6942,7 @@ export async function registerRoutes(
                     if (planType === "PREMIUM" || planType === "ELITE") {
                       const claimed = await storage.claimAuditForGeneration(audit.id).catch(() => false);
                       if (!claimed) {
-                        console.warn(`[Webhook] ⏭️ Could not claim audit ${audit.id} for generation — another process owns it, NOT triggering parallel gen`);
+                        console.warn(`[Webhook] ⏭️ Could not claim audit ${audit.id} for generation , another process owns it, NOT triggering parallel gen`);
                       } else {
                         try {
                           await startReportGeneration(audit.id, responses as Record<string, unknown>, {}, planType);
@@ -7364,7 +7364,7 @@ export async function registerRoutes(
           );
           deleted[table] = result.rowCount ?? 0;
         } catch {
-          // Table may not exist — skip
+          // Table may not exist , skip
         }
       }
 
@@ -8228,13 +8228,13 @@ export async function registerRoutes(
         return;
       }
 
-      // Check status — block silently unless admin explicitly opts in with ?force=1.
+      // Check status , block silently unless admin explicitly opts in with ?force=1.
       const forceRawSend = req.query.force === "1" || (req.body as any)?.force === true;
       if (audit.reportDeliveryStatus === "SENT" && !forceRawSend) {
         res.json({
           success: true,
           alreadySent: true,
-          message: "Email déjà envoyé — pass ?force=1 pour renvoyer volontairement",
+          message: "Email déjà envoyé , pass ?force=1 pour renvoyer volontairement",
           sentAt: audit.reportSentAt
         });
         return;
@@ -8250,7 +8250,7 @@ export async function registerRoutes(
         return;
       }
 
-      // Force send — admin-initiated. Still dedup via email_tracking unless caller opts out.
+      // Force send , admin-initiated. Still dedup via email_tracking unless caller opts out.
       const baseUrl = getBaseUrl();
 
       console.log(`[ForceSend] Sending to ${audit.email} (audit: ${audit.id}, type: ${audit.type}, force=${forceRawSend})`);
@@ -8259,7 +8259,7 @@ export async function registerRoutes(
         const alreadyTracked = await storage.hasReportReadyEmailBeenSent(audit.id).catch(() => false);
         if (alreadyTracked) {
           res.status(409).json({
-            error: "Email déjà tracé comme envoyé — pass ?force=1 pour renvoyer volontairement",
+            error: "Email déjà tracé comme envoyé , pass ?force=1 pour renvoyer volontairement",
             auditId: audit.id
           });
           return;
@@ -8845,7 +8845,7 @@ export async function registerRoutes(
         console.log(`[PeptidesEngine] Order created: ${order.id} for ${email}`);
       } catch (orderErr) {
         console.error("[PeptidesEngine] Order creation failed:", orderErr);
-        // Continue — don't block generation if order recording fails
+        // Continue , don't block generation if order recording fails
       }
 
       // Check payment confirmation (Stripe session or explicit override)
@@ -8863,7 +8863,7 @@ export async function registerRoutes(
         res.status(202).json({
           success: true,
           status: "pending_payment",
-          message: "Paiement en attente — le protocole sera généré après confirmation.",
+          message: "Paiement en attente , le protocole sera généré après confirmation.",
           orderId: order?.id ?? null,
         });
         return;
@@ -8871,7 +8871,7 @@ export async function registerRoutes(
 
       // CROSS-ORDER PROTECTION: before firing a 60s AI generation, check if ANY
       // other paid Peptides order for this email already has a reportId. If yes,
-      // short-circuit with the existing report — prevents the inline path from
+      // short-circuit with the existing report , prevents the inline path from
       // racing with the autogen cron or a prior confirm-session call.
       {
         const cross = await storage.hasAnyPeptidesReportForEmail(email).catch(() => ({ exists: false } as any));
@@ -8918,13 +8918,13 @@ export async function registerRoutes(
             ? `\n\nTes 2 Blood Analysis offertes (codes, usage unique):\n${report.promoCodesGenerated.join("\n")}`
             : "";
         const coachingBlock =
-          `\n\n——————————————————————\nTON BONUS COACHING\n——————————————————————\n` +
+          `\n\n,,,,,,,,,,,,,,,,,,,,,,\nTON BONUS COACHING\n,,,,,,,,,,,,,,,,,,,,,,\n` +
           `Code : PEPTIDES150\n` +
           `→ 150€ déduits sur ton coaching Elite ou Private Lab.\n` +
           `Valable sur n'importe quelle durée (4/8/12 sem).\n\n` +
           `Tu veux passer au coaching personnalisé après ton protocole ?\n` +
-          `• Coaching Elite — https://www.achzodcoaching.com/coaching-elite\n` +
-          `• Private Lab — https://www.achzodcoaching.com/coaching-achzod-private-lab\n\n` +
+          `• Coaching Elite , https://www.achzodcoaching.com/coaching-elite\n` +
+          `• Private Lab , https://www.achzodcoaching.com/coaching-achzod-private-lab\n\n` +
           `Colle le code PEPTIDES150 dans le champ promo au checkout.`;
 
         const peptidesNames = report.peptides?.map((p) => p.name).join(", ") ?? "voir rapport";
@@ -8934,7 +8934,7 @@ export async function registerRoutes(
           `Accède à ton rapport complet ici :\n${getBaseUrl(req)}/peptides/${reportId}` +
           promoCodesBlock +
           coachingBlock +
-          `\n\nConserve ce lien — il est personnel et unique.\n\nAchzod`;
+          `\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`;
 
         await sendCTAEmail(
           email,
@@ -9010,17 +9010,17 @@ export async function registerRoutes(
     if (reviewCronRunning) return;
     reviewCronRunning = true;
     try {
-      // Memory guard — skip cycle if heap pressure is critical (prevents the
+      // Memory guard , skip cycle if heap pressure is critical (prevents the
       // 2026-04-19 SIGABRT crash). Render container is 512MB; 440MB RSS means
       // GC can't keep up.
       const memRssMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
       if (memRssMb > 440) {
-        console.warn(`[ReviewCron] ⚠️ Skipping cycle — RSS ${memRssMb}MB > 440MB threshold`);
+        console.warn(`[ReviewCron] ⚠️ Skipping cycle , RSS ${memRssMb}MB > 440MB threshold`);
         return;
       }
 
       const baseUrl = process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || "https://apexlabs.achzodcoaching.com";
-      // Use light variant — this cron only needs metadata (id, email, dates, status).
+      // Use light variant , this cron only needs metadata (id, email, dates, status).
       // Full JSONB columns (narrative_report, responses, scores) would add ~90MB to heap.
       const allAudits = await storage.getAllAuditsLight();
       const now = new Date();
@@ -9046,7 +9046,7 @@ export async function registerRoutes(
           console.error(`[ReviewCron] Failed for ${audit.email}:`, e);
         }
       }
-      // Peptides Engine clients — burnout_reports table, not in allAudits
+      // Peptides Engine clients , burnout_reports table, not in allAudits
       try {
         const peptidesReports = await storage.getAllBurnoutReports();
         for (const report of peptidesReports || []) {
@@ -9075,7 +9075,7 @@ export async function registerRoutes(
         console.error("[ReviewCron] Peptides iteration failed:", e);
       }
 
-      // Blood Analysis clients — blood_reports table
+      // Blood Analysis clients , blood_reports table
       try {
         const bloodReports = await storage.getAllBloodReports();
         for (const report of bloodReports || []) {
@@ -9135,15 +9135,15 @@ export async function registerRoutes(
       autoGenRunning = false;
     }
     if (autoGenRunning) {
-      console.log("[AutoGen] ⏭️ Skipped — already running");
+      console.log("[AutoGen] ⏭️ Skipped , already running");
       return;
     }
-    // Memory guard — Peptides generation loads a large Sonnet response (~300KB)
+    // Memory guard , Peptides generation loads a large Sonnet response (~300KB)
     // and writes it back to DB. Combined with other in-flight work it can push
     // past the 400MB heap limit. Skip the cycle if we're already near the wall.
     const memRssMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
     if (memRssMb > 440) {
-      console.warn(`[AutoGen] ⚠️ Skipping cycle — RSS ${memRssMb}MB > 440MB threshold`);
+      console.warn(`[AutoGen] ⚠️ Skipping cycle , RSS ${memRssMb}MB > 440MB threshold`);
       return;
     }
     autoGenRunning = true;
@@ -9165,7 +9165,7 @@ export async function registerRoutes(
         if (meta?.peptidesReportId) continue;
 
         const hoursSincePaid = (now.getTime() - new Date(order.paidAt).getTime()) / (1000 * 60 * 60);
-        // Wait at least 10 min before autogen kicks in — gives the inline generation pipeline
+        // Wait at least 10 min before autogen kicks in , gives the inline generation pipeline
         // time to finish first. Prevents double report generation (race condition).
         if (hoursSincePaid < 0.17 || hoursSincePaid > 168) continue;
 
@@ -9180,7 +9180,7 @@ export async function registerRoutes(
         }
 
         if (!responses) {
-          console.error(`[AutoGen] No responses for ${email} — skipping, will retry next cycle`);
+          console.error(`[AutoGen] No responses for ${email} , skipping, will retry next cycle`);
           continue;
         }
 
@@ -9197,11 +9197,11 @@ export async function registerRoutes(
         // when Stripe creates two orders from a double-click (alexm2220 incident).
         const cross = await storage.hasAnyPeptidesReportForEmail(email).catch(() => ({ exists: false } as any));
         if (cross.exists) {
-          console.warn(`[AutoGen] ⏭️ Cross-order duplicate detected for ${email}: existing report ${cross.existingReportId} on order ${cross.existingOrderId}. This order (${order.id}) skipped — consider refunding.`);
+          console.warn(`[AutoGen] ⏭️ Cross-order duplicate detected for ${email}: existing report ${cross.existingReportId} on order ${cross.existingOrderId}. This order (${order.id}) skipped , consider refunding.`);
           continue;
         }
 
-        // SAFETY #2: Email dedup — if a peptides delivery email was already sent to this recipient, skip entirely
+        // SAFETY #2: Email dedup , if a peptides delivery email was already sent to this recipient, skip entirely
         const alreadyEmailed = await storage.hasPeptidesDeliveryEmailBeenSent(email).catch(() => false);
         if (alreadyEmailed) {
           console.log(`[AutoGen] Peptides delivery email already sent to ${email} (dedup via email_tracking)`);
@@ -9212,11 +9212,11 @@ export async function registerRoutes(
         const report = await generatePeptidesProtocol(responses, email);
         const saved = await storage.createBurnoutReport({ email: `peptides::${email}`, responses, report });
 
-        // SAFETY #3: Atomic CAS — "first writer wins". If another process already set peptidesReportId
+        // SAFETY #3: Atomic CAS , "first writer wins". If another process already set peptidesReportId
         // during our 60s+ generation, our report becomes orphan and we DO NOT send any email.
         const claimed = await storage.claimPeptidesReportSlot(order.id, saved.id);
         if (!claimed) {
-          console.warn(`[AutoGen] ⚠️ Lost CAS race for ${email} — another process already claimed the slot. Report ${saved.id} is orphan, NO email sent.`);
+          console.warn(`[AutoGen] ⚠️ Lost CAS race for ${email} , another process already claimed the slot. Report ${saved.id} is orphan, NO email sent.`);
           autoGenLastResult = `RACE_LOST: ${email} → orphan report ${saved.id}`;
           continue;
         }
@@ -9228,31 +9228,31 @@ export async function registerRoutes(
         const peptidesNames = report.peptides?.map((p: any) => p.name).join(", ") ?? "voir rapport";
         const promoBlock = report.promoCodesGenerated?.length > 0
           ? `\n\nTes 2 Blood Analysis offertes (codes, usage unique):\n${report.promoCodesGenerated.join("\n")}` : "";
-        const coachingBlock = `\n\n——————————————————————\nTON BONUS COACHING\n——————————————————————\nCode : PEPTIDES150\n→ 150€ déduits sur ton coaching Elite ou Private Lab.\nValable sur n'importe quelle durée (4/8/12 sem).\n\nTu veux passer au coaching personnalisé après ton protocole ?\n• Coaching Elite — https://www.achzodcoaching.com/coaching-elite\n• Private Lab — https://www.achzodcoaching.com/coaching-achzod-private-lab\n\nColle le code PEPTIDES150 dans le champ promo au checkout.`;
+        const coachingBlock = `\n\n,,,,,,,,,,,,,,,,,,,,,,\nTON BONUS COACHING\n,,,,,,,,,,,,,,,,,,,,,,\nCode : PEPTIDES150\n→ 150€ déduits sur ton coaching Elite ou Private Lab.\nValable sur n'importe quelle durée (4/8/12 sem).\n\nTu veux passer au coaching personnalisé après ton protocole ?\n• Coaching Elite , https://www.achzodcoaching.com/coaching-elite\n• Private Lab , https://www.achzodcoaching.com/coaching-achzod-private-lab\n\nColle le code PEPTIDES150 dans le champ promo au checkout.`;
 
         let clientEmailSent = false;
         if (stillNotEmailed) {
           try {
             clientEmailSent = await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
-              `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}${coachingBlock}\n\nConserve ce lien — il est personnel et unique.\n\nAchzod`
+              `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`
             );
             if (clientEmailSent) {
               console.log(`[AutoGen] ✅ Delivery email sent to ${email}`);
             } else {
-              console.error(`[AutoGen] ⚠️ Delivery email returned false for ${email} — SendPulse probable issue`);
+              console.error(`[AutoGen] ⚠️ Delivery email returned false for ${email} , SendPulse probable issue`);
             }
           } catch (emailErr) {
             console.error(`[AutoGen] ⚠️ Delivery email THREW for ${email}:`, emailErr);
           }
         } else {
-          console.warn(`[AutoGen] ⚠️ Delivery email already sent to ${email} (last-moment check) — skipping`);
+          console.warn(`[AutoGen] ⚠️ Delivery email already sent to ${email} (last-moment check) , skipping`);
         }
 
         try {
           const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
           const adminSubject = clientEmailSent
-            ? `RAPPORT GENERE — Peptides Engine — ${email}`
-            : `⚠️ RAPPORT GENERE MAIS EMAIL CLIENT ECHOUE — ${email}`;
+            ? `RAPPORT GENERE , Peptides Engine , ${email}`
+            : `⚠️ RAPPORT GENERE MAIS EMAIL CLIENT ECHOUE , ${email}`;
           const adminBody = clientEmailSent
             ? `Rapport Peptides Engine genere et livre.\n\nClient: ${email}\nPeptides: ${peptidesNames}\nSections: ${report.sections?.length ?? 0}\nLien: ${baseUrl}/peptides/${saved.id}`
             : `Rapport Peptides Engine genere, MAIS l'email de livraison au client a echoue (SendPulse).\n\nAction requise: renvoyer manuellement via admin dashboard ou /api/admin/send-cta.\n\nClient: ${email}\nPeptides: ${peptidesNames}\nSections: ${report.sections?.length ?? 0}\nLien: ${baseUrl}/peptides/${saved.id}`;
@@ -9265,7 +9265,7 @@ export async function registerRoutes(
         autoGenLastResult = clientEmailSent
           ? `OK: ${email} → ${saved.id}`
           : `SAVED_BUT_EMAIL_FAILED: ${email} → ${saved.id}`;
-        console.log(`[AutoGen] ${clientEmailSent ? "✅" : "⚠️"} Report ${saved.id} for ${email} — client email ${clientEmailSent ? "sent" : "FAILED"}`);
+        console.log(`[AutoGen] ${clientEmailSent ? "✅" : "⚠️"} Report ${saved.id} for ${email} , client email ${clientEmailSent ? "sent" : "FAILED"}`);
         break; // 1 per cycle
       }
     } catch (err) {
@@ -9280,7 +9280,7 @@ export async function registerRoutes(
     try {
       const memRssMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
       if (memRssMb > 440) {
-        console.warn(`[AutoSend] ⚠️ Skipping cycle — RSS ${memRssMb}MB > 440MB threshold`);
+        console.warn(`[AutoSend] ⚠️ Skipping cycle , RSS ${memRssMb}MB > 440MB threshold`);
         return;
       }
 
@@ -9295,7 +9295,7 @@ export async function registerRoutes(
 
         const status = audit.reportDeliveryStatus;
 
-        // READY: send immediately (race-safe — CAS + email_tracking dedup)
+        // READY: send immediately (race-safe , CAS + email_tracking dedup)
         if (status === "READY") {
           try {
             const baseUrl = getBaseUrl();
@@ -9332,7 +9332,7 @@ export async function registerRoutes(
       // Memory guard
       const memRssMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
       if (memRssMb > 440) {
-        console.warn(`[AutoSequence] ⚠️ Skipping cycle — RSS ${memRssMb}MB > 440MB threshold`);
+        console.warn(`[AutoSequence] ⚠️ Skipping cycle , RSS ${memRssMb}MB > 440MB threshold`);
         return;
       }
 
@@ -9386,7 +9386,7 @@ export async function registerRoutes(
               if (emailSent) { sent++; if (sent >= 5) break; }
             }
           }
-          // J+30 nurture — pushes the profile-matched coaching formule with DISCOVERY20
+          // J+30 nurture , pushes the profile-matched coaching formule with DISCOVERY20
           if (daysSinceSent >= 30 && daysSinceSent < 60 && !trackingTypes.includes("sendDiscoveryJ30NurtureEmail")) {
             const hasConverted = await storage.hasUserPurchased?.(audit.email);
             if (!hasConverted) {
@@ -9412,7 +9412,7 @@ export async function registerRoutes(
     }
   }, 30 * 60 * 1000).unref(); // Every 30 minutes
 
-  // Peptides Engine — cycle 2 re-order email at J+60.
+  // Peptides Engine , cycle 2 re-order email at J+60.
   // Runs every 12h, sends at most 20 emails per cycle. Per-email dedup via
   // email_tracking (emailType = sendPeptidesCycle2ReorderEmail) so a client
   // is only asked to re-order once. Applies only to reports >= 60 days old
@@ -9439,7 +9439,7 @@ export async function registerRoutes(
         const daysSince = (now.getTime() - createdAt.getTime()) / (24 * 60 * 60 * 1000);
         if (daysSince < 60 || daysSince > 120) continue;
 
-        // Dedup — has this email already been sent?
+        // Dedup , has this email already been sent?
         const history = await storage.getEmailTrackingForAudit(report.id).catch(() => []);
         const already = (history || []).some((t: any) => t.emailType === "sendPeptidesCycle2ReorderEmail");
         if (already) continue;
@@ -9470,7 +9470,7 @@ export async function registerRoutes(
   }, 12 * 60 * 60 * 1000).unref(); // Every 12 hours
   console.log("[PeptidesReorderCron] ✅ setInterval registered (12h cycle)");
 
-  // startMonitoring DISABLED — daily reports and abandonment alerts turned off
+  // startMonitoring DISABLED , daily reports and abandonment alerts turned off
   // startMonitoring(storage, 30).catch(err => {
   //   console.error('[Monitor] Erreur démarrage surveillance:', err);
   // });

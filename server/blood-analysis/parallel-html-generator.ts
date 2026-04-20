@@ -155,7 +155,7 @@ const SECTION_TITLES: Record<string, string> = {
   recomposition: "Potentiel recomposition (perte de gras + gain de muscle)",
   axes: "Lecture compartimentée par axes",
   interconnexions: "Interconnexions majeures (le pattern)",
-  deep_dive: "Deep dive — marqueurs prioritaires",
+  deep_dive: "Deep dive , marqueurs prioritaires",
   plan: "Plan d'action 90 jours",
   nutrition: "Nutrition & entraînement",
   supplements: "Suppléments & stack",
@@ -822,7 +822,7 @@ REGLES ABSOLUES:
 - N'invente jamais une valeur, un marqueur, un symptome ou une source.
 - Si une donnee manque: "Non renseigne" + impact + test utile.
 - Emoji interdits.
-- N'utilise jamais le caractere de tiret long "—". Utilise uniquement "-" dans toutes les phrases et titres.
+- N'utilise jamais le caractere de tiret long ",". Utilise uniquement "-" dans toutes les phrases et titres.
 - Style narratif dense: paragraphes complets, phrases detaillees.
 - Interdiction absolue de listes a puces, listes numerotees, tableaux markdown.
 - Cite [SRC:ID] uniquement si l'ID existe dans le contexte fourni. Cite le maximum de sources disponibles.
@@ -1045,7 +1045,7 @@ function buildBatch2Prompt(ctx: BatchContext): string {
 - Chaque interconnexion: pattern observe, hypothese mecanistique, ce qui confirmerait, action concrete.
 - Cite [SRC:ID] si disponible.
 
-## Deep dive — marqueurs prioritaires
+## Deep dive , marqueurs prioritaires
 - Longueur minimale: ${minDeepDive} caracteres.
 - Couvrir au moins ${ctx.minDeepDiveMarkers} marqueurs prioritaires (critiques/suboptimaux d'abord).
 - Pour chaque marqueur: sous-titre "### Nom du marqueur" puis priorite, valeur et ranges, lecture clinique, lecture performance, causes plausibles, plan d'action, tests a ajouter.
@@ -1214,7 +1214,7 @@ function parseKnowledgeSourceEntries(knowledgeContext: string): KnowledgeSourceE
     const id = String(match[1] || "").trim();
     const header = String(match[2] || "").trim().replace(/^-+\s*/, "");
     if (!id || !header) continue;
-    const sourceLabel = header.split("—")[0].trim();
+    const sourceLabel = header.split(",")[0].trim();
     entries.push({
       id,
       header,
@@ -1366,7 +1366,7 @@ async function generateBatchedContent(
     { label: "Batch 3/3 (action)", prompt: buildBatch3Prompt(ctx), maxTokens: 22000, expectedKeys: ["plan", "nutrition", "supplements", "annexes", "sources"] },
   ];
 
-  // Run all 3 batches IN PARALLEL (not sequential) — cuts time from ~180s to ~60-90s
+  // Run all 3 batches IN PARALLEL (not sequential) , cuts time from ~180s to ~60-90s
   const results = await Promise.allSettled(
     batches.map(async (batch) => {
       const rawContent = await streamApiCall(
@@ -1467,7 +1467,7 @@ function buildMarkersTableHtml(markers: MarkerAnalysis[]): string {
 
   const formatRangeDisplay = (range: string): string => {
     const text = String(range || "").trim();
-    const match = text.match(/(-?\d+(?:[.,]\d+)?)\s*(?:-|–|—)\s*(-?\d+(?:[.,]\d+)?)/);
+    const match = text.match(/(-?\d+(?:[.,]\d+)?)\s*(?:-|–|,)\s*(-?\d+(?:[.,]\d+)?)/);
     if (!match) return text;
     const min = Number(String(match[1]).replace(",", "."));
     const max = Number(String(match[2]).replace(",", "."));
@@ -1826,7 +1826,7 @@ function buildHtmlReport(
 <body>
   <div class="report-container">
     <header class="report-header">
-      <h1>Analyse Sanguine — ${escapeHtml(clientName)}</h1>
+      <h1>Analyse Sanguine , ${escapeHtml(clientName)}</h1>
       <p class="subtitle">${escapeHtml(profile.gender === "femme" ? "Femme" : "Homme")}${profile.age ? ` · ${escapeHtml(profile.age)} ans` : ""} · ${markers.length} marqueurs analyses · ${escapeHtml(generatedAt)}</p>
       <div class="stats-row">
         <div class="stat-card">

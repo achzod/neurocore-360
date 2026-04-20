@@ -117,7 +117,7 @@ async function checkBloodReportOwnership(req: any, res: any, reportId: string, s
     return false;
   }
 
-  // Try blood_tests table (has userId — compare with JWT userId directly)
+  // Try blood_tests table (has userId , compare with JWT userId directly)
   try {
     const { db } = await import("../db.js");
     const { bloodTests } = await import("../../shared/drizzle-schema.js");
@@ -188,7 +188,7 @@ const isDeliverableAiReport = (reportText: string): boolean => {
   if (text.length < 9000) return false;
   if (/\*Rapport fallback deterministic/i.test(text)) return false;
   if (/section non disponible|veuillez reg(?:e|é)n(?:e|é)rer le rapport/i.test(text)) return false;
-  if (/^\s*###\s*Axe\s+\d+\s+[—-]\s*Non renseigne\b/gim.test(text)) return false;
+  if (/^\s*###\s*Axe\s+\d+\s+[,-]\s*Non renseigne\b/gim.test(text)) return false;
   return BLOOD_REQUIRED_SECTION_PATTERNS.every((pattern) => pattern.test(text));
 };
 
@@ -932,7 +932,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       const scheduledFor = new Date(Date.now() + BLOOD_DELIVERY_DELAY_HOURS * 60 * 60 * 1000);
 
       if (shouldQueueBackgroundAI) {
-        // AI report still needs async generation — schedule delivery after it completes
+        // AI report still needs async generation , schedule delivery after it completes
         setImmediate(async () => {
           try {
             const enrichedCandidate = await generateAiReportWithAttempts(
@@ -968,19 +968,19 @@ export function registerBloodAnalysisRoutes(app: Express): void {
               deliveryStatus: "SCHEDULED",
               reportScheduledFor: scheduledFor,
             });
-            console.log(`[BloodAnalysis] Report ${reportRecord.id} generated (async), SCHEDULED for ${scheduledFor.toISOString()} — email deferred`);
+            console.log(`[BloodAnalysis] Report ${reportRecord.id} generated (async), SCHEDULED for ${scheduledFor.toISOString()} , email deferred`);
           } catch (err) {
             console.error("[BloodAnalysis] async AI failed:", err);
             await storage.updateBloodReport(reportRecord.id, { deliveryStatus: "FAILED" }).catch(() => {});
           }
         });
       } else if (aiAnalysis) {
-        // AI report ready synchronously — schedule for later delivery
+        // AI report ready synchronously , schedule for later delivery
         await storage.updateBloodReport(reportRecord.id, {
           deliveryStatus: "SCHEDULED",
           reportScheduledFor: scheduledFor,
         });
-        console.log(`[BloodAnalysis] Report ${reportRecord.id} generated, SCHEDULED for ${scheduledFor.toISOString()} — email deferred`);
+        console.log(`[BloodAnalysis] Report ${reportRecord.id} generated, SCHEDULED for ${scheduledFor.toISOString()} , email deferred`);
       }
 
       const status =
@@ -1194,7 +1194,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         return;
       }
 
-      // Dedup guard — admin force-send is a common source of accidental double
+      // Dedup guard , admin force-send is a common source of accidental double
       // emails (rapid double-click on the dashboard, or racing with the scheduled
       // delivery cron). Require ?force=1 to override if the report was already
       // emailed, so an accidental click can't re-notify the client.
@@ -1204,7 +1204,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         const deliveryStatus = (report as any).deliveryStatus;
         if (existingSentAt || deliveryStatus === "SENT") {
           res.status(409).json({
-            error: "Rapport déjà envoyé — pass ?force=1 pour renvoyer volontairement",
+            error: "Rapport déjà envoyé , pass ?force=1 pour renvoyer volontairement",
             reportId: report.id,
             emailSentAt: existingSentAt ?? null,
           });

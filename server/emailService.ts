@@ -171,7 +171,7 @@ async function sendEmailWithTracking(
     // Check unsubscribe before sending
     const { storage } = await import("./storage");
     if (await storage.isEmailUnsubscribed(trackingData.recipientEmail)) {
-      console.log(`[SendPulse] BLOCKED — ${trackingData.recipientEmail} is unsubscribed`);
+      console.log(`[SendPulse] BLOCKED , ${trackingData.recipientEmail} is unsubscribed`);
       return { result: false, error: "unsubscribed" };
     }
 
@@ -180,7 +180,7 @@ async function sendEmailWithTracking(
     // IMPORTANT: callers encode the HTML with encodeBase64() BEFORE handing it
     // to us (SendPulse accepts a base64-encoded html field). That means when
     // we arrive here, the `{{UNSUB_LINK}}` literal is no longer visible in
-    // emailPayload.html — it's been shuffled away in the base64. A plain
+    // emailPayload.html , it's been shuffled away in the base64. A plain
     // string .replace() ran against base64 text can't match it, and the
     // "Se désabonner" link reaches the user as literal {{UNSUB_LINK}} text
     // (reported 2026-04-20 by Achzod). Fix: decode, replace, re-encode.
@@ -197,18 +197,25 @@ async function sendEmailWithTracking(
     const looksLikeBase64 = (s: string): boolean =>
       typeof s === "string" && s.length > 40 && /^[A-Za-z0-9+/=\r\n]+$/.test(s.trim());
 
+    // Em-dash sanitizer: replace every — and – with a comma. AI-generated and
+    // hand-written templates both sneak them in, and Achzod's policy is zero
+    // em-dashes anywhere in client-facing output (they're the #1 AI tell).
+    // Applied after base64 decode so it covers the actual rendered HTML.
+    const stripDashes = (s: string) => s.replace(/[—–]/g, ",");
+
     if (looksLikeBase64(emailPayload.html)) {
       try {
         const decoded = Buffer.from(emailPayload.html, "base64").toString("utf8");
-        const replaced = decoded.replace(/\{\{UNSUB_LINK\}\}/g, unsubLink);
+        const replaced = stripDashes(decoded).replace(/\{\{UNSUB_LINK\}\}/g, unsubLink);
         emailPayload.html = Buffer.from(replaced).toString("base64");
       } catch {
-        // Fall through — at worst the link stays broken, but we don't crash the send.
+        // Fall through , at worst the link stays broken, but we don't crash the send.
       }
     } else {
-      emailPayload.html = emailPayload.html.replace(/\{\{UNSUB_LINK\}\}/g, unsubLink);
+      emailPayload.html = stripDashes(emailPayload.html).replace(/\{\{UNSUB_LINK\}\}/g, unsubLink);
     }
-    emailPayload.text = emailPayload.text.replace(/\{\{UNSUB_LINK\}\}/g, unsubLink);
+    emailPayload.text = stripDashes(emailPayload.text).replace(/\{\{UNSUB_LINK\}\}/g, unsubLink);
+    emailPayload.subject = stripDashes(emailPayload.subject);
 
     const token = await getAccessToken();
 
@@ -354,7 +361,7 @@ function getEmailWrapper(
   //   - Replaced `display: inline-flex` (Gmail strips it and renders a "..."
   //     placeholder where the badge should be) with a plain inline table.
   //   - Header uses mso + Outlook-safe HTML table layout instead of div/flex.
-  //   - All `@import` and external fonts removed — Gmail blocks them,
+  //   - All `@import` and external fonts removed , Gmail blocks them,
   //     which was also contributing to the layout shift.
   //   - Removed the decorative circle div that gmail was rendering as bullet.
   //   - Added wider Outlook fallback so padding/gradients degrade gracefully.
@@ -402,7 +409,7 @@ function getEmailWrapper(
 </html>`;
 }
 
-// Primary CTA Button — Gmail + Outlook bulletproof (VML fallback for Outlook 07+).
+// Primary CTA Button , Gmail + Outlook bulletproof (VML fallback for Outlook 07+).
 // Uses nested <table> + mso-padding-alt for Outlook, fallback inline-block for
 // everything else. Never relies on CSS that Gmail strips (inline-flex, gap,
 // display:flex). White text on dark colors, black text on bright brand colors.
@@ -608,9 +615,9 @@ export async function sendReportReadyEmail(
     // preview hook + audit name late enough to avoid subject-line-cutoff on mobile.
     const subject =
       auditType === "GRATUIT"
-        ? "Ton rapport est la — on regarde ce qui bloque ?"
+        ? "Ton rapport est la, on regarde ce qui bloque ?"
         : auditType === "BLOOD_ANALYSIS"
-        ? "Tes marqueurs sanguins sont analyses — resultats dedans"
+        ? "Tes marqueurs sanguins sont analyses, resultats dedans"
         : auditType === "ELITE"
         ? "Rapport Ultimate Scan : tes 18 axes + protocole complet"
         : auditType === "PREMIUM"
@@ -2396,7 +2403,7 @@ export async function sendBloodAnalysisHtmlEmail(
   try {
     void baseUrl;
     // Strip forbidden dashes/emojis from the report markdown BEFORE rendering HTML
-    // and BEFORE the quality gate checks — otherwise the gate blocks on raw AI em-dashes.
+    // and BEFORE the quality gate checks , otherwise the gate blocks on raw AI em-dashes.
     reportMarkdown = stripBloodForbiddenFormatting(reportMarkdown);
     const fallbackNameFromEmail = String(email || "")
       .split("@")[0]
@@ -2847,10 +2854,10 @@ export async function sendGratuitUpsellEmail(
           Le pas logique après ton Discovery
         </p>
         <h3 style="color: ${COLORS.primary}; font-size: 26px; font-weight: 700; margin: 0 0 10px; letter-spacing: -0.5px;">
-          Coaching Essential — à partir de 249€
+          Coaching Essential , à partir de 249€
         </h3>
         <p style="color: ${COLORS.text}; font-size: 14px; line-height: 1.7; margin: 0 0 16px;">
-          Je construis ton plan <strong>d'après ton Discovery</strong> — pas un questionnaire à refaire.<br/>
+          Je construis ton plan <strong>d'après ton Discovery</strong> , pas un questionnaire à refaire.<br/>
           Plan + nutrition précision + bilans hebdos. Tu m'écris tes retours, j'ajuste chaque semaine.
         </p>
         <div style="background: ${COLORS.background}; border-radius: 8px; padding: 14px 18px; display: inline-block; margin-bottom: 16px; border: 1px dashed ${COLORS.primary};">
@@ -3336,7 +3343,7 @@ export async function sendPremiumJ14Email(
 }
 
 // Email Discovery J+14: coaching personnalisé avec code DISCOVERY20.
-// Accepts an optional `recommendation` produced by recommendCoachingTier() —
+// Accepts an optional `recommendation` produced by recommendCoachingTier() ,
 // when provided, routes the CTA to the specific formule page (Essential/Elite/
 // PrivateLab) and surfaces a one-sentence personalized rationale in the hero.
 export async function sendDiscoveryJ14CoachingEmail(
@@ -3430,7 +3437,7 @@ export async function sendDiscoveryJ14CoachingEmail(
       <div style="padding: 20px; background: ${COLORS.surface}; border-radius: 8px; margin-bottom: 24px; border-left: 3px solid ${COLORS.primary};">
         <p style="color: ${COLORS.textMuted}; font-size: 13px; line-height: 1.7; margin: 0; font-style: italic;">
           <strong style="color: ${COLORS.text};">"J'ai fait le Discovery, vu mes points faibles, mais c'est le coaching qui a tout changé. En 8 semaines, j'ai perdu 6kg, gagné en muscle et ma libido est revenue. L'analyse c'est le diagnostic, le coaching c'est le traitement."</strong><br/>
-          <span style="font-size: 12px; color: ${COLORS.textMuted};">— Magroud W., suivi 3 mois</span>
+          <span style="font-size: 12px; color: ${COLORS.textMuted};">, Magroud W., suivi 3 mois</span>
         </p>
       </div>
 
@@ -3459,7 +3466,7 @@ export async function sendDiscoveryJ14CoachingEmail(
           ? `Je te recommande ${tierLabel} d'après ton Discovery. ${recommendation!.reason} Code DISCOVERY20 (-20% sauf Starter). Voir ${tierLabel}: ${coachingLink}`
           : `L'analyse seule ne suffit pas. Coaching personnalisé basé sur ton Discovery Scan avec code DISCOVERY20 (-20% sur toutes les formules sauf Starter). Voir les formules: ${coachingLink}`,
         subject: tierLabel
-          ? `${tierLabel} — la formule qui match ton Discovery (-20%)`
+          ? `${tierLabel} , la formule qui match ton Discovery (-20%)`
           : "Tu as les donnees. Maintenant passe a l'action",
         from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
@@ -3481,7 +3488,7 @@ export async function sendDiscoveryJ14CoachingEmail(
   }
 }
 
-// Email Discovery J+5: "Pourquoi ton Discovery seul ne va rien changer" — angle
+// Email Discovery J+5: "Pourquoi ton Discovery seul ne va rien changer" , angle
 // storytelling brutal, pousse coaching Essential directement plutôt que des audits.
 export async function sendGratuitJ5Email(
   email: string,
@@ -3514,7 +3521,7 @@ export async function sendGratuitJ5Email(
         <div style="padding: 16px; background: ${COLORS.background}; border-radius: 8px; border-left: 3px solid ${COLORS.warning}; margin-bottom: 12px;">
           <div>
             <p style="color: ${COLORS.text}; font-size: 15px; font-weight: 600; margin: 0 0 4px;">
-              1. Le plan manque — tu sais où tu bloques mais pas quoi faire lundi matin
+              1. Le plan manque , tu sais où tu bloques mais pas quoi faire lundi matin
             </p>
             <p style="color: ${COLORS.textMuted}; font-size: 13px; margin: 0; line-height: 1.6;">
               Un rapport te donne les scores. Pas une routine jour-par-jour, pas des repas calibrés, pas des charges d'entraînement adaptées à TA fatigue cette semaine.
@@ -3525,7 +3532,7 @@ export async function sendGratuitJ5Email(
         <div style="padding: 16px; background: ${COLORS.background}; border-radius: 8px; border-left: 3px solid ${COLORS.warning}; margin-bottom: 12px;">
           <div>
             <p style="color: ${COLORS.text}; font-size: 15px; font-weight: 600; margin: 0 0 4px;">
-              2. Aucun ajustement — tu pars droit dans le mur sans feedback
+              2. Aucun ajustement , tu pars droit dans le mur sans feedback
             </p>
             <p style="color: ${COLORS.textMuted}; font-size: 13px; margin: 0; line-height: 1.6;">
               Après 1 semaine, ton corps réagit différemment de la théorie. Sans quelqu'un qui lit tes bilans hebdos et recalibre, tu restes sur un plan générique pendant 2 mois.
@@ -3536,10 +3543,10 @@ export async function sendGratuitJ5Email(
         <div style="padding: 16px; background: ${COLORS.background}; border-radius: 8px; border-left: 3px solid ${COLORS.warning};">
           <div>
             <p style="color: ${COLORS.text}; font-size: 15px; font-weight: 600; margin: 0 0 4px;">
-              3. L'accountability manque — personne ne te réveille quand tu dévies
+              3. L'accountability manque , personne ne te réveille quand tu dévies
             </p>
             <p style="color: ${COLORS.textMuted}; font-size: 13px; margin: 0; line-height: 1.6;">
-              Sans contrat moral, tu arrêtes après 10 jours. C'est pas de la faiblesse — c'est de la physiologie. 98% des gens font pareil.
+              Sans contrat moral, tu arrêtes après 10 jours. C'est pas de la faiblesse , c'est de la physiologie. 98% des gens font pareil.
             </p>
           </div>
         </div>
@@ -3551,7 +3558,7 @@ export async function sendGratuitJ5Email(
           La solution qui résout les 3
         </p>
         <h3 style="color: ${COLORS.primary}; font-size: 22px; font-weight: 700; margin: 0 0 10px; letter-spacing: -0.5px;">
-          Coaching Essential — à partir de 249€
+          Coaching Essential , à partir de 249€
         </h3>
         <p style="color: ${COLORS.text}; font-size: 14px; margin: 0 0 16px; line-height: 1.6;">
           Plan sur-mesure basé sur ton Discovery · Nutrition précision · Bilans hebdos · Ajustements en continu · Contrat moral avec moi.
@@ -3650,7 +3657,7 @@ export async function sendGratuitJ7Email(
           -20% sur toutes les formules coaching (sauf Starter)
         </p>
         <p style="color: ${COLORS.textMuted}; font-size: 12px; margin: 8px 0 0;">
-          Expire <strong style="color:${COLORS.warning};">dans 48h</strong> — après, plus de discount client Discovery.
+          Expire <strong style="color:${COLORS.warning};">dans 48h</strong> , après, plus de discount client Discovery.
         </p>
       </div>
 
@@ -3721,8 +3728,8 @@ export async function sendGratuitJ7Email(
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
-        text: `Dernière relance — DISCOVERY20 expire dans 48h.\n\n-20% sur toutes les formules coaching (sauf Starter) :\n\nEssential 4 sem : 199€ (au lieu de 249€) — ${essentialLink}\nElite 4 sem : 319€ (au lieu de 399€) — ${eliteLink}\nPrivate Lab 4 sem : 399€ (au lieu de 499€) — ${privateLabLink}\n\nAprès J+9, code désactivé. Pas de rattrapage.\n\nAchzod`,
-        subject: "Dernière relance — DISCOVERY20 expire dans 48h",
+        text: `Dernière relance , DISCOVERY20 expire dans 48h.\n\n-20% sur toutes les formules coaching (sauf Starter) :\n\nEssential 4 sem : 199€ (au lieu de 249€) , ${essentialLink}\nElite 4 sem : 319€ (au lieu de 399€) , ${eliteLink}\nPrivate Lab 4 sem : 399€ (au lieu de 499€) , ${privateLabLink}\n\nAprès J+9, code désactivé. Pas de rattrapage.\n\nAchzod`,
+        subject: "Dernière relance , DISCOVERY20 expire dans 48h",
         from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
       },
@@ -3977,7 +3984,7 @@ export async function sendApexLabsWelcomeEmail(email: string): Promise<boolean> 
               </h2>
 
               <p style="color: ${APEX_COLORS.textMuted}; font-size: 16px; line-height: 1.8; margin: 0 0 30px; text-align: center;">
-                Tu fais maintenant partie des premiers à avoir accès à <strong style="color: ${APEX_COLORS.text};">ApexLabs</strong> — la nouvelle génération d'optimisation humaine.
+                Tu fais maintenant partie des premiers à avoir accès à <strong style="color: ${APEX_COLORS.text};">ApexLabs</strong> , la nouvelle génération d'optimisation humaine.
               </p>
 
               <!-- What's coming -->
@@ -3987,16 +3994,16 @@ export async function sendApexLabsWelcomeEmail(email: string): Promise<boolean> 
                 </h3>
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                   <tr><td style="padding: 10px 0; color: ${APEX_COLORS.textMuted}; font-size: 15px; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                    <span style="color: ${APEX_COLORS.primary}; margin-right: 12px;">→</span> Discovery Scan — Diagnostic gratuit 5 piliers
+                    <span style="color: ${APEX_COLORS.primary}; margin-right: 12px;">→</span> Discovery Scan , Diagnostic gratuit 5 piliers
                   </td></tr>
                   <tr><td style="padding: 10px 0; color: ${APEX_COLORS.textMuted}; font-size: 15px; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                    <span style="color: ${APEX_COLORS.primary}; margin-right: 12px;">→</span> Anabolic Bioscan — Audit métabolique complet
+                    <span style="color: ${APEX_COLORS.primary}; margin-right: 12px;">→</span> Anabolic Bioscan , Audit métabolique complet
                   </td></tr>
                   <tr><td style="padding: 10px 0; color: ${APEX_COLORS.textMuted}; font-size: 15px; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                    <span style="color: ${APEX_COLORS.primary}; margin-right: 12px;">→</span> Ultimate Scan — L'analyse ultime + photos
+                    <span style="color: ${APEX_COLORS.primary}; margin-right: 12px;">→</span> Ultimate Scan , L'analyse ultime + photos
                   </td></tr>
                   <tr><td style="padding: 10px 0; color: ${APEX_COLORS.textMuted}; font-size: 15px; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                    <span style="color: ${APEX_COLORS.primary}; margin-right: 12px;">→</span> Blood Analysis — 50+ biomarqueurs
+                    <span style="color: ${APEX_COLORS.primary}; margin-right: 12px;">→</span> Blood Analysis , 50+ biomarqueurs
                   </td></tr>
                   <tr><td style="padding: 10px 0; color: ${APEX_COLORS.textMuted}; font-size: 15px;">
                   </td></tr>
@@ -4157,7 +4164,7 @@ export async function addSubscriberToList(
   }
 }
 
-// Discovery J+30 — long-tail nurture for Discovery Scan recipients who haven't
+// Discovery J+30 , long-tail nurture for Discovery Scan recipients who haven't
 // upgraded. Pushes COACHING directly (not more audits) since coaching is the
 // real revenue. Uses DISCOVERY20 code (20% off all formules except Starter).
 // When a `recommendation` is passed, the CTA points to the matched formule
@@ -4207,7 +4214,7 @@ export async function sendDiscoveryJ30NurtureEmail(
           Un audit ne transforme pas. Le suivi, oui.
         </p>
         <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.7; margin: 0;">
-          Le Discovery te dit où tu bloques. Mais pour corriger durablement sommeil / stress / nutrition / énergie, il faut un protocole ajusté semaine après semaine selon tes retours. C'est ce que fait le coaching — je te construis un plan, tu m'envoies tes bilans hebdos, j'ajuste.
+          Le Discovery te dit où tu bloques. Mais pour corriger durablement sommeil / stress / nutrition / énergie, il faut un protocole ajusté semaine après semaine selon tes retours. C'est ce que fait le coaching , je te construis un plan, tu m'envoies tes bilans hebdos, j'ajuste.
         </p>
       </div>
       `}
@@ -4228,7 +4235,7 @@ export async function sendDiscoveryJ30NurtureEmail(
           </p>
         </div>
         <p style="color: ${COLORS.textMuted}; font-size: 13px; line-height: 1.6; margin: 0 0 18px;">
-          Je construis ton plan à partir des données de ton Discovery — pas de questionnaire à refaire.
+          Je construis ton plan à partir des données de ton Discovery , pas de questionnaire à refaire.
         </p>
         ${getPrimaryButton(tierLabel ? `Voir ${tierLabel} →` : 'Voir les formules coaching →', coachingLink)}
       </div>
@@ -4270,10 +4277,10 @@ export async function sendDiscoveryJ30NurtureEmail(
         html: encodeBase64(emailContent),
         text: tierLabel
           ? `Je te recommande ${tierLabel} d'après ton Discovery.\n\n${recommendation!.reason}\n\nCode DISCOVERY20 (-20% sauf Starter).\n\nVoir ${tierLabel} : ${coachingLink}\nRelire ton Discovery : ${reportLink}\n\nAchzod`
-          : `Un mois depuis ton Discovery. Un audit ne transforme pas — le suivi, oui.\n\nOffre clients Discovery : -20% sur toutes les formules coaching (sauf Starter), code DISCOVERY20.\n\nVoir les formules : ${coachingLink}\nCoaching Essential (à partir de 249€, 4-8-12 sem) : ${essentialLink}\nRelire le Discovery : ${reportLink}\n\nAchzod`,
+          : `Un mois depuis ton Discovery. Un audit ne transforme pas , le suivi, oui.\n\nOffre clients Discovery : -20% sur toutes les formules coaching (sauf Starter), code DISCOVERY20.\n\nVoir les formules : ${coachingLink}\nCoaching Essential (à partir de 249€, 4-8-12 sem) : ${essentialLink}\nRelire le Discovery : ${reportLink}\n\nAchzod`,
         subject: tierLabel
-          ? `${tierLabel} — la formule calibrée pour ton profil (-20%)`
-          : "Un mois depuis ton Discovery — -20% sur ton coaching",
+          ? `${tierLabel} , la formule calibrée pour ton profil (-20%)`
+          : "Un mois depuis ton Discovery , -20% sur ton coaching",
         from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
       },
@@ -4292,7 +4299,7 @@ export async function sendDiscoveryJ30NurtureEmail(
   }
 }
 
-// Peptides Engine — Cycle 2 re-order email (J+60 post-delivery).
+// Peptides Engine , Cycle 2 re-order email (J+60 post-delivery).
 // Sent once to clients whose first Peptides protocol was delivered ~60 days ago,
 // roughly the end of a typical 8-12 week cycle. Offers a loyalty discount for
 // re-ordering. Revenue retention play on existing client base.
@@ -4322,10 +4329,10 @@ export async function sendPeptidesCycle2ReorderEmail(
           Pourquoi un cycle 2 ?
         </p>
         <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.7; margin: 0 0 10px;">
-          Ton corps s'est adapté aux peptides du cycle 1. Les résultats sont là mais les gains marginaux ralentissent — c'est biologiquement normal. Un cycle 2 recalibré sur tes nouveaux objectifs (consolidation, progression, switch de stack) permet de repartir sur du neuf sans perdre l'acquis.
+          Ton corps s'est adapté aux peptides du cycle 1. Les résultats sont là mais les gains marginaux ralentissent , c'est biologiquement normal. Un cycle 2 recalibré sur tes nouveaux objectifs (consolidation, progression, switch de stack) permet de repartir sur du neuf sans perdre l'acquis.
         </p>
         <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.7; margin: 0;">
-          Si tu as fait un Blood Analysis mi-cycle (tes 2 crédits offerts) — c'est exactement les marqueurs à regarder pour guider le cycle 2.
+          Si tu as fait un Blood Analysis mi-cycle (tes 2 crédits offerts) , c'est exactement les marqueurs à regarder pour guider le cycle 2.
         </p>
       </div>
 
@@ -4363,7 +4370,7 @@ export async function sendPeptidesCycle2ReorderEmail(
       </div>
 
       <p style="color: ${COLORS.textMuted}; font-size: 12px; line-height: 1.6; margin: 0; text-align: center;">
-        Pas envie de relancer ? Pas de souci — je ne renverrai plus cet email.<br/>
+        Pas envie de relancer ? Pas de souci , je ne renverrai plus cet email.<br/>
         <a href="{{UNSUB_LINK}}" style="color: #525252; text-decoration: underline;">Se désabonner</a>
       </p>
 
@@ -4381,7 +4388,7 @@ export async function sendPeptidesCycle2ReorderEmail(
       {
         html: encodeBase64(emailContent),
         text: `Ton cycle 1 Peptides Engine touche a sa fin. Pret pour le cycle 2 ?\n\nTarif clients existants : 199€ (au lieu de 299€). Code CYCLE2.\n2 credits Blood Analysis offerts a nouveau.\n\nCommander : ${orderLink}\nRevoir le rapport cycle 1 : ${reportLink}\n\nAchzod`,
-        subject: "Ton cycle 1 touche à sa fin — prêt pour le cycle 2 ? (-100€ clients existants)",
+        subject: "Ton cycle 1 touche à sa fin , prêt pour le cycle 2 ? (-100€ clients existants)",
         from: { name: SENDER_NAME, email: SENDER_EMAIL },
         to: [{ email }],
       },

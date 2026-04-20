@@ -753,7 +753,7 @@ export const normalizeMarkerValue = (markerId: string, value: number, unit?: str
   }
   if (markerId === "testosterone_libre") {
     if (sourceUnit === "pmol/L") return roundValue(value / 3.47, 2);
-    // If pg/mL or already target unit — no conversion needed
+    // If pg/mL or already target unit , no conversion needed
     if (sourceUnit === "pg/mL") return roundValue(value, 1);
     // Heuristic: if value > 15 and no unit, likely pmol/L (French labs give 20-90 pmol/L)
     if (!sourceUnit && value > 15) return roundValue(value / 3.47, 2);
@@ -1426,7 +1426,7 @@ Liste autorisee (markerId, nom, unite attendue):
 ${markerList}
 
 IMPORTANT: NE CONVERTIS PAS les valeurs. Retourne la valeur BRUTE du PDF dans l'unite qui correspond a l'unite attendue ci-dessus.
-Si le PDF donne la valeur dans une autre unite que l'unite attendue, retourne quand meme la valeur BRUTE avec son unite source — la conversion sera faite automatiquement.
+Si le PDF donne la valeur dans une autre unite que l'unite attendue, retourne quand meme la valeur BRUTE avec son unite source , la conversion sera faite automatiquement.
 
 Retourne UNIQUEMENT un JSON array (sans markdown, sans texte):
 [{"markerId": "...", "value": number_brut, "unit_source": "unite exacte du PDF"}]
@@ -1640,7 +1640,7 @@ const buildSourceExcerpt = (article: ScrapedArticle) => {
   const sourceId = getSourceRefId(article);
   const excerpt = article.content.replace(/\s+/g, " ").trim().slice(0, 360);
   const title = article.title?.trim() || "Source";
-  const sourceLine = `- [SRC:${sourceId}] ${label} — ${title}`;
+  const sourceLine = `- [SRC:${sourceId}] ${label} , ${title}`;
   const urlLine = article.url ? `  URL: ${article.url}` : "";
   const excerptLine = `  Extrait: ${excerpt}${excerpt.length >= 360 ? "..." : ""}`;
   return [sourceLine, urlLine, excerptLine].filter(Boolean).join("\n");
@@ -1828,7 +1828,7 @@ const REQUIRED_REPORT_SECTIONS: RequiredReportSection[] = [
   },
   {
     key: "deep_dive",
-    title: "Deep dive — marqueurs prioritaires",
+    title: "Deep dive , marqueurs prioritaires",
     aliases: ["deep-dive-marqueurs-prioritaires", "deep-dive"],
     minChars: 4600,
   },
@@ -1990,7 +1990,7 @@ const isAnthropicLowCreditError = (error: unknown): boolean => {
 
 const BULLET_LINE_REGEX = /^\s*(?:[-*+]|(?:\d+[\.\)]))\s+/;
 const MARKDOWN_TABLE_LINE_REGEX = /^\s*\|(?:[^|\n]+\|)+\s*$/;
-const PLACEHOLDER_AXIS_HEADING_REGEX = /^\s*###\s*Axe\s+\d+\s+[—-]\s*Non renseigne\b/im;
+const PLACEHOLDER_AXIS_HEADING_REGEX = /^\s*###\s*Axe\s+\d+\s+[,-]\s*Non renseigne\b/im;
 const NON_RENSEIGNE_DOSSIER_REGEX = /non renseigne pour ce dossier/i;
 const ACHZOD_FIRST_PERSON_REGEX = /\b(?:je|j['’]ai|j['’]analyse|j['’]observe|j['’]identifie|je te|je t['’]|je vais)\b/gi;
 const ACHZOD_TUTEOIEMENT_REGEX = /\b(?:tu|ton|ta|tes|toi|t['’]es|t['’]as|t['’]a)\b/gi;
@@ -2440,7 +2440,7 @@ Format obligatoire (titres H2 exacts, dans cet ordre):
 ## Potentiel recomposition (perte de gras + gain de muscle)
 ## Lecture compartimentée par axes
 ## Interconnexions majeures (le pattern)
-## Deep dive — marqueurs prioritaires
+## Deep dive , marqueurs prioritaires
 ## Plan d'action 90 jours
 ## Nutrition & entraînement
 ## Suppléments & stack
@@ -2452,7 +2452,7 @@ Contraintes de qualité:
 - Les 12 sections H2 sont obligatoires, dans l'ordre exact, sans section additionnelle.
 - Sections obligatoirement denses:
   - "Lecture compartimentée par axes": longue et détaillée.
-  - "Deep dive — marqueurs prioritaires": marqueur par marqueur, concret.
+  - "Deep dive , marqueurs prioritaires": marqueur par marqueur, concret.
   - "Plan d'action 90 jours": phase par phase avec KPI et conditions de progression.
   - "Nutrition & entraînement" et "Suppléments & stack": protocoles complets reliés aux biomarqueurs.
 - Priorise la précision, la clarté et l'actionnabilité.
@@ -2514,7 +2514,7 @@ const parseKnowledgeSourceCatalog = (knowledgeContext: string): Map<string, Know
     const line = rawLine.trim();
     if (!line) continue;
 
-    const srcMatch = line.match(/^\[SRC:([^\]]+)\]\s*(.+?)\s*[—-]\s*(.+)$/i);
+    const srcMatch = line.match(/^\[SRC:([^\]]+)\]\s*(.+?)\s*[,-]\s*(.+)$/i);
     if (srcMatch) {
       const id = srcMatch[1].trim();
       const label = srcMatch[2].trim();
@@ -2573,7 +2573,7 @@ const buildSourcesSection = (
       lines.push(`[SRC:${id}] Source citée dans le rapport mais absente du contexte bibliographique transmis.`);
       continue;
     }
-    const mainLine = `[SRC:${id}] ${source.label} — ${source.title}`;
+    const mainLine = `[SRC:${id}] ${source.label} , ${source.title}`;
     const extraBits = [source.url ? `URL: ${source.url}` : "", source.category ? `Catégorie: ${source.category}` : ""]
       .filter(Boolean)
       .join(" | ");
@@ -3128,7 +3128,7 @@ export function buildFallbackAnalysis(
   }> = [
     {
       key: "hormonal",
-      title: "Axe 1 — Potentiel musculaire & androgenes",
+      title: "Axe 1 , Potentiel musculaire & androgenes",
       markers: axisMarkers.hormonal,
       actions: [
         "Stabiliser sommeil, lipides alimentaires essentiels et surcharge mentale.",
@@ -3138,7 +3138,7 @@ export function buildFallbackAnalysis(
     },
     {
       key: "metabolique",
-      title: "Axe 2 — Metabolisme & gestion du risque diabete",
+      title: "Axe 2 , Metabolisme & gestion du risque diabete",
       markers: axisMarkers.metabolique,
       actions: [
         "Prioriser fibres + proteines avant glucides rapides.",
@@ -3148,7 +3148,7 @@ export function buildFallbackAnalysis(
     },
     {
       key: "lipidique",
-      title: "Axe 3 — Lipides & risque cardio-metabolique",
+      title: "Axe 3 , Lipides & risque cardio-metabolique",
       markers: axisMarkers.lipidique,
       actions: [
         "Qualite lipidique alimentaire + baisse sucres/alcool si necessaire.",
@@ -3158,7 +3158,7 @@ export function buildFallbackAnalysis(
     },
     {
       key: "thyroide",
-      title: "Axe 4 — Thyroide & depense energetique",
+      title: "Axe 4 , Thyroide & depense energetique",
       markers: axisMarkers.thyroide,
       actions: [
         "Eviter les seches prolongées trop basses en glucides/calories.",
@@ -3168,7 +3168,7 @@ export function buildFallbackAnalysis(
     },
     {
       key: "hepatique",
-      title: "Axe 5 — Foie, bile & detox metabolique",
+      title: "Axe 5 , Foie, bile & detox metabolique",
       markers: axisMarkers.hepatique,
       actions: [
         "Reduire l'alcool et la charge inflammatoire alimentaire.",
@@ -3178,7 +3178,7 @@ export function buildFallbackAnalysis(
     },
     {
       key: "renal",
-      title: "Axe 6 — Rein, hydratation & performance",
+      title: "Axe 6 , Rein, hydratation & performance",
       markers: axisMarkers.renal,
       actions: [
         "Hydratation structuree + sodium/potassium adaptes a la transpiration.",
@@ -3188,7 +3188,7 @@ export function buildFallbackAnalysis(
     },
     {
       key: "inflammation",
-      title: "Axe 7 — Inflammation, immunite & terrain",
+      title: "Axe 7 , Inflammation, immunite & terrain",
       markers: axisMarkers.inflammation,
       actions: [
         "Regulariser recuperation, sommeil et charge d'entrainement.",
@@ -3198,14 +3198,14 @@ export function buildFallbackAnalysis(
     },
     {
       key: "hematologie",
-      title: "Axe 8 — Hematologie, oxygenation & endurance",
+      title: "Axe 8 , Hematologie, oxygenation & endurance",
       markers: axisMarkers.hematologie,
       actions: ["Verifier statut fer/B12/folates si fatigue/performance en baisse."],
       missingTests: ["Hemoglobine", "Hematocrite", "VGM", "RDW"],
     },
     {
       key: "micronutriments",
-      title: "Axe 9 — Micronutriments (vitamines & mineraux)",
+      title: "Axe 9 , Micronutriments (vitamines & mineraux)",
       markers: axisMarkers.micronutriments,
       actions: [
         "Corriger d'abord vitamine D, B12, magnesium/zinc selon panel disponible.",
@@ -3215,14 +3215,14 @@ export function buildFallbackAnalysis(
     },
     {
       key: "electrolytes",
-      title: "Axe 10 — Electrolytes, crampes, pression & performance",
+      title: "Axe 10 , Electrolytes, crampes, pression & performance",
       markers: axisMarkers.electrolytes,
       actions: ["Calibrer sodium/potassium selon transpiration et volume de training."],
       missingTests: ["Sodium", "Potassium", "Calcium", "Chlore"],
     },
     {
       key: "stress",
-      title: "Axe 11 — Stress, sommeil, recuperation",
+      title: "Axe 11 , Stress, sommeil, recuperation",
       markers: axisMarkers.stress,
       actions: [
         "Routines anti-stress (respiration, NSDR, marche basse intensite).",
@@ -3312,7 +3312,7 @@ export function buildFallbackAnalysis(
   }
 
   const priorityMarkers = topPriorityMarkers;
-  sections.push("## Deep dive — marqueurs prioritaires\n");
+  sections.push("## Deep dive , marqueurs prioritaires\n");
   if (!priorityMarkers.length) {
     sections.push("Aucun marqueur hors zone optimale majeure sur ce bilan.");
   } else {
@@ -3341,7 +3341,7 @@ export function buildFallbackAnalysis(
   sections.push("## Interconnexions majeures (le pattern)\n");
   if (correlations.length) {
     correlations.forEach((item, idx) => {
-      sections.push(`### Pattern ${idx + 1} — ${item.factor}`);
+      sections.push(`### Pattern ${idx + 1} , ${item.factor}`);
       sections.push(`1) Pattern observe: ${item.current}.`);
       sections.push(`2) Hypothese la plus probable: ${item.impact}`);
       sections.push("3) Ce qui confirmerait: retest cible + suivi longitudinal des marqueurs relies + suivi hebdomadaire du lifestyle.");
@@ -3518,17 +3518,17 @@ export function buildFallbackAnalysis(
   sections.push("- Deload: conserver qualite nutritionnelle, reduire volume training, proteger le sommeil.");
 
   sections.push("\n## Supplements & stack\n");
-  sections.push("### Niveau 1 — Fondamentaux (impact large)");
+  sections.push("### Niveau 1 , Fondamentaux (impact large)");
   sections.push("- Vitamine D3: 2000-5000 UI/j avec repas gras (selon statut initial). Pourquoi: immunite, performance, axe hormonal.");
   sections.push("- Magnesium glycinate: 300-400 mg le soir. Pourquoi: sommeil, gestion stress, recuperation nerveuse.");
   sections.push("- Omega-3 EPA+DHA: 2-3 g/j. Pourquoi: terrain inflammatoire/lipidique.");
   sections.push("- Creatine monohydrate: 3-5 g/j. Pourquoi: force, masse maigre, capacite de travail.");
-  sections.push("### Niveau 2 — Cibles metaboliques/inflammatoires");
+  sections.push("### Niveau 2 , Cibles metaboliques/inflammatoires");
   sections.push("- Berberine (si glycemie/HOMA alteres): dose fractionnee, monitoring digestif. Precaution: interactions hypoglycemiantes.");
   sections.push("- Psyllium/fibres solubles: pre-repas riches en glucides pour lisser la reponse glycemique.");
   sections.push("- Curcuminoides standardises (si inflammation): avec repas, verifier tolerance digestive.");
   sections.push("- Glycine le soir: support sommeil/recuperation chez profils stresses.");
-  sections.push("### Niveau 3 — Ajustements selon panel");
+  sections.push("### Niveau 3 , Ajustements selon panel");
   sections.push("- Zinc (si statut bas): courte phase puis reevaluation au retest.");
   sections.push("- B12/Folate (si statut bas): corriger d'abord deficit confirme, puis maintenance.");
   sections.push("- Electrolytes (sodium/potassium): calibrer selon transpiration/cardio/volume training.");
@@ -3605,21 +3605,21 @@ export function buildFallbackAnalysis(
   sections.push("- Ajustements doses agressifs sans donnees de tolerance.");
 
   sections.push("\n## Annexes (references et vigilance)\n");
-  sections.push("### Annexe A — Marqueurs secondaires (lecture rapide)");
+  sections.push("### Annexe A , Marqueurs secondaires (lecture rapide)");
   sections.push(
     formatList(
       analysisResult.markers.slice(0, 24).map((marker) => `${marker.name}: ${marker.status} | ${marker.value} ${marker.unit}`),
       "Aucun marqueur secondaire disponible."
     )
   );
-  sections.push("### Annexe B — Hypotheses & tests de confirmation");
+  sections.push("### Annexe B , Hypotheses & tests de confirmation");
   sections.push(
     formatList(
       criticalMissing.map((id) => `Hypothese a confirmer via ${id.replace(/_/g, " ").toUpperCase()}`),
       "Aucune hypothese critique supplementaire."
     )
   );
-  sections.push("### Annexe C — Glossaire utile");
+  sections.push("### Annexe C , Glossaire utile");
   sections.push("- HOMA-IR: indice de resistance a l'insuline.");
   sections.push("- ApoB: charge de particules atherogenes.");
   sections.push("- hs-CRP: marqueur d'inflammation systemique basse intensite.");
@@ -3636,7 +3636,7 @@ export function buildFallbackAnalysis(
       const details = [source.url ? `URL: ${source.url}` : "", source.category ? `Catégorie: ${source.category}` : ""]
         .filter(Boolean)
         .join(" | ");
-      sections.push(details ? `[SRC:${source.id}] ${source.label} — ${source.title}. ${details}.` : `[SRC:${source.id}] ${source.label} — ${source.title}.`);
+      sections.push(details ? `[SRC:${source.id}] ${source.label} , ${source.title}. ${details}.` : `[SRC:${source.id}] ${source.label} , ${source.title}.`);
     }
   } else {
     sections.push("Aucune source bibliographique contextualisée n'a été transmise pour cette génération fallback.");
@@ -3916,7 +3916,7 @@ const buildAxisPromptContext = (markers: MarkerAnalysis[]): string => {
         .slice(0, 6)
         .map((marker) => `${marker.name}=${marker.value}${marker.unit ? ` ${marker.unit}` : ""} (${marker.status})`)
         .join(" | ");
-      return `Axe ${idx + 1} — ${panel}: ${panelMarkers.length} marqueur(s), ${criticalCount} critique(s), ${suboptimalCount} important(s). Marqueurs disponibles: ${markerPreview}.`;
+      return `Axe ${idx + 1} , ${panel}: ${panelMarkers.length} marqueur(s), ${criticalCount} critique(s), ${suboptimalCount} important(s). Marqueurs disponibles: ${markerPreview}.`;
     })
     .join("\n");
 };
@@ -4073,7 +4073,7 @@ FORMAT OBLIGATOIRE (dans cet ordre exact):
 4. ## Potentiel recomposition (perte de gras + gain de muscle)
 5. ## Lecture compartimentée par axes
 6. ## Interconnexions majeures (le pattern)
-7. ## Deep dive — marqueurs prioritaires
+7. ## Deep dive , marqueurs prioritaires
 8. ## Plan d'action 90 jours
 9. ## Nutrition & entraînement
 10. ## Suppléments & stack
@@ -4085,7 +4085,7 @@ EXIGENCES DE QUALITE:
 - Traiter au moins ${minDeepDiveMarkers} marqueurs en deep dive (ou tous les non-optimaux s'il y en a moins).
 - ${minSourceCitations > 0 ? `Inserer au moins ${minSourceCitations} citations [SRC:ID] dans les sections analytiques (hors section Sources).` : "Aucun ID [SRC] disponible dans le contexte: ne pas inventer de citation."}
 - Pour chaque axe et chaque marqueur prioritaire: lecture clinique + lecture performance + actions concretes.
-- Interdiction de creer des titres placeholders du type "Axe X — Non renseigne". Si un axe est incomplet, conserver son nom reel et indiquer "Non renseigne" uniquement dans le paragraphe.
+- Interdiction de creer des titres placeholders du type "Axe X , Non renseigne". Si un axe est incomplet, conserver son nom reel et indiquer "Non renseigne" uniquement dans le paragraphe.
 - Rediger exclusivement en prose narrative: paragraphes complets et phrases detaillees.
 - Interdiction absolue dans la sortie finale: listes a puces, listes numerotees, tableaux markdown.
 - Orthographe premium obligatoire: accents, cédilles et français naturel irréprochable.
@@ -4099,7 +4099,7 @@ EXIGENCES DE QUALITE:
   - "## Potentiel recomposition (perte de gras + gain de muscle)": au moins ${qualityThresholds.recomposition} caracteres, avec leviers, freins, conditions de progression.
   - "## Lecture compartimentée par axes": au moins ${qualityThresholds.axes} caracteres, avec un bloc detaille par axe present.
   - "## Interconnexions majeures (le pattern)": au moins ${qualityThresholds.interconnexions} caracteres, avec patterns relies entre marqueurs.
-  - "## Deep dive — marqueurs prioritaires": au moins ${qualityThresholds.deepDive} caracteres, marqueur par marqueur.
+  - "## Deep dive , marqueurs prioritaires": au moins ${qualityThresholds.deepDive} caracteres, marqueur par marqueur.
   - "## Plan d'action 90 jours": au moins ${qualityThresholds.plan} caracteres, avec objectifs + actions + indicateurs + erreurs a eviter par phase.
   - "## Nutrition & entraînement": au moins ${qualityThresholds.nutrition} caracteres, en liant chaque recommendation aux marqueurs.
   - "## Suppléments & stack": au moins ${qualityThresholds.supplements} caracteres, avec rationale, dose, timing, duree, precautions.
@@ -4378,7 +4378,7 @@ Contraintes:
 - Couvre explicitement chaque axe disponible dans les marqueurs du bilan.
 - Pour chaque axe: score, lecture clinique, lecture performance/bodybuilding, actions prioritaires, tests manquants.
 - Utilise les vrais marqueurs et leurs valeurs. Si un axe est incomplet, ecris "Non renseigne" dans le corps, jamais dans le titre d'axe.
-- Interdiction de produire des titres du type "Axe X — Non renseigne": conserver le nom reel de l'axe.
+- Interdiction de produire des titres du type "Axe X , Non renseigne": conserver le nom reel de l'axe.
 - Pas d'invention, pas de generalites vides.
 
 Contexte marqueurs:
@@ -4413,11 +4413,11 @@ Patterns: ${patternsText}
 ${knowledgeContext ? `\nSources disponibles:\n${knowledgeContext}` : ""}`,
     },
     {
-      title: "Deep dive — marqueurs prioritaires",
+      title: "Deep dive , marqueurs prioritaires",
       aliases: ["deep-dive-marqueurs-prioritaires", "deep-dive"],
       minChars: qualityThresholds.deepDive,
       maxTokens: 10000,
-      prompt: () => `Genere UNIQUEMENT la section "## Deep dive — marqueurs prioritaires".
+      prompt: () => `Genere UNIQUEMENT la section "## Deep dive , marqueurs prioritaires".
 
 Contraintes:
 - ${narrativeConstraint}
@@ -5091,7 +5091,7 @@ export async function getBloodworkKnowledgeContext(
       const sourceId = getSourceRefId(article);
       const label = SOURCE_LABELS[article.source] || article.source;
       const excerpt = article.content.replace(/\s+/g, " ").trim().slice(0, 500);
-      contextLines.push(`[SRC:${sourceId}] ${label} — ${article.title}`);
+      contextLines.push(`[SRC:${sourceId}] ${label} , ${article.title}`);
       if (article.url) contextLines.push(`URL: ${article.url}`);
       if (article.category) contextLines.push(`Categorie: ${article.category}`);
       if (article.keywords?.length) {

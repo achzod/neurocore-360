@@ -595,7 +595,7 @@ export function registerBloodTestsRoutes(app: Express): void {
 
       const bt = results[0];
       // Get the PDF file from the stored data or re-read from the original upload
-      // The markers need to be re-extracted — we can trigger the AI analysis again
+      // The markers need to be re-extracted , we can trigger the AI analysis again
       const markers = Array.isArray(bt.markers) ? bt.markers : [];
 
       // Re-run AI analysis on existing markers
@@ -991,7 +991,7 @@ export function registerBloodTestsRoutes(app: Express): void {
         return;
       }
 
-      // PDF is valid and markers found — NOW debit credit
+      // PDF is valid and markers found , NOW debit credit
       const updatedUser = await storage.adjustUserCredits(user.id, -1);
       if (!updatedUser) {
         res.status(500).json({ error: "Impossible de debiter les credits" });

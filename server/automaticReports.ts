@@ -152,7 +152,7 @@ async function gatherStats(): Promise<ReportStats> {
   );
   const sentLast6h = Number(sentRes.rows[0]?.c ?? 0);
 
-  // Revenus — orders table managed by raw SQL in storage.ts (no drizzle model),
+  // Revenus , orders table managed by raw SQL in storage.ts (no drizzle model),
   // so query directly via pg pool. Filter in SQL to avoid loading every row's
   // metadata blob into Node.
   let totalCents = 0;

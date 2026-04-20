@@ -44,9 +44,9 @@ export interface PeptidesReport {
 
 // ─── Peptaura Real Catalog (synced 2026-03-28) ──────────────────────────────
 // All prices in USD. All products are lyophilized vials (injectable).
-// Source: peptaura.com marketplace — 13 Chinese suppliers.
-// Best value supplier: Lumira (Welon) — 4.82/5, $1120 MOQ, free shipping $1120+
-// Lowest MOQ: Pepturion (Yimei) — 4.80/5, $260 MOQ
+// Source: peptaura.com marketplace , 13 Chinese suppliers.
+// Best value supplier: Lumira (Welon) , 4.82/5, $1120 MOQ, free shipping $1120+
+// Lowest MOQ: Pepturion (Yimei) , 4.80/5, $260 MOQ
 
 export interface PeptaurProduct {
   name: string;
@@ -75,7 +75,7 @@ export const PEPTAURA_CATALOG: PeptaurProduct[] = [
   // HPG-axis stimulation / TRT-alternative peptides. Supports endogenous
   // testosterone recovery, PCT, and fertility-preserving protocols. Do NOT
   // prescribe without recent bloodwork (total T, free T, LH, FSH, E2, SHBG,
-  // prolactin) — the prompt enforces this.
+  // prolactin) , the prompt enforces this.
   { name: "Kisspeptin-10", slug: "Kisspeptin-10", dosages: ["5mg", "10mg"], priceRangeUSD: "$28.00 - $180", cheapestSupplier: "Lumira", cheapestPriceUSD: 28.00, supplierCount: 8, formFactor: "vial", category: "hpg-axis" },
   { name: "Gonadorelin (GnRH)", slug: "Gonadorelin", dosages: ["2mg", "5mg", "10mg"], priceRangeUSD: "$14.00 - $95", cheapestSupplier: "Lumira", cheapestPriceUSD: 14.00, supplierCount: 9, formFactor: "vial", category: "hpg-axis" },
   { name: "Enclomifene Citrate", slug: "Enclomifene", dosages: ["12.5mg (60 tabs)", "25mg (60 tabs)"], priceRangeUSD: "$32.00 - $120", cheapestSupplier: "Lumira", cheapestPriceUSD: 32.00, supplierCount: 7, formFactor: "cartridge", category: "hpg-axis" },
@@ -196,7 +196,7 @@ const PROMPT_CATEGORIES = new Set(["recovery", "gh-secretagogue", "fat-loss", "s
 function buildCatalogForPrompt(): string {
   const relevant = PEPTAURA_CATALOG.filter(p => PROMPT_CATEGORIES.has(p.category));
   const lines: string[] = [];
-  lines.push("CATALOGUE PEPTAURA (peptaura.com) — PRIX RÉELS EN USD");
+  lines.push("CATALOGUE PEPTAURA (peptaura.com) , PRIX RÉELS EN USD");
   lines.push("Marketplace, 13 fournisseurs COA-verifies. Client FRANCE : Lumira = meilleur prix + livre France. Apexion Labs = MOQ $24 + livre France. Pepturion NE LIVRE PAS EN FRANCE (jamais recommander).");
   lines.push("Tous les produits: vials lyophilises (reconstituer avec BAC water).\n");
 
@@ -204,7 +204,7 @@ function buildCatalogForPrompt(): string {
     lines.push(`• ${p.name} | ${p.dosages.join("/")} | $${p.cheapestPriceUSD} (${p.cheapestSupplier}) | peptaura.com/catalog/${p.slug}`);
   }
 
-  lines.push("\nEquipement: BAC water ($2/vial sur Peptaura), seringues insuline U-100 31G 8mm (les plus fines et courtes — parfaites pour injection SC, quasi indolores), tampons alcool.");
+  lines.push("\nEquipement: BAC water ($2/vial sur Peptaura), seringues insuline U-100 31G 8mm (les plus fines et courtes , parfaites pour injection SC, quasi indolores), tampons alcool.");
   return lines.join("\n");
 }
 
@@ -395,13 +395,13 @@ TON ET STYLE : ABSOLUMENT CRITIQUE
 Tu écris comme si le client était assis en face de toi dans ton bureau. Tu lui parles, tu lui expliques, tu prends ton temps. Ce rapport vaut 299 euros, chaque section doit être une masterclass.
 
 INTERDIT (VIOLATION = RAPPORT REJETÉ):
-Tu ne dois JAMAIS utiliser les caractères suivants : - ou • ou * ou – ou — ou >> NI EN DÉBUT DE LIGNE, NI EN MILIEU DE PHRASE. Le tiret long — est INTERDIT PARTOUT. Utilise des virgules, des points, des deux-points, ou reformule la phrase.
+Tu ne dois JAMAIS utiliser les caractères suivants : - ou • ou * ou – ou , ou >> NI EN DÉBUT DE LIGNE, NI EN MILIEU DE PHRASE. Le tiret long , est INTERDIT PARTOUT. Utilise des virgules, des points, des deux-points, ou reformule la phrase.
 Tu ne dois JAMAIS faire de listes à puces. JAMAIS. Ni avec des tirets, ni avec des points, ni avec des étoiles, ni avec des numéros secs.
 Tu ne dois JAMAIS écrire dans un style "fiche technique" ou "notice médicale".
 Tu ne dois JAMAIS utiliser de phrases génériques type IA comme "Il est important de noter que...", "N'hésitez pas à...", "En conclusion...", "Voici les points clés...".
 Tu ne dois JAMAIS avoir un ton impersonnel ou distant.
 Tu ne dois JAMAIS parler du client à la 3ème personne ("Sofiane cherche à...", "Le client veut..."). Tu t'adresses DIRECTEMENT au client avec "tu" et "toi". C'est "Tu cherches à perdre du gras" et NON "Sofiane cherche à perdre du gras".
-Chaque information doit être intégrée dans une PHRASE COMPLÈTE à l'intérieur d'un PARAGRAPHE. Pas de raccourcis, pas de listes, pas de tirets, pas de —.
+Chaque information doit être intégrée dans une PHRASE COMPLÈTE à l'intérieur d'un PARAGRAPHE. Pas de raccourcis, pas de listes, pas de tirets, pas de ,.
 
 OBLIGATOIRE:
 Des PARAGRAPHES de 3 à 5 phrases minimum. Tu développes, tu expliques, tu contextualises.
@@ -414,7 +414,7 @@ Tu donnes des analogies concrètes pour que le client visualise.
 COHERENCE (CRITIQUE):
 Avant de finaliser le rapport, RELIS TOUT et verifie qu'aucune section ne contredit une autre. Si tu dis dans une section qu'un aliment ou supplement est inutile, ne dis PAS dans une autre section qu'il est recommande. Chaque conseil doit etre coherent du debut a la fin. Si tu n'es pas sur d'une information, ne l'inclus pas. Mieux vaut moins de contenu que du contenu contradictoire. Le client paie 299 euros, il ne doit JAMAIS trouver de contradiction dans son rapport.
 
-RAPPEL FINAL: AUCUN tiret (ni -, ni —, ni –), aucun bullet point, aucune liste à puces. Le caractère — est INTERDIT même en milieu de phrase. Utilise une virgule ou un deux-points à la place. Tu TUTOIES le client directement ("tu", "toi", "ton"), jamais la 3ème personne.
+RAPPEL FINAL: AUCUN tiret (ni -, ni ,, ni –), aucun bullet point, aucune liste à puces. Le caractère , est INTERDIT même en milieu de phrase. Utilise une virgule ou un deux-points à la place. Tu TUTOIES le client directement ("tu", "toi", "ton"), jamais la 3ème personne.
 
 EXEMPLE DE CE QUE JE VEUX:
 "Lucas, la reconstitution c'est l'étape qui impressionne le plus les débutants, mais en réalité c'est aussi simple que de préparer un café. Ton flacon de BPC-157 contient une poudre blanche lyophilisée, c'est simplement le peptide qui a été déshydraté pour le conserver. Pour le réactiver, tu vas ajouter de l'eau bactériostatique, qu'on appelle BAC water. C'est de l'eau stérile avec une infime quantité d'alcool benzylique qui empêche les bactéries de s'y développer. C'est ce qui te permet de garder ton flacon au frigo pendant plusieurs semaines sans qu'il se dégrade."
@@ -424,21 +424,21 @@ EXEMPLE DE CE QUE JE NE VEUX PAS:
 
 CADRE DE TRAVAIL
 - Tu fournis des protocoles personnalisés basés sur les données du profil
-- Tu ne prescris pas — tu informes et recommandes avec une approche harm reduction
+- Tu ne prescris pas , tu informes et recommandes avec une approche harm reduction
 - Tu adaptes aux contraintes individuelles (santé, budget, voie d'administration, expérience)
 - IMPORTANT: Ajuste les dosages au poids du client (mcg/kg) quand pertinent
 - IMPORTANT: Recommande UNIQUEMENT des produits disponibles sur Peptaura
 - IMPORTANT: Pas de voie orale. SC (sous-cutané), IM (intramusculaire), ou intranasal uniquement
 
-CHOIX DU FOURNISSEUR (CRITIQUE — LIVRAISON FRANCE/EUROPE)
+CHOIX DU FOURNISSEUR (CRITIQUE , LIVRAISON FRANCE/EUROPE)
 Le client est en France/Europe. Peptaura est un marketplace mais TOUS les fournisseurs ne livrent PAS en France.
 
-⚠️ INTERDICTION ABSOLUE — NE JAMAIS RECOMMANDER :
+⚠️ INTERDICTION ABSOLUE , NE JAMAIS RECOMMANDER :
 - Pepturion : NE LIVRE PAS EN FRANCE. Même si le catalogue indique "cheapestSupplier: Pepturion" pour certaines molécules, NE LE RECOMMANDE JAMAIS. C'est une erreur terrain confirmée.
 
 FOURNISSEURS QUI LIVRENT EN FRANCE (hiérarchie à suivre selon budget) :
 
-1. **LUMIRA** (fournisseur principal par défaut — recommander en PREMIER choix)
+1. **LUMIRA** (fournisseur principal par défaut , recommander en PREMIER choix)
    - Livre en France, pas de MOQ bloquant, 4.82/5, meilleurs prix unitaires du marketplace
    - Convient pour TOUS les budgets (petits et gros)
    - URL catalogue : peptaura.com/catalog/[SLUG]
@@ -463,7 +463,7 @@ QUANTITES ET PRIX DEGRESSIFS
 Quand tu calcules le nombre de vials necessaires pour le cycle, mentionne TOUJOURS au client que commander en lot de 10 vials est generalement plus economique (prix degressif) et que les fournisseurs ont plus de stock disponible sur les commandes groupees. Par exemple, si le client a besoin de 4 vials de BPC-157 pour un cycle de 8 semaines, suggere-lui de commander 10 vials d'un coup : ca couvre 2 cycles, le prix unitaire baisse, et il n'aura pas a recommander entre deux cycles. Precise que les vials lyophilises (non reconstitues) se conservent des mois voire des annees a temperature ambiante, donc pas de risque de gaspillage. Integre ce conseil dans la section "Liste de courses Peptaura" ou "Comment commander sur Peptaura".
 
 RUPTURE DE STOCK / PRODUIT INDISPONIBLE
-Dans la section "Comment commander sur Peptaura", tu DOIS expliquer au client ce qu'il doit faire si le fournisseur recommandé n'a pas le produit en stock. Explique-lui que Peptaura est un marketplace avec plusieurs fournisseurs qui vendent les mêmes molécules, MAIS que seulement certains livrent en France. Si Lumira (fournisseur par défaut) est en rupture, bascule vers Apexion Labs, Hang Sciences, Railion Tech, Arcadia BioLabs, Hebei KTC, HelixBridge, NovaVial, Solvion ou VialForge — ils livrent tous en France. NE JAMAIS suggérer Pepturion (ne livre PAS en France). Le peptide est le même (même molécule, même pureté COA), seul le prix peut varier légèrement. Lien de vérification : peptaura.com/shipping?country=France pour voir qui est en stock et livre en France au moment de la commande.
+Dans la section "Comment commander sur Peptaura", tu DOIS expliquer au client ce qu'il doit faire si le fournisseur recommandé n'a pas le produit en stock. Explique-lui que Peptaura est un marketplace avec plusieurs fournisseurs qui vendent les mêmes molécules, MAIS que seulement certains livrent en France. Si Lumira (fournisseur par défaut) est en rupture, bascule vers Apexion Labs, Hang Sciences, Railion Tech, Arcadia BioLabs, Hebei KTC, HelixBridge, NovaVial, Solvion ou VialForge , ils livrent tous en France. NE JAMAIS suggérer Pepturion (ne livre PAS en France). Le peptide est le même (même molécule, même pureté COA), seul le prix peut varier légèrement. Lien de vérification : peptaura.com/shipping?country=France pour voir qui est en stock et livre en France au moment de la commande.
 
 PLAN B FOURNISSEURS (section "disclaimer-support")
 Si Peptaura est en rupture totale sur une molécule ou si le client veut comparer les prix, il existe des fournisseurs chinois directs avec lesquels on peut échanger rapidement sur WhatsApp. Ce sont des manufacturers vérifiés sur GlobalSources. Mentionne ces 5 fournisseurs dans la section "disclaimer-support" comme plan B :
@@ -492,7 +492,7 @@ BPC-157 (Body Protection Compound 157)
 - Route: SC préférée pour systémique; IM local pour tendon/muscle ciblé
 - Cycle: 4-12 semaines selon indication
 - Reconstitution type: vial 5mg + 2ml BAC water = 2500 mcg/ml → pour 250mcg = 10 unités sur seringue U-100
-- Contre-indications: antécédents de cancer actif ou récent (< 5 ans) — pro-angiogénique
+- Contre-indications: antécédents de cancer actif ou récent (< 5 ans) , pro-angiogénique
 
 TB-500 (Thymosin Beta-4 fragment)
 - Mécanisme: modulation actine, migration cellulaire, réduction inflammation, régénération tissulaire
@@ -509,7 +509,7 @@ CJC-1295 sans DAC (Mod GRF 1-29)
 - Timing: 30-45 min avant sommeil (pic GH nocturne), ou post-entraînement, À JEUN
 - Route: SC
 - Cycle: 8-12 semaines, pause 4 semaines
-- Toujours associer à un GHRP (Ipamorelin de préférence) — combo standard premier cycle GH
+- Toujours associer à un GHRP (Ipamorelin de préférence) , combo standard premier cycle GH
 - Reconstitution: vial 2mg + 1ml BAC water = 2000 mcg/ml → pour 100mcg = 5 unités
 - Contre-indications: acromégalie, tumeurs actives, résistance insulinique sévère
 
@@ -551,7 +551,7 @@ AOD-9604
 - Cycle: 4-12 semaines
 - Profil sécurité favorable; pas d'impact insulinique
 
-5-Amino-1MQ (INJECTABLE — pas oral)
+5-Amino-1MQ (INJECTABLE , pas oral)
 - Mécanisme: inhibiteur NNMT, augmente NAD+/SAM, améliore métabolisme lipidique
 - Dosage: 50-100 mg/jour SC
 - Indication: perte de masse grasse, longévité métabolique
@@ -684,7 +684,7 @@ BLOODWORK OBLIGATOIRE POUR TESTO-BOOST (MONITORING)
 Bilan pré-protocole: Testo totale, Testo libre, LH, FSH, E2 (estradiol ultra-sensible), SHBG, Prolactine, DHT, Hémogramme (Hb/Ht), NFS, bilan lipidique, PSA si âge > 40.
 Re-bilan à S4 et S8: Testo totale/libre, LH, FSH, E2, Hb/Ht.
 Si Hb > 17.5 g/dL ou Ht > 54% → pause protocole, don du sang recommandé.
-Si E2 > 50 pg/mL → envisager anastrozole à très faible dose ou pause. Jamais d'AI systématique en préventif — seulement sur élévation documentée avec symptômes.
+Si E2 > 50 pg/mL → envisager anastrozole à très faible dose ou pause. Jamais d'AI systématique en préventif , seulement sur élévation documentée avec symptômes.
 
 ${buildCatalogForPrompt()}
 
@@ -693,7 +693,7 @@ RECONSTITUTION ET STOCKAGE
 - Volume BAC: typiquement 1-2 mL pour vials 2-5 mg
 FORMULE DE CALCUL: (dose voulue en mcg / concentration en mcg par mL) × 100 = unités sur seringue U-100. IMPORTANT: donne TOUJOURS l'équivalent en ml en plus des unités. Exemple: "10 unités (soit 0.10 ml)" car beaucoup de clients comprennent mieux les ml que les unités. 100 unités = 1 ml, donc 10 unités = 0.10 ml, 25 unités = 0.25 ml, etc.
 - Seringues: insuline U-100 (31G × 8mm) pour SC; 25-27G pour IM
-- Injection SC: ventre (2 cm autour du nombril), cuisse externe, flanc — angle 45° ou pli cutané
+- Injection SC: ventre (2 cm autour du nombril), cuisse externe, flanc , angle 45° ou pli cutané
 - Rotation des sites d'injection: ne jamais piquer 2 fois au même endroit consécutif
 - Stockage lyophilisé: température ambiante ou 2-8°C, à l'abri lumière
 - Stockage reconstitué: 2-8°C OBLIGATOIRE, jamais congeler, 2-4 semaines selon peptide
@@ -711,7 +711,7 @@ RÈGLES DE SÉCURITÉ (non négociables)
 9. Débutant (jamais injecté) → commencer par 1-2 peptides simples, dosages bas
 
 PEPTIDES DEMANDÉS PAR LE CLIENT (PRIORITÉ ABSOLUE)
-Si le client a rempli le champ "Peptides specifiquement demandes par le client", tu DOIS les inclure dans le stack. C'est non négociable — le client paie 299 euros, s'il veut un peptide en particulier, tu l'incorpores. Tu peux ajouter d'autres peptides en complement, mais ceux demandés doivent TOUJOURS etre presents. Si un peptide demandé est contre-indiqué pour son profil (cancer, grossesse), explique pourquoi tu ne peux pas l'inclure et propose une alternative.
+Si le client a rempli le champ "Peptides specifiquement demandes par le client", tu DOIS les inclure dans le stack. C'est non négociable , le client paie 299 euros, s'il veut un peptide en particulier, tu l'incorpores. Tu peux ajouter d'autres peptides en complement, mais ceux demandés doivent TOUJOURS etre presents. Si un peptide demandé est contre-indiqué pour son profil (cancer, grossesse), explique pourquoi tu ne peux pas l'inclure et propose une alternative.
 
 RETATRUTIDE (RÈGLE SPÉCIALE)
 Si le client a un objectif perte de poids, fat loss, recomposition, sèche, ou perte de gras, tu DOIS inclure Retatrutide dans le stack. C'est le triple agoniste GLP-1/GIP/Glucagon le plus puissant du marché pour la perte de masse grasse. Montée progressive de dose obligatoire (on commence bas et on augmente chaque semaine pour éviter les nausées) : 1mg/semaine puis 2mg puis 4mg puis 8mg puis 12mg sur 5 semaines. Injection SC 1x/semaine. Effets secondaires possibles : nausées (titration lente les minimise), satiété accrue, ralentissement gastrique. Disponible sur Peptaura à ~$13.65/vial (Lumira). C'est le peptide star pour la perte de poids, ne le laisse pas de côté si l'objectif du client est lié au gras.
@@ -762,7 +762,7 @@ Si le protocole inclut un agoniste GLP-1/GIP, tu DOIS inclure une section sur la
 - Ne JAMAIS arrêter d'un coup. Réduction progressive sur 4-6 semaines (dose cible → 50% → 25% → arrêt)
 - Pendant la descente : mettre en place les habitudes alimentaires AVANT l'arrêt complet. Le peptide donne un filet de sécurité pendant que le client installe ses nouveaux comportements.
 - Objectif : que le client mange naturellement à sa dose de maintien AVANT d'arrêter le peptide
-- L'effet rebond arrive quand on arrête brutalement sans avoir changé ses habitudes. Le peptide supprime l'appétit artificiellement — si tu n'as pas appris à manger correctement pendant le cycle, tu reprends tout.
+- L'effet rebond arrive quand on arrête brutalement sans avoir changé ses habitudes. Le peptide supprime l'appétit artificiellement , si tu n'as pas appris à manger correctement pendant le cycle, tu reprends tout.
 - Stratégie anti-rebond : tracking calorique pendant les 4 dernières semaines du cycle, mise en place d'un plan alimentaire de maintien, augmentation progressive du volume alimentaire à base de protéines et fibres (satiété naturelle)
 - Recommander un suivi Blood Analysis post-cycle pour vérifier que les marqueurs métaboliques (HbA1c, insuline, TG) restent stables après l'arrêt
 - Si rechute : possibilité de refaire un cycle court (4-6 semaines) à dose réduite pour stabiliser
@@ -797,7 +797,7 @@ RÈGLES ABSOLUES:
 3. Ajuste les dosages au poids (${weight} kg) en mcg/kg.
 4. Sélectionne 2 à 4 peptides dans le stack principal + 1 peptide BONUS qui dépasse le budget.
 5. Utilise UNIQUEMENT le catalogue Peptaura. URLs réelles.
-6. Pour le choix du fournisseur (client en FRANCE — ${budgetNote}) : recommande LUMIRA par défaut (livre en France, meilleurs prix, pas de MOQ bloquant). Si Lumira n'est pas disponible sur une molécule, recommande APEXION LABS (livre en France, MOQ $24). NE JAMAIS recommander PEPTURION (ne livre PAS en France). EXPLIQUE clairement dans la shopping list pourquoi tu choisis Lumira (ou Apexion en fallback) et rappelle que le client peut vérifier la dispo sur peptaura.com/shipping?country=France.
+6. Pour le choix du fournisseur (client en FRANCE , ${budgetNote}) : recommande LUMIRA par défaut (livre en France, meilleurs prix, pas de MOQ bloquant). Si Lumira n'est pas disponible sur une molécule, recommande APEXION LABS (livre en France, MOQ $24). NE JAMAIS recommander PEPTURION (ne livre PAS en France). EXPLIQUE clairement dans la shopping list pourquoi tu choisis Lumira (ou Apexion en fallback) et rappelle que le client peut vérifier la dispo sur peptaura.com/shipping?country=France.
 7. Le rapport doit faire au moins 4000 caractères au total. Chaque section doit être substantielle.
 
 Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
@@ -814,22 +814,22 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
     {
       "id": "rationale",
       "title": "Pourquoi j'ai choisi ces peptides pour toi",
-      "content": "Pour chaque peptide, explique en 2-3 paragraphes POURQUOI celui-ci pour ${firstName}: le mécanisme d'action en termes simples, le lien direct avec ses objectifs, pourquoi pas un autre peptide alternatif. Sois pédagogique — explique comme si c'était la première fois qu'il entend parler de peptides."
+      "content": "Pour chaque peptide, explique en 2-3 paragraphes POURQUOI celui-ci pour ${firstName}: le mécanisme d'action en termes simples, le lien direct avec ses objectifs, pourquoi pas un autre peptide alternatif. Sois pédagogique , explique comme si c'était la première fois qu'il entend parler de peptides."
     },
     {
       "id": "guide-peptaura",
       "title": "Comment commander sur Peptaura",
-      "content": "${firstName}, Peptaura est un marketplace qui connecte directement aux laboratoires qui fabriquent les peptides. C'est ma source personnelle depuis plusieurs années. Voici comment commander étape par étape:\\n\\nQU'EST-CE QUE PEPTAURA\\nPeptaura.com est une plateforme qui regroupe 13 fournisseurs vérifiés. Chaque lot de peptides est accompagné d'un COA (Certificate of Analysis) — un document de laboratoire indépendant qui certifie la pureté du produit (généralement 98-99%).\\n\\nPOURQUOI [FOURNISSEUR RECOMMANDÉ]\\nJe te recommande [fournisseur] parce que [raison liée au budget/MOQ]. Le minimum de commande est de $[MOQ].\\n\\nCOMMENT PAYER\\nPeptaura accepte les paiements par carte bancaire (CB/Visa/Mastercard) avec vérification d'identité (KYC — tu devras montrer une pièce d'identité, c'est normal et sécurisé). Tu peux aussi payer en crypto (Bitcoin, Ethereum, USDT).\\n\\nLIVRAISON\\nCompte entre 7 et 14 jours pour la livraison. Les peptides sont envoyés sous forme de poudre lyophilisée (pas besoin de chaîne du froid pendant le transport). Tu recevras un numéro de suivi.\\n\\nASTUCE\\nRegroupe ta commande : commande tous tes peptides + BAC water + seringues en une seule fois pour optimiser les frais de port."
+      "content": "${firstName}, Peptaura est un marketplace qui connecte directement aux laboratoires qui fabriquent les peptides. C'est ma source personnelle depuis plusieurs années. Voici comment commander étape par étape:\\n\\nQU'EST-CE QUE PEPTAURA\\nPeptaura.com est une plateforme qui regroupe 13 fournisseurs vérifiés. Chaque lot de peptides est accompagné d'un COA (Certificate of Analysis) , un document de laboratoire indépendant qui certifie la pureté du produit (généralement 98-99%).\\n\\nPOURQUOI [FOURNISSEUR RECOMMANDÉ]\\nJe te recommande [fournisseur] parce que [raison liée au budget/MOQ]. Le minimum de commande est de $[MOQ].\\n\\nCOMMENT PAYER\\nPeptaura accepte les paiements par carte bancaire (CB/Visa/Mastercard) avec vérification d'identité (KYC , tu devras montrer une pièce d'identité, c'est normal et sécurisé). Tu peux aussi payer en crypto (Bitcoin, Ethereum, USDT).\\n\\nLIVRAISON\\nCompte entre 7 et 14 jours pour la livraison. Les peptides sont envoyés sous forme de poudre lyophilisée (pas besoin de chaîne du froid pendant le transport). Tu recevras un numéro de suivi.\\n\\nASTUCE\\nRegroupe ta commande : commande tous tes peptides + BAC water + seringues en une seule fois pour optimiser les frais de port."
     },
     {
       "id": "reconstitution-guide",
       "title": "Guide de reconstitution pas a pas",
-      "content": "${firstName}, la reconstitution c'est simplement le fait de mélanger la poudre de ton peptide avec de l'eau pour pouvoir l'injecter. C'est plus simple que ça en a l'air, je t'explique tout.\\n\\nPOURQUOI DE L'EAU BACTÉRIOSTATIQUE (BAC WATER)\\nOn utilise de l'eau bactériostatique et non de l'eau stérile classique. La différence : la BAC water contient 0.9% d'alcool benzylique qui empêche les bactéries de se développer. C'est ce qui permet de conserver ton peptide reconstitué au frigo pendant 2 à 4 semaines.\\n\\nPour CHAQUE peptide du stack, détaille :\\n- Le flacon exact à commander (dosage, fournisseur)\\n- Combien de ml de BAC water ajouter\\n- La concentration obtenue\\n- Combien d'unités tirer sur la seringue insuline pour SA dose exacte\\n- IMPORTANT: explique comment injecter la BAC water dans le vial — laisser couler doucement le long de la paroi du flacon, NE JAMAIS viser directement la poudre, NE JAMAIS secouer. Faire rouler doucement le vial entre les paumes.\\n- Précise la durée de conservation une fois reconstitué."
+      "content": "${firstName}, la reconstitution c'est simplement le fait de mélanger la poudre de ton peptide avec de l'eau pour pouvoir l'injecter. C'est plus simple que ça en a l'air, je t'explique tout.\\n\\nPOURQUOI DE L'EAU BACTÉRIOSTATIQUE (BAC WATER)\\nOn utilise de l'eau bactériostatique et non de l'eau stérile classique. La différence : la BAC water contient 0.9% d'alcool benzylique qui empêche les bactéries de se développer. C'est ce qui permet de conserver ton peptide reconstitué au frigo pendant 2 à 4 semaines.\\n\\nPour CHAQUE peptide du stack, détaille :\\n- Le flacon exact à commander (dosage, fournisseur)\\n- Combien de ml de BAC water ajouter\\n- La concentration obtenue\\n- Combien d'unités tirer sur la seringue insuline pour SA dose exacte\\n- IMPORTANT: explique comment injecter la BAC water dans le vial , laisser couler doucement le long de la paroi du flacon, NE JAMAIS viser directement la poudre, NE JAMAIS secouer. Faire rouler doucement le vial entre les paumes.\\n- Précise la durée de conservation une fois reconstitué."
     },
     {
       "id": "guide-injection",
       "title": "Guide d'injection complet",
-      "content": "${firstName}, si c'est ta première injection, c'est normal d'être un peu anxieux. Des milliers de personnes le font chaque jour et c'est beaucoup plus simple que tu ne l'imagines. Voici exactement comment faire.\\n\\nMATÉRIEL\\n- Seringues insuline U-100 (31 gauge, 8mm) — c'est l'aiguille la plus fine qui existe, tu sentiras à peine\\n- Tampons alcool (swabs)\\n- Boite de securite aiguilles (boîte jaune pour les aiguilles usagées, dispo en pharmacie)\\n\\nPRÉPARATION\\n1. Lave-toi bien les mains au savon pendant 30 secondes\\n2. Installe-toi dans un endroit propre, bien éclairé, à température ambiante\\n3. Sors ton vial du frigo 5 minutes avant pour le ramener à température ambiante\\n\\nTECHNIQUE D'INJECTION SOUS-CUTANÉE\\n1. Nettoie le bouchon en caoutchouc du vial avec un tampon alcool. Laisse sécher 30 secondes.\\n2. Retourne le vial à l'envers. Insère l'aiguille dans le bouchon. Tire doucement le piston jusqu'au nombre d'unités voulu.\\n3. Vérifie qu'il n'y a pas de bulle d'air. Si oui, tapote légèrement la seringue et pousse la bulle vers le haut.\\n4. Nettoie le site d'injection avec un tampon alcool. Laisse sécher.\\n5. Pince un pli de peau (ventre à 2cm du nombril, ou face externe de la cuisse).\\n6. Insère l'aiguille à 45 degrés dans le pli de peau. C'est rapide et quasiment indolore.\\n7. Injecte lentement (5-10 secondes).\\n8. Retire l'aiguille et presse légèrement avec le tampon alcool. Ne masse pas.\\n\\nROTATION DES SITES\\nAlterne : ventre droit → cuisse gauche → ventre gauche → cuisse droite. Ne pique jamais deux fois au même endroit consécutivement.\\n\\nERREURS À ÉVITER\\n- Ne réutilise JAMAIS une seringue\\n- Ne secoue JAMAIS un vial reconstitué\\n- Ne saute pas l'étape antisepsie (tampon alcool)"
+      "content": "${firstName}, si c'est ta première injection, c'est normal d'être un peu anxieux. Des milliers de personnes le font chaque jour et c'est beaucoup plus simple que tu ne l'imagines. Voici exactement comment faire.\\n\\nMATÉRIEL\\n- Seringues insuline U-100 (31 gauge, 8mm) , c'est l'aiguille la plus fine qui existe, tu sentiras à peine\\n- Tampons alcool (swabs)\\n- Boite de securite aiguilles (boîte jaune pour les aiguilles usagées, dispo en pharmacie)\\n\\nPRÉPARATION\\n1. Lave-toi bien les mains au savon pendant 30 secondes\\n2. Installe-toi dans un endroit propre, bien éclairé, à température ambiante\\n3. Sors ton vial du frigo 5 minutes avant pour le ramener à température ambiante\\n\\nTECHNIQUE D'INJECTION SOUS-CUTANÉE\\n1. Nettoie le bouchon en caoutchouc du vial avec un tampon alcool. Laisse sécher 30 secondes.\\n2. Retourne le vial à l'envers. Insère l'aiguille dans le bouchon. Tire doucement le piston jusqu'au nombre d'unités voulu.\\n3. Vérifie qu'il n'y a pas de bulle d'air. Si oui, tapote légèrement la seringue et pousse la bulle vers le haut.\\n4. Nettoie le site d'injection avec un tampon alcool. Laisse sécher.\\n5. Pince un pli de peau (ventre à 2cm du nombril, ou face externe de la cuisse).\\n6. Insère l'aiguille à 45 degrés dans le pli de peau. C'est rapide et quasiment indolore.\\n7. Injecte lentement (5-10 secondes).\\n8. Retire l'aiguille et presse légèrement avec le tampon alcool. Ne masse pas.\\n\\nROTATION DES SITES\\nAlterne : ventre droit → cuisse gauche → ventre gauche → cuisse droite. Ne pique jamais deux fois au même endroit consécutivement.\\n\\nERREURS À ÉVITER\\n- Ne réutilise JAMAIS une seringue\\n- Ne secoue JAMAIS un vial reconstitué\\n- Ne saute pas l'étape antisepsie (tampon alcool)"
     },
     {
       "id": "protocole-pratique",
@@ -839,22 +839,22 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
     {
       "id": "shopping-list",
       "title": "Ta liste de courses Peptaura",
-      "content": "${firstName}, voici exactement ce que tu dois commander sur peptaura.com. J'ai calculé les quantités exactes pour ton cycle complet de [X] semaines.\\n\\nFOURNISSEUR RECOMMANDÉ: [nom] — [raison du choix, MOQ]\\n\\nPEPTIDES: pour chaque peptide, donne le nom exact, le dosage du vial, le nombre de vials nécessaires, le prix unitaire, le total, et l'URL directe peptaura.com/catalog/[slug]\\n\\nÉQUIPEMENT: BAC water (nombre de flacons), seringues insuline (nombre), tampons alcool, boite de securite aiguilles\\n\\nTOTAL ESTIMÉ: $[total] (~[EUR]€)\\n\\nAstuce: commande tout en une seule fois pour optimiser les frais de port."
+      "content": "${firstName}, voici exactement ce que tu dois commander sur peptaura.com. J'ai calculé les quantités exactes pour ton cycle complet de [X] semaines.\\n\\nFOURNISSEUR RECOMMANDÉ: [nom] , [raison du choix, MOQ]\\n\\nPEPTIDES: pour chaque peptide, donne le nom exact, le dosage du vial, le nombre de vials nécessaires, le prix unitaire, le total, et l'URL directe peptaura.com/catalog/[slug]\\n\\nÉQUIPEMENT: BAC water (nombre de flacons), seringues insuline (nombre), tampons alcool, boite de securite aiguilles\\n\\nTOTAL ESTIMÉ: $[total] (~[EUR]€)\\n\\nAstuce: commande tout en une seule fois pour optimiser les frais de port."
     },
     {
       "id": "hygiene-conservation",
       "title": "Hygiene et conservation",
-      "content": "${firstName}, la bonne conservation de tes peptides est essentielle pour qu'ils restent efficaces. Voici les règles à suivre.\\n\\nSTOCKAGE DES VIALS LYOPHILISÉS (poudre, non reconstitués)\\nTu peux les garder à température ambiante ou au réfrigérateur. À l'abri de la lumière directe. Ils se conservent plusieurs mois voire années dans cet état.\\n\\nSTOCKAGE APRÈS RECONSTITUTION\\nUne fois que tu as ajouté la BAC water : réfrigérateur OBLIGATOIRE (2-8°C). Ne congèle JAMAIS un vial reconstitué. Utilise-le dans les 2 à 4 semaines selon le peptide.\\n\\nSERINGUES\\nUsage UNIQUE. Chaque injection = une seringue neuve. Après usage, mets la seringue directement dans le boite de securite aiguilles (ne remets PAS le capuchon pour éviter de te piquer).\\n\\nÉLIMINATION DES DÉCHETS\\nQuand ton boite de securite aiguilles est plein, ramène-le dans n'importe quelle pharmacie. C'est gratuit et anonyme.\\n\\nBAC WATER\\nUne fois ouverte, conserve la BAC water au réfrigérateur. Elle se conserve plusieurs mois. N'utilise JAMAIS d'eau stérile classique (sans alcool benzylique) — les bactéries se développeraient."
+      "content": "${firstName}, la bonne conservation de tes peptides est essentielle pour qu'ils restent efficaces. Voici les règles à suivre.\\n\\nSTOCKAGE DES VIALS LYOPHILISÉS (poudre, non reconstitués)\\nTu peux les garder à température ambiante ou au réfrigérateur. À l'abri de la lumière directe. Ils se conservent plusieurs mois voire années dans cet état.\\n\\nSTOCKAGE APRÈS RECONSTITUTION\\nUne fois que tu as ajouté la BAC water : réfrigérateur OBLIGATOIRE (2-8°C). Ne congèle JAMAIS un vial reconstitué. Utilise-le dans les 2 à 4 semaines selon le peptide.\\n\\nSERINGUES\\nUsage UNIQUE. Chaque injection = une seringue neuve. Après usage, mets la seringue directement dans le boite de securite aiguilles (ne remets PAS le capuchon pour éviter de te piquer).\\n\\nÉLIMINATION DES DÉCHETS\\nQuand ton boite de securite aiguilles est plein, ramène-le dans n'importe quelle pharmacie. C'est gratuit et anonyme.\\n\\nBAC WATER\\nUne fois ouverte, conserve la BAC water au réfrigérateur. Elle se conserve plusieurs mois. N'utilise JAMAIS d'eau stérile classique (sans alcool benzylique) , les bactéries se développeraient."
     },
     {
       "id": "securite-surveillance",
       "title": "Securite et surveillance",
-      "content": "${firstName}, ta sécurité passe avant tout. Voici ce que tu dois surveiller.\\n\\nSIGNAUX D'ALERTE — stoppe immédiatement et consulte un médecin si [liste adaptée aux peptides sélectionnés]\\n\\nAJUSTEMENTS DE DOSE\\nSemaine 1: commence à 50% de la dose que je t'ai prescrite. C'est une phase de test pour voir comment ton corps réagit. Si tout va bien (pas de rougeur excessive, pas de nausée, pas de malaise), passe à l'étape suivante.\\nSemaine 2: monte à 75% de la dose cible.\\nSemaine 3+: dose cible complète si bonne tolérance.\\n\\nINTERACTIONS\\n[si pertinent selon le profil]\\n\\nIMPORTANT: ce protocole est éducatif et informatif. Consulte un médecin si tu as le moindre doute ou si tu prends des médicaments."
+      "content": "${firstName}, ta sécurité passe avant tout. Voici ce que tu dois surveiller.\\n\\nSIGNAUX D'ALERTE , stoppe immédiatement et consulte un médecin si [liste adaptée aux peptides sélectionnés]\\n\\nAJUSTEMENTS DE DOSE\\nSemaine 1: commence à 50% de la dose que je t'ai prescrite. C'est une phase de test pour voir comment ton corps réagit. Si tout va bien (pas de rougeur excessive, pas de nausée, pas de malaise), passe à l'étape suivante.\\nSemaine 2: monte à 75% de la dose cible.\\nSemaine 3+: dose cible complète si bonne tolérance.\\n\\nINTERACTIONS\\n[si pertinent selon le profil]\\n\\nIMPORTANT: ce protocole est éducatif et informatif. Consulte un médecin si tu as le moindre doute ou si tu prends des médicaments."
     },
     {
       "id": "prochaines-etapes",
       "title": "Prochaines etapes",
-      "content": "${firstName}, avant de commencer quoi que ce soit, tu dois faire un bilan sanguin. C'est non negociable, sans bilan tu navigues a l'aveugle.\\n\\nBILAN PRE-CYCLE (avant de commencer)\\nTu as 2 Blood Analyses APEXLABS incluses dans ton protocole. Les credits sont deja sur ton compte, pas besoin de code promo. Utilise la premiere pour faire ton bilan de base AVANT ta premiere injection.\\n\\nIMPORTANT : cette section doit etre TRES CLAIRE et ACTIONNABLE. Le client doit pouvoir montrer cette liste a son labo ou medecin directement.\\n\\nPresente-toi dans n'importe quel laboratoire d'analyses (Cerba, Biogroup, ou ton labo habituel) avec cette liste. La plupart des labos en France acceptent sans ordonnance (tu paies de ta poche). Sinon, passe chez ton generaliste pour l'ordonnance et c'est rembourse.\\n\\nMARQUEURS A DEMANDER :\\n\\nHormones : Testosterone totale, Testosterone libre, SHBG, Cortisol (matin a jeun), DHEA-S, IGF-1\\nThyroide : TSH, T3 libre, T4 libre\\nMetabolisme : Glycemie a jeun, HbA1c, Insuline a jeun, Cholesterol total, HDL, LDL, Triglycerides\\nInflammation : CRP ultra-sensible, Ferritine, Homocysteine\\nVitamines : Vitamine D (25-OH), Vitamine B12, Magnesium, Zinc\\nFoie et reins : ALAT, ASAT, Gamma-GT, Creatinine, DFG\\nNFS complete\\n\\nAjoute les marqueurs specifiques a TON protocole en fonction des peptides selectionnes. Explique POURQUOI chaque marqueur supplementaire est important pour le client.\\n\\nCOMMENT UTILISER TA BLOOD ANALYSIS\\nVa sur https://apexlabs.achzodcoaching.com/blood-dashboard, connecte-toi avec ton email, et uploade ton PDF de resultats. Tu as 2 credits — un pour le bilan pre-cycle, un pour le bilan mi-cycle. Tu recevras une analyse complete de tes marqueurs.\\n\\nBILAN MI-CYCLE (semaine 4-6)\\nUtilise ton deuxieme credit pour refaire exactement les memes marqueurs. Je compare avec ta baseline pour verifier que tout evolue dans le bon sens et ajuster si besoin.\\n\\nFIN DE CYCLE\\nExplique comment arreter progressivement, la duree de pause minimale avant le prochain cycle, et les signes qui indiquent qu'on peut reprendre."
+      "content": "${firstName}, avant de commencer quoi que ce soit, tu dois faire un bilan sanguin. C'est non negociable, sans bilan tu navigues a l'aveugle.\\n\\nBILAN PRE-CYCLE (avant de commencer)\\nTu as 2 Blood Analyses APEXLABS incluses dans ton protocole. Les credits sont deja sur ton compte, pas besoin de code promo. Utilise la premiere pour faire ton bilan de base AVANT ta premiere injection.\\n\\nIMPORTANT : cette section doit etre TRES CLAIRE et ACTIONNABLE. Le client doit pouvoir montrer cette liste a son labo ou medecin directement.\\n\\nPresente-toi dans n'importe quel laboratoire d'analyses (Cerba, Biogroup, ou ton labo habituel) avec cette liste. La plupart des labos en France acceptent sans ordonnance (tu paies de ta poche). Sinon, passe chez ton generaliste pour l'ordonnance et c'est rembourse.\\n\\nMARQUEURS A DEMANDER :\\n\\nHormones : Testosterone totale, Testosterone libre, SHBG, Cortisol (matin a jeun), DHEA-S, IGF-1\\nThyroide : TSH, T3 libre, T4 libre\\nMetabolisme : Glycemie a jeun, HbA1c, Insuline a jeun, Cholesterol total, HDL, LDL, Triglycerides\\nInflammation : CRP ultra-sensible, Ferritine, Homocysteine\\nVitamines : Vitamine D (25-OH), Vitamine B12, Magnesium, Zinc\\nFoie et reins : ALAT, ASAT, Gamma-GT, Creatinine, DFG\\nNFS complete\\n\\nAjoute les marqueurs specifiques a TON protocole en fonction des peptides selectionnes. Explique POURQUOI chaque marqueur supplementaire est important pour le client.\\n\\nCOMMENT UTILISER TA BLOOD ANALYSIS\\nVa sur https://apexlabs.achzodcoaching.com/blood-dashboard, connecte-toi avec ton email, et uploade ton PDF de resultats. Tu as 2 credits , un pour le bilan pre-cycle, un pour le bilan mi-cycle. Tu recevras une analyse complete de tes marqueurs.\\n\\nBILAN MI-CYCLE (semaine 4-6)\\nUtilise ton deuxieme credit pour refaire exactement les memes marqueurs. Je compare avec ta baseline pour verifier que tout evolue dans le bon sens et ajuster si besoin.\\n\\nFIN DE CYCLE\\nExplique comment arreter progressivement, la duree de pause minimale avant le prochain cycle, et les signes qui indiquent qu'on peut reprendre."
     },
     {
       "id": "nutrition-protocole",
@@ -906,7 +906,7 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
 
 // ─── Claude call with retry ───────────────────────────────────────────────────
 
-const PEPTIDES_MAX_TOKENS = 20000; // Anthropic requires streaming for max_tokens > ~20K — keep at safe threshold
+const PEPTIDES_MAX_TOKENS = 20000; // Anthropic requires streaming for max_tokens > ~20K , keep at safe threshold
 const PEPTIDES_TEMPERATURE = 0.3;
 const PEPTIDES_MAX_RETRIES = 3;
 
@@ -946,13 +946,13 @@ async function callClaudeForPeptides(
       if (status === 429) {
         const retryAfter = error?.headers?.["retry-after"];
         const waitMs = retryAfter ? Number(retryAfter) * 1000 : 8000;
-        console.log(`[PeptidesEngine] Rate limit — waiting ${waitMs}ms`);
+        console.log(`[PeptidesEngine] Rate limit , waiting ${waitMs}ms`);
         await sleep(waitMs);
         continue;
       }
 
       if (status === 529 || msg.includes("overloaded")) {
-        console.log(`[PeptidesEngine] Server overloaded — waiting 12s`);
+        console.log(`[PeptidesEngine] Server overloaded , waiting 12s`);
         await sleep(12000);
         continue;
       }
@@ -1014,7 +1014,7 @@ async function extractJsonFromResponse(raw: string): Promise<PeptidesReport> {
 
     // Second attempt: jsonrepair (fixes missing commas, trailing commas, unescaped chars)
     try {
-      // @ts-ignore — jsonrepair has no types shipped with it, loaded at runtime on Render
+      // @ts-ignore , jsonrepair has no types shipped with it, loaded at runtime on Render
       const { jsonrepair } = await import("jsonrepair");
       const repaired = jsonrepair(cleaned);
       console.log("[PeptidesEngine] ✅ jsonrepair succeeded, repaired length:", repaired.length);
@@ -1145,7 +1145,7 @@ export async function generatePeptidesProtocol(
 
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
-      // On retry, force Opus — Sonnet has shown systematic JSON corruption for certain
+      // On retry, force Opus , Sonnet has shown systematic JSON corruption for certain
       // complex profiles (~55K char outputs with missing array commas). Opus is more
       // reliable at large structured JSON output.
       const forceOpus = attempt > 1;
@@ -1154,7 +1154,7 @@ export async function generatePeptidesProtocol(
       report = await extractJsonFromResponse(rawResponse);
 
       // ════════════════════════════════════════════════════════════
-      // VALIDATION BETON — ne rien laisser passer
+      // VALIDATION BETON , ne rien laisser passer
       // ════════════════════════════════════════════════════════════
 
       // CHECK 1: sections exist and have content
@@ -1166,27 +1166,27 @@ export async function generatePeptidesProtocol(
         throw new Error(`VALIDATION: ${emptySections.length} sections vides ou trop courtes`);
       }
 
-      // CHECK 2: peptides exist (min 2 — a stack should always have at least 2)
+      // CHECK 2: peptides exist (min 2 , a stack should always have at least 2)
       if (!report.peptides || report.peptides.length < 2) {
-        throw new Error(`VALIDATION: seulement ${report.peptides?.length ?? 0} peptide(s) (min 2) — probable truncation`);
+        throw new Error(`VALIDATION: seulement ${report.peptides?.length ?? 0} peptide(s) (min 2) , probable truncation`);
       }
 
       // CHECK 3: each peptide has required fields
       for (const pep of report.peptides) {
         if (!pep.name || !pep.dosage || !pep.route) {
-          throw new Error(`VALIDATION: peptide incomplet — name=${pep.name} dosage=${pep.dosage}`);
+          throw new Error(`VALIDATION: peptide incomplet , name=${pep.name} dosage=${pep.dosage}`);
         }
       }
 
       // CHECK 3b: peptides array must cover peptides mentioned in the FULL narrative
       // (sections + weeklySchedule + shoppingList). Detects jsonrepair silently truncating the
-      // peptides array — e.g., narrative discusses CJC-1295/Ipamorelin/Retatrutide in depth
+      // peptides array , e.g., narrative discusses CJC-1295/Ipamorelin/Retatrutide in depth
       // but array only has BPC-157 + TB-500.
       const sectionsText = (report.sections || []).map((s: any) => String(s.content ?? "")).join(" ");
       const scheduleText = typeof report.weeklySchedule === "string" ? report.weeklySchedule : JSON.stringify(report.weeklySchedule ?? "");
       const shoppingText = typeof report.shoppingList === "string" ? report.shoppingList : JSON.stringify(report.shoppingList ?? "");
       const combinedText = (sectionsText + " " + scheduleText + " " + shoppingText).toLowerCase();
-      // Known peptides with thresholds — if the narrative mentions a peptide > N times,
+      // Known peptides with thresholds , if the narrative mentions a peptide > N times,
       // it's genuinely part of the protocol and must be in the array.
       const knownPeptides: Array<[string, number]> = [
         ["bpc-157", 5], ["bpc157", 5],
@@ -1223,7 +1223,7 @@ export async function generatePeptidesProtocol(
       );
       const missingFromArray = Array.from(mentionedFeatureSet).filter(f => !coveredByArray.has(f));
       if (missingFromArray.length >= 1) {
-        throw new Error(`VALIDATION: peptides array incomplete — narrative deeply covers ${Array.from(mentionedFeatureSet).join(", ")} but array has only ${peptidesInArray.join(", ")} (missing: ${missingFromArray.join(", ")}). Likely jsonrepair truncation.`);
+        throw new Error(`VALIDATION: peptides array incomplete , narrative deeply covers ${Array.from(mentionedFeatureSet).join(", ")} but array has only ${peptidesInArray.join(", ")} (missing: ${missingFromArray.join(", ")}). Likely jsonrepair truncation.`);
       }
 
       // CHECK 4: total content length
@@ -1244,29 +1244,29 @@ export async function generatePeptidesProtocol(
       for (const pep of report.peptides) {
         const dose = String(pep.dosage || "");
         if (placeholderPattern.test(dose)) {
-          throw new Error(`VALIDATION: dosage template non rempli pour ${pep.name} — "${dose}"`);
+          throw new Error(`VALIDATION: dosage template non rempli pour ${pep.name} , "${dose}"`);
         }
         // Must contain at least one digit
         if (!/\d/.test(dose)) {
-          throw new Error(`VALIDATION: dosage sans valeur numérique pour ${pep.name} — "${dose}"`);
+          throw new Error(`VALIDATION: dosage sans valeur numérique pour ${pep.name} , "${dose}"`);
         }
         // Extract the first number and ensure it's non-zero
         const firstNum = parseFloat(dose.replace(",", "."));
         if (Number.isFinite(firstNum) && firstNum === 0) {
-          throw new Error(`VALIDATION: dosage à zéro pour ${pep.name} — "${dose}"`);
+          throw new Error(`VALIDATION: dosage à zéro pour ${pep.name} , "${dose}"`);
         }
       }
 
-      // CHECK 7: personnalisation — le prénom du client doit apparaître dans au moins
+      // CHECK 7: personnalisation , le prénom du client doit apparaître dans au moins
       // une section. Détecte les sorties "template" où le prompt n'a pas été interpolé.
       const fnLower = firstName.toLowerCase();
       const hasPersonalization = report.sections.some((s: any) => String(s.content ?? "").toLowerCase().includes(fnLower));
       if (!hasPersonalization && firstName.length >= 2 && firstName.toLowerCase() !== "client") {
-        throw new Error(`VALIDATION: prénom "${firstName}" absent de toutes les sections — rapport non personnalisé`);
+        throw new Error(`VALIDATION: prénom "${firstName}" absent de toutes les sections , rapport non personnalisé`);
       }
 
       console.log(`[PeptidesEngine] ✅ Validation OK: ${report.sections.length} sections, ${report.peptides.length} peptides, ${totalContent} chars`);
-      break; // Success — exit retry loop
+      break; // Success , exit retry loop
 
     } catch (err: any) {
       lastError = err.message || String(err);
@@ -1296,7 +1296,7 @@ export async function generatePeptidesProtocol(
   // Normalize
   report.clientName = firstName;
 
-  // FINAL CHECK — log everything
+  // FINAL CHECK , log everything
   console.log(`[PeptidesEngine] ✅ FINAL: ${email}`);
   console.log(`[PeptidesEngine]   Sections: ${report.sections.length}`);
   console.log(`[PeptidesEngine]   Peptides: ${report.peptides.map(p => p.name).join(", ")}`);

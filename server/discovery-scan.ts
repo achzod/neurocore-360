@@ -618,7 +618,7 @@ function scoreMindset(responses: DiscoveryResponses): number {
   if (soutien === 'pas-du-tout') score -= 15;
   else if (soutien === 'peu') score -= 10;
 
-  // questionnaire: blocages-perso (checkbox) — count active blockers
+  // questionnaire: blocages-perso (checkbox) , count active blockers
   const blocages = responses['blocages-perso'];
   if (Array.isArray(blocages) && !blocages.includes('aucun') && blocages.length >= 3) score -= 15;
   else if (Array.isArray(blocages) && !blocages.includes('aucun') && blocages.length >= 1) score -= 5;
@@ -951,7 +951,7 @@ REGLES ABSOLUES CONTENU:
 
 REGLES ABSOLUES FORMAT:
 - Texte brut fluide (PAS de markdown : pas de **, ##, -, *, _)
-- JAMAIS de tiret long ou tiret cadratin (pas de —)
+- JAMAIS de tiret long ou tiret cadratin (pas de ,)
 - JAMAIS d'emojis
 - Paragraphes separes par des lignes vides
 - Commence DIRECTEMENT par l'analyse
@@ -992,7 +992,7 @@ STYLE OBLIGATOIRE:
 FORMAT OBLIGATOIRE:
 - MINIMUM 45-55 lignes (2000+ caracteres)
 - Texte brut fluide, PAS de markdown
-- JAMAIS de tiret long (—), JAMAIS d'emojis
+- JAMAIS de tiret long (,), JAMAIS d'emojis
 - NE JAMAIS repeter le titre de la section
 - Commence DIRECTEMENT par l'analyse
 - Paragraphes separes par lignes vides
@@ -1631,7 +1631,7 @@ const DISCOVERY_GLOBAL_PROMPT = `Tu es un expert en physiologie, endocrinologie 
 MISSION: Rediger une analyse clinique TRES LONGUE et TRES DETAILLEE (minimum 800 mots) des dysfonctionnements detectes. EXPLIQUER les mecanismes, PAS donner de solutions.
 
 REGLES ABSOLUES (VIOLATION = ECHEC):
-1. JAMAIS de tiret long (—) ou tiret cadratin. Utilise : ou . a la place
+1. JAMAIS de tiret long (,) ou tiret cadratin. Utilise : ou . a la place
 2. JAMAIS de markdown (pas de ##, **, -, *, listes a puces)
 3. JAMAIS d'emojis
 4. JAMAIS de recommandations, solutions, ou conseils
@@ -1747,7 +1747,7 @@ PARAGRAPHE 3 (minimum 250 mots): L'impact metabolique complet. Detail les conseq
 PARAGRAPHE 4 (minimum 250 mots): Pourquoi ${responses.prenom} stagne malgre ses efforts. Fais le lien direct avec son objectif "${responses.objectif}". Explique pourquoi les approches classiques ne fonctionnent pas dans son cas specifique. Conclus sur l'importance de comprendre ces mecanismes pour debloquer la situation.
 
 RAPPELS CRITIQUES:
-- JAMAIS de tiret long (—) ni de tiret cadratin
+- JAMAIS de tiret long (,) ni de tiret cadratin
 - Prose fluide uniquement, PAS de listes
 - PAS de markdown (##, **, -, *)
 - PAS d'emojis
@@ -1859,7 +1859,7 @@ function cleanMarkdownToHTML(text: string): string {
     // Remove "client" language (single-author voice)
     .replace(/\bclients\b/gi, "profils")
     .replace(/\bclient\b/gi, "profil")
-    // CRITICAL: Remove ALL em dashes (—) and en dashes (–) FIRST
+    // CRITICAL: Remove ALL em dashes (,) and en dashes (–) FIRST
     .replace(/—/g, ':')
     .replace(/–/g, '-')
     .replace(/\u2014/g, ':')  // Unicode em dash
@@ -2267,17 +2267,17 @@ export async function convertToNarrativeReport(
   };
 
   // ════════════════════════════════════════════════════════════
-  // VALIDATION PRE-DELIVERY — fail-closed, no bad report ever shipped
+  // VALIDATION PRE-DELIVERY , fail-closed, no bad report ever shipped
   // ════════════════════════════════════════════════════════════
   // Any failure throws, caller's try/catch marks audit as NEEDS_REVIEW,
   // no email sent, admin reviews manually.
 
-  // CHECK 1: sections — Discovery has intro + global + 8 domains + 2 CTA = 12 expected
+  // CHECK 1: sections , Discovery has intro + global + 8 domains + 2 CTA = 12 expected
   if (!Array.isArray(report.sections) || report.sections.length < 10) {
     throw new Error(`[Discovery Validation] sections invalid: got ${report.sections?.length ?? 0}, expected >= 10`);
   }
 
-  // CHECK 2: content length — each section must have real body (strip HTML, min 80 chars)
+  // CHECK 2: content length , each section must have real body (strip HTML, min 80 chars)
   const stripHtml = (s: string) => String(s ?? "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
   const weakSections = report.sections.filter(s => stripHtml(s.content).length < 80);
   if (weakSections.length > 2) {
@@ -2289,12 +2289,12 @@ export async function convertToNarrativeReport(
     throw new Error(`[Discovery Validation] contenu narratif total trop court: ${totalContent} chars (min 3000)`);
   }
 
-  // CHECK 3: globalScore — must be a finite number in [0, 10] (we're on the /10 scale)
+  // CHECK 3: globalScore , must be a finite number in [0, 10] (we're on the /10 scale)
   if (typeof report.globalScore !== "number" || !Number.isFinite(report.globalScore) || report.globalScore < 0 || report.globalScore > 10) {
     throw new Error(`[Discovery Validation] globalScore invalide: ${report.globalScore}`);
   }
 
-  // CHECK 4: metrics — must have exactly 8 domains, each with valid value in [0, 10]
+  // CHECK 4: metrics , must have exactly 8 domains, each with valid value in [0, 10]
   if (!Array.isArray(report.metrics) || report.metrics.length !== 8) {
     throw new Error(`[Discovery Validation] metrics invalid: got ${report.metrics?.length ?? 0}, expected 8 domains`);
   }
@@ -2307,7 +2307,7 @@ export async function convertToNarrativeReport(
     }
   }
 
-  // CHECK 5: clientName — must be present and not a fallback/template value
+  // CHECK 5: clientName , must be present and not a fallback/template value
   if (!report.clientName || /^(profil|client|prenom|utilisateur)$/i.test(report.clientName.trim())) {
     throw new Error(`[Discovery Validation] clientName invalide ou template: "${report.clientName}"`);
   }
@@ -2316,7 +2316,7 @@ export async function convertToNarrativeReport(
   const firstNameLower = report.clientName.toLowerCase();
   const hasPersonalization = report.sections.some(s => stripHtml(s.content).toLowerCase().includes(firstNameLower));
   if (!hasPersonalization) {
-    throw new Error(`[Discovery Validation] prenom "${report.clientName}" absent de toutes les sections — report non personnalisé`);
+    throw new Error(`[Discovery Validation] prenom "${report.clientName}" absent de toutes les sections , report non personnalisé`);
   }
 
   console.log(`[Discovery Validation] ✅ OK: ${report.sections.length} sections, ${totalContent} chars, global=${report.globalScore}/10, ${report.metrics.length} metrics`);

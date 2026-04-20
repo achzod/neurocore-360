@@ -792,7 +792,7 @@ export function calculatePrediabetesRisk(
   const rawRisk = maxPoints > 0 ? (riskPoints / maxPoints) * 100 : 50;
   let score = Math.round(100 - rawRisk);
 
-  // Generate interpretation — never claim diabetes/prediabetes without glycemic data.
+  // Generate interpretation , never claim diabetes/prediabetes without glycemic data.
   let interpretation = "";
   if (!hasCoreGlycemicData) {
     score = Math.max(score, 50);
@@ -2152,11 +2152,11 @@ export function calculateHormonalHealthScore(
         unit: "pg/mL",
         maxWeight: 28, // DOMINANT for hormonal health in men
         evaluate: (v) => {
-          if (v >= 15 && v <= 25) return { deduction: 0, explanation: "Testo libre optimale — axe androgénique bien calibré." };
-          if (v >= 12) return { deduction: 8, explanation: "Testo libre légèrement suboptimale — marge d'optimisation." };
-          if (v >= 8) return { deduction: 18, explanation: "Testo libre basse — déséquilibre hormonal significatif impactant énergie et récupération." };
-          if (v >= 5) return { deduction: 24, explanation: "Testo libre très basse — hypogonadisme fonctionnel probable." };
-          return { deduction: 28, explanation: "Testo libre effondrée — consultation endocrinologique urgente." };
+          if (v >= 15 && v <= 25) return { deduction: 0, explanation: "Testo libre optimale , axe androgénique bien calibré." };
+          if (v >= 12) return { deduction: 8, explanation: "Testo libre légèrement suboptimale , marge d'optimisation." };
+          if (v >= 8) return { deduction: 18, explanation: "Testo libre basse , déséquilibre hormonal significatif impactant énergie et récupération." };
+          if (v >= 5) return { deduction: 24, explanation: "Testo libre très basse , hypogonadisme fonctionnel probable." };
+          return { deduction: 28, explanation: "Testo libre effondrée , consultation endocrinologique urgente." };
         },
       },
       {
@@ -2168,8 +2168,8 @@ export function calculateHormonalHealthScore(
           if (v >= 600 && v <= 900) return { deduction: 0, explanation: "Testostérone totale optimale." };
           if (v >= 500) return { deduction: 5, explanation: "Testostérone totale acceptable." };
           if (v >= 400) return { deduction: 12, explanation: "Testostérone totale basse." };
-          if (v >= 300) return { deduction: 17, explanation: "Testostérone totale très basse — frein hormonal majeur." };
-          return { deduction: 20, explanation: "Testostérone totale critique — investigation endocrinienne nécessaire." };
+          if (v >= 300) return { deduction: 17, explanation: "Testostérone totale très basse , frein hormonal majeur." };
+          return { deduction: 20, explanation: "Testostérone totale critique , investigation endocrinienne nécessaire." };
         },
       },
       {
@@ -2178,10 +2178,10 @@ export function calculateHormonalHealthScore(
         unit: "nmol/L",
         maxWeight: 15,
         evaluate: (v) => {
-          if (v >= 20 && v <= 35) return { deduction: 0, explanation: "SHBG optimal — biodisponibilité hormonale maximale." };
-          if (v >= 15 && v <= 45) return { deduction: 5, explanation: "SHBG acceptable — léger impact sur la fraction libre." };
-          if (v <= 10 || v >= 55) return { deduction: 15, explanation: "SHBG très déséquilibré — impact sévère sur la biodisponibilité des hormones." };
-          return { deduction: 10, explanation: "SHBG hors zone — impact modéré sur la testo libre." };
+          if (v >= 20 && v <= 35) return { deduction: 0, explanation: "SHBG optimal , biodisponibilité hormonale maximale." };
+          if (v >= 15 && v <= 45) return { deduction: 5, explanation: "SHBG acceptable , léger impact sur la fraction libre." };
+          if (v <= 10 || v >= 55) return { deduction: 15, explanation: "SHBG très déséquilibré , impact sévère sur la biodisponibilité des hormones." };
+          return { deduction: 10, explanation: "SHBG hors zone , impact modéré sur la testo libre." };
         },
       },
       {
@@ -2190,14 +2190,14 @@ export function calculateHormonalHealthScore(
         unit: "pg/mL",
         maxWeight: 12,
         evaluate: (v) => {
-          if (v >= 20 && v <= 35) return { deduction: 0, explanation: "Estradiol optimal — équilibre T/E2 correct." };
+          if (v >= 20 && v <= 35) return { deduction: 0, explanation: "Estradiol optimal , équilibre T/E2 correct." };
           if (v >= 15 && v <= 40) return { deduction: 3, explanation: "Estradiol acceptable." };
-          return { deduction: 12, explanation: "Estradiol déséquilibré — impact sur l'axe hormonal global." };
+          return { deduction: 12, explanation: "Estradiol déséquilibré , impact sur l'axe hormonal global." };
         },
       },
     );
   } else {
-    // Femme — estradiol domine
+    // Femme , estradiol domine
     checks.push({
       markerId: "estradiol",
       label: "Estradiol",
@@ -2206,7 +2206,7 @@ export function calculateHormonalHealthScore(
       evaluate: (v) => {
         if (v >= 30 && v <= 120) return { deduction: 0, explanation: "Estradiol dans la zone optimale femme." };
         if (v >= 20 && v <= 150) return { deduction: 8, explanation: "Estradiol acceptable." };
-        return { deduction: 25, explanation: "Estradiol hors zone — déséquilibre hormonal significatif." };
+        return { deduction: 25, explanation: "Estradiol hors zone , déséquilibre hormonal significatif." };
       },
     });
   }
@@ -2219,10 +2219,10 @@ export function calculateHormonalHealthScore(
       unit: "µg/dL",
       maxWeight: 15,
       evaluate: (v) => {
-        if (v >= 12 && v <= 18) return { deduction: 0, explanation: "Cortisol optimal — bon équilibre surrénalien." };
+        if (v >= 12 && v <= 18) return { deduction: 0, explanation: "Cortisol optimal , bon équilibre surrénalien." };
         if (v >= 8 && v <= 22) return { deduction: 5, explanation: "Cortisol acceptable." };
-        if (v > 25) return { deduction: 15, explanation: "Cortisol chroniquement élevé — stress surrénalien, frein hormonal majeur." };
-        return { deduction: 12, explanation: "Cortisol bas — fatigue surrénale possible." };
+        if (v > 25) return { deduction: 15, explanation: "Cortisol chroniquement élevé , stress surrénalien, frein hormonal majeur." };
+        return { deduction: 12, explanation: "Cortisol bas , fatigue surrénale possible." };
       },
     },
     {
@@ -2231,9 +2231,9 @@ export function calculateHormonalHealthScore(
       unit: "µg/dL",
       maxWeight: 10,
       evaluate: (v) => {
-        if (v >= 300 && v <= 450) return { deduction: 0, explanation: "DHEA-S optimal — précurseur hormonal bien présent." };
+        if (v >= 300 && v <= 450) return { deduction: 0, explanation: "DHEA-S optimal , précurseur hormonal bien présent." };
         if (v >= 200) return { deduction: 4, explanation: "DHEA-S acceptable mais perfectible." };
-        return { deduction: 10, explanation: "DHEA-S bas — axe surrénalien appauvri." };
+        return { deduction: 10, explanation: "DHEA-S bas , axe surrénalien appauvri." };
       },
     },
   );
@@ -2257,8 +2257,8 @@ export function calculateHormonalHealthScore(
 
   const recommendations: string[] = [];
   if (score < 85) {
-    recommendations.push("Sommeil 7-9h — crucial pour la production hormonale nocturne.");
-    recommendations.push("Musculation 3x/semaine — stimule testostérone et GH.");
+    recommendations.push("Sommeil 7-9h , crucial pour la production hormonale nocturne.");
+    recommendations.push("Musculation 3x/semaine , stimule testostérone et GH.");
   }
   if (score < 70) {
     recommendations.push("Zinc 30mg + Magnésium 400mg le soir (cofacteurs de la synthèse de testo).");
@@ -2266,7 +2266,7 @@ export function calculateHormonalHealthScore(
   }
   if (score < 55) {
     recommendations.push("Bilan hormonal complet : testo totale, SHBG, LH, FSH, cortisol, prolactine.");
-    recommendations.push("Réduire alcool et stress chronique — antagonistes directs de la testostérone.");
+    recommendations.push("Réduire alcool et stress chronique , antagonistes directs de la testostérone.");
   }
 
   return {
@@ -2500,43 +2500,43 @@ export function calculateAnabolicCapacityScore(
   const markersUsed: string[] = [];
   const gender = profile?.gender || "homme";
 
-  // Marker weights — testo libre is DOMINANT (30pts), SHBG + VitD are major
+  // Marker weights , testo libre is DOMINANT (30pts), SHBG + VitD are major
   const checks: WeightedMarkerCheck[] = [
     {
       markerId: "testosterone_libre",
       label: "Testostérone libre",
       unit: "pg/mL",
-      maxWeight: 30, // DOMINANT — the single most important marker
+      maxWeight: 30, // DOMINANT , the single most important marker
       evaluate: (v) => {
-        if (v >= 20) return { deduction: 0, explanation: "Testo libre optimale — pleine capacité anabolique." };
-        if (v >= 15) return { deduction: 6, explanation: "Testo libre correcte — bon potentiel de construction musculaire." };
-        if (v >= 12) return { deduction: 15, explanation: "Testo libre suboptimale — frein modéré sur l'hypertrophie et la récupération." };
-        if (v >= 8) return { deduction: 22, explanation: "Testo libre basse — frein significatif sur l'anabolisme, la force et la récupération." };
-        return { deduction: 30, explanation: "Testo libre effondrée — blocage anabolique majeur, investigation endocrinienne nécessaire." };
+        if (v >= 20) return { deduction: 0, explanation: "Testo libre optimale , pleine capacité anabolique." };
+        if (v >= 15) return { deduction: 6, explanation: "Testo libre correcte , bon potentiel de construction musculaire." };
+        if (v >= 12) return { deduction: 15, explanation: "Testo libre suboptimale , frein modéré sur l'hypertrophie et la récupération." };
+        if (v >= 8) return { deduction: 22, explanation: "Testo libre basse , frein significatif sur l'anabolisme, la force et la récupération." };
+        return { deduction: 30, explanation: "Testo libre effondrée , blocage anabolique majeur, investigation endocrinienne nécessaire." };
       },
     },
     {
       markerId: "shbg",
       label: "SHBG",
       unit: "nmol/L",
-      maxWeight: 18, // Major — directly modulates free T bioavailability
+      maxWeight: 18, // Major , directly modulates free T bioavailability
       evaluate: (v) => {
-        if (v >= 20 && v <= 35) return { deduction: 0, explanation: "SHBG optimal — biodisponibilité de la testo maximale." };
-        if (v >= 15 && v <= 40) return { deduction: 4, explanation: "SHBG acceptable — léger impact sur la testo libre." };
-        if (v >= 10 && v <= 50) return { deduction: 10, explanation: "SHBG hors zone — impact modéré sur la fraction libre de testo." };
-        return { deduction: 18, explanation: "SHBG très déséquilibré — la biodisponibilité de la testostérone est sévèrement impactée." };
+        if (v >= 20 && v <= 35) return { deduction: 0, explanation: "SHBG optimal , biodisponibilité de la testo maximale." };
+        if (v >= 15 && v <= 40) return { deduction: 4, explanation: "SHBG acceptable , léger impact sur la testo libre." };
+        if (v >= 10 && v <= 50) return { deduction: 10, explanation: "SHBG hors zone , impact modéré sur la fraction libre de testo." };
+        return { deduction: 18, explanation: "SHBG très déséquilibré , la biodisponibilité de la testostérone est sévèrement impactée." };
       },
     },
     {
       markerId: "vitamine_d",
       label: "Vitamine D",
       unit: "ng/mL",
-      maxWeight: 15, // Major — VDR in testes, muscle, immune. <30 = deficient for performance
+      maxWeight: 15, // Major , VDR in testes, muscle, immune. <30 = deficient for performance
       evaluate: (v) => {
-        if (v >= 50 && v <= 80) return { deduction: 0, explanation: "Vitamine D en zone performance — support hormonal et musculaire optimal." };
-        if (v >= 40) return { deduction: 4, explanation: "Vitamine D correcte — marge d'optimisation pour la performance." };
-        if (v >= 30) return { deduction: 9, explanation: "Vitamine D insuffisante — frein sur production de testo, force et immunité." };
-        return { deduction: 15, explanation: "Carence en vitamine D — impact majeur sur hormones, muscle et récupération." };
+        if (v >= 50 && v <= 80) return { deduction: 0, explanation: "Vitamine D en zone performance , support hormonal et musculaire optimal." };
+        if (v >= 40) return { deduction: 4, explanation: "Vitamine D correcte , marge d'optimisation pour la performance." };
+        if (v >= 30) return { deduction: 9, explanation: "Vitamine D insuffisante , frein sur production de testo, force et immunité." };
+        return { deduction: 15, explanation: "Carence en vitamine D , impact majeur sur hormones, muscle et récupération." };
       },
     },
     {
@@ -2549,10 +2549,10 @@ export function calculateAnabolicCapacityScore(
           if (v >= 20 && v <= 50) return { deduction: 0, explanation: "Testostérone totale dans la zone optimale femme." };
           return { deduction: 6, explanation: "Testostérone totale hors zone optimale femme." };
         }
-        if (v >= 600 && v <= 900) return { deduction: 0, explanation: "Testostérone totale optimale — terrain anabolique solide." };
+        if (v >= 600 && v <= 900) return { deduction: 0, explanation: "Testostérone totale optimale , terrain anabolique solide." };
         if (v >= 500) return { deduction: 4, explanation: "Testostérone totale acceptable mais sous l'optimal performance." };
-        if (v >= 400) return { deduction: 8, explanation: "Testostérone totale basse — frein sur force et hypertrophie." };
-        return { deduction: 12, explanation: "Testostérone totale très basse — impact anabolique majeur." };
+        if (v >= 400) return { deduction: 8, explanation: "Testostérone totale basse , frein sur force et hypertrophie." };
+        return { deduction: 12, explanation: "Testostérone totale très basse , impact anabolique majeur." };
       },
     },
     {
@@ -2561,10 +2561,10 @@ export function calculateAnabolicCapacityScore(
       unit: "ng/mL",
       maxWeight: 10,
       evaluate: (v) => {
-        if (v >= 200 && v <= 280) return { deduction: 0, explanation: "IGF-1 optimal — signal anabolique de croissance bien présent." };
-        if (v >= 150) return { deduction: 3, explanation: "IGF-1 acceptable — progression correcte." };
-        if (v >= 110) return { deduction: 6, explanation: "IGF-1 bas — récupération et hypertrophie potentiellement limitées." };
-        return { deduction: 10, explanation: "IGF-1 très bas — signal de croissance insuffisant." };
+        if (v >= 200 && v <= 280) return { deduction: 0, explanation: "IGF-1 optimal , signal anabolique de croissance bien présent." };
+        if (v >= 150) return { deduction: 3, explanation: "IGF-1 acceptable , progression correcte." };
+        if (v >= 110) return { deduction: 6, explanation: "IGF-1 bas , récupération et hypertrophie potentiellement limitées." };
+        return { deduction: 10, explanation: "IGF-1 très bas , signal de croissance insuffisant." };
       },
     },
     {
@@ -2573,10 +2573,10 @@ export function calculateAnabolicCapacityScore(
       unit: "µg/dL",
       maxWeight: 10,
       evaluate: (v) => {
-        if (v >= 12 && v <= 18) return { deduction: 0, explanation: "Cortisol calibré — environnement favorable à la récupération." };
-        if (v >= 8 && v <= 22) return { deduction: 3, explanation: "Cortisol acceptable — légère vigilance." };
-        if (v > 25) return { deduction: 10, explanation: "Cortisol élevé — contexte catabolique, frein direct sur l'anabolisme." };
-        return { deduction: 7, explanation: "Cortisol hors cible — récupération et progression possiblement impactées." };
+        if (v >= 12 && v <= 18) return { deduction: 0, explanation: "Cortisol calibré , environnement favorable à la récupération." };
+        if (v >= 8 && v <= 22) return { deduction: 3, explanation: "Cortisol acceptable , légère vigilance." };
+        if (v > 25) return { deduction: 10, explanation: "Cortisol élevé , contexte catabolique, frein direct sur l'anabolisme." };
+        return { deduction: 7, explanation: "Cortisol hors cible , récupération et progression possiblement impactées." };
       },
     },
     {
@@ -2585,10 +2585,10 @@ export function calculateAnabolicCapacityScore(
       unit: "mg/L",
       maxWeight: 8,
       evaluate: (v) => {
-        if (v <= 0.5) return { deduction: 0, explanation: "Inflammation très basse — récupération et anabolisme favorisés." };
-        if (v <= 1.0) return { deduction: 2, explanation: "Inflammation faible — impact limité." };
-        if (v <= 2.0) return { deduction: 4, explanation: "Inflammation modérée — peut ralentir la récupération." };
-        return { deduction: 8, explanation: "Inflammation élevée — frein significatif sur récupération et progression." };
+        if (v <= 0.5) return { deduction: 0, explanation: "Inflammation très basse , récupération et anabolisme favorisés." };
+        if (v <= 1.0) return { deduction: 2, explanation: "Inflammation faible , impact limité." };
+        if (v <= 2.0) return { deduction: 4, explanation: "Inflammation modérée , peut ralentir la récupération." };
+        return { deduction: 8, explanation: "Inflammation élevée , frein significatif sur récupération et progression." };
       },
     },
     {
@@ -2599,9 +2599,9 @@ export function calculateAnabolicCapacityScore(
       evaluate: (v) => {
         const optMin = gender === "femme" ? 30 : 20;
         const optMax = gender === "femme" ? 120 : 35;
-        if (v >= optMin && v <= optMax) return { deduction: 0, explanation: "Estradiol équilibré — soutien hormonal cohérent." };
+        if (v >= optMin && v <= optMax) return { deduction: 0, explanation: "Estradiol équilibré , soutien hormonal cohérent." };
         if (v >= optMin * 0.7 && v <= optMax * 1.3) return { deduction: 3, explanation: "Estradiol légèrement hors cible." };
-        return { deduction: 6, explanation: "Estradiol déséquilibré — impact sur performance et récupération." };
+        return { deduction: 6, explanation: "Estradiol déséquilibré , impact sur performance et récupération." };
       },
     },
     {
@@ -2610,9 +2610,9 @@ export function calculateAnabolicCapacityScore(
       unit: "ng/mL",
       maxWeight: 5,
       evaluate: (v) => {
-        if (v >= 80 && v <= 150) return { deduction: 0, explanation: "Ferritine optimale — bon support de l'oxygénation musculaire." };
+        if (v >= 80 && v <= 150) return { deduction: 0, explanation: "Ferritine optimale , bon support de l'oxygénation musculaire." };
         if ((v >= 50 && v < 80) || (v > 150 && v <= 220)) return { deduction: 2, explanation: "Ferritine correcte mais non optimale." };
-        return { deduction: 5, explanation: "Ferritine hors zone cible — impact possible sur énergie et récupération." };
+        return { deduction: 5, explanation: "Ferritine hors zone cible , impact possible sur énergie et récupération." };
       },
     },
     {
@@ -2621,9 +2621,9 @@ export function calculateAnabolicCapacityScore(
       unit: "µg/dL",
       maxWeight: 5,
       evaluate: (v) => {
-        if (v >= 300 && v <= 450) return { deduction: 0, explanation: "DHEA-S optimal — précurseur anabolique bien présent." };
+        if (v >= 300 && v <= 450) return { deduction: 0, explanation: "DHEA-S optimal , précurseur anabolique bien présent." };
         if (v >= 200) return { deduction: 2, explanation: "DHEA-S acceptable." };
-        return { deduction: 5, explanation: "DHEA-S bas — axe surrénalien possiblement limité." };
+        return { deduction: 5, explanation: "DHEA-S bas , axe surrénalien possiblement limité." };
       },
     },
   ];
@@ -2636,17 +2636,17 @@ export function calculateAnabolicCapacityScore(
 
   let interpretation = `Score Anabolique: ${score}/100. `;
   if (score >= 85) {
-    interpretation += "Excellente capacité de construction musculaire — terrain hormonal et métabolique très favorable.";
+    interpretation += "Excellente capacité de construction musculaire , terrain hormonal et métabolique très favorable.";
   } else if (score >= 70) {
-    interpretation += "Bonne capacité anabolique — quelques leviers d'optimisation identifiés.";
+    interpretation += "Bonne capacité anabolique , quelques leviers d'optimisation identifiés.";
   } else if (score >= 55) {
-    interpretation += "Capacité anabolique modérée — plusieurs freins corrigibles limitent ta progression.";
+    interpretation += "Capacité anabolique modérée , plusieurs freins corrigibles limitent ta progression.";
   } else if (score >= 40) {
-    interpretation += "Capacité anabolique limitée — freins biologiques significatifs, correction prioritaire.";
+    interpretation += "Capacité anabolique limitée , freins biologiques significatifs, correction prioritaire.";
   } else if (score >= 25) {
-    interpretation += "Capacité anabolique faible — le terrain hormonal freine sérieusement la prise de muscle.";
+    interpretation += "Capacité anabolique faible , le terrain hormonal freine sérieusement la prise de muscle.";
   } else {
-    interpretation += "Capacité anabolique critique — investigation endocrinienne urgente recommandée.";
+    interpretation += "Capacité anabolique critique , investigation endocrinienne urgente recommandée.";
   }
 
   const recommendations: string[] = [];
@@ -2655,7 +2655,7 @@ export function calculateAnabolicCapacityScore(
   const crp = getMarkerValue(markers, "crp_us");
   const shbg = getMarkerValue(markers, "shbg");
   if (testoLibre !== null && testoLibre < 15) recommendations.push("Priorité #1 : remonter la testo libre (sommeil 7-9h, lipides de qualité, zinc/magnésium, réduire stress).");
-  if (shbg !== null && shbg > 40) recommendations.push("SHBG élevé — investiguer causes (excès d'E2, thyroïde, foie) et optimiser pour libérer plus de testo.");
+  if (shbg !== null && shbg > 40) recommendations.push("SHBG élevé , investiguer causes (excès d'E2, thyroïde, foie) et optimiser pour libérer plus de testo.");
   if (vitD !== null && vitD < 50) recommendations.push("Corriger vitamine D vers 50-80 ng/mL (D3 4000-5000 UI/jour + K2 MK7).");
   if (crp !== null && crp > 1.5) recommendations.push("Réduire l'inflammation systémique (oméga-3, sommeil, charge d'entraînement).");
   if (score < 70) recommendations.push("Bilan hormonal complet recommandé : testo totale, SHBG, LH, FSH, cortisol si non déjà dosés.");
@@ -2699,11 +2699,11 @@ export function calculateMetabolicEfficiencyScore(
     markersUsed.push("hdl");
     const ratio = tg / hdl;
     let explanation = "";
-    if (ratio <= 1.5) { tgHdlDeduction = 0; explanation = "Ratio TG/HDL excellent — flexibilité métabolique optimale, lipolyse efficace."; }
-    else if (ratio <= 2.5) { tgHdlDeduction = 5; explanation = "Ratio TG/HDL bon — sensibilité insulinique correcte."; }
-    else if (ratio <= 3.5) { tgHdlDeduction = 12; explanation = "Ratio TG/HDL élevé — résistance insulinique probable, mobilisation des graisses freinée."; }
-    else if (ratio <= 5.0) { tgHdlDeduction = 20; explanation = "Ratio TG/HDL très élevé — frein majeur sur perte de gras, flexibilité métabolique compromise."; }
-    else { tgHdlDeduction = 25; explanation = "Ratio TG/HDL critique — résistance insulinique installée, recomposition extrêmement difficile."; }
+    if (ratio <= 1.5) { tgHdlDeduction = 0; explanation = "Ratio TG/HDL excellent , flexibilité métabolique optimale, lipolyse efficace."; }
+    else if (ratio <= 2.5) { tgHdlDeduction = 5; explanation = "Ratio TG/HDL bon , sensibilité insulinique correcte."; }
+    else if (ratio <= 3.5) { tgHdlDeduction = 12; explanation = "Ratio TG/HDL élevé , résistance insulinique probable, mobilisation des graisses freinée."; }
+    else if (ratio <= 5.0) { tgHdlDeduction = 20; explanation = "Ratio TG/HDL très élevé , frein majeur sur perte de gras, flexibilité métabolique compromise."; }
+    else { tgHdlDeduction = 25; explanation = "Ratio TG/HDL critique , résistance insulinique installée, recomposition extrêmement difficile."; }
     factors.push({
       marker: "Ratio TG/HDL",
       value: Number(ratio.toFixed(2)),
@@ -2721,11 +2721,11 @@ export function calculateMetabolicEfficiencyScore(
       unit: "µIU/mL",
       maxWeight: 22, // DOMINANT for metabolic score
       evaluate: (v) => {
-        if (v <= 5) return { deduction: 0, explanation: "Insuline optimale — excellente sensibilité, lipolyse facilitée." };
-        if (v <= 8) return { deduction: 4, explanation: "Insuline correcte — bon potentiel de recomposition." };
-        if (v <= 12) return { deduction: 10, explanation: "Insuline limite — vigilance sur la stratégie glucidique." };
-        if (v <= 18) return { deduction: 17, explanation: "Hyperinsulinémie modérée — perte de gras significativement freinée." };
-        return { deduction: 22, explanation: "Hyperinsulinémie marquée — stockage adipeux favorisé, lipolyse quasi bloquée." };
+        if (v <= 5) return { deduction: 0, explanation: "Insuline optimale , excellente sensibilité, lipolyse facilitée." };
+        if (v <= 8) return { deduction: 4, explanation: "Insuline correcte , bon potentiel de recomposition." };
+        if (v <= 12) return { deduction: 10, explanation: "Insuline limite , vigilance sur la stratégie glucidique." };
+        if (v <= 18) return { deduction: 17, explanation: "Hyperinsulinémie modérée , perte de gras significativement freinée." };
+        return { deduction: 22, explanation: "Hyperinsulinémie marquée , stockage adipeux favorisé, lipolyse quasi bloquée." };
       },
     },
     {
@@ -2734,11 +2734,11 @@ export function calculateMetabolicEfficiencyScore(
       unit: "",
       maxWeight: 18,
       evaluate: (v) => {
-        if (v < 1.0) return { deduction: 0, explanation: "HOMA-IR excellent — terrain très favorable à la lipolyse." };
-        if (v < 1.5) return { deduction: 3, explanation: "HOMA-IR bon — sensibilité insulinique correcte." };
-        if (v < 2.0) return { deduction: 8, explanation: "HOMA-IR intermédiaire — début de résistance insulinique." };
-        if (v < 3.0) return { deduction: 14, explanation: "HOMA-IR élevé — résistance insulinique installée, perte de gras difficile." };
-        return { deduction: 18, explanation: "HOMA-IR critique — résistance insulinique sévère." };
+        if (v < 1.0) return { deduction: 0, explanation: "HOMA-IR excellent , terrain très favorable à la lipolyse." };
+        if (v < 1.5) return { deduction: 3, explanation: "HOMA-IR bon , sensibilité insulinique correcte." };
+        if (v < 2.0) return { deduction: 8, explanation: "HOMA-IR intermédiaire , début de résistance insulinique." };
+        if (v < 3.0) return { deduction: 14, explanation: "HOMA-IR élevé , résistance insulinique installée, perte de gras difficile." };
+        return { deduction: 18, explanation: "HOMA-IR critique , résistance insulinique sévère." };
       },
     },
     {
@@ -2747,10 +2747,10 @@ export function calculateMetabolicEfficiencyScore(
       unit: "mIU/L",
       maxWeight: 12,
       evaluate: (v) => {
-        if (v >= 0.7 && v <= 2.0) return { deduction: 0, explanation: "TSH optimale — métabolisme bien piloté." };
-        if (v <= 2.8) return { deduction: 3, explanation: "TSH correcte — légère vigilance." };
-        if (v <= 4.0) return { deduction: 8, explanation: "TSH élevée — ralentissement métabolique probable." };
-        return { deduction: 12, explanation: "TSH très élevée — frein thyroïdien majeur sur la dépense énergétique." };
+        if (v >= 0.7 && v <= 2.0) return { deduction: 0, explanation: "TSH optimale , métabolisme bien piloté." };
+        if (v <= 2.8) return { deduction: 3, explanation: "TSH correcte , légère vigilance." };
+        if (v <= 4.0) return { deduction: 8, explanation: "TSH élevée , ralentissement métabolique probable." };
+        return { deduction: 12, explanation: "TSH très élevée , frein thyroïdien majeur sur la dépense énergétique." };
       },
     },
     {
@@ -2759,10 +2759,10 @@ export function calculateMetabolicEfficiencyScore(
       unit: "ng/dL",
       maxWeight: 10,
       evaluate: (v) => {
-        if (v >= 1.2 && v <= 1.8) return { deduction: 0, explanation: "T4 libre optimale — réserve thyroïdienne bien calibrée." };
-        if (v >= 1.0) return { deduction: 4, explanation: "T4 libre légèrement basse — conversion T3 possiblement réduite." };
-        if (v >= 0.8) return { deduction: 8, explanation: "T4 libre basse — frein métabolique, lipolyse ralentie." };
-        return { deduction: 10, explanation: "T4 libre très basse — frein métabolique sévère." };
+        if (v >= 1.2 && v <= 1.8) return { deduction: 0, explanation: "T4 libre optimale , réserve thyroïdienne bien calibrée." };
+        if (v >= 1.0) return { deduction: 4, explanation: "T4 libre légèrement basse , conversion T3 possiblement réduite." };
+        if (v >= 0.8) return { deduction: 8, explanation: "T4 libre basse , frein métabolique, lipolyse ralentie." };
+        return { deduction: 10, explanation: "T4 libre très basse , frein métabolique sévère." };
       },
     },
     {
@@ -2771,10 +2771,10 @@ export function calculateMetabolicEfficiencyScore(
       unit: "pg/mL",
       maxWeight: 12,
       evaluate: (v) => {
-        if (v >= 3.1 && v <= 4.2) return { deduction: 0, explanation: "T3 libre optimale — dépense énergétique bien régulée." };
-        if (v >= 2.8) return { deduction: 4, explanation: "T3 libre acceptable — marge d'optimisation." };
-        if (v >= 2.3) return { deduction: 8, explanation: "T3 libre basse — lipolyse et thermogenèse freinées." };
-        return { deduction: 12, explanation: "T3 libre très basse — le métabolisme tourne au ralenti." };
+        if (v >= 3.1 && v <= 4.2) return { deduction: 0, explanation: "T3 libre optimale , dépense énergétique bien régulée." };
+        if (v >= 2.8) return { deduction: 4, explanation: "T3 libre acceptable , marge d'optimisation." };
+        if (v >= 2.3) return { deduction: 8, explanation: "T3 libre basse , lipolyse et thermogenèse freinées." };
+        return { deduction: 12, explanation: "T3 libre très basse , le métabolisme tourne au ralenti." };
       },
     },
     {
@@ -2783,10 +2783,10 @@ export function calculateMetabolicEfficiencyScore(
       unit: "mg/dL",
       maxWeight: 10,
       evaluate: (v) => {
-        if (v >= 75 && v <= 90) return { deduction: 0, explanation: "Glycémie optimale — bon contrôle glucidique." };
-        if (v <= 99) return { deduction: 3, explanation: "Glycémie normale haute — perfectible." };
-        if (v <= 109) return { deduction: 7, explanation: "Pré-diabète — dérive métabolique significative." };
-        return { deduction: 10, explanation: "Glycémie élevée — résistance insulinique probable." };
+        if (v >= 75 && v <= 90) return { deduction: 0, explanation: "Glycémie optimale , bon contrôle glucidique." };
+        if (v <= 99) return { deduction: 3, explanation: "Glycémie normale haute , perfectible." };
+        if (v <= 109) return { deduction: 7, explanation: "Pré-diabète , dérive métabolique significative." };
+        return { deduction: 10, explanation: "Glycémie élevée , résistance insulinique probable." };
       },
     },
     {
@@ -2795,10 +2795,10 @@ export function calculateMetabolicEfficiencyScore(
       unit: "µg/dL",
       maxWeight: 8,
       evaluate: (v) => {
-        if (v >= 12 && v <= 18) return { deduction: 0, explanation: "Cortisol optimal — pas de frein catabolique sur le métabolisme." };
+        if (v >= 12 && v <= 18) return { deduction: 0, explanation: "Cortisol optimal , pas de frein catabolique sur le métabolisme." };
         if (v >= 8 && v <= 22) return { deduction: 2, explanation: "Cortisol acceptable." };
-        if (v > 25) return { deduction: 8, explanation: "Cortisol élevé — stockage viscéral favorisé, lipolyse perturbée." };
-        return { deduction: 5, explanation: "Cortisol hors cible — impact possible sur le métabolisme des graisses." };
+        if (v > 25) return { deduction: 8, explanation: "Cortisol élevé , stockage viscéral favorisé, lipolyse perturbée." };
+        return { deduction: 5, explanation: "Cortisol hors cible , impact possible sur le métabolisme des graisses." };
       },
     },
     {
@@ -2807,10 +2807,10 @@ export function calculateMetabolicEfficiencyScore(
       unit: "mg/L",
       maxWeight: 6,
       evaluate: (v) => {
-        if (v <= 0.5) return { deduction: 0, explanation: "Inflammation très basse — métabolisme non perturbé." };
-        if (v <= 1.5) return { deduction: 2, explanation: "Inflammation faible — impact limité." };
-        if (v <= 3.0) return { deduction: 4, explanation: "Inflammation modérée — peut freiner la recomposition." };
-        return { deduction: 6, explanation: "Inflammation élevée — frein métabolique significatif." };
+        if (v <= 0.5) return { deduction: 0, explanation: "Inflammation très basse , métabolisme non perturbé." };
+        if (v <= 1.5) return { deduction: 2, explanation: "Inflammation faible , impact limité." };
+        if (v <= 3.0) return { deduction: 4, explanation: "Inflammation modérée , peut freiner la recomposition." };
+        return { deduction: 6, explanation: "Inflammation élevée , frein métabolique significatif." };
       },
     },
   ];
@@ -2823,15 +2823,15 @@ export function calculateMetabolicEfficiencyScore(
 
   let interpretation = `Score Métabolique: ${finalScore}/100. Difficulté de perte de gras estimée: ${difficulty}. `;
   if (difficulty === "FACILE") {
-    interpretation += "Ton terrain biologique est favorable — la perte de gras répond bien à un protocole standard.";
+    interpretation += "Ton terrain biologique est favorable , la perte de gras répond bien à un protocole standard.";
   } else if (difficulty === "NORMAL") {
     interpretation += "Bonne capacité de recomposition avec un protocole bien structuré.";
   } else if (difficulty === "MODERE") {
     interpretation += "La perte de gras est possible mais demande un protocole séquencé et progressif.";
   } else if (difficulty === "DIFFICILE") {
-    interpretation += "Le terrain métabolique impose une stratégie rigoureuse — résistance insulinique et/ou thyroïdienne probable.";
+    interpretation += "Le terrain métabolique impose une stratégie rigoureuse , résistance insulinique et/ou thyroïdienne probable.";
   } else {
-    interpretation += "Frein métabolique sévère — correction des dysfonctions sous-jacentes nécessaire avant toute sèche agressive.";
+    interpretation += "Frein métabolique sévère , correction des dysfonctions sous-jacentes nécessaire avant toute sèche agressive.";
   }
 
   const recommendations: string[] = [];
