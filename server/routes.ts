@@ -5066,6 +5066,38 @@ export async function registerRoutes(
   });
 
   // Admin email tracking stats
+  // Focused per-recipient email tracking query — the /api/admin/email-trackings
+  // endpoint returns at most 200 rows across the whole app, which only covers
+  // ~24h of traffic. To confirm whether a specific client actually received
+  // their delivery email (e.g. did the Peptides delivery reach them?), we need
+  // a query that filters by recipient and returns the full per-email history.
+  app.get("/api/admin/email-tracking-by-recipient", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const email = String(req.query.email || "").trim().toLowerCase();
+      if (!email || !email.includes("@")) {
+        res.status(400).json({ error: "email query param required" });
+        return;
+      }
+      const result = await pool.query(
+        `SELECT id, email_type, recipient_email, subject, audit_id, audit_type,
+                sendpulse_status, sendpulse_error, sent_at, opened, clicked
+           FROM email_tracking
+          WHERE LOWER(recipient_email) = $1
+          ORDER BY sent_at DESC
+          LIMIT 200`,
+        [email]
+      );
+      res.json({
+        email,
+        count: result.rowCount ?? 0,
+        trackings: result.rows,
+      });
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+    }
+  });
+
   app.get("/api/admin/email-trackings/stats", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
