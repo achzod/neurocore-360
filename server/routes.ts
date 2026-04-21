@@ -5133,6 +5133,55 @@ export async function registerRoutes(
   });
 
   // Admin email tracking stats
+  // Admin: inspect blood_reports + blood_tests for a specific email. Used to
+  // diagnose "I just uploaded my blood test" tickets when the client's not in
+  // the deliveries log yet. Returns both tables so we can see: was the upload
+  // persisted? is the AI analysis pending/failed/done? is the delivery
+  // scheduled?
+  app.get("/api/admin/blood-lookup-by-email", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const email = String(req.query.email || "").trim().toLowerCase();
+      if (!email || !email.includes("@")) {
+        res.status(400).json({ error: "email query param required" });
+        return;
+      }
+      const blood = await pool.query(
+        `SELECT id, email, delivery_status, report_scheduled_for, email_sent_at,
+                ai_report IS NOT NULL AND ai_report <> '' AS has_ai,
+                created_at, delivery_retries
+           FROM blood_reports
+          WHERE LOWER(email) = $1
+          ORDER BY created_at DESC
+          LIMIT 20`,
+        [email]
+      ).catch(() => ({ rows: [] }));
+      let tests: any = { rows: [] };
+      try {
+        tests = await pool.query(
+          `SELECT bt.id, bt.status, bt.created_at, bt.completed_at,
+                  bt.patient_profile->>'email' AS pp_email,
+                  jsonb_array_length(COALESCE(bt.markers, '[]'::jsonb)) AS marker_count,
+                  bt.analysis IS NOT NULL AS has_analysis
+             FROM blood_tests bt
+             LEFT JOIN users u ON u.id = bt.user_id
+            WHERE LOWER(u.email) = $1
+               OR LOWER(bt.patient_profile->>'email') = $1
+            ORDER BY bt.created_at DESC
+            LIMIT 20`,
+          [email]
+        );
+      } catch {}
+      res.json({
+        email,
+        bloodReports: blood.rows,
+        bloodTests: tests.rows,
+      });
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+    }
+  });
+
   // Focused per-recipient email tracking query — the /api/admin/email-trackings
   // endpoint returns at most 200 rows across the whole app, which only covers
   // ~24h of traffic. To confirm whether a specific client actually received
