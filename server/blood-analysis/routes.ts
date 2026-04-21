@@ -1177,7 +1177,12 @@ export function registerBloodAnalysisRoutes(app: Express): void {
             email: profile.email || userRow?.email || req.body.email || "",
             profile,
             markers: Array.isArray(bt.markers) ? bt.markers : [],
-            aiReport: analysis.aiReport || "",
+            // Accept both field names: older writes used `aiReport`, the 2026-04
+            // AI pipeline writes `aiAnalysis`. Without the fallback the admin
+            // force-send endpoint refuses to deliver with "AI report not yet
+            // generated" even though the 89KB narrative is sitting right there
+            // in analysis.aiAnalysis (Sofiane Ennasri, 2026-04-21).
+            aiReport: analysis.aiReport || analysis.aiAnalysis || "",
             createdAt: bt.createdAt,
           } as any;
           fromBloodTests = true;
