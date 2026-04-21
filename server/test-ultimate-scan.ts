@@ -343,7 +343,7 @@ async function checkAuditStatus(auditId: string): Promise<void> {
 }
 
 async function runTests() {
-  console.log("\n🚀 NEUROCORE 360 - Ultimate Scan Test Suite\n");
+  console.log("\n🚀 APEXLABS - Ultimate Scan Test Suite\n");
 
   // Load photos
   console.log("📷 Loading photos...");

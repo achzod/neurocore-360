@@ -1,4 +1,4 @@
--- NEUROCORE 360 - Script d'initialisation de la base de données PostgreSQL
+-- APEXLABS - Script d'initialisation de la base de données PostgreSQL
 
 -- Table: users (déjà dans drizzle-schema, mais créée ici pour être sûr)
 CREATE TABLE IF NOT EXISTS users (

@@ -3,7 +3,7 @@ import { getUncachableStripeClient } from './stripeClient';
 async function createProducts() {
   const stripe = await getUncachableStripeClient();
 
-  console.log('Creating NEUROCORE 360° products in Stripe...');
+  console.log('Creating APEXLABS° products in Stripe...');
 
   // Check if products already exist
   const existingProducts = await stripe.products.list({ limit: 100 });

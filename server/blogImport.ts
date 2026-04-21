@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Blog Import & Translation
+ * APEXLABS - Blog Import & Translation
  *
  * Objectif :
  * - Prendre une URL d'article (Ultrahuman, Predator Nutrition, TheMusclePhD, etc.)

@@ -267,7 +267,7 @@ function isLikelySectionTitle(line: string): boolean {
 }
 
 function extractClientName(txtContent: string): string {
-  const match = txtContent.match(/AUDIT COMPLET (?:NEUROCORE 360|APEXLABS) - (.+?)(?:\s*={3,}|\s*[\r\n])/i);
+  const match = txtContent.match(/AUDIT COMPLET (?:APEXLABS|APEXLABS) - (.+?)(?:\s*={3,}|\s*[\r\n])/i);
   if (match) {
     return match[1].trim();
   }
@@ -314,7 +314,7 @@ function extractCTA(txtContent: string, type: 'debut' | 'fin'): string | undefin
     const start = findLastLineMarker(txtContent, markers);
     if (start.index !== -1) {
       // Trouver la fin du CTA (avant la première section principale ou avant "AUDIT COMPLET")
-      const endMarkers = ['AUDIT COMPLET APEXLABS', 'AUDIT COMPLET NEUROCORE 360', 'EXECUTIVE SUMMARY', '---'];
+      const endMarkers = ['AUDIT COMPLET APEXLABS', 'AUDIT COMPLET APEXLABS', 'EXECUTIVE SUMMARY', '---'];
       let endIdx = txtContent.length;
       for (const marker of endMarkers) {
         const escaped = marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -340,7 +340,7 @@ function extractCTA(txtContent: string, type: 'debut' | 'fin'): string | undefin
       }
       const raw = txtContent.substring(start.index, endIdx);
       const cleaned = raw
-        .replace(/^\s*AUDIT COMPLET (?:NEUROCORE 360|APEXLABS)[^\n]*$/gmi, '')
+        .replace(/^\s*AUDIT COMPLET (?:APEXLABS|APEXLABS)[^\n]*$/gmi, '')
         .replace(/^\s*G[eé]n[eé]r[eé] le [^\n]*$/gmi, '')
         .trim();
       return cleaned || undefined;
@@ -360,7 +360,7 @@ function extractCTA(txtContent: string, type: 'debut' | 'fin'): string | undefin
     if (start.index !== -1) {
       const raw = txtContent.substring(start.index);
       const cleaned = raw
-        .replace(/^\s*AUDIT COMPLET (?:NEUROCORE 360|APEXLABS)[^\n]*$/gmi, '')
+        .replace(/^\s*AUDIT COMPLET (?:APEXLABS|APEXLABS)[^\n]*$/gmi, '')
         .replace(/^\s*G[eé]n[eé]r[eé] le [^\n]*$/gmi, '')
         .trim();
       return cleaned || undefined;

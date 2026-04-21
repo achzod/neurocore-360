@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Blood Analysis Questionnaire
+ * APEXLABS - Blood Analysis Questionnaire
  * Questions pour saisir les valeurs du bilan sanguin
  */
 

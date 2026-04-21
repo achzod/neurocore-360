@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Knowledge Base API Routes
+ * APEXLABS - Knowledge Base API Routes
  * Endpoints pour gérer la base de connaissances IA
  */
 

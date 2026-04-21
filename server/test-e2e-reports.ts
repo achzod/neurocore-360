@@ -1,5 +1,5 @@
 /**
- * E2E Test Script for Neurocore 360 Report Generation
+ * E2E Test Script for APEXLABS Report Generation
  * Tests:
  * 1. Ultimate Scan report with Apple wearable data
  * 2. Ultimate Scan report with Ultrahuman wearable data
@@ -496,7 +496,7 @@ async function runTest3_NoWearable() {
 }
 
 async function main() {
-  console.log('🚀 Starting Neurocore 360 E2E Report Tests');
+  console.log('🚀 Starting APEXLABS E2E Report Tests');
   console.log(`📍 Target: ${BASE_URL}`);
   console.log(`📅 ${new Date().toISOString()}`);
 

@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Parallel HTML Blood Report Generator (V3)
+ * APEXLABS - Parallel HTML Blood Report Generator (V3)
  *
  * Architecture:
  *   1. Build shared context (markers, patterns, lifestyle, deep dive)
@@ -836,7 +836,7 @@ REGLES ABSOLUES:
 - ORIENTATION DU RAPPORT:
   - Oriente chaque analyse vers la performance, l'anabolisme, la lipolyse et la recomposition corporelle.
   - Utilise un vocabulaire d'expert terrain: volume tolerable, recuperation, synthese proteique, flexibilite metabolique, adherence.
-  - Appuie tes recommandations sur la bibliotheque de connaissances NEUROCORE 360 et les sources [SRC:ID] disponibles.
+  - Appuie tes recommandations sur la bibliotheque de connaissances APEXLABS et les sources [SRC:ID] disponibles.
   - Relie toujours les decisions nutrition/training/supplements aux marqueurs qui les justifient biologiquement.`;
 
 // ============================================
@@ -1543,7 +1543,7 @@ function buildHtmlReport(
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NEUROCORE 360 | ACHZOD | ${escapeHtml(clientName)} | Bilan sanguin complet</title>
+  <title>APEXLABS | ACHZOD | ${escapeHtml(clientName)} | Bilan sanguin complet</title>
   <style>
     :root {
       --bg: #0a0a0f;
@@ -1864,7 +1864,7 @@ ${SECTION_ORDER.map((key, i) => {
     ${sectionsHtml}
 
     <footer class="report-footer">
-      <p>Ce rapport est genere par <span class="brand">NEUROCORE 360</span> et ne constitue pas un avis medical.</p>
+      <p>Ce rapport est genere par <span class="brand">APEXLABS</span> et ne constitue pas un avis medical.</p>
       <p>Consulte un professionnel de sante pour toute decision medicale.</p>
     </footer>
   </div>

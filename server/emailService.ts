@@ -1515,7 +1515,7 @@ const renderCompositeScoresPanel = (riskProfile?: ComprehensiveRiskProfile): str
         <span class="composite-overall-unit">/100</span>
       </div>
       <div class="composite-overall-copy">
-        <h3>Score global NEUROCORE 360</h3>
+        <h3>Score global APEXLABS</h3>
         <p>${escapeHtml(overall.interpretation)}</p>
       </div>
     </div>
@@ -1725,7 +1725,7 @@ const renderClaudeTabbedReportHtml = (
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NEUROCORE 360 | ACHZOD | ${escapeHtml(clientName)} | Bilan sanguin complet</title>
+  <title>APEXLABS | ACHZOD | ${escapeHtml(clientName)} | Bilan sanguin complet</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232f2822'/%3E%3Cpath d='M32 11l17 42h-8.3l-3.2-8.7H26.4L23.2 53H15L32 11zm2.8 25.8L32 28.7l-2.8 8.1h5.6z' fill='%23f8dcc0'/%3E%3C/svg%3E">
   <style>
     :root {
@@ -2166,7 +2166,7 @@ const renderClaudeTabbedReportHtml = (
   <div class="wrap">
     <header class="header">
       <div class="brand-line">
-        <div class="badge"><span class="badge-dot"></span>NEUROCORE 360</div>
+        <div class="badge"><span class="badge-dot"></span>APEXLABS</div>
         <div class="achzod-mark"><span class="achzod-mark-icon">A</span><span>ACHZOD</span></div>
       </div>
       <h1 class="title">${escapeHtml(clientName)} - Bilan sanguin complet</h1>
@@ -2186,7 +2186,7 @@ const renderClaudeTabbedReportHtml = (
         ${panelsWithExtraTabs}
       </div>
     </main>
-    <p class="footer-note">Rapport ID: ${escapeHtml(reportId)} · Généré pour envoi client · <strong>NEUROCORE 360 by ACHZOD</strong></p>
+    <p class="footer-note">Rapport ID: ${escapeHtml(reportId)} · Généré pour envoi client · <strong>APEXLABS by ACHZOD</strong></p>
     <p class="footer-note">Copyright ${new Date().getFullYear()} ACHZOD. Tous droits réservés.</p>
   </div>
   <script>

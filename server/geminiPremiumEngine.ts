@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Module de génération d'audits avec Gemini
+ * APEXLABS - Module de génération d'audits avec Gemini
  * Génère des audits TXT complets avec 18 sections
  * SYSTÈME PRINCIPAL - NE PAS UTILISER narrativeEngineAI.ts
  * AVEC SYSTÈME DE CACHE PROGRESSIF pour reprendre après crash

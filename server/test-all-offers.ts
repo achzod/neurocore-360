@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Test complet de toutes les offres
+ * APEXLABS - Test complet de toutes les offres
  *
  * Tests:
  * 1. Discovery Scan (GRATUIT)
@@ -581,7 +581,7 @@ async function analyzeReport(auditId: string): Promise<{
 
 async function main() {
   console.log("\n" + "█".repeat(70));
-  console.log("  NEUROCORE 360 - BATTERIE DE TESTS QUALITÉ");
+  console.log("  APEXLABS - BATTERIE DE TESTS QUALITÉ");
   console.log("█".repeat(70));
   console.log(`\n📅 Date: ${new Date().toLocaleString("fr-FR")}`);
   console.log(`🌐 API: ${API_BASE}\n`);

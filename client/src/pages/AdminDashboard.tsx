@@ -1154,7 +1154,7 @@ export default function AdminDashboard() {
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold">PREMIUM J+14 (Dernière chance)</h3>
-                    <p className="text-sm text-muted-foreground">Relance si J+7 non ouvert - NEUROCORE20</p>
+                    <p className="text-sm text-muted-foreground">Relance si J+7 non ouvert - BIOSCAN20</p>
                   </div>
                   <Badge variant="secondary" className="ml-auto">
                     {audits.filter(a => (a.type === "PREMIUM" || a.type === "ELITE") && a.reportDeliveryStatus === "SENT" && getDaysSinceSent(a.reportSentAt) !== null && getDaysSinceSent(a.reportSentAt)! >= 14).length}

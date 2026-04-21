@@ -34,7 +34,7 @@ export async function streamAuditZip(params: {
   res.setHeader("Content-Type", "application/zip");
   res.setHeader(
     "Content-Disposition",
-    `attachment; filename=neurocore-360-${auditId.slice(0, 8)}.zip`
+    `attachment; filename=apexlabs-${auditId.slice(0, 8)}.zip`
   );
 
   zip.pipe(res);

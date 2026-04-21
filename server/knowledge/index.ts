@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Knowledge Base Module
+ * APEXLABS - Knowledge Base Module
  * Export principal pour l'intégration
  */
 

@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Configuration centralisée Gemini
+ * APEXLABS - Configuration centralisée Gemini
  */
 
 export const GEMINI_CONFIG = {

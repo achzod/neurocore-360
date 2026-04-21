@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - PubMed Blood Marker Scraper
+ * APEXLABS - PubMed Blood Marker Scraper
  * Scrape systematic reviews & meta-analyses from PubMed for blood biomarkers
  *
  * Uses PubMed E-utilities API (free, no API key required for <3 req/sec)

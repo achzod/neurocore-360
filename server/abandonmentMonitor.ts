@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Système de surveillance des relances d'abandons
+ * APEXLABS - Système de surveillance des relances d'abandons
  *
  * Surveille en temps réel :
  * - Ouvertures des emails

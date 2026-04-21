@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Blood Marker Knowledge Base Seed
+ * APEXLABS - Blood Marker Knowledge Base Seed
  * Articles curated pour enrichir l'analyse sanguine
  *
  * Axes: sante, performance, prise de muscle, perte de gras, bodybuilding

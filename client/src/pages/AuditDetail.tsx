@@ -435,7 +435,7 @@ export default function AuditDetail() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `neurocore-360-rapport-${auditId.slice(0, 8)}.pdf`;
+        a.download = `apexlabs-rapport-${auditId.slice(0, 8)}.pdf`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
@@ -497,7 +497,7 @@ export default function AuditDetail() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `neurocore-360-rapport-${auditId.slice(0, 8)}.html`;
+      a.download = `apexlabs-rapport-${auditId.slice(0, 8)}.html`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);

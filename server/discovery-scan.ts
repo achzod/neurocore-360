@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Discovery Scan Engine
+ * APEXLABS - Discovery Scan Engine
  * Algo dédié pour l'analyse gratuite (66 questions)
  *
  * OBJECTIF: Analyser et expliquer les blocages SANS recommandations

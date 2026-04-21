@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Knowledge Base Scraper V3
+ * APEXLABS - Knowledge Base Scraper V3
  * Sources: Huberman, SBS, Applied Metabolics, SendPulse, Examine, Peter Attia, Marek, Masterjohn, RP, MPMD
  */
 

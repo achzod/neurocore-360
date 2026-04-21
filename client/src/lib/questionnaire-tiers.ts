@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Système de Questionnaire 3 Tiers
+ * APEXLABS - Système de Questionnaire 3 Tiers
  *
  * GRATUIT (Discovery Scan, 0€): ~66 questions - Dashboard basique
  * ANABOLIC BIOSCAN (59€): ~137 questions - Rapport Achzod 16 sections

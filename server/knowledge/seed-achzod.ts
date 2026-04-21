@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Knowledge Base Seed
+ * APEXLABS - Knowledge Base Seed
  * Articles manuels ACHZOD - Biomécanique, protocoles, expérience terrain
  *
  * Run: npx tsx server/knowledge/seed-achzod.ts

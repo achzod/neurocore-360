@@ -3,7 +3,7 @@ import { getCTADebut, getCTAFin, PRICING } from "./cta";
 import type { AuditTier } from "./types";
 
 /**
- * NEUROCORE 360 - Premium HTML Export Engine
+ * APEXLABS - Premium HTML Export Engine
  * Ultrahuman-inspired design with glassmorphism, bento grids, and tech aesthetics
  */
 

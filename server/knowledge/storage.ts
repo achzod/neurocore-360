@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Knowledge Base Storage
+ * APEXLABS - Knowledge Base Storage
  * Stockage des articles scrapés pour l'apprentissage IA
  */
 

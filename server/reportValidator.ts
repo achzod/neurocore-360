@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Report Quality Validator
+ * APEXLABS - Report Quality Validator
  *
  * Validates generated reports before sending to ensure:
  * - All sections are present and complete
@@ -114,6 +114,8 @@ const CTA_MARKERS = [
   "programme",
   "achzodcoaching",
   "neurocore20",
+  "bioscan20",
+  "discovery20",
   "analyse20",
   "retour30",
   "promo",

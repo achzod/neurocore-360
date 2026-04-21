@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Conversion Tracker
+ * APEXLABS - Conversion Tracker
  *
  * Tracks conversions from:
  * - Meta Ads (Pixel ID: 1120781400174189)

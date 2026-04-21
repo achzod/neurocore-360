@@ -1618,7 +1618,7 @@ export function FullReport({ reportData = DEFAULT_REPORT_DATA, initialTheme = 'n
               animate={{ scale: [1, 1.3, 1] }}
               transition={{ duration: 2, repeat: Infinity }}
             />
-            <span className="text-xs font-mono font-bold tracking-widest uppercase">Neurocore 360</span>
+            <span className="text-xs font-mono font-bold tracking-widest uppercase">APEXLABS</span>
           </div>
           <h1 className="text-xl font-bold tracking-tight">
             Audit: {reportData.clientName}
@@ -1935,7 +1935,7 @@ export function FullReport({ reportData = DEFAULT_REPORT_DATA, initialTheme = 'n
             viewport={{ once: true }}
           >
             <div>
-              <h4 className="font-bold text-lg mb-2 tracking-tight">Neurocore 360</h4>
+              <h4 className="font-bold text-lg mb-2 tracking-tight">APEXLABS</h4>
               <p className="text-[var(--color-text-muted)] text-sm max-w-xs">
                 Achzod Coaching - Excellence · Science · Transformation
               </p>

@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Knowledge Search Integration
+ * APEXLABS - Knowledge Search Integration
  * Intègre la base de connaissances dans la génération de rapports
  */
 

@@ -1,4 +1,4 @@
-# Sources de Connaissances - NEUROCORE 360
+# Sources de Connaissances - APEXLABS
 
 ## 1. Huberman Lab (Public)
 **URL:** https://www.hubermanlab.com/episodes

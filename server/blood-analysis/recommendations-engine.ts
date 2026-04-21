@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Blood Analysis Recommendations Engine
+ * APEXLABS - Blood Analysis Recommendations Engine
  * Génère des recommandations, protocoles et compléments basés sur :
  * - Les marqueurs sanguins analysés
  * - Les risk scores calculés

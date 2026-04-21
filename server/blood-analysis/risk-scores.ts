@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Blood Analysis Risk Scores Engine
+ * APEXLABS - Blood Analysis Risk Scores Engine
  * Comprehensive risk assessments based on bloodwork
  * 
  * Sources: ADA, AHA/ACC, ATP III, Peter Attia, Marek Health

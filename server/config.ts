@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Configuration centralisée
+ * APEXLABS - Configuration centralisée
  */
 
 export const CONFIG = {

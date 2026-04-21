@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Module de generation d'audits avec Claude Opus 4.6
+ * APEXLABS - Module de generation d'audits avec Claude Opus 4.6
  * Remplace openaiPremiumEngine pour une generation plus personnalisee et detaillee
  */
 

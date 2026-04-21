@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Blood Analysis System
+ * APEXLABS - Blood Analysis System
  * Analyse de bilans sanguins avec ranges OPTIMAUX vs normaux
  * Sources: Examine, Peter Attia, Marek Health, Chris Masterjohn, RP, MPMD
  */
@@ -1556,7 +1556,7 @@ function detectPatterns(markers: MarkerAnalysis[]): DiagnosticPattern[] {
 const SOURCE_LABELS: Record<string, string> = {
   huberman: "Huberman Lab",
   applied_metabolics: "Applied Metabolics",
-  newsletter: "NeuroCore Newsletter",
+  newsletter: "APEXLABS Newsletter",
   peter_attia: "Dr. Peter Attia",
   mpmd: "Derek de MPMD",
   chris_masterjohn: "Dr. Chris Masterjohn",
@@ -2405,7 +2405,7 @@ Objectif:
 - Relier chaque décision à la performance, la recomposition corporelle, la récupération et le risque cardio-métabolique.
 - Orientation du rapport: optimisation performance + recomposition corporelle (anabolisme, lipolyse, maintien masse maigre).
 - Utilise le vocabulaire terrain: synthèse protéique, volume tolérable, charge interne, récupération, adhérence.
-- Appuie les décisions sur la bibliothèque de connaissances NEUROCORE 360 et les sources [SRC:ID] disponibles.
+- Appuie les décisions sur la bibliothèque de connaissances APEXLABS et les sources [SRC:ID] disponibles.
 
 Règles critiques:
 - N'invente jamais une valeur, un marqueur, un symptôme, une habitude ou une source.

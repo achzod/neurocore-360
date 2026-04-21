@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Blood Analysis API Routes
+ * APEXLABS - Blood Analysis API Routes
  * Comprehensive bloodwork analysis with risk assessments
  */
 

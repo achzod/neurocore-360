@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Types TypeScript
+ * APEXLABS - Types TypeScript
  * Types partagés pour geminiPremiumEngine, photoAnalysisAI, routes, exportService
  */
 

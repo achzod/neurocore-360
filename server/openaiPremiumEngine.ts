@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Module de génération d'audits avec OpenAI GPT-5.2-2025-12-11
+ * APEXLABS - Module de génération d'audits avec OpenAI GPT-5.2-2025-12-11
  * Adapté de geminiPremiumEngine.ts - Réutilise les mêmes sections et prompts
  */
 

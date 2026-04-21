@@ -2918,7 +2918,7 @@ export async function registerRoutes(
 
       const pdf = await generateExportPDF(narrativeReport, auditId, photos);
       res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", `attachment; filename=neurocore-360-${auditId.slice(0, 8)}.pdf`);
+      res.setHeader("Content-Disposition", `attachment; filename=apexlabs-${auditId.slice(0, 8)}.pdf`);
       res.send(pdf);
     } catch (error) {
       console.error("[Export PDF] Error:", error);
@@ -3023,7 +3023,7 @@ export async function registerRoutes(
 
       console.log(`[Export HTML] Serving ${html.length} chars for audit ${auditId}`);
       res.setHeader("Content-Type", "text/html");
-      res.setHeader("Content-Disposition", `attachment; filename=neurocore-360-${auditId.slice(0, 8)}.html`);
+      res.setHeader("Content-Disposition", `attachment; filename=apexlabs-${auditId.slice(0, 8)}.html`);
       res.send(html);
     } catch (error) {
       console.error("[Export HTML] Error:", error);
@@ -7175,7 +7175,7 @@ export async function registerRoutes(
       }).join("\n");
 
       res.setHeader("Content-Type", "text/csv");
-      res.setHeader("Content-Disposition", `attachment; filename="neurocore-orders-${new Date().toISOString().split("T")[0]}.csv"`);
+      res.setHeader("Content-Disposition", `attachment; filename="apexlabs-orders-${new Date().toISOString().split("T")[0]}.csv"`);
       res.send(header + rows);
     } catch (error) {
       console.error("[Admin CSV] Error:", error);

@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Système automatisé de relances d'abandons
+ * APEXLABS - Système automatisé de relances d'abandons
  *
  * Fonctionnalités :
  * - Détection intelligente des abandons (timing + progression)
