@@ -2697,6 +2697,14 @@ export async function sendAdminEmailNewAudit(
         ? "Blood Analysis"
         : "Ultimate Scan";
 
+    // Delivery window for each audit type (mirrors storage.ts DELIVERY_DELAYS_HOURS)
+    // Discovery + Premium + Elite = 24h delay to batch-smooth inbox load + give
+    // the cron pipeline a clean window. Blood + Burnout deliver immediately.
+    const deliveryHours = (auditType === "GRATUIT" || auditType === "PREMIUM" || auditType === "ELITE") ? 24 : 0;
+    const deliveryText = deliveryHours > 0
+      ? `Email rapport programmé dans ${deliveryHours}h (livraison automatique).`
+      : `Email rapport envoyé au client.`;
+
     const content = `
       <h2 style="color: ${COLORS.text}; margin: 0 0 24px; font-size: 24px; font-weight: 700;">
         Nouvelle analyse generee
@@ -2718,7 +2726,7 @@ export async function sendAdminEmailNewAudit(
       </div>
 
       <p style="color: ${COLORS.primary}; font-size: 14px; line-height: 1.7; margin: 24px 0 0; text-align: center; font-weight: 500;">
-        L'email a ete envoye au contact.
+        ${deliveryText}
       </p>
     `;
 
