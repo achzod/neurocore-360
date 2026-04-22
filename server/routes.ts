@@ -4884,6 +4884,25 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/admin/audits/:id/mark-handled", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { pool } = await import("./db");
+      const result = await pool.query(
+        "UPDATE audits SET report_delivery_status = 'SENT', report_sent_at = NOW() WHERE id = $1 AND report_delivery_status IN ('SCHEDULED','READY') RETURNING id",
+        [req.params.id]
+      );
+      if (result.rowCount === 0) {
+        res.status(404).json({ success: false, error: "Audit introuvable ou déjà traité (pas SCHEDULED/READY)" });
+        return;
+      }
+      res.json({ success: true, auditId: req.params.id });
+    } catch (error) {
+      console.error("[Admin] mark-handled error:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
   app.post("/api/admin/orders/:id/cancel", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
