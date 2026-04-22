@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useSearch } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +16,13 @@ export default function Login() {
   const search = useSearch();
   const { toast } = useToast();
   const [email, setEmail] = useState("");
-  const next = new URLSearchParams(search).get("next") || "";
+  const params = new URLSearchParams(search);
+  const next = params.get("next") || "";
+  const prefillEmail = params.get("email") || "";
+
+  useEffect(() => {
+    if (prefillEmail && !email) setEmail(prefillEmail);
+  }, [prefillEmail, email]);
 
   const sendMagicLinkMutation = useMutation({
     mutationFn: async () => {
