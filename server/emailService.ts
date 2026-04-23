@@ -2986,6 +2986,201 @@ Achzod`;
   }
 }
 
+// Abandoner campaign: people who started the Discovery questionnaire but never
+// finished it. Primary CTA: resume the free scan (2 min to complete). Soft
+// secondary mention of the APEX30 code if they'd rather skip ahead.
+export async function sendFinishDiscoveryEmail(
+  email: string,
+  opts: { apexPromoCode?: string; expiresText?: string } = {}
+): Promise<boolean> {
+  try {
+    const APEX_CODE = opts.apexPromoCode || "APEX30";
+    const EXPIRES = opts.expiresText || "7 jours";
+    const resumeHref = `https://apexlabs.achzodcoaching.com/audit-complet/questionnaire`;
+    const peptidesHref = `https://apexlabs.achzodcoaching.com/peptides-engine?promo=${APEX_CODE}`;
+
+    const content = `
+      <p style="color: ${COLORS.textMuted}; font-size: 13px; text-align: center; margin: 0 0 8px 0; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 600;">Rappel personnel</p>
+      <h2 style="color: ${COLORS.text}; margin: 0 0 20px 0; font-size: 26px; line-height: 1.25; text-align: center; font-weight: 800; letter-spacing: -0.6px;">
+        Il te reste 2 minutes pour finir ton scan gratuit.
+      </h2>
+      <p style="color: ${COLORS.textMuted}; font-size: 15px; line-height: 1.7; margin: 0 0 14px 0;">
+        T'as commence ton Discovery APEXLABS il y a quelques jours mais tu n'es pas alle au bout. Zero pression , juste un rappel : ton rapport personnalise t'attend a la fin. Gratuit, 66 questions, 2 a 3 min.
+      </p>
+      <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.7; margin: 0 0 22px 0;">
+        Ton rapport te donne 10 domaines analyses (energie, sommeil, hormones, recup, stress, nutrition, etc.), une priorisation des points a travailler, et les scans payants qui te correspondent si tu veux aller plus profond.
+      </p>
+
+      <!-- Primary CTA: resume -->
+      <div style="margin: 0 0 24px 0; padding: 22px; background: linear-gradient(135deg, rgba(34, 211, 238, 0.12) 0%, rgba(34, 211, 238, 0.03) 100%); border-radius: 14px; border: 1px solid rgba(34, 211, 238, 0.25); text-align: center;">
+        <p style="margin: 0 0 6px 0; color: ${COLORS.discovery}; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700;">Gratuit , 2 min</p>
+        <h3 style="margin: 0 0 8px 0; color: ${COLORS.text}; font-size: 20px; font-weight: 800; letter-spacing: -0.3px;">Reprends ou refais ton Discovery</h3>
+        <p style="margin: 0 0 4px 0; color: ${COLORS.textMuted}; font-size: 13px; line-height: 1.6;">
+          Tu reprends la ou tu t'etais arrete , ou tu repars de zero si tu veux.
+        </p>
+        ${getPrimaryButton('Finir mon scan gratuit', resumeHref, COLORS.discovery)}
+      </div>
+
+      <!-- Divider -->
+      <div style="height: 1px; background: ${COLORS.border}; margin: 28px 0;"></div>
+
+      <!-- Soft secondary -->
+      <p style="color: ${COLORS.textMuted}; font-size: 12px; text-align: center; margin: 0 0 10px 0; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 600;">Ou si tu veux skip l'etape du scan gratuit</p>
+      <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.7; margin: 0 0 14px 0;">
+        J'ouvre le code <strong style="color: ${COLORS.primary};">${APEX_CODE}</strong> pendant ${EXPIRES} : -30% sur tout le site APEXLABS. Le plus puissant c'est le Peptides Engine (protocole base sur mes sources direct fournisseur) , 209EUR au lieu de 299EUR, et -150EUR deduits du coaching Elite/Private Lab apres.
+      </p>
+      ${getPrimaryButton('Voir Peptides Engine (-30%)', peptidesHref, COLORS.primary)}
+
+      <p style="color: ${COLORS.textMuted}; font-size: 12px; text-align: center; margin: 24px 0 0 0;">
+        Code valable jusqu'au 30/04.
+      </p>
+      <p style="color: ${COLORS.text}; font-size: 14px; margin: 20px 0 0 0; font-weight: 600;">Achzod</p>
+    `;
+
+    const emailContent = getEmailWrapper(
+      content,
+      `linear-gradient(135deg, ${COLORS.discovery} 0%, #0891b2 100%)`,
+      "Ton scan t'attend",
+      "66 questions , 2 minutes , gratuit"
+    );
+
+    const plainText = `Il te reste 2 minutes pour finir ton Discovery APEXLABS gratuit. Tu reprends la ou tu t'etais arrete. 66 questions, 10 domaines analyses, rapport personnalise immediat.
+
+Finir mon scan : ${resumeHref}
+
+Ou si tu veux skip et aller direct a l'action : code ${APEX_CODE} (-30% tout le site pendant ${EXPIRES}). Focus Peptides Engine 209EUR au lieu de 299EUR + -150EUR deduits du coaching Elite/Private Lab apres : ${peptidesHref}
+
+Code valable jusqu'au 30/04.
+
+Achzod`;
+
+    const result = await sendEmailWithTracking(
+      {
+        subject: "Il te reste 2 min pour finir ton scan gratuit",
+        from: { name: SENDER_NAME, email: SENDER_EMAIL },
+        to: [{ email }],
+        html: encodeBase64(emailContent),
+        text: plainText,
+      },
+      {
+        emailType: "sendFinishDiscoveryEmail",
+        recipientEmail: email,
+        metadata: { apexCode: APEX_CODE },
+      }
+    );
+    return result.result === true;
+  } catch (error) {
+    console.error("[SendPulse] Error sending finish-discovery email:", error);
+    return false;
+  }
+}
+
+// Cross-sell campaign: clients who already paid for at least one APEX product.
+// Warm buyers — primary CTA is coaching (where real transformation happens),
+// secondary CTA is Peptides Engine for those who bought a scan only.
+export async function sendCrossSellUpgradeEmail(
+  email: string,
+  opts: { apexPromoCode?: string; coachingPromoCode?: string; expiresText?: string } = {}
+): Promise<boolean> {
+  try {
+    const APEX_CODE = opts.apexPromoCode || "APEX30";
+    const COACHING_CODE = opts.coachingPromoCode || "ANALYSE20";
+    const EXPIRES = opts.expiresText || "7 jours";
+    const coachingHref = "https://www.achzodcoaching.com/";
+    const peptidesHref = `https://apexlabs.achzodcoaching.com/peptides-engine?promo=${APEX_CODE}`;
+
+    const content = `
+      <p style="color: ${COLORS.textMuted}; font-size: 13px; text-align: center; margin: 0 0 8px 0; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 600;">Entre nous , deja client</p>
+      <h2 style="color: ${COLORS.text}; margin: 0 0 20px 0; font-size: 26px; line-height: 1.25; text-align: center; font-weight: 800; letter-spacing: -0.6px;">
+        Tu as fait le scan.<br/>Voici l'etape d'apres.
+      </h2>
+      <p style="color: ${COLORS.textMuted}; font-size: 15px; line-height: 1.75; margin: 0 0 14px 0;">
+        Tu as deja passe le cap de prendre un audit APEXLABS , merci pour ta confiance. Mais les datas seules ne transforment pas un corps. Ce qui transforme, c'est la mise en application, les bons protocoles, le suivi.
+      </p>
+      <p style="color: ${COLORS.textMuted}; font-size: 15px; line-height: 1.75; margin: 0 0 22px 0;">
+        Deux chemins pour toi selon ou tu en es :
+      </p>
+
+      <!-- BLOCK 1: Coaching -->
+      <div style="margin: 0 0 24px 0; padding: 24px 22px; background: linear-gradient(135deg, rgba(139, 92, 246, 0.14) 0%, rgba(139, 92, 246, 0.04) 100%); border-radius: 14px; border: 1px solid rgba(139, 92, 246, 0.28);">
+        <p style="margin: 0 0 4px 0; color: ${COLORS.purple}; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700;">Chemin 1 , le plus direct</p>
+        <h3 style="margin: 0 0 10px 0; color: ${COLORS.text}; font-size: 20px; font-weight: 800; letter-spacing: -0.3px;">Coaching Achzod , -20% avec ${COACHING_CODE}</h3>
+        <p style="margin: 0 0 12px 0; color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.65;">
+          L'audit te dit quoi faire. Le coaching te tient la main pour le faire. Essential, Elite, Private Lab , tu choisis le format qui te colle.
+        </p>
+        <p style="margin: 0 0 14px 0; color: ${COLORS.text}; font-size: 13.5px; line-height: 1.7; font-weight: 600;">
+          Rappel : le montant de ton audit est deduit du coaching. C'est un acompte.
+        </p>
+        <div style="display: inline-block; padding: 8px 14px; background: rgba(139, 92, 246, 0.15); border: 1px dashed ${COLORS.purple}; border-radius: 8px; margin-bottom: 6px;">
+          <span style="color: ${COLORS.textMuted}; font-size: 11px; letter-spacing: 1px; text-transform: uppercase;">Code : </span>
+          <span style="color: ${COLORS.text}; font-size: 16px; font-weight: 800; letter-spacing: 1.5px;">${COACHING_CODE}</span>
+        </div>
+        ${getPrimaryButton('Voir les formules coaching', coachingHref, COLORS.purple)}
+      </div>
+
+      <!-- BLOCK 2: Peptides (urgency) -->
+      <div style="margin: 0 0 20px 0; padding: 24px 22px; background: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(239, 68, 68, 0.04) 100%); border-radius: 14px; border: 2px solid ${COLORS.warning};">
+        <p style="margin: 0 0 4px 0; color: ${COLORS.warning}; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700;">Chemin 2 , sourcing bientot coupe</p>
+        <h3 style="margin: 0 0 10px 0; color: ${COLORS.text}; font-size: 20px; font-weight: 800; letter-spacing: -0.3px;">Peptides Engine , -30% avec ${APEX_CODE}</h3>
+        <p style="margin: 0 0 12px 0; color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.65;">
+          Mon produit le plus puissant. Protocole base sur <strong style="color: ${COLORS.text};">mes sources direct fournisseur</strong> , celles que j'utilise, doses exactes, testees. Mes contacts commencent a restreindre l'acces. Dans 6 mois c'est peut-etre ferme.
+        </p>
+        <p style="margin: 0 0 4px 0;">
+          <span style="color: ${COLORS.textMuted}; font-size: 12px; text-decoration: line-through;">299EUR</span>
+          <span style="color: ${COLORS.warning}; font-size: 22px; font-weight: 800; margin-left: 8px;">209EUR</span>
+        </p>
+        <p style="margin: 0 0 4px 0; color: ${COLORS.textMuted}; font-size: 12px; line-height: 1.6;">
+          + <strong style="color: ${COLORS.text};">150EUR deduits</strong> si tu passes ensuite sur Elite ou Private Lab.
+        </p>
+        ${getPrimaryButton('Je prends Peptides Engine', peptidesHref, COLORS.warning)}
+      </div>
+
+      <p style="color: ${COLORS.textMuted}; font-size: 12px; text-align: center; margin: 24px 0 0 0;">
+        Codes valables jusqu'au 30/04. Apres c'est plein tarif.
+      </p>
+      <p style="color: ${COLORS.text}; font-size: 14px; margin: 20px 0 0 0; font-weight: 600;">Achzod</p>
+    `;
+
+    const emailContent = getEmailWrapper(
+      content,
+      `linear-gradient(135deg, ${COLORS.primary} 0%, #d4a017 100%)`,
+      "L'etape d'apres",
+      `Codes ${COACHING_CODE} (coaching) + ${APEX_CODE} (APEX) , ${EXPIRES}`
+    );
+
+    const plainText = `Tu as deja pris un audit APEXLABS. Voici les 2 chemins pour passer a l'action.
+
+1. COACHING ACHZOD -20% avec ${COACHING_CODE} : ${coachingHref}
+Essential, Elite, Private Lab. Rappel : ton audit est deduit du coaching (acompte, pas supplement).
+
+2. PEPTIDES ENGINE -30% avec ${APEX_CODE} : ${peptidesHref}
+Protocole base sur mes sources direct fournisseur. 209EUR au lieu de 299EUR + -150EUR deduits du coaching Elite/Private Lab apres. Sources bientot coupees.
+
+Codes valables jusqu'au 30/04.
+
+Achzod`;
+
+    const result = await sendEmailWithTracking(
+      {
+        subject: "Tu as fait le scan. L'etape d'apres.",
+        from: { name: SENDER_NAME, email: SENDER_EMAIL },
+        to: [{ email }],
+        html: encodeBase64(emailContent),
+        text: plainText,
+      },
+      {
+        emailType: "sendCrossSellUpgradeEmail",
+        recipientEmail: email,
+        metadata: { apexCode: APEX_CODE, coachingCode: COACHING_CODE },
+      }
+    );
+    return result.result === true;
+  } catch (error) {
+    console.error("[SendPulse] Error sending cross-sell upgrade email:", error);
+    return false;
+  }
+}
+
 // Email Discovery J+3: pivot vers le coaching directement (plus d'upsell audit intermédiaire).
 // Push Essential (entry tier) avec DISCOVERY20. L'objectif est d'établir le coaching
 // comme la "vraie solution" dès J+3 plutôt que de vendre un 2e audit à 59€.

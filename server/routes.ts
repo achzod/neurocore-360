@@ -31,6 +31,8 @@ import {
   sendPeptidesCycle2ReorderEmail,
   sendDiscoveryJ30NurtureEmail,
   sendReactivationCampaignEmail,
+  sendFinishDiscoveryEmail,
+  sendCrossSellUpgradeEmail,
 } from "./emailService";
 import { generateExportHTML, generateExportPDF } from "./exportService";
 import { generateAndConvertAuditWithClaude } from "./anthropicEngine";
@@ -4910,6 +4912,57 @@ export async function registerRoutes(
       res.json({ success: true, email });
     } catch (error) {
       console.error("[Admin] send-reactivation-campaign error:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  app.post("/api/admin/send-finish-discovery", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { email, apexPromoCode, expiresText } = req.body as {
+        email?: string; apexPromoCode?: string; expiresText?: string;
+      };
+      if (!email || !email.includes("@")) {
+        res.status(400).json({ success: false, error: "email requis" });
+        return;
+      }
+      const sent = await sendFinishDiscoveryEmail(email.trim().toLowerCase(), {
+        apexPromoCode,
+        expiresText,
+      });
+      if (!sent) {
+        res.status(500).json({ success: false, error: "Echec envoi" });
+        return;
+      }
+      res.json({ success: true, email });
+    } catch (error) {
+      console.error("[Admin] send-finish-discovery error:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  app.post("/api/admin/send-cross-sell-upgrade", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { email, apexPromoCode, coachingPromoCode, expiresText } = req.body as {
+        email?: string; apexPromoCode?: string; coachingPromoCode?: string; expiresText?: string;
+      };
+      if (!email || !email.includes("@")) {
+        res.status(400).json({ success: false, error: "email requis" });
+        return;
+      }
+      const sent = await sendCrossSellUpgradeEmail(email.trim().toLowerCase(), {
+        apexPromoCode,
+        coachingPromoCode,
+        expiresText,
+      });
+      if (!sent) {
+        res.status(500).json({ success: false, error: "Echec envoi" });
+        return;
+      }
+      res.json({ success: true, email });
+    } catch (error) {
+      console.error("[Admin] send-cross-sell-upgrade error:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
     }
   });
