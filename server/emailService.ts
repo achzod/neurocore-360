@@ -2819,6 +2819,173 @@ export async function sendCTAEmail(
   }
 }
 
+// Reactivation campaign for warm-but-blocked Discovery leads.
+// Opened their report, never bought, are still within reach.
+// Sends: coaching ANALYSE20 + APEX20 all-site (focus Peptides with sourcing urgency).
+export async function sendReactivationCampaignEmail(
+  email: string,
+  opts: { apexPromoCode?: string; coachingPromoCode?: string; expiresText?: string } = {}
+): Promise<boolean> {
+  try {
+    const APEX_CODE = opts.apexPromoCode || "APEX20";
+    const COACHING_CODE = opts.coachingPromoCode || "ANALYSE20";
+    const EXPIRES = opts.expiresText || "7 jours";
+
+    const peptidesHref = `https://apexlabs.achzodcoaching.com/peptides-engine?promo=${APEX_CODE}`;
+    const ultimateHref = `https://apexlabs.achzodcoaching.com/audit-complet/checkout?plan=ultimate&promo=${APEX_CODE}`;
+    const bloodHref = `https://apexlabs.achzodcoaching.com/blood-analysis?promo=${APEX_CODE}`;
+    const anabolicHref = `https://apexlabs.achzodcoaching.com/audit-complet/checkout?plan=anabolic&promo=${APEX_CODE}`;
+    const coachingHref = "https://www.achzodcoaching.com/";
+
+    const miniProductRow = (label: string, subtitle: string, oldPrice: string, newPrice: string, href: string, accent: string) => `
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin: 0 0 12px 0; background: ${COLORS.surface}; border: 1px solid ${COLORS.border}; border-left: 3px solid ${accent}; border-radius: 10px;">
+        <tr>
+          <td style="padding: 16px 18px;">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+              <tr>
+                <td style="vertical-align: middle;">
+                  <p style="margin: 0 0 4px 0; color: ${COLORS.text}; font-size: 15px; font-weight: 700; letter-spacing: -0.2px;">${label}</p>
+                  <p style="margin: 0; color: ${COLORS.textMuted}; font-size: 12px; line-height: 1.5;">${subtitle}</p>
+                </td>
+                <td align="right" style="vertical-align: middle; white-space: nowrap; padding-left: 12px;">
+                  <p style="margin: 0 0 2px 0; color: ${COLORS.textMuted}; font-size: 11px; text-decoration: line-through;">${oldPrice}</p>
+                  <p style="margin: 0 0 6px 0; color: ${accent}; font-size: 18px; font-weight: 800;">${newPrice}</p>
+                  <a href="${href}" style="display: inline-block; background: ${accent}; color: #000000; font-size: 11px; font-weight: 700; padding: 6px 14px; border-radius: 6px; text-decoration: none; text-transform: uppercase; letter-spacing: 0.4px;">Prendre</a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>`;
+
+    const content = `
+      <!-- Opening hook -->
+      <p style="color: ${COLORS.textMuted}; font-size: 13px; text-align: center; margin: 0 0 8px 0; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 600;">Relance personnelle</p>
+      <h2 style="color: ${COLORS.text}; margin: 0 0 20px 0; font-size: 26px; line-height: 1.25; text-align: center; font-weight: 800; letter-spacing: -0.6px;">
+        T'as ouvert ton Discovery.<br/>Puis plus rien.
+      </h2>
+      <p style="color: ${COLORS.textMuted}; font-size: 15px; line-height: 1.7; margin: 0 0 12px 0;">
+        Sans juger, j'essaie juste de comprendre. Une seule question :
+      </p>
+      <p style="color: ${COLORS.text}; font-size: 17px; line-height: 1.5; margin: 0 0 12px 0; font-weight: 700;">
+        Qu'est-ce qui t'a bloque ?
+      </p>
+      <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.7; margin: 0 0 8px 0;">
+        Reponds en 1 ligne. Prix ? Pas le bon moment ? Rapport pas convaincant ? Autre chose ? Ca m'aide enormement.
+      </p>
+
+      <!-- Divider -->
+      <div style="height: 1px; background: ${COLORS.border}; margin: 32px 0;"></div>
+
+      <p style="color: ${COLORS.textMuted}; font-size: 13px; text-align: center; margin: 0 0 20px 0; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 600;">Si tu veux reprendre , ${EXPIRES}</p>
+
+      <!-- BLOCK 1: Coaching -->
+      <div style="margin: 0 0 28px 0; padding: 24px 22px; background: linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(139, 92, 246, 0.03) 100%); border-radius: 14px; border: 1px solid rgba(139, 92, 246, 0.25);">
+        <p style="margin: 0 0 4px 0; color: ${COLORS.purple}; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700;">Option 1</p>
+        <h3 style="margin: 0 0 10px 0; color: ${COLORS.text}; font-size: 20px; font-weight: 800; letter-spacing: -0.3px;">Coaching Achzod , -20%</h3>
+        <p style="margin: 0 0 16px 0; color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.65;">
+          Si ton objectif c'est de passer a l'action (pas juste lire des rapports), c'est la que ca se joue. Essential, Elite, Private Lab , tous les formats.
+        </p>
+        <div style="display: inline-block; padding: 8px 14px; background: rgba(139, 92, 246, 0.15); border: 1px dashed ${COLORS.purple}; border-radius: 8px; margin-bottom: 6px;">
+          <span style="color: ${COLORS.textMuted}; font-size: 11px; letter-spacing: 1px; text-transform: uppercase;">Code : </span>
+          <span style="color: ${COLORS.text}; font-size: 16px; font-weight: 800; letter-spacing: 1.5px;">${COACHING_CODE}</span>
+        </div>
+        ${getPrimaryButton('Voir les formules coaching', coachingHref, COLORS.purple)}
+      </div>
+
+      <!-- BLOCK 2: APEX20 site-wide -->
+      <div style="margin: 0 0 20px 0; padding: 24px 22px; background: linear-gradient(135deg, rgba(252, 221, 0, 0.10) 0%, rgba(252, 221, 0, 0.02) 100%); border-radius: 14px; border: 1px solid ${COLORS.border};">
+        <p style="margin: 0 0 4px 0; color: ${COLORS.primary}; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700;">Option 2</p>
+        <h3 style="margin: 0 0 10px 0; color: ${COLORS.text}; font-size: 20px; font-weight: 800; letter-spacing: -0.3px;">Tout le site APEXLABS , -20%</h3>
+        <div style="display: inline-block; padding: 8px 14px; background: rgba(252, 221, 0, 0.12); border: 1px dashed ${COLORS.primary}; border-radius: 8px; margin-bottom: 20px;">
+          <span style="color: ${COLORS.textMuted}; font-size: 11px; letter-spacing: 1px; text-transform: uppercase;">Code : </span>
+          <span style="color: ${COLORS.primary}; font-size: 16px; font-weight: 800; letter-spacing: 1.5px;">${APEX_CODE}</span>
+        </div>
+
+        <!-- Urgency Peptides -->
+        <div style="margin: 0 0 20px 0; padding: 20px; background: linear-gradient(135deg, rgba(245, 158, 11, 0.14) 0%, rgba(239, 68, 68, 0.06) 100%); border-radius: 12px; border: 2px solid ${COLORS.warning};">
+          <p style="margin: 0 0 4px 0; color: ${COLORS.warning}; font-size: 10px; letter-spacing: 1.8px; text-transform: uppercase; font-weight: 800;">&#9888; Source bientot coupee</p>
+          <h4 style="margin: 0 0 8px 0; color: ${COLORS.text}; font-size: 19px; font-weight: 800; letter-spacing: -0.3px;">Peptides Engine</h4>
+          <p style="margin: 0 0 12px 0; color: ${COLORS.textMuted}; font-size: 13.5px; line-height: 1.65;">
+            Mon produit le plus puissant : protocole peptides base sur <strong style="color: ${COLORS.text};">mes sources direct fournisseur</strong> , les memes que j'utilise, testees, doses exactes. Mes contacts me disent qu'ils vont restreindre l'acces a un cercle ferme. Si t'attends 6 mois, je peux plus te garantir la meme orientation.
+          </p>
+          <p style="margin: 0 0 4px 0;">
+            <span style="color: ${COLORS.textMuted}; font-size: 12px; text-decoration: line-through;">299EUR</span>
+            <span style="color: ${COLORS.warning}; font-size: 22px; font-weight: 800; margin-left: 8px;">239EUR</span>
+          </p>
+          <p style="margin: 0 0 4px 0; color: ${COLORS.textMuted}; font-size: 12px; line-height: 1.6;">
+            + <strong style="color: ${COLORS.text};">150EUR deduits</strong> si tu passes ensuite sur Elite ou Private Lab.
+          </p>
+          ${getPrimaryButton('Je prends Peptides Engine', peptidesHref, COLORS.warning)}
+        </div>
+
+        <p style="margin: 0 0 12px 0; color: ${COLORS.textMuted}; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; font-weight: 600;">Ou les autres scans , tous -20%</p>
+
+        ${miniProductRow('Ultimate Scan', '18 sections + posture + wearables + plan nutrition/training sur-mesure', '79EUR', '63EUR', ultimateHref, COLORS.purple)}
+        ${miniProductRow('Blood Analysis', '39 biomarqueurs : hormones, thyroide, metabolisme, inflammation, vitamines', '99EUR', '79EUR', bloodHref, COLORS.blood)}
+        ${miniProductRow('Anabolic Bioscan', 'Scan hormonal cible : testo, cortisol, thyroide, potentiel anabolique', '59EUR', '47EUR', anabolicHref, COLORS.anabolic)}
+      </div>
+
+      <!-- Deduction recap -->
+      <div style="margin: 24px 0 0 0; padding: 18px; background: ${COLORS.surface}; border-radius: 10px; border: 1px solid ${COLORS.border};">
+        <p style="margin: 0 0 10px 0; color: ${COLORS.text}; font-size: 13px; font-weight: 700;">Rappel deduction coaching</p>
+        <p style="margin: 0 0 6px 0; color: ${COLORS.textMuted}; font-size: 12.5px; line-height: 1.8;">&bull; Peptides Engine : <strong style="color: ${COLORS.text};">-150EUR</strong> sur Elite / Private Lab</p>
+        <p style="margin: 0 0 6px 0; color: ${COLORS.textMuted}; font-size: 12.5px; line-height: 1.8;">&bull; Ultimate Scan : <strong style="color: ${COLORS.text};">-79EUR</strong> sur tout coaching</p>
+        <p style="margin: 0 0 6px 0; color: ${COLORS.textMuted}; font-size: 12.5px; line-height: 1.8;">&bull; Blood Analysis : <strong style="color: ${COLORS.text};">-99EUR</strong> sur tout coaching</p>
+        <p style="margin: 0 0 10px 0; color: ${COLORS.textMuted}; font-size: 12.5px; line-height: 1.8;">&bull; Anabolic Bioscan : <strong style="color: ${COLORS.text};">-59EUR</strong> sur tout coaching</p>
+        <p style="margin: 0; color: ${COLORS.textMuted}; font-size: 12px; font-style: italic;">C'est un acompte, pas un supplement.</p>
+      </div>
+
+      <p style="color: ${COLORS.textMuted}; font-size: 12px; text-align: center; margin: 24px 0 0 0;">
+        Les codes expirent le 30/04. Apres c'est plein tarif.
+      </p>
+      <p style="color: ${COLORS.text}; font-size: 14px; margin: 20px 0 0 0; font-weight: 600;">Achzod</p>
+    `;
+
+    const emailContent = getEmailWrapper(
+      content,
+      `linear-gradient(135deg, ${COLORS.primary} 0%, #d4a017 100%)`,
+      "Une derniere chance",
+      `Code ${APEX_CODE} , -20% tout le site (${EXPIRES})`
+    );
+
+    const plainText = `Tu as ouvert ton Discovery APEXLABS il y a quelques semaines mais tu n'as pas pris la suite. Qu'est-ce qui t'a bloque ? Reponds en 1 ligne, ca m'aide enormement.
+
+Si tu veux reprendre, 2 codes pendant ${EXPIRES} :
+1. COACHING ACHZOD , -20% avec le code ${COACHING_CODE} : ${coachingHref}
+2. TOUT LE SITE APEXLABS , -20% avec le code ${APEX_CODE}
+
+Focus Peptides Engine (239EUR au lieu de 299EUR + -150EUR deduits du coaching Elite/Private Lab apres) : ${peptidesHref}
+Ultimate Scan (63EUR au lieu de 79EUR) : ${ultimateHref}
+Blood Analysis (79EUR au lieu de 99EUR) : ${bloodHref}
+Anabolic Bioscan (47EUR au lieu de 59EUR) : ${anabolicHref}
+
+Sources Peptides bientot coupees (mes contacts vont restreindre l'acces a un cercle ferme). Les codes expirent le 30/04.
+
+Achzod`;
+
+    const result = await sendEmailWithTracking(
+      {
+        subject: "Tu as ouvert ton Discovery. Puis plus rien.",
+        from: { name: SENDER_NAME, email: SENDER_EMAIL },
+        to: [{ email }],
+        html: encodeBase64(emailContent),
+        text: plainText,
+      },
+      {
+        emailType: "sendReactivationCampaignEmail",
+        recipientEmail: email,
+        metadata: { apexCode: APEX_CODE, coachingCode: COACHING_CODE },
+      }
+    );
+
+    return result.result === true;
+  } catch (error) {
+    console.error("[SendPulse] Error sending reactivation campaign email:", error);
+    return false;
+  }
+}
+
 // Email Discovery J+3: pivot vers le coaching directement (plus d'upsell audit intermédiaire).
 // Push Essential (entry tier) avec DISCOVERY20. L'objectif est d'établir le coaching
 // comme la "vraie solution" dès J+3 plutôt que de vendre un 2e audit à 59€.

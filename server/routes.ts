@@ -30,6 +30,7 @@ import {
   sendPeptidesReviewS12Email,
   sendPeptidesCycle2ReorderEmail,
   sendDiscoveryJ30NurtureEmail,
+  sendReactivationCampaignEmail,
 } from "./emailService";
 import { generateExportHTML, generateExportPDF } from "./exportService";
 import { generateAndConvertAuditWithClaude } from "./anthropicEngine";
@@ -4880,6 +4881,35 @@ export async function registerRoutes(
       res.json({ success: true, order });
     } catch (error) {
       console.error("[Admin Orders] Error getting order:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  app.post("/api/admin/send-reactivation-campaign", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { email, apexPromoCode, coachingPromoCode, expiresText } = req.body as {
+        email?: string;
+        apexPromoCode?: string;
+        coachingPromoCode?: string;
+        expiresText?: string;
+      };
+      if (!email || !email.includes("@")) {
+        res.status(400).json({ success: false, error: "email requis" });
+        return;
+      }
+      const sent = await sendReactivationCampaignEmail(email.trim().toLowerCase(), {
+        apexPromoCode,
+        coachingPromoCode,
+        expiresText,
+      });
+      if (!sent) {
+        res.status(500).json({ success: false, error: "Echec envoi" });
+        return;
+      }
+      res.json({ success: true, email });
+    } catch (error) {
+      console.error("[Admin] send-reactivation-campaign error:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
     }
   });
