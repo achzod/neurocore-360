@@ -73,6 +73,31 @@ async function buildAll() {
       `  <url><loc>${BASE}/blog/${article.slug}</loc><lastmod>${lastmod}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>`
     );
   }
+
+  // Category pillar pages — one URL per non-empty category. Mirrors the
+  // CATEGORY_LABELS map in server/static.ts and the BLOG_CATEGORIES list in
+  // client/src/data/blogTypes.ts; keep these three in sync.
+  const categorySlugs = [
+    "musculation",
+    "sarms",
+    "supplements",
+    "hormones",
+    "sommeil",
+    "stress",
+    "nutrition",
+    "performance",
+    "metabolisme",
+    "longevite",
+    "biohacking",
+    "femmes",
+  ];
+  for (const slug of categorySlugs) {
+    const count = articles.filter((a: any) => a.category === slug).length;
+    if (count === 0) continue;
+    sitemapEntries.push(
+      `  <url><loc>${BASE}/blog/categorie/${slug}</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>`
+    );
+  }
   const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemapEntries.join("\n")}\n</urlset>\n`;
   await writeFile(resolve("client", "public", "sitemap.xml"), sitemapXml);
   console.log(`sitemap.xml: ${staticPages.length + articles.length} URLs`);

@@ -63,6 +63,7 @@ const PeptidesEnginePage = lazy(() => import("@/pages/PeptidesEnginePage"));
 const PeptidesEngineReport = lazy(() => import("@/pages/PeptidesEngineReport"));
 const Blog = lazy(() => import("@/pages/Blog"));
 const BlogArticle = lazy(() => import("@/pages/BlogArticle"));
+const BlogCategory = lazy(() => import("@/pages/BlogCategory"));
 const Press = lazy(() => import("@/pages/Press"));
 const DeductionCoaching = lazy(() => import("@/pages/DeductionCoaching"));
 const ApexLabs = lazy(() => import("@/pages/ApexLabs"));
@@ -195,6 +196,7 @@ function Router() {
         <Route path="/politique-confidentialite" component={PolitiqueConfidentialite} />
         <Route path="/faq" component={FAQ} />
         <Route path="/blog" component={Blog} />
+        <Route path="/blog/categorie/:slug" component={BlogCategory} />
         <Route path="/blog/:slug" component={BlogArticle} />
         <Route path="/press" component={Press} />
         <Route path="/deduction-coaching" component={DeductionCoaching} />
