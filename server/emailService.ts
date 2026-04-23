@@ -2862,7 +2862,7 @@ export async function sendReactivationCampaignEmail(
       <!-- Opening hook -->
       <p style="color: ${COLORS.textMuted}; font-size: 13px; text-align: center; margin: 0 0 8px 0; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 600;">Relance personnelle</p>
       <h2 style="color: ${COLORS.text}; margin: 0 0 20px 0; font-size: 26px; line-height: 1.25; text-align: center; font-weight: 800; letter-spacing: -0.6px;">
-        T'as ouvert ton Discovery.<br/>Puis plus rien.
+        Ca fait quelques semaines depuis ton Discovery.<br/>Et pas de suite.
       </h2>
       <p style="color: ${COLORS.textMuted}; font-size: 15px; line-height: 1.7; margin: 0 0 12px 0;">
         Sans juger, j'essaie juste de comprendre. Une seule question :
@@ -2949,7 +2949,7 @@ export async function sendReactivationCampaignEmail(
       `Code ${APEX_CODE} , -20% tout le site (${EXPIRES})`
     );
 
-    const plainText = `Tu as ouvert ton Discovery APEXLABS il y a quelques semaines mais tu n'as pas pris la suite. Qu'est-ce qui t'a bloque ? Reponds en 1 ligne, ca m'aide enormement.
+    const plainText = `Ca fait quelques semaines depuis ton Discovery APEXLABS et tu n'as pas pris la suite. Qu'est-ce qui t'a bloque ? Reponds en 1 ligne, ca m'aide enormement.
 
 Si tu veux reprendre, 2 codes pendant ${EXPIRES} :
 1. COACHING ACHZOD , -20% avec le code ${COACHING_CODE} : ${coachingHref}
@@ -2966,7 +2966,7 @@ Achzod`;
 
     const result = await sendEmailWithTracking(
       {
-        subject: "Tu as ouvert ton Discovery. Puis plus rien.",
+        subject: "Ton Discovery , et apres ?",
         from: { name: SENDER_NAME, email: SENDER_EMAIL },
         to: [{ email }],
         html: encodeBase64(emailContent),
