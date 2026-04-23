@@ -2821,13 +2821,13 @@ export async function sendCTAEmail(
 
 // Reactivation campaign for warm-but-blocked Discovery leads.
 // Opened their report, never bought, are still within reach.
-// Sends: coaching ANALYSE20 + APEX20 all-site (focus Peptides with sourcing urgency).
+// Sends: coaching ANALYSE20 + APEX30 all-site (focus Peptides with sourcing urgency).
 export async function sendReactivationCampaignEmail(
   email: string,
   opts: { apexPromoCode?: string; coachingPromoCode?: string; expiresText?: string } = {}
 ): Promise<boolean> {
   try {
-    const APEX_CODE = opts.apexPromoCode || "APEX20";
+    const APEX_CODE = opts.apexPromoCode || "APEX30";
     const COACHING_CODE = opts.coachingPromoCode || "ANALYSE20";
     const EXPIRES = opts.expiresText || "7 jours";
 
@@ -2893,10 +2893,10 @@ export async function sendReactivationCampaignEmail(
         ${getPrimaryButton('Voir les formules coaching', coachingHref, COLORS.purple)}
       </div>
 
-      <!-- BLOCK 2: APEX20 site-wide -->
+      <!-- BLOCK 2: APEX30 site-wide -->
       <div style="margin: 0 0 20px 0; padding: 24px 22px; background: linear-gradient(135deg, rgba(252, 221, 0, 0.10) 0%, rgba(252, 221, 0, 0.02) 100%); border-radius: 14px; border: 1px solid ${COLORS.border};">
         <p style="margin: 0 0 4px 0; color: ${COLORS.primary}; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700;">Option 2</p>
-        <h3 style="margin: 0 0 10px 0; color: ${COLORS.text}; font-size: 20px; font-weight: 800; letter-spacing: -0.3px;">Tout le site APEXLABS , -20%</h3>
+        <h3 style="margin: 0 0 10px 0; color: ${COLORS.text}; font-size: 20px; font-weight: 800; letter-spacing: -0.3px;">Tout le site APEXLABS , -30%</h3>
         <div style="display: inline-block; padding: 8px 14px; background: rgba(252, 221, 0, 0.12); border: 1px dashed ${COLORS.primary}; border-radius: 8px; margin-bottom: 20px;">
           <span style="color: ${COLORS.textMuted}; font-size: 11px; letter-spacing: 1px; text-transform: uppercase;">Code : </span>
           <span style="color: ${COLORS.primary}; font-size: 16px; font-weight: 800; letter-spacing: 1.5px;">${APEX_CODE}</span>
@@ -2911,7 +2911,7 @@ export async function sendReactivationCampaignEmail(
           </p>
           <p style="margin: 0 0 4px 0;">
             <span style="color: ${COLORS.textMuted}; font-size: 12px; text-decoration: line-through;">299EUR</span>
-            <span style="color: ${COLORS.warning}; font-size: 22px; font-weight: 800; margin-left: 8px;">239EUR</span>
+            <span style="color: ${COLORS.warning}; font-size: 22px; font-weight: 800; margin-left: 8px;">209EUR</span>
           </p>
           <p style="margin: 0 0 4px 0; color: ${COLORS.textMuted}; font-size: 12px; line-height: 1.6;">
             + <strong style="color: ${COLORS.text};">150EUR deduits</strong> si tu passes ensuite sur Elite ou Private Lab.
@@ -2921,9 +2921,9 @@ export async function sendReactivationCampaignEmail(
 
         <p style="margin: 0 0 12px 0; color: ${COLORS.textMuted}; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; font-weight: 600;">Ou les autres scans , tous -20%</p>
 
-        ${miniProductRow('Ultimate Scan', '18 sections + posture + wearables + plan nutrition/training sur-mesure', '79EUR', '63EUR', ultimateHref, COLORS.purple)}
-        ${miniProductRow('Blood Analysis', '39 biomarqueurs : hormones, thyroide, metabolisme, inflammation, vitamines', '99EUR', '79EUR', bloodHref, COLORS.blood)}
-        ${miniProductRow('Anabolic Bioscan', 'Scan hormonal cible : testo, cortisol, thyroide, potentiel anabolique', '59EUR', '47EUR', anabolicHref, COLORS.anabolic)}
+        ${miniProductRow('Ultimate Scan', '18 sections + posture + wearables + plan nutrition/training sur-mesure', '79EUR', '55EUR', ultimateHref, COLORS.purple)}
+        ${miniProductRow('Blood Analysis', '39 biomarqueurs : hormones, thyroide, metabolisme, inflammation, vitamines', '99EUR', '69EUR', bloodHref, COLORS.blood)}
+        ${miniProductRow('Anabolic Bioscan', 'Scan hormonal cible : testo, cortisol, thyroide, potentiel anabolique', '59EUR', '41EUR', anabolicHref, COLORS.anabolic)}
       </div>
 
       <!-- Deduction recap -->
@@ -2946,19 +2946,19 @@ export async function sendReactivationCampaignEmail(
       content,
       `linear-gradient(135deg, ${COLORS.primary} 0%, #d4a017 100%)`,
       "Une derniere chance",
-      `Code ${APEX_CODE} , -20% tout le site (${EXPIRES})`
+      `Code ${APEX_CODE} , -30% tout le site (${EXPIRES})`
     );
 
     const plainText = `Ca fait quelques semaines depuis ton Discovery APEXLABS et tu n'as pas pris la suite. Qu'est-ce qui t'a bloque ? Reponds en 1 ligne, ca m'aide enormement.
 
 Si tu veux reprendre, 2 codes pendant ${EXPIRES} :
 1. COACHING ACHZOD , -20% avec le code ${COACHING_CODE} : ${coachingHref}
-2. TOUT LE SITE APEXLABS , -20% avec le code ${APEX_CODE}
+2. TOUT LE SITE APEXLABS , -30% avec le code ${APEX_CODE}
 
-Focus Peptides Engine (239EUR au lieu de 299EUR + -150EUR deduits du coaching Elite/Private Lab apres) : ${peptidesHref}
-Ultimate Scan (63EUR au lieu de 79EUR) : ${ultimateHref}
-Blood Analysis (79EUR au lieu de 99EUR) : ${bloodHref}
-Anabolic Bioscan (47EUR au lieu de 59EUR) : ${anabolicHref}
+Focus Peptides Engine (209EUR au lieu de 299EUR + -150EUR deduits du coaching Elite/Private Lab apres) : ${peptidesHref}
+Ultimate Scan (55EUR au lieu de 79EUR) : ${ultimateHref}
+Blood Analysis (69EUR au lieu de 99EUR) : ${bloodHref}
+Anabolic Bioscan (41EUR au lieu de 59EUR) : ${anabolicHref}
 
 Sources Peptides bientot coupees (mes contacts vont restreindre l'acces a un cercle ferme). Les codes expirent le 30/04.
 
