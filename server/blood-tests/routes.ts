@@ -582,6 +582,22 @@ export function registerBloodTestsRoutes(app: Express): void {
   });
 
   // Admin: re-extract markers from an existing blood test's PDF
+  app.get("/api/admin/blood-tests/:id/raw", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const { id } = req.params;
+      const { db: dumpDb } = await import("../db.js");
+      const { bloodTests: dumpBt } = await import("../../shared/drizzle-schema.js");
+      const { eq: dumpEq } = await import("drizzle-orm");
+      const results = await dumpDb.select().from(dumpBt).where(dumpEq(dumpBt.id, id));
+      if (!results.length) { res.status(404).json({ error: "Blood test not found" }); return; }
+      res.json({ success: true, bloodTest: results[0] });
+    } catch (error: any) {
+      console.error("[Admin] Blood test dump error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.post("/api/admin/blood-tests/:id/reprocess", async (req, res) => {
     if (!requireAdmin(req, res)) return;
     try {
