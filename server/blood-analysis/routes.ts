@@ -233,7 +233,13 @@ const sendBloodClientDeliveryEmail = async (
   const resolvedGender = String(profile?.gender || "homme").toLowerCase() === "femme" ? "femme" : "homme";
   const markerInputs = (Array.isArray(markerSnapshots) ? markerSnapshots : [])
     .map((marker) => {
-      const markerId = String((marker as any)?.markerId || "").trim();
+      // blood_tests.markers stores the identifier as `code` (e.g. "crp_us"),
+      // while blood_analysis_reports.extractedBiomarkers uses `markerId`.
+      // Fall back between the two so riskProfile is built correctly regardless
+      // of which table the report originated from — without the fallback, the
+      // report attachment renders "Scores composites non disponibles" for
+      // every blood_tests-sourced client (Vincent Soria, 2026-04-22).
+      const markerId = String((marker as any)?.markerId || (marker as any)?.code || "").trim();
       const value = Number((marker as any)?.value);
       if (!markerId || !Number.isFinite(value)) return null;
       return { markerId, value };
@@ -1075,7 +1081,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 
       const resolvedMarkers = ((report.markers || []) as Array<Record<string, unknown>>)
         .map((marker) => ({
-          markerId: normalizeMarkerName(String(marker.markerId || marker.name || "")),
+          markerId: normalizeMarkerName(String(marker.markerId || marker.code || marker.name || "")),
           value: Number(marker.value),
           unit: marker.unit as string | undefined,
         }))
