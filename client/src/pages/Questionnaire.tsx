@@ -516,7 +516,60 @@ function QuestionnaireContent() {
     return false;
   };
 
+  // Magic-link resume flow: when an abandonment-reminder email links here
+  // with `?resume=<token>`, hit the server to resolve the token → email +
+  // saved progress. Bypasses localStorage entirely so the user can resume
+  // on any device. The token is consumed (clicked_at marked) on the first
+  // GET /api/questionnaire/resume call.
+  const [resumeChecked, setResumeChecked] = useState(false);
   useEffect(() => {
+    const url = new URL(window.location.href);
+    const token = url.searchParams.get("resume");
+    if (!token) { setResumeChecked(true); return; }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/questionnaire/resume?token=${encodeURIComponent(token)}`);
+        if (!res.ok) {
+          console.warn("[Questionnaire] Resume token invalid, falling back to localStorage");
+          return;
+        }
+        const data = await res.json();
+        if (cancelled || !data?.email) return;
+
+        // Pre-fill email + mark submitted so the rest of the questionnaire
+        // mounts immediately without re-asking for the address.
+        setEmail(data.email);
+        setEmailSubmitted(true);
+        try { localStorage.setItem("neurocore_email", data.email); } catch {}
+
+        if (data.progress?.responses) {
+          setResponses(prev => ({ ...prev, ...data.progress.responses, email: data.email }));
+          if (data.progress.currentSection !== undefined) {
+            setCurrentSectionIndex(data.progress.currentSection);
+          }
+          if (data.progress.responses["sexe"]) setSexConfirmed(true);
+          if (data.progress.responses["prenom"]) setPrenomConfirmed(true);
+        }
+
+        // Clean the URL so reloads don't keep replaying the resume.
+        url.searchParams.delete("resume");
+        window.history.replaceState({}, "", url.toString());
+      } catch (e) {
+        console.error("[Questionnaire] Resume fetch failed:", e);
+      } finally {
+        if (!cancelled) setResumeChecked(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    // Wait for the resume flow above to finish before falling back to the
+    // localStorage hydrate path — otherwise we'd briefly show the previous
+    // user's saved data on a shared device.
+    if (!resumeChecked) return;
     try {
       const savedEmail = localStorage.getItem("neurocore_email");
       const savedResponses = localStorage.getItem("neurocore_responses");
@@ -575,7 +628,7 @@ function QuestionnaireContent() {
     } catch (e) {
       console.error("[Questionnaire] Init error:", e);
     }
-  }, []);
+  }, [resumeChecked]);
 
   useEffect(() => {
     if (emailSubmitted) {

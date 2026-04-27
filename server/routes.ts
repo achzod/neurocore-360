@@ -626,6 +626,66 @@ export async function registerRoutes(
     }
   });
 
+  // First-party open-tracking pixel. The reminder HTML embeds
+  // <img src="/api/track/email-open?t=TOKEN"> so when Gmail (or any client
+  // that loads remote images) renders the message, opened_at is stamped.
+  // Always returns a 1x1 transparent GIF, never errors, never blocks.
+  app.get("/api/track/email-open", async (req, res) => {
+    const token = String(req.query.t || "").trim();
+    try {
+      if (token && /^[a-f0-9]{64}$/.test(token)) {
+        try { await (storage as any).markReminderOpened?.(token); } catch {}
+      }
+    } catch {}
+    // 1x1 transparent GIF
+    const gif = Buffer.from(
+      "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+      "base64"
+    );
+    res.setHeader("Content-Type", "image/gif");
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    res.status(200).end(gif);
+  });
+
+  // Resume an abandoned questionnaire from a magic link in a relance email.
+  // The token is generated in abandonmentReminders.ts when the mail is sent
+  // and stored in the abandonment_reminders table. Looking it up here:
+  //  1. resolves to the original email (no PII in the URL),
+  //  2. marks the click on that reminder row,
+  //  3. returns the saved progress so the client can hydrate state.
+  app.get("/api/questionnaire/resume", async (req, res) => {
+    try {
+      const token = String(req.query.token || "").trim();
+      if (!token || !/^[a-f0-9]{64}$/.test(token)) {
+        res.status(400).json({ error: "Token invalide" });
+        return;
+      }
+      const reminder = (storage as any).getAbandonmentReminderByToken
+        ? await (storage as any).getAbandonmentReminderByToken(token)
+        : null;
+      if (!reminder) {
+        res.status(404).json({ error: "Lien expiré ou introuvable" });
+        return;
+      }
+      // Mark the click side-effect (best effort, never blocks the response).
+      try { await (storage as any).markReminderClicked?.(token); } catch {}
+
+      const progress = await storage.getProgress(reminder.email);
+      if (!progress) {
+        // No saved progress (already converted, deleted, etc.) — still return
+        // the email so the client can pre-fill it and start fresh.
+        res.json({ email: reminder.email, progress: null });
+        return;
+      }
+      res.json({ email: reminder.email, progress });
+    } catch (error) {
+      console.error("[Questionnaire] Resume error:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
   // Admin: Get all incomplete questionnaires
   app.get("/api/admin/incomplete-questionnaires", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;

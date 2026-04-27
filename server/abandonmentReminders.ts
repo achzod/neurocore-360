@@ -9,8 +9,16 @@
  * - Notifications admin quotidiennes
  */
 
+import { randomBytes } from 'crypto';
 import type { IStorage } from './storage';
 import { sendCTAEmail, SENDER_EMAIL } from './emailService';
+
+const APP_URL = process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || 'https://apexlabs.achzodcoaching.com';
+
+function genResumeToken(): string {
+  // 32 bytes → 64 hex chars, fits the resume_token VARCHAR(64) column.
+  return randomBytes(32).toString('hex');
+}
 
 export interface AbandonedQuestionnaire {
   email: string;
@@ -91,56 +99,79 @@ export function segmentAbandons(abandons: AbandonedQuestionnaire[]): ReminderSeg
 function getReminderEmailTemplate(
   email: string,
   percentComplete: number,
-  segment: string
+  segment: string,
+  resumeToken: string,
 ): { subject: string; html: string; text: string } {
 
-  const subject = "Ton audit APEXLABS t'attend + Offre exclusive -30% !";
+  // P3 brand-aligned rewrite: no spammy promo in the subject, no off-brand
+  // blue, focused single CTA on the resume link with the magic token. The
+  // 30% discount block is removed — finishing the FREE audit is the carrot,
+  // not a paid product upsell on a user who hasn't even validated interest
+  // yet.
+  const resumeUrl = `${APP_URL}/audit-complet/questionnaire?resume=${resumeToken}`;
+  const remaining = Math.max(0, 100 - percentComplete);
 
-  const text = `Salut !
+  const subject = `Ton audit s'arrête à ${percentComplete}% — reprends en un clic`;
 
-J'ai vu que tu avais commencé ton questionnaire APEXLABS mais que tu ne l'as pas terminé.
+  const text = `Salut,
 
-Tu en étais à ${percentComplete}% - plus que quelques questions et tu auras accès à ton analyse personnalisée complète !
+Tu as commencé ton audit APEXLABS hier — il te reste ${remaining}% à remplir.
 
-🎁 Offre exclusive pour toi : -30% avec le code RETOUR30 sur les analyses Anabolic Bioscan, Ultimate Scan et Blood Analysis.
+Quand tu cliques sur le lien, tu reprends exactement où tu t'étais arrêté, peu importe l'appareil :
 
-Ces analyses sont beaucoup plus précises et complètes que le Discovery Scan gratuit - tu obtiendras des protocoles personnalisés détaillés.
+${resumeUrl}
 
-💡 Bonus : Le montant de ton analyse est 100% déduit si tu prends un coaching avec moi (sauf formule Starter).
+Ce que tu débloques en finissant : un rapport personnalisé sur ton profil métabolique, hormonal et de récupération. Gratuit. Pas de carte bancaire.
 
-Clique ici pour reprendre où tu en étais : https://apexlabs.achzodcoaching.com/audit-complet/questionnaire
-
-À très vite,
 Achzod`;
 
-  const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <p>Salut !</p>
-
-      <p>J'ai vu que tu avais commencé ton questionnaire <strong>APEXLABS</strong> mais que tu ne l'as pas terminé.</p>
-
-      <p>Tu en étais à <strong>${percentComplete}%</strong> - plus que quelques questions et tu auras accès à ton analyse personnalisée complète !</p>
-
-      <div style="background: #f0f7ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
-        <p style="margin: 0; font-size: 18px;">🎁 <strong>Offre exclusive pour toi</strong></p>
-        <p style="margin: 10px 0 0 0;">-30% avec le code <strong style="color: #0066cc; font-size: 20px;">RETOUR30</strong></p>
-        <p style="margin: 5px 0 0 0; font-size: 14px;">sur les analyses Anabolic Bioscan, Ultimate Scan et Blood Analysis</p>
-      </div>
-
-      <p>Ces analyses sont beaucoup plus <strong>précises et complètes</strong> que le Discovery Scan gratuit - tu obtiendras des protocoles personnalisés détaillés.</p>
-
-      <p>💡 <strong>Bonus</strong> : Le montant de ton analyse est <strong>100% déduit</strong> si tu prends un coaching avec moi (sauf formule Starter).</p>
-
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="https://apexlabs.achzodcoaching.com/audit-complet/questionnaire"
-           style="background: #0066cc; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
-          Reprendre mon questionnaire
-        </a>
-      </div>
-
-      <p>À très vite,<br><strong>Achzod</strong></p>
-    </div>
-  `;
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><title>Ton audit s'arrête à ${percentComplete}%</title></head>
+<body style="margin:0;padding:0;background:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;">
+    <tr><td align="center" style="padding:40px 16px;">
+      <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#0f0f0f;border:1px solid rgba(252,221,0,0.18);border-radius:14px;overflow:hidden;">
+        <tr><td style="padding:32px 36px 8px;">
+          <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#FCDD00;font-weight:700;">APEXLABS · AUDIT INTERROMPU</div>
+        </td></tr>
+        <tr><td style="padding:18px 36px 8px;">
+          <h1 style="margin:0;color:#fff;font-size:28px;line-height:1.18;letter-spacing:-0.022em;font-weight:700;">
+            Tu t'es arrêté à <span style="color:#FCDD00;">${percentComplete}%</span>.
+          </h1>
+        </td></tr>
+        <tr><td style="padding:14px 36px 0;">
+          <p style="margin:0;color:rgba(255,255,255,0.78);font-size:16px;line-height:1.6;">
+            Ton questionnaire est sauvegardé. Quand tu cliques ci-dessous, tu reprends exactement où tu en étais — peu importe l'appareil. Il te reste <strong style="color:#fff;">${remaining}%</strong> à remplir.
+          </p>
+        </td></tr>
+        <tr><td align="center" style="padding:32px 36px 12px;">
+          <a href="${resumeUrl}" style="display:inline-block;background:#FCDD00;color:#0a0a0a;padding:16px 32px;border-radius:999px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.06em;text-transform:uppercase;">
+            Reprendre où je m'étais arrêté →
+          </a>
+        </td></tr>
+        <tr><td style="padding:24px 36px 0;">
+          <div style="border-top:1px solid rgba(255,255,255,0.10);padding-top:18px;">
+            <p style="margin:0;color:rgba(255,255,255,0.55);font-size:13px;line-height:1.55;">
+              <strong style="color:rgba(255,255,255,0.85);">Ce que tu débloques en finissant :</strong> ton rapport personnalisé sur ton profil métabolique, hormonal et de récupération. Gratuit. Pas de carte bancaire demandée.
+            </p>
+          </div>
+        </td></tr>
+        <tr><td style="padding:24px 36px 32px;">
+          <p style="margin:0;color:rgba(255,255,255,0.42);font-size:11px;font-family:'JetBrains Mono',Menlo,monospace;letter-spacing:0.06em;">
+            Achzod · APEXLABS
+          </p>
+        </td></tr>
+      </table>
+      <p style="margin:24px 0 0;color:rgba(255,255,255,0.30);font-size:11px;font-family:'JetBrains Mono',Menlo,monospace;letter-spacing:0.05em;">
+        Si tu ne souhaites plus recevoir ces rappels, ignore ce mail.
+      </p>
+    </td></tr>
+  </table>
+  <!-- P4: first-party open-tracking pixel -->
+  <img src="${APP_URL}/api/track/email-open?t=${resumeToken}" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0;opacity:0;" />
+</body>
+</html>`;
 
   return { subject, html, text };
 }
@@ -175,21 +206,25 @@ export async function sendReminderSegment(
         continue;
       }
 
-      // Préparer l'email
+      // Generate a unique resume token per send so each email link is
+      // single-use-trackable (clicked_at = first click on this token).
+      const resumeToken = genResumeToken();
+
       const emailTemplate = getReminderEmailTemplate(
         abandon.email,
         abandon.percentComplete,
-        segment.name
+        segment.name,
+        resumeToken,
       );
 
-      // Envoyer l'email
+      // Send the HTML email (sendCTAEmail signature: to, subject, body, html?)
       await sendCTAEmail(
         abandon.email,
         emailTemplate.subject,
-        emailTemplate.text
+        emailTemplate.text,
+        emailTemplate.html,
       );
 
-      // Logger dans la DB
       const priorityScore =
         segment.name === 'HIGH_PRIORITY' ? 100 :
         segment.name === 'MEDIUM_PRIORITY' ? 50 : 25;
@@ -199,6 +234,7 @@ export async function sendReminderSegment(
         percentComplete: abandon.percentComplete,
         hoursSinceStart: Math.round(abandon.hoursSinceStart),
         priorityScore,
+        resumeToken,
       });
 
       sent++;
@@ -251,7 +287,7 @@ export async function autoSendAbandonmentReminders(
 
       return {
         email: q.email,
-        percentComplete: parseInt(q.percentComplete || '0'),
+        percentComplete: parseInt(String(q.percentComplete ?? '0')),
         hoursSinceStart,
         startedAt,
         lastActivityAt: new Date(q.lastActivityAt || q.startedAt),

@@ -259,7 +259,12 @@ export interface IStorage {
     percentComplete: number;
     hoursSinceStart: number;
     priorityScore: number;
+    resumeToken?: string;
   }): Promise<void>;
+  getAbandonmentReminderByToken?(token: string): Promise<{ email: string; sent_at: Date } | null>;
+  markReminderClicked?(token: string): Promise<void>;
+  markReminderOpened?(token: string): Promise<void>;
+  markReminderConvertedByEmail?(email: string, amountCents: number, withinDays?: number): Promise<number>;
   getAbandonmentStats(days: number): Promise<{
     last24h: { sent: number; openRate: number; clickRate: number; conversions: number };
     last7days: { sent: number; openRate: number; conversions: number; revenue: number };
@@ -983,6 +988,7 @@ export class MemStorage implements IStorage {
     percentComplete: number;
     hoursSinceStart: number;
     priorityScore: number;
+    resumeToken?: string;
   }): Promise<void> {
     this.memAbandonmentReminders.push({
       id: randomUUID(),
@@ -2867,7 +2873,22 @@ export class PgStorage implements IStorage {
       values
     );
     if (result.rows.length === 0) return undefined;
-    return this.rowToOrder(result.rows[0]);
+    const updatedOrder = this.rowToOrder(result.rows[0]);
+
+    // P2 — abandonment-reminder conversion tracking. When an order
+    // transitions to `paid`, look for any reminder sent to this email
+    // within the last 14 days and stamp it as converted. Best effort: we
+    // never block the order update on this side-effect.
+    if (data.status === "paid" && updatedOrder?.email) {
+      try {
+        const cents = updatedOrder.amountCents ?? 0;
+        await this.markReminderConvertedByEmail(updatedOrder.email, cents, 14);
+      } catch (err) {
+        console.warn("[Reminder] Conversion tracking failed for", updatedOrder.email, err);
+      }
+    }
+
+    return updatedOrder;
   }
 
   // Atomically link audit to order (prevents race conditions on confirm-session double-clicks)
@@ -3102,19 +3123,28 @@ export class PgStorage implements IStorage {
         opened_at TIMESTAMP DEFAULT NULL,
         clicked_at TIMESTAMP DEFAULT NULL,
         converted_at TIMESTAMP DEFAULT NULL,
+        converted_amount_cents INTEGER DEFAULT NULL,
         audit_id VARCHAR(36),
+        resume_token VARCHAR(64),
         created_at TIMESTAMP DEFAULT NOW() NOT NULL
       )
     `);
+
+    // Add columns if they didn't exist on legacy DBs.
+    try { await pool.query(`ALTER TABLE abandonment_reminders ADD COLUMN IF NOT EXISTS resume_token VARCHAR(64)`); } catch {}
+    try { await pool.query(`ALTER TABLE abandonment_reminders ADD COLUMN IF NOT EXISTS converted_amount_cents INTEGER`); } catch {}
 
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_abandonment_reminders_email
       ON abandonment_reminders(email)
     `);
-
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_abandonment_reminders_sent_at
       ON abandonment_reminders(sent_at)
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_abandonment_reminders_resume_token
+      ON abandonment_reminders(resume_token)
     `);
 
     this.abandonmentRemindersTableCreated = true;
@@ -3140,13 +3170,70 @@ export class PgStorage implements IStorage {
     percentComplete: number;
     hoursSinceStart: number;
     priorityScore: number;
+    resumeToken?: string;
   }): Promise<void> {
     await this.ensureAbandonmentRemindersTableCreated();
     await pool.query(
-      `INSERT INTO abandonment_reminders (email, percent_complete, hours_since_start, priority_score)
-       VALUES ($1, $2, $3, $4)`,
-      [data.email.toLowerCase(), data.percentComplete, data.hoursSinceStart, data.priorityScore]
+      `INSERT INTO abandonment_reminders (email, percent_complete, hours_since_start, priority_score, resume_token)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [data.email.toLowerCase(), data.percentComplete, data.hoursSinceStart, data.priorityScore, data.resumeToken ?? null]
     );
+  }
+
+  async getAbandonmentReminderByToken(token: string): Promise<{ email: string; sent_at: Date } | null> {
+    if (!token) return null;
+    await this.ensureAbandonmentRemindersTableCreated();
+    const r = await pool.query(
+      `SELECT email, sent_at FROM abandonment_reminders
+        WHERE resume_token = $1
+        ORDER BY sent_at DESC
+        LIMIT 1`,
+      [token]
+    );
+    if (r.rows.length === 0) return null;
+    return { email: r.rows[0].email, sent_at: r.rows[0].sent_at };
+  }
+
+  async markReminderClicked(token: string): Promise<void> {
+    if (!token) return;
+    await this.ensureAbandonmentRemindersTableCreated();
+    await pool.query(
+      `UPDATE abandonment_reminders
+          SET clicked_at = COALESCE(clicked_at, NOW())
+        WHERE resume_token = $1`,
+      [token]
+    );
+  }
+
+  async markReminderOpened(token: string): Promise<void> {
+    if (!token) return;
+    await this.ensureAbandonmentRemindersTableCreated();
+    await pool.query(
+      `UPDATE abandonment_reminders
+          SET opened_at = COALESCE(opened_at, NOW())
+        WHERE resume_token = $1`,
+      [token]
+    );
+  }
+
+  async markReminderConvertedByEmail(
+    email: string,
+    amountCents: number,
+    withinDays: number = 14,
+  ): Promise<number> {
+    if (!email) return 0;
+    await this.ensureAbandonmentRemindersTableCreated();
+    const r = await pool.query(
+      `UPDATE abandonment_reminders
+          SET converted_at = COALESCE(converted_at, NOW()),
+              converted_amount_cents = COALESCE(converted_amount_cents, $2)
+        WHERE LOWER(email) = LOWER($1)
+          AND converted_at IS NULL
+          AND sent_at >= NOW() - ($3 || ' days')::interval
+       RETURNING id`,
+      [email, amountCents, String(withinDays)]
+    );
+    return r.rowCount ?? 0;
   }
 
   async getAbandonmentStats(days: number): Promise<{
@@ -3172,13 +3259,16 @@ export class PgStorage implements IStorage {
     const sent24h = parseInt(last24h.sent || '0');
     const openRate24h = sent24h > 0 ? Math.round((parseInt(last24h.opened || '0') / sent24h) * 100) : 0;
     const clickRate24h = sent24h > 0 ? Math.round((parseInt(last24h.clicked || '0') / sent24h) * 100) : 0;
+    const conversions24h = parseInt(last24h.conversions || '0');
 
-    // Stats derniers 7 jours
+    // Stats derniers 7 jours — sums real converted amounts now that
+    // markReminderConvertedByEmail records the actual order cents.
     const last7dResult = await pool.query(`
       SELECT
         COUNT(*) as sent,
         COUNT(opened_at) as opened,
-        COUNT(converted_at) as conversions
+        COUNT(converted_at) as conversions,
+        COALESCE(SUM(converted_amount_cents), 0) as converted_cents
       FROM abandonment_reminders
       WHERE sent_at >= NOW() - INTERVAL '7 days'
     `);
@@ -3187,9 +3277,7 @@ export class PgStorage implements IStorage {
     const sent7d = parseInt(last7d.sent || '0');
     const openRate7d = sent7d > 0 ? Math.round((parseInt(last7d.opened || '0') / sent7d) * 100) : 0;
     const conversions7d = parseInt(last7d.conversions || '0');
-
-    // Revenue estimé (TODO: lier avec orders table)
-    const revenue = conversions7d * 59; // Estimation moyenne
+    const revenue = Math.round(parseInt(last7d.converted_cents || '0') / 100);
 
     // Pending abandons
     const incomplete = await this.getIncompleteQuestionnaires();

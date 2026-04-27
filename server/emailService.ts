@@ -2764,35 +2764,43 @@ export async function sendAdminEmailNewAudit(
 export async function sendCTAEmail(
   email: string,
   subject: string,
-  message: string
+  message: string,
+  customHtml?: string,
 ): Promise<boolean> {
   try {
-    const content = `
-      <h2 style="color: ${COLORS.text}; margin: 0 0 12px; font-size: 24px; text-align: center; font-weight: 700; letter-spacing: -0.5px;">
-        Message important
-      </h2>
+    let emailContent: string;
 
-      <p style="color: ${COLORS.textMuted}; font-size: 15px; line-height: 1.7; margin: 0 0 18px; text-align: center;">
-        De la part d'Achzod
-      </p>
+    if (customHtml) {
+      // Caller supplied a fully-formed HTML email (used by the abandonment
+      // reminder, brand-aligned dark template). Skip the default CTA wrapper.
+      emailContent = customHtml;
+    } else {
+      const content = `
+        <h2 style="color: ${COLORS.text}; margin: 0 0 12px; font-size: 24px; text-align: center; font-weight: 700; letter-spacing: -0.5px;">
+          Message important
+        </h2>
 
-      <div style="margin-top: 18px; padding: 18px; background-color: ${COLORS.surface}; border-radius: 10px; border: 1px solid ${COLORS.border};">
-        ${message
-          .split("\n")
-          .map(
-            (line) =>
-              `<p style="color: ${COLORS.text}; font-size: 14px; line-height: 1.7; margin: 0 0 10px;">${line}</p>`
-          )
-          .join("")}
-      </div>
-    `;
+        <p style="color: ${COLORS.textMuted}; font-size: 15px; line-height: 1.7; margin: 0 0 18px; text-align: center;">
+          De la part d'Achzod
+        </p>
 
-    const emailContent = getEmailWrapper(
-      content,
-      `linear-gradient(135deg, ${COLORS.primary} 0%, #0b0b0f 100%)`,
-      "ApexLabs",
-      "Message personnalisé"
-    );
+        <div style="margin-top: 18px; padding: 18px; background-color: ${COLORS.surface}; border-radius: 10px; border: 1px solid ${COLORS.border};">
+          ${message
+            .split("\n")
+            .map(
+              (line) =>
+                `<p style="color: ${COLORS.text}; font-size: 14px; line-height: 1.7; margin: 0 0 10px;">${line}</p>`
+            )
+            .join("")}
+        </div>
+      `;
+      emailContent = getEmailWrapper(
+        content,
+        `linear-gradient(135deg, ${COLORS.primary} 0%, #0b0b0f 100%)`,
+        "ApexLabs",
+        "Message personnalisé"
+      );
+    }
 
     const result = await sendEmailWithTracking(
       {
