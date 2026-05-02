@@ -755,8 +755,24 @@ export const normalizeMarkerValue = (markerId: string, value: number, unit?: str
     if (sourceUnit === "pmol/L") return roundValue(value / 3.47, 2);
     // If pg/mL or already target unit , no conversion needed
     if (sourceUnit === "pg/mL") return roundValue(value, 1);
-    // Heuristic: if value > 15 and no unit, likely pmol/L (French labs give 20-90 pmol/L)
-    if (!sourceUnit && value > 15) return roundValue(value / 3.47, 2);
+    // Heuristic when source unit was not parsed from PDF.
+    // Reference physiological ranges:
+    //   pg/mL : homme 5-25, femme 0,5-3 (target unit, no conversion)
+    //   pmol/L : homme 30-180, femme 1-10 (needs / 3.47 conversion)
+    // Previous heuristic (>15 = pmol/L) was too aggressive : a real pg/mL
+    // value of 15.7 (homme top of range) was misread as pmol/L and divided
+    // to 4.52, breaking Vincent's report. Now require value >= 30 before
+    // assuming pmol/L. Values 5-29 stay as pg/mL by default. Values
+    // 25-29 are still ambiguous : we log a warning so PDF extraction can
+    // be improved upstream, but we keep the safer pg/mL interpretation.
+    if (!sourceUnit && value >= 30) return roundValue(value / 3.47, 2);
+    if (!sourceUnit && value >= 25 && value < 30) {
+      console.warn(
+        `[BloodAnalysis] Ambiguous testosterone_libre value=${value} without unit. ` +
+        `Range 25-30 could be pg/mL high or pmol/L low. Keeping pg/mL (no conversion). ` +
+        `Improve PDF extraction to capture explicit unit.`
+      );
+    }
   }
   if (markerId === "estradiol") {
     if (sourceUnit === "pmol/L") return roundValue(value / 3.67, 1);
