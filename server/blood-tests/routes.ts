@@ -633,6 +633,74 @@ export function registerBloodTestsRoutes(app: Express): void {
     }
   });
 
+  // Admin: patch a single marker value (e.g. fix wrong testostérone libre 4.52 → 15.7).
+  // Body: { code: string, value: number, regenerate?: boolean }
+  // If regenerate true (default), re-runs AI analysis with the corrected marker.
+  app.post("/api/admin/blood-tests/:id/patch-marker", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const { id } = req.params;
+      const { code, value, regenerate = true } = (req.body || {}) as {
+        code?: string;
+        value?: number;
+        regenerate?: boolean;
+      };
+      if (!code || typeof code !== "string") {
+        res.status(400).json({ error: "Missing 'code' (marker code)" });
+        return;
+      }
+      if (typeof value !== "number" || !Number.isFinite(value)) {
+        res.status(400).json({ error: "Missing or invalid 'value' (number)" });
+        return;
+      }
+
+      const { db: reDb } = await import("../db.js");
+      const { bloodTests: btTable } = await import("../../shared/drizzle-schema.js");
+      const { eq: btEq } = await import("drizzle-orm");
+
+      const results = await reDb.select().from(btTable).where(btEq(btTable.id, id));
+      if (!results.length) { res.status(404).json({ error: "Blood test not found" }); return; }
+
+      const bt = results[0];
+      const markers = Array.isArray(bt.markers) ? [...(bt.markers as any[])] : [];
+      const idx = markers.findIndex((m: any) => m && (m.code === code || m.markerId === code));
+      if (idx === -1) {
+        res.status(404).json({ error: `Marker not found: ${code}`, availableCodes: markers.map((m: any) => m.code || m.markerId).filter(Boolean) });
+        return;
+      }
+      const previous = markers[idx]?.value;
+      markers[idx] = { ...markers[idx], value };
+
+      // Persist marker change first so reprocess sees the corrected value.
+      await reDb.update(btTable).set({ markers: markers as any }).where(btEq(btTable.id, id));
+
+      let aiRegenerated = false;
+      if (regenerate) {
+        const { generateAIBloodAnalysis } = await import("../blood-analysis/index.js");
+        const profile = bt.patientProfile && typeof bt.patientProfile === "object" ? bt.patientProfile as any : {};
+        const aiResult = await generateAIBloodAnalysis(markers as any, profile, id);
+        await reDb.update(btTable).set({
+          analysis: aiResult as any,
+          status: "completed",
+          completedAt: new Date(),
+        }).where(btEq(btTable.id, id));
+        aiRegenerated = true;
+      }
+
+      res.json({
+        success: true,
+        message: "Marker patched",
+        code,
+        previous,
+        value,
+        regenerated: aiRegenerated,
+      });
+    } catch (error: any) {
+      console.error("[Admin] Blood test patch-marker error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.post("/api/admin/blood-tests/seed", async (req, res) => {
     if (!requireAdmin(req, res)) return;
     try {
