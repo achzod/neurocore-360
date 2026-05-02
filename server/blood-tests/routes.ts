@@ -676,11 +676,19 @@ export function registerBloodTestsRoutes(app: Express): void {
 
       let aiRegenerated = false;
       if (regenerate) {
-        const { generateAIBloodAnalysis } = await import("../blood-analysis/index.js");
+        const { analyzeBloodwork, generateAIBloodAnalysis } = await import("../blood-analysis/index.js");
         const profile = bt.patientProfile && typeof bt.patientProfile === "object" ? bt.patientProfile as any : {};
-        const aiResult = await generateAIBloodAnalysis(markers as any, profile, id);
+        // Convert markers to BloodMarkerInput shape (markerId|name, value, unit)
+        const markerInputs = (markers as any[]).map((m) => ({
+          markerId: m?.code || m?.markerId,
+          name: m?.name,
+          value: Number(m?.value),
+          unit: m?.unit,
+        })).filter((m) => (m.markerId || m.name) && Number.isFinite(m.value));
+        const analysisResult = await analyzeBloodwork(markerInputs as any, profile);
+        const aiResult = await generateAIBloodAnalysis(analysisResult, profile);
         await reDb.update(btTable).set({
-          analysis: aiResult as any,
+          analysis: { ...analysisResult, aiAnalysis: aiResult } as any,
           status: "completed",
           completedAt: new Date(),
         }).where(btEq(btTable.id, id));
