@@ -678,7 +678,6 @@ export function registerBloodTestsRoutes(app: Express): void {
       if (regenerate) {
         const { analyzeBloodwork, generateAIBloodAnalysis } = await import("../blood-analysis/index.js");
         const profile = bt.patientProfile && typeof bt.patientProfile === "object" ? bt.patientProfile as any : {};
-        // Convert markers to BloodMarkerInput shape (markerId|name, value, unit)
         const markerInputs = (markers as any[]).map((m) => ({
           markerId: m?.code || m?.markerId,
           name: m?.name,
@@ -687,8 +686,30 @@ export function registerBloodTestsRoutes(app: Express): void {
         })).filter((m) => (m.markerId || m.name) && Number.isFinite(m.value));
         const analysisResult = await analyzeBloodwork(markerInputs as any, profile);
         const aiResult = await generateAIBloodAnalysis(analysisResult, profile);
+
+        // Preserve all existing analysis metadata fields (aiStatus, categoryScores,
+        // systemScores, lifestyleCorrelations, etc.) and overlay the new analysis
+        // + freshly regenerated AI report under BOTH keys (aiReport for the
+        // /api/blood-analysis/report/:id route, aiAnalysis for the legacy raw fetch).
+        const existingAnalysis =
+          bt.analysis && typeof bt.analysis === "object" && !Array.isArray(bt.analysis)
+            ? (bt.analysis as Record<string, unknown>)
+            : {};
+        const refreshedAnalysis: Record<string, unknown> = {
+          ...existingAnalysis,
+          ...analysisResult,
+          aiReport: aiResult,
+          aiAnalysis: aiResult,
+          aiModel: "claude-opus-4-6",
+          aiStatus: "generated",
+          aiGeneratedAt: new Date().toISOString(),
+          aiError: null,
+          aiFallbackAt: null,
+          aiFallbackReason: null,
+        };
+
         await reDb.update(btTable).set({
-          analysis: { ...analysisResult, aiAnalysis: aiResult } as any,
+          analysis: refreshedAnalysis as any,
           status: "completed",
           completedAt: new Date(),
         }).where(btEq(btTable.id, id));
