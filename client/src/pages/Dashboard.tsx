@@ -715,6 +715,14 @@ export default function Dashboard() {
   });
   const userOrders = userOrdersData?.orders || [];
 
+  const { data: peptidesData } = useQuery<{ success: boolean; reports: Array<{
+    id: string; createdAt: string; peptideCount: number; peptideNames: string[];
+  }> }>({
+    queryKey: [`/api/user/peptides-reports?email=${encodeURIComponent(userEmail || "")}`],
+    enabled: !!userEmail,
+  });
+  const peptidesReports = peptidesData?.reports || [];
+
   const latestAudit = audits?.[0];
   const hasCompletedAudit = latestAudit?.status === "COMPLETED" && latestAudit?.scores;
 
@@ -968,6 +976,49 @@ export default function Dashboard() {
                 ))}
               </div>
             </motion.div>
+
+            {peptidesReports.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.42 }}
+                className="mt-12"
+              >
+                <h2 className="mb-6 text-xl font-semibold flex items-center gap-2">
+                  <Pill className="h-5 w-5 text-primary" />
+                  Mes protocoles peptides ({peptidesReports.length})
+                </h2>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  {peptidesReports.map((rep) => (
+                    <Card key={rep.id} style={cardStyle}>
+                      <CardContent className="py-5">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge variant="secondary">Peptides Engine</Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(rep.createdAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" })}
+                              </span>
+                            </div>
+                            {rep.peptideNames.length > 0 && (
+                              <div className="text-sm text-muted-foreground line-clamp-2">
+                                {rep.peptideNames.join(", ")}
+                              </div>
+                            )}
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {rep.peptideCount} peptide{rep.peptideCount > 1 ? "s" : ""} prescrit{rep.peptideCount > 1 ? "s" : ""}
+                            </div>
+                          </div>
+                          <Link href={`/peptides/${rep.id}`}>
+                            <Button size="sm">Voir le rapport</Button>
+                          </Link>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </motion.div>
+            )}
 
             {/* Historique des commandes */}
             {userOrders.length > 0 && (

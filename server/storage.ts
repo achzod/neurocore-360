@@ -176,6 +176,7 @@ export interface IStorage {
   getBurnoutReport(id: string): Promise<BurnoutReportRecord | undefined>;
   updateBurnoutReport(id: string, report: unknown): Promise<BurnoutReportRecord | undefined>;
   getAllBurnoutReports(): Promise<BurnoutReportRecord[]>;
+  getPeptidesReportsByEmail(email: string): Promise<BurnoutReportRecord[]>;
 
   createBloodReport(input: { email: string; profile: Record<string, unknown>; markers: unknown[]; analysis: unknown; aiReport: string }): Promise<BloodReportRecord>;
   getBloodReport(id: string): Promise<BloodReportRecord | undefined>;
@@ -567,6 +568,13 @@ export class MemStorage implements IStorage {
       const dateB = new Date(b.createdAt).getTime();
       return dateB - dateA;
     });
+  }
+
+  async getPeptidesReportsByEmail(email: string): Promise<BurnoutReportRecord[]> {
+    const prefixed = `peptides::${email.trim().toLowerCase()}`;
+    return Array.from(this.burnoutReports.values())
+      .filter(r => String(r.email ?? "").toLowerCase() === prefixed)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
   async createBloodReport(input: { email: string; profile: Record<string, unknown>; markers: unknown[]; analysis: unknown; aiReport: string }): Promise<BloodReportRecord> {
@@ -1704,6 +1712,22 @@ export class PgStorage implements IStorage {
       id: row.id,
       email: row.email,
       responses: row.responses || {},
+      report: row.report || {},
+      createdAt: row.created_at,
+    }));
+  }
+
+  async getPeptidesReportsByEmail(email: string): Promise<BurnoutReportRecord[]> {
+    await this.ensureBurnoutReportsTable();
+    const prefixed = `peptides::${email.trim().toLowerCase()}`;
+    const result = await pool.query(
+      "SELECT id, email, report, created_at FROM burnout_reports WHERE LOWER(email) = $1 ORDER BY created_at DESC",
+      [prefixed]
+    );
+    return result.rows.map(row => ({
+      id: row.id,
+      email: row.email,
+      responses: {},
       report: row.report || {},
       createdAt: row.created_at,
     }));

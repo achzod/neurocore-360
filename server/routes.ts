@@ -1367,6 +1367,43 @@ export async function registerRoutes(
     }
   });
 
+  // Peptides reports for the authenticated user — surface them in the dashboard
+  // so users can find their protocol back even if they lose the email.
+  app.get("/api/user/peptides-reports", async (req, res) => {
+    try {
+      const email = String(req.query.email || "").trim().toLowerCase();
+      if (!email || !email.includes("@")) {
+        res.status(400).json({ error: "Email requis" });
+        return;
+      }
+      const payload = getAuthPayload(req);
+      const isAdmin = requireAdminAuth(req, res, true);
+      if (!isAdmin) {
+        if (!payload || payload.email.toLowerCase() !== email) {
+          res.status(401).json({ error: "Unauthorized" });
+          return;
+        }
+      }
+      const reports = await storage.getPeptidesReportsByEmail(email);
+      const light = reports.map(r => {
+        const peptides = (r.report as any)?.peptides;
+        const peptideNames = Array.isArray(peptides)
+          ? peptides.map((p: any) => p?.name).filter(Boolean).slice(0, 6)
+          : [];
+        return {
+          id: r.id,
+          createdAt: r.createdAt,
+          peptideCount: Array.isArray(peptides) ? peptides.length : 0,
+          peptideNames,
+        };
+      });
+      res.json({ success: true, reports: light });
+    } catch (error) {
+      console.error("[PeptidesEngine] list-by-email error:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
   app.get("/api/audits/:id", async (req, res) => {
     try {
       // UUID audit IDs are unguessable , allow direct access for report viewing
@@ -9246,7 +9283,7 @@ export async function registerRoutes(
         // Deliver via email
         const promoCodesBlock =
           report.promoCodesGenerated?.length > 0
-            ? `\n\nTes 2 Blood Analysis offertes (codes, usage unique):\n${report.promoCodesGenerated.join("\n")}`
+            ? `\n\nTes 2 Blood Analyses offertes :\n2 credits Blood Analysis ont ete ajoutes a ton compte (un pre-cycle, un mi-cycle).\nPas de code a saisir : connecte-toi sur ${getBaseUrl(req)}/blood-dashboard avec ton email pour les utiliser.`
             : "";
         const coachingBlock =
           `\n\n,,,,,,,,,,,,,,,,,,,,,,\nTON BONUS COACHING\n,,,,,,,,,,,,,,,,,,,,,,\n` +

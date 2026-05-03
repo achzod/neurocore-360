@@ -693,7 +693,7 @@ export default function PeptidesEngineReport() {
           </motion.div>
         )}
 
-        {/* Promo Codes */}
+        {/* Blood Analysis credits */}
         {report.promoCodes && report.promoCodes.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -705,19 +705,21 @@ export default function PeptidesEngineReport() {
               <Shield className="w-5 h-5" style={{ color: AMBER }} />
               Tes 2 Blood Analyses incluses
             </h2>
-            <p className="text-white/50 text-sm mb-4">Utilise ces codes sur la page Blood Analysis pour tes bilans gratuits (avant cycle + mi-cycle).</p>
+            <p className="text-white/70 text-sm mb-4">
+              <strong className="text-amber-400">2 credits Blood Analysis</strong> ont ete ajoutes a ton compte (un pour le bilan pre-cycle, un pour le bilan mi-cycle). Pas de code promo a saisir : connecte-toi sur le dashboard Blood Analysis avec ton email et tes credits sont la.
+            </p>
             <div className="grid md:grid-cols-2 gap-3">
-              {report.promoCodes.map((code, i) => (
-                <div key={i} className="bg-black/50 border border-dashed border-amber-500/30 rounded-xl p-4 text-center">
-                  <p className="text-white/40 text-[10px] font-mono uppercase tracking-widest mb-2">
-                    {i === 0 ? "Bilan pre-cycle" : "Bilan mi-cycle"}
-                  </p>
-                  <p className="text-amber-400 text-xl font-bold font-mono tracking-widest">{code}</p>
-                </div>
-              ))}
+              <div className="bg-black/50 border border-dashed border-amber-500/30 rounded-xl p-4 text-center">
+                <p className="text-white/40 text-[10px] font-mono uppercase tracking-widest mb-2">Bilan pre-cycle</p>
+                <p className="text-amber-400 text-sm font-mono">1 credit pret</p>
+              </div>
+              <div className="bg-black/50 border border-dashed border-amber-500/30 rounded-xl p-4 text-center">
+                <p className="text-white/40 text-[10px] font-mono uppercase tracking-widest mb-2">Bilan mi-cycle</p>
+                <p className="text-amber-400 text-sm font-mono">1 credit pret</p>
+              </div>
             </div>
-            <a href="/offers/blood-analysis" className="mt-4 inline-flex items-center gap-2 text-sm font-mono" style={{ color: AMBER }}>
-              Acceder a Blood Analysis <ExternalLink className="w-3 h-3" />
+            <a href="/blood-dashboard" className="mt-4 inline-flex items-center gap-2 text-sm font-mono" style={{ color: AMBER }}>
+              Acceder a mon dashboard Blood Analysis <ExternalLink className="w-3 h-3" />
             </a>
           </motion.div>
         )}
