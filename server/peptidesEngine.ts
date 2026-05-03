@@ -1057,6 +1057,127 @@ function validateAndFixPeptauraUrls(report: PeptidesReport): PeptidesReport {
   return report;
 }
 
+// ─── Post-process: validate vials math (Guillaume Gestin bug, 2026-05-03) ────
+// The AI sometimes invents an absurd vial count (e.g. "3 vials" for a 111mg
+// Retatrutide cycle that actually needs 12 vials of 10mg). We deterministically
+// recompute total_mg from the dosage prose + cycle duration, parse the vial
+// size from the reconstitution prose, and override vialsNeeded if it's off
+// by more than a 30% safety margin.
+
+interface VialsDerivation {
+  totalMg: number;
+  vialMg: number;
+  weeks: number;
+  computed: number;
+}
+
+function parseDoseToMg(value: number, unit: string): number {
+  const u = unit.toLowerCase();
+  if (u.startsWith("mcg") || u === "µg" || u === "ug") return value / 1000;
+  if (u.startsWith("mg")) return value;
+  if (u.startsWith("g")) return value * 1000;
+  return value;
+}
+
+function deriveVialsForPeptide(pep: PeptideItem): VialsDerivation | null {
+  const dosage = pep.dosage || "";
+  const cycle = pep.cycleDuration || "";
+  const reconstitution = pep.reconstitution || "";
+
+  // Extract cycle weeks (default 12 if not parseable)
+  const weeksMatch = cycle.match(/(\d+)\s*semaines?/i);
+  const weeks = weeksMatch ? parseInt(weeksMatch[1], 10) : 12;
+  if (weeks <= 0 || weeks > 52) return null;
+
+  // Extract vial size from reconstitution (e.g. "Vial 10mg + 2ml")
+  const vialMatch = reconstitution.match(/vial\s*(\d+(?:\.\d+)?)\s*(mg|mcg)/i);
+  if (!vialMatch) return null;
+  const vialMg = parseDoseToMg(parseFloat(vialMatch[1]), vialMatch[2]);
+  if (!isFinite(vialMg) || vialMg <= 0) return null;
+
+  // Pattern A — progressive weekly doses: "1mg sem 1, 2mg sem 2, ... Xmg sem N et au-delà"
+  const progressive = Array.from(
+    dosage.matchAll(/(\d+(?:\.\d+)?)\s*(mg|mcg)\s*sem(?:aine)?\s*(\d+)/gi)
+  );
+  if (progressive.length >= 2) {
+    // Build week→mg map
+    const dosesByWeek = new Map<number, number>();
+    for (const m of progressive) {
+      const v = parseDoseToMg(parseFloat(m[1]), m[2]);
+      const w = parseInt(m[3], 10);
+      dosesByWeek.set(w, v);
+    }
+    const sortedWeeks = [...dosesByWeek.keys()].sort((a, b) => a - b);
+    const lastDefinedWeek = sortedWeeks[sortedWeeks.length - 1];
+    const lastDose = dosesByWeek.get(lastDefinedWeek)!;
+    let totalMg = 0;
+    for (let w = 1; w <= weeks; w++) {
+      if (dosesByWeek.has(w)) totalMg += dosesByWeek.get(w)!;
+      else if (w > lastDefinedWeek) totalMg += lastDose; // "et au-delà"
+      // else: gap before first defined week — assume 0 (rare)
+    }
+    return { totalMg, vialMg, weeks, computed: Math.ceil(totalMg / vialMg) };
+  }
+
+  // Pattern B — fixed daily dose with N injections/day
+  const perInjMatch = dosage.match(/(\d+(?:\.\d+)?)\s*(mg|mcg)\s*par\s*injection/i);
+  const injPerDayMatch = dosage.match(/(\d+)\s*injections?\s*par\s*jour/i);
+  if (perInjMatch && injPerDayMatch) {
+    const perInjMg = parseDoseToMg(parseFloat(perInjMatch[1]), perInjMatch[2]);
+    const injPerDay = parseInt(injPerDayMatch[1], 10);
+    const totalMg = perInjMg * injPerDay * 7 * weeks;
+    return { totalMg, vialMg, weeks, computed: Math.ceil(totalMg / vialMg) };
+  }
+
+  // Pattern C — fixed daily total ("X mg par jour" / "X mcg par jour")
+  const perDayMatch = dosage.match(/(\d+(?:\.\d+)?)\s*(mg|mcg)\s*par\s*jour/i);
+  if (perDayMatch) {
+    const perDayMg = parseDoseToMg(parseFloat(perDayMatch[1]), perDayMatch[2]);
+    const totalMg = perDayMg * 7 * weeks;
+    return { totalMg, vialMg, weeks, computed: Math.ceil(totalMg / vialMg) };
+  }
+
+  // Pattern D — fixed weekly dose ("X mg par semaine")
+  const perWeekMatch = dosage.match(/(\d+(?:\.\d+)?)\s*(mg|mcg)\s*par\s*semaine/i);
+  if (perWeekMatch) {
+    const perWeekMg = parseDoseToMg(parseFloat(perWeekMatch[1]), perWeekMatch[2]);
+    const totalMg = perWeekMg * weeks;
+    return { totalMg, vialMg, weeks, computed: Math.ceil(totalMg / vialMg) };
+  }
+
+  return null;
+}
+
+function validateVialsMath(report: PeptidesReport): PeptidesReport {
+  for (const pep of report.peptides) {
+    const derived = deriveVialsForPeptide(pep);
+    if (!derived) continue;
+
+    // Parse the AI's claim (e.g. "3 vials" -> 3) for comparison
+    const aiCountMatch = (pep.vialsNeeded || "").match(/(\d+)\s*vials?/i);
+    const aiCount = aiCountMatch ? parseInt(aiCountMatch[1], 10) : null;
+
+    // Override only when AI undershoots or overshoots by ≥30% — ceiling already
+    // bakes in the partial-vial buffer, so we don't add another +1 by default.
+    const shouldOverride =
+      aiCount === null ||
+      aiCount < derived.computed ||
+      Math.abs(aiCount - derived.computed) / derived.computed > 0.3;
+
+    if (shouldOverride) {
+      const totalDisplay =
+        derived.totalMg >= 1
+          ? `${Math.round(derived.totalMg * 10) / 10}mg`
+          : `${Math.round(derived.totalMg * 1000)}mcg`;
+      pep.vialsNeeded = `${derived.computed} vials de ${derived.vialMg}mg pour ${derived.weeks} semaines (total ~${totalDisplay})`;
+      console.log(
+        `[PeptidesEngine] Vials override for ${pep.name}: AI said ${aiCount}, math gives ${derived.computed} (total ${totalDisplay} / vial ${derived.vialMg}mg / ${derived.weeks} sem)`
+      );
+    }
+  }
+  return report;
+}
+
 // ─── Promo code creator ───────────────────────────────────────────────────────
 
 async function addBloodAnalysisCredits(email: string): Promise<string[]> {
@@ -1285,6 +1406,9 @@ export async function generatePeptidesProtocol(
 
   // Validate and fix Peptaura URLs (never trust Claude's URLs)
   report = validateAndFixPeptauraUrls(report);
+
+  // Validate vials math — AI invents wrong vial counts (Guillaume Gestin bug)
+  report = validateVialsMath(report);
 
   // POST-PROCESSING: clean dashes and 3rd person references
   report = cleanReportContent(report, firstName);
