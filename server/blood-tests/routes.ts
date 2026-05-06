@@ -21,6 +21,7 @@ import {
 } from "../blood-analysis/ai-timeout";
 import { generateComprehensiveBloodReport } from "../blood-analysis/recommendations-engine";
 import { generateComprehensiveRiskProfile } from "../blood-analysis/risk-scores";
+import { sendBloodClientDeliveryEmail } from "../blood-analysis/routes";
 import { storage } from "../storage";
 import { getAuthPayload } from "../auth";
 
@@ -1363,8 +1364,53 @@ export function registerBloodTestsRoutes(app: Express): void {
               status: "completed",
               completedAt: new Date(),
             });
+
+            // Auto-deliver email to client after AI completion (Younes Y. bug,
+            // 2026-05-07: blood-tests-uploaded reports were marked completed
+            // but no delivery email was ever sent — clients had no way to
+            // discover their report was ready).
+            if (!isFallbackAnalysisText(enriched)) {
+              try {
+                const baseUrl = process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || "https://apexlabs.achzodcoaching.com";
+                const recipient = (profile.email as string) || user.email;
+                if (recipient && enriched) {
+                  const sent = await sendBloodClientDeliveryEmail(
+                    recipient,
+                    baseRecord.id,
+                    enriched,
+                    baseUrl,
+                    markers as any,
+                    profile as Record<string, unknown>,
+                  );
+                  console.log(`[BloodTests] Auto-delivery email for ${baseRecord.id} to ${recipient}: ${sent ? "sent" : "blocked-by-quality-gate"}`);
+                }
+              } catch (mailErr) {
+                console.error(`[BloodTests] Auto-delivery failed for ${baseRecord.id}:`, mailErr);
+              }
+            }
           } catch (err) {
             console.error("[BloodTests] Upload async AI retry failed:", err);
+          }
+        });
+      } else if (aiAnalysis && !syncAiNeedsBackgroundRetry) {
+        // Sync path: AI was generated synchronously, deliver immediately.
+        setImmediate(async () => {
+          try {
+            const baseUrl = process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || "https://apexlabs.achzodcoaching.com";
+            const recipient = (profile.email as string) || user.email;
+            if (recipient && aiAnalysis) {
+              const sent = await sendBloodClientDeliveryEmail(
+                recipient,
+                baseRecord.id,
+                aiAnalysis,
+                baseUrl,
+                markers as any,
+                profile as Record<string, unknown>,
+              );
+              console.log(`[BloodTests] Sync auto-delivery email for ${baseRecord.id} to ${recipient}: ${sent ? "sent" : "blocked-by-quality-gate"}`);
+            }
+          } catch (mailErr) {
+            console.error(`[BloodTests] Sync auto-delivery failed for ${baseRecord.id}:`, mailErr);
           }
         });
       }

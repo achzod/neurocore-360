@@ -192,7 +192,7 @@ const isDeliverableAiReport = (reportText: string): boolean => {
   return BLOOD_REQUIRED_SECTION_PATTERNS.every((pattern) => pattern.test(text));
 };
 
-const sendBloodClientDeliveryEmail = async (
+export const sendBloodClientDeliveryEmail = async (
   recipientEmail: string,
   reportId: string,
   aiReport: string,
@@ -335,11 +335,16 @@ const generateAiReportWithAttempts = async (
 
 type MarkerStatus = "optimal" | "normal" | "suboptimal" | "critical";
 
+// Recalibrated 2026-05-07 (Younes Y. case): a flat average across markers
+// gave a "bon 72/100" to a patient whose FSH/LH were critically suppressed
+// and testo/E2 sub-optimal. Critical hormonal markers MUST tank the global
+// score, not get diluted by a few good metabolic numbers. Suboptimal also
+// penalised harder than before.
 const SCORE_BY_STATUS: Record<MarkerStatus, number> = {
   optimal: 100,
-  normal: 80,
-  suboptimal: 55,
-  critical: 30,
+  normal: 75,
+  suboptimal: 40,
+  critical: 0,
 };
 
 const CATEGORY_BY_MARKER: Record<string, string> = {
@@ -393,17 +398,74 @@ const normalizeMarkerStatus = (status: unknown): MarkerStatus => {
   return "normal";
 };
 
-const computeGlobalScoreFromStatuses = (statuses: MarkerStatus[]): number => {
-  if (!statuses.length) return 0;
-  const total = statuses.reduce((sum, status) => sum + SCORE_BY_STATUS[status], 0);
-  return Math.round(total / statuses.length);
+// Category weights — hormonal axis gets the highest weight because a broken
+// HPT axis (FSH/LH effondrés) is more impactful for performance/health than
+// a slightly out-of-range vitamin D.
+const CATEGORY_WEIGHTS: Record<string, number> = {
+  hormonal: 25,
+  metabolic: 20,
+  thyroid: 15,
+  inflammation: 15,
+  liver_kidney: 15,
+  vitamins: 10,
+};
+const DEFAULT_CATEGORY_WEIGHT = 8;
+
+interface MarkerForScoring {
+  markerId?: string;
+  status: MarkerStatus;
+}
+
+const computeGlobalScoreWeighted = (markers: MarkerForScoring[]): number => {
+  if (!markers.length) return 0;
+
+  // Group markers by category
+  const byCategory: Record<string, MarkerStatus[]> = {};
+  for (const m of markers) {
+    const cat = (m.markerId && CATEGORY_BY_MARKER[m.markerId]) || "general";
+    if (!byCategory[cat]) byCategory[cat] = [];
+    byCategory[cat].push(m.status);
+  }
+
+  // Average per category
+  let weightedSum = 0;
+  let totalWeight = 0;
+  for (const [cat, statuses] of Object.entries(byCategory)) {
+    if (!statuses.length) continue;
+    const catAvg = statuses.reduce((s, st) => s + SCORE_BY_STATUS[st], 0) / statuses.length;
+    const weight = CATEGORY_WEIGHTS[cat] ?? DEFAULT_CATEGORY_WEIGHT;
+    weightedSum += catAvg * weight;
+    totalWeight += weight;
+  }
+
+  if (totalWeight === 0) return 0;
+  let baseScore = weightedSum / totalWeight;
+
+  // Critical-marker hard penalty: each critical marker subtracts 8 points,
+  // capped at -40. A patient with 2+ critical hormonal markers cannot be
+  // labelled "bon" by mathematical accident.
+  const criticalCount = markers.filter((m) => m.status === "critical").length;
+  const criticalPenalty = Math.min(40, criticalCount * 8);
+  baseScore = Math.max(0, baseScore - criticalPenalty);
+
+  return Math.round(baseScore);
 };
 
-const getGlobalLevel = (score: number): "excellent" | "bon" | "moyen" | "faible" => {
+// Backwards-compatible wrapper — kept for any external caller that still
+// passes raw statuses. Internally re-routes to the weighted version when
+// possible. Called sites should prefer computeGlobalScoreWeighted.
+const computeGlobalScoreFromStatuses = (statuses: MarkerStatus[]): number => {
+  if (!statuses.length) return 0;
+  const fakeMarkers: MarkerForScoring[] = statuses.map((s) => ({ status: s }));
+  return computeGlobalScoreWeighted(fakeMarkers);
+};
+
+const getGlobalLevel = (score: number): "excellent" | "bon" | "moyen" | "faible" | "critique" => {
   if (score >= 85) return "excellent";
   if (score >= 70) return "bon";
   if (score >= 50) return "moyen";
-  return "faible";
+  if (score >= 30) return "faible";
+  return "critique";
 };
 
 const normalizeLegacyReportMarker = (
@@ -1643,8 +1705,8 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         });
 
         const effectiveMarkers = normalizedMarkers.length ? normalizedMarkers : fallbackMarkers;
-        const globalScore = computeGlobalScoreFromStatuses(
-          effectiveMarkers.map((marker) => marker.status)
+        const globalScore = computeGlobalScoreWeighted(
+          effectiveMarkers.map((marker) => ({ markerId: marker.markerId, status: marker.status }))
         );
         const globalLevel = getGlobalLevel(globalScore);
         const existingAnalysis =
