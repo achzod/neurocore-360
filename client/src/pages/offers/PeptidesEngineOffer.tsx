@@ -1,6 +1,6 @@
 /**
  * APEXLABS - Peptides Engine Offer
- * Protocole peptides personnalise — 299€
+ * Protocole peptides personnalise — 199€ flash (jusqu'au 10 mai 2026 23h59 Paris) puis 399€
  */
 
 import { useState, useEffect } from "react";
@@ -47,12 +47,97 @@ import { Footer } from "@/components/Footer";
 
 const PRIMARY = "#F59E0B";
 
+// Flash promo deadline: dimanche 10 mai 2026 23:59 Paris (UTC+2)
+const FLASH_DEADLINE_MS = new Date("2026-05-10T23:59:59+02:00").getTime();
+const FLASH_PROMO_CODE = "PEPTIDES100";
+const FLASH_PRICE = 199;
+const REGULAR_PRICE = 399;
+
+function pad2(n: number) {
+  return String(Math.max(0, n)).padStart(2, "0");
+}
+
+function useCountdown(targetMs: number) {
+  const [now, setNow] = useState<number>(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const diff = Math.max(0, targetMs - now);
+  const days = Math.floor(diff / 86_400_000);
+  const hours = Math.floor((diff % 86_400_000) / 3_600_000);
+  const minutes = Math.floor((diff % 3_600_000) / 60_000);
+  const seconds = Math.floor((diff % 60_000) / 1_000);
+  return { days, hours, minutes, seconds, expired: diff <= 0 };
+}
+
+function FlashCountdown({ compact = false }: { compact?: boolean }) {
+  const { days, hours, minutes, seconds, expired } = useCountdown(FLASH_DEADLINE_MS);
+  if (expired) return null;
+
+  const cellPad = compact ? "px-3 py-2" : "px-4 py-3 md:px-5 md:py-4";
+  const digitSize = compact ? "text-2xl" : "text-3xl md:text-4xl";
+  const labelSize = compact ? "text-[9px]" : "text-[10px]";
+
+  return (
+    <div className="inline-flex items-center gap-2 md:gap-3">
+      {[
+        { v: days, l: "JOURS" },
+        { v: hours, l: "HEURES" },
+        { v: minutes, l: "MIN" },
+        { v: seconds, l: "SEC" },
+      ].map((seg, i, arr) => (
+        <div key={seg.l} className="flex items-center gap-2 md:gap-3">
+          <div className="flex flex-col items-center">
+            <div
+              className={`${cellPad} rounded-md border border-amber-500/30 bg-[#0a0a0a] font-mono ${digitSize} font-bold tabular-nums leading-none`}
+              style={{ color: PRIMARY }}
+            >
+              {pad2(seg.v)}
+            </div>
+            <span className={`mt-1.5 font-mono ${labelSize} font-semibold tracking-[0.2em] text-white/40`}>
+              {seg.l}
+            </span>
+          </div>
+          {i < arr.length - 1 && (
+            <span className={`${digitSize} font-bold leading-none text-white/15 -mt-3`}>:</span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function FlashBanner() {
+  const { expired } = useCountdown(FLASH_DEADLINE_MS);
+  if (expired) return null;
+  return (
+    <div
+      className="sticky top-0 z-40 w-full border-b border-amber-500/30 backdrop-blur"
+      style={{
+        background: "linear-gradient(90deg, rgba(245,158,11,0.10) 0%, rgba(245,158,11,0.04) 50%, rgba(245,158,11,0.10) 100%)",
+      }}
+    >
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-3 px-4 py-2.5 text-center md:gap-5">
+        <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-amber-500">
+          Fenêtre 72h
+        </span>
+        <span className="text-xs text-white/70 md:text-sm">
+          <strong className="text-white">{FLASH_PRICE}€</strong> au lieu de <span className="text-white/50 line-through">{REGULAR_PRICE}€</span> · code{" "}
+          <strong style={{ color: PRIMARY }}>{FLASH_PROMO_CODE}</strong>
+        </span>
+        <FlashCountdown compact />
+      </div>
+    </div>
+  );
+}
+
 type FAQEntry = { q: string; a: string };
 
 const FAQ: FAQEntry[] = [
   {
-    q: "Pourquoi 299€ au lieu de 399€ ?",
-    a: "C'est le prix de lancement. Le protocole inclut 2 blood analyses (valeur 198€), l'acces direct a la source a prix labo, et un suivi complet. A 299€, c'est un investissement qui se rembourse en une seule commande de peptides au bon prix. Et si tu prends un coaching 12 semaines, 150€ sont deduits de ta formule.",
+    q: "Pourquoi 199€ au lieu de 399€ ?",
+    a: "Fenetre flash 72h. Mes fournisseurs durcissent leurs conditions, je passe le tarif a 399€ des le 11 mai. D'ici dimanche 10 mai 23h59, le code PEPTIDES100 te donne 199€ au lieu de 399€. Le protocole inclut 2 blood analyses (valeur 198€), l'acces direct a la source a prix labo, le support 30 jours sans limite. A 199€ tu rembourses en une seule commande de peptides au bon prix. Si tu prends un coaching 12 semaines, 150€ sont deduits de ta formule.",
   },
   {
     q: "C'est quoi la source premium ?",
@@ -1417,25 +1502,36 @@ function FinalCTA() {
             35 questions. Un protocole sur mesure. La source ou les peptides coutent 60-90% moins cher. 2 bilans sanguins inclus.
           </p>
 
-          {/* Price */}
-          <div className="mt-10 inline-flex flex-col items-center gap-2 rounded-2xl border border-white/10 bg-[#0a0a0a] px-10 py-7">
-            <p className="font-mono text-xs uppercase tracking-widest text-amber-500 mb-1">Prix de lancement</p>
-            <div className="flex items-center gap-3">
-              <p className="text-2xl font-bold text-white/30 line-through">399€</p>
-              <p className="text-5xl font-bold text-white">299€</p>
+          {/* Price - flash 199€ + countdown */}
+          <div className="mt-10 inline-flex flex-col items-center gap-3 rounded-2xl border border-amber-500/30 bg-[#0a0a0a] px-8 py-8 md:px-12">
+            <p className="font-mono text-[11px] font-bold uppercase tracking-[0.25em] text-amber-500">
+              Tarif gele 72h
+            </p>
+            <div className="flex items-end gap-4">
+              <p className="text-3xl font-bold text-white/30 line-through leading-none">399€</p>
+              <p className="text-6xl font-bold text-white leading-none md:text-7xl">199€</p>
             </div>
-            <p className="font-mono text-xs text-white/40">TVA incluse · Paiement securise</p>
+            <p className="font-mono text-xs uppercase tracking-widest text-white/50">
+              avec le code <strong style={{ color: PRIMARY }}>PEPTIDES100</strong>
+            </p>
+            <div className="mt-3">
+              <FlashCountdown />
+            </div>
+            <p className="font-mono text-[11px] uppercase tracking-widest text-white/40">
+              Fin dimanche 10 mai · 23:59 (Paris)
+            </p>
+            <p className="font-mono text-xs text-white/40 mt-1">TVA incluse · Paiement securise</p>
             <motion.p
               animate={{ opacity: [0.6, 1, 0.6] }}
               transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              className="font-mono text-xs font-bold mt-2 tracking-wide"
+              className="font-mono text-xs font-bold mt-1 tracking-wide"
               style={{ color: "#00E5FF" }}
             >150€ deduits de tout coaching Elite/Private Lab 8 ou 12 semaines</motion.p>
           </div>
 
           <div className="mt-8 flex flex-col items-center gap-4">
-            <CTAButton href="/peptides-engine" large>
-              Acceder a mon protocole — 299€
+            <CTAButton href="/peptides-engine?promo=PEPTIDES100" large>
+              Reserver mon protocole a 199€
             </CTAButton>
             <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-white/35">
               <span className="flex items-center gap-1.5">
@@ -1517,21 +1613,42 @@ function Hero() {
           <span className="font-semibold text-white">60-90% moins cher</span> que partout ailleurs.
         </motion.p>
 
-        {/* Pricing */}
+        {/* Pricing - flash 199€ */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="mt-10 flex items-center justify-center gap-4"
+          className="mt-10 flex flex-col items-center gap-3"
         >
-          <span className="text-2xl font-bold text-white/30 line-through">399€</span>
-          <span className="text-5xl font-bold text-white">299€</span>
-          <span className="text-xs font-mono uppercase tracking-widest text-amber-500">Prix de lancement</span>
+          <span className="font-mono text-[11px] font-bold uppercase tracking-[0.25em] text-amber-500">
+            Tarif gele 72h
+          </span>
+          <div className="flex items-end justify-center gap-4">
+            <span className="text-3xl font-bold text-white/30 line-through leading-none">399€</span>
+            <span className="text-6xl font-bold text-white leading-none md:text-7xl">199€</span>
+          </div>
+          <span className="font-mono text-xs uppercase tracking-widest text-white/50">
+            avec le code <strong style={{ color: PRIMARY }}>PEPTIDES100</strong>
+          </span>
         </motion.div>
+
+        {/* Countdown */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.35 }}
+          className="mt-8 flex flex-col items-center gap-3"
+        >
+          <FlashCountdown />
+          <span className="font-mono text-[11px] uppercase tracking-widest text-white/40">
+            Fin dimanche 10 mai · 23:59 (Paris)
+          </span>
+        </motion.div>
+
         <motion.p
           animate={{ opacity: [0.6, 1, 0.6] }}
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          className="mt-3 font-mono text-xs font-bold text-center tracking-wide"
+          className="mt-6 font-mono text-xs font-bold text-center tracking-wide"
           style={{ color: "#00E5FF" }}
         >150€ deduits de tout coaching Elite/Private Lab 8 ou 12 semaines</motion.p>
 
@@ -1542,8 +1659,8 @@ function Hero() {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="mt-8 flex flex-col items-center gap-4"
         >
-          <CTAButton href="/peptides-engine" large>
-            Acceder a mon protocole — 299€
+          <CTAButton href="/peptides-engine?promo=PEPTIDES100" large>
+            Reserver mon protocole a 199€
           </CTAButton>
 
           <div className="flex flex-wrap items-center justify-center gap-5 text-xs text-white/35">
@@ -1590,6 +1707,7 @@ export default function PeptidesEngineOffer() {
   return (
     <div className="min-h-screen bg-black text-white">
       <Header />
+      <FlashBanner />
 
       <main>
         <Hero />
