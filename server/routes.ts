@@ -8998,8 +8998,9 @@ export async function registerRoutes(
             let eventType = event.toLowerCase().replace(/\s+/g, '_');
 
             // Normalize event names
+            // SendPulse sends "redirect" for clicks (action name from webhook registration)
             if (eventType.includes('open')) eventType = 'open';
-            else if (eventType.includes('click')) eventType = 'click';
+            else if (eventType.includes('click') || eventType.includes('redirect') || eventType === 'link') eventType = 'click';
             else if (eventType.includes('unsub')) eventType = 'unsubscribe';
             else if (eventType.includes('bounce')) eventType = 'bounce';
             else if (eventType.includes('deliver')) eventType = 'delivered';
@@ -9059,6 +9060,86 @@ export async function registerRoutes(
         success: false,
         error: "Erreur webhook",
         message: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // ==================== BACKFILL: Map historical "redirect" events to clicked ====================
+  // SendPulse uses "redirect" as click event name; before the webhook fix it was stored
+  // as event_type='redirect' in cta_tracking but email_tracking.clicked stayed NULL.
+  app.post("/api/admin/backfill-redirect-clicks", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+
+    try {
+      const { Pool } = await import("pg");
+      const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+      if (!databaseUrl) {
+        res.status(500).json({ error: "DATABASE_URL not configured" });
+        return;
+      }
+
+      const pool = new Pool({
+        connectionString: databaseUrl,
+        ssl: databaseUrl.includes("render.com") || databaseUrl.includes("neon.tech")
+          ? { rejectUnauthorized: false }
+          : false,
+      });
+
+      try {
+        const before = await pool.query(
+          `SELECT
+             COUNT(*) FILTER (WHERE event_type = 'redirect') AS redirect_events,
+             COUNT(*) FILTER (WHERE event_type = 'click') AS click_events
+           FROM cta_tracking`
+        );
+
+        const trackingBefore = await pool.query(
+          `SELECT COUNT(*) AS clicked_count FROM email_tracking WHERE clicked IS NOT NULL`
+        );
+
+        // Step 1: rewrite event_type 'redirect' -> 'click' in cta_tracking
+        const rewriteResult = await pool.query(
+          `UPDATE cta_tracking SET event_type = 'click' WHERE event_type = 'redirect'`
+        );
+
+        // Step 2: update email_tracking.clicked from earliest matching click event
+        const updateResult = await pool.query(
+          `UPDATE email_tracking et
+           SET clicked = sub.first_click
+           FROM (
+             SELECT email_tracking_id, MIN(created_at) AS first_click
+             FROM cta_tracking
+             WHERE event_type = 'click' AND email_tracking_id IS NOT NULL
+             GROUP BY email_tracking_id
+           ) sub
+           WHERE et.id = sub.email_tracking_id AND et.clicked IS NULL`
+        );
+
+        const trackingAfter = await pool.query(
+          `SELECT COUNT(*) AS clicked_count FROM email_tracking WHERE clicked IS NOT NULL`
+        );
+
+        res.json({
+          success: true,
+          redirect_events_rewritten: rewriteResult.rowCount,
+          email_tracking_updated: updateResult.rowCount,
+          before: {
+            redirect_events: Number(before.rows[0].redirect_events),
+            click_events: Number(before.rows[0].click_events),
+            email_tracking_clicked: Number(trackingBefore.rows[0].clicked_count),
+          },
+          after: {
+            email_tracking_clicked: Number(trackingAfter.rows[0].clicked_count),
+          },
+        });
+      } finally {
+        await pool.end();
+      }
+    } catch (error) {
+      console.error("[BackfillRedirectClicks] Error:", error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   });
