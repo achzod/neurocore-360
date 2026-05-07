@@ -8319,8 +8319,12 @@ export async function registerRoutes(
     if (!requireAdminAuth(req, res)) return;
 
     try {
-      const SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID;
-      const SENDPULSE_SECRET = process.env.SENDPULSE_SECRET;
+      // Accept both SENDPULSE_USER_ID/SECRET and SENDPULSE_API_USER_ID/API_SECRET
+      // (the rest of the codebase already supports both, but this admin endpoint
+      // was hardcoded to the first variant, breaking the dashboard CTA stats
+      // when env was set with the API_ prefix variant — Achzod report 2026-05-07).
+      const SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID || process.env.SENDPULSE_API_USER_ID;
+      const SENDPULSE_SECRET = process.env.SENDPULSE_SECRET || process.env.SENDPULSE_API_SECRET;
 
       if (!SENDPULSE_USER_ID || !SENDPULSE_SECRET) {
         res.json({ success: false, error: "SendPulse credentials not configured" });
