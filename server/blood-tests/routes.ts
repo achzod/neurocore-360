@@ -127,18 +127,33 @@ const SYSTEM_BY_MARKER: Record<string, string> = {
   anti_tpo: "thyroid",
 };
 
+// Recalibrated 2026-05-07 (Younes Y. case): flat-average gave a "bon"
+// to a patient with collapsed HPT axis. New system penalises critical
+// markers harder and weights categories by health-impact priority.
 const SCORE_BY_STATUS: Record<MarkerStatus, number> = {
   optimal: 100,
-  normal: 80,
-  suboptimal: 55,
-  critical: 30,
+  normal: 75,
+  suboptimal: 40,
+  critical: 0,
 };
+
+const CATEGORY_WEIGHTS: Record<string, number> = {
+  hormonal: 25,
+  metabolic: 20,
+  thyroid: 15,
+  inflammation: 15,
+  liver_kidney: 15,
+  vitamins: 10,
+  hemato: 10,
+};
+const DEFAULT_CATEGORY_WEIGHT = 8;
 
 const getGlobalLevel = (score: number | null | undefined): string | null => {
   if (score === null || score === undefined) return null;
-  if (score >= 80) return "excellent";
-  if (score >= 65) return "bon";
+  if (score >= 85) return "excellent";
+  if (score >= 70) return "bon";
   if (score >= 50) return "moyen";
+  if (score >= 30) return "faible";
   return "critique";
 };
 
@@ -158,10 +173,31 @@ const computeCategoryScores = (markers: Array<{ category?: string; status?: Mark
   );
 };
 
-const computeGlobalScore = (scoresMap: Record<string, number>) => {
-  const scores = Object.values(scoresMap);
-  if (scores.length === 0) return 0;
-  return Math.round(scores.reduce((sum, value) => sum + value, 0) / scores.length);
+const computeGlobalScore = (
+  scoresMap: Record<string, number>,
+  markers?: Array<{ status?: MarkerStatus }>
+) => {
+  const entries = Object.entries(scoresMap);
+  if (entries.length === 0) return 0;
+
+  // Weighted average across categories : hormonal counts more than vitamins.
+  let weightedSum = 0;
+  let totalWeight = 0;
+  for (const [cat, score] of entries) {
+    const weight = CATEGORY_WEIGHTS[cat] ?? DEFAULT_CATEGORY_WEIGHT;
+    weightedSum += score * weight;
+    totalWeight += weight;
+  }
+  let baseScore = totalWeight > 0 ? weightedSum / totalWeight : 0;
+
+  // Critical-marker penalty (caller passes raw markers when available).
+  if (markers && markers.length > 0) {
+    const criticalCount = markers.filter((m) => m.status === "critical").length;
+    const criticalPenalty = Math.min(40, criticalCount * 8);
+    baseScore = Math.max(0, baseScore - criticalPenalty);
+  }
+
+  return Math.round(baseScore);
 };
 
 const getAgeFromDob = (dob?: string): string | undefined => {
@@ -932,7 +968,7 @@ export function registerBloodTestsRoutes(app: Express): void {
           const categoryScores = computeCategoryScores(markers);
           const systemScores = computeSystemScores(markers);
           const scoreSource = Object.keys(systemScores).length ? systemScores : categoryScores;
-          const globalScore = computeGlobalScore(scoreSource);
+          const globalScore = computeGlobalScore(scoreSource, markers);
           const globalLevel = getGlobalLevel(globalScore);
           const temporalRisk = computeTemporalRisk(markers);
           const protocolPhases = buildProtocolPhases(markers);
@@ -1280,7 +1316,7 @@ export function registerBloodTestsRoutes(app: Express): void {
       const categoryScores = computeCategoryScores(markers);
       const systemScores = computeSystemScores(markers);
       const scoreSource = Object.keys(systemScores).length ? systemScores : categoryScores;
-      const globalScore = computeGlobalScore(scoreSource);
+      const globalScore = computeGlobalScore(scoreSource, markers);
       const globalLevel = getGlobalLevel(globalScore);
       const temporalRisk = computeTemporalRisk(markers);
       const protocolPhases = buildProtocolPhases(markers);
@@ -1527,7 +1563,7 @@ export function registerBloodTestsRoutes(app: Express): void {
         }))
       );
       const scoreSource = Object.keys(systemScores).length ? systemScores : categoryScores;
-      const recomputedGlobalScore = computeGlobalScore(scoreSource);
+      const recomputedGlobalScore = computeGlobalScore(scoreSource, normalizedMarkers as any);
       const recomputedGlobalLevel = getGlobalLevel(recomputedGlobalScore);
 
       const riskProfile = resolvedMarkers.length
