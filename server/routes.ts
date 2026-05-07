@@ -3404,7 +3404,12 @@ export async function registerRoutes(
         const pType = (planType as ProductTypeEnum) || "PREMIUM";
         const baseCents = ProductPriceCents[pType] ?? 0;
         const promoObj = validatedPromoCode ? await storage.getPromoCode(validatedPromoCode) : null;
-        const discountCents = promoObj ? Math.round(baseCents * promoObj.discountPercent / 100) : 0;
+        // PEPTIDES100 uses amount_off=10000 cents at Stripe, regardless of stored %
+        const discountCents = promoObj
+          ? (validatedPromoCode?.toUpperCase() === 'PEPTIDES100'
+              ? 10000
+              : Math.round(baseCents * promoObj.discountPercent / 100))
+          : 0;
 
         const order = await storage.createOrder({
           email,
