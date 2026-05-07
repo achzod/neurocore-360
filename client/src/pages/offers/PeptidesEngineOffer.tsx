@@ -45,7 +45,17 @@ import { Footer } from "@/components/Footer";
 // CONSTANTS
 // ============================================================================
 
-const PRIMARY = "#F59E0B";
+// Apple-style palette: blanc / gris métal / bleu
+const PRIMARY = "#0071E3";        // Apple blue (boutons + accents)
+const PRIMARY_HOVER = "#0077ED";
+const TEXT_DARK = "#1D1D1F";       // Near-black headlines
+const TEXT_MED = "#424245";        // Secondary text
+const TEXT_GRAY = "#6E6E73";       // Body gray
+const TEXT_FAINT = "#86868B";      // Captions
+const SURFACE = "#FFFFFF";         // Pure white background
+const SURFACE_2 = "#F5F5F7";       // Apple gray surface (cards)
+const SURFACE_3 = "#FBFBFD";       // Slightly off-white sections
+const BORDER = "#D2D2D7";          // Apple light border
 
 // Flash promo deadline: dimanche 10 mai 2026 23:59 Paris (UTC+2)
 const FLASH_DEADLINE_MS = new Date("2026-05-10T23:59:59+02:00").getTime();
@@ -90,17 +100,17 @@ function FlashCountdown({ compact = false }: { compact?: boolean }) {
         <div key={seg.l} className="flex items-center gap-2 md:gap-3">
           <div className="flex flex-col items-center">
             <div
-              className={`${cellPad} rounded-md border border-amber-500/30 bg-[#0a0a0a] font-mono ${digitSize} font-bold tabular-nums leading-none`}
+              className={`${cellPad} rounded-md border border-[#0071E3]/30 bg-[#F5F5F7] font-mono ${digitSize} font-bold tabular-nums leading-none`}
               style={{ color: PRIMARY }}
             >
               {pad2(seg.v)}
             </div>
-            <span className={`mt-1.5 font-mono ${labelSize} font-semibold tracking-[0.2em] text-white/40`}>
+            <span className={`mt-1.5 font-mono ${labelSize} font-semibold tracking-[0.2em] text-[#86868B]`}>
               {seg.l}
             </span>
           </div>
           {i < arr.length - 1 && (
-            <span className={`${digitSize} font-bold leading-none text-white/15 -mt-3`}>:</span>
+            <span className={`${digitSize} font-bold leading-none text-[#D2D2D7] -mt-3`}>:</span>
           )}
         </div>
       ))}
@@ -114,19 +124,18 @@ function FlashBanner() {
   // Sticky just below the Header (Header is sticky top-0 z-50, ~64px tall).
   return (
     <div
-      className="sticky top-[64px] z-[45] w-full border-y border-amber-500/40 backdrop-blur-sm"
-      style={{
-        background:
-          "linear-gradient(90deg, rgba(245,158,11,0.18) 0%, rgba(245,158,11,0.08) 50%, rgba(245,158,11,0.18) 100%)",
-      }}
+      className="sticky top-[64px] z-[45] w-full border-b border-[#D2D2D7] bg-white/85 backdrop-blur-md"
     >
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-3 px-4 py-3 text-center md:gap-6 md:py-3.5">
-        <span className="font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-amber-400 md:text-[11px]">
-          ⚡ Fenêtre 72h
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-3 px-4 py-3 text-center md:gap-6">
+        <span
+          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white md:text-[11px]"
+          style={{ backgroundColor: PRIMARY }}
+        >
+          Fenêtre 72h
         </span>
-        <span className="text-xs text-white md:text-sm">
-          <strong className="text-white">{FLASH_PRICE}€</strong> au lieu de{" "}
-          <span className="text-white/50 line-through">{REGULAR_PRICE}€</span> · code{" "}
+        <span className="text-[13px] text-[#1D1D1F] md:text-sm">
+          <strong className="text-[#1D1D1F]">{FLASH_PRICE}€</strong> au lieu de{" "}
+          <span className="text-[#86868B] line-through">{REGULAR_PRICE}€</span> · code{" "}
           <strong style={{ color: PRIMARY }}>{FLASH_PROMO_CODE}</strong>
         </span>
         <FlashCountdown compact />
@@ -323,13 +332,13 @@ function FAQItem({ q, a, index }: { q: string; a: string; index: number }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay: index * 0.04 }}
-      className="border-b border-white/10"
+      className="border-b border-[#D2D2D7]"
     >
       <button
         onClick={() => setOpen(!open)}
-        className="flex w-full items-start justify-between gap-8 py-6 text-left transition-colors hover:text-amber-400"
+        className="flex w-full items-start justify-between gap-8 py-6 text-left transition-colors hover:text-[#0071E3]"
       >
-        <h3 className="text-base font-semibold text-white">{q}</h3>
+        <h3 className="text-base font-semibold text-[#1D1D1F]">{q}</h3>
         <motion.div
           animate={{ rotate: open ? 180 : 0 }}
           transition={{ duration: 0.25 }}
@@ -347,7 +356,7 @@ function FAQItem({ q, a, index }: { q: string; a: string; index: number }) {
             transition={{ duration: 0.25 }}
             className="overflow-hidden"
           >
-            <p className="pb-6 text-sm leading-relaxed text-white/60">{a}</p>
+            <p className="pb-6 text-sm leading-relaxed text-[#6E6E73]">{a}</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -375,17 +384,15 @@ function CTAButton({ children, href = "/peptides-engine", large = false }: { chi
   return (
     <Link href={href}>
       <motion.a
-        whileHover={{ scale: 1.02 }}
+        whileHover={{ scale: 1.02, backgroundColor: PRIMARY_HOVER }}
         whileTap={{ scale: 0.98 }}
-        className={`inline-flex cursor-pointer items-center gap-2 rounded-lg font-semibold transition-all ${
-          large
-            ? "px-10 py-5 text-lg"
-            : "px-7 py-4 text-base"
+        className={`inline-flex cursor-pointer items-center gap-2 rounded-full font-semibold transition-all ${
+          large ? "px-9 py-4 text-base" : "px-7 py-3 text-[15px]"
         }`}
-        style={{ backgroundColor: PRIMARY, color: "#000" }}
+        style={{ backgroundColor: PRIMARY, color: "#fff" }}
       >
         {children}
-        <ArrowRight className="h-5 w-5" />
+        <ArrowRight className="h-4 w-4" />
       </motion.a>
     </Link>
   );
@@ -417,10 +424,10 @@ function PriceComparison() {
           className="mb-14 text-center"
         >
           <SectionLabel>La verite sur les prix</SectionLabel>
-          <h2 className="mt-4 text-3xl font-bold text-white md:text-4xl">
+          <h2 className="mt-4 text-3xl font-bold text-[#1D1D1F] md:text-4xl">
             Ce que tu paies ailleurs vs via ma source
           </h2>
-          <p className="mt-4 text-white/50 max-w-2xl mx-auto">
+          <p className="mt-4 text-[#6E6E73] max-w-2xl mx-auto">
             Prix reels compares. Revendeurs FR/EU vs source directe laboratoire avec COA (Certificat d'Analyse) par lot.
           </p>
         </motion.div>
@@ -430,12 +437,12 @@ function PriceComparison() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="rounded-2xl border border-white/10 bg-[#0a0a0a] overflow-hidden mb-6"
+          className="rounded-2xl border border-[#D2D2D7] bg-[#F5F5F7] overflow-hidden mb-6"
         >
           {/* Header */}
-          <div className="grid grid-cols-4 gap-4 px-6 py-4 border-b border-white/10 bg-white/5">
-            <span className="text-xs font-mono uppercase tracking-wider text-white/40">Peptide</span>
-            <span className="text-xs font-mono uppercase tracking-wider text-white/40 text-center">Revendeur FR/EU</span>
+          <div className="grid grid-cols-4 gap-4 px-6 py-4 border-b border-[#D2D2D7] bg-white/5">
+            <span className="text-xs font-mono uppercase tracking-wider text-[#86868B]">Peptide</span>
+            <span className="text-xs font-mono uppercase tracking-wider text-[#86868B] text-center">Revendeur FR/EU</span>
             <span className="text-xs font-mono uppercase tracking-wider text-center" style={{ color: PRIMARY }}>Ma source</span>
             <span className="text-xs font-mono uppercase tracking-wider text-right" style={{ color: PRIMARY }}>Economie</span>
           </div>
@@ -448,13 +455,13 @@ function PriceComparison() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.05 }}
-              className={`grid grid-cols-4 gap-4 px-6 py-4 items-center ${i < PRICE_TABLE.length - 1 ? "border-b border-white/5" : ""}`}
+              className={`grid grid-cols-4 gap-4 px-6 py-4 items-center ${i < PRICE_TABLE.length - 1 ? "border-b border-[#E5E5EA]" : ""}`}
             >
               <div>
-                <span className="text-sm font-medium text-white">{row.name}</span>
-                <span className="ml-2 text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/5 text-white/40">{row.tag}</span>
+                <span className="text-sm font-medium text-[#1D1D1F]">{row.name}</span>
+                <span className="ml-2 text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/5 text-[#86868B]">{row.tag}</span>
               </div>
-              <span className="text-sm text-white/40 text-center line-through">{row.reseller}</span>
+              <span className="text-sm text-[#86868B] text-center line-through">{row.reseller}</span>
               <span className="text-sm font-bold text-center" style={{ color: PRIMARY }}>{row.sourceEur}</span>
               <div className="text-right">
                 <span className="text-sm font-bold text-emerald-400">-{row.savings}</span>
@@ -469,14 +476,14 @@ function PriceComparison() {
             initial={{ opacity: 0, x: -24 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-8"
+            className="rounded-2xl border border-[#D2D2D7] bg-[#F5F5F7] p-8"
           >
-            <p className="mb-1 font-mono text-xs uppercase tracking-wider text-white/40">Revendeur classique</p>
-            <p className="mb-2 text-4xl font-bold text-white/40">1 200€<span className="text-lg font-normal">/cycle</span></p>
-            <p className="text-sm text-white/30">3 peptides × 8 vials × 50€ en moyenne</p>
+            <p className="mb-1 font-mono text-xs uppercase tracking-wider text-[#86868B]">Revendeur classique</p>
+            <p className="mb-2 text-4xl font-bold text-[#86868B]">1 200€<span className="text-lg font-normal">/cycle</span></p>
+            <p className="text-sm text-[#A1A1A6]">3 peptides × 8 vials × 50€ en moyenne</p>
             <ul className="mt-4 space-y-2">
               {["Prix gonfles x3-x10", "Pas de COA", "Aucune personnalisation"].map((item) => (
-                <li key={item} className="flex items-start gap-2 text-sm text-white/40">
+                <li key={item} className="flex items-start gap-2 text-sm text-[#86868B]">
                   <span className="text-red-500 mt-0.5">✕</span> {item}
                 </li>
               ))}
@@ -487,18 +494,18 @@ function PriceComparison() {
             initial={{ opacity: 0, x: 24 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="relative rounded-2xl border bg-[#0a0a0a] p-8"
+            className="relative rounded-2xl border bg-[#F5F5F7] p-8"
             style={{ borderColor: PRIMARY }}
           >
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-4 py-1 text-xs font-semibold" style={{ backgroundColor: PRIMARY, color: "#000" }}>
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-4 py-1 text-xs font-semibold" style={{ backgroundColor: PRIMARY, color: "#fff" }}>
               Via ton protocole
             </div>
             <p className="mb-1 font-mono text-xs uppercase tracking-wider" style={{ color: PRIMARY }}>Ma source (dans ton protocole)</p>
-            <p className="mb-2 text-4xl font-bold text-white">~280€<span className="text-lg font-normal text-white/60">/cycle</span></p>
-            <p className="text-sm text-white/50">3 peptides × 8 vials × ~$12 direct labo</p>
+            <p className="mb-2 text-4xl font-bold text-[#1D1D1F]">~280€<span className="text-lg font-normal text-[#6E6E73]">/cycle</span></p>
+            <p className="text-sm text-[#6E6E73]">3 peptides × 8 vials × ~$12 direct labo</p>
             <ul className="mt-4 space-y-2">
               {["Prix direct laboratoire", "COA par lot, labo tiers", "Protocole personnalise"].map((item) => (
-                <li key={item} className="flex items-start gap-2 text-sm text-white">
+                <li key={item} className="flex items-start gap-2 text-sm text-[#1D1D1F]">
                   <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" style={{ color: PRIMARY }} /> {item}
                 </li>
               ))}
@@ -513,7 +520,7 @@ function PriceComparison() {
           className="rounded-xl border px-8 py-5 text-center"
           style={{ borderColor: `${PRIMARY}40`, backgroundColor: `${PRIMARY}08` }}
         >
-          <p className="text-lg text-white">
+          <p className="text-lg text-[#1D1D1F]">
             Tu economises{" "}
             <span className="font-black text-2xl" style={{ color: PRIMARY }}>920€</span>{" "}
             des le 1er cycle. Et chaque cycle apres. Le protocole se rembourse en <span className="font-bold" style={{ color: PRIMARY }}>une seule commande</span>.
@@ -567,7 +574,7 @@ const AnimationWrapper = ({ children, title, value, status, extraUI, color = "cy
       whileInView={{ opacity: 1, scale: 1, y: 0 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.8, ease: "easeOut" }}
-      className={`relative w-full max-w-lg aspect-square md:aspect-[4/5] rounded-3xl border bg-black/50 backdrop-blur-2xl overflow-hidden flex items-center justify-center group ${colorMap[color]}`}
+      className={`relative w-full max-w-lg aspect-square md:aspect-[4/5] rounded-3xl border bg-white/50 backdrop-blur-2xl overflow-hidden flex items-center justify-center group ${colorMap[color]}`}
     >
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:1.5rem_1.5rem]" />
       <motion.div
@@ -578,12 +585,12 @@ const AnimationWrapper = ({ children, title, value, status, extraUI, color = "cy
 
       {children}
 
-      <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-md border border-white/10 rounded-lg p-3 flex flex-col gap-1 z-30">
+      <div className="absolute top-4 left-4 bg-white/80 backdrop-blur-md border border-[#D2D2D7] rounded-lg p-3 flex flex-col gap-1 z-30">
         <div className="flex items-center gap-2 mb-1">
           <div className={`w-2 h-2 rounded-full animate-pulse ${dotMap[color]}`} />
           <span className={`text-[10px] font-mono uppercase tracking-wider ${textMap[color]}`}>{title}</span>
         </div>
-        <span className="text-3xl font-bold text-white tracking-tighter">{value}</span>
+        <span className="text-3xl font-bold text-[#1D1D1F] tracking-tighter">{value}</span>
         <span className="text-xs text-slate-400">{status}</span>
       </div>
 
@@ -603,8 +610,8 @@ const ArsenalAnimation = () => {
   return (
     <AnimationWrapper title="Arsenal" value="4" status="Composés Majeurs" color="cyan"
       extraUI={
-        <div className="absolute bottom-4 left-4 bg-black/80 backdrop-blur-md border border-cyan-500/30 rounded p-2">
-          <span className="text-[10px] text-cyan-400 font-mono uppercase">Analyse: <span className="text-white font-bold">MULTI-CIBLES</span></span>
+        <div className="absolute bottom-4 left-4 bg-white/80 backdrop-blur-md border border-cyan-500/30 rounded p-2">
+          <span className="text-[10px] text-cyan-400 font-mono uppercase">Analyse: <span className="text-[#1D1D1F] font-bold">MULTI-CIBLES</span></span>
         </div>
       }
     >
@@ -661,9 +668,9 @@ const SourcingAnimation = () => {
   return (
     <AnimationWrapper title="Sourcing" value="99.9%" status="Pureté HPLC" color="green"
       extraUI={
-        <div className="absolute bottom-4 right-4 bg-black/80 backdrop-blur-md border border-green-500/30 rounded p-2 flex flex-col items-end">
+        <div className="absolute bottom-4 right-4 bg-white/80 backdrop-blur-md border border-green-500/30 rounded p-2 flex flex-col items-end">
           <span className="text-[10px] text-green-400 font-mono uppercase">Statut Fournisseur</span>
-          <span className="text-sm font-bold text-white">VÉRIFIÉ ACHZOD</span>
+          <span className="text-sm font-bold text-[#1D1D1F]">VÉRIFIÉ ACHZOD</span>
         </div>
       }
     >
@@ -708,8 +715,8 @@ const ReconstitutionAnimation = () => {
   return (
     <AnimationWrapper title="Mathématiques" value="0.01ml" status="Précision Requise" color="yellow"
       extraUI={
-        <div className="absolute bottom-4 left-4 bg-black/80 backdrop-blur-md border border-yellow-500/30 rounded p-2">
-          <span className="text-[10px] text-yellow-400 font-mono uppercase">Calculateur: <span className="text-white font-bold">INTÉGRÉ</span></span>
+        <div className="absolute bottom-4 left-4 bg-white/80 backdrop-blur-md border border-yellow-500/30 rounded p-2">
+          <span className="text-[10px] text-yellow-400 font-mono uppercase">Calculateur: <span className="text-[#1D1D1F] font-bold">INTÉGRÉ</span></span>
         </div>
       }
     >
@@ -750,9 +757,9 @@ const SynergyAnimation = () => {
   return (
     <AnimationWrapper title="Pharmacocinétique" value="24/7" status="Couverture Récepteurs" color="red"
       extraUI={
-        <div className="absolute bottom-4 right-4 bg-black/80 backdrop-blur-md border border-red-500/30 rounded p-2 flex flex-col items-end">
+        <div className="absolute bottom-4 right-4 bg-white/80 backdrop-blur-md border border-red-500/30 rounded p-2 flex flex-col items-end">
           <span className="text-[10px] text-red-400 font-mono uppercase">Saturation</span>
-          <span className="text-sm font-bold text-white">OPTIMALE</span>
+          <span className="text-sm font-bold text-[#1D1D1F]">OPTIMALE</span>
         </div>
       }
     >
@@ -897,7 +904,7 @@ const colorThemes = {
 
 function AnimatedFeaturesSection() {
   return (
-    <section className="py-24 px-6 bg-[#050505]">
+    <section className="py-24 px-6 bg-white">
       <div className="mx-auto max-w-6xl">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
@@ -906,10 +913,10 @@ function AnimatedFeaturesSection() {
           className="mb-16 text-center"
         >
           <SectionLabel>Ce que contient ton protocole</SectionLabel>
-          <h2 className="mt-4 text-3xl font-bold text-white md:text-4xl">
+          <h2 className="mt-4 text-3xl font-bold text-[#1D1D1F] md:text-4xl">
             La science derriere chaque decision
           </h2>
-          <p className="mt-4 text-white/50 max-w-2xl mx-auto">
+          <p className="mt-4 text-[#6E6E73] max-w-2xl mx-auto">
             Chaque element de ton protocole est documente, calcule et verifie. Pas d'improvisation.
           </p>
         </motion.div>
@@ -926,7 +933,7 @@ function AnimatedFeaturesSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-80px" }}
                 transition={{ duration: 0.7, ease: "easeOut", delay: 0.1 }}
-                className={`relative flex flex-col ${card.reverse ? "lg:flex-row-reverse" : "lg:flex-row"} items-center gap-8 lg:gap-14 p-8 lg:p-12 rounded-3xl bg-black/40 backdrop-blur-sm border ${theme.border} ${theme.shadow} ${theme.hoverBorder} transition-all duration-500 overflow-hidden`}
+                className={`relative flex flex-col ${card.reverse ? "lg:flex-row-reverse" : "lg:flex-row"} items-center gap-8 lg:gap-14 p-8 lg:p-12 rounded-3xl bg-white/40 backdrop-blur-sm border ${theme.border} ${theme.shadow} ${theme.hoverBorder} transition-all duration-500 overflow-hidden`}
               >
                 {/* Background gradient */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${theme.gradient} to-transparent opacity-40 pointer-events-none`} />
@@ -936,10 +943,10 @@ function AnimatedFeaturesSection() {
                   <div className={`w-14 h-14 rounded-2xl ${theme.iconBg} border ${theme.border} flex items-center justify-center mb-6 ${theme.iconColor}`}>
                     <IconComp size={28} />
                   </div>
-                  <h3 className="text-2xl md:text-3xl font-black mb-4 tracking-tight uppercase text-white">
+                  <h3 className="text-2xl md:text-3xl font-black mb-4 tracking-tight uppercase text-[#1D1D1F]">
                     {card.title}
                   </h3>
-                  <p className="text-base text-white/65 leading-relaxed">
+                  <p className="text-base text-[#6E6E73] leading-relaxed">
                     {card.description}
                   </p>
                 </div>
@@ -963,7 +970,7 @@ function AnimatedFeaturesSection() {
 
 function COASection() {
   return (
-    <section className="py-20 px-6 bg-[#060606]">
+    <section className="py-20 px-6 bg-white">
       <div className="mx-auto max-w-5xl">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
@@ -972,10 +979,10 @@ function COASection() {
           className="text-center mb-10"
         >
           <p className="text-xs font-mono uppercase tracking-[0.3em] text-green-500 mb-3">Transparence totale</p>
-          <h2 className="text-2xl md:text-3xl font-black text-white mb-3">
+          <h2 className="text-2xl md:text-3xl font-black text-[#1D1D1F] mb-3">
             Chaque lot est teste par un labo independant
           </h2>
-          <p className="text-white/50 text-sm max-w-xl mx-auto">
+          <p className="text-[#6E6E73] text-sm max-w-xl mx-auto">
             Les fournisseurs Peptaura fournissent un COA (Certificate of Analysis) pour chaque lot produit. Purete verifiee par spectrometrie de masse (HPLC), generalement 98-99%.
           </p>
         </motion.div>
@@ -989,7 +996,7 @@ function COASection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="group rounded-2xl border border-green-900/30 bg-black/40 p-4 hover:border-green-500/40 transition-all overflow-hidden"
+            className="group rounded-2xl border border-green-900/30 bg-white/40 p-4 hover:border-green-500/40 transition-all overflow-hidden"
           >
             <img
               src="https://www.peptaura.com/coas/0f216e6b9a6c700dcf11bb051f6f7acf31ff0ac79d0230a572e2ee07f3558fbd.png"
@@ -997,7 +1004,7 @@ function COASection() {
               className="w-full rounded-lg opacity-80 group-hover:opacity-100 transition-opacity"
               loading="lazy"
             />
-            <p className="text-center text-xs text-white/40 mt-3 font-mono">Exemple de COA (cliquer pour agrandir)</p>
+            <p className="text-center text-xs text-[#86868B] mt-3 font-mono">Exemple de COA (cliquer pour agrandir)</p>
           </motion.a>
 
           <motion.a
@@ -1008,14 +1015,14 @@ function COASection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2 }}
-            className="group rounded-2xl border border-green-900/30 bg-black/40 p-6 hover:border-green-500/40 transition-all flex flex-col items-center justify-center gap-4"
+            className="group rounded-2xl border border-green-900/30 bg-white/40 p-6 hover:border-green-500/40 transition-all flex flex-col items-center justify-center gap-4"
           >
             <div className="w-20 h-20 rounded-2xl bg-green-500/10 flex items-center justify-center">
               <ExternalLink className="w-8 h-8 text-green-500" />
             </div>
             <div className="text-center">
-              <p className="text-white font-bold mb-1">COA complet (PDF)</p>
-              <p className="text-white/40 text-xs">Rapport HPLC avec chromatogramme, purete, identite moleculaire</p>
+              <p className="text-[#1D1D1F] font-bold mb-1">COA complet (PDF)</p>
+              <p className="text-[#86868B] text-xs">Rapport HPLC avec chromatogramme, purete, identite moleculaire</p>
             </div>
             <p className="text-xs text-green-500 font-mono">Cliquer pour telecharger</p>
           </motion.a>
@@ -1031,7 +1038,7 @@ function COASection() {
 
 function DeliverablesSection() {
   return (
-    <section className="py-24 px-6 bg-[#050505]">
+    <section className="py-24 px-6 bg-white">
       <div className="mx-auto max-w-5xl">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
@@ -1040,7 +1047,7 @@ function DeliverablesSection() {
           className="mb-14 text-center"
         >
           <SectionLabel>Ce que tu recois</SectionLabel>
-          <h2 className="mt-4 text-3xl font-bold text-white md:text-4xl">
+          <h2 className="mt-4 text-3xl font-bold text-[#1D1D1F] md:text-4xl">
             9 livrables. Tout ce qu'il faut. Rien de superflu.
           </h2>
         </motion.div>
@@ -1055,16 +1062,16 @@ function DeliverablesSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.05 }}
-                className="rounded-xl border border-white/8 bg-[#0a0a0a] p-6"
+                className="rounded-xl border border-[#E5E5EA] bg-[#F5F5F7] p-6"
               >
                 <div
                   className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg"
-                  style={{ backgroundColor: "rgba(245,158,11,0.1)" }}
+                  style={{ backgroundColor: "rgba(0,113,227,0.1)" }}
                 >
                   <Icon className="h-5 w-5" style={{ color: PRIMARY }} />
                 </div>
-                <h3 className="mb-2 text-sm font-semibold text-white">{item.title}</h3>
-                <p className="text-sm leading-relaxed text-white/50">{item.desc}</p>
+                <h3 className="mb-2 text-sm font-semibold text-[#1D1D1F]">{item.title}</h3>
+                <p className="text-sm leading-relaxed text-[#6E6E73]">{item.desc}</p>
               </motion.div>
             );
           })}
@@ -1089,7 +1096,7 @@ function HowItWorks() {
           className="mb-14 text-center"
         >
           <SectionLabel>Processus</SectionLabel>
-          <h2 className="mt-4 text-3xl font-bold text-white md:text-4xl">3 etapes, 48h</h2>
+          <h2 className="mt-4 text-3xl font-bold text-[#1D1D1F] md:text-4xl">3 etapes, 48h</h2>
         </motion.div>
 
         <div className="relative">
@@ -1110,21 +1117,21 @@ function HowItWorks() {
                 >
                   <div className="relative shrink-0">
                     <div
-                      className="flex h-14 w-14 items-center justify-center rounded-full border-2 bg-[#0a0a0a]"
+                      className="flex h-14 w-14 items-center justify-center rounded-full border-2 bg-[#F5F5F7]"
                       style={{ borderColor: PRIMARY }}
                     >
                       <Icon className="h-6 w-6" style={{ color: PRIMARY }} />
                     </div>
                   </div>
-                  <div className="flex-1 rounded-xl border border-white/8 bg-[#0a0a0a] p-6">
+                  <div className="flex-1 rounded-xl border border-[#E5E5EA] bg-[#F5F5F7] p-6">
                     <div className="mb-1 flex items-center gap-3">
                       <span className="font-mono text-xs" style={{ color: PRIMARY }}>{step.step}</span>
-                      <span className="rounded-full border border-white/10 px-2 py-0.5 font-mono text-xs text-white/40">
+                      <span className="rounded-full border border-[#D2D2D7] px-2 py-0.5 font-mono text-xs text-[#86868B]">
                         {step.time}
                       </span>
                     </div>
-                    <h3 className="mb-2 text-base font-semibold text-white">{step.title}</h3>
-                    <p className="text-sm leading-relaxed text-white/55">{step.desc}</p>
+                    <h3 className="mb-2 text-base font-semibold text-[#1D1D1F]">{step.title}</h3>
+                    <p className="text-sm leading-relaxed text-[#6E6E73]">{step.desc}</p>
                   </div>
                 </motion.div>
               );
@@ -1142,7 +1149,7 @@ function HowItWorks() {
 
 function ObjectivesSection() {
   return (
-    <section className="py-24 px-6 bg-[#050505]">
+    <section className="py-24 px-6 bg-white">
       <div className="mx-auto max-w-5xl">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
@@ -1151,10 +1158,10 @@ function ObjectivesSection() {
           className="mb-14 text-center"
         >
           <SectionLabel>Objectifs couverts</SectionLabel>
-          <h2 className="mt-4 text-3xl font-bold text-white md:text-4xl">
+          <h2 className="mt-4 text-3xl font-bold text-[#1D1D1F] md:text-4xl">
             8 categories. 74 molecules disponibles.
           </h2>
-          <p className="mt-4 text-white/50">
+          <p className="mt-4 text-[#6E6E73]">
             Le questionnaire identifie ton objectif principal et adapte le stack en consequence.
           </p>
         </motion.div>
@@ -1169,17 +1176,17 @@ function ObjectivesSection() {
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.06 }}
-                className="group rounded-xl border border-white/8 bg-[#0a0a0a] p-5 transition-colors hover:border-amber-500/30"
+                className="group rounded-xl border border-[#E5E5EA] bg-[#F5F5F7] p-5 transition-colors hover:border-[#0071E3]/30"
               >
                 <div
                   className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-lg"
-                  style={{ backgroundColor: "rgba(245,158,11,0.1)" }}
+                  style={{ backgroundColor: "rgba(0,113,227,0.1)" }}
                 >
                   <Icon className="h-4 w-4" style={{ color: PRIMARY }} />
                 </div>
-                <h3 className="mb-1 text-sm font-semibold text-white">{obj.title}</h3>
+                <h3 className="mb-1 text-sm font-semibold text-[#1D1D1F]">{obj.title}</h3>
                 <p className="mb-2 font-mono text-[11px]" style={{ color: PRIMARY }}>{obj.peptides}</p>
-                <p className="text-xs leading-relaxed text-white/45">{obj.detail}</p>
+                <p className="text-xs leading-relaxed text-[#86868B]">{obj.detail}</p>
               </motion.div>
             );
           })}
@@ -1195,7 +1202,7 @@ function ObjectivesSection() {
 
 function CredibilityBar() {
   return (
-    <section className="py-16 px-6 border-y border-white/8">
+    <section className="py-16 px-6 border-y border-[#E5E5EA]">
       <div className="mx-auto max-w-5xl">
         <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-8">
           {CREDIBILITY.map((item, i) => (
@@ -1208,7 +1215,7 @@ function CredibilityBar() {
               className="text-center"
             >
               <p className="text-2xl font-bold" style={{ color: PRIMARY }}>{item.stat}</p>
-              <p className="mt-1 text-xs text-white/45">{item.label}</p>
+              <p className="mt-1 text-xs text-[#86868B]">{item.label}</p>
             </motion.div>
           ))}
         </div>
@@ -1231,15 +1238,15 @@ function ScarcityGuarantee() {
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="rounded-2xl border bg-[#0a0a0a] p-8"
-            style={{ borderColor: "rgba(245,158,11,0.3)" }}
+            className="rounded-2xl border bg-[#F5F5F7] p-8"
+            style={{ borderColor: "rgba(0,113,227,0.3)" }}
           >
             <div className="mb-4 flex items-center gap-3">
               <Users className="h-5 w-5" style={{ color: PRIMARY }} />
               <SectionLabel>Disponibilite</SectionLabel>
             </div>
-            <p className="mb-3 text-2xl font-bold text-white">15 protocoles par mois</p>
-            <p className="mb-6 text-sm text-white/55">
+            <p className="mb-3 text-2xl font-bold text-[#1D1D1F]">15 protocoles par mois</p>
+            <p className="mb-6 text-sm text-[#6E6E73]">
               Chaque protocole est verifie manuellement avant envoi. La limite mensuelle garantit la qualite de chaque livrable.
             </p>
             {/* Visual counter */}
@@ -1254,7 +1261,7 @@ function ScarcityGuarantee() {
                 />
               ))}
             </div>
-            <p className="mt-3 font-mono text-xs text-white/35">9/15 protocoles livres ce mois</p>
+            <p className="mt-3 font-mono text-xs text-[#86868B]">9/15 protocoles livres ce mois</p>
           </motion.div>
 
           {/* Guarantee */}
@@ -1263,21 +1270,21 @@ function ScarcityGuarantee() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-8"
+            className="rounded-2xl border border-[#D2D2D7] bg-[#F5F5F7] p-8"
           >
             <div className="mb-4 flex items-center gap-3">
               <Shield className="h-5 w-5" style={{ color: PRIMARY }} />
               <SectionLabel>Gage de qualite</SectionLabel>
             </div>
-            <p className="mb-3 text-xl font-bold text-white leading-snug">
+            <p className="mb-3 text-xl font-bold text-[#1D1D1F] leading-snug">
               Je construis ton protocole personnellement
             </p>
-            <p className="text-sm leading-relaxed text-white/55">
+            <p className="text-sm leading-relaxed text-[#6E6E73]">
               C'est moi, Achzod, qui analyse ton profil et qui valide chaque protocole avant de te l'envoyer. Les 2 bilans sanguins inclus te permettent de suivre tes marqueurs objectivement et de me contacter pour ajuster si besoin.
             </p>
             <div className="mt-6 flex items-center gap-2">
               <Check className="h-4 w-4" style={{ color: PRIMARY }} />
-              <p className="text-sm font-semibold text-white">Mon expertise, ton suivi mesurable</p>
+              <p className="text-sm font-semibold text-[#1D1D1F]">Mon expertise, ton suivi mesurable</p>
             </div>
           </motion.div>
         </div>
@@ -1288,25 +1295,25 @@ function ScarcityGuarantee() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.2 }}
-          className="mt-6 rounded-2xl border border-amber-500/20 bg-[#0a0a0a] p-8"
+          className="mt-6 rounded-2xl border border-[#0071E3]/20 bg-[#F5F5F7] p-8"
         >
           <div className="flex flex-col md:flex-row md:items-center gap-6">
             <div className="flex-1">
-              <p className="text-xs font-mono uppercase tracking-widest text-amber-500 mb-2">Peptides + Coaching</p>
-              <p className="text-xl font-bold text-white mb-3">150€ deduits de ton coaching Elite/Private Lab (8 ou 12 semaines)</p>
-              <p className="text-sm text-white/55 leading-relaxed mb-4">
+              <p className="text-xs font-mono uppercase tracking-widest text-[#0071E3] mb-2">Peptides + Coaching</p>
+              <p className="text-xl font-bold text-[#1D1D1F] mb-3">150€ deduits de ton coaching Elite/Private Lab (8 ou 12 semaines)</p>
+              <p className="text-sm text-[#6E6E73] leading-relaxed mb-4">
                 Tu peux commander tes peptides maintenant, prendre un coaching Achzod, et commencer le suivi une fois que tu as recu tes peptides. Pas besoin d'attendre pour s'organiser.
               </p>
               <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-white/70">
+                <div className="flex items-center gap-2 text-sm text-[#424245]">
                   <Check className="h-3.5 w-3.5 flex-shrink-0" style={{ color: PRIMARY }} />
                   <span>Commande tes peptides sur Peptaura</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-white/70">
+                <div className="flex items-center gap-2 text-sm text-[#424245]">
                   <Check className="h-3.5 w-3.5 flex-shrink-0" style={{ color: PRIMARY }} />
                   <span>Prends ta formule coaching Elite ou Private Lab (8 ou 12 semaines)</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-white/70">
+                <div className="flex items-center gap-2 text-sm text-[#424245]">
                   <Check className="h-3.5 w-3.5 flex-shrink-0" style={{ color: PRIMARY }} />
                   <span>Commence le coaching des que tu recois tes peptides</span>
                 </div>
@@ -1316,7 +1323,7 @@ function ScarcityGuarantee() {
               href="https://www.achzodcoaching.com/formules-coaching"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm text-black whitespace-nowrap"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm text-white whitespace-nowrap"
               style={{ background: PRIMARY }}
             >
               Voir les formules coaching
@@ -1335,7 +1342,7 @@ function ScarcityGuarantee() {
 
 function FAQSection() {
   return (
-    <section className="py-24 px-6 bg-[#050505]">
+    <section className="py-24 px-6 bg-white">
       <div className="mx-auto max-w-3xl">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
@@ -1344,7 +1351,7 @@ function FAQSection() {
           className="mb-14 text-center"
         >
           <SectionLabel>Questions frequentes</SectionLabel>
-          <h2 className="mt-4 text-3xl font-bold text-white md:text-4xl">
+          <h2 className="mt-4 text-3xl font-bold text-[#1D1D1F] md:text-4xl">
             Tout ce que tu veux savoir
           </h2>
         </motion.div>
@@ -1380,7 +1387,7 @@ function ReviewsSection() {
   if (reviews.length === 0) return null;
 
   return (
-    <section className="py-20 px-6 bg-[#050505]">
+    <section className="py-20 px-6 bg-white">
       <div className="mx-auto max-w-5xl">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
@@ -1389,14 +1396,14 @@ function ReviewsSection() {
           className="text-center mb-10"
         >
           <p className="text-xs font-mono uppercase tracking-[0.3em] mb-3" style={{ color: PRIMARY }}>Avis clients</p>
-          <h2 className="text-2xl md:text-3xl font-black text-white mb-2">
+          <h2 className="text-2xl md:text-3xl font-black text-[#1D1D1F] mb-2">
             Ce qu'en pensent mes clients
           </h2>
           <div className="flex items-center justify-center gap-1 mb-2">
             {[1,2,3,4,5].map(i => (
               <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
             ))}
-            <span className="text-white/50 text-sm ml-2">{reviews.length} avis</span>
+            <span className="text-[#6E6E73] text-sm ml-2">{reviews.length} avis</span>
           </div>
         </motion.div>
 
@@ -1408,17 +1415,17 @@ function ReviewsSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.08 }}
-              className="bg-white/[0.03] border border-white/10 rounded-xl p-5"
+              className="bg-white/[0.03] border border-[#D2D2D7] rounded-xl p-5"
             >
               <div className="flex items-center gap-1 mb-3">
                 {[1,2,3,4,5].map(s => (
-                  <Star key={s} className={`w-3.5 h-3.5 ${s <= r.rating ? "fill-yellow-400 text-yellow-400" : "text-white/20"}`} />
+                  <Star key={s} className={`w-3.5 h-3.5 ${s <= r.rating ? "fill-yellow-400 text-yellow-400" : "text-[#D2D2D7]"}`} />
                 ))}
               </div>
-              <p className="text-white/70 text-sm leading-relaxed mb-3">
+              <p className="text-[#424245] text-sm leading-relaxed mb-3">
                 "{r.comment?.length > 120 ? r.comment.slice(0, 120) + "..." : r.comment}"
               </p>
-              <p className="text-white/30 text-xs font-mono">
+              <p className="text-[#A1A1A6] text-xs font-mono">
                 {r.auditType === "PEPTIDES_ENGINE" ? "Peptides Engine" : r.auditType === "ANABOLIC_BIOSCAN" ? "Anabolic Bioscan" : "Discovery Scan"}
               </p>
             </motion.div>
@@ -1435,24 +1442,24 @@ function ReviewsSection() {
 
 function TrustSection() {
   return (
-    <section className="py-16 px-6 bg-[#0a0a0a]">
+    <section className="py-16 px-6 bg-[#F5F5F7]">
       <div className="mx-auto max-w-5xl">
         {/* Garantie reponse */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="bg-white/[0.02] border border-white/10 rounded-2xl p-8 mb-8 text-center"
+          className="bg-white/[0.02] border border-[#D2D2D7] rounded-2xl p-8 mb-8 text-center"
         >
-          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
-            <Mail className="w-7 h-7 text-amber-500" />
+          <div className="w-14 h-14 rounded-2xl bg-[#0071E3]/10 flex items-center justify-center mx-auto mb-4">
+            <Mail className="w-7 h-7 text-[#0071E3]" />
           </div>
-          <h3 className="text-xl font-bold text-white mb-2">Je reponds personnellement a chaque message</h3>
-          <p className="text-white/50 text-sm max-w-lg mx-auto mb-4">
+          <h3 className="text-xl font-bold text-[#1D1D1F] mb-2">Je reponds personnellement a chaque message</h3>
+          <p className="text-[#6E6E73] text-sm max-w-lg mx-auto mb-4">
             Une question sur ton protocole, un doute sur un dosage, besoin d'un ajustement ? Ecris-moi directement.
             Je reponds sous 24h, personnellement. Pas un assistant, pas un bot. Moi.
           </p>
-          <a href="mailto:coaching@achzodcoaching.com" className="text-amber-500 font-mono text-sm hover:underline">
+          <a href="mailto:coaching@achzodcoaching.com" className="text-[#0071E3] font-mono text-sm hover:underline">
             coaching@achzodcoaching.com
           </a>
         </motion.div>
@@ -1463,7 +1470,7 @@ function TrustSection() {
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ delay: 0.2 }}
-          className="flex flex-wrap items-center justify-center gap-8 text-white/30 text-xs font-mono uppercase tracking-widest"
+          className="flex flex-wrap items-center justify-center gap-8 text-[#A1A1A6] text-xs font-mono uppercase tracking-widest"
         >
           <div className="flex items-center gap-2">
             <Lock className="w-4 h-4" />
@@ -1497,33 +1504,33 @@ function FinalCTA() {
           viewport={{ once: true }}
         >
           <SectionLabel>Acces immediat</SectionLabel>
-          <h2 className="mt-6 text-4xl font-bold text-white md:text-5xl leading-tight">
+          <h2 className="mt-6 text-4xl font-bold text-[#1D1D1F] md:text-5xl leading-tight">
             Ton protocole peptides personnalise.{" "}
             <span style={{ color: PRIMARY }}>Livré en 48h.</span>
           </h2>
-          <p className="mt-6 text-lg text-white/55 max-w-xl mx-auto">
+          <p className="mt-6 text-lg text-[#6E6E73] max-w-xl mx-auto">
             35 questions. Un protocole sur mesure. La source ou les peptides coutent 60-90% moins cher. 2 bilans sanguins inclus.
           </p>
 
           {/* Price - flash 199€ + countdown */}
-          <div className="mt-10 inline-flex flex-col items-center gap-3 rounded-2xl border border-amber-500/30 bg-[#0a0a0a] px-8 py-8 md:px-12">
-            <p className="font-mono text-[11px] font-bold uppercase tracking-[0.25em] text-amber-500">
+          <div className="mt-10 inline-flex flex-col items-center gap-3 rounded-2xl border border-[#0071E3]/30 bg-[#F5F5F7] px-8 py-8 md:px-12">
+            <p className="font-mono text-[11px] font-bold uppercase tracking-[0.25em] text-[#0071E3]">
               Tarif gele 72h
             </p>
             <div className="flex items-end gap-4">
-              <p className="text-3xl font-bold text-white/30 line-through leading-none">399€</p>
-              <p className="text-6xl font-bold text-white leading-none md:text-7xl">199€</p>
+              <p className="text-3xl font-bold text-[#A1A1A6] line-through leading-none">399€</p>
+              <p className="text-6xl font-bold text-[#1D1D1F] leading-none md:text-7xl">199€</p>
             </div>
-            <p className="font-mono text-xs uppercase tracking-widest text-white/50">
+            <p className="font-mono text-xs uppercase tracking-widest text-[#6E6E73]">
               avec le code <strong style={{ color: PRIMARY }}>PEPTIDES100</strong>
             </p>
             <div className="mt-3">
               <FlashCountdown />
             </div>
-            <p className="font-mono text-[11px] uppercase tracking-widest text-white/40">
+            <p className="font-mono text-[11px] uppercase tracking-widest text-[#86868B]">
               Fin dimanche 10 mai · 23:59 (Paris)
             </p>
-            <p className="font-mono text-xs text-white/40 mt-1">TVA incluse · Paiement securise</p>
+            <p className="font-mono text-xs text-[#86868B] mt-1">TVA incluse · Paiement securise</p>
             <motion.p
               animate={{ opacity: [0.6, 1, 0.6] }}
               transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
@@ -1536,7 +1543,7 @@ function FinalCTA() {
             <CTAButton href="/peptides-engine?promo=PEPTIDES100" large>
               Reserver mon protocole a 199€
             </CTAButton>
-            <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-white/35">
+            <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-[#86868B]">
               <span className="flex items-center gap-1.5">
                 <Check className="h-3 w-3" style={{ color: PRIMARY }} />
                 15 protocoles/mois max
@@ -1568,14 +1575,14 @@ function Hero() {
       <div
         className="pointer-events-none absolute inset-0"
         style={{
-          background: "radial-gradient(ellipse 60% 50% at 50% 0%, rgba(245,158,11,0.08) 0%, transparent 70%)",
+          background: "radial-gradient(ellipse 60% 50% at 50% 0%, rgba(0,113,227,0.08) 0%, transparent 70%)",
         }}
       />
       {/* Grid */}
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.03]"
         style={{
-          backgroundImage: `linear-gradient(rgba(245,158,11,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(245,158,11,0.8) 1px, transparent 1px)`,
+          backgroundImage: `linear-gradient(rgba(0,113,227,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(0,113,227,0.8) 1px, transparent 1px)`,
           backgroundSize: "40px 40px",
         }}
       />
@@ -1586,10 +1593,10 @@ function Hero() {
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/12 bg-[#0a0a0a] px-4 py-2"
+          className="mb-8 inline-flex items-center gap-2 rounded-full border border-[#D2D2D7] bg-[#F5F5F7] px-4 py-2"
         >
           <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: PRIMARY }} />
-          <span className="font-mono text-xs uppercase tracking-widest text-white/60">
+          <span className="font-mono text-xs uppercase tracking-widest text-[#6E6E73]">
             Protocole exclusif · 74 molecules disponibles
           </span>
         </motion.div>
@@ -1599,7 +1606,7 @@ function Hero() {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-5xl font-bold leading-tight text-white md:text-6xl lg:text-7xl"
+          className="text-5xl font-bold leading-tight text-[#1D1D1F] md:text-6xl lg:text-7xl"
         >
           Ton protocole peptides.{" "}
           <span style={{ color: PRIMARY }}>Ta source secrete.</span>
@@ -1610,10 +1617,10 @@ function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="mx-auto mt-8 max-w-2xl text-lg leading-relaxed text-white/60 md:text-xl"
+          className="mx-auto mt-8 max-w-2xl text-lg leading-relaxed text-[#6E6E73] md:text-xl"
         >
           Reponds a 35 questions. Recois un protocole personnalise avec dosages exacts, guide de reconstitution calcule, calendrier hebdo, et acces direct a la source ou les peptides coutent{" "}
-          <span className="font-semibold text-white">60-90% moins cher</span> que partout ailleurs.
+          <span className="font-semibold text-[#1D1D1F]">60-90% moins cher</span> que partout ailleurs.
         </motion.p>
 
         {/* Pricing - flash 199€ */}
@@ -1623,14 +1630,14 @@ function Hero() {
           transition={{ duration: 0.6, delay: 0.3 }}
           className="mt-10 flex flex-col items-center gap-3"
         >
-          <span className="font-mono text-[11px] font-bold uppercase tracking-[0.25em] text-amber-500">
+          <span className="font-mono text-[11px] font-bold uppercase tracking-[0.25em] text-[#0071E3]">
             Tarif gele 72h
           </span>
           <div className="flex items-end justify-center gap-4">
-            <span className="text-3xl font-bold text-white/30 line-through leading-none">399€</span>
-            <span className="text-6xl font-bold text-white leading-none md:text-7xl">199€</span>
+            <span className="text-3xl font-bold text-[#A1A1A6] line-through leading-none">399€</span>
+            <span className="text-6xl font-bold text-[#1D1D1F] leading-none md:text-7xl">199€</span>
           </div>
-          <span className="font-mono text-xs uppercase tracking-widest text-white/50">
+          <span className="font-mono text-xs uppercase tracking-widest text-[#6E6E73]">
             avec le code <strong style={{ color: PRIMARY }}>PEPTIDES100</strong>
           </span>
         </motion.div>
@@ -1643,7 +1650,7 @@ function Hero() {
           className="mt-8 flex flex-col items-center gap-3"
         >
           <FlashCountdown />
-          <span className="font-mono text-[11px] uppercase tracking-widest text-white/40">
+          <span className="font-mono text-[11px] uppercase tracking-widest text-[#86868B]">
             Fin dimanche 10 mai · 23:59 (Paris)
           </span>
         </motion.div>
@@ -1666,7 +1673,7 @@ function Hero() {
             Reserver mon protocole a 199€
           </CTAButton>
 
-          <div className="flex flex-wrap items-center justify-center gap-5 text-xs text-white/35">
+          <div className="flex flex-wrap items-center justify-center gap-5 text-xs text-[#86868B]">
             <span className="flex items-center gap-1.5">
               <Clock className="h-3 w-3" />
               15 protocoles par mois maximum
@@ -1691,7 +1698,7 @@ function Hero() {
             "Support email 30 jours",
             "Explications inegalables",
           ].map((t) => (
-            <div key={t} className="flex items-center gap-2 text-xs text-white/40">
+            <div key={t} className="flex items-center gap-2 text-xs text-[#86868B]">
               <CheckCircle2 className="h-3.5 w-3.5" style={{ color: PRIMARY }} />
               {t}
             </div>
@@ -1708,7 +1715,7 @@ function Hero() {
 
 export default function PeptidesEngineOffer() {
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-white text-[#1D1D1F]">
       <Header />
       <FlashBanner />
 
