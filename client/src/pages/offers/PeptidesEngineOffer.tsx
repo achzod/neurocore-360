@@ -111,19 +111,22 @@ function FlashCountdown({ compact = false }: { compact?: boolean }) {
 function FlashBanner() {
   const { expired } = useCountdown(FLASH_DEADLINE_MS);
   if (expired) return null;
+  // Sticky just below the Header (Header is sticky top-0 z-50, ~64px tall).
   return (
     <div
-      className="sticky top-0 z-40 w-full border-b border-amber-500/30 backdrop-blur"
+      className="sticky top-[64px] z-[45] w-full border-y border-amber-500/40 backdrop-blur-sm"
       style={{
-        background: "linear-gradient(90deg, rgba(245,158,11,0.10) 0%, rgba(245,158,11,0.04) 50%, rgba(245,158,11,0.10) 100%)",
+        background:
+          "linear-gradient(90deg, rgba(245,158,11,0.18) 0%, rgba(245,158,11,0.08) 50%, rgba(245,158,11,0.18) 100%)",
       }}
     >
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-3 px-4 py-2.5 text-center md:gap-5">
-        <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-amber-500">
-          Fenêtre 72h
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-3 px-4 py-3 text-center md:gap-6 md:py-3.5">
+        <span className="font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-amber-400 md:text-[11px]">
+          ⚡ Fenêtre 72h
         </span>
-        <span className="text-xs text-white/70 md:text-sm">
-          <strong className="text-white">{FLASH_PRICE}€</strong> au lieu de <span className="text-white/50 line-through">{REGULAR_PRICE}€</span> · code{" "}
+        <span className="text-xs text-white md:text-sm">
+          <strong className="text-white">{FLASH_PRICE}€</strong> au lieu de{" "}
+          <span className="text-white/50 line-through">{REGULAR_PRICE}€</span> · code{" "}
           <strong style={{ color: PRIMARY }}>{FLASH_PROMO_CODE}</strong>
         </span>
         <FlashCountdown compact />
