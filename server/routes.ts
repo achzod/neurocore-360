@@ -3261,12 +3261,11 @@ export async function registerRoutes(
           // Create a Stripe coupon dynamically
           try {
             const couponId = `NEUROCORE_${promoCode.toUpperCase()}_${Date.now()}`;
-            const coupon = await stripe.coupons.create({
-              id: couponId,
-              percent_off: validation.discount,
-              duration: 'once',
-              max_redemptions: 1,
-            });
+            // Flash campaign: PEPTIDES100 = exact -100€ off (not %, regardless of DB %)
+            const couponParams: any = promoCode.toUpperCase() === 'PEPTIDES100'
+              ? { id: couponId, amount_off: 10000, currency: 'eur', duration: 'once', max_redemptions: 1 }
+              : { id: couponId, percent_off: validation.discount, duration: 'once', max_redemptions: 1 };
+            const coupon = await stripe.coupons.create(couponParams);
             discounts = [{ coupon: coupon.id }];
           } catch (couponError: any) {
             console.error("Stripe coupon error:", couponError);
