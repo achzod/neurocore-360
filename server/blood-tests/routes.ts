@@ -724,10 +724,23 @@ export function registerBloodTestsRoutes(app: Express): void {
         const analysisResult = await analyzeBloodwork(markerInputs as any, profile);
         const aiResult = await generateAIBloodAnalysis(analysisResult, profile);
 
-        // Preserve all existing analysis metadata fields (aiStatus, categoryScores,
-        // systemScores, lifestyleCorrelations, etc.) and overlay the new analysis
-        // + freshly regenerated AI report under BOTH keys (aiReport for the
-        // /api/blood-analysis/report/:id route, aiAnalysis for the legacy raw fetch).
+        // Recompute scoring with the current (May 2026) calibration so any
+        // stale globalScore from a prior calibration gets overwritten. Without
+        // this, ...existingAnalysis would preserve the old categoryScores and
+        // globalScore (Younes Y. case 2026-05-07).
+        const markersForScoring = (analysisResult.markers || []).map((m: any) => ({
+          code: m.markerId,
+          category: CATEGORY_BY_MARKER[m.markerId] || "general",
+          status: m.status as MarkerStatus,
+        }));
+        const newCategoryScores = computeCategoryScores(markersForScoring);
+        const newSystemScores = computeSystemScores(markersForScoring);
+        const newScoreSource = Object.keys(newSystemScores).length ? newSystemScores : newCategoryScores;
+        const newGlobalScore = computeGlobalScore(newScoreSource, markersForScoring);
+        const newGlobalLevel = getGlobalLevel(newGlobalScore);
+
+        // Preserve all existing analysis metadata fields (aiStatus, lifestyleCorrelations,
+        // etc.) but overwrite scoring fields with freshly recomputed values.
         const existingAnalysis =
           bt.analysis && typeof bt.analysis === "object" && !Array.isArray(bt.analysis)
             ? (bt.analysis as Record<string, unknown>)
@@ -735,6 +748,10 @@ export function registerBloodTestsRoutes(app: Express): void {
         const refreshedAnalysis: Record<string, unknown> = {
           ...existingAnalysis,
           ...analysisResult,
+          categoryScores: newCategoryScores,
+          systemScores: newSystemScores,
+          globalScore: newGlobalScore,
+          globalLevel: newGlobalLevel,
           aiReport: aiResult,
           aiAnalysis: aiResult,
           aiModel: "claude-opus-4-6",
@@ -747,6 +764,8 @@ export function registerBloodTestsRoutes(app: Express): void {
 
         await reDb.update(btTable).set({
           analysis: refreshedAnalysis as any,
+          globalScore: newGlobalScore,
+          globalLevel: newGlobalLevel,
           status: "completed",
           completedAt: new Date(),
         }).where(btEq(btTable.id, id));
