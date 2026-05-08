@@ -3728,7 +3728,12 @@ export async function registerRoutes(
         if (validation.valid) {
           validatedPromoCode = promoCode;
           promoObj = await storage.getPromoCode(promoCode);
-          discountCents = promoObj ? Math.round(baseCents * promoObj.discountPercent / 100) : 0;
+          // PEPTIDES100 uses flat -100EUR (10000 cents) regardless of stored %
+          discountCents = promoObj
+            ? (promoCode.toUpperCase() === 'PEPTIDES100'
+                ? 10000
+                : Math.round(baseCents * promoObj.discountPercent / 100))
+            : 0;
         }
       }
 
