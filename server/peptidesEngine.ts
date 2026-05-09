@@ -690,8 +690,27 @@ ${buildCatalogForPrompt()}
 
 RECONSTITUTION ET STOCKAGE
 - BAC water (eau bactériostatique): solvant standard pour lyophilisats
-- Volume BAC: typiquement 1-2 mL pour vials 2-5 mg
+
+CONTRAINTES PHYSIQUES DES VIALS (RÈGLES DURES, NON-NÉGOCIABLES)
+Les vials pharmaceutiques de peptides ont une capacité physique TOTALE de 3 à 4 mL maximum (pas 5, pas 10). Le pellet lyophilisé occupe en plus une partie du volume. Tu ne PEUX PAS recommander d'ajouter plus de 3 mL de BAC water dans un vial standard, c'est physiquement impossible et le client ne pourra pas suivre tes instructions (incident Younes 2026-05-09 avec GHK-Cu 50mg : protocole disait "5ml de BAC water", impossible à injecter).
+
+VOLUMES BAC WATER AUTORISÉS:
+- Vials 2-5 mg: 1 à 2 mL de BAC water (jamais plus)
+- Vials 5-10 mg: 1 à 2 mL de BAC water (jamais plus)
+- Vials 10-30 mg (GLP-1 type Tirzepatide, Retatrutide, Semaglutide): 2 à 3 mL de BAC water (jamais plus)
+- Vials 50-100 mg (GHK-Cu, 5-Amino-1MQ, certains GLP-1 dosés haut): 2 mL de BAC water max (PAS 5 mL)
+- HCG 5000-10000 IU: 1 à 2 mL
+- HGH (Somatropin) en IU: suivre les instructions du fabricant du vial spécifique
+
+CALCUL DE CONCENTRATION:
+concentration (mg/mL) = dose totale du vial (mg) / volume BAC ajouté (mL)
+Exemple GHK-Cu 50mg + 2mL BAC = 25 mg/mL = 25 000 mcg/mL → pour dose 1mg (1000 mcg) = (1000/25000)×100 = 4 unités U-100 (soit 0.04 mL)
+Exemple Tirzepatide 30mg + 3mL BAC = 10 mg/mL = 10 000 mcg/mL → pour dose 5mg = (5000/10000)×100 = 50 unités (soit 0.50 mL)
+
 FORMULE DE CALCUL: (dose voulue en mcg / concentration en mcg par mL) × 100 = unités sur seringue U-100. IMPORTANT: donne TOUJOURS l'équivalent en ml en plus des unités. Exemple: "10 unités (soit 0.10 ml)" car beaucoup de clients comprennent mieux les ml que les unités. 100 unités = 1 ml, donc 10 unités = 0.10 ml, 25 unités = 0.25 ml, etc.
+
+VÉRIFICATION OBLIGATOIRE AVANT FINALISATION:
+Pour CHAQUE peptide du protocole, relis ta recommandation de reconstitution et vérifie: le volume de BAC water proposé est-il <= 3 mL ? Si oui, OK. Si non (ex: tu as écrit "ajoute 5 mL"), CORRIGE immédiatement à 2 mL et recalcule la concentration et le dosage en unités. Pas de "5 mL" dans la sortie finale, jamais.
 - Seringues: insuline U-100 (31G × 8mm) pour SC; 25-27G pour IM
 - Injection SC: ventre (2 cm autour du nombril), cuisse externe, flanc , angle 45° ou pli cutané
 - Rotation des sites d'injection: ne jamais piquer 2 fois au même endroit consécutif
@@ -891,7 +910,7 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
       "timing": "Horaire précis et conditions",
       "route": "SC / IM / Intranasal",
       "cycleDuration": "X semaines, pause Y semaines",
-      "reconstitution": "Vial [Xmg] + [Y]ml BAC water = [Z]mcg/ml → [N] unités (soit [X.XX] ml) pour [dose]mcg",
+      "reconstitution": "Vial [Xmg] + [Y]ml BAC water = [Z]mcg/ml → [N] unités (soit [X.XX] ml) pour [dose]mcg. CONTRAINTE: [Y] ne dépasse JAMAIS 3, en pratique 1 à 2 pour les vials 2-10mg et 2 à 3 pour les vials 10-100mg. Vérifie avant de finaliser.",
       "vialsNeeded": "X vials pour le cycle complet",
       "purchaseUrl": "https://www.peptaura.com/catalog/[SLUG_EXACT]",
       "priceEstimate": "~$XX/vial × Y vials = $ZZ total (~€WW)"
