@@ -4203,6 +4203,51 @@ export async function registerRoutes(
     }
   });
 
+  // Admin: link an orphan paid Peptides Engine order to an existing report.
+  // Aissa Moujtahid 2026-03-30: triple-paid 299 EUR (Stripe double-click race
+  // before idempotency lock landed), generated only one report. The cross-
+  // order dedup in the autogen cron correctly prevents 2 more reports from
+  // being created, but it also leaves the duplicate orders permanently
+  // stuck without metadata.peptidesReportId, which means our reorder emails,
+  // analytics, and reconciliation tools all treat them as undelivered.
+  // Use case: pass orderId + reportId after manually verifying ownership.
+  app.post("/api/admin/peptides-link-order-to-report", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { orderId, reportId } = req.body || {};
+      if (!orderId || !reportId) {
+        res.status(400).json({ error: "orderId et reportId requis" });
+        return;
+      }
+      const order = await storage.getOrder(orderId);
+      if (!order) { res.status(404).json({ error: "Order introuvable" }); return; }
+      if (order.productType !== "PEPTIDES_ENGINE") {
+        res.status(400).json({ error: `Order productType=${order.productType}, attendu PEPTIDES_ENGINE` });
+        return;
+      }
+      const report = await storage.getBurnoutReport(reportId);
+      if (!report) { res.status(404).json({ error: "Report introuvable" }); return; }
+      // Sanity: report email matches order email (peptides::email convention)
+      const reportEmail = String(report.email || "").replace(/^peptides::/i, "").toLowerCase();
+      if (reportEmail !== String(order.email || "").toLowerCase()) {
+        res.status(400).json({
+          error: "Report email ne correspond pas a l'order email",
+          orderEmail: order.email,
+          reportEmail,
+        });
+        return;
+      }
+      const previous = (order.metadata as any)?.peptidesReportId;
+      await storage.updateOrder(orderId, {
+        metadata: { ...(order.metadata as object ?? {}), peptidesReportId: reportId },
+      });
+      res.json({ success: true, orderId, reportId, previous: previous ?? null });
+    } catch (error: any) {
+      console.error("[Admin] Link order to report error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Admin: inject responses manually for a paid peptides client (last resort recovery)
   app.post("/api/admin/peptides-inject-responses", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
