@@ -494,8 +494,20 @@ export function normalizeMarkerName(name: string): string {
     return MARKER_ALIASES[normalized];
   }
 
+  // Strip diacritics so "testostérone totale" matches alias
+  // "testosterone totale" (Alan Annequin 2026-05-09 incident: stored
+  // marker name had é which never matched the unaccented alias key,
+  // so the entire testosterone analysis was silently dropped).
+  const deaccented = normalized.normalize("NFD").replace(/[̀-ͯ]/g, "");
+  if (BIOMARKER_RANGES[deaccented]) {
+    return deaccented;
+  }
+  if (MARKER_ALIASES[deaccented]) {
+    return MARKER_ALIASES[deaccented];
+  }
+
   // Try without special characters (spaces, dashes, underscores)
-  const simplified = normalized.replace(/[\s\-_]/g, "");
+  const simplified = deaccented.replace(/[\s\-_]/g, "");
   for (const [alias, key] of Object.entries(MARKER_ALIASES)) {
     if (alias.replace(/[\s\-_]/g, "") === simplified) {
       return key;

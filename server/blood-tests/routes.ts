@@ -663,7 +663,23 @@ export function registerBloodTestsRoutes(app: Express): void {
         ? String(new Date().getFullYear() - new Date(profile.dob).getFullYear())
         : undefined;
 
-      const analysisResult = await analyzeBloodwork(markers as any, { gender, age });
+      // Stored markers from blood_tests use a `code` field (e.g.
+      // "testosterone_total") which is exactly what BIOMARKER_RANGES keys on,
+      // but analyzeBloodwork takes BloodMarkerInput which only reads
+      // .markerId || .name. With code unwired, it falls back to .name
+      // ("Testostérone totale" with accent) and the alias table has
+      // "testosterone totale" without accent — so testosterone got dropped
+      // entirely from the analyzed marker list, and the model wrote "tests
+      // manquants: testostérone totale et libre" because it literally
+      // received zero testosterone data (Alan Annequin 2026-05-09). Map
+      // code → markerId before calling analyzeBloodwork.
+      const normalizedInput = (markers as any[]).map((m) => ({
+        markerId: m.code || m.markerId,
+        name: m.name,
+        value: m.value,
+        unit: m.unit,
+      }));
+      const analysisResult = await analyzeBloodwork(normalizedInput as any, { gender, age });
       const knowledgeContext = await getBloodworkKnowledgeContext(analysisResult.markers, analysisResult.patterns).catch(() => undefined);
       const aiText = await generateAIBloodAnalysis(
         analysisResult,
@@ -1790,7 +1806,16 @@ export function registerBloodTestsRoutes(app: Express): void {
           const age = profile.dob && typeof profile.dob === "string"
             ? String(new Date().getFullYear() - new Date(profile.dob).getFullYear())
             : undefined;
-          const analysisResult = await analyzeBloodwork(markers as any, { gender, age });
+          // Map code -> markerId so analyzeBloodwork doesn't fall back to the
+          // accented name and drop markers (see explanation in reprocess
+          // endpoint above).
+          const recoveryNormalizedInput = (markers as any[]).map((m) => ({
+            markerId: m.code || m.markerId,
+            name: m.name,
+            value: m.value,
+            unit: m.unit,
+          }));
+          const analysisResult = await analyzeBloodwork(recoveryNormalizedInput as any, { gender, age });
           const knowledgeContext = await getBloodworkKnowledgeContext(analysisResult.markers, analysisResult.patterns).catch(() => undefined);
           const aiText = await generateAIBloodAnalysis(
             analysisResult,
