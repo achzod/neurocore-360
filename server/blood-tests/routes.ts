@@ -647,18 +647,43 @@ export function registerBloodTestsRoutes(app: Express): void {
       if (!results.length) { res.status(404).json({ error: "Blood test not found" }); return; }
 
       const bt = results[0];
-      // Get the PDF file from the stored data or re-read from the original upload
-      // The markers need to be re-extracted , we can trigger the AI analysis again
       const markers = Array.isArray(bt.markers) ? bt.markers : [];
 
-      // Re-run AI analysis on existing markers
-      const { generateAIBloodAnalysis } = await import("../blood-analysis/index.js");
+      // generateAIBloodAnalysis expects a full BloodAnalysisResult (object with
+      // .markers, .patterns, .alerts, etc.), not a raw markers[] array. Passing
+      // the array directly throws "Cannot read properties of undefined (reading
+      // 'map')" when it tries to read .patterns / .markers off it (Alan
+      // Annequin 2026-05-09 stuck in "processing" forever, reprocess endpoint
+      // crashed). Always run analyzeBloodwork first so we have the right shape.
+      const { analyzeBloodwork, generateAIBloodAnalysis, getBloodworkKnowledgeContext } =
+        await import("../blood-analysis/index.js");
       const profile = bt.patientProfile && typeof bt.patientProfile === "object" ? bt.patientProfile as any : {};
+      const gender = (profile.gender as "homme" | "femme") || "homme";
+      const age = profile.dob && typeof profile.dob === "string"
+        ? String(new Date().getFullYear() - new Date(profile.dob).getFullYear())
+        : undefined;
 
-      const aiResult = await generateAIBloodAnalysis(markers as any, profile, id);
+      const analysisResult = await analyzeBloodwork(markers as any, { gender, age });
+      const knowledgeContext = await getBloodworkKnowledgeContext(markers as any).catch(() => undefined);
+      const aiText = await generateAIBloodAnalysis(
+        analysisResult,
+        { ...profile, gender },
+        knowledgeContext,
+      );
+
+      const mergedAnalysis: Record<string, unknown> = {
+        ...(typeof bt.analysis === "object" && bt.analysis ? (bt.analysis as Record<string, unknown>) : {}),
+        ...analysisResult,
+        aiAnalysis: aiText,
+        aiStatus: "completed",
+        aiGeneratedAt: new Date().toISOString(),
+        aiModel: "claude-opus-4-6",
+      };
+      delete mergedAnalysis.aiFallbackReason;
+      delete mergedAnalysis.aiFallbackAt;
 
       await reDb.update(btTable).set({
-        analysis: aiResult as any,
+        analysis: mergedAnalysis as any,
         status: "completed",
         completedAt: new Date(),
       }).where(btEq(btTable.id, id));
