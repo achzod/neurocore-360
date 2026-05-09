@@ -4381,7 +4381,25 @@ Contraintes:
 - Longueur minimale: ${qualityThresholds.recomposition} caracteres.
 - Inclure: freins biologiques dominants, opportunites court terme, conditions de progression training/nutrition, indicateurs de validation.
 - Relier explicitement les conclusions aux marqueurs prioritaires.
-- COUVERTURE HORMONES SEXUELLES OBLIGATOIRE: si testosterone totale et/ou testosterone libre sont presentes dans le "Contexte marqueurs", tu DOIS les citer explicitement avec leurs valeurs et statut dans cette section, car elles conditionnent directement le potentiel anabolique et la prise de muscle. Cas reel a eviter (Alan Annequin 2026-05-09): testo totale a 1068 ng/dL et testo libre a 20.9 pg/mL etaient presentes, le modele a parle de l'axe hormonal en evitant ces 2 valeurs cles, le client a signale l'erreur.
+
+COUVERTURE OBLIGATOIRE DES MARQUEURS-CLES DE RECOMPOSITION (si presents dans "Contexte marqueurs"):
+La recomposition corporelle (perte de gras + gain de muscle) est gouvernee par un ensemble de marqueurs hormonaux et metaboliques bien identifies. Si l'un de ces marqueurs apparait dans le bilan avec une valeur numerique, tu DOIS le citer explicitement dans cette section, avec sa valeur exacte, son unite, son statut, et l'impact concret sur la recomposition du client — peu importe que la valeur soit basse, normale, optimale ou elevee, dans tous les cas elle conditionne le resultat. Liste des marqueurs concernes:
+
+1. Testosterone totale: principal moteur anabolique chez l'homme. Une valeur basse limite la synthese proteique; une valeur haute non endogene (apport exterieur) supprime l'axe HPG et change toute la lecture; une valeur optimale est un atout direct pour le gain musculaire. Toujours citer sa valeur.
+2. Testosterone libre: la fraction biodisponible reellement active dans les tissus muscles. C'est elle qui compte pour l'anabolisme reel, pas la totale. Toujours citer sa valeur.
+3. SHBG: protein de transport qui sequestre la testosterone. Si elevee, reduit la fraction libre (frein anabolique). Si basse, libere plus de testo libre.
+4. Estradiol (E2): conversion de testo via aromatase. Trop haut = retention d'eau, mood, freine la perte de gras viscerale. Trop bas = impact libido, recuperation, densite osseuse.
+5. LH et FSH: signaux hypophysaires qui pilotent la production endogene. Bas = hypothese supresion exogene OU defaut hypothalamique.
+6. IGF-1: facteur de croissance, reflete l'activite GH. Conditionne directement la synthese proteique musculaire et la reparation tissulaire.
+7. Cortisol matinal: catabolisme. Eleve = freine la synthese proteique, favorise le stockage de gras visceral.
+8. DHEA-S: precurseur androgenique, indicateur de la reserve surrenalienne anabolique.
+9. TSH, T3 libre, T4 libre: axe thyroidien gouverne le metabolisme de base et donc le potentiel de perte de gras.
+10. Insuline a jeun, HbA1c, Glycemie: sensibilite a l'insuline gouverne la repartition gras/muscle des nutriments.
+11. CRP-us: inflammation chronique freine la synthese proteique et favorise la resistance a l'insuline.
+12. Ferritine: trop haute = inflammation/surcharge en fer freine la recomposition; trop basse = limite l'oxygenation tissulaire et la performance training.
+
+REGLE STRICTE: si un de ces 12 marqueurs cles est dans "Contexte marqueurs", il DOIT figurer dans le narratif avec sa valeur. Cas reel a eviter (Alan Annequin 2026-05-09): testo totale a 1068 ng/dL et testo libre a 20.9 pg/mL etaient presentes, ignoree completement de cette section; le client a signale l'erreur, le rapport a du etre regenere.
+
 - Rester concret et mesurable.
 
 Contexte:
