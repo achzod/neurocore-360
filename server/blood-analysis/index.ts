@@ -3928,11 +3928,18 @@ const buildAxisPromptContext = (markers: MarkerAnalysis[]): string => {
       const panelMarkers = grouped.get(panel) || [];
       const criticalCount = panelMarkers.filter((marker) => marker.status === "critical").length;
       const suboptimalCount = panelMarkers.filter((marker) => marker.status === "suboptimal").length;
-      const markerPreview = panelMarkers
-        .slice(0, 6)
+      const optimalCount = panelMarkers.filter((marker) => marker.status === "optimal").length;
+      // Alan Annequin 2026-05-09: previous code did .slice(0, 6) which truncated
+      // the per-axis preview when an axis had more than 6 markers. His
+      // hormonal axis had 8 markers (testo total, testo libre, FSH, LH, SHBG,
+      // IGF-1, prolactine, estradiol); testo total + libre fell off the list
+      // and the model dropped them from the section narrative entirely. Show
+      // every marker with its value, unit, and status so the model has no
+      // excuse to skip any.
+      const fullList = panelMarkers
         .map((marker) => `${marker.name}=${marker.value}${marker.unit ? ` ${marker.unit}` : ""} (${marker.status})`)
         .join(" | ");
-      return `Axe ${idx + 1} , ${panel}: ${panelMarkers.length} marqueur(s), ${criticalCount} critique(s), ${suboptimalCount} important(s). Marqueurs disponibles: ${markerPreview}.`;
+      return `Axe ${idx + 1} , ${panel}: ${panelMarkers.length} marqueur(s) (${criticalCount} critique, ${suboptimalCount} suboptimal, ${optimalCount} optimal). Marqueurs DISPONIBLES (TOUS a couvrir individuellement, sans en sauter aucun, meme les optimaux): ${fullList}.`;
     })
     .join("\n");
 };
@@ -4373,6 +4380,7 @@ Contraintes:
 - Longueur minimale: ${qualityThresholds.recomposition} caracteres.
 - Inclure: freins biologiques dominants, opportunites court terme, conditions de progression training/nutrition, indicateurs de validation.
 - Relier explicitement les conclusions aux marqueurs prioritaires.
+- COUVERTURE HORMONES SEXUELLES OBLIGATOIRE: si testosterone totale et/ou testosterone libre sont presentes dans le "Contexte marqueurs", tu DOIS les citer explicitement avec leurs valeurs et statut dans cette section, car elles conditionnent directement le potentiel anabolique et la prise de muscle. Cas reel a eviter (Alan Annequin 2026-05-09): testo totale a 1068 ng/dL et testo libre a 20.9 pg/mL etaient presentes, le modele a parle de l'axe hormonal en evitant ces 2 valeurs cles, le client a signale l'erreur.
 - Rester concret et mesurable.
 
 Contexte:
@@ -4393,7 +4401,8 @@ Contraintes:
 - Longueur minimale: ${qualityThresholds.axes} caracteres.
 - Couvre explicitement chaque axe disponible dans les marqueurs du bilan.
 - Pour chaque axe: score, lecture clinique, lecture performance/bodybuilding, actions prioritaires, tests manquants.
-- Avant de citer un marqueur comme "manquant", "a doser", "non renseigne" ou "tests recommandes", VERIFIE qu'il n'apparait PAS deja dans la section "Contexte marqueurs" ci-dessous. Si tu vois le marqueur dans cette liste avec une valeur numerique, il est PRESENT, ne le mentionne JAMAIS comme manquant. Cas reel a eviter (Alan Annequin 2026-05-09): testosterone totale et libre etaient dans le bilan, le modele les a re-listees comme "tests manquants essentiels" en bas de section, le client a signale l'erreur.
+- COUVERTURE EXHAUSTIVE OBLIGATOIRE: pour CHAQUE axe, tu DOIS discuter individuellement CHAQUE marqueur present dans le "Contexte marqueurs" qui appartient a cet axe (verifie via le panel/categorie). Aucun marqueur ne doit etre omis, meme si son statut est "optimal" ou "normal". Cite explicitement sa valeur exacte, son unite, son statut, et donne une phrase d'interpretation. Si un marqueur est dans la zone optimale, dis-le clairement et explique pourquoi c'est une bonne nouvelle. Cas reel a eviter (Alan Annequin 2026-05-09): testosterone totale a 1068 ng/dL (au-dessus du normal haut, donnee CRITIQUE) et testosterone libre a 20.9 pg/mL (optimale, NEWS POSITIVE) etaient dans le bilan; le modele les a completement omises de l'axe hormonal en se concentrant sur FSH/LH/SHBG/IGF-1/prolactine; le client a signale l'erreur, le rapport a du etre regenere.
+- Avant de citer un marqueur comme "manquant", "a doser", "non renseigne" ou "tests recommandes", VERIFIE qu'il n'apparait PAS deja dans la section "Contexte marqueurs" ci-dessous. Si tu vois le marqueur dans cette liste avec une valeur numerique, il est PRESENT, ne le mentionne JAMAIS comme manquant.
 - Utilise les vrais marqueurs et leurs valeurs. Si un axe est incomplet, ecris "Non renseigne" dans le corps, jamais dans le titre d'axe.
 - Interdiction de produire des titres du type "Axe X , Non renseigne": conserver le nom reel de l'axe.
 - Pas d'invention, pas de generalites vides.
