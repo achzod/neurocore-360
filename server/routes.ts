@@ -3451,6 +3451,44 @@ export async function registerRoutes(
   });
 
   // ==================== SHARED AUDIT CREATION HELPER ====================
+  // Idempotent blood credit grant for paid orders. Both Stripe confirm-session
+  // and the Stripe webhook can race; whichever wins marks the order as paid
+  // and the loser's credit-grant block is skipped. We track grant status on the
+  // order metadata so the second arrival is a no-op instead of skipping silently.
+  async function grantBloodCreditsForOrder(
+    orderId: string,
+    email: string,
+    creditCount: number,
+    metadataFlag: "bloodCreditGranted" | "peptidesCreditsGranted",
+  ): Promise<void> {
+    const { pool } = await import("./db");
+    try {
+      const check = await pool.query(
+        `SELECT metadata FROM orders WHERE id = $1`,
+        [orderId],
+      );
+      const meta = (check.rows[0]?.metadata ?? {}) as Record<string, unknown>;
+      if (meta[metadataFlag] === true) return;
+
+      let user = await storage.getUserByEmail(email);
+      if (!user) {
+        await storage.createUser({ email, credits: creditCount });
+      } else {
+        await pool.query(
+          "UPDATE users SET credits = credits + $1 WHERE email = $2",
+          [creditCount, email],
+        );
+      }
+      await pool.query(
+        `UPDATE orders SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object($1::text, true) WHERE id = $2`,
+        [metadataFlag, orderId],
+      );
+      console.log(`[Credit] Granted +${creditCount} blood credit(s) to ${email} for order ${orderId} (${metadataFlag})`);
+    } catch (err) {
+      console.error(`[Credit] Failed to grant credits for order ${orderId}:`, err);
+    }
+  }
+
   // Used by both Stripe confirm-session and PayPal capture-order
   async function createAuditFromPaidOrder(
     email: string,
@@ -3614,6 +3652,9 @@ export async function registerRoutes(
             stripeCustomerId: (session as any).customer || null,
           });
         }
+        if (existingOrder && email) {
+          await grantBloodCreditsForOrder(existingOrder.id, email, 2, "peptidesCreditsGranted");
+        }
         res.json({ success: true, auditId: "", auditType: "PEPTIDES_ENGINE", email, generating: true });
         return;
       }
@@ -3642,6 +3683,7 @@ export async function registerRoutes(
       if (planType === "BLOOD_ANALYSIS") {
         if (existingOrder) {
           await storage.updateOrder(existingOrder.id, { status: "paid", paidAt: new Date() });
+          await grantBloodCreditsForOrder(existingOrder.id, email, 1, "bloodCreditGranted");
         }
         res.json({ success: true, auditId: "", auditType: "BLOOD_ANALYSIS", email });
         return;
@@ -7238,34 +7280,12 @@ export async function registerRoutes(
 
             // Peptides Engine: add 2 blood credits directly on payment
             if (email && planType === "PEPTIDES_ENGINE") {
-              try {
-                let user = await storage.getUserByEmail(email);
-                if (!user) {
-                  user = await storage.createUser({ email, credits: 2 });
-                  console.log(`[Webhook] ✅ Created user ${email} with 2 blood credits (Peptides Engine)`);
-                } else {
-                  await pool.query("UPDATE users SET credits = credits + 2 WHERE email = $1", [email]);
-                  console.log(`[Webhook] ✅ +2 blood credits for ${email} (Peptides Engine)`);
-                }
-              } catch (creditErr) {
-                console.error(`[Webhook] Peptides blood credit error:`, creditErr);
-              }
+              await grantBloodCreditsForOrder(order.id, email, 2, "peptidesCreditsGranted");
             }
 
             // Blood Analysis: add +1 credit on payment
             if (email && planType === "BLOOD_ANALYSIS") {
-              try {
-                let user = await storage.getUserByEmail(email);
-                if (!user) {
-                  user = await storage.createUser({ email, credits: 1 });
-                  console.log(`[Webhook] ✅ Created user ${email} with 1 blood credit`);
-                } else {
-                  await pool.query("UPDATE users SET credits = credits + 1 WHERE email = $1", [email]);
-                  console.log(`[Webhook] ✅ +1 blood credit for ${email}`);
-                }
-              } catch (creditErr) {
-                console.error(`[Webhook] Blood credit update failed:`, creditErr);
-              }
+              await grantBloodCreditsForOrder(order.id, email, 1, "bloodCreditGranted");
             }
 
             // Peptides Engine: DO NOT generate here , setInterval handles it
