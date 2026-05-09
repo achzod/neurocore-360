@@ -9644,7 +9644,40 @@ export async function registerRoutes(
         const meta = order.metadata as any;
         const email = order.email;
         if (!email || email.includes("test") || email.includes("debug")) continue;
-        if (meta?.peptidesReportId) continue;
+
+        // Recovery path: report exists but email never went out (e.g. SendPulse
+        // returned false, network blip during initial autogen send). Without
+        // this branch the cron skips forever because peptidesReportId is
+        // populated, leaving the client with a paid 199 EUR product they can
+        // never reach. Re-attempt delivery on every cycle until email_tracking
+        // confirms a send.
+        if (meta?.peptidesReportId) {
+          const alreadyEmailed = await storage.hasPeptidesDeliveryEmailBeenSent(email).catch(() => false);
+          if (alreadyEmailed) continue;
+          const existing = await storage.getBurnoutReport(meta.peptidesReportId).catch(() => null);
+          if (!existing) continue;
+          const existingReport = existing.report as any;
+          const baseUrl = getBaseUrl();
+          const peptidesNames = existingReport?.peptides?.map((p: any) => p.name).join(", ") ?? "voir rapport";
+          const promoBlock = Array.isArray(existingReport?.promoCodesGenerated) && existingReport.promoCodesGenerated.length > 0
+            ? `\n\nTes 2 Blood Analysis offertes (codes, usage unique):\n${existingReport.promoCodesGenerated.join("\n")}`
+            : "";
+          const coachingBlock = `\n\n,,,,,,,,,,,,,,,,,,,,,,\nTON BONUS COACHING\n,,,,,,,,,,,,,,,,,,,,,,\nCode : PEPTIDES150\n→ 150€ déduits sur ton coaching Elite ou Private Lab.\nValable sur n'importe quelle durée (4/8/12 sem).\n\nTu veux passer au coaching personnalisé après ton protocole ?\n• Coaching Elite , https://www.achzodcoaching.com/coaching-elite\n• Private Lab , https://www.achzodcoaching.com/coaching-achzod-private-lab\n\nColle le code PEPTIDES150 dans le champ promo au checkout.`;
+          try {
+            const recovered = await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
+              `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${meta.peptidesReportId}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`,
+            );
+            if (recovered) {
+              console.log(`[AutoGen] ✅ Recovered delivery email for ${email} (report ${meta.peptidesReportId})`);
+              autoGenLastResult = `RECOVERED_EMAIL: ${email}`;
+            } else {
+              console.warn(`[AutoGen] ⚠️ Recovery email send returned false for ${email}, will retry next cycle`);
+            }
+          } catch (recErr) {
+            console.error(`[AutoGen] Recovery email send threw for ${email}:`, recErr);
+          }
+          continue;
+        }
 
         const hoursSincePaid = (now.getTime() - new Date(order.paidAt).getTime()) / (1000 * 60 * 60);
         // Wait at least 10 min before autogen kicks in , gives the inline generation pipeline
