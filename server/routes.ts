@@ -4093,6 +4093,11 @@ export async function registerRoutes(
 
       // BLOOD_ANALYSIS: just mark paid, no audit to create
       if (planType === "BLOOD_ANALYSIS") {
+        // Grant the +1 blood credit via the same idempotent helper Stripe
+        // uses. Without this, PayPal customers paid 99 EUR and never got a
+        // credit on their account — they'd land on /blood-dashboard, fill
+        // the form, and hit "Credits insuffisants" (zero credits).
+        await grantBloodCreditsForOrder(existingOrder.id, email, 1, "bloodCreditGranted");
         // Send confirmation email
         sendCTAEmail(email, "Blood Analysis : paiement recu",
           `Salut,\n\nMerci pour ta commande Blood Analysis. Ton paiement est bien recu.\n\nVoici la liste exacte des marqueurs a demander a ton medecin ou directement au laboratoire. Tu peux te presenter dans n'importe quel labo d'analyses (Cerba, Biogroup, ou ton labo habituel) avec cette liste. La plupart des labos acceptent sans ordonnance (tu paies de ta poche). Sinon, un passage chez ton generaliste pour l'ordonnance et c'est rembourse.\n\nPANEL 1 : HORMONES ANABOLIQUES\nTestosterone totale, Testosterone libre, SHBG, Cortisol (matin a jeun), DHEA-S, IGF-1, LH, FSH, Estradiol\n\nPANEL 2 : THYROIDE\nTSH, T3 libre, T4 libre, Anti-TPO\n\nPANEL 3 : METABOLISME ET LIPIDES\nGlycemie a jeun, HbA1c, Insuline a jeun, Cholesterol total, HDL, LDL, Triglycerides, ApoB, Lp(a)\n\nPANEL 4 : INFLAMMATION ET FER\nCRP ultra-sensible, Ferritine, Homocysteine, Vitesse de sedimentation\n\nPANEL 5 : VITAMINES ET MINERAUX\nVitamine D (25-OH), Vitamine B12, Magnesium, Zinc, Folates\n\nPANEL 6 : HEPATIQUE ET RENAL\nALAT, ASAT, Gamma-GT, Creatinine, DFG (eGFR), Acide urique\n\nNFS (Numeration Formule Sanguine) complete\n\nUne fois ta prise de sang faite, uploade ton PDF de resultats sur ton dashboard APEXLABS :\nhttps://apexlabs.achzodcoaching.com/auth/login?next=%2Fblood-dashboard&email=${encodeURIComponent(email)}\n\nTu cliques sur le lien, tu recois un email avec un lien d'acces unique (verifie aussi tes spams), tu cliques dessus, tu arrives sur ton dashboard. La tu remplis tes infos, tu glisses ton PDF dans la zone d'upload, et tu lances l'analyse.\n\nIMPORTANT : un seul PDF par upload (10 MB max). Si tu as plusieurs fichiers a fusionner :\n- Sur iPhone (Fichiers) : mets tes PDFs dans un dossier, "Selectionner", coche-les dans l'ordre, "..." en bas, "Creer un PDF".\n- Alternative : ilovepdf.com/fr/fusionner_pdf , glisse-depose tes fichiers, telecharge le PDF unique, uploade-le.\n\nTu recevras ton analyse complete sous 24h.\n\nTon code promo : BLOOD99\n99€ deduits de ton coaching Elite/Private Lab 8 ou 12 semaines\nachzodcoaching.com/formules-coaching\n\nSi tu as des questions, reponds directement a cet email.\n\nAchzod`
@@ -4104,19 +4109,10 @@ export async function registerRoutes(
       // PEPTIDES_ENGINE: trigger background generation from saved responses
       if (planType === "PEPTIDES_ENGINE") {
         console.log(`[PayPal] Peptides Engine paid for ${email} , triggering generation`);
-        // Add +2 blood credits
-        try {
-          const { pool: dbPool } = await import("./db");
-          let user = await storage.getUserByEmail(email);
-          if (!user) {
-            user = await storage.createUser({ email, credits: 2 });
-          } else {
-            await dbPool.query("UPDATE users SET credits = credits + 2 WHERE email = $1", [email]);
-          }
-          console.log(`[PayPal] +2 blood credits for ${email} (Peptides Engine)`);
-        } catch (creditErr) {
-          console.error(`[PayPal] Blood credit error:`, creditErr);
-        }
+        // Add +2 blood credits via idempotent helper (was a raw UPDATE that
+        // would double-grant on PayPal capture retry; the helper sets a
+        // metadata flag and skips if already granted).
+        await grantBloodCreditsForOrder(existingOrder.id, email, 2, "peptidesCreditsGranted");
 
         // DO NOT generate in background here , Render kills the process after HTTP response.
         // The auto-recovery cron will detect this order (paid, no reportId) and generate.
