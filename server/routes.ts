@@ -3179,6 +3179,29 @@ export async function registerRoutes(
     }
   });
 
+  // Idempotent helper for one-shot order side-effects (CAPI, admin notif,
+  // customer confirmation email). Both confirm-session and the Stripe
+  // webhook can fire these in different orders depending on which wins the
+  // post-payment race; the flag check keeps each effect to exactly once.
+  const runOnceOnOrder = async (
+    orderId: string,
+    flagName: string,
+    op: () => Promise<void>,
+  ): Promise<void> => {
+    try {
+      const fresh = await storage.getOrder(orderId);
+      const meta = (fresh?.metadata as Record<string, unknown> | null) ?? {};
+      if (meta[flagName]) return;
+      await op();
+      await pool.query(
+        `UPDATE orders SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object($1::text, true) WHERE id = $2`,
+        [flagName, orderId],
+      );
+    } catch (err) {
+      console.error(`[runOnceOnOrder] ${flagName} failed for ${orderId}:`, err);
+    }
+  };
+
   // Damien G. 2026-04-20 paid 59 EUR for Anabolic Bioscan with email
   // "damiengil09700@gmailcom" (missing dot before com). Our previous check
   // was email.includes("@") which passes a malformed address. We now require
@@ -3701,6 +3724,30 @@ export async function registerRoutes(
         if (existingOrder) {
           await storage.updateOrder(existingOrder.id, { status: "paid", paidAt: new Date() });
           await grantBloodCreditsForOrder(existingOrder.id, email, 1, "bloodCreditGranted");
+
+          // Customer confirmation email with PDF instructions + magic link
+          // walkthrough. Without this, clients whose confirm-session beats
+          // the Stripe webhook to "paid" status get no email and never know
+          // how to upload their bloodwork PDF (the webhook block at line
+          // 7228 is gated on order.status === "pending"). Idempotent via
+          // metadata flag so the webhook firing later doesn't double-send.
+          await runOnceOnOrder(existingOrder.id, "customerConfirmEmailSentAt", async () => {
+            const clientName2 = email.split("@")[0];
+            const msg = `Salut ${clientName2},\n\nMerci pour ta commande Blood Analysis. Ton paiement est bien recu.\n\nVoici la liste exacte des marqueurs a demander a ton medecin ou directement au laboratoire (panel complet APEXLABS , 39 biomarqueurs) :\n\nPANEL 1 : HORMONES ANABOLIQUES\nTestosterone totale, Testosterone libre, SHBG, Cortisol (matin a jeun), DHEA-S, IGF-1, LH, FSH, Estradiol\n\nPANEL 2 : THYROIDE\nTSH, T3 libre, T4 libre, Anti-TPO\n\nPANEL 3 : METABOLISME ET LIPIDES\nGlycemie a jeun, HbA1c, Insuline a jeun, Cholesterol total, HDL, LDL, Triglycerides, ApoB, Lp(a)\n\nPANEL 4 : INFLAMMATION ET FER\nCRP ultra-sensible, Ferritine, Homocysteine, Vitesse de sedimentation\n\nPANEL 5 : VITAMINES ET MINERAUX\nVitamine D (25-OH), Vitamine B12, Magnesium, Zinc, Folates\n\nPANEL 6 : HEPATIQUE ET RENAL\nALAT, ASAT, Gamma-GT, Creatinine, DFG (eGFR), Acide urique\n\nNFS (Numeration Formule Sanguine) complete\n\nPresente-toi dans n'importe quel labo avec cette liste. La plupart acceptent sans ordonnance. Sinon, ton generaliste te fait l'ordonnance.\n\nUne fois ta prise de sang faite, uploade ton PDF sur : https://apexlabs.achzodcoaching.com/auth/login?next=%2Fblood-dashboard&email=${encodeURIComponent(email)}\n\nTu cliques sur le lien, tu recois un email avec un lien d'acces unique (verifie aussi tes spams), tu cliques dessus, tu arrives sur ton dashboard. La tu remplis tes infos, tu glisses ton PDF dans la zone d'upload, et tu lances l'analyse.\n\nIMPORTANT : un seul PDF par upload (10 MB max). Si tu as plusieurs fichiers a fusionner :\n- Sur iPhone (Fichiers) : mets tes PDFs dans un dossier, "Selectionner", coche-les dans l'ordre, "..." en bas, "Creer un PDF".\n- Alternative : ilovepdf.com/fr/fusionner_pdf , glisse-depose tes fichiers, telecharge le PDF unique, uploade-le.\n\nTon code promo : BLOOD99\n99€ deduits de ton coaching Elite/Private Lab 8 ou 12 semaines\nachzodcoaching.com/formules-coaching\n\nSi tu as des questions, reponds directement a cet email.\n\nAchzod`;
+            await sendCTAEmail(email, "Blood Analysis : commande recue", msg);
+          });
+
+          // Admin payment notification — same idempotency: ensures Achzod
+          // sees every paid order even when confirm-session wins the race.
+          await runOnceOnOrder(existingOrder.id, "adminPaymentNotifSentAt", async () => {
+            const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
+            const amount = (existingOrder.finalAmountCents / 100).toFixed(2);
+            await sendCTAEmail(
+              adminEmail,
+              `PAIEMENT ${amount}EUR , Blood Analysis (99EUR) , ${email}`,
+              `PAIEMENT RECU!\n\nProduit: Blood Analysis\nClient: ${email}\nMontant: ${amount}EUR\nPromo: ${existingOrder.promoCode || "aucun"}\n\nOrder ID: ${existingOrder.id}`,
+            );
+          });
         }
         res.json({ success: true, auditId: "", auditType: "BLOOD_ANALYSIS", email });
         return;
@@ -7270,8 +7317,9 @@ export async function registerRoutes(
               console.error(`[Webhook] Meta CAPI Purchase (stripe) failed (non-blocking):`, capiErr);
             }
 
-            // Admin notification for PAID orders
-            try {
+            // Admin notification for PAID orders (idempotent — confirm-session
+            // may have already sent it for BLOOD_ANALYSIS)
+            await runOnceOnOrder(order.id, "adminPaymentNotifSentAt", async () => {
               const clientEmail = session.customer_details?.email || session.customer_email || order.email;
               const clientName = session.customer_details?.name || clientEmail?.split("@")[0] || "Client";
               const planLabel = order.productType === "PREMIUM" ? "Anabolic Bioscan (59EUR)" :
@@ -7279,19 +7327,17 @@ export async function registerRoutes(
                                order.productType === "BLOOD_ANALYSIS" ? "Blood Analysis (99EUR)" : order.productName;
               const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
               const amount = (order.finalAmountCents / 100).toFixed(2);
-
               await sendCTAEmail(
                 adminEmail,
                 `PAIEMENT ${amount}EUR , ${planLabel} , ${clientName}`,
-                `PAIEMENT RECU!\n\nProduit: ${planLabel}\nClient: ${clientName}\nEmail: ${clientEmail}\nMontant: ${amount}EUR\nPromo: ${order.promoCode || "aucun"}\n\nOrder ID: ${order.id}`
+                `PAIEMENT RECU!\n\nProduit: ${planLabel}\nClient: ${clientName}\nEmail: ${clientEmail}\nMontant: ${amount}EUR\nPromo: ${order.promoCode || "aucun"}\n\nOrder ID: ${order.id}`,
               );
               console.log(`[Webhook] Admin payment notification sent for order ${order.id}`);
-            } catch (notifErr) {
-              console.error(`[Webhook] Admin payment notification failed:`, notifErr);
-            }
+            });
 
             // Send confirmation email to client (Stripe webhook = payment confirmed)
-            try {
+            // Idempotent — confirm-session may have already sent it.
+            await runOnceOnOrder(order.id, "customerConfirmEmailSentAt", async () => {
               const clientEmail2 = session.customer_details?.email || session.customer_email || order.email;
               const clientName2 = session.customer_details?.name || clientEmail2?.split("@")[0] || "Client";
               const promoByType2: Record<string, { code: string; label: string }> = {
@@ -7314,9 +7360,9 @@ export async function registerRoutes(
                     : "Ton rapport est en cours de generation. Tu le recevras par email d'ici 24h.";
                   msg = `Salut ${clientName2},\n\nMerci pour ta commande ${prodLabel2}. Ton paiement est bien recu.\n\n${deliveryMsg}\n\n${promo2 ? `Ton code promo : ${promo2.code}\n${promo2.label}\nachzodcoaching.com/formules-coaching\n\n` : ""}Si tu as des questions, reponds directement a cet email.\n\nAchzod`;
                 }
-                sendCTAEmail(clientEmail2!, `${prodLabel2} : commande recue`, msg).catch(() => {});
+                await sendCTAEmail(clientEmail2!, `${prodLabel2} : commande recue`, msg);
               }
-            } catch {}
+            });
 
             // ✅ FIX: Create audit automatically in webhook (prevents missing audits)
             const email = session.customer_details?.email || session.customer_email || session.metadata?.email || order.email;
