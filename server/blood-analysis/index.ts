@@ -4342,6 +4342,7 @@ Contraintes:
 - ${narrativeConstraint}
 - Longueur minimale: ${qualityThresholds.qualite} caracteres.
 - Inclure: fiabilite du panel, limites de couverture, facteurs confondants, ce qui manque pour conclure, tests prioritaires a ajouter.
+- AVANT de citer un marqueur comme "a ajouter" / "manquant" / "a doser", verifie qu'il n'apparait PAS deja dans la section "Marqueurs" ci-dessous. Si le marqueur est dans la liste avec une valeur numerique, il est PRESENT, ne le mentionne JAMAIS comme manquant. Cas reel a eviter (Alan 2026-05-09): testo totale et libre etaient dans le bilan, le modele les a re-listees comme "tests prioritaires a ajouter".
 - Quand une info manque: "Non renseigne" + impact concret sur la decision.
 - Rester factuel et actionnable.
 
