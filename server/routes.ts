@@ -3179,9 +3179,26 @@ export async function registerRoutes(
     }
   });
 
+  // Damien G. 2026-04-20 paid 59 EUR for Anabolic Bioscan with email
+  // "damiengil09700@gmailcom" (missing dot before com). Our previous check
+  // was email.includes("@") which passes a malformed address. We now require
+  // domain to end with a dotted TLD so typos like @gmailcom or @gmial.com get
+  // bounced at checkout instead of producing a paid orphan order with no way
+  // to deliver the report.
+  const isValidEmailFormat = (raw: unknown): boolean => {
+    if (typeof raw !== "string") return false;
+    const trimmed = raw.trim();
+    if (trimmed.length < 6 || trimmed.length > 254) return false;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmed);
+  };
+
   app.post("/api/stripe/create-checkout-session", checkoutLimiter, async (req, res) => {
     try {
       const { priceId: clientPriceId, email, planType, responses, promoCode, referrer, fbp, fbc, userAgent, sourceUrl } = req.body;
+      if (!isValidEmailFormat(email)) {
+        res.status(400).json({ error: "EMAIL_INVALID", message: "Adresse email invalide. Verifie qu'il y a bien un point dans le domaine (par exemple @gmail.com et non @gmailcom)." });
+        return;
+      }
 
       // Already paid check for ALL product types (prevents double charge)
       if (email && planType && planType !== "GRATUIT") {
@@ -3715,6 +3732,10 @@ export async function registerRoutes(
       const { email, planType, responses, promoCode, fbp, fbc, userAgent, sourceUrl } = req.body;
       if (!email || !planType) {
         res.status(400).json({ error: "email et planType requis" });
+        return;
+      }
+      if (!isValidEmailFormat(email)) {
+        res.status(400).json({ error: "EMAIL_INVALID", message: "Adresse email invalide. Verifie qu'il y a bien un point dans le domaine (par exemple @gmail.com et non @gmailcom)." });
         return;
       }
 
