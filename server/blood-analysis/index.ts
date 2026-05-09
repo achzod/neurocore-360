@@ -4393,6 +4393,7 @@ Contraintes:
 - Longueur minimale: ${qualityThresholds.axes} caracteres.
 - Couvre explicitement chaque axe disponible dans les marqueurs du bilan.
 - Pour chaque axe: score, lecture clinique, lecture performance/bodybuilding, actions prioritaires, tests manquants.
+- Avant de citer un marqueur comme "manquant", "a doser", "non renseigne" ou "tests recommandes", VERIFIE qu'il n'apparait PAS deja dans la section "Contexte marqueurs" ci-dessous. Si tu vois le marqueur dans cette liste avec une valeur numerique, il est PRESENT, ne le mentionne JAMAIS comme manquant. Cas reel a eviter (Alan Annequin 2026-05-09): testosterone totale et libre etaient dans le bilan, le modele les a re-listees comme "tests manquants essentiels" en bas de section, le client a signale l'erreur.
 - Utilise les vrais marqueurs et leurs valeurs. Si un axe est incomplet, ecris "Non renseigne" dans le corps, jamais dans le titre d'axe.
 - Interdiction de produire des titres du type "Axe X , Non renseigne": conserver le nom reel de l'axe.
 - Pas d'invention, pas de generalites vides.
