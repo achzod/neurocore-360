@@ -1423,7 +1423,9 @@ export function registerBloodTestsRoutes(app: Express): void {
             // Auto-deliver email to client after AI completion (Younes Y. bug,
             // 2026-05-07: blood-tests-uploaded reports were marked completed
             // but no delivery email was ever sent — clients had no way to
-            // discover their report was ready).
+            // discover their report was ready). On success we persist
+            // deliveryStatus + emailSentAt into the analysis JSON so admin
+            // force-send can dedup and not re-spam the client.
             if (!isFallbackAnalysisText(enriched)) {
               try {
                 const baseUrl = process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || "https://apexlabs.achzodcoaching.com";
@@ -1438,6 +1440,15 @@ export function registerBloodTestsRoutes(app: Express): void {
                     profile as Record<string, unknown>,
                   );
                   console.log(`[BloodTests] Auto-delivery email for ${baseRecord.id} to ${recipient}: ${sent ? "sent" : "blocked-by-quality-gate"}`);
+                  if (sent) {
+                    await storage.updateBloodTest(baseRecord.id, {
+                      analysis: {
+                        ...refreshedAnalysis,
+                        deliveryStatus: "SENT",
+                        emailSentAt: new Date().toISOString(),
+                      },
+                    });
+                  }
                 }
               } catch (mailErr) {
                 console.error(`[BloodTests] Auto-delivery failed for ${baseRecord.id}:`, mailErr);
@@ -1463,6 +1474,17 @@ export function registerBloodTestsRoutes(app: Express): void {
                 profile as Record<string, unknown>,
               );
               console.log(`[BloodTests] Sync auto-delivery email for ${baseRecord.id} to ${recipient}: ${sent ? "sent" : "blocked-by-quality-gate"}`);
+              if (sent) {
+                const current = await storage.getBloodTest(baseRecord.id);
+                const currentAnalysis = (current?.analysis as Record<string, unknown>) || {};
+                await storage.updateBloodTest(baseRecord.id, {
+                  analysis: {
+                    ...currentAnalysis,
+                    deliveryStatus: "SENT",
+                    emailSentAt: new Date().toISOString(),
+                  },
+                });
+              }
             }
           } catch (mailErr) {
             console.error(`[BloodTests] Sync auto-delivery failed for ${baseRecord.id}:`, mailErr);

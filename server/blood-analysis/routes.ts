@@ -1271,10 +1271,25 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       // emails (rapid double-click on the dashboard, or racing with the scheduled
       // delivery cron). Require ?force=1 to override if the report was already
       // emailed, so an accidental click can't re-notify the client.
+      // Lucien Essouffi 2026-05-09: blood_tests records have no dedicated
+      // delivery columns, so we persist deliveryStatus/emailSentAt inside the
+      // analysis JSON. The guard now reads them from there for blood_tests.
       const forceRaw = req.query.force === "1" || (req.body as any)?.force === true;
-      if (!fromBloodTests && !forceRaw) {
-        const existingSentAt = (report as any).emailSentAt;
-        const deliveryStatus = (report as any).deliveryStatus;
+      if (!forceRaw) {
+        let existingSentAt: string | Date | null = null;
+        let deliveryStatus: string | null = null;
+        if (fromBloodTests) {
+          const { db: fsDb } = await import("../db.js");
+          const { bloodTests: fsBt } = await import("../../shared/drizzle-schema.js");
+          const { eq: fsEq } = await import("drizzle-orm");
+          const rows = await fsDb.select().from(fsBt).where(fsEq(fsBt.id, req.params.id));
+          const ana = rows[0]?.analysis as Record<string, unknown> | null | undefined;
+          existingSentAt = (ana?.emailSentAt as string | undefined) ?? null;
+          deliveryStatus = (ana?.deliveryStatus as string | undefined) ?? null;
+        } else {
+          existingSentAt = (report as any).emailSentAt ?? null;
+          deliveryStatus = (report as any).deliveryStatus ?? null;
+        }
         if (existingSentAt || deliveryStatus === "SENT") {
           res.status(409).json({
             error: "Rapport déjà envoyé , pass ?force=1 pour renvoyer volontairement",
@@ -1298,6 +1313,16 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       if (sent) {
         if (!fromBloodTests) {
           await storage.updateBloodReport(report.id, { deliveryStatus: "SENT", emailSentAt: new Date() });
+        } else {
+          const current = await storage.getBloodTest(report.id);
+          const currentAnalysis = (current?.analysis as Record<string, unknown>) || {};
+          await storage.updateBloodTest(report.id, {
+            analysis: {
+              ...currentAnalysis,
+              deliveryStatus: "SENT",
+              emailSentAt: new Date().toISOString(),
+            },
+          });
         }
         res.json({ success: true, reportId: report.id, email: report.email, status: "sent" });
       } else {
