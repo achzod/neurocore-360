@@ -664,7 +664,7 @@ export function registerBloodTestsRoutes(app: Express): void {
         : undefined;
 
       const analysisResult = await analyzeBloodwork(markers as any, { gender, age });
-      const knowledgeContext = await getBloodworkKnowledgeContext(markers as any).catch(() => undefined);
+      const knowledgeContext = await getBloodworkKnowledgeContext(analysisResult.markers, analysisResult.patterns).catch(() => undefined);
       const aiText = await generateAIBloodAnalysis(
         analysisResult,
         { ...profile, gender },
@@ -1744,4 +1744,116 @@ export function registerBloodTestsRoutes(app: Express): void {
       res.status(500).json({ error: "Erreur generation PDF" });
     }
   });
+
+  // Stuck-blood-test recovery cron. The upload pipeline marks a row as
+  // "processing" when the inline AI generation times out, then schedules a
+  // setImmediate retry. Both Younes Y. (2026-05-07) and Alan Annequin
+  // (2026-05-09) sat in "processing" indefinitely because the setImmediate
+  // either never fired or threw silently. This cron finds rows older than
+  // 10 minutes still in "processing" and re-runs the analysis the same way
+  // the admin reprocess endpoint does. After success it triggers
+  // auto-delivery so the client gets their report. The +/- 24h window keeps
+  // the cron from churning on truly broken historical rows that need manual
+  // intervention.
+  let recoveryRunning = false;
+  setInterval(async () => {
+    if (recoveryRunning) return;
+    recoveryRunning = true;
+    try {
+      const { db: rDb } = await import("../db.js");
+      const { bloodTests: rBt } = await import("../../shared/drizzle-schema.js");
+      const { eq: rEq, and: rAnd, lt: rLt, gt: rGt } = await import("drizzle-orm");
+      const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000);
+      const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const stuck = await rDb.select().from(rBt).where(
+        rAnd(
+          rEq(rBt.status, "processing"),
+          rLt(rBt.createdAt, tenMinAgo),
+          rGt(rBt.createdAt, dayAgo),
+        ),
+      );
+      if (!stuck.length) return;
+      console.log(`[BloodTests-Recovery] ${stuck.length} stuck row(s), recovering...`);
+      const { analyzeBloodwork, generateAIBloodAnalysis, getBloodworkKnowledgeContext } =
+        await import("../blood-analysis/index.js");
+      const { sendBloodClientDeliveryEmail } = await import("../blood-analysis/routes.js");
+      for (const bt of stuck) {
+        try {
+          const markers = Array.isArray(bt.markers) ? bt.markers : [];
+          if (!markers.length) {
+            // No markers extracted — pipeline failed earlier than AI step. Skip.
+            console.warn(`[BloodTests-Recovery] ${bt.id} has zero markers, skipping`);
+            continue;
+          }
+          const profile = bt.patientProfile && typeof bt.patientProfile === "object" ? bt.patientProfile as any : {};
+          const gender = (profile.gender as "homme" | "femme") || "homme";
+          const age = profile.dob && typeof profile.dob === "string"
+            ? String(new Date().getFullYear() - new Date(profile.dob).getFullYear())
+            : undefined;
+          const analysisResult = await analyzeBloodwork(markers as any, { gender, age });
+          const knowledgeContext = await getBloodworkKnowledgeContext(analysisResult.markers, analysisResult.patterns).catch(() => undefined);
+          const aiText = await generateAIBloodAnalysis(
+            analysisResult,
+            { ...profile, gender },
+            knowledgeContext,
+          );
+          const mergedAnalysis: Record<string, unknown> = {
+            ...(typeof bt.analysis === "object" && bt.analysis ? (bt.analysis as Record<string, unknown>) : {}),
+            ...analysisResult,
+            aiAnalysis: aiText,
+            aiStatus: "completed",
+            aiGeneratedAt: new Date().toISOString(),
+            aiModel: "claude-opus-4-6",
+            recoveredByCronAt: new Date().toISOString(),
+          };
+          delete mergedAnalysis.aiFallbackReason;
+          delete mergedAnalysis.aiFallbackAt;
+          await rDb.update(rBt).set({
+            analysis: mergedAnalysis as any,
+            status: "completed",
+            completedAt: new Date(),
+          }).where(rEq(rBt.id, bt.id));
+          console.log(`[BloodTests-Recovery] ${bt.id} recovered`);
+
+          // Auto-deliver, with the same dedup-via-analysis-JSON pattern the
+          // upload pipeline uses. We don't want this cron to also re-spam a
+          // client whose report was somehow already delivered before being
+          // marked "processing" again.
+          if (mergedAnalysis.deliveryStatus !== "SENT" && aiText) {
+            const { storage: rStorage } = await import("../storage.js");
+            const userRow = await rStorage.getUser(bt.userId);
+            const recipient = (profile.email as string) || userRow?.email;
+            if (recipient) {
+              const baseUrl = process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || "https://apexlabs.achzodcoaching.com";
+              const sent = await sendBloodClientDeliveryEmail(
+                recipient,
+                bt.id,
+                aiText,
+                baseUrl,
+                markers as any,
+                profile as Record<string, unknown>,
+              );
+              if (sent) {
+                await rDb.update(rBt).set({
+                  analysis: {
+                    ...mergedAnalysis,
+                    deliveryStatus: "SENT",
+                    emailSentAt: new Date().toISOString(),
+                  } as any,
+                }).where(rEq(rBt.id, bt.id));
+                console.log(`[BloodTests-Recovery] ${bt.id} delivered to ${recipient}`);
+              }
+            }
+          }
+        } catch (innerErr) {
+          console.error(`[BloodTests-Recovery] ${bt.id} failed:`, innerErr);
+        }
+      }
+    } catch (err) {
+      console.error("[BloodTests-Recovery] Cron error:", err);
+    } finally {
+      recoveryRunning = false;
+    }
+  }, 5 * 60 * 1000).unref();
+  console.log("[BloodTests-Recovery] ✅ setInterval registered (5min cycle)");
 }
