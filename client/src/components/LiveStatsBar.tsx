@@ -64,14 +64,9 @@ function getItems(variant: Variant, s: LiveStats): Array<{ value: string; label:
 
   switch (variant) {
     case "peptides":
-      if (s.peptidesProtocols > 0) {
-        all.push({ value: `${s.peptidesProtocols}`, label: "protocoles livrés" });
-      }
+      // "protocoles livrés" volontairement masqué (info commerciale confidentielle).
       if (s.peptidesAvgPerProtocol > 0) {
         all.push({ value: `${s.peptidesAvgPerProtocol}`, label: "peptides en moyenne" });
-      }
-      if (s.bloodAnalyses > 0) {
-        all.push({ value: `${s.bloodAnalyses}`, label: "Blood Analysis livrées" });
       }
       all.push({ value: "2", label: "crédits Blood offerts" });
       break;

@@ -57,8 +57,8 @@ const SURFACE_2 = "#F5F5F7";       // Apple gray surface (cards)
 const SURFACE_3 = "#FBFBFD";       // Slightly off-white sections
 const BORDER = "#D2D2D7";          // Apple light border
 
-// Flash promo deadline: dimanche 10 mai 2026 23:59 Paris (UTC+2)
-const FLASH_DEADLINE_MS = new Date("2026-05-10T23:59:59+02:00").getTime();
+// Flash promo deadline: jeudi 14 mai 2026 23:59 Paris (UTC+2)
+const FLASH_DEADLINE_MS = new Date("2026-05-14T23:59:59+02:00").getTime();
 const FLASH_PROMO_CODE = "PEPTIDES100";
 const FLASH_PRICE = 199;
 const REGULAR_PRICE = 399;
