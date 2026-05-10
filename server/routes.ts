@@ -3304,8 +3304,16 @@ export async function registerRoutes(
           // Create a Stripe coupon dynamically
           try {
             const couponId = `NEUROCORE_${promoCodeNormalized}_${Date.now()}`;
-            // Flash campaign: PEPTIDES100 = exact -100€ off (not %, regardless of DB %)
-            const couponParams: any = promoCode.toUpperCase() === 'PEPTIDES100'
+            // Flash campaign: PEPTIDES100 = exact -100€ off (not %, regardless of DB %).
+            // Marc M. 2026-05-11 22:02 incident: PEPTIDES100 applied to an ELITE (79€)
+            // order produced -100€ → 0€ free product. We restricted the promo's
+            // validFor to PEPTIDES_ENGINE in DB; we ALSO guard the code-level
+            // special case here on planType, so even if a future promo with the
+            // same code label exists on a different product, it never triggers
+            // the flat -100€ branch.
+            const isPeptides100OnPeptides =
+              promoCodeNormalized === 'PEPTIDES100' && planType === 'PEPTIDES_ENGINE';
+            const couponParams: any = isPeptides100OnPeptides
               ? { id: couponId, amount_off: 10000, currency: 'eur', duration: 'once', max_redemptions: 1 }
               : { id: couponId, percent_off: validation.discount, duration: 'once', max_redemptions: 1 };
             const coupon = await stripe.coupons.create(couponParams);
@@ -3447,9 +3455,11 @@ export async function registerRoutes(
         const pType = (planType as ProductTypeEnum) || "PREMIUM";
         const baseCents = ProductPriceCents[pType] ?? 0;
         const promoObj = validatedPromoCode ? await storage.getPromoCode(validatedPromoCode) : null;
-        // PEPTIDES100 uses amount_off=10000 cents at Stripe, regardless of stored %
+        // PEPTIDES100 uses amount_off=10000 cents at Stripe, regardless of stored %.
+        // Guard on planType so the flat -100€ never applies to another product
+        // (Marc M. 2026-05-11 ELITE 0€ incident).
         const discountCents = promoObj
-          ? (validatedPromoCode?.toUpperCase() === 'PEPTIDES100'
+          ? (validatedPromoCode?.toUpperCase() === 'PEPTIDES100' && pType === 'PEPTIDES_ENGINE'
               ? 10000
               : Math.round(baseCents * promoObj.discountPercent / 100))
           : 0;
@@ -3841,9 +3851,10 @@ export async function registerRoutes(
         if (validation.valid) {
           validatedPromoCode = promoCode;
           promoObj = await storage.getPromoCode(promoCode);
-          // PEPTIDES100 uses flat -100EUR (10000 cents) regardless of stored %
+          // PEPTIDES100 = flat -100EUR but ONLY on PEPTIDES_ENGINE
+          // (Marc M. 2026-05-11 ELITE 0€ incident — see Stripe branch).
           discountCents = promoObj
-            ? (promoCode.toUpperCase() === 'PEPTIDES100'
+            ? (promoCode.toUpperCase() === 'PEPTIDES100' && planType === 'PEPTIDES_ENGINE'
                 ? 10000
                 : Math.round(baseCents * promoObj.discountPercent / 100))
             : 0;
