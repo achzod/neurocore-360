@@ -1246,22 +1246,9 @@ function ScarcityGuarantee() {
               <SectionLabel>Disponibilite</SectionLabel>
             </div>
             <p className="mb-3 text-2xl font-bold text-[#1D1D1F]">15 protocoles par mois</p>
-            <p className="mb-6 text-sm text-[#6E6E73]">
+            <p className="text-sm text-[#6E6E73]">
               Chaque protocole est verifie manuellement avant envoi. La limite mensuelle garantit la qualite de chaque livrable.
             </p>
-            {/* Visual counter */}
-            <div className="flex gap-2 flex-wrap">
-              {Array.from({ length: 15 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-3 w-3 rounded-sm"
-                  style={{
-                    backgroundColor: i < 9 ? PRIMARY : "rgba(255,255,255,0.1)",
-                  }}
-                />
-              ))}
-            </div>
-            <p className="mt-3 font-mono text-xs text-[#86868B]">9/15 protocoles livres ce mois</p>
           </motion.div>
 
           {/* Guarantee */}
