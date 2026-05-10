@@ -584,7 +584,7 @@ export async function registerRoutes(
 
   app.post("/api/questionnaire/clear-progress", async (req, res) => {
     try {
-      const schema = z.object({ email: z.string().email() });
+      const schema = z.object({ email: z.string().trim().toLowerCase().email() });
       const { email } = schema.parse(req.body);
       await storage.deleteProgress(email);
       res.json({ success: true });
@@ -929,7 +929,7 @@ export async function registerRoutes(
   });
 
   const createAuditBodySchema = z.object({
-    email: z.string().email(),
+    email: z.string().trim().toLowerCase().email(),
     type: z.enum(["GRATUIT", "PREMIUM", "ELITE"]),
     responses: z.record(z.unknown()),
   });
@@ -3289,18 +3289,21 @@ export async function registerRoutes(
 
       const baseUrl = getBaseUrl();
 
-      // Validate and apply promo code if provided
+      // Validate and apply promo code if provided.
+      // Trim + uppercase so a pasted code with leading/trailing whitespace or
+      // lowercase letters still validates (Achzod report 2026-05-10).
       let discounts: any[] = [];
       let validatedPromoCode: string | null = null;
+      const promoCodeNormalized = typeof promoCode === "string" ? promoCode.trim().toUpperCase() : null;
 
-      if (promoCode) {
-        const validation = await storage.validatePromoCode(promoCode, planType);
+      if (promoCodeNormalized) {
+        const validation = await storage.validatePromoCode(promoCodeNormalized, planType);
         if (validation.valid) {
-          validatedPromoCode = promoCode;
+          validatedPromoCode = promoCodeNormalized;
 
           // Create a Stripe coupon dynamically
           try {
-            const couponId = `NEUROCORE_${promoCode.toUpperCase()}_${Date.now()}`;
+            const couponId = `NEUROCORE_${promoCodeNormalized}_${Date.now()}`;
             // Flash campaign: PEPTIDES100 = exact -100€ off (not %, regardless of DB %)
             const couponParams: any = promoCode.toUpperCase() === 'PEPTIDES100'
               ? { id: couponId, amount_off: 10000, currency: 'eur', duration: 'once', max_redemptions: 1 }
@@ -6018,8 +6021,19 @@ export async function registerRoutes(
   // Validate promo code (Public - for checkout)
   app.post("/api/promo-codes/validate", async (req, res) => {
     try {
-      const { code, auditType } = req.body;
+      const rawCode = req.body?.code;
+      const auditType = req.body?.auditType;
 
+      if (!rawCode || typeof rawCode !== "string") {
+        res.status(400).json({ valid: false, discount: 0, error: "Code requis" });
+        return;
+      }
+
+      // Trim + uppercase so a code pasted from email with a stray leading/
+      // trailing space or in lowercase doesn't fail validation (2026-05-10
+      // Achzod reported clients complaining "PEPTIDES100 marche plus" — the
+      // code was active and correct, they were pasting it with whitespace).
+      const code = rawCode.trim().toUpperCase();
       if (!code) {
         res.status(400).json({ valid: false, discount: 0, error: "Code requis" });
         return;
@@ -9346,8 +9360,12 @@ export async function registerRoutes(
   // 1. Save questionnaire progress
   app.post("/api/peptides-engine/save-progress", peptidesLimiter, async (req, res) => {
     try {
+      // .trim() before .email() so a pasted email with leading/trailing
+      // whitespace doesn't get rejected (Achzod report 2026-05-10: client
+      // saw "Données invalides" with Zod email validation failing on a copy-
+      // pasted address that had a stray space).
       const schema = z.object({
-        email: z.string().email(),
+        email: z.string().trim().toLowerCase().email(),
         currentSection: z.number().min(0).max(50),
         totalSections: z.number().min(1).max(50).optional(),
         responses: z.record(z.unknown()),
@@ -9395,7 +9413,7 @@ export async function registerRoutes(
   app.post("/api/peptides-engine/create", peptidesLimiter, async (req, res) => {
     try {
       const schema = z.object({
-        email: z.string().email(),
+        email: z.string().trim().toLowerCase().email(),
         responses: z.record(z.unknown()),
         stripeSessionId: z.string().optional(),
         skipPaymentCheck: z.boolean().optional(),
