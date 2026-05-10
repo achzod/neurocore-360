@@ -510,6 +510,15 @@ export default function PeptidesEnginePage() {
       const v = responses[q.id];
       if (v === undefined || v === null || v === "") return false;
       if (Array.isArray(v) && v.length === 0) return false;
+      // Email-type questions must be a properly formatted address — otherwise
+      // the user can advance with "nom@gmail" or "test@.com" and only get
+      // bounced at the backend Zod gate with a cryptic error (Achzod report
+      // 2026-05-10: client thought PEPTIDES100 was broken, was actually his
+      // email field that had been typed incomplete).
+      if (q.type === "email" && typeof v === "string") {
+        const trimmed = v.trim();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmed)) return false;
+      }
       return true;
     });
   };

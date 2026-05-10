@@ -9365,7 +9365,7 @@ export async function registerRoutes(
       // saw "Données invalides" with Zod email validation failing on a copy-
       // pasted address that had a stray space).
       const schema = z.object({
-        email: z.string().trim().toLowerCase().email(),
+        email: z.string().trim().toLowerCase().email("Email invalide. Verifie qu'il contient bien un @ et un point dans le domaine (par exemple ton@gmail.com)."),
         currentSection: z.number().min(0).max(50),
         totalSections: z.number().min(1).max(50).optional(),
         responses: z.record(z.unknown()),
@@ -9382,7 +9382,9 @@ export async function registerRoutes(
       res.json({ success: true, progress });
     } catch (error) {
       if (error instanceof z.ZodError) {
-        res.status(400).json({ error: "Données invalides", details: error.errors });
+        const first = error.errors[0];
+        const message = first?.message || "Données invalides";
+        res.status(400).json({ error: message, field: first?.path?.[0], details: error.errors });
         return;
       }
       console.error("[PeptidesEngine] save-progress error:", error);
@@ -9413,7 +9415,7 @@ export async function registerRoutes(
   app.post("/api/peptides-engine/create", peptidesLimiter, async (req, res) => {
     try {
       const schema = z.object({
-        email: z.string().trim().toLowerCase().email(),
+        email: z.string().trim().toLowerCase().email("Email invalide. Verifie qu'il contient bien un @ et un point dans le domaine (par exemple ton@gmail.com)."),
         responses: z.record(z.unknown()),
         stripeSessionId: z.string().optional(),
         skipPaymentCheck: z.boolean().optional(),
