@@ -2450,11 +2450,16 @@ export async function sendBloodAnalysisHtmlEmail(
         Ton rapport Blood Analysis est pret
       </h2>
       <p style="color:${CLAUDE_THEME.muted};font-size:15px;line-height:1.75;margin:0 0 12px;">
-        ${escapeHtml(clientName)}, j'ai finalise ton analyse sanguine complete. Le rapport est livre uniquement en fichier HTML joint pour que tu puisses l'ouvrir localement avec tous les onglets interactifs.
+        ${escapeHtml(clientName)}, j'ai finalise ton analyse sanguine complete. Le rapport est livre en fichier HTML joint avec onglets interactifs (scores composites, radar dynamique, deep dive marqueur par marqueur, plan d'action).
       </p>
-      <p style="color:${CLAUDE_THEME.muted};font-size:15px;line-height:1.75;margin:0 0 12px;">
-        Ce livrable contient les scores composites, le radar dynamique, l'onglet de chaque marqueur extrait avec definition et impacts, puis toutes les sections d'analyse et de plan d'action.
-      </p>
+      <div style="margin:0 0 14px;padding:14px 16px;border:2px solid ${CLAUDE_THEME.accent};border-radius:12px;background:${CLAUDE_THEME.accentSoft};">
+        <p style="margin:0;color:${CLAUDE_THEME.ink};font-size:14px;line-height:1.6;font-weight:700;">
+          A LIRE SUR ORDINATEUR
+        </p>
+        <p style="margin:6px 0 0;color:${CLAUDE_THEME.ink};font-size:13px;line-height:1.65;">
+          Ouvre le fichier HTML attache depuis ton ordinateur (PC ou Mac), pas depuis l'app mail iPhone, sinon les onglets risquent de ne pas s'afficher correctement. Si tu n'as pas d'ordinateur sous la main, ouvre le fichier dans Safari/Chrome de ton telephone (telecharge-le d'abord, puis ouvre-le depuis tes Fichiers).
+        </p>
+      </div>
       <div style="margin:12px 0 0;padding:14px;border:1px solid ${CLAUDE_THEME.border};border-radius:12px;background:${CLAUDE_THEME.paperSoft};">
         <p style="margin:0 0 8px;color:${CLAUDE_THEME.ink};font-size:14px;font-weight:700;">Rappel dossier</p>
         <p style="margin:0 0 4px;color:${CLAUDE_THEME.muted};font-size:14px;line-height:1.65;">Nombre de marqueurs analyses: ${markerCount}</p>
