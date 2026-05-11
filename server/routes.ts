@@ -7050,6 +7050,76 @@ export async function registerRoutes(
     }
   });
 
+  // List recent SendPulse campaigns (for finding/cleaning up drafts).
+  // Query params: ?limit=20&offset=0
+  app.get("/api/admin/sendpulse/campaigns", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID || process.env.SENDPULSE_API_USER_ID || process.env.SENDPULSE_ID;
+      const SENDPULSE_SECRET = process.env.SENDPULSE_SECRET || process.env.SENDPULSE_API_SECRET;
+      if (!SENDPULSE_USER_ID || !SENDPULSE_SECRET) {
+        res.status(400).json({ success: false, error: "SendPulse credentials not configured" });
+        return;
+      }
+      const limit = Math.min(Number(req.query.limit) || 50, 100);
+      const offset = Number(req.query.offset) || 0;
+      const authResp = await fetch("https://api.sendpulse.com/oauth/access_token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ grant_type: "client_credentials", client_id: SENDPULSE_USER_ID, client_secret: SENDPULSE_SECRET }),
+      });
+      if (!authResp.ok) {
+        res.status(500).json({ success: false, error: "SendPulse auth failed" });
+        return;
+      }
+      const authData = await authResp.json() as { access_token: string };
+      const campaignsResp = await fetch(`https://api.sendpulse.com/campaigns?limit=${limit}&offset=${offset}`, {
+        headers: { Authorization: `Bearer ${authData.access_token}` },
+      });
+      const campaigns = await campaignsResp.json();
+      res.json({ success: true, campaigns });
+    } catch (error: any) {
+      console.error("[SendPulse list-campaigns] Error:", error);
+      res.status(500).json({ success: false, error: error?.message });
+    }
+  });
+
+  // Cancel a SendPulse campaign by ID.
+  app.post("/api/admin/sendpulse/campaigns/:id/cancel", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID || process.env.SENDPULSE_API_USER_ID || process.env.SENDPULSE_ID;
+      const SENDPULSE_SECRET = process.env.SENDPULSE_SECRET || process.env.SENDPULSE_API_SECRET;
+      if (!SENDPULSE_USER_ID || !SENDPULSE_SECRET) {
+        res.status(400).json({ success: false, error: "SendPulse credentials not configured" });
+        return;
+      }
+      const id = req.params.id;
+      const authResp = await fetch("https://api.sendpulse.com/oauth/access_token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ grant_type: "client_credentials", client_id: SENDPULSE_USER_ID, client_secret: SENDPULSE_SECRET }),
+      });
+      if (!authResp.ok) {
+        res.status(500).json({ success: false, error: "SendPulse auth failed" });
+        return;
+      }
+      const authData = await authResp.json() as { access_token: string };
+      // SendPulse: DELETE /campaigns/:id cancels a scheduled campaign
+      const cancelResp = await fetch(`https://api.sendpulse.com/campaigns/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${authData.access_token}` },
+      });
+      const text = await cancelResp.text();
+      let data: any = null;
+      try { data = JSON.parse(text); } catch { data = { raw: text }; }
+      res.json({ success: cancelResp.ok, status: cancelResp.status, data });
+    } catch (error: any) {
+      console.error("[SendPulse cancel-campaign] Error:", error);
+      res.status(500).json({ success: false, error: error?.message });
+    }
+  });
+
   // Create a SendPulse campaign as a scheduled draft (future send_date keeps it editable in UI).
   // Body: { subject, htmlBase64, bookId, name?, senderEmail?, senderName?, sendDate? }
   app.post("/api/admin/sendpulse/create-campaign-draft", async (req, res) => {
