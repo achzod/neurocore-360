@@ -38,6 +38,10 @@ process.on("uncaughtException", (error) => {
 app.use(helmet({
   contentSecurityPolicy: false, // Let Vite handle CSP in dev
   crossOriginEmbedderPolicy: false,
+  // Allow newsletter / marketing assets (e.g. images embedded in emails) to be
+  // fetched cross-origin from Gmail/SendPulse/etc.  Default "same-origin" was
+  // breaking image rendering in email previews.
+  crossOriginResourcePolicy: { policy: "cross-origin" },
 }));
 
 // Gzip compression for all responses
