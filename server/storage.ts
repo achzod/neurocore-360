@@ -232,6 +232,8 @@ export interface IStorage {
   claimOrderForAudit(orderId: string, auditId: string): Promise<boolean>;
   /** Atomic CAS: set metadata.peptidesReportId only if currently null/absent. Returns true if we won the race. */
   claimPeptidesReportSlot(orderId: string, reportId: string): Promise<boolean>;
+  /** Atomic JSONB merge: set a single metadata key without stomping concurrently-set keys. */
+  setOrderMetadataKey(orderId: string, key: string, value: string | number | boolean): Promise<boolean>;
   /** Cross-order protection: true if ANY paid Peptides order for this email already has a reportId.
    *  Catches duplicate-payment case (2 orders same email) — without this, each order wins its own
    *  CAS and generates a separate report (alexm2220 incident 2026-03-30). */
@@ -896,6 +898,15 @@ export class MemStorage implements IStorage {
     const meta = (order.metadata as any) ?? {};
     if (meta.peptidesReportId) return false;
     order.metadata = { ...meta, peptidesReportId: reportId } as any;
+    order.updatedAt = new Date();
+    return true;
+  }
+
+  async setOrderMetadataKey(orderId: string, key: string, value: string | number | boolean): Promise<boolean> {
+    const order = this.memOrders.get(orderId);
+    if (!order) return false;
+    const meta = (order.metadata as any) ?? {};
+    order.metadata = { ...meta, [key]: value } as any;
     order.updatedAt = new Date();
     return true;
   }
@@ -2938,6 +2949,22 @@ export class PgStorage implements IStorage {
          AND (metadata IS NULL OR metadata->>'peptidesReportId' IS NULL OR metadata->>'peptidesReportId' = '')
        RETURNING id`,
       [reportId, orderId]
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Atomic JSONB merge: set a single key without touching anything else. Avoids
+  // the read-modify-write stomp pattern that wipes concurrently-set siblings.
+  async setOrderMetadataKey(orderId: string, key: string, value: string | number | boolean): Promise<boolean> {
+    await this.ensureOrdersTableCreated();
+    const jsonValue = JSON.stringify(value);
+    const result = await pool.query(
+      `UPDATE orders
+         SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object($1::text, $2::jsonb),
+             updated_at = NOW()
+       WHERE id = $3
+       RETURNING id`,
+      [key, jsonValue, orderId]
     );
     return (result.rowCount ?? 0) > 0;
   }

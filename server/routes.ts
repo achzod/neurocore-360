@@ -9921,10 +9921,15 @@ export async function registerRoutes(
       target = new Date(target.getTime() + hoursToNext9 * 3600 * 1000 + Math.floor(Math.random() * 3 * 3600 * 1000));
     }
 
-    // Persist on the order so the schedule is stable across cycles
+    // Persist on the order so the schedule is stable across cycles. Atomic
+    // JSONB merge — does not stomp other metadata keys (e.g. peptidesReportId
+    // set concurrently by the claim CAS). Earlier read-modify-write pattern
+    // was wiping the reportId set by claimPeptidesReportSlot, causing endless
+    // regeneration loops and false admin "ECHOUE" alerts (Julien Baldy +
+    // parrinello cases 2026-05-11).
     if (order?.id) {
       await storage
-        .updateOrder(order.id, { metadata: { ...meta, peptidesEmailScheduledAt: target.toISOString() } })
+        .setOrderMetadataKey(order.id, "peptidesEmailScheduledAt", target.toISOString())
         .catch((err: any) => console.warn("[Peptides Delivery] Failed to persist scheduledAt:", err));
     }
     return target;
@@ -10094,11 +10099,15 @@ export async function registerRoutes(
         const coachingBlock = `\n\n,,,,,,,,,,,,,,,,,,,,,,\nTON BONUS COACHING\n,,,,,,,,,,,,,,,,,,,,,,\nCode : PEPTIDES150\n→ 150€ déduits sur ton coaching Elite ou Private Lab.\nValable sur n'importe quelle durée (4/8/12 sem).\n\nTu veux passer au coaching personnalisé après ton protocole ?\n• Coaching Elite , https://www.achzodcoaching.com/coaching-elite\n• Private Lab , https://www.achzodcoaching.com/coaching-achzod-private-lab\n\nColle le code PEPTIDES150 dans le champ promo au checkout.`;
 
         let clientEmailSent = false;
+        let deliveryDeferred = false;
+        let deliveryScheduledAtIso = "";
         // Anti-automation delivery gate: gen now, deliver later
         const { due: newReportDue, scheduledAt: newReportScheduledAt } = await isPeptidesEmailDeliveryDue(order);
         if (stillNotEmailed && !newReportDue) {
+          deliveryDeferred = true;
+          deliveryScheduledAtIso = newReportScheduledAt.toISOString();
           console.log(
-            `[AutoGen] New report email DEFERRED for ${email} until ${newReportScheduledAt.toISOString()} (recovery loop will retry)`
+            `[AutoGen] New report email DEFERRED for ${email} until ${deliveryScheduledAtIso} (recovery loop will retry)`
           );
         } else if (stillNotEmailed) {
           try {
@@ -10119,12 +10128,19 @@ export async function registerRoutes(
 
         try {
           const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
-          const adminSubject = clientEmailSent
-            ? `RAPPORT GENERE , Peptides Engine , ${email}`
-            : `⚠️ RAPPORT GENERE MAIS EMAIL CLIENT ECHOUE , ${email}`;
-          const adminBody = clientEmailSent
-            ? `Rapport Peptides Engine genere et livre.\n\nClient: ${email}\nPeptides: ${peptidesNames}\nSections: ${report.sections?.length ?? 0}\nLien: ${baseUrl}/peptides/${saved.id}`
-            : `Rapport Peptides Engine genere, MAIS l'email de livraison au client a echoue (SendPulse).\n\nAction requise: renvoyer manuellement via admin dashboard ou /api/admin/send-cta.\n\nClient: ${email}\nPeptides: ${peptidesNames}\nSections: ${report.sections?.length ?? 0}\nLien: ${baseUrl}/peptides/${saved.id}`;
+          let adminSubject: string;
+          let adminBody: string;
+          if (clientEmailSent) {
+            adminSubject = `RAPPORT GENERE , Peptides Engine , ${email}`;
+            adminBody = `Rapport Peptides Engine genere et livre.\n\nClient: ${email}\nPeptides: ${peptidesNames}\nSections: ${report.sections?.length ?? 0}\nLien: ${baseUrl}/peptides/${saved.id}`;
+          } else if (deliveryDeferred) {
+            const parisLocal = new Date(deliveryScheduledAtIso).toLocaleString("fr-FR", { timeZone: "Europe/Paris" });
+            adminSubject = `RAPPORT GENERE - LIVRAISON PROGRAMMEE , ${email}`;
+            adminBody = `Rapport Peptides Engine genere et stocke. Email de livraison client programme pour ${parisLocal} (Paris).\n\nAucune action requise: l'envoi automatique se fera a l'heure prevue par le cron de recovery.\n\nClient: ${email}\nPeptides: ${peptidesNames}\nSections: ${report.sections?.length ?? 0}\nLien: ${baseUrl}/peptides/${saved.id}`;
+          } else {
+            adminSubject = `⚠️ RAPPORT GENERE MAIS EMAIL CLIENT ECHOUE , ${email}`;
+            adminBody = `Rapport Peptides Engine genere, MAIS l'email de livraison au client a echoue (SendPulse).\n\nAction requise: renvoyer manuellement via admin dashboard ou /api/admin/send-cta.\n\nClient: ${email}\nPeptides: ${peptidesNames}\nSections: ${report.sections?.length ?? 0}\nLien: ${baseUrl}/peptides/${saved.id}`;
+          }
           await sendCTAEmail(adminEmail, adminSubject, adminBody);
           console.log(`[AutoGen] ✅ Admin notification sent`);
         } catch (adminErr) {
@@ -10133,8 +10149,10 @@ export async function registerRoutes(
 
         autoGenLastResult = clientEmailSent
           ? `OK: ${email} → ${saved.id}`
+          : deliveryDeferred
+          ? `DEFERRED: ${email} → ${saved.id} (scheduled ${deliveryScheduledAtIso})`
           : `SAVED_BUT_EMAIL_FAILED: ${email} → ${saved.id}`;
-        console.log(`[AutoGen] ${clientEmailSent ? "✅" : "⚠️"} Report ${saved.id} for ${email} , client email ${clientEmailSent ? "sent" : "FAILED"}`);
+        console.log(`[AutoGen] ${clientEmailSent ? "✅" : deliveryDeferred ? "⏳" : "⚠️"} Report ${saved.id} for ${email} , client email ${clientEmailSent ? "sent" : deliveryDeferred ? "deferred" : "FAILED"}`);
         break; // 1 per cycle
       }
     } catch (err) {
