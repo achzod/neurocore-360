@@ -9692,11 +9692,24 @@ export async function registerRoutes(
           coachingBlock +
           `\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`;
 
-        await sendCTAEmail(
-          email,
-          "Ton protocole peptides personnalisé est prêt",
-          deliveryMessage
-        ).catch((err) => console.error("[PeptidesEngine] Delivery email failed:", err));
+        // Delivery scheduling: avoid the "20 min after payment" automation
+        // signal. Report is generated now, email goes out at scheduledAt
+        // (paidAt + 4-8h, business hours). Autogen recovery loop polls
+        // every 5 min and sends once due.
+        const { due: deliveryDue, scheduledAt: deliveryScheduledAt } = order
+          ? await isPeptidesEmailDeliveryDue(order)
+          : { due: true, scheduledAt: new Date() };
+        if (deliveryDue) {
+          await sendCTAEmail(
+            email,
+            "Ton protocole peptides personnalisé est prêt",
+            deliveryMessage
+          ).catch((err) => console.error("[PeptidesEngine] Delivery email failed:", err));
+        } else {
+          console.log(
+            `[PeptidesEngine] Delivery email DEFERRED for ${email} until ${deliveryScheduledAt.toISOString()} (anti-automation gate)`
+          );
+        }
 
         // Clean up progress
         await storage.saveBurnoutProgress({
@@ -9870,6 +9883,58 @@ export async function registerRoutes(
   }, 6 * 60 * 60 * 1000); // Every 6 hours
   console.log("[ReviewCron] ✅ setInterval registered (6h cycle)");
 
+  // -----------------------------------------------------------------------
+  // Peptides delivery scheduling
+  // -----------------------------------------------------------------------
+  // Generation is instant (the engine assembles the protocol in seconds), but
+  // delivering the email 5-15 minutes after payment makes the protocol feel
+  // mass-produced. Clients have complained that the speed reveals automation.
+  //
+  // Strategy: generate immediately (so the protocol is ready and no risk of
+  // loss), but gate the email send to a randomised "scheduled delivery" time
+  // = paidAt + random(4-8h), clamped to Paris business hours (09:00-22:00).
+  // The autogen recovery loop will pick up scheduled-but-unsent orders.
+  async function resolvePeptidesEmailScheduledAt(order: any): Promise<Date> {
+    const meta = (order?.metadata as any) || {};
+    const existing = meta.peptidesEmailScheduledAt;
+    if (existing) {
+      const parsed = new Date(existing);
+      if (!Number.isNaN(parsed.getTime())) return parsed;
+    }
+    const paidAt = order?.paidAt ? new Date(order.paidAt) : new Date();
+    if (Number.isNaN(paidAt.getTime())) return new Date();
+
+    // Random delay 4-8h
+    const delayMs = (4 + Math.random() * 4) * 3600 * 1000;
+    let target = new Date(paidAt.getTime() + delayMs);
+
+    // Clamp to Paris business hours 09:00-22:00
+    const getParisHour = (d: Date) =>
+      Number(d.toLocaleString("en-GB", { hour: "2-digit", hour12: false, timeZone: "Europe/Paris" }));
+    const parisHour = getParisHour(target);
+    if (parisHour < 9) {
+      // Push forward to 09h + 0-2h Paris
+      target = new Date(target.getTime() + (9 - parisHour) * 3600 * 1000 + Math.floor(Math.random() * 2 * 3600 * 1000));
+    } else if (parisHour >= 22) {
+      // Push to next day 09h + 0-3h Paris
+      const hoursToNext9 = (24 - parisHour) + 9;
+      target = new Date(target.getTime() + hoursToNext9 * 3600 * 1000 + Math.floor(Math.random() * 3 * 3600 * 1000));
+    }
+
+    // Persist on the order so the schedule is stable across cycles
+    if (order?.id) {
+      await storage
+        .updateOrder(order.id, { metadata: { ...meta, peptidesEmailScheduledAt: target.toISOString() } })
+        .catch((err: any) => console.warn("[Peptides Delivery] Failed to persist scheduledAt:", err));
+    }
+    return target;
+  }
+
+  async function isPeptidesEmailDeliveryDue(order: any): Promise<{ due: boolean; scheduledAt: Date }> {
+    const scheduledAt = await resolvePeptidesEmailScheduledAt(order);
+    return { due: Date.now() >= scheduledAt.getTime(), scheduledAt };
+  }
+
   // Auto-recovery: generate missing peptides reports every 5 minutes
   let autoGenRunning = false;
   let autoGenCycleCount = 0;
@@ -9937,6 +10002,15 @@ export async function registerRoutes(
             ? `\n\nTes 2 Blood Analysis offertes (codes, usage unique):\n${existingReport.promoCodesGenerated.join("\n")}`
             : "";
           const coachingBlock = `\n\n,,,,,,,,,,,,,,,,,,,,,,\nTON BONUS COACHING\n,,,,,,,,,,,,,,,,,,,,,,\nCode : PEPTIDES150\n→ 150€ déduits sur ton coaching Elite ou Private Lab.\nValable sur n'importe quelle durée (4/8/12 sem).\n\nTu veux passer au coaching personnalisé après ton protocole ?\n• Coaching Elite , https://www.achzodcoaching.com/coaching-elite\n• Private Lab , https://www.achzodcoaching.com/coaching-achzod-private-lab\n\nColle le code PEPTIDES150 dans le champ promo au checkout.`;
+          // Anti-automation delivery gate: only send if scheduled time has arrived
+          const { due: recoveryDue, scheduledAt: recoveryScheduledAt } = await isPeptidesEmailDeliveryDue(order);
+          if (!recoveryDue) {
+            console.log(
+              `[AutoGen] Recovery email DEFERRED for ${email} until ${recoveryScheduledAt.toISOString()}`
+            );
+            continue;
+          }
+
           try {
             const recovered = await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
               `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${meta.peptidesReportId}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`,
@@ -10020,7 +10094,13 @@ export async function registerRoutes(
         const coachingBlock = `\n\n,,,,,,,,,,,,,,,,,,,,,,\nTON BONUS COACHING\n,,,,,,,,,,,,,,,,,,,,,,\nCode : PEPTIDES150\n→ 150€ déduits sur ton coaching Elite ou Private Lab.\nValable sur n'importe quelle durée (4/8/12 sem).\n\nTu veux passer au coaching personnalisé après ton protocole ?\n• Coaching Elite , https://www.achzodcoaching.com/coaching-elite\n• Private Lab , https://www.achzodcoaching.com/coaching-achzod-private-lab\n\nColle le code PEPTIDES150 dans le champ promo au checkout.`;
 
         let clientEmailSent = false;
-        if (stillNotEmailed) {
+        // Anti-automation delivery gate: gen now, deliver later
+        const { due: newReportDue, scheduledAt: newReportScheduledAt } = await isPeptidesEmailDeliveryDue(order);
+        if (stillNotEmailed && !newReportDue) {
+          console.log(
+            `[AutoGen] New report email DEFERRED for ${email} until ${newReportScheduledAt.toISOString()} (recovery loop will retry)`
+          );
+        } else if (stillNotEmailed) {
           try {
             clientEmailSent = await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
               `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`
