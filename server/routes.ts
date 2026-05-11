@@ -6998,8 +6998,8 @@ export async function registerRoutes(
   app.get("/api/admin/sendpulse/books", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
-      const SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID;
-      const SENDPULSE_SECRET = process.env.SENDPULSE_SECRET;
+      const SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID || process.env.SENDPULSE_API_USER_ID || process.env.SENDPULSE_ID;
+      const SENDPULSE_SECRET = process.env.SENDPULSE_SECRET || process.env.SENDPULSE_API_SECRET;
 
       if (!SENDPULSE_USER_ID || !SENDPULSE_SECRET) {
         res.json({ success: false, error: "SendPulse credentials not configured" });
@@ -7031,12 +7031,13 @@ export async function registerRoutes(
 
       const books = await booksResponse.json() as Array<{ id: number; name: string; all_email_qty: number }>;
 
-      // Filter ApexLabs books
-      const apexBooks = books.filter((b) => b.name.includes("APEXLABS"));
+      // Optional filter: ?filter=APEXLABS keeps the old behavior; default returns all books
+      const filter = String(req.query.filter || "");
+      const filtered = filter ? books.filter((b) => b.name.toLowerCase().includes(filter.toLowerCase())) : books;
 
       res.json({
         success: true,
-        books: apexBooks.map((b) => ({
+        books: filtered.map((b) => ({
           id: b.id,
           name: b.name,
           subscriberCount: b.all_email_qty,
@@ -7046,6 +7047,70 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("[SendPulse Admin] Error:", error);
       res.json({ success: false, error: "Erreur SendPulse" });
+    }
+  });
+
+  // Create a SendPulse campaign as a scheduled draft (future send_date keeps it editable in UI).
+  // Body: { subject, htmlBase64, bookId, name?, senderEmail?, senderName?, sendDate? }
+  app.post("/api/admin/sendpulse/create-campaign-draft", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID || process.env.SENDPULSE_API_USER_ID || process.env.SENDPULSE_ID;
+      const SENDPULSE_SECRET = process.env.SENDPULSE_SECRET || process.env.SENDPULSE_API_SECRET;
+      if (!SENDPULSE_USER_ID || !SENDPULSE_SECRET) {
+        res.status(400).json({ success: false, error: "SendPulse credentials not configured" });
+        return;
+      }
+      const { subject, htmlBase64, bookId, name, senderEmail, senderName, sendDate } = req.body || {};
+      if (!subject || !htmlBase64 || !bookId) {
+        res.status(400).json({ success: false, error: "subject, htmlBase64, bookId required" });
+        return;
+      }
+
+      // Get token
+      const authResp = await fetch("https://api.sendpulse.com/oauth/access_token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ grant_type: "client_credentials", client_id: SENDPULSE_USER_ID, client_secret: SENDPULSE_SECRET }),
+      });
+      if (!authResp.ok) {
+        res.status(500).json({ success: false, error: "SendPulse auth failed" });
+        return;
+      }
+      const authData = await authResp.json() as { access_token: string };
+
+      // Schedule far enough in the future to act as a draft (1 year ahead by default).
+      // Achzod can edit, reschedule earlier, or trigger send from SendPulse UI.
+      const futureDate = sendDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().replace("T", " ").substring(0, 19);
+
+      const payload = {
+        sender_name: senderName || process.env.SENDPULSE_SENDER_NAME || "Achzod",
+        sender_email: senderEmail || process.env.SENDPULSE_SENDER_EMAIL || "coaching@achzodcoaching.com",
+        subject,
+        body: htmlBase64,
+        list_id: Number(bookId),
+        name: name || subject,
+        send_date: futureDate,
+      };
+
+      const campaignResp = await fetch("https://api.sendpulse.com/campaigns", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${authData.access_token}` },
+        body: JSON.stringify(payload),
+      });
+      const text = await campaignResp.text();
+      let data: any = null;
+      try { data = JSON.parse(text); } catch { data = { raw: text }; }
+      if (!campaignResp.ok) {
+        console.error("[SendPulse create-campaign] failed:", campaignResp.status, text);
+        res.status(500).json({ success: false, status: campaignResp.status, error: data });
+        return;
+      }
+      console.log("[SendPulse create-campaign] success:", data);
+      res.json({ success: true, campaign: data, scheduledFor: futureDate });
+    } catch (error: any) {
+      console.error("[SendPulse create-campaign] Error:", error);
+      res.status(500).json({ success: false, error: error?.message || "Erreur SendPulse" });
     }
   });
 
