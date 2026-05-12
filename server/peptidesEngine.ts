@@ -45,8 +45,9 @@ export interface PeptidesReport {
 // ─── Peptaura Real Catalog (synced 2026-03-28) ──────────────────────────────
 // All prices in USD. All products are lyophilized vials (injectable).
 // Source: peptaura.com marketplace , 13 Chinese suppliers.
-// Best value supplier: Lumira (Welon) , 4.82/5, $1120 MOQ, free shipping $1120+
-// Lowest MOQ: Pepturion (Yimei) , 4.80/5, $260 MOQ
+// Active suppliers (2026-05-12): Lumira, Pepturion, Retalux, HelixBridge, Hang Sciences, Railion Tech.
+// France-shipping suppliers (5): Lumira, HelixBridge, Hang Sciences, Railion Tech, Retalux. Pepturion does NOT ship to France.
+// MOQs: Hang Sciences $39, Railion Tech $96. Others have no enforced minimum.
 
 export interface PeptaurProduct {
   name: string;
@@ -56,138 +57,109 @@ export interface PeptaurProduct {
   cheapestSupplier: string;
   cheapestPriceUSD: number; // lowest single vial
   supplierCount: number;
-  formFactor: "vial" | "cartridge";
+  formFactor: "vial" | "cartridge" | "nasal spray";
   category: "recovery" | "gh-secretagogue" | "fat-loss" | "sleep" | "cognitive" | "libido" | "skin" | "longevity" | "endurance" | "glp1" | "blend" | "supplies" | "hpg-axis" | "other";
 }
 
 export const PEPTAURA_CATALOG: PeptaurProduct[] = [
-  // ══════════════════════════════════════════════════════════════════════════════
-  // RECOVERY & HEALING
-  // ══════════════════════════════════════════════════════════════════════════════
-  { name: "BPC-157", slug: "BPC157", dosages: ["5mg", "10mg"], priceRangeUSD: "$9.65 - $266", cheapestSupplier: "Lumira", cheapestPriceUSD: 9.65, supplierCount: 13, formFactor: "vial", category: "recovery" },
-  { name: "TB-500", slug: "TB500", dosages: ["5mg", "10mg"], priceRangeUSD: "$10.37 - $434", cheapestSupplier: "Lumira", cheapestPriceUSD: 10.37, supplierCount: 12, formFactor: "vial", category: "recovery" },
-  { name: "BPC-157 + TB-500 Blend", slug: "BPC157+TB500", dosages: ["combo"], priceRangeUSD: "$22.93 - $450", cheapestSupplier: "Lumira", cheapestPriceUSD: 22.93, supplierCount: 12, formFactor: "vial", category: "blend" },
-  { name: "LL-37", slug: "LL-37", dosages: ["5mg", "10mg"], priceRangeUSD: "$20.38 - $210", cheapestSupplier: "Lumira", cheapestPriceUSD: 20.38, supplierCount: 11, formFactor: "vial", category: "recovery" },
-  { name: "Thymosin Alpha-1", slug: "Thymosin Alpha-1", dosages: ["5mg", "10mg"], priceRangeUSD: "$19.66 - $280", cheapestSupplier: "Lumira", cheapestPriceUSD: 19.66, supplierCount: 11, formFactor: "vial", category: "recovery" },
-  { name: "KPV", slug: "KPV", dosages: ["10mg"], priceRangeUSD: "$12.38 - $112", cheapestSupplier: "Lumira", cheapestPriceUSD: 12.38, supplierCount: 10, formFactor: "vial", category: "recovery" },
-  { name: "VIP", slug: "VIP", dosages: ["5mg", "10mg"], priceRangeUSD: "$19.11 - $266", cheapestSupplier: "Lumira", cheapestPriceUSD: 19.11, supplierCount: 12, formFactor: "vial", category: "recovery" },
-  { name: "HCG", slug: "HCG", dosages: ["5000IU", "10000IU"], priceRangeUSD: "$18.02 - $239", cheapestSupplier: "Lumira", cheapestPriceUSD: 18.02, supplierCount: 11, formFactor: "vial", category: "hpg-axis" },
-  // HPG-axis stimulation / TRT-alternative peptides. Supports endogenous
-  // testosterone recovery, PCT, and fertility-preserving protocols. Do NOT
-  // prescribe without recent bloodwork (total T, free T, LH, FSH, E2, SHBG,
-  // prolactin) , the prompt enforces this.
-  { name: "Kisspeptin-10", slug: "Kisspeptin-10", dosages: ["5mg", "10mg"], priceRangeUSD: "$28.00 - $180", cheapestSupplier: "Lumira", cheapestPriceUSD: 28.00, supplierCount: 8, formFactor: "vial", category: "hpg-axis" },
-  { name: "Gonadorelin (GnRH)", slug: "Gonadorelin", dosages: ["2mg", "5mg", "10mg"], priceRangeUSD: "$14.00 - $95", cheapestSupplier: "Lumira", cheapestPriceUSD: 14.00, supplierCount: 9, formFactor: "vial", category: "hpg-axis" },
-  { name: "Enclomifene Citrate", slug: "Enclomifene", dosages: ["12.5mg (60 tabs)", "25mg (60 tabs)"], priceRangeUSD: "$32.00 - $120", cheapestSupplier: "Lumira", cheapestPriceUSD: 32.00, supplierCount: 7, formFactor: "cartridge", category: "hpg-axis" },
-  { name: "Tamoxifen (Nolvadex)", slug: "Tamoxifen", dosages: ["20mg (60 tabs)"], priceRangeUSD: "$22.00 - $85", cheapestSupplier: "Lumira", cheapestPriceUSD: 22.00, supplierCount: 8, formFactor: "cartridge", category: "hpg-axis" },
-  { name: "Ara-290", slug: "Ara-290", dosages: ["5mg", "10mg"], priceRangeUSD: "$14.01 - $112", cheapestSupplier: "Lumira", cheapestPriceUSD: 14.01, supplierCount: 10, formFactor: "vial", category: "recovery" },
-  { name: "Cerebrolysin", slug: "Cerebrolysin", dosages: ["5ml", "10ml"], priceRangeUSD: "$15.11 - $116", cheapestSupplier: "Lumira", cheapestPriceUSD: 15.11, supplierCount: 11, formFactor: "vial", category: "recovery" },
-  { name: "Dermorphin", slug: "Dermorphin", dosages: ["5mg"], priceRangeUSD: "$54.60 - $105", cheapestSupplier: "VialForge", cheapestPriceUSD: 54.60, supplierCount: 7, formFactor: "vial", category: "recovery" },
+// RECOVERY & HEALING
+  { name: "Ara-290", slug: "Ara-290", dosages: ["10mg", "16mg"], priceRangeUSD: "$14.01 - $112", cheapestSupplier: "Lumira", cheapestPriceUSD: 14.01, supplierCount: 2, formFactor: "vial", category: "recovery" },
+  { name: "BPC-157", slug: "BPC157", dosages: ["5mg", "10mg"], priceRangeUSD: "$9.65 - $266", cheapestSupplier: "Lumira", cheapestPriceUSD: 9.65, supplierCount: 4, formFactor: "vial", category: "recovery" },
+  { name: "Cerebrolysin", slug: "Cerebrolysin", dosages: ["60mg"], priceRangeUSD: "$15.11 - $116", cheapestSupplier: "Lumira", cheapestPriceUSD: 15.11, supplierCount: 1, formFactor: "vial", category: "recovery" },
+  { name: "Dermorphin", slug: "Dermorphin", dosages: ["5mg", "10mg"], priceRangeUSD: "$54.60 - $105", cheapestSupplier: "Lumira", cheapestPriceUSD: 54.60, supplierCount: 1, formFactor: "vial", category: "recovery" },
+  { name: "KPV", slug: "KPV", dosages: ["5mg", "10mg"], priceRangeUSD: "$12.38 - $112", cheapestSupplier: "Pepturion", cheapestPriceUSD: 12.38, supplierCount: 3, formFactor: "vial", category: "recovery" },
+  { name: "LL-37", slug: "LL-37", dosages: ["5mg"], priceRangeUSD: "$20.38 - $210", cheapestSupplier: "Lumira", cheapestPriceUSD: 20.38, supplierCount: 3, formFactor: "vial", category: "recovery" },
+  { name: "TB-500", slug: "TB500", dosages: ["2mg", "5mg", "10mg"], priceRangeUSD: "$10.37 - $434", cheapestSupplier: "Lumira", cheapestPriceUSD: 10.37, supplierCount: 3, formFactor: "vial", category: "recovery" },
+  { name: "Thymalin", slug: "Thymalin", dosages: ["10mg", "50mg"], priceRangeUSD: "$15.11 - $448", cheapestSupplier: "Lumira", cheapestPriceUSD: 15.11, supplierCount: 4, formFactor: "vial", category: "recovery" },
+  { name: "Thymosin Alpha-1", slug: "Thymosin Alpha-1", dosages: ["5mg", "10mg"], priceRangeUSD: "$19.66 - $280", cheapestSupplier: "Lumira", cheapestPriceUSD: 19.66, supplierCount: 3, formFactor: "vial", category: "recovery" },
+  { name: "VIP", slug: "VIP", dosages: ["5mg", "10mg"], priceRangeUSD: "$19.11 - $266", cheapestSupplier: "Lumira", cheapestPriceUSD: 19.11, supplierCount: 3, formFactor: "vial", category: "recovery" },
 
-  // ══════════════════════════════════════════════════════════════════════════════
+  // HPG-AXIS (TRT-alternatives, fertility)
+  { name: "HCG", slug: "HCG", dosages: ["1000IU", "2000IU", "5000IU", "10000IU"], priceRangeUSD: "$18.02 - $239", cheapestSupplier: "Railion Tech", cheapestPriceUSD: 18.02, supplierCount: 1, formFactor: "vial", category: "hpg-axis" },
+
   // GH SECRETAGOGUES
-  // ══════════════════════════════════════════════════════════════════════════════
-  { name: "CJC-1295 (no DAC)", slug: "CJC-1295", dosages: ["2mg", "5mg", "10mg"], priceRangeUSD: "$18.02 - $228", cheapestSupplier: "Lumira", cheapestPriceUSD: 18.02, supplierCount: 12, formFactor: "vial", category: "gh-secretagogue" },
-  { name: "CJC-1295 (with DAC)", slug: "CJC-1295 (DAC)", dosages: ["2mg", "5mg"], priceRangeUSD: "$33.67 - $420", cheapestSupplier: "Lumira", cheapestPriceUSD: 33.67, supplierCount: 11, formFactor: "vial", category: "gh-secretagogue" },
-  { name: "CJC-1295 + Ipamorelin Blend", slug: "CJC-1295 (no DAC) + Ipamorelin", dosages: ["combo"], priceRangeUSD: "$23.30 - $210", cheapestSupplier: "Lumira", cheapestPriceUSD: 23.30, supplierCount: 12, formFactor: "vial", category: "blend" },
-  { name: "Ipamorelin", slug: "Ipamorelin", dosages: ["5mg", "10mg"], priceRangeUSD: "$8.92 - $210", cheapestSupplier: "Lumira", cheapestPriceUSD: 8.92, supplierCount: 13, formFactor: "vial", category: "gh-secretagogue" },
-  { name: "Tesamorelin", slug: "Tesamorelin", dosages: ["2mg", "5mg", "10mg", "20mg"], priceRangeUSD: "$23.30 - $588", cheapestSupplier: "Lumira", cheapestPriceUSD: 23.30, supplierCount: 12, formFactor: "vial", category: "gh-secretagogue" },
-  { name: "Sermorelin", slug: "Sermorelin", dosages: ["5mg", "10mg"], priceRangeUSD: "$54.60 - $232", cheapestSupplier: "VialForge", cheapestPriceUSD: 54.60, supplierCount: 3, formFactor: "vial", category: "gh-secretagogue" },
-  { name: "Sermorelin Acetate", slug: "Sermorelin Acetate", dosages: ["5mg", "10mg"], priceRangeUSD: "$17.11 - $266", cheapestSupplier: "Lumira", cheapestPriceUSD: 17.11, supplierCount: 8, formFactor: "vial", category: "gh-secretagogue" },
-  { name: "Hexarelin", slug: "Hexarelin Acetate", dosages: ["5mg", "10mg"], priceRangeUSD: "$63.34 - $238", cheapestSupplier: "Lumira", cheapestPriceUSD: 63.34, supplierCount: 7, formFactor: "vial", category: "gh-secretagogue" },
-  { name: "GHRP-2", slug: "GHRP-2 Acetate", dosages: ["5mg", "10mg"], priceRangeUSD: "$36.40 - $98", cheapestSupplier: "NovaVial", cheapestPriceUSD: 36.40, supplierCount: 10, formFactor: "vial", category: "gh-secretagogue" },
-  { name: "GHRP-6", slug: "GHRP-6 Acetate", dosages: ["5mg", "10mg"], priceRangeUSD: "$7.64 - $98", cheapestSupplier: "Lumira", cheapestPriceUSD: 7.64, supplierCount: 10, formFactor: "vial", category: "gh-secretagogue" },
-  { name: "HGH (Somatropin)", slug: "Somatropin (HGH)", dosages: ["6IU", "10IU", "12IU", "15IU", "24IU", "36IU"], priceRangeUSD: "$12.92 - $490", cheapestSupplier: "Lumira", cheapestPriceUSD: 12.92, supplierCount: 10, formFactor: "vial", category: "gh-secretagogue" },
-  { name: "HGH Fragment 176-191", slug: "HGH Fragment 176-191", dosages: ["5mg", "10mg"], priceRangeUSD: "$21.29 - $259", cheapestSupplier: "Lumira", cheapestPriceUSD: 21.29, supplierCount: 7, formFactor: "vial", category: "gh-secretagogue" },
-  { name: "IGF-1 LR3", slug: "IGF-1LR3", dosages: ["1mg"], priceRangeUSD: "$8.92 - $360", cheapestSupplier: "Lumira", cheapestPriceUSD: 8.92, supplierCount: 10, formFactor: "vial", category: "gh-secretagogue" },
-  { name: "PEG-MGF", slug: "PEG MGF", dosages: ["2mg", "5mg"], priceRangeUSD: "$112 - $140", cheapestSupplier: "Ultrapept", cheapestPriceUSD: 112.00, supplierCount: 5, formFactor: "vial", category: "gh-secretagogue" },
-  { name: "HMG", slug: "HMG", dosages: ["75IU", "150IU"], priceRangeUSD: "$13.83 - $106", cheapestSupplier: "Lumira", cheapestPriceUSD: 13.83, supplierCount: 9, formFactor: "vial", category: "gh-secretagogue" },
+  { name: "GHRP-2", slug: "GHRP-2 Acetate", dosages: ["5mg", "10mg", "15mg"], priceRangeUSD: "$36.40 - $98", cheapestSupplier: "Lumira", cheapestPriceUSD: 36.40, supplierCount: 4, formFactor: "vial", category: "gh-secretagogue" },
+  { name: "GHRP-6", slug: "GHRP-6 Acetate", dosages: ["5mg", "10mg"], priceRangeUSD: "$7.64 - $98", cheapestSupplier: "Lumira", cheapestPriceUSD: 7.64, supplierCount: 4, formFactor: "vial", category: "gh-secretagogue" },
+  { name: "HGH (Somatropin)", slug: "Somatropin (HGH)", dosages: ["10IU", "12IU", "15IU", "24IU", "36IU"], priceRangeUSD: "$12.92 - $490", cheapestSupplier: "Lumira", cheapestPriceUSD: 12.92, supplierCount: 1, formFactor: "vial", category: "gh-secretagogue" },
+  { name: "HGH Fragment 176-191", slug: "HGH Fragment 176-191", dosages: ["5mg", "10mg"], priceRangeUSD: "$21.29 - $259", cheapestSupplier: "Lumira", cheapestPriceUSD: 21.29, supplierCount: 1, formFactor: "vial", category: "gh-secretagogue" },
+  { name: "HMG", slug: "HMG", dosages: ["75IU"], priceRangeUSD: "$13.83 - $106", cheapestSupplier: "Lumira", cheapestPriceUSD: 13.83, supplierCount: 2, formFactor: "vial", category: "gh-secretagogue" },
+  { name: "Hexarelin", slug: "Hexarelin Acetate", dosages: ["2mg", "5mg"], priceRangeUSD: "$63.34 - $238", cheapestSupplier: "Lumira", cheapestPriceUSD: 63.34, supplierCount: 1, formFactor: "vial", category: "gh-secretagogue" },
+  { name: "IGF-1 LR3", slug: "IGF-1LR3", dosages: ["0.1mg", "1mg"], priceRangeUSD: "$8.92 - $360", cheapestSupplier: "Lumira", cheapestPriceUSD: 8.92, supplierCount: 2, formFactor: "vial", category: "gh-secretagogue" },
+  { name: "Ipamorelin", slug: "Ipamorelin", dosages: ["2mg", "5mg", "10mg"], priceRangeUSD: "$8.92 - $210", cheapestSupplier: "Railion Tech", cheapestPriceUSD: 8.92, supplierCount: 1, formFactor: "vial", category: "gh-secretagogue" },
+  { name: "PEG-MGF", slug: "PEG MGF", dosages: ["2mg"], priceRangeUSD: "$112 - $140", cheapestSupplier: "Lumira", cheapestPriceUSD: 112.00, supplierCount: 2, formFactor: "vial", category: "gh-secretagogue" },
+  { name: "Sermorelin", slug: "Sermorelin", dosages: ["5mg", "10mg"], priceRangeUSD: "$54.60 - $232", cheapestSupplier: "Retalux", cheapestPriceUSD: 54.60, supplierCount: 1, formFactor: "vial", category: "gh-secretagogue" },
+  { name: "Sermorelin Acetate", slug: "Sermorelin Acetate", dosages: ["5mg", "10mg"], priceRangeUSD: "$17.11 - $266", cheapestSupplier: "Lumira", cheapestPriceUSD: 17.11, supplierCount: 2, formFactor: "vial", category: "gh-secretagogue" },
+  { name: "Tesamorelin", slug: "Tesamorelin", dosages: ["2mg", "5mg", "10mg", "20mg"], priceRangeUSD: "$23.30 - $588", cheapestSupplier: "Lumira", cheapestPriceUSD: 23.30, supplierCount: 2, formFactor: "vial", category: "gh-secretagogue" },
 
-  // ══════════════════════════════════════════════════════════════════════════════
   // FAT LOSS & GLP-1
-  // ══════════════════════════════════════════════════════════════════════════════
-  { name: "AOD-9604", slug: "AOD-9604", dosages: ["5mg", "10mg"], priceRangeUSD: "$23.84 - $319", cheapestSupplier: "Lumira", cheapestPriceUSD: 23.84, supplierCount: 9, formFactor: "vial", category: "fat-loss" },
-  { name: "5-Amino-1MQ", slug: "5-AMINO-1MQ", dosages: ["50mg", "100mg"], priceRangeUSD: "$10.37 - $252", cheapestSupplier: "Lumira", cheapestPriceUSD: 10.37, supplierCount: 12, formFactor: "vial", category: "fat-loss" },
-  { name: "Semaglutide", slug: "Semaglutide", dosages: ["5mg", "10mg", "15mg", "20mg", "30mg"], priceRangeUSD: "$5.64 - $266", cheapestSupplier: "Lumira", cheapestPriceUSD: 5.64, supplierCount: 13, formFactor: "vial", category: "glp1" },
-  { name: "Tirzepatide", slug: "Tirzepatide", dosages: ["5mg", "10mg", "15mg", "20mg", "30mg", "60mg", "100mg"], priceRangeUSD: "$9.65 - $671", cheapestSupplier: "Lumira", cheapestPriceUSD: 9.65, supplierCount: 13, formFactor: "vial", category: "glp1" },
-  { name: "Retatrutide", slug: "Retatrutide", dosages: ["5mg", "10mg", "15mg", "20mg", "30mg", "50mg"], priceRangeUSD: "$13.65 - $735", cheapestSupplier: "Lumira", cheapestPriceUSD: 13.65, supplierCount: 13, formFactor: "vial", category: "glp1" },
-  { name: "Cagrilintide", slug: "Cagrilintide", dosages: ["5mg", "10mg"], priceRangeUSD: "$30.76 - $389", cheapestSupplier: "Lumira", cheapestPriceUSD: 30.76, supplierCount: 13, formFactor: "vial", category: "glp1" },
-  { name: "Cagrilintide + Semaglutide Blend", slug: "Cagrilintide+Semaglutide", dosages: ["combo"], priceRangeUSD: "$193.70 - $350", cheapestSupplier: "Pepturion", cheapestPriceUSD: 193.70, supplierCount: 9, formFactor: "vial", category: "glp1" },
-  { name: "Mazdutide", slug: "Mazdutide", dosages: ["5mg", "10mg"], priceRangeUSD: "$154 - $322", cheapestSupplier: "Ultrapept", cheapestPriceUSD: 154.00, supplierCount: 6, formFactor: "vial", category: "glp1" },
-  { name: "Survodutide", slug: "Survodutide", dosages: ["5mg", "10mg"], priceRangeUSD: "$294 - $521", cheapestSupplier: "HelixBridge", cheapestPriceUSD: 294.00, supplierCount: 9, formFactor: "vial", category: "glp1" },
-  { name: "L-Carnitine", slug: "L-Carnitine", dosages: ["500mg", "1000mg"], priceRangeUSD: "$10.37 - $126", cheapestSupplier: "Lumira", cheapestPriceUSD: 10.37, supplierCount: 3, formFactor: "vial", category: "fat-loss" },
-  { name: "Lipo-C", slug: "Lipo c", dosages: ["10ml"], priceRangeUSD: "$12.92 - $136", cheapestSupplier: "Lumira", cheapestPriceUSD: 12.92, supplierCount: 6, formFactor: "vial", category: "fat-loss" },
+  { name: "5-Amino-1MQ", slug: "5-AMINO-1MQ", dosages: ["5mg", "10mg", "50mg"], priceRangeUSD: "$10.37 - $252", cheapestSupplier: "Lumira", cheapestPriceUSD: 10.37, supplierCount: 5, formFactor: "vial", category: "fat-loss" },
+  { name: "AOD-9604", slug: "AOD-9604", dosages: ["2mg", "5mg", "10mg"], priceRangeUSD: "$23.84 - $319", cheapestSupplier: "Lumira", cheapestPriceUSD: 23.84, supplierCount: 2, formFactor: "vial", category: "fat-loss" },
+  { name: "L-Carnitine", slug: "L-Carnitine", dosages: ["600mg", "1200mg"], priceRangeUSD: "$10.37 - $126", cheapestSupplier: "Lumira", cheapestPriceUSD: 10.37, supplierCount: 2, formFactor: "vial", category: "fat-loss" },
+  { name: "Lipo-C", slug: "Lipo c", dosages: ["10mL"], priceRangeUSD: "$12.92 - $136", cheapestSupplier: "Lumira", cheapestPriceUSD: 12.92, supplierCount: 1, formFactor: "vial", category: "fat-loss" },
 
-  // ══════════════════════════════════════════════════════════════════════════════
+  // GLP-1 AGONISTS
+  { name: "Cagrilintide", slug: "Cagrilintide", dosages: ["2mg", "5mg", "10mg", "15mg"], priceRangeUSD: "$30.76 - $389", cheapestSupplier: "Lumira", cheapestPriceUSD: 30.76, supplierCount: 1, formFactor: "vial", category: "glp1" },
+  { name: "Cagrilintide + Semaglutide Blend", slug: "Cagrilintide+Semaglutide", dosages: ["5mg", "10mg"], priceRangeUSD: "$193.70 - $350", cheapestSupplier: "Lumira", cheapestPriceUSD: 193.70, supplierCount: 1, formFactor: "vial", category: "glp1" },
+  { name: "Mazdutide", slug: "Mazdutide", dosages: ["5mg", "10mg", "9mg"], priceRangeUSD: "$154 - $322", cheapestSupplier: "Pepturion", cheapestPriceUSD: 154.00, supplierCount: 1, formFactor: "vial", category: "glp1" },
+  { name: "Retatrutide", slug: "Retatrutide", dosages: ["5mg", "10mg", "15mg", "20mg", "30mg", "40mg", "50mg", "60mg"], priceRangeUSD: "$13.65 - $735", cheapestSupplier: "Lumira", cheapestPriceUSD: 13.65, supplierCount: 6, formFactor: "vial", category: "glp1" },
+  { name: "Semaglutide", slug: "Semaglutide", dosages: ["2mg", "5mg", "10mg", "15mg", "20mg", "30mg", "50mg"], priceRangeUSD: "$5.64 - $266", cheapestSupplier: "Lumira", cheapestPriceUSD: 5.64, supplierCount: 1, formFactor: "vial", category: "glp1" },
+  { name: "Survodutide", slug: "Survodutide", dosages: ["10mg"], priceRangeUSD: "$294 - $521", cheapestSupplier: "Lumira", cheapestPriceUSD: 294.00, supplierCount: 4, formFactor: "vial", category: "glp1" },
+  { name: "Tirzepatide", slug: "Tirzepatide", dosages: ["5mg", "10mg", "15mg", "20mg", "30mg", "40mg", "45mg", "50mg", "60mg", "70mg", "80mg", "90mg"], priceRangeUSD: "$9.65 - $671", cheapestSupplier: "Lumira", cheapestPriceUSD: 9.65, supplierCount: 6, formFactor: "vial", category: "glp1" },
+
   // SLEEP
-  // ══════════════════════════════════════════════════════════════════════════════
-  { name: "DSIP", slug: "DSIP", dosages: ["5mg", "10mg"], priceRangeUSD: "$6.55 - $154", cheapestSupplier: "Lumira", cheapestPriceUSD: 6.55, supplierCount: 12, formFactor: "vial", category: "sleep" },
-  { name: "Melatonin", slug: "Melatonin", dosages: ["10mg"], priceRangeUSD: "$13.65 - $182", cheapestSupplier: "Lumira", cheapestPriceUSD: 13.65, supplierCount: 4, formFactor: "vial", category: "sleep" },
+  { name: "DSIP", slug: "DSIP", dosages: ["2mg", "5mg", "10mg"], priceRangeUSD: "$6.55 - $154", cheapestSupplier: "Lumira", cheapestPriceUSD: 6.55, supplierCount: 2, formFactor: "vial", category: "sleep" },
+  { name: "Melatonin", slug: "Melatonin", dosages: ["10mg"], priceRangeUSD: "$13.65 - $182", cheapestSupplier: "Lumira", cheapestPriceUSD: 13.65, supplierCount: 2, formFactor: "vial", category: "sleep" },
 
-  // ══════════════════════════════════════════════════════════════════════════════
   // COGNITIVE & NEUROPROTECTION
-  // ══════════════════════════════════════════════════════════════════════════════
-  { name: "Semax", slug: "Semax", dosages: ["10mg", "30mg"], priceRangeUSD: "$9.65 - $266", cheapestSupplier: "Lumira", cheapestPriceUSD: 9.65, supplierCount: 13, formFactor: "nasal spray", category: "cognitive" },
-  { name: "Selank", slug: "Selank", dosages: ["10mg"], priceRangeUSD: "$9.28 - $252", cheapestSupplier: "Lumira", cheapestPriceUSD: 9.28, supplierCount: 10, formFactor: "nasal spray", category: "cognitive" },
-  { name: "Adamax", slug: "Adamax", dosages: ["10mg"], priceRangeUSD: "$18.02 - $259", cheapestSupplier: "Lumira", cheapestPriceUSD: 18.02, supplierCount: 8, formFactor: "vial", category: "cognitive" },
-  { name: "Pinealon", slug: "Pinealon", dosages: ["10mg", "20mg"], priceRangeUSD: "$9.46 - $203", cheapestSupplier: "Lumira", cheapestPriceUSD: 9.46, supplierCount: 8, formFactor: "vial", category: "cognitive" },
-  { name: "P21", slug: "P21", dosages: ["10mg", "20mg"], priceRangeUSD: "$56 - $539", cheapestSupplier: "Ultrapept", cheapestPriceUSD: 56.00, supplierCount: 6, formFactor: "vial", category: "cognitive" },
-  { name: "PE 22-28", slug: "PE 22-28", dosages: ["10mg"], priceRangeUSD: "$106 - $126", cheapestSupplier: "VialForge", cheapestPriceUSD: 106.40, supplierCount: 5, formFactor: "vial", category: "cognitive" },
-  { name: "Oxytocin", slug: "Oxytocin Acetate", dosages: ["5mg", "10mg"], priceRangeUSD: "$8.92 - $126", cheapestSupplier: "Lumira", cheapestPriceUSD: 8.92, supplierCount: 8, formFactor: "vial", category: "cognitive" },
-  { name: "KissPeptin-10", slug: "KissPeptin-10", dosages: ["5mg", "10mg"], priceRangeUSD: "$12.74 - $172", cheapestSupplier: "Lumira", cheapestPriceUSD: 12.74, supplierCount: 12, formFactor: "vial", category: "cognitive" },
+  { name: "Adamax", slug: "Adamax", dosages: ["5mg", "10mg"], priceRangeUSD: "$18.02 - $259", cheapestSupplier: "Railion Tech", cheapestPriceUSD: 18.02, supplierCount: 1, formFactor: "vial", category: "cognitive" },
+  { name: "KissPeptin-10", slug: "KissPeptin-10", dosages: ["5mg", "10mg"], priceRangeUSD: "$12.74 - $172", cheapestSupplier: "Lumira", cheapestPriceUSD: 12.74, supplierCount: 5, formFactor: "vial", category: "cognitive" },
+  { name: "Oxytocin", slug: "Oxytocin Acetate", dosages: ["2mg", "5mg", "10mg"], priceRangeUSD: "$8.92 - $126", cheapestSupplier: "Hang Sciences", cheapestPriceUSD: 8.92, supplierCount: 1, formFactor: "vial", category: "cognitive" },
+  { name: "P21", slug: "P21", dosages: ["5mg"], priceRangeUSD: "$56 - $539", cheapestSupplier: "Lumira", cheapestPriceUSD: 56.00, supplierCount: 1, formFactor: "vial", category: "cognitive" },
+  { name: "PE 22-28", slug: "PE 22-28", dosages: ["5mg", "10mg"], priceRangeUSD: "$106 - $126", cheapestSupplier: "Lumira", cheapestPriceUSD: 106.40, supplierCount: 1, formFactor: "vial", category: "cognitive" },
+  { name: "Pinealon", slug: "Pinealon", dosages: ["10mg"], priceRangeUSD: "$9.46 - $203", cheapestSupplier: "Lumira", cheapestPriceUSD: 9.46, supplierCount: 1, formFactor: "vial", category: "cognitive" },
+  { name: "Selank", slug: "Selank", dosages: ["5mg", "10mg", "11mg"], priceRangeUSD: "$9.28 - $252", cheapestSupplier: "Lumira", cheapestPriceUSD: 9.28, supplierCount: 5, formFactor: "nasal spray", category: "cognitive" },
+  { name: "Semax", slug: "Semax", dosages: ["5mg", "10mg"], priceRangeUSD: "$9.65 - $266", cheapestSupplier: "Lumira", cheapestPriceUSD: 9.65, supplierCount: 5, formFactor: "nasal spray", category: "cognitive" },
 
-  // ══════════════════════════════════════════════════════════════════════════════
   // LIBIDO & SEXUAL
-  // ══════════════════════════════════════════════════════════════════════════════
-  { name: "PT-141", slug: "PT-141", dosages: ["10mg"], priceRangeUSD: "$14.38 - $111", cheapestSupplier: "Lumira", cheapestPriceUSD: 14.38, supplierCount: 11, formFactor: "vial", category: "libido" },
-  { name: "Melanotan II", slug: "MT-2", dosages: ["10mg"], priceRangeUSD: "$10.74 - $84", cheapestSupplier: "Lumira", cheapestPriceUSD: 10.74, supplierCount: 12, formFactor: "vial", category: "libido" },
-  { name: "Melanotan I", slug: "MT-1", dosages: ["10mg"], priceRangeUSD: "$10.74 - $84", cheapestSupplier: "Lumira", cheapestPriceUSD: 10.74, supplierCount: 7, formFactor: "vial", category: "skin" },
+  { name: "Melanotan II", slug: "MT-2", dosages: ["10mg"], priceRangeUSD: "$10.74 - $84", cheapestSupplier: "Lumira", cheapestPriceUSD: 10.74, supplierCount: 4, formFactor: "vial", category: "libido" },
+  { name: "PT-141", slug: "PT-141", dosages: ["10mg"], priceRangeUSD: "$14.38 - $111", cheapestSupplier: "Lumira", cheapestPriceUSD: 14.38, supplierCount: 5, formFactor: "vial", category: "libido" },
 
-  // ══════════════════════════════════════════════════════════════════════════════
   // SKIN, HAIR & ANTI-AGING
-  // ══════════════════════════════════════════════════════════════════════════════
-  { name: "GHK-Cu", slug: "GHK-Cu", dosages: ["50mg", "100mg"], priceRangeUSD: "$7.64 - $126", cheapestSupplier: "Lumira", cheapestPriceUSD: 7.64, supplierCount: 13, formFactor: "vial", category: "skin" },
-  { name: "GHK", slug: "GHK", dosages: ["50mg", "100mg"], priceRangeUSD: "$70 - $83", cheapestSupplier: "Ultrapept", cheapestPriceUSD: 70.00, supplierCount: 2, formFactor: "vial", category: "skin" },
-  { name: "AHK-Cu", slug: "AHK-Cu", dosages: ["50mg", "100mg"], priceRangeUSD: "$10.01 - $129", cheapestSupplier: "Lumira", cheapestPriceUSD: 10.01, supplierCount: 9, formFactor: "vial", category: "skin" },
-  { name: "Snap-8", slug: "Snap-8", dosages: ["50mg", "100mg"], priceRangeUSD: "$9.65 - $318", cheapestSupplier: "Lumira", cheapestPriceUSD: 9.65, supplierCount: 10, formFactor: "vial", category: "skin" },
-  { name: "Hyaluronic Acid", slug: "Hyaluronic Acid", dosages: ["100mg"], priceRangeUSD: "$29.41 - $259", cheapestSupplier: "Ultrapept", cheapestPriceUSD: 29.41, supplierCount: 7, formFactor: "vial", category: "skin" },
+  { name: "AHK-Cu", slug: "AHK-Cu", dosages: ["20mg", "50mg", "100mg"], priceRangeUSD: "$10.01 - $129", cheapestSupplier: "Lumira", cheapestPriceUSD: 10.01, supplierCount: 1, formFactor: "vial", category: "skin" },
+  { name: "GHK", slug: "GHK", dosages: ["50mg"], priceRangeUSD: "$70 - $83", cheapestSupplier: "HelixBridge", cheapestPriceUSD: 70.00, supplierCount: 1, formFactor: "vial", category: "skin" },
+  { name: "GHK-Cu", slug: "GHK-Cu", dosages: ["50mg", "100mg"], priceRangeUSD: "$7.64 - $126", cheapestSupplier: "Lumira", cheapestPriceUSD: 7.64, supplierCount: 6, formFactor: "vial", category: "skin" },
+  { name: "Hyaluronic Acid", slug: "Hyaluronic Acid", dosages: ["5mg"], priceRangeUSD: "$29.41 - $259", cheapestSupplier: "Lumira", cheapestPriceUSD: 29.41, supplierCount: 3, formFactor: "vial", category: "skin" },
+  { name: "Melanotan I", slug: "MT-1", dosages: ["10mg"], priceRangeUSD: "$10.74 - $84", cheapestSupplier: "Lumira", cheapestPriceUSD: 10.74, supplierCount: 3, formFactor: "vial", category: "skin" },
+  { name: "Snap-8", slug: "Snap-8", dosages: ["10mg", "100mg"], priceRangeUSD: "$9.65 - $318", cheapestSupplier: "Lumira", cheapestPriceUSD: 9.65, supplierCount: 5, formFactor: "vial", category: "skin" },
 
-  // ══════════════════════════════════════════════════════════════════════════════
   // LONGEVITY & MITOCHONDRIA
-  // ══════════════════════════════════════════════════════════════════════════════
-  { name: "Epitalon", slug: "Epitalon", dosages: ["10mg", "50mg"], priceRangeUSD: "$9.65 - $294", cheapestSupplier: "Lumira", cheapestPriceUSD: 9.65, supplierCount: 13, formFactor: "vial", category: "longevity" },
-  { name: "SS-31 (Elamipretide)", slug: "SS-31", dosages: ["50mg"], priceRangeUSD: "$11.28 - $647", cheapestSupplier: "Lumira", cheapestPriceUSD: 11.28, supplierCount: 12, formFactor: "vial", category: "endurance" },
-  { name: "MOTS-c", slug: "MOTS-c", dosages: ["10mg"], priceRangeUSD: "$15.83 - $336", cheapestSupplier: "Lumira", cheapestPriceUSD: 15.83, supplierCount: 10, formFactor: "vial", category: "longevity" },
-  { name: "NAD+", slug: "NAD+", dosages: ["100mg", "250mg", "500mg"], priceRangeUSD: "$16.56 - $448", cheapestSupplier: "Lumira", cheapestPriceUSD: 16.56, supplierCount: 11, formFactor: "vial", category: "longevity" },
-  { name: "NAD+ (buffered)", slug: "NAD (buffered)", dosages: ["100mg", "250mg"], priceRangeUSD: "$10.01 - $133", cheapestSupplier: "Lumira", cheapestPriceUSD: 10.01, supplierCount: 2, formFactor: "vial", category: "longevity" },
-  { name: "Glutathione", slug: "Glutathione", dosages: ["200mg", "500mg"], priceRangeUSD: "$7.10 - $196", cheapestSupplier: "Lumira", cheapestPriceUSD: 7.10, supplierCount: 8, formFactor: "vial", category: "longevity" },
-  { name: "FOX04-DRI", slug: "FOX04-DRI", dosages: ["5mg", "10mg"], priceRangeUSD: "$952+", cheapestSupplier: "Ultrapept", cheapestPriceUSD: 952.00, supplierCount: 13, formFactor: "vial", category: "longevity" },
-  { name: "FOX04", slug: "FOX04", dosages: ["5mg", "10mg"], priceRangeUSD: "$231 - $952", cheapestSupplier: "Hebei Ktc", cheapestPriceUSD: 231.00, supplierCount: 7, formFactor: "vial", category: "longevity" },
-  { name: "SLU-PP-332", slug: "SLU-PP-332", dosages: ["50mg", "100mg"], priceRangeUSD: "$28.76 - $221", cheapestSupplier: "Lumira", cheapestPriceUSD: 28.76, supplierCount: 4, formFactor: "vial", category: "endurance" },
-  { name: "PNC-27", slug: "PNC-27", dosages: ["5mg", "10mg"], priceRangeUSD: "$126 - $280", cheapestSupplier: "Ultrapept", cheapestPriceUSD: 126.00, supplierCount: 4, formFactor: "vial", category: "longevity" },
-  { name: "GDF-8 (Myostatin inhibitor)", slug: "GDF-8", dosages: ["1mg"], priceRangeUSD: "$280 - $343", cheapestSupplier: "Hebei Ktc", cheapestPriceUSD: 280.00, supplierCount: 6, formFactor: "vial", category: "longevity" },
+  { name: "Cartalax", slug: "Cartalax", dosages: ["10mg", "20mg"], priceRangeUSD: "TBD", cheapestSupplier: "HelixBridge", cheapestPriceUSD: 0, supplierCount: 1, formFactor: "vial", category: "longevity" },
+  { name: "Epitalon", slug: "Epitalon", dosages: ["10mg", "50mg"], priceRangeUSD: "$9.65 - $294", cheapestSupplier: "Lumira", cheapestPriceUSD: 9.65, supplierCount: 5, formFactor: "vial", category: "longevity" },
+  { name: "FOX04", slug: "FOX04", dosages: ["10mg"], priceRangeUSD: "$231 - $952", cheapestSupplier: "Lumira", cheapestPriceUSD: 231.00, supplierCount: 2, formFactor: "vial", category: "longevity" },
+  { name: "FOX04-DRI", slug: "FOX04-DRI", dosages: ["10mg"], priceRangeUSD: "$952+", cheapestSupplier: "Lumira", cheapestPriceUSD: 952.00, supplierCount: 1, formFactor: "vial", category: "longevity" },
+  { name: "Glutathione", slug: "Glutathione", dosages: ["600mg", "1500mg"], priceRangeUSD: "$7.10 - $196", cheapestSupplier: "Lumira", cheapestPriceUSD: 7.10, supplierCount: 2, formFactor: "vial", category: "longevity" },
+  { name: "MOTS-c", slug: "MOTS-c", dosages: ["10mg", "20mg", "40mg"], priceRangeUSD: "$15.83 - $336", cheapestSupplier: "Lumira", cheapestPriceUSD: 15.83, supplierCount: 4, formFactor: "vial", category: "longevity" },
+  { name: "NAD+", slug: "NAD+", dosages: ["100mg", "500mg", "1000mg"], priceRangeUSD: "$16.56 - $448", cheapestSupplier: "Pepturion", cheapestPriceUSD: 16.56, supplierCount: 3, formFactor: "vial", category: "longevity" },
+  { name: "NAD+ (buffered)", slug: "NAD (buffered)", dosages: ["500mg", "1000mg"], priceRangeUSD: "$10.01 - $133", cheapestSupplier: "Lumira", cheapestPriceUSD: 10.01, supplierCount: 1, formFactor: "vial", category: "longevity" },
 
-  // ══════════════════════════════════════════════════════════════════════════════
-  // IMMUNE & THYMIC
-  // ══════════════════════════════════════════════════════════════════════════════
-  { name: "Thymalin", slug: "Thymalin", dosages: ["10mg", "20mg"], priceRangeUSD: "$15.11 - $448", cheapestSupplier: "Lumira", cheapestPriceUSD: 15.11, supplierCount: 13, formFactor: "vial", category: "recovery" },
-  { name: "Testagen", slug: "Testagen", dosages: ["10mg", "20mg"], priceRangeUSD: "$168 - $322", cheapestSupplier: "Ultrapept", cheapestPriceUSD: 168.00, supplierCount: 4, formFactor: "vial", category: "other" },
-  { name: "Vilon", slug: "Vilon", dosages: ["10mg", "20mg"], priceRangeUSD: "$168 - $179", cheapestSupplier: "Hebei Ktc", cheapestPriceUSD: 168.00, supplierCount: 6, formFactor: "vial", category: "longevity" },
+  // ENDURANCE
+  { name: "SLU-PP-332", slug: "SLU-PP-332", dosages: ["5mg"], priceRangeUSD: "$28.76 - $221", cheapestSupplier: "Retalux", cheapestPriceUSD: 28.76, supplierCount: 2, formFactor: "vial", category: "endurance" },
+  { name: "SS-31 (Elamipretide)", slug: "SS-31", dosages: ["5mg", "10mg", "50mg"], priceRangeUSD: "$11.28 - $647", cheapestSupplier: "Lumira", cheapestPriceUSD: 11.28, supplierCount: 1, formFactor: "vial", category: "endurance" },
 
-  // ══════════════════════════════════════════════════════════════════════════════
   // BLENDS & PROPRIETARY
-  // ══════════════════════════════════════════════════════════════════════════════
-  { name: "GLOW (blend)", slug: "GLOW", dosages: ["combo"], priceRangeUSD: "$240.50 - $347", cheapestSupplier: "Railion Tech", cheapestPriceUSD: 240.50, supplierCount: 10, formFactor: "vial", category: "blend" },
-  { name: "KLOW (blend)", slug: "KLOW", dosages: ["combo"], priceRangeUSD: "$54.05 - $432", cheapestSupplier: "Lumira", cheapestPriceUSD: 54.05, supplierCount: 10, formFactor: "vial", category: "blend" },
+  { name: "BPC-157 + TB-500 Blend", slug: "BPC157+TB500", dosages: ["10mg", "20mg", "30mg"], priceRangeUSD: "$22.93 - $450", cheapestSupplier: "Lumira", cheapestPriceUSD: 22.93, supplierCount: 5, formFactor: "vial", category: "blend" },
+  { name: "CJC-1295 + Ipamorelin Blend", slug: "CJC-1295 (no DAC) + Ipamorelin", dosages: ["10mg"], priceRangeUSD: "$23.30 - $210", cheapestSupplier: "Lumira", cheapestPriceUSD: 23.30, supplierCount: 4, formFactor: "vial", category: "blend" },
+  { name: "GLOW (blend)", slug: "GLOW", dosages: ["70mg"], priceRangeUSD: "$240.50 - $347", cheapestSupplier: "Lumira", cheapestPriceUSD: 240.50, supplierCount: 4, formFactor: "vial", category: "blend" },
+  { name: "KLOW (blend)", slug: "KLOW", dosages: ["80mg"], priceRangeUSD: "$54.05 - $432", cheapestSupplier: "Lumira", cheapestPriceUSD: 54.05, supplierCount: 5, formFactor: "vial", category: "blend" },
 
-  // ══════════════════════════════════════════════════════════════════════════════
   // SUPPLIES & EQUIPMENT
-  // ══════════════════════════════════════════════════════════════════════════════
-  { name: "BAC Water", slug: "BAC Water", dosages: ["10ml"], priceRangeUSD: "$2 - $24", cheapestSupplier: "Lumira", cheapestPriceUSD: 2.00, supplierCount: 11, formFactor: "vial", category: "supplies" },
-  { name: "Acetic Acid", slug: "Acetic Acid", dosages: ["10ml"], priceRangeUSD: "$3.46 - $31", cheapestSupplier: "Lumira", cheapestPriceUSD: 3.46, supplierCount: 7, formFactor: "vial", category: "supplies" },
-  { name: "B12", slug: "B12", dosages: ["5mg", "10mg"], priceRangeUSD: "$9.80 - $160", cheapestSupplier: "NovaVial", cheapestPriceUSD: 9.80, supplierCount: 4, formFactor: "vial", category: "other" },
+  { name: "Acetic Acid", slug: "Acetic Acid", dosages: ["3ml", "10ml"], priceRangeUSD: "$3.46 - $31", cheapestSupplier: "Lumira", cheapestPriceUSD: 3.46, supplierCount: 2, formFactor: "vial", category: "supplies" },
+  { name: "BAC Water", slug: "BAC Water", dosages: ["3ml", "5ml", "10ml"], priceRangeUSD: "$2 - $24", cheapestSupplier: "Lumira", cheapestPriceUSD: 2.00, supplierCount: 2, formFactor: "vial", category: "supplies" },
+
+  // OTHER
+  { name: "B12", slug: "B12", dosages: ["10mg"], priceRangeUSD: "$9.80 - $160", cheapestSupplier: "Retalux", cheapestPriceUSD: 9.80, supplierCount: 2, formFactor: "vial", category: "other" },
 ];
-// Total: 74 products synced from peptaura.com (2026-03-28)
+// Total: 69 products synced from peptaura.com (2026-05-12)
 
 // Build catalog summary for Claude prompt
 // Only inject protocol-relevant peptides into the prompt (not supplies/blends/niche)
@@ -197,7 +169,7 @@ function buildCatalogForPrompt(): string {
   const relevant = PEPTAURA_CATALOG.filter(p => PROMPT_CATEGORIES.has(p.category));
   const lines: string[] = [];
   lines.push("CATALOGUE PEPTAURA (peptaura.com) , PRIX RÉELS EN USD");
-  lines.push("Marketplace, 13 fournisseurs COA-verifies. Client FRANCE : Lumira = meilleur prix + livre France. Apexion Labs = MOQ $24 + livre France. Pepturion NE LIVRE PAS EN FRANCE (jamais recommander).");
+  lines.push("Marketplace, 6 fournisseurs COA-verifies actifs (Lumira, Pepturion, Retalux, HelixBridge, Hang Sciences, Railion Tech). Client FRANCE : 5 fournisseurs livrent (Lumira, HelixBridge, Hang Sciences MOQ $39, Railion Tech MOQ $96, Retalux). PEPTURION NE LIVRE PAS EN FRANCE (jamais recommander a un client FR).");
   lines.push("Tous les produits: vials lyophilises (reconstituer avec BAC water).\n");
 
   for (const p of relevant) {
@@ -450,12 +422,12 @@ FOURNISSEURS QUI LIVRENT EN FRANCE (hiérarchie à suivre selon budget) :
    - Ou si le client veut commander petit et tester avant de scaler
 
 3. **HANG SCIENCES, RAILION TECH, ARCADIA BIOLABS, HEBEI KTC, HELIXBRIDGE, NOVAVIAL, SOLVION, VIALFORGE**
-   - Tous livrent en France aussi, disponibles comme alternatives si rupture sur Lumira/Apexion
+   - Les 5 fournisseurs France-shipping sont des alternatives interchangeables (meme molecule, COA, purete)
    - Mentionne-les en fallback dans la section "rupture de stock"
 
 RÈGLES :
 - Par DÉFAUT : recommande LUMIRA en premier choix, avec explication "meilleurs prix + livraison France confirmée".
-- Si le catalogue indique "cheapestSupplier: Pepturion" : DIS AU CLIENT DE NE PAS UTILISER PEPTURION (pas de livraison France), et recommande Lumira ou Apexion Labs à la place. Utilise le prix "priceRangeUSD" du catalogue comme fourchette indicative.
+- Si le catalogue indique "cheapestSupplier: Pepturion" : DIS AU CLIENT DE NE PAS UTILISER PEPTURION (pas de livraison France), et recommande Lumira ou Retalux/HelixBridge à la place. Utilise le prix "priceRangeUSD" du catalogue comme fourchette indicative.
 - Mentionne toujours : "vérifie la disponibilité sur peptaura.com/shipping?country=France avant de commander, certains fournisseurs peuvent être temporairement hors stock".
 - PRIX : utilise UNIQUEMENT le catalogue (cheapestPriceUSD ou priceRangeUSD). N'INVENTE JAMAIS un prix. Si tu n'as que le prix Pepturion en cheapestPriceUSD, donne une fourchette réaliste basée sur priceRangeUSD et précise "prix Lumira à vérifier sur le site".
 
@@ -463,7 +435,7 @@ QUANTITES ET PRIX DEGRESSIFS
 Quand tu calcules le nombre de vials necessaires pour le cycle, mentionne TOUJOURS au client que commander en lot de 10 vials est generalement plus economique (prix degressif) et que les fournisseurs ont plus de stock disponible sur les commandes groupees. Par exemple, si le client a besoin de 4 vials de BPC-157 pour un cycle de 8 semaines, suggere-lui de commander 10 vials d'un coup : ca couvre 2 cycles, le prix unitaire baisse, et il n'aura pas a recommander entre deux cycles. Precise que les vials lyophilises (non reconstitues) se conservent des mois voire des annees a temperature ambiante, donc pas de risque de gaspillage. Integre ce conseil dans la section "Liste de courses Peptaura" ou "Comment commander sur Peptaura".
 
 RUPTURE DE STOCK / PRODUIT INDISPONIBLE
-Dans la section "Comment commander sur Peptaura", tu DOIS expliquer au client ce qu'il doit faire si le fournisseur recommandé n'a pas le produit en stock. Explique-lui que Peptaura est un marketplace avec plusieurs fournisseurs qui vendent les mêmes molécules, MAIS que seulement certains livrent en France. Si Lumira (fournisseur par défaut) est en rupture, bascule vers Apexion Labs, Hang Sciences, Railion Tech, Arcadia BioLabs, Hebei KTC, HelixBridge, NovaVial, Solvion ou VialForge , ils livrent tous en France. NE JAMAIS suggérer Pepturion (ne livre PAS en France). Le peptide est le même (même molécule, même pureté COA), seul le prix peut varier légèrement. Lien de vérification : peptaura.com/shipping?country=France pour voir qui est en stock et livre en France au moment de la commande.
+Dans la section "Comment commander sur Peptaura", tu DOIS expliquer au client ce qu'il doit faire si le fournisseur recommandé n'a pas le produit en stock. Explique-lui que Peptaura est un marketplace avec 6 fournisseurs actifs (Lumira, Pepturion, Retalux, HelixBridge, Hang Sciences, Railion Tech), mais que seulement 5 livrent en France. Si Lumira (fournisseur par défaut) est en rupture, bascule vers Retalux, HelixBridge, Hang Sciences (MOQ $39) ou Railion Tech (MOQ $96) , ces 5-la livrent tous en France. NE JAMAIS suggérer Pepturion (ne livre PAS en France). Le peptide est le même (même molécule, même pureté COA), seul le prix peut varier légèrement. Lien de vérification : peptaura.com/shipping?country=France pour voir qui est en stock et livre en France au moment de la commande.
 
 PLAN B FOURNISSEURS (section "disclaimer-support")
 Si Peptaura est en rupture totale sur une molécule ou si le client veut comparer les prix, il existe des fournisseurs chinois directs avec lesquels on peut échanger rapidement sur WhatsApp. Ce sont des manufacturers vérifiés sur GlobalSources. Mentionne ces 5 fournisseurs dans la section "disclaimer-support" comme plan B :
@@ -634,57 +606,35 @@ Tirzepatide (GLP-1/GIP dual)
 - Route: SC 1x/semaine
 - Cycle: 3-12 mois
 
-AXE HPG / RELANCE TESTOSTÉRONE NATURELLE (alternative TRT)
-Quand pep_primary_goal = "testo-boost" OU pep_secondary_goals contient "testo-boost", tu construis un protocole de stimulation endogène basé sur les données suivantes. IMPORTANT : tu NE prescris JAMAIS sans bilan hormonal récent (Testo totale, Testo libre, LH, FSH, E2, SHBG, Prolactine). Si pep_testo_bloodwork = "never" ou "old", ta PREMIÈRE recommandation doit être de faire le bilan via Apexlabs Blood Analysis (tu as 2 codes offerts dans le stack, c'est l'occasion) avant d'entamer le moindre peptide. Pas de bilan = pas de protocole hormonal, point.
+AXE HPG / RELANCE TESTOSTERONE NATURELLE (alternative TRT) - CATALOGUE PEPTAURA RESTREINT
+IMPORTANT 2026-05 : Peptaura.com ne propose plus actuellement Enclomifene, Kisspeptin-10, Gonadorelin ni Tamoxifen (404). Le seul outil HPG-axis encore disponible sur Peptaura est HCG. Pour les SERMs (Enclomifene, Tamoxifen) et autres analogues, oriente le client vers une consultation medicale (medecin generaliste ou endocrinologue) pour obtenir une ordonnance et passer par une pharmacie classique. Ne fais JAMAIS semblant qu'on peut sourcer ces molecules sur Peptaura aujourd'hui.
 
-Enclomifene Citrate (SERM sélectif, premier choix HPG-axis)
-- Mécanisme: bloque les récepteurs oestrogènes hypothalamiques → lève le feedback négatif → hypophyse libère LH/FSH → testicules produisent testo endogène. Contrairement au clomiphène racémique (Clomid), l'enclomifène est l'isomère "pur" sans le zu-isomère qui cause la fatigue et les troubles visuels. Beaucoup mieux toléré.
-- Dosage: 12.5 mg/jour (démarrage) → 25 mg/jour si réponse insuffisante après 4 semaines. Per os (sublingual marche aussi).
-- Indication: hypogonadisme secondaire, optimisation testo, PCT post-cycle, préservation fertilité (ne shut down pas l'axe HPG, au contraire).
-- Cycle: 8-12 semaines avec re-bilan à S4 et S8. Pause obligatoire si Hb/Ht montent trop ou si E2 flambe.
-- Avantages: fertilité préservée (voire améliorée), pas d'injection, réversible rapidement.
-- Effets secondaires potentiels: céphalées légères, variation humeur, très rarement troubles visuels transitoires (bien moins que Clomid).
+Quand pep_primary_goal = "testo-boost" OU pep_secondary_goals contient "testo-boost", tu construis un protocole base sur les regles suivantes. IMPORTANT : tu NE prescris JAMAIS sans bilan hormonal recent (Testo totale, Testo libre, LH, FSH, E2, SHBG, Prolactine, DHT, Albumine). Si pep_testo_bloodwork = "never" ou "old", ta PREMIERE recommandation doit etre de faire le bilan via Apexlabs Blood Analysis (tu as 2 credits offerts dans le stack, c'est l'occasion) avant d'entamer le moindre peptide. Pas de bilan = pas de protocole hormonal, point.
 
-Kisspeptin-10 (peptide recherche, très prometteur)
-- Mécanisme: active les neurones GnRH hypothalamiques → libération pulsatile LH/FSH → testo endogène + fertilité. Plus "physiologique" que l'enclomifène car agit en amont de la cascade.
-- Dosage: 50-200 mcg SC 2-3x/semaine selon protocole recherche. Démarrage 50 mcg, titration progressive.
-- Indication: optimisation testo chez client à axe HPG fonctionnel, préservation fertilité, sortie de shut-down post-cycle long.
-- Cycle: 6-12 semaines. Data humaine encore limitée hors protocoles recherche, à utiliser avec monitoring serré.
-- Synergie: excellente avec Gonadoreline pour stimuler l'axe à plusieurs niveaux.
+HCG (analogue LH, seul outil HPG-axis sur Peptaura)
+- Mecanisme : mime la LH, active directement les cellules de Leydig testiculaires, production testo + maintien taille testiculaire.
+- Dosage : 250-500 UI SC 2-3x/semaine (relance ou co-TRT). Doses elevees (1000-3000 UI) reservees aux protocoles specifiques.
+- Indications : preservation fertilite/taille testiculaire si deja sous TRT prescrit par medecin, relance post-cycle, hypogonadisme secondaire confirme.
+- Limites : peut sur-aromatiser (E2 haut, bloat, gynecomastie), shut-down de l'axe a doses elevees, demi-vie longue (24-72h) donc effet plus continu et moins pulsatile.
+- Cycle : 4-12 semaines en relance, ou usage continu en micro-dose si TRT prescrit.
+- Source : disponible sur Peptaura via Railion Tech (1 fournisseur, dosages 1000/2000/5000/10000 IU).
 
-Gonadorelin (GnRH synthétique, stimulation directe hypophysaire)
-- Mécanisme: peptide décapeptidique GnRH → libère LH/FSH depuis l'antéhypophyse. Demi-vie très courte (10-40 min) donc administration pulsatile qui mime le rythme naturel.
-- Dosage: 100-300 mcg SC 2-3x/semaine, ou micro-doses 25-50 mcg quotidiennes pour mimer la pulsatilité physiologique.
-- Indication: alternative à l'HCG pour maintenir la fonction testiculaire (taille + spermatogenèse) chez les hommes déjà sous TRT, ou relance post-cycle, ou co-adjuvant kisspeptin.
-- Avantages vs HCG: pas d'accumulation tissulaire, effet plus "clean" sur la fertilité, moins d'aromatisation.
-- Cycle: souvent continu en micro-dose si TRT, ou 4-8 semaines en relance.
+ENCLOMIFENE / TAMOXIFENE / KISSPEPTIN / GONADORELIN (non disponibles sur Peptaura)
+Si le client a besoin d'une de ces molecules selon son profil, oriente-le vers une consultation medicale pour obtenir l'ordonnance, puis pharmacie classique (Enclomifene/Tamoxifen sont des medicaments prescrits en France). Mentionne explicitement dans le rapport que ces molecules ne sont PAS sourcables via Peptaura actuellement, pour eviter qu'il cherche sans les trouver.
 
-HCG (analogue LH, standard historique)
-- Mécanisme: mime la LH, active directement les cellules de Leydig testiculaires → production testo + maintien taille testiculaire.
-- Dosage: 250-500 UI SC 2-3x/semaine (relance ou co-TRT). Doses élevées (1000-3000 UI) réservées aux protocoles spécifiques.
-- Indication: préservation fertilité/taille testiculaire si déjà sous TRT, relance post-cycle, hypogonadisme secondaire (si enclomifène échoue).
-- Limites: peut sur-aromatiser (E2 haut, bloat, gynéco), shut-down de l'axe à doses élevées, demi-vie longue (24-72h) donc effet plus continu et moins pulsatile que GnRH.
-- Cycle: 4-12 semaines en relance, ou usage continu en micro-dose avec TRT.
-
-Tamoxifene (Nolvadex, SERM pour PCT ou gynéco)
-- Mécanisme: SERM qui bloque les récepteurs oestrogènes au niveau sein et hypothalamus. Restaure la production de gonadotrophines après shut-down.
-- Dosage: 20 mg/jour pendant 4-6 semaines en PCT. 10-20 mg/jour pour gynéco naissante.
-- Indication: PCT après cycle long/lourd, gynécomastie naissante, complément enclomifène si besoin de protection anti-oestrogénique mammaire spécifique.
-- Attention: prolongation QT possible, interaction warfarine, pas idéal en chronique.
-
-PROTOCOLES TESTO-BOOST (logique de décision)
-Si testo basse confirmée (pep_testo_bloodwork = "recent-low") + fertilité importante/critique : ENCLOMIFÈNE en premier choix (8-12 sem, re-bilan à S4 et S8). Alternative/upgrade: Kisspeptin si client avancé et veut un protocole plus "physiologique".
-Si testo dans la norme mais client veut optimiser + fertilité critique : refuser protocole aggressif, proposer optimisation lifestyle + éventuellement Kisspeptin micro-dose à discuter avec médecin. Ne prescris pas Enclomifène pour "optimisation" chez un homme normal avec projet bébé sans justification médicale solide.
-Post-cycle (pep_testo_pct_context = "post-cycle") : combo Enclomifène 25mg/j + HCG 500UI x2/sem pendant 4 sem, puis Enclomifène seul 4 sem supplémentaires. Tamoxifène 20mg/j en option si gynéco naissante.
-Andropause (age-related) + bilan LH/FSH hauts (hypogonadisme primaire) : l'axe HPG est déjà au max, les SERMs et kisspeptin ne marcheront pas. Dis-le honnêtement au client, oriente vers consultation endocrino pour TRT médicale si indication confirmée. Tu ne fais pas semblant.
-Andropause + LH/FSH bas/normaux (hypogonadisme secondaire) : Enclomifène premier choix, c'est la classe d'indication.
-Baisse stress/lifestyle : PREMIER REFLEXE = optimisation sommeil, stress management, alimentation, training. Peptides en second temps si les basics sont déjà en place. Tu peux proposer Enclomifène 12.5 mg cycle court 8 sem avec priorité sur le lifestyle.
+PROTOCOLES TESTO-BOOST (logique de decision adaptee au catalogue actuel)
+Si testo basse confirmee (pep_testo_bloodwork = "recent-low") + fertilite importante : recommande consultation medecin/endocrino pour Enclomifene (Androtardyl/Andractim sous ordonnance) en premiere ligne. HCG en complement pour preserver la taille testiculaire si TRT est demarre.
+Si testo dans la norme mais client veut optimiser : refuse tout protocole pharmacologique. Propose optimisation lifestyle (sommeil, stress, alimentation, training, supplementation zinc/D3/magnesium). Pas de protocole HPG-axis sans indication medicale documentee.
+Post-cycle (pep_testo_pct_context = "post-cycle") : HCG 500 UI x2-3/semaine pendant 4 semaines, en complement d'une consultation medicale pour Enclomifene sous ordonnance. Insiste sur le bilan pre/post.
+Andropause (age-related) + bilan LH/FSH hauts (hypogonadisme primaire) : l'axe HPG est deja au max. Dis-le honnetement au client, oriente vers consultation endocrino pour evaluation TRT medicale. Tu ne fais pas semblant.
+Andropause + LH/FSH bas/normaux (hypogonadisme secondaire) : consultation medecin pour Enclomifene sous ordonnance + HCG en complement disponible sur Peptaura.
+Baisse stress/lifestyle : PREMIER REFLEXE = optimisation sommeil, stress management, alimentation, training. Peptides en second temps si les basics sont deja en place. Pas de raccourci pharmaco.
 
 BLOODWORK OBLIGATOIRE POUR TESTO-BOOST (MONITORING)
-Bilan pré-protocole: Testo totale, Testo libre, LH, FSH, E2 (estradiol ultra-sensible), SHBG, Prolactine, DHT, Hémogramme (Hb/Ht), NFS, bilan lipidique, PSA si âge > 40.
-Re-bilan à S4 et S8: Testo totale/libre, LH, FSH, E2, Hb/Ht.
-Si Hb > 17.5 g/dL ou Ht > 54% → pause protocole, don du sang recommandé.
-Si E2 > 50 pg/mL → envisager anastrozole à très faible dose ou pause. Jamais d'AI systématique en préventif , seulement sur élévation documentée avec symptômes.
+Bilan pre-protocole : Testo totale, Testo libre, LH, FSH, E2 (estradiol ultra-sensible), SHBG, Prolactine, DHT, Albumine, Hemogramme (Hb/Ht), NFS, bilan lipidique, PSA si age > 40.
+Re-bilan a S4 et S8 : Testo totale/libre, LH, FSH, E2, Hb/Ht.
+Si Hb > 17.5 g/dL ou Ht > 54% : pause protocole, don du sang recommande.
+Si E2 > 50 pg/mL : envisager anastrozole a tres faible dose sous ordonnance medicale ou pause. Jamais d'AI systematique en preventif, seulement sur elevation documentee avec symptomes.
 
 ${buildCatalogForPrompt()}
 
@@ -816,7 +766,7 @@ RÈGLES ABSOLUES:
 3. Ajuste les dosages au poids (${weight} kg) en mcg/kg.
 4. Sélectionne 2 à 4 peptides dans le stack principal + 1 peptide BONUS qui dépasse le budget.
 5. Utilise UNIQUEMENT le catalogue Peptaura. URLs réelles.
-6. Pour le choix du fournisseur (client en FRANCE , ${budgetNote}) : recommande LUMIRA par défaut (livre en France, meilleurs prix, pas de MOQ bloquant). Si Lumira n'est pas disponible sur une molécule, recommande APEXION LABS (livre en France, MOQ $24). NE JAMAIS recommander PEPTURION (ne livre PAS en France). EXPLIQUE clairement dans la shopping list pourquoi tu choisis Lumira (ou Apexion en fallback) et rappelle que le client peut vérifier la dispo sur peptaura.com/shipping?country=France.
+6. Pour le choix du fournisseur (client en FRANCE , ${budgetNote}) : recommande LUMIRA par défaut (livre en France, le plus large catalogue, pas de MOQ bloquant). Si Lumira n'a pas le produit, bascule sur Retalux, HelixBridge, Hang Sciences (MOQ $39, regroupe la commande) ou Railion Tech (MOQ $96, regroupe la commande). NE JAMAIS recommander PEPTURION (ne livre PAS en France). EXPLIQUE clairement dans la shopping list pourquoi tu choisis le fournisseur recommandé et rappelle que le client peut vérifier la dispo sur peptaura.com/shipping?country=France.
 7. Le rapport doit faire au moins 4000 caractères au total. Chaque section doit être substantielle.
 
 Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
@@ -836,9 +786,14 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
       "content": "Pour chaque peptide, explique en 2-3 paragraphes POURQUOI celui-ci pour ${firstName}: le mécanisme d'action en termes simples, le lien direct avec ses objectifs, pourquoi pas un autre peptide alternatif. Sois pédagogique , explique comme si c'était la première fois qu'il entend parler de peptides."
     },
     {
+      "id": "bilan-sanguin",
+      "title": "Ton bilan sanguin baseline (a faire avant ta premiere injection)",
+      "content": "${firstName}, avant de commencer quoi que ce soit, tu dois faire un bilan sanguin. C'est non negociable, sans bilan tu navigues a l'aveugle. Je te detaille TOUT ci-dessous : la liste de marqueurs a copier-coller pour ton labo, ce qui est prepaye dans ton pack, ce qui ne l'est pas, et le cout reel a prevoir.\\n\\nCE QUI EST PREPAYE DANS TON PACK PEPTIDES ENGINE\\nTu as 2 credits Blood Analysis APEXLABS deja sur ton compte (pas de code promo a saisir). Cela couvre l'ANALYSE et l'INTERPRETATION par moi de tes 2 bilans (un pre-cycle pour ta baseline, un mi-cycle a la semaine 4 a 6 pour suivre l'evolution). Valeur 198 EUR.\\n\\nCE QUI N'EST PAS PREPAYE\\nLa prise de sang elle-meme au laboratoire physique en France. C'est une depense separee que tu regles directement a ton labo. Compte les ordres de grandeur suivants :\\n- SANS ordonnance : entre 80 et 150 EUR pour la liste complete (les chaines Cerba, Biogroup, Synlab, Eurofins acceptent toutes sans ordo, paiement de ta poche). Tu peux demander un devis avant de te lancer.\\n- AVEC ordonnance de ton generaliste : la securite sociale plus ta mutuelle remboursent la grande majorite, tu sors a 20 a 40 EUR de poche en moyenne. Certains marqueurs hormonaux specialises ou la vitamine D peuvent rester hors-AMM donc a ta charge meme avec ordo, mais c'est marginal sur la facture totale.\\n\\nLa liste etant longue, beaucoup de generalistes acceptent de prescrire si tu expliques que c'est un bilan de fond pour un suivi nutritionnel et hormonal serieux.\\n\\nMARQUEURS A DEMANDER (a presenter au labo ou au medecin pour ordonnance)\\n\\nHormones : Testosterone totale, Testosterone libre, SHBG, Cortisol (matin a jeun), DHEA-S, IGF-1, DHT\\nAxe gonadotrope : LH, FSH, Estradiol, Prolactine\\nThyroide : TSH, T3 libre, T4 libre\\nMetabolisme : Glycemie a jeun, HbA1c, Insuline a jeun\\nLipides : Cholesterol total, HDL, LDL, Triglycerides, ApoB\\nInflammation et terrain : CRP ultra-sensible, Ferritine, Homocysteine, Albumine\\nVitamines et mineraux : Vitamine D 25-OH, B12, Magnesium erythrocytaire (plus precis que serique), Zinc serique, Selenium\\nFoie et reins : ALAT, ASAT, Gamma-GT, Creatinine, DFG\\nNFS complete\\n\\nAjoute les marqueurs specifiques a TON protocole en fonction des peptides selectionnes (par exemple IGF-1 si protocole GH, Prolactine si Ipamorelin, T4/T3 reverse si Retatrutide). Explique POURQUOI chaque marqueur supplementaire est important pour ce client precis.\\n\\nCONDITIONS DE PRELEVEMENT\\nMatin entre 7h et 10h, a jeun depuis 10h, au moins 48h apres ta derniere seance intense, pas d'alcool dans les 48h precedant.\\n\\nCOMMENT UTILISER TON CREDIT BLOOD ANALYSIS\\nVa sur https://apexlabs.achzodcoaching.com/blood-dashboard, connecte-toi avec ton email (lien magique passwordless), et uploade ton PDF de resultats. Tu recevras une analyse complete de tes marqueurs en quelques minutes, avec mes recommandations specifiques pour ton cas.\\n\\nIMPORTANT : un seul PDF par upload (10 MB max). Si tu as plusieurs fichiers a fusionner : sur iPhone via Fichiers (Selectionner les PDFs dans l'ordre, \\\"...\\\" en bas, \\\"Creer un PDF\\\") ou via ilovepdf.com/fr/fusionner_pdf.\\n\\nBILAN MI-CYCLE (semaine 4-6)\\nUtilise ton deuxieme credit pour refaire exactement les memes marqueurs. Je compare avec ta baseline pour verifier que tout evolue dans le bon sens et ajuster si besoin.\\n\\nFIN DE CYCLE\\nExplique comment arreter progressivement, la duree de pause minimale avant le prochain cycle, et les signes qui indiquent qu'on peut reprendre."
+    },
+    {
       "id": "guide-peptaura",
       "title": "Comment commander sur Peptaura",
-      "content": "${firstName}, Peptaura est un marketplace qui connecte directement aux laboratoires qui fabriquent les peptides. C'est ma source personnelle depuis plusieurs années. Voici comment commander étape par étape:\\n\\nQU'EST-CE QUE PEPTAURA\\nPeptaura.com est une plateforme qui regroupe 13 fournisseurs vérifiés. Chaque lot de peptides est accompagné d'un COA (Certificate of Analysis) , un document de laboratoire indépendant qui certifie la pureté du produit (généralement 98-99%).\\n\\nPOURQUOI [FOURNISSEUR RECOMMANDÉ]\\nJe te recommande [fournisseur] parce que [raison liée au budget/MOQ]. Le minimum de commande est de $[MOQ].\\n\\nCOMMENT PAYER\\nPeptaura accepte les paiements par carte bancaire (CB/Visa/Mastercard) avec vérification d'identité (KYC , tu devras montrer une pièce d'identité, c'est normal et sécurisé). Tu peux aussi payer en crypto (Bitcoin, Ethereum, USDT).\\n\\nLIVRAISON\\nCompte entre 7 et 14 jours pour la livraison. Les peptides sont envoyés sous forme de poudre lyophilisée (pas besoin de chaîne du froid pendant le transport). Tu recevras un numéro de suivi.\\n\\nASTUCE\\nRegroupe ta commande : commande tous tes peptides + BAC water + seringues en une seule fois pour optimiser les frais de port."
+      "content": "${firstName}, Peptaura est un marketplace qui connecte directement aux laboratoires qui fabriquent les peptides. C'est ma source personnelle depuis plusieurs années. Voici comment commander étape par étape:\\n\\nQU'EST-CE QUE PEPTAURA\\nPeptaura.com est une plateforme qui regroupe 6 fournisseurs verifies (Lumira, Pepturion, Retalux, HelixBridge, Hang Sciences, Railion Tech), dont 5 livrent en France (tous sauf Pepturion). Chaque lot de peptides est accompagné d'un COA (Certificate of Analysis) , un document de laboratoire indépendant qui certifie la pureté du produit (généralement 98-99%).\\n\\nPOURQUOI [FOURNISSEUR RECOMMANDÉ]\\nJe te recommande [fournisseur] parce que [raison liée au budget/MOQ]. Le minimum de commande est de $[MOQ].\\n\\nCOMMENT PAYER\\nPeptaura accepte les paiements par carte bancaire (CB/Visa/Mastercard) avec vérification d'identité (KYC , tu devras montrer une pièce d'identité, c'est normal et sécurisé). Tu peux aussi payer en crypto (Bitcoin, Ethereum, USDT).\\n\\nLIVRAISON\\nCompte entre 7 et 14 jours pour la livraison. Les peptides sont envoyés sous forme de poudre lyophilisée (pas besoin de chaîne du froid pendant le transport). Tu recevras un numéro de suivi.\\n\\nASTUCE\\nRegroupe ta commande : commande tous tes peptides + BAC water + seringues en une seule fois pour optimiser les frais de port."
     },
     {
       "id": "reconstitution-guide",
@@ -869,11 +824,6 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
       "id": "securite-surveillance",
       "title": "Securite et surveillance",
       "content": "${firstName}, ta sécurité passe avant tout. Voici ce que tu dois surveiller.\\n\\nSIGNAUX D'ALERTE , stoppe immédiatement et consulte un médecin si [liste adaptée aux peptides sélectionnés]\\n\\nAJUSTEMENTS DE DOSE\\nSemaine 1: commence à 50% de la dose que je t'ai prescrite. C'est une phase de test pour voir comment ton corps réagit. Si tout va bien (pas de rougeur excessive, pas de nausée, pas de malaise), passe à l'étape suivante.\\nSemaine 2: monte à 75% de la dose cible.\\nSemaine 3+: dose cible complète si bonne tolérance.\\n\\nINTERACTIONS\\n[si pertinent selon le profil]\\n\\nIMPORTANT: ce protocole est éducatif et informatif. Consulte un médecin si tu as le moindre doute ou si tu prends des médicaments."
-    },
-    {
-      "id": "prochaines-etapes",
-      "title": "Prochaines etapes",
-      "content": "${firstName}, avant de commencer quoi que ce soit, tu dois faire un bilan sanguin. C'est non negociable, sans bilan tu navigues a l'aveugle.\\n\\nBILAN PRE-CYCLE (avant de commencer)\\nTu as 2 Blood Analyses APEXLABS incluses dans ton protocole. Les credits sont deja sur ton compte, pas besoin de code promo. Utilise la premiere pour faire ton bilan de base AVANT ta premiere injection.\\n\\nIMPORTANT : cette section doit etre TRES CLAIRE et ACTIONNABLE. Le client doit pouvoir montrer cette liste a son labo ou medecin directement.\\n\\nPresente-toi dans n'importe quel laboratoire d'analyses (Cerba, Biogroup, ou ton labo habituel) avec cette liste. La plupart des labos en France acceptent sans ordonnance (tu paies de ta poche). Sinon, passe chez ton generaliste pour l'ordonnance et c'est rembourse.\\n\\nMARQUEURS A DEMANDER :\\n\\nHormones : Testosterone totale, Testosterone libre, SHBG, Cortisol (matin a jeun), DHEA-S, IGF-1\\nThyroide : TSH, T3 libre, T4 libre\\nMetabolisme : Glycemie a jeun, HbA1c, Insuline a jeun, Cholesterol total, HDL, LDL, Triglycerides\\nInflammation : CRP ultra-sensible, Ferritine, Homocysteine\\nVitamines : Vitamine D (25-OH), Vitamine B12, Magnesium, Zinc\\nFoie et reins : ALAT, ASAT, Gamma-GT, Creatinine, DFG\\nNFS complete\\n\\nAjoute les marqueurs specifiques a TON protocole en fonction des peptides selectionnes. Explique POURQUOI chaque marqueur supplementaire est important pour le client.\\n\\nCOMMENT UTILISER TA BLOOD ANALYSIS\\nVa sur https://apexlabs.achzodcoaching.com/blood-dashboard, connecte-toi avec ton email (lien magique passwordless), et uploade ton PDF de resultats. Tu as 2 credits , un pour le bilan pre-cycle, un pour le bilan mi-cycle. Tu recevras une analyse complete de tes marqueurs.\\n\\nIMPORTANT : un seul PDF par upload (10 MB max). Si tu as plusieurs fichiers a fusionner : sur iPhone via Fichiers (Selectionner les PDFs dans l'ordre, \\\"...\\\" en bas, \\\"Creer un PDF\\\") ou via ilovepdf.com/fr/fusionner_pdf.\\n\\nBILAN MI-CYCLE (semaine 4-6)\\nUtilise ton deuxieme credit pour refaire exactement les memes marqueurs. Je compare avec ta baseline pour verifier que tout evolue dans le bon sens et ajuster si besoin.\\n\\nFIN DE CYCLE\\nExplique comment arreter progressivement, la duree de pause minimale avant le prochain cycle, et les signes qui indiquent qu'on peut reprendre."
     },
     {
       "id": "nutrition-protocole",
