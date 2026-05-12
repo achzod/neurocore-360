@@ -76,8 +76,11 @@ export const PEPTAURA_CATALOG: PeptaurProduct[] = [
 
   // HPG-AXIS (TRT-alternatives, fertility)
   { name: "HCG", slug: "HCG", dosages: ["1000IU", "2000IU", "5000IU", "10000IU"], priceRangeUSD: "$18.02 - $239", cheapestSupplier: "Railion Tech", cheapestPriceUSD: 18.02, supplierCount: 1, formFactor: "vial", category: "hpg-axis" },
+  { name: "KissPeptin-10", slug: "KissPeptin-10", dosages: ["5mg", "10mg"], priceRangeUSD: "$12.74 - $172", cheapestSupplier: "Lumira", cheapestPriceUSD: 12.74, supplierCount: 5, formFactor: "vial", category: "hpg-axis" },
 
   // GH SECRETAGOGUES
+  { name: "CJC-1295 (no DAC)", slug: "CJC-1295 (no DAC)", dosages: ["2mg", "5mg", "10mg"], priceRangeUSD: "$18.02 - $228", cheapestSupplier: "Lumira", cheapestPriceUSD: 18.02, supplierCount: 3, formFactor: "vial", category: "gh-secretagogue" },
+  { name: "CJC-1295 (with DAC)", slug: "CJC-1295 (with DAC)", dosages: ["2mg", "5mg"], priceRangeUSD: "$33.67 - $420", cheapestSupplier: "Lumira", cheapestPriceUSD: 33.67, supplierCount: 2, formFactor: "vial", category: "gh-secretagogue" },
   { name: "GHRP-2", slug: "GHRP-2 Acetate", dosages: ["5mg", "10mg", "15mg"], priceRangeUSD: "$36.40 - $98", cheapestSupplier: "Lumira", cheapestPriceUSD: 36.40, supplierCount: 4, formFactor: "vial", category: "gh-secretagogue" },
   { name: "GHRP-6", slug: "GHRP-6 Acetate", dosages: ["5mg", "10mg"], priceRangeUSD: "$7.64 - $98", cheapestSupplier: "Lumira", cheapestPriceUSD: 7.64, supplierCount: 4, formFactor: "vial", category: "gh-secretagogue" },
   { name: "HGH (Somatropin)", slug: "Somatropin (HGH)", dosages: ["10IU", "12IU", "15IU", "24IU", "36IU"], priceRangeUSD: "$12.92 - $490", cheapestSupplier: "Lumira", cheapestPriceUSD: 12.92, supplierCount: 1, formFactor: "vial", category: "gh-secretagogue" },
@@ -159,7 +162,7 @@ export const PEPTAURA_CATALOG: PeptaurProduct[] = [
   // OTHER
   { name: "B12", slug: "B12", dosages: ["10mg"], priceRangeUSD: "$9.80 - $160", cheapestSupplier: "Retalux", cheapestPriceUSD: 9.80, supplierCount: 2, formFactor: "vial", category: "other" },
 ];
-// Total: 69 products synced from peptaura.com (2026-05-12)
+// Total: 72 products synced from peptaura.com (2026-05-12, partial)
 
 // Build catalog summary for Claude prompt
 // Only inject protocol-relevant peptides into the prompt (not supplies/blends/niche)
