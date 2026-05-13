@@ -217,6 +217,7 @@ export interface IStorage {
   getEmailTrackingForAudit(auditId: string): Promise<EmailTracking[]>;
   /** Returns true if a peptides delivery email (subject contains "protocole peptides") has been sent to this recipient */
   hasPeptidesDeliveryEmailBeenSent(email: string): Promise<boolean>;
+  hasPeptidesOrderConfirmationBeenSent(email: string): Promise<boolean>;
   hasUserLeftReview(auditId: string): Promise<boolean>;
 
   // Orders
@@ -817,6 +818,13 @@ export class MemStorage implements IStorage {
       (t: any) => String(t.recipientEmail || "").toLowerCase() === email.toLowerCase()
         && t.emailType === "sendCTAEmail"
         && /protocole peptides|peptides personnalis/i.test(String(t.subject || ""))
+    );
+  }
+
+  async hasPeptidesOrderConfirmationBeenSent(email: string): Promise<boolean> {
+    return Array.from(this.emailTrackings.values()).some(
+      (t: any) => String(t.recipientEmail || "").toLowerCase() === email.toLowerCase()
+        && t.emailType === "sendPeptidesOrderConfirmation"
     );
   }
 
@@ -2394,6 +2402,22 @@ export class PgStorage implements IStorage {
     } catch (err) {
       // If subject column doesn't exist in an older DB, fall back to type-only check (less strict)
       console.warn("[EmailTracking] hasPeptidesDeliveryEmailBeenSent fallback (subject column missing?):", err);
+      return false;
+    }
+  }
+
+  async hasPeptidesOrderConfirmationBeenSent(email: string): Promise<boolean> {
+    try {
+      const result = await pool.query(
+        `SELECT 1 FROM email_tracking
+          WHERE LOWER(recipient_email) = LOWER($1)
+            AND email_type = 'sendPeptidesOrderConfirmation'
+          LIMIT 1`,
+        [email]
+      );
+      return (result.rowCount ?? 0) > 0;
+    } catch (err) {
+      console.warn("[EmailTracking] hasPeptidesOrderConfirmationBeenSent query failed:", err);
       return false;
     }
   }

@@ -29,6 +29,7 @@ import {
   sendPeptidesReviewS5Email,
   sendPeptidesReviewS12Email,
   sendPeptidesCycle2ReorderEmail,
+  sendPeptidesOrderConfirmationEmail,
   sendDiscoveryJ30NurtureEmail,
   sendReactivationCampaignEmail,
   sendFinishDiscoveryEmail,
@@ -4436,6 +4437,68 @@ export async function registerRoutes(
     } catch (error) {
       console.error("[Admin Update Status] Error:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  app.post("/api/admin/peptides/send-order-confirmation", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { orderId, force } = req.body as { orderId: string; force?: boolean };
+      if (!orderId) {
+        res.status(400).json({ success: false, error: "orderId required" });
+        return;
+      }
+      const order = await storage.getOrder(orderId);
+      if (!order) {
+        res.status(404).json({ success: false, error: "Order not found" });
+        return;
+      }
+      if (order.productType !== "PEPTIDES_ENGINE") {
+        res.status(400).json({ success: false, error: `not a peptides order (type=${order.productType})` });
+        return;
+      }
+      const email = order.email;
+      if (!email) {
+        res.status(400).json({ success: false, error: "order has no email" });
+        return;
+      }
+      if (!force) {
+        const alreadyConfirmed = await storage.hasPeptidesOrderConfirmationBeenSent(email).catch(() => false);
+        if (alreadyConfirmed) {
+          res.json({ success: false, skipped: "already_sent", email });
+          return;
+        }
+      }
+
+      const meta = (order.metadata as any) || {};
+      const reportId = meta?.peptidesReportId;
+      let peptidesNames = "voir rapport";
+      let bloodCreditsCount = 0;
+      if (reportId) {
+        const existing = await storage.getBurnoutReport(reportId).catch(() => null);
+        if (existing) {
+          const r = existing.report as any;
+          peptidesNames = r?.peptides?.map((p: any) => p.name).join(", ") || peptidesNames;
+          bloodCreditsCount = Array.isArray(r?.promoCodesGenerated) ? r.promoCodesGenerated.length : 0;
+        }
+      }
+      const scheduledAt = await resolvePeptidesEmailScheduledAt(order);
+      const firstName = meta?.peptidesResponses?.prenom || email.split("@")[0];
+
+      const sent = await sendPeptidesOrderConfirmationEmail(email, {
+        firstName,
+        amountEur: ((order as any).finalAmountCents || 0) / 100,
+        promoCode: (order as any).promoCode || null,
+        peptidesNames,
+        scheduledDeliveryAt: scheduledAt,
+        bloodCreditsCount,
+        orderId: order.id,
+      });
+
+      res.json({ success: true, sent, email, scheduledAt: scheduledAt.toISOString(), peptidesNames, bloodCreditsCount });
+    } catch (error: any) {
+      console.error("[Admin Send Order Confirmation] Error:", error);
+      res.status(500).json({ success: false, error: error?.message || "Erreur serveur" });
     }
   });
 
@@ -10004,6 +10067,24 @@ export async function registerRoutes(
           console.log(
             `[PeptidesEngine] Delivery email DEFERRED for ${email} until ${deliveryScheduledAt.toISOString()} (anti-automation gate)`
           );
+          // Immediate confirmation email so the client knows the payment landed.
+          // Without this, they pay 199-299 EUR and see zero feedback for hours.
+          if (order?.id) {
+            const alreadyConfirmed = await storage.hasPeptidesOrderConfirmationBeenSent(email).catch(() => false);
+            if (!alreadyConfirmed) {
+              const firstName = (order.metadata as any)?.peptidesResponses?.prenom
+                || (order.email ? order.email.split("@")[0] : undefined);
+              sendPeptidesOrderConfirmationEmail(email, {
+                firstName,
+                amountEur: ((order as any).finalAmountCents || 0) / 100,
+                promoCode: (order as any).promoCode || null,
+                peptidesNames,
+                scheduledDeliveryAt: deliveryScheduledAt,
+                bloodCreditsCount: Array.isArray(report.promoCodesGenerated) ? report.promoCodesGenerated.length : 0,
+                orderId: order.id,
+              }).catch((err) => console.error("[PeptidesEngine] Confirmation email failed:", err));
+            }
+          }
         }
 
         // Clean up progress
@@ -10308,6 +10389,22 @@ export async function registerRoutes(
             console.log(
               `[AutoGen] Recovery email DEFERRED for ${email} until ${recoveryScheduledAt.toISOString()}`
             );
+            // Immediate confirmation email so client knows order is registered
+            // (no zero-feedback window during the 4-8h anti-automation deferral).
+            const alreadyConfirmed = await storage.hasPeptidesOrderConfirmationBeenSent(email).catch(() => false);
+            if (!alreadyConfirmed) {
+              const firstName = (order.metadata as any)?.peptidesResponses?.prenom
+                || (order.email ? order.email.split("@")[0] : undefined);
+              sendPeptidesOrderConfirmationEmail(email, {
+                firstName,
+                amountEur: ((order as any).finalAmountCents || 0) / 100,
+                promoCode: (order as any).promoCode || null,
+                peptidesNames,
+                scheduledDeliveryAt: recoveryScheduledAt,
+                bloodCreditsCount: Array.isArray(existingReport?.promoCodesGenerated) ? existingReport.promoCodesGenerated.length : 0,
+                orderId: order.id,
+              }).catch((err) => console.error("[AutoGen Recovery] Confirmation email failed:", err));
+            }
             continue;
           }
 
@@ -10404,6 +10501,23 @@ export async function registerRoutes(
           console.log(
             `[AutoGen] New report email DEFERRED for ${email} until ${deliveryScheduledAtIso} (recovery loop will retry)`
           );
+          // Immediate confirmation email so client knows order is registered
+          // (no zero-feedback window during the 4-8h anti-automation deferral).
+          const alreadyConfirmed = await storage.hasPeptidesOrderConfirmationBeenSent(email).catch(() => false);
+          if (!alreadyConfirmed) {
+            const firstName = (order.metadata as any)?.peptidesResponses?.prenom
+              || (responses as any)?.prenom
+              || (order.email ? order.email.split("@")[0] : undefined);
+            sendPeptidesOrderConfirmationEmail(email, {
+              firstName,
+              amountEur: ((order as any).finalAmountCents || 0) / 100,
+              promoCode: (order as any).promoCode || null,
+              peptidesNames,
+              scheduledDeliveryAt: newReportScheduledAt,
+              bloodCreditsCount: Array.isArray(report.promoCodesGenerated) ? report.promoCodesGenerated.length : 0,
+              orderId: order.id,
+            }).catch((err) => console.error("[AutoGen NewReport] Confirmation email failed:", err));
+          }
         } else if (stillNotEmailed) {
           try {
             clientEmailSent = await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
