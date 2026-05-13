@@ -4440,6 +4440,41 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/admin/blood-credits/add", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { email, count, reason } = req.body as { email: string; count?: number; reason?: string };
+      if (!email || typeof email !== "string") {
+        res.status(400).json({ success: false, error: "email required" });
+        return;
+      }
+      const n = typeof count === "number" && count > 0 ? Math.floor(count) : 1;
+      const note = (reason || "manual admin grant").slice(0, 200);
+
+      const { pool } = await import("./db");
+      let user = await storage.getUserByEmail(email);
+      let before = 0;
+      let after = 0;
+      if (!user) {
+        const created = await storage.createUser({ email, credits: n });
+        before = 0;
+        after = (created as any)?.credits ?? n;
+      } else {
+        before = (user as any).credits ?? 0;
+        const result = await pool.query(
+          "UPDATE users SET credits = credits + $1 WHERE LOWER(email) = LOWER($2) RETURNING credits",
+          [n, email]
+        );
+        after = result.rows[0]?.credits ?? (before + n);
+      }
+      console.log(`[Admin BloodCredit] +${n} credit(s) granted to ${email}: ${before} -> ${after} (reason: ${note})`);
+      res.json({ success: true, email, added: n, creditsBefore: before, creditsAfter: after, reason: note });
+    } catch (error: any) {
+      console.error("[Admin BloodCredit Add] Error:", error);
+      res.status(500).json({ success: false, error: error?.message || "Erreur serveur" });
+    }
+  });
+
   app.post("/api/admin/peptides/send-order-confirmation", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
