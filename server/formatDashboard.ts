@@ -149,10 +149,6 @@ function cleanSectionContent(content: string): string {
     .replace(/^\s*pubmed\b.*$/gmi, '')
     .replace(/https?:\/\/\S+/gi, '')
     .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, '')
-    .replace(/Sources?\s*:.*$/gmi, '')
-    .replace(/\b(Sources?|References?|Références?)\s*:\s*[^.\n]+\.?/gi, '')
-    .replace(/^.*\b(Sources?|References?|Références?)\b\s*[:\-–—].*$/gmi, '')
-    .replace(/^.*\b(Sources?|References?|Références?)\b.*$/gmi, '')
     .replace(/^\s*score\s*:?\s*\d{1,3}\s*\/\s*100\s*$/gmi, '')
     .replace(/score\s*:?\s*\d{1,3}\s*\/\s*100/gi, '')
     .replace(/^\s*score\s+global\s*:?.*$/gmi, '')
@@ -194,10 +190,7 @@ function stripCtaFromContent(content: string): string {
     "PRET A TRANSFORMER CES INSIGHTS",
     "FORMULES DISPONIBLES",
     "MES FORMULES",
-    "CODE PROMO",
-    "OPTION 1",
-    "OPTION 2",
-    "OPTION 3"
+    "CODE PROMO"
   ];
   const markerRegex = [
     /tu\s+as\s+les\s+cl[eé]s/i,
