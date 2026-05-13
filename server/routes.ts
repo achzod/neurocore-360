@@ -4417,6 +4417,41 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/admin/audit/:auditId/rebuild-html", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { auditId } = req.params;
+      const audit = await storage.getAudit(auditId);
+      if (!audit) {
+        res.status(404).json({ success: false, error: "Audit non trouvé" });
+        return;
+      }
+      const txt = (audit as any).reportTxt || (audit.narrativeReport as any)?.txt || "";
+      if (!txt || txt.length < 1000) {
+        res.status(409).json({ success: false, error: `reportTxt insuffisant (${txt.length} chars)` });
+        return;
+      }
+      const { generatePremiumHTMLFromTxt } = await import("./exportServicePremium");
+      const photos = (audit as any).photos || [];
+      const responses = (audit.responses as any) || {};
+      const beforeLen = ((audit as any).reportHtml || "").length;
+      const newHtml = generatePremiumHTMLFromTxt(txt, auditId, photos, responses);
+      await storage.updateAudit(auditId, { reportHtml: newHtml } as any);
+      console.log(`[Admin Rebuild HTML] audit=${auditId} txt=${txt.length}ch oldHtml=${beforeLen}ch newHtml=${newHtml.length}ch`);
+      res.json({
+        success: true,
+        auditId,
+        txtLength: txt.length,
+        oldHtmlLength: beforeLen,
+        newHtmlLength: newHtml.length,
+        delta: newHtml.length - beforeLen,
+      });
+    } catch (error: any) {
+      console.error("[Admin Rebuild HTML] Error:", error);
+      res.status(500).json({ success: false, error: error.message || "Erreur serveur" });
+    }
+  });
+
   app.post("/api/admin/audit/:auditId/patch-section", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
