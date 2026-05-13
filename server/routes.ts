@@ -4417,6 +4417,72 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/admin/audit/:auditId/patch-section", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { auditId } = req.params;
+      const { sectionIndex, html, mode } = req.body as {
+        sectionIndex: number;
+        html: string;
+        mode?: "append" | "prepend" | "replace";
+      };
+
+      if (typeof sectionIndex !== "number" || sectionIndex < 0) {
+        res.status(400).json({ success: false, error: "sectionIndex (number >= 0) required" });
+        return;
+      }
+      if (typeof html !== "string" || html.length === 0) {
+        res.status(400).json({ success: false, error: "html (non-empty string) required" });
+        return;
+      }
+      const op = mode === "prepend" || mode === "replace" ? mode : "append";
+
+      const audit = await storage.getAudit(auditId);
+      if (!audit) {
+        res.status(404).json({ success: false, error: "Audit non trouvé" });
+        return;
+      }
+
+      const narrative: any = (audit as any).narrativeReport;
+      if (!narrative || !Array.isArray(narrative.sections)) {
+        res.status(409).json({ success: false, error: "Audit n'a pas de narrativeReport.sections" });
+        return;
+      }
+      if (sectionIndex >= narrative.sections.length) {
+        res.status(400).json({ success: false, error: `sectionIndex out of range (max ${narrative.sections.length - 1})` });
+        return;
+      }
+
+      const section = narrative.sections[sectionIndex];
+      const currentIntro = typeof section.introduction === "string" ? section.introduction : "";
+      let nextIntro: string;
+      if (op === "append") nextIntro = currentIntro + html;
+      else if (op === "prepend") nextIntro = html + currentIntro;
+      else nextIntro = html;
+
+      const patchedSections = narrative.sections.map((s: any, i: number) =>
+        i === sectionIndex ? { ...s, introduction: nextIntro } : s
+      );
+      const patchedNarrative = { ...narrative, sections: patchedSections };
+
+      await storage.updateAudit(auditId, { narrativeReport: patchedNarrative } as any);
+      console.log(`[Admin Patch] audit=${auditId} section=${sectionIndex} mode=${op} added=${html.length}ch`);
+
+      res.json({
+        success: true,
+        auditId,
+        sectionIndex,
+        sectionTitle: section.title || null,
+        mode: op,
+        previousLength: currentIntro.length,
+        newLength: nextIntro.length,
+      });
+    } catch (error) {
+      console.error("[Admin Patch Section] Error:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
   app.post("/api/admin/send-cta", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
