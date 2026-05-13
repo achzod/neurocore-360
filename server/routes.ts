@@ -130,6 +130,28 @@ export async function registerRoutes(
         return { sent: false, skipped: "already_in_tracking" };
       }
 
+      // Completeness gate: block delivery if the report has truncation signatures.
+      // Errors → flip audit to NEEDS_REVIEW and abort send (Achzod must inspect/fix first).
+      if (auditType === "ELITE" || auditType === "PREMIUM") {
+        try {
+          const audit = await storage.getAudit(auditId);
+          if (audit) {
+            const { checkReportCompleteness } = await import("./reportCompleteness");
+            const txt = (audit as any).reportTxt || (audit.narrativeReport as any)?.txt || "";
+            const html = (audit as any).reportHtml || (audit.narrativeReport as any)?.html || "";
+            const check = checkReportCompleteness(txt, html, auditType);
+            if (!check.ok) {
+              const summary = check.errors.map(e => `${e.code}${e.section ? `(${e.section})` : ""}`).join(", ");
+              console.error(`${prefix} 🚫 COMPLETENESS GATE FAILED for audit ${auditId} type=${auditType} :: ${summary}`);
+              await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" }).catch(() => {});
+              return { sent: false, skipped: `completeness_failed:${summary}` };
+            }
+          }
+        } catch (err) {
+          console.error(`${prefix} ⚠️ completeness check threw, allowing send by default:`, err);
+        }
+      }
+
       const claimed = await storage.claimAuditForSending(auditId).catch(() => false);
       if (!claimed) {
         console.log(`${prefix} ⏭️ Could not claim audit ${auditId} for sending , another process owns it or already SENT`);
@@ -4414,6 +4436,178 @@ export async function registerRoutes(
     } catch (error) {
       console.error("[Admin Update Status] Error:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  app.post("/api/admin/audit/:auditId/check-completeness", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { auditId } = req.params;
+      const audit = await storage.getAudit(auditId);
+      if (!audit) {
+        res.status(404).json({ success: false, error: "Audit non trouvé" });
+        return;
+      }
+      const { checkReportCompleteness } = await import("./reportCompleteness");
+      const txt = (audit as any).reportTxt || (audit.narrativeReport as any)?.txt || "";
+      const html = (audit as any).reportHtml || (audit.narrativeReport as any)?.html || "";
+      const check = checkReportCompleteness(txt, html, audit.type as string);
+      res.json({ success: true, auditId, type: audit.type, ...check });
+    } catch (error: any) {
+      console.error("[Admin Check Completeness] Error:", error);
+      res.status(500).json({ success: false, error: error?.message || "Erreur serveur" });
+    }
+  });
+
+  app.post("/api/admin/audits/check-all-completeness", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const types: string[] = Array.isArray(req.body?.types) && req.body.types.length
+        ? req.body.types
+        : ["ELITE", "PREMIUM"];
+      const statuses: string[] = Array.isArray(req.body?.statuses) && req.body.statuses.length
+        ? req.body.statuses
+        : ["SENT", "READY", "NEEDS_REVIEW"];
+      const flipToReview: boolean = req.body?.flipToReview === true;
+
+      const { checkReportCompleteness } = await import("./reportCompleteness");
+      const lightAudits = await storage.getAllAuditsLight();
+      const candidates = lightAudits
+        .filter(a => types.includes(a.type as string))
+        .filter(a => statuses.includes(a.reportDeliveryStatus as string));
+
+      const results: Array<any> = [];
+      let okCount = 0;
+      let failCount = 0;
+      let flippedCount = 0;
+
+      for (const lite of candidates) {
+        try {
+          const full = await storage.getAudit(lite.id);
+          if (!full) continue;
+          const txt = (full as any).reportTxt || (full.narrativeReport as any)?.txt || "";
+          const html = (full as any).reportHtml || (full.narrativeReport as any)?.html || "";
+          const check = checkReportCompleteness(txt, html, lite.type as string);
+          if (check.ok) {
+            okCount++;
+            results.push({ id: lite.id, email: lite.email, type: lite.type, status: lite.reportDeliveryStatus, ok: true, sectionCount: check.sectionCount });
+          } else {
+            failCount++;
+            if (flipToReview && lite.reportDeliveryStatus !== "NEEDS_REVIEW") {
+              await storage.updateAudit(lite.id, { reportDeliveryStatus: "NEEDS_REVIEW" }).catch(() => {});
+              flippedCount++;
+            }
+            results.push({
+              id: lite.id,
+              email: lite.email,
+              type: lite.type,
+              status: lite.reportDeliveryStatus,
+              ok: false,
+              sectionCount: check.sectionCount,
+              errors: check.errors.map(e => `${e.code}${e.section ? `(${e.section})` : ""}`),
+            });
+          }
+        } catch (e: any) {
+          results.push({ id: lite.id, email: lite.email, error: e?.message });
+        }
+      }
+
+      console.log(`[Admin Check All] ok=${okCount} fail=${failCount} flipped=${flippedCount} flipToReview=${flipToReview}`);
+      res.json({
+        success: true,
+        flipToReview,
+        total: candidates.length,
+        ok: okCount,
+        fail: failCount,
+        flipped: flippedCount,
+        results,
+      });
+    } catch (error: any) {
+      console.error("[Admin Check All Completeness] Error:", error);
+      res.status(500).json({ success: false, error: error?.message || "Erreur serveur" });
+    }
+  });
+
+  app.post("/api/admin/backfill-rebuild-html", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const types: string[] = Array.isArray(req.body?.types) && req.body.types.length
+        ? req.body.types
+        : ["ELITE", "PREMIUM"];
+      const statuses: string[] = Array.isArray(req.body?.statuses) && req.body.statuses.length
+        ? req.body.statuses
+        : ["SENT", "READY", "NEEDS_REVIEW"];
+      const dryRun: boolean = req.body?.dryRun === true;
+      const limit: number = typeof req.body?.limit === "number" && req.body.limit > 0
+        ? Math.min(req.body.limit, 500)
+        : 500;
+
+      const { generatePremiumHTMLFromTxt } = await import("./exportServicePremium");
+
+      const lightAudits = await storage.getAllAuditsLight();
+      const candidates = lightAudits
+        .filter(a => types.includes(a.type as string))
+        .filter(a => statuses.includes(a.reportDeliveryStatus as string))
+        .slice(0, limit);
+
+      const results: Array<{
+        id: string;
+        email: string;
+        type: string;
+        status: string;
+        txtLen: number;
+        oldHtmlLen: number;
+        newHtmlLen: number;
+        delta: number;
+        skipped?: string;
+        error?: string;
+      }> = [];
+
+      let processed = 0;
+      let rebuilt = 0;
+      let totalDelta = 0;
+
+      for (const lite of candidates) {
+        processed++;
+        try {
+          const full = await storage.getAudit(lite.id);
+          if (!full) {
+            results.push({ id: lite.id, email: lite.email, type: lite.type as string, status: lite.reportDeliveryStatus as string, txtLen: 0, oldHtmlLen: 0, newHtmlLen: 0, delta: 0, skipped: "not_found" });
+            continue;
+          }
+          const txt = (full as any).reportTxt || (full.narrativeReport as any)?.txt || "";
+          const oldHtml = (full as any).reportHtml || "";
+          if (!txt || txt.length < 1000) {
+            results.push({ id: lite.id, email: lite.email, type: lite.type as string, status: lite.reportDeliveryStatus as string, txtLen: txt.length, oldHtmlLen: oldHtml.length, newHtmlLen: 0, delta: 0, skipped: "txt_too_short" });
+            continue;
+          }
+          const photos = (full as any).photos || [];
+          const responses = (full.responses as any) || {};
+          const newHtml = generatePremiumHTMLFromTxt(txt, lite.id, photos, responses);
+          const delta = newHtml.length - oldHtml.length;
+          if (!dryRun) {
+            await storage.updateAudit(lite.id, { reportHtml: newHtml } as any);
+            rebuilt++;
+          }
+          totalDelta += delta;
+          results.push({ id: lite.id, email: lite.email, type: lite.type as string, status: lite.reportDeliveryStatus as string, txtLen: txt.length, oldHtmlLen: oldHtml.length, newHtmlLen: newHtml.length, delta });
+        } catch (e: any) {
+          results.push({ id: lite.id, email: lite.email, type: lite.type as string, status: lite.reportDeliveryStatus as string, txtLen: 0, oldHtmlLen: 0, newHtmlLen: 0, delta: 0, error: e?.message || "unknown" });
+        }
+      }
+
+      console.log(`[Admin Backfill] processed=${processed} rebuilt=${rebuilt} totalDelta=${totalDelta} dryRun=${dryRun}`);
+      res.json({
+        success: true,
+        dryRun,
+        processed,
+        rebuilt,
+        totalDelta,
+        results,
+      });
+    } catch (error: any) {
+      console.error("[Admin Backfill] Error:", error);
+      res.status(500).json({ success: false, error: error?.message || "Erreur serveur" });
     }
   });
 
