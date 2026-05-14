@@ -889,25 +889,27 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
   ],
   "peptides": [
     {
-      "name": "Nom exact du peptide (ex: BPC-157, CJC-1295 sans DAC, Semaglutide)",
-      "purpose": "Objectif spécifique pour CE profil",
-      "whyThisPeptide": "Explication détaillée en 2-3 phrases",
-      "dosage": "X mcg/jour (X mcg/kg pour ${weight}kg)",
-      "timing": "Horaire précis et conditions",
-      "route": "SC / IM / Intranasal",
-      "cycleDuration": "X semaines, pause Y semaines",
-      "reconstitution": "Vial [Xmg] + [Y]ml BAC water = [Z]mcg/ml → [N] unités (soit [X.XX] ml) pour [dose]mcg. CONTRAINTE: [Y] ne dépasse JAMAIS 3, en pratique 1 à 2 pour les vials 2-10mg et 2 à 3 pour les vials 10-100mg.",
-      "totalCycleNeed": "Calcule mg total nécessaires pour le cycle (dose × fréquence × semaines) , ex: 7mg total pour Sema sur 12 sem",
-      "vialsNeeded": "1 à 3 vials max selon format dispo (ex: 1 vial de 10mg suffit pour 7mg de besoin)",
-      "checkAvailability": "Procédure : peptaura.com → onglet Shipping → ${countryLabel} → liste live des fournisseurs qui livrent → choisis format dispo qui matche [totalCycleNeed]",
-      "priceEstimate": "Fourchette indicative : entre $X et $Y par vial selon fournisseur et format (à vérifier en live)"
+      "name": "BPC-157",
+      "purpose": "Récupération tendineuse + intestin",
+      "whyThisPeptide": "Explication 2-3 phrases adaptée au profil de ${firstName}",
+      "dosage": "250 mcg deux fois par jour",
+      "timing": "Matin à jeun et soir avant coucher",
+      "route": "SC",
+      "cycleDuration": "8 semaines",
+      "reconstitution": "Vial 5mg + 2ml BAC water = 2500 mcg/ml. Pour 250 mcg, tire 10 unités sur seringue U-100.",
+      "totalCycleNeed": "28 mg sur 8 semaines (250 mcg × 2 × 7 × 8)",
+      "vialsNeeded": "6 vials de 5mg",
+      "checkAvailability": "Vérifie peptaura.com onglet Shipping pays ${countryLabel} pour le format dispo",
+      "priceEstimate": "Entre 15 et 30 dollars par vial"
     }
   ],
-  "bloodMarkers": ["IGF-1", "Glycémie à jeun", "... marqueurs pertinents pour ce profil"],
-  "weeklySchedule": "LUNDI AM: [peptide] [dose] SC [site] | LUNDI PM: [peptide] [dose] SC [site] | MARDI AM: ... | etc.",
-  "shoppingList": "Liste exacte des molécules + quantités à ACHETER pour 1 cycle. Format: [peptide] : besoin total [X mg], commande [1-3 vials] format [dose typique mg] | ... | + BAC water 1 vial | + seringues U-100 31G boîte 100 | + tampons alcool. INTERDIT : pas plus de 3 vials par molécule, pas de mention de fournisseur précis ni de prix précis, pas d'URL produit. Le client trouve dispo via onglet Shipping. TOTAL estimé : fourchette de prix indicative en USD.",
+  "bloodMarkers": ["IGF-1", "Glycémie à jeun"],
+  "weeklySchedule": "LUNDI AM: peptide dose SC site | LUNDI PM: ... | etc",
+  "shoppingList": "BPC-157 : besoin total X mg, commande Y vials format Zmg | autre peptide : ... | + BAC water 1 vial | + seringues U-100 31G boîte 100 | + tampons alcool | TOTAL estimé : entre X et Y dollars",
   "promoCodesGenerated": []
-}`;
+}
+
+EXEMPLE FOURNI CI-DESSUS : tu suis la STRUCTURE mais tu remplaces tous les contenus par les valeurs réelles calculées pour ${firstName}. Tu génères 2 à 4 peptides (pas un seul), tu calcules les vraies quantités avec la formule du règle 6, et tu adapte tous les champs à ce profil spécifique.`;
 }
 
 // ─── Claude call with retry ───────────────────────────────────────────────────
