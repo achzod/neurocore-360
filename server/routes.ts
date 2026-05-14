@@ -4475,6 +4475,9 @@ export async function registerRoutes(
     }
   });
 
+  // In-memory job store for async test-generate
+  const testGenJobs = new Map<string, { status: "running" | "done" | "error"; report?: any; error?: string; startedAt: number; finishedAt?: number }>();
+
   app.post("/api/admin/peptides/test-generate", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
@@ -4484,13 +4487,39 @@ export async function registerRoutes(
         return;
       }
       const testEmail = email || "test+iter@achzodcoaching.com";
-      const { generatePeptidesProtocol } = await import("./peptidesEngine");
-      const report = await generatePeptidesProtocol(responses as any, testEmail);
-      res.json({ success: true, email: testEmail, report });
+      const jobId = `testgen-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      testGenJobs.set(jobId, { status: "running", startedAt: Date.now() });
+      // Cap stored jobs to last 20
+      if (testGenJobs.size > 20) {
+        const oldest = Array.from(testGenJobs.entries()).sort((a, b) => a[1].startedAt - b[1].startedAt)[0];
+        if (oldest) testGenJobs.delete(oldest[0]);
+      }
+      // Fire-and-forget background generation
+      (async () => {
+        try {
+          const { generatePeptidesProtocol } = await import("./peptidesEngine");
+          const report = await generatePeptidesProtocol(responses as any, testEmail);
+          testGenJobs.set(jobId, { status: "done", report, startedAt: testGenJobs.get(jobId)!.startedAt, finishedAt: Date.now() });
+        } catch (err: any) {
+          testGenJobs.set(jobId, { status: "error", error: err?.message || String(err), startedAt: testGenJobs.get(jobId)!.startedAt, finishedAt: Date.now() });
+        }
+      })();
+      res.json({ success: true, jobId, status: "running" });
     } catch (error: any) {
       console.error("[Admin Test Generate] Error:", error);
       res.status(500).json({ success: false, error: error?.message || "Erreur serveur" });
     }
+  });
+
+  app.get("/api/admin/peptides/test-generate/:jobId", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    const job = testGenJobs.get(req.params.jobId);
+    if (!job) {
+      res.status(404).json({ success: false, error: "Job not found" });
+      return;
+    }
+    const elapsedSec = Math.round(((job.finishedAt || Date.now()) - job.startedAt) / 1000);
+    res.json({ success: true, jobId: req.params.jobId, ...job, elapsedSec });
   });
 
   app.post("/api/admin/peptides/send-order-confirmation", async (req, res) => {
