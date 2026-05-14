@@ -3955,104 +3955,94 @@ export async function sendGratuitJ5Email(
     const reportLink = `${baseUrl}/analysis/${auditId}`;
 
     const content = `
-      <h2 style="color: ${COLORS.text}; margin: 0 0 16px; font-size: 28px; text-align: center; font-weight: 700; letter-spacing: -1px;">
-        Pourquoi ton Discovery<br/>seul <span style="color:${COLORS.warning};">ne va rien changer</span>
-      </h2>
-
-      <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 28px; text-align: center;">
-        5 jours depuis ton rapport. Statistiquement, tu n'as probablement rien appliqué.<br/>
-        <strong style="color: ${COLORS.text};">C'est pas de ta faute. C'est le mode "auto-application" qui est cassé.</strong>
+      <p style="color:${APPLE_COLORS.inkSoft};font-size:16px;line-height:1.65;margin:0 0 24px;">
+        5 jours depuis ton rapport. La plupart des gens à ce stade n'ont rien appliqué. C'est pas un manque de volonté, c'est juste que <strong style="color:${APPLE_COLORS.ink};">un rapport, même précis, ne suffit pas à transformer un corps tout seul</strong>.
       </p>
 
-      <!-- Les 3 raisons (storytelling) -->
-      <div style="padding: 28px; background: ${COLORS.surface}; border-radius: 12px; border: 1px solid ${COLORS.border}; margin-bottom: 28px;">
-        <p style="color: ${COLORS.textMuted}; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 20px; font-weight: 600; text-align: center;">
-          3 raisons pour lesquelles on n'y arrive pas seul
-        </p>
+      <h2 style="color:${APPLE_COLORS.ink};margin:0 0 14px;font-size:22px;font-weight:700;letter-spacing:-0.4px;">
+        Pourquoi un Discovery sans suivi reste inactionnable
+      </h2>
 
-        <div style="padding: 16px; background: ${COLORS.background}; border-radius: 8px; border-left: 3px solid ${COLORS.warning}; margin-bottom: 12px;">
-          <div>
-            <p style="color: ${COLORS.text}; font-size: 15px; font-weight: 600; margin: 0 0 4px;">
-              1. Le plan manque , tu sais où tu bloques mais pas quoi faire lundi matin
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:28px;border-collapse:separate;border-spacing:0 10px;">
+        <tr>
+          <td style="padding:16px 18px;background:#f5f5f7;border-radius:10px;border-left:3px solid ${APPLE_COLORS.accent};">
+            <p style="color:${APPLE_COLORS.ink};font-size:15px;font-weight:600;margin:0 0 4px;line-height:1.45;">1. Le plan concret manque</p>
+            <p style="color:${APPLE_COLORS.inkSoft};font-size:13px;margin:0;line-height:1.55;">
+              Le Discovery te donne le diagnostic. Il ne te dit pas quoi faire lundi matin précisément, ni quelle dose de protéines selon ta fatigue de la semaine, ni quels glucides ajuster si tu plateau.
             </p>
-            <p style="color: ${COLORS.textMuted}; font-size: 13px; margin: 0; line-height: 1.6;">
-              Un rapport te donne les scores. Pas une routine jour-par-jour, pas des repas calibrés, pas des charges d'entraînement adaptées à TA fatigue cette semaine.
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:16px 18px;background:#f5f5f7;border-radius:10px;border-left:3px solid ${APPLE_COLORS.accent};">
+            <p style="color:${APPLE_COLORS.ink};font-size:15px;font-weight:600;margin:0 0 4px;line-height:1.45;">2. L'ajustement hebdo n'existe pas en autonomie</p>
+            <p style="color:${APPLE_COLORS.inkSoft};font-size:13px;margin:0;line-height:1.55;">
+              Après une semaine, ton corps réagit à ton plan d'une façon ou d'une autre. Sans quelqu'un qui lit tes données et recalibre, tu restes sur un plan figé pendant 2 mois et tu plafonne.
             </p>
-          </div>
-        </div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:16px 18px;background:#f5f5f7;border-radius:10px;border-left:3px solid ${APPLE_COLORS.accent};">
+            <p style="color:${APPLE_COLORS.ink};font-size:15px;font-weight:600;margin:0 0 4px;line-height:1.45;">3. Le contrat moral manque</p>
+            <p style="color:${APPLE_COLORS.inkSoft};font-size:13px;margin:0;line-height:1.55;">
+              Sans engagement écrit avec quelqu'un qui vérifie tes données hebdo, on lâche tous au bout de 10 jours. C'est documenté, c'est physiologique. C'est pour ça que le coaching existe.
+            </p>
+          </td>
+        </tr>
+      </table>
 
-        <div style="padding: 16px; background: ${COLORS.background}; border-radius: 8px; border-left: 3px solid ${COLORS.warning}; margin-bottom: 12px;">
-          <div>
-            <p style="color: ${COLORS.text}; font-size: 15px; font-weight: 600; margin: 0 0 4px;">
-              2. Aucun ajustement , tu pars droit dans le mur sans feedback
-            </p>
-            <p style="color: ${COLORS.textMuted}; font-size: 13px; margin: 0; line-height: 1.6;">
-              Après 1 semaine, ton corps réagit différemment de la théorie. Sans quelqu'un qui lit tes bilans hebdos et recalibre, tu restes sur un plan générique pendant 2 mois.
-            </p>
-          </div>
-        </div>
-
-        <div style="padding: 16px; background: ${COLORS.background}; border-radius: 8px; border-left: 3px solid ${COLORS.warning};">
-          <div>
-            <p style="color: ${COLORS.text}; font-size: 15px; font-weight: 600; margin: 0 0 4px;">
-              3. L'accountability manque , personne ne te réveille quand tu dévies
-            </p>
-            <p style="color: ${COLORS.textMuted}; font-size: 13px; margin: 0; line-height: 1.6;">
-              Sans contrat moral, tu arrêtes après 10 jours. C'est pas de la faiblesse , c'est de la physiologie. 98% des gens font pareil.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <!-- CTA Principal : Coaching Essential -->
-      <div style="padding: 28px; background: linear-gradient(135deg, ${COLORS.primary}20 0%, ${COLORS.primary}05 100%); border-radius: 12px; border: 2px solid ${COLORS.primary}; margin-bottom: 20px; text-align: center;">
-        <p style="color: ${COLORS.textMuted}; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 8px; font-weight: 700;">
+      <!-- Solution Coaching Essential -->
+      <div style="padding:28px;background:${APPLE_COLORS.card};border:2px solid ${APPLE_COLORS.accent};border-radius:14px;margin-bottom:24px;">
+        <p style="color:${APPLE_COLORS.muted};font-size:11px;text-transform:uppercase;letter-spacing:2px;margin:0 0 8px;font-weight:700;">
           La solution qui résout les 3
         </p>
-        <h3 style="color: ${COLORS.primary}; font-size: 22px; font-weight: 700; margin: 0 0 10px; letter-spacing: -0.5px;">
-          Coaching Essential , à partir de 249€
+        <h3 style="color:${APPLE_COLORS.ink};font-size:22px;font-weight:700;margin:0 0 10px;letter-spacing:-0.4px;">
+          Coaching Essential
         </h3>
-        <p style="color: ${COLORS.text}; font-size: 14px; margin: 0 0 16px; line-height: 1.6;">
-          Plan sur-mesure basé sur ton Discovery · Nutrition précision · Bilans hebdos · Ajustements en continu · Contrat moral avec moi.
+        <p style="color:${APPLE_COLORS.inkSoft};font-size:14px;margin:0 0 18px;line-height:1.6;">
+          Plan sur-mesure calibré sur ton Discovery, nutrition précision, bilan écrit chaque semaine, ajustements en continu, contrat moral avec moi.
         </p>
-        <div style="background: ${COLORS.background}; border-radius: 8px; padding: 12px 16px; display: inline-block; margin-bottom: 14px; border: 1px dashed ${COLORS.primary};">
-          <p style="color: ${COLORS.primary}; font-size: 18px; font-weight: 700; letter-spacing: 3px; margin: 0;">
-            DISCOVERY30
+
+        <div style="padding:14px 18px;background:#f5f5f7;border-radius:10px;margin-bottom:18px;text-align:center;">
+          <p style="color:${APPLE_COLORS.muted};font-size:11px;text-transform:uppercase;letter-spacing:1.5px;margin:0 0 6px;font-weight:700;">
+            Code clients Discovery
           </p>
-          <p style="color: ${COLORS.textMuted}; font-size: 11px; margin: 4px 0 0;">-30% formules 8 et 12 sem</p>
+          <p style="color:${APPLE_COLORS.accent};font-size:24px;font-weight:800;letter-spacing:2px;margin:0 0 4px;">DISCOVERY30</p>
+          <p style="color:${APPLE_COLORS.inkSoft};font-size:12px;margin:0;">-30% sur formules 8 et 12 sem (Essential, Elite, Private Lab)</p>
         </div>
-        <br/>
-        ${getPrimaryButton('Voir Coaching Essential →', primaryCtaLink)}
+
+        ${getCoachingAppleButton('Voir Coaching Essential', primaryCtaLink)}
       </div>
 
-      <!-- CTA Secondaire -->
-      <div style="text-align: center; margin-bottom: 24px;">
-        <a href="${secondaryCtaLink}" style="color: ${COLORS.textMuted}; font-size: 14px; text-decoration: underline;">
-          Comparer les 3 formules (Essential / Elite / Private Lab) →
+      <div style="text-align:center;margin-bottom:20px;">
+        <a href="${secondaryCtaLink}" style="color:${APPLE_COLORS.accent};font-size:14px;text-decoration:none;font-weight:500;">
+          Comparer les 3 formules (Essential, Elite, Private Lab) →
         </a>
       </div>
 
-      <div style="padding: 14px 18px; background: ${COLORS.surface}; border-radius: 8px; border: 1px solid ${COLORS.border}; text-align: center;">
-        <a href="${reportLink}" style="color: ${COLORS.textMuted}; font-size: 13px; text-decoration: underline;">
+      <div style="padding:14px 18px;background:#f5f5f7;border-radius:10px;text-align:center;">
+        <a href="${reportLink}" style="color:${APPLE_COLORS.muted};font-size:13px;text-decoration:underline;">
           Relire mon Discovery Scan
         </a>
       </div>
 
+      <p style="color:${APPLE_COLORS.muted};font-size:12px;margin:24px 0 0;">
+        Achzod
+      </p>
+
       <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
     `;
 
-    const emailContent = getEmailWrapper(
+    const emailContent = getCoachingAppleWrapper(
       content,
-      `linear-gradient(135deg, ${COLORS.primary} 0%, #059669 100%)`,
-      "Coaching Achzod",
-      "Pourquoi seul ne marche pas"
+      "Un Discovery sans suivi reste inactionnable",
+      "Voici pourquoi la suite passe par un coaching"
     );
 
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
-        text: `Pourquoi ton Discovery seul ne va rien changer.\n\n3 raisons : pas de plan concret, pas d'ajustement hebdo, pas d'accountability.\n\nCoaching Essential (249€+, 4/8/12 sem) résout les 3. Code DISCOVERY30 (-30% formules 8 et 12 sem).\n\nEssential: ${primaryCtaLink}\nToutes les formules: ${secondaryCtaLink}\n\nAchzod`,
-        subject: "Pourquoi ton Discovery seul ne va rien changer",
+        text: `Un Discovery sans suivi reste inactionnable.\n\n3 raisons : pas de plan jour-par-jour, pas d'ajustement hebdo, pas de contrat moral.\n\nCoaching Essential (à partir de 249€) résout les 3. Code DISCOVERY30 (-30% sur formules 8 et 12 sem).\n\nEssential : ${primaryCtaLink}\nToutes les formules : ${secondaryCtaLink}\nRelire le Discovery : ${reportLink}\n\nAchzod`,
+        subject: "Un Discovery sans suivi reste inactionnable",
         from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
       },
