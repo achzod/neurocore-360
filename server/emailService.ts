@@ -4078,100 +4078,85 @@ export async function sendGratuitJ7Email(
     const allFormulesLink = `https://www.achzodcoaching.com/formules-coaching?utm_source=apexlabs&utm_medium=email&utm_campaign=discovery_j7_lastcall`;
 
     const content = `
-      <h2 style="color: ${COLORS.text}; margin: 0 0 16px; font-size: 28px; text-align: center; font-weight: 700; letter-spacing: -1px;">
-        Dernière relance<br/><span style="color:${COLORS.warning};">DISCOVERY30 expire dans 48h</span>
-      </h2>
-
-      <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 28px; text-align: center;">
-        7 jours depuis ton Discovery. Si t'attendais un déclic, c'est maintenant.<br/>
-        <strong style="color: ${COLORS.text};">Le code -30% coaching se désactive dans 48h.</strong>
+      <p style="color:${APPLE_COLORS.inkSoft};font-size:16px;line-height:1.65;margin:0 0 24px;">
+        7 jours depuis ton Discovery. Si t'as lu mes mails et que tu hésites encore, voici une comparaison claire des 3 formules coaching avec le tarif <strong style="color:${APPLE_COLORS.ink};">DISCOVERY30</strong> appliqué.
       </p>
 
-      <!-- Urgency box -->
-      <div style="background: ${COLORS.background}; border-radius: 10px; padding: 22px; border: 2px dashed ${COLORS.warning}; margin-bottom: 28px; text-align: center;">
-        <p style="color: ${COLORS.warning}; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 8px; font-weight: 700;">
-          Code à utiliser au checkout
+      <!-- Code box -->
+      <div style="padding:22px 26px;background:${APPLE_COLORS.card};border:2px solid ${APPLE_COLORS.accent};border-radius:14px;margin-bottom:28px;text-align:center;">
+        <p style="color:${APPLE_COLORS.muted};font-size:11px;text-transform:uppercase;letter-spacing:2px;margin:0 0 8px;font-weight:700;">
+          Code à appliquer au checkout
         </p>
-        <p style="color: ${COLORS.warning}; font-size: 36px; font-weight: 700; letter-spacing: 4px; margin: 0 0 8px;">
-          DISCOVERY30
-        </p>
-        <p style="color: ${COLORS.text}; font-size: 14px; margin: 0; font-weight: 600;">
-          -30% sur formules coaching (formules 8 et 12 sem uniquement)
-        </p>
-        <p style="color: ${COLORS.textMuted}; font-size: 12px; margin: 8px 0 0;">
-          Expire <strong style="color:${COLORS.warning};">dans 48h</strong> , après, plus de discount client Discovery.
+        <p style="color:${APPLE_COLORS.accent};font-size:30px;font-weight:800;letter-spacing:3px;margin:0 0 6px;">DISCOVERY30</p>
+        <p style="color:${APPLE_COLORS.ink};font-size:14px;margin:0;font-weight:500;">
+          -30% sur formules coaching <strong>8 et 12 semaines</strong>
         </p>
       </div>
 
-      <!-- 3 formules side by side -->
-      <p style="color: ${COLORS.textMuted}; font-size: 13px; text-align: center; margin: 0 0 16px; text-transform: uppercase; letter-spacing: 2px; font-weight: 600;">
-        Les 3 formules avec -30%
-      </p>
+      <h2 style="color:${APPLE_COLORS.ink};margin:0 0 14px;font-size:20px;font-weight:700;letter-spacing:-0.3px;">
+        Les 3 formules après DISCOVERY30
+      </h2>
 
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 28px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:24px;border-collapse:separate;border-spacing:0 10px;">
         <tr>
-          <td style="padding: 14px 16px; border: 1px solid ${COLORS.border}; border-radius: 8px; background: ${COLORS.surface};">
-            <p style="color: ${COLORS.text}; font-size: 15px; font-weight: 700; margin: 0 0 4px;">Essential</p>
-            <p style="color: ${COLORS.textMuted}; font-size: 12px; margin: 0 0 4px; line-height: 1.5;">Mail 7j/7 • Plan sur-mesure • Bilans hebdos</p>
-            <p style="color: ${COLORS.text}; font-size: 13px; margin: 0 0 8px;">
-              <span style="text-decoration: line-through; color: ${COLORS.textMuted};">399€</span>
-              <span style="color: ${COLORS.primary}; font-weight: 700; margin-left: 6px;">279€</span> (8 sem)
+          <td style="padding:18px 20px;background:#f5f5f7;border-radius:12px;">
+            <p style="color:${APPLE_COLORS.ink};font-size:16px;font-weight:700;margin:0 0 4px;letter-spacing:-0.2px;">Essential</p>
+            <p style="color:${APPLE_COLORS.inkSoft};font-size:13px;margin:0 0 8px;line-height:1.55;">Mail prioritaire 7j/7. Plan personnalisé sur ton Discovery. Bilan écrit hebdo.</p>
+            <p style="color:${APPLE_COLORS.ink};font-size:14px;margin:0 0 10px;">
+              <span style="text-decoration:line-through;color:${APPLE_COLORS.muted};">399€</span>
+              <span style="color:${APPLE_COLORS.accent};font-weight:700;margin-left:8px;font-size:18px;">279€</span> 8 sem
             </p>
-            <a href="${essentialLink}" style="color: ${COLORS.primary}; font-size: 13px; text-decoration: underline; font-weight: 600;">Voir Essential →</a>
+            <a href="${essentialLink}" style="color:${APPLE_COLORS.accent};font-size:14px;text-decoration:none;font-weight:600;">Voir Essential →</a>
           </td>
         </tr>
-        <tr><td style="height: 8px;"></td></tr>
         <tr>
-          <td style="padding: 14px 16px; border: 1px solid ${COLORS.border}; border-radius: 8px; background: ${COLORS.surface};">
-            <p style="color: ${COLORS.text}; font-size: 15px; font-weight: 700; margin: 0 0 4px;">Elite ★</p>
-            <p style="color: ${COLORS.textMuted}; font-size: 12px; margin: 0 0 4px; line-height: 1.5;">Mail direct • Bilans hebdo • Gestion blessures</p>
-            <p style="color: ${COLORS.text}; font-size: 13px; margin: 0 0 8px;">
-              <span style="text-decoration: line-through; color: ${COLORS.textMuted};">649€</span>
-              <span style="color: ${COLORS.primary}; font-weight: 700; margin-left: 6px;">454€</span> (8 sem)
+          <td style="padding:18px 20px;background:#f5f5f7;border-radius:12px;border-left:3px solid ${APPLE_COLORS.accent};">
+            <p style="color:${APPLE_COLORS.ink};font-size:16px;font-weight:700;margin:0 0 4px;letter-spacing:-0.2px;">Elite (plus choisi)</p>
+            <p style="color:${APPLE_COLORS.inkSoft};font-size:13px;margin:0 0 8px;line-height:1.55;">Tout Essential, plus gestion blessures et ajustements deux fois par semaine.</p>
+            <p style="color:${APPLE_COLORS.ink};font-size:14px;margin:0 0 10px;">
+              <span style="text-decoration:line-through;color:${APPLE_COLORS.muted};">649€</span>
+              <span style="color:${APPLE_COLORS.accent};font-weight:700;margin-left:8px;font-size:18px;">454€</span> 8 sem
             </p>
-            <a href="${eliteLink}" style="color: ${COLORS.primary}; font-size: 13px; text-decoration: underline; font-weight: 600;">Voir Elite →</a>
+            <a href="${eliteLink}" style="color:${APPLE_COLORS.accent};font-size:14px;text-decoration:none;font-weight:600;">Voir Elite →</a>
           </td>
         </tr>
-        <tr><td style="height: 8px;"></td></tr>
         <tr>
-          <td style="padding: 14px 16px; border: 1px solid ${COLORS.border}; border-radius: 8px; background: ${COLORS.surface};">
-            <p style="color: ${COLORS.text}; font-size: 15px; font-weight: 700; margin: 0 0 4px;">Private Lab</p>
-            <p style="color: ${COLORS.textMuted}; font-size: 12px; margin: 0 0 4px; line-height: 1.5;">Mail prioritaire 6h-minuit • Reconstruction hebdo pluridisciplinaire</p>
-            <p style="color: ${COLORS.text}; font-size: 13px; margin: 0 0 8px;">
-              <span style="text-decoration: line-through; color: ${COLORS.textMuted};">799€</span>
-              <span style="color: ${COLORS.primary}; font-weight: 700; margin-left: 6px;">559€</span> (8 sem)
+          <td style="padding:18px 20px;background:#f5f5f7;border-radius:12px;">
+            <p style="color:${APPLE_COLORS.ink};font-size:16px;font-weight:700;margin:0 0 4px;letter-spacing:-0.2px;">Private Lab</p>
+            <p style="color:${APPLE_COLORS.inkSoft};font-size:13px;margin:0 0 8px;line-height:1.55;">Tout Elite, plus reconstruction pluridisciplinaire et accès mail prioritaire 6h-minuit.</p>
+            <p style="color:${APPLE_COLORS.ink};font-size:14px;margin:0 0 10px;">
+              <span style="text-decoration:line-through;color:${APPLE_COLORS.muted};">799€</span>
+              <span style="color:${APPLE_COLORS.accent};font-weight:700;margin-left:8px;font-size:18px;">559€</span> 8 sem
             </p>
-            <a href="${privateLabLink}" style="color: ${COLORS.primary}; font-size: 13px; text-decoration: underline; font-weight: 600;">Voir Private Lab →</a>
+            <a href="${privateLabLink}" style="color:${APPLE_COLORS.accent};font-size:14px;text-decoration:none;font-weight:600;">Voir Private Lab →</a>
           </td>
         </tr>
       </table>
 
-      ${getPrimaryButton('Comparer les 3 formules →', allFormulesLink)}
+      ${getCoachingAppleButton('Comparer les 3 formules', allFormulesLink)}
 
-      <p style="color: ${COLORS.textMuted}; font-size: 13px; margin: 24px 0 0; text-align: center;">
-        Après J+9, le code DISCOVERY30 est désactivé pour les clients Discovery.<br/>
-        Pas de prolongation, pas de rattrapage.
+      <p style="color:${APPLE_COLORS.muted};font-size:13px;margin:20px 0 0;text-align:center;line-height:1.55;">
+        Les 4 semaines ne sont pas éligibles au code DISCOVERY30, seules les 8 et 12 sem le sont.
       </p>
 
-      <p style="color: ${COLORS.textMuted}; font-size: 12px; line-height: 1.6; margin: 16px 0 0; text-align: center;">
-        <a href="{{UNSUB_LINK}}" style="color: #525252; text-decoration: underline;">Se desabonner</a>
+      <p style="color:${APPLE_COLORS.muted};font-size:12px;margin:24px 0 0;">
+        Achzod
       </p>
 
       <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
     `;
 
-    const emailContent = getEmailWrapper(
+    const emailContent = getCoachingAppleWrapper(
       content,
-      `linear-gradient(135deg, ${COLORS.warning} 0%, #d97706 100%)`,
-      "48h restantes",
-      "DISCOVERY30 expire bientôt"
+      "Comparaison des 3 formules coaching",
+      "Tarifs après DISCOVERY30 appliqué"
     );
 
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
-        text: `Dernière relance , DISCOVERY30 actif sur formules 8 et 12 sem.\n\n-30% sur formules coaching 8 et 12 sem :\n\nEssential 8 sem : 279€ (au lieu de 399€) , ${essentialLink}\nElite 8 sem : 454€ (au lieu de 649€) , ${eliteLink}\nPrivate Lab 8 sem : 559€ (au lieu de 799€) , ${privateLabLink}\n\nLes 4 semaines ne sont pas éligibles au code, seules les 8 et 12 sem le sont.\n\nAchzod`,
-        subject: "Dernière relance , DISCOVERY30 expire dans 48h",
+        text: `Comparaison des 3 formules coaching avec DISCOVERY30 appliqué.\n\nEssential 8 sem : 279€ (au lieu de 399€) , ${essentialLink}\nElite 8 sem : 454€ (au lieu de 649€) , ${eliteLink}\nPrivate Lab 8 sem : 559€ (au lieu de 799€) , ${privateLabLink}\n\nLes 4 semaines ne sont pas éligibles au code, seules les 8 et 12 sem le sont.\n\nAchzod`,
+        subject: "Comparaison des 3 formules coaching après DISCOVERY30",
         from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
       },
