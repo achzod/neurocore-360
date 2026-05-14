@@ -4475,6 +4475,24 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/admin/peptides/test-generate", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { responses, email } = req.body as { responses: Record<string, unknown>; email?: string };
+      if (!responses || typeof responses !== "object") {
+        res.status(400).json({ success: false, error: "responses object required" });
+        return;
+      }
+      const testEmail = email || "test+iter@achzodcoaching.com";
+      const { generatePeptidesProtocol } = await import("./peptidesEngine");
+      const report = await generatePeptidesProtocol(responses as any, testEmail);
+      res.json({ success: true, email: testEmail, report });
+    } catch (error: any) {
+      console.error("[Admin Test Generate] Error:", error);
+      res.status(500).json({ success: false, error: error?.message || "Erreur serveur" });
+    }
+  });
+
   app.post("/api/admin/peptides/send-order-confirmation", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
