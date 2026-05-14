@@ -889,22 +889,23 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
   ],
   "peptides": [
     {
-      "name": "Nom du peptide",
+      "name": "Nom exact du peptide (ex: BPC-157, CJC-1295 sans DAC, Semaglutide)",
       "purpose": "Objectif spécifique pour CE profil",
       "whyThisPeptide": "Explication détaillée en 2-3 phrases",
       "dosage": "X mcg/jour (X mcg/kg pour ${weight}kg)",
       "timing": "Horaire précis et conditions",
       "route": "SC / IM / Intranasal",
       "cycleDuration": "X semaines, pause Y semaines",
-      "reconstitution": "Vial [Xmg] + [Y]ml BAC water = [Z]mcg/ml → [N] unités (soit [X.XX] ml) pour [dose]mcg. CONTRAINTE: [Y] ne dépasse JAMAIS 3, en pratique 1 à 2 pour les vials 2-10mg et 2 à 3 pour les vials 10-100mg. Vérifie avant de finaliser.",
-      "vialsNeeded": "X vials pour le cycle complet",
-      "purchaseUrl": "https://www.peptaura.com/catalog/[SLUG_EXACT]",
-      "priceEstimate": "~$XX/vial × Y vials = $ZZ total (~€WW)"
+      "reconstitution": "Vial [Xmg] + [Y]ml BAC water = [Z]mcg/ml → [N] unités (soit [X.XX] ml) pour [dose]mcg. CONTRAINTE: [Y] ne dépasse JAMAIS 3, en pratique 1 à 2 pour les vials 2-10mg et 2 à 3 pour les vials 10-100mg.",
+      "totalCycleNeed": "Calcule mg total nécessaires pour le cycle (dose × fréquence × semaines) , ex: 7mg total pour Sema sur 12 sem",
+      "vialsNeeded": "1 à 3 vials max selon format dispo (ex: 1 vial de 10mg suffit pour 7mg de besoin)",
+      "checkAvailability": "Procédure : peptaura.com → onglet Shipping → ${countryLabel} → liste live des fournisseurs qui livrent → choisis format dispo qui matche [totalCycleNeed]",
+      "priceEstimate": "Fourchette indicative : entre $X et $Y par vial selon fournisseur et format (à vérifier en live)"
     }
   ],
   "bloodMarkers": ["IGF-1", "Glycémie à jeun", "... marqueurs pertinents pour ce profil"],
   "weeklySchedule": "LUNDI AM: [peptide] [dose] SC [site] | LUNDI PM: [peptide] [dose] SC [site] | MARDI AM: ... | etc.",
-  "shoppingList": "[peptide] [dosage] × [qty] ([fournisseur]) = $[prix] | [peptide] × [qty] = $[prix] | BAC water × [qty] = $[prix] | Seringues × [qty] = $[prix] | TOTAL: ~$XXX (~€YYY)",
+  "shoppingList": "Liste exacte des molécules + quantités à ACHETER pour 1 cycle. Format: [peptide] : besoin total [X mg], commande [1-3 vials] format [dose typique mg] | ... | + BAC water 1 vial | + seringues U-100 31G boîte 100 | + tampons alcool. INTERDIT : pas plus de 3 vials par molécule, pas de mention de fournisseur précis ni de prix précis, pas d'URL produit. Le client trouve dispo via onglet Shipping. TOTAL estimé : fourchette de prix indicative en USD.",
   "promoCodesGenerated": []
 }`;
 }
