@@ -283,7 +283,7 @@ function renderCoachingOffersTable(
   const deductionPercent = deduction.percent ?? 0;
   const hasDeduction = deductionAmount > 0 || deductionPercent > 0;
   const headerNote = deductionPercent > 0
-    ? `Deduction appliquee : -${deductionPercent}% (sauf Starter)`
+    ? `Deduction appliquee : -${deductionPercent}% (formules 8 et 12 sem uniquement)`
     : deductionAmount > 0
     ? `Deduction appliquee : -${formatEuro(deductionAmount)}`
     : "Aucune deduction appliquee sur ce rapport";
@@ -455,10 +455,10 @@ function getCoachingSection(auditType: string, color: string = COLORS.purple): s
   const deductionAmount = getDeductionAmount(auditType);
   const promo = getPromoCodeForAuditType(auditType);
 
-  // GRATUIT / DISCOVERY uses DISCOVERY20 (-20% percent on all formules except Starter)
+  // GRATUIT / DISCOVERY uses DISCOVERY30 (-30% percent on all formules except Starter)
   const isDiscovery = auditType === "GRATUIT" || auditType === "DISCOVERY";
   const discoveryPromo = isDiscovery
-    ? { code: "DISCOVERY20", percent: 20 }
+    ? { code: "DISCOVERY30", percent: 30 }
     : null;
 
   const promoSection = promo ? `
@@ -474,7 +474,7 @@ function getCoachingSection(auditType: string, color: string = COLORS.purple): s
       <div style="margin: 20px 0; padding: 16px; border: 2px dashed ${color}; border-radius: 12px; text-align: center; background: ${color}10;">
         <p style="color: ${COLORS.textMuted}; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 6px;">Ton code Discovery</p>
         <p style="color: ${color}; font-size: 28px; font-weight: 700; letter-spacing: 3px; margin: 0;">${discoveryPromo.code}</p>
-        <p style="color: ${COLORS.text}; font-size: 13px; margin: 8px 0 0;">-${discoveryPromo.percent}% sur toutes les formules (sauf Starter)</p>
+        <p style="color: ${COLORS.text}; font-size: 13px; margin: 8px 0 0;">-${discoveryPromo.percent}% sur toutes les formules (formules 8 et 12 sem uniquement)</p>
       </div>
       <p style="color: ${COLORS.textMuted}; font-size: 12px; text-align: center; margin: 0 0 16px;">
         Colle ce code au checkout sur achzodcoaching.com pour appliquer la reduction.
@@ -3195,7 +3195,7 @@ Achzod`;
 }
 
 // Email Discovery J+3: pivot vers le coaching directement (plus d'upsell audit intermédiaire).
-// Push Essential (entry tier) avec DISCOVERY20. L'objectif est d'établir le coaching
+// Push Essential (entry tier) avec DISCOVERY30. L'objectif est d'établir le coaching
 // comme la "vraie solution" dès J+3 plutôt que de vendre un 2e audit à 59€.
 export async function sendGratuitUpsellEmail(
   email: string,
@@ -3248,9 +3248,9 @@ export async function sendGratuitUpsellEmail(
             Code clients Discovery
           </p>
           <p style="color: ${COLORS.primary}; font-size: 22px; font-weight: 700; letter-spacing: 3px; margin: 0;">
-            DISCOVERY20
+            DISCOVERY30
           </p>
-          <p style="color: ${COLORS.text}; font-size: 12px; margin: 4px 0 0;">-20% sur toutes les formules (sauf Starter)</p>
+          <p style="color: ${COLORS.text}; font-size: 12px; margin: 4px 0 0;">-30% sur formules 8 et 12 sem uniquement</p>
         </div>
         <br/>
         ${getPrimaryButton('Voir Coaching Essential →', coachingLink)}
@@ -3283,7 +3283,7 @@ export async function sendGratuitUpsellEmail(
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
-        text: `Ton Discovery t'a dit QUOI. Le coaching te dit COMMENT.\n\nEssential (à partir de 249€, 4/8/12 sem) construit ton plan d'après ton Discovery.\n\nCode DISCOVERY20 = -20% sur toutes les formules sauf Starter.\n\nVoir Essential : ${coachingLink}\nComparer toutes les formules : ${allFormulesLink}\n\nAchzod`,
+        text: `Ton Discovery t'a dit QUOI. Le coaching te dit COMMENT.\n\nEssential (à partir de 249€, 4/8/12 sem) construit ton plan d'après ton Discovery.\n\nCode DISCOVERY30 = -30% sur formules 8 et 12 sem uniquement.\n\nVoir Essential : ${coachingLink}\nComparer toutes les formules : ${allFormulesLink}\n\nAchzod`,
         subject: "Ton Discovery te dit QUOI. Le coaching te dit COMMENT.",
         from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
@@ -3293,7 +3293,7 @@ export async function sendGratuitUpsellEmail(
         recipientEmail: email,
         auditId,
         auditType: "GRATUIT",
-        metadata: { promoCode: "DISCOVERY20", reportLink, coachingLink, trackingId },
+        metadata: { promoCode: "DISCOVERY30", reportLink, coachingLink, trackingId },
       }
     );
 
@@ -3725,7 +3725,7 @@ export async function sendPremiumJ14Email(
   }
 }
 
-// Email Discovery J+14: coaching personnalisé avec code DISCOVERY20.
+// Email Discovery J+14: coaching personnalisé avec code DISCOVERY30.
 // Accepts an optional `recommendation` produced by recommendCoachingTier() ,
 // when provided, routes the CTA to the specific formule page (Essential/Elite/
 // PrivateLab) and surfaces a one-sentence personalized rationale in the hero.
@@ -3806,10 +3806,10 @@ export async function sendDiscoveryJ14CoachingEmail(
             Code promo exclusif
           </p>
           <p style="color: ${COLORS.primary}; font-size: 40px; font-weight: 700; letter-spacing: 4px; margin: 0 0 8px;">
-            DISCOVERY20
+            DISCOVERY30
           </p>
           <p style="color: ${COLORS.text}; font-size: 15px; margin: 0; font-weight: 600;">
-            -20% sur toutes les formules coaching<br/><span style="font-size: 13px; color: ${COLORS.textMuted};">(sauf formule Starter)</span>
+            -30% sur formules coaching<br/><span style="font-size: 13px; color: ${COLORS.textMuted};">(formules 8 et 12 sem uniquement)</span>
           </p>
         </div>
 
@@ -3846,10 +3846,10 @@ export async function sendDiscoveryJ14CoachingEmail(
       {
         html: encodeBase64(emailContent),
         text: tierLabel
-          ? `Je te recommande ${tierLabel} d'après ton Discovery. ${recommendation!.reason} Code DISCOVERY20 (-20% sauf Starter). Voir ${tierLabel}: ${coachingLink}`
-          : `L'analyse seule ne suffit pas. Coaching personnalisé basé sur ton Discovery Scan avec code DISCOVERY20 (-20% sur toutes les formules sauf Starter). Voir les formules: ${coachingLink}`,
+          ? `Je te recommande ${tierLabel} d'après ton Discovery. ${recommendation!.reason} Code DISCOVERY30 (-30% formules 8 et 12 sem). Voir ${tierLabel}: ${coachingLink}`
+          : `L'analyse seule ne suffit pas. Coaching personnalisé basé sur ton Discovery Scan avec code DISCOVERY30 (-30% sur formules 8 et 12 sem uniquement). Voir les formules: ${coachingLink}`,
         subject: tierLabel
-          ? `${tierLabel} , la formule qui match ton Discovery (-20%)`
+          ? `${tierLabel} , la formule qui match ton Discovery (-30%)`
           : "Tu as les donnees. Maintenant passe a l'action",
         from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
@@ -3859,7 +3859,7 @@ export async function sendDiscoveryJ14CoachingEmail(
         recipientEmail: email,
         auditId,
         auditType: "GRATUIT",
-        metadata: { promoCode: "DISCOVERY20", coachingLink, trackingId, recommendedTier: recommendation?.tier },
+        metadata: { promoCode: "DISCOVERY30", coachingLink, trackingId, recommendedTier: recommendation?.tier },
       }
     );
 
@@ -3948,9 +3948,9 @@ export async function sendGratuitJ5Email(
         </p>
         <div style="background: ${COLORS.background}; border-radius: 8px; padding: 12px 16px; display: inline-block; margin-bottom: 14px; border: 1px dashed ${COLORS.primary};">
           <p style="color: ${COLORS.primary}; font-size: 18px; font-weight: 700; letter-spacing: 3px; margin: 0;">
-            DISCOVERY20
+            DISCOVERY30
           </p>
-          <p style="color: ${COLORS.textMuted}; font-size: 11px; margin: 4px 0 0;">-20% sauf Starter</p>
+          <p style="color: ${COLORS.textMuted}; font-size: 11px; margin: 4px 0 0;">-30% formules 8 et 12 sem</p>
         </div>
         <br/>
         ${getPrimaryButton('Voir Coaching Essential →', primaryCtaLink)}
@@ -3982,7 +3982,7 @@ export async function sendGratuitJ5Email(
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
-        text: `Pourquoi ton Discovery seul ne va rien changer.\n\n3 raisons : pas de plan concret, pas d'ajustement hebdo, pas d'accountability.\n\nCoaching Essential (249€+, 4/8/12 sem) résout les 3. Code DISCOVERY20 (-20% sauf Starter).\n\nEssential: ${primaryCtaLink}\nToutes les formules: ${secondaryCtaLink}\n\nAchzod`,
+        text: `Pourquoi ton Discovery seul ne va rien changer.\n\n3 raisons : pas de plan concret, pas d'ajustement hebdo, pas d'accountability.\n\nCoaching Essential (249€+, 4/8/12 sem) résout les 3. Code DISCOVERY30 (-30% formules 8 et 12 sem).\n\nEssential: ${primaryCtaLink}\nToutes les formules: ${secondaryCtaLink}\n\nAchzod`,
         subject: "Pourquoi ton Discovery seul ne va rien changer",
         from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
@@ -3992,7 +3992,7 @@ export async function sendGratuitJ5Email(
         recipientEmail: email,
         auditId,
         auditType: "GRATUIT",
-        metadata: { promoCode: "DISCOVERY20", primaryCtaLink, secondaryCtaLink, trackingId },
+        metadata: { promoCode: "DISCOVERY30", primaryCtaLink, secondaryCtaLink, trackingId },
       }
     );
 
@@ -4004,7 +4004,7 @@ export async function sendGratuitJ5Email(
   }
 }
 
-// Email Discovery J+7: "Offre limitée -20% cette semaine"
+// Email Discovery J+7: "Offre limitée -30% cette semaine"
 export async function sendGratuitJ7Email(
   email: string,
   auditId: string,
@@ -4020,12 +4020,12 @@ export async function sendGratuitJ7Email(
 
     const content = `
       <h2 style="color: ${COLORS.text}; margin: 0 0 16px; font-size: 28px; text-align: center; font-weight: 700; letter-spacing: -1px;">
-        Dernière relance<br/><span style="color:${COLORS.warning};">DISCOVERY20 expire dans 48h</span>
+        Dernière relance<br/><span style="color:${COLORS.warning};">DISCOVERY30 expire dans 48h</span>
       </h2>
 
       <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 28px; text-align: center;">
         7 jours depuis ton Discovery. Si t'attendais un déclic, c'est maintenant.<br/>
-        <strong style="color: ${COLORS.text};">Le code -20% coaching se désactive dans 48h.</strong>
+        <strong style="color: ${COLORS.text};">Le code -30% coaching se désactive dans 48h.</strong>
       </p>
 
       <!-- Urgency box -->
@@ -4034,10 +4034,10 @@ export async function sendGratuitJ7Email(
           Code à utiliser au checkout
         </p>
         <p style="color: ${COLORS.warning}; font-size: 36px; font-weight: 700; letter-spacing: 4px; margin: 0 0 8px;">
-          DISCOVERY20
+          DISCOVERY30
         </p>
         <p style="color: ${COLORS.text}; font-size: 14px; margin: 0; font-weight: 600;">
-          -20% sur toutes les formules coaching (sauf Starter)
+          -30% sur formules coaching (formules 8 et 12 sem uniquement)
         </p>
         <p style="color: ${COLORS.textMuted}; font-size: 12px; margin: 8px 0 0;">
           Expire <strong style="color:${COLORS.warning};">dans 48h</strong> , après, plus de discount client Discovery.
@@ -4046,7 +4046,7 @@ export async function sendGratuitJ7Email(
 
       <!-- 3 formules side by side -->
       <p style="color: ${COLORS.textMuted}; font-size: 13px; text-align: center; margin: 0 0 16px; text-transform: uppercase; letter-spacing: 2px; font-weight: 600;">
-        Les 3 formules avec -20%
+        Les 3 formules avec -30%
       </p>
 
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 28px;">
@@ -4055,8 +4055,8 @@ export async function sendGratuitJ7Email(
             <p style="color: ${COLORS.text}; font-size: 15px; font-weight: 700; margin: 0 0 4px;">Essential</p>
             <p style="color: ${COLORS.textMuted}; font-size: 12px; margin: 0 0 4px; line-height: 1.5;">Mail 7j/7 • Plan sur-mesure • Bilans hebdos</p>
             <p style="color: ${COLORS.text}; font-size: 13px; margin: 0 0 8px;">
-              <span style="text-decoration: line-through; color: ${COLORS.textMuted};">249€</span>
-              <span style="color: ${COLORS.primary}; font-weight: 700; margin-left: 6px;">199€</span> (4 sem)
+              <span style="text-decoration: line-through; color: ${COLORS.textMuted};">399€</span>
+              <span style="color: ${COLORS.primary}; font-weight: 700; margin-left: 6px;">279€</span> (8 sem)
             </p>
             <a href="${essentialLink}" style="color: ${COLORS.primary}; font-size: 13px; text-decoration: underline; font-weight: 600;">Voir Essential →</a>
           </td>
@@ -4065,10 +4065,10 @@ export async function sendGratuitJ7Email(
         <tr>
           <td style="padding: 14px 16px; border: 1px solid ${COLORS.border}; border-radius: 8px; background: ${COLORS.surface};">
             <p style="color: ${COLORS.text}; font-size: 15px; font-weight: 700; margin: 0 0 4px;">Elite ★</p>
-            <p style="color: ${COLORS.textMuted}; font-size: 12px; margin: 0 0 4px; line-height: 1.5;">WhatsApp direct • Visio hebdo 30min • Gestion blessures</p>
+            <p style="color: ${COLORS.textMuted}; font-size: 12px; margin: 0 0 4px; line-height: 1.5;">Mail direct • Bilans hebdo • Gestion blessures</p>
             <p style="color: ${COLORS.text}; font-size: 13px; margin: 0 0 8px;">
-              <span style="text-decoration: line-through; color: ${COLORS.textMuted};">399€</span>
-              <span style="color: ${COLORS.primary}; font-weight: 700; margin-left: 6px;">319€</span> (4 sem)
+              <span style="text-decoration: line-through; color: ${COLORS.textMuted};">649€</span>
+              <span style="color: ${COLORS.primary}; font-weight: 700; margin-left: 6px;">454€</span> (8 sem)
             </p>
             <a href="${eliteLink}" style="color: ${COLORS.primary}; font-size: 13px; text-decoration: underline; font-weight: 600;">Voir Elite →</a>
           </td>
@@ -4077,10 +4077,10 @@ export async function sendGratuitJ7Email(
         <tr>
           <td style="padding: 14px 16px; border: 1px solid ${COLORS.border}; border-radius: 8px; background: ${COLORS.surface};">
             <p style="color: ${COLORS.text}; font-size: 15px; font-weight: 700; margin: 0 0 4px;">Private Lab</p>
-            <p style="color: ${COLORS.textMuted}; font-size: 12px; margin: 0 0 4px; line-height: 1.5;">WhatsApp 7j/7 6h-minuit • Reconstruction hebdo pluridisciplinaire</p>
+            <p style="color: ${COLORS.textMuted}; font-size: 12px; margin: 0 0 4px; line-height: 1.5;">Mail prioritaire 6h-minuit • Reconstruction hebdo pluridisciplinaire</p>
             <p style="color: ${COLORS.text}; font-size: 13px; margin: 0 0 8px;">
-              <span style="text-decoration: line-through; color: ${COLORS.textMuted};">499€</span>
-              <span style="color: ${COLORS.primary}; font-weight: 700; margin-left: 6px;">399€</span> (4 sem)
+              <span style="text-decoration: line-through; color: ${COLORS.textMuted};">799€</span>
+              <span style="color: ${COLORS.primary}; font-weight: 700; margin-left: 6px;">559€</span> (8 sem)
             </p>
             <a href="${privateLabLink}" style="color: ${COLORS.primary}; font-size: 13px; text-decoration: underline; font-weight: 600;">Voir Private Lab →</a>
           </td>
@@ -4090,7 +4090,7 @@ export async function sendGratuitJ7Email(
       ${getPrimaryButton('Comparer les 3 formules →', allFormulesLink)}
 
       <p style="color: ${COLORS.textMuted}; font-size: 13px; margin: 24px 0 0; text-align: center;">
-        Après J+9, le code DISCOVERY20 est désactivé pour les clients Discovery.<br/>
+        Après J+9, le code DISCOVERY30 est désactivé pour les clients Discovery.<br/>
         Pas de prolongation, pas de rattrapage.
       </p>
 
@@ -4105,14 +4105,14 @@ export async function sendGratuitJ7Email(
       content,
       `linear-gradient(135deg, ${COLORS.warning} 0%, #d97706 100%)`,
       "48h restantes",
-      "DISCOVERY20 expire bientôt"
+      "DISCOVERY30 expire bientôt"
     );
 
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
-        text: `Dernière relance , DISCOVERY20 expire dans 48h.\n\n-20% sur toutes les formules coaching (sauf Starter) :\n\nEssential 4 sem : 199€ (au lieu de 249€) , ${essentialLink}\nElite 4 sem : 319€ (au lieu de 399€) , ${eliteLink}\nPrivate Lab 4 sem : 399€ (au lieu de 499€) , ${privateLabLink}\n\nAprès J+9, code désactivé. Pas de rattrapage.\n\nAchzod`,
-        subject: "Dernière relance , DISCOVERY20 expire dans 48h",
+        text: `Dernière relance , DISCOVERY30 actif sur formules 8 et 12 sem.\n\n-30% sur formules coaching 8 et 12 sem :\n\nEssential 8 sem : 279€ (au lieu de 399€) , ${essentialLink}\nElite 8 sem : 454€ (au lieu de 649€) , ${eliteLink}\nPrivate Lab 8 sem : 559€ (au lieu de 799€) , ${privateLabLink}\n\nLes 4 semaines ne sont pas éligibles au code, seules les 8 et 12 sem le sont.\n\nAchzod`,
+        subject: "Dernière relance , DISCOVERY30 expire dans 48h",
         from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
       },
@@ -4121,7 +4121,7 @@ export async function sendGratuitJ7Email(
         recipientEmail: email,
         auditId,
         auditType: "GRATUIT",
-        metadata: { promoCode: "DISCOVERY20", essentialLink, eliteLink, privateLabLink, trackingId },
+        metadata: { promoCode: "DISCOVERY30", essentialLink, eliteLink, privateLabLink, trackingId },
       }
     );
 
@@ -4142,10 +4142,10 @@ const PROMO_EMAIL_CONFIG: Record<string, {
   gradient: string;
 }> = {
   GRATUIT: {
-    title: "Ton code promo -20%",
+    title: "Ton code promo -30%",
     subtitle: "Merci pour ton avis sur le Discovery Scan",
-    description: "Utilise ce code pour bénéficier de 20% de réduction sur toutes les formules de coaching Achzod.",
-    discount: "-20% sur le coaching",
+    description: "Utilise ce code pour bénéficier de 30% de réduction sur les formules coaching 8 et 12 semaines (Essential, Elite, Private Lab).",
+    discount: "-30% sur formules coaching 8 et 12 sem",
     gradient: "linear-gradient(135deg, #FCDD00 0%, #d4af37 100%)",
   },
   PREMIUM: {
@@ -4549,7 +4549,7 @@ export async function addSubscriberToList(
 
 // Discovery J+30 , long-tail nurture for Discovery Scan recipients who haven't
 // upgraded. Pushes COACHING directly (not more audits) since coaching is the
-// real revenue. Uses DISCOVERY20 code (20% off all formules except Starter).
+// real revenue. Uses DISCOVERY30 code (20% off all formules except Starter).
 // When a `recommendation` is passed, the CTA points to the matched formule
 // page (Essential/Elite/PrivateLab) and the intro surfaces the rationale.
 // One-shot per client, dedup via email_tracking.
@@ -4607,14 +4607,14 @@ export async function sendDiscoveryJ30NurtureEmail(
           Offre clients Discovery
         </p>
         <p style="color: ${COLORS.text}; font-size: 16px; font-weight: 600; margin: 0 0 16px;">
-          -20% sur toutes les formules coaching<br/><span style="font-size: 13px; color: ${COLORS.textMuted};">(sauf Starter)</span>
+          -30% sur formules coaching<br/><span style="font-size: 13px; color: ${COLORS.textMuted};">(formules 8 et 12 sem uniquement)</span>
         </p>
         <div style="background: ${COLORS.background}; border-radius: 8px; padding: 14px 18px; display: inline-block; margin-bottom: 16px; border: 1px dashed ${COLORS.primary};">
           <p style="color: ${COLORS.textMuted}; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; margin: 0 0 4px; font-weight: 600;">
             Ton code
           </p>
           <p style="color: ${COLORS.primary}; font-size: 22px; font-weight: 700; letter-spacing: 3px; margin: 0;">
-            DISCOVERY20
+            DISCOVERY30
           </p>
         </div>
         <p style="color: ${COLORS.textMuted}; font-size: 13px; line-height: 1.6; margin: 0 0 18px;">
@@ -4659,11 +4659,11 @@ export async function sendDiscoveryJ30NurtureEmail(
       {
         html: encodeBase64(emailContent),
         text: tierLabel
-          ? `Je te recommande ${tierLabel} d'après ton Discovery.\n\n${recommendation!.reason}\n\nCode DISCOVERY20 (-20% sauf Starter).\n\nVoir ${tierLabel} : ${coachingLink}\nRelire ton Discovery : ${reportLink}\n\nAchzod`
-          : `Un mois depuis ton Discovery. Un audit ne transforme pas , le suivi, oui.\n\nOffre clients Discovery : -20% sur toutes les formules coaching (sauf Starter), code DISCOVERY20.\n\nVoir les formules : ${coachingLink}\nCoaching Essential (à partir de 249€, 4-8-12 sem) : ${essentialLink}\nRelire le Discovery : ${reportLink}\n\nAchzod`,
+          ? `Je te recommande ${tierLabel} d'après ton Discovery.\n\n${recommendation!.reason}\n\nCode DISCOVERY30 (-30% formules 8 et 12 sem).\n\nVoir ${tierLabel} : ${coachingLink}\nRelire ton Discovery : ${reportLink}\n\nAchzod`
+          : `Un mois depuis ton Discovery. Un audit ne transforme pas , le suivi, oui.\n\nOffre clients Discovery : -30% sur formules coaching 8 et 12 sem uniquement, code DISCOVERY30.\n\nVoir les formules : ${coachingLink}\nCoaching Essential (à partir de 249€, 4-8-12 sem) : ${essentialLink}\nRelire le Discovery : ${reportLink}\n\nAchzod`,
         subject: tierLabel
-          ? `${tierLabel} , la formule calibrée pour ton profil (-20%)`
-          : "Un mois depuis ton Discovery , -20% sur ton coaching",
+          ? `${tierLabel} , la formule calibrée pour ton profil (-30%)`
+          : "Un mois depuis ton Discovery , -30% sur ton coaching",
         from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
       },
@@ -4671,7 +4671,7 @@ export async function sendDiscoveryJ30NurtureEmail(
         emailType: "sendDiscoveryJ30NurtureEmail",
         recipientEmail: email,
         auditId,
-        metadata: { promoCode: "DISCOVERY20", coachingLink, trackingId, recommendedTier: recommendation?.tier },
+        metadata: { promoCode: "DISCOVERY30", coachingLink, trackingId, recommendedTier: recommendation?.tier },
       }
     );
 

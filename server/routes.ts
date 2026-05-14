@@ -10785,7 +10785,7 @@ export async function registerRoutes(
               if (emailSent) { sent++; if (sent >= 5) break; }
             }
           }
-          // J+30 nurture , pushes the profile-matched coaching formule with DISCOVERY20
+          // J+30 nurture , pushes the profile-matched coaching formule with DISCOVERY30
           if (daysSinceSent >= 30 && daysSinceSent < 60 && !trackingTypes.includes("sendDiscoveryJ30NurtureEmail")) {
             const hasConverted = await storage.hasUserPurchased?.(audit.email);
             if (!hasConverted) {
