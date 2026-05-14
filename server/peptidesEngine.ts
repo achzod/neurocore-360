@@ -799,11 +799,11 @@ RÈGLES ABSOLUES:
 1. Adresse-toi à ${firstName} par son prénom à chaque section. Parle-lui comme un coach.
 2. Fais des PHRASES COMPLÈTES, jamais de listes sèches sans contexte.
 3. Ajuste les dosages au poids (${weight} kg) en mcg/kg.
-4. Sélectionne 2 à 4 peptides dans le stack principal + 1 peptide BONUS qui dépasse le budget.
-5. Le catalogue Peptaura est une photo à un instant T qui devient obsolète en quelques jours. Tu peux mentionner Lumira et HelixBridge comme fournisseurs souvent disponibles, MAIS tu ne donnes JAMAIS d'URL produit précise ni de format vial figé. Le client trouvera lui-même ce qui est dispo via l'onglet Shipping (méthode détaillée plus bas).
-6. CALCUL QUANTITÉ STRICT (règle béton , bug Jamal 2026-05-14) : pour chaque peptide, calcule la dose totale du cycle (dose × fréquence × semaines), puis recommande 1 à 3 vials max (selon le format dispo) + 20 % de marge MAX. JAMAIS de "commande 10 vials pour le prix dégressif". Si le client veut un 2ème cycle, il le fera au moment de la commande, pas en sur-stockant aveuglément.
-7. SHIPPING : le client est en **${countryLabel}** (${countryCode}). Dans la section "Comment commander sur Peptaura", tu indiques l'URL de filtrage exacte : **peptaura.com/shipping?country=${shippingUrlCountry}**. Tu décris la procédure standardisée : (1) va sur Peptaura, (2) onglet Shipping, (3) tape ${countryLabel}, (4) liste live des fournisseurs qui livrent dans son pays, (5) il choisit le format dispo qui matche son besoin calculé, (6) en cas de doute ou format bizarre, il revient vers moi par mail avant de commander. ${countryCode === "FR" || countryCode === "BE" || countryCode === "LU" || countryCode === "CH" ? "INTERDICTION ABSOLUE : Pepturion ne livre pas en France/BE/LU/CH, ne le mentionne JAMAIS comme option." : ""}
-8. Le rapport doit faire au moins 4000 caractères au total. Chaque section doit être substantielle.
+4. STRUCTURE JSON OBLIGATOIRE : le champ "peptides" doit être un array de 2 à 4 entrées MINIMUM. Chaque entrée a { name, dosage, route, frequency, cycleWeeks }. Si tu n'inclus pas cet array correctement rempli, le rapport est REJETÉ. C'est non négociable. Tu peux ajouter 1 peptide BONUS qui dépasse le budget.
+5. Tu peux mentionner Lumira et HelixBridge comme fournisseurs souvent disponibles dans le pays du client, MAIS tu ne donnes JAMAIS d'URL produit précise (jamais "peptaura.com/catalog/Semaglutide") ni de format vial figé chez un fournisseur précis ("Lumira 5mg à $8.47"). Le stock fluctue, donne au client la méthode (onglet Shipping → son pays → liste live) au lieu d'URLs qui rouilleront.
+6. CALCUL QUANTITÉ STRICT (anti bug Jamal 2026-05-14) : pour chaque peptide, calcule la dose totale du cycle = (dose moyenne × fréquence/sem × nb semaines). Recommande 1 à 3 vials max selon le format typique du marché + 20% de marge MAX. INTERDIT : recommander 10 vials pour un cycle simple sous prétexte de prix dégressif ou de réserve future. Le pack groupé peut être mentionné comme option discrète si le client veut un 2ème cycle, mais jamais comme recommandation par défaut.
+7. SHIPPING : client en ${countryLabel} (code ${countryCode}). Section "Comment commander sur Peptaura" doit mentionner l'URL **peptaura.com/shipping?country=${shippingUrlCountry}** et la procédure 6 étapes : (1) va sur Peptaura, (2) onglet Shipping, (3) tape ${countryLabel}, (4) liste live des fournisseurs qui livrent, (5) choisis format dispo qui matche besoin calculé, (6) en cas de doute, retour vers moi par mail.${countryCode === "FR" || countryCode === "BE" || countryCode === "LU" || countryCode === "CH" ? ` INTERDICTION : Pepturion ne livre pas en ${countryLabel}, ne le mentionne JAMAIS.` : ""}
+8. Le rapport doit faire au moins 4000 caractères au total. Chaque section substantielle.
 
 Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
 
@@ -1392,25 +1392,25 @@ export async function generatePeptidesProtocol(
       }
 
       // CHECK 8: over-ordering detection (bug Jamal 2026-05-14)
-      // Le prompt actuel interdit la sur-commande mais on bétonne avec une regex de
-      // détection. Patterns interdits dans la shoppingList et les sections :
-      //  - "commande/prends/recommande 10 vials" (l'ancien comportement par défaut)
-      //  - "prix dégressif" lié à 10 vials
-      // Si détecté, on rejette et on retry , la 2ème tentative sur Opus a souvent
-      // mieux suivi la consigne quantité.
+      // Cible UNIQUEMENT les vrais patterns de sur-commande, pas les mentions
+      // génériques de "prix dégressif" qui peuvent apparaître en contexte
+      // pédagogique. On rejette si l'IA recommande EXPLICITEMENT 10+ vials.
       const allTexts = [
         sectionsText,
         shoppingText,
         scheduleText,
       ].join(" ").toLowerCase();
       const overOrderingPatterns: Array<{ re: RegExp; label: string }> = [
-        { re: /(commande|prends|recommande|achete)\s+(de\s+)?10\s+vials/i, label: "commande_10_vials" },
-        { re: /\b1[0-9]\s+vials\s+(d'un coup|pour\s+(le\s+)?prix)/i, label: "10plus_vials_bulk" },
-        { re: /prix\s+d[ée]gressif/i, label: "prix_degressif" },
+        // "commande/prends/recommande 10 vials" en recommandation directe
+        { re: /(je\s+(te\s+)?recommande|commande|prends|achete)\s+(de\s+)?(10|dix|1[1-9]|20|vingt)\s+vials/i, label: "commande_10plus_vials" },
+        // "tu as besoin de 10 vials" / "il te faut 10 vials"
+        { re: /(tu\s+as\s+besoin\s+(de\s+)?|il\s+te\s+faut\s+|prends\s+)(10|dix|1[1-9]|20)\s+vials/i, label: "besoin_10plus_vials" },
+        // "10 vials d'un coup pour [prix dégressif|économie]"
+        { re: /\b(10|dix|1[1-9]|20)\s+vials\s+(d'un coup|en\s+une\s+(seule\s+)?fois|pour\s+(le\s+)?(prix|tarif|d[ée]gressif|economie))/i, label: "bulk_10plus_just" },
       ];
       const matched = overOrderingPatterns.find(p => p.re.test(allTexts));
       if (matched) {
-        throw new Error(`VALIDATION: sur-commande détectée (pattern "${matched.label}") , prompt anti-bulk a été ignoré, retry.`);
+        throw new Error(`VALIDATION: sur-commande détectée (pattern "${matched.label}") , prompt anti-bulk ignoré, retry.`);
       }
 
       console.log(`[PeptidesEngine] ✅ Validation OK: ${report.sections.length} sections, ${report.peptides.length} peptides, ${totalContent} chars`);
