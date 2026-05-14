@@ -409,6 +409,99 @@ function getEmailWrapper(
 </html>`;
 }
 
+// =================================================================================
+// COACHING APPLE-CLEAN THEME (Discovery → coaching emails)
+// Memory rule feedback_email_apple_style.md : client emails = white + Apple blue.
+// Dark APEXLABS theme is reserved for audit deliverables. Coaching = conversion =
+// trust = Apple-clean refined design.
+// =================================================================================
+
+const APPLE_COLORS = {
+  bg: '#f5f5f7',          // light grey page background
+  card: '#ffffff',
+  ink: '#1d1d1f',
+  inkSoft: '#515154',
+  muted: '#86868b',
+  rule: '#d2d2d7',
+  accent: '#0071E3',      // Apple blue
+  accentDark: '#0058B0',
+  highlight: '#fff3b8',
+  success: '#34C759',
+  warn: '#FF9500',
+};
+
+function getCoachingAppleWrapper(
+  content: string,
+  headerTitle: string = "Coaching Achzod",
+  headerSubtitle: string = "",
+): string {
+  return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="only" />
+  <meta name="supported-color-schemes" content="only" />
+  <title>Achzod Coaching</title>
+</head>
+<body style="margin:0;padding:0;background-color:${APPLE_COLORS.bg};font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:${APPLE_COLORS.ink};">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${APPLE_COLORS.bg};">
+    <tr>
+      <td align="center" style="padding:40px 16px;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;width:100%;background-color:${APPLE_COLORS.card};border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+          <!-- Header (Apple clean : no gradient, white background, blue accent line) -->
+          <tr>
+            <td style="background-color:${APPLE_COLORS.card};padding:36px 40px 12px 40px;border-bottom:3px solid ${APPLE_COLORS.accent};">
+              <p style="margin:0 0 8px 0;color:${APPLE_COLORS.muted};font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Achzod Coaching</p>
+              <h1 style="margin:0;color:${APPLE_COLORS.ink};font-size:28px;line-height:1.2;font-weight:800;letter-spacing:-0.6px;">${headerTitle}</h1>
+              ${headerSubtitle ? `<p style="margin:8px 0 0 0;color:${APPLE_COLORS.inkSoft};font-size:15px;font-weight:500;line-height:1.5;">${headerSubtitle}</p>` : ''}
+            </td>
+          </tr>
+          <!-- Content -->
+          <tr>
+            <td style="padding:36px 40px;color:${APPLE_COLORS.ink};">
+              ${content}
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="background-color:${APPLE_COLORS.bg};padding:24px 40px;border-top:1px solid ${APPLE_COLORS.rule};text-align:center;">
+              <p style="margin:0 0 6px 0;color:${APPLE_COLORS.ink};font-size:13px;font-weight:600;">Achzod</p>
+              <p style="margin:0 0 10px 0;color:${APPLE_COLORS.muted};font-size:11px;">coaching@achzodcoaching.com</p>
+              <p style="margin:0;"><a href="{{UNSUB_LINK}}" style="color:${APPLE_COLORS.muted};font-size:10px;text-decoration:underline;">Se desabonner</a></p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+function getCoachingAppleButton(text: string, href: string, variant: 'primary' | 'secondary' = 'primary'): string {
+  const bg = variant === 'primary' ? APPLE_COLORS.accent : APPLE_COLORS.card;
+  const fg = variant === 'primary' ? '#ffffff' : APPLE_COLORS.accent;
+  const border = variant === 'primary' ? APPLE_COLORS.accent : APPLE_COLORS.accent;
+  return `
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:20px 0;">
+      <tr>
+        <td align="center">
+          <!--[if mso]>
+          <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${href}" style="height:50px;v-text-anchor:middle;width:300px;" arcsize="20%" fillcolor="${bg}" strokecolor="${border}" strokeweight="1px">
+            <w:anchorlock/>
+            <center style="color:${fg};font-family:-apple-system,Arial,sans-serif;font-size:15px;font-weight:600;letter-spacing:0.3px;">${text}</center>
+          </v:roundrect>
+          <![endif]-->
+          <!--[if !mso]><!-->
+          <a href="${href}" target="_blank" style="background-color:${bg};border:1px solid ${border};border-radius:10px;color:${fg};display:inline-block;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:15px;font-weight:600;line-height:50px;min-width:240px;padding:0 32px;text-align:center;text-decoration:none;letter-spacing:0.3px;mso-hide:all;">${text}</a>
+          <!--<![endif]-->
+        </td>
+      </tr>
+    </table>
+  `;
+}
+
 // Primary CTA Button , Gmail + Outlook bulletproof (VML fallback for Outlook 07+).
 // Uses nested <table> + mso-padding-alt for Outlook, fallback inline-block for
 // everything else. Never relies on CSS that Gmail strips (inline-flex, gap,
@@ -3747,99 +3840,75 @@ export async function sendDiscoveryJ14CoachingEmail(
       : null;
 
     const content = `
-      <h2 style="color: ${COLORS.text}; margin: 0 0 16px; font-size: 28px; text-align: center; font-weight: 700; letter-spacing: -1px;">
-        ${tierLabel ? `Je te recommande <span style="color:${COLORS.primary};">${tierLabel}</span>` : "L'analyse seule ne suffit pas"}
-      </h2>
-
-      <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 28px; text-align: center;">
-        Tu as ton Discovery Scan. Tu connais maintenant tes points faibles.<br/>
-        <strong style="color: ${COLORS.text};">Mais comment transformer ces infos en résultats concrets ?</strong>
+      <p style="color:${APPLE_COLORS.inkSoft};font-size:16px;line-height:1.6;margin:0 0 24px;">
+        Tu as ton Discovery Scan. Tu vois tes points faibles. La question maintenant : <strong style="color:${APPLE_COLORS.ink};">comment transformer ce diagnostic en résultats concrets sur 8 à 12 semaines ?</strong>
       </p>
 
       ${recommendation ? `
-      <!-- Personalized recommendation based on Discovery profile -->
-      <div style="padding: 20px; background: ${COLORS.primary}15; border-radius: 12px; border: 1px solid ${COLORS.primary}40; margin-bottom: 28px;">
-        <p style="color: ${COLORS.primary}; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 8px; font-weight: 700;">
-          Recommandation d'après ton profil
+      <div style="padding:18px 22px;background:#e8f4ff;border-radius:12px;border-left:3px solid ${APPLE_COLORS.accent};margin-bottom:28px;">
+        <p style="color:${APPLE_COLORS.accent};font-size:11px;text-transform:uppercase;letter-spacing:1.5px;margin:0 0 6px;font-weight:700;">
+          Ma recommandation pour ton profil
         </p>
-        <p style="color: ${COLORS.text}; font-size: 15px; line-height: 1.7; margin: 0;">
+        <p style="color:${APPLE_COLORS.ink};font-size:15px;line-height:1.6;margin:0;font-weight:500;">
           ${recommendation.reason}
         </p>
       </div>
       ` : ""}
 
-      <!-- Problème -->
-      <div style="padding: 24px; background: ${COLORS.surface}; border-radius: 12px; border-left: 4px solid ${COLORS.warning}; margin-bottom: 28px;">
-        <p style="color: ${COLORS.text}; font-size: 16px; font-weight: 600; margin: 0 0 12px;">
-          Le problème de l'auto-application :
-        </p>
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-          <tr><td style="padding: 6px 0; color: ${COLORS.textMuted}; font-size: 14px;">❌ Tu ne sais pas par où commencer</td></tr>
-          <tr><td style="padding: 6px 0; color: ${COLORS.textMuted}; font-size: 14px;">❌ Tu procrastines la mise en action</td></tr>
-          <tr><td style="padding: 6px 0; color: ${COLORS.textMuted}; font-size: 14px;">❌ Tu perds du temps avec des essais-erreurs</td></tr>
-          <tr><td style="padding: 6px 0; color: ${COLORS.textMuted}; font-size: 14px;">❌ Tu abandonnes après 2-3 semaines</td></tr>
-        </table>
-      </div>
-
-      <!-- Solution Coaching -->
-      <div style="padding: 32px; background: linear-gradient(135deg, ${COLORS.primary}20 0%, ${COLORS.primary}05 100%); border-radius: 12px; border: 2px solid ${COLORS.primary}; margin-bottom: 28px;">
-        <h3 style="color: ${COLORS.primary}; font-size: 24px; font-weight: 700; margin: 0 0 16px; text-align: center; letter-spacing: -0.5px;">
-          Le Coaching Achzod, c'est l'application pratique
-        </h3>
-
-        <p style="color: ${COLORS.textMuted}; font-size: 15px; line-height: 1.7; margin: 0 0 24px; text-align: center;">
-          <strong style="color: ${COLORS.text};">Suivi personnalisé</strong> basé sur TON profil Discovery<br/>
-          + <strong style="color: ${COLORS.text};">Plan d'action concret</strong> + <strong style="color: ${COLORS.text};">Accountability</strong> pour tenir sur la durée
-        </p>
-
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 24px;">
-          <tr><td style="padding: 8px 0; color: ${COLORS.text}; font-size: 15px; font-weight: 500;">✓ Protocole nutrition personnalisé</td></tr>
-          <tr><td style="padding: 8px 0; color: ${COLORS.text}; font-size: 15px; font-weight: 500;">✓ Programme d'entraînement adapté</td></tr>
-          <tr><td style="padding: 8px 0; color: ${COLORS.text}; font-size: 15px; font-weight: 500;">✓ Suppléments optimisés pour TON cas</td></tr>
-          <tr><td style="padding: 8px 0; color: ${COLORS.text}; font-size: 15px; font-weight: 500;">✓ Suivi hebdo/mensuel pour ajuster</td></tr>
-          <tr><td style="padding: 8px 0; color: ${COLORS.text}; font-size: 15px; font-weight: 500;">✓ Accès direct à Achzod (WhatsApp/Telegram)</td></tr>
-        </table>
-
-        <!-- Code Promo -->
-        <div style="background: ${COLORS.background}; border-radius: 10px; padding: 24px; text-align: center; margin-bottom: 24px; border: 2px dashed ${COLORS.primary};">
-          <p style="color: ${COLORS.textMuted}; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 8px; font-weight: 600;">
-            Code promo exclusif
-          </p>
-          <p style="color: ${COLORS.primary}; font-size: 40px; font-weight: 700; letter-spacing: 4px; margin: 0 0 8px;">
-            DISCOVERY30
-          </p>
-          <p style="color: ${COLORS.text}; font-size: 15px; margin: 0; font-weight: 600;">
-            -30% sur formules coaching<br/><span style="font-size: 13px; color: ${COLORS.textMuted};">(formules 8 et 12 sem uniquement)</span>
-          </p>
-        </div>
-
-        ${getPrimaryButton(tierLabel ? `Voir ${tierLabel} →` : 'Voir les formules coaching →', coachingLink)}
-      </div>
-
-      <!-- Social Proof -->
-      <div style="padding: 20px; background: ${COLORS.surface}; border-radius: 8px; margin-bottom: 24px; border-left: 3px solid ${COLORS.primary};">
-        <p style="color: ${COLORS.textMuted}; font-size: 13px; line-height: 1.7; margin: 0; font-style: italic;">
-          <strong style="color: ${COLORS.text};">"J'ai fait le Discovery, vu mes points faibles, mais c'est le coaching qui a tout changé. En 8 semaines, j'ai perdu 6kg, gagné en muscle et ma libido est revenue. L'analyse c'est le diagnostic, le coaching c'est le traitement."</strong><br/>
-          <span style="font-size: 12px; color: ${COLORS.textMuted};">, Magroud W., suivi 3 mois</span>
-        </p>
-      </div>
-
-      <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.7; margin: 0 0 8px; text-align: center;">
-        Tu as les données. Maintenant passe à l'action.
+      <h2 style="color:${APPLE_COLORS.ink};margin:32px 0 14px;font-size:22px;font-weight:700;letter-spacing:-0.4px;">
+        ${tierLabel ? `Pourquoi ${tierLabel} fait la différence` : "Pourquoi un coaching change la donne"}
+      </h2>
+      <p style="color:${APPLE_COLORS.inkSoft};font-size:15px;line-height:1.65;margin:0 0 24px;">
+        Le Discovery te donne le diagnostic. Le coaching, c'est moi qui m'engage avec toi sur la durée pour calibrer ton plan, suivre tes progrès semaine après semaine, et ajuster avant que tu décroches. Tout passe par mail privé, je réponds personnellement à chaque message en moins de 24h.
       </p>
 
-      <p style="color: ${COLORS.textMuted}; font-size: 12px; text-align: center; margin: 24px 0 0;">
-        Code valable jusqu'au <strong style="color: ${COLORS.text};">${new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')}</strong>
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:32px;border-collapse:separate;border-spacing:0 6px;">
+        <tr><td style="padding:10px 16px;background:#f5f5f7;border-radius:8px;color:${APPLE_COLORS.ink};font-size:14px;font-weight:500;line-height:1.55;">Protocole nutrition calibré sur ton bilan Discovery</td></tr>
+        <tr><td style="padding:10px 16px;background:#f5f5f7;border-radius:8px;color:${APPLE_COLORS.ink};font-size:14px;font-weight:500;line-height:1.55;">Programme entraînement adapté à ton niveau et tes contraintes</td></tr>
+        <tr><td style="padding:10px 16px;background:#f5f5f7;border-radius:8px;color:${APPLE_COLORS.ink};font-size:14px;font-weight:500;line-height:1.55;">Stack supplémentation choisi pour ton profil hormonal et métabolique</td></tr>
+        <tr><td style="padding:10px 16px;background:#f5f5f7;border-radius:8px;color:${APPLE_COLORS.ink};font-size:14px;font-weight:500;line-height:1.55;">Bilan écrit chaque semaine pour ajuster avant les blocages</td></tr>
+        <tr><td style="padding:10px 16px;background:#f5f5f7;border-radius:8px;color:${APPLE_COLORS.ink};font-size:14px;font-weight:500;line-height:1.55;">Accès mail prioritaire à moi, réponse personnelle en moins de 24h</td></tr>
+      </table>
+
+      <!-- Code promo -->
+      <div style="padding:24px 28px;background:${APPLE_COLORS.card};border:2px solid ${APPLE_COLORS.accent};border-radius:14px;text-align:center;margin-bottom:28px;">
+        <p style="color:${APPLE_COLORS.muted};font-size:11px;text-transform:uppercase;letter-spacing:2px;margin:0 0 8px;font-weight:700;">
+          Code promo clients Discovery
+        </p>
+        <p style="color:${APPLE_COLORS.accent};font-size:34px;font-weight:800;letter-spacing:3px;margin:0 0 10px;">
+          DISCOVERY30
+        </p>
+        <p style="color:${APPLE_COLORS.ink};font-size:14px;margin:0;font-weight:500;line-height:1.55;">
+          -30% sur formules coaching <strong>8 et 12 semaines</strong><br/>
+          <span style="color:${APPLE_COLORS.muted};font-size:13px;">Essential, Elite, Private Lab. Les 4 sem ne sont pas éligibles.</span>
+        </p>
+      </div>
+
+      ${getCoachingAppleButton(tierLabel ? `Voir ${tierLabel}` : 'Voir les formules coaching', coachingLink)}
+
+      <!-- Social proof -->
+      <div style="margin:32px 0 24px;padding:20px 22px;background:#f5f5f7;border-radius:12px;border-left:3px solid ${APPLE_COLORS.accent};">
+        <p style="color:${APPLE_COLORS.ink};font-size:14px;line-height:1.7;margin:0 0 8px;font-weight:500;">
+          "J'ai fait le Discovery, vu mes points faibles, mais c'est le coaching qui a tout changé. En 8 semaines, perdu 6 kg, gagné en muscle, ma libido est revenue. L'analyse c'est le diagnostic, le coaching c'est le traitement."
+        </p>
+        <p style="color:${APPLE_COLORS.muted};font-size:12px;margin:0;">, suivi 3 mois</p>
+      </div>
+
+      <p style="color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.6;margin:24px 0 0;">
+        Tu as les données. Maintenant on passe à l'action ensemble.
+      </p>
+
+      <p style="color:${APPLE_COLORS.muted};font-size:12px;margin:16px 0 0;">
+        Achzod
       </p>
 
       <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
     `;
 
-    const emailContent = getEmailWrapper(
+    const emailContent = getCoachingAppleWrapper(
       content,
-      `linear-gradient(135deg, ${COLORS.primary} 0%, #059669 100%)`,
-      "Coaching Achzod",
-      "Transforme ton analyse en résultats"
+      tierLabel ? `Je te recommande ${tierLabel}` : "Tu as les données, passe à l'action",
+      tierLabel ? "La formule calibrée pour ton profil Discovery" : "Le coaching qui transforme ton analyse en résultats"
     );
 
     const result = await sendEmailWithTracking(
