@@ -4475,9 +4475,6 @@ export async function registerRoutes(
     }
   });
 
-  // In-memory job store for async test-generate
-  const testGenJobs = new Map<string, { status: "running" | "done" | "error"; report?: any; error?: string; startedAt: number; finishedAt?: number }>();
-
   app.post("/api/admin/peptides/test-generate", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
@@ -4487,39 +4484,63 @@ export async function registerRoutes(
         return;
       }
       const testEmail = email || "test+iter@achzodcoaching.com";
-      const jobId = `testgen-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      testGenJobs.set(jobId, { status: "running", startedAt: Date.now() });
-      // Cap stored jobs to last 20
-      if (testGenJobs.size > 20) {
-        const oldest = Array.from(testGenJobs.entries()).sort((a, b) => a[1].startedAt - b[1].startedAt)[0];
-        if (oldest) testGenJobs.delete(oldest[0]);
-      }
-      // Fire-and-forget background generation
+      const jobTag = `peptides::test::${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const startedAt = Date.now();
+
+      // Persist initial "running" state in burnout_reports so it survives Render restarts
+      await storage.createBurnoutReport({
+        email: jobTag,
+        responses,
+        report: { status: "running", startedAt, testEmail } as any,
+      });
+
+      // Fire-and-forget background generation that updates the DB row
       (async () => {
         try {
           const { generatePeptidesProtocol } = await import("./peptidesEngine");
           const report = await generatePeptidesProtocol(responses as any, testEmail);
-          testGenJobs.set(jobId, { status: "done", report, startedAt: testGenJobs.get(jobId)!.startedAt, finishedAt: Date.now() });
+          const rows = await storage.getAllBurnoutReports();
+          const row = rows.find((r: any) => r.email === jobTag);
+          if (row) {
+            await storage.updateBurnoutReport(row.id, { status: "done", startedAt, finishedAt: Date.now(), testEmail, report });
+          }
         } catch (err: any) {
-          testGenJobs.set(jobId, { status: "error", error: err?.message || String(err), startedAt: testGenJobs.get(jobId)!.startedAt, finishedAt: Date.now() });
+          const rows = await storage.getAllBurnoutReports().catch(() => []);
+          const row = rows.find((r: any) => r.email === jobTag);
+          if (row) {
+            await storage.updateBurnoutReport(row.id, { status: "error", startedAt, finishedAt: Date.now(), testEmail, error: err?.message || String(err) }).catch(() => {});
+          }
         }
       })();
-      res.json({ success: true, jobId, status: "running" });
+
+      res.json({ success: true, jobTag, status: "running" });
     } catch (error: any) {
       console.error("[Admin Test Generate] Error:", error);
       res.status(500).json({ success: false, error: error?.message || "Erreur serveur" });
     }
   });
 
-  app.get("/api/admin/peptides/test-generate/:jobId", async (req, res) => {
+  app.get("/api/admin/peptides/test-generate-status", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
-    const job = testGenJobs.get(req.params.jobId);
-    if (!job) {
-      res.status(404).json({ success: false, error: "Job not found" });
-      return;
+    try {
+      const jobTag = String(req.query.jobTag || "");
+      if (!jobTag) {
+        res.status(400).json({ success: false, error: "jobTag required" });
+        return;
+      }
+      const rows = await storage.getAllBurnoutReports();
+      const row = rows.find((r: any) => r.email === jobTag);
+      if (!row) {
+        res.status(404).json({ success: false, error: "Job not found" });
+        return;
+      }
+      const rep = row.report as any;
+      const elapsedSec = Math.round(((rep?.finishedAt || Date.now()) - (rep?.startedAt || Date.now())) / 1000);
+      res.json({ success: true, jobTag, ...rep, elapsedSec });
+    } catch (error: any) {
+      console.error("[Admin Test Generate Status] Error:", error);
+      res.status(500).json({ success: false, error: error?.message || "Erreur serveur" });
     }
-    const elapsedSec = Math.round(((job.finishedAt || Date.now()) - job.startedAt) / 1000);
-    res.json({ success: true, jobId: req.params.jobId, ...job, elapsedSec });
   });
 
   app.post("/api/admin/peptides/send-order-confirmation", async (req, res) => {
