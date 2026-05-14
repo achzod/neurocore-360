@@ -3303,75 +3303,72 @@ export async function sendGratuitUpsellEmail(
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
 
     const content = `
-      <h2 style="color: ${COLORS.text}; margin: 0 0 16px; font-size: 28px; text-align: center; font-weight: 700; letter-spacing: -1px;">
-        Ton Discovery t'a dit <span style="color:${COLORS.primary};">QUOI</span>.<br/>Le coaching te dit <span style="color:${COLORS.primary};">COMMENT</span>.
-      </h2>
-
-      <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 28px; text-align: center;">
-        Tu as tes scores, tes blocages, la carte de ton profil.<br/>
-        <strong style="color: ${COLORS.text};">Mais aucun score ne s'améliore en le regardant.</strong>
+      <p style="color:${APPLE_COLORS.inkSoft};font-size:16px;line-height:1.65;margin:0 0 24px;">
+        Tu as tes scores Discovery, tes blocages, la carte de ton profil. La réalité froide : <strong style="color:${APPLE_COLORS.ink};">aucun score ne s'améliore en le regardant</strong>. Trois choses se passent à 99% quand on attaque seul après un audit.
       </p>
 
-      <!-- Pain point framing -->
-      <div style="padding: 24px; background: ${COLORS.surface}; border-radius: 12px; border-left: 4px solid ${COLORS.warning}; margin-bottom: 28px;">
-        <p style="color: ${COLORS.text}; font-size: 15px; font-weight: 600; margin: 0 0 10px;">
-          Trois trucs qui se passent à 99% quand on essaie seul :
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:28px;border-collapse:separate;border-spacing:0 8px;">
+        <tr>
+          <td style="padding:14px 18px;background:#f5f5f7;border-radius:10px;color:${APPLE_COLORS.ink};font-size:14px;line-height:1.55;font-weight:500;">
+            Tu sais par où commencer pendant 1 semaine, puis tu dévies sans t'en rendre compte.
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:14px 18px;background:#f5f5f7;border-radius:10px;color:${APPLE_COLORS.ink};font-size:14px;line-height:1.55;font-weight:500;">
+            Tu vois aucun résultat mesurable à J+30, tu doutes, tu abandonnes.
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:14px 18px;background:#f5f5f7;border-radius:10px;color:${APPLE_COLORS.ink};font-size:14px;line-height:1.55;font-weight:500;">
+            Tu restes bloqué sur les mêmes axes pendant 6 mois sans le savoir.
+          </td>
+        </tr>
+      </table>
+
+      <h2 style="color:${APPLE_COLORS.ink};margin:0 0 14px;font-size:22px;font-weight:700;letter-spacing:-0.4px;">
+        Le pas logique après ton Discovery
+      </h2>
+
+      <p style="color:${APPLE_COLORS.inkSoft};font-size:15px;line-height:1.65;margin:0 0 24px;">
+        Je construis ton plan directement à partir des données de ton Discovery, pas de questionnaire à refaire. Plan personnalisé, nutrition précision, bilan écrit chaque semaine où tu m'envoies tes retours et j'ajuste avant que tu décroches.
+      </p>
+
+      <!-- Code box -->
+      <div style="padding:24px 26px;background:${APPLE_COLORS.card};border:2px solid ${APPLE_COLORS.accent};border-radius:14px;margin-bottom:24px;text-align:center;">
+        <p style="color:${APPLE_COLORS.muted};font-size:11px;text-transform:uppercase;letter-spacing:2px;margin:0 0 8px;font-weight:700;">
+          Code clients Discovery
         </p>
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-          <tr><td style="padding: 6px 0; color: ${COLORS.textMuted}; font-size: 14px;">→ Tu sais par où commencer pendant 1 semaine, puis tu dévies</td></tr>
-          <tr><td style="padding: 6px 0; color: ${COLORS.textMuted}; font-size: 14px;">→ Tu vois aucun résultat mesurable à J+30, tu doutes, tu abandonnes</td></tr>
-          <tr><td style="padding: 6px 0; color: ${COLORS.textMuted}; font-size: 14px;">→ Tu restes bloqué sur les mêmes axes pendant 6 mois sans le savoir</td></tr>
-        </table>
+        <p style="color:${APPLE_COLORS.accent};font-size:30px;font-weight:800;letter-spacing:3px;margin:0 0 6px;">DISCOVERY30</p>
+        <p style="color:${APPLE_COLORS.ink};font-size:14px;margin:0 0 18px;font-weight:500;">
+          -30% sur formules coaching <strong>8 et 12 semaines</strong> (Essential, Elite, Private Lab)
+        </p>
+        ${getCoachingAppleButton('Voir Coaching Essential', coachingLink)}
       </div>
 
-      <!-- Coaching Essential CTA -->
-      <div style="padding: 28px; background: linear-gradient(135deg, ${COLORS.primary}20 0%, ${COLORS.primary}05 100%); border-radius: 12px; border: 2px solid ${COLORS.primary}; margin-bottom: 24px; text-align: center;">
-        <p style="color: ${COLORS.textMuted}; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 6px; font-weight: 700;">
-          Le pas logique après ton Discovery
-        </p>
-        <h3 style="color: ${COLORS.primary}; font-size: 26px; font-weight: 700; margin: 0 0 10px; letter-spacing: -0.5px;">
-          Coaching Essential , à partir de 249€
-        </h3>
-        <p style="color: ${COLORS.text}; font-size: 14px; line-height: 1.7; margin: 0 0 16px;">
-          Je construis ton plan <strong>d'après ton Discovery</strong> , pas un questionnaire à refaire.<br/>
-          Plan + nutrition précision + bilans hebdos. Tu m'écris tes retours, j'ajuste chaque semaine.
-        </p>
-        <div style="background: ${COLORS.background}; border-radius: 8px; padding: 14px 18px; display: inline-block; margin-bottom: 16px; border: 1px dashed ${COLORS.primary};">
-          <p style="color: ${COLORS.textMuted}; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; margin: 0 0 4px; font-weight: 600;">
-            Code clients Discovery
-          </p>
-          <p style="color: ${COLORS.primary}; font-size: 22px; font-weight: 700; letter-spacing: 3px; margin: 0;">
-            DISCOVERY30
-          </p>
-          <p style="color: ${COLORS.text}; font-size: 12px; margin: 4px 0 0;">-30% sur formules 8 et 12 sem uniquement</p>
-        </div>
-        <br/>
-        ${getPrimaryButton('Voir Coaching Essential →', coachingLink)}
-      </div>
-
-      <!-- Secondary: all formules -->
-      <div style="padding: 14px 18px; background: ${COLORS.surface}; border-radius: 8px; border: 1px solid ${COLORS.border}; text-align: center; margin-bottom: 16px;">
-        <a href="${allFormulesLink}" style="color: ${COLORS.textMuted}; font-size: 13px; text-decoration: underline;">
-          Comparer les 3 formules (Essential / Elite / Private Lab) →
+      <div style="text-align:center;margin-bottom:16px;">
+        <a href="${allFormulesLink}" style="color:${APPLE_COLORS.accent};font-size:14px;text-decoration:none;font-weight:500;">
+          Comparer les 3 formules →
         </a>
       </div>
 
-      <!-- Relire le rapport -->
-      <div style="padding: 14px 18px; background: ${COLORS.surface}; border-radius: 8px; border: 1px solid ${COLORS.border}; text-align: center; margin-bottom: 16px;">
-        <a href="${reportLink}" style="color: ${COLORS.textMuted}; font-size: 13px; text-decoration: underline;">
+      <div style="padding:14px 18px;background:#f5f5f7;border-radius:10px;text-align:center;">
+        <a href="${reportLink}" style="color:${APPLE_COLORS.muted};font-size:13px;text-decoration:underline;">
           Relire mon Discovery Scan
         </a>
       </div>
 
-      <p style="color: ${COLORS.textMuted}; font-size: 12px; line-height: 1.6; margin: 0 0 8px; text-align: center;">
-        Pas intéressé ? Ignore simplement cet email.<br/>
-        <a href="{{UNSUB_LINK}}" style="color: #525252; text-decoration: underline;">Se désabonner</a>
+      <p style="color:${APPLE_COLORS.muted};font-size:12px;margin:24px 0 0;">
+        Achzod
       </p>
 
       <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
     `;
 
-    const emailContent = getEmailWrapper(content);
+    const emailContent = getCoachingAppleWrapper(
+      content,
+      "Ton Discovery te dit QUOI. Le coaching te dit COMMENT.",
+      "Le pas logique après ton bilan Discovery"
+    );
 
     const result = await sendEmailWithTracking(
       {
