@@ -172,6 +172,15 @@ export const PEPTIDES_QUESTIONS: PeptidesQuestion[] = [
   ]},
 
   // === SECTION 4: PRATIQUE ===
+  { id: "pep_country", sectionId: "pratique", type: "select", label: "Pays de livraison", required: true, options: [
+    { value: "FR", label: "France" },
+    { value: "BE", label: "Belgique" },
+    { value: "CH", label: "Suisse" },
+    { value: "LU", label: "Luxembourg" },
+    { value: "CA", label: "Canada" },
+    { value: "EU-other", label: "Autre pays Europe" },
+    { value: "world", label: "Autre pays" },
+  ]},
   { id: "pep_budget", sectionId: "pratique", type: "select", label: "Budget mensuel peptides", required: true, options: [
     { value: "under50", label: "< 50 EUR" },
     { value: "50-100", label: "50-100 EUR" },

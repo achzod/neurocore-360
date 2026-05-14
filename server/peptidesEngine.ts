@@ -433,11 +433,40 @@ RÈGLES :
 - Mentionne toujours : "vérifie la disponibilité sur peptaura.com/shipping?country=France avant de commander, certains fournisseurs peuvent être temporairement hors stock".
 - PRIX : utilise UNIQUEMENT le catalogue (cheapestPriceUSD ou priceRangeUSD). N'INVENTE JAMAIS un prix. Si tu n'as que le prix Pepturion en cheapestPriceUSD, donne une fourchette réaliste basée sur priceRangeUSD et précise "prix Lumira à vérifier sur le site".
 
-QUANTITES ET PRIX DEGRESSIFS
-Quand tu calcules le nombre de vials necessaires pour le cycle, mentionne TOUJOURS au client que commander en lot de 10 vials est generalement plus economique (prix degressif) et que les fournisseurs ont plus de stock disponible sur les commandes groupees. Par exemple, si le client a besoin de 4 vials de BPC-157 pour un cycle de 8 semaines, suggere-lui de commander 10 vials d'un coup : ca couvre 2 cycles, le prix unitaire baisse, et il n'aura pas a recommander entre deux cycles. Precise que les vials lyophilises (non reconstitues) se conservent des mois voire des annees a temperature ambiante, donc pas de risque de gaspillage. Integre ce conseil dans la section "Liste de courses Peptaura" ou "Comment commander sur Peptaura".
+QUANTITES (RÈGLE BÉTON , JAMAIS DE SUR-COMMANDE)
+Pour CHAQUE peptide du stack, tu calcules les vials nécessaires en suivant cette formule stricte :
 
-RUPTURE DE STOCK / PRODUIT INDISPONIBLE
-Dans la section "Comment commander sur Peptaura", tu DOIS expliquer au client ce qu'il doit faire si le fournisseur recommandé n'a pas le produit en stock. Explique-lui que Peptaura est un marketplace avec 6 fournisseurs actifs (Lumira, Pepturion, Retalux, HelixBridge, Hang Sciences, Railion Tech), mais que seulement 5 livrent en France. Si Lumira (fournisseur par défaut) est en rupture, bascule vers Retalux, HelixBridge, Hang Sciences (MOQ $39) ou Railion Tech (MOQ $96) , ces 5-la livrent tous en France. NE JAMAIS suggérer Pepturion (ne livre PAS en France). Le peptide est le même (même molécule, même pureté COA), seul le prix peut varier légèrement. Lien de vérification : peptaura.com/shipping?country=France pour voir qui est en stock et livre en France au moment de la commande.
+1. Calcule la dose totale du cycle en mg : (dose moyenne par injection × fréquence par semaine × nombre de semaines).
+2. Identifie le format vial qui matche cette consommation (vise : 1 à 3 vials de stock max pour 1 cycle complet, jamais plus).
+3. Ajoute une marge sécurité de 20 % MAXIMUM (perte de reconstitution, manipulation, dose de test phase 1).
+4. **NE RECOMMANDE JAMAIS D'OFFICE 10 VIALS POUR UN PRIX DÉGRESSIF.** Cette consigne est INTERDITE. Le client paie pour 1 cycle, tu lui calcules le besoin de 1 cycle.
+
+EXEMPLE CONCRET , Semaglutide cycle 12 sem en titration 0.25 → 0.5 → 1 mg :
+- Dose totale = (4 × 0.25) + (4 × 0.5) + (4 × 1) = 7 mg sur 12 sem.
+- Format vial typique sur Peptaura : 5 mg, 10 mg ou 20 mg.
+- Recommandation à donner : "Tu as besoin de 7 mg de Sema. Prends **1 vial de 10 mg** (ou 1 vial de 20 mg si seul format dispo) , ça te couvre les 12 semaines + marge."
+- INTERDIT : "commande 6 vials de 5 mg + 4 vials de réserve". Ça c'était le bug Jamal 2026-05-14.
+
+À mentionner UNE SEULE FOIS dans la section "Liste de courses" : "Si tu envisages déjà un 2ème cycle, tu peux opter pour le pack 10 vials qui descend le prix unitaire, vials lyophilisés conservables 2 à 3 ans au frigo. Pas obligatoire, c'est une option si ton budget le permet."
+
+STOCK PEPTAURA = MARCHÉ GRIS QUI BOUGE TOUT LE TEMPS (RÈGLE MÉTHODE > URL)
+Le stock sur Peptaura fluctue en permanence : ruptures, nouveaux lots, changements de fournisseur principal, formats qui apparaissent et disparaissent. Le catalogue qu'on te donne est une photo à un instant T qui devient obsolète en quelques jours.
+
+**RÈGLE D'OR :** tu ne donnes JAMAIS d'URL produit précise type "peptaura.com/catalog/Semaglutide" ni de format vial figé type "vial 5 mg chez Lumira". À la place, tu donnes au client la **MÉTHODE** pour trouver lui-même ce qui est dispo :
+
+DANS LA SECTION "Comment commander sur Peptaura", explique cette procédure standardisée :
+
+1. Va sur peptaura.com.
+2. Clique sur l'onglet **Shipping** en haut.
+3. Tape ton pays dans le filtre.
+4. Tu obtiens la liste des fournisseurs qui livrent **actuellement** dans ton pays.
+5. Pour chaque molécule de ton stack, tu cherches dans cette liste qui a du stock, dans quel format, à quel prix.
+6. Tu choisis ce qui matche ton besoin calculé (1 cycle = X mg, donc tu prends le format vial le plus proche).
+7. **En cas de doute** (rupture totale, format bizarre, prix qui parait étrange), tu reviens vers moi par mail avant de commander, je te valide la commande exacte en 24h.
+
+Tu peux mentionner Lumira et HelixBridge comme fournisseurs souvent disponibles, MAIS toujours en ajoutant : "vérifie en live sur l'onglet Shipping, le stock change tous les jours". JAMAIS de promesse "Lumira a Semaglutide 5 mg" parce que tu n'en sais rien au moment où le client commandera.
+
+INTERDICTION ABSOLUE : Pepturion ne livre pas en France. Si le client est FR/BE/LU/CH, ne le mentionne pas comme option.
 
 PLAN B FOURNISSEURS (section "disclaimer-support")
 Si Peptaura est en rupture totale sur une molécule ou si le client veut comparer les prix, il existe des fournisseurs chinois directs avec lesquels on peut échanger rapidement sur WhatsApp. Ce sont des manufacturers vérifiés sur GlobalSources. Mentionne ces 5 fournisseurs dans la section "disclaimer-support" comme plan B :
@@ -757,9 +786,23 @@ function buildUserPrompt(
   const budget = String(responses.pep_budget || responses.budget || "100-200");
   const budgetNote = budget.includes(">300") || budget.includes("300") ? "budget élevé" : budget.includes("<50") || budget.includes("50") ? "petit budget" : "budget moyen";
 
+  // Country of delivery , drives supplier filter + shipping URL in the report.
+  // Default to France if missing (legacy questionnaire pre-2026-05-14 didn't have this question).
+  const COUNTRY_LABELS: Record<string, string> = {
+    FR: "France", BE: "Belgique", CH: "Suisse", LU: "Luxembourg",
+    CA: "Canada", "EU-other": "Europe (autre)", world: "Hors Europe",
+  };
+  const COUNTRY_URL_PARAM: Record<string, string> = {
+    FR: "France", BE: "Belgium", CH: "Switzerland", LU: "Luxembourg",
+    CA: "Canada", "EU-other": "Europe", world: "All",
+  };
+  const countryCode = String(responses.pep_country || "FR");
+  const countryLabel = COUNTRY_LABELS[countryCode] || "France";
+  const shippingUrlCountry = COUNTRY_URL_PARAM[countryCode] || "France";
+
   return `Génère un protocole peptides COMPLET et DIDACTIQUE pour ${firstName}.
 
-DONNÉES PROFIL (${firstName}, ${weight} kg):
+DONNÉES PROFIL (${firstName}, ${weight} kg, pays de livraison : ${countryLabel}):
 ${summary}
 
 RÈGLES ABSOLUES:
@@ -767,9 +810,10 @@ RÈGLES ABSOLUES:
 2. Fais des PHRASES COMPLÈTES, jamais de listes sèches sans contexte.
 3. Ajuste les dosages au poids (${weight} kg) en mcg/kg.
 4. Sélectionne 2 à 4 peptides dans le stack principal + 1 peptide BONUS qui dépasse le budget.
-5. Utilise UNIQUEMENT le catalogue Peptaura. URLs réelles.
-6. Pour le choix du fournisseur (client en FRANCE , ${budgetNote}) : recommande LUMIRA par défaut (livre en France, le plus large catalogue, pas de MOQ bloquant). Si Lumira n'a pas le produit, bascule sur Retalux, HelixBridge, Hang Sciences (MOQ $39, regroupe la commande) ou Railion Tech (MOQ $96, regroupe la commande). NE JAMAIS recommander PEPTURION (ne livre PAS en France). EXPLIQUE clairement dans la shopping list pourquoi tu choisis le fournisseur recommandé et rappelle que le client peut vérifier la dispo sur peptaura.com/shipping?country=France.
-7. Le rapport doit faire au moins 4000 caractères au total. Chaque section doit être substantielle.
+5. Le catalogue Peptaura est une photo à un instant T qui devient obsolète en quelques jours. Tu peux mentionner Lumira et HelixBridge comme fournisseurs souvent disponibles, MAIS tu ne donnes JAMAIS d'URL produit précise ni de format vial figé. Le client trouvera lui-même ce qui est dispo via l'onglet Shipping (méthode détaillée plus bas).
+6. CALCUL QUANTITÉ STRICT (règle béton , bug Jamal 2026-05-14) : pour chaque peptide, calcule la dose totale du cycle (dose × fréquence × semaines), puis recommande 1 à 3 vials max (selon le format dispo) + 20 % de marge MAX. JAMAIS de "commande 10 vials pour le prix dégressif". Si le client veut un 2ème cycle, il le fera au moment de la commande, pas en sur-stockant aveuglément.
+7. SHIPPING : le client est en **${countryLabel}** (${countryCode}). Dans la section "Comment commander sur Peptaura", tu indiques l'URL de filtrage exacte : **peptaura.com/shipping?country=${shippingUrlCountry}**. Tu décris la procédure standardisée : (1) va sur Peptaura, (2) onglet Shipping, (3) tape ${countryLabel}, (4) liste live des fournisseurs qui livrent dans son pays, (5) il choisit le format dispo qui matche son besoin calculé, (6) en cas de doute ou format bizarre, il revient vers moi par mail avant de commander. ${countryCode === "FR" || countryCode === "BE" || countryCode === "LU" || countryCode === "CH" ? "INTERDICTION ABSOLUE : Pepturion ne livre pas en France/BE/LU/CH, ne le mentionne JAMAIS comme option." : ""}
+8. Le rapport doit faire au moins 4000 caractères au total. Chaque section doit être substantielle.
 
 Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
 
@@ -1355,6 +1399,28 @@ export async function generatePeptidesProtocol(
       const hasPersonalization = report.sections.some((s: any) => String(s.content ?? "").toLowerCase().includes(fnLower));
       if (!hasPersonalization && firstName.length >= 2 && firstName.toLowerCase() !== "client") {
         throw new Error(`VALIDATION: prénom "${firstName}" absent de toutes les sections , rapport non personnalisé`);
+      }
+
+      // CHECK 8: over-ordering detection (bug Jamal 2026-05-14)
+      // Le prompt actuel interdit la sur-commande mais on bétonne avec une regex de
+      // détection. Patterns interdits dans la shoppingList et les sections :
+      //  - "commande/prends/recommande 10 vials" (l'ancien comportement par défaut)
+      //  - "prix dégressif" lié à 10 vials
+      // Si détecté, on rejette et on retry , la 2ème tentative sur Opus a souvent
+      // mieux suivi la consigne quantité.
+      const allTexts = [
+        sectionsText,
+        shoppingText,
+        scheduleText,
+      ].join(" ").toLowerCase();
+      const overOrderingPatterns: Array<{ re: RegExp; label: string }> = [
+        { re: /(commande|prends|recommande|achete)\s+(de\s+)?10\s+vials/i, label: "commande_10_vials" },
+        { re: /\b1[0-9]\s+vials\s+(d'un coup|pour\s+(le\s+)?prix)/i, label: "10plus_vials_bulk" },
+        { re: /prix\s+d[ée]gressif/i, label: "prix_degressif" },
+      ];
+      const matched = overOrderingPatterns.find(p => p.re.test(allTexts));
+      if (matched) {
+        throw new Error(`VALIDATION: sur-commande détectée (pattern "${matched.label}") , prompt anti-bulk a été ignoré, retry.`);
       }
 
       console.log(`[PeptidesEngine] ✅ Validation OK: ${report.sections.length} sections, ${report.peptides.length} peptides, ${totalContent} chars`);
