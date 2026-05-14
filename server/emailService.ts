@@ -4617,86 +4617,75 @@ export async function sendDiscoveryJ30NurtureEmail(
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
 
     const content = `
-      <h2 style="color: ${COLORS.text}; margin: 0 0 16px; font-size: 26px; text-align: center; font-weight: 700; letter-spacing: -0.5px;">
-        ${tierLabel ? `Je te recommande <span style="color:${COLORS.primary};">${tierLabel}</span>` : "Un mois depuis ton Discovery"}
-      </h2>
-
-      <p style="color: ${COLORS.textMuted}; font-size: 15px; line-height: 1.7; margin: 0 0 24px; text-align: center;">
-        Tu as reçu tes scores et tes blocages.<br/>
-        <strong style="color: ${COLORS.text};">Maintenant la vraie question : qu'est-ce que tu en fais ?</strong>
+      <p style="color:${APPLE_COLORS.inkSoft};font-size:16px;line-height:1.65;margin:0 0 24px;">
+        Un mois depuis ton Discovery. Tu as les données, tu as vu où tu bloques. La question maintenant : <strong style="color:${APPLE_COLORS.ink};">est-ce que tu veux qu'on attaque vraiment, ensemble ?</strong>
       </p>
 
       ${recommendation ? `
-      <div style="padding: 20px; background: ${COLORS.primary}15; border-radius: 12px; border: 1px solid ${COLORS.primary}40; margin-bottom: 24px;">
-        <p style="color: ${COLORS.primary}; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 8px; font-weight: 700;">
-          Recommandation d'après ton profil
+      <div style="padding:18px 22px;background:#e8f4ff;border-radius:12px;border-left:3px solid ${APPLE_COLORS.accent};margin-bottom:28px;">
+        <p style="color:${APPLE_COLORS.accent};font-size:11px;text-transform:uppercase;letter-spacing:1.5px;margin:0 0 6px;font-weight:700;">
+          Ma recommandation pour ton profil
         </p>
-        <p style="color: ${COLORS.text}; font-size: 14px; line-height: 1.7; margin: 0;">
+        <p style="color:${APPLE_COLORS.ink};font-size:15px;line-height:1.6;margin:0;font-weight:500;">
           ${recommendation.reason}
         </p>
       </div>
       ` : `
-      <div style="padding: 24px; background: ${COLORS.surface}; border-radius: 12px; border-left: 4px solid ${COLORS.warning}; margin-bottom: 24px;">
-        <p style="color: ${COLORS.text}; font-size: 15px; font-weight: 600; margin: 0 0 10px;">
+      <div style="padding:20px 22px;background:#f5f5f7;border-radius:12px;border-left:3px solid ${APPLE_COLORS.accent};margin-bottom:28px;">
+        <p style="color:${APPLE_COLORS.ink};font-size:15px;font-weight:600;margin:0 0 8px;">
           Un audit ne transforme pas. Le suivi, oui.
         </p>
-        <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.7; margin: 0;">
-          Le Discovery te dit où tu bloques. Mais pour corriger durablement sommeil / stress / nutrition / énergie, il faut un protocole ajusté semaine après semaine selon tes retours. C'est ce que fait le coaching , je te construis un plan, tu m'envoies tes bilans hebdos, j'ajuste.
+        <p style="color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.6;margin:0;">
+          Le Discovery te dit où tu bloques. Pour corriger durablement sommeil, stress, nutrition et énergie, il faut un protocole ajusté semaine après semaine selon ce que tu m'envoies. C'est exactement ce que je fais en coaching.
         </p>
       </div>
       `}
 
-      <div style="padding: 28px; background: linear-gradient(135deg, ${COLORS.primary}20 0%, ${COLORS.primary}05 100%); border-radius: 12px; border: 2px solid ${COLORS.primary}; margin-bottom: 24px; text-align: center;">
-        <p style="color: ${COLORS.textMuted}; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 10px; font-weight: 600;">
+      <!-- Offre coaching -->
+      <div style="padding:26px;background:${APPLE_COLORS.card};border:2px solid ${APPLE_COLORS.accent};border-radius:14px;margin-bottom:24px;">
+        <p style="color:${APPLE_COLORS.muted};font-size:11px;text-transform:uppercase;letter-spacing:2px;margin:0 0 8px;font-weight:700;text-align:center;">
           Offre clients Discovery
         </p>
-        <p style="color: ${COLORS.text}; font-size: 16px; font-weight: 600; margin: 0 0 16px;">
-          -30% sur formules coaching<br/><span style="font-size: 13px; color: ${COLORS.textMuted};">(formules 8 et 12 sem uniquement)</span>
+        <p style="color:${APPLE_COLORS.accent};font-size:30px;font-weight:800;letter-spacing:3px;margin:0 0 8px;text-align:center;">
+          DISCOVERY30
         </p>
-        <div style="background: ${COLORS.background}; border-radius: 8px; padding: 14px 18px; display: inline-block; margin-bottom: 16px; border: 1px dashed ${COLORS.primary};">
-          <p style="color: ${COLORS.textMuted}; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; margin: 0 0 4px; font-weight: 600;">
-            Ton code
-          </p>
-          <p style="color: ${COLORS.primary}; font-size: 22px; font-weight: 700; letter-spacing: 3px; margin: 0;">
-            DISCOVERY30
-          </p>
-        </div>
-        <p style="color: ${COLORS.textMuted}; font-size: 13px; line-height: 1.6; margin: 0 0 18px;">
-          Je construis ton plan à partir des données de ton Discovery , pas de questionnaire à refaire.
+        <p style="color:${APPLE_COLORS.ink};font-size:14px;margin:0 0 16px;text-align:center;font-weight:500;">
+          -30% sur formules coaching <strong>8 et 12 sem</strong>
         </p>
-        ${getPrimaryButton(tierLabel ? `Voir ${tierLabel} →` : 'Voir les formules coaching →', coachingLink)}
+        <p style="color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.6;margin:0 0 16px;text-align:center;">
+          Je construis ton plan à partir des données de ton Discovery, pas de questionnaire à refaire.
+        </p>
+        ${getCoachingAppleButton(tierLabel ? `Voir ${tierLabel}` : 'Voir les formules coaching', coachingLink)}
       </div>
 
       ${!tierLabel || tierLabel !== "Essential" ? `
-      <div style="padding: 14px 18px; background: ${COLORS.surface}; border-radius: 8px; border: 1px solid ${COLORS.border}; text-align: center; margin-bottom: 8px;">
-        <p style="color: ${COLORS.textMuted}; font-size: 13px; margin: 0 0 6px;">
+      <div style="padding:14px 18px;background:#f5f5f7;border-radius:10px;text-align:center;margin-bottom:14px;">
+        <p style="color:${APPLE_COLORS.inkSoft};font-size:13px;margin:0 0 6px;">
           ${tierLabel ? "Budget plus serré ?" : "Pas sûr du niveau de coaching adapté ?"}
         </p>
-        <a href="${essentialLink}" style="color: ${COLORS.primary}; font-size: 13px; text-decoration: underline; font-weight: 600;">
-          Commence par Essential (4/8/12 sem, à partir de 249€) →
+        <a href="${essentialLink}" style="color:${APPLE_COLORS.accent};font-size:13px;text-decoration:none;font-weight:600;">
+          Commencer par Essential (à partir de 249€) →
         </a>
       </div>
       ` : ""}
 
-      <div style="padding: 14px 18px; background: ${COLORS.surface}; border-radius: 8px; border: 1px solid ${COLORS.border}; text-align: center; margin-bottom: 20px;">
-        <a href="${reportLink}" style="color: ${COLORS.textMuted}; font-size: 13px; text-decoration: underline;">
+      <div style="padding:14px 18px;background:#f5f5f7;border-radius:10px;text-align:center;">
+        <a href="${reportLink}" style="color:${APPLE_COLORS.muted};font-size:13px;text-decoration:underline;">
           Relire mon Discovery Scan
         </a>
       </div>
 
-      <p style="color: ${COLORS.textMuted}; font-size: 12px; line-height: 1.6; margin: 0; text-align: center;">
-        Pas intéressé ? Pas de problème.<br/>
-        <a href="{{UNSUB_LINK}}" style="color: #525252; text-decoration: underline;">Se désabonner</a>
+      <p style="color:${APPLE_COLORS.muted};font-size:12px;margin:24px 0 0;">
+        Achzod
       </p>
 
       <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
     `;
 
-    const emailContent = getEmailWrapper(
+    const emailContent = getCoachingAppleWrapper(
       content,
-      `linear-gradient(135deg, ${COLORS.primary} 0%, #0b0b0f 100%)`,
-      "Coaching Achzod",
-      "Un mois après ton Discovery"
+      tierLabel ? `Je te recommande ${tierLabel}` : "Un mois depuis ton Discovery",
+      tierLabel ? "La formule calibrée pour ton profil" : "On attaque vraiment, ensemble ?"
     );
 
     const result = await sendEmailWithTracking(
