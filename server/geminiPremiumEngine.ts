@@ -1178,89 +1178,91 @@ PROGRESSION :
   // PLAN CONCRET
   // 
   "Plan Semaine par Semaine 30-60-90": `
-INSTRUCTIONS POUR "PLAN SEMAINE PAR SEMAINE 30-60-90" (RÔLE : AUTORITÉ OPÉRATIONNELLE FINALE)
+INSTRUCTIONS POUR "PLAN SEMAINE PAR SEMAINE 30-60-90" :
 
-Tu es la VÉRITÉ qui séquence tout dans le temps. Tu DOIS référencer EXPLICITEMENT par leur titre exact chacun des Protocoles + la Biomécanique + la Nutrition COMPLÈTE + l'Entraînement précis. PAS une projection vague, un PLAN D'ACTION ULTRA détaillé exécutable jour par jour.
+PAS une projection, un PLAN D'ACTION detaille.
 
-═══════════════════════════════════════════════════════════════════
-RÈGLE BÉTON : CONTRÔLE FINAL OBLIGATOIRE AVANT VALIDATION
-═══════════════════════════════════════════════════════════════════
+FORMAT OBLIGATOIRE :
 
-Avant de finir cette section, RELIS et VÉRIFIE que ton Plan répond OUI à TOUTES ces questions :
+ PLAN D'ACTION 30-60-90 JOURS 
 
-(1) Chacun des Protocoles disponibles (PROTOCOLE MATIN ANTI-CORTISOL, PROTOCOLE SOIR VERROUILLAGE SOMMEIL, PROTOCOLE DIGESTION 14 JOURS, PROTOCOLE BUREAU ANTI-SÉDENTARITÉ, PROTOCOLE ENTRAINEMENT PERSONNALISÉ) apparaît-il PAR SON TITRE EXACT au moins une fois dans le Plan, avec une semaine d'activation explicite ?
-(2) La nutrition est-elle complète pour CHAQUE phase (pas juste petit-déj : aussi déjeuner, collation, dîner, macros cibles) ?
-(3) Les séances entrainement sont-elles NOMMÉES (Séance A, B, C, D ou full/upper/lower) avec exercices+séries+reps précis ?
-(4) Si l'Analyse Visuelle/Posturale ou Biomécanique a été générée, ses corrections sont-elles intégrées dans le Plan avec timing précis (mobilité avant séance, activation, étirements ciblés) ?
-(5) Les KPI/checkpoints sont-ils chiffrés à la fin de chaque phase ?
+PHASE 1 : RESET (Semaines 1-4)
 
-Si tu réponds NON à une de ces questions, le Plan est INVALIDE. Tu DOIS le compléter avant de soumettre.
+SEMAINE 1 - FONDATIONS :
+Lundi :
+- Matin : Implementer protocole matin anti-cortisol
+- Soir : Implementer protocole soir sommeil
+- Entrainement : Focus mobilite, pas d'intensite
 
-═══════════════════════════════════════════════════════════════════
-STRUCTURE OBLIGATOIRE
-═══════════════════════════════════════════════════════════════════
+Mardi :
+- Debut protocole digestion 14 jours
+- Cardio Zone 2 : 30 min
 
-PHASE 1 (Semaines 1 à 4) , MISE EN PLACE FONDATIONS
-PHASE 2 (Semaines 5 à 8) , MONTÉE EN CHARGE ET ACTIVATION
-PHASE 3 (Semaines 9 à 12) , OPTIMISATION ET TRANSFORMATION
+Mercredi :
+- Premiere seance muscu adapte
+- Pas plus de 45 min
 
-═══════════════════════════════════════════════════════════════════
-POUR CHAQUE SEMAINE, tu DOIS spécifier ces 5 dimensions :
-═══════════════════════════════════════════════════════════════════
+Jeudi :
+- Repos actif : marche 30 min
+- Mesurer : tour de taille, poids, energie matin /10
 
-1. PROTOCOLES ACTIVÉS CETTE SEMAINE
-   Liste par TITRE EXACT (en majuscules) chaque protocole activé.
-   Pour chaque : démarrage / maintien / intensification / pause.
-   Exemple : "Semaine 5 : ACTIVATION du PROTOCOLE DIGESTION 14 JOURS (jour 1 = lundi), maintien du PROTOCOLE MATIN ANTI-CORTISOL déjà installé, intensification du PROTOCOLE ENTRAINEMENT PERSONNALISÉ."
+Vendredi :
+- Seance muscu
+- Tracking : qualite sommeil /10
 
-   À la fin des 12 semaines, TOUS les protocoles disponibles doivent avoir été activés au moins une fois. Sinon le Plan est incomplet.
+Samedi :
+- Cardio au choix
+- Prep meals semaine 2
 
-2. NUTRITION QUOTIDIENNE COMPLÈTE (PAS QUE LE PETIT-DÉJ)
-   Pour chaque phase, détaille la journée TYPE complète :
-   - Petit-déjeuner : option recommandée + macros (P / L / G)
-   - Collation matin (si applicable) : option + macros
-   - Déjeuner : structure repas + 2-3 exemples concrets + macros
-   - Collation après-midi (avant ou post-entrainement) : option + macros
-   - Dîner : structure + exemples + timing avant coucher
-   - Apports cibles quotidiens : kcal totales, P (g et g/kg), G (g), L (g), fibres
-   - Évolution semaine par semaine (ex: "sem 5 : baisse glucides de 30g/jour")
+Dimanche :
+- Repos total
+- Bilan semaine : [checklist]
 
-3. ENTRAÎNEMENT PRÉCIS (INTERDIT "séance muscu" SANS DÉTAILS)
-   Pour chaque jour d'entrainement :
-   - NOM de la séance (Séance A : Push, Séance B : Pull, Séance C : Legs, Séance D : Full Body, etc.)
-   - Liste exercices avec format : "Squat barre, 4×8 reps, RPE 7, tempo 3-0-1"
-   - Échauffement spécifique 10 min minimum
-   - Mobilité ciblée pre-séance si problème postural identifié
-   - Cardio : type (Zone 2 / HIIT / LISS), durée, FC cible
-   - Évolution semaine par semaine (volume, intensité, fréquence)
+SEMAINE 2 - AJUSTEMENTS :
+[Si energie matin < 5/10 : prolonger phase sommeil]
+[Si ballonnements encore presents : verifier aliments suspects]
+- Augmenter intensite entrainement 10%
+- Continuer protocoles
+- Objectif : premiers signes de degonflage
 
-4. INTÉGRATION BIOMÉCANIQUE / POSTURE
-   Si l'Analyse Visuelle ou Biomécanique a identifié des corrections (psoas raccourcis, scapula avancée, voûte plantaire, rotation thoracique limitée, etc.), tu DOIS les intégrer :
-   - Quel jour de la semaine, à quel moment (pre-séance, post-séance, jour de repos)
-   - Exercices précis (étirements, activations, mobilisations) avec séries × secondes
-   - Évolution du programme correctif sur les 12 semaines
-   - INTERDIT d'ignorer la biomécanique si elle a été abordée dans l'Analyse
+SEMAINES 3-4 - CONSOLIDATION :
+- Fin du reset digestif
+- Reintroduction progressive
+- Augmenter charge entrainement
+- Objectif fin S4 : -2kg, -2cm tour taille, energie 7/10
 
-5. MONITORING / KPI HEBDO + CHECKPOINTS PHASE
-   - Mesures hebdomadaires : poids, tour taille, énergie matin /10, qualité sommeil /10, ballonnements /10
-   - Checkpoint fin Phase 1 (sem 4) : objectif chiffré (kg, cm, indicateurs)
-   - Checkpoint fin Phase 2 (sem 8) : objectif chiffré progressif
-   - Checkpoint fin Phase 3 (sem 12) : objectif final
+PHASE 2 : ACCELERATION (Semaines 5-8)
 
-═══════════════════════════════════════════════════════════════════
-ARBRE DE DÉCISION SI BLOCAGE (obligatoire en fin de section)
-═══════════════════════════════════════════════════════════════════
-Si pas de perte depuis 2 semaines → réduire glucides 20% + ajouter 1 cardio
-Si énergie < 5/10 plusieurs jours → prolonger phase sommeil + reduire intensité
-Si ballonnements persistent → revérifier aliments suspects + extension protocole digestion
-Si douleur articulaire revient → pause séance concernée + mobilité ciblée 3 jours
+SEMAINE 5-6 :
+- Introduction carb cycling
+- Intensification entrainement (drop sets, rest-pause)
+- Ajout HIIT 1x/semaine
+- Tracking precis des macros
 
-INTERDITS DANS LE PLAN :
-- Phrases vagues type "implémente le protocole matin" sans le TITRE EXACT du protocole
-- "Séance muscu" ou "muscu" sans nom de séance + exercices + séries × reps
-- Trous dans la nutrition (oublier déjeuner/collations/dîner après avoir détaillé le petit-déj)
-- Ignorer les corrections biomécaniques mentionnées dans l'Analyse Posturale
-- Phrase générique "continue les protocoles" sans préciser lesquels et leur statut
+SEMAINE 7-8 :
+- Deload semaine 7
+- Reprise semaine 8
+- Objectif fin S8 : -4kg, -4cm tour taille, energie 8/10
+
+SI PLATEAU (pas de perte depuis 2 semaines) :
+-> Reduire glucides de 20%
+-> Ajouter 1 seance cardio
+-> Verifier adherence protocoles
+
+PHASE 3 : TRANSFORMATION (Semaines 9-12)
+
+SEMAINE 9-10 :
+- Push final nutrition (deficit plus agressif si bien tolere)
+- Volume entrainement maximal
+- Focus : detail musculaire
+
+SEMAINE 11-12 :
+- Maintien
+- Photos comparatives
+- Objectif final : -6 a 8kg, -6cm tour taille, physique transforme
+
+ARBRE DE DECISION SI BLOCAGE :
+[Flowchart textuel avec decisions]
 `,
 
   "KPI et Tableau de Bord": `

@@ -67,7 +67,7 @@ function getHeroText(analysis: RecommendationAnalysis, globalScore: number): {
       label: 'Optimisation hormonale possible',
       headline: 'Ton profil suggere un potentiel de progression hormonal',
       subline: "Peptides Engine te donne un protocole peptides personnalise avec dosages exacts, acces a la source a prix labo, et 2 bilans sanguins inclus pour suivre tes marqueurs.",
-      primaryCta: 'Peptides Engine · 299€',
+      primaryCta: 'Peptides Engine · 399€',
       primaryLink: '/offers/peptides-engine',
       secondaryCta: 'Coaching Achzod',
       secondaryLink: 'https://www.achzodcoaching.com/formules-coaching',
@@ -80,7 +80,7 @@ function getHeroText(analysis: RecommendationAnalysis, globalScore: number): {
       label: 'Blocages detectes',
       headline: `Ton score (${globalScore}/10) revele des axes d'amelioration`,
       subline: "Un protocole peptides cible peut debloquer ta progression. Dosages ajustes a ton poids, guide complet, et acces a la source 60-90% moins chere.",
-      primaryCta: 'Peptides Engine · 299€',
+      primaryCta: 'Peptides Engine · 399€',
       primaryLink: '/offers/peptides-engine',
       secondaryCta: 'Coaching Achzod',
       secondaryLink: 'https://www.achzodcoaching.com/formules-coaching',
@@ -92,7 +92,7 @@ function getHeroText(analysis: RecommendationAnalysis, globalScore: number): {
     label: 'Passe au niveau superieur',
     headline: 'Ton Discovery a identifie tes leviers de progression',
     subline: 'Un protocole peptides personnalise peut accelerer tes resultats. 35 questions, dosages exacts, et acces a la source la moins chere du marche.',
-    primaryCta: 'Peptides Engine · 299€',
+    primaryCta: 'Peptides Engine · 399€',
     primaryLink: '/offers/peptides-engine',
     secondaryCta: 'Coaching Achzod',
     secondaryLink: 'https://www.achzodcoaching.com/formules-coaching',
@@ -402,19 +402,19 @@ export const UpgradeTeaser: React.FC<UpgradeTeaserProps> = ({
   let contextNote: string;
 
   if (context === 'energy') {
-    resolvedCtaText = ctaText ?? 'Peptides Engine · 299€';
+    resolvedCtaText = ctaText ?? 'Peptides Engine · 399€';
     resolvedCtaLink = ctaLink ?? '/offers/peptides-engine';
     secondaryCtaText = 'Coaching Achzod (-20%)';
     secondaryCtaLink = 'https://www.achzodcoaching.com/formules-coaching';
     contextNote = 'Protocole peptides personnalise pour ton profil hormonal';
   } else if (context === 'training') {
-    resolvedCtaText = ctaText ?? 'Peptides Engine · 299€';
+    resolvedCtaText = ctaText ?? 'Peptides Engine · 399€';
     resolvedCtaLink = ctaLink ?? '/offers/peptides-engine';
     secondaryCtaText = 'Coaching Achzod (-20%)';
     secondaryCtaLink = 'https://www.achzodcoaching.com/formules-coaching';
     contextNote = 'Peptides pour la recuperation et la performance';
   } else {
-    resolvedCtaText = ctaText ?? 'Peptides Engine · 299€';
+    resolvedCtaText = ctaText ?? 'Peptides Engine · 399€';
     resolvedCtaLink = ctaLink ?? '/offers/peptides-engine';
     secondaryCtaText = 'Coaching (-20% : ANALYSE20)';
     secondaryCtaLink = 'https://www.achzodcoaching.com/formules-coaching';
@@ -658,7 +658,7 @@ export const StickyCTA: React.FC<StickyCTAProps> = ({ theme, show }) => {
           >
             <span className="flex items-center justify-center gap-2">
               <Zap size={16} />
-              Peptides Engine · 299€
+              Peptides Engine · 399€
             </span>
           </a>
           <a
@@ -801,7 +801,7 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({ theme, auditId }) => {
               Protocole peptides personnalise avec dosages exacts, acces a la source -90%, guide complet, 2 bilans sanguins inclus
             </p>
             <div className="text-xs" style={{ color: '#F59E0B' }}>
-              299€ · Livraison 48h par email
+              399€ · Livraison 48h par email
             </div>
           </div>
 
@@ -841,7 +841,7 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({ theme, auditId }) => {
               <Zap size={22} />
               <div className="text-left">
                 <div className="text-xs opacity-80 uppercase tracking-wider">Peptides Engine</div>
-                <div className="font-black">299€</div>
+                <div className="font-black">399€</div>
               </div>
             </div>
           </a>

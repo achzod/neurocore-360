@@ -1499,24 +1499,12 @@ function FinalCTA() {
             35 questions. Un protocole sur mesure. La source ou les peptides coutent 60-90% moins cher. 2 bilans sanguins inclus.
           </p>
 
-          {/* Price - flash 199€ + countdown */}
+          {/* Price - tarif standard 399€ */}
           <div className="mt-10 inline-flex flex-col items-center gap-3 rounded-2xl border border-[#0071E3]/30 bg-[#F5F5F7] px-8 py-8 md:px-12">
             <p className="font-mono text-[11px] font-bold uppercase tracking-[0.25em] text-[#0071E3]">
-              Tarif gele 72h
+              Tarif protocole peptides
             </p>
-            <div className="flex items-end gap-4">
-              <p className="text-3xl font-bold text-[#A1A1A6] line-through leading-none">399€</p>
-              <p className="text-6xl font-bold text-[#1D1D1F] leading-none md:text-7xl">199€</p>
-            </div>
-            <p className="font-mono text-xs uppercase tracking-widest text-[#6E6E73]">
-              avec le code <strong style={{ color: PRIMARY }}>PEPTIDES100</strong>
-            </p>
-            <div className="mt-3">
-              <FlashCountdown />
-            </div>
-            <p className="font-mono text-[11px] uppercase tracking-widest text-[#86868B]">
-              Fin dimanche 10 mai · 23:59 (Paris)
-            </p>
+            <p className="text-6xl font-bold text-[#1D1D1F] leading-none md:text-7xl">399€</p>
             <p className="font-mono text-xs text-[#86868B] mt-1">TVA incluse · Paiement securise</p>
             <motion.p
               animate={{ opacity: [0.6, 1, 0.6] }}
@@ -1527,8 +1515,8 @@ function FinalCTA() {
           </div>
 
           <div className="mt-8 flex flex-col items-center gap-4">
-            <CTAButton href="/peptides-engine?promo=PEPTIDES100" large>
-              Reserver mon protocole a 199€
+            <CTAButton href="/peptides-engine" large>
+              Reserver mon protocole a 399€
             </CTAButton>
             <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-[#86868B]">
               <span className="flex items-center gap-1.5">
