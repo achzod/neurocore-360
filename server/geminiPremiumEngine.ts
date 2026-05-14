@@ -312,6 +312,121 @@ const SECTIONS_ANABOLIC: SectionName[] = [
 const SECTIONS = SECTIONS_ULTIMATE;
 
 // =============================================================================
+// HIÉRARCHIE DES SECTIONS (anti-contradiction structurelle)
+// =============================================================================
+// Chaque section a un NIVEAU dans la pyramide opérationnelle :
+//   • ANALYSE : diagnostique + mécanisme (le POURQUOI). Pas de recos opérationnelles précises.
+//   • PROTOCOLE : détails techniques (options, dosages, procédure). Pas de séquençage temporel.
+//   • PLAN : autorité opérationnelle finale (séquence dans le temps). Référence les protocoles.
+//   • META : transverse (Executive, Stack supplements, KPI, Synthese).
+// Cette classification est injectée dans le prompt de chaque section pour éviter que
+// l'ANALYSE METABOLISME conseille un aliment X pendant que le PROTOCOLE DIGESTION dit Y
+// (bug remonté par Hakim 2026-05-14).
+// =============================================================================
+
+type SectionLevel = 'ANALYSE' | 'PROTOCOLE' | 'PLAN' | 'META';
+
+const SECTION_LEVELS: Record<string, SectionLevel> = {
+  // META
+  "Executive Summary": 'META',
+  "Stack Supplements Optimise": 'META',
+  "KPI et Tableau de Bord": 'META',
+  "Synthese et Prochaines Etapes": 'META',
+
+  // ANALYSES (diagnostiques)
+  "Analyse visuelle et posturale complete": 'ANALYSE',
+  "Analyse biomecanique et sangle profonde": 'ANALYSE',
+  "Analyse entrainement et periodisation": 'ANALYSE',
+  "Analyse systeme cardiovasculaire": 'ANALYSE',
+  "Analyse metabolisme et nutrition": 'ANALYSE',
+  "Analyse sommeil et recuperation": 'ANALYSE',
+  "Analyse digestion et microbiote": 'ANALYSE',
+  "Analyse axes hormonaux": 'ANALYSE',
+  "Analyse energie et recuperation": 'ANALYSE',
+
+  // PROTOCOLES (opérationnels techniques)
+  "Protocole Matin Anti-Cortisol": 'PROTOCOLE',
+  "Protocole Soir Verrouillage Sommeil": 'PROTOCOLE',
+  "Protocole Digestion 14 Jours": 'PROTOCOLE',
+  "Protocole Bureau Anti-Sedentarite": 'PROTOCOLE',
+  "Protocole Entrainement Personnalise": 'PROTOCOLE',
+
+  // PLAN (séquençage)
+  "Plan Semaine par Semaine 30-60-90": 'PLAN',
+};
+
+function getSectionLevel(section: string): SectionLevel {
+  return SECTION_LEVELS[section] || 'ANALYSE';
+}
+
+function buildHierarchyConstraintsForSection(section: string): string {
+  const level = getSectionLevel(section);
+  switch (level) {
+    case 'ANALYSE':
+      return `\n
+HIÉRARCHIE DES SECTIONS (RÈGLE ANTI-CONTRADICTION CRITIQUE)
+Cette section est de NIVEAU ANALYSE (diagnostique). Tu rédiges UNIQUEMENT le diagnostic et l'explication des mécanismes biologiques.
+
+INTERDIT DANS UNE ANALYSE :
+- Donner des recommandations alimentaires PRÉCISES (ex: "mange 3 oeufs au petit-déjeuner", "prends 30g de protéines").
+- Donner des dosages de suppléments précis (ex: "prends 400mg de magnésium").
+- Décrire une procédure minute par minute.
+- Séquencer dans le temps ("semaine 1, semaine 2", "phase 1 phase 2").
+- Proposer des MENUS, OPTIONS spécifiques d'aliments, ou listes de courses.
+
+AUTORISÉ DANS UNE ANALYSE :
+- Expliquer le mécanisme physiologique (hormones, enzymes, voies métaboliques).
+- Décrire le diagnostic du profil ("résistance insulinique modérée", "axe cortisol décalé").
+- Indiquer le levier global ("la nutrition matin est ton point de bascule").
+- Renvoyer EXPLICITEMENT au Protocole ou au Plan pour l'exécution : "Les options alimentaires précises sont dans le PROTOCOLE MATIN ANTI-CORTISOL. Le calendrier d'activation est dans le PLAN SEMAINE PAR SEMAINE 30-60-90."
+
+Cette discipline élimine les contradictions entre ton analyse et les sections opérationnelles. Tu poses le diagnostic et tu laisses les Protocoles/Plan donner les ordres précis.\n`;
+
+    case 'PROTOCOLE':
+      return `\n
+HIÉRARCHIE DES SECTIONS (RÈGLE ANTI-CONTRADICTION CRITIQUE)
+Cette section est de NIVEAU PROTOCOLE (opérationnel technique). Tu rédiges la procédure exacte avec tous les détails techniques.
+
+AUTORISÉ DANS UN PROTOCOLE :
+- Détails techniques (procédure minute par minute, sites d'injection, doses précises, températures, durées).
+- Options alimentaires multiples avec macros, justifiées pour ce profil.
+- Variantes selon contraintes (budget, équipement, intolérances).
+- Erreurs à éviter (technique, timing, dosage).
+
+INTERDIT DANS UN PROTOCOLE :
+- Séquencer dans le temps ("commence semaine 1, augmente semaine 3"). Le PLAN SEMAINE PAR SEMAINE 30-60-90 est seul à séquencer.
+- Refaire le diagnostic complet (les Analyses l'ont fait).
+- Donner des conseils contradictoires avec les autres Protocoles (ex: si le Protocole Digestion 14 Jours élimine un aliment, ne le recommande pas comme petit-déjeuner dans le Protocole Matin Anti-Cortisol).
+
+Tu pars du principe que le Plan dira AU CLIENT QUAND activer ce protocole. Tu écris UNIQUEMENT la procédure technique, pas le calendrier.\n`;
+
+    case 'PLAN':
+      return `\n
+HIÉRARCHIE DES SECTIONS (RÈGLE ANTI-CONTRADICTION CRITIQUE)
+Cette section est de NIVEAU PLAN (autorité opérationnelle finale). Tu es la VÉRITÉ qui séquence tout dans le temps.
+
+RÔLE DU PLAN :
+- Tu séquences les actions semaine par semaine (Phase 1 sem 1-4 = fondations, Phase 2 sem 5-8 = montée en charge, Phase 3 sem 9-12 = optimisation).
+- Tu RÉFÉRENCES explicitement les Protocoles techniques au lieu de redonner les détails. Exemple : "Phase 2 lundi semaine 5 : applique le PROTOCOLE MATIN ANTI-CORTISOL (option Omelette repensée recommandée pour ton profil insulino-résistant)."
+- Tu introduis les habitudes PROGRESSIVEMENT (jamais tout en semaine 1).
+
+INTERDIT DANS LE PLAN :
+- Redonner les détails techniques d'un Protocole (procédure minute par minute, doses précises). Le client va dans le Protocole pour ça.
+- Refaire le diagnostic.
+- Contredire un Protocole. Si le Protocole Matin Anti-Cortisol propose 3 options, le Plan dit laquelle activer en priorité pour ce profil.
+
+Tu es la BOUSSOLE QUOTIDIENNE du client. C'est la section qu'il ouvre chaque matin pour savoir ce qu'il fait aujourd'hui.\n`;
+
+    case 'META':
+      return `\n
+HIÉRARCHIE DES SECTIONS (RÈGLE ANTI-CONTRADICTION CRITIQUE)
+Cette section est de NIVEAU META (transverse). Tu donnes une vue d'ensemble qui doit RESTER COHÉRENTE avec les Analyses, Protocoles et Plan.
+
+RÈGLE : Tu ne contredis JAMAIS une recommandation des autres sections. Tu synthétises, tu ne créés PAS de nouvelles directives spécifiques. Si tu mentionnes une action concrète, c'est avec un renvoi explicite ("voir Protocole X" ou "Plan Phase Y").\n`;
+  }
+}
+
+// =============================================================================
 // VERSION GRATUITE (Discovery Scan) - 5-7 pages avec sections cadenas
 // =============================================================================
 // Structure :
@@ -1615,6 +1730,8 @@ async function generateValidatedPremiumSection(
     console.log(`[Premium] Section "${section}": Knowledge base loaded (${knowledgeContext.length} chars from 6 articles)`);
   }
 
+  const hierarchyConstraints = buildHierarchyConstraintsForSection(section);
+
   const buildPrompt = (attempt: number) => {
     const retryWarning = attempt > 1
       ? `\n\nATTENTION CRITIQUE: Ta reponse precedente etait BEAUCOUP TROP COURTE. Tu DOIS ecrire MINIMUM ${validation.minLines} lignes (~${validation.minChars} caracteres). Developpe CHAQUE mecanisme en detail. Donne des exemples concrets. Explique les cascades physiologiques. C'est un rapport PREMIUM exigeant.\n`
@@ -1639,7 +1756,7 @@ INSTRUCTION CRITIQUE ABSOLUE:
       .replace('{section}', section)
       .replace('{section_specific_instructions}', specificInstructions)
       .replace('{data}', fullDataStr)}
-
+${hierarchyConstraints}
 ${knowledgeInsert}
 ${retryWarning}
 
