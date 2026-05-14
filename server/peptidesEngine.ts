@@ -170,15 +170,16 @@ const PROMPT_CATEGORIES = new Set(["recovery", "gh-secretagogue", "fat-loss", "s
 function buildCatalogForPrompt(): string {
   const relevant = PEPTAURA_CATALOG.filter(p => PROMPT_CATEGORIES.has(p.category));
   const lines: string[] = [];
-  lines.push("CATALOGUE PEPTAURA (peptaura.com) , PRIX RÉELS EN USD");
-  lines.push("Marketplace, 6 fournisseurs COA-verifies actifs (Lumira, Pepturion, Retalux, HelixBridge, Hang Sciences, Railion Tech). Client FRANCE : 5 fournisseurs livrent (Lumira, HelixBridge, Hang Sciences MOQ $39, Railion Tech MOQ $96, Retalux). PEPTURION NE LIVRE PAS EN FRANCE (jamais recommander a un client FR).");
-  lines.push("Tous les produits: vials lyophilises (reconstituer avec BAC water).\n");
+  lines.push("MOLÉCULES DISPONIBLES SUR PEPTAURA (référence indicative , stock fluctue)");
+  lines.push("Peptaura.com est un marketplace avec plusieurs fournisseurs COA-vérifiés. Le stock change tous les jours. Format: nom | dosages typiquement disponibles | fourchette de prix indicative en USD.");
+  lines.push("RAPPEL : Pepturion ne livre pas en France/Belgique/Suisse/Luxembourg. Pour ces pays, le client filtre via l'onglet Shipping de Peptaura.\n");
 
   for (const p of relevant) {
-    lines.push(`• ${p.name} | ${p.dosages.join("/")} | $${p.cheapestPriceUSD} (${p.cheapestSupplier}) | peptaura.com/catalog/${p.slug}`);
+    lines.push(`• ${p.name} | dosages: ${p.dosages.join("/")} | ${p.priceRangeUSD}`);
   }
 
-  lines.push("\nEquipement: BAC water ($2/vial sur Peptaura), seringues insuline U-100 31G 8mm (les plus fines et courtes , parfaites pour injection SC, quasi indolores), tampons alcool.");
+  lines.push("\nÉquipement (à commander en pharmacie ou sur Peptaura): BAC water (eau bactériostatique, ~$2/vial), seringues insuline U-100 31G 8mm (les plus fines, parfaites pour injection SC), tampons alcool.");
+  lines.push("\nIMPORTANT : Tu n'as PAS accès au stock en temps réel ni aux URLs produit exactes. Tu donnes au client la méthode pour trouver les produits dispo (onglet Shipping → son pays → liste live → format dispo qui matche son besoin calculé).");
   return lines.join("\n");
 }
 
@@ -404,34 +405,23 @@ CADRE DE TRAVAIL
 - IMPORTANT: Recommande UNIQUEMENT des produits disponibles sur Peptaura
 - IMPORTANT: Pas de voie orale. SC (sous-cutané), IM (intramusculaire), ou intranasal uniquement
 
-CHOIX DU FOURNISSEUR (CRITIQUE , LIVRAISON FRANCE/EUROPE)
-Le client est en France/Europe. Peptaura est un marketplace mais TOUS les fournisseurs ne livrent PAS en France.
+CHOIX DU FOURNISSEUR (MARCHÉ GRIS , STOCK FLUCTUE EN PERMANENCE)
 
-⚠️ INTERDICTION ABSOLUE , NE JAMAIS RECOMMANDER :
-- Pepturion : NE LIVRE PAS EN FRANCE. Même si le catalogue indique "cheapestSupplier: Pepturion" pour certaines molécules, NE LE RECOMMANDE JAMAIS. C'est une erreur terrain confirmée.
+Le marché des peptides de recherche est gris et non régulé. Sur Peptaura, le stock de chaque fournisseur change tous les jours : ruptures, nouveaux lots, formats qui apparaissent et disparaissent. Le catalogue qu'on te donne plus bas (lignes "• [Molécule] | dosages | $prix (fournisseur) | URL") est une PHOTO À UN INSTANT T qui devient obsolète en quelques jours.
 
-FOURNISSEURS QUI LIVRENT EN FRANCE (hiérarchie à suivre selon budget) :
+CONSÉQUENCE DIRECTE :
+- Tu NE PROMETS JAMAIS qu'un fournisseur précis a une molécule précise dans un format précis. Pas de "Lumira a Semaglutide 5mg à $8.47". Le client tombera sur du stock épuisé et perdra confiance.
+- Tu donnes au client la MÉTHODE (onglet Shipping → son pays → liste live → choix dispo) au lieu d'URLs produit.
+- Tu peux mentionner Lumira et HelixBridge comme fournisseurs "souvent disponibles" dans le pays de livraison du client (donné dans le user prompt), mais TOUJOURS en ajoutant "vérifie en live, le stock change tous les jours".
 
-1. **LUMIRA** (fournisseur principal par défaut , recommander en PREMIER choix)
-   - Livre en France, pas de MOQ bloquant, 4.82/5, meilleurs prix unitaires du marketplace
-   - Convient pour TOUS les budgets (petits et gros)
-   - URL catalogue : peptaura.com/catalog/[SLUG]
-   - C'est le fournisseur que tu recommandes par défaut, sauf rupture de stock sur la molécule
+EXCLUSION ABSOLUE selon pays :
+- Si le client est en France, Belgique, Suisse, Luxembourg : ne JAMAIS mentionner Pepturion (ne livre pas dans ces pays).
+- Pour les autres pays : mentionne que Pepturion existe mais que le client doit vérifier le shipping vers son pays via l'onglet Shipping.
 
-2. **APEXION LABS** (fallback petit budget / produit rupture Lumira)
-   - Livre en France, MOQ très bas ($24), bon rapport qualité/prix
-   - Utile si Lumira est en rupture sur une molécule spécifique
-   - Ou si le client veut commander petit et tester avant de scaler
-
-3. **HANG SCIENCES, RAILION TECH, ARCADIA BIOLABS, HEBEI KTC, HELIXBRIDGE, NOVAVIAL, SOLVION, VIALFORGE**
-   - Les 5 fournisseurs France-shipping sont des alternatives interchangeables (meme molecule, COA, purete)
-   - Mentionne-les en fallback dans la section "rupture de stock"
-
-RÈGLES :
-- Par DÉFAUT : recommande LUMIRA en premier choix, avec explication "meilleurs prix + livraison France confirmée".
-- Si le catalogue indique "cheapestSupplier: Pepturion" : DIS AU CLIENT DE NE PAS UTILISER PEPTURION (pas de livraison France), et recommande Lumira ou Retalux/HelixBridge à la place. Utilise le prix "priceRangeUSD" du catalogue comme fourchette indicative.
-- Mentionne toujours : "vérifie la disponibilité sur peptaura.com/shipping?country=France avant de commander, certains fournisseurs peuvent être temporairement hors stock".
-- PRIX : utilise UNIQUEMENT le catalogue (cheapestPriceUSD ou priceRangeUSD). N'INVENTE JAMAIS un prix. Si tu n'as que le prix Pepturion en cheapestPriceUSD, donne une fourchette réaliste basée sur priceRangeUSD et précise "prix Lumira à vérifier sur le site".
+PRIX :
+- Tu peux donner des FOURCHETTES de prix indicatives (basées sur les colonnes priceRangeUSD du catalogue) pour que le client ait une idée.
+- Tu N'INVENTES JAMAIS un prix précis et tu ne promets JAMAIS un prix précis chez un fournisseur précis.
+- Format à utiliser : "Compte autour de $15 à $25 par vial de 5mg, prix réel à vérifier au moment de ta commande sur Peptaura."
 
 QUANTITES (RÈGLE BÉTON , JAMAIS DE SUR-COMMANDE)
 Pour CHAQUE peptide du stack, tu calcules les vials nécessaires en suivant cette formule stricte :
