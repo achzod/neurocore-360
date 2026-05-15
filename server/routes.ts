@@ -3565,6 +3565,167 @@ export async function registerRoutes(
     }
   }
 
+  // Reconcile a single PayPal order whose browser-initiated capture call
+  // never reached us (Mounir Hadir, 2026-05-13: tab closed after PayPal
+  // success, order stayed pending in DB while PayPal had it as COMPLETED).
+  // Re-reads the order from PayPal, extracts the capture id + payer email
+  // from the live order representation, marks the DB row paid, runs the
+  // same downstream side effects (credits, admin notif). Returns a small
+  // result object describing what happened. Idempotent.
+  async function reconcilePaypalOrderById(orderId: string): Promise<{
+    status: "already_paid" | "reconciled" | "not_completed" | "not_found" | "no_paypal_id" | "error";
+    orderId: string;
+    paypalOrderId?: string;
+    paypalStatus?: string;
+    captureId?: string;
+    error?: string;
+  }> {
+    const order = await storage.getOrder(orderId).catch(() => null);
+    if (!order) return { status: "not_found", orderId };
+    if (order.status === "paid") return { status: "already_paid", orderId };
+    const paypalOrderId = (order as any).paypalOrderId;
+    if (!paypalOrderId) return { status: "no_paypal_id", orderId };
+
+    try {
+      const { getPayPalOrderDetails } = await import("./paypalClient");
+      const details = await getPayPalOrderDetails(paypalOrderId);
+      const ppStatus = details?.status as string | undefined;
+      if (ppStatus !== "COMPLETED") {
+        return { status: "not_completed", orderId, paypalOrderId, paypalStatus: ppStatus };
+      }
+
+      const capture = details?.purchase_units?.[0]?.payments?.captures?.[0];
+      const captureId: string = capture?.id || "";
+      const payerEmail: string =
+        details?.payer?.email_address ||
+        details?.payment_source?.paypal?.email_address ||
+        "";
+      const paidAtRaw: string =
+        capture?.create_time || capture?.update_time || details?.update_time || new Date().toISOString();
+      const paidAt = new Date(paidAtRaw);
+
+      const newMeta = {
+        ...((order.metadata as any) || {}),
+        paypalCaptureId: captureId,
+        payerEmail,
+        reconciledByCron: new Date().toISOString(),
+        reconciledReason: "browser-initiated capture missed, recovered via PayPal API poll",
+      };
+      await storage.updateOrder(order.id, { status: "paid", paidAt, metadata: newMeta });
+
+      const email = order.email;
+      const productType = order.productType;
+
+      // Credits for products that grant them (matches the capture endpoint)
+      if (productType === "BLOOD_ANALYSIS") {
+        await grantBloodCreditsForOrder(order.id, email, 1, "bloodCreditGranted").catch(() => {});
+      } else if (productType === "PEPTIDES_ENGINE") {
+        await grantBloodCreditsForOrder(order.id, email, 2, "peptidesCreditsGranted").catch(() => {});
+      }
+
+      // Admin payment notification (mirrors capture endpoint)
+      try {
+        const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
+        const amount = (order.finalAmountCents / 100).toFixed(2);
+        const productLabel = (order as any).productName || productType;
+        await sendCTAEmail(
+          adminEmail,
+          `PAIEMENT ${amount}EUR , ${productLabel} (PayPal RECONCILE) , ${email}`,
+          `PAIEMENT RECONCILE depuis dashboard PayPal (le navigateur du client n'a pas relaye le capture).\n\nProduit: ${productLabel}\nEmail: ${email}\nMontant: ${amount}EUR\nPromo: ${(order as any).promoCode || "aucun"}\n\nOrder ID: ${order.id}\nPayPal Order ID: ${paypalOrderId}\nPayPal Capture ID: ${captureId}\nPaid at (PayPal): ${paidAtRaw}\n\nLe rapport peptides sera genere par le cron autogen sur le prochain tick. La livraison email sera envoyee a l'heure programmee (anti-automation).`
+        );
+      } catch (notifErr) {
+        console.error("[PayPal Reconcile] Admin notif failed:", notifErr);
+      }
+
+      console.log(`[PayPal Reconcile] ✅ Order ${order.id} (${email}) marked paid from PayPal status COMPLETED`);
+      return {
+        status: "reconciled",
+        orderId,
+        paypalOrderId,
+        paypalStatus: ppStatus,
+        captureId,
+      };
+    } catch (err: any) {
+      console.error(`[PayPal Reconcile] Failed for order ${orderId}:`, err?.message || err);
+      return { status: "error", orderId, error: err?.message || String(err) };
+    }
+  }
+
+  // Admin: reconcile ALL pending orders that have a paypalOrderId (one-shot).
+  // Used after deploys + as the body of the periodic reconcile cron below.
+  async function reconcileAllPendingPaypalOrders(maxAgeHours: number = 168): Promise<{
+    scanned: number;
+    reconciled: string[];
+    stillPending: string[];
+    errors: Array<{ orderId: string; error: string }>;
+  }> {
+    const { orders } = await storage.getAllOrders({ status: "pending", limit: 500 });
+    const cutoff = Date.now() - maxAgeHours * 3600 * 1000;
+    const candidates = orders.filter((o: any) =>
+      o.paypalOrderId &&
+      new Date(o.createdAt).getTime() >= cutoff &&
+      !o.email?.includes("test") &&
+      !o.email?.includes("debug")
+    );
+    const reconciled: string[] = [];
+    const stillPending: string[] = [];
+    const errors: Array<{ orderId: string; error: string }> = [];
+    for (const o of candidates) {
+      const result = await reconcilePaypalOrderById(o.id);
+      if (result.status === "reconciled") reconciled.push(o.id);
+      else if (result.status === "not_completed") stillPending.push(o.id);
+      else if (result.status === "error") errors.push({ orderId: o.id, error: result.error || "unknown" });
+    }
+    console.log(
+      `[PayPal Reconcile Cron] Scanned ${candidates.length} candidates: ${reconciled.length} reconciled, ${stillPending.length} still pending on PayPal, ${errors.length} errors`
+    );
+    return { scanned: candidates.length, reconciled, stillPending, errors };
+  }
+
+  app.post("/api/admin/paypal/reconcile-pending", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const maxAgeHours = Number((req.body as any)?.maxAgeHours ?? 168);
+      const out = await reconcileAllPendingPaypalOrders(maxAgeHours);
+      res.json({ success: true, ...out });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error?.message || "Erreur serveur" });
+    }
+  });
+
+  app.post("/api/admin/paypal/reconcile/:orderId", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const out = await reconcilePaypalOrderById(req.params.orderId);
+      res.json({ success: true, ...out });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error?.message || "Erreur serveur" });
+    }
+  });
+
+  // Periodic reconciliation cron — every 10 min. Catches any PayPal capture
+  // that the browser-initiated flow missed (closed tab, network hiccup, ad
+  // blocker eating the XHR). Combined with the existing peptides autogen
+  // cron, a missed capture now self-heals within ~15 min instead of staying
+  // pending until a client emails Achzod days later.
+  let paypalReconcileRunning = false;
+  setInterval(async () => {
+    if (paypalReconcileRunning) return;
+    paypalReconcileRunning = true;
+    try {
+      const memRssMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
+      if (memRssMb > 440) {
+        console.warn(`[PayPal Reconcile Cron] ⚠️ Skipping , RSS ${memRssMb}MB > 440MB`);
+        return;
+      }
+      await reconcileAllPendingPaypalOrders(168);
+    } catch (err) {
+      console.error("[PayPal Reconcile Cron] Cycle error:", err);
+    } finally {
+      paypalReconcileRunning = false;
+    }
+  }, 10 * 60 * 1000);
+
   // Used by both Stripe confirm-session and PayPal capture-order
   async function createAuditFromPaidOrder(
     email: string,
