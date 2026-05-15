@@ -5894,49 +5894,61 @@ export async function registerRoutes(
           return;
         }
 
-        // Kick generation off in the background and reply immediately so the
-        // admin doesn't time out the request.
-        result.generating = true;
-        res.json(result);
-
-        (async () => {
-          try {
-            const { generatePeptidesProtocol } = await import("./peptidesEngine");
-            const report = await generatePeptidesProtocol(responses, order.email);
-            const saved = await storage.createBurnoutReport({
-              email: `peptides::${order.email}`,
-              responses,
-              report,
-            });
-            const refreshed = await storage.getOrder(order.id);
-            const mergedMeta = { ...((refreshed?.metadata as any) || {}), peptidesReportId: saved.id };
-            await storage.updateOrder(order.id, { metadata: mergedMeta });
-
-            if (body.sendConfirmation !== false) {
-              const firstName = responses.pep_name || responses.prenom || (order.email.split("@")[0]);
-              const peptidesNames = (report.peptides || []).map((p: any) => p.name).join(", ");
-              const scheduledAt = await (async () => {
-                try {
-                  const fresh = await storage.getOrder(order.id);
-                  return fresh ? await resolvePeptidesEmailScheduledAt(fresh) : new Date();
-                } catch { return new Date(); }
-              })();
-              sendPeptidesOrderConfirmationEmail(order.email, {
-                firstName,
-                amountEur: (order.finalAmountCents || 0) / 100,
-                promoCode: (order as any).promoCode || null,
-                peptidesNames,
-                scheduledDeliveryAt: scheduledAt,
-                bloodCreditsCount: Array.isArray(report.promoCodesGenerated) ? report.promoCodesGenerated.length : 0,
-                orderId: order.id,
-              }).catch((err) => console.error("[Force-Paid] Confirmation email failed:", err));
-            }
-            console.log(`[Force-Paid] Generation + persist OK for ${order.email} report=${saved.id}`);
-          } catch (genErr: any) {
-            console.error(`[Force-Paid] Generation FAILED for ${order.email}:`, genErr?.message || genErr);
+        // Run generation SYNCHRONOUSLY (admin endpoint, no anonymous user
+        // waiting). Mounir Hadir's case (2026-05-15) showed background IIFE
+        // can die silently on Render Starter timeouts. Synchronous flow
+        // returns the actual error to the caller for visibility, and goes
+        // through the same CAS-protected linking path as /api/admin/peptides-generate.
+        try {
+          const { generatePeptidesProtocol } = await import("./peptidesEngine");
+          const report = await generatePeptidesProtocol(responses, order.email);
+          const saved = await storage.createBurnoutReport({
+            email: `peptides::${order.email}`,
+            responses,
+            report,
+          });
+          const claimed = await storage.claimPeptidesReportSlot(order.id, saved.id);
+          if (!claimed) {
+            result.warning = `Race condition: another process already linked a report to this order. Generated report ${saved.id} is orphan.`;
+            result.orphanReportId = saved.id;
+          } else {
+            result.reportId = saved.id;
           }
-        })();
-        return;
+
+          const peptidesNames = (report.peptides || []).map((p: any) => p.name).join(", ");
+          const firstName = responses.pep_name || responses.prenom || (order.email.split("@")[0]);
+
+          if (body.sendConfirmation !== false && claimed) {
+            const scheduledAt = await (async () => {
+              try {
+                const fresh = await storage.getOrder(order.id);
+                return fresh ? await resolvePeptidesEmailScheduledAt(fresh) : new Date();
+              } catch { return new Date(); }
+            })();
+            await sendPeptidesOrderConfirmationEmail(order.email, {
+              firstName,
+              amountEur: (order.finalAmountCents || 0) / 100,
+              promoCode: (order as any).promoCode || null,
+              peptidesNames,
+              scheduledDeliveryAt: scheduledAt,
+              bloodCreditsCount: Array.isArray(report.promoCodesGenerated) ? report.promoCodesGenerated.length : 0,
+              orderId: order.id,
+            }).catch((err) => console.error("[Force-Paid] Confirmation email failed:", err));
+            result.confirmationSent = true;
+          }
+          result.peptidesNames = peptidesNames;
+          result.reportLink = `${getBaseUrl()}/peptides/${saved.id}`;
+        } catch (genErr: any) {
+          const errMsg = genErr?.message || String(genErr);
+          console.error(`[Force-Paid] Generation FAILED for ${order.email}:`, errMsg);
+          result.generationError = errMsg;
+          const adminEmail = process.env.ADMIN_NOTIF_EMAIL || "coaching@achzodcoaching.com";
+          await sendCTAEmail(
+            adminEmail,
+            `[FORCE-PAID ECHEC] Peptides ${order.email}`,
+            `Le force-paid sur ${order.email} a bien marque l'order ${order.id} paid, mais la generation peptides a echoue.\n\nErreur: ${errMsg}\n\nReponses (${Object.keys(responses).length} keys): OK\n\nRelance manuellement: POST /api/admin/peptides-generate avec { "email": "${order.email}" }`
+          ).catch(() => {});
+        }
       }
 
       res.json(result);
