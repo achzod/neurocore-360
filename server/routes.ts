@@ -4777,6 +4777,46 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/admin/audit/:auditId/restore-snapshot", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { auditId } = req.params;
+      const { narrativeReport, reportTxt, reportHtml, reportDeliveryStatus } = req.body as {
+        narrativeReport?: any;
+        reportTxt?: string;
+        reportHtml?: string;
+        reportDeliveryStatus?: string;
+      };
+      const audit = await storage.getAudit(auditId);
+      if (!audit) {
+        res.status(404).json({ success: false, error: "Audit non trouvé" });
+        return;
+      }
+      const updates: any = {};
+      if (narrativeReport !== undefined) updates.narrativeReport = narrativeReport;
+      if (reportTxt !== undefined) updates.reportTxt = reportTxt;
+      if (reportHtml !== undefined) updates.reportHtml = reportHtml;
+      if (reportDeliveryStatus !== undefined) updates.reportDeliveryStatus = reportDeliveryStatus;
+      if (Object.keys(updates).length === 0) {
+        res.status(400).json({ success: false, error: "no fields to restore" });
+        return;
+      }
+      await storage.updateAudit(auditId, updates);
+      console.log(`[Admin Restore] audit=${auditId} restored: ${Object.keys(updates).join(", ")}`);
+      res.json({
+        success: true,
+        auditId,
+        restored: Object.keys(updates),
+        narrativeReportSize: narrativeReport ? JSON.stringify(narrativeReport).length : 0,
+        reportTxtSize: reportTxt?.length ?? 0,
+        reportHtmlSize: reportHtml?.length ?? 0,
+      });
+    } catch (error: any) {
+      console.error("[Admin Restore Snapshot] Error:", error);
+      res.status(500).json({ success: false, error: error?.message || "Erreur serveur" });
+    }
+  });
+
   app.post("/api/admin/audit/:auditId/rebuild-html", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
