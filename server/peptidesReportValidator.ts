@@ -88,11 +88,14 @@ function extractPriceQty(priceEstimate: string | undefined): number | null {
 
 function extractTotalMgFromVials(vialsNeeded: string | undefined): number | null {
   if (!vialsNeeded) return null;
-  const totalMatch = vialsNeeded.match(/total\s*[~≈]?\s*(\d+(?:[.,]\d+)?)\s*mg/i);
-  if (totalMatch) return parseFloat(totalMatch[1].replace(",", "."));
+  // Prefer the actual capacity (qty × vialMg) over the AI's "total ~Xmg"
+  // claim, because the AI sometimes states a misleading "total" value (the
+  // BUDGET needed) while the qty × mg gives the real ordered capacity.
   const qty = extractVialQty(vialsNeeded);
   const mg = extractVialMg(vialsNeeded);
   if (qty && mg) return qty * mg;
+  const totalMatch = vialsNeeded.match(/total\s*[~≈]?\s*(\d+(?:[.,]\d+)?)\s*mg/i);
+  if (totalMatch) return parseFloat(totalMatch[1].replace(",", "."));
   return null;
 }
 
@@ -243,7 +246,11 @@ function checkPeptide(p: PeptidesPeptide): string[] {
         `surcommande detectee: ${totalMgOrdered}mg commandes vs ${needMg.toFixed(1)}mg besoin (x${overshoot.toFixed(1)})`
       );
     }
-    if (overshoot < 0.85) {
+    // Skip sous-commande when the cycle duration is a range like "8 à 12 semaines":
+    // the AI legitimately sizes for the lower bound. Only flag a HARD undershoot
+    // (< 60% of estimator's need) to avoid noisy false positives.
+    const cycleHasRange = /(\d+)\s*(?:à|a|-|–)\s*(\d+)\s*semaines?/i.test(p.cycleDuration || "");
+    if (!cycleHasRange && overshoot < 0.6) {
       issues.push(
         `sous-commande detectee: ${totalMgOrdered}mg commandes vs ${needMg.toFixed(1)}mg besoin (${(overshoot * 100).toFixed(0)}%)`
       );
