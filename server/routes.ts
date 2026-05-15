@@ -5831,6 +5831,121 @@ export async function registerRoutes(
     }
   });
 
+  // Manually reconcile a paid PayPal/Stripe transaction whose webhook never
+  // fired (the order stays pending in DB even though the customer was charged).
+  // Marks the order as paid at the supplied timestamp, optionally cancels
+  // sibling pending orders for the same email+productType (to clean up the
+  // 4 PENDING noise from retried checkouts), and for PEPTIDES_ENGINE kicks
+  // off generation + delivery scheduling via the same path the webhook uses.
+  app.post("/api/admin/orders/:id/force-paid", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const order = await storage.getOrder(req.params.id);
+      if (!order) {
+        res.status(404).json({ success: false, error: "Commande non trouvée" });
+        return;
+      }
+      if (order.status === "paid") {
+        res.status(400).json({ success: false, error: "Order is already paid" });
+        return;
+      }
+      const body = (req.body || {}) as {
+        paidAt?: string;
+        paypalCaptureId?: string;
+        cancelSiblings?: boolean;
+        sendConfirmation?: boolean;
+      };
+      const paidAt = body.paidAt ? new Date(body.paidAt) : new Date();
+      if (Number.isNaN(paidAt.getTime())) {
+        res.status(400).json({ success: false, error: "paidAt must be a valid ISO date" });
+        return;
+      }
+
+      const newMeta = { ...((order.metadata as any) || {}) };
+      if (body.paypalCaptureId) newMeta.paypalCaptureId = body.paypalCaptureId;
+      newMeta.forcePaidByAdmin = new Date().toISOString();
+      newMeta.forcePaidReason = "webhook missed, reconciled manually from PayPal dashboard";
+
+      await storage.updateOrder(order.id, { status: "paid", paidAt, metadata: newMeta });
+
+      let cancelledSiblings: string[] = [];
+      if (body.cancelSiblings !== false) {
+        const { orders: allOrders } = await storage.getAllOrders({ email: order.email, limit: 50 });
+        for (const o of allOrders) {
+          if (
+            o.id !== order.id &&
+            o.productType === order.productType &&
+            o.status === "pending"
+          ) {
+            await storage.updateOrder(o.id, { status: "cancelled" }).catch(() => {});
+            cancelledSiblings.push(o.id);
+          }
+        }
+      }
+
+      const result: any = { success: true, orderId: order.id, cancelledSiblings };
+
+      if (order.productType === "PEPTIDES_ENGINE") {
+        const meta = newMeta as any;
+        const responses = meta.peptidesResponses || {};
+        if (!responses || Object.keys(responses).length < 3) {
+          result.warning = "peptidesResponses empty or too short; generation skipped, run /api/admin/peptides-inject-responses + /api/admin/peptides-generate manually";
+          res.json(result);
+          return;
+        }
+
+        // Kick generation off in the background and reply immediately so the
+        // admin doesn't time out the request.
+        result.generating = true;
+        res.json(result);
+
+        (async () => {
+          try {
+            const { generatePeptidesProtocol } = await import("./peptidesEngine");
+            const report = await generatePeptidesProtocol(responses, order.email);
+            const saved = await storage.createBurnoutReport({
+              email: `peptides::${order.email}`,
+              responses,
+              report,
+            });
+            const refreshed = await storage.getOrder(order.id);
+            const mergedMeta = { ...((refreshed?.metadata as any) || {}), peptidesReportId: saved.id };
+            await storage.updateOrder(order.id, { metadata: mergedMeta });
+
+            if (body.sendConfirmation !== false) {
+              const firstName = responses.pep_name || responses.prenom || (order.email.split("@")[0]);
+              const peptidesNames = (report.peptides || []).map((p: any) => p.name).join(", ");
+              const scheduledAt = await (async () => {
+                try {
+                  const fresh = await storage.getOrder(order.id);
+                  return fresh ? await resolvePeptidesEmailScheduledAt(fresh) : new Date();
+                } catch { return new Date(); }
+              })();
+              sendPeptidesOrderConfirmationEmail(order.email, {
+                firstName,
+                amountEur: (order.finalAmountCents || 0) / 100,
+                promoCode: (order as any).promoCode || null,
+                peptidesNames,
+                scheduledDeliveryAt: scheduledAt,
+                bloodCreditsCount: Array.isArray(report.promoCodesGenerated) ? report.promoCodesGenerated.length : 0,
+                orderId: order.id,
+              }).catch((err) => console.error("[Force-Paid] Confirmation email failed:", err));
+            }
+            console.log(`[Force-Paid] Generation + persist OK for ${order.email} report=${saved.id}`);
+          } catch (genErr: any) {
+            console.error(`[Force-Paid] Generation FAILED for ${order.email}:`, genErr?.message || genErr);
+          }
+        })();
+        return;
+      }
+
+      res.json(result);
+    } catch (error: any) {
+      console.error("[Admin Force-Paid] Error:", error);
+      res.status(500).json({ success: false, error: error?.message || "Erreur serveur" });
+    }
+  });
+
   app.post("/api/admin/orders/:id/cancel", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
