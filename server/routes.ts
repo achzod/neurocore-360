@@ -10594,48 +10594,6 @@ export async function registerRoutes(
           if (!existing) continue;
           const existingReport = existing.report as any;
 
-          // STRICT GATE — never deliver a peptides report that fails validation.
-          // Auto-repair vials math first (handles the common AI desync where
-          // vialsNeeded and priceEstimate disagree), then re-validate. If errors
-          // remain, escalate to admin and SKIP the cron tick (do not email).
-          try {
-            const { validateVialsMath } = await import("./peptidesEngine");
-            const { validatePeptidesReport } = await import("./peptidesReportValidator");
-            const repaired = validateVialsMath(JSON.parse(JSON.stringify(existingReport)));
-            const validation = validatePeptidesReport(repaired);
-            if (!validation.ok) {
-              const repairedFingerprint = JSON.stringify(repaired);
-              const originalFingerprint = JSON.stringify(existingReport);
-              if (repairedFingerprint !== originalFingerprint) {
-                await storage.updateBurnoutReport(meta.peptidesReportId, repaired).catch(() => {});
-              }
-              const adminEmail = process.env.ADMIN_NOTIF_EMAIL || "coaching@achzodcoaching.com";
-              console.error(
-                `[AutoGen] 🛑 DELIVERY BLOCKED for ${email} (report ${meta.peptidesReportId}): ${validation.errors.length} validation errors`
-              );
-              await sendCTAEmail(
-                adminEmail,
-                `[BLOQUE] Livraison peptides ${email}`,
-                `Le rapport peptides de ${email} a echoue la validation pre-livraison.\n\nReportId: ${meta.peptidesReportId}\nOrderId: ${order.id}\n\nErreurs (${validation.errors.length}):\n${validation.errors.slice(0, 10).map(e => " - " + e).join("\n")}\n\nVerifie manuellement puis utilise /api/admin/peptides/recompute-vials/${meta.peptidesReportId} pour patcher, ou regenere le rapport.\n\nLa livraison n'aura pas lieu tant que le rapport n'est pas valide.`
-              ).catch(() => {});
-              continue;
-            }
-            // Validation passed (possibly after auto-repair). Persist the repaired
-            // version so the link the client opens uses synced numbers.
-            const repairedFingerprint = JSON.stringify(repaired);
-            const originalFingerprint = JSON.stringify(existingReport);
-            if (repairedFingerprint !== originalFingerprint) {
-              await storage.updateBurnoutReport(meta.peptidesReportId, repaired).catch(() => {});
-              Object.assign(existingReport, repaired);
-            }
-          } catch (gateErr: any) {
-            console.error(
-              `[AutoGen] ⚠️ Validation gate threw for ${email}, blocking delivery:`,
-              gateErr?.message || gateErr
-            );
-            continue;
-          }
-
           const baseUrl = getBaseUrl();
           const peptidesNames = existingReport?.peptides?.map((p: any) => p.name).join(", ") ?? "voir rapport";
           const promoBlock = Array.isArray(existingReport?.promoCodesGenerated) && existingReport.promoCodesGenerated.length > 0
@@ -10664,6 +10622,60 @@ export async function registerRoutes(
                 orderId: order.id,
               }).catch((err) => console.error("[AutoGen Recovery] Confirmation email failed:", err));
             }
+            continue;
+          }
+
+          // STRICT GATE — runs only when delivery is actually due (now or past
+          // scheduledAt). Auto-repair vials math first, then validate. If the
+          // report still fails, email admin AT MOST ONCE per 6h per order and
+          // skip the tick. Without the time-gate, the cron would re-fire the
+          // BLOQUE email every ~6h before the scheduled time was even reached.
+          try {
+            const { validateVialsMath } = await import("./peptidesEngine");
+            const { validatePeptidesReport } = await import("./peptidesReportValidator");
+            const repaired = validateVialsMath(JSON.parse(JSON.stringify(existingReport)));
+            const repairedFingerprint = JSON.stringify(repaired);
+            const originalFingerprint = JSON.stringify(existingReport);
+            if (repairedFingerprint !== originalFingerprint) {
+              await storage.updateBurnoutReport(meta.peptidesReportId, repaired).catch(() => {});
+              Object.assign(existingReport, repaired);
+            }
+            const validation = validatePeptidesReport(repaired);
+            if (!validation.ok) {
+              const lastNotifIso = (order.metadata as any)?.peptidesBloqueNotifiedAt as string | undefined;
+              const sinceLastSec = lastNotifIso
+                ? (Date.now() - new Date(lastNotifIso).getTime()) / 1000
+                : Number.POSITIVE_INFINITY;
+              if (sinceLastSec > 6 * 3600) {
+                const adminEmail = process.env.ADMIN_NOTIF_EMAIL || "coaching@achzodcoaching.com";
+                console.error(
+                  `[AutoGen] 🛑 DELIVERY BLOCKED for ${email} (report ${meta.peptidesReportId}): ${validation.errors.length} validation errors`
+                );
+                await sendCTAEmail(
+                  adminEmail,
+                  `[BLOQUE] Livraison peptides ${email}`,
+                  `Le rapport peptides de ${email} a echoue la validation pre-livraison.\n\nReportId: ${meta.peptidesReportId}\nOrderId: ${order.id}\n\nErreurs (${validation.errors.length}):\n${validation.errors.slice(0, 10).map(e => " - " + e).join("\n")}\n\nVerifie manuellement puis utilise /api/admin/peptides/recompute-vials/${meta.peptidesReportId} pour patcher, ou regenere le rapport.\n\nLa livraison n'aura pas lieu tant que le rapport n'est pas valide.\n\n(Prochaine alerte au plus tot dans 6h.)`
+                ).catch(() => {});
+                await storage
+                  .setOrderMetadataKey(order.id, "peptidesBloqueNotifiedAt", new Date().toISOString())
+                  .catch(() => {});
+              } else {
+                console.warn(
+                  `[AutoGen] Validation still failing for ${email} but BLOQUE already sent ${Math.round(sinceLastSec / 60)} min ago , skipping admin notif`
+                );
+              }
+              continue;
+            }
+            if ((order.metadata as any)?.peptidesBloqueNotifiedAt) {
+              await storage
+                .setOrderMetadataKey(order.id, "peptidesBloqueNotifiedAt", "")
+                .catch(() => {});
+            }
+          } catch (gateErr: any) {
+            console.error(
+              `[AutoGen] ⚠️ Validation gate threw for ${email}, blocking delivery:`,
+              gateErr?.message || gateErr
+            );
             continue;
           }
 
