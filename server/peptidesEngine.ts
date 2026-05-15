@@ -7,6 +7,7 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import { ANTHROPIC_CONFIG, validateAnthropicConfig } from "./anthropicConfig";
+import { validatePeptidesReport } from "./peptidesReportValidator";
 import { storage } from "./storage";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -433,15 +434,26 @@ RÈGLES :
 - Mentionne toujours : "vérifie la disponibilité sur peptaura.com/shipping?country=France avant de commander, certains fournisseurs peuvent être temporairement hors stock".
 - PRIX : utilise UNIQUEMENT le catalogue (cheapestPriceUSD ou priceRangeUSD). N'INVENTE JAMAIS un prix. Si tu n'as que le prix Pepturion en cheapestPriceUSD, donne une fourchette réaliste basée sur priceRangeUSD et précise "prix Lumira à vérifier sur le site".
 
-QUANTITES (RÈGLE STRICTE ANTI-SUR-COMMANDE, bug Jamal 2026-05-14)
-Pour CHAQUE peptide du stack, calcule la dose totale du cycle complet = dose moyenne par injection × fréquence par semaine × nombre de semaines. Puis recommande le nombre de vials qui couvre ce besoin + 20 % de marge MAX (pour reconstitution et test). JAMAIS plus.
+QUANTITES (RÈGLE STRICTE ANTI-SUR-COMMANDE, bug Jamal 2026-05-14 + Epitalon 2026-05-15)
+Pour CHAQUE peptide du stack, calcule la dose totale du cycle complet.
 
-INTERDIT : recommander 10 vials d'office pour le prix dégressif. INTERDIT : suggérer "achete plus pour avoir une réserve". Le client achète pour 1 cycle. Si à la fin du cycle il veut continuer, il commandera un deuxième cycle à ce moment-là. Le sur-stockage aveugle est exactement le bug qui a fait perdre 80 euros à Jamal le 14 mai 2026.
+DEUX CAS :
+1. Protocole CONTINU (BPC-157, CJC, Ipamorelin, Retatrutide en titration) = dose moyenne par injection × fréquence par semaine × nombre de semaines.
+2. Protocole CURE (Epitalon, Thymosin Alpha, MOTS-c parfois) = dose par jour × NOMBRE DE JOURS CONSECUTIFS DE LA CURE. PAS × 12 semaines × 7 jours. Si Epitalon = 10 mg/jour pendant 20 jours, le besoin total c'est 200 mg, donc 20 vials de 10 mg, PAS 84 vials.
+
+Puis recommande le nombre de vials qui couvre ce besoin + 20 % de marge MAX (pour reconstitution et test). JAMAIS plus.
+
+ALIGNEMENT vialsNeeded ↔ priceEstimate (NON NEGOCIABLE)
+La quantite annoncee dans "vialsNeeded" DOIT EXACTEMENT egaler la quantite utilisee dans le calcul "priceEstimate". Si vialsNeeded = "3 vials", priceEstimate calcule sur 3 vials. JAMAIS l'inverse. Pas de "3 vials mais commander 10 pour le prix degressif" : c'est une suggestion de sur-commande qui appauvrit le client. UN SEUL CHIFFRE, le bon.
+
+INTERDIT : recommander 10 vials d'office pour le prix dégressif. INTERDIT : suggérer "achete plus pour avoir une réserve". Le client achète pour 1 cycle. Si à la fin du cycle il veut continuer, il commandera un deuxième cycle à ce moment-là. Le sur-stockage aveugle est exactement le bug qui a fait perdre 80 euros à Jamal le 14 mai 2026 et 925 dollars à Luk le 15 mai 2026 (Epitalon 84 vials au lieu de 20).
 
 EXEMPLES CONCRETS :
-- Semaglutide cycle 12 sem en titration 0,25 / 0,5 / 1 mg = 7 mg total cycle. Recommande : 1 vial de 10 mg OU 1 vial de 20 mg si seul format dispo. PAS 6 vials.
+- Semaglutide cycle 12 sem en titration 0,25 / 0,5 / 1 mg = 7 mg total cycle. Recommande : 1 vial de 10 mg OU 1 vial de 20 mg si seul format dispo. PAS 6 vials. vialsNeeded = "1 vials de 10mg pour 12 semaines (total ~7mg)". priceEstimate = "~$8.47/vial x 1 vials = $8.47 total (~8€)".
 - BPC-157 250 mcg deux fois par jour pendant 8 semaines = 28 mg total cycle. Recommande : 3 vials de 10 mg (couvre + marge). PAS 10 vials.
 - CJC-1295 sans DAC 100 mcg 1 fois par jour pendant 12 sem = 8,4 mg. Recommande : 2 vials de 5 mg OU 1 vial de 10 mg. PAS 10 vials.
+- Epitalon 5 mg/jour × 20 jours consecutifs = 100 mg total. Recommande : 10 vials de 10 mg. PAS 42 vials. cycleDuration = "20 jours consecutifs (cure), 2 fois par an".
+- Epitalon 10 mg/jour × 20 jours consecutifs = 200 mg total. Recommande : 20 vials de 10 mg. PAS 84 vials.
 
 Si tu veux mentionner le pack groupé comme OPTION (pas comme défaut) : une seule phrase à la fin de la liste de courses : "Si tu envisages déjà un deuxième cycle, tu peux opter pour le pack 10 vials qui descend le prix unitaire, vials lyophilisés conservables 2 à 3 ans au frigo." Pas obligatoire.
 
@@ -887,9 +899,9 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
       "route": "SC / IM / Intranasal",
       "cycleDuration": "X semaines, pause Y semaines",
       "reconstitution": "Vial [Xmg] + [Y]ml BAC water = [Z]mcg/ml → [N] unités (soit [X.XX] ml) pour [dose]mcg. CONTRAINTE: [Y] ne dépasse JAMAIS 3, en pratique 1 à 2 pour les vials 2-10mg et 2 à 3 pour les vials 10-100mg. Vérifie avant de finaliser.",
-      "vialsNeeded": "X vials pour le cycle complet",
+      "vialsNeeded": "X vials de [N]mg pour [duree] (total ~Xmg)",
       "purchaseUrl": "https://www.peptaura.com/catalog/[SLUG_EXACT]",
-      "priceEstimate": "~$XX/vial × Y vials = $ZZ total (~€WW)"
+      "priceEstimate": "~$XX/vial × X vials = $ZZ total (~€WW)"
     }
   ],
   "bloodMarkers": ["IGF-1", "Glycémie à jeun", "... marqueurs pertinents pour ce profil"],
@@ -1030,7 +1042,7 @@ async function extractJsonFromResponse(raw: string): Promise<PeptidesReport> {
 
 // ─── Post-process: validate Peptaura URLs ─────────────────────────────────────
 
-function validateAndFixPeptauraUrls(report: PeptidesReport): PeptidesReport {
+export function validateAndFixPeptauraUrls(report: PeptidesReport): PeptidesReport {
   const slugMap = new Map(PEPTAURA_CATALOG.map(p => [p.name.toLowerCase(), p]));
 
   for (const pep of report.peptides) {
@@ -1075,9 +1087,13 @@ function parseDoseToMg(value: number, unit: string): number {
 }
 
 function deriveVialsForPeptide(pep: PeptideItem): VialsDerivation | null {
-  const dosage = pep.dosage || "";
-  const cycle = pep.cycleDuration || "";
-  const reconstitution = pep.reconstitution || "";
+  // Normalize French decimal commas (0,25 -> 0.25) so regex captures match.
+  // Without this, Pattern D (Semaglutide titration "0,25 mg par semaine") fell
+  // back to null and the AI's "60 vials" overshoot passed through unchecked.
+  const dosage = (pep.dosage || "").replace(/(\d),(\d)/g, "$1.$2");
+  const cycle = (pep.cycleDuration || "").replace(/(\d),(\d)/g, "$1.$2");
+  const reconstitution = (pep.reconstitution || "").replace(/(\d),(\d)/g, "$1.$2");
+  const allText = `${dosage} ${cycle}`;
 
   // Extract cycle weeks (default 12 if not parseable)
   const weeksMatch = cycle.match(/(\d+)\s*semaines?/i);
@@ -1089,6 +1105,47 @@ function deriveVialsForPeptide(pep: PeptideItem): VialsDerivation | null {
   if (!vialMatch) return null;
   const vialMg = parseDoseToMg(parseFloat(vialMatch[1]), vialMatch[2]);
   if (!isFinite(vialMg) || vialMg <= 0) return null;
+
+  // Pattern PRIORITAIRE — cure de N jours consecutifs (Epitalon, Thymosin Alpha, etc.)
+  // Sinon le code calculait 12 semaines x 7 jours = 84 vials pour une cure de 20j.
+  const consecutiveDaysMatch =
+    allText.match(/(\d+)\s*jours?\s*cons[eé]cutifs?/i) ||
+    allText.match(/cure\s+de\s+(\d+)\s*jours?/i) ||
+    allText.match(/pendant\s+(\d+)\s*jours?\s*cons[eé]cutifs/i);
+  if (consecutiveDaysMatch) {
+    const cureDays = parseInt(consecutiveDaysMatch[1], 10);
+    if (cureDays > 0 && cureDays <= 365) {
+      // Find daily dose
+      const perDay = dosage.match(/(\d+(?:\.\d+)?)\s*(mg|mcg)\s*(?:par|\/)\s*jour/i);
+      if (perDay) {
+        const perDayMg = parseDoseToMg(parseFloat(perDay[1]), perDay[2]);
+        const totalMg = perDayMg * cureDays;
+        return { totalMg, vialMg, weeks: Math.ceil(cureDays / 7), computed: Math.ceil(totalMg / vialMg) };
+      }
+    }
+  }
+
+  // Pattern A-bis — progressive weekly with range: "0.25 mg par semaine (semaines 1 à 4), puis 0.5 mg par semaine (semaines 5 à 8)"
+  const rangeMatches = Array.from(
+    dosage.matchAll(/(\d+(?:\.\d+)?)\s*(mg|mcg)\s*par\s*semaine\s*\(\s*semaines?\s*(\d+)\s*(?:à|a|-|–)\s*(\d+)\s*\)/gi)
+  );
+  if (rangeMatches.length >= 2) {
+    let totalMg = 0;
+    let lastDose = 0;
+    let lastEnd = 0;
+    for (const m of rangeMatches) {
+      const v = parseDoseToMg(parseFloat(m[1]), m[2]);
+      const start = parseInt(m[3], 10);
+      const end = parseInt(m[4], 10);
+      const weeksInPhase = Math.max(0, end - start + 1);
+      totalMg += v * weeksInPhase;
+      lastDose = v;
+      if (end > lastEnd) lastEnd = end;
+    }
+    // Extend last dose to cycle end if cycle is longer than the last phase.
+    if (weeks > lastEnd && lastDose > 0) totalMg += lastDose * (weeks - lastEnd);
+    return { totalMg, vialMg, weeks, computed: Math.ceil(totalMg / vialMg) };
+  }
 
   // Pattern A — progressive weekly doses: "1mg sem 1, 2mg sem 2, ... Xmg sem N et au-delà"
   const progressive = Array.from(
@@ -1143,31 +1200,67 @@ function deriveVialsForPeptide(pep: PeptideItem): VialsDerivation | null {
   return null;
 }
 
-function validateVialsMath(report: PeptidesReport): PeptidesReport {
+function extractUnitPriceUsd(priceEstimate: string): number | null {
+  if (!priceEstimate) return null;
+  const m = priceEstimate.match(/[~≈]?\$?\s*(\d+(?:[.,]\d+)?)\s*(?:USD|\$|US)?\s*\/?\s*vial/i);
+  if (!m) return null;
+  return parseFloat(m[1].replace(",", "."));
+}
+
+function syncPriceEstimate(pep: PeptideItem, newQty: number): void {
+  const unit = extractUnitPriceUsd(pep.priceEstimate || "");
+  if (!unit) return;
+  const total = Math.round(unit * newQty * 100) / 100;
+  const eur = Math.round(total * 0.92);
+  pep.priceEstimate = `~$${unit.toFixed(2)}/vial × ${newQty} vials = $${total.toFixed(2)} total (~${eur}€)`;
+}
+
+export function validateVialsMath(report: PeptidesReport): PeptidesReport {
   for (const pep of report.peptides) {
     const derived = deriveVialsForPeptide(pep);
-    if (!derived) continue;
 
-    // Parse the AI's claim (e.g. "3 vials" -> 3) for comparison
-    const aiCountMatch = (pep.vialsNeeded || "").match(/(\d+)\s*vials?/i);
-    const aiCount = aiCountMatch ? parseInt(aiCountMatch[1], 10) : null;
+    // STRICT alignment: extract qty from BOTH vialsNeeded AND priceEstimate.
+    // They MUST match. If priceEstimate qty differs from vialsNeeded qty,
+    // we sync priceEstimate to vialsNeeded (vialsNeeded is the source of truth).
+    const aiVialsCountMatch = (pep.vialsNeeded || "").match(/(\d+)\s*vials?/i);
+    const aiVialsCount = aiVialsCountMatch ? parseInt(aiVialsCountMatch[1], 10) : null;
+    const priceCountMatch = (pep.priceEstimate || "").match(/[x×]\s*(\d+)\s*vials?/i);
+    const priceCount = priceCountMatch ? parseInt(priceCountMatch[1], 10) : null;
 
-    // Override only when AI undershoots or overshoots by ≥30% — ceiling already
-    // bakes in the partial-vial buffer, so we don't add another +1 by default.
-    const shouldOverride =
-      aiCount === null ||
-      aiCount < derived.computed ||
-      Math.abs(aiCount - derived.computed) / derived.computed > 0.3;
+    if (derived) {
+      // Override only when AI undershoots or overshoots by ≥30% — ceiling already
+      // bakes in the partial-vial buffer, so we don't add another +1 by default.
+      const shouldOverride =
+        aiVialsCount === null ||
+        aiVialsCount < derived.computed ||
+        Math.abs(aiVialsCount - derived.computed) / derived.computed > 0.3;
 
-    if (shouldOverride) {
-      const totalDisplay =
-        derived.totalMg >= 1
-          ? `${Math.round(derived.totalMg * 10) / 10}mg`
-          : `${Math.round(derived.totalMg * 1000)}mcg`;
-      pep.vialsNeeded = `${derived.computed} vials de ${derived.vialMg}mg pour ${derived.weeks} semaines (total ~${totalDisplay})`;
-      console.log(
-        `[PeptidesEngine] Vials override for ${pep.name}: AI said ${aiCount}, math gives ${derived.computed} (total ${totalDisplay} / vial ${derived.vialMg}mg / ${derived.weeks} sem)`
-      );
+      if (shouldOverride) {
+        const totalDisplay =
+          derived.totalMg >= 1
+            ? `${Math.round(derived.totalMg * 10) / 10}mg`
+            : `${Math.round(derived.totalMg * 1000)}mcg`;
+        const cureDaysMatch = (pep.dosage + " " + pep.cycleDuration).match(/(\d+)\s*jours?\s*cons[eé]cutifs?/i);
+        const durationLabel = cureDaysMatch ? `${cureDaysMatch[1]} jours consecutifs` : `${derived.weeks} semaines`;
+        pep.vialsNeeded = `${derived.computed} vials de ${derived.vialMg}mg pour ${durationLabel} (total ~${totalDisplay})`;
+        syncPriceEstimate(pep, derived.computed);
+        console.log(
+          `[PeptidesEngine] Vials override for ${pep.name}: AI said ${aiVialsCount}, math gives ${derived.computed} (total ${totalDisplay} / vial ${derived.vialMg}mg / ${durationLabel}) , priceEstimate synced`
+        );
+        continue;
+      }
+    }
+
+    // If math derivation failed but vialsNeeded and priceEstimate quantities
+    // disagree by >35%, sync priceEstimate to vialsNeeded (no surcharge risk).
+    if (aiVialsCount != null && priceCount != null && aiVialsCount !== priceCount) {
+      const ratio = Math.max(aiVialsCount, priceCount) / Math.min(aiVialsCount, priceCount);
+      if (ratio > 1.35) {
+        syncPriceEstimate(pep, aiVialsCount);
+        console.log(
+          `[PeptidesEngine] priceEstimate desync for ${pep.name}: vialsNeeded=${aiVialsCount} vs price=${priceCount} (ratio ${ratio.toFixed(2)}) , synced to ${aiVialsCount}`
+        );
+      }
     }
   }
   return report;
@@ -1414,6 +1507,30 @@ export async function generatePeptidesProtocol(
 
   // Normalize
   report.clientName = firstName;
+
+  // ════════════════════════════════════════════════════════════
+  // FINAL STRICT GATE — runs after all post-processing.
+  // Flagship 199-399 EUR product = zero error tolerance.
+  // Catches anything the inline CHECKs and math fixup missed:
+  // residual peptide field gaps, vials/price desync, AI brand
+  // mentions, em-dashes, blockquotes, empty sections, weekly plan
+  // gaps, etc. If it fails here, we throw so the caller doesn't
+  // persist + email a broken report.
+  // ════════════════════════════════════════════════════════════
+  const finalValidation = validatePeptidesReport(report as any);
+  if (!finalValidation.ok) {
+    console.error(
+      `[PeptidesEngine] ❌ FINAL GATE FAILED for ${email}:\n${finalValidation.errors.map(e => `  , ${e}`).join("\n")}`
+    );
+    throw new Error(
+      `PEPTIDES_FINAL_VALIDATION_FAILED: ${finalValidation.errors.slice(0, 5).join(" | ")}`
+    );
+  }
+  if (finalValidation.warnings.length > 0) {
+    console.warn(
+      `[PeptidesEngine] ⚠️ Final gate warnings for ${email}: ${finalValidation.warnings.slice(0, 3).join(" | ")}`
+    );
+  }
 
   // FINAL CHECK , log everything
   console.log(`[PeptidesEngine] ✅ FINAL: ${email}`);

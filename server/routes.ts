@@ -4605,6 +4605,79 @@ export async function registerRoutes(
     }
   });
 
+  // Admin: validate + recompute vials math for one peptides report.
+  // GET (or POST without apply=true) returns a diff and the validator output.
+  // POST { apply: true } persists the fixed report to DB. Used as a last-mile
+  // pre-delivery gate for the 4 imminent scheduled orders + as a manual
+  // recovery hook for any flagged report.
+  app.post("/api/admin/peptides/recompute-vials/:reportId", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { reportId } = req.params;
+      const apply = !!(req.body as any)?.apply;
+      const existing = await storage.getBurnoutReport(reportId);
+      if (!existing || !String(existing.email ?? "").startsWith("peptides::")) {
+        res.status(404).json({ success: false, error: "Peptides report not found" });
+        return;
+      }
+      const { validateVialsMath } = await import("./peptidesEngine");
+      const { validatePeptidesReport } = await import("./peptidesReportValidator");
+      const before = JSON.parse(JSON.stringify(existing.report));
+      const fixed = validateVialsMath(JSON.parse(JSON.stringify(before)));
+      const validation = validatePeptidesReport(fixed);
+      const diff: Array<{ name: string; vialsBefore: string; vialsAfter: string; priceBefore: string; priceAfter: string }> = [];
+      const beforePeps = (before as any).peptides || [];
+      const afterPeps = (fixed as any).peptides || [];
+      for (let i = 0; i < beforePeps.length; i++) {
+        const b = beforePeps[i];
+        const a = afterPeps[i];
+        if (b.vialsNeeded !== a.vialsNeeded || b.priceEstimate !== a.priceEstimate) {
+          diff.push({
+            name: a.name,
+            vialsBefore: b.vialsNeeded,
+            vialsAfter: a.vialsNeeded,
+            priceBefore: b.priceEstimate,
+            priceAfter: a.priceEstimate,
+          });
+        }
+      }
+      if (apply && diff.length > 0) {
+        await storage.updateBurnoutReport(reportId, fixed);
+        console.log(`[Admin Peptides Patch] Persisted recompute for ${reportId}, ${diff.length} peptides changed`);
+      }
+      res.json({
+        success: true,
+        reportId,
+        applied: apply,
+        changes: diff,
+        validation,
+      });
+    } catch (error: any) {
+      console.error("[Admin Peptides Recompute] Error:", error);
+      res.status(500).json({ success: false, error: error?.message || "Erreur serveur" });
+    }
+  });
+
+  // Admin: validate a peptides report without modification. Returns
+  // validator output for human review.
+  app.get("/api/admin/peptides/validate/:reportId", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { reportId } = req.params;
+      const existing = await storage.getBurnoutReport(reportId);
+      if (!existing || !String(existing.email ?? "").startsWith("peptides::")) {
+        res.status(404).json({ success: false, error: "Peptides report not found" });
+        return;
+      }
+      const { validatePeptidesReport } = await import("./peptidesReportValidator");
+      const validation = validatePeptidesReport(existing.report as any);
+      res.json({ success: true, reportId, validation });
+    } catch (error: any) {
+      console.error("[Admin Peptides Validate] Error:", error);
+      res.status(500).json({ success: false, error: error?.message || "Erreur serveur" });
+    }
+  });
+
   app.post("/api/admin/audit/:auditId/check-completeness", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
@@ -10520,6 +10593,49 @@ export async function registerRoutes(
           const existing = await storage.getBurnoutReport(meta.peptidesReportId).catch(() => null);
           if (!existing) continue;
           const existingReport = existing.report as any;
+
+          // STRICT GATE — never deliver a peptides report that fails validation.
+          // Auto-repair vials math first (handles the common AI desync where
+          // vialsNeeded and priceEstimate disagree), then re-validate. If errors
+          // remain, escalate to admin and SKIP the cron tick (do not email).
+          try {
+            const { validateVialsMath } = await import("./peptidesEngine");
+            const { validatePeptidesReport } = await import("./peptidesReportValidator");
+            const repaired = validateVialsMath(JSON.parse(JSON.stringify(existingReport)));
+            const validation = validatePeptidesReport(repaired);
+            if (!validation.ok) {
+              const repairedFingerprint = JSON.stringify(repaired);
+              const originalFingerprint = JSON.stringify(existingReport);
+              if (repairedFingerprint !== originalFingerprint) {
+                await storage.updateBurnoutReport(meta.peptidesReportId, repaired).catch(() => {});
+              }
+              const adminEmail = process.env.ADMIN_NOTIF_EMAIL || "coaching@achzodcoaching.com";
+              console.error(
+                `[AutoGen] 🛑 DELIVERY BLOCKED for ${email} (report ${meta.peptidesReportId}): ${validation.errors.length} validation errors`
+              );
+              await sendCTAEmail(
+                adminEmail,
+                `[BLOQUE] Livraison peptides ${email}`,
+                `Le rapport peptides de ${email} a echoue la validation pre-livraison.\n\nReportId: ${meta.peptidesReportId}\nOrderId: ${order.id}\n\nErreurs (${validation.errors.length}):\n${validation.errors.slice(0, 10).map(e => " - " + e).join("\n")}\n\nVerifie manuellement puis utilise /api/admin/peptides/recompute-vials/${meta.peptidesReportId} pour patcher, ou regenere le rapport.\n\nLa livraison n'aura pas lieu tant que le rapport n'est pas valide.`
+              ).catch(() => {});
+              continue;
+            }
+            // Validation passed (possibly after auto-repair). Persist the repaired
+            // version so the link the client opens uses synced numbers.
+            const repairedFingerprint = JSON.stringify(repaired);
+            const originalFingerprint = JSON.stringify(existingReport);
+            if (repairedFingerprint !== originalFingerprint) {
+              await storage.updateBurnoutReport(meta.peptidesReportId, repaired).catch(() => {});
+              Object.assign(existingReport, repaired);
+            }
+          } catch (gateErr: any) {
+            console.error(
+              `[AutoGen] ⚠️ Validation gate threw for ${email}, blocking delivery:`,
+              gateErr?.message || gateErr
+            );
+            continue;
+          }
+
           const baseUrl = getBaseUrl();
           const peptidesNames = existingReport?.peptides?.map((p: any) => p.name).join(", ") ?? "voir rapport";
           const promoBlock = Array.isArray(existingReport?.promoCodesGenerated) && existingReport.promoCodesGenerated.length > 0
