@@ -148,8 +148,8 @@ type FAQEntry = { q: string; a: string };
 
 const FAQ: FAQEntry[] = [
   {
-    q: "Pourquoi 199€ au lieu de 399€ ?",
-    a: "Fenetre flash 72h. Mes fournisseurs durcissent leurs conditions, je passe le tarif a 399€ des le 11 mai. D'ici dimanche 10 mai 23h59, le code PEPTIDES100 te donne 199€ au lieu de 399€. Le protocole inclut 2 blood analyses (valeur 198€), l'acces direct a la source a prix labo, le support 30 jours sans limite. A 199€ tu rembourses en une seule commande de peptides au bon prix. Si tu prends un coaching 12 semaines, 150€ sont deduits de ta formule.",
+    q: "Pourquoi 399€ ?",
+    a: "Le protocole inclut 2 blood analyses (valeur 198€), l'acces direct a la source a prix labo (60-90% moins cher que les revendeurs classiques), le support email 30 jours sans limite. Sur ta premiere commande de peptides au bon prix, tu rembourses le protocole. Si tu prends un coaching 12 semaines apres, 150€ sont deduits de ta formule avec le code PEPTIDES150.",
   },
   {
     q: "C'est quoi la source premium ?",
@@ -1598,7 +1598,7 @@ function Hero() {
           <span className="font-semibold text-[#1D1D1F]">60-90% moins cher</span> que partout ailleurs.
         </motion.p>
 
-        {/* Pricing - flash 199€ */}
+        {/* Pricing - tarif standard 399€ (flash expired) */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1606,27 +1606,13 @@ function Hero() {
           className="mt-10 flex flex-col items-center gap-3"
         >
           <span className="font-mono text-[11px] font-bold uppercase tracking-[0.25em] text-[#0071E3]">
-            Tarif gele 72h
+            Tarif protocole peptides
           </span>
           <div className="flex items-end justify-center gap-4">
-            <span className="text-3xl font-bold text-[#A1A1A6] line-through leading-none">399€</span>
-            <span className="text-6xl font-bold text-[#1D1D1F] leading-none md:text-7xl">199€</span>
+            <span className="text-6xl font-bold text-[#1D1D1F] leading-none md:text-7xl">399€</span>
           </div>
           <span className="font-mono text-xs uppercase tracking-widest text-[#6E6E73]">
-            avec le code <strong style={{ color: PRIMARY }}>PEPTIDES100</strong>
-          </span>
-        </motion.div>
-
-        {/* Countdown */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.35 }}
-          className="mt-8 flex flex-col items-center gap-3"
-        >
-          <FlashCountdown />
-          <span className="font-mono text-[11px] uppercase tracking-widest text-[#86868B]">
-            Fin dimanche 10 mai · 23:59 (Paris)
+            TVA incluse · Paiement securise
           </span>
         </motion.div>
 
@@ -1644,8 +1630,8 @@ function Hero() {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="mt-8 flex flex-col items-center gap-4"
         >
-          <CTAButton href="/peptides-engine?promo=PEPTIDES100" large>
-            Reserver mon protocole a 199€
+          <CTAButton href="/peptides-engine" large>
+            Reserver mon protocole a 399€
           </CTAButton>
 
           <div className="flex flex-wrap items-center justify-center gap-5 text-xs text-[#86868B]">
