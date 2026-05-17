@@ -4431,20 +4431,87 @@ export async function registerRoutes(
       const baseUrl = getBaseUrl();
       const peptidesNames = report.peptides?.map((p: any) => p.name).join(", ") ?? "voir rapport";
 
+      // ANTI-AUTOMATION DELIVERY GATE
+      // ─────────────────────────────
+      // Even when an admin triggers generation manually (recovery / debug),
+      // we DO NOT mail the client immediately at gen-time. Sending a 300-line
+      // personalized report 30 min after a 399 EUR purchase screams "AI" and
+      // breaks the "hand-written by Achzod" positioning the brand depends on.
+      // Two paths from here:
+      //   - Delivery already due (rare on manual trigger, common on backfills
+      //     of paid orders older than scheduledAt): send the delivery email now.
+      //   - Delivery NOT yet due: only send the order-confirmation email so
+      //     the client gets a feedback signal that we got the payment. The
+      //     autogen recovery cron will fire the real delivery email at the
+      //     scheduled time.
+      //
+      // Caller can pass forceImmediate=true to skip the gate (use sparingly).
+      const forceImmediate = !!(req.body as any)?.forceImmediate;
+      const adminNotifEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
+
+      let emailSent = false;
+      let deliveryDeferred = false;
+      let deliveryScheduledAtIso = "";
+
       if (!skipEmail) {
-        // Final dedup check right before send
         const stillNotEmailed = !(await storage.hasPeptidesDeliveryEmailBeenSent(email).catch(() => false));
-        if (stillNotEmailed) {
-          const promoBlock = report.promoCodesGenerated?.length > 0
-            ? `\n\nTes 2 Blood Analysis offertes (codes):\n${report.promoCodesGenerated.join("\n")}` : "";
-          const coachingBlock = `\n\n,,,,,,,,,,,,,,,,,,,,,,\nTON BONUS COACHING\n,,,,,,,,,,,,,,,,,,,,,,\nCode : PEPTIDES150\n→ 150€ déduits sur ton coaching Elite ou Private Lab.\nValable sur n'importe quelle durée (4/8/12 sem).\n\nTu veux passer au coaching personnalisé après ton protocole ?\n• Coaching Elite , https://www.achzodcoaching.com/coaching-elite\n• Private Lab , https://www.achzodcoaching.com/coaching-achzod-private-lab\n\nColle le code PEPTIDES150 dans le champ promo au checkout.`;
-          await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
-            `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`
-          ).catch(() => {});
-          const adminNotifEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
-          await sendCTAEmail(adminNotifEmail, `PEPTIDES GENERE , ${email}`, `Rapport genere pour ${email}\nReport ID: ${saved.id}\nPeptides: ${peptidesNames}\nLien: ${baseUrl}/peptides/${saved.id}`).catch(() => {});
-        } else {
+        if (!stillNotEmailed) {
           console.warn(`[Admin] Delivery email already sent for ${email} (last-moment dedup) , skipping`);
+        } else {
+          let deliveryDue = forceImmediate;
+          let scheduledAt: Date | null = null;
+          if (!forceImmediate && pepOrder) {
+            try {
+              const fresh = await storage.getOrder(pepOrder.id);
+              if (fresh) {
+                const due = await isPeptidesEmailDeliveryDue(fresh);
+                deliveryDue = due.due;
+                scheduledAt = due.scheduledAt;
+              }
+            } catch (gateErr) {
+              console.error(`[Admin] Schedule gate read failed for ${email}:`, gateErr);
+              deliveryDue = false; // safe default: defer
+            }
+          }
+
+          if (deliveryDue) {
+            const promoBlock = report.promoCodesGenerated?.length > 0
+              ? `\n\nTes 2 Blood Analysis offertes (codes):\n${report.promoCodesGenerated.join("\n")}` : "";
+            const coachingBlock = `\n\n,,,,,,,,,,,,,,,,,,,,,,\nTON BONUS COACHING\n,,,,,,,,,,,,,,,,,,,,,,\nCode : PEPTIDES150\n→ 150€ déduits sur ton coaching Elite ou Private Lab.\nValable sur n'importe quelle durée (4/8/12 sem).\n\nTu veux passer au coaching personnalisé après ton protocole ?\n• Coaching Elite , https://www.achzodcoaching.com/coaching-elite\n• Private Lab , https://www.achzodcoaching.com/coaching-achzod-private-lab\n\nColle le code PEPTIDES150 dans le champ promo au checkout.`;
+            await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
+              `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`
+            ).catch(() => {});
+            emailSent = true;
+            await sendCTAEmail(adminNotifEmail, `PEPTIDES GENERE , ${email}`, `Rapport genere et livre pour ${email}\nReport ID: ${saved.id}\nPeptides: ${peptidesNames}\nLien: ${baseUrl}/peptides/${saved.id}`).catch(() => {});
+          } else if (scheduledAt) {
+            deliveryDeferred = true;
+            deliveryScheduledAtIso = scheduledAt.toISOString();
+            // Send the order confirmation so the client knows the payment landed.
+            const alreadyConfirmed = pepOrder ? await storage.hasPeptidesOrderConfirmationBeenSent(email).catch(() => false) : false;
+            if (!alreadyConfirmed && pepOrder) {
+              const firstName = (pepOrder.metadata as any)?.peptidesResponses?.prenom
+                || (responses as any)?.pep_name
+                || (email ? email.split("@")[0] : undefined);
+              sendPeptidesOrderConfirmationEmail(email, {
+                firstName,
+                amountEur: ((pepOrder as any).finalAmountCents || 0) / 100,
+                promoCode: (pepOrder as any).promoCode || null,
+                peptidesNames,
+                scheduledDeliveryAt: scheduledAt,
+                bloodCreditsCount: Array.isArray(report.promoCodesGenerated) ? report.promoCodesGenerated.length : 0,
+                orderId: pepOrder.id,
+              }).catch((err) => console.error("[Admin Manual Gen] Confirmation email failed:", err));
+            }
+            const parisLocal = scheduledAt.toLocaleString("fr-FR", { timeZone: "Europe/Paris" });
+            await sendCTAEmail(
+              adminNotifEmail,
+              `RAPPORT GENERE - LIVRAISON PROGRAMMEE , ${email}`,
+              `Rapport Peptides Engine genere et stocke. Email de livraison client programme pour ${parisLocal} (Paris).\n\nGenere via /api/admin/peptides-generate (manuel). Aucune action requise: l'envoi automatique se fera a l'heure prevue par le cron de recovery.\n\nClient: ${email}\nPeptides: ${peptidesNames}\nReport ID: ${saved.id}\nLien: ${baseUrl}/peptides/${saved.id}`
+            ).catch(() => {});
+            console.log(`[Admin Manual Gen] Delivery DEFERRED for ${email} until ${deliveryScheduledAtIso} (anti-automation 4-8h gate)`);
+          } else {
+            console.warn(`[Admin Manual Gen] No schedule readable + forceImmediate=false for ${email} , delivery skipped this call`);
+          }
         }
       } else {
         console.log(`[Admin] skipEmail=true , report generated but no email sent for ${email}`);
@@ -4456,7 +4523,9 @@ export async function registerRoutes(
         peptideCount: report.peptides?.length ?? 0,
         sectionCount: report.sections?.length ?? 0,
         link: `${baseUrl}/peptides/${saved.id}`,
-        emailSent: !skipEmail,
+        emailSent,
+        deliveryDeferred,
+        scheduledDeliveryAt: deliveryScheduledAtIso || null,
         replaced: !!replaceReportId,
       });
     } catch (error: any) {
