@@ -153,7 +153,26 @@ function estimateNeedMg(p: PeptidesPeptide): number | null {
     }
   }
 
+  // Frequency detection ahead of titration: titration steps express
+  // PER-INJECTION doses, not weekly totals, so we need the frequency to
+  // scale correctly. "150 mcg semaine 1, 200 mcg semaine 2" combined with
+  // "300 mcg par injection le soir" = daily injections, scale ×7.
+  const detectInjPerWeek = (txt: string): number => {
+    if (/\b1\s*(?:fois|injection)\s*(?:par|\/)\s*semaine|hebdomadaire|1x\/sem\b/i.test(txt)) return 1;
+    if (/\b2\s*(?:fois|injections?|jours?)\s*(?:par|\/)\s*semaine/i.test(txt)) return 2;
+    if (/\b3\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine/i.test(txt)) return 3;
+    if (/\b4\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine/i.test(txt)) return 4;
+    if (/\b5\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine/i.test(txt)) return 5;
+    if (/\b6\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine/i.test(txt)) return 6;
+    if (/chaque\s+(?:soir|matin|jour)|tous\s+les\s+(?:soirs?|jours?)|\bpar\s+(?:injection|jour|soir)\b|\ble\s+soir\b|\bavant\s+le\s+coucher\b|7\s*(?:jours?|soirs?)\s*\/?\s*7|\b1x\/jour\b/i.test(txt)) return 7;
+    return 1;
+  };
+  const injectionsPerWeekTit = detectInjPerWeek(dose);
+
   // Titration / progressive: take the steady-state dose × steady-state weeks.
+  // Regex accepts plural "semaines": "8mg semaines 4 à 12" used to fall
+  // through, causing Simon Leveque's Retatrutide 79mg need to be calculated
+  // as 43mg (5 vials ordered, but 8 needed).
   const progressive = Array.from(
     dose.matchAll(/(\d+(?:[.,]\d+)?)\s*(mg|mcg)\s*sem(?:aine)?s?\s*(\d+)/gi)
   );
@@ -173,6 +192,9 @@ function estimateNeedMg(p: PeptidesPeptide): number | null {
       if (dosesByWeek.has(w)) total += dosesByWeek.get(w)!;
       else if (w > lastDefined) total += lastDose;
     }
+    // Apply injection frequency multiplier: titration steps are per-injection,
+    // so daily protocols multiply by 7.
+    total = total * injectionsPerWeekTit;
     if (total > 0) return total;
   }
 

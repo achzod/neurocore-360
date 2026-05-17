@@ -1147,9 +1147,29 @@ function deriveVialsForPeptide(pep: PeptideItem): VialsDerivation | null {
     return { totalMg, vialMg, weeks, computed: Math.ceil(totalMg / vialMg) };
   }
 
+  // Detect injection frequency from the prose so titration patterns scale
+  // correctly. "150 mcg semaine 1, ..." with "300 mcg par injection le soir"
+  // means each titration step is the per-injection dose given DAILY, not the
+  // total weekly dose. Without this the Ipamorelin / CJC-1295 calculation
+  // came out at 1/7th of the real need (Simon Leveque, 2026-05-17).
+  function detectInjectionsPerWeek(dosageText: string): number {
+    if (/\b1\s*(?:fois|injection)\s*(?:par|\/)\s*semaine|hebdomadaire|1x\/sem\b/i.test(dosageText)) return 1;
+    if (/\b2\s*(?:fois|injections?|jours?)\s*(?:par|\/)\s*semaine/i.test(dosageText)) return 2;
+    if (/\b3\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine/i.test(dosageText)) return 3;
+    if (/\b4\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine/i.test(dosageText)) return 4;
+    if (/\b5\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine/i.test(dosageText)) return 5;
+    if (/\b6\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine/i.test(dosageText)) return 6;
+    if (/chaque\s+(?:soir|matin|jour)|tous\s+les\s+(?:soirs?|jours?)|\bpar\s+(?:injection|jour|soir)\b|\ble\s+soir\b|\bavant\s+le\s+coucher\b|7\s*(?:jours?|soirs?)\s*\/?\s*7|\b1x\/jour\b/i.test(dosageText)) return 7;
+    return 1; // safe default
+  }
+  const injectionsPerWeek = detectInjectionsPerWeek(dosage);
+
   // Pattern A — progressive weekly doses: "1mg sem 1, 2mg sem 2, ... Xmg sem N et au-delà"
+  // Regex accepts plural "semaines": "8mg semaines 4 à 12" used to fall through
+  // because the `s` after "semaine" broke the match. Retatrutide on Simon
+  // Leveque ended up with 5 vials of 10mg instead of 8 because of that miss.
   const progressive = Array.from(
-    dosage.matchAll(/(\d+(?:\.\d+)?)\s*(mg|mcg)\s*sem(?:aine)?\s*(\d+)/gi)
+    dosage.matchAll(/(\d+(?:\.\d+)?)\s*(mg|mcg)\s*sem(?:aine)?s?\s*(\d+)/gi)
   );
   if (progressive.length >= 2) {
     // Build week→mg map
@@ -1168,6 +1188,10 @@ function deriveVialsForPeptide(pep: PeptideItem): VialsDerivation | null {
       else if (w > lastDefinedWeek) totalMg += lastDose; // "et au-delà"
       // else: gap before first defined week — assume 0 (rare)
     }
+    // Scale by injections per week: titration steps are PER-INJECTION doses
+    // (e.g. "150 mcg semaine 1" with daily injections means 150 mcg × 7 days).
+    // For 1×/week protocols (Retatrutide) this multiplier is 1, no change.
+    totalMg = totalMg * injectionsPerWeek;
     return { totalMg, vialMg, weeks, computed: Math.ceil(totalMg / vialMg) };
   }
 
