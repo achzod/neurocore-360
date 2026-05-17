@@ -218,6 +218,10 @@ export interface IStorage {
   /** Returns true if a peptides delivery email (subject contains "protocole peptides") has been sent to this recipient */
   hasPeptidesDeliveryEmailBeenSent(email: string): Promise<boolean>;
   hasPeptidesOrderConfirmationBeenSent(email: string): Promise<boolean>;
+  /** Returns true if a blood analysis HTML email has already been tracked for this report (audit_id) */
+  hasBloodAnalysisEmailBeenSentForReport(reportId: string): Promise<boolean>;
+  /** Returns true if a blood analysis HTML email was sent to this recipient within the last N hours */
+  hasBloodAnalysisEmailBeenSentRecently(email: string, withinHours: number): Promise<boolean>;
   hasUserLeftReview(auditId: string): Promise<boolean>;
 
   // Orders
@@ -825,6 +829,21 @@ export class MemStorage implements IStorage {
     return Array.from(this.emailTrackings.values()).some(
       (t: any) => String(t.recipientEmail || "").toLowerCase() === email.toLowerCase()
         && t.emailType === "sendPeptidesOrderConfirmation"
+    );
+  }
+
+  async hasBloodAnalysisEmailBeenSentForReport(reportId: string): Promise<boolean> {
+    return Array.from(this.emailTrackings.values()).some(
+      (t: any) => t.auditId === reportId && t.emailType === "sendBloodAnalysisHtmlEmail"
+    );
+  }
+
+  async hasBloodAnalysisEmailBeenSentRecently(email: string, withinHours: number): Promise<boolean> {
+    const cutoff = Date.now() - withinHours * 60 * 60 * 1000;
+    return Array.from(this.emailTrackings.values()).some(
+      (t: any) => String(t.recipientEmail || "").toLowerCase() === email.toLowerCase()
+        && t.emailType === "sendBloodAnalysisHtmlEmail"
+        && new Date(t.sentAt).getTime() >= cutoff
     );
   }
 
@@ -2418,6 +2437,39 @@ export class PgStorage implements IStorage {
       return (result.rowCount ?? 0) > 0;
     } catch (err) {
       console.warn("[EmailTracking] hasPeptidesOrderConfirmationBeenSent query failed:", err);
+      return false;
+    }
+  }
+
+  async hasBloodAnalysisEmailBeenSentForReport(reportId: string): Promise<boolean> {
+    try {
+      const result = await pool.query(
+        `SELECT 1 FROM email_tracking
+          WHERE audit_id = $1
+            AND email_type = 'sendBloodAnalysisHtmlEmail'
+          LIMIT 1`,
+        [reportId]
+      );
+      return (result.rowCount ?? 0) > 0;
+    } catch (err) {
+      console.warn("[EmailTracking] hasBloodAnalysisEmailBeenSentForReport failed:", err);
+      return false;
+    }
+  }
+
+  async hasBloodAnalysisEmailBeenSentRecently(email: string, withinHours: number): Promise<boolean> {
+    try {
+      const result = await pool.query(
+        `SELECT 1 FROM email_tracking
+          WHERE LOWER(recipient_email) = LOWER($1)
+            AND email_type = 'sendBloodAnalysisHtmlEmail'
+            AND sent_at >= NOW() - ($2 || ' hours')::interval
+          LIMIT 1`,
+        [email, String(withinHours)]
+      );
+      return (result.rowCount ?? 0) > 0;
+    } catch (err) {
+      console.warn("[EmailTracking] hasBloodAnalysisEmailBeenSentRecently failed:", err);
       return false;
     }
   }

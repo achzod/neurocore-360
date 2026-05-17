@@ -199,7 +199,7 @@ export const sendBloodClientDeliveryEmail = async (
   baseUrl: string,
   markerSnapshots?: MarkerAnalysis[] | BloodReportMarkerSnapshot[],
   profile?: Record<string, unknown>,
-  deliveryMeta?: { orderRef?: string },
+  deliveryMeta?: { orderRef?: string; bypassRecentDedup?: boolean },
 ): Promise<boolean> => {
   void baseUrl;
   const reportText = canonicalizeBloodReport(aiReport).trim();
@@ -208,6 +208,31 @@ export const sendBloodClientDeliveryEmail = async (
       `[BloodAnalysis] Blocking email delivery for ${reportId}: report is empty/fallback/incomplete.`
     );
     return false;
+  }
+
+  // Hard dedup: never resend for the same report (audit_id). Defends against
+  // race between the upload sync setImmediate and the 5min recovery cron when
+  // analysis.deliveryStatus persistence is delayed or lost.
+  if (await storage.hasBloodAnalysisEmailBeenSentForReport(reportId).catch(() => false)) {
+    console.warn(
+      `[BloodAnalysis] Blocking duplicate email for report ${reportId}: email_tracking already records a send.`
+    );
+    return false;
+  }
+
+  // Soft dedup: same recipient received another blood report within the last
+  // 12h (Nabil 2026-05-17 incident: two distinct reports, 4min apart, same
+  // recipient). bypassRecentDedup=true is for explicit admin force-send.
+  if (!deliveryMeta?.bypassRecentDedup) {
+    const recent = await storage
+      .hasBloodAnalysisEmailBeenSentRecently(recipientEmail, 12)
+      .catch(() => false);
+    if (recent) {
+      console.warn(
+        `[BloodAnalysis] Blocking ${reportId} -> ${recipientEmail}: another blood report was delivered <12h ago. Use bypassRecentDedup to force.`
+      );
+      return false;
+    }
   }
 
   const inferClientName = () => {
@@ -1308,6 +1333,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         baseUrl,
         report.markers as MarkerAnalysis[],
         report.profile as Record<string, unknown>,
+        { bypassRecentDedup: forceRaw },
       );
 
       if (sent) {
