@@ -1519,12 +1519,17 @@ export async function generatePeptidesProtocol(
   // ════════════════════════════════════════════════════════════
   const finalValidation = validatePeptidesReport(report as any);
   if (!finalValidation.ok) {
+    // DO NOT throw — that loses 100% of work and blocks delivery forever.
+    // Save the report anyway with the validation issues recorded on it.
+    // The delivery cron has its own validatePeptidesReport gate (commit dffbab54)
+    // which will BLOQUE the email if anything stays broken, alerting admin
+    // via [BLOQUE] mail. This way: report is preserved, admin is notified,
+    // client doesn't get a delivery until issues are resolved.
     console.error(
-      `[PeptidesEngine] ❌ FINAL GATE FAILED for ${email}:\n${finalValidation.errors.map(e => `  , ${e}`).join("\n")}`
+      `[PeptidesEngine] ⚠️ FINAL GATE issues for ${email} (saving anyway, delivery cron will gate):\n${finalValidation.errors.map(e => `  , ${e}`).join("\n")}`
     );
-    throw new Error(
-      `PEPTIDES_FINAL_VALIDATION_FAILED: ${finalValidation.errors.slice(0, 5).join(" | ")}`
-    );
+    (report as any)._validationIssues = finalValidation.errors;
+    (report as any)._validationStatus = "FAILED_BUT_SAVED";
   }
   if (finalValidation.warnings.length > 0) {
     console.warn(
