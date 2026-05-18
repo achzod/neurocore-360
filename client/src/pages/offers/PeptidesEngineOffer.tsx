@@ -149,7 +149,7 @@ type FAQEntry = { q: string; a: string };
 const FAQ: FAQEntry[] = [
   {
     q: "Pourquoi 399€ ?",
-    a: "Le protocole inclut 2 blood analyses (valeur 198€), l'acces direct a la source a prix labo (60-90% moins cher que les revendeurs classiques), le support email 30 jours sans limite. Sur ta premiere commande de peptides au bon prix, tu rembourses le protocole. Si tu prends un coaching 12 semaines apres, 150€ sont deduits de ta formule avec le code PEPTIDES150.",
+    a: "Le contenu varie selon le tier. Solo (199€) : le protocole personnalise + l'acces source. Coached (299€) : tout Solo + 1 bilan sanguin + 30 jours de support ecrit. Tracked (399€) : tout Coached + 1 bilan supplementaire + 90 jours de support + 1 reecriture si evolution. Et dans les 3 tiers, le montant paye est integralement deduit de ton coaching Essential, Elite ou Private Lab 8 ou 12 semaines (crédit valable 8 semaines).",
   },
   {
     q: "C'est quoi la source premium ?",
@@ -1287,9 +1287,9 @@ function ScarcityGuarantee() {
           <div className="flex flex-col md:flex-row md:items-center gap-6">
             <div className="flex-1">
               <p className="text-xs font-mono uppercase tracking-widest text-[#0071E3] mb-2">Peptides + Coaching</p>
-              <p className="text-xl font-bold text-[#1D1D1F] mb-3">150€ deduits de ton coaching Elite/Private Lab (8 ou 12 semaines)</p>
+              <p className="text-xl font-bold text-[#1D1D1F] mb-3">Ton montant Peptides Engine (199€, 299€ ou 399€) est intégralement déduit de ton coaching Essential, Elite ou Private Lab 8 ou 12 semaines.</p>
               <p className="text-sm text-[#6E6E73] leading-relaxed mb-4">
-                Tu peux commander tes peptides maintenant, prendre un coaching Achzod, et commencer le suivi une fois que tu as recu tes peptides. Pas besoin d'attendre pour s'organiser.
+                Tu peux commander tes peptides maintenant, prendre un coaching Achzod, et commencer le suivi une fois que tu as recu tes peptides. Le crédit déduction est valable 8 semaines à compter de la livraison de ton rapport.
               </p>
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm text-[#424245]">
@@ -1298,7 +1298,7 @@ function ScarcityGuarantee() {
                 </div>
                 <div className="flex items-center gap-2 text-sm text-[#424245]">
                   <Check className="h-3.5 w-3.5 flex-shrink-0" style={{ color: PRIMARY }} />
-                  <span>Prends ta formule coaching Elite ou Private Lab (8 ou 12 semaines)</span>
+                  <span>Prends ta formule coaching Essential, Elite ou Private Lab (8 ou 12 semaines)</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-[#424245]">
                   <Check className="h-3.5 w-3.5 flex-shrink-0" style={{ color: PRIMARY }} />
