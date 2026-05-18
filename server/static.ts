@@ -234,11 +234,28 @@ export function serveStatic(app: Express) {
     }),
   );
 
-  // Other static files (images, fonts, favicon) — moderate cache
+  // index.html (root + explicit path) must NEVER be browser-cached. Browsers
+  // were holding 24h of stale HTML referencing old chunk paths, blocking
+  // shipped frontend fixes from reaching returning visitors (Achzod incident
+  // 2026-05-19 : a fresh /peptides-engine bugfix was deployed but visitors who
+  // had loaded the page earlier the same day stayed on the broken bundle for
+  // up to 24h because the previous "express.static maxAge=1d" sent
+  // Cache-Control: max-age=86400 on the root document). Hashed /assets/* keep
+  // the immutable 1y cache, so this only forces a fresh HTML lookup ; the
+  // referenced chunks are still served from the long browser cache when they
+  // haven't changed.
+  app.get(["/", "/index.html"], (_req, res) => {
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.sendFile(path.resolve(distPath, "index.html"));
+  });
+
+  // Other static files (images, fonts, favicon) — moderate cache. We exclude
+  // index.html via the explicit handler above so the SPA shell stays fresh.
   app.use(
     express.static(distPath, {
       maxAge: "1d",
       etag: true,
+      index: false, // do NOT auto-serve index.html (covered by the explicit handler)
     }),
   );
 
@@ -616,9 +633,11 @@ ${sorted
     res.send(injectedHtml);
   });
 
-  // Default catch-all: serve index.html for all other SPA routes
+  // Default catch-all: serve index.html for all other SPA routes. Same
+  // strict no-cache as the explicit "/" handler so any SPA route is always
+  // fresh.
   app.use("*", (_req, res) => {
-    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }
