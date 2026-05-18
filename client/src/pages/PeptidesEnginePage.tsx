@@ -46,7 +46,28 @@ import {
 // ─── Constants ──────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = "peptides_engine_responses";
-const PRICE_EUR = 299;
+
+// 3 tiers : Solo (entry, no blood, no support) / Coached (recommandé, 1 blood, 30j support) / Tracked (2 blood, 90j support, 1 reécriture).
+// Le rapport généré est IDENTIQUE dans les 3 tiers ; seul l'écosystème autour change.
+export type PeptidesTier = "solo" | "coached" | "tracked";
+
+const TIER_CONFIG: Record<PeptidesTier, {
+  label: string;
+  price: number;
+  bloodCredits: number;
+  supportDays: number;
+}> = {
+  solo: { label: "Solo", price: 199, bloodCredits: 0, supportDays: 0 },
+  coached: { label: "Coached", price: 299, bloodCredits: 1, supportDays: 30 },
+  tracked: { label: "Tracked", price: 399, bloodCredits: 2, supportDays: 90 },
+};
+
+function readTierFromUrl(): PeptidesTier {
+  if (typeof window === "undefined") return "coached";
+  const raw = new URLSearchParams(window.location.search).get("tier");
+  if (raw === "solo" || raw === "coached" || raw === "tracked") return raw;
+  return "coached"; // default sweet spot
+}
 
 // Peptides Engine consent ─ versioned wording for legal traceability.
 // IMPORTANT : ne JAMAIS modifier silencieusement le texte ci-dessous, toujours
@@ -276,6 +297,8 @@ function CheckoutCard({
   onPromoCodeChange,
   acceptedTerms,
   onAcceptedTermsChange,
+  tier,
+  onTierChange,
 }: {
   responses: Record<string, unknown>;
   onConfirmStripe: () => void;
@@ -287,52 +310,108 @@ function CheckoutCard({
   onPromoCodeChange: (v: string) => void;
   acceptedTerms: boolean;
   onAcceptedTermsChange: (v: boolean) => void;
+  tier: PeptidesTier;
+  onTierChange: (t: PeptidesTier) => void;
 }) {
   const safetyCheck = shouldBlockPurchase(responses);
+  const tierCfg = TIER_CONFIG[tier];
 
-  const valueItems = [
-    { label: "Protocole personnalise (2-5 peptides)", value: "297€" },
-    { label: "2 Blood Analyses incluses", value: "198€" },
-    { label: "Acces source premium (-60% vs revendeurs)", value: "200€+" },
-    { label: "Total valeur", value: "697€+" },
-  ];
+  const tierFeatures: Record<PeptidesTier, { label: string; value: string }[]> = {
+    solo: [
+      { label: "Protocole personnalisé sur-mesure", value: "Inclus" },
+      { label: "Accès source directe (-60 à -90%)", value: "Inclus" },
+      { label: "Crédit déduction coaching 199€", value: "Inclus" },
+      { label: "Bilan sanguin", value: "Non" },
+      { label: "Support écrit post-livraison", value: "Non" },
+    ],
+    coached: [
+      { label: "Protocole personnalisé sur-mesure", value: "Inclus" },
+      { label: "Accès source directe (-60 à -90%)", value: "Inclus" },
+      { label: "Crédit déduction coaching 299€", value: "Inclus" },
+      { label: "1 Bilan sanguin (au choix)", value: "Inclus" },
+      { label: "Support écrit 30 jours", value: "Inclus" },
+    ],
+    tracked: [
+      { label: "Protocole personnalisé sur-mesure", value: "Inclus" },
+      { label: "Accès source directe (-60 à -90%)", value: "Inclus" },
+      { label: "Crédit déduction coaching 399€", value: "Inclus" },
+      { label: "2 Bilans sanguins (baseline + mi-cycle)", value: "Inclus" },
+      { label: "Support écrit 90 jours", value: "Inclus" },
+      { label: "1 réécriture protocole sur évolution", value: "Inclus" },
+    ],
+  };
+  const valueItems = tierFeatures[tier];
 
   return (
     <div className="space-y-6">
       <div className="text-center space-y-2">
         <h2 className="text-2xl font-bold text-white">Ton protocole est pret</h2>
         <p className="text-white/50 text-sm">
-          Rempli le paiement pour recevoir ton protocole complet sous 48h
+          Choisis ton niveau d'accompagnement et confirme le paiement
         </p>
       </div>
 
-      {/* Value breakdown */}
+      {/* Tier selector , 3 buttons */}
+      <div className="grid grid-cols-3 gap-2">
+        {(["solo", "coached", "tracked"] as const).map((t) => {
+          const cfg = TIER_CONFIG[t];
+          const active = tier === t;
+          return (
+            <button
+              key={t}
+              type="button"
+              onClick={() => onTierChange(t)}
+              className={`relative rounded-xl border px-3 py-3 text-left transition-all ${
+                active
+                  ? "border-amber-500 bg-amber-500/10"
+                  : "border-white/10 bg-white/5 hover:border-white/30"
+              }`}
+              aria-pressed={active}
+            >
+              {t === "coached" && (
+                <span className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full bg-amber-500 text-black px-2 py-0.5 text-[9px] font-bold whitespace-nowrap">
+                  POPULAIRE
+                </span>
+              )}
+              <div className={`text-xs font-bold ${active ? "text-amber-400" : "text-white/70"}`}>
+                {cfg.label}
+              </div>
+              <div className={`text-xl font-bold mt-1 ${active ? "text-white" : "text-white/50"}`}>
+                {cfg.price}€
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Value breakdown , tier specific */}
       <div className="rounded-xl border border-white/10 bg-white/5 p-5 space-y-3">
         <p className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-4">
-          Ce qui est inclus
+          Tier {tierCfg.label} , ce qui est inclus
         </p>
-        {valueItems.map((item) => (
-          <div key={item.label} className="flex items-center justify-between text-sm">
-            <span className="flex items-center gap-2 text-white/70">
-              <Check className="h-3.5 w-3.5 text-amber-500 shrink-0" aria-hidden="true" />
-              {item.label}
-            </span>
-            <span
-              className={
-                item.label === "Total valeur"
-                  ? "font-bold text-white/30 line-through"
-                  : "text-white/40"
-              }
-            >
-              {item.value}
-            </span>
-          </div>
-        ))}
+        {valueItems.map((item) => {
+          const isExcluded = item.value === "Non";
+          return (
+            <div key={item.label} className="flex items-center justify-between text-sm">
+              <span className="flex items-center gap-2 text-white/70">
+                {isExcluded ? (
+                  <span className="h-3.5 w-3.5 rounded-full border border-white/20 shrink-0" />
+                ) : (
+                  <Check className="h-3.5 w-3.5 text-amber-500 shrink-0" aria-hidden="true" />
+                )}
+                <span className={isExcluded ? "text-white/30 line-through" : ""}>
+                  {item.label}
+                </span>
+              </span>
+              <span className={isExcluded ? "text-white/20" : "text-white/40"}>{item.value}</span>
+            </div>
+          );
+        })}
 
         <div className="border-t border-white/10 pt-3 flex items-center justify-between">
-          <span className="font-bold text-white text-base">Peptides Engine</span>
+          <span className="font-bold text-white text-base">Peptides Engine {tierCfg.label}</span>
           <div className="text-right">
-            <span className="text-2xl font-bold text-amber-400">{PRICE_EUR}€</span>
+            <span className="text-2xl font-bold text-amber-400">{tierCfg.price}€</span>
           </div>
         </div>
       </div>
@@ -445,7 +524,7 @@ function CheckoutCard({
         ) : promoCode.trim() ? (
           `Utiliser mon code promo`
         ) : (
-          `Confirmer — ${PRICE_EUR}€`
+          `Confirmer , ${tierCfg.price}€`
         )}
       </Button>
 
@@ -470,6 +549,9 @@ export default function PeptidesEnginePage() {
   const [showCheckout, setShowCheckout] = useState(false);
   const [promoCode, setPromoCode] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  // Tier preselected from ?tier= URL param (set by landing page CTAs).
+  // Default to "coached" (sweet spot) so direct visits land on the recommended.
+  const [tier, setTier] = useState<PeptidesTier>(() => readTierFromUrl());
 
   const totalSections = PEPTIDES_SECTIONS.length;
   const isLastSection = sectionIndex === totalSections - 1;
@@ -627,6 +709,7 @@ export default function PeptidesEnginePage() {
         const res = await apiRequest("POST", "/api/paypal/create-order", {
           email,
           planType: "PEPTIDES_ENGINE",
+          peptidesTier: tier,
           responses,
           promoCode: promoCode.trim() || undefined,
           peptidesEngineConsent,
@@ -638,6 +721,7 @@ export default function PeptidesEnginePage() {
       const res = await apiRequest("POST", "/api/stripe/create-checkout-session", {
         email,
         planType: "PEPTIDES_ENGINE",
+        peptidesTier: tier,
         responses,
         referrer: urlRef || undefined,
         promoCode: promoCode.trim() || undefined,
@@ -648,7 +732,7 @@ export default function PeptidesEnginePage() {
     },
     onSuccess: (data: any) => {
       try {
-        trackBeginCheckout("PEPTIDES_ENGINE", "Peptides Engine", PRICE_EUR);
+        trackBeginCheckout("PEPTIDES_ENGINE", `Peptides Engine ${TIER_CONFIG[tier].label}`, TIER_CONFIG[tier].price);
       } catch {
         // analytics failure must never block redirect
       }
@@ -807,6 +891,8 @@ export default function PeptidesEnginePage() {
                 onPromoCodeChange={setPromoCode}
                 acceptedTerms={acceptedTerms}
                 onAcceptedTermsChange={setAcceptedTerms}
+                tier={tier}
+                onTierChange={setTier}
               />
             </motion.div>
           )}

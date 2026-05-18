@@ -1484,54 +1484,481 @@ function TrustSection() {
 function FinalCTA() {
   return (
     <section className="py-32 px-6">
-      <div className="mx-auto max-w-3xl text-center">
+      <div className="mx-auto max-w-5xl text-center">
         <motion.div
           initial={{ opacity: 0, y: 32 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
-          <SectionLabel>Acces immediat</SectionLabel>
+          <SectionLabel>Démarre maintenant</SectionLabel>
           <h2 className="mt-6 text-4xl font-bold text-[#1D1D1F] md:text-5xl leading-tight">
-            Ton protocole peptides personnalise.{" "}
-            <span style={{ color: PRIMARY }}>Livré en 48h.</span>
+            Choisis ton niveau d'accompagnement.{" "}
+            <span style={{ color: PRIMARY }}>Livré sous 48h.</span>
           </h2>
-          <p className="mt-6 text-lg text-[#6E6E73] max-w-xl mx-auto">
-            35 questions. Un protocole sur mesure. La source ou les peptides coutent 60-90% moins cher. 2 bilans sanguins inclus.
+          <p className="mt-6 text-lg text-[#6E6E73] max-w-2xl mx-auto">
+            Le même protocole expert dans les trois offres. Ce qui change : les bilans sanguins, la durée du support, le crédit déductible sur ton coaching.
           </p>
 
-          {/* Price - tarif standard 399€ */}
-          <div className="mt-10 inline-flex flex-col items-center gap-3 rounded-2xl border border-[#0071E3]/30 bg-[#F5F5F7] px-8 py-8 md:px-12">
-            <p className="font-mono text-[11px] font-bold uppercase tracking-[0.25em] text-[#0071E3]">
-              Tarif protocole peptides
-            </p>
-            <p className="text-6xl font-bold text-[#1D1D1F] leading-none md:text-7xl">399€</p>
-            <p className="font-mono text-xs text-[#86868B] mt-1">TVA incluse · Paiement securise</p>
-            <motion.p
-              animate={{ opacity: [0.6, 1, 0.6] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              className="font-mono text-xs font-bold mt-1 tracking-wide"
-              style={{ color: "#00E5FF" }}
-            >150€ deduits de tout coaching Elite/Private Lab 8 ou 12 semaines</motion.p>
+          {/* 3 compact cards CTA */}
+          <div className="mt-12 grid gap-4 md:grid-cols-3">
+            {PRICING_TIERS.map((tier) => {
+              const isFeatured = tier.badge === "Le plus choisi";
+              return (
+                <Link key={tier.id} href={tier.href}>
+                  <a
+                    className={`group block rounded-2xl border-2 p-6 text-left transition-all hover:scale-[1.02] hover:shadow-lg ${
+                      isFeatured
+                        ? "border-[#0071E3] bg-[#0071E3]/5"
+                        : "border-[#D2D2D7] bg-white hover:border-[#0071E3]"
+                    }`}
+                  >
+                    {tier.badge && (
+                      <span
+                        className="inline-block mb-3 rounded-full px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider"
+                        style={{
+                          backgroundColor: isFeatured ? PRIMARY : "#1D1D1F",
+                          color: "#fff",
+                        }}
+                      >
+                        {tier.badge}
+                      </span>
+                    )}
+                    <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#6E6E73]">
+                      Peptides Engine
+                    </p>
+                    <h3 className="mt-1 text-2xl font-bold text-[#1D1D1F]">{tier.name}</h3>
+                    <p className="mt-3 text-3xl font-bold text-[#1D1D1F]">
+                      {tier.price}€
+                    </p>
+                    <p className="mt-1 text-xs font-mono text-[#0071E3]">
+                      {tier.deduction}€ déductibles coaching
+                    </p>
+                    <div
+                      className="mt-5 inline-flex items-center gap-2 text-sm font-semibold group-hover:gap-3 transition-all"
+                      style={{ color: isFeatured ? PRIMARY : "#1D1D1F" }}
+                    >
+                      Choisir {tier.name}
+                      <ArrowRight className="h-4 w-4" />
+                    </div>
+                  </a>
+                </Link>
+              );
+            })}
           </div>
 
-          <div className="mt-8 flex flex-col items-center gap-4">
-            <CTAButton href="/peptides-engine" large>
-              Reserver mon protocole a 399€
-            </CTAButton>
-            <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-[#86868B]">
-              <span className="flex items-center gap-1.5">
-                <Check className="h-3 w-3" style={{ color: PRIMARY }} />
-                15 protocoles/mois max
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Check className="h-3 w-3" style={{ color: PRIMARY }} />
-                Livraison email 48h
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Check className="h-3 w-3" style={{ color: PRIMARY }} />
-                2 bilans sanguins inclus
-              </span>
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-5 text-xs text-[#86868B]">
+            <span className="flex items-center gap-1.5">
+              <Clock className="h-3 w-3" />
+              15 protocoles par mois maximum
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Check className="h-3 w-3" style={{ color: PRIMARY }} />
+              Livraison email sous 48h
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Check className="h-3 w-3" style={{ color: PRIMARY }} />
+              Crédit coaching valable 8 sem
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Lock className="h-3 w-3" style={{ color: PRIMARY }} />
+              Paiement sécurisé Stripe + PayPal
+            </span>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// PRICING TIERS , 3 offres côte à côte
+// ============================================================================
+
+const PRICING_TIERS = [
+  {
+    id: "solo",
+    name: "Solo",
+    tagline: "Pour celui qui sait ce qu'il fait",
+    price: 199,
+    badge: null as string | null,
+    deduction: 199,
+    features: [
+      { label: "Protocole personnalisé sur-mesure", included: true },
+      { label: "Guide de reconstitution + calendrier injection", included: true },
+      { label: "Accès source directe (-60 à -90% vs revendeurs)", included: true },
+      { label: "Crédit déduction coaching 199€ (valable 8 sem)", included: true },
+      { label: "Bilan sanguin baseline", included: false },
+      { label: "Bilan sanguin mi-cycle", included: false },
+      { label: "Support écrit post-livraison", included: false },
+    ],
+    description:
+      "Le protocole expert, livré clé en main. Pour celui qui a déjà un bilan récent ou qui se chargera du suivi en autonomie.",
+    ctaLabel: "Choisir Solo , 199€",
+    href: "/peptides-engine?tier=solo",
+  },
+  {
+    id: "coached",
+    name: "Coached",
+    tagline: "Le filet de sécurité + accompagnement",
+    price: 299,
+    badge: "Le plus choisi",
+    deduction: 299,
+    features: [
+      { label: "Protocole personnalisé sur-mesure", included: true },
+      { label: "Guide de reconstitution + calendrier injection", included: true },
+      { label: "Accès source directe (-60 à -90% vs revendeurs)", included: true },
+      { label: "Crédit déduction coaching 299€ (valable 8 sem)", included: true },
+      { label: "1 Bilan sanguin (baseline OU mi-cycle, au choix)", included: true },
+      { label: "Support écrit 30 jours post-livraison", included: true },
+      { label: "Bilan sanguin supplémentaire", included: false },
+    ],
+    description:
+      "La protection métabolique pendant le démarrage du cycle. Tu choisis quand utiliser ton bilan sanguin, et tu as accès direct à mon support écrit pendant 30 jours.",
+    ctaLabel: "Choisir Coached , 299€",
+    href: "/peptides-engine?tier=coached",
+  },
+  {
+    id: "tracked",
+    name: "Tracked",
+    tagline: "Le track scientifique complet",
+    price: 399,
+    badge: "Maximum value",
+    deduction: 399,
+    features: [
+      { label: "Protocole personnalisé sur-mesure", included: true },
+      { label: "Guide de reconstitution + calendrier injection", included: true },
+      { label: "Accès source directe (-60 à -90% vs revendeurs)", included: true },
+      { label: "Crédit déduction coaching 399€ (valable 8 sem)", included: true },
+      { label: "Bilan sanguin baseline (avant cycle)", included: true },
+      { label: "Bilan sanguin mi-cycle (semaine 4 à 6)", included: true },
+      { label: "Support écrit 90 jours post-livraison", included: true },
+      { label: "1 réécriture protocole si évolution objectif", included: true },
+    ],
+    description:
+      "Le track end-to-end : tu rentres avec une baseline mesurée, tu sors avec une comparaison avant/après. Et si ta situation change (blessure, opération), je réécris ton protocole une fois sans surcoût.",
+    ctaLabel: "Choisir Tracked , 399€",
+    href: "/peptides-engine?tier=tracked",
+  },
+] as const;
+
+function PricingTiers() {
+  return (
+    <section id="offres" className="py-24 px-6 bg-[#FBFBFD]">
+      <div className="mx-auto max-w-6xl">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mb-14 text-center"
+        >
+          <SectionLabel>Choisis ton offre</SectionLabel>
+          <h2 className="mt-4 text-3xl font-bold text-[#1D1D1F] md:text-4xl leading-tight">
+            Trois niveaux d'accompagnement.<br className="hidden md:block" />{" "}
+            <span style={{ color: PRIMARY }}>Le même protocole expert dans les trois.</span>
+          </h2>
+          <p className="mt-4 text-[#6E6E73] max-w-2xl mx-auto">
+            Ce qui change entre les tiers : la quantité de bilans sanguins, la durée du support écrit, et le montant déductible sur ton coaching. Le rapport peptides reste identique.
+          </p>
+        </motion.div>
+
+        <div className="grid gap-6 md:grid-cols-3">
+          {PRICING_TIERS.map((tier, idx) => {
+            const isFeatured = tier.badge === "Le plus choisi";
+            return (
+              <motion.div
+                key={tier.id}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.08 }}
+                className={`relative rounded-2xl border bg-white p-6 md:p-8 flex flex-col ${
+                  isFeatured
+                    ? "border-[#0071E3] shadow-2xl shadow-[#0071E3]/10 md:scale-105"
+                    : "border-[#D2D2D7]"
+                }`}
+              >
+                {tier.badge && (
+                  <div
+                    className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-4 py-1 text-xs font-bold whitespace-nowrap"
+                    style={{
+                      backgroundColor: isFeatured ? PRIMARY : "#1D1D1F",
+                      color: "#fff",
+                    }}
+                  >
+                    {tier.badge}
+                  </div>
+                )}
+
+                <div className="flex flex-col items-start gap-2 mb-6">
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#6E6E73]">
+                    Peptides Engine
+                  </p>
+                  <h3 className="text-3xl font-bold text-[#1D1D1F]">{tier.name}</h3>
+                  <p className="text-sm text-[#6E6E73]">{tier.tagline}</p>
+                </div>
+
+                <div className="mb-6">
+                  <div className="flex items-end gap-2">
+                    <span className="text-5xl font-bold text-[#1D1D1F]">{tier.price}€</span>
+                    <span className="mb-2 text-sm text-[#86868B]">TTC</span>
+                  </div>
+                  <p className="mt-2 text-xs font-mono text-[#0071E3]">
+                    {tier.deduction}€ déductibles sur ton coaching 8 ou 12 sem
+                  </p>
+                </div>
+
+                <p className="mb-6 text-sm text-[#424245] leading-relaxed">{tier.description}</p>
+
+                <ul className="space-y-3 mb-8 flex-grow">
+                  {tier.features.map((f) => (
+                    <li key={f.label} className="flex items-start gap-2.5 text-sm">
+                      {f.included ? (
+                        <Check
+                          className="h-4 w-4 mt-0.5 flex-shrink-0"
+                          style={{ color: PRIMARY }}
+                        />
+                      ) : (
+                        <span className="h-4 w-4 mt-0.5 flex-shrink-0 inline-block rounded-full border border-[#D2D2D7]" />
+                      )}
+                      <span className={f.included ? "text-[#1D1D1F]" : "text-[#86868B] line-through"}>
+                        {f.label}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Link href={tier.href}>
+                  <a
+                    className="block w-full rounded-full text-center px-6 py-4 text-sm font-semibold transition-colors"
+                    style={{
+                      backgroundColor: isFeatured ? PRIMARY : "#1D1D1F",
+                      color: "#fff",
+                    }}
+                  >
+                    {tier.ctaLabel}
+                  </a>
+                </Link>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        <p className="mt-10 text-center text-xs text-[#86868B] font-mono">
+          Paiement Stripe ou PayPal · TVA incluse · Aucun remboursement après livraison du rapport (CGV art. 7)
+        </p>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// COACHING DEDUCTION TABLE , offre killer
+// ============================================================================
+
+const DEDUCTION_MATRIX = [
+  {
+    coachingName: "Essential",
+    duration: "8 sem",
+    basePrice: 399,
+    soloFinal: 200,
+    coachedFinal: 100,
+    trackedFinal: 0,
+  },
+  {
+    coachingName: "Essential",
+    duration: "12 sem",
+    basePrice: 549,
+    soloFinal: 350,
+    coachedFinal: 250,
+    trackedFinal: 150,
+  },
+  {
+    coachingName: "Elite",
+    duration: "8 sem",
+    basePrice: 649,
+    soloFinal: 450,
+    coachedFinal: 350,
+    trackedFinal: 250,
+  },
+  {
+    coachingName: "Elite",
+    duration: "12 sem",
+    basePrice: 899,
+    soloFinal: 700,
+    coachedFinal: 600,
+    trackedFinal: 500,
+  },
+  {
+    coachingName: "Private Lab",
+    duration: "8 sem",
+    basePrice: 799,
+    soloFinal: 600,
+    coachedFinal: 500,
+    trackedFinal: 400,
+  },
+  {
+    coachingName: "Private Lab",
+    duration: "12 sem",
+    basePrice: 1199,
+    soloFinal: 1000,
+    coachedFinal: 900,
+    trackedFinal: 800,
+  },
+];
+
+function CoachingDeduction() {
+  return (
+    <section className="py-24 px-6 bg-white">
+      <div className="mx-auto max-w-6xl">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mb-12 text-center"
+        >
+          <SectionLabel>L'offre killer</SectionLabel>
+          <h2 className="mt-4 text-3xl font-bold text-[#1D1D1F] md:text-5xl leading-tight">
+            Ton Peptides Engine est{" "}
+            <span style={{ color: PRIMARY }}>intégralement déduit</span><br className="hidden md:block" />
+            sur ton coaching Essential, Elite ou Private Lab.
+          </h2>
+          <p className="mt-6 text-lg text-[#6E6E73] max-w-3xl mx-auto leading-relaxed">
+            Tu paies ton protocole peptides aujourd'hui. Si tu décides de passer au coaching dans les 8 semaines, ton montant Peptides est retiré du prix du coaching 8 ou 12 semaines, peu importe la formule.
+          </p>
+          <p className="mt-4 text-sm font-mono text-[#86868B]">
+            Crédit valable 8 semaines après livraison du rapport · Cumulable avec aucune autre promo
+          </p>
+        </motion.div>
+
+        {/* Highlighted killer offer */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          className="mb-12 rounded-3xl border-2 border-[#0071E3] bg-gradient-to-br from-[#0071E3]/5 to-[#FBFBFD] p-8 md:p-12"
+        >
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-6 md:gap-12">
+            <div className="flex-1">
+              <p className="font-mono text-[11px] font-bold uppercase tracking-[0.25em] text-[#0071E3] mb-3">
+                Combo signature
+              </p>
+              <h3 className="text-2xl md:text-3xl font-bold text-[#1D1D1F] leading-tight">
+                Tracked 399€ + Essential 8 sem
+              </h3>
+              <p className="mt-3 text-base text-[#424245] leading-relaxed">
+                399€ Peptides Engine + 399€ Essential 8 sem = 399€ déduits. <strong className="text-[#1D1D1F]">Ton coaching Essential 8 semaines est totalement offert.</strong>
+              </p>
+              <p className="mt-3 text-sm text-[#6E6E73]">
+                Tu paies une seule fois 399€ et tu repars avec : le protocole peptides personnalisé, 2 bilans sanguins, 90 jours de support, ET 8 semaines de coaching Essential complet. Pour le prix d'un coaching Essential seul.
+              </p>
             </div>
+            <div className="flex flex-col items-center md:items-end gap-2 md:gap-3 w-full md:w-auto">
+              <div className="text-right">
+                <p className="text-xs font-mono text-[#86868B] line-through">Valeur séparée 798€</p>
+                <p className="text-5xl md:text-6xl font-bold text-[#1D1D1F] leading-none">399€</p>
+                <p className="mt-1 text-xs font-mono text-[#0071E3]">Économie 399€</p>
+              </div>
+              <Link href="/peptides-engine?tier=tracked">
+                <a
+                  className="mt-3 inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-colors w-full md:w-auto justify-center"
+                  style={{ backgroundColor: PRIMARY, color: "#fff" }}
+                >
+                  Réserver le combo signature
+                </a>
+              </Link>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Full deduction matrix */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="rounded-2xl border border-[#D2D2D7] bg-white overflow-hidden"
+        >
+          <div className="px-6 py-5 border-b border-[#D2D2D7] bg-[#F5F5F7]">
+            <h3 className="text-lg font-bold text-[#1D1D1F]">
+              Combien tu paies vraiment selon ta combinaison
+            </h3>
+            <p className="mt-1 text-sm text-[#6E6E73]">
+              Prix coaching final après application de ton crédit déduction Peptides Engine
+            </p>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[640px]">
+              <thead className="bg-[#FBFBFD] border-b border-[#E5E5EA]">
+                <tr>
+                  <th className="px-4 py-3 text-left font-mono text-[10px] uppercase tracking-wider text-[#86868B]">
+                    Coaching
+                  </th>
+                  <th className="px-4 py-3 text-left font-mono text-[10px] uppercase tracking-wider text-[#86868B]">
+                    Durée
+                  </th>
+                  <th className="px-4 py-3 text-center font-mono text-[10px] uppercase tracking-wider text-[#86868B]">
+                    Prix de base
+                  </th>
+                  <th className="px-4 py-3 text-center font-mono text-[10px] uppercase tracking-wider text-[#86868B]">
+                    Solo 199€<br />
+                    <span className="font-normal normal-case">après déduction</span>
+                  </th>
+                  <th className="px-4 py-3 text-center font-mono text-[10px] uppercase tracking-wider" style={{ color: PRIMARY }}>
+                    Coached 299€<br />
+                    <span className="font-normal normal-case">après déduction</span>
+                  </th>
+                  <th className="px-4 py-3 text-center font-mono text-[10px] uppercase tracking-wider text-[#86868B]">
+                    Tracked 399€<br />
+                    <span className="font-normal normal-case">après déduction</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {DEDUCTION_MATRIX.map((row, idx) => {
+                  const isLastOfGroup = idx % 2 === 1;
+                  const isFreeCell = row.trackedFinal === 0;
+                  return (
+                    <tr
+                      key={`${row.coachingName}-${row.duration}`}
+                      className={`${isLastOfGroup ? "border-b-2 border-[#E5E5EA]" : "border-b border-[#E5E5EA]/50"} hover:bg-[#FBFBFD]`}
+                    >
+                      <td className="px-4 py-4 font-semibold text-[#1D1D1F]">
+                        {row.coachingName}
+                      </td>
+                      <td className="px-4 py-4 text-[#424245]">{row.duration}</td>
+                      <td className="px-4 py-4 text-center text-[#86868B] line-through">
+                        {row.basePrice}€
+                      </td>
+                      <td className="px-4 py-4 text-center font-semibold text-[#1D1D1F]">
+                        {row.soloFinal}€
+                      </td>
+                      <td className="px-4 py-4 text-center font-bold" style={{ color: PRIMARY }}>
+                        {row.coachedFinal}€
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        {isFreeCell ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-[#0071E3] text-white px-3 py-1 text-xs font-bold">
+                            GRATUIT
+                          </span>
+                        ) : (
+                          <span className="font-semibold text-[#1D1D1F]">{row.trackedFinal}€</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="px-6 py-4 border-t border-[#D2D2D7] bg-[#FBFBFD]">
+            <p className="text-xs text-[#6E6E73] leading-relaxed">
+              <strong className="text-[#1D1D1F]">Comment ça marche :</strong> tu paies ton Peptides Engine, je te transmets ton crédit déduction par email avec ton rapport. Tu l'appliques sur ta commande coaching depuis{" "}
+              <a href="https://www.achzodcoaching.com/formules-coaching" className="underline" style={{ color: PRIMARY }} target="_blank" rel="noopener noreferrer">
+                achzodcoaching.com/formules-coaching
+              </a>
+              {" "}, valable uniquement sur les engagements 8 ou 12 semaines de Essential, Elite ou Private Lab.
+            </p>
           </div>
         </motion.div>
       </div>
@@ -1598,7 +2025,7 @@ function Hero() {
           <span className="font-semibold text-[#1D1D1F]">60-90% moins cher</span> que partout ailleurs.
         </motion.p>
 
-        {/* Pricing - tarif standard 399€ (flash expired) */}
+        {/* Pricing , 3 tiers d'entrée à partir de 199€ */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1606,22 +2033,25 @@ function Hero() {
           className="mt-10 flex flex-col items-center gap-3"
         >
           <span className="font-mono text-[11px] font-bold uppercase tracking-[0.25em] text-[#0071E3]">
-            Tarif protocole peptides
+            3 offres disponibles
           </span>
-          <div className="flex items-end justify-center gap-4">
-            <span className="text-6xl font-bold text-[#1D1D1F] leading-none md:text-7xl">399€</span>
+          <div className="flex items-end justify-center gap-3">
+            <span className="text-2xl font-medium text-[#6E6E73]">à partir de</span>
+            <span className="text-6xl font-bold text-[#1D1D1F] leading-none md:text-7xl">199€</span>
           </div>
           <span className="font-mono text-xs uppercase tracking-widest text-[#6E6E73]">
-            TVA incluse · Paiement securise
+            TVA incluse · Paiement sécurisé · Aucun engagement
           </span>
         </motion.div>
 
         <motion.p
-          animate={{ opacity: [0.6, 1, 0.6] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          className="mt-6 font-mono text-xs font-bold text-center tracking-wide"
-          style={{ color: "#00E5FF" }}
-        >150€ deduits de tout coaching Elite/Private Lab 8 ou 12 semaines</motion.p>
+          animate={{ opacity: [0.7, 1, 0.7] }}
+          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+          className="mt-6 font-mono text-xs font-bold text-center tracking-wide max-w-md mx-auto"
+          style={{ color: PRIMARY }}
+        >
+          Intégralement déduit de ton coaching Essential, Elite ou Private Lab 8 ou 12 sem
+        </motion.p>
 
         {/* CTA */}
         <motion.div
@@ -1630,9 +2060,18 @@ function Hero() {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="mt-8 flex flex-col items-center gap-4"
         >
-          <CTAButton href="/peptides-engine" large>
-            Reserver mon protocole a 399€
-          </CTAButton>
+          <a
+            href="#offres"
+            className="inline-flex items-center gap-2 rounded-full px-10 py-5 text-base font-semibold text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl"
+            style={{ backgroundColor: PRIMARY }}
+            onClick={(e) => {
+              e.preventDefault();
+              document.getElementById("offres")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+          >
+            Voir les 3 offres
+            <ArrowRight className="h-5 w-5" />
+          </a>
 
           <div className="flex flex-wrap items-center justify-center gap-5 text-xs text-[#86868B]">
             <span className="flex items-center gap-1.5">
@@ -1641,7 +2080,11 @@ function Hero() {
             </span>
             <span className="flex items-center gap-1.5">
               <Check className="h-3 w-3" style={{ color: PRIMARY }} />
-              Support email 30 jours
+              Livraison sous 24 à 48h
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Check className="h-3 w-3" style={{ color: PRIMARY }} />
+              Coaching déductible 8 sem
             </span>
           </div>
         </motion.div>
@@ -1654,10 +2097,10 @@ function Hero() {
           className="mt-14 flex flex-wrap items-center justify-center gap-6"
         >
           {[
-            "Protocole realise manuellement",
-            "2 bilans sanguins inclus (198€)",
-            "Support email 30 jours",
-            "Explications inegalables",
+            "Protocole rédigé manuellement",
+            "Jusqu'à 2 bilans sanguins inclus",
+            "Support écrit jusqu'à 90 jours",
+            "Source directe -60 à -90%",
           ].map((t) => (
             <div key={t} className="flex items-center gap-2 text-xs text-[#86868B]">
               <CheckCircle2 className="h-3.5 w-3.5" style={{ color: PRIMARY }} />
@@ -1682,6 +2125,8 @@ export default function PeptidesEngineOffer() {
 
       <main>
         <Hero />
+        <PricingTiers />
+        <CoachingDeduction />
         <PriceComparison />
         <DeliverablesSection />
         <AnimatedFeaturesSection />

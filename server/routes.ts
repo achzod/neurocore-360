@@ -46,6 +46,7 @@ import { isAnthropicAvailable } from "./anthropicEngine";
 import { getAuthPayload, type AuthPayload } from "./auth";
 import crypto from "crypto";
 import { validateAnthropicConfig, ANTHROPIC_CONFIG } from "./anthropicConfig";
+import { buildPeptidesCoachingDeductionBlock } from "./cta";
 
 import { registerKnowledgeRoutes } from "./knowledge";
 import { registerBloodAnalysisRoutes } from "./blood-analysis/routes";
@@ -3238,9 +3239,22 @@ export async function registerRoutes(
     return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmed);
   };
 
+  // Tier pricing for PEPTIDES_ENGINE (3 offres distinctes : Solo / Coached / Tracked).
+  // Le rapport reste IDENTIQUE entre les tiers ; seul l'ecosysteme autour change.
+  const PEPTIDES_TIER_PRICE_CENTS: Record<"solo" | "coached" | "tracked", number> = {
+    solo: 19900,     // 199€ , protocole seul
+    coached: 29900,  // 299€ , + 1 blood + 30j support (recommande)
+    tracked: 39900,  // 399€ , + 2 blood + 90j support + 1 reecriture
+  };
+
+  function resolvePeptidesTier(raw: unknown): "solo" | "coached" | "tracked" {
+    if (raw === "solo" || raw === "coached" || raw === "tracked") return raw;
+    return "coached"; // default sweet spot if missing/invalid
+  }
+
   app.post("/api/stripe/create-checkout-session", checkoutLimiter, async (req, res) => {
     try {
-      const { priceId: clientPriceId, email, planType, responses, promoCode, referrer, fbp, fbc, userAgent, sourceUrl, peptidesEngineConsent } = req.body;
+      const { priceId: clientPriceId, email, planType, responses, promoCode, referrer, fbp, fbc, userAgent, sourceUrl, peptidesEngineConsent, peptidesTier: rawTier } = req.body;
       if (!isValidEmailFormat(email)) {
         res.status(400).json({ error: "EMAIL_INVALID", message: "Adresse email invalide. Verifie qu'il y a bien un point dans le domaine (par exemple @gmail.com et non @gmailcom)." });
         return;
@@ -3450,14 +3464,34 @@ export async function registerRoutes(
         }
       }
 
+      // For PEPTIDES_ENGINE we use inline price_data so we can set the amount
+      // dynamically based on the selected tier (Solo 199 / Coached 299 /
+      // Tracked 399). For other products we still use the configured priceId.
+      const peptidesTier = planType === "PEPTIDES_ENGINE" ? resolvePeptidesTier(rawTier) : null;
+      const peptidesTierCents = peptidesTier ? PEPTIDES_TIER_PRICE_CENTS[peptidesTier] : 0;
+
+      const lineItems = peptidesTier
+        ? [{
+            quantity: 1,
+            price_data: {
+              currency: 'eur',
+              unit_amount: peptidesTierCents,
+              product_data: {
+                name: `Peptides Engine ${peptidesTier.charAt(0).toUpperCase() + peptidesTier.slice(1)}`,
+                description:
+                  peptidesTier === "solo"
+                    ? "Protocole peptides personnalise + acces source + credit deduction coaching 199 EUR."
+                    : peptidesTier === "coached"
+                    ? "Protocole peptides personnalise + 1 bilan sanguin + 30j support + credit deduction coaching 299 EUR."
+                    : "Protocole peptides personnalise + 2 bilans sanguins + 90j support + 1 reecriture + credit deduction coaching 399 EUR.",
+              },
+            },
+          }]
+        : [{ price: priceId, quantity: 1 }];
+
       const sessionParams: any = {
         payment_method_types: ['card'],
-        line_items: [
-          {
-            price: priceId,
-            quantity: 1,
-          },
-        ],
+        line_items: lineItems,
         mode: 'payment',
         success_url: successUrl,
         cancel_url: cancelUrl,
@@ -3465,6 +3499,7 @@ export async function registerRoutes(
         metadata: {
           email,
           planType,
+          peptidesTier: peptidesTier || '',
           responses: responses ? JSON.stringify(responses).substring(0, 500) : '',
           promoCode: validatedPromoCode || '',
           referrer: referrer || '',
@@ -3489,7 +3524,12 @@ export async function registerRoutes(
       // Create pending order
       try {
         const pType = (planType as ProductTypeEnum) || "PREMIUM";
-        const baseCents = ProductPriceCents[pType] ?? 0;
+        // For PEPTIDES_ENGINE the amount depends on the selected tier (Solo
+        // 199 / Coached 299 / Tracked 399). For other product types we still
+        // use the static ProductPriceCents map.
+        const baseCents = pType === "PEPTIDES_ENGINE" && peptidesTier
+          ? PEPTIDES_TIER_PRICE_CENTS[peptidesTier]
+          : (ProductPriceCents[pType] ?? 0);
         const promoObj = validatedPromoCode ? await storage.getPromoCode(validatedPromoCode) : null;
         // PEPTIDES100 uses amount_off=10000 cents at Stripe, regardless of stored %.
         // Guard on planType so the flat -100€ never applies to another product
@@ -3532,6 +3572,7 @@ export async function registerRoutes(
           userAgent: req.headers["user-agent"] || null,
           metadata: {
             planType,
+            peptidesTier: peptidesTier || undefined,
             peptidesResponses: planType === "PEPTIDES_ENGINE" ? responses : undefined,
             peptidesEngineConsent: peptidesConsentRecord,
           },
@@ -4009,7 +4050,7 @@ export async function registerRoutes(
         return;
       }
 
-      const { email, planType, responses, promoCode, fbp, fbc, userAgent, sourceUrl, peptidesEngineConsent } = req.body;
+      const { email, planType, responses, promoCode, fbp, fbc, userAgent, sourceUrl, peptidesEngineConsent, peptidesTier: rawTier } = req.body;
       if (!email || !planType) {
         res.status(400).json({ error: "email et planType requis" });
         return;
@@ -4066,7 +4107,11 @@ export async function registerRoutes(
       }
 
       const pType = planType as ProductTypeEnum;
-      const baseCents = ProductPriceCents[pType] ?? 0;
+      // For PEPTIDES_ENGINE use the tier-specific price (Solo/Coached/Tracked).
+      const peptidesTier = pType === "PEPTIDES_ENGINE" ? resolvePeptidesTier(rawTier) : null;
+      const baseCents = peptidesTier
+        ? PEPTIDES_TIER_PRICE_CENTS[peptidesTier]
+        : (ProductPriceCents[pType] ?? 0);
       if (baseCents === 0) {
         res.status(400).json({ error: "INVALID_PLAN", message: `Plan invalide: ${planType}` });
         return;
@@ -4210,6 +4255,7 @@ export async function registerRoutes(
           userAgent: req.headers["user-agent"] || null,
           metadata: {
             planType,
+            peptidesTier: peptidesTier || undefined,
             paymentMethod: "paypal",
             peptidesResponses: planType === "PEPTIDES_ENGINE" ? responses : undefined,
             peptidesEngineConsent: peptidesConsentRecord,
@@ -4544,7 +4590,9 @@ export async function registerRoutes(
           if (deliveryDue) {
             const promoBlock = report.promoCodesGenerated?.length > 0
               ? `\n\nTes 2 Blood Analysis offertes (codes):\n${report.promoCodesGenerated.join("\n")}` : "";
-            const coachingBlock = `\n\n,,,,,,,,,,,,,,,,,,,,,,\nTON BONUS COACHING\n,,,,,,,,,,,,,,,,,,,,,,\nCode : PEPTIDES150\n→ 150€ déduits sur ton coaching Elite ou Private Lab.\nValable sur n'importe quelle durée (4/8/12 sem).\n\nTu veux passer au coaching personnalisé après ton protocole ?\n• Coaching Elite , https://www.achzodcoaching.com/coaching-elite\n• Private Lab , https://www.achzodcoaching.com/coaching-achzod-private-lab\n\nColle le code PEPTIDES150 dans le champ promo au checkout.`;
+            const coachingBlock = buildPeptidesCoachingDeductionBlock(
+              (pepOrder?.metadata as any)?.peptidesTier ?? null
+            );
             await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
               `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`
             ).catch(() => {});
@@ -6198,7 +6246,8 @@ export async function registerRoutes(
         // through the same CAS-protected linking path as /api/admin/peptides-generate.
         try {
           const { generatePeptidesProtocol } = await import("./peptidesEngine");
-          const report = await generatePeptidesProtocol(responses, order.email);
+          const forcePaidTier = ((order.metadata as any)?.peptidesTier as "solo" | "coached" | "tracked" | undefined) ?? "coached";
+          const report = await generatePeptidesProtocol(responses, order.email, forcePaidTier);
           const saved = await storage.createBurnoutReport({
             email: `peptides::${order.email}`,
             responses,
@@ -8498,8 +8547,17 @@ export async function registerRoutes(
                 ELITE: { code: "ULTIMATE79", label: "79€ déduits de ta formule coaching (Essential/Elite/Private Lab)" },
                 PREMIUM: { code: "BIOSCAN59", label: "59€ déduits de ta formule coaching (Essential/Elite/Private Lab)" },
                 BLOOD_ANALYSIS: { code: "BLOOD99", label: "99€ déduits de ta formule coaching (Essential/Elite/Private Lab)" },
-                PEPTIDES_ENGINE: { code: "PEPTIDES150", label: "150€ déduits sur ta formule Elite ou Private Lab" },
               };
+              // PEPTIDES_ENGINE deduction is tier-aware (Solo/Coached/Tracked).
+              const peptidesTierForPromo = (order.metadata as any)?.peptidesTier as "solo" | "coached" | "tracked" | undefined;
+              if (peptidesTierForPromo === "solo") {
+                promoByType2.PEPTIDES_ENGINE = { code: "PEPTIDES199", label: "199€ déduits sur Essential/Elite/Private Lab 8 ou 12 sem (valide 8 sem)" };
+              } else if (peptidesTierForPromo === "tracked") {
+                promoByType2.PEPTIDES_ENGINE = { code: "PEPTIDES399", label: "399€ déduits sur Essential/Elite/Private Lab 8 ou 12 sem (valide 8 sem)" };
+              } else {
+                // Default to Coached for missing tier (back-compat with old orders pre-tier).
+                promoByType2.PEPTIDES_ENGINE = { code: "PEPTIDES299", label: "299€ déduits sur Essential/Elite/Private Lab 8 ou 12 sem (valide 8 sem)" };
+              }
               const promo2 = promoByType2[order.productType];
               const prodLabel2 = order.productType === "ELITE" ? "Ultimate Scan" : order.productType === "PREMIUM" ? "Anabolic Bioscan" : order.productType === "BLOOD_ANALYSIS" ? "Blood Analysis" : order.productType === "PEPTIDES_ENGINE" ? "Peptides Engine" : order.productName;
               if (["ELITE", "PREMIUM", "BLOOD_ANALYSIS", "PEPTIDES_ENGINE"].includes(order.productType)) {
@@ -10671,15 +10729,9 @@ export async function registerRoutes(
           report.promoCodesGenerated?.length > 0
             ? `\n\nTes 2 Blood Analyses offertes :\n2 credits Blood Analysis ont ete ajoutes a ton compte (un pre-cycle, un mi-cycle).\nPas de code a saisir : connecte-toi sur ${getBaseUrl(req)}/blood-dashboard avec ton email pour les utiliser.`
             : "";
-        const coachingBlock =
-          `\n\n,,,,,,,,,,,,,,,,,,,,,,\nTON BONUS COACHING\n,,,,,,,,,,,,,,,,,,,,,,\n` +
-          `Code : PEPTIDES150\n` +
-          `→ 150€ déduits sur ton coaching Elite ou Private Lab.\n` +
-          `Valable sur n'importe quelle durée (4/8/12 sem).\n\n` +
-          `Tu veux passer au coaching personnalisé après ton protocole ?\n` +
-          `• Coaching Elite , https://www.achzodcoaching.com/coaching-elite\n` +
-          `• Private Lab , https://www.achzodcoaching.com/coaching-achzod-private-lab\n\n` +
-          `Colle le code PEPTIDES150 dans le champ promo au checkout.`;
+        const coachingBlock = buildPeptidesCoachingDeductionBlock(
+          (order.metadata as any)?.peptidesTier ?? null
+        );
 
         const peptidesNames = report.peptides?.map((p) => p.name).join(", ") ?? "voir rapport";
         const deliveryMessage =
@@ -11023,7 +11075,9 @@ export async function registerRoutes(
           const promoBlock = Array.isArray(existingReport?.promoCodesGenerated) && existingReport.promoCodesGenerated.length > 0
             ? `\n\nTes 2 Blood Analysis offertes (codes, usage unique):\n${existingReport.promoCodesGenerated.join("\n")}`
             : "";
-          const coachingBlock = `\n\n,,,,,,,,,,,,,,,,,,,,,,\nTON BONUS COACHING\n,,,,,,,,,,,,,,,,,,,,,,\nCode : PEPTIDES150\n→ 150€ déduits sur ton coaching Elite ou Private Lab.\nValable sur n'importe quelle durée (4/8/12 sem).\n\nTu veux passer au coaching personnalisé après ton protocole ?\n• Coaching Elite , https://www.achzodcoaching.com/coaching-elite\n• Private Lab , https://www.achzodcoaching.com/coaching-achzod-private-lab\n\nColle le code PEPTIDES150 dans le champ promo au checkout.`;
+          const coachingBlock = buildPeptidesCoachingDeductionBlock(
+            (order.metadata as any)?.peptidesTier ?? null
+          );
           // Anti-automation delivery gate: only send if scheduled time has arrived
           const { due: recoveryDue, scheduledAt: recoveryScheduledAt } = await isPeptidesEmailDeliveryDue(order);
           if (!recoveryDue) {
@@ -11164,7 +11218,8 @@ export async function registerRoutes(
         }
 
         const { generatePeptidesProtocol } = await import("./peptidesEngine");
-        const report = await generatePeptidesProtocol(responses, email);
+        const autoGenTier = ((order.metadata as any)?.peptidesTier as "solo" | "coached" | "tracked" | undefined) ?? "coached";
+        const report = await generatePeptidesProtocol(responses, email, autoGenTier);
         const saved = await storage.createBurnoutReport({ email: `peptides::${email}`, responses, report });
 
         // SAFETY #3: Atomic CAS , "first writer wins". If another process already set peptidesReportId
@@ -11183,7 +11238,9 @@ export async function registerRoutes(
         const peptidesNames = report.peptides?.map((p: any) => p.name).join(", ") ?? "voir rapport";
         const promoBlock = report.promoCodesGenerated?.length > 0
           ? `\n\nTes 2 Blood Analysis offertes (codes, usage unique):\n${report.promoCodesGenerated.join("\n")}` : "";
-        const coachingBlock = `\n\n,,,,,,,,,,,,,,,,,,,,,,\nTON BONUS COACHING\n,,,,,,,,,,,,,,,,,,,,,,\nCode : PEPTIDES150\n→ 150€ déduits sur ton coaching Elite ou Private Lab.\nValable sur n'importe quelle durée (4/8/12 sem).\n\nTu veux passer au coaching personnalisé après ton protocole ?\n• Coaching Elite , https://www.achzodcoaching.com/coaching-elite\n• Private Lab , https://www.achzodcoaching.com/coaching-achzod-private-lab\n\nColle le code PEPTIDES150 dans le champ promo au checkout.`;
+        const coachingBlock = buildPeptidesCoachingDeductionBlock(
+          (order.metadata as any)?.peptidesTier ?? null
+        );
 
         let clientEmailSent = false;
         let deliveryDeferred = false;

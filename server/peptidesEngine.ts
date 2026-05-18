@@ -1292,22 +1292,40 @@ export function validateVialsMath(report: PeptidesReport): PeptidesReport {
 
 // ─── Promo code creator ───────────────────────────────────────────────────────
 
-async function addBloodAnalysisCredits(email: string): Promise<string[]> {
-  // Add 2 blood analysis credits directly to the user account (no promo codes needed)
+// Blood credits granted depend on the tier:
+//   Solo    = 0 (autonome, blood en option à l'unité)
+//   Coached = 1 (baseline OU mi-cycle, au choix)
+//   Tracked = 2 (baseline + mi-cycle = track scientifique complet)
+async function addBloodAnalysisCredits(
+  email: string,
+  tier: "solo" | "coached" | "tracked" = "coached"
+): Promise<string[]> {
+  const TIER_CREDITS: Record<"solo" | "coached" | "tracked", number> = {
+    solo: 0,
+    coached: 1,
+    tracked: 2,
+  };
+  const credits = TIER_CREDITS[tier];
+  if (credits === 0) {
+    console.log(`[PeptidesEngine] Tier=${tier} : 0 blood credits granted for ${email}`);
+    return [];
+  }
   try {
     const { pool } = await import("./db");
     let user = await storage.getUserByEmail(email);
     if (!user) {
-      user = await storage.createUser({ email, credits: 2 });
-      console.log(`[PeptidesEngine] Created user ${email} with 2 blood credits`);
+      user = await storage.createUser({ email, credits });
+      console.log(`[PeptidesEngine] Created user ${email} with ${credits} blood credit(s) (tier=${tier})`);
     } else {
-      await pool.query("UPDATE users SET credits = credits + 2 WHERE email = $1", [email]);
-      console.log(`[PeptidesEngine] +2 blood credits for ${email}`);
+      await pool.query("UPDATE users SET credits = credits + $2 WHERE email = $1", [email, credits]);
+      console.log(`[PeptidesEngine] +${credits} blood credit(s) for ${email} (tier=${tier})`);
     }
   } catch (err) {
     console.error(`[PeptidesEngine] Failed to add blood credits for ${email}:`, err);
   }
-  return ["2 credits Blood Analysis ajoutes a ton compte"];
+  return credits === 1
+    ? ["1 credit Blood Analysis ajoute a ton compte"]
+    : [`${credits} credits Blood Analysis ajoutes a ton compte`];
 }
 
 // ─── Safety gate ──────────────────────────────────────────────────────────────
@@ -1365,9 +1383,10 @@ export function checkPeptidesSafetyGate(
 
 export async function generatePeptidesProtocol(
   responses: Record<string, unknown>,
-  email: string
+  email: string,
+  tier: "solo" | "coached" | "tracked" = "coached"
 ): Promise<PeptidesReport> {
-  console.log(`[PeptidesEngine] Starting generation for ${email}`);
+  console.log(`[PeptidesEngine] Starting generation for ${email} (tier=${tier})`);
 
   const firstName = extractFirstName(responses, email);
   const userPrompt = buildUserPrompt(responses, firstName);
@@ -1525,8 +1544,8 @@ export async function generatePeptidesProtocol(
   // POST-PROCESSING: clean dashes and 3rd person references
   report = cleanReportContent(report, firstName);
 
-  // Create promo codes and inject into report
-  const promoCodes = await addBloodAnalysisCredits(email);
+  // Create promo codes and inject into report (tier-dependent : Solo=0, Coached=1, Tracked=2)
+  const promoCodes = await addBloodAnalysisCredits(email, tier);
   report.promoCodesGenerated = promoCodes;
 
   // Normalize
