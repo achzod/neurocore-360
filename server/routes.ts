@@ -3240,10 +3240,23 @@ export async function registerRoutes(
 
   app.post("/api/stripe/create-checkout-session", checkoutLimiter, async (req, res) => {
     try {
-      const { priceId: clientPriceId, email, planType, responses, promoCode, referrer, fbp, fbc, userAgent, sourceUrl } = req.body;
+      const { priceId: clientPriceId, email, planType, responses, promoCode, referrer, fbp, fbc, userAgent, sourceUrl, peptidesEngineConsent } = req.body;
       if (!isValidEmailFormat(email)) {
         res.status(400).json({ error: "EMAIL_INVALID", message: "Adresse email invalide. Verifie qu'il y a bien un point dans le domaine (par exemple @gmail.com et non @gmailcom)." });
         return;
+      }
+
+      // Mandatory consent gate for PEPTIDES_ENGINE. Refus de checkout sans
+      // acceptation explicite, horodatée et versionnée. Stocké dans
+      // order.metadata pour preuve en cas de litige Stripe/PayPal.
+      if (planType === "PEPTIDES_ENGINE") {
+        if (!peptidesEngineConsent || peptidesEngineConsent.accepted !== true || typeof peptidesEngineConsent.version !== "string") {
+          res.status(400).json({
+            error: "CONSENT_REQUIRED",
+            message: "Tu dois accepter les conditions de la commande Peptides Engine avant de payer.",
+          });
+          return;
+        }
       }
 
       // Already paid check for ALL product types (prevents double charge)
@@ -3487,6 +3500,25 @@ export async function registerRoutes(
               : Math.round(baseCents * promoObj.discountPercent / 100))
           : 0;
 
+        // Persist consent record with server-authoritative timestamp + IP + UA.
+        // This is the legal evidence pack we hand to Stripe/PayPal in a dispute.
+        const peptidesConsentRecord = (planType === "PEPTIDES_ENGINE" && peptidesEngineConsent)
+          ? {
+              accepted: true,
+              version: String(peptidesEngineConsent.version),
+              text: typeof peptidesEngineConsent.text === "string"
+                ? String(peptidesEngineConsent.text).slice(0, 4000)
+                : undefined,
+              clientAcceptedAt: typeof peptidesEngineConsent.clientAcceptedAt === "string"
+                ? peptidesEngineConsent.clientAcceptedAt
+                : undefined,
+              serverAcceptedAt: new Date().toISOString(),
+              ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null,
+              userAgent: req.headers["user-agent"] || null,
+              paymentMethod: "stripe" as const,
+            }
+          : undefined;
+
         const order = await storage.createOrder({
           email,
           productType: pType,
@@ -3498,7 +3530,11 @@ export async function registerRoutes(
           stripeCheckoutSessionId: session.id,
           ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null,
           userAgent: req.headers["user-agent"] || null,
-          metadata: { planType, peptidesResponses: planType === "PEPTIDES_ENGINE" ? responses : undefined },
+          metadata: {
+            planType,
+            peptidesResponses: planType === "PEPTIDES_ENGINE" ? responses : undefined,
+            peptidesEngineConsent: peptidesConsentRecord,
+          },
         });
 
         // Track promo code usage on the order
@@ -3973,7 +4009,7 @@ export async function registerRoutes(
         return;
       }
 
-      const { email, planType, responses, promoCode, fbp, fbc, userAgent, sourceUrl } = req.body;
+      const { email, planType, responses, promoCode, fbp, fbc, userAgent, sourceUrl, peptidesEngineConsent } = req.body;
       if (!email || !planType) {
         res.status(400).json({ error: "email et planType requis" });
         return;
@@ -3981,6 +4017,17 @@ export async function registerRoutes(
       if (!isValidEmailFormat(email)) {
         res.status(400).json({ error: "EMAIL_INVALID", message: "Adresse email invalide. Verifie qu'il y a bien un point dans le domaine (par exemple @gmail.com et non @gmailcom)." });
         return;
+      }
+
+      // Mandatory consent gate for PEPTIDES_ENGINE (idem Stripe).
+      if (planType === "PEPTIDES_ENGINE") {
+        if (!peptidesEngineConsent || peptidesEngineConsent.accepted !== true || typeof peptidesEngineConsent.version !== "string") {
+          res.status(400).json({
+            error: "CONSENT_REQUIRED",
+            message: "Tu dois accepter les conditions de la commande Peptides Engine avant de payer.",
+          });
+          return;
+        }
       }
 
       // Already paid check for ALL product types (prevents double charge via PayPal)
@@ -4131,6 +4178,25 @@ export async function registerRoutes(
 
       // Create pending order in DB
       try {
+        // Persist consent record with server-authoritative timestamp + IP + UA.
+        // This is the legal evidence pack we hand to PayPal in a dispute.
+        const peptidesConsentRecord = (planType === "PEPTIDES_ENGINE" && peptidesEngineConsent)
+          ? {
+              accepted: true,
+              version: String(peptidesEngineConsent.version),
+              text: typeof peptidesEngineConsent.text === "string"
+                ? String(peptidesEngineConsent.text).slice(0, 4000)
+                : undefined,
+              clientAcceptedAt: typeof peptidesEngineConsent.clientAcceptedAt === "string"
+                ? peptidesEngineConsent.clientAcceptedAt
+                : undefined,
+              serverAcceptedAt: new Date().toISOString(),
+              ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null,
+              userAgent: req.headers["user-agent"] || null,
+              paymentMethod: "paypal" as const,
+            }
+          : undefined;
+
         const order = await storage.createOrder({
           email,
           productType: pType,
@@ -4146,6 +4212,7 @@ export async function registerRoutes(
             planType,
             paymentMethod: "paypal",
             peptidesResponses: planType === "PEPTIDES_ENGINE" ? responses : undefined,
+            peptidesEngineConsent: peptidesConsentRecord,
             // Meta CAPI attribution , read by the capture handler to send Purchase CAPI event
             fbp: fbp || undefined,
             fbc: fbc || undefined,

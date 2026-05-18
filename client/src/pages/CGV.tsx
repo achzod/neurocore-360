@@ -94,6 +94,20 @@ export default function CGV() {
                   suivi des marqueurs biologiques.
                 </p>
               </div>
+              <div className="rounded-sm border border-[#FCDD00]/30 bg-[#FCDD00]/5 p-4">
+                <h4 className="font-semibold text-white">Peptides Engine (299€ - Paiement unique)</h4>
+                <p className="mt-1 text-sm text-white/50">
+                  Protocole peptides personnalise redige sur-mesure par Achzod a partir d'un questionnaire
+                  individuel (profil, objectifs, antecedents, budget). Le rapport est transmis sous 24 a 48h
+                  apres paiement et inclut : selection des peptides, dosages calcules pour le profil du client,
+                  guide de reconstitution, calendrier d'injection, liste de courses avec sources verifiees,
+                  2 credits Blood Analysis APEXLABS et code de deduction coaching valable 12 mois.
+                </p>
+                <p className="mt-3 text-xs font-semibold text-red-400">
+                  Produit personnalise non remboursable des livraison du rapport (article L221-28 du Code de
+                  la consommation). Voir article 7.
+                </p>
+              </div>
               <div className="rounded-sm border border-white/10 bg-[#0F0F0F] p-4">
                 <h4 className="font-semibold text-white">FormCheck (Bientot disponible)</h4>
                 <p className="mt-1 text-sm text-white/50">
@@ -201,9 +215,42 @@ export default function CGV() {
               </li>
             </ul>
             <p className="mt-4 text-white/60 leading-relaxed">
-              Pour exercer votre droit de retractation (avant generation du rapport), envoyez un email a{" "}
+              Pour exercer votre droit de retractation (avant livraison du rapport), envoyez un email a{" "}
               <a href="mailto:coaching@achzodcoaching.com" className="text-[#FCDD00] hover:underline">coaching@achzodcoaching.com</a>.
             </p>
+            <div className="rounded-sm border border-red-500/30 bg-red-500/10 p-4 mt-6">
+              <h4 className="font-semibold text-red-400">Cas particulier : Peptides Engine</h4>
+              <p className="mt-2 text-sm text-white/60">
+                Le rapport Peptides Engine est un document personnalise qu'Achzod redige sur-mesure pour le
+                profil du client a partir des reponses fournies au questionnaire. La preparation du rapport
+                debute immediatement apres paiement. En validant son achat et en cochant la case de
+                consentement dediee sur la page de paiement, le client :
+              </p>
+              <ul className="mt-3 space-y-2 text-sm text-white/60">
+                <li className="flex items-start gap-2">
+                  <span className="w-1 h-1 rounded-full bg-red-400 mt-2 flex-shrink-0" />
+                  <span>Demande expressement qu'Achzod commence la preparation de son rapport personnalise immediatement apres paiement.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="w-1 h-1 rounded-full bg-red-400 mt-2 flex-shrink-0" />
+                  <span>Reconnait que le rapport est un contenu numerique entierement personnalise, executable une seule fois pour son profil unique.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="w-1 h-1 rounded-full bg-red-400 mt-2 flex-shrink-0" />
+                  <span>Renonce expressement et de maniere irrevocable a son droit de retractation conformement a l'article L221-28 du Code de la consommation.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="w-1 h-1 rounded-full bg-red-400 mt-2 flex-shrink-0" />
+                  <span>Accepte qu'aucun remboursement n'est possible apres livraison du rapport, sauf cas de force majeure dument justifie.</span>
+                </li>
+              </ul>
+              <p className="mt-3 text-sm text-white/60">
+                Cette acceptation est horodatee cote serveur et conservee en preuve. En cas de litige
+                introduit aupres de Stripe, PayPal ou de tout autre prestataire de paiement, cette preuve
+                d'acceptation explicite (version du texte, date, heure, adresse IP, user-agent) sera transmise
+                au prestataire et opposable au client.
+              </p>
+            </div>
           </section>
 
           <section className="rounded-sm bg-white/[0.03] border border-white/10 p-6 md:p-8">
@@ -218,7 +265,7 @@ export default function CGV() {
             <ul className="mt-4 space-y-2 text-white/60">
               <li className="flex items-start gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#FCDD00] mt-2 flex-shrink-0" />
-                <span>Le droit de retractation ne s'applique pas une fois le contenu numerique genere, conformement a l'article L221-28 du Code de la consommation.</span>
+                <span>Le droit de retractation ne s'applique pas une fois le contenu numerique livre, conformement a l'article L221-28 du Code de la consommation.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#FCDD00] mt-2 flex-shrink-0" />

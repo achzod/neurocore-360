@@ -48,6 +48,15 @@ import {
 const STORAGE_KEY = "peptides_engine_responses";
 const PRICE_EUR = 299;
 
+// Peptides Engine consent ─ versioned wording for legal traceability.
+// IMPORTANT : ne JAMAIS modifier silencieusement le texte ci-dessous, toujours
+// bumper TERMS_VERSION quand la formulation change. Le serveur stocke la
+// version acceptée dans order.metadata.peptidesEngineConsent pour preuve en
+// cas de litige PayPal/Stripe.
+const PEPTIDES_TERMS_VERSION = "peptides-engine-cgv-v1-2026-05-18";
+const PEPTIDES_TERMS_TEXT =
+  "Je reconnais que le rapport Peptides Engine est un document personnalisé qu'Achzod rédige sur-mesure pour mon profil, livré sous 24 à 48h après ma commande. Je demande expressément qu'Achzod commence la préparation immédiatement après paiement. En raison de la nature digitale et personnalisée du rapport, aucun remboursement n'est possible une fois le rapport livré, et je renonce expressément et de manière irrévocable à mon droit de rétractation conformément à l'article L221-28 du Code de la consommation (contenu numérique personnalisé). Je confirme avoir lu et accepté les Conditions Générales de Vente.";
+
 const SECTION_ICONS: Record<string, React.ElementType> = {
   profil: User,
   objectifs: Target,
@@ -265,6 +274,8 @@ function CheckoutCard({
   onPaymentMethodChange,
   promoCode,
   onPromoCodeChange,
+  acceptedTerms,
+  onAcceptedTermsChange,
 }: {
   responses: Record<string, unknown>;
   onConfirmStripe: () => void;
@@ -274,6 +285,8 @@ function CheckoutCard({
   onPaymentMethodChange: (m: "stripe" | "paypal") => void;
   promoCode: string;
   onPromoCodeChange: (v: string) => void;
+  acceptedTerms: boolean;
+  onAcceptedTermsChange: (v: boolean) => void;
 }) {
   const safetyCheck = shouldBlockPurchase(responses);
 
@@ -373,12 +386,46 @@ function CheckoutCard({
         </div>
       )}
 
+      {/* Consent — required before any payment can be initiated.
+          Acceptance is captured server-side with timestamp + IP + UA + text
+          version for legal traceability against PayPal/Stripe disputes. */}
+      {!safetyCheck.blocked && (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <Checkbox
+              checked={acceptedTerms}
+              onCheckedChange={(v) => onAcceptedTermsChange(v === true)}
+              className="mt-1 border-amber-500/60 data-[state=checked]:bg-amber-500 data-[state=checked]:text-black"
+              aria-label="J'accepte les conditions de la commande Peptides Engine"
+            />
+            <span className="text-xs text-white/70 leading-relaxed">
+              Je reconnais que le rapport Peptides Engine est un document personnalisé qu'Achzod
+              rédige sur-mesure pour mon profil, livré sous 24 à 48h après ma commande. Je demande
+              expressément qu'Achzod commence la préparation immédiatement après paiement. En raison
+              de la nature digitale et personnalisée du rapport, <strong className="text-white">aucun
+              remboursement n'est possible une fois le rapport livré</strong>, et je renonce
+              expressément à mon droit de rétractation conformément à l'article L221-28 du Code de
+              la consommation. Je confirme avoir lu et accepté les{" "}
+              <a
+                href="/cgv"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-amber-400 underline hover:text-amber-300"
+              >
+                Conditions Générales de Vente
+              </a>
+              .
+            </span>
+          </label>
+        </div>
+      )}
+
       {/* CTA */}
       <Button
         onClick={paymentMethod === "paypal" ? onConfirmPaypal : onConfirmStripe}
-        disabled={safetyCheck.blocked || isLoading}
+        disabled={safetyCheck.blocked || isLoading || !acceptedTerms}
         className="w-full bg-amber-500 hover:bg-amber-400 text-black font-bold text-base h-12 disabled:opacity-40 disabled:cursor-not-allowed"
-        aria-disabled={safetyCheck.blocked}
+        aria-disabled={safetyCheck.blocked || !acceptedTerms}
       >
         {isLoading ? (
           <span className="flex items-center gap-2">
@@ -389,6 +436,11 @@ function CheckoutCard({
           <span className="flex items-center gap-2">
             <Lock className="h-4 w-4" aria-hidden="true" />
             Achat desactive
+          </span>
+        ) : !acceptedTerms ? (
+          <span className="flex items-center gap-2">
+            <Lock className="h-4 w-4" aria-hidden="true" />
+            Accepte les conditions pour continuer
           </span>
         ) : promoCode.trim() ? (
           `Utiliser mon code promo`
@@ -417,6 +469,7 @@ export default function PeptidesEnginePage() {
   const [paymentMethod, setPaymentMethod] = useState<"stripe" | "paypal">("stripe");
   const [showCheckout, setShowCheckout] = useState(false);
   const [promoCode, setPromoCode] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const totalSections = PEPTIDES_SECTIONS.length;
   const isLastSection = sectionIndex === totalSections - 1;
@@ -528,6 +581,13 @@ export default function PeptidesEnginePage() {
     mutationFn: async (method: "stripe" | "paypal") => {
       const email = (responses["pep_email"] as string) || "";
 
+      // Guard: server also rejects PEPTIDES_ENGINE without consent, but we
+      // surface a friendly client error first so the user sees a normal
+      // message instead of a 400 toast from the API layer.
+      if (!acceptedTerms) {
+        throw new Error("Accepte les conditions de la commande pour continuer.");
+      }
+
       // CRITICAL: Save responses to server BEFORE checkout — MANDATORY
       // If this fails, abort checkout. A client must never pay without responses saved.
       const saveRes = await apiRequest("POST", "/api/peptides-engine/save-progress", {
@@ -552,12 +612,24 @@ export default function PeptidesEnginePage() {
 
       const metaAttr = getMetaAttribution();
 
+      // Versioned consent payload. The server timestamps acceptance with its
+      // own clock to prevent client-side tampering, and pairs it with IP + UA
+      // already captured from request headers. Used as legal evidence in any
+      // PayPal/Stripe dispute.
+      const peptidesEngineConsent = {
+        accepted: true,
+        version: PEPTIDES_TERMS_VERSION,
+        text: PEPTIDES_TERMS_TEXT,
+        clientAcceptedAt: new Date().toISOString(),
+      };
+
       if (method === "paypal") {
         const res = await apiRequest("POST", "/api/paypal/create-order", {
           email,
           planType: "PEPTIDES_ENGINE",
           responses,
           promoCode: promoCode.trim() || undefined,
+          peptidesEngineConsent,
           ...metaAttr,
         });
         return res.json();
@@ -569,6 +641,7 @@ export default function PeptidesEnginePage() {
         responses,
         referrer: urlRef || undefined,
         promoCode: promoCode.trim() || undefined,
+        peptidesEngineConsent,
         ...metaAttr,
       });
       return res.json();
@@ -732,6 +805,8 @@ export default function PeptidesEnginePage() {
                 onPaymentMethodChange={setPaymentMethod}
                 promoCode={promoCode}
                 onPromoCodeChange={setPromoCode}
+                acceptedTerms={acceptedTerms}
+                onAcceptedTermsChange={setAcceptedTerms}
               />
             </motion.div>
           )}
