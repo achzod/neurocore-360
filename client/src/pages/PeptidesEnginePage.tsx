@@ -682,11 +682,27 @@ export default function PeptidesEnginePage() {
         throw new Error("Impossible de sauvegarder tes reponses. Reessaie.");
       }
 
-      // Verify responses exist server-side (double-check)
-      const verifyRes = await apiRequest("GET", `/api/peptides-engine/verify-responses?email=${encodeURIComponent(email)}`);
-      const verifyData = await verifyRes.json();
-      if (!verifyData.verified) {
-        throw new Error("Verification echouee. Reessaie dans quelques secondes.");
+      // Best-effort verify (PG read-after-write can lag a few hundred ms behind
+      // the commit; if verify fails we silently retry once after 1s, then we
+      // trust the 200 OK on save-progress. We also pass responses in the
+      // checkout payload as a belt-and-suspenders fallback , the server can
+      // re-save them at order creation time if it can't find them by email).
+      try {
+        let verified = false;
+        for (let attempt = 0; attempt < 2 && !verified; attempt++) {
+          if (attempt > 0) await new Promise((r) => setTimeout(r, 1000));
+          const verifyRes = await apiRequest(
+            "GET",
+            `/api/peptides-engine/verify-responses?email=${encodeURIComponent(email)}`
+          );
+          const verifyData = await verifyRes.json().catch(() => ({ verified: false }));
+          verified = verifyData?.verified === true;
+        }
+        if (!verified) {
+          console.warn("[PeptidesEngine] verify-responses fell through, trusting save-progress 200 OK and proceeding.");
+        }
+      } catch (verifyErr) {
+        console.warn("[PeptidesEngine] verify-responses errored, trusting save-progress 200 OK:", verifyErr);
       }
 
       // Capture referrer from URL
