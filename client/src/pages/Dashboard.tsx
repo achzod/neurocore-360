@@ -596,6 +596,7 @@ export default function Dashboard() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [confirmingCheckout, setConfirmingCheckout] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [checkoutSuccess, setCheckoutSuccess] = useState<{ title: string; message: string; cta?: { label: string; href: string } } | null>(null);
   const [currentTheme, setCurrentTheme] = useState<Theme>(THEME_PRESETS[0]);
 
   const themeColors = currentTheme.colors;
@@ -622,6 +623,7 @@ export default function Dashboard() {
     if (isPaypal && paypalToken && success) {
       setConfirmingCheckout(true);
       setCheckoutError(null);
+      setCheckoutSuccess(null);
       window.history.replaceState({}, "", "/dashboard");
 
       (async () => {
@@ -633,9 +635,36 @@ export default function Dashboard() {
           });
           const data = await response.json();
 
-          if (response.ok && data.success && data.auditId) {
-            const target = getReportPath(data.auditType || "", data.auditId);
-            navigate(target);
+          if (response.ok && data.success) {
+            // Classic audit flow (PREMIUM/ELITE/GRATUIT) , navigate to report
+            if (data.auditId) {
+              const target = getReportPath(data.auditType || "", data.auditId);
+              navigate(target);
+              return;
+            }
+            // Peptides Engine , report generated async by autogen cron
+            if (data.auditType === "PEPTIDES_ENGINE") {
+              setCheckoutSuccess({
+                title: "Paiement reçu",
+                message: "Ton protocole Peptides Engine arrive par email sous quelques heures. Tu n'as rien à faire d'autre.",
+                cta: { label: "Retour au tableau de bord", href: "/dashboard" },
+              });
+              return;
+            }
+            // Blood Analysis , client must upload PDF on blood-dashboard
+            if (data.auditType === "BLOOD_ANALYSIS") {
+              setCheckoutSuccess({
+                title: "Paiement reçu",
+                message: "Tu peux maintenant uploader ton PDF d'analyses sanguines sur ton espace Blood Analysis. Ton analyse complète arrive sous 24h après upload.",
+                cta: { label: "Uploader mes résultats", href: "/blood-dashboard" },
+              });
+              return;
+            }
+            // Fallback success (unknown auditType but success flag)
+            setCheckoutSuccess({
+              title: "Paiement reçu",
+              message: "Ta commande est confirmée. Tu recevras les détails par email.",
+            });
             return;
           }
 
@@ -659,6 +688,7 @@ export default function Dashboard() {
     if (sessionId && success) {
       setConfirmingCheckout(true);
       setCheckoutError(null);
+      setCheckoutSuccess(null);
       window.history.replaceState({}, "", "/dashboard");
 
       (async () => {
@@ -670,9 +700,32 @@ export default function Dashboard() {
           });
           const data = await response.json();
 
-          if (response.ok && data.success && data.auditId) {
-            const target = getReportPath(data.auditType || "", data.auditId);
-            navigate(target);
+          if (response.ok && data.success) {
+            if (data.auditId) {
+              const target = getReportPath(data.auditType || "", data.auditId);
+              navigate(target);
+              return;
+            }
+            if (data.auditType === "PEPTIDES_ENGINE") {
+              setCheckoutSuccess({
+                title: "Paiement reçu",
+                message: "Ton protocole Peptides Engine arrive par email sous quelques heures. Tu n'as rien à faire d'autre.",
+                cta: { label: "Retour au tableau de bord", href: "/dashboard" },
+              });
+              return;
+            }
+            if (data.auditType === "BLOOD_ANALYSIS") {
+              setCheckoutSuccess({
+                title: "Paiement reçu",
+                message: "Tu peux maintenant uploader ton PDF d'analyses sanguines sur ton espace Blood Analysis. Ton analyse complète arrive sous 24h après upload.",
+                cta: { label: "Uploader mes résultats", href: "/blood-dashboard" },
+              });
+              return;
+            }
+            setCheckoutSuccess({
+              title: "Paiement reçu",
+              message: "Ta commande est confirmée. Tu recevras les détails par email.",
+            });
             return;
           }
 
@@ -735,6 +788,29 @@ export default function Dashboard() {
             <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
             <p className="mt-4 text-muted-foreground">Confirmation du paiement en cours...</p>
           </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (checkoutSuccess) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="mx-auto max-w-2xl px-4 py-20 text-center">
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-emerald-500">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold">{checkoutSuccess.title}</h2>
+          <p className="mt-3 max-w-lg mx-auto text-muted-foreground">{checkoutSuccess.message}</p>
+          {checkoutSuccess.cta ? (
+            <Link href={checkoutSuccess.cta.href}>
+              <Button className="mt-6">{checkoutSuccess.cta.label}</Button>
+            </Link>
+          ) : null}
         </div>
         <Footer />
       </div>

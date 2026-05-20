@@ -3444,7 +3444,7 @@ export async function registerRoutes(
       const cancelUrl = isBloodAnalysis
         ? `${baseUrl}/offers/blood-analysis?cancelled=true`
         : isPeptides
-        ? `${baseUrl}/offers/peptides-engine?cancelled=true`
+        ? `${baseUrl}/peptides-engine?cancelled=true`
         : `${baseUrl}/audit-complet/checkout?cancelled=true`;
 
       // CRITICAL: Save responses to DB BEFORE creating Stripe session
@@ -4205,12 +4205,15 @@ export async function registerRoutes(
 
       const baseUrl = getBaseUrl();
       const isBloodAnalysis = planType === "BLOOD_ANALYSIS";
+      const isPeptidesEngine = planType === "PEPTIDES_ENGINE";
       const returnUrl = isBloodAnalysis
         ? `${baseUrl}/blood-analysis?paypal=true`
         : `${baseUrl}/dashboard?success=true&paypal=true`;
       const cancelUrl = isBloodAnalysis
         ? `${baseUrl}/offers/blood-analysis?cancelled=true`
-        : `${baseUrl}/audit-complet/checkout?cancelled=true`;
+        : isPeptidesEngine
+          ? `${baseUrl}/peptides-engine?cancelled=true`
+          : `${baseUrl}/audit-complet/checkout?cancelled=true`;
 
       const productName = ProductDisplayNames[pType] || planType;
 

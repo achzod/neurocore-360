@@ -595,6 +595,22 @@ export default function PeptidesEnginePage() {
     }
   }, [responses, sectionIndex, showCheckout]);
 
+  // Handle ?cancelled=true return from Stripe/PayPal cancel flow.
+  // Without this toast, clients who hit "Cancel" on PayPal land back here
+  // with no feedback, get confused, and abandon (this caused 77% pending
+  // PayPal orders in May 2026).
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("cancelled") === "true") {
+      toast({
+        title: "Paiement annulé",
+        description: "Tu peux relancer le paiement quand tu veux, tes réponses sont gardées.",
+      });
+      window.history.replaceState({}, "", "/peptides-engine");
+      setShowCheckout(true);
+    }
+  }, [toast]);
+
   const handleAnswer = (id: string, value: unknown) => {
     setResponses((prev) => ({ ...prev, [id]: value }));
   };
