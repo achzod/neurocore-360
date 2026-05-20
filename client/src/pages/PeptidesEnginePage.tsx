@@ -686,40 +686,30 @@ export default function PeptidesEnginePage() {
         throw new Error("Accepte les conditions de la commande pour continuer.");
       }
 
-      // CRITICAL: Save responses to server BEFORE checkout — MANDATORY
-      // If this fails, abort checkout. A client must never pay without responses saved.
-      const saveRes = await apiRequest("POST", "/api/peptides-engine/save-progress", {
-        email,
-        currentSection: PEPTIDES_SECTIONS.length,
-        totalSections: PEPTIDES_SECTIONS.length,
-        responses,
-      });
-      if (!saveRes.ok) {
-        throw new Error("Impossible de sauvegarder tes reponses. Reessaie.");
-      }
-
-      // Best-effort verify (PG read-after-write can lag a few hundred ms behind
-      // the commit; if verify fails we silently retry once after 1s, then we
-      // trust the 200 OK on save-progress. We also pass responses in the
-      // checkout payload as a belt-and-suspenders fallback , the server can
-      // re-save them at order creation time if it can't find them by email).
+      // Save responses to server BEFORE checkout. Server also re-saves them at
+      // order creation time from the checkout payload (belt-and-suspenders),
+      // so we tolerate a save failure here to keep the flow fast , what matters
+      // is that the click-to-PayPal-redirect stays under ~1.5s, otherwise
+      // Safari iOS treats the cross-origin nav as non-user-gesture and silently
+      // blocks it (this caused ~77% PayPal pending rate in May 2026 with 64%
+      // of pendings being mobile vs 43% of paid).
       try {
-        let verified = false;
-        for (let attempt = 0; attempt < 2 && !verified; attempt++) {
-          if (attempt > 0) await new Promise((r) => setTimeout(r, 1000));
-          const verifyRes = await apiRequest(
-            "GET",
-            `/api/peptides-engine/verify-responses?email=${encodeURIComponent(email)}`
-          );
-          const verifyData = await verifyRes.json().catch(() => ({ verified: false }));
-          verified = verifyData?.verified === true;
+        const saveRes = await apiRequest("POST", "/api/peptides-engine/save-progress", {
+          email,
+          currentSection: PEPTIDES_SECTIONS.length,
+          totalSections: PEPTIDES_SECTIONS.length,
+          responses,
+        });
+        if (!saveRes.ok) {
+          console.warn("[PeptidesEngine] save-progress non-2xx, server will re-save from checkout payload");
         }
-        if (!verified) {
-          console.warn("[PeptidesEngine] verify-responses fell through, trusting save-progress 200 OK and proceeding.");
-        }
-      } catch (verifyErr) {
-        console.warn("[PeptidesEngine] verify-responses errored, trusting save-progress 200 OK:", verifyErr);
+      } catch (saveErr) {
+        console.warn("[PeptidesEngine] save-progress errored, server will re-save from checkout payload:", saveErr);
       }
+      // NOTE: verify-responses removed , its 1-3s read-after-write polling was
+      // the dominant cause of Safari iOS dropping the user-gesture window on
+      // window.location.href. The responses payload below + server-side
+      // re-save in /api/paypal/create-order is enough redundancy.
 
       // Capture referrer from URL
       const urlRef = new URLSearchParams(window.location.search).get("ref") || "";
