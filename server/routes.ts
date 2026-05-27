@@ -6458,9 +6458,15 @@ export async function registerRoutes(
         res.status(404).json({ success: false, error: "Audit non trouvé" });
         return;
       }
-      // Fetch from report_artifacts table
+      // Fetch from report_artifacts table. Pass ?content=1 to also return
+      // txt + html — used by admin recovery flows when an artifact exists but
+      // narrativeReport never hydrated (e.g. send marked SENT without delivery).
+      const withContent = req.query.content === "1";
+      const cols = withContent
+        ? "id, audit_id, tier, engine, model, txt, html, created_at"
+        : "id, audit_id, tier, engine, model, created_at";
       const result = await pool.query(
-        "SELECT id, audit_id, tier, engine, model, created_at FROM report_artifacts WHERE audit_id = $1 ORDER BY created_at DESC",
+        `SELECT ${cols} FROM report_artifacts WHERE audit_id = $1 ORDER BY created_at DESC`,
         [auditId]
       );
       res.json({
@@ -6472,6 +6478,7 @@ export async function registerRoutes(
           engine: r.engine,
           model: r.model,
           createdAt: r.created_at,
+          ...(withContent ? { txt: r.txt, html: r.html } : {}),
         })),
       });
     } catch (error) {
