@@ -7,7 +7,12 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import { ANTHROPIC_CONFIG, validateAnthropicConfig } from "./anthropicConfig";
-import { validatePeptidesReport } from "./peptidesReportValidator";
+import {
+  validatePeptidesReport,
+  estimateNeedMg,
+  extractTotalMgFromVials,
+  extractVialMg,
+} from "./peptidesReportValidator";
 import { storage } from "./storage";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -454,6 +459,7 @@ EXEMPLES CONCRETS :
 - CJC-1295 sans DAC 100 mcg 1 fois par jour pendant 12 sem = 8,4 mg. Recommande : 2 vials de 5 mg OU 1 vial de 10 mg. PAS 10 vials.
 - Epitalon 5 mg/jour × 20 jours consecutifs = 100 mg total. Recommande : 10 vials de 10 mg. PAS 42 vials. cycleDuration = "20 jours consecutifs (cure), 2 fois par an".
 - Epitalon 10 mg/jour × 20 jours consecutifs = 200 mg total. Recommande : 20 vials de 10 mg. PAS 84 vials.
+- Retatrutide titration 12 sem (0,25 / 0,5 / 1 / 2 / 4 / 8 mg par semaine) = ~7 a 12 mg total cycle selon la rampe. Recommande : 1 a 2 vials de 10 mg MAX. PAS 8 vials de 10 mg (80 mg, x6,7 le besoin reel — bug akrameb 03/06/2026). vialsNeeded = "2 vials de 10mg pour 12 semaines (total ~14mg)". priceEstimate aligne sur 2 vials.
 
 Si tu veux mentionner le pack groupé comme OPTION (pas comme défaut) : une seule phrase à la fin de la liste de courses : "Si tu envisages déjà un deuxième cycle, tu peux opter pour le pack 10 vials qui descend le prix unitaire, vials lyophilisés conservables 2 à 3 ans au frigo." Pas obligatoire.
 
@@ -1283,6 +1289,45 @@ export function validateVialsMath(report: PeptidesReport): PeptidesReport {
         syncPriceEstimate(pep, aiVialsCount);
         console.log(
           `[PeptidesEngine] priceEstimate desync for ${pep.name}: vialsNeeded=${aiVialsCount} vs price=${priceCount} (ratio ${ratio.toFixed(2)}) , synced to ${aiVialsCount}`
+        );
+      }
+    }
+
+    // Surcommande clamp (akrameb 2026-06-03 Retatrutide 80mg ordered vs 12mg
+    // need, x6.7). If the AI still overshoots the realistic need by >2.5x,
+    // re-anchor to need × 1.2 (the +20% margin explicitly allowed by the
+    // system prompt). Runs after the override block above, so it catches
+    // surcommandes the derivation path could not detect.
+    const totalMgOrdered = extractTotalMgFromVials(pep.vialsNeeded);
+    const needMg = estimateNeedMg(pep);
+    const knownVialMg = derived?.vialMg ?? extractVialMg(pep.vialsNeeded);
+    if (
+      totalMgOrdered != null &&
+      needMg != null &&
+      needMg > 0 &&
+      knownVialMg != null &&
+      knownVialMg > 0
+    ) {
+      const overshoot = totalMgOrdered / needMg;
+      if (overshoot > 2.5) {
+        const targetMg = needMg * 1.2;
+        const clampedCount = Math.max(1, Math.ceil(targetMg / knownVialMg));
+        const clampedTotalMg = clampedCount * knownVialMg;
+        const totalDisplay =
+          clampedTotalMg >= 1
+            ? `${Math.round(clampedTotalMg * 10) / 10}mg`
+            : `${Math.round(clampedTotalMg * 1000)}mcg`;
+        const cureDaysMatch = (pep.dosage + " " + pep.cycleDuration).match(/(\d+)\s*jours?\s*cons[eé]cutifs?/i);
+        const weeksMatch = (pep.cycleDuration || "").match(/(\d+)\s*semaines?/i);
+        const durationLabel = cureDaysMatch
+          ? `${cureDaysMatch[1]} jours consecutifs`
+          : weeksMatch
+            ? `${weeksMatch[1]} semaines`
+            : pep.cycleDuration || "le cycle";
+        pep.vialsNeeded = `${clampedCount} vials de ${knownVialMg}mg pour ${durationLabel} (total ~${totalDisplay})`;
+        syncPriceEstimate(pep, clampedCount);
+        console.log(
+          `[PeptidesEngine] Surcommande clamp for ${pep.name}: ordered ${totalMgOrdered}mg vs need ${needMg.toFixed(1)}mg (x${overshoot.toFixed(1)}) → ${clampedCount} vials de ${knownVialMg}mg (~${totalDisplay}, need ×1.2)`
         );
       }
     }

@@ -67,13 +67,13 @@ function extractFirstNumber(text: string | undefined): number | null {
   return parseFloat(m[1].replace(",", "."));
 }
 
-function extractVialQty(vialsNeeded: string | undefined): number | null {
+export function extractVialQty(vialsNeeded: string | undefined): number | null {
   if (!vialsNeeded) return null;
   const m = vialsNeeded.match(/(\d+)\s*vials?\b/i);
   return m ? parseInt(m[1], 10) : null;
 }
 
-function extractVialMg(vialsNeeded: string | undefined): number | null {
+export function extractVialMg(vialsNeeded: string | undefined): number | null {
   if (!vialsNeeded) return null;
   const m = vialsNeeded.match(/vials?\s*(?:de|of)?\s*(\d+(?:[.,]\d+)?)\s*mg\b/i);
   if (!m) return null;
@@ -86,7 +86,7 @@ function extractPriceQty(priceEstimate: string | undefined): number | null {
   return m ? parseInt(m[1], 10) : null;
 }
 
-function extractTotalMgFromVials(vialsNeeded: string | undefined): number | null {
+export function extractTotalMgFromVials(vialsNeeded: string | undefined): number | null {
   if (!vialsNeeded) return null;
   // Prefer the actual capacity (qty × vialMg) over the AI's "total ~Xmg"
   // claim, because the AI sometimes states a misleading "total" value (the
@@ -99,7 +99,7 @@ function extractTotalMgFromVials(vialsNeeded: string | undefined): number | null
   return null;
 }
 
-function estimateNeedMg(p: PeptidesPeptide): number | null {
+export function estimateNeedMg(p: PeptidesPeptide): number | null {
   // Normalize French decimal commas so regex captures match.
   const dose = (p.dosage || "").replace(/(\d),(\d)/g, "$1.$2");
   const cycle = (p.cycleDuration || "").replace(/(\d),(\d)/g, "$1.$2");
