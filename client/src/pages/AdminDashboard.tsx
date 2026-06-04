@@ -648,60 +648,98 @@ export default function AdminDashboard() {
     setOrderPage(0);
   }, [orderStatusFilter, orderProductFilter]);
 
+  // Shared moderation call with: retry on transient network errors (covers
+  // Render redeploy windows that previously surfaced as generic
+  // "Impossible d'approuver l'avis" toasts), explicit server error messages,
+  // and post-failure verification to detect cases where the server processed
+  // the action but the response was lost in transit.
+  const submitReviewAction = async (
+    reviewId: string,
+    action: "approve" | "reject",
+  ): Promise<{ ok: boolean; serverError?: string; transient: boolean }> => {
+    const url = `/api/admin/reviews/${reviewId}/${action}`;
+    const init: RequestInit = {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-admin-key": adminKey! },
+      body: JSON.stringify({ reviewedBy: "admin" }),
+    };
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const response = await fetch(url, init);
+        const data = await response.json().catch(() => null);
+        if (response.ok && data?.success) return { ok: true, transient: false };
+        const serverError = data?.error || `HTTP ${response.status}`;
+        // 5xx is retryable, 4xx is a real client/auth issue → surface as-is.
+        const isRetryable = response.status >= 500;
+        if (!isRetryable || attempt === 2) {
+          return { ok: false, serverError, transient: isRetryable };
+        }
+      } catch {
+        if (attempt === 2) return { ok: false, transient: true };
+      }
+      await new Promise((r) => setTimeout(r, 800));
+    }
+    return { ok: false, transient: true };
+  };
+
   const handleApprove = async (reviewId: string) => {
     if (!adminKey) return;
     setProcessingId(reviewId);
-    try {
-      const response = await fetch(`/api/admin/reviews/${reviewId}/approve`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
-        body: JSON.stringify({ reviewedBy: "admin" }),
-      });
-      const data = await response.json();
-      if (data.success) {
-        setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+    const result = await submitReviewAction(reviewId, "approve");
+    if (result.ok) {
+      setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+      toast({ title: "Avis approuvé", description: "L'avis sera affiché sur le site" });
+      setProcessingId(null);
+      return;
+    }
+    // Failure path: re-fetch pending list. If the review is gone, the server
+    // processed it; only the client-side response was lost.
+    await fetchPendingReviews();
+    setReviews((current) => {
+      const stillPending = current.some((r) => r.id === reviewId);
+      if (!stillPending) {
+        toast({ title: "Avis approuvé", description: "L'action est passée malgré l'erreur réseau." });
+      } else {
         toast({
-          title: "Avis approuvé",
-          description: "L'avis sera affiché sur le site",
+          title: "Erreur",
+          description: result.transient
+            ? "Coupure réseau. Réessaie."
+            : result.serverError || "Impossible d'approuver l'avis",
+          variant: "destructive",
         });
       }
-    } catch (error) {
-      toast({
-        title: "Erreur",
-        description: "Impossible d'approuver l'avis",
-        variant: "destructive",
-      });
-    } finally {
-      setProcessingId(null);
-    }
+      return current;
+    });
+    setProcessingId(null);
   };
 
   const handleReject = async (reviewId: string) => {
     if (!adminKey) return;
     setProcessingId(reviewId);
-    try {
-      const response = await fetch(`/api/admin/reviews/${reviewId}/reject`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
-        body: JSON.stringify({ reviewedBy: "admin" }),
-      });
-      const data = await response.json();
-      if (data.success) {
-        setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+    const result = await submitReviewAction(reviewId, "reject");
+    if (result.ok) {
+      setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+      toast({ title: "Avis rejeté", description: "L'avis ne sera pas affiché" });
+      setProcessingId(null);
+      return;
+    }
+    await fetchPendingReviews();
+    setReviews((current) => {
+      const stillPending = current.some((r) => r.id === reviewId);
+      if (!stillPending) {
+        toast({ title: "Avis rejeté", description: "L'action est passée malgré l'erreur réseau." });
+      } else {
         toast({
-          title: "Avis rejeté",
-          description: "L'avis ne sera pas affiché",
+          title: "Erreur",
+          description: result.transient
+            ? "Coupure réseau. Réessaie."
+            : result.serverError || "Impossible de rejeter l'avis",
+          variant: "destructive",
         });
       }
-    } catch (error) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de rejeter l'avis",
-        variant: "destructive",
-      });
-    } finally {
-      setProcessingId(null);
-    }
+      return current;
+    });
+    setProcessingId(null);
   };
 
   const handleSendCTA = async () => {
