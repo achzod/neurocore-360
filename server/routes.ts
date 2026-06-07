@@ -1270,17 +1270,6 @@ export async function registerRoutes(
       const deliveryStatus = completedAudit.reportDeliveryStatus;
 
       // ============================================
-      // GATE 0: Admin BLOCKED? Never auto-deliver.
-      // Set by monitoring.ts after MAX_RETRY validation failures so we don't
-      // ship a broken report. Only an admin manual force-regenerate can clear
-      // this (and resets the audit-level totalRegenAttempts counter).
-      // ============================================
-      if (deliveryStatus === 'BLOCKED') {
-        console.error(`[Email] ❌ Report ${auditId} status BLOCKED (admin intervention required) , EMAIL BLOCKED`);
-        return;
-      }
-
-      // ============================================
       // GATE 1: Email already sent? STOP.
       // ============================================
       if (completedAudit.reportSentAt) {
@@ -2598,19 +2587,12 @@ export async function registerRoutes(
 
           console.log(`[Admin] Force-regenerating NEEDS_REVIEW audit ${auditId}`);
 
-          // Reset audit-level regen counter so monitoring.ts retries fresh
-          // (without this, a BLOCKED audit would re-block on the next monitoring
-          // tick because totalRegenAttempts in metadata is still at the cap).
-          const existingMeta = ((audit as any).metadata as any) || {};
-          const resetMeta = { ...existingMeta, totalRegenAttempts: 0 };
-
           // Reset EVERYTHING and restart generation
           await storage.updateAudit(auditId, {
             reportDeliveryStatus: "GENERATING",
             narrativeReport: null, // Clear old failed report
             reportScheduledFor: null, // Clear scheduled delivery , deliver immediately
-            metadata: resetMeta,
-          } as any);
+          });
 
           // Delete old failed job
           await storage.deleteReportJob(auditId).catch(() => {});
@@ -2902,9 +2884,6 @@ export async function registerRoutes(
       // never leaks into an email. Note: reportSentAt is preserved on purpose so
       // processReportAndSendEmail bails at Gate 1 (admin must use resend-email
       // with ?force=1 to email the fresh report).
-      // reportTxt/reportHtml are kept on purpose: they keep the dashboard
-      // renderable during the 5-12min regen window. They'll be overwritten by
-      // reportJobManager once the new generation completes.
       await storage.updateAudit(auditId, { reportDeliveryStatus: "PENDING", narrativeReport: null });
       const claimedPaid = await storage.claimAuditForGeneration(auditId).catch(() => false);
       if (!claimedPaid) {
@@ -9907,14 +9886,9 @@ export async function registerRoutes(
             WHERE audit_id = $1 AND email_type = 'sendReportReadyEmail'`,
           [a.id]
         );
-        // Default-deny: only treat as delivered when SendPulse explicitly returned
-        // success. NULL / unknown statuses (e.g. tracking row created but the
-        // post-send UPDATE crashed) must NOT be promoted to SENT, otherwise the
-        // admin reconcile silently marks the audit delivered without any proof
-        // of actual delivery (Chloé Manca 2026-05-25 incident).
         const hasSuccess = rows.rows.some(r => {
           const s = String(r.sendpulse_status ?? "").toLowerCase();
-          return s === "success";
+          return s !== "failed" && s !== "auth_failed" && s !== "unsubscribed";
         });
         const hasAny = rows.rows.length > 0;
         const classification = hasSuccess ? "already_sent" : hasAny ? "failed_only" : "never_tried";
