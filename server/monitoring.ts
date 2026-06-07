@@ -90,35 +90,31 @@ async function fixStuckGeneratingJobs(stats: MonitoringStats): Promise<void> {
 
     for (const audit of stuckAudits) {
       try {
-        log(`Monitoring: Restarting stuck audit ${audit.id}`, "monitoring");
+        const totalRegenAttempts = await getAuditRegenCount(audit);
+        const currentMeta = ((audit as any).metadata as any) || {};
 
-        // Check retry count
-        const reportJob = await storage.getReportJob(audit.id);
-        const attemptCount = reportJob?.attemptCount || 0;
-
-        if (attemptCount >= MAX_RETRY_ATTEMPTS) {
+        if (totalRegenAttempts >= MAX_RETRY_ATTEMPTS) {
           log(
-            `Monitoring: Audit ${audit.id} already at max retries (${MAX_RETRY_ATTEMPTS}), marking as FAILED`,
+            `Monitoring: Audit ${audit.id} stuck at audit-level cap (${totalRegenAttempts}/${MAX_RETRY_ATTEMPTS}), marking BLOCKED`,
             "monitoring"
           );
-          await storage.updateAudit(audit.id, { reportDeliveryStatus: "FAILED" });
-          await storage.failReportJob(audit.id, "Max retries exceeded after auto-monitoring");
+          await markAuditBlockedAndAlert(audit, totalRegenAttempts, "Stuck in GENERATING after max regen");
           continue;
         }
+
+        const nextAttempt = await bumpAuditRegenCount(audit.id, totalRegenAttempts, currentMeta);
+        log(`Monitoring: Restarting stuck audit ${audit.id} (attempt ${nextAttempt}/${MAX_RETRY_ATTEMPTS})`, "monitoring");
 
         // Reset and restart
         await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
         await startReportGeneration(audit.id, audit.responses, audit.scores || {}, audit.type);
 
-        // processReportAndSendEmail will be called by reportJobManager
-        const { default: routes } = await import("./routes.js");
-        // Note: processReportAndSendEmail is internal to routes, called automatically
-
         stats.generatingStuck++;
 
         // Log to DB for audit trail
         await logMonitoringAction(audit.id, "RESTART_STUCK_GENERATING", {
-          attemptCount,
+          attemptCount: nextAttempt,
+          totalRegenAttempts: nextAttempt,
           reason: `Stuck in GENERATING for > 2h`,
         });
       } catch (error) {
@@ -129,6 +125,55 @@ async function fixStuckGeneratingJobs(stats: MonitoringStats): Promise<void> {
     }
   } catch (error) {
     console.error("[Monitoring] Error in fixStuckGeneratingJobs:", error);
+  }
+}
+
+/**
+ * Reads the persistent audit-level regen counter that survives reportJob deletes.
+ * If the counter is absent (legacy audits before this patch), seed it from the
+ * monitoring_logs row count so this run sees an accurate history. Without this
+ * seed, audits like paulmtya 2026-06-07 sat in an infinite NEEDS_REVIEW loop
+ * because the reportJob.attemptCount got wiped on every regen.
+ */
+async function getAuditRegenCount(audit: any): Promise<number> {
+  const meta = ((audit as any).metadata as any) || {};
+  if (typeof meta.totalRegenAttempts === "number") return meta.totalRegenAttempts;
+  try {
+    const { pool } = await import("./db.js");
+    const r = await pool.query(
+      "SELECT COUNT(*) AS c FROM monitoring_logs WHERE audit_id = $1 AND action IN ('REGENERATE_NEEDS_REVIEW', 'RETRY_FAILED', 'RESTART_STUCK_GENERATING')",
+      [audit.id]
+    );
+    return Number(r.rows[0]?.c || 0);
+  } catch {
+    return 0;
+  }
+}
+
+async function bumpAuditRegenCount(auditId: string, current: number, currentMeta: any): Promise<number> {
+  const next = current + 1;
+  await storage.updateAudit(auditId, {
+    metadata: { ...(currentMeta || {}), totalRegenAttempts: next },
+  } as any);
+  return next;
+}
+
+async function markAuditBlockedAndAlert(audit: any, totalRegenAttempts: number, lastReason: string): Promise<void> {
+  await storage.updateAudit(audit.id, { reportDeliveryStatus: "BLOCKED" } as any);
+  await logMonitoringAction(audit.id, "BLOCKED_MAX_REGEN", {
+    totalRegenAttempts,
+    lastReason,
+  });
+  try {
+    const { sendCTAEmail } = await import("./emailService.js");
+    const adminEmail = process.env.ADMIN_NOTIF_EMAIL || "coaching@achzodcoaching.com";
+    await sendCTAEmail(
+      adminEmail,
+      `[BLOQUE] Audit ${audit.email} - validation a echoue ${totalRegenAttempts}x`,
+      `L'audit ${audit.id} (${audit.email}, type=${audit.type}) a echoue la validation ${totalRegenAttempts} fois consecutives.\n\nIntervention manuelle requise. Le rapport NE sera PAS livre automatiquement tant que l'audit reste en status BLOCKED.\n\nDernier motif: ${lastReason}\n\nDebug: GET /api/admin/audits/${audit.id}/validation-details\nMonitoring: GET /api/admin/audits/${audit.id}/monitoring-history\n\nPour relancer (avec compteur reset): POST /api/admin/force-regenerate-failed { auditId: "${audit.id}" }`
+    );
+  } catch (err) {
+    console.error(`[Monitoring] Failed to send BLOCKED alert for ${audit.id}:`, err);
   }
 }
 
@@ -148,19 +193,20 @@ async function fixNeedsReviewJobs(stats: MonitoringStats): Promise<void> {
 
     for (const audit of needsReviewAudits) {
       try {
-        // Check retry count
-        const reportJob = await storage.getReportJob(audit.id);
-        const attemptCount = reportJob?.attemptCount || 0;
+        const totalRegenAttempts = await getAuditRegenCount(audit);
+        const currentMeta = ((audit as any).metadata as any) || {};
 
-        if (attemptCount >= MAX_RETRY_ATTEMPTS) {
+        if (totalRegenAttempts >= MAX_RETRY_ATTEMPTS) {
           log(
-            `Monitoring: Audit ${audit.id} NEEDS_REVIEW already at max retries (${MAX_RETRY_ATTEMPTS}), skipping`,
+            `Monitoring: Audit ${audit.id} NEEDS_REVIEW at audit-level cap (${totalRegenAttempts}/${MAX_RETRY_ATTEMPTS}), marking BLOCKED`,
             "monitoring"
           );
+          await markAuditBlockedAndAlert(audit, totalRegenAttempts, "Validation still failing after max regen");
           continue;
         }
 
-        log(`Monitoring: Regenerating NEEDS_REVIEW audit ${audit.id} (attempt ${attemptCount + 1})`, "monitoring");
+        const nextAttempt = await bumpAuditRegenCount(audit.id, totalRegenAttempts, currentMeta);
+        log(`Monitoring: Regenerating NEEDS_REVIEW audit ${audit.id} (attempt ${nextAttempt}/${MAX_RETRY_ATTEMPTS})`, "monitoring");
 
         // Clear old failed report and restart
         await storage.updateAudit(audit.id, {
@@ -175,7 +221,8 @@ async function fixNeedsReviewJobs(stats: MonitoringStats): Promise<void> {
 
         // Log to DB for audit trail
         await logMonitoringAction(audit.id, "REGENERATE_NEEDS_REVIEW", {
-          attemptCount: attemptCount + 1,
+          attemptCount: nextAttempt,
+          totalRegenAttempts: nextAttempt,
           reason: "Auto-regeneration after validation failure",
         });
       } catch (error) {
@@ -205,15 +252,20 @@ async function retryFailedJobs(stats: MonitoringStats): Promise<void> {
 
     for (const audit of failedAudits) {
       try {
-        const reportJob = await storage.getReportJob(audit.id);
-        const attemptCount = reportJob?.attemptCount || 0;
+        const totalRegenAttempts = await getAuditRegenCount(audit);
+        const currentMeta = ((audit as any).metadata as any) || {};
 
-        if (attemptCount >= MAX_RETRY_ATTEMPTS) {
-          // Max retries reached, skip
+        if (totalRegenAttempts >= MAX_RETRY_ATTEMPTS) {
+          log(
+            `Monitoring: Audit ${audit.id} FAILED at audit-level cap (${totalRegenAttempts}/${MAX_RETRY_ATTEMPTS}), marking BLOCKED`,
+            "monitoring"
+          );
+          await markAuditBlockedAndAlert(audit, totalRegenAttempts, "Job FAILED after max regen");
           continue;
         }
 
-        log(`Monitoring: Retrying FAILED audit ${audit.id} (attempt ${attemptCount + 1})`, "monitoring");
+        const nextAttempt = await bumpAuditRegenCount(audit.id, totalRegenAttempts, currentMeta);
+        log(`Monitoring: Retrying FAILED audit ${audit.id} (attempt ${nextAttempt}/${MAX_RETRY_ATTEMPTS})`, "monitoring");
 
         await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
         await startReportGeneration(audit.id, audit.responses, audit.scores || {}, audit.type);
@@ -221,7 +273,8 @@ async function retryFailedJobs(stats: MonitoringStats): Promise<void> {
         stats.failedRetried++;
 
         await logMonitoringAction(audit.id, "RETRY_FAILED", {
-          attemptCount: attemptCount + 1,
+          attemptCount: nextAttempt,
+          totalRegenAttempts: nextAttempt,
           reason: "Auto-retry after failure",
         });
       } catch (error) {
