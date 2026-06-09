@@ -381,6 +381,18 @@ function BloodClientDashboardInner() {
               <div>
                 <h2 className="text-xl font-semibold tracking-tight blood-text-primary">Uploader un bilan sanguin</h2>
                 <p className="mt-1 text-sm blood-text-secondary">PDF uniquement · 10 MB max · 1 credit par analyse</p>
+                <p className="mt-2 text-xs blood-text-tertiary">
+                  Ton labo t'a envoye 2 PDFs (hemato + biochimie) ? Fusionne-les en 1 seul fichier avant l'upload, sinon ton analyse sera incomplete et le credit sera consomme.{" "}
+                  <a
+                    href="https://www.ilovepdf.com/fr/fusionner_pdf"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline"
+                  >
+                    Outil gratuit
+                  </a>
+                  .
+                </p>
               </div>
               <span
                 className="rounded-full px-3 py-1 text-xs font-medium border"
@@ -633,7 +645,7 @@ function BloodClientDashboardInner() {
                 </div>
                 <div>
                   <p className="font-medium blood-text-primary">{file ? file.name : "Glisse ton PDF ici, ou selectionne un fichier"}</p>
-                  <p className="mt-1 text-xs blood-text-tertiary">PDF uniquement · 10 MB max</p>
+                  <p className="mt-1 text-xs blood-text-tertiary">PDF uniquement (1 seul fichier fusionne si labo en a fourni 2) · 10 MB max</p>
                 </div>
                 <input
                   type="file"
