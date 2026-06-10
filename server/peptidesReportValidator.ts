@@ -263,7 +263,19 @@ function checkPeptide(p: PeptidesPeptide): string[] {
   const needMg = estimateNeedMg(p);
   if (totalMgOrdered != null && needMg != null && needMg > 0) {
     const overshoot = totalMgOrdered / needMg;
-    if (overshoot > 2.5) {
+    // Incompressible-minimum exception: when one vial of the smallest
+    // available format already exceeds the cycle need (e.g. GHK-Cu sold only
+    // as 50mg vials but the protocol calls for 8mg), there is nothing the
+    // recommendation can do to lower the order. Flagging it as "surcommande"
+    // is a false positive (Farhan 2026-06-10 GHK-Cu 50mg vs 8mg, x6.3).
+    const orderedVialCount = extractVialQty(p.vialsNeeded);
+    const orderedVialMg = extractVialMg(p.vialsNeeded);
+    const isSingleVialFloor =
+      orderedVialCount === 1 &&
+      orderedVialMg != null &&
+      orderedVialMg > 0 &&
+      orderedVialMg >= needMg;
+    if (overshoot > 2.5 && !isSingleVialFloor) {
       issues.push(
         `surcommande detectee: ${totalMgOrdered}mg commandes vs ${needMg.toFixed(1)}mg besoin (x${overshoot.toFixed(1)})`
       );
@@ -361,8 +373,29 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
     const daysFound = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
       .filter((d) => new RegExp(`\\b${d}\\b`, "i").test(c)).length;
     const everyDayPattern = /chaque\s+(matin|soir|jour)|tous\s+les\s+jours|7\s*(?:jours?|soirs?)\s*\/?\s*7/i.test(c);
-    if (daysFound < 5 && !everyDayPattern) {
-      errors.push(`semaine type incomplete: ${daysFound}/7 jours et pas de pattern 'chaque jour'`);
+
+    // Compute max injection frequency across the stack to know whether a
+    // sparsely-named-week is legitimate. Low-frequency stacks (GHK-Cu 1x/sem,
+    // TB-500 2x/sem) naturally list only 2-4 weekdays in the practical-week
+    // section; flagging that as "incomplete" was a false positive on Farhan
+    // 2026-06-10 (3 named days, all peptides ≤2x/sem).
+    const maxFreqPerWeek = peptides.reduce((max, p) => {
+      const txt = `${p.dosage || ""} ${p.timing || ""}`;
+      if (/chaque jour|tous les jours|7\s*(?:jours?|soirs?)\s*\/?\s*7|\b1x\/jour\b|par jour\b/i.test(txt)) return Math.max(max, 7);
+      const m = txt.match(/(\d)\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine/i);
+      if (m) return Math.max(max, parseInt(m[1], 10));
+      return max;
+    }, 0);
+    const hasRestDayMention = /repos|off|pause|aucune\s+injection|hors\s+protocole/i.test(c);
+    const sparseWeekIsLegit = maxFreqPerWeek > 0 && maxFreqPerWeek <= 4 && daysFound >= maxFreqPerWeek;
+
+    if (everyDayPattern || sparseWeekIsLegit) {
+      // OK, nothing to flag.
+    } else if (daysFound < 3) {
+      errors.push(`semaine type incomplete: ${daysFound}/7 jours nommes (max freq stack = ${maxFreqPerWeek}/sem)`);
+    } else if (daysFound < 5 && !hasRestDayMention) {
+      // Weak signal, keep as a warning so admins see it but delivery is not blocked.
+      warnings.push(`semaine type peu detaillee: ${daysFound}/7 jours, pas de mention repos explicite`);
     }
   }
 
