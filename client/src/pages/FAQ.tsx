@@ -13,7 +13,7 @@ interface FAQItem {
 const faqs: FAQItem[] = [
   {
     question: "Qu'est-ce que APEXLABS exactement ?",
-    answer: "APEXLABS est mon système d'analyse métabolique et de performance que j'ai construit après des années de coaching individuel et 11 certifications internationales (NASM, ISSA, Precision Nutrition, Pre-Script). Selon l'offre choisie, je couvre sommeil, hormones, digestion, stress, nutrition, entraînement, biomécanique, cardiovasculaire... et tu reçois un rapport de 5 à 50 pages avec des protocoles concrets, pas des conseils génériques."
+    answer: "APEXLABS est mon système d'analyse métabolique et de performance que j'ai construit après des années de coaching individuel et 12 certifications internationales (NASM, ISSA, Precision Nutrition, Pre-Script). Selon l'offre choisie, je couvre sommeil, hormones, digestion, stress, nutrition, entraînement, biomécanique, cardiovasculaire... et tu reçois un rapport de 5 à 50 pages avec des protocoles concrets, pas des conseils génériques."
   },
   {
     question: "Quelle est la différence entre les 4 offres ?",
@@ -33,7 +33,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: "Qui es-tu exactement, Achzod ?",
-    answer: "Coach certifié avec 11 certifications internationales : NASM (CPT, CES, PES, FNS, WFS), ISSA (CPT, Nutritionist, Bodybuilding Specialist), Precision Nutrition (Level 1, Sleep & Recovery) et Pre-Script (Movement Assessment, Corrective Exercise). J'ai accompagné des centaines de clients en coaching individuel. APEXLABS est l'aboutissement de toute cette expérience : chaque protocole, chaque recommandation vient de mon expertise terrain."
+    answer: "Coach certifié avec 12 certifications internationales : NASM (CPT, CES, PES, FNS, WFS), ISSA (CPT, Nutritionist, Bodybuilding Specialist), Precision Nutrition (Level 1, Sleep & Recovery) et Pre-Script (Movement Assessment, Corrective Exercise, Nutrition). J'ai accompagné des centaines de clients en coaching individuel. APEXLABS est l'aboutissement de toute cette expérience : chaque protocole, chaque recommandation vient de mon expertise terrain."
   },
   {
     question: "Est-ce adapté aux débutants ?",

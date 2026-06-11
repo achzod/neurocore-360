@@ -1091,13 +1091,13 @@ function CertificationsSection() {
     { org: "NASM", items: ["CPT", "CNC", "PES"] },
     { org: "ISSA", items: ["CPT", "SNS", "SFC", "SBC"] },
     { org: "Precision Nutrition", items: ["PN1"] },
-    { org: "Pre-Script", items: ["Level 1"] },
+    { org: "Pre-Script", items: ["Level 1", "Nutrition"] },
   ];
 
   return (
     <section id="certifications" className="py-16 bg-black border-y border-white/5">
       <div className="mx-auto max-w-5xl px-6">
-        <p className="text-xs uppercase tracking-[0.3em] text-gray-600 text-center mb-8">11 Certifications Internationales</p>
+        <p className="text-xs uppercase tracking-[0.3em] text-gray-600 text-center mb-8">12 Certifications Internationales</p>
         <div className="flex flex-wrap justify-center gap-4">
           {certs.map((c) => (
             <motion.div

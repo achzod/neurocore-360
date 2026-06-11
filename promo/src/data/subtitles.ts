@@ -14,7 +14,7 @@ export const SUBTITLES: SubtitleEntry[] = [
   { startFrame: 516, endFrame: 623, text: "Blood Analysis. 99 euros. Upload ton bilan, 39 biomarqueurs, les vrais ranges optimaux." },
   { startFrame: 624, endFrame: 731, text: "Ultimate Scan. 79 euros. 183 questions, analyse posturale, wearables connectes integres." },
   { startFrame: 732, endFrame: 839, text: "FormCheck. Premiere analyse gratuite. Envoie ta video, recois ton score." },
-  { startFrame: 840, endFrame: 989, text: "39 biomarqueurs. 183 questions. 11 certifications internationales." },
+  { startFrame: 840, endFrame: 989, text: "39 biomarqueurs. 183 questions. 12 certifications internationales." },
   { startFrame: 990, endFrame: 1139, text: "Choisis ton scan. 100% deduit si tu prends un coaching." },
   { startFrame: 1140, endFrame: 1199, text: "APEXLABS by Achzod." },
 ];

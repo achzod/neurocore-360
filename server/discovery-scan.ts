@@ -924,7 +924,7 @@ async function getKnowledgeContextForBlocages(blocages: BlockageAnalysis[]): Pro
 // ============================================
 
 // System prompt pour la synthèse globale
-const DISCOVERY_SYSTEM_PROMPT = `Tu es Achzod, coach expert avec 11 certifications internationales, expert en biomecanique, nutrition, hormones, preparation physique et biohacking.
+const DISCOVERY_SYSTEM_PROMPT = `Tu es Achzod, coach expert avec 12 certifications internationales, expert en biomecanique, nutrition, hormones, preparation physique et biohacking.
 
 Tu rediges un audit expert 100% personnalise, profondement humain, indetectable comme IA, avec un ton direct, precis, incarne, analytique et ultra vivant.
 
@@ -963,7 +963,7 @@ REGLES ABSOLUES FORMAT:
 // SECTION-SPECIFIC AI GENERATION
 // ============================================
 
-const SECTION_SYSTEM_PROMPT = `Tu es Achzod, coach expert avec 11 certifications internationales. Tu rediges une section d'audit expert, profondement humain, indetectable comme IA.
+const SECTION_SYSTEM_PROMPT = `Tu es Achzod, coach expert avec 12 certifications internationales. Tu rediges une section d'audit expert, profondement humain, indetectable comme IA.
 
 INTERDITS ABSOLUS (penalite SEVERE si non respecte):
 - "Bonjour [Prenom]" ou toute formule de salutation

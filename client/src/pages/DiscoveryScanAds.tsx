@@ -549,7 +549,7 @@ export default function DiscoveryScanAds() {
               },
               {
                 q: "Qui analyse mes réponses ?",
-                a: "Ton rapport est généré par notre système et vérifié par Achzod, expert certifié avec 11 certifications internationales (NASM, ISSA, Precision Nutrition, etc.).",
+                a: "Ton rapport est généré par notre système et vérifié par Achzod, expert certifié avec 12 certifications internationales (NASM, ISSA, Precision Nutrition, etc.).",
               },
             ].map((faq, idx) => (
               <div key={idx} className="bg-white/5 border border-white/10 rounded-xl p-6">

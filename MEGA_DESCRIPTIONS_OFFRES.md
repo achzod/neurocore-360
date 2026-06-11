@@ -485,4 +485,4 @@ OUI. Tu commences par le Discovery Scan gratuit, puis tu upgrades vers Anabolic 
 ---
 
 **BY ACHZOD**
-11 certifications internationales · 500+ clients coachés · 10 ans d'expérience terrain
+12 certifications internationales · 500+ clients coachés · 10 ans d'expérience terrain

@@ -437,7 +437,7 @@ ${related
   // SSR meta for blog index page
   app.get("/blog", (_req, res) => {
     const title = "Blog Musculation, Nutrition & Biohacking | APEXLABS";
-    const description = "Articles experts sur la musculation, nutrition, sommeil, hormones, biohacking et performance. Par ACHZOD, 11 certifications internationales.";
+    const description = "Articles experts sur la musculation, nutrition, sommeil, hormones, biohacking et performance. Par ACHZOD, 12 certifications internationales.";
 
     // Emit a CollectionPage + ItemList so Google sees the blog as a hub
     const blogListSchema = {
