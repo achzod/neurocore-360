@@ -26194,7 +26194,7 @@ L'ashwagandha reste le choix le plus polyvalent pour débuter. La rhodiola est i
 
 ---
 
-**Mesurez votre stress objectivement.** Un [scan HRV](/offers/complete-scan) révèle l'état réel de votre système nerveux autonome et guide votre stratégie adaptogène.
+**Mesurez votre stress objectivement.** Un [scan HRV](/offers/ultimate-scan) révèle l'état réel de votre système nerveux autonome et guide votre stratégie adaptogène.
 
 ---
 
@@ -28166,7 +28166,7 @@ Pour la santé générale, 100-200mg d'ubiquinone ou 50-100mg d'ubiquinol par jo
 
 ---
 
-**Optimisez votre énergie cellulaire.** Un [bilan métabolique complet](/offers/complete-scan) évalue vos fonctions et guide une stratégie anti-âge personnalisée.
+**Optimisez votre énergie cellulaire.** Un [bilan métabolique complet](/offers/ultimate-scan) évalue vos fonctions et guide une stratégie anti-âge personnalisée.
 
 ---
 
@@ -28457,7 +28457,7 @@ Son goût agréable, son faible coût et son excellent profil de sécurité en f
 
 ---
 
-**Optimisez votre sommeil et récupération.** Un [scan complet](/offers/complete-scan) analyse votre sommeil et vos marqueurs pour une stratégie personnalisée.
+**Optimisez votre sommeil et récupération.** Un [scan complet](/offers/ultimate-scan) analyse votre sommeil et vos marqueurs pour une stratégie personnalisée.
 
 ---
 
@@ -29423,7 +29423,7 @@ Commencez avec une forme adaptée à votre budget, donnez-lui 4-8 semaines, et �
 
 ---
 
-**Évaluez votre vieillissement cellulaire.** Un [bilan métabolique complet](/offers/complete-scan) analyse vos marqueurs d'inflammation et de stress oxydatif pour une stratégie anti-âge personnalisée.
+**Évaluez votre vieillissement cellulaire.** Un [bilan métabolique complet](/offers/ultimate-scan) analyse vos marqueurs d'inflammation et de stress oxydatif pour une stratégie anti-âge personnalisée.
 
 ---
 
@@ -30019,7 +30019,7 @@ Pour des bénéfices optimaux, choisissez un extrait de qualité, donnez-lui 4-8
 
 ---
 
-**Optimisez votre santé cognitive.** Un [bilan complet](/offers/complete-scan) analyse vos marqueurs et vous aide à construire une stratégie nootropique personnalisée.
+**Optimisez votre santé cognitive.** Un [bilan complet](/offers/ultimate-scan) analyse vos marqueurs et vous aide à construire une stratégie nootropique personnalisée.
 
 ---
 
@@ -30663,7 +30663,7 @@ C'est un excellent point de départ si vous cherchez un adaptogène pour gérer 
 
 ---
 
-**Évaluez votre stress et vos hormones.** Un [bilan complet](/offers/complete-scan) analyse votre cortisol, testostérone et HRV pour une stratégie personnalisée.
+**Évaluez votre stress et vos hormones.** Un [bilan complet](/offers/ultimate-scan) analyse votre cortisol, testostérone et HRV pour une stratégie personnalisée.
 
 ---
 
@@ -31534,7 +31534,7 @@ Particulièrement pertinent pour les végétariens, les athlètes et les personn
 
 ---
 
-**Évaluez votre santé cardiovasculaire.** Un [bilan complet](/offers/complete-scan) analyse vos marqueurs cardiaques et guide une stratégie de prévention personnalisée.
+**Évaluez votre santé cardiovasculaire.** Un [bilan complet](/offers/ultimate-scan) analyse vos marqueurs cardiaques et guide une stratégie de prévention personnalisée.
 
 ---
 
@@ -31835,7 +31835,7 @@ Ajouter de la K2 MK-7 est simple, sûr et peut avoir des bénéfices significati
 
 ---
 
-**Évaluez votre santé osseuse et cardiovasculaire.** Un [bilan complet](/offers/complete-scan) analyse vos marqueurs et guide une stratégie de prévention personnalisée.
+**Évaluez votre santé osseuse et cardiovasculaire.** Un [bilan complet](/offers/ultimate-scan) analyse vos marqueurs et guide une stratégie de prévention personnalisée.
 
 ---
 

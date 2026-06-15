@@ -1,9 +1,14 @@
 import express, { type Express } from "express";
 import fs from "fs";
 import path from "path";
+import { marked } from "marked";
 
 const BASE_URL = "https://apexlabs.achzodcoaching.com";
 const DEFAULT_OG_IMAGE = `${BASE_URL}/og-default.png`;
+
+// marked: GFM + breaks. Output is injected into a server-side <noscript>
+// block consumed by Googlebot, so we render trusted in-repo markdown only.
+marked.setOptions({ gfm: true, breaks: true });
 
 interface BlogArticle {
   slug: string;
@@ -26,6 +31,19 @@ function esc(str: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+// Render an article's markdown body to an HTML block. Injected verbatim into
+// a server-side <noscript> region so Googlebot sees the full prose, headings,
+// lists and in-article links. Fixes "crawled but not indexed" caused by the
+// React SPA shell that ships an empty <div id="root"></div> to crawlers.
+function renderArticleBodyHtml(content: string | undefined): string {
+  if (!content) return "";
+  try {
+    return marked.parse(content, { async: false }) as string;
+  } catch {
+    return `<p>${esc(content).slice(0, 2000)}</p>`;
+  }
 }
 
 // Strip common markdown so extracted snippets read as plain prose.
@@ -361,7 +379,7 @@ export function serveStatic(app: Express) {
     const related = getRelatedArticles(article, articles, 4);
     const relatedHtml =
       related.length > 0
-        ? `<noscript><nav aria-label="Articles connexes">
+        ? `<nav aria-label="Articles connexes">
 <h2>Articles connexes (${esc(categoryLabel)})</h2>
 <ul>
 ${related
@@ -372,8 +390,20 @@ ${related
   .join("\n")}
 <li><a href="${BASE_URL}/blog/categorie/${esc(category)}">Voir tous les articles ${esc(categoryLabel)}</a></li>
 </ul>
-</nav></noscript>`
+</nav>`
         : "";
+
+    // Server-rendered article body for crawlers. Wraps the converted markdown
+    // in <noscript> so users (JS-enabled) see the React render, while
+    // Googlebot indexes the full text. This is the fix for the 123 blog URLs
+    // marked "crawled, currently not indexed" by Search Console.
+    const articleBodyHtml = renderArticleBodyHtml(article.content);
+    const noscriptBlock = `<noscript><article>
+<h1>${esc(article.title)}</h1>
+<p><em>${esc(categoryLabel)} , ${esc(article.date || "")}${article.readTime ? " , " + esc(article.readTime) : ""}</em></p>
+${articleBodyHtml}
+${relatedHtml}
+</article></noscript>`;
 
     const schemaBlobs = [blogPosting, breadcrumb, faqSchema]
       .filter(Boolean)
@@ -384,7 +414,9 @@ ${related
       .join("\n");
 
     const escTitle = esc(title);
-    // Inject meta tags into the HTML <head>
+    // Inject meta tags into the HTML <head>, then push the noscript body
+    // block right before </body> so crawlers see full content even with an
+    // empty React root.
     const injectedHtml = indexHtml
       .replace(/<title>[^<]*<\/title>/, `<title>${escTitle}</title>`)
       .replace(
@@ -427,8 +459,8 @@ ${related
         /<link rel="canonical" href="[^"]*"/,
         `<link rel="canonical" href="${url}"`,
       )
-      // Inject schemas + related links right before closing </head>
-      .replace("</head>", `${schemaBlobs}\n${relatedHtml}\n</head>`);
+      .replace("</head>", `${schemaBlobs}\n</head>`)
+      .replace("</body>", `${noscriptBlock}\n</body>`);
 
     res.setHeader("Cache-Control", "public, max-age=3600");
     res.send(injectedHtml);
@@ -579,7 +611,7 @@ ${sorted
   // SSR meta for offer pages
   const offerMeta: Record<string, { title: string; desc: string }> = {
     "discovery-scan": {
-      title: "Discovery Scan Gratuit - Diagnostic Santé IA | APEXLABS",
+      title: "Discovery Scan Gratuit - Diagnostic Santé Complet | APEXLABS",
       desc: "Analyse gratuite de 10 domaines de santé en 66 questions. Score global, radar de performance, identification des blocages. Par ACHZOD.",
     },
     "anabolic-bioscan": {
@@ -594,16 +626,61 @@ ${sorted
       title: "Blood Analysis - Bilan Sanguin Optimisé | APEXLABS",
       desc: "39 biomarqueurs analysés avec ranges optimaux. Upload ton PDF, reçois ton rapport complet. 99€ d'acompte coaching.",
     },
+    formcheck: {
+      title: "FormCheck - Analyse Vidéo de Tes Mouvements | APEXLABS",
+      desc: "Envoie ta vidéo de squat, soulevé de terre ou développé couché. Reçois une analyse biomécanique détaillée et des corrections actionnables. Par ACHZOD.",
+    },
+    "peptides-engine": {
+      title: "Peptides Engine - Protocole Peptides Personnalisé | APEXLABS",
+      desc: "Protocole peptides sur-mesure basé sur ton profil hormonal et tes objectifs. Stack, dosage, timing, monitoring. Approche structurée par ACHZOD.",
+    },
+  };
+
+  // Permanent redirects (301) for legacy/broken offer URLs flagged by Google
+  // Search Console as Soft 404. Each maps to its closest real equivalent so
+  // we consolidate link equity instead of losing it on a 404.
+  //   /offers/complete-scan        -> /offers/ultimate-scan
+  //     (8 in-article references in client/src/data/blogArticles.ts called
+  //      our most complete scan "complete-scan" before the rename)
+  //   /offers/peptides-engine-     -> /offers/peptides-engine
+  //     (Google indexed a typo'd URL with a trailing dash; same product)
+  const offerRedirects: Record<string, string> = {
+    "complete-scan": "/offers/ultimate-scan",
+    "peptides-engine-": "/offers/peptides-engine",
   };
 
   app.get("/offers/:offer", (req, res) => {
-    const meta = offerMeta[req.params.offer];
-    if (!meta) {
-      res.setHeader("Cache-Control", "no-cache");
-      return res.send(indexHtml);
+    const offerSlug = req.params.offer;
+
+    const redirectTo = offerRedirects[offerSlug];
+    if (redirectTo) {
+      return res.redirect(301, redirectTo);
     }
 
-    const url = `${BASE_URL}/offers/${req.params.offer}`;
+    const meta = offerMeta[offerSlug];
+    if (!meta) {
+      // Unknown offer: serve a real 404 with noindex so Google de-lists it
+      // instead of treating the SPA shell as duplicate content (Soft 404).
+      res.status(404);
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("X-Robots-Tag", "noindex, follow");
+      const html404 = indexHtml
+        .replace(
+          /<title>[^<]*<\/title>/,
+          `<title>Page introuvable | APEXLABS</title>`,
+        )
+        .replace(
+          /<meta name="robots" content="[^"]*"/,
+          `<meta name="robots" content="noindex, follow"`,
+        )
+        .replace(
+          /<meta name="description" content="[^"]*"/,
+          `<meta name="description" content="Cette offre n'existe pas ou a été déplacée. Découvre toutes les offres APEXLABS."`,
+        );
+      return res.send(html404);
+    }
+
+    const url = `${BASE_URL}/offers/${offerSlug}`;
     const injectedHtml = indexHtml
       .replace(/<title>[^<]*<\/title>/, `<title>${esc(meta.title)}</title>`)
       .replace(/<meta name="description" content="[^"]*"/, `<meta name="description" content="${esc(meta.desc)}"`)
@@ -631,6 +708,115 @@ ${sorted
 
     res.setHeader("Cache-Control", "public, max-age=3600");
     res.send(injectedHtml);
+  });
+
+  // Generic SSR meta injection helper for content pages that don't need
+  // structured data or noscript bodies (legal, press, simple landings).
+  // For pages reachable via tracked query params (?plan=, ?promo=, ?utm_*),
+  // the canonical URL stays parameter-free so Google consolidates duplicate
+  // signals instead of marking them "alternate page with proper canonical".
+  function ssrSimplePage(
+    routes: string[],
+    meta: { title: string; desc: string; canonical: string; ogType?: string },
+  ) {
+    for (const route of routes) {
+      app.get(route, (_req, res) => {
+        const t = esc(meta.title);
+        const d = esc(meta.desc);
+        const u = meta.canonical;
+        const html = indexHtml
+          .replace(/<title>[^<]*<\/title>/, `<title>${t}</title>`)
+          .replace(
+            /<meta name="description" content="[^"]*"/,
+            `<meta name="description" content="${d}"`,
+          )
+          .replace(
+            /<meta property="og:title" content="[^"]*"/,
+            `<meta property="og:title" content="${t}"`,
+          )
+          .replace(
+            /<meta property="og:description" content="[^"]*"/,
+            `<meta property="og:description" content="${d}"`,
+          )
+          .replace(
+            /<meta property="og:url" content="[^"]*"/,
+            `<meta property="og:url" content="${u}"`,
+          )
+          .replace(
+            /<meta property="og:type" content="[^"]*"/,
+            `<meta property="og:type" content="${meta.ogType || "website"}"`,
+          )
+          .replace(
+            /<meta name="twitter:title" content="[^"]*"/,
+            `<meta name="twitter:title" content="${t}"`,
+          )
+          .replace(
+            /<meta name="twitter:description" content="[^"]*"/,
+            `<meta name="twitter:description" content="${d}"`,
+          )
+          .replace(
+            /<link rel="canonical" href="[^"]*"/,
+            `<link rel="canonical" href="${u}"`,
+          );
+        res.setHeader("Cache-Control", "public, max-age=3600");
+        res.send(html);
+      });
+    }
+  }
+
+  ssrSimplePage(["/peptides-engine"], {
+    title: "Peptides Engine - Protocole Peptides Personnalisé | APEXLABS",
+    desc: "Protocole peptides sur-mesure: stack, dosage, timing, monitoring. Calibré sur ton profil hormonal et tes objectifs. Approche structurée par ACHZOD.",
+    canonical: `${BASE_URL}/peptides-engine`,
+    ogType: "product",
+  });
+
+  ssrSimplePage(["/audit-complet"], {
+    title: "Audit Complet - Diagnostic Santé Premium | APEXLABS",
+    desc: "Audit santé complet basé sur ton questionnaire détaillé: hormones, métabolisme, sommeil, stress, performance. Rapport personnalisé par ACHZOD.",
+    canonical: `${BASE_URL}/audit-complet`,
+  });
+
+  ssrSimplePage(["/questionnaire", "/audit-complet/questionnaire"], {
+    title: "Questionnaire d'Audit Santé | APEXLABS",
+    desc: "Réponds au questionnaire APEXLABS pour générer ton audit santé personnalisé. Hormones, métabolisme, sommeil, performance.",
+    canonical: `${BASE_URL}/questionnaire`,
+  });
+
+  ssrSimplePage(["/press"], {
+    title: "Presse & Médias | APEXLABS by Achzod",
+    desc: "ACHZOD dans les médias: interviews, publications, références presse autour de l'optimisation humaine et de la bio-data.",
+    canonical: `${BASE_URL}/press`,
+  });
+
+  ssrSimplePage(["/deduction-coaching"], {
+    title: "Déduction Coaching - Vos Scans Déductibles | APEXLABS",
+    desc: "Le montant de ton scan APEXLABS est intégralement déductible si tu poursuis avec un coaching ACHZOD. Détails, conditions et offres applicables.",
+    canonical: `${BASE_URL}/deduction-coaching`,
+  });
+
+  ssrSimplePage(["/blood-analysis"], {
+    title: "Blood Analysis - Upload Ton Bilan Sanguin | APEXLABS",
+    desc: "Envoie ton PDF de bilan sanguin et reçois une analyse de 39 biomarqueurs avec ranges optimaux et plan d'action personnalisé. Par ACHZOD.",
+    canonical: `${BASE_URL}/blood-analysis`,
+  });
+
+  ssrSimplePage(["/mentions-legales"], {
+    title: "Mentions Légales | APEXLABS by Achzod",
+    desc: "Mentions légales du site APEXLABS by Achzod: éditeur, hébergeur, responsable de publication.",
+    canonical: `${BASE_URL}/mentions-legales`,
+  });
+
+  ssrSimplePage(["/cgv"], {
+    title: "Conditions Générales de Vente | APEXLABS by Achzod",
+    desc: "Conditions Générales de Vente APEXLABS by Achzod: modalités d'achat, livraison numérique, droit de rétractation, support.",
+    canonical: `${BASE_URL}/cgv`,
+  });
+
+  ssrSimplePage(["/politique-confidentialite"], {
+    title: "Politique de Confidentialité | APEXLABS by Achzod",
+    desc: "Politique de confidentialité APEXLABS by Achzod: données collectées, RGPD, droits d'accès, sécurité, cookies.",
+    canonical: `${BASE_URL}/politique-confidentialite`,
   });
 
   // Default catch-all: serve index.html for all other SPA routes. Same
