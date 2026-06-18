@@ -5006,6 +5006,48 @@ export async function registerRoutes(
     }
   });
 
+  // Admin: patch one or more section.content fields on a peptides report.
+  // Body: { patches: [{ sectionId: string, content: string }] }
+  // Used for surgical post-generation fixes on a delivered report without
+  // regenerating the whole rationale (the URL stays the same, client sees
+  // the corrected content on next page load).
+  app.post("/api/admin/peptides/edit-sections/:reportId", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { reportId } = req.params;
+      const patches = (req.body as any)?.patches;
+      if (!Array.isArray(patches) || patches.length === 0) {
+        res.status(400).json({ success: false, error: "patches array required" });
+        return;
+      }
+      const existing = await storage.getBurnoutReport(reportId);
+      if (!existing || !String(existing.email ?? "").startsWith("peptides::")) {
+        res.status(404).json({ success: false, error: "Peptides report not found" });
+        return;
+      }
+      const report = JSON.parse(JSON.stringify(existing.report)) as any;
+      const sections = Array.isArray(report.sections) ? report.sections : [];
+      const updated: string[] = [];
+      const notFound: string[] = [];
+      for (const p of patches) {
+        const sid = String(p?.sectionId ?? "");
+        const content = String(p?.content ?? "");
+        if (!sid || !content) continue;
+        const idx = sections.findIndex((s: any) => s?.id === sid);
+        if (idx === -1) { notFound.push(sid); continue; }
+        sections[idx].content = content;
+        updated.push(sid);
+      }
+      report.sections = sections;
+      await storage.updateBurnoutReport(reportId, report);
+      console.log(`[Admin Peptides Edit] Patched ${updated.length} sections on ${reportId}: ${updated.join(", ")}`);
+      res.json({ success: true, reportId, updated, notFound });
+    } catch (error: any) {
+      console.error("[Admin Peptides Edit] Error:", error);
+      res.status(500).json({ success: false, error: error?.message || "Erreur serveur" });
+    }
+  });
+
   // Admin: validate a peptides report without modification. Returns
   // validator output for human review.
   app.get("/api/admin/peptides/validate/:reportId", async (req, res) => {
