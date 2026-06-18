@@ -654,16 +654,12 @@ export default function FormCheck() {
             transition={{ duration: 0.6, delay: 0.5 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
-            <a
-              href={`https://wa.me/${WA_NUMBER}?text=menu`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-3 text-white font-semibold text-base px-8 py-4 rounded-sm transition-all hover:scale-105"
-              style={{ background: ACCENT }}
+            <span
+              aria-disabled="true"
+              className="inline-flex items-center gap-3 text-white/70 font-semibold text-base px-8 py-4 rounded-sm cursor-not-allowed select-none border border-white/15 bg-white/[0.04]"
             >
-              <MessageCircle className="w-5 h-5" />
-              Commencer sur WhatsApp
-            </a>
+              Indisponible pour le moment
+            </span>
             <a
               href="#packs"
               className="inline-flex items-center gap-2 text-white/60 font-semibold text-base px-8 py-4 rounded-sm border border-white/20 hover:border-white/40 transition-all"
@@ -1171,21 +1167,12 @@ export default function FormCheck() {
                   ))}
                 </ul>
                 {pack.cta && (
-                  <a
-                    href={pack.ctaHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block w-full text-center py-3 rounded-sm text-sm font-bold uppercase tracking-wider transition-all"
-                    style={pack.highlight ? {
-                      background: ACCENT,
-                      color: '#fff',
-                    } : {
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      color: '#fff',
-                    }}
+                  <span
+                    aria-disabled="true"
+                    className="block w-full text-center py-3 rounded-sm text-sm font-bold uppercase tracking-wider cursor-not-allowed select-none border border-white/15 bg-white/[0.04] text-white/60"
                   >
-                    {pack.cta}
-                  </a>
+                    Indisponible pour le moment
+                  </span>
                 )}
               </motion.div>
             ))}
