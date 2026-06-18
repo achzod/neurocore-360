@@ -5006,8 +5006,12 @@ export async function registerRoutes(
     }
   });
 
-  // Admin: patch one or more section.content fields on a peptides report.
-  // Body: { patches: [{ sectionId: string, content: string }] }
+  // Admin: patch one or more section.content fields on a peptides report,
+  // and optionally remove peptides from the report.peptides[] array.
+  // Body: {
+  //   patches?: [{ sectionId: string, content: string }],
+  //   removePeptides?: string[]   // peptide.name values to remove
+  // }
   // Used for surgical post-generation fixes on a delivered report without
   // regenerating the whole rationale (the URL stays the same, client sees
   // the corrected content on next page load).
@@ -5016,8 +5020,9 @@ export async function registerRoutes(
     try {
       const { reportId } = req.params;
       const patches = (req.body as any)?.patches;
-      if (!Array.isArray(patches) || patches.length === 0) {
-        res.status(400).json({ success: false, error: "patches array required" });
+      const removePeptides = (req.body as any)?.removePeptides;
+      if ((!Array.isArray(patches) || patches.length === 0) && (!Array.isArray(removePeptides) || removePeptides.length === 0)) {
+        res.status(400).json({ success: false, error: "patches or removePeptides required" });
         return;
       }
       const existing = await storage.getBurnoutReport(reportId);
@@ -5029,19 +5034,34 @@ export async function registerRoutes(
       const sections = Array.isArray(report.sections) ? report.sections : [];
       const updated: string[] = [];
       const notFound: string[] = [];
-      for (const p of patches) {
-        const sid = String(p?.sectionId ?? "");
-        const content = String(p?.content ?? "");
-        if (!sid || !content) continue;
-        const idx = sections.findIndex((s: any) => s?.id === sid);
-        if (idx === -1) { notFound.push(sid); continue; }
-        sections[idx].content = content;
-        updated.push(sid);
+      if (Array.isArray(patches)) {
+        for (const p of patches) {
+          const sid = String(p?.sectionId ?? "");
+          const content = String(p?.content ?? "");
+          if (!sid || !content) continue;
+          const idx = sections.findIndex((s: any) => s?.id === sid);
+          if (idx === -1) { notFound.push(sid); continue; }
+          sections[idx].content = content;
+          updated.push(sid);
+        }
+        report.sections = sections;
       }
-      report.sections = sections;
+      const peptidesRemoved: string[] = [];
+      if (Array.isArray(removePeptides) && removePeptides.length > 0 && Array.isArray(report.peptides)) {
+        const toRemove = new Set(removePeptides.map(String));
+        const before = report.peptides.length;
+        report.peptides = report.peptides.filter((p: any) => {
+          if (p && toRemove.has(String(p.name))) {
+            peptidesRemoved.push(String(p.name));
+            return false;
+          }
+          return true;
+        });
+        console.log(`[Admin Peptides Edit] Removed ${before - report.peptides.length} peptides from ${reportId}: ${peptidesRemoved.join(", ")}`);
+      }
       await storage.updateBurnoutReport(reportId, report);
       console.log(`[Admin Peptides Edit] Patched ${updated.length} sections on ${reportId}: ${updated.join(", ")}`);
-      res.json({ success: true, reportId, updated, notFound });
+      res.json({ success: true, reportId, updated, notFound, peptidesRemoved });
     } catch (error: any) {
       console.error("[Admin Peptides Edit] Error:", error);
       res.status(500).json({ success: false, error: error?.message || "Erreur serveur" });
