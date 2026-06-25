@@ -1518,6 +1518,22 @@ export async function registerRoutes(
         res.status(202).json({ message: "Rapport relance", status: "generating", progress: 0 });
         return;
       }
+
+      const audit = await storage.getAudit(req.params.id);
+      const hasDeliveredReport =
+        audit &&
+        (audit.reportDeliveryStatus === "READY" || audit.reportDeliveryStatus === "SENT") &&
+        (!!(audit as any).reportTxt || !!(audit as any).reportHtml || !!audit.narrativeReport);
+      if (hasDeliveredReport) {
+        res.json({
+          status: "completed",
+          progress: 100,
+          currentSection: "Rapport termine !",
+          error: null,
+        });
+        return;
+      }
+
       if (!job) {
         res.json({ status: "not_started", progress: 0, currentSection: "" });
         return;
