@@ -144,7 +144,6 @@ const SOURCE_MARKERS = [
   "applied metabolics",
   "stronger by science",
   "sbs",
-  "examine",
   "examine.com",
   "renaissance periodization",
   "mpmd",
@@ -164,6 +163,9 @@ const SOURCE_MARKERS = [
 
 const MULTI_PERSON_MARKERS = ["nous", "notre", "nos", "client", "on"];
 const EMOJI_REGEX = /[\p{Extended_Pictographic}\uFE0F]/gu;
+
+const EXAMINE_SOURCE_REGEX =
+  /\b(?:examine\.com|(?:source|sources|reference|references|référence|références|fiche|article|étude|etude|publication|selon|d'après)\s+examine|examine\s+(?:indique|rapporte|montre|explique|conclut|suggère|suggere))\b/i;
 
 export function validateReport(
   reportTxt: string,
@@ -251,6 +253,9 @@ export function validateReport(
 
   // 4. Knowledge source visibility (should be absent in output)
   const sourcesFound = SOURCE_MARKERS.filter((marker) => txtLower.includes(marker));
+  if (EXAMINE_SOURCE_REGEX.test(reportTxt) && !sourcesFound.includes("examine")) {
+    sourcesFound.push("examine");
+  }
   const hasSourcesLine = /sources?\s*:/i.test(txtLower);
   if (hasSourcesLine && !sourcesFound.includes("sources:")) {
     sourcesFound.push("sources:");
