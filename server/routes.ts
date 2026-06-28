@@ -306,6 +306,22 @@ export async function registerRoutes(
       : null,
   });
 
+  const dedupeSendPulseEmails = (emails: SendPulseEmailRecord[]): SendPulseEmailRecord[] => {
+    const seen = new Map<string, SendPulseEmailRecord>();
+    for (const email of emails) {
+      const fallbackKey = [
+        sendPulseRecipient(email).toLowerCase(),
+        sendPulseSubject(email).toLowerCase(),
+        sendPulseSendDate(email) || "",
+      ].join("|");
+      const key = sendPulseEmailId(email) || fallbackKey;
+      if (!seen.has(key)) {
+        seen.set(key, email);
+      }
+    }
+    return Array.from(seen.values());
+  };
+
   async function fetchSendPulseEmails(
     accessToken: string,
     opts: { fromDate: string; pageLimit: number; maxPages: number; logPrefix: string }
@@ -339,8 +355,9 @@ export async function registerRoutes(
       offset += opts.pageLimit;
     }
 
-    console.log(`[${opts.logPrefix}] Total emails fetched: ${allEmails.length}`);
-    return allEmails;
+    const uniqueEmails = dedupeSendPulseEmails(allEmails);
+    console.log(`[${opts.logPrefix}] Total emails fetched: ${allEmails.length}; unique: ${uniqueEmails.length}`);
+    return uniqueEmails;
   }
 
   async function fetchSendPulseEmailDetails(
