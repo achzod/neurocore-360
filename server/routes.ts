@@ -9292,8 +9292,8 @@ export async function registerRoutes(
 
       // Get pending/ready from audits
       const allAudits = await storage.getAllAudits();
-      const pending = allAudits.filter(a => a.reportDeliveryStatus === 'SCHEDULED').length;
-      const ready = allAudits.filter(a => a.reportDeliveryStatus === 'READY').length;
+      const pending = allAudits.filter(a => a.reportDeliveryStatus === 'SCHEDULED' && !a.reportSentAt).length;
+      const ready = allAudits.filter(a => a.reportDeliveryStatus === 'READY' && !a.reportSentAt).length;
 
       // Count reports specifically (emailType = sendReportReadyEmail)
       const { db } = await import("./db.js");
@@ -9920,8 +9920,11 @@ export async function registerRoutes(
     try {
       const allAudits = await storage.getAllAudits();
 
-      const scheduled = allAudits.filter(a => a.reportDeliveryStatus === 'SCHEDULED');
-      const ready = allAudits.filter(a => a.reportDeliveryStatus === 'READY');
+      const scheduled = allAudits.filter(a => a.reportDeliveryStatus === 'SCHEDULED' && !a.reportSentAt);
+      const ready = allAudits.filter(a => a.reportDeliveryStatus === 'READY' && !a.reportSentAt);
+      const inconsistentSentState = allAudits.filter(a =>
+        !!a.reportSentAt && (a.reportDeliveryStatus === 'READY' || a.reportDeliveryStatus === 'SCHEDULED')
+      );
 
       // Find stuck (SCHEDULED > 48h)
       const now = new Date();
@@ -9960,8 +9963,17 @@ export async function registerRoutes(
         counts: {
           scheduled: scheduled.length,
           ready: ready.length,
-          stuck: stuck.length
-        }
+          stuck: stuck.length,
+          alreadySentButStatusOpen: inconsistentSentState.length
+        },
+        alreadySentButStatusOpen: inconsistentSentState.map(a => ({
+          id: a.id,
+          email: a.email,
+          type: a.type,
+          status: a.reportDeliveryStatus,
+          reportSentAt: a.reportSentAt,
+          createdAt: a.createdAt
+        }))
       });
 
     } catch (error) {
