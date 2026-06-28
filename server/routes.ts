@@ -100,6 +100,43 @@ export async function registerRoutes(
     return `http://localhost:${process.env.PORT || 5000}`;
   }
 
+  function getSendPulseCredentials(): { userId: string; secret: string; missing: string[] } {
+    const userId = process.env.SENDPULSE_USER_ID || process.env.SENDPULSE_API_USER_ID || process.env.SENDPULSE_ID || "";
+    const secret = process.env.SENDPULSE_SECRET || process.env.SENDPULSE_API_SECRET || "";
+    const missing = [
+      ...(!userId ? ["SENDPULSE_USER_ID or SENDPULSE_API_USER_ID"] : []),
+      ...(!secret ? ["SENDPULSE_SECRET or SENDPULSE_API_SECRET"] : []),
+    ];
+    return { userId, secret, missing };
+  }
+
+  async function getSendPulseAdminToken(): Promise<string> {
+    const { userId, secret, missing } = getSendPulseCredentials();
+    if (missing.length) {
+      throw new Error(`SendPulse credentials not configured: ${missing.join(", ")}`);
+    }
+
+    const tokenRes = await fetch("https://api.sendpulse.com/oauth/access_token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        grant_type: "client_credentials",
+        client_id: userId,
+        client_secret: secret,
+      }),
+    });
+    const tokenText = await tokenRes.text();
+    if (!tokenRes.ok) {
+      throw new Error(`SendPulse authentication failed (${tokenRes.status}): ${tokenText.slice(0, 300)}`);
+    }
+
+    const tokenData = JSON.parse(tokenText) as { access_token?: string };
+    if (!tokenData.access_token) {
+      throw new Error("No access token received from SendPulse");
+    }
+    return tokenData.access_token;
+  }
+
   // Centralized, race-safe wrapper around sendReportReadyEmail. Guarantees a
   // given audit can never receive two delivery emails , even if multiple paths
   // (inline create, Stripe webhook, admin resend, scheduled cron) try to send
@@ -112,7 +149,8 @@ export async function registerRoutes(
   //   2. hasReportReadyEmailBeenSent , check email_tracking as a secondary
   //      guard in case the DB state got out of sync (manual edits, etc.).
   //   3. finalizeAuditSend , on SendPulse success, moves to SENT + stamps
-  //      report_sent_at. On failure, reverts SENDING → READY so a retry path
+  //      report_sent_at. This confirms provider acceptance, not inbox placement.
+  //      On failure, reverts SENDING → READY so a retry path
   //      can pick it up.
   async function safeSendReportReadyEmail(
     auditId: string,
@@ -165,7 +203,7 @@ export async function registerRoutes(
       const ok = await sendReportReadyEmail(email, auditId, auditType, baseUrl);
       await storage.finalizeAuditSend(auditId, ok);
       if (ok) {
-        console.log(`${prefix} ✅ Email delivered for audit ${auditId} to ${email}`);
+        console.log(`${prefix} ✅ Email accepted by SendPulse for audit ${auditId} to ${email}`);
       } else {
         console.error(`${prefix} ❌ sendReportReadyEmail returned false for audit ${auditId}`);
       }
@@ -327,8 +365,7 @@ export async function registerRoutes(
     };
 
     // 3. Email (SendPulse API)
-    const spUser = process.env.SENDPULSE_USER_ID || process.env.SENDPULSE_API_USER_ID;
-    const spSecret = process.env.SENDPULSE_SECRET || process.env.SENDPULSE_API_SECRET;
+    const { userId: spUser, secret: spSecret } = getSendPulseCredentials();
     checks.email = {
       ok: Boolean(spUser && spSecret),
       detail: !spUser ? "SENDPULSE_USER_ID missing" :
@@ -8133,8 +8170,7 @@ export async function registerRoutes(
   app.get("/api/admin/sendpulse/books", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
-      const SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID || process.env.SENDPULSE_API_USER_ID || process.env.SENDPULSE_ID;
-      const SENDPULSE_SECRET = process.env.SENDPULSE_SECRET || process.env.SENDPULSE_API_SECRET;
+      const { userId: SENDPULSE_USER_ID, secret: SENDPULSE_SECRET } = getSendPulseCredentials();
 
       if (!SENDPULSE_USER_ID || !SENDPULSE_SECRET) {
         res.json({ success: false, error: "SendPulse credentials not configured" });
@@ -8190,8 +8226,7 @@ export async function registerRoutes(
   app.get("/api/admin/sendpulse/campaigns", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
-      const SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID || process.env.SENDPULSE_API_USER_ID || process.env.SENDPULSE_ID;
-      const SENDPULSE_SECRET = process.env.SENDPULSE_SECRET || process.env.SENDPULSE_API_SECRET;
+      const { userId: SENDPULSE_USER_ID, secret: SENDPULSE_SECRET } = getSendPulseCredentials();
       if (!SENDPULSE_USER_ID || !SENDPULSE_SECRET) {
         res.status(400).json({ success: false, error: "SendPulse credentials not configured" });
         return;
@@ -8223,8 +8258,7 @@ export async function registerRoutes(
   app.post("/api/admin/sendpulse/campaigns/:id/cancel", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
-      const SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID || process.env.SENDPULSE_API_USER_ID || process.env.SENDPULSE_ID;
-      const SENDPULSE_SECRET = process.env.SENDPULSE_SECRET || process.env.SENDPULSE_API_SECRET;
+      const { userId: SENDPULSE_USER_ID, secret: SENDPULSE_SECRET } = getSendPulseCredentials();
       if (!SENDPULSE_USER_ID || !SENDPULSE_SECRET) {
         res.status(400).json({ success: false, error: "SendPulse credentials not configured" });
         return;
@@ -8260,8 +8294,7 @@ export async function registerRoutes(
   app.post("/api/admin/sendpulse/create-campaign-draft", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
-      const SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID || process.env.SENDPULSE_API_USER_ID || process.env.SENDPULSE_ID;
-      const SENDPULSE_SECRET = process.env.SENDPULSE_SECRET || process.env.SENDPULSE_API_SECRET;
+      const { userId: SENDPULSE_USER_ID, secret: SENDPULSE_SECRET } = getSendPulseCredentials();
       if (!SENDPULSE_USER_ID || !SENDPULSE_SECRET) {
         res.status(400).json({ success: false, error: "SendPulse credentials not configured" });
         return;
@@ -8324,8 +8357,7 @@ export async function registerRoutes(
     if (!requireAdminAuth(req, res)) return;
     try {
       const { bookId } = req.params;
-      const SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID;
-      const SENDPULSE_SECRET = process.env.SENDPULSE_SECRET;
+      const { userId: SENDPULSE_USER_ID, secret: SENDPULSE_SECRET } = getSendPulseCredentials();
 
       if (!SENDPULSE_USER_ID || !SENDPULSE_SECRET) {
         res.json({ success: false, error: "SendPulse credentials not configured" });
@@ -9319,6 +9351,7 @@ export async function registerRoutes(
         stats: {
           totalSent: totalUnique,
           delivered,
+          acceptedByProvider: delivered,
           failed,
           pending,
           ready,
@@ -9332,6 +9365,7 @@ export async function registerRoutes(
           totalTracked: allEmails.length,
           openRate: stats.openRate.toFixed(1),
           clickRate: stats.clickRate.toFixed(1),
+          deliveryMetricNote: "delivered is legacy naming; it means SendPulse API accepted the message, not confirmed inbox placement",
         }
       });
 
@@ -9350,8 +9384,7 @@ export async function registerRoutes(
     if (!requireAdminAuth(req, res)) return;
 
     try {
-      const SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID;
-      const SENDPULSE_SECRET = process.env.SENDPULSE_SECRET;
+      const { userId: SENDPULSE_USER_ID, secret: SENDPULSE_SECRET } = getSendPulseCredentials();
 
       if (!SENDPULSE_USER_ID || !SENDPULSE_SECRET) {
         res.json({ success: false, error: "SendPulse credentials not configured" });
@@ -9594,52 +9627,22 @@ export async function registerRoutes(
     if (!requireAdminAuth(req, res)) return;
 
     try {
-      const SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID;
-      const SENDPULSE_SECRET = process.env.SENDPULSE_SECRET;
-
-      if (!SENDPULSE_USER_ID || !SENDPULSE_SECRET) {
-        res.json({ success: false, error: "SendPulse credentials not configured" });
-        return;
-      }
-
-      // 1. Get SendPulse OAuth token
-      const tokenRes = await fetch("https://api.sendpulse.com/oauth/access_token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          grant_type: "client_credentials",
-          client_id: SENDPULSE_USER_ID,
-          client_secret: SENDPULSE_SECRET,
-        }),
-      });
-
-      if (!tokenRes.ok) {
-        const errorText = await tokenRes.text();
-        console.error("[SendPulseLiveStats] Auth failed:", errorText);
-        res.json({ success: false, error: "SendPulse authentication failed" });
-        return;
-      }
-
-      const tokenData = await tokenRes.json();
-      const accessToken = tokenData.access_token;
-
-      if (!accessToken) {
-        res.json({ success: false, error: "No access token received from SendPulse" });
-        return;
-      }
-
-      // 2. Get ALL emails from SendPulse with pagination (depuis le 17 mars 2026)
-      const since17mars = "2026-03-17T00:00:00Z";
-      const limit = 100; // SendPulse max per request
+      const accessToken = await getSendPulseAdminToken();
+      const days = Math.min(Math.max(Number(req.query.days) || 14, 1), 180);
+      const fromDate = String(
+        req.query.from_date || new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
+      );
+      const pageLimit = Math.min(Math.max(Number(req.query.pageLimit) || 100, 1), 100);
+      const maxPages = Math.min(Math.max(Number(req.query.pages) || 5, 1), 50);
+      const responseLimit = Math.min(Math.max(Number(req.query.limit) || 100, 1), 500);
+      const recipientFilter = String(req.query.recipient || req.query.email || "").trim().toLowerCase();
+      const subjectFilter = String(req.query.subject || "").trim().toLowerCase();
       let allEmails: any[] = [];
       let offset = 0;
-      let hasMore = true;
 
-      console.log("[SendPulseLiveStats] Starting pagination...");
-
-      while (hasMore) { // No limit - fetch ALL emails
+      for (let page = 0; page < maxPages; page++) {
         const emailsRes = await fetch(
-          `https://api.sendpulse.com/smtp/emails?limit=${limit}&offset=${offset}&from_date=${since17mars}`,
+          `https://api.sendpulse.com/smtp/emails?limit=${pageLimit}&offset=${offset}&from_date=${encodeURIComponent(fromDate)}`,
           {
             headers: {
               "Authorization": `Bearer ${accessToken}`,
@@ -9660,24 +9663,67 @@ export async function registerRoutes(
         console.log(`[SendPulseLiveStats] Fetched ${emails.length} emails at offset ${offset}`);
 
         if (emails.length === 0) {
-          hasMore = false;
-        } else {
-          allEmails = allEmails.concat(emails);
-          offset += limit;
+          break;
         }
+
+        allEmails = allEmails.concat(emails);
+        offset += pageLimit;
       }
 
       console.log(`[SendPulseLiveStats] Total emails fetched: ${allEmails.length}`);
 
-      // Parse SendPulse response
-      const emails = allEmails;
+      const emails = allEmails.filter((email: any) => {
+        const recipient = String(email.recipient || email.to || email.email || "").toLowerCase();
+        const subject = String(email.subject || "").toLowerCase();
+        if (recipientFilter && !recipient.includes(recipientFilter)) return false;
+        if (subjectFilter && !subject.includes(subjectFilter)) return false;
+        return true;
+      });
+
+      const smtpCode = (email: any): number | null => {
+        const raw = email.smtp_answer_code ?? email.smtpAnswerCode ?? email.smtp_code;
+        const parsed = Number(raw);
+        return Number.isFinite(parsed) ? parsed : null;
+      };
+      const isDelivered = (email: any): boolean => {
+        const code = smtpCode(email);
+        const status = String(email.status || "").toLowerCase();
+        return (code !== null && code >= 200 && code < 300) || status === "sent" || status === "delivered";
+      };
+      const isHardFailed = (email: any): boolean => {
+        const code = smtpCode(email);
+        const status = String(email.status || "").toLowerCase();
+        return (code !== null && code >= 500) || status === "failed" || status === "error" || status === "bounced";
+      };
+      const isSoftFailed = (email: any): boolean => {
+        const code = smtpCode(email);
+        return code !== null && code >= 400 && code < 500;
+      };
+      const engagementCount = (email: any, key: string): number => {
+        const raw = email[key] ?? email.tracking?.[key] ?? email.statistics?.[key];
+        const parsed = Number(raw);
+        return Number.isFinite(parsed) ? parsed : 0;
+      };
+      const simplify = (email: any) => ({
+        id: email.id || email.email_id || email.message_id || null,
+        recipient: email.recipient || email.to || email.email || null,
+        subject: email.subject || null,
+        status: email.status || null,
+        sendDate: email.send_date || email.date || email.created_at || null,
+        smtpAnswerCode: email.smtp_answer_code ?? null,
+        smtpAnswerSubcode: email.smtp_answer_subcode ?? null,
+        smtpAnswerData: email.smtp_answer_data || null,
+        opens: engagementCount(email, "opens"),
+        clicks: engagementCount(email, "clicks"),
+      });
 
       // Calculate stats
       const totalSent = emails.length;
-      const delivered = emails.filter((e: any) => e.smtp_answer_code === 250 || e.status === "sent").length;
-      const failed = emails.filter((e: any) => e.status === "failed" || e.status === "error").length;
-      const opened = emails.filter((e: any) => e.opens > 0).length;
-      const clicked = emails.filter((e: any) => e.clicks > 0).length;
+      const delivered = emails.filter(isDelivered).length;
+      const hardFailed = emails.filter(isHardFailed).length;
+      const softFailed = emails.filter(isSoftFailed).length;
+      const opened = emails.filter((e: any) => engagementCount(e, "opens") > 0).length;
+      const clicked = emails.filter((e: any) => engagementCount(e, "clicks") > 0).length;
 
       // By type (parse from subject)
       const byType: Record<string, number> = {
@@ -9727,11 +9773,11 @@ export async function registerRoutes(
         stats: {
           totalSent,
           delivered,
-          failed,
+          failed: hardFailed + softFailed,
+          hardFailed,
+          softFailed,
           opened,
           clicked,
-          pending: 0, // SendPulse API ne donne que les envoyés
-          ready: 0,
           byType,
           last24h: last24hCount,
           last7d: last7dCount,
@@ -9739,6 +9785,17 @@ export async function registerRoutes(
           openRate: totalSent > 0 ? ((opened / totalSent) * 100).toFixed(1) + '%' : '0.0%',
           clickRate: totalSent > 0 ? ((clicked / totalSent) * 100).toFixed(1) + '%' : '0.0%'
         },
+        query: {
+          days,
+          fromDate,
+          pageLimit,
+          maxPages,
+          fetched: allEmails.length,
+          filtered: emails.length,
+          recipient: recipientFilter || null,
+          subject: subjectFilter || null,
+        },
+        records: emails.slice(0, responseLimit).map(simplify),
         raw: {
           totalEmails: emails.length,
           sampleEmail: emails[0] || null
@@ -9764,8 +9821,7 @@ export async function registerRoutes(
       // (the rest of the codebase already supports both, but this admin endpoint
       // was hardcoded to the first variant, breaking the dashboard CTA stats
       // when env was set with the API_ prefix variant — Achzod report 2026-05-07).
-      const SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID || process.env.SENDPULSE_API_USER_ID;
-      const SENDPULSE_SECRET = process.env.SENDPULSE_SECRET || process.env.SENDPULSE_API_SECRET;
+      const { userId: SENDPULSE_USER_ID, secret: SENDPULSE_SECRET } = getSendPulseCredentials();
 
       if (!SENDPULSE_USER_ID || !SENDPULSE_SECRET) {
         res.json({ success: false, error: "SendPulse credentials not configured" });

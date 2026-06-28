@@ -149,6 +149,14 @@ function encodeBase64(str: string): string {
  * @param trackingData - Tracking metadata
  * @returns SendPulse response
  */
+type SendPulseSendResult = {
+  result: boolean;
+  id?: string;
+  error?: any;
+  message?: any;
+  httpStatus?: number;
+};
+
 async function sendEmailWithTracking(
   emailPayload: {
     html: string;
@@ -166,7 +174,7 @@ async function sendEmailWithTracking(
     auditType?: string;
     metadata?: Record<string, any>;
   }
-): Promise<{ result: boolean; error?: any; message?: any }> {
+): Promise<SendPulseSendResult> {
   try {
     // Check unsubscribe before sending
     const { storage } = await import("./storage");
@@ -236,9 +244,33 @@ async function sendEmailWithTracking(
       body: JSON.stringify({ email: payloadWithBcc, track_opens: 1, track_clicks: 1 }),
     });
 
-    const result = (await response.json()) as { result: boolean; error?: any; message?: any };
+    const responseText = await response.text();
+    let parsed: any = null;
+    try {
+      parsed = responseText ? JSON.parse(responseText) : {};
+    } catch {
+      parsed = { result: false, error: responseText || `HTTP ${response.status}` };
+    }
 
-    // Log to tracking system
+    const result: SendPulseSendResult = {
+      ...(parsed && typeof parsed === "object" ? parsed : { error: parsed }),
+      result: response.ok && parsed?.result === true,
+      httpStatus: response.status,
+    };
+    const sendpulseTaskId = extractSendPulseDeliveryId(result);
+    if (sendpulseTaskId) result.id = sendpulseTaskId;
+    const sendpulseError = result.result
+      ? undefined
+      : JSON.stringify(result.error || result.message || responseText || `HTTP ${response.status}`);
+    const trackingMetadata = {
+      ...(trackingData.metadata || {}),
+      sendpulseHttpStatus: response.status,
+      sendpulseAccepted: result.result,
+      ...(sendpulseTaskId ? { sendpulseTaskId } : {}),
+      ...(result.message !== undefined ? { sendpulseMessage: result.message } : {}),
+    };
+
+    // Log provider acceptance. Real mailbox delivery is checked later through SendPulse SMTP status.
     await logEmail({
       emailType: trackingData.emailType,
       recipientEmail: trackingData.recipientEmail,
@@ -247,12 +279,13 @@ async function sendEmailWithTracking(
       auditType: trackingData.auditType,
       subject: emailPayload.subject,
       previewText: emailPayload.text.substring(0, 100),
+      sendpulseTaskId,
       sendpulseStatus: result.result ? "success" : "failed",
-      sendpulseError: result.error ? JSON.stringify(result.error) : undefined,
-      metadata: trackingData.metadata,
+      sendpulseError,
+      metadata: trackingMetadata,
     });
 
-    console.log(`[SendPulse] Email ${result.result ? "✅ sent" : "❌ failed"}:`, result);
+    console.log(`[SendPulse] Email ${result.result ? "✅ accepted" : "❌ failed"}:`, result);
     return result;
   } catch (error) {
     console.error(`[SendPulse] Error sending ${trackingData.emailType}:`, error);
@@ -2494,7 +2527,7 @@ const evaluateBloodDeliveryQuality = (
   };
 };
 
-const extractSendPulseDeliveryId = (payload: unknown): string | undefined => {
+function extractSendPulseDeliveryId(payload: unknown): string | undefined {
   if (!payload || typeof payload !== "object") return undefined;
   const candidate = (payload as any).id || (payload as any).message?.id || (payload as any).data?.id;
   if (candidate) return String(candidate);
@@ -2505,7 +2538,7 @@ const extractSendPulseDeliveryId = (payload: unknown): string | undefined => {
   } catch {
     return undefined;
   }
-};
+}
 
 export async function sendBloodAnalysisHtmlEmail(
   email: string,
