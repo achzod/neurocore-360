@@ -190,6 +190,59 @@ const sendPulseRecordDateMs = (record: SendPulseLiveRecord): number => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+const chooseRecentSendPulseRecord = (
+  records: SendPulseLiveRecord[],
+  recipientEmail: string,
+  subject: string,
+  sentStartedAt: Date,
+): SendPulseLiveRecord | null => {
+  const normalizedRecipient = recipientEmail.trim().toLowerCase();
+  const normalizedSubject = normalizeSendPulseText(subject);
+  const matches = records
+    .filter((record) => sendPulseRecordRecipient(record) === normalizedRecipient)
+    .filter((record) => normalizeSendPulseText(sendPulseRecordSubject(record)) === normalizedSubject)
+    .map((record) => ({
+      record,
+      delta: Math.abs(sendPulseRecordDateMs(record) - sentStartedAt.getTime()),
+    }))
+    .filter(({ delta }) => delta <= 15 * 60 * 1000)
+    .sort((a, b) => a.delta - b.delta);
+
+  return matches[0]?.record || null;
+};
+
+async function fetchSendPulseLiveRecordDetails(
+  token: string,
+  records: SendPulseLiveRecord[],
+): Promise<SendPulseLiveRecord[]> {
+  const ids = Array.from(new Set(records.map(sendPulseRecordId).filter(Boolean)));
+  if (ids.length === 0) return records;
+
+  const response = await fetch("https://api.sendpulse.com/smtp/emails/info", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ emails: ids.slice(0, 100) }),
+  });
+  if (!response.ok) return records;
+
+  const data = await response.json();
+  const details: SendPulseLiveRecord[] = Array.isArray(data) ? data : (data.data || data.emails || []);
+  const byId = new Map<string, SendPulseLiveRecord>();
+  for (const detail of details) {
+    const id = sendPulseRecordId(detail);
+    if (id) byId.set(id, detail);
+  }
+
+  return records.map((record) => {
+    const id = sendPulseRecordId(record);
+    const detail = id ? byId.get(id) : undefined;
+    return detail ? { ...record, ...detail } : record;
+  });
+}
+
 const isCriticalSendPulseEmail = (emailType: string, subject: string): boolean => {
   const normalized = normalizeSendPulseText(subject);
   return emailType === "sendReportReadyEmail"
@@ -230,17 +283,12 @@ async function findRecentSendPulseLiveRecord(
 
     const data = await response.json();
     const records: SendPulseLiveRecord[] = Array.isArray(data) ? data : (data.data || []);
-    const matches = records
-      .filter((record) => sendPulseRecordRecipient(record) === normalizedRecipient)
-      .filter((record) => normalizeSendPulseText(sendPulseRecordSubject(record)) === normalizedSubject)
-      .map((record) => ({
-        record,
-        delta: Math.abs(sendPulseRecordDateMs(record) - sentStartedAt.getTime()),
-      }))
-      .filter(({ delta }) => delta <= 15 * 60 * 1000)
-      .sort((a, b) => a.delta - b.delta);
+    const listMatch = chooseRecentSendPulseRecord(records, normalizedRecipient, normalizedSubject, sentStartedAt);
+    if (listMatch) return listMatch;
 
-    if (matches[0]?.record) return matches[0].record;
+    const detailedRecords = await fetchSendPulseLiveRecordDetails(token, records).catch(() => records);
+    const detailMatch = chooseRecentSendPulseRecord(detailedRecords, normalizedRecipient, normalizedSubject, sentStartedAt);
+    if (detailMatch) return detailMatch;
   }
 
   return null;

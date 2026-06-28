@@ -289,6 +289,13 @@ export async function registerRoutes(
   const normalizeSendPulseMatchText = (value: unknown): string =>
     normalizeSearchText(value).replace(/\s+/g, " ").trim();
 
+  const sendPulseSubjectsMatch = (a: unknown, b: unknown): boolean => {
+    const left = normalizeSendPulseMatchText(a);
+    const right = normalizeSendPulseMatchText(b);
+    if (!left || !right) return false;
+    return left === right || left.includes(right) || right.includes(left);
+  };
+
   const matchesEmailAuditScope = (emailType: unknown, subject: unknown, scope: string): boolean => {
     const type = String(emailType || "");
     const promo = PROMO_EMAIL_TYPES.includes(type) || isPromoSubject(subject);
@@ -10215,6 +10222,8 @@ export async function registerRoutes(
       const pageLimit = Math.min(Math.max(Number(body.pageLimit ?? req.query.pageLimit) || 100, 1), 100);
       const maxPages = Math.min(Math.max(Number(body.pages ?? req.query.pages) || 50, 1), 100);
       const dbLimit = Math.min(Math.max(Number(body.dbLimit ?? req.query.dbLimit) || 1000, 1), 10000);
+      const detailsEnabled = String(body.details ?? req.query.details ?? "1") !== "0";
+      const detailLimit = Math.min(Math.max(Number(body.detailLimit ?? req.query.detailLimit) || pageLimit * maxPages, 1), 10000);
       const recipientFilter = String(body.recipient || req.query.recipient || body.email || req.query.email || "").trim().toLowerCase();
       const subjectFilter = String(body.subject || req.query.subject || "").trim().toLowerCase();
       const maxDeltaMinutes = Math.min(Math.max(Number(body.maxDeltaMinutes ?? req.query.maxDeltaMinutes) || 20, 1), 180);
@@ -10240,9 +10249,13 @@ export async function registerRoutes(
         maxPages,
         logPrefix: "SendPulseReconcile",
       });
+      const detailResult = detailsEnabled
+        ? await fetchSendPulseEmailDetails(accessToken, liveEmails, detailLimit, "SendPulseReconcileDetails")
+        : { emails: liveEmails, attempted: 0, fetched: 0, errors: [] };
+      const liveEmailsForMatch = detailResult.emails;
 
       const liveByRecipient = new Map<string, SendPulseEmailRecord[]>();
-      for (const email of liveEmails) {
+      for (const email of liveEmailsForMatch) {
         const recipient = sendPulseRecipient(email).toLowerCase();
         if (!recipient) continue;
         const list = liveByRecipient.get(recipient) || [];
@@ -10256,10 +10269,9 @@ export async function registerRoutes(
 
       for (const row of dbResult.rows) {
         const recipient = String(row.recipient_email || "").toLowerCase();
-        const subject = normalizeSendPulseMatchText(row.subject);
         const sentMs = new Date(row.sent_at).getTime();
         const candidates = (liveByRecipient.get(recipient) || [])
-          .filter((email) => normalizeSendPulseMatchText(sendPulseSubject(email)) === subject)
+          .filter((email) => sendPulseSubjectsMatch(sendPulseSubject(email), row.subject))
           .map((email) => ({
             email,
             deltaMs: Math.abs(sendPulseSendDateMs(email) - sentMs),
@@ -10328,8 +10340,13 @@ export async function registerRoutes(
           recipient: recipientFilter || null,
           subject: subjectFilter || null,
           maxDeltaMinutes,
+          detailsEnabled,
+          detailsAttempted: detailResult.attempted,
+          detailsFetched: detailResult.fetched,
+          detailErrors: detailResult.errors,
           localRows: dbResult.rowCount ?? dbResult.rows.length,
           liveFetched: liveEmails.length,
+          liveForMatch: liveEmailsForMatch.length,
         },
         summary: {
           matched,
