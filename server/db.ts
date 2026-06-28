@@ -12,9 +12,9 @@ export const pool = new Pool({
   ssl: (dbUrl.includes('render.com') || dbUrl.includes('neon.tech'))
     ? { rejectUnauthorized: false }
     : false,
-  max: 20,
-  connectionTimeoutMillis: 10000,
-  idleTimeoutMillis: 30000,
+  max: Number(process.env.DB_POOL_MAX || "5"),
+  connectionTimeoutMillis: Number(process.env.DB_CONNECTION_TIMEOUT_MS || "15000"),
+  idleTimeoutMillis: Number(process.env.DB_IDLE_TIMEOUT_MS || "30000"),
 });
 
 pool.on("error", (err) => {
