@@ -700,13 +700,15 @@ function getDiscoveryPromoBanner(daysLeft: number): string {
       <p style="margin:0 0 6px;color:#ffffff;font-size:28px;font-weight:800;letter-spacing:3px;">DISCOVERY30</p>
       <p style="margin:0;color:rgba(255,255,255,0.95);font-size:14px;font-weight:500;line-height:1.5;">
         -30% sur formules coaching 8 et 12 sem<br/>
+        <span style="font-size:12px;color:rgba(255,255,255,0.8);">A copier dans le champ <strong style="color:#ffffff;">Code promotionnel</strong> au checkout</span><br/>
         <span style="font-size:12px;color:rgba(255,255,255,0.8);">Valide jusqu'au <strong style="color:#ffffff;">${deadline}</strong></span>
       </p>
     </div>
   `;
 }
 
-// Append ?promo=DISCOVERY30 to a coaching link (preserves existing query params)
+// Keep promo in the URL for attribution. Webflow checkout still requires the client
+// to paste DISCOVERY30 manually in the "Code promotionnel" field.
 function withDiscoveryPromo(url: string): string {
   const sep = url.includes('?') ? '&' : '?';
   return `${url}${sep}promo=DISCOVERY30`;
@@ -3579,7 +3581,7 @@ export async function sendGratuitUpsellEmail(
       </div>
 
       <p style="color:${APPLE_COLORS.muted};font-size:12px;line-height:1.55;margin:20px 0 0;text-align:center;">
-        Code valable jusqu'au <strong style="color:${APPLE_COLORS.ink};">${deadlineDate}</strong>. Le code est pré-appliqué automatiquement quand tu cliques sur le bouton.
+        Code valable jusqu'au <strong style="color:${APPLE_COLORS.ink};">${deadlineDate}</strong>. Au paiement, copie <strong style="color:${APPLE_COLORS.ink};">DISCOVERY30</strong> dans le champ "Code promotionnel ?".
       </p>
 
       <div style="padding:14px 18px;background:#f5f5f7;border-radius:10px;text-align:center;margin-top:20px;">
@@ -3604,7 +3606,7 @@ export async function sendGratuitUpsellEmail(
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
-        text: `Ton code DISCOVERY30 est actif : -30% sur formules coaching 8 et 12 semaines, valable jusqu'au ${deadlineDate}.\n\nActiver mon code maintenant (code pré-appliqué automatiquement) : ${coachingLink}\nComparer les 3 formules : ${allFormulesLink}\n\nAchzod`,
+        text: `Ton code DISCOVERY30 est actif : -30% sur formules coaching 8 et 12 semaines, valable jusqu'au ${deadlineDate}.\n\nChoisir ma formule : ${coachingLink}\nComparer les 3 formules : ${allFormulesLink}\n\nAu paiement, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`,
         subject: `DISCOVERY30 actif , 7 jours pour activer ton coaching -30%`,
         from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
@@ -4105,7 +4107,7 @@ export async function sendDiscoveryJ14CoachingEmail(
       ${getCoachingAppleButton(tierLabel ? `Activer mon code -30% sur ${tierLabel}` : 'Activer mon code -30% maintenant', coachingLink)}
 
       <p style="color:${APPLE_COLORS.muted};font-size:12px;line-height:1.55;margin:20px 0 0;text-align:center;">
-        Code valable jusqu'au <strong style="color:${APPLE_COLORS.ink};">${deadlineDate}</strong>. Le code est pré-appliqué automatiquement au checkout.
+        Code valable jusqu'au <strong style="color:${APPLE_COLORS.ink};">${deadlineDate}</strong>. Au checkout, copie <strong style="color:${APPLE_COLORS.ink};">DISCOVERY30</strong> dans le champ "Code promotionnel ?".
       </p>
 
       <!-- Social proof -->
@@ -4133,8 +4135,8 @@ export async function sendDiscoveryJ14CoachingEmail(
       {
         html: encodeBase64(emailContent),
         text: tierLabel
-          ? `Je te recommande ${tierLabel} d'après ton Discovery.\n${recommendation!.reason}\n\nCode DISCOVERY30 : -30% jusqu'au ${deadlineDate} (7 jours).\nActiver mon code (pré-appliqué) : ${coachingLink}\n\nAchzod`
-          : `Tu as les données. Le coaching, c'est l'application pratique sur la durée.\n\nCode DISCOVERY30 : -30% sur formules 8 et 12 sem, jusqu'au ${deadlineDate} (7 jours).\nActiver mon code (pré-appliqué) : ${coachingLink}\n\nAchzod`,
+          ? `Je te recommande ${tierLabel} d'après ton Discovery.\n${recommendation!.reason}\n\nCode DISCOVERY30 : -30% jusqu'au ${deadlineDate} (7 jours).\nChoisir ma formule : ${coachingLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`
+          : `Tu as les données. Le coaching, c'est l'application pratique sur la durée.\n\nCode DISCOVERY30 : -30% sur formules 8 et 12 sem, jusqu'au ${deadlineDate} (7 jours).\nChoisir ma formule : ${coachingLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`,
         subject: tierLabel
           ? `${tierLabel} avec DISCOVERY30 , 7 jours pour activer`
           : `7 jours pour activer DISCOVERY30 , -30% coaching`,
@@ -4234,7 +4236,7 @@ export async function sendGratuitJ5Email(
       </div>
 
       <p style="color:${APPLE_COLORS.muted};font-size:12px;line-height:1.55;margin:18px 0 0;text-align:center;">
-        Code valable jusqu'au <strong style="color:${APPLE_COLORS.ink};">${deadlineDate}</strong>. Le bouton applique le code automatiquement.
+        Code valable jusqu'au <strong style="color:${APPLE_COLORS.ink};">${deadlineDate}</strong>. Au checkout, copie <strong style="color:${APPLE_COLORS.ink};">DISCOVERY30</strong> dans le champ "Code promotionnel ?".
       </p>
 
       <div style="padding:14px 18px;background:#f5f5f7;border-radius:10px;text-align:center;">
@@ -4259,7 +4261,7 @@ export async function sendGratuitJ5Email(
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
-        text: `Ton code DISCOVERY30 est actif : -30% sur formules coaching 8 et 12 semaines, valable jusqu'au ${deadlineDate} (5 jours).\n\nLe Discovery te donne le diagnostic. Le coaching te donne le plan jour-par-jour, l'ajustement hebdo, et le contrat moral.\n\nActiver mon code maintenant (pré-appliqué) : ${primaryCtaLink}\nComparer les 3 formules : ${secondaryCtaLink}\nRelire le Discovery : ${reportLink}\n\nAchzod`,
+        text: `Ton code DISCOVERY30 est actif : -30% sur formules coaching 8 et 12 semaines, valable jusqu'au ${deadlineDate} (5 jours).\n\nLe Discovery te donne le diagnostic. Le coaching te donne le plan jour-par-jour, l'ajustement hebdo, et le contrat moral.\n\nChoisir ma formule : ${primaryCtaLink}\nComparer les 3 formules : ${secondaryCtaLink}\nRelire le Discovery : ${reportLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`,
         subject: `5 jours pour activer DISCOVERY30 , -30% coaching`,
         from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
@@ -4305,7 +4307,7 @@ export async function sendGratuitJ7Email(
       </p>
 
       <!-- Code box -->
-      <div style="padding:22px 26px;background:${APPLE_COLORS.card};border:2px solid ${APPLE_COLORS.accent};border-radius:14px;margin-bottom:28px;text-align:center;display:none;">
+      <div style="padding:22px 26px;background:${APPLE_COLORS.card};border:2px solid ${APPLE_COLORS.accent};border-radius:14px;margin-bottom:28px;text-align:center;">
         <p style="color:${APPLE_COLORS.muted};font-size:11px;text-transform:uppercase;letter-spacing:2px;margin:0 0 8px;font-weight:700;">
           Code à appliquer au checkout
         </p>
@@ -4377,7 +4379,7 @@ export async function sendGratuitJ7Email(
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
-        text: `Plus que 3 jours pour activer DISCOVERY30 (jusqu'au ${deadlineDate}).\n\nComparaison des 3 formules coaching avec DISCOVERY30 appliqué (code pré-appliqué au checkout via les liens ci-dessous) :\n\nEssential 8 sem : 279€ (au lieu de 399€) , ${essentialLink}\nElite 8 sem : 454€ (au lieu de 649€) , ${eliteLink}\nPrivate Lab 8 sem : 559€ (au lieu de 799€) , ${privateLabLink}\n\nLes 4 semaines ne sont pas éligibles au code, seules les 8 et 12 sem le sont.\n\nAchzod`,
+        text: `Plus que 3 jours pour activer DISCOVERY30 (jusqu'au ${deadlineDate}).\n\nComparaison des 3 formules coaching avec DISCOVERY30 :\n\nEssential 8 sem : 279€ (au lieu de 399€) , ${essentialLink}\nElite 8 sem : 454€ (au lieu de 649€) , ${eliteLink}\nPrivate Lab 8 sem : 559€ (au lieu de 799€) , ${privateLabLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?". Les 4 semaines ne sont pas éligibles au code, seules les 8 et 12 sem le sont.\n\nAchzod`,
         subject: `3 jours avant que DISCOVERY30 expire , -30% coaching`,
         from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
@@ -4870,7 +4872,7 @@ export async function sendDiscoveryJ30NurtureEmail(
       ${getCoachingAppleButton(tierLabel ? `Activer mon code -30% sur ${tierLabel}` : 'Activer mon code -30% maintenant', coachingLink)}
 
       <p style="color:${APPLE_COLORS.muted};font-size:12px;line-height:1.55;margin:18px 0 0;text-align:center;">
-        Code valable jusqu'au <strong style="color:${APPLE_COLORS.ink};">${deadlineDate}</strong>. Le code est pré-appliqué automatiquement au checkout.
+        Code valable jusqu'au <strong style="color:${APPLE_COLORS.ink};">${deadlineDate}</strong>. Au checkout, copie <strong style="color:${APPLE_COLORS.ink};">DISCOVERY30</strong> dans le champ "Code promotionnel ?".
       </p>
 
       ${!tierLabel || tierLabel !== "Essential" ? `
@@ -4907,8 +4909,8 @@ export async function sendDiscoveryJ30NurtureEmail(
       {
         html: encodeBase64(emailContent),
         text: tierLabel
-          ? `Je te recommande ${tierLabel} d'après ton Discovery.\n${recommendation!.reason}\n\nCode DISCOVERY30 : -30% jusqu'au ${deadlineDate} (5 jours).\nActiver mon code (pré-appliqué) : ${coachingLink}\n\nAchzod`
-          : `Un mois depuis ton Discovery. Pour corriger durablement, faut un protocole ajusté chaque semaine. C'est exactement ce que je fais en coaching.\n\nCode DISCOVERY30 : -30% sur formules 8 et 12 sem, jusqu'au ${deadlineDate} (5 jours).\nActiver mon code (pré-appliqué) : ${coachingLink}\nCommencer par Essential : ${essentialLink}\n\nAchzod`,
+          ? `Je te recommande ${tierLabel} d'après ton Discovery.\n${recommendation!.reason}\n\nCode DISCOVERY30 : -30% jusqu'au ${deadlineDate} (5 jours).\nChoisir ma formule : ${coachingLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`
+          : `Un mois depuis ton Discovery. Pour corriger durablement, faut un protocole ajusté chaque semaine. C'est exactement ce que je fais en coaching.\n\nCode DISCOVERY30 : -30% sur formules 8 et 12 sem, jusqu'au ${deadlineDate} (5 jours).\nChoisir ma formule : ${coachingLink}\nCommencer par Essential : ${essentialLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`,
         subject: tierLabel
           ? `${tierLabel} avec DISCOVERY30 , 5 jours pour activer`
           : `5 jours pour activer DISCOVERY30 , -30% coaching`,
