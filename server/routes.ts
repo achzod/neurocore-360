@@ -7698,13 +7698,15 @@ export async function registerRoutes(
           const { eq } = await import("drizzle-orm");
 
           const emailTracking = await db.select().from(emailTrackingTable).where(eq(emailTrackingTable.auditId, audit.id));
-          const trackingTypes = emailTracking.map(t => t.emailType);
+          const trackingTypes = emailTracking
+            .filter((t: any) => t.sendpulseStatus === "success")
+            .map(t => t.emailType);
 
           // GRATUIT audits: Send upsell email after 2 days
           if (audit.type === "GRATUIT" && daysSinceSent >= 2 && daysSinceSent < 30) {
             if (!trackingTypes.includes("sendGratuitUpsellEmail")) {
-              // sendGratuitUpsellEmail uses sendEmailWithTracking which logs automatically
-              const sent = await sendGratuitUpsellEmail(audit.email, audit.id, baseUrl, "auto-sequence");
+              const trackingRecord = await storage.createEmailTracking(audit.id, "sendGratuitUpsellEmail", audit.email);
+              const sent = await sendGratuitUpsellEmail(audit.email, audit.id, baseUrl, trackingRecord.id);
               if (sent) results.gratuitUpsell++;
               else results.errors++;
             }
@@ -7715,7 +7717,8 @@ export async function registerRoutes(
             if (!trackingTypes.includes("sendGratuitJ5Email")) {
               const hasConverted = await storage.hasUserPurchased(audit.email);
               if (!hasConverted) {
-                const sent = await sendGratuitJ5Email(audit.email, audit.id, baseUrl, "auto-sequence");
+                const trackingRecord = await storage.createEmailTracking(audit.id, "sendGratuitJ5Email", audit.email);
+                const sent = await sendGratuitJ5Email(audit.email, audit.id, baseUrl, trackingRecord.id);
                 if (sent) results.gratuitJ5++;
                 else results.errors++;
               }
@@ -7727,7 +7730,8 @@ export async function registerRoutes(
             if (!trackingTypes.includes("sendGratuitJ7Email")) {
               const hasConverted = await storage.hasUserPurchased(audit.email);
               if (!hasConverted) {
-                const sent = await sendGratuitJ7Email(audit.email, audit.id, baseUrl, "auto-sequence");
+                const trackingRecord = await storage.createEmailTracking(audit.id, "sendGratuitJ7Email", audit.email);
+                const sent = await sendGratuitJ7Email(audit.email, audit.id, baseUrl, trackingRecord.id);
                 if (sent) results.gratuitJ7++;
                 else results.errors++;
               }
@@ -7741,7 +7745,8 @@ export async function registerRoutes(
               const hasConverted = await storage.hasUserPurchased(audit.email);
 
               if (!hasConverted) {
-                const sent = await sendDiscoveryJ14CoachingEmail(audit.email, audit.id, baseUrl, "auto-sequence");
+                const trackingRecord = await storage.createEmailTracking(audit.id, "sendDiscoveryJ14CoachingEmail", audit.email);
+                const sent = await sendDiscoveryJ14CoachingEmail(audit.email, audit.id, baseUrl, trackingRecord.id);
                 if (sent) {
                   results.gratuitJ14 = (results.gratuitJ14 || 0) + 1;
                 } else {
@@ -7757,8 +7762,8 @@ export async function registerRoutes(
             if (daysSinceSent >= 7 && daysSinceSent < 14) {
               if (!trackingTypes.includes("sendPremiumJ7Email")) {
                 const hasReview = await storage.hasUserLeftReview(audit.id);
-                // sendPremiumJ7Email uses sendEmailWithTracking which logs automatically
-                const sent = await sendPremiumJ7Email(audit.email, audit.id, audit.type, baseUrl, "auto-sequence", hasReview);
+                const trackingRecord = await storage.createEmailTracking(audit.id, "sendPremiumJ7Email", audit.email);
+                const sent = await sendPremiumJ7Email(audit.email, audit.id, audit.type, baseUrl, trackingRecord.id, hasReview);
                 if (sent) results.premiumJ7++;
                 else results.errors++;
               }
@@ -7766,13 +7771,13 @@ export async function registerRoutes(
 
             // J+14: Send ONLY if J+7 email was NOT opened
             if (daysSinceSent >= 14 && daysSinceSent < 30) {
-              const j7Email = emailTracking.find(t => t.emailType === "sendPremiumJ7Email");
+              const j7Email = emailTracking.find((t: any) => t.emailType === "sendPremiumJ7Email" && t.sendpulseStatus === "success");
               const j14Sent = trackingTypes.includes("sendPremiumJ14Email");
 
               // Only send J+14 if J+7 was sent but NOT opened
               if (j7Email && !j7Email.opened && !j14Sent) {
-                // sendPremiumJ14Email uses sendEmailWithTracking which logs automatically
-                const sent = await sendPremiumJ14Email(audit.email, audit.id, audit.type, baseUrl, "auto-sequence");
+                const trackingRecord = await storage.createEmailTracking(audit.id, "sendPremiumJ14Email", audit.email);
+                const sent = await sendPremiumJ14Email(audit.email, audit.id, audit.type, baseUrl, trackingRecord.id);
                 if (sent) results.premiumJ14++;
                 else results.errors++;
               }
@@ -12360,25 +12365,30 @@ export async function registerRoutes(
         const daysSinceSent = (now.getTime() - sentAt.getTime()) / (24 * 60 * 60 * 1000);
 
         const trackingHistory = await storage.getEmailTrackingForAudit(audit.id) || [];
-        const trackingTypes = trackingHistory.map((t: any) => t.emailType);
+        const trackingTypes = trackingHistory
+          .filter((t: any) => t.sendpulseStatus === "success")
+          .map((t: any) => t.emailType);
 
         // GRATUIT sequences
         if (audit.type === "GRATUIT") {
           if (daysSinceSent >= 3 && daysSinceSent < 7 && !trackingTypes.includes("sendGratuitUpsellEmail")) {
-            const emailSent = await sendGratuitUpsellEmail(audit.email, audit.id, baseUrl, "auto-sequence");
+            const trackingRecord = await storage.createEmailTracking(audit.id, "sendGratuitUpsellEmail", audit.email);
+            const emailSent = await sendGratuitUpsellEmail(audit.email, audit.id, baseUrl, trackingRecord.id);
             if (emailSent) { sent++; if (sent >= 5) break; }
           }
           if (daysSinceSent >= 5 && daysSinceSent < 10 && !trackingTypes.includes("sendGratuitJ5Email")) {
             const hasConverted = await storage.hasUserPurchased?.(audit.email);
             if (!hasConverted) {
-              const emailSent = await sendGratuitJ5Email(audit.email, audit.id, baseUrl, "auto-sequence");
+              const trackingRecord = await storage.createEmailTracking(audit.id, "sendGratuitJ5Email", audit.email);
+              const emailSent = await sendGratuitJ5Email(audit.email, audit.id, baseUrl, trackingRecord.id);
               if (emailSent) { sent++; if (sent >= 5) break; }
             }
           }
           if (daysSinceSent >= 7 && daysSinceSent < 14 && !trackingTypes.includes("sendGratuitJ7Email")) {
             const hasConverted = await storage.hasUserPurchased?.(audit.email);
             if (!hasConverted) {
-              const emailSent = await sendGratuitJ7Email(audit.email, audit.id, baseUrl, "auto-sequence");
+              const trackingRecord = await storage.createEmailTracking(audit.id, "sendGratuitJ7Email", audit.email);
+              const emailSent = await sendGratuitJ7Email(audit.email, audit.id, baseUrl, trackingRecord.id);
               if (emailSent) { sent++; if (sent >= 5) break; }
             }
           }
@@ -12393,7 +12403,8 @@ export async function registerRoutes(
                 responses: (audit.responses as Record<string, unknown>) ?? null,
                 scores: (audit.scores as any) ?? null,
               });
-              const emailSent = await sendDiscoveryJ14CoachingEmail(audit.email, audit.id, baseUrl, "auto-sequence", recommendation);
+              const trackingRecord = await storage.createEmailTracking(audit.id, "sendDiscoveryJ14CoachingEmail", audit.email);
+              const emailSent = await sendDiscoveryJ14CoachingEmail(audit.email, audit.id, baseUrl, trackingRecord.id, recommendation);
               if (emailSent) { sent++; if (sent >= 5) break; }
             }
           }

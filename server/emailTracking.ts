@@ -12,6 +12,7 @@
 import { db } from "./db";
 import { emailTracking } from "../shared/drizzle-schema";
 import { notifyGoogleSheetUpdate } from "./googleSheetsTracking";
+import { eq } from "drizzle-orm";
 
 export const ADMIN_EMAIL_CC = "achkou@gmail.com";
 
@@ -29,6 +30,10 @@ export interface EmailTrackingData {
   metadata?: Record<string, any>;
 }
 
+const isUuid = (value: unknown): value is string =>
+  typeof value === "string" &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+
 /**
  * Log an email to the tracking system
  * Called after every email send attempt
@@ -37,7 +42,7 @@ export async function logEmail(data: EmailTrackingData): Promise<string> {
   try {
     console.log(`[EmailTracking] Logging email: ${data.emailType} → ${data.recipientEmail}`);
 
-    const result = await db.insert(emailTracking).values({
+    const values = {
       emailType: data.emailType,
       recipientEmail: data.recipientEmail,
       recipientName: data.recipientName || null,
@@ -50,8 +55,27 @@ export async function logEmail(data: EmailTrackingData): Promise<string> {
       sendpulseError: data.sendpulseError || null,
       metadata: data.metadata || null,
       sentAt: new Date(),
-      createdAt: new Date(),
-    }).returning({ id: emailTracking.id });
+    };
+
+    const precreatedTrackingId = isUuid(data.metadata?.trackingId)
+      ? data.metadata.trackingId
+      : null;
+
+    let result: Array<{ id: string }> = [];
+    if (precreatedTrackingId) {
+      result = await db
+        .update(emailTracking)
+        .set(values)
+        .where(eq(emailTracking.id, precreatedTrackingId))
+        .returning({ id: emailTracking.id });
+    }
+
+    if (result.length === 0) {
+      result = await db.insert(emailTracking).values({
+        ...values,
+        createdAt: new Date(),
+      }).returning({ id: emailTracking.id });
+    }
 
     const trackingId = result[0]?.id || "unknown";
 

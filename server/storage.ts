@@ -88,6 +88,9 @@ export interface EmailTracking {
   sentAt: Date;
   openedAt: Date | null;
   clickedAt: Date | null;
+  opened?: Date | null;
+  clicked?: Date | null;
+  sendpulseStatus?: string | null;
 }
 
 export interface BurnoutProgress {
@@ -212,7 +215,7 @@ export interface IStorage {
   validatePromoCode(code: string, auditType: string): Promise<{ valid: boolean; discount: number; error?: string }>;
 
   // Email tracking
-  createEmailTracking(auditId: string, emailType: string): Promise<EmailTracking>;
+  createEmailTracking(auditId: string, emailType: string, recipientEmail?: string): Promise<EmailTracking>;
   markEmailOpened(trackingId: string): Promise<void>;
   getEmailTrackingForAudit(auditId: string): Promise<EmailTracking[]>;
   /** Returns true if a peptides delivery email (subject contains "protocole peptides") has been sent to this recipient */
@@ -793,7 +796,7 @@ export class MemStorage implements IStorage {
   }
 
   // Email tracking methods (MemStorage)
-  async createEmailTracking(auditId: string, emailType: string): Promise<EmailTracking> {
+  async createEmailTracking(auditId: string, emailType: string, recipientEmail?: string): Promise<EmailTracking> {
     const tracking: EmailTracking = {
       id: randomUUID(),
       auditId,
@@ -2374,13 +2377,18 @@ export class PgStorage implements IStorage {
 
   // Email tracking methods (PgStorage)
   private rowToEmailTracking(row: any): EmailTracking {
+    const opened = row.opened ?? row.opened_at ?? null;
+    const clicked = row.clicked ?? row.clicked_at ?? null;
     return {
       id: row.id,
       auditId: row.audit_id,
       emailType: row.email_type,
       sentAt: row.sent_at,
-      openedAt: row.opened_at,
-      clickedAt: row.clicked_at,
+      openedAt: opened,
+      clickedAt: clicked,
+      opened,
+      clicked,
+      sendpulseStatus: row.sendpulse_status ?? null,
     };
   }
 
