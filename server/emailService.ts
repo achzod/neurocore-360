@@ -157,6 +157,95 @@ type SendPulseSendResult = {
   httpStatus?: number;
 };
 
+type SendPulseLiveRecord = Record<string, any>;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const normalizeSendPulseText = (value: unknown): string =>
+  String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const sendPulseRecordId = (record: SendPulseLiveRecord): string | undefined => {
+  const raw = record.id ?? record.email_id ?? record.message_id ?? record.task_id;
+  return raw ? String(raw).trim() : undefined;
+};
+
+const sendPulseRecordRecipient = (record: SendPulseLiveRecord): string =>
+  String(record.recipient || record.to || record.email || "").trim().toLowerCase();
+
+const sendPulseRecordSubject = (record: SendPulseLiveRecord): string =>
+  String(record.subject || "").trim();
+
+const sendPulseRecordDateMs = (record: SendPulseLiveRecord): number => {
+  const raw = String(record.send_date || record.date || record.created_at || "").trim();
+  if (!raw) return 0;
+  const isoUtc = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(raw)
+    ? raw.replace(" ", "T") + "Z"
+    : raw;
+  const parsed = Date.parse(isoUtc);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const isCriticalSendPulseEmail = (emailType: string, subject: string): boolean => {
+  const normalized = normalizeSendPulseText(subject);
+  return emailType === "sendReportReadyEmail"
+    || emailType === "sendPeptidesOrderConfirmation"
+    || (emailType === "sendCTAEmail" && (
+      normalized.includes("protocole peptides")
+      || normalized.includes("commande recue")
+      || normalized.includes("paiement recu")
+      || normalized.includes("rapport")
+    ));
+};
+
+async function findRecentSendPulseLiveRecord(
+  token: string,
+  recipientEmail: string,
+  subject: string,
+  sentStartedAt: Date,
+): Promise<SendPulseLiveRecord | null> {
+  const normalizedRecipient = recipientEmail.trim().toLowerCase();
+  const normalizedSubject = normalizeSendPulseText(subject);
+  if (!normalizedRecipient || !normalizedSubject) return null;
+
+  const fromDate = new Date(sentStartedAt.getTime() - 10 * 60 * 1000).toISOString();
+  const attemptDelays = [800, 1800, 3200];
+
+  for (let attempt = 0; attempt < attemptDelays.length; attempt++) {
+    await sleep(attemptDelays[attempt]);
+    const response = await fetch(
+      `https://api.sendpulse.com/smtp/emails?limit=100&offset=0&from_date=${encodeURIComponent(fromDate)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+    if (!response.ok) continue;
+
+    const data = await response.json();
+    const records: SendPulseLiveRecord[] = Array.isArray(data) ? data : (data.data || []);
+    const matches = records
+      .filter((record) => sendPulseRecordRecipient(record) === normalizedRecipient)
+      .filter((record) => normalizeSendPulseText(sendPulseRecordSubject(record)) === normalizedSubject)
+      .map((record) => ({
+        record,
+        delta: Math.abs(sendPulseRecordDateMs(record) - sentStartedAt.getTime()),
+      }))
+      .filter(({ delta }) => delta <= 15 * 60 * 1000)
+      .sort((a, b) => a.delta - b.delta);
+
+    if (matches[0]?.record) return matches[0].record;
+  }
+
+  return null;
+}
+
 async function sendEmailWithTracking(
   emailPayload: {
     html: string;
@@ -235,6 +324,7 @@ async function sendEmailWithTracking(
 
     console.log(`[SendPulse] Sending ${trackingData.emailType} to ${trackingData.recipientEmail} (BCC: ${ADMIN_EMAIL_CC})`);
 
+    const sentStartedAt = new Date();
     const response = await fetch("https://api.sendpulse.com/smtp/emails", {
       method: "POST",
       headers: {
@@ -257,15 +347,49 @@ async function sendEmailWithTracking(
       result: response.ok && parsed?.result === true,
       httpStatus: response.status,
     };
-    const sendpulseTaskId = extractSendPulseDeliveryId(result);
+    let sendpulseTaskId = extractSendPulseDeliveryId(result);
     if (sendpulseTaskId) result.id = sendpulseTaskId;
+    const liveLookupMetadata: Record<string, any> = {};
+
+    if (result.result && !sendpulseTaskId) {
+      const liveRecord = await findRecentSendPulseLiveRecord(
+        token,
+        trackingData.recipientEmail,
+        emailPayload.subject,
+        sentStartedAt,
+      ).catch((error) => {
+        liveLookupMetadata.sendpulseLiveLookupError = error instanceof Error ? error.message : String(error);
+        return null;
+      });
+
+      if (liveRecord) {
+        sendpulseTaskId = sendPulseRecordId(liveRecord) || extractSendPulseDeliveryId(liveRecord);
+        if (sendpulseTaskId) result.id = sendpulseTaskId;
+        liveLookupMetadata.sendpulseLiveLookup = "matched";
+        liveLookupMetadata.sendpulseSendDate = liveRecord.send_date || liveRecord.date || liveRecord.created_at || null;
+        liveLookupMetadata.sendpulseSmtpAnswerCode = liveRecord.smtp_answer_code ?? null;
+        liveLookupMetadata.sendpulseSmtpAnswerData = liveRecord.smtp_answer_data || null;
+      } else {
+        liveLookupMetadata.sendpulseLiveLookup = "not_found";
+        liveLookupMetadata.sendpulseLiveLookupFromDate = new Date(sentStartedAt.getTime() - 10 * 60 * 1000).toISOString();
+        if (isCriticalSendPulseEmail(trackingData.emailType, emailPayload.subject)) {
+          result.result = false;
+          result.error = "SendPulse accepted API request but no live SMTP record was found";
+        }
+      }
+    } else if (result.result && sendpulseTaskId) {
+      liveLookupMetadata.sendpulseLiveLookup = "provider_id_from_response";
+    }
+
     const sendpulseError = result.result
       ? undefined
       : JSON.stringify(result.error || result.message || responseText || `HTTP ${response.status}`);
     const trackingMetadata = {
       ...(trackingData.metadata || {}),
       sendpulseHttpStatus: response.status,
-      sendpulseAccepted: result.result,
+      sendpulseAccepted: response.ok && parsed?.result === true,
+      sendpulseVerified: result.result,
+      ...liveLookupMetadata,
       ...(sendpulseTaskId ? { sendpulseTaskId } : {}),
       ...(result.message !== undefined ? { sendpulseMessage: result.message } : {}),
     };

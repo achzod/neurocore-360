@@ -822,6 +822,7 @@ export class MemStorage implements IStorage {
       (t: any) => String(t.recipientEmail || "").toLowerCase() === email.toLowerCase()
         && t.emailType === "sendCTAEmail"
         && /protocole peptides|peptides personnalis/i.test(String(t.subject || ""))
+        && !["failed", "auth_failed", "unsubscribed"].includes(String(t.sendpulseStatus || "").toLowerCase())
     );
   }
 
@@ -829,6 +830,7 @@ export class MemStorage implements IStorage {
     return Array.from(this.emailTrackings.values()).some(
       (t: any) => String(t.recipientEmail || "").toLowerCase() === email.toLowerCase()
         && t.emailType === "sendPeptidesOrderConfirmation"
+        && !["failed", "auth_failed", "unsubscribed"].includes(String(t.sendpulseStatus || "").toLowerCase())
     );
   }
 
@@ -2414,6 +2416,7 @@ export class PgStorage implements IStorage {
           WHERE LOWER(recipient_email) = LOWER($1)
             AND email_type = 'sendCTAEmail'
             AND (subject ILIKE '%protocole peptides%' OR subject ILIKE '%peptides personnalisé%' OR subject ILIKE '%peptides personnalise%')
+            AND (sendpulse_status IS NULL OR sendpulse_status NOT IN ('failed','auth_failed','unsubscribed'))
           LIMIT 1`,
         [email]
       );
@@ -2431,6 +2434,7 @@ export class PgStorage implements IStorage {
         `SELECT 1 FROM email_tracking
           WHERE LOWER(recipient_email) = LOWER($1)
             AND email_type = 'sendPeptidesOrderConfirmation'
+            AND (sendpulse_status IS NULL OR sendpulse_status NOT IN ('failed','auth_failed','unsubscribed'))
           LIMIT 1`,
         [email]
       );

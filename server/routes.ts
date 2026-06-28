@@ -215,6 +215,16 @@ export async function registerRoutes(
   const sendPulseSendDate = (email: SendPulseEmailRecord): string | null =>
     email.send_date || email.date || email.created_at || null;
 
+  const sendPulseSendDateMs = (email: SendPulseEmailRecord): number => {
+    const raw = String(sendPulseSendDate(email) || "").trim();
+    if (!raw) return 0;
+    const isoUtc = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(raw)
+      ? raw.replace(" ", "T") + "Z"
+      : raw;
+    const parsed = Date.parse(isoUtc);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
   const sendPulseSmtpCode = (email: SendPulseEmailRecord): number | null => {
     const raw = email.smtp_answer_code ?? email.smtpAnswerCode ?? email.smtp_code;
     const parsed = Number(raw);
@@ -275,6 +285,9 @@ export async function registerRoutes(
       "blood analysis",
     ].some((needle) => normalized.includes(needle));
   };
+
+  const normalizeSendPulseMatchText = (value: unknown): string =>
+    normalizeSearchText(value).replace(/\s+/g, " ").trim();
 
   const matchesEmailAuditScope = (emailType: unknown, subject: unknown, scope: string): boolean => {
     const type = String(emailType || "");
@@ -5022,6 +5035,138 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("[Admin] Link order to report error:", error);
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Admin: correct a Peptides Engine typo email across order/report/progress.
+  // Default is dry-run + delivery hold, so correcting the DB cannot silently
+  // trigger the recovery cron before Achzod approves the exact client email.
+  app.post("/api/admin/peptides-correct-email", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const {
+        orderId,
+        reportId,
+        fromEmail,
+        toEmail,
+        apply = false,
+        holdDelivery = true,
+      } = req.body || {};
+      const oldEmail = String(fromEmail || "").trim().toLowerCase();
+      const newEmail = String(toEmail || "").trim().toLowerCase();
+      if (!orderId || !reportId || !oldEmail || !newEmail || !newEmail.includes("@")) {
+        res.status(400).json({ success: false, error: "orderId, reportId, fromEmail, toEmail requis" });
+        return;
+      }
+
+      const order = await storage.getOrder(orderId);
+      if (!order) { res.status(404).json({ success: false, error: "Order introuvable" }); return; }
+      if (order.productType !== "PEPTIDES_ENGINE") {
+        res.status(400).json({ success: false, error: `Order productType=${order.productType}, attendu PEPTIDES_ENGINE` });
+        return;
+      }
+      if (String(order.email || "").toLowerCase() !== oldEmail) {
+        res.status(400).json({ success: false, error: "fromEmail ne correspond pas a l'order", orderEmail: order.email });
+        return;
+      }
+      const meta = (order.metadata as any) || {};
+      if (meta?.peptidesReportId && meta.peptidesReportId !== reportId) {
+        res.status(400).json({ success: false, error: "reportId ne correspond pas a metadata.peptidesReportId", metadataReportId: meta.peptidesReportId });
+        return;
+      }
+
+      const report = await storage.getBurnoutReport(reportId);
+      if (!report) { res.status(404).json({ success: false, error: "Report introuvable" }); return; }
+      const reportEmail = String(report.email || "").replace(/^peptides::/i, "").toLowerCase();
+      if (reportEmail !== oldEmail) {
+        res.status(400).json({ success: false, error: "fromEmail ne correspond pas au report", reportEmail });
+        return;
+      }
+
+      const progressOldKey = `peptides::${oldEmail}`;
+      const progressNewKey = `peptides::${newEmail}`;
+      const progressExists = await pool.query("SELECT id FROM burnout_progress WHERE email = $1", [progressOldKey]).catch(() => ({ rows: [] } as any));
+      const progressTargetExists = await pool.query("SELECT id FROM burnout_progress WHERE email = $1", [progressNewKey]).catch(() => ({ rows: [] } as any));
+
+      if (!apply) {
+        res.json({
+          success: true,
+          dryRun: true,
+          wouldUpdate: {
+            orderId,
+            reportId,
+            orderEmail: { from: oldEmail, to: newEmail },
+            reportEmail: { from: `peptides::${oldEmail}`, to: `peptides::${newEmail}` },
+            progress: progressExists.rows.length > 0
+              ? progressTargetExists.rows.length > 0 ? "target_exists_skip" : "move"
+              : "not_found",
+            holdDelivery: !!holdDelivery,
+          },
+        });
+        return;
+      }
+
+      const nowIso = new Date().toISOString();
+      const nextMeta = {
+        ...meta,
+        peptidesReportId: reportId,
+        correctedEmailFrom: oldEmail,
+        correctedEmailTo: newEmail,
+        correctedEmailAt: nowIso,
+        ...(holdDelivery ? { peptidesEmailHold: true, peptidesEmailHoldReason: "email_corrected_waiting_manual_resend" } : {}),
+        peptidesResponses: {
+          ...(meta.peptidesResponses || {}),
+          pep_email: newEmail,
+        },
+      };
+      await storage.updateOrder(orderId, { email: newEmail, metadata: nextMeta });
+
+      await pool.query(
+        `UPDATE burnout_reports
+            SET email = $1,
+                responses = CASE
+                  WHEN jsonb_typeof(responses) = 'object'
+                    THEN responses || jsonb_build_object('pep_email', $2::text)
+                  ELSE responses
+                END
+          WHERE id = $3`,
+        [progressNewKey, newEmail, reportId]
+      );
+
+      let progressAction = "not_found";
+      if (progressExists.rows.length > 0) {
+        if (progressTargetExists.rows.length > 0) {
+          progressAction = "target_exists_skip";
+        } else {
+          await pool.query(
+            `UPDATE burnout_progress
+                SET email = $1,
+                    responses = CASE
+                      WHEN jsonb_typeof(responses) = 'object'
+                        THEN responses || jsonb_build_object('pep_email', $2::text)
+                      ELSE responses
+                    END,
+                    last_activity_at = NOW()
+              WHERE email = $3`,
+            [progressNewKey, newEmail, progressOldKey]
+          );
+          progressAction = "moved";
+        }
+      }
+
+      res.json({
+        success: true,
+        dryRun: false,
+        orderId,
+        reportId,
+        fromEmail: oldEmail,
+        toEmail: newEmail,
+        holdDelivery: !!holdDelivery,
+        progressAction,
+      });
+    } catch (error: any) {
+      console.error("[Admin Peptides Correct Email] Error:", error);
+      res.status(500).json({ success: false, error: error?.message || "Erreur serveur" });
     }
   });
 
@@ -10054,6 +10199,155 @@ export async function registerRoutes(
     }
   });
 
+  // Reconcile local email_tracking rows with SendPulse live SMTP records.
+  // SendPulse's immediate /smtp/emails response often returns { result:true }
+  // without an email id. This endpoint backfills sendpulse_task_id by matching
+  // recipient + subject + send timestamp against /smtp/emails history.
+  app.post("/api/admin/sendpulse/reconcile-tracking", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const body = req.body || {};
+      const apply = body.apply === true || String(req.query.apply || "") === "1";
+      const days = Math.min(Math.max(Number(body.days ?? req.query.days) || 30, 1), 365);
+      const fromDate = String(
+        body.fromDate || req.query.from_date || new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
+      );
+      const pageLimit = Math.min(Math.max(Number(body.pageLimit ?? req.query.pageLimit) || 100, 1), 100);
+      const maxPages = Math.min(Math.max(Number(body.pages ?? req.query.pages) || 50, 1), 100);
+      const dbLimit = Math.min(Math.max(Number(body.dbLimit ?? req.query.dbLimit) || 1000, 1), 10000);
+      const recipientFilter = String(body.recipient || req.query.recipient || body.email || req.query.email || "").trim().toLowerCase();
+      const subjectFilter = String(body.subject || req.query.subject || "").trim().toLowerCase();
+      const maxDeltaMinutes = Math.min(Math.max(Number(body.maxDeltaMinutes ?? req.query.maxDeltaMinutes) || 20, 1), 180);
+
+      const dbResult = await pool.query(
+        `SELECT id, email_type, recipient_email, subject, audit_id, audit_type,
+                sendpulse_task_id, sendpulse_status, sendpulse_error, sent_at, metadata
+           FROM email_tracking
+          WHERE sent_at >= $1
+            AND sendpulse_status = 'success'
+            AND (sendpulse_task_id IS NULL OR sendpulse_task_id = '')
+            AND ($2 = '' OR LOWER(recipient_email) LIKE '%' || $2 || '%')
+            AND ($3 = '' OR LOWER(COALESCE(subject, '')) LIKE '%' || $3 || '%')
+          ORDER BY sent_at DESC
+          LIMIT $4`,
+        [fromDate, recipientFilter, subjectFilter, dbLimit]
+      );
+
+      const accessToken = await getSendPulseAdminToken();
+      const liveEmails = await fetchSendPulseEmails(accessToken, {
+        fromDate,
+        pageLimit,
+        maxPages,
+        logPrefix: "SendPulseReconcile",
+      });
+
+      const liveByRecipient = new Map<string, SendPulseEmailRecord[]>();
+      for (const email of liveEmails) {
+        const recipient = sendPulseRecipient(email).toLowerCase();
+        if (!recipient) continue;
+        const list = liveByRecipient.get(recipient) || [];
+        list.push(email);
+        liveByRecipient.set(recipient, list);
+      }
+
+      const items: Array<any> = [];
+      let matched = 0;
+      let updated = 0;
+
+      for (const row of dbResult.rows) {
+        const recipient = String(row.recipient_email || "").toLowerCase();
+        const subject = normalizeSendPulseMatchText(row.subject);
+        const sentMs = new Date(row.sent_at).getTime();
+        const candidates = (liveByRecipient.get(recipient) || [])
+          .filter((email) => normalizeSendPulseMatchText(sendPulseSubject(email)) === subject)
+          .map((email) => ({
+            email,
+            deltaMs: Math.abs(sendPulseSendDateMs(email) - sentMs),
+          }))
+          .filter((candidate) => candidate.deltaMs <= maxDeltaMinutes * 60 * 1000)
+          .sort((a, b) => a.deltaMs - b.deltaMs);
+
+        const best = candidates[0]?.email;
+        const sendpulseTaskId = best ? sendPulseEmailId(best) : "";
+        const action = best && apply ? "updated" : best ? "matched" : "unmatched";
+
+        if (best) {
+          matched++;
+          if (apply && sendpulseTaskId) {
+            const update = await pool.query(
+              `UPDATE email_tracking
+                  SET sendpulse_task_id = $1,
+                      metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
+                        'sendpulseLiveLookup', 'matched',
+                        'sendpulseReconciledAt', NOW(),
+                        'sendpulseSendDate', $2::text,
+                        'sendpulseSmtpAnswerCode', $3::text,
+                        'sendpulseSmtpAnswerData', $4::text,
+                        'sendpulseReconcileDeltaSeconds', $5::int
+                      )
+                WHERE id = $6`,
+              [
+                sendpulseTaskId,
+                sendPulseSendDate(best),
+                sendPulseSmtpCode(best),
+                best.smtp_answer_data || "",
+                Math.round((candidates[0]?.deltaMs || 0) / 1000),
+                row.id,
+              ]
+            );
+            updated += update.rowCount ?? 0;
+          }
+        }
+
+        items.push({
+          id: row.id,
+          emailType: row.email_type,
+          recipientEmail: row.recipient_email,
+          subject: row.subject,
+          sentAt: row.sent_at,
+          auditId: row.audit_id,
+          auditType: row.audit_type,
+          action,
+          matchedSendpulseTaskId: sendpulseTaskId || null,
+          matchedSendDate: best ? sendPulseSendDate(best) : null,
+          smtpAnswerCode: best ? sendPulseSmtpCode(best) : null,
+          smtpAnswerData: best?.smtp_answer_data || null,
+          deltaSeconds: best ? Math.round((candidates[0]?.deltaMs || 0) / 1000) : null,
+        });
+      }
+
+      res.json({
+        success: true,
+        apply,
+        query: {
+          days,
+          fromDate,
+          pageLimit,
+          maxPages,
+          dbLimit,
+          recipient: recipientFilter || null,
+          subject: subjectFilter || null,
+          maxDeltaMinutes,
+          localRows: dbResult.rowCount ?? dbResult.rows.length,
+          liveFetched: liveEmails.length,
+        },
+        summary: {
+          matched,
+          unmatched: dbResult.rows.length - matched,
+          updated,
+        },
+        items,
+      });
+    } catch (error) {
+      console.error("[SendPulseReconcile] Error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Erreur reconciliation SendPulse",
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  });
+
   // ==================== PROMO / CTA DELIVERABILITY AUDIT ====================
   app.get("/api/admin/promo-deliverability-audit", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
@@ -11378,7 +11672,7 @@ export async function registerRoutes(
             ? `\n\nTes 2 Blood Analyses offertes :\n2 credits Blood Analysis ont ete ajoutes a ton compte (un pre-cycle, un mi-cycle).\nPas de code a saisir : connecte-toi sur ${getBaseUrl(req)}/blood-dashboard avec ton email pour les utiliser.`
             : "";
         const coachingBlock = buildPeptidesCoachingDeductionBlock(
-          (order.metadata as any)?.peptidesTier ?? null
+          (order?.metadata as any)?.peptidesTier ?? null
         );
 
         const peptidesNames = report.peptides?.map((p) => p.name).join(", ") ?? "voir rapport";
@@ -11704,6 +11998,10 @@ export async function registerRoutes(
         const meta = order.metadata as any;
         const email = order.email;
         if (!email || email.includes("test") || email.includes("debug")) continue;
+        if (meta?.peptidesEmailHold === true || meta?.peptidesEmailHold === "true") {
+          console.log(`[AutoGen] Peptides delivery HOLD for ${email} (order ${order.id})`);
+          continue;
+        }
 
         // Recovery path: report exists but email never went out (e.g. SendPulse
         // returned false, network blip during initial autogen send). Without
