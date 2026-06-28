@@ -137,6 +137,264 @@ export async function registerRoutes(
     return tokenData.access_token;
   }
 
+  type SendPulseEmailRecord = Record<string, any>;
+
+  const PROMO_EMAIL_TYPES = [
+    "sendCTAEmail",
+    "sendGratuitUpsellEmail",
+    "sendGratuitJ5Email",
+    "sendGratuitJ7Email",
+    "sendDiscoveryJ14CoachingEmail",
+    "sendDiscoveryJ30NurtureEmail",
+    "sendPremiumJ7Email",
+    "sendPremiumJ14Email",
+    "sendFinishDiscoveryEmail",
+    "sendCrossSellUpgradeEmail",
+    "sendPeptidesCycle2ReorderEmail",
+    "sendPromoCodeEmail",
+    "sendReactivationCampaignEmail",
+  ];
+
+  const REPORT_EMAIL_TYPES = [
+    "sendReportReadyEmail",
+    "sendPeptidesOrderConfirmation",
+  ];
+
+  const PROMO_SUBJECT_PATTERNS = [
+    "%offre%",
+    "%promo%",
+    "%code promo%",
+    "%coaching%",
+    "%upgrade%",
+    "%peptides%",
+    "%reprends%",
+    "%protocole%",
+    "%cycle%",
+    "%commande recue%",
+    "%commande reçue%",
+    "%paiement recu%",
+    "%paiement reçu%",
+  ];
+
+  const REPORT_SUBJECT_PATTERNS = [
+    "%rapport%",
+    "%protocole peptides%",
+    "%est pret%",
+    "%est prêt%",
+    "%ultimate scan%",
+    "%anabolic bioscan%",
+    "%discovery scan%",
+    "%blood analysis%",
+  ];
+
+  const normalizeSearchText = (value: unknown): string =>
+    String(value || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+
+  const chunkArray = <T,>(items: T[], size: number): T[][] => {
+    const chunks: T[][] = [];
+    for (let i = 0; i < items.length; i += size) {
+      chunks.push(items.slice(i, i + size));
+    }
+    return chunks;
+  };
+
+  const sendPulseEmailId = (email: SendPulseEmailRecord): string => {
+    const raw = email.id ?? email.email_id ?? email.message_id ?? email.task_id ?? "";
+    return String(raw || "").trim();
+  };
+
+  const sendPulseRecipient = (email: SendPulseEmailRecord): string =>
+    String(email.recipient || email.to || email.email || "").trim();
+
+  const sendPulseSubject = (email: SendPulseEmailRecord): string =>
+    String(email.subject || "").trim();
+
+  const sendPulseSendDate = (email: SendPulseEmailRecord): string | null =>
+    email.send_date || email.date || email.created_at || null;
+
+  const sendPulseSmtpCode = (email: SendPulseEmailRecord): number | null => {
+    const raw = email.smtp_answer_code ?? email.smtpAnswerCode ?? email.smtp_code;
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+
+  const sendPulseIsDelivered = (email: SendPulseEmailRecord): boolean => {
+    const code = sendPulseSmtpCode(email);
+    const status = String(email.status || "").toLowerCase();
+    return (code !== null && code >= 200 && code < 300) || status === "sent" || status === "delivered";
+  };
+
+  const sendPulseIsHardFailed = (email: SendPulseEmailRecord): boolean => {
+    const code = sendPulseSmtpCode(email);
+    const status = String(email.status || "").toLowerCase();
+    return (code !== null && code >= 500) || status === "failed" || status === "error" || status === "bounced";
+  };
+
+  const sendPulseIsSoftFailed = (email: SendPulseEmailRecord): boolean => {
+    const code = sendPulseSmtpCode(email);
+    return code !== null && code >= 400 && code < 500;
+  };
+
+  const sendPulseEngagementCount = (email: SendPulseEmailRecord, key: "opens" | "clicks"): number => {
+    const aliases = key === "opens" ? ["opens", "open"] : ["clicks", "click"];
+    for (const alias of aliases) {
+      const raw = email[alias] ?? email.tracking?.[alias] ?? email.statistics?.[alias];
+      const parsed = Number(raw);
+      if (Number.isFinite(parsed) && parsed > 0) return parsed;
+    }
+    return 0;
+  };
+
+  const isPromoSubject = (subject: unknown): boolean => {
+    const normalized = normalizeSearchText(subject);
+    return [
+      "offre",
+      "promo",
+      "coaching",
+      "upgrade",
+      "peptides",
+      "reprends",
+      "protocole",
+      "cycle",
+      "commande recue",
+      "paiement recu",
+    ].some((needle) => normalized.includes(needle));
+  };
+
+  const isReportSubject = (subject: unknown): boolean => {
+    const normalized = normalizeSearchText(subject);
+    return [
+      "rapport",
+      "est pret",
+      "ultimate scan",
+      "anabolic bioscan",
+      "discovery scan",
+      "blood analysis",
+    ].some((needle) => normalized.includes(needle));
+  };
+
+  const matchesEmailAuditScope = (emailType: unknown, subject: unknown, scope: string): boolean => {
+    const type = String(emailType || "");
+    const promo = PROMO_EMAIL_TYPES.includes(type) || isPromoSubject(subject);
+    const report = REPORT_EMAIL_TYPES.includes(type) || isReportSubject(subject);
+    if (scope === "promo") return promo;
+    if (scope === "report") return report;
+    return promo || report;
+  };
+
+  const simplifySendPulseEmail = (email: SendPulseEmailRecord) => ({
+    id: sendPulseEmailId(email) || null,
+    recipient: sendPulseRecipient(email) || null,
+    subject: sendPulseSubject(email) || null,
+    status: email.status || null,
+    sendDate: sendPulseSendDate(email),
+    smtpAnswerCode: email.smtp_answer_code ?? null,
+    smtpAnswerSubcode: email.smtp_answer_subcode ?? null,
+    smtpAnswerData: email.smtp_answer_data || null,
+    opens: sendPulseEngagementCount(email, "opens"),
+    clicks: sendPulseEngagementCount(email, "clicks"),
+    tracking: email.tracking
+      ? {
+          open: Number(email.tracking.open || 0),
+          click: Number(email.tracking.click || 0),
+          linkCount: Array.isArray(email.tracking.link) ? email.tracking.link.length : 0,
+          clientInfoCount: Array.isArray(email.tracking.client_info) ? email.tracking.client_info.length : 0,
+        }
+      : null,
+  });
+
+  async function fetchSendPulseEmails(
+    accessToken: string,
+    opts: { fromDate: string; pageLimit: number; maxPages: number; logPrefix: string }
+  ): Promise<SendPulseEmailRecord[]> {
+    const allEmails: SendPulseEmailRecord[] = [];
+    let offset = 0;
+
+    for (let page = 0; page < opts.maxPages; page++) {
+      const emailsRes = await fetch(
+        `https://api.sendpulse.com/smtp/emails?limit=${opts.pageLimit}&offset=${offset}&from_date=${encodeURIComponent(opts.fromDate)}`,
+        {
+          headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!emailsRes.ok) {
+        const errorText = await emailsRes.text();
+        console.error(`[${opts.logPrefix}] Failed at offset ${offset}:`, errorText);
+        break;
+      }
+
+      const emailsData = await emailsRes.json();
+      const emails = Array.isArray(emailsData) ? emailsData : (emailsData.data || []);
+      console.log(`[${opts.logPrefix}] Fetched ${emails.length} emails at offset ${offset}`);
+
+      if (emails.length === 0) break;
+      allEmails.push(...emails);
+      offset += opts.pageLimit;
+    }
+
+    console.log(`[${opts.logPrefix}] Total emails fetched: ${allEmails.length}`);
+    return allEmails;
+  }
+
+  async function fetchSendPulseEmailDetails(
+    accessToken: string,
+    emails: SendPulseEmailRecord[],
+    maxDetails: number,
+    logPrefix = "SendPulseDetails"
+  ): Promise<{ emails: SendPulseEmailRecord[]; attempted: number; fetched: number; errors: string[] }> {
+    const ids = Array.from(new Set(emails.map(sendPulseEmailId).filter(Boolean))).slice(0, maxDetails);
+    if (ids.length === 0) {
+      return { emails, attempted: 0, fetched: 0, errors: [] };
+    }
+
+    const detailById = new Map<string, SendPulseEmailRecord>();
+    const errors: string[] = [];
+
+    for (const chunk of chunkArray(ids, 500)) {
+      const detailsRes = await fetch("https://api.sendpulse.com/smtp/emails/info", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ emails: chunk }),
+      });
+
+      if (!detailsRes.ok) {
+        const errorText = await detailsRes.text();
+        const message = `${detailsRes.status}: ${errorText.slice(0, 300)}`;
+        console.error(`[${logPrefix}] Detail batch failed:`, message);
+        errors.push(message);
+        continue;
+      }
+
+      const detailsData = await detailsRes.json();
+      const details = Array.isArray(detailsData) ? detailsData : (detailsData.data || detailsData.emails || []);
+      for (const detail of details) {
+        const id = sendPulseEmailId(detail);
+        if (id) detailById.set(id, detail);
+      }
+    }
+
+    return {
+      emails: emails.map((email) => {
+        const id = sendPulseEmailId(email);
+        const detail = id ? detailById.get(id) : undefined;
+        return detail ? { ...email, ...detail } : email;
+      }),
+      attempted: ids.length,
+      fetched: detailById.size,
+      errors,
+    };
+  }
+
   // Centralized, race-safe wrapper around sendReportReadyEmail. Guarantees a
   // given audit can never receive two delivery emails , even if multiple paths
   // (inline create, Stripe webhook, admin resend, scheduled cron) try to send
@@ -6763,7 +7021,7 @@ export async function registerRoutes(
       }
       const result = await pool.query(
         `SELECT id, email_type, recipient_email, subject, audit_id, audit_type,
-                sendpulse_status, sendpulse_error, sent_at, opened, clicked
+                sendpulse_task_id, sendpulse_status, sendpulse_error, sent_at, opened, clicked
            FROM email_tracking
           WHERE LOWER(recipient_email) = $1
           ORDER BY sent_at DESC
@@ -9635,95 +9893,38 @@ export async function registerRoutes(
       const pageLimit = Math.min(Math.max(Number(req.query.pageLimit) || 100, 1), 100);
       const maxPages = Math.min(Math.max(Number(req.query.pages) || 5, 1), 50);
       const responseLimit = Math.min(Math.max(Number(req.query.limit) || 100, 1), 500);
+      const detailsEnabled = String(req.query.details ?? "1") !== "0";
+      const detailLimit = Math.min(Math.max(Number(req.query.detailLimit) || pageLimit * maxPages, 1), 5000);
       const recipientFilter = String(req.query.recipient || req.query.email || "").trim().toLowerCase();
       const subjectFilter = String(req.query.subject || "").trim().toLowerCase();
-      let allEmails: any[] = [];
-      let offset = 0;
 
-      for (let page = 0; page < maxPages; page++) {
-        const emailsRes = await fetch(
-          `https://api.sendpulse.com/smtp/emails?limit=${pageLimit}&offset=${offset}&from_date=${encodeURIComponent(fromDate)}`,
-          {
-            headers: {
-              "Authorization": `Bearer ${accessToken}`,
-              "Content-Type": "application/json"
-            }
-          }
-        );
+      const allEmails = await fetchSendPulseEmails(accessToken, {
+        fromDate,
+        pageLimit,
+        maxPages,
+        logPrefix: "SendPulseLiveStats",
+      });
 
-        if (!emailsRes.ok) {
-          const errorText = await emailsRes.text();
-          console.error(`[SendPulseLiveStats] Failed at offset ${offset}:`, errorText);
-          break;
-        }
-
-        const emailsData = await emailsRes.json();
-        const emails = Array.isArray(emailsData) ? emailsData : (emailsData.data || []);
-
-        console.log(`[SendPulseLiveStats] Fetched ${emails.length} emails at offset ${offset}`);
-
-        if (emails.length === 0) {
-          break;
-        }
-
-        allEmails = allEmails.concat(emails);
-        offset += pageLimit;
-      }
-
-      console.log(`[SendPulseLiveStats] Total emails fetched: ${allEmails.length}`);
-
-      const emails = allEmails.filter((email: any) => {
-        const recipient = String(email.recipient || email.to || email.email || "").toLowerCase();
-        const subject = String(email.subject || "").toLowerCase();
+      const filteredEmails = allEmails.filter((email: SendPulseEmailRecord) => {
+        const recipient = sendPulseRecipient(email).toLowerCase();
+        const subject = sendPulseSubject(email).toLowerCase();
         if (recipientFilter && !recipient.includes(recipientFilter)) return false;
         if (subjectFilter && !subject.includes(subjectFilter)) return false;
         return true;
       });
 
-      const smtpCode = (email: any): number | null => {
-        const raw = email.smtp_answer_code ?? email.smtpAnswerCode ?? email.smtp_code;
-        const parsed = Number(raw);
-        return Number.isFinite(parsed) ? parsed : null;
-      };
-      const isDelivered = (email: any): boolean => {
-        const code = smtpCode(email);
-        const status = String(email.status || "").toLowerCase();
-        return (code !== null && code >= 200 && code < 300) || status === "sent" || status === "delivered";
-      };
-      const isHardFailed = (email: any): boolean => {
-        const code = smtpCode(email);
-        const status = String(email.status || "").toLowerCase();
-        return (code !== null && code >= 500) || status === "failed" || status === "error" || status === "bounced";
-      };
-      const isSoftFailed = (email: any): boolean => {
-        const code = smtpCode(email);
-        return code !== null && code >= 400 && code < 500;
-      };
-      const engagementCount = (email: any, key: string): number => {
-        const raw = email[key] ?? email.tracking?.[key] ?? email.statistics?.[key];
-        const parsed = Number(raw);
-        return Number.isFinite(parsed) ? parsed : 0;
-      };
-      const simplify = (email: any) => ({
-        id: email.id || email.email_id || email.message_id || null,
-        recipient: email.recipient || email.to || email.email || null,
-        subject: email.subject || null,
-        status: email.status || null,
-        sendDate: email.send_date || email.date || email.created_at || null,
-        smtpAnswerCode: email.smtp_answer_code ?? null,
-        smtpAnswerSubcode: email.smtp_answer_subcode ?? null,
-        smtpAnswerData: email.smtp_answer_data || null,
-        opens: engagementCount(email, "opens"),
-        clicks: engagementCount(email, "clicks"),
-      });
+      const details = detailsEnabled
+        ? await fetchSendPulseEmailDetails(accessToken, filteredEmails, detailLimit, "SendPulseLiveStatsDetails")
+        : { emails: filteredEmails, attempted: 0, fetched: 0, errors: [] };
+      const emails = details.emails;
 
       // Calculate stats
       const totalSent = emails.length;
-      const delivered = emails.filter(isDelivered).length;
-      const hardFailed = emails.filter(isHardFailed).length;
-      const softFailed = emails.filter(isSoftFailed).length;
-      const opened = emails.filter((e: any) => engagementCount(e, "opens") > 0).length;
-      const clicked = emails.filter((e: any) => engagementCount(e, "clicks") > 0).length;
+      const delivered = emails.filter(sendPulseIsDelivered).length;
+      const hardFailed = emails.filter(sendPulseIsHardFailed).length;
+      const softFailed = emails.filter(sendPulseIsSoftFailed).length;
+      const opened = emails.filter((e: SendPulseEmailRecord) => sendPulseEngagementCount(e, "opens") > 0).length;
+      const clicked = emails.filter((e: SendPulseEmailRecord) => sendPulseEngagementCount(e, "clicks") > 0).length;
 
       // By type (parse from subject)
       const byType: Record<string, number> = {
@@ -9734,8 +9935,8 @@ export async function registerRoutes(
         OTHER: 0,
       };
 
-      emails.forEach((email: any) => {
-        const subject = (email.subject || "").toLowerCase();
+      emails.forEach((email: SendPulseEmailRecord) => {
+        const subject = sendPulseSubject(email).toLowerCase();
         const text = (email.text || "").toLowerCase();
         const combined = subject + " " + text;
 
@@ -9757,13 +9958,13 @@ export async function registerRoutes(
       const last24h = now - 24 * 60 * 60 * 1000;
       const last7d = now - 7 * 24 * 60 * 60 * 1000;
 
-      const last24hCount = emails.filter((e: any) => {
-        const sentTime = e.send_date ? new Date(e.send_date).getTime() : 0;
+      const last24hCount = emails.filter((e: SendPulseEmailRecord) => {
+        const sentTime = sendPulseSendDate(e) ? new Date(String(sendPulseSendDate(e))).getTime() : 0;
         return sentTime >= last24h;
       }).length;
 
-      const last7dCount = emails.filter((e: any) => {
-        const sentTime = e.send_date ? new Date(e.send_date).getTime() : 0;
+      const last7dCount = emails.filter((e: SendPulseEmailRecord) => {
+        const sentTime = sendPulseSendDate(e) ? new Date(String(sendPulseSendDate(e))).getTime() : 0;
         return sentTime >= last7d;
       }).length;
 
@@ -9792,10 +9993,14 @@ export async function registerRoutes(
           maxPages,
           fetched: allEmails.length,
           filtered: emails.length,
+          detailsEnabled,
+          detailsAttempted: details.attempted,
+          detailsFetched: details.fetched,
+          detailErrors: details.errors,
           recipient: recipientFilter || null,
           subject: subjectFilter || null,
         },
-        records: emails.slice(0, responseLimit).map(simplify),
+        records: emails.slice(0, responseLimit).map(simplifySendPulseEmail),
         raw: {
           totalEmails: emails.length,
           sampleEmail: emails[0] || null
@@ -9812,94 +10017,297 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== PROMO / CTA DELIVERABILITY AUDIT ====================
+  app.get("/api/admin/promo-deliverability-audit", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+
+    try {
+      const scopeInput = String(req.query.scope || "all").toLowerCase();
+      const scope = ["promo", "report", "all"].includes(scopeInput) ? scopeInput : "all";
+      const days = Math.min(Math.max(Number(req.query.days) || 180, 1), 365);
+      const fromDate = String(
+        req.query.from_date || new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
+      );
+      const pageLimit = Math.min(Math.max(Number(req.query.pageLimit) || 100, 1), 100);
+      const maxPages = Math.min(Math.max(Number(req.query.pages) || 20, 1), 100);
+      const responseLimit = Math.min(Math.max(Number(req.query.limit) || 100, 1), 500);
+      const dbLimit = Math.min(Math.max(Number(req.query.dbLimit) || 5000, 1), 20000);
+      const detailsEnabled = String(req.query.details ?? "1") !== "0";
+      const detailLimit = Math.min(Math.max(Number(req.query.detailLimit) || pageLimit * maxPages, 1), 10000);
+      const recipientFilter = String(req.query.recipient || req.query.email || "").trim().toLowerCase();
+      const subjectFilter = String(req.query.subject || "").trim().toLowerCase();
+
+      const dbResult = await pool.query(
+        `SELECT id, email_type, recipient_email, subject, audit_id, audit_type,
+                sendpulse_task_id, sendpulse_status, sendpulse_error, sent_at,
+                opened, clicked, converted, conversion_type, metadata,
+                split_part(lower(recipient_email), '@', 2) AS domain
+           FROM email_tracking
+          WHERE sent_at >= $1
+            AND (
+              ($2 = 'promo' AND (email_type = ANY($3::text[]) OR lower(coalesce(subject, '')) LIKE ANY($5::text[])))
+              OR ($2 = 'report' AND (email_type = ANY($4::text[]) OR lower(coalesce(subject, '')) LIKE ANY($6::text[])))
+              OR ($2 = 'all' AND (
+                email_type = ANY($3::text[])
+                OR email_type = ANY($4::text[])
+                OR lower(coalesce(subject, '')) LIKE ANY($5::text[])
+                OR lower(coalesce(subject, '')) LIKE ANY($6::text[])
+              ))
+            )
+            AND ($7 = '' OR lower(recipient_email) LIKE '%' || $7 || '%')
+            AND ($8 = '' OR lower(coalesce(subject, '')) LIKE '%' || $8 || '%')
+          ORDER BY sent_at DESC
+          LIMIT $9`,
+        [
+          fromDate,
+          scope,
+          PROMO_EMAIL_TYPES,
+          REPORT_EMAIL_TYPES,
+          PROMO_SUBJECT_PATTERNS,
+          REPORT_SUBJECT_PATTERNS,
+          recipientFilter,
+          subjectFilter,
+          dbLimit,
+        ]
+      );
+
+      const dbRows = dbResult.rows;
+      const byType: Record<string, number> = {};
+      const byDomain: Record<string, number> = {};
+      const inc = (target: Record<string, number>, key: string | null | undefined) => {
+        const safeKey = key || "unknown";
+        target[safeKey] = (target[safeKey] || 0) + 1;
+      };
+      dbRows.forEach((row: any) => {
+        inc(byType, row.email_type);
+        inc(byDomain, row.domain);
+      });
+
+      const dbAccepted = dbRows.filter((row: any) => row.sendpulse_status === "success").length;
+      const dbFailed = dbRows.filter((row: any) => row.sendpulse_status === "failed").length;
+      const dbOpened = dbRows.filter((row: any) => row.opened).length;
+      const dbClicked = dbRows.filter((row: any) => row.clicked).length;
+      const dbConverted = dbRows.filter((row: any) => row.converted).length;
+      const dbMissingProviderId = dbRows.filter((row: any) => row.sendpulse_status === "success" && !row.sendpulse_task_id).length;
+
+      const accessToken = await getSendPulseAdminToken();
+      const allLiveEmails = await fetchSendPulseEmails(accessToken, {
+        fromDate,
+        pageLimit,
+        maxPages,
+        logPrefix: "PromoDeliverabilityAudit",
+      });
+      const scopedLiveEmails = allLiveEmails.filter((email: SendPulseEmailRecord) => {
+        const recipient = sendPulseRecipient(email).toLowerCase();
+        const subject = sendPulseSubject(email).toLowerCase();
+        if (!matchesEmailAuditScope("", subject, scope)) return false;
+        if (recipientFilter && !recipient.includes(recipientFilter)) return false;
+        if (subjectFilter && !subject.includes(subjectFilter)) return false;
+        return true;
+      });
+      const detailResult = detailsEnabled
+        ? await fetchSendPulseEmailDetails(accessToken, scopedLiveEmails, detailLimit, "PromoDeliverabilityDetails")
+        : { emails: scopedLiveEmails, attempted: 0, fetched: 0, errors: [] };
+      const liveEmails = detailResult.emails;
+
+      const liveByDomain: Record<string, number> = {};
+      liveEmails.forEach((email: SendPulseEmailRecord) => {
+        const recipient = sendPulseRecipient(email).toLowerCase();
+        inc(liveByDomain, recipient.includes("@") ? recipient.split("@").pop() : "unknown");
+      });
+
+      const liveDelivered = liveEmails.filter(sendPulseIsDelivered).length;
+      const liveHardFailed = liveEmails.filter(sendPulseIsHardFailed).length;
+      const liveSoftFailed = liveEmails.filter(sendPulseIsSoftFailed).length;
+      const liveOpened = liveEmails.filter((email: SendPulseEmailRecord) => sendPulseEngagementCount(email, "opens") > 0).length;
+      const liveClicked = liveEmails.filter((email: SendPulseEmailRecord) => sendPulseEngagementCount(email, "clicks") > 0).length;
+      const liveDeliveredUnopened = liveEmails.filter((email: SendPulseEmailRecord) =>
+        sendPulseIsDelivered(email) &&
+        sendPulseEngagementCount(email, "opens") === 0 &&
+        sendPulseEngagementCount(email, "clicks") === 0
+      );
+      const liveOpenedNoClick = liveEmails.filter((email: SendPulseEmailRecord) =>
+        sendPulseIsDelivered(email) &&
+        sendPulseEngagementCount(email, "opens") > 0 &&
+        sendPulseEngagementCount(email, "clicks") === 0
+      );
+
+      const rowAction = (row: any) => ({
+        id: row.id,
+        emailType: row.email_type,
+        recipientEmail: row.recipient_email,
+        subject: row.subject,
+        auditId: row.audit_id,
+        auditType: row.audit_type,
+        sendpulseTaskId: row.sendpulse_task_id,
+        sendpulseStatus: row.sendpulse_status,
+        sendpulseError: row.sendpulse_error,
+        sentAt: row.sent_at,
+        opened: row.opened,
+        clicked: row.clicked,
+        converted: row.converted,
+        conversionType: row.conversion_type,
+      });
+
+      res.json({
+        success: true,
+        source: "email_tracking DB + SendPulse SMTP live details",
+        note: "SMTP 2xx proves the recipient server accepted the email. It does not prove inbox placement or human read; opens/clicks depend on tracking being loaded.",
+        query: {
+          scope,
+          days,
+          fromDate,
+          pageLimit,
+          maxPages,
+          dbLimit,
+          fetchedFromSendPulse: allLiveEmails.length,
+          liveFiltered: liveEmails.length,
+          detailsEnabled,
+          detailsAttempted: detailResult.attempted,
+          detailsFetched: detailResult.fetched,
+          detailErrors: detailResult.errors,
+          recipient: recipientFilter || null,
+          subject: subjectFilter || null,
+        },
+        db: {
+          stats: {
+            totalTracked: dbRows.length,
+            acceptedByProvider: dbAccepted,
+            failedAtProvider: dbFailed,
+            opened: dbOpened,
+            clicked: dbClicked,
+            converted: dbConverted,
+            missingProviderId: dbMissingProviderId,
+            openRate: dbRows.length > 0 ? ((dbOpened / dbRows.length) * 100).toFixed(1) + "%" : "0.0%",
+            clickRate: dbRows.length > 0 ? ((dbClicked / dbRows.length) * 100).toFixed(1) + "%" : "0.0%",
+            conversionRate: dbRows.length > 0 ? ((dbConverted / dbRows.length) * 100).toFixed(1) + "%" : "0.0%",
+          },
+          byType,
+          byDomain,
+          recent: dbRows.slice(0, responseLimit).map(rowAction),
+        },
+        sendpulse: {
+          stats: {
+            totalScoped: liveEmails.length,
+            smtpDelivered: liveDelivered,
+            hardFailed: liveHardFailed,
+            softFailed: liveSoftFailed,
+            opened: liveOpened,
+            clicked: liveClicked,
+            deliveryRate: liveEmails.length > 0 ? ((liveDelivered / liveEmails.length) * 100).toFixed(1) + "%" : "0.0%",
+            openRate: liveEmails.length > 0 ? ((liveOpened / liveEmails.length) * 100).toFixed(1) + "%" : "0.0%",
+            clickRate: liveEmails.length > 0 ? ((liveClicked / liveEmails.length) * 100).toFixed(1) + "%" : "0.0%",
+          },
+          byDomain: liveByDomain,
+        },
+        actionBuckets: {
+          hardOrInvalidRecipient: liveEmails.filter(sendPulseIsHardFailed).slice(0, responseLimit).map(simplifySendPulseEmail),
+          softFailureRetry: liveEmails.filter(sendPulseIsSoftFailed).slice(0, responseLimit).map(simplifySendPulseEmail),
+          smtpDeliveredNoOpenNoClick: liveDeliveredUnopened.slice(0, responseLimit).map(simplifySendPulseEmail),
+          openedNoClick: liveOpenedNoClick.slice(0, responseLimit).map(simplifySendPulseEmail),
+          clickedNoConversion: dbRows.filter((row: any) => row.clicked && !row.converted).slice(0, responseLimit).map(rowAction),
+          dbProviderFailed: dbRows.filter((row: any) => row.sendpulse_status === "failed").slice(0, responseLimit).map(rowAction),
+          legacyAcceptedMissingProviderId: dbRows
+            .filter((row: any) => row.sendpulse_status === "success" && !row.sendpulse_task_id)
+            .slice(0, responseLimit)
+            .map(rowAction),
+        },
+      });
+    } catch (error) {
+      console.error("[PromoDeliverabilityAudit] Error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Erreur audit deliverability promo",
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  });
+
   // ==================== CTA STATS ====================
   app.get("/api/admin/cta-stats", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
 
     try {
-      // Accept both SENDPULSE_USER_ID/SECRET and SENDPULSE_API_USER_ID/API_SECRET
-      // (the rest of the codebase already supports both, but this admin endpoint
-      // was hardcoded to the first variant, breaking the dashboard CTA stats
-      // when env was set with the API_ prefix variant — Achzod report 2026-05-07).
-      const { userId: SENDPULSE_USER_ID, secret: SENDPULSE_SECRET } = getSendPulseCredentials();
+      const days = Math.min(Math.max(Number(req.query.days) || 180, 1), 365);
+      const fromDate = String(
+        req.query.from_date || new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
+      );
+      const eventLimit = Math.min(Math.max(Number(req.query.eventLimit) || 100, 1), 500);
 
-      if (!SENDPULSE_USER_ID || !SENDPULSE_SECRET) {
-        res.json({ success: false, error: "SendPulse credentials not configured" });
-        return;
+      const emailsResult = await pool.query(
+        `SELECT id, email_type, recipient_email, subject, audit_id, audit_type,
+                sendpulse_status, sendpulse_error, sent_at, opened, clicked,
+                converted, conversion_type
+           FROM email_tracking
+          WHERE sent_at >= $1
+            AND (
+              email_type = ANY($2::text[])
+              OR lower(coalesce(subject, '')) LIKE ANY($3::text[])
+            )
+          ORDER BY sent_at DESC`,
+        [fromDate, PROMO_EMAIL_TYPES, PROMO_SUBJECT_PATTERNS]
+      );
+
+      const eventsResult = await pool.query(
+        `SELECT ct.event_type, ct.url, ct.created_at,
+                et.id AS email_tracking_id,
+                et.email_type,
+                et.recipient_email,
+                et.subject,
+                et.audit_id,
+                et.audit_type
+           FROM cta_tracking ct
+           LEFT JOIN email_tracking et ON et.id = ct.email_tracking_id
+          WHERE ct.created_at >= $1
+            AND (
+              et.id IS NULL
+              OR et.email_type = ANY($2::text[])
+              OR lower(coalesce(et.subject, '')) LIKE ANY($3::text[])
+            )
+          ORDER BY ct.created_at DESC
+          LIMIT $4`,
+        [fromDate, PROMO_EMAIL_TYPES, PROMO_SUBJECT_PATTERNS, eventLimit]
+      );
+
+      const emails = emailsResult.rows;
+      const totalSent = emails.length;
+      const accepted = emails.filter((email: any) => email.sendpulse_status === "success").length;
+      const failed = emails.filter((email: any) => email.sendpulse_status === "failed").length;
+      const opened = emails.filter((email: any) => email.opened).length;
+      const clicked = emails.filter((email: any) => email.clicked).length;
+      const converted = emails.filter((email: any) => email.converted).length;
+
+      const byEventType: Record<string, number> = {};
+      const byUrl: Record<string, number> = {};
+      for (const event of eventsResult.rows) {
+        const eventType = event.event_type || "unknown";
+        byEventType[eventType] = (byEventType[eventType] || 0) + 1;
+        if (event.url) byUrl[event.url] = (byUrl[event.url] || 0) + 1;
       }
-
-      // 1. Get SendPulse OAuth token
-      const tokenRes = await fetch("https://api.sendpulse.com/oauth/access_token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          grant_type: "client_credentials",
-          client_id: SENDPULSE_USER_ID,
-          client_secret: SENDPULSE_SECRET,
-        }),
-      });
-
-      if (!tokenRes.ok) {
-        throw new Error(`SendPulse auth failed: ${tokenRes.statusText}`);
-      }
-
-      const tokenData = await tokenRes.json();
-      const accessToken = tokenData.access_token;
-
-      // 2. Get ALL emails from SendPulse with pagination
-      const since17mars = "2026-03-17T00:00:00Z";
-      const limit = 100;
-      let allEmails: any[] = [];
-      let offset = 0;
-      let hasMore = true;
-
-      console.log("[CTAStats] Fetching emails from SendPulse...");
-
-      while (hasMore) {
-        const emailsRes = await fetch(
-          `https://api.sendpulse.com/smtp/emails?limit=${limit}&offset=${offset}&from_date=${since17mars}`,
-          {
-            headers: {
-              "Authorization": `Bearer ${accessToken}`,
-              "Content-Type": "application/json"
-            }
-          }
-        );
-
-        if (!emailsRes.ok) {
-          console.error(`[CTAStats] Failed at offset ${offset}`);
-          break;
-        }
-
-        const emailsData = await emailsRes.json();
-        const emails = Array.isArray(emailsData) ? emailsData : (emailsData.data || []);
-
-        if (emails.length === 0) {
-          hasMore = false;
-        } else {
-          allEmails = allEmails.concat(emails);
-          offset += limit;
-        }
-      }
-
-      console.log(`[CTAStats] Total emails fetched: ${allEmails.length}`);
-
-      const totalSent = allEmails.length;
-      const opened = allEmails.filter((e: any) => e.opens && e.opens > 0).length;
-      const clicked = allEmails.filter((e: any) => e.clicks && e.clicks > 0).length;
 
       res.json({
         success: true,
+        source: "email_tracking + cta_tracking DB",
+        note: "For real SMTP delivery status use /api/admin/promo-deliverability-audit or /api/admin/sendpulse-live-stats; SendPulse list rows do not include reliable opens/clicks.",
+        query: {
+          days,
+          fromDate,
+          eventLimit,
+        },
         stats: {
           totalSent,
+          acceptedByProvider: accepted,
+          failedAtProvider: failed,
           opened,
           clicked,
+          converted,
           openRate: totalSent > 0 ? ((opened / totalSent) * 100).toFixed(1) + '%' : '0.0%',
           clickRate: totalSent > 0 ? ((clicked / totalSent) * 100).toFixed(1) + '%' : '0.0%',
           clickToOpenRate: opened > 0 ? ((clicked / opened) * 100).toFixed(1) + '%' : '0.0%',
-          byEventType: {},
-          byUrl: {},
-          recentEvents: []
+          conversionRate: totalSent > 0 ? ((converted / totalSent) * 100).toFixed(1) + '%' : '0.0%',
+          byEventType,
+          byUrl,
+          recentEvents: eventsResult.rows
         }
       });
 
@@ -10481,23 +10889,41 @@ export async function registerRoutes(
         for (const eventData of events) {
           try {
             const { event, email, task_id, link_url, timestamp } = eventData;
+            const providerTaskId = String(
+              task_id || eventData.taskId || eventData.id || eventData.email_id || eventData.message_id || ""
+            ).trim();
+            const normalizedEmail = email ? String(email).toLowerCase().trim() : "";
 
-            if (!event || !email) {
+            if (!event || (!normalizedEmail && !providerTaskId)) {
               console.log("[SendPulseWebhook] ⚠️  Skipping event, missing required fields");
               errors++;
               continue;
             }
 
-            const normalizedEmail = email.toLowerCase().trim();
+            // Prefer exact provider ID matching. Falling back to latest recipient
+            // only exists for old rows created before sendpulse_task_id storage.
+            let emailResult = providerTaskId
+              ? await pool.query(
+                  `SELECT id
+                     FROM email_tracking
+                    WHERE sendpulse_task_id = $1
+                       OR metadata->>'sendpulseTaskId' = $1
+                       OR metadata->>'sendpulseId' = $1
+                    ORDER BY sent_at DESC
+                    LIMIT 1`,
+                  [providerTaskId]
+                )
+              : { rows: [] as any[] };
 
-            // Find email_tracking record
-            const emailResult = await pool.query(
-              `SELECT id FROM email_tracking WHERE LOWER(recipient_email) = $1 ORDER BY sent_at DESC LIMIT 1`,
-              [normalizedEmail]
-            );
+            if (emailResult.rows.length === 0 && normalizedEmail) {
+              emailResult = await pool.query(
+                `SELECT id FROM email_tracking WHERE LOWER(recipient_email) = $1 ORDER BY sent_at DESC LIMIT 1`,
+                [normalizedEmail]
+              );
+            }
 
             if (emailResult.rows.length === 0) {
-              console.log(`[SendPulseWebhook] ⚠️  Email tracking not found for: ${normalizedEmail}`);
+              console.log(`[SendPulseWebhook] ⚠️  Email tracking not found for: ${normalizedEmail || providerTaskId}`);
               // Still record the event with null email_tracking_id
             }
 
@@ -10539,10 +10965,31 @@ export async function registerRoutes(
                   `UPDATE email_tracking SET clicked = NOW() WHERE id = $1 AND clicked IS NULL`,
                   [emailTrackingId]
                 );
+              } else if (eventType === 'delivered') {
+                await pool.query(
+                  `UPDATE email_tracking SET sendpulse_status = 'success' WHERE id = $1`,
+                  [emailTrackingId]
+                );
+              } else if (eventType === 'bounce' || eventType === 'spam' || eventType === 'unsubscribe') {
+                await pool.query(
+                  `UPDATE email_tracking
+                      SET sendpulse_status = 'failed',
+                          sendpulse_error = $2
+                    WHERE id = $1`,
+                  [
+                    emailTrackingId,
+                    JSON.stringify({
+                      eventType,
+                      providerTaskId: providerTaskId || null,
+                      timestamp: timestamp || null,
+                      reason: eventData.reason || eventData.description || eventData.smtp_answer_data || null,
+                    }),
+                  ]
+                );
               }
             }
 
-            console.log(`[SendPulseWebhook] ✅ Tracked ${eventType} for ${normalizedEmail}`);
+            console.log(`[SendPulseWebhook] ✅ Tracked ${eventType} for ${normalizedEmail || providerTaskId}`);
             processed++;
 
           } catch (err) {
