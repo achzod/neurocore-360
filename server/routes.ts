@@ -9914,6 +9914,7 @@ export async function registerRoutes(
       const detailLimit = Math.min(Math.max(Number(req.query.detailLimit) || pageLimit * maxPages, 1), 5000);
       const recipientFilter = String(req.query.recipient || req.query.email || "").trim().toLowerCase();
       const subjectFilter = String(req.query.subject || "").trim().toLowerCase();
+      const recordFilter = String(req.query.recordFilter || req.query.only || "all").trim().toLowerCase();
 
       const allEmails = await fetchSendPulseEmails(accessToken, {
         fromDate,
@@ -9984,6 +9985,23 @@ export async function registerRoutes(
         const sentTime = sendPulseSendDate(e) ? new Date(String(sendPulseSendDate(e))).getTime() : 0;
         return sentTime >= last7d;
       }).length;
+      const recordsForResponse = emails.filter((email: SendPulseEmailRecord) => {
+        if (recordFilter === "all") return true;
+        if (recordFilter === "failed") return sendPulseIsHardFailed(email) || sendPulseIsSoftFailed(email);
+        if (recordFilter === "hardfailed") return sendPulseIsHardFailed(email);
+        if (recordFilter === "softfailed") return sendPulseIsSoftFailed(email);
+        if (recordFilter === "delivered") return sendPulseIsDelivered(email);
+        if (recordFilter === "opened") return sendPulseEngagementCount(email, "opens") > 0;
+        if (recordFilter === "clicked") return sendPulseEngagementCount(email, "clicks") > 0;
+        if (recordFilter === "deliverednoopen") {
+          return sendPulseIsDelivered(email) &&
+            sendPulseEngagementCount(email, "opens") === 0 &&
+            sendPulseEngagementCount(email, "clicks") === 0;
+        }
+        if (recordFilter === "promo") return matchesEmailAuditScope("", sendPulseSubject(email), "promo");
+        if (recordFilter === "report") return matchesEmailAuditScope("", sendPulseSubject(email), "report");
+        return true;
+      });
 
       res.json({
         success: true,
@@ -10016,8 +10034,10 @@ export async function registerRoutes(
           detailErrors: details.errors,
           recipient: recipientFilter || null,
           subject: subjectFilter || null,
+          recordFilter,
+          recordsForResponse: recordsForResponse.length,
         },
-        records: emails.slice(0, responseLimit).map(simplifySendPulseEmail),
+        records: recordsForResponse.slice(0, responseLimit).map(simplifySendPulseEmail),
         raw: {
           totalEmails: emails.length,
           sampleEmail: emails[0] || null
@@ -10054,41 +10074,47 @@ export async function registerRoutes(
       const recipientFilter = String(req.query.recipient || req.query.email || "").trim().toLowerCase();
       const subjectFilter = String(req.query.subject || "").trim().toLowerCase();
 
-      const dbResult = await pool.query(
-        `SELECT id, email_type, recipient_email, subject, audit_id, audit_type,
-                sendpulse_task_id, sendpulse_status, sendpulse_error, sent_at,
-                opened, clicked, converted, conversion_type, metadata,
-                split_part(lower(recipient_email), '@', 2) AS domain
-           FROM email_tracking
-          WHERE sent_at >= $1
-            AND (
-              ($2 = 'promo' AND (email_type = ANY($3::text[]) OR lower(coalesce(subject, '')) LIKE ANY($5::text[])))
-              OR ($2 = 'report' AND (email_type = ANY($4::text[]) OR lower(coalesce(subject, '')) LIKE ANY($6::text[])))
-              OR ($2 = 'all' AND (
-                email_type = ANY($3::text[])
-                OR email_type = ANY($4::text[])
-                OR lower(coalesce(subject, '')) LIKE ANY($5::text[])
-                OR lower(coalesce(subject, '')) LIKE ANY($6::text[])
-              ))
-            )
-            AND ($7 = '' OR lower(recipient_email) LIKE '%' || $7 || '%')
-            AND ($8 = '' OR lower(coalesce(subject, '')) LIKE '%' || $8 || '%')
-          ORDER BY sent_at DESC
-          LIMIT $9`,
-        [
-          fromDate,
-          scope,
-          PROMO_EMAIL_TYPES,
-          REPORT_EMAIL_TYPES,
-          PROMO_SUBJECT_PATTERNS,
-          REPORT_SUBJECT_PATTERNS,
-          recipientFilter,
-          subjectFilter,
-          dbLimit,
-        ]
-      );
-
-      const dbRows = dbResult.rows;
+      let dbRows: any[] = [];
+      let dbError: string | null = null;
+      try {
+        const dbResult = await pool.query(
+          `SELECT id, email_type, recipient_email, subject, audit_id, audit_type,
+                  sendpulse_task_id, sendpulse_status, sendpulse_error, sent_at,
+                  opened, clicked, converted, conversion_type, metadata,
+                  split_part(lower(recipient_email), '@', 2) AS domain
+             FROM email_tracking
+            WHERE sent_at >= $1
+              AND (
+                ($2 = 'promo' AND (email_type = ANY($3::text[]) OR lower(coalesce(subject, '')) LIKE ANY($5::text[])))
+                OR ($2 = 'report' AND (email_type = ANY($4::text[]) OR lower(coalesce(subject, '')) LIKE ANY($6::text[])))
+                OR ($2 = 'all' AND (
+                  email_type = ANY($3::text[])
+                  OR email_type = ANY($4::text[])
+                  OR lower(coalesce(subject, '')) LIKE ANY($5::text[])
+                  OR lower(coalesce(subject, '')) LIKE ANY($6::text[])
+                ))
+              )
+              AND ($7 = '' OR lower(recipient_email) LIKE '%' || $7 || '%')
+              AND ($8 = '' OR lower(coalesce(subject, '')) LIKE '%' || $8 || '%')
+            ORDER BY sent_at DESC
+            LIMIT $9`,
+          [
+            fromDate,
+            scope,
+            PROMO_EMAIL_TYPES,
+            REPORT_EMAIL_TYPES,
+            PROMO_SUBJECT_PATTERNS,
+            REPORT_SUBJECT_PATTERNS,
+            recipientFilter,
+            subjectFilter,
+            dbLimit,
+          ]
+        );
+        dbRows = dbResult.rows;
+      } catch (error) {
+        dbError = error instanceof Error ? error.message : String(error);
+        console.error("[PromoDeliverabilityAudit] DB unavailable, continuing with SendPulse live only:", dbError);
+      }
       const byType: Record<string, number> = {};
       const byDomain: Record<string, number> = {};
       const inc = (target: Record<string, number>, key: string | null | undefined) => {
@@ -10187,6 +10213,8 @@ export async function registerRoutes(
           subject: subjectFilter || null,
         },
         db: {
+          available: !dbError,
+          error: dbError,
           stats: {
             totalTracked: dbRows.length,
             acceptedByProvider: dbAccepted,
