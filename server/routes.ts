@@ -5934,7 +5934,7 @@ export async function registerRoutes(
       const dryRun = req.body.dryRun !== false;
       const day = Math.min(Math.max(Number(req.body.day) || 1, 1), 7);
       const requestedMaxToSend = Math.min(Math.max(Number(req.body.maxToSend) || (day === 1 ? 25 : 60), 1), 250);
-      const maxBatchSize = dryRun ? 250 : 8;
+      const maxBatchSize = dryRun ? 250 : 1;
       const maxToSend = Math.min(requestedMaxToSend, maxBatchSize);
       const lookbackDays = Math.min(Math.max(Number(req.body.lookbackDays) || 120, 7), 365);
       const cohortFilter = String(req.body.cohort || "auto").trim() as RecoveryCtaCohort | "auto";
@@ -5977,7 +5977,11 @@ export async function registerRoutes(
         `SELECT LOWER(recipient_email) AS email
            FROM email_tracking
           WHERE email_type = 'sendRecoveryCtaEmail'
-            AND sent_at >= NOW() - INTERVAL '21 days'`
+            AND sent_at >= NOW() - INTERVAL '21 days'
+            AND (
+              sendpulse_task_id IS NOT NULL
+              OR LOWER(COALESCE(sendpulse_status, '')) IN ('success', 'sent', 'delivered')
+            )`
       );
       sentRows.rows.forEach((row: any) => sentRecovery.add(cleanEmail(row.email)));
 
