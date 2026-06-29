@@ -403,13 +403,37 @@ if (process.env.NODE_ENV === "production") {
         10
       );
       const RECOVERY_CTA_ENABLED = process.env.RECOVERY_CTA_DRIP_ENABLED !== "0";
+      const RECOVERY_CTA_PARIS_START_HOUR = Math.min(
+        Math.max(Number(process.env.RECOVERY_CTA_PARIS_START_HOUR || 8), 0),
+        23
+      );
+      const RECOVERY_CTA_PARIS_END_HOUR = Math.min(
+        Math.max(Number(process.env.RECOVERY_CTA_PARIS_END_HOUR || 22), 1),
+        24
+      );
       const recoveryCtaDays = process.env.RECOVERY_CTA_INCLUDE_COLD === "1"
         ? [2, 3, 4, 5, 6, 7]
         : [2, 3, 4, 5];
       let recoveryCtaRunning = false;
 
+      const isWithinRecoveryCtaWindow = () => {
+        const hour = Number(
+          new Intl.DateTimeFormat("en-GB", {
+            timeZone: "Europe/Paris",
+            hour: "2-digit",
+            hourCycle: "h23",
+          }).format(new Date())
+        );
+        if (RECOVERY_CTA_PARIS_START_HOUR === RECOVERY_CTA_PARIS_END_HOUR) return true;
+        if (RECOVERY_CTA_PARIS_START_HOUR < RECOVERY_CTA_PARIS_END_HOUR) {
+          return hour >= RECOVERY_CTA_PARIS_START_HOUR && hour < RECOVERY_CTA_PARIS_END_HOUR;
+        }
+        return hour >= RECOVERY_CTA_PARIS_START_HOUR || hour < RECOVERY_CTA_PARIS_END_HOUR;
+      };
+
       const runRecoveryCtaDrip = async () => {
         if (!RECOVERY_CTA_ENABLED || recoveryCtaRunning) return;
+        if (!isWithinRecoveryCtaWindow()) return;
         const adminKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY;
         if (!adminKey) {
           log("Recovery CTA drip skipped: ADMIN_SECRET/ADMIN_KEY missing", "recovery-cta");
@@ -474,7 +498,7 @@ if (process.env.NODE_ENV === "production") {
 
       setInterval(runRecoveryCtaDrip, RECOVERY_CTA_INTERVAL_MS);
       log(
-        `Recovery CTA drip started (every ${Math.round(RECOVERY_CTA_INTERVAL_MS / 60000)} min, max ${RECOVERY_CTA_PER_TICK}/tick, days ${recoveryCtaDays.join(",")})`,
+        `Recovery CTA drip started (every ${Math.round(RECOVERY_CTA_INTERVAL_MS / 60000)} min, max ${RECOVERY_CTA_PER_TICK}/tick, days ${recoveryCtaDays.join(",")}, Paris ${RECOVERY_CTA_PARIS_START_HOUR}-${RECOVERY_CTA_PARIS_END_HOUR})`,
         "recovery-cta"
       );
 
