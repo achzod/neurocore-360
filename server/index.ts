@@ -391,6 +391,93 @@ if (process.env.NODE_ENV === "production") {
       setInterval(runAbandonRecovery, ABANDON_INTERVAL_MS);
       log("Abandonment recovery cron started (every 6h, max 50 reminders/cycle)");
 
+      // Recovery CTA drip - keeps the coaching recovery campaign moving without
+      // batching enough SendPulse calls into one request to trigger gateway
+      // timeouts. Cold-base sends stay opt-in via RECOVERY_CTA_INCLUDE_COLD=1.
+      const RECOVERY_CTA_INTERVAL_MS = Math.max(
+        60_000,
+        Number(process.env.RECOVERY_CTA_INTERVAL_MS || 10 * 60 * 1000)
+      );
+      const RECOVERY_CTA_PER_TICK = Math.min(
+        Math.max(Number(process.env.RECOVERY_CTA_PER_TICK || 3), 1),
+        10
+      );
+      const RECOVERY_CTA_ENABLED = process.env.RECOVERY_CTA_DRIP_ENABLED !== "0";
+      const recoveryCtaDays = process.env.RECOVERY_CTA_INCLUDE_COLD === "1"
+        ? [2, 3, 4, 5, 6, 7]
+        : [2, 3, 4, 5];
+      let recoveryCtaRunning = false;
+
+      const runRecoveryCtaDrip = async () => {
+        if (!RECOVERY_CTA_ENABLED || recoveryCtaRunning) return;
+        const adminKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY;
+        if (!adminKey) {
+          log("Recovery CTA drip skipped: ADMIN_SECRET/ADMIN_KEY missing", "recovery-cta");
+          return;
+        }
+
+        recoveryCtaRunning = true;
+        try {
+          const baseUrl = getBaseUrl();
+          let sent = 0;
+          let failed = 0;
+          for (let attempt = 0; attempt < RECOVERY_CTA_PER_TICK; attempt++) {
+            let sentThisAttempt = false;
+
+            for (const day of recoveryCtaDays) {
+              const controller = new AbortController();
+              const timeout = setTimeout(() => controller.abort(), 55_000);
+              try {
+                const response = await fetch(`${baseUrl}/api/admin/recovery-cta-campaign`, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "x-admin-key": adminKey,
+                  },
+                  body: JSON.stringify({ dryRun: false, day, maxToSend: 25, lookbackDays: 120 }),
+                  signal: controller.signal,
+                });
+                const result: any = await response.json().catch(() => null);
+                if (!response.ok || !result?.success) {
+                  failed++;
+                  console.error("[RecoveryCTA-Drip] send failed", {
+                    day,
+                    status: response.status,
+                    error: result?.error || result?.message || "non-json response",
+                  });
+                  continue;
+                }
+                if (Number(result.sent || 0) > 0) {
+                  sent += Number(result.sent);
+                  sentThisAttempt = true;
+                  break;
+                }
+              } catch (err) {
+                failed++;
+                console.error("[RecoveryCTA-Drip] send error:", err);
+              } finally {
+                clearTimeout(timeout);
+              }
+            }
+
+            if (!sentThisAttempt) break;
+            await new Promise((resolve) => setTimeout(resolve, 5_000));
+          }
+
+          if (sent > 0 || failed > 0) {
+            log(`Recovery CTA drip: sent=${sent}, failed=${failed}`, "recovery-cta");
+          }
+        } finally {
+          recoveryCtaRunning = false;
+        }
+      };
+
+      setInterval(runRecoveryCtaDrip, RECOVERY_CTA_INTERVAL_MS);
+      log(
+        `Recovery CTA drip started (every ${Math.round(RECOVERY_CTA_INTERVAL_MS / 60000)} min, max ${RECOVERY_CTA_PER_TICK}/tick, days ${recoveryCtaDays.join(",")})`,
+        "recovery-cta"
+      );
+
       // Self-ping to prevent Render cold starts (every 4 min)
       if (process.env.NODE_ENV === "production") {
         const selfPingUrl = `${getBaseUrl()}/api/health`;
