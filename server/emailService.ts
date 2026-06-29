@@ -714,6 +714,10 @@ function withDiscoveryPromo(url: string): string {
   return `${url}${sep}promo=DISCOVERY30`;
 }
 
+function withEmailClickTracking(baseUrl: string, trackingId: string, url: string): string {
+  return `${baseUrl}/api/track/email/${encodeURIComponent(trackingId)}/click?url=${encodeURIComponent(url)}`;
+}
+
 function getCoachingAppleButton(text: string, href: string, variant: 'primary' | 'secondary' = 'primary'): string {
   const bg = variant === 'primary' ? APPLE_COLORS.accent : APPLE_COLORS.card;
   const fg = variant === 'primary' ? '#ffffff' : APPLE_COLORS.accent;
@@ -3535,6 +3539,8 @@ export async function sendGratuitUpsellEmail(
     const reportLink = `${baseUrl}/analysis/${auditId}`;
     const coachingLink = withDiscoveryPromo(`https://www.achzodcoaching.com/coaching-essential?utm_source=apexlabs&utm_medium=email&utm_campaign=discovery_j3_coaching`);
     const allFormulesLink = withDiscoveryPromo(`https://www.achzodcoaching.com/formules-coaching?utm_source=apexlabs&utm_medium=email&utm_campaign=discovery_j3_coaching`);
+    const trackedCoachingLink = withEmailClickTracking(baseUrl, trackingId, coachingLink);
+    const trackedAllFormulesLink = withEmailClickTracking(baseUrl, trackingId, allFormulesLink);
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
     const DAYS_LEFT = 7;
     const deadlineDate = formatDeadlineFR(DAYS_LEFT);
@@ -3572,10 +3578,10 @@ export async function sendGratuitUpsellEmail(
         Je construis ton plan directement à partir des données de ton Discovery, pas de questionnaire à refaire. Plan personnalisé, nutrition précision, bilan écrit chaque semaine où tu m'envoies tes retours et j'ajuste avant que tu décroches.
       </p>
 
-      ${getCoachingAppleButton('Activer mon code -30% maintenant', coachingLink)}
+      ${getCoachingAppleButton('Activer mon code -30% maintenant', trackedCoachingLink)}
 
       <div style="text-align:center;margin:18px 0 14px;">
-        <a href="${allFormulesLink}" style="color:${APPLE_COLORS.accent};font-size:14px;text-decoration:none;font-weight:500;">
+        <a href="${trackedAllFormulesLink}" style="color:${APPLE_COLORS.accent};font-size:14px;text-decoration:none;font-weight:500;">
           Comparer les 3 formules avec DISCOVERY30 →
         </a>
       </div>
@@ -3606,7 +3612,7 @@ export async function sendGratuitUpsellEmail(
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
-        text: `Ton code DISCOVERY30 est actif : -30% sur formules coaching 8 et 12 semaines, valable jusqu'au ${deadlineDate}.\n\nChoisir ma formule : ${coachingLink}\nComparer les 3 formules : ${allFormulesLink}\n\nAu paiement, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`,
+        text: `Ton code DISCOVERY30 est actif : -30% sur formules coaching 8 et 12 semaines, valable jusqu'au ${deadlineDate}.\n\nChoisir ma formule : ${trackedCoachingLink}\nComparer les 3 formules : ${trackedAllFormulesLink}\n\nAu paiement, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`,
         subject: `DISCOVERY30 actif , 7 jours pour activer ton coaching -30%`,
         from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
@@ -3616,7 +3622,7 @@ export async function sendGratuitUpsellEmail(
         recipientEmail: email,
         auditId,
         auditType: "GRATUIT",
-        metadata: { promoCode: "DISCOVERY30", reportLink, coachingLink, trackingId },
+        metadata: { promoCode: "DISCOVERY30", reportLink, coachingLink, allFormulesLink, trackedCoachingLink, trackedAllFormulesLink, trackingId },
       }
     );
 
@@ -4065,6 +4071,7 @@ export async function sendDiscoveryJ14CoachingEmail(
     const coachingLink = withDiscoveryPromo(recommendation
       ? `${recommendation.href}?utm_source=apexlabs&utm_medium=email&utm_campaign=discovery_j14&tier=${recommendation.tier.toLowerCase()}`
       : defaultHref);
+    const trackedCoachingLink = withEmailClickTracking(baseUrl, trackingId, coachingLink);
     const tierLabel = recommendation
       ? recommendation.tier === "PRIVATELAB" ? "Private Lab" : recommendation.tier === "ELITE" ? "Elite" : "Essential"
       : null;
@@ -4104,7 +4111,7 @@ export async function sendDiscoveryJ14CoachingEmail(
         <tr><td style="padding:10px 16px;background:#f5f5f7;border-radius:8px;color:${APPLE_COLORS.ink};font-size:14px;font-weight:500;line-height:1.55;">Accès mail prioritaire à moi, réponse personnelle en moins de 24h</td></tr>
       </table>
 
-      ${getCoachingAppleButton(tierLabel ? `Activer mon code -30% sur ${tierLabel}` : 'Activer mon code -30% maintenant', coachingLink)}
+      ${getCoachingAppleButton(tierLabel ? `Activer mon code -30% sur ${tierLabel}` : 'Activer mon code -30% maintenant', trackedCoachingLink)}
 
       <p style="color:${APPLE_COLORS.muted};font-size:12px;line-height:1.55;margin:20px 0 0;text-align:center;">
         Code valable jusqu'au <strong style="color:${APPLE_COLORS.ink};">${deadlineDate}</strong>. Au checkout, copie <strong style="color:${APPLE_COLORS.ink};">DISCOVERY30</strong> dans le champ "Code promotionnel ?".
@@ -4135,8 +4142,8 @@ export async function sendDiscoveryJ14CoachingEmail(
       {
         html: encodeBase64(emailContent),
         text: tierLabel
-          ? `Je te recommande ${tierLabel} d'après ton Discovery.\n${recommendation!.reason}\n\nCode DISCOVERY30 : -30% jusqu'au ${deadlineDate} (7 jours).\nChoisir ma formule : ${coachingLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`
-          : `Tu as les données. Le coaching, c'est l'application pratique sur la durée.\n\nCode DISCOVERY30 : -30% sur formules 8 et 12 sem, jusqu'au ${deadlineDate} (7 jours).\nChoisir ma formule : ${coachingLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`,
+          ? `Je te recommande ${tierLabel} d'après ton Discovery.\n${recommendation!.reason}\n\nCode DISCOVERY30 : -30% jusqu'au ${deadlineDate} (7 jours).\nChoisir ma formule : ${trackedCoachingLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`
+          : `Tu as les données. Le coaching, c'est l'application pratique sur la durée.\n\nCode DISCOVERY30 : -30% sur formules 8 et 12 sem, jusqu'au ${deadlineDate} (7 jours).\nChoisir ma formule : ${trackedCoachingLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`,
         subject: tierLabel
           ? `${tierLabel} avec DISCOVERY30 , 7 jours pour activer`
           : `7 jours pour activer DISCOVERY30 , -30% coaching`,
@@ -4148,7 +4155,7 @@ export async function sendDiscoveryJ14CoachingEmail(
         recipientEmail: email,
         auditId,
         auditType: "GRATUIT",
-        metadata: { promoCode: "DISCOVERY30", coachingLink, trackingId, recommendedTier: recommendation?.tier },
+        metadata: { promoCode: "DISCOVERY30", coachingLink, trackedCoachingLink, trackingId, recommendedTier: recommendation?.tier },
       }
     );
 
@@ -4172,6 +4179,8 @@ export async function sendGratuitJ5Email(
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
     const primaryCtaLink = withDiscoveryPromo(`https://www.achzodcoaching.com/coaching-essential?utm_source=apexlabs&utm_medium=email&utm_campaign=discovery_j5`);
     const secondaryCtaLink = withDiscoveryPromo(`https://www.achzodcoaching.com/formules-coaching?utm_source=apexlabs&utm_medium=email&utm_campaign=discovery_j5`);
+    const trackedPrimaryCtaLink = withEmailClickTracking(baseUrl, trackingId, primaryCtaLink);
+    const trackedSecondaryCtaLink = withEmailClickTracking(baseUrl, trackingId, secondaryCtaLink);
     const reportLink = `${baseUrl}/analysis/${auditId}`;
     const DAYS_LEFT = 5;
     const deadlineDate = formatDeadlineFR(DAYS_LEFT);
@@ -4226,11 +4235,11 @@ export async function sendGratuitJ5Email(
           Plan sur-mesure calibré sur ton Discovery, nutrition précision, bilan écrit chaque semaine, ajustements en continu, contrat moral avec moi.
         </p>
 
-        ${getCoachingAppleButton('Activer mon code -30% maintenant', primaryCtaLink)}
+        ${getCoachingAppleButton('Activer mon code -30% maintenant', trackedPrimaryCtaLink)}
       </div>
 
       <div style="text-align:center;margin-bottom:14px;">
-        <a href="${secondaryCtaLink}" style="color:${APPLE_COLORS.accent};font-size:14px;text-decoration:none;font-weight:500;">
+        <a href="${trackedSecondaryCtaLink}" style="color:${APPLE_COLORS.accent};font-size:14px;text-decoration:none;font-weight:500;">
           Comparer les 3 formules avec DISCOVERY30 →
         </a>
       </div>
@@ -4261,7 +4270,7 @@ export async function sendGratuitJ5Email(
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
-        text: `Ton code DISCOVERY30 est actif : -30% sur formules coaching 8 et 12 semaines, valable jusqu'au ${deadlineDate} (5 jours).\n\nLe Discovery te donne le diagnostic. Le coaching te donne le plan jour-par-jour, l'ajustement hebdo, et le contrat moral.\n\nChoisir ma formule : ${primaryCtaLink}\nComparer les 3 formules : ${secondaryCtaLink}\nRelire le Discovery : ${reportLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`,
+        text: `Ton code DISCOVERY30 est actif : -30% sur formules coaching 8 et 12 semaines, valable jusqu'au ${deadlineDate} (5 jours).\n\nLe Discovery te donne le diagnostic. Le coaching te donne le plan jour-par-jour, l'ajustement hebdo, et le contrat moral.\n\nChoisir ma formule : ${trackedPrimaryCtaLink}\nComparer les 3 formules : ${trackedSecondaryCtaLink}\nRelire le Discovery : ${reportLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`,
         subject: `5 jours pour activer DISCOVERY30 , -30% coaching`,
         from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
@@ -4271,7 +4280,7 @@ export async function sendGratuitJ5Email(
         recipientEmail: email,
         auditId,
         auditType: "GRATUIT",
-        metadata: { promoCode: "DISCOVERY30", primaryCtaLink, secondaryCtaLink, trackingId },
+        metadata: { promoCode: "DISCOVERY30", primaryCtaLink, secondaryCtaLink, trackedPrimaryCtaLink, trackedSecondaryCtaLink, trackingId },
       }
     );
 
@@ -4296,6 +4305,10 @@ export async function sendGratuitJ7Email(
     const eliteLink = withDiscoveryPromo(`https://www.achzodcoaching.com/coaching-elite?utm_source=apexlabs&utm_medium=email&utm_campaign=discovery_j7_lastcall`);
     const privateLabLink = withDiscoveryPromo(`https://www.achzodcoaching.com/coaching-achzod-private-lab?utm_source=apexlabs&utm_medium=email&utm_campaign=discovery_j7_lastcall`);
     const allFormulesLink = withDiscoveryPromo(`https://www.achzodcoaching.com/formules-coaching?utm_source=apexlabs&utm_medium=email&utm_campaign=discovery_j7_lastcall`);
+    const trackedEssentialLink = withEmailClickTracking(baseUrl, trackingId, essentialLink);
+    const trackedEliteLink = withEmailClickTracking(baseUrl, trackingId, eliteLink);
+    const trackedPrivateLabLink = withEmailClickTracking(baseUrl, trackingId, privateLabLink);
+    const trackedAllFormulesLink = withEmailClickTracking(baseUrl, trackingId, allFormulesLink);
     const DAYS_LEFT = 3;
     const deadlineDate = formatDeadlineFR(DAYS_LEFT);
 
@@ -4330,7 +4343,7 @@ export async function sendGratuitJ7Email(
               <span style="text-decoration:line-through;color:${APPLE_COLORS.muted};">399€</span>
               <span style="color:${APPLE_COLORS.accent};font-weight:700;margin-left:8px;font-size:18px;">279€</span> 8 sem
             </p>
-            <a href="${essentialLink}" style="color:${APPLE_COLORS.accent};font-size:14px;text-decoration:none;font-weight:600;">Voir Essential →</a>
+            <a href="${trackedEssentialLink}" style="color:${APPLE_COLORS.accent};font-size:14px;text-decoration:none;font-weight:600;">Voir Essential →</a>
           </td>
         </tr>
         <tr>
@@ -4341,7 +4354,7 @@ export async function sendGratuitJ7Email(
               <span style="text-decoration:line-through;color:${APPLE_COLORS.muted};">649€</span>
               <span style="color:${APPLE_COLORS.accent};font-weight:700;margin-left:8px;font-size:18px;">454€</span> 8 sem
             </p>
-            <a href="${eliteLink}" style="color:${APPLE_COLORS.accent};font-size:14px;text-decoration:none;font-weight:600;">Voir Elite →</a>
+            <a href="${trackedEliteLink}" style="color:${APPLE_COLORS.accent};font-size:14px;text-decoration:none;font-weight:600;">Voir Elite →</a>
           </td>
         </tr>
         <tr>
@@ -4352,12 +4365,12 @@ export async function sendGratuitJ7Email(
               <span style="text-decoration:line-through;color:${APPLE_COLORS.muted};">799€</span>
               <span style="color:${APPLE_COLORS.accent};font-weight:700;margin-left:8px;font-size:18px;">559€</span> 8 sem
             </p>
-            <a href="${privateLabLink}" style="color:${APPLE_COLORS.accent};font-size:14px;text-decoration:none;font-weight:600;">Voir Private Lab →</a>
+            <a href="${trackedPrivateLabLink}" style="color:${APPLE_COLORS.accent};font-size:14px;text-decoration:none;font-weight:600;">Voir Private Lab →</a>
           </td>
         </tr>
       </table>
 
-      ${getCoachingAppleButton('Comparer les 3 formules', allFormulesLink)}
+      ${getCoachingAppleButton('Comparer les 3 formules', trackedAllFormulesLink)}
 
       <p style="color:${APPLE_COLORS.muted};font-size:13px;margin:20px 0 0;text-align:center;line-height:1.55;">
         Les 4 semaines ne sont pas éligibles au code DISCOVERY30, seules les 8 et 12 sem le sont.
@@ -4379,7 +4392,7 @@ export async function sendGratuitJ7Email(
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
-        text: `Plus que 3 jours pour activer DISCOVERY30 (jusqu'au ${deadlineDate}).\n\nComparaison des 3 formules coaching avec DISCOVERY30 :\n\nEssential 8 sem : 279€ (au lieu de 399€) , ${essentialLink}\nElite 8 sem : 454€ (au lieu de 649€) , ${eliteLink}\nPrivate Lab 8 sem : 559€ (au lieu de 799€) , ${privateLabLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?". Les 4 semaines ne sont pas éligibles au code, seules les 8 et 12 sem le sont.\n\nAchzod`,
+        text: `Plus que 3 jours pour activer DISCOVERY30 (jusqu'au ${deadlineDate}).\n\nComparaison des 3 formules coaching avec DISCOVERY30 :\n\nEssential 8 sem : 279€ (au lieu de 399€) , ${trackedEssentialLink}\nElite 8 sem : 454€ (au lieu de 649€) , ${trackedEliteLink}\nPrivate Lab 8 sem : 559€ (au lieu de 799€) , ${trackedPrivateLabLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?". Les 4 semaines ne sont pas éligibles au code, seules les 8 et 12 sem le sont.\n\nAchzod`,
         subject: `3 jours avant que DISCOVERY30 expire , -30% coaching`,
         from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
@@ -4389,7 +4402,7 @@ export async function sendGratuitJ7Email(
         recipientEmail: email,
         auditId,
         auditType: "GRATUIT",
-        metadata: { promoCode: "DISCOVERY30", essentialLink, eliteLink, privateLabLink, trackingId },
+        metadata: { promoCode: "DISCOVERY30", essentialLink, eliteLink, privateLabLink, allFormulesLink, trackedEssentialLink, trackedEliteLink, trackedPrivateLabLink, trackedAllFormulesLink, trackingId },
       }
     );
 
@@ -4835,6 +4848,8 @@ export async function sendDiscoveryJ30NurtureEmail(
       ? `${recommendation.href}?utm_source=apexlabs&utm_medium=email&utm_campaign=discovery_j30_nurture&tier=${recommendation.tier.toLowerCase()}`
       : defaultCoachingLink);
     const essentialLink = withDiscoveryPromo(`https://www.achzodcoaching.com/coaching-essential?utm_source=apexlabs&utm_medium=email&utm_campaign=discovery_j30_nurture`);
+    const trackedCoachingLink = withEmailClickTracking(baseUrl, trackingId, coachingLink);
+    const trackedEssentialLink = withEmailClickTracking(baseUrl, trackingId, essentialLink);
     const tierLabel = recommendation
       ? recommendation.tier === "PRIVATELAB" ? "Private Lab" : recommendation.tier === "ELITE" ? "Elite" : "Essential"
       : null;
@@ -4869,7 +4884,7 @@ export async function sendDiscoveryJ30NurtureEmail(
       </div>
       `}
 
-      ${getCoachingAppleButton(tierLabel ? `Activer mon code -30% sur ${tierLabel}` : 'Activer mon code -30% maintenant', coachingLink)}
+      ${getCoachingAppleButton(tierLabel ? `Activer mon code -30% sur ${tierLabel}` : 'Activer mon code -30% maintenant', trackedCoachingLink)}
 
       <p style="color:${APPLE_COLORS.muted};font-size:12px;line-height:1.55;margin:18px 0 0;text-align:center;">
         Code valable jusqu'au <strong style="color:${APPLE_COLORS.ink};">${deadlineDate}</strong>. Au checkout, copie <strong style="color:${APPLE_COLORS.ink};">DISCOVERY30</strong> dans le champ "Code promotionnel ?".
@@ -4880,7 +4895,7 @@ export async function sendDiscoveryJ30NurtureEmail(
         <p style="color:${APPLE_COLORS.inkSoft};font-size:13px;margin:0 0 6px;">
           ${tierLabel ? "Budget plus serré ?" : "Pas sûr du niveau adapté ?"}
         </p>
-        <a href="${essentialLink}" style="color:${APPLE_COLORS.accent};font-size:13px;text-decoration:none;font-weight:600;">
+        <a href="${trackedEssentialLink}" style="color:${APPLE_COLORS.accent};font-size:13px;text-decoration:none;font-weight:600;">
           Commencer par Essential (à partir de 249€) →
         </a>
       </div>
@@ -4909,8 +4924,8 @@ export async function sendDiscoveryJ30NurtureEmail(
       {
         html: encodeBase64(emailContent),
         text: tierLabel
-          ? `Je te recommande ${tierLabel} d'après ton Discovery.\n${recommendation!.reason}\n\nCode DISCOVERY30 : -30% jusqu'au ${deadlineDate} (5 jours).\nChoisir ma formule : ${coachingLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`
-          : `Un mois depuis ton Discovery. Pour corriger durablement, faut un protocole ajusté chaque semaine. C'est exactement ce que je fais en coaching.\n\nCode DISCOVERY30 : -30% sur formules 8 et 12 sem, jusqu'au ${deadlineDate} (5 jours).\nChoisir ma formule : ${coachingLink}\nCommencer par Essential : ${essentialLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`,
+          ? `Je te recommande ${tierLabel} d'après ton Discovery.\n${recommendation!.reason}\n\nCode DISCOVERY30 : -30% jusqu'au ${deadlineDate} (5 jours).\nChoisir ma formule : ${trackedCoachingLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`
+          : `Un mois depuis ton Discovery. Pour corriger durablement, faut un protocole ajusté chaque semaine. C'est exactement ce que je fais en coaching.\n\nCode DISCOVERY30 : -30% sur formules 8 et 12 sem, jusqu'au ${deadlineDate} (5 jours).\nChoisir ma formule : ${trackedCoachingLink}\nCommencer par Essential : ${trackedEssentialLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`,
         subject: tierLabel
           ? `${tierLabel} avec DISCOVERY30 , 5 jours pour activer`
           : `5 jours pour activer DISCOVERY30 , -30% coaching`,
@@ -4921,7 +4936,7 @@ export async function sendDiscoveryJ30NurtureEmail(
         emailType: "sendDiscoveryJ30NurtureEmail",
         recipientEmail: email,
         auditId,
-        metadata: { promoCode: "DISCOVERY30", coachingLink, trackingId, recommendedTier: recommendation?.tier },
+        metadata: { promoCode: "DISCOVERY30", coachingLink, essentialLink, trackedCoachingLink, trackedEssentialLink, trackingId, recommendedTier: recommendation?.tier },
       }
     );
 

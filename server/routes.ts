@@ -7672,6 +7672,46 @@ export async function registerRoutes(
     res.send(gif);
   });
 
+  app.get("/api/track/email/:trackingId/click", async (req, res) => {
+    const { trackingId } = req.params;
+    const rawUrl = String(req.query.url || "").trim();
+
+    let redirectUrl: URL;
+    try {
+      redirectUrl = new URL(rawUrl);
+      const allowedHosts = new Set(["achzodcoaching.com", "www.achzodcoaching.com"]);
+      if (redirectUrl.protocol !== "https:" || !allowedHosts.has(redirectUrl.hostname)) {
+        res.status(400).send("Invalid redirect URL");
+        return;
+      }
+    } catch {
+      res.status(400).send("Invalid redirect URL");
+      return;
+    }
+
+    try {
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trackingId)) {
+        await pool.query(
+          `UPDATE email_tracking SET clicked = NOW() WHERE id = $1 AND clicked IS NULL`,
+          [trackingId]
+        );
+        await pool.query(
+          `INSERT INTO cta_tracking (email_tracking_id, event_type, url, metadata, created_at)
+           VALUES ($1, 'click', $2, $3, NOW())`,
+          [
+            trackingId,
+            redirectUrl.toString(),
+            JSON.stringify({ source: "first_party_redirect" }),
+          ]
+        );
+      }
+    } catch (error) {
+      console.error("[Email Tracking] Click redirect tracking error:", error);
+    }
+
+    res.redirect(302, redirectUrl.toString());
+  });
+
   // ==================== EMAIL SEQUENCES CRON ====================
 
   // Cron endpoint to process scheduled email sequences
