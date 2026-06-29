@@ -34,6 +34,8 @@ import {
   sendReactivationCampaignEmail,
   sendFinishDiscoveryEmail,
   sendCrossSellUpgradeEmail,
+  sendRecoveryCtaEmail,
+  type RecoveryCtaCohort,
 } from "./emailService";
 import { generateExportHTML, generateExportPDF } from "./exportService";
 import { generateAndConvertAuditWithClaude } from "./anthropicEngine";
@@ -153,6 +155,7 @@ export async function registerRoutes(
     "sendPeptidesCycle2ReorderEmail",
     "sendPromoCodeEmail",
     "sendReactivationCampaignEmail",
+    "sendRecoveryCtaEmail",
   ];
 
   const REPORT_EMAIL_TYPES = [
@@ -5922,6 +5925,361 @@ export async function registerRoutes(
     } catch (error) {
       console.error("[Admin Send CTA] Error:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  app.post("/api/admin/recovery-cta-campaign", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const dryRun = req.body.dryRun !== false;
+      const day = Math.min(Math.max(Number(req.body.day) || 1, 1), 7);
+      const maxToSend = Math.min(Math.max(Number(req.body.maxToSend) || (day === 1 ? 25 : 60), 1), 250);
+      const lookbackDays = Math.min(Math.max(Number(req.body.lookbackDays) || 120, 7), 365);
+      const cohortFilter = String(req.body.cohort || "auto").trim() as RecoveryCtaCohort | "auto";
+      const baseUrl = getBaseUrl(req);
+      const fromDate = new Date(Date.now() - lookbackDays * 24 * 60 * 60 * 1000).toISOString();
+
+      type RecoveryCandidate = {
+        email: string;
+        cohort: RecoveryCtaCohort;
+        priority: number;
+        source: string;
+        lastSignalAt: string | null;
+        auditId?: string | null;
+        auditType?: string | null;
+        percentComplete?: number | null;
+        hoursSinceStart?: number | null;
+      };
+
+      const invalidDomains = new Set([
+        "yopmail.com",
+        "test.com",
+        "test.fr",
+        "example.com",
+        "gmai.com",
+        "yahlo.com",
+        "hormail.fr",
+        "tahoo.fr",
+      ]);
+      const disallowedFragments = ["achkou", "achzodcoaching", "test", "debug", "noemail"];
+      const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const cleanEmail = (email: unknown) => String(email || "").trim().toLowerCase();
+      const emailDomain = (email: string) => email.includes("@") ? email.split("@").pop() || "" : "";
+      const isExcludedEmail = (email: string) =>
+        !validEmail.test(email)
+        || invalidDomains.has(emailDomain(email))
+        || disallowedFragments.some((fragment) => email.includes(fragment));
+
+      const sentRecovery = new Set<string>();
+      const sentRows = await pool.query(
+        `SELECT LOWER(recipient_email) AS email
+           FROM email_tracking
+          WHERE email_type = 'sendRecoveryCtaEmail'
+            AND sent_at >= NOW() - INTERVAL '21 days'`
+      );
+      sentRows.rows.forEach((row: any) => sentRecovery.add(cleanEmail(row.email)));
+
+      const blockedRecipients = new Set<string>();
+      const blockedRows = await pool.query(
+        `SELECT DISTINCT LOWER(et.recipient_email) AS email
+           FROM email_tracking et
+           LEFT JOIN cta_tracking ct ON ct.email_tracking_id = et.id
+          WHERE et.recipient_email IS NOT NULL
+            AND (
+              et.converted IS NOT NULL
+              OR LOWER(COALESCE(et.sendpulse_status, '')) IN ('unsubscribed', 'auth_failed')
+              OR LOWER(COALESCE(et.sendpulse_error, '')) LIKE '%unsubscribe%'
+              OR LOWER(COALESCE(et.sendpulse_error, '')) LIKE '%spam%'
+              OR LOWER(COALESCE(et.sendpulse_error, '')) LIKE '%bounce%'
+              OR ct.event_type IN ('unsubscribe', 'spam', 'bounce')
+            )`
+      );
+      blockedRows.rows.forEach((row: any) => blockedRecipients.add(cleanEmail(row.email)));
+
+      const candidates = new Map<string, RecoveryCandidate>();
+      const addCandidate = (candidate: RecoveryCandidate) => {
+        const email = cleanEmail(candidate.email);
+        if (!email || isExcludedEmail(email) || sentRecovery.has(email) || blockedRecipients.has(email)) return;
+        const existing = candidates.get(email);
+        if (!existing || candidate.priority > existing.priority) {
+          candidates.set(email, { ...candidate, email });
+        }
+      };
+
+      const clickedRows = await pool.query(
+        `SELECT LOWER(recipient_email) AS email,
+                MAX(clicked) AS last_signal_at,
+                MAX(audit_id) AS audit_id,
+                MAX(audit_type) AS audit_type
+           FROM email_tracking
+          WHERE sent_at >= $1
+            AND clicked IS NOT NULL
+            AND converted IS NULL
+            AND (
+              email_type = ANY($2::text[])
+              OR LOWER(COALESCE(subject, '')) LIKE ANY($3::text[])
+            )
+          GROUP BY LOWER(recipient_email)`,
+        [fromDate, PROMO_EMAIL_TYPES, PROMO_SUBJECT_PATTERNS]
+      );
+      clickedRows.rows.forEach((row: any) => addCandidate({
+        email: row.email,
+        cohort: "clicked_no_conversion",
+        priority: 100,
+        source: "email_tracking.clicked",
+        lastSignalAt: row.last_signal_at,
+        auditId: row.audit_id,
+        auditType: row.audit_type,
+      }));
+
+      const progressRows = await pool.query(
+        `SELECT LOWER(qp.email) AS email,
+                qp.percent_complete::int AS percent_complete,
+                EXTRACT(EPOCH FROM (NOW() - qp.started_at)) / 3600 AS hours_since_start,
+                qp.last_activity_at AS last_signal_at
+           FROM questionnaire_progress qp
+          WHERE qp.status = 'IN_PROGRESS'
+            AND qp.started_at <= NOW() - INTERVAL '6 hours'
+            AND NOT EXISTS (
+              SELECT 1 FROM audits a
+               WHERE LOWER(a.email) = LOWER(qp.email)
+                 AND a.created_at > qp.last_activity_at
+            )`
+      );
+      progressRows.rows.forEach((row: any) => {
+        const percentComplete = Number(row.percent_complete) || 0;
+        const hoursSinceStart = Number(row.hours_since_start) || 0;
+        const cohort: RecoveryCtaCohort = percentComplete >= 75
+          ? "abandon_high"
+          : percentComplete >= 25 && hoursSinceStart <= 48
+          ? "abandon_medium"
+          : "abandon_last_chance";
+        const priority = cohort === "abandon_high" ? 90 : cohort === "abandon_medium" ? 80 : 40;
+        addCandidate({
+          email: row.email,
+          cohort,
+          priority,
+          source: "questionnaire_progress",
+          lastSignalAt: row.last_signal_at,
+          percentComplete,
+          hoursSinceStart: Math.round(hoursSinceStart),
+        });
+      });
+
+      const openedRows = await pool.query(
+        `SELECT LOWER(recipient_email) AS email,
+                MAX(opened) AS last_signal_at,
+                MAX(audit_id) AS audit_id,
+                MAX(audit_type) AS audit_type
+           FROM email_tracking
+          WHERE sent_at >= $1
+            AND opened IS NOT NULL
+            AND clicked IS NULL
+            AND converted IS NULL
+            AND (
+              email_type = ANY($2::text[])
+              OR LOWER(COALESCE(subject, '')) LIKE ANY($3::text[])
+            )
+          GROUP BY LOWER(recipient_email)`,
+        [fromDate, PROMO_EMAIL_TYPES, PROMO_SUBJECT_PATTERNS]
+      );
+      openedRows.rows.forEach((row: any) => addCandidate({
+        email: row.email,
+        cohort: "opened_no_click",
+        priority: 70,
+        source: "email_tracking.opened",
+        lastSignalAt: row.last_signal_at,
+        auditId: row.audit_id,
+        auditType: row.audit_type,
+      }));
+
+      const buyerRows = await pool.query(
+        `SELECT LOWER(email) AS email,
+                MAX(paid_at) AS last_signal_at,
+                MAX(product_type) AS product_type
+           FROM orders
+          WHERE paid_at >= $1
+            AND status = 'paid'
+            AND COALESCE(final_amount_cents, amount_cents, 0) > 0
+          GROUP BY LOWER(email)`,
+        [fromDate]
+      );
+      buyerRows.rows.forEach((row: any) => addCandidate({
+        email: row.email,
+        cohort: "apex_buyer",
+        priority: 60,
+        source: `orders.${row.product_type || "paid"}`,
+        lastSignalAt: row.last_signal_at,
+      }));
+
+      const reportRows = await pool.query(
+        `SELECT LOWER(email) AS email,
+                MAX(report_sent_at) AS last_signal_at,
+                MAX(id) AS audit_id,
+                MAX(type) AS audit_type
+           FROM audits
+          WHERE created_at >= $1
+            AND report_sent_at IS NOT NULL
+          GROUP BY LOWER(email)`,
+        [fromDate]
+      );
+      reportRows.rows.forEach((row: any) => addCandidate({
+        email: row.email,
+        cohort: "warm_report",
+        priority: 50,
+        source: "audits.report_sent",
+        lastSignalAt: row.last_signal_at,
+        auditId: row.audit_id,
+        auditType: row.audit_type,
+      }));
+
+      const coldRows = await pool.query(
+        `SELECT LOWER(email) AS email, MAX(last_signal_at) AS last_signal_at
+           FROM (
+             SELECT recipient_email AS email, sent_at AS last_signal_at
+               FROM email_tracking
+              WHERE sent_at >= $1
+             UNION ALL
+             SELECT email, created_at AS last_signal_at
+               FROM audits
+              WHERE created_at >= $1
+             UNION ALL
+             SELECT email, last_activity_at AS last_signal_at
+               FROM questionnaire_progress
+              WHERE last_activity_at >= $1
+             UNION ALL
+             SELECT email, COALESCE(paid_at, created_at) AS last_signal_at
+               FROM orders
+              WHERE created_at >= $1
+           ) source
+          WHERE email IS NOT NULL
+          GROUP BY LOWER(email)`,
+        [fromDate]
+      );
+      coldRows.rows.forEach((row: any) => addCandidate({
+        email: row.email,
+        cohort: "cold_base",
+        priority: 10,
+        source: "all_known_contacts",
+        lastSignalAt: row.last_signal_at,
+      }));
+
+      const allowedByDay: Record<number, RecoveryCtaCohort[]> = {
+        1: ["clicked_no_conversion", "abandon_high"],
+        2: ["abandon_medium", "opened_no_click"],
+        3: ["opened_no_click", "warm_report"],
+        4: ["apex_buyer", "warm_report"],
+        5: ["abandon_last_chance", "warm_report"],
+        6: ["cold_base"],
+        7: ["cold_base"],
+      };
+      const allowedCohorts = cohortFilter === "auto" ? allowedByDay[day] : [cohortFilter];
+      const byCohort = Array.from(candidates.values()).reduce<Record<string, number>>((acc, candidate) => {
+        acc[candidate.cohort] = (acc[candidate.cohort] || 0) + 1;
+        return acc;
+      }, {});
+      const eligible = Array.from(candidates.values())
+        .filter((candidate) => allowedCohorts.includes(candidate.cohort))
+        .sort((a, b) => {
+          if (b.priority !== a.priority) return b.priority - a.priority;
+          return new Date(b.lastSignalAt || 0).getTime() - new Date(a.lastSignalAt || 0).getTime();
+        });
+      const selected = eligible.slice(0, maxToSend);
+
+      if (dryRun) {
+        res.json({
+          success: true,
+          dryRun: true,
+          day,
+          allowedCohorts,
+          lookbackDays,
+          totalKnownEligible: candidates.size,
+          byCohort,
+          eligibleForDay: eligible.length,
+          selectedCount: selected.length,
+          preview: selected.slice(0, 25),
+          excluded: {
+            alreadyRecoverySent21d: sentRecovery.size,
+            blockedOrConverted: blockedRecipients.size,
+          },
+        });
+        return;
+      }
+
+      const results: Array<any> = [];
+      let sent = 0;
+      let failed = 0;
+      for (const candidate of selected) {
+        try {
+          const resumeToken = candidate.cohort.startsWith("abandon_")
+            ? crypto.randomBytes(32).toString("hex")
+            : null;
+          const resumeUrl = resumeToken
+            ? `${baseUrl}/audit-complet/questionnaire?resume=${resumeToken}`
+            : null;
+          const trackingRecord = await storage.createEmailTracking(
+            candidate.auditId || crypto.randomUUID(),
+            "sendRecoveryCtaEmail",
+            candidate.email
+          );
+          const ok = await sendRecoveryCtaEmail(candidate.email, {
+            cohort: candidate.cohort,
+            baseUrl,
+            trackingId: trackingRecord.id,
+            percentComplete: candidate.percentComplete,
+            resumeUrl,
+            expiresText: "7 jours",
+          });
+
+          if (ok) {
+            sent++;
+            if (resumeToken && candidate.percentComplete != null && candidate.hoursSinceStart != null) {
+              await storage.logAbandonmentReminder({
+                email: candidate.email,
+                percentComplete: candidate.percentComplete,
+                hoursSinceStart: candidate.hoursSinceStart,
+                priorityScore: candidate.priority,
+                resumeToken,
+              }).catch((err: any) => console.error("[RecoveryCTA] Unable to log abandonment reminder:", err));
+            }
+          } else {
+            failed++;
+          }
+
+          results.push({ email: candidate.email, cohort: candidate.cohort, sent: ok, trackingId: trackingRecord.id });
+          await new Promise((resolve) => setTimeout(resolve, 650));
+        } catch (error) {
+          failed++;
+          results.push({
+            email: candidate.email,
+            cohort: candidate.cohort,
+            sent: false,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
+
+      res.json({
+        success: true,
+        dryRun: false,
+        day,
+        allowedCohorts,
+        lookbackDays,
+        totalKnownEligible: candidates.size,
+        byCohort,
+        eligibleForDay: eligible.length,
+        attempted: selected.length,
+        sent,
+        failed,
+        results,
+      });
+    } catch (error) {
+      console.error("[RecoveryCTA] Error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Erreur recovery CTA",
+        message: error instanceof Error ? error.message : String(error),
+      });
     }
   });
 

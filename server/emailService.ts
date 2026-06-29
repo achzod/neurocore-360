@@ -3164,6 +3164,168 @@ export async function sendCTAEmail(
   }
 }
 
+export type RecoveryCtaCohort =
+  | "clicked_no_conversion"
+  | "abandon_high"
+  | "abandon_medium"
+  | "opened_no_click"
+  | "apex_buyer"
+  | "warm_report"
+  | "abandon_last_chance"
+  | "cold_base";
+
+const escapeEmailHtml = (value: unknown): string =>
+  String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+// Recovery CTA campaign after fixing the DISCOVERY30 checkout expectation.
+// Every coaching link goes through the first-party click redirect so APEXLABS
+// owns click attribution even if SendPulse click tracking is unavailable.
+export async function sendRecoveryCtaEmail(
+  email: string,
+  opts: {
+    cohort: RecoveryCtaCohort;
+    baseUrl: string;
+    trackingId: string;
+    percentComplete?: number | null;
+    resumeUrl?: string | null;
+    expiresText?: string;
+  }
+): Promise<boolean> {
+  try {
+    const expiresText = opts.expiresText || "7 jours";
+    const cohort = opts.cohort;
+    const campaign = "recovery_cta_2026_06";
+    const coachingUrl = withDiscoveryPromo(
+      `https://www.achzodcoaching.com/formules-coaching?utm_source=apexlabs&utm_medium=email&utm_campaign=${campaign}&utm_content=${encodeURIComponent(cohort)}`
+    );
+    const trackedCoachingUrl = withEmailClickTracking(opts.baseUrl, opts.trackingId, coachingUrl);
+    const trackingPixel = `${opts.baseUrl}/api/track/email/${opts.trackingId}/open.gif`;
+    const safePercent = typeof opts.percentComplete === "number" && Number.isFinite(opts.percentComplete)
+      ? Math.max(0, Math.min(99, Math.round(opts.percentComplete)))
+      : null;
+    const resumeUrl = opts.resumeUrl || null;
+    const trackedPrimaryUrl = cohort.startsWith("abandon_") && resumeUrl ? resumeUrl : trackedCoachingUrl;
+
+    const subjectByCohort: Record<RecoveryCtaCohort, string> = {
+      clicked_no_conversion: "DISCOVERY30 : le checkout est clair maintenant",
+      abandon_high: "Ton Discovery est presque fini",
+      abandon_medium: "Reprends ton Discovery cette semaine",
+      opened_no_click: "Je reprends ton dossier Discovery",
+      apex_buyer: "Ton audit peut devenir ton plan coaching",
+      warm_report: "Ton Discovery, la suite concrète",
+      abandon_last_chance: "Ton scan est encore sauvegardé",
+      cold_base: "Ton Discovery, et maintenant ?",
+    };
+
+    const introByCohort: Record<RecoveryCtaCohort, string> = {
+      clicked_no_conversion:
+        "Tu avais cliqué mais tu n'es pas allé au bout. Je remets le lien proprement : le code n'est pas automatique, il faut le coller dans le champ Code promotionnel au checkout.",
+      abandon_high:
+        `Tu étais à ${safePercent ?? "plus de 75"}% du questionnaire. Ton scan est sauvegardé, reprends-le d'abord : derrière, je te garde DISCOVERY30 pour passer au coaching si tu veux appliquer le plan.`,
+      abandon_medium:
+        `Tu avais commencé ton Discovery${safePercent !== null ? ` et tu étais à ${safePercent}%` : ""}. Finis-le, récupère ton rapport, puis utilise DISCOVERY30 si tu veux que je transforme le diagnostic en plan concret.`,
+      opened_no_click:
+        "Tu as ouvert une relance mais tu n'as pas cliqué. Je te remets la suite simplement : si tu veux que le Discovery devienne un vrai plan semaine après semaine, c'est le coaching.",
+      apex_buyer:
+        "Tu as déjà fait un audit APEXLABS. Les données seules ne transforment pas un corps : le coaching sert à appliquer, ajuster et tenir le plan.",
+      warm_report:
+        "Tu as ton Discovery. Maintenant la vraie question, c'est l'application : nutrition, entraînement, suivi hebdo, ajustements quand ça bloque.",
+      abandon_last_chance:
+        "Ton questionnaire est encore sauvegardé. Si tu veux reprendre proprement, fais-le maintenant puis garde DISCOVERY30 pour le coaching.",
+      cold_base:
+        "Je reprends les dossiers Discovery cette semaine. Si tu veux passer du rapport à un plan suivi, je te remets l'accès coaching avec DISCOVERY30.",
+    };
+
+    const primaryLabel = cohort.startsWith("abandon_") && resumeUrl
+      ? "Reprendre mon Discovery"
+      : "Voir les formules coaching";
+
+    const content = `
+      ${getDiscoveryPromoBanner(7)}
+
+      <p style="color:${APPLE_COLORS.inkSoft};font-size:16px;line-height:1.65;margin:0 0 20px;">
+        ${escapeEmailHtml(introByCohort[cohort])}
+      </p>
+
+      <div style="padding:18px 20px;background:#f5f5f7;border-radius:12px;margin:0 0 22px;">
+        <p style="color:${APPLE_COLORS.ink};font-size:15px;line-height:1.65;margin:0;">
+          <strong>Important :</strong> au paiement sur AchzodCoaching, colle
+          <strong>DISCOVERY30</strong> dans le champ <strong>Code promotionnel ?</strong>.
+          Le code est valable ${escapeEmailHtml(expiresText)} sur les formules coaching 8 et 12 semaines.
+        </p>
+      </div>
+
+      ${getCoachingAppleButton(primaryLabel, trackedPrimaryUrl)}
+
+      ${cohort.startsWith("abandon_") && resumeUrl ? `
+      <p style="color:${APPLE_COLORS.muted};font-size:13px;line-height:1.55;margin:12px 0 0;text-align:center;">
+        Déjà prêt pour le coaching ? <a href="${trackedCoachingUrl}" style="color:${APPLE_COLORS.accent};text-decoration:none;font-weight:600;">Voir directement les formules</a>
+      </p>
+      ` : ""}
+
+      <p style="color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.65;margin:26px 0 0;">
+        Si tu bloques sur le choix de la formule, réponds simplement à ce mail avec ton objectif et je te dis quoi prendre.
+      </p>
+
+      <p style="color:${APPLE_COLORS.muted};font-size:12px;margin:24px 0 0;">
+        Achzod
+      </p>
+
+      <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
+    `;
+
+    const emailContent = getCoachingAppleWrapper(
+      content,
+      cohort.startsWith("abandon_") ? "Ton Discovery est sauvegardé" : "DISCOVERY30 est actif",
+      "Code à coller au checkout"
+    );
+
+    const plainText = `${introByCohort[cohort]}
+
+Code DISCOVERY30 : -30% sur formules coaching 8 et 12 semaines, valable ${expiresText}.
+Au paiement, copie DISCOVERY30 dans le champ "Code promotionnel ?".
+
+${cohort.startsWith("abandon_") && resumeUrl ? `Reprendre mon Discovery : ${resumeUrl}\nVoir les formules coaching : ${trackedCoachingUrl}` : `Voir les formules coaching : ${trackedCoachingUrl}`}
+
+Si tu bloques sur le choix de la formule, réponds simplement à ce mail avec ton objectif.
+
+Achzod`;
+
+    const result = await sendEmailWithTracking(
+      {
+        subject: subjectByCohort[cohort],
+        from: { name: "Achzod Coaching", email: SENDER_EMAIL },
+        to: [{ email }],
+        html: encodeBase64(emailContent),
+        text: plainText,
+      },
+      {
+        emailType: "sendRecoveryCtaEmail",
+        recipientEmail: email,
+        metadata: {
+          trackingId: opts.trackingId,
+          cohort,
+          promoCode: "DISCOVERY30",
+          coachingUrl,
+          trackedCoachingUrl,
+          resumeUrl,
+          campaign,
+        },
+      }
+    );
+
+    return result.result === true;
+  } catch (error) {
+    console.error("[SendPulse] Error sending recovery CTA email:", error);
+    return false;
+  }
+}
+
 // Reactivation campaign for warm-but-blocked Discovery leads.
 // Opened their report, never bought, are still within reach.
 // Sends: coaching ANALYSE20 + APEX30 all-site (focus Peptides with sourcing urgency).
