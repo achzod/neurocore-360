@@ -5933,7 +5933,9 @@ export async function registerRoutes(
     try {
       const dryRun = req.body.dryRun !== false;
       const day = Math.min(Math.max(Number(req.body.day) || 1, 1), 7);
-      const maxToSend = Math.min(Math.max(Number(req.body.maxToSend) || (day === 1 ? 25 : 60), 1), 250);
+      const requestedMaxToSend = Math.min(Math.max(Number(req.body.maxToSend) || (day === 1 ? 25 : 60), 1), 250);
+      const maxBatchSize = dryRun ? 250 : 8;
+      const maxToSend = Math.min(requestedMaxToSend, maxBatchSize);
       const lookbackDays = Math.min(Math.max(Number(req.body.lookbackDays) || 120, 7), 365);
       const cohortFilter = String(req.body.cohort || "auto").trim() as RecoveryCtaCohort | "auto";
       const baseUrl = getBaseUrl(req);
@@ -6197,6 +6199,9 @@ export async function registerRoutes(
           byCohort,
           eligibleForDay: eligible.length,
           selectedCount: selected.length,
+          requestedMaxToSend,
+          maxBatchSize,
+          batchLimited: requestedMaxToSend > maxToSend,
           preview: selected.slice(0, 25),
           excluded: {
             alreadyRecoverySent21d: sentRecovery.size,
@@ -6268,6 +6273,9 @@ export async function registerRoutes(
         totalKnownEligible: candidates.size,
         byCohort,
         eligibleForDay: eligible.length,
+        requestedMaxToSend,
+        maxBatchSize,
+        batchLimited: requestedMaxToSend > maxToSend,
         attempted: selected.length,
         sent,
         failed,
