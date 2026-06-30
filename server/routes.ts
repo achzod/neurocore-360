@@ -5998,6 +5998,16 @@ export async function registerRoutes(
               OR LOWER(COALESCE(et.sendpulse_error, '')) LIKE '%spam%'
               OR LOWER(COALESCE(et.sendpulse_error, '')) LIKE '%bounce%'
               OR ct.event_type IN ('unsubscribe', 'spam', 'bounce')
+              OR LOWER(et.recipient_email) IN (
+                SELECT LOWER(recipient_email)
+                  FROM email_tracking
+                 WHERE email_type = 'sendRecoveryCtaEmail'
+                   AND sent_at >= NOW() - INTERVAL '6 hours'
+                   AND sendpulse_task_id IS NULL
+                   AND LOWER(COALESCE(sendpulse_status, '')) NOT IN ('success', 'sent', 'delivered')
+                 GROUP BY LOWER(recipient_email)
+                HAVING COUNT(*) >= 3
+              )
             )`
       );
       blockedRows.rows.forEach((row: any) => blockedRecipients.add(cleanEmail(row.email)));
@@ -6373,6 +6383,16 @@ export async function registerRoutes(
                    OR LOWER(COALESCE(b.sendpulse_error, '')) LIKE '%spam%'
                    OR LOWER(COALESCE(b.sendpulse_error, '')) LIKE '%bounce%'
                    OR ct.event_type IN ('unsubscribe', 'spam', 'bounce')
+                   OR LOWER(b.recipient_email) IN (
+                     SELECT LOWER(recipient_email)
+                       FROM email_tracking
+                      WHERE email_type = 'sendRecoveryCtaEmail'
+                        AND sent_at >= NOW() - INTERVAL '6 hours'
+                        AND sendpulse_task_id IS NULL
+                        AND LOWER(COALESCE(sendpulse_status, '')) NOT IN ('success', 'sent', 'delivered')
+                      GROUP BY LOWER(recipient_email)
+                     HAVING COUNT(*) >= 3
+                   )
                  )
             )
             AND NOT EXISTS (
