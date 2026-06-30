@@ -85,12 +85,15 @@ export interface EmailTracking {
   id: string;
   auditId: string;
   emailType: string;
+  recipientEmail?: string | null;
   sentAt: Date;
   openedAt: Date | null;
   clickedAt: Date | null;
   opened?: Date | null;
   clicked?: Date | null;
   sendpulseStatus?: string | null;
+  converted?: Date | null;
+  conversionType?: string | null;
 }
 
 export interface BurnoutProgress {
@@ -217,6 +220,7 @@ export interface IStorage {
   // Email tracking
   createEmailTracking(auditId: string, emailType: string, recipientEmail?: string): Promise<EmailTracking>;
   markEmailOpened(trackingId: string): Promise<void>;
+  markEmailTrackingConvertedByEmail?(email: string, amountCents: number, conversionType: string, withinDays?: number): Promise<number>;
   getEmailTrackingForAudit(auditId: string): Promise<EmailTracking[]>;
   /** Returns true if a peptides delivery email (subject contains "protocole peptides") has been sent to this recipient */
   hasPeptidesDeliveryEmailBeenSent(email: string): Promise<boolean>;
@@ -437,9 +441,12 @@ export class MemStorage implements IStorage {
   async createAudit(
     input: InsertAudit & { email: string; responses: Record<string, unknown> }
   ): Promise<Audit> {
-    let user = await this.getUserByEmail(input.email);
+    // Same lowercase-normalize policy as PgStorage.createAudit, keeps the
+    // in-memory backend consistent with prod when used in dev/tests.
+    const normalizedEmail = input.email.trim().toLowerCase();
+    let user = await this.getUserByEmail(normalizedEmail);
     if (!user) {
-      user = await this.createUser({ email: input.email });
+      user = await this.createUser({ email: normalizedEmail });
     }
 
     const id = randomUUID();
@@ -460,7 +467,7 @@ export class MemStorage implements IStorage {
     const audit: Audit = {
       id,
       userId: user.id,
-      email: input.email,
+      email: normalizedEmail,
       type: input.type,
       status: "COMPLETED",
       responses: input.responses,
@@ -801,6 +808,7 @@ export class MemStorage implements IStorage {
       id: randomUUID(),
       auditId,
       emailType,
+      recipientEmail: recipientEmail || "",
       sentAt: new Date(),
       openedAt: null,
       clickedAt: null,
@@ -814,6 +822,28 @@ export class MemStorage implements IStorage {
     if (tracking && !tracking.openedAt) {
       tracking.openedAt = new Date();
     }
+  }
+
+  async markEmailTrackingConvertedByEmail(
+    email: string,
+    _amountCents: number,
+    conversionType: string,
+    withinDays: number = 14,
+  ): Promise<number> {
+    const cutoff = Date.now() - withinDays * 24 * 60 * 60 * 1000;
+    let updated = 0;
+    for (const tracking of this.emailTrackings.values()) {
+      if (
+        String(tracking.recipientEmail || "").toLowerCase() === email.toLowerCase()
+        && !tracking.converted
+        && new Date(tracking.sentAt).getTime() >= cutoff
+      ) {
+        tracking.converted = new Date();
+        tracking.conversionType = conversionType;
+        updated++;
+      }
+    }
+    return updated;
   }
 
   async getEmailTrackingForAudit(auditId: string): Promise<EmailTracking[]> {
@@ -1432,9 +1462,15 @@ export class PgStorage implements IStorage {
   }
 
   async createAudit(input: InsertAudit & { email: string; responses: Record<string, unknown> }): Promise<Audit> {
-    let user = await this.getUserByEmail(input.email);
+    // Normalize email at write so string compares against order.email (already
+    // stored lowercase) match. Without this, audits.email keeps whatever case
+    // the user typed at checkout, which silently breaks audit↔order linking
+    // (Chloé Manca 2026-05-25: audit stored as CHLOE.MANCA@..., order as
+    // chloe.manca@..., resolver returned orderId=null).
+    const normalizedEmail = input.email.trim().toLowerCase();
+    let user = await this.getUserByEmail(normalizedEmail);
     if (!user) {
-      user = await this.createUser({ email: input.email });
+      user = await this.createUser({ email: normalizedEmail });
     }
 
     const id = randomUUID();
@@ -1455,7 +1491,7 @@ export class PgStorage implements IStorage {
     const result = await pool.query(
       `INSERT INTO audits (id, user_id, email, type, status, responses, scores, report_delivery_status, report_scheduled_for, completed_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW()) RETURNING *`,
-      [id, user.id, input.email, input.type, "COMPLETED", JSON.stringify(input.responses), JSON.stringify(scores), "PENDING", scheduledDate]
+      [id, user.id, normalizedEmail, input.type, "COMPLETED", JSON.stringify(input.responses), JSON.stringify(scores), "PENDING", scheduledDate]
     );
 
     return this.rowToAudit(result.rows[0]);
@@ -2383,12 +2419,15 @@ export class PgStorage implements IStorage {
       id: row.id,
       auditId: row.audit_id,
       emailType: row.email_type,
+      recipientEmail: row.recipient_email ?? null,
       sentAt: row.sent_at,
       openedAt: opened,
       clickedAt: clicked,
       opened,
       clicked,
       sendpulseStatus: row.sendpulse_status ?? null,
+      converted: row.converted ?? null,
+      conversionType: row.conversion_type ?? null,
     };
   }
 
@@ -2406,6 +2445,33 @@ export class PgStorage implements IStorage {
       "UPDATE email_tracking SET opened = NOW() WHERE id = $1 AND opened IS NULL",
       [trackingId]
     );
+  }
+
+  async markEmailTrackingConvertedByEmail(
+    email: string,
+    amountCents: number,
+    conversionType: string,
+    withinDays: number = 14,
+  ): Promise<number> {
+    if (!email) return 0;
+    const result = await pool.query(
+      `UPDATE email_tracking
+          SET converted = COALESCE(converted, NOW()),
+              conversion_type = COALESCE(conversion_type, $3),
+              metadata = COALESCE(metadata, '{}'::jsonb)
+                || jsonb_build_object(
+                  'convertedAmountCents', $2::int,
+                  'convertedByOrderAttribution', true
+                ),
+              updated_at = NOW()
+        WHERE LOWER(recipient_email) = LOWER($1)
+          AND converted IS NULL
+          AND sent_at >= NOW() - ($4 || ' days')::interval
+          AND COALESCE(sendpulse_status, '') NOT IN ('failed', 'auth_failed', 'unsubscribed')
+       RETURNING id`,
+      [email, amountCents, conversionType, String(withinDays)]
+    );
+    return result.rowCount ?? 0;
   }
 
   async getEmailTrackingForAudit(auditId: string): Promise<EmailTracking[]> {
@@ -3004,8 +3070,12 @@ export class PgStorage implements IStorage {
     // never block the order update on this side-effect.
     if (data.status === "paid" && updatedOrder?.email) {
       try {
-        const cents = updatedOrder.amountCents ?? 0;
+        const cents = updatedOrder.finalAmountCents ?? updatedOrder.amountCents ?? 0;
         await this.markReminderConvertedByEmail(updatedOrder.email, cents, 14);
+        if (cents > 0) {
+          const conversionType = `${String(updatedOrder.productType || "order").toLowerCase()}_purchase`;
+          await this.markEmailTrackingConvertedByEmail(updatedOrder.email, cents, conversionType, 14);
+        }
       } catch (err) {
         console.warn("[Reminder] Conversion tracking failed for", updatedOrder.email, err);
       }

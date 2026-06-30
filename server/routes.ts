@@ -6295,6 +6295,181 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/admin/recovery-cta-click-followup", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const dryRun = req.body?.dryRun !== false;
+      const requestedMaxToSend = Math.min(Math.max(Number(req.body?.maxToSend) || 25, 1), 250);
+      const maxToSend = dryRun ? requestedMaxToSend : Math.min(requestedMaxToSend, 1);
+      const lookbackDays = Math.min(Math.max(Number(req.body?.lookbackDays) || 14, 2), 120);
+      const minHoursSinceClick = Math.min(Math.max(Number(req.body?.minHoursSinceClick) || 2, 0), 168);
+      const baseUrl = getBaseUrl(req);
+      const fromDate = new Date(Date.now() - lookbackDays * 24 * 60 * 60 * 1000).toISOString();
+
+      const invalidDomains = new Set([
+        "yopmail.com",
+        "test.com",
+        "test.fr",
+        "example.com",
+        "gmai.com",
+        "yahlo.com",
+        "hormail.fr",
+        "tahoo.fr",
+      ]);
+      const disallowedFragments = ["achkou", "achzodcoaching", "test", "debug", "noemail"];
+      const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const cleanEmail = (email: unknown) => String(email || "").trim().toLowerCase();
+      const emailDomain = (email: string) => email.includes("@") ? email.split("@").pop() || "" : "";
+      const isExcludedEmail = (email: string) =>
+        !validEmail.test(email)
+        || invalidDomains.has(emailDomain(email))
+        || disallowedFragments.some((fragment) => email.includes(fragment));
+
+      const result = await pool.query(
+        `WITH clicked AS (
+           SELECT DISTINCT ON (LOWER(recipient_email))
+                  LOWER(recipient_email) AS email,
+                  id AS source_tracking_id,
+                  audit_id,
+                  audit_type,
+                  subject,
+                  clicked AS last_signal_at
+             FROM email_tracking
+            WHERE sent_at >= $1
+              AND recipient_email IS NOT NULL
+              AND clicked IS NOT NULL
+              AND converted IS NULL
+              AND clicked <= NOW() - ($2 || ' hours')::interval
+              AND (
+                email_type = 'sendRecoveryCtaEmail'
+                OR email_type = ANY($3::text[])
+                OR LOWER(COALESCE(subject, '')) LIKE ANY($4::text[])
+              )
+            ORDER BY LOWER(recipient_email), clicked DESC
+         )
+         SELECT c.*
+           FROM clicked c
+          WHERE NOT EXISTS (
+            SELECT 1
+              FROM email_tracking f
+             WHERE LOWER(f.recipient_email) = c.email
+               AND f.email_type = 'sendRecoveryCtaEmail'
+               AND f.sent_at >= NOW() - INTERVAL '14 days'
+               AND f.metadata->>'cohort' = 'clicked_help'
+               AND (
+                 f.sendpulse_task_id IS NOT NULL
+                 OR LOWER(COALESCE(f.sendpulse_status, '')) IN ('success', 'sent', 'delivered')
+               )
+          )
+            AND NOT EXISTS (
+              SELECT 1
+                FROM email_tracking b
+                LEFT JOIN cta_tracking ct ON ct.email_tracking_id = b.id
+               WHERE LOWER(b.recipient_email) = c.email
+                 AND (
+                   b.converted IS NOT NULL
+                   OR LOWER(COALESCE(b.sendpulse_status, '')) IN ('unsubscribed', 'auth_failed')
+                   OR LOWER(COALESCE(b.sendpulse_error, '')) LIKE '%unsubscribe%'
+                   OR LOWER(COALESCE(b.sendpulse_error, '')) LIKE '%spam%'
+                   OR LOWER(COALESCE(b.sendpulse_error, '')) LIKE '%bounce%'
+                   OR ct.event_type IN ('unsubscribe', 'spam', 'bounce')
+                 )
+            )
+            AND NOT EXISTS (
+              SELECT 1
+                FROM orders o
+               WHERE LOWER(o.email) = c.email
+                 AND o.status = 'paid'
+                 AND COALESCE(o.final_amount_cents, o.amount_cents, 0) > 0
+                 AND COALESCE(o.paid_at, o.created_at) >= c.last_signal_at
+            )
+          ORDER BY c.last_signal_at DESC
+          LIMIT $5`,
+        [
+          fromDate,
+          String(minHoursSinceClick),
+          PROMO_EMAIL_TYPES,
+          PROMO_SUBJECT_PATTERNS,
+          maxToSend,
+        ]
+      );
+
+      const candidates = result.rows
+        .map((row: any) => ({ ...row, email: cleanEmail(row.email) }))
+        .filter((row: any) => row.email && !isExcludedEmail(row.email));
+
+      if (dryRun) {
+        res.json({
+          success: true,
+          dryRun: true,
+          lookbackDays,
+          minHoursSinceClick,
+          eligible: candidates.length,
+          selectedCount: candidates.length,
+          subject: "Tu hesites sur la formule ?",
+          cohort: "clicked_help",
+          preview: candidates.slice(0, 25),
+        });
+        return;
+      }
+
+      const results: Array<any> = [];
+      let sent = 0;
+      let failed = 0;
+      for (const candidate of candidates) {
+        try {
+          const trackingRecord = await storage.createEmailTracking(
+            candidate.audit_id || crypto.randomUUID(),
+            "sendRecoveryCtaEmail",
+            candidate.email
+          );
+          const ok = await sendRecoveryCtaEmail(candidate.email, {
+            cohort: "clicked_help",
+            baseUrl,
+            trackingId: trackingRecord.id,
+            expiresText: "72 heures",
+          });
+          if (ok) sent++;
+          else failed++;
+          results.push({
+            email: candidate.email,
+            sent: ok,
+            trackingId: trackingRecord.id,
+            sourceTrackingId: candidate.source_tracking_id,
+            lastSignalAt: candidate.last_signal_at,
+          });
+          await new Promise((resolve) => setTimeout(resolve, 650));
+        } catch (error) {
+          failed++;
+          results.push({
+            email: candidate.email,
+            sent: false,
+            sourceTrackingId: candidate.source_tracking_id,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
+
+      res.json({
+        success: true,
+        dryRun: false,
+        lookbackDays,
+        minHoursSinceClick,
+        attempted: candidates.length,
+        sent,
+        failed,
+        results,
+      });
+    } catch (error) {
+      console.error("[RecoveryCTA-ClickFollowup] Error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Erreur recovery CTA click follow-up",
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  });
+
   // Admin: Send review request J+3 to all eligible audits
   app.post("/api/admin/send-review-requests", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;

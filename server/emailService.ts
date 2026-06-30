@@ -3166,6 +3166,7 @@ export async function sendCTAEmail(
 
 export type RecoveryCtaCohort =
   | "clicked_no_conversion"
+  | "clicked_help"
   | "abandon_high"
   | "abandon_medium"
   | "opened_no_click"
@@ -3213,6 +3214,7 @@ export async function sendRecoveryCtaEmail(
 
     const subjectByCohort: Record<RecoveryCtaCohort, string> = {
       clicked_no_conversion: "DISCOVERY30 : le checkout est clair maintenant",
+      clicked_help: "Tu hesites sur la formule ?",
       abandon_high: "Ton Discovery est presque fini",
       abandon_medium: "Reprends ton Discovery cette semaine",
       opened_no_click: "Je reprends ton dossier Discovery",
@@ -3225,6 +3227,8 @@ export async function sendRecoveryCtaEmail(
     const introByCohort: Record<RecoveryCtaCohort, string> = {
       clicked_no_conversion:
         "Tu avais cliqué mais tu n'es pas allé au bout. Je remets le lien proprement : le code n'est pas automatique, il faut le coller dans le champ Code promotionnel au checkout.",
+      clicked_help:
+        "Tu as cliqué sur le coaching mais tu n'es pas allé au bout. Si c'est le choix de la formule, le budget ou le code promo qui bloque, réponds à ce mail avec ton objectif et je te dis exactement quoi prendre. Sinon je te remets le lien direct.",
       abandon_high:
         `Tu étais à ${safePercent ?? "plus de 75"}% du questionnaire. Ton scan est sauvegardé, reprends-le d'abord : derrière, je te garde DISCOVERY30 pour passer au coaching si tu veux appliquer le plan.`,
       abandon_medium:
