@@ -553,6 +553,120 @@ export async function registerRoutes(
     });
   });
 
+  app.get("/go/coaching", (req, res) => {
+    const escapeHtml = (value: unknown): string =>
+      String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    const cleanParam = (value: unknown, fallback: string): string => {
+      const cleaned = String(value || fallback).replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 64);
+      return cleaned || fallback;
+    };
+    const code = cleanParam(req.query.code, "DISCOVERY30").toUpperCase();
+    const campaign = cleanParam(req.query.utm_campaign, "discovery30");
+    const content = cleanParam(req.query.utm_content, "coaching_bridge");
+    const selectedTier = cleanParam(req.query.tier, "");
+    const productUrl = (path: string, tier: string) => {
+      const url = new URL(path, "https://www.achzodcoaching.com");
+      url.searchParams.set("utm_source", "apexlabs");
+      url.searchParams.set("utm_medium", "bridge");
+      url.searchParams.set("utm_campaign", campaign);
+      url.searchParams.set("utm_content", `${content}_${tier}`);
+      url.searchParams.set("promo", code);
+      return url.toString();
+    };
+    const formulasUrl = productUrl("/formules-coaching", "compare");
+    const offers = [
+      { tier: "ESSENTIAL", label: "Essential 8 semaines", before: "399 EUR", after: "279,30 EUR", href: productUrl("/product/coaching-essential-8", "essential8"), note: "Le meilleur point d'entree si tu veux un vrai suivi sans WhatsApp." },
+      { tier: "ELITE", label: "Elite 8 semaines", before: "649 EUR", after: "454,30 EUR", href: productUrl("/product/coaching-elite-8", "elite8"), note: "Le meilleur choix si tu veux WhatsApp + ajustements plus proches." },
+      { tier: "PRIVATELAB", label: "Private Lab 8 semaines", before: "799 EUR", after: "559,30 EUR", href: productUrl("/product/8-semaines-private-lab", "privatelab8"), note: "Le format le plus avance si tu veux un suivi tres serre." },
+      { tier: "ESSENTIAL", label: "Essential 12 semaines", before: "549 EUR", after: "384,30 EUR", href: productUrl("/product/coaching-essential-12", "essential12"), note: "Plus rentable si tu veux une transformation plus stable." },
+      { tier: "ELITE", label: "Elite 12 semaines", before: "899 EUR", after: "629,30 EUR", href: productUrl("/product/coaching-elite-12", "elite12"), note: "Le meilleur ratio suivi/resultat sur 12 semaines." },
+      { tier: "PRIVATELAB", label: "Private Lab 12 semaines", before: "1199 EUR", after: "839,30 EUR", href: productUrl("/product/12-semaines-private-lab", "privatelab12"), note: "Accompagnement premium long pour gros objectif." },
+    ];
+    const sortedOffers = selectedTier
+      ? [...offers].sort((a, b) => Number(b.tier === selectedTier) - Number(a.tier === selectedTier))
+      : offers;
+    const offerCards = sortedOffers.map((offer) => `
+      <a class="offer${offer.tier === selectedTier ? " selected" : ""}" href="${escapeHtml(offer.href)}">
+        <span class="offer-title">${escapeHtml(offer.label)}</span>
+        <span class="prices"><span>${escapeHtml(offer.before)}</span><strong>${escapeHtml(offer.after)}</strong></span>
+        <span class="note">${escapeHtml(offer.note)}</span>
+      </a>
+    `).join("");
+
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.setHeader("Cache-Control", "no-store");
+    res.send(`<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Activer ${escapeHtml(code)} - Achzod Coaching</title>
+  <style>
+    :root { color-scheme: light; --ink:#111827; --muted:#5f6673; --line:#d9dde5; --blue:#1166ff; --bg:#f7f8fb; --card:#ffffff; --green:#0f8a4b; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--ink); }
+    main { width: min(960px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 42px; }
+    .top { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:22px; font-size:13px; color:var(--muted); }
+    .hero { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 28px; box-shadow: 0 10px 34px rgba(17,24,39,.06); }
+    h1 { margin: 0 0 12px; font-size: clamp(30px, 5vw, 54px); line-height: 1.02; letter-spacing: 0; }
+    .sub { margin: 0; color: var(--muted); font-size: 17px; line-height: 1.55; max-width: 760px; }
+    .code-box { margin: 22px 0 0; display:grid; grid-template-columns: 1fr auto; gap: 12px; align-items:center; border: 1px solid #9bbcff; background:#eef4ff; padding: 14px; border-radius: 8px; }
+    .code { font-size: clamp(28px, 6vw, 48px); line-height: 1; font-weight: 850; color: var(--blue); letter-spacing: 0; }
+    button { border: 0; background: var(--blue); color:#fff; min-height: 46px; padding: 0 18px; border-radius: 8px; font-weight: 800; cursor: pointer; }
+    .steps { display:grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 18px 0 0; }
+    .step { border: 1px solid var(--line); background:#fff; border-radius: 8px; padding: 14px; min-height: 110px; }
+    .step strong { display:block; margin-bottom: 6px; }
+    .step span { color: var(--muted); font-size: 14px; line-height: 1.45; }
+    .offers { display:grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 18px 0 0; }
+    .offer { display:flex; min-height: 154px; flex-direction:column; justify-content:space-between; text-decoration:none; color:var(--ink); border:1px solid var(--line); background:#fff; border-radius:8px; padding:16px; transition: border-color .15s, transform .15s; }
+    .offer:hover { border-color: var(--blue); transform: translateY(-1px); }
+    .offer.selected { border:2px solid var(--blue); }
+    .offer-title { font-weight: 850; font-size: 16px; }
+    .prices { display:flex; flex-direction:column; gap:4px; }
+    .prices span { color: var(--muted); text-decoration: line-through; font-size: 14px; }
+    .prices strong { color: var(--green); font-size: 22px; }
+    .note { color: var(--muted); font-size: 13px; line-height: 1.4; }
+    .compare { display:block; text-align:center; margin-top:16px; color:var(--blue); font-weight:800; text-decoration:none; }
+    .warn { margin-top:18px; color:#7c2d12; background:#fff7ed; border:1px solid #fed7aa; border-radius:8px; padding:14px; line-height:1.45; }
+    @media (max-width: 760px) { main { width: min(100% - 22px, 960px); padding-top:18px; } .hero { padding: 20px; } .code-box, .steps, .offers { grid-template-columns:1fr; } .top { align-items:flex-start; flex-direction:column; } }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="top"><strong>APEXLABS -> ACHZOD COACHING</strong><span>Code reserve aux dossiers Discovery/ApexLabs</span></div>
+    <section class="hero">
+      <h1>Active ton -30% coaching</h1>
+      <p class="sub">Webflow ne peut pas appliquer le code automatiquement depuis l'email. La procedure correcte est simple : copie le code, choisis une formule 8 ou 12 semaines, puis colle-le dans <strong>Code promotionnel ?</strong> au checkout.</p>
+      <div class="code-box">
+        <div class="code" id="code">${escapeHtml(code)}</div>
+        <button type="button" id="copy">Copier le code</button>
+      </div>
+      <div class="steps">
+        <div class="step"><strong>1. Copie ${escapeHtml(code)}</strong><span>Garde le code pret avant d'ouvrir le checkout.</span></div>
+        <div class="step"><strong>2. Choisis 8 ou 12 semaines</strong><span>Le code ne s'applique pas aux formules 4 semaines.</span></div>
+        <div class="step"><strong>3. Clique APPLIQUER</strong><span>Au checkout, colle le code dans <strong>Code promotionnel ?</strong>.</span></div>
+      </div>
+      <div class="offers">${offerCards}</div>
+      <a class="compare" href="${escapeHtml(formulasUrl)}">Comparer toutes les formules</a>
+      <div class="warn"><strong>Important :</strong> si le total ne baisse pas au checkout, le code n'a pas ete applique. Recolle <strong>${escapeHtml(code)}</strong> puis clique <strong>APPLIQUER</strong> avant de payer.</div>
+    </section>
+  </main>
+  <script>
+    const code = ${JSON.stringify(code)};
+    document.getElementById("copy").addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(code); document.getElementById("copy").textContent = "Code copie"; }
+      catch { document.getElementById("copy").textContent = code; }
+    });
+  </script>
+</body>
+</html>`);
+  });
+
   // Public stats endpoint , live factual numbers for social proof on landing/checkout pages.
   // Values are computed from the DB, not fabricated. Cached for 5 min to avoid hammering
   // the DB on every page view. Filters out test/debug emails. Only counts data from the

@@ -707,11 +707,20 @@ function getDiscoveryPromoBanner(daysLeft: number): string {
   `;
 }
 
-// Keep promo in the URL for attribution. Webflow checkout still requires the client
-// to paste DISCOVERY30 manually in the "Code promotionnel" field.
-function withDiscoveryPromo(url: string): string {
-  const sep = url.includes('?') ? '&' : '?';
-  return `${url}${sep}promo=DISCOVERY30`;
+function discoveryCoachingBridgeUrl(
+  baseUrl: string,
+  campaign: string,
+  content: string,
+  tier?: "ESSENTIAL" | "ELITE" | "PRIVATELAB"
+): string {
+  const url = new URL("/go/coaching", baseUrl);
+  url.searchParams.set("code", "DISCOVERY30");
+  url.searchParams.set("utm_source", "apexlabs");
+  url.searchParams.set("utm_medium", "email");
+  url.searchParams.set("utm_campaign", campaign);
+  url.searchParams.set("utm_content", content);
+  if (tier) url.searchParams.set("tier", tier);
+  return url.toString();
 }
 
 function withEmailClickTracking(baseUrl: string, trackingId: string, url: string): string {
@@ -3201,9 +3210,7 @@ export async function sendRecoveryCtaEmail(
     const expiresText = opts.expiresText || "7 jours";
     const cohort = opts.cohort;
     const campaign = "recovery_cta_2026_06";
-    const coachingUrl = withDiscoveryPromo(
-      `https://www.achzodcoaching.com/formules-coaching?utm_source=apexlabs&utm_medium=email&utm_campaign=${campaign}&utm_content=${encodeURIComponent(cohort)}`
-    );
+    const coachingUrl = discoveryCoachingBridgeUrl(opts.baseUrl, campaign, cohort);
     const trackedCoachingUrl = withEmailClickTracking(opts.baseUrl, opts.trackingId, coachingUrl);
     const trackingPixel = `${opts.baseUrl}/api/track/email/${opts.trackingId}/open.gif`;
     const safePercent = typeof opts.percentComplete === "number" && Number.isFinite(opts.percentComplete)
@@ -3703,8 +3710,8 @@ export async function sendGratuitUpsellEmail(
 ): Promise<boolean> {
   try {
     const reportLink = `${baseUrl}/analysis/${auditId}`;
-    const coachingLink = withDiscoveryPromo(`https://www.achzodcoaching.com/coaching-essential?utm_source=apexlabs&utm_medium=email&utm_campaign=discovery_j3_coaching`);
-    const allFormulesLink = withDiscoveryPromo(`https://www.achzodcoaching.com/formules-coaching?utm_source=apexlabs&utm_medium=email&utm_campaign=discovery_j3_coaching`);
+    const coachingLink = discoveryCoachingBridgeUrl(baseUrl, "discovery_j3_coaching", "essential", "ESSENTIAL");
+    const allFormulesLink = discoveryCoachingBridgeUrl(baseUrl, "discovery_j3_coaching", "compare");
     const trackedCoachingLink = withEmailClickTracking(baseUrl, trackingId, coachingLink);
     const trackedAllFormulesLink = withEmailClickTracking(baseUrl, trackingId, allFormulesLink);
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
@@ -4233,10 +4240,12 @@ export async function sendDiscoveryJ14CoachingEmail(
 ): Promise<boolean> {
   try {
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
-    const defaultHref = `https://www.achzodcoaching.com/formules-coaching?utm_source=apexlabs&utm_medium=email&utm_campaign=discovery_j14`;
-    const coachingLink = withDiscoveryPromo(recommendation
-      ? `${recommendation.href}?utm_source=apexlabs&utm_medium=email&utm_campaign=discovery_j14&tier=${recommendation.tier.toLowerCase()}`
-      : defaultHref);
+    const coachingLink = discoveryCoachingBridgeUrl(
+      baseUrl,
+      "discovery_j14",
+      recommendation ? recommendation.tier.toLowerCase() : "compare",
+      recommendation?.tier
+    );
     const trackedCoachingLink = withEmailClickTracking(baseUrl, trackingId, coachingLink);
     const tierLabel = recommendation
       ? recommendation.tier === "PRIVATELAB" ? "Private Lab" : recommendation.tier === "ELITE" ? "Elite" : "Essential"
@@ -4343,8 +4352,8 @@ export async function sendGratuitJ5Email(
 ): Promise<boolean> {
   try {
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
-    const primaryCtaLink = withDiscoveryPromo(`https://www.achzodcoaching.com/coaching-essential?utm_source=apexlabs&utm_medium=email&utm_campaign=discovery_j5`);
-    const secondaryCtaLink = withDiscoveryPromo(`https://www.achzodcoaching.com/formules-coaching?utm_source=apexlabs&utm_medium=email&utm_campaign=discovery_j5`);
+    const primaryCtaLink = discoveryCoachingBridgeUrl(baseUrl, "discovery_j5", "essential", "ESSENTIAL");
+    const secondaryCtaLink = discoveryCoachingBridgeUrl(baseUrl, "discovery_j5", "compare");
     const trackedPrimaryCtaLink = withEmailClickTracking(baseUrl, trackingId, primaryCtaLink);
     const trackedSecondaryCtaLink = withEmailClickTracking(baseUrl, trackingId, secondaryCtaLink);
     const reportLink = `${baseUrl}/analysis/${auditId}`;
@@ -4467,10 +4476,10 @@ export async function sendGratuitJ7Email(
 ): Promise<boolean> {
   try {
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
-    const essentialLink = withDiscoveryPromo(`https://www.achzodcoaching.com/coaching-essential?utm_source=apexlabs&utm_medium=email&utm_campaign=discovery_j7_lastcall`);
-    const eliteLink = withDiscoveryPromo(`https://www.achzodcoaching.com/coaching-elite?utm_source=apexlabs&utm_medium=email&utm_campaign=discovery_j7_lastcall`);
-    const privateLabLink = withDiscoveryPromo(`https://www.achzodcoaching.com/coaching-achzod-private-lab?utm_source=apexlabs&utm_medium=email&utm_campaign=discovery_j7_lastcall`);
-    const allFormulesLink = withDiscoveryPromo(`https://www.achzodcoaching.com/formules-coaching?utm_source=apexlabs&utm_medium=email&utm_campaign=discovery_j7_lastcall`);
+    const essentialLink = discoveryCoachingBridgeUrl(baseUrl, "discovery_j7_lastcall", "essential", "ESSENTIAL");
+    const eliteLink = discoveryCoachingBridgeUrl(baseUrl, "discovery_j7_lastcall", "elite", "ELITE");
+    const privateLabLink = discoveryCoachingBridgeUrl(baseUrl, "discovery_j7_lastcall", "privatelab", "PRIVATELAB");
+    const allFormulesLink = discoveryCoachingBridgeUrl(baseUrl, "discovery_j7_lastcall", "compare");
     const trackedEssentialLink = withEmailClickTracking(baseUrl, trackingId, essentialLink);
     const trackedEliteLink = withEmailClickTracking(baseUrl, trackingId, eliteLink);
     const trackedPrivateLabLink = withEmailClickTracking(baseUrl, trackingId, privateLabLink);
@@ -5009,11 +5018,13 @@ export async function sendDiscoveryJ30NurtureEmail(
 ): Promise<boolean> {
   try {
     const reportLink = `${baseUrl}/analysis/${auditId}`;
-    const defaultCoachingLink = `https://www.achzodcoaching.com/formules-coaching?utm_source=apexlabs&utm_medium=email&utm_campaign=discovery_j30_nurture`;
-    const coachingLink = withDiscoveryPromo(recommendation
-      ? `${recommendation.href}?utm_source=apexlabs&utm_medium=email&utm_campaign=discovery_j30_nurture&tier=${recommendation.tier.toLowerCase()}`
-      : defaultCoachingLink);
-    const essentialLink = withDiscoveryPromo(`https://www.achzodcoaching.com/coaching-essential?utm_source=apexlabs&utm_medium=email&utm_campaign=discovery_j30_nurture`);
+    const coachingLink = discoveryCoachingBridgeUrl(
+      baseUrl,
+      "discovery_j30_nurture",
+      recommendation ? recommendation.tier.toLowerCase() : "compare",
+      recommendation?.tier
+    );
+    const essentialLink = discoveryCoachingBridgeUrl(baseUrl, "discovery_j30_nurture", "essential", "ESSENTIAL");
     const trackedCoachingLink = withEmailClickTracking(baseUrl, trackingId, coachingLink);
     const trackedEssentialLink = withEmailClickTracking(baseUrl, trackingId, essentialLink);
     const tierLabel = recommendation
