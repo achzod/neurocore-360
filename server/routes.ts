@@ -190,6 +190,11 @@ export async function registerRoutes(
     "%blood analysis%",
   ];
 
+  const isEmailSequenceAttempted = (tracking: any): boolean => {
+    const status = String(tracking?.sendpulseStatus || "").toLowerCase();
+    return !["failed", "auth_failed", "unsubscribed"].includes(status);
+  };
+
   const normalizeSearchText = (value: unknown): string =>
     String(value || "")
       .toLowerCase()
@@ -8304,7 +8309,7 @@ export async function registerRoutes(
 
           const emailTracking = await db.select().from(emailTrackingTable).where(eq(emailTrackingTable.auditId, audit.id));
           const trackingTypes = emailTracking
-            .filter((t: any) => t.sendpulseStatus === "success")
+            .filter(isEmailSequenceAttempted)
             .map(t => t.emailType);
 
           // GRATUIT audits: Send upsell email after 2 days
@@ -12971,7 +12976,7 @@ export async function registerRoutes(
 
         const trackingHistory = await storage.getEmailTrackingForAudit(audit.id) || [];
         const trackingTypes = trackingHistory
-          .filter((t: any) => t.sendpulseStatus === "success")
+          .filter(isEmailSequenceAttempted)
           .map((t: any) => t.emailType);
 
         // GRATUIT sequences
