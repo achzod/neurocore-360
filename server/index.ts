@@ -448,6 +448,43 @@ if (process.env.NODE_ENV === "production") {
           for (let attempt = 0; attempt < RECOVERY_CTA_PER_TICK; attempt++) {
             let sentThisAttempt = false;
 
+            {
+              const controller = new AbortController();
+              const timeout = setTimeout(() => controller.abort(), 55_000);
+              try {
+                const response = await fetch(`${baseUrl}/api/admin/recovery-cta-click-followup`, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "x-admin-key": adminKey,
+                  },
+                  body: JSON.stringify({ dryRun: false, maxToSend: 25, lookbackDays: 14, minHoursSinceClick: 2 }),
+                  signal: controller.signal,
+                });
+                const result: any = await response.json().catch(() => null);
+                if (!response.ok || !result?.success) {
+                  failed++;
+                  console.error("[RecoveryCTA-Drip] click follow-up failed", {
+                    status: response.status,
+                    error: result?.error || result?.message || "non-json response",
+                  });
+                } else if (Number(result.sent || 0) > 0) {
+                  sent += Number(result.sent);
+                  sentThisAttempt = true;
+                }
+              } catch (err) {
+                failed++;
+                console.error("[RecoveryCTA-Drip] click follow-up error:", err);
+              } finally {
+                clearTimeout(timeout);
+              }
+            }
+
+            if (sentThisAttempt) {
+              await new Promise((resolve) => setTimeout(resolve, 5_000));
+              continue;
+            }
+
             for (const day of recoveryCtaDays) {
               const controller = new AbortController();
               const timeout = setTimeout(() => controller.abort(), 55_000);
