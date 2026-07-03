@@ -49,6 +49,11 @@ async function buildAll() {
   // Generate sitemap.xml with all blog articles
   console.log("generating sitemap.xml...");
   const BASE = "https://apexlabs.achzodcoaching.com";
+  const sitemapLoc = (pathname: string) =>
+    `${BASE}${pathname
+      .split("/")
+      .map((segment, index) => (index === 0 ? "" : encodeURIComponent(segment)))
+      .join("/")}`;
   const staticPages = [
     { loc: "/", priority: "1.0", changefreq: "weekly" },
     { loc: "/offers/discovery-scan", priority: "0.9", changefreq: "monthly" },
@@ -57,23 +62,19 @@ async function buildAll() {
     { loc: "/offers/blood-analysis", priority: "0.9", changefreq: "monthly" },
     { loc: "/offers/formcheck", priority: "0.8", changefreq: "monthly" },
     { loc: "/offers/peptides-engine", priority: "0.9", changefreq: "monthly" },
-    { loc: "/peptides-engine", priority: "0.9", changefreq: "monthly" },
     { loc: "/blog", priority: "0.8", changefreq: "daily" },
     { loc: "/faq", priority: "0.7", changefreq: "monthly" },
     { loc: "/press", priority: "0.6", changefreq: "monthly" },
     { loc: "/deduction-coaching", priority: "0.6", changefreq: "monthly" },
-    { loc: "/politique-confidentialite", priority: "0.3", changefreq: "yearly" },
-    { loc: "/mentions-legales", priority: "0.3", changefreq: "yearly" },
-    { loc: "/cgv", priority: "0.3", changefreq: "yearly" },
   ];
   const today = new Date().toISOString().split("T")[0];
   const sitemapEntries = staticPages.map(
-    (p) => `  <url><loc>${BASE}${p.loc}</loc><lastmod>${today}</lastmod><changefreq>${p.changefreq}</changefreq><priority>${p.priority}</priority></url>`
+    (p) => `  <url><loc>${sitemapLoc(p.loc)}</loc><lastmod>${today}</lastmod><changefreq>${p.changefreq}</changefreq><priority>${p.priority}</priority></url>`
   );
   for (const article of articles) {
     const lastmod = article.date ? new Date(article.date).toISOString().split("T")[0] : today;
     sitemapEntries.push(
-      `  <url><loc>${BASE}/blog/${article.slug}</loc><lastmod>${lastmod}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>`
+      `  <url><loc>${sitemapLoc(`/blog/${article.slug}`)}</loc><lastmod>${lastmod}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>`
     );
   }
 
@@ -98,12 +99,12 @@ async function buildAll() {
     const count = articles.filter((a: any) => a.category === slug).length;
     if (count === 0) continue;
     sitemapEntries.push(
-      `  <url><loc>${BASE}/blog/categorie/${slug}</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>`
+      `  <url><loc>${sitemapLoc(`/blog/categorie/${slug}`)}</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>`
     );
   }
   const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemapEntries.join("\n")}\n</urlset>\n`;
   await writeFile(resolve("client", "public", "sitemap.xml"), sitemapXml);
-  console.log(`sitemap.xml: ${staticPages.length + articles.length} URLs`);
+  console.log(`sitemap.xml: ${sitemapEntries.length} URLs`);
 
   console.log("building client...");
   await viteBuild();
