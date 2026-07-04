@@ -412,8 +412,8 @@ if (process.env.NODE_ENV === "production") {
         24
       );
       const recoveryCtaDays = process.env.RECOVERY_CTA_INCLUDE_COLD === "1"
-        ? [2, 3, 4, 5, 6, 7]
-        : [2, 3, 4, 5];
+        ? [1, 2, 3, 4, 5, 6, 7]
+        : [1, 2, 3, 4, 5];
       let recoveryCtaRunning = false;
 
       const isWithinRecoveryCtaWindow = () => {
