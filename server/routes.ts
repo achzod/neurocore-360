@@ -8363,8 +8363,17 @@ export async function registerRoutes(
     let redirectUrl: URL;
     try {
       redirectUrl = new URL(rawUrl);
-      const allowedHosts = new Set(["achzodcoaching.com", "www.achzodcoaching.com"]);
-      if (redirectUrl.protocol !== "https:" || !allowedHosts.has(redirectUrl.hostname)) {
+      const allowedCoachingHosts = new Set(["achzodcoaching.com", "www.achzodcoaching.com"]);
+      const allowedApexBridgeHosts = new Set([
+        "apexlabs.achzodcoaching.com",
+        "neurocore-360.onrender.com",
+      ]);
+      const isCoachingDestination = allowedCoachingHosts.has(redirectUrl.hostname);
+      const isApexCoachingBridge =
+        allowedApexBridgeHosts.has(redirectUrl.hostname) &&
+        redirectUrl.pathname === "/go/coaching";
+
+      if (redirectUrl.protocol !== "https:" || (!isCoachingDestination && !isApexCoachingBridge)) {
         res.status(400).send("Invalid redirect URL");
         return;
       }
