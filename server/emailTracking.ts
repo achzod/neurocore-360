@@ -25,7 +25,7 @@ export interface EmailTrackingData {
   subject: string;
   previewText?: string;
   sendpulseTaskId?: string;
-  sendpulseStatus?: "success" | "failed" | "pending";
+  sendpulseStatus?: "success" | "failed" | "pending" | "unsubscribed" | "auth_failed";
   sendpulseError?: string;
   metadata?: Record<string, any>;
 }

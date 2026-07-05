@@ -6130,6 +6130,10 @@ export async function registerRoutes(
             )`
       );
       blockedRows.rows.forEach((row: any) => blockedRecipients.add(cleanEmail(row.email)));
+      const unsubscribeRows = await pool.query(
+        `SELECT LOWER(email) AS email FROM email_unsubscribes`
+      ).catch(() => ({ rows: [] }));
+      unsubscribeRows.rows.forEach((row: any) => blockedRecipients.add(cleanEmail(row.email)));
 
       const candidates = new Map<string, RecoveryCandidate>();
       const addCandidate = (candidate: RecoveryCandidate) => {
@@ -6453,6 +6457,11 @@ export async function registerRoutes(
         !validEmail.test(email)
         || invalidDomains.has(emailDomain(email))
         || disallowedFragments.some((fragment) => email.includes(fragment));
+      const unsubscribedRecipients = new Set<string>();
+      const unsubscribeRows = await pool.query(
+        `SELECT LOWER(email) AS email FROM email_unsubscribes`
+      ).catch(() => ({ rows: [] }));
+      unsubscribeRows.rows.forEach((row: any) => unsubscribedRecipients.add(cleanEmail(row.email)));
 
       const result = await pool.query(
         `WITH clicked AS (
@@ -6535,7 +6544,7 @@ export async function registerRoutes(
 
       const candidates = result.rows
         .map((row: any) => ({ ...row, email: cleanEmail(row.email) }))
-        .filter((row: any) => row.email && !isExcludedEmail(row.email));
+        .filter((row: any) => row.email && !isExcludedEmail(row.email) && !unsubscribedRecipients.has(row.email));
 
       if (dryRun) {
         res.json({

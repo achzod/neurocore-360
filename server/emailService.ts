@@ -317,6 +317,23 @@ async function sendEmailWithTracking(
     const { storage } = await import("./storage");
     if (await storage.isEmailUnsubscribed(trackingData.recipientEmail)) {
       console.log(`[SendPulse] BLOCKED , ${trackingData.recipientEmail} is unsubscribed`);
+      await logEmail({
+        emailType: trackingData.emailType,
+        recipientEmail: trackingData.recipientEmail,
+        recipientName: trackingData.recipientName,
+        auditId: trackingData.auditId,
+        auditType: trackingData.auditType,
+        subject: emailPayload.subject,
+        previewText: emailPayload.text.substring(0, 100),
+        sendpulseStatus: "unsubscribed",
+        sendpulseError: "recipient unsubscribed",
+        metadata: {
+          ...(trackingData.metadata || {}),
+          sendpulseAccepted: false,
+          sendpulseVerified: false,
+          blockedReason: "unsubscribed",
+        },
+      });
       return { result: false, error: "unsubscribed" };
     }
 
