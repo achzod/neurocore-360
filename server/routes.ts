@@ -35,7 +35,9 @@ import {
   sendFinishDiscoveryEmail,
   sendCrossSellUpgradeEmail,
   sendRecoveryCtaEmail,
+  sendCoachingFormulaChoiceLeadEmail,
   type RecoveryCtaCohort,
+  type CoachingFormulaLeadInput,
 } from "./emailService";
 import { generateExportHTML, generateExportPDF } from "./exportService";
 import { generateAndConvertAuditWithClaude } from "./anthropicEngine";
@@ -7341,6 +7343,83 @@ export async function registerRoutes(
     } catch (error) {
       console.error("[Admin] send-reactivation-campaign error:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  app.post("/api/admin/send-coaching-formula-choice-lead", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const body = req.body || {};
+      const lead = (body.lead || body) as CoachingFormulaLeadInput & { email?: string };
+      const email = String(lead.email || "").trim().toLowerCase();
+      const dryRun = body.dryRun === true;
+      const expiresText = String(body.expiresText || "5 jours");
+
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        res.status(400).json({ success: false, error: "email valide requis" });
+        return;
+      }
+
+      const alreadySent = await pool.query(
+        `SELECT id, sendpulse_status, sendpulse_task_id, sent_at
+           FROM email_tracking
+          WHERE LOWER(recipient_email) = $1
+            AND email_type = 'sendCoachingFormulaChoiceLeadEmail'
+            AND sent_at >= NOW() - INTERVAL '30 days'
+            AND (
+              sendpulse_task_id IS NOT NULL
+              OR LOWER(COALESCE(sendpulse_status, '')) IN ('success', 'sent', 'delivered', 'unsubscribed')
+            )
+          ORDER BY sent_at DESC
+          LIMIT 1`,
+        [email]
+      );
+
+      if ((alreadySent.rowCount || 0) > 0) {
+        res.json({
+          success: true,
+          skipped: true,
+          reason: "already_sent_recently",
+          email,
+          previous: alreadySent.rows[0],
+        });
+        return;
+      }
+
+      const baseUrl = getBaseUrl(req);
+      const trackingId = crypto.randomUUID();
+      if (dryRun) {
+        res.json({
+          success: true,
+          dryRun: true,
+          email,
+          trackingId,
+          tier: lead.tier || null,
+          baseUrl,
+        });
+        return;
+      }
+
+      const trackingRecord = await storage.createEmailTracking(
+        crypto.randomUUID(),
+        "sendCoachingFormulaChoiceLeadEmail",
+        email
+      );
+      const sent = await sendCoachingFormulaChoiceLeadEmail(email, lead, {
+        baseUrl,
+        trackingId: trackingRecord.id,
+        expiresText,
+      });
+
+      if (!sent) {
+        res.status(500).json({ success: false, error: "Echec envoi", email, trackingId: trackingRecord.id });
+        return;
+      }
+
+      res.json({ success: true, email, trackingId: trackingRecord.id });
+    } catch (error) {
+      console.error("[Admin] send-coaching-formula-choice-lead error:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur", message: error instanceof Error ? error.message : String(error) });
     }
   });
 

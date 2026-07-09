@@ -3201,6 +3201,68 @@ export type RecoveryCtaCohort =
   | "abandon_last_chance"
   | "cold_base";
 
+export type CoachingFormulaLeadInput = {
+  tier?: string | null;
+  profil?: string | null;
+  objectif?: string | null;
+  blessure_sante?: string | null;
+  sommeil?: string | null;
+  pourquoi_ce_choix?: string | null;
+  date?: string | null;
+};
+
+const normalizeCoachingFormulaTier = (tier: unknown): {
+  label: string;
+  ctaLabel: string;
+  urlTier?: "ESSENTIAL" | "ELITE" | "PRIVATELAB";
+  content: string;
+} => {
+  const raw = String(tier || "").trim().toLowerCase();
+  if (raw.includes("private")) {
+    return {
+      label: "Private Lab",
+      ctaLabel: "Activer mon code sur Private Lab",
+      urlTier: "PRIVATELAB",
+      content: "private_lab",
+    };
+  }
+  if (raw.includes("elite")) {
+    return {
+      label: "Elite",
+      ctaLabel: "Activer mon code sur Elite",
+      urlTier: "ELITE",
+      content: "elite",
+    };
+  }
+  if (raw.includes("essential")) {
+    return {
+      label: "Essential",
+      ctaLabel: "Activer mon code sur Essential",
+      urlTier: "ESSENTIAL",
+      content: "essential",
+    };
+  }
+  if (raw.includes("starter")) {
+    return {
+      label: "Starter / Essential",
+      ctaLabel: "Voir la formule adaptée",
+      urlTier: "ESSENTIAL",
+      content: "starter_essential",
+    };
+  }
+  return {
+    label: "formule adaptée",
+    ctaLabel: "Comparer les formules",
+    content: "compare",
+  };
+};
+
+const compactEmailLine = (value: unknown, maxLength = 220): string => {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength - 1).trim()}…`;
+};
+
 const escapeEmailHtml = (value: unknown): string =>
   String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -3350,6 +3412,136 @@ Achzod`;
     return result.result === true;
   } catch (error) {
     console.error("[SendPulse] Error sending recovery CTA email:", error);
+    return false;
+  }
+}
+
+export async function sendCoachingFormulaChoiceLeadEmail(
+  email: string,
+  lead: CoachingFormulaLeadInput,
+  opts: {
+    baseUrl: string;
+    trackingId: string;
+    expiresText?: string;
+  }
+): Promise<boolean> {
+  try {
+    const tier = normalizeCoachingFormulaTier(lead.tier);
+    const campaign = "coaching_formula_choice_2026_07";
+    const expiresText = opts.expiresText || "5 jours";
+    const coachingUrl = discoveryCoachingBridgeUrl(opts.baseUrl, campaign, tier.content, tier.urlTier);
+    const trackedCoachingUrl = withEmailClickTracking(opts.baseUrl, opts.trackingId, coachingUrl);
+    const trackingPixel = `${opts.baseUrl}/api/track/email/${opts.trackingId}/open.gif`;
+    const deadlineDate = formatDeadlineFR(5);
+
+    const objective = compactEmailLine(lead.objectif, 260);
+    const profile = compactEmailLine(lead.profil, 180);
+    const sleep = compactEmailLine(lead.sommeil, 180);
+    const reason = compactEmailLine(lead.pourquoi_ce_choix, 520);
+
+    const contextRows = [
+      objective ? `<p style="margin:0 0 8px;color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.55;"><strong style="color:${APPLE_COLORS.ink};">Objectif :</strong> ${escapeEmailHtml(objective)}</p>` : "",
+      profile ? `<p style="margin:0 0 8px;color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.55;"><strong style="color:${APPLE_COLORS.ink};">Profil :</strong> ${escapeEmailHtml(profile)}</p>` : "",
+      sleep ? `<p style="margin:0;color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.55;"><strong style="color:${APPLE_COLORS.ink};">Sommeil/énergie :</strong> ${escapeEmailHtml(sleep)}</p>` : "",
+    ].filter(Boolean).join("");
+
+    const content = `
+      ${getDiscoveryPromoBanner(5)}
+
+      <p style="color:${APPLE_COLORS.inkSoft};font-size:16px;line-height:1.65;margin:0 0 18px;">
+        Tu as rempli le questionnaire pour choisir ta formule de coaching. Je te relance parce que ton profil est déjà qualifié, il ne manque plus que la décision.
+      </p>
+
+      <div style="padding:20px 22px;background:#e8f4ff;border-radius:12px;border-left:3px solid ${APPLE_COLORS.accent};margin:0 0 24px;">
+        <p style="color:${APPLE_COLORS.accent};font-size:11px;text-transform:uppercase;letter-spacing:1.5px;margin:0 0 6px;font-weight:700;">
+          Formule recommandée
+        </p>
+        <p style="color:${APPLE_COLORS.ink};font-size:24px;font-weight:800;margin:0 0 10px;letter-spacing:-0.3px;">
+          ${escapeEmailHtml(tier.label)}
+        </p>
+        ${reason ? `<p style="color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.65;margin:0;">${escapeEmailHtml(reason)}</p>` : ""}
+      </div>
+
+      ${contextRows ? `
+      <div style="padding:16px 18px;background:#f5f5f7;border-radius:12px;margin:0 0 24px;">
+        ${contextRows}
+      </div>
+      ` : ""}
+
+      <p style="color:${APPLE_COLORS.ink};font-size:16px;line-height:1.65;margin:0 0 10px;font-weight:600;">
+        Si tu veux que je transforme ça en plan concret semaine après semaine, prends ta place maintenant.
+      </p>
+      <p style="color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.65;margin:0 0 20px;">
+        Le code <strong style="color:${APPLE_COLORS.ink};">DISCOVERY30</strong> retire 30% sur les formules coaching 8 et 12 semaines. Il reste ${escapeEmailHtml(expiresText)}.
+      </p>
+
+      ${getCoachingAppleButton(tier.ctaLabel, trackedCoachingUrl)}
+
+      <p style="color:${APPLE_COLORS.muted};font-size:12px;line-height:1.55;margin:18px 0 0;text-align:center;">
+        Code valable jusqu'au <strong style="color:${APPLE_COLORS.ink};">${deadlineDate}</strong>. Au checkout, copie <strong style="color:${APPLE_COLORS.ink};">DISCOVERY30</strong> dans le champ "Code promotionnel ?".
+      </p>
+
+      <div style="padding:14px 18px;background:#f5f5f7;border-radius:10px;text-align:center;margin:24px 0 14px;">
+        <p style="color:${APPLE_COLORS.inkSoft};font-size:13px;margin:0;line-height:1.6;">
+          Si tu hésites encore, réponds simplement à ce mail avec ton blocage : budget, timing, formule, blessure, ou autre. Je te réponds directement.
+        </p>
+      </div>
+
+      <p style="color:${APPLE_COLORS.muted};font-size:12px;margin:24px 0 0;">
+        Achzod
+      </p>
+
+      <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
+    `;
+
+    const emailContent = getCoachingAppleWrapper(
+      content,
+      `${tier.label} avec DISCOVERY30`,
+      `Tu as rempli le choix de formule, il reste ${expiresText}`
+    );
+
+    const plainParts = [
+      `Tu as rempli le questionnaire pour choisir ta formule de coaching.`,
+      `Formule recommandée : ${tier.label}.`,
+      objective ? `Objectif : ${objective}` : "",
+      reason ? `Pourquoi : ${reason}` : "",
+      "",
+      `Code DISCOVERY30 : -30% sur les formules coaching 8 et 12 semaines, valable ${expiresText}.`,
+      `Choisir ma formule : ${trackedCoachingUrl}`,
+      "",
+      `Au checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".`,
+      `Si tu hésites encore, réponds à ce mail avec ton blocage : budget, timing, formule, blessure, ou autre.`,
+      "",
+      "Achzod",
+    ].filter((part) => part !== "");
+
+    const result = await sendEmailWithTracking(
+      {
+        subject: `${tier.label} : ta formule coaching recommandée`,
+        from: { name: "Achzod Coaching", email: SENDER_EMAIL },
+        to: [{ email }],
+        html: encodeBase64(emailContent),
+        text: plainParts.join("\n"),
+      },
+      {
+        emailType: "sendCoachingFormulaChoiceLeadEmail",
+        recipientEmail: email,
+        metadata: {
+          trackingId: opts.trackingId,
+          promoCode: "DISCOVERY30",
+          campaign,
+          recommendedTier: tier.label,
+          rawTier: lead.tier || null,
+          coachingUrl,
+          trackedCoachingUrl,
+          formulaLeadDate: lead.date || null,
+        },
+      }
+    );
+
+    return result.result === true;
+  } catch (error) {
+    console.error("[SendPulse] Error sending coaching formula choice lead email:", error);
     return false;
   }
 }
