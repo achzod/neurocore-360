@@ -102,6 +102,7 @@ app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
+  const maxJsonLogChars = Number(process.env.API_RESPONSE_LOG_MAX_CHARS || 2000);
 
   const originalResJson = res.json;
   res.json = function (bodyJson, ...args) {
@@ -114,7 +115,10 @@ app.use((req, res, next) => {
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+        const serialized = JSON.stringify(capturedJsonResponse);
+        logLine += serialized.length > maxJsonLogChars
+          ? ` :: ${serialized.slice(0, maxJsonLogChars)}... [truncated ${serialized.length} chars]`
+          : ` :: ${serialized}`;
       }
 
       log(logLine);

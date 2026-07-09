@@ -5,8 +5,6 @@
  * https://docs.google.com/spreadsheets/d/1DihvbVfke7wFtmHN7N2Q9gEicIN9bnzGTZEqhXXwQRQ/edit
  */
 
-import { storage } from "./storage";
-
 export interface AuditTrackingRow {
   id: string;
   email: string;
@@ -25,62 +23,38 @@ export interface AuditTrackingRow {
  * Génère les données de tracking pour tous les audits
  */
 export async function generateTrackingData(): Promise<AuditTrackingRow[]> {
-  const { db } = await import("./db.js");
-  const { audits } = await import("../shared/drizzle-schema.js");
+  const { pool } = await import("./db.js");
+  const result = await pool.query(`
+    SELECT
+      a.id,
+      a.email,
+      a.type,
+      COALESCE(a.report_delivery_status, 'UNKNOWN') AS status,
+      a.created_at,
+      NULL::timestamp AS generated_at,
+      a.report_scheduled_for,
+      a.report_sent_at,
+      COALESCE(a.narrative_report->'validationResult'->>'score', '') AS validation_score,
+      COALESCE(rj.attempt_count::text, '') AS attempt_count,
+      COALESCE(LEFT(rj.error, 100), '') AS error_message
+    FROM audits a
+    LEFT JOIN report_jobs rj ON rj.audit_id = a.id
+    ORDER BY a.created_at DESC
+  `);
 
-  const allAudits = await db.select().from(audits);
-  const rows: AuditTrackingRow[] = [];
-
-  for (const audit of allAudits) {
-    // Récupérer le job pour attempt count
-    let attemptCount = "";
-    let errorMessage = "";
-    try {
-      const job = await storage.getReportJob(audit.id);
-      if (job) {
-        attemptCount = String(job.attemptCount || 0);
-        errorMessage = job.error || "";
-      }
-    } catch {}
-
-    // Score de validation
-    let validationScore = "";
-    const narrative = (audit as any)?.narrativeReport;
-    if (narrative && typeof narrative === "object") {
-      const validation = narrative.validationResult;
-      if (validation && typeof validation === "object") {
-        validationScore = String(validation.score || "");
-      }
-    }
-
-    rows.push({
-      id: audit.id,
-      email: audit.email,
-      type: audit.type,
-      status: audit.reportDeliveryStatus || "UNKNOWN",
-      createdAt: audit.createdAt ? new Date(audit.createdAt).toISOString() : "",
-      generatedAt: (audit as any).reportGeneratedAt
-        ? new Date((audit as any).reportGeneratedAt).toISOString()
-        : "",
-      scheduledFor: audit.reportScheduledFor
-        ? new Date(audit.reportScheduledFor).toISOString()
-        : "",
-      sentAt: (audit as any).reportSentAt
-        ? new Date((audit as any).reportSentAt).toISOString()
-        : "",
-      validationScore,
-      attemptCount,
-      errorMessage: errorMessage.substring(0, 100), // Limiter la taille
-    });
-  }
-
-  // Trier par date de création (plus récent en premier)
-  rows.sort(
-    (a, b) =>
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
-
-  return rows;
+  return result.rows.map((row) => ({
+    id: row.id,
+    email: row.email,
+    type: row.type,
+    status: row.status,
+    createdAt: row.created_at ? new Date(row.created_at).toISOString() : "",
+    generatedAt: row.generated_at ? new Date(row.generated_at).toISOString() : "",
+    scheduledFor: row.report_scheduled_for ? new Date(row.report_scheduled_for).toISOString() : "",
+    sentAt: row.report_sent_at ? new Date(row.report_sent_at).toISOString() : "",
+    validationScore: row.validation_score || "",
+    attemptCount: row.attempt_count || "",
+    errorMessage: row.error_message || "",
+  }));
 }
 
 /**
@@ -265,6 +239,12 @@ export async function getCombinedStats(): Promise<{
  * 2. Ajouter l'URL webhook dans .env: GOOGLE_SHEETS_WEBHOOK_URL=https://script.google.com/macros/s/.../exec
  */
 
+const GOOGLE_SHEETS_NOTIFY_MIN_INTERVAL_MS = Number(process.env.GOOGLE_SHEETS_NOTIFY_MIN_INTERVAL_MS || 5 * 60 * 1000);
+const GOOGLE_SHEETS_NOTIFY_TIMEOUT_MS = Number(process.env.GOOGLE_SHEETS_NOTIFY_TIMEOUT_MS || 8000);
+let lastGoogleSheetNotifyAt = 0;
+let googleSheetNotifyInFlight = false;
+let googleSheetNotifySkipped = 0;
+
 export async function notifyGoogleSheetUpdate(): Promise<boolean> {
   const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL;
 
@@ -273,8 +253,23 @@ export async function notifyGoogleSheetUpdate(): Promise<boolean> {
     return false;
   }
 
+  const now = Date.now();
+  if (googleSheetNotifyInFlight || now - lastGoogleSheetNotifyAt < GOOGLE_SHEETS_NOTIFY_MIN_INTERVAL_MS) {
+    googleSheetNotifySkipped += 1;
+    return false;
+  }
+
+  googleSheetNotifyInFlight = true;
+  lastGoogleSheetNotifyAt = now;
+
   try {
-    console.log('[GoogleSheets] Calling webhook to update sheet...');
+    const skipped = googleSheetNotifySkipped;
+    googleSheetNotifySkipped = 0;
+    console.log(`[GoogleSheets] Calling webhook to update sheet${skipped ? ` (throttled ${skipped} intermediate updates)` : ""}...`);
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), GOOGLE_SHEETS_NOTIFY_TIMEOUT_MS);
+    timeout.unref?.();
 
     const response = await fetch(webhookUrl, {
       method: 'POST',
@@ -282,7 +277,9 @@ export async function notifyGoogleSheetUpdate(): Promise<boolean> {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ timestamp: new Date().toISOString() }),
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
 
     if (!response.ok) {
       throw new Error(`Webhook returned ${response.status}`);
@@ -293,5 +290,7 @@ export async function notifyGoogleSheetUpdate(): Promise<boolean> {
   } catch (error) {
     console.error('[GoogleSheets] ❌ Error calling webhook:', error);
     return false;
+  } finally {
+    googleSheetNotifyInFlight = false;
   }
 }
