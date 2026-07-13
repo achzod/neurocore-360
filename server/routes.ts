@@ -11191,6 +11191,201 @@ export async function registerRoutes(
     }
   });
 
+  // Sync local tracking rows with the final SMTP status exposed by SendPulse.
+  // The immediate send response can be "accepted" while a later SMTP detail is
+  // a hard fail (for example mailbox over quota). Webhooks do not always arrive,
+  // so this endpoint is the recovery/audit backstop.
+  app.post("/api/admin/sendpulse/sync-live-status", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const body = req.body || {};
+      const apply = body.apply === true || String(req.query.apply || "") === "1";
+      const days = Math.min(Math.max(Number(body.days ?? req.query.days) || 14, 1), 365);
+      const fromDate = String(
+        body.fromDate || req.query.from_date || new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
+      );
+      const pageLimit = Math.min(Math.max(Number(body.pageLimit ?? req.query.pageLimit) || 100, 1), 100);
+      const maxPages = Math.min(Math.max(Number(body.pages ?? req.query.pages) || 50, 1), 100);
+      const dbLimit = Math.min(Math.max(Number(body.dbLimit ?? req.query.dbLimit) || 5000, 1), 20000);
+      const detailsEnabled = String(body.details ?? req.query.details ?? "1") !== "0";
+      const detailLimit = Math.min(Math.max(Number(body.detailLimit ?? req.query.detailLimit) || pageLimit * maxPages, 1), 10000);
+      const recipientFilter = String(body.recipient || req.query.recipient || body.email || req.query.email || "").trim().toLowerCase();
+      const subjectFilter = String(body.subject || req.query.subject || "").trim().toLowerCase();
+      const maxDeltaMinutes = Math.min(Math.max(Number(body.maxDeltaMinutes ?? req.query.maxDeltaMinutes) || 20, 1), 180);
+
+      const dbResult = await pool.query(
+        `SELECT id, email_type, recipient_email, subject, audit_id, audit_type,
+                sendpulse_task_id, sendpulse_status, sendpulse_error, sent_at, metadata
+           FROM email_tracking
+          WHERE sent_at >= $1
+            AND ($2 = '' OR LOWER(recipient_email) LIKE '%' || $2 || '%')
+            AND ($3 = '' OR LOWER(COALESCE(subject, '')) LIKE '%' || $3 || '%')
+          ORDER BY sent_at DESC
+          LIMIT $4`,
+        [fromDate, recipientFilter, subjectFilter, dbLimit]
+      );
+
+      const accessToken = await getSendPulseAdminToken();
+      const liveEmails = await fetchSendPulseEmails(accessToken, {
+        fromDate,
+        pageLimit,
+        maxPages,
+        logPrefix: "SendPulseLiveStatusSync",
+      });
+      const detailResult = detailsEnabled
+        ? await fetchSendPulseEmailDetails(accessToken, liveEmails, detailLimit, "SendPulseLiveStatusSyncDetails")
+        : { emails: liveEmails, attempted: 0, fetched: 0, errors: [] };
+      const liveEmailsForMatch = detailResult.emails;
+
+      const liveById = new Map<string, SendPulseEmailRecord>();
+      const liveByRecipient = new Map<string, SendPulseEmailRecord[]>();
+      for (const email of liveEmailsForMatch) {
+        const id = sendPulseEmailId(email);
+        if (id) liveById.set(id, email);
+        const recipient = sendPulseRecipient(email).toLowerCase();
+        if (!recipient) continue;
+        const list = liveByRecipient.get(recipient) || [];
+        list.push(email);
+        liveByRecipient.set(recipient, list);
+      }
+
+      const items: Array<any> = [];
+      let matched = 0;
+      let failedLive = 0;
+      let deliveredLive = 0;
+      let updated = 0;
+
+      for (const row of dbResult.rows) {
+        const recipient = String(row.recipient_email || "").toLowerCase();
+        const sentMs = new Date(row.sent_at).getTime();
+        const existingTaskId = String(row.sendpulse_task_id || "").trim();
+        let best = existingTaskId ? liveById.get(existingTaskId) || null : null;
+
+        if (!best) {
+          const candidates = (liveByRecipient.get(recipient) || [])
+            .filter((email) => sendPulseSubjectsMatch(sendPulseSubject(email), row.subject))
+            .map((email) => ({
+              email,
+              deltaMs: Math.abs(sendPulseSendDateMs(email) - sentMs),
+            }))
+            .filter((candidate) => candidate.deltaMs <= maxDeltaMinutes * 60 * 1000)
+            .sort((a, b) => a.deltaMs - b.deltaMs);
+          best = candidates[0]?.email || null;
+        }
+
+        const sendpulseTaskId = best ? sendPulseEmailId(best) : "";
+        const smtpCode = best ? sendPulseSmtpCode(best) : null;
+        const hardFailed = best ? sendPulseIsHardFailed(best) : false;
+        const softFailed = best ? sendPulseIsSoftFailed(best) : false;
+        const delivered = best ? sendPulseIsDelivered(best) : false;
+        const liveFailure = hardFailed || softFailed;
+        const shouldBackfillId = !!best && !!sendpulseTaskId && !existingTaskId;
+        const shouldMarkFailed = liveFailure && String(row.sendpulse_status || "").toLowerCase() !== "failed";
+        const action = shouldMarkFailed
+          ? apply ? "marked_failed" : "would_mark_failed"
+          : shouldBackfillId
+            ? apply ? "backfilled_id" : "would_backfill_id"
+            : best
+              ? "matched_no_change"
+              : "unmatched";
+
+        if (best) matched++;
+        if (liveFailure) failedLive++;
+        if (delivered) deliveredLive++;
+
+        if (apply && best && (shouldMarkFailed || shouldBackfillId)) {
+          const status = liveFailure ? "failed" : row.sendpulse_status;
+          const error = liveFailure
+            ? JSON.stringify({
+                eventType: hardFailed ? "hard_fail" : "soft_fail",
+                providerTaskId: sendpulseTaskId || null,
+                smtpAnswerCode: smtpCode,
+                smtpAnswerSubcode: best.smtp_answer_subcode ?? null,
+                smtpAnswerData: best.smtp_answer_data || null,
+              })
+            : row.sendpulse_error;
+
+          const update = await pool.query(
+            `UPDATE email_tracking
+                SET sendpulse_task_id = COALESCE(NULLIF($1, ''), sendpulse_task_id),
+                    sendpulse_status = $2,
+                    sendpulse_error = $3,
+                    metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
+                      'sendpulseLiveStatusSyncedAt', NOW(),
+                      'sendpulseLiveStatusSync', $4::text,
+                      'sendpulseSendDate', $5::text,
+                      'sendpulseSmtpAnswerCode', $6::text,
+                      'sendpulseSmtpAnswerData', $7::text
+                    )
+              WHERE id = $8`,
+            [
+              sendpulseTaskId,
+              status,
+              error,
+              action,
+              sendPulseSendDate(best),
+              smtpCode,
+              best.smtp_answer_data || "",
+              row.id,
+            ]
+          );
+          updated += update.rowCount ?? 0;
+        }
+
+        items.push({
+          id: row.id,
+          emailType: row.email_type,
+          recipientEmail: row.recipient_email,
+          subject: row.subject,
+          sentAt: row.sent_at,
+          previousStatus: row.sendpulse_status,
+          action,
+          matchedSendpulseTaskId: sendpulseTaskId || null,
+          matchedSendDate: best ? sendPulseSendDate(best) : null,
+          smtpAnswerCode: smtpCode,
+          smtpAnswerData: best?.smtp_answer_data || null,
+        });
+      }
+
+      res.json({
+        success: true,
+        apply,
+        query: {
+          days,
+          fromDate,
+          pageLimit,
+          maxPages,
+          dbLimit,
+          recipient: recipientFilter || null,
+          subject: subjectFilter || null,
+          maxDeltaMinutes,
+          detailsEnabled,
+          detailsAttempted: detailResult.attempted,
+          detailsFetched: detailResult.fetched,
+          detailErrors: detailResult.errors,
+          localRows: dbResult.rowCount ?? dbResult.rows.length,
+          liveFetched: liveEmails.length,
+          liveForMatch: liveEmailsForMatch.length,
+        },
+        summary: {
+          matched,
+          unmatched: dbResult.rows.length - matched,
+          deliveredLive,
+          failedLive,
+          updated,
+        },
+        items,
+      });
+    } catch (error) {
+      console.error("[SendPulseLiveStatusSync] Error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Erreur synchro live SendPulse",
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  });
+
   // ==================== PROMO / CTA DELIVERABILITY AUDIT ====================
   app.get("/api/admin/promo-deliverability-audit", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
