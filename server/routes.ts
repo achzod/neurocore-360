@@ -11299,20 +11299,29 @@ export async function registerRoutes(
         const softFailed = best ? sendPulseIsSoftFailed(best) : false;
         const delivered = best ? sendPulseIsDelivered(best) : false;
         const liveFailure = hardFailed || softFailed;
-        const criticalMismatch = !!providerIdMismatch && !best && matchesEmailAuditScope(row.email_type, row.subject, "report");
+        const metadata = row.metadata && typeof row.metadata === "object" ? row.metadata : {};
+        const metadataSmtpCode = Number((metadata as any).sendpulseSmtpAnswerCode);
+        const metadataSmtpData = String((metadata as any).sendpulseSmtpAnswerData || "");
+        const metadataLiveDelivered =
+          (metadata as any).sendpulseVerified === true &&
+          Number.isFinite(metadataSmtpCode) &&
+          metadataSmtpCode >= 200 &&
+          metadataSmtpCode < 300 &&
+          metadataSmtpData.toLowerCase().includes(recipient);
+        const criticalMismatch = !!providerIdMismatch && !best && !metadataLiveDelivered && matchesEmailAuditScope(row.email_type, row.subject, "report");
         const shouldBackfillId = !!best && !!sendpulseTaskId && !existingTaskId;
         const shouldMarkFailed = (liveFailure || criticalMismatch) && String(row.sendpulse_status || "").toLowerCase() !== "failed";
         const action = shouldMarkFailed
           ? apply ? "marked_failed" : "would_mark_failed"
           : shouldBackfillId
             ? apply ? "backfilled_id" : "would_backfill_id"
-            : best
+            : best || metadataLiveDelivered
               ? "matched_no_change"
               : "unmatched";
 
         if (best) matched++;
         if (liveFailure) failedLive++;
-        if (delivered) deliveredLive++;
+        if (delivered || metadataLiveDelivered) deliveredLive++;
 
         if (apply && (best || criticalMismatch) && (shouldMarkFailed || shouldBackfillId)) {
           const status = liveFailure || criticalMismatch ? "failed" : row.sendpulse_status;
