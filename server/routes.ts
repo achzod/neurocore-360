@@ -288,6 +288,8 @@ export async function registerRoutes(
     const normalized = normalizeSearchText(subject);
     return [
       "rapport",
+      "protocole peptides",
+      "peptides personnalise",
       "est pret",
       "ultimate scan",
       "anabolic bioscan",
@@ -11259,7 +11261,25 @@ export async function registerRoutes(
         const recipient = String(row.recipient_email || "").toLowerCase();
         const sentMs = new Date(row.sent_at).getTime();
         const existingTaskId = String(row.sendpulse_task_id || "").trim();
+        let providerIdMismatch: any = null;
         let best = existingTaskId ? liveById.get(existingTaskId) || null : null;
+
+        if (best) {
+          const liveRecipient = sendPulseRecipient(best).toLowerCase();
+          const liveSubject = sendPulseSubject(best);
+          const recipientMatches = liveRecipient === recipient;
+          const subjectMatches = sendPulseSubjectsMatch(liveSubject, row.subject);
+          if (!recipientMatches || !subjectMatches) {
+            providerIdMismatch = {
+              existingTaskId,
+              liveRecipient,
+              liveSubject,
+              expectedRecipient: recipient,
+              expectedSubject: row.subject,
+            };
+            best = null;
+          }
+        }
 
         if (!best) {
           const candidates = (liveByRecipient.get(recipient) || [])
@@ -11279,8 +11299,9 @@ export async function registerRoutes(
         const softFailed = best ? sendPulseIsSoftFailed(best) : false;
         const delivered = best ? sendPulseIsDelivered(best) : false;
         const liveFailure = hardFailed || softFailed;
+        const criticalMismatch = !!providerIdMismatch && !best && matchesEmailAuditScope(row.email_type, row.subject, "report");
         const shouldBackfillId = !!best && !!sendpulseTaskId && !existingTaskId;
-        const shouldMarkFailed = liveFailure && String(row.sendpulse_status || "").toLowerCase() !== "failed";
+        const shouldMarkFailed = (liveFailure || criticalMismatch) && String(row.sendpulse_status || "").toLowerCase() !== "failed";
         const action = shouldMarkFailed
           ? apply ? "marked_failed" : "would_mark_failed"
           : shouldBackfillId
@@ -11293,16 +11314,22 @@ export async function registerRoutes(
         if (liveFailure) failedLive++;
         if (delivered) deliveredLive++;
 
-        if (apply && best && (shouldMarkFailed || shouldBackfillId)) {
-          const status = liveFailure ? "failed" : row.sendpulse_status;
+        if (apply && (best || criticalMismatch) && (shouldMarkFailed || shouldBackfillId)) {
+          const status = liveFailure || criticalMismatch ? "failed" : row.sendpulse_status;
           const error = liveFailure
             ? JSON.stringify({
                 eventType: hardFailed ? "hard_fail" : "soft_fail",
                 providerTaskId: sendpulseTaskId || null,
                 smtpAnswerCode: smtpCode,
-                smtpAnswerSubcode: best.smtp_answer_subcode ?? null,
-                smtpAnswerData: best.smtp_answer_data || null,
+                smtpAnswerSubcode: best?.smtp_answer_subcode ?? null,
+                smtpAnswerData: best?.smtp_answer_data || null,
               })
+            : criticalMismatch
+              ? JSON.stringify({
+                  eventType: "provider_id_recipient_mismatch",
+                  providerTaskId: existingTaskId || null,
+                  ...providerIdMismatch,
+                })
             : row.sendpulse_error;
 
           const update = await pool.query(
@@ -11315,7 +11342,8 @@ export async function registerRoutes(
                       'sendpulseLiveStatusSync', $4::text,
                       'sendpulseSendDate', $5::text,
                       'sendpulseSmtpAnswerCode', $6::text,
-                      'sendpulseSmtpAnswerData', $7::text
+                      'sendpulseSmtpAnswerData', $7::text,
+                      'sendpulseProviderIdMismatch', $9::jsonb
                     )
               WHERE id = $8`,
             [
@@ -11323,10 +11351,11 @@ export async function registerRoutes(
               status,
               error,
               action,
-              sendPulseSendDate(best),
+              best ? sendPulseSendDate(best) : null,
               smtpCode,
-              best.smtp_answer_data || "",
+              best?.smtp_answer_data || "",
               row.id,
+              JSON.stringify(providerIdMismatch || null),
             ]
           );
           updated += update.rowCount ?? 0;
@@ -11344,6 +11373,7 @@ export async function registerRoutes(
           matchedSendDate: best ? sendPulseSendDate(best) : null,
           smtpAnswerCode: smtpCode,
           smtpAnswerData: best?.smtp_answer_data || null,
+          providerIdMismatch,
         });
       }
 

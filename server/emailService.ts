@@ -211,6 +211,17 @@ const chooseRecentSendPulseRecord = (
   return matches[0]?.record || null;
 };
 
+const sendPulseLiveRecordMatches = (
+  record: SendPulseLiveRecord,
+  recipientEmail: string,
+  subject: string,
+): boolean => {
+  const normalizedRecipient = recipientEmail.trim().toLowerCase();
+  const normalizedSubject = normalizeSendPulseText(subject);
+  return sendPulseRecordRecipient(record) === normalizedRecipient
+    && normalizeSendPulseText(sendPulseRecordSubject(record)) === normalizedSubject;
+};
+
 async function fetchSendPulseLiveRecordDetails(
   token: string,
   records: SendPulseLiveRecord[],
@@ -416,6 +427,32 @@ async function sendEmailWithTracking(
     if (sendpulseTaskId) result.id = sendpulseTaskId;
     const liveLookupMetadata: Record<string, any> = {};
 
+    if (result.result && sendpulseTaskId) {
+      const providerRecord = await fetchSendPulseLiveRecordDetails(token, [{ id: sendpulseTaskId }]).catch((error) => {
+        liveLookupMetadata.sendpulseProviderIdVerifyError = error instanceof Error ? error.message : String(error);
+        return [];
+      });
+      const providerMatch = providerRecord.find((record) => sendPulseRecordId(record) === sendpulseTaskId);
+
+      if (providerMatch && sendPulseLiveRecordMatches(providerMatch, trackingData.recipientEmail, emailPayload.subject)) {
+        liveLookupMetadata.sendpulseLiveLookup = "provider_id_verified";
+        liveLookupMetadata.sendpulseSendDate = providerMatch.send_date || providerMatch.date || providerMatch.created_at || null;
+        liveLookupMetadata.sendpulseSmtpAnswerCode = providerMatch.smtp_answer_code ?? null;
+        liveLookupMetadata.sendpulseSmtpAnswerData = providerMatch.smtp_answer_data || null;
+      } else if (providerMatch) {
+        liveLookupMetadata.sendpulseLiveLookup = "provider_id_recipient_mismatch";
+        liveLookupMetadata.sendpulseProviderId = sendpulseTaskId;
+        liveLookupMetadata.sendpulseProviderRecipient = sendPulseRecordRecipient(providerMatch) || null;
+        liveLookupMetadata.sendpulseProviderSubject = sendPulseRecordSubject(providerMatch) || null;
+        liveLookupMetadata.sendpulseProviderSmtpAnswerCode = providerMatch.smtp_answer_code ?? null;
+        liveLookupMetadata.sendpulseProviderSmtpAnswerData = providerMatch.smtp_answer_data || null;
+        sendpulseTaskId = undefined;
+        delete result.id;
+      } else {
+        liveLookupMetadata.sendpulseLiveLookup = "provider_id_unverified";
+      }
+    }
+
     if (result.result && !sendpulseTaskId) {
       const liveRecord = await findRecentSendPulseLiveRecord(
         token,
@@ -442,8 +479,6 @@ async function sendEmailWithTracking(
           result.error = "SendPulse accepted API request but no live SMTP record was found";
         }
       }
-    } else if (result.result && sendpulseTaskId) {
-      liveLookupMetadata.sendpulseLiveLookup = "provider_id_from_response";
     }
 
     const sendpulseError = result.result
