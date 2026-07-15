@@ -222,6 +222,32 @@ const sendPulseLiveRecordMatches = (
     && normalizeSendPulseText(sendPulseRecordSubject(record)) === normalizedSubject;
 };
 
+const sendPulseLiveSmtpCode = (record: SendPulseLiveRecord): number | null => {
+  const raw = record.smtp_answer_code ?? record.smtpAnswerCode ?? record.smtp_code;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const sendPulseLiveDeliveryFailure = (record: SendPulseLiveRecord): Record<string, unknown> | null => {
+  const smtpAnswerCode = sendPulseLiveSmtpCode(record);
+  const status = String(record.status || "").toLowerCase();
+  const smtpAnswerData = String(record.smtp_answer_data || record.smtpAnswerData || "");
+  const hardFailed = (smtpAnswerCode !== null && smtpAnswerCode >= 500)
+    || status === "failed"
+    || status === "error"
+    || status === "bounced"
+    || /unsubscribed/i.test(smtpAnswerData);
+  const softFailed = smtpAnswerCode !== null && smtpAnswerCode >= 400 && smtpAnswerCode < 500;
+  if (!hardFailed && !softFailed) return null;
+  return {
+    eventType: hardFailed ? "hard_fail" : "soft_fail",
+    providerTaskId: sendPulseRecordId(record) || null,
+    smtpAnswerCode,
+    smtpAnswerData,
+    status: record.status || null,
+  };
+};
+
 async function fetchSendPulseLiveRecordDetails(
   token: string,
   records: SendPulseLiveRecord[],
@@ -428,6 +454,7 @@ async function sendEmailWithTracking(
     if (sendpulseTaskId) result.id = sendpulseTaskId;
     const liveLookupMetadata: Record<string, any> = {};
     const criticalEmail = isCriticalSendPulseEmail(trackingData.emailType, emailPayload.subject);
+    let liveDeliveryFailure: Record<string, unknown> | null = null;
 
     if (result.result && sendpulseTaskId) {
       const providerRecord = await fetchSendPulseLiveRecordDetails(token, [{ id: sendpulseTaskId }]).catch((error) => {
@@ -441,6 +468,7 @@ async function sendEmailWithTracking(
         liveLookupMetadata.sendpulseSendDate = providerMatch.send_date || providerMatch.date || providerMatch.created_at || null;
         liveLookupMetadata.sendpulseSmtpAnswerCode = providerMatch.smtp_answer_code ?? null;
         liveLookupMetadata.sendpulseSmtpAnswerData = providerMatch.smtp_answer_data || null;
+        liveDeliveryFailure = sendPulseLiveDeliveryFailure(providerMatch);
       } else if (providerMatch) {
         liveLookupMetadata.sendpulseLiveLookup = "provider_id_recipient_mismatch";
         liveLookupMetadata.sendpulseProviderId = sendpulseTaskId;
@@ -478,6 +506,7 @@ async function sendEmailWithTracking(
         liveLookupMetadata.sendpulseSendDate = liveRecord.send_date || liveRecord.date || liveRecord.created_at || null;
         liveLookupMetadata.sendpulseSmtpAnswerCode = liveRecord.smtp_answer_code ?? null;
         liveLookupMetadata.sendpulseSmtpAnswerData = liveRecord.smtp_answer_data || null;
+        liveDeliveryFailure = sendPulseLiveDeliveryFailure(liveRecord);
       } else {
         liveLookupMetadata.sendpulseLiveLookup = "not_found";
         liveLookupMetadata.sendpulseLiveLookupFromDate = new Date(sentStartedAt.getTime() - 10 * 60 * 1000).toISOString();
@@ -486,6 +515,12 @@ async function sendEmailWithTracking(
           result.error = "SendPulse accepted API request but no live SMTP record was found";
         }
       }
+    }
+
+    if (result.result && liveDeliveryFailure) {
+      result.result = false;
+      result.error = liveDeliveryFailure;
+      liveLookupMetadata.sendpulseLiveDeliveryFailure = liveDeliveryFailure;
     }
 
     const sendpulseError = result.result
