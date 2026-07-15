@@ -1,6 +1,6 @@
 /**
  * Peptides Engine — Questionnaire Definitions
- * 38 questions across 6 sections with conditional logic
+ * Questionnaire across 6 sections with conditional logic
  */
 
 export interface PeptidesQuestion {
@@ -178,9 +178,22 @@ export const PEPTIDES_QUESTIONS: PeptidesQuestion[] = [
     { value: "CH", label: "Suisse" },
     { value: "LU", label: "Luxembourg" },
     { value: "CA", label: "Canada" },
+    { value: "US", label: "Etats-Unis" },
+    { value: "AE", label: "Emirats arabes unis" },
+    { value: "GB", label: "Royaume-Uni" },
+    { value: "DE", label: "Allemagne" },
+    { value: "ES", label: "Espagne" },
+    { value: "IT", label: "Italie" },
+    { value: "NL", label: "Pays-Bas" },
+    { value: "PT", label: "Portugal" },
+    { value: "MA", label: "Maroc" },
+    { value: "DZ", label: "Algerie" },
+    { value: "TN", label: "Tunisie" },
     { value: "EU-other", label: "Autre pays Europe" },
     { value: "world", label: "Autre pays" },
   ]},
+  { id: "pep_country_eu_other", sectionId: "pratique", type: "text", label: "Precise le pays europeen de livraison", conditionalOn: "pep_country:EU-other", placeholder: "Ex: Autriche, Pologne, Suede..." },
+  { id: "pep_country_other", sectionId: "pratique", type: "text", label: "Precise le pays de livraison", conditionalOn: "pep_country:world", placeholder: "Pays exact de livraison" },
   { id: "pep_budget", sectionId: "pratique", type: "select", label: "Budget mensuel peptides", required: true, options: [
     { value: "under50", label: "< 50 EUR" },
     { value: "50-100", label: "50-100 EUR" },

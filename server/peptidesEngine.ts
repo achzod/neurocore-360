@@ -11,6 +11,7 @@ import {
   validatePeptidesReport,
   estimateNeedMg,
   extractTotalMgFromVials,
+  extractVialQty,
   extractVialMg,
 } from "./peptidesReportValidator";
 import { storage } from "./storage";
@@ -48,12 +49,10 @@ export interface PeptidesReport {
   promoCodesGenerated: string[];
 }
 
-// ─── Peptaura Real Catalog (synced 2026-03-28) ──────────────────────────────
-// All prices in USD. All products are lyophilized vials (injectable).
-// Source: peptaura.com marketplace , 13 Chinese suppliers.
-// Active suppliers (2026-05-12): Lumira, Pepturion, Retalux, HelixBridge, Hang Sciences, Railion Tech.
-// France-shipping suppliers (5): Lumira, HelixBridge, Hang Sciences, Railion Tech, Retalux. Pepturion does NOT ship to France.
-// MOQs: Hang Sciences $39, Railion Tech $96. Others have no enforced minimum.
+// ─── Peptaura fallback catalog ───────────────────────────────────────────────
+// Static fallback only. Runtime generation refreshes the live sitemap, country
+// shipping page and final product pages before saving a report.
+// All prices in USD. Most products are lyophilized vials unless noted.
 
 export interface PeptaurProduct {
   name: string;
@@ -64,14 +63,14 @@ export interface PeptaurProduct {
   cheapestPriceUSD: number; // lowest single vial
   supplierCount: number;
   formFactor: "vial" | "cartridge" | "nasal spray";
-  category: "recovery" | "gh-secretagogue" | "fat-loss" | "sleep" | "cognitive" | "libido" | "skin" | "longevity" | "endurance" | "glp1" | "blend" | "supplies" | "hpg-axis" | "other";
+  category: "recovery" | "gh-secretagogue" | "fat-loss" | "sleep" | "cognitive" | "libido" | "skin" | "longevity" | "endurance" | "glp1" | "blend" | "supplies" | "hpg-axis" | "anabolic" | "other";
 }
 
 export const PEPTAURA_CATALOG: PeptaurProduct[] = [
 // RECOVERY & HEALING
   { name: "Ara-290", slug: "Ara-290", dosages: ["10mg", "16mg"], priceRangeUSD: "$21.01 - $107.80", cheapestSupplier: "Lumira", cheapestPriceUSD: 21.01, supplierCount: 3, formFactor: "vial", category: "recovery" },
-  { name: "BPC-157", slug: "BPC157", dosages: ["5mg", "10mg"], priceRangeUSD: "$14.48 - $134.40", cheapestSupplier: "Lumira", cheapestPriceUSD: 14.48, supplierCount: 5, formFactor: "vial", category: "recovery" },
-  { name: "Cerebrolysin", slug: "Cerebrolysin", dosages: ["60mg"], priceRangeUSD: "$22.65 - $116.20", cheapestSupplier: "Lumira", cheapestPriceUSD: 22.65, supplierCount: 1, formFactor: "vial", category: "recovery" },
+  { name: "BPC-157", slug: "BPC-157", dosages: ["5mg", "10mg"], priceRangeUSD: "$14.48 - $134.40", cheapestSupplier: "Lumira", cheapestPriceUSD: 14.48, supplierCount: 5, formFactor: "vial", category: "recovery" },
+  { name: "Cerebroprotein hydrolysate", slug: "Cerebroprotein hydrolysate", dosages: ["60mg"], priceRangeUSD: "$22.65 - $116.20", cheapestSupplier: "Lumira", cheapestPriceUSD: 22.65, supplierCount: 1, formFactor: "vial", category: "recovery" },
   { name: "Dermorphin", slug: "Dermorphin", dosages: ["5mg", "10mg"], priceRangeUSD: "$15.29 - $152.60", cheapestSupplier: "Lumira", cheapestPriceUSD: 15.29, supplierCount: 1, formFactor: "vial", category: "recovery" },
   { name: "KPV", slug: "KPV", dosages: ["5mg", "10mg"], priceRangeUSD: "$18.56 - $107.10", cheapestSupplier: "Lumira", cheapestPriceUSD: 18.56, supplierCount: 5, formFactor: "vial", category: "recovery" },
   { name: "LL-37", slug: "LL-37", dosages: ["5mg"], priceRangeUSD: "$30.58 - $156.80", cheapestSupplier: "Lumira", cheapestPriceUSD: 30.58, supplierCount: 3, formFactor: "vial", category: "recovery" },
@@ -129,7 +128,7 @@ export const PEPTAURA_CATALOG: PeptaurProduct[] = [
   { name: "Semax", slug: "Semax", dosages: ["5mg", "10mg"], priceRangeUSD: "$14.48 - $123.20", cheapestSupplier: "Lumira", cheapestPriceUSD: 14.48, supplierCount: 5, formFactor: "nasal spray", category: "cognitive" },
 
   // LIBIDO & SEXUAL
-  { name: "Melanotan II", slug: "MT-2", dosages: ["10mg"], priceRangeUSD: "$16.10 - $82.60", cheapestSupplier: "Lumira", cheapestPriceUSD: 16.1, supplierCount: 4, formFactor: "vial", category: "libido" },
+  { name: "Melanotan II", slug: "Melanotan-2", dosages: ["10mg"], priceRangeUSD: "$16.10 - $82.60", cheapestSupplier: "Lumira", cheapestPriceUSD: 16.1, supplierCount: 4, formFactor: "vial", category: "libido" },
   { name: "PT-141", slug: "PT-141", dosages: ["10mg"], priceRangeUSD: "$21.57 - $112", cheapestSupplier: "Lumira", cheapestPriceUSD: 21.57, supplierCount: 5, formFactor: "vial", category: "libido" },
 
   // SKIN, HAIR & ANTI-AGING
@@ -137,7 +136,7 @@ export const PEPTAURA_CATALOG: PeptaurProduct[] = [
   { name: "GHK", slug: "GHK", dosages: ["50mg"], priceRangeUSD: "$76.70 - $76.70", cheapestSupplier: "HelixBridge", cheapestPriceUSD: 7.67, supplierCount: 1, formFactor: "vial", category: "skin" },
   { name: "GHK-Cu", slug: "GHK-Cu", dosages: ["50mg", "100mg"], priceRangeUSD: "$11.47 - $100.80", cheapestSupplier: "Lumira", cheapestPriceUSD: 11.47, supplierCount: 6, formFactor: "vial", category: "skin" },
   { name: "Hyaluronic Acid", slug: "Hyaluronic Acid", dosages: ["5mg"], priceRangeUSD: "$97.50 - $228.80", cheapestSupplier: "Retalux", cheapestPriceUSD: 9.75, supplierCount: 3, formFactor: "vial", category: "skin" },
-  { name: "Melanotan I", slug: "MT-1", dosages: ["10mg"], priceRangeUSD: "$16.11 - $89.60", cheapestSupplier: "Lumira", cheapestPriceUSD: 16.11, supplierCount: 3, formFactor: "vial", category: "skin" },
+  { name: "Melanotan I", slug: "Melanotan-1", dosages: ["10mg"], priceRangeUSD: "$16.11 - $89.60", cheapestSupplier: "Lumira", cheapestPriceUSD: 16.11, supplierCount: 3, formFactor: "vial", category: "skin" },
   { name: "Snap-8", slug: "Snap-8", dosages: ["10mg", "100mg"], priceRangeUSD: "$14.48 - $372.40", cheapestSupplier: "Lumira", cheapestPriceUSD: 14.48, supplierCount: 5, formFactor: "vial", category: "skin" },
 
   // LONGEVITY & MITOCHONDRIA
@@ -148,14 +147,14 @@ export const PEPTAURA_CATALOG: PeptaurProduct[] = [
   { name: "Glutathione", slug: "Glutathione", dosages: ["600mg", "1500mg"], priceRangeUSD: "$10.64 - $128.80", cheapestSupplier: "Lumira", cheapestPriceUSD: 10.64, supplierCount: 3, formFactor: "vial", category: "longevity" },
   { name: "MOTS-c", slug: "MOTS-c", dosages: ["10mg", "20mg", "40mg"], priceRangeUSD: "$23.76 - $336", cheapestSupplier: "Lumira", cheapestPriceUSD: 23.76, supplierCount: 4, formFactor: "vial", category: "longevity" },
   { name: "NAD+", slug: "NAD+", dosages: ["100mg", "500mg", "1000mg"], priceRangeUSD: "$24.85 - $282", cheapestSupplier: "Lumira", cheapestPriceUSD: 24.85, supplierCount: 4, formFactor: "vial", category: "longevity" },
-  { name: "NAD+ (buffered)", slug: "NAD (buffered)", dosages: ["500mg", "1000mg"], priceRangeUSD: "$15.01 - $133", cheapestSupplier: "Lumira", cheapestPriceUSD: 15.01, supplierCount: 1, formFactor: "vial", category: "longevity" },
+  { name: "NAD+ (buffered)", slug: "NAD+ (buffered)", dosages: ["500mg", "1000mg"], priceRangeUSD: "$15.01 - $133", cheapestSupplier: "Lumira", cheapestPriceUSD: 15.01, supplierCount: 1, formFactor: "vial", category: "longevity" },
 
   // ENDURANCE
   { name: "SLU-PP-332", slug: "SLU-PP-332", dosages: ["5mg"], priceRangeUSD: "$156 - $167.70", cheapestSupplier: "Retalux", cheapestPriceUSD: 15.6, supplierCount: 2, formFactor: "vial", category: "endurance" },
   { name: "SS-31 (Elamipretide)", slug: "SS-31", dosages: ["5mg", "10mg", "50mg"], priceRangeUSD: "$16.80 - $646.80", cheapestSupplier: "Lumira", cheapestPriceUSD: 16.8, supplierCount: 5, formFactor: "vial", category: "endurance" },
 
   // BLENDS & PROPRIETARY
-  { name: "BPC-157 + TB-500 Blend", slug: "BPC157+TB500", dosages: ["10mg", "20mg", "30mg"], priceRangeUSD: "$34.40 - $530.60", cheapestSupplier: "Lumira", cheapestPriceUSD: 34.4, supplierCount: 5, formFactor: "vial", category: "blend" },
+  { name: "BPC-157 + TB-500 Blend", slug: "BPC-157+TB500", dosages: ["10mg", "20mg", "30mg"], priceRangeUSD: "$34.40 - $530.60", cheapestSupplier: "Lumira", cheapestPriceUSD: 34.4, supplierCount: 5, formFactor: "vial", category: "blend" },
   { name: "CJC-1295 + Ipamorelin Blend", slug: "CJC-1295 (no DAC) + Ipamorelin", dosages: ["10mg"], priceRangeUSD: "$34.94 - $179.20", cheapestSupplier: "Lumira", cheapestPriceUSD: 34.94, supplierCount: 4, formFactor: "vial", category: "blend" },
   { name: "GLOW (blend)", slug: "GLOW", dosages: ["70mg"], priceRangeUSD: "$67.70 - $347.20", cheapestSupplier: "Lumira", cheapestPriceUSD: 67.7, supplierCount: 4, formFactor: "vial", category: "blend" },
   { name: "KLOW (blend)", slug: "KLOW", dosages: ["80mg"], priceRangeUSD: "$81.09 - $436.80", cheapestSupplier: "Lumira", cheapestPriceUSD: 81.09, supplierCount: 5, formFactor: "vial", category: "blend" },
@@ -167,25 +166,496 @@ export const PEPTAURA_CATALOG: PeptaurProduct[] = [
   // OTHER
   { name: "B12", slug: "B12", dosages: ["10mg/ml"], priceRangeUSD: "$117 - $130", cheapestSupplier: "Hang Sciences", cheapestPriceUSD: 11.7, supplierCount: 2, formFactor: "vial", category: "other" },
 ];
-// Total: 71 products synced from peptaura.com (2026-05-12 with real per-vial prices from JS-rendered scrape)
+// Static fallback count differs from the live sitemap. The live sitemap wins.
+
+const PEPTAURA_LIVE_ONLY_PRODUCTS: PeptaurProduct[] = [
+  { name: "Dihexa", slug: "Dihexa", dosages: [], priceRangeUSD: "live", cheapestSupplier: "live", cheapestPriceUSD: 0, supplierCount: 0, formFactor: "vial", category: "cognitive" },
+  { name: "Eloralintide", slug: "Eloralintide", dosages: [], priceRangeUSD: "live", cheapestSupplier: "live", cheapestPriceUSD: 0, supplierCount: 0, formFactor: "vial", category: "glp1" },
+  { name: "GDF-8", slug: "GDF-8", dosages: [], priceRangeUSD: "live", cheapestSupplier: "live", cheapestPriceUSD: 0, supplierCount: 0, formFactor: "vial", category: "anabolic" },
+  { name: "KP1", slug: "KP1", dosages: [], priceRangeUSD: "live", cheapestSupplier: "live", cheapestPriceUSD: 0, supplierCount: 0, formFactor: "vial", category: "recovery" },
+  { name: "PBS Water", slug: "PBS Water", dosages: [], priceRangeUSD: "live", cheapestSupplier: "live", cheapestPriceUSD: 0, supplierCount: 0, formFactor: "vial", category: "supplies" },
+  { name: "PNC-27", slug: "PNC-27", dosages: [], priceRangeUSD: "live", cheapestSupplier: "live", cheapestPriceUSD: 0, supplierCount: 0, formFactor: "vial", category: "other" },
+  { name: "Testagen", slug: "Testagen", dosages: [], priceRangeUSD: "live", cheapestSupplier: "live", cheapestPriceUSD: 0, supplierCount: 0, formFactor: "vial", category: "hpg-axis" },
+];
+
+function normalizePeptauraKey(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9+]+/g, "");
+}
+
+function getPeptauraCatalogProducts(): PeptaurProduct[] {
+  const seen = new Set<string>();
+  const products: PeptaurProduct[] = [];
+  for (const product of [...PEPTAURA_CATALOG, ...PEPTAURA_LIVE_ONLY_PRODUCTS]) {
+    const key = normalizePeptauraKey(product.slug);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    products.push(product);
+  }
+  return products;
+}
+
+interface CacheEntry<T> {
+  value: T;
+  expiresAt: number;
+}
+
+interface PeptauraShippingAvailability {
+  country: string;
+  shippingUrl: string;
+  availableVendors: string[];
+  blockedVendors: string[];
+  fetchedAt: string;
+  live: boolean;
+}
+
+interface PeptauraPromptContext {
+  country: string;
+  shippingUrl: string;
+  shippingAvailability: PeptauraShippingAvailability;
+  liveCatalogSlugs: string[] | null;
+  promptBlock: string;
+}
+
+interface PeptauraPriceTier {
+  price: number;
+  minQty: number;
+}
+
+interface PeptauraLiveListing {
+  id: number;
+  name: string;
+  dosage: string;
+  supplier: string;
+  supplierDisplayName: string;
+  outOfStock: boolean;
+  form: string;
+  priceTiers: PeptauraPriceTier[];
+  warehouse: string;
+  shippingOptionCount: number;
+  orderingMode: string;
+  enabled: boolean;
+  suspended: boolean;
+}
+
+interface PeptauraLiveProductSnapshot {
+  slug: string;
+  url: string;
+  listings: PeptauraLiveListing[];
+  fetchedAt: string;
+  live: boolean;
+}
+
+const PEPTAURA_CACHE_TTL_MS = Number(process.env.PEPTAURA_CACHE_TTL_MS || 24 * 60 * 60 * 1000);
+const PEPTAURA_FETCH_TIMEOUT_MS = Number(process.env.PEPTAURA_FETCH_TIMEOUT_MS || 8000);
+let peptauraSitemapCache: CacheEntry<string[] | null> | null = null;
+const peptauraShippingCache = new Map<string, CacheEntry<PeptauraShippingAvailability>>();
+const peptauraProductCache = new Map<string, CacheEntry<PeptauraLiveProductSnapshot>>();
+
+const PEPTAURA_COUNTRY_LABELS: Record<string, string> = {
+  FR: "France",
+  BE: "Belgium",
+  CH: "Switzerland",
+  LU: "Luxembourg",
+  CA: "Canada",
+  US: "United States",
+  AE: "United Arab Emirates",
+  GB: "United Kingdom",
+  DE: "Germany",
+  ES: "Spain",
+  IT: "Italy",
+  NL: "Netherlands",
+  PT: "Portugal",
+  MA: "Morocco",
+  DZ: "Algeria",
+  TN: "Tunisia",
+  "EU-other": "Other Europe",
+  world: "Other country",
+};
+
+function normalizeDeliveryCountry(responses: Record<string, unknown>): string {
+  const raw = String(
+    responses.pep_country ??
+    responses.country ??
+    responses.pays ??
+    responses.deliveryCountry ??
+    ""
+  ).trim();
+  const euOther = String(responses.pep_country_eu_other ?? "").trim();
+  const worldOther = String(responses.pep_country_other ?? "").trim();
+
+  if (raw === "EU-other" && euOther) return euOther;
+  if (raw === "world" && worldOther) return worldOther;
+
+  if (!raw) return "France";
+  return PEPTAURA_COUNTRY_LABELS[raw] || PEPTAURA_COUNTRY_LABELS[raw.toUpperCase()] || raw;
+}
+
+function peptauraShippingUrl(country: string): string {
+  return `https://www.peptaura.com/shipping?country=${encodeURIComponent(country)}`;
+}
+
+function peptauraProductUrl(slug: string): string {
+  return `https://www.peptaura.com/catalog/${encodeURIComponent(slug).replace(/%2B/g, "+")}`;
+}
+
+async function fetchTextWithTimeout(url: string, timeoutMs = PEPTAURA_FETCH_TIMEOUT_MS): Promise<string | null> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        "user-agent": "APEXLABS-PeptidesEngine/1.0 (+https://apexlabs.achzodcoaching.com)",
+        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      },
+    });
+    if (!res.ok) {
+      console.warn(`[PeptidesEngine] Peptaura fetch ${res.status} for ${url}`);
+      return null;
+    }
+    return await res.text();
+  } catch (err) {
+    console.warn(`[PeptidesEngine] Peptaura fetch failed for ${url}:`, err instanceof Error ? err.message : String(err));
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function decodePeptauraHtml(html: string): string {
+  return html
+    .replace(/\\"/g, "\"")
+    .replace(/\\u0026/g, "&")
+    .replace(/\\u002F/g, "/")
+    .replace(/&quot;/g, "\"")
+    .replace(/&amp;/g, "&");
+}
+
+function stripHtml(value: string): string {
+  return value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+async function fetchPeptauraCatalogSlugs(): Promise<string[] | null> {
+  const now = Date.now();
+  if (peptauraSitemapCache && peptauraSitemapCache.expiresAt > now) return peptauraSitemapCache.value;
+
+  const html = await fetchTextWithTimeout("https://www.peptaura.com/sitemap.xml");
+  if (!html) {
+    peptauraSitemapCache = { value: null, expiresAt: now + Math.min(PEPTAURA_CACHE_TTL_MS, 15 * 60 * 1000) };
+    return null;
+  }
+
+  const slugs = Array.from(html.matchAll(/https:\/\/www\.peptaura\.com\/catalog\/([^<]+)/g))
+    .map((m) => {
+      try {
+        return decodeURIComponent(m[1]);
+      } catch {
+        return m[1];
+      }
+    })
+    .filter(Boolean);
+
+  peptauraSitemapCache = { value: slugs, expiresAt: now + PEPTAURA_CACHE_TTL_MS };
+  return slugs;
+}
+
+function parsePeptauraShipping(html: string, country: string): PeptauraShippingAvailability {
+  const decoded = decodePeptauraHtml(html);
+  const availableVendors: string[] = [];
+  const blockedVendors: string[] = [];
+
+  const availableRows = decoded.matchAll(/<a class="flex items-center gap-3 px-3 py-3[^"]*" href="\/vendors\/([^"]+)">([\s\S]*?)<\/a>/g);
+  for (const row of availableRows) {
+    const text = stripHtml(row[2]);
+    const vendor = text || decodeURIComponent(row[1]);
+    if (vendor && !availableVendors.includes(vendor)) availableVendors.push(vendor);
+  }
+
+  const blockedRows = decoded.matchAll(/<div class="flex items-center gap-3 rounded-lg px-3 py-3 opacity-60">([\s\S]*?)<\/div>/g);
+  for (const row of blockedRows) {
+    const text = stripHtml(row[1]);
+    const vendor = text.split("—")[0]?.trim();
+    if (vendor && !blockedVendors.includes(vendor)) blockedVendors.push(vendor);
+  }
+
+  return {
+    country,
+    shippingUrl: peptauraShippingUrl(country),
+    availableVendors,
+    blockedVendors,
+    fetchedAt: new Date().toISOString(),
+    live: availableVendors.length > 0 || blockedVendors.length > 0,
+  };
+}
+
+async function fetchPeptauraShippingAvailability(country: string): Promise<PeptauraShippingAvailability> {
+  const cacheKey = country.toLowerCase();
+  const now = Date.now();
+  const cached = peptauraShippingCache.get(cacheKey);
+  if (cached && cached.expiresAt > now) return cached.value;
+
+  const shippingUrl = peptauraShippingUrl(country);
+  const html = await fetchTextWithTimeout(shippingUrl);
+  const parsed = html
+    ? parsePeptauraShipping(html, country)
+    : { country, shippingUrl, availableVendors: [], blockedVendors: [], fetchedAt: new Date().toISOString(), live: false };
+
+  peptauraShippingCache.set(cacheKey, { value: parsed, expiresAt: now + PEPTAURA_CACHE_TTL_MS });
+  return parsed;
+}
+
+function parsePeptauraProductSnapshot(slug: string, html: string): PeptauraLiveProductSnapshot {
+  const decoded = decodePeptauraHtml(html);
+  const listings: PeptauraLiveListing[] = [];
+  const listingPattern = /"id":(\d+),"name":"([^"]+)","dosage":"([^"]+)","supplier":"([^"]+)"([\s\S]*?)"orderingMode":"([^"]+)"/g;
+
+  for (const match of decoded.matchAll(listingPattern)) {
+    const [, id, name, dosage, supplier, block, orderingMode] = match;
+    const tiers = Array.from(block.matchAll(/"price":(\d+(?:\.\d+)?),"min_qty":(\d+)/g)).map((tier) => ({
+      price: Number(tier[1]),
+      minQty: Number(tier[2]),
+    })).filter((tier) => Number.isFinite(tier.price) && Number.isFinite(tier.minQty));
+    if (tiers.length === 0) continue;
+
+    const displayName = block.match(/"display_name":"([^"]+)"/)?.[1] || supplier;
+    const warehouse = block.match(/"warehouse":"([^"]+)"/)?.[1] || "unknown";
+    const form = block.match(/"form":"([^"]+)"/)?.[1] || "vial";
+    const shippingOptionCount = Number(block.match(/"shipping_option_count":(\d+)/)?.[1] || 0);
+
+    listings.push({
+      id: Number(id),
+      name,
+      dosage,
+      supplier,
+      supplierDisplayName: displayName,
+      outOfStock: /"out_of_stock":true/.test(block),
+      form,
+      priceTiers: tiers,
+      warehouse,
+      shippingOptionCount,
+      orderingMode,
+      enabled: !/"enabled":false/.test(block),
+      suspended: /"suspended":true/.test(block),
+    });
+  }
+
+  return {
+    slug,
+    url: peptauraProductUrl(slug),
+    listings,
+    fetchedAt: new Date().toISOString(),
+    live: listings.length > 0,
+  };
+}
+
+async function fetchPeptauraProductSnapshot(slug: string): Promise<PeptauraLiveProductSnapshot | null> {
+  const cacheKey = normalizePeptauraKey(slug);
+  const now = Date.now();
+  const cached = peptauraProductCache.get(cacheKey);
+  if (cached && cached.expiresAt > now) return cached.value;
+
+  const url = peptauraProductUrl(slug);
+  const html = await fetchTextWithTimeout(url);
+  if (!html || /not found|404/i.test(html.slice(0, 50000))) return null;
+
+  const snapshot = parsePeptauraProductSnapshot(slug, html);
+  peptauraProductCache.set(cacheKey, { value: snapshot, expiresAt: now + PEPTAURA_CACHE_TTL_MS });
+  return snapshot;
+}
+
+function vendorKey(value: string): string {
+  return normalizePeptauraKey(value);
+}
+
+function listingVendorKeys(listing: PeptauraLiveListing): string[] {
+  return [listing.supplier, listing.supplierDisplayName].map(vendorKey);
+}
+
+function isVendorInList(listing: PeptauraLiveListing, vendors: string[]): boolean {
+  const allowed = new Set(vendors.map(vendorKey));
+  return listingVendorKeys(listing).some((key) => allowed.has(key));
+}
+
+function parseListingMg(dosage: string): number | null {
+  const match = dosage.match(/(\d+(?:[.,]\d+)?)\s*mg/i);
+  if (!match) return null;
+  return Number(match[1].replace(",", "."));
+}
+
+function effectiveUnitPrice(listing: PeptauraLiveListing, qty: number): number {
+  const eligible = listing.priceTiers
+    .filter((tier) => tier.minQty <= Math.max(1, qty))
+    .sort((a, b) => a.price - b.price);
+  return (eligible[0] || listing.priceTiers.sort((a, b) => a.minQty - b.minQty)[0]).price;
+}
+
+function selectBestLiveListing(
+  snapshot: PeptauraLiveProductSnapshot,
+  shipping: PeptauraShippingAvailability,
+  targetVialMg: number | null,
+  qty: number
+): PeptauraLiveListing | null {
+  let candidates = snapshot.listings.filter((listing) =>
+    listing.enabled &&
+    !listing.suspended &&
+    !listing.outOfStock &&
+    listing.orderingMode === "available" &&
+    listing.shippingOptionCount > 0
+  );
+  if (candidates.length === 0) return null;
+
+  if (shipping.blockedVendors.length > 0) {
+    candidates = candidates.filter((listing) => !isVendorInList(listing, shipping.blockedVendors));
+  }
+  if (candidates.length === 0) return null;
+
+  if (shipping.availableVendors.length > 0) {
+    const shippingMatches = candidates.filter((listing) => isVendorInList(listing, shipping.availableVendors));
+    if (shippingMatches.length > 0) candidates = shippingMatches;
+  }
+
+  candidates.sort((a, b) => {
+    const aMg = parseListingMg(a.dosage);
+    const bMg = parseListingMg(b.dosage);
+    const aExact = targetVialMg != null && aMg != null && Math.abs(aMg - targetVialMg) < 0.05 ? 0 : 1;
+    const bExact = targetVialMg != null && bMg != null && Math.abs(bMg - targetVialMg) < 0.05 ? 0 : 1;
+    if (aExact !== bExact) return aExact - bExact;
+    const aPrice = effectiveUnitPrice(a, qty);
+    const bPrice = effectiveUnitPrice(b, qty);
+    const aPerMg = aMg && aMg > 0 ? aPrice / aMg : aPrice;
+    const bPerMg = bMg && bMg > 0 ? bPrice / bMg : bPrice;
+    return aPerMg - bPerMg;
+  });
+
+  return candidates[0];
+}
+
+function findPeptauraProductForPeptide(pepName: string): PeptaurProduct | null {
+  const cleanName = normalizePeptauraKey(pepName);
+  const products = getPeptauraCatalogProducts();
+  const direct = products.find((p) =>
+    normalizePeptauraKey(p.name) === cleanName ||
+    normalizePeptauraKey(p.slug) === cleanName
+  );
+  if (direct) return direct;
+  return products.find((p) => {
+    const nameKey = normalizePeptauraKey(p.name);
+    const slugKey = normalizePeptauraKey(p.slug);
+    return cleanName.includes(nameKey) || nameKey.includes(cleanName) || cleanName.includes(slugKey) || slugKey.includes(cleanName);
+  }) || null;
+}
+
+function buildLivePriceEstimate(pep: PeptideItem, listing: PeptauraLiveListing, qty: number): string | null {
+  const unit = effectiveUnitPrice(listing, qty);
+  if (!Number.isFinite(unit) || unit <= 0) return null;
+  const total = Math.round(unit * qty * 100) / 100;
+  const eur = Math.round(total * 0.92);
+  const supplier = listing.supplierDisplayName || listing.supplier;
+  return `~$${unit.toFixed(2)}/vial (${listing.dosage}, ${supplier}) × ${qty} vials = $${total.toFixed(2)} total (~${eur}€)`;
+}
+
+async function applyLivePeptauraPricing(
+  report: PeptidesReport,
+  context: PeptauraPromptContext
+): Promise<PeptidesReport> {
+  const liveNotes: string[] = [];
+
+  for (const pep of report.peptides) {
+    const product = findPeptauraProductForPeptide(pep.name);
+    if (!product) continue;
+
+    pep.purchaseUrl = peptauraProductUrl(product.slug);
+    const qty = extractVialQty(pep.vialsNeeded) || 1;
+    const targetVialMg = extractVialMg(pep.vialsNeeded) || extractVialMg(pep.reconstitution);
+    const snapshot = await fetchPeptauraProductSnapshot(product.slug);
+    if (!snapshot || snapshot.listings.length === 0) continue;
+
+    const best = selectBestLiveListing(snapshot, context.shippingAvailability, targetVialMg, qty);
+    if (!best) continue;
+
+    const bestMg = parseListingMg(best.dosage);
+    if (targetVialMg != null && bestMg != null && Math.abs(bestMg - targetVialMg) > 0.05) {
+      liveNotes.push(`${pep.name}: live listing trouve (${best.dosage}) mais non applique car vialsNeeded utilise ${targetVialMg}mg`);
+      continue;
+    }
+
+    const livePrice = buildLivePriceEstimate(pep, best, qty);
+    if (livePrice) {
+      pep.priceEstimate = livePrice;
+      liveNotes.push(`${pep.name}: ${best.dosage} via ${best.supplierDisplayName || best.supplier}`);
+    }
+  }
+
+  (report as any)._peptauraLiveSync = {
+    country: context.country,
+    shippingUrl: context.shippingUrl,
+    shippingLive: context.shippingAvailability.live,
+    availableVendors: context.shippingAvailability.availableVendors,
+    blockedVendors: context.shippingAvailability.blockedVendors,
+    liveCatalogCount: context.liveCatalogSlugs?.length ?? null,
+    syncedAt: new Date().toISOString(),
+    applied: liveNotes,
+  };
+
+  return report;
+}
 
 // Build catalog summary for Claude prompt
 // Only inject protocol-relevant peptides into the prompt (not supplies/blends/niche)
-const PROMPT_CATEGORIES = new Set(["recovery", "gh-secretagogue", "fat-loss", "sleep", "cognitive", "libido", "skin", "longevity", "endurance", "glp1"]);
+const PROMPT_CATEGORIES = new Set(["recovery", "gh-secretagogue", "fat-loss", "sleep", "cognitive", "libido", "skin", "longevity", "endurance", "glp1", "hpg-axis", "anabolic"]);
+const FALLBACK_DELISTED_PRODUCT_KEYS = new Set(["vip", "hghfragment176191", "slupp332"]);
 
-function buildCatalogForPrompt(): string {
-  const relevant = PEPTAURA_CATALOG.filter(p => PROMPT_CATEGORIES.has(p.category));
+function buildCatalogForPrompt(context: PeptauraPromptContext): string {
+  const liveSlugKeys = context.liveCatalogSlugs ? new Set(context.liveCatalogSlugs.map(normalizePeptauraKey)) : null;
+  const relevant = getPeptauraCatalogProducts()
+    .filter(p => PROMPT_CATEGORIES.has(p.category))
+    .filter(p => {
+      const key = normalizePeptauraKey(p.slug);
+      return liveSlugKeys ? liveSlugKeys.has(key) : !FALLBACK_DELISTED_PRODUCT_KEYS.has(key);
+    });
   const lines: string[] = [];
-  lines.push("CATALOGUE PEPTAURA (peptaura.com) , PRIX RÉELS EN USD");
-  lines.push("Marketplace, 6 fournisseurs COA-verifies actifs (Lumira, Pepturion, Retalux, HelixBridge, Hang Sciences, Railion Tech). Client FRANCE : 5 fournisseurs livrent (Lumira, HelixBridge, Hang Sciences MOQ $39, Railion Tech MOQ $96, Retalux). PEPTURION NE LIVRE PAS EN FRANCE (jamais recommander a un client FR).");
-  lines.push("Tous les produits: vials lyophilises (reconstituer avec BAC water).\n");
+  const shipping = context.shippingAvailability;
+  lines.push("CONTEXTE PEPTAURA LIVE (peptaura.com)");
+  lines.push(`Pays de livraison client: ${context.country}. Page a verifier: ${context.shippingUrl}`);
+  if (shipping.live) {
+    lines.push(`Fournisseurs qui livrent vers ${context.country}: ${shipping.availableVendors.join(", ") || "aucun detecte"}.`);
+    lines.push(`Fournisseurs a ne PAS utiliser pour ${context.country}: ${shipping.blockedVendors.join(", ") || "aucun detecte"}.`);
+  } else {
+    lines.push("Shipping live indisponible au moment de la generation: ne promets pas un fournisseur, demande de verifier la page shipping avant commande.");
+  }
+  lines.push(`Catalogue live sitemap: ${context.liveCatalogSlugs ? `${context.liveCatalogSlugs.length} pages produit detectees` : "fallback catalogue interne"}.`);
+  lines.push("Les prix ci-dessous sont le fallback interne quand le scrape live produit n'a pas encore repondu. Le serveur re-scrape ensuite chaque page produit retenue et remplace automatiquement priceEstimate avant sauvegarde.");
+  lines.push("Tous les produits: vials lyophilises sauf mention spray/cartridge. Reconstitution avec BAC water quand applicable.\n");
 
   for (const p of relevant) {
-    lines.push(`• ${p.name} | ${p.dosages.join("/")} | $${p.cheapestPriceUSD} (${p.cheapestSupplier}) | peptaura.com/catalog/${p.slug}`);
+    const dosages = p.dosages.length > 0 ? p.dosages.join("/") : "dosages live";
+    const price = p.cheapestPriceUSD > 0 ? `$${p.cheapestPriceUSD} (${p.cheapestSupplier})` : "prix live a verifier";
+    lines.push(`• ${p.name} | ${dosages} | ${price} | peptaura.com/catalog/${p.slug}`);
   }
 
   lines.push("\nEquipement: BAC water ($2/vial sur Peptaura), seringues insuline U-100 31G 8mm (les plus fines et courtes , parfaites pour injection SC, quasi indolores), tampons alcool.");
   return lines.join("\n");
+}
+
+async function buildPeptauraPromptContext(responses: Record<string, unknown>): Promise<PeptauraPromptContext> {
+  const country = normalizeDeliveryCountry(responses);
+  const [shippingAvailability, liveCatalogSlugs] = await Promise.all([
+    fetchPeptauraShippingAvailability(country),
+    fetchPeptauraCatalogSlugs(),
+  ]);
+  const context: PeptauraPromptContext = {
+    country,
+    shippingUrl: peptauraShippingUrl(country),
+    shippingAvailability,
+    liveCatalogSlugs,
+    promptBlock: "",
+  };
+  context.promptBlock = buildCatalogForPrompt(context);
+  return context;
 }
 
 // ─── Client (lazy init) ───────────────────────────────────────────────────────
@@ -314,6 +784,9 @@ function buildResponsesSummary(responses: Record<string, unknown>): string {
     pep_testo_bloodwork: "Bilan hormonal récent",
     pep_testo_fertility: "Préservation fertilité",
     pep_testo_pct_context: "Contexte baisse testostérone",
+    pep_country: "Pays de livraison Peptaura",
+    pep_country_eu_other: "Pays Europe precise",
+    pep_country_other: "Pays de livraison precise",
     pep_budget: "Budget mensuel",
     pep_injection_comfort: "Confort injections",
     pep_injection_type: "Type injection préféré",
@@ -410,34 +883,15 @@ CADRE DE TRAVAIL
 - IMPORTANT: Recommande UNIQUEMENT des produits disponibles sur Peptaura
 - IMPORTANT: Pas de voie orale. SC (sous-cutané), IM (intramusculaire), ou intranasal uniquement
 
-CHOIX DU FOURNISSEUR (CRITIQUE , LIVRAISON FRANCE/EUROPE)
-Le client est en France/Europe. Peptaura est un marketplace mais TOUS les fournisseurs ne livrent PAS en France.
-
-⚠️ INTERDICTION ABSOLUE , NE JAMAIS RECOMMANDER :
-- Pepturion : NE LIVRE PAS EN FRANCE. Même si le catalogue indique "cheapestSupplier: Pepturion" pour certaines molécules, NE LE RECOMMANDE JAMAIS. C'est une erreur terrain confirmée.
-
-FOURNISSEURS QUI LIVRENT EN FRANCE (hiérarchie à suivre selon budget) :
-
-1. **LUMIRA** (fournisseur principal par défaut , recommander en PREMIER choix)
-   - Livre en France, pas de MOQ bloquant, 4.82/5, meilleurs prix unitaires du marketplace
-   - Convient pour TOUS les budgets (petits et gros)
-   - URL catalogue : peptaura.com/catalog/[SLUG]
-   - C'est le fournisseur que tu recommandes par défaut, sauf rupture de stock sur la molécule
-
-2. **APEXION LABS** (fallback petit budget / produit rupture Lumira)
-   - Livre en France, MOQ très bas ($24), bon rapport qualité/prix
-   - Utile si Lumira est en rupture sur une molécule spécifique
-   - Ou si le client veut commander petit et tester avant de scaler
-
-3. **HANG SCIENCES, RAILION TECH, ARCADIA BIOLABS, HEBEI KTC, HELIXBRIDGE, NOVAVIAL, SOLVION, VIALFORGE**
-   - Les 5 fournisseurs France-shipping sont des alternatives interchangeables (meme molecule, COA, purete)
-   - Mentionne-les en fallback dans la section "rupture de stock"
+CHOIX DU FOURNISSEUR (CRITIQUE , LIVRAISON PAYS CLIENT)
+Peptaura est un marketplace mais TOUS les fournisseurs ne livrent PAS dans tous les pays. Le pays de livraison client et la liste fournisseurs autorises/interdits sont fournis dans le bloc CONTEXTE PEPTAURA LIVE du prompt utilisateur. Tu dois suivre ce bloc en priorité absolue, même s'il contredit une ancienne connaissance.
 
 RÈGLES :
-- Par DÉFAUT : recommande LUMIRA en premier choix, avec explication "meilleurs prix + livraison France confirmée".
-- Si le catalogue indique "cheapestSupplier: Pepturion" : DIS AU CLIENT DE NE PAS UTILISER PEPTURION (pas de livraison France), et recommande Lumira ou Retalux/HelixBridge à la place. Utilise le prix "priceRangeUSD" du catalogue comme fourchette indicative.
-- Mentionne toujours : "vérifie la disponibilité sur peptaura.com/shipping?country=France avant de commander, certains fournisseurs peuvent être temporairement hors stock".
-- PRIX : utilise UNIQUEMENT le catalogue (cheapestPriceUSD ou priceRangeUSD). N'INVENTE JAMAIS un prix. Si tu n'as que le prix Pepturion en cheapestPriceUSD, donne une fourchette réaliste basée sur priceRangeUSD et précise "prix Lumira à vérifier sur le site".
+- Recommande uniquement un fournisseur qui apparaît dans "Fournisseurs qui livrent vers [pays]" quand cette donnée live est disponible.
+- Ne recommande jamais un fournisseur qui apparaît dans "Fournisseurs a ne PAS utiliser pour [pays]".
+- Si le shipping live n'est pas disponible, ne promets pas un fournisseur précis. Donne le lien peptaura.com/shipping?country=[pays] et demande au client de vérifier avant de payer.
+- Mentionne toujours la vérification pays dans la shopping list, parce que stock et shipping peuvent bouger.
+- PRIX : utilise uniquement le catalogue Peptaura et les prix live/fallback fournis. N'invente jamais un prix. Le serveur remplace ensuite priceEstimate par un scrape live avant sauvegarde quand la page produit répond.
 
 QUANTITES (RÈGLE STRICTE ANTI-SUR-COMMANDE, bug Jamal 2026-05-14 + Epitalon 2026-05-15)
 Pour CHAQUE peptide du stack, calcule la dose totale du cycle complet.
@@ -477,9 +931,7 @@ Dans la section "Comment commander sur Peptaura", explique cette procédure stan
 6. Tu choisis le format qui matche le besoin que je t'ai calculé (point QUANTITES ci-dessus).
 7. En cas de doute (rupture totale, format inhabituel, prix qui parait étrange), tu m'écris par mail avant de commander, je te valide la commande exacte en 24h.
 
-Tu peux mentionner Lumira et HelixBridge comme fournisseurs souvent dispos en France, MAIS toujours en ajoutant "vérifie en live sur l'onglet Shipping, le stock change tous les jours". JAMAIS de promesse type "Lumira a Semaglutide 5 mg à 8,47 dollars".
-
-INTERDICTION ABSOLUE : Pepturion ne livre pas en France, Belgique, Suisse, Luxembourg. Ne le mentionne pas comme option pour ces pays.
+Tu peux mentionner uniquement les fournisseurs detectes dans CONTEXTE PEPTAURA LIVE comme livrant dans le pays client. JAMAIS de promesse type "Lumira a Semaglutide 5 mg à 8,47 dollars". Les fournisseurs listes comme bloques pour ce pays sont interdits dans le rapport.
 
 PLAN B FOURNISSEURS (section "disclaimer-support")
 Si Peptaura est en rupture totale sur une molécule ou si le client veut comparer les prix, il existe des fournisseurs chinois directs avec lesquels on peut échanger rapidement sur WhatsApp. Ce sont des manufacturers vérifiés sur GlobalSources. Mentionne ces 5 fournisseurs dans la section "disclaimer-support" comme plan B :
@@ -650,21 +1102,21 @@ Tirzepatide (GLP-1/GIP dual)
 - Route: SC 1x/semaine
 - Cycle: 3-12 mois
 
-AXE HPG / RELANCE TESTOSTERONE NATURELLE (alternative TRT) - CATALOGUE PEPTAURA RESTREINT
-IMPORTANT 2026-05 : Peptaura.com ne propose plus actuellement Enclomifene, Kisspeptin-10, Gonadorelin ni Tamoxifen (404). Le seul outil HPG-axis encore disponible sur Peptaura est HCG. Pour les SERMs (Enclomifene, Tamoxifen) et autres analogues, oriente le client vers une consultation medicale (medecin generaliste ou endocrinologue) pour obtenir une ordonnance et passer par une pharmacie classique. Ne fais JAMAIS semblant qu'on peut sourcer ces molecules sur Peptaura aujourd'hui.
+AXE HPG / RELANCE TESTOSTERONE NATURELLE (alternative TRT) - CATALOGUE PEPTAURA LIVE
+IMPORTANT 2026-07 : la disponibilite HCG, KissPeptin-10, Testagen et autres outils HPG doit suivre le bloc CONTEXTE PEPTAURA LIVE. Ne dis jamais qu'une molecule est disponible ou indisponible si le catalogue live dit l'inverse. Pour les SERMs medicamenteux (Enclomifene, Tamoxifen) et les protocoles endocriniens qui necessitent ordonnance, oriente le client vers une consultation medicale (medecin generaliste ou endocrinologue) et pharmacie classique. Ne fais jamais semblant qu'un medicament sous ordonnance se source comme un peptide marketplace.
 
 Quand pep_primary_goal = "testo-boost" OU pep_secondary_goals contient "testo-boost", tu construis un protocole base sur les regles suivantes. IMPORTANT : tu NE prescris JAMAIS sans bilan hormonal recent (Testo totale, Testo libre, LH, FSH, E2, SHBG, Prolactine, DHT, Albumine). Si pep_testo_bloodwork = "never" ou "old", ta PREMIERE recommandation doit etre de faire le bilan via Apexlabs Blood Analysis (tu as 2 credits offerts dans le stack, c'est l'occasion) avant d'entamer le moindre peptide. Pas de bilan = pas de protocole hormonal, point.
 
-HCG (analogue LH, seul outil HPG-axis sur Peptaura)
+HCG (analogue LH, outil HPG-axis Peptaura si listing live disponible)
 - Mecanisme : mime la LH, active directement les cellules de Leydig testiculaires, production testo + maintien taille testiculaire.
 - Dosage : 250-500 UI SC 2-3x/semaine (relance ou co-TRT). Doses elevees (1000-3000 UI) reservees aux protocoles specifiques.
 - Indications : preservation fertilite/taille testiculaire si deja sous TRT prescrit par medecin, relance post-cycle, hypogonadisme secondaire confirme.
 - Limites : peut sur-aromatiser (E2 haut, bloat, gynecomastie), shut-down de l'axe a doses elevees, demi-vie longue (24-72h) donc effet plus continu et moins pulsatile.
 - Cycle : 4-12 semaines en relance, ou usage continu en micro-dose si TRT prescrit.
-- Source : disponible sur Peptaura via Railion Tech (1 fournisseur, dosages 1000/2000/5000/10000 IU).
+- Source : Peptaura uniquement si le listing live et la livraison pays client sont disponibles. Utilise le fournisseur autorise par le bloc CONTEXTE PEPTAURA LIVE, pas une ancienne reference fournisseur.
 
-ENCLOMIFENE / TAMOXIFENE / KISSPEPTIN / GONADORELIN (non disponibles sur Peptaura)
-Si le client a besoin d'une de ces molecules selon son profil, oriente-le vers une consultation medicale pour obtenir l'ordonnance, puis pharmacie classique (Enclomifene/Tamoxifen sont des medicaments prescrits en France). Mentionne explicitement dans le rapport que ces molecules ne sont PAS sourcables via Peptaura actuellement, pour eviter qu'il cherche sans les trouver.
+ENCLOMIFENE / TAMOXIFENE / GONADORELIN (hors marketplace standard)
+Si le client a besoin d'une de ces molecules selon son profil, oriente-le vers une consultation medicale pour obtenir l'ordonnance, puis pharmacie classique quand c'est un medicament prescrit dans son pays. KissPeptin-10 et Testagen ne doivent etre recommandes via Peptaura que si le catalogue live les liste et si un fournisseur livre dans le pays client.
 
 PROTOCOLES TESTO-BOOST (logique de decision adaptee au catalogue actuel)
 Si testo basse confirmee (pep_testo_bloodwork = "recent-low") + fertilite importante : recommande consultation medecin/endocrino pour Enclomifene (Androtardyl/Andractim sous ordonnance) en premiere ligne. HCG en complement pour preserver la taille testiculaire si TRT est demarre.
@@ -680,7 +1132,8 @@ Re-bilan a S4 et S8 : Testo totale/libre, LH, FSH, E2, Hb/Ht.
 Si Hb > 17.5 g/dL ou Ht > 54% : pause protocole, don du sang recommande.
 Si E2 > 50 pg/mL : envisager anastrozole a tres faible dose sous ordonnance medicale ou pause. Jamais d'AI systematique en preventif, seulement sur elevation documentee avec symptomes.
 
-${buildCatalogForPrompt()}
+CATALOGUE PEPTAURA DYNAMIQUE
+Le catalogue, les fournisseurs qui livrent dans le pays du client, les fournisseurs bloques et les prix live sont fournis dans le prompt utilisateur via le bloc CONTEXTE PEPTAURA LIVE. Ce bloc dynamique est prioritaire sur toute information statique.
 
 RECONSTITUTION ET STOCKAGE
 - BAC water (eau bactériostatique): solvant standard pour lyophilisats
@@ -788,7 +1241,8 @@ Le JSON doit respecter exactement la structure demandée dans le prompt utilisat
 
 function buildUserPrompt(
   responses: Record<string, unknown>,
-  firstName: string
+  firstName: string,
+  peptauraContext: PeptauraPromptContext
 ): string {
   const summary = buildResponsesSummary(responses);
 
@@ -804,13 +1258,15 @@ function buildUserPrompt(
 DONNÉES PROFIL (${firstName}, ${weight} kg):
 ${summary}
 
+${peptauraContext.promptBlock}
+
 RÈGLES ABSOLUES:
 1. Adresse-toi à ${firstName} par son prénom à chaque section. Parle-lui comme un coach.
 2. Fais des PHRASES COMPLÈTES, jamais de listes sèches sans contexte.
 3. Ajuste les dosages au poids (${weight} kg) en mcg/kg.
 4. Sélectionne 2 à 4 peptides dans le stack principal + 1 peptide BONUS qui dépasse le budget.
 5. Utilise UNIQUEMENT le catalogue Peptaura. URLs réelles.
-6. Pour le choix du fournisseur (client en FRANCE , ${budgetNote}) : recommande LUMIRA par défaut (livre en France, le plus large catalogue, pas de MOQ bloquant). Si Lumira n'a pas le produit, bascule sur Retalux, HelixBridge, Hang Sciences (MOQ $39, regroupe la commande) ou Railion Tech (MOQ $96, regroupe la commande). NE JAMAIS recommander PEPTURION (ne livre PAS en France). EXPLIQUE clairement dans la shopping list pourquoi tu choisis le fournisseur recommandé et rappelle que le client peut vérifier la dispo sur peptaura.com/shipping?country=France.
+6. Pour le choix du fournisseur (pays de livraison ${peptauraContext.country}, ${budgetNote}) : suis STRICTEMENT CONTEXTE PEPTAURA LIVE. Recommande un fournisseur qui livre vers ${peptauraContext.country}, evite tout fournisseur liste comme bloque, et rappelle que le client doit verifier ${peptauraContext.shippingUrl} avant de payer.
 7. Le rapport doit faire au moins 4000 caractères au total. Chaque section doit être substantielle.
 
 Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
@@ -837,7 +1293,7 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
     {
       "id": "guide-peptaura",
       "title": "Comment commander sur Peptaura",
-      "content": "${firstName}, Peptaura est un marketplace qui connecte directement aux laboratoires qui fabriquent les peptides. C'est ma source personnelle depuis plusieurs années. Voici comment commander étape par étape:\\n\\nQU'EST-CE QUE PEPTAURA\\nPeptaura.com est une plateforme qui regroupe 6 fournisseurs verifies (Lumira, Pepturion, Retalux, HelixBridge, Hang Sciences, Railion Tech), dont 5 livrent en France (tous sauf Pepturion). Chaque lot de peptides est accompagné d'un COA (Certificate of Analysis) , un document de laboratoire indépendant qui certifie la pureté du produit (généralement 98-99%).\\n\\nPOURQUOI [FOURNISSEUR RECOMMANDÉ]\\nJe te recommande [fournisseur] parce que [raison liée au budget/MOQ]. Le minimum de commande est de $[MOQ].\\n\\nCOMMENT PAYER\\nPeptaura accepte les paiements par carte bancaire (CB/Visa/Mastercard) avec vérification d'identité (KYC , tu devras montrer une pièce d'identité, c'est normal et sécurisé). Tu peux aussi payer en crypto (Bitcoin, Ethereum, USDT).\\n\\nLIVRAISON\\nCompte entre 7 et 14 jours pour la livraison. Les peptides sont envoyés sous forme de poudre lyophilisée (pas besoin de chaîne du froid pendant le transport). Tu recevras un numéro de suivi.\\n\\nASTUCE\\nRegroupe ta commande : commande tous tes peptides + BAC water + seringues en une seule fois pour optimiser les frais de port."
+      "content": "${firstName}, Peptaura est un marketplace qui connecte directement aux laboratoires qui fabriquent les peptides. C'est ma source personnelle depuis plusieurs années. Voici comment commander étape par étape:\\n\\nQU'EST-CE QUE PEPTAURA\\nPeptaura.com est une plateforme qui regroupe plusieurs fournisseurs verifies. Tous les fournisseurs ne livrent pas dans tous les pays, donc tu dois utiliser le fournisseur recommande dans ce rapport et verifier la page shipping Peptaura pour ton pays avant de payer. Chaque lot de peptides est accompagné d'un COA (Certificate of Analysis) , un document de laboratoire indépendant qui certifie la pureté du produit (généralement 98-99%).\\n\\nPOURQUOI [FOURNISSEUR RECOMMANDÉ]\\nJe te recommande [fournisseur] parce que [raison liée au budget/MOQ/pays de livraison]. Le minimum de commande est de $[MOQ] si le fournisseur en applique un.\\n\\nCOMMENT PAYER\\nPeptaura accepte les paiements par carte bancaire (CB/Visa/Mastercard) avec vérification d'identité (KYC , tu devras montrer une pièce d'identité, c'est normal et sécurisé). Tu peux aussi payer en crypto (Bitcoin, Ethereum, USDT).\\n\\nLIVRAISON\\nCompte entre 7 et 14 jours pour la livraison quand le fournisseur livre bien ton pays. Les peptides sont envoyés sous forme de poudre lyophilisée (pas besoin de chaîne du froid pendant le transport). Tu recevras un numéro de suivi.\\n\\nASTUCE\\nRegroupe ta commande : commande tous tes peptides + BAC water + seringues en une seule fois pour optimiser les frais de port."
     },
     {
       "id": "reconstitution-guide",
@@ -1049,18 +1505,18 @@ async function extractJsonFromResponse(raw: string): Promise<PeptidesReport> {
 // ─── Post-process: validate Peptaura URLs ─────────────────────────────────────
 
 export function validateAndFixPeptauraUrls(report: PeptidesReport): PeptidesReport {
-  const slugMap = new Map(PEPTAURA_CATALOG.map(p => [p.name.toLowerCase(), p]));
+  const slugMap = new Map(getPeptauraCatalogProducts().map(p => [p.name.toLowerCase(), p]));
 
   for (const pep of report.peptides) {
     const match = slugMap.get(pep.name.toLowerCase());
     if (match) {
       // Force correct URL from our catalog
-      pep.purchaseUrl = `https://www.peptaura.com/catalog/${match.slug}`;
+      pep.purchaseUrl = peptauraProductUrl(match.slug);
     } else {
       // Try fuzzy match
       for (const [key, cat] of slugMap) {
         if (pep.name.toLowerCase().includes(key) || key.includes(pep.name.toLowerCase())) {
-          pep.purchaseUrl = `https://www.peptaura.com/catalog/${cat.slug}`;
+          pep.purchaseUrl = peptauraProductUrl(cat.slug);
           break;
         }
       }
@@ -1434,7 +1890,8 @@ export async function generatePeptidesProtocol(
   console.log(`[PeptidesEngine] Starting generation for ${email} (tier=${tier})`);
 
   const firstName = extractFirstName(responses, email);
-  const userPrompt = buildUserPrompt(responses, firstName);
+  const peptauraContext = await buildPeptauraPromptContext(responses);
+  const userPrompt = buildUserPrompt(responses, firstName, peptauraContext);
 
   // Generate with retry (up to 2 attempts)
   let report: PeptidesReport | null = null;
@@ -1585,6 +2042,10 @@ export async function generatePeptidesProtocol(
 
   // Validate vials math — AI invents wrong vial counts (Guillaume Gestin bug)
   report = validateVialsMath(report);
+
+  // Refresh Peptaura product pages for the final peptide stack and anchor
+  // supplier/price to the client's delivery country before saving.
+  report = await applyLivePeptauraPricing(report, peptauraContext);
 
   // POST-PROCESSING: clean dashes and 3rd person references
   report = cleanReportContent(report, firstName);
