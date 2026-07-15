@@ -199,7 +199,7 @@ export const sendBloodClientDeliveryEmail = async (
   baseUrl: string,
   markerSnapshots?: MarkerAnalysis[] | BloodReportMarkerSnapshot[],
   profile?: Record<string, unknown>,
-  deliveryMeta?: { orderRef?: string; bypassRecentDedup?: boolean },
+  deliveryMeta?: { orderRef?: string; bypassRecentDedup?: boolean; bypassReportDedup?: boolean },
 ): Promise<boolean> => {
   void baseUrl;
   const reportText = canonicalizeBloodReport(aiReport).trim();
@@ -213,7 +213,7 @@ export const sendBloodClientDeliveryEmail = async (
   // Hard dedup: never resend for the same report (audit_id). Defends against
   // race between the upload sync setImmediate and the 5min recovery cron when
   // analysis.deliveryStatus persistence is delayed or lost.
-  if (await storage.hasBloodAnalysisEmailBeenSentForReport(reportId).catch(() => false)) {
+  if (!deliveryMeta?.bypassReportDedup && await storage.hasBloodAnalysisEmailBeenSentForReport(reportId).catch(() => false)) {
     console.warn(
       `[BloodAnalysis] Blocking duplicate email for report ${reportId}: email_tracking already records a send.`
     );
@@ -1333,7 +1333,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         baseUrl,
         report.markers as MarkerAnalysis[],
         report.profile as Record<string, unknown>,
-        { bypassRecentDedup: forceRaw },
+        { bypassRecentDedup: forceRaw, bypassReportDedup: forceRaw },
       );
 
       if (sent) {

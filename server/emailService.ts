@@ -257,6 +257,7 @@ async function fetchSendPulseLiveRecordDetails(
 const isCriticalSendPulseEmail = (emailType: string, subject: string): boolean => {
   const normalized = normalizeSendPulseText(subject);
   return emailType === "sendReportReadyEmail"
+    || emailType === "sendBloodAnalysisHtmlEmail"
     || emailType === "sendPeptidesOrderConfirmation"
     || (emailType === "sendCTAEmail" && (
       normalized.includes("protocole peptides")
@@ -426,6 +427,7 @@ async function sendEmailWithTracking(
     let sendpulseTaskId = extractSendPulseDeliveryId(result);
     if (sendpulseTaskId) result.id = sendpulseTaskId;
     const liveLookupMetadata: Record<string, any> = {};
+    const criticalEmail = isCriticalSendPulseEmail(trackingData.emailType, emailPayload.subject);
 
     if (result.result && sendpulseTaskId) {
       const providerRecord = await fetchSendPulseLiveRecordDetails(token, [{ id: sendpulseTaskId }]).catch((error) => {
@@ -450,6 +452,11 @@ async function sendEmailWithTracking(
         delete result.id;
       } else {
         liveLookupMetadata.sendpulseLiveLookup = "provider_id_unverified";
+        if (criticalEmail) {
+          liveLookupMetadata.sendpulseProviderId = sendpulseTaskId;
+          sendpulseTaskId = undefined;
+          delete result.id;
+        }
       }
     }
 
@@ -474,7 +481,7 @@ async function sendEmailWithTracking(
       } else {
         liveLookupMetadata.sendpulseLiveLookup = "not_found";
         liveLookupMetadata.sendpulseLiveLookupFromDate = new Date(sentStartedAt.getTime() - 10 * 60 * 1000).toISOString();
-        if (isCriticalSendPulseEmail(trackingData.emailType, emailPayload.subject)) {
+        if (criticalEmail) {
           result.result = false;
           result.error = "SendPulse accepted API request but no live SMTP record was found";
         }
