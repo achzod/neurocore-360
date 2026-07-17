@@ -1028,6 +1028,51 @@ export async function registerRoutes(
     }
   }
 
+  const isActivePeptidesOrder = (order: any): boolean =>
+    order?.productType === "PEPTIDES_ENGINE" &&
+    (order?.status === "paid" || order?.status === "partial_refund");
+
+  const getPeptidesReportIdsFromOrder = (order: any): string[] => {
+    if (!order || order.productType !== "PEPTIDES_ENGINE") return [];
+    const ids = new Set<string>();
+    const metadata = order.metadata && typeof order.metadata === "object" ? order.metadata as Record<string, unknown> : {};
+    const metadataReportId = metadata.peptidesReportId;
+    if (typeof metadataReportId === "string" && metadataReportId.trim()) {
+      ids.add(metadataReportId.trim());
+    }
+    if (typeof order.auditId === "string" && order.auditId.trim()) {
+      ids.add(order.auditId.trim());
+    }
+    return Array.from(ids);
+  };
+
+  const filterVisiblePeptidesReportsForOrders = (reports: any[], orders: any[]): any[] => {
+    const peptidesOrders = orders.filter((order) => order?.productType === "PEPTIDES_ENGINE");
+    if (peptidesOrders.length === 0) return reports;
+
+    const activeOrders = peptidesOrders.filter(isActivePeptidesOrder);
+    if (activeOrders.length === 0) return [];
+
+    const activeReportIds = new Set(activeOrders.flatMap(getPeptidesReportIdsFromOrder));
+    if (activeReportIds.size === 0) return reports;
+
+    return reports.filter((report) => activeReportIds.has(String(report?.id ?? "")));
+  };
+
+  const isPeptidesReportAccessibleForOrders = (reportId: string, orders: any[]): boolean => {
+    const peptidesOrders = orders.filter((order) => order?.productType === "PEPTIDES_ENGINE");
+    if (peptidesOrders.length === 0) return true;
+
+    const matchingOrders = peptidesOrders.filter((order) =>
+      getPeptidesReportIdsFromOrder(order).includes(reportId)
+    );
+    if (matchingOrders.length > 0) {
+      return matchingOrders.some(isActivePeptidesOrder);
+    }
+
+    return peptidesOrders.some(isActivePeptidesOrder);
+  };
+
   // SECURITY: Check if user owns the audit (prevents IDOR vulnerability)
   async function checkAuditOwnership(req: any, res: any, auditId: string, silent?: boolean): Promise<boolean> {
     const audit = await storage.getAudit(auditId);
@@ -1867,7 +1912,9 @@ export async function registerRoutes(
         }
       }
       const reports = await storage.getPeptidesReportsByEmail(email);
-      const light = reports.map(r => {
+      const orders = await storage.getOrdersByEmail(email);
+      const visibleReports = filterVisiblePeptidesReportsForOrders(reports, orders);
+      const light = visibleReports.map(r => {
         const peptides = (r.report as any)?.peptides;
         const peptideNames = Array.isArray(peptides)
           ? peptides.map((p: any) => p?.name).filter(Boolean).slice(0, 6)
@@ -12842,6 +12889,13 @@ export async function registerRoutes(
 
       // Ensure it's a peptides report (email prefixed with peptides::)
       if (!String(record.email ?? "").startsWith("peptides::")) {
+        res.status(404).json({ error: "Rapport introuvable" });
+        return;
+      }
+
+      const reportEmail = String(record.email ?? "").replace(/^peptides::/i, "").trim().toLowerCase();
+      const orders = reportEmail.includes("@") ? await storage.getOrdersByEmail(reportEmail) : [];
+      if (!isPeptidesReportAccessibleForOrders(id, orders)) {
         res.status(404).json({ error: "Rapport introuvable" });
         return;
       }
