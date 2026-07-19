@@ -27,9 +27,9 @@ const CTA_ACHZOD = `
 
 ---
 
-[![Anabolic Code](https://cdn.prod.website-files.com/5fd0a9c447b7bb9814a00d71/6851ebc888d485c358317cfe_Ebook%20Anabolic%20Code%20Cover-min.jpg)](https://achzodcoaching.com)
+[![Anabolic Code](https://cdn.prod.website-files.com/5fd0a9c447b7bb9814a00d71/6851ebc888d485c358317cfe_Ebook%20Anabolic%20Code%20Cover-min.jpg)](https://www.achzodcoaching.com)
 
-**Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique sur [achzodcoaching.com](https://achzodcoaching.com)`;
+**Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique sur [achzodcoaching.com](https://www.achzodcoaching.com)`;
 
 // Liste complète des URLs TheMusclePhD à scraper
 const MUSCLEPHD_URLS = [
@@ -491,9 +491,9 @@ function generateUltrahumanFile(articles: Article[]): void {
 
 ---
 
-[![Anabolic Code](https://cdn.prod.website-files.com/5fd0a9c447b7bb9814a00d71/6851ebc888d485c358317cfe_Ebook%20Anabolic%20Code%20Cover-min.jpg)](https://achzodcoaching.com)
+[![Anabolic Code](https://cdn.prod.website-files.com/5fd0a9c447b7bb9814a00d71/6851ebc888d485c358317cfe_Ebook%20Anabolic%20Code%20Cover-min.jpg)](https://www.achzodcoaching.com)
 
-**Decouvrez Anabolic Code** - Le guide complet sur l'optimisation hormonale sur [achzodcoaching.com](https://achzodcoaching.com)`;
+**Decouvrez Anabolic Code** - Le guide complet sur l'optimisation hormonale sur [achzodcoaching.com](https://www.achzodcoaching.com)`;
 
   let content = `// Ultrahuman French blog articles
 // Auto-generated on ${new Date().toISOString()}
