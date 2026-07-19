@@ -1,0 +1,13 @@
+Old path,Redirect to path
+/coaching%-sans%-suivi,/coaching-essential
+/produits/essential,/coaching-essential
+/produits/elite,/coaching-elite
+/blogs/blog/glucides%-et%-musculation%-le%-guide%-partie%-1,/blog/glucides-et-musculation-le-guide-partie-1
+/blogs/blog/proteines%-acides%-amines%-le%-guide%-chapitre%-1,/blog/proteines-acides-amines-le-guide-chapitre-1
+/blogs/blog/macronutriments%-obtenir%-les%-bonnes%-quantites%-pour%-la%-croissance,/blog/macronutriments-obtenir-les-bonnes-quantites-pour-la-croissance
+/collections/ebooks/products/un%-maximum%-de%-muscles%-et%-un%-minimum%-de%-gras%-en%-10%-semaines%-prise%-de%-masse%-seche%-perte%-de%-gras,/product/liberer-son-potentiel-genetique-en-10-semaines-perte-de-gras-et-prise-de-muscles
+/${ebook.link},/ebooks
+/product/${ebook.link},/ebooks
+/blog/${ebook.link},/blog
+/freebies/${ebook.link},/freebies
+/categorie/${ebook.link},/blog

@@ -27,6 +27,7 @@ APEX (`apexlabs.achzodcoaching.com`):
 - 0 noindex in sitemap.
 - 0 thin/no-description/no-H1 pages found in sitemap crawl.
 - Local code fix applied: APEX blog CTAs now use `https://www.achzodcoaching.com` instead of the non-canonical `https://achzodcoaching.com`.
+- Post-deploy check on commit `fa7265ab`: 266 sitemap URLs OK, 0 redirects, 0 non-200, 0 noindex, 0 canonical mismatch. `blog-articles.json` has 243 articles, 0 old non-www coaching links, 0 `${ebook.link}` leaks.
 
 Webflow main site (`www.achzodcoaching.com`):
 - 145 sitemap URLs crawled.
@@ -34,12 +35,17 @@ Webflow main site (`www.achzodcoaching.com`):
 - 0 redirect in sitemap.
 - 0 canonical mismatch.
 - 0 noindex in sitemap.
-- 8 pages have weak SEO metadata / low-value indexability.
-- Internal crawl found real broken links and legacy redirects.
+- 9 pages have weak SEO metadata / low-value indexability.
+- Internal crawl found 16 real broken links and legacy redirects.
 
 ## Webflow corrections to apply
 
 These changes must be made in Webflow because the main site is served by Webflow, not this repo.
+Webflow reference:
+- Redirect setup: https://help.webflow.com/hc/en-us/articles/33961294898835-How-do-I-set-up-redirects-in-Webflow
+- CSV import/export: https://help.webflow.com/hc/en-us/articles/33961211526291-Import-export-301-redirects
+
+Important: Webflow CSV imports overwrite existing redirects. Export the current redirects first, append the rows from `webflow-redirects-additions-achzodcoaching-2026-07-19.csv`, then import the merged file and publish.
 
 ### 1. 301 redirects
 
@@ -47,20 +53,25 @@ Add these in Webflow Site settings > Publishing > 301 redirects, then publish.
 
 | Old path | Redirect to |
 |---|---|
-| `/coaching-sans-suivi` | `/coaching-essential` |
+| `/coaching%-sans%-suivi` | `/coaching-essential` |
 | `/produits/essential` | `/coaching-essential` |
 | `/produits/elite` | `/coaching-elite` |
-| `/blogs/blog/glucides-et-musculation-le-guide-partie-1` | `/blog/glucides-et-musculation-le-guide-partie-1` |
-| `/blogs/blog/proteines-acides-amines-le-guide-chapitre-1` | `/blog/proteines-acides-amines-le-guide-chapitre-1` |
-| `/blogs/blog/macronutriments-obtenir-les-bonnes-quantites-pour-la-croissance` | `/blog/macronutriments-obtenir-les-bonnes-quantites-pour-la-croissance` |
-| `/collections/ebooks/products/un-maximum-de-muscles-et-un-minimum-de-gras-en-10-semaines-prise-de-masse-seche-perte-de-gras` | `/product/liberer-son-potentiel-genetique-en-10-semaines-perte-de-gras-et-prise-de-muscles` |
-| `/%24%7Bebook.link%7D` | `/ebooks` |
-| `/product/%24%7Bebook.link%7D` | `/ebooks` |
-| `/blog/%24%7Bebook.link%7D` | `/blog` |
-| `/freebies/%24%7Bebook.link%7D` | `/freebies` |
-| `/categorie/%24%7Bebook.link%7D` | `/blog` |
+| `/blogs/blog/glucides%-et%-musculation%-le%-guide%-partie%-1` | `/blog/glucides-et-musculation-le-guide-partie-1` |
+| `/blogs/blog/proteines%-acides%-amines%-le%-guide%-chapitre%-1` | `/blog/proteines-acides-amines-le-guide-chapitre-1` |
+| `/blogs/blog/macronutriments%-obtenir%-les%-bonnes%-quantites%-pour%-la%-croissance` | `/blog/macronutriments-obtenir-les-bonnes-quantites-pour-la-croissance` |
+| `/collections/ebooks/products/un%-maximum%-de%-muscles%-et%-un%-minimum%-de%-gras%-en%-10%-semaines%-prise%-de%-masse%-seche%-perte%-de%-gras` | `/product/liberer-son-potentiel-genetique-en-10-semaines-perte-de-gras-et-prise-de-muscles` |
+| `/${ebook.link}` | `/ebooks` |
+| `/product/${ebook.link}` | `/ebooks` |
+| `/blog/${ebook.link}` | `/blog` |
+| `/freebies/${ebook.link}` | `/freebies` |
+| `/categorie/${ebook.link}` | `/blog` |
 
-If Webflow rejects the encoded `%24%7Bebook.link%7D` syntax, try the decoded path `${ebook.link}` in the old path field.
+If Webflow rejects the `${ebook.link}` paths, use the encoded fallback and escape percent characters in the old path:
+- `/%%24%%7Bebook.link%%7D`
+- `/product/%%24%%7Bebook.link%%7D`
+- `/blog/%%24%%7Bebook.link%%7D`
+- `/freebies/%%24%%7Bebook.link%%7D`
+- `/categorie/%%24%%7Bebook.link%%7D`
 
 ### 2. Fix internal links in Webflow
 
