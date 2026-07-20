@@ -8,9 +8,9 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { motion, useScroll, useTransform, useMotionValue, animate, AnimatePresence } from "framer-motion";
 import { ArrowRight, Check, ChevronDown, Smartphone, MessageCircle, FileText, Target, Ruler, Dumbbell, X } from "lucide-react";
+import { WHATSAPP_NUMBER } from "@/lib/whatsapp";
 
 const ACCENT = "#25D366";
-const WA_NUMBER = "33787746578"; // WhatsApp Achzod
 
 // ============================================================================
 // FAQ ACCORDION ITEM
@@ -1081,7 +1081,7 @@ export default function FormCheck() {
                 badge: "GRATUIT",
                 highlight: false,
                 cta: "Tester gratuitement",
-                ctaHref: `https://wa.me/${WA_NUMBER}?text=menu`,
+                ctaHref: `https://wa.me/${WHATSAPP_NUMBER}?text=menu`,
               },
               {
                 name: "Solo",
@@ -1094,7 +1094,7 @@ export default function FormCheck() {
                 badge: null,
                 highlight: false,
                 cta: "Commencer a 9,90€",
-                ctaHref: `https://wa.me/${WA_NUMBER}?text=forfaits`,
+                ctaHref: `https://wa.me/${WHATSAPP_NUMBER}?text=forfaits`,
               },
               {
                 name: "Pro",
@@ -1107,7 +1107,7 @@ export default function FormCheck() {
                 badge: "LE + POPULAIRE",
                 highlight: true,
                 cta: "Passer Pro maintenant",
-                ctaHref: `https://wa.me/${WA_NUMBER}?text=forfaits`,
+                ctaHref: `https://wa.me/${WHATSAPP_NUMBER}?text=forfaits`,
               },
               {
                 name: "Coach",
@@ -1120,7 +1120,7 @@ export default function FormCheck() {
                 badge: "ILLIMITE",
                 highlight: false,
                 cta: "Devenir Coach",
-                ctaHref: `https://wa.me/${WA_NUMBER}?text=forfaits`,
+                ctaHref: `https://wa.me/${WHATSAPP_NUMBER}?text=forfaits`,
               },
             ].map((pack, i) => (
               <motion.div

@@ -51,7 +51,7 @@ export function Header() {
           </Link>
 
           {/* Desktop Navigation - Inter Bold, uppercase, gray */}
-          <nav className="hidden items-center gap-6 lg:flex flex-1" aria-label="Navigation principale">
+          <nav className="hidden flex-1 items-center gap-3 min-[1360px]:flex 2xl:gap-6" aria-label="Navigation principale">
             {PRODUCTS.map((product) => (
               <Link
                 key={product.name}
@@ -70,7 +70,7 @@ export function Header() {
           </nav>
 
           {/* Right side actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 2xl:gap-3">
             <a 
               href="https://www.achzodcoaching.com" 
               target="_blank" 
@@ -125,7 +125,7 @@ export function Header() {
 
             {/* Mobile menu toggle */}
             <button
-              className="lg:hidden p-2 text-[#9CA3AF] hover:text-white transition-colors"
+              className="p-2 text-[#9CA3AF] transition-colors hover:text-white min-[1360px]:hidden"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label={mobileMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
               aria-expanded={mobileMenuOpen}
@@ -138,7 +138,7 @@ export function Header() {
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <nav className="border-t border-[#333333] py-4 lg:hidden bg-[#000000]" aria-label="Navigation mobile">
+          <nav className="border-t border-[#333333] bg-[#000000] py-4 min-[1360px]:hidden" aria-label="Navigation mobile">
             <div className="flex flex-col gap-1">
               {PRODUCTS.map((product) => (
                 <Link

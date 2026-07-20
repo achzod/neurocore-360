@@ -65,6 +65,37 @@ export function trackClick(buttonName: string, destination?: string) {
   });
 }
 
+// Track high-intent WhatsApp contact clicks without counting them as purchases.
+export function trackWhatsAppClick({
+  offer,
+  placement,
+  tier,
+  destination,
+}: {
+  offer: string;
+  placement: string;
+  tier?: string;
+  destination: string;
+}) {
+  gtag('event', 'whatsapp_click', {
+    event_category: 'contact',
+    event_label: `${offer}:${placement}`,
+    method: 'whatsapp',
+    offer,
+    placement,
+    tier: tier || 'unspecified',
+    link_url: destination,
+  });
+
+  // Meta standard event for prospects who actively open a conversation.
+  fbq('track', 'Contact', {
+    content_name: offer,
+    content_category: 'whatsapp',
+    placement,
+    tier: tier || 'unspecified',
+  });
+}
+
 // Track form submissions (Discovery Scan questionnaire, etc.)
 export function trackFormSubmit(formName: string) {
   gtag('event', 'generate_lead', {

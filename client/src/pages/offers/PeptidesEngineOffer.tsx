@@ -37,9 +37,12 @@ import {
   Lock,
   CheckCircle,
   ExternalLink,
+  MessageCircle,
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { trackWhatsAppClick } from "@/lib/analytics";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
 // ============================================================================
 // CONSTANTS
@@ -47,7 +50,6 @@ import { Footer } from "@/components/Footer";
 
 // Apple-style palette: blanc / gris métal / bleu
 const PRIMARY = "#0071E3";        // Apple blue (boutons + accents)
-const PRIMARY_HOVER = "#0077ED";
 const TEXT_DARK = "#1D1D1F";       // Near-black headlines
 const TEXT_MED = "#424245";        // Secondary text
 const TEXT_GRAY = "#6E6E73";       // Body gray
@@ -56,6 +58,140 @@ const SURFACE = "#FFFFFF";         // Pure white background
 const SURFACE_2 = "#F5F5F7";       // Apple gray surface (cards)
 const SURFACE_3 = "#FBFBFD";       // Slightly off-white sections
 const BORDER = "#D2D2D7";          // Apple light border
+const WHATSAPP_GREEN = "#25D366";
+const WHATSAPP_TEXT = "#128C7E";
+
+type PeptidesTierId = "solo" | "coached" | "tracked";
+type WhatsAppPlacement = "pricing_card" | "faq" | "mobile_floating";
+
+const PEPTIDES_TIER_LABELS: Record<PeptidesTierId, string> = {
+  solo: "Solo",
+  coached: "Coached",
+  tracked: "Tracked",
+};
+
+function buildPeptidesWhatsAppMessage(tier?: PeptidesTierId): string {
+  const tierContext = tier ? ` Je regarde la formule ${PEPTIDES_TIER_LABELS[tier]}.` : "";
+  return `Salut Achzod, je viens de la page Peptides Engine.${tierContext} J'ai une question avant de commander :`;
+}
+
+function PeptidesWhatsAppLink({
+  placement,
+  tier,
+  label,
+  className = "",
+  filled = false,
+}: {
+  placement: WhatsAppPlacement;
+  tier?: PeptidesTierId;
+  label: string;
+  className?: string;
+  filled?: boolean;
+}) {
+  const destination = buildWhatsAppUrl(buildPeptidesWhatsAppMessage(tier));
+
+  return (
+    <a
+      href={destination}
+      target="_blank"
+      rel="noopener noreferrer"
+      data-testid={`whatsapp-cta-${placement}${tier ? `-${tier}` : ""}`}
+      aria-label={`${label} (ouvre WhatsApp dans un nouvel onglet)`}
+      className={`inline-flex items-center justify-center gap-2 rounded-full border px-5 py-3 font-semibold transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${className}`}
+      style={{
+        backgroundColor: filled ? WHATSAPP_GREEN : "#FFFFFF",
+        borderColor: WHATSAPP_GREEN,
+        color: filled ? "#FFFFFF" : WHATSAPP_TEXT,
+        ["--tw-ring-color" as string]: WHATSAPP_GREEN,
+      }}
+      onClick={() => {
+        try {
+          trackWhatsAppClick({
+            offer: "Peptides Engine",
+            placement,
+            tier,
+            destination,
+          });
+        } catch {
+          // Analytics must never block access to WhatsApp.
+        }
+      }}
+    >
+      <MessageCircle className="h-4 w-4" aria-hidden="true" />
+      <span>{label}</span>
+    </a>
+  );
+}
+
+function MobileWhatsAppCTA() {
+  const [visible, setVisible] = useState(false);
+  const [purchaseCtaVisible, setPurchaseCtaVisible] = useState(false);
+
+  useEffect(() => {
+    const pricingSection = document.getElementById("offres");
+    if (!pricingSection) return;
+
+    if (pricingSection.getBoundingClientRect().top <= window.innerHeight) {
+      setVisible(true);
+    } else if ("IntersectionObserver" in window) {
+      const pricingObserver = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            setVisible(true);
+            pricingObserver.disconnect();
+          }
+        },
+        { threshold: 0.15 },
+      );
+      pricingObserver.observe(pricingSection);
+
+      return () => pricingObserver.disconnect();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!("IntersectionObserver" in window)) return;
+
+    const purchaseLinks = Array.from(
+      document.querySelectorAll<HTMLAnchorElement>('a[href^="/peptides-engine?tier="]'),
+    );
+    const visiblePurchaseLinks = new Set<Element>();
+    const purchaseObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) visiblePurchaseLinks.add(entry.target);
+          else visiblePurchaseLinks.delete(entry.target);
+        });
+        setPurchaseCtaVisible(visiblePurchaseLinks.size > 0);
+      },
+      { threshold: 0.2 },
+    );
+
+    purchaseLinks.forEach((link) => purchaseObserver.observe(link));
+    return () => purchaseObserver.disconnect();
+  }, []);
+
+  return (
+    <AnimatePresence>
+      {visible && !purchaseCtaVisible && (
+        <motion.div
+          initial={{ opacity: 0, y: 16, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 16, scale: 0.96 }}
+          className="fixed right-4 z-40 md:hidden"
+          style={{ bottom: "max(1rem, env(safe-area-inset-bottom))" }}
+        >
+          <PeptidesWhatsAppLink
+            placement="mobile_floating"
+            label="Une question ?"
+            filled
+            className="border-0 px-4 py-3 text-sm shadow-[0_12px_32px_rgba(18,140,126,0.32)]"
+          />
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
 
 // Flash promo deadline: jeudi 14 mai 2026 23:59 Paris (UTC+2)
 const FLASH_DEADLINE_MS = new Date("2026-05-14T23:59:59+02:00").getTime();
@@ -382,18 +518,14 @@ function SectionLabel({ children }: { children: string }) {
 
 function CTAButton({ children, href = "/peptides-engine", large = false }: { children: React.ReactNode; href?: string; large?: boolean }) {
   return (
-    <Link href={href}>
-      <motion.a
-        whileHover={{ scale: 1.02, backgroundColor: PRIMARY_HOVER }}
-        whileTap={{ scale: 0.98 }}
-        className={`inline-flex cursor-pointer items-center gap-2 rounded-full font-semibold transition-all ${
-          large ? "px-9 py-4 text-base" : "px-7 py-3 text-[15px]"
-        }`}
-        style={{ backgroundColor: PRIMARY, color: "#fff" }}
-      >
-        {children}
-        <ArrowRight className="h-4 w-4" />
-      </motion.a>
+    <Link
+      href={href}
+      className={`inline-flex cursor-pointer items-center gap-2 rounded-full bg-[#0071E3] font-semibold text-white transition-all hover:scale-[1.02] hover:bg-[#0077ED] active:scale-[0.98] ${
+        large ? "px-9 py-4 text-base" : "px-7 py-3 text-[15px]"
+      }`}
+    >
+      {children}
+      <ArrowRight className="h-4 w-4" />
     </Link>
   );
 }
@@ -647,6 +779,7 @@ const ArsenalAnimation = () => {
             <rect x={pep.x - 10} y={pep.y + 4} width="20" height="2" fill="rgba(255,255,255,0.1)" />
             <motion.rect
               x={pep.x - 10} y={pep.y + 4} height="2" fill={pep.color}
+              initial={{ width: 0 }}
               animate={{ width: [0, 20, 15, 20] }}
               transition={{ duration: 3, repeat: Infinity, delay: i * 0.5 }}
             />
@@ -734,6 +867,7 @@ const ReconstitutionAnimation = () => {
         {/* Plunger & Liquid */}
         <motion.rect
           x="42" y="25" width="16" height="40" fill="rgba(234,179,8,0.3)"
+          initial={{ height: 40, y: 25 }}
           animate={{ height: [40, 10, 40], y: [25, 55, 25] }}
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
         />
@@ -795,6 +929,7 @@ const SynergyAnimation = () => {
 
         {/* Animated Intersection Dots */}
         <motion.circle cx="10" cy="90" r="2" fill="#ef4444" className="drop-shadow-[0_0_5px_#ef4444]"
+          initial={{ cx: 10, cy: 90 }}
           animate={{
             cx: [10, 20, 30, 50, 70, 90],
             cy: [90, 35, 60, 80, 85, 90],
@@ -802,6 +937,7 @@ const SynergyAnimation = () => {
           transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
         />
         <motion.circle cx="10" cy="90" r="2" fill="#06b6d4" className="drop-shadow-[0_0_5px_#06b6d4]"
+          initial={{ cx: 10, cy: 90 }}
           animate={{
             cx: [10, 30, 50, 70, 90],
             cy: [90, 60, 40, 42.5, 45],
@@ -1348,6 +1484,34 @@ function FAQSection() {
             <FAQItem key={item.q} q={item.q} a={item.a} index={i} />
           ))}
         </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mt-12 rounded-2xl border border-[#D2D2D7] bg-[#F5F5F7] p-6 text-center md:p-8"
+        >
+          <div
+            className="mx-auto flex h-12 w-12 items-center justify-center rounded-full"
+            style={{ backgroundColor: `${WHATSAPP_GREEN}1A`, color: WHATSAPP_TEXT }}
+          >
+            <MessageCircle className="h-6 w-6" aria-hidden="true" />
+          </div>
+          <h3 className="mt-4 text-xl font-bold text-[#1D1D1F]">
+            Encore une question avant de choisir ?
+          </h3>
+          <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-[#6E6E73]">
+            Écris-moi directement sur WhatsApp pour une question sur l'offre, la livraison ou le choix de la formule.
+          </p>
+          <PeptidesWhatsAppLink
+            placement="faq"
+            label="Écris-moi sur WhatsApp"
+            className="mt-5 text-sm"
+          />
+          <p className="mt-3 text-[11px] text-[#86868B]">
+            Les conseils médicaux personnalisés restent du ressort d'un professionnel de santé.
+          </p>
+        </motion.div>
       </div>
     </section>
   );
@@ -1504,14 +1668,15 @@ function FinalCTA() {
             {PRICING_TIERS.map((tier) => {
               const isFeatured = tier.badge === "Le plus choisi";
               return (
-                <Link key={tier.id} href={tier.href}>
-                  <a
-                    className={`group block rounded-2xl border-2 p-6 text-left transition-all hover:scale-[1.02] hover:shadow-lg ${
-                      isFeatured
-                        ? "border-[#0071E3] bg-[#0071E3]/5"
-                        : "border-[#D2D2D7] bg-white hover:border-[#0071E3]"
-                    }`}
-                  >
+                <Link
+                  key={tier.id}
+                  href={tier.href}
+                  className={`group block rounded-2xl border-2 p-6 text-left transition-all hover:scale-[1.02] hover:shadow-lg ${
+                    isFeatured
+                      ? "border-[#0071E3] bg-[#0071E3]/5"
+                      : "border-[#D2D2D7] bg-white hover:border-[#0071E3]"
+                  }`}
+                >
                     {tier.badge && (
                       <span
                         className="inline-block mb-3 rounded-full px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider"
@@ -1540,7 +1705,6 @@ function FinalCTA() {
                       Choisir {tier.name}
                       <ArrowRight className="h-4 w-4" />
                     </div>
-                  </a>
                 </Link>
               );
             })}
@@ -1643,7 +1807,7 @@ const PRICING_TIERS = [
 
 function PricingTiers() {
   return (
-    <section id="offres" className="py-24 px-6 bg-[#FBFBFD]">
+    <section id="offres" className="scroll-mt-16 py-24 px-6 bg-[#FBFBFD]">
       <div className="mx-auto max-w-6xl">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
@@ -1727,17 +1891,20 @@ function PricingTiers() {
                   ))}
                 </ul>
 
-                <Link href={tier.href}>
-                  <a
-                    className="block w-full rounded-full text-center px-6 py-4 text-sm font-semibold transition-colors"
-                    style={{
-                      backgroundColor: isFeatured ? PRIMARY : "#1D1D1F",
-                      color: "#fff",
-                    }}
-                  >
-                    {tier.ctaLabel}
-                  </a>
+                <Link
+                  href={tier.href}
+                  className="block w-full rounded-full px-6 py-4 text-center text-sm font-semibold text-white transition-colors"
+                  style={{ backgroundColor: isFeatured ? PRIMARY : "#1D1D1F" }}
+                >
+                  {tier.ctaLabel}
                 </Link>
+
+                <PeptidesWhatsAppLink
+                  placement="pricing_card"
+                  tier={tier.id}
+                  label={`Une question sur ${tier.name} ?`}
+                  className="mt-3 w-full px-4 py-2.5 text-xs"
+                />
               </motion.div>
             );
           })}
@@ -1858,13 +2025,11 @@ function CoachingDeduction() {
                 <p className="text-5xl md:text-6xl font-bold text-[#1D1D1F] leading-none">399€</p>
                 <p className="mt-1 text-xs font-mono text-[#0071E3]">Économie 399€</p>
               </div>
-              <Link href="/peptides-engine?tier=tracked">
-                <a
-                  className="mt-3 inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-colors w-full md:w-auto justify-center"
-                  style={{ backgroundColor: PRIMARY, color: "#fff" }}
-                >
-                  Réserver le combo signature
-                </a>
+              <Link
+                href="/peptides-engine?tier=tracked"
+                className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#0071E3] px-6 py-3 text-sm font-semibold text-white transition-colors md:w-auto"
+              >
+                Réserver le combo signature
               </Link>
             </div>
           </div>
@@ -2140,6 +2305,8 @@ export default function PeptidesEngineOffer() {
         <FAQSection />
         <FinalCTA />
       </main>
+
+      <MobileWhatsAppCTA />
 
       <Footer />
     </div>
