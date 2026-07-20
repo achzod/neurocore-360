@@ -62,7 +62,14 @@ const WHATSAPP_GREEN = "#25D366";
 const WHATSAPP_TEXT = "#128C7E";
 
 type PeptidesTierId = "solo" | "coached" | "tracked";
-type WhatsAppPlacement = "pricing_card" | "faq" | "mobile_floating";
+type WhatsAppPlacement =
+  | "hero"
+  | "pricing_assist"
+  | "pricing_card"
+  | "trust"
+  | "faq"
+  | "final"
+  | "sticky";
 
 const PEPTIDES_TIER_LABELS: Record<PeptidesTierId, string> = {
   solo: "Solo",
@@ -70,9 +77,16 @@ const PEPTIDES_TIER_LABELS: Record<PeptidesTierId, string> = {
   tracked: "Tracked",
 };
 
-function buildPeptidesWhatsAppMessage(tier?: PeptidesTierId): string {
-  const tierContext = tier ? ` Je regarde la formule ${PEPTIDES_TIER_LABELS[tier]}.` : "";
-  return `Salut Achzod, je viens de la page Peptides Engine.${tierContext} J'ai une question avant de commander :`;
+function buildPeptidesWhatsAppMessage(placement: WhatsAppPlacement, tier?: PeptidesTierId): string {
+  if (tier) {
+    return `Salut Achzod, je viens de la page Peptides Engine. Je regarde la formule ${PEPTIDES_TIER_LABELS[tier]}. J'ai une question avant de commander :`;
+  }
+
+  if (placement === "pricing_assist") {
+    return "Salut Achzod, je viens de la page Peptides Engine. J'hésite entre Solo, Coached et Tracked. Mon objectif principal est :";
+  }
+
+  return "Salut Achzod, je viens de la page Peptides Engine. J'ai une question avant de commander :";
 }
 
 function PeptidesWhatsAppLink({
@@ -88,7 +102,7 @@ function PeptidesWhatsAppLink({
   className?: string;
   filled?: boolean;
 }) {
-  const destination = buildWhatsAppUrl(buildPeptidesWhatsAppMessage(tier));
+  const destination = buildWhatsAppUrl(buildPeptidesWhatsAppMessage(placement, tier));
 
   return (
     <a
@@ -96,6 +110,7 @@ function PeptidesWhatsAppLink({
       target="_blank"
       rel="noopener noreferrer"
       data-testid={`whatsapp-cta-${placement}${tier ? `-${tier}` : ""}`}
+      data-whatsapp-inline={placement === "sticky" ? undefined : "true"}
       aria-label={`${label} (ouvre WhatsApp dans un nouvel onglet)`}
       className={`inline-flex items-center justify-center gap-2 rounded-full border px-5 py-3 font-semibold transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${className}`}
       style={{
@@ -123,70 +138,76 @@ function PeptidesWhatsAppLink({
   );
 }
 
-function MobileWhatsAppCTA() {
+function StickyWhatsAppCTA() {
   const [visible, setVisible] = useState(false);
-  const [purchaseCtaVisible, setPurchaseCtaVisible] = useState(false);
+  const [inlineCtaVisible, setInlineCtaVisible] = useState(false);
 
   useEffect(() => {
-    const pricingSection = document.getElementById("offres");
-    if (!pricingSection) return;
+    const hero = document.getElementById("peptides-hero");
+    if (!hero) return;
 
-    if (pricingSection.getBoundingClientRect().top <= window.innerHeight) {
-      setVisible(true);
-    } else if ("IntersectionObserver" in window) {
-      const pricingObserver = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) {
-            setVisible(true);
-            pricingObserver.disconnect();
-          }
-        },
-        { threshold: 0.15 },
-      );
-      pricingObserver.observe(pricingSection);
+    const updateVisibility = () => {
+      setVisible(hero.getBoundingClientRect().bottom <= window.innerHeight * 0.55);
+    };
 
-      return () => pricingObserver.disconnect();
-    }
+    updateVisibility();
+    window.addEventListener("scroll", updateVisibility, { passive: true });
+    window.addEventListener("resize", updateVisibility);
+
+    return () => {
+      window.removeEventListener("scroll", updateVisibility);
+      window.removeEventListener("resize", updateVisibility);
+    };
   }, []);
 
   useEffect(() => {
     if (!("IntersectionObserver" in window)) return;
 
-    const purchaseLinks = Array.from(
-      document.querySelectorAll<HTMLAnchorElement>('a[href^="/peptides-engine?tier="]'),
+    const inlineCtas = Array.from(
+      document.querySelectorAll<HTMLAnchorElement>(
+        'a[data-whatsapp-inline="true"], a[href^="/peptides-engine?tier="]',
+      ),
     );
-    const visiblePurchaseLinks = new Set<Element>();
-    const purchaseObserver = new IntersectionObserver(
+    const visibleInlineCtas = new Set<Element>();
+    const inlineCtaObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) visiblePurchaseLinks.add(entry.target);
-          else visiblePurchaseLinks.delete(entry.target);
+          if (entry.isIntersecting) visibleInlineCtas.add(entry.target);
+          else visibleInlineCtas.delete(entry.target);
         });
-        setPurchaseCtaVisible(visiblePurchaseLinks.size > 0);
+        setInlineCtaVisible(visibleInlineCtas.size > 0);
       },
       { threshold: 0.2 },
     );
 
-    purchaseLinks.forEach((link) => purchaseObserver.observe(link));
-    return () => purchaseObserver.disconnect();
+    inlineCtas.forEach((link) => inlineCtaObserver.observe(link));
+    return () => inlineCtaObserver.disconnect();
   }, []);
 
   return (
     <AnimatePresence>
-      {visible && !purchaseCtaVisible && (
+      {visible && !inlineCtaVisible && (
         <motion.div
-          initial={{ opacity: 0, y: 16, scale: 0.96 }}
+          initial={{ opacity: 0, y: 18, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 16, scale: 0.96 }}
-          className="fixed right-4 z-40 md:hidden"
+          exit={{ opacity: 0, y: 18, scale: 0.96 }}
+          className="fixed inset-x-3 z-40 md:left-auto md:right-6"
           style={{ bottom: "max(1rem, env(safe-area-inset-bottom))" }}
         >
-          <PeptidesWhatsAppLink
-            placement="mobile_floating"
-            label="Une question ?"
-            filled
-            className="border-0 px-4 py-3 text-sm shadow-[0_12px_32px_rgba(18,140,126,0.32)]"
-          />
+          <div className="flex items-center justify-between gap-3 rounded-2xl border border-[#25D366]/40 bg-white p-2 pl-4 shadow-[0_16px_50px_rgba(18,140,126,0.28)] md:min-w-[390px]">
+            <div className="hidden min-w-0 text-left sm:block">
+              <p className="truncate text-xs font-bold text-[#1D1D1F] md:text-sm">
+                Une question avant d'acheter ?
+              </p>
+              <p className="hidden text-[11px] text-[#6E6E73] md:block">Réponse personnelle sous 24h</p>
+            </div>
+            <PeptidesWhatsAppLink
+              placement="sticky"
+              label="WhatsApp direct"
+              filled
+              className="w-full shrink-0 border-0 px-4 py-3 text-sm shadow-[0_8px_22px_rgba(18,140,126,0.3)] sm:w-auto"
+            />
+          </div>
         </motion.div>
       )}
     </AnimatePresence>
@@ -1506,7 +1527,8 @@ function FAQSection() {
           <PeptidesWhatsAppLink
             placement="faq"
             label="Écris-moi sur WhatsApp"
-            className="mt-5 text-sm"
+            filled
+            className="mt-5 border-0 px-7 py-3.5 text-sm shadow-[0_10px_26px_rgba(18,140,126,0.24)]"
           />
           <p className="mt-3 text-[11px] text-[#86868B]">
             Les conseils médicaux personnalisés restent du ressort d'un professionnel de santé.
@@ -1610,9 +1632,17 @@ function TrustSection() {
             Une question sur ton protocole, un doute sur un dosage, besoin d'un ajustement ? Ecris-moi directement.
             Je reponds sous 24h, personnellement. Pas un assistant, pas un bot. Moi.
           </p>
-          <a href="mailto:coaching@achzodcoaching.com" className="text-[#0071E3] font-mono text-sm hover:underline">
-            coaching@achzodcoaching.com
-          </a>
+          <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <PeptidesWhatsAppLink
+              placement="trust"
+              label="Me parler directement sur WhatsApp"
+              filled
+              className="w-full border-0 px-7 py-3.5 text-sm shadow-[0_10px_26px_rgba(18,140,126,0.24)] sm:w-auto"
+            />
+            <a href="mailto:coaching@achzodcoaching.com" className="px-4 py-3 font-mono text-xs text-[#0071E3] hover:underline">
+              ou par email
+            </a>
+          </div>
         </motion.div>
 
         {/* Logos de confiance */}
@@ -1708,6 +1738,24 @@ function FinalCTA() {
                 </Link>
               );
             })}
+          </div>
+
+          <div className="mt-8 flex flex-col items-center justify-between gap-5 rounded-2xl border border-[#25D366]/40 bg-[#25D366]/[0.06] p-5 text-left sm:flex-row sm:p-6">
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#25D366]/15 text-[#128C7E]">
+                <MessageCircle className="h-5 w-5" aria-hidden="true" />
+              </div>
+              <div>
+                <p className="font-bold text-[#1D1D1F]">Tu hésites encore entre les trois offres ?</p>
+                <p className="mt-1 text-sm text-[#6E6E73]">Explique-moi ton objectif et je t'aide à choisir sans engagement.</p>
+              </div>
+            </div>
+            <PeptidesWhatsAppLink
+              placement="final"
+              label="M'aider à choisir"
+              filled
+              className="w-full shrink-0 border-0 px-6 py-3.5 text-sm shadow-[0_10px_26px_rgba(18,140,126,0.22)] sm:w-auto"
+            />
           </div>
 
           <div className="mt-10 flex flex-wrap items-center justify-center gap-5 text-xs text-[#86868B]">
@@ -1825,6 +1873,31 @@ function PricingTiers() {
           </p>
         </motion.div>
 
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mb-10 flex flex-col items-center justify-between gap-5 rounded-2xl border border-[#25D366]/40 bg-white p-5 shadow-[0_12px_36px_rgba(18,140,126,0.08)] sm:flex-row sm:p-6"
+        >
+          <div className="flex items-start gap-4 text-left">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#25D366]/15 text-[#128C7E]">
+              <MessageCircle className="h-6 w-6" aria-hidden="true" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-[#1D1D1F]">Pas sûr du niveau qu'il te faut ?</h3>
+              <p className="mt-1 text-sm leading-relaxed text-[#6E6E73]">
+                Envoie-moi ton objectif sur WhatsApp. Je t'aide personnellement à choisir la bonne formule.
+              </p>
+            </div>
+          </div>
+          <PeptidesWhatsAppLink
+            placement="pricing_assist"
+            label="Aide-moi à choisir"
+            filled
+            className="w-full shrink-0 border-0 px-7 py-3.5 text-sm shadow-[0_10px_26px_rgba(18,140,126,0.24)] sm:w-auto"
+          />
+        </motion.div>
+
         <div className="grid gap-6 md:grid-cols-3">
           {PRICING_TIERS.map((tier, idx) => {
             const isFeatured = tier.badge === "Le plus choisi";
@@ -1902,8 +1975,9 @@ function PricingTiers() {
                 <PeptidesWhatsAppLink
                   placement="pricing_card"
                   tier={tier.id}
-                  label={`Une question sur ${tier.name} ?`}
-                  className="mt-3 w-full px-4 py-2.5 text-xs"
+                  label={`Me conseiller sur ${tier.name}`}
+                  filled
+                  className="mt-3 w-full border-0 px-4 py-3 text-sm shadow-[0_8px_20px_rgba(18,140,126,0.2)]"
                 />
               </motion.div>
             );
@@ -2137,7 +2211,7 @@ function CoachingDeduction() {
 
 function Hero() {
   return (
-    <section className="relative overflow-hidden px-6 pb-24 pt-32">
+    <section id="peptides-hero" className="relative overflow-hidden px-6 pb-16 pt-20 md:pb-24 md:pt-32">
       {/* Ambient glow */}
       <div
         className="pointer-events-none absolute inset-0"
@@ -2160,10 +2234,10 @@ function Hero() {
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="mb-8 inline-flex items-center gap-2 rounded-full border border-[#D2D2D7] bg-[#F5F5F7] px-4 py-2"
+          className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#D2D2D7] bg-[#F5F5F7] px-3 py-2 md:mb-8 md:px-4"
         >
           <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: PRIMARY }} />
-          <span className="font-mono text-xs uppercase tracking-widest text-[#6E6E73]">
+          <span className="font-mono text-[10px] uppercase tracking-widest text-[#6E6E73] md:text-xs">
             Protocole exclusif · 74 molecules disponibles
           </span>
         </motion.div>
@@ -2173,7 +2247,7 @@ function Hero() {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-5xl font-bold leading-tight text-[#1D1D1F] md:text-6xl lg:text-7xl"
+          className="text-4xl font-bold leading-tight text-[#1D1D1F] md:text-6xl lg:text-7xl"
         >
           Ton protocole peptides.{" "}
           <span style={{ color: PRIMARY }}>Ta source secrete.</span>
@@ -2184,7 +2258,7 @@ function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="mx-auto mt-8 max-w-2xl text-lg leading-relaxed text-[#6E6E73] md:text-xl"
+          className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-[#6E6E73] md:mt-8 md:text-xl"
         >
           Reponds a 35 questions. Recois un protocole personnalise avec dosages exacts, guide de reconstitution calcule, calendrier hebdo, et acces direct a la source ou les peptides coutent{" "}
           <span className="font-semibold text-[#1D1D1F]">60-90% moins cher</span> que partout ailleurs.
@@ -2195,14 +2269,14 @@ function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="mt-10 flex flex-col items-center gap-3"
+          className="mt-6 flex flex-col items-center gap-2 md:mt-10 md:gap-3"
         >
           <span className="font-mono text-[11px] font-bold uppercase tracking-[0.25em] text-[#0071E3]">
             3 offres disponibles
           </span>
           <div className="flex items-end justify-center gap-3">
-            <span className="text-2xl font-medium text-[#6E6E73]">à partir de</span>
-            <span className="text-6xl font-bold text-[#1D1D1F] leading-none md:text-7xl">199€</span>
+            <span className="text-lg font-medium text-[#6E6E73] md:text-2xl">à partir de</span>
+            <span className="text-5xl font-bold text-[#1D1D1F] leading-none md:text-7xl">199€</span>
           </div>
           <span className="font-mono text-xs uppercase tracking-widest text-[#6E6E73]">
             TVA incluse · Paiement sécurisé · Aucun engagement
@@ -2212,7 +2286,7 @@ function Hero() {
         <motion.p
           animate={{ opacity: [0.7, 1, 0.7] }}
           transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-          className="mt-6 font-mono text-xs font-bold text-center tracking-wide max-w-md mx-auto"
+          className="mt-4 font-mono text-[11px] font-bold text-center tracking-wide max-w-md mx-auto md:mt-6 md:text-xs"
           style={{ color: PRIMARY }}
         >
           Intégralement déduit de ton coaching Essential, Elite ou Private Lab 8 ou 12 sem
@@ -2223,20 +2297,32 @@ function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="mt-8 flex flex-col items-center gap-4"
+          className="mt-6 flex flex-col items-center gap-4 md:mt-8"
         >
-          <a
-            href="#offres"
-            className="inline-flex items-center gap-2 rounded-full px-10 py-5 text-base font-semibold text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl"
-            style={{ backgroundColor: PRIMARY }}
-            onClick={(e) => {
-              e.preventDefault();
-              document.getElementById("offres")?.scrollIntoView({ behavior: "smooth", block: "start" });
-            }}
-          >
-            Voir les 3 offres
-            <ArrowRight className="h-5 w-5" />
-          </a>
+          <div className="flex w-full max-w-2xl flex-col items-stretch justify-center gap-3 sm:flex-row">
+            <a
+              href="#offres"
+              className="inline-flex items-center justify-center gap-2 rounded-full px-8 py-5 text-base font-semibold text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl"
+              style={{ backgroundColor: PRIMARY }}
+              onClick={(e) => {
+                e.preventDefault();
+                document.getElementById("offres")?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+            >
+              Voir les 3 offres
+              <ArrowRight className="h-5 w-5" />
+            </a>
+            <PeptidesWhatsAppLink
+              placement="hero"
+              label="Parler à Achzod sur WhatsApp"
+              filled
+              className="order-first border-0 px-8 py-5 text-base shadow-[0_12px_30px_rgba(18,140,126,0.26)] sm:order-last"
+            />
+          </div>
+
+          <p className="text-xs font-medium text-[#128C7E]">
+            Question avant de choisir ? Réponse personnelle sous 24h · Sans engagement
+          </p>
 
           <div className="flex flex-wrap items-center justify-center gap-5 text-xs text-[#86868B]">
             <span className="flex items-center gap-1.5">
@@ -2259,7 +2345,7 @@ function Hero() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.6 }}
-          className="mt-14 flex flex-wrap items-center justify-center gap-6"
+          className="mt-10 flex flex-wrap items-center justify-center gap-4 md:mt-14 md:gap-6"
         >
           {[
             "Protocole rédigé manuellement",
@@ -2306,7 +2392,7 @@ export default function PeptidesEngineOffer() {
         <FinalCTA />
       </main>
 
-      <MobileWhatsAppCTA />
+      <StickyWhatsAppCTA />
 
       <Footer />
     </div>
