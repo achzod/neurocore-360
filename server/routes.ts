@@ -12330,27 +12330,11 @@ export async function registerRoutes(
         return;
       }
 
-      const { Pool } = await import("pg");
-      const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
-
-      if (!databaseUrl) {
-        res.status(500).json({ error: 'DATABASE_URL not configured' });
-        return;
-      }
-
-      const pool = new Pool({
-        connectionString: databaseUrl,
-        ssl: databaseUrl.includes("render.com") || databaseUrl.includes("neon.tech")
-          ? { rejectUnauthorized: false }
-          : false,
-      });
-
       let processed = 0;
       let errors = 0;
 
-      try {
-        for (const eventData of events) {
-          try {
+      for (const eventData of events) {
+        try {
             const { event, email, task_id, link_url, timestamp } = eventData;
             const providerTaskId = String(
               task_id || eventData.taskId || eventData.id || eventData.email_id || eventData.message_id || ""
@@ -12455,23 +12439,19 @@ export async function registerRoutes(
             console.log(`[SendPulseWebhook] ✅ Tracked ${eventType} for ${normalizedEmail || providerTaskId}`);
             processed++;
 
-          } catch (err) {
-            console.error("[SendPulseWebhook] Error processing event:", err);
-            errors++;
-          }
+        } catch (err) {
+          console.error("[SendPulseWebhook] Error processing event:", err);
+          errors++;
         }
-
-        res.json({
-          success: true,
-          message: "Events processed",
-          processed,
-          errors,
-          total: events.length
-        });
-
-      } finally {
-        await pool.end();
       }
+
+      res.json({
+        success: true,
+        message: "Events processed",
+        processed,
+        errors,
+        total: events.length
+      });
 
     } catch (error) {
       console.error("[SendPulseWebhook] Error:", error);
