@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Zap, Check, X, Clock, TrendingUp, Star, AlertTriangle, Target } from 'lucide-react';
 import { Theme, SectionContent } from './ultrahuman/types';
+import { DiscoveryWhatsAppLink } from './DiscoveryWhatsAppCTA';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SCAN RECOMMENDATION LOGIC
@@ -623,9 +624,10 @@ export const SmartRecommendation: React.FC<SmartRecommendationProps> = ({
 interface StickyCTAProps {
   theme: Theme;
   show: boolean;
+  clientName?: string;
 }
 
-export const StickyCTA: React.FC<StickyCTAProps> = ({ theme, show }) => {
+export const StickyCTA: React.FC<StickyCTAProps> = ({ theme, show, clientName }) => {
   if (!show) return null;
 
   return (
@@ -647,10 +649,16 @@ export const StickyCTA: React.FC<StickyCTAProps> = ({ theme, show }) => {
           </p>
         </div>
 
-        <div className="flex gap-3 w-full md:w-auto">
+        <div className="flex gap-2 sm:gap-3 w-full md:w-auto">
+          <DiscoveryWhatsAppLink
+            placement="report_sticky"
+            clientName={clientName}
+            label="WhatsApp direct"
+            className="flex-1 px-4 py-3 text-center whitespace-nowrap md:flex-initial"
+          />
           <a
             href="/offers/peptides-engine"
-            className="flex-1 md:flex-initial px-6 py-3 rounded font-bold text-sm transition-all hover:scale-105 text-center whitespace-nowrap"
+            className="flex-1 md:flex-initial px-4 sm:px-6 py-3 rounded font-bold text-sm transition-all hover:scale-105 text-center whitespace-nowrap"
             style={{
               backgroundColor: '#F59E0B',
               color: '#000'
@@ -658,14 +666,15 @@ export const StickyCTA: React.FC<StickyCTAProps> = ({ theme, show }) => {
           >
             <span className="flex items-center justify-center gap-2">
               <Zap size={16} />
-              Peptides Engine · 399€
+              <span className="sm:hidden">Peptides · 399€</span>
+              <span className="hidden sm:inline">Peptides Engine · 399€</span>
             </span>
           </a>
           <a
             href="https://www.achzodcoaching.com/formules-coaching"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 md:flex-initial px-6 py-3 rounded font-bold text-sm transition-all hover:scale-105 text-center whitespace-nowrap"
+            className="hidden lg:inline-flex px-6 py-3 rounded font-bold text-sm transition-all hover:scale-105 text-center whitespace-nowrap items-center justify-center"
             style={{
               backgroundColor: 'transparent',
               border: `1px solid ${theme.colors.border}`,

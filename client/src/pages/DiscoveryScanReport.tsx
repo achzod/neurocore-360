@@ -17,6 +17,7 @@ import {
 } from '@/components/UpgradeComponents';
 import { ExitIntentPopup } from '@/components/ExitIntentPopup';
 import { CoachingPromoBanner } from '@/components/CoachingPromoBanner';
+import { DiscoveryWhatsAppLink } from '@/components/DiscoveryWhatsAppCTA';
 import {
   Menu,
   ArrowUp,
@@ -477,8 +478,47 @@ const DiscoveryScanReport: React.FC = () => {
         </div>
 
         <div className="max-w-[1200px] mx-auto p-6 lg:p-12 space-y-12 lg:space-y-32">
-          {/* Coaching bonus banner — stays visible so client never loses their code */}
-          <CoachingPromoBanner auditType="GRATUIT" className="-mx-6 lg:-mx-12 mb-6" />
+          <div className="space-y-4">
+            {/* Immediate human contact CTA — present on every current and future Discovery report */}
+            <section
+              data-testid="discovery-whatsapp-panel"
+              className="relative overflow-hidden rounded-2xl border border-[#25D366]/40 bg-[#25D366]/10 p-5 sm:p-6"
+            >
+              <div
+                className="pointer-events-none absolute inset-0 opacity-30"
+                style={{
+                  background: 'radial-gradient(circle at top right, rgba(37, 211, 102, 0.35), transparent 55%)'
+                }}
+              />
+              <div className="relative flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+                <div className="max-w-2xl">
+                  <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-[#25D366]">
+                    Besoin d'un avis humain ?
+                  </p>
+                  <h2 className="text-xl font-bold sm:text-2xl" style={{ color: 'var(--color-text)' }}>
+                    Une question sur tes résultats, {displayName} ?
+                  </h2>
+                  <p className="mt-2 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+                    Écris-moi directement. Je t'aide à comprendre ton Discovery Scan et à choisir la prochaine étape adaptée.
+                  </p>
+                </div>
+                <div className="w-full shrink-0 md:w-auto">
+                  <DiscoveryWhatsAppLink
+                    placement="report_top"
+                    clientName={displayName}
+                    label="Parler à Achzod sur WhatsApp"
+                    className="w-full min-h-14 text-sm sm:text-base md:w-auto"
+                  />
+                  <p className="mt-2 text-center text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
+                    Réponse personnelle sous 24h
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            {/* Coaching bonus banner — stays visible so client never loses their code */}
+            <CoachingPromoBanner auditType="GRATUIT" className="-mx-6 lg:-mx-12" />
+          </div>
 
           {/* Hero Section */}
           <div id="dashboard" className="pt-8 lg:pt-12">
@@ -863,7 +903,7 @@ const DiscoveryScanReport: React.FC = () => {
       </main>
 
       {/* Sticky CTA */}
-      <StickyCTA theme={currentTheme} show={showStickyCTA} />
+      <StickyCTA theme={currentTheme} show={showStickyCTA} clientName={displayName} />
 
       {/* Exit Intent Popup */}
       <ExitIntentPopup theme={currentTheme} userName={displayName} />
