@@ -22,7 +22,7 @@ import {
   sendDiscoveryJ14CoachingEmail,
   sendPromoCodeEmail,
   sendAdminReviewNotification,
-  sendCTAEmail,
+  sendCTAEmail as sendBaseCTAEmail,
   addSubscriberToList,
   sendApexLabsWelcomeEmail,
   sendPeptidesReviewEmail,
@@ -51,6 +51,7 @@ import { getAuthPayload, type AuthPayload } from "./auth";
 import crypto from "crypto";
 import { validateAnthropicConfig, ANTHROPIC_CONFIG } from "./anthropicConfig";
 import { buildPeptidesCoachingDeductionBlock } from "./cta";
+import { BLOOD_ANALYSIS_PURCHASE_CREDITS, clarifyBloodPurchaseEmail } from "./bloodOffer";
 
 import { registerKnowledgeRoutes } from "./knowledge";
 import { registerBloodAnalysisRoutes } from "./blood-analysis/routes";
@@ -66,6 +67,15 @@ import {
   buildExcerpt,
   slugify,
 } from "./blogImport";
+
+function sendCTAEmail(
+  email: string,
+  subject: string,
+  message: string,
+  customHtml?: string,
+): Promise<boolean> {
+  return sendBaseCTAEmail(email, subject, clarifyBloodPurchaseEmail(subject, message), customHtml);
+}
 
 export async function registerRoutes(
   httpServer: Server,
@@ -3927,20 +3937,12 @@ export async function registerRoutes(
             discountAmountCents: discountCents,
           });
           if (planType === "BLOOD_ANALYSIS") {
-            // Add +1 blood credit (promo 100% = free, but still needs credit to upload)
-            try {
-              const { pool } = await import("./db");
-              let user = await storage.getUserByEmail(email);
-              if (!user) {
-                user = await storage.createUser({ email, credits: 1 });
-                console.log(`[Checkout] Created user ${email} with 1 blood credit (promo 100%)`);
-              } else {
-                await pool.query("UPDATE users SET credits = credits + 1 WHERE email = $1", [email]);
-                console.log(`[Checkout] +1 blood credit for ${email} (promo 100%)`);
-              }
-            } catch (creditErr) {
-              console.error(`[Checkout] Blood credit error for ${email}:`, creditErr);
-            }
+            await grantBloodCreditsForOrder(
+              order.id,
+              email,
+              BLOOD_ANALYSIS_PURCHASE_CREDITS,
+              "bloodCreditGranted",
+            );
             res.json({ success: true, free: true, auditId: "", auditType: "BLOOD_ANALYSIS", email });
             return;
           }
@@ -4135,31 +4137,42 @@ export async function registerRoutes(
     creditCount: number,
     metadataFlag: "bloodCreditGranted" | "peptidesCreditsGranted",
   ): Promise<void> {
-    const { pool } = await import("./db");
+    const client = await pool.connect();
     try {
-      const check = await pool.query(
-        `SELECT metadata FROM orders WHERE id = $1`,
+      await client.query("BEGIN");
+      const check = await client.query(
+        `SELECT metadata FROM orders WHERE id = $1 FOR UPDATE`,
         [orderId],
       );
-      const meta = (check.rows[0]?.metadata ?? {}) as Record<string, unknown>;
-      if (meta[metadataFlag] === true) return;
-
-      let user = await storage.getUserByEmail(email);
-      if (!user) {
-        await storage.createUser({ email, credits: creditCount });
-      } else {
-        await pool.query(
-          "UPDATE users SET credits = credits + $1 WHERE email = $2",
-          [creditCount, email],
-        );
+      if (!check.rows.length) {
+        throw new Error(`Order ${orderId} not found while granting blood credits`);
       }
-      await pool.query(
+      const meta = (check.rows[0]?.metadata ?? {}) as Record<string, unknown>;
+      if (meta[metadataFlag] === true) {
+        await client.query("COMMIT");
+        return;
+      }
+
+      const normalizedEmail = email.trim().toLowerCase();
+      await client.query(
+        `INSERT INTO users (id, email, credits, created_at)
+         VALUES ($1, $2, $3, NOW())
+         ON CONFLICT (email)
+         DO UPDATE SET credits = users.credits + EXCLUDED.credits`,
+        [crypto.randomUUID(), normalizedEmail, creditCount],
+      );
+      await client.query(
         `UPDATE orders SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object($1::text, true) WHERE id = $2`,
         [metadataFlag, orderId],
       );
+      await client.query("COMMIT");
       console.log(`[Credit] Granted +${creditCount} blood credit(s) to ${email} for order ${orderId} (${metadataFlag})`);
     } catch (err) {
+      await client.query("ROLLBACK").catch(() => {});
       console.error(`[Credit] Failed to grant credits for order ${orderId}:`, err);
+      throw err;
+    } finally {
+      client.release();
     }
   }
 
@@ -4216,7 +4229,12 @@ export async function registerRoutes(
 
       // Credits for products that grant them (matches the capture endpoint)
       if (productType === "BLOOD_ANALYSIS") {
-        await grantBloodCreditsForOrder(order.id, email, 1, "bloodCreditGranted").catch(() => {});
+        await grantBloodCreditsForOrder(
+          order.id,
+          email,
+          BLOOD_ANALYSIS_PURCHASE_CREDITS,
+          "bloodCreditGranted",
+        ).catch(() => {});
       } else if (productType === "PEPTIDES_ENGINE") {
         await grantBloodCreditsForOrder(order.id, email, 2, "peptidesCreditsGranted").catch(() => {});
       }
@@ -4518,7 +4536,12 @@ export async function registerRoutes(
       if (planType === "BLOOD_ANALYSIS") {
         if (existingOrder) {
           await storage.updateOrder(existingOrder.id, { status: "paid", paidAt: new Date() });
-          await grantBloodCreditsForOrder(existingOrder.id, email, 1, "bloodCreditGranted");
+          await grantBloodCreditsForOrder(
+            existingOrder.id,
+            email,
+            BLOOD_ANALYSIS_PURCHASE_CREDITS,
+            "bloodCreditGranted",
+          );
 
           // Customer confirmation email with PDF instructions + magic link
           // walkthrough. Without this, clients whose confirm-session beats
@@ -4688,19 +4711,12 @@ export async function registerRoutes(
           });
         }
         if (planType === "BLOOD_ANALYSIS") {
-          // Add +1 blood credit (PayPal promo 100%)
-          try {
-            const { pool } = await import("./db");
-            let user = await storage.getUserByEmail(email);
-            if (!user) {
-              user = await storage.createUser({ email, credits: 1 });
-            } else {
-              await pool.query("UPDATE users SET credits = credits + 1 WHERE email = $1", [email]);
-            }
-            console.log(`[PayPal] +1 blood credit for ${email} (promo 100%)`);
-          } catch (creditErr) {
-            console.error(`[PayPal] Blood credit error:`, creditErr);
-          }
+          await grantBloodCreditsForOrder(
+            order.id,
+            email,
+            BLOOD_ANALYSIS_PURCHASE_CREDITS,
+            "bloodCreditGranted",
+          );
           res.json({ success: true, free: true, auditId: "", auditType: "BLOOD_ANALYSIS", email });
           return;
         }
@@ -4928,11 +4944,12 @@ export async function registerRoutes(
 
       // BLOOD_ANALYSIS: just mark paid, no audit to create
       if (planType === "BLOOD_ANALYSIS") {
-        // Grant the +1 blood credit via the same idempotent helper Stripe
-        // uses. Without this, PayPal customers paid 99 EUR and never got a
-        // credit on their account — they'd land on /blood-dashboard, fill
-        // the form, and hit "Credits insuffisants" (zero credits).
-        await grantBloodCreditsForOrder(existingOrder.id, email, 1, "bloodCreditGranted");
+        await grantBloodCreditsForOrder(
+          existingOrder.id,
+          email,
+          BLOOD_ANALYSIS_PURCHASE_CREDITS,
+          "bloodCreditGranted",
+        );
         // Send confirmation email
         sendCTAEmail(email, "Blood Analysis : paiement recu",
           `Salut,\n\nMerci pour ta commande Blood Analysis. Ton paiement est bien recu.\n\nVoici la liste exacte des marqueurs a demander a ton medecin ou directement au laboratoire. Tu peux te presenter dans n'importe quel labo d'analyses (Cerba, Biogroup, ou ton labo habituel) avec cette liste. La plupart des labos acceptent sans ordonnance (tu paies de ta poche). Sinon, un passage chez ton generaliste pour l'ordonnance et c'est rembourse.\n\nPANEL 1 : HORMONES ANABOLIQUES\nTestosterone totale, Testosterone libre, SHBG, Cortisol (matin a jeun), DHEA-S, IGF-1, LH, FSH, Estradiol\n\nPANEL 2 : THYROIDE\nTSH, T3 libre, T4 libre, Anti-TPO\n\nPANEL 3 : METABOLISME ET LIPIDES\nGlycemie a jeun, HbA1c, Insuline a jeun, Cholesterol total, HDL, LDL, Triglycerides, ApoB, Lp(a)\n\nPANEL 4 : INFLAMMATION ET FER\nCRP ultra-sensible, Ferritine, Homocysteine, Vitesse de sedimentation\n\nPANEL 5 : VITAMINES ET MINERAUX\nVitamine D (25-OH), Vitamine B12, Magnesium, Zinc, Folates\n\nPANEL 6 : HEPATIQUE ET RENAL\nALAT, ASAT, Gamma-GT, Creatinine, DFG (eGFR), Acide urique\n\nNFS (Numeration Formule Sanguine) complete\n\nUne fois ta prise de sang faite, uploade ton PDF de resultats sur ton dashboard APEXLABS :\nhttps://apexlabs.achzodcoaching.com/auth/login?next=%2Fblood-dashboard&email=${encodeURIComponent(email)}\n\nTu cliques sur le lien, tu recois un email avec un lien d'acces unique (verifie aussi tes spams), tu cliques dessus, tu arrives sur ton dashboard. La tu remplis tes infos, tu glisses ton PDF dans la zone d'upload, et tu lances l'analyse.\n\nIMPORTANT : un seul PDF par upload (10 MB max). Si tu as plusieurs fichiers a fusionner :\n- Sur iPhone (Fichiers) : mets tes PDFs dans un dossier, "Selectionner", coche-les dans l'ordre, "..." en bas, "Creer un PDF".\n- Alternative : ilovepdf.com/fr/fusionner_pdf , glisse-depose tes fichiers, telecharge le PDF unique, uploade-le.\n\nTu recevras ton analyse complete sous 24h.\n\nTon code promo : BLOOD99\n99€ deduits de ton coaching Elite/Private Lab 8 ou 12 semaines\nachzodcoaching.com/formules-coaching\n\nSi tu as des questions, reponds directement a cet email.\n\nAchzod`
@@ -10029,9 +10046,14 @@ export async function registerRoutes(
               await grantBloodCreditsForOrder(order.id, email, 2, "peptidesCreditsGranted");
             }
 
-            // Blood Analysis: add +1 credit on payment
+            // Blood Analysis: add the two credits included in the offer.
             if (email && planType === "BLOOD_ANALYSIS") {
-              await grantBloodCreditsForOrder(order.id, email, 1, "bloodCreditGranted");
+              await grantBloodCreditsForOrder(
+                order.id,
+                email,
+                BLOOD_ANALYSIS_PURCHASE_CREDITS,
+                "bloodCreditGranted",
+              );
             }
 
             // Peptides Engine: DO NOT generate here , setInterval handles it

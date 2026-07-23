@@ -48,9 +48,9 @@ const OFFERS: Offer[] = [
     id: 'blood-analysis',
     title: "BLOOD ANALYSIS",
     subtitle: "La Vérité Biologique",
-    description: "Ton médecin te dit que tout est 'normal' mais tu te sens toujours mal? Normal ≠ Optimal. Upload ton bilan sanguin et j'analyse 39 biomarqueurs sur 6 panels (hormonal, thyroïdien, métabolique, inflammatoire, vitamines, hépatique/rénal) avec des ranges OPTIMAUX. Je détecte les patterns invisibles, les corrélations entre marqueurs, et je te donne des protocoles de correction ciblés. Radars visuels + rapport complet.",
-    features: ["39 biomarqueurs analysés", "6 panels complets", "Ranges optimaux", "Protocoles personnalisés"],
-    price: "99€",
+    description: "Ton médecin te dit que tout est 'normal' mais tu te sens toujours mal? Normal ≠ Optimal. Le paiement inclut 2 analyses complètes utilisables quand tu veux : idéalement un bilan initial avant les recommandations, puis un contrôle 2 à 3 mois après. Pour chaque PDF, j'analyse 39 biomarqueurs sur 6 panels avec des ranges OPTIMAUX et des protocoles ciblés.",
+    features: ["2 analyses sans expiration", "39 biomarqueurs analysés", "Comparaison avant / après", "Protocoles personnalisés"],
+    price: "99€ · 2 analyses",
     imageUrl: "",
     reverse: false,
     useCustomVisual: true

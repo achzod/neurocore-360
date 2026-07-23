@@ -507,7 +507,7 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
       } else if (data?.free && data?.auditType === "BLOOD_ANALYSIS") {
         toast({
           title: "Code promo 100% appliqué !",
-          description: "Accède au dashboard Blood Analysis.",
+          description: "Tes 2 crédits Blood Analysis ont été ajoutés. Accède à ton dashboard.",
         });
         navigate("/auth/login?next=/blood-dashboard&paid=true");
       } else if (data?.url) {

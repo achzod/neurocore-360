@@ -64,8 +64,12 @@ const SOURCES = [
 
 const FAQ = [
   {
-    q: "Pourquoi payer 99\u20ac alors que mon labo me donne des resultats gratuits ?",
-    a: "Ton labo te donne des ranges \"normaux\" bases sur la moyenne de la population — y compris des gens malades. Ici, j'utilise des ranges optimaux de performance et de longevite issus de la litterature scientifique (Huberman, Attia, Examine.com). Tu recois une lecture par systeme (hormones, thyroide, metabolisme, inflammation, vitamines, foie/rein) avec un plan d'action priorise.",
+    q: "Que comprend exactement le paiement unique de 99\u20ac ?",
+    a: "Il ajoute 2 credits Blood Analysis a ton compte, soit 2 analyses completes de bilan sanguin. Tes credits n'expirent pas et tu peux les utiliser quand tu veux. Chaque upload de PDF valide consomme 1 credit. Les prises de sang et les frais du laboratoire ne sont pas inclus.",
+  },
+  {
+    q: "Quand utiliser mes 2 credits ?",
+    a: "Le parcours recommande est d'utiliser le 1er credit pour analyser un bilan initial avant la mise en place de tes recommandations, puis le 2e credit pour un bilan de controle 2 a 3 mois apres leur mise en place. Tu peux toutefois utiliser tes credits au moment qui te convient.",
   },
   {
     q: "Combien de biomarqueurs sont analyses ?",
@@ -85,7 +89,7 @@ const FAQ = [
   },
   {
     q: "Je peux suivre l'evolution dans le temps ?",
-    a: "Oui. Chaque upload cree un bilan historise dans ton dashboard. Des que tu as plusieurs bilans, tu vois les tendances et la trajectoire de chaque marqueur. C'est la meilleure facon de mesurer l'impact de tes changements d'hygiene de vie sur ta biologie reelle.",
+    a: "Oui. Tes 2 credits sont justement prevus pour comparer deux bilans. Chaque upload cree un bilan historise dans ton dashboard, ce qui te permet de mesurer l'evolution de tes marqueurs apres 2 a 3 mois de recommandations.",
   },
 ];
 
@@ -529,9 +533,9 @@ export default function BloodAnalysisOffer() {
   const ctaHref = "/blood-analysis";
   const trustRow = useMemo(
     () => [
+      "99€ = 2 analyses completes",
       "Liste des marqueurs fournie apres achat",
       "Ranges optimaux evidence-based",
-      "Dashboard + export PDF",
     ],
     []
   );
@@ -573,9 +577,32 @@ export default function BloodAnalysisOffer() {
               </h1>
 
               <p className="text-white/70 text-lg leading-relaxed max-w-2xl">
-                Upload ton PDF de laboratoire. Je decode tes biomarqueurs, je compare les ranges normaux aux
-                ranges optimaux (performance/longevite), et je te livre un plan d'action priorise.
+                Ton achat inclut 2 analyses completes, utilisables quand tu veux. Upload ton PDF de laboratoire :
+                je decode tes biomarqueurs, compare les ranges normaux aux ranges optimaux, et te livre un plan
+                d'action priorise.
               </p>
+
+              <div>
+                <Link
+                  href={ctaHref}
+                  className="group inline-flex w-full sm:w-auto items-center justify-center gap-3 rounded-full px-7 py-3 text-sm font-semibold text-white transition-all hover:scale-[1.02]"
+                  style={{ backgroundColor: PRIMARY_BLUE }}
+                >
+                  Obtenir mes 2 analyses — 99€
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                </Link>
+              </div>
+
+              <div
+                className="max-w-2xl rounded-2xl border px-5 py-4"
+                style={{ background: "rgba(2,121,232,0.08)", borderColor: "rgba(2,121,232,0.35)" }}
+              >
+                <p className="text-sm font-semibold text-white">Le parcours ideal avec tes 2 credits</p>
+                <p className="mt-1 text-sm leading-relaxed text-white/70">
+                  1er bilan avant la mise en place des recommandations, puis bilan de controle 2 a 3 mois apres.
+                  Aucun delai impose : tes credits n'expirent pas.
+                </p>
+              </div>
 
               <div className="flex flex-wrap items-center gap-5 text-sm text-white/50">
                 {trustRow.map((item) => (
@@ -587,15 +614,6 @@ export default function BloodAnalysisOffer() {
               </div>
 
               <div className="flex flex-wrap items-center gap-3 pt-2">
-                <Link href={ctaHref}>
-                  <a
-                    className="group inline-flex items-center gap-3 rounded-full px-7 py-3 text-sm font-semibold text-white transition-all hover:scale-[1.02]"
-                    style={{ backgroundColor: PRIMARY_BLUE }}
-                  >
-                    Analyser mon bilan — 99€
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                  </a>
-                </Link>
                 <button
                   type="button"
                   onClick={() => panelsRef.current?.scrollIntoView({ behavior: "smooth" })}
@@ -685,11 +703,18 @@ export default function BloodAnalysisOffer() {
           >
             <div className="flex items-end gap-2 mb-2">
               <span className="text-5xl font-black text-white tracking-tighter">99€</span>
-              <span className="text-white/40 text-sm mb-2">acompte — deductible du coaching</span>
+              <span className="text-white/40 text-sm mb-2">paiement unique</span>
             </div>
-            <p className="text-white/50 text-sm mb-8">Acces immediat apres paiement. Rapport livre sous 24h.</p>
+            <p className="text-lg font-semibold mb-2" style={{ color: PRIMARY_BLUE }}>
+              2 credits = 2 analyses completes
+            </p>
+            <p className="text-white/50 text-sm mb-8">
+              Utilisables quand tu veux, sans expiration. Chaque rapport est livre sous 24h apres l'upload.
+            </p>
             <ul className="space-y-3 mb-10">
               {[
+                "1er bilan avant les recommandations",
+                "2e bilan de controle 2 a 3 mois apres",
                 "39 biomarqueurs analyses sur 6 panels",
                 "Ranges optimaux vs normaux (pas juste \u00abnormal\u00bb)",
                 "Plan d\u2019action personnalise et priorise",
@@ -703,14 +728,13 @@ export default function BloodAnalysisOffer() {
                 </li>
               ))}
             </ul>
-            <Link href={ctaHref}>
-              <a
-                className="group w-full inline-flex items-center justify-center gap-3 rounded-full px-7 py-4 text-sm font-semibold text-white transition-all hover:scale-[1.02]"
-                style={{ backgroundColor: PRIMARY_BLUE }}
-              >
-                Analyser mon bilan — 99€
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </a>
+            <Link
+              href={ctaHref}
+              className="group w-full inline-flex items-center justify-center gap-3 rounded-full px-7 py-4 text-sm font-semibold text-white transition-all hover:scale-[1.02]"
+              style={{ backgroundColor: PRIMARY_BLUE }}
+            >
+              Obtenir mes 2 analyses — 99€
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
             <p className="mt-4 text-center text-xs text-white/30">Paiement securise par Stripe · Carte ou PayPal</p>
           </motion.div>
@@ -762,8 +786,8 @@ export default function BloodAnalysisOffer() {
               {
                 step: "01",
                 icon: Zap,
-                title: "Achete ton analyse",
-                desc: "Paiement securise 99\u20ac par carte ou PayPal. Tu recois immediatement l'acces au dashboard.",
+                title: "Obtiens tes 2 credits",
+                desc: "Paiement unique de 99\u20ac par carte ou PayPal. Tes 2 credits sont ajoutes a ton dashboard et n'expirent pas.",
                 time: "< 1 min",
               },
               {
@@ -776,16 +800,16 @@ export default function BloodAnalysisOffer() {
               {
                 step: "03",
                 icon: Upload,
-                title: "Upload ton PDF",
-                desc: "Depose tes resultats (PDF non-verrouille) sur ton dashboard client.",
+                title: "Utilise ton 1er credit",
+                desc: "Depose ton bilan initial avant la mise en place des recommandations. Chaque PDF valide consomme 1 credit.",
                 time: "10 sec",
               },
               {
                 step: "04",
                 icon: Check,
-                title: "Recois ton rapport",
-                desc: "Dashboard interactif + ranges optimaux + plan d'action priorise. Livre sous 24h.",
-                time: "Sous 24h",
+                title: "Mesure ton evolution",
+                desc: "Utilise idealement ton 2e credit 2 a 3 mois apres les recommandations pour comparer tes marqueurs.",
+                time: "2 a 3 mois",
               },
             ].map((item, idx) => (
               <motion.div
@@ -917,14 +941,13 @@ export default function BloodAnalysisOffer() {
           </div>
 
           <div className="mt-12 flex justify-center">
-            <Link href={ctaHref}>
-              <a
-                className="inline-flex items-center gap-3 rounded-full px-7 py-3 text-sm font-semibold text-white hover:scale-[1.02] transition-all"
-                style={{ backgroundColor: PRIMARY_BLUE }}
-              >
-                Decouvrir mes ranges optimaux
-                <ArrowRight className="h-4 w-4" />
-              </a>
+            <Link
+              href={ctaHref}
+              className="inline-flex items-center gap-3 rounded-full px-7 py-3 text-sm font-semibold text-white hover:scale-[1.02] transition-all"
+              style={{ backgroundColor: PRIMARY_BLUE }}
+            >
+              Decouvrir mes ranges optimaux
+              <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
@@ -1027,20 +1050,19 @@ export default function BloodAnalysisOffer() {
         <div className="mx-auto max-w-6xl text-center">
           <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">Analyser ton bilan maintenant</h2>
           <p className="mt-4 text-white/50 max-w-2xl mx-auto">
-            Tu uploade ton PDF. Tu recuperes un dashboard clair, des ranges optimaux, et un plan d'action.
+            99€ te donnent 2 analyses completes : un point de depart, puis une mesure concrete de ton evolution.
           </p>
           <div className="mt-8 flex justify-center">
-            <Link href={ctaHref}>
-              <a
-                className="group inline-flex items-center gap-3 rounded-full px-8 py-4 text-sm font-semibold text-white transition-all hover:scale-[1.02]"
-                style={{ backgroundColor: PRIMARY_BLUE }}
-              >
-                Lancer mon Blood Analysis — 99€
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </a>
+            <Link
+              href={ctaHref}
+              className="group inline-flex items-center gap-3 rounded-full px-8 py-4 text-sm font-semibold text-white transition-all hover:scale-[1.02]"
+              style={{ backgroundColor: PRIMARY_BLUE }}
+            >
+              Obtenir mes 2 analyses — 99€
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>
-          <p className="mt-4 text-xs text-white/40">Paiement securise · Historique conserve · Export PDF</p>
+          <p className="mt-4 text-xs text-white/40">Credits sans expiration · Paiement securise · Historique conserve · Export PDF</p>
         </div>
       </section>
 
@@ -1048,4 +1070,3 @@ export default function BloodAnalysisOffer() {
     </div>
   );
 }
-

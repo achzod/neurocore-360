@@ -389,7 +389,8 @@ export class MemStorage implements IStorage {
     const user = this.users.get(id);
     if (!user) return undefined;
     const current = user.credits ?? 0;
-    const next = Math.max(0, current + delta);
+    const next = current + delta;
+    if (next < 0) return undefined;
     const updated = { ...user, credits: next };
     this.users.set(id, updated);
     return updated;
@@ -1381,9 +1382,10 @@ export class PgStorage implements IStorage {
     await this.ensureUserCreditsColumn();
     const result = await pool.query(
       `UPDATE users
-       SET credits = GREATEST(credits + $2, 0),
+       SET credits = credits + $2,
            updated_at = NOW()
        WHERE id = $1
+         AND credits + $2 >= 0
        RETURNING *`,
       [id, delta]
     );

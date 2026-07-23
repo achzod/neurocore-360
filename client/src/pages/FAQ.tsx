@@ -17,7 +17,11 @@ const faqs: FAQItem[] = [
   },
   {
     question: "Quelle est la différence entre les 4 offres ?",
-    answer: "DISCOVERY SCAN (Gratuit) : ~66 questions sur 10 domaines, rapport 5-7 pages avec 4 sections (executive summary, énergie, métabolisme, synthèse) + sections verrouillées qui te montrent ce que tu débloques en passant à l'Anabolic. ANABOLIC BIOSCAN (59€) : ~137 questions, rapport 20+ pages avec 16 sections complètes — 6 analyses approfondies + 5 protocoles d'action (matin anti-cortisol, soir sommeil, digestion 14j, bureau anti-sédentarité, entraînement personnalisé) + stack suppléments + plan 30-60-90 jours + KPI. Mon best-seller. ULTIMATE SCAN (79€) : tout l'Anabolic + analyse photo posturale et biomécanique (3 photos : face, dos, profil) pour 18 sections et un rapport de 40-50 pages. L'analyse la plus complète. BLOOD ANALYSIS (99€) : tu uploades ton bilan sanguin PDF, j'analyse 39 biomarqueurs avec des ranges optimaux de performance — pas les ranges \"normaux\" des labos."
+    answer: "DISCOVERY SCAN (Gratuit) : ~66 questions sur 10 domaines, rapport 5-7 pages avec 4 sections (executive summary, énergie, métabolisme, synthèse) + sections verrouillées qui te montrent ce que tu débloques en passant à l'Anabolic. ANABOLIC BIOSCAN (59€) : ~137 questions, rapport 20+ pages avec 16 sections complètes — 6 analyses approfondies + 5 protocoles d'action (matin anti-cortisol, soir sommeil, digestion 14j, bureau anti-sédentarité, entraînement personnalisé) + stack suppléments + plan 30-60-90 jours + KPI. Mon best-seller. ULTIMATE SCAN (79€) : tout l'Anabolic + analyse photo posturale et biomécanique (3 photos : face, dos, profil) pour 18 sections et un rapport de 40-50 pages. L'analyse la plus complète. BLOOD ANALYSIS (99€) : le paiement inclut 2 crédits, soit 2 analyses complètes de bilan sanguin avec 39 biomarqueurs et des ranges optimaux de performance — pas seulement les ranges \"normaux\" des labos."
+  },
+  {
+    question: "Que comprend le Blood Analysis à 99€ ?",
+    answer: "Le paiement unique de 99€ ajoute 2 crédits Blood Analysis à ton compte. Un crédit permet d'uploader et d'analyser un bilan sanguin PDF valide : tu disposes donc de 2 analyses complètes. Les crédits n'expirent pas et tu peux les utiliser quand tu veux. Le parcours recommandé est une première analyse avant la mise en place des recommandations, puis une deuxième analyse de contrôle 2 à 3 mois après. Les prises de sang et les frais du laboratoire ne sont pas inclus."
   },
   {
     question: "Combien de temps prend le questionnaire ?",
@@ -45,11 +49,11 @@ const faqs: FAQItem[] = [
   },
   {
     question: "Ai-je besoin d'une prise de sang ?",
-    answer: "Non, pas pour le Discovery, l'Anabolic ou l'Ultimate — le questionnaire suffit. Si tu as un bilan sanguin récent, le Blood Analysis (99€) te permet de l'uploader pour une lecture avec des ranges optimaux de performance. Sinon, selon ton profil, je te recommande les analyses pertinentes à demander à ton médecin."
+    answer: "Non, pas pour le Discovery, l'Anabolic ou l'Ultimate — le questionnaire suffit. Avec le Blood Analysis, tu utilises idéalement ton premier crédit sur un bilan réalisé avant les recommandations, puis ton second crédit sur un nouveau bilan 2 à 3 mois après. La liste des marqueurs à demander à ton médecin ou à ton laboratoire est fournie après l'achat."
   },
   {
     question: "C'est un paiement unique ou un abonnement ?",
-    answer: "Paiement unique. Pas d'abonnement, pas de frais cachés. Discovery Scan = Gratuit pour toujours. Anabolic Bioscan = 59€ une fois. Ultimate Scan = 79€ une fois. Blood Analysis = 99€ une fois. Tu gardes accès à ton rapport et ton dashboard à vie."
+    answer: "Paiement unique. Pas d'abonnement, pas de frais cachés. Discovery Scan = Gratuit pour toujours. Anabolic Bioscan = 59€ une fois. Ultimate Scan = 79€ une fois. Blood Analysis = 99€ une fois pour 2 crédits, soit 2 analyses complètes utilisables sans expiration. Tu gardes accès à tes rapports et à ton dashboard."
   },
   {
     question: "Le rapport remplace-t-il un médecin ?",

@@ -358,6 +358,10 @@ function BloodClientDashboardInner() {
               Je decode ton bilan sanguin ligne par ligne. Tu obtiens une lecture clinique + performance, des signaux prioritaires,
               et un plan d'action clair.
             </p>
+            <p className="mt-2 max-w-2xl text-sm blood-text-tertiary">
+              Parcours recommande : 1er bilan avant tes recommandations, puis bilan de controle 2 a 3 mois apres.
+              Tes credits restent utilisables quand tu veux.
+            </p>
           </div>
 
           <div className="flex items-center gap-3">
@@ -370,7 +374,7 @@ function BloodClientDashboardInner() {
               style={{ backgroundColor: theme.primaryBlue }}
               onClick={() => navigate("/offers/blood-analysis")}
             >
-              Acheter des credits
+              Obtenir 2 credits
             </Button>
           </div>
         </motion.section>
@@ -666,7 +670,7 @@ function BloodClientDashboardInner() {
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="text-xs blood-text-tertiary">
-                Credit debite a l'upload. Statut: <span className="blood-text-secondary">processing</span> →{" "}
+                1 credit debite uniquement apres validation du PDF. Statut: <span className="blood-text-secondary">processing</span> →{" "}
                 <span className="blood-text-secondary">completed</span>.
               </div>
               <Button

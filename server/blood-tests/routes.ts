@@ -1204,7 +1204,9 @@ export function registerBloodTestsRoutes(app: Express): void {
       // PDF is valid and markers found , NOW debit credit
       const updatedUser = await storage.adjustUserCredits(user.id, -1);
       if (!updatedUser) {
-        res.status(500).json({ error: "Impossible de debiter les credits" });
+        res.status(409).json({
+          error: "Credit deja utilise ou solde insuffisant. Actualise ton dashboard avant de relancer une analyse.",
+        });
         return;
       }
 

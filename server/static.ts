@@ -868,7 +868,7 @@ ${sorted
     },
     "blood-analysis": {
       title: "Blood Analysis - Bilan Sanguin Optimisé | APEXLABS",
-      desc: "39 biomarqueurs analysés avec ranges optimaux. Upload ton PDF, reçois ton rapport complet. 99€ d'acompte coaching.",
+      desc: "99€ inclut 2 analyses de 39 biomarqueurs, utilisables sans expiration. Bilan initial puis contrôle à 2-3 mois avec ranges optimaux.",
     },
     formcheck: {
       title: "FormCheck - Analyse Vidéo de Tes Mouvements | APEXLABS",
@@ -978,8 +978,15 @@ ${sorted
     "blood-analysis": {
       h1: "Blood Analysis",
       lead:
-        "Analyse de bilan sanguin orientee optimisation: biomarqueurs, ranges optimaux, signaux d'alerte et plan d'action comprehensible.",
+        "Deux analyses de bilan sanguin utilisables sans expiration: une baseline avant les recommandations, puis un controle idealement 2 a 3 mois apres.",
       sections: [
+        {
+          title: "Deux credits inclus",
+          body: [
+            "Le paiement unique de 99 EUR ajoute deux credits Blood Analysis au compte client. Chaque upload de bilan valide consomme un credit; les credits n'expirent pas.",
+            "Le parcours recommande consiste a analyser un bilan initial avant la mise en place des recommandations, puis un second bilan 2 a 3 mois apres pour mesurer l'evolution. Les credits restent utilisables librement.",
+          ],
+        },
         {
           title: "Biomarqueurs",
           body: [
@@ -1372,13 +1379,13 @@ ${sorted
 
   ssrSimplePage(["/blood-analysis"], {
     title: "Blood Analysis - Upload Ton Bilan Sanguin | APEXLABS",
-    desc: "Envoie ton PDF de bilan sanguin et reçois une analyse de 39 biomarqueurs avec ranges optimaux et plan d'action personnalisé. Par ACHZOD.",
+    desc: "2 crédits sans expiration pour analyser deux bilans sanguins de 39 biomarqueurs, avec ranges optimaux et suivi avant/après. Par ACHZOD.",
     canonical: `${BASE_URL}/offers/blood-analysis`,
     robots: "noindex, follow",
     body: {
       h1: "Blood Analysis APEXLABS",
       lead:
-        "Upload de bilan sanguin pour obtenir une lecture structuree des biomarqueurs: metabolisme, hormones, inflammation, foie, reins et micronutriments.",
+        "Deux credits sans expiration pour analyser un bilan initial, puis mesurer l'evolution 2 a 3 mois apres les recommandations.",
       sections: [
         {
           title: "Objectif",

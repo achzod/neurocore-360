@@ -136,15 +136,18 @@ export default function BloodAnalysisStart() {
       <div className="mx-auto max-w-lg px-6 py-20">
         <div className="text-center mb-8">
           <p className="text-xs uppercase tracking-[0.3em] mb-3" style={{ color: PRIMARY_BLUE }}>Blood Analysis</p>
-          <h1 className="text-3xl font-bold mb-3">Analyse ton bilan sanguin</h1>
-          <p className="text-white/50 text-sm">39 biomarqueurs · 6 panels · Ranges optimaux</p>
+          <h1 className="text-3xl font-bold mb-3">Obtiens tes 2 analyses sanguines</h1>
+          <p className="text-white/50 text-sm">2 credits sans expiration · 39 biomarqueurs · 6 panels</p>
         </div>
 
         <Card className="border border-white/10 bg-[#0a0a0a] p-8 space-y-6">
           {/* Price */}
           <div className="text-center">
             <p className="text-4xl font-bold text-white">99€</p>
-            <p className="text-white/40 text-xs mt-1">Paiement unique — 1 analyse complete</p>
+            <p className="text-white/70 text-sm font-semibold mt-2">Paiement unique — 2 credits, soit 2 analyses completes</p>
+            <p className="text-white/40 text-xs mt-2">
+              Utilisables quand tu veux : idealement avant les recommandations, puis 2 a 3 mois apres.
+            </p>
           </div>
 
           {/* Live social proof */}
@@ -153,6 +156,8 @@ export default function BloodAnalysisStart() {
           {/* Features */}
           <div className="space-y-2.5">
             {[
+              "2 credits Blood Analysis sans expiration",
+              "Comparaison avant / apres recommandations",
               "39 biomarqueurs analyses sur 6 panels",
               "Ranges optimaux vs normaux",
               "Plan d'action personnalise et priorise",
@@ -205,7 +210,7 @@ export default function BloodAnalysisStart() {
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <>
-                {promoCode.trim() ? "Utiliser mon code promo" : "Payer 99€ et analyser mon bilan"}
+                {promoCode.trim() ? "Utiliser mon code promo" : "Payer 99€ et obtenir mes 2 analyses"}
                 <ArrowRight className="h-4 w-4" />
               </>
             )}

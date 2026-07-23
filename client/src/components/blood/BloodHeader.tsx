@@ -186,7 +186,7 @@ export default function BloodHeader({
                   }}
                 >
                   <Sparkles className="h-4 w-4" />
-                  <span className="hidden lg:inline">Acheter des crédits</span>
+                  <span className="hidden lg:inline">Obtenir 2 crédits</span>
                   <span className="lg:hidden">+</span>
                 </motion.button>
               </Link>

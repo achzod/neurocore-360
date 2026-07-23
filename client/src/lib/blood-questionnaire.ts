@@ -151,8 +151,10 @@ export const BLOOD_ANALYSIS_PRICING = {
   name: "Blood Analysis",
   price: 99,
   currency: "EUR",
-  description: "Analyse approfondie de ton bilan sanguin avec ranges OPTIMAUX",
+  description: "2 analyses approfondies de bilan sanguin, utilisables sans expiration",
   features: [
+    "2 crédits Blood Analysis",
+    "Bilan initial + contrôle à 2-3 mois",
     "Analyse de +30 biomarqueurs",
     "Ranges OPTIMAUX vs normaux",
     "Détection des patterns (Low T, Thyroid, etc.)",

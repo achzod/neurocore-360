@@ -90,8 +90,9 @@ export default function CGV() {
               <div className="rounded-sm border border-white/10 bg-[#0F0F0F] p-4">
                 <h4 className="font-semibold text-white">Blood Analysis (99€ - Paiement unique)</h4>
                 <p className="mt-1 text-sm text-white/50">
-                  Analyse complete de bilan sanguin avec rapport personnalise, protocoles d'optimisation et
-                  suivi des marqueurs biologiques.
+                  Deux credits sans expiration, soit deux analyses completes de bilan sanguin avec rapports
+                  personnalises, protocoles d'optimisation et suivi des marqueurs biologiques. Chaque upload
+                  de bilan valide consomme un credit. Les frais de laboratoire ne sont pas inclus.
                 </p>
               </div>
               <div className="rounded-sm border border-[#FCDD00]/30 bg-[#FCDD00]/5 p-4">

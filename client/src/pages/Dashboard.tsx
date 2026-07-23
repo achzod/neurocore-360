@@ -655,7 +655,7 @@ export default function Dashboard() {
             if (data.auditType === "BLOOD_ANALYSIS") {
               setCheckoutSuccess({
                 title: "Paiement reçu",
-                message: "Tu peux maintenant uploader ton PDF d'analyses sanguines sur ton espace Blood Analysis. Ton analyse complète arrive sous 24h après upload.",
+                message: "Tes 2 crédits Blood Analysis ont été ajoutés sans expiration. Utilise idéalement le premier avant tes recommandations, puis le second 2 à 3 mois après. Chaque rapport arrive sous 24h après upload.",
                 cta: { label: "Uploader mes résultats", href: "/blood-dashboard" },
               });
               return;
@@ -717,7 +717,7 @@ export default function Dashboard() {
             if (data.auditType === "BLOOD_ANALYSIS") {
               setCheckoutSuccess({
                 title: "Paiement reçu",
-                message: "Tu peux maintenant uploader ton PDF d'analyses sanguines sur ton espace Blood Analysis. Ton analyse complète arrive sous 24h après upload.",
+                message: "Tes 2 crédits Blood Analysis ont été ajoutés sans expiration. Utilise idéalement le premier avant tes recommandations, puis le second 2 à 3 mois après. Chaque rapport arrive sous 24h après upload.",
                 cta: { label: "Uploader mes résultats", href: "/blood-dashboard" },
               });
               return;
