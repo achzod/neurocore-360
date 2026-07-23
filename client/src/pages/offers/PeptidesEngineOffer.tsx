@@ -2211,7 +2211,7 @@ function CoachingDeduction() {
 
 function Hero() {
   return (
-    <section id="peptides-hero" className="relative overflow-hidden px-6 pb-16 pt-20 md:pb-24 md:pt-32">
+    <section id="peptides-hero" className="relative overflow-hidden px-6 pb-16 pt-2 md:pb-24 md:pt-32">
       {/* Ambient glow */}
       <div
         className="pointer-events-none absolute inset-0"
@@ -2234,7 +2234,7 @@ function Hero() {
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#D2D2D7] bg-[#F5F5F7] px-3 py-2 md:mb-8 md:px-4"
+          className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#D2D2D7] bg-[#F5F5F7] px-3 py-2 md:mb-8 md:px-4"
         >
           <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: PRIMARY }} />
           <span className="font-mono text-[10px] uppercase tracking-widest text-[#6E6E73] md:text-xs">
@@ -2258,10 +2258,16 @@ function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-[#6E6E73] md:mt-8 md:text-xl"
+          className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-[#6E6E73] md:mt-8 md:text-xl"
         >
-          Reponds a 35 questions. Recois un protocole personnalise avec dosages exacts, guide de reconstitution calcule, calendrier hebdo, et acces direct a la source ou les peptides coutent{" "}
-          <span className="font-semibold text-[#1D1D1F]">60-90% moins cher</span> que partout ailleurs.
+          <span className="md:hidden">
+            Réponds à 35 questions. Reçois ton protocole personnalisé : dosages exacts, reconstitution, calendrier hebdo et accès à la source, jusqu'à{" "}
+            <span className="font-semibold text-[#1D1D1F]">60-90% moins chère.</span>
+          </span>
+          <span className="hidden md:inline">
+            Reponds a 35 questions. Recois un protocole personnalise avec dosages exacts, guide de reconstitution calcule, calendrier hebdo, et acces direct a la source ou les peptides coutent{" "}
+            <span className="font-semibold text-[#1D1D1F]">60-90% moins cher</span> que partout ailleurs.
+          </span>
         </motion.p>
 
         {/* Pricing , 3 tiers d'entrée à partir de 199€ */}
@@ -2269,7 +2275,7 @@ function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="mt-6 flex flex-col items-center gap-2 md:mt-10 md:gap-3"
+          className="mt-4 flex flex-col items-center gap-2 md:mt-10 md:gap-3"
         >
           <span className="font-mono text-[11px] font-bold uppercase tracking-[0.25em] text-[#0071E3]">
             3 offres disponibles
@@ -2283,21 +2289,12 @@ function Hero() {
           </span>
         </motion.div>
 
-        <motion.p
-          animate={{ opacity: [0.7, 1, 0.7] }}
-          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-          className="mt-4 font-mono text-[11px] font-bold text-center tracking-wide max-w-md mx-auto md:mt-6 md:text-xs"
-          style={{ color: PRIMARY }}
-        >
-          Intégralement déduit de ton coaching Essential, Elite ou Private Lab 8 ou 12 sem
-        </motion.p>
-
         {/* CTA */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="mt-6 flex flex-col items-center gap-4 md:mt-8"
+          className="mt-2 flex flex-col items-center gap-4 md:mt-8"
         >
           <div className="flex w-full max-w-2xl flex-col items-stretch justify-center gap-3 sm:flex-row">
             <a
@@ -2319,6 +2316,15 @@ function Hero() {
               className="order-first border-0 px-8 py-5 text-base shadow-[0_12px_30px_rgba(18,140,126,0.26)] sm:order-last"
             />
           </div>
+
+          <motion.p
+            animate={{ opacity: [0.7, 1, 0.7] }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+            className="max-w-md text-center font-mono text-[11px] font-bold tracking-wide md:text-xs"
+            style={{ color: PRIMARY }}
+          >
+            Intégralement déduit de ton coaching Essential, Elite ou Private Lab 8 ou 12 sem
+          </motion.p>
 
           <p className="text-xs font-medium text-[#128C7E]">
             Question avant de choisir ? Réponse personnelle sous 24h · Sans engagement
