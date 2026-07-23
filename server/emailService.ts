@@ -890,7 +890,7 @@ function getCoachingSection(auditType: string, color: string = COLORS.purple): s
   const deductionAmount = getDeductionAmount(auditType);
   const promo = getPromoCodeForAuditType(auditType);
 
-  // GRATUIT / DISCOVERY uses DISCOVERY30 (-30% percent on all formules except Starter)
+  // GRATUIT / DISCOVERY uses DISCOVERY30 (-30% on all coaching formulas)
   const isDiscovery = auditType === "GRATUIT" || auditType === "DISCOVERY";
   const discoveryPromo = isDiscovery
     ? { code: "DISCOVERY30", percent: 30 }
@@ -3319,14 +3319,6 @@ const normalizeCoachingFormulaTier = (tier: unknown): {
       content: "essential",
     };
   }
-  if (raw.includes("starter")) {
-    return {
-      label: "Starter / Essential",
-      ctaLabel: "Voir la formule adaptée",
-      urlTier: "ESSENTIAL",
-      content: "starter_essential",
-    };
-  }
   return {
     label: "formule adaptée",
     ctaLabel: "Comparer les formules",
@@ -5291,7 +5283,7 @@ export async function addSubscriberToList(
 
 // Discovery J+30 , long-tail nurture for Discovery Scan recipients who haven't
 // upgraded. Pushes COACHING directly (not more audits) since coaching is the
-// real revenue. Uses DISCOVERY30 code (20% off all formules except Starter).
+// real revenue. Uses DISCOVERY30 code (20% off all coaching formulas).
 // When a `recommendation` is passed, the CTA points to the matched formule
 // page (Essential/Elite/PrivateLab) and the intro surfaces the rationale.
 // One-shot per client, dedup via email_tracking.

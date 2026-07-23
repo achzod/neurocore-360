@@ -644,7 +644,7 @@ Anabolic (59€)
   ↓ CTA upgrade
 Ultimate (79€)
   ↓ CTA coaching
-Coaching Starter / Essential / Elite / Private Lab
+Coaching Essential / Elite / Private Lab
 ```
 
 ---

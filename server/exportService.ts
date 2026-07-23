@@ -1352,28 +1352,8 @@ export async function generateExportHTMLFromTxt(
         <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 12px;">Tu ne paies pas deux fois. L'audit devient ton ticket d'entrée.</p>
       </div>
 
-      <!-- Grille STARTER / TRANSFORM / ELITE -->
+      <!-- Grille TRANSFORM / ELITE -->
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
-
-        <!-- STARTER -->
-        <div style="background: var(--surface-1); border: 1px solid var(--border); border-radius: 20px; padding: 32px; position: relative;">
-          <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">Plan sur-mesure</div>
-          <h3 style="font-size: 1.6rem; font-weight: 800; color: var(--text); margin-bottom: 8px;">Starter</h3>
-          <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">Plan personnalisé livré. Autonomie totale.</p>
-
-          <div style="margin-bottom: 24px; text-align: center; padding: 16px; background: var(--surface-2); border-radius: 12px;">
-            <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">1 mois</div>
-            <div style="font-size: 1.6rem; font-weight: 800; color: var(--primary);">97€</div>
-            <div style="font-size: 0.75rem; color: var(--accent-ok);">-${ctaAmount}€ déduits de ton audit</div>
-          </div>
-
-          <ul style="list-style: none; padding: 0; margin: 0 0 24px 0; color: var(--text-muted); font-size: 0.9rem; line-height: 1.8;">
-            <li style="margin-bottom: 8px; padding-left: 20px; position: relative;"><span style="position: absolute; left: 0; color: var(--primary);">+</span> Plan sur-mesure</li>
-            <li style="margin-bottom: 8px; padding-left: 20px; position: relative;"><span style="position: absolute; left: 0; color: var(--primary);">+</span> Support email</li>
-            <li style="padding-left: 20px; position: relative;"><span style="position: absolute; left: 0; color: var(--primary);">+</span> Livraison rapide</li>
-          </ul>
-          <a href="https://www.achzodcoaching.com/coaching-starter" target="_blank" style="display: block; text-align: center; padding: 14px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-weight: 700; text-decoration: none; transition: all 0.2s;">Choisir Starter</a>
-        </div>
 
         <!-- TRANSFORM (Recommandé) -->
         <div style="background: linear-gradient(135deg, rgba(94, 234, 212, 0.12) 0%, rgba(94, 234, 212, 0.03) 100%); border: 2px solid var(--primary); border-radius: 20px; padding: 32px; position: relative;">
@@ -1421,9 +1401,6 @@ export async function generateExportHTMLFromTxt(
       <div style="margin-top: 40px; padding: 28px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 16px;">
         <h4 style="color: var(--text); font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; text-align: center;">Tu hésites ? Voici comment choisir :</h4>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; color: var(--text-muted); font-size: 0.9rem;">
-          <div style="padding: 16px; background: var(--surface-2); border-radius: 10px;">
-            <strong style="color: var(--text);">Starter</strong> : Tu veux un plan sur-mesure et avancer en autonomie.
-          </div>
           <div style="padding: 16px; background: rgba(94, 234, 212, 0.08); border-radius: 10px; border: 1px solid var(--primary);">
             <strong style="color: var(--primary);">Transform</strong> : Tu veux un suivi hebdo et des ajustements continus.
           </div>

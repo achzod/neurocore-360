@@ -195,7 +195,7 @@ export const REPORT_DATA: ReportData = {
 <p><strong>Seul :</strong> Risque d'erreur d'interprétation, pas de feedback, pas d'ajustement.</p>
 <p><strong>Ensemble :</strong> Protocole ajusté chaque semaine. Exécution supervisée. Redevabilité sans complaisance.</p>
 <p>Si tu es prêt à exécuter, transparent et engagé sur la durée (3 mois min), candidate sur achzodcoaching.com. Pas de promesse miracle, juste un cadre qui transforme l'information en résultats.</p>`,
-      chips: ["Starter", "Essential", "Elite", "Private Lab"]
+      chips: ["Essential", "Elite", "Private Lab"]
     }
   ]
 };

@@ -1195,7 +1195,6 @@ const HowToReadGuide = ({ color }: { color: string }) => {
 // CTA Coaching Component
 const CoachingCTA = ({ color }: { color: string }) => {
   const plans = [
-    { name: 'STARTER', price: '97', duration: '1 mois', features: ['Plan personnalise', 'Support email'] },
     { name: 'TRANSFORM', price: '247', duration: '3 mois', features: ['Suivi hebdo', 'Ajustements', 'Support prioritaire'], popular: true },
     { name: 'ELITE', price: '497', duration: '6 mois', features: ['Coaching 1:1', 'Bilans mensuels', 'Acces VIP'] },
   ];
@@ -1239,7 +1238,7 @@ const CoachingCTA = ({ color }: { color: string }) => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {plans.map((plan, idx) => (
             <motion.div
               key={plan.name}

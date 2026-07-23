@@ -577,18 +577,6 @@ export function generatePremiumHTMLFromTxt(
         <p>Les plans génériques ne fonctionnent pas. Tu as besoin d'un système de pilotage complet.</p>
 
         <div class="pricing-grid">
-          <div class="price-card">
-            <span class="mini-score-label">STARTER</span>
-            <span class="price-tag">97€ <span style="font-size:14px; color:#666; font-weight:400;">/ 1 mois</span></span>
-            <p style="font-size:13px; margin-bottom:24px;">Plan personnalisé livré. Autonomie totale. Pour les profils disciplinés.</p>
-            <ul class="tech-list" style="font-size:12px;">
-              <li>Plan sur-mesure</li>
-              <li>Support email</li>
-              <li>Livraison rapide</li>
-            </ul>
-            <a href="https://www.achzodcoaching.com/coaching-starter" class="btn-tech outline">Choisir Starter</a>
-          </div>
-
           <div class="price-card featured">
             <div style="position:absolute; top:-12px; right:20px; background:var(--signal-cyan); color:#000; font-size:10px; font-weight:700; padding:4px 8px; border-radius:4px;">RECOMMANDE</div>
             <span class="mini-score-label" style="color:var(--signal-cyan)">TRANSFORM</span>

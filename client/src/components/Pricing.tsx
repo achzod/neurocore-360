@@ -250,7 +250,6 @@ export function Pricing() {
             <p className="text-white/80 text-sm">
               <span className="font-semibold text-primary">Offre coaching :</span>{" "}
               Le montant de ton audit est <span className="font-bold text-white">déduit de ton coaching</span>
-              <span className="text-white/50 text-xs ml-2">(hors offre Starter)</span>
             </p>
           </div>
         </motion.div>

@@ -14,7 +14,6 @@ import {
   ArrowRight,
   Check,
   Gift,
-  Sparkles,
   Calculator,
   Crown,
   Zap,
@@ -51,7 +50,7 @@ export default function DeductionCoaching() {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen overflow-x-hidden bg-background">
       <Header />
       <main>
         {/* Hero Section */}
@@ -76,10 +75,6 @@ export default function DeductionCoaching() {
                 Peu importe l'analyse que tu choisis, le montant sera intégralement déduit si tu décides de prendre un coaching avec moi.
               </p>
 
-              <div className="inline-flex items-center gap-2 rounded-full bg-amber-500/10 border border-amber-500/20 px-4 py-2 text-sm text-amber-600 dark:text-amber-400">
-                <Sparkles className="h-4 w-4" />
-                <span>*Sauf formule Starter (1 mois)</span>
-              </div>
             </motion.div>
           </div>
         </section>
@@ -203,7 +198,6 @@ export default function DeductionCoaching() {
                 { name: "Transform", duration: "3 mois", price: "247€", eligible: true },
                 { name: "Elite", duration: "6 mois", price: "497€", eligible: true },
                 { name: "Private Lab", duration: "Sur mesure", price: "Sur devis", eligible: true },
-                { name: "Starter", duration: "1 mois", price: "97€", eligible: false },
               ].map((plan, index) => (
                 <motion.div
                   key={index}

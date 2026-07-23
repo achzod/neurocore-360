@@ -157,7 +157,7 @@ APRÈS REVIEW:
 **Anabolic/Ultimate → Coaching:**
 - Via emails J+7/J+14
 - Code NEUROCORE20 (-20%)
-- Formules: Starter 97€, Transform 247€, Elite 497€
+- Formules: Transform 247€, Elite 497€
 
 **Burnout → Anabolic/Coaching:**
 - CTA Anabolic 59€

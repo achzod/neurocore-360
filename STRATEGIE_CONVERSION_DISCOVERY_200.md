@@ -43,7 +43,7 @@
 ### J+14 : Coaching Personnalisé (NOUVEAU !)
 ✅ **Email:** `sendDiscoveryJ14CoachingEmail`
 ✅ **Objet:** "Tu as les données. Maintenant passe à l'action"
-✅ **Offre:** Code ANALYSE20 (-20% coaching sauf Starter)
+✅ **Offre:** Code ANALYSE20 (-20% coaching)
 ✅ **CTA:** https://www.achzodcoaching.com/
 
 **Contenu:**
@@ -177,7 +177,7 @@ Si tu veux envoyer les relances MAINTENANT pour tous ceux qui sont éligibles, t
 
 ### Email J+14 (Coaching)
 - **Angle:** L'analyse c'est le diagnostic, le coaching c'est le traitement
-- **Offre:** -20% coaching (sauf Starter)
+- **Offre:** -20% coaching
 - **Ticket:** 160-400€+ (dépend de la formule choisie)
 
 ### Pourquoi J+14 pour Coaching ?

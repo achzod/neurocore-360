@@ -110,8 +110,7 @@ Site: ${CONTACT.website}
 // à compter de la livraison du rapport (urgence légitime).
 // IMPORTANT : les 3 codes (PEPTIDES199, PEPTIDES299, PEPTIDES399) doivent être
 // créés côté Stripe achzodcoaching.com avec restriction sur les produits 8 et
-// 12 sem de Essential/Elite/Private Lab uniquement (pas Sans Suivi, pas Starter,
-// pas 4 sem).
+// 12 sem de Essential/Elite/Private Lab uniquement (pas Sans Suivi ni 4 sem).
 export const PEPTIDES_COACHING_DEDUCTION: Record<"solo" | "coached" | "tracked", { code: string; amount: number; label: string }> = {
   solo: { code: "PEPTIDES199", amount: 199, label: "Solo" },
   coached: { code: "PEPTIDES299", amount: 299, label: "Coached" },

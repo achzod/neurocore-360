@@ -136,10 +136,6 @@ export default function CGV() {
                 <span className="w-1.5 h-1.5 rounded-full bg-[#FCDD00] mt-2 flex-shrink-0" />
                 <span><strong className="text-white">Achzod Private Lab (499€+)</strong> : Deduction applicable</span>
               </li>
-              <li className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 flex-shrink-0" />
-                <span><strong className="text-white">Coaching Starter (149€)</strong> : Deduction NON applicable</span>
-              </li>
             </ul>
             <p className="mt-4 text-white/60 leading-relaxed">
               La deduction est valable pendant 12 mois a compter de la date d'achat de l'audit.

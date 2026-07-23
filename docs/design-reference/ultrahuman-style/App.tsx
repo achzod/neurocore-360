@@ -476,14 +476,7 @@ const App: React.FC = () => {
                </p>
              </div>
 
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <PricingCard 
-                  name="Starter"
-                  price="150€"
-                  features={["Plan 8 semaines sur-mesure", "Bilan à 4 et 8 semaines", "Autonomie complète"]}
-                  primaryColor={currentTheme.colors.primary}
-                  url="https://www.achzodcoaching.com/coaching-starter"
-                />
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <PricingCard 
                   name="Essential"
                   price="200€"

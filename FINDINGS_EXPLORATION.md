@@ -773,7 +773,6 @@ CTA_MARKERS = [
 - J+14: Si J+7 non ouvert → email `sendPremiumJ14Email` (dernière chance)
 
 **Formules proposées dans email J+7:**
-- Starter: 97€/mois
 - Transform: 247€/3 mois (recommandé)
 - Elite: 497€/6 mois
 
@@ -941,4 +940,3 @@ EMAILS:
 ---
 
 **Fin Phase 1 - 2026-01-10 15:24**
-

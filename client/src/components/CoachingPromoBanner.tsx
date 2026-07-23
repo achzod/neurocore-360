@@ -57,7 +57,7 @@ function getPromoInfo(kind: AuditKind): PromoInfo {
     default:
       return {
         code: "DISCOVERY20",
-        description: "-20% sur toutes les formules coaching (sauf Starter)",
+        description: "-20% sur toutes les formules coaching",
         recommendedFormules: [FORMULE_ESSENTIAL, FORMULE_ELITE, FORMULE_PRIVATELAB],
       };
   }
