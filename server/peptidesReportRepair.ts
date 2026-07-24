@@ -90,6 +90,10 @@ function cleanUnsafePeptideFields(report: RepairableReport): void {
     peptide.cycleDuration = `Projet de duree a confirmer: ${stripProjectPrefix(peptide.cycleDuration)
       .replace(/,\s*relance si besoin[^.]*\.?/gi, "")
       .replace(/\s*Peut [eê]tre r[ée]p[ée]t[ée][^.]*\.?/gi, "")}`;
+    peptide.vialsNeeded = String(peptide.vialsNeeded || "")
+      .replace(/\bpour Cure\b/g, "pour une cure")
+      .replace(/besoin calcule ~(\d+)\.(\d+)\s*mg/gi, "besoin calcule ~$1,$2 mg")
+      .replace(/(\d)\s*mg\b/gi, "$1 mg");
 
     const dosageHasDescent = /descente|diminu|r[ée]duction|baisse/i.test(peptide.dosage || "");
     if (!dosageHasDescent && /descente|diminution progressive|r[ée]duction progressive/i.test(peptide.cycleDuration || "")) {
