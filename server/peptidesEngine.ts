@@ -2501,6 +2501,11 @@ export async function generatePeptidesProtocol(
   // supplier/price to the client's delivery country before saving.
   report = await applyLivePeptauraPricing(report, peptauraContext);
 
+  // Replace unsafe legacy claims and generic self-injection guidance before
+  // the report becomes public. Delivery refresh runs the same repair again,
+  // which keeps the operation idempotent and catches live catalog changes.
+  report = repairPeptidesReportContent(report, responses, tier);
+
   // POST-PROCESSING: clean dashes and 3rd person references
   report = cleanReportContent(report, firstName);
 

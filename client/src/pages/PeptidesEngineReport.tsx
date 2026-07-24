@@ -40,6 +40,7 @@ interface ReportSection {
 interface PeptidesReport {
   clientName: string;
   tier?: string;
+  qualityVersion?: string;
   sections: ReportSection[];
   peptides: PeptideRec[];
   bloodMarkers: string[];
@@ -200,18 +201,27 @@ function WeeklyScheduleTable({ schedule }: { schedule: string }) {
 function ShoppingListCards({ list }: { list: string }) {
   if (!list) return null;
 
-  const items = list.split("|").map(s => s.trim()).filter(Boolean);
+  const items = list.includes("\n")
+    ? list.split(/\n\s*\n/).map(s => s.trim()).filter(Boolean)
+    : list.split("|").map(s => s.trim()).filter(Boolean);
   const peptideItems: { name: string; details: string }[] = [];
   const equipmentItems: string[] = [];
   let totalLine = "";
 
   for (const item of items) {
-    if (item.toUpperCase().startsWith("TOTAL")) {
-      totalLine = item;
-    } else if (item.includes("$") || item.includes("vial")) {
-      peptideItems.push({ name: item.split("×")[0]?.trim() || item.split("=")[0]?.trim() || item, details: item });
+    const lines = item.split(/\n+/).map(line => line.trim()).filter(Boolean);
+    const firstLine = lines[0] || item;
+    const readableName = firstLine.replace(/^\d+\.\s*/, "");
+    const details = lines.length > 1 ? lines.slice(1).join(" ") : item;
+    if (firstLine.toUpperCase().startsWith("TOTAL")) {
+      totalLine = lines.join(" ");
+    } else if (details.includes("$") || details.includes("vial")) {
+      peptideItems.push({
+        name: readableName.split("×")[0]?.trim() || readableName.split("=")[0]?.trim() || readableName,
+        details,
+      });
     } else {
-      equipmentItems.push(item);
+      equipmentItems.push(lines.join(" "));
     }
   }
 
@@ -219,10 +229,15 @@ function ShoppingListCards({ list }: { list: string }) {
     <div className="mt-4 space-y-3">
       {/* Peptide items */}
       {peptideItems.map((item, i) => (
-        <div key={i} className="bg-white/5 border border-white/8 rounded-xl p-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full" style={{ background: AMBER }} />
-            <span className="text-sm text-white/80 font-mono">{item.details}</span>
+        <div key={i} className="bg-white/5 border border-white/8 rounded-xl p-3 min-w-0">
+          <div className="flex items-start gap-2 min-w-0">
+            <div className="w-2 h-2 rounded-full flex-shrink-0 mt-1.5" style={{ background: AMBER }} />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-white mb-1 break-words">{item.name}</p>
+              <p className="text-xs sm:text-sm text-white/70 font-mono break-words [overflow-wrap:anywhere]">
+                {item.details}
+              </p>
+            </div>
           </div>
         </div>
       ))}
@@ -365,11 +380,11 @@ export default function PeptidesEngineReport() {
             <div className="space-y-4 text-white/70 text-sm leading-relaxed mb-8">
               <p>Avant d'acceder a ton protocole personnalise, tu dois accepter les conditions suivantes :</p>
               <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
-                <p><strong className="text-white">1. Usage strictement personnel</strong> :Ce protocole est genere exclusivement pour toi. Il ne peut etre partage, reproduit, publie ou distribue sous quelque forme que ce soit.</p>
-                <p><strong className="text-white">2. Interdiction de diffusion</strong> :Toute publication sur internet (reseaux sociaux, forums, YouTube, blogs, groupes Telegram/Discord) est strictement interdite.</p>
-                <p><strong className="text-white">3. Propriete intellectuelle</strong> :Le contenu du protocole, incluant les recommandations, dosages et guides, est la propriete intellectuelle d'APEXLABS by Achzod.</p>
-                <p><strong className="text-white">4. Usage educatif</strong> :Ce protocole est fourni a titre educatif et informatif. Il ne constitue pas un avis medical. Consulte un medecin avant toute supplementation.</p>
-                <p><strong className="text-white">5. Violation</strong> :Toute violation de ces conditions entrainera la resiliation immediate de l'acces au protocole et pourra donner lieu a des <span className="text-amber-400">poursuites judiciaires</span> (dommages et interets). Juridiction : Tribunaux de Paris.</p>
+                <p><strong className="text-white">1. Usage strictement personnel</strong> : Ce protocole est genere exclusivement pour toi. Il ne peut etre partage, reproduit, publie ou distribue sous quelque forme que ce soit.</p>
+                <p><strong className="text-white">2. Interdiction de diffusion</strong> : Toute publication sur internet (reseaux sociaux, forums, YouTube, blogs, groupes Telegram/Discord) est strictement interdite.</p>
+                <p><strong className="text-white">3. Propriete intellectuelle</strong> : Le contenu du protocole, incluant les recommandations, dosages et guides, est la propriete intellectuelle d'APEXLABS by Achzod.</p>
+                <p><strong className="text-white">4. Usage educatif</strong> : Ce protocole est fourni a titre educatif et informatif. Il ne constitue pas un avis medical. Consulte un medecin avant toute supplementation.</p>
+                <p><strong className="text-white">5. Violation</strong> : Toute violation de ces conditions entrainera la resiliation immediate de l'acces au protocole et pourra donner lieu a des <span className="text-amber-400">poursuites judiciaires</span> (dommages et interets). Juridiction : Tribunaux de Paris.</p>
               </div>
             </div>
             <button
@@ -378,7 +393,7 @@ export default function PeptidesEngineReport() {
               style={{ background: AMBER }}
             >
               <Shield className="w-4 h-4" />
-              J'accepte les conditions :Acceder a mon protocole
+              J'accepte les conditions : Acceder a mon protocole
             </button>
           </motion.div>
         </div>
@@ -581,53 +596,73 @@ export default function PeptidesEngineReport() {
           </motion.div>
         )}
 
-        {/* ══════════════════════════════════════════════════════════════════ */}
-        {/* VISUAL GUIDES ,  Reconstitution, Erreurs, Calcul de dose        */}
-        {/* ══════════════════════════════════════════════════════════════════ */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
-          className="mb-12"
-        >
-          <div className="flex items-center gap-2 mb-6">
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: `#06b6d415` }}>
-              <FlaskConical className="w-4 h-4" style={{ color: "#06b6d4" }} />
+        {report.qualityVersion === "medical-review-v1" ? (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="mb-12 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-5 sm:p-6"
+          >
+            <div className="flex items-start gap-3">
+              <Shield className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: AMBER }} />
+              <div>
+                <h2 className="text-lg font-bold mb-2">Calcul et manipulation a faire valider</h2>
+                <p className="text-sm text-white/65 leading-relaxed">
+                  Le calculateur automatique et les guides generiques de reconstitution sont desactives pour ce rapport.
+                  Fais confirmer la concentration, le volume, le materiel et le geste par un medecin ou un pharmacien
+                  avant toute manipulation.
+                </p>
+              </div>
             </div>
-            <h2 className="text-xl font-bold">Guide Visuel ,  Reconstitution</h2>
-          </div>
-          <ReconstitutionStepByStep />
-        </motion.div>
+          </motion.div>
+        ) : (
+          <>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+              className="mb-12"
+            >
+              <div className="flex items-center gap-2 mb-6">
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: `#06b6d415` }}>
+                  <FlaskConical className="w-4 h-4" style={{ color: "#06b6d4" }} />
+                </div>
+                <h2 className="text-xl font-bold">Guide visuel de reconstitution</h2>
+              </div>
+              <ReconstitutionStepByStep />
+            </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="mb-12"
-        >
-          <div className="flex items-center gap-2 mb-6">
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: `#ef444415` }}>
-              <AlertTriangle className="w-4 h-4" style={{ color: "#ef4444" }} />
-            </div>
-            <h2 className="text-xl font-bold">Les 5 erreurs a eviter</h2>
-          </div>
-          <FiveReconstitutionErrors />
-        </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="mb-12"
+            >
+              <div className="flex items-center gap-2 mb-6">
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: `#ef444415` }}>
+                  <AlertTriangle className="w-4 h-4" style={{ color: "#ef4444" }} />
+                </div>
+                <h2 className="text-xl font-bold">Les 5 erreurs a eviter</h2>
+              </div>
+              <FiveReconstitutionErrors />
+            </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.35 }}
-          className="mb-12"
-        >
-          <div className="flex items-center gap-2 mb-6">
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: `${AMBER}15` }}>
-              <Syringe className="w-4 h-4" style={{ color: AMBER }} />
-            </div>
-            <h2 className="text-xl font-bold">Calcule ta dose en 30 secondes</h2>
-          </div>
-          <DoseCalculatorVisual />
-        </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 }}
+              className="mb-12"
+            >
+              <div className="flex items-center gap-2 mb-6">
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: `${AMBER}15` }}>
+                  <Syringe className="w-4 h-4" style={{ color: AMBER }} />
+                </div>
+                <h2 className="text-xl font-bold">Calcule ta dose en 30 secondes</h2>
+              </div>
+              <DoseCalculatorVisual />
+            </motion.div>
+          </>
+        )}
 
         {/* Report Sections (collapsible, parsed) :skip intro sections already shown above */}
         <div className="space-y-4 mb-12">

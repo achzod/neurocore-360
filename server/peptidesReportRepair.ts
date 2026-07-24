@@ -402,6 +402,7 @@ export function repairPeptidesReportContent(
 
   report.clientName = sanitizeClientFacingText(firstName);
   if (tier) report.tier = sanitizeClientFacingText(tier);
+  (report as any).qualityVersion = "medical-review-v1";
 
   cleanUnsafePeptideFields(report);
   report.sections = buildSections(report, firstName);
