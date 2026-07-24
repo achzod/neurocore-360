@@ -110,6 +110,9 @@ assert.ok(repaired.sections.reduce((sum: number, section: any) => sum + section.
 assert.doesNotMatch(repaired.peptides[0].cycleDuration, /descente progressive/i);
 assert.doesNotMatch(repaired.peptides[0].timing, /peut etre melange/i);
 assert.match(repaired.peptides[0].reconstitution, /1\.60 ml/);
+assert.match(repaired.peptides[0].purpose, /hypothese experimentale/i);
+assert.match(repaired.peptides[0].whyThisPeptide, /non approuvee/i);
+assert.doesNotMatch(repaired.peptides[0].whyThisPeptide, /plus puissante/i);
 assert.equal(repairedAudit.ok, true, repairedAudit.errors.join("\n"));
 
 console.log("Peptides guardrails: OK");

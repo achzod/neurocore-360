@@ -30,8 +30,67 @@ function joinBlocks(...blocks: string[]): string {
   return blocks.filter(Boolean).join("\n\n");
 }
 
+function asSentence(value: string | undefined): string {
+  const cleaned = sanitizeClientFacingText(String(value || "")).replace(/[.!?:]+\s*$/g, "");
+  return cleaned ? `${cleaned}.` : "";
+}
+
+function stripProjectPrefix(value: string | undefined): string {
+  return String(value || "")
+    .replace(/^Projet (?:theorique )?(?:de )?(?:dosage|timing|voie|duree) a (?:faire )?(?:confirmer|valider)(?: medicalement)?\s*:\s*/i, "")
+    .trim();
+}
+
+function cautiousPurpose(peptide: PeptideItem): { purpose: string; rationale: string } {
+  const name = peptide.name.toLowerCase();
+  if (/retatrutide/.test(name)) {
+    return {
+      purpose: "Hypothese experimentale liee a la regulation de l'appetit et du metabolisme, a discuter avec un medecin",
+      rationale: "Cette molecule a ete evoquee a cause de ton objectif de perte de masse grasse. Elle reste experimentale et non approuvee hors essai clinique. Son mecanisme ne prouve ni un benefice personnel, ni une preservation automatique du muscle, ni un rapport benefice-risque favorable pour toi.",
+    };
+  }
+  if (/cjc/.test(name)) {
+    return {
+      purpose: "Hypothese experimentale autour de l'axe GH et de la recuperation, sans efficacite personnelle garantie",
+      rationale: "Cette molecule a ete evoquee en lien avec tes objectifs de recuperation et de sommeil. Les promesses de hausse utile de GH, de lipolyse ou d'effet anti-age sont retirees. Le statut du produit, les donnees humaines limitees et ton bilan doivent etre examines par un medecin.",
+    };
+  }
+  if (/ipamorelin/.test(name)) {
+    return {
+      purpose: "Hypothese experimentale de secretagogue de GH, a evaluer sans promesse sur le sommeil ou la composition corporelle",
+      rationale: "Cette molecule a ete evoquee pour completer une discussion sur l'axe GH. Le rapport ne peut pas affirmer qu'elle sera selective, qu'elle evitera un effet hormonal indesirable ou qu'elle ameliorera ton sommeil et ta recuperation. Un medecin doit evaluer le niveau de preuve et les risques.",
+    };
+  }
+  if (/dsip/.test(name)) {
+    return {
+      purpose: "Hypothese experimentale autour du sommeil, avec donnees humaines limitees et sans effet hormonal garanti",
+      rationale: "Cette molecule a ete evoquee a cause de ton objectif de sommeil. Une amelioration du sommeil ou de la testostérone ne peut pas etre promise a partir du mecanisme suppose. Le produit est experimental pour cet usage et une evaluation medicale des causes du sommeil perturbe reste prioritaire.",
+    };
+  }
+  if (/epitalon/.test(name)) {
+    return {
+      purpose: "Hypothese experimentale de longevite, sans benefice clinique anti-age etabli pour ton cas",
+      rationale: "Cette molecule a ete evoquee pour ton interet envers la longevite. Le rapport retire les affirmations sur l'activation utile de la telomerase, le rajeunissement cellulaire ou un profil de securite exceptionnel. Les preuves humaines et le statut reglementaire doivent etre verifies avec un professionnel.",
+    };
+  }
+  return {
+    purpose: "Hypothese a discuter avec un medecin, sans efficacite ni securite garanties",
+    rationale: "Cette molecule a ete evoquee a partir de ton questionnaire. Cela ne suffit pas a conclure qu'elle est adaptee. Son statut, les donnees humaines, les risques, les alternatives approuvees et ton bilan doivent etre verifies avant toute decision.",
+  };
+}
+
 function cleanUnsafePeptideFields(report: RepairableReport): void {
   for (const peptide of report.peptides || []) {
+    const cautious = cautiousPurpose(peptide);
+    peptide.purpose = cautious.purpose;
+    peptide.whyThisPeptide = cautious.rationale;
+    peptide.dosage = `Projet theorique de dosage a valider medicalement: ${stripProjectPrefix(peptide.dosage)}`;
+    peptide.timing = `Projet de timing a confirmer: ${stripProjectPrefix(peptide.timing)}`;
+    peptide.route = `Projet de voie a confirmer: ${stripProjectPrefix(peptide.route)}`;
+    peptide.cycleDuration = `Projet de duree a confirmer: ${stripProjectPrefix(peptide.cycleDuration)
+      .replace(/,\s*relance si besoin[^.]*\.?/gi, "")
+      .replace(/\s*Peut [eê]tre r[ée]p[ée]t[ée][^.]*\.?/gi, "")}`;
+
     const dosageHasDescent = /descente|diminu|r[ée]duction|baisse/i.test(peptide.dosage || "");
     if (!dosageHasDescent && /descente|diminution progressive|r[ée]duction progressive/i.test(peptide.cycleDuration || "")) {
       peptide.cycleDuration = sanitizeClientFacingText(
@@ -74,14 +133,14 @@ function cleanUnsafePeptideFields(report: RepairableReport): void {
 function peptideIdentity(peptide: PeptideItem): string {
   return joinBlocks(
     block(peptide.name, [
-      `Objectif evoque dans le rapport: ${peptide.purpose}.`,
-      `Projet de dosage a faire valider: ${peptide.dosage}.`,
-      `Timing propose a faire valider: ${peptide.timing}.`,
-      `Duree proposee: ${peptide.cycleDuration}.`,
-      `Quantite calculee: ${peptide.vialsNeeded}.`,
-      `Verification live: ${peptide.priceEstimate}.`,
-      `Lien catalogue: ${peptide.purchaseUrl}.`,
-      `Point de securite: ${peptide.reconstitution}`,
+      `Objectif evoque dans le rapport: ${asSentence(peptide.purpose)}`,
+      `Dosage: ${asSentence(peptide.dosage)}`,
+      `Timing: ${asSentence(peptide.timing)}`,
+      `Duree: ${asSentence(peptide.cycleDuration)}`,
+      `Quantite calculee: ${asSentence(peptide.vialsNeeded)}`,
+      `Verification live: ${asSentence(peptide.priceEstimate)}`,
+      `Lien catalogue: ${asSentence(peptide.purchaseUrl)}`,
+      `Point de securite: ${asSentence(peptide.reconstitution)}`,
     ].join("\n"))
   );
 }

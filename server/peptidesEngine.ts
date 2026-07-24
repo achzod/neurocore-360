@@ -930,7 +930,8 @@ async function applyLivePeptauraPricing(
       best = compatible;
       bestMg = parseListingMg(best.dosage);
       const durationLabel = String(pep.cycleDuration || "le cycle").split(/[,.]/)[0].trim();
-      pep.vialsNeeded = `${qty} vial${qty > 1 ? "s" : ""} de ${bestMg}mg pour ${durationLabel} (besoin calcule ~${needMg.toFixed(2)}mg)`;
+      const naturalDurationLabel = durationLabel.charAt(0).toLowerCase() + durationLabel.slice(1);
+      pep.vialsNeeded = `${qty} vial${qty > 1 ? "s" : ""} de ${bestMg}mg pour ${naturalDurationLabel} (besoin calcule ~${needMg.toFixed(2)}mg)`;
     }
 
     const livePrice = buildLivePriceEstimate(pep, best, qty);
