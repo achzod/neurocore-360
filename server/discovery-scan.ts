@@ -1312,8 +1312,8 @@ FORMAT OBLIGATOIRE:
         .replace(/^(Je vais (analyser|examiner|etudier)[^.]*\.?\s*)/gi, '')
         .replace(/^(Voici (mon analyse|l['']analyse|une analyse)[^.]*\.?\s*)/gi, '')
         .replace(/^(Analyse de la section[^.]*\.?\s*)/gi, '')
-        .replace(/—/g, ':')
-        .replace(/–/g, '-')
+        .replace(/\u2014/g, ':')
+        .replace(/\u2013/g, '-')
         .replace(/\*\*/g, '')
         .replace(/##\s*/g, '')
         .replace(/^\s*[-*]\s+/gm, '')
@@ -1854,9 +1854,9 @@ function cleanMarkdownToHTML(text: string): string {
     // Remove "client" language (single-author voice)
     .replace(/\bclients\b/gi, "profils")
     .replace(/\bclient\b/gi, "profil")
-    // CRITICAL: Remove ALL em dashes (,) and en dashes (–) FIRST
-    .replace(/—/g, ':')
-    .replace(/–/g, '-')
+    // CRITICAL: Remove ALL em dashes (,) and en dashes (-) FIRST
+    .replace(/\u2014/g, ':')
+    .replace(/\u2013/g, '-')
     .replace(/\u2014/g, ':')  // Unicode em dash
     .replace(/\u2013/g, '-')  // Unicode en dash
     // Remove markdown headers (## Title -> Title)
@@ -1885,8 +1885,8 @@ function cleanMarkdownToHTML(text: string): string {
     .replace(/\s*class=(\"|')[^\"']*(\"|')/gi, '')
     .replace(/<\/?font[^>]*>/gi, '')
     // Final pass: remove any remaining em dashes that slipped through
-    .replace(/—/g, ':')
-    .replace(/–/g, '-')
+    .replace(/\u2014/g, ':')
+    .replace(/\u2013/g, '-')
     .trim();
 
   if (hasEnglishMarkers(cleaned, 6)) {

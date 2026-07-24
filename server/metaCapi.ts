@@ -1,17 +1,17 @@
-// Meta Conversions API (CAPI) — server-side event tracking
+// Meta Conversions API (CAPI) ,  server-side event tracking
 //
 // Purpose: send Purchase / Lead / InitiateCheckout events directly to Meta from
 // the backend, which survives Safari ITP, ad-blockers, and browser tab closure.
-// Standard observation: 30–50% of client-side Pixel events are lost in 2026 —
+// Standard observation: 30-50% of client-side Pixel events are lost in 2026 ,
 // CAPI recovers them.
 //
 // Deduplication with the client-side Pixel: pass the SAME event_id on both sides
 // (e.g., `stripe_${session.id}`). Meta dedups within a 7-day window.
 //
 // Environment variables:
-//   META_PIXEL_ID       — numeric pixel id (same value as the client Pixel)
-//   META_ACCESS_TOKEN   — system-user token with `ads_management` scope on the pixel
-//   META_TEST_EVENT_CODE (optional) — shown in Events Manager "Test Events" tab while debugging
+//   META_PIXEL_ID       ,  numeric pixel id (same value as the client Pixel)
+//   META_ACCESS_TOKEN   ,  system-user token with `ads_management` scope on the pixel
+//   META_TEST_EVENT_CODE (optional) ,  shown in Events Manager "Test Events" tab while debugging
 //
 // This module NEVER throws upwards: any network / auth failure is logged and
 // swallowed, so a Meta outage can never block a Stripe / PayPal checkout flow.
@@ -88,7 +88,7 @@ function sha256PhoneE164(value: string | null | undefined): string | undefined {
 
 function cleanIp(ip: string | null | undefined): string | undefined {
   if (!ip) return undefined;
-  // Express can give us "::ffff:1.2.3.4" for IPv4-in-IPv6 — strip the prefix.
+  // Express can give us "::ffff:1.2.3.4" for IPv4-in-IPv6 ,  strip the prefix.
   const stripped = ip.replace(/^::ffff:/, "").trim();
   if (!stripped || stripped === "::1" || stripped === "127.0.0.1") return undefined;
   return stripped;
@@ -100,7 +100,7 @@ export async function sendMetaEvent(args: SendMetaEventArgs): Promise<SendMetaEv
   const testEventCode = process.env.META_TEST_EVENT_CODE;
 
   if (!pixelId || !accessToken) {
-    console.warn(`[CAPI] ${args.eventName}: META_PIXEL_ID or META_ACCESS_TOKEN missing — skipping`);
+    console.warn(`[CAPI] ${args.eventName}: META_PIXEL_ID or META_ACCESS_TOKEN missing ,  skipping`);
     return { ok: false, skipped: true };
   }
 
@@ -166,13 +166,13 @@ export async function sendMetaEvent(args: SendMetaEventArgs): Promise<SendMetaEv
 
     if (!response.ok || body?.error) {
       console.error(
-        `[CAPI] ${args.eventName} (${args.eventId}) failed — status=${response.status} error=${JSON.stringify(body?.error ?? body).slice(0, 400)}`
+        `[CAPI] ${args.eventName} (${args.eventId}) failed ,  status=${response.status} error=${JSON.stringify(body?.error ?? body).slice(0, 400)}`
       );
       return { ok: false, error: body?.error ?? body };
     }
 
     console.log(
-      `[CAPI] ${args.eventName} ok — event_id=${args.eventId} fbtrace=${body?.fbtrace_id ?? "n/a"} received=${body?.events_received ?? "?"}${testEventCode ? " [TEST]" : ""}`
+      `[CAPI] ${args.eventName} ok ,  event_id=${args.eventId} fbtrace=${body?.fbtrace_id ?? "n/a"} received=${body?.events_received ?? "?"}${testEventCode ? " [TEST]" : ""}`
     );
     return { ok: true, fbtrace_id: body?.fbtrace_id };
   } catch (err) {

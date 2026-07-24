@@ -105,17 +105,17 @@ function getReminderEmailTemplate(
 
   // P3 brand-aligned rewrite: no spammy promo in the subject, no off-brand
   // blue, focused single CTA on the resume link with the magic token. The
-  // 30% discount block is removed — finishing the FREE audit is the carrot,
+  // 30% discount block is removed ,  finishing the FREE audit is the carrot,
   // not a paid product upsell on a user who hasn't even validated interest
   // yet.
   const resumeUrl = `${APP_URL}/audit-complet/questionnaire?resume=${resumeToken}`;
   const remaining = Math.max(0, 100 - percentComplete);
 
-  const subject = `Ton audit s'arrête à ${percentComplete}% — reprends en un clic`;
+  const subject = `Ton audit s'arrête à ${percentComplete}% ,  reprends en un clic`;
 
   const text = `Salut,
 
-Tu as commencé ton audit APEXLABS hier — il te reste ${remaining}% à remplir.
+Tu as commencé ton audit APEXLABS hier ,  il te reste ${remaining}% à remplir.
 
 Quand tu cliques sur le lien, tu reprends exactement où tu t'étais arrêté, peu importe l'appareil :
 
@@ -142,7 +142,7 @@ Achzod`;
         </td></tr>
         <tr><td style="padding:14px 36px 0;">
           <p style="margin:0;color:rgba(255,255,255,0.78);font-size:16px;line-height:1.6;">
-            Ton questionnaire est sauvegardé. Quand tu cliques ci-dessous, tu reprends exactement où tu en étais — peu importe l'appareil. Il te reste <strong style="color:#fff;">${remaining}%</strong> à remplir.
+            Ton questionnaire est sauvegardé. Quand tu cliques ci-dessous, tu reprends exactement où tu en étais ,  peu importe l'appareil. Il te reste <strong style="color:#fff;">${remaining}%</strong> à remplir.
           </p>
         </td></tr>
         <tr><td align="center" style="padding:32px 36px 12px;">

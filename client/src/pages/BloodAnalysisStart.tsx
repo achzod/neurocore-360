@@ -144,7 +144,7 @@ export default function BloodAnalysisStart() {
           {/* Price */}
           <div className="text-center">
             <p className="text-4xl font-bold text-white">99€</p>
-            <p className="text-white/70 text-sm font-semibold mt-2">Paiement unique — 2 credits, soit 2 analyses completes</p>
+            <p className="text-white/70 text-sm font-semibold mt-2">Paiement unique ,  2 credits, soit 2 analyses completes</p>
             <p className="text-white/40 text-xs mt-2">
               Utilisables quand tu veux : idealement avant les recommandations, puis 2 a 3 mois apres.
             </p>

@@ -1,4 +1,4 @@
-// Blog articles data - ACHZOD 
+// Blog articles data - ACHZOD
 import { SARMS_ARTICLES } from "./sarmsArticles";
 import { ACHZOD_ARTICLES as MUSCLEPHD_ARTICLES } from "./musclephdArticles";
 import { ACHZODArticles as YAMAMOTO_ARTICLES } from "./yamamotoArticles";
@@ -278,7 +278,7 @@ Votre système nerveux vous parlera si vous prenez le temps de l'écouter.
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -597,7 +597,7 @@ Votre nerf vague est votre superpouvoir parasympathique. Il est temps de l'activ
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -1047,7 +1047,7 @@ Votre HRV n'est pas juste un chiffre. C'est le reflet direct de la santé de vot
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -1067,7 +1067,7 @@ Votre HRV n'est pas juste un chiffre. C'est le reflet direct de la santé de vot
 
 Chaque minute de chaque jour, votre système nerveux autonome orchestre une danse millénaire entre deux états opposés : combat ou fuite d'un côté, repos et digestion de l'autre. Cette tension perpétuelle détermine non seulement votre niveau de stress immédiat, mais aussi votre capacité à récupérer, à construire du muscle, à métaboliser correctement, et même à vivre une vie productive et heureuse.
 
-Le problème ? La plupart des gens ne comprennent pas cette dynamique. Ils vivent dans un état sympathique quasi constant – activés, stressés, en hypervigilance – sans même le réaliser. Et quand ils tentent  de se reposer, leur système nerveux refuse de coopérer. C'est un des secrets cachés derrière le burnout, l'anxiété chronique, et la prise de poids inexplicable même avec une bonne alimentation.
+Le problème ? La plupart des gens ne comprennent pas cette dynamique. Ils vivent dans un état sympathique quasi constant - activés, stressés, en hypervigilance - sans même le réaliser. Et quand ils tentent  de se reposer, leur système nerveux refuse de coopérer. C'est un des secrets cachés derrière le burnout, l'anxiété chronique, et la prise de poids inexplicable même avec une bonne alimentation.
 
 ## Comprendre Votre Système Nerveux Autonome
 
@@ -1077,7 +1077,7 @@ Le système nerveux autonome (SNA) est la partie de votre système nerveux qui f
 
 ### La Branche Sympathique : Votre Système d'Activation
 
-Le système sympathique est souvent appelé "fight or flight" – combat ou fuite. Mais cette terminologie est trompeuse. C'est plus précisément le système d'activation et de mobilisation d'énergie. Quand il s'active, plusieurs choses se produisent simultanément dans votre corps :
+Le système sympathique est souvent appelé "fight or flight" - combat ou fuite. Mais cette terminologie est trompeuse. C'est plus précisément le système d'activation et de mobilisation d'énergie. Quand il s'active, plusieurs choses se produisent simultanément dans votre corps :
 
 **Réactions Physiologiques Immédiates**
 - Votre cœur s'accélère, augmentant la circulation sanguine
@@ -1093,7 +1093,7 @@ Ces réactions évolutionnaires avaient du sens il y a 100 000 ans quand le dang
 
 ### La Branche Parasympathique : Votre Système de Récupération
 
-Le système parasympathique est appelé "rest and digest" – repos et digestion. C'est votre mode de récupération, de régénération, et de croissance. Quand le parasympathique domine :
+Le système parasympathique est appelé "rest and digest" - repos et digestion. C'est votre mode de récupération, de régénération, et de croissance. Quand le parasympathique domine :
 
 **Réactions Physiologiques Contraires**
 - Votre fréquence cardiaque ralentit
@@ -1232,7 +1232,7 @@ L'exposition au froid stress initialement le sympathique (respiration rapide, au
 - Semaines 5+ : 2-3 minutes
 - Le soir ne pas faire, c'est trop stimulant
 
-L'adaptation au froid renforce votre système parasympathique – votre capacité à rester calme sous stress.
+L'adaptation au froid renforce votre système parasympathique - votre capacité à rester calme sous stress.
 
 ### 3. Mouvements et Exercice
 
@@ -1345,7 +1345,7 @@ La bonne nouvelle ? Ces changements ne prennent pas des mois. Une semaine de rou
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -1373,11 +1373,11 @@ C'est là que réside le véritable pouvoir. Chaque inspiration et expiration es
 
 ### Pourquoi la Respiration Affecte Votre Système Nerveux
 
-Le système nerveux autonome possède deux branches opposées : le sympathique (activation) et le parasympathique (récupération). Traditionnellement, on pensait que ces systèmes fonctionnaient de manière entièrement automatique – vous ne pouviez pas y accéder consciemment.
+Le système nerveux autonome possède deux branches opposées : le sympathique (activation) et le parasympathique (récupération). Traditionnellement, on pensait que ces systèmes fonctionnaient de manière entièrement automatique - vous ne pouviez pas y accéder consciemment.
 
 Mais la respiration a rompu cette règle. Spécifiquement, l'expiration active directement le nerf vague, le principal nerf du parasympathique. Quand vous expirez, particulièrement si vous expirez PLUS LONGTEMPS que vous n'inspirez, vous envoyez des signaux directs à votre cerveau : "Nous sommes en sécurité. Détendez-vous. Passez au repos et digestion."
 
-Inversement, une respiration rapide et superficielle (qui imite la respiration d'urgence/combat) signale au système sympathique qu'il faut activer. Ce signal est primordial – plus primordial que votre pensée consciente. Votre système nerveux répond à votre respiration avant même de réfléchir.
+Inversement, une respiration rapide et superficielle (qui imite la respiration d'urgence/combat) signale au système sympathique qu'il faut activer. Ce signal est primordial - plus primordial que votre pensée consciente. Votre système nerveux répond à votre respiration avant même de réfléchir.
 
 ### L'Impact Physiologique Direct
 
@@ -1428,7 +1428,7 @@ Développée par le Dr Andrew Weil, basée sur les techniques yogiques anciennes
 
 **La Science**
 Cette technique fonctionne par plusieurs mécanismes :
-1. La rétention prolongée (7 secondes) augmente le dioxyde de carbone dans votre système – cela relaxe les vaisseaux sanguins
+1. La rétention prolongée (7 secondes) augmente le dioxyde de carbone dans votre système - cela relaxe les vaisseaux sanguins
 2. L'expiration prolongée (8 secondes) active directement le nerf vague
 3. La combination de ces trois phases crée une activation parasympathique cascade qui accumule les effets
 
@@ -1441,11 +1441,11 @@ Cette technique fonctionne par plusieurs mécanismes :
 - Progressez jusqu'à 8 cycles
 
 **Important**
-Si vous vous sentez étourdi, arrêtez. C'est normal les premières fois – vous augmentez simplement le CO2. Réduisez les cycles.
+Si vous vous sentez étourdi, arrêtez. C'est normal les premières fois - vous augmentez simplement le CO2. Réduisez les cycles.
 
 **Quand l'Utiliser**
 - Pour l'anxiété aiguë (attaque de panique, nervosité avant un événement)
-- Pour l'insomnie – pratiquez au lit, au coucher
+- Pour l'insomnie - pratiquez au lit, au coucher
 - Avant toute situation stressante
 
 **Résultats Attendus**
@@ -1458,7 +1458,7 @@ Si vous vous sentez étourdi, arrêtez. C'est normal les premières fois – vou
 Le "box breathing" (respiration carrée) est utilisé par les militaires d'élite, les forces de l'ordre, et les athlètes de haut niveau pour maintenir le calme sous pression extrême.
 
 **La Science**
-Les quatre phases égales créent une symétrie nerveuse – ni sur-activation ni sous-activation. C'est un équilibre parfait, idéal quand vous devez rester clair mentalement mais calme physiologiquement.
+Les quatre phases égales créent une symétrie nerveuse - ni sur-activation ni sous-activation. C'est un équilibre parfait, idéal quand vous devez rester clair mentalement mais calme physiologiquement.
 
 **Le Protocole**
 - Inspirez par le nez : 4 secondes
@@ -1546,7 +1546,7 @@ La respiration Wim Hof est une technique développée par Wim Hof, "The Iceman",
 Une technique yogique classique qui alterne les narines pour équilibrer les hémisphères du cerveau et moduler entre sympathique et parasympathique.
 
 **La Science**
-Votre narine droite est plus connectée à votre hémisphère gauche (logique, action) – plus "sympathique". Votre narine gauche est plus connectée à votre hémisphère droit (créativité, détente) – plus "parasympathique". Cette technique alterne entre les deux pour créer l'équilibre.
+Votre narine droite est plus connectée à votre hémisphère gauche (logique, action) - plus "sympathique". Votre narine gauche est plus connectée à votre hémisphère droit (créativité, détente) - plus "parasympathique". Cette technique alterne entre les deux pour créer l'équilibre.
 
 **Le Protocole**
 - Fermez votre narine droite avec votre pouce droit
@@ -1609,7 +1609,7 @@ Votre narine droite est plus connectée à votre hémisphère gauche (logique, a
 
 La respiration est gratuite. Elle est toujours disponible. Aucun équipement requis. Et pourtant, elle est l'outil simple le plus puissant pour reprendre le contrôle de votre système nerveux.
 
-Chaque respiration est une opportunité. Chaque cycle respiratoire est une chance de recâbler votre physiology. En maîtrisant ces protocoles, vous ne contrôlez pas seulement votre anxiété – vous reprenez le contrôle entièrement sur votre réponse biologique au stress.
+Chaque respiration est une opportunité. Chaque cycle respiratoire est une chance de recâbler votre physiology. En maîtrisant ces protocoles, vous ne contrôlez pas seulement votre anxiété - vous reprenez le contrôle entièrement sur votre réponse biologique au stress.
 
 C'est votre superpouvoir. Commencez dès maintenant.
 
@@ -1621,7 +1621,7 @@ C'est votre superpouvoir. Commencez dès maintenant.
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -1648,7 +1648,7 @@ Vous fermez les yeux à 23h, vous vous réveillez à 7h. Vous avez "dormi 8 heur
 
 Non, probablement pas.
 
-Votre nuit se compose ieurs phases : sommeil léger, sommeil REM (rêves), et sommeil profond (ondes lentes). Chaque phase joue un rôle distinct et irremplaçable. Mais le sommeil profond – ce stade 3 NREM – est l'or biologique pur. C'est quand votre corps effectue ses réparations les plus critiques.
+Votre nuit se compose ieurs phases : sommeil léger, sommeil REM (rêves), et sommeil profond (ondes lentes). Chaque phase joue un rôle distinct et irremplaçable. Mais le sommeil profond - ce stade 3 NREM - est l'or biologique pur. C'est quand votre corps effectue ses réparations les plus critiques.
 
 La plupart des gens passent seulement 10-15% de leur nuit en sommeil profond. Si vous dormez 8 heures, c'est seulement 48 à 72 minutes de véritable réparation. Aucune merveille que vous vous sentiez fatigué !
 
@@ -1686,7 +1686,7 @@ Sans sommeil profond suffisant, même avec l'entraînement optimal et la nutriti
 **Nettoyage Cérébral : Le Glyphatic System**
 Votre cerveau produit des déchets métaboliques toute la journée. La majorité des déchets (protéines mal repliées, béta-amyloïde, protéines tau) s'accumule dans la matière grise. Ces accumulations sont liées à la dégénérescence cognitive et aux maladies neurodégénératives comme l'Alzheimer.
 
-Pendant le sommeil profond, votre cerveau active le système glyphatic – un système de "nettoyage" qui :
+Pendant le sommeil profond, votre cerveau active le système glyphatic - un système de "nettoyage" qui :
 - Augmente le volume intercellulaire de 60%
 - Permet aux fluides cérébrospinaux de circuler rapidement
 - Élimine les déchets protéiques
@@ -1730,7 +1730,7 @@ La lumière bleue des écrans supprime la mélatonine, retardant l'endormissemen
 La caféine bloque les récepteurs d'adénosine même lors du sommeil. Une demi-vie de 5-7 heures signifie qu'une tasse de café à 14h interfère toujours avec le sommeil profond la nuit.
 
 **3. Alcool**
-Beaucoup de gens pensent que l'alcool améliore le sommeil. Partiellement vrai – il accélère l'endormissement. Mais l'alcool supprime le REM et fragmente dramatiquement le sommeil profond, réduisant sa qualité de 20-30%.
+Beaucoup de gens pensent que l'alcool améliore le sommeil. Partiellement vrai - il accélère l'endormissement. Mais l'alcool supprime le REM et fragmente dramatiquement le sommeil profond, réduisant sa qualité de 20-30%.
 
 **4. Cycles Irréguliers**
 Dormir à heures variables détruit votre rythme circadien. Votre cerveau ne "sait pas" quand programmer le sommeil profond optimalement.
@@ -1978,7 +1978,7 @@ Dormir mieux, c'est changer votre vie. Commencez ce soir.
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -2215,33 +2215,33 @@ Votre productivité, votre créativité, votre santé mentale et physique en dé
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
   },
   {  id: "8",
     slug: "cafeine-sommeil-quand-arreter",
-    title: "Comment la caféine affecte votre sommeil – et quand arrêter d'en boire",
+    title: "Comment la caféine affecte votre sommeil - et quand arrêter d'en boire",
     excerpt: "Avec une demi-vie de 5-7 heures, la caféine consommée à 14h peut perturber votre sommeil nocturne.",
     category: "sommeil",
     author: "ACHZOD",
     date: "2024-12-15",
     readTime: "5 min",
     image: "https://images.unsplash.com/photo-1515894203077-9cd36032142f?w=800&auto=format&fit=crop",
-    content: `# Comment la caféine affecte votre sommeil – et quand arrêter d
+    content: `# Comment la caféine affecte votre sommeil - et quand arrêter d
 
 ## Comment la caféine affecte vraiment votre corps
 
-La caféine est l'une des molécules les plus mal comprises de la nutrition moderne. Contrairement à ce que beaucoup pensent, la caféine ne vous donne pas d'énergie. Elle crée plutôt une illusion d'énergie en bloquant les récepteurs d'adénosine dans votre cerveau – la molécule neurotransmettrice responsable de la signalisation de la fatigue.
+La caféine est l'une des molécules les plus mal comprises de la nutrition moderne. Contrairement à ce que beaucoup pensent, la caféine ne vous donne pas d'énergie. Elle crée plutôt une illusion d'énergie en bloquant les récepteurs d'adénosine dans votre cerveau - la molécule neurotransmettrice responsable de la signalisation de la fatigue.
 
-Lorsque vous consommez de la caféine, elle se fixe aux récepteurs d'adénosine et les empêche de fonctionner. C'est comme si vous mettiez du ruban adhésif sur les capteurs de fatigue de votre cerveau. Vous n'êtes pas plus énergique – vous êtes simplement moins conscient de votre fatigue réelle. Cette distinction est cruciale pour comprendre pourquoi la caféine peut vous priver de sommeil même si vous avez l'impression d'avoir suffisamment d'énergie.
+Lorsque vous consommez de la caféine, elle se fixe aux récepteurs d'adénosine et les empêche de fonctionner. C'est comme si vous mettiez du ruban adhésif sur les capteurs de fatigue de votre cerveau. Vous n'êtes pas plus énergique - vous êtes simplement moins conscient de votre fatigue réelle. Cette distinction est cruciale pour comprendre pourquoi la caféine peut vous priver de sommeil même si vous avez l'impression d'avoir suffisamment d'énergie.
 
- la caféine stimule la libération de dopamine et augmente votre fréquence cardiaque, ce qui renforce cette sensation de "boost" énergétique. Mais après l'euphorie initiale, votre corps s'adapte à la caféine en développant une tolérance. Vous avez donc besoin d'en consommer davantage pour obtenir le même effet – ce qui explique pourquoi beaucoup de gens finissent par boire 3, 4, voire 5 cafés par jour.
+ la caféine stimule la libération de dopamine et augmente votre fréquence cardiaque, ce qui renforce cette sensation de "boost" énergétique. Mais après l'euphorie initiale, votre corps s'adapte à la caféine en développant une tolérance. Vous avez donc besoin d'en consommer davantage pour obtenir le même effet - ce qui explique pourquoi beaucoup de gens finissent par boire 3, 4, voire 5 cafés par jour.
 
 ## Les différentes demi-vies de la caféine
 
-La demi-vie de la caféine – le temps qu'il faut à votre corps pour éliminer 50% de la caféine – est l'un des facteurs les plus importants à comprendre. Pour la plupart des adultes, la demi-vie moyenne est de 5 à 7 heures. Cela signifie qu'un café consommé à 14h aura encore 50% de sa caféine présente dans votre système à 20h ou 21h.
+La demi-vie de la caféine - le temps qu'il faut à votre corps pour éliminer 50% de la caféine - est l'un des facteurs les plus importants à comprendre. Pour la plupart des adultes, la demi-vie moyenne est de 5 à 7 heures. Cela signifie qu'un café consommé à 14h aura encore 50% de sa caféine présente dans votre système à 20h ou 21h.
 
 Mais voici l'aspect critique : certaines personnes sont des "métaboliseurs lents" en raison de variations génétiques dans leurs enzymes hépatiques (principalement la CYP1A2). Ces individus peuvent avoir une demi-vie allongée de 10 à 12 heures, voire plus. À l'inverse, les "métaboliseurs rapides" peuvent éliminer la caféine en 3 à 5 heures.
 
@@ -2262,21 +2262,21 @@ Mais ce n'est pas tout. La caféine affecte la structure de votre sommeil :
 - **Sommeil REM perturbé** : La caféine peut réduire votre temps de sommeil REM, la phase où vous rêvez et où se produit la consolidation émotionnelle et motrice des apprentissages.
 - **Fragmentation du sommeil** : Vous vous endormez peut-être, mais votre sommeil est plus fragmenté avec plus d'microéveils, ce qui réduit la qualité globale de votre sommeil.
 
-L'ironie est que vous pouvez vous endormir sans problème – votre forte envie de dormir due à l'accumulation d'adénosine dépasse l'effet stimulant de la caféine restante. Mais votre sommeil est de mauvaise qualité, et votre récupération en souffre.
+L'ironie est que vous pouvez vous endormir sans problème - votre forte envie de dormir due à l'accumulation d'adénosine dépasse l'effet stimulant de la caféine restante. Mais votre sommeil est de mauvaise qualité, et votre récupération en souffre.
 
-Cela signifie que même si vous dormez 8 heures, vous pouvez vous réveiller aussi fatigué qu'après 5 heures sans caféine. Et cette fatigue chronique vous pousse à consommer plus de caféine le lendemain matin pour fonctionner – créant ainsi un cycle addictif.
+Cela signifie que même si vous dormez 8 heures, vous pouvez vous réveiller aussi fatigué qu'après 5 heures sans caféine. Et cette fatigue chronique vous pousse à consommer plus de caféine le lendemain matin pour fonctionner - créant ainsi un cycle addictif.
 
 ## Les pires moments pour consommer de la caféine
 
 Le moment de votre consommation de caféine est tout aussi important que la quantité. Votre rythme circadien (horloge biologique) suit un pattern spécifique tout au long de la journée, et il y a des "fenêtres" optimales et terribles pour la caféine.
 
-Entre 9h et 11h30 du matin, votre cortisol (hormone du stress) atteint naturellement son pic. Boire du café pendant cette fenêtre ne maximise pas votre alertness – vous gaspillez simplement votre caféine. Attendre jusqu'à 11h30 ou 12h est beaucoup plus efficace pour créer un pic d'énergie.
+Entre 9h et 11h30 du matin, votre cortisol (hormone du stress) atteint naturellement son pic. Boire du café pendant cette fenêtre ne maximise pas votre alertness - vous gaspillez simplement votre caféine. Attendre jusqu'à 11h30 ou 12h est beaucoup plus efficace pour créer un pic d'énergie.
 
 De 14h à 16h, votre corps connaît naturellement une baisse d'énergie (la "sieste post-déjeuner"). C'est une excellente fenêtre pour une petite dose de caféine si vous en avez besoin. Mais après 15h-16h, la caféine devient un problème pour votre sommeil nocturne.
 
 ## Cutoff strict de caféine
 
-Mon recommandation, basée sur des centaines de clients optimisés : **pas de caféine après 14h**. Pour les personnes sensibles ou les métaboliseurs lents, ce cutoff devrait être plus tôt – peut-être 13h ou même 12h.
+Mon recommandation, basée sur des centaines de clients optimisés : **pas de caféine après 14h**. Pour les personnes sensibles ou les métaboliseurs lents, ce cutoff devrait être plus tôt - peut-être 13h ou même 12h.
 
 Cela peut sembler extrême si vous êtes habitué aux cafés d'après-midi ou aux boissons énergisantes tardives. Mais pendant 2-3 semaines d'ajustement, vous remarquerez une amélioration dramatique de votre sommeil, de votre énergie diurne et de votre récupération globale.
 
@@ -2317,7 +2317,7 @@ Un supplément de 100-200mg de L-théanine peut créer une légère sensation de
 
 Si vous êtes actuellement un consommateur lourd de caféine, arrêter brutalement causera des migraines de sevrage qui peuvent durer 3-5 jours. Au lieu de cela, réduisez graduellement votre consommation en diminuant de 25% par semaine.
 
-Les premiers jours d'une consommation réduite, vous vous sentirez plus fatigué. C'est normal – votre corps s'ajuste. Persévérez pendant 2-3 semaines, et vous remarquerez que votre énergie diurne naturelle augmente parce que vous dormez mieux. C'est le chemin vers une énergie durable et naturelle.
+Les premiers jours d'une consommation réduite, vous vous sentirez plus fatigué. C'est normal - votre corps s'ajuste. Persévérez pendant 2-3 semaines, et vous remarquerez que votre énergie diurne naturelle augmente parce que vous dormez mieux. C'est le chemin vers une énergie durable et naturelle.
 
 ## Optimisation de votre protocole caféine
 
@@ -2342,7 +2342,7 @@ Avec ces ajustements, vous verrez dans 2-3 semaines :
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -2360,7 +2360,7 @@ Avec ces ajustements, vous verrez dans 2-3 semaines :
 
 ## Qu'est-ce que vraiment votre rythme circadien ?
 
-Votre rythme circadien est bien plus qu'une simple horloge biologique – c'est un système complexe de gestion de votre énergie et de votre bien-être qui évolue sur un cycle d'environ 24 heures. "Circadien" signifie littéralement "environ un jour" (circa = environ, dies = jour en latin).
+Votre rythme circadien est bien plus qu'une simple horloge biologique - c'est un système complexe de gestion de votre énergie et de votre bien-être qui évolue sur un cycle d'environ 24 heures. "Circadien" signifie littéralement "environ un jour" (circa = environ, dies = jour en latin).
 
 Contrairement à ce que beaucoup pensent, votre rythme circadien n'est pas fixe à exactement 24 heures. Il est plus précisément entre 24 et 24,5 heures pour la plupart des gens. Cela signifie que sans signaux externes puissants, votre horloge biologique "glisserait" progressivement hors du synchronisme avec le cycle jour-nuit réel de la planète. C'est précisément pour cette raison que les "donneurs de temps" (zeitgebers) externes sont si critiques.
 
@@ -2372,9 +2372,9 @@ Votre rythme circadien n'est pas limité au sommeil. C'est un système maître q
 
 **Température corporelle** : Votre température centrale du corps varie d'environ 0,5 à 1 degré Celsius au cours de la journée, avec un pic l'après-midi et un creux tard dans la nuit. Cette variation affecte votre vigilance, votre performance athlétique et votre capacité à vous endormir.
 
-**Métabolisme et digestion** : Votre système digestif, votre métabolisme énergétique et même votre sensibilité à l'insuline varient au cours du jour. C'est pourquoi manger aux mêmes heures chaque jour est important – cela régule ces processus métaboliques.
+**Métabolisme et digestion** : Votre système digestif, votre métabolisme énergétique et même votre sensibilité à l'insuline varient au cours du jour. C'est pourquoi manger aux mêmes heures chaque jour est important - cela régule ces processus métaboliques.
 
-**Fonction cognitive** : Votre mémoire, votre concentration, votre capacité à résoudre des problèmes complexes – tout cela varie de façon prévisible au cours du jour selon votre rythme circadien.
+**Fonction cognitive** : Votre mémoire, votre concentration, votre capacité à résoudre des problèmes complexes - tout cela varie de façon prévisible au cours du jour selon votre rythme circadien.
 
 **Fonction immunitaire** : Votre production d'anticorps, votre réponse inflammatoire et votre capacité à combattre les infections varient aussi selon votre rythme circadien.
 
@@ -2384,7 +2384,7 @@ Un zeitgeber (du mot allemand signifiant "donneur de temps") est un signal envir
 
 ### La lumière : le zeitgeber le plus puissant
 
-La lumière, en particulier la lumière bleue du matin, est le signal le plus puissant pour réglementer votre rythme circadien. Votre rétine contient des cellules photoréceptrices spéciales appelées cellules ganglionnaires intrinsèquement photosensibles (ipRGCs) qui contiennent un pigment appelé mélanopsine. Ces cellules ne sont pas impliquées dans la vision normale – elles sont uniquement impliquées dans la détection de la lumière pour la régulation du rythme circadien.
+La lumière, en particulier la lumière bleue du matin, est le signal le plus puissant pour réglementer votre rythme circadien. Votre rétine contient des cellules photoréceptrices spéciales appelées cellules ganglionnaires intrinsèquement photosensibles (ipRGCs) qui contiennent un pigment appelé mélanopsine. Ces cellules ne sont pas impliquées dans la vision normale - elles sont uniquement impliquées dans la détection de la lumière pour la régulation du rythme circadien.
 
 Ce système de détection de la lumière est connecté directement à votre noyau suprachiasmatique (NSC), l'horloge biologique maître de votre cerveau. L'exposition à la lumière bleue le matin active ces cellules et supprime la mélatonine, ce qui vous rend alerte et "règle" votre horloge pour le jour. L'absence de lumière le soir (ou l'exposition à une lumière rouge/infrarouge apaisante) permet à la mélatonine de monter en flèche, préparant votre corps pour le sommeil.
 
@@ -2400,7 +2400,7 @@ Le jeûne nocturne de 12 heures minimum est un puissant signal circadien. Cela i
 
 Voici un exemple : si vous mangez votre dernier repas à 19h et votre premier repas à 7h, vous avez un jeûne de 12 heures. Cela communique clairement à votre corps le cycle jour-nuit et synchronise plusieurs processus métaboliques.
 
-À l'inverse, "grignoter" toute la journée ou manger tard le soir envoie un signal confus à votre corps – votre corps ne sait pas quand c'est le "jour" et quand c'est la "nuit". Cela peut causer des dysrégulations métaboliques et du sommeil.
+À l'inverse, "grignoter" toute la journée ou manger tard le soir envoie un signal confus à votre corps - votre corps ne sait pas quand c'est le "jour" et quand c'est la "nuit". Cela peut causer des dysrégulations métaboliques et du sommeil.
 
 ### Activité physique et exercice
 
@@ -2414,7 +2414,7 @@ Pour vraiment comprendre votre rythme circadien, vous devez connaître la cascad
 
 **3-4 heures avant le réveil** : La mélatonine commence à baisser et le cortisol commence à monter. C'est pourquoi vous vous sentez naturellement plus alerte avant de vous réveiller réellement.
 
-**Au réveil** : Le cortisol augmente rapidement. C'est normal et sain – c'est ce qui vous réveille. La mélatonine chute à presque zéro. Votre température corporelle augmente. Votre fréquence cardiaque augmente.
+**Au réveil** : Le cortisol augmente rapidement. C'est normal et sain - c'est ce qui vous réveille. La mélatonine chute à presque zéro. Votre température corporelle augmente. Votre fréquence cardiaque augmente.
 
 **1-2 heures après le réveil** : Votre cortisol atteint son pic diurne. C'est quand vous êtes le plus alerte mentalement et physiquement. C'est le meilleur moment pour les tâches cognitives difficiles ou l'entraînement intense.
 
@@ -2432,7 +2432,7 @@ Si ce pattern est déréglé, le désastre suit.
 
 ## Les conséquences d'un rythme circadien déréglé
 
-Un rythme circadien chroniquement dysrégulé n'est pas juste gênant – c'est un facteur de risque majeur pour presque chaque maladie grave :
+Un rythme circadien chroniquement dysrégulé n'est pas juste gênant - c'est un facteur de risque majeur pour presque chaque maladie grave :
 
 **Obésité et troubles métaboliques** : Un rythme circadien désynchronisé augmente votre insuline et réduit votre sensibilité à l'insuline, ce qui favorise la prise de poids et le diabète de type 2.
 
@@ -2526,7 +2526,7 @@ Une fois que vous avez resynchronisé votre rythme circadien (généralement 2-4
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -2546,9 +2546,9 @@ Une fois que vous avez resynchronisé votre rythme circadien (généralement 2-4
 
 Dans les sociétés occidentales modernes, la sieste est souvent perçue comme un signe de paresse ou de faiblesse. Pourtant, les cultures méditerranéennes, asiatiques et sud-américaines qui ont préservé la tradition de la sieste ont raison depuis des millénaires. La science moderne confirme désormais ce que ces cultures savaient intuitivement : la sieste n'est pas un luxe, c'est un outil puissant de performance, de santé et de longévité.
 
-Notre corps humain est biologiquement programmé pour un pattern de sommeil biphasique – c'est-à-dire deux périodes de sommeil par jour, pas une seule période nocturne continue. Le modèle moderne du "sommeil monophasique" (dormir uniquement la nuit) est en réalité une construction sociale récente, imposée par les contraintes industrielles et économiques des deux derniers siècles.
+Notre corps humain est biologiquement programmé pour un pattern de sommeil biphasique - c'est-à-dire deux périodes de sommeil par jour, pas une seule période nocturne continue. Le modèle moderne du "sommeil monophasique" (dormir uniquement la nuit) est en réalité une construction sociale récente, imposée par les contraintes industrielles et économiques des deux derniers siècles.
 
-Nos ancêtres, et la majorité des mammifères sur terre, suivent naturellement un pattern biphasique. Il y a une fenêtre circadienne naturelle de baisse d'énergie entre 13h et 15h – ce que les Espagnols appellent la "siesta" et ce que les chercheurs nomment le "creux post-prandial". Ce n'est pas causé uniquement par votre déjeuner (bien que manger un gros repas amplifie l'effet) – c'est une baisse d'alerte programmée génétiquement.
+Nos ancêtres, et la majorité des mammifères sur terre, suivent naturellement un pattern biphasique. Il y a une fenêtre circadienne naturelle de baisse d'énergie entre 13h et 15h - ce que les Espagnols appellent la "siesta" et ce que les chercheurs nomment le "creux post-prandial". Ce n'est pas causé uniquement par votre déjeuner (bien que manger un gros repas amplifie l'effet) - c'est une baisse d'alerte programmée génétiquement.
 
 Ignorer ce signal naturel et forcer votre corps à rester éveillé et productif pendant cette fenêtre crée une dette de performance et de santé que vous payez sur le long terme.
 
@@ -2556,7 +2556,7 @@ Ignorer ce signal naturel et forcer votre corps à rester éveillé et productif
 
 Les données épidémiologiques sur les siestes sont impressionnantes. Une étude massive portant sur 23 681 adultes grecs pendant 6 ans a révélé que ceux qui faisaient des siestes régulières (au moins 3 fois par semaine) avaient un risque de mortalité cardiovasculaire réduit de 37% par rapport aux non-siesteurs.
 
-Une autre étude de la NASA sur des pilotes de ligne a démontré qu'une sieste de 26 minutes améliorait la performance de vol de 34% et la vigilance de 54%. Ces résultats sont stupéfiants – une intervention aussi simple qu'une courte sieste peut presque doubler votre vigilance dans des tâches critiques.
+Une autre étude de la NASA sur des pilotes de ligne a démontré qu'une sieste de 26 minutes améliorait la performance de vol de 34% et la vigilance de 54%. Ces résultats sont stupéfiants - une intervention aussi simple qu'une courte sieste peut presque doubler votre vigilance dans des tâches critiques.
 
 Les mécanismes biologiques sont clairs : la sieste permet une consolidation accélérée de la mémoire, une réduction du cortisol (hormone du stress), une amélioration de la fonction immunitaire et une récupération partielle de la dette de sommeil accumulée. La sieste agit comme un "reset" physiologique qui optimise votre système nerveux, votre fonction cognitive et votre équilibre hormonal.
 
@@ -2585,7 +2585,7 @@ La micro-sieste est la sieste la plus courte mais étonnamment efficace. Même 5
 
 ### Le power nap (15-20 minutes)
 
-Le power nap est le "sweet spot" de la sieste – suffisamment long pour obtenir des bénéfices substantiels, suffisamment court pour éviter l'inertie du sommeil. C'est la durée de sieste la plus recommandée par les chercheurs en sommeil pour la population générale.
+Le power nap est le "sweet spot" de la sieste - suffisamment long pour obtenir des bénéfices substantiels, suffisamment court pour éviter l'inertie du sommeil. C'est la durée de sieste la plus recommandée par les chercheurs en sommeil pour la population générale.
 
 À cette durée, vous entrez dans le stade 2 du sommeil (sommeil léger modéré) mais vous ne descendez pas dans le sommeil profond (stades 3 et 4). Cela vous permet de vous réveiller facilement et de vous sentir immédiatement alerte.
 
@@ -2622,7 +2622,7 @@ La sieste de 30 à 60 minutes commence à entrer dans le territoire du sommeil p
 
 ### La sieste complète (90 minutes)
 
-La sieste de 90 minutes représente un cycle de sommeil complet – passant par tous les stades de sommeil léger, sommeil profond et sommeil REM (le sommeil où vous rêvez). C'est la durée "magique" qui vous permet de compléter un cycle entier et de vous réveiller naturellement à la fin de ce cycle, minimisant l'inertie du sommeil.
+La sieste de 90 minutes représente un cycle de sommeil complet - passant par tous les stades de sommeil léger, sommeil profond et sommeil REM (le sommeil où vous rêvez). C'est la durée "magique" qui vous permet de compléter un cycle entier et de vous réveiller naturellement à la fin de ce cycle, minimisant l'inertie du sommeil.
 
 **Avantages** :
 - Consolidation maximale de la mémoire à long terme (déclarative et procédurale)
@@ -2643,7 +2643,7 @@ La sieste de 90 minutes représente un cycle de sommeil complet – passant par 
 
 La sieste café est une technique fascinante qui combine les effets de la caféine et de la sieste pour un boost d'énergie maximal. Le principe : buvez rapidement un café (ou une source équivalente de caféine), puis faites immédiatement une sieste de 20 minutes.
 
-La caféine prend environ 20-30 minutes pour être absorbée et atteindre votre cerveau. Pendant que vous dormez, l'adénosine (la molécule de fatigue) est naturellement éliminée de vos récepteurs cérébraux. Lorsque vous vous réveillez 20 minutes plus tard, la caféine commence à agir ET vos récepteurs d'adénosine sont déjà nettoyés – créant un double effet synergique.
+La caféine prend environ 20-30 minutes pour être absorbée et atteindre votre cerveau. Pendant que vous dormez, l'adénosine (la molécule de fatigue) est naturellement éliminée de vos récepteurs cérébraux. Lorsque vous vous réveillez 20 minutes plus tard, la caféine commence à agir ET vos récepteurs d'adénosine sont déjà nettoyés - créant un double effet synergique.
 
 **Avantages** :
 - Boost d'énergie maximal (supérieur à la caféine ou à la sieste seule)
@@ -2663,7 +2663,7 @@ Le moment de votre sieste est tout aussi important que sa durée. Votre rythme c
 
 ### La fenêtre idéale : 13h-15h
 
-La fenêtre circadienne optimale pour une sieste se situe entre 13h et 15h. C'est pendant cette période que votre corps connaît naturellement une baisse d'alerte – votre température corporelle baisse légèrement, votre cortisol décline et votre pression homéostatique de sommeil (la "pression" accumulée pour dormir) est modérée mais présente.
+La fenêtre circadienne optimale pour une sieste se situe entre 13h et 15h. C'est pendant cette période que votre corps connaît naturellement une baisse d'alerte - votre température corporelle baisse légèrement, votre cortisol décline et votre pression homéostatique de sommeil (la "pression" accumulée pour dormir) est modérée mais présente.
 
 Faire une sieste pendant cette fenêtre :
 - S'aligne avec votre biologie naturelle, rendant l'endormissement plus facile
@@ -2714,7 +2714,7 @@ Voici mon protocole exact pour une sieste optimale, basé sur des années de coa
 
 **Silence** : Utilisez des bouchons d'oreilles ou du bruit blanc si nécessaire. Même des bruits légers peuvent fragmenter votre sommeil léger.
 
-**Position** : Allongez-vous si possible. Une position semi-allongée (comme dans un fauteuil incliné) fonctionne aussi. Évitez de rester assis droit – c'est beaucoup plus difficile de s'endormir.
+**Position** : Allongez-vous si possible. Une position semi-allongée (comme dans un fauteuil incliné) fonctionne aussi. Évitez de rester assis droit - c'est beaucoup plus difficile de s'endormir.
 
 ### 2. Utiliser une alarme intelligente
 
@@ -2739,7 +2739,7 @@ Après votre alarme, prenez 2-3 minutes pour vous réveiller progressivement. É
 
 ### Erreur 1 : Siestes trop longues sans être des cycles complets
 
-Faire une sieste de 45-60 minutes est le pire des deux mondes – suffisamment longue pour entrer dans le sommeil profond, mais pas assez longue pour compléter un cycle entier. Résultat : inertie du sommeil massive au réveil. Respectez soit 20 minutes, soit 90 minutes.
+Faire une sieste de 45-60 minutes est le pire des deux mondes - suffisamment longue pour entrer dans le sommeil profond, mais pas assez longue pour compléter un cycle entier. Résultat : inertie du sommeil massive au réveil. Respectez soit 20 minutes, soit 90 minutes.
 
 ### Erreur 2 : Siestes trop tardives
 
@@ -2766,11 +2766,11 @@ Si votre lieu de travail n'a pas de salle dédiée, considérez ces alternatives
 
 ## La sieste comme outil de longévité
 
-Les "zones bleues" – ces régions du monde où les gens vivent régulièrement plus de 100 ans – ont toutes quelque chose en commun : une culture de la sieste. À Ikaria (Grèce), Sardaigne (Italie), Nicoya (Costa Rica), les siestes font partie intégrante du mode de vie.
+Les "zones bleues" - ces régions du monde où les gens vivent régulièrement plus de 100 ans - ont toutes quelque chose en commun : une culture de la sieste. À Ikaria (Grèce), Sardaigne (Italie), Nicoya (Costa Rica), les siestes font partie intégrante du mode de vie.
 
-La sieste n'est pas juste un "nice to have" – c'est un outil puissant de longévité, de performance et de santé. Dans un monde moderne qui glorifie le "hustle" constant et la privation de sommeil, la sieste est un acte de rébellion intelligent et scientifiquement validé.
+La sieste n'est pas juste un "nice to have" - c'est un outil puissant de longévité, de performance et de santé. Dans un monde moderne qui glorifie le "hustle" constant et la privation de sommeil, la sieste est un acte de rébellion intelligent et scientifiquement validé.
 
-Votre corps a évolué pendant des millions d'années avec un pattern de sommeil biphasique. Honorer ce pattern n'est pas de la paresse – c'est de l'optimisation biologique.
+Votre corps a évolué pendant des millions d'années avec un pattern de sommeil biphasique. Honorer ce pattern n'est pas de la paresse - c'est de l'optimisation biologique.
 
 ---
 
@@ -2780,7 +2780,7 @@ Votre corps a évolué pendant des millions d'années avec un pattern de sommeil
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -3001,7 +3001,7 @@ Après ce mois d'ajustements progressifs, vous remarquerez :
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -3263,21 +3263,21 @@ Et rappelez-vous : ces recommandations sont des points de départ, pas des véri
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
   },
   {  id: "13",
     slug: "guide-ultime-glycemie",
-    title: "Le guide ultime de la glycémie – et ce que vos niveaux signifient",
+    title: "Le guide ultime de la glycémie - et ce que vos niveaux signifient",
     excerpt: "Comprendre votre glycémie est fondamental pour l'énergie, la composition corporelle et la longévité.",
     category: "nutrition",
     author: "ACHZOD",
     date: "2024-12-02",
     readTime: "8 min",
     image: "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800&auto=format&fit=crop",
-    content: `# Le guide ultime de la glycémie – et ce que vos niveaux signifient
+    content: `# Le guide ultime de la glycémie - et ce que vos niveaux signifient
 
 ## Votre glycémie : le chef d'orchestre silencieux de votre santé
 
@@ -3581,7 +3581,7 @@ Ces objectifs peuvent sembler stricts comparés aux standards médicaux conventi
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -3589,7 +3589,7 @@ Ces objectifs peuvent sembler stricts comparés aux standards médicaux conventi
   {  id: "14",
     slug: "iifym-macros-flexible-dieting",
     title: "IIFYM expliqué : Le guide complet du flexible dieting",
-    excerpt: "If It Fits Your Macros – une approche flexible qui se concentre sur les macronutriments.",
+    excerpt: "If It Fits Your Macros - une approche flexible qui se concentre sur les macronutriments.",
     category: "nutrition",
     author: "ACHZOD",
     date: "2024-11-30",
@@ -3942,7 +3942,7 @@ C'est cette approche équilibrée - que j'appelle IIFYM 2.0 - qui produit les me
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -4080,7 +4080,7 @@ La clé est de personnaliser votre consommation en fonction de votre situation i
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -4330,7 +4330,7 @@ En suivant ces six règles, vous transformerez votre approche de l'entraînement
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -4363,11 +4363,11 @@ La Zone 2 est une zone d'intensité spécifique définie par votre fréquence ca
 
 Le modèle classique divise l'intensité de l'exercice en cinq zones basées sur votre fréquence cardiaque maximale :
 
-- **Zone 1** : 50-60% de la FC max – Récupération active très légère
-- **Zone 2** : 60-70% de la FC max – Endurance de base, aérobie facile
-- **Zone 3** : 70-80% de la FC max – Tempo modéré
-- **Zone 4** : 80-90% de la FC max – Seuil lactique
-- **Zone 5** : 90-100% de la FC max – Effort maximal
+- **Zone 1** : 50-60% de la FC max - Récupération active très légère
+- **Zone 2** : 60-70% de la FC max - Endurance de base, aérobie facile
+- **Zone 3** : 70-80% de la FC max - Tempo modéré
+- **Zone 4** : 80-90% de la FC max - Seuil lactique
+- **Zone 5** : 90-100% de la FC max - Effort maximal
 
 La Zone 2, donc, correspond à environ 60 à 70 pour cent de votre fréquence cardiaque maximale. Pour la plupart des gens, cela se situe entre 120 et 150 battements par minute, selon l'âge et la condition physique.
 
@@ -4570,7 +4570,7 @@ La tortue bat le lièvre. Toujours.
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -4814,7 +4814,7 @@ Arrêtez de penser en termes de tribu. Vous n'êtes ni un coureur ni un pratiqua
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -4984,7 +4984,7 @@ Une stratégie glucidique bien pensée peut faire la différence entre une séan
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -5152,7 +5152,7 @@ La récupération n'est pas de la paresse, c'est de l'intelligence. Respectez-la
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -5320,7 +5320,7 @@ Un sommeil de qualité n'est pas un luxe, c'est une nécessité absolue pour vot
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -5498,7 +5498,7 @@ Votre âge métabolique n'est pas une sentence définitive mais un indicateur dy
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -5690,7 +5690,7 @@ Chaque femme traverse cette transition différemment. L'approche personnalisée,
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -5886,7 +5886,7 @@ Investir dans des bilans réguliers et complets représente l'une des meilleures
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -6098,7 +6098,7 @@ La HRV ne constitue pas un outil magique mais un guide parmi d'autres. Combinez-
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -6306,7 +6306,7 @@ La graisse viscérale répond mieux aux interventions de mode de vie que la grai
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -6495,7 +6495,7 @@ La respiration est notre acte physiologique le plus fondamental. Toute intervent
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -6726,7 +6726,7 @@ Il y a de fortes chances que vous découvriez un nouvel outil précieux dans vot
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -6909,7 +6909,7 @@ Une setup complète de sleepmaxxing peut facilement dépasser 3000-5000€ :
 
 ## Conclusion : Le paradoxe du sommeil parfait
 
-Le sommeil est l'un des rares domaines de la santé où "lâcher prise" est thérapeutique. Plus vous chassez le sommeil parfait, plus il vous échappe. Les insomniaques chroniques ne manquent pas de connaissances sur l'hygiène du sommeil—ils en savent trop et y pensent trop.
+Le sommeil est l'un des rares domaines de la santé où "lâcher prise" est thérapeutique. Plus vous chassez le sommeil parfait, plus il vous échappe. Les insomniaques chroniques ne manquent pas de connaissances sur l'hygiène du sommeil, ils en savent trop et y pensent trop.
 
 **Le sleepmaxxing est utile quand** :
 - Vous établissez des routines simples et consistantes
@@ -6934,7 +6934,7 @@ Le meilleur sommeil n'est pas celui qu'on traque obsessionnellement, c'est celui
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -6980,7 +6980,7 @@ Ces hormones ne varient pas linéairement mais en vagues successives, créant de
 
 ### Ce qui se passe physiologiquement
 
-Le premier jour de vos règles marque le Jour 1 de votre cycle. À ce moment, les œstrogènes et la progestérone sont au plus bas—les deux hormones ont chuté dramatiquement car il n'y a pas eu de grossesse. Cette chute hormonale déclenche l'élimination de la muqueuse utérine (endomètre) accumulée le mois précédent.
+Le premier jour de vos règles marque le Jour 1 de votre cycle. À ce moment, les œstrogènes et la progestérone sont au plus bas, les deux hormones ont chuté dramatiquement car il n'y a pas eu de grossesse. Cette chute hormonale déclenche l'élimination de la muqueuse utérine (endomètre) accumulée le mois précédent.
 
 **Température corporelle** : Retour à la baseline (36.5-36.7°C)
 
@@ -7257,7 +7257,7 @@ Le cycle menstruel n'est pas un handicap. C'est un système adaptatif complexe q
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -7265,7 +7265,7 @@ Le cycle menstruel n'est pas un handicap. C'est un système adaptatif complexe q
   {  id: "31",
     slug: "entrainement-pendant-regles",
     title: "Faut-il s'entraîner pendant les règles ?",
-    excerpt: "La science sur l'exercice pendant la menstruation – et comment adapter votre entraînement.",
+    excerpt: "La science sur l'exercice pendant la menstruation - et comment adapter votre entraînement.",
     category: "femmes",
     author: "ACHZOD",
     date: "2024-10-18",
@@ -7549,7 +7549,7 @@ Trackez, adaptez, optimisez. Et surtout : zéro culpabilité. Manquer 1-2 jours 
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -7628,7 +7628,7 @@ Les femmes ont une température corporelle de base légèrement plus élevée (0
 
 ## L'impact du cycle menstruel sur le sommeil
 
-Le cycle menstruel n'affecte pas que votre humeur et votre énergie—il module profondément votre sommeil.
+Le cycle menstruel n'affecte pas que votre humeur et votre énergie, il module profondément votre sommeil.
 
 ### Phase folliculaire et ovulation (J1-J16) : Le sommeil optimal
 
@@ -7883,7 +7883,7 @@ Votre sommeil est complexe, cyclique, et unique. Il mérite d'être compris et o
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -7905,7 +7905,7 @@ Vous vous sentez épuisée sans raison apparente ? Vous prenez du poids malgré 
 
 Les hormones sont les messagers chimiques qui régulent pratiquement chaque fonction de votre corps : métabolisme, énergie, humeur, sommeil, reproduction, cognition, composition corporelle. Pourtant, la plupart des femmes n'ont jamais fait d'analyse hormonale complète, ou si elles l'ont fait, elles ne savent pas vraiment interpréter les résultats.
 
-"Dans les normes" ne signifie pas "optimal". Les ranges de laboratoire sont établis sur 95% de la population—incluant des personnes malades, en surpoids, stressées, ou sous médication. Être dans les normes signifie simplement que vous n'avez pas une pathologie flagrante. Mais entre "pas malade" et "optimal", il existe un monde de différence.
+"Dans les normes" ne signifie pas "optimal". Les ranges de laboratoire sont établis sur 95% de la population, incluant des personnes malades, en surpoids, stressées, ou sous médication. Être dans les normes signifie simplement que vous n'avez pas une pathologie flagrante. Mais entre "pas malade" et "optimal", il existe un monde de différence.
 
 , nous allons décortiquer les hormones clés à tester, leur rôle, comment les interpréter, quand les doser, et surtout, quoi faire des résultats.
 
@@ -8251,7 +8251,7 @@ Méfiez-vous du médecin qui vous dit "tout est normal" alors que vous êtes ép
 
 ## Conclusion : Vos hormones, votre pouvoir
 
-Les hormones ne sont pas une fatalité. Elles sont le reflet de votre santé globale—et elles sont largement modulables.
+Les hormones ne sont pas une fatalité. Elles sont le reflet de votre santé globale, et elles sont largement modulables.
 
 **Si vous ressentez des symptômes chroniques inexpliqués** : fatigue, prise de poids, troubles du sommeil, humeur instable, perte de libido, difficulté de concentration... NE les ignorez pas. NE laissez pas un médecin vous dire "c'est dans votre tête" ou "c'est l'âge".
 
@@ -8271,7 +8271,7 @@ Vos hormones sont vos alliées. Apprenez à les écouter, à les tester, et à l
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -8412,7 +8412,7 @@ L'entraînement lourd, progressif, avec une forme stricte et une proximité rais
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -8563,7 +8563,7 @@ Rappelez-vous : stimulez, n'annihilez pas. Votre croissance musculaire dépend a
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -8734,7 +8734,7 @@ La surcharge progressive n'est pas un sprint, c'est un marathon. Progressez inte
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -8965,7 +8965,7 @@ Cette approche fondée sur la science vous permettra de maximiser votre croissan
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -9182,7 +9182,7 @@ Si vous respectez ces principes avec cohérence sur 8-12 semaines, vous serez su
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -9399,7 +9399,7 @@ La créatine est un supplément extraordinairement efficace, mais gardons la per
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -9630,7 +9630,7 @@ N'ayez pas peur de consommer beaucoup de protéines. Votre croissance musculaire
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -9666,7 +9666,7 @@ Chaque noyau contrôle une portion de la fibre musculaire appelée "domaine myon
 
 ### Ce qui se passe pendant l'entraînement
 
-Quand vous vous entraînez intensément, vos muscles subissent des microtraumatismes. En réponse, des **cellules satellites** – des cellules souches dormantes situées à la périphérie des fibres musculaires – s'activent. Ces cellules fusionnent avec vos fibres musculaires et leur donnent leurs noyaux.
+Quand vous vous entraînez intensément, vos muscles subissent des microtraumatismes. En réponse, des **cellules satellites** - des cellules souches dormantes situées à la périphérie des fibres musculaires - s'activent. Ces cellules fusionnent avec vos fibres musculaires et leur donnent leurs noyaux.
 
 Résultat : vos fibres musculaires acquièrent de nouveaux noyaux, augmentant ainsi leur capacité à produire des protéines contractiles (actine et myosine). Plus de noyaux = plus de protéines = plus de muscle.
 
@@ -9752,7 +9752,7 @@ Vous construisez un patrimoine biologique qui vous suivra toute votre vie. Même
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -9804,7 +9804,7 @@ Pendant longtemps, les bodybuilders ont vanté les mérites du focus interne san
 
 ### L'activation musculaire augmente... mais pas toujours
 
-Les études utilisant l'électromyographie (EMG) – qui mesure l'activation électrique des muscles – ont montré que le focus interne **augmente effectivement le recrutement des fibres musculaires**. Quand vous pensez activement à contracter votre biceps pendant un curl, l'activation EMG est supérieure à celle observée avec un focus externe.
+Les études utilisant l'électromyographie (EMG) - qui mesure l'activation électrique des muscles - ont montré que le focus interne **augmente effectivement le recrutement des fibres musculaires**. Quand vous pensez activement à contracter votre biceps pendant un curl, l'activation EMG est supérieure à celle observée avec un focus externe.
 
 Mais voici le hic : **cet avantage disparaît progressivement à mesure que l'intensité augmente**.
 
@@ -9920,7 +9920,7 @@ La clé est de développer la **flexibilité cognitive** : savoir basculer d'un 
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -9944,7 +9944,7 @@ Le deload (ou semaine de décharge) est l'une des stratégies les plus mal compr
 
 ## Pourquoi la récupération est aussi importante que l'entraînement
 
-L'entraînement crée un stress. Ce stress force votre corps à s'adapter : construire du muscle, renforcer les tendons, améliorer les systèmes énergétiques. Mais l'adaptation ne se produit pas pendant l'entraînement – elle se produit **pendant la récupération**.
+L'entraînement crée un stress. Ce stress force votre corps à s'adapter : construire du muscle, renforcer les tendons, améliorer les systèmes énergétiques. Mais l'adaptation ne se produit pas pendant l'entraînement - elle se produit **pendant la récupération**.
 
 ### Le concept de fatigue centrale
 
@@ -10020,7 +10020,7 @@ Ne planifiez pas vos deloads de manière arbitraire (toutes les 4 semaines par e
 
 - **Appétit réduit** : Vous n'avez plus faim, alors que normalement l'entraînement vous donne faim.
 - **Perte de libido** : Un signe classique de fatigue hormonale (testostérone basse, cortisol élevé).
-- **Maladies fréquentes** : Vous attrapez tous les rhumes qui passent – signe que votre système immunitaire est affaibli.
+- **Maladies fréquentes** : Vous attrapez tous les rhumes qui passent - signe que votre système immunitaire est affaibli.
 
 Si vous cumulez 3-4 de ces signes sur une semaine, il est temps de décharger.
 
@@ -10062,7 +10062,7 @@ Vous retrouvez la faim, le plaisir de l'entraînement. Cela prévient le burnout
 
 ### Prévention des blessures
 
-En réduisant le stress sur les tissus, vous laissez les tendons, ligaments et articulations récupérer. Beaucoup de blessures surviennent par accumulation de micro-traumatismes – le deload casse cette accumulation.
+En réduisant le stress sur les tissus, vous laissez les tendons, ligaments et articulations récupérer. Beaucoup de blessures surviennent par accumulation de micro-traumatismes - le deload casse cette accumulation.
 
 ## Les erreurs courantes à éviter
 
@@ -10080,7 +10080,7 @@ Si vous faites un deload toutes les 3 semaines, vous ne laissez pas assez de tem
 
 ## À retenir : le deload est un investissement, pas une perte
 
-Les athlètes qui progressent le plus sur le long terme ne sont pas ceux qui s'entraînent le plus dur – ce sont ceux qui **gèrent le mieux leur récupération**. Le deload n'est pas une semaine perdue : c'est la semaine qui garantit que les semaines suivantes seront productives.
+Les athlètes qui progressent le plus sur le long terme ne sont pas ceux qui s'entraînent le plus dur - ce sont ceux qui **gèrent le mieux leur récupération**. Le deload n'est pas une semaine perdue : c'est la semaine qui garantit que les semaines suivantes seront productives.
 
 Apprenez à écouter votre corps plutôt que de suivre des règles arbitraires. Un bon deload au bon moment peut vous faire progresser plus en 6 mois qu'une année de grind continu.
 
@@ -10092,7 +10092,7 @@ Apprenez à écouter votre corps plutôt que de suivre des règles arbitraires. 
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -10283,7 +10283,7 @@ La clé : **déficit modéré, protéines élevées, intensité maintenue, patie
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -10395,7 +10395,7 @@ Pour un bodybuilder cherchant la **masse pure**, l'hypertrophie myofibrillaire (
 
 Les courbatures (DOMS : Delayed Onset Muscle Soreness) sont effectivement **plus intenses** après un travail excentrique. Mais cela ne signifie pas que c'est mieux pour la croissance.
 
-Les courbatures proviennent de **micro-déchirures** des fibres et de l'inflammation locale. L'excentrique génère plus de dommages structuraux, d'où plus de douleur. Mais la croissance musculaire ne dépend pas uniquement des dommages – elle dépend surtout de la **tension mécanique** et du **stress métabolique**.
+Les courbatures proviennent de **micro-déchirures** des fibres et de l'inflammation locale. L'excentrique génère plus de dommages structuraux, d'où plus de douleur. Mais la croissance musculaire ne dépend pas uniquement des dommages - elle dépend surtout de la **tension mécanique** et du **stress métabolique**.
 
 En fait, trop de dommages peut même **nuire à la récupération** et ralentir vos progrès.
 
@@ -10453,7 +10453,7 @@ La phase excentrique n'est **ni magique, ni supérieure**. Dans un entraînement
 - Intégrez des techniques d'accentuation excentrique sur les muscles en retard
 - Restez prudent et progressif pour éviter le surentraînement
 
-Le muscle ne fait pas la différence entre concentrique et excentrique – il répond à la **tension mécanique totale**. Maximisez cette tension sur les deux phases, et vous grandirez.
+Le muscle ne fait pas la différence entre concentrique et excentrique - il répond à la **tension mécanique totale**. Maximisez cette tension sur les deux phases, et vous grandirez.
 
 ---
 
@@ -10463,7 +10463,7 @@ Le muscle ne fait pas la différence entre concentrique et excentrique – il r�
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -10687,7 +10687,7 @@ Arrêtez de faire 3 séries de mollets le vendredi soir et de vous plaindre qu'i
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -10717,7 +10717,7 @@ L'alcool n'est pas juste "des calories vides". C'est une molécule qui interfèr
 
 ### 1. Suppression massive de la synthèse protéique musculaire
 
-Le premier problème – et le plus grave – c'est l'impact direct de l'alcool sur la **synthèse protéique musculaire (MPS)**, le processus par lequel votre corps construit de nouvelles protéines musculaires après l'entraînement.
+Le premier problème - et le plus grave - c'est l'impact direct de l'alcool sur la **synthèse protéique musculaire (MPS)**, le processus par lequel votre corps construit de nouvelles protéines musculaires après l'entraînement.
 
 #### L'étude choc de 2014
 
@@ -10746,7 +10746,7 @@ L'alcool (et son métabolite, l'acétaldéhyde) interfère avec plusieurs voies 
 
 ### 2. Perturbations hormonales : la tempête parfaite
 
-L'alcool ne se contente pas d'éteindre les signaux anaboliques – il allume aussi les signaux **cataboliques** (dégradation musculaire).
+L'alcool ne se contente pas d'éteindre les signaux anaboliques - il allume aussi les signaux **cataboliques** (dégradation musculaire).
 
 #### Cortisol : l'hormone du stress en surrégime
 
@@ -10891,7 +10891,7 @@ La clé : la **cohérence** et l'**honnêteté avec vous-même**. Ne vous plaign
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -11105,7 +11105,7 @@ Rappelez-vous : **plus n'est pas toujours mieux. Mieux est mieux.**
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -11403,7 +11403,7 @@ Dans 12 mois, la différence sera spectaculaire.
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -11715,7 +11715,7 @@ L'entraînement optimal n'est pas celui qui est parfait sur le papier, c'est cel
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -12027,7 +12027,7 @@ Une fois que vous aurez fait tout cela, vous pourrez légitimement parler de lim
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -12354,7 +12354,7 @@ Le timing parfait d'une nutrition médiocre reste médiocre. Le timing imparfait
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -12722,7 +12722,7 @@ Arrêtez de stresser sur le nombre de repas. Stressez sur la qualité de votre n
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -13127,7 +13127,7 @@ Investissez dans ce qui fonctionne vraiment : nourriture de qualité, programme 
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -13157,7 +13157,7 @@ La littérature scientifique penche clairement en faveur de l'amplitude complèt
 
 **1. Temps sous tension optimisé**
 
-Contrairement à une idée reçue, le temps sous tension seul n'explique pas tout. Ce qui compte vraiment, c'est le **temps sous tension productive** – c'est-à-dire le temps passé dans les zones où le muscle est réellement stimulé de manière optimale. L'amplitude complète force le muscle à travailler sur toute sa longueur fonctionnelle, maximisant ainsi le recrutement des fibres musculaires.
+Contrairement à une idée reçue, le temps sous tension seul n'explique pas tout. Ce qui compte vraiment, c'est le **temps sous tension productive** - c'est-à-dire le temps passé dans les zones où le muscle est réellement stimulé de manière optimale. L'amplitude complète force le muscle à travailler sur toute sa longueur fonctionnelle, maximisant ainsi le recrutement des fibres musculaires.
 
 **2. L'étirement musculaire sous charge**
 
@@ -13275,7 +13275,7 @@ Cependant, les répétitions partielles ne sont pas à jeter. Utilisées straté
 - Contourner des limitations anatomiques
 - Ajouter de la variété et des stimuli nouveaux
 
-La clé est l'intentionnalité : chaque répétition, qu'elle soit complète ou partielle, doit avoir un objectif précis et être exécutée avec contrôle. Ne laissez jamais l'ego ou la paresse dicter votre amplitude de mouvement. Votre corps – et vos gains – vous remercieront.
+La clé est l'intentionnalité : chaque répétition, qu'elle soit complète ou partielle, doit avoir un objectif précis et être exécutée avec contrôle. Ne laissez jamais l'ego ou la paresse dicter votre amplitude de mouvement. Votre corps - et vos gains - vous remercieront.
 
 ---
 
@@ -13285,7 +13285,7 @@ La clé est l'intentionnalité : chaque répétition, qu'elle soit complète ou 
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -13328,7 +13328,7 @@ Les recherches montrent qu'il faut environ **2.5-3g de leucine par repas** pour 
 
 ### Le profil complet d'acides aminés essentiels
 
-Les protéines animales sont dites "complètes" – elles contiennent tous les 9 acides aminés essentiels en quantités suffisantes pour soutenir la croissance musculaire. Les protéines végétales, à quelques exceptions près (soja, quinoa), sont souvent **limitantes en un ou plusieurs acides aminés**.
+Les protéines animales sont dites "complètes" - elles contiennent tous les 9 acides aminés essentiels en quantités suffisantes pour soutenir la croissance musculaire. Les protéines végétales, à quelques exceptions près (soja, quinoa), sont souvent **limitantes en un ou plusieurs acides aminés**.
 
 **Exemples de limitations :**
 - Les légumineuses (lentilles, pois chiches) : faibles en méthionine
@@ -13502,7 +13502,7 @@ L'important n'est pas tant la source de vos protéines, mais **l'atteinte de vos
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -13798,7 +13798,7 @@ Votre corps ne progresse pas dans le chaos, mais dans la structure intelligente.
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -14052,7 +14052,7 @@ La vraie force, c'est savoir écouter son corps.
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -14367,7 +14367,7 @@ La discipline, ce n'est pas s'entraîner coûte que coûte. C'est être honnête
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -14658,7 +14658,7 @@ Arrêtez de chercher la complexité quand la simplicité fonctionne parfaitement
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -15066,7 +15066,7 @@ Comme toujours en musculation, **les fondamentaux priment** : surcharge progress
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -15477,7 +15477,7 @@ C'est le "supplément" le moins cher et le plus efficace qui existe. Il coule de
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -15658,7 +15658,7 @@ Cette combinaison vous offre :
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -15915,7 +15915,7 @@ La caféine a un léger effet diurétique. Assurez-vous d'être bien hydraté av
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -15935,7 +15935,7 @@ La caféine a un léger effet diurétique. Assurez-vous d'être bien hydraté av
 
 Combien de fois avez-vous entendu qu'il fallait "pousser avec les talons" au squat pour "recruter les ischio-jambiers" ? Ou qu'un squat profond était excellent pour développer l'arrière des cuisses ? Ces affirmations sont répétées ad nauseam dans les salles de sport, mais la réalité scientifique est tout autre.
 
-Les ischio-jambiers sont probablement **les muscles les moins actifs** pendant le squat. Et ce n'est pas un défaut de l'exercice – c'est de la biomécanique pure.
+Les ischio-jambiers sont probablement **les muscles les moins actifs** pendant le squat. Et ce n'est pas un défaut de l'exercice - c'est de la biomécanique pure.
 
 ## Ce que disent les études d'activation musculaire
 
@@ -15973,7 +15973,7 @@ Pendant la phase montante du squat :
 1. **La hanche s'étend** (mouvement que les ischio-jambiers sont censés produire)
 2. **Le genou s'étend également** (mouvement opposé à la fonction des ischio-jambiers)
 
-Si les ischio-jambiers se contractaient fortement pour aider à l'extension de hanche, ils tireraient simultanément le tibia vers l'arrière, provoquant une **flexion du genou** – exactement l'inverse de ce que vous essayez de faire.
+Si les ischio-jambiers se contractaient fortement pour aider à l'extension de hanche, ils tireraient simultanément le tibia vers l'arrière, provoquant une **flexion du genou** - exactement l'inverse de ce que vous essayez de faire.
 
 C'est comme appuyer sur l'accélérateur et le frein en même temps : biomécaniquement contre-productif.
 
@@ -16025,7 +16025,7 @@ Si votre objectif est de soulever le plus lourd possible au squat, cette faible 
 
 Si votre objectif est le développement musculaire harmonieux, compter uniquement sur le squat pour les ischio-jambiers serait une erreur stratégique majeure.
 
-**Problème** : Vous développerez des quadriceps et des fessiers massifs, mais des ischio-jambiers disproportionnés – le classique "déséquilibre quad-dominant".
+**Problème** : Vous développerez des quadriceps et des fessiers massifs, mais des ischio-jambiers disproportionnés - le classique "déséquilibre quad-dominant".
 
 ### Pour les athlètes
 
@@ -16143,7 +16143,7 @@ Beaucoup de pratiquants font des RDL mais oublient les leg curls et les nordics.
 
 ### Erreur 3 : Volume insuffisant
 
-Les ischio-jambiers peuvent tolérer un volume élevé. Ne les traitez pas comme un muscle accessoire – donnez-leur l'attention qu'ils méritent.
+Les ischio-jambiers peuvent tolérer un volume élevé. Ne les traitez pas comme un muscle accessoire - donnez-leur l'attention qu'ils méritent.
 
 ### Erreur 4 : Amplitude de mouvement partielle
 
@@ -16173,7 +16173,7 @@ Vos genoux, votre performance, et votre physique vous remercieront.
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -16193,7 +16193,7 @@ Vos genoux, votre performance, et votre physique vous remercieront.
 
 Dans de nombreuses salles de sport, le soulevé de terre est programmé le jour du dos. Logique, non ? C'est un mouvement de tirage, il sollicite toute la chaîne postérieure, et vous le sentez travailler dans le haut du dos. Mais est-ce vraiment un exercice de dos optimal ? La réponse est plus nuancée que vous ne le pensez.
 
-Le soulevé de terre est un exercice extraordinaire – probablement l'un des meilleurs mouvements de force globale existants. Mais le qualifier simplement d'"exercice de dos" serait réducteur et pourrait vous conduire à négliger des aspects cruciaux de votre entraînement dorsal.
+Le soulevé de terre est un exercice extraordinaire - probablement l'un des meilleurs mouvements de force globale existants. Mais le qualifier simplement d'"exercice de dos" serait réducteur et pourrait vous conduire à négliger des aspects cruciaux de votre entraînement dorsal.
 
 ## Ce que disent les études d'activation musculaire
 
@@ -16268,7 +16268,7 @@ Le deadlift développe une force de préhension phénoménale, qui se transfère
 
 ### 4. Transfert fonctionnel
 
-Le deadlift est le mouvement qui ressemble le plus à "soulever quelque chose du sol" – une action fondamentale de la vie quotidienne et du sport.
+Le deadlift est le mouvement qui ressemble le plus à "soulever quelque chose du sol" - une action fondamentale de la vie quotidienne et du sport.
 
 ### 5. Densité osseuse
 
@@ -16441,7 +16441,7 @@ Le soulevé de terre est-il un bon exercice pour le dos ? **Oui, mais avec des n
 - Activer fortement les rhomboïdes
 - Créer le ratio taille/épaule en V
 
-**Conclusion** : Le deadlift peut et devrait faire partie de votre entraînement du dos, mais il doit **compléter** – pas remplacer – les tirages horizontaux et verticaux. C'est un exercice de chaîne postérieure globale plutôt qu'un exercice de dos spécifique.
+**Conclusion** : Le deadlift peut et devrait faire partie de votre entraînement du dos, mais il doit **compléter** - pas remplacer - les tirages horizontaux et verticaux. C'est un exercice de chaîne postérieure globale plutôt qu'un exercice de dos spécifique.
 
 Traitez-le comme la cerise sur le gâteau d'un programme de dos complet, pas comme la fondation.
 
@@ -16453,7 +16453,7 @@ Traitez-le comme la cerise sur le gâteau d'un programme de dos complet, pas com
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -16699,7 +16699,7 @@ Arrêtez d'avoir peur. Apprenez à le faire correctement. Et récoltez les bén�
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -16920,7 +16920,7 @@ Mais ne vous attendez pas à ce qu'un dos plus fort améliore directement votre 
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -17155,7 +17155,7 @@ Utilisez-les stratégiquement, cycliquement, et toujours en respectant votre cap
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -17326,7 +17326,7 @@ Concentrez-vous sur ce qui fonctionne, entraînez-vous intelligemment, nourrisse
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -17561,7 +17561,7 @@ La clé est de comprendre que l'inflammation post-exercice n'est pas votre ennem
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -17861,7 +17861,7 @@ Votre maison peut devenir votre salle. Tout ce qu'il faut, c'est la connaissance
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -18168,7 +18168,7 @@ Votre génétique détermine la distribution de vos types de fibres, et vous ne 
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -18458,7 +18458,7 @@ Le meilleur programme d'entraînement n'est pas celui conçu pour votre genre, m
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -18629,7 +18629,7 @@ Ne laissez pas le mythe vous priver de cet outil extraordinaire de développemen
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -18802,7 +18802,7 @@ Pour tout objectif de composition corporelle, voici la hiérarchie d'importance 
 **3. Timing des nutriments** - 5% des résultats
 **4. Suppléments** - 5% des résultats
 
-Peu importe votre approche alimentaire – keto, vegan, paleo, jeûne intermittent, IIFYM – **le déficit ou surplus calorique reste le facteur déterminant du changement de poids**. Ces approches ne sont que des outils pour faciliter le contrôle de la balance énergétique en jouant sur la satiété, les préférences personnelles ou la structure psychologique.
+Peu importe votre approche alimentaire - keto, vegan, paleo, jeûne intermittent, IIFYM - **le déficit ou surplus calorique reste le facteur déterminant du changement de poids**. Ces approches ne sont que des outils pour faciliter le contrôle de la balance énergétique en jouant sur la satiété, les préférences personnelles ou la structure psychologique.
 
 Un régime qui ne respecte pas la balance énergétique échouera, peu importe sa "pureté" alimentaire. À l'inverse, un régime mal construit nutritionnellement mais respectant la balance énergétique produira quand même des résultats de poids (mais pas nécessairement de santé ou de composition).
 
@@ -18846,7 +18846,7 @@ La maîtrise de la balance énergétique transforme la nutrition d'une série de
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -19096,7 +19096,7 @@ La patience, la consistance et l'exécution impeccable des fondamentaux battront
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -19297,7 +19297,7 @@ Le "métabolisme lent" n'est pas une condamnation, c'est généralement un mode 
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -19528,7 +19528,7 @@ Redirigez cette énergie mentale et financière vers ce qui compte vraiment : ap
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -19839,7 +19839,7 @@ La prochaine fois que vous exécutez un exercice, posez-vous : "À quelle positi
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -20119,7 +20119,7 @@ Avant de commencer toute supplémentation, considérez vos besoins individuels. 
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -20478,7 +20478,7 @@ L'investissement est minime, les bénéfices potentiels sont considérables, et 
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -20685,7 +20685,7 @@ Pour des résultats optimaux, choisissez un extrait de qualité standardisé, re
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -20906,7 +20906,7 @@ Arrêtez de chercher le supplément miracle du moment. La créatine fonctionne d
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -21146,7 +21146,7 @@ Votre microbiome est un écosystème vivant. Prenez-en soin, et il prendra soin 
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -21381,7 +21381,7 @@ Testez vos niveaux, supplémentez intelligemment, et n'oubliez pas les cofacteur
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -21674,7 +21674,7 @@ Choisissez la forme adaptée à vos objectifs (glycinate pour l'usage général)
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -21888,7 +21888,7 @@ Si vous avez des circonstances particulières, les EAA sont généralement le me
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -22141,7 +22141,7 @@ Choisissez une source de qualité, soyez patient (les effets prennent du temps),
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -22421,7 +22421,7 @@ L'objectif n'est pas de créer une dépendance à des suppléments, mais de sout
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -22696,7 +22696,7 @@ La meilleure approche combine une alimentation riche en aliments complets et une
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -23043,7 +23043,7 @@ Le choix des formes de supplements est egalement crucial : les formes chelates o
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -23469,7 +23469,7 @@ Le sureau n'est pas une panacée et ne remplace pas les soins médicaux appropri
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -23929,7 +23929,7 @@ La curcumine illustre parfaitement comment la science moderne peut valider et op
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -24232,7 +24232,7 @@ En prenant le contrôle de votre santé hormonale naturellement, vous investisse
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -24516,7 +24516,7 @@ Rappelez-vous : la récupération n'est pas du temps perdu - c'est pendant cette
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -24812,7 +24812,7 @@ Avec la bonne supplémentation et une approche bien planifiée, vous pouvez prof
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -25060,7 +25060,7 @@ Votre microbiome est unique - ce qui fonctionne pour une personne peut ne pas fo
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -25347,7 +25347,7 @@ Chaque femme est unique, et sa supplémentation devrait l'être aussi. Écoutez 
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -25609,7 +25609,7 @@ Rappelez-vous : les meilleurs suppléments sont ceux que vous prenez régulière
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -25900,7 +25900,7 @@ Commencez avec 10g de peptides de collagène hydrolysé par jour, toujours avec 
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -26206,7 +26206,7 @@ L'ashwagandha reste le choix le plus polyvalent pour débuter. La rhodiola est i
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -26509,7 +26509,7 @@ Pour la plupart des pratiquants, 10-15g d'EAA autour de l'entrainement, combines
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -26832,7 +26832,7 @@ Utilisez les doses les plus faibles efficaces, au bon moment, et considerez la m
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -27172,7 +27172,7 @@ L'investissement dans une strategie d'hydratation incluant les electrolytes est 
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -27503,7 +27503,7 @@ Ne supplémentez jamais à l'aveugle. Faites d'abord une analyse, puis ajustez a
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -27864,7 +27864,7 @@ Pour les athletes, les vegetariens, les personnes agees et tous ceux qui transpi
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -28178,7 +28178,7 @@ Pour la santé générale, 100-200mg d'ubiquinone ou 50-100mg d'ubiquinol par jo
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -28469,7 +28469,7 @@ Son goût agréable, son faible coût et son excellent profil de sécurité en f
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -28799,7 +28799,7 @@ Choisissez en fonction de vos objectifs, privilégiez la qualité, et intégrez-
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -29105,7 +29105,7 @@ Cependant, c'est aussi un composé puissant qui nécessite respect et prudence. 
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -29435,7 +29435,7 @@ Commencez avec une forme adaptée à votre budget, donnez-lui 4-8 semaines, et �
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -29739,7 +29739,7 @@ L'investissement en beta-alanine, combine a la creatine, represente l'une des ba
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -30031,7 +30031,7 @@ Pour des bénéfices optimaux, choisissez un extrait de qualité, donnez-lui 4-8
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -30374,7 +30374,7 @@ Investissez dans un produit de qualité, prenez-le avec un repas, et considérez
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -30675,7 +30675,7 @@ C'est un excellent point de départ si vous cherchez un adaptogène pour gérer 
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -30929,7 +30929,7 @@ En resume : si vous ne deviez choisir qu'un seul supplement pour ameliorer votre
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -31241,7 +31241,7 @@ En resume : l'ALA represente l'un des outils les plus polyvalents et scientifiqu
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -31546,7 +31546,7 @@ Particulièrement pertinent pour les végétariens, les athlètes et les personn
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -31847,7 +31847,7 @@ Ajouter de la K2 MK-7 est simple, sûr et peut avoir des bénéfices significati
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -31856,7 +31856,7 @@ Ajouter de la K2 MK-7 est simple, sûr et peut avoir des bénéfices significati
 
 // Combine all articles (base + SARMS + Ultrahuman)
 const ALL_ARTICLES: BlogArticle[] = [
-  ...BLOG_ARTICLES, 
+  ...BLOG_ARTICLES,
   ...SARMS_ARTICLES,
   ...MUSCLEPHD_ARTICLES,
   ...YAMAMOTO_ARTICLES

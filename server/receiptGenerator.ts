@@ -17,7 +17,7 @@ function formatCents(cents: number, currency = "eur"): string {
 }
 
 function formatDate(d: Date | string | null): string {
-  if (!d) return "—";
+  if (!d) return ", ";
   return new Date(d).toLocaleDateString("fr-FR", {
     year: "numeric",
     month: "long",
@@ -37,7 +37,7 @@ export function generateReceiptHTML(order: Order): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reçu #${order.id.slice(0, 8)} — APEXLABS by Achzod</title>
+  <title>Reçu #${order.id.slice(0, 8)} ,  APEXLABS by Achzod</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -133,7 +133,7 @@ export function generateReceiptHTML(order: Order): string {
     </div>
 
     <div class="footer">
-      <p>APEXLABS by Achzod — achzodcoaching.com</p>
+      <p>APEXLABS by Achzod ,  achzodcoaching.com</p>
       <p>Ce document fait office de reçu. Conservez-le pour vos archives.</p>
     </div>
   </div>

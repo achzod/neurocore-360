@@ -83,7 +83,7 @@ function useCountUp(to: number, duration = 1.2, trigger: boolean) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// COMPONENT 1 — ReconstitutionStepByStep
+// COMPONENT 1 ,  ReconstitutionStepByStep
 // ══════════════════════════════════════════════════════════════════════════════
 
 interface Step {
@@ -194,7 +194,7 @@ const SyringeAngle: React.FC = () => {
           </div>
         </motion.div>
         <span className="text-xs text-center" style={{ color: C.textMuted, maxWidth: 80 }}>
-          Droit — eau sur poudre
+          Droit ,  eau sur poudre
         </span>
       </div>
 
@@ -234,7 +234,7 @@ const SyringeAngle: React.FC = () => {
           <div className="w-3 h-2 rounded" style={{ background: `${C.green}50` }} />
         </motion.div>
         <span className="text-xs text-center" style={{ color: C.textMuted, maxWidth: 80 }}>
-          45° — contre la paroi
+          45° ,  contre la paroi
         </span>
       </div>
     </div>
@@ -245,7 +245,7 @@ const DissolveStates: React.FC = () => {
   const states = [
     { label: 'En cours', color: C.amber, desc: 'Rotation douce, attendre…', opacity: 0.7 },
     { label: 'Pret', color: C.green, desc: 'Solution claire et limpide', opacity: 1 },
-    { label: 'Inutilisable', color: C.red, desc: 'Solution trouble — ne pas injecter', opacity: 0.9 },
+    { label: 'Inutilisable', color: C.red, desc: 'Solution trouble ,  ne pas injecter', opacity: 0.9 },
   ];
   const [active, setActive] = useState(0);
 
@@ -318,7 +318,7 @@ const StepChecklist: React.FC<{ steps: string[] }> = ({ steps }) => {
 
 const storageData = [
   { temp: '20°C', poudre: 'Quelques mois', icn: '🌡' },
-  { temp: '2–8°C', poudre: '2 ans', icn: '❄' },
+  { temp: '2-8°C', poudre: '2 ans', icn: '❄' },
   { temp: '-20°C', poudre: '+10 ans', icn: '🧊' },
 ];
 
@@ -574,7 +574,7 @@ export const ReconstitutionStepByStep: React.FC = () => {
               style={{ background: C.cyanDim, border: `1px solid ${C.cyanBorder}` }}
             >
               {[
-                'Toujours au refrigerateur 2–8°C',
+                'Toujours au refrigerateur 2-8°C',
                 'Duree de vie : 2 mois et plus',
                 'Sortir 10 min avant injection (temperature ambiante)',
                 'Etiqueter : date + concentration + nom peptide',
@@ -601,8 +601,8 @@ export const ReconstitutionStepByStep: React.FC = () => {
             "Calcul de concentration effectue (mg ÷ ml = mg/ml)",
             'Bouchons desinfectes a l\'alcool 70%, seches 15 secondes',
             "Eau injectee lentement contre la paroi a 45°",
-            'Dissolution par rotation douce — jamais de secouage',
-            'Flacon etiquete et conserve au frigo 2–8°C',
+            'Dissolution par rotation douce ,  jamais de secouage',
+            'Flacon etiquete et conserve au frigo 2-8°C',
             'Dose calculee en unites avant chaque injection',
           ]}
         />
@@ -622,7 +622,7 @@ export const ReconstitutionStepByStep: React.FC = () => {
       >
         <SectionLabel>Guide Pratique</SectionLabel>
         <h2 className="text-xl font-bold text-white">
-          Reconstitution Peptide — 7 Etapes
+          Reconstitution Peptide ,  7 Etapes
         </h2>
         <p className="text-sm mt-1" style={{ color: C.textMuted }}>
           Protocole complet pour une reconstitution sterile et precise.
@@ -728,7 +728,7 @@ export const ReconstitutionStepByStep: React.FC = () => {
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
-// COMPONENT 2 — FiveReconstitutionErrors
+// COMPONENT 2 ,  FiveReconstitutionErrors
 // ══════════════════════════════════════════════════════════════════════════════
 
 interface ErrorCard {
@@ -808,8 +808,8 @@ const ComparisonTable: React.FC = () => {
 const DisinfectFlow: React.FC = () => {
   const steps = [
     { label: 'Compresse alcool 70%', color: C.cyan },
-    { label: 'Bouchon BAC — 10s', color: C.amber },
-    { label: 'Bouchon peptide — 10s', color: C.amber },
+    { label: 'Bouchon BAC ,  10s', color: C.amber },
+    { label: 'Bouchon peptide ,  10s', color: C.amber },
     { label: 'Laisser secher 15s', color: C.green },
   ];
   return (
@@ -874,7 +874,7 @@ export const FiveReconstitutionErrors: React.FC = () => {
           </div>
           <div className="flex items-center gap-2 text-sm" style={{ color: C.red }}>
             <Ban size={14} />
-            Solution mousseuse — peptide deteriore
+            Solution mousseuse ,  peptide deteriore
           </div>
         </div>
       ),
@@ -884,11 +884,11 @@ export const FiveReconstitutionErrors: React.FC = () => {
             className="text-sm py-2 px-3 rounded-lg"
             style={{ background: C.greenDim, color: C.textDim, border: `1px solid ${C.green}30` }}
           >
-            Rotation douce entre les paumes. Solution claire et limpide en 5–10 minutes.
+            Rotation douce entre les paumes. Solution claire et limpide en 5-10 minutes.
           </div>
           <div className="flex items-center gap-2 text-sm" style={{ color: C.green }}>
             <CheckCircle2 size={14} />
-            Solution transparente — peptide intact
+            Solution transparente ,  peptide intact
           </div>
         </div>
       ),
@@ -902,7 +902,7 @@ export const FiveReconstitutionErrors: React.FC = () => {
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm" style={{ color: C.red }}>
             <XCircle size={14} />
-            Aiguille droite — eau tombe directement sur la poudre
+            Aiguille droite ,  eau tombe directement sur la poudre
           </div>
           <div className="text-sm" style={{ color: C.textMuted }}>
             Choc mécanique degradant les structures fragiles du peptide.
@@ -1116,7 +1116,7 @@ export const FiveReconstitutionErrors: React.FC = () => {
           </div>
           <div className="space-y-2">
             {[
-              'Ne jamais secouer — rotation douce uniquement',
+              'Ne jamais secouer ,  rotation douce uniquement',
               "Toujours injecter l'eau a 45° contre la paroi",
               "Utiliser de l'eau BAC, pas de l'eau sterile simple",
               "Desinfecter les deux bouchons avant chaque ponction",
@@ -1135,7 +1135,7 @@ export const FiveReconstitutionErrors: React.FC = () => {
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
-// COMPONENT 3 — DoseCalculatorVisual
+// COMPONENT 3 ,  DoseCalculatorVisual
 // ══════════════════════════════════════════════════════════════════════════════
 
 // Animated syringe fill component
@@ -1194,7 +1194,7 @@ const SyringeDiagram: React.FC = () => (
     style={{ background: C.card, border: `1px solid ${C.border}` }}
   >
     <div className="text-xs font-mono mb-3" style={{ color: C.cyan }}>
-      SERINGUE INSULINE U-100 — LECTURE DES GRADUATIONS
+      SERINGUE INSULINE U-100 ,  LECTURE DES GRADUATIONS
     </div>
     <div className="flex items-start gap-4">
       {/* Syringe SVG */}
@@ -1210,7 +1210,7 @@ const SyringeDiagram: React.FC = () => (
         <rect x="14" y="20" width="20" height="110" rx="3" fill={C.card} stroke={C.border} strokeWidth="1.5" />
         {/* Plunger */}
         <rect x="17" y="22" width="14" height="95" rx="2" fill={`${C.cyan}18`} />
-        {/* Graduations 0–100 by 10 */}
+        {/* Graduations 0-100 by 10 */}
         {[10, 20, 30, 40, 50, 60, 70, 80, 90].map((u) => (
           <line
             key={u}
@@ -1498,7 +1498,7 @@ export const DoseCalculatorVisual: React.FC = () => {
   const shortcutsInView = useInView(shortcutsRef, { once: false });
 
   const scenarios10A: Scenario = {
-    label: 'Scenario A — 1 ml',
+    label: 'Scenario A ,  1 ml',
     mg: 10,
     ml: 1,
     conc: 10,
@@ -1510,7 +1510,7 @@ export const DoseCalculatorVisual: React.FC = () => {
     ],
   };
   const scenarios10B: Scenario = {
-    label: 'Scenario B — 2 ml',
+    label: 'Scenario B ,  2 ml',
     mg: 10,
     ml: 2,
     conc: 5,
@@ -1523,7 +1523,7 @@ export const DoseCalculatorVisual: React.FC = () => {
     ],
   };
   const scenarios20A: Scenario = {
-    label: 'Scenario A — 1 ml',
+    label: 'Scenario A ,  1 ml',
     mg: 20,
     ml: 1,
     conc: 20,
@@ -1535,7 +1535,7 @@ export const DoseCalculatorVisual: React.FC = () => {
     ],
   };
   const scenarios20B: Scenario = {
-    label: 'Scenario B — 2 ml',
+    label: 'Scenario B ,  2 ml',
     mg: 20,
     ml: 2,
     conc: 10,
@@ -1563,7 +1563,7 @@ export const DoseCalculatorVisual: React.FC = () => {
       <div className="px-6 pt-6 pb-4 border-b" style={{ borderColor: C.border }}>
         <SectionLabel>Calcul des Doses</SectionLabel>
         <h2 className="text-xl font-bold text-white">
-          Guide Visuel — Concentrations & Unites
+          Guide Visuel ,  Concentrations & Unites
         </h2>
         <p className="text-sm mt-1" style={{ color: C.textMuted }}>
           Calculer sa concentration et convertir en unites de seringue U-100.
@@ -1572,7 +1572,7 @@ export const DoseCalculatorVisual: React.FC = () => {
 
       <div className="p-4 space-y-6">
 
-        {/* Section 1 — La formule */}
+        {/* Section 1 ,  La formule */}
         <div>
           <SectionLabel>1. La Formule</SectionLabel>
           <div
@@ -1632,31 +1632,31 @@ export const DoseCalculatorVisual: React.FC = () => {
           </div>
         </div>
 
-        {/* Section 2 — Seringue U-100 */}
+        {/* Section 2 ,  Seringue U-100 */}
         <div>
           <SectionLabel>2. Lire sa Seringue Insuline U-100</SectionLabel>
           <SyringeDiagram />
         </div>
 
-        {/* Section 3 — Flacon 10mg */}
+        {/* Section 3 ,  Flacon 10mg */}
         <div>
-          <SectionLabel>3. Flacon 10mg — 2 Scenarios</SectionLabel>
+          <SectionLabel>3. Flacon 10mg ,  2 Scenarios</SectionLabel>
           <div className="flex gap-3 flex-col sm:flex-row">
             <ScenarioCard scenario={scenarios10A} />
             <ScenarioCard scenario={scenarios10B} />
           </div>
         </div>
 
-        {/* Section 4 — Flacon 20mg */}
+        {/* Section 4 ,  Flacon 20mg */}
         <div>
-          <SectionLabel>4. Flacon 20mg — 2 Scenarios</SectionLabel>
+          <SectionLabel>4. Flacon 20mg ,  2 Scenarios</SectionLabel>
           <div className="flex gap-3 flex-col sm:flex-row">
             <ScenarioCard scenario={scenarios20A} />
             <ScenarioCard scenario={scenarios20B} />
           </div>
         </div>
 
-        {/* Section 5 — Formule dose → unites */}
+        {/* Section 5 ,  Formule dose → unites */}
         <div>
           <SectionLabel>5. Formule Dose → Unites</SectionLabel>
           <div
@@ -1706,7 +1706,7 @@ export const DoseCalculatorVisual: React.FC = () => {
           </div>
         </div>
 
-        {/* Section 6 — Tableau recap */}
+        {/* Section 6 ,  Tableau recap */}
         <div>
           <SectionLabel>6. Tableau de Reference Complet</SectionLabel>
           <p className="text-xs mb-3" style={{ color: C.textMuted }}>
@@ -1715,7 +1715,7 @@ export const DoseCalculatorVisual: React.FC = () => {
           <ReferenceTable />
         </div>
 
-        {/* Section 7 — Les 2 raccourcis */}
+        {/* Section 7 ,  Les 2 raccourcis */}
         <div ref={shortcutsRef}>
           <SectionLabel>7. Les 2 Raccourcis a Retenir</SectionLabel>
           <motion.div
@@ -1788,7 +1788,7 @@ export const DoseCalculatorVisual: React.FC = () => {
         {/* Visual syringe fills for quick ref */}
         <div>
           <div className="text-xs font-mono mb-3" style={{ color: C.textMuted }}>
-            VISUALISATION — SERINGUE U-100 A 5 mg/ml
+            VISUALISATION ,  SERINGUE U-100 A 5 mg/ml
           </div>
           <div className="flex gap-4 justify-start">
             {[

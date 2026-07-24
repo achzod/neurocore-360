@@ -112,7 +112,7 @@ const normalizePlan = (plan: string | null | undefined): PlanId | null => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Social proof — 3 curated reviews shown between comparison table and plan cards
+// Social proof ,  3 curated reviews shown between comparison table and plan cards
 // ─────────────────────────────────────────────────────────────────────────────
 
 type CheckoutReview = {
@@ -182,7 +182,7 @@ function CheckoutSocialProof() {
           aria-label="10 avis vérifiés, note moyenne 5 sur 5"
         >
           <Star className="h-3 w-3 fill-current" style={{ color: "#FCDD00" }} aria-hidden="true" />
-          10 avis — 5.0 / 5 moyenne
+          10 avis ,  5.0 / 5 moyenne
         </Badge>
       </div>
 
@@ -214,7 +214,7 @@ function CheckoutSocialProof() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Inline comparison table — no Theme dependency, pure Tailwind + shadcn
+// Inline comparison table ,  no Theme dependency, pure Tailwind + shadcn
 // ─────────────────────────────────────────────────────────────────────────────
 
 type CellValue = boolean | string;
@@ -270,7 +270,7 @@ function CheckoutComparisonTable() {
           Compare les niveaux d'analyse
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Choisis en connaissance de cause — chaque scan est différent, pas juste "plus cher".
+          Choisis en connaissance de cause ,  chaque scan est différent, pas juste "plus cher".
         </p>
       </div>
 
@@ -463,7 +463,7 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
         return response.json();
       }
 
-      // Default: Stripe — server has fallback price IDs if frontend VITE vars are missing
+      // Default: Stripe ,  server has fallback price IDs if frontend VITE vars are missing
       const checkoutPayload: Record<string, unknown> = {
         email,
         planType: type,
@@ -570,10 +570,10 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
           </p>
         </motion.div>
 
-        {/* Comparison table — always visible so users see what they're missing */}
+        {/* Comparison table ,  always visible so users see what they're missing */}
         <CheckoutComparisonTable />
 
-        {/* Social proof — reinforces buying decision before plan selection */}
+        {/* Social proof ,  reinforces buying decision before plan selection */}
         <CheckoutSocialProof />
 
         <div className="mt-12 grid gap-6 lg:grid-cols-2 items-stretch max-w-4xl mx-auto">
@@ -849,7 +849,7 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
           </Card>
         </motion.div>
 
-        {/* Live social proof — real counters from DB */}
+        {/* Live social proof ,  real counters from DB */}
         <div className="mt-8">
           <LiveStatsBar variant="checkout" />
         </div>

@@ -16,7 +16,7 @@ Bien entendu, une partie de la créatine, chimiquement "acide méthylguanidino-a
 
 ## Supplémentation et stockage musculaire
 
-La quantité de Cr utilisée quotidiennement dépend de divers facteurs, parmi lesquels la durée et l'intensité de l'exercice, la biodisponibilité des sources de Cr, la masse musculaire de l'athlète. En effet, il a été rapporté que les athlètes de grande taille sont capables de consommer des quantités de Cr égales à 5-10 g/jour ; dans certaines conditions cliniques, elle atteint même 10 à 30 g/jour (Braissant, Wyss et. All). 
+La quantité de Cr utilisée quotidiennement dépend de divers facteurs, parmi lesquels la durée et l'intensité de l'exercice, la biodisponibilité des sources de Cr, la masse musculaire de l'athlète. En effet, il a été rapporté que les athlètes de grande taille sont capables de consommer des quantités de Cr égales à 5-10 g/jour ; dans certaines conditions cliniques, elle atteint même 10 à 30 g/jour (Braissant, Wyss et. All).
 
 Depuis plusieurs années, on suppose que l'augmentation de la quantité de créatine ingérée pourrait entraîner des avantages grâce à une plus grande disponibilité et donc une augmentation de la capacité de stockage de celle-ci dans les muscles. Il a également été démontré que lorsque la concentration de créatine diminue au cours de l'exercice, la capacité à maintenir l'intensité diminue également. Avec un régime alimentaire normal, il est possible d'apporter 1 à 2 g de créatine par jour, ce qui permet de saturer les réserves à 60-70 %. Une supplémentation permettrait non seulement de saturer les réserves à 100 %, mais même d'en augmenter la capacité de 20 à 40 % selon les stratégies de supplémentation utilisées (Candow, Kreider et all.).
 
@@ -38,7 +38,7 @@ En conclusion, la créatine augmente les performances dans presque toutes les co
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -85,7 +85,7 @@ Mécanismes de démangeaisons évoqués par la bêta-alanine.J Neurosci.2012;(32
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -126,7 +126,7 @@ Dhuley J.N. « Effet de type nootropique de l'ashwagandha (Withania somnifera L.
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -175,7 +175,7 @@ De plus, prendre conscience des grandes qualités que possèdent les plantes est
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -236,7 +236,7 @@ Am J Physiol Endocrinol Metab.2002 Oct;
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -297,7 +297,7 @@ Pour acheter le bon complément probiotique, nul besoin d'un diplôme en pharmac
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -334,13 +334,13 @@ L'effet du polysorbate 20 sur la solubilité et la stabilité du candésartan ci
 
 Partie 1 : matériaux utilisés pour formuler des microcapsules. Développement de médicaments et pharmacie industrielle, 14 septembre 2011. Gibbs, BF, Kermasha, S, Ali, I et Mulligan, C. N.1999.Encapsulation dans l'industrie alimentaire : une revue.International Journal of Food Science and Nutrition.50 : 213-224.
 
-Gouin, S.2004.Microencapsulation : évaluation industrielle des technologies et tendances existantes.Tendances de la technologie des sciences alimentaires.15 : 330–347.
+Gouin, S.2004.Microencapsulation : évaluation industrielle des technologies et tendances existantes.Tendances de la technologie des sciences alimentaires.15 : 330-347.
 
 ---
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -395,7 +395,7 @@ Horm Metab Res 21 : 338-340. 10.Hespel, P. ; Van den Eede, E. ; Ramaekers, M. ; 
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -446,7 +446,7 @@ Burke, Deakin (2010). Nutrition sportive clinique. McGraw-Hill Australia Pty Ltd
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -495,7 +495,7 @@ Jeukendrup AE.Nutrition pour les sports d'endurance : marathon, triathlon et cyc
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -542,13 +542,13 @@ Cet effet, également connu sous le nom d'« effet fenêtre ouverte », vient du
 
 Casa Editrice Ambrosiana, Milan, 1998. OPPLIGER RA, CASE HS, HORSWILL CA et al. "Perte de poids chez les lutteurs", Position officielle de l'American College of Sports Medicine. Médecine et science du sport et de l'exercice. Vol.28, No.2. 1996 ROEMMICH JN, SINNING WE « Perte de poids et entraînement à la lutte : effets ou nutrition, maturation, composition corporelle et force ».Journal of Applied Physiology 82 : 1751-1759, 1997.TIMPMANN S., OOPIK V.« L'influence de la réduction du poids corporel sur les performances des sports de combat« .Athlon 10/2005, 1-2/2006.WILMORE J.H. « Sports de catégorie de poids » ; Partie 4, Cap.49, dans MAUGHAN R.J. « Nutrition in Sport », Volume VII de l'Encyclopédie de médecine sportive, en collaboration avec la Fédération internationale de médecine sportive.
 
-Blackwell Science, 2002. Damir Zubac, Armin Paravlic, Reid Reale, Igor Jelaska, Shawnda A Morrison, Vladimir IvancevEur J Nutr.2019 Mar;58(2):497-514.Équilibre des fluides et état d'hydratation chez les athlètes olympiques de sports de combat : une revue systématique avec méta-analyse d'études contrôlées et non contrôlées.Shirreffs SM et al.2005, La réponse sudorale des joueurs de football professionnels d'élite à l'entraînement dans la chaleur.Int.J.Sport.Med.26 (2) : 90-5.Maughan, R.2006.Guidelines for remplaçant fluide et CHO pendant exercice.Dans : Nutrition sportive clinique-McGraw Hill.R.J.Maughan, S.M.Shirreﬀs; Scand J Med Sci Sports 2010 : 20 (Suppl.2) : 59–69. Développement de stratégies d'hydratation pour optimiser les performances des athlètes dans les sports de haute intensité et dans les sports avec efforts intenses répétés. N.A.Masento, M.Golightly, D.T.Field, L.T.Butler et C.M.van Reekum ; British journal of nutrition, janvier 2014, Effets de l'état d'hydratation sur les performances cognitives et l'humeur.
+Blackwell Science, 2002. Damir Zubac, Armin Paravlic, Reid Reale, Igor Jelaska, Shawnda A Morrison, Vladimir IvancevEur J Nutr.2019 Mar;58(2):497-514.Équilibre des fluides et état d'hydratation chez les athlètes olympiques de sports de combat : une revue systématique avec méta-analyse d'études contrôlées et non contrôlées.Shirreffs SM et al.2005, La réponse sudorale des joueurs de football professionnels d'élite à l'entraînement dans la chaleur.Int.J.Sport.Med.26 (2) : 90-5.Maughan, R.2006.Guidelines for remplaçant fluide et CHO pendant exercice.Dans : Nutrition sportive clinique-McGraw Hill.R.J.Maughan, S.M.Shirreﬀs; Scand J Med Sci Sports 2010 : 20 (Suppl.2) : 59-69. Développement de stratégies d'hydratation pour optimiser les performances des athlètes dans les sports de haute intensité et dans les sports avec efforts intenses répétés. N.A.Masento, M.Golightly, D.T.Field, L.T.Butler et C.M.van Reekum ; British journal of nutrition, janvier 2014, Effets de l'état d'hydratation sur les performances cognitives et l'humeur.
 
 ---
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -599,7 +599,7 @@ Les triathlètes périodisent-ils leur alimentation et leur teneur en minéraux,
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -662,7 +662,7 @@ Sports Med.2007;37(3):199-212.doi : 10.2165/00007256-200737030-00002.PMID : 1732
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -717,9 +717,9 @@ Ci-dessous, nous rapportons ceux avec les preuves scientifiques les plus à l'ap
 
 Nutrition pour le sprinter. J Sports Sci. 2007; 25 Suppl 1: S5-15.doi: 10.1080/02640410701607205. Erratum dans: J Sports Sci. 2009 avril; Houtkooper L, Abbé JM, Nimmo M; Association internationale des fédérations d'athlétisme. Nutrition pour les lanceurs, les sauteurs et les athlètes d'épreuves combinées.
 
-Slater GJ, Sygo J, Jorgensen M.SPRINTING...Approches diététiques pour optimiser l'adaptation et la performance de l'entraînement.Int J Sport Nutr Exerc Metab.2019 1 mars; Sygo J, Kendig Glass A, Killer SC, Stellingwerff T.Fueling for the Field: Nutrition for Jumps, Throws, and Combined Events.Int J Sport Nutr Exerc Metab.2019 Mar 1;29(2):95-105.doi: 10.1123/ijsnem.2018-0272.Epub 2019 mars 13.PMID : 30676152. Biolo, G., Tipton, K.D., Klein, S. et Wolfe, R.R. (1997). Un apport abondant en acides aminés améliore l'effet métabolique de l'exercice sur les protéines musculaires. American Journal of Physiology : Endocrinology and Metabolism, 273, E122 – E129.
+Slater GJ, Sygo J, Jorgensen M.SPRINTING...Approches diététiques pour optimiser l'adaptation et la performance de l'entraînement.Int J Sport Nutr Exerc Metab.2019 1 mars; Sygo J, Kendig Glass A, Killer SC, Stellingwerff T.Fueling for the Field: Nutrition for Jumps, Throws, and Combined Events.Int J Sport Nutr Exerc Metab.2019 Mar 1;29(2):95-105.doi: 10.1123/ijsnem.2018-0272.Epub 2019 mars 13.PMID : 30676152. Biolo, G., Tipton, K.D., Klein, S. et Wolfe, R.R. (1997). Un apport abondant en acides aminés améliore l'effet métabolique de l'exercice sur les protéines musculaires. American Journal of Physiology : Endocrinology and Metabolism, 273, E122 - E129.
 
-Borsheim, E., Aarsland, A. et Wolfe, RR (2004a). Effet d'un mélange d'acides aminés, de protéines et de glucides sur l'équilibre net des protéines musculaires après un exercice de résistance. International Journal of Sport Nutrition and Exercise Metabolism, 14, 255 – 271. Melin AK, Heikura IA, Tenforde A, Mountjoy M.Energy Availability in Athletics: Health, Performance, and Physique.Int J Sport Nutr Exerc Metab.2019 Mar 1;29(2):152-164.doi: 10.1123/ijsnem.2018-0201.Epub 2019 février 26.PMID : 30632422.
+Borsheim, E., Aarsland, A. et Wolfe, RR (2004a). Effet d'un mélange d'acides aminés, de protéines et de glucides sur l'équilibre net des protéines musculaires après un exercice de résistance. International Journal of Sport Nutrition and Exercise Metabolism, 14, 255 - 271. Melin AK, Heikura IA, Tenforde A, Mountjoy M.Energy Availability in Athletics: Health, Performance, and Physique.Int J Sport Nutr Exerc Metab.2019 Mar 1;29(2):152-164.doi: 10.1123/ijsnem.2018-0201.Epub 2019 février 26.PMID : 30632422.
 
 Bolger R, Lyons M, Harrison AJ, Kenny IC. Performances de sprint et interventions d'entraînement basées sur la résistance : une revue systématique.
 
@@ -727,7 +727,7 @@ Bolger R, Lyons M, Harrison AJ, Kenny IC. Performances de sprint et intervention
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -784,7 +784,7 @@ Int J Sports Med.2008 Dec; Seifert JG, Luetkemeier MJ, White AT, Mino LM.Les eff
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -823,7 +823,7 @@ Pour une activité sportive correcte (surtout au niveau compétitif) et pour mie
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -856,7 +856,7 @@ If we consider simplistically the amount of work done with increased hypertrophy
 
 On the other hand, an excessively intensity-oriented training and therefore the management of a high load, not carried out in a progressive and organized way, can have negative effects on performance, from excessive stress on the central nervous system, through excessive stress on the joints, to a possible increase in the risk of muscle injury. Let us remember that, also on the relationship between muscular damage and triggering of the hypertrophic mechanism although related, there is no direct proportion. We know that training-induced muscle damage plays a key role in muscle growth (9), but some studies have shown that by increasing the volume more than one is considered already profitable for hypertrophic purposes, there is no increase in results but rather a slowdown (12). In conclusion, this short article gives us a further demonstration of what often happens when we cross scientific research and practical experience: it is not possible a single answer to the question "what is the best method to obtain muscle hypertrophy?".
 
-From a scientific and also practical point of view, both a more volume-oriented training, and one on intensity, have been shown to obtain results on the increase of hypertrophy but only if organized in the correct way, that is, by evaluating the type of subject to which they are proposed, and always remembering that the theoretical model does not obtain infinite results,- demonstrating once again that the alternation of the stimulus, and the correct planning of training, are the best solution to achieve long-term results, even with athletes with greater experience in using overloads for hypertrophic purposes -. 1.Henneman, E., G. Somjen et D.O.Carpenter.1965. Signification fonctionnelle de la taille des cellules dans les motoneurones spinaux.J.Neurophysiol.28 : 560–580. 2.Ratamess, N.A., B.A.Alvar, T.K.Evetoch, T.J.Housh, W.B.Kibler, W.J.Kraemer et al.2009.Stand de position de l'American College of Sports Medicine.Modèles de progression dans l'entraînement en résistance pour adultes en bonne santé.Med.Sci.Sports Exerc.41:687. 3.Clarkson, P.M., K.Nosaka et B.Braun.1992.Fonction musculaire après des dommages musculaires induits par l'exercice et une adaptation rapide.Med.Sci.Sports Exerc.24 :512–520. 4.Brandenburg, J.E. et D.Docherty.2002.Les effets d'une charge excentrique accentuée sur la force, l'hypertrophie musculaire et les adaptations neuronales chez les individus entraînés.J.Strength Cond.Res.16 : 25-32. 5.Schoenfeld, B.J., N.A.Ratamess, M.D.Peterson, B.Contreras, G.T.Sonmez et B.A.Alvar.2014.Effets de différentes stratégies de chargement d'entraînement en résistance à volume égal sur les adaptations musculaires chez des hommes bien entraînés.J.Strength Cond Res.28 : 2909-2918. 6.Krieger, J.W., Séries simples ou multiples d'exercices de résistance pour l'hypertrophie musculaire : une méta-analyse. J Strength Cond Res, 2010.24(4) : p.1150-9 7.
+From a scientific and also practical point of view, both a more volume-oriented training, and one on intensity, have been shown to obtain results on the increase of hypertrophy but only if organized in the correct way, that is, by evaluating the type of subject to which they are proposed, and always remembering that the theoretical model does not obtain infinite results,- demonstrating once again that the alternation of the stimulus, and the correct planning of training, are the best solution to achieve long-term results, even with athletes with greater experience in using overloads for hypertrophic purposes -. 1.Henneman, E., G. Somjen et D.O.Carpenter.1965. Signification fonctionnelle de la taille des cellules dans les motoneurones spinaux.J.Neurophysiol.28 : 560-580. 2.Ratamess, N.A., B.A.Alvar, T.K.Evetoch, T.J.Housh, W.B.Kibler, W.J.Kraemer et al.2009.Stand de position de l'American College of Sports Medicine.Modèles de progression dans l'entraînement en résistance pour adultes en bonne santé.Med.Sci.Sports Exerc.41:687. 3.Clarkson, P.M., K.Nosaka et B.Braun.1992.Fonction musculaire après des dommages musculaires induits par l'exercice et une adaptation rapide.Med.Sci.Sports Exerc.24 :512-520. 4.Brandenburg, J.E. et D.Docherty.2002.Les effets d'une charge excentrique accentuée sur la force, l'hypertrophie musculaire et les adaptations neuronales chez les individus entraînés.J.Strength Cond.Res.16 : 25-32. 5.Schoenfeld, B.J., N.A.Ratamess, M.D.Peterson, B.Contreras, G.T.Sonmez et B.A.Alvar.2014.Effets de différentes stratégies de chargement d'entraînement en résistance à volume égal sur les adaptations musculaires chez des hommes bien entraînés.J.Strength Cond Res.28 : 2909-2918. 6.Krieger, J.W., Séries simples ou multiples d'exercices de résistance pour l'hypertrophie musculaire : une méta-analyse. J Strength Cond Res, 2010.24(4) : p.1150-9 7.
 
 ## Conclusion
 
@@ -870,7 +870,7 @@ Journal of Strength and Conditioning Research, 2014.29(10) : p.2909-18. 13.Schoe
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -891,7 +891,7 @@ Journal of Strength and Conditioning Research, 2014.29(10) : p.2909-18. 13.Schoe
 
 Il est crucial de connaître et de comprendre quels processus physiologiques et biochimiques doivent avoir lieu afin de maximiser un stimulus d'entraînement optimal. Des concepts tels que l'augmentation progressive de la tension mécanique, les dommages musculaires et le stress métabolique doivent être compris et surtout contextualisés car ils contribuent, de manière synergique, à une réponse adaptative ou réponse adaptative musculaire.
 
-L'hypertrophie musculaire peut emprunter deux voies distinctes : l'hypertrophie myofibrillaire, qui augmente la taille et le nombre de myofibrilles (les unités contractiles), et l'hypertrophie sarcoplasmique, qui augmente le volume du sarcoplasme — le liquide entourant les myofibrilles, contenant glycogène, eau, minéraux et enzymes. La méthode SST (Sarcoplasma Stimulating Training) cible spécifiquement cette seconde voie.
+L'hypertrophie musculaire peut emprunter deux voies distinctes : l'hypertrophie myofibrillaire, qui augmente la taille et le nombre de myofibrilles (les unités contractiles), et l'hypertrophie sarcoplasmique, qui augmente le volume du sarcoplasme ,  le liquide entourant les myofibrilles, contenant glycogène, eau, minéraux et enzymes. La méthode SST (Sarcoplasma Stimulating Training) cible spécifiquement cette seconde voie.
 
 ## Protocole SST classique
 
@@ -921,7 +921,7 @@ Limitez l'utilisation du SST à 1-2 séances par semaine par groupe musculaire p
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -972,7 +972,7 @@ La récupération entre les séries dure entre 40 secondes et une minute. Les po
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -1039,7 +1039,7 @@ Ainsi, nous soumettons un muscle à une charge exigeante, mais avec suffisamment
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -1078,7 +1078,7 @@ Il est parfois oublié qu'un entraînement n'est utile que si vous avez la capac
 
 À l'inverse, un entraînement excessivement axé sur l'intensité sans progression organisée peut avoir des effets négatifs : stress du système nerveux central, stress articulaire et risque accru de blessure. Rappelons aussi que les dommages musculaires jouent un rôle clé dans la croissance (9), mais qu'un excès de volume n'augmente pas les résultats et peut même les ralentir (12).
 
-La périodisation — l'organisation méthodique de l'entraînement en micro et mésocycles — permet de tirer le meilleur des deux approches. Un mésocycle typique pourrait alterner 3-4 semaines d'entraînement orienté volume (12-20 répétitions, repos courts de 60-90s, nombreuses séries) avec 3-4 semaines d'entraînement orienté intensité (4-8 répétitions, repos longs de 2-4 min, charges lourdes). Cette alternance stimule des mécanismes d'adaptation distincts et complémentaires.
+La périodisation ,  l'organisation méthodique de l'entraînement en micro et mésocycles ,  permet de tirer le meilleur des deux approches. Un mésocycle typique pourrait alterner 3-4 semaines d'entraînement orienté volume (12-20 répétitions, repos courts de 60-90s, nombreuses séries) avec 3-4 semaines d'entraînement orienté intensité (4-8 répétitions, repos longs de 2-4 min, charges lourdes). Cette alternance stimule des mécanismes d'adaptation distincts et complémentaires.
 
 ## Recommandations pratiques
 
@@ -1094,7 +1094,7 @@ En définitive, il n'existe pas de réponse unique à la question : "quelle est 
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -1143,7 +1143,7 @@ La supplémentation spécifique au cross training comprend : multivitamines et O
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -1190,7 +1190,7 @@ Votre objectif est la course : ce sera le jour où vous résumerez et démontrer
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -1233,7 +1233,7 @@ Kinanthropométrie dans les sports aquatiques : Une étude sur des athlètes de 
 
 ## Hydratation et supplémentation
 
-European Journal of Applied Physiology, 94, 697–704.PubMed doi:10.1007/ s00421-005-1337-0 Capelli, C., Pendergast, D.R. et Termin, B. (1998). Énergétique de la nage à vitesse maximale chez l'homme. European Journal of Applied Physiology and Occupational Physiology, 78, 385–393.PubMed doi:10.1007/s004210050435 Pyne, D.B., Verhagen, E.A. et Mountjoy, M. (2014). Nutrition, maladie et blessures dans les sports aquatiques.
+European Journal of Applied Physiology, 94, 697-704.PubMed doi:10.1007/ s00421-005-1337-0 Capelli, C., Pendergast, D.R. et Termin, B. (1998). Énergétique de la nage à vitesse maximale chez l'homme. European Journal of Applied Physiology and Occupational Physiology, 78, 385-393.PubMed doi:10.1007/s004210050435 Pyne, D.B., Verhagen, E.A. et Mountjoy, M. (2014). Nutrition, maladie et blessures dans les sports aquatiques.
 
 International Journal of Sport Nutrition and Exercise Metabolism, 24, 460-469. Stellingwerff, T., Pyne, D.B. et Burke, L.M. (2014). Considérations nutritionnelles dans des environnements spéciaux pour les sports aquatiques. International Journal of Sport Nutrition and Exercise Metabolism, 24, 470-479.
 
@@ -1243,7 +1243,7 @@ Cox, G.R., Desbrow, B., Montgomery, P.G., Anderson, M.E., Bruce, C.R., Macrides,
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -1298,7 +1298,7 @@ L'effet de la supplémentation en magnésium sur la forme musculaire : une méta
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -1345,9 +1345,9 @@ Là aussi, même si les études ne sont pas encore nombreuses, nous souhaitons c
 
 ## Nutrition en altitude
 
-High Alt Med Biol 2009 ; 10 : 135–48. Nybo L. Exercice et stress thermique : défis cérébraux et conséquences. Prog Brain Res 2007 ; 162 : 29-43.
+High Alt Med Biol 2009 ; 10 : 135-48. Nybo L. Exercice et stress thermique : défis cérébraux et conséquences. Prog Brain Res 2007 ; 162 : 29-43.
 
-Levine BD, Stray-Gundersen J.Dose-réponse de l'entraînement en altitude : quelle altitude est suffisante ? Adv Exp Med Biol 2006 ; 588 : 233–47. Berglund B. Entraînement à haute altitude.
+Levine BD, Stray-Gundersen J.Dose-réponse de l'entraînement en altitude : quelle altitude est suffisante ? Adv Exp Med Biol 2006 ; 588 : 233-47. Berglund B. Entraînement à haute altitude.
 
 Aspects de l'adaptation hématologique. Sports Med 1992 ; 14 : 289-303. Heinicke I, Boehler A, Rechsteiner T et al. Une altitude modérée mais pas d'entraînement d'endurance supplémentaire augmente les marqueurs du stress oxydatif dans le condensat de l'haleine expirée.
 
@@ -1355,17 +1355,17 @@ Eur J Appl Physiol 2009 ; 106 : 599-604. Gore CJ. Le défi de l'évaluation des 
 
 Friedmann B, Jost J, Rating T, et al. Effets de la supplémentation en fer sur l'hémoglobine totale du corps pendant l'entraînement d'endurance à altitude modérée. Int J Sports Med 1999 ; 20 : 78-85. Hung SC, Tung TY, Yang CS, Tarng DC.
 
-La supplémentation riche en calories augmente les taux sériques de leptine et améliore la réponse à la rHuEPO chez les patients hémodialysés à long terme. Am J Kidney Dis 2005 ; 45 : 1073–83. Yanagisawa K, Ito O, Nagai S, Onishi S. La boisson électrolytique et glucidique prévient la perte d'eau au début de l'entraînement en haute altitude.
+La supplémentation riche en calories augmente les taux sériques de leptine et améliore la réponse à la rHuEPO chez les patients hémodialysés à long terme. Am J Kidney Dis 2005 ; 45 : 1073-83. Yanagisawa K, Ito O, Nagai S, Onishi S. La boisson électrolytique et glucidique prévient la perte d'eau au début de l'entraînement en haute altitude.
 
 ## Planification
 
-J Med Invest 2012 ; 59 : 10210. Consolazio CF, Matoush LO, Johnson HL, Krzywicki HJ, Daws TA, GJ Isaac. Effets des régimes riches en glucides sur les performances et la symptomatologie clinique après une ascension rapide à haute altitude. Fed Proc 1969 ; 28 : 937–43.
+J Med Invest 2012 ; 59 : 10210. Consolazio CF, Matoush LO, Johnson HL, Krzywicki HJ, Daws TA, GJ Isaac. Effets des régimes riches en glucides sur les performances et la symptomatologie clinique après une ascension rapide à haute altitude. Fed Proc 1969 ; 28 : 937-43.
 
-Brugarolas J, Lei K, Hurley RL et al. Régulation de la fonction mTOR en réponse à l'hypoxie par REDD1 et le complexe suppresseur de tumeur TSC1/TSC2. Genes Dev 2004 ; 18 : 2893–904. Witard OC, Jackman SR, Breen L, Smith K, Selby A, Tipton KD.
+Brugarolas J, Lei K, Hurley RL et al. Régulation de la fonction mTOR en réponse à l'hypoxie par REDD1 et le complexe suppresseur de tumeur TSC1/TSC2. Genes Dev 2004 ; 18 : 2893-904. Witard OC, Jackman SR, Breen L, Smith K, Selby A, Tipton KD.
 
-Taux de synthèse des protéines musculaires myofibrillaires après un repas en réponse à des doses croissantes de protéines de lactosérum au repos et après un exercice de résistance. Am J Clin Nutr 2014 ; 99 : 86–95. Koopman R, Verdijk L, Manders RJ et al. La co-ingestion de protéines et de leucine stimule les taux de synthèse des protéines musculaires dans la même mesure chez les hommes maigres jeunes et âgés.
+Taux de synthèse des protéines musculaires myofibrillaires après un repas en réponse à des doses croissantes de protéines de lactosérum au repos et après un exercice de résistance. Am J Clin Nutr 2014 ; 99 : 86-95. Koopman R, Verdijk L, Manders RJ et al. La co-ingestion de protéines et de leucine stimule les taux de synthèse des protéines musculaires dans la même mesure chez les hommes maigres jeunes et âgés.
 
-Am J Clin Nutr 2006 ; 84 : 623–32. Rai RM, Malhotra MS, Dimri GP, Sampathkumar T. Utilisation de différentes quantités de graisse à haute altitude. Am J Clin Nutr 1975 ; 28 : 242–5.
+Am J Clin Nutr 2006 ; 84 : 623-32. Rai RM, Malhotra MS, Dimri GP, Sampathkumar T. Utilisation de différentes quantités de graisse à haute altitude. Am J Clin Nutr 1975 ; 28 : 242-5.
 
 Chung-Yu Chen, Chien-Wen Hou, Jeffrey R Bernard, Chiu-Chou Chen, Ta-Cheng Hung, Lu-Ling Cheng, Yi-Hung Liao, Chia-Hua Kuo. Un supplément à base de Rhodiola crenulata et de Cordyceps sinensis stimule les performances d'exercices aérobiques après un entraînement à court terme en haute altitude. High Alt Med Biol 2014 Sep;15(3):371-9. Wolfarth B.Un entraînement traditionnel en altitude de trois semaines augmente la masse d'hémoglobine et le volume de globules rouges chez les athlètes d'élite du biathlon.
 
@@ -1381,7 +1381,7 @@ Lang JA, Krajek AC, Schwartz KS, Rand JE. La supplémentation orale en L-Tyrosin
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -1418,17 +1418,17 @@ Sukumaran NP, Amalraj A, Gopi S. Effets neuropharmacologiques et cognitifs de Ba
 
 ## Nutrition et récupération
 
-Choi K.T. « Caractéristiques botaniques, effets pharmacologiques et composants médicinaux du ginseng coréen Panax C A Meyer. » Acta Pharmacologica Sinica.2008 septembre;29(9):1109-18. Jia L., Zhao Y. « Évaluation actuelle de la phytomédecine – ginseng du millénaire (I) : étymologie, pharmacognosie, phytochimie, marché et réglementation. » Chimie médicinale actuelle.2009;16(19):2475-84. Olinyk S., Oh S., « Effet actoprotecteur du ginseng : amélioration des performances mentales et physiques » Journal of Ginseng Research, avril 2013 ; 37(2) : 144-166. Coleman C.I., Hebert J.H., Reddy P. « Les effets du Panax ginseng sur la qualité de vie. » Journal of Clinical and Pharmaceutical Therapy.
+Choi K.T. « Caractéristiques botaniques, effets pharmacologiques et composants médicinaux du ginseng coréen Panax C A Meyer. » Acta Pharmacologica Sinica.2008 septembre;29(9):1109-18. Jia L., Zhao Y. « Évaluation actuelle de la phytomédecine - ginseng du millénaire (I) : étymologie, pharmacognosie, phytochimie, marché et réglementation. » Chimie médicinale actuelle.2009;16(19):2475-84. Olinyk S., Oh S., « Effet actoprotecteur du ginseng : amélioration des performances mentales et physiques » Journal of Ginseng Research, avril 2013 ; 37(2) : 144-166. Coleman C.I., Hebert J.H., Reddy P. « Les effets du Panax ginseng sur la qualité de vie. » Journal of Clinical and Pharmaceutical Therapy.
 
-Février 2003 ; 28(1):5-15. Popa A. « Ginkgo Biloba and Memory » Pharmacotherapy Update – Cleveland Clinic Vol.V, No.V septembre/octobre 2002EGb 761 : extrait de ginkgo biloba, Ginkor.Drugs in R.& D.2003;4(3):188-93. Mashayekh A., Pham DL, Yousem DM, Dizon M., Barker P.B., Lin DD. « Effets du Ginkgo biloba sur le flux sanguin cérébral évalués par imagerie quantitative de perfusion IRM : une étude pilote. » Neuroradiologie.Mars 2011;53(3):185-91. Ahlemeyer B., Krieglstein J. « Effets neuroprotecteurs de l'extrait de Ginkgo biloba. » Cellular & Molecular Life Sciences.2003 Sep;60(9):1779-92.Mashayekh A., Pham D.L., Yousem D.M., Dizon M., Barker P.B., Lin DD. « Effets du Ginkgo biloba sur le flux sanguin cérébral évalués par imagerie de perfusion IRM quantitative : une étude pilote. » Neuroradiologie.Mars 2011;53(3):185-91.
+Février 2003 ; 28(1):5-15. Popa A. « Ginkgo Biloba and Memory » Pharmacotherapy Update - Cleveland Clinic Vol.V, No.V septembre/octobre 2002EGb 761 : extrait de ginkgo biloba, Ginkor.Drugs in R.& D.2003;4(3):188-93. Mashayekh A., Pham DL, Yousem DM, Dizon M., Barker P.B., Lin DD. « Effets du Ginkgo biloba sur le flux sanguin cérébral évalués par imagerie quantitative de perfusion IRM : une étude pilote. » Neuroradiologie.Mars 2011;53(3):185-91. Ahlemeyer B., Krieglstein J. « Effets neuroprotecteurs de l'extrait de Ginkgo biloba. » Cellular & Molecular Life Sciences.2003 Sep;60(9):1779-92.Mashayekh A., Pham D.L., Yousem D.M., Dizon M., Barker P.B., Lin DD. « Effets du Ginkgo biloba sur le flux sanguin cérébral évalués par imagerie de perfusion IRM quantitative : une étude pilote. » Neuroradiologie.Mars 2011;53(3):185-91.
 
-Popa A. « Ginkgo Biloba and Memory » Pharmacotherapy Update – Cleveland Clinic Vol.V, No.V septembre/octobre 2002Cieza A., Maier P., Pöppel E. « Effets du Ginkgo biloba sur le fonctionnement mental chez des volontaires sains. » Archives de la recherche médicale. 2003 septembre-octobre; 34(5):373-81
+Popa A. « Ginkgo Biloba and Memory » Pharmacotherapy Update - Cleveland Clinic Vol.V, No.V septembre/octobre 2002Cieza A., Maier P., Pöppel E. « Effets du Ginkgo biloba sur le fonctionnement mental chez des volontaires sains. » Archives de la recherche médicale. 2003 septembre-octobre; 34(5):373-81
 
 ---
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,
@@ -1457,29 +1457,29 @@ Les aliments que nous consommons quotidiennement, souvent ultra-transformés, so
 
 ## Nutrition et longévité
 
-Un sentiment de bien-être psycho-physique , qui ne peut être atteint que si vous vous nourrissez de manière optimale, augmentant ainsi l'espérance de vie mais surtout la qualité de vie. Des nutraceutiques pour bien vieillir Après avoir introduit les concepts de médecine préventive et de vieillissement lent, nous savons qu'offrir à notre corps tout ce dont il a besoin est optimal pour qu'il fonctionne au mieux et améliore la qualité de vie en ralentissant le processus de vieillissement. Voyons ensemble une liste des compléments les plus utiles pour bien vieillir. Oméga-3 – Les acides gras oméga-3 sont nécessaires au bon fonctionnement de l'organisme et assurent une fonction protectrice : ils protègent le cœur, le cerveau et régulent la pression cardiaque.
+Un sentiment de bien-être psycho-physique , qui ne peut être atteint que si vous vous nourrissez de manière optimale, augmentant ainsi l'espérance de vie mais surtout la qualité de vie. Des nutraceutiques pour bien vieillir Après avoir introduit les concepts de médecine préventive et de vieillissement lent, nous savons qu'offrir à notre corps tout ce dont il a besoin est optimal pour qu'il fonctionne au mieux et améliore la qualité de vie en ralentissant le processus de vieillissement. Voyons ensemble une liste des compléments les plus utiles pour bien vieillir. Oméga-3 - Les acides gras oméga-3 sont nécessaires au bon fonctionnement de l'organisme et assurent une fonction protectrice : ils protègent le cœur, le cerveau et régulent la pression cardiaque.
 
-Plusieurs études ont également montré qu'ils combattent les mécanismes inflammatoires à l'origine des maladies, notamment auto-immunes. radicaux, combattant l’inflammation. Curcuma – Épice largement utilisée en cuisine, l’extrait de curcuma est connu pour être un puissant anti-inflammatoire et pour son action antioxydante. Il semble protéger notamment le cerveau du vieillissement et renforcer le système immunitaire, et ces effets positifs sont imputables à la présence de curcuminoïdes, composés bioactifs qui composent le pigment extrait du curcuma. Vitamine C – L'acide ascorbique, autre nom sous lequel la vitamine C est appelée, est un nutriment essentiel pour la réparation des tissus, et en plus de soutenir la fonctionnalité du système immunitaire, c'est un puissant antioxydant, il neutralise la formation de radicaux libres et participe activement à la biosynthèse des molécules de collagène, responsables de la beauté de la peau et de l'élasticité des tissus.
+Plusieurs études ont également montré qu'ils combattent les mécanismes inflammatoires à l'origine des maladies, notamment auto-immunes. radicaux, combattant l’inflammation. Curcuma - Épice largement utilisée en cuisine, l’extrait de curcuma est connu pour être un puissant anti-inflammatoire et pour son action antioxydante. Il semble protéger notamment le cerveau du vieillissement et renforcer le système immunitaire, et ces effets positifs sont imputables à la présence de curcuminoïdes, composés bioactifs qui composent le pigment extrait du curcuma. Vitamine C - L'acide ascorbique, autre nom sous lequel la vitamine C est appelée, est un nutriment essentiel pour la réparation des tissus, et en plus de soutenir la fonctionnalité du système immunitaire, c'est un puissant antioxydant, il neutralise la formation de radicaux libres et participe activement à la biosynthèse des molécules de collagène, responsables de la beauté de la peau et de l'élasticité des tissus.
 
-Vitamine A – La vitamine A aide à former et à maintenir une peau, des dents, un squelette et des membranes saines dans notre corps. Elle est connue sous le nom de rétinol car elle produit des pigments dans la rétine de l'œil, favorisant une vision saine, en plus d'être nécessaire à la reproduction et à la lactation. Elle nourrit également les cheveux et retarde leur vieillissement. Vitamines B – Toutes les vitamines B sont essentielles pour transformer les aliments en énergie.
+Vitamine A - La vitamine A aide à former et à maintenir une peau, des dents, un squelette et des membranes saines dans notre corps. Elle est connue sous le nom de rétinol car elle produit des pigments dans la rétine de l'œil, favorisant une vision saine, en plus d'être nécessaire à la reproduction et à la lactation. Elle nourrit également les cheveux et retarde leur vieillissement. Vitamines B - Toutes les vitamines B sont essentielles pour transformer les aliments en énergie.
 
-Beaucoup ont un rôle antioxydant, réduisant les dommages cellulaires et le vieillissement. La vitamine B1 est nécessaire au bon fonctionnement de l’influx nerveux ; La B6 joue un rôle important dans le développement du cerveau et la formation de l’hémoglobine ; l'acide folique (B9) est utilisé pour la construction des globules rouges et prévient les dommages au système nerveux pendant la vie embryonnaire. Même un faible niveau de vitamine B12 a été associé à l'accélération des processus de vieillissement, démontrant ainsi un effet protecteur. Vitamine D – La carence en vitamine D est responsable de la fragilité osseuse, car la vitamine D favorise l'absorption du calcium et régule la quantité de phosphate dans l'organisme.
+Beaucoup ont un rôle antioxydant, réduisant les dommages cellulaires et le vieillissement. La vitamine B1 est nécessaire au bon fonctionnement de l’influx nerveux ; La B6 joue un rôle important dans le développement du cerveau et la formation de l’hémoglobine ; l'acide folique (B9) est utilisé pour la construction des globules rouges et prévient les dommages au système nerveux pendant la vie embryonnaire. Même un faible niveau de vitamine B12 a été associé à l'accélération des processus de vieillissement, démontrant ainsi un effet protecteur. Vitamine D - La carence en vitamine D est responsable de la fragilité osseuse, car la vitamine D favorise l'absorption du calcium et régule la quantité de phosphate dans l'organisme.
 
 ## Activité physique adaptée
 
-Ces actions sont essentielles pour avoir des os solides et sains, en évitant le risque de fractures osseuses. Elle renforce également l'activité du système immunitaire, nous protégeant des attaques externes de virus et de bactéries. Vitamine E – Elle agit dans notre organisme comme un puissant antioxydant, nous protégeant des effets de la pollution, de la fumée, d'une mauvaise alimentation, facteurs qui tendent à augmenter le stress oxydatif. En particulier, la vitamine E protège les membranes cellulaires et prévient diverses maladies dégénératives.
+Ces actions sont essentielles pour avoir des os solides et sains, en évitant le risque de fractures osseuses. Elle renforce également l'activité du système immunitaire, nous protégeant des attaques externes de virus et de bactéries. Vitamine E - Elle agit dans notre organisme comme un puissant antioxydant, nous protégeant des effets de la pollution, de la fumée, d'une mauvaise alimentation, facteurs qui tendent à augmenter le stress oxydatif. En particulier, la vitamine E protège les membranes cellulaires et prévient diverses maladies dégénératives.
 
-Acide alpha-lipoïque – C'est un puissant antioxydant, utile pour réduire le stress oxydatif car il soutient l'activité des vitamines C, A et E. Son action neutralise également le processus de glycation, la réaction par laquelle les sucres se lient aux protéines, formant des composés nocifs pour la santé et le vieillissement. Il agit également en améliorant la sensibilité à l'insuline, réduisant ainsi l'apparition du diabète de type 2. CoenzymeQ10 – Soutient la production d'énergie et a une action antioxydante.
+Acide alpha-lipoïque - C'est un puissant antioxydant, utile pour réduire le stress oxydatif car il soutient l'activité des vitamines C, A et E. Son action neutralise également le processus de glycation, la réaction par laquelle les sucres se lient aux protéines, formant des composés nocifs pour la santé et le vieillissement. Il agit également en améliorant la sensibilité à l'insuline, réduisant ainsi l'apparition du diabète de type 2. CoenzymeQ10 - Soutient la production d'énergie et a une action antioxydante.
 
-Elle stimule le système immunitaire et contribue à la protection de nos organes, dont le cerveau, contre le stress oxydatif, ralentissant ainsi le vieillissement. Collagène – L'apport de peptides de collagène hydrolysés bioactifs améliore l'apparence de la peau, des cheveux et des tissus conjonctifs et stimule l'organisme à biosynthétiser du nouveau collagène. Il garantit la luminosité, l'hydratation et l'élasticité de la peau, ainsi que la réduction de la profondeur des rides et des signes du vieillissement. Acide Hyaluronique – Pris par voie orale et pas seulement sous forme de crème topique, l'acide hyaluronique nourrit le tissu conjonctif de l'intérieur.
+Elle stimule le système immunitaire et contribue à la protection de nos organes, dont le cerveau, contre le stress oxydatif, ralentissant ainsi le vieillissement. Collagène - L'apport de peptides de collagène hydrolysés bioactifs améliore l'apparence de la peau, des cheveux et des tissus conjonctifs et stimule l'organisme à biosynthétiser du nouveau collagène. Il garantit la luminosité, l'hydratation et l'élasticité de la peau, ainsi que la réduction de la profondeur des rides et des signes du vieillissement. Acide Hyaluronique - Pris par voie orale et pas seulement sous forme de crème topique, l'acide hyaluronique nourrit le tissu conjonctif de l'intérieur.
 
 Il a une action hydratante et lubrifiante sur la peau et les articulations, comble la peau, la rend ferme et lumineuse et protège le cartilage, réduisant l'inconfort articulaire. Même si chaque organe vieillit à des rythmes différents, si nous prenons soin de nous dès le plus jeune âge en combinant mode de vie, alimentation, entraînement et intégration, nous pouvons vivre mieux (et plus longtemps). La prévention commence par la sensibilisation, tout comme le changement. Federica Federici & Massimiliano Febbi Gilchrest B.A.Modifications cutanées liées à l'âge.
 
 ## Habitudes de vie clés
 
-J.Am.Geriatr.Soc. 1982;30 :139-143.doi : 10.1111/j.1532-5415.1982.tb01289.x. Cevenini E., Invidia L., Lescai F., Salvioli S., Tieri P., Castellani G., Franceschi C.Modèles humains du vieillissement et de la longévité.Avis d'expert.Biol.Ther.2008;8:1393–1405.doi: 10.1517/14712598.8.9.1393. Segger D., Schonlau F. La supplémentation avec Evelle améliore la douceur et l'élasticité de la peau dans une étude en double aveugle contrôlée par placebo auprès de 62 femmes.
+J.Am.Geriatr.Soc. 1982;30 :139-143.doi : 10.1111/j.1532-5415.1982.tb01289.x. Cevenini E., Invidia L., Lescai F., Salvioli S., Tieri P., Castellani G., Franceschi C.Modèles humains du vieillissement et de la longévité.Avis d'expert.Biol.Ther.2008;8:1393-1405.doi: 10.1517/14712598.8.9.1393. Segger D., Schonlau F. La supplémentation avec Evelle améliore la douceur et l'élasticité de la peau dans une étude en double aveugle contrôlée par placebo auprès de 62 femmes.
 
-J.Dermatol.Treat. 2004;15 :222-226.doi : 10.1080/09546630410033772. Ni Z., Mu Y., Gulati O. Traitement du mélasma avec du pycnogenol.Phytother.Res.2002;16:567–571.doi : 10.1002/ptr.1085. Losada-Echeberria M., Herranz-Lopez M., Micol V., Barrajon-Catalan E.
+J.Dermatol.Treat. 2004;15 :222-226.doi : 10.1080/09546630410033772. Ni Z., Mu Y., Gulati O. Traitement du mélasma avec du pycnogenol.Phytother.Res.2002;16:567-571.doi : 10.1002/ptr.1085. Losada-Echeberria M., Herranz-Lopez M., Micol V., Barrajon-Catalan E.
 
 Les polyphénols comme médicaments prometteurs contre les principales signatures du cancer du sein. Antioxydants (Bâle) 2017 ;6 doi : 10.3390/antiox6040088. Finch CE, Tanzi RE.Génétique du vieillissement.Science. 1997 ; 278 : 407-11. Rowe JW, Kahn RL.Le vieillissement humain : habituel et réussi.Science.1987 ; 237 : 143-9.
 
@@ -1491,7 +1491,7 @@ Med Sci Monit.2008 ; 14 : 37-44. Alamdari N, O'Neal P, Hasselgren PO. Curcumine 
 
 [![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
+**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle.
 👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
 
 ---`,

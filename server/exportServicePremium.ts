@@ -143,7 +143,7 @@ export function generatePremiumHTMLFromTxt(
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AUDIT EXPERT — ${firstName.toUpperCase()} | ACHZOD SYSTEM</title>
+  <title>AUDIT EXPERT ,  ${firstName.toUpperCase()} | ACHZOD SYSTEM</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -507,7 +507,7 @@ export function generatePremiumHTMLFromTxt(
   <main class="main">
 
     <section class="hero" id="hero">
-      <div class="hero-label">AUDIT EXPERT — CONFIDENTIAL</div>
+      <div class="hero-label">AUDIT EXPERT ,  CONFIDENTIAL</div>
       <h1>${firstName.toUpperCase()},<br><span class="gradient-text">VOICI TON AUDIT.</span></h1>
       <p style="margin-top: 24px; border-left: 2px solid var(--signal-orange); padding-left: 20px;">
         ${firstName}, ${globalScore}/100. Voici ce qui se passe vraiment dans ton corps.

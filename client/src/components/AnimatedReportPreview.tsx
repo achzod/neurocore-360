@@ -11,7 +11,7 @@
  *   panels={[{ name: "Hormones", score: 72 }, ...]}
  *   alert={{ title: "Testosterone libre: 8.2 pg/mL", detail: "Range optimal: 15-25 pg/mL" }}
  *   biomarkers={[{ name: "Testosterone totale", value: "485 ng/dL", range: "600-900", status: "low" }, ...]}
- *   protocol={{ title: "Phase 1 — Semaines 1-4", items: ["Item 1", "Item 2"] }}
+ *   protocol={{ title: "Phase 1 ,  Semaines 1-4", items: ["Item 1", "Item 2"] }}
  *   extras={[{ title: "Stack Supplements", detail: "Magnesium 300mg, Ashwagandha 600mg" }]}
  * />
  */
@@ -112,11 +112,11 @@ export function AnimatedReportPreview({
   protocol,
   extras,
 }: ReportPreviewProps) {
-  // inView detection — trigger once when the container enters the viewport
+  // inView detection ,  trigger once when the container enters the viewport
   const sectionRef = useRef<HTMLDivElement>(null);
   const inView = useInView(sectionRef, { once: true, margin: "-80px" });
 
-  // Continuous scroll animation — starts after the entrance sequence (5s)
+  // Continuous scroll animation ,  starts after the entrance sequence (5s)
   // We estimate the scrollable content height so the y animation feels proportional.
   // A fixed large negative value is safe since overflow:hidden clips it.
   const contentRef = useRef<HTMLDivElement>(null);
@@ -177,12 +177,12 @@ export function AnimatedReportPreview({
 
   return (
     <div ref={sectionRef} className="relative rounded-2xl border border-white/15 overflow-hidden" style={{ height: "520px" }}>
-      {/* Top fade mask — sits above scrolling content, below browser chrome */}
+      {/* Top fade mask ,  sits above scrolling content, below browser chrome */}
       <div className="absolute top-10 left-0 right-0 h-16 bg-gradient-to-b from-[#0a0a0a] to-transparent z-20 pointer-events-none" />
       {/* Bottom fade mask */}
       <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#0a0a0a] to-transparent z-20 pointer-events-none" />
 
-      {/* Browser chrome — STATIC, never moves */}
+      {/* Browser chrome ,  STATIC, never moves */}
       <div className="absolute top-0 left-0 right-0 h-10 bg-[#1a1a1a] border-b border-white/10 z-30 flex items-center px-4 gap-2">
         <div className="w-3 h-3 rounded-full bg-red-500/60" />
         <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
@@ -192,7 +192,7 @@ export function AnimatedReportPreview({
         </div>
       </div>
 
-      {/* Scrolling content wrapper — entrance animations + continuous loop scroll */}
+      {/* Scrolling content wrapper ,  entrance animations + continuous loop scroll */}
       <motion.div
         ref={contentRef}
         className="pt-10"
@@ -214,7 +214,7 @@ export function AnimatedReportPreview({
         <div className="bg-[#0a0a0a] p-8 space-y-8">
 
           {/* ----------------------------------------------------------------
-              Score header — counter animates 0→target in first 1.5s
+              Score header ,  counter animates 0→target in first 1.5s
           ---------------------------------------------------------------- */}
           <motion.div
             className="border border-white/10 rounded-xl p-8"
@@ -239,7 +239,7 @@ export function AnimatedReportPreview({
           </motion.div>
 
           {/* ----------------------------------------------------------------
-              Panel bars — stagger 1.0–2.0s
+              Panel bars ,  stagger 1.0-2.0s
           ---------------------------------------------------------------- */}
           <div className={`grid gap-3 ${panels.length > 6 ? "grid-cols-2" : "grid-cols-3"}`}>
             {panels.map((panel, i) => {
@@ -272,7 +272,7 @@ export function AnimatedReportPreview({
           </div>
 
           {/* ----------------------------------------------------------------
-              Alert card — slides in from right at 2.0s
+              Alert card ,  slides in from right at 2.0s
           ---------------------------------------------------------------- */}
           {alert && (
             <motion.div
@@ -287,13 +287,13 @@ export function AnimatedReportPreview({
               </div>
               <p className="text-sm text-white/70">
                 <strong className="text-white">{alert.title}</strong>
-                {alert.detail ? ` — ${alert.detail}` : ""}
+                {alert.detail ? ` ,  ${alert.detail}` : ""}
               </p>
             </motion.div>
           )}
 
           {/* ----------------------------------------------------------------
-              Biomarker rows — fade in staggered at 3.0s
+              Biomarker rows ,  fade in staggered at 3.0s
           ---------------------------------------------------------------- */}
           {biomarkers && biomarkers.length > 0 && (
             <motion.div
@@ -302,7 +302,7 @@ export function AnimatedReportPreview({
               animate={inView ? { opacity: 1 } : {}}
               transition={{ delay: 2.8, duration: 0.3 }}
             >
-              <p className="text-xs uppercase tracking-wider text-white/40 mb-4">Biomarqueurs — Detail</p>
+              <p className="text-xs uppercase tracking-wider text-white/40 mb-4">Biomarqueurs ,  Detail</p>
               {biomarkers.map((marker, i) => (
                 <motion.div
                   key={marker.name}
@@ -348,7 +348,7 @@ export function AnimatedReportPreview({
           ))}
 
           {/* ----------------------------------------------------------------
-              Protocol items — appear with checkmarks at 4.0s
+              Protocol items ,  appear with checkmarks at 4.0s
           ---------------------------------------------------------------- */}
           {protocol && (
             <motion.div

@@ -611,7 +611,7 @@ export default function FormCheck() {
             className="inline-flex items-center gap-2 rounded-sm px-4 py-2 mb-8"
             style={{ background: `${ACCENT}1A`, border: `1px solid ${ACCENT}33` }}
           >
-            <span className="text-xs font-mono uppercase tracking-widest" style={{ color: ACCENT }}>[ NOUVEAU — 100% WHATSAPP ]</span>
+            <span className="text-xs font-mono uppercase tracking-widest" style={{ color: ACCENT }}>[ NOUVEAU ,  100% WHATSAPP ]</span>
           </motion.div>
 
           <motion.h1
@@ -685,7 +685,7 @@ export default function FormCheck() {
         </motion.div>
       </section>
 
-      {/* REPORT SHOWCASE — Animated scroll */}
+      {/* REPORT SHOWCASE ,  Animated scroll */}
       <section className="py-32 px-6 border-t border-white/5">
         <div className="max-w-6xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
@@ -1031,7 +1031,7 @@ export default function FormCheck() {
                   <span className="text-xs font-mono font-bold text-[#FF6B00] uppercase tracking-widest">Hyrox Ready</span>
                 </div>
                 <p className="text-white/50 text-sm">
-                  Wall ball, ski erg, sled push, burpee broad jump — tous les exos Hyrox sont supportes avec leurs propres criteres.
+                  Wall ball, ski erg, sled push, burpee broad jump ,  tous les exos Hyrox sont supportes avec leurs propres criteres.
                 </p>
               </motion.div>
             </motion.div>
@@ -1049,7 +1049,7 @@ export default function FormCheck() {
         </div>
       </section>
 
-      {/* PACKS & PRICING — Coming Soon */}
+      {/* PACKS & PRICING ,  Coming Soon */}
       <section id="packs" className="py-32 px-6 border-t border-white/5">
         <div className="max-w-5xl mx-auto">
           <motion.div
@@ -1408,7 +1408,7 @@ export default function FormCheck() {
             <div className="aspect-square w-12 rounded-sm flex items-center justify-center" style={{ background: `${ACCENT}1A`, border: `1px solid ${ACCENT}33` }}>
               <MessageCircle className="w-6 h-6" style={{ color: ACCENT }} />
             </div>
-            <span className="text-white/60">100% via WhatsApp — aucune app a telecharger</span>
+            <span className="text-white/60">100% via WhatsApp ,  aucune app a telecharger</span>
           </div>
         </motion.div>
       </section>

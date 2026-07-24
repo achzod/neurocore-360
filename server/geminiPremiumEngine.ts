@@ -145,8 +145,8 @@ function cleanPremiumContent(content: string): string {
     .replace(/\bclients\b/gi, 'profils')
     .replace(/\bclient\b/gi, 'profil')
     // Remove em dashes and special characters
-    .replace(/—/g, ':')
-    .replace(/–/g, '-')
+    .replace(/\u2014/g, ':')
+    .replace(/\u2013/g, '-')
     .replace(/…/g, '...')
     // Remove markdown
     .replace(/\*\*/g, '')
@@ -175,9 +175,9 @@ function cleanPremiumContent(content: string): string {
   return cleaned;
 }
 
-// 
+//
 // SYSTÈME DE CACHE POUR SAUVEGARDE PROGRESSIVE
-// 
+//
 const CACHE_DIR = path.join(process.cwd(), '.cache');
 
 interface CacheData {
@@ -234,8 +234,8 @@ import { GEMINI_CONFIG } from './geminiConfig';
 
 // Initialisation standard
 const genAI = new GoogleGenerativeAI(GEMINI_CONFIG.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ 
-  model: GEMINI_CONFIG.GEMINI_MODEL 
+const model = genAI.getGenerativeModel({
+  model: GEMINI_CONFIG.GEMINI_MODEL
 });
 
 const GEMINI_MODEL = GEMINI_CONFIG.GEMINI_MODEL;
@@ -499,6 +499,8 @@ Tu rediges un audit APEXLABS by Achzod (Anabolic Bioscan ou Ultimate Scan) avec 
 
 ANTI-IA : TON TEXTE DOIT ETRE 100% INDETECTABLE COMME ECRIT PAR UNE IA
 INTERDITS ABSOLUS (penalite SEVERE si non respecte) :
+- Les caracteres Unicode U+2014 et U+2013 sont interdits partout. Utilise une virgule, un point ou reformule.
+- Tu tutoies toujours. Aucun "vous", "votre", "vos" ou verbe a l'imperatif pluriel.
 - "Bonjour [Prenom]" ou toute formule de salutation en debut de section
 - "J'espere que...", "N'hesite pas a...", "Je t'encourage a..."
 - "Il est important de noter que...", "Il convient de souligner..."
@@ -519,9 +521,17 @@ CE QUI REND TON TEXTE HUMAIN :
 - Inclus des observations specifiques qui prouvent que tu as LU ses reponses
 - Varie la longueur des phrases (3 mots parfois, 30 mots ailleurs)
 - N'aie pas peur d'etre direct voire brutal si necessaire
+- Ecris comme dans un vrai message personnel. Evite les plans trop symetriques, les transitions scolaires et les repetitions de structure.
 
 COHERENCE (CRITIQUE):
 Ne contredis JAMAIS une information donnee dans une autre section. Si tu dis qu'un supplement est inutile, ne le recommande pas ailleurs. Si tu dis qu'un aliment est a eviter, ne le presente pas comme benefique dans une autre section. Relis mentalement tout le rapport et assure-toi que chaque conseil est coherent du debut a la fin. Le client paie pour un rapport d'expert, pas pour des contradictions.
+
+GARDE-FOUS DE VERIFICATION (OBLIGATOIRES):
+- Une cible proteique quotidienne doit toujours partir du poids fourni et afficher aussi le repere en g/kg. Si le poids manque, ne donne aucun total fixe en grammes. Demande le poids.
+- Ne presente jamais une quantite de poudre de whey comme une quantite identique de proteines. Demande de verifier l'etiquette.
+- Pour les probiotiques, precise la souche, le produit, le motif, le debut et la duree totale. Une duree n'est jamais universelle. Demande une validation par le medecin ou le pharmacien si tu proposes de poursuivre au-dela du protocole court.
+- Pour un bilan hormonal, ne demande jamais au lecteur de commander aveuglement tous les marqueurs. Il doit montrer la liste a son medecin ou a un endocrinologue. Le professionnel choisit les examens utiles. Un dosage hormonal anormal doit etre confirme selon les conditions de prelevement adaptees.
+- Toute recommandation dosee doit contenir une phrase naturelle qui demande une verification par un medecin ou un pharmacien, surtout en cas de traitement, pathologie, grossesse, allergie ou symptome inhabituel.
 
 PHILOSOPHIE : STORYTELLING CLINIQUE (humain + scientifique)
 - Tu tutoies toujours.
@@ -584,10 +594,10 @@ Donnees du profil :
 `;
 
 const SECTION_INSTRUCTIONS: Record<string, string> = {
-  
-  // 
+
+  //
   // EXECUTIVE SUMMARY - PAGE 1 (20 secondes pour scotcher)
-  // 
+  //
   "Executive Summary": `
 INSTRUCTIONS POUR "EXECUTIVE SUMMARY" :
 C'est la pièce maîtresse. Elle doit être BRUTALE et CLINIQUE.
@@ -601,21 +611,21 @@ Quelle est l'action unique qui va déverrouiller 80% des résultats ?
 3. LA PROJECTION MÉTABOLIQUE :
 Où sera sa physiologie dans 30 jours ?`,
 
-  // 
+  //
   // ANALYSES PROFONDES (plus courtes mais ULTRA precises)
-  // 
+  //
   "Analyse visuelle et posturale complete": `
 INSTRUCTIONS POUR "ANALYSE VISUELLE ET POSTURALE COMPLETE" :
 
 TU ES UN EXPERT EN MORPHO-PHYSIOLOGIE. Tu fais du SCREENING, pas un diagnostic médical.
 
 1. MAPPING VISUEL OBLIGATOIRE :
-Cite explicitement les photos fournies ("Sur ton cliché de face...", "L'angle de ton bassin sur la photo de profil..."). 
+Cite explicitement les photos fournies ("Sur ton cliché de face...", "L'angle de ton bassin sur la photo de profil...").
 Même si tu déduis des choses, présente-les comme une analyse visuelle de tes photos STATIQUES.
 
 2. RÉCIT CLINIQUE PROFOND :
-Explique la répartition des graisses comme une signature endocrinienne. 
-Parle de "Tensegrité Myofasciale" et de "Force de Cisaillement". 
+Explique la répartition des graisses comme une signature endocrinienne.
+Parle de "Tensegrité Myofasciale" et de "Force de Cisaillement".
 Fais le lien entre la posture et la biochimie du stress.
 
 3. INTERDICTION ABSOLUE CHIFFRES INVENTÉS :
@@ -847,14 +857,14 @@ STRUCTURE :
   Utilise des phrases complètes, pas seulement des emojis. Explique l'état de chaque axe avec des phrases.
 
 - Sous-section 2 : "2. Synthèse endocrinienne"
-  Explique l'interaction entre ces hormones avec des phrases complètes. 
+  Explique l'interaction entre ces hormones avec des phrases complètes.
   Détaille la stratégie du bilan sanguin comme une enquête indispensable de manière narrative.
 
 Minimum 70 lignes de texte narratif.`,
 
-  // 
+  //
   // PROTOCOLES FERMES (mode d'emploi precis)
-  // 
+  //
   "Protocole Matin Anti-Cortisol": `
 INSTRUCTIONS POUR "PROTOCOLE MATIN ANTI-CORTISOL" :
 
@@ -972,7 +982,7 @@ Plan de RESET DIGESTIF en 14 jours avec liste d'aliments OK/NOK.
 
 FORMAT OBLIGATOIRE :
 
- PROTOCOLE DIGESTION 14 JOURS 
+ PROTOCOLE DIGESTION 14 JOURS
 Objectif : Calmer l'inflammation, reparer l'intestin, eliminer les intolerants
 
 PHASE 1 : ELIMINATION (Jour 1 a 7)
@@ -1036,7 +1046,7 @@ MODE D'EMPLOI pour contrer les 8-10h assis par jour.
 
 FORMAT OBLIGATOIRE :
 
- PROTOCOLE BUREAU ANTI-SEDENTARITE 
+ PROTOCOLE BUREAU ANTI-SEDENTARITE
 Objectif : Reactiver ton corps malgre le travail de bureau
 
 ROUTINE MICRO-PAUSES (toutes les 45-60 min) :
@@ -1174,9 +1184,9 @@ PROGRESSION :
 - Reprise cycle
 `,
 
-  // 
+  //
   // PLAN CONCRET
-  // 
+  //
   "Plan Semaine par Semaine 30-60-90": `
 INSTRUCTIONS POUR "PLAN SEMAINE PAR SEMAINE 30-60-90" :
 
@@ -1184,7 +1194,7 @@ PAS une projection, un PLAN D'ACTION detaille.
 
 FORMAT OBLIGATOIRE :
 
- PLAN D'ACTION 30-60-90 JOURS 
+ PLAN D'ACTION 30-60-90 JOURS
 
 PHASE 1 : RESET (Semaines 1-4)
 
@@ -1332,7 +1342,7 @@ Cette section est generee a partir de la bibliotheque de complements (moteur sup
 
 FORMAT OBLIGATOIRE :
 
- STACK SUPPLEMENTS OPTIMISE 
+ STACK SUPPLEMENTS OPTIMISE
 Base sur : [ses carences/besoins identifies]
 
 PRIORITE 1 - FONDAMENTAUX (commencer par ceux-la) :
@@ -1420,7 +1430,7 @@ INTERDITS ABSOLUS :
 - "Bonjour [Prenom]" ou formules de salutation (tu es DEJA en conversation)
 - "J'espere que..." ou formules polies generiques
 - "N'hesite pas a..." (trop mou)
-- Listes a puces, numerotation, ou symboles de type "+" / "x" / "-" 
+- Listes a puces, numerotation, ou symboles de type "+" / "x" / "-"
 - Resumer ce qui a deja ete dit (inutile)
 - Ton passif ou condescendant
 - Toute mention d'offre, coaching, promo, ou prochaine vente (le CTA arrive apres)
@@ -1826,7 +1836,7 @@ export async function generateAuditTxt(
   resumeAuditId?: string
 ): Promise<string | null> {
   const startTime = Date.now();
-  
+
   const firstName = getFirstNameForReport(clientData);
   const lastName = clientData['nom'] || '';
   const fullName = `${firstName} ${lastName}`.trim();
@@ -1834,7 +1844,7 @@ export async function generateAuditTxt(
   const auditId = resumeAuditId || generateAuditId();
   let cachedSections: { [key: string]: string } = {};
   let sectionsFromCache = 0;
-  
+
   if (resumeAuditId) {
     const cached = loadFromCache(resumeAuditId);
     if (cached) {
@@ -1861,7 +1871,7 @@ export async function generateAuditTxt(
   const fullDataStr = dataStr + photoDataStr;
 
   const auditParts: string[] = [];
-  
+
   const ctaDebut = getCTADebut(tier, PRICING.PREMIUM);
   auditParts.push(ctaDebut);
   auditParts.push(`\n AUDIT COMPLET APEXLABS - ${fullName.toUpperCase()} \n`);
@@ -1952,16 +1962,16 @@ export async function generateAuditTxt(
   });
 
   let fullAudit = auditParts.join('\n');
-  
+
   const ctaFin = getCTAFin(tier, PRICING.PREMIUM);
   fullAudit += '\n\n' + ctaFin;
-  
+
   deleteCache(auditId);
-  
+
   const generationTime = Date.now() - startTime;
   const newSections = sectionsToGenerate.length - sectionsFromCache;
   console.log(`\n[GeminiPremiumEngine] Audit genere en ${(generationTime / 1000).toFixed(1)}s (${newSections} nouvelles sections, ${sectionsFromCache} du cache)`);
-  
+
   return fullAudit;
 }
 
@@ -1972,7 +1982,7 @@ export async function generateAndConvertAudit(
   resumeAuditId?: string
 ): Promise<AuditResult> {
   const startTime = Date.now();
-  
+
   const firstName = getFirstNameForReport(clientData);
   const lastName = clientData['nom'] || '';
   const clientName = `${firstName} ${lastName}`.trim();

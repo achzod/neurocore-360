@@ -1,9 +1,9 @@
 /**
  * Formatage TXT -> Dashboard
- * 
+ *
  * Cette fonction prend le TXT brut généré par generateAuditTxt()
  * et le transforme en format structuré pour le dashboard
- * 
+ *
  * ARCHITECTURE EN 2 ÉTAPES :
  * 1. generateAuditTxt() → TXT brut (simple, fiable)
  * 2. formatTxtToDashboard() → Format dashboard (séparé, flexible)
@@ -153,7 +153,7 @@ function cleanSectionContent(content: string): string {
     .replace(/score\s*:?\s*\d{1,3}\s*\/\s*100/gi, '')
     .replace(/^\s*score\s+global\s*:?.*$/gmi, '')
     .replace(/score\s+global\s*:?\s*\d{1,3}\s*\/\s*100/gi, '')
-    .replace(/score\s+global\s*[:\-–—]\s*\d{1,3}\s*\/\s*100/gi, '')
+    .replace(/score\s+global\s*[:\-\u2013\u2014]\s*\d{1,3}\s*\/\s*100/gi, '')
     .replace(/\bscore\s+global\b.*$/gmi, '')
     .replace(/^\s*code\s+promo.*$/gmi, '')
     .replace(/^\s*formules?\s+disponibles.*$/gmi, '')
@@ -366,14 +366,14 @@ export function formatTxtToDashboard(txtContent: string): AuditDashboardFormat {
   const sections: DashboardSection[] = [];
   const clientName = extractClientName(txtContent);
   const generatedAt = extractGeneratedAt(txtContent);
-  
+
   const ctaDebut = extractCTA(txtContent, 'debut');
   const ctaFin = extractCTA(txtContent, 'fin');
 
   // Nouveau délimiteur Elite V4 : Titres en MAJUSCULES seuls sur une ligne
   const sectionLines = txtContent.split('\n');
   const sectionMatches: { title: string; startIndex: number; endIndex: number }[] = [];
-  
+
   // Titres attendus (tirés de geminiPremiumEngine SECTIONS)
   // Mise à jour pour correspondre aux titres générés par Gemini 2.5
   const VALID_TITLES = [
@@ -436,35 +436,35 @@ export function formatTxtToDashboard(txtContent: string): AuditDashboardFormat {
       matchCount++;
       const resolvedTitle = matchedTitle as string;
       // Vérifier qu'on n'a pas déjà cette section (éviter les doublons)
-      const alreadyExists = sectionMatches.some(s => 
+      const alreadyExists = sectionMatches.some(s =>
         s.title.toUpperCase().replace(/[^A-Z]/g, '') === resolvedTitle.toUpperCase().replace(/[^A-Z]/g, '')
       );
-      
+
       if (!alreadyExists) {
         const title = resolvedTitle;
         const startIndex = txtContent.indexOf(lineFull, currentPos) + lineFull.length;
-        
+
         if (sectionMatches.length > 0) {
           sectionMatches[sectionMatches.length - 1].endIndex = txtContent.indexOf(lineFull, currentPos);
         }
-        
+
         sectionMatches.push({
           title,
           startIndex,
           endIndex: txtContent.length
         });
-        
+
         currentPos = startIndex;
         continue;
       }
     }
-    
+
     const foundIndex = txtContent.indexOf(lineFull, currentPos);
     if (foundIndex !== -1) {
        currentPos = foundIndex + lineFull.length;
     }
   }
-  
+
   console.log(`[formatTxtToDashboard] Matched ${matchCount} title lines → ${sectionMatches.length} unique sections (TXT: ${txtContent.length} chars)`);
   for (const sm of sectionMatches.slice(0, 3)) {
     console.log(`[formatTxtToDashboard]   "${sm.title}" start=${sm.startIndex} end=${sm.endIndex} rawLen=${sm.endIndex - sm.startIndex}`);
@@ -484,26 +484,26 @@ export function formatTxtToDashboard(txtContent: string): AuditDashboardFormat {
     const extractedScore = extractSectionScoreFromContent(rawContent);
     const content = cleanSectionContent(rawContent);
     console.log(`[formatTxtToDashboard]   Section "${title}": raw=${rawLen} → afterStrip=${afterStripLen} → cleaned=${content.length} chars`);
-    
+
     const normalizedTitle = normalizeTitle(title);
     const category =
       SECTION_CATEGORIES[normalizedTitle] ||
       (normalizedTitle.includes('supplement') ? 'supplements' : 'analysis');
-    
+
     const sectionId = normalizedTitle
       .replace(/[^a-z0-9\s]/g, '')
       .replace(/\s+/g, '-');
-    
+
     if (normalizedTitle === 'resume executif' || normalizedTitle === 'executive summary') {
       resumeExecutif = content;
     }
-    
+
     // Score: uniquement si explicitement formaté "Score : NN/100".
     // Pour éviter l'incohérence perçue: pas de score affiché sur Executive Summary / protocoles / supplements.
     const extracted = extractedScore ?? extractSectionScoreFromContent(content);
     const score = category === 'analysis' ? (extracted ?? 0) : 0;
     const finalScore = category === 'executive' ? 0 : score;
-    
+
     sections.push({
       id: sectionId,
       title: title,
@@ -513,7 +513,7 @@ export function formatTxtToDashboard(txtContent: string): AuditDashboardFormat {
       category
     });
   }
-  
+
   // Score global: privilégier "SCORE GLOBAL : NN/100" si présent.
   // Sinon: moyenne des sections d'analyse scorées (pas les protocoles).
   const extractedGlobal = extractGlobalScoreFromTxt(txtContent);
@@ -524,7 +524,7 @@ export function formatTxtToDashboard(txtContent: string): AuditDashboardFormat {
     ? Math.round(analysisScores.reduce((a, b) => a + b, 0) / analysisScores.length)
     : 65;
   const global = extractedGlobal ?? avgAnalysis;
-  
+
   return {
     clientName,
     generatedAt,
@@ -557,15 +557,15 @@ export function getSectionById(
 export function formatSectionToHTML(section: DashboardSection): string {
   const lines = section.content.split('\n');
   let html = '';
-  
+
   for (const line of lines) {
     const trimmedLine = line.trim();
-    
+
     if (!trimmedLine) {
       html += '<br/>';
       continue;
     }
-    
+
     if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('• ')) {
       html += `<li>${trimmedLine.substring(2)}</li>`;
     } else if (trimmedLine.match(/^\d+\.\s/)) {
@@ -578,7 +578,7 @@ export function formatSectionToHTML(section: DashboardSection): string {
       html += `<p>${trimmedLine}</p>`;
     }
   }
-  
+
   return html;
 }
 

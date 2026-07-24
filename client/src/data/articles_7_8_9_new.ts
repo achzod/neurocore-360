@@ -14,9 +14,9 @@ export const ARTICLE_7 = {
     content: `
 ## Introduction : Votre ADN Dicte Votre Rythme
 
-Avez-vous déjà remarqué que certaines personnes bondissent du lit à 5h du matin, débordantes d'énergie, tandis que d'autres ne deviennent vraiment productives qu'après le coucher du soleil ? Cette différence n'est pas une question de paresse ou de discipline — c'est de la génétique pure. Votre chronotype, encodé dans vos gènes, détermine votre rythme circadien naturel et influence profondément quand vous êtes le plus alerte, le plus créatif, et le plus performant.
+Avez-vous déjà remarqué que certaines personnes bondissent du lit à 5h du matin, débordantes d'énergie, tandis que d'autres ne deviennent vraiment productives qu'après le coucher du soleil ? Cette différence n'est pas une question de paresse ou de discipline ,  c'est de la génétique pure. Votre chronotype, encodé dans vos gènes, détermine votre rythme circadien naturel et influence profondément quand vous êtes le plus alerte, le plus créatif, et le plus performant.
 
-La science du chronotype a révolutionné notre compréhension de la productivité humaine. Les recherches du Dr Michael Breus et d'autres chronobiologistes ont identifié quatre profils distincts, chacun avec ses propres pics et creux énergétiques. Comprendre votre chronotype n'est pas un luxe — c'est une nécessité pour quiconque souhaite optimiser sa performance sans lutter contre sa propre biologie.
+La science du chronotype a révolutionné notre compréhension de la productivité humaine. Les recherches du Dr Michael Breus et d'autres chronobiologistes ont identifié quatre profils distincts, chacun avec ses propres pics et creux énergétiques. Comprendre votre chronotype n'est pas un luxe ,  c'est une nécessité pour quiconque souhaite optimiser sa performance sans lutter contre sa propre biologie.
 
 Dans ce guide exhaustif, nous allons explorer en profondeur chaque chronotype, leurs caractéristiques scientifiques, et surtout, comment restructurer votre journée pour travailler avec votre nature plutôt que contre elle.
 
@@ -52,10 +52,10 @@ Les Lions excellent dans les tâches analytiques et créatives en début de jour
 - **5h30-6h00** : Hydratation, exposition à la lumière naturelle si possible
 - **6h00-6h30** : Exercice physique intensif (le Lion tolère bien l'effort matinal)
 - **6h30-7h30** : Petit-déjeuner riche en protéines, planification de la journée
-- **8h00-12h00** : FENÊTRE DE PRODUCTIVITÉ MAXIMALE — Tâches stratégiques, décisions importantes, travail créatif
+- **8h00-12h00** : FENÊTRE DE PRODUCTIVITÉ MAXIMALE ,  Tâches stratégiques, décisions importantes, travail créatif
 - **12h00-13h00** : Déjeuner léger pour éviter la somnolence post-prandiale
 - **13h00-15h00** : Tâches administratives, emails, réunions routinières
-- **15h00-17h00** : Début du déclin énergétique — tâches mécaniques, organisation
+- **15h00-17h00** : Début du déclin énergétique ,  tâches mécaniques, organisation
 - **17h00-18h00** : Exercice léger ou marche (éviter l'intensif qui perturberait le sommeil)
 - **18h00-19h30** : Dîner tôt
 - **19h30-21h00** : Relaxation, temps social, préparation au sommeil
@@ -75,18 +75,18 @@ L'Ours représente la majorité de la population et suit naturellement le cycle 
 
 **Caractéristiques Cognitives**
 
-L'Ours atteint son pic de performance cognitive en milieu de matinée, généralement entre 10h et 14h. Durant cette fenêtre, sa capacité de concentration, sa créativité et sa mémoire sont optimales. Contrairement au Lion, l'Ours a besoin d'un temps de "mise en route" le matin — les premières heures post-réveil étant mieux adaptées aux routines qu'au travail cognitif intense.
+L'Ours atteint son pic de performance cognitive en milieu de matinée, généralement entre 10h et 14h. Durant cette fenêtre, sa capacité de concentration, sa créativité et sa mémoire sont optimales. Contrairement au Lion, l'Ours a besoin d'un temps de "mise en route" le matin ,  les premières heures post-réveil étant mieux adaptées aux routines qu'au travail cognitif intense.
 
 **Journée Optimale de l'Ours**
 
 - **7h00-7h30** : Réveil progressif, éviter les alarmes brutales
 - **7h30-8h00** : Exposition à la lumière naturelle, étirements doux
 - **8h00-8h30** : Petit-déjeuner équilibré, éviter les sucres rapides
-- **8h30-10h00** : Mise en route — emails, tâches routinières, organisation
-- **10h00-12h30** : FENÊTRE DE PRODUCTIVITÉ MAXIMALE — Travail stratégique, décisions critiques
+- **8h30-10h00** : Mise en route ,  emails, tâches routinières, organisation
+- **10h00-12h30** : FENÊTRE DE PRODUCTIVITÉ MAXIMALE ,  Travail stratégique, décisions critiques
 - **12h30-14h00** : Déjeuner avec pause réelle (pas devant l'écran)
-- **14h00-16h00** : Deuxième pic productif — collaboration, réunions créatives
-- **16h00-17h00** : Creux post-prandial — tâches mécaniques ou sieste de 20 min
+- **14h00-16h00** : Deuxième pic productif ,  collaboration, réunions créatives
+- **16h00-17h00** : Creux post-prandial ,  tâches mécaniques ou sieste de 20 min
 - **17h00-18h30** : Exercice physique (moment optimal pour l'Ours)
 - **18h30-20h00** : Dîner et temps familial
 - **20h00-22h30** : Loisirs, relaxation
@@ -114,13 +114,13 @@ Le Loup est souvent stigmatisé dans notre société orientée vers le matin, ma
 - **9h00-9h30** : Lumière vive intense, douche froide si possible
 - **9h30-10h00** : Exercice léger pour accélérer l'éveil (yoga, marche)
 - **10h00-10h30** : Premier repas (petit-déjeuner tardif ou brunch)
-- **10h30-12h00** : Mise en route lente — emails, tâches administratives
+- **10h30-12h00** : Mise en route lente ,  emails, tâches administratives
 - **12h00-13h00** : Réunion de mi-journée, collaboration
 - **13h00-14h00** : Déjeuner
-- **14h00-16h00** : Montée en puissance — tâches modérément exigeantes
-- **16h00-20h00** : FENÊTRE DE PRODUCTIVITÉ MAXIMALE — Travail créatif, projets complexes, deep work
+- **14h00-16h00** : Montée en puissance ,  tâches modérément exigeantes
+- **16h00-20h00** : FENÊTRE DE PRODUCTIVITÉ MAXIMALE ,  Travail créatif, projets complexes, deep work
 - **20h00-21h00** : Dîner
-- **21h00-23h00** : Deuxième pic créatif — projets personnels, apprentissage
+- **21h00-23h00** : Deuxième pic créatif ,  projets personnels, apprentissage
 - **23h00-00h00** : Routine de relaxation
 - **00h00-01h00** : Coucher optimal
 
@@ -149,10 +149,10 @@ Malgré leur sommeil problématique, les Dauphins possèdent une intelligence fl
 - **7h30-8h00** : Petit-déjeuner riche en protéines et graisses saines
 - **8h00-8h30** : Méditation ou respiration profonde (essentiel pour ce chronotype)
 - **8h30-10h00** : Tâches routinières, mise en place de la journée
-- **10h00-12h00** : Premier pic productif — travail analytique
+- **10h00-12h00** : Premier pic productif ,  travail analytique
 - **12h00-13h00** : Déjeuner calme, éviter les stimulations excessives
 - **13h00-14h00** : Pause réelle, sieste courte si possible (max 20 min)
-- **14h00-16h00** : FENÊTRE DE PRODUCTIVITÉ MAXIMALE — Tâches complexes
+- **14h00-16h00** : FENÊTRE DE PRODUCTIVITÉ MAXIMALE ,  Tâches complexes
 - **16h00-18h00** : Tâches collaboratives, réunions
 - **18h00-19h00** : Exercice de décompression (yoga, natation)
 - **19h00-20h00** : Dîner léger et tôt
@@ -170,7 +170,7 @@ Faiblesses : Sommeil chroniquement insuffisant, anxiété, difficulté à se dé
 
 ### Négocier des Horaires Flexibles
 
-Si votre chronotype est en conflit avec les horaires traditionnels, la négociation d'horaires flexibles peut transformer votre productivité. Présentez à votre employeur des données sur la productivité chronobiologique — montrez les périodes où vous performez le mieux.
+Si votre chronotype est en conflit avec les horaires traditionnels, la négociation d'horaires flexibles peut transformer votre productivité. Présentez à votre employeur des données sur la productivité chronobiologique ,  montrez les périodes où vous performez le mieux.
 
 Un Loup qui commence à 10h et travaille jusqu'à 19h sera significativement plus productif qu'en forçant un horaire 8h-17h. Les entreprises avant-gardistes comprennent que la flexibilité horaire n'est pas un privilège mais un investissement dans la performance.
 
@@ -200,7 +200,7 @@ Forcer un entraînement à un moment non-optimal pour votre chronotype augmente 
 
 Le désalignement chronotype-horaires de vie est associé à un risque accru de dépression et d'anxiété. Les Loups forcés de fonctionner comme des Lions accumulent une dette de sommeil chronique qui affecte neurotransmetteurs et humeur.
 
-Reconnaître et respecter votre chronotype n'est pas de l'indulgence — c'est de la prévention en santé mentale.
+Reconnaître et respecter votre chronotype n'est pas de l'indulgence ,  c'est de la prévention en santé mentale.
 
 ## Conclusion : Travaillez AVEC Votre Biologie
 
@@ -241,7 +241,7 @@ Pour comprendre la caféine, il faut d'abord comprendre l'adénosine. L'adénosi
 
 La caféine est structurellement similaire à l'adénosine. Cette ressemblance moléculaire lui permet de se fixer sur les récepteurs d'adénosine (principalement A1 et A2A) sans les activer. La caféine "occupe la place" sans produire l'effet soporifique. L'adénosine continue de s'accumuler, mais vos récepteurs ne "voient" pas cette accumulation.
 
-Résultat : vous ne ressentez pas la fatigue que votre cerveau devrait signaler. Mais attention — cette fatigue n'a pas disparu. L'adénosine s'accumule toujours en coulisses. Quand la caféine se libère finalement des récepteurs, le "crash" d'adénosine vous frappe de plein fouet.
+Résultat : vous ne ressentez pas la fatigue que votre cerveau devrait signaler. Mais attention ,  cette fatigue n'a pas disparu. L'adénosine s'accumule toujours en coulisses. Quand la caféine se libère finalement des récepteurs, le "crash" d'adénosine vous frappe de plein fouet.
 
 ### La Demi-Vie : Le Chiffre Crucial
 
@@ -298,7 +298,7 @@ Plusieurs facteurs peuvent temporairement modifier votre demi-vie de caféine :
 
 Beaucoup de consommateurs de caféine raisonnent ainsi : "Je bois du café le soir et je m'endors quand même, donc ça ne m'affecte pas." Cette logique est dangereusement fausse.
 
-L'endormissement (latence de sommeil) n'est qu'une infime partie de l'équation. Ce qui compte vraiment, c'est l'architecture de votre sommeil — la qualité et la proportion de chaque stade.
+L'endormissement (latence de sommeil) n'est qu'une infime partie de l'équation. Ce qui compte vraiment, c'est l'architecture de votre sommeil ,  la qualité et la proportion de chaque stade.
 
 ### Sommeil Profond (Stades N3) : La Victime Silencieuse
 
@@ -318,7 +318,7 @@ Le sommeil paradoxal (REM) est essentiel pour :
 - La régulation émotionnelle
 - Les rêves et la créativité
 
-La caféine tardive fragmente et réduit le sommeil REM, même si vous ne vous réveillez pas consciemment. Le lendemain, vous notez peut-être une irritabilité accrue, une difficulté à gérer le stress, une créativité diminuée — sans connecter ces symptômes à votre café de l'après-midi.
+La caféine tardive fragmente et réduit le sommeil REM, même si vous ne vous réveillez pas consciemment. Le lendemain, vous notez peut-être une irritabilité accrue, une difficulté à gérer le stress, une créativité diminuée ,  sans connecter ces symptômes à votre café de l'après-midi.
 
 ### La Fragmentation : L'Ennemi Invisible
 
@@ -436,7 +436,7 @@ Un consommateur chronique ne bénéficie pas autant qu'un consommateur intermitt
 
 ### Athlètes et Entraînement
 
-La caféine améliore la performance aérobique et anaérobique de 2-5%. Timing optimal : 60 minutes avant l'effort. Mais attention — un entraînement l'après-midi avec caféine peut significativement perturber le sommeil nocturne.
+La caféine améliore la performance aérobique et anaérobique de 2-5%. Timing optimal : 60 minutes avant l'effort. Mais attention ,  un entraînement l'après-midi avec caféine peut significativement perturber le sommeil nocturne.
 
 Pour les athlètes sérieux, la stratégie est de cycler la caféine : utilisation stratégique avant les compétitions majeures (après une semaine d'abstinence pour maximiser l'effet), mais limitation durant l'entraînement régulier.
 
@@ -450,7 +450,7 @@ La métabolisation de la caféine est significativement ralentie pendant la gros
 
 ## Conclusion : La Caféine comme Outil de Précision
 
-La caféine n'est ni bonne ni mauvaise en soi. C'est un outil puissant qui, mal utilisé, sabote votre récupération et paradoxalement votre énergie. Correctement déployé — avec respect pour la pharmacologie et votre sommeil — c'est un amplificateur de performance légitime.
+La caféine n'est ni bonne ni mauvaise en soi. C'est un outil puissant qui, mal utilisé, sabote votre récupération et paradoxalement votre énergie. Correctement déployé ,  avec respect pour la pharmacologie et votre sommeil ,  c'est un amplificateur de performance légitime.
 
 Les points clés à retenir :
 1. **Délai matinal de 90-120 min** pour respecter le cortisol naturel
@@ -480,7 +480,7 @@ export const ARTICLE_9 = {
     content: `
 ## Introduction : L'Orchestre Invisible de Votre Corps
 
-Chaque cellule de votre corps possède une horloge. Votre foie, votre coeur, vos muscles, votre cerveau — chacun de ces organes suit un rythme précis de 24 heures, optimisant ses fonctions à des moments spécifiques de la journée. Cette symphonie biologique s'appelle le rythme circadien, du latin "circa" (environ) et "diem" (jour).
+Chaque cellule de votre corps possède une horloge. Votre foie, votre coeur, vos muscles, votre cerveau ,  chacun de ces organes suit un rythme précis de 24 heures, optimisant ses fonctions à des moments spécifiques de la journée. Cette symphonie biologique s'appelle le rythme circadien, du latin "circa" (environ) et "diem" (jour).
 
 Ce n'est pas une métaphore poétique mais une réalité biochimique. Le Prix Nobel de Physiologie ou Médecine 2017 a récompensé Jeffrey Hall, Michael Rosbash et Michael Young pour leur découverte des mécanismes moléculaires contrôlant le rythme circadien. Leurs travaux ont révélé que des dysfonctionnements circadiens sont impliqués dans le cancer, les maladies métaboliques, les troubles psychiatriques, et le vieillissement accéléré.
 
@@ -496,7 +496,7 @@ Le NSC reçoit des signaux lumineux directement de la rétine via le tractus ré
 
 ### Les Horloges Périphériques : Un Réseau Décentralisé
 
-Votre NSC n'est pas la seule horloge. Pratiquement chaque cellule de votre corps possède sa propre machinerie circadienne. Ces horloges périphériques — dans le foie, les muscles, le tissu adipeux, le pancréas — sont synchronisées par le NSC mais peuvent aussi répondre à des signaux locaux.
+Votre NSC n'est pas la seule horloge. Pratiquement chaque cellule de votre corps possède sa propre machinerie circadienne. Ces horloges périphériques ,  dans le foie, les muscles, le tissu adipeux, le pancréas ,  sont synchronisées par le NSC mais peuvent aussi répondre à des signaux locaux.
 
 Le foie, par exemple, possède une horloge puissante synchronisée non seulement par le NSC mais aussi par les horaires alimentaires. Manger à des heures irrégulières peut désynchroniser l'horloge hépatique du NSC, créant un "jet lag interne" aux conséquences métaboliques significatives.
 
@@ -635,7 +635,7 @@ Des études montrent que des calories identiques consommées le matin vs le soir
 
 ### Impact Métabolique
 
-Le rythme circadien orchestre le métabolisme. Insuline, glucagon, hormones de la faim (ghréline, leptine) — tout suit des patterns circadiens précis.
+Le rythme circadien orchestre le métabolisme. Insuline, glucagon, hormones de la faim (ghréline, leptine) ,  tout suit des patterns circadiens précis.
 
 Un rythme perturbé cause :
 - Résistance à l'insuline (même chez les individus sains, après quelques jours de désynchronisation)
@@ -835,12 +835,12 @@ Un simple journal peut révéler des patterns :
 
 Votre rythme circadien n'est pas un aspect secondaire de votre santé. C'est le système d'exploitation sur lequel toutes vos fonctions tournent. Un rythme robuste et synchronisé optimise tout : énergie, cognition, métabolisme, humeur, immunité, longévité.
 
-La bonne nouvelle ? Contrairement à votre génétique, votre rythme circadien est hautement modifiable. Les zeitgebers — lumière, alimentation, exercice, température — sont sous votre contrôle. Quelques ajustements stratégiques peuvent transformer votre physiologie en quelques jours.
+La bonne nouvelle ? Contrairement à votre génétique, votre rythme circadien est hautement modifiable. Les zeitgebers ,  lumière, alimentation, exercice, température ,  sont sous votre contrôle. Quelques ajustements stratégiques peuvent transformer votre physiologie en quelques jours.
 
 Les points clés :
 1. **Lumière matinale** : non-négociable, la fondation de tout
 2. **Obscurité vespérale** : protégez les 2-3h avant le coucher
-3. **Horaires réguliers** : réveil, repas, coucher — avec constance
+3. **Horaires réguliers** : réveil, repas, coucher ,  avec constance
 4. **Exercice et température** : utilisez-les stratégiquement
 5. **Patience** : les changements circadiens prennent 3-7 jours pour s'établir
 

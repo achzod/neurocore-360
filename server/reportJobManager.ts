@@ -18,7 +18,7 @@ const MIN_VALIDATION_SCORE = 75;
 
 /**
  * Report Job Manager - Handles async AI report generation with persistence
- * 
+ *
  * Features:
  * - DB persistence for job state across server restarts
  * - In-memory Set prevents duplicate concurrent executions (same process)
@@ -27,7 +27,7 @@ const MIN_VALIDATION_SCORE = 75;
  * - Stuck job detection (10 min threshold)
  * - Retry logic with max attempts (restarts don't consume retries)
  * - ⚠️ FIX: Photo analysis integration
- * 
+ *
  * Limitations (mono-instance design):
  * - No worker heartbeat system for multi-instance deployments
  * - No DB-level locking for concurrent worker coordination
@@ -41,7 +41,7 @@ const AI_CALL_TIMEOUT_MS = 45 * 60 * 1000;
 const MAX_RETRY_ATTEMPTS = 3;
 
 const activeGenerations = new Set<string>();
-const MAX_CONCURRENT_GENERATIONS = 1; // 1 rapport à la fois — stabilité > vitesse
+const MAX_CONCURRENT_GENERATIONS = 1; // 1 rapport à la fois ,  stabilité > vitesse
 let shutdownHooksInstalled = false;
 
 function installShutdownHooksOnce() {
@@ -139,7 +139,7 @@ export async function startReportGeneration(
       auditId,
       status: "pending" as ReportJobStatusEnum,
       progress: 0,
-      currentSection: "En attente — un autre rapport est en cours de generation...",
+      currentSection: "En attente ,  un autre rapport est en cours de generation...",
       error: null,
       attemptCount: 0,
     });
@@ -151,16 +151,16 @@ export async function startReportGeneration(
     const existingJob = await storage.getReportJob(auditId);
     if (existingJob) return existingJob;
   }
-  
+
   const existingJob = await storage.getReportJob(auditId);
-  
+
   if (existingJob) {
     if (existingJob.status === "pending" || existingJob.status === "generating") {
       const lastProgressTime = existingJob.lastProgressAt ? new Date(existingJob.lastProgressAt).getTime() : 0;
       const startedTime = existingJob.startedAt ? new Date(existingJob.startedAt).getTime() : Date.now();
       const referenceTime = lastProgressTime || startedTime;
       const isStuck = Date.now() - referenceTime > STUCK_JOB_THRESHOLD_MS;
-      
+
       if (isStuck) {
         console.log(`[ReportJobManager] Job ${auditId} is stuck (no progress for ${STUCK_JOB_THRESHOLD_MS/1000}s), restarting...`);
         await storage.failReportJob(auditId, "Job stuck - no progress detected");
@@ -220,7 +220,7 @@ async function generateReportAsync(
     // ⚠️ FIX: Récupérer les photos depuis audit.photos (tableau) ou responses
     const audit = await storage.getAudit(auditId);
     if (!audit) {
-      throw new Error(`Audit ${auditId} not found — cannot generate report`);
+      throw new Error(`Audit ${auditId} not found ,  cannot generate report`);
     }
     const auditResponses = (audit as any)?.responses || {};
 
@@ -234,10 +234,10 @@ async function generateReportAsync(
       }
       return null;
     };
-    
+
     // Les photos peuvent être stockées de plusieurs façons selon le flux
     let photos: string[] = [];
-    
+
     // Option 1: audit.photos (tableau direct - flux principal)
     if ((audit as any)?.photos && Array.isArray((audit as any).photos)) {
       photos = (audit as any).photos.filter((p: string) => p && (p.startsWith('data:') || p.length > 100));
@@ -272,7 +272,7 @@ async function generateReportAsync(
         pickPhoto(audit as any, ["photoBack", "photo-back"]),
       ].filter(Boolean) as string[];
     }
-    
+
     // P0 fail-fast : seul ELITE (Ultimate Scan) nécessite 3 photos pour l'analyse visuelle/posturale
     // GRATUIT et PREMIUM n'ont pas besoin de photos
     const requiresPhotos = auditType === "ELITE";
@@ -298,14 +298,14 @@ async function generateReportAsync(
     let photoAnalysis = null;
     if (requiresPhotos && photosForReport.length > 0) {
       console.log(`[ReportJobManager] ${photosForReport.length} photos detectees, lancement analyse vision...`);
-      
+
       await storage.createOrUpdateReportJob({
         auditId,
         status: "generating" as ReportJobStatusEnum,
         currentSection: "Analyse de tes photos corporelles...",
         progress: 10,
       });
-      
+
       try {
         const { analyzeBodyPhotosWithAI } = await import("./photoAnalysisAI");
         // API attendue: { front, side, back }
@@ -404,7 +404,7 @@ async function generateReportAsync(
 
     // ⚠️ IMPORTANT: Ne PAS marquer comme COMPLETED avant d'avoir généré le HTML
     // et sauvegardé dans la DB. Sinon le client voit "COMPLETED" mais pas de rapport.
-    
+
     // Convert TXT to HTML with Premium Design (Ultrahuman-style)
     console.log(`[ReportJobManager] Converting TXT to Premium HTML for ${auditId}...`);
     const reportHtml = generatePremiumHTMLFromTxt(
@@ -413,7 +413,7 @@ async function generateReportAsync(
       photosForReport,
       normalizedResponses as Record<string, unknown>
     );
-    
+
     if (!reportHtml || reportHtml.length < 1000) {
       throw new Error(`HTML generation failed or too short (${reportHtml?.length || 0} chars)`);
     }
@@ -505,7 +505,7 @@ async function generateReportAsync(
     const savedTxt = (verifyAudit as any)?.reportTxt || (verifyAudit as any)?.narrativeReport?.txt || '';
     if (typeof savedTxt === 'string' && savedTxt.length < 100) {
       console.error(`[ReportJobManager] ❌ SAVE VERIFICATION FAILED: reportTxt is ${savedTxt.length} chars after save!`);
-      throw new Error(`DB save verification failed — content not persisted (${savedTxt.length} chars)`);
+      throw new Error(`DB save verification failed ,  content not persisted (${savedTxt.length} chars)`);
     }
     console.log(`[ReportJobManager] ✅ Report saved and verified: ${savedTxt.length} chars in DB`);
 
@@ -528,9 +528,9 @@ async function generateReportAsync(
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     console.error(`[ReportJobManager] Generation FAILED for ${auditId}:`, errorMessage);
-    
+
     await storage.failReportJob(auditId, errorMessage);
-    
+
     await storage.updateAudit(auditId, {
       reportDeliveryStatus: "FAILED",
     });
@@ -560,30 +560,30 @@ async function generateReportAsync(
 
 export async function resumePendingJobs(): Promise<number> {
   console.log(`[ReportJobManager] Checking for pending jobs to resume after restart...`);
-  
+
   const activeJobs = await storage.getActiveReportJobs();
   let resumedCount = 0;
 
   for (const job of activeJobs) {
     const currentAttempts = job.attemptCount || 0;
     console.log(`[ReportJobManager] Found interrupted job ${job.auditId} (status: ${job.status}, attempts: ${currentAttempts})`);
-    
+
     if (currentAttempts >= MAX_RETRY_ATTEMPTS) {
       console.log(`[ReportJobManager] Job ${job.auditId} already at max retries (${MAX_RETRY_ATTEMPTS}), marking as FAILED`);
       await storage.failReportJob(job.auditId, "Max retries exceeded");
       await storage.updateAudit(job.auditId, { reportDeliveryStatus: "FAILED" });
       continue;
     }
-    
+
     const audit = await storage.getAudit(job.auditId);
     if (!audit) {
       console.log(`[ReportJobManager] Could not find audit ${job.auditId}, cleaning up orphan job`);
       await storage.deleteReportJob(job.auditId);
       continue;
     }
-    
+
     console.log(`[ReportJobManager] Resuming job ${job.auditId} (attempt ${currentAttempts}, not incrementing for restart)`);
-    
+
     await storage.createOrUpdateReportJob({
       auditId: job.auditId,
       status: "pending" as ReportJobStatusEnum,
@@ -592,7 +592,7 @@ export async function resumePendingJobs(): Promise<number> {
       error: null,
       attemptCount: currentAttempts,
     });
-    
+
     activeGenerations.add(job.auditId);
     generateReportAsync(job.auditId, audit.responses, audit.scores, audit.type);
     resumedCount++;

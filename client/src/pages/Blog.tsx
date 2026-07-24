@@ -18,12 +18,12 @@ export default function Blog() {
     document.title = "Blog ACHZOD | Articles Musculation, Nutrition & Performance";
     const meta = document.querySelector('meta[name="description"]');
     if (meta) {
-      meta.setAttribute("content", "Blog ACHZOD — articles, guides et insights sur la musculation, nutrition, hormones, biohacking et performance. Par Achzod.");
+      meta.setAttribute("content", "Blog ACHZOD ,  articles, guides et insights sur la musculation, nutrition, hormones, biohacking et performance. Par Achzod.");
     }
     const ogTitle = document.querySelector('meta[property="og:title"]');
     if (ogTitle) ogTitle.setAttribute("content", "Blog ACHZOD | Articles Musculation, Nutrition & Performance");
     const ogDesc = document.querySelector('meta[property="og:description"]');
-    if (ogDesc) ogDesc.setAttribute("content", "Blog ACHZOD — articles, guides et insights sur la musculation, nutrition, hormones, biohacking et performance.");
+    if (ogDesc) ogDesc.setAttribute("content", "Blog ACHZOD ,  articles, guides et insights sur la musculation, nutrition, hormones, biohacking et performance.");
   }, []);
 
   useEffect(() => {
@@ -155,15 +155,15 @@ export default function Blog() {
                   );
                 })}
               </div>
-              
+
               <div className="flex bg-white/5 p-1 rounded-sm border border-white/10 text-[10px] font-black uppercase tracking-tighter min-w-max">
-                <button 
+                <button
                   onClick={() => setSortBy("popular")}
                   className={`px-3 py-1.5 rounded-sm transition-all ${sortBy === "popular" ? "bg-white text-black" : "text-white/40 hover:text-white"}`}
                 >
                   POPULAIRES
                 </button>
-                <button 
+                <button
                   onClick={() => setSortBy("recent")}
                   className={`px-3 py-1.5 rounded-sm transition-all ${sortBy === "recent" ? "bg-white text-black" : "text-white/40 hover:text-white"}`}
                 >
@@ -387,7 +387,7 @@ export default function Blog() {
           <div className="mx-auto max-w-4xl px-4">
             <div className="flex flex-col md:flex-row items-center gap-10 bg-white/[0.03] border border-white/10 p-8 md:p-12 rounded-sm relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-[#FCDD00]/10 blur-[60px] -translate-y-1/2 translate-x-1/2" />
-              
+
               <div className="flex-1 text-center md:text-left relative z-10">
                 <p className="text-[#FCDD00] text-xs font-mono tracking-[0.3em] uppercase mb-4">
                   [ OPTIMISATION MAXIMALE ]
@@ -399,9 +399,9 @@ export default function Blog() {
                 <p className="mb-8 text-lg text-white/60">
                   Ne te contente pas de lire. Applique. Rejoins le coaching ACHZOD pour un protocole sur mesure : nutrition, entraînement, et bio-data.
                 </p>
-                <a 
-                  href="https://www.achzodcoaching.com" 
-                  target="_blank" 
+                <a
+                  href="https://www.achzodcoaching.com"
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-3 px-8 py-4 bg-[#FCDD00] text-black text-xs font-black uppercase tracking-[0.2em] hover:bg-white transition-all rounded-sm shadow-[0_0_20px_rgba(252,221,0,0.2)]"
                 >
@@ -410,8 +410,8 @@ export default function Blog() {
                 </a>
               </div>
               <div className="hidden md:block w-1/3">
-                <img 
-                  src="https://cdn.prod.website-files.com/5fd0a9c447b7bb9814a00d71/6851ebc888d485c358317cfe_Ebook%20Anabolic%20Code%20Cover-min.jpg" 
+                <img
+                  src="https://cdn.prod.website-files.com/5fd0a9c447b7bb9814a00d71/6851ebc888d485c358317cfe_Ebook%20Anabolic%20Code%20Cover-min.jpg"
                   alt="ACHZOD Coaching"
                   className="w-full h-full object-contain rotate-3 hover:rotate-0 transition-transform duration-500"
                 />

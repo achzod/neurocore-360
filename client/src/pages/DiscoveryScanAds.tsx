@@ -505,7 +505,7 @@ export default function DiscoveryScanAds() {
               <p className="text-white/80 mb-4 leading-relaxed">
                 "L'analyse est ultra précise et les recommandations sont concrètes. J'ai enfin compris où concentrer mes efforts pour progresser."
               </p>
-              <p className="text-sm text-white/50">— Alexandre M.</p>
+              <p className="text-sm text-white/50">,  Alexandre M.</p>
             </div>
 
             {/* Review 2 */}
@@ -518,7 +518,7 @@ export default function DiscoveryScanAds() {
               <p className="text-white/80 mb-4 leading-relaxed">
                 "Le rapport est complet et facile à comprendre. Les protocoles personnalisés m'ont permis d'améliorer mes performances rapidement."
               </p>
-              <p className="text-sm text-white/50">— Thomas B.</p>
+              <p className="text-sm text-white/50">,  Thomas B.</p>
             </div>
           </div>
         </div>

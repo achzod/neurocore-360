@@ -1394,7 +1394,7 @@ const AnabolicScanReportInner: React.FC<AnabolicScanReportProps> = ({ auditId })
                     <span style={{ color: currentTheme.colors.textMuted }}>voici ton bioscan.</span>
                   </h1>
                   <p className="text-lg leading-relaxed max-w-lg" style={{ color: 'var(--color-text-muted)' }}>
-                    {Math.round(safeGlobalScore)}/100 — {scoreSummary}
+                    {Math.round(safeGlobalScore)}/100 ,  {scoreSummary}
                   </p>
                 </div>
 

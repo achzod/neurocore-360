@@ -101,7 +101,7 @@ export const ExitIntentPopup: React.FC<ExitIntentPopupProps> = ({ theme, userNam
           <div className="flex items-center justify-center gap-2 mb-6 text-sm" style={{ color: theme.colors.textMuted }}>
             <Star size={16} className="fill-yellow-400 text-yellow-400" />
             <span>
-              "Ces analyses sont juste impressionnantes" — Magroud W. ⭐⭐⭐⭐⭐
+              "Ces analyses sont juste impressionnantes" ,  Magroud W. ⭐⭐⭐⭐⭐
             </span>
           </div>
 

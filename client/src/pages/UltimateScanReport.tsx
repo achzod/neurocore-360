@@ -1419,7 +1419,7 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
                     <span style={{ color: currentTheme.colors.textMuted }}>voici ton ultimate scan.</span>
                   </h1>
                   <p className="text-lg leading-relaxed max-w-lg" style={{ color: 'var(--color-text-muted)' }}>
-                    {Math.round(safeGlobalScore)}/100 — {scoreSummary}
+                    {Math.round(safeGlobalScore)}/100 ,  {scoreSummary}
                   </p>
                 </div>
 

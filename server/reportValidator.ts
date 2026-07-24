@@ -11,6 +11,7 @@
 
 import { AuditTier } from './types';
 import { getSectionsForTier } from './geminiPremiumEngine';
+import { auditClientFacingText } from './clientFacingQuality';
 
 export interface ValidationResult {
   isValid: boolean;
@@ -161,7 +162,7 @@ const SOURCE_MARKERS = [
   "chris kresser",
 ];
 
-const MULTI_PERSON_MARKERS = ["nous", "notre", "nos", "client", "on"];
+const MULTI_PERSON_MARKERS = ["nous", "notre", "nos", "client"];
 const EMOJI_REGEX = /[\p{Extended_Pictographic}\uFE0F]/gu;
 
 const EXAMINE_SOURCE_REGEX =
@@ -184,6 +185,17 @@ export function validateReport(
   // Normalize text for analysis
   const txtLower = reportTxt.toLowerCase();
   const htmlLower = reportHtml.toLowerCase();
+  const clientFacingAudit = auditClientFacingText(reportTxt);
+
+  if (clientFacingAudit.forbiddenDashes > 0) {
+    errors.push(`Ponctuation interdite detectee: ${clientFacingAudit.forbiddenDashes} tiret(s) Unicode`);
+  }
+  if (clientFacingAudit.vouvoiement.length > 0) {
+    errors.push(`Vouvoiement detecte: ${clientFacingAudit.vouvoiement.join(", ")}`);
+  }
+  if (clientFacingAudit.roboticPhrases.length > 0) {
+    errors.push(`Formulations artificielles detectees: ${clientFacingAudit.roboticPhrases.join(", ")}`);
+  }
 
   // 1. Check total length
   const totalChars = reportTxt.length;
@@ -229,7 +241,7 @@ export function validateReport(
     const sectionContent = reportTxt.substring(startIndex, endIndex);
     const sectionLength = sectionContent.length;
 
-    // Supplements/Stack sections are naturally shorter — use lower threshold
+    // Supplements/Stack sections are naturally shorter ,  use lower threshold
     const isSupplementSection = section.toLowerCase().includes('supplement') || section.toLowerCase().includes('stack');
     const effectiveMinLength = isSupplementSection ? 500 : minSectionLength;
     if (sectionLength < effectiveMinLength) {
@@ -335,6 +347,32 @@ export function validateReport(
 
   if (!hasPersonalization) {
     warnings.push('Manque de personnalisation (tutoiement)');
+  }
+
+  // 10. Medical and nutrition consistency checks
+  const hasProteinQuantity = /prot[ée]ines?[\s\S]{0,120}\b\d{2,3}\s*g\b|\b\d{2,3}\s*g[\s\S]{0,120}prot[ée]ines?/i.test(reportTxt);
+  const hasProteinPerKgTarget = /\b\d+(?:[.,]\d+)?\s*(?:à|a|-)\s*\d+(?:[.,]\d+)?\s*g\s*\/?\s*kg\b|\b\d+(?:[.,]\d+)?\s*g\s*\/?\s*kg\b/i.test(reportTxt);
+  if (hasProteinQuantity && !hasProteinPerKgTarget) {
+    errors.push("Cible proteique chiffree sans repere en g/kg. Le rapport doit utiliser le poids ou signaler que le poids manque.");
+  }
+
+  const hasProbioticFourteenDays = /probiot[\s\S]{0,240}\b14\s*jours?\b|\b14\s*jours?\b[\s\S]{0,240}probiot/i.test(reportTxt);
+  const hasProbioticEightWeeks = /probiot[\s\S]{0,240}\b8\s*semaines?\b|\b8\s*semaines?\b[\s\S]{0,240}probiot/i.test(reportTxt);
+  const hasExplicitProbioticBridge =
+    /probiot[\s\S]{0,400}(?:commence|d[ée]but)[\s\S]{0,160}jour\s*8[\s\S]{0,240}(?:puis|ensuite|continue|poursui)[\s\S]{0,160}8\s*semaines?/i.test(reportTxt);
+  if (hasProbioticFourteenDays && hasProbioticEightWeeks && !hasExplicitProbioticBridge) {
+    errors.push("Durees probiotiques contradictoires. Precise le debut, la duree totale, la souche et la validation medicale.");
+  }
+
+  const hasHormoneLabInstruction = /(?:bilan|axes?)\s+hormonal[\s\S]{0,800}laboratoire/i.test(reportTxt);
+  const hasClinicianValidation = /\b(?:m[ée]decin|endocrinologue|pharmacien|prescription)\b/i.test(reportTxt);
+  if (hasHormoneLabInstruction && !hasClinicianValidation) {
+    errors.push("Bilan hormonal propose sans validation par un medecin ou un endocrinologue.");
+  }
+
+  const hasDoseRecommendations = /\b(?:dosage|dose|mg|mcg|ui)\b/i.test(reportTxt);
+  if (hasDoseRecommendations && !hasClinicianValidation) {
+    errors.push("Recommandations dosees sans avertissement clair de verification par un professionnel de sante.");
   }
 
   // Calculate score

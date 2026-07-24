@@ -16,25 +16,25 @@ const CSS_VARIABLES_DARK = `
     --surface-1: #1E1E1E;
     --surface-2: #242424;
     --surface-3: #2E2E2E;
-    
+
     /* Legacy compatibility */
     --background: #0B0B0F;
     --card-bg: #121212;
-    
+
     /* Texte */
     --text: rgba(255,255,255,0.92);
     --text-muted: rgba(255,255,255,0.65);
     --text-faint: rgba(255,255,255,0.42);
     --text-primary: rgba(255,255,255,0.92);
     --text-secondary: rgba(255,255,255,0.65);
-    
+
     /* Accent (limité, désaturé) */
     --primary: #5eead4; /* Teal désaturé */
     --primary-glow: rgba(94, 234, 212, 0.3);
     --accent-ok: #34d399; /* Vert doux (OK uniquement) */
     --accent-warning: #f59e0b; /* Ambre doux (à corriger uniquement) */
     --secondary: #9F8CFF; /* Violet */
-    
+
     /* Bordure */
     --border: rgba(255,255,255,0.06);
     --accent-gradient: linear-gradient(to right, #5eead4, #34d399);
@@ -120,8 +120,8 @@ function generateScoreRing(score: number, size: number = 200): string {
         </filter>
       </defs>
       <circle cx="${center}" cy="${center}" r="${radius}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="${stroke}" />
-      <circle cx="${center}" cy="${center}" r="${radius}" fill="none" stroke="${color}" stroke-width="${stroke}" 
-        stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" stroke-linecap="round" 
+      <circle cx="${center}" cy="${center}" r="${radius}" fill="none" stroke="${color}" stroke-width="${stroke}"
+        stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" stroke-linecap="round"
         transform="rotate(-90 ${center} ${center})" filter="url(#glow-${score})" />
       <text x="${center}" y="${center - 8}" font-size="56" font-family="Inter, sans-serif" font-weight="800" fill="var(--text)" text-anchor="middle">${score}</text>
       <text x="${center}" y="${center + 24}" font-size="14" font-family="Inter, sans-serif" font-weight="700" fill="${color}" text-anchor="middle" letter-spacing="0.1em">${label}</text>
@@ -141,7 +141,7 @@ function generateSVGGauge(score: number): string {
   return `
     <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="filter: drop-shadow(0 0 10px ${color}40);">
       <circle cx="${center}" cy="${center}" r="${radius}" fill="none" stroke="#262626" stroke-width="${stroke}" />
-      <circle cx="${center}" cy="${center}" r="${radius}" fill="none" stroke="${color}" stroke-width="${stroke}" 
+      <circle cx="${center}" cy="${center}" r="${radius}" fill="none" stroke="${color}" stroke-width="${stroke}"
         stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" stroke-linecap="round" transform="rotate(-90 ${center} ${center})" />
       <text x="${center}" y="${center + 10}" font-size="28" font-family="Inter, sans-serif" font-weight="800" fill="#ffffff" text-anchor="middle">${score}</text>
     </svg>
@@ -302,7 +302,7 @@ export async function generateExportHTMLFromTxt(
   if (!dashboard.ctaFin || !dashboard.ctaFin.trim()) {
     dashboard.ctaFin = getCTAFin(inferredTier, ctaAmount);
   }
-  
+
   // Extraire les scores réels OU générer des scores cohérents basés sur le score global
   const scores: Record<string, number> = {};
   const analysisLabels: Record<string, string> = {
@@ -373,18 +373,18 @@ export async function generateExportHTMLFromTxt(
       const lines = section.content.split('\n');
       formattedContent = lines.map(line => {
         let l = line.trim();
-      
+
       // Nettoyage
       l = l.replace(/\[[■□\s#=-]+\]\s*\d+\/\d+/, '');
       l = l.replace(/^[=\-#*]{2,}/, '').replace(/[=\-#*]{2,}$/, '').trim();
       // Suppression hard des emojis/ASCII résiduels (standard premium clinique)
       l = l.replace(/[🟢🟡🔴🧬🛡️📸🎯🚀⭐✅❌⚠️🌙☀️📑]/g, '').trim();
-      // Remplacer les tirets longs (—) par des tirets normaux ou deux-points
-      l = l.replace(/\s*—\s*/g, ' : ').replace(/—/g, '-');
+      // Remplacer les tirets longs (, ) par des tirets normaux ou deux-points
+      l = l.replace(/\s*\u2014\s*/g, ' : ').replace(/\u2014/g, '-');
       l = l.replace(/\s{2,}/g, ' ').trim();
       // Supprimer toute mention "info à clarifier" côté rendu client
       if (l.toLowerCase().includes("info a clarifier")) return '';
-      
+
       if (!l) return '';
 
       // Titres internes - Formatage professionnel
@@ -435,7 +435,7 @@ export async function generateExportHTMLFromTxt(
       section.category === "action" ? "PROTOCOLE" :
       section.category === "supplements" ? "SUPPLEMENTS" :
       "ANALYSE";
-    
+
     return `
       <div class="accordion-section" id="${section.id}">
         <div class="accordion-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.accordion-icon').textContent = this.nextElementSibling.classList.contains('open') ? '−' : '+'">
@@ -474,7 +474,7 @@ export async function generateExportHTMLFromTxt(
     ${CSS_VARIABLES}
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    
+
     body {
       font-family: 'Inter', sans-serif;
       background-color: var(--background);
@@ -567,7 +567,7 @@ export async function generateExportHTMLFromTxt(
     }
 
     /* OURA STYLE DASHBOARD COMPONENTS */
-    
+
     /* Hero Score Ring (Oura style) */
     .hero-score-container {
       display: flex;
@@ -593,7 +593,7 @@ export async function generateExportHTMLFromTxt(
       line-height: 1.5;
       margin-top: 12px;
     }
-    
+
     /* Contributors Cards (3 causes racines) */
     .contributors-grid {
       display: grid;
@@ -631,7 +631,7 @@ export async function generateExportHTMLFromTxt(
       font-weight: 500;
       line-height: 1.4;
     }
-    
+
     /* KPI Tiles (4-6 max) */
     .kpi-tiles-grid {
       display: grid;
@@ -672,7 +672,7 @@ export async function generateExportHTMLFromTxt(
     .kpi-tile.priority-ok {
       border-color: var(--accent-ok);
     }
-    
+
     /* Plan 3 Phases */
     .plan-phases {
       display: grid;
@@ -714,7 +714,7 @@ export async function generateExportHTMLFromTxt(
       color: var(--primary);
       font-weight: 700;
     }
-    
+
     /* Bloc "À confirmer" (tests vidéo) */
     .confirm-block {
       background: var(--surface-2);
@@ -737,7 +737,7 @@ export async function generateExportHTMLFromTxt(
       color: var(--text-muted);
       line-height: 1.6;
     }
-    
+
     /* Accordéon pour sections détaillées */
     .accordion-section {
       background: var(--surface-1);
@@ -769,7 +769,7 @@ export async function generateExportHTMLFromTxt(
     .accordion-body {
       padding: 0 20px 20px 20px;
     }
-    
+
     /* Badge Priorité */
     .priority-badge {
       display: inline-block;
@@ -855,7 +855,7 @@ export async function generateExportHTMLFromTxt(
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
-    
+
     .insight-box {
       background: rgba(94, 234, 212, 0.05);
       border: 1px solid rgba(94, 234, 212, 0.2);
@@ -915,7 +915,7 @@ export async function generateExportHTMLFromTxt(
       transition: opacity 0.5s;
     }
     .photo-container:hover img { opacity: 1; }
-    
+
     .footer {
       text-align: center;
       padding: 80px 0;
@@ -924,7 +924,7 @@ export async function generateExportHTMLFromTxt(
       border-top: 1px solid var(--border);
       margin-top: 60px;
     }
-    
+
     /* THEME SELECTOR */
     .theme-selector {
       position: fixed;
@@ -958,7 +958,7 @@ export async function generateExportHTMLFromTxt(
       background: var(--primary);
       color: var(--background);
     }
-    
+
     /* TABLE OF CONTENTS (toujours visible + animée) */
     @keyframes tocIn {
       from { opacity: 0; transform: translateY(-50%) translateX(-8px); }
@@ -1058,13 +1058,13 @@ export async function generateExportHTMLFromTxt(
       border-left: 3px solid var(--primary);
       animation: tocActivePulse 2.2s ease-in-out infinite;
     }
-    
+
     @media (max-width: 1200px) {
       .toc-container {
         max-width: 240px;
       }
     }
-    
+
     @media (max-width: 968px) {
       .toc-container,
       .toc-toggle {
@@ -1086,8 +1086,8 @@ export async function generateExportHTMLFromTxt(
 
     @media print {
       body { background: white; color: black; }
-      .hero, .card, .section-card, .stat-card { 
-        background: white; color: black; border: 1px solid #ccc; box-shadow: none; 
+      .hero, .card, .section-card, .stat-card {
+        background: white; color: black; border: 1px solid #ccc; box-shadow: none;
       }
       h1, h2, h3, h4, p, strong { color: black !important; }
       .hero-badge { border-color: black; color: black; }
@@ -1100,10 +1100,10 @@ export async function generateExportHTMLFromTxt(
     <button class="theme-btn" data-theme="dark">Dark</button>
     <button class="theme-btn active" data-theme="light">Light</button>
   </div>
-  
+
   <!-- Table of Contents Toggle (réduire / agrandir) -->
   <button class="toc-toggle" id="toc-toggle" aria-label="Réduire / agrandir la table des matières">≡</button>
-  
+
   <!-- Table of Contents -->
   <nav class="toc-container" id="toc-container">
     <div class="toc-title">Table des matières</div>
@@ -1115,9 +1115,9 @@ export async function generateExportHTMLFromTxt(
       `).join('')}
     </ul>
   </nav>
-  
+
   <div class="container">
-    
+
     <!-- Hero Header Compact (Oura style) -->
     <header class="hero" style="padding: 40px 30px;">
       <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; flex-wrap: wrap; gap: 20px;">
@@ -1130,7 +1130,7 @@ export async function generateExportHTMLFromTxt(
         </div>
       </div>
       <p style="font-size: 1rem; color: var(--text); margin: 8px 0 0 0;">Salut ${firstName}. Voici ton audit 360, clair, actionnable, sans blabla.</p>
-      
+
       <!-- Hero Score Ring (Oura style) -->
       <div class="hero-score-container">
         <div class="hero-score-label">Score Global</div>
@@ -1139,7 +1139,7 @@ export async function generateExportHTMLFromTxt(
           ${dashboard.global >= 85 ? 'Excellente base métabolique' : dashboard.global >= 70 ? 'Bon potentiel d\'optimisation' : dashboard.global >= 50 ? 'Amélioration significative possible' : 'Priorité : corrections fondamentales'}
         </p>
       </div>
-      
+
       <!-- Notice importante (anti-hallucination) -->
       <p style="font-size: 12px; color: var(--text-faint); text-align: center; margin-top: 24px; padding: 12px; background: var(--surface-1); border-radius: 8px;">
         Analyse basée sur photos statiques. Posture confirmée par tests vidéo simples.
@@ -1150,24 +1150,24 @@ export async function generateExportHTMLFromTxt(
     ${(() => {
       const executiveSection = dashboard.sections.find(s => s.title.toUpperCase().includes('EXECUTIVE SUMMARY') || s.category === 'executive');
       if (!executiveSection) return '';
-      
+
       // Extraire les 3 causes principales depuis le contenu Executive Summary
       const content = executiveSection.content;
       const causes = [];
-      
+
       // Chercher "LEVIER" ou des patterns similaires
       const levierMatch = content.match(/(?:LEVIER|LEVEUR|CAUSE|RACINE)[\s\S]{0,200}/i);
       if (levierMatch) {
         const lines = levierMatch[0].split('\n').slice(0, 4).filter(l => l.trim().length > 20);
         causes.push(...lines.slice(0, 3));
       }
-      
+
       // Si pas assez, utiliser les premières phrases significatives
       if (causes.length < 3) {
         const sentences = content.split(/[\.\n]/).filter(s => s.trim().length > 30 && s.trim().length < 200);
         causes.push(...sentences.slice(0, 3 - causes.length));
       }
-      
+
       if (causes.length === 0) {
         causes.push(
           'Optimisation métabolique nécessaire',
@@ -1175,7 +1175,7 @@ export async function generateExportHTMLFromTxt(
           'Rééquilibrage hormonal recommandé'
         );
       }
-      
+
       return `
         <div class="contributors-grid">
           ${causes.slice(0, 3).map((cause, i) => `
@@ -1205,12 +1205,12 @@ export async function generateExportHTMLFromTxt(
         'HORMONAUX': 'Hormone',
         'ENTRAINEMENT': 'Force'
       };
-      
+
       const kpiTiles = analysisSections.map(section => {
         const titleKey = Object.keys(kpiLabels).find(key => section.title.toUpperCase().includes(key)) || 'AUTO';
         const label = kpiLabels[titleKey] || titleKey.substring(0, 8);
         const priority = section.score < 50 ? 'high' : section.score < 70 ? 'medium' : 'ok';
-        
+
         return {
           label,
           score: section.score,
@@ -1218,9 +1218,9 @@ export async function generateExportHTMLFromTxt(
           desc: section.title.replace(/^ANALYSE\s+/i, '').substring(0, 40)
         };
       });
-      
+
       if (kpiTiles.length === 0) return '';
-      
+
       return `
         <div class="kpi-tiles-grid">
           ${kpiTiles.map(tile => `
@@ -1240,11 +1240,11 @@ export async function generateExportHTMLFromTxt(
     ${(() => {
       const planSection = dashboard.sections.find(s => s.title.toUpperCase().includes('PLAN') && s.title.toUpperCase().includes('SEMAINE'));
       if (!planSection) return '';
-      
+
       const content = planSection.content;
       // Extraire les 3 phases (Phase 1, Phase 2, Phase 3 ou Semaines 1-4, 5-8, 9-12)
       const phases: Array<{ title: string; bullets: string[] }> = [];
-      
+
       const phaseMatches = content.match(/(?:PHASE|SEMAINE).*?30.*?60.*?90|(?:SEMAINE|PHASE)\s*(?:1|2|3).*?[\s\S]{0,500}/gi);
       if (phaseMatches && phaseMatches.length >= 3) {
         phaseMatches.slice(0, 3).forEach((match, i) => {
@@ -1262,7 +1262,7 @@ export async function generateExportHTMLFromTxt(
           { title: 'Phase 3 : Consolidation (Semaines 9-12)', bullets: ['Automatisation', 'Optimisation fine', 'Maintenance'] }
         );
       }
-      
+
       return `
         <div class="plan-phases">
           ${phases.map(phase => `
@@ -1439,10 +1439,10 @@ export async function generateExportHTMLFromTxt(
     <div id="review-form-container" style="max-width: 700px; margin: 60px auto; padding: 40px; background: var(--card-bg); border: 1px solid var(--primary); border-radius: 24px;">
       <h3 style="color: var(--text-primary); margin-bottom: 16px; text-align: center; font-size: 1.8rem; font-weight: 800;">Ton avis compte</h3>
       <p style="color: var(--text-secondary); margin-bottom: 32px; text-align: center; font-size: 1.05rem;">Donne ton avis sur cette analyse pour m'aider à améliorer mes services</p>
-      
+
       <form id="review-form" style="display: flex; flex-direction: column; gap: 24px;">
         <input type="hidden" id="audit-id" value="${auditId}" />
-        
+
         <div>
           <label style="color: var(--text-primary); display: block; margin-bottom: 12px; font-weight: 600; font-size: 1.05rem;">Note sur 5 étoiles *</label>
           <div id="rating-stars" style="display: flex; gap: 8px; justify-content: center; font-size: 2.5rem; cursor: pointer;">
@@ -1454,33 +1454,33 @@ export async function generateExportHTMLFromTxt(
           </div>
           <input type="hidden" id="rating-value" name="rating" required />
         </div>
-        
+
         <div>
           <label for="comment" style="color: var(--text-primary); display: block; margin-bottom: 12px; font-weight: 600; font-size: 1.05rem;">Ton commentaire *</label>
-          <textarea 
-            id="comment" 
-            name="comment" 
-            required 
-            minlength="10" 
+          <textarea
+            id="comment"
+            name="comment"
+            required
+            minlength="10"
             maxlength="1000"
             placeholder="Partage ton expérience avec cette analyse..."
             style="width: 100%; min-height: 140px; padding: 16px; background: var(--background); border: 1px solid var(--border); border-radius: 12px; color: var(--text-primary); font-family: inherit; font-size: 1rem; resize: vertical;"
           ></textarea>
           <small style="color: var(--text-secondary); display: block; margin-top: 8px;">Minimum 10 caractères</small>
         </div>
-        
+
         <div>
           <label for="email" style="color: var(--text-primary); display: block; margin-bottom: 12px; font-weight: 600; font-size: 1.05rem;">Email (optionnel)</label>
-          <input 
-            type="email" 
-            id="email" 
+          <input
+            type="email"
+            id="email"
             name="email"
             placeholder="ton@email.com"
             style="width: 100%; padding: 14px 16px; background: var(--background); border: 1px solid var(--border); border-radius: 12px; color: var(--text-primary); font-family: inherit; font-size: 1rem;"
           />
         </div>
-        
-        <button 
+
+        <button
           type="submit"
           style="background: linear-gradient(135deg, var(--primary) 0%, #059669 100%); color: white; padding: 16px 32px; border: none; border-radius: 12px; font-size: 1.05rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s, transform 0.2s; box-shadow: 0 4px 20px rgba(94, 234, 212, 0.3);"
           onmouseover="this.style.opacity='0.9'; this.style.transform='translateY(-2px)'"
@@ -1488,11 +1488,11 @@ export async function generateExportHTMLFromTxt(
         >
           Envoyer mon avis
         </button>
-        
+
         <div id="review-success" style="display: none; padding: 20px; background: rgba(16, 185, 129, 0.15); border: 1px solid var(--primary); border-radius: 12px; color: var(--primary); text-align: center; font-weight: 500;">
           Merci. Ton avis sera examiné avant publication.
         </div>
-        
+
         <div id="review-error" style="display: none; padding: 20px; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; border-radius: 12px; color: #fca5a5; text-align: center; font-weight: 500;">
           Erreur lors de l'envoi. Réessaie plus tard.
         </div>
@@ -1505,13 +1505,13 @@ export async function generateExportHTMLFromTxt(
     </footer>
 
   </div>
-  
+
   <script>
     (function() {
       // Theme Management
       const savedTheme = localStorage.getItem('report-theme') || 'light';
       document.documentElement.setAttribute('data-theme', savedTheme);
-      
+
       const themeButtons = document.querySelectorAll('.theme-btn');
       themeButtons.forEach(btn => {
         if (btn.dataset.theme === savedTheme) {
@@ -1525,12 +1525,12 @@ export async function generateExportHTMLFromTxt(
           btn.classList.add('active');
         });
       });
-      
+
       // Table of Contents Management
       const tocToggle = document.getElementById('toc-toggle');
       const tocContainer = document.getElementById('toc-container');
       const tocLinks = document.querySelectorAll('.toc-link');
-      
+
       if (tocToggle && tocContainer) {
         // Toujours visible: on propose seulement un mode "réduit"
         const savedMin = localStorage.getItem('report-toc-min') === '1';
@@ -1540,7 +1540,7 @@ export async function generateExportHTMLFromTxt(
           tocContainer.classList.toggle('minimized');
           localStorage.setItem('report-toc-min', tocContainer.classList.contains('minimized') ? '1' : '0');
         });
-        
+
         // Smooth scroll for TOC links
         tocLinks.forEach(link => {
           link.addEventListener('click', (e) => {
@@ -1556,7 +1556,7 @@ export async function generateExportHTMLFromTxt(
             }
           });
         });
-        
+
         // Highlight active section in TOC on scroll
         const sections = document.querySelectorAll('.accordion-section');
         const observerOptions = {
@@ -1564,7 +1564,7 @@ export async function generateExportHTMLFromTxt(
           rootMargin: '-100px 0px -66% 0px',
           threshold: 0
         };
-        
+
         const observer = new IntersectionObserver((entries) => {
           entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -1578,10 +1578,10 @@ export async function generateExportHTMLFromTxt(
             }
           });
         }, observerOptions);
-        
+
         sections.forEach(section => observer.observe(section));
       }
-      
+
       // Review Form
       const form = document.getElementById('review-form');
       const ratingStars = document.getElementById('rating-stars');
@@ -1591,7 +1591,7 @@ export async function generateExportHTMLFromTxt(
       const successDiv = document.getElementById('review-success');
       const errorDiv = document.getElementById('review-error');
       let selectedRating = 0;
-      
+
       // Gestion des étoiles
       const stars = ratingStars.querySelectorAll('span');
       stars.forEach((star, index) => {
@@ -1613,7 +1613,7 @@ export async function generateExportHTMLFromTxt(
           updateStars();
         }
       });
-      
+
       function updateStars() {
         stars.forEach((star, index) => {
           if (index < selectedRating) {
@@ -1625,7 +1625,7 @@ export async function generateExportHTMLFromTxt(
           }
         });
       }
-      
+
       function highlightStars(count) {
         stars.forEach((star, index) => {
           if (index < count) {
@@ -1637,48 +1637,48 @@ export async function generateExportHTMLFromTxt(
           }
         });
       }
-      
+
       // Soumission du formulaire
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         successDiv.style.display = 'none';
         errorDiv.style.display = 'none';
-        
+
         if (!selectedRating) {
           alert('Veuillez sélectionner une note');
           return;
         }
-        
+
         const auditId = document.getElementById('audit-id').value;
         if (!auditId) {
           errorDiv.style.display = 'block';
           errorDiv.textContent = '❌ ID audit manquant';
           return;
         }
-        
+
         // Obtenir l'URL de base - utiliser l'URL du serveur si fichier local
         let baseUrl = window.location.origin;
         if (baseUrl === 'null' || baseUrl.startsWith('file://')) {
           // Si fichier ouvert localement, utiliser l'URL du serveur
           baseUrl = 'https://apexlabs.achzodcoaching.com';
         }
-        
+
         const formData = {
           auditId: auditId,
           rating: selectedRating,
           comment: commentInput.value.trim(),
           email: emailInput.value.trim() || undefined
         };
-        
+
         try {
           const response = await fetch(baseUrl + '/api/review', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formData)
           });
-          
+
           const data = await response.json();
-          
+
           if (response.ok && data.success) {
             successDiv.style.display = 'block';
             form.reset();
@@ -1722,23 +1722,23 @@ export async function generateExportPDF(
   clientResponses?: Record<string, unknown>
 ): Promise<Buffer> {
   const html = await generateExportHTML(report, auditId, photos, clientResponses);
-  
+
   let browser = null;
   try {
     browser = await puppeteer.launch({
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
-    
+
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "networkidle0" });
-    
+
     const pdf = await page.pdf({
       format: "A4",
       printBackground: true,
       margin: { top: "0mm", right: "0mm", bottom: "0mm", left: "0mm" },
     });
-    
+
     return Buffer.from(pdf);
   } catch (error) {
     throw error;

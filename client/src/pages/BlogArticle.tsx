@@ -59,7 +59,7 @@ export default function BlogArticlePage() {
   useEffect(() => {
     if (article) {
       document.title = `${article.title} | Blog ACHZOD`;
-      
+
       const metaDescription = document.querySelector('meta[name="description"]');
       if (metaDescription) {
         metaDescription.setAttribute('content', article.excerpt);
@@ -280,7 +280,7 @@ export default function BlogArticlePage() {
                 </ReactMarkdown>
               </div>
 
-              {/* End-of-article CTA — converts SEO readers into Discovery leads */}
+              {/* End-of-article CTA ,  converts SEO readers into Discovery leads */}
               <div className="mt-10 rounded-sm border border-[#FCDD00]/40 bg-gradient-to-br from-[#FCDD00]/5 to-transparent p-6 sm:p-8">
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FCDD00] mb-2">
                   Va plus loin
@@ -386,7 +386,7 @@ export default function BlogArticlePage() {
           </section>
         )}
 
-        {/* CTA Peptides Engine — shown on ALL articles */}
+        {/* CTA Peptides Engine ,  shown on ALL articles */}
         <section className="py-16 border-t border-amber-500/10 bg-amber-500/[0.02]">
             <div className="mx-auto max-w-4xl px-4">
               <div className="flex flex-col md:flex-row items-center gap-10 bg-black/40 border border-amber-500/20 p-8 md:p-12 rounded-sm relative overflow-hidden">
@@ -441,7 +441,7 @@ export default function BlogArticlePage() {
             <div className="flex flex-col md:flex-row items-center gap-10 bg-white/[0.03] border border-white/10 p-8 md:p-12 rounded-sm relative overflow-hidden">
               {/* Decoration */}
               <div className="absolute top-0 right-0 w-32 h-32 bg-[#FCDD00]/10 blur-[60px] -translate-y-1/2 translate-x-1/2" />
-              
+
               <div className="flex-1 text-center md:text-left relative z-10">
                 <p className="text-[#FCDD00] text-xs font-mono tracking-[0.3em] uppercase mb-4">
                   [ REJOINDRE L'ÉLITE ]
@@ -451,12 +451,12 @@ export default function BlogArticlePage() {
                   <span className="text-[#FCDD00]">DÈS AUJOURD'HUI</span>
                 </h2>
                 <p className="mb-8 text-lg text-white/60">
-                  Ton corps n'a jamais manqué d'effort. Il a manqué de méthode. 
+                  Ton corps n'a jamais manqué d'effort. Il a manqué de méthode.
                   Biomécanique, hormones, récupération : rejoins le coaching ACHZOD pour des résultats réels.
                 </p>
-                <a 
-                  href="https://www.achzodcoaching.com" 
-                  target="_blank" 
+                <a
+                  href="https://www.achzodcoaching.com"
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-3 px-8 py-4 bg-[#FCDD00] text-black text-xs font-black uppercase tracking-[0.2em] hover:bg-white transition-all rounded-sm shadow-[0_0_20px_rgba(252,221,0,0.2)]"
                 >
@@ -466,8 +466,8 @@ export default function BlogArticlePage() {
               </div>
               <div className="hidden md:block w-1/3">
                 <div className="relative aspect-square">
-                  <img 
-                    src="https://cdn.prod.website-files.com/5fd0a9c447b7bb9814a00d71/6851ebc888d485c358317cfe_Ebook%20Anabolic%20Code%20Cover-min.jpg" 
+                  <img
+                    src="https://cdn.prod.website-files.com/5fd0a9c447b7bb9814a00d71/6851ebc888d485c358317cfe_Ebook%20Anabolic%20Code%20Cover-min.jpg"
                     alt="ACHZOD Coaching"
                     className="w-full h-full object-contain rotate-3 hover:rotate-0 transition-transform duration-500"
                   />

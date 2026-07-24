@@ -192,8 +192,8 @@ const DEFAULT_REPORT_DATA: ReportData = {
       title: 'Message d\'ouverture',
       subtitle: 'Introduction',
       content: `<p>Ton dossier est ouvert devant moi. Pas de surprises, pas de langue de bois : tu vas recevoir une analyse chirurgicale de ce qui bloque reellement ta progression.</p>
-<p>Ce rapport decortique chaque systeme de ton corps — sommeil, stress, hormones, digestion, entrainement — et surtout comment ils s'influencent mutuellement. Ton score global de <strong>58/100</strong> cache une realite plus nuancee.</p>
-<p>Tu vas comprendre pourquoi ton energie flanche malgre la discipline. Et surtout, quels leviers actionner — dans quel ordre — pour debloquer la machine.</p>`,
+<p>Ce rapport decortique chaque systeme de ton corps ,  sommeil, stress, hormones, digestion, entrainement ,  et surtout comment ils s'influencent mutuellement. Ton score global de <strong>58/100</strong> cache une realite plus nuancee.</p>
+<p>Tu vas comprendre pourquoi ton energie flanche malgre la discipline. Et surtout, quels leviers actionner ,  dans quel ordre ,  pour debloquer la machine.</p>`,
       chips: ['Analyse Chirurgicale', 'Blocages Identifies'],
       score: 58,
       scoreLabel: 'Score Global',
@@ -206,7 +206,7 @@ const DEFAULT_REPORT_DATA: ReportData = {
       content: `<p>Ton corps hurle quelque chose que tu refuses d'entendre.</p>
         <p>Tu fais tout ce que j'attends d'un gars qui veut optimiser sa sante. Et pourtant... tu stagnes. L'energie manque. La recuperation traine. Les resultats ne suivent pas l'investissement.</p>
 <p><strong>Systeme nerveux : 38 sur 100.</strong> Le score le plus bas de ton bilan. Et c'est precisement ce score qui tire tout le reste vers le bas.</p>
-<p>Stress eleve. Anxiete frequente. Concentration difficile. Ce triptyque raconte une histoire que ton corps connait par coeur : mode survie permanent. Ton systeme nerveux sympathique — celui qui gere la reponse au danger — tourne en surregime.</p>`,
+<p>Stress eleve. Anxiete frequente. Concentration difficile. Ce triptyque raconte une histoire que ton corps connait par coeur : mode survie permanent. Ton systeme nerveux sympathique ,  celui qui gere la reponse au danger ,  tourne en surregime.</p>`,
       chips: ['Mode Survie', 'Sympathique Dominant', 'Frein Metabolique'],
       score: 38,
       scoreLabel: 'Systeme Nerveux',
@@ -224,7 +224,7 @@ const DEFAULT_REPORT_DATA: ReportData = {
       subtitle: 'Le Pilier Fragile',
       content: `<p>Ton score sommeil affiche <strong>35/100</strong>. Dette de sommeil massive : 679 heures/an. Deep Sleep < 10%.</p>
 <p>Tu dors, oui. Mais tu ne recuperes pas comme tu le devrais. C'est pendant le sommeil profond (N3) que ton hypophyse libere le gros pulse d'hormone de croissance (GH) de la nuit.</p>
-<p><strong>HRV estime : 26-32ms</strong> — systeme nerveux sature. Latence d'endormissement : 60-90 min. Reveils nocturnes : 3-4x par nuit.</p>
+<p><strong>HRV estime : 26-32ms</strong> ,  systeme nerveux sature. Latence d'endormissement : 60-90 min. Reveils nocturnes : 3-4x par nuit.</p>
 <p>Objectif : 7h30 minimum. Stack sommeil : Magnesium + Glycine + Inositol + Ashwagandha. Chambre 17-18°C, blackout complet.</p>`,
       chips: ['GH Tronquee', 'Reveils Nocturnes', 'HRV Critique'],
       score: 35,
@@ -261,7 +261,7 @@ const DEFAULT_REPORT_DATA: ReportData = {
       title: 'Stress & systeme nerveux',
       subtitle: 'Le Goulot d\'Etranglement',
       content: `<p>Ton score systeme nerveux a <strong>38/100</strong> constitue le point le plus bas de ton bilan.</p>
-<p>Fatigue surrenalienne Phase 2 avec cortisol bas matin, eleve soir. Deficit dopamine SEVERE (11/40). GABA : 16/40 — BAS.</p>
+<p>Fatigue surrenalienne Phase 2 avec cortisol bas matin, eleve soir. Deficit dopamine SEVERE (11/40). GABA : 16/40 ,  BAS.</p>
 <p><strong>Impact hormonal :</strong> Le cortisol et la testosterone partagent un precurseur commun (Pregnenolone Steal). En mode survie, ton corps priorise le cortisol.</p>
 <p>Protocole : Tyrosine 1g matin a jeun, Mucuna Pruriens 300mg, Ashwagandha KSM-66 600mg soir, Stop cafeine apres 10h.</p>`,
       chips: ['Axe HPA', 'Pregnenolone Steal', 'Dominance Sympathique'],
@@ -280,7 +280,7 @@ const DEFAULT_REPORT_DATA: ReportData = {
       title: 'Profil hormonal',
       subtitle: 'Zone Grise',
       content: `<p>Cortisol/DHEA ratio effondre. Testosterone libre probablement basse (SHBG elevee). Thyroide ralentie (T3 libre potentiellement basse).</p>
-<p><strong>Metaboliseur LENT cafeine</strong> — une tasse de cafe a 16h signifie encore 50% de la cafeine en circulation a 23h.</p>
+<p><strong>Metaboliseur LENT cafeine</strong> ,  une tasse de cafe a 16h signifie encore 50% de la cafeine en circulation a 23h.</p>
 <p>La cafeine ne te donne pas d'energie, elle bloque les recepteurs a adenosine (le signal de fatigue). Tu "fonctionnes" mais tu ne recuperes pas.</p>`,
       chips: ['Testosterone Libre', 'SHBG', 'Resistance Insuline'],
       score: 42,
@@ -299,7 +299,7 @@ const DEFAULT_REPORT_DATA: ReportData = {
       subtitle: 'Sedentarite Extreme',
       content: `<p>Ton score Training : <strong>25/100</strong>. Sedentarite extreme : 10-12h assis/jour. 0 entrainement structure.</p>
 <p>Steps quotidiens : 2000-3000 (besoin : 7000+). Mobilite nulle. Posture detruite (cyphose, text neck). Sarcopenie precoce.</p>
-<p><strong>Emotional Eater + Limbic Friction eleve</strong> — tu manges tes emotions.</p>
+<p><strong>Emotional Eater + Limbic Friction eleve</strong> ,  tu manges tes emotions.</p>
 <p>Protocole : Force basique 3x/semaine (Full Body 45min), Marche Zone 2 3x/semaine (30-40 min), Mobilite/etirements quotidiens, Meal prep dimanche.</p>`,
       chips: ['Dette de Recuperation', 'Sarcopenie', 'Sedentarite'],
       score: 25,
@@ -346,11 +346,11 @@ const DEFAULT_REPORT_DATA: ReportData = {
       id: 'protocol',
       title: 'Protocole 90 Jours',
       subtitle: '3 Phases',
-      content: `<p><strong>PHASE 1 — RESET (J1-30) :</strong></p>
+      content: `<p><strong>PHASE 1 ,  RESET (J1-30) :</strong></p>
 <p>Sortir mode sympathique, remonter HRV, restaurer sommeil. Force basique 3x/semaine, Marche Zone 2 3x/semaine, 2400 kcal/jour, Stop cafeine apres 10h, Coucher 22h30.</p>
-<p class="mt-4"><strong>PHASE 2 — BUILD (J31-60) :</strong></p>
+<p class="mt-4"><strong>PHASE 2 ,  BUILD (J31-60) :</strong></p>
 <p>Perte gras visceral, gain masse musculaire. 4x Force (split Upper/Lower), 2x Zone 2 + 1x HIIT leger si HRV > 55, 2200 kcal (-200), Carb Cycling.</p>
-<p class="mt-4"><strong>PHASE 3 — OPTIMIZE (J61-90) :</strong></p>
+<p class="mt-4"><strong>PHASE 3 ,  OPTIMIZE (J61-90) :</strong></p>
 <p>Maintenance gains, performance maximale. 3x Force (5-3-1), 2x Conditionnement + 1x Zone 2, 2400 kcal maintenance, DEXA Scan + Bilan sanguin.</p>`,
       chips: ['RESET', 'BUILD', 'OPTIMIZE'],
       chartType: 'timeline' as const,

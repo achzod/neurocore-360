@@ -108,7 +108,7 @@ function normalizeRequestPath(value: string): string {
   return pathOnly;
 }
 
-// Detect FAQ pairs from markdown content — headings that end with "?" or
+// Detect FAQ pairs from markdown content ,  headings that end with "?" or
 // start with common question words. Answer = next non-empty paragraph(s)
 // before the following heading.
 function detectFaqPairs(
@@ -176,7 +176,7 @@ function getRelatedArticles(
   return same.slice(0, limit);
 }
 
-// Matches client/src/data/blogTypes.ts BLOG_CATEGORIES — kept in sync here
+// Matches client/src/data/blogTypes.ts BLOG_CATEGORIES ,  kept in sync here
 // so the server can render category pillar pages without importing client code.
 const CATEGORY_LABELS: Record<string, string> = {
   musculation: "Musculation",
@@ -380,7 +380,7 @@ ${links ? `<nav aria-label="Pages principales"><ul>${links}</ul></nav>` : ""}
     ].some((pattern) => pattern.test(p));
   }
 
-  // Hashed assets (js/css with content hash in filename) — long cache
+  // Hashed assets (js/css with content hash in filename) ,  long cache
   app.use(
     "/assets",
     express.static(path.join(distPath, "assets"), {
@@ -473,7 +473,7 @@ ${links ? `<nav aria-label="Pages principales"><ul>${links}</ul></nav>` : ""}
     res.send(html);
   });
 
-  // Other static files (images, fonts, favicon) — moderate cache. We exclude
+  // Other static files (images, fonts, favicon) ,  moderate cache. We exclude
   // index.html via the explicit handler above so the SPA shell stays fresh.
   app.use(
     express.static(distPath, {
@@ -530,7 +530,7 @@ ${links ? `<nav aria-label="Pages principales"><ul>${links}</ul></nav>` : ""}
       inLanguage: "fr-FR",
     };
 
-    // JSON-LD BreadcrumbList — helps Google render the pagination path.
+    // JSON-LD BreadcrumbList ,  helps Google render the pagination path.
     const breadcrumb = {
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
@@ -562,7 +562,7 @@ ${links ? `<nav aria-label="Pages principales"><ul>${links}</ul></nav>` : ""}
       ],
     };
 
-    // JSON-LD FAQPage — only if we detect enough genuine Q/A pairs.
+    // JSON-LD FAQPage ,  only if we detect enough genuine Q/A pairs.
     const faqPairs = detectFaqPairs(article.content, 8);
     const faqSchema =
       faqPairs.length >= 2
@@ -733,7 +733,7 @@ ${relatedHtml}
     res.send(injectedHtml);
   });
 
-  // Category pillar page — /blog/categorie/:slug
+  // Category pillar page ,  /blog/categorie/:slug
   // Route unknown categories to the default SPA (client will 404 or fall back
   // to the generic /blog page).
   app.get("/blog/categorie/:slug", (req, res) => {

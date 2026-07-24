@@ -290,7 +290,7 @@ function QuestionField({
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // No size limit — we compress everything automatically
+        // No size limit ,  we compress everything automatically
         const compressImage = (dataUrl: string): Promise<string> => {
           return new Promise((resolve) => {
             const img = new Image();
@@ -567,7 +567,7 @@ function QuestionnaireContent() {
 
   useEffect(() => {
     // Wait for the resume flow above to finish before falling back to the
-    // localStorage hydrate path — otherwise we'd briefly show the previous
+    // localStorage hydrate path ,  otherwise we'd briefly show the previous
     // user's saved data on a shared device.
     if (!resumeChecked) return;
     try {
@@ -728,7 +728,7 @@ function QuestionnaireContent() {
       // Immediately persist a progress row so the abandonment-recovery cron
       // can pick up this user even if they close the tab before answering
       // the first question. Without this, the first save wouldn't happen
-      // until the 3s-debounced response-change effect fires — anyone who
+      // until the 3s-debounced response-change effect fires ,  anyone who
       // bails in the first 3 seconds would be invisible to the abandon cron.
       // Fire-and-forget, best-effort.
       apiRequest("POST", "/api/questionnaire/save-progress", {
@@ -747,7 +747,7 @@ function QuestionnaireContent() {
     if (PHOTO_FIELDS.includes(questionId)) {
       const newPhotoData = { ...photoData, [questionId]: value as string };
       setPhotoData(newPhotoData);
-      // Don't store photos in sessionStorage — they stay in React state only
+      // Don't store photos in sessionStorage ,  they stay in React state only
       // This prevents quota exceeded errors on all browsers
     }
     setResponses((prev) => ({ ...prev, [questionId]: value }));
@@ -1036,8 +1036,8 @@ function QuestionnaireContent() {
                           Ces photos sont ESSENTIELLES pour ton analyse
                         </p>
                         <p className="text-sm text-amber-700/90 dark:text-amber-400/90">
-                          Sans ces 3 photos, je ne pourrai pas realiser ton analyse posturale complete. 
-                          C'est l'un des piliers de l'audit : je detecte les desequilibres musculaires, 
+                          Sans ces 3 photos, je ne pourrai pas realiser ton analyse posturale complete.
+                          C'est l'un des piliers de l'audit : je detecte les desequilibres musculaires,
                           les compensations, et les sources potentielles de douleurs ou contre-performances.
                         </p>
                         <div className="text-sm text-amber-700/80 dark:text-amber-400/80 space-y-1">
@@ -1078,7 +1078,7 @@ function QuestionnaireContent() {
                       />
                     </div>
                     {userSex && userSex !== "" && (
-                      <Button 
+                      <Button
                         onClick={() => setSexConfirmed(true)}
                         className="w-full"
                         data-testid="button-confirm-sex"

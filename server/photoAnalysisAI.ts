@@ -280,15 +280,15 @@ export async function analyzeBodyPhotosWithAI(
     // Skip images that are way too large (>4MB base64 = ~3MB decoded)
     // These will cause Claude API "Could not process image" errors
     if (parsed.data.length > 4_000_000) {
-      console.warn(`[PhotoAnalysis] SKIPPING ${label}: ${(parsed.data.length / 1024 / 1024).toFixed(1)}MB base64 — too large for API`);
+      console.warn(`[PhotoAnalysis] SKIPPING ${label}: ${(parsed.data.length / 1024 / 1024).toFixed(1)}MB base64 ,  too large for API`);
       return;
     }
 
-    // Reject unsupported MIME types before hitting Claude Vision — fails
+    // Reject unsupported MIME types before hitting Claude Vision ,  fails
     // gracefully instead of producing a vague 400.
     const mt = parsed.mediaType.toLowerCase();
     if (!CLAUDE_SUPPORTED_MEDIA.has(mt)) {
-      console.warn(`[PhotoAnalysis] SKIPPING ${label}: unsupported media type "${mt}" — needs JPEG/PNG/GIF/WebP. Likely iPhone HEIC — ask the client to re-upload or enable client-side HEIC→JPEG conversion.`);
+      console.warn(`[PhotoAnalysis] SKIPPING ${label}: unsupported media type "${mt}" ,  needs JPEG/PNG/GIF/WebP. Likely iPhone HEIC ,  ask the client to re-upload or enable client-side HEIC→JPEG conversion.`);
       return;
     }
 

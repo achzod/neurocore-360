@@ -140,7 +140,7 @@ function sanitizePremiumText(text: string): string {
   let cleaned = stripInlineHtml(text)
     .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, "")
     .replace(/Sources?\s*:.*$/gmi, "")
-    .replace(/^.*\b(Sources?|References?|Références?)\b\s*[:\-–—].*$/gmi, "")
+    .replace(/^.*\b(Sources?|References?|Références?)\b\s*[:\-\u2013\u2014].*$/gmi, "")
     .replace(/^\s*[-=]{3,}\s*$/gm, "")
     .replace(/^\s*[-+•]\s+/gm, "")
     .replace(/^\s*\d+\.\s+/gm, "")
@@ -540,7 +540,7 @@ ${dataStr}
       }
 
       if (!knowledgeContext || knowledgeContext.length < MIN_KNOWLEDGE_CONTEXT_CHARS) {
-        console.warn(`[Claude] Knowledge context empty/short for "${section}" — proceeding without external context`);
+        console.warn(`[Claude] Knowledge context empty/short for "${section}" ,  proceeding without external context`);
         knowledgeContext = "";
       }
 

@@ -416,7 +416,7 @@ function CheckoutCard({
         </div>
       </div>
 
-      {/* Live social proof — real counters from DB, empty-state safe */}
+      {/* Live social proof ,  real counters from DB, empty-state safe */}
       <LiveStatsBar variant="peptides" />
 
       {/* Safety gate */}
@@ -465,7 +465,7 @@ function CheckoutCard({
         </div>
       )}
 
-      {/* Consent — required before any payment can be initiated.
+      {/* Consent ,  required before any payment can be initiated.
           Acceptance is captured server-side with timestamp + IP + UA + text
           version for legal traceability against PayPal/Stripe disputes. */}
       {!safetyCheck.blocked && (
@@ -531,7 +531,7 @@ function CheckoutCard({
       {/* Trust line */}
       <p className="text-center text-xs text-white/30 flex items-center justify-center gap-1">
         <Lock className="h-3 w-3" aria-hidden="true" />
-        Paiement 100% securise — Stripe
+        Paiement 100% securise ,  Stripe
       </p>
     </div>
   );
@@ -579,7 +579,7 @@ export default function PeptidesEnginePage() {
         }
       }
     } catch {
-      // Corrupted storage — start fresh
+      // Corrupted storage ,  start fresh
     }
   }, []);
 
@@ -591,7 +591,7 @@ export default function PeptidesEnginePage() {
         JSON.stringify({ responses, sectionIndex, showCheckout })
       );
     } catch {
-      // Storage full — ignore
+      // Storage full ,  ignore
     }
   }, [responses, sectionIndex, showCheckout]);
 
@@ -661,7 +661,7 @@ export default function PeptidesEnginePage() {
       const v = responses[q.id];
       if (v === undefined || v === null || v === "") return false;
       if (Array.isArray(v) && v.length === 0) return false;
-      // Email-type questions must be a properly formatted address — otherwise
+      // Email-type questions must be a properly formatted address ,  otherwise
       // the user can advance with "nom@gmail" or "test@.com" and only get
       // bounced at the backend Zod gate with a cryptic error (Achzod report
       // 2026-05-10: client thought PEPTIDES100 was broken, was actually his
@@ -760,7 +760,7 @@ export default function PeptidesEnginePage() {
       }
 
       if (data?.alreadyPaid && data?.redirect) {
-        // Already paid — redirect to report or dashboard
+        // Already paid ,  redirect to report or dashboard
         localStorage.removeItem(STORAGE_KEY);
         window.location.href = data.redirect;
       } else if (data?.url) {

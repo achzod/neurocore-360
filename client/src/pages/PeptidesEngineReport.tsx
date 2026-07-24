@@ -582,7 +582,7 @@ export default function PeptidesEngineReport() {
         )}
 
         {/* ══════════════════════════════════════════════════════════════════ */}
-        {/* VISUAL GUIDES — Reconstitution, Erreurs, Calcul de dose        */}
+        {/* VISUAL GUIDES ,  Reconstitution, Erreurs, Calcul de dose        */}
         {/* ══════════════════════════════════════════════════════════════════ */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -594,7 +594,7 @@ export default function PeptidesEngineReport() {
             <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: `#06b6d415` }}>
               <FlaskConical className="w-4 h-4" style={{ color: "#06b6d4" }} />
             </div>
-            <h2 className="text-xl font-bold">Guide Visuel — Reconstitution</h2>
+            <h2 className="text-xl font-bold">Guide Visuel ,  Reconstitution</h2>
           </div>
           <ReconstitutionStepByStep />
         </motion.div>

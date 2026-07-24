@@ -22,7 +22,7 @@ interface LiveStatsBarProps {
 }
 
 // Social-proof bar showing live, factual numbers pulled from the DB.
-// Never fabricates — if the API returns `error` or totalReportsDelivered === 0
+// Never fabricates ,  if the API returns `error` or totalReportsDelivered === 0
 // (brand new install, pre-launch), the component renders nothing.
 export function LiveStatsBar({ variant = "peptides", className = "" }: LiveStatsBarProps) {
   const [stats, setStats] = useState<LiveStats | null>(null);
@@ -36,7 +36,7 @@ export function LiveStatsBar({ variant = "peptides", className = "" }: LiveStats
         if (!data.totalReportsDelivered || data.totalReportsDelivered < 3) return;
         setStats(data);
       })
-      .catch(() => { /* silent — social proof is nice-to-have, not critical */ });
+      .catch(() => { /* silent ,  social proof is nice-to-have, not critical */ });
     return () => { cancelled = true; };
   }, []);
 

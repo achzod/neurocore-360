@@ -22,7 +22,7 @@ const requiredSections: SectionRule[] = [
   { title: "Potentiel recomposition (perte de gras + gain de muscle)", minChars: 1200 },
   { title: "Lecture compartimentée par axes", minChars: 6000 },
   { title: "Interconnexions majeures (le pattern)", minChars: 1500 },
-  { title: "Deep dive — marqueurs prioritaires", minChars: 4600 },
+  { title: "Deep dive ,  marqueurs prioritaires", minChars: 4600 },
   { title: "Plan d'action 90 jours", minChars: 3400 },
   { title: "Nutrition & entraînement", minChars: 2600 },
   { title: "Suppléments & stack", minChars: 3000 },
@@ -35,7 +35,7 @@ const normalizeLoose = (value: string) =>
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[—–-]+/g, " ")
+    .replace(/[\u2013\u2014-]+/g, " ")
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
 
@@ -122,7 +122,7 @@ function auditMarkdown(report: string, markerCount: number) {
   const sections = splitSections(report);
   const bulletCount = (report.match(/^\s*(?:[-*+]|\d+[\.)])\s+/gm) || []).length;
   const tableCount = (report.match(/^\s*\|(?:[^|\n]+\|)+\s*$/gm) || []).length;
-  const placeholderAxes = (report.match(/^\s*###\s*Axe\s+\d+\s+[—-]\s*Non renseigne\b/gim) || []).length;
+  const placeholderAxes = (report.match(/^\s*###\s*Axe\s+\d+\s+[\u2014-]\s*Non renseigne\b/gim) || []).length;
   const dossierPlaceholder = (report.match(/non renseigne pour ce dossier/gi) || []).length;
   const sourcesSection = findSection(sections, "Sources (bibliothèque)");
   const reportWithoutSources = sourcesSection ? report.replace(sourcesSection.content, "").trim() : report;
@@ -506,7 +506,7 @@ function auditHtml(html: string) {
     .replace(/&nbsp;/g, " ")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[—–-]+/g, " ")
+    .replace(/[\u2013\u2014-]+/g, " ")
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
   const missingHeadings = requiredSections
@@ -515,13 +515,13 @@ function auditHtml(html: string) {
         .toLowerCase()
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[—–-]+/g, " ")
+        .replace(/[\u2013\u2014-]+/g, " ")
         .replace(/[^a-z0-9]+/g, " ")
         .trim();
       return !normalized.includes(target);
     })
     .map((section) => section.title);
-  const placeholderAxes = (text.match(/Axe\s+\d+\s+[—-]\s*Non renseigne/gi) || []).length;
+  const placeholderAxes = (text.match(/Axe\s+\d+\s+[\u2014-]\s*Non renseigne/gi) || []).length;
   const hasDashboardButton = text.includes("Ouvrir le dashboard");
   const hasInlineReportShell = /class=["'][^"']*tabs-shell[^"']*["']/i.test(text);
 
@@ -548,7 +548,7 @@ function auditAttachmentHtml(html: string) {
     .replace(/&nbsp;/g, " ")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[—–-]+/g, " ")
+    .replace(/[\u2013\u2014-]+/g, " ")
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
 
@@ -558,7 +558,7 @@ function auditAttachmentHtml(html: string) {
         .toLowerCase()
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[—–-]+/g, " ")
+        .replace(/[\u2013\u2014-]+/g, " ")
         .replace(/[^a-z0-9]+/g, " ")
         .trim();
       return !normalized.includes(target);

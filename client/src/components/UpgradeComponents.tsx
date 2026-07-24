@@ -350,7 +350,7 @@ export const SocialProofBlock: React.FC<SocialProofBlockProps> = ({ theme, quote
           </blockquote>
           <div className="flex items-center gap-2">
             <p className="text-xs font-bold" style={{ color: theme.colors.text }}>
-              — {author}
+              ,  {author}
             </p>
             <div className="flex">
               {[1, 2, 3, 4, 5].map((star) => (
@@ -564,7 +564,7 @@ export const SmartRecommendation: React.FC<SmartRecommendationProps> = ({
             className="text-[10px] font-bold uppercase tracking-widest mb-1"
             style={{ color: theme.colors.primary }}
           >
-            Recommandation personnalisée — basée sur tes résultats Discovery
+            Recommandation personnalisée ,  basée sur tes résultats Discovery
           </p>
           <h4 className="text-lg font-bold" style={{ color: theme.colors.text }}>
             {headline}

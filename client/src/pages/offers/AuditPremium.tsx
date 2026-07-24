@@ -505,7 +505,7 @@ export default function AuditPremium() {
           </motion.div>
           <div className="divide-y divide-white/10">
             {[
-              { q: "Combien de temps prend le questionnaire ?", a: "Environ 15-20 minutes. 137 questions sur 16 domaines : profil, sante, sommeil, stress, energie, digestion, entrainement, nutrition de base, lifestyle, mindset, nutrition detaillee, hormones, axes cliniques, supplements, biomarqueurs, composition corporelle. Ta progression est sauvegardee automatiquement — tu peux fermer et reprendre plus tard." },
+              { q: "Combien de temps prend le questionnaire ?", a: "Environ 15-20 minutes. 137 questions sur 16 domaines : profil, sante, sommeil, stress, energie, digestion, entrainement, nutrition de base, lifestyle, mindset, nutrition detaillee, hormones, axes cliniques, supplements, biomarqueurs, composition corporelle. Ta progression est sauvegardee automatiquement ,  tu peux fermer et reprendre plus tard." },
               { q: "Que contient le rapport de 20+ pages ?", a: "16 sections completes : executive summary avec score global, 6 analyses approfondies (entrainement et periodisation, systeme cardiovasculaire, metabolisme et nutrition, sommeil et recuperation, digestion et microbiote, axes hormonaux), 5 protocoles d'action (matin anti-cortisol, soir verrouillage sommeil, digestion 14 jours, bureau anti-sedentarite, entrainement personnalise), stack supplements optimise, plan semaine par semaine 30-60-90 jours, KPI et tableau de bord, synthese et prochaines etapes." },
               { q: "Quelle est la difference avec l'Ultimate Scan ?", a: "L'Anabolic Bioscan couvre 16 sections de rapport sans photos. L'Ultimate Scan (79\u20ac) ajoute 2 sections exclusives basees sur 3 photos (face, dos, profil) : analyse visuelle et posturale complete + analyse biomecanique et sangle profonde. Total : 18 sections, ~183 questions, rapport de 40-50 pages." },
               { q: "Les 5 protocoles sont-ils vraiment personnalises ?", a: "Oui. Chaque protocole est genere par mon moteur IA en fonction de TES reponses. Le protocole matin anti-cortisol, le protocole soir verrouillage sommeil, le protocole digestion 14 jours, le protocole bureau anti-sedentarite et le protocole entrainement personnalise sont tous adaptes a ton profil, tes desequilibres et tes objectifs specifiques." },
@@ -535,7 +535,7 @@ export default function AuditPremium() {
           </p>
           <Link href="/questionnaire?plan=anabolic">
             <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(252,221,0,0.3)]">
-              Lancer mon Anabolic Bioscan — 59€ d'acompte
+              Lancer mon Anabolic Bioscan ,  59€ d'acompte
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
           </Link>

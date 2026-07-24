@@ -96,7 +96,7 @@ export function CoachingPromoBanner({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // ignore — dismissable UX, not critical
+      // ignore ,  dismissable UX, not critical
     }
   };
 

@@ -53,7 +53,7 @@ function deriveVialsForPeptide(pep: any): { totalMg: number; vialMg: number; wee
 
   // Range pattern (0.25mg par semaine (semaines 1 à 4))
   const rangeMatches = Array.from(
-    dosage.matchAll(/(\d+(?:\.\d+)?)\s*(mg|mcg)\s*par\s*semaine\s*\(\s*semaines?\s*(\d+)\s*(?:à|a|-|–)\s*(\d+)\s*\)/gi)
+    dosage.matchAll(/(\d+(?:\.\d+)?)\s*(mg|mcg)\s*par\s*semaine\s*\(\s*semaines?\s*(\d+)\s*(?:à|a|-)\s*(\d+)\s*\)/gi)
   ) as RegExpMatchArray[];
   if (rangeMatches.length >= 2) {
     let totalMg = 0, lastDose = 0, lastEnd = 0;

@@ -76,7 +76,7 @@ const OFFERS: Offer[] = [
     id: 'formcheck',
     title: "FORMCHECK",
     subtitle: "L'analyse biomecanique que tu aurais voulu avoir a chaque serie",
-    description: "Tu filmes ta serie. Tu envoies sur WhatsApp. Tu recois un rapport que meme ton kine du sport ne te ferait pas entre deux rendez-vous. Score sur 100, corrections biomecaniques avec mecanismes articulaires, analyse rep par rep, tempo et controle, compensations detectees, plan d'action en 3 points. Tous les exercices de ta salle supportes — squat, bench, deadlift, row, pull-up, et 50+ autres. Detection automatique.",
+    description: "Tu filmes ta serie. Tu envoies sur WhatsApp. Tu recois un rapport que meme ton kine du sport ne te ferait pas entre deux rendez-vous. Score sur 100, corrections biomecaniques avec mecanismes articulaires, analyse rep par rep, tempo et controle, compensations detectees, plan d'action en 3 points. Tous les exercices de ta salle supportes ,  squat, bench, deadlift, row, pull-up, et 50+ autres. Detection automatique.",
     features: ["Corrections biomecaniques precisees", "Analyse rep par rep", "Compensations detectees", "50+ exercices supportes"],
     price: "1ere analyse gratuite",
     imageUrl: "",
@@ -557,7 +557,7 @@ function ECGSection() {
 }
 
 // ============================================================================
-// COACHING DEDUCTION BLOCK — "100% DÉDUIT"
+// COACHING DEDUCTION BLOCK ,  "100% DÉDUIT"
 // ============================================================================
 function CoachingDeductionBlock() {
   return (
@@ -955,7 +955,7 @@ function OfferCard({ offer, index }: { offer: Offer; index: number }) {
 }
 
 // ============================================================================
-// COACHING DEDUCTION BANNER — animated highlight
+// COACHING DEDUCTION BANNER ,  animated highlight
 // ============================================================================
 function CoachingDeductionBanner() {
   return (
@@ -1123,7 +1123,7 @@ function CertificationsSection() {
 
 
 // ============================================================================
-// REVIEWS SECTION — real approved reviews first, then BETA_REVIEWS fallback
+// REVIEWS SECTION ,  real approved reviews first, then BETA_REVIEWS fallback
 // ============================================================================
 
 interface DisplayReview {

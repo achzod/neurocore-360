@@ -49,7 +49,7 @@ export default function PolitiqueConfidentialite() {
             <ul className="list-disc list-inside space-y-1 text-white/60">
               <li><strong className="text-white">Donnees d'identification :</strong> adresse email, nom/prenom (si fourni)</li>
               <li><strong className="text-white">Donnees de sante :</strong> reponses aux questionnaires (sommeil, stress, nutrition, entrainement, hormones), resultats d'analyses sanguines (PDF uploade), photos corporelles (Ultimate Scan)</li>
-              <li><strong className="text-white">Donnees de paiement :</strong> traitees directement par Stripe et PayPal — nous ne stockons jamais vos coordonnees bancaires</li>
+              <li><strong className="text-white">Donnees de paiement :</strong> traitees directement par Stripe et PayPal ,  nous ne stockons jamais vos coordonnees bancaires</li>
               <li><strong className="text-white">Donnees techniques :</strong> adresse IP, user-agent, cookies essentiels</li>
               <li><strong className="text-white">Donnees analytiques :</strong> pages visitees, interactions (uniquement avec votre consentement via Google Analytics)</li>
             </ul>
@@ -102,8 +102,8 @@ export default function PolitiqueConfidentialite() {
           <Section title="8. Cookies">
             <p className="mb-3">Nous utilisons deux types de cookies :</p>
             <ul className="list-disc list-inside space-y-1 text-white/60">
-              <li><strong className="text-white">Cookies essentiels :</strong> session, preferences d'interface — pas de consentement requis</li>
-              <li><strong className="text-white">Cookies analytiques (Google Analytics) :</strong> mesure d'audience — actives uniquement apres votre consentement via la banniere</li>
+              <li><strong className="text-white">Cookies essentiels :</strong> session, preferences d'interface ,  pas de consentement requis</li>
+              <li><strong className="text-white">Cookies analytiques (Google Analytics) :</strong> mesure d'audience ,  actives uniquement apres votre consentement via la banniere</li>
             </ul>
             <p className="mt-3">Vous pouvez modifier votre choix a tout moment en supprimant le cookie "apexlabs_cookie_consent" dans les parametres de votre navigateur.</p>
           </Section>

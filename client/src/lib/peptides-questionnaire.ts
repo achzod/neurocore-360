@@ -1,5 +1,5 @@
 /**
- * Peptides Engine — Questionnaire Definitions
+ * Peptides Engine ,  Questionnaire Definitions
  * Questionnaire across 6 sections with conditional logic
  */
 
@@ -49,7 +49,7 @@ export const PEPTIDES_QUESTIONS: PeptidesQuestion[] = [
     { value: "unknown", label: "Je ne sais pas" },
   ]},
   { id: "pep_experience", sectionId: "profil", type: "select", label: "Experience avec les peptides", required: true, options: [
-    { value: "none", label: "Aucune — debutant total" },
+    { value: "none", label: "Aucune ,  debutant total" },
     { value: "read", label: "J'ai lu/regarde du contenu" },
     { value: "tried", label: "J'ai deja utilise 1-2 peptides" },
     { value: "regular", label: "Utilisateur regulier (3+ peptides)" },
@@ -101,7 +101,7 @@ export const PEPTIDES_QUESTIONS: PeptidesQuestion[] = [
     { value: "circadian", label: "Decalage circadien" },
   ]},
 
-  // Testosterone-boost sub-questions — only shown if user picked testo-boost as primary goal.
+  // Testosterone-boost sub-questions ,  only shown if user picked testo-boost as primary goal.
   // These drive the protocol choice (enclomifene vs HCG+kisspeptin vs gonadorelin pulsatile).
   // Without them we'd be prescribing blind; with them the engine can tailor safely.
   { id: "pep_testo_symptoms", sectionId: "objectifs", type: "checkbox", label: "Symptômes ressentis (coche tout ce qui s'applique)", conditionalOn: "pep_primary_goal:testo-boost", options: [
@@ -119,11 +119,11 @@ export const PEPTIDES_QUESTIONS: PeptidesQuestion[] = [
     { value: "recent-low", label: "Oui, < 3 mois, testo basse confirmée" },
     { value: "recent-normal", label: "Oui, < 3 mois, testo dans la norme mais je veux optimiser" },
     { value: "old", label: "Oui, > 3 mois (je vais en refaire un)" },
-    { value: "never", label: "Jamais fait — je vais en faire un avant" },
+    { value: "never", label: "Jamais fait ,  je vais en faire un avant" },
   ]},
   { id: "pep_testo_fertility", sectionId: "objectifs", type: "select", label: "Préserver la fertilité (projet bébé actuel ou futur) ?", conditionalOn: "pep_primary_goal:testo-boost", required: true, options: [
-    { value: "critical", label: "Oui, critique — je veux concevoir bientôt" },
-    { value: "important", label: "Oui, important — à moyen terme (1-3 ans)" },
+    { value: "critical", label: "Oui, critique ,  je veux concevoir bientôt" },
+    { value: "important", label: "Oui, important ,  à moyen terme (1-3 ans)" },
     { value: "nice", label: "Préférable, mais pas urgent" },
     { value: "no", label: "Non, fertilité pas un enjeu" },
   ]},
@@ -158,9 +158,9 @@ export const PEPTIDES_QUESTIONS: PeptidesQuestion[] = [
   ]},
   { id: "pep_trt", sectionId: "sante", type: "select", label: "Es-tu sous TRT ou hormone exogene?", options: [
     { value: "no", label: "Non" },
-    { value: "trt", label: "Oui — TRT testosterone" },
-    { value: "hgh", label: "Oui — HGH" },
-    { value: "other", label: "Oui — autre" },
+    { value: "trt", label: "Oui ,  TRT testosterone" },
+    { value: "hgh", label: "Oui ,  HGH" },
+    { value: "other", label: "Oui ,  autre" },
   ]},
   { id: "pep_trt_details", sectionId: "sante", type: "text", label: "Details de ton protocole TRT/hormone", conditionalOn: "pep_trt:trt", placeholder: "Dose, frequence, depuis quand" },
   { id: "pep_peds_history", sectionId: "sante", type: "select", label: "Historique PEDs (steroides, SARMs)", options: [
@@ -204,7 +204,7 @@ export const PEPTIDES_QUESTIONS: PeptidesQuestion[] = [
   { id: "pep_injection_comfort", sectionId: "pratique", type: "select", label: "Confort avec les injections", required: true, options: [
     { value: "fine", label: "Aucun probleme" },
     { value: "anxious", label: "Un peu anxieux mais OK" },
-    { value: "very-anxious", label: "Tres anxieux — prefere alternatives" },
+    { value: "very-anxious", label: "Tres anxieux ,  prefere alternatives" },
     { value: "refuse", label: "Refuse categoriquement les injections" },
   ]},
   { id: "pep_injection_type", sectionId: "pratique", type: "select", label: "Preference type d'injection", conditionalOn: "pep_injection_comfort:fine", options: [
@@ -279,8 +279,8 @@ export const PEPTIDES_QUESTIONS: PeptidesQuestion[] = [
     { value: "maybe", label: "Peut-etre plus tard" },
     { value: "no", label: "Non, le protocole me suffit" },
   ]},
-  { id: "pep_requested_peptides", sectionId: "attentes", type: "textarea", label: "Tu as des peptides specifiques en tete?", placeholder: "Optionnel — ecris les noms exacts des peptides que tu veux dans ton protocole (ex: BPC-157, Retatrutide, Semaglutide...)" },
-  { id: "pep_questions", sectionId: "attentes", type: "textarea", label: "Questions ou precisions?", placeholder: "Optionnel — ajoute tout ce que tu veux que je sache" },
+  { id: "pep_requested_peptides", sectionId: "attentes", type: "textarea", label: "Tu as des peptides specifiques en tete?", placeholder: "Optionnel ,  ecris les noms exacts des peptides que tu veux dans ton protocole (ex: BPC-157, Retatrutide, Semaglutide...)" },
+  { id: "pep_questions", sectionId: "attentes", type: "textarea", label: "Questions ou precisions?", placeholder: "Optionnel ,  ajoute tout ce que tu veux que je sache" },
 ];
 
 // Safety gate: conditions that prevent purchase

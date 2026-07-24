@@ -199,7 +199,7 @@ const MARKER_DEFINITION_BY_KEY: Record<string, string> = {
 
 const stripForbiddenStyleTokens = (value: string): string =>
   String(value || "")
-    .replace(/[—–]/g, "-")
+    .replace(/[\u2013\u2014]/g, "-")
     .replace(/[\u{1F1E6}-\u{1F1FF}]/gu, "")
     .replace(/[\u{1F300}-\u{1FAFF}]/gu, "")
     .replace(/[\u{2600}-\u{27BF}]/gu, "")
@@ -1467,7 +1467,7 @@ function buildMarkersTableHtml(markers: MarkerAnalysis[]): string {
 
   const formatRangeDisplay = (range: string): string => {
     const text = String(range || "").trim();
-    const match = text.match(/(-?\d+(?:[.,]\d+)?)\s*(?:-|–|,)\s*(-?\d+(?:[.,]\d+)?)/);
+    const match = text.match(/(-?\d+(?:[.,]\d+)?)\s*(?:-|\u2013|,)\s*(-?\d+(?:[.,]\d+)?)/);
     if (!match) return text;
     const min = Number(String(match[1]).replace(",", "."));
     const max = Number(String(match[2]).replace(",", "."));

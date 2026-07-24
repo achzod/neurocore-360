@@ -1,6 +1,6 @@
 /**
  * PayPal REST API v2 Client
- * Direct HTTP integration — no npm dependency needed.
+ * Direct HTTP integration ,  no npm dependency needed.
  */
 
 const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID || "";

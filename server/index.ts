@@ -10,6 +10,7 @@ import { resumePendingJobs } from "./reportJobManager";
 import { storage } from "./storage";
 import { sendReportReadyEmail, sendAdminEmailNewAudit } from "./emailService";
 import { sendScheduledBloodEmail } from "./blood-analysis/routes";
+import { startPeptauraCatalogCron } from "./peptidesEngine";
 
 const app = express();
 const httpServer = createServer(app);
@@ -23,7 +24,7 @@ if (sentryEnabled) {
   });
 }
 
-// Global safety nets — prevent silent crashes in production
+// Global safety nets ,  prevent silent crashes in production
 process.on("unhandledRejection", (reason) => {
   console.error("[FATAL] Unhandled Promise Rejection:", reason);
   if (sentryEnabled) Sentry.captureException(reason);
@@ -178,7 +179,8 @@ if (process.env.NODE_ENV === "production") {
     },
     async () => {
       log(`serving on port ${port}`);
-      
+      startPeptauraCatalogCron();
+
       try {
         const resumedCount = await resumePendingJobs();
         if (resumedCount > 0) {
@@ -204,7 +206,7 @@ if (process.env.NODE_ENV === "production") {
 
       const runScheduledDelivery = async () => {
         if (cronRunning) {
-          log("Cron: skipping — previous run still in progress");
+          log("Cron: skipping ,  previous run still in progress");
           return;
         }
         cronRunning = true;
@@ -249,7 +251,7 @@ if (process.env.NODE_ENV === "production") {
                 // Note: Admin notification already sent at blood report creation
                 delivered++;
               } else {
-                // Quality gate blocked — keep SCHEDULED but increment retries so we eventually give up
+                // Quality gate blocked ,  keep SCHEDULED but increment retries so we eventually give up
                 await storage.updateBloodReport(report.id, { deliveryStatus: "SCHEDULED" });
                 console.warn(`[Cron] Blood ${report.id} quality gate blocked (retry ${retries + 1}/${BLOOD_MAX_DELIVERY_RETRIES})`);
               }
@@ -283,7 +285,7 @@ if (process.env.NODE_ENV === "production") {
               log(`Recovered ${auditRecoveryResult.rows.length} orphaned audits: ${recoveredIds}`);
             }
           } catch (_recoveryErr) {
-            // Non-critical — silently ignore if DB unavailable
+            // Non-critical ,  silently ignore if DB unavailable
           }
 
           if (delivered > 0) {
@@ -360,11 +362,11 @@ if (process.env.NODE_ENV === "production") {
       setInterval(runReportWithGuard, REPORT_INTERVAL_MS);
       log("Automatic 6h reports started (sent to admin email)");
 
-      // Conversion tracking: DISABLED — no ads running, sends empty reports wasting tokens
+      // Conversion tracking: DISABLED ,  no ads running, sends empty reports wasting tokens
       // To re-enable: uncomment and import sendDailyConversionReport from conversionTracker
       log("Daily conversion report DISABLED (no ads running)");
 
-      // Automatic abandonment recovery — sends reminder emails to users who started a
+      // Automatic abandonment recovery ,  sends reminder emails to users who started a
       // questionnaire but didn't finish. Was only available as an admin endpoint, never
       // ran on its own. Now scheduled every 6h so abandons actually get recovered.
       // Respects the built-in min-6h wait + per-email dedup via logAbandonmentReminder.
@@ -391,7 +393,7 @@ if (process.env.NODE_ENV === "production") {
         }
       };
 
-      // Don't run on startup — wait one interval so the service is settled.
+      // Don't run on startup ,  wait one interval so the service is settled.
       setInterval(runAbandonRecovery, ABANDON_INTERVAL_MS);
       log("Abandonment recovery cron started (every 6h, max 50 reminders/cycle)");
 
@@ -555,12 +557,12 @@ if (process.env.NODE_ENV === "production") {
         log("Self-ping anti cold start enabled (every 4 min)");
       }
 
-      // RSS watchdog — graceful restart before Render container OOM-kills us
+      // RSS watchdog ,  graceful restart before Render container OOM-kills us
       // with SIGABRT (exit 134). Render container is 512MB. max-old-space-size
       // limits the V8 JS heap only; RSS also counts native memory (pdf-parse,
       // puppeteer, sharp, node_modules buffers) which doesn't respect that
       // flag. If RSS climbs above 460MB we're minutes from a container-level
-      // SIGABRT — better to exit cleanly ourselves, let Render auto-restart
+      // SIGABRT ,  better to exit cleanly ourselves, let Render auto-restart
       // with a warm pool, and emit a log we can grep on.
       //
       // Triggers 2026-04-19T22:58Z and 2026-04-20T13:34Z were both

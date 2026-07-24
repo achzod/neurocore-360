@@ -919,7 +919,7 @@ const SKIP_LINE_REGEX =
   /(objectif|recommand|valeur|référence|reference|score|esc|risque|guide|interpret|evaluation|page|\bhas\b|consid[ée]r[ée]|est\s+normal|en\s*faveur|17\s*alpha|hydroxy[-\s]?prog[ée]st[ée]rone|transmis\s+au|envoy[ée]s?\s+au|examen[s]?\s+transmis|pr[ée]l[èe]vement\s*:|valid[ée]\s*(le|par)|seuil\s*de\s*d[ée]tection)/i;
 
 const DATE_LINE_REGEX = /^\d{2}[\/-]\d{2}[\/-]\d{2,4}$/;
-const RANGE_LINE_REGEX = /\d+(?:[.,]\d+)?\s*(?:à|a|–|-)\s*\d+(?:[.,]\d+)?/i;
+const RANGE_LINE_REGEX = /\d+(?:[.,]\d+)?\s*(?:à|a|-)\s*\d+(?:[.,]\d+)?/i;
 
 const findUnit = (line?: string): string | undefined => {
   if (!line) return undefined;
@@ -1045,7 +1045,7 @@ const extractNumberFromSnippet = (snippet: string): number | null => {
     if (isYearLike(value, raw) || isHugeNumber(raw, value)) continue;
     const before = snippet.slice(Math.max(0, start - 3), start);
     const after = snippet.slice(end, end + 3);
-    if (before.includes("-") || after.includes("-") || before.includes("–") || after.includes("–")) {
+    if (before.includes("-") || after.includes("-") || before.includes("-") || after.includes("-")) {
       continue;
     }
     // Skip numbers that are part of compound marker names like "17 ALPHA HYDROXY"
@@ -2430,7 +2430,7 @@ Identité et voix obligatoires:
 
 Objectif:
 - Donner une lecture exploitable, personnalisée et priorisée du bilan sanguin.
-- ORIENTATION CENTRALE DU RAPPORT BLOOD ANALYSIS APEXLABS: ce produit est positionné et acheté par le client pour 3 finalités — PRISE DE MUSCLE, PERTE DE GRAS, SANTÉ. Tout dans le rapport doit servir ces 3 axes. Ce ne sont pas trois sujets parmi d'autres: c'est le cadre dans lequel chaque marqueur, chaque recommandation et chaque conclusion doit s'inscrire. Le client n'achète pas un bilan médical générique, il achète une lecture orientée résultats physiques.
+- ORIENTATION CENTRALE DU RAPPORT BLOOD ANALYSIS APEXLABS: ce produit est positionné et acheté par le client pour 3 finalités ,  PRISE DE MUSCLE, PERTE DE GRAS, SANTÉ. Tout dans le rapport doit servir ces 3 axes. Ce ne sont pas trois sujets parmi d'autres: c'est le cadre dans lequel chaque marqueur, chaque recommandation et chaque conclusion doit s'inscrire. Le client n'achète pas un bilan médical générique, il achète une lecture orientée résultats physiques.
 - LECTURE TRIPLE-AXE OBLIGATOIRE PAR MARQUEUR: pour chaque biomarqueur que tu cites, tu dois expliciter au moins deux des trois angles d'impact suivants pour CE client précis (jamais des généralités):
   1. PRISE DE MUSCLE: comment cette valeur (haute/normale/basse) influence la synthèse protéique, la récupération, le potentiel hypertrophique, la signalisation anabolique.
   2. PERTE DE GRAS: comment cette valeur joue sur le métabolisme de base, la sensibilité insulinique, la lipolyse, la rétention d'eau, le stockage viscéral.
@@ -4405,7 +4405,7 @@ Contraintes:
 - Relier explicitement les conclusions aux marqueurs prioritaires.
 
 COUVERTURE OBLIGATOIRE DES MARQUEURS-CLES DE RECOMPOSITION (si presents dans "Contexte marqueurs"):
-La recomposition corporelle (perte de gras + gain de muscle) est gouvernee par un ensemble de marqueurs hormonaux et metaboliques bien identifies. Si l'un de ces marqueurs apparait dans le bilan avec une valeur numerique, tu DOIS le citer explicitement dans cette section, avec sa valeur exacte, son unite, son statut, et l'impact concret sur la recomposition du client — peu importe que la valeur soit basse, normale, optimale ou elevee, dans tous les cas elle conditionne le resultat. Liste des marqueurs concernes:
+La recomposition corporelle (perte de gras + gain de muscle) est gouvernee par un ensemble de marqueurs hormonaux et metaboliques bien identifies. Si l'un de ces marqueurs apparait dans le bilan avec une valeur numerique, tu DOIS le citer explicitement dans cette section, avec sa valeur exacte, son unite, son statut, et l'impact concret sur la recomposition du client ,  peu importe que la valeur soit basse, normale, optimale ou elevee, dans tous les cas elle conditionne le resultat. Liste des marqueurs concernes:
 
 1. Testosterone totale: principal moteur anabolique chez l'homme. Une valeur basse limite la synthese proteique; une valeur haute non endogene (apport exterieur) supprime l'axe HPG et change toute la lecture; une valeur optimale est un atout direct pour le gain musculaire. Toujours citer sa valeur.
 2. Testosterone libre: la fraction biodisponible reellement active dans les tissus muscles. C'est elle qui compte pour l'anabolisme reel, pas la totale. Toujours citer sa valeur.

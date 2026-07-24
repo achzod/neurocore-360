@@ -55,7 +55,7 @@ const parseRange = (range?: string): { min?: number; max?: number } => {
   if (!range) return {};
   const normalizedRange = String(range)
     .replace(/,/g, '.')
-    .replace(/[−–—]/g, '-')
+    .replace(/[\u2212\u2013\u2014]/g, '-')
     // Prevent "10-40" from being parsed as [10, -40].
     .replace(/(\d)\s*-\s*(?=\d)/g, '$1 to ');
   const numbers = normalizedRange.match(/[+-]?\d+(?:\.\d+)?/g);

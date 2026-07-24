@@ -261,7 +261,7 @@ export const sendBloodClientDeliveryEmail = async (
       // blood_tests.markers stores the identifier as `code` (e.g. "crp_us"),
       // while blood_analysis_reports.extractedBiomarkers uses `markerId`.
       // Fall back between the two so riskProfile is built correctly regardless
-      // of which table the report originated from — without the fallback, the
+      // of which table the report originated from ,  without the fallback, the
       // report attachment renders "Scores composites non disponibles" for
       // every blood_tests-sourced client (Vincent Soria, 2026-04-22).
       const markerId = String((marker as any)?.markerId || (marker as any)?.code || "").trim();
@@ -423,7 +423,7 @@ const normalizeMarkerStatus = (status: unknown): MarkerStatus => {
   return "normal";
 };
 
-// Category weights — hormonal axis gets the highest weight because a broken
+// Category weights ,  hormonal axis gets the highest weight because a broken
 // HPT axis (FSH/LH effondrés) is more impactful for performance/health than
 // a slightly out-of-range vitamin D.
 const CATEGORY_WEIGHTS: Record<string, number> = {
@@ -476,7 +476,7 @@ const computeGlobalScoreWeighted = (markers: MarkerForScoring[]): number => {
   return Math.round(baseScore);
 };
 
-// Backwards-compatible wrapper — kept for any external caller that still
+// Backwards-compatible wrapper ,  kept for any external caller that still
 // passes raw statuses. Internally re-routes to the weighted version when
 // possible. Called sites should prefer computeGlobalScoreWeighted.
 const computeGlobalScoreFromStatuses = (statuses: MarkerStatus[]): number => {
@@ -2393,7 +2393,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       // Extract markers from PDF if provided
       let resolvedMarkers = markers || [];
       let extractedPatient = {};
-      
+
       if ((!resolvedMarkers || resolvedMarkers.length === 0) && pdfBase64) {
         try {
           const pdfBuffer = Buffer.from(pdfBase64, "base64");

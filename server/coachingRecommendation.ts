@@ -3,9 +3,9 @@
 // appropriate coaching tier for the nurture email. No side effects.
 //
 // Tiers:
-//   ESSENTIAL  — entry level, mail 7j/7 48h, nutrition precision focus
-//   ELITE      — WhatsApp lun-ven 9-19h, injury/rehab handling, weekly ajustments
-//   PRIVATELAB — WhatsApp 7j/7 6h-minuit, premium, pluridisciplinary
+//   ESSENTIAL  ,  entry level, mail 7j/7 48h, nutrition precision focus
+//   ELITE      ,  WhatsApp lun-ven 9-19h, injury/rehab handling, weekly ajustments
+//   PRIVATELAB ,  WhatsApp 7j/7 6h-minuit, premium, pluridisciplinary
 
 export type CoachingTier = "ESSENTIAL" | "ELITE" | "PRIVATELAB";
 
@@ -51,7 +51,7 @@ function lower(v: unknown): string {
  *     - low training score AND any injury/recovery/récupération mention,
  *       i.e. the client needs weekly adjustments + WhatsApp contact, OR
  *     - at least 3 out of 8 domains scoring critically low (<= 40/100)
- *       — a holistic overhaul benefits from Elite's broader touch
+ *       ,  a holistic overhaul benefits from Elite's broader touch
  *
  *   ESSENTIAL (default)
  *     - simpler single-axis focus (nutrition/composition/stress), mail 48h cadence
@@ -67,7 +67,7 @@ export function recommendCoachingTier(opts: {
   const r = opts.responses ?? {};
   const s = opts.scores?.scoresByDomain ?? {};
 
-  // Budget signal — optional field `pep_budget`, `budget`, or free-text "combien"/"mensuel"
+  // Budget signal ,  optional field `pep_budget`, `budget`, or free-text "combien"/"mensuel"
   const budgetStr = lower(r.budget ?? r.pep_budget ?? r["budget-mensuel"] ?? r["budget-coaching"]);
   const hasHighBudget =
     /500|600|700|800|1000|>500|>1000|>700/.test(budgetStr) ||
@@ -82,7 +82,7 @@ export function recommendCoachingTier(opts: {
   })();
   const highFrequency = (freqMax ?? 0) >= 5;
 
-  // Objectif — performance vs general wellness
+  // Objectif ,  performance vs general wellness
   const objectifStr = lower(r.objectif ?? r["objectif-principal"] ?? r.pep_primary_goal ?? "");
   const performanceFocus = /performance|competition|athletic|high|pro|elite/.test(objectifStr);
 
@@ -128,7 +128,7 @@ export function recommendCoachingTier(opts: {
     return {
       tier: "ELITE",
       reason:
-        "Plusieurs axes sont en rouge simultanément — ça demande une refonte globale. Elite te donne l'accès direct pour recaler plusieurs leviers en parallèle.",
+        "Plusieurs axes sont en rouge simultanément ,  ça demande une refonte globale. Elite te donne l'accès direct pour recaler plusieurs leviers en parallèle.",
       href: FORMULE_HREF.ELITE,
     };
   }

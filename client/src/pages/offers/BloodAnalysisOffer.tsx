@@ -588,7 +588,7 @@ export default function BloodAnalysisOffer() {
                   className="group inline-flex w-full sm:w-auto items-center justify-center gap-3 rounded-full px-7 py-3 text-sm font-semibold text-white transition-all hover:scale-[1.02]"
                   style={{ backgroundColor: PRIMARY_BLUE }}
                 >
-                  Obtenir mes 2 analyses — 99€
+                  Obtenir mes 2 analyses ,  99€
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </Link>
               </div>
@@ -733,7 +733,7 @@ export default function BloodAnalysisOffer() {
               className="group w-full inline-flex items-center justify-center gap-3 rounded-full px-7 py-4 text-sm font-semibold text-white transition-all hover:scale-[1.02]"
               style={{ backgroundColor: PRIMARY_BLUE }}
             >
-              Obtenir mes 2 analyses — 99€
+              Obtenir mes 2 analyses ,  99€
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
             <p className="mt-4 text-center text-xs text-white/30">Paiement securise par Stripe · Carte ou PayPal</p>
@@ -741,7 +741,7 @@ export default function BloodAnalysisOffer() {
         </div>
       </section>
 
-      {/* Marqueurs à demander — section complète */}
+      {/* Marqueurs à demander ,  section complète */}
       <section className="relative z-10 bg-[#0a0a0a] pb-16 px-6">
         <div className="mx-auto max-w-4xl">
           <motion.div
@@ -913,7 +913,7 @@ export default function BloodAnalysisOffer() {
               </p>
               <div className="mt-8 rounded-lg border border-white/15 bg-[#0a0a0a] p-5">
                 <p className="text-sm font-semibold">Exemple: testosterone totale</p>
-                <p className="mt-2 text-sm text-white/70">Normal labo: 300–1000 ng/dL</p>
+                <p className="mt-2 text-sm text-white/70">Normal labo: 300-1000 ng/dL</p>
                 <p className="mt-4 text-sm text-white/70">
                   350 = "normal", mais souvent associe a fatigue, libido basse, progression lente.
                 </p>
@@ -932,7 +932,7 @@ export default function BloodAnalysisOffer() {
               </p>
               <div className="mt-8 rounded-lg border border-white/15 bg-[#0a0a0a] p-5">
                 <p className="text-sm font-semibold">Exemple: testosterone totale</p>
-                <p className="mt-2 text-sm text-white/70">Optimal: 600–900 ng/dL</p>
+                <p className="mt-2 text-sm text-white/70">Optimal: 600-900 ng/dL</p>
                 <p className="mt-4 text-sm text-white/70">
                   700 = zone optimale: energie, libido et progression generalement meilleures.
                 </p>
@@ -1010,7 +1010,7 @@ export default function BloodAnalysisOffer() {
               { name: "IGF-1", value: "195 ng/mL", range: "200-350", status: "low" },
             ]}
             protocol={{
-              title: "Phase 1 — Semaines 1-4",
+              title: "Phase 1 ,  Semaines 1-4",
               items: [
                 "Supplementation Vitamine D3: 4000 UI/jour avec repas gras",
                 "Magnesium bisglycinate: 400mg au coucher",
@@ -1058,7 +1058,7 @@ export default function BloodAnalysisOffer() {
               className="group inline-flex items-center gap-3 rounded-full px-8 py-4 text-sm font-semibold text-white transition-all hover:scale-[1.02]"
               style={{ backgroundColor: PRIMARY_BLUE }}
             >
-              Obtenir mes 2 analyses — 99€
+              Obtenir mes 2 analyses ,  99€
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>

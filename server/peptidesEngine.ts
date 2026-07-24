@@ -15,6 +15,10 @@ import {
   extractVialMg,
 } from "./peptidesReportValidator";
 import { storage } from "./storage";
+import {
+  collectClientFacingStrings,
+  sanitizeClientFacingText,
+} from "./clientFacingQuality";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -217,6 +221,8 @@ interface PeptauraPromptContext {
   shippingUrl: string;
   shippingAvailability: PeptauraShippingAvailability;
   liveCatalogSlugs: string[] | null;
+  catalogRefreshedAt: string;
+  catalogSnapshots: PeptauraLiveProductSnapshot[];
   promptBlock: string;
 }
 
@@ -239,6 +245,8 @@ interface PeptauraLiveListing {
   orderingMode: string;
   enabled: boolean;
   suspended: boolean;
+  boxSize: number;
+  marginRate: number;
 }
 
 interface PeptauraLiveProductSnapshot {
@@ -249,11 +257,26 @@ interface PeptauraLiveProductSnapshot {
   live: boolean;
 }
 
-const PEPTAURA_CACHE_TTL_MS = Number(process.env.PEPTAURA_CACHE_TTL_MS || 24 * 60 * 60 * 1000);
+const PEPTAURA_CACHE_TTL_MS = Number(process.env.PEPTAURA_CACHE_TTL_MS || 15 * 60 * 1000);
+const PEPTAURA_CATALOG_MAX_AGE_MS = Number(process.env.PEPTAURA_CATALOG_MAX_AGE_MS || 20 * 60 * 1000);
+const PEPTAURA_CRAWL_INTERVAL_MS = Number(process.env.PEPTAURA_CRAWL_INTERVAL_MS || 15 * 60 * 1000);
+const PEPTAURA_CRAWL_CONCURRENCY = Math.max(1, Math.min(8, Number(process.env.PEPTAURA_CRAWL_CONCURRENCY || 4)));
 const PEPTAURA_FETCH_TIMEOUT_MS = Number(process.env.PEPTAURA_FETCH_TIMEOUT_MS || 8000);
 let peptauraSitemapCache: CacheEntry<string[] | null> | null = null;
 const peptauraShippingCache = new Map<string, CacheEntry<PeptauraShippingAvailability>>();
 const peptauraProductCache = new Map<string, CacheEntry<PeptauraLiveProductSnapshot>>();
+let peptauraCatalogLastRefreshAt = 0;
+let peptauraCatalogRefreshPromise: Promise<PeptauraCatalogRefreshResult> | null = null;
+let peptauraCatalogCron: NodeJS.Timeout | null = null;
+
+export interface PeptauraCatalogRefreshResult {
+  ok: boolean;
+  startedAt: string;
+  completedAt: string;
+  sitemapProducts: number;
+  refreshedProducts: number;
+  failedProducts: string[];
+}
 
 const PEPTAURA_COUNTRY_LABELS: Record<string, string> = {
   FR: "France",
@@ -302,7 +325,11 @@ function peptauraProductUrl(slug: string): string {
   return `https://www.peptaura.com/catalog/${encodeURIComponent(slug).replace(/%2B/g, "+")}`;
 }
 
-async function fetchTextWithTimeout(url: string, timeoutMs = PEPTAURA_FETCH_TIMEOUT_MS): Promise<string | null> {
+async function fetchTextWithTimeout(
+  url: string,
+  timeoutMs = PEPTAURA_FETCH_TIMEOUT_MS,
+  forceFresh = false
+): Promise<string | null> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -311,6 +338,7 @@ async function fetchTextWithTimeout(url: string, timeoutMs = PEPTAURA_FETCH_TIME
       headers: {
         "user-agent": "APEXLABS-PeptidesEngine/1.0 (+https://apexlabs.achzodcoaching.com)",
         "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        ...(forceFresh ? { "cache-control": "no-cache", "pragma": "no-cache" } : {}),
       },
     });
     if (!res.ok) {
@@ -339,11 +367,11 @@ function stripHtml(value: string): string {
   return value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
-async function fetchPeptauraCatalogSlugs(): Promise<string[] | null> {
+async function fetchPeptauraCatalogSlugs(forceFresh = false): Promise<string[] | null> {
   const now = Date.now();
-  if (peptauraSitemapCache && peptauraSitemapCache.expiresAt > now) return peptauraSitemapCache.value;
+  if (!forceFresh && peptauraSitemapCache && peptauraSitemapCache.expiresAt > now) return peptauraSitemapCache.value;
 
-  const html = await fetchTextWithTimeout("https://www.peptaura.com/sitemap.xml");
+  const html = await fetchTextWithTimeout("https://www.peptaura.com/sitemap.xml", PEPTAURA_FETCH_TIMEOUT_MS, forceFresh);
   if (!html) {
     peptauraSitemapCache = { value: null, expiresAt: now + Math.min(PEPTAURA_CACHE_TTL_MS, 15 * 60 * 1000) };
     return null;
@@ -378,7 +406,7 @@ function parsePeptauraShipping(html: string, country: string): PeptauraShippingA
   const blockedRows = decoded.matchAll(/<div class="flex items-center gap-3 rounded-lg px-3 py-3 opacity-60">([\s\S]*?)<\/div>/g);
   for (const row of blockedRows) {
     const text = stripHtml(row[1]);
-    const vendor = text.split("—")[0]?.trim();
+    const vendor = text.split(/\u2014|\u2013/)[0]?.trim();
     if (vendor && !blockedVendors.includes(vendor)) blockedVendors.push(vendor);
   }
 
@@ -392,14 +420,17 @@ function parsePeptauraShipping(html: string, country: string): PeptauraShippingA
   };
 }
 
-async function fetchPeptauraShippingAvailability(country: string): Promise<PeptauraShippingAvailability> {
+async function fetchPeptauraShippingAvailability(
+  country: string,
+  forceFresh = false
+): Promise<PeptauraShippingAvailability> {
   const cacheKey = country.toLowerCase();
   const now = Date.now();
   const cached = peptauraShippingCache.get(cacheKey);
-  if (cached && cached.expiresAt > now) return cached.value;
+  if (!forceFresh && cached && cached.expiresAt > now) return cached.value;
 
   const shippingUrl = peptauraShippingUrl(country);
-  const html = await fetchTextWithTimeout(shippingUrl);
+  const html = await fetchTextWithTimeout(shippingUrl, PEPTAURA_FETCH_TIMEOUT_MS, forceFresh);
   const parsed = html
     ? parsePeptauraShipping(html, country)
     : { country, shippingUrl, availableVendors: [], blockedVendors: [], fetchedAt: new Date().toISOString(), live: false };
@@ -408,9 +439,93 @@ async function fetchPeptauraShippingAvailability(country: string): Promise<Pepta
   return parsed;
 }
 
-function parsePeptauraProductSnapshot(slug: string, html: string): PeptauraLiveProductSnapshot {
+function extractPeptauraCatalogArray(decoded: string): unknown[] {
+  const marker = "\"catalog\":[";
+  const markerAt = decoded.indexOf(marker);
+  if (markerAt < 0) return [];
+  const start = markerAt + marker.length - 1;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let index = start; index < decoded.length; index++) {
+    const char = decoded[index];
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === "\\") {
+        escaped = true;
+      } else if (char === "\"") {
+        inString = false;
+      }
+      continue;
+    }
+    if (char === "\"") {
+      inString = true;
+      continue;
+    }
+    if (char === "[") depth++;
+    if (char === "]") {
+      depth--;
+      if (depth === 0) {
+        const rawArray = decoded.slice(start, index + 1);
+        try {
+          const parsed = JSON.parse(rawArray);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return [];
+        }
+      }
+    }
+  }
+  return [];
+}
+
+export function parsePeptauraProductSnapshot(slug: string, html: string): PeptauraLiveProductSnapshot {
   const decoded = decodePeptauraHtml(html);
   const listings: PeptauraLiveListing[] = [];
+  const parsedCatalog = extractPeptauraCatalogArray(decoded);
+
+  for (const rawEntry of parsedCatalog) {
+    const entry = rawEntry as Record<string, any>;
+    const supplierDetails = entry.suppliers && typeof entry.suppliers === "object"
+      ? entry.suppliers as Record<string, any>
+      : {};
+    const priceTiers = Array.isArray(entry.price_tiers)
+      ? entry.price_tiers
+          .map((tier: any) => ({ price: Number(tier?.price), minQty: Number(tier?.min_qty) }))
+          .filter((tier: PeptauraPriceTier) => Number.isFinite(tier.price) && tier.price > 0 && Number.isFinite(tier.minQty) && tier.minQty > 0)
+      : [];
+    if (priceTiers.length === 0) continue;
+
+    listings.push({
+      id: Number(entry.id),
+      name: String(entry.name || slug),
+      dosage: String(entry.dosage || ""),
+      supplier: String(entry.supplier || supplierDetails.display_name || ""),
+      supplierDisplayName: String(supplierDetails.display_name || entry.supplier || ""),
+      outOfStock: entry.out_of_stock === true,
+      form: String(entry.form || "vial"),
+      priceTiers,
+      warehouse: String(entry.warehouse || "unknown"),
+      shippingOptionCount: Number(supplierDetails.shipping_option_count || 0),
+      orderingMode: String(supplierDetails.orderingMode || ""),
+      enabled: supplierDetails.enabled !== false,
+      suspended: supplierDetails.suspended === true,
+      boxSize: Math.max(1, Number(entry.box_size || 1)),
+      marginRate: Math.max(0, Number(entry.margin_rate ?? supplierDetails.margin_rate ?? 0)),
+    });
+  }
+
+  if (listings.length > 0) {
+    return {
+      slug,
+      url: peptauraProductUrl(slug),
+      listings,
+      fetchedAt: new Date().toISOString(),
+      live: true,
+    };
+  }
+
   const listingPattern = /"id":(\d+),"name":"([^"]+)","dosage":"([^"]+)","supplier":"([^"]+)"([\s\S]*?)"orderingMode":"([^"]+)"/g;
 
   for (const match of decoded.matchAll(listingPattern)) {
@@ -425,6 +540,9 @@ function parsePeptauraProductSnapshot(slug: string, html: string): PeptauraLiveP
     const warehouse = block.match(/"warehouse":"([^"]+)"/)?.[1] || "unknown";
     const form = block.match(/"form":"([^"]+)"/)?.[1] || "vial";
     const shippingOptionCount = Number(block.match(/"shipping_option_count":(\d+)/)?.[1] || 0);
+    const boxSize = Number(block.match(/"box_size":(\d+)/)?.[1] || 1);
+    const marginMatches = Array.from(block.matchAll(/"margin_rate":(\d+(?:\.\d+)?)/g));
+    const marginRate = Number(marginMatches.at(-1)?.[1] || 0);
 
     listings.push({
       id: Number(id),
@@ -440,6 +558,8 @@ function parsePeptauraProductSnapshot(slug: string, html: string): PeptauraLiveP
       orderingMode,
       enabled: !/"enabled":false/.test(block),
       suspended: /"suspended":true/.test(block),
+      boxSize: Math.max(1, boxSize),
+      marginRate: Math.max(0, marginRate),
     });
   }
 
@@ -452,19 +572,142 @@ function parsePeptauraProductSnapshot(slug: string, html: string): PeptauraLiveP
   };
 }
 
-async function fetchPeptauraProductSnapshot(slug: string): Promise<PeptauraLiveProductSnapshot | null> {
+async function fetchPeptauraProductSnapshot(
+  slug: string,
+  forceFresh = false
+): Promise<PeptauraLiveProductSnapshot | null> {
   const cacheKey = normalizePeptauraKey(slug);
   const now = Date.now();
   const cached = peptauraProductCache.get(cacheKey);
-  if (cached && cached.expiresAt > now) return cached.value;
+  if (!forceFresh && cached && cached.expiresAt > now) return cached.value;
 
   const url = peptauraProductUrl(slug);
-  const html = await fetchTextWithTimeout(url);
+  const html = await fetchTextWithTimeout(url, PEPTAURA_FETCH_TIMEOUT_MS, forceFresh);
   if (!html || /not found|404/i.test(html.slice(0, 50000))) return null;
 
   const snapshot = parsePeptauraProductSnapshot(slug, html);
   peptauraProductCache.set(cacheKey, { value: snapshot, expiresAt: now + PEPTAURA_CACHE_TTL_MS });
   return snapshot;
+}
+
+function getCachedPeptauraSnapshots(): PeptauraLiveProductSnapshot[] {
+  return Array.from(peptauraProductCache.values())
+    .map((entry) => entry.value)
+    .filter((snapshot) => snapshot.live && snapshot.listings.length > 0)
+    .sort((a, b) => a.slug.localeCompare(b.slug));
+}
+
+export async function refreshPeptauraCatalog(
+  options: { forceFresh?: boolean } = {}
+): Promise<PeptauraCatalogRefreshResult> {
+  if (peptauraCatalogRefreshPromise) return peptauraCatalogRefreshPromise;
+
+  peptauraCatalogRefreshPromise = (async () => {
+    const startedAt = new Date().toISOString();
+    const forceFresh = options.forceFresh !== false;
+    const slugs = await fetchPeptauraCatalogSlugs(forceFresh);
+    if (!slugs || slugs.length === 0) {
+      return {
+        ok: false,
+        startedAt,
+        completedAt: new Date().toISOString(),
+        sitemapProducts: 0,
+        refreshedProducts: 0,
+        failedProducts: ["sitemap"],
+      };
+    }
+
+    const queue = [...slugs];
+    const failedProducts: string[] = [];
+    let refreshedProducts = 0;
+    const workers = Array.from(
+      { length: Math.min(PEPTAURA_CRAWL_CONCURRENCY, queue.length) },
+      async () => {
+        while (queue.length > 0) {
+          const slug = queue.shift();
+          if (!slug) return;
+          const snapshot = await fetchPeptauraProductSnapshot(slug, forceFresh);
+          if (snapshot) refreshedProducts++;
+          else failedProducts.push(slug);
+        }
+      }
+    );
+    await Promise.all(workers);
+
+    const completedAt = new Date().toISOString();
+    const minimumCoverage = Math.ceil(slugs.length * 0.95);
+    const ok = refreshedProducts >= minimumCoverage;
+    if (ok) peptauraCatalogLastRefreshAt = Date.parse(completedAt);
+    const result: PeptauraCatalogRefreshResult = {
+      ok,
+      startedAt,
+      completedAt,
+      sitemapProducts: slugs.length,
+      refreshedProducts,
+      failedProducts,
+    };
+    console.log(
+      `[Peptaura Catalog] Refresh ${ok ? "OK" : "PARTIAL"}: ${refreshedProducts}/${slugs.length} products, ${failedProducts.length} failures`
+    );
+    return result;
+  })();
+
+  try {
+    return await peptauraCatalogRefreshPromise;
+  } finally {
+    peptauraCatalogRefreshPromise = null;
+  }
+}
+
+async function ensurePeptauraCatalogFresh(): Promise<PeptauraCatalogRefreshResult> {
+  const cached = getCachedPeptauraSnapshots();
+  const ageMs = peptauraCatalogLastRefreshAt > 0
+    ? Date.now() - peptauraCatalogLastRefreshAt
+    : Number.POSITIVE_INFINITY;
+  if (cached.length > 0 && ageMs <= PEPTAURA_CATALOG_MAX_AGE_MS) {
+    const timestamp = new Date(peptauraCatalogLastRefreshAt).toISOString();
+    return {
+      ok: true,
+      startedAt: timestamp,
+      completedAt: timestamp,
+      sitemapProducts: peptauraSitemapCache?.value?.length || cached.length,
+      refreshedProducts: cached.length,
+      failedProducts: [],
+    };
+  }
+  return refreshPeptauraCatalog({ forceFresh: true });
+}
+
+export function getPeptauraCatalogHealth() {
+  const snapshots = getCachedPeptauraSnapshots();
+  const refreshedAt = peptauraCatalogLastRefreshAt > 0
+    ? new Date(peptauraCatalogLastRefreshAt).toISOString()
+    : null;
+  return {
+    running: Boolean(peptauraCatalogRefreshPromise),
+    refreshedAt,
+    ageMs: peptauraCatalogLastRefreshAt > 0
+      ? Date.now() - peptauraCatalogLastRefreshAt
+      : null,
+    snapshotCount: snapshots.length,
+    sitemapCount: peptauraSitemapCache?.value?.length ?? null,
+    maxAgeMs: PEPTAURA_CATALOG_MAX_AGE_MS,
+    intervalMs: PEPTAURA_CRAWL_INTERVAL_MS,
+  };
+}
+
+export function startPeptauraCatalogCron(): void {
+  if (peptauraCatalogCron) return;
+  void refreshPeptauraCatalog({ forceFresh: true }).catch((error) => {
+    console.error("[Peptaura Catalog] Initial refresh failed:", error);
+  });
+  peptauraCatalogCron = setInterval(() => {
+    void refreshPeptauraCatalog({ forceFresh: true }).catch((error) => {
+      console.error("[Peptaura Catalog] Scheduled refresh failed:", error);
+    });
+  }, PEPTAURA_CRAWL_INTERVAL_MS);
+  peptauraCatalogCron.unref();
+  console.log(`[Peptaura Catalog] Cron started every ${Math.round(PEPTAURA_CRAWL_INTERVAL_MS / 60000)} minutes`);
 }
 
 function vendorKey(value: string): string {
@@ -486,11 +729,21 @@ function parseListingMg(dosage: string): number | null {
   return Number(match[1].replace(",", "."));
 }
 
-function effectiveUnitPrice(listing: PeptauraLiveListing, qty: number): number {
+function packageCountForVials(listing: PeptauraLiveListing, vialQty: number): number {
+  return Math.max(1, Math.ceil(Math.max(1, vialQty) / Math.max(1, listing.boxSize)));
+}
+
+function effectivePackagePrice(listing: PeptauraLiveListing, vialQty: number): number {
+  const packageCount = packageCountForVials(listing, vialQty);
   const eligible = listing.priceTiers
-    .filter((tier) => tier.minQty <= Math.max(1, qty))
+    .filter((tier) => tier.minQty <= packageCount)
     .sort((a, b) => a.price - b.price);
-  return (eligible[0] || listing.priceTiers.sort((a, b) => a.minQty - b.minQty)[0]).price;
+  const rawPrice = (eligible[0] || listing.priceTiers.sort((a, b) => a.minQty - b.minQty)[0]).price;
+  return Math.round(rawPrice * (1 + listing.marginRate) * 100) / 100;
+}
+
+function offerTotalPrice(listing: PeptauraLiveListing, vialQty: number): number {
+  return effectivePackagePrice(listing, vialQty) * packageCountForVials(listing, vialQty);
 }
 
 function selectBestLiveListing(
@@ -518,24 +771,35 @@ function selectBestLiveListing(
     if (shippingMatches.length > 0) candidates = shippingMatches;
   }
 
+  const maxAllowedVials = Math.max(qty, Math.floor(qty * 1.2));
+  const withoutForcedOverstock = candidates.filter((listing) => {
+    const deliveredVials = packageCountForVials(listing, qty) * listing.boxSize;
+    return deliveredVials <= maxAllowedVials;
+  });
+  if (withoutForcedOverstock.length > 0) candidates = withoutForcedOverstock;
+  else return null;
+
   candidates.sort((a, b) => {
     const aMg = parseListingMg(a.dosage);
     const bMg = parseListingMg(b.dosage);
     const aExact = targetVialMg != null && aMg != null && Math.abs(aMg - targetVialMg) < 0.05 ? 0 : 1;
     const bExact = targetVialMg != null && bMg != null && Math.abs(bMg - targetVialMg) < 0.05 ? 0 : 1;
     if (aExact !== bExact) return aExact - bExact;
-    const aPrice = effectiveUnitPrice(a, qty);
-    const bPrice = effectiveUnitPrice(b, qty);
-    const aPerMg = aMg && aMg > 0 ? aPrice / aMg : aPrice;
-    const bPerMg = bMg && bMg > 0 ? bPrice / bMg : bPrice;
-    return aPerMg - bPerMg;
+    const aTotal = offerTotalPrice(a, qty);
+    const bTotal = offerTotalPrice(b, qty);
+    if (aTotal !== bTotal) return aTotal - bTotal;
+    const aDelivered = packageCountForVials(a, qty) * a.boxSize;
+    const bDelivered = packageCountForVials(b, qty) * b.boxSize;
+    return aDelivered - bDelivered;
   });
 
   return candidates[0];
 }
 
 function findPeptauraProductForPeptide(pepName: string): PeptaurProduct | null {
-  const cleanName = normalizePeptauraKey(pepName);
+  const cleanName = normalizePeptauraKey(pepName)
+    .replace("sansdac", "nodac")
+    .replace("avecdac", "withdac");
   const products = getPeptauraCatalogProducts();
   const direct = products.find((p) =>
     normalizePeptauraKey(p.name) === cleanName ||
@@ -549,37 +813,82 @@ function findPeptauraProductForPeptide(pepName: string): PeptaurProduct | null {
   }) || null;
 }
 
+function findLiveSnapshotForPeptide(
+  pepName: string,
+  snapshots: PeptauraLiveProductSnapshot[]
+): PeptauraLiveProductSnapshot | null {
+  const cleanName = normalizePeptauraKey(pepName)
+    .replace("sansdac", "nodac")
+    .replace("avecdac", "withdac");
+  const scored = snapshots.map((snapshot) => {
+    const slugKey = normalizePeptauraKey(snapshot.slug)
+      .replace("sansdac", "nodac")
+      .replace("avecdac", "withdac");
+    const listingKeys = snapshot.listings.map((listing) =>
+      normalizePeptauraKey(listing.name)
+        .replace("sansdac", "nodac")
+        .replace("avecdac", "withdac")
+    );
+    const exact = slugKey === cleanName || listingKeys.includes(cleanName);
+    const partial = cleanName.includes(slugKey) || slugKey.includes(cleanName)
+      || listingKeys.some((key) => cleanName.includes(key) || key.includes(cleanName));
+    return { snapshot, score: exact ? 2 : partial ? 1 : 0 };
+  });
+  return scored.sort((a, b) => b.score - a.score)[0]?.score
+    ? scored.sort((a, b) => b.score - a.score)[0].snapshot
+    : null;
+}
+
 function buildLivePriceEstimate(pep: PeptideItem, listing: PeptauraLiveListing, qty: number): string | null {
-  const unit = effectiveUnitPrice(listing, qty);
-  if (!Number.isFinite(unit) || unit <= 0) return null;
-  const total = Math.round(unit * qty * 100) / 100;
+  const packagePrice = effectivePackagePrice(listing, qty);
+  if (!Number.isFinite(packagePrice) || packagePrice <= 0) return null;
+  const packageCount = packageCountForVials(listing, qty);
+  const deliveredVials = packageCount * listing.boxSize;
+  const total = Math.round(packagePrice * packageCount * 100) / 100;
   const eur = Math.round(total * 0.92);
   const supplier = listing.supplierDisplayName || listing.supplier;
-  return `~$${unit.toFixed(2)}/vial (${listing.dosage}, ${supplier}) × ${qty} vials = $${total.toFixed(2)} total (~${eur}€)`;
+  if (listing.boxSize > 1) {
+    return `Environ $${packagePrice.toFixed(2)} la boite de ${listing.boxSize} vials (${listing.dosage}, ${supplier}), ${packageCount} boite(s), ${deliveredVials} vials recus, total $${total.toFixed(2)} (environ ${eur} euros)`;
+  }
+  return `Environ $${packagePrice.toFixed(2)} par vial (${listing.dosage}, ${supplier}), ${qty} vial(s), total $${total.toFixed(2)} (environ ${eur} euros)`;
 }
 
 async function applyLivePeptauraPricing(
   report: PeptidesReport,
-  context: PeptauraPromptContext
+  context: PeptauraPromptContext,
+  forceFresh = true
 ): Promise<PeptidesReport> {
   const liveNotes: string[] = [];
+  const failures: string[] = [];
+  const listingSnapshots: Array<Record<string, unknown>> = [];
 
   for (const pep of report.peptides) {
     const product = findPeptauraProductForPeptide(pep.name);
-    if (!product) continue;
+    const cachedSnapshot = findLiveSnapshotForPeptide(pep.name, context.catalogSnapshots);
+    const slug = cachedSnapshot?.slug || product?.slug;
+    if (!slug) {
+      failures.push(`${pep.name}: aucune page produit Peptaura trouvee`);
+      continue;
+    }
 
-    pep.purchaseUrl = peptauraProductUrl(product.slug);
+    pep.purchaseUrl = peptauraProductUrl(slug);
     const qty = extractVialQty(pep.vialsNeeded) || 1;
     const targetVialMg = extractVialMg(pep.vialsNeeded) || extractVialMg(pep.reconstitution);
-    const snapshot = await fetchPeptauraProductSnapshot(product.slug);
-    if (!snapshot || snapshot.listings.length === 0) continue;
+    const snapshot = await fetchPeptauraProductSnapshot(slug, forceFresh);
+    if (!snapshot || snapshot.listings.length === 0) {
+      failures.push(`${pep.name}: page produit live indisponible`);
+      continue;
+    }
 
     const best = selectBestLiveListing(snapshot, context.shippingAvailability, targetVialMg, qty);
-    if (!best) continue;
+    if (!best) {
+      failures.push(`${pep.name}: aucune offre en stock compatible avec le pays, le dosage et la quantite`);
+      continue;
+    }
 
     const bestMg = parseListingMg(best.dosage);
     if (targetVialMg != null && bestMg != null && Math.abs(bestMg - targetVialMg) > 0.05) {
-      liveNotes.push(`${pep.name}: live listing trouve (${best.dosage}) mais non applique car vialsNeeded utilise ${targetVialMg}mg`);
+      failures.push(`${pep.name}: dosage live ${best.dosage} incompatible avec ${targetVialMg} mg par vial`);
       continue;
     }
 
@@ -587,6 +896,24 @@ async function applyLivePeptauraPricing(
     if (livePrice) {
       pep.priceEstimate = livePrice;
       liveNotes.push(`${pep.name}: ${best.dosage} via ${best.supplierDisplayName || best.supplier}`);
+      const packageCount = packageCountForVials(best, qty);
+      listingSnapshots.push({
+        peptide: pep.name,
+        slug,
+        url: snapshot.url,
+        supplier: best.supplierDisplayName || best.supplier,
+        dosage: best.dosage,
+        requestedVials: qty,
+        boxSize: best.boxSize,
+        packageCount,
+        deliveredVials: packageCount * best.boxSize,
+        unitPackagePriceUsd: effectivePackagePrice(best, qty),
+        totalPriceUsd: offerTotalPrice(best, qty),
+        marginRate: best.marginRate,
+        fetchedAt: snapshot.fetchedAt,
+      });
+    } else {
+      failures.push(`${pep.name}: prix live illisible`);
     }
   }
 
@@ -597,9 +924,19 @@ async function applyLivePeptauraPricing(
     availableVendors: context.shippingAvailability.availableVendors,
     blockedVendors: context.shippingAvailability.blockedVendors,
     liveCatalogCount: context.liveCatalogSlugs?.length ?? null,
+    catalogRefreshedAt: context.catalogRefreshedAt,
     syncedAt: new Date().toISOString(),
     applied: liveNotes,
+    failures,
+    listingSnapshots,
   };
+
+  report.shoppingList = [
+    ...report.peptides.map((pep) =>
+      `${pep.name}: ${pep.vialsNeeded}. ${pep.priceEstimate}. ${pep.purchaseUrl}`
+    ),
+    `Avant de payer, verifie une derniere fois le stock et la livraison vers ${context.country} sur ${context.shippingUrl}.`,
+  ].join("\n");
 
   return report;
 }
@@ -627,35 +964,72 @@ function buildCatalogForPrompt(context: PeptauraPromptContext): string {
   } else {
     lines.push("Shipping live indisponible au moment de la generation: ne promets pas un fournisseur, demande de verifier la page shipping avant commande.");
   }
-  lines.push(`Catalogue live sitemap: ${context.liveCatalogSlugs ? `${context.liveCatalogSlugs.length} pages produit detectees` : "fallback catalogue interne"}.`);
-  lines.push("Les prix ci-dessous sont le fallback interne quand le scrape live produit n'a pas encore repondu. Le serveur re-scrape ensuite chaque page produit retenue et remplace automatiquement priceEstimate avant sauvegarde.");
+  lines.push(`Catalogue live rafraichi le ${context.catalogRefreshedAt}: ${context.liveCatalogSlugs ? `${context.liveCatalogSlugs.length} pages produit detectees` : "indisponible"}.`);
+  lines.push("Les prix ci-dessous viennent des pages produit live. Le serveur recontrole ensuite chaque page retenue avant sauvegarde et juste avant livraison.");
   lines.push("Tous les produits: vials lyophilises sauf mention spray/cartridge. Reconstitution avec BAC water quand applicable.\n");
 
+  const snapshotsBySlug = new Map(
+    context.catalogSnapshots.map((snapshot) => [normalizePeptauraKey(snapshot.slug), snapshot])
+  );
   for (const p of relevant) {
-    const dosages = p.dosages.length > 0 ? p.dosages.join("/") : "dosages live";
-    const price = p.cheapestPriceUSD > 0 ? `$${p.cheapestPriceUSD} (${p.cheapestSupplier})` : "prix live a verifier";
-    lines.push(`• ${p.name} | ${dosages} | ${price} | peptaura.com/catalog/${p.slug}`);
+    const snapshot = snapshotsBySlug.get(normalizePeptauraKey(p.slug));
+    const offers = snapshot?.listings
+      .filter((listing) => listing.enabled && !listing.suspended && !listing.outOfStock && listing.orderingMode === "available")
+      .slice(0, 12)
+      .map((listing) => {
+        const visible = effectivePackagePrice(listing, 1);
+        const box = listing.boxSize > 1 ? `boite ${listing.boxSize}` : "vial";
+        return `${listing.dosage}, ${listing.supplierDisplayName || listing.supplier}, ${box}, $${visible.toFixed(2)}`;
+      });
+    lines.push(`${p.name} | ${offers?.join(" ; ") || "aucune offre live exploitable"} | peptaura.com/catalog/${p.slug}`);
   }
 
-  lines.push("\nEquipement: BAC water ($2/vial sur Peptaura), seringues insuline U-100 31G 8mm (les plus fines et courtes , parfaites pour injection SC, quasi indolores), tampons alcool.");
+  const knownKeys = new Set(relevant.map((product) => normalizePeptauraKey(product.slug)));
+  for (const snapshot of context.catalogSnapshots) {
+    if (knownKeys.has(normalizePeptauraKey(snapshot.slug))) continue;
+    const offers = snapshot.listings
+      .filter((listing) => listing.enabled && !listing.suspended && !listing.outOfStock && listing.orderingMode === "available")
+      .slice(0, 8)
+      .map((listing) => `${listing.dosage}, ${listing.supplierDisplayName || listing.supplier}, $${effectivePackagePrice(listing, 1).toFixed(2)}`);
+    if (offers.length > 0) {
+      lines.push(`${snapshot.slug} | ${offers.join(" ; ")} | peptaura.com/catalog/${snapshot.slug}`);
+    }
+  }
+
+  lines.push("\nEquipement: BAC water et materiel sterile. Le client verifie les offres live avant de payer.");
   return lines.join("\n");
 }
 
 async function buildPeptauraPromptContext(responses: Record<string, unknown>): Promise<PeptauraPromptContext> {
   const country = normalizeDeliveryCountry(responses);
-  const [shippingAvailability, liveCatalogSlugs] = await Promise.all([
-    fetchPeptauraShippingAvailability(country),
-    fetchPeptauraCatalogSlugs(),
+  const [shippingAvailability, catalogRefresh] = await Promise.all([
+    fetchPeptauraShippingAvailability(country, true),
+    ensurePeptauraCatalogFresh(),
   ]);
+  const liveCatalogSlugs = await fetchPeptauraCatalogSlugs();
+  const catalogSnapshots = getCachedPeptauraSnapshots();
+  const health = getPeptauraCatalogHealth();
   const context: PeptauraPromptContext = {
     country,
     shippingUrl: peptauraShippingUrl(country),
     shippingAvailability,
     liveCatalogSlugs,
+    catalogRefreshedAt: health.refreshedAt || catalogRefresh.completedAt,
+    catalogSnapshots,
     promptBlock: "",
   };
   context.promptBlock = buildCatalogForPrompt(context);
   return context;
+}
+
+export async function refreshPeptauraPricingForDelivery(
+  sourceReport: PeptidesReport,
+  responses: Record<string, unknown>
+): Promise<PeptidesReport> {
+  const report = validateVialsMath(JSON.parse(JSON.stringify(sourceReport)));
+  const context = await buildPeptauraPromptContext(responses);
+  await applyLivePeptauraPricing(report, context, true);
+  return cleanReportContent(report, report.clientName || extractFirstName(responses, ""));
 }
 
 // ─── Client (lazy init) ───────────────────────────────────────────────────────
@@ -686,8 +1060,7 @@ function cleanReportContent(report: PeptidesReport, firstName: string): Peptides
   const cleanText = (text: string): string => {
     if (!text) return text;
     // Replace em dash / en dash with comma or colon
-    let cleaned = text.replace(/ — /g, ", ").replace(/ – /g, ", ");
-    cleaned = cleaned.replace(/—/g, ", ").replace(/–/g, ", ");
+    let cleaned = sanitizeClientFacingText(text);
     // Fix double commas from replacement
     cleaned = cleaned.replace(/,\s*,/g, ",");
     // Fix 3rd person: "Prénom cherche" → "Tu cherches"
@@ -715,19 +1088,59 @@ function cleanReportContent(report: PeptidesReport, firstName: string): Peptides
     cleaned = cleaned.replace(new RegExp(`${firstName} est `, "gi"), "Tu es ");
     // Fix "Prénom a " → "Tu as "
     cleaned = cleaned.replace(new RegExp(`${firstName} a (un|une|des|le|la|les|besoin|deja|déjà)`, "gi"), "Tu as $1");
-    return cleaned;
+    cleaned = cleaned
+      .replace(/\bil est important de noter que\b/gi, "concretement,")
+      .replace(/\bil convient de souligner que\b/gi, "le point a retenir,")
+      .replace(/\bn['’]h[ée]site pas [àa]\b/gi, "tu peux")
+      .replace(/\ben conclusion\b/gi, "au final")
+      .replace(/\bvoici les points cl[ée]s\b/gi, "retiens ceci");
+    return sanitizeClientFacingText(cleaned);
   };
 
-  // Clean all sections
   for (const section of report.sections) {
     section.content = cleanText(section.content);
-    if (section.title) section.title = section.title.replace(/—/g, ":").replace(/–/g, ":");
+    if (section.title) section.title = cleanText(section.title);
   }
 
-  // Clean peptide descriptions
   for (const pep of report.peptides) {
-    if (pep.purpose) pep.purpose = cleanText(pep.purpose);
-    if (pep.whyThisPeptide) pep.whyThisPeptide = cleanText(pep.whyThisPeptide);
+    for (const key of [
+      "name",
+      "purpose",
+      "dosage",
+      "timing",
+      "route",
+      "cycleDuration",
+      "priceEstimate",
+      "reconstitution",
+      "whyThisPeptide",
+      "vialsNeeded",
+    ] as const) {
+      const value = pep[key];
+      if (typeof value === "string") (pep as any)[key] = cleanText(value);
+    }
+  }
+  report.clientName = cleanText(report.clientName);
+  report.weeklySchedule = cleanText(report.weeklySchedule);
+  report.shoppingList = cleanText(report.shoppingList);
+  report.bloodMarkers = (report.bloodMarkers || []).map(cleanText);
+
+  const safetyText = collectClientFacingStrings(report).join("\n");
+  if (!/\b(?:experimental|non approuv[ée]|produit de recherche)\b/i.test(safetyText)
+    || !/\b(?:m[ée]decin|pharmacien)\b[\s\S]{0,180}\b(?:valide|v[ée]rifie|avis|accord|confirme)\b|\b(?:valide|v[ée]rifie|avis|accord|confirme)\b[\s\S]{0,180}\b(?:m[ée]decin|pharmacien)\b/i.test(safetyText)) {
+    const safetySection = report.sections.find((section) =>
+      /securite|s[ée]curit[ée]|disclaimer|support|avant de commencer/i.test(`${section.id} ${section.title}`)
+    ) || report.sections.at(-1);
+    if (safetySection) {
+      safetySection.content = cleanText(
+        `${safetySection.content}\n\n${firstName}, je veux etre net sur ce point. Plusieurs molecules citees ici sont experimentales ou non approuvees, avec des donnees humaines encore limitees. Ce rapport ne transforme pas un produit de recherche en traitement valide. Avant tout achat ou toute utilisation, demande a ton medecin ou a ton pharmacien de verifier la molecule, la dose, tes allergies, tes traitements et tes analyses. Sans cet accord, tu suspends la demarche.`
+      );
+    }
+  }
+
+  const unresolved = collectClientFacingStrings(report)
+    .filter((value) => /[\u2013\u2014]|&(?:mdash|ndash);/i.test(value));
+  if (unresolved.length > 0) {
+    throw new Error(`QUALITY: ${unresolved.length} ponctuation(s) Unicode interdite(s) apres nettoyage`);
   }
 
   return report;
@@ -842,46 +1255,33 @@ function buildResponsesSummary(responses: Record<string, unknown>): string {
 
 // ─── System prompt ────────────────────────────────────────────────────────────
 
-const SYSTEM_PROMPT = `Tu es Achzod, coach en optimisation humaine. Tu as 15 ans d'expérience avec les peptides thérapeutiques, tu les utilises personnellement et tu coaches des dizaines de clients dessus. Tu t'exprimes en français.
+const SYSTEM_PROMPT = `Tu rediges en francais un rapport personnalise de reduction des risques pour Achzod.
 
-TON ET STYLE : ABSOLUMENT CRITIQUE
-Tu écris comme si le client était assis en face de toi dans ton bureau. Tu lui parles, tu lui expliques, tu prends ton temps. Ce rapport vaut 299 euros, chaque section doit être une masterclass.
+TON ET STYLE
+Tu tutoies toujours. Les mots "vous", "votre", "vos" et les imperatifs au pluriel sont interdits.
+Les caracteres Unicode U+2014 et U+2013 sont interdits partout. Utilise une virgule, un point ou reformule.
+Ecris comme une vraie personne qui connait le dossier. Varie la longueur des phrases. Evite les introductions scolaires, les transitions automatiques, les plans trop symetriques et les formules toutes faites.
+Ne pretends jamais qu'un geste est simple, indolore ou sans risque. Ne rassure jamais avec un nombre invente de personnes qui feraient la meme chose.
+N'invente aucune experience personnelle, aucun diplome et aucune validation medicale.
 
-INTERDIT (VIOLATION = RAPPORT REJETÉ):
-Tu ne dois JAMAIS utiliser les caractères suivants : - ou • ou * ou – ou , ou >> NI EN DÉBUT DE LIGNE, NI EN MILIEU DE PHRASE. Le tiret long , est INTERDIT PARTOUT. Utilise des virgules, des points, des deux-points, ou reformule la phrase.
-Tu ne dois JAMAIS faire de listes à puces. JAMAIS. Ni avec des tirets, ni avec des points, ni avec des étoiles, ni avec des numéros secs.
-Tu ne dois JAMAIS écrire dans un style "fiche technique" ou "notice médicale".
-Tu ne dois JAMAIS utiliser de phrases génériques type IA comme "Il est important de noter que...", "N'hésitez pas à...", "En conclusion...", "Voici les points clés...".
-Tu ne dois JAMAIS avoir un ton impersonnel ou distant.
-Tu ne dois JAMAIS parler du client à la 3ème personne ("Sofiane cherche à...", "Le client veut..."). Tu t'adresses DIRECTEMENT au client avec "tu" et "toi". C'est "Tu cherches à perdre du gras" et NON "Sofiane cherche à perdre du gras".
-Chaque information doit être intégrée dans une PHRASE COMPLÈTE à l'intérieur d'un PARAGRAPHE. Pas de raccourcis, pas de listes, pas de tirets, pas de ,.
+COHERENCE ET VERIFICATION
+Chaque dose, frequence, duree, quantite totale, format de vial et prix doit etre mathematiquement coherent.
+Pour chaque molecule, calcule le besoin total phase par phase. Ecris le calcul dans le rapport. Le nombre de vials doit couvrir ce besoin sans depasser 20 pour cent de marge.
+Ne melange jamais prix par vial, prix par boite et prix total. Le serveur controle les pages Peptaura apres la generation et juste avant la livraison.
+Si une donnee manque, dis clairement qu'elle manque. N'invente rien.
 
-OBLIGATOIRE:
-Des PARAGRAPHES de 3 à 5 phrases minimum. Tu développes, tu expliques, tu contextualises.
-Tu appelles le client par son prénom à chaque section.
-Tu utilises "je" (pas "nous" ni "on"), c'est TOI Achzod qui parle.
-Tu anticipes ses questions : "Tu te demandes sûrement pourquoi...", "La question que tout le monde se pose c'est..."
-Tu rassures : "C'est plus simple que ça en a l'air", "Des milliers de personnes font ça chaque jour".
-Chaque terme technique est IMMÉDIATEMENT suivi d'une explication simple entre parenthèses ou dans la phrase suivante.
-Tu donnes des analogies concrètes pour que le client visualise.
-COHERENCE (CRITIQUE):
-Avant de finaliser le rapport, RELIS TOUT et verifie qu'aucune section ne contredit une autre. Si tu dis dans une section qu'un aliment ou supplement est inutile, ne dis PAS dans une autre section qu'il est recommande. Chaque conseil doit etre coherent du debut a la fin. Si tu n'es pas sur d'une information, ne l'inclus pas. Mieux vaut moins de contenu que du contenu contradictoire. Le client paie 299 euros, il ne doit JAMAIS trouver de contradiction dans son rapport.
-
-RAPPEL FINAL: AUCUN tiret (ni -, ni ,, ni –), aucun bullet point, aucune liste à puces. Le caractère , est INTERDIT même en milieu de phrase. Utilise une virgule ou un deux-points à la place. Tu TUTOIES le client directement ("tu", "toi", "ton"), jamais la 3ème personne.
-
-EXEMPLE DE CE QUE JE VEUX:
-"Lucas, la reconstitution c'est l'étape qui impressionne le plus les débutants, mais en réalité c'est aussi simple que de préparer un café. Ton flacon de BPC-157 contient une poudre blanche lyophilisée, c'est simplement le peptide qui a été déshydraté pour le conserver. Pour le réactiver, tu vas ajouter de l'eau bactériostatique, qu'on appelle BAC water. C'est de l'eau stérile avec une infime quantité d'alcool benzylique qui empêche les bactéries de s'y développer. C'est ce qui te permet de garder ton flacon au frigo pendant plusieurs semaines sans qu'il se dégrade."
-
-EXEMPLE DE CE QUE JE NE VEUX PAS:
-"BPC-157: Vial 5mg + 2ml BAC water = 2500 mcg/ml → 10 unités U-100 pour 250 mcg. Stockage: 2-8°C."
+SECURITE MEDICALE
+Ce rapport ne remplace ni une ordonnance ni un suivi medical.
+Les produits de recherche et les molecules non approuvees ne doivent jamais etre presentes comme des traitements valides ou comme une automedication sure.
+Retatrutide reste une molecule experimentale. BPC-157, ipamorelin injectable et plusieurs autres peptides ont des donnees humaines de securite limitees ou des risques identifies. Dis le clairement quand ils sont cites.
+Avant tout achat ou toute utilisation, demande une validation explicite par un medecin ou un pharmacien connaissant le dossier, les traitements, les allergies et les analyses biologiques du client.
+En cas de contre-indication, de traitement concomitant, d'allergie, de symptome inhabituel ou de donnee manquante, suspends la recommandation et oriente vers le professionnel adapte.
+Ne promets jamais la purete, la sterilite, l'efficacite ou la securite d'un vendeur. Un COA ne prouve pas a lui seul la sterilite du produit recu.
 
 CADRE DE TRAVAIL
-- Tu fournis des protocoles personnalisés basés sur les données du profil
-- Tu ne prescris pas , tu informes et recommandes avec une approche harm reduction
-- Tu adaptes aux contraintes individuelles (santé, budget, voie d'administration, expérience)
-- IMPORTANT: Ajuste les dosages au poids du client (mcg/kg) quand pertinent
-- IMPORTANT: Recommande UNIQUEMENT des produits disponibles sur Peptaura
-- IMPORTANT: Pas de voie orale. SC (sous-cutané), IM (intramusculaire), ou intranasal uniquement
+Tu analyses le profil, les objectifs, les risques, le budget et le niveau d'experience.
+Tu recommandes uniquement des produits detectes sur le catalogue Peptaura live et livrables dans le pays indique.
+Tu donnes la priorite aux options approuvees et encadrees medicalement lorsqu'elles existent.
 
 CHOIX DU FOURNISSEUR (CRITIQUE , LIVRAISON PAYS CLIENT)
 Peptaura est un marketplace mais TOUS les fournisseurs ne livrent PAS dans tous les pays. Le pays de livraison client et la liste fournisseurs autorises/interdits sont fournis dans le bloc CONTEXTE PEPTAURA LIVE du prompt utilisateur. Tu dois suivre ce bloc en priorité absolue, même s'il contredit une ancienne connaissance.
@@ -913,7 +1313,7 @@ EXEMPLES CONCRETS :
 - CJC-1295 sans DAC 100 mcg 1 fois par jour pendant 12 sem = 8,4 mg. Recommande : 2 vials de 5 mg OU 1 vial de 10 mg. PAS 10 vials.
 - Epitalon 5 mg/jour × 20 jours consecutifs = 100 mg total. Recommande : 10 vials de 10 mg. PAS 42 vials. cycleDuration = "20 jours consecutifs (cure), 2 fois par an".
 - Epitalon 10 mg/jour × 20 jours consecutifs = 200 mg total. Recommande : 20 vials de 10 mg. PAS 84 vials.
-- Retatrutide titration 12 sem (0,25 / 0,5 / 1 / 2 / 4 / 8 mg par semaine) = ~7 a 12 mg total cycle selon la rampe. Recommande : 1 a 2 vials de 10 mg MAX. PAS 8 vials de 10 mg (80 mg, x6,7 le besoin reel — bug akrameb 03/06/2026). vialsNeeded = "2 vials de 10mg pour 12 semaines (total ~14mg)". priceEstimate aligne sur 2 vials.
+- Exemple mathematique uniquement: semaine 1 a 1 mg, semaine 2 a 2 mg, semaine 3 a 4 mg, semaines 4 a 12 a 8 mg donne 79 mg au total. Avec des vials de 10 mg, il faut 8 vials pour couvrir 80 mg. Cette verification ne constitue pas une recommandation d'utiliser cette molecule experimentale.
 
 Si tu veux mentionner le pack groupé comme OPTION (pas comme défaut) : une seule phrase à la fin de la liste de courses : "Si tu envisages déjà un deuxième cycle, tu peux opter pour le pack 10 vials qui descend le prix unitaire, vials lyophilisés conservables 2 à 3 ans au frigo." Pas obligatoire.
 
@@ -933,24 +1333,8 @@ Dans la section "Comment commander sur Peptaura", explique cette procédure stan
 
 Tu peux mentionner uniquement les fournisseurs detectes dans CONTEXTE PEPTAURA LIVE comme livrant dans le pays client. JAMAIS de promesse type "Lumira a Semaglutide 5 mg à 8,47 dollars". Les fournisseurs listes comme bloques pour ce pays sont interdits dans le rapport.
 
-PLAN B FOURNISSEURS (section "disclaimer-support")
-Si Peptaura est en rupture totale sur une molécule ou si le client veut comparer les prix, il existe des fournisseurs chinois directs avec lesquels on peut échanger rapidement sur WhatsApp. Ce sont des manufacturers vérifiés sur GlobalSources. Mentionne ces 5 fournisseurs dans la section "disclaimer-support" comme plan B :
-1. Luta : https://luta.manufacturer.globalsources.com/homepage_6003002403155.htm
-2. Lijiu : https://lijiu.manufacturer.globalsources.com/homepage_6003002415560.htm
-3. YX Trading : https://yxtrading.manufacturer.globalsources.com/homepage_6003002363820.htm
-4. Meiliduo : https://meiliduo.manufacturer.globalsources.com/homepage_6003002415233.htm
-5. Shangye : https://shangye.manufacturer.globalsources.com/homepage_6003002363391.htm
-Explique au client que ces fournisseurs sont contactables directement via WhatsApp (bouton sur leur page GlobalSources), que les échanges sont rapides, et qu'il peut demander le COA (certificat d'analyse) avant de commander. Précise que c'est un plan B et que Peptaura reste la méthode la plus simple pour un débutant.
-
-PLAN C FOURNISSEURS EUROPE/UK (section "disclaimer-support")
-Pour les clients qui veulent une livraison rapide (2-5 jours au lieu de 7-14 depuis la Chine), il existe des fournisseurs basés au Royaume-Uni. Les prix sont plus élevés que Peptaura ou les fournisseurs chinois, mais la livraison est beaucoup plus rapide et il n'y a pas de risque douane. Mentionne ces 2 sources dans la section "disclaimer-support" comme plan C :
-1. Peptiology UK : https://peptiology.co.uk/ (basé au Royaume-Uni, large catalogue de peptides, livraison rapide Europe)
-2. UK Peptides : https://www.uk-peptides.com/ (basé au Royaume-Uni, peptides de recherche, livraison express)
-Précise que ces sources sont plus chères que Peptaura (environ 2 à 3 fois le prix) mais que la livraison est en 2-5 jours ouvrés au lieu de 7-14 jours. C'est une option pour ceux qui veulent commencer rapidement ou qui ne veulent pas attendre la livraison depuis la Chine.
-
-PLAN D FOURNISSEUR PREMIUM EUROPE (section "disclaimer-support")
-Pour les clients qui veulent la meilleure fiabilité possible avec livraison Europe et paiement simple par virement bancaire :
-1. Receptor Chem : https://receptorchem.co.uk/ (basé au Royaume-Uni, excellente qualité, livraison fiable en Europe, paiement par virement bancaire). Plus cher que Peptaura mais reconnu pour la fiabilité et la qualité constante. C'est une source premium pour ceux qui préfèrent la simplicité d'un virement bancaire et ne veulent pas passer par une plateforme marketplace.
+SOURCES ET FOURNISSEURS
+Ne recommande aucun vendeur de secours non verifie. Ne promets jamais une qualite, une sterilite, un delai ou une absence de risque douanier. Si Peptaura ne propose aucune offre compatible, indique que l'achat est suspendu et oriente le client vers un medecin et une pharmacie autorisee.
 
 CONNAISSANCES PEPTIDES (base complète, INJECTABLES UNIQUEMENT)
 
@@ -1568,7 +1952,7 @@ function deriveVialsForPeptide(pep: PeptideItem): VialsDerivation | null {
   const vialMg = parseDoseToMg(parseFloat(vialMatch[1]), vialMatch[2]);
   if (!isFinite(vialMg) || vialMg <= 0) return null;
 
-  // Pattern PRIORITAIRE — cure de N jours consecutifs (Epitalon, Thymosin Alpha, etc.)
+  // Pattern PRIORITAIRE ,  cure de N jours consecutifs (Epitalon, Thymosin Alpha, etc.)
   // Sinon le code calculait 12 semaines x 7 jours = 84 vials pour une cure de 20j.
   const consecutiveDaysMatch =
     allText.match(/(\d+)\s*jours?\s*cons[eé]cutifs?/i) ||
@@ -1587,9 +1971,9 @@ function deriveVialsForPeptide(pep: PeptideItem): VialsDerivation | null {
     }
   }
 
-  // Pattern A-bis — progressive weekly with range: "0.25 mg par semaine (semaines 1 à 4), puis 0.5 mg par semaine (semaines 5 à 8)"
+  // Pattern A-bis ,  progressive weekly with range: "0.25 mg par semaine (semaines 1 à 4), puis 0.5 mg par semaine (semaines 5 à 8)"
   const rangeMatches = Array.from(
-    dosage.matchAll(/(\d+(?:\.\d+)?)\s*(mg|mcg)\s*par\s*semaine\s*\(\s*semaines?\s*(\d+)\s*(?:à|a|-|–)\s*(\d+)\s*\)/gi)
+    dosage.matchAll(/(\d+(?:\.\d+)?)\s*(mg|mcg)\s*par\s*semaine\s*\(\s*semaines?\s*(\d+)\s*(?:à|a|-)\s*(\d+)\s*\)/gi)
   );
   if (rangeMatches.length >= 2) {
     let totalMg = 0;
@@ -1626,7 +2010,33 @@ function deriveVialsForPeptide(pep: PeptideItem): VialsDerivation | null {
   }
   const injectionsPerWeek = detectInjectionsPerWeek(dosage);
 
-  // Pattern A — progressive weekly doses: "1mg sem 1, 2mg sem 2, ... Xmg sem N et au-delà"
+  const reverseProgressive = Array.from(
+    dosage.matchAll(/semaines?\s*(\d+)(?:\s*(?:à|a|-)\s*(\d+))?\s*(?:à|a|:)\s*(\d+(?:[.,]\d+)?)\s*(mg|mcg|µg|ug)\b/gi)
+  );
+  if (reverseProgressive.length >= 2) {
+    const dosesByWeek = new Map<number, number>();
+    for (const match of reverseProgressive) {
+      const start = parseInt(match[1], 10);
+      const end = match[2] ? parseInt(match[2], 10) : start;
+      const doseMg = parseDoseToMg(parseFloat(match[3].replace(",", ".")), match[4]);
+      for (let week = start; week <= Math.min(end, weeks); week++) {
+        dosesByWeek.set(week, doseMg);
+      }
+    }
+    const definedWeeks = [...dosesByWeek.keys()].sort((a, b) => a - b);
+    if (definedWeeks.length > 0) {
+      let lastDose = dosesByWeek.get(definedWeeks[0]) || 0;
+      let totalMg = 0;
+      for (let week = 1; week <= weeks; week++) {
+        if (dosesByWeek.has(week)) lastDose = dosesByWeek.get(week) || lastDose;
+        totalMg += lastDose;
+      }
+      totalMg *= injectionsPerWeek;
+      return { totalMg, vialMg, weeks, computed: Math.ceil(totalMg / vialMg) };
+    }
+  }
+
+  // Pattern A ,  progressive weekly doses: "1mg sem 1, 2mg sem 2, ... Xmg sem N et au-delà"
   // Regex accepts plural "semaines": "8mg semaines 4 à 12" used to fall through
   // because the `s` after "semaine" broke the match. Retatrutide on Simon
   // Leveque ended up with 5 vials of 10mg instead of 8 because of that miss.
@@ -1648,7 +2058,7 @@ function deriveVialsForPeptide(pep: PeptideItem): VialsDerivation | null {
     for (let w = 1; w <= weeks; w++) {
       if (dosesByWeek.has(w)) totalMg += dosesByWeek.get(w)!;
       else if (w > lastDefinedWeek) totalMg += lastDose; // "et au-delà"
-      // else: gap before first defined week — assume 0 (rare)
+      // else: gap before first defined week ,  assume 0 (rare)
     }
     // Scale by injections per week: titration steps are PER-INJECTION doses
     // (e.g. "150 mcg semaine 1" with daily injections means 150 mcg × 7 days).
@@ -1657,7 +2067,7 @@ function deriveVialsForPeptide(pep: PeptideItem): VialsDerivation | null {
     return { totalMg, vialMg, weeks, computed: Math.ceil(totalMg / vialMg) };
   }
 
-  // Pattern B — fixed daily dose with N injections/day
+  // Pattern B ,  fixed daily dose with N injections/day
   const perInjMatch = dosage.match(/(\d+(?:\.\d+)?)\s*(mg|mcg)\s*par\s*injection/i);
   const injPerDayMatch = dosage.match(/(\d+)\s*injections?\s*par\s*jour/i);
   if (perInjMatch && injPerDayMatch) {
@@ -1667,7 +2077,7 @@ function deriveVialsForPeptide(pep: PeptideItem): VialsDerivation | null {
     return { totalMg, vialMg, weeks, computed: Math.ceil(totalMg / vialMg) };
   }
 
-  // Pattern C — fixed daily total ("X mg par jour" / "X mcg par jour")
+  // Pattern C ,  fixed daily total ("X mg par jour" / "X mcg par jour")
   const perDayMatch = dosage.match(/(\d+(?:\.\d+)?)\s*(mg|mcg)\s*par\s*jour/i);
   if (perDayMatch) {
     const perDayMg = parseDoseToMg(parseFloat(perDayMatch[1]), perDayMatch[2]);
@@ -1675,7 +2085,7 @@ function deriveVialsForPeptide(pep: PeptideItem): VialsDerivation | null {
     return { totalMg, vialMg, weeks, computed: Math.ceil(totalMg / vialMg) };
   }
 
-  // Pattern D — fixed weekly dose ("X mg par semaine")
+  // Pattern D ,  fixed weekly dose ("X mg par semaine")
   const perWeekMatch = dosage.match(/(\d+(?:\.\d+)?)\s*(mg|mcg)\s*par\s*semaine/i);
   if (perWeekMatch) {
     const perWeekMg = parseDoseToMg(parseFloat(perWeekMatch[1]), perWeekMatch[2]);
@@ -1714,7 +2124,7 @@ export function validateVialsMath(report: PeptidesReport): PeptidesReport {
     const priceCount = priceCountMatch ? parseInt(priceCountMatch[1], 10) : null;
 
     if (derived) {
-      // Override only when AI undershoots or overshoots by ≥30% — ceiling already
+      // Override only when AI undershoots or overshoots by ≥30% ,  ceiling already
       // bakes in the partial-vial buffer, so we don't add another +1 by default.
       const shouldOverride =
         aiVialsCount === null ||
@@ -2040,7 +2450,7 @@ export async function generatePeptidesProtocol(
   // Validate and fix Peptaura URLs (never trust Claude's URLs)
   report = validateAndFixPeptauraUrls(report);
 
-  // Validate vials math — AI invents wrong vial counts (Guillaume Gestin bug)
+  // Validate vials math ,  AI invents wrong vial counts (Guillaume Gestin bug)
   report = validateVialsMath(report);
 
   // Refresh Peptaura product pages for the final peptide stack and anchor
@@ -2050,15 +2460,11 @@ export async function generatePeptidesProtocol(
   // POST-PROCESSING: clean dashes and 3rd person references
   report = cleanReportContent(report, firstName);
 
-  // Create promo codes and inject into report (tier-dependent : Solo=0, Coached=1, Tracked=2)
-  const promoCodes = await addBloodAnalysisCredits(email, tier);
-  report.promoCodesGenerated = promoCodes;
-
-  // Normalize
+  report.promoCodesGenerated = [];
   report.clientName = firstName;
 
   // ════════════════════════════════════════════════════════════
-  // FINAL STRICT GATE — runs after all post-processing.
+  // FINAL STRICT GATE ,  runs after all post-processing.
   // Flagship 199-399 EUR product = zero error tolerance.
   // Catches anything the inline CHECKs and math fixup missed:
   // residual peptide field gaps, vials/price desync, AI brand
@@ -2068,23 +2474,19 @@ export async function generatePeptidesProtocol(
   // ════════════════════════════════════════════════════════════
   const finalValidation = validatePeptidesReport(report as any);
   if (!finalValidation.ok) {
-    // DO NOT throw — that loses 100% of work and blocks delivery forever.
-    // Save the report anyway with the validation issues recorded on it.
-    // The delivery cron has its own validatePeptidesReport gate (commit dffbab54)
-    // which will BLOQUE the email if anything stays broken, alerting admin
-    // via [BLOQUE] mail. This way: report is preserved, admin is notified,
-    // client doesn't get a delivery until issues are resolved.
     console.error(
-      `[PeptidesEngine] ⚠️ FINAL GATE issues for ${email} (saving anyway, delivery cron will gate):\n${finalValidation.errors.map(e => `  , ${e}`).join("\n")}`
+      `[PeptidesEngine] FINAL GATE blocked ${email}:\n${finalValidation.errors.map(e => `  ${e}`).join("\n")}`
     );
-    (report as any)._validationIssues = finalValidation.errors;
-    (report as any)._validationStatus = "FAILED_BUT_SAVED";
+    throw new Error(`FINAL_GATE: ${finalValidation.errors.slice(0, 12).join(" | ")}`);
   }
   if (finalValidation.warnings.length > 0) {
     console.warn(
       `[PeptidesEngine] ⚠️ Final gate warnings for ${email}: ${finalValidation.warnings.slice(0, 3).join(" | ")}`
     );
   }
+
+  const promoCodes = await addBloodAnalysisCredits(email, tier);
+  report.promoCodesGenerated = promoCodes;
 
   // FINAL CHECK , log everything
   console.log(`[PeptidesEngine] ✅ FINAL: ${email}`);

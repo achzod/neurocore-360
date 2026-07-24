@@ -397,11 +397,11 @@ async function sendEmailWithTracking(
     const looksLikeBase64 = (s: string): boolean =>
       typeof s === "string" && s.length > 40 && /^[A-Za-z0-9+/=\r\n]+$/.test(s.trim());
 
-    // Em-dash sanitizer: replace every — and – with a comma. AI-generated and
+    // Em-dash sanitizer: replace every ,  and - with a comma. AI-generated and
     // hand-written templates both sneak them in, and Achzod's policy is zero
     // em-dashes anywhere in client-facing output (they're the #1 AI tell).
     // Applied after base64 decode so it covers the actual rendered HTML.
-    const stripDashes = (s: string) => s.replace(/[—–]/g, ",");
+    const stripDashes = (s: string) => s.replace(/[\u2013\u2014]/g, ",");
 
     if (looksLikeBase64(emailPayload.html)) {
       try {
@@ -1090,7 +1090,7 @@ export async function sendReportReadyEmail(
 
 const stripBloodForbiddenFormatting = (value: string): string =>
   String(value || "")
-    .replace(/[—–]/g, "-")
+    .replace(/[\u2013\u2014]/g, "-")
     .replace(/[\u{1F1E6}-\u{1F1FF}]/gu, "")
     .replace(/[\u{1F300}-\u{1FAFF}]/gu, "")
     .replace(/[\u{2600}-\u{27BF}]/gu, "")
@@ -1291,7 +1291,7 @@ const parseRange = (value?: string): { min: number; max: number } | null => {
 
   // Prefer explicit range parsing (avoids treating separator "-" as negative sign).
   const explicit = text.match(
-    /(-?\d+(?:[.,]\d+)?)\s*(?:-|–|—|to|a|à)\s*(-?\d+(?:[.,]\d+)?)/i,
+    /(-?\d+(?:[.,]\d+)?)\s*(?:-|\u2013|,|to|a|à)\s*(-?\d+(?:[.,]\d+)?)/i,
   );
   let min: number;
   let max: number;
@@ -2724,7 +2724,7 @@ const DELIVERY_REQUIRED_SECTION_TITLES = [
   "Sources (bibliothèque)",
 ];
 
-const FORBIDDEN_DASH_REGEX = /[—–]/;
+const FORBIDDEN_DASH_REGEX = /[\u2013\u2014]/;
 const FORBIDDEN_EMOJI_REGEX = /[\u{1F1E6}-\u{1F1FF}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u;
 
 const normalizeQualityText = (value: string): string =>
@@ -2732,7 +2732,7 @@ const normalizeQualityText = (value: string): string =>
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[—–-]+/g, " ")
+    .replace(/[\u2013\u2014-]+/g, " ")
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
 
@@ -3872,7 +3872,7 @@ Achzod`;
 }
 
 // Cross-sell campaign: clients who already paid for at least one APEX product.
-// Warm buyers — primary CTA is coaching (where real transformation happens),
+// Warm buyers ,  primary CTA is coaching (where real transformation happens),
 // secondary CTA is Peptides Engine for those who bought a scan only.
 export async function sendCrossSellUpgradeEmail(
   email: string,

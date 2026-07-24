@@ -668,7 +668,7 @@ export function registerBloodTestsRoutes(app: Express): void {
       // but analyzeBloodwork takes BloodMarkerInput which only reads
       // .markerId || .name. With code unwired, it falls back to .name
       // ("Testostérone totale" with accent) and the alias table has
-      // "testosterone totale" without accent — so testosterone got dropped
+      // "testosterone totale" without accent ,  so testosterone got dropped
       // entirely from the analyzed marker list, and the model wrote "tests
       // manquants: testostérone totale et libre" because it literally
       // received zero testosterone data (Alan Annequin 2026-05-09). Map
@@ -1465,7 +1465,7 @@ export function registerBloodTestsRoutes(app: Express): void {
 
             // Auto-deliver email to client after AI completion (Younes Y. bug,
             // 2026-05-07: blood-tests-uploaded reports were marked completed
-            // but no delivery email was ever sent — clients had no way to
+            // but no delivery email was ever sent ,  clients had no way to
             // discover their report was ready). On success we persist
             // deliveryStatus + emailSentAt into the analysis JSON so admin
             // force-send can dedup and not re-spam the client.
@@ -1799,7 +1799,7 @@ export function registerBloodTestsRoutes(app: Express): void {
         try {
           const markers = Array.isArray(bt.markers) ? bt.markers : [];
           if (!markers.length) {
-            // No markers extracted — pipeline failed earlier than AI step. Skip.
+            // No markers extracted ,  pipeline failed earlier than AI step. Skip.
             console.warn(`[BloodTests-Recovery] ${bt.id} has zero markers, skipping`);
             continue;
           }

@@ -58,7 +58,13 @@ import { registerBloodAnalysisRoutes } from "./blood-analysis/routes";
 import { registerBloodTestsRoutes } from "./blood-tests/routes";
 import { signAuthToken } from "./auth";
 import { analyzeDiscoveryScan, convertToNarrativeReport } from "./discovery-scan";
-import { generatePeptidesProtocol, checkPeptidesSafetyGate } from "./peptidesEngine";
+import {
+  generatePeptidesProtocol,
+  checkPeptidesSafetyGate,
+  getPeptauraCatalogHealth,
+  refreshPeptauraCatalog,
+  refreshPeptauraPricingForDelivery,
+} from "./peptidesEngine";
 import { createRateLimiter } from "./middleware/rateLimit";
 import {
   scrapeArticleFromUrl,
@@ -1211,7 +1217,7 @@ export async function registerRoutes(
 
       const progress = await storage.getProgress(reminder.email);
       if (!progress) {
-        // No saved progress (already converted, deleted, etc.) — still return
+        // No saved progress (already converted, deleted, etc.) ,  still return
         // the email so the client can pre-fill it and start fresh.
         res.json({ email: reminder.email, progress: null });
         return;
@@ -1561,7 +1567,7 @@ export async function registerRoutes(
         }
 
         // Meta CAPI , server-side Lead event for Discovery Scan (free top-of-funnel)
-        // Recovers 30–50% of leads lost to Safari ITP / ad-blockers on the client Pixel.
+        // Recovers 30-50% of leads lost to Safari ITP / ad-blockers on the client Pixel.
         // event_id uses the audit id so a future client-side Pixel Lead can dedup.
         try {
           const { sendMetaLead } = await import("./metaCapi.js");
@@ -1753,7 +1759,7 @@ export async function registerRoutes(
     // La génération peut être longue (throttling 429 + génération multi-sections)
     const maxWait = 45 * 60 * 1000;
     const startTime = Date.now();
-    
+
     const waitForCompletion = async (): Promise<boolean> => {
       while (Date.now() - startTime < maxWait) {
         const status = await getJobStatus(auditId);
@@ -1904,7 +1910,7 @@ export async function registerRoutes(
     }
   });
 
-  // Peptides reports for the authenticated user — surface them in the dashboard
+  // Peptides reports for the authenticated user ,  surface them in the dashboard
   // so users can find their protocol back even if they lose the email.
   app.get("/api/user/peptides-reports", async (req, res) => {
     try {
@@ -1993,10 +1999,10 @@ export async function registerRoutes(
         audit.scores || {},
         audit.type
       );
-      res.json({ 
-        status: job.status, 
-        progress: job.progress, 
-        currentSection: job.currentSection 
+      res.json({
+        status: job.status,
+        progress: job.progress,
+        currentSection: job.currentSection
       });
     } catch (error) {
       console.error("[Narrative] Start error:", error);
@@ -2540,11 +2546,11 @@ export async function registerRoutes(
           res.json(mappedReport);
           return;
         }
-        
+
         res.json({ ...(audit.narrativeReport as any), auditType: (audit as any).type });
         return;
       }
-      
+
       const job = await getJobStatus(req.params.id);
       if (job && job.status === "completed") {
         const freshAudit = await storage.getAudit(req.params.id);
@@ -2562,9 +2568,9 @@ export async function registerRoutes(
         res.status(202).json({ message: "Rapport en cours de regeneration", status: "regenerating", progress: 0 });
         return;
       }
-      
+
       if (job && (job.status === "pending" || job.status === "generating")) {
-        res.status(202).json({ 
+        res.status(202).json({
           message: "Rapport en cours de generation",
           status: job.status,
           progress: job.progress,
@@ -2572,7 +2578,7 @@ export async function registerRoutes(
         });
         return;
       }
-      
+
       if ((audit.reportDeliveryStatus === "SENT" || audit.reportDeliveryStatus === "READY") && !audit.narrativeReport) {
         console.log(`[Narrative] Regenerating lost report for audit ${req.params.id}`);
         await storage.updateAudit(req.params.id, { reportDeliveryStatus: "GENERATING" });
@@ -2581,7 +2587,7 @@ export async function registerRoutes(
         res.status(202).json({ message: "Rapport en cours de regeneration", status: "generating", progress: 0 });
         return;
       }
-      
+
       res.status(404).json({ error: "Rapport non disponible" });
     } catch (error) {
       console.error("[Narrative] Fetch error:", error);
@@ -2844,7 +2850,7 @@ export async function registerRoutes(
 
       for (const audit of pendingAudits) {
         await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
-        
+
         await startReportGeneration(audit.id, audit.responses, audit.scores, audit.type);
         queued.push(audit.id);
 
@@ -2854,9 +2860,9 @@ export async function registerRoutes(
         });
       }
 
-      res.json({ 
-        message: `${queued.length} rapport(s) en cours de generation`, 
-        queued 
+      res.json({
+        message: `${queued.length} rapport(s) en cours de generation`,
+        queued
       });
     } catch (error) {
       console.error("[Admin] Error processing pending reports:", error);
@@ -3032,7 +3038,7 @@ export async function registerRoutes(
   //   - before launch (2026-03-17): test orders from dev period.
   //
   // Keeps: paid (revenue), pending (in-progress checkout that could still
-  // convert), refunded (accounting trail). Default mode is dry-run — pass
+  // convert), refunded (accounting trail). Default mode is dry-run ,  pass
   // ?confirm=1 to actually delete.
   app.post("/api/admin/purge-noise-orders", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
@@ -3040,7 +3046,7 @@ export async function registerRoutes(
       const confirm = req.query.confirm === "1" || (req.body as any)?.confirm === true;
       const launch = new Date("2026-03-17T00:00:00Z");
 
-      // Count what would be deleted — NEVER touch paid/refunded, ever.
+      // Count what would be deleted ,  NEVER touch paid/refunded, ever.
       const countPreLaunch = await pool.query(
         `SELECT COUNT(*)::int AS c, COALESCE(status,'?') AS status
            FROM orders
@@ -3444,7 +3450,7 @@ export async function registerRoutes(
     try {
       const auditId = req.params.id;
       const audit = await storage.getAudit(auditId);
-      
+
       if (!audit) {
         res.status(404).json({ error: "Audit non trouve" });
         return;
@@ -3498,15 +3504,15 @@ export async function registerRoutes(
           console.error(`[Resend] Admin email failed (best-effort):`, e);
         }
 
-        res.json({ 
-          success: true, 
+        res.json({
+          success: true,
           message: `Email envoye a ${audit.email}`,
           email: audit.email
         });
       } else {
         console.error(`[Resend] Email FAILED for ${audit.email} - check SendPulse config`);
-        res.status(500).json({ 
-          error: "Echec envoi email - verifier configuration SendPulse" 
+        res.status(500).json({
+          error: "Echec envoi email - verifier configuration SendPulse"
         });
       }
     } catch (error) {
@@ -3518,7 +3524,7 @@ export async function registerRoutes(
   async function processReportAsync(auditId: string, email: string, auditType: string) {
     const maxWait = 10 * 60 * 1000;
     const startTime = Date.now();
-    
+
     const checkComplete = async (): Promise<boolean> => {
       while (Date.now() - startTime < maxWait) {
         const status = await getJobStatus(auditId);
@@ -3533,7 +3539,7 @@ export async function registerRoutes(
     };
 
     const success = await checkComplete();
-    
+
     if (success) {
       const baseUrl = getBaseUrl();
       console.log(`[Admin] Sending email to ${email} for audit ${auditId} (baseUrl: ${baseUrl})`);
@@ -3561,7 +3567,7 @@ export async function registerRoutes(
         res.status(404).json({ error: "Audit non trouve" });
         return;
       }
-      
+
       const narrativeReport = audit.narrativeReport as any;
       if (!narrativeReport) {
         res.status(400).json({ error: "Rapport non disponible" });
@@ -3649,7 +3655,7 @@ export async function registerRoutes(
     <header style="text-align: center; padding: 2rem 0; margin-bottom: 2rem; border-bottom: 1px solid #222;">
       <div style="font-size: 0.75rem; letter-spacing: 0.2em; color: #E8C547; text-transform: uppercase; margin-bottom: 0.5rem;">APEXLABS</div>
       <h1 style="font-size: 2rem; font-weight: 900; color: #fff; margin-bottom: 0.5rem;">Discovery Scan</h1>
-      <p style="color: #888;">${clientName} &mdash; ${new Date(generatedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+      <p style="color: #888;">${clientName} ,  ${new Date(generatedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
       <div style="margin-top: 1.5rem; font-size: 3rem; font-weight: 900; color: #E8C547;">${globalScore}<span style="font-size: 1.5rem; color: #888;">/10</span></div>
       <p style="font-size: 0.85rem; color: #888; margin-top: 0.25rem;">Score Global</p>
     </header>
@@ -3659,7 +3665,7 @@ export async function registerRoutes(
     ${sectionsHtml}
 
     <footer style="text-align: center; padding: 2rem 0; margin-top: 2rem; border-top: 1px solid #222; color: #555; font-size: 0.8rem;">
-      <p>APEXLABS by Achzod &mdash; apexlabs.achzodcoaching.com</p>
+      <p>APEXLABS by Achzod ,  apexlabs.achzodcoaching.com</p>
     </footer>
   </div>
 </body>
@@ -4319,7 +4325,7 @@ export async function registerRoutes(
     }
   });
 
-  // Periodic reconciliation cron — every 10 min. Catches any PayPal capture
+  // Periodic reconciliation cron ,  every 10 min. Catches any PayPal capture
   // that the browser-initiated flow missed (closed tab, network hiccup, ad
   // blocker eating the XHR). Combined with the existing peptides autogen
   // cron, a missed capture now self-heals within ~15 min instead of staying
@@ -4555,7 +4561,7 @@ export async function registerRoutes(
             await sendCTAEmail(email, "Blood Analysis : commande recue", msg);
           });
 
-          // Admin payment notification — same idempotency: ensures Achzod
+          // Admin payment notification ,  same idempotency: ensures Achzod
           // sees every paid order even when confirm-session wins the race.
           await runOnceOnOrder(existingOrder.id, "adminPaymentNotifSentAt", async () => {
             const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
@@ -4672,7 +4678,7 @@ export async function registerRoutes(
           validatedPromoCode = promoCode;
           promoObj = await storage.getPromoCode(promoCode);
           // PEPTIDES100 = flat -100EUR but ONLY on PEPTIDES_ENGINE
-          // (Marc M. 2026-05-11 ELITE 0€ incident — see Stripe branch).
+          // (Marc M. 2026-05-11 ELITE 0€ incident ,  see Stripe branch).
           discountCents = promoObj
             ? (promoCode.toUpperCase() === 'PEPTIDES100' && planType === 'PEPTIDES_ENGINE'
                 ? 10000
@@ -5050,7 +5056,8 @@ export async function registerRoutes(
 
       // Generate synchronously (admin endpoint = manual trigger, can wait)
       const { generatePeptidesProtocol } = await import("./peptidesEngine");
-      const report = await generatePeptidesProtocol(responses, email);
+      const manualTier = ((pepOrder?.metadata as any)?.peptidesTier as "solo" | "coached" | "tracked" | undefined) ?? "coached";
+      const report = await generatePeptidesProtocol(responses, email, manualTier);
 
       let saved;
       let claimed = true;
@@ -5490,6 +5497,56 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("[Admin BloodCredit Add] Error:", error);
       res.status(500).json({ success: false, error: error?.message || "Erreur serveur" });
+    }
+  });
+
+  app.get("/api/admin/peptaura-catalog/status", (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    res.json({ success: true, catalog: getPeptauraCatalogHealth() });
+  });
+
+  app.post("/api/admin/peptaura-catalog/refresh", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const result = await refreshPeptauraCatalog({ forceFresh: true });
+      res.status(result.ok ? 200 : 503).json({
+        success: result.ok,
+        result,
+        catalog: getPeptauraCatalogHealth(),
+      });
+    } catch (error: any) {
+      console.error("[Admin Peptaura Refresh] Error:", error);
+      res.status(500).json({ success: false, error: error?.message || "Erreur refresh Peptaura" });
+    }
+  });
+
+  app.post("/api/admin/peptides/delivery-hold", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { orderId, hold, reason } = req.body as {
+        orderId?: string;
+        hold?: boolean;
+        reason?: string;
+      };
+      if (!orderId || typeof hold !== "boolean") {
+        res.status(400).json({ success: false, error: "orderId et hold boolean requis" });
+        return;
+      }
+      const order = await storage.getOrder(orderId);
+      if (!order || order.productType !== "PEPTIDES_ENGINE") {
+        res.status(404).json({ success: false, error: "Commande Peptides Engine introuvable" });
+        return;
+      }
+      await storage.setOrderMetadataKey(orderId, "peptidesEmailHold", hold);
+      await storage.setOrderMetadataKey(
+        orderId,
+        "peptidesEmailHoldReason",
+        hold ? String(reason || "verification_manuelle").slice(0, 240) : ""
+      );
+      res.json({ success: true, orderId, hold, reason: hold ? reason || "verification_manuelle" : null });
+    } catch (error: any) {
+      console.error("[Admin Peptides Hold] Error:", error);
+      res.status(500).json({ success: false, error: error?.message || "Erreur mise a jour hold" });
     }
   });
 
@@ -7002,7 +7059,7 @@ export async function registerRoutes(
     if (!requireAdminAuth(req, res)) return;
     try {
       const { Pool } = await import('pg');
-      
+
       // Requêtes SQL exécutées une par une pour éviter les problèmes de parsing
       const statements = [
         // Ajouter colonnes manquantes à audits si la table existe
@@ -7025,10 +7082,10 @@ export async function registerRoutes(
             ALTER TABLE audits ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP;
           END IF;
         END $$`,
-        
+
         // D'abord supprimer audits pour le recréer avec le bon schéma (si toujours pas bon)
         // `DROP TABLE IF EXISTS audits CASCADE`,
-        
+
         // Créer users
         `CREATE TABLE IF NOT EXISTS users (
           id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -7036,7 +7093,7 @@ export async function registerRoutes(
           name VARCHAR(255),
           created_at TIMESTAMP DEFAULT NOW() NOT NULL
         )`,
-        
+
         // Créer audits avec le bon schéma
         `CREATE TABLE IF NOT EXISTS audits (
           id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -7068,7 +7125,7 @@ export async function registerRoutes(
           html TEXT NOT NULL,
           created_at TIMESTAMP DEFAULT NOW() NOT NULL
         )`,
-        
+
         // Autres tables
         `CREATE TABLE IF NOT EXISTS questionnaire_progress (
           id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -7082,13 +7139,13 @@ export async function registerRoutes(
           last_activity_at TIMESTAMP DEFAULT NOW() NOT NULL
         )`,
 
-        
+
         `CREATE TABLE IF NOT EXISTS magic_tokens (
           token VARCHAR(255) PRIMARY KEY,
           email VARCHAR(255) NOT NULL,
           expires_at TIMESTAMP NOT NULL
         )`,
-        
+
         `CREATE TABLE IF NOT EXISTS report_jobs (
           audit_id VARCHAR(36) PRIMARY KEY,
           status VARCHAR(20) NOT NULL DEFAULT 'pending',
@@ -7101,7 +7158,7 @@ export async function registerRoutes(
           last_progress_at TIMESTAMP DEFAULT NOW() NOT NULL,
           completed_at TIMESTAMP
         )`,
-        
+
         `CREATE TABLE IF NOT EXISTS reviews (
           id VARCHAR(36) PRIMARY KEY,
           audit_id VARCHAR(36) NOT NULL,
@@ -7118,7 +7175,7 @@ export async function registerRoutes(
           reviewed_at TIMESTAMP,
           reviewed_by VARCHAR(255)
         )`,
-        
+
         `CREATE TABLE IF NOT EXISTS cta_history (
           id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
           audit_id VARCHAR(36) NOT NULL,
@@ -7131,7 +7188,7 @@ export async function registerRoutes(
           error TEXT,
           created_at TIMESTAMP DEFAULT NOW() NOT NULL
         )`,
-        
+
         // Promo codes
         `CREATE TABLE IF NOT EXISTS promo_codes (
           id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -7176,19 +7233,19 @@ export async function registerRoutes(
         `CREATE INDEX IF NOT EXISTS idx_promo_codes_code ON promo_codes(code)`,
         `CREATE INDEX IF NOT EXISTS idx_email_tracking_audit_id ON email_tracking(audit_id)`
       ];
-      
+
       const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_CONNECTION_STRING;
       if (!databaseUrl) {
         return res.status(500).json({ error: 'DATABASE_URL not configured' });
       }
-      
+
       const pool = new Pool({
         connectionString: databaseUrl,
         ssl: databaseUrl.includes('render.com') ? { rejectUnauthorized: false } : false,
       });
-      
+
       const client = await pool.connect();
-      
+
       try {
         let executed = 0;
         let skipped = 0;
@@ -7198,7 +7255,7 @@ export async function registerRoutes(
             executed++;
           } catch (error: any) {
             // Ignorer les erreurs si la table/index existe déjà, ou si colonne n'existe pas (pour les index)
-            if (error.code === '42P07' || error.code === '42710' || error.code === '42703' || 
+            if (error.code === '42P07' || error.code === '42710' || error.code === '42703' ||
                 error.message.includes('already exists') || error.message.includes('does not exist')) {
               skipped++;
             } else {
@@ -7839,7 +7896,7 @@ export async function registerRoutes(
         return;
       }
       // Fetch from report_artifacts table. Pass ?content=1 to also return
-      // txt + html — used by admin recovery flows when an artifact exists but
+      // txt + html ,  used by admin recovery flows when an artifact exists but
       // narrativeReport never hydrated (e.g. send marked SENT without delivery).
       const withContent = req.query.content === "1";
       const cols = withContent
@@ -8013,7 +8070,7 @@ export async function registerRoutes(
     }
   });
 
-  // Focused per-recipient email tracking query — the /api/admin/email-trackings
+  // Focused per-recipient email tracking query ,  the /api/admin/email-trackings
   // endpoint returns at most 200 rows across the whole app, which only covers
   // ~24h of traffic. To confirm whether a specific client actually received
   // their delivery email (e.g. did the Peptides delivery reach them?), we need
@@ -8479,7 +8536,7 @@ export async function registerRoutes(
 
       // Trim + uppercase so a code pasted from email with a stray leading/
       // trailing space or in lowercase doesn't fail validation (2026-05-10
-      // Achzod reported clients complaining "PEPTIDES100 marche plus" — the
+      // Achzod reported clients complaining "PEPTIDES100 marche plus" ,  the
       // code was active and correct, they were pasting it with whitespace).
       const code = rawCode.trim().toUpperCase();
       if (!code) {
@@ -9959,7 +10016,7 @@ export async function registerRoutes(
               console.error(`[Webhook] Meta CAPI Purchase (stripe) failed (non-blocking):`, capiErr);
             }
 
-            // Admin notification for PAID orders (idempotent — confirm-session
+            // Admin notification for PAID orders (idempotent ,  confirm-session
             // may have already sent it for BLOOD_ANALYSIS)
             await runOnceOnOrder(order.id, "adminPaymentNotifSentAt", async () => {
               const clientEmail = session.customer_details?.email || session.customer_email || order.email;
@@ -9978,7 +10035,7 @@ export async function registerRoutes(
             });
 
             // Send confirmation email to client (Stripe webhook = payment confirmed)
-            // Idempotent — confirm-session may have already sent it.
+            // Idempotent ,  confirm-session may have already sent it.
             await runOnceOnOrder(order.id, "customerConfirmEmailSentAt", async () => {
               const clientEmail2 = session.customer_details?.email || session.customer_email || order.email;
               const clientName2 = session.customer_details?.name || clientEmail2?.split("@")[0] || "Client";
@@ -13078,7 +13135,7 @@ export async function registerRoutes(
     }
 
     // Persist on the order so the schedule is stable across cycles. Atomic
-    // JSONB merge — does not stomp other metadata keys (e.g. peptidesReportId
+    // JSONB merge ,  does not stomp other metadata keys (e.g. peptidesReportId
     // set concurrently by the claim CAS). Earlier read-modify-write pattern
     // was wiping the reportId set by claimPeptidesReportSlot, causing endless
     // regeneration loops and false admin "ECHOUE" alerts (Julien Baldy +
@@ -13195,15 +13252,25 @@ export async function registerRoutes(
             continue;
           }
 
-          // STRICT GATE — runs only when delivery is actually due (now or past
+          // STRICT GATE ,  runs only when delivery is actually due (now or past
           // scheduledAt). Auto-repair vials math first, then validate. If the
           // report still fails, email admin AT MOST ONCE per 6h per order and
           // skip the tick. Without the time-gate, the cron would re-fire the
           // BLOQUE email every ~6h before the scheduled time was even reached.
           try {
-            const { validateVialsMath } = await import("./peptidesEngine");
             const { validatePeptidesReport } = await import("./peptidesReportValidator");
-            const repaired = validateVialsMath(JSON.parse(JSON.stringify(existingReport)));
+            const pricingResponses = (
+              (existing as any)?.responses
+              || (order.metadata as any)?.peptidesResponses
+              || {}
+            ) as Record<string, unknown>;
+            if (Object.keys(pricingResponses).length < 3) {
+              throw new Error("Reponses client manquantes pour la verification Peptaura pre-livraison");
+            }
+            const repaired = await refreshPeptauraPricingForDelivery(
+              JSON.parse(JSON.stringify(existingReport)),
+              pricingResponses
+            );
             const repairedFingerprint = JSON.stringify(repaired);
             const originalFingerprint = JSON.stringify(existingReport);
             if (repairedFingerprint !== originalFingerprint) {
@@ -13265,7 +13332,7 @@ export async function registerRoutes(
           continue;
         }
 
-        const hoursSincePaid = (now.getTime() - new Date(order.paidAt).getTime()) / (1000 * 60 * 60);
+        const hoursSincePaid = (now.getTime() - new Date(order.paidAt!).getTime()) / (1000 * 60 * 60);
         // Wait at least 10 min before autogen kicks in , gives the inline generation pipeline
         // time to finish first. Prevents double report generation (race condition).
         if (hoursSincePaid < 0.17 || hoursSincePaid > 168) continue;

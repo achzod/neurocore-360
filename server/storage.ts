@@ -247,7 +247,7 @@ export interface IStorage {
   /** Atomic JSONB merge: set a single metadata key without stomping concurrently-set keys. */
   setOrderMetadataKey(orderId: string, key: string, value: string | number | boolean): Promise<boolean>;
   /** Cross-order protection: true if ANY paid Peptides order for this email already has a reportId.
-   *  Catches duplicate-payment case (2 orders same email) — without this, each order wins its own
+   *  Catches duplicate-payment case (2 orders same email) ,  without this, each order wins its own
    *  CAS and generates a separate report (alexm2220 incident 2026-03-30). */
   hasAnyPeptidesReportForEmail(email: string): Promise<{ exists: boolean; existingOrderId?: string; existingReportId?: string }>;
   /** Atomic CAS: transition audit to GENERATING iff current status allows. Prevents two concurrent generators. */
@@ -425,7 +425,7 @@ export class MemStorage implements IStorage {
   }
 
   async getAllAuditsLight(): Promise<Audit[]> {
-    // MemStorage fallback — no JSONB in memory, return full rows
+    // MemStorage fallback ,  no JSONB in memory, return full rows
     return this.getAllAudits();
   }
 
@@ -2250,22 +2250,22 @@ export class PgStorage implements IStorage {
 
   async createOrUpdateReportJob(job: Partial<ReportJob> & { auditId: string }): Promise<ReportJob> {
     const existing = await this.getReportJob(job.auditId);
-    
+
     if (existing) {
       const updates: string[] = [];
       const values: unknown[] = [];
       let idx = 1;
-      
+
       if (job.status !== undefined) { updates.push(`status = $${idx++}`); values.push(job.status); }
       if (job.progress !== undefined) { updates.push(`progress = $${idx++}`); values.push(job.progress); }
       if (job.currentSection !== undefined) { updates.push(`current_section = $${idx++}`); values.push(job.currentSection); }
       if (job.error !== undefined) { updates.push(`error = $${idx++}`); values.push(job.error); }
       if (job.attemptCount !== undefined) { updates.push(`attempt_count = $${idx++}`); values.push(job.attemptCount); }
       if (job.completedAt !== undefined) { updates.push(`completed_at = $${idx++}`); values.push(job.completedAt); }
-      
+
       updates.push(`updated_at = NOW()`);
       updates.push(`last_progress_at = NOW()`);
-      
+
       values.push(job.auditId);
       const result = await pool.query(
         `UPDATE report_jobs SET ${updates.join(", ")} WHERE audit_id = $${idx} RETURNING *`,
@@ -3066,7 +3066,7 @@ export class PgStorage implements IStorage {
     if (result.rows.length === 0) return undefined;
     const updatedOrder = this.rowToOrder(result.rows[0]);
 
-    // P2 — abandonment-reminder conversion tracking. When an order
+    // P2 ,  abandonment-reminder conversion tracking. When an order
     // transitions to `paid`, look for any reminder sent to this email
     // within the last 14 days and stamp it as converted. Best effort: we
     // never block the order update on this side-effect.
@@ -3096,7 +3096,7 @@ export class PgStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
-  // Atomic CAS for peptides report — only set if not already set. Prevents two concurrent
+  // Atomic CAS for peptides report ,  only set if not already set. Prevents two concurrent
   // generators (autogen + admin + inline) from both delivering reports to the same client.
   // First writer wins; losers must discard their work.
   async claimPeptidesReportSlot(orderId: string, reportId: string): Promise<boolean> {
@@ -3129,12 +3129,12 @@ export class PgStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
-  // Cross-order protection for Peptides — returns true if ANY paid Peptides order of the same
+  // Cross-order protection for Peptides ,  returns true if ANY paid Peptides order of the same
   // email already has a peptidesReportId. The alexm2220 incident (2026-03-30) shipped two
   // reports because the client paid twice (two Stripe orders 5 min apart) and each order
   // independently won its own per-order CAS. Email dedup via email_tracking would normally
   // catch this at send time, but the dedup query depends on the tracking row being present
-  // and non-failed — a SendPulse outage or a purged tracking table opens the same hole.
+  // and non-failed ,  a SendPulse outage or a purged tracking table opens the same hole.
   // Checking at generation-time, before the 60s AI call, is cheap and closes it permanently.
   async hasAnyPeptidesReportForEmail(email: string): Promise<{ exists: boolean; existingOrderId?: string; existingReportId?: string }> {
     await this.ensureOrdersTableCreated();
@@ -3158,7 +3158,7 @@ export class PgStorage implements IStorage {
     };
   }
 
-  // Atomic CAS for audit report generation — transition to GENERATING only if the audit is
+  // Atomic CAS for audit report generation ,  transition to GENERATING only if the audit is
   // in a terminal-failure or initial state. Prevents two concurrent generators (e.g. inline
   // create + Stripe webhook, or admin regenerate + scheduled cron) from producing two
   // different reports for the same client.
@@ -3175,7 +3175,7 @@ export class PgStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
-  // Atomic CAS for audit email send — transition to SENDING only if not already sent.
+  // Atomic CAS for audit email send ,  transition to SENDING only if not already sent.
   // Prevents the same audit from being emailed twice concurrently (inline send + admin
   // resend + scheduled delivery cron all racing).
   async claimAuditForSending(auditId: string): Promise<boolean> {
@@ -3226,7 +3226,7 @@ export class PgStorage implements IStorage {
       );
       return (result.rowCount ?? 0) > 0;
     } catch (err) {
-      console.warn("[EmailTracking] hasReportReadyEmailBeenSent query failed — defaulting to false:", err);
+      console.warn("[EmailTracking] hasReportReadyEmailBeenSent query failed ,  defaulting to false:", err);
       return false;
     }
   }
@@ -3472,7 +3472,7 @@ export class PgStorage implements IStorage {
     const clickRate24h = sent24h > 0 ? Math.round((parseInt(last24h.clicked || '0') / sent24h) * 100) : 0;
     const conversions24h = parseInt(last24h.conversions || '0');
 
-    // Stats derniers 7 jours — sums real converted amounts now that
+    // Stats derniers 7 jours ,  sums real converted amounts now that
     // markReminderConvertedByEmail records the actual order cents.
     const last7dResult = await pool.query(`
       SELECT

@@ -17,7 +17,7 @@ export const PRICING = {
   BLOOD: 99,
 };
 
-// Codes promo par type d'offre — a creer dans Stripe cote coaching
+// Codes promo par type d'offre, a creer dans Stripe cote coaching
 export const PROMO_CODES_BY_TIER: Record<string, { code: string; amount: number }> = {
   PREMIUM: { code: "BIOSCAN59", amount: 59 },
   ELITE: { code: "ULTIMATE79", amount: 79 },
@@ -126,7 +126,7 @@ export function buildPeptidesCoachingDeductionBlock(
   const now = opts.now ?? new Date();
   const expiry = new Date(now.getTime() + 8 * 7 * 24 * 60 * 60 * 1000); // 8 weeks
   const expiryStr = expiry.toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
-  return `\n\n,,,,,,,,,,,,,,,,,,,,,,\nTON BONUS COACHING (${cfg.label})\n,,,,,,,,,,,,,,,,,,,,,,\nCode : ${cfg.code}\n${cfg.amount}EUR deduits sur ton coaching Essential, Elite ou Private Lab.\nValable sur les engagements 8 ou 12 semaines uniquement.\nExpire le ${expiryStr} (8 semaines a compter de maintenant).\n\nTu veux passer au coaching personnalise apres ton protocole ?\n- Coaching Essential , https://www.achzodcoaching.com/coaching-essential\n- Coaching Elite , https://www.achzodcoaching.com/coaching-elite\n- Private Lab , https://www.achzodcoaching.com/coaching-achzod-private-lab\n\nColle le code ${cfg.code} dans le champ promo au checkout coaching.`;
+  return `\n\nTON BONUS COACHING (${cfg.label})\n\nCode : ${cfg.code}\n${cfg.amount}EUR deduits sur ton coaching Essential, Elite ou Private Lab.\nValable sur les engagements 8 ou 12 semaines uniquement.\nExpire le ${expiryStr} (8 semaines a compter de maintenant).\n\nTu veux passer au coaching personnalise apres ton protocole ?\n- Coaching Essential, https://www.achzodcoaching.com/coaching-essential\n- Coaching Elite, https://www.achzodcoaching.com/coaching-elite\n- Private Lab, https://www.achzodcoaching.com/coaching-achzod-private-lab\n\nColle le code ${cfg.code} dans le champ promo au checkout coaching.`;
 }
 
 export function getCTABlood(): string {

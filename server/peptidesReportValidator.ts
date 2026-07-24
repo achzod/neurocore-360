@@ -9,6 +9,11 @@
  * Returns { ok, errors, warnings }. Only ok=true passes the gate.
  */
 
+import {
+  auditClientFacingText,
+  collectClientFacingStrings,
+} from "./clientFacingQuality";
+
 export interface PeptidesPeptide {
   name?: string;
   route?: string;
@@ -29,6 +34,26 @@ export interface PeptidesReport {
   sections?: Array<{ id?: string; title?: string; content?: string }>;
   clientName?: string;
   promoCodesGenerated?: any[];
+  weeklySchedule?: string;
+  shoppingList?: string;
+  _peptauraLiveSync?: {
+    syncedAt?: string;
+    catalogRefreshedAt?: string;
+    shippingLive?: boolean;
+    applied?: string[];
+    failures?: string[];
+    listingSnapshots?: Array<{
+      peptide?: string;
+      fetchedAt?: string;
+      supplier?: string;
+      dosage?: string;
+      requestedVials?: number;
+      deliveredVials?: number;
+      packageCount?: number;
+      boxSize?: number;
+      totalPriceUsd?: number;
+    }>;
+  };
 }
 
 export interface PeptidesValidation {
@@ -59,6 +84,9 @@ const REQUIRED_PEPTIDE_FIELDS = [
 const MIN_SECTIONS = 12;
 const MIN_SECTION_CHARS = 350;
 const MIN_TOTAL_CHARS = 30_000;
+const MAX_PEPTAURA_DELIVERY_AGE_MS = Number(
+  process.env.PEPTAURA_DELIVERY_MAX_AGE_MS || 45 * 60 * 1000
+);
 
 function extractFirstNumber(text: string | undefined): number | null {
   if (!text) return null;
@@ -110,7 +138,7 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
   if (wkMatchEarly) weeksFromCycle = parseInt(wkMatchEarly[1], 10);
 
   const rangeMatches = Array.from(
-    dose.matchAll(/(\d+(?:\.\d+)?)\s*(mg|mcg|µg|ug)\s*par\s*semaine\s*\(\s*semaines?\s*(\d+)\s*(?:à|a|-|–)\s*(\d+)\s*\)/gi)
+    dose.matchAll(/(\d+(?:\.\d+)?)\s*(mg|mcg|µg|ug)\s*par\s*semaine\s*\(\s*semaines?\s*(\d+)\s*(?:à|a|-)\s*(\d+)\s*\)/gi)
   );
   if (rangeMatches.length >= 2) {
     let totalMg = 0;
@@ -168,6 +196,38 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
     return 1;
   };
   const injectionsPerWeekTit = detectInjPerWeek(dose);
+
+  // Reverse titration syntax used by natural French:
+  // "semaine 1 a 1 mg, semaine 2 a 2 mg, semaines 4 a 12 a 8 mg".
+  // The previous estimator only understood "1 mg semaine 1" and silently
+  // accepted severe under-orders such as 20 mg for a real 79 mg cycle.
+  const reverseProgressive = Array.from(
+    dose.matchAll(/semaines?\s*(\d+)(?:\s*(?:à|a|-)\s*(\d+))?\s*(?:à|a|:)\s*(\d+(?:[.,]\d+)?)\s*(mg|mcg|µg|ug)\b/gi)
+  );
+  if (reverseProgressive.length >= 2 && weeks > 0) {
+    const dosesByWeek = new Map<number, number>();
+    for (const match of reverseProgressive) {
+      const start = parseInt(match[1], 10);
+      const end = match[2] ? parseInt(match[2], 10) : start;
+      const rawValue = parseFloat(match[3].replace(",", "."));
+      const unit = match[4].toLowerCase();
+      const valueMg = unit.startsWith("mg") ? rawValue : rawValue / 1000;
+      for (let week = start; week <= Math.min(end, weeks); week++) {
+        dosesByWeek.set(week, valueMg);
+      }
+    }
+    const definedWeeks = [...dosesByWeek.keys()].sort((a, b) => a - b);
+    if (definedWeeks.length > 0) {
+      let lastDose = dosesByWeek.get(definedWeeks[0]) || 0;
+      let totalMg = 0;
+      for (let week = 1; week <= weeks; week++) {
+        if (dosesByWeek.has(week)) lastDose = dosesByWeek.get(week) || lastDose;
+        totalMg += lastDose;
+      }
+      totalMg *= injectionsPerWeekTit;
+      if (totalMg > 0) return totalMg;
+    }
+  }
 
   // Titration / progressive: take the steady-state dose × steady-state weeks.
   // Regex accepts plural "semaines": "8mg semaines 4 à 12" used to fall
@@ -283,7 +343,7 @@ function checkPeptide(p: PeptidesPeptide): string[] {
     // Skip sous-commande when the cycle duration is a range like "8 à 12 semaines":
     // the AI legitimately sizes for the lower bound. Only flag a HARD undershoot
     // (< 60% of estimator's need) to avoid noisy false positives.
-    const cycleHasRange = /(\d+)\s*(?:à|a|-|–)\s*(\d+)\s*semaines?/i.test(p.cycleDuration || "");
+    const cycleHasRange = /(\d+)\s*(?:à|a|-)\s*(\d+)\s*semaines?/i.test(p.cycleDuration || "");
     if (!cycleHasRange && overshoot < 0.6) {
       issues.push(
         `sous-commande detectee: ${totalMgOrdered}mg commandes vs ${needMg.toFixed(1)}mg besoin (${(overshoot * 100).toFixed(0)}%)`
@@ -293,6 +353,11 @@ function checkPeptide(p: PeptidesPeptide): string[] {
 
   if (p.purchaseUrl && !/^https?:\/\//.test(p.purchaseUrl)) {
     issues.push(`purchaseUrl mal formee: ${p.purchaseUrl}`);
+  }
+
+  if (/descente|diminution progressive|reduction progressive/i.test(p.cycleDuration || "")
+    && !/descente|diminu|reduction|réduction|baisse/i.test(p.dosage || "")) {
+    issues.push("cycleDuration annonce une descente progressive absente du dosage");
   }
 
   return issues;
@@ -316,6 +381,30 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
   const peptides = report.peptides || [];
   const sections = report.sections || [];
   const totalChars = sections.reduce((s, sec) => s + (sec.content?.length || 0), 0);
+  const clientFacingText = collectClientFacingStrings(report).join("\n");
+  const styleAudit = auditClientFacingText(clientFacingText);
+
+  if (styleAudit.forbiddenDashes > 0) {
+    errors.push(`ponctuation Unicode interdite: ${styleAudit.forbiddenDashes} occurrence(s)`);
+  }
+  if (styleAudit.vouvoiement.length > 0) {
+    errors.push(`vouvoiement interdit: ${styleAudit.vouvoiement.join(", ")}`);
+  }
+  if (styleAudit.roboticPhrases.length > 0) {
+    errors.push(`style artificiel detecte: ${styleAudit.roboticPhrases.join(", ")}`);
+  }
+
+  const hasMedicalVerification = /\b(?:m[ée]decin|pharmacien)\b[\s\S]{0,180}\b(?:valide|v[ée]rifie|avis|accord|confirme)\b|\b(?:valide|v[ée]rifie|avis|accord|confirme)\b[\s\S]{0,180}\b(?:m[ée]decin|pharmacien)\b/i.test(clientFacingText);
+  if (!hasMedicalVerification) {
+    errors.push("warning de verification medecin ou pharmacien manquant");
+  }
+  const hasExperimentalPeptide = (report.peptides || []).some((peptide) =>
+    /\b(?:retatrutide|bpc[\s-]?157|tb[\s-]?500|ipamorelin|cjc[\s-]?1295|dsip|epitalon)\b/i.test(peptide.name || "")
+  );
+  if (hasExperimentalPeptide
+    && !/\b(?:experimental|non approuv[ée]|donn[ée]es humaines.{0,40}limit[ée]es|produit de recherche)\b/i.test(clientFacingText)) {
+    errors.push("statut experimental ou non approuve absent pour le stack propose");
+  }
 
   if (peptides.length === 0) {
     errors.push("aucun peptide recommande");
@@ -343,9 +432,6 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
     if (/\{\{[^}]+\}\}|\$\{[^}]+\}/.test(c)) {
       errors.push(`template non resolu dans ${title}`);
     }
-    if (/—|&mdash;/.test(c)) {
-      errors.push(`em-dash interdit dans ${title}`);
-    }
     if (/^\s*>\s/m.test(c)) {
       errors.push(`blockquote interdit dans ${title}`);
     }
@@ -362,6 +448,63 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
     peptidesChecked.push({ name: p.name || "?", issues });
     for (const iss of issues) {
       errors.push(`[${p.name || "?"}] ${iss}`);
+    }
+  }
+
+  const liveSync = report._peptauraLiveSync;
+  if (!liveSync?.syncedAt) {
+    errors.push("preuve de synchronisation Peptaura manquante");
+  } else {
+    const syncedAtMs = new Date(liveSync.syncedAt).getTime();
+    const ageMs = Date.now() - syncedAtMs;
+    if (!Number.isFinite(syncedAtMs)) {
+      errors.push("horodatage Peptaura invalide");
+    } else if (ageMs > MAX_PEPTAURA_DELIVERY_AGE_MS) {
+      errors.push(`catalogue Peptaura trop ancien pour livraison: ${Math.round(ageMs / 60000)} min`);
+    }
+  }
+  if (!liveSync?.catalogRefreshedAt) {
+    errors.push("horodatage du crawl catalogue Peptaura manquant");
+  } else {
+    const catalogAtMs = new Date(liveSync.catalogRefreshedAt).getTime();
+    const ageMs = Date.now() - catalogAtMs;
+    if (!Number.isFinite(catalogAtMs)) {
+      errors.push("horodatage du crawl catalogue Peptaura invalide");
+    } else if (ageMs > MAX_PEPTAURA_DELIVERY_AGE_MS) {
+      errors.push(`crawl catalogue Peptaura trop ancien: ${Math.round(ageMs / 60000)} min`);
+    }
+  }
+  if (liveSync?.shippingLive !== true) {
+    errors.push("verification live des fournisseurs par pays indisponible");
+  }
+  if ((liveSync?.failures || []).length > 0) {
+    errors.push(`echecs de verification Peptaura: ${(liveSync?.failures || []).join(" | ")}`);
+  }
+  const appliedNames = new Set(
+    (liveSync?.listingSnapshots || [])
+      .map((entry) => String(entry.peptide || "").toLowerCase())
+      .filter(Boolean)
+  );
+  if (peptides.length > 0 && appliedNames.size < peptides.length) {
+    errors.push(`prix live incomplets: ${appliedNames.size}/${peptides.length} peptides verifies`);
+  }
+  for (const snapshot of liveSync?.listingSnapshots || []) {
+    const fetchedAtMs = new Date(String(snapshot.fetchedAt || "")).getTime();
+    if (!Number.isFinite(fetchedAtMs)
+      || Date.now() - fetchedAtMs > MAX_PEPTAURA_DELIVERY_AGE_MS) {
+      errors.push(`offre Peptaura trop ancienne ou invalide: ${snapshot.peptide || "?"}`);
+    }
+    const peptide = peptides.find((entry) =>
+      String(entry.name || "").toLowerCase() === String(snapshot.peptide || "").toLowerCase()
+    );
+    const declaredQty = extractVialQty(peptide?.vialsNeeded);
+    if (declaredQty != null && snapshot.requestedVials != null && declaredQty !== snapshot.requestedVials) {
+      errors.push(`[${snapshot.peptide || "?"}] quantite prix live ${snapshot.requestedVials} differente de vialsNeeded ${declaredQty}`);
+    }
+    if (snapshot.deliveredVials != null
+      && snapshot.requestedVials != null
+      && snapshot.deliveredVials / snapshot.requestedVials > 1.2) {
+      errors.push(`[${snapshot.peptide || "?"}] boite live impose trop de surstock: ${snapshot.deliveredVials} recus pour ${snapshot.requestedVials} demandes`);
     }
   }
 

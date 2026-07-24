@@ -613,13 +613,13 @@ export default function ProPanel() {
                 "Renforcement trapeze inferieur: face pull 3x15 avant chaque seance",
                 "Exposition lumiere naturelle 30min apres le reveil",
                 "Magnesium Bisglycinate 300mg au coucher pour ameliorer HRV",
-                "Cardio zone 2 — 3x45min/semaine pour optimiser RHR",
+                "Cardio zone 2 ,  3x45min/semaine pour optimiser RHR",
               ],
             }}
             extras={[
               {
                 title: "Analyse Posturale",
-                detail: "3 photos analysees — 4 corrections identifiees",
+                detail: "3 photos analysees ,  4 corrections identifiees",
               },
             ]}
           />
@@ -666,7 +666,7 @@ export default function ProPanel() {
           </p>
           <Link href="/questionnaire?plan=ultimate">
             <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(252,221,0,0.3)]">
-              Lancer mon Ultimate Scan — 79€ d'acompte
+              Lancer mon Ultimate Scan ,  79€ d'acompte
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
           </Link>

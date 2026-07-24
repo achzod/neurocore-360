@@ -1,11 +1,11 @@
 /**
  * SYNC ALL BLOG ARTICLES - MASTER SCRIPT
- * 
+ *
  * Ce script:
  * 1. Scrape et traduit les 80 articles TheMusclePhD incomplets/partiels
  * 2. Complète les 16 articles Ultrahuman partiels depuis les JSON sources
  * 3. Génère les fichiers TypeScript finaux
- * 
+ *
  * Usage: OPENAI_API_KEY=sk-xxx npx tsx scripts/sync-all-blog-articles.ts
  */
 
@@ -143,7 +143,7 @@ async function sleep(ms: number): Promise<void> {
 
 async function scrapeArticle(url: string): Promise<{ title: string; content: string; image: string } | null> {
   console.log(`  [SCRAPE] ${url}`);
-  
+
   try {
     const response = await fetch(url, {
       headers: {
@@ -163,7 +163,7 @@ async function scrapeArticle(url: string): Promise<{ title: string; content: str
     const titleMatch = html.match(/<h1[^>]*class="[^"]*entry-title[^"]*"[^>]*>([^<]+)<\/h1>/i) ||
                        html.match(/<title>([^<|]+)/i) ||
                        html.match(/<h1[^>]*>([^<]+)<\/h1>/i);
-    const title = titleMatch ? titleMatch[1].trim().replace(/\s*[-–|].*$/, "") : "Article";
+    const title = titleMatch ? titleMatch[1].trim().replace(/\s*[-\u2013|].*$/, "") : "Article";
 
     // Extract featured image
     const imageMatch = html.match(/og:image[^>]*content="([^"]+)"/i) ||
@@ -217,8 +217,8 @@ async function scrapeArticle(url: string): Promise<{ title: string; content: str
       .replace(/&#8217;/g, "'")
       .replace(/&#8220;/g, '"')
       .replace(/&#8221;/g, '"')
-      .replace(/&#8211;/g, "–")
-      .replace(/&#8212;/g, "—")
+      .replace(/&#8211;/g, "-")
+      .replace(/&#8212;/g, ", ")
       .replace(/\n{3,}/g, "\n\n")
       .trim();
 
@@ -281,9 +281,9 @@ TITRE_FR: [titre traduit]
 
       const titleMatch = result.match(/TITRE_FR:\s*(.+)/);
       const titleFr = titleMatch ? titleMatch[1].trim() : title;
-      
+
       const contentStart = result.indexOf("---");
-      const contentFr = contentStart > -1 
+      const contentFr = contentStart > -1
         ? result.substring(contentStart + 3).trim()
         : result.replace(/TITRE_FR:.*\n?/, "").trim();
 
@@ -329,7 +329,7 @@ async function processMusclePHD(openai: OpenAI): Promise<Article[]> {
 
   for (let i = 0; i < MUSCLEPHD_URLS.length; i++) {
     const url = MUSCLEPHD_URLS[i];
-    
+
     // Skip duplicates
     if (processedUrls.has(url)) continue;
     processedUrls.add(url);
@@ -390,7 +390,7 @@ async function processUltrahuman(): Promise<Article[]> {
   console.log("=".repeat(60));
 
   const articles: Article[] = [];
-  
+
   if (!fs.existsSync(ULTRAHUMAN_JSON_DIR)) {
     console.log("  [SKIP] No ultrahuman-fr JSON directory");
     return articles;
@@ -405,7 +405,7 @@ async function processUltrahuman(): Promise<Article[]> {
 
     try {
       const data = JSON.parse(fs.readFileSync(path.join(ULTRAHUMAN_JSON_DIR, file), "utf-8"));
-      
+
       const wordCount = (data.content || "").split(/\s+/).length;
       const excerpt = (data.excerpt || data.content?.substring(0, 180) || "") + "...";
 
@@ -552,7 +552,7 @@ async function main() {
 
   // 1. Process MusclePhD (scrape + translate)
   const mphdArticles = await processMusclePHD(openai);
-  
+
   // 2. Process Ultrahuman (from JSON)
   const uhArticles = await processUltrahuman();
 
@@ -560,7 +560,7 @@ async function main() {
   if (mphdArticles.length > 0) {
     generateMusclePHDFile(mphdArticles);
   }
-  
+
   if (uhArticles.length > 0) {
     generateUltrahumanFile(uhArticles);
   }

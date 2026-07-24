@@ -1,13 +1,13 @@
 /**
  * SYNC MUSCLEPHD ARTICLES - FULL SCRAPE + TRANSLATE + REBRAND
- * 
+ *
  * Ce script:
  * 1. Scrape tous les articles TheMusclePhD
  * 2. Traduit 100% du contenu en français via OpenAI
  * 3. Rebrand avec auteur ACHZOD
  * 4. Ajoute CTA vers achzodcoaching.com
  * 5. Génère le fichier TypeScript final
- * 
+ *
  * Usage: OPENAI_API_KEY=sk-xxx npx tsx scripts/sync-musclephd-full.ts
  */
 
@@ -104,7 +104,7 @@ async function sleep(ms: number): Promise<void> {
 
 async function scrapeArticle(url: string): Promise<{ title: string; content: string; image: string } | null> {
   console.log(`[SCRAPE] ${url}`);
-  
+
   try {
     const response = await fetch(url, {
       headers: {
@@ -124,7 +124,7 @@ async function scrapeArticle(url: string): Promise<{ title: string; content: str
     const titleMatch = html.match(/<h1[^>]*class="[^"]*entry-title[^"]*"[^>]*>([^<]+)<\/h1>/i) ||
                        html.match(/<title>([^<|]+)/i) ||
                        html.match(/<h1[^>]*>([^<]+)<\/h1>/i);
-    const title = titleMatch ? titleMatch[1].trim().replace(/\s*[-–|].*$/, "") : "Article";
+    const title = titleMatch ? titleMatch[1].trim().replace(/\s*[-\u2013|].*$/, "") : "Article";
 
     // Extract featured image
     const imageMatch = html.match(/og:image[^>]*content="([^"]+)"/i) ||
@@ -133,7 +133,7 @@ async function scrapeArticle(url: string): Promise<{ title: string; content: str
 
     // Extract article content - multiple selectors
     let content = "";
-    
+
     // Try entry-content first
     const entryContentMatch = html.match(/<div[^>]*class="[^"]*entry-content[^"]*"[^>]*>([\s\S]*?)<\/div>\s*(?:<div class="(?:post-tags|related|comments)|<footer)/i);
     if (entryContentMatch) {
@@ -192,8 +192,8 @@ async function scrapeArticle(url: string): Promise<{ title: string; content: str
       .replace(/&#8217;/g, "'")
       .replace(/&#8220;/g, '"')
       .replace(/&#8221;/g, '"')
-      .replace(/&#8211;/g, "–")
-      .replace(/&#8212;/g, "—")
+      .replace(/&#8211;/g, "-")
+      .replace(/&#8212;/g, ", ")
       // Clean up whitespace
       .replace(/\n{3,}/g, "\n\n")
       .trim();
@@ -244,7 +244,7 @@ TITRE_FR: [titre traduit]
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       console.log(`[TRANSLATE] Attempt ${attempt}/${retries} for "${title.substring(0, 40)}..."`);
-      
+
       const response = await openai.chat.completions.create({
         model: "gpt-4.1",
         messages: [{ role: "user", content: prompt }],
@@ -262,9 +262,9 @@ TITRE_FR: [titre traduit]
       // Parse response
       const titleMatch = result.match(/TITRE_FR:\s*(.+)/);
       const titleFr = titleMatch ? titleMatch[1].trim() : title;
-      
+
       const contentStart = result.indexOf("---");
-      const contentFr = contentStart > -1 
+      const contentFr = contentStart > -1
         ? result.substring(contentStart + 3).trim()
         : result.replace(/TITRE_FR:.*\n?/, "").trim();
 
@@ -321,7 +321,7 @@ async function main() {
   for (let i = 0; i < MUSCLEPHD_URLS.length; i++) {
     const url = MUSCLEPHD_URLS[i];
     const slugEn = extractSlugFromUrl(url);
-    
+
     console.log(`\n[${i + 1}/${MUSCLEPHD_URLS.length}] Processing: ${slugEn}`);
     console.log("-".repeat(50));
 

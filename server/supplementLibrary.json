@@ -189,7 +189,7 @@
             "Dose must be in grams per day; avoid fairy-dust blends."
           ],
           "risks": [
-            "May slightly reduce carotenoid absorption—pair with colorful veg."
+            "May slightly reduce carotenoid absorption, pair with colorful veg."
           ],
           "interactions": [],
           "refs": [],
@@ -234,7 +234,7 @@
             "Bloating if ramped too fast."
           ],
           "interactions": [
-            "May reduce absorption of meds/supps—separate timing."
+            "May reduce absorption of meds/supps, separate timing."
           ],
           "refs": [],
           "notes": ""
@@ -508,7 +508,7 @@
               "min": 600,
               "max": 2400,
               "unit": "mg",
-              "note": "extract-specific; commonly 1.2–2.4 g/day split"
+              "note": "extract-specific; commonly 1.2-2.4 g/day split"
             }
           ],
           "timing": [
@@ -781,7 +781,7 @@
           ],
           "risks": [],
           "interactions": [
-            "Warfarin/coumarins: INR interaction reports—avoid unless supervised."
+            "Warfarin/coumarins: INR interaction reports, avoid unless supervised."
           ],
           "refs": [
             "Meta-analyses and interaction reports; INR case reports"
@@ -887,7 +887,7 @@
               "min": 10,
               "max": 20,
               "unit": "g",
-              "note": "daily; or 10–15 g pre-loading with vitamin C before tendon loading"
+              "note": "daily; or 10-15 g pre-loading with vitamin C before tendon loading"
             }
           ],
           "timing": [
@@ -1328,7 +1328,7 @@
               "min": 10,
               "max": 30,
               "unit": "mg",
-              "note": "if chronic >25 mg add copper 1–2 mg unless contraindicated"
+              "note": "if chronic >25 mg add copper 1-2 mg unless contraindicated"
             }
           ],
           "timing": [
@@ -1342,7 +1342,7 @@
           "mechanism": "Supports androgen signaling and overall endocrine function (especially if deficient).",
           "evidence_grade": "B",
           "label_check": [
-            "Must list ELEMENTAL zinc. If zinc ≥25 mg for >4–6 weeks, consider copper."
+            "Must list ELEMENTAL zinc. If zinc ≥25 mg for >4-6 weeks, consider copper."
           ],
           "risks": [
             "Nausea; copper deficiency risk if high-dose long-term."
@@ -1412,7 +1412,7 @@
               "min": 125,
               "max": 600,
               "unit": "mg",
-              "note": "6–8 weeks typical"
+              "note": "6-8 weeks typical"
             }
           ],
           "timing": [
@@ -2041,7 +2041,7 @@
           "mechanism": "Circadian phase support and sleep onset; OTC products can be wildly mislabeled; prioritize tested brands and low dose.",
           "evidence_grade": "A",
           "label_check": [
-            "Prefer USP/NSF/third-party tested; avoid gummies unless tested; start at 0.1–0.3 mg."
+            "Prefer USP/NSF/third-party tested; avoid gummies unless tested; start at 0.1-0.3 mg."
           ],
           "risks": [
             "Grogginess/vivid dreams; tolerance-like effects if abused; label variance risk."
@@ -2150,7 +2150,7 @@
               "min": 300,
               "max": 600,
               "unit": "mg",
-              "note": "30–60 min pre-bed"
+              "note": "30-60 min pre-bed"
             }
           ],
           "timing": [
@@ -2613,7 +2613,7 @@
             "off_weeks": 0,
             "notes": ""
           },
-          "mechanism": "Modulates monoamines and inflammatory/oxidative pathways; meta-analyses show similar symptom reduction to SSRIs in several mild–moderate depression trials.",
+          "mechanism": "Modulates monoamines and inflammatory/oxidative pathways; meta-analyses show similar symptom reduction to SSRIs in several mild-moderate depression trials.",
           "evidence_grade": "A",
           "label_check": [
             "Must be standardized extract, not culinary powder."
@@ -2643,7 +2643,7 @@
               "min": 10,
               "max": 50,
               "unit": "billion_CFU",
-              "note": "choose by strain evidence; 8–12 weeks"
+              "note": "choose by strain evidence; 8-12 weeks"
             }
           ],
           "timing": [
@@ -2654,7 +2654,7 @@
             "off_weeks": 0,
             "notes": ""
           },
-          "mechanism": "Gut–brain axis modulation; meta-analyses suggest modest improvements in depressive symptoms in some groups; strain-specific effects vary.",
+          "mechanism": "Gut-brain axis modulation; meta-analyses suggest modest improvements in depressive symptoms in some groups; strain-specific effects vary.",
           "evidence_grade": "B",
           "label_check": [
             "Must list strains and CFU at end-of-shelf-life; avoid 'probiotic blend' with no details."

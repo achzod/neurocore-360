@@ -162,7 +162,7 @@ export function trackAddPaymentInfo(itemId: string, itemName: string, price: num
 /**
  * Read `_fbp` / `_fbc` cookies set by the Meta Pixel + current user agent + source url.
  * Forward these with every checkout request so the server-side CAPI Purchase event
- * can match the same user/browser — without this, CAPI can't deduplicate with the
+ * can match the same user/browser ,  without this, CAPI can't deduplicate with the
  * client Pixel and match quality stays low.
  */
 function readCookie(name: string): string | undefined {
@@ -237,7 +237,7 @@ export function trackPurchase(
     transaction_id: transactionId,
   });
 
-  // Meta Pixel Purchase — pass eventID matching the server-side CAPI event_id
+  // Meta Pixel Purchase ,  pass eventID matching the server-side CAPI event_id
   // so Meta deduplicates the Pixel + CAPI pair into one Purchase.
   fbq('track', 'Purchase', {
     content_ids: [itemId],

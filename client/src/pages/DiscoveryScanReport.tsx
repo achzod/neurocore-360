@@ -479,7 +479,7 @@ const DiscoveryScanReport: React.FC = () => {
 
         <div className="max-w-[1200px] mx-auto p-6 lg:p-12 space-y-12 lg:space-y-32">
           <div className="space-y-4">
-            {/* Immediate human contact CTA — present on every current and future Discovery report */}
+            {/* Immediate human contact CTA ,  present on every current and future Discovery report */}
             <section
               data-testid="discovery-whatsapp-panel"
               className="relative overflow-hidden rounded-2xl border border-[#25D366]/40 bg-[#25D366]/10 p-5 sm:p-6"
@@ -516,7 +516,7 @@ const DiscoveryScanReport: React.FC = () => {
               </div>
             </section>
 
-            {/* Coaching bonus banner — stays visible so client never loses their code */}
+            {/* Coaching bonus banner ,  stays visible so client never loses their code */}
             <CoachingPromoBanner auditType="GRATUIT" className="-mx-6 lg:-mx-12" />
           </div>
 
@@ -533,7 +533,7 @@ const DiscoveryScanReport: React.FC = () => {
                   <span style={{ color: currentTheme.colors.textMuted }}>voici ton scan.</span>
                 </h1>
                 <p className="text-lg leading-relaxed max-w-lg" style={{ color: 'var(--color-text-muted)' }}>
-                  {displayGlobalScore}/10 — {displayGlobalScore >= 7 ? 'Une base solide.' : displayGlobalScore >= 5 ? 'Des axes d\'optimisation identifies.' : 'Plusieurs blocages a debloquer.'}
+                  {displayGlobalScore}/10 ,  {displayGlobalScore >= 7 ? 'Une base solide.' : displayGlobalScore >= 5 ? 'Des axes d\'optimisation identifies.' : 'Plusieurs blocages a debloquer.'}
                 </p>
               </div>
 

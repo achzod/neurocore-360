@@ -17,7 +17,7 @@ if (sentryDsn) {
     });
 }
 
-// Microsoft Clarity — heatmaps + session recordings. Free, no script bloat.
+// Microsoft Clarity ,  heatmaps + session recordings. Free, no script bloat.
 // Only loads if VITE_CLARITY_ID env var is set at build time. No-op otherwise,
 // so this change is 100% safe even if the env var is never configured.
 const clarityId = import.meta.env.VITE_CLARITY_ID as string | undefined;

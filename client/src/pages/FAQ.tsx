@@ -17,7 +17,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: "Quelle est la différence entre les 4 offres ?",
-    answer: "DISCOVERY SCAN (Gratuit) : ~66 questions sur 10 domaines, rapport 5-7 pages avec 4 sections (executive summary, énergie, métabolisme, synthèse) + sections verrouillées qui te montrent ce que tu débloques en passant à l'Anabolic. ANABOLIC BIOSCAN (59€) : ~137 questions, rapport 20+ pages avec 16 sections complètes — 6 analyses approfondies + 5 protocoles d'action (matin anti-cortisol, soir sommeil, digestion 14j, bureau anti-sédentarité, entraînement personnalisé) + stack suppléments + plan 30-60-90 jours + KPI. Mon best-seller. ULTIMATE SCAN (79€) : tout l'Anabolic + analyse photo posturale et biomécanique (3 photos : face, dos, profil) pour 18 sections et un rapport de 40-50 pages. L'analyse la plus complète. BLOOD ANALYSIS (99€) : le paiement inclut 2 crédits, soit 2 analyses complètes de bilan sanguin avec 39 biomarqueurs et des ranges optimaux de performance — pas seulement les ranges \"normaux\" des labos."
+    answer: "DISCOVERY SCAN (Gratuit) : ~66 questions sur 10 domaines, rapport 5-7 pages avec 4 sections (executive summary, énergie, métabolisme, synthèse) + sections verrouillées qui te montrent ce que tu débloques en passant à l'Anabolic. ANABOLIC BIOSCAN (59€) : ~137 questions, rapport 20+ pages avec 16 sections complètes ,  6 analyses approfondies + 5 protocoles d'action (matin anti-cortisol, soir sommeil, digestion 14j, bureau anti-sédentarité, entraînement personnalisé) + stack suppléments + plan 30-60-90 jours + KPI. Mon best-seller. ULTIMATE SCAN (79€) : tout l'Anabolic + analyse photo posturale et biomécanique (3 photos : face, dos, profil) pour 18 sections et un rapport de 40-50 pages. L'analyse la plus complète. BLOOD ANALYSIS (99€) : le paiement inclut 2 crédits, soit 2 analyses complètes de bilan sanguin avec 39 biomarqueurs et des ranges optimaux de performance ,  pas seulement les ranges \"normaux\" des labos."
   },
   {
     question: "Que comprend le Blood Analysis à 99€ ?",
@@ -25,7 +25,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: "Combien de temps prend le questionnaire ?",
-    answer: "Discovery Scan : ~5 minutes (66 questions). Anabolic Bioscan : ~15-20 minutes (137 questions). Ultimate Scan : ~20-25 minutes (183 questions). Ta progression est sauvegardée automatiquement — tu peux fermer et reprendre plus tard sans rien perdre."
+    answer: "Discovery Scan : ~5 minutes (66 questions). Anabolic Bioscan : ~15-20 minutes (137 questions). Ultimate Scan : ~20-25 minutes (183 questions). Ta progression est sauvegardée automatiquement ,  tu peux fermer et reprendre plus tard sans rien perdre."
   },
   {
     question: "Combien de temps pour recevoir mon rapport ?",
@@ -49,7 +49,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: "Ai-je besoin d'une prise de sang ?",
-    answer: "Non, pas pour le Discovery, l'Anabolic ou l'Ultimate — le questionnaire suffit. Avec le Blood Analysis, tu utilises idéalement ton premier crédit sur un bilan réalisé avant les recommandations, puis ton second crédit sur un nouveau bilan 2 à 3 mois après. La liste des marqueurs à demander à ton médecin ou à ton laboratoire est fournie après l'achat."
+    answer: "Non, pas pour le Discovery, l'Anabolic ou l'Ultimate ,  le questionnaire suffit. Avec le Blood Analysis, tu utilises idéalement ton premier crédit sur un bilan réalisé avant les recommandations, puis ton second crédit sur un nouveau bilan 2 à 3 mois après. La liste des marqueurs à demander à ton médecin ou à ton laboratoire est fournie après l'achat."
   },
   {
     question: "C'est un paiement unique ou un abonnement ?",

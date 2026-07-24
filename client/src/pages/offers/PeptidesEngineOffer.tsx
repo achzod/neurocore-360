@@ -1,6 +1,6 @@
 /**
  * APEXLABS - Peptides Engine Offer
- * Protocole peptides personnalise — 199€ flash (jusqu'au 10 mai 2026 23h59 Paris) puis 399€
+ * Protocole peptides personnalise ,  199€ flash (jusqu'au 10 mai 2026 23h59 Paris) puis 399€
  */
 
 import { useState, useEffect } from "react";
@@ -685,7 +685,7 @@ function PriceComparison() {
 }
 
 // ============================================================================
-// ANIMATED FEATURE CARDS — components adapted from peptides-ref/src/App.tsx
+// ANIMATED FEATURE CARDS ,  components adapted from peptides-ref/src/App.tsx
 // ============================================================================
 
 const AnimationWrapper = ({ children, title, value, status, extraUI, color = "cyan" }: {

@@ -69,7 +69,7 @@ const OFFERS: Offer[] = [
     id: 'peptides-engine',
     title: "PEPTIDES ENGINE",
     subtitle: "Ton Protocole Sur-Mesure",
-    description: "Tu veux prendre des peptides mais tu sais pas par ou commencer? 35 questions sur tes objectifs, ta sante et tes contraintes. Tu recois un protocole personnalise: molecules, dosages exacts en mcg/jour, timing, guide de reconstitution, liens fournisseur verifie avec COA. Et 2 Blood Analyses incluses pour verifier tes marqueurs avant et pendant le cycle. Recuperation, GH, fat loss, sommeil, cognition — chaque objectif a son stack.",
+    description: "Tu veux prendre des peptides mais tu sais pas par ou commencer? 35 questions sur tes objectifs, ta sante et tes contraintes. Tu recois un protocole personnalise: molecules, dosages exacts en mcg/jour, timing, guide de reconstitution, liens fournisseur verifie avec COA. Et 2 Blood Analyses incluses pour verifier tes marqueurs avant et pendant le cycle. Recuperation, GH, fat loss, sommeil, cognition ,  chaque objectif a son stack.",
     features: ["Protocole 2-4 peptides", "Dosages et timing precis", "2 Blood Analyses incluses", "Fournisseur verifie COA -60%"],
     price: "149€",
     imageUrl: "",
