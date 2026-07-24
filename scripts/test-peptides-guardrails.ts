@@ -4,6 +4,7 @@ import {
   validatePeptidesReport,
   type PeptidesReport,
 } from "../server/peptidesReportValidator";
+import { repairPeptidesReportContent } from "../server/peptidesReportRepair";
 
 const now = new Date().toISOString();
 const peptide = {
@@ -21,6 +22,14 @@ const peptide = {
 };
 
 assert.equal(estimateNeedMg(peptide), 79, "La titration naturelle doit totaliser 79 mg");
+assert.equal(
+  estimateNeedMg({
+    dosage: "150 mcg au coucher",
+    cycleDuration: "Cure de 4 semaines",
+  }),
+  4.2,
+  "Une prise au coucher sur 4 semaines doit etre calculee comme quotidienne"
+);
 
 const longHumanParagraph = [
   "Luca, cette partie reprend ton profil concret et distingue clairement les faits des hypotheses.",
@@ -82,5 +91,25 @@ stale._peptauraLiveSync!.syncedAt = new Date(Date.now() - 2 * 60 * 60 * 1000).to
 const staleAudit = validatePeptidesReport(stale);
 assert.equal(staleAudit.ok, false);
 assert.match(staleAudit.errors.join("\n"), /trop ancien/);
+
+const legacyReport = structuredClone(report) as any;
+legacyReport.tier = "standard";
+legacyReport.bloodMarkers = [];
+legacyReport.peptides[0].cycleDuration = "12 semaines avec descente progressive sur les 4 dernieres semaines";
+legacyReport.peptides[0].timing = "Peut etre melange dans la meme seringue avec un autre produit.";
+legacyReport.peptides[0].reconstitution = "Vial 10mg + 2ml. Pour 8mg, utilise deux vials et deux injections.";
+const repaired = repairPeptidesReportContent(
+  legacyReport,
+  { pep_name: "Luca", pep_country: "France" },
+  "solo"
+) as any;
+const repairedAudit = validatePeptidesReport(repaired);
+assert.equal(repaired.tier, "solo");
+assert.equal(repaired.sections.length, 15);
+assert.ok(repaired.sections.reduce((sum: number, section: any) => sum + section.content.length, 0) >= 30_000);
+assert.doesNotMatch(repaired.peptides[0].cycleDuration, /descente progressive/i);
+assert.doesNotMatch(repaired.peptides[0].timing, /peut etre melange/i);
+assert.match(repaired.peptides[0].reconstitution, /1\.60 ml/);
+assert.equal(repairedAudit.ok, true, repairedAudit.errors.join("\n"));
 
 console.log("Peptides guardrails: OK");

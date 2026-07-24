@@ -24,6 +24,10 @@ const ROBOTIC_PATTERNS: Array<{ label: string; pattern: RegExp }> = [
   { label: "dans le cadre de", pattern: /\bdans le cadre de (?:cette|ce)\b/i },
   { label: "comme mentionne precedemment", pattern: /\bcomme mentionn[ée] pr[ée]c[ée]demment\b/i },
   { label: "chaque individu est unique", pattern: /\bchaque individu est unique\b/i },
+  { label: "des millions de personnes", pattern: /\bdes millions de personnes\b/i },
+  { label: "plus simple que ca en a l'air", pattern: /\bplus simple que [çc]a en a l'air\b/i },
+  { label: "source personnelle", pattern: /\b(?:ma|notre) source personnelle\b/i },
+  { label: "quasi indolore", pattern: /\bquasi indolore\b/i },
   { label: "assistant ou modele IA", pattern: /\b(?:assistant|mod[èe]le de langage|intelligence artificielle|chatgpt|claude|openai|anthropic)\b/i },
 ];
 

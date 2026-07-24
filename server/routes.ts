@@ -5733,6 +5733,93 @@ export async function registerRoutes(
     }
   });
 
+  // Admin: full deterministic repair before delivery.
+  // Recomputes vial quantities, refreshes every selected Peptaura listing,
+  // replaces unsafe legacy sections, applies the paid tier and persists only
+  // when the strict validator returns ok=true.
+  app.post("/api/admin/peptides/repair-live/:reportId", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { reportId } = req.params;
+      const apply = !!(req.body as any)?.apply;
+      const existing = await storage.getBurnoutReport(reportId);
+      if (!existing || !String(existing.email ?? "").startsWith("peptides::")) {
+        res.status(404).json({ success: false, error: "Peptides report not found" });
+        return;
+      }
+
+      const email = String(existing.email).slice("peptides::".length).toLowerCase();
+      const orders = await storage.getOrdersByEmail(email);
+      const order = orders.find((candidate: any) =>
+        candidate.productType === "PEPTIDES_ENGINE"
+        && candidate.status === "paid"
+        && (
+          String(candidate?.metadata?.peptidesReportId || "") === reportId
+          || orders.filter((entry: any) => entry.productType === "PEPTIDES_ENGINE" && entry.status === "paid").length === 1
+        )
+      );
+      if (!order) {
+        res.status(404).json({ success: false, error: "Paid Peptides Engine order not found for report" });
+        return;
+      }
+
+      const responses = (
+        (existing as any).responses
+        || (order.metadata as any)?.peptidesResponses
+        || {}
+      ) as Record<string, unknown>;
+      if (Object.keys(responses).length < 3) {
+        res.status(400).json({ success: false, error: "Client responses missing for live repair" });
+        return;
+      }
+
+      const paidTier = String((order.metadata as any)?.peptidesTier || (existing.report as any)?.tier || "solo");
+      const before = JSON.parse(JSON.stringify(existing.report));
+      const repaired = await refreshPeptauraPricingForDelivery(before, responses, paidTier);
+      const { validatePeptidesReport } = await import("./peptidesReportValidator");
+      const validation = validatePeptidesReport(repaired);
+
+      if (apply && !validation.ok) {
+        res.status(422).json({
+          success: false,
+          reportId,
+          applied: false,
+          orderId: order.id,
+          validation,
+          error: "Strict validation failed, report not persisted",
+        });
+        return;
+      }
+
+      if (apply) {
+        await storage.updateBurnoutReport(reportId, repaired);
+        await storage.setOrderMetadataKey(order.id, "peptidesReportRepairedAt", new Date().toISOString());
+        console.log(`[Admin Peptides Repair] Persisted validated live repair for ${reportId}`);
+      }
+
+      res.json({
+        success: true,
+        reportId,
+        orderId: order.id,
+        applied: apply,
+        validation,
+        tier: repaired.tier,
+        peptides: repaired.peptides.map((peptide: any) => ({
+          name: peptide.name,
+          dosage: peptide.dosage,
+          cycleDuration: peptide.cycleDuration,
+          vialsNeeded: peptide.vialsNeeded,
+          priceEstimate: peptide.priceEstimate,
+          purchaseUrl: peptide.purchaseUrl,
+        })),
+        liveSync: (repaired as any)._peptauraLiveSync,
+      });
+    } catch (error: any) {
+      console.error("[Admin Peptides Repair] Error:", error);
+      res.status(500).json({ success: false, error: error?.message || "Erreur serveur" });
+    }
+  });
+
   // Admin: patch one or more section.content fields on a peptides report,
   // and optionally remove peptides from the report.peptides[] array.
   // Body: {
@@ -13269,7 +13356,8 @@ export async function registerRoutes(
             }
             const repaired = await refreshPeptauraPricingForDelivery(
               JSON.parse(JSON.stringify(existingReport)),
-              pricingResponses
+              pricingResponses,
+              String((order.metadata as any)?.peptidesTier || existingReport?.tier || "solo")
             );
             const repairedFingerprint = JSON.stringify(repaired);
             const originalFingerprint = JSON.stringify(existingReport);

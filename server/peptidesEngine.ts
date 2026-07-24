@@ -19,6 +19,7 @@ import {
   collectClientFacingStrings,
   sanitizeClientFacingText,
 } from "./clientFacingQuality";
+import { repairPeptidesReportContent } from "./peptidesReportRepair";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -373,7 +374,9 @@ async function fetchPeptauraCatalogSlugs(forceFresh = false): Promise<string[] |
 
   const html = await fetchTextWithTimeout("https://www.peptaura.com/sitemap.xml", PEPTAURA_FETCH_TIMEOUT_MS, forceFresh);
   if (!html) {
-    peptauraSitemapCache = { value: null, expiresAt: now + Math.min(PEPTAURA_CACHE_TTL_MS, 15 * 60 * 1000) };
+    if (peptauraSitemapCache?.value && peptauraSitemapCache.value.length > 0) {
+      return peptauraSitemapCache.value;
+    }
     return null;
   }
 
@@ -430,7 +433,16 @@ async function fetchPeptauraShippingAvailability(
   if (!forceFresh && cached && cached.expiresAt > now) return cached.value;
 
   const shippingUrl = peptauraShippingUrl(country);
-  const html = await fetchTextWithTimeout(shippingUrl, PEPTAURA_FETCH_TIMEOUT_MS, forceFresh);
+  let html = await fetchTextWithTimeout(shippingUrl, PEPTAURA_FETCH_TIMEOUT_MS, forceFresh);
+  if (!html && forceFresh) {
+    html = await fetchTextWithTimeout(shippingUrl, PEPTAURA_FETCH_TIMEOUT_MS, false);
+  }
+  if (!html && cached?.value?.live) {
+    const cachedAgeMs = now - new Date(cached.value.fetchedAt).getTime();
+    if (Number.isFinite(cachedAgeMs) && cachedAgeMs <= PEPTAURA_CATALOG_MAX_AGE_MS) {
+      return cached.value;
+    }
+  }
   const parsed = html
     ? parsePeptauraShipping(html, country)
     : { country, shippingUrl, availableVendors: [], blockedVendors: [], fetchedAt: new Date().toISOString(), live: false };
@@ -848,9 +860,9 @@ function buildLivePriceEstimate(pep: PeptideItem, listing: PeptauraLiveListing, 
   const eur = Math.round(total * 0.92);
   const supplier = listing.supplierDisplayName || listing.supplier;
   if (listing.boxSize > 1) {
-    return `Environ $${packagePrice.toFixed(2)} la boite de ${listing.boxSize} vials (${listing.dosage}, ${supplier}), ${packageCount} boite(s), ${deliveredVials} vials recus, total $${total.toFixed(2)} (environ ${eur} euros)`;
+    return `Environ $${packagePrice.toFixed(2)} la boite de ${listing.boxSize} vials (${listing.dosage}, ${supplier}), ${packageCount} boite${packageCount > 1 ? "s" : ""}, ${deliveredVials} vials recus, total $${total.toFixed(2)} (conversion indicative: ${eur} euros)`;
   }
-  return `Environ $${packagePrice.toFixed(2)} par vial (${listing.dosage}, ${supplier}), ${qty} vial(s), total $${total.toFixed(2)} (environ ${eur} euros)`;
+  return `Environ $${packagePrice.toFixed(2)} par vial (${listing.dosage}, ${supplier}), ${qty} vial${qty > 1 ? "s" : ""}, total $${total.toFixed(2)} (conversion indicative: ${eur} euros)`;
 }
 
 async function applyLivePeptauraPricing(
@@ -872,24 +884,53 @@ async function applyLivePeptauraPricing(
     }
 
     pep.purchaseUrl = peptauraProductUrl(slug);
-    const qty = extractVialQty(pep.vialsNeeded) || 1;
+    let qty = extractVialQty(pep.vialsNeeded) || 1;
     const targetVialMg = extractVialMg(pep.vialsNeeded) || extractVialMg(pep.reconstitution);
-    const snapshot = await fetchPeptauraProductSnapshot(slug, forceFresh);
+    const fetchedSnapshot = await fetchPeptauraProductSnapshot(slug, forceFresh);
+    const cachedSnapshotAgeMs = cachedSnapshot
+      ? Date.now() - new Date(cachedSnapshot.fetchedAt).getTime()
+      : Number.POSITIVE_INFINITY;
+    const snapshot = fetchedSnapshot
+      || (
+        cachedSnapshot
+        && Number.isFinite(cachedSnapshotAgeMs)
+        && cachedSnapshotAgeMs <= PEPTAURA_CATALOG_MAX_AGE_MS
+          ? cachedSnapshot
+          : null
+      );
     if (!snapshot || snapshot.listings.length === 0) {
       failures.push(`${pep.name}: page produit live indisponible`);
       continue;
     }
 
-    const best = selectBestLiveListing(snapshot, context.shippingAvailability, targetVialMg, qty);
+    let best = selectBestLiveListing(snapshot, context.shippingAvailability, targetVialMg, qty);
     if (!best) {
       failures.push(`${pep.name}: aucune offre en stock compatible avec le pays, le dosage et la quantite`);
       continue;
     }
 
-    const bestMg = parseListingMg(best.dosage);
+    let bestMg = parseListingMg(best.dosage);
     if (targetVialMg != null && bestMg != null && Math.abs(bestMg - targetVialMg) > 0.05) {
-      failures.push(`${pep.name}: dosage live ${best.dosage} incompatible avec ${targetVialMg} mg par vial`);
-      continue;
+      const needMg = estimateNeedMg(pep);
+      if (needMg == null || needMg <= 0) {
+        failures.push(`${pep.name}: dosage live ${best.dosage} incompatible avec ${targetVialMg} mg par vial et besoin total incalculable`);
+        continue;
+      }
+      qty = Math.max(1, Math.ceil(needMg / bestMg));
+      const compatible = selectBestLiveListing(
+        snapshot,
+        context.shippingAvailability,
+        bestMg,
+        qty
+      );
+      if (!compatible || parseListingMg(compatible.dosage) !== bestMg) {
+        failures.push(`${pep.name}: impossible d'adapter le format live ${best.dosage} au besoin de ${needMg.toFixed(2)} mg`);
+        continue;
+      }
+      best = compatible;
+      bestMg = parseListingMg(best.dosage);
+      const durationLabel = String(pep.cycleDuration || "le cycle").split(/[,.]/)[0].trim();
+      pep.vialsNeeded = `${qty} vial${qty > 1 ? "s" : ""} de ${bestMg}mg pour ${durationLabel} (besoin calcule ~${needMg.toFixed(2)}mg)`;
     }
 
     const livePrice = buildLivePriceEstimate(pep, best, qty);
@@ -1024,12 +1065,14 @@ async function buildPeptauraPromptContext(responses: Record<string, unknown>): P
 
 export async function refreshPeptauraPricingForDelivery(
   sourceReport: PeptidesReport,
-  responses: Record<string, unknown>
+  responses: Record<string, unknown>,
+  tier?: string | null
 ): Promise<PeptidesReport> {
   const report = validateVialsMath(JSON.parse(JSON.stringify(sourceReport)));
   const context = await buildPeptauraPromptContext(responses);
   await applyLivePeptauraPricing(report, context, true);
-  return cleanReportContent(report, report.clientName || extractFirstName(responses, ""));
+  const repaired = repairPeptidesReportContent(report, responses, tier);
+  return cleanReportContent(repaired, repaired.clientName || extractFirstName(responses, ""));
 }
 
 // ─── Client (lazy init) ───────────────────────────────────────────────────────
