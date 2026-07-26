@@ -49,6 +49,11 @@ interface PeptidesReport {
   shoppingList?: string;
   promoCodes: string[];
   generatedAt: string;
+  _generationMeta?: {
+    generatedAt?: string;
+    model?: string;
+    provider?: string;
+  };
 }
 
 // ============================================================================
@@ -319,7 +324,7 @@ export default function PeptidesEngineReport() {
         if (data.report) {
           const r = data.report;
           r.promoCodes = r.promoCodes || r.promoCodesGenerated || [];
-          r.generatedAt = r.generatedAt || data.createdAt || new Date().toISOString();
+          r.generatedAt = r._generationMeta?.generatedAt || r.generatedAt || data.createdAt || new Date().toISOString();
           setReport(r);
         } else {
           setError(data.error || "Rapport non trouve");
@@ -431,7 +436,8 @@ export default function PeptidesEngineReport() {
             Ton protocole, {report.clientName}
           </h1>
           <p className="text-white/50 text-sm font-mono">
-            Genere le {new Date(report.generatedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+            {report._generationMeta?.generatedAt ? "Mis a jour le" : "Genere le"}{" "}
+            {new Date(report.generatedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
         </motion.div>
 

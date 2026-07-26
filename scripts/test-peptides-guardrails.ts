@@ -15,11 +15,17 @@ import {
 import { splitWeeklyScheduleEntries } from "../client/src/lib/peptidesSchedule";
 
 const engineSource = readFileSync(new URL("../server/peptidesEngine.ts", import.meta.url), "utf8");
+const reportPageSource = readFileSync(new URL("../client/src/pages/PeptidesEngineReport.tsx", import.meta.url), "utf8");
 assert.match(engineSource, /PEPTIDES_PRIMARY_MODEL[\s\S]{0,120}"claude-sonnet-4-6"/);
 assert.match(engineSource, /PEPTIDES_QUALITY_FALLBACK_MODEL[\s\S]{0,120}"gpt-5\.6-sol"/);
 assert.match(engineSource, /effort:\s*"max"/);
 assert.match(engineSource, /mode:\s*"pro"/);
 assert.match(engineSource, /Candidate rejected[\s\S]{0,600}Switching to quality fallback/);
+assert.match(
+  reportPageSource,
+  /_generationMeta\?\.generatedAt[\s\S]{0,180}Mis a jour le/,
+  "Une regeneration doit afficher sa vraie date de mise a jour"
+);
 
 const renderedScheduleEntries = splitWeeklyScheduleEntries(
   "LUNDI SOIR: CJC 200 mcg | MERCREDI SOIR: CJC 200 mcg | DIMANCHE MATIN: Retatrutide (S1: 20 unites | S2: 40 unites | S3: 80 unites)"
