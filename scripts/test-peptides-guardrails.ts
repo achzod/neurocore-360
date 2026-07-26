@@ -106,6 +106,20 @@ const repetitionAudit = validatePeptidesReport(repetitionFailure);
 assert.equal(repetitionAudit.ok, false);
 assert.match(repetitionAudit.errors.join("\n"), /phrases repetees detectees/);
 
+const repairableRoboticPhrase = structuredClone(report);
+repairableRoboticPhrase.sections![0].content += " C'est plus simple que ca en a l'air.";
+const repairedRoboticPhrase = repairPeptidesReportContent(
+  repairableRoboticPhrase as any,
+  { pep_name: "Luca", pep_country: "France" },
+  "solo"
+) as any;
+const repairedRoboticAudit = validatePeptidesReport(repairedRoboticPhrase);
+assert.equal(repairedRoboticAudit.ok, true, repairedRoboticAudit.errors.join("\n"));
+assert.doesNotMatch(
+  repairedRoboticPhrase.sections[0].content,
+  /plus simple que ca en a l'air/i
+);
+
 const stale = structuredClone(report);
 stale._peptauraLiveSync!.syncedAt = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
 const staleAudit = validatePeptidesReport(stale);
