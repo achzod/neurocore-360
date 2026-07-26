@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   estimateNeedMg,
+  findOperationalPeptidesMissingFromArray,
   validatePeptidesReport,
   type PeptidesReport,
 } from "../server/peptidesReportValidator";
@@ -83,6 +84,41 @@ const report: PeptidesReport = {
 
 const baseline = validatePeptidesReport(report);
 assert.equal(baseline.ok, true, baseline.errors.join("\n"));
+
+const historicalMentionOnly = structuredClone(report);
+historicalMentionOnly.sections![1].content += [
+  " MK-677 faisait partie de son historique.",
+  " MK-677 explique une partie de son retour.",
+  " MK-677 n'est pas retenu ici.",
+  " MK-677 reste une ancienne experience.",
+  " MK-677 sert uniquement de comparaison.",
+  " MK-677 ne fait pas partie du stack actif.",
+].join("");
+assert.deepEqual(
+  findOperationalPeptidesMissingFromArray(historicalMentionOnly),
+  [],
+  "Un peptide historique mentionne dans la narration ne doit pas etre exige dans le stack actif"
+);
+
+const truncatedOperationalStack = structuredClone(historicalMentionOnly);
+truncatedOperationalStack.weeklySchedule =
+  "LUNDI SOIR: DSIP 150 mcg au coucher | MARDI: repos";
+truncatedOperationalStack.shoppingList =
+  "DSIP 5 mg x 2 vials a commander apres verification du stock";
+assert.deepEqual(
+  findOperationalPeptidesMissingFromArray(truncatedOperationalStack),
+  ["dsip"],
+  "Un peptide actif dans le calendrier ou la liste de commande doit exister dans le tableau structure"
+);
+
+const explicitlyExcludedOperationalMention = structuredClone(report);
+explicitlyExcludedOperationalMention.shoppingList =
+  "MK-677 10 mg exclu, ne pas commander";
+assert.deepEqual(
+  findOperationalPeptidesMissingFromArray(explicitlyExcludedOperationalMention),
+  [],
+  "Une molecule explicitement exclue ne doit pas declencher une alerte de truncation"
+);
 
 const underOrder = structuredClone(report);
 underOrder.peptides![0].vialsNeeded = "2 vials de 10mg pour 12 semaines";

@@ -126,6 +126,93 @@ function findRepeatedReportSentences(
     .sort((a, b) => b.count - a.count);
 }
 
+const OPERATIONAL_PEPTIDE_ALIASES: Array<{
+  key: string;
+  aliases: string[];
+}> = [
+  { key: "bpc157", aliases: ["bpc-157", "bpc157"] },
+  { key: "tb500", aliases: ["tb-500", "tb500"] },
+  { key: "cjc1295", aliases: ["cjc-1295", "cjc1295"] },
+  { key: "ipamorelin", aliases: ["ipamorelin"] },
+  { key: "retatrutide", aliases: ["retatrutide"] },
+  { key: "mk677", aliases: ["mk-677", "mk677", "ibutamoren"] },
+  { key: "epitalon", aliases: ["epitalon"] },
+  { key: "ghkcu", aliases: ["ghk-cu", "ghkcu"] },
+  { key: "semax", aliases: ["semax"] },
+  { key: "selank", aliases: ["selank"] },
+  { key: "dsip", aliases: ["dsip"] },
+  { key: "melanotan", aliases: ["melanotan"] },
+  { key: "hexarelin", aliases: ["hexarelin"] },
+  { key: "tesamorelin", aliases: ["tesamorelin"] },
+  { key: "sermorelin", aliases: ["sermorelin"] },
+  { key: "semaglutide", aliases: ["semaglutide"] },
+  { key: "tirzepatide", aliases: ["tirzepatide"] },
+];
+
+function normalizeOperationalText(value: unknown): string {
+  return String(value ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function containsOperationalAlias(value: string, aliases: string[]): boolean {
+  const paddedValue = ` ${normalizeOperationalText(value)} `;
+  return aliases.some((alias) =>
+    paddedValue.includes(` ${normalizeOperationalText(alias)} `)
+  );
+}
+
+/**
+ * Detects a peptide that is actively scheduled or ordered but missing from
+ * report.peptides. Narrative-only mentions are deliberately ignored because
+ * they can describe past use, a rejected option or a comparison.
+ */
+export function findOperationalPeptidesMissingFromArray(
+  report: Pick<PeptidesReport, "peptides" | "weeklySchedule" | "shoppingList">
+): string[] {
+  const peptideNames = (report.peptides || []).map((peptide) =>
+    String(peptide.name || "")
+  );
+  const coveredKeys = new Set(
+    OPERATIONAL_PEPTIDE_ALIASES
+      .filter(({ aliases }) =>
+        peptideNames.some((name) => containsOperationalAlias(name, aliases))
+      )
+      .map(({ key }) => key)
+  );
+
+  const operationalSegments = [
+    String(report.weeklySchedule || ""),
+    String(report.shoppingList || ""),
+  ]
+    .flatMap((value) => value.split(/[\n|;]+/))
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  const operationalSignal =
+    /\b(?:dose|dosage|inject|injection|sous cutan|vial|vials|flacon|flacons|commande|commander|acheter|achat|matin|soir|coucher|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\b|\b\d+(?:[.,]\d+)?\s*(?:mcg|ug|mg|ml|iu|ui)\b|(?:x|×)\s*\d+\b/i;
+  const exclusionSignal =
+    /\b(?:ne\s+pas|pas\s+de|aucun|aucune|exclu|exclure|eviter|evite|arreter|arrete|stop|historique|ancien|ancienne|non\s+retenu|non\s+retenue)\b/i;
+
+  return OPERATIONAL_PEPTIDE_ALIASES
+    .filter(({ key, aliases }) => {
+      if (coveredKeys.has(key)) return false;
+      return operationalSegments.some((segment) => {
+        if (!containsOperationalAlias(segment, aliases)) return false;
+        const normalizedSegment = normalizeOperationalText(segment);
+        return (
+          operationalSignal.test(normalizedSegment) &&
+          !exclusionSignal.test(normalizedSegment)
+        );
+      });
+    })
+    .map(({ key }) => key);
+}
+
 function extractFirstNumber(text: string | undefined): number | null {
   if (!text) return null;
   const m = text.match(/(\d+(?:[.,]\d+)?)/);

@@ -15,6 +15,7 @@ import {
   extractTotalMgFromVials,
   extractVialQty,
   extractVialMg,
+  findOperationalPeptidesMissingFromArray,
 } from "./peptidesReportValidator";
 import { storage } from "./storage";
 import {
@@ -2589,52 +2590,16 @@ export async function generatePeptidesProtocol(
         }
       }
 
-      // CHECK 3b: peptides array must cover peptides mentioned in the FULL narrative
-      // (sections + weeklySchedule + shoppingList). Detects jsonrepair silently truncating the
-      // peptides array , e.g., narrative discusses CJC-1295/Ipamorelin/Retatrutide in depth
-      // but array only has BPC-157 + TB-500.
-      const sectionsText = (report.sections || []).map((s: any) => String(s.content ?? "")).join(" ");
-      const scheduleText = typeof report.weeklySchedule === "string" ? report.weeklySchedule : JSON.stringify(report.weeklySchedule ?? "");
-      const shoppingText = typeof report.shoppingList === "string" ? report.shoppingList : JSON.stringify(report.shoppingList ?? "");
-      const combinedText = (sectionsText + " " + scheduleText + " " + shoppingText).toLowerCase();
-      // Known peptides with thresholds , if the narrative mentions a peptide > N times,
-      // it's genuinely part of the protocol and must be in the array.
-      const knownPeptides: Array<[string, number]> = [
-        ["bpc-157", 5], ["bpc157", 5],
-        ["tb-500", 5], ["tb500", 5],
-        ["cjc-1295", 5], ["cjc1295", 5],
-        ["ipamorelin", 5],
-        ["retatrutide", 5],
-        ["mk-677", 5], ["mk677", 5], ["ibutamoren", 5],
-        ["epitalon", 5],
-        ["ghk-cu", 5], ["ghkcu", 5],
-        ["semax", 5], ["selank", 5], ["dsip", 5],
-        ["melanotan", 5], ["hexarelin", 5],
-        ["tesamorelin", 5], ["sermorelin", 5],
-        ["semaglutide", 5], ["tirzepatide", 5],
-      ];
-      const peptidesInArray = (report.peptides || []).map((p: any) => String(p.name || "").toLowerCase());
-      const countInText = (needle: string) => {
-        let count = 0; let idx = 0;
-        while ((idx = combinedText.indexOf(needle, idx)) !== -1) { count++; idx += needle.length; }
-        return count;
-      };
-      const mentionedFeatures = knownPeptides
-        .map(([name, threshold]) => ({ name, count: countInText(name), threshold }))
-        .filter(x => x.count >= x.threshold);
-      // Deduplicate (e.g., bpc-157 and bpc157 are the same peptide)
-      const featureKey = (name: string) => name.replace(/-/g, "").toLowerCase();
-      const mentionedFeatureSet = new Set(mentionedFeatures.map(x => featureKey(x.name)));
-      const coveredByArray = new Set(
-        peptidesInArray.flatMap((arrName: string) => {
-          const key = featureKey(arrName);
-          // Match array peptide against feature (e.g., "CJC-1295 sans DAC" covers "cjc1295")
-          return Array.from(mentionedFeatureSet).filter(f => key.includes(f) || f.includes(key.split(" ")[0] || ""));
-        })
-      );
-      const missingFromArray = Array.from(mentionedFeatureSet).filter(f => !coveredByArray.has(f));
+      // CHECK 3b: peptides actively scheduled or ordered must exist in the
+      // structured array. Narrative-only mentions can legitimately describe
+      // past use, rejected options or comparisons and must not trigger a false
+      // truncation alarm.
+      const missingFromArray = findOperationalPeptidesMissingFromArray(report);
       if (missingFromArray.length >= 1) {
-        throw new Error(`VALIDATION: peptides array incomplete , narrative deeply covers ${Array.from(mentionedFeatureSet).join(", ")} but array has only ${peptidesInArray.join(", ")} (missing: ${missingFromArray.join(", ")}). Likely jsonrepair truncation.`);
+        const peptidesInArray = (report.peptides || []).map((p: any) =>
+          String(p.name || "").toLowerCase()
+        );
+        throw new Error(`VALIDATION: peptides array incomplete , active schedule or shopping list has ${missingFromArray.join(", ")} but array has only ${peptidesInArray.join(", ")}. Likely jsonrepair truncation.`);
       }
 
       // CHECK 4: total content length
