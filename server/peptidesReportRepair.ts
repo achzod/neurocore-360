@@ -41,6 +41,71 @@ function stripProjectPrefix(value: string | undefined): string {
     .trim();
 }
 
+function normalizePeptideMention(value: string): string {
+  return sanitizeClientFacingText(value)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "");
+}
+
+function peptideMentionKeys(name: string): string[] {
+  const normalized = normalizePeptideMention(name);
+  if (normalized.includes("cjc1295") && normalized.includes("ipamorelin")) {
+    return ["cjc1295", "ipamorelin"];
+  }
+  const knownKeys = [
+    "retatrutide",
+    "bpc157",
+    "tb500",
+    "cjc1295",
+    "ipamorelin",
+    "mk677",
+    "epitalon",
+    "ghkcu",
+    "semax",
+    "selank",
+    "dsip",
+    "melanotan",
+    "hexarelin",
+    "tesamorelin",
+    "sermorelin",
+    "semaglutide",
+    "tirzepatide",
+  ];
+  const matches = knownKeys.filter((key) => normalized.includes(key));
+  return matches.length > 0 ? matches : [normalized];
+}
+
+function mentionsPeptide(value: string, peptideName: string): boolean {
+  const normalized = normalizePeptideMention(value);
+  return peptideMentionKeys(peptideName).some((key) => normalized.includes(key));
+}
+
+export function pruneUnintegratedBonusPeptides(
+  sourceReport: PeptidesReport
+): PeptidesReport {
+  const report = sourceReport as RepairableReport;
+  const protocolText = [
+    report.weeklySchedule || "",
+    ...(report.sections || [])
+      .filter((section) =>
+        /protocole|semaine type|calendrier/i.test(
+          `${section.id || ""} ${section.title || ""}`
+        )
+      )
+      .map((section) => section.content || ""),
+  ].join("\n");
+
+  report.peptides = (report.peptides || []).filter((peptide) => {
+    const isBonus = /\bbonus\b/i.test(
+      `${peptide.purpose || ""} ${peptide.whyThisPeptide || ""}`
+    );
+    return !isBonus || mentionsPeptide(protocolText, peptide.name || "");
+  });
+  return report;
+}
+
 function isTruthy(value: unknown): boolean {
   if (typeof value === "boolean") return value;
   if (typeof value === "string") {
@@ -146,9 +211,12 @@ function cleanStandardSections(report: RepairableReport): void {
   for (const section of report.sections || []) {
     section.content = sanitizeClientFacingText(
       String(section.content || "")
-        .replace(/ce rapport est un document de preparation a une discussion medicale\./gi, "")
+        .replace(/ce rapport est un document de pr[ée]paration [àa] une discussion m[ée]dicale\./gi, "")
         .replace(/sans validation explicite, tu ne commences pas\./gi, "")
-        .replace(/consulte un medecin avant toute supplementation\./gi, "")
+        .replace(/ce protocole est fourni [àa] titre [ée]ducatif et informatif\.[^.]*\./gi, "")
+        .replace(/il ne constitue pas un avis m[ée]dical ni une ordonnance\./gi, "")
+        .replace(/consulte un professionnel de sant[ée] avant toute suppl[ée]mentation[^.]*\./gi, "")
+        .replace(/consulte un m[ée]decin avant toute suppl[ée]mentation\./gi, "")
         .replace(/des milliers de personnes le font chaque jour et c'est beaucoup plus simple que tu ne l'imagines\./gi, "")
         .replace(/\n{3,}/g, "\n\n")
         .trim()
@@ -174,6 +242,10 @@ function removeUnsupportedDescent(
   }
 
   const cleaned = original
+    .replace(
+      /\([^)]*(?:descente|diminution|r[ée]duction|baisse)(?:\s+progressive)?[^)]*\)/gi,
+      ""
+    )
     .replace(
       /\s*[,;(]?\s*(?:(?:avec|puis|et|dont|incluant|comprenant)\s+)?(?:une\s+)?(?:phase\s+de\s+)?(?:\d+\s*semaines?\s+(?:de|en)\s+)?(?:descente|diminution|r[ée]duction|baisse)(?:\s+progressive)?[^,.;)]*\)?/gi,
       ""
@@ -247,10 +319,205 @@ function cleanExpertPeptideFields(report: RepairableReport): void {
   }
 }
 
-function repairStandardReportContent(report: RepairableReport, firstName: string): void {
+function normalizeTierCreditClaims(
+  report: RepairableReport,
+  tier: string
+): void {
+  if (tier !== "solo") return;
+
+  for (const section of report.sections || []) {
+    if (
+      /bilan-sanguin/i.test(section.id || "") &&
+      /(?:2 cr[ée]dits?|premier cr[ée]dit|deuxi[èe]me cr[ée]dit)/i.test(
+        `${section.title || ""} ${section.content || ""}`
+      )
+    ) {
+      section.title = "Blood Analysis et bilan de depart";
+      section.content = sanitizeClientFacingText(
+        [
+          "Ton offre Solo n'ajoute aucun credit Blood Analysis. Si tu veux une interpretation APEXLABS, tu commandes cette analyse separement. Le prelevement du laboratoire reste lui aussi une depense distincte.",
+          "Le bilan de depart sert a fixer une base avant toute modification. Les marqueurs doivent etre choisis selon ton objectif, ton historique, tes traitements, tes allergies et les molecules evoquees. Pour un axe GH, l'IGF-1 fait partie des reperes utiles. Pour l'axe metabolique, la glycemie, l'HbA1c, l'insuline et les lipides donnent une base de comparaison.",
+          "Si tu veux comparer l'evolution, tu peux commander une seconde analyse plus tard, idealement dans des conditions proches: meme laboratoire, horaire similaire, meme contexte de jeune et derniere seance notee. Aucun credit n'est presente ici comme offert ou deja ajoute a ton compte.",
+          "Quand ton PDF est pret, utilise https://apexlabs.achzodcoaching.com/blood-dashboard avec l'adresse de ta commande. Le PDF doit etre lisible et complet.",
+        ].join("\n\n")
+      );
+      continue;
+    }
+    let content = String(section.content || "");
+    section.title = sanitizeClientFacingText(
+      String(section.title || "")
+        .replace(/\btes? 2 cr[ée]dits? Blood Analysis\b/gi, "Blood Analysis")
+        .replace(/\b2 cr[ée]dits? Blood Analysis\b/gi, "Blood Analysis")
+    );
+    content = content
+      .replace(
+        /CE QUI EST PR[ÉE]PAY[ÉE][\s\S]*?(?=CE QUI N['’]EST PAS PR[ÉE]PAY[ÉE])/i,
+        "CE QUI EST INCLUS DANS TON OFFRE SOLO\nTon offre Solo n'ajoute aucun credit Blood Analysis. L'analyse APEXLABS et le prelevement au laboratoire restent deux achats separes si tu choisis de les faire.\n\n"
+      )
+      .replace(
+        /COMMENT UTILISER TON CREDIT BLOOD ANALYSIS[\s\S]*?(?=IMPORTANT\s*:)/i,
+        "COMMENT COMMANDER UNE BLOOD ANALYSIS SEPAREMENT\nSi tu veux faire analyser ton bilan par APEXLABS, commande l'analyse separement puis connecte-toi sur https://apexlabs.achzodcoaching.com/blood-dashboard avec ton email pour envoyer le PDF.\n\n"
+      )
+      .replace(
+        /\butilise ton premier cr[ée]dit Blood Analysis(?: APEXLABS)?\b/gi,
+        "commande une premiere Blood Analysis separement"
+      )
+      .replace(
+        /\butilise ton deuxi[èe]me cr[ée]dit Blood Analysis\b/gi,
+        "commande une seconde Blood Analysis separement"
+      )
+      .replace(
+        /\bton premier cr[ée]dit Blood Analysis\b/gi,
+        "une premiere Blood Analysis commandee separement"
+      )
+      .replace(
+        /\bton deuxi[èe]me cr[ée]dit Blood Analysis\b/gi,
+        "une seconde Blood Analysis commandee separement"
+      )
+      .replace(
+        /\btes? 2 cr[ée]dits? Blood Analysis\b/gi,
+        "l'option Blood Analysis"
+      )
+      .replace(
+        /\btu as (?:1|2|un|deux) cr[ée]dits? Blood Analysis(?: APEXLABS)?(?: d[ée]j[àa] sur ton compte)?\b/gi,
+        "ton offre Solo n'ajoute aucun credit Blood Analysis"
+      )
+      .replace(
+        /\b(?:le|ton) premier cr[ée]dit\b/gi,
+        "une premiere Blood Analysis commandee separement"
+      )
+      .replace(
+        /\b(?:le|ton) deuxi[èe]me cr[ée]dit\b/gi,
+        "une seconde Blood Analysis commandee separement"
+      );
+    section.content = sanitizeClientFacingText(content);
+  }
+}
+
+function removeUnsupportedDescentNarrative(report: RepairableReport): void {
+  const peptidesWithoutDescent = (report.peptides || []).filter(
+    (peptide) =>
+      !/descente|diminu|r[ée]duction|baisse/i.test(peptide.dosage || "")
+  );
+  if (peptidesWithoutDescent.length === 0) return;
+
+  for (const section of report.sections || []) {
+    const paragraphs = String(section.content || "").split(/\n{2,}/);
+    section.content = sanitizeClientFacingText(
+      paragraphs
+        .map((paragraph) => {
+          const peptide = peptidesWithoutDescent.find(
+            (candidate) =>
+              mentionsPeptide(paragraph, candidate.name || "") &&
+              /descente|diminution progressive|r[ée]duction progressive|r[ée]duit progressivement|arr[êe]t brutal/i.test(
+                paragraph
+              )
+          );
+          if (!peptide) return paragraph;
+          return (
+            `FIN DE CYCLE ${String(peptide.name || "").toUpperCase()}\n` +
+            `La fin du cycle suit exactement le dosage et la duree indiques dans la fiche ${peptide.name}. ` +
+            "N'ajoute aucune dose ni phase de descente qui n'y figure pas."
+          );
+        })
+        .join("\n\n")
+    );
+  }
+}
+
+function extractLiveReportTotalUsd(report: RepairableReport): number {
+  return String(report.shoppingList || "")
+    .split(/\n+/)
+    .reduce((sum, line) => {
+      const match = line.match(/\btotal\s*\$(\d+(?:[.,]\d+)?)/i);
+      return sum + (match ? Number(match[1].replace(",", ".")) : 0);
+    }, 0);
+}
+
+function synchronizeStandardShoppingNarrative(
+  report: RepairableReport,
+  firstName: string
+): void {
+  const shoppingSection = (report.sections || []).find((section) =>
+    /shopping|liste de courses/i.test(`${section.id} ${section.title}`)
+  );
+  const shoppingLines = String(report.shoppingList || "")
+    .split(/\n+/)
+    .map((line) => sanitizeClientFacingText(line))
+    .filter(Boolean);
+  const totalUsd = extractLiveReportTotalUsd(report);
+  const totalEur = Math.round(totalUsd * 0.92);
+  const maxWeeks = Math.max(
+    1,
+    ...(report.peptides || []).map((peptide) => {
+      const match = String(peptide.cycleDuration || "").match(
+        /(\d+)\s*semaines?\b/i
+      );
+      return match ? Number(match[1]) : 0;
+    })
+  );
+  const monthlyEur = totalUsd > 0
+    ? Math.round(totalEur / Math.max(1, maxWeeks / 4.345))
+    : 0;
+
+  if (shoppingSection) {
+    shoppingSection.content = sanitizeClientFacingText(
+      [
+        `${firstName}, voici la liste de commande recalculee apres verification des pages Peptaura. Cette version remplace tous les chiffres generes avant le controle live.`,
+        ...shoppingLines,
+        totalUsd > 0
+          ? `TOTAL LIVE DU CYCLE\nEnviron $${totalUsd.toFixed(2)}, soit environ ${totalEur} euros hors frais de port. Sur ${maxWeeks} semaines, cela represente environ ${monthlyEur} euros par mois.`
+          : "",
+      ]
+        .filter(Boolean)
+        .join("\n\n")
+    );
+  }
+
+  const supportSection = (report.sections || []).find((section) =>
+    /disclaimer|support/i.test(`${section.id} ${section.title}`)
+  );
+  if (supportSection && totalUsd > 0) {
+    const canonicalCost =
+      `COUT RECALCULE APRES CONTROLE LIVE\nLe total du cycle est d'environ $${totalUsd.toFixed(2)}, ` +
+      `soit environ ${totalEur} euros hors frais de port. Sur ${maxWeeks} semaines, compte environ ${monthlyEur} euros par mois.`;
+    const content = String(supportSection.content || "");
+    supportSection.content = sanitizeClientFacingText(
+      /COUT (?:MENSUEL|RECALCULE)[\s\S]*?(?=CE PROTOCOLE|$)/i.test(content)
+        ? content.replace(
+            /COUT (?:MENSUEL|RECALCULE)[\s\S]*?(?=CE PROTOCOLE|$)/i,
+            `${canonicalCost}\n\n`
+          )
+        : `${content}\n\n${canonicalCost}`
+    );
+  }
+}
+
+function normalizeSingleVialGrammar(report: RepairableReport): void {
+  const normalize = (value: string): string =>
+    sanitizeClientFacingText(value.replace(/\b1\s+vials\b/gi, "1 vial"));
+  for (const peptide of report.peptides || []) {
+    peptide.vialsNeeded = normalize(peptide.vialsNeeded || "");
+    peptide.priceEstimate = normalize(peptide.priceEstimate || "");
+  }
+  report.shoppingList = normalize(report.shoppingList || "");
+  for (const section of report.sections || []) {
+    section.content = normalize(section.content || "");
+  }
+}
+
+function repairStandardReportContent(
+  report: RepairableReport,
+  firstName: string,
+  tier: string
+): void {
   (report as any).qualityVersion = "expert-standard-v1";
   cleanExpertPeptideFields(report);
   cleanStandardSections(report);
+  normalizeTierCreditClaims(report, tier);
+  removeUnsupportedDescentNarrative(report);
+  synchronizeStandardShoppingNarrative(report, firstName);
+  normalizeSingleVialGrammar(report);
   upsertFinalDisclaimer(report, firstName);
 }
 
@@ -616,8 +883,10 @@ export function repairPeptidesReportContent(
     cleanUnsafePeptideFields(report);
     report.sections = buildSections(report, firstName);
     report.shoppingList = sanitizeClientFacingText(liveShoppingLines(report));
+    normalizeTierCreditClaims(report, String(tier || report.tier || ""));
+    normalizeSingleVialGrammar(report);
   } else {
-    repairStandardReportContent(report, firstName);
+    repairStandardReportContent(report, firstName, String(tier || report.tier || ""));
   }
 
   const totalChars = (report.sections || []).reduce((sum, section) => sum + section.content.length, 0);

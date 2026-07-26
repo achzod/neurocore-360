@@ -16,13 +16,17 @@ import {
   extractVialQty,
   extractVialMg,
   findOperationalPeptidesMissingFromArray,
+  calculateBacWaterNeedMl,
 } from "./peptidesReportValidator";
 import { storage } from "./storage";
 import {
   collectClientFacingStrings,
   sanitizeClientFacingText,
 } from "./clientFacingQuality";
-import { repairPeptidesReportContent } from "./peptidesReportRepair";
+import {
+  pruneUnintegratedBonusPeptides,
+  repairPeptidesReportContent,
+} from "./peptidesReportRepair";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -861,14 +865,19 @@ function findLiveSnapshotForPeptide(
         .replace("sansdac", "nodac")
         .replace("avecdac", "withdac")
     );
-    const exact = slugKey === cleanName || listingKeys.includes(cleanName);
-    const partial = cleanName.includes(slugKey) || slugKey.includes(cleanName)
-      || listingKeys.some((key) => cleanName.includes(key) || key.includes(cleanName));
-    return { snapshot, score: exact ? 2 : partial ? 1 : 0 };
+    const candidateKeys = [slugKey, ...listingKeys].filter(Boolean);
+    const exact = candidateKeys.some((key) => key === cleanName);
+    const longestPartialMatch = candidateKeys.reduce((longest, key) => {
+      if (!cleanName.includes(key) && !key.includes(cleanName)) return longest;
+      return Math.max(longest, Math.min(cleanName.length, key.length));
+    }, 0);
+    return {
+      snapshot,
+      score: exact ? 10_000 + cleanName.length : longestPartialMatch,
+    };
   });
-  return scored.sort((a, b) => b.score - a.score)[0]?.score
-    ? scored.sort((a, b) => b.score - a.score)[0].snapshot
-    : null;
+  const bestMatch = scored.sort((a, b) => b.score - a.score)[0];
+  return bestMatch?.score ? bestMatch.snapshot : null;
 }
 
 function buildLivePriceEstimate(pep: PeptideItem, listing: PeptauraLiveListing, qty: number): string | null {
@@ -883,6 +892,13 @@ function buildLivePriceEstimate(pep: PeptideItem, listing: PeptauraLiveListing, 
     return `Environ $${packagePrice.toFixed(2)} la boite de ${listing.boxSize} vials (${listing.dosage}, ${supplier}), ${packageCount} boite${packageCount > 1 ? "s" : ""}, ${deliveredVials} vials recus, total $${total.toFixed(2)} (conversion indicative: ${eur} euros)`;
   }
   return `Environ $${packagePrice.toFixed(2)} par vial (${listing.dosage}, ${supplier}), ${qty} vial${qty > 1 ? "s" : ""}, total $${total.toFixed(2)} (conversion indicative: ${eur} euros)`;
+}
+
+function parseListingMl(value: string): number | null {
+  const match = String(value || "").replace(/(\d),(\d)/g, "$1.$2").match(
+    /(\d+(?:\.\d+)?)\s*ml\b/i
+  );
+  return match ? Number(match[1]) : null;
 }
 
 async function applyLivePeptauraPricing(
@@ -979,6 +995,74 @@ async function applyLivePeptauraPricing(
     }
   }
 
+  let bacWaterLine = "";
+  const bacWaterNeedMl = calculateBacWaterNeedMl(report);
+  const bacProduct = getPeptauraCatalogProducts().find((product) =>
+    /^bac\s*water$/i.test(product.name)
+  );
+  const bacCachedSnapshot = bacProduct
+    ? findLiveSnapshotForPeptide(bacProduct.name, context.catalogSnapshots)
+    : null;
+  const bacSlug = bacCachedSnapshot?.slug || bacProduct?.slug;
+  if (bacWaterNeedMl > 0 && bacSlug) {
+    const fetchedBacSnapshot = await fetchPeptauraProductSnapshot(
+      bacSlug,
+      forceFresh
+    );
+    const bacSnapshot = fetchedBacSnapshot || bacCachedSnapshot;
+    const nominalBottleMl = Math.max(
+      1,
+      ...((bacSnapshot?.listings || [])
+        .map((listing) => parseListingMl(listing.dosage))
+        .filter((value): value is number => value != null && value > 0))
+    );
+    const bacBottleQty = Math.max(1, Math.ceil(bacWaterNeedMl / nominalBottleMl));
+    const bacListing = bacSnapshot
+      ? selectBestLiveListing(
+          bacSnapshot,
+          context.shippingAvailability,
+          null,
+          bacBottleQty
+        )
+      : null;
+
+    if (bacSnapshot && bacListing) {
+      const bottleMl = parseListingMl(bacListing.dosage) || nominalBottleMl;
+      const finalBottleQty = Math.max(1, Math.ceil(bacWaterNeedMl / bottleMl));
+      const packageCount = packageCountForVials(bacListing, finalBottleQty);
+      const deliveredBottles = packageCount * bacListing.boxSize;
+      const packagePrice = effectivePackagePrice(bacListing, finalBottleQty);
+      const totalPrice = offerTotalPrice(bacListing, finalBottleQty);
+      const supplier =
+        bacListing.supplierDisplayName || bacListing.supplier;
+      bacWaterLine =
+        `BAC Water: besoin calcule ${bacWaterNeedMl.toFixed(1)} ml, ` +
+        `${finalBottleQty} flacon${finalBottleQty > 1 ? "s" : ""} de ${bottleMl}ml. ` +
+        `Environ $${packagePrice.toFixed(2)} par flacon (${supplier}), total $${totalPrice.toFixed(2)}. ` +
+        `${peptauraProductUrl(bacSlug)}`;
+      liveNotes.push(`BAC Water: ${bacListing.dosage} via ${supplier}`);
+      listingSnapshots.push({
+        peptide: "BAC Water",
+        slug: bacSlug,
+        url: bacSnapshot.url,
+        supplier,
+        dosage: bacListing.dosage,
+        requestedVials: finalBottleQty,
+        boxSize: bacListing.boxSize,
+        packageCount,
+        deliveredVials: deliveredBottles,
+        unitPackagePriceUsd: packagePrice,
+        totalPriceUsd: totalPrice,
+        marginRate: bacListing.marginRate,
+        fetchedAt: bacSnapshot.fetchedAt,
+      });
+    } else {
+      failures.push("BAC Water: aucune offre live compatible avec le pays");
+    }
+  } else if (bacWaterNeedMl > 0) {
+    failures.push("BAC Water: page produit Peptaura introuvable");
+  }
+
   (report as any)._peptauraLiveSync = {
     country: context.country,
     shippingUrl: context.shippingUrl,
@@ -997,6 +1081,7 @@ async function applyLivePeptauraPricing(
     ...report.peptides.map((pep) =>
       `${pep.name}: ${pep.vialsNeeded}. ${pep.priceEstimate}. ${pep.purchaseUrl}`
     ),
+    ...(bacWaterLine ? [bacWaterLine] : []),
     `Avant de payer, verifie une derniere fois le stock et la livraison vers ${context.country} sur ${context.shippingUrl}.`,
   ].join("\n");
 
@@ -1392,7 +1477,7 @@ La quantite annoncee dans "vialsNeeded" DOIT EXACTEMENT egaler la quantite utili
 INTERDIT : recommander 10 vials d'office pour le prix dégressif. INTERDIT : suggérer "achete plus pour avoir une réserve". Le client achète pour 1 cycle. Si à la fin du cycle il veut continuer, il commandera un deuxième cycle à ce moment-là. Le sur-stockage aveugle est exactement le bug qui a fait perdre 80 euros à Jamal le 14 mai 2026 et 925 dollars à Luk le 15 mai 2026 (Epitalon 84 vials au lieu de 20).
 
 EXEMPLES CONCRETS :
-- Semaglutide cycle 12 sem en titration 0,25 / 0,5 / 1 mg = 7 mg total cycle. Recommande : 1 vial de 10 mg OU 1 vial de 20 mg si seul format dispo. PAS 6 vials. vialsNeeded = "1 vials de 10mg pour 12 semaines (total ~7mg)". priceEstimate = "~$8.47/vial x 1 vials = $8.47 total (~8€)".
+- Semaglutide cycle 12 sem en titration 0,25 / 0,5 / 1 mg = 7 mg total cycle. Recommande : 1 vial de 10 mg OU 1 vial de 20 mg si seul format dispo. PAS 6 vials. vialsNeeded = "1 vial de 10mg pour 12 semaines (total ~7mg)". priceEstimate = "~$8.47/vial x 1 vial = $8.47 total (~8€)".
 - BPC-157 250 mcg deux fois par jour pendant 8 semaines = 28 mg total cycle. Recommande : 3 vials de 10 mg (couvre + marge). PAS 10 vials.
 - CJC-1295 sans DAC 100 mcg 1 fois par jour pendant 12 sem = 8,4 mg. Recommande : 2 vials de 5 mg OU 1 vial de 10 mg. PAS 10 vials.
 - Epitalon 5 mg/jour × 20 jours consecutifs = 100 mg total. Recommande : 10 vials de 10 mg. PAS 42 vials. cycleDuration = "20 jours consecutifs (cure), 2 fois par an".
@@ -1573,7 +1658,7 @@ Tirzepatide (GLP-1/GIP dual)
 AXE HPG / RELANCE TESTOSTERONE NATURELLE (alternative TRT) - CATALOGUE PEPTAURA LIVE
 IMPORTANT 2026-07 : la disponibilite HCG, KissPeptin-10, Testagen et autres outils HPG doit suivre le bloc CONTEXTE PEPTAURA LIVE. Ne dis jamais qu'une molecule est disponible ou indisponible si le catalogue live dit l'inverse. Pour les SERMs medicamenteux (Enclomifene, Tamoxifen) et les protocoles endocriniens qui necessitent ordonnance, oriente le client vers une consultation medicale (medecin generaliste ou endocrinologue) et pharmacie classique. Ne fais jamais semblant qu'un medicament sous ordonnance se source comme un peptide marketplace.
 
-Quand pep_primary_goal = "testo-boost" OU pep_secondary_goals contient "testo-boost", tu construis un protocole base sur les regles suivantes. IMPORTANT : tu NE prescris JAMAIS sans bilan hormonal recent (Testo totale, Testo libre, LH, FSH, E2, SHBG, Prolactine, DHT, Albumine). Si pep_testo_bloodwork = "never" ou "old", ta PREMIERE recommandation doit etre de faire le bilan via Apexlabs Blood Analysis (tu as 2 credits offerts dans le stack, c'est l'occasion) avant d'entamer le moindre peptide. Pas de bilan = pas de protocole hormonal, point.
+Quand pep_primary_goal = "testo-boost" OU pep_secondary_goals contient "testo-boost", tu construis un protocole base sur les regles suivantes. IMPORTANT : tu NE prescris JAMAIS sans bilan hormonal recent (Testo totale, Testo libre, LH, FSH, E2, SHBG, Prolactine, DHT, Albumine). Si pep_testo_bloodwork = "never" ou "old", ta PREMIERE recommandation doit etre de faire le bilan via Apexlabs Blood Analysis avant d'entamer le moindre peptide. Le nombre de credits inclus depend exclusivement du bloc CONTEXTE OFFRE du prompt utilisateur. N'invente jamais un credit offert. Pas de bilan = pas de protocole hormonal, point.
 
 HCG (analogue LH, outil HPG-axis Peptaura si listing live disponible)
 - Mecanisme : mime la LH, active directement les cellules de Leydig testiculaires, production testo + maintien taille testiculaire.
@@ -1710,7 +1795,8 @@ Le JSON doit respecter exactement la structure demandée dans le prompt utilisat
 function buildUserPrompt(
   responses: Record<string, unknown>,
   firstName: string,
-  peptauraContext: PeptauraPromptContext
+  peptauraContext: PeptauraPromptContext,
+  tier: "solo" | "coached" | "tracked"
 ): string {
   const summary = buildResponsesSummary(responses);
 
@@ -1720,6 +1806,15 @@ function buildUserPrompt(
   // Estimate total cycle cost for supplier recommendation
   const budget = String(responses.pep_budget || responses.budget || "100-200");
   const budgetNote = budget.includes(">300") || budget.includes("300") ? "budget élevé" : budget.includes("<50") || budget.includes("50") ? "petit budget" : "budget moyen";
+  const includedBloodCredits: Record<"solo" | "coached" | "tracked", number> = {
+    solo: 0,
+    coached: 1,
+    tracked: 2,
+  };
+  const bloodCredits = includedBloodCredits[tier];
+  const bloodCreditInstructions = bloodCredits === 0
+    ? "L'offre Solo n'ajoute aucun credit Blood Analysis. Tu peux recommander une analyse separee, mais tu ne dis jamais qu'elle est offerte, prepaye, incluse ou deja sur le compte."
+    : `Cette offre inclut exactement ${bloodCredits} credit${bloodCredits > 1 ? "s" : ""} Blood Analysis. Tu n'en annonces jamais davantage.`;
 
   return `Génère un protocole peptides COMPLET et DIDACTIQUE pour ${firstName}.
 
@@ -1728,14 +1823,22 @@ ${summary}
 
 ${peptauraContext.promptBlock}
 
+CONTEXTE OFFRE:
+Tier exact: ${tier}
+Credits Blood Analysis ajoutes par cette commande: ${bloodCredits}
+${bloodCreditInstructions}
+
 RÈGLES ABSOLUES:
 1. Adresse-toi à ${firstName} par son prénom à chaque section. Parle-lui comme un coach.
 2. Fais des PHRASES COMPLÈTES, jamais de listes sèches sans contexte.
 3. Ajuste les dosages au poids (${weight} kg) en mcg/kg.
-4. Sélectionne 2 à 4 peptides dans le stack principal + 1 peptide BONUS qui dépasse le budget.
+4. Sélectionne 2 à 4 peptides AU TOTAL. Un bonus n'est autorise que s'il respecte le budget et s'il apparait partout: justification, reconstitution, calendrier, shopping list et tableau peptides. Pour un debutant a l'injection ou un budget contraint, reste plutot a 2 ou 3 peptides et n'ajoute aucun bonus gadget.
 5. Utilise UNIQUEMENT le catalogue Peptaura. URLs réelles.
 6. Pour le choix du fournisseur (pays de livraison ${peptauraContext.country}, ${budgetNote}) : suis STRICTEMENT CONTEXTE PEPTAURA LIVE. Recommande un fournisseur qui livre vers ${peptauraContext.country}, evite tout fournisseur liste comme bloque, et rappelle que le client doit verifier ${peptauraContext.shippingUrl} avant de payer.
 7. Le rapport doit faire au moins 4000 caractères au total. Chaque section doit être substantielle.
+8. Chaque entree de "peptides" doit apparaitre dans la section de justification, le guide de reconstitution, le calendrier pratique, "weeklySchedule" et la liste de courses. Si tu ne l'integres pas partout, retire-la du tableau.
+9. Le dosage, la duree et toute phase de descente doivent etre strictement identiques dans les cartes, les sections et le calendrier. N'invente jamais une descente dans une seule section.
+10. La quantite de BAC water doit couvrir la somme reelle de tous les vials du cycle. Le serveur recalculera cette quantite.
 
 Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
 
@@ -1756,7 +1859,7 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
     {
       "id": "bilan-sanguin",
       "title": "Ton bilan sanguin baseline (a faire avant ta premiere injection)",
-      "content": "${firstName}, avant de commencer quoi que ce soit, tu dois faire un bilan sanguin. C'est non negociable, sans bilan tu navigues a l'aveugle. Je te detaille TOUT ci-dessous : la liste de marqueurs a copier-coller pour ton labo, ce qui est prepaye dans ton pack, ce qui ne l'est pas, et le cout reel a prevoir.\\n\\nCE QUI EST PREPAYE DANS TON PACK PEPTIDES ENGINE\\nTu as 2 credits Blood Analysis APEXLABS deja sur ton compte (pas de code promo a saisir). Cela couvre l'ANALYSE et l'INTERPRETATION par moi de tes 2 bilans (un pre-cycle pour ta baseline, un mi-cycle a la semaine 4 a 6 pour suivre l'evolution). Valeur 198 EUR.\\n\\nCE QUI N'EST PAS PREPAYE\\nLa prise de sang elle-meme au laboratoire physique en France. C'est une depense separee que tu regles directement a ton labo. Compte les ordres de grandeur suivants :\\n- SANS ordonnance : entre 80 et 150 EUR pour la liste complete (les chaines Cerba, Biogroup, Synlab, Eurofins acceptent toutes sans ordo, paiement de ta poche). Tu peux demander un devis avant de te lancer.\\n- AVEC ordonnance de ton generaliste : la securite sociale plus ta mutuelle remboursent la grande majorite, tu sors a 20 a 40 EUR de poche en moyenne. Certains marqueurs hormonaux specialises ou la vitamine D peuvent rester hors-AMM donc a ta charge meme avec ordo, mais c'est marginal sur la facture totale.\\n\\nLa liste etant longue, beaucoup de generalistes acceptent de prescrire si tu expliques que c'est un bilan de fond pour un suivi nutritionnel et hormonal serieux.\\n\\nMARQUEURS A DEMANDER (a presenter au labo ou au medecin pour ordonnance)\\n\\nHormones : Testosterone totale, Testosterone libre, SHBG, Cortisol (matin a jeun), DHEA-S, IGF-1, DHT\\nAxe gonadotrope : LH, FSH, Estradiol, Prolactine\\nThyroide : TSH, T3 libre, T4 libre\\nMetabolisme : Glycemie a jeun, HbA1c, Insuline a jeun\\nLipides : Cholesterol total, HDL, LDL, Triglycerides, ApoB\\nInflammation et terrain : CRP ultra-sensible, Ferritine, Homocysteine, Albumine\\nVitamines et mineraux : Vitamine D 25-OH, B12, Magnesium erythrocytaire (plus precis que serique), Zinc serique, Selenium\\nFoie et reins : ALAT, ASAT, Gamma-GT, Creatinine, DFG\\nNFS complete\\n\\nAjoute les marqueurs specifiques a TON protocole en fonction des peptides selectionnes (par exemple IGF-1 si protocole GH, Prolactine si Ipamorelin, T4/T3 reverse si Retatrutide). Explique POURQUOI chaque marqueur supplementaire est important pour ce client precis.\\n\\nCONDITIONS DE PRELEVEMENT\\nMatin entre 7h et 10h, a jeun depuis 10h, au moins 48h apres ta derniere seance intense, pas d'alcool dans les 48h precedant.\\n\\nCOMMENT UTILISER TON CREDIT BLOOD ANALYSIS\\nVa sur https://apexlabs.achzodcoaching.com/blood-dashboard, connecte-toi avec ton email (lien magique passwordless), et uploade ton PDF de resultats. Tu recevras une analyse complete de tes marqueurs en quelques minutes, avec mes recommandations specifiques pour ton cas.\\n\\nIMPORTANT : un seul PDF par upload (10 MB max). Si tu as plusieurs fichiers a fusionner : sur iPhone via Fichiers (Selectionner les PDFs dans l'ordre, \\\"...\\\" en bas, \\\"Creer un PDF\\\") ou via ilovepdf.com/fr/fusionner_pdf.\\n\\nBILAN MI-CYCLE (semaine 4-6)\\nUtilise ton deuxieme credit pour refaire exactement les memes marqueurs. Je compare avec ta baseline pour verifier que tout evolue dans le bon sens et ajuster si besoin.\\n\\nFIN DE CYCLE\\nExplique comment arreter progressivement, la duree de pause minimale avant le prochain cycle, et les signes qui indiquent qu'on peut reprendre."
+      "content": "${firstName}, explique le bilan de depart et le suivi sans inventer ce qui est inclus. CONTEXTE OFFRE: tier ${tier}, exactement ${bloodCredits} credit(s) Blood Analysis ajoutes par cette commande. ${bloodCreditInstructions} Distingue clairement le prix de l'analyse APEXLABS du prix du prelevement au laboratoire. Donne les marqueurs adaptes au stack, les conditions de prelevement et le calendrier de suivi."
     },
     {
       "id": "guide-peptaura",
@@ -2532,7 +2635,7 @@ export async function generatePeptidesProtocol(
 
   const firstName = extractFirstName(responses, email);
   const peptauraContext = await buildPeptauraPromptContext(responses);
-  const userPrompt = buildUserPrompt(responses, firstName, peptauraContext);
+  const userPrompt = buildUserPrompt(responses, firstName, peptauraContext, tier);
 
   // Sonnet 4.6 is always the first pass. GPT-5.6 Sol is used only when the
   // Sonnet candidate fails generation, parsing, deterministic checks, live
@@ -2549,12 +2652,24 @@ export async function generatePeptidesProtocol(
       model: PEPTIDES_PRIMARY_MODEL,
       generate: () => callClaudeForPeptides(SYSTEM_PROMPT, userPrompt),
     },
-    {
+  ];
+  if (process.env.OPENAI_API_KEY) {
+    providers.push({
       provider: "openai",
       model: PEPTIDES_QUALITY_FALLBACK_MODEL,
       generate: () => callOpenAIForPeptides(SYSTEM_PROMPT, userPrompt, email),
-    },
-  ];
+    });
+  } else {
+    providers.push({
+      provider: "anthropic",
+      model: PEPTIDES_PRIMARY_MODEL,
+      generate: () =>
+        callClaudeForPeptides(
+          SYSTEM_PROMPT,
+          `${userPrompt}\n\nREGENERATION QUALITE: repars de zero. Controle avant de repondre les credits du tier, la presence de chaque peptide dans toutes les sections operationnelles, l'alignement des doses et des durees, les quantites de vials, la BAC water et la liste de commande.`
+        ),
+    });
+  }
 
   for (let attempt = 0; attempt < providers.length; attempt++) {
     const selected = providers[attempt];
@@ -2645,6 +2760,12 @@ export async function generatePeptidesProtocol(
 
       // Deterministic post-processing is part of the provider evaluation. A
       // model only wins when the exact report that will be persisted passes.
+      report = pruneUnintegratedBonusPeptides(report);
+      if (report.peptides.length < 2) {
+        throw new Error(
+          `VALIDATION: seulement ${report.peptides.length} peptide(s) apres retrait des bonus non integres`
+        );
+      }
       report = validateAndFixPeptauraUrls(report);
       report = validateVialsMath(report);
       report = await applyLivePeptauraPricing(report, peptauraContext);
@@ -2687,7 +2808,9 @@ export async function generatePeptidesProtocol(
       report = null;
       if (attempt + 1 < providers.length) {
         console.log(
-          `[PeptidesEngine] Switching to quality fallback: ${PEPTIDES_QUALITY_FALLBACK_MODEL}, effort=max, mode=pro`
+          providers[attempt + 1].provider === "openai"
+            ? `[PeptidesEngine] Switching to quality fallback: ${PEPTIDES_QUALITY_FALLBACK_MODEL}, effort=max, mode=pro`
+            : `[PeptidesEngine] OpenAI fallback unavailable, retrying a strict full regeneration with ${PEPTIDES_PRIMARY_MODEL}`
         );
       }
     }

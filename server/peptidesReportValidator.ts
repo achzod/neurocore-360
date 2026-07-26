@@ -166,6 +166,77 @@ function containsOperationalAlias(value: string, aliases: string[]): boolean {
   );
 }
 
+function aliasesForStructuredPeptide(name: string): string[] {
+  const matchedAliases = OPERATIONAL_PEPTIDE_ALIASES
+    .filter(({ aliases }) => containsOperationalAlias(name, aliases))
+    .flatMap(({ aliases }) => aliases);
+  return matchedAliases.length > 0 ? matchedAliases : [name];
+}
+
+export function findStructuredPeptideCoverageIssues(
+  report: Pick<
+    PeptidesReport,
+    "peptides" | "sections" | "weeklySchedule" | "shoppingList"
+  >
+): string[] {
+  const sections = report.sections || [];
+  const rationaleText = sections
+    .filter((section) =>
+      /rationale|pourquoi|choix/i.test(`${section.id || ""} ${section.title || ""}`)
+    )
+    .map((section) => section.content || "")
+    .join("\n");
+  const reconstitutionText = sections
+    .filter((section) =>
+      /reconstitution/i.test(`${section.id || ""} ${section.title || ""}`)
+    )
+    .map((section) => section.content || "")
+    .join("\n");
+  const protocolText = [
+    String(report.weeklySchedule || ""),
+    ...sections
+      .filter((section) =>
+        /protocole|semaine type|calendrier/i.test(
+          `${section.id || ""} ${section.title || ""}`
+        )
+      )
+      .map((section) => section.content || ""),
+  ].join("\n");
+  const shoppingText = [
+    String(report.shoppingList || ""),
+    ...sections
+      .filter((section) =>
+        /shopping|liste de courses/i.test(
+          `${section.id || ""} ${section.title || ""}`
+        )
+      )
+      .map((section) => section.content || ""),
+  ].join("\n");
+
+  const issues: string[] = [];
+  for (const peptide of report.peptides || []) {
+    const name = String(peptide.name || "");
+    const aliases = aliasesForStructuredPeptide(name);
+    if (rationaleText && !containsOperationalAlias(rationaleText, aliases)) {
+      issues.push(`${name}: absent de la justification`);
+    }
+    if (
+      /^sc\b|sous[- ]?cutan/i.test(String(peptide.route || "")) &&
+      reconstitutionText &&
+      !containsOperationalAlias(reconstitutionText, aliases)
+    ) {
+      issues.push(`${name}: absent du guide de reconstitution`);
+    }
+    if (!containsOperationalAlias(protocolText, aliases)) {
+      issues.push(`${name}: absent du calendrier operationnel`);
+    }
+    if (!containsOperationalAlias(shoppingText, aliases)) {
+      issues.push(`${name}: absent de la liste de commande`);
+    }
+  }
+  return issues;
+}
+
 /**
  * Detects a peptide that is actively scheduled or ordered but missing from
  * report.peptides. Narrative-only mentions are deliberately ignored because
@@ -250,6 +321,26 @@ export function extractTotalMgFromVials(vialsNeeded: string | undefined): number
   const totalMatch = vialsNeeded.match(/total\s*[~≈]?\s*(\d+(?:[.,]\d+)?)\s*mg/i);
   if (totalMatch) return parseFloat(totalMatch[1].replace(",", "."));
   return null;
+}
+
+export function calculateBacWaterNeedMl(
+  report: Pick<PeptidesReport, "peptides">
+): number {
+  return (report.peptides || []).reduce((totalMl, peptide) => {
+    const solventMatch = String(peptide.reconstitution || "")
+      .replace(/(\d),(\d)/g, "$1.$2")
+      .match(/\+\s*(\d+(?:\.\d+)?)\s*ml\b/i);
+    const solventPerVialMl = solventMatch ? Number(solventMatch[1]) : 0;
+    const vialQty = extractVialQty(peptide.vialsNeeded) || 0;
+    if (
+      !Number.isFinite(solventPerVialMl) ||
+      solventPerVialMl <= 0 ||
+      vialQty <= 0
+    ) {
+      return totalMl;
+    }
+    return totalMl + solventPerVialMl * vialQty;
+  }, 0);
 }
 
 export function estimateNeedMg(p: PeptidesPeptide): number | null {
@@ -484,6 +575,24 @@ function checkPeptide(p: PeptidesPeptide): string[] {
     && !/descente|diminu|reduction|réduction|baisse/i.test(p.dosage || "")) {
     issues.push("cycleDuration annonce une descente progressive absente du dosage");
   }
+  if (/\b1\s+vials\b/i.test(`${p.vialsNeeded || ""} ${p.priceEstimate || ""}`)) {
+    issues.push("grammaire quantite invalide: 1 vials");
+  }
+  for (const [field, value] of [
+    ["dosage", p.dosage],
+    ["timing", p.timing],
+    ["cycleDuration", p.cycleDuration],
+    ["reconstitution", p.reconstitution],
+    ["vialsNeeded", p.vialsNeeded],
+    ["priceEstimate", p.priceEstimate],
+  ] as const) {
+    const text = String(value || "");
+    const opening = (text.match(/\(/g) || []).length;
+    const closing = (text.match(/\)/g) || []).length;
+    if (opening !== closing) {
+      issues.push(`${field} contient des parentheses desequilibrees`);
+    }
+  }
 
   return issues;
 }
@@ -536,6 +645,21 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
         `surcouche medicale excessive pour un rapport standard: ${medicalMentions} renvois professionnels, ${cautionMentions} warnings`
       );
     }
+    const coverageIssues = findStructuredPeptideCoverageIssues(report);
+    if (coverageIssues.length > 0) {
+      errors.push(
+        `coherence cartes/sections incomplete: ${coverageIssues.join(" | ")}`
+      );
+    }
+  }
+
+  if (
+    String(report.tier || "").toLowerCase() === "solo" &&
+    /(?:\b(?:1|2|un|deux)\s+cr[ée]dits?\s+Blood Analysis\b|\b(?:premier|deuxi[èe]me)\s+cr[ée]dit\s+Blood Analysis\b)/i.test(
+      clientFacingText
+    )
+  ) {
+    errors.push("offre Solo: faux credit Blood Analysis annonce");
   }
 
   const verificationAction = "(?:valid(?:e|er|ation)|v[ée]rifi(?:e|er|cation)|avis|accord|confirm(?:e|er|ation))";

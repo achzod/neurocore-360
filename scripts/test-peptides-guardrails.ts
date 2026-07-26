@@ -1,12 +1,17 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
+  calculateBacWaterNeedMl,
   estimateNeedMg,
   findOperationalPeptidesMissingFromArray,
+  findStructuredPeptideCoverageIssues,
   validatePeptidesReport,
   type PeptidesReport,
 } from "../server/peptidesReportValidator";
-import { repairPeptidesReportContent } from "../server/peptidesReportRepair";
+import {
+  pruneUnintegratedBonusPeptides,
+  repairPeptidesReportContent,
+} from "../server/peptidesReportRepair";
 
 const engineSource = readFileSync(new URL("../server/peptidesEngine.ts", import.meta.url), "utf8");
 assert.match(engineSource, /PEPTIDES_PRIMARY_MODEL[\s\S]{0,120}"claude-sonnet-4-6"/);
@@ -39,6 +44,29 @@ assert.equal(
   4.2,
   "Une prise au coucher sur 4 semaines doit etre calculee comme quotidienne"
 );
+assert.equal(
+  calculateBacWaterNeedMl({
+    peptides: [
+      {
+        name: "Retatrutide",
+        vialsNeeded: "8 vials de 10mg",
+        reconstitution: "Vial 10mg + 2ml BAC water",
+      },
+      {
+        name: "CJC-1295 + Ipamorelin",
+        vialsNeeded: "1 vial de 10mg",
+        reconstitution: "Vial 10mg + 2ml BAC water",
+      },
+      {
+        name: "DSIP",
+        vialsNeeded: "1 vial de 5mg",
+        reconstitution: "Vial 5mg + 1ml BAC water",
+      },
+    ],
+  }),
+  19,
+  "La BAC water doit couvrir chaque vial du cycle, pas seulement le premier vial ouvert"
+);
 
 const safetyParagraph = [
   "Luca, la retatrutide reste une molecule experimentale non approuvee et ce document ne valide aucune automedication.",
@@ -59,8 +87,8 @@ const report: PeptidesReport = {
       ),
     ].filter(Boolean).join("\n\n"),
   })),
-  weeklySchedule: "Calendrier complet du lundi au dimanche, avec les horaires et les jours de repos.",
-  shoppingList: "Aucun achat avant verification du stock, du pays et accord du professionnel.",
+  weeklySchedule: "JEUDI: Retatrutide 1 mg, injection hebdomadaire selon la titration.",
+  shoppingList: "Retatrutide: 8 vials de 10mg, stock et pays a verifier avant achat.",
   promoCodesGenerated: [],
   _peptauraLiveSync: {
     syncedAt: now,
@@ -84,6 +112,26 @@ const report: PeptidesReport = {
 
 const baseline = validatePeptidesReport(report);
 assert.equal(baseline.ok, true, baseline.errors.join("\n"));
+
+const coherentCoverage = structuredClone(report);
+coherentCoverage.sections![0].id = "rationale";
+coherentCoverage.sections![0].title = "Pourquoi ce choix";
+coherentCoverage.sections![0].content += " Retatrutide relie le choix a l'objectif prioritaire.";
+coherentCoverage.sections![1].id = "reconstitution-guide";
+coherentCoverage.sections![1].title = "Guide de reconstitution";
+coherentCoverage.sections![1].content += " Retatrutide garde une fiche de reconstitution distincte.";
+assert.deepEqual(
+  findStructuredPeptideCoverageIssues(coherentCoverage),
+  [],
+  "Chaque peptide structure doit etre couvert par les sections operationnelles"
+);
+
+const missingCoverage = structuredClone(coherentCoverage);
+missingCoverage.weeklySchedule = "LUNDI: repos";
+assert.match(
+  findStructuredPeptideCoverageIssues(missingCoverage).join("\n"),
+  /absent du calendrier operationnel/
+);
 
 const historicalMentionOnly = structuredClone(report);
 historicalMentionOnly.sections![1].content += [
@@ -118,6 +166,20 @@ assert.deepEqual(
   findOperationalPeptidesMissingFromArray(explicitlyExcludedOperationalMention),
   [],
   "Une molecule explicitement exclue ne doit pas declencher une alerte de truncation"
+);
+
+const reportWithUnintegratedBonus = structuredClone(report) as any;
+reportWithUnintegratedBonus.peptides.push({
+  ...structuredClone(peptide),
+  name: "BPC-157",
+  purpose: "BONUS: ajout facultatif",
+  whyThisPeptide: "Peptide bonus hors du stack principal",
+});
+pruneUnintegratedBonusPeptides(reportWithUnintegratedBonus);
+assert.deepEqual(
+  reportWithUnintegratedBonus.peptides.map((entry: any) => entry.name),
+  ["Retatrutide"],
+  "Un bonus absent du calendrier ne doit pas survivre dans les cartes"
 );
 
 const underOrder = structuredClone(report);
@@ -156,6 +218,32 @@ assert.doesNotMatch(
   /plus simple que ca en a l'air/i
 );
 
+const falseSoloCredits = structuredClone(report) as any;
+falseSoloCredits.tier = "solo";
+falseSoloCredits.qualityVersion = "expert-standard-v1";
+falseSoloCredits.sections[0].content +=
+  " Tu as 2 credits Blood Analysis APEXLABS deja sur ton compte.";
+const falseSoloCreditsAudit = validatePeptidesReport(falseSoloCredits);
+assert.equal(falseSoloCreditsAudit.ok, false);
+assert.match(
+  falseSoloCreditsAudit.errors.join("\n"),
+  /faux credit Blood Analysis/
+);
+const repairedSoloCredits = repairPeptidesReportContent(
+  falseSoloCredits,
+  { pep_name: "Luca", pep_country: "France" },
+  "solo"
+) as any;
+assert.doesNotMatch(
+  repairedSoloCredits.sections[0].content,
+  /tu as 2 credits Blood Analysis/i
+);
+assert.equal(
+  validatePeptidesReport(repairedSoloCredits).ok,
+  true,
+  validatePeptidesReport(repairedSoloCredits).errors.join("\n")
+);
+
 const stale = structuredClone(report);
 stale._peptauraLiveSync!.syncedAt = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
 const staleAudit = validatePeptidesReport(stale);
@@ -189,6 +277,7 @@ const unsupportedDescentVariants = [
   "12 semaines, puis une descente progressive sur les 2 dernieres semaines",
   "Cycle de 12 semaines dont 2 semaines de reduction progressive",
   "12 semaines (baisse progressive sur la fin)",
+  "12 semaines (descente progressive: 4 mg, 2 mg, 1 mg, arret). Pause de 8 semaines",
 ];
 for (const cycleDuration of unsupportedDescentVariants) {
   const descentReport = structuredClone(report) as any;
@@ -210,6 +299,20 @@ for (const cycleDuration of unsupportedDescentVariants) {
     repairedDescentAudit.errors.join("\n")
   );
 }
+
+const singleVialsGrammar = structuredClone(report) as any;
+singleVialsGrammar.peptides[0].vialsNeeded = "1 vials de 10mg pour 12 semaines";
+singleVialsGrammar.peptides[0].priceEstimate =
+  "Environ $20 par vial, 1 vials, total $20";
+const repairedSingleVial = repairPeptidesReportContent(
+  singleVialsGrammar,
+  { pep_name: "Luca", pep_country: "France" },
+  "solo"
+) as any;
+assert.doesNotMatch(
+  `${repairedSingleVial.peptides[0].vialsNeeded} ${repairedSingleVial.peptides[0].priceEstimate}`,
+  /\b1\s+vials\b/i
+);
 
 const supportedDescent = structuredClone(report) as any;
 supportedDescent.peptides[0].cycleDuration =
@@ -234,5 +337,10 @@ const hardFlagReport = repairPeptidesReportContent(
 ) as any;
 assert.equal(hardFlagReport.qualityVersion, "medical-review-v1");
 assert.equal(hardFlagReport.sections.length, 15);
+assert.doesNotMatch(
+  hardFlagReport.sections.map((section: any) => `${section.title}\n${section.content}`).join("\n"),
+  /\b2 credits Blood Analysis\b/i,
+  "Le mode medical doit respecter le tier Solo lui aussi"
+);
 
 console.log("Peptides guardrails: OK");
