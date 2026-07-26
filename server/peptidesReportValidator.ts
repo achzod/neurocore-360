@@ -30,6 +30,7 @@ export interface PeptidesPeptide {
 
 export interface PeptidesReport {
   tier?: string;
+  qualityVersion?: "expert-standard-v1" | "medical-review-v1";
   peptides?: PeptidesPeptide[];
   sections?: Array<{ id?: string; title?: string; content?: string }>;
   clientName?: string;
@@ -87,6 +88,43 @@ const MIN_TOTAL_CHARS = 30_000;
 const MAX_PEPTAURA_DELIVERY_AGE_MS = Number(
   process.env.PEPTAURA_DELIVERY_MAX_AGE_MS || 45 * 60 * 1000
 );
+
+function normalizeSentenceForRepetition(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9 ]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function findRepeatedReportSentences(
+  sections: Array<{ content?: string }>
+): Array<{ sentence: string; count: number }> {
+  const counts = new Map<string, { sentence: string; count: number }>();
+
+  for (const section of sections) {
+    const sentences = String(section.content || "")
+      .split(/(?<=[.!?])\s+|\n{2,}/)
+      .map((entry) => entry.trim())
+      .filter((entry) => entry.length >= 60);
+
+    for (const sentence of sentences) {
+      const normalized = normalizeSentenceForRepetition(sentence);
+      if (normalized.length < 50) continue;
+      const previous = counts.get(normalized);
+      counts.set(normalized, {
+        sentence: previous?.sentence || sentence,
+        count: (previous?.count || 0) + 1,
+      });
+    }
+  }
+
+  return [...counts.values()]
+    .filter((entry) => entry.count >= 4)
+    .sort((a, b) => b.count - a.count);
+}
 
 function extractFirstNumber(text: string | undefined): number | null {
   if (!text) return null;
@@ -392,6 +430,25 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
   }
   if (styleAudit.roboticPhrases.length > 0) {
     errors.push(`style artificiel detecte: ${styleAudit.roboticPhrases.join(", ")}`);
+  }
+
+  const repeatedSentences = findRepeatedReportSentences(sections);
+  if (repeatedSentences.length > 0) {
+    const examples = repeatedSentences
+      .slice(0, 3)
+      .map((entry) => `${entry.count}x "${entry.sentence.slice(0, 100)}"`)
+      .join(" | ");
+    errors.push(`phrases repetees detectees, rendu artificiel: ${examples}`);
+  }
+
+  if (report.qualityVersion === "expert-standard-v1") {
+    const medicalMentions = (clientFacingText.match(/\b(?:m[ée]decin|pharmacien|professionnel de sant[ée])\b/gi) || []).length;
+    const cautionMentions = (clientFacingText.match(/\b(?:exp[ée]rimental|non approuv[ée]|validation m[ée]dicale|avis m[ée]dical|accord m[ée]dical)\b/gi) || []).length;
+    if (medicalMentions > 22 || cautionMentions > 28) {
+      errors.push(
+        `surcouche medicale excessive pour un rapport standard: ${medicalMentions} renvois professionnels, ${cautionMentions} warnings`
+      );
+    }
   }
 
   const hasMedicalVerification = /\b(?:m[ée]decin|pharmacien)\b[\s\S]{0,180}\b(?:valide|v[ée]rifie|avis|accord|confirme)\b|\b(?:valide|v[ée]rifie|avis|accord|confirme)\b[\s\S]{0,180}\b(?:m[ée]decin|pharmacien)\b/i.test(clientFacingText);

@@ -41,6 +41,175 @@ function stripProjectPrefix(value: string | undefined): string {
     .trim();
 }
 
+function isTruthy(value: unknown): boolean {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") {
+    const normalized = sanitizeClientFacingText(value).toLowerCase().trim();
+    return ["oui", "yes", "true", "1"].includes(normalized);
+  }
+  return false;
+}
+
+function hasAnyPattern(value: unknown, pattern: RegExp): boolean {
+  if (!value) return false;
+  if (typeof value === "string") return pattern.test(sanitizeClientFacingText(value));
+  if (Array.isArray(value)) return value.some((item) => hasAnyPattern(item, pattern));
+  return pattern.test(JSON.stringify(value));
+}
+
+function needsMedicalReview(responses: Record<string, unknown>): boolean {
+  const hardRedFlag = /(cancer|tumeur|oncolog|chemio|radioth|grossesse|enceinte|allait|pancreat|insuffisance\s+(?:renale|hepatique)|cirrhose|hepatite\s+active|insuffisance\s+cardiaque|arythmi|bipolaire|schizoph|psychose)/i;
+  const importantFields = [
+    responses.pep_conditions,
+    responses.pep_conditions_other,
+    responses.antecedentsMedicaux,
+    responses.pathologiesChroniques,
+    responses.medicaments,
+    responses.pep_medications,
+    responses.pep_allergies,
+  ];
+
+  if (importantFields.some((value) => hasAnyPattern(value, hardRedFlag))) {
+    return true;
+  }
+
+  const booleanRedFlags = [
+    responses.cancer,
+    responses.antecedentsCancer,
+    responses.grossesse,
+    responses.allaitement,
+  ];
+
+  return booleanRedFlags.some(isTruthy);
+}
+
+function confidentPurpose(peptide: PeptideItem): { purpose: string; rationale: string } {
+  const name = sanitizeClientFacingText(peptide.name || "").toLowerCase();
+
+  if (/retatrutide/.test(name)) {
+    return {
+      purpose: "Priorite fat loss quand l'appetit, les fringales et la regulation des portions sont le vrai point de blocage.",
+      rationale: "Je le retiens quand l'objectif principal est de perdre du gras vite sans te faire tourner en rond sur la faim. L'interet ici est la maitrise de l'appetit et la progression par titration propre, pas la promesse magique.",
+    };
+  }
+  if (/cjc/.test(name)) {
+    return {
+      purpose: "Base GH propre pour recuperation, sommeil et maintien de la masse maigre si le contexte s'y prete.",
+      rationale: "Je le garde quand je veux un axe GH plus structuré sans partir sur une logique gadget. L'interet est la recuperation et la qualite du terrain, surtout si le sommeil, le training et la recomp comptent dans ton dossier.",
+    };
+  }
+  if (/ipamorelin/.test(name)) {
+    return {
+      purpose: "Levier GH selectif pour renforcer la recuperation et completer un stack orienté recomp ou sommeil.",
+      rationale: "Je le retiens quand je veux un secretagogue plus propre et plus lisible que d'autres options GH. Il a du sens surtout en duo avec un GHRH bien choisi et quand la recuperation est une vraie limite chez toi.",
+    };
+  }
+  if (/dsip/.test(name)) {
+    return {
+      purpose: "Aide sommeil quand le vrai probleme est l'endormissement, la profondeur de nuit ou la recup nerveuse.",
+      rationale: "Je le prends en compte si ton sommeil te freine deja sur l'energie, la faim ou la progression. Le but est de calmer le terrain et d'ameliorer la qualite des nuits, pas de maquiller une hygiene de vie bancale.",
+    };
+  }
+  if (/epitalon/.test(name)) {
+    return {
+      purpose: "Option longévité / rythme circadien quand le dossier justifie un travail propre sur recup et vieillissement.",
+      rationale: "Je le garde comme option plus secondaire, utile si le focus est la recuperation long terme et le rythme biologique. Ce n'est pas la base d'un stack physique, c'est un ajout plus fin quand le terrain s'y prete.",
+    };
+  }
+
+  return {
+    purpose: sanitizeClientFacingText(peptide.purpose || "Choix retenu en fonction de ton objectif principal, de ton niveau et du meilleur ratio utilite / complexite."),
+    rationale: sanitizeClientFacingText(peptide.whyThisPeptide || "Je le retiens parce qu'il colle a ton profil et qu'il apporte un levier clair dans le stack, sans faire doublon avec le reste."),
+  };
+}
+
+function upsertFinalDisclaimer(report: RepairableReport, firstName: string): void {
+  const shortDisclaimer = sanitizeClientFacingText(
+    `${firstName}, point important pour finir: plusieurs molecules de ce rapport ont un statut experimental ou non approuve pour cet usage. Tu gardes une logique terrain, mais tu fais verifier le produit exact, la dose, la concentration, tes traitements, tes allergies et tes analyses par un medecin ou un pharmacien avant de passer a l'acte.`
+  );
+
+  const disclaimerSection = (report.sections || []).find((section) =>
+    /disclaimer|support|important|securite/i.test(`${section.id} ${section.title}`)
+  ) || (report.sections || [])[report.sections.length - 1];
+
+  if (!disclaimerSection) return;
+
+  disclaimerSection.content = sanitizeClientFacingText(
+    `${String(disclaimerSection.content || "")
+      .replace(/ce protocole est fourni a titre educatif[^.]*\./gi, "")
+      .replace(/consulte un professionnel de sante[^.]*\./gi, "")
+      .trim()}\n\n${shortDisclaimer}`
+  );
+}
+
+function cleanStandardSections(report: RepairableReport): void {
+  for (const section of report.sections || []) {
+    section.content = sanitizeClientFacingText(
+      String(section.content || "")
+        .replace(/ce rapport est un document de preparation a une discussion medicale\./gi, "")
+        .replace(/sans validation explicite, tu ne commences pas\./gi, "")
+        .replace(/consulte un medecin avant toute supplementation\./gi, "")
+        .replace(/des milliers de personnes le font chaque jour et c'est beaucoup plus simple que tu ne l'imagines\./gi, "")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim()
+    );
+  }
+}
+
+function cleanExpertPeptideFields(report: RepairableReport): void {
+  for (const peptide of report.peptides || []) {
+    const confident = confidentPurpose(peptide);
+    peptide.purpose = confident.purpose;
+    peptide.whyThisPeptide = confident.rationale;
+    peptide.dosage = sanitizeClientFacingText(stripProjectPrefix(peptide.dosage));
+    peptide.timing = sanitizeClientFacingText(
+      stripProjectPrefix(peptide.timing)
+        .replace(/peut [eê]tre m[ée]lang[ée][^.]*m[êe]me seringue[^.]*\.?/gi, "Garde ce produit separe dans sa propre seringue, sauf validation professionnelle contraire.")
+    );
+    peptide.route = sanitizeClientFacingText(stripProjectPrefix(peptide.route));
+    peptide.cycleDuration = sanitizeClientFacingText(
+      stripProjectPrefix(peptide.cycleDuration)
+        .replace(/\s*avec\s+(?:une\s+)?descente progressive[^,.;]*/gi, "")
+        .replace(/\s*,\s*,/g, ",")
+    );
+
+    const vialMatch = String(peptide.reconstitution || "").replace(/(\d),(\d)/g, "$1.$2").match(/vial(?: de)?\s*(\d+(?:\.\d+)?)\s*mg\s*\+\s*(\d+(?:\.\d+)?)\s*ml/i);
+    const doseMatch = Array.from(String(peptide.dosage || "").replace(/(\d),(\d)/g, "$1.$2").matchAll(/(\d+(?:\.\d+)?)\s*mg/gi))
+      .map((match) => Number(match[1]))
+      .filter(Number.isFinite);
+
+    if (/retatrutide/i.test(peptide.name || "") && vialMatch && doseMatch.length > 0) {
+      const vialMg = Number(vialMatch[1]);
+      const solventMl = Number(vialMatch[2]);
+      const targetDoseMg = Math.max(...doseMatch);
+      const concentration = vialMg / solventMl;
+      const totalMl = targetDoseMg / concentration;
+      const splitLine = totalMl > 1
+        ? ` Comme ca depasse 1 ml, tu fractionnes en 2 injections distinctes de ${(totalMl / 2).toFixed(2)} ml le meme jour, sur 2 sites differents.`
+        : "";
+      peptide.reconstitution = sanitizeClientFacingText(
+        `Vial ${vialMg}mg + ${solventMl}ml BAC water = ${concentration.toFixed(2)} mg/ml. Pour ${targetDoseMg}mg, tu tires ${totalMl.toFixed(2)} ml au total.${splitLine}`
+      );
+    } else {
+      peptide.reconstitution = sanitizeClientFacingText(
+        String(peptide.reconstitution || "")
+          .replace(/controle de coherence uniquement:\s*/i, "")
+          .replace(/la reconstitution ne doit pas etre improvisee[^.]*\./gi, "")
+          .replace(/fais verifier[^.]*\./gi, "")
+          .replace(/ne melange pas ce produit avec un autre[^.]*\./gi, "Garde ce produit separe du reste, sauf validation professionnelle contraire.")
+          .trim()
+      );
+    }
+  }
+}
+
+function repairStandardReportContent(report: RepairableReport, firstName: string): void {
+  (report as any).qualityVersion = "expert-standard-v1";
+  cleanExpertPeptideFields(report);
+  cleanStandardSections(report);
+  upsertFinalDisclaimer(report, firstName);
+}
+
 function cautiousPurpose(peptide: PeptideItem): { purpose: string; rationale: string } {
   const name = peptide.name.toLowerCase();
   if (/retatrutide/.test(name)) {
@@ -402,13 +571,16 @@ export function repairPeptidesReportContent(
 
   report.clientName = sanitizeClientFacingText(firstName);
   if (tier) report.tier = sanitizeClientFacingText(tier);
-  (report as any).qualityVersion = "medical-review-v1";
+  if (needsMedicalReview(responses)) {
+    (report as any).qualityVersion = "medical-review-v1";
+    cleanUnsafePeptideFields(report);
+    report.sections = buildSections(report, firstName);
+    report.shoppingList = sanitizeClientFacingText(liveShoppingLines(report));
+  } else {
+    repairStandardReportContent(report, firstName);
+  }
 
-  cleanUnsafePeptideFields(report);
-  report.sections = buildSections(report, firstName);
-  report.shoppingList = sanitizeClientFacingText(liveShoppingLines(report));
-
-  const totalChars = report.sections.reduce((sum, section) => sum + section.content.length, 0);
+  const totalChars = (report.sections || []).reduce((sum, section) => sum + section.content.length, 0);
   if (totalChars < 30_000) {
     throw new Error(`QUALITY: rapport repare trop court (${totalChars} caracteres)`);
   }

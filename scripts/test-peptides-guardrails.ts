@@ -1,10 +1,18 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   estimateNeedMg,
   validatePeptidesReport,
   type PeptidesReport,
 } from "../server/peptidesReportValidator";
 import { repairPeptidesReportContent } from "../server/peptidesReportRepair";
+
+const engineSource = readFileSync(new URL("../server/peptidesEngine.ts", import.meta.url), "utf8");
+assert.match(engineSource, /PEPTIDES_PRIMARY_MODEL[\s\S]{0,120}"claude-sonnet-4-6"/);
+assert.match(engineSource, /PEPTIDES_QUALITY_FALLBACK_MODEL[\s\S]{0,120}"gpt-5\.6-sol"/);
+assert.match(engineSource, /effort:\s*"max"/);
+assert.match(engineSource, /mode:\s*"pro"/);
+assert.match(engineSource, /Candidate rejected[\s\S]{0,600}Switching to quality fallback/);
 
 const now = new Date().toISOString();
 const peptide = {
@@ -31,11 +39,9 @@ assert.equal(
   "Une prise au coucher sur 4 semaines doit etre calculee comme quotidienne"
 );
 
-const longHumanParagraph = [
-  "Luca, cette partie reprend ton profil concret et distingue clairement les faits des hypotheses.",
-  "La retatrutide reste une molecule experimentale non approuvee et ce document ne valide aucune automedication.",
+const safetyParagraph = [
+  "Luca, la retatrutide reste une molecule experimentale non approuvee et ce document ne valide aucune automedication.",
   "Avant tout achat ou toute utilisation, demande a ton medecin ou a ton pharmacien de verifier le produit, la dose, tes allergies et tes analyses.",
-  "Si un element manque ou si un symptome apparait, tu suspends la demarche et tu demandes un avis medical.",
 ].join(" ");
 
 const report: PeptidesReport = {
@@ -45,7 +51,12 @@ const report: PeptidesReport = {
   sections: Array.from({ length: 12 }, (_, index) => ({
     id: `section-${index + 1}`,
     title: `Partie ${index + 1}`,
-    content: Array.from({ length: 24 }, () => longHumanParagraph).join("\n\n"),
+    content: [
+      index === 0 ? safetyParagraph : "",
+      ...Array.from({ length: 24 }, (_, paragraphIndex) =>
+        `Luca, le repere ${index + 1}.${paragraphIndex + 1} relie ton objectif concret a une decision pratique differente; cette explication reste personnalisee, varie son angle et donne assez de contexte pour comprendre le choix sans recopier une formule standard.`
+      ),
+    ].filter(Boolean).join("\n\n"),
   })),
   weeklySchedule: "Le calendrier reste suspendu tant que le medecin ou le pharmacien ne l'a pas valide.",
   shoppingList: "Aucun achat avant verification du stock, du pays et accord du professionnel.",
@@ -86,6 +97,15 @@ assert.equal(styleAudit.ok, false);
 assert.match(styleAudit.errors.join("\n"), /ponctuation Unicode interdite/);
 assert.match(styleAudit.errors.join("\n"), /vouvoiement interdit/);
 
+const repetitionFailure = structuredClone(report);
+const repeatedDisclaimer = "Ce bloc generique est repete partout et donne au rapport une voix artificielle qui ne correspond pas au dossier du client.";
+for (let index = 0; index < 5; index++) {
+  repetitionFailure.sections![index].content += `\n\n${repeatedDisclaimer}`;
+}
+const repetitionAudit = validatePeptidesReport(repetitionFailure);
+assert.equal(repetitionAudit.ok, false);
+assert.match(repetitionAudit.errors.join("\n"), /phrases repetees detectees/);
+
 const stale = structuredClone(report);
 stale._peptauraLiveSync!.syncedAt = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
 const staleAudit = validatePeptidesReport(stale);
@@ -105,14 +125,22 @@ const repaired = repairPeptidesReportContent(
 ) as any;
 const repairedAudit = validatePeptidesReport(repaired);
 assert.equal(repaired.tier, "solo");
-assert.equal(repaired.sections.length, 15);
+assert.equal(repaired.qualityVersion, "expert-standard-v1");
+assert.equal(repaired.sections.length, 12);
 assert.ok(repaired.sections.reduce((sum: number, section: any) => sum + section.content.length, 0) >= 30_000);
 assert.doesNotMatch(repaired.peptides[0].cycleDuration, /descente progressive/i);
 assert.doesNotMatch(repaired.peptides[0].timing, /peut etre melange/i);
 assert.match(repaired.peptides[0].reconstitution, /1\.60 ml/);
-assert.match(repaired.peptides[0].purpose, /hypothese experimentale/i);
-assert.match(repaired.peptides[0].whyThisPeptide, /non approuvee/i);
-assert.doesNotMatch(repaired.peptides[0].whyThisPeptide, /plus puissante/i);
+assert.doesNotMatch(repaired.peptides[0].purpose, /hypothese experimentale/i);
+assert.match(repaired.peptides[0].whyThisPeptide, /appetit|perte du gras|titration/i);
 assert.equal(repairedAudit.ok, true, repairedAudit.errors.join("\n"));
+
+const hardFlagReport = repairPeptidesReportContent(
+  structuredClone(legacyReport),
+  { pep_name: "Luca", pep_country: "France", pep_conditions: "Cancer en remission recente" },
+  "solo"
+) as any;
+assert.equal(hardFlagReport.qualityVersion, "medical-review-v1");
+assert.equal(hardFlagReport.sections.length, 15);
 
 console.log("Peptides guardrails: OK");

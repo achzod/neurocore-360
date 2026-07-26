@@ -815,19 +815,27 @@ export async function registerRoutes(
       detail: process.env.ANTHROPIC_API_KEY ? "configured" : "ANTHROPIC_API_KEY missing , reports won't generate",
     };
 
-    // 5. Sentry
+    // 5. OpenAI quality fallback for Peptides Engine
+    checks.openai = {
+      ok: Boolean(process.env.OPENAI_API_KEY),
+      detail: process.env.OPENAI_API_KEY
+        ? "configured , Peptides fallback gpt-5.6-sol ready"
+        : "OPENAI_API_KEY missing , Peptides quality fallback unavailable",
+    };
+
+    // 6. Sentry
     checks.sentry = {
       ok: Boolean(process.env.SENTRY_DSN),
       detail: process.env.SENTRY_DSN ? "enabled" : "NOT configured , errors invisible",
     };
 
-    // 6. Admin
+    // 7. Admin
     checks.admin = {
       ok: Boolean(process.env.ADMIN_SECRET),
       detail: process.env.ADMIN_SECRET ? "configured" : "ADMIN_SECRET missing",
     };
 
-    // 7. APP_URL
+    // 8. APP_URL
     checks.appUrl = {
       ok: Boolean(process.env.APP_URL),
       detail: process.env.APP_URL || "NOT SET , emails will use fallback URL",

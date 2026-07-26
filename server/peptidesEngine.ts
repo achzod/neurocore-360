@@ -6,6 +6,8 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
+import { createHash } from "node:crypto";
 import { ANTHROPIC_CONFIG, validateAnthropicConfig } from "./anthropicConfig";
 import {
   validatePeptidesReport,
@@ -52,7 +54,24 @@ export interface PeptidesReport {
   weeklySchedule: string;
   shoppingList: string;
   promoCodesGenerated: string[];
+  qualityVersion?: "expert-standard-v1" | "medical-review-v1";
+  _generationMeta?: {
+    provider: "anthropic" | "openai";
+    model: string;
+    reasoningEffort?: string;
+    reasoningMode?: string;
+    generatedAt: string;
+  };
 }
+
+export const PEPTIDES_PRIMARY_MODEL =
+  process.env.PEPTIDES_PRIMARY_MODEL || "claude-sonnet-4-6";
+export const PEPTIDES_QUALITY_FALLBACK_MODEL =
+  process.env.PEPTIDES_QUALITY_FALLBACK_MODEL || "gpt-5.6-sol";
+export const PEPTIDES_QUALITY_FALLBACK_REASONING = Object.freeze({
+  effort: "max",
+  mode: "pro",
+});
 
 // ─── Peptaura fallback catalog ───────────────────────────────────────────────
 // Static fallback only. Runtime generation refreshes the live sitemap, country
@@ -1169,8 +1188,10 @@ function cleanReportContent(report: PeptidesReport, firstName: string): Peptides
   report.bloodMarkers = (report.bloodMarkers || []).map(cleanText);
 
   const safetyText = collectClientFacingStrings(report).join("\n");
-  if (!/\b(?:experimental|non approuv[ée]|produit de recherche)\b/i.test(safetyText)
-    || !/\b(?:m[ée]decin|pharmacien)\b[\s\S]{0,180}\b(?:valide|v[ée]rifie|avis|accord|confirme)\b|\b(?:valide|v[ée]rifie|avis|accord|confirme)\b[\s\S]{0,180}\b(?:m[ée]decin|pharmacien)\b/i.test(safetyText)) {
+  const reportMode = String((report as any).qualityVersion || "");
+  if (reportMode === "medical-review-v1"
+    && (!/\b(?:experimental|non approuv[ée]|produit de recherche)\b/i.test(safetyText)
+    || !/\b(?:m[ée]decin|pharmacien)\b[\s\S]{0,180}\b(?:valide|v[ée]rifie|avis|accord|confirme)\b|\b(?:valide|v[ée]rifie|avis|accord|confirme)\b[\s\S]{0,180}\b(?:m[ée]decin|pharmacien)\b/i.test(safetyText))) {
     const safetySection = report.sections.find((section) =>
       /securite|s[ée]curit[ée]|disclaimer|support|avant de commencer/i.test(`${section.id} ${section.title}`)
     ) || report.sections.at(-1);
@@ -1299,14 +1320,25 @@ function buildResponsesSummary(responses: Record<string, unknown>): string {
 
 // ─── System prompt ────────────────────────────────────────────────────────────
 
-const SYSTEM_PROMPT = `Tu rediges en francais un rapport personnalise de reduction des risques pour Achzod.
+const SYSTEM_PROMPT = `Tu rediges en francais le rapport expert Peptides Engine signe Achzod.
 
 TON ET STYLE
 Tu tutoies toujours. Les mots "vous", "votre", "vos" et les imperatifs au pluriel sont interdits.
 Les caracteres Unicode U+2014 et U+2013 sont interdits partout. Utilise une virgule, un point ou reformule.
 Ecris comme une vraie personne qui connait le dossier. Varie la longueur des phrases. Evite les introductions scolaires, les transitions automatiques, les plans trop symetriques et les formules toutes faites.
+Tu parles comme un expert terrain, pas comme un avocat, pas comme une notice FDA, pas comme un commercial euphorique.
+Tu assumes une recommandation claire, hierarchisee, pratique et personnalisee. Tu cadres le risque sans dissoudre la valeur du protocole.
+Le client a paye pour comprendre ce que tu choisirais pour son profil et comment tu organiserais le stack. Donne-lui cette reponse franchement.
+Chaque idee de prudence ne doit apparaitre qu'une fois. Tu ne recopies jamais le meme disclaimer, la meme consigne medicale ou la meme phrase dans plusieurs sections.
+Evite les rafales de titres en majuscules. Utilise des sous-titres seulement quand ils aident vraiment a lire.
 Ne pretends jamais qu'un geste est simple, indolore ou sans risque. Ne rassure jamais avec un nombre invente de personnes qui feraient la meme chose.
 N'invente aucune experience personnelle, aucun diplome et aucune validation medicale.
+
+MODES DE SORTIE
+Mode par defaut: expert-standard-v1.
+Mode exceptionnel: medical-review-v1.
+Tu n'utilises medical-review-v1 QUE si le questionnaire montre au moins un hard red flag clair: cancer actif ou remission recente, grossesse ou allaitement, insuffisance hepatique ou renale severe, pancreatite ou pathologie biliaire majeure selon molecule, maladie cardio serieuse, polytraitement lourd, symptomes alarmants actuels, allergie injectable douteuse ou contexte psychiatrique severe.
+Si aucun hard red flag n'est explicitement present, tu restes en expert-standard-v1.
 
 COHERENCE ET VERIFICATION
 Chaque dose, frequence, duree, quantite totale, format de vial et prix doit etre mathematiquement coherent.
@@ -1318,14 +1350,16 @@ SECURITE MEDICALE
 Ce rapport ne remplace ni une ordonnance ni un suivi medical.
 Les produits de recherche et les molecules non approuvees ne doivent jamais etre presentes comme des traitements valides ou comme une automedication sure.
 Retatrutide reste une molecule experimentale. BPC-157, ipamorelin injectable et plusieurs autres peptides ont des donnees humaines de securite limitees ou des risques identifies. Dis le clairement quand ils sont cites.
-Avant tout achat ou toute utilisation, demande une validation explicite par un medecin ou un pharmacien connaissant le dossier, les traitements, les allergies et les analyses biologiques du client.
-En cas de contre-indication, de traitement concomitant, d'allergie, de symptome inhabituel ou de donnee manquante, suspends la recommandation et oriente vers le professionnel adapte.
+En expert-standard-v1, la securite reste discrete: un seul disclaimer final propre suffit. Tu n'inondes pas chaque section de warnings generiques.
+En medical-review-v1, tu peux suspendre les guides pratiques, neutraliser le protocole et renvoyer vers verification medicale explicite.
+En cas de contre-indication, de traitement concomitant, d'allergie, de symptome inhabituel ou de donnee manquante critique, suspends la recommandation et oriente vers le professionnel adapte.
 Ne promets jamais la purete, la sterilite, l'efficacite ou la securite d'un vendeur. Un COA ne prouve pas a lui seul la sterilite du produit recu.
 
 CADRE DE TRAVAIL
 Tu analyses le profil, les objectifs, les risques, le budget et le niveau d'experience.
 Tu recommandes uniquement des produits detectes sur le catalogue Peptaura live et livrables dans le pays indique.
-Tu donnes la priorite aux options approuvees et encadrees medicalement lorsqu'elles existent.
+Tu hiérarchises toujours le stack: priorite 1, priorite 2, optionnelle, bonus si pertinent.
+Pour chaque peptide retenu, tu dois expliquer: pourquoi toi, pourquoi maintenant, dose retenue, frequence, timing, duree, ce qu'on attend, ce qu'on surveille, quand on ajuste ou arrete.
 
 CHOIX DU FOURNISSEUR (CRITIQUE , LIVRAISON PAYS CLIENT)
 Peptaura est un marketplace mais TOUS les fournisseurs ne livrent PAS dans tous les pays. Le pays de livraison client et la liste fournisseurs autorises/interdits sont fournis dans le bloc CONTEXTE PEPTAURA LIVE du prompt utilisateur. Tu dois suivre ce bloc en priorité absolue, même s'il contredit une ancienne connaissance.
@@ -1721,7 +1755,7 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
     {
       "id": "guide-peptaura",
       "title": "Comment commander sur Peptaura",
-      "content": "${firstName}, Peptaura est un marketplace qui connecte directement aux laboratoires qui fabriquent les peptides. C'est ma source personnelle depuis plusieurs années. Voici comment commander étape par étape:\\n\\nQU'EST-CE QUE PEPTAURA\\nPeptaura.com est une plateforme qui regroupe plusieurs fournisseurs verifies. Tous les fournisseurs ne livrent pas dans tous les pays, donc tu dois utiliser le fournisseur recommande dans ce rapport et verifier la page shipping Peptaura pour ton pays avant de payer. Chaque lot de peptides est accompagné d'un COA (Certificate of Analysis) , un document de laboratoire indépendant qui certifie la pureté du produit (généralement 98-99%).\\n\\nPOURQUOI [FOURNISSEUR RECOMMANDÉ]\\nJe te recommande [fournisseur] parce que [raison liée au budget/MOQ/pays de livraison]. Le minimum de commande est de $[MOQ] si le fournisseur en applique un.\\n\\nCOMMENT PAYER\\nPeptaura accepte les paiements par carte bancaire (CB/Visa/Mastercard) avec vérification d'identité (KYC , tu devras montrer une pièce d'identité, c'est normal et sécurisé). Tu peux aussi payer en crypto (Bitcoin, Ethereum, USDT).\\n\\nLIVRAISON\\nCompte entre 7 et 14 jours pour la livraison quand le fournisseur livre bien ton pays. Les peptides sont envoyés sous forme de poudre lyophilisée (pas besoin de chaîne du froid pendant le transport). Tu recevras un numéro de suivi.\\n\\nASTUCE\\nRegroupe ta commande : commande tous tes peptides + BAC water + seringues en une seule fois pour optimiser les frais de port."
+      "content": "${firstName}, Peptaura est un marketplace. Le but ici n'est pas de te survendre une source, mais de te donner une methode propre pour commander le bon format au bon moment.\\n\\nQU'EST-CE QUE PEPTAURA\\nPeptaura.com regroupe plusieurs fournisseurs. Tous ne livrent pas dans tous les pays, et les stocks bougent. Tu dois donc verifier la page shipping pour ton pays avant de payer et recroiser chaque ligne de ta shopping list avec l'offre live du jour.\\n\\nPOURQUOI [FOURNISSEUR RECOMMANDÉ]\\nJe te propose [fournisseur] parce qu'il colle le mieux a ton pays, ton budget et au format de vial dont tu as besoin aujourd'hui. Si le stock ou le format change, tu ne remplaces pas au hasard, tu refais valider la commande exacte.\\n\\nCOMMENT PAYER\\nTu suis simplement les moyens de paiement affiches sur la plateforme au moment de la commande. Pas de promesse ici sur la disponibilite d'une methode precise.\\n\\nLIVRAISON\\nLe delai depend du fournisseur, du pays et du stock live. Tu controles toujours la page shipping et le statut reel au moment de payer.\\n\\nASTUCE\\nLe plus propre est de commander le stack exact, la BAC water et le materiel necessaire sans surstocker pour rien."
     },
     {
       "id": "reconstitution-guide",
@@ -1731,7 +1765,7 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
     {
       "id": "guide-injection",
       "title": "Guide d'injection complet",
-      "content": "${firstName}, si c'est ta première injection, c'est normal d'être un peu anxieux. Des milliers de personnes le font chaque jour et c'est beaucoup plus simple que tu ne l'imagines. Voici exactement comment faire.\\n\\nMATÉRIEL\\n- Seringues insuline U-100 (31 gauge, 8mm) , c'est l'aiguille la plus fine qui existe, tu sentiras à peine\\n- Tampons alcool (swabs)\\n- Boite de securite aiguilles (boîte jaune pour les aiguilles usagées, dispo en pharmacie)\\n\\nPRÉPARATION\\n1. Lave-toi bien les mains au savon pendant 30 secondes\\n2. Installe-toi dans un endroit propre, bien éclairé, à température ambiante\\n3. Sors ton vial du frigo 5 minutes avant pour le ramener à température ambiante\\n\\nTECHNIQUE D'INJECTION SOUS-CUTANÉE\\n1. Nettoie le bouchon en caoutchouc du vial avec un tampon alcool. Laisse sécher 30 secondes.\\n2. Retourne le vial à l'envers. Insère l'aiguille dans le bouchon. Tire doucement le piston jusqu'au nombre d'unités voulu.\\n3. Vérifie qu'il n'y a pas de bulle d'air. Si oui, tapote légèrement la seringue et pousse la bulle vers le haut.\\n4. Nettoie le site d'injection avec un tampon alcool. Laisse sécher.\\n5. Pince un pli de peau (ventre à 2cm du nombril, ou face externe de la cuisse).\\n6. Insère l'aiguille à 45 degrés dans le pli de peau. C'est rapide et quasiment indolore.\\n7. Injecte lentement (5-10 secondes).\\n8. Retire l'aiguille et presse légèrement avec le tampon alcool. Ne masse pas.\\n\\nROTATION DES SITES\\nAlterne : ventre droit → cuisse gauche → ventre gauche → cuisse droite. Ne pique jamais deux fois au même endroit consécutivement.\\n\\nERREURS À ÉVITER\\n- Ne réutilise JAMAIS une seringue\\n- Ne secoue JAMAIS un vial reconstitué\\n- Ne saute pas l'étape antisepsie (tampon alcool)"
+      "content": "${firstName}, si c'est ta première injection, traite cette partie serieusement. Le but n'est pas de te rassurer artificiellement mais de te donner un cadre propre.\\n\\nMATÉRIEL\\n- Seringues insuline U-100 (31 gauge, 8mm) si la dose et le volume valides collent a ce format\\n- Tampons alcool (swabs)\\n- Boite de securite aiguilles (boîte jaune pour les aiguilles usagées, dispo en pharmacie)\\n\\nPRÉPARATION\\n1. Lave-toi bien les mains au savon pendant 30 secondes\\n2. Installe-toi dans un endroit propre, bien éclairé, à température ambiante\\n3. Sors ton vial du frigo 5 minutes avant si le produit reconstitué doit revenir a une temperature plus confortable\\n\\nTECHNIQUE D'INJECTION SOUS-CUTANÉE\\n1. Nettoie le bouchon en caoutchouc du vial avec un tampon alcool. Laisse sécher 30 secondes.\\n2. Retourne le vial à l'envers. Insère l'aiguille dans le bouchon. Tire doucement le piston jusqu'au nombre d'unités voulu.\\n3. Vérifie qu'il n'y a pas de bulle d'air. Si oui, tapote légèrement la seringue et pousse la bulle vers le haut.\\n4. Nettoie le site d'injection avec un tampon alcool. Laisse sécher.\\n5. Pince un pli de peau (ventre à 2cm du nombril, ou face externe de la cuisse).\\n6. Insère l'aiguille à 45 degrés dans le pli de peau. Geste propre, lent et contrôlé.\\n7. Injecte lentement (5-10 secondes).\\n8. Retire l'aiguille et presse légèrement avec le tampon alcool. Ne masse pas.\\n\\nROTATION DES SITES\\nAlterne : ventre droit → cuisse gauche → ventre gauche → cuisse droite. Ne pique jamais deux fois au même endroit consécutivement.\\n\\nERREURS À ÉVITER\\n- Ne réutilise JAMAIS une seringue\\n- Ne secoue JAMAIS un vial reconstitué\\n- Ne saute pas l'étape antisepsie (tampon alcool)"
     },
     {
       "id": "protocole-pratique",
@@ -1801,7 +1835,7 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
 }`;
 }
 
-// ─── Claude call with retry ───────────────────────────────────────────────────
+// ─── Model calls with retry ───────────────────────────────────────────────────
 
 const PEPTIDES_MAX_TOKENS = 20000; // Anthropic requires streaming for max_tokens > ~20K , keep at safe threshold
 const PEPTIDES_TEMPERATURE = 0.3;
@@ -1809,14 +1843,10 @@ const PEPTIDES_MAX_RETRIES = 3;
 
 async function callClaudeForPeptides(
   systemPrompt: string,
-  userPrompt: string,
-  opts?: { forceOpus?: boolean }
+  userPrompt: string
 ): Promise<string> {
   const client = getClient();
-  // When forceOpus=true, skip Sonnet entirely and go directly to Opus.
-  // Used on retry after Sonnet produced malformed JSON.
-  const model = opts?.forceOpus ? "claude-opus-4-6" : "claude-sonnet-4-6";
-  const fallback = opts?.forceOpus ? "claude-sonnet-4-6" : "claude-opus-4-6";
+  const model = PEPTIDES_PRIMARY_MODEL;
 
   for (let attempt = 1; attempt <= PEPTIDES_MAX_RETRIES; attempt++) {
     try {
@@ -1860,30 +1890,181 @@ async function callClaudeForPeptides(
     }
   }
 
-  // Fallback model
-  console.log(`[PeptidesEngine] Switching to fallback model: ${fallback}`);
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    try {
-      const response = await client.messages.create({
-        model: fallback,
-        max_tokens: PEPTIDES_MAX_TOKENS,
-        temperature: PEPTIDES_TEMPERATURE,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userPrompt }],
-      });
-      const textBlock = response.content.find((c) => c.type === "text");
-      const text = textBlock?.type === "text" ? textBlock.text : "";
-      if (text.trim()) {
-        console.log(`[PeptidesEngine] Fallback OK (attempt ${attempt})`);
-        return text;
+  throw new Error(`[PeptidesEngine] ${model} failed after ${PEPTIDES_MAX_RETRIES} attempts`);
+}
+
+let openAIClient: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  const apiKey = process.env.OPENAI_API_KEY || "";
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY missing for Peptides Engine quality fallback");
+  }
+  if (!openAIClient) {
+    openAIClient = new OpenAI({
+      apiKey,
+      maxRetries: 2,
+      timeout: 12 * 60 * 1000,
+    });
+  }
+  return openAIClient;
+}
+
+const PEPTIDES_REPORT_JSON_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "clientName",
+    "tier",
+    "sections",
+    "peptides",
+    "bloodMarkers",
+    "weeklySchedule",
+    "shoppingList",
+    "promoCodesGenerated",
+  ],
+  properties: {
+    clientName: { type: "string" },
+    tier: { type: "string" },
+    sections: {
+      type: "array",
+      minItems: 12,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["id", "title", "content"],
+        properties: {
+          id: { type: "string" },
+          title: { type: "string" },
+          content: { type: "string" },
+        },
+      },
+    },
+    peptides: {
+      type: "array",
+      minItems: 2,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: [
+          "name",
+          "purpose",
+          "whyThisPeptide",
+          "dosage",
+          "timing",
+          "route",
+          "cycleDuration",
+          "reconstitution",
+          "vialsNeeded",
+          "purchaseUrl",
+          "priceEstimate",
+        ],
+        properties: {
+          name: { type: "string" },
+          purpose: { type: "string" },
+          whyThisPeptide: { type: "string" },
+          dosage: { type: "string" },
+          timing: { type: "string" },
+          route: { type: "string" },
+          cycleDuration: { type: "string" },
+          reconstitution: { type: "string" },
+          vialsNeeded: { type: "string" },
+          purchaseUrl: { type: "string" },
+          priceEstimate: { type: "string" },
+        },
+      },
+    },
+    bloodMarkers: {
+      type: "array",
+      items: { type: "string" },
+    },
+    weeklySchedule: { type: "string" },
+    shoppingList: { type: "string" },
+    promoCodesGenerated: {
+      type: "array",
+      items: { type: "string" },
+    },
+  },
+} as const;
+
+function openAIResponseText(response: any): string {
+  if (typeof response?.output_text === "string" && response.output_text.trim()) {
+    return response.output_text;
+  }
+  return (response?.output || [])
+    .flatMap((item: any) => item?.content || [])
+    .filter((item: any) => item?.type === "output_text" && typeof item?.text === "string")
+    .map((item: any) => item.text)
+    .join("");
+}
+
+async function callOpenAIForPeptides(
+  systemPrompt: string,
+  userPrompt: string,
+  email: string
+): Promise<string> {
+  const client = getOpenAIClient();
+  const safetyIdentifier = `peptides_${createHash("sha256")
+    .update(String(email || "").trim().toLowerCase())
+    .digest("hex")
+    .slice(0, 24)}`;
+
+  console.log(
+    `[PeptidesEngine] Quality fallback starting: ${PEPTIDES_QUALITY_FALLBACK_MODEL}, effort=max, mode=pro`
+  );
+
+  let response: any = await client.responses.create({
+    model: PEPTIDES_QUALITY_FALLBACK_MODEL,
+    background: true,
+    store: true,
+    instructions: systemPrompt,
+    input: userPrompt,
+    max_output_tokens: Number(process.env.PEPTIDES_OPENAI_MAX_OUTPUT_TOKENS || 64000),
+    reasoning: PEPTIDES_QUALITY_FALLBACK_REASONING,
+    text: {
+      verbosity: "high",
+      format: {
+        type: "json_schema",
+        name: "peptides_engine_report",
+        strict: true,
+        schema: PEPTIDES_REPORT_JSON_SCHEMA,
+      },
+    },
+    safety_identifier: safetyIdentifier,
+  } as any);
+
+  const deadline = Date.now() + Number(process.env.PEPTIDES_OPENAI_TIMEOUT_MS || 12 * 60 * 1000);
+  while (response?.status === "queued" || response?.status === "in_progress") {
+    if (Date.now() >= deadline) {
+      try {
+        await client.responses.cancel(response.id);
+      } catch {
+        // Best effort only. The server still refuses to persist an unvalidated result.
       }
-    } catch (error: any) {
-      console.error(`[PeptidesEngine] Fallback attempt ${attempt}/2: ${error?.message || error}`);
-      if (attempt < 2) await sleep(4000);
+      throw new Error(`OpenAI fallback timeout (${response?.id || "unknown response"})`);
     }
+    await sleep(2500);
+    response = await client.responses.retrieve(response.id);
   }
 
-  throw new Error("[PeptidesEngine] All generation attempts failed");
+  if (response?.status !== "completed") {
+    const detail =
+      response?.error?.message
+      || response?.incomplete_details?.reason
+      || response?.status
+      || "unknown";
+    throw new Error(`OpenAI fallback incomplete: ${detail}`);
+  }
+
+  const text = openAIResponseText(response);
+  if (!text.trim()) {
+    throw new Error("OpenAI fallback returned an empty report");
+  }
+
+  console.log(
+    `[PeptidesEngine] Quality fallback OK: ${PEPTIDES_QUALITY_FALLBACK_MODEL}, response=${response.id}`
+  );
+  return text;
 }
 
 // ─── JSON extractor ───────────────────────────────────────────────────────────
@@ -2347,18 +2528,35 @@ export async function generatePeptidesProtocol(
   const peptauraContext = await buildPeptauraPromptContext(responses);
   const userPrompt = buildUserPrompt(responses, firstName, peptauraContext);
 
-  // Generate with retry (up to 2 attempts)
+  // Sonnet 4.6 is always the first pass. GPT-5.6 Sol is used only when the
+  // Sonnet candidate fails generation, parsing, deterministic checks, live
+  // catalog reconciliation, or the final client-facing quality gate.
   let report: PeptidesReport | null = null;
   let lastError = "";
+  const providers: Array<{
+    provider: "anthropic" | "openai";
+    model: string;
+    generate: () => Promise<string>;
+  }> = [
+    {
+      provider: "anthropic",
+      model: PEPTIDES_PRIMARY_MODEL,
+      generate: () => callClaudeForPeptides(SYSTEM_PROMPT, userPrompt),
+    },
+    {
+      provider: "openai",
+      model: PEPTIDES_QUALITY_FALLBACK_MODEL,
+      generate: () => callOpenAIForPeptides(SYSTEM_PROMPT, userPrompt, email),
+    },
+  ];
 
-  for (let attempt = 1; attempt <= 2; attempt++) {
+  for (let attempt = 0; attempt < providers.length; attempt++) {
+    const selected = providers[attempt];
     try {
-      // On retry, force Opus , Sonnet has shown systematic JSON corruption for certain
-      // complex profiles (~55K char outputs with missing array commas). Opus is more
-      // reliable at large structured JSON output.
-      const forceOpus = attempt > 1;
-      console.log(`[PeptidesEngine] Attempt ${attempt}/2 for ${email}${forceOpus ? " (forcing Opus)" : ""}`);
-      const rawResponse = await callClaudeForPeptides(SYSTEM_PROMPT, userPrompt, { forceOpus });
+      console.log(
+        `[PeptidesEngine] Candidate ${attempt + 1}/${providers.length}: ${selected.provider}/${selected.model} for ${email}`
+      );
+      const rawResponse = await selected.generate();
       report = await extractJsonFromResponse(rawResponse);
 
       // ════════════════════════════════════════════════════════════
@@ -2473,65 +2671,60 @@ export async function generatePeptidesProtocol(
         throw new Error(`VALIDATION: prénom "${firstName}" absent de toutes les sections , rapport non personnalisé`);
       }
 
-      console.log(`[PeptidesEngine] ✅ Validation OK: ${report.sections.length} sections, ${report.peptides.length} peptides, ${totalContent} chars`);
-      break; // Success , exit retry loop
+      console.log(`[PeptidesEngine] ✅ Structure OK: ${report.sections.length} sections, ${report.peptides.length} peptides, ${totalContent} chars`);
+
+      // Deterministic post-processing is part of the provider evaluation. A
+      // model only wins when the exact report that will be persisted passes.
+      report = validateAndFixPeptauraUrls(report);
+      report = validateVialsMath(report);
+      report = await applyLivePeptauraPricing(report, peptauraContext);
+      report = repairPeptidesReportContent(report, responses, tier);
+      report = cleanReportContent(report, firstName);
+      report.promoCodesGenerated = [];
+      report.clientName = firstName;
+      report._generationMeta = {
+        provider: selected.provider,
+        model: selected.model,
+        ...(selected.provider === "openai"
+          ? {
+              reasoningEffort: PEPTIDES_QUALITY_FALLBACK_REASONING.effort,
+              reasoningMode: PEPTIDES_QUALITY_FALLBACK_REASONING.mode,
+            }
+          : {}),
+        generatedAt: new Date().toISOString(),
+      };
+
+      const finalValidation = validatePeptidesReport(report as any);
+      if (!finalValidation.ok) {
+        throw new Error(`FINAL_GATE: ${finalValidation.errors.slice(0, 12).join(" | ")}`);
+      }
+      if (finalValidation.warnings.length > 0) {
+        console.warn(
+          `[PeptidesEngine] Final gate warnings for ${email}: ${finalValidation.warnings.slice(0, 3).join(" | ")}`
+        );
+      }
+
+      console.log(
+        `[PeptidesEngine] ✅ Candidate accepted: ${selected.provider}/${selected.model}, quality=${report.qualityVersion || "unknown"}`
+      );
+      break;
 
     } catch (err: any) {
       lastError = err.message || String(err);
-      console.error(`[PeptidesEngine] ❌ Attempt ${attempt} failed: ${lastError}`);
+      console.error(
+        `[PeptidesEngine] ❌ Candidate rejected: ${selected.provider}/${selected.model}: ${lastError}`
+      );
       report = null;
-      if (attempt < 2) {
-        console.log(`[PeptidesEngine] Retrying in 3s...`);
-        await sleep(3000);
+      if (attempt + 1 < providers.length) {
+        console.log(
+          `[PeptidesEngine] Switching to quality fallback: ${PEPTIDES_QUALITY_FALLBACK_MODEL}, effort=max, mode=pro`
+        );
       }
     }
   }
 
   if (!report) {
-    throw new Error(`[PeptidesEngine] Generation failed after 2 attempts: ${lastError}`);
-  }
-
-  // Validate and fix Peptaura URLs (never trust Claude's URLs)
-  report = validateAndFixPeptauraUrls(report);
-
-  // Validate vials math ,  AI invents wrong vial counts (Guillaume Gestin bug)
-  report = validateVialsMath(report);
-
-  // Refresh Peptaura product pages for the final peptide stack and anchor
-  // supplier/price to the client's delivery country before saving.
-  report = await applyLivePeptauraPricing(report, peptauraContext);
-
-  // Replace unsafe legacy claims and generic self-injection guidance before
-  // the report becomes public. Delivery refresh runs the same repair again,
-  // which keeps the operation idempotent and catches live catalog changes.
-  report = repairPeptidesReportContent(report, responses, tier);
-
-  // POST-PROCESSING: clean dashes and 3rd person references
-  report = cleanReportContent(report, firstName);
-
-  report.promoCodesGenerated = [];
-  report.clientName = firstName;
-
-  // ════════════════════════════════════════════════════════════
-  // FINAL STRICT GATE ,  runs after all post-processing.
-  // Flagship 199-399 EUR product = zero error tolerance.
-  // Catches anything the inline CHECKs and math fixup missed:
-  // residual peptide field gaps, vials/price desync, AI brand
-  // mentions, em-dashes, blockquotes, empty sections, weekly plan
-  // gaps, etc. If it fails here, we throw so the caller doesn't
-  // persist + email a broken report.
-  // ════════════════════════════════════════════════════════════
-  const finalValidation = validatePeptidesReport(report as any);
-  if (!finalValidation.ok) {
-    console.error(
-      `[PeptidesEngine] FINAL GATE blocked ${email}:\n${finalValidation.errors.map(e => `  ${e}`).join("\n")}`
-    );
-    throw new Error(`FINAL_GATE: ${finalValidation.errors.slice(0, 12).join(" | ")}`);
-  }
-  if (finalValidation.warnings.length > 0) {
-    console.warn(
-      `[PeptidesEngine] ⚠️ Final gate warnings for ${email}: ${finalValidation.warnings.slice(0, 3).join(" | ")}`
-    );
+    throw new Error(`[PeptidesEngine] All quality candidates failed: ${lastError}`);
   }
 
   const promoCodes = await addBloodAnalysisCredits(email, tier);
