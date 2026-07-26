@@ -185,6 +185,48 @@ assert.doesNotMatch(repaired.peptides[0].purpose, /hypothese experimentale/i);
 assert.match(repaired.peptides[0].whyThisPeptide, /appetit|perte du gras|titration/i);
 assert.equal(repairedAudit.ok, true, repairedAudit.errors.join("\n"));
 
+const unsupportedDescentVariants = [
+  "12 semaines, puis une descente progressive sur les 2 dernieres semaines",
+  "Cycle de 12 semaines dont 2 semaines de reduction progressive",
+  "12 semaines (baisse progressive sur la fin)",
+];
+for (const cycleDuration of unsupportedDescentVariants) {
+  const descentReport = structuredClone(report) as any;
+  descentReport.peptides[0].cycleDuration = cycleDuration;
+  descentReport.peptides[0].dosage = "1 mg par semaine pendant 12 semaines";
+  const repairedDescent = repairPeptidesReportContent(
+    descentReport,
+    { pep_name: "Luca", pep_country: "France" },
+    "solo"
+  ) as any;
+  assert.doesNotMatch(
+    repairedDescent.peptides[0].cycleDuration,
+    /descente|diminution progressive|reduction progressive|baisse progressive/i
+  );
+  const repairedDescentAudit = validatePeptidesReport(repairedDescent);
+  assert.equal(
+    repairedDescentAudit.ok,
+    true,
+    repairedDescentAudit.errors.join("\n")
+  );
+}
+
+const supportedDescent = structuredClone(report) as any;
+supportedDescent.peptides[0].cycleDuration =
+  "12 semaines avec descente progressive sur les 2 dernieres semaines";
+supportedDescent.peptides[0].dosage =
+  "1 mg par semaine, puis descente a 0.5 mg les semaines 11 et 12";
+const repairedSupportedDescent = repairPeptidesReportContent(
+  supportedDescent,
+  { pep_name: "Luca", pep_country: "France" },
+  "solo"
+) as any;
+assert.match(
+  repairedSupportedDescent.peptides[0].cycleDuration,
+  /descente progressive/i,
+  "Une descente detaillee dans le dosage doit rester visible"
+);
+
 const hardFlagReport = repairPeptidesReportContent(
   structuredClone(legacyReport),
   { pep_name: "Luca", pep_country: "France", pep_conditions: "Cancer en remission recente" },

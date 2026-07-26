@@ -156,6 +156,51 @@ function cleanStandardSections(report: RepairableReport): void {
   }
 }
 
+function removeUnsupportedDescent(
+  cycleDuration: string | undefined,
+  dosage: string | undefined
+): string {
+  const original = stripProjectPrefix(cycleDuration);
+  const dosageHasDescent = /descente|diminu|r[ée]duction|baisse/i.test(
+    dosage || ""
+  );
+  const cycleHasDescent =
+    /descente|diminution progressive|r[ée]duction progressive|baisse progressive/i.test(
+      original
+    );
+
+  if (dosageHasDescent || !cycleHasDescent) {
+    return sanitizeClientFacingText(original);
+  }
+
+  const cleaned = original
+    .replace(
+      /\s*[,;(]?\s*(?:(?:avec|puis|et|dont|incluant|comprenant)\s+)?(?:une\s+)?(?:phase\s+de\s+)?(?:\d+\s*semaines?\s+(?:de|en)\s+)?(?:descente|diminution|r[ée]duction|baisse)(?:\s+progressive)?[^,.;)]*\)?/gi,
+      ""
+    )
+    .replace(/\s*,\s*,/g, ",")
+    .replace(/\(\s*\)/g, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/[\s,;]+$/g, "")
+    .trim();
+
+  if (
+    cleaned &&
+    !/descente|diminution progressive|r[ée]duction progressive|baisse progressive/i.test(
+      cleaned
+    )
+  ) {
+    return sanitizeClientFacingText(cleaned);
+  }
+
+  const durationMatch = original.match(
+    /\b\d+\s*(?:jours?|semaines?|mois)\b/i
+  );
+  return sanitizeClientFacingText(
+    durationMatch ? `${durationMatch[0]} au total` : "Duree a confirmer"
+  );
+}
+
 function cleanExpertPeptideFields(report: RepairableReport): void {
   for (const peptide of report.peptides || []) {
     const confident = confidentPurpose(peptide);
@@ -167,10 +212,9 @@ function cleanExpertPeptideFields(report: RepairableReport): void {
         .replace(/peut [eê]tre m[ée]lang[ée][^.]*m[êe]me seringue[^.]*\.?/gi, "Garde ce produit separe dans sa propre seringue, sauf validation professionnelle contraire.")
     );
     peptide.route = sanitizeClientFacingText(stripProjectPrefix(peptide.route));
-    peptide.cycleDuration = sanitizeClientFacingText(
-      stripProjectPrefix(peptide.cycleDuration)
-        .replace(/\s*avec\s+(?:une\s+)?descente progressive[^,.;]*/gi, "")
-        .replace(/\s*,\s*,/g, ",")
+    peptide.cycleDuration = removeUnsupportedDescent(
+      peptide.cycleDuration,
+      peptide.dosage
     );
 
     const vialMatch = String(peptide.reconstitution || "").replace(/(\d),(\d)/g, "$1.$2").match(/vial(?: de)?\s*(\d+(?:\.\d+)?)\s*mg\s*\+\s*(\d+(?:\.\d+)?)\s*ml/i);
@@ -264,14 +308,10 @@ function cleanUnsafePeptideFields(report: RepairableReport): void {
       .replace(/besoin calcule ~(\d+)\.(\d+)\s*mg/gi, "besoin calcule ~$1,$2 mg")
       .replace(/(\d)\s*mg\b/gi, "$1 mg");
 
-    const dosageHasDescent = /descente|diminu|r[ée]duction|baisse/i.test(peptide.dosage || "");
-    if (!dosageHasDescent && /descente|diminution progressive|r[ée]duction progressive/i.test(peptide.cycleDuration || "")) {
-      peptide.cycleDuration = sanitizeClientFacingText(
-        (peptide.cycleDuration || "")
-          .replace(/\s*avec\s+(?:une\s+)?descente progressive[^,.;]*/gi, "")
-          .replace(/\s*,\s*,/g, ",")
-      );
-    }
+    peptide.cycleDuration = removeUnsupportedDescent(
+      peptide.cycleDuration,
+      peptide.dosage
+    );
 
     const noMixing =
       "Ne melange pas plusieurs produits dans la meme seringue sans confirmation explicite d'un medecin ou d'un pharmacien qui connait les produits, les concentrations et ton dossier.";
