@@ -211,12 +211,22 @@ function cleanStandardSections(report: RepairableReport): void {
   for (const section of report.sections || []) {
     section.content = sanitizeClientFacingText(
       String(section.content || "")
+        .replace(
+          /(?:https?:\/\/)?(?:www\.)?apexlabs\.(?:fr|com)(?:\/[^\s)]*)?/gi,
+          "https://apexlabs.achzodcoaching.com/blood-dashboard"
+        )
+        .replace(
+          /compte g[ée]n[ée]ralement\s+\d+\s*(?:[àa]|-)\s*\d+\s+jours ouvr[ée]s[^.]*\./gi,
+          "Le delai affiche par le fournisseur au moment de payer est le seul repere a utiliser."
+        )
         .replace(/ce rapport est un document de pr[ée]paration [àa] une discussion m[ée]dicale\./gi, "")
         .replace(/sans validation explicite, tu ne commences pas\./gi, "")
+        .replace(/ce protocole est fourni [àa] titre [ée]ducatif\.\s*/gi, "")
         .replace(/ce protocole est fourni [àa] titre [ée]ducatif et informatif\.[^.]*\./gi, "")
         .replace(/il ne constitue pas un avis m[ée]dical ni une ordonnance\./gi, "")
         .replace(/consulte un professionnel de sant[ée] avant toute suppl[ée]mentation[^.]*\./gi, "")
         .replace(/consulte un professionnel de sant[ée] si tu as le moindre doute\./gi, "")
+        .replace(/consulte un m[ée]decin si tu as le moindre doute[^.]*\./gi, "")
         .replace(/consulte un m[ée]decin avant toute suppl[ée]mentation\./gi, "")
         .replace(/des milliers de personnes le font chaque jour et c'est beaucoup plus simple que tu ne l'imagines\./gi, "")
         .replace(/\n{3,}/g, "\n\n")
@@ -479,10 +489,17 @@ function normalizeOperationalPlaceholders(report: RepairableReport): void {
     if (!escapedName) continue;
     schedule = schedule.replace(
       new RegExp(
-        `(${escapedName}\\s*)\\[(?:dose|dosage)\\s+selon\\s+(?:la\\s+)?semaine\\]`,
+        `(${escapedName}\\s*)\\[(?:dose|dosage)[^\\]]*\\]`,
         "gi"
       ),
-      `$1(${peptide.dosage})`
+      (_match, prefix: string) => `${prefix}(${peptide.dosage})`
+    );
+    schedule = schedule.replace(
+      new RegExp(
+        `(${escapedName}\\s*)(?:valeur|dose exacte)\\s+indiqu[ée]e\\s+dans\\s+la\\s+fiche`,
+        "gi"
+      ),
+      (_match, prefix: string) => `${prefix}(${peptide.dosage})`
     );
   }
   report.weeklySchedule = sanitizeClientFacingText(

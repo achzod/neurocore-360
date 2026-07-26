@@ -162,6 +162,26 @@ assert.match(
   /ancien domaine Blood Analysis interdit/
 );
 
+const legacyBloodDotCom = structuredClone(report);
+legacyBloodDotCom.sections![0].content +=
+  " Envoie ensuite ton bilan sur https://apexlabs.com/checklist.";
+const legacyBloodDotComAudit = validatePeptidesReport(legacyBloodDotCom);
+assert.equal(legacyBloodDotComAudit.ok, false);
+assert.match(
+  legacyBloodDotComAudit.errors.join("\n"),
+  /ancien domaine Blood Analysis interdit/
+);
+
+const supplierDelayPromise = structuredClone(report);
+supplierDelayPromise.sections![0].content +=
+  " Compte generalement 5 a 15 jours ouvres pour la livraison.";
+const supplierDelayPromiseAudit = validatePeptidesReport(supplierDelayPromise);
+assert.equal(supplierDelayPromiseAudit.ok, false);
+assert.match(
+  supplierDelayPromiseAudit.errors.join("\n"),
+  /promesse de delai fournisseur interdite/
+);
+
 const historicalMentionOnly = structuredClone(report);
 historicalMentionOnly.sections![1].content += [
   " MK-677 faisait partie de son historique.",
@@ -245,6 +265,60 @@ assert.equal(repairedRoboticAudit.ok, true, repairedRoboticAudit.errors.join("\n
 assert.doesNotMatch(
   repairedRoboticPhrase.sections[0].content,
   /plus simple que ca en a l'air/i
+);
+
+const repairableOperationalVariants = structuredClone(report) as any;
+repairableOperationalVariants.weeklySchedule =
+  "LUNDI: Retatrutide [dose precise selon semaine], sous cutanee.";
+repairableOperationalVariants.sections[0].content +=
+  " Compte generalement 5 a 15 jours ouvres pour la livraison.";
+repairableOperationalVariants.sections[1].content +=
+  " Checklist disponible sur https://apexlabs.com/checklist. REATATRUTIDE reste le peptide structure.";
+repairableOperationalVariants.sections[2].content +=
+  " Ce protocole est fourni a titre educatif. Consulte un medecin si tu as le moindre doute avant de continuer.";
+const repairedOperationalVariants = repairPeptidesReportContent(
+  repairableOperationalVariants,
+  { pep_name: "Luca", pep_country: "France" },
+  "solo"
+) as any;
+const repairedOperationalVariantsText = [
+  repairedOperationalVariants.weeklySchedule,
+  ...repairedOperationalVariants.sections.map((section: any) => section.content),
+].join("\n");
+assert.match(
+  repairedOperationalVariants.weeklySchedule,
+  new RegExp(peptide.dosage.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i")
+);
+assert.doesNotMatch(
+  repairedOperationalVariantsText,
+  /valeur indiquee dans la fiche|dose exacte indiquee dans la fiche|apexlabs\.(?:fr|com)|\b5 a 15 jours ouvres\b|REATATRUTIDE|ce protocole est fourni a titre educatif|consulte un medecin si tu as le moindre doute/i
+);
+assert.equal(
+  validatePeptidesReport(repairedOperationalVariants).ok,
+  true,
+  validatePeptidesReport(repairedOperationalVariants).errors.join("\n")
+);
+
+const previouslyDegradedOperationalVariant = structuredClone(report) as any;
+previouslyDegradedOperationalVariant.weeklySchedule =
+  "LUNDI: Retatrutide valeur indiquee dans la fiche, sous cutanee.";
+const repairedPreviouslyDegraded = repairPeptidesReportContent(
+  previouslyDegradedOperationalVariant,
+  { pep_name: "Luca", pep_country: "France" },
+  "solo"
+) as any;
+assert.match(
+  repairedPreviouslyDegraded.weeklySchedule,
+  new RegExp(peptide.dosage.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i")
+);
+assert.doesNotMatch(
+  JSON.stringify(repairedPreviouslyDegraded),
+  /valeur indiquee dans la fiche|dose exacte indiquee dans la fiche/i
+);
+assert.equal(
+  validatePeptidesReport(repairedPreviouslyDegraded).ok,
+  true,
+  validatePeptidesReport(repairedPreviouslyDegraded).errors.join("\n")
 );
 
 const falseSoloCredits = structuredClone(report) as any;

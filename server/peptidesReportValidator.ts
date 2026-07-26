@@ -696,11 +696,17 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
   ) {
     errors.push("offre Solo: faux credit Blood Analysis annonce");
   }
-  if (/\bapexlabs\.fr\b/i.test(clientFacingText)) {
-    errors.push("ancien domaine Blood Analysis interdit: apexlabs.fr");
+  if (/\bapexlabs\.(?:fr|com)\b/i.test(clientFacingText)) {
+    errors.push("ancien domaine Blood Analysis interdit: apexlabs.fr ou apexlabs.com");
   }
   if (/\[(?:dose|dosage|peptide|timing)[^\]]*\]/i.test(clientFacingText)) {
     errors.push("placeholder operationnel non resolu");
+  }
+  if (/\b(?:valeur|dose exacte)\s+indiqu[ée]e\s+dans la fiche\b/i.test(clientFacingText)) {
+    errors.push("consigne operationnelle vague non resolue");
+  }
+  if (/\b\d+\s*(?:[àa]|-)\s*\d+\s+jours ouvr[ée]s\b/i.test(clientFacingText)) {
+    errors.push("promesse de delai fournisseur interdite");
   }
 
   const verificationAction = "(?:valid(?:e|er|ation)|v[ée]rifi(?:e|er|cation)|avis|accord|confirm(?:e|er|ation))";

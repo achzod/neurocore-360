@@ -43,6 +43,7 @@ export function sanitizeClientFacingText(value: string): string {
   return value
     .replace(FORBIDDEN_DASH_ENTITIES, ",")
     .replace(FORBIDDEN_UNICODE_DASHES, ",")
+    .replace(/\breatatrutide\b/gi, "Retatrutide")
     .replace(/\b(?:c['’]est\s+)?plus simple que [çc]a en a l['’]air\b/gi, "la logique devient claire une fois le calcul pose")
     .replace(/\s*,\s*,+/g, ", ")
     .replace(/[ \t]+([,.;:!?])/g, "$1")
