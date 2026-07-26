@@ -708,6 +708,13 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
   if (/\b\d+\s*(?:[àa]|-)\s*\d+\s+jours ouvr[ée]s\b/i.test(clientFacingText)) {
     errors.push("promesse de delai fournisseur interdite");
   }
+  if (
+    /commence [àa] \d+\s*% de la dose cible[^.]*premi[èe]re semaine|reste au palier pr[ée]c[ée]dent[^.]*avant de monter|cycle court de \d+\s*[àa-]\s*\d+ semaines [àa] dose r[ée]duite est possible/i.test(
+      clientFacingText
+    )
+  ) {
+    errors.push("ajustement de dose contradictoire hors fiche");
+  }
 
   const verificationAction = "(?:valid(?:e|er|ation)|v[ée]rifi(?:e|er|cation)|avis|accord|confirm(?:e|er|ation))";
   const hasMedicalVerification = new RegExp(

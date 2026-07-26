@@ -235,6 +235,42 @@ function cleanStandardSections(report: RepairableReport): void {
   }
 }
 
+function normalizeUnsupportedStandardClaims(report: RepairableReport): void {
+  for (const section of report.sections || []) {
+    section.content = sanitizeClientFacingText(
+      String(section.content || "")
+        .replace(
+          /c['’]est la mol[ée]cule la plus puissante disponible aujourd['’]hui[^.]*\./gi,
+          "Dans ce stack, c'est le levier principal retenu pour travailler la satiete et la perte de masse grasse, sans promettre un resultat automatique."
+        )
+        .replace(
+          /il va naturellement r[ée]duire ton app[ée]tit[^.]*sans toucher [àa] ta masse maigre[^.]*\./gi,
+          "L'objectif est de reduire l'appetit tout en protegeant au mieux la masse maigre avec un entrainement regulier et un apport proteique suffisant."
+        )
+        .replace(
+          /l['’]ipamorelin est un s[ée]cr[ée]tagogue GH s[ée]lectif, il amplifie ce signal sans augmenter le cortisol ni la prolactine[^.]*\./gi,
+          "L'Ipamorelin complete le signal GH avec un profil recherche plus cible que les anciens secretagogues, sans garantir une reponse hormonale identique chez tout le monde."
+        )
+        .replace(
+          /le DSIP \(Delta Sleep-Inducing Peptide\) est un neuropeptide qui am[ée]liore l['’]architecture du sommeil profond[^.]*\./gi,
+          "Le DSIP est retenu ici comme levier experimental autour du sommeil profond, avec des donnees humaines encore limitees."
+        )
+        .replace(
+          /le DSIP ne te massue pas, il am[ée]liore la qualit[ée] du sommeil sans cr[ée]er de d[ée]pendance\./gi,
+          "Le DSIP n'est pas presente comme un somnifere ni comme un resultat garanti."
+        )
+        .replace(
+          /tu peux les garder [àa] temp[ée]rature ambiante ou au r[ée]frig[ée]rateur, [àa] l['’]abri de la lumi[èe]re directe\. Dans cet [ée]tat, ils se conservent plusieurs mois\./gi,
+          "Garde chaque vial a l'abri de la lumiere et respecte la temperature ainsi que la date indiquees par le fournisseur du produit exact."
+        )
+        .replace(
+          /une fois ouverte, conserve la BAC water au r[ée]frig[ée]rateur\. Elle se conserve plusieurs mois\./gi,
+          "Note la date d'ouverture de la BAC water et respecte la duree indiquee sur le flacon."
+        )
+    );
+  }
+}
+
 function removeUnsupportedDescent(
   cycleDuration: string | undefined,
   dosage: string | undefined
@@ -572,6 +608,18 @@ function removeConflictingDoseAdjustments(report: RepairableReport): void {
   for (const section of report.sections || []) {
     section.content = sanitizeClientFacingText(
       String(section.content || "")
+        .replace(
+          /commence [àa] \d+\s*% de la dose cible[^.]*pendant la premi[èe]re semaine\./gi,
+          "Pour chaque peptide, suis exactement la dose de la fiche et le calendrier, sans ajouter un palier depuis cette checklist."
+        )
+        .replace(
+          /si les naus[ée]es sont fortes, reste au palier pr[ée]c[ée]dent[^.]*avant de monter\./gi,
+          "Si les nausees deviennent fortes, stoppe et fais le point avant toute reprise."
+        )
+        .replace(
+          /(?:si tu sens que tu reprends du poids[^.]*,\s*)?un cycle court de \d+\s*[àa-]\s*\d+ semaines [àa] dose r[ée]duite est possible[^.]*\./gi,
+          "Si le poids remonte apres l'arret, ne relance pas un cycle court pour compenser. Reprends d'abord tes mesures, ton alimentation et ton bilan."
+        )
         .split(/\n{2,}/)
         .map((paragraph) =>
           /^AJUSTEMENTS? DE DOSE\b/i.test(paragraph.trim())
@@ -663,6 +711,7 @@ function repairStandardReportContent(
   (report as any).qualityVersion = "expert-standard-v1";
   cleanExpertPeptideFields(report);
   cleanStandardSections(report);
+  normalizeUnsupportedStandardClaims(report);
   normalizeTierCreditClaims(report, tier);
   removeUnsupportedDescentNarrative(report);
   normalizeOperationalPlaceholders(report);

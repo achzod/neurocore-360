@@ -182,6 +182,22 @@ assert.match(
   /promesse de delai fournisseur interdite/
 );
 
+const contradictoryDoseAdvice = structuredClone(report);
+contradictoryDoseAdvice.sections![3].content +=
+  " Commence a 50% de la dose cible pour les deux peptides pendant la premiere semaine.";
+contradictoryDoseAdvice.sections![4].content +=
+  " Si les nausees sont fortes, reste au palier precedent une semaine de plus avant de monter.";
+contradictoryDoseAdvice.sections![5].content +=
+  " Un cycle court de 4 a 6 semaines a dose reduite est possible.";
+const contradictoryDoseAdviceAudit = validatePeptidesReport(
+  contradictoryDoseAdvice
+);
+assert.equal(contradictoryDoseAdviceAudit.ok, false);
+assert.match(
+  contradictoryDoseAdviceAudit.errors.join("\n"),
+  /ajustement de dose contradictoire hors fiche/
+);
+
 const historicalMentionOnly = structuredClone(report);
 historicalMentionOnly.sections![1].content += [
   " MK-677 faisait partie de son historique.",
@@ -319,6 +335,21 @@ assert.equal(
   validatePeptidesReport(repairedPreviouslyDegraded).ok,
   true,
   validatePeptidesReport(repairedPreviouslyDegraded).errors.join("\n")
+);
+
+const repairedContradictoryDoseAdvice = repairPeptidesReportContent(
+  contradictoryDoseAdvice as any,
+  { pep_name: "Luca", pep_country: "France" },
+  "solo"
+) as any;
+assert.doesNotMatch(
+  JSON.stringify(repairedContradictoryDoseAdvice),
+  /commence a 50% de la dose cible|reste au palier precedent|cycle court de 4 a 6 semaines a dose reduite est possible/i
+);
+assert.equal(
+  validatePeptidesReport(repairedContradictoryDoseAdvice).ok,
+  true,
+  validatePeptidesReport(repairedContradictoryDoseAdvice).errors.join("\n")
 );
 
 const falseSoloCredits = structuredClone(report) as any;
