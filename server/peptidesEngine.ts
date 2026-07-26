@@ -1189,9 +1189,14 @@ function cleanReportContent(report: PeptidesReport, firstName: string): Peptides
 
   const safetyText = collectClientFacingStrings(report).join("\n");
   const reportMode = String((report as any).qualityVersion || "");
+  const verificationAction = "(?:valid(?:e|er|ation)|v[ée]rifi(?:e|er|cation)|avis|accord|confirm(?:e|er|ation))";
+  const hasMedicalVerification = new RegExp(
+    `\\b(?:m[ée]decin|pharmacien)\\b[\\s\\S]{0,180}\\b${verificationAction}\\b|\\b${verificationAction}\\b[\\s\\S]{0,180}\\b(?:m[ée]decin|pharmacien)\\b`,
+    "i"
+  ).test(safetyText);
   if (reportMode === "medical-review-v1"
     && (!/\b(?:experimental|non approuv[ée]|produit de recherche)\b/i.test(safetyText)
-    || !/\b(?:m[ée]decin|pharmacien)\b[\s\S]{0,180}\b(?:valide|v[ée]rifie|avis|accord|confirme)\b|\b(?:valide|v[ée]rifie|avis|accord|confirme)\b[\s\S]{0,180}\b(?:m[ée]decin|pharmacien)\b/i.test(safetyText))) {
+    || !hasMedicalVerification)) {
     const safetySection = report.sections.find((section) =>
       /securite|s[ée]curit[ée]|disclaimer|support|avant de commencer/i.test(`${section.id} ${section.title}`)
     ) || report.sections.at(-1);

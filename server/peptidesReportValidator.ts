@@ -451,7 +451,11 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
     }
   }
 
-  const hasMedicalVerification = /\b(?:m[ée]decin|pharmacien)\b[\s\S]{0,180}\b(?:valide|v[ée]rifie|avis|accord|confirme)\b|\b(?:valide|v[ée]rifie|avis|accord|confirme)\b[\s\S]{0,180}\b(?:m[ée]decin|pharmacien)\b/i.test(clientFacingText);
+  const verificationAction = "(?:valid(?:e|er|ation)|v[ée]rifi(?:e|er|cation)|avis|accord|confirm(?:e|er|ation))";
+  const hasMedicalVerification = new RegExp(
+    `\\b(?:m[ée]decin|pharmacien)\\b[\\s\\S]{0,180}\\b${verificationAction}\\b|\\b${verificationAction}\\b[\\s\\S]{0,180}\\b(?:m[ée]decin|pharmacien)\\b`,
+    "i"
+  ).test(clientFacingText);
   if (!hasMedicalVerification) {
     errors.push("warning de verification medecin ou pharmacien manquant");
   }

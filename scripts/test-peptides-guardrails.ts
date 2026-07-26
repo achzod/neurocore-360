@@ -58,7 +58,7 @@ const report: PeptidesReport = {
       ),
     ].filter(Boolean).join("\n\n"),
   })),
-  weeklySchedule: "Le calendrier reste suspendu tant que le medecin ou le pharmacien ne l'a pas valide.",
+  weeklySchedule: "Calendrier complet du lundi au dimanche, avec les horaires et les jours de repos.",
   shoppingList: "Aucun achat avant verification du stock, du pays et accord du professionnel.",
   promoCodesGenerated: [],
   _peptauraLiveSync: {
