@@ -2524,7 +2524,9 @@ export function validateVialsMath(report: PeptidesReport): PeptidesReport {
           : weeksMatch
             ? `${weeksMatch[1]} semaines`
             : pep.cycleDuration || "le cycle";
-        pep.vialsNeeded = `${clampedCount} vials de ${knownVialMg}mg pour ${durationLabel} (total ~${totalDisplay})`;
+        pep.vialsNeeded =
+          `${clampedCount} vial${clampedCount > 1 ? "s" : ""} de ${knownVialMg}mg pour ${durationLabel} ` +
+          `(besoin calcule ~${needMg.toFixed(1)}mg, ${totalDisplay} livres par le format minimum)`;
         syncPriceEstimate(pep, clampedCount);
         console.log(
           `[PeptidesEngine] Surcommande clamp for ${pep.name}: ordered ${totalMgOrdered}mg vs need ${needMg.toFixed(1)}mg (x${overshoot.toFixed(1)}) → ${clampedCount} vials de ${knownVialMg}mg (~${totalDisplay}, need ×1.2)`

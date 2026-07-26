@@ -119,7 +119,12 @@ coherentCoverage.sections![0].title = "Pourquoi ce choix";
 coherentCoverage.sections![0].content += " Retatrutide relie le choix a l'objectif prioritaire.";
 coherentCoverage.sections![1].id = "reconstitution-guide";
 coherentCoverage.sections![1].title = "Guide de reconstitution";
-coherentCoverage.sections![1].content += " Retatrutide garde une fiche de reconstitution distincte.";
+coherentCoverage.sections![1].content +=
+  ` Retatrutide garde une fiche de reconstitution distincte: ${peptide.reconstitution}.`;
+coherentCoverage.sections![2].id = "protocole-pratique";
+coherentCoverage.sections![2].title = "Protocole pratique";
+coherentCoverage.sections![2].content +=
+  ` Retatrutide. Dose: ${peptide.dosage}. Duree: ${peptide.cycleDuration}.`;
 assert.deepEqual(
   findStructuredPeptideCoverageIssues(coherentCoverage),
   [],
@@ -128,9 +133,33 @@ assert.deepEqual(
 
 const missingCoverage = structuredClone(coherentCoverage);
 missingCoverage.weeklySchedule = "LUNDI: repos";
+missingCoverage.sections![2].content =
+  "Calendrier sans molecule active, uniquement des jours de repos.";
 assert.match(
   findStructuredPeptideCoverageIssues(missingCoverage).join("\n"),
   /absent du calendrier operationnel/
+);
+
+const unresolvedOperationalPlaceholder = structuredClone(report);
+unresolvedOperationalPlaceholder.weeklySchedule =
+  "LUNDI: Retatrutide [dose selon semaine]";
+const unresolvedOperationalPlaceholderAudit = validatePeptidesReport(
+  unresolvedOperationalPlaceholder
+);
+assert.equal(unresolvedOperationalPlaceholderAudit.ok, false);
+assert.match(
+  unresolvedOperationalPlaceholderAudit.errors.join("\n"),
+  /placeholder operationnel non resolu/
+);
+
+const legacyBloodDomain = structuredClone(report);
+legacyBloodDomain.sections![0].content +=
+  " Envoie ensuite ton bilan sur apexlabs.fr.";
+const legacyBloodDomainAudit = validatePeptidesReport(legacyBloodDomain);
+assert.equal(legacyBloodDomainAudit.ok, false);
+assert.match(
+  legacyBloodDomainAudit.errors.join("\n"),
+  /ancien domaine Blood Analysis interdit/
 );
 
 const historicalMentionOnly = structuredClone(report);

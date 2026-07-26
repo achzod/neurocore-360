@@ -159,6 +159,12 @@ function normalizeOperationalText(value: unknown): string {
     .trim();
 }
 
+function normalizedTextContains(haystack: string, needle: string): boolean {
+  const normalizedHaystack = normalizeOperationalText(haystack);
+  const normalizedNeedle = normalizeOperationalText(needle);
+  return Boolean(normalizedNeedle) && normalizedHaystack.includes(normalizedNeedle);
+}
+
 function containsOperationalAlias(value: string, aliases: string[]): boolean {
   const paddedValue = ` ${normalizeOperationalText(value)} `;
   return aliases.some((alias) =>
@@ -192,15 +198,17 @@ export function findStructuredPeptideCoverageIssues(
     )
     .map((section) => section.content || "")
     .join("\n");
+  const protocolSectionText = sections
+    .filter((section) =>
+      /protocole|semaine type|calendrier/i.test(
+        `${section.id || ""} ${section.title || ""}`
+      )
+    )
+    .map((section) => section.content || "")
+    .join("\n");
   const protocolText = [
     String(report.weeklySchedule || ""),
-    ...sections
-      .filter((section) =>
-        /protocole|semaine type|calendrier/i.test(
-          `${section.id || ""} ${section.title || ""}`
-        )
-      )
-      .map((section) => section.content || ""),
+    protocolSectionText,
   ].join("\n");
   const shoppingText = [
     String(report.shoppingList || ""),
@@ -232,6 +240,33 @@ export function findStructuredPeptideCoverageIssues(
     }
     if (!containsOperationalAlias(shoppingText, aliases)) {
       issues.push(`${name}: absent de la liste de commande`);
+    }
+    if (
+      protocolSectionText &&
+      !normalizedTextContains(
+        protocolSectionText,
+        String(peptide.dosage || "")
+      )
+    ) {
+      issues.push(`${name}: dosage de la fiche absent du protocole`);
+    }
+    if (
+      protocolSectionText &&
+      !normalizedTextContains(
+        protocolSectionText,
+        String(peptide.cycleDuration || "")
+      )
+    ) {
+      issues.push(`${name}: duree de la fiche absente du protocole`);
+    }
+    if (
+      reconstitutionText &&
+      !normalizedTextContains(
+        reconstitutionText,
+        String(peptide.reconstitution || "")
+      )
+    ) {
+      issues.push(`${name}: calcul de reconstitution non aligne sur la fiche`);
     }
   }
   return issues;
@@ -660,6 +695,12 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
     )
   ) {
     errors.push("offre Solo: faux credit Blood Analysis annonce");
+  }
+  if (/\bapexlabs\.fr\b/i.test(clientFacingText)) {
+    errors.push("ancien domaine Blood Analysis interdit: apexlabs.fr");
+  }
+  if (/\[(?:dose|dosage|peptide|timing)[^\]]*\]/i.test(clientFacingText)) {
+    errors.push("placeholder operationnel non resolu");
   }
 
   const verificationAction = "(?:valid(?:e|er|ation)|v[ée]rifi(?:e|er|cation)|avis|accord|confirm(?:e|er|ation))";

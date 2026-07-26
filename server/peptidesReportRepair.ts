@@ -216,6 +216,7 @@ function cleanStandardSections(report: RepairableReport): void {
         .replace(/ce protocole est fourni [àa] titre [ée]ducatif et informatif\.[^.]*\./gi, "")
         .replace(/il ne constitue pas un avis m[ée]dical ni une ordonnance\./gi, "")
         .replace(/consulte un professionnel de sant[ée] avant toute suppl[ée]mentation[^.]*\./gi, "")
+        .replace(/consulte un professionnel de sant[ée] si tu as le moindre doute\./gi, "")
         .replace(/consulte un m[ée]decin avant toute suppl[ée]mentation\./gi, "")
         .replace(/des milliers de personnes le font chaque jour et c'est beaucoup plus simple que tu ne l'imagines\./gi, "")
         .replace(/\n{3,}/g, "\n\n")
@@ -344,6 +345,15 @@ function normalizeTierCreditClaims(
       continue;
     }
     let content = String(section.content || "");
+    content = content
+      .replace(
+        /Apexlabs\s*\(\s*(?:https?:\/\/)?(?:www\.)?apexlabs\.fr\s*\)/gi,
+        "APEXLABS"
+      )
+      .replace(
+        /\b(?:https?:\/\/)?(?:www\.)?apexlabs\.fr\b/gi,
+        "https://apexlabs.achzodcoaching.com/blood-dashboard"
+      );
     section.title = sanitizeClientFacingText(
       String(section.title || "")
         .replace(/\btes? 2 cr[ée]dits? Blood Analysis\b/gi, "Blood Analysis")
@@ -392,6 +402,31 @@ function normalizeTierCreditClaims(
       );
     section.content = sanitizeClientFacingText(content);
   }
+
+  const bloodSection = (report.sections || []).find((section) =>
+    /bilan-sanguin|bilan sanguin/i.test(`${section.id} ${section.title}`)
+  );
+  if (bloodSection) {
+    const canonicalSoloOffer = [
+      "OFFRE SOLO ET BLOOD ANALYSIS",
+      "Cette commande Solo n'ajoute aucun credit Blood Analysis. Si tu veux une interpretation APEXLABS, tu commandes l'analyse separement puis tu envoies ton PDF sur https://apexlabs.achzodcoaching.com/blood-dashboard.",
+      "Le prelevement du laboratoire est facture separement par le laboratoire. Son prix depend du pays, du laboratoire et des marqueurs retenus. Demande un devis avant le prelevement au lieu de te fier a un tarif fixe dans ce rapport.",
+    ].join("\n");
+    const content = String(bloodSection.content || "")
+      .replace(
+        /L['’]offre Solo[\s\S]*?(?=\n{2,}MARQUEURS|\n{2,}CALENDRIER|\n{2,}CONDITIONS)/i,
+        `${canonicalSoloOffer}\n\n`
+      )
+      .replace(
+        /\b(?:https?:\/\/)?(?:www\.)?apexlabs\.fr\b/gi,
+        "https://apexlabs.achzodcoaching.com/blood-dashboard"
+      );
+    bloodSection.content = sanitizeClientFacingText(
+      /OFFRE SOLO ET BLOOD ANALYSIS/i.test(content)
+        ? content
+        : `${canonicalSoloOffer}\n\n${content}`
+    );
+  }
 }
 
 function removeUnsupportedDescentNarrative(report: RepairableReport): void {
@@ -431,7 +466,104 @@ function extractLiveReportTotalUsd(report: RepairableReport): number {
     .reduce((sum, line) => {
       const match = line.match(/\btotal\s*\$(\d+(?:[.,]\d+)?)/i);
       return sum + (match ? Number(match[1].replace(",", ".")) : 0);
-    }, 0);
+  }, 0);
+}
+
+function normalizeOperationalPlaceholders(report: RepairableReport): void {
+  let schedule = String(report.weeklySchedule || "");
+  for (const peptide of report.peptides || []) {
+    const escapedName = String(peptide.name || "").replace(
+      /[.*+?^${}()|[\]\\]/g,
+      "\\$&"
+    );
+    if (!escapedName) continue;
+    schedule = schedule.replace(
+      new RegExp(
+        `(${escapedName}\\s*)\\[(?:dose|dosage)\\s+selon\\s+(?:la\\s+)?semaine\\]`,
+        "gi"
+      ),
+      `$1(${peptide.dosage})`
+    );
+  }
+  report.weeklySchedule = sanitizeClientFacingText(
+    schedule
+      .replace(
+        /\[(?:dose|dosage)\s+selon\s+(?:la\s+)?semaine\]/gi,
+        "dose exacte indiquee dans la fiche du peptide"
+      )
+      .replace(/\[(?:dose|dosage|peptide|timing)[^\]]*\]/gi, "valeur indiquee dans la fiche")
+  );
+}
+
+function synchronizeReconstitutionNarrative(
+  report: RepairableReport,
+  firstName: string
+): void {
+  const section = (report.sections || []).find((entry) =>
+    /reconstitution/i.test(`${entry.id} ${entry.title}`)
+  );
+  if (!section) return;
+
+  section.content = sanitizeClientFacingText(
+    [
+      `${firstName}, utilise uniquement les formats et les calculs ci-dessous. Ils sont reconstruits depuis les fiches retenues apres le controle du catalogue et des quantites.`,
+      "METHODE COMMUNE\nLave-toi les mains, nettoie les bouchons, injecte la BAC water doucement le long de la paroi du vial et ne vise pas directement la poudre. Ne secoue pas le vial. Fais-le rouler doucement entre tes paumes jusqu'a dissolution complete. La solution doit rester claire.",
+      ...(report.peptides || []).map(
+        (peptide) =>
+          `${String(peptide.name || "").toUpperCase()}\n` +
+          `Dose et frequence: ${asSentence(peptide.dosage)}\n` +
+          `Format commande: ${asSentence(peptide.vialsNeeded)}\n` +
+          `Reconstitution exacte: ${asSentence(peptide.reconstitution)}`
+      ),
+      "BAC WATER TOTALE\nLa quantite totale a commander figure dans la liste de courses live. Elle additionne le solvant necessaire pour chaque vial du cycle, pas uniquement le premier vial ouvert.",
+    ].join("\n\n")
+  );
+}
+
+function synchronizeProtocolNarrative(
+  report: RepairableReport,
+  firstName: string
+): void {
+  const section = (report.sections || []).find((entry) =>
+    /protocole|semaine type|calendrier/i.test(`${entry.id} ${entry.title}`)
+  );
+  if (!section) return;
+
+  const scheduleLines = String(report.weeklySchedule || "")
+    .split(/\s*\|\s*/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  let content = sanitizeClientFacingText(
+    [
+      `${firstName}, cette section est la source de verite pour les doses, les durees et le calendrier. Elle reprend exactement les fiches validees, sans ajouter une phase differente ailleurs dans le rapport.`,
+      ...(report.peptides || []).map(
+        (peptide) =>
+          `${String(peptide.name || "").toUpperCase()}\n` +
+          `Dose: ${asSentence(peptide.dosage)}\n` +
+          `Timing: ${asSentence(peptide.timing)}\n` +
+          `Duree: ${asSentence(peptide.cycleDuration)}`
+      ),
+      "CALENDRIER HEBDOMADAIRE",
+      ...scheduleLines,
+    ].join("\n\n")
+  );
+  if (!/[.!?:)»\]]$/.test(content)) content = `${content}.`;
+  section.content = content;
+}
+
+function removeConflictingDoseAdjustments(report: RepairableReport): void {
+  for (const section of report.sections || []) {
+    section.content = sanitizeClientFacingText(
+      String(section.content || "")
+        .split(/\n{2,}/)
+        .map((paragraph) =>
+          /^AJUSTEMENTS? DE DOSE\b/i.test(paragraph.trim())
+            ? "AJUSTEMENT DES DOSES\nLes seules progressions planifiees sont celles ecrites dans les fiches et dans le calendrier du protocole. N'ajoute pas un palier different a partir d'une autre section du rapport."
+            : paragraph
+        )
+        .join("\n\n")
+    );
+  }
 }
 
 function synchronizeStandardShoppingNarrative(
@@ -483,9 +615,9 @@ function synchronizeStandardShoppingNarrative(
       `soit environ ${totalEur} euros hors frais de port. Sur ${maxWeeks} semaines, compte environ ${monthlyEur} euros par mois.`;
     const content = String(supportSection.content || "");
     supportSection.content = sanitizeClientFacingText(
-      /COUT (?:MENSUEL|RECALCULE)[\s\S]*?(?=CE PROTOCOLE|$)/i.test(content)
+      /CO[UÛ]T (?:MENSUEL|RECALCULE)[\s\S]*?(?=CE PROTOCOLE|$)/i.test(content)
         ? content.replace(
-            /COUT (?:MENSUEL|RECALCULE)[\s\S]*?(?=CE PROTOCOLE|$)/i,
+            /CO[UÛ]T (?:MENSUEL|RECALCULE)[\s\S]*?(?=CE PROTOCOLE|$)/i,
             `${canonicalCost}\n\n`
           )
         : `${content}\n\n${canonicalCost}`
@@ -516,6 +648,10 @@ function repairStandardReportContent(
   cleanStandardSections(report);
   normalizeTierCreditClaims(report, tier);
   removeUnsupportedDescentNarrative(report);
+  normalizeOperationalPlaceholders(report);
+  synchronizeReconstitutionNarrative(report, firstName);
+  synchronizeProtocolNarrative(report, firstName);
+  removeConflictingDoseAdjustments(report);
   synchronizeStandardShoppingNarrative(report, firstName);
   normalizeSingleVialGrammar(report);
   upsertFinalDisclaimer(report, firstName);
