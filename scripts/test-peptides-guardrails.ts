@@ -12,6 +12,7 @@ import {
   pruneUnintegratedBonusPeptides,
   repairPeptidesReportContent,
 } from "../server/peptidesReportRepair";
+import { splitWeeklyScheduleEntries } from "../client/src/lib/peptidesSchedule";
 
 const engineSource = readFileSync(new URL("../server/peptidesEngine.ts", import.meta.url), "utf8");
 assert.match(engineSource, /PEPTIDES_PRIMARY_MODEL[\s\S]{0,120}"claude-sonnet-4-6"/);
@@ -19,6 +20,16 @@ assert.match(engineSource, /PEPTIDES_QUALITY_FALLBACK_MODEL[\s\S]{0,120}"gpt-5\.
 assert.match(engineSource, /effort:\s*"max"/);
 assert.match(engineSource, /mode:\s*"pro"/);
 assert.match(engineSource, /Candidate rejected[\s\S]{0,600}Switching to quality fallback/);
+
+const renderedScheduleEntries = splitWeeklyScheduleEntries(
+  "LUNDI SOIR: CJC 200 mcg | MERCREDI SOIR: CJC 200 mcg | DIMANCHE MATIN: Retatrutide (S1: 20 unites | S2: 40 unites | S3: 80 unites)"
+);
+assert.equal(renderedScheduleEntries.length, 3);
+assert.match(
+  renderedScheduleEntries[2],
+  /S1: 20 unites \| S2: 40 unites \| S3: 80 unites/,
+  "Le tableau ne doit pas couper une titration qui contient des pipes"
+);
 
 const now = new Date().toISOString();
 const peptide = {

@@ -4,6 +4,7 @@
  */
 import { useEffect, useState } from "react";
 import { useParams } from "wouter";
+import { splitWeeklyScheduleEntries } from "@/lib/peptidesSchedule";
 import { motion } from "framer-motion";
 import {
   Shield, Syringe, FlaskConical, Activity, AlertTriangle, ExternalLink,
@@ -138,7 +139,10 @@ function WeeklyScheduleTable({ schedule }: { schedule: string }) {
   if (!schedule) return null;
 
   // Parse "LUNDI AM: ... | LUNDI PM: ... | MARDI AM: ..." format
-  const entries = schedule.split("|").map(s => s.trim()).filter(Boolean);
+  // A dose can itself contain pipes, for example "S1: ... | S2: ...".
+  // Split only when the next segment starts with a real weekday so the full
+  // titration remains visible in the table cell.
+  const entries = splitWeeklyScheduleEntries(schedule);
   const days: Record<string, { am: string; pm: string }> = {};
   const DAY_ORDER = ["LUNDI", "MARDI", "MERCREDI", "JEUDI", "VENDREDI", "SAMEDI", "DIMANCHE"];
 
