@@ -279,7 +279,7 @@ function ShoppingListCards({ list }: { list: string }) {
 const SECTION_ICONS: Record<string, typeof Syringe> = {
   "profil-synthese": User,
   "rationale": Brain,
-  "guide-peptaura": Globe,
+  "guide-fournisseur": Globe,
   "reconstitution-guide": FlaskConical,
   "guide-injection": Syringe,
   "protocole-pratique": Calendar,
@@ -304,7 +304,7 @@ export default function PeptidesEngineReport() {
   const [error, setError] = useState<string | null>(null);
   const [ndaAccepted, setNdaAccepted] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    new Set(["profil-synthese", "rationale", "guide-peptaura", "reconstitution-guide", "guide-injection", "protocole-pratique", "nutrition-protocole", "shopping-list", "checklist-demarrage"])
+    new Set(["profil-synthese", "rationale", "guide-fournisseur", "reconstitution-guide", "guide-injection", "protocole-pratique", "nutrition-protocole", "shopping-list", "checklist-demarrage"])
   );
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
@@ -564,7 +564,7 @@ export default function PeptidesEngineReport() {
                 {pep.purchaseUrl && (
                   <a href={pep.purchaseUrl} target="_blank" rel="noopener noreferrer"
                      className="inline-flex items-center gap-1.5 text-xs font-mono px-4 py-2 rounded-lg border border-amber-500/30 hover:bg-amber-500/10 transition-colors" style={{ color: AMBER }}>
-                    Acheter sur Peptaura <ExternalLink className="w-3 h-3" />
+                    Acceder au fournisseur <ExternalLink className="w-3 h-3" />
                   </a>
                 )}
               </div>
@@ -599,7 +599,7 @@ export default function PeptidesEngineReport() {
           >
             <h2 className="text-lg font-bold mb-2 flex items-center gap-2">
               <ShoppingCart className="w-5 h-5" style={{ color: AMBER }} />
-              Liste de Courses Peptaura
+              Liste de courses personnalisee
             </h2>
             <p className="text-white/40 text-xs font-mono mb-1">Tout ce dont tu as besoin pour le cycle complet</p>
             <ShoppingListCards list={report.shoppingList} />

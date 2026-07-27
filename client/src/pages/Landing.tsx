@@ -365,7 +365,7 @@ function PeptidesEngineVisual() {
       </div>
       <div className="absolute top-3 right-3 z-20 text-right">
         <div className="font-mono text-[10px] text-amber-400">SOURCE SECRETE</div>
-        <div className="font-mono text-[8px] text-gray-500">PEPTAURA.COM</div>
+        <div className="font-mono text-[8px] text-gray-500">REVELEE APRES ACHAT</div>
       </div>
 
       {/* Molecule price ticker */}

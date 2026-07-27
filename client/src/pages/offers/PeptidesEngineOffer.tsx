@@ -31,6 +31,7 @@ import {
   Clock,
   Network,
   ShieldCheck,
+  FileCheck2,
   Calculator,
   GitMerge,
   Star,
@@ -1140,49 +1141,42 @@ function COASection() {
             Chaque lot est teste par un labo independant
           </h2>
           <p className="text-[#6E6E73] text-sm max-w-xl mx-auto">
-            Les fournisseurs Peptaura fournissent un COA (Certificate of Analysis) pour chaque lot produit. Purete verifiee par spectrometrie de masse (HPLC), generalement 98-99%.
+            Les fournisseurs references doivent fournir les documents d'analyse disponibles pour chaque lot. La source exacte et ses documents sont reveles uniquement dans le rapport achete.
           </p>
         </motion.div>
 
         <div className="grid md:grid-cols-2 gap-6">
-          <motion.a
-            href="https://www.peptaura.com/coas/0f216e6b9a6c700dcf11bb051f6f7acf31ff0ac79d0230a572e2ee07f3558fbd.png"
-            target="_blank"
-            rel="noopener noreferrer"
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="group rounded-2xl border border-green-900/30 bg-white/40 p-4 hover:border-green-500/40 transition-all overflow-hidden"
+            className="rounded-2xl border border-green-900/30 bg-white/40 p-6 flex flex-col items-center justify-center gap-4"
           >
-            <img
-              src="https://www.peptaura.com/coas/0f216e6b9a6c700dcf11bb051f6f7acf31ff0ac79d0230a572e2ee07f3558fbd.png"
-              alt="Exemple COA - Certificat d'Analyse peptide"
-              className="w-full rounded-lg opacity-80 group-hover:opacity-100 transition-opacity"
-              loading="lazy"
-            />
-            <p className="text-center text-xs text-[#86868B] mt-3 font-mono">Exemple de COA (cliquer pour agrandir)</p>
-          </motion.a>
+            <div className="w-20 h-20 rounded-2xl bg-green-500/10 flex items-center justify-center">
+              <ShieldCheck className="w-8 h-8 text-green-500" />
+            </div>
+            <div className="text-center">
+              <p className="text-[#1D1D1F] font-bold mb-1">Source protegee</p>
+              <p className="text-[#86868B] text-xs">Identite du fournisseur disponible exclusivement apres achat</p>
+            </div>
+          </motion.div>
 
-          <motion.a
-            href="https://www.peptaura.com/coas/32001f878ccdf779123172f705efb48db899480894340e0e32c2cef3bcc621f5.pdf"
-            target="_blank"
-            rel="noopener noreferrer"
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2 }}
-            className="group rounded-2xl border border-green-900/30 bg-white/40 p-6 hover:border-green-500/40 transition-all flex flex-col items-center justify-center gap-4"
+            className="rounded-2xl border border-green-900/30 bg-white/40 p-6 flex flex-col items-center justify-center gap-4"
           >
             <div className="w-20 h-20 rounded-2xl bg-green-500/10 flex items-center justify-center">
-              <ExternalLink className="w-8 h-8 text-green-500" />
+              <FileCheck2 className="w-8 h-8 text-green-500" />
             </div>
             <div className="text-center">
-              <p className="text-[#1D1D1F] font-bold mb-1">COA complet (PDF)</p>
-              <p className="text-[#86868B] text-xs">Rapport HPLC avec chromatogramme, purete, identite moleculaire</p>
+              <p className="text-[#1D1D1F] font-bold mb-1">Documents de lot</p>
+              <p className="text-[#86868B] text-xs">Liens et controles detailles fournis dans le rapport personnalise</p>
             </div>
-            <p className="text-xs text-green-500 font-mono">Cliquer pour telecharger</p>
-          </motion.a>
+          </motion.div>
         </div>
       </div>
     </section>
@@ -1451,7 +1445,7 @@ function ScarcityGuarantee() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm text-[#424245]">
                   <Check className="h-3.5 w-3.5 flex-shrink-0" style={{ color: PRIMARY }} />
-                  <span>Commande tes peptides sur Peptaura</span>
+                  <span>Commande via la source revelee dans ton rapport</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-[#424245]">
                   <Check className="h-3.5 w-3.5 flex-shrink-0" style={{ color: PRIMARY }} />

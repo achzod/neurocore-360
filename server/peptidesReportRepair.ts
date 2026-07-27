@@ -888,7 +888,7 @@ function buildSections(report: RepairableReport, firstName: string): ReportSecti
         block("Limite claire", medicalGate),
       ),
     },
-    "guide-peptaura": {
+    "guide-fournisseur": {
       title: "Verification du catalogue Peptaura",
       content: joinBlocks(
         block("Nature de la plateforme", "Peptaura est une place de marche qui agrege des offres de fournisseurs. Une fiche presente sur la plateforme n'est pas une validation medicale, une autorisation de mise sur le marche ou une garantie pharmaceutique. Un COA fourni par un vendeur ne suffit pas, a lui seul, a prouver l'identite, la sterilite, la concentration ou la conservation d'un produit recu."),
@@ -1043,7 +1043,7 @@ function buildSections(report: RepairableReport, firstName: string): ReportSecti
     "profil-synthese",
     "rationale",
     "bilan-sanguin",
-    "guide-peptaura",
+    "guide-fournisseur",
     "reconstitution-guide",
     "guide-injection",
     "protocole-pratique",
