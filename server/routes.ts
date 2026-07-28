@@ -3755,13 +3755,17 @@ export async function registerRoutes(
   const runOnceOnOrder = async (
     orderId: string,
     flagName: string,
-    op: () => Promise<void>,
+    op: () => Promise<void | boolean>,
   ): Promise<void> => {
     try {
       const fresh = await storage.getOrder(orderId);
       const meta = (fresh?.metadata as Record<string, unknown> | null) ?? {};
       if (meta[flagName]) return;
-      await op();
+      const completed = await op();
+      if (completed === false) {
+        console.warn(`[runOnceOnOrder] ${flagName} not confirmed for ${orderId}, flag left unset`);
+        return;
+      }
       await pool.query(
         `UPDATE orders SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object($1::text, true) WHERE id = $2`,
         [flagName, orderId],
@@ -4566,7 +4570,7 @@ export async function registerRoutes(
           await runOnceOnOrder(existingOrder.id, "customerConfirmEmailSentAt", async () => {
             const clientName2 = email.split("@")[0];
             const msg = `Salut ${clientName2},\n\nMerci pour ta commande Blood Analysis. Ton paiement est bien recu.\n\nVoici la liste exacte des marqueurs a demander a ton medecin ou directement au laboratoire (panel complet APEXLABS , 39 biomarqueurs) :\n\nPANEL 1 : HORMONES ANABOLIQUES\nTestosterone totale, Testosterone libre, SHBG, Cortisol (matin a jeun), DHEA-S, IGF-1, LH, FSH, Estradiol\n\nPANEL 2 : THYROIDE\nTSH, T3 libre, T4 libre, Anti-TPO\n\nPANEL 3 : METABOLISME ET LIPIDES\nGlycemie a jeun, HbA1c, Insuline a jeun, Cholesterol total, HDL, LDL, Triglycerides, ApoB, Lp(a)\n\nPANEL 4 : INFLAMMATION ET FER\nCRP ultra-sensible, Ferritine, Homocysteine, Vitesse de sedimentation\n\nPANEL 5 : VITAMINES ET MINERAUX\nVitamine D (25-OH), Vitamine B12, Magnesium, Zinc, Folates\n\nPANEL 6 : HEPATIQUE ET RENAL\nALAT, ASAT, Gamma-GT, Creatinine, DFG (eGFR), Acide urique\n\nNFS (Numeration Formule Sanguine) complete\n\nPresente-toi dans n'importe quel labo avec cette liste. La plupart acceptent sans ordonnance. Sinon, ton generaliste te fait l'ordonnance.\n\nUne fois ta prise de sang faite, uploade ton PDF sur : https://apexlabs.achzodcoaching.com/auth/login?next=%2Fblood-dashboard&email=${encodeURIComponent(email)}\n\nTu cliques sur le lien, tu recois un email avec un lien d'acces unique (verifie aussi tes spams), tu cliques dessus, tu arrives sur ton dashboard. La tu remplis tes infos, tu glisses ton PDF dans la zone d'upload, et tu lances l'analyse.\n\nIMPORTANT : un seul PDF par upload (10 MB max). Si tu as plusieurs fichiers a fusionner :\n- Sur iPhone (Fichiers) : mets tes PDFs dans un dossier, "Selectionner", coche-les dans l'ordre, "..." en bas, "Creer un PDF".\n- Alternative : ilovepdf.com/fr/fusionner_pdf , glisse-depose tes fichiers, telecharge le PDF unique, uploade-le.\n\nTon code promo : BLOOD99\n99€ deduits de ton coaching Elite/Private Lab 8 ou 12 semaines\nachzodcoaching.com/formules-coaching\n\nSi tu as des questions, reponds directement a cet email.\n\nAchzod`;
-            await sendCTAEmail(email, "Blood Analysis : commande recue", msg);
+            return sendCTAEmail(email, "Blood Analysis : commande recue", msg);
           });
 
           // Admin payment notification ,  same idempotency: ensures Achzod
@@ -4574,7 +4578,7 @@ export async function registerRoutes(
           await runOnceOnOrder(existingOrder.id, "adminPaymentNotifSentAt", async () => {
             const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
             const amount = (existingOrder.finalAmountCents / 100).toFixed(2);
-            await sendCTAEmail(
+            return sendCTAEmail(
               adminEmail,
               `PAIEMENT ${amount}EUR , Blood Analysis (99EUR) , ${email}`,
               `PAIEMENT RECU!\n\nProduit: Blood Analysis\nClient: ${email}\nMontant: ${amount}EUR\nPromo: ${existingOrder.promoCode || "aucun"}\n\nOrder ID: ${existingOrder.id}`,
@@ -10121,12 +10125,14 @@ export async function registerRoutes(
                                order.productType === "BLOOD_ANALYSIS" ? "Blood Analysis (99EUR)" : order.productName;
               const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
               const amount = (order.finalAmountCents / 100).toFixed(2);
-              await sendCTAEmail(
+              const sent = await sendCTAEmail(
                 adminEmail,
                 `PAIEMENT ${amount}EUR , ${planLabel} , ${clientName}`,
                 `PAIEMENT RECU!\n\nProduit: ${planLabel}\nClient: ${clientName}\nEmail: ${clientEmail}\nMontant: ${amount}EUR\nPromo: ${order.promoCode || "aucun"}\n\nOrder ID: ${order.id}`,
               );
+              if (!sent) return false;
               console.log(`[Webhook] Admin payment notification sent for order ${order.id}`);
+              return true;
             });
 
             // Send confirmation email to client (Stripe webhook = payment confirmed)
@@ -10163,8 +10169,10 @@ export async function registerRoutes(
                     : "Ton rapport est en cours de generation. Tu le recevras par email d'ici 24h.";
                   msg = `Salut ${clientName2},\n\nMerci pour ta commande ${prodLabel2}. Ton paiement est bien recu.\n\n${deliveryMsg}\n\n${promo2 ? `Ton code promo : ${promo2.code}\n${promo2.label}\nachzodcoaching.com/formules-coaching\n\n` : ""}Si tu as des questions, reponds directement a cet email.\n\nAchzod`;
                 }
-                await sendCTAEmail(clientEmail2!, `${prodLabel2} : commande recue`, msg);
+                const sent = await sendCTAEmail(clientEmail2!, `${prodLabel2} : commande recue`, msg);
+                if (!sent) return false;
               }
+              return true;
             });
 
             // ✅ FIX: Create audit automatically in webhook (prevents missing audits)

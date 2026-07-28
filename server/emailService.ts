@@ -6,6 +6,7 @@ const SENDPULSE_USER_ID =
   process.env.SENDPULSE_USER_ID || process.env.SENDPULSE_API_USER_ID || "";
 const SENDPULSE_SECRET =
   process.env.SENDPULSE_SECRET || process.env.SENDPULSE_API_SECRET || "";
+const BREVO_API_KEY = process.env.BREVO_API_KEY || "";
 export const SENDER_EMAIL = process.env.SENDER_EMAIL || "coaching@achzodcoaching.com";
 export const SENDER_NAME = process.env.SENDER_NAME || "ApexLabs by Achzod";
 
@@ -521,6 +522,65 @@ async function sendEmailWithTracking(
       result.result = false;
       result.error = liveDeliveryFailure;
       liveLookupMetadata.sendpulseLiveDeliveryFailure = liveDeliveryFailure;
+    }
+
+    // Transactional safety net. SendPulse can reject every request when its
+    // monthly quota/bandwidth is exhausted (HTTP 422). Orders, payment
+    // notifications and paid report deliveries must not disappear with the
+    // marketing provider, so critical messages fail over to Brevo.
+    if (!result.result && criticalEmail && BREVO_API_KEY) {
+      try {
+        const htmlContent = looksLikeBase64(emailPayload.html)
+          ? Buffer.from(emailPayload.html, "base64").toString("utf8")
+          : emailPayload.html;
+        const brevoResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "api-key": BREVO_API_KEY,
+          },
+          body: JSON.stringify({
+            sender: emailPayload.from,
+            to: emailPayload.to,
+            bcc: [{ email: ADMIN_EMAIL_CC, name: "Admin APEXLABS" }],
+            subject: emailPayload.subject,
+            htmlContent,
+            textContent: emailPayload.text,
+          }),
+        });
+        const brevoText = await brevoResponse.text();
+        let brevoData: Record<string, any> = {};
+        try {
+          brevoData = brevoText ? JSON.parse(brevoText) : {};
+        } catch {
+          brevoData = { raw: brevoText };
+        }
+        if (brevoResponse.ok) {
+          result.result = true;
+          result.id = String(brevoData.messageId || `brevo-${Date.now()}`);
+          delete result.error;
+          liveLookupMetadata.fallbackProvider = "brevo";
+          liveLookupMetadata.brevoMessageId = brevoData.messageId || null;
+          liveLookupMetadata.sendpulseFallbackReason =
+            parsed?.message || parsed?.error || `HTTP ${response.status}`;
+          console.log(
+            `[EmailFallback] ✅ Brevo accepted ${trackingData.emailType} for ${trackingData.recipientEmail}`,
+          );
+        } else {
+          liveLookupMetadata.fallbackProvider = "brevo";
+          liveLookupMetadata.brevoHttpStatus = brevoResponse.status;
+          liveLookupMetadata.brevoError = brevoData;
+          console.error(
+            `[EmailFallback] ❌ Brevo failed ${trackingData.emailType} for ${trackingData.recipientEmail}:`,
+            brevoData,
+          );
+        }
+      } catch (brevoError) {
+        liveLookupMetadata.fallbackProvider = "brevo";
+        liveLookupMetadata.brevoError =
+          brevoError instanceof Error ? brevoError.message : String(brevoError);
+        console.error("[EmailFallback] Brevo request threw:", brevoError);
+      }
     }
 
     const sendpulseError = result.result
