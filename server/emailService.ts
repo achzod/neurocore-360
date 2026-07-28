@@ -1,14 +1,37 @@
 import type { ComprehensiveRiskProfile, RiskScore } from "./blood-analysis/risk-scores";
 import { logBloodEmailDelivery } from "./blood-analysis/delivery-log";
 import { logEmail, ADMIN_EMAIL_CC, type EmailTrackingData } from "./emailTracking";
+import nodemailer from "nodemailer";
 
 const SENDPULSE_USER_ID =
   process.env.SENDPULSE_USER_ID || process.env.SENDPULSE_API_USER_ID || "";
 const SENDPULSE_SECRET =
   process.env.SENDPULSE_SECRET || process.env.SENDPULSE_API_SECRET || "";
 const BREVO_API_KEY = process.env.BREVO_API_KEY || "";
+const SMTP_HOST = process.env.SMTP_HOST || "";
+const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
+const SMTP_USER = process.env.SMTP_USER || "";
+const SMTP_PASS = process.env.SMTP_PASS || "";
 export const SENDER_EMAIL = process.env.SENDER_EMAIL || "coaching@achzodcoaching.com";
 export const SENDER_NAME = process.env.SENDER_NAME || "ApexLabs by Achzod";
+
+let smtpFallbackTransport: ReturnType<typeof nodemailer.createTransport> | null = null;
+
+function getSmtpFallbackTransport() {
+  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) return null;
+  if (!smtpFallbackTransport) {
+    smtpFallbackTransport = nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: SMTP_PORT === 465,
+      auth: { user: SMTP_USER, pass: SMTP_PASS },
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 20_000,
+    });
+  }
+  return smtpFallbackTransport;
+}
 
 // SendPulse Address Book IDs - configure in env or hardcode after creating in SendPulse
 const SENDPULSE_APEXLABS_BOOK_ID = process.env.SENDPULSE_APEXLABS_BOOK_ID || "";
@@ -580,6 +603,45 @@ async function sendEmailWithTracking(
         liveLookupMetadata.brevoError =
           brevoError instanceof Error ? brevoError.message : String(brevoError);
         console.error("[EmailFallback] Brevo request threw:", brevoError);
+      }
+    }
+
+    if (!result.result && criticalEmail) {
+      const smtpTransport = getSmtpFallbackTransport();
+      if (smtpTransport) {
+        try {
+          const htmlContent = looksLikeBase64(emailPayload.html)
+            ? Buffer.from(emailPayload.html, "base64").toString("utf8")
+            : emailPayload.html;
+          const smtpInfo = await smtpTransport.sendMail({
+            from: { name: emailPayload.from.name, address: SMTP_USER },
+            replyTo: emailPayload.from.email,
+            to: emailPayload.to.map((recipient) => ({
+              name: recipient.name || "",
+              address: recipient.email,
+            })),
+            bcc: ADMIN_EMAIL_CC,
+            subject: emailPayload.subject,
+            html: htmlContent,
+            text: emailPayload.text,
+          });
+          result.result = true;
+          result.id = smtpInfo.messageId;
+          delete result.error;
+          liveLookupMetadata.fallbackProvider = "smtp";
+          liveLookupMetadata.smtpFallbackMessageId = smtpInfo.messageId;
+          liveLookupMetadata.smtpFallbackAccepted = smtpInfo.accepted;
+          liveLookupMetadata.sendpulseFallbackReason =
+            parsed?.message || parsed?.error || `HTTP ${response.status}`;
+          console.log(
+            `[EmailFallback] ✅ SMTP accepted ${trackingData.emailType} for ${trackingData.recipientEmail}`,
+          );
+        } catch (smtpError) {
+          liveLookupMetadata.fallbackProvider = "smtp";
+          liveLookupMetadata.smtpFallbackError =
+            smtpError instanceof Error ? smtpError.message : String(smtpError);
+          console.error("[EmailFallback] SMTP request threw:", smtpError);
+        }
       }
     }
 
