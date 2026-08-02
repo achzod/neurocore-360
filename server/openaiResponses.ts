@@ -58,7 +58,7 @@ const PROFILE_CONFIG: Record<OpenAIReportProfile, ProfileConfig> = {
   peptides: {
     effort: "max",
     mode: "pro",
-    maxOutputTokens: 32_000,
+    maxOutputTokens: 24_000,
     timeoutMs: 15 * 60 * 1000,
     verbosity: "high",
   },
@@ -510,13 +510,28 @@ export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAIT
       while (response?.status === "queued" || response?.status === "in_progress") {
         if (Date.now() >= deadline) {
           try {
-            const cancelledResponse = await client.responses.cancel(response.id);
-            await recordAIUsageEvent({
-              response: cancelledResponse,
-              profile: request.profile,
-              label: request.label,
-              status: "cancelled_timeout",
-            });
+            const cancelResult = await Promise.race([
+              client.responses.cancel(response.id).then((cancelledResponse) => ({
+                completed: true as const,
+                cancelledResponse,
+              })),
+              sleep(10_000).then(() => ({
+                completed: false as const,
+                cancelledResponse: null,
+              })),
+            ]);
+            if (cancelResult.completed && cancelResult.cancelledResponse) {
+              await recordAIUsageEvent({
+                response: cancelResult.cancelledResponse,
+                profile: request.profile,
+                label: request.label,
+                status: "cancelled_timeout",
+              });
+            } else {
+              console.warn(
+                `[OpenAIResponses] Cancel did not complete within 10s: ${response?.id || "unknown"}`,
+              );
+            }
           } catch {
             // Best effort. No incomplete response is returned to a client.
           }

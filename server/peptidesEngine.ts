@@ -77,11 +77,11 @@ export interface PeptidesReport {
 
 export const PEPTIDES_PRIMARY_MODEL = OPENAI_REPORT_MODEL;
 const configuredPeptidesOutputTokens = Number(
-  process.env.PEPTIDES_OPENAI_MAX_OUTPUT_TOKENS || 32_000
+  process.env.PEPTIDES_OPENAI_MAX_OUTPUT_TOKENS || 24_000
 );
 export const PEPTIDES_MAX_OUTPUT_TOKENS = Number.isFinite(configuredPeptidesOutputTokens)
-  ? Math.min(32_000, Math.max(24_000, configuredPeptidesOutputTokens))
-  : 32_000;
+  ? Math.min(24_000, Math.max(20_000, configuredPeptidesOutputTokens))
+  : 24_000;
 export const ENCLOMIPHENE_SOURCE_URL = "https://receptorchem.co.uk/enclomiphene-citrate/";
 export const PEPTIDES_REASONING = Object.freeze({
   effort: "max",
@@ -2799,6 +2799,12 @@ export async function generatePeptidesProtocol(
         `[PeptidesEngine] ❌ Candidate rejected: ${selected.provider}/${selected.model}: ${lastError}`
       );
       report = null;
+      const terminalProviderFailure =
+        /OpenAI response timeout|no credits remaining|insufficient_quota|invalid api key/i.test(lastError);
+      if (terminalProviderFailure) {
+        console.error("[PeptidesEngine] Provider failure is terminal, duplicate paid generation blocked");
+        break;
+      }
       if (attempt + 1 < providers.length) {
         console.log(`[PeptidesEngine] Starting strict full regeneration with ${PEPTIDES_PRIMARY_MODEL}, effort=max, mode=pro`);
       }
