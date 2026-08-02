@@ -18,11 +18,19 @@ interface PromoInfo {
   recommendedFormules: Array<{ name: string; href: string }>;
 }
 
+type PeptidesTier = "solo" | "coached" | "tracked";
+
 const FORMULE_ESSENTIAL = { name: "Essential", href: "https://www.achzodcoaching.com/coaching-essential" };
 const FORMULE_ELITE = { name: "Elite", href: "https://www.achzodcoaching.com/coaching-elite" };
 const FORMULE_PRIVATELAB = { name: "Private Lab", href: "https://www.achzodcoaching.com/coaching-achzod-private-lab" };
 
-function getPromoInfo(kind: AuditKind): PromoInfo {
+const PEPTIDES_PROMOS: Record<PeptidesTier, Pick<PromoInfo, "code" | "description">> = {
+  solo: { code: "PEPTIDES199", description: "199 EUR deduits sur ton coaching" },
+  coached: { code: "PEPTIDES299", description: "299 EUR deduits sur ton coaching" },
+  tracked: { code: "PEPTIDES399", description: "399 EUR deduits sur ton coaching" },
+};
+
+function getPromoInfo(kind: AuditKind, peptidesTier?: PeptidesTier): PromoInfo {
   switch (kind) {
     case "PREMIUM":
     case "ANABOLIC":
@@ -46,12 +54,13 @@ function getPromoInfo(kind: AuditKind): PromoInfo {
         recommendedFormules: [FORMULE_ESSENTIAL, FORMULE_ELITE],
       };
     case "PEPTIDES_ENGINE":
-    case "PEPTIDES":
+    case "PEPTIDES": {
+      const peptidePromo = PEPTIDES_PROMOS[peptidesTier || "coached"];
       return {
-        code: "PEPTIDES150",
-        description: "150€ déduits sur ton coaching Elite ou Private Lab",
+        ...peptidePromo,
         recommendedFormules: [FORMULE_ELITE, FORMULE_PRIVATELAB],
       };
+    }
     case "GRATUIT":
     case "DISCOVERY":
     default:
@@ -65,6 +74,7 @@ function getPromoInfo(kind: AuditKind): PromoInfo {
 
 interface CoachingPromoBannerProps {
   auditType: AuditKind;
+  peptidesTier?: PeptidesTier;
   /** Optional extra className for outer wrapper. */
   className?: string;
   /** If true, allow the user to dismiss the banner via local-storage flag. */
@@ -76,6 +86,7 @@ interface CoachingPromoBannerProps {
 // days after the email they still have everything in front of them.
 export function CoachingPromoBanner({
   auditType,
+  peptidesTier,
   className = "",
   dismissible = true,
 }: CoachingPromoBannerProps) {
@@ -88,7 +99,7 @@ export function CoachingPromoBanner({
 
   if (dismissed) return null;
 
-  const promo = getPromoInfo(auditType);
+  const promo = getPromoInfo(auditType, peptidesTier);
 
   const copyCode = async () => {
     try {

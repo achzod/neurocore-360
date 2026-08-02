@@ -40,6 +40,16 @@ export interface PeptidesReport {
   bloodMarkers?: string[];
   _validationContext?: {
     confirmedLowTestosterone?: boolean;
+    profile?: {
+      weightKg?: number;
+      primaryGoal?: string;
+      secondaryGoals?: string[];
+      country?: string;
+      budget?: string;
+      timeline?: string;
+      experience?: string;
+      injectionComfort?: string;
+    };
   };
   _enclomipheneSourceSync?: {
     url?: string;
@@ -91,6 +101,7 @@ const REQUIRED_PEPTIDE_FIELDS = [
   "priceEstimate",
   "cycleDuration",
   "reconstitution",
+  "whyThisPeptide",
 ] as const;
 
 const MIN_SECTIONS = 12;
@@ -100,6 +111,162 @@ const MIN_TOTAL_CHARS = 30_000;
 const MAX_PEPTAURA_DELIVERY_AGE_MS = Number(
   process.env.PEPTAURA_DELIVERY_MAX_AGE_MS || 45 * 60 * 1000
 );
+
+const PRIMARY_GOAL_PATTERNS: Record<string, RegExp> = {
+  recovery: /\b(?:recuperation|guerison|tendon|articulation|blessure)\b/i,
+  "gh-antiaging": /\b(?:gh|hormone de croissance|anti[ -]?age|longevite)\b/i,
+  fatloss: /\b(?:perte de (?:gras|graisse|masse grasse)|fat loss|seche|recomposition)\b/i,
+  sleep: /\b(?:sommeil|endormissement|reveils? nocturnes?|nuit)\b/i,
+  cognitive: /\b(?:cognitif|focus|memoire|concentration|brain fog)\b/i,
+  libido: /\b(?:libido|sexuel|erection)\b/i,
+  "testo-boost": /\b(?:testosterone|axe hpg|lh|fsh|hypogonad)\b/i,
+  "skin-hair": /\b(?:peau|cheveux|capillaire|anti[ -]?age)\b/i,
+  endurance: /\b(?:endurance|cardio|capacite aerobie)\b/i,
+};
+
+function escaped(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function searchable(value: string): string {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+function numericRangePattern(value: string): RegExp | null {
+  const numbers = value.match(/\d+(?:[.,]\d+)?/g);
+  if (!numbers || numbers.length === 0) return null;
+  const parts = numbers.map((entry) =>
+    entry.split(/[.,]/).map(escaped).join("[.,]")
+  );
+  return new RegExp(parts.join("[\\s\\S]{0,24}"), "i");
+}
+
+function validateReportPersonalization(
+  report: PeptidesReport
+): string[] {
+  if (report.qualityVersion !== "expert-standard-v1") return [];
+  const profile = report._validationContext?.profile;
+  if (!profile || Object.keys(profile).length === 0) return [];
+
+  const errors: string[] = [];
+  const synthesis = (report.sections || []).find((section) =>
+    /profil-synthese|synthese de ton profil/i.test(`${section.id || ""} ${section.title || ""}`)
+  );
+  const synthesisText = String(synthesis?.content || "");
+  const synthesisSearch = searchable(synthesisText);
+  if (!synthesis) {
+    return ["personnalisation: synthese de profil absente"];
+  }
+
+  const matchedFacts: string[] = [];
+  const weightKg = Number(profile.weightKg || 0);
+  const weightPattern = Number.isFinite(weightKg) && weightKg > 0
+    ? new RegExp(`\\b${escaped(String(weightKg))}(?:[.,]0+)?\\s*kg\\b`, "i")
+    : null;
+  if (Number.isFinite(weightKg) && weightKg > 0) {
+    if (!weightPattern?.test(synthesisSearch)) {
+      errors.push(`personnalisation: poids ${weightKg} kg absent de la synthese`);
+    } else {
+      matchedFacts.push("poids");
+    }
+  }
+
+  const goal = String(profile.primaryGoal || "").toLowerCase();
+  const goalPattern = PRIMARY_GOAL_PATTERNS[goal] || (goal ? new RegExp(escaped(goal), "i") : null);
+  if (goalPattern) {
+    if (!goalPattern.test(synthesisSearch)) {
+      errors.push(`personnalisation: objectif principal ${profile.primaryGoal} absent de la synthese`);
+    } else {
+      matchedFacts.push("objectif");
+    }
+  }
+
+  const contextualFacts: Array<[string, string | undefined, RegExp | null]> = [
+    ["pays", profile.country, ({
+      france: /\bfrance\b/i,
+      belgium: /\b(?:belgique|belgium)\b/i,
+      switzerland: /\b(?:suisse|switzerland)\b/i,
+      "united arab emirates": /\b(?:emirats arabes unis|united arab emirates|uae|dubai)\b/i,
+      "united states": /\b(?:etats-unis|united states|usa)\b/i,
+      "united kingdom": /\b(?:royaume-uni|united kingdom|uk)\b/i,
+      germany: /\b(?:allemagne|germany)\b/i,
+      spain: /\b(?:espagne|spain)\b/i,
+      italy: /\b(?:italie|italy)\b/i,
+      morocco: /\b(?:maroc|morocco)\b/i,
+    } as Record<string, RegExp>)[searchable(String(profile.country || ""))]
+      || (profile.country ? new RegExp(escaped(searchable(profile.country)), "i") : null)],
+    ["budget", profile.budget, numericRangePattern(String(profile.budget || ""))],
+    ["timeline", profile.timeline, ({
+      fast: /\b(?:4\s*(?:a|-|à)\s*6 semaines|rapide)\b/i,
+      solid: /\b(?:8\s*(?:a|-|à)\s*12 semaines|solide)\b/i,
+      longterm: /\b(?:12\+? semaines|long terme)\b/i,
+    } as Record<string, RegExp>)[String(profile.timeline || "").toLowerCase()] || null],
+    ["experience", profile.experience, ({
+      none: /\b(?:debutant|premiere utilisation|jamais utilise|aucune experience)\b/i,
+      read: /\b(?:lu|regarde|theorique|contenu)\b/i,
+      tried: /\b(?:deja utilise|1\s*(?:a|-|à)\s*2 peptides)\b/i,
+      regular: /\b(?:regulier|3\+? peptides)\b/i,
+      advanced: /\b(?:avance|stacks? complexes?)\b/i,
+    } as Record<string, RegExp>)[String(profile.experience || "").toLowerCase()] || null],
+    ["injection", profile.injectionComfort, ({
+      fine: /\b(?:a l'aise|aucun probleme|confortable)\b/i,
+      anxious: /\b(?:anxieux|apprehension|injection)\b/i,
+      "very-anxious": /\b(?:tres anxieux|alternative|apprehension forte)\b/i,
+      refuse: /\b(?:refuse|sans injection|non injectable)\b/i,
+    } as Record<string, RegExp>)[String(profile.injectionComfort || "").toLowerCase()] || null],
+  ];
+  for (const [label, rawValue, pattern] of contextualFacts) {
+    if (rawValue && pattern && pattern.test(synthesisSearch)) matchedFacts.push(label);
+  }
+
+  const availableFacts = 2 + contextualFacts.filter(([, rawValue, pattern]) => rawValue && pattern).length;
+  const requiredFacts = Math.min(4, availableFacts);
+  if (matchedFacts.length < requiredFacts) {
+    errors.push(`personnalisation: seulement ${matchedFacts.length}/${requiredFacts} faits du questionnaire repris dans la synthese`);
+  }
+
+  for (const peptide of report.peptides || []) {
+    const rationale = String(peptide.whyThisPeptide || "").trim();
+    const rationaleSearch = searchable(rationale);
+    if (rationale.length < 120) {
+      errors.push(`[${peptide.name || "?"}] personnalisation trop courte dans whyThisPeptide (${rationale.length} caracteres)`);
+    }
+    if (!/\b(?:tu|ton|ta|tes|chez toi|dans ton)\b/i.test(rationale)) {
+      errors.push(`[${peptide.name || "?"}] whyThisPeptide ne parle pas directement au client`);
+    }
+    const rationaleFacts = [
+      goalPattern?.test(rationaleSearch) ? "objectif" : "",
+      weightPattern?.test(rationaleSearch) ? "poids" : "",
+      ...contextualFacts
+        .filter(([, rawValue, pattern]) => rawValue && pattern?.test(rationaleSearch))
+        .map(([label]) => label),
+    ].filter(Boolean);
+    if (new Set(rationaleFacts).size < 2) {
+      errors.push(`[${peptide.name || "?"}] whyThisPeptide relie moins de 2 faits concrets du questionnaire`);
+    }
+  }
+
+  if (Number.isFinite(weightKg) && weightKg > 0) {
+    const nutrition = (report.sections || []).find((section) =>
+      /nutrition/i.test(`${section.id || ""} ${section.title || ""}`)
+    );
+    const nutritionText = String(nutrition?.content || "");
+    const lowGrams = Math.round(weightKg * 1.8);
+    const highGrams = Math.round(weightKg * 2.2);
+    if (!/1[,.]8\s*(?:a|à|-)\s*2[,.]2\s*g\s*\/\s*kg\s*\/\s*jour/i.test(nutritionText)) {
+      errors.push("nutrition personnalisee: repere 1,8 a 2,2 g/kg/jour absent");
+    }
+    const dailyTargetPattern = new RegExp(
+      `\\b${lowGrams}\\s*(?:a|à|-)\\s*${highGrams}\\s*g\\s+de\\s+prot[ée]ines?\\s+par\\s+jour\\b`,
+      "i"
+    );
+    if (!dailyTargetPattern.test(nutritionText)) {
+      errors.push(`nutrition personnalisee: cible calculee ${lowGrams} a ${highGrams} g/jour absente pour ${weightKg} kg`);
+    }
+  }
+
+  return errors;
+}
 
 function normalizeSentenceForRepetition(value: string): string {
   return value
@@ -789,7 +956,7 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
   if (report.qualityVersion === "expert-standard-v1") {
     const medicalMentions = (clientFacingText.match(/\b(?:m[ée]decin|pharmacien|professionnel de sant[ée])\b/gi) || []).length;
     const cautionMentions = (clientFacingText.match(/\b(?:exp[ée]rimental|non approuv[ée]|validation m[ée]dicale|avis m[ée]dical|accord m[ée]dical)\b/gi) || []).length;
-    if (medicalMentions > 12 || cautionMentions > 16) {
+    if (medicalMentions > 8 || cautionMentions > 10) {
       errors.push(
         `surcouche medicale excessive pour un rapport standard: ${medicalMentions} renvois professionnels, ${cautionMentions} warnings`
       );
@@ -815,6 +982,14 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
   }
   if (/\[(?:dose|dosage|peptide|timing)[^\]]*\]/i.test(clientFacingText)) {
     errors.push("placeholder operationnel non resolu");
+  }
+  if (
+    /\[(?:x+|nom|description|fournisseur|raison|r[ée]ponse|liste|marqueurs?|prix|total|duree|objectif|si pertinent|si applicable)[^\]]*\]/i.test(
+      clientFacingText
+    )
+    || /\b(?:a completer|placeholder|insere ici|remplir ici)\b/i.test(clientFacingText)
+  ) {
+    errors.push("placeholder generique non resolu");
   }
   if (/\b(?:valeur|dose exacte)\s+indiqu[ée]e\s+dans la fiche\b/i.test(clientFacingText)) {
     errors.push("consigne operationnelle vague non resolue");
@@ -845,6 +1020,8 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
     && !/\b(?:experimental|non approuv[ée]|donn[ée]es humaines.{0,40}limit[ée]es|produit de recherche)\b/i.test(clientFacingText)) {
     errors.push("statut experimental ou non approuve absent pour le stack propose");
   }
+
+  errors.push(...validateReportPersonalization(report));
 
   if (peptides.length === 0) {
     errors.push("aucun peptide recommande");

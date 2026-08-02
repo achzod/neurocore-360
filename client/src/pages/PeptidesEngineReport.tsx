@@ -9,12 +9,14 @@ import { motion } from "framer-motion";
 import {
   Shield, Syringe, FlaskConical, Activity, AlertTriangle, ExternalLink,
   ChevronDown, ShoppingCart, Calendar, Lock, User, Brain, ArrowRight,
-  CheckCircle2, Globe, Droplets, HelpCircle, Star, Send, Loader2,
+  CheckCircle2, Globe, Droplets, HelpCircle, Star, Send, Loader2, MessageCircle,
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { CoachingPromoBanner } from "@/components/CoachingPromoBanner";
 import { Footer } from "@/components/Footer";
 import { ReconstitutionStepByStep, FiveReconstitutionErrors, DoseCalculatorVisual } from "@/components/peptides/ReconstitutionVisualGuide";
+import { trackWhatsAppClick } from "@/lib/analytics";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
 const AMBER = "#F59E0B";
 
@@ -40,7 +42,7 @@ interface ReportSection {
 
 interface PeptidesReport {
   clientName: string;
-  tier?: string;
+  tier?: PeptidesTier;
   qualityVersion?: string;
   sections: ReportSection[];
   peptides: PeptideRec[];
@@ -54,6 +56,59 @@ interface PeptidesReport {
     model?: string;
     provider?: string;
   };
+  _catalogLiveSync?: {
+    country?: string;
+    syncedAt?: string;
+    catalogRefreshedAt?: string;
+  };
+}
+
+type PeptidesTier = "solo" | "coached" | "tracked";
+type PeptidesWhatsAppPlacement = "report_primary" | "report_sticky";
+
+function PeptidesWhatsAppLink({
+  placement,
+  clientName,
+  tier,
+  label,
+  className = "",
+}: {
+  placement: PeptidesWhatsAppPlacement;
+  clientName?: string;
+  tier: PeptidesTier;
+  label: string;
+  className?: string;
+}) {
+  const identity = clientName && clientName !== "Profil" ? ` Je suis ${clientName}.` : "";
+  const destination = buildWhatsAppUrl(
+    `Salut Achzod, je viens de consulter mon rapport Peptides Engine.${identity} Je veux ton aide pour piloter le protocole et choisir le coaching le plus adapte.`
+  );
+
+  return (
+    <a
+      href={destination}
+      target="_blank"
+      rel="noopener noreferrer"
+      data-testid={`peptides-whatsapp-${placement}`}
+      aria-label={`${label} (ouvre WhatsApp dans un nouvel onglet)`}
+      className={`inline-flex items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 py-3 font-bold text-white shadow-[0_12px_34px_rgba(37,211,102,0.28)] transition-all hover:-translate-y-0.5 hover:bg-[#20BD5A] hover:shadow-[0_16px_38px_rgba(37,211,102,0.38)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2 focus-visible:ring-offset-black ${className}`}
+      onClick={() => {
+        try {
+          trackWhatsAppClick({
+            offer: "Peptides Engine",
+            placement,
+            tier,
+            destination,
+          });
+        } catch {
+          // Analytics must never block access to WhatsApp.
+        }
+      }}
+    >
+      <MessageCircle className="h-5 w-5 shrink-0" aria-hidden="true" />
+      <span>{label}</span>
+    </a>
+  );
 }
 
 // ============================================================================
@@ -411,10 +466,18 @@ export default function PeptidesEngineReport() {
     );
   }
 
+  const reportTier: PeptidesTier = report.tier === "solo" || report.tier === "tracked"
+    ? report.tier
+    : "coached";
+  const bloodCredits = reportTier === "tracked" ? 2 : reportTier === "coached" ? 1 : 0;
+  const liveSyncDate = report._catalogLiveSync?.syncedAt
+    ? new Date(report._catalogLiveSync.syncedAt)
+    : null;
+
   return (
     <div className="min-h-screen bg-black text-white">
       <Header />
-      <CoachingPromoBanner auditType="PEPTIDES_ENGINE" />
+      <CoachingPromoBanner auditType="PEPTIDES_ENGINE" peptidesTier={reportTier} />
 
       <div className="max-w-4xl mx-auto px-6 py-24">
         {/* Header */}
@@ -439,6 +502,30 @@ export default function PeptidesEngineReport() {
             {report._generationMeta?.generatedAt ? "Mis a jour le" : "Genere le"}{" "}
             {new Date(report.generatedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.08 }}
+          className="mb-12 overflow-hidden rounded-2xl border border-[#25D366]/25 bg-gradient-to-br from-[#25D366]/12 via-[#0a0a0a] to-[#0a0a0a] p-6 sm:p-8"
+        >
+          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+            <div className="max-w-2xl">
+              <p className="mb-2 font-mono text-xs uppercase tracking-[0.18em] text-[#25D366]">Execution et ajustements</p>
+              <h2 className="mb-2 text-xl font-bold sm:text-2xl">Tu veux que je pilote la suite avec toi ?</h2>
+              <p className="text-sm leading-relaxed text-white/65">
+                Ton rapport pose la strategie. En coaching, je reprends ton dossier, tes retours et tes marqueurs pour ajuster la trajectoire avec toi, sans te laisser improviser seul.
+              </p>
+            </div>
+            <PeptidesWhatsAppLink
+              placement="report_primary"
+              clientName={report.clientName}
+              tier={reportTier}
+              label="Parler a Achzod sur WhatsApp"
+              className="w-full shrink-0 md:w-auto"
+            />
+          </div>
         </motion.div>
 
         {/* Intro :Profile Synthesis (pulled out of collapsible sections) */}
@@ -602,6 +689,11 @@ export default function PeptidesEngineReport() {
               Liste de courses personnalisee
             </h2>
             <p className="text-white/40 text-xs font-mono mb-1">Tout ce dont tu as besoin pour le cycle complet</p>
+            {liveSyncDate && !Number.isNaN(liveSyncDate.getTime()) && (
+              <p className="mb-4 text-xs leading-relaxed text-emerald-300/75">
+                Prix, formats, stock et livraison vers {report._catalogLiveSync?.country || "ton pays"} controles le {liveSyncDate.toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}. Verifie une derniere fois les liens juste avant de payer, le catalogue peut bouger.
+              </p>
+            )}
             <ShoppingListCards list={report.shoppingList} />
           </motion.div>
         )}
@@ -739,7 +831,7 @@ export default function PeptidesEngineReport() {
         )}
 
         {/* Blood Analysis credits */}
-        {report.promoCodes && report.promoCodes.length > 0 && (
+        {bloodCredits > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -748,20 +840,22 @@ export default function PeptidesEngineReport() {
           >
             <h2 className="text-lg font-bold mb-2 flex items-center gap-2">
               <Shield className="w-5 h-5" style={{ color: AMBER }} />
-              Tes 2 Blood Analyses incluses
+              {bloodCredits === 1 ? "Ton credit Blood Analysis inclus" : "Tes 2 credits Blood Analysis inclus"}
             </h2>
             <p className="text-white/70 text-sm mb-4">
-              <strong className="text-amber-400">2 credits Blood Analysis</strong> ont ete ajoutes a ton compte (un pour le bilan pre-cycle, un pour le bilan mi-cycle). Pas de code promo a saisir : connecte-toi sur le dashboard Blood Analysis avec ton email et tes credits sont la.
+              <strong className="text-amber-400">{bloodCredits} credit{bloodCredits > 1 ? "s" : ""} Blood Analysis</strong> {bloodCredits > 1 ? "ont ete ajoutes" : "a ete ajoute"} a ton compte. {bloodCredits === 2 ? "L'usage ideal est le premier avant la mise en place des recommandations, puis le second environ 2 a 3 mois apres." : "Tu peux l'utiliser au moment le plus utile pour ton suivi."} Pas de code a saisir, connecte-toi avec l'email de ta commande.
             </p>
-            <div className="grid md:grid-cols-2 gap-3">
+            <div className={`grid gap-3 ${bloodCredits === 2 ? "md:grid-cols-2" : ""}`}>
               <div className="bg-black/50 border border-dashed border-amber-500/30 rounded-xl p-4 text-center">
                 <p className="text-white/40 text-[10px] font-mono uppercase tracking-widest mb-2">Bilan pre-cycle</p>
                 <p className="text-amber-400 text-sm font-mono">1 credit pret</p>
               </div>
-              <div className="bg-black/50 border border-dashed border-amber-500/30 rounded-xl p-4 text-center">
-                <p className="text-white/40 text-[10px] font-mono uppercase tracking-widest mb-2">Bilan mi-cycle</p>
-                <p className="text-amber-400 text-sm font-mono">1 credit pret</p>
-              </div>
+              {bloodCredits === 2 && (
+                <div className="bg-black/50 border border-dashed border-amber-500/30 rounded-xl p-4 text-center">
+                  <p className="text-white/40 text-[10px] font-mono uppercase tracking-widest mb-2">Controle apres recommandations</p>
+                  <p className="text-amber-400 text-sm font-mono">1 credit pret</p>
+                </div>
+              )}
             </div>
             <a href="/blood-dashboard" className="mt-4 inline-flex items-center gap-2 text-sm font-mono" style={{ color: AMBER }}>
               Acceder a mon dashboard Blood Analysis <ExternalLink className="w-3 h-3" />
@@ -905,6 +999,14 @@ export default function PeptidesEngineReport() {
         </motion.div>
 
       </div>
+
+      <PeptidesWhatsAppLink
+        placement="report_sticky"
+        clientName={report.clientName}
+        tier={reportTier}
+        label="WhatsApp direct"
+        className="fixed bottom-4 right-4 z-50 px-4 py-3 text-sm sm:bottom-6 sm:right-6"
+      />
 
       <Footer />
     </div>

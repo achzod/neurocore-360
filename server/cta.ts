@@ -7,7 +7,8 @@ import { AuditTier } from './types';
 
 export const CONTACT = {
   email: 'coaching@achzodcoaching.com',
-  website: 'achzodcoaching.com'
+  website: 'achzodcoaching.com',
+  whatsapp: 'https://wa.me/971585210514'
 };
 
 export const PRICING = {
@@ -111,22 +112,52 @@ Site: ${CONTACT.website}
 // IMPORTANT : les 3 codes (PEPTIDES199, PEPTIDES299, PEPTIDES399) doivent être
 // créés côté Stripe achzodcoaching.com avec restriction sur les produits 8 et
 // 12 sem de Essential/Elite/Private Lab uniquement (pas Sans Suivi ni 4 sem).
-export const PEPTIDES_COACHING_DEDUCTION: Record<"solo" | "coached" | "tracked", { code: string; amount: number; label: string }> = {
+export type PeptidesTier = "solo" | "coached" | "tracked";
+
+export const PEPTIDES_COACHING_DEDUCTION: Record<PeptidesTier, { code: string; amount: number; label: string }> = {
   solo: { code: "PEPTIDES199", amount: 199, label: "Solo" },
   coached: { code: "PEPTIDES299", amount: 299, label: "Coached" },
   tracked: { code: "PEPTIDES399", amount: 399, label: "Tracked" },
 };
 
+export const PEPTIDES_BLOOD_CREDITS: Record<PeptidesTier, number> = {
+  solo: 0,
+  coached: 1,
+  tracked: 2,
+};
+
+export function resolvePeptidesTier(
+  tier: PeptidesTier | string | null | undefined
+): PeptidesTier {
+  return tier === "solo" || tier === "coached" || tier === "tracked"
+    ? tier
+    : "coached";
+}
+
+export function buildPeptidesBloodCreditsBlock(
+  tier: PeptidesTier | string | null | undefined,
+  dashboardUrl: string
+): string {
+  const resolvedTier = resolvePeptidesTier(tier);
+  const credits = PEPTIDES_BLOOD_CREDITS[resolvedTier];
+  if (credits === 0) return "";
+
+  const usage = credits === 1
+    ? "Tu peux l'utiliser au moment le plus utile pour ton suivi."
+    : "L'usage ideal est le premier avant la mise en place des recommandations, puis le second environ 2 a 3 mois apres.";
+  return `\n\n${credits} credit${credits > 1 ? "s" : ""} Blood Analysis inclus dans ton offre ${PEPTIDES_COACHING_DEDUCTION[resolvedTier].label}.\n${usage}\nConnecte-toi avec l'email de ta commande sur ${dashboardUrl}.`;
+}
+
 export function buildPeptidesCoachingDeductionBlock(
-  tier: "solo" | "coached" | "tracked" | null | undefined,
+  tier: PeptidesTier | string | null | undefined,
   opts: { now?: Date } = {}
 ): string {
-  const resolvedTier = tier && (tier === "solo" || tier === "coached" || tier === "tracked") ? tier : "coached";
+  const resolvedTier = resolvePeptidesTier(tier);
   const cfg = PEPTIDES_COACHING_DEDUCTION[resolvedTier];
   const now = opts.now ?? new Date();
   const expiry = new Date(now.getTime() + 8 * 7 * 24 * 60 * 60 * 1000); // 8 weeks
   const expiryStr = expiry.toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
-  return `\n\nTON BONUS COACHING (${cfg.label})\n\nCode : ${cfg.code}\n${cfg.amount}EUR deduits sur ton coaching Essential, Elite ou Private Lab.\nValable sur les engagements 8 ou 12 semaines uniquement.\nExpire le ${expiryStr} (8 semaines a compter de maintenant).\n\nTu veux passer au coaching personnalise apres ton protocole ?\n- Coaching Essential, https://www.achzodcoaching.com/coaching-essential\n- Coaching Elite, https://www.achzodcoaching.com/coaching-elite\n- Private Lab, https://www.achzodcoaching.com/coaching-achzod-private-lab\n\nColle le code ${cfg.code} dans le champ promo au checkout coaching.`;
+  return `\n\nTON BONUS COACHING (${cfg.label})\n\nCode : ${cfg.code}\n${cfg.amount}EUR deduits sur ton coaching Essential, Elite ou Private Lab.\nValable sur les engagements 8 ou 12 semaines uniquement.\nExpire le ${expiryStr} (8 semaines a compter de maintenant).\n\nTu veux que je reprenne ton dossier, suive tes retours et ajuste la trajectoire avec toi ?\nWhatsApp direct : ${CONTACT.whatsapp}\n- Coaching Essential, https://www.achzodcoaching.com/coaching-essential\n- Coaching Elite, https://www.achzodcoaching.com/coaching-elite\n- Private Lab, https://www.achzodcoaching.com/coaching-achzod-private-lab\n\nColle le code ${cfg.code} dans le champ promo au checkout coaching.`;
 }
 
 export function getCTABlood(): string {

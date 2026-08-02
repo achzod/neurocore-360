@@ -150,6 +150,20 @@ function needsMedicalReview(responses: Record<string, unknown>): boolean {
 
 function confidentPurpose(peptide: PeptideItem): { purpose: string; rationale: string } {
   const name = sanitizeClientFacingText(peptide.name || "").toLowerCase();
+  const existingPurpose = sanitizeClientFacingText(peptide.purpose || "").trim();
+  const existingRationale = sanitizeClientFacingText(peptide.whyThisPeptide || "").trim();
+  const isConcretePersonalization =
+    existingPurpose.length >= 45
+    && existingRationale.length >= 120
+    && /\b(?:tu|ton|ta|tes|chez toi|dans ton)\b/i.test(`${existingPurpose} ${existingRationale}`)
+    && !/\b(?:garanti|sans risque|aucun risque|le plus puissant|automatique|miracle)\b/i.test(`${existingPurpose} ${existingRationale}`);
+
+  // Keep a strong model-written explanation because it can reference the
+  // client's exact questionnaire. Static fallbacks are only for incomplete or
+  // unsafe legacy copy.
+  if (isConcretePersonalization) {
+    return { purpose: existingPurpose, rationale: existingRationale };
+  }
 
   if (/retatrutide/.test(name)) {
     return {
@@ -714,10 +728,42 @@ function normalizeSingleVialGrammar(report: RepairableReport): void {
   }
 }
 
+function upsertPersonalizedNutritionTarget(
+  report: RepairableReport,
+  responses: Record<string, unknown>
+): void {
+  const weightKg = Number(responses.pep_weight || responses.poids || 0);
+  if (!Number.isFinite(weightKg) || weightKg < 40 || weightKg > 250) return;
+
+  const nutritionSection = (report.sections || []).find((section) =>
+    /nutrition/i.test(`${section.id} ${section.title}`)
+  );
+  if (!nutritionSection) return;
+
+  const lowGrams = Math.round(weightKg * 1.8);
+  const highGrams = Math.round(weightKg * 2.2);
+  const withoutLegacyDailyTargets = String(nutritionSection.content || "")
+    .replace(/\n*REPERE PROTEINES PERSONNALISE[\s\S]*?(?=\n\n[A-Z][A-Z ]{4,}\n|$)/gi, "")
+    .replace(
+      /[^.\n]*(?:(?:prot[ée]ines?)[^.\n]{0,100}\b\d{2,3}\s*g\b|\b\d{2,3}\s*g\b[^.\n]{0,100}(?:prot[ée]ines?))[^.\n]{0,80}(?:par\s+jour|\/\s*jour|quotidien(?:ne)?)[^.\n]*\.?/gi,
+      ""
+    )
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  const canonicalTarget =
+    `REPERE PROTEINES PERSONNALISE\nA ${weightKg} kg, vise ${lowGrams} a ${highGrams} g de proteines par jour. ` +
+    `Le calcul vient de 1,8 a 2,2 g/kg/jour. Ce total est le repere du cycle, puis tu le repartis sur tes repas selon ton organisation.`;
+
+  nutritionSection.content = sanitizeClientFacingText(
+    `${withoutLegacyDailyTargets}\n\n${canonicalTarget}`
+  );
+}
+
 function repairStandardReportContent(
   report: RepairableReport,
   firstName: string,
-  tier: string
+  tier: string,
+  responses: Record<string, unknown>
 ): void {
   (report as any).qualityVersion = "expert-standard-v1";
   cleanExpertPeptideFields(report);
@@ -731,6 +777,7 @@ function repairStandardReportContent(
   removeConflictingDoseAdjustments(report);
   synchronizeStandardShoppingNarrative(report, firstName);
   normalizeSingleVialGrammar(report);
+  upsertPersonalizedNutritionTarget(report, responses);
   upsertFinalDisclaimer(report, firstName);
 }
 
@@ -1099,7 +1146,12 @@ export function repairPeptidesReportContent(
     normalizeTierCreditClaims(report, String(tier || report.tier || ""));
     normalizeSingleVialGrammar(report);
   } else {
-    repairStandardReportContent(report, firstName, String(tier || report.tier || ""));
+    repairStandardReportContent(
+      report,
+      firstName,
+      String(tier || report.tier || ""),
+      responses
+    );
   }
 
   const totalChars = (report.sections || []).reduce((sum, section) => sum + section.content.length, 0);

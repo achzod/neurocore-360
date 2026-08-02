@@ -13,6 +13,10 @@ import {
   repairPeptidesReportContent,
 } from "../server/peptidesReportRepair";
 import { splitWeeklyScheduleEntries } from "../client/src/lib/peptidesSchedule";
+import {
+  buildPeptidesBloodCreditsBlock,
+  buildPeptidesCoachingDeductionBlock,
+} from "../server/cta";
 
 const engineSource = readFileSync(new URL("../server/peptidesEngine.ts", import.meta.url), "utf8");
 const routesSource = readFileSync(new URL("../server/routes.ts", import.meta.url), "utf8");
@@ -31,6 +35,19 @@ assert.match(engineSource, /1\. Enclomiphene Citrate/);
 assert.match(engineSource, /2\. KissPeptin-10/);
 assert.match(engineSource, /https:\/\/receptorchem\.co\.uk\/enclomiphene-citrate\//);
 assert.match(routesSource, /DELIVERY BLOCKED[\s\S]{0,1800}continue;/);
+assert.doesNotMatch(routesSource, /Tes 2 Blood Analysis offertes/);
+assert.match(reportPageSource, /data-testid=\{`peptides-whatsapp-/);
+assert.match(reportPageSource, /placement="report_primary"/);
+assert.match(reportPageSource, /placement="report_sticky"/);
+assert.match(reportPageSource, /peptidesTier=\{reportTier\}/);
+assert.doesNotMatch(reportPageSource, /PEPTIDES150/);
+assert.equal(buildPeptidesBloodCreditsBlock("solo", "https://example.com/blood"), "");
+assert.match(buildPeptidesBloodCreditsBlock("coached", "https://example.com/blood"), /1 credit Blood Analysis/);
+assert.doesNotMatch(buildPeptidesBloodCreditsBlock("coached", "https://example.com/blood"), /2 credits/);
+assert.match(buildPeptidesBloodCreditsBlock("tracked", "https://example.com/blood"), /2 credits Blood Analysis/);
+assert.match(buildPeptidesCoachingDeductionBlock("solo"), /PEPTIDES199/);
+assert.match(buildPeptidesCoachingDeductionBlock("tracked"), /PEPTIDES399/);
+assert.match(buildPeptidesCoachingDeductionBlock("tracked"), /wa\.me\/971585210514/);
 assert.match(
   reportPageSource,
   /_generationMeta\?\.generatedAt[\s\S]{0,180}Mis a jour le/,
@@ -157,6 +174,57 @@ assert.deepEqual(
   [],
   "Chaque peptide structure doit etre couvert par les sections operationnelles"
 );
+
+const personalizedReport = structuredClone(coherentCoverage) as any;
+personalizedReport.qualityVersion = "expert-standard-v1";
+personalizedReport._validationContext = {
+  confirmedLowTestosterone: false,
+  profile: {
+    weightKg: 80,
+    primaryGoal: "fatloss",
+    country: "France",
+    budget: "100-200",
+    timeline: "solid",
+    experience: "none",
+    injectionComfort: "anxious",
+  },
+};
+personalizedReport.sections[3].id = "profil-synthese";
+personalizedReport.sections[3].title = "Synthese de ton profil";
+personalizedReport.sections[3].content +=
+  " Luca, tu peses 80 kg et ton objectif principal est la perte de graisse. Tu es debutant total, avec une apprehension sur les injections. Tu veux une trajectoire solide sur 8 a 12 semaines et ton budget se situe entre 100 et 200 EUR par mois.";
+personalizedReport.sections[4].id = "nutrition-protocole";
+personalizedReport.sections[4].title = "Nutrition pendant ton protocole";
+personalizedReport.sections[4].content +=
+  " A 80 kg, vise 144 a 176 g de proteines par jour. Le calcul vient de 1,8 a 2,2 g/kg/jour et garde une marge utile pour ta perte de graisse.";
+personalizedReport.peptides[0].whyThisPeptide =
+  "Je retiens ce levier parce que ton objectif prioritaire est la perte de graisse, que la gestion de l'appetit compte dans ton dossier et que ton budget de 100 a 200 EUR impose un stack lisible. Chez toi, la titration doit rester identique dans la fiche et le calendrier. Les donnees humaines restent encore limitees.";
+personalizedReport.peptides[0].timing = "Jour fixe, 1 fois par semaine.";
+personalizedReport.sections[2].content += " LUNDI: injection au dosage de la fiche. Les autres jours sont des jours de repos hors protocole.";
+const personalizedAudit = validatePeptidesReport(personalizedReport);
+assert.equal(personalizedAudit.ok, true, personalizedAudit.errors.join("\n"));
+
+const genericProfileFailure = structuredClone(personalizedReport) as any;
+genericProfileFailure.sections[3].content = genericProfileFailure.sections[3].content
+  .replace(/tu peses 80 kg[^.]*\./i, "Ton profil demande une approche adaptee.")
+  .replace(/Tu es debutant total[^.]*\./i, "Ton niveau est pris en compte.");
+const genericProfileAudit = validatePeptidesReport(genericProfileFailure);
+assert.equal(genericProfileAudit.ok, false);
+assert.match(genericProfileAudit.errors.join("\n"), /personnalisation/);
+
+const genericRationaleFailure = structuredClone(personalizedReport) as any;
+genericRationaleFailure.peptides[0].whyThisPeptide =
+  "Je retiens ce levier pour ton objectif de perte de graisse. Ton objectif de perte de graisse guide ce choix et ton objectif de perte de graisse reste le fil conducteur de la fiche, du calendrier et de la liste de commande.";
+const genericRationaleAudit = validatePeptidesReport(genericRationaleFailure);
+assert.equal(genericRationaleAudit.ok, false);
+assert.match(genericRationaleAudit.errors.join("\n"), /moins de 2 faits concrets/);
+
+const wrongProteinTarget = structuredClone(personalizedReport) as any;
+wrongProteinTarget.sections[4].content = wrongProteinTarget.sections[4].content
+  .replace(/144 a 176 g de proteines par jour/i, "90 g de proteines par jour");
+const wrongProteinAudit = validatePeptidesReport(wrongProteinTarget);
+assert.equal(wrongProteinAudit.ok, false);
+assert.match(wrongProteinAudit.errors.join("\n"), /cible calculee 144 a 176 g\/jour absente/);
 
 const missingCoverage = structuredClone(coherentCoverage);
 missingCoverage.weeklySchedule = "LUNDI: repos";

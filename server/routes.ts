@@ -55,7 +55,10 @@ import {
   isOpenAIConfigured,
   runOpenAIText,
 } from "./openaiResponses";
-import { buildPeptidesCoachingDeductionBlock } from "./cta";
+import {
+  buildPeptidesBloodCreditsBlock,
+  buildPeptidesCoachingDeductionBlock,
+} from "./cta";
 import { BLOOD_ANALYSIS_PURCHASE_CREDITS, clarifyBloodPurchaseEmail } from "./bloodOffer";
 
 import { registerKnowledgeRoutes } from "./knowledge";
@@ -5335,8 +5338,10 @@ export async function registerRoutes(
           }
 
           if (deliveryDue) {
-            const promoBlock = report.promoCodesGenerated?.length > 0
-              ? `\n\nTes 2 Blood Analysis offertes (codes):\n${report.promoCodesGenerated.join("\n")}` : "";
+            const promoBlock = buildPeptidesBloodCreditsBlock(
+              (pepOrder?.metadata as any)?.peptidesTier ?? report.tier,
+              `${baseUrl}/blood-dashboard`
+            );
             const coachingBlock = buildPeptidesCoachingDeductionBlock(
               (pepOrder?.metadata as any)?.peptidesTier ?? null
             );
@@ -13186,10 +13191,10 @@ export async function registerRoutes(
         }
 
         // Deliver via email
-        const promoCodesBlock =
-          report.promoCodesGenerated?.length > 0
-            ? `\n\nTes 2 Blood Analyses offertes :\n2 credits Blood Analysis ont ete ajoutes a ton compte (un pre-cycle, un mi-cycle).\nPas de code a saisir : connecte-toi sur ${getBaseUrl(req)}/blood-dashboard avec ton email pour les utiliser.`
-            : "";
+        const promoCodesBlock = buildPeptidesBloodCreditsBlock(
+          (order?.metadata as any)?.peptidesTier ?? report.tier,
+          `${getBaseUrl(req)}/blood-dashboard`
+        );
         const coachingBlock = buildPeptidesCoachingDeductionBlock(
           (order?.metadata as any)?.peptidesTier ?? null
         );
@@ -13295,11 +13300,17 @@ export async function registerRoutes(
         return;
       }
 
+      const clientReport = JSON.parse(JSON.stringify(record.report || {}));
+      if (clientReport._peptauraLiveSync) {
+        clientReport._catalogLiveSync = clientReport._peptauraLiveSync;
+        delete clientReport._peptauraLiveSync;
+      }
+
       res.json({
         success: true,
         id: record.id,
         createdAt: record.createdAt,
-        report: record.report,
+        report: clientReport,
       });
     } catch (error) {
       console.error("[PeptidesEngine] report fetch error:", error);
@@ -13544,9 +13555,10 @@ export async function registerRoutes(
 
           const baseUrl = getBaseUrl();
           const peptidesNames = existingReport?.peptides?.map((p: any) => p.name).join(", ") ?? "voir rapport";
-          const promoBlock = Array.isArray(existingReport?.promoCodesGenerated) && existingReport.promoCodesGenerated.length > 0
-            ? `\n\nTes 2 Blood Analysis offertes (codes, usage unique):\n${existingReport.promoCodesGenerated.join("\n")}`
-            : "";
+          const promoBlock = buildPeptidesBloodCreditsBlock(
+            (order.metadata as any)?.peptidesTier ?? existingReport?.tier,
+            `${baseUrl}/blood-dashboard`
+          );
           const coachingBlock = buildPeptidesCoachingDeductionBlock(
             (order.metadata as any)?.peptidesTier ?? null
           );
@@ -13719,8 +13731,10 @@ export async function registerRoutes(
 
         const baseUrl = getBaseUrl();
         const peptidesNames = report.peptides?.map((p: any) => p.name).join(", ") ?? "voir rapport";
-        const promoBlock = report.promoCodesGenerated?.length > 0
-          ? `\n\nTes 2 Blood Analysis offertes (codes, usage unique):\n${report.promoCodesGenerated.join("\n")}` : "";
+        const promoBlock = buildPeptidesBloodCreditsBlock(
+          (order.metadata as any)?.peptidesTier ?? report.tier,
+          `${baseUrl}/blood-dashboard`
+        );
         const coachingBlock = buildPeptidesCoachingDeductionBlock(
           (order.metadata as any)?.peptidesTier ?? null
         );

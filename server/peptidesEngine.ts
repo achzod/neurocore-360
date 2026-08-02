@@ -65,6 +65,16 @@ export interface PeptidesReport {
   };
   _validationContext?: {
     confirmedLowTestosterone: boolean;
+    profile?: {
+      weightKg?: number;
+      primaryGoal?: string;
+      secondaryGoals?: string[];
+      country?: string;
+      budget?: string;
+      timeline?: string;
+      experience?: string;
+      injectionComfort?: string;
+    };
   };
   _enclomipheneSourceSync?: {
     url: string;
@@ -376,6 +386,31 @@ function isEnclomipheneName(value: string): boolean {
 
 function hasConfirmedLowTestosterone(responses: Record<string, unknown>): boolean {
   return String(responses.pep_testo_bloodwork || "").trim().toLowerCase() === "recent-low";
+}
+
+function buildPeptidesValidationContext(
+  responses: Record<string, unknown>,
+  country = normalizeDeliveryCountry(responses)
+): NonNullable<PeptidesReport["_validationContext"]> {
+  const weightKg = Number(responses.pep_weight || responses.poids || 0);
+  const secondaryGoalsRaw = responses.pep_secondary_goals || responses.objectifSecondaire;
+  const secondaryGoals = Array.isArray(secondaryGoalsRaw)
+    ? secondaryGoalsRaw.map(String).filter(Boolean)
+    : String(secondaryGoalsRaw || "").split(/[,;|]/).map((value) => value.trim()).filter(Boolean);
+
+  return {
+    confirmedLowTestosterone: hasConfirmedLowTestosterone(responses),
+    profile: {
+      ...(Number.isFinite(weightKg) && weightKg > 0 ? { weightKg } : {}),
+      primaryGoal: String(responses.pep_primary_goal || responses.objectifPrincipal || "").trim(),
+      secondaryGoals,
+      country,
+      budget: String(responses.pep_budget || responses.budget || "").trim(),
+      timeline: String(responses.pep_timeline || responses.timeline || "").trim(),
+      experience: String(responses.pep_experience || responses.experience || "").trim(),
+      injectionComfort: String(responses.pep_injection_comfort || "").trim(),
+    },
+  };
 }
 
 async function fetchTextWithTimeout(
@@ -735,7 +770,11 @@ export async function refreshPeptauraCatalog(
         while (queue.length > 0) {
           const slug = queue.shift();
           if (!slug) return;
-          const snapshot = await fetchPeptauraProductSnapshot(slug, forceFresh);
+          let snapshot = await fetchPeptauraProductSnapshot(slug, forceFresh);
+          if (!snapshot) {
+            console.warn(`[Peptaura Catalog] Retry product after timeout or unreadable response: ${slug}`);
+            snapshot = await fetchPeptauraProductSnapshot(slug, true);
+          }
           if (snapshot) refreshedProducts++;
           else failedProducts.push(slug);
         }
@@ -1310,10 +1349,8 @@ export async function refreshPeptauraPricingForDelivery(
   tier?: string | null
 ): Promise<PeptidesReport> {
   const report = validateVialsMath(JSON.parse(JSON.stringify(sourceReport)));
-  report._validationContext = {
-    confirmedLowTestosterone: hasConfirmedLowTestosterone(responses),
-  };
   const context = await buildPeptauraPromptContext(responses);
+  report._validationContext = buildPeptidesValidationContext(responses, context.country);
   await applyLivePeptauraPricing(report, context, true);
   const repaired = repairPeptidesReportContent(report, responses, tier);
   return cleanReportContent(repaired, repaired.clientName || extractFirstName(responses, ""));
@@ -1540,6 +1577,8 @@ Ecris comme une vraie personne qui connait le dossier. Varie la longueur des phr
 Tu parles comme un expert terrain, pas comme un avocat, pas comme une notice FDA, pas comme un commercial euphorique.
 Tu assumes une recommandation claire, hierarchisee, pratique et personnalisee. Tu cadres le risque sans dissoudre la valeur du protocole.
 Le client a paye pour comprendre ce que tu choisirais pour son profil et comment tu organiserais le stack. Donne-lui cette reponse franchement.
+La personnalisation doit etre visible, pas seulement annoncee. Reprends les faits exacts du questionnaire: poids, objectif principal, objectifs secondaires, experience, contraintes d'injection, budget, pays, entrainement et calendrier. Chaque choix de molecule doit etre relie a au moins deux faits concrets du dossier.
+Une phrase qui pourrait etre collee telle quelle dans le rapport d'un autre client est a reecrire avec le contexte de ce client. Tu ne remplis jamais avec des banalites pour atteindre la longueur demandee.
 Chaque idee de prudence ne doit apparaitre qu'une fois. Tu ne recopies jamais le meme disclaimer, la meme consigne medicale ou la meme phrase dans plusieurs sections.
 Le rendu ne doit jamais ressembler a un compte rendu medical. Les molecules, le protocole, le timing, les calculs, les explications et la liste de commande occupent le premier plan. Regroupe les verifications indispensables dans un seul bloc court au lieu de renvoyer le client vers un professionnel dans chaque section.
 Evite les rafales de titres en majuscules. Utilise des sous-titres seulement quand ils aident vraiment a lire.
@@ -1961,6 +2000,11 @@ RÈGLES ABSOLUES:
 8. Chaque entree de "peptides" doit apparaitre dans la section de justification, le guide de reconstitution, le calendrier pratique, "weeklySchedule" et la liste de courses. Si tu ne l'integres pas partout, retire-la du tableau.
 9. Le dosage, la duree et toute phase de descente doivent etre strictement identiques dans les cartes, les sections et le calendrier. N'invente jamais une descente dans une seule section.
 10. La quantite de BAC water doit couvrir la somme reelle de tous les vials du cycle. Le serveur recalculera cette quantite.
+11. La synthese de profil doit citer au minimum le poids exact, l'objectif principal, le niveau d'experience, la contrainte d'injection, le budget ou le pays, et la timeline. Ne transforme pas les codes du questionnaire en jargon interne.
+12. Le champ "whyThisPeptide" de chaque molecule fait au moins 120 caracteres et relie le choix a au moins deux faits concrets du dossier. "Adapte a ton objectif" sans nommer l'objectif ne passe pas.
+13. Dans "nutrition-protocole", donne le repere proteique en g/kg ET le total calcule en grammes par jour pour ${weight} kg. Les deux chiffres doivent etre mathematiquement coherents.
+14. Aucun placeholder, aucun crochet, aucun "a completer", aucun "selon la fiche" et aucune valeur generique ne doivent rester dans la sortie.
+15. En mode expert-standard-v1, toutes les verifications generales sont regroupees dans le dernier bloc. Les effets propres a une molecule restent expliques dans leur section, mais tu ne repetes pas une formule medicale partout.
 
 Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
 
@@ -1991,7 +2035,7 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
     {
       "id": "reconstitution-guide",
       "title": "Guide de reconstitution pas a pas",
-      "content": "${firstName}, la reconstitution c'est simplement le fait de mélanger la poudre de ton peptide avec de l'eau pour pouvoir l'injecter. C'est plus simple que ça en a l'air, je t'explique tout.\\n\\nPOURQUOI DE L'EAU BACTÉRIOSTATIQUE (BAC WATER)\\nOn utilise de l'eau bactériostatique et non de l'eau stérile classique. La différence : la BAC water contient 0.9% d'alcool benzylique qui empêche les bactéries de se développer. C'est ce qui permet de conserver ton peptide reconstitué au frigo pendant 2 à 4 semaines.\\n\\nPour CHAQUE peptide du stack, détaille :\\n- Le flacon exact à commander (dosage, fournisseur)\\n- Combien de ml de BAC water ajouter\\n- La concentration obtenue\\n- Combien d'unités tirer sur la seringue insuline pour SA dose exacte\\n- IMPORTANT: explique comment injecter la BAC water dans le vial , laisser couler doucement le long de la paroi du flacon, NE JAMAIS viser directement la poudre, NE JAMAIS secouer. Faire rouler doucement le vial entre les paumes.\\n- Précise la durée de conservation une fois reconstitué."
+      "content": "${firstName}, cette partie demande de la rigueur. Pour CHAQUE peptide du stack, détaille le flacon exact retenu, le volume de BAC water, la concentration obtenue, la dose exacte en mcg ou mg, son équivalent en ml et en unités sur une seringue U-100, puis refais le calcul en sens inverse. Explique le geste étape par étape sans annoncer une durée de conservation universelle: la conservation doit reprendre l'instruction du produit exact. Chaque calcul doit être identique à la fiche peptide et au calendrier."
     },
     {
       "id": "guide-injection",
@@ -2016,7 +2060,7 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
     {
       "id": "securite-surveillance",
       "title": "Securite et surveillance",
-      "content": "${firstName}, ta sécurité passe avant tout. Voici ce que tu dois surveiller.\\n\\nSIGNAUX D'ALERTE , stoppe immédiatement et consulte un médecin si [liste adaptée aux peptides sélectionnés]\\n\\nAJUSTEMENTS DE DOSE\\nSemaine 1: commence à 50% de la dose que je t'ai prescrite. C'est une phase de test pour voir comment ton corps réagit. Si tout va bien (pas de rougeur excessive, pas de nausée, pas de malaise), passe à l'étape suivante.\\nSemaine 2: monte à 75% de la dose cible.\\nSemaine 3+: dose cible complète si bonne tolérance.\\n\\nINTERACTIONS\\n[si pertinent selon le profil]\\n\\nIMPORTANT: ce protocole est éducatif et informatif. Consulte un médecin si tu as le moindre doute ou si tu prends des médicaments."
+      "content": "${firstName}, distingue les effets attendus propres à chaque molecule, les paramètres que tu notes chaque semaine et les critères précis qui suspendent le protocole. Reprends uniquement la titration écrite dans les fiches peptides, à l'identique. N'ajoute jamais une montée automatique à 50 ou 75 pour cent. Regroupe ici les interactions réellement pertinentes pour les réponses du questionnaire. La vérification générale par un médecin ou un pharmacien n'apparait qu'une fois, dans le dernier bloc."
     },
     {
       "id": "nutrition-protocole",
@@ -2026,12 +2070,12 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
     {
       "id": "checklist-demarrage",
       "title": "Checklist avant de commencer",
-      "content": "${firstName}, avant ta première injection, assure-toi d'avoir coché chaque étape.\\n\\nETAPE 1 : BILAN SANGUIN PRE-CYCLE\\nUtilise ton premier code Blood Analysis APEXLABS pour faire ton bilan de base. C'est non négociable, sans bilan tu navigues à l'aveugle.\\n\\nETAPE 2 : PHOTOS ET MESURES\\nPrend une photo de face, de profil et de dos en sous-vêtements. Note ton poids, ton tour de taille, ton tour de bras, ton tour de cuisse. Tu te remercieras dans 8 semaines quand tu compareras.\\n\\nETAPE 3 : COMMANDER SUR PEPTAURA\\nCommande tous tes peptides, la BAC water, les seringues et les tampons en une seule fois. Regroupe pour optimiser les frais de port.\\n\\nETAPE 4 : RECEPTION ET PREPARATION\\nQuand tu reçois ton colis, vérifie que chaque vial est intact et scellé. Stocke les vials lyophilisés à température ambiante ou au frigo. Ne reconstitue que le premier vial de chaque peptide.\\n\\nETAPE 5 : PREMIERE INJECTION\\nRelis le guide d'injection et le guide de reconstitution. Commence à 50% de la dose cible pendant la première semaine. C'est ta phase de test."
+      "content": "${firstName}, construis une checklist numérotée vraiment adaptée au dossier. Elle doit reprendre exactement ce qui est inclus dans le tier ${tier}: ${bloodCreditInstructions} Ajoute les mesures de départ utiles à l'objectif, la commande recroisée avec le stock et la livraison live, le contrôle du format et du lot reçus, le matériel exact, puis la première semaine telle qu'elle est écrite dans les fiches. N'invente pas une règle générique de départ à 50 pour cent."
     },
     {
       "id": "effets-secondaires",
       "title": "Effets secondaires : normal vs alerte",
-      "content": "${firstName}, ton corps va réagir aux peptides et c'est normal. Voici ce qui est attendu et ce qui doit t'alerter.\\n\\nEFFETS NORMAUX (pas d'inquiétude)\\nPour chaque peptide du stack, détaille les effets secondaires courants et bénins : rougeur au site d'injection (disparaît en 30 min), légère fatigue les premiers jours, nausée légère avec Retatrutide (la titration progressive minimise ça), flush cutané avec certains peptides, augmentation de l'appétit avec les sécrétagogues GH, rêves plus vivides avec DSIP, etc.\\n\\nSIGNAUX D'ALERTE (stoppe et consulte)\\nAdapte selon les peptides sélectionnés : gonflement persistant au site d'injection, douleur thoracique, vertiges sévères, réaction allergique (urticaire, difficulté respiratoire), nausées persistantes malgré titration, hypoglycémie (tremblements, sueurs froides), changement de grain de peau/naevi avec Melanotan. Précise pour CHAQUE peptide du stack."
+      "content": "${firstName}, pour CHAQUE molecule retenue, explique séparément les effets possibles les plus fréquents, ce que tu notes dans ton suivi et les signaux qui imposent d'arrêter. N'appelle jamais un symptôme 'normal' par défaut et n'invente ni délai de disparition ni garantie liée à la titration. Les consignes doivent correspondre au stack réel et aux réponses du questionnaire."
     },
     {
       "id": "faq",
@@ -2765,9 +2809,7 @@ export async function generatePeptidesProtocol(
       report = await applyLivePeptauraPricing(report, peptauraContext);
       report = repairPeptidesReportContent(report, responses, tier);
       report = cleanReportContent(report, firstName);
-      report._validationContext = {
-        confirmedLowTestosterone: hasConfirmedLowTestosterone(responses),
-      };
+      report._validationContext = buildPeptidesValidationContext(responses, peptauraContext.country);
       report.promoCodesGenerated = [];
       report.clientName = firstName;
       report._generationMeta = {
