@@ -90,6 +90,10 @@ assert.match(routes, /deterministic_client_facing_repair/);
 assert.match(routes, /automaticReportRecoveryRunning/);
 assert.match(routes, /requireAdminAuth/);
 
+const emailService = read("server/emailService.ts");
+assert.match(emailService, /const shouldBccAdmin = !emailPayload\.to\.some/);
+assert.match(emailService, /none, already direct recipient/);
+
 assert.equal(auditClientFacingText("Ton rendez-vous est confirme.").vouvoiement.length, 0);
 assert.deepEqual(auditClientFacingText("Vous devez verifier votre plan.").vouvoiement, [
   "vous",

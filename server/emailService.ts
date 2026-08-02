@@ -443,13 +443,22 @@ async function sendEmailWithTracking(
 
     const token = await getAccessToken();
 
-    // Add BCC to admin email for all outgoing emails
+    // Add BCC to admin email unless the admin is already a direct recipient.
+    // Duplicating the same Gmail address in To + BCC makes some SendPulse
+    // payloads fail RFC 5322 validation and would hide critical cost alerts.
+    const shouldBccAdmin = !emailPayload.to.some(
+      (recipient) => recipient.email.trim().toLowerCase() === ADMIN_EMAIL_CC.toLowerCase(),
+    );
     const payloadWithBcc = {
       ...emailPayload,
-      bcc: [{ email: ADMIN_EMAIL_CC, name: "Admin APEXLABS" }],
+      ...(shouldBccAdmin
+        ? { bcc: [{ email: ADMIN_EMAIL_CC, name: "Admin APEXLABS" }] }
+        : {}),
     };
 
-    console.log(`[SendPulse] Sending ${trackingData.emailType} to ${trackingData.recipientEmail} (BCC: ${ADMIN_EMAIL_CC})`);
+    console.log(
+      `[SendPulse] Sending ${trackingData.emailType} to ${trackingData.recipientEmail} (BCC: ${shouldBccAdmin ? ADMIN_EMAIL_CC : "none, already direct recipient"})`,
+    );
 
     const sentStartedAt = new Date();
     const response = await fetch("https://api.sendpulse.com/smtp/emails", {
@@ -565,7 +574,9 @@ async function sendEmailWithTracking(
           body: JSON.stringify({
             sender: emailPayload.from,
             to: emailPayload.to,
-            bcc: [{ email: ADMIN_EMAIL_CC, name: "Admin APEXLABS" }],
+            ...(shouldBccAdmin
+              ? { bcc: [{ email: ADMIN_EMAIL_CC, name: "Admin APEXLABS" }] }
+              : {}),
             subject: emailPayload.subject,
             htmlContent,
             textContent: emailPayload.text,
@@ -620,7 +631,7 @@ async function sendEmailWithTracking(
               name: recipient.name || "",
               address: recipient.email,
             })),
-            bcc: ADMIN_EMAIL_CC,
+            ...(shouldBccAdmin ? { bcc: ADMIN_EMAIL_CC } : {}),
             subject: emailPayload.subject,
             html: htmlContent,
             text: emailPayload.text,
