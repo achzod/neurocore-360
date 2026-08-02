@@ -50,6 +50,7 @@ import { getAuthPayload, type AuthPayload } from "./auth";
 import crypto from "crypto";
 import {
   OPENAI_REPORT_MODEL,
+  checkAIUsageCostAlert,
   getAIUsageCostSummary,
   isOpenAIConfigured,
   runOpenAIText,
@@ -854,6 +855,23 @@ export async function registerRoutes(
       res.status(500).json({ success: false, error: "Impossible de charger les couts API" });
     }
   });
+
+  app.post("/api/admin/ai-usage-costs/check-alert", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      await checkAIUsageCostAlert();
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("[Admin AI Usage Alert] Error:", error?.message || error);
+      res.status(500).json({ success: false, error: "Impossible de verifier l alerte cout API" });
+    }
+  });
+
+  setInterval(() => {
+    checkAIUsageCostAlert().catch((error: any) => {
+      console.error("[AICost] Scheduled alert check failed:", error?.message || error);
+    });
+  }, 5 * 60 * 1000).unref();
 
   async function recoverStoredAuditReport(
     auditId: string,

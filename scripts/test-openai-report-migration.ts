@@ -39,6 +39,9 @@ assert.match(shared, /client\.responses\.create/);
 assert.doesNotMatch(shared, /chat\.completions/);
 assert.match(shared, /peptides:[\s\S]*maxOutputTokens:\s*20_000/);
 assert.match(shared, /ai_usage_events/);
+assert.match(shared, /ai_usage_cost_alerts/);
+assert.match(shared, /DAILY_COST_ALERT_LEVELS_USD = \[5, 10, 25, 50, 100, 250, 500, 1_000\]/);
+assert.match(shared, /AI_COST_ALERT_EMAIL \|\| "achkou@gmail\.com"/);
 assert.match(shared, /\[AICost\]/);
 assert.match(shared, /Cancel did not complete within 10s/);
 assert.match(shared, /maxRetries:\s*0/);
@@ -81,6 +84,7 @@ assert.equal(longContextCosts.openaiLongContextMultiplierApplied, true);
 
 const routes = read("server/routes.ts");
 assert.match(routes, /\/api\/admin\/ai-usage-costs/);
+assert.match(routes, /\/api\/admin\/ai-usage-costs\/check-alert/);
 assert.match(routes, /\/api\/admin\/recover-report-failures/);
 assert.match(routes, /deterministic_client_facing_repair/);
 assert.match(routes, /automaticReportRecoveryRunning/);

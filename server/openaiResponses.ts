@@ -222,6 +222,14 @@ async function ensureAIUsageTable(): Promise<void> {
         CREATE INDEX IF NOT EXISTS ai_usage_events_created_at_idx
         ON ai_usage_events (created_at DESC)
       `);
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS ai_usage_cost_alerts (
+          alert_key TEXT PRIMARY KEY,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          estimated_openai_cost_usd DOUBLE PRECISION NOT NULL,
+          estimated_sonnet46_cost_usd DOUBLE PRECISION NOT NULL
+        )
+      `);
     })().catch((error) => {
       aiUsageTablePromise = null;
       throw error;
@@ -284,10 +292,66 @@ async function recordAIUsageEvent(params: {
         costs.sonnet46EquivalentUsd,
       ],
     );
+    void maybeSendAIUsageCostAlert().catch((alertError: any) => {
+      console.error(`[AICost] Alert check failed: ${alertError?.message || alertError}`);
+    });
   } catch (error: any) {
     console.error(`[AICost] Persistence failed: ${error?.message || error}`);
   }
   return telemetry;
+}
+
+const DAILY_COST_ALERT_LEVELS_USD = [5, 10, 25, 50, 100, 250, 500, 1_000] as const;
+
+async function maybeSendAIUsageCostAlert(): Promise<void> {
+  await ensureAIUsageTable();
+  const { pool } = await import("./db");
+  const spendResult = await pool.query(`
+    SELECT
+      TO_CHAR(NOW() AT TIME ZONE 'Asia/Dubai', 'YYYY-MM-DD') AS dubai_day,
+      COALESCE(SUM(estimated_openai_cost_usd), 0) AS openai_usd,
+      COALESCE(SUM(estimated_sonnet46_cost_usd), 0) AS sonnet_usd
+    FROM ai_usage_events
+    WHERE (created_at AT TIME ZONE 'Asia/Dubai')::date =
+          (NOW() AT TIME ZONE 'Asia/Dubai')::date
+  `);
+  const row = spendResult.rows[0] || {};
+  const openaiUsd = numberFromDb(row.openai_usd);
+  const sonnetUsd = numberFromDb(row.sonnet_usd);
+  const crossedLevel = [...DAILY_COST_ALERT_LEVELS_USD]
+    .reverse()
+    .find((level) => openaiUsd >= level);
+  if (!crossedLevel) return;
+
+  const alertKey = `daily:${row.dubai_day}:${crossedLevel}`;
+  const claimed = await pool.query(
+    `INSERT INTO ai_usage_cost_alerts (
+       alert_key, estimated_openai_cost_usd, estimated_sonnet46_cost_usd
+     ) VALUES ($1, $2, $3)
+     ON CONFLICT (alert_key) DO NOTHING
+     RETURNING alert_key`,
+    [alertKey, openaiUsd, sonnetUsd],
+  );
+  if ((claimed.rowCount ?? 0) === 0) return;
+
+  const alertEmail = process.env.AI_COST_ALERT_EMAIL || "achkou@gmail.com";
+  const { sendCTAEmail } = await import("./emailService");
+  const difference = openaiUsd - sonnetUsd;
+  const sent = await sendCTAEmail(
+    alertEmail,
+    `[ALERTE COUT API] ${openaiUsd.toFixed(2)} USD aujourd'hui`,
+    `Alerte automatique APEXLABS.\n\nLe cout OpenAI estime a atteint ${openaiUsd.toFixed(4)} USD aujourd'hui, heure de Dubai.\nEquivalent Sonnet 4.6 au meme volume de tokens: ${sonnetUsd.toFixed(4)} USD.\nEcart estime: ${difference.toFixed(4)} USD.\n\nSeuil franchi: ${crossedLevel} USD.\n\nDetail protege: /api/admin/ai-usage-costs?days=1`,
+  );
+  console.log(
+    `[AICost] Daily threshold ${crossedLevel} USD alert ${sent ? "sent" : "failed"} to ${alertEmail}`,
+  );
+  if (!sent) {
+    await pool.query("DELETE FROM ai_usage_cost_alerts WHERE alert_key = $1", [alertKey]);
+  }
+}
+
+export async function checkAIUsageCostAlert(): Promise<void> {
+  await maybeSendAIUsageCostAlert();
 }
 
 function numberFromDb(value: unknown): number {
