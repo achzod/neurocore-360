@@ -48,7 +48,12 @@ import { streamAuditZip } from "./exportZipService";
 import { createPayPalOrder, capturePayPalOrder, isPayPalConfigured } from "./paypalClient";
 import { getAuthPayload, type AuthPayload } from "./auth";
 import crypto from "crypto";
-import { OPENAI_REPORT_MODEL, isOpenAIConfigured, runOpenAIText } from "./openaiResponses";
+import {
+  OPENAI_REPORT_MODEL,
+  getAIUsageCostSummary,
+  isOpenAIConfigured,
+  runOpenAIText,
+} from "./openaiResponses";
 import { buildPeptidesCoachingDeductionBlock } from "./cta";
 import { BLOOD_ANALYSIS_PURCHASE_CREDITS, clarifyBloodPurchaseEmail } from "./bloodOffer";
 
@@ -837,6 +842,17 @@ export async function registerRoutes(
 
     const allOk = Object.values(checks).every((c) => c.ok);
     res.json({ ready: allOk, checks });
+  });
+
+  app.get("/api/admin/ai-usage-costs", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const days = Number(req.query.days || 30);
+      res.json(await getAIUsageCostSummary(days));
+    } catch (error: any) {
+      console.error("[Admin AI Usage Costs] Error:", error?.message || error);
+      res.status(500).json({ success: false, error: "Impossible de charger les couts API" });
+    }
   });
 
   // ==================== ADMIN RECONCILIATION STATS ====================

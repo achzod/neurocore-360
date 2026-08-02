@@ -58,11 +58,341 @@ const PROFILE_CONFIG: Record<OpenAIReportProfile, ProfileConfig> = {
   peptides: {
     effort: "max",
     mode: "pro",
-    maxOutputTokens: 64_000,
+    maxOutputTokens: 32_000,
     timeoutMs: 15 * 60 * 1000,
     verbosity: "high",
   },
 };
+
+const PRICING = {
+  openaiGpt56Sol: {
+    uncachedInputPerMillion: 5,
+    cachedInputPerMillion: 0.5,
+    cacheWritePerMillion: 6.25,
+    outputPerMillion: 30,
+    longContextThresholdTokens: 272_000,
+    longContextInputMultiplier: 2,
+    longContextOutputMultiplier: 1.5,
+    source: "https://developers.openai.com/api/docs/models/gpt-5.6-sol",
+  },
+  sonnet46Equivalent: {
+    uncachedInputPerMillion: 3,
+    cachedInputPerMillion: 0.3,
+    cacheWritePerMillion: 3.75,
+    outputPerMillion: 15,
+    source: "https://platform.claude.com/docs/en/about-claude/pricing",
+  },
+} as const;
+
+export interface AIUsageTokens {
+  inputTokens: number;
+  cachedInputTokens: number;
+  cacheWriteTokens: number;
+  outputTokens: number;
+  reasoningTokens: number;
+  totalTokens: number;
+}
+
+export interface AIUsageCostEstimate {
+  openaiGpt56SolUsd: number;
+  sonnet46EquivalentUsd: number;
+  differenceUsd: number;
+  sonnet46EquivalentSavingsPercent: number;
+  openaiLongContextMultiplierApplied: boolean;
+}
+
+export interface AIUsageTelemetry {
+  tokens: AIUsageTokens;
+  costs: AIUsageCostEstimate;
+}
+
+function nonNegativeInteger(value: unknown): number {
+  const parsed = Number(value || 0);
+  return Number.isFinite(parsed) ? Math.max(0, Math.round(parsed)) : 0;
+}
+
+function roundUsd(value: number): number {
+  return Math.round(value * 100_000_000) / 100_000_000;
+}
+
+export function estimateAIUsageCosts(tokens: AIUsageTokens): AIUsageCostEstimate {
+  const inputTokens = nonNegativeInteger(tokens.inputTokens);
+  const cachedInputTokens = Math.min(inputTokens, nonNegativeInteger(tokens.cachedInputTokens));
+  const cacheWriteTokens = Math.min(
+    Math.max(0, inputTokens - cachedInputTokens),
+    nonNegativeInteger(tokens.cacheWriteTokens),
+  );
+  const uncachedInputTokens = Math.max(0, inputTokens - cachedInputTokens - cacheWriteTokens);
+  const outputTokens = nonNegativeInteger(tokens.outputTokens);
+  const longContext = inputTokens > PRICING.openaiGpt56Sol.longContextThresholdTokens;
+  const openaiInputMultiplier = longContext
+    ? PRICING.openaiGpt56Sol.longContextInputMultiplier
+    : 1;
+  const openaiOutputMultiplier = longContext
+    ? PRICING.openaiGpt56Sol.longContextOutputMultiplier
+    : 1;
+
+  const openaiGpt56SolUsd =
+    ((uncachedInputTokens * PRICING.openaiGpt56Sol.uncachedInputPerMillion +
+      cachedInputTokens * PRICING.openaiGpt56Sol.cachedInputPerMillion +
+      cacheWriteTokens * PRICING.openaiGpt56Sol.cacheWritePerMillion) /
+      1_000_000) *
+      openaiInputMultiplier +
+    (outputTokens * PRICING.openaiGpt56Sol.outputPerMillion * openaiOutputMultiplier) /
+      1_000_000;
+
+  const sonnet46EquivalentUsd =
+    (uncachedInputTokens * PRICING.sonnet46Equivalent.uncachedInputPerMillion +
+      cachedInputTokens * PRICING.sonnet46Equivalent.cachedInputPerMillion +
+      cacheWriteTokens * PRICING.sonnet46Equivalent.cacheWritePerMillion +
+      outputTokens * PRICING.sonnet46Equivalent.outputPerMillion) /
+    1_000_000;
+  const differenceUsd = openaiGpt56SolUsd - sonnet46EquivalentUsd;
+  const sonnetSavings = openaiGpt56SolUsd > 0
+    ? (differenceUsd / openaiGpt56SolUsd) * 100
+    : 0;
+
+  return {
+    openaiGpt56SolUsd: roundUsd(openaiGpt56SolUsd),
+    sonnet46EquivalentUsd: roundUsd(sonnet46EquivalentUsd),
+    differenceUsd: roundUsd(differenceUsd),
+    sonnet46EquivalentSavingsPercent: Math.round(sonnetSavings * 100) / 100,
+    openaiLongContextMultiplierApplied: longContext,
+  };
+}
+
+function extractUsageTelemetry(response: any): AIUsageTelemetry | null {
+  const usage = response?.usage;
+  if (!usage || typeof usage !== "object") return null;
+
+  const inputTokens = nonNegativeInteger(usage.input_tokens);
+  const outputTokens = nonNegativeInteger(usage.output_tokens);
+  const cachedInputTokens = nonNegativeInteger(
+    usage.input_tokens_details?.cached_tokens ?? usage.cached_input_tokens,
+  );
+  const cacheWriteTokens = nonNegativeInteger(
+    usage.input_tokens_details?.cache_write_tokens ??
+      usage.input_tokens_details?.cache_creation_tokens ??
+      usage.cache_creation_input_tokens,
+  );
+  const reasoningTokens = nonNegativeInteger(
+    usage.output_tokens_details?.reasoning_tokens ?? usage.reasoning_tokens,
+  );
+  const totalTokens = nonNegativeInteger(usage.total_tokens) || inputTokens + outputTokens;
+  if (inputTokens === 0 && outputTokens === 0 && totalTokens === 0) return null;
+
+  const tokens: AIUsageTokens = {
+    inputTokens,
+    cachedInputTokens: Math.min(inputTokens, cachedInputTokens),
+    cacheWriteTokens: Math.min(inputTokens, cacheWriteTokens),
+    outputTokens,
+    reasoningTokens: Math.min(outputTokens, reasoningTokens),
+    totalTokens,
+  };
+  return { tokens, costs: estimateAIUsageCosts(tokens) };
+}
+
+let aiUsageTablePromise: Promise<void> | null = null;
+
+async function ensureAIUsageTable(): Promise<void> {
+  if (!aiUsageTablePromise) {
+    aiUsageTablePromise = (async () => {
+      const { pool } = await import("./db");
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS ai_usage_events (
+          id BIGSERIAL PRIMARY KEY,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          provider TEXT NOT NULL DEFAULT 'openai',
+          model TEXT NOT NULL,
+          profile TEXT NOT NULL,
+          label TEXT,
+          response_id TEXT NOT NULL UNIQUE,
+          status TEXT NOT NULL,
+          input_tokens BIGINT NOT NULL,
+          cached_input_tokens BIGINT NOT NULL DEFAULT 0,
+          cache_write_tokens BIGINT NOT NULL DEFAULT 0,
+          output_tokens BIGINT NOT NULL,
+          reasoning_tokens BIGINT NOT NULL DEFAULT 0,
+          total_tokens BIGINT NOT NULL,
+          estimated_openai_cost_usd DOUBLE PRECISION NOT NULL,
+          estimated_sonnet46_cost_usd DOUBLE PRECISION NOT NULL
+        )
+      `);
+      await pool.query(`
+        CREATE INDEX IF NOT EXISTS ai_usage_events_created_at_idx
+        ON ai_usage_events (created_at DESC)
+      `);
+    })().catch((error) => {
+      aiUsageTablePromise = null;
+      throw error;
+    });
+  }
+  await aiUsageTablePromise;
+}
+
+async function recordAIUsageEvent(params: {
+  response: any;
+  profile: OpenAIReportProfile;
+  label?: string;
+  status: string;
+}): Promise<AIUsageTelemetry | null> {
+  const telemetry = extractUsageTelemetry(params.response);
+  const responseId = String(params.response?.id || "").trim();
+  if (!telemetry || !responseId) return telemetry;
+
+  const { tokens, costs } = telemetry;
+  console.log(
+    `[AICost] profile=${params.profile} label=${params.label || "none"} status=${params.status} response=${responseId} input=${tokens.inputTokens} cached=${tokens.cachedInputTokens} output=${tokens.outputTokens} reasoning=${tokens.reasoningTokens} openai_usd=${costs.openaiGpt56SolUsd.toFixed(6)} sonnet46_equivalent_usd=${costs.sonnet46EquivalentUsd.toFixed(6)}`,
+  );
+
+  try {
+    await ensureAIUsageTable();
+    const { pool } = await import("./db");
+    await pool.query(
+      `INSERT INTO ai_usage_events (
+        provider, model, profile, label, response_id, status,
+        input_tokens, cached_input_tokens, cache_write_tokens,
+        output_tokens, reasoning_tokens, total_tokens,
+        estimated_openai_cost_usd, estimated_sonnet46_cost_usd
+      ) VALUES (
+        'openai', $1, $2, $3, $4, $5,
+        $6, $7, $8, $9, $10, $11, $12, $13
+      )
+      ON CONFLICT (response_id) DO UPDATE SET
+        status = EXCLUDED.status,
+        input_tokens = EXCLUDED.input_tokens,
+        cached_input_tokens = EXCLUDED.cached_input_tokens,
+        cache_write_tokens = EXCLUDED.cache_write_tokens,
+        output_tokens = EXCLUDED.output_tokens,
+        reasoning_tokens = EXCLUDED.reasoning_tokens,
+        total_tokens = EXCLUDED.total_tokens,
+        estimated_openai_cost_usd = EXCLUDED.estimated_openai_cost_usd,
+        estimated_sonnet46_cost_usd = EXCLUDED.estimated_sonnet46_cost_usd`,
+      [
+        String(params.response?.model || OPENAI_REPORT_MODEL),
+        params.profile,
+        params.label || null,
+        responseId,
+        params.status,
+        tokens.inputTokens,
+        tokens.cachedInputTokens,
+        tokens.cacheWriteTokens,
+        tokens.outputTokens,
+        tokens.reasoningTokens,
+        tokens.totalTokens,
+        costs.openaiGpt56SolUsd,
+        costs.sonnet46EquivalentUsd,
+      ],
+    );
+  } catch (error: any) {
+    console.error(`[AICost] Persistence failed: ${error?.message || error}`);
+  }
+  return telemetry;
+}
+
+function numberFromDb(value: unknown): number {
+  const parsed = Number(value || 0);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function mapUsageSummaryRow(row: any): Record<string, unknown> {
+  return {
+    calls: numberFromDb(row.calls),
+    inputTokens: numberFromDb(row.input_tokens),
+    cachedInputTokens: numberFromDb(row.cached_input_tokens),
+    outputTokens: numberFromDb(row.output_tokens),
+    reasoningTokens: numberFromDb(row.reasoning_tokens),
+    totalTokens: numberFromDb(row.total_tokens),
+    openaiEstimatedUsd: roundUsd(numberFromDb(row.openai_usd)),
+    sonnet46EquivalentUsd: roundUsd(numberFromDb(row.sonnet_usd)),
+    differenceUsd: roundUsd(numberFromDb(row.openai_usd) - numberFromDb(row.sonnet_usd)),
+  };
+}
+
+export async function getAIUsageCostSummary(requestedDays = 30): Promise<Record<string, unknown>> {
+  const days = Math.min(365, Math.max(1, Math.round(Number(requestedDays) || 30)));
+  await ensureAIUsageTable();
+  const { pool } = await import("./db");
+  const periodSql = "created_at >= NOW() - ($1::int * INTERVAL '1 day')";
+  const summaryFields = `
+    COUNT(*) AS calls,
+    COALESCE(SUM(input_tokens), 0) AS input_tokens,
+    COALESCE(SUM(cached_input_tokens), 0) AS cached_input_tokens,
+    COALESCE(SUM(output_tokens), 0) AS output_tokens,
+    COALESCE(SUM(reasoning_tokens), 0) AS reasoning_tokens,
+    COALESCE(SUM(total_tokens), 0) AS total_tokens,
+    COALESCE(SUM(estimated_openai_cost_usd), 0) AS openai_usd,
+    COALESCE(SUM(estimated_sonnet46_cost_usd), 0) AS sonnet_usd`;
+  const [totalResult, profilesResult, dailyResult, statusesResult, recentResult] = await Promise.all([
+    pool.query(`SELECT ${summaryFields} FROM ai_usage_events WHERE ${periodSql}`, [days]),
+    pool.query(
+      `SELECT profile, ${summaryFields}
+       FROM ai_usage_events WHERE ${periodSql}
+       GROUP BY profile ORDER BY openai_usd DESC`,
+      [days],
+    ),
+    pool.query(
+      `SELECT TO_CHAR(created_at AT TIME ZONE 'Asia/Dubai', 'YYYY-MM-DD') AS day, ${summaryFields}
+       FROM ai_usage_events WHERE ${periodSql}
+       GROUP BY day ORDER BY day DESC`,
+      [days],
+    ),
+    pool.query(
+      `SELECT status, COUNT(*) AS calls
+       FROM ai_usage_events WHERE ${periodSql}
+       GROUP BY status ORDER BY status`,
+      [days],
+    ),
+    pool.query(
+      `SELECT created_at, model, profile, label, response_id, status,
+              input_tokens, cached_input_tokens, output_tokens, reasoning_tokens, total_tokens,
+              estimated_openai_cost_usd, estimated_sonnet46_cost_usd
+       FROM ai_usage_events WHERE ${periodSql}
+       ORDER BY created_at DESC LIMIT 50`,
+      [days],
+    ),
+  ]);
+
+  const mapRecent = (row: any) => ({
+    createdAt: row.created_at,
+    model: row.model,
+    profile: row.profile,
+    label: row.label,
+    responseId: row.response_id,
+    status: row.status,
+    inputTokens: numberFromDb(row.input_tokens),
+    cachedInputTokens: numberFromDb(row.cached_input_tokens),
+    outputTokens: numberFromDb(row.output_tokens),
+    reasoningTokens: numberFromDb(row.reasoning_tokens),
+    totalTokens: numberFromDb(row.total_tokens),
+    openaiEstimatedUsd: roundUsd(numberFromDb(row.estimated_openai_cost_usd)),
+    sonnet46EquivalentUsd: roundUsd(numberFromDb(row.estimated_sonnet46_cost_usd)),
+  });
+
+  return {
+    success: true,
+    periodDays: days,
+    trackingStartedWhenFirstEventWasRecorded: true,
+    generatedAt: new Date().toISOString(),
+    currency: "USD",
+    comparison: "Theoretical same-token-volume comparison only. No Anthropic API call is made.",
+    pricing: PRICING,
+    totals: mapUsageSummaryRow(totalResult.rows[0] || {}),
+    byProfile: profilesResult.rows.map((row: any) => ({
+      profile: row.profile,
+      ...mapUsageSummaryRow(row),
+    })),
+    byDayDubai: dailyResult.rows.map((row: any) => ({
+      day: row.day,
+      ...mapUsageSummaryRow(row),
+    })),
+    byStatus: statusesResult.rows.map((row: any) => ({
+      status: row.status,
+      calls: numberFromDb(row.calls),
+    })),
+    recent: recentResult.rows.map(mapRecent),
+  };
+}
 
 let openAIClient: OpenAI | null = null;
 
@@ -133,6 +463,7 @@ export interface OpenAITextResult {
   profile: OpenAIReportProfile;
   reasoningEffort: ReasoningEffort;
   reasoningMode: "pro" | "standard";
+  usage: AIUsageTelemetry | null;
 }
 
 export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAITextResult> {
@@ -179,7 +510,13 @@ export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAIT
       while (response?.status === "queued" || response?.status === "in_progress") {
         if (Date.now() >= deadline) {
           try {
-            await client.responses.cancel(response.id);
+            const cancelledResponse = await client.responses.cancel(response.id);
+            await recordAIUsageEvent({
+              response: cancelledResponse,
+              profile: request.profile,
+              label: request.label,
+              status: "cancelled_timeout",
+            });
           } catch {
             // Best effort. No incomplete response is returned to a client.
           }
@@ -190,6 +527,12 @@ export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAIT
       }
 
       if (response?.status !== "completed") {
+        await recordAIUsageEvent({
+          response,
+          profile: request.profile,
+          label: request.label,
+          status: String(response?.status || "incomplete"),
+        });
         const detail =
           response?.error?.message ||
           response?.incomplete_details?.reason ||
@@ -206,6 +549,12 @@ export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAIT
       console.log(
         `[OpenAIResponses] Completed${label}: ${request.profile}/${model}, response=${response.id}, chars=${text.length}`
       );
+      const usage = await recordAIUsageEvent({
+        response,
+        profile: request.profile,
+        label: request.label,
+        status: "completed",
+      });
       return {
         text,
         responseId: response.id,
@@ -213,6 +562,7 @@ export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAIT
         profile: request.profile,
         reasoningEffort: profile.effort,
         reasoningMode: profile.mode || "standard",
+        usage,
       };
     } catch (error: any) {
       lastError = error;
