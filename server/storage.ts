@@ -154,6 +154,25 @@ export interface BloodTestRecord {
   completedAt?: Date | string | null;
 }
 
+export type AuditSummary = Pick<
+  Audit,
+  | "id"
+  | "userId"
+  | "email"
+  | "type"
+  | "status"
+  | "reportDeliveryStatus"
+  | "reportScheduledFor"
+  | "reportSentAt"
+  | "createdAt"
+  | "completedAt"
+>;
+
+export type BloodReportSummary = Pick<
+  BloodReportRecord,
+  "id" | "email" | "deliveryStatus" | "emailSentAt" | "createdAt"
+>;
+
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
@@ -167,6 +186,7 @@ export interface IStorage {
   getAllAudits(): Promise<Audit[]>;
   /** Memory-safe variant of getAllAudits that omits heavy JSONB columns (narrative_report, responses, scores). Use in long-running crons. */
   getAllAuditsLight(): Promise<Audit[]>;
+  getAllAuditSummaries(): Promise<AuditSummary[]>;
   getScheduledAuditsForDelivery(): Promise<Audit[]>;
   createAudit(audit: InsertAudit & { email: string; responses: Record<string, unknown> }): Promise<Audit>;
   updateAudit(id: string, data: Partial<Audit>): Promise<Audit | undefined>;
@@ -188,6 +208,7 @@ export interface IStorage {
   getBloodReport(id: string): Promise<BloodReportRecord | undefined>;
   updateBloodReport(id: string, data: Partial<BloodReportRecord>): Promise<BloodReportRecord | undefined>;
   getAllBloodReports(): Promise<BloodReportRecord[]>;
+  getAllBloodReportSummaries(): Promise<BloodReportSummary[]>;
   getScheduledBloodReportsForDelivery(): Promise<BloodReportRecord[]>;
 
   createBloodTest(input: Omit<BloodTestRecord, "id" | "createdAt"> & { createdAt?: Date }): Promise<BloodTestRecord>;
@@ -429,6 +450,22 @@ export class MemStorage implements IStorage {
     return this.getAllAudits();
   }
 
+  async getAllAuditSummaries(): Promise<AuditSummary[]> {
+    const audits = await this.getAllAudits();
+    return audits.map((audit) => ({
+      id: audit.id,
+      userId: audit.userId,
+      email: audit.email,
+      type: audit.type,
+      status: audit.status,
+      reportDeliveryStatus: audit.reportDeliveryStatus,
+      reportScheduledFor: audit.reportScheduledFor,
+      reportSentAt: audit.reportSentAt,
+      createdAt: audit.createdAt,
+      completedAt: audit.completedAt,
+    }));
+  }
+
   async getScheduledAuditsForDelivery(): Promise<Audit[]> {
     const now = new Date();
     return Array.from(this.audits.values()).filter(
@@ -637,6 +674,17 @@ export class MemStorage implements IStorage {
       const dateB = new Date(b.createdAt).getTime();
       return dateB - dateA;
     });
+  }
+
+  async getAllBloodReportSummaries(): Promise<BloodReportSummary[]> {
+    const reports = await this.getAllBloodReports();
+    return reports.map((report) => ({
+      id: report.id,
+      email: report.email,
+      deliveryStatus: report.deliveryStatus,
+      emailSentAt: report.emailSentAt,
+      createdAt: report.createdAt,
+    }));
   }
 
   async getScheduledBloodReportsForDelivery(): Promise<BloodReportRecord[]> {
@@ -1456,6 +1504,36 @@ export class PgStorage implements IStorage {
     }));
   }
 
+  async getAllAuditSummaries(): Promise<AuditSummary[]> {
+    const result = await pool.query(`
+      SELECT
+        id,
+        user_id,
+        email,
+        type,
+        status,
+        report_delivery_status,
+        report_scheduled_for,
+        report_sent_at,
+        created_at,
+        completed_at
+      FROM audits
+      ORDER BY created_at DESC
+    `);
+    return result.rows.map((row) => ({
+      id: row.id,
+      userId: row.user_id,
+      email: row.email,
+      type: row.type,
+      status: row.status,
+      reportDeliveryStatus: row.report_delivery_status,
+      reportScheduledFor: row.report_scheduled_for,
+      reportSentAt: row.report_sent_at,
+      createdAt: row.created_at,
+      completedAt: row.completed_at,
+    }));
+  }
+
   async getScheduledAuditsForDelivery(): Promise<Audit[]> {
     const result = await pool.query(
       "SELECT * FROM audits WHERE report_delivery_status = 'SCHEDULED' AND report_scheduled_for <= NOW()"
@@ -1926,6 +2004,23 @@ export class PgStorage implements IStorage {
       deliveryStatus: row.delivery_status || "PENDING",
       deliveryRetries: Number(row.delivery_retries) || 0,
       reportScheduledFor: row.report_scheduled_for || null,
+      emailSentAt: row.email_sent_at || null,
+      createdAt: row.created_at,
+    }));
+  }
+
+  async getAllBloodReportSummaries(): Promise<BloodReportSummary[]> {
+    await this.ensureBloodReportsTable();
+    const result = await pool.query(`
+      SELECT id, email, delivery_status, email_sent_at, created_at
+      FROM blood_reports
+      ORDER BY created_at DESC
+      LIMIT 100
+    `);
+    return result.rows.map((row) => ({
+      id: row.id,
+      email: row.email,
+      deliveryStatus: row.delivery_status || "PENDING",
       emailSentAt: row.email_sent_at || null,
       createdAt: row.created_at,
     }));

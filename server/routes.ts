@@ -5609,8 +5609,10 @@ export async function registerRoutes(
   app.get("/api/admin/audits", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
-      const allAudits = await storage.getAllAudits();
-      const bloodReports = await storage.getAllBloodReports();
+      // Keep this collection endpoint deliberately lightweight. Full reports and
+      // questionnaire payloads are available from the authenticated detail route.
+      const allAudits = await storage.getAllAuditSummaries();
+      const bloodReports = await storage.getAllBloodReportSummaries();
 
       const mappedBlood = bloodReports.map((report) => ({
         id: report.id,
@@ -5632,6 +5634,21 @@ export async function registerRoutes(
       res.json({ success: true, audits });
     } catch (error) {
       console.error("[Admin Audits] Error:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  app.get("/api/admin/audits/:id", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const audit = await storage.getAudit(req.params.id);
+      if (!audit) {
+        res.status(404).json({ success: false, error: "Audit non trouvé" });
+        return;
+      }
+      res.json({ success: true, audit });
+    } catch (error) {
+      console.error("[Admin Audit Detail] Error:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
     }
   });

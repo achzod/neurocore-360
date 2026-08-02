@@ -209,6 +209,7 @@ async function generateReportAsync(
   console.log(`[ReportJobManager] Starting async generation for ${auditId}`);
   const normalizeMode = auditType === "GRATUIT" ? "discovery" : "analysis";
   const normalizedResponses = normalizeResponses(responses, { mode: normalizeMode });
+  let qualityReviewPersisted = false;
 
   try {
     await storage.createOrUpdateReportJob({
@@ -458,6 +459,7 @@ async function generateReportAsync(
         reportGeneratedAt: new Date(),
         reportDeliveryStatus: "NEEDS_REVIEW",
       });
+      qualityReviewPersisted = true;
 
       // Fail the job so email is NOT sent
       throw new Error(`Validation échouée (score: ${validation.score}/100). Rapport nécessite révision manuelle. Erreurs: ${validation.errors.slice(0, 3).join('; ')}`);
@@ -540,10 +542,13 @@ async function generateReportAsync(
     console.error(`[ReportJobManager] Generation FAILED for ${auditId}:`, errorMessage);
 
     await storage.failReportJob(auditId, errorMessage);
-
-    await storage.updateAudit(auditId, {
-      reportDeliveryStatus: "FAILED",
-    });
+    if (qualityReviewPersisted) {
+      console.log(`[ReportJobManager] Preserving NEEDS_REVIEW status for ${auditId} after quality validation failure`);
+    } else {
+      await storage.updateAudit(auditId, {
+        reportDeliveryStatus: "FAILED",
+      });
+    }
   } finally {
     activeGenerations.delete(auditId);
 
