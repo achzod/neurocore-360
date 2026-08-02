@@ -1,14 +1,10 @@
 /**
  * APEXLABS - Peptides Engine v2
- * Generates personalized peptide protocols via Claude.
+ * Generates personalized peptide protocols via GPT-5.6 Sol.
  * Synced with real Peptaura marketplace catalog.
- * Temperature 0.3 for reproducibility and clinical consistency.
  */
 
-import Anthropic from "@anthropic-ai/sdk";
-import OpenAI from "openai";
-import { createHash } from "node:crypto";
-import { ANTHROPIC_CONFIG, validateAnthropicConfig } from "./anthropicConfig";
+import { OPENAI_REPORT_MODEL, runOpenAIText } from "./openaiResponses";
 import {
   validatePeptidesReport,
   estimateNeedMg,
@@ -61,7 +57,7 @@ export interface PeptidesReport {
   promoCodesGenerated: string[];
   qualityVersion?: "expert-standard-v1" | "medical-review-v1";
   _generationMeta?: {
-    provider: "anthropic" | "openai";
+    provider: "openai";
     model: string;
     reasoningEffort?: string;
     reasoningMode?: string;
@@ -69,11 +65,8 @@ export interface PeptidesReport {
   };
 }
 
-export const PEPTIDES_PRIMARY_MODEL =
-  process.env.PEPTIDES_PRIMARY_MODEL || "claude-sonnet-4-6";
-export const PEPTIDES_QUALITY_FALLBACK_MODEL =
-  process.env.PEPTIDES_QUALITY_FALLBACK_MODEL || "gpt-5.6-sol";
-export const PEPTIDES_QUALITY_FALLBACK_REASONING = Object.freeze({
+export const PEPTIDES_PRIMARY_MODEL = OPENAI_REPORT_MODEL;
+export const PEPTIDES_REASONING = Object.freeze({
   effort: "max",
   mode: "pro",
 });
@@ -1088,7 +1081,7 @@ async function applyLivePeptauraPricing(
   return report;
 }
 
-// Build catalog summary for Claude prompt
+// Build catalog summary for the report prompt
 // Only inject protocol-relevant peptides into the prompt (not supplies/blends/niche)
 const PROMPT_CATEGORIES = new Set(["recovery", "gh-secretagogue", "fat-loss", "sleep", "cognitive", "libido", "skin", "longevity", "endurance", "glp1", "hpg-axis", "anabolic"]);
 const FALLBACK_DELISTED_PRODUCT_KEYS = new Set(["vip", "hghfragment176191", "slupp332"]);
@@ -1181,25 +1174,7 @@ export async function refreshPeptauraPricingForDelivery(
   return cleanReportContent(repaired, repaired.clientName || extractFirstName(responses, ""));
 }
 
-// ─── Client (lazy init) ───────────────────────────────────────────────────────
-
-let _client: Anthropic | null = null;
-
-function getClient(): Anthropic {
-  if (!_client) {
-    if (!validateAnthropicConfig()) {
-      throw new Error("[PeptidesEngine] Anthropic API key not configured");
-    }
-    _client = new Anthropic({ apiKey: ANTHROPIC_CONFIG.ANTHROPIC_API_KEY });
-  }
-  return _client;
-}
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms));
-}
 
 /**
  * Post-processing: remove all dashes/em-dashes from report content
@@ -1946,79 +1921,6 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
 
 // ─── Model calls with retry ───────────────────────────────────────────────────
 
-const PEPTIDES_MAX_TOKENS = 20000; // Anthropic requires streaming for max_tokens > ~20K , keep at safe threshold
-const PEPTIDES_TEMPERATURE = 0.3;
-const PEPTIDES_MAX_RETRIES = 3;
-
-async function callClaudeForPeptides(
-  systemPrompt: string,
-  userPrompt: string
-): Promise<string> {
-  const client = getClient();
-  const model = PEPTIDES_PRIMARY_MODEL;
-
-  for (let attempt = 1; attempt <= PEPTIDES_MAX_RETRIES; attempt++) {
-    try {
-      const response = await client.messages.create({
-        model,
-        max_tokens: PEPTIDES_MAX_TOKENS,
-        temperature: PEPTIDES_TEMPERATURE,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userPrompt }],
-      });
-
-      const textBlock = response.content.find((c) => c.type === "text");
-      const text = textBlock?.type === "text" ? textBlock.text : "";
-
-      if (!text.trim()) throw new Error("Empty response from Claude");
-
-      console.log(`[PeptidesEngine] Generation OK (attempt ${attempt}, model: ${model})`);
-      return text;
-    } catch (error: any) {
-      const status = error?.status;
-      const msg = String(error?.message || error || "");
-      console.error(`[PeptidesEngine] Attempt ${attempt}/${PEPTIDES_MAX_RETRIES} failed: ${msg}`);
-
-      if (status === 429) {
-        const retryAfter = error?.headers?.["retry-after"];
-        const waitMs = retryAfter ? Number(retryAfter) * 1000 : 8000;
-        console.log(`[PeptidesEngine] Rate limit , waiting ${waitMs}ms`);
-        await sleep(waitMs);
-        continue;
-      }
-
-      if (status === 529 || msg.includes("overloaded")) {
-        console.log(`[PeptidesEngine] Server overloaded , waiting 12s`);
-        await sleep(12000);
-        continue;
-      }
-
-      if (attempt < PEPTIDES_MAX_RETRIES) {
-        await sleep(3000 + Math.random() * 1000);
-      }
-    }
-  }
-
-  throw new Error(`[PeptidesEngine] ${model} failed after ${PEPTIDES_MAX_RETRIES} attempts`);
-}
-
-let openAIClient: OpenAI | null = null;
-
-function getOpenAIClient(): OpenAI {
-  const apiKey = process.env.OPENAI_API_KEY || "";
-  if (!apiKey) {
-    throw new Error("OPENAI_API_KEY missing for Peptides Engine quality fallback");
-  }
-  if (!openAIClient) {
-    openAIClient = new OpenAI({
-      apiKey,
-      maxRetries: 2,
-      timeout: 12 * 60 * 1000,
-    });
-  }
-  return openAIClient;
-}
-
 const PEPTIDES_REPORT_JSON_SCHEMA = {
   type: "object",
   additionalProperties: false,
@@ -2096,84 +1998,30 @@ const PEPTIDES_REPORT_JSON_SCHEMA = {
   },
 } as const;
 
-function openAIResponseText(response: any): string {
-  if (typeof response?.output_text === "string" && response.output_text.trim()) {
-    return response.output_text;
-  }
-  return (response?.output || [])
-    .flatMap((item: any) => item?.content || [])
-    .filter((item: any) => item?.type === "output_text" && typeof item?.text === "string")
-    .map((item: any) => item.text)
-    .join("");
-}
-
 async function callOpenAIForPeptides(
   systemPrompt: string,
   userPrompt: string,
-  email: string
+  email: string,
+  label: string
 ): Promise<string> {
-  const client = getOpenAIClient();
-  const safetyIdentifier = `peptides_${createHash("sha256")
-    .update(String(email || "").trim().toLowerCase())
-    .digest("hex")
-    .slice(0, 24)}`;
-
   console.log(
-    `[PeptidesEngine] Quality fallback starting: ${PEPTIDES_QUALITY_FALLBACK_MODEL}, effort=max, mode=pro`
+    `[PeptidesEngine] GPT generation starting: ${PEPTIDES_PRIMARY_MODEL}, effort=max, mode=pro`
   );
-
-  let response: any = await client.responses.create({
-    model: PEPTIDES_QUALITY_FALLBACK_MODEL,
-    background: true,
-    store: true,
+  const response = await runOpenAIText({
+    profile: "peptides",
     instructions: systemPrompt,
     input: userPrompt,
-    max_output_tokens: Number(process.env.PEPTIDES_OPENAI_MAX_OUTPUT_TOKENS || 64000),
-    reasoning: PEPTIDES_QUALITY_FALLBACK_REASONING,
-    text: {
-      verbosity: "high",
-      format: {
-        type: "json_schema",
-        name: "peptides_engine_report",
-        strict: true,
-        schema: PEPTIDES_REPORT_JSON_SCHEMA,
-      },
-    },
-    safety_identifier: safetyIdentifier,
-  } as any);
-
-  const deadline = Date.now() + Number(process.env.PEPTIDES_OPENAI_TIMEOUT_MS || 12 * 60 * 1000);
-  while (response?.status === "queued" || response?.status === "in_progress") {
-    if (Date.now() >= deadline) {
-      try {
-        await client.responses.cancel(response.id);
-      } catch {
-        // Best effort only. The server still refuses to persist an unvalidated result.
-      }
-      throw new Error(`OpenAI fallback timeout (${response?.id || "unknown response"})`);
-    }
-    await sleep(2500);
-    response = await client.responses.retrieve(response.id);
-  }
-
-  if (response?.status !== "completed") {
-    const detail =
-      response?.error?.message
-      || response?.incomplete_details?.reason
-      || response?.status
-      || "unknown";
-    throw new Error(`OpenAI fallback incomplete: ${detail}`);
-  }
-
-  const text = openAIResponseText(response);
-  if (!text.trim()) {
-    throw new Error("OpenAI fallback returned an empty report");
-  }
+    safetyId: email,
+    schema: PEPTIDES_REPORT_JSON_SCHEMA as unknown as Record<string, unknown>,
+    schemaName: "peptides_engine_report",
+    maxOutputTokens: Number(process.env.PEPTIDES_OPENAI_MAX_OUTPUT_TOKENS || 64000),
+    label,
+  });
 
   console.log(
-    `[PeptidesEngine] Quality fallback OK: ${PEPTIDES_QUALITY_FALLBACK_MODEL}, response=${response.id}`
+    `[PeptidesEngine] GPT generation OK: ${PEPTIDES_PRIMARY_MODEL}, response=${response.responseId}`
   );
-  return text;
+  return response.text;
 }
 
 // ─── JSON extractor ───────────────────────────────────────────────────────────
@@ -2215,7 +2063,7 @@ async function extractJsonFromResponse(raw: string): Promise<PeptidesReport> {
         const pos = parseInt(posMatch[1], 10);
         console.error(`[PeptidesEngine] Context around position ${pos}:`, cleaned.slice(Math.max(0, pos - 100), pos + 100));
       }
-      throw new Error("Could not parse Claude response as JSON (even with repair)");
+      throw new Error("Could not parse model response as JSON (even with repair)");
     }
   }
 }
@@ -2639,39 +2487,32 @@ export async function generatePeptidesProtocol(
   const peptauraContext = await buildPeptauraPromptContext(responses);
   const userPrompt = buildUserPrompt(responses, firstName, peptauraContext, tier);
 
-  // Sonnet 4.6 is always the first pass. GPT-5.6 Sol is used only when the
-  // Sonnet candidate fails generation, parsing, deterministic checks, live
-  // catalog reconciliation, or the final client-facing quality gate.
+  // Each candidate uses GPT-5.6 Sol. A second independent generation is used
+  // only when the first candidate fails a deterministic or client-facing gate.
   let report: PeptidesReport | null = null;
   let lastError = "";
   const providers: Array<{
-    provider: "anthropic" | "openai";
+    provider: "openai";
     model: string;
     generate: () => Promise<string>;
   }> = [
     {
-      provider: "anthropic",
-      model: PEPTIDES_PRIMARY_MODEL,
-      generate: () => callClaudeForPeptides(SYSTEM_PROMPT, userPrompt),
-    },
-  ];
-  if (process.env.OPENAI_API_KEY) {
-    providers.push({
       provider: "openai",
-      model: PEPTIDES_QUALITY_FALLBACK_MODEL,
-      generate: () => callOpenAIForPeptides(SYSTEM_PROMPT, userPrompt, email),
-    });
-  } else {
-    providers.push({
-      provider: "anthropic",
+      model: PEPTIDES_PRIMARY_MODEL,
+      generate: () => callOpenAIForPeptides(SYSTEM_PROMPT, userPrompt, email, "peptides-primary"),
+    },
+    {
+      provider: "openai",
       model: PEPTIDES_PRIMARY_MODEL,
       generate: () =>
-        callClaudeForPeptides(
+        callOpenAIForPeptides(
           SYSTEM_PROMPT,
-          `${userPrompt}\n\nREGENERATION QUALITE: repars de zero. Controle avant de repondre les credits du tier, la presence de chaque peptide dans toutes les sections operationnelles, l'alignement des doses et des durees, les quantites de vials, la BAC water et la liste de commande.`
+          `${userPrompt}\n\nREGENERATION QUALITE: repars de zero. Controle avant de repondre les credits du tier, la presence de chaque peptide dans toutes les sections operationnelles, l'alignement des doses et des durees, les quantites de vials, la BAC water et la liste de commande.`,
+          email,
+          "peptides-strict-regeneration"
         ),
-    });
-  }
+    },
+  ];
 
   for (let attempt = 0; attempt < providers.length; attempt++) {
     const selected = providers[attempt];
@@ -2778,12 +2619,8 @@ export async function generatePeptidesProtocol(
       report._generationMeta = {
         provider: selected.provider,
         model: selected.model,
-        ...(selected.provider === "openai"
-          ? {
-              reasoningEffort: PEPTIDES_QUALITY_FALLBACK_REASONING.effort,
-              reasoningMode: PEPTIDES_QUALITY_FALLBACK_REASONING.mode,
-            }
-          : {}),
+        reasoningEffort: PEPTIDES_REASONING.effort,
+        reasoningMode: PEPTIDES_REASONING.mode,
         generatedAt: new Date().toISOString(),
       };
 
@@ -2809,11 +2646,7 @@ export async function generatePeptidesProtocol(
       );
       report = null;
       if (attempt + 1 < providers.length) {
-        console.log(
-          providers[attempt + 1].provider === "openai"
-            ? `[PeptidesEngine] Switching to quality fallback: ${PEPTIDES_QUALITY_FALLBACK_MODEL}, effort=max, mode=pro`
-            : `[PeptidesEngine] OpenAI fallback unavailable, retrying a strict full regeneration with ${PEPTIDES_PRIMARY_MODEL}`
-        );
+        console.log(`[PeptidesEngine] Starting strict full regeneration with ${PEPTIDES_PRIMARY_MODEL}, effort=max, mode=pro`);
       }
     }
   }

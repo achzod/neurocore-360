@@ -1,9 +1,9 @@
 import { generateAndConvertAudit, deleteCache as deleteGeminiCache, getSectionsForTier } from "./geminiPremiumEngine";
-import { generateAndConvertAuditWithClaude, deleteAnthropicCache } from "./anthropicEngine";
+import { generateAndConvertAuditWithOpenAI, deleteOpenAICache } from "./openaiPremiumEngine";
 import { generatePremiumHTMLFromTxt } from "./exportServicePremium";
 import { storage } from "./storage";
 import type { ClientData, AuditTier } from "./types";
-import { ANTHROPIC_CONFIG } from "./anthropicConfig";
+import { OPENAI_REPORT_MODEL } from "./openaiResponses";
 import { validateReport, logValidation, quickValidate } from "./reportValidator";
 import { normalizeResponses } from "./responseNormalizer";
 
@@ -109,7 +109,7 @@ export async function getJobStatus(auditId: string): Promise<ReportJob | null> {
 
 export async function forceRegenerate(auditId: string): Promise<void> {
   deleteGeminiCache(auditId);
-  deleteAnthropicCache(auditId);
+  deleteOpenAICache(auditId);
   activeGenerations.delete(auditId);
   await storage.deleteReportJob(auditId);
   // Reset everything so the job starts completely fresh
@@ -330,13 +330,12 @@ async function generateReportAsync(
       progress: 20,
     });
 
-    console.log(`[ReportJobManager] Calling Claude Opus 4.6 engine for ${auditId}`);
+    console.log(`[ReportJobManager] Calling ${OPENAI_REPORT_MODEL} engine for ${auditId}`);
 
-    // Utiliser Claude Opus 4.6 pour la génération
     const generationPromise = withTimeout(
-      generateAndConvertAuditWithClaude(normalizedResponses as ClientData, photoAnalysis, auditType as any, auditId),
+      generateAndConvertAuditWithOpenAI(normalizedResponses as ClientData, photoAnalysis, auditType as any, auditId),
       AI_CALL_TIMEOUT_MS,
-      `Claude Opus 4.6 report generation for ${auditId}`
+      `${OPENAI_REPORT_MODEL} report generation for ${auditId}`
     );
 
     // ============================================
@@ -399,7 +398,7 @@ async function generateReportAsync(
     const result = await generationPromise.finally(() => clearInterval(heartbeat));
 
     if (!result.success) {
-      throw new Error(result.error || "Claude Opus 4.6 generation failed");
+      throw new Error(result.error || `${OPENAI_REPORT_MODEL} generation failed`);
     }
 
     // ⚠️ IMPORTANT: Ne PAS marquer comme COMPLETED avant d'avoir généré le HTML
@@ -513,8 +512,8 @@ async function generateReportAsync(
     await storage.createReportArtifact({
       auditId,
       tier: String(auditType || "PREMIUM"),
-      engine: "anthropic",
-      model: ANTHROPIC_CONFIG.ANTHROPIC_MODEL,
+      engine: "openai",
+      model: OPENAI_REPORT_MODEL,
       txt: String(result.txt || ""),
       html: String(reportHtml || ""),
     });

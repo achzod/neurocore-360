@@ -90,7 +90,7 @@ export const bloodAnalysisReports = pgTable("blood_analysis_reports", {
   // Questionnaire
   questionnaireData: jsonb("questionnaireData"),
 
-  // Analysis (full JSON from Claude Opus 4.6)
+  // Analysis (full JSON from GPT-5.6 Sol)
   analysis: jsonb("analysis"),
 
   // PDF
@@ -99,7 +99,7 @@ export const bloodAnalysisReports = pgTable("blood_analysis_reports", {
   // Metadata
   processingStatus: varchar("processingStatus", { length: 20 }).notNull().default("pending"), // pending | processing | completed | failed
   processingError: text("processingError"),
-  aiModel: varchar("aiModel", { length: 50 }).default("claude-opus-4-6"),
+  aiModel: varchar("aiModel", { length: 50 }).default("gpt-5.6-sol"),
 
   // Timestamps
   testDate: timestamp("testDate"),

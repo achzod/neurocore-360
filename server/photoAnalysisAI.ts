@@ -1,9 +1,7 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { ANTHROPIC_CONFIG, validateAnthropicConfig } from "./anthropicConfig";
+import { OPENAI_REPORT_MODEL, runOpenAIText } from "./openaiResponses";
 import { PhotoAnalysis } from "./types";
 
-// Ultimate Scan photo analysis should not require extra Render env vars.
-// We run vision analysis with Claude (Opus 4.6 by default) using ANTHROPIC_API_KEY.
+// Ultimate Scan photo analysis uses the same OpenAI key as every report engine.
 
 export type PhotoAnalysisResult = PhotoAnalysis;
 
@@ -142,7 +140,7 @@ function normalizeAnalysisResult(obj: Record<string, unknown>): PhotoAnalysisRes
   const base = getDefaultAnalysis("normalisation");
   const raw = obj as any;
 
-  // Normalize posture (Claude may return different formats)
+  // Normalize posture if a provider ever returns a legacy field name.
   const posture = raw.posture || {};
   const postureDetails = posture.details || {};
   const toStr = (v: unknown): string => {
@@ -164,7 +162,7 @@ function normalizeAnalysisResult(obj: Record<string, unknown>): PhotoAnalysisRes
     issues: Array.isArray(posture.issues) ? posture.issues : [],
   };
 
-  // Normalize summary (Claude may return object or string)
+  // Normalize summary if a provider ever returns an object.
   base.summary = typeof raw.summary === "string" ? raw.summary
     : raw.summary ? JSON.stringify(raw.summary) : "Analyse completee";
 
@@ -215,7 +213,7 @@ function normalizeAnalysisResult(obj: Record<string, unknown>): PhotoAnalysisRes
   return base as PhotoAnalysisResult;
 }
 
-const MAX_PHOTO_BASE64_SIZE = 500_000; // ~375KB decoded, plenty for Claude vision
+const MAX_PHOTO_BASE64_SIZE = 500_000;
 
 function parsePhotoToBase64(photo: string): { mediaType: string; data: string } | null {
   const trimmed = String(photo || "").trim();
@@ -235,8 +233,7 @@ function parsePhotoToBase64(photo: string): { mediaType: string; data: string } 
     data = trimmed.replace(/\s/g, "");
   }
 
-  // If image is too large, log warning but still send (Claude can handle up to ~5MB)
-  // The real fix is frontend compression before upload
+  // The real fix for oversized images remains frontend compression before upload.
   if (data.length > MAX_PHOTO_BASE64_SIZE) {
     console.warn(`[PhotoAnalysis] Image too large: ${(data.length / 1024).toFixed(0)}KB base64 (${(data.length * 0.75 / 1024 / 1024).toFixed(1)}MB decoded). May cause API errors.`);
   }
@@ -244,27 +241,95 @@ function parsePhotoToBase64(photo: string): { mediaType: string; data: string } 
   return { mediaType, data };
 }
 
-function getAnthropicClient(): Anthropic {
-  if (!validateAnthropicConfig()) {
-    throw new Error("ANTHROPIC_API_KEY not configured");
-  }
-  return new Anthropic({ apiKey: ANTHROPIC_CONFIG.ANTHROPIC_API_KEY });
-}
+const PHOTO_ANALYSIS_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "fatDistribution",
+    "posture",
+    "muscularBalance",
+    "medicalObservations",
+    "recommendations",
+    "summary",
+    "confidenceLevel",
+  ],
+  properties: {
+    fatDistribution: {
+      type: "object",
+      additionalProperties: false,
+      required: ["visceral", "subcutaneous", "zones", "estimatedBF", "waistToHipRatio", "hormonalPattern", "inflammationSigns"],
+      properties: {
+        visceral: { type: "string", enum: ["faible", "modere", "eleve", "tres-eleve"] },
+        subcutaneous: { type: "string", enum: ["faible", "modere", "eleve", "tres-eleve"] },
+        zones: { type: "array", items: { type: "string" } },
+        estimatedBF: { type: "string" },
+        waistToHipRatio: { type: "string" },
+        hormonalPattern: { type: "string" },
+        inflammationSigns: { type: "string" },
+      },
+    },
+    posture: {
+      type: "object",
+      additionalProperties: false,
+      required: ["headPosition", "shoulderAlignment", "spineAlignment", "pelvicTilt", "kneesAlignment", "overallScore", "issues"],
+      properties: {
+        headPosition: { type: "string" },
+        shoulderAlignment: { type: "string" },
+        spineAlignment: { type: "string" },
+        pelvicTilt: { type: "string" },
+        kneesAlignment: { type: "string" },
+        overallScore: { type: "number", minimum: 0, maximum: 100 },
+        issues: { type: "array", items: { type: "string" } },
+      },
+    },
+    muscularBalance: {
+      type: "object",
+      additionalProperties: false,
+      required: ["upperBody", "lowerBody", "leftRightSymmetry", "anteriorPosterior", "weakAreas", "strongAreas"],
+      properties: {
+        upperBody: { type: "string" },
+        lowerBody: { type: "string" },
+        leftRightSymmetry: { type: "string" },
+        anteriorPosterior: { type: "string" },
+        weakAreas: { type: "array", items: { type: "string" } },
+        strongAreas: { type: "array", items: { type: "string" } },
+      },
+    },
+    medicalObservations: {
+      type: "object",
+      additionalProperties: false,
+      required: ["skinCondition", "edemaPresence", "vascularSigns", "potentialConcerns"],
+      properties: {
+        skinCondition: { type: "array", items: { type: "string" } },
+        edemaPresence: { type: "string" },
+        vascularSigns: { type: "array", items: { type: "string" } },
+        potentialConcerns: { type: "array", items: { type: "string" } },
+      },
+    },
+    recommendations: {
+      type: "object",
+      additionalProperties: false,
+      required: ["posturalCorrections", "muscleGroupsToTarget", "mobilityWork", "medicalFollowUp"],
+      properties: {
+        posturalCorrections: { type: "array", items: { type: "string" } },
+        muscleGroupsToTarget: { type: "array", items: { type: "string" } },
+        mobilityWork: { type: "array", items: { type: "string" } },
+        medicalFollowUp: { type: "array", items: { type: "string" } },
+      },
+    },
+    summary: { type: "string" },
+    confidenceLevel: { type: "number", minimum: 0, maximum: 100 },
+  },
+} as const;
 
 export async function analyzeBodyPhotosWithAI(
   photos: { front?: string; side?: string; back?: string },
   userContext?: { sexe?: string; age?: string; objectif?: string }
 ): Promise<PhotoAnalysisResult> {
-  const client = getAnthropicClient();
-
-  const blocks: any[] = [];
+  const images: Array<{ label: string; imageUrl: string; size: number }> = [];
   const labels: string[] = [];
 
-  // Claude Vision only accepts JPEG/PNG/GIF/WebP. HEIC/HEIF (iOS Safari default
-   // for newer iPhones) triggers a 400 "Could not process image" that cascades
-   // into a blocked ELITE email delivery. Reject these upstream with a clear log
-   // so the admin can manually follow-up.
-  const CLAUDE_SUPPORTED_MEDIA = new Set([
+  const SUPPORTED_MEDIA = new Set([
     "image/jpeg",
     "image/jpg",
     "image/png",
@@ -278,27 +343,21 @@ export async function analyzeBodyPhotosWithAI(
     if (!parsed) return;
 
     // Skip images that are way too large (>4MB base64 = ~3MB decoded)
-    // These will cause Claude API "Could not process image" errors
     if (parsed.data.length > 4_000_000) {
       console.warn(`[PhotoAnalysis] SKIPPING ${label}: ${(parsed.data.length / 1024 / 1024).toFixed(1)}MB base64 ,  too large for API`);
       return;
     }
 
-    // Reject unsupported MIME types before hitting Claude Vision ,  fails
-    // gracefully instead of producing a vague 400.
     const mt = parsed.mediaType.toLowerCase();
-    if (!CLAUDE_SUPPORTED_MEDIA.has(mt)) {
+    if (!SUPPORTED_MEDIA.has(mt)) {
       console.warn(`[PhotoAnalysis] SKIPPING ${label}: unsupported media type "${mt}" ,  needs JPEG/PNG/GIF/WebP. Likely iPhone HEIC ,  ask the client to re-upload or enable client-side HEIC→JPEG conversion.`);
       return;
     }
 
-    blocks.push({
-      type: "image",
-      source: {
-        type: "base64",
-        media_type: parsed.mediaType,
-        data: parsed.data,
-      },
+    images.push({
+      label,
+      imageUrl: `data:${parsed.mediaType};base64,${parsed.data}`,
+      size: parsed.data.length,
     });
     labels.push(label);
   };
@@ -307,142 +366,53 @@ export async function analyzeBodyPhotosWithAI(
   add("Photo 2: Vue de profil", photos.side);
   add("Photo 3: Vue de dos", photos.back);
 
-  if (blocks.length === 0) return getDefaultAnalysis("Aucune photo fournie");
+  if (images.length === 0) return getDefaultAnalysis("Aucune photo fournie");
 
   const contextText = userContext
     ? `\nCONTEXTE CLIENT: Sexe ${userContext.sexe || "non specifie"}, Age ${userContext.age || "non specifie"}, Objectif ${userContext.objectif || "non specifie"}`
     : "";
 
-  const fullPrompt = `${PHOTO_ANALYSIS_PROMPT}${contextText}\n\nPhotos fournies: ${labels.join(", ")}\n\nAnalyse ces photos et retourne ton analyse en JSON.`;
-  blocks.push({ type: "text", text: fullPrompt });
+  const fullPrompt = `${PHOTO_ANALYSIS_PROMPT}${contextText}\n\nPhotos fournies: ${labels.join(", ")}\n\nAnalyse uniquement ce qui est réellement visible. Retourne le JSON demandé.`;
+
+  const analyze = async (selected: typeof images, label: string): Promise<PhotoAnalysisResult> => {
+    const content: any[] = [{ type: "input_text", text: fullPrompt }];
+    for (const image of selected) {
+      content.push({ type: "input_text", text: image.label });
+      content.push({ type: "input_image", image_url: image.imageUrl, detail: "high" });
+    }
+    const result = await runOpenAIText({
+      profile: "vision",
+      instructions:
+        "Tu analyses des photos de composition corporelle avec prudence et précision. Tu distingues strictement observation et hypothèse. Tu n'inventes aucune mesure. Tu réponds en français et uniquement dans le schéma JSON fourni.",
+      input: [{ role: "user", content }],
+      safetyId: `${userContext?.age || "unknown"}-${labels.join("|")}`,
+      schema: PHOTO_ANALYSIS_SCHEMA as unknown as Record<string, unknown>,
+      schemaName: "ultimate_photo_analysis",
+      maxOutputTokens: 10_000,
+      label,
+    });
+    return normalizeAnalysisResult(JSON.parse(result.text));
+  };
 
   try {
-    console.log(`[PhotoAnalysis Claude] Analysing ${labels.length} photos with ${ANTHROPIC_CONFIG.ANTHROPIC_MODEL}...`);
-
-    const resp = await client.messages.create({
-      model: ANTHROPIC_CONFIG.ANTHROPIC_MODEL,
-      max_tokens: 4096,
-      temperature: 0.3,
-      messages: [{ role: "user", content: blocks }],
-    } as any);
-
-    const textContent = (resp as any).content?.find((c: any) => c.type === "text");
-    const text = textContent?.text || "";
-
-    // Try multiple extraction strategies for JSON
-    let jsonStr: string | null = null;
-
-    // Strategy 1: Extract from ```json blocks
-    const codeBlockMatch = String(text).match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
-    if (codeBlockMatch) {
-      jsonStr = codeBlockMatch[1];
-    }
-
-    // Strategy 2: Find the largest JSON object
-    if (!jsonStr) {
-      const jsonMatch = String(text).match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        jsonStr = jsonMatch[0];
-      }
-    }
-
-    if (!jsonStr) {
-      console.error("[PhotoAnalysis Claude] No JSON found in response:", String(text).slice(0, 500));
-      return getDefaultAnalysis("JSON non trouve dans la reponse");
-    }
-
-    // Aggressive JSON cleanup
-    jsonStr = jsonStr.replace(/```json\s*/g, "").replace(/```\s*/g, "");
-    jsonStr = jsonStr.replace(/,(\s*[}\]])/g, "$1"); // trailing commas
-    jsonStr = jsonStr.replace(/[\x00-\x1F\x7F]/g, " "); // control chars
-    // Fix multiline strings (newlines inside JSON string values)
-    jsonStr = jsonStr.replace(/\n/g, " ").replace(/\r/g, " ");
-    // Fix single quotes used instead of double
-    // Fix unescaped quotes inside strings
-    jsonStr = jsonStr.replace(/\\'/g, "'");
-    // Remove any BOM
-    jsonStr = jsonStr.replace(/^\uFEFF/, "");
-
-    let parsed: Record<string, unknown>;
-    try {
-      parsed = JSON.parse(jsonStr);
-    } catch (e) {
-      // Strategy 3: try to extract a smaller valid JSON
-      try {
-        // Remove everything before first { and after last }
-        const firstBrace = jsonStr.indexOf("{");
-        const lastBrace = jsonStr.lastIndexOf("}");
-        if (firstBrace >= 0 && lastBrace > firstBrace) {
-          const trimmed = jsonStr.substring(firstBrace, lastBrace + 1);
-          parsed = JSON.parse(trimmed);
-        } else {
-          throw e;
-        }
-      } catch (e2) {
-        // Strategy 4: retry API call with stricter prompt
-        console.error("[PhotoAnalysis Claude] JSON parse failed, retrying with strict prompt...");
-        console.error("[PhotoAnalysis Claude] Snippet:", jsonStr.slice(0, 500));
-        try {
-          const retryBlocks = blocks.filter((b: any) => b.type === "image").slice(0, 2);
-          retryBlocks.push({ type: "text", text: "Analyse ces photos. Reponds UNIQUEMENT avec un JSON valide, sans texte avant ou apres, sans markdown. Le JSON doit contenir: fatDistribution, muscularBalance, posture, confidenceLevel, summary, recommendations, medicalObservations." });
-          const retryResp = await client.messages.create({
-            model: ANTHROPIC_CONFIG.ANTHROPIC_MODEL,
-            max_tokens: 4096,
-            temperature: 0.1,
-            messages: [{ role: "user", content: retryBlocks }],
-          } as any);
-          const retryText = (retryResp as any).content?.find((c: any) => c.type === "text")?.text || "";
-          const retryJson = retryText.replace(/[\x00-\x1F\x7F\n\r]/g, " ").match(/\{[\s\S]*\}/);
-          if (retryJson) {
-            parsed = JSON.parse(retryJson[0].replace(/,(\s*[}\]])/g, "$1"));
-            console.log("[PhotoAnalysis Claude] Retry with strict prompt succeeded");
-          } else {
-            throw new Error("Retry also failed");
-          }
-        } catch (retryErr) {
-          console.error("[PhotoAnalysis Claude] All parse attempts failed");
-          return getDefaultAnalysis("Erreur parsing JSON");
-        }
-      }
-    }
-
-    console.log(`[PhotoAnalysis Claude] Analysis complete - confidence: ${(parsed as any).confidenceLevel || 70}%`);
-    return normalizeAnalysisResult(parsed);
+    console.log(`[PhotoAnalysis OpenAI] Analysing ${labels.length} photos with ${OPENAI_REPORT_MODEL}...`);
+    const parsed = await analyze(images, "ultimate-photo-analysis");
+    console.log(`[PhotoAnalysis OpenAI] Analysis complete - confidence: ${parsed.confidenceLevel || 70}%`);
+    return parsed;
   } catch (err: any) {
     const msg = err?.message || String(err);
-    console.error("[PhotoAnalysis Claude] Error:", msg);
+    console.error("[PhotoAnalysis OpenAI] Error:", msg);
 
-    // If image processing failed, retry with fewer/smaller images
-    if ((msg.includes("400") || msg.includes("Could not process")) && blocks.length > 2) {
-      console.warn("[PhotoAnalysis Claude] Retrying with smaller image set...");
-      // Remove the largest image block and retry
-      const imageBlocks = blocks.filter((b: any) => b.type === "image");
-      const textBlock = blocks.find((b: any) => b.type === "text");
-      if (imageBlocks.length > 1 && textBlock) {
-        // Sort by data size, remove the largest
-        imageBlocks.sort((a: any, b: any) => (b.source?.data?.length || 0) - (a.source?.data?.length || 0));
-        const smallerBlocks = [...imageBlocks.slice(1), textBlock];
-        try {
-          console.log(`[PhotoAnalysis Claude] Retry with ${imageBlocks.length - 1} photos...`);
-          const retryResp = await client.messages.create({
-            model: ANTHROPIC_CONFIG.ANTHROPIC_MODEL,
-            max_tokens: 4096,
-            temperature: 0.3,
-            messages: [{ role: "user", content: smallerBlocks }],
-          } as any);
-          const retryText = (retryResp as any).content?.find((c: any) => c.type === "text")?.text || "";
-          const retryJson = String(retryText).match(/\{[\s\S]*\}/);
-          if (retryJson) {
-            const parsed = JSON.parse(retryJson[0].replace(/,(\s*[}\]])/g, "$1"));
-            console.log("[PhotoAnalysis Claude] Retry succeeded with fewer photos");
-            return normalizeAnalysisResult(parsed);
-          }
-        } catch (retryErr) {
-          console.error("[PhotoAnalysis Claude] Retry also failed:", retryErr);
-        }
+    if (images.length > 1) {
+      try {
+        const smaller = [...images].sort((a, b) => a.size - b.size).slice(0, images.length - 1);
+        console.warn(`[PhotoAnalysis OpenAI] Retrying with ${smaller.length} smaller photos...`);
+        return await analyze(smaller, "ultimate-photo-analysis-retry");
+      } catch (retryErr) {
+        console.error("[PhotoAnalysis OpenAI] Retry failed:", retryErr);
       }
     }
-    return getDefaultAnalysis(msg || "Erreur API Claude");
+    return getDefaultAnalysis(msg || "Erreur API OpenAI");
   }
 }
 
@@ -453,4 +423,3 @@ export function formatPhotoAnalysisForReport(photoAnalysis: PhotoAnalysisResult 
   const summary = (photoAnalysis as any)?.summary || "";
   return `ANALYSE PHOTO (Vision)\n- Estimation BF: ${bf}\n- Synthese: ${summary}`.trim();
 }
-

@@ -1231,7 +1231,7 @@ type MarkdownSection = {
   lines: string[];
 };
 
-const CLAUDE_THEME = {
+const BLOOD_REPORT_THEME = {
   paper: "#f7efe2",
   paperSoft: "#fbf6ee",
   card: "#f4ebdc",
@@ -2089,7 +2089,7 @@ const renderCompositeScoresPanel = (riskProfile?: ComprehensiveRiskProfile): str
 
 const renderBiomarkerRadarPanel = (rows: BiomarkerScoreRow[]): string => {
   if (!rows.length) {
-    return `<p style="margin:0;color:${CLAUDE_THEME.muted};font-size:15px;line-height:1.8;">Le radar des scores n'a pas pu être construit automatiquement sur cette version du rapport. Je te recommande de relancer la génération pour obtenir la cartographie complète de chaque biomarqueur.</p>`;
+    return `<p style="margin:0;color:${BLOOD_REPORT_THEME.muted};font-size:15px;line-height:1.8;">Le radar des scores n'a pas pu être construit automatiquement sur cette version du rapport. Je te recommande de relancer la génération pour obtenir la cartographie complète de chaque biomarqueur.</p>`;
   }
 
   const radarRows = rows.slice(0, Math.min(24, rows.length));
@@ -2186,7 +2186,7 @@ const renderBiomarkerRadarPanel = (rows: BiomarkerScoreRow[]): string => {
   `;
 };
 
-const renderClaudeTabbedReportHtml = (
+const renderBloodTabbedReportHtml = (
   reportId: string,
   reportMarkdown: string,
   markerSnapshots?: BloodReportMarkerSnapshot[],
@@ -2243,7 +2243,7 @@ const renderClaudeTabbedReportHtml = (
     .map((section, index) => {
       const tabId = slugifyTabId(section.title, index);
       const activeClass = "";
-      const bodyHtml = renderSectionLinesToHtml(section.lines, CLAUDE_THEME.ink, CLAUDE_THEME.muted);
+      const bodyHtml = renderSectionLinesToHtml(section.lines, BLOOD_REPORT_THEME.ink, BLOOD_REPORT_THEME.muted);
       return `
       <section id="${tabId}" class="tab-panel${activeClass}" aria-label="${escapeHtml(section.title)}">
         <h2>${escapeHtml(section.title)}</h2>
@@ -2286,16 +2286,16 @@ const renderClaudeTabbedReportHtml = (
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232f2822'/%3E%3Cpath d='M32 11l17 42h-8.3l-3.2-8.7H26.4L23.2 53H15L32 11zm2.8 25.8L32 28.7l-2.8 8.1h5.6z' fill='%23f8dcc0'/%3E%3C/svg%3E">
   <style>
     :root {
-      --paper: ${CLAUDE_THEME.paper};
-      --paper-soft: ${CLAUDE_THEME.paperSoft};
-      --card: ${CLAUDE_THEME.card};
-      --card-strong: ${CLAUDE_THEME.cardStrong};
-      --ink: ${CLAUDE_THEME.ink};
-      --muted: ${CLAUDE_THEME.muted};
-      --border: ${CLAUDE_THEME.border};
-      --accent: ${CLAUDE_THEME.accent};
-      --accent-soft: ${CLAUDE_THEME.accentSoft};
-      --shadow: ${CLAUDE_THEME.shadow};
+      --paper: ${BLOOD_REPORT_THEME.paper};
+      --paper-soft: ${BLOOD_REPORT_THEME.paperSoft};
+      --card: ${BLOOD_REPORT_THEME.card};
+      --card-strong: ${BLOOD_REPORT_THEME.cardStrong};
+      --ink: ${BLOOD_REPORT_THEME.ink};
+      --muted: ${BLOOD_REPORT_THEME.muted};
+      --border: ${BLOOD_REPORT_THEME.border};
+      --accent: ${BLOOD_REPORT_THEME.accent};
+      --accent-soft: ${BLOOD_REPORT_THEME.accentSoft};
+      --shadow: ${BLOOD_REPORT_THEME.shadow};
     }
     * { box-sizing: border-box; }
     body {
@@ -2782,7 +2782,7 @@ const renderClaudeTabbedReportHtml = (
 </html>`);
 };
 
-const getClaudeLightEmailWrapper = (
+const getBloodLightEmailWrapper = (
   content: string,
   headerTitle: string,
   headerSubtitle: string,
@@ -2796,18 +2796,18 @@ const getClaudeLightEmailWrapper = (
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
   </style>
 </head>
-<body style="margin:0;padding:0;background:${CLAUDE_THEME.paper};font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:${CLAUDE_THEME.ink};">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding:30px 14px;background:${CLAUDE_THEME.paper};">
+<body style="margin:0;padding:0;background:${BLOOD_REPORT_THEME.paper};font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:${BLOOD_REPORT_THEME.ink};">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding:30px 14px;background:${BLOOD_REPORT_THEME.paper};">
     <tr>
       <td align="center">
-        <table role="presentation" width="700" cellspacing="0" cellpadding="0" style="max-width:700px;background:${CLAUDE_THEME.card};border-radius:16px;border:1px solid ${CLAUDE_THEME.border};overflow:hidden;">
+        <table role="presentation" width="700" cellspacing="0" cellpadding="0" style="max-width:700px;background:${BLOOD_REPORT_THEME.card};border-radius:16px;border:1px solid ${BLOOD_REPORT_THEME.border};overflow:hidden;">
           <tr>
-            <td style="padding:26px 26px 20px;background:linear-gradient(140deg,${CLAUDE_THEME.cardStrong} 0%,${CLAUDE_THEME.paperSoft} 100%);border-bottom:1px solid ${CLAUDE_THEME.border};">
-              <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:${CLAUDE_THEME.accent};font-weight:700;margin-bottom:10px;">Theme Claude · ApexLabs</div>
-              <h1 style="margin:0;color:${CLAUDE_THEME.ink};font-size:30px;line-height:1.2;letter-spacing:-0.02em;">${escapeHtml(
+            <td style="padding:26px 26px 20px;background:linear-gradient(140deg,${BLOOD_REPORT_THEME.cardStrong} 0%,${BLOOD_REPORT_THEME.paperSoft} 100%);border-bottom:1px solid ${BLOOD_REPORT_THEME.border};">
+              <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:${BLOOD_REPORT_THEME.accent};font-weight:700;margin-bottom:10px;">Blood Analysis · ApexLabs</div>
+              <h1 style="margin:0;color:${BLOOD_REPORT_THEME.ink};font-size:30px;line-height:1.2;letter-spacing:-0.02em;">${escapeHtml(
                 headerTitle
               )}</h1>
-              <p style="margin:10px 0 0;color:${CLAUDE_THEME.muted};font-size:14px;line-height:1.55;">${escapeHtml(
+              <p style="margin:10px 0 0;color:${BLOOD_REPORT_THEME.muted};font-size:14px;line-height:1.55;">${escapeHtml(
                 headerSubtitle
               )}</p>
             </td>
@@ -2967,7 +2967,7 @@ export async function sendBloodAnalysisHtmlEmail(
       .replace(/[._-]+/g, " ")
       .trim()
       .replace(/\b\w/g, (char) => char.toUpperCase());
-    const standaloneReportHtml = renderClaudeTabbedReportHtml(reportId, reportMarkdown, markerSnapshots, {
+    const standaloneReportHtml = renderBloodTabbedReportHtml(reportId, reportMarkdown, markerSnapshots, {
       clientName: meta?.clientName || fallbackNameFromEmail || "Client",
       reportDate: meta?.reportDate,
       markerCount:
@@ -2998,52 +2998,52 @@ export async function sendBloodAnalysisHtmlEmail(
 
     const content = `
       <div style="text-align:center;margin-bottom:18px;">
-        <span style="display:inline-block;background:${CLAUDE_THEME.accentSoft};color:${CLAUDE_THEME.accent};padding:8px 16px;border-radius:999px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;border:1px solid ${CLAUDE_THEME.border};">
+        <span style="display:inline-block;background:${BLOOD_REPORT_THEME.accentSoft};color:${BLOOD_REPORT_THEME.accent};padding:8px 16px;border-radius:999px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;border:1px solid ${BLOOD_REPORT_THEME.border};">
           Rapport client en piece jointe
         </span>
       </div>
 
-      <h2 style="color:${CLAUDE_THEME.ink};margin:0 0 10px;font-size:30px;text-align:center;font-weight:700;letter-spacing:-0.02em;">
+      <h2 style="color:${BLOOD_REPORT_THEME.ink};margin:0 0 10px;font-size:30px;text-align:center;font-weight:700;letter-spacing:-0.02em;">
         Ton rapport Blood Analysis est pret
       </h2>
-      <p style="color:${CLAUDE_THEME.muted};font-size:15px;line-height:1.75;margin:0 0 12px;">
+      <p style="color:${BLOOD_REPORT_THEME.muted};font-size:15px;line-height:1.75;margin:0 0 12px;">
         ${escapeHtml(clientName)}, j'ai finalise ton analyse sanguine complete. Le rapport est livre en fichier HTML joint avec onglets interactifs (scores composites, radar dynamique, deep dive marqueur par marqueur, plan d'action).
       </p>
-      <div style="margin:0 0 14px;padding:14px 16px;border:2px solid ${CLAUDE_THEME.accent};border-radius:12px;background:${CLAUDE_THEME.accentSoft};">
-        <p style="margin:0;color:${CLAUDE_THEME.ink};font-size:14px;line-height:1.6;font-weight:700;">
+      <div style="margin:0 0 14px;padding:14px 16px;border:2px solid ${BLOOD_REPORT_THEME.accent};border-radius:12px;background:${BLOOD_REPORT_THEME.accentSoft};">
+        <p style="margin:0;color:${BLOOD_REPORT_THEME.ink};font-size:14px;line-height:1.6;font-weight:700;">
           A LIRE SUR ORDINATEUR
         </p>
-        <p style="margin:6px 0 0;color:${CLAUDE_THEME.ink};font-size:13px;line-height:1.65;">
+        <p style="margin:6px 0 0;color:${BLOOD_REPORT_THEME.ink};font-size:13px;line-height:1.65;">
           Ouvre le fichier HTML attache depuis ton ordinateur (PC ou Mac), pas depuis l'app mail iPhone, sinon les onglets risquent de ne pas s'afficher correctement. Si tu n'as pas d'ordinateur sous la main, ouvre le fichier dans Safari/Chrome de ton telephone (telecharge-le d'abord, puis ouvre-le depuis tes Fichiers).
         </p>
       </div>
-      <div style="margin:12px 0 0;padding:14px;border:1px solid ${CLAUDE_THEME.border};border-radius:12px;background:${CLAUDE_THEME.paperSoft};">
-        <p style="margin:0 0 8px;color:${CLAUDE_THEME.ink};font-size:14px;font-weight:700;">Rappel dossier</p>
-        <p style="margin:0 0 4px;color:${CLAUDE_THEME.muted};font-size:14px;line-height:1.65;">Nombre de marqueurs analyses: ${markerCount}</p>
-        <p style="margin:0;color:${CLAUDE_THEME.muted};font-size:14px;line-height:1.65;">Priorites visibles sur cette extraction: ${escapeHtml(topPriorityText)}.</p>
+      <div style="margin:12px 0 0;padding:14px;border:1px solid ${BLOOD_REPORT_THEME.border};border-radius:12px;background:${BLOOD_REPORT_THEME.paperSoft};">
+        <p style="margin:0 0 8px;color:${BLOOD_REPORT_THEME.ink};font-size:14px;font-weight:700;">Rappel dossier</p>
+        <p style="margin:0 0 4px;color:${BLOOD_REPORT_THEME.muted};font-size:14px;line-height:1.65;">Nombre de marqueurs analyses: ${markerCount}</p>
+        <p style="margin:0;color:${BLOOD_REPORT_THEME.muted};font-size:14px;line-height:1.65;">Priorites visibles sur cette extraction: ${escapeHtml(topPriorityText)}.</p>
       </div>
 
-      <div style="margin:20px 0;padding:20px;border:2px dashed ${CLAUDE_THEME.accent};border-radius:12px;text-align:center;background:${CLAUDE_THEME.accentSoft};">
-        <p style="color:${CLAUDE_THEME.muted};font-size:11px;text-transform:uppercase;letter-spacing:2px;margin:0 0 6px;">Ton code promo</p>
-        <p style="color:${CLAUDE_THEME.accent};font-size:28px;font-weight:700;letter-spacing:3px;margin:0;">BLOOD99</p>
-        <p style="color:${CLAUDE_THEME.ink};font-size:13px;margin:8px 0 0;">-99EUR deduits sur ton coaching Achzod</p>
+      <div style="margin:20px 0;padding:20px;border:2px dashed ${BLOOD_REPORT_THEME.accent};border-radius:12px;text-align:center;background:${BLOOD_REPORT_THEME.accentSoft};">
+        <p style="color:${BLOOD_REPORT_THEME.muted};font-size:11px;text-transform:uppercase;letter-spacing:2px;margin:0 0 6px;">Ton code promo</p>
+        <p style="color:${BLOOD_REPORT_THEME.accent};font-size:28px;font-weight:700;letter-spacing:3px;margin:0;">BLOOD99</p>
+        <p style="color:${BLOOD_REPORT_THEME.ink};font-size:13px;margin:8px 0 0;">-99EUR deduits sur ton coaching Achzod</p>
       </div>
-      <p style="color:${CLAUDE_THEME.muted};font-size:13px;line-height:1.65;margin:0 0 8px;text-align:center;">
+      <p style="color:${BLOOD_REPORT_THEME.muted};font-size:13px;line-height:1.65;margin:0 0 8px;text-align:center;">
         Le montant de ta Blood Analysis (99 EUR) est deduit a 100% si tu passes au coaching.<br/>
-        Utilise ce code sur <a href="https://www.achzodcoaching.com/formules-coaching" style="color:${CLAUDE_THEME.accent};text-decoration:underline;">achzodcoaching.com</a> pour deduire 99EUR de ta formule coaching.
+        Utilise ce code sur <a href="https://www.achzodcoaching.com/formules-coaching" style="color:${BLOOD_REPORT_THEME.accent};text-decoration:underline;">achzodcoaching.com</a> pour deduire 99EUR de ta formule coaching.
       </p>
 
-      <div style="margin-top:14px;padding-top:14px;border-top:1px solid ${CLAUDE_THEME.border};text-align:center;">
-        <p style="margin:0;color:${CLAUDE_THEME.muted};font-size:12px;">Pièce jointe: <strong style="color:${CLAUDE_THEME.ink};">Blood_Analysis_${escapeHtml(
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid ${BLOOD_REPORT_THEME.border};text-align:center;">
+        <p style="margin:0;color:${BLOOD_REPORT_THEME.muted};font-size:12px;">Pièce jointe: <strong style="color:${BLOOD_REPORT_THEME.ink};">Blood_Analysis_${escapeHtml(
           reportId
         )}.html</strong></p>
       </div>
     `;
 
-    const emailContent = stripBloodForbiddenFormatting(getClaudeLightEmailWrapper(
+    const emailContent = stripBloodForbiddenFormatting(getBloodLightEmailWrapper(
       content,
       "Blood Analysis",
-      "Rapport HTML a onglets (theme Claude)",
+      "Ton rapport interactif personnalise",
     ));
     const attachmentName = `Blood_Analysis_${reportId}.html`;
 

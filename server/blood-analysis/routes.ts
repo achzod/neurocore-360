@@ -311,11 +311,12 @@ const getErrorMessage = (error: unknown): string => {
   return String(error);
 };
 
-const isAnthropicLowCreditError = (error: unknown): boolean => {
+const isAILowCreditError = (error: unknown): boolean => {
   const message = getErrorMessage(error).toLowerCase();
   return (
     message.includes("credit balance is too low") ||
     message.includes("insufficient credits") ||
+    message.includes("insufficient_quota") ||
     message.includes("billing")
   );
 };
@@ -343,7 +344,7 @@ const generateAiReportWithAttempts = async (
         `[BloodAnalysis] ${contextLabel} attempt ${attempt} produced non-deliverable content (len=${normalizedCandidate.length}).`
       );
     } catch (error) {
-      if (isAnthropicLowCreditError(error)) {
+      if (isAILowCreditError(error)) {
         console.error(`[BloodAnalysis] ${contextLabel} aborted: AI_CREDIT_BALANCE_LOW.`);
         return AI_CREDIT_BALANCE_LOW_SENTINEL;
       }
@@ -610,10 +611,10 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         analysisResult.patterns
       );
 
-      const hasAnthropicKey = Boolean(process.env.ANTHROPIC_API_KEY);
+      const hasOpenAIKey = Boolean(process.env.OPENAI_API_KEY);
       let aiAnalysis = "";
       let aiCreditBalanceLow = false;
-      if (hasAnthropicKey) {
+      if (hasOpenAIKey) {
         try {
           aiAnalysis = await withAIGenerationTimeout(
             () =>
@@ -628,7 +629,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
             aiAnalysis = canonicalizeBloodReport(aiAnalysis);
           }
         } catch (aiError) {
-          if (isAnthropicLowCreditError(aiError)) {
+          if (isAILowCreditError(aiError)) {
             aiCreditBalanceLow = true;
             console.error("[BloodAnalysis] Analyze AI failed: AI_CREDIT_BALANCE_LOW.");
           } else if (isAIGenerationTimeoutError(aiError)) {
@@ -639,22 +640,22 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         }
       }
 
-      if (!aiAnalysis && !hasAnthropicKey) {
+      if (!aiAnalysis && !hasOpenAIKey) {
         if (ALLOW_DETERMINISTIC_FALLBACK) {
           console.warn(
-            "[BloodAnalysis] Anthropic key missing; deterministic fallback is enabled by env but blocked from delivery."
+            "[BloodAnalysis] OpenAI key missing; deterministic fallback is enabled by env but blocked from delivery."
           );
         } else {
           console.warn(
-            "[BloodAnalysis] Anthropic key missing; deterministic fallback disabled."
+            "[BloodAnalysis] OpenAI key missing; deterministic fallback disabled."
           );
         }
       }
 
       const status =
-        !aiAnalysis && (!hasAnthropicKey || aiCreditBalanceLow)
+        !aiAnalysis && (!hasOpenAIKey || aiCreditBalanceLow)
           ? "unavailable"
-          : hasAnthropicKey && !aiAnalysis
+          : hasOpenAIKey && !aiAnalysis
           ? "processing"
           : "completed";
 
@@ -952,7 +953,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 
       const shouldIncludeAI = includeAI !== false;
       const shouldAsyncAI = asyncAI !== false;
-      const hasAnthropicKey = Boolean(process.env.ANTHROPIC_API_KEY);
+      const hasOpenAIKey = Boolean(process.env.OPENAI_API_KEY);
       const profileWithAge = {
         ...profile,
         age: computedAge,
@@ -961,7 +962,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       let syncAiNeedsBackgroundRetry = false;
       let aiCreditBalanceLow = false;
       if (shouldIncludeAI) {
-        if (!shouldAsyncAI && hasAnthropicKey) {
+        if (!shouldAsyncAI && hasOpenAIKey) {
           const syncCandidate = await generateAiReportWithAttempts(
             analysisResult,
             profileWithAge as any,
@@ -981,14 +982,14 @@ export function registerBloodAnalysisRoutes(app: Express): void {
             syncAiNeedsBackgroundRetry = true;
             console.warn("[BloodAnalysis] Submit sync AI unavailable, queuing async retry (no fallback delivery).");
           }
-        } else if (!hasAnthropicKey) {
+        } else if (!hasOpenAIKey) {
           aiAnalysis = "";
           if (ALLOW_DETERMINISTIC_FALLBACK) {
             console.warn(
-              "[BloodAnalysis] Submit: Anthropic key missing; fallback mode enabled by env but disabled for delivery."
+              "[BloodAnalysis] Submit: OpenAI key missing; fallback mode enabled by env but disabled for delivery."
             );
           } else {
-            console.warn("[BloodAnalysis] Submit: Anthropic key missing; fallback disabled.");
+            console.warn("[BloodAnalysis] Submit: OpenAI key missing; fallback disabled.");
           }
         }
       }
@@ -1016,7 +1017,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 
       const shouldQueueBackgroundAI =
         shouldIncludeAI &&
-        hasAnthropicKey &&
+        hasOpenAIKey &&
         !aiCreditBalanceLow &&
         (shouldAsyncAI || syncAiNeedsBackgroundRetry);
 
@@ -1077,9 +1078,9 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       }
 
       const status =
-        shouldIncludeAI && !aiAnalysis && (!hasAnthropicKey || aiCreditBalanceLow)
+        shouldIncludeAI && !aiAnalysis && (!hasOpenAIKey || aiCreditBalanceLow)
           ? "unavailable"
-          : shouldIncludeAI && hasAnthropicKey && !aiAnalysis
+          : shouldIncludeAI && hasOpenAIKey && !aiAnalysis
           ? "processing"
           : "completed";
 
@@ -1537,26 +1538,26 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 
       // If the AI report is missing, kick off background generation.
       // This unblocks cases where async generation never ran (dyno sleep / crash / seed rows).
-      const hasAnthropicKey = Boolean(process.env.ANTHROPIC_API_KEY);
+      const hasOpenAIKey = Boolean(process.env.OPENAI_API_KEY);
       const aiReportText = typeof (report as any).aiReport === "string" ? (report as any).aiReport : "";
       let effectiveAiReport = canonicalizeBloodReport(aiReportText).trim();
       if (effectiveAiReport && effectiveAiReport !== aiReportText) {
         (report as any).aiReport = effectiveAiReport;
       }
 
-      if (!effectiveAiReport && !hasAnthropicKey) {
+      if (!effectiveAiReport && !hasOpenAIKey) {
         if (ALLOW_DETERMINISTIC_FALLBACK) {
           console.warn(
-            `[BloodAnalysis] Anthropic key missing for ${reportId}; fallback mode enabled but disabled for delivery.`
+            `[BloodAnalysis] OpenAI key missing for ${reportId}; fallback mode enabled but disabled for delivery.`
           );
         } else {
           console.warn(
-            `[BloodAnalysis] Anthropic key missing for ${reportId}; fallback disabled.`
+            `[BloodAnalysis] OpenAI key missing for ${reportId}; fallback disabled.`
           );
         }
       }
 
-      const shouldGenerateAi = hasAnthropicKey && effectiveAiReport.length === 0;
+      const shouldGenerateAi = hasOpenAIKey && effectiveAiReport.length === 0;
 
       if (shouldGenerateAi && !BLOOD_AI_REPORT_IN_FLIGHT.has(reportId)) {
         BLOOD_AI_REPORT_IN_FLIGHT.add(reportId);
@@ -1621,7 +1622,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
                 const refreshedAnalysis: Record<string, unknown> = {
                   ...existingAnalysis,
                   ...analysisResult,
-                  aiModel: "claude-opus-4-6",
+                  aiModel: "gpt-5.6-sol",
                   aiGeneratedAt: new Date().toISOString(),
                   aiError,
                 };
@@ -1672,7 +1673,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
               const refreshedAnalysis: Record<string, unknown> = {
                 ...existingAnalysis,
                 ...analysisResult,
-                aiModel: "claude-opus-4-6",
+                aiModel: "gpt-5.6-sol",
                 aiGeneratedAt: new Date().toISOString(),
                 ...(aiError ? { aiError } : {}),
               };
@@ -1779,14 +1780,14 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         };
       }
 
-      if (!effectiveAiReport && !hasAnthropicKey) {
+      if (!effectiveAiReport && !hasOpenAIKey) {
         if (ALLOW_DETERMINISTIC_FALLBACK) {
           console.warn(
-            `[BloodAnalysis] Anthropic key missing for ${reportId}; fallback mode enabled but disabled for delivery.`
+            `[BloodAnalysis] OpenAI key missing for ${reportId}; fallback mode enabled but disabled for delivery.`
           );
         } else {
           console.warn(
-            `[BloodAnalysis] Anthropic key missing for ${reportId}; fallback disabled.`
+            `[BloodAnalysis] OpenAI key missing for ${reportId}; fallback disabled.`
           );
         }
       }
@@ -2442,10 +2443,10 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         basicAnalysis.patterns
       );
 
-      const hasAnthropicKey = Boolean(process.env.ANTHROPIC_API_KEY);
+      const hasOpenAIKey = Boolean(process.env.OPENAI_API_KEY);
       let aiReport = "";
       let aiCreditBalanceLow = false;
-      if (hasAnthropicKey) {
+      if (hasOpenAIKey) {
         const aiCandidate = await generateAiReportWithAttempts(
           basicAnalysis,
           profileWithAge,
@@ -2464,17 +2465,17 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         aiReport = "";
         if (ALLOW_DETERMINISTIC_FALLBACK) {
           console.warn(
-            "[BloodAnalysis] Full analysis: Anthropic key missing; fallback mode enabled by env but disabled for delivery."
+            "[BloodAnalysis] Full analysis: OpenAI key missing; fallback mode enabled by env but disabled for delivery."
           );
         } else {
-          console.warn("[BloodAnalysis] Full analysis: Anthropic key missing; fallback disabled.");
+          console.warn("[BloodAnalysis] Full analysis: OpenAI key missing; fallback disabled.");
         }
       }
 
       const aiStatus =
-        !aiReport && (!hasAnthropicKey || aiCreditBalanceLow)
+        !aiReport && (!hasOpenAIKey || aiCreditBalanceLow)
           ? "unavailable"
-          : hasAnthropicKey && !aiReport
+          : hasOpenAIKey && !aiReport
           ? "processing"
           : "completed";
 
@@ -2600,10 +2601,10 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         basicAnalysis.patterns
       );
 
-      const hasAnthropicKey = Boolean(process.env.ANTHROPIC_API_KEY);
+      const hasOpenAIKey = Boolean(process.env.OPENAI_API_KEY);
       let aiReport = "";
       let aiCreditBalanceLow = false;
-      if (hasAnthropicKey) {
+      if (hasOpenAIKey) {
         const aiCandidate = await generateAiReportWithAttempts(
           basicAnalysis,
           profileWithAge,
@@ -2622,17 +2623,17 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         aiReport = "";
         if (ALLOW_DETERMINISTIC_FALLBACK) {
           console.warn(
-            "[BloodAnalysis] Comprehensive report: Anthropic key missing; fallback mode enabled by env but disabled for delivery."
+            "[BloodAnalysis] Comprehensive report: OpenAI key missing; fallback mode enabled by env but disabled for delivery."
           );
         } else {
-          console.warn("[BloodAnalysis] Comprehensive report: Anthropic key missing; fallback disabled.");
+          console.warn("[BloodAnalysis] Comprehensive report: OpenAI key missing; fallback disabled.");
         }
       }
 
       const aiStatus =
-        !aiReport && (!hasAnthropicKey || aiCreditBalanceLow)
+        !aiReport && (!hasOpenAIKey || aiCreditBalanceLow)
           ? "unavailable"
-          : hasAnthropicKey && !aiReport
+          : hasOpenAIKey && !aiReport
           ? "processing"
           : "completed";
 

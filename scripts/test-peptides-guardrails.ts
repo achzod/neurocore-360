@@ -16,11 +16,11 @@ import { splitWeeklyScheduleEntries } from "../client/src/lib/peptidesSchedule";
 
 const engineSource = readFileSync(new URL("../server/peptidesEngine.ts", import.meta.url), "utf8");
 const reportPageSource = readFileSync(new URL("../client/src/pages/PeptidesEngineReport.tsx", import.meta.url), "utf8");
-assert.match(engineSource, /PEPTIDES_PRIMARY_MODEL[\s\S]{0,120}"claude-sonnet-4-6"/);
-assert.match(engineSource, /PEPTIDES_QUALITY_FALLBACK_MODEL[\s\S]{0,120}"gpt-5\.6-sol"/);
+assert.match(engineSource, /PEPTIDES_PRIMARY_MODEL[\s\S]{0,120}OPENAI_REPORT_MODEL/);
 assert.match(engineSource, /effort:\s*"max"/);
 assert.match(engineSource, /mode:\s*"pro"/);
-assert.match(engineSource, /Candidate rejected[\s\S]{0,600}Switching to quality fallback/);
+assert.match(engineSource, /Candidate rejected[\s\S]{0,600}strict full regeneration/);
+assert.doesNotMatch(engineSource, /@anthropic-ai\/sdk|ANTHROPIC_API_KEY|callClaudeForPeptides/);
 assert.match(
   reportPageSource,
   /_generationMeta\?\.generatedAt[\s\S]{0,180}Mis a jour le/,

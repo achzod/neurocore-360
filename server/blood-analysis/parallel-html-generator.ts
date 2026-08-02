@@ -12,9 +12,9 @@
  *   Total time: ~60-90s (parallel) instead of ~180s+ (sequential)
  */
 
-import Anthropic from "@anthropic-ai/sdk";
 import { searchArticles } from "../knowledge/storage";
 import type { ScrapedArticle } from "../knowledge/storage";
+import { OPENAI_REPORT_MODEL, runOpenAIText } from "../openaiResponses";
 import {
   BIOMARKER_RANGES,
   buildFallbackAnalysis,
@@ -933,31 +933,23 @@ function parseMarkdownSections(markdown: string): Record<string, string> {
 // ============================================
 
 async function streamApiCall(
-  anthropic: Anthropic,
   system: string,
   userPrompt: string,
   maxTokens: number,
   label: string,
 ): Promise<string> {
-  const model = process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-6";
-  console.log(`[BatchHTML] ${label}: starting stream (model=${model}, max_tokens=${maxTokens})`);
+  console.log(`[BatchHTML] ${label}: starting response (model=${OPENAI_REPORT_MODEL}, max_output_tokens=${maxTokens})`);
 
-  const stream = await anthropic.messages.create({
-    model,
-    max_tokens: maxTokens,
-    system,
-    messages: [{ role: "user", content: userPrompt }],
-    stream: true,
+  const response = await runOpenAIText({
+    profile: "blood",
+    instructions: system,
+    input: userPrompt,
+    safetyId: label,
+    maxOutputTokens: Math.max(16_000, maxTokens),
+    label: `blood-parallel-${label}`,
   });
 
-  let content = "";
-  for await (const event of stream) {
-    if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-      content += event.delta.text;
-    }
-  }
-
-  const trimmed = content.trim();
+  const trimmed = response.text.trim();
   console.log(`[BatchHTML] ${label}: completed, ${trimmed.length} chars`);
   return trimmed;
 }
@@ -1355,7 +1347,6 @@ function enforceExpertSupplementsSection(
  * Returns a map of { sectionKey: sectionContent }.
  */
 async function generateBatchedContent(
-  anthropic: Anthropic,
   ctx: BatchContext,
 ): Promise<Record<string, string>> {
   const allSections: Record<string, string> = {};
@@ -1370,7 +1361,6 @@ async function generateBatchedContent(
   const results = await Promise.allSettled(
     batches.map(async (batch) => {
       const rawContent = await streamApiCall(
-        anthropic,
         SYSTEM_PROMPT,
         batch.prompt,
         batch.maxTokens,
@@ -1881,7 +1871,6 @@ export async function generateParallelHtmlReport(
   userProfile: UserProfile,
   knowledgeContext?: string,
 ): Promise<{ html: string; markdown: string; sections: Record<string, string> }> {
-  const anthropic = new Anthropic();
   const markerCount = analysisResult.markers.length;
 
   // Build markers table (shared context)
@@ -1950,7 +1939,7 @@ export async function generateParallelHtmlReport(
   // ========== 3 PARALLEL batch calls ==========
   console.log(`[BatchHTML] Starting 3 parallel batched API calls...`);
   try {
-    sectionsMap = await generateBatchedContent(anthropic, ctx);
+    sectionsMap = await generateBatchedContent(ctx);
     const foundCount = Object.keys(sectionsMap).length;
     console.log(`[BatchHTML] Parallel generation produced ${foundCount}/12 sections`);
   } catch (err: any) {

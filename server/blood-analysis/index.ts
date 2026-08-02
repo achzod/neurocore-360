@@ -4,10 +4,10 @@
  * Sources: Examine, Peter Attia, Marek Health, Chris Masterjohn, RP, MPMD
  */
 
-import Anthropic from "@anthropic-ai/sdk";
 import pLimit from "p-limit";
 import { searchArticles, searchFullText } from "../knowledge/storage";
 import type { ScrapedArticle } from "../knowledge/storage";
+import { isOpenAIConfigured, runOpenAIText } from "../openaiResponses";
 
 // ============================================
 // BIOMARKERS - OPTIMAL RANGES
@@ -1426,11 +1426,10 @@ export async function extractMarkersFromPdfText(
     unique.set(item.markerId, item);
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!isOpenAIConfigured()) {
     return addComputedMarkers(Array.from(unique.values()));
   }
 
-  const anthropic = new Anthropic();
   const markerList = Object.entries(BIOMARKER_RANGES)
     .map(([id, range]) => `${id} (${range.name}, ${range.unit})`)
     .join(", ");
@@ -1456,25 +1455,47 @@ ${markerList}
 IMPORTANT: NE CONVERTIS PAS les valeurs. Retourne la valeur BRUTE du PDF dans l'unite qui correspond a l'unite attendue ci-dessus.
 Si le PDF donne la valeur dans une autre unite que l'unite attendue, retourne quand meme la valeur BRUTE avec son unite source , la conversion sera faite automatiquement.
 
-Retourne UNIQUEMENT un JSON array (sans markdown, sans texte):
-[{"markerId": "...", "value": number_brut, "unit_source": "unite exacte du PDF"}]
+Retourne UNIQUEMENT un objet JSON conforme au schema, avec la cle "markers":
+{"markers":[{"markerId": "...", "value": number_brut, "unit_source": "unite exacte du PDF"}]}
 
 TEXTE PDF:
 ${cleaned.slice(0, 20000)}`;
 
   try {
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 4000,
-      system: "Tu es un extracteur strict de biomarqueurs sanguins. Tu ne renvoies que du JSON valide. ZERO erreur toleree. Chaque valeur doit correspondre EXACTEMENT au resultat du patient dans le PDF, pas aux valeurs de reference ni aux anteriorites.",
-      messages: [{ role: "user", content: userPrompt }],
+    const response = await runOpenAIText({
+      profile: "extraction",
+      instructions: "Tu es un extracteur strict de biomarqueurs sanguins. Tu ne renvoies que le JSON conforme au schema. ZERO erreur toleree. Chaque valeur doit correspondre EXACTEMENT au resultat du patient dans le PDF, pas aux valeurs de reference ni aux anteriorites.",
+      input: userPrompt,
+      safetyId: fileName,
+      maxOutputTokens: 8_000,
+      schemaName: "blood_marker_extraction",
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        required: ["markers"],
+        properties: {
+          markers: {
+            type: "array",
+            items: {
+              type: "object",
+              additionalProperties: false,
+              required: ["markerId", "value", "unit_source"],
+              properties: {
+                markerId: { type: "string" },
+                value: { type: "number" },
+                unit_source: { type: "string" },
+              },
+            },
+          },
+        },
+      },
+      label: `blood-pdf-extraction-${fileName}`,
     });
 
-    const textContent = response.content.find((c) => c.type === "text");
-    const rawItems = extractJsonArray(textContent?.text || "");
-    console.log(`[BloodAnalysis] Claude raw extraction: ${JSON.stringify(rawItems.filter((i: any) => /testost/i.test(i.markerId)).slice(0, 5))}`);
+    const rawItems: Array<Record<string, unknown>> = JSON.parse(response.text)?.markers || [];
+    console.log(`[BloodAnalysis] OpenAI raw extraction: ${JSON.stringify(rawItems.filter((i: any) => /testost/i.test(i.markerId)).slice(0, 5))}`);
     const extracted = rawItems
-      .map((item) => {
+      .map((item: Record<string, unknown>) => {
         const markerId = String((item as any).markerId || "").trim();
         const unitSource = String((item as any).unit_source || (item as any).unit || "").trim();
         return {
@@ -1486,20 +1507,20 @@ ${cleaned.slice(0, 20000)}`;
       .filter((item) => Boolean(BIOMARKER_RANGES[item.markerId]))
       .filter((item) => isPlausibleMarkerValue(item.markerId, item.value));
 
-    // Claude extraction OVERRIDES regex extraction (more accurate for French lab formats)
+    // Structured AI extraction overrides regex extraction when values are plausible.
     for (const item of extracted) {
-      unique.set(item.markerId, item); // Override regex values with Claude values
+      unique.set(item.markerId, item);
     }
-    console.log(`[BloodAnalysis] Claude extracted ${extracted.length} markers (overriding regex)`);
+    console.log(`[BloodAnalysis] OpenAI extracted ${extracted.length} markers (overriding regex)`);
 
   } catch (error) {
-    if (isAnthropicLowCreditError(error)) {
+    if (isAILowCreditError(error)) {
       console.warn(
-        `[BloodAnalysis] Anthropic extraction skipped for "${fileName}" (AI_CREDIT_BALANCE_LOW). Falling back to deterministic extraction.`
+        `[BloodAnalysis] OpenAI extraction skipped for "${fileName}" (AI_CREDIT_BALANCE_LOW). Falling back to deterministic extraction.`
       );
     } else {
       console.warn(
-        `[BloodAnalysis] Anthropic extraction failed for "${fileName}" (${getErrorMessage(
+        `[BloodAnalysis] OpenAI extraction failed for "${fileName}" (${getErrorMessage(
           error
         )}). Falling back to deterministic extraction.`
       );
@@ -2007,11 +2028,12 @@ const getErrorMessage = (error: unknown): string => {
   return String(error);
 };
 
-const isAnthropicLowCreditError = (error: unknown): boolean => {
+const isAILowCreditError = (error: unknown): boolean => {
   const message = getErrorMessage(error).toLowerCase();
   return (
     message.includes("credit balance is too low") ||
     message.includes("insufficient credits") ||
+    message.includes("insufficient_quota") ||
     message.includes("billing")
   );
 };
@@ -3992,27 +4014,28 @@ export async function generateAIBloodAnalysis(
   },
   knowledgeContext?: string
 ): Promise<string> {
-  const anthropic = new Anthropic();
-  const defaultModel = "claude-opus-4-6";
-  const resolveModel = () => {
-    const configured = String(process.env.BLOOD_ANALYSIS_MODEL || defaultModel).trim();
-    const allowOverride = process.env.BLOOD_ANALYSIS_ALLOW_MODEL_OVERRIDE === "true";
-    if (!configured) return defaultModel;
-    if (!/^claude-/i.test(configured)) {
-      console.warn(
-        `[BloodAnalysis] Unsupported BLOOD_ANALYSIS_MODEL="${configured}" for Anthropic pipeline. Falling back to ${defaultModel}.`
-      );
-      return defaultModel;
-    }
-    if (!allowOverride && configured !== defaultModel) {
-      console.warn(
-        `[BloodAnalysis] BLOOD_ANALYSIS_MODEL="${configured}" ignored. Locked to ${defaultModel}. Set BLOOD_ANALYSIS_ALLOW_MODEL_OVERRIDE=true to bypass.`
-      );
-      return defaultModel;
-    }
-    return configured;
+  if (!isOpenAIConfigured()) {
+    throw new Error("OPENAI_API_KEY_MISSING");
+  }
+  const bloodSafetyId = [userProfile.prenom, userProfile.nom, userProfile.age]
+    .filter(Boolean)
+    .join("|") || "blood-report";
+  const generateBloodPass = async (
+    instructions: string,
+    input: string,
+    maxOutputTokens: number,
+    label: string
+  ): Promise<string> => {
+    const result = await runOpenAIText({
+      profile: "blood",
+      instructions,
+      input,
+      safetyId: bloodSafetyId,
+      maxOutputTokens: Math.max(16_000, maxOutputTokens),
+      label,
+    });
+    return result.text;
   };
-  const modelName = resolveModel();
 
   // Build the prompt with analysis data
   const markersTable = analysisResult.markers
@@ -4161,9 +4184,6 @@ ${lowDataMode ? "\nMODE DONNEES PARTIELLES: panel incomplet. Renforce la section
   let bestScore = -1;
   let lowCreditErrorDetected = false;
 
-  // Keep timeout conservative to avoid reports stuck in "processing".
-  const API_TIMEOUT_MS = 120000;
-
   // Reduce retries to 1 for faster response, with timeout protection
   const maxAttempts = process.env.BLOOD_ANALYSIS_FAST_MODE === "true" ? 1 : 2;
   const parallelSectionsEnabled = process.env.BLOOD_ANALYSIS_PARALLEL_SECTIONS !== "false";
@@ -4187,21 +4207,12 @@ ${lowDataMode ? "\nMODE DONNEES PARTIELLES: panel incomplet. Renforce la section
       const prompt = `${userPrompt}\n${retryNote}`;
 
       try {
-        // Stream output to support long narratives while keeping memory bounded.
-        const stream = await anthropic.messages.create({
-          model: modelName,
-          max_tokens: 22000,
-          system: BLOOD_ANALYSIS_SYSTEM_PROMPT,
-          messages: [{ role: "user", content: prompt }],
-          stream: true,
-        });
-
-        let candidate = "";
-        for await (const event of stream) {
-          if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-            candidate += event.delta.text;
-          }
-        }
+        const candidate = await generateBloodPass(
+          BLOOD_ANALYSIS_SYSTEM_PROMPT,
+          prompt,
+          48_000,
+          `blood-monolithic-attempt-${attempt}`
+        );
         const sanitizedCandidate = sanitizeSourceCitations(candidate, availableSourceIdArray);
         const normalizedCandidate = reorderReportSections(
           ensureSourcesSection(normalizeFrenchTypography(sanitizedCandidate), knowledgeContext)
@@ -4239,12 +4250,7 @@ ${lowDataMode ? "\nMODE DONNEES PARTIELLES: panel incomplet. Renforce la section
           break;
         }
       } catch (err: any) {
-        if (err.message === "API_TIMEOUT") {
-          console.warn(`[BloodAnalysis] Attempt ${attempt} timed out after ${API_TIMEOUT_MS}ms`);
-          if (attempt === maxAttempts) {
-            throw new Error("AI_TIMEOUT_ALL_ATTEMPTS");
-          }
-        } else if (isAnthropicLowCreditError(err)) {
+        if (isAILowCreditError(err)) {
           throw new Error("AI_CREDIT_BALANCE_LOW");
         } else {
           throw err;
@@ -4292,21 +4298,12 @@ ${patternsText}
 ${knowledgeContext ? `Contexte scientifique:\n${knowledgeContext}\n` : ""}`;
 
     try {
-      const planStream = await anthropic.messages.create({
-        model: modelName,
-        max_tokens: 9000,
-        system:
-          "Tu es un expert bloodwork performance. Genere uniquement la section demandee, en markdown propre, avec style narratif strict sans puces, sans numerotation, sans tableaux et avec orthographe francaise irreprochable (accents obligatoires).",
-        messages: [{ role: "user", content: planPrompt }],
-        stream: true,
-      });
-
-      let planContent = "";
-      for await (const event of planStream) {
-        if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-          planContent += event.delta.text;
-        }
-      }
+      const planContent = await generateBloodPass(
+        "Tu es un expert bloodwork performance. Genere uniquement la section demandee, en markdown propre, avec style narratif strict sans puces, sans numerotation, sans tableaux et avec orthographe francaise irreprochable (accents obligatoires).",
+        planPrompt,
+        14_000,
+        "blood-plan-90-days"
+      );
 
       const planText = extractPlan90Section(normalizeFrenchTypography(planContent));
       if (planText) {
@@ -4607,21 +4604,12 @@ ${markersTable}`,
     const maxSectionAttempts = isAxesSection ? 2 : 1;
 
     for (let attempt = 1; attempt <= maxSectionAttempts; attempt += 1) {
-      const sectionStream = await anthropic.messages.create({
-        model: modelName,
-        max_tokens: spec.maxTokens,
-        system:
-          "Tu es un expert bloodwork performance. Genere uniquement la section demandee en markdown, sans texte hors section, avec style narratif strict sans puces, sans numerotation, sans tableaux et avec orthographe francaise irreprochable (accents obligatoires).",
-        messages: [{ role: "user", content: spec.prompt() }],
-        stream: true,
-      });
-
-      let sectionContent = "";
-      for await (const event of sectionStream) {
-        if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-          sectionContent += event.delta.text;
-        }
-      }
+      const sectionContent = await generateBloodPass(
+        "Tu es un expert bloodwork performance. Genere uniquement la section demandee en markdown, sans texte hors section, avec style narratif strict sans puces, sans numerotation, sans tableaux et avec orthographe francaise irreprochable (accents obligatoires).",
+        spec.prompt(),
+        spec.maxTokens,
+        `blood-section-${spec.aliases[0]}-attempt-${attempt}`
+      );
 
       const generated = sectionContent.trim();
       if (!generated) continue;
@@ -4649,21 +4637,8 @@ ${markersTable}`,
   };
 
   const preflightCreditsCheck = async (): Promise<void> => {
-    try {
-      const response = await anthropic.messages.create({
-        model: modelName,
-        max_tokens: 8,
-        system: "Reponds uniquement: OK",
-        messages: [{ role: "user", content: "OK" }],
-      });
-      if (!response?.content?.length) {
-        throw new Error("AI_PRECHECK_EMPTY_RESPONSE");
-      }
-    } catch (error) {
-      if (isAnthropicLowCreditError(error)) {
-        throw new Error("AI_CREDIT_BALANCE_LOW");
-      }
-      throw error;
+    if (!isOpenAIConfigured()) {
+      throw new Error("OPENAI_API_KEY_MISSING");
     }
   };
 
@@ -4698,7 +4673,7 @@ ${markersTable}`,
               `[BloodAnalysis] ❌ Failed to generate section "${spec.title}" in parallel mode:`,
               err.message
             );
-            if (isAnthropicLowCreditError(err)) {
+            if (isAILowCreditError(err)) {
               lowCreditErrorDetected = true;
             }
             return { spec, sectionToInsert: "", currentLength, skipped: false };
@@ -4737,7 +4712,7 @@ ${markersTable}`,
         );
       } catch (err: any) {
         console.error(`[BloodAnalysis] ❌ Failed to repair "${spec.title}":`, err.message);
-        if (isAnthropicLowCreditError(err)) {
+        if (isAILowCreditError(err)) {
           lowCreditErrorDetected = true;
           break;
         }

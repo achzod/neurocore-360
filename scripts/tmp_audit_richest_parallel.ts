@@ -88,15 +88,15 @@ async function pickRichestPdf() {
   for (const file of files) {
     try {
       const parsed = await pdf(fs.readFileSync(file));
-      // Keep richest-PDF detection deterministic: extraction must not depend on Anthropic credits.
-      const previousAnthropicKey = process.env.ANTHROPIC_API_KEY;
-      delete process.env.ANTHROPIC_API_KEY;
+      // Keep richest-PDF detection deterministic: extraction must not depend on API credits.
+      const previousOpenAIKey = process.env.OPENAI_API_KEY;
+      delete process.env.OPENAI_API_KEY;
       let markers: any[] = [];
       try {
         markers = await extractMarkersFromPdfText(parsed.text || "", path.basename(file));
       } finally {
-        if (previousAnthropicKey) {
-          process.env.ANTHROPIC_API_KEY = previousAnthropicKey;
+        if (previousOpenAIKey) {
+          process.env.OPENAI_API_KEY = previousOpenAIKey;
         }
       }
       if (!markers.length) {

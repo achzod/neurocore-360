@@ -39,8 +39,8 @@ const main = async () => {
   if (!databaseUrl) {
     throw new Error("DATABASE_URL is required");
   }
-  if (!process.env.ANTHROPIC_API_KEY) {
-    throw new Error("ANTHROPIC_API_KEY is required");
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY is required");
   }
 
   const client = new Client({

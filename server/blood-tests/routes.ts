@@ -24,6 +24,7 @@ import { generateComprehensiveRiskProfile } from "../blood-analysis/risk-scores"
 import { sendBloodClientDeliveryEmail } from "../blood-analysis/routes";
 import { storage } from "../storage";
 import { getAuthPayload } from "../auth";
+import { OPENAI_REPORT_MODEL } from "../openaiResponses";
 
 type MarkerStatus = "optimal" | "normal" | "suboptimal" | "critical";
 
@@ -397,7 +398,7 @@ const deriveAiMeta = (analysis: string, fallbackReason?: string) => {
   }
   return {
     aiStatus: "generated" as const,
-    aiModel: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-6",
+    aiModel: OPENAI_REPORT_MODEL,
     aiGeneratedAt: generatedAt,
     aiFallbackAt: null,
     aiFallbackReason: null,
@@ -406,7 +407,7 @@ const deriveAiMeta = (analysis: string, fallbackReason?: string) => {
 
 const deriveAiProcessingMeta = (reason?: string) => ({
   aiStatus: "processing" as const,
-  aiModel: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-6",
+  aiModel: OPENAI_REPORT_MODEL,
   aiGeneratedAt: null,
   aiFallbackAt: null,
   aiFallbackReason: reason || "generation_pending",
@@ -573,6 +574,28 @@ export function registerBloodTestsRoutes(app: Express): void {
           const age = pdfProfile.dob ? getAgeFromDob(pdfProfile.dob) : req.body.age || undefined;
           const analysisResult = await analyzeBloodwork(extractedMarkers, { gender, age });
 
+          const scoredMarkers = analysisResult.markers.map((marker) => {
+            const range = BIOMARKER_RANGES[marker.markerId];
+            return {
+              name: marker.name,
+              code: marker.markerId,
+              category: CATEGORY_BY_MARKER[marker.markerId] || "general",
+              value: marker.value,
+              unit: marker.unit,
+              refMin: range?.normalMin ?? null,
+              refMax: range?.normalMax ?? null,
+              optimalMin: range?.optimalMin ?? null,
+              optimalMax: range?.optimalMax ?? null,
+              status: marker.status,
+              interpretation: marker.interpretation,
+            };
+          });
+          const categoryScores = computeCategoryScores(scoredMarkers);
+          const systemScores = computeSystemScores(scoredMarkers);
+          const scoreSource = Object.keys(systemScores).length ? systemScores : categoryScores;
+          const globalScore = computeGlobalScore(scoreSource, scoredMarkers);
+          const globalLevel = getGlobalLevel(globalScore);
+
           const knowledgeContext = await getBloodworkKnowledgeContext(
             analysisResult.markers,
             analysisResult.patterns
@@ -590,8 +613,8 @@ export function registerBloodTestsRoutes(app: Express): void {
             markers: extractedMarkers as any,
             analysis: analysisResult as any,
             patientProfile: { ...pdfProfile, email, prenom: aiProfile.prenom, nom: aiProfile.nom } as any,
-            globalScore: analysisResult.globalScore ?? null,
-            globalLevel: analysisResult.globalLevel ?? null,
+            globalScore,
+            globalLevel,
           });
 
           // Generate AI report
@@ -693,7 +716,7 @@ export function registerBloodTestsRoutes(app: Express): void {
         aiAnalysis: aiText,
         aiStatus: "completed",
         aiGeneratedAt: new Date().toISOString(),
-        aiModel: "claude-opus-4-6",
+        aiModel: "gpt-5.6-sol",
       };
       delete mergedAnalysis.aiFallbackReason;
       delete mergedAnalysis.aiFallbackAt;
@@ -795,7 +818,7 @@ export function registerBloodTestsRoutes(app: Express): void {
           globalLevel: newGlobalLevel,
           aiReport: aiResult,
           aiAnalysis: aiResult,
-          aiModel: "claude-opus-4-6",
+          aiModel: "gpt-5.6-sol",
           aiStatus: "generated",
           aiGeneratedAt: new Date().toISOString(),
           aiError: null,
@@ -936,8 +959,8 @@ export function registerBloodTestsRoutes(app: Express): void {
           let aiFallbackReason: string | undefined;
           let syncAiNeedsBackgroundRetry = false;
           const includeAI = body.includeAI !== false;
-          const asyncAI = body.asyncAI === true;
-          const hasAnthropicKey = Boolean(process.env.ANTHROPIC_API_KEY);
+          const asyncAI = body.asyncAI !== false;
+          const hasOpenAIKey = Boolean(process.env.OPENAI_API_KEY);
           const aiProfile = {
             gender: patientProfile.gender as "homme" | "femme",
             age,
@@ -956,7 +979,7 @@ export function registerBloodTestsRoutes(app: Express): void {
             medications: patientProfile.medications,
             infectionRecent: patientProfile.infectionRecent,
           };
-          if (includeAI && !asyncAI && hasAnthropicKey) {
+          if (includeAI && !asyncAI && hasOpenAIKey) {
             try {
               aiAnalysis = await withAIGenerationTimeout(
                 () =>
@@ -979,7 +1002,7 @@ export function registerBloodTestsRoutes(app: Express): void {
             }
           }
           if (!aiAnalysis) {
-            if (!includeAI || !hasAnthropicKey) {
+            if (!includeAI || !hasOpenAIKey) {
               aiAnalysis = buildFallbackAnalysis(analysisResult, {
                 gender: patientProfile.gender as "homme" | "femme",
                 age,
@@ -997,7 +1020,7 @@ export function registerBloodTestsRoutes(app: Express): void {
                 taille: patientProfile.taille,
               });
               if (!aiFallbackReason) {
-                aiFallbackReason = includeAI ? "anthropic_key_missing" : "ai_disabled";
+                aiFallbackReason = includeAI ? "openai_key_missing" : "ai_disabled";
               }
             } else {
               syncAiNeedsBackgroundRetry = true;
@@ -1068,7 +1091,7 @@ export function registerBloodTestsRoutes(app: Express): void {
             completedAt: initialStatus === "completed" ? new Date() : undefined,
           });
 
-          if (includeAI && hasAnthropicKey && (asyncAI || syncAiNeedsBackgroundRetry || !aiAnalysis)) {
+          if (includeAI && hasOpenAIKey && (asyncAI || syncAiNeedsBackgroundRetry || !aiAnalysis)) {
             setImmediate(async () => {
               try {
                 const enriched = await generateAIBloodAnalysisWithFallbackRetry(
@@ -1289,7 +1312,8 @@ export function registerBloodTestsRoutes(app: Express): void {
       let aiAnalysis = "";
       let aiFallbackReason: string | undefined;
       let syncAiNeedsBackgroundRetry = false;
-      const hasAnthropicKey = Boolean(process.env.ANTHROPIC_API_KEY);
+      const hasOpenAIKey = Boolean(process.env.OPENAI_API_KEY);
+      const asyncAI = req.body.asyncAI !== false;
       const aiProfile = {
         gender: profile.gender as "homme" | "femme",
         age,
@@ -1308,7 +1332,7 @@ export function registerBloodTestsRoutes(app: Express): void {
         medications: profile.medications,
         infectionRecent: profile.infectionRecent,
       };
-      if (hasAnthropicKey) {
+      if (hasOpenAIKey && !asyncAI) {
         try {
           aiAnalysis = await withAIGenerationTimeout(
             () =>
@@ -1331,7 +1355,7 @@ export function registerBloodTestsRoutes(app: Express): void {
         }
       }
       if (!aiAnalysis) {
-        if (!hasAnthropicKey) {
+        if (!hasOpenAIKey) {
           aiAnalysis = buildFallbackAnalysis(analysisResult, {
             gender: profile.gender as "homme" | "femme",
             age,
@@ -1348,7 +1372,7 @@ export function registerBloodTestsRoutes(app: Express): void {
             poids: profile.poids,
             taille: profile.taille,
           });
-          aiFallbackReason = aiFallbackReason || "anthropic_key_missing";
+          aiFallbackReason = aiFallbackReason || "openai_key_missing";
         } else {
           syncAiNeedsBackgroundRetry = true;
           aiFallbackReason = aiFallbackReason || "sync_empty_response_or_error";
@@ -1412,7 +1436,7 @@ export function registerBloodTestsRoutes(app: Express): void {
         completedAt: initialStatus === "completed" ? new Date() : undefined,
       });
 
-      if (hasAnthropicKey && (syncAiNeedsBackgroundRetry || !aiAnalysis)) {
+      if (hasOpenAIKey && (asyncAI || syncAiNeedsBackgroundRetry || !aiAnalysis)) {
         setImmediate(async () => {
           try {
             const enriched = await generateAIBloodAnalysisWithFallbackRetry(
@@ -1830,7 +1854,7 @@ export function registerBloodTestsRoutes(app: Express): void {
             aiAnalysis: aiText,
             aiStatus: "completed",
             aiGeneratedAt: new Date().toISOString(),
-            aiModel: "claude-opus-4-6",
+            aiModel: "gpt-5.6-sol",
             recoveredByCronAt: new Date().toISOString(),
           };
           delete mergedAnalysis.aiFallbackReason;

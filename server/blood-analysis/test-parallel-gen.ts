@@ -1,6 +1,6 @@
 /**
  * Test script for parallel HTML generation.
- * Run with: ANTHROPIC_API_KEY=<key> npx tsx server/blood-analysis/test-parallel-gen.ts
+ * Run with: OPENAI_API_KEY=<key> npx tsx server/blood-analysis/test-parallel-gen.ts
  */
 
 import { generateParallelHtmlReport } from "./parallel-html-generator";

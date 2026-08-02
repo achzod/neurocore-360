@@ -24,13 +24,13 @@ async function pickRichestPdf() {
   for (const file of files) {
     try {
       const parsed = await pdf(fs.readFileSync(file));
-      const previousAnthropicKey = process.env.ANTHROPIC_API_KEY;
-      delete process.env.ANTHROPIC_API_KEY;
+      const previousOpenAIKey = process.env.OPENAI_API_KEY;
+      delete process.env.OPENAI_API_KEY;
       let markers: any[] = [];
       try {
         markers = await extractMarkersFromPdfText(parsed.text || "", path.basename(file));
       } finally {
-        if (previousAnthropicKey) process.env.ANTHROPIC_API_KEY = previousAnthropicKey;
+        if (previousOpenAIKey) process.env.OPENAI_API_KEY = previousOpenAIKey;
       }
       if (!markers.length) continue;
       if (!richest || markers.length > richest.markers.length) {

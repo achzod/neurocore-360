@@ -1,14 +1,12 @@
 /**
- * APEXLABS - Module de génération d'audits avec OpenAI GPT-5.2-2025-12-11
- * Adapté de geminiPremiumEngine.ts - Réutilise les mêmes sections et prompts
+ * APEXLABS - Génération des audits PREMIUM et ELITE avec GPT-5.6 Sol.
  */
 
-import OpenAI from 'openai';
 import * as fs from 'fs';
 import * as path from 'path';
 import { ClientData, PhotoAnalysis, AuditResult, SectionName, AuditTier } from './types';
 import { formatPhotoAnalysisForReport } from './photoAnalysisAI';
-import { OPENAI_CONFIG } from './openaiConfig';
+import { OPENAI_REPORT_MODEL, openAIProfileMetadata, runOpenAIText } from './openaiResponses';
 import { getCTADebut, getCTAFin, PRICING } from './cta';
 import { calculateScoresFromResponses } from "./analysisEngine";
 import { generateSupplementsSectionText } from "./supplementEngine";
@@ -71,50 +69,24 @@ function loadFromCache(auditId: string): CacheData | null {
   return null;
 }
 
+export function deleteOpenAICache(auditId: string): void {
+  const cachePath = getCachePath(auditId);
+  if (fs.existsSync(cachePath)) {
+    fs.unlinkSync(cachePath);
+  }
+}
+
 function generateAuditId(): string {
   return `openai-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 }
-
-// OpenAI Initialization
-const openai = new OpenAI({
-  apiKey: OPENAI_CONFIG.OPENAI_API_KEY,
-});
 
 const SOURCE_NAME_REGEX = new RegExp(
   "\\b(huberman|peter attia|attia|applied metabolics|stronger by science|sbs|examine|renaissance periodization|mpmd|newsletter)\\b",
   "gi"
 );
 
-const OPENAI_MODEL = OPENAI_CONFIG.OPENAI_MODEL;
-const OPENAI_TEMPERATURE = OPENAI_CONFIG.OPENAI_TEMPERATURE;
-// ⚠️ Important: caps serrés pour limiter TPM et éviter les réponses vides.
-const OPENAI_MAX_COMPLETION_TOKENS_PER_SECTION =
-  Number((OPENAI_CONFIG as any).OPENAI_MAX_TOKENS_PER_SECTION) ||
-  Number(OPENAI_CONFIG.OPENAI_MAX_TOKENS) ||
-  1000;
-const OPENAI_MAX_RETRIES = OPENAI_CONFIG.OPENAI_MAX_RETRIES;
-const OPENAI_SLEEP_BETWEEN = OPENAI_CONFIG.OPENAI_SLEEP_BETWEEN;
 const OPENAI_SECTION_CONCURRENCY =
-  (OPENAI_CONFIG as any).OPENAI_SECTION_CONCURRENCY ?? (OPENAI_CONFIG as any).OPENAI_CONCURRENCY_LIMIT ?? 2;
-
-// Suivi des bursts de réponses vides pour baisser la concurrence quelques minutes.
-let reduceConcurrencyUntil = 0;
-const emptyTimestamps: number[] = [];
-
-function noteEmptyResponse() {
-  const now = Date.now();
-  emptyTimestamps.push(now);
-  // garder seulement les 10 dernières
-  while (emptyTimestamps.length > 10) emptyTimestamps.shift();
-  // si >=2 empties sur les 5 dernières, on passe en mode "concurrency 2" pendant 3 minutes
-  if (emptyTimestamps.length >= 2) {
-    const recent = emptyTimestamps.slice(-5);
-    if (recent.length >= 2 && recent[recent.length - 1] - recent[0] < 90_000) {
-      reduceConcurrencyUntil = Math.max(reduceConcurrencyUntil, now + 180_000); // 3 minutes
-      console.log("[OpenAI] Burst de réponses vides: réduction concurrence à 2 pendant 3 minutes");
-    }
-  }
-}
+  Number(process.env.OPENAI_SECTION_CONCURRENCY || "2");
 
 function getCapForSection(section: SectionName): number {
   const s = section.toLowerCase();
@@ -126,256 +98,21 @@ function getCapForSection(section: SectionName): number {
   return defaultCap;
 }
 
-function parseResetToMs(v?: string): number | null {
-  if (!v) return null;
-  // Formats observés: "1s", "6m0s"
-  const m = v.match(/(?:(\d+)m)?(?:(\d+)s)?/);
-  if (!m) return null;
-  const mins = m[1] ? Number(m[1]) : 0;
-  const secs = m[2] ? Number(m[2]) : 0;
-  const total = (mins * 60 + secs) * 1000;
-  return Number.isFinite(total) && total > 0 ? total : null;
-}
-
-function sleep(ms: number) {
-  return new Promise((r) => setTimeout(r, ms));
-}
-
-function getHeader(headers: any, name: string): string | undefined {
-  if (!headers) return undefined;
-  const key = name.toLowerCase();
-  // Headers() (fetch style)
-  if (typeof headers.get === "function") {
-    return headers.get(name) ?? headers.get(key) ?? undefined;
-  }
-  // plain object
-  const direct = headers[name] ?? headers[key];
-  return typeof direct === "string" ? direct : undefined;
-}
-
-function parseRetryAfterToMs(v?: string): number | null {
-  if (!v) return null;
-  const s = String(v).trim();
-  if (!s) return null;
-  // Retry-After peut être en secondes ("5") ou une date HTTP.
-  const asSeconds = Number(s);
-  if (Number.isFinite(asSeconds) && asSeconds >= 0) {
-    return Math.min(10 * 60 * 1000, Math.floor(asSeconds * 1000));
-  }
-  const asDate = Date.parse(s);
-  if (!Number.isNaN(asDate)) {
-    const delta = asDate - Date.now();
-    if (delta > 0) return Math.min(10 * 60 * 1000, delta);
-  }
-  return null;
-}
-
-function isRetryableStatus(status: unknown): boolean {
-  const s = typeof status === "number" ? status : Number(status);
-  if (!Number.isFinite(s)) return false;
-  // 408/409/429/5xx : transient
-  return s === 408 || s === 409 || s === 429 || s >= 500;
-}
-
-function getMaxCompletionTokensForSection(section: SectionName, tier: AuditTier): number {
-  // Objectif: réduire le TPM "réservé" (OpenAI estime les quotas sur max_completion_tokens).
-  // Valeurs volontairement serrées; ajustables via env.
-  const defaultCap = Number(process.env.OPENAI_MAX_COMPLETION_TOKENS_DEFAULT ?? "1100");
-  const longCap = Number(process.env.OPENAI_MAX_COMPLETION_TOKENS_LONG ?? "1400");
-  const shortCap = Number(process.env.OPENAI_MAX_COMPLETION_TOKENS_SHORT ?? "850");
-
-  if (tier === "GRATUIT") {
-    return Number(process.env.OPENAI_MAX_COMPLETION_TOKENS_GRATUIT ?? "900");
-  }
-
-  const s = String(section).toLowerCase();
-  if (s.includes("executive summary")) return shortCap;
-  if (s.startsWith("protocole")) return defaultCap;
-  if (s.startsWith("plan ")) return longCap;
-  if (s.includes("kpi")) return defaultCap;
-  if (s.includes("synthese")) return shortCap;
-  return defaultCap;
-}
-
-function degradedSectionText(section: SectionName): string {
-  return [
-    `${String(section).toUpperCase()}`,
-    ``,
-    `NOTE (TECHNIQUE)`,
-    `Je n’ai pas pu finaliser cette section à cause d’un incident temporaire.`,
-    `Je la régénère dès que le service est stable (sans impacter le reste de ton rapport).`,
-  ].join("\n");
-}
-
-// Fallback model (GPT-4o) si le modèle principal a des problèmes
-const FALLBACK_MODEL = (OPENAI_CONFIG as any).OPENAI_FALLBACK_MODEL || process.env.OPENAI_FALLBACK_MODEL || "gpt-4o";
-
-async function callOpenAIWithModel(
-  prompt: string,
-  model: string,
-  opts?: { maxCompletionTokens?: number; label?: string; useFallbackParams?: boolean }
-): Promise<string> {
-  const label = opts?.label ? ` (${opts.label})` : "";
-  const maxTokens = opts?.maxCompletionTokens ?? 1500;
-
-  // Pour le fallback model (gpt-4.1), on utilise max_tokens au lieu de max_completion_tokens
-  const isFallbackModel = model !== OPENAI_MODEL;
-
-  try {
-    const requestParams: any = {
-      model: model,
-      messages: [{ role: "user", content: prompt }],
-      temperature: isFallbackModel ? 0.7 : OPENAI_TEMPERATURE,
-    };
-
-    // GPT-5.2 utilise max_completion_tokens, GPT-4.1/4o utilisent max_tokens
-    if (isFallbackModel) {
-      requestParams.max_tokens = maxTokens;
-    } else {
-      requestParams.max_completion_tokens = maxTokens;
-    }
-
-    const response = await openai.chat.completions.create(requestParams);
-    const text = response.choices[0]?.message?.content || "";
-
-    if (!text.trim()) {
-      throw new Error("OpenAI returned an empty response");
-    }
-
-    return text;
-  } catch (error: any) {
-    console.log(`[OpenAI] Erreur avec ${model}${label}: ${error?.message || error}`);
-    throw error;
-  }
-}
-
 async function callOpenAI(
   prompt: string,
-  opts?: { maxCompletionTokens?: number; label?: string }
+  opts?: { maxCompletionTokens?: number; label?: string; safetyId?: string }
 ): Promise<string> {
-  let fallbackDelayMs = Math.max(250, OPENAI_SLEEP_BETWEEN * 1000);
-  let emptyStreak = 0;
-  const maxEmptyRetries = Number(process.env.OPENAI_MAX_EMPTY_RETRIES ?? "2");
-  const label = opts?.label ? ` (${opts.label})` : "";
-
-  // Adaptatif: quand on voit des 429 / réponses vides, baisser progressivement le plafond
-  let adaptiveMaxTokens = Math.max(
-    400,
-    Number(opts?.maxCompletionTokens ?? OPENAI_MAX_COMPLETION_TOKENS_PER_SECTION)
-  );
-
-  // D'abord essayer avec le modèle principal (GPT-5.2)
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    try {
-      const text = await callOpenAIWithModel(prompt, OPENAI_MODEL, {
-        maxCompletionTokens: adaptiveMaxTokens,
-        label: opts?.label,
-      });
-      if (text.trim()) {
-        console.log(`[OpenAI] Section${label} OK avec ${OPENAI_MODEL}`);
-        return text;
-      }
-      throw new Error("OpenAI returned an empty response");
-    } catch (error: any) {
-      const status = error?.status ?? error?.response?.status;
-      const headers = error?.headers ?? error?.response?.headers;
-      const msg = String(error?.message || error || "");
-
-      if (msg.toLowerCase().includes("empty response")) {
-        emptyStreak++;
-        noteEmptyResponse();
-        console.log(
-          `[OpenAI] Empty response${label} (streak ${emptyStreak}) tentative ${attempt}/3 avec ${OPENAI_MODEL}`
-        );
-        adaptiveMaxTokens = Math.max(400, Math.floor(adaptiveMaxTokens * 0.85));
-
-        // Après 2 empty responses, on passe au fallback
-        if (emptyStreak >= maxEmptyRetries) {
-          console.log(`[OpenAI] ${OPENAI_MODEL} instable${label}, passage au fallback ${FALLBACK_MODEL}`);
-          break;
-        }
-      }
-
-      // 429: attendre et réessayer
-      if (status === 429) {
-        const retryAfter = getHeader(headers, "retry-after");
-        const retryAfterMs = parseRetryAfterToMs(retryAfter);
-        const resetTokens = getHeader(headers, "x-ratelimit-reset-tokens");
-        const resetReqs = getHeader(headers, "x-ratelimit-reset-requests");
-        const resetMs = parseResetToMs(resetTokens || resetReqs || undefined);
-        const jitter = Math.floor(Math.random() * 250);
-
-        console.log(
-          `[OpenAI] 429 Rate limit${label} tentative ${attempt}/3`
-        );
-        adaptiveMaxTokens = Math.max(400, Math.floor(adaptiveMaxTokens * 0.8));
-
-        if (retryAfterMs != null) {
-          await sleep(retryAfterMs + jitter);
-        } else if (resetMs != null) {
-          await sleep(resetMs + jitter);
-        } else {
-          await sleep(fallbackDelayMs + jitter);
-          fallbackDelayMs = Math.min(fallbackDelayMs * 2, 30_000);
-        }
-        continue;
-      }
-
-      // 5xx: attendre et réessayer
-      if (isRetryableStatus(status)) {
-        const jitter = Math.floor(Math.random() * 250);
-        console.log(`[OpenAI] Transient ${status}${label} tentative ${attempt}/3`);
-        await sleep(fallbackDelayMs + jitter);
-        fallbackDelayMs = Math.min(fallbackDelayMs * 2, 30_000);
-        continue;
-      }
-
-      // Autre erreur: court délai et retry
-      if (attempt < 3) {
-        const jitter = Math.floor(Math.random() * 250);
-        await sleep(1500 + jitter);
-      }
-    }
-  }
-
-  // FALLBACK: essayer avec GPT-4.1 (plus stable)
-  console.log(`[OpenAI] Tentative avec fallback ${FALLBACK_MODEL}${label}`);
-
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    try {
-      const text = await callOpenAIWithModel(prompt, FALLBACK_MODEL, {
-        maxCompletionTokens: 1800, // GPT-4.1 plus stable, on peut augmenter
-        label: opts?.label,
-        useFallbackParams: true,
-      });
-      if (text.trim()) {
-        console.log(`[OpenAI] Section${label} OK avec fallback ${FALLBACK_MODEL}`);
-        return text;
-      }
-      throw new Error("Fallback returned an empty response");
-    } catch (error: any) {
-      const status = error?.status ?? error?.response?.status;
-      const headers = error?.headers ?? error?.response?.headers;
-
-      console.log(`[OpenAI] Fallback${label} tentative ${attempt}/3 erreur: ${error?.message || error}`);
-
-      if (status === 429) {
-        const retryAfter = getHeader(headers, "retry-after");
-        const retryAfterMs = parseRetryAfterToMs(retryAfter);
-        const jitter = Math.floor(Math.random() * 250);
-        await sleep(retryAfterMs ?? 5000 + jitter);
-        continue;
-      }
-
-      if (attempt < 3) {
-        const jitter = Math.floor(Math.random() * 250);
-        await sleep(2000 + jitter);
-      }
-    }
-  }
-
-  console.log(`[OpenAI] Echec total${label} - tous les modèles ont échoué`);
-  return "";
+  const result = await runOpenAIText({
+    profile: "premium",
+    instructions:
+      "Tu écris un rapport APEXLABS en français, en tutoyant, avec une voix humaine, précise et directe. Tu suis toutes les consignes fournies, tu n'inventes aucune donnée, tu ne mentionnes jamais l'IA et tu n'utilises aucun tiret long Unicode.",
+    input: prompt,
+    safetyId: opts?.safetyId || "premium-report",
+    label: opts?.label,
+    // Le budget inclut le raisonnement. On refuse les anciens caps trop courts.
+    maxOutputTokens: Math.max(18_000, Number(opts?.maxCompletionTokens || 0)),
+  });
+  return result.text;
 }
 
 async function mapWithConcurrency<T, R>(
@@ -519,8 +256,7 @@ ${dataStr}
   let newSectionsGenerated = 0;
   const sectionsToGenerate = getSectionsForTier(tier);
 
-  const concurrencyNow =
-    Date.now() < reduceConcurrencyUntil ? Math.max(2, Number(OPENAI_SECTION_CONCURRENCY) || 2) : Number(OPENAI_SECTION_CONCURRENCY) || 3;
+  const concurrencyNow = Math.max(1, Math.min(3, Number(OPENAI_SECTION_CONCURRENCY) || 2));
 
   const results = await mapWithConcurrency(
     sectionsToGenerate,
@@ -569,6 +305,7 @@ ${dataStr}
       let sectionText = await callOpenAI(prompt, {
         maxCompletionTokens: maxTokensForThisSection,
         label: String(section),
+        safetyId: String((clientData as any)?.email || auditId),
       });
       const dt = Date.now() - t0;
       console.log(
@@ -586,28 +323,18 @@ ${dataStr}
         const subTexts: string[] = [];
         for (const sub of subparts) {
           const subPrompt = `${prompt}\n\n[Split] ${sub} - reste concis, 3 constats + 3 actions + 1 bloc "à approfondir".`;
-          const subText = await callOpenAI(subPrompt, { maxCompletionTokens: 850, label: `${section}-${sub}` });
+          const subText = await callOpenAI(subPrompt, {
+            maxCompletionTokens: 850,
+            label: `${section}-${sub}`,
+            safetyId: String((clientData as any)?.email || auditId),
+          });
           if (subText.trim()) subTexts.push(subText);
         }
         sectionText = subTexts.join("\n\n");
       }
 
       if (!sectionText) {
-        // Mode dégradé: on garde un placeholder pour éviter de bloquer tout le job
-        noteEmptyResponse();
-        const degraded = degradedSectionText(section as SectionName);
-        cachedSections[section] = degraded;
-        saveToCache(auditId, {
-          auditId,
-          clientData,
-          photoAnalysis,
-          tier,
-          sections: cachedSections,
-          startedAt: new Date().toISOString(),
-          lastUpdated: new Date().toISOString(),
-        });
-        newSectionsGenerated++;
-        return { section, text: degraded, fromCache: false };
+        throw new Error(`OpenAI n'a produit aucun contenu pour la section ${section}`);
       }
 
       let cleanedText = stripInlineHtml(sectionText)
@@ -684,7 +411,7 @@ export async function generateAndConvertAuditWithOpenAI(
   const clientName = `${firstName} ${lastName}`.trim();
 
   console.log(`\n[OpenAI] Nouvelle demande d'audit pour ${firstName}`);
-  console.log(`[OpenAI] Generation audit PREMIUM avec GPT-5.2-2025-12-11 pour ${clientName}...`);
+  console.log(`[OpenAI] Generation audit ${tier} avec ${OPENAI_REPORT_MODEL} pour ${clientName}...`);
 
   const txtContent = await generateAuditTxtWithOpenAI(clientData, photoAnalysis, tier, resumeAuditId);
   if (!txtContent) {
@@ -697,6 +424,13 @@ export async function generateAndConvertAuditWithOpenAI(
 
   console.log(`[OpenAI] Audit TXT genere (${txtContent.length} caracteres)`);
 
+  if (txtContent.length < 10_000) {
+    return {
+      success: false,
+      error: `Rapport OpenAI trop court (${txtContent.length} caracteres)`,
+    };
+  }
+
   const generationTime = Date.now() - startTime;
 
   return {
@@ -706,7 +440,8 @@ export async function generateAndConvertAuditWithOpenAI(
     metadata: {
       generationTimeMs: generationTime,
       sectionsGenerated: getSectionsForTier(tier).length,
-      modelUsed: OPENAI_CONFIG.OPENAI_MODEL,
+      modelUsed: OPENAI_REPORT_MODEL,
+      ...openAIProfileMetadata("premium"),
     },
   };
 }

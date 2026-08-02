@@ -7,12 +7,10 @@
  * - Conséquences métaboliques, hormonales, digestives, psycho
  * - CTA vers Anabolic Bioscan / Ultimate Scan
  *
- * Utilise Claude Opus 4.6 + Knowledge Base (Huberman, Attia, etc.)
+ * Utilise GPT-5.6 Sol + Knowledge Base (Huberman, Attia, etc.)
  */
 
-import Anthropic from '@anthropic-ai/sdk';
-import OpenAI from 'openai';
-import { OPENAI_CONFIG } from './openaiConfig';
+import { runOpenAIText } from './openaiResponses';
 import { searchArticles, searchFullText } from './knowledge/storage';
 import { ALLOWED_SOURCES } from './knowledge/search';
 import { normalizeResponses } from './responseNormalizer';
@@ -142,7 +140,7 @@ const MIN_DISCOVERY_SECTION_CHARS = 3000;
 const MIN_DISCOVERY_SECTION_LINES = 30;
 const MIN_DISCOVERY_SECTION_WORDS = 400;
 const MIN_DISCOVERY_SECTION_PARAGRAPHS = 8;
-const DISCOVERY_AI_TIMEOUT_MS = Number(process.env.DISCOVERY_AI_TIMEOUT_MS ?? "90000");
+const DISCOVERY_AI_TIMEOUT_MS = Number(process.env.DISCOVERY_AI_TIMEOUT_MS ?? "360000");
 
 async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   let timeoutId: NodeJS.Timeout | undefined;
@@ -324,10 +322,6 @@ function getDiscoveryFirstName(responses: DiscoveryResponses): string {
   }
   return "toi";
 }
-
-const openai = OPENAI_CONFIG.OPENAI_API_KEY
-  ? new OpenAI({ apiKey: OPENAI_CONFIG.OPENAI_API_KEY })
-  : null;
 
 // ============================================
 // SCORING FUNCTIONS
@@ -1183,7 +1177,6 @@ async function generateSectionContentAI(
   responses: DiscoveryResponses,
   knowledgeContext: string
 ): Promise<string> {
-  const anthropic = new Anthropic();
   const prenom = getDiscoveryFirstName(responses);
   const objectif = responses.objectif || 'tes objectifs';
   const sexe = responses.sexe || 'homme';
@@ -1292,18 +1285,19 @@ FORMAT OBLIGATOIRE:
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       const response = await withTimeout(
-        anthropic.messages.create({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 5000, // Longer content
-          system: SECTION_SYSTEM_PROMPT,
-          messages: [{ role: 'user', content: buildPrompt(attempt) }]
+        runOpenAIText({
+          profile: "discovery",
+          instructions: SECTION_SYSTEM_PROMPT,
+          input: buildPrompt(attempt),
+          safetyId: responses.email || prenom,
+          maxOutputTokens: 10_000,
+          label: `discovery-section-${domain}-attempt-${attempt}`,
         }),
         DISCOVERY_AI_TIMEOUT_MS,
-        `Claude section ${domain}`
+        `OpenAI section ${domain}`
       );
 
-      const textContent = response.content.find(c => c.type === 'text');
-      let rawText = textContent?.text || '';
+      let rawText = response.text || '';
 
       // Clean AI indicators and formatting issues
       rawText = rawText
@@ -1363,56 +1357,6 @@ FORMAT OBLIGATOIRE:
       if (attempt === MAX_RETRIES) {
         break;
       }
-    }
-  }
-
-  if (!openai) {
-    return '';
-  }
-
-  console.warn(`[Discovery] Fallback OpenAI pour section ${domain}`);
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    try {
-      const response = await withTimeout(
-        openai.chat.completions.create({
-          model: OPENAI_CONFIG.OPENAI_MODEL,
-          messages: [
-            { role: 'system', content: SECTION_SYSTEM_PROMPT },
-            { role: 'user', content: buildPrompt(attempt) }
-          ],
-          temperature: OPENAI_CONFIG.OPENAI_TEMPERATURE,
-          max_tokens: OPENAI_CONFIG.OPENAI_MAX_TOKENS,
-        }),
-        DISCOVERY_AI_TIMEOUT_MS,
-        `OpenAI section ${domain}`
-      );
-      const rawText = response.choices[0]?.message?.content || '';
-      if (!rawText.trim()) {
-        continue;
-      }
-      let cleanedText = stripInlineHtml(rawText);
-      if (hasEnglishMarkers(cleanedText, 6)) {
-        cleanedText = stripEnglishLines(cleanedText);
-      }
-      cleanedText = normalizeSingleVoice(cleanedText);
-      cleanedText = stripCitationLines(cleanedText);
-      cleanedText = normalizeParagraphs(cleanedText);
-      const validation = isValidContent(cleanedText);
-      if (validation.charCount > bestValidation.charCount) {
-        bestCandidate = cleanedText;
-        bestValidation = validation;
-      }
-      if (validation.isValid) {
-        console.log(
-          `[Discovery] OK OpenAI section ${domain} (${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines)`
-        );
-        return cleanMarkdownToHTML(cleanedText);
-      }
-      console.warn(
-        `[Discovery] OpenAI section ${domain} too short (${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines)`
-      );
-    } catch (error) {
-      console.error(`[Discovery] OpenAI section ${domain} error:`, error);
     }
   }
 
@@ -1702,8 +1646,6 @@ async function generateAISynthesis(
     console.warn("[Discovery] Knowledge context manquant pour la synthese. Generation en mode degrade.");
   }
 
-  const anthropic = new Anthropic();
-
   const blocagesSummary = blocages.map(b =>
     `[${b.severity.toUpperCase()}] ${b.domain}: ${b.title}\n${b.mechanism}`
   ).join('\n\n');
@@ -1754,18 +1696,19 @@ RAPPELS CRITIQUES:
   try {
     for (let attempt = 1; attempt <= 2; attempt++) {
       const response = await withTimeout(
-        anthropic.messages.create({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 4000,
-          system: DISCOVERY_SYSTEM_PROMPT,
-          messages: [{ role: 'user', content: userPrompt }]
+        runOpenAIText({
+          profile: "discovery",
+          instructions: DISCOVERY_SYSTEM_PROMPT,
+          input: userPrompt,
+          safetyId: responses.email || responses.prenom || "discovery",
+          maxOutputTokens: 10_000,
+          label: `discovery-synthesis-attempt-${attempt}`,
         }),
         DISCOVERY_AI_TIMEOUT_MS,
-        "Claude synthesis"
+        "OpenAI synthesis"
       );
 
-      const textContent = response.content.find(c => c.type === 'text');
-      let rawText = textContent?.text || '';
+      let rawText = response.text || '';
       if (!rawText.trim()) {
         throw new Error("[Discovery] Synthese vide");
       }
@@ -1800,38 +1743,6 @@ RAPPELS CRITIQUES:
     throw new Error("[Discovery] Synthese invalide apres retries");
   } catch (error) {
     console.error('[Discovery] AI synthesis error:', error);
-
-    if (openai) {
-      try {
-        console.warn('[Discovery] Fallback OpenAI pour synthese globale');
-        const response = await withTimeout(
-          openai.chat.completions.create({
-            model: OPENAI_CONFIG.OPENAI_MODEL,
-            messages: [
-              { role: 'system', content: DISCOVERY_SYSTEM_PROMPT },
-              { role: 'user', content: userPrompt }
-            ],
-            temperature: OPENAI_CONFIG.OPENAI_TEMPERATURE,
-            max_tokens: OPENAI_CONFIG.OPENAI_MAX_TOKENS,
-          }),
-          DISCOVERY_AI_TIMEOUT_MS,
-          "OpenAI synthesis"
-        );
-        const text = response.choices[0]?.message?.content || '';
-        if (text.trim()) {
-          let cleaned = text;
-          if (hasEnglishMarkers(cleaned, 6)) {
-            cleaned = stripEnglishLines(cleaned);
-          }
-          cleaned = normalizeSingleVoice(cleaned);
-          cleaned = stripCitationLines(cleaned);
-          cleaned = ensureSynthesisLength(cleaned, responses, scores, blocages);
-          return cleanMarkdownToHTML(cleaned);
-        }
-      } catch (fallbackError) {
-        console.error('[Discovery] OpenAI synthesis fallback error:', fallbackError);
-      }
-    }
 
     return cleanMarkdownToHTML(
       buildSynthesisFallback(responses, scores, blocages)

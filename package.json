@@ -9,6 +9,7 @@
     "start": "NODE_ENV=production node --max-old-space-size=400 --heapsnapshot-near-heap-limit=1 dist/index.cjs",
     "check": "tsc",
     "test:peptides:guardrails": "tsx scripts/test-peptides-guardrails.ts",
+    "test:reports:openai": "tsx scripts/test-openai-report-migration.ts",
     "test:peptaura:live": "tsx scripts/test-peptaura-live.ts",
     "check:client-style": "tsx scripts/check-client-facing-style.ts",
     "check:secret-source": "tsx scripts/check-secret-source-leaks.ts",
@@ -21,7 +22,6 @@
     "backfill:orders": "tsx scripts/backfill-orders.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.37.0",
     "@google/genai": "^1.34.0",
     "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^3.10.0",

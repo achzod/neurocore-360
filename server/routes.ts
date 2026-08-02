@@ -40,16 +40,15 @@ import {
   type CoachingFormulaLeadInput,
 } from "./emailService";
 import { generateExportHTML, generateExportPDF } from "./exportService";
-import { generateAndConvertAuditWithClaude } from "./anthropicEngine";
+import { generateAndConvertAuditWithOpenAI } from "./openaiPremiumEngine";
 import { formatTxtToDashboard, formatSectionToHTML, getSectionsByCategory } from "./formatDashboard";
 import { ClientData, PhotoAnalysis } from "./types";
 import { generateEnhancedSupplementsHTML, generateSupplementStack } from "./supplementEngine";
 import { streamAuditZip } from "./exportZipService";
 import { createPayPalOrder, capturePayPalOrder, isPayPalConfigured } from "./paypalClient";
-import { isAnthropicAvailable } from "./anthropicEngine";
 import { getAuthPayload, type AuthPayload } from "./auth";
 import crypto from "crypto";
-import { validateAnthropicConfig, ANTHROPIC_CONFIG } from "./anthropicConfig";
+import { OPENAI_REPORT_MODEL, isOpenAIConfigured, runOpenAIText } from "./openaiResponses";
 import { buildPeptidesCoachingDeductionBlock } from "./cta";
 import { BLOOD_ANALYSIS_PURCHASE_CREDITS, clarifyBloodPurchaseEmail } from "./bloodOffer";
 
@@ -809,18 +808,12 @@ export async function registerRoutes(
               !spSecret ? "SENDPULSE_SECRET missing" : "SendPulse configured",
     };
 
-    // 4. AI (Anthropic Claude)
-    checks.anthropic = {
-      ok: Boolean(process.env.ANTHROPIC_API_KEY),
-      detail: process.env.ANTHROPIC_API_KEY ? "configured" : "ANTHROPIC_API_KEY missing , reports won't generate",
-    };
-
-    // 5. OpenAI quality fallback for Peptides Engine
+    // 4. OpenAI, fournisseur unique pour tous les rapports
     checks.openai = {
-      ok: Boolean(process.env.OPENAI_API_KEY),
-      detail: process.env.OPENAI_API_KEY
-        ? "configured , Peptides fallback gpt-5.6-sol ready"
-        : "OPENAI_API_KEY missing , Peptides quality fallback unavailable",
+      ok: isOpenAIConfigured(),
+      detail: isOpenAIConfigured()
+        ? `configured , ${OPENAI_REPORT_MODEL} ready for all report engines`
+        : "OPENAI_API_KEY missing , report generation unavailable",
     };
 
     // 6. Sentry
@@ -1492,45 +1485,40 @@ export async function registerRoutes(
     return pics.length === 3;
   };
 
-  // Test endpoint for Claude API
-  app.get("/api/test-claude", async (req, res) => {
+  // Test endpoint for the shared OpenAI Responses engine
+  app.get("/api/test-openai", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
-      const isConfigured = validateAnthropicConfig();
-      const hasKey = !!ANTHROPIC_CONFIG.ANTHROPIC_API_KEY;
+      const hasKey = isOpenAIConfigured();
 
-      if (!isConfigured) {
+      if (!hasKey) {
         res.status(500).json({
           status: "error",
-          message: "ANTHROPIC_API_KEY not configured",
-          config: { hasKey, model: ANTHROPIC_CONFIG.ANTHROPIC_MODEL }
+          message: "OPENAI_API_KEY not configured",
+          config: { hasKey, model: OPENAI_REPORT_MODEL }
         });
         return;
       }
 
-      const Anthropic = require('@anthropic-ai/sdk').default;
-      const client = new Anthropic({ apiKey: ANTHROPIC_CONFIG.ANTHROPIC_API_KEY });
-
-      const response = await client.messages.create({
-        model: ANTHROPIC_CONFIG.ANTHROPIC_MODEL,
-        max_tokens: 100,
-        messages: [{ role: "user", content: "Réponds simplement: OK" }],
+      const response = await runOpenAIText({
+        profile: "extraction",
+        instructions: "Réponds uniquement avec OK.",
+        input: "Test de disponibilité du moteur de rapports.",
+        maxOutputTokens: 2_000,
+        label: "admin-smoke-test",
       });
-
-      const textContent = response.content.find((c: any) => c.type === 'text');
-      const text = textContent?.text || "";
 
       res.json({
         status: "success",
-        message: "Claude API is working",
-        response: text,
-        config: { model: ANTHROPIC_CONFIG.ANTHROPIC_MODEL }
+        message: "OpenAI Responses API is working",
+        response: response.text,
+        config: { model: response.model }
       });
     } catch (error: any) {
-      console.error("[Test Claude] Error:", error);
+      console.error("[Test OpenAI] Error:", error);
       res.status(500).json({
         status: "error",
-        message: "Erreur test Claude",
+        message: "Erreur test OpenAI",
       });
     }
   });
@@ -7136,7 +7124,7 @@ export async function registerRoutes(
         return;
       }
 
-      const result = await generateAndConvertAuditWithClaude(clientData, photoAnalysis, 'PREMIUM', resumeAuditId);
+      const result = await generateAndConvertAuditWithOpenAI(clientData, photoAnalysis, 'PREMIUM', resumeAuditId);
 
       if (!result.success) {
         res.status(500).json(result);
@@ -7145,7 +7133,7 @@ export async function registerRoutes(
 
       res.json(result);
     } catch (error: any) {
-      console.error("[Claude Opus 4.6] Erreur generation audit:", error);
+      console.error(`[${OPENAI_REPORT_MODEL}] Erreur generation audit:`, error);
       res.status(500).json({
         success: false,
         error: "Erreur serveur interne"

@@ -297,7 +297,7 @@ function QuestionField({
             img.onload = () => {
               try {
                 const canvas = document.createElement('canvas');
-                // Max 1200px to keep enough detail for Claude photo analysis
+                // Max 1200px to preserve enough detail for photo analysis
                 const MAX_DIM = 1200;
                 let w = img.width;
                 let h = img.height;

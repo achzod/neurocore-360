@@ -18,7 +18,7 @@ export const ULTRAHUMAN_THEMES: Theme[] = [
   },
   {
     id: "metabolic",
-    name: "Claude Creme",
+    name: "Warm Creme",
     type: "light",
     colors: {
       primary: "#C46A2B",

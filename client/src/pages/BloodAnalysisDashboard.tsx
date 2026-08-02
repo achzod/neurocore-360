@@ -24,7 +24,7 @@ const ReportSectionTab = lazy(() => import("./BloodAnalysisDashboard/tabs/Report
 
 const THEMES: Theme[] = ULTRAHUMAN_THEMES;
 
-// Force light theme - find "Claude Creme" or "Titanium Light"
+// Force the warm light theme, with a light fallback.
 const DEFAULT_THEME = THEMES.find(t => t.id === "metabolic") || THEMES.find(t => t.type === "light") || THEMES[1];
 
 const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() {

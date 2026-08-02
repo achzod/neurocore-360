@@ -62,7 +62,7 @@ async function main() {
   // Required by modules imported by blood-analysis internals.
   process.env.DATABASE_URL ||= "postgresql://user:pass@localhost:5432/db";
   // Keep parser-only extraction deterministic for regression checks.
-  delete process.env.ANTHROPIC_API_KEY;
+  delete process.env.OPENAI_API_KEY;
 
   const { extractMarkersFromPdfText, analyzeBloodwork } = await import("../server/blood-analysis/index.ts");
 
