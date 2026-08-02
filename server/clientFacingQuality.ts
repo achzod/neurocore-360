@@ -2,7 +2,7 @@ const FORBIDDEN_UNICODE_DASHES = /[\u2013\u2014]/g;
 const FORBIDDEN_DASH_ENTITIES = /&(?:mdash|ndash);/gi;
 
 const VOUVOIEMENT_PATTERNS: Array<{ label: string; pattern: RegExp }> = [
-  { label: "vous", pattern: /\bvous\b/i },
+  { label: "vous", pattern: /(?<!rendez[-\s])\bvous\b/i },
   { label: "votre", pattern: /\bvotre\b/i },
   { label: "vos", pattern: /\bvos\b/i },
   { label: "veuillez", pattern: /\bveuillez\b/i },

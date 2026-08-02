@@ -6,6 +6,7 @@ import type { ClientData, AuditTier } from "./types";
 import { OPENAI_REPORT_MODEL } from "./openaiResponses";
 import { validateReport, logValidation, quickValidate } from "./reportValidator";
 import { normalizeResponses } from "./responseNormalizer";
+import { repairReportTextForDelivery } from "./reportTextRepair";
 
 export type ProgressCallback = (progress: number, section: string) => Promise<void>;
 import type { ReportJob, ReportJobStatusEnum } from "@shared/schema";
@@ -401,13 +402,23 @@ async function generateReportAsync(
       throw new Error(result.error || `${OPENAI_REPORT_MODEL} generation failed`);
     }
 
+    const repairedReportTxt = repairReportTextForDelivery(
+      result.txt || "",
+      normalizedResponses as Record<string, unknown>,
+    );
+    if (repairedReportTxt !== (result.txt || "")) {
+      console.log(
+        `[ReportJobManager] Deterministic client-facing repair applied for ${auditId}`,
+      );
+    }
+
     // ⚠️ IMPORTANT: Ne PAS marquer comme COMPLETED avant d'avoir généré le HTML
     // et sauvegardé dans la DB. Sinon le client voit "COMPLETED" mais pas de rapport.
 
     // Convert TXT to HTML with Premium Design (Ultrahuman-style)
     console.log(`[ReportJobManager] Converting TXT to Premium HTML for ${auditId}...`);
     const reportHtml = generatePremiumHTMLFromTxt(
-      result.txt || '',
+      repairedReportTxt,
       auditId,
       photosForReport,
       normalizedResponses as Record<string, unknown>
@@ -423,7 +434,7 @@ async function generateReportAsync(
     // VALIDATION OBLIGATOIRE AVANT ENVOI
     // ============================================
     const tier = (auditType as AuditTier) || 'PREMIUM';
-    const validation = validateReport(result.txt || '', reportHtml, tier);
+    const validation = validateReport(repairedReportTxt, reportHtml, tier);
     logValidation(auditId, validation);
 
     // Check if report meets quality standards
@@ -435,14 +446,14 @@ async function generateReportAsync(
       // Save the report anyway but mark as NEEDS_REVIEW
       await storage.updateAudit(auditId, {
         narrativeReport: {
-          txt: result.txt,
+          txt: repairedReportTxt,
           html: reportHtml,
           clientName: result.clientName,
           metadata: result.metadata,
           validationResult: validation,
           photoAnalysis: photoAnalysis, // Include photo analysis for frontend display
         },
-        reportTxt: result.txt || '',
+        reportTxt: repairedReportTxt,
         reportHtml: reportHtml,
         reportGeneratedAt: new Date(),
         reportDeliveryStatus: "NEEDS_REVIEW",
@@ -457,7 +468,7 @@ async function generateReportAsync(
     // ============================================
     // HARD CHECK: TXT content must exist and be substantial
     // ============================================
-    const txtContent = result.txt || '';
+    const txtContent = repairedReportTxt;
     if (txtContent.length < 500) {
       throw new Error(`HARD BLOCK: TXT content too short (${txtContent.length} chars). Generation likely failed silently.`);
     }
@@ -477,11 +488,11 @@ async function generateReportAsync(
     };
 
     // Sauvegarder le rapport dans l'audit AVANT de marquer comme COMPLETED
-    console.log(`[ReportJobManager] Saving report to DB: TXT=${(result.txt || '').length} HTML=${reportHtml.length} chars`);
+    console.log(`[ReportJobManager] Saving report to DB: TXT=${repairedReportTxt.length} HTML=${reportHtml.length} chars`);
     try {
       await storage.updateAudit(auditId, {
         narrativeReport: report,
-        reportTxt: result.txt || '',
+        reportTxt: repairedReportTxt,
         reportHtml: reportHtml,
         reportGeneratedAt: new Date(),
         reportDeliveryStatus: "READY",
@@ -492,7 +503,7 @@ async function generateReportAsync(
       console.log(`[ReportJobManager] Retrying with minimal narrativeReport...`);
       await storage.updateAudit(auditId, {
         narrativeReport: { clientName: result.clientName, metadata: result.metadata, validationResult: validation, photoAnalysis: photoAnalysis },
-        reportTxt: result.txt || '',
+        reportTxt: repairedReportTxt,
         reportHtml: reportHtml,
         reportGeneratedAt: new Date(),
         reportDeliveryStatus: "READY",
@@ -514,7 +525,7 @@ async function generateReportAsync(
       tier: String(auditType || "PREMIUM"),
       engine: "openai",
       model: OPENAI_REPORT_MODEL,
-      txt: String(result.txt || ""),
+      txt: repairedReportTxt,
       html: String(reportHtml || ""),
     });
 

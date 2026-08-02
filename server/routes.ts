@@ -855,6 +855,170 @@ export async function registerRoutes(
     }
   });
 
+  async function recoverStoredAuditReport(
+    auditId: string,
+    options: { apply: boolean; deliver: boolean },
+  ): Promise<Record<string, unknown>> {
+    const audit = await storage.getAudit(auditId);
+    if (!audit) return { auditId, recovered: false, reason: "audit_not_found" };
+    const sourceTxt = String(
+      (audit as any).reportTxt || (audit.narrativeReport as any)?.txt || "",
+    );
+    if (sourceTxt.length < 5000) {
+      return { auditId, email: audit.email, recovered: false, reason: "stored_report_missing" };
+    }
+
+    const [{ repairReportTextForDelivery }, { generatePremiumHTMLFromTxt }, { validateReport }] =
+      await Promise.all([
+        import("./reportTextRepair"),
+        import("./exportServicePremium"),
+        import("./reportValidator"),
+      ]);
+    const responses = ((audit as any).responses || {}) as Record<string, unknown>;
+    const repairedTxt = repairReportTextForDelivery(sourceTxt, responses);
+    const repairedHtml = generatePremiumHTMLFromTxt(
+      repairedTxt,
+      audit.id,
+      extractPhotosFromAudit(audit),
+      responses,
+    );
+    const validation = validateReport(repairedTxt, repairedHtml, audit.type as any);
+    const valid = validation.isValid && validation.score >= 75;
+    const baseResult = {
+      auditId,
+      email: audit.email,
+      type: audit.type,
+      previousStatus: audit.reportDeliveryStatus,
+      changed: repairedTxt !== sourceTxt,
+      valid,
+      score: validation.score,
+      errors: validation.errors,
+      warnings: validation.warnings,
+      txtChars: repairedTxt.length,
+      htmlChars: repairedHtml.length,
+    };
+    if (!valid || !options.apply) {
+      return { ...baseResult, recovered: false, dryRun: !options.apply };
+    }
+
+    const previousNarrative =
+      audit.narrativeReport && typeof audit.narrativeReport === "object"
+        ? { ...(audit.narrativeReport as Record<string, unknown>) }
+        : {};
+    delete (previousNarrative as any).txt;
+    delete (previousNarrative as any).html;
+    await storage.updateAudit(auditId, {
+      narrativeReport: {
+        ...previousNarrative,
+        validationResult: validation,
+        recovery: {
+          method: "deterministic_client_facing_repair",
+          recoveredAt: new Date().toISOString(),
+        },
+      },
+      reportTxt: repairedTxt,
+      reportHtml: repairedHtml,
+      reportGeneratedAt: new Date(),
+      reportDeliveryStatus: "READY",
+    });
+    await storage.completeReportJob(auditId).catch(() => {});
+
+    const delivery = options.deliver
+      ? await safeSendReportReadyEmail(
+          auditId,
+          audit.email,
+          audit.type,
+          getBaseUrl(),
+          { logPrefix: "[AutoRecovery]" },
+        )
+      : { sent: false, skipped: "delivery_not_requested" };
+    const verifiedAudit = await storage.getAudit(auditId);
+    return {
+      ...baseResult,
+      recovered: true,
+      delivered: delivery.sent,
+      deliverySkipped: delivery.skipped,
+      finalStatus: verifiedAudit?.reportDeliveryStatus,
+      reportSentAt: verifiedAudit?.reportSentAt,
+    };
+  }
+
+  app.post("/api/admin/recover-report-failures", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const requested = Array.isArray(req.body?.auditIds)
+        ? req.body.auditIds.map(String).filter(Boolean).slice(0, 20)
+        : [];
+      const apply = req.body?.apply === true;
+      const deliver = apply && req.body?.deliver === true;
+      let auditIds = requested;
+      if (auditIds.length === 0) {
+        const candidates = await pool.query(`
+          SELECT id
+          FROM audits
+          WHERE report_sent_at IS NULL
+            AND report_delivery_status IN ('FAILED', 'NEEDS_REVIEW', 'PENDING')
+            AND LENGTH(COALESCE(report_txt, '')) >= 5000
+            AND email NOT ILIKE '%test%'
+            AND email NOT ILIKE '%debug%'
+            AND email NOT ILIKE '%achkou%'
+            AND email NOT ILIKE '%achzodcoaching%'
+          ORDER BY created_at ASC
+          LIMIT 20
+        `);
+        auditIds = candidates.rows.map((row: any) => String(row.id));
+      }
+
+      const results: Record<string, unknown>[] = [];
+      for (const auditId of auditIds) {
+        results.push(await recoverStoredAuditReport(auditId, { apply, deliver }));
+      }
+      res.json({
+        success: true,
+        mode: apply ? (deliver ? "repair-and-deliver" : "repair") : "dry-run",
+        count: results.length,
+        results,
+      });
+    } catch (error: any) {
+      console.error("[Admin Report Recovery] Error:", error?.message || error);
+      res.status(500).json({ success: false, error: error?.message || "Erreur recovery rapports" });
+    }
+  });
+
+  let automaticReportRecoveryRunning = false;
+  setInterval(async () => {
+    if (automaticReportRecoveryRunning) return;
+    automaticReportRecoveryRunning = true;
+    try {
+      const candidates = await pool.query(`
+        SELECT id
+        FROM audits
+        WHERE report_sent_at IS NULL
+          AND report_delivery_status IN ('FAILED', 'NEEDS_REVIEW', 'PENDING')
+          AND LENGTH(COALESCE(report_txt, '')) >= 5000
+          AND created_at < NOW() - INTERVAL '10 minutes'
+          AND email ~* '^[^@[:space:]]+@[^@[:space:]]+\\.[^@[:space:]]+$'
+          AND email NOT ILIKE '%test%'
+          AND email NOT ILIKE '%debug%'
+          AND email NOT ILIKE '%achkou%'
+          AND email NOT ILIKE '%achzodcoaching%'
+        ORDER BY created_at ASC
+        LIMIT 3
+      `);
+      for (const row of candidates.rows) {
+        const result = await recoverStoredAuditReport(String(row.id), {
+          apply: true,
+          deliver: true,
+        });
+        console.log("[AutoRecovery] Audit result:", result);
+      }
+    } catch (error: any) {
+      console.error("[AutoRecovery] Cycle failed:", error?.message || error);
+    } finally {
+      automaticReportRecoveryRunning = false;
+    }
+  }, 10 * 60 * 1000).unref();
+
   // ==================== ADMIN RECONCILIATION STATS ====================
   app.get("/api/admin/reconciliation-stats", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;

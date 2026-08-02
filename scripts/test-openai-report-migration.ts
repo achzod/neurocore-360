@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { estimateAIUsageCosts } from "../server/openaiResponses";
+import { repairReportTextForDelivery } from "../server/reportTextRepair";
+import { auditClientFacingText } from "../server/clientFacingQuality";
 
 const read = (relativePath: string): string =>
   readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf8");
@@ -35,10 +37,12 @@ assert.match(shared, /blood:[\s\S]*effort:\s*"max"[\s\S]*mode:\s*"pro"/);
 assert.match(shared, /peptides:[\s\S]*effort:\s*"max"[\s\S]*mode:\s*"pro"/);
 assert.match(shared, /client\.responses\.create/);
 assert.doesNotMatch(shared, /chat\.completions/);
-assert.match(shared, /peptides:[\s\S]*maxOutputTokens:\s*24_000/);
+assert.match(shared, /peptides:[\s\S]*maxOutputTokens:\s*20_000/);
 assert.match(shared, /ai_usage_events/);
 assert.match(shared, /\[AICost\]/);
 assert.match(shared, /Cancel did not complete within 10s/);
+assert.match(shared, /maxRetries:\s*0/);
+assert.match(shared, /const deadline = Date\.now\(\) \+ profile\.timeoutMs;[\s\S]{0,120}client\.responses\.create/);
 
 const baselineCosts = estimateAIUsageCosts({
   inputTokens: 100_000,
@@ -77,7 +81,24 @@ assert.equal(longContextCosts.openaiLongContextMultiplierApplied, true);
 
 const routes = read("server/routes.ts");
 assert.match(routes, /\/api\/admin\/ai-usage-costs/);
+assert.match(routes, /\/api\/admin\/recover-report-failures/);
+assert.match(routes, /deterministic_client_facing_repair/);
+assert.match(routes, /automaticReportRecoveryRunning/);
 assert.match(routes, /requireAdminAuth/);
+
+assert.equal(auditClientFacingText("Ton rendez-vous est confirme.").vouvoiement.length, 0);
+assert.deepEqual(auditClientFacingText("Vous devez verifier votre plan.").vouvoiement, [
+  "vous",
+  "votre",
+]);
+const repairedClientText = repairReportTextForDelivery(
+  "Vous devez verifier votre plan. Ton rendez-vous reste demain. Proteines: 90 g par jour.",
+  { poids: 80 },
+);
+assert.equal(auditClientFacingText(repairedClientText).vouvoiement.length, 0);
+assert.match(repairedClientText, /rendez-vous/);
+assert.match(repairedClientText, /1,6 a 2,2 g\/kg\/jour/);
+assert.match(repairedClientText, /128 a 176 g par jour/);
 
 const packageManifest = read("package.json");
 assert.doesNotMatch(packageManifest, /@anthropic-ai\/sdk/);

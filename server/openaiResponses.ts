@@ -58,7 +58,7 @@ const PROFILE_CONFIG: Record<OpenAIReportProfile, ProfileConfig> = {
   peptides: {
     effort: "max",
     mode: "pro",
-    maxOutputTokens: 24_000,
+    maxOutputTokens: 20_000,
     timeoutMs: 15 * 60 * 1000,
     verbosity: "high",
   },
@@ -491,22 +491,28 @@ export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAIT
         };
       }
 
-      let response: any = await client.responses.create({
-        model,
-        background,
-        store: background,
-        instructions: request.instructions,
-        input: request.input,
-        max_output_tokens: request.maxOutputTokens || profile.maxOutputTokens,
-        reasoning: {
-          effort: profile.effort,
-          ...(profile.mode ? { mode: profile.mode } : {}),
-        },
-        text: textConfig,
-        safety_identifier: safeIdentifier(request.safetyId || request.label || "anonymous", request.profile),
-      } as any);
-
       const deadline = Date.now() + profile.timeoutMs;
+      let response: any = await client.responses.create(
+        {
+          model,
+          background,
+          store: background,
+          instructions: request.instructions,
+          input: request.input,
+          max_output_tokens: request.maxOutputTokens || profile.maxOutputTokens,
+          reasoning: {
+            effort: profile.effort,
+            ...(profile.mode ? { mode: profile.mode } : {}),
+          },
+          text: textConfig,
+          safety_identifier: safeIdentifier(request.safetyId || request.label || "anonymous", request.profile),
+        } as any,
+        {
+          maxRetries: 0,
+          timeout: profile.timeoutMs,
+        } as any,
+      );
+
       while (response?.status === "queued" || response?.status === "in_progress") {
         if (Date.now() >= deadline) {
           try {
