@@ -76,6 +76,12 @@ export interface PeptidesReport {
 }
 
 export const PEPTIDES_PRIMARY_MODEL = OPENAI_REPORT_MODEL;
+const configuredPeptidesOutputTokens = Number(
+  process.env.PEPTIDES_OPENAI_MAX_OUTPUT_TOKENS || 32_000
+);
+export const PEPTIDES_MAX_OUTPUT_TOKENS = Number.isFinite(configuredPeptidesOutputTokens)
+  ? Math.min(32_000, Math.max(24_000, configuredPeptidesOutputTokens))
+  : 32_000;
 export const ENCLOMIPHENE_SOURCE_URL = "https://receptorchem.co.uk/enclomiphene-citrate/";
 export const PEPTIDES_REASONING = Object.freeze({
   effort: "max",
@@ -1951,7 +1957,7 @@ RÈGLES ABSOLUES:
 4. Sélectionne 2 à 4 peptides AU TOTAL. Un bonus n'est autorise que s'il respecte le budget et s'il apparait partout: justification, reconstitution, calendrier, shopping list et tableau peptides. Pour un debutant a l'injection ou un budget contraint, reste plutot a 2 ou 3 peptides et n'ajoute aucun bonus gadget.
 5. Utilise UNIQUEMENT le catalogue Peptaura. URLs réelles.
 6. Pour le choix du fournisseur (pays de livraison ${peptauraContext.country}, ${budgetNote}) : suis STRICTEMENT CONTEXTE PEPTAURA LIVE. Recommande un fournisseur qui livre vers ${peptauraContext.country}, evite tout fournisseur liste comme bloque, et rappelle que le client doit verifier ${peptauraContext.shippingUrl} avant de payer.
-7. Le rapport doit faire au moins 4000 caractères au total. Chaque section doit être substantielle.
+7. Le rapport doit contenir entre 30000 et 38000 caracteres au total. Chaque section doit etre substantielle, sans repetitions ni remplissage. Ne depasse pas 38000 caracteres.
 8. Chaque entree de "peptides" doit apparaitre dans la section de justification, le guide de reconstitution, le calendrier pratique, "weeklySchedule" et la liste de courses. Si tu ne l'integres pas partout, retire-la du tableau.
 9. Le dosage, la duree et toute phase de descente doivent etre strictement identiques dans les cartes, les sections et le calendrier. N'invente jamais une descente dans une seule section.
 10. La quantite de BAC water doit couvrir la somme reelle de tous les vials du cycle. Le serveur recalculera cette quantite.
@@ -2155,7 +2161,7 @@ async function callOpenAIForPeptides(
     safetyId: email,
     schema: PEPTIDES_REPORT_JSON_SCHEMA as unknown as Record<string, unknown>,
     schemaName: "peptides_engine_report",
-    maxOutputTokens: Number(process.env.PEPTIDES_OPENAI_MAX_OUTPUT_TOKENS || 64000),
+    maxOutputTokens: PEPTIDES_MAX_OUTPUT_TOKENS,
     label,
   });
 

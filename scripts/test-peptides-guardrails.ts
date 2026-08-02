@@ -20,6 +20,9 @@ const reportPageSource = readFileSync(new URL("../client/src/pages/PeptidesEngin
 assert.match(engineSource, /PEPTIDES_PRIMARY_MODEL[\s\S]{0,120}OPENAI_REPORT_MODEL/);
 assert.match(engineSource, /effort:\s*"max"/);
 assert.match(engineSource, /mode:\s*"pro"/);
+assert.match(engineSource, /PEPTIDES_MAX_OUTPUT_TOKENS[\s\S]{0,140}32_000/);
+assert.doesNotMatch(engineSource, /PEPTIDES_OPENAI_MAX_OUTPUT_TOKENS \|\| 64000/);
+assert.match(engineSource, /entre 30000 et 38000 caracteres au total/);
 assert.match(engineSource, /Candidate rejected[\s\S]{0,600}strict full regeneration/);
 assert.doesNotMatch(engineSource, /@anthropic-ai\/sdk|ANTHROPIC_API_KEY|callClaudeForPeptides/);
 assert.match(engineSource, /PROTOCOLE OBLIGATOIRE SI TESTOSTERONE BASSE CONFIRMEE/i);
