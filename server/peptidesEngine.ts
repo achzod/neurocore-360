@@ -612,7 +612,10 @@ async function fetchPeptauraProductSnapshot(
 
   const url = peptauraProductUrl(slug);
   const html = await fetchTextWithTimeout(url, PEPTAURA_FETCH_TIMEOUT_MS, forceFresh);
-  if (!html || /not found|404/i.test(html.slice(0, 50000))) return null;
+  if (!html) return null;
+  const pageHead = html.slice(0, 50000);
+  const isMissingPage = /<title>\s*(?:404|[^<]*not found)|<h1[^>]*>\s*(?:404|[^<]*not found)|\bpage not found\b/i.test(pageHead);
+  if (isMissingPage) return null;
 
   const snapshot = parsePeptauraProductSnapshot(slug, html);
   peptauraProductCache.set(cacheKey, { value: snapshot, expiresAt: now + PEPTAURA_CACHE_TTL_MS });

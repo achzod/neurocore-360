@@ -45,6 +45,8 @@ void (async () => {
 
   const refresh = await refreshPeptauraCatalog({ forceFresh: true });
   assert.equal(refresh.ok, true, refresh.failedProducts.join(", "));
+  assert.deepEqual(refresh.failedProducts, [], `Produits non rafraichis: ${refresh.failedProducts.join(", ")}`);
+  assert.equal(refresh.refreshedProducts, refresh.sitemapProducts);
   assert.equal(refresh.refreshedProducts >= Math.ceil(refresh.sitemapProducts * 0.95), true);
   assert.equal(getPeptauraCatalogHealth().snapshotCount >= 70, true);
 
