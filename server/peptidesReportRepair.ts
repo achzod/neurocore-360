@@ -510,8 +510,11 @@ function extractLiveReportTotalUsd(report: RepairableReport): number {
   return String(report.shoppingList || "")
     .split(/\n+/)
     .reduce((sum, line) => {
-      const match = line.match(/\btotal\s*\$(\d+(?:[.,]\d+)?)/i);
-      return sum + (match ? Number(match[1].replace(",", ".")) : 0);
+      const usdMatch = line.match(/\btotal\s*\$(\d+(?:[.,]\d+)?)/i);
+      const gbpMatch = line.match(/\btotal\s*£(\d+(?:[.,]\d+)?)/i);
+      const usd = usdMatch ? Number(usdMatch[1].replace(",", ".")) : 0;
+      const gbpAsUsd = gbpMatch ? Number(gbpMatch[1].replace(",", ".")) * 1.28 : 0;
+      return sum + usd + gbpAsUsd;
   }, 0);
 }
 
@@ -557,10 +560,16 @@ function synchronizeReconstitutionNarrative(
   );
   if (!section) return;
 
+  const injectablePeptides = (report.peptides || []).filter((peptide) =>
+    !/orale?|buccale?/i.test(peptide.route || "")
+    && !/aucune reconstitution|sans reconstitution|solution liquide/i.test(peptide.reconstitution || "")
+  );
   section.content = sanitizeClientFacingText(
     [
       `${firstName}, utilise uniquement les formats et les calculs ci-dessous. Ils sont reconstruits depuis les fiches retenues apres le controle du catalogue et des quantites.`,
-      "METHODE COMMUNE\nLave-toi les mains, nettoie les bouchons, injecte la BAC water doucement le long de la paroi du vial et ne vise pas directement la poudre. Ne secoue pas le vial. Fais-le rouler doucement entre tes paumes jusqu'a dissolution complete. La solution doit rester claire.",
+      ...(injectablePeptides.length > 0
+        ? ["METHODE COMMUNE POUR LES VIALS\nLave-toi les mains, nettoie les bouchons, injecte la BAC water doucement le long de la paroi du vial et ne vise pas directement la poudre. Ne secoue pas le vial. Fais-le rouler doucement entre tes paumes jusqu'a dissolution complete. La solution doit rester claire."]
+        : []),
       ...(report.peptides || []).map(
         (peptide) =>
           `${String(peptide.name || "").toUpperCase()}\n` +
@@ -568,7 +577,9 @@ function synchronizeReconstitutionNarrative(
           `Format commande: ${asSentence(peptide.vialsNeeded)}\n` +
           `Reconstitution exacte: ${asSentence(peptide.reconstitution)}`
       ),
-      "BAC WATER TOTALE\nLa quantite totale a commander figure dans la liste de courses live. Elle additionne le solvant necessaire pour chaque vial du cycle, pas uniquement le premier vial ouvert.",
+      ...(injectablePeptides.length > 0
+        ? ["BAC WATER TOTALE\nLa quantite totale a commander figure dans la liste de courses live. Elle additionne le solvant necessaire pour chaque vial du cycle, pas uniquement le premier vial ouvert."]
+        : []),
     ].join("\n\n")
   );
 }

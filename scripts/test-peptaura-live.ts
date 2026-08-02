@@ -8,7 +8,15 @@ void (async () => {
     refreshPeptauraCatalog,
     getPeptauraCatalogHealth,
     validateVialsMath,
+    fetchEnclomipheneSourceSnapshot,
+    ENCLOMIPHENE_SOURCE_URL,
   } = await import("../server/peptidesEngine");
+
+  const enclomipheneSource = await fetchEnclomipheneSourceSnapshot(true);
+  assert.equal(enclomipheneSource?.url, ENCLOMIPHENE_SOURCE_URL);
+  assert.equal(enclomipheneSource?.available, true);
+  assert.match(enclomipheneSource?.format || "", /30 ml a 12,5 mg\/ml/i);
+  assert.equal(Number(enclomipheneSource?.priceGbp) > 0, true);
 
   const html = await fetch("https://www.peptaura.com/catalog/Retatrutide", {
     headers: { "cache-control": "no-cache" },

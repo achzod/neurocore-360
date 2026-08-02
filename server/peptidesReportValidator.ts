@@ -37,6 +37,17 @@ export interface PeptidesReport {
   promoCodesGenerated?: any[];
   weeklySchedule?: string;
   shoppingList?: string;
+  bloodMarkers?: string[];
+  _validationContext?: {
+    confirmedLowTestosterone?: boolean;
+  };
+  _enclomipheneSourceSync?: {
+    url?: string;
+    fetchedAt?: string;
+    available?: boolean;
+    format?: string;
+    priceGbp?: number;
+  };
   _peptauraLiveSync?: {
     syncedAt?: string;
     catalogRefreshedAt?: string;
@@ -84,6 +95,7 @@ const REQUIRED_PEPTIDE_FIELDS = [
 
 const MIN_SECTIONS = 12;
 const MIN_SECTION_CHARS = 350;
+const ENCLOMIPHENE_SOURCE_URL = "https://receptorchem.co.uk/enclomiphene-citrate/";
 const MIN_TOTAL_CHARS = 30_000;
 const MAX_PEPTAURA_DELIVERY_AGE_MS = Number(
   process.env.PEPTAURA_DELIVERY_MAX_AGE_MS || 45 * 60 * 1000
@@ -555,7 +567,12 @@ function checkPeptide(p: PeptidesPeptide): string[] {
     }
   }
 
-  if (!p.purchaseUrl?.toLowerCase().includes("peptaura.com")) {
+  const isEnclomiphene = /\benclomiph[eè]ne(?:\s+citrate)?\b/i.test(p.name || "");
+  if (isEnclomiphene) {
+    if (p.purchaseUrl !== ENCLOMIPHENE_SOURCE_URL) {
+      issues.push(`source Enclomiphene invalide: ${p.purchaseUrl}`);
+    }
+  } else if (!p.purchaseUrl?.toLowerCase().includes("peptaura.com")) {
     issues.push(`purchaseUrl pas Peptaura: ${p.purchaseUrl}`);
   }
 
@@ -632,6 +649,103 @@ function checkPeptide(p: PeptidesPeptide): string[] {
   return issues;
 }
 
+function validateConfirmedLowTestosteroneProtocol(
+  report: PeptidesReport,
+  clientFacingText: string
+): string[] {
+  if (report._validationContext?.confirmedLowTestosterone !== true) return [];
+
+  const errors: string[] = [];
+  const peptides = report.peptides || [];
+  const enclomiphene = peptides.find((peptide) =>
+    /\benclomiph[eè]ne(?:\s+citrate)?\b/i.test(peptide.name || "")
+  );
+  const kisspeptin = peptides.find((peptide) =>
+    /\bkisspeptin[\s-]*10\b/i.test(peptide.name || "")
+  );
+
+  if (!enclomiphene) errors.push("testo basse confirmee: Enclomiphene obligatoire absent");
+  if (!kisspeptin) errors.push("testo basse confirmee: KissPeptin-10 obligatoire absent");
+
+  for (const [label, peptide, pattern] of [
+    ["Enclomiphene", enclomiphene, /\benclomiph[eè]ne(?:\s+citrate)?\b/i],
+    ["KissPeptin-10", kisspeptin, /\bkisspeptin[\s-]*10\b/i],
+  ] as const) {
+    if (!peptide) continue;
+    if (String(peptide.whyThisPeptide || "").trim().length < 80) {
+      errors.push(`testo basse confirmee: explication trop courte pour ${label}`);
+    }
+    if (!pattern.test(report.weeklySchedule || "")) {
+      errors.push(`testo basse confirmee: ${label} absent de la semaine type`);
+    }
+    if (!pattern.test(report.shoppingList || "")) {
+      errors.push(`testo basse confirmee: ${label} absent de la liste de commande`);
+    }
+    const narrativeMentions = (report.sections || []).filter((section) =>
+      pattern.test(`${section.title || ""} ${section.content || ""}`)
+    ).length;
+    if (narrativeMentions < 2) {
+      errors.push(`testo basse confirmee: ${label} insuffisamment explique dans les sections`);
+    }
+  }
+
+  if (enclomiphene) {
+    if (enclomiphene.purchaseUrl !== ENCLOMIPHENE_SOURCE_URL) {
+      errors.push("testo basse confirmee: URL ReceptorChem Enclomiphene incorrecte");
+    }
+    if (!/orale?|buccale?/i.test(enclomiphene.route || "")) {
+      errors.push("testo basse confirmee: voie orale Enclomiphene absente");
+    }
+    if (!/aucune reconstitution|sans reconstitution|solution liquide/i.test(enclomiphene.reconstitution || "")) {
+      errors.push("testo basse confirmee: format liquide Enclomiphene mal decrit");
+    }
+  }
+
+  if (kisspeptin && !/peptaura\.com\/catalog\/KissPeptin-10/i.test(kisspeptin.purchaseUrl || "")) {
+    errors.push("testo basse confirmee: URL Peptaura KissPeptin-10 incorrecte");
+  }
+
+  const source = report._enclomipheneSourceSync;
+  const sourceFetchedAt = new Date(String(source?.fetchedAt || "")).getTime();
+  if (!source || source.available !== true || source.url !== ENCLOMIPHENE_SOURCE_URL) {
+    errors.push("testo basse confirmee: source ReceptorChem non validee en direct");
+  } else if (!Number.isFinite(sourceFetchedAt)
+    || Date.now() - sourceFetchedAt > MAX_PEPTAURA_DELIVERY_AGE_MS) {
+    errors.push("testo basse confirmee: verification ReceptorChem trop ancienne");
+  }
+  if (!/30\s*ml[\s\S]*12[,.]5\s*mg\s*\/\s*ml/i.test(source?.format || "")) {
+    errors.push("testo basse confirmee: format ReceptorChem inattendu");
+  }
+  if (!Number.isFinite(source?.priceGbp) || Number(source?.priceGbp) <= 0) {
+    errors.push("testo basse confirmee: prix ReceptorChem non verifie");
+  }
+
+  const normalizedMarkers = (report.bloodMarkers || [])
+    .join(" ")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  for (const [label, pattern] of [
+    ["testosterone totale", /testosterone\s+totale/],
+    ["testosterone libre", /testosterone\s+libre/],
+    ["LH", /\blh\b/],
+    ["FSH", /\bfsh\b/],
+    ["E2", /\b(?:e2|estradiol)\b/],
+    ["SHBG", /\bshbg\b/],
+    ["prolactine", /\bprolactine\b/],
+  ] as const) {
+    if (!pattern.test(normalizedMarkers)) {
+      errors.push(`testo basse confirmee: marqueur de suivi absent, ${label}`);
+    }
+  }
+
+  if (/\b(?:Androtardyl|Andractim)\b/i.test(clientFacingText)) {
+    errors.push("testo basse confirmee: confusion androgenes et Enclomiphene interdite");
+  }
+
+  return errors;
+}
+
 export function validatePeptidesReport(report: PeptidesReport | null | undefined): PeptidesValidation {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -675,7 +789,7 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
   if (report.qualityVersion === "expert-standard-v1") {
     const medicalMentions = (clientFacingText.match(/\b(?:m[ée]decin|pharmacien|professionnel de sant[ée])\b/gi) || []).length;
     const cautionMentions = (clientFacingText.match(/\b(?:exp[ée]rimental|non approuv[ée]|validation m[ée]dicale|avis m[ée]dical|accord m[ée]dical)\b/gi) || []).length;
-    if (medicalMentions > 22 || cautionMentions > 28) {
+    if (medicalMentions > 12 || cautionMentions > 16) {
       errors.push(
         `surcouche medicale excessive pour un rapport standard: ${medicalMentions} renvois professionnels, ${cautionMentions} warnings`
       );
@@ -738,6 +852,8 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
   if (peptides.length < 2) {
     warnings.push(`tres peu de peptides (${peptides.length})`);
   }
+
+  errors.push(...validateConfirmedLowTestosteroneProtocol(report, clientFacingText));
 
   if (sections.length < MIN_SECTIONS) {
     errors.push(`sections insuffisantes: ${sections.length} < ${MIN_SECTIONS}`);

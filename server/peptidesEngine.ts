@@ -63,9 +63,20 @@ export interface PeptidesReport {
     reasoningMode?: string;
     generatedAt: string;
   };
+  _validationContext?: {
+    confirmedLowTestosterone: boolean;
+  };
+  _enclomipheneSourceSync?: {
+    url: string;
+    fetchedAt: string;
+    available: boolean;
+    format: string;
+    priceGbp: number;
+  };
 }
 
 export const PEPTIDES_PRIMARY_MODEL = OPENAI_REPORT_MODEL;
+export const ENCLOMIPHENE_SOURCE_URL = "https://receptorchem.co.uk/enclomiphene-citrate/";
 export const PEPTIDES_REASONING = Object.freeze({
   effort: "max",
   mode: "pro",
@@ -241,7 +252,16 @@ interface PeptauraPromptContext {
   liveCatalogSlugs: string[] | null;
   catalogRefreshedAt: string;
   catalogSnapshots: PeptauraLiveProductSnapshot[];
+  enclomipheneSource: EnclomipheneSourceSnapshot | null;
   promptBlock: string;
+}
+
+export interface EnclomipheneSourceSnapshot {
+  url: string;
+  fetchedAt: string;
+  available: boolean;
+  format: string;
+  priceGbp: number;
 }
 
 interface PeptauraPriceTier {
@@ -283,6 +303,7 @@ const PEPTAURA_FETCH_TIMEOUT_MS = Number(process.env.PEPTAURA_FETCH_TIMEOUT_MS |
 let peptauraSitemapCache: CacheEntry<string[] | null> | null = null;
 const peptauraShippingCache = new Map<string, CacheEntry<PeptauraShippingAvailability>>();
 const peptauraProductCache = new Map<string, CacheEntry<PeptauraLiveProductSnapshot>>();
+let enclomipheneSourceCache: CacheEntry<EnclomipheneSourceSnapshot | null> | null = null;
 let peptauraCatalogLastRefreshAt = 0;
 let peptauraCatalogRefreshPromise: Promise<PeptauraCatalogRefreshResult> | null = null;
 let peptauraCatalogCron: NodeJS.Timeout | null = null;
@@ -343,6 +364,14 @@ function peptauraProductUrl(slug: string): string {
   return `https://www.peptaura.com/catalog/${encodeURIComponent(slug).replace(/%2B/g, "+")}`;
 }
 
+function isEnclomipheneName(value: string): boolean {
+  return /\benclomiph[eè]ne(?:\s+citrate)?\b/i.test(value);
+}
+
+function hasConfirmedLowTestosterone(responses: Record<string, unknown>): boolean {
+  return String(responses.pep_testo_bloodwork || "").trim().toLowerCase() === "recent-low";
+}
+
 async function fetchTextWithTimeout(
   url: string,
   timeoutMs = PEPTAURA_FETCH_TIMEOUT_MS,
@@ -360,12 +389,12 @@ async function fetchTextWithTimeout(
       },
     });
     if (!res.ok) {
-      console.warn(`[PeptidesEngine] Peptaura fetch ${res.status} for ${url}`);
+      console.warn(`[PeptidesEngine] Source fetch ${res.status} for ${url}`);
       return null;
     }
     return await res.text();
   } catch (err) {
-    console.warn(`[PeptidesEngine] Peptaura fetch failed for ${url}:`, err instanceof Error ? err.message : String(err));
+    console.warn(`[PeptidesEngine] Source fetch failed for ${url}:`, err instanceof Error ? err.message : String(err));
     return null;
   } finally {
     clearTimeout(timeout);
@@ -383,6 +412,48 @@ function decodePeptauraHtml(html: string): string {
 
 function stripHtml(value: string): string {
   return value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+export async function fetchEnclomipheneSourceSnapshot(
+  forceFresh = false
+): Promise<EnclomipheneSourceSnapshot | null> {
+  const now = Date.now();
+  if (!forceFresh && enclomipheneSourceCache && enclomipheneSourceCache.expiresAt > now) {
+    return enclomipheneSourceCache.value;
+  }
+
+  const html = await fetchTextWithTimeout(
+    ENCLOMIPHENE_SOURCE_URL,
+    PEPTAURA_FETCH_TIMEOUT_MS,
+    forceFresh
+  );
+  if (!html) {
+    enclomipheneSourceCache = { value: null, expiresAt: now + 60_000 };
+    return null;
+  }
+
+  const productAt = html.indexOf('id="product-11658"');
+  const productBlock = productAt >= 0 ? html.slice(productAt, productAt + 35_000) : html;
+  const hasExpectedTitle = /product_title[^>]*>\s*Enclomiphene\s*</i.test(productBlock);
+  const hasExpectedFormat = /30\s*ml\s*(?:@|[^\d]{1,20})\s*12[.,]5\s*mg\s*\/\s*ml/i.test(productBlock);
+  const available = /\binstock\b/i.test(productBlock)
+    && /name="add-to-cart"\s+value="11658"/i.test(productBlock);
+  const priceMatch = productBlock.match(
+    /woocommerce-Price-currencySymbol">&pound;<\/span>(\d+(?:\.\d+)?)/i
+  );
+  const priceGbp = Number(priceMatch?.[1] || 0);
+  const snapshot: EnclomipheneSourceSnapshot = {
+    url: ENCLOMIPHENE_SOURCE_URL,
+    fetchedAt: new Date().toISOString(),
+    available: hasExpectedTitle && hasExpectedFormat && available && priceGbp > 0,
+    format: "30 ml a 12,5 mg/ml",
+    priceGbp,
+  };
+  enclomipheneSourceCache = {
+    value: snapshot,
+    expiresAt: now + PEPTAURA_CACHE_TTL_MS,
+  };
+  return snapshot;
 }
 
 async function fetchPeptauraCatalogSlugs(forceFresh = false): Promise<string[] | null> {
@@ -907,6 +978,52 @@ async function applyLivePeptauraPricing(
   const listingSnapshots: Array<Record<string, unknown>> = [];
 
   for (const pep of report.peptides) {
+    if (isEnclomipheneName(pep.name)) {
+      const source = context.enclomipheneSource
+        || await fetchEnclomipheneSourceSnapshot(forceFresh);
+      const sourceSync = source || {
+        url: ENCLOMIPHENE_SOURCE_URL,
+        fetchedAt: new Date().toISOString(),
+        available: false,
+        format: "30 ml a 12,5 mg/ml",
+        priceGbp: 0,
+      };
+      report._enclomipheneSourceSync = sourceSync;
+      if (!source?.available) {
+        failures.push("Enclomiphene: source ReceptorChem live indisponible ou format inattendu");
+        continue;
+      }
+
+      const needMg = estimateNeedMg(pep);
+      if (needMg == null || needMg <= 0) {
+        failures.push("Enclomiphene: quantite totale incalculable depuis le protocole");
+        continue;
+      }
+      const bottleMg = 30 * 12.5;
+      const bottleCount = Math.max(1, Math.ceil(needMg / bottleMg));
+      const totalGbp = Math.round(source.priceGbp * bottleCount * 100) / 100;
+      pep.purchaseUrl = ENCLOMIPHENE_SOURCE_URL;
+      pep.reconstitution = "Aucune reconstitution, solution liquide de 30 ml concentree a 12,5 mg/ml";
+      pep.vialsNeeded = `${bottleCount} flacon${bottleCount > 1 ? "s" : ""} de 30 ml a 12,5 mg/ml pour ${pep.cycleDuration} (besoin calcule environ ${needMg.toFixed(1)} mg)`;
+      pep.priceEstimate = `Environ £${source.priceGbp.toFixed(2)} par flacon, ${bottleCount} flacon${bottleCount > 1 ? "s" : ""}, total £${totalGbp.toFixed(2)}`;
+      liveNotes.push(`Enclomiphene: ${source.format} via ReceptorChem`);
+      listingSnapshots.push({
+        peptide: pep.name,
+        slug: "enclomiphene-citrate",
+        url: source.url,
+        supplier: "ReceptorChem",
+        dosage: source.format,
+        requestedVials: bottleCount,
+        boxSize: 1,
+        packageCount: bottleCount,
+        deliveredVials: bottleCount,
+        unitPackagePriceGbp: source.priceGbp,
+        totalPriceGbp: totalGbp,
+        fetchedAt: source.fetchedAt,
+      });
+      continue;
+    }
+
     const product = findPeptauraProductForPeptide(pep.name);
     const cachedSnapshot = findLiveSnapshotForPeptide(pep.name, context.catalogSnapshots);
     const slug = cachedSnapshot?.slug || product?.slug;
@@ -1078,6 +1195,9 @@ async function applyLivePeptauraPricing(
       `${pep.name}: ${pep.vialsNeeded}. ${pep.priceEstimate}. ${pep.purchaseUrl}`
     ),
     ...(bacWaterLine ? [bacWaterLine] : []),
+    ...(report.peptides.some((pep) => isEnclomipheneName(pep.name))
+      ? [`Avant de payer Enclomiphene, verifie une derniere fois le stock sur ${ENCLOMIPHENE_SOURCE_URL}.`]
+      : []),
     `Avant de payer, verifie une derniere fois le stock et la livraison vers ${context.country} sur ${context.shippingUrl}.`,
   ].join("\n");
 
@@ -1110,6 +1230,15 @@ function buildCatalogForPrompt(context: PeptauraPromptContext): string {
   lines.push(`Catalogue live rafraichi le ${context.catalogRefreshedAt}: ${context.liveCatalogSlugs ? `${context.liveCatalogSlugs.length} pages produit detectees` : "indisponible"}.`);
   lines.push("Les prix ci-dessous viennent des pages produit live. Le serveur recontrole ensuite chaque page retenue avant sauvegarde et juste avant livraison.");
   lines.push("Tous les produits: vials lyophilises sauf mention spray/cartridge. Reconstitution avec BAC water quand applicable.\n");
+  if (context.enclomipheneSource) {
+    const source = context.enclomipheneSource;
+    lines.push("SOURCE EXTERNE ENCLOMIPHENE VERIFIEE EN DIRECT");
+    lines.push(
+      `Enclomiphene Citrate | ${source.format} | £${source.priceGbp.toFixed(2)} | ` +
+      `${source.available ? "en stock" : "indisponible"} | ${source.url}`
+    );
+    lines.push("Cette URL exacte remplace Peptaura uniquement pour Enclomiphene.\n");
+  }
 
   const snapshotsBySlug = new Map(
     context.catalogSnapshots.map((snapshot) => [normalizePeptauraKey(snapshot.slug), snapshot])
@@ -1145,9 +1274,12 @@ function buildCatalogForPrompt(context: PeptauraPromptContext): string {
 
 async function buildPeptauraPromptContext(responses: Record<string, unknown>): Promise<PeptauraPromptContext> {
   const country = normalizeDeliveryCountry(responses);
-  const [shippingAvailability, catalogRefresh] = await Promise.all([
+  const [shippingAvailability, catalogRefresh, enclomipheneSource] = await Promise.all([
     fetchPeptauraShippingAvailability(country, true),
     ensurePeptauraCatalogFresh(),
+    hasConfirmedLowTestosterone(responses)
+      ? fetchEnclomipheneSourceSnapshot(true)
+      : Promise.resolve(null),
   ]);
   const liveCatalogSlugs = await fetchPeptauraCatalogSlugs();
   const catalogSnapshots = getCachedPeptauraSnapshots();
@@ -1159,6 +1291,7 @@ async function buildPeptauraPromptContext(responses: Record<string, unknown>): P
     liveCatalogSlugs,
     catalogRefreshedAt: health.refreshedAt || catalogRefresh.completedAt,
     catalogSnapshots,
+    enclomipheneSource,
     promptBlock: "",
   };
   context.promptBlock = buildCatalogForPrompt(context);
@@ -1171,6 +1304,9 @@ export async function refreshPeptauraPricingForDelivery(
   tier?: string | null
 ): Promise<PeptidesReport> {
   const report = validateVialsMath(JSON.parse(JSON.stringify(sourceReport)));
+  report._validationContext = {
+    confirmedLowTestosterone: hasConfirmedLowTestosterone(responses),
+  };
   const context = await buildPeptauraPromptContext(responses);
   await applyLivePeptauraPricing(report, context, true);
   const repaired = repairPeptidesReportContent(report, responses, tier);
@@ -1399,6 +1535,7 @@ Tu parles comme un expert terrain, pas comme un avocat, pas comme une notice FDA
 Tu assumes une recommandation claire, hierarchisee, pratique et personnalisee. Tu cadres le risque sans dissoudre la valeur du protocole.
 Le client a paye pour comprendre ce que tu choisirais pour son profil et comment tu organiserais le stack. Donne-lui cette reponse franchement.
 Chaque idee de prudence ne doit apparaitre qu'une fois. Tu ne recopies jamais le meme disclaimer, la meme consigne medicale ou la meme phrase dans plusieurs sections.
+Le rendu ne doit jamais ressembler a un compte rendu medical. Les molecules, le protocole, le timing, les calculs, les explications et la liste de commande occupent le premier plan. Regroupe les verifications indispensables dans un seul bloc court au lieu de renvoyer le client vers un professionnel dans chaque section.
 Evite les rafales de titres en majuscules. Utilise des sous-titres seulement quand ils aident vraiment a lire.
 Ne pretends jamais qu'un geste est simple, indolore ou sans risque. Ne rassure jamais avec un nombre invente de personnes qui feraient la meme chose.
 N'invente aucune experience personnelle, aucun diplome et aucune validation medicale.
@@ -1633,8 +1770,8 @@ Tirzepatide (GLP-1/GIP dual)
 - Route: SC 1x/semaine
 - Cycle: 3-12 mois
 
-AXE HPG / RELANCE TESTOSTERONE NATURELLE (alternative TRT) - CATALOGUE PEPTAURA LIVE
-IMPORTANT 2026-07 : la disponibilite HCG, KissPeptin-10, Testagen et autres outils HPG doit suivre le bloc CONTEXTE PEPTAURA LIVE. Ne dis jamais qu'une molecule est disponible ou indisponible si le catalogue live dit l'inverse. Pour les SERMs medicamenteux (Enclomifene, Tamoxifen) et les protocoles endocriniens qui necessitent ordonnance, oriente le client vers une consultation medicale (medecin generaliste ou endocrinologue) et pharmacie classique. Ne fais jamais semblant qu'un medicament sous ordonnance se source comme un peptide marketplace.
+AXE HPG / TESTOSTERONE BASSE, PROTOCOLE DIRECT ET SOURCES LIVE
+La disponibilite de KissPeptin-10, HCG, Testagen et des autres outils HPG suit le bloc CONTEXTE PEPTAURA LIVE. Ne dis jamais qu'une molecule est disponible ou indisponible si le catalogue live dit l'inverse. Enclomiphene fait exception: sa seule source autorisee dans ce moteur est https://receptorchem.co.uk/enclomiphene-citrate/ et le serveur controle cette page en direct avant sauvegarde puis avant livraison.
 
 Quand pep_primary_goal = "testo-boost" OU pep_secondary_goals contient "testo-boost", tu construis un protocole base sur les regles suivantes. IMPORTANT : tu NE prescris JAMAIS sans bilan hormonal recent (Testo totale, Testo libre, LH, FSH, E2, SHBG, Prolactine, DHT, Albumine). Si pep_testo_bloodwork = "never" ou "old", ta PREMIERE recommandation doit etre de faire le bilan via Apexlabs Blood Analysis avant d'entamer le moindre peptide. Le nombre de credits inclus depend exclusivement du bloc CONTEXTE OFFRE du prompt utilisateur. N'invente jamais un credit offert. Pas de bilan = pas de protocole hormonal, point.
 
@@ -1646,15 +1783,16 @@ HCG (analogue LH, outil HPG-axis Peptaura si listing live disponible)
 - Cycle : 4-12 semaines en relance, ou usage continu en micro-dose si TRT prescrit.
 - Source : Peptaura uniquement si le listing live et la livraison pays client sont disponibles. Utilise le fournisseur autorise par le bloc CONTEXTE PEPTAURA LIVE, pas une ancienne reference fournisseur.
 
-ENCLOMIFENE / TAMOXIFENE / GONADORELIN (hors marketplace standard)
-Si le client a besoin d'une de ces molecules selon son profil, oriente-le vers une consultation medicale pour obtenir l'ordonnance, puis pharmacie classique quand c'est un medicament prescrit dans son pays. KissPeptin-10 et Testagen ne doivent etre recommandes via Peptaura que si le catalogue live les liste et si un fournisseur livre dans le pays client.
+PROTOCOLE OBLIGATOIRE SI TESTOSTERONE BASSE CONFIRMEE
+Si pep_testo_bloodwork = "recent-low", le stack principal contient OBLIGATOIREMENT ces deux fiches completes dans peptides:
+1. Enclomiphene Citrate. purchaseUrl EXACTE: https://receptorchem.co.uk/enclomiphene-citrate/. Source live attendue: solution liquide 30 ml a 12,5 mg/ml. Route orale. Ecris un protocole chiffre, un timing clair, une duree, le besoin total en mg, le nombre de flacons, le cout et l'explication du choix. reconstitution doit dire qu'il n'y en a aucune pour cette solution liquide. Ne cite jamais Androtardyl ou Andractim comme synonymes ou marques d'Enclomiphene.
+2. KissPeptin-10. purchaseUrl Peptaura live exacte. Ecris un protocole chiffre, le timing, la voie, la duree, la reconstitution, le calcul en unites et en ml, le nombre de vials, le cout live et l'explication de son role dans le stack.
+Les deux molecules doivent apparaitre dans la synthese, le rationnel, les fiches, la semaine type et la liste de commande. Explique leur logique ensemble avec des mots simples, sans transformer le rapport en consultation medicale. HCG ne remplace jamais ce duo. Tu peux l'ajouter uniquement si le contexte TRT, fertilite ou post-cycle le justifie explicitement et si sa source Peptaura passe les controles live.
 
-PROTOCOLES TESTO-BOOST (logique de decision adaptee au catalogue actuel)
-Si testo basse confirmee (pep_testo_bloodwork = "recent-low") + fertilite importante : recommande consultation medecin/endocrino pour Enclomifene (Androtardyl/Andractim sous ordonnance) en premiere ligne. HCG en complement pour preserver la taille testiculaire si TRT est demarre.
+AUTRES CAS TESTO-BOOST
 Si testo dans la norme mais client veut optimiser : refuse tout protocole pharmacologique. Propose optimisation lifestyle (sommeil, stress, alimentation, training, supplementation zinc/D3/magnesium). Pas de protocole HPG-axis sans indication medicale documentee.
-Post-cycle (pep_testo_pct_context = "post-cycle") : HCG 500 UI x2-3/semaine pendant 4 semaines, en complement d'une consultation medicale pour Enclomifene sous ordonnance. Insiste sur le bilan pre/post.
-Andropause (age-related) + bilan LH/FSH hauts (hypogonadisme primaire) : l'axe HPG est deja au max. Dis-le honnetement au client, oriente vers consultation endocrino pour evaluation TRT medicale. Tu ne fais pas semblant.
-Andropause + LH/FSH bas/normaux (hypogonadisme secondaire) : consultation medecin pour Enclomifene sous ordonnance + HCG en complement disponible sur Peptaura.
+Post-cycle (pep_testo_pct_context = "post-cycle") : conserve le duo Enclomiphene plus KissPeptin-10 si la testo est basse confirmee, puis ajoute HCG uniquement si le profil le justifie et si sa fiche Peptaura est validee en direct. Insiste sur le bilan pre/post dans le bloc de suivi.
+Andropause ou autre contexte avec testo basse confirmee : conserve le duo obligatoire et explique clairement ce que LH et FSH changent dans la lecture du profil et dans les attentes realistes.
 Baisse stress/lifestyle : PREMIER REFLEXE = optimisation sommeil, stress management, alimentation, training. Peptides en second temps si les basics sont deja en place. Pas de raccourci pharmaco.
 
 BLOODWORK OBLIGATOIRE POUR TESTO-BOOST (MONITORING)
@@ -2077,6 +2215,10 @@ export function validateAndFixPeptauraUrls(report: PeptidesReport): PeptidesRepo
   const slugMap = new Map(getPeptauraCatalogProducts().map(p => [p.name.toLowerCase(), p]));
 
   for (const pep of report.peptides) {
+    if (isEnclomipheneName(pep.name)) {
+      pep.purchaseUrl = ENCLOMIPHENE_SOURCE_URL;
+      continue;
+    }
     const match = slugMap.get(pep.name.toLowerCase());
     if (match) {
       // Force correct URL from our catalog
@@ -2617,6 +2759,9 @@ export async function generatePeptidesProtocol(
       report = await applyLivePeptauraPricing(report, peptauraContext);
       report = repairPeptidesReportContent(report, responses, tier);
       report = cleanReportContent(report, firstName);
+      report._validationContext = {
+        confirmedLowTestosterone: hasConfirmedLowTestosterone(responses),
+      };
       report.promoCodesGenerated = [];
       report.clientName = firstName;
       report._generationMeta = {

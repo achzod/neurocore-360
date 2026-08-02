@@ -15,12 +15,18 @@ import {
 import { splitWeeklyScheduleEntries } from "../client/src/lib/peptidesSchedule";
 
 const engineSource = readFileSync(new URL("../server/peptidesEngine.ts", import.meta.url), "utf8");
+const routesSource = readFileSync(new URL("../server/routes.ts", import.meta.url), "utf8");
 const reportPageSource = readFileSync(new URL("../client/src/pages/PeptidesEngineReport.tsx", import.meta.url), "utf8");
 assert.match(engineSource, /PEPTIDES_PRIMARY_MODEL[\s\S]{0,120}OPENAI_REPORT_MODEL/);
 assert.match(engineSource, /effort:\s*"max"/);
 assert.match(engineSource, /mode:\s*"pro"/);
 assert.match(engineSource, /Candidate rejected[\s\S]{0,600}strict full regeneration/);
 assert.doesNotMatch(engineSource, /@anthropic-ai\/sdk|ANTHROPIC_API_KEY|callClaudeForPeptides/);
+assert.match(engineSource, /PROTOCOLE OBLIGATOIRE SI TESTOSTERONE BASSE CONFIRMEE/i);
+assert.match(engineSource, /1\. Enclomiphene Citrate/);
+assert.match(engineSource, /2\. KissPeptin-10/);
+assert.match(engineSource, /https:\/\/receptorchem\.co\.uk\/enclomiphene-citrate\//);
+assert.match(routesSource, /DELIVERY BLOCKED[\s\S]{0,1800}continue;/);
 assert.match(
   reportPageSource,
   /_generationMeta\?\.generatedAt[\s\S]{0,180}Mis a jour le/,
@@ -286,6 +292,14 @@ const repetitionAudit = validatePeptidesReport(repetitionFailure);
 assert.equal(repetitionAudit.ok, false);
 assert.match(repetitionAudit.errors.join("\n"), /phrases repetees detectees/);
 
+const medicalWallFailure = structuredClone(report) as any;
+medicalWallFailure.qualityVersion = "expert-standard-v1";
+medicalWallFailure.sections[0].content +=
+  ` ${Array.from({ length: 13 }, (_, index) => `Renvoi medecin numero ${index + 1}`).join(". ")}.`;
+const medicalWallAudit = validatePeptidesReport(medicalWallFailure);
+assert.equal(medicalWallAudit.ok, false);
+assert.match(medicalWallAudit.errors.join("\n"), /surcouche medicale excessive/);
+
 const repairableRoboticPhrase = structuredClone(report);
 repairableRoboticPhrase.sections![0].content += " C'est plus simple que ca en a l'air.";
 const repairedRoboticPhrase = repairPeptidesReportContent(
@@ -492,6 +506,115 @@ assert.doesNotMatch(
   hardFlagReport.sections.map((section: any) => `${section.title}\n${section.content}`).join("\n"),
   /\b2 credits Blood Analysis\b/i,
   "Le mode medical doit respecter le tier Solo lui aussi"
+);
+
+const missingLowTestosteroneStack = structuredClone(report) as any;
+missingLowTestosteroneStack._validationContext = { confirmedLowTestosterone: true };
+const missingLowTestosteroneAudit = validatePeptidesReport(missingLowTestosteroneStack);
+assert.equal(missingLowTestosteroneAudit.ok, false);
+assert.match(
+  missingLowTestosteroneAudit.errors.join("\n"),
+  /Enclomiphene obligatoire absent[\s\S]*KissPeptin-10 obligatoire absent/
+);
+
+const validLowTestosteroneStack = structuredClone(report) as any;
+validLowTestosteroneStack._validationContext = { confirmedLowTestosterone: true };
+validLowTestosteroneStack._enclomipheneSourceSync = {
+  url: "https://receptorchem.co.uk/enclomiphene-citrate/",
+  fetchedAt: now,
+  available: true,
+  format: "30 ml a 12,5 mg/ml",
+  priceGbp: 39.99,
+};
+validLowTestosteroneStack.peptides.push(
+  {
+    name: "Enclomiphene Citrate",
+    route: "Voie orale",
+    dosage: "12,5 mg par jour",
+    timing: "Chaque matin a heure fixe",
+    purpose: "Soutien de l'axe HPG dans le contexte documente par le questionnaire",
+    purchaseUrl: "https://receptorchem.co.uk/enclomiphene-citrate/",
+    vialsNeeded: "2 flacons de 30 ml a 12,5 mg/ml pour 8 semaines",
+    priceEstimate: "Environ £39,99 par flacon, 2 flacons, total £79,98",
+    cycleDuration: "8 semaines",
+    reconstitution: "Aucune reconstitution, solution liquide de 30 ml concentree a 12,5 mg/ml",
+    whyThisPeptide: "Ce choix structure la partie orale du stack et donne un levier distinct de KissPeptin-10, avec un timing, une duree et une quantite totale clairement calcules.",
+  },
+  {
+    name: "KissPeptin-10",
+    route: "Sous cutanee",
+    dosage: "100 mcg trois fois par semaine",
+    timing: "Lundi, mercredi et vendredi le soir",
+    purpose: "Peptide central du stack oriente axe HPG",
+    purchaseUrl: "https://www.peptaura.com/catalog/KissPeptin-10",
+    vialsNeeded: "1 vial de 5mg pour 8 semaines",
+    priceEstimate: "Environ $16 par vial, 1 vial, total $16",
+    cycleDuration: "8 semaines",
+    reconstitution: "Vial 5mg + 2ml BAC water = 2500 mcg/ml, 4 unites soit 0,04 ml pour 100 mcg",
+    whyThisPeptide: "KissPeptin-10 complete la logique du stack avec une action differente de la solution orale, ce qui permet d'expliquer clairement le role de chaque molecule sans doublon.",
+  }
+);
+validLowTestosteroneStack.weeklySchedule +=
+  " | LUNDI MATIN: Enclomiphene Citrate 12,5 mg oral | LUNDI SOIR: KissPeptin-10 100 mcg sous cutanee";
+validLowTestosteroneStack.shoppingList +=
+  "\nEnclomiphene Citrate: 2 flacons, https://receptorchem.co.uk/enclomiphene-citrate/" +
+  "\nKissPeptin-10: 1 vial, https://www.peptaura.com/catalog/KissPeptin-10";
+validLowTestosteroneStack.bloodMarkers = [
+  "Testosterone totale",
+  "Testosterone libre",
+  "LH",
+  "FSH",
+  "E2 estradiol",
+  "SHBG",
+  "Prolactine",
+];
+validLowTestosteroneStack.sections[0].content +=
+  " Enclomiphene Citrate organise la partie orale du protocole tandis que KissPeptin-10 apporte le peptide retenu pour l'axe HPG.";
+validLowTestosteroneStack.sections[1].content +=
+  " Le calcul Enclomiphene couvre le cycle complet. Le calcul KissPeptin-10 relie la concentration, les unites et le volume injecte.";
+validLowTestosteroneStack._peptauraLiveSync.applied.push("Enclomiphene Citrate", "KissPeptin-10");
+validLowTestosteroneStack._peptauraLiveSync.listingSnapshots.push(
+  {
+    peptide: "Enclomiphene Citrate",
+    fetchedAt: now,
+    supplier: "ReceptorChem",
+    dosage: "30 ml a 12,5 mg/ml",
+    requestedVials: 2,
+    deliveredVials: 2,
+    packageCount: 2,
+    boxSize: 1,
+  },
+  {
+    peptide: "KissPeptin-10",
+    fetchedAt: now,
+    supplier: "Fournisseur test",
+    dosage: "5mg",
+    requestedVials: 1,
+    deliveredVials: 1,
+    packageCount: 1,
+    boxSize: 1,
+    totalPriceUsd: 16,
+  }
+);
+const validLowTestosteroneAudit = validatePeptidesReport(validLowTestosteroneStack);
+assert.equal(validLowTestosteroneAudit.ok, true, validLowTestosteroneAudit.errors.join("\n"));
+
+const wrongEnclomipheneSource = structuredClone(validLowTestosteroneStack);
+wrongEnclomipheneSource.peptides.find((entry: any) => /enclomiphene/i.test(entry.name)).purchaseUrl =
+  "https://www.peptaura.com/catalog/Enclomiphene";
+const wrongEnclomipheneSourceAudit = validatePeptidesReport(wrongEnclomipheneSource);
+assert.equal(wrongEnclomipheneSourceAudit.ok, false);
+assert.match(wrongEnclomipheneSourceAudit.errors.join("\n"), /source Enclomiphene invalide|URL ReceptorChem/);
+
+const staleEnclomipheneSource = structuredClone(validLowTestosteroneStack);
+staleEnclomipheneSource._enclomipheneSourceSync.fetchedAt = new Date(
+  Date.now() - 2 * 60 * 60 * 1000
+).toISOString();
+const staleEnclomipheneSourceAudit = validatePeptidesReport(staleEnclomipheneSource);
+assert.equal(staleEnclomipheneSourceAudit.ok, false);
+assert.match(
+  staleEnclomipheneSourceAudit.errors.join("\n"),
+  /verification ReceptorChem trop ancienne/
 );
 
 console.log("Peptides guardrails: OK");

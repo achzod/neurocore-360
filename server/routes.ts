@@ -60,6 +60,7 @@ import { analyzeDiscoveryScan, convertToNarrativeReport } from "./discovery-scan
 import {
   generatePeptidesProtocol,
   checkPeptidesSafetyGate,
+  fetchEnclomipheneSourceSnapshot,
   getPeptauraCatalogHealth,
   refreshPeptauraCatalog,
   refreshPeptauraPricingForDelivery,
@@ -5500,9 +5501,25 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/admin/peptaura-catalog/status", (req, res) => {
+  app.get("/api/admin/peptaura-catalog/status", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
-    res.json({ success: true, catalog: getPeptauraCatalogHealth() });
+    try {
+      const enclomipheneSource = await fetchEnclomipheneSourceSnapshot(true);
+      const sourceOk = Boolean(enclomipheneSource?.available);
+      res.status(sourceOk ? 200 : 503).json({
+        success: sourceOk,
+        catalog: getPeptauraCatalogHealth(),
+        enclomipheneSource,
+      });
+    } catch (error: any) {
+      console.error("[Admin Peptides Sources] Error:", error);
+      res.status(503).json({
+        success: false,
+        catalog: getPeptauraCatalogHealth(),
+        enclomipheneSource: null,
+        error: error?.message || "Erreur verification source Enclomiphene",
+      });
+    }
   });
 
   app.post("/api/admin/peptaura-catalog/refresh", async (req, res) => {
