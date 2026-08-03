@@ -59,5 +59,10 @@ assert.match(
   /WITH existing_tracking AS \([\s\S]*UPDATE email_tracking[\s\S]*INSERT INTO cta_tracking[\s\S]*FROM existing_tracking/,
   "click tracking must only create a CTA event when the email tracking row exists",
 );
+assert.match(
+  routesSource,
+  /RECOVERY_CTA_DAILY_CAP[\s\S]*sentRecentCoaching[\s\S]*remainingToday/,
+  "Discovery recovery must enforce a daily cap and a cross-sequence cooldown",
+);
 
-console.log("Email sequence policy passed: retries are capped and orphan CTA clicks are blocked");
+console.log("Email sequence policy passed: retries, recovery volume and orphan CTA clicks are capped");

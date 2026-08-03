@@ -6511,7 +6511,7 @@ export async function registerRoutes(
       const day = Math.min(Math.max(Number(req.body.day) || 1, 1), 7);
       const requestedMaxToSend = Math.min(Math.max(Number(req.body.maxToSend) || (day === 1 ? 25 : 60), 1), 250);
       const maxBatchSize = dryRun ? 250 : 1;
-      const maxToSend = Math.min(requestedMaxToSend, maxBatchSize);
+      const dailyCap = Math.min(Math.max(Number(process.env.RECOVERY_CTA_DAILY_CAP || 50), 1), 250);
       const lookbackDays = Math.min(Math.max(Number(req.body.lookbackDays) || 120, 7), 365);
       const cohortFilter = String(req.body.cohort || "auto").trim() as RecoveryCtaCohort | "auto";
       const baseUrl = getBaseUrl(req);
@@ -6562,6 +6562,35 @@ export async function registerRoutes(
       );
       sentRows.rows.forEach((row: any) => sentRecovery.add(cleanEmail(row.email)));
 
+      const sentRecentCoaching = new Set<string>();
+      const recentCoachingRows = await pool.query(
+        `SELECT DISTINCT LOWER(recipient_email) AS email
+           FROM email_tracking
+          WHERE recipient_email IS NOT NULL
+            AND email_type = ANY($1::text[])
+            AND sent_at >= NOW() - INTERVAL '21 days'
+            AND (
+              sendpulse_task_id IS NOT NULL
+              OR LOWER(COALESCE(sendpulse_status, '')) IN ('success', 'sent', 'delivered')
+            )`,
+        [COACHING_CTA_EMAIL_TYPES],
+      );
+      recentCoachingRows.rows.forEach((row: any) => sentRecentCoaching.add(cleanEmail(row.email)));
+
+      const dailySentResult = await pool.query(
+        `SELECT COUNT(*)::int AS sent
+           FROM email_tracking
+          WHERE email_type = 'sendRecoveryCtaEmail'
+            AND sent_at >= NOW() - INTERVAL '24 hours'
+            AND (
+              sendpulse_task_id IS NOT NULL
+              OR LOWER(COALESCE(sendpulse_status, '')) IN ('success', 'sent', 'delivered')
+            )`,
+      );
+      const sentLast24h = Number(dailySentResult.rows[0]?.sent || 0);
+      const remainingToday = Math.max(dailyCap - sentLast24h, 0);
+      const maxToSend = Math.min(requestedMaxToSend, maxBatchSize, remainingToday);
+
       const blockedRecipients = new Set<string>();
       const blockedRows = await pool.query(
         `SELECT DISTINCT LOWER(et.recipient_email) AS email
@@ -6599,7 +6628,7 @@ export async function registerRoutes(
       const candidates = new Map<string, RecoveryCandidate>();
       const addCandidate = (candidate: RecoveryCandidate) => {
         const email = cleanEmail(candidate.email);
-        if (!email || isExcludedEmail(email) || sentRecovery.has(email) || blockedRecipients.has(email)) return;
+        if (!email || isExcludedEmail(email) || sentRecentCoaching.has(email) || blockedRecipients.has(email)) return;
         const existing = candidates.get(email);
         if (!existing || candidate.priority > existing.priority) {
           candidates.set(email, { ...candidate, email });
@@ -6817,9 +6846,11 @@ export async function registerRoutes(
           requestedMaxToSend,
           maxBatchSize,
           batchLimited: requestedMaxToSend > maxToSend,
+          dailyLimit: { cap: dailyCap, sentLast24h, remainingToday },
           preview: selected.slice(0, 25),
           excluded: {
             alreadyRecoverySent21d: sentRecovery.size,
+            recentCoachingSent21d: sentRecentCoaching.size,
             blockedOrConverted: blockedRecipients.size,
           },
         });
@@ -6891,6 +6922,7 @@ export async function registerRoutes(
         requestedMaxToSend,
         maxBatchSize,
         batchLimited: requestedMaxToSend > maxToSend,
+        dailyLimit: { cap: dailyCap, sentLast24h, remainingToday },
         attempted: selected.length,
         sent,
         failed,

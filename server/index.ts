@@ -501,7 +501,7 @@ if (process.env.NODE_ENV === "production") {
                     "Content-Type": "application/json",
                     "x-admin-key": adminKey,
                   },
-                  body: JSON.stringify({ dryRun: false, day, maxToSend: 25, lookbackDays: 120 }),
+                  body: JSON.stringify({ dryRun: false, day, maxToSend: 25, lookbackDays: 365 }),
                   signal: controller.signal,
                 });
                 const result: any = await response.json().catch(() => null);
