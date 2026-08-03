@@ -8996,12 +8996,15 @@ export async function registerRoutes(
     try {
       if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trackingId)) {
         await pool.query(
-          `UPDATE email_tracking SET clicked = NOW() WHERE id = $1 AND clicked IS NULL`,
-          [trackingId]
-        );
-        await pool.query(
-          `INSERT INTO cta_tracking (email_tracking_id, event_type, url, metadata, created_at)
-           VALUES ($1, 'click', $2, $3, NOW())`,
+          `WITH existing_tracking AS (
+             UPDATE email_tracking
+                SET clicked = COALESCE(clicked, NOW())
+              WHERE id = $1
+              RETURNING id
+           )
+           INSERT INTO cta_tracking (email_tracking_id, event_type, url, metadata, created_at)
+           SELECT id, 'click', $2, $3, NOW()
+             FROM existing_tracking`,
           [
             trackingId,
             redirectUrl.toString(),

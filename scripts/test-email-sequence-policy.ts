@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import {
   getSuppressedSequenceEmailTypes,
   isPermanentEmailFailure,
@@ -52,4 +53,11 @@ assert.deepEqual(
   "two transient failures must stop the sequence",
 );
 
-console.log("Email sequence policy passed: permanent failures are suppressed and transient retries are capped");
+const routesSource = await readFile(new URL("../server/routes.ts", import.meta.url), "utf8");
+assert.match(
+  routesSource,
+  /WITH existing_tracking AS \([\s\S]*UPDATE email_tracking[\s\S]*INSERT INTO cta_tracking[\s\S]*FROM existing_tracking/,
+  "click tracking must only create a CTA event when the email tracking row exists",
+);
+
+console.log("Email sequence policy passed: retries are capped and orphan CTA clicks are blocked");
