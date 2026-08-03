@@ -8,6 +8,7 @@ export type CoachingOrderConversion = {
   couponCodes: string[];
   productNames: string[];
   source: "woocommerce" | "webflow";
+  convertedAt: string;
 };
 
 const paidStatuses = new Set(["processing", "completed"]);
@@ -90,6 +91,10 @@ export function parseCoachingOrderWebhook(body: unknown): CoachingOrderConversio
 
     const rawAmount = order.customerPaid?.value ?? order.totals?.total?.value ?? 0;
     const amountCents = Math.max(0, Number.parseInt(String(rawAmount), 10) || 0);
+    const acceptedOn = new Date(String(order.acceptedOn || ""));
+    const convertedAt = Number.isNaN(acceptedOn.getTime())
+      ? new Date().toISOString()
+      : acceptedOn.toISOString();
     return {
       orderId,
       email,
@@ -98,6 +103,7 @@ export function parseCoachingOrderWebhook(body: unknown): CoachingOrderConversio
       couponCodes,
       productNames,
       source: "webflow",
+      convertedAt,
     };
   }
 
@@ -120,6 +126,10 @@ export function parseCoachingOrderWebhook(body: unknown): CoachingOrderConversio
 
   const total = Number.parseFloat(String(payload.total ?? "0").replace(",", "."));
   const amountCents = Number.isFinite(total) && total > 0 ? Math.round(total * 100) : 0;
+  const paidAt = new Date(String(payload.date_paid_gmt || payload.date_paid || ""));
+  const convertedAt = Number.isNaN(paidAt.getTime())
+    ? new Date().toISOString()
+    : paidAt.toISOString();
 
   return {
     orderId,
@@ -129,6 +139,7 @@ export function parseCoachingOrderWebhook(body: unknown): CoachingOrderConversio
     couponCodes,
     productNames,
     source: "woocommerce",
+    convertedAt,
   };
 }
 

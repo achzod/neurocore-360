@@ -11,6 +11,7 @@ import {
 const payload = {
   id: 4812,
   status: "processing",
+  date_paid_gmt: "2026-08-02T12:30:00Z",
   total: "454.00",
   billing: { email: "Client@Example.com" },
   coupon_lines: [{ code: "discovery30" }],
@@ -30,6 +31,7 @@ assert.deepEqual(parseCoachingOrderWebhook(payload), {
   couponCodes: ["DISCOVERY30"],
   productNames: ["Coaching Elite 8 semaines"],
   source: "woocommerce",
+  convertedAt: "2026-08-02T12:30:00.000Z",
 });
 assert.equal(parseCoachingOrderWebhook({ ...payload, status: "pending" }), null);
 assert.equal(parseCoachingOrderWebhook({ ...payload, coupon_lines: [], line_items: [{ name: "Formation vidéo" }] }), null);
@@ -38,6 +40,7 @@ const webflowPayload = {
   triggerType: "ecomm_new_order",
   payload: {
     status: "unfulfilled",
+    acceptedOn: "2026-08-03T16:27:51Z",
     orderId: "42f-a34",
     customerPaid: { unit: "EUR", value: "43920", string: "€ 439,20 EUR" },
     customerInfo: { email: "Webflow.Client@example.com" },
@@ -53,6 +56,7 @@ assert.deepEqual(parseCoachingOrderWebhook(webflowPayload), {
   couponCodes: ["ZOD20"],
   productNames: ["12 semaines Essential"],
   source: "webflow",
+  convertedAt: "2026-08-03T16:27:51.000Z",
 });
 assert.equal(parseCoachingOrderWebhook({ ...webflowPayload, payload: { ...webflowPayload.payload, status: "refunded" } }), null);
 

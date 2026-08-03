@@ -9064,12 +9064,13 @@ export async function registerRoutes(
             WHERE LOWER(recipient_email) = LOWER($1)
               AND email_type = ANY($4::text[])
               AND sent_at >= NOW() - INTERVAL '365 days'
+              AND sent_at <= $6::timestamptz
               AND LOWER(COALESCE(sendpulse_status, '')) NOT IN ('failed', 'auth_failed', 'unsubscribed')
             ORDER BY clicked DESC NULLS LAST, sent_at DESC
             LIMIT 1
          )
          UPDATE email_tracking tracking
-            SET converted = COALESCE(tracking.converted, NOW()),
+            SET converted = COALESCE(tracking.converted, $6::timestamptz),
                 conversion_type = $3,
                 metadata = COALESCE(tracking.metadata, '{}'::jsonb)
                   || jsonb_build_object(
@@ -9087,6 +9088,7 @@ export async function registerRoutes(
           conversionType,
           COACHING_CTA_EMAIL_TYPES,
           conversion.orderId,
+          conversion.convertedAt,
         ],
       );
       const attributedRows = attributionResult.rowCount ?? 0;
@@ -9095,10 +9097,11 @@ export async function registerRoutes(
         `INSERT INTO email_tracking (
            id, audit_id, email_type, recipient_email, subject, sent_at,
            sendpulse_status, converted, conversion_type, metadata, updated_at
-         ) VALUES ($1, $2, 'coachingPurchaseWebhook', $3, 'Conversion coaching confirmée', NOW(),
-                   'success', NOW(), $4, $5::jsonb, NOW())
+         ) VALUES ($1, $2, 'coachingPurchaseWebhook', $3, 'Conversion coaching confirmée', $6::timestamptz,
+                   'success', $6::timestamptz, $4, $5::jsonb, NOW())
          ON CONFLICT (id) DO UPDATE SET
-           converted = COALESCE(email_tracking.converted, EXCLUDED.converted),
+           sent_at = LEAST(email_tracking.sent_at, EXCLUDED.sent_at),
+           converted = LEAST(COALESCE(email_tracking.converted, EXCLUDED.converted), EXCLUDED.converted),
            conversion_type = EXCLUDED.conversion_type,
            metadata = COALESCE(email_tracking.metadata, '{}'::jsonb) || EXCLUDED.metadata,
            updated_at = NOW()`,
@@ -9116,6 +9119,7 @@ export async function registerRoutes(
             productNames: conversion.productNames,
             attributedRows,
           }),
+          conversion.convertedAt,
         ],
       );
 
