@@ -202,6 +202,137 @@ function confidentPurpose(peptide: PeptideItem): { purpose: string; rationale: s
   };
 }
 
+type RationaleProfileFact = {
+  text: string;
+  pattern: RegExp;
+};
+
+const RATIONALE_GOAL_LABELS: Record<string, { text: string; pattern: RegExp }> = {
+  recovery: { text: "ton objectif principal est la recuperation", pattern: /\b(?:recuperation|guerison|tendon|articulation|blessure)\b/i },
+  "gh-antiaging": { text: "ton objectif principal porte sur l'axe GH et l'anti-age", pattern: /\b(?:gh|hormone de croissance|anti[ -]?age|longevite)\b/i },
+  fatloss: { text: "ton objectif principal est la perte de graisse", pattern: /\b(?:perte de (?:gras|graisse|masse grasse)|fat loss|seche|recomposition)\b/i },
+  sleep: { text: "ton objectif principal est le sommeil", pattern: /\b(?:sommeil|endormissement|reveils? nocturnes?|nuit)\b/i },
+  cognitive: { text: "ton objectif principal est la performance cognitive", pattern: /\b(?:cognitif|focus|memoire|concentration|brain fog)\b/i },
+  libido: { text: "ton objectif principal concerne la libido", pattern: /\b(?:libido|sexuel|erection)\b/i },
+  "testo-boost": { text: "ton objectif principal concerne la testosterone", pattern: /\b(?:testosterone|axe hpg|lh|fsh|hypogonad)\b/i },
+  "skin-hair": { text: "ton objectif principal concerne la peau et les cheveux", pattern: /\b(?:peau|cheveux|capillaire|anti[ -]?age)\b/i },
+  endurance: { text: "ton objectif principal est l'endurance", pattern: /\b(?:endurance|cardio|capacite aerobie)\b/i },
+};
+
+function escapeRationalePattern(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function rationaleNumericPattern(value: string): RegExp | null {
+  const numbers = value.match(/\d+(?:[.,]\d+)?/g);
+  if (!numbers || numbers.length === 0) return null;
+  const parts = numbers.map((entry) =>
+    entry.split(/[.,]/).map(escapeRationalePattern).join("[.,]")
+  );
+  return new RegExp(parts.join("[\\s\\S]{0,24}"), "i");
+}
+
+function buildRationaleProfileFacts(
+  responses: Record<string, unknown>
+): RationaleProfileFact[] {
+  const facts: RationaleProfileFact[] = [];
+  const weightKg = Number(responses.pep_weight || responses.poids || 0);
+  if (Number.isFinite(weightKg) && weightKg >= 40 && weightKg <= 250) {
+    facts.push({
+      text: `tu fais ${weightKg} kg`,
+      pattern: new RegExp(`\\b${escapeRationalePattern(String(weightKg))}(?:[.,]0+)?\\s*kg\\b`, "i"),
+    });
+  }
+
+  const primaryGoal = String(
+    responses.pep_primary_goal || responses.objectifPrincipal || ""
+  ).trim().toLowerCase();
+  if (primaryGoal) {
+    const knownGoal = RATIONALE_GOAL_LABELS[primaryGoal];
+    facts.push(knownGoal || {
+      text: `ton objectif principal est ${primaryGoal}`,
+      pattern: new RegExp(escapeRationalePattern(primaryGoal), "i"),
+    });
+  }
+
+  const budget = String(responses.pep_budget || responses.budget || "").trim();
+  const budgetPattern = rationaleNumericPattern(budget);
+  if (budget && budgetPattern) {
+    const budgetText = budget === "under50"
+      ? "ton budget reste sous 50 EUR par mois"
+      : budget === "over300"
+        ? "ton budget depasse 300 EUR par mois"
+        : `ton budget est de ${budget.replace(/-/g, " a ")} EUR par mois`;
+    facts.push({ text: budgetText, pattern: budgetPattern });
+  }
+
+  const timeline = String(responses.pep_timeline || responses.timeline || "").trim().toLowerCase();
+  const timelineFacts: Record<string, RationaleProfileFact> = {
+    fast: { text: "tu vises une premiere fenetre de 4 a 6 semaines", pattern: /\b(?:4\s*(?:a|-|à)\s*6 semaines|rapide)\b/i },
+    solid: { text: "tu vises une trajectoire solide sur 8 a 12 semaines", pattern: /\b(?:8\s*(?:a|-|à)\s*12 semaines|solide)\b/i },
+    longterm: { text: "tu privilegies une optimisation long terme sur 12 semaines ou plus", pattern: /\b(?:12\+? semaines|long terme)\b/i },
+  };
+  if (timelineFacts[timeline]) facts.push(timelineFacts[timeline]);
+
+  const experience = String(responses.pep_experience || responses.experience || "").trim().toLowerCase();
+  const experienceFacts: Record<string, RationaleProfileFact> = {
+    none: { text: "tu n'as encore aucune experience avec les peptides", pattern: /\b(?:debutant|premiere utilisation|jamais utilise|aucune experience)\b/i },
+    read: { text: "ton experience reste theorique apres avoir lu et regarde du contenu", pattern: /\b(?:lu|regarde|theorique|contenu)\b/i },
+    tried: { text: "tu as deja utilise 1 a 2 peptides", pattern: /\b(?:deja utilise|1\s*(?:a|-|à)\s*2 peptides)\b/i },
+    regular: { text: "tu utilises regulierement des peptides", pattern: /\b(?:regulier|3\+? peptides)\b/i },
+    advanced: { text: "tu as deja une experience avancee des stacks complexes", pattern: /\b(?:avance|stacks? complexes?)\b/i },
+  };
+  if (experienceFacts[experience]) facts.push(experienceFacts[experience]);
+
+  const injectionComfort = String(responses.pep_injection_comfort || "").trim().toLowerCase();
+  const injectionFacts: Record<string, RationaleProfileFact> = {
+    fine: { text: "tu es a l'aise avec les injections", pattern: /\b(?:a l'aise|aucun probleme|confortable)\b/i },
+    anxious: { text: "tu gardes une apprehension legere face aux injections", pattern: /\b(?:anxieux|apprehension|injection)\b/i },
+    "very-anxious": { text: "tu as une forte apprehension face aux injections", pattern: /\b(?:tres anxieux|alternative|apprehension forte)\b/i },
+    refuse: { text: "tu refuses les options injectables", pattern: /\b(?:refuse|sans injection|non injectable)\b/i },
+  };
+  if (injectionFacts[injectionComfort]) facts.push(injectionFacts[injectionComfort]);
+
+  return facts;
+}
+
+function anchorExpertPeptideRationales(
+  report: RepairableReport,
+  responses: Record<string, unknown>
+): void {
+  const facts = buildRationaleProfileFacts(responses);
+  if (facts.length < 2) return;
+
+  const templates = [
+    (name: string, first: string, second: string) =>
+      `Dans ton cas, ${name} reste lie a deux reperes tres concrets: ${first}, et ${second}.`,
+    (name: string, first: string, second: string) =>
+      `Pour ${name}, je garde le lien avec ton dossier bien visible: ${first}, et ${second}.`,
+    (name: string, first: string, second: string) =>
+      `Le choix de ${name} part directement de ton profil: ${first}, avec ${second}.`,
+    (name: string, first: string, second: string) =>
+      `${name} n'est pas ajoute au hasard dans ton stack: ${first} et ${second} structurent ce choix.`,
+  ];
+
+  for (const [index, peptide] of (report.peptides || []).entries()) {
+    const rationale = sanitizeClientFacingText(peptide.whyThisPeptide || "").trim();
+    const matchedFacts = facts.filter((fact) => fact.pattern.test(rationale));
+    if (matchedFacts.length >= 2) continue;
+
+    const missingFacts = facts.filter((fact) => !fact.pattern.test(rationale));
+    const selectedFacts = [...matchedFacts, ...missingFacts].slice(0, 2);
+    if (selectedFacts.length < 2) continue;
+
+    const name = sanitizeClientFacingText(peptide.name || `ce peptide ${index + 1}`);
+    const anchor = templates[index % templates.length](
+      name,
+      selectedFacts[0].text,
+      selectedFacts[1].text
+    );
+    peptide.whyThisPeptide = sanitizeClientFacingText(`${rationale} ${anchor}`);
+  }
+}
+
 function upsertFinalDisclaimer(report: RepairableReport, firstName: string): void {
   const shortDisclaimer = sanitizeClientFacingText(
     `${firstName}, point important pour finir: plusieurs molecules de ce rapport ont un statut experimental ou non approuve pour cet usage. Tu gardes une logique terrain, mais tu fais verifier le produit exact, la dose, la concentration, tes traitements, tes allergies et tes analyses par un medecin ou un pharmacien avant de passer a l'acte.`
@@ -767,6 +898,7 @@ function repairStandardReportContent(
 ): void {
   (report as any).qualityVersion = "expert-standard-v1";
   cleanExpertPeptideFields(report);
+  anchorExpertPeptideRationales(report, responses);
   cleanStandardSections(report);
   normalizeUnsupportedStandardClaims(report);
   normalizeTierCreditClaims(report, tier);

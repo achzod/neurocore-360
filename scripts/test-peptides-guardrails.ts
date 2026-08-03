@@ -220,6 +220,50 @@ const genericRationaleAudit = validatePeptidesReport(genericRationaleFailure);
 assert.equal(genericRationaleAudit.ok, false);
 assert.match(genericRationaleAudit.errors.join("\n"), /moins de 2 faits concrets/);
 
+const repairedGenericRationale = repairPeptidesReportContent(
+  structuredClone(genericRationaleFailure),
+  {
+    pep_name: "Luca",
+    pep_weight: 80,
+    pep_primary_goal: "fatloss",
+    pep_country: "France",
+    pep_budget: "100-200",
+    pep_timeline: "solid",
+    pep_experience: "none",
+    pep_injection_comfort: "anxious",
+  },
+  "solo"
+) as any;
+const repairedGenericRationaleAudit = validatePeptidesReport(repairedGenericRationale);
+assert.equal(
+  repairedGenericRationaleAudit.ok,
+  true,
+  repairedGenericRationaleAudit.errors.join("\n")
+);
+assert.match(repairedGenericRationale.peptides[0].whyThisPeptide, /80\s*kg/i);
+assert.match(repairedGenericRationale.peptides[0].whyThisPeptide, /perte de (?:gras|graisse)/i);
+
+const onceAnchoredRationale = repairedGenericRationale.peptides[0].whyThisPeptide;
+const twiceRepairedGenericRationale = repairPeptidesReportContent(
+  repairedGenericRationale,
+  {
+    pep_name: "Luca",
+    pep_weight: 80,
+    pep_primary_goal: "fatloss",
+    pep_country: "France",
+    pep_budget: "100-200",
+    pep_timeline: "solid",
+    pep_experience: "none",
+    pep_injection_comfort: "anxious",
+  },
+  "solo"
+) as any;
+assert.equal(
+  twiceRepairedGenericRationale.peptides[0].whyThisPeptide,
+  onceAnchoredRationale,
+  "La reparation personnalisee doit rester idempotente"
+);
+
 const wrongProteinTarget = structuredClone(personalizedReport) as any;
 wrongProteinTarget.sections[4].content = wrongProteinTarget.sections[4].content
   .replace(/144 a 176 g de proteines par jour/i, "90 g de proteines par jour");
