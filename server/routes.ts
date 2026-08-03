@@ -12562,6 +12562,263 @@ export async function registerRoutes(
     }
   });
 
+  // Discovery to coaching funnel, aggregated in PostgreSQL so the admin audit
+  // never has to load every audit and 50k+ email rows into application memory.
+  // The response contains counts only and can safely feed monitoring.
+  app.get("/api/admin/discovery-coaching-funnel", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+
+    try {
+      const cooldownDays = Math.min(Math.max(Number(req.query.cooldownDays) || 21, 7), 90);
+      const fromDate = new Date(Date.now() - cooldownDays * 24 * 60 * 60 * 1000).toISOString();
+
+      const funnelResult = await pool.query(
+        `WITH discovery AS (
+           SELECT LOWER(TRIM(email)) AS email,
+                  COUNT(*)::int AS audit_count,
+                  BOOL_OR(report_sent_at IS NOT NULL) AS report_sent,
+                  MAX(created_at) AS latest_audit_at
+             FROM audits
+            WHERE type = 'GRATUIT'
+              AND email IS NOT NULL
+              AND TRIM(email) ~* '^[^[:space:]@]+@[^[:space:]@]+\\.[^[:space:]@]+$'
+              AND LOWER(email) NOT LIKE ALL(ARRAY['%achkou%', '%achzodcoaching%', '%test%', '%debug%', '%noemail%'])
+              AND SPLIT_PART(LOWER(TRIM(email)), '@', 2) <> ALL(
+                ARRAY['yopmail.com', 'test.com', 'test.fr', 'example.com', 'gmai.com', 'gmail.col', 'yahlo.com', 'hormail.fr', 'tahoo.fr']
+              )
+            GROUP BY LOWER(TRIM(email))
+         ), coaching_buyers AS (
+           SELECT DISTINCT LOWER(TRIM(recipient_email)) AS email
+             FROM email_tracking
+            WHERE recipient_email IS NOT NULL
+              AND (
+                email_type = 'coachingPurchaseWebhook'
+                OR (
+                  converted IS NOT NULL
+                  AND LOWER(COALESCE(conversion_type, '')) LIKE 'coaching%'
+                )
+              )
+         ), blocked AS (
+           SELECT DISTINCT LOWER(TRIM(recipient_email)) AS email
+             FROM email_tracking
+            WHERE recipient_email IS NOT NULL
+              AND (
+                LOWER(COALESCE(sendpulse_status, '')) IN ('unsubscribed', 'auth_failed')
+                OR LOWER(COALESCE(sendpulse_error, '')) ~ '(unsubscrib|spam|hard_fail|hard fail|bounce|bad recipient|no mx|invalid recipient|mailbox does not exist|user unknown)'
+              )
+           UNION
+           SELECT LOWER(TRIM(email)) AS email FROM email_unsubscribes
+           UNION
+           SELECT DISTINCT LOWER(TRIM(et.recipient_email)) AS email
+             FROM cta_tracking ct
+             JOIN email_tracking et ON et.id = ct.email_tracking_id
+            WHERE ct.event_type IN ('unsubscribe', 'spam', 'bounce')
+         ), per_recipient AS (
+           SELECT d.email,
+                  d.audit_count,
+                  d.report_sent,
+                  d.latest_audit_at,
+                  (buyer.email IS NOT NULL) AS buyer,
+                  (blocked.email IS NOT NULL) AS blocked,
+                  COUNT(et.id)::int AS lifetime_attempts,
+                  COUNT(et.id) FILTER (WHERE et.sent_at >= $2)::int AS recent_attempts,
+                  COUNT(et.id) FILTER (
+                    WHERE et.sent_at >= $2 AND et.email_type = 'sendRecoveryCtaEmail'
+                  )::int AS recent_recovery_attempts,
+                  BOOL_OR(
+                    et.sent_at >= $2
+                    AND LOWER(COALESCE(et.sendpulse_status, '')) IN ('success', 'sent', 'delivered')
+                  ) AS recent_accepted,
+                  BOOL_OR(et.sent_at >= $2 AND et.opened IS NOT NULL) AS recent_opened,
+                  BOOL_OR(et.sent_at >= $2 AND et.clicked IS NOT NULL) AS recent_clicked,
+                  BOOL_OR(et.sent_at >= $2 AND et.converted IS NOT NULL) AS recent_converted
+             FROM discovery d
+             LEFT JOIN coaching_buyers buyer ON buyer.email = d.email
+             LEFT JOIN blocked ON blocked.email = d.email
+             LEFT JOIN email_tracking et
+               ON LOWER(TRIM(et.recipient_email)) = d.email
+              AND et.email_type = ANY($1::text[])
+            GROUP BY d.email, d.audit_count, d.report_sent, d.latest_audit_at, buyer.email, blocked.email
+         )
+         SELECT COUNT(*)::int AS discovery_recipients,
+                COALESCE(SUM(audit_count), 0)::int AS discovery_audits,
+                COUNT(*) FILTER (WHERE report_sent)::int AS reports_sent,
+                COUNT(*) FILTER (WHERE buyer)::int AS coaching_buyers,
+                COUNT(*) FILTER (WHERE NOT buyer)::int AS non_buyers,
+                COUNT(*) FILTER (WHERE blocked)::int AS blocked,
+                COUNT(*) FILTER (WHERE recent_attempts > 0)::int AS contacted_during_cooldown,
+                COUNT(*) FILTER (WHERE recent_attempts = 0)::int AS not_contacted_during_cooldown,
+                COUNT(*) FILTER (WHERE recent_recovery_attempts > 0)::int AS recovery_recipients,
+                COALESCE(SUM(recent_recovery_attempts), 0)::int AS recovery_attempts,
+                COUNT(*) FILTER (WHERE recent_recovery_attempts = 1)::int AS recovery_once,
+                COUNT(*) FILTER (WHERE recent_recovery_attempts = 2)::int AS recovery_twice,
+                COUNT(*) FILTER (WHERE recent_recovery_attempts >= 3)::int AS recovery_three_plus,
+                COUNT(*) FILTER (WHERE recent_accepted)::int AS accepted,
+                COUNT(*) FILTER (WHERE recent_opened)::int AS opened,
+                COUNT(*) FILTER (WHERE recent_clicked)::int AS clicked,
+                COUNT(*) FILTER (WHERE recent_converted)::int AS converted,
+                COUNT(*) FILTER (
+                  WHERE NOT buyer AND NOT blocked AND report_sent AND recent_attempts = 0
+                )::int AS eligible_now,
+                COUNT(*) FILTER (
+                  WHERE NOT buyer AND NOT blocked AND report_sent AND recent_attempts = 0 AND lifetime_attempts = 0
+                )::int AS eligible_never_contacted,
+                COUNT(*) FILTER (
+                  WHERE NOT buyer AND NOT blocked AND report_sent AND recent_attempts = 0 AND lifetime_attempts > 0
+                )::int AS eligible_reactivation,
+                COUNT(*) FILTER (
+                  WHERE NOT buyer AND NOT blocked AND report_sent AND recent_attempts = 0
+                    AND latest_audit_at >= NOW() - INTERVAL '7 days'
+                )::int AS eligible_age_0_7,
+                COUNT(*) FILTER (
+                  WHERE NOT buyer AND NOT blocked AND report_sent AND recent_attempts = 0
+                    AND latest_audit_at < NOW() - INTERVAL '7 days'
+                    AND latest_audit_at >= NOW() - INTERVAL '30 days'
+                )::int AS eligible_age_8_30,
+                COUNT(*) FILTER (
+                  WHERE NOT buyer AND NOT blocked AND report_sent AND recent_attempts = 0
+                    AND latest_audit_at < NOW() - INTERVAL '30 days'
+                    AND latest_audit_at >= NOW() - INTERVAL '90 days'
+                )::int AS eligible_age_31_90,
+                COUNT(*) FILTER (
+                  WHERE NOT buyer AND NOT blocked AND report_sent AND recent_attempts = 0
+                    AND latest_audit_at < NOW() - INTERVAL '90 days'
+                )::int AS eligible_age_91_plus
+           FROM per_recipient`,
+        [COACHING_CTA_EMAIL_TYPES, fromDate],
+      );
+
+      const byTypeResult = await pool.query(
+        `WITH discovery AS (
+           SELECT DISTINCT LOWER(TRIM(email)) AS email
+             FROM audits
+            WHERE type = 'GRATUIT'
+              AND email IS NOT NULL
+              AND TRIM(email) ~* '^[^[:space:]@]+@[^[:space:]@]+\\.[^[:space:]@]+$'
+              AND LOWER(email) NOT LIKE ALL(ARRAY['%achkou%', '%achzodcoaching%', '%test%', '%debug%', '%noemail%'])
+         ), per_recipient_type AS (
+           SELECT et.email_type,
+                  LOWER(TRIM(et.recipient_email)) AS recipient,
+                  COUNT(*)::int AS attempts,
+                  BOOL_OR(LOWER(COALESCE(et.sendpulse_status, '')) IN ('success', 'sent', 'delivered')) AS accepted,
+                  BOOL_OR(et.opened IS NOT NULL) AS opened,
+                  BOOL_OR(et.clicked IS NOT NULL) AS clicked,
+                  BOOL_OR(et.converted IS NOT NULL) AS converted,
+                  BOOL_OR(
+                    LOWER(COALESCE(et.sendpulse_status, '')) IN ('unsubscribed', 'auth_failed')
+                    OR LOWER(COALESCE(et.sendpulse_error, '')) ~ '(unsubscrib|spam|hard_fail|hard fail|bounce|bad recipient|no mx|invalid recipient|mailbox does not exist|user unknown)'
+                  ) AS permanent_failure
+             FROM email_tracking et
+             JOIN discovery d ON d.email = LOWER(TRIM(et.recipient_email))
+            WHERE et.sent_at >= $1
+              AND et.email_type = ANY($2::text[])
+            GROUP BY et.email_type, LOWER(TRIM(et.recipient_email))
+         )
+         SELECT email_type,
+                COUNT(*)::int AS unique_recipients,
+                COALESCE(SUM(attempts), 0)::int AS attempts,
+                COALESCE(SUM(GREATEST(attempts - 1, 0)), 0)::int AS duplicate_attempts,
+                COUNT(*) FILTER (WHERE accepted)::int AS accepted,
+                COUNT(*) FILTER (WHERE permanent_failure)::int AS permanent_failures,
+                COUNT(*) FILTER (WHERE opened)::int AS opened,
+                COUNT(*) FILTER (WHERE clicked)::int AS clicked,
+                COUNT(*) FILTER (WHERE converted)::int AS converted
+           FROM per_recipient_type
+          GROUP BY email_type
+          ORDER BY attempts DESC`,
+        [fromDate, COACHING_CTA_EMAIL_TYPES],
+      );
+
+      const raw = funnelResult.rows[0] || {};
+      const number = (key: string) => Number(raw[key] || 0);
+      const rate = (value: number, denominator: number) =>
+        denominator > 0 ? Math.round((value / denominator) * 10_000) / 100 : 0;
+      const formatType = (row: any) => {
+        const uniqueRecipients = Number(row.unique_recipients || 0);
+        const accepted = Number(row.accepted || 0);
+        const opened = Number(row.opened || 0);
+        const clicked = Number(row.clicked || 0);
+        const converted = Number(row.converted || 0);
+        return {
+          emailType: row.email_type,
+          uniqueRecipients,
+          attempts: Number(row.attempts || 0),
+          duplicateAttempts: Number(row.duplicate_attempts || 0),
+          accepted,
+          permanentFailures: Number(row.permanent_failures || 0),
+          opened,
+          clicked,
+          converted,
+          acceptanceRate: rate(accepted, uniqueRecipients),
+          openRateOnAccepted: rate(opened, accepted),
+          clickRateOnAccepted: rate(clicked, accepted),
+          clickToOpenRate: rate(clicked, opened),
+          conversionRateOnAccepted: rate(converted, accepted),
+        };
+      };
+
+      const accepted = number("accepted");
+      const opened = number("opened");
+      const clicked = number("clicked");
+      const converted = number("converted");
+      res.json({
+        success: true,
+        query: { cooldownDays, fromDate },
+        note: "Les ouvertures sont des signaux techniques. Les clics et achats confirmes sont les signaux de conversion les plus fiables.",
+        discovery: {
+          recipients: number("discovery_recipients"),
+          audits: number("discovery_audits"),
+          reportsSent: number("reports_sent"),
+          coachingBuyers: number("coaching_buyers"),
+          nonBuyers: number("non_buyers"),
+        },
+        cooldown: {
+          contacted: number("contacted_during_cooldown"),
+          notContacted: number("not_contacted_during_cooldown"),
+          blocked: number("blocked"),
+        },
+        recovery: {
+          recipients: number("recovery_recipients"),
+          attempts: number("recovery_attempts"),
+          frequency: {
+            once: number("recovery_once"),
+            twice: number("recovery_twice"),
+            threePlus: number("recovery_three_plus"),
+          },
+        },
+        engagement: {
+          accepted,
+          opened,
+          clicked,
+          converted,
+          openRateOnAccepted: rate(opened, accepted),
+          clickRateOnAccepted: rate(clicked, accepted),
+          clickToOpenRate: rate(clicked, opened),
+          conversionRateOnAccepted: rate(converted, accepted),
+        },
+        eligible: {
+          now: number("eligible_now"),
+          neverContacted: number("eligible_never_contacted"),
+          reactivation: number("eligible_reactivation"),
+          byLatestDiscoveryAge: {
+            days0To7: number("eligible_age_0_7"),
+            days8To30: number("eligible_age_8_30"),
+            days31To90: number("eligible_age_31_90"),
+            days91Plus: number("eligible_age_91_plus"),
+          },
+        },
+        byType: byTypeResult.rows.map(formatType),
+      });
+    } catch (error) {
+      console.error("[DiscoveryCoachingFunnel] Error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Erreur funnel Discovery coaching",
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  });
+
   // ==================== AUDITS PENDING ====================
   app.get("/api/admin/audits-pending", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
