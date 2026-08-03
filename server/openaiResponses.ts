@@ -62,7 +62,7 @@ const PROFILE_CONFIG: Record<OpenAIReportProfile, ProfileConfig> = {
     effort: "xhigh",
     mode: "pro",
     maxOutputTokens: 32_000,
-    timeoutMs: 15 * 60 * 1000,
+    timeoutMs: 30 * 60 * 1000,
     verbosity: "high",
   },
 };

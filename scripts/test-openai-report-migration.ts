@@ -38,7 +38,7 @@ assert.match(shared, /peptides:[\s\S]*effort:\s*"xhigh"[\s\S]*mode:\s*"pro"/);
 assert.match(shared, /client\.responses\.create/);
 assert.doesNotMatch(shared, /chat\.completions/);
 assert.match(shared, /peptides:[\s\S]*maxOutputTokens:\s*32_000/);
-assert.match(shared, /peptides:[\s\S]*timeoutMs:\s*15 \* 60 \* 1000/);
+assert.match(shared, /peptides:[\s\S]*timeoutMs:\s*30 \* 60 \* 1000/);
 assert.match(shared, /ai_usage_events/);
 assert.match(shared, /ai_usage_cost_alerts/);
 assert.match(shared, /DAILY_COST_ALERT_LEVELS_USD = \[5, 10, 25, 50, 100, 250, 500, 1_000\]/);
