@@ -61,7 +61,10 @@ const PROFILE_CONFIG: Record<OpenAIReportProfile, ProfileConfig> = {
     // max_output_tokens includes hidden reasoning tokens. At effort=max,
     // 20k can be exhausted before the structured report is emitted.
     maxOutputTokens: 48_000,
-    timeoutMs: 15 * 60 * 1000,
+    // Complex structured reports regularly outlive 15 minutes in background
+    // mode. Keep one candidate alive instead of cancelling useful work and
+    // paying for a second full regeneration.
+    timeoutMs: 30 * 60 * 1000,
     verbosity: "high",
   },
 };
