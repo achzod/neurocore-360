@@ -14,6 +14,56 @@ const SMTP_USER = process.env.SMTP_USER || "";
 const SMTP_PASS = process.env.SMTP_PASS || "";
 export const SENDER_EMAIL = process.env.SENDER_EMAIL || "coaching@achzodcoaching.com";
 export const SENDER_NAME = process.env.SENDER_NAME || "ApexLabs by Achzod";
+export const WHATSAPP_PRO_NUMBER = "971585210514";
+
+const CLIENT_LINK_HOSTS = new Set([
+  "apexlabs.achzodcoaching.com",
+  "neurocore-360.onrender.com",
+  "achzodcoaching.com",
+  "www.achzodcoaching.com",
+  "wa.me",
+  "api.whatsapp.com",
+]);
+
+const isTrackingUuid = (value: unknown): value is string =>
+  typeof value === "string"
+  && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+
+function buildTrackedEmailClickUrl(baseUrl: string, trackingId: string, targetUrl: string): string {
+  return `${baseUrl.replace(/\/+$/, "")}/api/track/email/${encodeURIComponent(trackingId)}/click?url=${encodeURIComponent(targetUrl)}`;
+}
+
+function trackClientFacingHtmlLinks(html: string, trackingId: unknown): string {
+  if (!isTrackingUuid(trackingId)) return html;
+  const baseUrl = String(
+    process.env.APP_URL
+    || process.env.PUBLIC_BASE_URL
+    || process.env.RENDER_EXTERNAL_URL
+    || "https://apexlabs.achzodcoaching.com"
+  ).replace(/\/+$/, "");
+
+  return html.replace(/href=(['"])(https:\/\/[^'"\s>]+)\1/gi, (match, quote: string, rawUrl: string) => {
+    try {
+      if (rawUrl.includes(`/api/track/email/${trackingId}/click`)) return match;
+      const target = new URL(rawUrl.replace(/&amp;/g, "&"));
+      if (!CLIENT_LINK_HOSTS.has(target.hostname.toLowerCase())) return match;
+      if (target.pathname === "/api/unsubscribe") return match;
+      const tracked = buildTrackedEmailClickUrl(baseUrl, trackingId, target.toString());
+      return `href=${quote}${tracked}${quote}`;
+    } catch {
+      return match;
+    }
+  });
+}
+
+export type EmailCtaQaFixture = {
+  emailType: string;
+  subject: string;
+  html: string;
+  text: string;
+};
+
+let emailCtaQaCapture: EmailCtaQaFixture[] | null = null;
 
 let smtpFallbackTransport: ReturnType<typeof nodemailer.createTransport> | null = null;
 
@@ -375,6 +425,27 @@ async function sendEmailWithTracking(
   }
 ): Promise<SendPulseSendResult> {
   try {
+    const criticalEmail = isCriticalSendPulseEmail(trackingData.emailType, emailPayload.subject);
+    if (emailCtaQaCapture) {
+      const looksEncoded = typeof emailPayload.html === "string"
+        && emailPayload.html.length > 40
+        && /^[A-Za-z0-9+/=\r\n]+$/.test(emailPayload.html.trim());
+      const decoded = looksEncoded
+        ? Buffer.from(emailPayload.html, "base64").toString("utf8")
+        : emailPayload.html;
+      const unsubLink = "https://apexlabs.achzodcoaching.com/api/unsubscribe?email=qa";
+      const html = trackClientFacingHtmlLinks(
+        decoded.replace(/[\u2013\u2014]/g, ",").replace(/\{\{UNSUB_LINK\}\}/g, unsubLink),
+        trackingData.metadata?.trackingId,
+      );
+      emailCtaQaCapture.push({
+        emailType: trackingData.emailType,
+        subject: emailPayload.subject.replace(/[\u2013\u2014]/g, ","),
+        html,
+        text: emailPayload.text.replace(/[\u2013\u2014]/g, ","),
+      });
+      return { result: true, id: `qa-${trackingData.emailType}` };
+    }
     // Check unsubscribe before sending
     const { storage } = await import("./storage");
     if (await storage.isEmailUnsubscribed(trackingData.recipientEmail)) {
@@ -430,23 +501,29 @@ async function sendEmailWithTracking(
     if (looksLikeBase64(emailPayload.html)) {
       try {
         const decoded = Buffer.from(emailPayload.html, "base64").toString("utf8");
-        const replaced = stripDashes(decoded).replace(/\{\{UNSUB_LINK\}\}/g, unsubLink);
+        const replaced = trackClientFacingHtmlLinks(
+          stripDashes(decoded).replace(/\{\{UNSUB_LINK\}\}/g, unsubLink),
+          trackingData.metadata?.trackingId,
+        );
         emailPayload.html = Buffer.from(replaced).toString("base64");
       } catch {
         // Fall through , at worst the link stays broken, but we don't crash the send.
       }
     } else {
-      emailPayload.html = stripDashes(emailPayload.html).replace(/\{\{UNSUB_LINK\}\}/g, unsubLink);
+      emailPayload.html = trackClientFacingHtmlLinks(
+        stripDashes(emailPayload.html).replace(/\{\{UNSUB_LINK\}\}/g, unsubLink),
+        trackingData.metadata?.trackingId,
+      );
     }
     emailPayload.text = stripDashes(emailPayload.text).replace(/\{\{UNSUB_LINK\}\}/g, unsubLink);
     emailPayload.subject = stripDashes(emailPayload.subject);
 
     const token = await getAccessToken();
 
-    // Add BCC to admin email unless the admin is already a direct recipient.
-    // Duplicating the same Gmail address in To + BCC makes some SendPulse
-    // payloads fail RFC 5322 validation and would hide critical cost alerts.
-    const shouldBccAdmin = !emailPayload.to.some(
+    // BCC is reserved for transactional deliveries. Copying every nurture and
+    // sales email doubled provider traffic, polluted the admin inbox and made
+    // quota failures more likely without adding any conversion value.
+    const shouldBccAdmin = criticalEmail && !emailPayload.to.some(
       (recipient) => recipient.email.trim().toLowerCase() === ADMIN_EMAIL_CC.toLowerCase(),
     );
     const payloadWithBcc = {
@@ -486,7 +563,6 @@ async function sendEmailWithTracking(
     let sendpulseTaskId = extractSendPulseDeliveryId(result);
     if (sendpulseTaskId) result.id = sendpulseTaskId;
     const liveLookupMetadata: Record<string, any> = {};
-    const criticalEmail = isCriticalSendPulseEmail(trackingData.emailType, emailPayload.subject);
     let liveDeliveryFailure: Record<string, unknown> | null = null;
 
     if (result.result && sendpulseTaskId) {
@@ -807,10 +883,10 @@ function getEmailWrapper(
   <title>APEXLABS</title>
 </head>
 <body style="margin:0;padding:0;background-color:${COLORS.background};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:${COLORS.text};">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${COLORS.background};">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:100%;table-layout:fixed;background-color:${COLORS.background};">
     <tr>
-      <td align="center" style="padding:32px 16px;">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;width:100%;background-color:${COLORS.surface};border-radius:16px;overflow:hidden;border:1px solid ${COLORS.border};">
+      <td align="center" style="box-sizing:border-box;padding:32px 0;">
+        <table role="presentation" width="94%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;width:94%;table-layout:fixed;background-color:${COLORS.surface};border-radius:16px;overflow:hidden;border:1px solid ${COLORS.border};">
           <!-- Header (background gradient, text in black for contrast on bright gradients) -->
           <tr>
             <td align="center" style="background:${headerGradient};padding:44px 24px 40px 24px;text-align:center;">
@@ -877,10 +953,10 @@ function getCoachingAppleWrapper(
   <title>Achzod Coaching</title>
 </head>
 <body style="margin:0;padding:0;background-color:${APPLE_COLORS.bg};font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:${APPLE_COLORS.ink};">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${APPLE_COLORS.bg};">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:100%;table-layout:fixed;background-color:${APPLE_COLORS.bg};">
     <tr>
-      <td align="center" style="padding:40px 16px;">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;width:100%;background-color:${APPLE_COLORS.card};border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+      <td align="center" style="box-sizing:border-box;padding:40px 0;">
+        <table role="presentation" width="94%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;width:94%;table-layout:fixed;background-color:${APPLE_COLORS.card};border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
           <!-- Header (Apple clean : no gradient, white background, blue accent line) -->
           <tr>
             <td style="background-color:${APPLE_COLORS.card};padding:36px 40px 12px 40px;border-bottom:3px solid ${APPLE_COLORS.accent};">
@@ -920,15 +996,14 @@ function formatDeadlineFR(daysFromNow: number): string {
 // Reusable Apple-clean DISCOVERY30 banner at the top of each coaching email.
 // Visual: full-width Apple blue box, code in bold, deadline date personalisée.
 function getDiscoveryPromoBanner(daysLeft: number): string {
-  const deadline = formatDeadlineFR(daysLeft);
+  void daysLeft;
   return `
     <div style="margin:0 0 28px;padding:18px 22px;background:${APPLE_COLORS.accent};border-radius:14px;text-align:center;">
-      <p style="margin:0 0 4px;color:rgba(255,255,255,0.85);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Ton code clients Discovery</p>
+      <p style="margin:0 0 4px;color:rgba(255,255,255,0.85);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Réservé à ton dossier Discovery</p>
       <p style="margin:0 0 6px;color:#ffffff;font-size:28px;font-weight:800;letter-spacing:3px;">DISCOVERY30</p>
       <p style="margin:0;color:rgba(255,255,255,0.95);font-size:14px;font-weight:500;line-height:1.5;">
         -30% sur formules coaching 8 et 12 sem<br/>
-        <span style="font-size:12px;color:rgba(255,255,255,0.8);">A copier dans le champ <strong style="color:#ffffff;">Code promotionnel</strong> au checkout</span><br/>
-        <span style="font-size:12px;color:rgba(255,255,255,0.8);">Valide jusqu'au <strong style="color:#ffffff;">${deadline}</strong></span>
+        <span style="font-size:12px;color:rgba(255,255,255,0.8);">À copier dans le champ <strong style="color:#ffffff;">Code promotionnel</strong> au checkout</span>
       </p>
     </div>
   `;
@@ -940,18 +1015,40 @@ function discoveryCoachingBridgeUrl(
   content: string,
   tier?: "ESSENTIAL" | "ELITE" | "PRIVATELAB"
 ): string {
-  const url = new URL("/go/coaching", baseUrl);
-  url.searchParams.set("code", "DISCOVERY30");
+  void baseUrl;
+  const productPathByTier: Record<"ESSENTIAL" | "ELITE" | "PRIVATELAB", string> = {
+    ESSENTIAL: "/product/coaching-essential-8",
+    ELITE: "/product/coaching-elite-8",
+    PRIVATELAB: "/product/8-semaines-private-lab",
+  };
+  const url = new URL(tier ? productPathByTier[tier] : "/formules-coaching", "https://www.achzodcoaching.com");
+  url.searchParams.set("promo", "DISCOVERY30");
   url.searchParams.set("utm_source", "apexlabs");
   url.searchParams.set("utm_medium", "email");
   url.searchParams.set("utm_campaign", campaign);
   url.searchParams.set("utm_content", content);
-  if (tier) url.searchParams.set("tier", tier);
   return url.toString();
 }
 
 function withEmailClickTracking(baseUrl: string, trackingId: string, url: string): string {
-  return `${baseUrl}/api/track/email/${encodeURIComponent(trackingId)}/click?url=${encodeURIComponent(url)}`;
+  return buildTrackedEmailClickUrl(baseUrl, trackingId, url);
+}
+
+function getTrackedWhatsAppUrl(baseUrl: string, trackingId: string, campaign: string): string {
+  const text = `Salut Achzod, je viens de lire ton email ${campaign}. J'ai une question avant de choisir mon coaching.`;
+  const whatsappUrl = `https://wa.me/${WHATSAPP_PRO_NUMBER}?text=${encodeURIComponent(text)}`;
+  return withEmailClickTracking(baseUrl, trackingId, whatsappUrl);
+}
+
+function getWhatsAppConversionBlock(baseUrl: string, trackingId: string, campaign: string): string {
+  const trackedWhatsappUrl = getTrackedWhatsAppUrl(baseUrl, trackingId, campaign);
+  return `
+    <div style="margin:22px 0 0;padding:18px 20px;background:#ecfdf3;border:1px solid #a7f3d0;border-radius:12px;text-align:center;">
+      <p style="margin:0 0 6px;color:#14532d;font-size:15px;font-weight:700;">Tu hésites sur la formule ?</p>
+      <p style="margin:0 0 14px;color:#166534;font-size:13px;line-height:1.55;">Écris-moi directement. Dis-moi ton objectif et ce qui te bloque, je te réponds humainement.</p>
+      <a href="${trackedWhatsappUrl}" target="_blank" style="background:#16a34a;border-radius:10px;color:#ffffff;display:inline-block;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:15px;font-weight:700;line-height:48px;padding:0 24px;text-align:center;text-decoration:none;">Me parler sur WhatsApp</a>
+    </div>
+  `;
 }
 
 function getCoachingAppleButton(text: string, href: string, variant: 'primary' | 'secondary' = 'primary'): string {
@@ -995,7 +1092,7 @@ function getPrimaryButton(text: string, href: string, color: string = COLORS.pri
           </v:roundrect>
           <![endif]-->
           <!--[if !mso]><!-->
-          <a href="${href}" target="_blank" style="background-color:${color};background:${color};border:0;border-radius:8px;color:${textColor};display:inline-block;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:14px;font-weight:700;line-height:52px;min-width:220px;padding:0 28px;text-align:center;text-decoration:none;text-transform:uppercase;letter-spacing:0.6px;mso-hide:all;">${text}</a>
+          <a href="${href}" target="_blank" style="background-color:${color};background:${color};border:0;border-radius:8px;box-sizing:border-box;color:${textColor};display:inline-block;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:14px;font-weight:700;line-height:1.35;max-width:320px;padding:16px 18px;text-align:center;text-decoration:none;text-transform:uppercase;letter-spacing:0.6px;width:100%;mso-hide:all;">${text}</a>
           <!--<![endif]-->
         </td>
       </tr>
@@ -1049,10 +1146,6 @@ function getCoachingSection(auditType: string, color: string = COLORS.purple): s
       </p>
   ` : "";
 
-  const deductionArg = discoveryPromo
-    ? { percent: discoveryPromo.percent }
-    : { amount: deductionAmount };
-
   return `
     <div style="padding: 28px; background: linear-gradient(135deg, ${color}15 0%, ${color}08 100%); border-radius: 12px; border: 1px solid ${color}30;">
       <div style="text-align: center; margin-bottom: 20px;">
@@ -1069,7 +1162,12 @@ function getCoachingSection(auditType: string, color: string = COLORS.purple): s
 
       ${promoSection}
 
-      ${renderCoachingOffersTable(deductionArg, color)}
+      <div style="margin:18px 0;padding:16px 18px;background:${COLORS.surface};border:1px solid ${COLORS.border};border-radius:10px;text-align:left;">
+        <p style="color:${COLORS.text};font-size:14px;font-weight:700;margin:0 0 8px;">Choisis selon le niveau de suivi dont tu as besoin</p>
+        <p style="color:${COLORS.textMuted};font-size:13px;line-height:1.7;margin:0;">
+          Essential pour un cadre clair, Elite pour des ajustements plus proches, Private Lab pour le suivi le plus complet. Les prix et durées sont comparés sur une seule page.
+        </p>
+      </div>
 
       ${getPrimaryButton('Decouvrir les formules', coachingLink, color)}
     </div>
@@ -3489,6 +3587,7 @@ export async function sendRecoveryCtaEmail(
 ): Promise<boolean> {
   try {
     const expiresText = opts.expiresText || "7 jours";
+    void expiresText;
     const cohort = opts.cohort;
     const campaign = "recovery_cta_2026_06";
     const coachingUrl = discoveryCoachingBridgeUrl(opts.baseUrl, campaign, cohort);
@@ -3501,15 +3600,15 @@ export async function sendRecoveryCtaEmail(
     const trackedPrimaryUrl = cohort.startsWith("abandon_") && resumeUrl ? resumeUrl : trackedCoachingUrl;
 
     const subjectByCohort: Record<RecoveryCtaCohort, string> = {
-      clicked_no_conversion: "DISCOVERY30 : le checkout est clair maintenant",
-      clicked_help: "Tu hesites sur la formule ?",
+      clicked_no_conversion: "Tu avais presque terminé",
+      clicked_help: "Tu hésites sur la formule ?",
       abandon_high: "Ton Discovery est presque fini",
       abandon_medium: "Reprends ton Discovery cette semaine",
       opened_no_click: "Je reprends ton dossier Discovery",
       apex_buyer: "Ton audit peut devenir ton plan coaching",
       warm_report: "Ton Discovery, la suite concrète",
       abandon_last_chance: "Ton scan est encore sauvegardé",
-      cold_base: "Ton Discovery, et maintenant ?",
+      cold_base: "On fait quoi de ton Discovery ?",
     };
 
     const introByCohort: Record<RecoveryCtaCohort, string> = {
@@ -3548,11 +3647,13 @@ export async function sendRecoveryCtaEmail(
         <p style="color:${APPLE_COLORS.ink};font-size:15px;line-height:1.65;margin:0;">
           <strong>Important :</strong> au paiement sur AchzodCoaching, colle
           <strong>DISCOVERY30</strong> dans le champ <strong>Code promotionnel ?</strong>.
-          Le code est valable ${escapeEmailHtml(expiresText)} sur les formules coaching 8 et 12 semaines.
+          Le code est réservé aux formules coaching 8 et 12 semaines.
         </p>
       </div>
 
       ${getCoachingAppleButton(primaryLabel, trackedPrimaryUrl)}
+
+      ${getWhatsAppConversionBlock(opts.baseUrl, opts.trackingId, `Recovery ${cohort}`)}
 
       ${cohort.startsWith("abandon_") && resumeUrl ? `
       <p style="color:${APPLE_COLORS.muted};font-size:13px;line-height:1.55;margin:12px 0 0;text-align:center;">
@@ -3579,10 +3680,11 @@ export async function sendRecoveryCtaEmail(
 
     const plainText = `${introByCohort[cohort]}
 
-Code DISCOVERY30 : -30% sur formules coaching 8 et 12 semaines, valable ${expiresText}.
+Code DISCOVERY30 : -30% sur les formules coaching 8 et 12 semaines.
 Au paiement, copie DISCOVERY30 dans le champ "Code promotionnel ?".
 
 ${cohort.startsWith("abandon_") && resumeUrl ? `Reprendre mon Discovery : ${resumeUrl}\nVoir les formules coaching : ${trackedCoachingUrl}` : `Voir les formules coaching : ${trackedCoachingUrl}`}
+WhatsApp : ${getTrackedWhatsAppUrl(opts.baseUrl, opts.trackingId, `Recovery ${cohort}`)}
 
 Si tu bloques sur le choix de la formule, réponds simplement à ce mail avec ton objectif.
 
@@ -3631,10 +3733,10 @@ export async function sendCoachingFormulaChoiceLeadEmail(
     const tier = normalizeCoachingFormulaTier(lead.tier);
     const campaign = "coaching_formula_choice_2026_07";
     const expiresText = opts.expiresText || "5 jours";
+    void expiresText;
     const coachingUrl = discoveryCoachingBridgeUrl(opts.baseUrl, campaign, tier.content, tier.urlTier);
     const trackedCoachingUrl = withEmailClickTracking(opts.baseUrl, opts.trackingId, coachingUrl);
     const trackingPixel = `${opts.baseUrl}/api/track/email/${opts.trackingId}/open.gif`;
-    const deadlineDate = formatDeadlineFR(5);
 
     const objective = compactEmailLine(lead.objectif, 260);
     const profile = compactEmailLine(lead.profil, 180);
@@ -3674,13 +3776,15 @@ export async function sendCoachingFormulaChoiceLeadEmail(
         Si tu veux que je transforme ça en plan concret semaine après semaine, prends ta place maintenant.
       </p>
       <p style="color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.65;margin:0 0 20px;">
-        Le code <strong style="color:${APPLE_COLORS.ink};">DISCOVERY30</strong> retire 30% sur les formules coaching 8 et 12 semaines. Il reste ${escapeEmailHtml(expiresText)}.
+        Le code <strong style="color:${APPLE_COLORS.ink};">DISCOVERY30</strong> retire 30% sur les formules coaching 8 et 12 semaines.
       </p>
 
       ${getCoachingAppleButton(tier.ctaLabel, trackedCoachingUrl)}
 
+      ${getWhatsAppConversionBlock(opts.baseUrl, opts.trackingId, "Choix de formule")}
+
       <p style="color:${APPLE_COLORS.muted};font-size:12px;line-height:1.55;margin:18px 0 0;text-align:center;">
-        Code valable jusqu'au <strong style="color:${APPLE_COLORS.ink};">${deadlineDate}</strong>. Au checkout, copie <strong style="color:${APPLE_COLORS.ink};">DISCOVERY30</strong> dans le champ "Code promotionnel ?".
+        Au checkout, copie <strong style="color:${APPLE_COLORS.ink};">DISCOVERY30</strong> dans le champ "Code promotionnel ?".
       </p>
 
       <div style="padding:14px 18px;background:#f5f5f7;border-radius:10px;text-align:center;margin:24px 0 14px;">
@@ -3699,7 +3803,7 @@ export async function sendCoachingFormulaChoiceLeadEmail(
     const emailContent = getCoachingAppleWrapper(
       content,
       `${tier.label} avec DISCOVERY30`,
-      `Tu as rempli le choix de formule, il reste ${expiresText}`
+      `Tu as rempli le choix de formule, voici ma recommandation`
     );
 
     const plainParts = [
@@ -3708,8 +3812,9 @@ export async function sendCoachingFormulaChoiceLeadEmail(
       objective ? `Objectif : ${objective}` : "",
       reason ? `Pourquoi : ${reason}` : "",
       "",
-      `Code DISCOVERY30 : -30% sur les formules coaching 8 et 12 semaines, valable ${expiresText}.`,
+      `Code DISCOVERY30 : -30% sur les formules coaching 8 et 12 semaines.`,
       `Choisir ma formule : ${trackedCoachingUrl}`,
+      `WhatsApp : ${getTrackedWhatsAppUrl(opts.baseUrl, opts.trackingId, "Choix de formule")}`,
       "",
       `Au checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".`,
       `Si tu hésites encore, réponds à ce mail avec ton blocage : budget, timing, formule, blessure, ou autre.`,
@@ -3753,18 +3858,23 @@ export async function sendCoachingFormulaChoiceLeadEmail(
 // Sends: coaching ANALYSE20 + APEX30 all-site (focus Peptides with sourcing urgency).
 export async function sendReactivationCampaignEmail(
   email: string,
-  opts: { apexPromoCode?: string; coachingPromoCode?: string; expiresText?: string } = {}
+  opts: { apexPromoCode?: string; coachingPromoCode?: string; expiresText?: string; baseUrl?: string; trackingId?: string } = {}
 ): Promise<boolean> {
   try {
     const APEX_CODE = opts.apexPromoCode || "APEX30";
     const COACHING_CODE = opts.coachingPromoCode || "ANALYSE20";
-    const EXPIRES = opts.expiresText || "7 jours";
 
     const peptidesHref = `https://apexlabs.achzodcoaching.com/peptides-engine?promo=${APEX_CODE}`;
     const ultimateHref = `https://apexlabs.achzodcoaching.com/audit-complet/checkout?plan=ultimate&promo=${APEX_CODE}`;
     const bloodHref = `https://apexlabs.achzodcoaching.com/blood-analysis?promo=${APEX_CODE}`;
     const anabolicHref = `https://apexlabs.achzodcoaching.com/audit-complet/checkout?plan=anabolic&promo=${APEX_CODE}`;
     const coachingHref = "https://www.achzodcoaching.com/";
+    const whatsappBlock = opts.baseUrl && opts.trackingId
+      ? getWhatsAppConversionBlock(opts.baseUrl, opts.trackingId, "Réactivation Discovery")
+      : "";
+    const whatsappText = opts.baseUrl && opts.trackingId
+      ? `\nWhatsApp : ${getTrackedWhatsAppUrl(opts.baseUrl, opts.trackingId, "Réactivation Discovery")}`
+      : "";
 
     const miniProductRow = (label: string, subtitle: string, oldPrice: string, newPrice: string, href: string, accent: string) => `
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin: 0 0 12px 0; background: ${COLORS.surface}; border: 1px solid ${COLORS.border}; border-left: 3px solid ${accent}; border-radius: 10px;">
@@ -3806,7 +3916,7 @@ export async function sendReactivationCampaignEmail(
       <!-- Divider -->
       <div style="height: 1px; background: ${COLORS.border}; margin: 32px 0;"></div>
 
-      <p style="color: ${COLORS.textMuted}; font-size: 13px; text-align: center; margin: 0 0 20px 0; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 600;">Si tu veux reprendre , ${EXPIRES}</p>
+      <p style="color: ${COLORS.textMuted}; font-size: 13px; text-align: center; margin: 0 0 20px 0; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 600;">Si tu veux reprendre, voici deux options</p>
 
       <!-- BLOCK 1: Coaching -->
       <div style="margin: 0 0 28px 0; padding: 24px 22px; background: linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(139, 92, 246, 0.03) 100%); border-radius: 14px; border: 1px solid rgba(139, 92, 246, 0.25);">
@@ -3833,10 +3943,10 @@ export async function sendReactivationCampaignEmail(
 
         <!-- Urgency Peptides -->
         <div style="margin: 0 0 20px 0; padding: 20px; background: linear-gradient(135deg, rgba(245, 158, 11, 0.14) 0%, rgba(239, 68, 68, 0.06) 100%); border-radius: 12px; border: 2px solid ${COLORS.warning};">
-          <p style="margin: 0 0 4px 0; color: ${COLORS.warning}; font-size: 10px; letter-spacing: 1.8px; text-transform: uppercase; font-weight: 800;">&#9888; Source bientot coupee</p>
+          <p style="margin: 0 0 4px 0; color: ${COLORS.warning}; font-size: 10px; letter-spacing: 1.8px; text-transform: uppercase; font-weight: 800;">Option Peptides Engine</p>
           <h4 style="margin: 0 0 8px 0; color: ${COLORS.text}; font-size: 19px; font-weight: 800; letter-spacing: -0.3px;">Peptides Engine</h4>
           <p style="margin: 0 0 12px 0; color: ${COLORS.textMuted}; font-size: 13.5px; line-height: 1.65;">
-            Mon produit le plus puissant : protocole peptides base sur <strong style="color: ${COLORS.text};">mes sources direct fournisseur</strong> , les memes que j'utilise, testees, doses exactes. Mes contacts me disent qu'ils vont restreindre l'acces a un cercle ferme. Si t'attends 6 mois, je peux plus te garantir la meme orientation.
+            Un protocole peptides construit à partir de ton profil, avec les références fournisseur, le budget et les étapes d'utilisation regroupés au même endroit.
           </p>
           <p style="margin: 0 0 4px 0;">
             <span style="color: ${COLORS.textMuted}; font-size: 12px; text-decoration: line-through;">299EUR</span>
@@ -3855,6 +3965,8 @@ export async function sendReactivationCampaignEmail(
         ${miniProductRow('Anabolic Bioscan', 'Scan hormonal cible : testo, cortisol, thyroide, potentiel anabolique', '59EUR', '41EUR', anabolicHref, COLORS.anabolic)}
       </div>
 
+      ${whatsappBlock}
+
       <!-- Deduction recap -->
       <div style="margin: 24px 0 0 0; padding: 18px; background: ${COLORS.surface}; border-radius: 10px; border: 1px solid ${COLORS.border};">
         <p style="margin: 0 0 10px 0; color: ${COLORS.text}; font-size: 13px; font-weight: 700;">Rappel deduction coaching</p>
@@ -3866,7 +3978,7 @@ export async function sendReactivationCampaignEmail(
       </div>
 
       <p style="color: ${COLORS.textMuted}; font-size: 12px; text-align: center; margin: 24px 0 0 0;">
-        Les codes expirent le 30/04. Apres c'est plein tarif.
+        Copie le code choisi au moment du paiement.
       </p>
       <p style="color: ${COLORS.text}; font-size: 14px; margin: 20px 0 0 0; font-weight: 600;">Achzod</p>
     `;
@@ -3874,13 +3986,13 @@ export async function sendReactivationCampaignEmail(
     const emailContent = getEmailWrapper(
       content,
       `linear-gradient(135deg, ${COLORS.primary} 0%, #d4a017 100%)`,
-      "Une derniere chance",
-      `Code ${APEX_CODE} , -30% tout le site (${EXPIRES})`
+      "Je te laisse deux options",
+      `Code ${APEX_CODE} sur APEXLABS`
     );
 
     const plainText = `Ca fait quelques semaines depuis ton Discovery APEXLABS et tu n'as pas pris la suite. Qu'est-ce qui t'a bloque ? Reponds en 1 ligne, ca m'aide enormement.
 
-Si tu veux reprendre, 2 codes pendant ${EXPIRES} :
+Si tu veux reprendre, voici 2 options :
 1. COACHING ACHZOD , -20% avec le code ${COACHING_CODE} : ${coachingHref}
 2. TOUT LE SITE APEXLABS , -30% avec le code ${APEX_CODE}
 
@@ -3889,13 +4001,14 @@ Ultimate Scan (55EUR au lieu de 79EUR) : ${ultimateHref}
 Blood Analysis (69EUR au lieu de 99EUR) : ${bloodHref}
 Anabolic Bioscan (41EUR au lieu de 59EUR) : ${anabolicHref}
 
-Sources Peptides bientot coupees (mes contacts vont restreindre l'acces a un cercle ferme). Les codes expirent le 30/04.
+Copie le code choisi au moment du paiement.
+${whatsappText}
 
 Achzod`;
 
     const result = await sendEmailWithTracking(
       {
-        subject: "Ton Discovery , et apres ?",
+        subject: "Ton Discovery, et après ?",
         from: { name: SENDER_NAME, email: SENDER_EMAIL },
         to: [{ email }],
         html: encodeBase64(emailContent),
@@ -3904,7 +4017,7 @@ Achzod`;
       {
         emailType: "sendReactivationCampaignEmail",
         recipientEmail: email,
-        metadata: { apexCode: APEX_CODE, coachingCode: COACHING_CODE },
+        metadata: { apexCode: APEX_CODE, coachingCode: COACHING_CODE, trackingId: opts.trackingId },
       }
     );
 
@@ -3920,13 +4033,18 @@ Achzod`;
 // secondary mention of the APEX30 code if they'd rather skip ahead.
 export async function sendFinishDiscoveryEmail(
   email: string,
-  opts: { apexPromoCode?: string; expiresText?: string } = {}
+  opts: { apexPromoCode?: string; expiresText?: string; baseUrl?: string; trackingId?: string } = {}
 ): Promise<boolean> {
   try {
     const APEX_CODE = opts.apexPromoCode || "APEX30";
-    const EXPIRES = opts.expiresText || "7 jours";
     const resumeHref = `https://apexlabs.achzodcoaching.com/audit-complet/questionnaire`;
     const peptidesHref = `https://apexlabs.achzodcoaching.com/peptides-engine?promo=${APEX_CODE}`;
+    const whatsappBlock = opts.baseUrl && opts.trackingId
+      ? getWhatsAppConversionBlock(opts.baseUrl, opts.trackingId, "Finir Discovery")
+      : "";
+    const whatsappText = opts.baseUrl && opts.trackingId
+      ? `\nWhatsApp : ${getTrackedWhatsAppUrl(opts.baseUrl, opts.trackingId, "Finir Discovery")}`
+      : "";
 
     const content = `
       <p style="color: ${COLORS.textMuted}; font-size: 13px; text-align: center; margin: 0 0 8px 0; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 600;">Rappel personnel</p>
@@ -3950,18 +4068,20 @@ export async function sendFinishDiscoveryEmail(
         ${getPrimaryButton('Finir mon scan gratuit', resumeHref, COLORS.discovery)}
       </div>
 
+      ${whatsappBlock}
+
       <!-- Divider -->
       <div style="height: 1px; background: ${COLORS.border}; margin: 28px 0;"></div>
 
       <!-- Soft secondary -->
       <p style="color: ${COLORS.textMuted}; font-size: 12px; text-align: center; margin: 0 0 10px 0; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 600;">Ou si tu veux skip l'etape du scan gratuit</p>
       <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.7; margin: 0 0 14px 0;">
-        J'ouvre le code <strong style="color: ${COLORS.primary};">${APEX_CODE}</strong> pendant ${EXPIRES} : -30% sur tout le site APEXLABS. Le plus puissant c'est le Peptides Engine (protocole base sur mes sources direct fournisseur) , 209EUR au lieu de 299EUR, et -150EUR deduits du coaching Elite/Private Lab apres.
+        Le code <strong style="color: ${COLORS.primary};">${APEX_CODE}</strong> donne -30% sur APEXLABS. Si tu veux aller directement vers Peptides Engine, tu retrouves le protocole, les références fournisseur et le budget au même endroit.
       </p>
       ${getPrimaryButton('Voir Peptides Engine (-30%)', peptidesHref, COLORS.primary)}
 
       <p style="color: ${COLORS.textMuted}; font-size: 12px; text-align: center; margin: 24px 0 0 0;">
-        Code valable jusqu'au 30/04.
+        Copie ${APEX_CODE} au moment du paiement.
       </p>
       <p style="color: ${COLORS.text}; font-size: 14px; margin: 20px 0 0 0; font-weight: 600;">Achzod</p>
     `;
@@ -3977,9 +4097,10 @@ export async function sendFinishDiscoveryEmail(
 
 Finir mon scan : ${resumeHref}
 
-Ou si tu veux skip et aller direct a l'action : code ${APEX_CODE} (-30% tout le site pendant ${EXPIRES}). Focus Peptides Engine 209EUR au lieu de 299EUR + -150EUR deduits du coaching Elite/Private Lab apres : ${peptidesHref}
+Ou si tu veux aller directement à Peptides Engine : code ${APEX_CODE} (-30% sur APEXLABS) : ${peptidesHref}
 
-Code valable jusqu'au 30/04.
+Copie ${APEX_CODE} au moment du paiement.
+${whatsappText}
 
 Achzod`;
 
@@ -3994,7 +4115,7 @@ Achzod`;
       {
         emailType: "sendFinishDiscoveryEmail",
         recipientEmail: email,
-        metadata: { apexCode: APEX_CODE },
+        metadata: { apexCode: APEX_CODE, trackingId: opts.trackingId },
       }
     );
     return result.result === true;
@@ -4009,14 +4130,19 @@ Achzod`;
 // secondary CTA is Peptides Engine for those who bought a scan only.
 export async function sendCrossSellUpgradeEmail(
   email: string,
-  opts: { apexPromoCode?: string; coachingPromoCode?: string; expiresText?: string } = {}
+  opts: { apexPromoCode?: string; coachingPromoCode?: string; expiresText?: string; baseUrl?: string; trackingId?: string } = {}
 ): Promise<boolean> {
   try {
     const APEX_CODE = opts.apexPromoCode || "APEX30";
     const COACHING_CODE = opts.coachingPromoCode || "ANALYSE20";
-    const EXPIRES = opts.expiresText || "7 jours";
     const coachingHref = "https://www.achzodcoaching.com/";
     const peptidesHref = `https://apexlabs.achzodcoaching.com/peptides-engine?promo=${APEX_CODE}`;
+    const whatsappBlock = opts.baseUrl && opts.trackingId
+      ? getWhatsAppConversionBlock(opts.baseUrl, opts.trackingId, "Client APEXLABS")
+      : "";
+    const whatsappText = opts.baseUrl && opts.trackingId
+      ? `\nWhatsApp : ${getTrackedWhatsAppUrl(opts.baseUrl, opts.trackingId, "Client APEXLABS")}`
+      : "";
 
     const content = `
       <p style="color: ${COLORS.textMuted}; font-size: 13px; text-align: center; margin: 0 0 8px 0; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 600;">Entre nous , deja client</p>
@@ -4049,10 +4175,10 @@ export async function sendCrossSellUpgradeEmail(
 
       <!-- BLOCK 2: Peptides (urgency) -->
       <div style="margin: 0 0 20px 0; padding: 24px 22px; background: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(239, 68, 68, 0.04) 100%); border-radius: 14px; border: 2px solid ${COLORS.warning};">
-        <p style="margin: 0 0 4px 0; color: ${COLORS.warning}; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700;">Chemin 2 , sourcing bientot coupe</p>
+        <p style="margin: 0 0 4px 0; color: ${COLORS.warning}; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700;">Chemin 2, Peptides Engine</p>
         <h3 style="margin: 0 0 10px 0; color: ${COLORS.text}; font-size: 20px; font-weight: 800; letter-spacing: -0.3px;">Peptides Engine , -30% avec ${APEX_CODE}</h3>
         <p style="margin: 0 0 12px 0; color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.65;">
-          Mon produit le plus puissant. Protocole base sur <strong style="color: ${COLORS.text};">mes sources direct fournisseur</strong> , celles que j'utilise, doses exactes, testees. Mes contacts commencent a restreindre l'acces. Dans 6 mois c'est peut-etre ferme.
+          Protocole construit à partir de ton profil, avec références fournisseur, budget et étapes d'utilisation regroupés au même endroit.
         </p>
         <p style="margin: 0 0 4px 0;">
           <span style="color: ${COLORS.textMuted}; font-size: 12px; text-decoration: line-through;">299EUR</span>
@@ -4064,8 +4190,10 @@ export async function sendCrossSellUpgradeEmail(
         ${getPrimaryButton('Je prends Peptides Engine', peptidesHref, COLORS.warning)}
       </div>
 
+      ${whatsappBlock}
+
       <p style="color: ${COLORS.textMuted}; font-size: 12px; text-align: center; margin: 24px 0 0 0;">
-        Codes valables jusqu'au 30/04. Apres c'est plein tarif.
+        Copie le code choisi au moment du paiement.
       </p>
       <p style="color: ${COLORS.text}; font-size: 14px; margin: 20px 0 0 0; font-weight: 600;">Achzod</p>
     `;
@@ -4074,7 +4202,7 @@ export async function sendCrossSellUpgradeEmail(
       content,
       `linear-gradient(135deg, ${COLORS.primary} 0%, #d4a017 100%)`,
       "L'etape d'apres",
-      `Codes ${COACHING_CODE} (coaching) + ${APEX_CODE} (APEX) , ${EXPIRES}`
+      `Codes ${COACHING_CODE} coaching et ${APEX_CODE} APEXLABS`
     );
 
     const plainText = `Tu as deja pris un audit APEXLABS. Voici les 2 chemins pour passer a l'action.
@@ -4083,9 +4211,10 @@ export async function sendCrossSellUpgradeEmail(
 Essential, Elite, Private Lab. Rappel : ton audit est deduit du coaching (acompte, pas supplement).
 
 2. PEPTIDES ENGINE -30% avec ${APEX_CODE} : ${peptidesHref}
-Protocole base sur mes sources direct fournisseur. 209EUR au lieu de 299EUR + -150EUR deduits du coaching Elite/Private Lab apres. Sources bientot coupees.
+Protocole construit à partir de ton profil, avec références fournisseur et budget détaillé. 209EUR au lieu de 299EUR, avec 150EUR déduits du coaching Elite ou Private Lab ensuite.
 
-Codes valables jusqu'au 30/04.
+Copie le code choisi au moment du paiement.
+${whatsappText}
 
 Achzod`;
 
@@ -4100,7 +4229,7 @@ Achzod`;
       {
         emailType: "sendCrossSellUpgradeEmail",
         recipientEmail: email,
-        metadata: { apexCode: APEX_CODE, coachingCode: COACHING_CODE },
+        metadata: { apexCode: APEX_CODE, coachingCode: COACHING_CODE, trackingId: opts.trackingId },
       }
     );
     return result.result === true;
@@ -4127,13 +4256,18 @@ export async function sendGratuitUpsellEmail(
     const trackedAllFormulesLink = withEmailClickTracking(baseUrl, trackingId, allFormulesLink);
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
     const DAYS_LEFT = 7;
-    const deadlineDate = formatDeadlineFR(DAYS_LEFT);
 
     const content = `
       ${getDiscoveryPromoBanner(DAYS_LEFT)}
 
       <p style="color:${APPLE_COLORS.inkSoft};font-size:16px;line-height:1.65;margin:0 0 20px;">
-        Tu as tes scores Discovery, tes blocages, la carte de ton profil. La réalité froide : <strong style="color:${APPLE_COLORS.ink};">aucun score ne s'améliore en le regardant</strong>. Trois choses se passent à 99% quand on attaque seul après un audit.
+        J'ai relu la suite logique après ton Discovery. Tu as déjà la carte de ton profil. Maintenant, il faut choisir une première action simple et tenir assez longtemps pour mesurer ce qui change.
+      </p>
+
+      ${getCoachingAppleButton('Voir Essential avec -30%', trackedCoachingLink)}
+
+      <p style="color:${APPLE_COLORS.muted};font-size:12px;line-height:1.55;margin:0 0 20px;text-align:center;">
+        Au paiement, copie <strong style="color:${APPLE_COLORS.ink};">DISCOVERY30</strong> dans le champ "Code promotionnel ?".
       </p>
 
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:24px;border-collapse:separate;border-spacing:0 8px;">
@@ -4162,17 +4296,13 @@ export async function sendGratuitUpsellEmail(
         Je construis ton plan directement à partir des données de ton Discovery, pas de questionnaire à refaire. Plan personnalisé, nutrition précision, bilan écrit chaque semaine où tu m'envoies tes retours et j'ajuste avant que tu décroches.
       </p>
 
-      ${getCoachingAppleButton('Activer mon code -30% maintenant', trackedCoachingLink)}
-
       <div style="text-align:center;margin:18px 0 14px;">
         <a href="${trackedAllFormulesLink}" style="color:${APPLE_COLORS.accent};font-size:14px;text-decoration:none;font-weight:500;">
           Comparer les 3 formules avec DISCOVERY30 →
         </a>
       </div>
 
-      <p style="color:${APPLE_COLORS.muted};font-size:12px;line-height:1.55;margin:20px 0 0;text-align:center;">
-        Code valable jusqu'au <strong style="color:${APPLE_COLORS.ink};">${deadlineDate}</strong>. Au paiement, copie <strong style="color:${APPLE_COLORS.ink};">DISCOVERY30</strong> dans le champ "Code promotionnel ?".
-      </p>
+      ${getWhatsAppConversionBlock(baseUrl, trackingId, "Discovery J3")}
 
       <div style="padding:14px 18px;background:#f5f5f7;border-radius:10px;text-align:center;margin-top:20px;">
         <a href="${reportLink}" style="color:${APPLE_COLORS.muted};font-size:13px;text-decoration:underline;">
@@ -4189,15 +4319,15 @@ export async function sendGratuitUpsellEmail(
 
     const emailContent = getCoachingAppleWrapper(
       content,
-      `DISCOVERY30 actif , -30% sur ton coaching`,
-      `Valable jusqu'au ${deadlineDate}`
+      `J'ai relu ton Discovery`,
+      `La suite la plus simple pour passer à l'action`
     );
 
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
-        text: `Ton code DISCOVERY30 est actif : -30% sur formules coaching 8 et 12 semaines, valable jusqu'au ${deadlineDate}.\n\nChoisir ma formule : ${trackedCoachingLink}\nComparer les 3 formules : ${trackedAllFormulesLink}\n\nAu paiement, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`,
-        subject: `DISCOVERY30 actif , 7 jours pour activer ton coaching -30%`,
+        text: `J'ai relu la suite logique après ton Discovery. Si tu veux que je transforme tes résultats en plan suivi, Essential est le point d'entrée le plus simple.\n\nVoir Essential avec DISCOVERY30 : ${trackedCoachingLink}\nComparer les formules : ${trackedAllFormulesLink}\nWhatsApp : ${getTrackedWhatsAppUrl(baseUrl, trackingId, "Discovery J3")}\n\nAu paiement, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`,
+        subject: `J'ai relu ton Discovery`,
         from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
       },
@@ -4442,14 +4572,14 @@ export async function sendPeptidesReviewS5Email(
       content,
       `linear-gradient(135deg, ${COLORS.warning} 0%, #d97706 100%)`,
       "Peptides Engine",
-      "Semaine 5 \u2014 Retour d'experience"
+      "Semaine 5, retour d'experience"
     );
 
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
         text: `5 semaines de cycle. Tu as assez de recul pour juger de l'efficacite de ton protocole. Laisse ton avis : ${reviewLink}`,
-        subject: "5 semaines de cycle \u2014 ton retour ?",
+        subject: "5 semaines de cycle, ton retour ?",
         from: { name: SENDER_NAME, email: SENDER_EMAIL },
         to: [{ email }],
       },
@@ -4492,14 +4622,14 @@ export async function sendPeptidesReviewS12Email(
       content,
       `linear-gradient(135deg, ${COLORS.warning} 0%, #d97706 100%)`,
       "Peptides Engine",
-      "Fin de cycle \u2014 Bilan"
+      "Fin de cycle, bilan"
     );
 
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
         text: `Ton cycle touche a sa fin. C'est le moment ideal pour partager ton experience. Laisse ton avis : ${reviewLink}`,
-        subject: "Fin de cycle Peptides Engine \u2014 ton bilan ?",
+        subject: "Fin de cycle Peptides Engine, ton bilan ?",
         from: { name: SENDER_NAME, email: SENDER_EMAIL },
         to: [{ email }],
       },
@@ -4548,6 +4678,8 @@ export async function sendPremiumJ7Email(
 
       ${getCoachingSection(auditType, COLORS.purple)}
 
+      ${getWhatsAppConversionBlock(baseUrl, trackingId, `${auditType} J7`)}
+
       <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
     `;
 
@@ -4558,8 +4690,8 @@ export async function sendPremiumJ7Email(
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
-        text: `Ca fait une semaine ! Pret a passer a l'action ? Ton code promo : ${promoJ7Label}. Decouvre le coaching personnalise.`,
-        subject: `Pret a transformer ta sante ? (${promoJ7Label})`,
+        text: `J'ai relu la suite après ton audit. Ton code ${promoJ7Label} est prêt. Voir le coaching : https://www.achzodcoaching.com/formules-coaching\nWhatsApp : ${getTrackedWhatsAppUrl(baseUrl, trackingId, `${auditType} J7`)}\n\nAchzod`,
+        subject: `J'ai relu la suite après ton audit`,
         from: { name: SENDER_NAME, email: SENDER_EMAIL },
         to: [{ email }],
       },
@@ -4602,6 +4734,8 @@ export async function sendPremiumJ14Email(
 
       ${getCoachingSection(auditType, COLORS.warning)}
 
+      ${getWhatsAppConversionBlock(baseUrl, trackingId, `${auditType} J14`)}
+
       <p style="color: #525252; font-size: 12px; line-height: 1.6; margin: 28px 0 0; text-align: center;">
         <a href="{{UNSUB_LINK}}" style="color: #525252; text-decoration: underline;">Se desabonner</a>
       </p>
@@ -4616,8 +4750,8 @@ export async function sendPremiumJ14Email(
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
-        text: `Coaching Achzod. Ton code promo : ${promoJ14Label}. Utilise-le sur achzodcoaching.com.`,
-        subject: `Coaching Achzod - code ${promoJ14Label}`,
+        text: `Tu as déjà l'analyse. Si tu veux que je t'aide à l'appliquer, ton code ${promoJ14Label} est prêt.\nVoir le coaching : https://www.achzodcoaching.com/formules-coaching\nWhatsApp : ${getTrackedWhatsAppUrl(baseUrl, trackingId, `${auditType} J14`)}\n\nAchzod`,
+        subject: `Tu veux que je t'aide à appliquer ton audit ?`,
         from: { name: SENDER_NAME, email: SENDER_EMAIL },
         to: [{ email }],
       },
@@ -4662,7 +4796,6 @@ export async function sendDiscoveryJ14CoachingEmail(
       ? recommendation.tier === "PRIVATELAB" ? "Private Lab" : recommendation.tier === "ELITE" ? "Elite" : "Essential"
       : null;
     const DAYS_LEFT = 7;
-    const deadlineDate = formatDeadlineFR(DAYS_LEFT);
 
     const content = `
       ${getDiscoveryPromoBanner(DAYS_LEFT)}
@@ -4682,6 +4815,14 @@ export async function sendDiscoveryJ14CoachingEmail(
       </div>
       ` : ""}
 
+      ${getCoachingAppleButton(tierLabel ? `Voir ${tierLabel} avec -30%` : 'Voir les formules avec -30%', trackedCoachingLink)}
+
+      <p style="color:${APPLE_COLORS.muted};font-size:12px;line-height:1.55;margin:0 0 18px;text-align:center;">
+        Au checkout, copie <strong style="color:${APPLE_COLORS.ink};">DISCOVERY30</strong> dans le champ "Code promotionnel ?".
+      </p>
+
+      ${getWhatsAppConversionBlock(baseUrl, trackingId, "Discovery J14")}
+
       <h2 style="color:${APPLE_COLORS.ink};margin:28px 0 14px;font-size:22px;font-weight:700;letter-spacing:-0.4px;">
         ${tierLabel ? `Pourquoi ${tierLabel} fait la différence` : "Pourquoi un coaching change la donne"}
       </h2>
@@ -4697,20 +4838,6 @@ export async function sendDiscoveryJ14CoachingEmail(
         <tr><td style="padding:10px 16px;background:#f5f5f7;border-radius:8px;color:${APPLE_COLORS.ink};font-size:14px;font-weight:500;line-height:1.55;">Accès mail prioritaire à moi, réponse personnelle en moins de 24h</td></tr>
       </table>
 
-      ${getCoachingAppleButton(tierLabel ? `Activer mon code -30% sur ${tierLabel}` : 'Activer mon code -30% maintenant', trackedCoachingLink)}
-
-      <p style="color:${APPLE_COLORS.muted};font-size:12px;line-height:1.55;margin:20px 0 0;text-align:center;">
-        Code valable jusqu'au <strong style="color:${APPLE_COLORS.ink};">${deadlineDate}</strong>. Au checkout, copie <strong style="color:${APPLE_COLORS.ink};">DISCOVERY30</strong> dans le champ "Code promotionnel ?".
-      </p>
-
-      <!-- Social proof -->
-      <div style="margin:32px 0 24px;padding:20px 22px;background:#f5f5f7;border-radius:12px;border-left:3px solid ${APPLE_COLORS.accent};">
-        <p style="color:${APPLE_COLORS.ink};font-size:14px;line-height:1.7;margin:0 0 8px;font-weight:500;">
-          "J'ai fait le Discovery, vu mes points faibles, mais c'est le coaching qui a tout changé. En 8 semaines, perdu 6 kg, gagné en muscle, ma libido est revenue. L'analyse c'est le diagnostic, le coaching c'est le traitement."
-        </p>
-        <p style="color:${APPLE_COLORS.muted};font-size:12px;margin:0;">, suivi 3 mois</p>
-      </div>
-
       <p style="color:${APPLE_COLORS.muted};font-size:12px;margin:16px 0 0;">
         Achzod
       </p>
@@ -4720,19 +4847,19 @@ export async function sendDiscoveryJ14CoachingEmail(
 
     const emailContent = getCoachingAppleWrapper(
       content,
-      tierLabel ? `${tierLabel} avec DISCOVERY30 (-30%)` : `7 jours pour activer DISCOVERY30`,
-      `-30% sur ton coaching jusqu'au ${deadlineDate}`
+      tierLabel ? `Je te conseille ${tierLabel}` : `Tu veux que je t'aide à l'appliquer ?`,
+      `Une recommandation claire, et je suis dispo sur WhatsApp`
     );
 
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
         text: tierLabel
-          ? `Je te recommande ${tierLabel} d'après ton Discovery.\n${recommendation!.reason}\n\nCode DISCOVERY30 : -30% jusqu'au ${deadlineDate} (7 jours).\nChoisir ma formule : ${trackedCoachingLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`
-          : `Tu as les données. Le coaching, c'est l'application pratique sur la durée.\n\nCode DISCOVERY30 : -30% sur formules 8 et 12 sem, jusqu'au ${deadlineDate} (7 jours).\nChoisir ma formule : ${trackedCoachingLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`,
+          ? `Je te recommande ${tierLabel} d'après ton Discovery.\n${recommendation!.reason}\n\nChoisir ${tierLabel} avec DISCOVERY30 : ${trackedCoachingLink}\nWhatsApp : ${getTrackedWhatsAppUrl(baseUrl, trackingId, "Discovery J14")}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`
+          : `Tu as les données. Si tu veux que je t'aide à les appliquer, voici les formules : ${trackedCoachingLink}\nWhatsApp : ${getTrackedWhatsAppUrl(baseUrl, trackingId, "Discovery J14")}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`,
         subject: tierLabel
-          ? `${tierLabel} avec DISCOVERY30 , 7 jours pour activer`
-          : `7 jours pour activer DISCOVERY30 , -30% coaching`,
+          ? `Je te conseille ${tierLabel} pour la suite`
+          : `Tu veux que je t'aide à appliquer ton Discovery ?`,
         from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
       },
@@ -4769,13 +4896,12 @@ export async function sendGratuitJ5Email(
     const trackedSecondaryCtaLink = withEmailClickTracking(baseUrl, trackingId, secondaryCtaLink);
     const reportLink = `${baseUrl}/analysis/${auditId}`;
     const DAYS_LEFT = 5;
-    const deadlineDate = formatDeadlineFR(DAYS_LEFT);
 
     const content = `
       ${getDiscoveryPromoBanner(DAYS_LEFT)}
 
       <p style="color:${APPLE_COLORS.inkSoft};font-size:16px;line-height:1.65;margin:0 0 20px;">
-        5 jours depuis ton rapport. La plupart des gens à ce stade n'ont rien appliqué. C'est pas un manque de volonté, c'est juste que <strong style="color:${APPLE_COLORS.ink};">un rapport, même précis, ne suffit pas à transformer un corps tout seul</strong>.
+        Quelques jours après un rapport, le vrai blocage est souvent le même : tu sais ce qui compte, mais tu ne sais pas quelle action prioriser lundi matin. C'est exactement là que je peux t'aider.
       </p>
 
       <h2 style="color:${APPLE_COLORS.ink};margin:0 0 14px;font-size:22px;font-weight:700;letter-spacing:-0.4px;">
@@ -4831,8 +4957,10 @@ export async function sendGratuitJ5Email(
       </div>
 
       <p style="color:${APPLE_COLORS.muted};font-size:12px;line-height:1.55;margin:18px 0 0;text-align:center;">
-        Code valable jusqu'au <strong style="color:${APPLE_COLORS.ink};">${deadlineDate}</strong>. Au checkout, copie <strong style="color:${APPLE_COLORS.ink};">DISCOVERY30</strong> dans le champ "Code promotionnel ?".
+        Au checkout, copie <strong style="color:${APPLE_COLORS.ink};">DISCOVERY30</strong> dans le champ "Code promotionnel ?".
       </p>
+
+      ${getWhatsAppConversionBlock(baseUrl, trackingId, "Discovery priorité")}
 
       <div style="padding:14px 18px;background:#f5f5f7;border-radius:10px;text-align:center;">
         <a href="${reportLink}" style="color:${APPLE_COLORS.muted};font-size:13px;text-decoration:underline;">
@@ -4849,15 +4977,15 @@ export async function sendGratuitJ5Email(
 
     const emailContent = getCoachingAppleWrapper(
       content,
-      `5 jours pour activer DISCOVERY30`,
-      `-30% sur ton coaching jusqu'au ${deadlineDate}`
+      `Le point qui bloque ton plan`,
+      `Une action claire vaut mieux que dix intentions`
     );
 
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
-        text: `Ton code DISCOVERY30 est actif : -30% sur formules coaching 8 et 12 semaines, valable jusqu'au ${deadlineDate} (5 jours).\n\nLe Discovery te donne le diagnostic. Le coaching te donne le plan jour-par-jour, l'ajustement hebdo, et le contrat moral.\n\nChoisir ma formule : ${trackedPrimaryCtaLink}\nComparer les 3 formules : ${trackedSecondaryCtaLink}\nRelire le Discovery : ${reportLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`,
-        subject: `5 jours pour activer DISCOVERY30 , -30% coaching`,
+        text: `Le vrai blocage après un Discovery, c'est souvent de savoir quoi prioriser lundi matin. Si tu veux un plan suivi, regarde Essential ou écris-moi directement.\n\nVoir Essential avec DISCOVERY30 : ${trackedPrimaryCtaLink}\nComparer les formules : ${trackedSecondaryCtaLink}\nWhatsApp : ${getTrackedWhatsAppUrl(baseUrl, trackingId, "Discovery priorité")}\nRelire le Discovery : ${reportLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`,
+        subject: `Le point qui bloque ton plan`,
         from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
       },
@@ -4896,13 +5024,12 @@ export async function sendGratuitJ7Email(
     const trackedPrivateLabLink = withEmailClickTracking(baseUrl, trackingId, privateLabLink);
     const trackedAllFormulesLink = withEmailClickTracking(baseUrl, trackingId, allFormulesLink);
     const DAYS_LEFT = 3;
-    const deadlineDate = formatDeadlineFR(DAYS_LEFT);
 
     const content = `
       ${getDiscoveryPromoBanner(DAYS_LEFT)}
 
       <p style="color:${APPLE_COLORS.inkSoft};font-size:16px;line-height:1.65;margin:0 0 24px;">
-        Plus que <strong style="color:${APPLE_COLORS.ink};">3 jours</strong> pour activer ton code DISCOVERY30. Voici une comparaison claire des 3 formules coaching avec le tarif après réduction.
+        Tu m'as demandé de rendre le choix simple. Voici les 3 niveaux, avec le prix 8 semaines après DISCOVERY30. Si tu hésites, écris-moi sur WhatsApp et je te dis lequel correspond à ton objectif.
       </p>
 
       <!-- Code box -->
@@ -4958,6 +5085,8 @@ export async function sendGratuitJ7Email(
 
       ${getCoachingAppleButton('Comparer les 3 formules', trackedAllFormulesLink)}
 
+      ${getWhatsAppConversionBlock(baseUrl, trackingId, "Comparatif Discovery")}
+
       <p style="color:${APPLE_COLORS.muted};font-size:13px;margin:20px 0 0;text-align:center;line-height:1.55;">
         Les 4 semaines ne sont pas éligibles au code DISCOVERY30, seules les 8 et 12 sem le sont.
       </p>
@@ -4971,15 +5100,15 @@ export async function sendGratuitJ7Email(
 
     const emailContent = getCoachingAppleWrapper(
       content,
-      `Plus que 3 jours pour DISCOVERY30`,
-      `-30% sur ton coaching jusqu'au ${deadlineDate}`
+      `Je te conseille de comparer ces 3 options`,
+      `Les prix sont clairs, et je peux t'aider sur WhatsApp`
     );
 
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
-        text: `Plus que 3 jours pour activer DISCOVERY30 (jusqu'au ${deadlineDate}).\n\nComparaison des 3 formules coaching avec DISCOVERY30 :\n\nEssential 8 sem : 279€ (au lieu de 399€) , ${trackedEssentialLink}\nElite 8 sem : 454€ (au lieu de 649€) , ${trackedEliteLink}\nPrivate Lab 8 sem : 559€ (au lieu de 799€) , ${trackedPrivateLabLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?". Les 4 semaines ne sont pas éligibles au code, seules les 8 et 12 sem le sont.\n\nAchzod`,
-        subject: `3 jours avant que DISCOVERY30 expire , -30% coaching`,
+        text: `Voici les 3 formules 8 semaines avec DISCOVERY30.\n\nEssential : 279€ au lieu de 399€ : ${trackedEssentialLink}\nElite : 454€ au lieu de 649€ : ${trackedEliteLink}\nPrivate Lab : 559€ au lieu de 799€ : ${trackedPrivateLabLink}\nWhatsApp : ${getTrackedWhatsAppUrl(baseUrl, trackingId, "Comparatif Discovery")}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?". Le code concerne les formules 8 et 12 semaines.\n\nAchzod`,
+        subject: `Je te conseille de comparer ces 3 options`,
         from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
       },
@@ -5443,7 +5572,6 @@ export async function sendDiscoveryJ30NurtureEmail(
       : null;
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
     const DAYS_LEFT = 5;
-    const deadlineDate = formatDeadlineFR(DAYS_LEFT);
 
     const content = `
       ${getDiscoveryPromoBanner(DAYS_LEFT)}
@@ -5475,8 +5603,10 @@ export async function sendDiscoveryJ30NurtureEmail(
       ${getCoachingAppleButton(tierLabel ? `Activer mon code -30% sur ${tierLabel}` : 'Activer mon code -30% maintenant', trackedCoachingLink)}
 
       <p style="color:${APPLE_COLORS.muted};font-size:12px;line-height:1.55;margin:18px 0 0;text-align:center;">
-        Code valable jusqu'au <strong style="color:${APPLE_COLORS.ink};">${deadlineDate}</strong>. Au checkout, copie <strong style="color:${APPLE_COLORS.ink};">DISCOVERY30</strong> dans le champ "Code promotionnel ?".
+        Au checkout, copie <strong style="color:${APPLE_COLORS.ink};">DISCOVERY30</strong> dans le champ "Code promotionnel ?".
       </p>
+
+      ${getWhatsAppConversionBlock(baseUrl, trackingId, "Discovery J30")}
 
       ${!tierLabel || tierLabel !== "Essential" ? `
       <div style="padding:14px 18px;background:#f5f5f7;border-radius:10px;text-align:center;margin:24px 0 14px;">
@@ -5484,7 +5614,7 @@ export async function sendDiscoveryJ30NurtureEmail(
           ${tierLabel ? "Budget plus serré ?" : "Pas sûr du niveau adapté ?"}
         </p>
         <a href="${trackedEssentialLink}" style="color:${APPLE_COLORS.accent};font-size:13px;text-decoration:none;font-weight:600;">
-          Commencer par Essential (à partir de 249€) →
+          Voir Essential 8 semaines à 279€ avec DISCOVERY30 →
         </a>
       </div>
       ` : ""}
@@ -5504,19 +5634,17 @@ export async function sendDiscoveryJ30NurtureEmail(
 
     const emailContent = getCoachingAppleWrapper(
       content,
-      tierLabel ? `${tierLabel} avec DISCOVERY30 (-30%)` : `5 jours pour activer DISCOVERY30`,
-      `-30% sur ton coaching jusqu'au ${deadlineDate}`
+      tierLabel ? `On fait quoi de ton Discovery ?` : `On fait quoi de ton Discovery ?`,
+      tierLabel ? `Je te conseille ${tierLabel}` : `Je te laisse une porte simple pour avancer`
     );
 
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
         text: tierLabel
-          ? `Je te recommande ${tierLabel} d'après ton Discovery.\n${recommendation!.reason}\n\nCode DISCOVERY30 : -30% jusqu'au ${deadlineDate} (5 jours).\nChoisir ma formule : ${trackedCoachingLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`
-          : `Un mois depuis ton Discovery. Pour corriger durablement, faut un protocole ajusté chaque semaine. C'est exactement ce que je fais en coaching.\n\nCode DISCOVERY30 : -30% sur formules 8 et 12 sem, jusqu'au ${deadlineDate} (5 jours).\nChoisir ma formule : ${trackedCoachingLink}\nCommencer par Essential : ${trackedEssentialLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`,
-        subject: tierLabel
-          ? `${tierLabel} avec DISCOVERY30 , 5 jours pour activer`
-          : `5 jours pour activer DISCOVERY30 , -30% coaching`,
+          ? `Un mois après ton Discovery, je te conseille ${tierLabel}.\n${recommendation!.reason}\n\nVoir la formule : ${trackedCoachingLink}\nWhatsApp : ${getTrackedWhatsAppUrl(baseUrl, trackingId, "Discovery J30")}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`
+          : `Un mois après ton Discovery, la question est simple : est-ce que tu veux que je t'aide à l'appliquer ?\n\nVoir les formules : ${trackedCoachingLink}\nVoir Essential : ${trackedEssentialLink}\nWhatsApp : ${getTrackedWhatsAppUrl(baseUrl, trackingId, "Discovery J30")}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`,
+        subject: `On fait quoi de ton Discovery ?`,
         from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
       },
@@ -5548,6 +5676,7 @@ export async function sendPeptidesCycle2ReorderEmail(
   try {
     const reportLink = `${baseUrl}/peptides/${reportId}`;
     const orderLink = `${baseUrl}/offers/peptides-engine?code=CYCLE2&utm_source=apexlabs&utm_medium=email&utm_campaign=peptides_j60_reorder`;
+    const coachingLink = "https://www.achzodcoaching.com/formules-coaching?utm_source=apexlabs&utm_medium=email&utm_campaign=peptides_j60_reorder&utm_content=coaching";
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
 
     const content = `
@@ -5596,6 +5725,14 @@ export async function sendPeptidesCycle2ReorderEmail(
         ${getPrimaryButton('Relancer mon protocole', orderLink, COLORS.warning)}
       </div>
 
+      ${getWhatsAppConversionBlock(baseUrl, trackingId, "Peptides cycle 2")}
+
+      <div style="padding:18px 20px;background:${COLORS.surface};border:1px solid ${COLORS.border};border-radius:10px;text-align:center;margin:20px 0;">
+        <p style="color:${COLORS.text};font-size:14px;font-weight:700;margin:0 0 6px;">Tu veux un suivi, pas seulement un nouveau protocole ?</p>
+        <p style="color:${COLORS.textMuted};font-size:13px;line-height:1.55;margin:0 0 10px;">Le coaching sert à ajuster nutrition, entraînement et progression autour de tes retours.</p>
+        <a href="${coachingLink}" style="color:${COLORS.warning};font-size:13px;text-decoration:underline;font-weight:700;">Voir le coaching Achzod</a>
+      </div>
+
       <div style="padding: 18px; background: ${COLORS.surface}; border-radius: 8px; border: 1px solid ${COLORS.border}; text-align: center; margin-bottom: 20px;">
         <p style="color: ${COLORS.textMuted}; font-size: 13px; line-height: 1.6; margin: 0 0 10px;">
           Besoin de relire ton protocole cycle 1 avant de choisir ?
@@ -5623,8 +5760,8 @@ export async function sendPeptidesCycle2ReorderEmail(
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
-        text: `Ton cycle 1 Peptides Engine touche a sa fin. Pret pour le cycle 2 ?\n\nTarif clients existants : 199€ (au lieu de 299€). Code CYCLE2.\n2 credits Blood Analysis offerts a nouveau.\n\nCommander : ${orderLink}\nRevoir le rapport cycle 1 : ${reportLink}\n\nAchzod`,
-        subject: "Ton cycle 1 touche à sa fin , prêt pour le cycle 2 ? (-100€ clients existants)",
+        text: `Ton cycle 1 Peptides Engine touche à sa fin. Si tu veux préparer la suite, le tarif client est de 199€ au lieu de 299€ avec CYCLE2.\n\nCommander : ${orderLink}\nWhatsApp : ${getTrackedWhatsAppUrl(baseUrl, trackingId, "Peptides cycle 2")}\nVoir le coaching : ${coachingLink}\nRevoir le rapport cycle 1 : ${reportLink}\n\nAchzod`,
+        subject: "On prépare ton cycle 2 ?",
         from: { name: SENDER_NAME, email: SENDER_EMAIL },
         to: [{ email }],
       },
@@ -5632,7 +5769,7 @@ export async function sendPeptidesCycle2ReorderEmail(
         emailType: "sendPeptidesCycle2ReorderEmail",
         recipientEmail: email,
         auditId: reportId,
-        metadata: { trackingId },
+        metadata: { trackingId, orderLink, coachingLink, reportLink },
       }
     );
 
@@ -5640,6 +5777,59 @@ export async function sendPeptidesCycle2ReorderEmail(
   } catch (error) {
     console.error("[SendPulse] Error sending peptides cycle2 reorder email:", error);
     return false;
+  }
+}
+
+export async function captureEmailCtaQaFixtures(): Promise<EmailCtaQaFixture[]> {
+  if (emailCtaQaCapture) throw new Error("Email CTA QA capture already running");
+  const baseUrl = "https://apexlabs.achzodcoaching.com";
+  const ids = [
+    "11111111-1111-4111-8111-111111111111",
+    "22222222-2222-4222-8222-222222222222",
+    "33333333-3333-4333-8333-333333333333",
+    "44444444-4444-4444-8444-444444444444",
+    "55555555-5555-4555-8555-555555555555",
+    "66666666-6666-4666-8666-666666666666",
+    "77777777-7777-4777-8777-777777777777",
+    "88888888-8888-4888-8888-888888888888",
+    "99999999-9999-4999-8999-999999999999",
+    "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+  ];
+  emailCtaQaCapture = [];
+  try {
+    await sendRecoveryCtaEmail("qa@example.com", {
+      cohort: "warm_report",
+      baseUrl,
+      trackingId: ids[0],
+    });
+    await sendGratuitUpsellEmail("qa@example.com", ids[1], baseUrl, ids[1]);
+    await sendGratuitJ7Email("qa@example.com", ids[2], baseUrl, ids[2]);
+    await sendDiscoveryJ14CoachingEmail("qa@example.com", ids[3], baseUrl, ids[3], {
+      tier: "ELITE",
+      reason: "Ton objectif et ton besoin d'ajustements réguliers rendent Elite plus cohérent pour toi.",
+      href: "https://www.achzodcoaching.com/product/coaching-elite-8",
+    });
+    await sendDiscoveryJ30NurtureEmail("qa@example.com", ids[4], baseUrl, ids[4], {
+      tier: "ESSENTIAL",
+      reason: "Essential te donne un cadre clair et un bilan écrit chaque semaine sans ajouter de complexité.",
+      href: "https://www.achzodcoaching.com/product/coaching-essential-8",
+    });
+    await sendPremiumJ7Email("qa@example.com", ids[5], "ELITE", baseUrl, ids[5], true);
+    await sendPeptidesCycle2ReorderEmail("qa@example.com", ids[6], baseUrl, ids[6]);
+    await sendCoachingFormulaChoiceLeadEmail("qa@example.com", {
+      tier: "ELITE",
+      objectif: "Perdre du gras sans sacrifier mes performances",
+      profil: "Sportif régulier avec un emploi du temps chargé",
+      sommeil: "Sommeil irrégulier et énergie variable",
+      pourquoi_ce_choix: "Elite te donne des ajustements plus proches sans alourdir ton organisation.",
+    }, { baseUrl, trackingId: ids[7] });
+    await sendReactivationCampaignEmail("qa@example.com", { baseUrl, trackingId: ids[8] });
+    await sendFinishDiscoveryEmail("qa@example.com", { baseUrl, trackingId: ids[9] });
+    await sendCrossSellUpgradeEmail("qa@example.com", { baseUrl, trackingId: ids[10] });
+    return [...emailCtaQaCapture];
+  } finally {
+    emailCtaQaCapture = null;
   }
 }
 

@@ -242,6 +242,8 @@ export interface IStorage {
   createEmailTracking(auditId: string, emailType: string, recipientEmail?: string): Promise<EmailTracking>;
   markEmailOpened(trackingId: string): Promise<void>;
   markEmailTrackingConvertedByEmail?(email: string, amountCents: number, conversionType: string, withinDays?: number): Promise<number>;
+  hasUserPurchased(email: string): Promise<boolean>;
+  hasUserCoachingConversion(email: string): Promise<boolean>;
   getEmailTrackingForAudit(auditId: string): Promise<EmailTracking[]>;
   /** Returns true if a peptides delivery email (subject contains "protocole peptides") has been sent to this recipient */
   hasPeptidesDeliveryEmailBeenSent(email: string): Promise<boolean>;
@@ -893,6 +895,26 @@ export class MemStorage implements IStorage {
       }
     }
     return updated;
+  }
+
+  async hasUserPurchased(email: string): Promise<boolean> {
+    const normalized = email.trim().toLowerCase();
+    if (!normalized) return false;
+    return Array.from(this.memOrders.values()).some(
+      (order) => order.email.toLowerCase() === normalized
+        && order.status === "paid"
+        && (order.finalAmountCents ?? order.amountCents ?? 0) > 0,
+    );
+  }
+
+  async hasUserCoachingConversion(email: string): Promise<boolean> {
+    const normalized = email.trim().toLowerCase();
+    if (!normalized) return false;
+    return Array.from(this.emailTrackings.values()).some(
+      (tracking) => String(tracking.recipientEmail || "").toLowerCase() === normalized
+        && Boolean(tracking.converted)
+        && String(tracking.conversionType || "").toLowerCase().startsWith("coaching"),
+    );
   }
 
   async getEmailTrackingForAudit(auditId: string): Promise<EmailTracking[]> {
@@ -2571,6 +2593,34 @@ export class PgStorage implements IStorage {
     return result.rowCount ?? 0;
   }
 
+  async hasUserPurchased(email: string): Promise<boolean> {
+    if (!email) return false;
+    const result = await pool.query(
+      `SELECT 1
+         FROM orders
+        WHERE LOWER(email) = LOWER($1)
+          AND status = 'paid'
+          AND COALESCE(final_amount_cents, amount_cents, 0) > 0
+        LIMIT 1`,
+      [email],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async hasUserCoachingConversion(email: string): Promise<boolean> {
+    if (!email) return false;
+    const result = await pool.query(
+      `SELECT 1
+         FROM email_tracking
+        WHERE LOWER(recipient_email) = LOWER($1)
+          AND converted IS NOT NULL
+          AND LOWER(COALESCE(conversion_type, '')) LIKE 'coaching%'
+        LIMIT 1`,
+      [email],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
   async getEmailTrackingForAudit(auditId: string): Promise<EmailTracking[]> {
     const result = await pool.query(
       "SELECT * FROM email_tracking WHERE audit_id = $1 ORDER BY sent_at DESC",
@@ -3667,7 +3717,7 @@ export interface InsertReview {
 
 // Promo codes mapping by audit type
 export const PROMO_CODES_BY_AUDIT_TYPE: Record<ReviewAuditTypeEnum, { code: string; description: string }> = {
-  'DISCOVERY': { code: 'DISCOVERY30', description: '-20% sur le coaching Achzod' },
+  'DISCOVERY': { code: 'DISCOVERY30', description: '-30% sur les formules coaching 8 et 12 semaines' },
   'ANABOLIC_BIOSCAN': { code: 'BIOSCAN59', description: '59€ déduits du coaching' },
   'ULTIMATE_SCAN': { code: 'ULTIMATE79', description: '79€ déduits du coaching' },
   'BLOOD_ANALYSIS': { code: 'BLOOD99', description: '99€ déduits du coaching' },

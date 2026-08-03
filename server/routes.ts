@@ -61,6 +61,12 @@ import {
   buildPeptidesCoachingDeductionBlock,
 } from "./cta";
 import { BLOOD_ANALYSIS_PURCHASE_CREDITS, clarifyBloodPurchaseEmail } from "./bloodOffer";
+import { getSuppressedSequenceEmailTypes, normalizeSearchText } from "./emailSequencePolicy";
+import {
+  coachingConversionTrackingId,
+  parseCoachingOrderWebhook,
+  verifyWooWebhookSignature,
+} from "./coachingConversion";
 
 import { registerKnowledgeRoutes } from "./knowledge";
 import { registerBloodAnalysisRoutes } from "./blood-analysis/routes";
@@ -184,6 +190,20 @@ export async function registerRoutes(
     "sendPromoCodeEmail",
     "sendReactivationCampaignEmail",
     "sendRecoveryCtaEmail",
+    "sendCoachingFormulaChoiceLeadEmail",
+  ];
+
+  const COACHING_CTA_EMAIL_TYPES = [
+    "sendGratuitUpsellEmail",
+    "sendGratuitJ7Email",
+    "sendDiscoveryJ14CoachingEmail",
+    "sendDiscoveryJ30NurtureEmail",
+    "sendPremiumJ7Email",
+    "sendPremiumJ14Email",
+    "sendRecoveryCtaEmail",
+    "sendCoachingFormulaChoiceLeadEmail",
+    "sendReactivationCampaignEmail",
+    "sendCrossSellUpgradeEmail",
   ];
 
   const REPORT_EMAIL_TYPES = [
@@ -217,17 +237,6 @@ export async function registerRoutes(
     "%discovery scan%",
     "%blood analysis%",
   ];
-
-  const isEmailSequenceAttempted = (tracking: any): boolean => {
-    const status = String(tracking?.sendpulseStatus || "").toLowerCase();
-    return !["failed", "auth_failed", "unsubscribed"].includes(status);
-  };
-
-  const normalizeSearchText = (value: unknown): string =>
-    String(value || "")
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "");
 
   const chunkArray = <T,>(items: T[], size: number): T[][] => {
     const chunks: T[][] = [];
@@ -635,6 +644,16 @@ export async function registerRoutes(
       { tier: "ELITE", label: "Elite 12 semaines", before: "899 EUR", after: "629,30 EUR", href: productUrl("/product/coaching-elite-12", "elite12"), note: "Le meilleur ratio suivi/resultat sur 12 semaines." },
       { tier: "PRIVATELAB", label: "Private Lab 12 semaines", before: "1199 EUR", after: "839,30 EUR", href: productUrl("/product/12-semaines-private-lab", "privatelab12"), note: "Accompagnement premium long pour gros objectif." },
     ];
+    const directOffer = selectedTier
+      ? offers.find((offer) => offer.tier === selectedTier && offer.label.includes("8 semaines"))
+      : null;
+    // Remove the extra pricing bridge from every historical email still in an
+    // inbox. A click now goes straight to the recommended product, or to the
+    // formula comparison when no tier was selected, with promo and UTM intact.
+    res.setHeader("Cache-Control", "no-store");
+    res.redirect(302, directOffer?.href || formulasUrl);
+    return;
+
     const sortedOffers = selectedTier
       ? [...offers].sort((a, b) => Number(b.tier === selectedTier) - Number(a.tier === selectedTier))
       : offers;
@@ -6514,6 +6533,7 @@ export async function registerRoutes(
         "test.fr",
         "example.com",
         "gmai.com",
+        "gmail.col",
         "yahlo.com",
         "hormail.fr",
         "tahoo.fr",
@@ -6547,21 +6567,24 @@ export async function registerRoutes(
            LEFT JOIN cta_tracking ct ON ct.email_tracking_id = et.id
           WHERE et.recipient_email IS NOT NULL
             AND (
-              et.converted IS NOT NULL
+              (et.converted IS NOT NULL AND LOWER(COALESCE(et.conversion_type, '')) LIKE 'coaching%')
               OR LOWER(COALESCE(et.sendpulse_status, '')) IN ('unsubscribed', 'auth_failed')
               OR LOWER(COALESCE(et.sendpulse_error, '')) LIKE '%unsubscribe%'
               OR LOWER(COALESCE(et.sendpulse_error, '')) LIKE '%spam%'
               OR LOWER(COALESCE(et.sendpulse_error, '')) LIKE '%bounce%'
+              OR LOWER(COALESCE(et.sendpulse_error, '')) LIKE '%hard_fail%'
+              OR LOWER(COALESCE(et.sendpulse_error, '')) LIKE '%bad recipient%'
+              OR LOWER(COALESCE(et.sendpulse_error, '')) LIKE '%no mx%'
               OR ct.event_type IN ('unsubscribe', 'spam', 'bounce')
               OR LOWER(et.recipient_email) IN (
                 SELECT LOWER(recipient_email)
                   FROM email_tracking
                  WHERE email_type = 'sendRecoveryCtaEmail'
-                   AND sent_at >= NOW() - INTERVAL '6 hours'
+                   AND sent_at >= NOW() - INTERVAL '12 hours'
                    AND sendpulse_task_id IS NULL
                    AND LOWER(COALESCE(sendpulse_status, '')) NOT IN ('success', 'sent', 'delivered')
                  GROUP BY LOWER(recipient_email)
-                HAVING COUNT(*) >= 3
+                HAVING COUNT(*) >= 2
               )
             )`
       );
@@ -6589,7 +6612,19 @@ export async function registerRoutes(
            FROM email_tracking
           WHERE sent_at >= $1
             AND clicked IS NOT NULL
-            AND converted IS NULL
+            AND NOT EXISTS (
+              SELECT 1
+                FROM email_tracking conversion
+               WHERE LOWER(conversion.recipient_email) = LOWER(email_tracking.recipient_email)
+                 AND conversion.converted IS NOT NULL
+                 AND LOWER(COALESCE(conversion.conversion_type, '')) LIKE 'coaching%'
+            )
+            AND EXISTS (
+              SELECT 1
+                FROM audits discovery
+               WHERE LOWER(discovery.email) = LOWER(email_tracking.recipient_email)
+                 AND discovery.type = 'GRATUIT'
+            )
             AND (
               email_type = ANY($2::text[])
               OR LOWER(COALESCE(subject, '')) LIKE ANY($3::text[])
@@ -6650,7 +6685,19 @@ export async function registerRoutes(
           WHERE sent_at >= $1
             AND opened IS NOT NULL
             AND clicked IS NULL
-            AND converted IS NULL
+            AND NOT EXISTS (
+              SELECT 1
+                FROM email_tracking conversion
+               WHERE LOWER(conversion.recipient_email) = LOWER(email_tracking.recipient_email)
+                 AND conversion.converted IS NOT NULL
+                 AND LOWER(COALESCE(conversion.conversion_type, '')) LIKE 'coaching%'
+            )
+            AND EXISTS (
+              SELECT 1
+                FROM audits discovery
+               WHERE LOWER(discovery.email) = LOWER(email_tracking.recipient_email)
+                 AND discovery.type = 'GRATUIT'
+            )
             AND (
               email_type = ANY($2::text[])
               OR LOWER(COALESCE(subject, '')) LIKE ANY($3::text[])
@@ -6676,6 +6723,12 @@ export async function registerRoutes(
           WHERE paid_at >= $1
             AND status = 'paid'
             AND COALESCE(final_amount_cents, amount_cents, 0) > 0
+            AND EXISTS (
+              SELECT 1
+                FROM audits discovery
+               WHERE LOWER(discovery.email) = LOWER(orders.email)
+                 AND discovery.type = 'GRATUIT'
+            )
           GROUP BY LOWER(email)`,
         [fromDate]
       );
@@ -6695,6 +6748,7 @@ export async function registerRoutes(
            FROM audits
           WHERE created_at >= $1
             AND report_sent_at IS NOT NULL
+            AND type = 'GRATUIT'
           GROUP BY LOWER(email)`,
         [fromDate]
       );
@@ -6709,25 +6763,11 @@ export async function registerRoutes(
       }));
 
       const coldRows = await pool.query(
-        `SELECT LOWER(email) AS email, MAX(last_signal_at) AS last_signal_at
-           FROM (
-             SELECT recipient_email AS email, sent_at AS last_signal_at
-               FROM email_tracking
-              WHERE sent_at >= $1
-             UNION ALL
-             SELECT email, created_at AS last_signal_at
-               FROM audits
-              WHERE created_at >= $1
-             UNION ALL
-             SELECT email, last_activity_at AS last_signal_at
-               FROM questionnaire_progress
-              WHERE last_activity_at >= $1
-             UNION ALL
-             SELECT email, COALESCE(paid_at, created_at) AS last_signal_at
-               FROM orders
-              WHERE created_at >= $1
-           ) source
-          WHERE email IS NOT NULL
+        `SELECT LOWER(email) AS email, MAX(COALESCE(report_sent_at, created_at)) AS last_signal_at
+           FROM audits
+          WHERE created_at >= $1
+            AND type = 'GRATUIT'
+            AND email IS NOT NULL
           GROUP BY LOWER(email)`,
         [fromDate]
       );
@@ -6881,6 +6921,7 @@ export async function registerRoutes(
         "test.fr",
         "example.com",
         "gmai.com",
+        "gmail.col",
         "yahlo.com",
         "hormail.fr",
         "tahoo.fr",
@@ -6912,7 +6953,19 @@ export async function registerRoutes(
             WHERE sent_at >= $1
               AND recipient_email IS NOT NULL
               AND clicked IS NOT NULL
-              AND converted IS NULL
+              AND NOT EXISTS (
+                SELECT 1
+                  FROM email_tracking conversion
+                 WHERE LOWER(conversion.recipient_email) = LOWER(email_tracking.recipient_email)
+                   AND conversion.converted IS NOT NULL
+                   AND LOWER(COALESCE(conversion.conversion_type, '')) LIKE 'coaching%'
+              )
+              AND EXISTS (
+                SELECT 1
+                  FROM audits discovery
+                 WHERE LOWER(discovery.email) = LOWER(email_tracking.recipient_email)
+                   AND discovery.type = 'GRATUIT'
+              )
               AND clicked <= NOW() - ($2 || ' hours')::interval
               AND (
                 email_type = 'sendRecoveryCtaEmail'
@@ -6941,31 +6994,26 @@ export async function registerRoutes(
                 LEFT JOIN cta_tracking ct ON ct.email_tracking_id = b.id
                WHERE LOWER(b.recipient_email) = c.email
                  AND (
-                   b.converted IS NOT NULL
+                   (b.converted IS NOT NULL AND LOWER(COALESCE(b.conversion_type, '')) LIKE 'coaching%')
                    OR LOWER(COALESCE(b.sendpulse_status, '')) IN ('unsubscribed', 'auth_failed')
                    OR LOWER(COALESCE(b.sendpulse_error, '')) LIKE '%unsubscribe%'
                    OR LOWER(COALESCE(b.sendpulse_error, '')) LIKE '%spam%'
                    OR LOWER(COALESCE(b.sendpulse_error, '')) LIKE '%bounce%'
+                   OR LOWER(COALESCE(b.sendpulse_error, '')) LIKE '%hard_fail%'
+                   OR LOWER(COALESCE(b.sendpulse_error, '')) LIKE '%bad recipient%'
+                   OR LOWER(COALESCE(b.sendpulse_error, '')) LIKE '%no mx%'
                    OR ct.event_type IN ('unsubscribe', 'spam', 'bounce')
                    OR LOWER(b.recipient_email) IN (
                      SELECT LOWER(recipient_email)
                        FROM email_tracking
                       WHERE email_type = 'sendRecoveryCtaEmail'
-                        AND sent_at >= NOW() - INTERVAL '6 hours'
+                        AND sent_at >= NOW() - INTERVAL '12 hours'
                         AND sendpulse_task_id IS NULL
                         AND LOWER(COALESCE(sendpulse_status, '')) NOT IN ('success', 'sent', 'delivered')
                       GROUP BY LOWER(recipient_email)
-                     HAVING COUNT(*) >= 3
+                     HAVING COUNT(*) >= 2
                    )
                  )
-            )
-            AND NOT EXISTS (
-              SELECT 1
-                FROM orders o
-               WHERE LOWER(o.email) = c.email
-                 AND o.status = 'paid'
-                 AND COALESCE(o.final_amount_cents, o.amount_cents, 0) > 0
-                 AND COALESCE(o.paid_at, o.created_at) >= c.last_signal_at
             )
           ORDER BY c.last_signal_at DESC
           LIMIT $5`,
@@ -7065,7 +7113,6 @@ export async function registerRoutes(
       // Get all completed audits with reports sent
       const allAudits = await storage.getAllAudits();
       const now = new Date();
-      const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
 
       // Filter: report sent 3+ days ago, no review left yet
       const eligible: typeof allAudits = [];
@@ -7078,7 +7125,9 @@ export async function registerRoutes(
         if (!sentAt) continue;
         const daysSinceSent = (now.getTime() - new Date(sentAt).getTime()) / (24 * 60 * 60 * 1000);
         const maxDays = req.body.catchUp ? 90 : 14; // catchUp=true → rattrapage tous les anciens clients
-        if (daysSinceSent < 3 || daysSinceSent > maxDays) continue;
+        // Keep the review request away from the J+3 sales email. Two messages
+        // on the same day split attention and lowered both click intents.
+        if (daysSinceSent < 10 || daysSinceSent > maxDays) continue;
 
         // Check if already left a review
         const existingReview = await storage.getReviewByAuditId?.(audit.id);
@@ -7764,10 +7813,15 @@ export async function registerRoutes(
         res.status(400).json({ success: false, error: "email requis" });
         return;
       }
-      const sent = await sendReactivationCampaignEmail(email.trim().toLowerCase(), {
+      const normalizedEmail = email.trim().toLowerCase();
+      const baseUrl = getBaseUrl(req);
+      const tracking = await storage.createEmailTracking(crypto.randomUUID(), "sendReactivationCampaignEmail", normalizedEmail);
+      const sent = await sendReactivationCampaignEmail(normalizedEmail, {
         apexPromoCode,
         coachingPromoCode,
         expiresText,
+        baseUrl,
+        trackingId: tracking.id,
       });
       if (!sent) {
         res.status(500).json({ success: false, error: "Echec envoi" });
@@ -7867,9 +7921,14 @@ export async function registerRoutes(
         res.status(400).json({ success: false, error: "email requis" });
         return;
       }
-      const sent = await sendFinishDiscoveryEmail(email.trim().toLowerCase(), {
+      const normalizedEmail = email.trim().toLowerCase();
+      const baseUrl = getBaseUrl(req);
+      const tracking = await storage.createEmailTracking(crypto.randomUUID(), "sendFinishDiscoveryEmail", normalizedEmail);
+      const sent = await sendFinishDiscoveryEmail(normalizedEmail, {
         apexPromoCode,
         expiresText,
+        baseUrl,
+        trackingId: tracking.id,
       });
       if (!sent) {
         res.status(500).json({ success: false, error: "Echec envoi" });
@@ -7892,10 +7951,15 @@ export async function registerRoutes(
         res.status(400).json({ success: false, error: "email requis" });
         return;
       }
-      const sent = await sendCrossSellUpgradeEmail(email.trim().toLowerCase(), {
+      const normalizedEmail = email.trim().toLowerCase();
+      const baseUrl = getBaseUrl(req);
+      const tracking = await storage.createEmailTracking(crypto.randomUUID(), "sendCrossSellUpgradeEmail", normalizedEmail);
+      const sent = await sendCrossSellUpgradeEmail(normalizedEmail, {
         apexPromoCode,
         coachingPromoCode,
         expiresText,
+        baseUrl,
+        trackingId: tracking.id,
       });
       if (!sent) {
         res.status(500).json({ success: false, error: "Echec envoi" });
@@ -8883,6 +8947,7 @@ export async function registerRoutes(
     const rawUrl = String(req.query.url || "").trim();
 
     let redirectUrl: URL;
+    let destinationType: "whatsapp" | "coaching" | "apexlabs" = "apexlabs";
     try {
       redirectUrl = new URL(rawUrl);
       const allowedCoachingHosts = new Set(["achzodcoaching.com", "www.achzodcoaching.com"]);
@@ -8891,14 +8956,27 @@ export async function registerRoutes(
         "neurocore-360.onrender.com",
       ]);
       const isCoachingDestination = allowedCoachingHosts.has(redirectUrl.hostname);
-      const isApexCoachingBridge =
-        allowedApexBridgeHosts.has(redirectUrl.hostname) &&
-        redirectUrl.pathname === "/go/coaching";
+      const isApexDestination = allowedApexBridgeHosts.has(redirectUrl.hostname);
+      const isWhatsappDestination =
+        redirectUrl.hostname === "wa.me"
+        && redirectUrl.pathname.replace(/\D/g, "") === "971585210514";
+      const isWhatsappApiDestination =
+        redirectUrl.hostname === "api.whatsapp.com"
+        && redirectUrl.pathname === "/send"
+        && String(redirectUrl.searchParams.get("phone") || "").replace(/\D/g, "") === "971585210514";
 
-      if (redirectUrl.protocol !== "https:" || (!isCoachingDestination && !isApexCoachingBridge)) {
+      if (
+        redirectUrl.protocol !== "https:"
+        || (!isCoachingDestination && !isApexDestination && !isWhatsappDestination && !isWhatsappApiDestination)
+      ) {
         res.status(400).send("Invalid redirect URL");
         return;
       }
+      destinationType = isWhatsappDestination || isWhatsappApiDestination
+        ? "whatsapp"
+        : isCoachingDestination
+        ? "coaching"
+        : "apexlabs";
     } catch {
       res.status(400).send("Invalid redirect URL");
       return;
@@ -8916,7 +8994,11 @@ export async function registerRoutes(
           [
             trackingId,
             redirectUrl.toString(),
-            JSON.stringify({ source: "first_party_redirect" }),
+            JSON.stringify({
+              source: "first_party_redirect",
+              destinationHost: redirectUrl.hostname,
+              destinationType,
+            }),
           ]
         );
       }
@@ -8925,6 +9007,106 @@ export async function registerRoutes(
     }
 
     res.redirect(302, redirectUrl.toString());
+  });
+
+  // WooCommerce calls this endpoint when a coaching order becomes paid. This
+  // closes the attribution loop with achzodcoaching.com and immediately stops
+  // every Discovery coaching follow-up for that email. The request is accepted
+  // only with WooCommerce's HMAC signature over the untouched JSON body.
+  app.post("/api/webhooks/coaching-order", async (req, res) => {
+    const secret = String(process.env.COACHING_WEBHOOK_SECRET || "").trim();
+    if (!secret) {
+      res.status(503).json({ success: false, error: "Coaching webhook non configuré" });
+      return;
+    }
+
+    const signature = String(req.get("x-wc-webhook-signature") || "").trim();
+    const rawBody = Buffer.isBuffer(req.rawBody)
+      ? req.rawBody
+      : Buffer.from(JSON.stringify(req.body || {}));
+    if (!verifyWooWebhookSignature(rawBody, signature, secret)) {
+      res.status(401).json({ success: false, error: "Signature webhook invalide" });
+      return;
+    }
+
+    const conversion = parseCoachingOrderWebhook(req.body);
+    if (!conversion) {
+      // WooCommerce retries non-2xx responses. Acknowledge irrelevant orders
+      // and unpaid status updates without recording a false conversion.
+      res.status(200).json({ success: true, ignored: true });
+      return;
+    }
+
+    try {
+      const trackingId = coachingConversionTrackingId(conversion.orderId);
+      const conversionType = "coaching_purchase";
+      const attributionResult = await pool.query(
+        `WITH candidate AS (
+           SELECT id
+             FROM email_tracking
+            WHERE LOWER(recipient_email) = LOWER($1)
+              AND email_type = ANY($4::text[])
+              AND sent_at >= NOW() - INTERVAL '365 days'
+              AND LOWER(COALESCE(sendpulse_status, '')) NOT IN ('failed', 'auth_failed', 'unsubscribed')
+            ORDER BY clicked DESC NULLS LAST, sent_at DESC
+            LIMIT 1
+         )
+         UPDATE email_tracking tracking
+            SET converted = COALESCE(tracking.converted, NOW()),
+                conversion_type = $3,
+                metadata = COALESCE(tracking.metadata, '{}'::jsonb)
+                  || jsonb_build_object(
+                    'convertedAmountCents', $2::int,
+                    'coachingOrderId', $5::text,
+                    'conversionAttribution', 'last_touch'
+                  ),
+                updated_at = NOW()
+           FROM candidate
+          WHERE tracking.id = candidate.id
+        RETURNING tracking.id`,
+        [
+          conversion.email,
+          conversion.amountCents,
+          conversionType,
+          COACHING_CTA_EMAIL_TYPES,
+          conversion.orderId,
+        ],
+      );
+      const attributedRows = attributionResult.rowCount ?? 0;
+
+      await pool.query(
+        `INSERT INTO email_tracking (
+           id, audit_id, email_type, recipient_email, subject, sent_at,
+           sendpulse_status, converted, conversion_type, metadata, updated_at
+         ) VALUES ($1, $2, 'coachingPurchaseWebhook', $3, 'Conversion coaching confirmée', NOW(),
+                   'success', NOW(), $4, $5::jsonb, NOW())
+         ON CONFLICT (id) DO UPDATE SET
+           converted = COALESCE(email_tracking.converted, EXCLUDED.converted),
+           conversion_type = EXCLUDED.conversion_type,
+           metadata = COALESCE(email_tracking.metadata, '{}'::jsonb) || EXCLUDED.metadata,
+           updated_at = NOW()`,
+        [
+          trackingId,
+          trackingId,
+          conversion.email,
+          conversionType,
+          JSON.stringify({
+            source: "achzodcoaching_woocommerce",
+            orderId: conversion.orderId,
+            amountCents: conversion.amountCents,
+            status: conversion.status,
+            couponCodes: conversion.couponCodes,
+            productNames: conversion.productNames,
+            attributedRows,
+          }),
+        ],
+      );
+
+      res.status(200).json({ success: true, attributedRows });
+    } catch (error) {
+      console.error("[CoachingConversion] Webhook processing failed:", error);
+      res.status(500).json({ success: false, error: "Échec attribution coaching" });
+    }
   });
 
   // ==================== EMAIL SEQUENCES CRON ====================
@@ -8936,7 +9118,7 @@ export async function registerRoutes(
     try {
       const baseUrl = getBaseUrl();
       const now = new Date();
-      const results = { gratuitUpsell: 0, gratuitJ5: 0, gratuitJ7: 0, premiumJ7: 0, premiumJ14: 0, errors: 0 };
+      const results = { gratuitUpsell: 0, gratuitJ5: 0, gratuitJ7: 0, gratuitJ14: 0, premiumJ7: 0, premiumJ14: 0, errors: 0 };
 
       // Get all SENT audits
       const allAudits = await storage.getAllAudits();
@@ -8953,37 +9135,26 @@ export async function registerRoutes(
           const { eq } = await import("drizzle-orm");
 
           const emailTracking = await db.select().from(emailTrackingTable).where(eq(emailTrackingTable.auditId, audit.id));
-          const trackingTypes = emailTracking
-            .filter(isEmailSequenceAttempted)
-            .map(t => t.emailType);
+          const trackingTypes = getSuppressedSequenceEmailTypes(emailTracking, now);
 
           // GRATUIT audits: Send upsell email after 2 days
           if (audit.type === "GRATUIT" && daysSinceSent >= 2 && daysSinceSent < 30) {
             if (!trackingTypes.includes("sendGratuitUpsellEmail")) {
-              const trackingRecord = await storage.createEmailTracking(audit.id, "sendGratuitUpsellEmail", audit.email);
-              const sent = await sendGratuitUpsellEmail(audit.email, audit.id, baseUrl, trackingRecord.id);
-              if (sent) results.gratuitUpsell++;
-              else results.errors++;
-            }
-          }
-
-          // GRATUIT audits: J+5 email "Ce que ton Discovery ne peut pas te donner"
-          if (audit.type === "GRATUIT" && daysSinceSent >= 5 && daysSinceSent < 30) {
-            if (!trackingTypes.includes("sendGratuitJ5Email")) {
-              const hasConverted = await storage.hasUserPurchased(audit.email);
+              const hasConverted = await storage.hasUserCoachingConversion(audit.email);
               if (!hasConverted) {
-                const trackingRecord = await storage.createEmailTracking(audit.id, "sendGratuitJ5Email", audit.email);
-                const sent = await sendGratuitJ5Email(audit.email, audit.id, baseUrl, trackingRecord.id);
-                if (sent) results.gratuitJ5++;
+                const trackingRecord = await storage.createEmailTracking(audit.id, "sendGratuitUpsellEmail", audit.email);
+                const sent = await sendGratuitUpsellEmail(audit.email, audit.id, baseUrl, trackingRecord.id);
+                if (sent) results.gratuitUpsell++;
                 else results.errors++;
               }
             }
           }
 
-          // GRATUIT audits: J+7 email "Offre limitee -40% cette semaine"
+          // Discovery J+7 coaching comparison, stopped as soon as the coaching
+          // checkout webhook confirms a paid order.
           if (audit.type === "GRATUIT" && daysSinceSent >= 7 && daysSinceSent < 30) {
             if (!trackingTypes.includes("sendGratuitJ7Email")) {
-              const hasConverted = await storage.hasUserPurchased(audit.email);
+              const hasConverted = await storage.hasUserCoachingConversion(audit.email);
               if (!hasConverted) {
                 const trackingRecord = await storage.createEmailTracking(audit.id, "sendGratuitJ7Email", audit.email);
                 const sent = await sendGratuitJ7Email(audit.email, audit.id, baseUrl, trackingRecord.id);
@@ -8996,14 +9167,13 @@ export async function registerRoutes(
           // GRATUIT audits: J+14 Coaching email (if no conversion)
           if (audit.type === "GRATUIT" && daysSinceSent >= 14 && daysSinceSent < 30) {
             if (!trackingTypes.includes("sendDiscoveryJ14CoachingEmail")) {
-              // Check if they've converted (purchased Ultimate/Anabolic)
-              const hasConverted = await storage.hasUserPurchased(audit.email);
+              const hasConverted = await storage.hasUserCoachingConversion(audit.email);
 
               if (!hasConverted) {
                 const trackingRecord = await storage.createEmailTracking(audit.id, "sendDiscoveryJ14CoachingEmail", audit.email);
                 const sent = await sendDiscoveryJ14CoachingEmail(audit.email, audit.id, baseUrl, trackingRecord.id);
                 if (sent) {
-                  results.gratuitJ14 = (results.gratuitJ14 || 0) + 1;
+                  results.gratuitJ14++;
                 } else {
                   results.errors++;
                 }
@@ -9048,6 +9218,16 @@ export async function registerRoutes(
       // PEPTIDES ENGINE SEQUENCES (S4, S8, S12, S16)
       // Based on paid orders, not audits
       // ════════════════════════════════════════════════════════════════
+      /*
+       * Disabled legacy block.
+       *
+       * It queried obsolete columns, duplicated tracking rows, advertised
+       * stale prices and overlapped the current Peptides review and cycle-2
+       * schedulers. Keeping it active caused the hourly sequence endpoint to
+       * fail after processing Discovery emails. The maintained Peptides flows
+       * below register their own deduped jobs outside this legacy endpoint.
+       */
+      /*
       let peptidesReviewJ3 = 0, peptidesReviewS5 = 0, peptidesReviewS12 = 0, peptidesS4 = 0, peptidesS8 = 0, peptidesS12 = 0, peptidesS16 = 0;
       let peptidesAutoGenerated = 0;
 
@@ -9238,6 +9418,7 @@ export async function registerRoutes(
       (results as any).peptidesS8 = peptidesS8;
       (results as any).peptidesS12 = peptidesS12;
       (results as any).peptidesS16 = peptidesS16;
+      */
 
       console.log(`[Cron] Email sequences processed:`, results);
       res.json({ success: true, ...results, processedAt: new Date().toISOString() });
@@ -12172,6 +12353,171 @@ export async function registerRoutes(
     }
   });
 
+  // Conversion-focused aggregate without recipient PII. Unlike the legacy
+  // counter, this endpoint deduplicates retries per recipient and separates
+  // permanent failures from accepted sends, so a provider outage cannot make
+  // the campaign look like tens of thousands of real prospects.
+  app.get("/api/admin/cta-performance", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+
+    try {
+      const days = Math.min(Math.max(Number(req.query.days) || 30, 1), 365);
+      const fromDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+      const params = [fromDate, PROMO_EMAIL_TYPES, PROMO_SUBJECT_PATTERNS];
+      const scopeSql = `sent_at >= $1
+        AND email_type <> 'coachingPurchaseWebhook'
+        AND (
+          email_type = ANY($2::text[])
+          OR lower(coalesce(subject, '')) LIKE ANY($3::text[])
+        )`;
+
+      const byTypeResult = await pool.query(
+        `WITH scoped AS (
+           SELECT email_type,
+                  LOWER(recipient_email) AS recipient,
+                  sendpulse_status,
+                  sendpulse_error,
+                  opened,
+                  clicked,
+                  converted
+             FROM email_tracking
+            WHERE ${scopeSql}
+         ), per_recipient AS (
+           SELECT email_type,
+                  recipient,
+                  COUNT(*)::int AS attempts,
+                  BOOL_OR(LOWER(COALESCE(sendpulse_status, '')) IN ('success', 'sent', 'delivered')) AS accepted,
+                  BOOL_OR(opened IS NOT NULL) AS opened,
+                  BOOL_OR(clicked IS NOT NULL) AS clicked,
+                  BOOL_OR(converted IS NOT NULL) AS converted,
+                  BOOL_OR(
+                    LOWER(COALESCE(sendpulse_status, '')) IN ('unsubscribed', 'auth_failed')
+                    OR LOWER(COALESCE(sendpulse_error, '')) ~ '(unsubscrib|spam|hard_fail|bounce|bad recipient|no mx|invalid recipient|user unknown)'
+                  ) AS permanent_failure
+             FROM scoped
+            GROUP BY email_type, recipient
+         )
+         SELECT email_type,
+                COUNT(*)::int AS unique_recipients,
+                SUM(attempts)::int AS attempts,
+                SUM(GREATEST(attempts - 1, 0))::int AS duplicate_attempts,
+                COUNT(*) FILTER (WHERE accepted)::int AS accepted,
+                COUNT(*) FILTER (WHERE permanent_failure)::int AS permanent_failures,
+                COUNT(*) FILTER (WHERE opened)::int AS opened,
+                COUNT(*) FILTER (WHERE clicked)::int AS clicked,
+                COUNT(*) FILTER (WHERE converted)::int AS converted
+           FROM per_recipient
+          GROUP BY email_type
+          ORDER BY unique_recipients DESC`,
+        params,
+      );
+
+      const bySubjectResult = await pool.query(
+        `WITH scoped AS (
+           SELECT COALESCE(NULLIF(subject, ''), '(sans objet)') AS subject,
+                  LOWER(recipient_email) AS recipient,
+                  sendpulse_status,
+                  opened,
+                  clicked,
+                  converted
+             FROM email_tracking
+            WHERE ${scopeSql}
+         ), per_recipient AS (
+           SELECT subject,
+                  recipient,
+                  BOOL_OR(LOWER(COALESCE(sendpulse_status, '')) IN ('success', 'sent', 'delivered')) AS accepted,
+                  BOOL_OR(opened IS NOT NULL) AS opened,
+                  BOOL_OR(clicked IS NOT NULL) AS clicked,
+                  BOOL_OR(converted IS NOT NULL) AS converted
+             FROM scoped
+            GROUP BY subject, recipient
+         )
+         SELECT subject,
+                COUNT(*)::int AS unique_recipients,
+                COUNT(*) FILTER (WHERE accepted)::int AS accepted,
+                COUNT(*) FILTER (WHERE opened)::int AS opened,
+                COUNT(*) FILTER (WHERE clicked)::int AS clicked,
+                COUNT(*) FILTER (WHERE converted)::int AS converted
+           FROM per_recipient
+          GROUP BY subject
+          ORDER BY unique_recipients DESC
+          LIMIT 50`,
+        params,
+      );
+
+      const eventsResult = await pool.query(
+        `SELECT
+           COUNT(*)::int AS total,
+           COUNT(*) FILTER (WHERE email_tracking_id IS NULL)::int AS orphaned,
+           COUNT(*) FILTER (WHERE event_type = 'click')::int AS clicks,
+           COUNT(*) FILTER (WHERE event_type = 'click' AND metadata->>'destinationType' = 'whatsapp')::int AS whatsapp_clicks,
+           COUNT(*) FILTER (WHERE event_type = 'click' AND metadata->>'destinationType' = 'coaching')::int AS coaching_clicks,
+           COUNT(*) FILTER (WHERE event_type = 'click' AND metadata->>'destinationType' = 'apexlabs')::int AS apexlabs_clicks
+         FROM cta_tracking
+         WHERE created_at >= $1`,
+        [fromDate],
+      );
+
+      const coachingConversionsResult = await pool.query(
+        `SELECT COUNT(DISTINCT LOWER(recipient_email))::int AS conversions,
+                COALESCE(SUM((metadata->>'amountCents')::int), 0)::bigint AS revenue_cents
+           FROM email_tracking
+          WHERE email_type = 'coachingPurchaseWebhook'
+            AND converted >= $1`,
+        [fromDate],
+      );
+
+      const rate = (value: number, denominator: number) =>
+        denominator > 0 ? Math.round((value / denominator) * 10_000) / 100 : 0;
+      const formatRows = (rows: any[]) => rows.map((row) => {
+        const uniqueRecipients = Number(row.unique_recipients || 0);
+        const accepted = Number(row.accepted || 0);
+        const opened = Number(row.opened || 0);
+        const clicked = Number(row.clicked || 0);
+        const converted = Number(row.converted || 0);
+        return {
+          ...(row.email_type ? { emailType: row.email_type } : { subject: row.subject }),
+          uniqueRecipients,
+          ...(row.attempts !== undefined ? {
+            attempts: Number(row.attempts || 0),
+            duplicateAttempts: Number(row.duplicate_attempts || 0),
+            permanentFailures: Number(row.permanent_failures || 0),
+          } : {}),
+          accepted,
+          opened,
+          clicked,
+          converted,
+          acceptanceRate: rate(accepted, uniqueRecipients),
+          openRateOnAccepted: rate(opened, accepted),
+          clickRateOnAccepted: rate(clicked, accepted),
+          clickToOpenRate: rate(clicked, opened),
+          trackedConversionRate: rate(converted, accepted),
+        };
+      });
+
+      res.json({
+        success: true,
+        query: { days, fromDate },
+        note: "Les conversions APEXLABS et coaching sont séparées. Une ouverture reste un signal technique dépendant du chargement des images; les clics et paiements confirmés sont les signaux les plus fiables.",
+        byType: formatRows(byTypeResult.rows),
+        bySubject: formatRows(bySubjectResult.rows),
+        events: eventsResult.rows[0],
+        coaching: {
+          conversions: Number(coachingConversionsResult.rows[0]?.conversions || 0),
+          revenueCents: Number(coachingConversionsResult.rows[0]?.revenue_cents || 0),
+          attribution: "last_touch",
+        },
+      });
+    } catch (error) {
+      console.error("[CTAPerformance] Error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Erreur audit performance CTA",
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  });
+
   // ==================== AUDITS PENDING ====================
   app.get("/api/admin/audits-pending", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
@@ -12783,6 +13129,8 @@ export async function registerRoutes(
               if (eventType.includes('open')) eventType = 'open';
               else if (eventType.includes('click') || eventType.includes('redirect') || eventType === 'link') eventType = 'click';
               else if (eventType.includes('unsub')) eventType = 'unsubscribe';
+              else if (eventType.includes('hard_fail') || eventType.includes('hard fail')) eventType = 'hard_fail';
+              else if (eventType.includes('soft_fail') || eventType.includes('soft fail')) eventType = 'soft_fail';
               else if (eventType.includes('bounce')) eventType = 'bounce';
               else if (eventType.includes('deliver')) eventType = 'delivered';
               else if (eventType.includes('spam')) eventType = 'spam';
@@ -12816,7 +13164,13 @@ export async function registerRoutes(
                     `UPDATE email_tracking SET sendpulse_status = 'success' WHERE id = $1`,
                     [emailTrackingId]
                   );
-                } else if (eventType === 'bounce' || eventType === 'spam' || eventType === 'unsubscribe') {
+                } else if (
+                  eventType === 'bounce'
+                  || eventType === 'hard_fail'
+                  || eventType === 'soft_fail'
+                  || eventType === 'spam'
+                  || eventType === 'unsubscribe'
+                ) {
                   await pool.query(
                     `UPDATE email_tracking
                         SET sendpulse_status = 'failed',
@@ -12832,6 +13186,11 @@ export async function registerRoutes(
                       }),
                     ]
                   );
+                  if (eventType === 'unsubscribe' && normalizedEmail) {
+                    await storage.unsubscribeEmail(normalizedEmail, "SendPulse unsubscribe webhook").catch((error) => {
+                      console.error("[SendPulseWebhook] Unable to persist unsubscribe:", error);
+                    });
+                  }
                 }
               }
 
@@ -13328,7 +13687,7 @@ export async function registerRoutes(
         const sentAt = (audit as any).reportSentAt || audit.createdAt;
         if (!sentAt) continue;
         const daysSinceSent = (now.getTime() - new Date(sentAt).getTime()) / (24 * 60 * 60 * 1000);
-        if (daysSinceSent < 3 || daysSinceSent > 14) continue;
+        if (daysSinceSent < 10 || daysSinceSent > 21) continue;
         const existingReview = await storage.getReviewByAuditId?.(audit.id);
         if (existingReview) continue;
         const emailHistory = await storage.getEmailTrackingForAudit(audit.id);
@@ -13881,27 +14240,20 @@ export async function registerRoutes(
         const daysSinceSent = (now.getTime() - sentAt.getTime()) / (24 * 60 * 60 * 1000);
 
         const trackingHistory = await storage.getEmailTrackingForAudit(audit.id) || [];
-        const trackingTypes = trackingHistory
-          .filter(isEmailSequenceAttempted)
-          .map((t: any) => t.emailType);
+        const trackingTypes = getSuppressedSequenceEmailTypes(trackingHistory, now);
 
         // GRATUIT sequences
         if (audit.type === "GRATUIT") {
           if (daysSinceSent >= 3 && daysSinceSent < 7 && !trackingTypes.includes("sendGratuitUpsellEmail")) {
-            const trackingRecord = await storage.createEmailTracking(audit.id, "sendGratuitUpsellEmail", audit.email);
-            const emailSent = await sendGratuitUpsellEmail(audit.email, audit.id, baseUrl, trackingRecord.id);
-            if (emailSent) { sent++; if (sent >= 5) break; }
-          }
-          if (daysSinceSent >= 5 && daysSinceSent < 10 && !trackingTypes.includes("sendGratuitJ5Email")) {
-            const hasConverted = await storage.hasUserPurchased?.(audit.email);
+            const hasConverted = await storage.hasUserCoachingConversion(audit.email);
             if (!hasConverted) {
-              const trackingRecord = await storage.createEmailTracking(audit.id, "sendGratuitJ5Email", audit.email);
-              const emailSent = await sendGratuitJ5Email(audit.email, audit.id, baseUrl, trackingRecord.id);
+              const trackingRecord = await storage.createEmailTracking(audit.id, "sendGratuitUpsellEmail", audit.email);
+              const emailSent = await sendGratuitUpsellEmail(audit.email, audit.id, baseUrl, trackingRecord.id);
               if (emailSent) { sent++; if (sent >= 5) break; }
             }
           }
           if (daysSinceSent >= 7 && daysSinceSent < 14 && !trackingTypes.includes("sendGratuitJ7Email")) {
-            const hasConverted = await storage.hasUserPurchased?.(audit.email);
+            const hasConverted = await storage.hasUserPurchased(audit.email);
             if (!hasConverted) {
               const trackingRecord = await storage.createEmailTracking(audit.id, "sendGratuitJ7Email", audit.email);
               const emailSent = await sendGratuitJ7Email(audit.email, audit.id, baseUrl, trackingRecord.id);
@@ -13909,7 +14261,7 @@ export async function registerRoutes(
             }
           }
           if (daysSinceSent >= 14 && daysSinceSent < 30 && !trackingTypes.includes("sendDiscoveryJ14CoachingEmail")) {
-            const hasConverted = await storage.hasUserPurchased?.(audit.email);
+            const hasConverted = await storage.hasUserCoachingConversion(audit.email);
             if (!hasConverted) {
               // Compute per-profile coaching tier recommendation from the audit's
               // scores + questionnaire responses so the email CTA points to the
@@ -13926,7 +14278,7 @@ export async function registerRoutes(
           }
           // J+30 nurture , pushes the profile-matched coaching formule with DISCOVERY30
           if (daysSinceSent >= 30 && daysSinceSent < 60 && !trackingTypes.includes("sendDiscoveryJ30NurtureEmail")) {
-            const hasConverted = await storage.hasUserPurchased?.(audit.email);
+            const hasConverted = await storage.hasUserCoachingConversion(audit.email);
             if (!hasConverted) {
               try {
                 const trackingRecord = await storage.createEmailTracking(audit.id, "sendDiscoveryJ30NurtureEmail", audit.email);
