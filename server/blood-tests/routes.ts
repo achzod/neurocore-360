@@ -24,6 +24,7 @@ import { sendBloodClientDeliveryEmail } from "../blood-analysis/routes";
 import { storage } from "../storage";
 import { getAuthPayload } from "../auth";
 import { OPENAI_REPORT_MODEL } from "../openaiResponses";
+import { auditClientFacingText, sanitizeClientFacingText } from "../clientFacingQuality";
 
 type MarkerStatus = "optimal" | "normal" | "suboptimal" | "critical";
 
@@ -656,6 +657,78 @@ export function registerBloodTestsRoutes(app: Express): void {
       res.json({ success: true, bloodTest: results[0] });
     } catch (error: any) {
       console.error("[Admin] Blood test dump error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Admin: deterministic cleanup for a generated report. This never calls GPT
+  // and never changes delivery state. It is safe to use for operational repair
+  // when only forbidden typography slipped through an otherwise valid report.
+  app.post("/api/admin/blood-tests/:id/sanitize-report", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const { id } = req.params;
+      const { db: sanitizeDb } = await import("../db.js");
+      const { bloodTests: sanitizeTable } = await import("../../shared/drizzle-schema.js");
+      const { eq: sanitizeEq } = await import("drizzle-orm");
+
+      const results = await sanitizeDb
+        .select()
+        .from(sanitizeTable)
+        .where(sanitizeEq(sanitizeTable.id, id));
+      if (!results.length) {
+        res.status(404).json({ error: "Blood test not found" });
+        return;
+      }
+
+      const bloodTest = results[0];
+      const analysis = bloodTest.analysis && typeof bloodTest.analysis === "object"
+        ? (bloodTest.analysis as Record<string, unknown>)
+        : {};
+      const currentReport = typeof analysis.aiAnalysis === "string"
+        ? analysis.aiAnalysis
+        : typeof analysis.aiReport === "string"
+          ? analysis.aiReport
+          : "";
+      if (!currentReport.trim()) {
+        res.status(409).json({ error: "No generated Blood report to sanitize" });
+        return;
+      }
+
+      const beforeAudit = auditClientFacingText(currentReport);
+      const sanitizedReport = sanitizeClientFacingText(currentReport);
+      const afterAudit = auditClientFacingText(sanitizedReport);
+      if (!afterAudit.ok) {
+        res.status(422).json({
+          error: "Client-facing quality gate still failing after deterministic sanitization",
+          beforeAudit,
+          afterAudit,
+        });
+        return;
+      }
+
+      const sanitizedAnalysis: Record<string, unknown> = {
+        ...analysis,
+        aiAnalysis: sanitizedReport,
+        aiReport: sanitizedReport,
+        aiSanitizedAt: new Date().toISOString(),
+        aiSanitizationAudit: { before: beforeAudit, after: afterAudit },
+      };
+      await sanitizeDb
+        .update(sanitizeTable)
+        .set({ analysis: sanitizedAnalysis as any })
+        .where(sanitizeEq(sanitizeTable.id, id));
+
+      res.json({
+        success: true,
+        changed: sanitizedReport !== currentReport,
+        beforeLength: currentReport.length,
+        afterLength: sanitizedReport.length,
+        beforeAudit,
+        afterAudit,
+      });
+    } catch (error: any) {
+      console.error("[Admin] Blood report sanitization error:", error);
       res.status(500).json({ error: error.message });
     }
   });

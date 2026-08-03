@@ -8,6 +8,7 @@ import pLimit from "p-limit";
 import { searchArticles, searchFullText } from "../knowledge/storage";
 import type { ScrapedArticle } from "../knowledge/storage";
 import { isOpenAIConfigured, runOpenAIText } from "../openaiResponses";
+import { auditClientFacingText, sanitizeClientFacingText } from "../clientFacingQuality";
 
 // ============================================
 // BIOMARKERS - OPTIMAL RANGES
@@ -4734,8 +4735,15 @@ ${markersTable}`,
   const withSources = ensureSourcesSection(orderedOutput, knowledgeContext);
   const normalizedOutput = reorderReportSections(normalizeFrenchTypography(withSources));
   const trimmedOutput = trimAiAnalysis(normalizedOutput);
+  const clientSafeOutput = sanitizeClientFacingText(trimmedOutput);
+  const clientFacingAudit = auditClientFacingText(clientSafeOutput);
+  if (!clientFacingAudit.ok) {
+    throw new Error(
+      `AI_REPORT_CLIENT_STYLE_GATE_FAILED:${JSON.stringify(clientFacingAudit)}`
+    );
+  }
   const finalStructureCheck = validateReportStructure(
-    trimmedOutput,
+    clientSafeOutput,
     analysisResult.markers,
     availableSourceIds
   );
@@ -4743,7 +4751,7 @@ ${markersTable}`,
     const reasons = finalStructureCheck.reasons.join(" | ");
     throw new Error(`AI_REPORT_QUALITY_GATE_FAILED:${reasons}`);
   }
-  return trimmedOutput;
+  return clientSafeOutput;
 }
 
 // ============================================

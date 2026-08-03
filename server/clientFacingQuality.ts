@@ -41,6 +41,7 @@ export interface ClientFacingQualityAudit {
 export function sanitizeClientFacingText(value: string): string {
   if (!value) return value;
   return value
+    .replace(/(\d)\s*(?:[\u2013\u2014]|&(?:mdash|ndash);)\s*(\d)/gi, "$1-$2")
     .replace(FORBIDDEN_DASH_ENTITIES, ",")
     .replace(FORBIDDEN_UNICODE_DASHES, ",")
     .replace(/\breatatrutide\b/gi, "Retatrutide")

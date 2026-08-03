@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { estimateAIUsageCosts } from "../server/openaiResponses";
 import { repairReportTextForDelivery } from "../server/reportTextRepair";
-import { auditClientFacingText } from "../server/clientFacingQuality";
+import { auditClientFacingText, sanitizeClientFacingText } from "../server/clientFacingQuality";
 
 const read = (relativePath: string): string =>
   readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf8");
@@ -118,6 +118,9 @@ assert.equal(auditClientFacingText(repairedClientText).vouvoiement.length, 0);
 assert.match(repairedClientText, /rendez-vous/);
 assert.match(repairedClientText, /1,6 a 2,2 g\/kg\/jour/);
 assert.match(repairedClientText, /128 a 176 g par jour/);
+const sanitizedDashText = sanitizeClientFacingText("Phase 8\u201312 semaines \u2014 puis controle.");
+assert.equal(sanitizedDashText, "Phase 8-12 semaines, puis controle.");
+assert.equal(auditClientFacingText(sanitizedDashText).forbiddenDashes, 0);
 
 const packageManifest = read("package.json");
 assert.doesNotMatch(packageManifest, /@anthropic-ai\/sdk/);
@@ -139,10 +142,19 @@ assert.match(vision, /schemaName:\s*"ultimate_photo_analysis"/);
 const blood = read("server/blood-analysis/index.ts");
 assert.match(blood, /profile:\s*"blood"/);
 assert.match(blood, /schemaName:\s*"blood_marker_extraction"/);
+assert.match(blood, /const clientSafeOutput = sanitizeClientFacingText\(trimmedOutput\)/);
+assert.match(blood, /const clientFacingAudit = auditClientFacingText\(clientSafeOutput\)/);
+assert.match(blood, /AI_REPORT_CLIENT_STYLE_GATE_FAILED/);
+assert.match(blood, /return clientSafeOutput/);
 assert.match(
   blood,
   /required marker-by-marker narrative[\s\S]{0,160}maxTokens:\s*28_000/,
 );
+
+const bloodTestRoutes = read("server/blood-tests/routes.ts");
+assert.match(bloodTestRoutes, /\/api\/admin\/blood-tests\/:id\/sanitize-report/);
+assert.match(bloodTestRoutes, /afterAudit = auditClientFacingText\(sanitizedReport\)/);
+assert.match(bloodTestRoutes, /aiSanitizationAudit/);
 
 const bloodRoutes = read("server/blood-analysis/routes.ts");
 assert.match(bloodRoutes, /Use \/api\/blood-tests\/upload for the tracked GPT report/);
