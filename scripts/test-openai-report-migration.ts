@@ -47,6 +47,8 @@ assert.match(shared, /\[AICost\]/);
 assert.match(shared, /Cancel did not complete within 10s/);
 assert.match(shared, /maxRetries:\s*0/);
 assert.match(shared, /const deadline = Date\.now\(\) \+ profile\.timeoutMs;[\s\S]{0,120}client\.responses\.create/);
+assert.match(shared, /export function isOpenAICreditError/);
+assert.match(shared, /if \(isOpenAICreditError\(error\)\) return false/);
 
 const baselineCosts = estimateAIUsageCosts({
   inputTokens: 100_000,
@@ -97,6 +99,7 @@ assert.match(routes, /A public GET is read-only/);
 assert.doesNotMatch(routes, /\[Discovery Fetch\] Report regenerated/);
 assert.match(routes, /Atomic claim first so two concurrent regenerate clicks cannot both/);
 assert.match(routes, /Repair legacy\/racing writes that replaced SENT with READY/);
+assert.match(routes, /failedAudit\?\.reportDeliveryStatus !== "NEEDS_REVIEW"/);
 
 const emailService = read("server/emailService.ts");
 assert.match(emailService, /const shouldBccAdmin = !emailPayload\.to\.some/);
@@ -127,6 +130,7 @@ assert.match(premium, /generateAndConvertAuditWithOpenAI/);
 assert.match(premium, /engine:\s*"openai"/);
 assert.match(premium, /postGenerationDeliveryStatus/);
 assert.match(premium, /scheduledFor\.getTime\(\) > Date\.now\(\)/);
+assert.match(premium, /automatic retry retained/);
 
 const vision = read("server/photoAnalysisAI.ts");
 assert.match(vision, /profile:\s*"vision"/);
@@ -152,6 +156,12 @@ assert.match(bloodTests, /const sixtyMinAgo = new Date\(Date\.now\(\) - 60 \* 60
 assert.doesNotMatch(bloodTests, /const tenMinAgo/);
 assert.match(bloodTests, /isInternalQaEmail/);
 assert.match(bloodTests, /return !isInternalQaEmail\(profile\.email\)/);
+assert.match(bloodTests, /async_generation_failed_pending_retry/);
+assert.doesNotMatch(bloodTests, /async_generation_failed_fallback/);
+
+const monitoring = read("server/monitoring.ts");
+assert.match(monitoring, /providerCreditFailure/);
+assert.match(monitoring, /retry counter will be reset/);
 
 const peptides = read("server/peptidesEngine.ts");
 assert.match(peptides, /profile:\s*"peptides"/);

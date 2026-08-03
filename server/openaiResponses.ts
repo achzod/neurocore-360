@@ -505,7 +505,22 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+export function isOpenAICreditError(error: unknown): boolean {
+  const candidate = error as any;
+  const message = [
+    candidate?.message,
+    candidate?.error?.message,
+    candidate?.response?.data?.error?.message,
+    candidate?.code,
+    candidate?.error?.code,
+  ]
+    .filter(Boolean)
+    .join(" ");
+  return /no credits remaining|insufficient_quota|billing hard limit|credit balance/i.test(message);
+}
+
 function isRetryable(error: any): boolean {
+  if (isOpenAICreditError(error)) return false;
   const status = Number(error?.status || error?.response?.status || 0);
   return status === 408 || status === 409 || status === 429 || status >= 500;
 }

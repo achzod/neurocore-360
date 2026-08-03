@@ -1102,31 +1102,14 @@ export function registerBloodTestsRoutes(app: Express): void {
                   knowledgeContext
                 );
                 if (!enriched) {
-                  const fallbackAnalysis = buildFallbackAnalysis(analysisResult, {
-                    gender: patientProfile.gender as "homme" | "femme",
-                    age,
-                    sleepHours: patientProfile.sleepHours,
-                    stressLevel: patientProfile.stressLevel,
-                    fastingHours: patientProfile.fastingHours,
-                    drawTime: patientProfile.drawTime,
-                    lastTraining: patientProfile.lastTraining,
-                    alcoholLast72h: patientProfile.alcoholLast72h,
-                    nutritionPhase: patientProfile.nutritionPhase,
-                    supplementsUsed: patientProfile.supplementsUsed,
-                    medications: patientProfile.medications,
-                    infectionRecent: patientProfile.infectionRecent,
-                    poids: patientProfile.poids,
-                    taille: patientProfile.taille,
-                  });
-                  const fallbackPayload = {
+                  const pendingPayload = {
                     ...analysisPayload,
-                    aiAnalysis: fallbackAnalysis,
-                    ...deriveAiMeta(fallbackAnalysis, "async_generation_failed_fallback"),
+                    aiAnalysis: "",
+                    ...deriveAiProcessingMeta("async_generation_failed_pending_retry"),
                   };
                   await storage.updateBloodTest(createdRecord.id, {
-                    analysis: fallbackPayload,
-                    status: "completed",
-                    completedAt: new Date(),
+                    analysis: pendingPayload,
+                    status: "processing",
                   });
                   return;
                 }
@@ -1447,31 +1430,14 @@ export function registerBloodTestsRoutes(app: Express): void {
               knowledgeContext
             );
             if (!enriched) {
-              const fallbackAnalysis = buildFallbackAnalysis(analysisResult, {
-                gender: profile.gender as "homme" | "femme",
-                age,
-                sleepHours: profile.sleepHours,
-                stressLevel: profile.stressLevel,
-                fastingHours: profile.fastingHours,
-                drawTime: profile.drawTime,
-                lastTraining: profile.lastTraining,
-                alcoholLast72h: profile.alcoholLast72h,
-                nutritionPhase: profile.nutritionPhase,
-                supplementsUsed: profile.supplementsUsed,
-                medications: profile.medications,
-                infectionRecent: profile.infectionRecent,
-                poids: profile.poids,
-                taille: profile.taille,
-              });
-              const fallbackPayload = {
+              const pendingPayload = {
                 ...analysisPayload,
-                aiAnalysis: fallbackAnalysis,
-                ...deriveAiMeta(fallbackAnalysis, "async_generation_failed_fallback"),
+                aiAnalysis: "",
+                ...deriveAiProcessingMeta("async_generation_failed_pending_retry"),
               };
               await storage.updateBloodTest(baseRecord.id, {
-                analysis: fallbackPayload,
-                status: "completed",
-                completedAt: new Date(),
+                analysis: pendingPayload,
+                status: "processing",
               });
               return;
             }

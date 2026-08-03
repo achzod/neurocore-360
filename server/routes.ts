@@ -2089,7 +2089,10 @@ export async function registerRoutes(
         console.error(`[Email] ❌ Email FAILED for audit ${auditId}`);
       }
     } else {
-      await storage.updateAudit(auditId, { reportDeliveryStatus: "PENDING" });
+      const failedAudit = await storage.getAudit(auditId).catch(() => null);
+      if (failedAudit?.reportDeliveryStatus !== "NEEDS_REVIEW") {
+        await storage.updateAudit(auditId, { reportDeliveryStatus: "PENDING" });
+      }
       console.error(`[Email] ❌ Report generation failed or timeout for audit ${auditId}`);
     }
     } catch (error) {

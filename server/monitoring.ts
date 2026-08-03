@@ -11,6 +11,7 @@
 
 import { storage } from "./storage";
 import { startReportGeneration } from "./reportJobManager";
+import { isOpenAICreditError } from "./openaiResponses";
 import { log } from "./index";
 
 interface MonitoringStats {
@@ -151,13 +152,22 @@ async function fixNeedsReviewJobs(stats: MonitoringStats): Promise<void> {
         // Check retry count
         const reportJob = await storage.getReportJob(audit.id);
         const attemptCount = reportJob?.attemptCount || 0;
+        const providerCreditFailure = isOpenAICreditError(
+          new Error(String((reportJob as any)?.error || "")),
+        );
 
-        if (attemptCount >= MAX_RETRY_ATTEMPTS) {
+        if (attemptCount >= MAX_RETRY_ATTEMPTS && !providerCreditFailure) {
           log(
             `Monitoring: Audit ${audit.id} NEEDS_REVIEW already at max retries (${MAX_RETRY_ATTEMPTS}), skipping`,
             "monitoring"
           );
           continue;
+        }
+
+        if (providerCreditFailure) {
+          console.warn(
+            `Monitoring: Audit ${audit.id} paused by OpenAI credit outage , retry counter will be reset`,
+          );
         }
 
         log(`Monitoring: Regenerating NEEDS_REVIEW audit ${audit.id} (attempt ${attemptCount + 1})`, "monitoring");

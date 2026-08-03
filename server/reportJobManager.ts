@@ -3,7 +3,7 @@ import { generateAndConvertAuditWithOpenAI, deleteOpenAICache } from "./openaiPr
 import { generatePremiumHTMLFromTxt } from "./exportServicePremium";
 import { storage } from "./storage";
 import type { ClientData, AuditTier } from "./types";
-import { OPENAI_REPORT_MODEL } from "./openaiResponses";
+import { isOpenAICreditError, OPENAI_REPORT_MODEL } from "./openaiResponses";
 import { validateReport, logValidation, quickValidate } from "./reportValidator";
 import { normalizeResponses } from "./responseNormalizer";
 import { repairReportTextForDelivery } from "./reportTextRepair";
@@ -554,7 +554,15 @@ async function generateReportAsync(
     console.error(`[ReportJobManager] Generation FAILED for ${auditId}:`, errorMessage);
 
     await storage.failReportJob(auditId, errorMessage);
-    if (qualityReviewPersisted) {
+    if (isOpenAICreditError(error)) {
+      // Provider billing outages are operational, not report-quality failures.
+      // Keep the client in the automatic review queue. Monitoring deliberately
+      // resets the attempt counter for this exact condition until credit returns.
+      await storage.updateAudit(auditId, {
+        reportDeliveryStatus: "NEEDS_REVIEW",
+      });
+      console.warn(`[ReportJobManager] OpenAI credit unavailable for ${auditId} , automatic retry retained`);
+    } else if (qualityReviewPersisted) {
       console.log(`[ReportJobManager] Preserving NEEDS_REVIEW status for ${auditId} after quality validation failure`);
     } else {
       await storage.updateAudit(auditId, {
