@@ -457,6 +457,17 @@ const isAdminRequest = (req: Request): boolean => {
   return Boolean(validKey && adminKey === validKey);
 };
 
+const isInternalQaEmail = (value: unknown): boolean => {
+  const email = String(value || "").trim().toLowerCase();
+  return (
+    email.includes("test") ||
+    email.includes("debug") ||
+    email.startsWith("qa-") ||
+    email.includes("@achzodcoaching.com") ||
+    email === "achkou@gmail.com"
+  );
+};
+
 const requireAuth = (req: Request, res: Response, next: NextFunction) => {
   const payload = getAuthPayload(req);
   if (!payload) {
@@ -1800,13 +1811,19 @@ export function registerBloodTestsRoutes(app: Express): void {
       // Ten minutes is a normal generation time, not evidence of a stuck job.
       const sixtyMinAgo = new Date(Date.now() - 60 * 60 * 1000);
       const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      const stuck = await rDb.select().from(rBt).where(
+      const stuckCandidates = await rDb.select().from(rBt).where(
         rAnd(
           rEq(rBt.status, "processing"),
           rLt(rBt.createdAt, sixtyMinAgo),
           rGt(rBt.createdAt, dayAgo),
         ),
       );
+      const stuck = stuckCandidates.filter((row) => {
+        const profile = row.patientProfile && typeof row.patientProfile === "object"
+          ? row.patientProfile as Record<string, unknown>
+          : {};
+        return !isInternalQaEmail(profile.email);
+      });
       if (!stuck.length) return;
       console.log(`[BloodTests-Recovery] ${stuck.length} stuck row(s), recovering...`);
       const { analyzeBloodwork, generateAIBloodAnalysis, getBloodworkKnowledgeContext } =

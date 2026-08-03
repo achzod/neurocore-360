@@ -135,6 +135,8 @@ const bloodTests = read("server/blood-tests/routes.ts");
 assert.doesNotMatch(bloodTests, /runAIGenerationWithRetry/);
 assert.match(bloodTests, /const sixtyMinAgo = new Date\(Date\.now\(\) - 60 \* 60 \* 1000\)/);
 assert.doesNotMatch(bloodTests, /const tenMinAgo/);
+assert.match(bloodTests, /isInternalQaEmail/);
+assert.match(bloodTests, /return !isInternalQaEmail\(profile\.email\)/);
 
 const peptides = read("server/peptidesEngine.ts");
 assert.match(peptides, /profile:\s*"peptides"/);
