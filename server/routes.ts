@@ -9573,6 +9573,25 @@ export async function registerRoutes(
         return;
       }
 
+      // A recovery job may have started long after the audit was created. The
+      // audit creation time is therefore not a valid signal that this current
+      // generation is stale. Never launch the Discovery-specific generator
+      // while the persisted report job is actively producing the same audit.
+      const activeReportJob = await getJobStatus(audit.id);
+      if (
+        activeReportJob?.status === "pending" ||
+        activeReportJob?.status === "generating"
+      ) {
+        res.status(202).json({
+          success: true,
+          status: activeReportJob.status,
+          progress: activeReportJob.progress,
+          currentSection: activeReportJob.currentSection,
+          message: "Generation en cours",
+        });
+        return;
+      }
+
       // No report stored -> trigger a fresh generation in background
       // to avoid users getting stuck on "Analyse en cours".
       const shouldRegenerate = !isGenerating || isStaleGeneration;

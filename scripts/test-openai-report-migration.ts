@@ -90,6 +90,8 @@ assert.match(routes, /\/api\/admin\/recover-report-failures/);
 assert.match(routes, /deterministic_client_facing_repair/);
 assert.match(routes, /automaticReportRecoveryRunning/);
 assert.match(routes, /requireAdminAuth/);
+assert.match(routes, /Never launch the Discovery-specific generator/);
+assert.match(routes, /activeReportJob\?\.status === "generating"/);
 
 const emailService = read("server/emailService.ts");
 assert.match(emailService, /const shouldBccAdmin = !emailPayload\.to\.some/);
