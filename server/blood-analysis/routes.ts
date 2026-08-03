@@ -53,11 +53,6 @@ import {
 } from "../emailService";
 import { getUncachableStripeClient } from "../stripeClient";
 import pdf from "pdf-parse";
-import {
-  withAIGenerationTimeout,
-  isAIGenerationTimeoutError,
-  BLOOD_AI_ASYNC_TIMEOUT_MS,
-} from "./ai-timeout";
 import { listBloodEmailDeliveries } from "./delivery-log";
 
 // Prevent duplicate background generation per instance.
@@ -301,7 +296,6 @@ export async function sendScheduledBloodEmail(
   );
 }
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const AI_CREDIT_BALANCE_LOW_SENTINEL = "__AI_CREDIT_BALANCE_LOW__";
 
 const getErrorMessage = (error: unknown): string => {
@@ -325,36 +319,29 @@ const generateAiReportWithAttempts = async (
   analysisResult: Awaited<ReturnType<typeof analyzeBloodwork>>,
   profile: Record<string, unknown>,
   knowledgeContext: string,
-  contextLabel: string,
-  maxAttempts = 3,
-  timeoutMs?: number
+  contextLabel: string
 ): Promise<string> => {
-  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    try {
-      const candidate = await withAIGenerationTimeout(
-        () => generateAIBloodAnalysis(analysisResult, profile as any, knowledgeContext),
-        `${contextLabel} attempt-${attempt}`,
-        timeoutMs
-      );
-      const normalizedCandidate = canonicalizeBloodReport(candidate);
-      if (isDeliverableAiReport(normalizedCandidate)) {
-        return normalizedCandidate;
-      }
-      console.warn(
-        `[BloodAnalysis] ${contextLabel} attempt ${attempt} produced non-deliverable content (len=${normalizedCandidate.length}).`
-      );
-    } catch (error) {
-      if (isAILowCreditError(error)) {
-        console.error(`[BloodAnalysis] ${contextLabel} aborted: AI_CREDIT_BALANCE_LOW.`);
-        return AI_CREDIT_BALANCE_LOW_SENTINEL;
-      }
-      if (isAIGenerationTimeoutError(error)) {
-        console.warn(`[BloodAnalysis] ${contextLabel} attempt ${attempt} timed out.`);
-      } else {
-        console.error(`[BloodAnalysis] ${contextLabel} attempt ${attempt} failed:`, error);
-      }
+  try {
+    // Each section call already has bounded retries and explicit cancellation.
+    // Retrying the whole eleven-section pipeline can overlap expensive reports.
+    const candidate = await generateAIBloodAnalysis(
+      analysisResult,
+      profile as any,
+      knowledgeContext
+    );
+    const normalizedCandidate = canonicalizeBloodReport(candidate);
+    if (isDeliverableAiReport(normalizedCandidate)) {
+      return normalizedCandidate;
     }
-    if (attempt < maxAttempts) await sleep(4000);
+    console.warn(
+      `[BloodAnalysis] ${contextLabel} produced non-deliverable content (len=${normalizedCandidate.length}).`
+    );
+  } catch (error) {
+    if (isAILowCreditError(error)) {
+      console.error(`[BloodAnalysis] ${contextLabel} aborted: AI_CREDIT_BALANCE_LOW.`);
+      return AI_CREDIT_BALANCE_LOW_SENTINEL;
+    }
+    console.error(`[BloodAnalysis] ${contextLabel} failed:`, error);
   }
   return "";
 };
@@ -928,8 +915,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
             analysisResult,
             profileWithAge as any,
             knowledgeContext,
-            "blood-analysis/submit sync report",
-            2
+            "blood-analysis/submit sync report"
           );
           if (syncCandidate === AI_CREDIT_BALANCE_LOW_SENTINEL) {
             aiCreditBalanceLow = true;
@@ -994,9 +980,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
               analysisResult,
               profileWithAge as any,
               knowledgeContext,
-              `blood-analysis/submit async report ${reportRecord.id}`,
-              3,
-              BLOOD_AI_ASYNC_TIMEOUT_MS
+              `blood-analysis/submit async report ${reportRecord.id}`
             );
             if (enrichedCandidate === AI_CREDIT_BALANCE_LOW_SENTINEL) {
               console.error(
@@ -1163,9 +1147,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
           analysisResult,
           normalizedProfile,
           knowledgeContext,
-          "blood-analysis/admin-regenerate",
-          3,
-          BLOOD_AI_ASYNC_TIMEOUT_MS
+          "blood-analysis/admin-regenerate"
         );
         if (aiReportCandidate === AI_CREDIT_BALANCE_LOW_SENTINEL) {
           throw new Error("AI_CREDIT_BALANCE_LOW");
@@ -1558,9 +1540,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
               analysisResult,
               { ...(rawProfile as any), gender } as any,
               knowledgeContext,
-              `blood-analysis/report background ${reportId}`,
-              3,
-              BLOOD_AI_ASYNC_TIMEOUT_MS
+              `blood-analysis/report background ${reportId}`
             );
             if (aiReportCandidate === AI_CREDIT_BALANCE_LOW_SENTINEL) {
               const aiError = "AI_CREDIT_BALANCE_LOW";
@@ -2412,9 +2392,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
           basicAnalysis,
           profileWithAge,
           knowledgeContext,
-          "blood-analysis/full-analysis",
-          2,
-          BLOOD_AI_ASYNC_TIMEOUT_MS
+          "blood-analysis/full-analysis"
         );
         if (aiCandidate === AI_CREDIT_BALANCE_LOW_SENTINEL) {
           aiCreditBalanceLow = true;
@@ -2570,9 +2548,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
           basicAnalysis,
           profileWithAge,
           knowledgeContext,
-          "blood-analysis/comprehensive-report",
-          2,
-          BLOOD_AI_ASYNC_TIMEOUT_MS
+          "blood-analysis/comprehensive-report"
         );
         if (aiCandidate === AI_CREDIT_BALANCE_LOW_SENTINEL) {
           aiCreditBalanceLow = true;
