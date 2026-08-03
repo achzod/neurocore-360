@@ -3,6 +3,8 @@ import crypto from "node:crypto";
 import {
   coachingConversionTrackingId,
   parseCoachingOrderWebhook,
+  verifyWebflowWebhookSignature,
+  verifyWebhookToken,
   verifyWooWebhookSignature,
 } from "../server/coachingConversion";
 
@@ -27,10 +29,44 @@ assert.deepEqual(parseCoachingOrderWebhook(payload), {
   status: "processing",
   couponCodes: ["DISCOVERY30"],
   productNames: ["Coaching Elite 8 semaines"],
+  source: "woocommerce",
 });
 assert.equal(parseCoachingOrderWebhook({ ...payload, status: "pending" }), null);
 assert.equal(parseCoachingOrderWebhook({ ...payload, coupon_lines: [], line_items: [{ name: "Formation vidéo" }] }), null);
+
+const webflowPayload = {
+  triggerType: "ecomm_new_order",
+  payload: {
+    status: "unfulfilled",
+    orderId: "42f-a34",
+    customerPaid: { unit: "EUR", value: "43920", string: "€ 439,20 EUR" },
+    customerInfo: { email: "Webflow.Client@example.com" },
+    purchasedItems: [{ productName: "12 semaines Essential" }],
+    totals: { extras: [{ type: "discount", name: "ZOD20" }] },
+  },
+};
+assert.deepEqual(parseCoachingOrderWebhook(webflowPayload), {
+  orderId: "42f-a34",
+  email: "webflow.client@example.com",
+  amountCents: 43920,
+  status: "processing",
+  couponCodes: ["ZOD20"],
+  productNames: ["12 semaines Essential"],
+  source: "webflow",
+});
+assert.equal(parseCoachingOrderWebhook({ ...webflowPayload, payload: { ...webflowPayload.payload, status: "refunded" } }), null);
+
+const webflowTimestamp = String(Date.now());
+const webflowRaw = Buffer.from(JSON.stringify(webflowPayload));
+const webflowSignature = crypto
+  .createHmac("sha256", secret)
+  .update(`${webflowTimestamp}:${webflowRaw.toString("utf8")}`)
+  .digest("hex");
+assert.equal(verifyWebflowWebhookSignature(webflowRaw, webflowTimestamp, webflowSignature, secret), true);
+assert.equal(verifyWebflowWebhookSignature(webflowRaw, String(Date.now() - 600_000), webflowSignature, secret), false);
+assert.equal(verifyWebhookToken(secret, secret), true);
+assert.equal(verifyWebhookToken(secret + "x", secret), false);
 assert.match(coachingConversionTrackingId("4812"), /^[0-9a-f-]{36}$/);
 assert.equal(coachingConversionTrackingId("4812"), coachingConversionTrackingId("4812"));
 
-console.log("Coaching conversion webhook passed: signature, paid-order parsing and idempotency are valid");
+console.log("Coaching conversion webhook passed: Webflow/Woo auth, paid-order parsing and idempotency are valid");

@@ -65,6 +65,8 @@ import { getSuppressedSequenceEmailTypes, normalizeSearchText } from "./emailSeq
 import {
   coachingConversionTrackingId,
   parseCoachingOrderWebhook,
+  verifyWebflowWebhookSignature,
+  verifyWebhookToken,
   verifyWooWebhookSignature,
 } from "./coachingConversion";
 
@@ -9018,10 +9020,10 @@ export async function registerRoutes(
     res.redirect(302, redirectUrl.toString());
   });
 
-  // WooCommerce calls this endpoint when a coaching order becomes paid. This
-  // closes the attribution loop with achzodcoaching.com and immediately stops
-  // every Discovery coaching follow-up for that email. The request is accepted
-  // only with WooCommerce's HMAC signature over the untouched JSON body.
+  // Webflow Ecommerce calls this endpoint when a coaching order is paid. The
+  // endpoint also keeps WooCommerce signature support for backward
+  // compatibility. Webhooks created in the Webflow dashboard do not include
+  // signature headers, so their URL carries the same unguessable secret.
   app.post("/api/webhooks/coaching-order", async (req, res) => {
     const secret = String(process.env.COACHING_WEBHOOK_SECRET || "").trim();
     if (!secret) {
@@ -9029,18 +9031,24 @@ export async function registerRoutes(
       return;
     }
 
-    const signature = String(req.get("x-wc-webhook-signature") || "").trim();
     const rawBody = Buffer.isBuffer(req.rawBody)
       ? req.rawBody
       : Buffer.from(JSON.stringify(req.body || {}));
-    if (!verifyWooWebhookSignature(rawBody, signature, secret)) {
+    const wooSignature = String(req.get("x-wc-webhook-signature") || "").trim();
+    const webflowSignature = String(req.get("x-webflow-signature") || "").trim();
+    const webflowTimestamp = String(req.get("x-webflow-timestamp") || "").trim();
+    const urlToken = String(req.query.token || "").trim();
+    const authenticated = verifyWebhookToken(urlToken, secret)
+      || verifyWooWebhookSignature(rawBody, wooSignature, secret)
+      || verifyWebflowWebhookSignature(rawBody, webflowTimestamp, webflowSignature, secret);
+    if (!authenticated) {
       res.status(401).json({ success: false, error: "Signature webhook invalide" });
       return;
     }
 
     const conversion = parseCoachingOrderWebhook(req.body);
     if (!conversion) {
-      // WooCommerce retries non-2xx responses. Acknowledge irrelevant orders
+      // Providers retry non-2xx responses. Acknowledge irrelevant orders
       // and unpaid status updates without recording a false conversion.
       res.status(200).json({ success: true, ignored: true });
       return;
@@ -9100,7 +9108,7 @@ export async function registerRoutes(
           conversion.email,
           conversionType,
           JSON.stringify({
-            source: "achzodcoaching_woocommerce",
+            source: `achzodcoaching_${conversion.source}`,
             orderId: conversion.orderId,
             amountCents: conversion.amountCents,
             status: conversion.status,
