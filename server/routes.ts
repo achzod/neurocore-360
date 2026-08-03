@@ -1850,59 +1850,19 @@ export async function registerRoutes(
         }
         res.json(audit);
 
-        const DISCOVERY_GENERATION_TIMEOUT = 5 * 60 * 1000; // 5 minutes max
-        (async () => {
-          try {
-            console.log(`[Discovery Scan] Starting report generation for audit ${audit.id}`);
-            const generationPromise = (async () => {
-              const result = await analyzeDiscoveryScan(mergedResponses as any);
-              console.log(`[Discovery Scan] Analysis complete for ${audit.id}, generating narrative...`);
-              const narrativeReport = await convertToNarrativeReport(result, mergedResponses as any);
-              console.log(`[Discovery Scan] Narrative generated for ${audit.id} (${JSON.stringify(narrativeReport).length} chars)`);
-              return narrativeReport;
-            })();
-
-            const timeoutPromise = new Promise<never>((_, reject) => {
-              setTimeout(() => reject(new Error(`Discovery Scan generation timed out after ${DISCOVERY_GENERATION_TIMEOUT / 1000}s`)), DISCOVERY_GENERATION_TIMEOUT);
-            });
-
-            const narrativeReport = await Promise.race([generationPromise, timeoutPromise]);
-
-            // Check if delivery should be delayed (scheduled)
-            const scheduledFor = audit.reportScheduledFor ? new Date(audit.reportScheduledFor) : null;
-            const shouldDelay = scheduledFor && scheduledFor > new Date();
-
-            if (shouldDelay) {
-              await storage.updateAudit(audit.id, {
-                narrativeReport,
-                reportDeliveryStatus: "SCHEDULED",
-              });
-              console.log(`[Discovery Scan] Report SCHEDULED for audit ${audit.id} , delivery at ${scheduledFor.toISOString()}`);
-            } else {
-              await storage.updateAudit(audit.id, {
-                narrativeReport,
-                reportDeliveryStatus: "READY",
-              });
-              console.log(`[Discovery Scan] Report READY for audit ${audit.id}`);
-
-              const baseUrl = getBaseUrl();
-              const { sent: emailSent } = await safeSendReportReadyEmail(audit.id, audit.email, audit.type, baseUrl, { logPrefix: "[Discovery Scan]" });
-              if (emailSent) {
-                const clientName = (mergedResponses as any)?.prenom || data.email.split("@")[0];
-                await sendAdminEmailNewAudit(audit.email, clientName, audit.type, audit.id);
-              }
-            }
-          } catch (error: any) {
-            console.error(`[Discovery Scan] Generation FAILED for audit ${audit.id}:`, error?.message || error);
-            try {
-              await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" });
-            } catch (updateErr) {
-              console.error(`[Discovery Scan] Failed to update status for ${audit.id}:`, updateErr);
-            }
-          }
-        })().catch((unhandled) => {
-          console.error(`[Discovery Scan] UNHANDLED error for audit ${audit.id}:`, unhandled);
-        });
+        // The persistent job manager owns Discovery generation too. This keeps
+        // the dedicated 12-section engine while adding boot recovery, queue
+        // handoff, retry tracking, and the same scheduled-delivery gate as paid
+        // reports. The former inline 5-minute race abandoned valid long reports.
+        try {
+          await startReportGeneration(audit.id, mergedResponses, audit.scores || {}, audit.type);
+          processReportAndSendEmail(audit.id, audit.email, audit.type).catch((err) => {
+            console.error(`[Discovery Scan] Delivery workflow error for ${audit.id}:`, err);
+          });
+        } catch (generationStartError) {
+          console.error(`[Discovery Scan] Failed to start persistent job for ${audit.id}:`, generationStartError);
+          await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" }).catch(() => {});
+        }
 
         return;
       }
@@ -2054,12 +2014,15 @@ export async function registerRoutes(
       // ============================================
       const reportTxt = (completedAudit as any)?.reportTxt || (completedAudit as any)?.narrativeReport?.txt || '';
       const reportHtml = (completedAudit as any)?.reportHtml || (completedAudit as any)?.narrativeReport?.html || '';
-      if (reportTxt.length < 500 && reportHtml.length < 500) {
-        console.error(`[Email] ❌ HARD BLOCK: Report ${auditId} has no real content (TXT:${reportTxt.length} HTML:${reportHtml.length}) , EMAIL BLOCKED`);
+      const discoveryNarrativeLength = auditType === "GRATUIT"
+        ? JSON.stringify((completedAudit as any)?.narrativeReport || {}).length
+        : 0;
+      if (reportTxt.length < 500 && reportHtml.length < 500 && discoveryNarrativeLength < 10_000) {
+        console.error(`[Email] ❌ HARD BLOCK: Report ${auditId} has no real content (TXT:${reportTxt.length} HTML:${reportHtml.length} DISCOVERY:${discoveryNarrativeLength}) , EMAIL BLOCKED`);
         await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" });
         return;
       }
-      console.log(`[Email] ✅ Content verified: TXT=${reportTxt.length} HTML=${reportHtml.length} chars`);
+      console.log(`[Email] ✅ Content verified: TXT=${reportTxt.length} HTML=${reportHtml.length} DISCOVERY=${discoveryNarrativeLength} chars`);
 
       // ============================================
       // GATE 5: ELITE must have valid photo analysis
@@ -3601,7 +3564,7 @@ export async function registerRoutes(
         return;
       }
 
-      // Handle Discovery Scan (GRATUIT) differently - sync generation
+      // Handle Discovery Scan (GRATUIT) with its dedicated persistent engine.
       if (audit.type === "GRATUIT") {
         console.log(`[Regenerate] Regenerating Discovery Scan for audit ${auditId}...`);
 
@@ -3615,29 +3578,23 @@ export async function registerRoutes(
           return;
         }
 
-        try {
-          // Generate new Discovery Scan report with AI content
-          const result = await analyzeDiscoveryScan(audit.responses as any);
-          const narrativeReport = await convertToNarrativeReport(result, audit.responses as any);
+        await storage.updateAudit(auditId, {
+          narrativeReport: null,
+          reportGeneratedAt: null,
+        });
+        await storage.deleteReportJob(auditId).catch(() => {});
+        const job = await startReportGeneration(auditId, audit.responses, audit.scores || {}, audit.type);
+        processReportAndSendEmail(auditId, audit.email, audit.type).catch((err) => {
+          console.error(`[Regenerate] Discovery delivery workflow error for ${auditId}:`, err);
+        });
 
-          await storage.updateAudit(auditId, {
-            narrativeReport,
-            reportDeliveryStatus: "READY"
-          });
-
-          console.log(`[Regenerate] Discovery Scan ${auditId} regenerated successfully`);
-
-          res.json({
-            success: true,
-            message: "Discovery Scan regenere",
-            auditId,
-            narrativeReport
-          });
-        } catch (genError) {
-          console.error("[Regenerate] Discovery Scan generation error:", genError);
-          await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" });
-          res.status(500).json({ error: "Rapport en révision. Réessaie plus tard." });
-        }
+        res.status(202).json({
+          success: true,
+          message: "Generation du Discovery Scan relancee",
+          auditId,
+          status: job.status,
+          progress: job.progress,
+        });
         return;
       }
 
@@ -9666,6 +9623,7 @@ export async function registerRoutes(
         narrativeReport: null,
         reportGeneratedAt: null,
       });
+      await storage.deleteReportJob(audit.id).catch(() => {});
       const job = await startReportGeneration(
         audit.id,
         audit.responses,

@@ -7,6 +7,7 @@ import { isOpenAICreditError, OPENAI_REPORT_MODEL } from "./openaiResponses";
 import { validateReport, logValidation, quickValidate } from "./reportValidator";
 import { normalizeResponses } from "./responseNormalizer";
 import { repairReportTextForDelivery } from "./reportTextRepair";
+import { analyzeDiscoveryScan, convertToNarrativeReport } from "./discovery-scan";
 
 export type ProgressCallback = (progress: number, section: string) => Promise<void>;
 import type { ReportJob, ReportJobStatusEnum } from "@shared/schema";
@@ -156,7 +157,12 @@ export async function startReportGeneration(
   const existingJob = await storage.getReportJob(auditId);
 
   if (existingJob) {
-    if (existingJob.status === "pending" || existingJob.status === "generating") {
+    if (existingJob.status === "pending") {
+      // A pending row is a queue reservation, not an active worker. Once a
+      // concurrency slot is free, this call must actually start it. Returning
+      // the existing row here previously left queued reports pending forever.
+      console.log(`[ReportJobManager] Pending job ${auditId} claimed from queue`);
+    } else if (existingJob.status === "generating") {
       const lastProgressTime = existingJob.lastProgressAt ? new Date(existingJob.lastProgressAt).getTime() : 0;
       const startedTime = existingJob.startedAt ? new Date(existingJob.startedAt).getTime() : Date.now();
       const referenceTime = lastProgressTime || startedTime;
@@ -225,6 +231,66 @@ async function generateReportAsync(
       throw new Error(`Audit ${auditId} not found ,  cannot generate report`);
     }
     const auditResponses = (audit as any)?.responses || {};
+
+    // Discovery Scan has its own 12-section engine and validator. It must never
+    // fall through to the premium 4-section generator during a retry, boot
+    // recovery, admin regeneration, or queue handoff.
+    if (auditType === "GRATUIT") {
+      await storage.updateReportJobProgress(
+        auditId,
+        10,
+        "Generation du Discovery Scan personnalise...",
+      );
+
+      const discoveryResult = await withTimeout(
+        analyzeDiscoveryScan(normalizedResponses as any),
+        AI_CALL_TIMEOUT_MS,
+        `${OPENAI_REPORT_MODEL} Discovery analysis for ${auditId}`,
+      );
+      await storage.updateReportJobProgress(
+        auditId,
+        55,
+        "Redaction des 12 sections du Discovery Scan...",
+      );
+      const narrativeReport = await withTimeout(
+        convertToNarrativeReport(discoveryResult, normalizedResponses as any),
+        AI_CALL_TIMEOUT_MS,
+        `${OPENAI_REPORT_MODEL} Discovery narrative for ${auditId}`,
+      );
+
+      const serializedLength = JSON.stringify(narrativeReport).length;
+      if (!Array.isArray((narrativeReport as any)?.sections) || (narrativeReport as any).sections.length < 10) {
+        throw new Error("Discovery validation failed after generation: sections missing");
+      }
+      if (serializedLength < 10_000) {
+        throw new Error(`Discovery validation failed after generation: ${serializedLength} chars`);
+      }
+
+      const deliveryAudit = await storage.getAudit(auditId);
+      const scheduledFor = deliveryAudit?.reportScheduledFor
+        ? new Date(deliveryAudit.reportScheduledFor)
+        : null;
+      const postGenerationDeliveryStatus = deliveryAudit?.reportSentAt
+        ? "SENT"
+        : scheduledFor &&
+          Number.isFinite(scheduledFor.getTime()) &&
+          scheduledFor.getTime() > Date.now()
+        ? "SCHEDULED"
+        : "READY";
+
+      await storage.updateAudit(auditId, {
+        narrativeReport,
+        reportGeneratedAt: new Date(),
+        reportDeliveryStatus: postGenerationDeliveryStatus,
+      });
+      await storage.completeReportJob(auditId);
+
+      const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+      console.log(
+        `[ReportJobManager] Discovery COMPLETED for ${auditId} in ${duration}s (${serializedLength} chars)`,
+      );
+      return;
+    }
 
     const pickPhoto = (source: any, keys: string[]): string | null => {
       if (!source) return null;

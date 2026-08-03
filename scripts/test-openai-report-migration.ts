@@ -102,6 +102,9 @@ assert.match(routes, /Repair legacy\/racing writes that replaced SENT with READY
 assert.match(routes, /failedAudit\?\.reportDeliveryStatus !== "NEEDS_REVIEW"/);
 assert.match(routes, /const maxWait = 95 \* 60 \* 1000/);
 assert.match(routes, /process\.env\.PUBLIC_BASE_URL \|\|[\s\S]{0,120}process\.env\.RENDER_EXTERNAL_URL/);
+assert.match(routes, /persistent job manager owns Discovery generation too/);
+assert.doesNotMatch(routes, /DISCOVERY_GENERATION_TIMEOUT = 5 \* 60 \* 1000/);
+assert.match(routes, /discoveryNarrativeLength < 10_000/);
 
 const emailService = read("server/emailService.ts");
 assert.match(emailService, /const shouldBccAdmin = !emailPayload\.to\.some/);
@@ -139,6 +142,11 @@ assert.match(premium, /AI_CALL_TIMEOUT_MS = 90 \* 60 \* 1000/);
 assert.match(premium, /postGenerationDeliveryStatus/);
 assert.match(premium, /scheduledFor\.getTime\(\) > Date\.now\(\)/);
 assert.match(premium, /automatic retry retained/);
+assert.match(premium, /Pending job \$\{auditId\} claimed from queue/);
+assert.match(premium, /auditType === "GRATUIT"/);
+assert.match(premium, /analyzeDiscoveryScan\(normalizedResponses/);
+assert.match(premium, /convertToNarrativeReport\(discoveryResult/);
+assert.match(premium, /Discovery COMPLETED/);
 
 const vision = read("server/photoAnalysisAI.ts");
 assert.match(vision, /profile:\s*"vision"/);
