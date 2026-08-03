@@ -127,6 +127,15 @@ const blood = read("server/blood-analysis/index.ts");
 assert.match(blood, /profile:\s*"blood"/);
 assert.match(blood, /schemaName:\s*"blood_marker_extraction"/);
 
+const bloodRoutes = read("server/blood-analysis/routes.ts");
+assert.match(bloodRoutes, /Use \/api\/blood-tests\/upload for the tracked GPT report/);
+assert.doesNotMatch(bloodRoutes, /blood-analysis\/analyze sync report/);
+
+const bloodTests = read("server/blood-tests/routes.ts");
+assert.doesNotMatch(bloodTests, /runAIGenerationWithRetry/);
+assert.match(bloodTests, /const sixtyMinAgo = new Date\(Date\.now\(\) - 60 \* 60 \* 1000\)/);
+assert.doesNotMatch(bloodTests, /const tenMinAgo/);
+
 const peptides = read("server/peptidesEngine.ts");
 assert.match(peptides, /profile:\s*"peptides"/);
 assert.match(peptides, /schemaName:\s*"peptides_engine_report"/);

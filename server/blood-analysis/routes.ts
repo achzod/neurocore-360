@@ -611,59 +611,20 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         analysisResult.patterns
       );
 
-      const hasOpenAIKey = Boolean(process.env.OPENAI_API_KEY);
-      let aiAnalysis = "";
-      let aiCreditBalanceLow = false;
-      if (hasOpenAIKey) {
-        try {
-          aiAnalysis = await withAIGenerationTimeout(
-            () =>
-              generateAIBloodAnalysis(
-                analysisResult,
-                profile,
-                knowledgeContext
-              ),
-            "blood-analysis/analyze sync report"
-          );
-          if (aiAnalysis) {
-            aiAnalysis = canonicalizeBloodReport(aiAnalysis);
-          }
-        } catch (aiError) {
-          if (isAILowCreditError(aiError)) {
-            aiCreditBalanceLow = true;
-            console.error("[BloodAnalysis] Analyze AI failed: AI_CREDIT_BALANCE_LOW.");
-          } else if (isAIGenerationTimeoutError(aiError)) {
-            console.warn("[BloodAnalysis] Analyze AI timed out (no fallback delivery).");
-          } else {
-            console.error("[BloodAnalysis] Analyze AI failed (no fallback delivery):", aiError);
-          }
-        }
-      }
-
-      if (!aiAnalysis && !hasOpenAIKey) {
-        if (ALLOW_DETERMINISTIC_FALLBACK) {
-          console.warn(
-            "[BloodAnalysis] OpenAI key missing; deterministic fallback is enabled by env but blocked from delivery."
-          );
-        } else {
-          console.warn(
-            "[BloodAnalysis] OpenAI key missing; deterministic fallback disabled."
-          );
-        }
-      }
-
-      const status =
-        !aiAnalysis && (!hasOpenAIKey || aiCreditBalanceLow)
-          ? "unavailable"
-          : hasOpenAIKey && !aiAnalysis
-          ? "processing"
-          : "completed";
+      // This legacy endpoint has no report row or job id, so a long synchronous
+      // GPT call cannot be resumed or delivered after an HTTP timeout. Keep it as
+      // a deterministic marker analysis. The authenticated /api/blood-tests/upload
+      // route owns the complete tracked GPT report workflow.
+      const aiAnalysis = "";
+      const status = "completed";
 
       res.json({
         success: true,
         analysis: analysisResult,
         aiReport: aiAnalysis,
         status,
+        aiReportAvailable: false,
+        aiWorkflow: "Use /api/blood-tests/upload for the tracked GPT report",
         sourcesUsed: knowledgeContext ? true : false
       });
     } catch (error) {

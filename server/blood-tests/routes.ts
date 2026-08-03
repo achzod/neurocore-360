@@ -17,7 +17,6 @@ import {
 import {
   withAIGenerationTimeout,
   isAIGenerationTimeoutError,
-  runAIGenerationWithRetry,
 } from "../blood-analysis/ai-timeout";
 import { generateComprehensiveBloodReport } from "../blood-analysis/recommendations-engine";
 import { generateComprehensiveRiskProfile } from "../blood-analysis/risk-scores";
@@ -376,8 +375,6 @@ const buildProtocolPhases = (markers: Array<{ name: string; status?: MarkerStatu
 
 const FALLBACK_REPORT_FOOTER_PATTERN = /\*Rapport fallback deterministic/i;
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 const isFallbackAnalysisText = (analysis: string): boolean => {
   const normalized = String(analysis || "").trim();
   if (!normalized) return true;
@@ -439,23 +436,17 @@ const generateAIBloodAnalysisWithFallbackRetry = async (
   },
   knowledgeContext?: string,
 ): Promise<string> => {
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
-    try {
-      const report = await runAIGenerationWithRetry(
-        () => generateAIBloodAnalysis(analysisResult, profile, knowledgeContext),
-        `blood-tests/async-ai-attempt-${attempt}`,
-        { attempts: 1 }
-      );
-      if (report && !isFallbackAnalysisText(report)) {
-        return report;
-      }
-      console.warn(`[BloodTests] Async AI attempt ${attempt} returned fallback-shaped report.`);
-    } catch (error) {
-      console.error(`[BloodTests] Async AI attempt ${attempt} failed:`, error);
+  try {
+    // generateAIBloodAnalysis already retries and cancels each OpenAI section call.
+    // Wrapping the entire multi-section pipeline in another timeout/retry layer can
+    // orphan the first run and start a second full report while it is still billing.
+    const report = await generateAIBloodAnalysis(analysisResult, profile, knowledgeContext);
+    if (report && !isFallbackAnalysisText(report)) {
+      return report;
     }
-    if (attempt < 3) {
-      await sleep(6000);
-    }
+    console.warn("[BloodTests] Async AI returned a fallback-shaped report.");
+  } catch (error) {
+    console.error("[BloodTests] Async AI failed:", error);
   }
   return "";
 };
@@ -1792,7 +1783,7 @@ export function registerBloodTestsRoutes(app: Express): void {
   // setImmediate retry. Both Younes Y. (2026-05-07) and Alan Annequin
   // (2026-05-09) sat in "processing" indefinitely because the setImmediate
   // either never fired or threw silently. This cron finds rows older than
-  // 10 minutes still in "processing" and re-runs the analysis the same way
+  // 60 minutes still in "processing" and re-runs the analysis the same way
   // the admin reprocess endpoint does. After success it triggers
   // auto-delivery so the client gets their report. The +/- 24h window keeps
   // the cron from churning on truly broken historical rows that need manual
@@ -1805,12 +1796,14 @@ export function registerBloodTestsRoutes(app: Express): void {
       const { db: rDb } = await import("../db.js");
       const { bloodTests: rBt } = await import("../../shared/drizzle-schema.js");
       const { eq: rEq, and: rAnd, lt: rLt, gt: rGt } = await import("drizzle-orm");
-      const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000);
+      // A complete GPT report contains eleven independently validated sections.
+      // Ten minutes is a normal generation time, not evidence of a stuck job.
+      const sixtyMinAgo = new Date(Date.now() - 60 * 60 * 1000);
       const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
       const stuck = await rDb.select().from(rBt).where(
         rAnd(
           rEq(rBt.status, "processing"),
-          rLt(rBt.createdAt, tenMinAgo),
+          rLt(rBt.createdAt, sixtyMinAgo),
           rGt(rBt.createdAt, dayAgo),
         ),
       );
