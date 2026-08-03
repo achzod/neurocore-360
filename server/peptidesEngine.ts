@@ -87,11 +87,11 @@ export interface PeptidesReport {
 
 export const PEPTIDES_PRIMARY_MODEL = OPENAI_REPORT_MODEL;
 const configuredPeptidesOutputTokens = Number(
-  process.env.PEPTIDES_OPENAI_MAX_OUTPUT_TOKENS || 20_000
+  process.env.PEPTIDES_OPENAI_MAX_OUTPUT_TOKENS || 48_000
 );
 export const PEPTIDES_MAX_OUTPUT_TOKENS = Number.isFinite(configuredPeptidesOutputTokens)
-  ? Math.min(20_000, Math.max(18_000, configuredPeptidesOutputTokens))
-  : 20_000;
+  ? Math.min(64_000, Math.max(32_000, configuredPeptidesOutputTokens))
+  : 48_000;
 export const ENCLOMIPHENE_SOURCE_URL = "https://receptorchem.co.uk/enclomiphene-citrate/";
 export const PEPTIDES_REASONING = Object.freeze({
   effort: "max",

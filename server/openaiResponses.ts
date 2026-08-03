@@ -58,7 +58,9 @@ const PROFILE_CONFIG: Record<OpenAIReportProfile, ProfileConfig> = {
   peptides: {
     effort: "max",
     mode: "pro",
-    maxOutputTokens: 20_000,
+    // max_output_tokens includes hidden reasoning tokens. At effort=max,
+    // 20k can be exhausted before the structured report is emitted.
+    maxOutputTokens: 48_000,
     timeoutMs: 15 * 60 * 1000,
     verbosity: "high",
   },
