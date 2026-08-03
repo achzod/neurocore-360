@@ -1,4 +1,4 @@
-import { generateAndConvertAudit, deleteCache as deleteGeminiCache, getSectionsForTier } from "./geminiPremiumEngine";
+import { deleteCache as deleteGeminiCache, getSectionsForTier } from "./geminiPremiumEngine";
 import { generateAndConvertAuditWithOpenAI, deleteOpenAICache } from "./openaiPremiumEngine";
 import { generatePremiumHTMLFromTxt } from "./exportServicePremium";
 import { storage } from "./storage";
@@ -24,8 +24,8 @@ const MIN_VALIDATION_SCORE = 75;
  * - DB persistence for job state across server restarts
  * - In-memory Set prevents duplicate concurrent executions (same process)
  * - Automatic boot recovery via resumePendingJobs()
- * - AI call timeout protection (8 min)
- * - Stuck job detection (10 min threshold)
+ * - AI call timeout protection sized for full xhigh multi-section reports
+ * - Stuck job detection aligned with the full report window
  * - Retry logic with max attempts (restarts don't consume retries)
  * - ⚠️ FIX: Photo analysis integration
  *
@@ -37,8 +37,8 @@ const MIN_VALIDATION_SCORE = 75;
 
 // La génération OpenAI (multi-sections) peut être longue (429 + retries + cache).
 // On doit donc éviter de considérer le job comme "stuck" tant que la génération est en cours.
-const STUCK_JOB_THRESHOLD_MS = 45 * 60 * 1000;
-const AI_CALL_TIMEOUT_MS = 45 * 60 * 1000;
+const STUCK_JOB_THRESHOLD_MS = 90 * 60 * 1000;
+const AI_CALL_TIMEOUT_MS = 90 * 60 * 1000;
 const MAX_RETRY_ATTEMPTS = 3;
 
 const activeGenerations = new Set<string>();

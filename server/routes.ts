@@ -1972,8 +1972,10 @@ export async function registerRoutes(
   });
 
   async function processReportAndSendEmail(auditId: string, email: string, auditType: string) {
-    // La génération peut être longue (throttling 429 + génération multi-sections)
-    const maxWait = 45 * 60 * 1000;
+    // Ultimate and Anabolic use many xhigh sections. Keep the delivery waiter
+    // beyond the 90 minute generation window so a valid report is not reset to
+    // PENDING seconds before the job persists its final state.
+    const maxWait = 95 * 60 * 1000;
     const startTime = Date.now();
 
     const waitForCompletion = async (): Promise<boolean> => {

@@ -100,6 +100,7 @@ assert.doesNotMatch(routes, /\[Discovery Fetch\] Report regenerated/);
 assert.match(routes, /Atomic claim first so two concurrent regenerate clicks cannot both/);
 assert.match(routes, /Repair legacy\/racing writes that replaced SENT with READY/);
 assert.match(routes, /failedAudit\?\.reportDeliveryStatus !== "NEEDS_REVIEW"/);
+assert.match(routes, /const maxWait = 95 \* 60 \* 1000/);
 
 const emailService = read("server/emailService.ts");
 assert.match(emailService, /const shouldBccAdmin = !emailPayload\.to\.some/);
@@ -130,7 +131,10 @@ assert.match(discovery, /profile:\s*"discovery"/);
 
 const premium = read("server/reportJobManager.ts");
 assert.match(premium, /generateAndConvertAuditWithOpenAI/);
+assert.doesNotMatch(premium, /import\s*\{\s*generateAndConvertAudit,/);
 assert.match(premium, /engine:\s*"openai"/);
+assert.match(premium, /STUCK_JOB_THRESHOLD_MS = 90 \* 60 \* 1000/);
+assert.match(premium, /AI_CALL_TIMEOUT_MS = 90 \* 60 \* 1000/);
 assert.match(premium, /postGenerationDeliveryStatus/);
 assert.match(premium, /scheduledFor\.getTime\(\) > Date\.now\(\)/);
 assert.match(premium, /automatic retry retained/);
