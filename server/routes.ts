@@ -49,6 +49,7 @@ import { createPayPalOrder, capturePayPalOrder, isPayPalConfigured } from "./pay
 import { getAuthPayload, type AuthPayload } from "./auth";
 import crypto from "crypto";
 import {
+  OPENAI_DISCOVERY_MODEL,
   OPENAI_REPORT_MODEL,
   checkAIUsageCostAlert,
   getAIUsageCostSummary,
@@ -840,7 +841,7 @@ export async function registerRoutes(
     checks.openai = {
       ok: isOpenAIConfigured(),
       detail: isOpenAIConfigured()
-        ? `configured , ${OPENAI_REPORT_MODEL} ready for all report engines`
+        ? `configured , Discovery=${OPENAI_DISCOVERY_MODEL}, critical reports=${OPENAI_REPORT_MODEL}`
         : "OPENAI_API_KEY missing , report generation unavailable",
     };
 

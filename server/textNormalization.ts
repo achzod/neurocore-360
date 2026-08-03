@@ -18,7 +18,6 @@ const ENGLISH_MARKERS: RegExp[] = [
   /\bresearch\b/gi,
   /\boverall\b/gi,
   /\bhealth\b/gi,
-  /\bperformance\b/gi,
   /\bexercise\b/gi,
   /\bbody\b/gi,
   /\bsleep\b/gi,
@@ -94,6 +93,8 @@ export function normalizeSingleVoice(text: string): string {
 function replaceEnglishArtifacts(text: string): string {
   if (!text) return text;
   const replacements: Array<[RegExp, string]> = [
+    [/\bthe\b/gi, "le"],
+    [/\bwhen\b/gi, "lorsque"],
     [/\bwhile\s+simultaneously\b/gi, "tout en"],
     [/\bsimultaneously\b/gi, "en meme temps"],
     [/\bwhile\b/gi, "alors que"],
@@ -104,11 +105,15 @@ function replaceEnglishArtifacts(text: string): string {
     [/\band\b/gi, "et"],
     [/\bthis\b/gi, "ce"],
     [/\bthat\b/gi, "cela"],
+    [/\bthese\b/gi, "ces"],
+    [/\bthose\b/gi, "ceux"],
     [/\bare\b/gi, "sont"],
     [/\bis\b/gi, "est"],
     [/\bwas\b/gi, "etait"],
     [/\bwere\b/gi, "etaient"],
     [/\boverall\b/gi, "globalement"],
+    [/\bresearch\b/gi, "recherche"],
+    [/\bexercise\b/gi, "exercice"],
     [/\byour\b/gi, "ton"],
     [/\byou\b/gi, "tu"],
     [/\bbody\b/gi, "corps"],

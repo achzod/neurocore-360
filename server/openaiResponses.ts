@@ -4,6 +4,12 @@ import OpenAI from "openai";
 export const OPENAI_REPORT_MODEL =
   process.env.OPENAI_REPORT_MODEL || "gpt-5.6-sol";
 
+// Discovery is the highest-volume report engine. Terra keeps the same GPT-5.6
+// family and reasoning controls at half the Sol token price. Critical paid
+// engines stay on Sol unless an explicit environment override is configured.
+export const OPENAI_DISCOVERY_MODEL =
+  process.env.OPENAI_DISCOVERY_MODEL || "gpt-5.6-terra";
+
 export type OpenAIReportProfile =
   | "discovery"
   | "premium"
@@ -67,6 +73,10 @@ const PROFILE_CONFIG: Record<OpenAIReportProfile, ProfileConfig> = {
   },
 };
 
+export function openAIModelForProfile(profile: OpenAIReportProfile): string {
+  return profile === "discovery" ? OPENAI_DISCOVERY_MODEL : OPENAI_REPORT_MODEL;
+}
+
 const PRICING = {
   openaiGpt56Sol: {
     uncachedInputPerMillion: 5,
@@ -77,6 +87,26 @@ const PRICING = {
     longContextInputMultiplier: 2,
     longContextOutputMultiplier: 1.5,
     source: "https://developers.openai.com/api/docs/models/gpt-5.6-sol",
+  },
+  openaiGpt56Terra: {
+    uncachedInputPerMillion: 2.5,
+    cachedInputPerMillion: 0.25,
+    cacheWritePerMillion: 3.125,
+    outputPerMillion: 15,
+    longContextThresholdTokens: 272_000,
+    longContextInputMultiplier: 2,
+    longContextOutputMultiplier: 1.5,
+    source: "https://developers.openai.com/api/docs/models/gpt-5.6-terra",
+  },
+  openaiGpt56Luna: {
+    uncachedInputPerMillion: 1,
+    cachedInputPerMillion: 0.1,
+    cacheWritePerMillion: 1.25,
+    outputPerMillion: 6,
+    longContextThresholdTokens: 272_000,
+    longContextInputMultiplier: 2,
+    longContextOutputMultiplier: 1.5,
+    source: "https://developers.openai.com/api/docs/models/gpt-5.6-luna",
   },
   sonnet46Equivalent: {
     uncachedInputPerMillion: 3,
@@ -97,6 +127,10 @@ export interface AIUsageTokens {
 }
 
 export interface AIUsageCostEstimate {
+  model: string;
+  pricingModel: "gpt-5.6-sol" | "gpt-5.6-terra" | "gpt-5.6-luna";
+  openaiEstimatedUsd: number;
+  /** @deprecated Compatibility alias. Use openaiEstimatedUsd. */
   openaiGpt56SolUsd: number;
   sonnet46EquivalentUsd: number;
   differenceUsd: number;
@@ -118,7 +152,31 @@ function roundUsd(value: number): number {
   return Math.round(value * 100_000_000) / 100_000_000;
 }
 
-export function estimateAIUsageCosts(tokens: AIUsageTokens): AIUsageCostEstimate {
+type OpenAIModelPricing =
+  | typeof PRICING.openaiGpt56Sol
+  | typeof PRICING.openaiGpt56Terra
+  | typeof PRICING.openaiGpt56Luna;
+
+function resolveOpenAIModelPricing(model: string): {
+  pricingModel: AIUsageCostEstimate["pricingModel"];
+  pricing: OpenAIModelPricing;
+} {
+  const normalized = String(model || "").trim().toLowerCase();
+  if (normalized.includes("gpt-5.6-terra")) {
+    return { pricingModel: "gpt-5.6-terra", pricing: PRICING.openaiGpt56Terra };
+  }
+  if (normalized.includes("gpt-5.6-luna")) {
+    return { pricingModel: "gpt-5.6-luna", pricing: PRICING.openaiGpt56Luna };
+  }
+  // Unknown or explicitly configured models are priced conservatively as Sol
+  // so monitoring never understates spend.
+  return { pricingModel: "gpt-5.6-sol", pricing: PRICING.openaiGpt56Sol };
+}
+
+export function estimateAIUsageCosts(
+  tokens: AIUsageTokens,
+  model = OPENAI_REPORT_MODEL,
+): AIUsageCostEstimate {
   const inputTokens = nonNegativeInteger(tokens.inputTokens);
   const cachedInputTokens = Math.min(inputTokens, nonNegativeInteger(tokens.cachedInputTokens));
   const cacheWriteTokens = Math.min(
@@ -127,21 +185,22 @@ export function estimateAIUsageCosts(tokens: AIUsageTokens): AIUsageCostEstimate
   );
   const uncachedInputTokens = Math.max(0, inputTokens - cachedInputTokens - cacheWriteTokens);
   const outputTokens = nonNegativeInteger(tokens.outputTokens);
-  const longContext = inputTokens > PRICING.openaiGpt56Sol.longContextThresholdTokens;
+  const { pricingModel, pricing } = resolveOpenAIModelPricing(model);
+  const longContext = inputTokens > pricing.longContextThresholdTokens;
   const openaiInputMultiplier = longContext
-    ? PRICING.openaiGpt56Sol.longContextInputMultiplier
+    ? pricing.longContextInputMultiplier
     : 1;
   const openaiOutputMultiplier = longContext
-    ? PRICING.openaiGpt56Sol.longContextOutputMultiplier
+    ? pricing.longContextOutputMultiplier
     : 1;
 
-  const openaiGpt56SolUsd =
-    ((uncachedInputTokens * PRICING.openaiGpt56Sol.uncachedInputPerMillion +
-      cachedInputTokens * PRICING.openaiGpt56Sol.cachedInputPerMillion +
-      cacheWriteTokens * PRICING.openaiGpt56Sol.cacheWritePerMillion) /
+  const openaiEstimatedUsd =
+    ((uncachedInputTokens * pricing.uncachedInputPerMillion +
+      cachedInputTokens * pricing.cachedInputPerMillion +
+      cacheWriteTokens * pricing.cacheWritePerMillion) /
       1_000_000) *
       openaiInputMultiplier +
-    (outputTokens * PRICING.openaiGpt56Sol.outputPerMillion * openaiOutputMultiplier) /
+    (outputTokens * pricing.outputPerMillion * openaiOutputMultiplier) /
       1_000_000;
 
   const sonnet46EquivalentUsd =
@@ -150,13 +209,16 @@ export function estimateAIUsageCosts(tokens: AIUsageTokens): AIUsageCostEstimate
       cacheWriteTokens * PRICING.sonnet46Equivalent.cacheWritePerMillion +
       outputTokens * PRICING.sonnet46Equivalent.outputPerMillion) /
     1_000_000;
-  const differenceUsd = openaiGpt56SolUsd - sonnet46EquivalentUsd;
-  const sonnetSavings = openaiGpt56SolUsd > 0
-    ? (differenceUsd / openaiGpt56SolUsd) * 100
+  const differenceUsd = openaiEstimatedUsd - sonnet46EquivalentUsd;
+  const sonnetSavings = openaiEstimatedUsd > 0
+    ? (differenceUsd / openaiEstimatedUsd) * 100
     : 0;
 
   return {
-    openaiGpt56SolUsd: roundUsd(openaiGpt56SolUsd),
+    model,
+    pricingModel,
+    openaiEstimatedUsd: roundUsd(openaiEstimatedUsd),
+    openaiGpt56SolUsd: roundUsd(openaiEstimatedUsd),
     sonnet46EquivalentUsd: roundUsd(sonnet46EquivalentUsd),
     differenceUsd: roundUsd(differenceUsd),
     sonnet46EquivalentSavingsPercent: Math.round(sonnetSavings * 100) / 100,
@@ -192,7 +254,10 @@ function extractUsageTelemetry(response: any): AIUsageTelemetry | null {
     reasoningTokens: Math.min(outputTokens, reasoningTokens),
     totalTokens,
   };
-  return { tokens, costs: estimateAIUsageCosts(tokens) };
+  return {
+    tokens,
+    costs: estimateAIUsageCosts(tokens, String(response?.model || OPENAI_REPORT_MODEL)),
+  };
 }
 
 let aiUsageTablePromise: Promise<void> | null = null;
@@ -253,7 +318,7 @@ async function recordAIUsageEvent(params: {
 
   const { tokens, costs } = telemetry;
   console.log(
-    `[AICost] profile=${params.profile} label=${params.label || "none"} status=${params.status} response=${responseId} input=${tokens.inputTokens} cached=${tokens.cachedInputTokens} output=${tokens.outputTokens} reasoning=${tokens.reasoningTokens} openai_usd=${costs.openaiGpt56SolUsd.toFixed(6)} sonnet46_equivalent_usd=${costs.sonnet46EquivalentUsd.toFixed(6)}`,
+    `[AICost] profile=${params.profile} model=${costs.model} pricing=${costs.pricingModel} label=${params.label || "none"} status=${params.status} response=${responseId} input=${tokens.inputTokens} cached=${tokens.cachedInputTokens} output=${tokens.outputTokens} reasoning=${tokens.reasoningTokens} openai_usd=${costs.openaiEstimatedUsd.toFixed(6)} sonnet46_equivalent_usd=${costs.sonnet46EquivalentUsd.toFixed(6)}`,
   );
 
   try {
@@ -291,7 +356,7 @@ async function recordAIUsageEvent(params: {
         tokens.outputTokens,
         tokens.reasoningTokens,
         tokens.totalTokens,
-        costs.openaiGpt56SolUsd,
+        costs.openaiEstimatedUsd,
         costs.sonnet46EquivalentUsd,
       ],
     );
@@ -390,12 +455,25 @@ export async function getAIUsageCostSummary(requestedDays = 30): Promise<Record<
     COALESCE(SUM(total_tokens), 0) AS total_tokens,
     COALESCE(SUM(estimated_openai_cost_usd), 0) AS openai_usd,
     COALESCE(SUM(estimated_sonnet46_cost_usd), 0) AS sonnet_usd`;
-  const [totalResult, profilesResult, dailyResult, statusesResult, recentResult] = await Promise.all([
+  const [
+    totalResult,
+    profilesResult,
+    modelsResult,
+    dailyResult,
+    statusesResult,
+    recentResult,
+  ] = await Promise.all([
     pool.query(`SELECT ${summaryFields} FROM ai_usage_events WHERE ${periodSql}`, [days]),
     pool.query(
       `SELECT profile, ${summaryFields}
        FROM ai_usage_events WHERE ${periodSql}
        GROUP BY profile ORDER BY openai_usd DESC`,
+      [days],
+    ),
+    pool.query(
+      `SELECT model, ${summaryFields}
+       FROM ai_usage_events WHERE ${periodSql}
+       GROUP BY model ORDER BY openai_usd DESC`,
       [days],
     ),
     pool.query(
@@ -447,6 +525,10 @@ export async function getAIUsageCostSummary(requestedDays = 30): Promise<Record<
     totals: mapUsageSummaryRow(totalResult.rows[0] || {}),
     byProfile: profilesResult.rows.map((row: any) => ({
       profile: row.profile,
+      ...mapUsageSummaryRow(row),
+    })),
+    byModel: modelsResult.rows.map((row: any) => ({
+      model: row.model,
       ...mapUsageSummaryRow(row),
     })),
     byDayDubai: dailyResult.rows.map((row: any) => ({
@@ -551,7 +633,7 @@ export interface OpenAITextResult {
 export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAITextResult> {
   const client = getOpenAIClient();
   const profile = PROFILE_CONFIG[request.profile];
-  const model = OPENAI_REPORT_MODEL;
+  const model = openAIModelForProfile(request.profile);
   const background = request.background ?? Boolean(profile.mode === "pro");
   const attempts = Math.max(1, request.retries ?? 3);
   const label = request.label ? ` ${request.label}` : "";
@@ -686,7 +768,7 @@ export function openAIProfileMetadata(profile: OpenAIReportProfile): Record<stri
   const config = PROFILE_CONFIG[profile];
   return {
     provider: "openai",
-    model: OPENAI_REPORT_MODEL,
+    model: openAIModelForProfile(profile),
     reasoningEffort: config.effort,
     reasoningMode: config.mode || "standard",
   };

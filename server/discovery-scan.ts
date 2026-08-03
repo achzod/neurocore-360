@@ -7,7 +7,7 @@
  * - Conséquences métaboliques, hormonales, digestives, psycho
  * - CTA vers Anabolic Bioscan / Ultimate Scan
  *
- * Utilise GPT-5.6 Sol + Knowledge Base (Huberman, Attia, etc.)
+ * Utilise la famille GPT-5.6 + Knowledge Base (Huberman, Attia, etc.)
  */
 
 import { runOpenAIText } from './openaiResponses';
@@ -226,46 +226,16 @@ const renderCoachingOffersTable = (discountPercent: number) => {
   </div>
   `;
 };
-const SOURCE_MARKERS = [
-  "sources",
-  "source",
-  "references",
-  "reference",
-  "références",
-  "référence",
-  "huberman",
-  "andrew huberman",
-  "huberman lab",
-  "peter attia",
-  "attia",
-  "applied metabolics",
-  "stronger by science",
-  "sbs",
-  "examine",
-  "examine.com",
-  "renaissance periodization",
-  "mpmd",
-  "more plates",
-  "moreplates",
-  "newsletter",
-  "achzod",
-  "matthew walker",
-  "sapolsky",
-  "layne norton",
-  "ben bikman",
-  "rhonda patrick",
-  "robert lustig",
-  "andy galpin",
-  "brad schoenfeld",
-  "mike israetel",
-  "justin sonnenburg",
-  "chris kresser",
-];
-
 const SOURCE_NAME_REGEX = new RegExp(
   "\\b(huberman|andrew\\s+huberman|huberman\\s+lab|peter\\s+attia|attia|applied\\s+metabolics|stronger\\s+by\\s+science|sbs|examine(?:\\.com)?|renaissance\\s+periodization|mpmd|more\\s+plates|moreplates|newsletter|achzod|matthew\\s+walker|sapolsky|layne\\s+norton|ben\\s+bikman|rhonda\\s+patrick|robert\\s+lustig|andy\\s+galpin|brad\\s+schoenfeld|mike\\s+israetel|justin\\s+sonnenburg|chris\\s+kresser)\\b",
   "gi"
 );
+const SOURCE_LABEL_REGEX = /(?:^|\n)\s*(?:sources?|references?|références?)\s*:/i;
+
+function hasForbiddenSourceAttribution(text: string): boolean {
+  const sourceNameRegex = new RegExp(SOURCE_NAME_REGEX.source, "i");
+  return SOURCE_LABEL_REGEX.test(text) || sourceNameRegex.test(text);
+}
 const EMOJI_REGEX = /[\p{Extended_Pictographic}\uFE0F]/gu;
 
 function normalizeParagraphs(text: string): string {
@@ -1198,7 +1168,13 @@ async function generateSectionContentAI(
   const MIN_LINE_COUNT = MIN_DISCOVERY_SECTION_LINES;
   const MAX_RETRIES = 2; // Reduced from 5 to avoid 5min+ generation times
   let bestCandidate = "";
-  let bestValidation = { charCount: 0, wordCount: 0, lineCount: 0, paragraphCount: 0 };
+  let bestValidation = {
+    charCount: 0,
+    wordCount: 0,
+    lineCount: 0,
+    paragraphCount: 0,
+    reasons: [] as string[],
+  };
 
   const buildPrompt = (attempt: number) => `SECTION A REDIGER: ${domainLabel.toUpperCase()}
 
@@ -1256,8 +1232,7 @@ FORMAT OBLIGATOIRE:
     const charCount = text.length;
     const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
     const lower = text.toLowerCase();
-    const hasExplicitSources = /(?:^|\b)(sources?|references?|références?)(?:\b|:)/i.test(lower);
-    const hasSources = SOURCE_MARKERS.some((marker) => lower.includes(marker));
+    const hasSources = hasForbiddenSourceAttribution(text);
     const hasClient = /\bclient\b/.test(lower);
     const hasNous = /\bnous\b/.test(lower) || /\bnotre\b/.test(lower);
     const hasEnglish = hasEnglishMarkers(text, 4);
@@ -1266,19 +1241,21 @@ FORMAT OBLIGATOIRE:
       (lineCount >= MIN_LINE_COUNT || wordCount >= MIN_DISCOVERY_SECTION_WORDS);
     const meetsParagraphs =
       paragraphCount >= MIN_DISCOVERY_SECTION_PARAGRAPHS || charCount >= MIN_CONTENT_LENGTH + 800;
+    const reasons = [
+      !meetsLength ? "length" : "",
+      !meetsParagraphs ? "paragraphs" : "",
+      hasSources ? "source-attribution" : "",
+      hasClient ? "client-word" : "",
+      hasNous ? "plural-voice" : "",
+      hasEnglish ? "english" : "",
+    ].filter(Boolean);
     return {
       lineCount,
       charCount,
       wordCount,
       paragraphCount,
-      isValid:
-        meetsLength &&
-        meetsParagraphs &&
-        !hasSources &&
-        !hasExplicitSources &&
-        !hasClient &&
-        !hasNous &&
-        !hasEnglish,
+      reasons,
+      isValid: reasons.length === 0,
     };
   };
 
@@ -1320,6 +1297,13 @@ FORMAT OBLIGATOIRE:
       }
       rawText = normalizeSingleVoice(rawText);
       rawText = stripCitationLines(rawText);
+      rawText = rawText
+        .replace(SOURCE_NAME_REGEX, "")
+        .replace(/\bclients\b/gi, "profils")
+        .replace(/\bclient\b/gi, "profil");
+      if (hasEnglishMarkers(rawText, 4)) {
+        rawText = stripEnglishLines(rawText);
+      }
       rawText = normalizeParagraphs(rawText);
       rawText = normalizeParagraphs(rawText);
 
@@ -1350,7 +1334,7 @@ FORMAT OBLIGATOIRE:
       }
 
       console.log(
-        `[Discovery] ✗ Section ${domain} TOO SHORT (${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines). Retrying...`
+        `[Discovery] Section ${domain} rejected (${validation.reasons.join(", ") || "unknown"}; ${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines). Retrying...`
       );
     } catch (error) {
       console.error(`[Discovery] AI section ${domain} error (attempt ${attempt}):`, error);
@@ -1713,9 +1697,7 @@ RAPPELS CRITIQUES:
         throw new Error("[Discovery] Synthese vide");
       }
 
-      const lower = rawText.toLowerCase();
-      const hasForbiddenSources =
-        /sources?\s*:/i.test(lower) || SOURCE_MARKERS.some((marker) => lower.includes(marker));
+      const hasForbiddenSources = hasForbiddenSourceAttribution(rawText);
 
       if (hasEnglishMarkers(rawText, 6)) {
         if (attempt < 2) {

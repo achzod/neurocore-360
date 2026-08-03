@@ -3,7 +3,11 @@ import { generateAndConvertAuditWithOpenAI, deleteOpenAICache } from "./openaiPr
 import { generatePremiumHTMLFromTxt } from "./exportServicePremium";
 import { storage } from "./storage";
 import type { ClientData, AuditTier } from "./types";
-import { isOpenAICreditError, OPENAI_REPORT_MODEL } from "./openaiResponses";
+import {
+  isOpenAICreditError,
+  openAIModelForProfile,
+  OPENAI_REPORT_MODEL,
+} from "./openaiResponses";
 import { validateReport, logValidation, quickValidate } from "./reportValidator";
 import { normalizeResponses } from "./responseNormalizer";
 import { repairReportTextForDelivery } from "./reportTextRepair";
@@ -236,6 +240,7 @@ async function generateReportAsync(
     // fall through to the premium 4-section generator during a retry, boot
     // recovery, admin regeneration, or queue handoff.
     if (auditType === "GRATUIT") {
+      const discoveryModel = openAIModelForProfile("discovery");
       await storage.updateReportJobProgress(
         auditId,
         10,
@@ -245,7 +250,7 @@ async function generateReportAsync(
       const discoveryResult = await withTimeout(
         analyzeDiscoveryScan(normalizedResponses as any),
         AI_CALL_TIMEOUT_MS,
-        `${OPENAI_REPORT_MODEL} Discovery analysis for ${auditId}`,
+        `${discoveryModel} Discovery analysis for ${auditId}`,
       );
       await storage.updateReportJobProgress(
         auditId,
@@ -255,7 +260,7 @@ async function generateReportAsync(
       const narrativeReport = await withTimeout(
         convertToNarrativeReport(discoveryResult, normalizedResponses as any),
         AI_CALL_TIMEOUT_MS,
-        `${OPENAI_REPORT_MODEL} Discovery narrative for ${auditId}`,
+        `${discoveryModel} Discovery narrative for ${auditId}`,
       );
 
       const serializedLength = JSON.stringify(narrativeReport).length;

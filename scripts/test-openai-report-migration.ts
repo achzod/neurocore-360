@@ -1,8 +1,14 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { estimateAIUsageCosts } from "../server/openaiResponses";
+import {
+  estimateAIUsageCosts,
+  openAIModelForProfile,
+  OPENAI_DISCOVERY_MODEL,
+  OPENAI_REPORT_MODEL,
+} from "../server/openaiResponses";
 import { repairReportTextForDelivery } from "../server/reportTextRepair";
 import { auditClientFacingText, sanitizeClientFacingText } from "../server/clientFacingQuality";
+import { hasEnglishMarkers, normalizeSingleVoice } from "../server/textNormalization";
 
 const read = (relativePath: string): string =>
   readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf8");
@@ -32,6 +38,8 @@ for (const file of coreFiles) {
 
 const shared = read("server/openaiResponses.ts");
 assert.match(shared, /"gpt-5\.6-sol"/);
+assert.match(shared, /OPENAI_DISCOVERY_MODEL[\s\S]{0,120}"gpt-5\.6-terra"/);
+assert.match(shared, /profile === "discovery" \? OPENAI_DISCOVERY_MODEL : OPENAI_REPORT_MODEL/);
 assert.match(shared, /premium:[\s\S]*effort:\s*"xhigh"[\s\S]*mode:\s*"pro"/);
 assert.match(shared, /blood:[\s\S]*effort:\s*"max"[\s\S]*mode:\s*"pro"/);
 assert.match(shared, /peptides:[\s\S]*effort:\s*"xhigh"[\s\S]*mode:\s*"pro"/);
@@ -57,8 +65,10 @@ const baselineCosts = estimateAIUsageCosts({
   outputTokens: 100_000,
   reasoningTokens: 20_000,
   totalTokens: 200_000,
-});
+}, "gpt-5.6-sol");
 assert.equal(baselineCosts.openaiGpt56SolUsd, 3.5);
+assert.equal(baselineCosts.openaiEstimatedUsd, 3.5);
+assert.equal(baselineCosts.pricingModel, "gpt-5.6-sol");
 assert.equal(baselineCosts.sonnet46EquivalentUsd, 1.8);
 assert.equal(baselineCosts.openaiLongContextMultiplierApplied, false);
 
@@ -69,7 +79,7 @@ const cachedCosts = estimateAIUsageCosts({
   outputTokens: 10_000,
   reasoningTokens: 2_000,
   totalTokens: 110_000,
-});
+}, "gpt-5.6-sol");
 assert.equal(cachedCosts.openaiGpt56SolUsd, 0.71);
 assert.equal(cachedCosts.sonnet46EquivalentUsd, 0.396);
 
@@ -80,10 +90,38 @@ const longContextCosts = estimateAIUsageCosts({
   outputTokens: 100_000,
   reasoningTokens: 20_000,
   totalTokens: 400_000,
-});
+}, "gpt-5.6-sol");
 assert.equal(longContextCosts.openaiGpt56SolUsd, 7.5);
 assert.equal(longContextCosts.sonnet46EquivalentUsd, 2.4);
 assert.equal(longContextCosts.openaiLongContextMultiplierApplied, true);
+
+const terraCosts = estimateAIUsageCosts({
+  inputTokens: 100_000,
+  cachedInputTokens: 0,
+  cacheWriteTokens: 0,
+  outputTokens: 100_000,
+  reasoningTokens: 20_000,
+  totalTokens: 200_000,
+}, "gpt-5.6-terra");
+assert.equal(terraCosts.openaiEstimatedUsd, 1.75);
+assert.equal(terraCosts.pricingModel, "gpt-5.6-terra");
+assert.equal(terraCosts.openaiEstimatedUsd / baselineCosts.openaiEstimatedUsd, 0.5);
+
+const lunaCosts = estimateAIUsageCosts({
+  inputTokens: 100_000,
+  cachedInputTokens: 0,
+  cacheWriteTokens: 0,
+  outputTokens: 100_000,
+  reasoningTokens: 20_000,
+  totalTokens: 200_000,
+}, "gpt-5.6-luna");
+assert.equal(lunaCosts.openaiEstimatedUsd, 0.7);
+assert.equal(lunaCosts.pricingModel, "gpt-5.6-luna");
+
+assert.equal(openAIModelForProfile("discovery"), OPENAI_DISCOVERY_MODEL);
+assert.equal(openAIModelForProfile("premium"), OPENAI_REPORT_MODEL);
+assert.equal(openAIModelForProfile("blood"), OPENAI_REPORT_MODEL);
+assert.equal(openAIModelForProfile("peptides"), OPENAI_REPORT_MODEL);
 
 const routes = read("server/routes.ts");
 assert.match(routes, /\/api\/admin\/ai-usage-costs/);
@@ -132,6 +170,16 @@ assert.doesNotMatch(packageManifest, /@anthropic-ai\/sdk/);
 
 const discovery = read("server/discovery-scan.ts");
 assert.match(discovery, /profile:\s*"discovery"/);
+assert.match(discovery, /hasForbiddenSourceAttribution/);
+assert.doesNotMatch(discovery, /SOURCE_MARKERS/);
+assert.equal(
+  hasEnglishMarkers("Ta performance progresse. La performance reste stable. Performance durable."),
+  false,
+);
+assert.equal(
+  hasEnglishMarkers(normalizeSingleVoice("When exercise improves performance, this changes health.")),
+  false,
+);
 
 const premium = read("server/reportJobManager.ts");
 assert.match(premium, /generateAndConvertAuditWithOpenAI/);
