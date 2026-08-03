@@ -856,10 +856,16 @@ export async function registerRoutes(
       detail: process.env.ADMIN_SECRET ? "configured" : "ADMIN_SECRET missing",
     };
 
-    // 8. APP_URL
+    // 8. Public URL. This mirrors getBaseUrl instead of requiring APP_URL
+    // when Render already provides the canonical external URL.
+    const configuredPublicUrl =
+      process.env.PUBLIC_BASE_URL ||
+      process.env.APP_URL ||
+      process.env.RENDER_EXTERNAL_URL ||
+      "";
     checks.appUrl = {
-      ok: Boolean(process.env.APP_URL),
-      detail: process.env.APP_URL || "NOT SET , emails will use fallback URL",
+      ok: Boolean(configuredPublicUrl),
+      detail: configuredPublicUrl || "NOT SET , report links unavailable",
     };
 
     const allOk = Object.values(checks).every((c) => c.ok);

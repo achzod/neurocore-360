@@ -101,6 +101,7 @@ assert.match(routes, /Atomic claim first so two concurrent regenerate clicks can
 assert.match(routes, /Repair legacy\/racing writes that replaced SENT with READY/);
 assert.match(routes, /failedAudit\?\.reportDeliveryStatus !== "NEEDS_REVIEW"/);
 assert.match(routes, /const maxWait = 95 \* 60 \* 1000/);
+assert.match(routes, /process\.env\.PUBLIC_BASE_URL \|\|[\s\S]{0,120}process\.env\.RENDER_EXTERNAL_URL/);
 
 const emailService = read("server/emailService.ts");
 assert.match(emailService, /const shouldBccAdmin = !emailPayload\.to\.some/);
