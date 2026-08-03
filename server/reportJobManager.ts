@@ -489,6 +489,18 @@ async function generateReportAsync(
       photoAnalysis: photoAnalysis,
     };
 
+    const deliveryAudit = await storage.getAudit(auditId);
+    const scheduledFor = deliveryAudit?.reportScheduledFor
+      ? new Date(deliveryAudit.reportScheduledFor)
+      : null;
+    const postGenerationDeliveryStatus = deliveryAudit?.reportSentAt
+      ? "SENT"
+      : scheduledFor &&
+        Number.isFinite(scheduledFor.getTime()) &&
+        scheduledFor.getTime() > Date.now()
+      ? "SCHEDULED"
+      : "READY";
+
     // Sauvegarder le rapport dans l'audit AVANT de marquer comme COMPLETED
     console.log(`[ReportJobManager] Saving report to DB: TXT=${repairedReportTxt.length} HTML=${reportHtml.length} chars`);
     try {
@@ -497,7 +509,7 @@ async function generateReportAsync(
         reportTxt: repairedReportTxt,
         reportHtml: reportHtml,
         reportGeneratedAt: new Date(),
-        reportDeliveryStatus: "READY",
+        reportDeliveryStatus: postGenerationDeliveryStatus,
       });
     } catch (saveErr: any) {
       console.error(`[ReportJobManager] ❌ DB SAVE FAILED for ${auditId}: ${saveErr.message}`);
@@ -508,7 +520,7 @@ async function generateReportAsync(
         reportTxt: repairedReportTxt,
         reportHtml: reportHtml,
         reportGeneratedAt: new Date(),
-        reportDeliveryStatus: "READY",
+        reportDeliveryStatus: postGenerationDeliveryStatus,
       });
     }
 

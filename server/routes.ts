@@ -494,6 +494,24 @@ export async function registerRoutes(
     const prefix = opts?.logPrefix || "[SafeSend]";
 
     if (!opts?.bypassClaim) {
+      // A READY write from a generator must never bypass a future delivery
+      // date. Re-check the date at the final send boundary and restore the
+      // scheduled state before any provider call or atomic send claim.
+      const deliveryAudit = await storage.getAudit(auditId).catch(() => null);
+      const scheduledFor = deliveryAudit?.reportScheduledFor
+        ? new Date(deliveryAudit.reportScheduledFor)
+        : null;
+      if (
+        !deliveryAudit?.reportSentAt &&
+        scheduledFor &&
+        Number.isFinite(scheduledFor.getTime()) &&
+        scheduledFor.getTime() > Date.now()
+      ) {
+        await storage.updateAudit(auditId, { reportDeliveryStatus: "SCHEDULED" }).catch(() => {});
+        console.log(`${prefix} Report ${auditId} scheduled for ${scheduledFor.toISOString()} , send deferred`);
+        return { sent: false, skipped: "scheduled_for_future" };
+      }
+
       const alreadyTracked = await storage.hasReportReadyEmailBeenSent(auditId).catch(() => false);
       if (alreadyTracked) {
         console.log(`${prefix} ⏭️ Report email already in email_tracking for audit ${auditId} , SKIP (no double send)`);
@@ -9541,13 +9559,11 @@ export async function registerRoutes(
         return;
       }
 
-      const generationStart = audit.createdAt ? new Date(audit.createdAt).getTime() : 0;
-      const generationAgeMs = generationStart ? Date.now() - generationStart : 0;
       const isGenerating = audit.reportDeliveryStatus === "GENERATING";
-      const isStaleGeneration = isGenerating && generationAgeMs > 12 * 60 * 1000;
 
-      // If a regeneration is in progress, avoid serving stale reports (unless stale).
-      if (isGenerating && !isStaleGeneration) {
+      // The audit creation time says nothing about the age of the current GPT
+      // call. Never treat a live generation as stale from this public read.
+      if (isGenerating) {
         res.status(202).json({
           success: true,
           status: "generating",
@@ -9592,37 +9608,16 @@ export async function registerRoutes(
         return;
       }
 
-      // No report stored -> trigger a fresh generation in background
-      // to avoid users getting stuck on "Analyse en cours".
-      const shouldRegenerate = !isGenerating || isStaleGeneration;
-      if (shouldRegenerate) {
-        await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
-      }
-
+      // A public GET is read-only. Missing or invalid content is handed to the
+      // persisted recovery worker instead of starting untracked GPT calls that
+      // can overlap, overwrite a scheduled status, and create duplicate cost.
+      await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" });
       res.status(202).json({
         success: true,
-        status: shouldRegenerate ? "regenerating" : "generating",
-        message: shouldRegenerate ? "Recalcul du rapport lance" : "Generation en cours",
+        status: "needs_review",
+        message: "Rapport place dans la file de regeneration",
       });
-
-      if (!shouldRegenerate) {
-        return;
-      }
-
-      (async () => {
-        try {
-          const result = await analyzeDiscoveryScan(audit.responses as any);
-          const narrativeReport = await convertToNarrativeReport(result, audit.responses as any);
-          await storage.updateAudit(audit.id, {
-            narrativeReport,
-            reportDeliveryStatus: "READY",
-          });
-          console.log(`[Discovery Fetch] Report regenerated for ${audit.id}`);
-        } catch (err) {
-          console.error("[Discovery Fetch] Regeneration error:", err);
-          await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" });
-        }
-      })();
+      return;
     } catch (error: any) {
       console.error("[Discovery Scan] Fetch error:", error);
       res.status(500).json({
@@ -9648,37 +9643,34 @@ export async function registerRoutes(
         return;
       }
 
-      // Reset state + atomic claim so two concurrent regenerate clicks can't
-      // both kick off parallel generations (which would race to write to the
-      // same audit record).
-      await storage.updateAudit(audit.id, {
-        reportDeliveryStatus: "PENDING",
-        narrativeReport: null,
-        reportGeneratedAt: null,
-      });
+      // Atomic claim first so two concurrent regenerate clicks cannot both
+      // start work for the same audit.
       const claimedDisc = await storage.claimAuditForGeneration(audit.id).catch(() => false);
       if (!claimedDisc) {
         res.status(409).json({ success: false, error: "Regeneration déjà en cours" });
         return;
       }
 
-      // Fire-and-forget regeneration to avoid blocking the UI
-      res.json({ success: true, auditId: audit.id, started: true });
-
-      (async () => {
-        try {
-          const result = await analyzeDiscoveryScan(audit.responses as any);
-          const narrativeReport = await convertToNarrativeReport(result, audit.responses as any);
-          await storage.updateAudit(audit.id, {
-            narrativeReport,
-            reportDeliveryStatus: "READY",
-          });
-          console.log(`[Discovery Regenerate] Success for ${audit.id}`);
-        } catch (err) {
-          console.error("[Discovery Regenerate] Error:", err);
-          await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" });
-        }
-      })();
+      await storage.updateAudit(audit.id, {
+        narrativeReport: null,
+        reportGeneratedAt: null,
+      });
+      const job = await startReportGeneration(
+        audit.id,
+        audit.responses,
+        audit.scores || {},
+        audit.type,
+      );
+      processReportAndSendEmail(audit.id, audit.email, audit.type).catch((err) => {
+        console.error(`[Discovery Regenerate] Delivery workflow error for ${audit.id}:`, err);
+      });
+      res.status(202).json({
+        success: true,
+        auditId: audit.id,
+        started: true,
+        status: job.status,
+        progress: job.progress,
+      });
     } catch (error) {
       console.error("[Discovery Scan] Regeneration error:", error);
       res.status(500).json({ success: false, error: "Erreur regénération" });
@@ -13855,9 +13847,15 @@ export async function registerRoutes(
 
       for (const audit of allAudits) {
         if (!audit.email || audit.email.includes("test") || audit.email.includes("debug") || audit.email.includes("achzodcoaching")) continue;
-        if (audit.reportSentAt) continue; // Already sent
-
         const status = audit.reportDeliveryStatus;
+        if (audit.reportSentAt) {
+          // Repair legacy/racing writes that replaced SENT with READY after the
+          // provider had already accepted the email. Never send a second time.
+          if (status !== "SENT") {
+            await storage.updateAudit(audit.id, { reportDeliveryStatus: "SENT" }).catch(() => {});
+          }
+          continue;
+        }
 
         // READY: send immediately (race-safe , CAS + email_tracking dedup)
         if (status === "READY") {

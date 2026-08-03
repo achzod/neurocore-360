@@ -4480,7 +4480,10 @@ ${knowledgeContext ? `\nSources disponibles:\n${knowledgeContext}` : ""}`,
       title: "Deep dive , marqueurs prioritaires",
       aliases: ["deep-dive-marqueurs-prioritaires", "deep-dive"],
       minChars: qualityThresholds.deepDive,
-      maxTokens: 10000,
+      // Max-mode reasoning consumed the previous 16k effective floor before
+      // the section could finish. Reserve enough room for reasoning plus the
+      // required marker-by-marker narrative so the quality gate can pass.
+      maxTokens: 28_000,
       prompt: () => `Genere UNIQUEMENT la section "## Deep dive , marqueurs prioritaires".
 
 Contraintes:

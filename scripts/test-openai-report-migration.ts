@@ -92,6 +92,11 @@ assert.match(routes, /automaticReportRecoveryRunning/);
 assert.match(routes, /requireAdminAuth/);
 assert.match(routes, /Never launch the Discovery-specific generator/);
 assert.match(routes, /activeReportJob\?\.status === "generating"/);
+assert.match(routes, /skipped: "scheduled_for_future"/);
+assert.match(routes, /A public GET is read-only/);
+assert.doesNotMatch(routes, /\[Discovery Fetch\] Report regenerated/);
+assert.match(routes, /Atomic claim first so two concurrent regenerate clicks cannot both/);
+assert.match(routes, /Repair legacy\/racing writes that replaced SENT with READY/);
 
 const emailService = read("server/emailService.ts");
 assert.match(emailService, /const shouldBccAdmin = !emailPayload\.to\.some/);
@@ -120,6 +125,8 @@ assert.match(discovery, /profile:\s*"discovery"/);
 const premium = read("server/reportJobManager.ts");
 assert.match(premium, /generateAndConvertAuditWithOpenAI/);
 assert.match(premium, /engine:\s*"openai"/);
+assert.match(premium, /postGenerationDeliveryStatus/);
+assert.match(premium, /scheduledFor\.getTime\(\) > Date\.now\(\)/);
 
 const vision = read("server/photoAnalysisAI.ts");
 assert.match(vision, /profile:\s*"vision"/);
@@ -128,6 +135,10 @@ assert.match(vision, /schemaName:\s*"ultimate_photo_analysis"/);
 const blood = read("server/blood-analysis/index.ts");
 assert.match(blood, /profile:\s*"blood"/);
 assert.match(blood, /schemaName:\s*"blood_marker_extraction"/);
+assert.match(
+  blood,
+  /required marker-by-marker narrative[\s\S]{0,160}maxTokens:\s*28_000/,
+);
 
 const bloodRoutes = read("server/blood-analysis/routes.ts");
 assert.match(bloodRoutes, /Use \/api\/blood-tests\/upload for the tracked GPT report/);
