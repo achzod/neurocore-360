@@ -9057,6 +9057,26 @@ export async function registerRoutes(
     try {
       const trackingId = coachingConversionTrackingId(conversion.orderId);
       const conversionType = "coaching_purchase";
+
+      // A historical import can discover that an earlier pass attributed the
+      // purchase to an email sent after the real payment date. Remove only
+      // that impossible attribution before recalculating last touch.
+      await pool.query(
+        `UPDATE email_tracking
+            SET converted = NULL,
+                conversion_type = NULL,
+                metadata = COALESCE(metadata, '{}'::jsonb)
+                  - 'convertedAmountCents'
+                  - 'coachingOrderId'
+                  - 'conversionAttribution',
+                updated_at = NOW()
+          WHERE email_type <> 'coachingPurchaseWebhook'
+            AND metadata->>'coachingOrderId' = $1
+            AND metadata->>'conversionAttribution' = 'last_touch'
+            AND sent_at > $2::timestamptz`,
+        [conversion.orderId, conversion.convertedAt],
+      );
+
       const attributionResult = await pool.query(
         `WITH candidate AS (
            SELECT id
@@ -9070,7 +9090,7 @@ export async function registerRoutes(
             LIMIT 1
          )
          UPDATE email_tracking tracking
-            SET converted = COALESCE(tracking.converted, $6::timestamptz),
+            SET converted = LEAST(COALESCE(tracking.converted, $6::timestamptz), $6::timestamptz),
                 conversion_type = $3,
                 metadata = COALESCE(tracking.metadata, '{}'::jsonb)
                   || jsonb_build_object(
