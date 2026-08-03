@@ -22,11 +22,11 @@ const engineSource = readFileSync(new URL("../server/peptidesEngine.ts", import.
 const routesSource = readFileSync(new URL("../server/routes.ts", import.meta.url), "utf8");
 const reportPageSource = readFileSync(new URL("../client/src/pages/PeptidesEngineReport.tsx", import.meta.url), "utf8");
 assert.match(engineSource, /PEPTIDES_PRIMARY_MODEL[\s\S]{0,120}OPENAI_REPORT_MODEL/);
-assert.match(engineSource, /effort:\s*"max"/);
+assert.match(engineSource, /effort:\s*"xhigh"/);
 assert.match(engineSource, /mode:\s*"pro"/);
-assert.match(engineSource, /PEPTIDES_MAX_OUTPUT_TOKENS[\s\S]{0,180}48_000/);
-assert.match(engineSource, /Math\.min\(64_000, Math\.max\(32_000/);
-assert.doesNotMatch(engineSource, /PEPTIDES_OPENAI_MAX_OUTPUT_TOKENS \|\| 20_000/);
+assert.match(engineSource, /PEPTIDES_MAX_OUTPUT_TOKENS[\s\S]{0,180}32_000/);
+assert.match(engineSource, /Math\.min\(40_000, Math\.max\(28_000/);
+assert.doesNotMatch(engineSource, /PEPTIDES_OPENAI_MAX_OUTPUT_TOKENS \|\| 48_000/);
 assert.match(engineSource, /entre 30000 et 38000 caracteres au total/);
 assert.match(engineSource, /Candidate rejected[\s\S]{0,600}strict full regeneration/);
 assert.match(engineSource, /Provider failure is terminal, duplicate paid generation blocked/);
