@@ -6941,80 +6941,89 @@ export async function registerRoutes(
       unsubscribeRows.rows.forEach((row: any) => unsubscribedRecipients.add(cleanEmail(row.email)));
 
       const result = await pool.query(
-        `WITH clicked AS (
-           SELECT DISTINCT ON (LOWER(recipient_email))
-                  LOWER(recipient_email) AS email,
-                  id AS source_tracking_id,
-                  audit_id,
-                  audit_type,
-                  subject,
-                  clicked AS last_signal_at
+        `WITH discovery_recipients AS (
+           SELECT DISTINCT LOWER(email) AS email
+             FROM audits
+            WHERE type = 'GRATUIT'
+              AND email IS NOT NULL
+         ), coaching_conversions AS (
+           SELECT DISTINCT LOWER(recipient_email) AS email
              FROM email_tracking
-            WHERE sent_at >= $1
-              AND recipient_email IS NOT NULL
-              AND clicked IS NOT NULL
-              AND NOT EXISTS (
-                SELECT 1
-                  FROM email_tracking conversion
-                 WHERE LOWER(conversion.recipient_email) = LOWER(email_tracking.recipient_email)
-                   AND conversion.converted IS NOT NULL
-                   AND LOWER(COALESCE(conversion.conversion_type, '')) LIKE 'coaching%'
-              )
-              AND EXISTS (
-                SELECT 1
-                  FROM audits discovery
-                 WHERE LOWER(discovery.email) = LOWER(email_tracking.recipient_email)
-                   AND discovery.type = 'GRATUIT'
-              )
-              AND clicked <= NOW() - ($2 || ' hours')::interval
+            WHERE recipient_email IS NOT NULL
+              AND converted IS NOT NULL
+              AND LOWER(COALESCE(conversion_type, '')) LIKE 'coaching%'
+         ), recent_help AS (
+           SELECT DISTINCT LOWER(recipient_email) AS email
+             FROM email_tracking
+            WHERE recipient_email IS NOT NULL
+              AND email_type = 'sendRecoveryCtaEmail'
+              AND sent_at >= NOW() - INTERVAL '14 days'
+              AND metadata->>'cohort' = 'clicked_help'
               AND (
-                email_type = 'sendRecoveryCtaEmail'
-                OR email_type = ANY($3::text[])
-                OR LOWER(COALESCE(subject, '')) LIKE ANY($4::text[])
+                sendpulse_task_id IS NOT NULL
+                OR LOWER(COALESCE(sendpulse_status, '')) IN ('success', 'sent', 'delivered')
               )
-            ORDER BY LOWER(recipient_email), clicked DESC
+         ), recent_failed_recovery AS (
+           SELECT LOWER(recipient_email) AS email
+             FROM email_tracking
+            WHERE recipient_email IS NOT NULL
+              AND email_type = 'sendRecoveryCtaEmail'
+              AND sent_at >= NOW() - INTERVAL '12 hours'
+              AND sendpulse_task_id IS NULL
+              AND LOWER(COALESCE(sendpulse_status, '')) NOT IN ('success', 'sent', 'delivered')
+            GROUP BY LOWER(recipient_email)
+           HAVING COUNT(*) >= 2
+         ), provider_blocked AS (
+           SELECT DISTINCT LOWER(recipient_email) AS email
+             FROM email_tracking
+            WHERE recipient_email IS NOT NULL
+              AND (
+                LOWER(COALESCE(sendpulse_status, '')) IN ('unsubscribed', 'auth_failed')
+                OR LOWER(COALESCE(sendpulse_error, '')) LIKE '%unsubscribe%'
+                OR LOWER(COALESCE(sendpulse_error, '')) LIKE '%spam%'
+                OR LOWER(COALESCE(sendpulse_error, '')) LIKE '%bounce%'
+                OR LOWER(COALESCE(sendpulse_error, '')) LIKE '%hard_fail%'
+                OR LOWER(COALESCE(sendpulse_error, '')) LIKE '%bad recipient%'
+                OR LOWER(COALESCE(sendpulse_error, '')) LIKE '%no mx%'
+              )
+           UNION
+           SELECT email FROM recent_failed_recovery
+         ), event_blocked AS (
+           SELECT DISTINCT LOWER(et.recipient_email) AS email
+             FROM cta_tracking ct
+             JOIN email_tracking et ON et.id = ct.email_tracking_id
+            WHERE ct.event_type IN ('unsubscribe', 'spam', 'bounce')
+         ), clicked AS (
+           SELECT DISTINCT ON (LOWER(et.recipient_email))
+                  LOWER(et.recipient_email) AS email,
+                  et.id AS source_tracking_id,
+                  et.audit_id,
+                  et.audit_type,
+                  et.subject,
+                  et.clicked AS last_signal_at
+             FROM email_tracking et
+             JOIN discovery_recipients discovery ON discovery.email = LOWER(et.recipient_email)
+             LEFT JOIN coaching_conversions conversion ON conversion.email = LOWER(et.recipient_email)
+             LEFT JOIN recent_help help ON help.email = LOWER(et.recipient_email)
+             LEFT JOIN provider_blocked provider_block ON provider_block.email = LOWER(et.recipient_email)
+             LEFT JOIN event_blocked event_block ON event_block.email = LOWER(et.recipient_email)
+            WHERE et.sent_at >= $1
+              AND et.recipient_email IS NOT NULL
+              AND et.clicked IS NOT NULL
+              AND et.clicked <= NOW() - ($2 || ' hours')::interval
+              AND conversion.email IS NULL
+              AND help.email IS NULL
+              AND provider_block.email IS NULL
+              AND event_block.email IS NULL
+              AND (
+                et.email_type = 'sendRecoveryCtaEmail'
+                OR et.email_type = ANY($3::text[])
+                OR LOWER(COALESCE(et.subject, '')) LIKE ANY($4::text[])
+              )
+            ORDER BY LOWER(et.recipient_email), et.clicked DESC
          )
          SELECT c.*
            FROM clicked c
-          WHERE NOT EXISTS (
-            SELECT 1
-              FROM email_tracking f
-             WHERE LOWER(f.recipient_email) = c.email
-               AND f.email_type = 'sendRecoveryCtaEmail'
-               AND f.sent_at >= NOW() - INTERVAL '14 days'
-               AND f.metadata->>'cohort' = 'clicked_help'
-               AND (
-                 f.sendpulse_task_id IS NOT NULL
-                 OR LOWER(COALESCE(f.sendpulse_status, '')) IN ('success', 'sent', 'delivered')
-               )
-          )
-            AND NOT EXISTS (
-              SELECT 1
-                FROM email_tracking b
-                LEFT JOIN cta_tracking ct ON ct.email_tracking_id = b.id
-               WHERE LOWER(b.recipient_email) = c.email
-                 AND (
-                   (b.converted IS NOT NULL AND LOWER(COALESCE(b.conversion_type, '')) LIKE 'coaching%')
-                   OR LOWER(COALESCE(b.sendpulse_status, '')) IN ('unsubscribed', 'auth_failed')
-                   OR LOWER(COALESCE(b.sendpulse_error, '')) LIKE '%unsubscribe%'
-                   OR LOWER(COALESCE(b.sendpulse_error, '')) LIKE '%spam%'
-                   OR LOWER(COALESCE(b.sendpulse_error, '')) LIKE '%bounce%'
-                   OR LOWER(COALESCE(b.sendpulse_error, '')) LIKE '%hard_fail%'
-                   OR LOWER(COALESCE(b.sendpulse_error, '')) LIKE '%bad recipient%'
-                   OR LOWER(COALESCE(b.sendpulse_error, '')) LIKE '%no mx%'
-                   OR ct.event_type IN ('unsubscribe', 'spam', 'bounce')
-                   OR LOWER(b.recipient_email) IN (
-                     SELECT LOWER(recipient_email)
-                       FROM email_tracking
-                      WHERE email_type = 'sendRecoveryCtaEmail'
-                        AND sent_at >= NOW() - INTERVAL '12 hours'
-                        AND sendpulse_task_id IS NULL
-                        AND LOWER(COALESCE(sendpulse_status, '')) NOT IN ('success', 'sent', 'delivered')
-                      GROUP BY LOWER(recipient_email)
-                     HAVING COUNT(*) >= 2
-                   )
-                 )
-            )
           ORDER BY c.last_signal_at DESC
           LIMIT $5`,
         [
