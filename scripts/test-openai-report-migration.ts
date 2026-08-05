@@ -302,6 +302,14 @@ for (const file of bloodClientFiles) {
   );
 }
 
+const bloodDashboard = read("client/src/pages/BloodAnalysisDashboard.tsx");
+assert.match(bloodDashboard, /aiStatus === "generated" \|\| aiStatus === "completed"/);
+assert.match(bloodDashboard, /Rapport finalisé/);
+assert.doesNotMatch(bloodDashboard, /Statut non défini/);
+
+const bloodReportSectionTab = read("client/src/pages/BloodAnalysisDashboard/tabs/ReportSectionTab.tsx");
+assert.match(bloodReportSectionTab, /aiStatus === "generated" \|\| aiStatus === "completed"/);
+
 const bloodReportHook = read("client/src/pages/BloodAnalysisDashboard/hooks/useBloodReport.ts");
 assert.match(bloodReportHook, /const token = localStorage\.getItem\("apexlabs_token"\);[\s\S]{0,120}let response = token/);
 assert.match(bloodReportHook, /: await fetch\(`\/api\/blood-analysis\/report\/\$\{reportId\}\/public`\)/);

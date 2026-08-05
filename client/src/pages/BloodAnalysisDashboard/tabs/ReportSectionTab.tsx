@@ -38,6 +38,7 @@ export function ReportSectionTab({
     ? aiReport.replace(/^##\s+Annexes\s*\(ultra long\)\s*$/gim, "## Annexes (references et vigilance)")
     : aiReport;
   const aiStatus = String(aiMeta?.status || "").toLowerCase();
+  const isFinalizedReport = aiStatus === "generated" || aiStatus === "completed";
   const validationHints = Array.isArray(aiMeta?.validationMissing)
     ? aiMeta?.validationMissing.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
     : [];
@@ -50,7 +51,7 @@ export function ReportSectionTab({
       })
     : null;
   const statusBadge =
-    aiStatus === "generated"
+    isFinalizedReport
       ? { label: "Rapport premium", bg: "rgba(16, 185, 129, 0.12)", border: "rgba(16, 185, 129, 0.35)", text: "#059669" }
       : aiStatus === "fallback"
       ? { label: "Mode déterministe", bg: "rgba(245, 158, 11, 0.12)", border: "rgba(245, 158, 11, 0.35)", text: "#B45309" }
@@ -313,7 +314,7 @@ export function ReportSectionTab({
             {section.title}
           </span>
         ))}
-        {(aiStatus === "generated" || aiStatus === "fallback") && generatedAtText && (
+        {(isFinalizedReport || aiStatus === "fallback") && generatedAtText && (
           <span className="text-[11px] sm:text-xs ml-auto" style={{ color: currentTheme.colors.textMuted }}>
             Mis à jour: {generatedAtText}
           </span>

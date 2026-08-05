@@ -67,16 +67,17 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
   const summary = report?.analysis?.summary || { optimal: [], watch: [], action: [] };
   const aiMeta = report?.aiMeta;
   const aiStatus = String(aiMeta?.status || "").toLowerCase();
+  const isFinalizedReport = aiStatus === "generated" || aiStatus === "completed";
   const aiBadgeLabel =
-    aiStatus === "generated"
-      ? "Rapport premium généré"
+    isFinalizedReport
+      ? "Rapport finalisé"
       : aiStatus === "processing"
       ? "Génération en cours"
       : aiStatus === "fallback"
       ? "Version déterministe active"
-      : "Statut non défini";
+      : "Rapport disponible";
   const aiBadgeColors =
-    aiStatus === "generated"
+    isFinalizedReport
       ? { bg: "rgba(16, 185, 129, 0.12)", border: "rgba(16, 185, 129, 0.35)", text: "#059669" }
       : aiStatus === "processing"
       ? { bg: "rgba(59, 130, 246, 0.12)", border: "rgba(59, 130, 246, 0.35)", text: "#2563EB" }
