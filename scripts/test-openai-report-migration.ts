@@ -187,6 +187,7 @@ assert.match(bloodTestRoutes, /activeBloodReportGenerationIds = new Set<string>/
 assert.match(bloodTestRoutes, /activeBloodReportGenerationKeys = new Set<string>/);
 assert.match(bloodTestRoutes, /Blood report generation already in progress/);
 assert.match(bloodTestRoutes, /getBloodReportGenerationKey/);
+assert.match(bloodTestRoutes, /haveEquivalentBloodMarkerPanels/);
 assert.match(bloodTestRoutes, /activeBloodReportGenerationKeys\.has\(generationKey\)/);
 assert.match(bloodTestRoutes, /isInternalQaBloodRecord/);
 assert.match(bloodTestRoutes, /BLOOD_RECOVERY_NO_MARKERS/);

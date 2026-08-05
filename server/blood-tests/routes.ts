@@ -509,6 +509,14 @@ const getBloodMarkerCodeSignature = (markersValue: unknown): string => {
     .join("|");
 };
 
+const haveEquivalentBloodMarkerPanels = (left: unknown, right: unknown): boolean => {
+  const leftCodes = new Set(getBloodMarkerCodeSignature(left).split("|").filter(Boolean));
+  const rightCodes = new Set(getBloodMarkerCodeSignature(right).split("|").filter(Boolean));
+  if (leftCodes.size < 10 || rightCodes.size < 10) return false;
+  const intersection = Array.from(leftCodes).filter((code) => rightCodes.has(code)).length;
+  return intersection / Math.max(leftCodes.size, rightCodes.size) >= 0.9;
+};
+
 const getBloodReportGenerationKey = (record: BloodTestOperationalRecord): string => {
   const profile = record.patientProfile && typeof record.patientProfile === "object"
     ? record.patientProfile as Record<string, unknown>
@@ -542,10 +550,7 @@ const collapseRecentBloodDuplicates = <T extends BloodTestOperationalRecord>(rec
       existing.userId === candidate.userId &&
       (
         getBloodMarkerFingerprint(existing.markers) === fingerprint ||
-        (
-          getBloodMarkerCodeSignature(existing.markers) === getBloodMarkerCodeSignature(candidate.markers) &&
-          Math.abs(new Date(existing.createdAt).getTime() - new Date(candidate.createdAt).getTime()) <= 2 * 60 * 60 * 1000
-        )
+        haveEquivalentBloodMarkerPanels(existing.markers, candidate.markers)
       ) &&
       Math.abs(new Date(existing.createdAt).getTime() - new Date(candidate.createdAt).getTime()) <= dayMs
     );
