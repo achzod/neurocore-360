@@ -185,7 +185,11 @@ function repairTutoiement(value: string): string {
 
 function deduplicateParentheticalMarkerDefinitions(value: string): string {
   const seen = new Set<string>();
-  return value.replace(
+  const withoutImmediateRestatements = value.replace(
+    /\s*\((ce\s+marqueur\s+(?:mesure|estime)[^)\n]{5,240})\)(?=\s*,?\s*(?:(?:qui|il|elle)\s+)?(?:mesure|estime|refl[eè]te|repr[ée]sente|correspond\s+à|est\s+(?:un|une))\b)/gi,
+    "",
+  );
+  return withoutImmediateRestatements.replace(
     /\s*\((ce\s+marqueur\s+(?:mesure|estime)[^)\n]{5,240})\)/gi,
     (full, definition: string) => {
       const key = definition

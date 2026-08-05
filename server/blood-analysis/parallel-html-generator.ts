@@ -496,6 +496,33 @@ function limitRepeatedStatMentions(
   return out;
 }
 
+function ensureMarkerNumericCoverage(
+  sectionsMap: Record<string, string>,
+  markers: MarkerAnalysis[],
+): Record<string, string> {
+  const out: Record<string, string> = { ...sectionsMap };
+  const body = SECTION_ORDER.filter((key) => key !== "sources")
+    .map((key) => out[key] || "")
+    .join("\n");
+  const missing = markers.filter((marker) => {
+    const numericValue = Number(marker.value);
+    if (!Number.isFinite(numericValue)) return false;
+    const raw = String(numericValue);
+    const numericPattern = escapeRegExp(raw).replace("\\.", "[.,]");
+    return !new RegExp(`(^|[^\\d.,])${numericPattern}(?![\\d.,])`).test(body);
+  });
+  if (!missing.length) return out;
+
+  const labels = missing.map((marker) => {
+    const value = String(Number(marker.value)).replace(".", ",");
+    const unit = String(marker.unit || "").trim();
+    return `${marker.name}: ${value}${unit ? ` ${unit}` : ""}`;
+  });
+  const annexes = String(out.annexes || "").trim();
+  out.annexes = `${annexes}\n\n### Repères chiffrés complémentaires\nPour garder un relevé complet, retiens aussi ${labels.join("; ")}.`.trim();
+  return out;
+}
+
 function extractSourceIdsFromText(text: string): string[] {
   const ids: string[] = [];
   const seen = new Set<string>();
@@ -2046,6 +2073,7 @@ export async function generateParallelHtmlReport(
   sectionsMap = limitRepeatedStatMentions(sectionsMap, analysisResult.markers, 3);
   sectionsMap = enforceExpertSupplementsSection(sectionsMap, analysisResult.markers, sourcesContext);
   sectionsMap = sanitizeNarrativeTone(sectionsMap);
+  sectionsMap = ensureMarkerNumericCoverage(sectionsMap, analysisResult.markers);
   sectionsMap = rebuildSourcesSectionFromCitations(sectionsMap, sourcesContext);
   sectionsMap = sanitizeNarrativeTone(sectionsMap);
   sectionsMap = Object.fromEntries(

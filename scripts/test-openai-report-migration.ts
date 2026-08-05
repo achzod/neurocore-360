@@ -173,6 +173,11 @@ const repairedDefinitionText = repairReportTextForDelivery(
 );
 assert.equal((repairedDefinitionText.match(/ce marqueur mesure/g) || []).length, 1);
 assert.match(repairedDefinitionText, /en verdict définitif\. Ton profil compte\./);
+const repairedImmediateDefinition = repairReportTextForDelivery(
+  "Ton ALT (ce marqueur mesure une enzyme hépatique), qui mesure le stress hépatique, reste stable.",
+);
+assert.doesNotMatch(repairedImmediateDefinition, /ce marqueur mesure/);
+assert.equal(repairedImmediateDefinition, "Ton ALT, qui mesure le stress hépatique, reste stable.");
 const sanitizedDashText = sanitizeClientFacingText("Phase 8\u201312 semaines \u2014 puis controle.");
 assert.equal(sanitizedDashText, "Phase 8-12 semaines, puis controle.");
 assert.equal(auditClientFacingText(sanitizedDashText).forbiddenDashes, 0);
@@ -257,6 +262,8 @@ assert.match(parallelBloodGenerator, /protectedMeetings/);
 assert.match(parallelBloodGenerator, /refl\[eè\]te\|estime/);
 assert.match(parallelBloodGenerator, /const definedMarkers = new Set<string>/);
 assert.doesNotMatch(parallelBloodGenerator, /premiere mention d'un marqueur dans chaque section/);
+assert.match(parallelBloodGenerator, /function ensureMarkerNumericCoverage/);
+assert.match(parallelBloodGenerator, /Repères chiffrés complémentaires/);
 
 const bloodRoutes = read("server/blood-analysis/routes.ts");
 assert.match(bloodRoutes, /Use \/api\/blood-tests\/upload for the tracked GPT report/);
