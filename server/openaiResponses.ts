@@ -37,11 +37,10 @@ const PROFILE_CONFIG: Record<OpenAIReportProfile, ProfileConfig> = {
     verbosity: "high",
   },
   blood: {
-    // Max consumed most of the output budget in hidden reasoning on long
-    // multi-section reports and repeatedly ended with max_output_tokens.
-    // Xhigh keeps the premium reasoning path while leaving room for the
-    // client-facing report and materially reducing latency and cost.
-    effort: "xhigh",
+    // Max and xhigh consumed most of the output budget in hidden reasoning on
+    // long multi-section reports. High keeps the pro reasoning path while
+    // leaving enough budget and time for all three client-facing batches.
+    effort: "high",
     mode: "pro",
     maxOutputTokens: 24_000,
     timeoutMs: 12 * 60 * 1000,
