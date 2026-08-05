@@ -161,6 +161,11 @@ assert.equal(auditClientFacingText(repairedClientText).roboticPhrases.length, 0)
 assert.match(repairedClientText, /rendez-vous/);
 assert.match(repairedClientText, /1,6 a 2,2 g\/kg\/jour/);
 assert.match(repairedClientText, /128 a 176 g par jour/);
+const repairedMeetingText = repairReportTextForDelivery(
+  "Prends rapidement rendez vous. Ton rendez-tu médical est confirmé.",
+);
+assert.equal(repairedMeetingText, "Prends rapidement rendez-vous. Ton rendez-vous médical est confirmé.");
+assert.deepEqual(auditClientFacingText("Prends rendez-tu demain.").roboticPhrases, ["rendez-tu"]);
 const sanitizedDashText = sanitizeClientFacingText("Phase 8\u201312 semaines \u2014 puis controle.");
 assert.equal(sanitizedDashText, "Phase 8-12 semaines, puis controle.");
 assert.equal(auditClientFacingText(sanitizedDashText).forbiddenDashes, 0);
@@ -233,6 +238,10 @@ assert.equal(
   true,
   "Tous les chemins admin et recovery doivent transmettre l'âge connu au générateur",
 );
+
+const parallelBloodGenerator = read("server/blood-analysis/parallel-html-generator.ts");
+assert.match(parallelBloodGenerator, /protectedMeetings/);
+assert.match(parallelBloodGenerator, /refl\[eè\]te\|estime/);
 
 const bloodRoutes = read("server/blood-analysis/routes.ts");
 assert.match(bloodRoutes, /Use \/api\/blood-tests\/upload for the tracked GPT report/);

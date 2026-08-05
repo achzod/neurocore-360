@@ -163,7 +163,8 @@ const SECTION_TITLES: Record<string, string> = {
   sources: "Sources (bibliothèque)",
 };
 
-const DEFINITION_HINT_REGEX = /\bce\s+marqueur\s+mesure\b/i;
+const DEFINITION_HINT_REGEX =
+  /\b(?:ce\s+marqueur\s+mesure|(?:qui|il|elle)\s+(?:mesure|refl[eè]te|estime)|mesure\s+(?:la|le|les|ton|ta|tes|un|une))\b/i;
 
 const MARKER_DEFINITION_BY_KEY: Record<string, string> = {
   hdl: "ce marqueur mesure ton cholestérol protecteur qui ramène l'excès de lipides vers le foie",
@@ -337,10 +338,18 @@ function sanitizeNarrativeTone(sectionsMap: Record<string, string>): Record<stri
   const out: Record<string, string> = { ...sectionsMap };
   for (const key of SECTION_ORDER) {
     if (!out[key]) continue;
-    let text = out[key];
+    const protectedMeetings: string[] = [];
+    let text = out[key].replace(/\brendez(?:[-\s\u00a0\u202f]+)vous\b/gi, (match) => {
+      const marker = `__APEX_MEETING_${protectedMeetings.length}__`;
+      protectedMeetings.push(match);
+      return marker;
+    });
     for (const [pattern, replacement] of replacements) {
       text = text.replace(pattern, replacement);
     }
+    protectedMeetings.forEach((_meeting, index) => {
+      text = text.replace(`__APEX_MEETING_${index}__`, "rendez-vous");
+    });
     text = text
       .replace(/[ \t]{2,}/g, " ")
       .replace(/\s+([,.;:!?])/g, "$1")

@@ -28,6 +28,7 @@ const ROBOTIC_PATTERNS: Array<{ label: string; pattern: RegExp }> = [
   { label: "plus simple que ca en a l'air", pattern: /\bplus simple que [çc]a en a l'air\b/i },
   { label: "source personnelle", pattern: /\b(?:ma|notre) source personnelle\b/i },
   { label: "quasi indolore", pattern: /\bquasi indolore\b/i },
+  { label: "rendez-tu", pattern: /\brendez[-\s]+tu\b/i },
   { label: "assistant ou modele IA", pattern: /\b(?:assistant|mod[èe]le de langage|intelligence artificielle|chatgpt|claude|openai|anthropic)\b/i },
 ];
 

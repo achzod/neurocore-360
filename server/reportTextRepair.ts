@@ -126,7 +126,9 @@ function replaceInitialCase(source: string, lowerReplacement: string): string {
 
 function repairTutoiement(value: string): string {
   const protectedMeetings: string[] = [];
-  let text = value.replace(/\brendez[ -]vous\b/gi, (match) => {
+  let text = value
+    .replace(/\brendez(?:[-\s\u00a0\u202f]+)(?:vous|tu)\b/gi, "rendez-vous")
+    .replace(/\brendez-vous\b/gi, (match) => {
     const marker = `__APEX_MEETING_${protectedMeetings.length}__`;
     protectedMeetings.push(match);
     return marker;
