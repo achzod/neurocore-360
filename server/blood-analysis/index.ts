@@ -10,6 +10,7 @@ import type { ScrapedArticle } from "../knowledge/storage";
 import { isOpenAIConfigured, runOpenAIText } from "../openaiResponses";
 import { auditClientFacingText, sanitizeClientFacingText } from "../clientFacingQuality";
 import { repairReportTextForDelivery } from "../reportTextRepair";
+import { isValidEmptySourcesDisclosure } from "./quality-gates";
 
 // ============================================
 // BIOMARKERS - OPTIMAL RANGES
@@ -2122,7 +2123,7 @@ const upsertSectionByAliases = (report: string, aliases: string[], newSectionCon
   return [before, nextSection, after].filter(Boolean).join("\n\n").trim();
 };
 
-const validateReportStructure = (
+export const validateReportStructure = (
   output: string,
   markers: MarkerAnalysis[],
   availableSourceIds?: Set<string>,
@@ -2190,7 +2191,9 @@ const validateReportStructure = (
     const minChars = spec.key === "sources"
       ? spec.minChars
       : Math.round(spec.minChars * sectionLengthMultiplier);
-    if (found.content.trim().length < minChars) {
+    const validEmptySourcesDisclosure = spec.key === "sources" &&
+      isValidEmptySourcesDisclosure(found.content, availableSourceIds);
+    if (!validEmptySourcesDisclosure && found.content.trim().length < minChars) {
       thin.push(spec.key);
     }
   }
@@ -2271,6 +2274,34 @@ const validateReportStructure = (
     thin,
     matchedSections,
   };
+};
+
+export const finalizeGeneratedBloodReport = (
+  markdown: string,
+  userProfile: Record<string, unknown>,
+  markers: MarkerAnalysis[],
+  availableSourceIds: Set<string>,
+): {
+  report: string;
+  clientFacingAudit: ReturnType<typeof auditClientFacingText>;
+  structureCheck: ReturnType<typeof validateReportStructure>;
+} => {
+  const availableSourceIdArray = Array.from(availableSourceIds);
+  const report = repairReportTextForDelivery(
+    sanitizeClientFacingText(trimAiAnalysis(reorderReportSections(
+      normalizeFrenchTypography(sanitizeSourceCitations(markdown, availableSourceIdArray))
+    ))),
+    userProfile,
+  );
+  const clientFacingAudit = auditClientFacingText(report);
+  const structureCheck = validateReportStructure(report, markers, availableSourceIds);
+  if (!clientFacingAudit.ok) {
+    throw new Error(`AI_REPORT_CLIENT_STYLE_GATE_FAILED:${JSON.stringify(clientFacingAudit)}`);
+  }
+  if (!structureCheck.ok) {
+    throw new Error(`AI_REPORT_QUALITY_GATE_FAILED:${structureCheck.reasons.join(" | ")}`);
+  }
+  return { report, clientFacingAudit, structureCheck };
 };
 
 const validateDeepDive = (
@@ -4033,24 +4064,13 @@ export async function generateAIBloodAnalysis(
       knowledgeContext,
       { allowCanonicalRecovery: false },
     );
-    const sourceCatalog = parseKnowledgeSourceCatalog(knowledgeContext || "");
-    const availableSourceIds = new Set(Array.from(sourceCatalog.keys()));
-    const availableSourceIdArray = Array.from(availableSourceIds);
-    const candidate = repairReportTextForDelivery(
-      sanitizeClientFacingText(trimAiAnalysis(reorderReportSections(
-        normalizeFrenchTypography(sanitizeSourceCitations(batched.markdown, availableSourceIdArray))
-      ))),
+    const availableSourceIds = new Set(batched.sourceIds);
+    return finalizeGeneratedBloodReport(
+      batched.markdown,
       userProfile as Record<string, unknown>,
-    );
-    const clientFacingAudit = auditClientFacingText(candidate);
-    const structureCheck = validateReportStructure(candidate, analysisResult.markers, availableSourceIds);
-    if (!clientFacingAudit.ok) {
-      throw new Error(`AI_REPORT_CLIENT_STYLE_GATE_FAILED:${JSON.stringify(clientFacingAudit)}`);
-    }
-    if (!structureCheck.ok) {
-      throw new Error(`AI_REPORT_QUALITY_GATE_FAILED:${structureCheck.reasons.join(" | ")}`);
-    }
-    return candidate;
+      analysisResult.markers,
+      availableSourceIds,
+    ).report;
   }
   const bloodSafetyId = [userProfile.prenom, userProfile.nom, userProfile.age]
     .filter(Boolean)

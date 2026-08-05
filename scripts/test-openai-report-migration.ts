@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { estimateAIUsageCosts } from "../server/openaiResponses";
 import { repairReportTextForDelivery } from "../server/reportTextRepair";
 import { auditClientFacingText, sanitizeClientFacingText } from "../server/clientFacingQuality";
+import { isValidEmptySourcesDisclosure } from "../server/blood-analysis/quality-gates";
 
 const read = (relativePath: string): string =>
   readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf8");
@@ -50,6 +51,18 @@ assert.match(shared, /maxRetries:\s*0/);
 assert.match(shared, /const deadline = Date\.now\(\) \+ profile\.timeoutMs;[\s\S]{0,120}client\.responses\.create/);
 assert.match(shared, /export function isOpenAICreditError/);
 assert.match(shared, /if \(isOpenAICreditError\(error\)\) return false/);
+assert.match(shared, /retrieveStoredOpenAIResponseText/);
+assert.match(shared, /responses\.retrieve\(normalizedId\)/);
+
+assert.equal(
+  isValidEmptySourcesDisclosure("Aucune source externe citée dans ce rapport.", new Set()),
+  true,
+);
+assert.equal(
+  isValidEmptySourcesDisclosure("Aucune source externe citée dans ce rapport.", new Set(["source-1"])),
+  false,
+);
+assert.equal(isValidEmptySourcesDisclosure("Texte court sans preuve.", new Set()), false);
 
 const baselineCosts = estimateAIUsageCosts({
   inputTokens: 100_000,
@@ -112,6 +125,8 @@ assert.match(bloodGenerator, /BLOOD_ANALYSIS_BATCHED_MODE !== "false"/);
 assert.match(bloodGenerator, /allowCanonicalRecovery:\s*false/);
 assert.match(bloodGenerator, /repairReportTextForDelivery/);
 assert.match(bloodGenerator, /spec\.key === "sources"/);
+assert.match(bloodGenerator, /isValidEmptySourcesDisclosure/);
+assert.match(bloodGenerator, /new Set\(batched\.sourceIds\)/);
 assert.match(bloodGenerator, /AI_REPORT_CLIENT_STYLE_GATE_FAILED/);
 assert.match(bloodGenerator, /AI_REPORT_QUALITY_GATE_FAILED/);
 
@@ -192,6 +207,10 @@ assert.match(bloodTestRoutes, /haveEquivalentBloodMarkerPanels/);
 assert.match(bloodTestRoutes, /activeBloodReportGenerationKeys\.has\(generationKey\)/);
 assert.match(bloodTestRoutes, /isInternalQaBloodRecord/);
 assert.match(bloodTestRoutes, /BLOOD_RECOVERY_NO_MARKERS/);
+assert.match(bloodTestRoutes, /\/api\/admin\/blood-tests\/:id\/recover-stored-openai/);
+assert.match(bloodTestRoutes, /stored_response_retrieval_no_generation/);
+assert.match(bloodTestRoutes, /deliveryStatus: "QA_HOLD"/);
+assert.match(bloodTestRoutes, /analysis\.deliveryStatus !== "QA_HOLD"/);
 
 const bloodRoutes = read("server/blood-analysis/routes.ts");
 assert.match(bloodRoutes, /Use \/api\/blood-tests\/upload for the tracked GPT report/);

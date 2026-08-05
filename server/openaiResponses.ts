@@ -496,6 +496,37 @@ function responseText(response: any): string {
     .join("");
 }
 
+export async function retrieveStoredOpenAIResponseText(responseId: string): Promise<{
+  text: string;
+  responseId: string;
+  model: string;
+  status: string;
+}> {
+  const normalizedId = String(responseId || "").trim();
+  if (!/^resp_[A-Za-z0-9]+$/.test(normalizedId)) {
+    throw new Error("Invalid stored OpenAI response id");
+  }
+
+  const response: any = await getOpenAIClient().responses.retrieve(normalizedId);
+  const status = String(response?.status || "unknown");
+  if (status !== "completed") {
+    throw new Error(`Stored OpenAI response is not completed: ${normalizedId} (${status})`);
+  }
+
+  const text = responseText(response).trim();
+  if (!text) {
+    throw new Error(`Stored OpenAI response is empty: ${normalizedId}`);
+  }
+
+  console.log(`[OpenAIResponses] Retrieved stored response=${normalizedId}, chars=${text.length}`);
+  return {
+    text,
+    responseId: normalizedId,
+    model: String(response?.model || OPENAI_REPORT_MODEL),
+    status,
+  };
+}
+
 function safeIdentifier(value: string, profile: OpenAIReportProfile): string {
   const digest = createHash("sha256")
     .update(String(value || "anonymous").trim().toLowerCase())

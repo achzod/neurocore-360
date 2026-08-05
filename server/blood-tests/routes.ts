@@ -13,6 +13,7 @@ import {
   BIOMARKER_RANGES,
   buildFallbackAnalysis,
   buildLifestyleCorrelations,
+  finalizeGeneratedBloodReport,
 } from "../blood-analysis";
 import {
   withAIGenerationTimeout,
@@ -1089,6 +1090,145 @@ export function registerBloodTestsRoutes(app: Express): void {
     } catch (error: any) {
       console.error("[Admin] Blood report sanitization error:", error);
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Admin: rebuild a failed batched report from already completed and stored
+  // OpenAI response IDs. This path performs retrieval only, never generation,
+  // and keeps delivery on QA hold until the report is explicitly force-sent.
+  app.post("/api/admin/blood-tests/:id/recover-stored-openai", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const { id } = req.params;
+    const responseIds = Array.isArray(req.body?.responseIds)
+      ? req.body.responseIds.map((value: unknown) => String(value || "").trim())
+      : [];
+    if (responseIds.length !== 3 || responseIds.some((value: string) => !/^resp_[A-Za-z0-9]+$/.test(value))) {
+      res.status(400).json({ error: "Exactly three valid stored OpenAI response IDs are required" });
+      return;
+    }
+    if (new Set(responseIds).size !== responseIds.length) {
+      res.status(400).json({ error: "Stored OpenAI response IDs must be unique" });
+      return;
+    }
+    if (activeBloodReportGenerationIds.has(id)) {
+      res.status(409).json({ error: "Blood report generation already in progress", reportId: id });
+      return;
+    }
+
+    activeBloodReportGenerationIds.add(id);
+    let generationKey = "";
+    try {
+      const { db: recoveryDb } = await import("../db.js");
+      const { bloodTests: recoveryTable } = await import("../../shared/drizzle-schema.js");
+      const { eq: recoveryEq } = await import("drizzle-orm");
+      const rows = await recoveryDb
+        .select()
+        .from(recoveryTable)
+        .where(recoveryEq(recoveryTable.id, id));
+      if (!rows.length) {
+        res.status(404).json({ error: "Blood test not found" });
+        return;
+      }
+
+      const bloodTest = rows[0];
+      generationKey = getBloodReportGenerationKey(bloodTest);
+      if (generationKey && activeBloodReportGenerationKeys.has(generationKey)) {
+        res.status(409).json({ error: "Equivalent Blood report generation already in progress", reportId: id });
+        return;
+      }
+      if (generationKey) activeBloodReportGenerationKeys.add(generationKey);
+
+      const markers = Array.isArray(bloodTest.markers) ? bloodTest.markers as any[] : [];
+      if (!markers.length) {
+        res.status(409).json({ error: "Blood test has no extracted markers" });
+        return;
+      }
+      const profile = bloodTest.patientProfile && typeof bloodTest.patientProfile === "object"
+        ? bloodTest.patientProfile as Record<string, any>
+        : {};
+      const gender = (profile.gender as "homme" | "femme") || "homme";
+      const age = getAgeFromDob(profile.dob);
+      const normalizedInput = markers.map((marker) => ({
+        markerId: marker.code || marker.markerId,
+        name: marker.name,
+        value: marker.value,
+        unit: marker.unit,
+      }));
+      const analysisResult = await analyzeBloodwork(normalizedInput as any, { gender, age });
+      const knowledgeContext = await getBloodworkKnowledgeContext(
+        analysisResult.markers,
+        analysisResult.patterns,
+      ).catch(() => undefined);
+      const [{ retrieveStoredOpenAIResponseText }, { generateParallelHtmlReport }] = await Promise.all([
+        import("../openaiResponses.js"),
+        import("../blood-analysis/parallel-html-generator.js"),
+      ]);
+      const storedResponses = await Promise.all(
+        responseIds.map((responseId: string) => retrieveStoredOpenAIResponseText(responseId)),
+      );
+      const rebuilt = await generateParallelHtmlReport(
+        analysisResult,
+        { ...profile, gender, age },
+        knowledgeContext,
+        {
+          allowCanonicalRecovery: false,
+          batchResponseTexts: storedResponses.map((response) => response.text),
+        },
+      );
+      const finalized = finalizeGeneratedBloodReport(
+        rebuilt.markdown,
+        { ...profile, gender, age },
+        analysisResult.markers,
+        new Set(rebuilt.sourceIds),
+      );
+      const existingAnalysis = bloodTest.analysis && typeof bloodTest.analysis === "object"
+        ? bloodTest.analysis as Record<string, unknown>
+        : {};
+      const recoveredAt = new Date().toISOString();
+      const mergedAnalysis: Record<string, unknown> = {
+        ...existingAnalysis,
+        ...analysisResult,
+        aiAnalysis: finalized.report,
+        aiReport: finalized.report,
+        ...deriveAiMeta(finalized.report),
+        aiRetryCount: 0,
+        aiNextRetryAt: null,
+        aiRecoveredAt: recoveredAt,
+        aiRecoveredFromResponseIds: responseIds,
+        aiRecoveryMode: "stored_response_retrieval_no_generation",
+        aiRecoveryAudit: {
+          clientFacing: finalized.clientFacingAudit,
+          structure: finalized.structureCheck,
+          reportLength: finalized.report.length,
+          sourceIds: rebuilt.sourceIds,
+        },
+        deliveryStatus: "QA_HOLD",
+        deliveryHoldReason: "awaiting_manual_content_and_render_audit",
+      };
+      await recoveryDb.update(recoveryTable).set({
+        analysis: mergedAnalysis as any,
+        status: "completed",
+        completedAt: new Date(),
+      }).where(recoveryEq(recoveryTable.id, id));
+
+      res.json({
+        success: true,
+        reportId: id,
+        reportLength: finalized.report.length,
+        sections: finalized.structureCheck.matchedSections,
+        clientFacingAudit: finalized.clientFacingAudit,
+        structureAudit: finalized.structureCheck,
+        sourceIds: rebuilt.sourceIds,
+        responseIds,
+        deliveryStatus: "QA_HOLD",
+        generatedNewOpenAIResponse: false,
+      });
+    } catch (error: any) {
+      console.error("[Admin] Stored OpenAI blood recovery error:", error);
+      res.status(422).json({ error: error?.message || String(error) });
+    } finally {
+      activeBloodReportGenerationIds.delete(id);
+      if (generationKey) activeBloodReportGenerationKeys.delete(generationKey);
     }
   });
 
@@ -2528,6 +2668,7 @@ export function registerBloodTestsRoutes(app: Express): void {
             Boolean(narrative) &&
             !isFallbackAnalysisText(narrative) &&
             analysis.deliveryStatus !== "SENT" &&
+            analysis.deliveryStatus !== "QA_HOLD" &&
             retryCount < 5 &&
             (!nextRetryAt || nextRetryAt <= Date.now());
         })

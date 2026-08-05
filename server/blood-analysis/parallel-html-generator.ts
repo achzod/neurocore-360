@@ -1348,6 +1348,7 @@ function enforceExpertSupplementsSection(
  */
 async function generateBatchedContent(
   ctx: BatchContext,
+  batchResponseTexts?: readonly string[],
 ): Promise<Record<string, string>> {
   const allSections: Record<string, string> = {};
 
@@ -1357,15 +1358,24 @@ async function generateBatchedContent(
     { label: "Batch 3/3 (action)", prompt: buildBatch3Prompt(ctx), maxTokens: 22000, expectedKeys: ["plan", "nutrition", "supplements", "annexes", "sources"] },
   ];
 
+  if (batchResponseTexts && batchResponseTexts.length !== batches.length) {
+    throw new Error(`Expected ${batches.length} stored batch responses, received ${batchResponseTexts.length}`);
+  }
+
   // Run all 3 batches IN PARALLEL (not sequential) , cuts time from ~180s to ~60-90s
   const results = await Promise.allSettled(
-    batches.map(async (batch) => {
-      const rawContent = await streamApiCall(
-        SYSTEM_PROMPT,
-        batch.prompt,
-        batch.maxTokens,
-        batch.label,
-      );
+    batches.map(async (batch, index) => {
+      const rawContent = batchResponseTexts
+        ? String(batchResponseTexts[index] || "").trim()
+        : await streamApiCall(
+            SYSTEM_PROMPT,
+            batch.prompt,
+            batch.maxTokens,
+            batch.label,
+          );
+      if (!rawContent) {
+        throw new Error(`${batch.label} returned an empty response`);
+      }
       return { batch, rawContent };
     }),
   );
@@ -1870,8 +1880,16 @@ export async function generateParallelHtmlReport(
   analysisResult: BloodAnalysisResult,
   userProfile: UserProfile,
   knowledgeContext?: string,
-  options?: { allowCanonicalRecovery?: boolean },
-): Promise<{ html: string; markdown: string; sections: Record<string, string> }> {
+  options?: {
+    allowCanonicalRecovery?: boolean;
+    batchResponseTexts?: readonly string[];
+  },
+): Promise<{
+  html: string;
+  markdown: string;
+  sections: Record<string, string>;
+  sourceIds: string[];
+}> {
   const markerCount = analysisResult.markers.length;
 
   // Build markers table (shared context)
@@ -1938,13 +1956,18 @@ export async function generateParallelHtmlReport(
   let sectionsMap: Record<string, string> = {};
 
   // ========== 3 PARALLEL batch calls ==========
-  console.log(`[BatchHTML] Starting 3 parallel batched API calls...`);
+  console.log(
+    options?.batchResponseTexts
+      ? `[BatchHTML] Rebuilding from ${options.batchResponseTexts.length} stored batch responses...`
+      : `[BatchHTML] Starting 3 parallel batched API calls...`,
+  );
   try {
-    sectionsMap = await generateBatchedContent(ctx);
+    sectionsMap = await generateBatchedContent(ctx, options?.batchResponseTexts);
     const foundCount = Object.keys(sectionsMap).length;
     console.log(`[BatchHTML] Parallel generation produced ${foundCount}/12 sections`);
   } catch (err: any) {
     console.error(`[BatchHTML] Generation failed: ${err.message}`);
+    if (options?.batchResponseTexts) throw err;
   }
 
   const fillMissingFromMarkdown = (markdown: string, reason: string) => {
@@ -1960,6 +1983,11 @@ export async function generateParallelHtmlReport(
   };
 
   const missingAfterParallel = SECTION_ORDER.filter((key) => !sectionsMap[key]);
+  if (options?.batchResponseTexts && missingAfterParallel.length > 0) {
+    throw new Error(
+      `Stored batch responses are incomplete: missing ${missingAfterParallel.join(",")}`,
+    );
+  }
   if (missingAfterParallel.length > 0 && options?.allowCanonicalRecovery !== false) {
     try {
       console.warn(
@@ -2045,5 +2073,8 @@ export async function generateParallelHtmlReport(
 
   console.log(`[BatchHTML] Final: ${html.length} chars HTML, ${markdown.length} chars markdown, ${totalSections}/12 sections`);
 
-  return { html, markdown, sections: sectionsMap };
+  const sourceIds = Array.from(
+    new Set(parseKnowledgeSourceEntries(sourcesContext).map((entry) => entry.id)),
+  );
+  return { html, markdown, sections: sectionsMap, sourceIds };
 }
