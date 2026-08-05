@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { estimateAIUsageCosts } from "../server/openaiResponses";
-import { repairReportTextForDelivery } from "../server/reportTextRepair";
+import {
+  auditKnownProfileContradictions,
+  extractKnownAgeYears,
+  repairReportTextForDelivery,
+} from "../server/reportTextRepair";
 import { auditClientFacingText, sanitizeClientFacingText } from "../server/clientFacingQuality";
 import { isValidEmptySourcesDisclosure } from "../server/blood-analysis/quality-gates";
 
@@ -63,6 +67,19 @@ assert.equal(
   false,
 );
 assert.equal(isValidEmptySourcesDisclosure("Texte court sans preuve.", new Set()), false);
+
+const knownAgeProfile = { dob: "78-10-10" };
+assert.equal(extractKnownAgeYears(knownAgeProfile, new Date("2026-08-06T00:00:00Z")), 47);
+const ageContradictionSample = [
+  "Ton âge manque et empêche une interprétation définitive.",
+  "L’âge est non renseigné - cette absence limite directement l’interprétation de l’IGF-1, de la filtration rénale et du risque cardiovasculaire absolu.",
+  "Priorité - Haute pour la récupération, avec interprétation limitée par l'absence d'âge.",
+  "Tests à ajouter - Âge, bilan nutritionnel et sommeil.",
+].join(" ");
+assert.ok(auditKnownProfileContradictions(ageContradictionSample, knownAgeProfile).length >= 3);
+const ageRepairedSample = repairReportTextForDelivery(ageContradictionSample, knownAgeProfile);
+assert.deepEqual(auditKnownProfileContradictions(ageRepairedSample, knownAgeProfile), []);
+assert.match(ageRepairedSample, /47 ans/);
 
 const baselineCosts = estimateAIUsageCosts({
   inputTokens: 100_000,
@@ -211,6 +228,11 @@ assert.match(bloodTestRoutes, /\/api\/admin\/blood-tests\/:id\/recover-stored-op
 assert.match(bloodTestRoutes, /stored_response_retrieval_no_generation/);
 assert.match(bloodTestRoutes, /deliveryStatus: "QA_HOLD"/);
 assert.match(bloodTestRoutes, /analysis\.deliveryStatus !== "QA_HOLD"/);
+assert.equal(
+  (bloodTestRoutes.match(/\{ \.\.\.profile, gender, age \}/g) || []).length >= 3,
+  true,
+  "Tous les chemins admin et recovery doivent transmettre l'âge connu au générateur",
+);
 
 const bloodRoutes = read("server/blood-analysis/routes.ts");
 assert.match(bloodRoutes, /Use \/api\/blood-tests\/upload for the tracked GPT report/);

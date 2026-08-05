@@ -20,6 +20,103 @@ function extractWeightKg(responses: Record<string, unknown>): number | null {
   return null;
 }
 
+export function extractKnownAgeYears(
+  responses: Record<string, unknown>,
+  now = new Date(),
+): number | null {
+  const direct = Number(responses.age);
+  if (Number.isFinite(direct) && direct >= 18 && direct <= 100) {
+    return Math.floor(direct);
+  }
+
+  const rawDob = String(responses.dob || responses.dateOfBirth || "").trim();
+  if (!rawDob) return null;
+  let birthDate: Date;
+  const compactMatch = rawDob.match(/^(\d{2})-(\d{2})-(\d{2})$/);
+  if (compactMatch) {
+    const shortYear = Number(compactMatch[1]);
+    const currentShortYear = now.getFullYear() % 100;
+    const fullYear = shortYear > currentShortYear ? 1900 + shortYear : 2000 + shortYear;
+    birthDate = new Date(fullYear, Number(compactMatch[2]) - 1, Number(compactMatch[3]));
+  } else {
+    birthDate = new Date(rawDob);
+  }
+  if (Number.isNaN(birthDate.getTime())) return null;
+
+  let age = now.getFullYear() - birthDate.getFullYear();
+  const birthdayPassed = now.getMonth() > birthDate.getMonth() ||
+    (now.getMonth() === birthDate.getMonth() && now.getDate() >= birthDate.getDate());
+  if (!birthdayPassed) age -= 1;
+  return age >= 18 && age <= 100 ? age : null;
+}
+
+function repairKnownAgeContext(value: string, responses: Record<string, unknown>): string {
+  const age = extractKnownAgeYears(responses);
+  if (age === null) return value;
+
+  return value
+    .replace(
+      /ton âge manque et empêche une interprétation définitive/gi,
+      `ce résultat doit être interprété avec la plage de référence spécifique à tes ${age} ans`,
+    )
+    .replace(
+      /L[’']âge est non renseigné\s*-\s*cette absence limite directement l[’']interprétation de [^.]+?risque cardiovasculaire absolu\./gi,
+      `Tu as ${age} ans au moment de cette analyse. Cet âge est intégré à l'interprétation de l'IGF-1, de la filtration rénale et du risque cardiovasculaire absolu.`,
+    )
+    .replace(
+      /Une nouvelle interprétation avec ton âge exact et la plage de référence du laboratoire est prioritaire\./gi,
+      `La comparaison avec la plage de référence du laboratoire correspondant à tes ${age} ans reste prioritaire.`,
+    )
+    .replace(
+      /mais son interprétation exige ton âge exact/gi,
+      `et son interprétation doit intégrer tes ${age} ans ainsi que la plage de référence du laboratoire`,
+    )
+    .replace(
+      /La portée réelle dépend de tes symptômes, de ton âge, de ton apport énergétique et de ton niveau d'entraînement, tous non renseignés\./gi,
+      `La portée réelle dépend de tes symptômes, de tes ${age} ans, de ton apport énergétique et de ton niveau d'entraînement. Tes symptômes, ton apport énergétique et ton niveau d'entraînement restent non renseignés.`,
+    )
+    .replace(/Tests manquants\s*-\s*L[’']âge,\s*/gi, "Tests manquants - ")
+    .replace(
+      /Pour l[’']IGF-1, l[’']âge est indispensable à une interprétation précise, car les références varient fortement au cours de la vie\./gi,
+      `Pour l'IGF-1, tes ${age} ans doivent être intégrés à l'interprétation, car les références varient fortement au cours de la vie.`,
+    )
+    .replace(
+      /Une imagerie préventive peut être discutée selon ton âge et tes antécédents, qui sont non renseignés\./gi,
+      `À ${age} ans, une imagerie préventive peut être discutée selon tes antécédents, qui restent non renseignés.`,
+    )
+    .replace(/sans heure de prélèvement, âge, symptômes/gi, "sans heure de prélèvement, symptômes")
+    .replace(
+      /Priorité\s*-\s*Haute pour la récupération, avec interprétation limitée par l'absence d'âge\./gi,
+      `Priorité - Haute pour la récupération, avec interprétation à comparer à la plage de référence correspondant à tes ${age} ans.`,
+    )
+    .replace(
+      /L'âge influence fortement les valeurs attendues, or ton âge est non renseigné\./gi,
+      `L'âge influence fortement les valeurs attendues. À ${age} ans, compare ce résultat à la plage de référence du laboratoire adaptée à ta tranche d'âge.`,
+    )
+    .replace(/Tests à ajouter\s*-\s*Âge,\s*/gi, "Tests à ajouter - ")
+    .replace(
+      /Selon ton âge, non renseigné, tes antécédents et ta pression artérielle/gi,
+      `À ${age} ans, selon tes antécédents et ta pression artérielle`,
+    )
+    .replace(
+      /Ton statut médicamenteux, tes antécédents rénaux, tes antécédents cardiovasculaires, ta pression artérielle, ton tabagisme et ton âge sont non renseignés\./gi,
+      `Ton statut médicamenteux, tes antécédents rénaux, tes antécédents cardiovasculaires, ta pression artérielle et ton tabagisme sont non renseignés. Ton âge, ${age} ans, est bien intégré à cette analyse.`,
+    );
+}
+
+export function auditKnownProfileContradictions(
+  value: string,
+  responses: Record<string, unknown>,
+): string[] {
+  if (extractKnownAgeYears(responses) === null) return [];
+  const patterns: Array<[string, RegExp]> = [
+    ["known_age_marked_missing", /(?:âge|ton âge)[^.\n]{0,90}(?:non renseigné|manque)/i],
+    ["known_age_absence_claim", /absence d[’']âge/i],
+    ["known_age_requested_again", /(?:ton âge exact|Tests à ajouter\s*-\s*Âge|Tests manquants\s*-\s*L[’']âge)/i],
+  ];
+  return patterns.filter(([, pattern]) => pattern.test(value)).map(([key]) => key);
+}
+
 function replaceInitialCase(source: string, lowerReplacement: string): string {
   if (source[0] === source[0]?.toUpperCase()) {
     return lowerReplacement.charAt(0).toUpperCase() + lowerReplacement.slice(1);
@@ -105,6 +202,8 @@ export function repairReportTextForDelivery(
     .replace(/\bquasi indolore\b/gi, "avec une gêne généralement limitée")
     .replace(/\bpour aller plus loin\b/gi, "prochaine étape")
     .replace(/\best fondamental pour\b/gi, "agit directement sur");
+
+  text = repairKnownAgeContext(text, responses);
 
   if (PROTEIN_QUANTITY.test(text) && !PROTEIN_PER_KG.test(text)) {
     const weight = extractWeightKg(responses);

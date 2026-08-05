@@ -9,7 +9,7 @@ import { searchArticles, searchFullText } from "../knowledge/storage";
 import type { ScrapedArticle } from "../knowledge/storage";
 import { isOpenAIConfigured, runOpenAIText } from "../openaiResponses";
 import { auditClientFacingText, sanitizeClientFacingText } from "../clientFacingQuality";
-import { repairReportTextForDelivery } from "../reportTextRepair";
+import { auditKnownProfileContradictions, repairReportTextForDelivery } from "../reportTextRepair";
 import { isValidEmptySourcesDisclosure } from "./quality-gates";
 
 // ============================================
@@ -2285,6 +2285,7 @@ export const finalizeGeneratedBloodReport = (
   report: string;
   clientFacingAudit: ReturnType<typeof auditClientFacingText>;
   structureCheck: ReturnType<typeof validateReportStructure>;
+  profileContradictions: string[];
 } => {
   const availableSourceIdArray = Array.from(availableSourceIds);
   const report = repairReportTextForDelivery(
@@ -2295,13 +2296,17 @@ export const finalizeGeneratedBloodReport = (
   );
   const clientFacingAudit = auditClientFacingText(report);
   const structureCheck = validateReportStructure(report, markers, availableSourceIds);
+  const profileContradictions = auditKnownProfileContradictions(report, userProfile);
   if (!clientFacingAudit.ok) {
     throw new Error(`AI_REPORT_CLIENT_STYLE_GATE_FAILED:${JSON.stringify(clientFacingAudit)}`);
   }
   if (!structureCheck.ok) {
     throw new Error(`AI_REPORT_QUALITY_GATE_FAILED:${structureCheck.reasons.join(" | ")}`);
   }
-  return { report, clientFacingAudit, structureCheck };
+  if (profileContradictions.length) {
+    throw new Error(`AI_REPORT_PROFILE_CONTRADICTION_GATE_FAILED:${profileContradictions.join(" | ")}`);
+  }
+  return { report, clientFacingAudit, structureCheck, profileContradictions };
 };
 
 const validateDeepDive = (

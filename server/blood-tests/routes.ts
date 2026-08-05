@@ -1293,7 +1293,7 @@ export function registerBloodTestsRoutes(app: Express): void {
       const knowledgeContext = await getBloodworkKnowledgeContext(analysisResult.markers, analysisResult.patterns).catch(() => undefined);
       let aiText = await generateAIBloodAnalysisWithFallbackRetry(
         analysisResult,
-        { ...profile, gender },
+        { ...profile, gender, age },
         knowledgeContext,
       );
       if (!aiText) {
@@ -2557,7 +2557,7 @@ export function registerBloodTestsRoutes(app: Express): void {
           const knowledgeContext = await getBloodworkKnowledgeContext(analysisResult.markers, analysisResult.patterns).catch(() => undefined);
           let aiText = await generateAIBloodAnalysisWithFallbackRetry(
             analysisResult,
-            { ...profile, gender },
+            { ...profile, gender, age },
             knowledgeContext,
           );
           if (!aiText) {
