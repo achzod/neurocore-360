@@ -390,6 +390,7 @@ function injectFirstMentionDefinitions(
 ): Record<string, string> {
   const out: Record<string, string> = { ...sectionsMap };
   const sortedMarkers = [...markers].sort((a, b) => b.name.length - a.name.length);
+  const definedMarkers = new Set<string>();
 
   for (const key of SECTION_ORDER) {
     if (key === "sources") continue;
@@ -399,6 +400,7 @@ function injectFirstMentionDefinitions(
       const markerName = String(marker.name || "").trim();
       if (!markerName) continue;
       const markerKey = guardKey(markerName);
+      if (definedMarkers.has(markerKey)) continue;
       let pattern = accentInsensitivePattern(markerName);
       const isVitamineD =
         markerKey === "vitamined" ||
@@ -414,7 +416,10 @@ function injectFirstMentionDefinitions(
 
       const afterStart = match.index + match[0].length;
       const afterWindow = normalizeGuard(text.slice(afterStart, Math.min(text.length, afterStart + 180)));
-      if (DEFINITION_HINT_REGEX.test(afterWindow)) continue;
+      if (DEFINITION_HINT_REGEX.test(afterWindow)) {
+        definedMarkers.add(markerKey);
+        continue;
+      }
 
       const definition = getDefinitionForMarker(marker);
       if (!definition) continue;
@@ -424,6 +429,7 @@ function injectFirstMentionDefinitions(
         insertion = `Vitamine D (${definition})`;
       }
       text = `${text.slice(0, match.index)}${insertion}${text.slice(match.index + match[0].length)}`;
+      definedMarkers.add(markerKey);
     }
     out[key] = text;
   }
@@ -838,10 +844,10 @@ REGLES ABSOLUES:
 - Ton expert, clair, concret, sans jargon inutile.
 - IMPORTANT: Tu ecris en francais avec TOUS les accents (é, è, ê, à, ù, ç, ô, î, û). Ne jamais omettre les accents.
   Exemples obligatoires: métabolique, hépatique, première, détaillé, précisément, récupération, entraînement.
-- DEFINITION DE CHAQUE MARQUEUR: Quand tu mentionnes un marqueur pour la premiere fois dans une section, explique brievement ce qu'il mesure et pourquoi c'est important. Exemple: "Le HDL, c'est ton cholesterol protecteur - celui qui evacue les graisses des arteres vers le foie. A 19 mg/dL, le tien est effondre."
+- DEFINITION DE CHAQUE MARQUEUR: A sa premiere mention utile dans le rapport, explique naturellement ce qu'il mesure et pourquoi il compte ici. Ne repete pas cette definition dans les sections suivantes. Exemple: "Le HDL, c'est ton cholesterol protecteur - celui qui evacue les graisses des arteres vers le foie. A 19 mg/dL, le tien est effondre."
 - INTERDICTION ABSOLUE de speculations sur l'utilisation de steroides, substances anabolisantes, ou produits dopants. Ne jamais insinuer, suggerer ou mentionner cette possibilite, meme comme "cause plausible". Focus uniquement sur les causes metaboliques, nutritionnelles, genetiques et liees au mode de vie.
 - REGLE NIACINE: Ne JAMAIS recommander la niacine (vitamine B3) si l'ALT est > 40 U/L. La niacine est hepatotoxique et contre-indiquee en cas de souffrance hepatique.
-- EVITER LA REPETITION: Ne repete pas les memes statistiques (valeur, pourcentage d'ecart) dans plusieurs sections. Tu peux rappeler la definition courte d'un marqueur a sa premiere mention dans chaque section, mais sans recopier tous les chiffres deja poses ailleurs. N'ecris jamais "deja detaille plus haut".
+- EVITER LA REPETITION: Ne repete ni les memes statistiques ni la definition d'un marqueur dans plusieurs sections. Chaque section doit apporter une information ou une decision nouvelle. N'ecris jamais "deja detaille plus haut".
 - ORIENTATION DU RAPPORT:
   - Oriente chaque analyse vers la performance, l'anabolisme, la lipolyse et la recomposition corporelle.
   - Utilise un vocabulaire d'expert terrain: volume tolerable, recuperation, synthese proteique, flexibilite metabolique, adherence.
@@ -1132,7 +1138,7 @@ ${ctx.supplementsExpertDirectives}
 
 STYLE: Prose narrative dense. Interdiction absolue de listes a puces, listes numerotees, tableaux. Uniquement paragraphes complets.
 TUTOIEMENT: OBLIGATOIRE. Utilise UNIQUEMENT "tu", "ton", "ta", "tes", "toi". JAMAIS "il", "elle", "le client", "Alex", "vous".
-DEFINITIONS: Dans chaque section de ce batch, a la premiere mention d'un marqueur, ajoute une phrase courte "ce marqueur mesure...". N'ecris jamais "deja detaille plus haut".
+DEFINITIONS: Definis naturellement un marqueur seulement s'il n'a pas deja ete explique dans le contexte fourni. Varie la formulation et n'utilise pas de phrase mecanique repetee. N'ecris jamais "deja detaille plus haut".
 STEROIDES: INTERDIT de mentionner, insinuer ou speculer sur l'utilisation de steroides ou produits dopants.`;
 }
 

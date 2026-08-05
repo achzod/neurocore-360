@@ -242,6 +242,8 @@ assert.equal(
 const parallelBloodGenerator = read("server/blood-analysis/parallel-html-generator.ts");
 assert.match(parallelBloodGenerator, /protectedMeetings/);
 assert.match(parallelBloodGenerator, /refl\[eè\]te\|estime/);
+assert.match(parallelBloodGenerator, /const definedMarkers = new Set<string>/);
+assert.doesNotMatch(parallelBloodGenerator, /premiere mention d'un marqueur dans chaque section/);
 
 const bloodRoutes = read("server/blood-analysis/routes.ts");
 assert.match(bloodRoutes, /Use \/api\/blood-tests\/upload for the tracked GPT report/);
