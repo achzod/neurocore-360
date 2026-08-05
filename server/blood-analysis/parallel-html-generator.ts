@@ -15,6 +15,7 @@
 import { searchArticles } from "../knowledge/storage";
 import type { ScrapedArticle } from "../knowledge/storage";
 import { OPENAI_REPORT_MODEL, runOpenAIText } from "../openaiResponses";
+import { hasExactNumericMention } from "./quality-gates";
 import {
   BIOMARKER_RANGES,
   buildFallbackAnalysis,
@@ -507,9 +508,7 @@ function ensureMarkerNumericCoverage(
   const missing = markers.filter((marker) => {
     const numericValue = Number(marker.value);
     if (!Number.isFinite(numericValue)) return false;
-    const raw = String(numericValue);
-    const numericPattern = escapeRegExp(raw).replace("\\.", "[.,]");
-    return !new RegExp(`(^|[^\\d.,])${numericPattern}(?![\\d.,])`).test(body);
+    return !hasExactNumericMention(body, numericValue);
   });
   if (!missing.length) return out;
 

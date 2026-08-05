@@ -7,7 +7,10 @@ import {
   repairReportTextForDelivery,
 } from "../server/reportTextRepair";
 import { auditClientFacingText, sanitizeClientFacingText } from "../server/clientFacingQuality";
-import { isValidEmptySourcesDisclosure } from "../server/blood-analysis/quality-gates";
+import {
+  hasExactNumericMention,
+  isValidEmptySourcesDisclosure,
+} from "../server/blood-analysis/quality-gates";
 
 const read = (relativePath: string): string =>
   readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf8");
@@ -67,6 +70,10 @@ assert.equal(
   false,
 );
 assert.equal(isValidEmptySourcesDisclosure("Texte court sans preuve.", new Set()), false);
+assert.equal(hasExactNumericMention("HOMA-IR: 2,24.", 2.24), true);
+assert.equal(hasExactNumericMention("Vitamine D: 21,5 ng/mL.", 21), false);
+assert.equal(hasExactNumericMention("AST: 21 U/L.", 21), true);
+assert.equal(hasExactNumericMention("Autre valeur: 12,24.", 2.24), false);
 
 const knownAgeProfile = { dob: "78-10-10" };
 assert.equal(extractKnownAgeYears(knownAgeProfile, new Date("2026-08-06T00:00:00Z")), 47);
