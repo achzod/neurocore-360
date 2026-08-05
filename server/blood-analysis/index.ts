@@ -2184,7 +2184,12 @@ const validateReportStructure = (
     }
     matchedSections += 1;
 
-    const minChars = Math.round(spec.minChars * sectionLengthMultiplier);
+    // Bibliography depth depends on the available source catalog, not on the
+    // patient's marker count. Scaling it with a 32-marker panel turned a valid
+    // 120+ character source list into a false negative at 144 characters.
+    const minChars = spec.key === "sources"
+      ? spec.minChars
+      : Math.round(spec.minChars * sectionLengthMultiplier);
     if (found.content.trim().length < minChars) {
       thin.push(spec.key);
     }
