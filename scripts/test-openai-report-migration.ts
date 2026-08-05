@@ -187,6 +187,8 @@ assert.match(bloodTestRoutes, /activeBloodReportGenerationKeys = new Set<string>
 assert.match(bloodTestRoutes, /Blood report generation already in progress/);
 assert.match(bloodTestRoutes, /getBloodReportGenerationKey/);
 assert.match(bloodTestRoutes, /activeBloodReportGenerationKeys\.has\(generationKey\)/);
+assert.match(bloodTestRoutes, /isInternalQaBloodRecord/);
+assert.match(bloodTestRoutes, /BLOOD_RECOVERY_NO_MARKERS/);
 
 const bloodRoutes = read("server/blood-analysis/routes.ts");
 assert.match(bloodRoutes, /Use \/api\/blood-tests\/upload for the tracked GPT report/);

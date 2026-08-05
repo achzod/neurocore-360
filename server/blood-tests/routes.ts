@@ -594,6 +594,13 @@ const isInternalQaEmail = (value: unknown): boolean => {
   );
 };
 
+const isInternalQaBloodRecord = (record: BloodTestOperationalRecord): boolean => {
+  const profile = record.patientProfile && typeof record.patientProfile === "object"
+    ? record.patientProfile as Record<string, unknown>
+    : {};
+  return isInternalQaEmail(profile.email);
+};
+
 const requireAuth = (req: Request, res: Response, next: NextFunction) => {
   const payload = getAuthPayload(req);
   if (!payload) {
@@ -870,15 +877,19 @@ export function registerBloodTestsRoutes(app: Express): void {
 
       const issues = {
         oldProcessing: activeRecords.filter((record) =>
+          !isInternalQaBloodRecord(record) &&
           record.status === "processing" && new Date(record.createdAt).getTime() < oldProcessingCutoff
         ).map((record) => record.id),
         recentErrors: activeRecords.filter((record) =>
+          !isInternalQaBloodRecord(record) &&
           record.status === "error" && new Date(record.createdAt).getTime() >= recentErrorCutoff
         ).map((record) => record.id),
         completedWithoutNarrative: activeRecords.filter((record) =>
+          !isInternalQaBloodRecord(record) &&
           record.status === "completed" && !getStoredBloodNarrative(record.analysis)
         ).map((record) => record.id),
         fallbackReports: activeRecords.filter((record) => {
+          if (isInternalQaBloodRecord(record)) return false;
           const narrative = getStoredBloodNarrative(record.analysis);
           return Boolean(narrative) && isFallbackAnalysisText(narrative);
         }).map((record) => record.id),
@@ -894,6 +905,7 @@ export function registerBloodTestsRoutes(app: Express): void {
           record.status === "completed" && !record.completedAt
         ).map((record) => record.id),
         qualityFailures: activeRecords.filter((record) => {
+          if (isInternalQaBloodRecord(record)) return false;
           const narrative = getStoredBloodNarrative(record.analysis);
           return Boolean(narrative) && !isFallbackAnalysisText(narrative) && !auditClientFacingText(narrative).ok;
         }).map((record) => record.id),
@@ -2373,8 +2385,13 @@ export function registerBloodTestsRoutes(app: Express): void {
         try {
           const markers = Array.isArray(bt.markers) ? bt.markers : [];
           if (!markers.length) {
-            // No markers extracted ,  pipeline failed earlier than AI step. Skip.
-            console.warn(`[BloodTests-Recovery] ${bt.id} has zero markers, skipping`);
+            // A row with no extracted markers cannot ever produce a report. Mark
+            // the historical orphan as an error so it is not retried forever.
+            console.warn(`[BloodTests-Recovery] ${bt.id} has zero markers, closing as unrecoverable`);
+            await rDb.update(rBt).set({
+              status: "error",
+              error: "BLOOD_RECOVERY_NO_MARKERS",
+            }).where(rEq(rBt.id, bt.id));
             continue;
           }
           const profile = bt.patientProfile && typeof bt.patientProfile === "object" ? bt.patientProfile as any : {};
