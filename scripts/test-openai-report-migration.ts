@@ -159,6 +159,21 @@ const bloodTestRoutes = read("server/blood-tests/routes.ts");
 assert.match(bloodTestRoutes, /\/api\/admin\/blood-tests\/:id\/sanitize-report/);
 assert.match(bloodTestRoutes, /afterAudit = auditClientFacingText\(sanitizedReport\)/);
 assert.match(bloodTestRoutes, /aiSanitizationAudit/);
+assert.match(bloodTestRoutes, /repairReportTextForDelivery\(currentReport, profile\)/);
+assert.match(bloodTestRoutes, /\/api\/admin\/blood-tests\/health/);
+assert.match(bloodTestRoutes, /\/api\/admin\/blood-tests\/reconcile/);
+assert.match(bloodTestRoutes, /collapseRecentBloodDuplicates/);
+assert.match(bloodTestRoutes, /findRecentBloodDuplicate/);
+assert.match(bloodTestRoutes, /Ton credit n'a pas ete debite/);
+assert.match(bloodTestRoutes, /aiAnalysis: storedNarrative,[\s\S]{0,80}aiReport: storedNarrative/);
+assert.match(bloodTestRoutes, /aiAnalysis: aiReport,[\s\S]{0,80}aiReport/);
+assert.match(bloodTestRoutes, /completedAt: bloodTest\.completedAt \|\| new Date\(\)/);
+assert.match(bloodTestRoutes, /aiRetryCount: retryCount/);
+assert.match(bloodTestRoutes, /aiNextRetryAt: fallbackResult/);
+assert.match(bloodTestRoutes, /bRank - aRank \|\| b\.length - a\.length/);
+assert.match(bloodTestRoutes, /Ton credit a ete rembourse/);
+assert.match(bloodTestRoutes, /deliveryStatus: "RETRY_PENDING"/);
+assert.match(bloodTestRoutes, /BLOOD_DELIVERY_RETRY_SINCE/);
 
 const bloodRoutes = read("server/blood-analysis/routes.ts");
 assert.match(bloodRoutes, /Use \/api\/blood-tests\/upload for the tracked GPT report/);
@@ -168,8 +183,7 @@ assert.match(bloodRoutes, /Retrying the whole eleven-section pipeline can overla
 
 const bloodTests = read("server/blood-tests/routes.ts");
 assert.doesNotMatch(bloodTests, /runAIGenerationWithRetry/);
-assert.match(bloodTests, /const sixtyMinAgo = new Date\(Date\.now\(\) - 60 \* 60 \* 1000\)/);
-assert.doesNotMatch(bloodTests, /const tenMinAgo/);
+assert.match(bloodTests, /const tenMinAgo = new Date\(Date\.now\(\) - 10 \* 60 \* 1000\)/);
 assert.match(bloodTests, /isInternalQaEmail/);
 assert.match(bloodTests, /return !isInternalQaEmail\(profile\.email\)/);
 assert.match(bloodTests, /async_generation_failed_pending_retry/);

@@ -24,7 +24,8 @@ import { sendBloodClientDeliveryEmail } from "../blood-analysis/routes";
 import { storage } from "../storage";
 import { getAuthPayload } from "../auth";
 import { OPENAI_REPORT_MODEL } from "../openaiResponses";
-import { auditClientFacingText, sanitizeClientFacingText } from "../clientFacingQuality";
+import { auditClientFacingText } from "../clientFacingQuality";
+import { repairReportTextForDelivery } from "../reportTextRepair";
 
 type MarkerStatus = "optimal" | "normal" | "suboptimal" | "critical";
 
@@ -452,6 +453,96 @@ const generateAIBloodAnalysisWithFallbackRetry = async (
   return "";
 };
 
+type BloodTestOperationalRecord = {
+  id: string;
+  userId: string;
+  status?: string | null;
+  createdAt: Date | string;
+  completedAt?: Date | string | null;
+  markers?: unknown;
+  analysis?: unknown;
+};
+
+const getStoredBloodNarrative = (analysisValue: unknown): string => {
+  if (!analysisValue || typeof analysisValue !== "object" || Array.isArray(analysisValue)) return "";
+  const analysis = analysisValue as Record<string, unknown>;
+  const candidates = [analysis.aiAnalysis, analysis.aiReport]
+    .filter((value): value is string => typeof value === "string" && Boolean(value.trim()));
+  return candidates.sort((a, b) => {
+    const aRank = isFallbackAnalysisText(a) ? 0 : 1;
+    const bRank = isFallbackAnalysisText(b) ? 0 : 1;
+    return bRank - aRank || b.length - a.length;
+  })[0] || "";
+};
+
+const getBloodMarkerFingerprint = (markersValue: unknown): string => {
+  if (!Array.isArray(markersValue) || markersValue.length === 0) return "";
+  return markersValue
+    .map((entry) => {
+      const marker = entry && typeof entry === "object" ? entry as Record<string, unknown> : {};
+      const id = String(marker.markerId || marker.code || marker.name || "").trim().toLowerCase();
+      const value = Number(marker.value);
+      const unit = String(marker.unit || "").trim().toLowerCase();
+      return id && Number.isFinite(value) ? `${id}:${value}:${unit}` : "";
+    })
+    .filter(Boolean)
+    .sort()
+    .join("|");
+};
+
+const getBloodReportQualityRank = (record: BloodTestOperationalRecord): number => {
+  const narrative = getStoredBloodNarrative(record.analysis);
+  if (narrative && !isFallbackAnalysisText(narrative)) return 4;
+  if (narrative) return 3;
+  if (record.status === "processing") return 2;
+  return 1;
+};
+
+const collapseRecentBloodDuplicates = <T extends BloodTestOperationalRecord>(records: T[]): T[] => {
+  const dayMs = 24 * 60 * 60 * 1000;
+  const ordered = [...records].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+  const kept: T[] = [];
+  for (const candidate of ordered) {
+    const fingerprint = getBloodMarkerFingerprint(candidate.markers);
+    if (!fingerprint) {
+      kept.push(candidate);
+      continue;
+    }
+    const duplicateIndex = kept.findIndex((existing) =>
+      existing.userId === candidate.userId &&
+      getBloodMarkerFingerprint(existing.markers) === fingerprint &&
+      Math.abs(new Date(existing.createdAt).getTime() - new Date(candidate.createdAt).getTime()) <= dayMs
+    );
+    if (duplicateIndex === -1) {
+      kept.push(candidate);
+      continue;
+    }
+    const existing = kept[duplicateIndex];
+    if (getBloodReportQualityRank(candidate) > getBloodReportQualityRank(existing)) {
+      kept[duplicateIndex] = candidate;
+    }
+  }
+  return kept.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+};
+
+const findRecentBloodDuplicate = <T extends BloodTestOperationalRecord>(
+  records: T[],
+  markers: unknown,
+): T | undefined => {
+  const fingerprint = getBloodMarkerFingerprint(markers);
+  if (!fingerprint) return undefined;
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+  return records
+    .filter((record) =>
+      new Date(record.createdAt).getTime() >= cutoff &&
+      ["processing", "completed"].includes(String(record.status || "")) &&
+      getBloodMarkerFingerprint(record.markers) === fingerprint
+    )
+    .sort((a, b) => getBloodReportQualityRank(b) - getBloodReportQualityRank(a))[0];
+};
+
 const isAdminRequest = (req: Request): boolean => {
   const adminKey = req.headers["x-admin-key"] || req.query.key;
   const validKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY;
@@ -541,6 +632,33 @@ export function registerBloodTestsRoutes(app: Express): void {
       const pdfText = parsed.text || "";
       if (!pdfText.trim()) { res.status(400).json({ error: "PDF vide" }); return; }
 
+      const fileName = req.file.originalname;
+      const pdfProfile = extractPatientInfoFromPdfText(pdfText);
+      const extractedMarkers = await extractMarkersFromPdfText(pdfText, fileName);
+      if (!extractedMarkers.length) {
+        res.status(400).json({ error: "Aucun marqueur detecte" });
+        return;
+      }
+      const existingTests = await storage.getBloodTestsByUserId(user.id);
+      const duplicate = findRecentBloodDuplicate(existingTests, extractedMarkers);
+      const forceUpload = req.body.force === true || String(req.body.force || "").toLowerCase() === "true";
+      if (duplicate && !forceUpload) {
+        res.status(409).json({
+          error: "Ce bilan a deja ete importe dans les dernieres 24 heures.",
+          bloodTestId: duplicate.id,
+          status: duplicate.status,
+        });
+        return;
+      }
+
+      const storedProfile = {
+        ...pdfProfile,
+        email: String(email).trim().toLowerCase(),
+        prenom: req.body.prenom || pdfProfile.prenom || String(email).split("@")[0],
+        nom: req.body.nom || pdfProfile.nom,
+        gender: pdfProfile.gender || req.body.gender || "homme",
+      };
+
       // Create record immediately, process in background
       const baseRecord = await storage.createBloodTest({
         userId: user.id,
@@ -549,9 +667,9 @@ export function registerBloodTestsRoutes(app: Express): void {
         fileSize: req.file.size,
         status: "processing",
         error: null,
-        markers: [],
-        analysis: {},
-        patientProfile: { email, prenom: req.body.prenom || email.split("@")[0] },
+        markers: extractedMarkers as any,
+        analysis: { ...deriveAiProcessingMeta("admin_upload_generation_pending") },
+        patientProfile: storedProfile as any,
         globalScore: null,
         globalLevel: null,
         createdAt: new Date(),
@@ -561,15 +679,8 @@ export function registerBloodTestsRoutes(app: Express): void {
       res.json({ success: true, bloodTestId: baseRecord.id, status: "processing" });
 
       // Process in background (extraction + full analysis pipeline)
-      const fileName = req.file.originalname;
-      const pdfProfile = extractPatientInfoFromPdfText(pdfText);
       setTimeout(async () => {
         try {
-          const extractedMarkers = await extractMarkersFromPdfText(pdfText, fileName);
-          if (!extractedMarkers.length) {
-            await storage.updateBloodTest(baseRecord.id, { status: "error", error: "Aucun marqueur detecte" });
-            return;
-          }
           console.log(`[Admin] ${extractedMarkers.length} markers extracted for ${email}`);
 
           // Run full analysis pipeline (same as regular upload)
@@ -607,15 +718,15 @@ export function registerBloodTestsRoutes(app: Express): void {
           const aiProfile = {
             gender,
             age,
-            prenom: req.body.prenom || pdfProfile.prenom,
-            nom: req.body.nom || pdfProfile.nom,
+            prenom: storedProfile.prenom,
+            nom: storedProfile.nom,
           };
 
           // Store markers + analysis immediately
           await storage.updateBloodTest(baseRecord.id, {
             markers: extractedMarkers as any,
             analysis: analysisResult as any,
-            patientProfile: { ...pdfProfile, email, prenom: aiProfile.prenom, nom: aiProfile.nom } as any,
+            patientProfile: storedProfile as any,
             globalScore,
             globalLevel,
           });
@@ -629,11 +740,54 @@ export function registerBloodTestsRoutes(app: Express): void {
             aiReport = buildFallbackAnalysis(analysisResult, { gender, age });
           }
 
+          aiReport = repairReportTextForDelivery(aiReport, storedProfile as Record<string, unknown>);
+          const completedAnalysis: Record<string, unknown> = {
+            ...analysisResult,
+            aiAnalysis: aiReport,
+            aiReport,
+            ...deriveAiMeta(
+              aiReport,
+              isFallbackAnalysisText(aiReport) ? "admin_upload_generation_fallback" : undefined
+            ),
+          };
           await storage.updateBloodTest(baseRecord.id, {
-            analysis: { ...analysisResult, aiReport } as any,
+            analysis: completedAnalysis as any,
             status: "completed",
+            completedAt: new Date(),
           });
           console.log(`[Admin] Blood test ${baseRecord.id} completed for ${email}`);
+
+          if (!isFallbackAnalysisText(aiReport)) {
+            try {
+              const baseUrl = process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || "https://apexlabs.achzodcoaching.com";
+              const sent = await sendBloodClientDeliveryEmail(
+                storedProfile.email,
+                baseRecord.id,
+                aiReport,
+                baseUrl,
+                extractedMarkers as any,
+                storedProfile as Record<string, unknown>,
+              );
+              await storage.updateBloodTest(baseRecord.id, {
+                analysis: {
+                  ...completedAnalysis,
+                  deliveryStatus: sent ? "SENT" : "RETRY_PENDING",
+                  ...(sent
+                    ? { emailSentAt: new Date().toISOString() }
+                    : { deliveryNextRetryAt: new Date(Date.now() + 60 * 60 * 1000).toISOString() }),
+                },
+              });
+            } catch (mailError) {
+              console.error(`[Admin] Blood auto-delivery failed for ${baseRecord.id}:`, mailError);
+              await storage.updateBloodTest(baseRecord.id, {
+                analysis: {
+                  ...completedAnalysis,
+                  deliveryStatus: "RETRY_PENDING",
+                  deliveryNextRetryAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+                },
+              });
+            }
+          }
         } catch (e) {
           console.error(`[Admin] Blood processing failed:`, e);
           await storage.updateBloodTest(baseRecord.id, { status: "error", error: String(e) }).catch(() => {});
@@ -661,9 +815,156 @@ export function registerBloodTestsRoutes(app: Express): void {
     }
   });
 
-  // Admin: deterministic cleanup for a generated report. This never calls GPT
-  // and never changes delivery state. It is safe to use for operational repair
-  // when only forbidden typography slipped through an otherwise valid report.
+  app.get("/api/admin/blood-tests/health", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const { db: healthDb } = await import("../db.js");
+      const { bloodTests: healthTable } = await import("../../shared/drizzle-schema.js");
+      const { desc: healthDesc } = await import("drizzle-orm");
+      const records = await healthDb
+        .select()
+        .from(healthTable)
+        .orderBy(healthDesc(healthTable.createdAt))
+        .limit(2000) as BloodTestOperationalRecord[];
+      const activeRecords = collapseRecentBloodDuplicates(records);
+      const oldProcessingCutoff = Date.now() - 15 * 60 * 1000;
+      const recentDeliveryCutoff = Math.max(
+        Date.now() - 48 * 60 * 60 * 1000,
+        new Date(process.env.BLOOD_DELIVERY_RETRY_SINCE || "2026-08-05T00:00:00.000Z").getTime(),
+      );
+      const recentErrorCutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+
+      const issues = {
+        oldProcessing: activeRecords.filter((record) =>
+          record.status === "processing" && new Date(record.createdAt).getTime() < oldProcessingCutoff
+        ).map((record) => record.id),
+        recentErrors: activeRecords.filter((record) =>
+          record.status === "error" && new Date(record.createdAt).getTime() >= recentErrorCutoff
+        ).map((record) => record.id),
+        completedWithoutNarrative: activeRecords.filter((record) =>
+          record.status === "completed" && !getStoredBloodNarrative(record.analysis)
+        ).map((record) => record.id),
+        fallbackReports: activeRecords.filter((record) => {
+          const narrative = getStoredBloodNarrative(record.analysis);
+          return Boolean(narrative) && isFallbackAnalysisText(narrative);
+        }).map((record) => record.id),
+        fieldMismatches: records.filter((record) => {
+          const analysis = record.analysis && typeof record.analysis === "object"
+            ? record.analysis as Record<string, unknown>
+            : {};
+          const aiAnalysis = typeof analysis.aiAnalysis === "string" ? analysis.aiAnalysis : "";
+          const aiReport = typeof analysis.aiReport === "string" ? analysis.aiReport : "";
+          return Boolean(aiAnalysis || aiReport) && aiAnalysis !== aiReport;
+        }).map((record) => record.id),
+        missingCompletedAt: records.filter((record) =>
+          record.status === "completed" && !record.completedAt
+        ).map((record) => record.id),
+        qualityFailures: activeRecords.filter((record) => {
+          const narrative = getStoredBloodNarrative(record.analysis);
+          return Boolean(narrative) && !isFallbackAnalysisText(narrative) && !auditClientFacingText(narrative).ok;
+        }).map((record) => record.id),
+        recentFullReportsNotDelivered: activeRecords.filter((record) => {
+          const narrative = getStoredBloodNarrative(record.analysis);
+          const analysis = record.analysis && typeof record.analysis === "object"
+            ? record.analysis as Record<string, unknown>
+            : {};
+          const profile = (record as any).patientProfile && typeof (record as any).patientProfile === "object"
+            ? (record as any).patientProfile as Record<string, unknown>
+            : {};
+          return new Date(record.createdAt).getTime() >= recentDeliveryCutoff &&
+            Boolean(narrative) &&
+            !isFallbackAnalysisText(narrative) &&
+            analysis.deliveryStatus !== "SENT" &&
+            !isInternalQaEmail(profile.email);
+        }).map((record) => record.id),
+      };
+      const counts = Object.fromEntries(
+        Object.entries(issues).map(([key, ids]) => [key, ids.length])
+      ) as Record<string, number>;
+      const redCount = Object.values(counts).reduce((sum, count) => sum + count, 0);
+      res.json({
+        success: true,
+        green: redCount === 0,
+        checked: records.length,
+        activeAfterDuplicateCollapse: activeRecords.length,
+        duplicateRowsHidden: records.length - activeRecords.length,
+        counts,
+        issues,
+        checkedAt: new Date().toISOString(),
+      });
+    } catch (error: any) {
+      console.error("[Admin] Blood health audit error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/admin/blood-tests/reconcile", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const dryRun = req.body?.dryRun !== false;
+      const { db: reconcileDb } = await import("../db.js");
+      const { bloodTests: reconcileTable } = await import("../../shared/drizzle-schema.js");
+      const { eq: reconcileEq, desc: reconcileDesc } = await import("drizzle-orm");
+      const records = await reconcileDb
+        .select()
+        .from(reconcileTable)
+        .orderBy(reconcileDesc(reconcileTable.createdAt))
+        .limit(2000);
+      const changed: string[] = [];
+      const blocked: Array<{ id: string; audit: ReturnType<typeof auditClientFacingText> }> = [];
+
+      for (const record of records) {
+        const narrative = getStoredBloodNarrative(record.analysis);
+        if (!narrative) continue;
+        const profile = record.patientProfile && typeof record.patientProfile === "object"
+          ? record.patientProfile as Record<string, unknown>
+          : {};
+        const repaired = repairReportTextForDelivery(narrative, profile);
+        const audit = auditClientFacingText(repaired);
+        if (!audit.ok) {
+          blocked.push({ id: record.id, audit });
+          continue;
+        }
+        const analysis = record.analysis && typeof record.analysis === "object"
+          ? record.analysis as Record<string, unknown>
+          : {};
+        const needsUpdate = analysis.aiAnalysis !== repaired ||
+          analysis.aiReport !== repaired ||
+          record.status !== "completed" ||
+          !record.completedAt;
+        if (!needsUpdate) continue;
+        changed.push(record.id);
+        if (!dryRun) {
+          await reconcileDb.update(reconcileTable).set({
+            analysis: {
+              ...analysis,
+              aiAnalysis: repaired,
+              aiReport: repaired,
+              aiReconciledAt: new Date().toISOString(),
+              aiReconciliationAudit: audit,
+            } as any,
+            status: "completed",
+            completedAt: record.completedAt || new Date(),
+          }).where(reconcileEq(reconcileTable.id, record.id));
+        }
+      }
+
+      res.status(blocked.length ? 422 : 200).json({
+        success: blocked.length === 0,
+        dryRun,
+        checked: records.length,
+        changed: changed.length,
+        changedIds: changed,
+        blocked,
+      });
+    } catch (error: any) {
+      console.error("[Admin] Blood reconciliation error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Admin: deterministic client-facing repair. This never calls GPT and never
+  // changes delivery state. It normalizes legacy fields, tutoiement and style.
   app.post("/api/admin/blood-tests/:id/sanitize-report", async (req, res) => {
     if (!requireAdmin(req, res)) return;
     try {
@@ -696,7 +997,10 @@ export function registerBloodTestsRoutes(app: Express): void {
       }
 
       const beforeAudit = auditClientFacingText(currentReport);
-      const sanitizedReport = sanitizeClientFacingText(currentReport);
+      const profile = bloodTest.patientProfile && typeof bloodTest.patientProfile === "object"
+        ? bloodTest.patientProfile as Record<string, unknown>
+        : {};
+      const sanitizedReport = repairReportTextForDelivery(currentReport, profile);
       const afterAudit = auditClientFacingText(sanitizedReport);
       if (!afterAudit.ok) {
         res.status(422).json({
@@ -716,7 +1020,11 @@ export function registerBloodTestsRoutes(app: Express): void {
       };
       await sanitizeDb
         .update(sanitizeTable)
-        .set({ analysis: sanitizedAnalysis as any })
+        .set({
+          analysis: sanitizedAnalysis as any,
+          status: "completed",
+          completedAt: bloodTest.completedAt || new Date(),
+        })
         .where(sanitizeEq(sanitizeTable.id, id));
 
       res.json({
@@ -802,18 +1110,18 @@ export function registerBloodTestsRoutes(app: Express): void {
           taille: profile.taille,
         });
       }
+      aiText = repairReportTextForDelivery(aiText, profile as Record<string, unknown>);
 
       const mergedAnalysis: Record<string, unknown> = {
         ...(typeof bt.analysis === "object" && bt.analysis ? (bt.analysis as Record<string, unknown>) : {}),
         ...analysisResult,
         aiAnalysis: aiText,
+        aiReport: aiText,
         ...deriveAiMeta(
           aiText,
           isFallbackAnalysisText(aiText) ? "admin_reprocess_fallback" : undefined
         ),
       };
-      delete mergedAnalysis.aiFallbackReason;
-      delete mergedAnalysis.aiFallbackAt;
 
       await reDb.update(btTable).set({
         analysis: mergedAnalysis as any,
@@ -1121,6 +1429,12 @@ export function registerBloodTestsRoutes(app: Express): void {
               aiFallbackReason = aiFallbackReason || "sync_empty_response_or_error";
             }
           }
+          if (aiAnalysis) {
+            aiAnalysis = repairReportTextForDelivery(
+              aiAnalysis,
+              patientProfile as Record<string, unknown>,
+            );
+          }
           const aiMeta = aiAnalysis
             ? deriveAiMeta(aiAnalysis, aiFallbackReason)
             : deriveAiProcessingMeta(aiFallbackReason);
@@ -1162,6 +1476,7 @@ export function registerBloodTestsRoutes(app: Express): void {
             followUp: analysisResult.followUp,
             alerts: analysisResult.alerts,
             aiAnalysis,
+            aiReport: aiAnalysis,
             ...aiMeta,
             protocolPhases,
             lifestyleCorrelations: buildLifestyleCorrelations(analysisResult.markers, patientProfile),
@@ -1197,6 +1512,7 @@ export function registerBloodTestsRoutes(app: Express): void {
                   const pendingPayload = {
                     ...analysisPayload,
                     aiAnalysis: "",
+                    aiReport: "",
                     ...deriveAiProcessingMeta("async_generation_failed_pending_retry"),
                   };
                   await storage.updateBloodTest(createdRecord.id, {
@@ -1205,12 +1521,17 @@ export function registerBloodTestsRoutes(app: Express): void {
                   });
                   return;
                 }
+                const normalizedEnriched = repairReportTextForDelivery(
+                  enriched,
+                  patientProfile as Record<string, unknown>,
+                );
                 const updatedAnalysis = {
                   ...analysisPayload,
-                  aiAnalysis: enriched,
+                  aiAnalysis: normalizedEnriched,
+                  aiReport: normalizedEnriched,
                   ...deriveAiMeta(
-                    enriched,
-                    isFallbackAnalysisText(enriched) ? "async_generation_returned_fallback" : undefined
+                    normalizedEnriched,
+                    isFallbackAnalysisText(normalizedEnriched) ? "async_generation_returned_fallback" : undefined
                   ),
                 };
                 await storage.updateBloodTest(createdRecord.id, {
@@ -1301,6 +1622,20 @@ export function registerBloodTestsRoutes(app: Express): void {
         return;
       }
 
+      // Protect credits and the dashboard from accidental double submissions.
+      // The same marker set within 24 hours resolves to the existing job.
+      const existingTests = await storage.getBloodTestsByUserId(user.id);
+      const duplicate = findRecentBloodDuplicate(existingTests, extractedMarkers);
+      if (duplicate) {
+        res.status(409).json({
+          error: "Ce bilan a deja ete importe. Ton credit n'a pas ete debite.",
+          bloodTestId: duplicate.id,
+          status: duplicate.status,
+          remainingCredits: credits,
+        });
+        return;
+      }
+
       // PDF is valid and markers found , NOW debit credit
       const updatedUser = await storage.adjustUserCredits(user.id, -1);
       if (!updatedUser) {
@@ -1365,13 +1700,20 @@ export function registerBloodTestsRoutes(app: Express): void {
           status: "error",
           error: `Infos patient manquantes: ${missingProfile.join(", ")}.`,
         });
+        const refundedUser = await storage.adjustUserCredits(user.id, 1);
         res.status(400).json({
-          error: `Infos patient manquantes: ${missingProfile.join(", ")}.`,
+          error: `Infos patient manquantes: ${missingProfile.join(", ")}. Ton credit a ete rembourse.`,
           bloodTest: updated || baseRecord,
-          remainingCredits: updatedUser.credits ?? 0,
+          remainingCredits: refundedUser?.credits ?? (updatedUser.credits ?? 0) + 1,
         });
         return;
       }
+
+      await storage.updateBloodTest(baseRecord.id, {
+        markers: extractedMarkers as any,
+        patientProfile: profile,
+        analysis: { ...deriveAiProcessingMeta("upload_generation_pending") },
+      });
 
       const age = getAgeFromDob(profile.dob);
       const analysisResult = await analyzeBloodwork(extractedMarkers, {
@@ -1455,6 +1797,12 @@ export function registerBloodTestsRoutes(app: Express): void {
           aiFallbackReason = aiFallbackReason || "sync_empty_response_or_error";
         }
       }
+      if (aiAnalysis) {
+        aiAnalysis = repairReportTextForDelivery(
+          aiAnalysis,
+          profile as Record<string, unknown>,
+        );
+      }
       const aiMeta = aiAnalysis
         ? deriveAiMeta(aiAnalysis, aiFallbackReason)
         : deriveAiProcessingMeta(aiFallbackReason);
@@ -1496,6 +1844,7 @@ export function registerBloodTestsRoutes(app: Express): void {
         followUp: analysisResult.followUp,
         alerts: analysisResult.alerts,
         aiAnalysis,
+        aiReport: aiAnalysis,
         ...aiMeta,
         protocolPhases,
         lifestyleCorrelations: buildLifestyleCorrelations(analysisResult.markers, profile),
@@ -1525,6 +1874,7 @@ export function registerBloodTestsRoutes(app: Express): void {
               const pendingPayload = {
                 ...analysisPayload,
                 aiAnalysis: "",
+                aiReport: "",
                 ...deriveAiProcessingMeta("async_generation_failed_pending_retry"),
               };
               await storage.updateBloodTest(baseRecord.id, {
@@ -1533,12 +1883,17 @@ export function registerBloodTestsRoutes(app: Express): void {
               });
               return;
             }
+            const normalizedEnriched = repairReportTextForDelivery(
+              enriched,
+              profile as Record<string, unknown>,
+            );
             const refreshedAnalysis = {
               ...analysisPayload,
-              aiAnalysis: enriched,
+              aiAnalysis: normalizedEnriched,
+              aiReport: normalizedEnriched,
               ...deriveAiMeta(
-                enriched,
-                isFallbackAnalysisText(enriched) ? "async_generation_returned_fallback" : undefined
+                normalizedEnriched,
+                isFallbackAnalysisText(normalizedEnriched) ? "async_generation_returned_fallback" : undefined
               ),
             };
             await storage.updateBloodTest(baseRecord.id, {
@@ -1553,15 +1908,15 @@ export function registerBloodTestsRoutes(app: Express): void {
             // discover their report was ready). On success we persist
             // deliveryStatus + emailSentAt into the analysis JSON so admin
             // force-send can dedup and not re-spam the client.
-            if (!isFallbackAnalysisText(enriched)) {
+            if (!isFallbackAnalysisText(normalizedEnriched)) {
               try {
                 const baseUrl = process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || "https://apexlabs.achzodcoaching.com";
                 const recipient = (profile.email as string) || user.email;
-                if (recipient && enriched) {
+                if (recipient && normalizedEnriched) {
                   const sent = await sendBloodClientDeliveryEmail(
                     recipient,
                     baseRecord.id,
-                    enriched,
+                    normalizedEnriched,
                     baseUrl,
                     markers as any,
                     profile as Record<string, unknown>,
@@ -1600,11 +1955,16 @@ export function registerBloodTestsRoutes(app: Express): void {
                 poids: profile.poids,
                 taille: profile.taille,
               });
+              const normalizedFallback = repairReportTextForDelivery(
+                fallbackAnalysis,
+                profile as Record<string, unknown>,
+              );
               await storage.updateBloodTest(baseRecord.id, {
                 analysis: {
                   ...analysisPayload,
-                  aiAnalysis: fallbackAnalysis,
-                  ...deriveAiMeta(fallbackAnalysis, "async_generation_failed_catch_fallback"),
+                  aiAnalysis: normalizedFallback,
+                  aiReport: normalizedFallback,
+                  ...deriveAiMeta(normalizedFallback, "async_generation_failed_catch_fallback"),
                 },
                 status: "completed",
                 completedAt: new Date(),
@@ -1671,7 +2031,9 @@ export function registerBloodTestsRoutes(app: Express): void {
           res.json({ bloodTests: [] });
           return;
         }
-        const tests = await storage.getBloodTestsByUserId(user.id);
+        const tests = collapseRecentBloodDuplicates(
+          await storage.getBloodTestsByUserId(user.id)
+        );
         const summaries = tests.map((test) => ({
           id: test.id,
           fileName: test.fileName,
@@ -1686,7 +2048,9 @@ export function registerBloodTestsRoutes(app: Express): void {
       }
 
       const auth = (req as any).auth as { userId: string };
-      const tests = await storage.getBloodTestsByUserId(auth.userId);
+      const tests = collapseRecentBloodDuplicates(
+        await storage.getBloodTestsByUserId(auth.userId)
+      );
       const summaries = tests.map((test) => ({
         id: test.id,
         fileName: test.fileName,
@@ -1784,6 +2148,11 @@ export function registerBloodTestsRoutes(app: Express): void {
         console.error("[BloodTest] Failed to generate comprehensive data:", err);
       }
 
+      const storedAnalysis = test.analysis && typeof test.analysis === "object" && !Array.isArray(test.analysis)
+        ? test.analysis as Record<string, unknown>
+        : {};
+      const storedNarrative = getStoredBloodNarrative(storedAnalysis);
+
       res.json({
         bloodTest: {
           id: test.id,
@@ -1805,7 +2174,9 @@ export function registerBloodTestsRoutes(app: Express): void {
         derivedMetrics: {},
         patterns: analysis.patterns || [],
         analysis: {
-          ...(test.analysis || {}),
+          ...storedAnalysis,
+          aiAnalysis: storedNarrative,
+          aiReport: storedNarrative,
           summary: analysis.summary,
           patterns: analysis.patterns,
           globalScore:
@@ -1893,7 +2264,7 @@ export function registerBloodTestsRoutes(app: Express): void {
     try {
       const { db: rDb } = await import("../db.js");
       const { bloodTests: rBt } = await import("../../shared/drizzle-schema.js");
-      const { eq: rEq, and: rAnd, lt: rLt, asc: rAsc } = await import("drizzle-orm");
+      const { eq: rEq, and: rAnd, lt: rLt, asc: rAsc, desc: rDesc } = await import("drizzle-orm");
       const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000);
       const stuckCandidates = await rDb.select().from(rBt).where(
         rAnd(
@@ -1907,12 +2278,36 @@ export function registerBloodTestsRoutes(app: Express): void {
           : {};
         return !isInternalQaEmail(profile.email);
       });
-      if (!stuck.length) return;
-      console.log(`[BloodTests-Recovery] ${stuck.length} stuck row(s), recovering...`);
+      const completedCandidates = await rDb
+        .select()
+        .from(rBt)
+        .where(rEq(rBt.status, "completed"))
+        .orderBy(rDesc(rBt.createdAt))
+        .limit(500);
+      const dueFallbacks = collapseRecentBloodDuplicates(completedCandidates).filter((row) => {
+        const profile = row.patientProfile && typeof row.patientProfile === "object"
+          ? row.patientProfile as Record<string, unknown>
+          : {};
+        const analysis = row.analysis && typeof row.analysis === "object"
+          ? row.analysis as Record<string, unknown>
+          : {};
+        const retryCount = Number(analysis.aiRetryCount || 0);
+        const nextRetryAt = analysis.aiNextRetryAt ? new Date(String(analysis.aiNextRetryAt)).getTime() : 0;
+        const narrative = getStoredBloodNarrative(analysis);
+        return !isInternalQaEmail(profile.email) &&
+          Boolean(narrative) &&
+          isFallbackAnalysisText(narrative) &&
+          retryCount < 3 &&
+          (!nextRetryAt || nextRetryAt <= Date.now());
+      });
+      const recoveryQueue = [...stuck, ...dueFallbacks].slice(0, 25);
+      if (recoveryQueue.length) {
+        console.log(`[BloodTests-Recovery] ${recoveryQueue.length} pending row(s), recovering...`);
+      }
       const { analyzeBloodwork, getBloodworkKnowledgeContext } =
         await import("../blood-analysis/index.js");
       const { sendBloodClientDeliveryEmail } = await import("../blood-analysis/routes.js");
-      for (const bt of stuck) {
+      for (const bt of recoveryQueue) {
         try {
           const markers = Array.isArray(bt.markers) ? bt.markers : [];
           if (!markers.length) {
@@ -1959,18 +2354,28 @@ export function registerBloodTestsRoutes(app: Express): void {
               taille: profile.taille,
             });
           }
+          aiText = repairReportTextForDelivery(aiText, profile as Record<string, unknown>);
+          const existingAnalysis = typeof bt.analysis === "object" && bt.analysis
+            ? bt.analysis as Record<string, unknown>
+            : {};
+          const fallbackResult = isFallbackAnalysisText(aiText);
+          const retryCount = fallbackResult ? Number(existingAnalysis.aiRetryCount || 0) + 1 : 0;
+          const nextRetryDelayHours = Math.min(24, 6 * Math.max(1, retryCount));
           const mergedAnalysis: Record<string, unknown> = {
-            ...(typeof bt.analysis === "object" && bt.analysis ? (bt.analysis as Record<string, unknown>) : {}),
+            ...existingAnalysis,
             ...analysisResult,
             aiAnalysis: aiText,
+            aiReport: aiText,
             ...deriveAiMeta(
               aiText,
-              isFallbackAnalysisText(aiText) ? "recovery_cron_fallback" : undefined
+              fallbackResult ? "recovery_cron_fallback" : undefined
             ),
+            aiRetryCount: retryCount,
+            aiNextRetryAt: fallbackResult
+              ? new Date(Date.now() + nextRetryDelayHours * 60 * 60 * 1000).toISOString()
+              : null,
             recoveredByCronAt: new Date().toISOString(),
           };
-          delete mergedAnalysis.aiFallbackReason;
-          delete mergedAnalysis.aiFallbackAt;
           await rDb.update(rBt).set({
             analysis: mergedAnalysis as any,
             status: "completed",
@@ -1982,7 +2387,7 @@ export function registerBloodTestsRoutes(app: Express): void {
           // upload pipeline uses. We don't want this cron to also re-spam a
           // client whose report was somehow already delivered before being
           // marked "processing" again.
-          if (mergedAnalysis.deliveryStatus !== "SENT" && aiText) {
+          if (!fallbackResult && mergedAnalysis.deliveryStatus !== "SENT" && aiText) {
             const { storage: rStorage } = await import("../storage.js");
             const userRow = await rStorage.getUser(bt.userId);
             const recipient = (profile.email as string) || userRow?.email;
@@ -2010,6 +2415,81 @@ export function registerBloodTestsRoutes(app: Express): void {
           }
         } catch (innerErr) {
           console.error(`[BloodTests-Recovery] ${bt.id} failed:`, innerErr);
+        }
+      }
+
+      // Delivery recovery is separate from GPT recovery. A temporary mail
+      // provider failure must never turn a valid report back into an error.
+      const deliveryRetrySince = new Date(
+        process.env.BLOOD_DELIVERY_RETRY_SINCE || "2026-08-05T00:00:00.000Z"
+      ).getTime();
+      const deliveryCandidates = collapseRecentBloodDuplicates(completedCandidates)
+        .filter((bt) => {
+          const profile = bt.patientProfile && typeof bt.patientProfile === "object"
+            ? bt.patientProfile as Record<string, unknown>
+            : {};
+          const analysis = bt.analysis && typeof bt.analysis === "object"
+            ? bt.analysis as Record<string, unknown>
+            : {};
+          const narrative = getStoredBloodNarrative(analysis);
+          const retryCount = Number(analysis.deliveryRetryCount || 0);
+          const nextRetryAt = analysis.deliveryNextRetryAt
+            ? new Date(String(analysis.deliveryNextRetryAt)).getTime()
+            : 0;
+          return new Date(bt.createdAt).getTime() >= deliveryRetrySince &&
+            !isInternalQaEmail(profile.email) &&
+            Boolean(narrative) &&
+            !isFallbackAnalysisText(narrative) &&
+            analysis.deliveryStatus !== "SENT" &&
+            retryCount < 5 &&
+            (!nextRetryAt || nextRetryAt <= Date.now());
+        })
+        .slice(0, 10);
+
+      for (const bt of deliveryCandidates) {
+        const profile = bt.patientProfile && typeof bt.patientProfile === "object"
+          ? bt.patientProfile as Record<string, unknown>
+          : {};
+        const analysis = bt.analysis && typeof bt.analysis === "object"
+          ? bt.analysis as Record<string, unknown>
+          : {};
+        const narrative = getStoredBloodNarrative(analysis);
+        const userRow = await storage.getUser(bt.userId);
+        const recipient = String(profile.email || userRow?.email || "").trim();
+        if (!recipient) continue;
+        const retryCount = Number(analysis.deliveryRetryCount || 0) + 1;
+        try {
+          const baseUrl = process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || "https://apexlabs.achzodcoaching.com";
+          const sent = await sendBloodClientDeliveryEmail(
+            recipient,
+            bt.id,
+            narrative,
+            baseUrl,
+            Array.isArray(bt.markers) ? bt.markers as any : [],
+            profile,
+          );
+          await rDb.update(rBt).set({
+            analysis: {
+              ...analysis,
+              deliveryStatus: sent ? "SENT" : "RETRY_PENDING",
+              deliveryRetryCount: retryCount,
+              deliveryLastAttemptAt: new Date().toISOString(),
+              ...(sent
+                ? { emailSentAt: new Date().toISOString(), deliveryNextRetryAt: null }
+                : { deliveryNextRetryAt: new Date(Date.now() + retryCount * 60 * 60 * 1000).toISOString() }),
+            } as any,
+          }).where(rEq(rBt.id, bt.id));
+        } catch (deliveryError) {
+          console.error(`[BloodTests-Recovery] Delivery retry failed for ${bt.id}:`, deliveryError);
+          await rDb.update(rBt).set({
+            analysis: {
+              ...analysis,
+              deliveryStatus: "RETRY_PENDING",
+              deliveryRetryCount: retryCount,
+              deliveryLastAttemptAt: new Date().toISOString(),
+              deliveryNextRetryAt: new Date(Date.now() + retryCount * 60 * 60 * 1000).toISOString(),
+            } as any,
+          }).where(rEq(rBt.id, bt.id));
         }
       }
     } catch (err) {
