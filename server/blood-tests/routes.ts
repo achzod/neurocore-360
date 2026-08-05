@@ -753,7 +753,7 @@ export function registerBloodTestsRoutes(app: Express): void {
       // 'map')" when it tries to read .patterns / .markers off it (Alan
       // Annequin 2026-05-09 stuck in "processing" forever, reprocess endpoint
       // crashed). Always run analyzeBloodwork first so we have the right shape.
-      const { analyzeBloodwork, generateAIBloodAnalysis, getBloodworkKnowledgeContext } =
+      const { analyzeBloodwork, getBloodworkKnowledgeContext } =
         await import("../blood-analysis/index.js");
       const profile = bt.patientProfile && typeof bt.patientProfile === "object" ? bt.patientProfile as any : {};
       const gender = (profile.gender as "homme" | "femme") || "homme";
@@ -779,19 +779,38 @@ export function registerBloodTestsRoutes(app: Express): void {
       }));
       const analysisResult = await analyzeBloodwork(normalizedInput as any, { gender, age });
       const knowledgeContext = await getBloodworkKnowledgeContext(analysisResult.markers, analysisResult.patterns).catch(() => undefined);
-      const aiText = await generateAIBloodAnalysis(
+      let aiText = await generateAIBloodAnalysisWithFallbackRetry(
         analysisResult,
         { ...profile, gender },
         knowledgeContext,
       );
+      if (!aiText) {
+        aiText = buildFallbackAnalysis(analysisResult, {
+          gender,
+          age,
+          sleepHours: profile.sleepHours,
+          stressLevel: profile.stressLevel,
+          fastingHours: profile.fastingHours,
+          drawTime: profile.drawTime,
+          lastTraining: profile.lastTraining,
+          alcoholLast72h: profile.alcoholLast72h,
+          nutritionPhase: profile.nutritionPhase,
+          supplementsUsed: profile.supplementsUsed,
+          medications: profile.medications,
+          infectionRecent: profile.infectionRecent,
+          poids: profile.poids,
+          taille: profile.taille,
+        });
+      }
 
       const mergedAnalysis: Record<string, unknown> = {
         ...(typeof bt.analysis === "object" && bt.analysis ? (bt.analysis as Record<string, unknown>) : {}),
         ...analysisResult,
         aiAnalysis: aiText,
-        aiStatus: "completed",
-        aiGeneratedAt: new Date().toISOString(),
-        aiModel: "gpt-5.6-sol",
+        ...deriveAiMeta(
+          aiText,
+          isFallbackAnalysisText(aiText) ? "admin_reprocess_fallback" : undefined
+        ),
       };
       delete mergedAnalysis.aiFallbackReason;
       delete mergedAnalysis.aiFallbackAt;
