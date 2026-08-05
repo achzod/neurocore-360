@@ -1870,6 +1870,7 @@ export async function generateParallelHtmlReport(
   analysisResult: BloodAnalysisResult,
   userProfile: UserProfile,
   knowledgeContext?: string,
+  options?: { allowCanonicalRecovery?: boolean },
 ): Promise<{ html: string; markdown: string; sections: Record<string, string> }> {
   const markerCount = analysisResult.markers.length;
 
@@ -1959,7 +1960,7 @@ export async function generateParallelHtmlReport(
   };
 
   const missingAfterParallel = SECTION_ORDER.filter((key) => !sectionsMap[key]);
-  if (missingAfterParallel.length > 0) {
+  if (missingAfterParallel.length > 0 && options?.allowCanonicalRecovery !== false) {
     try {
       console.warn(
         `[BatchHTML] Incomplete parallel output (${missingAfterParallel.length}/12 missing). Running canonical markdown recovery.`

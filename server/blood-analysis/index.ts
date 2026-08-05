@@ -4018,6 +4018,31 @@ export async function generateAIBloodAnalysis(
   if (!isOpenAIConfigured()) {
     throw new Error("OPENAI_API_KEY_MISSING");
   }
+
+  if (process.env.BLOOD_ANALYSIS_BATCHED_MODE !== "false") {
+    const { generateParallelHtmlReport } = await import("./parallel-html-generator.js");
+    const batched = await generateParallelHtmlReport(
+      analysisResult,
+      userProfile,
+      knowledgeContext,
+      { allowCanonicalRecovery: false },
+    );
+    const sourceCatalog = parseKnowledgeSourceCatalog(knowledgeContext || "");
+    const availableSourceIds = new Set(Array.from(sourceCatalog.keys()));
+    const availableSourceIdArray = Array.from(availableSourceIds);
+    const candidate = sanitizeClientFacingText(trimAiAnalysis(reorderReportSections(
+      normalizeFrenchTypography(sanitizeSourceCitations(batched.markdown, availableSourceIdArray))
+    )));
+    const clientFacingAudit = auditClientFacingText(candidate);
+    const structureCheck = validateReportStructure(candidate, analysisResult.markers, availableSourceIds);
+    if (!clientFacingAudit.ok) {
+      throw new Error(`AI_REPORT_CLIENT_STYLE_GATE_FAILED:${JSON.stringify(clientFacingAudit)}`);
+    }
+    if (!structureCheck.ok) {
+      throw new Error(`AI_REPORT_QUALITY_GATE_FAILED:${structureCheck.reasons.join(" | ")}`);
+    }
+    return candidate;
+  }
   const bloodSafetyId = [userProfile.prenom, userProfile.nom, userProfile.age]
     .filter(Boolean)
     .join("|") || "blood-report";

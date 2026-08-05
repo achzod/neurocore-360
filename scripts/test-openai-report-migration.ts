@@ -33,7 +33,8 @@ for (const file of coreFiles) {
 const shared = read("server/openaiResponses.ts");
 assert.match(shared, /"gpt-5\.6-sol"/);
 assert.match(shared, /premium:[\s\S]*effort:\s*"xhigh"[\s\S]*mode:\s*"pro"/);
-assert.match(shared, /blood:[\s\S]*effort:\s*"max"[\s\S]*mode:\s*"pro"/);
+assert.match(shared, /blood:[\s\S]*effort:\s*"xhigh"[\s\S]*mode:\s*"pro"/);
+assert.match(shared, /blood:[\s\S]*maxOutputTokens:\s*24_000/);
 assert.match(shared, /peptides:[\s\S]*effort:\s*"xhigh"[\s\S]*mode:\s*"pro"/);
 assert.match(shared, /client\.responses\.create/);
 assert.doesNotMatch(shared, /chat\.completions/);
@@ -105,6 +106,12 @@ assert.match(routes, /const maxWait = 95 \* 60 \* 1000/);
 const emailService = read("server/emailService.ts");
 assert.match(emailService, /const shouldBccAdmin = !emailPayload\.to\.some/);
 assert.match(emailService, /none, already direct recipient/);
+
+const bloodGenerator = read("server/blood-analysis/index.ts");
+assert.match(bloodGenerator, /BLOOD_ANALYSIS_BATCHED_MODE !== "false"/);
+assert.match(bloodGenerator, /allowCanonicalRecovery:\s*false/);
+assert.match(bloodGenerator, /AI_REPORT_CLIENT_STYLE_GATE_FAILED/);
+assert.match(bloodGenerator, /AI_REPORT_QUALITY_GATE_FAILED/);
 
 assert.equal(auditClientFacingText("Ton rendez-vous est confirme.").vouvoiement.length, 0);
 assert.deepEqual(auditClientFacingText("Vous devez verifier votre plan.").vouvoiement, [
