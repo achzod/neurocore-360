@@ -245,6 +245,12 @@ assert.equal(
   true,
   "Tous les chemins admin et recovery doivent transmettre l'âge connu au générateur",
 );
+assert.doesNotMatch(
+  bloodTestRoutes,
+  /new Date\(\)\.getFullYear\(\) - new Date\(profile\.dob\)\.getFullYear\(\)/,
+  "Les chemins Blood ne doivent jamais produire un âge négatif ou égal à zéro depuis une date future",
+);
+assert.match(bloodTestRoutes, /const age = getAgeFromDob\(profile\.dob\)/);
 
 const parallelBloodGenerator = read("server/blood-analysis/parallel-html-generator.ts");
 assert.match(parallelBloodGenerator, /protectedMeetings/);

@@ -26,7 +26,7 @@ import { storage } from "../storage";
 import { getAuthPayload } from "../auth";
 import { OPENAI_REPORT_MODEL } from "../openaiResponses";
 import { auditClientFacingText } from "../clientFacingQuality";
-import { repairReportTextForDelivery } from "../reportTextRepair";
+import { extractKnownAgeYears, repairReportTextForDelivery } from "../reportTextRepair";
 
 type MarkerStatus = "optimal" | "normal" | "suboptimal" | "critical";
 
@@ -204,11 +204,8 @@ const computeGlobalScore = (
 };
 
 const getAgeFromDob = (dob?: string): string | undefined => {
-  if (!dob) return undefined;
-  const parsed = new Date(dob);
-  if (Number.isNaN(parsed.getTime())) return undefined;
-  const age = Math.floor((Date.now() - parsed.getTime()) / 31557600000);
-  return Number.isFinite(age) ? String(age) : undefined;
+  const age = extractKnownAgeYears({ dob });
+  return age === null ? undefined : String(age);
 };
 
 const computeSystemScores = (markers: Array<{ code?: string; status?: MarkerStatus }>) => {
@@ -1269,9 +1266,7 @@ export function registerBloodTestsRoutes(app: Express): void {
         await import("../blood-analysis/index.js");
       const profile = bt.patientProfile && typeof bt.patientProfile === "object" ? bt.patientProfile as any : {};
       const gender = (profile.gender as "homme" | "femme") || "homme";
-      const age = profile.dob && typeof profile.dob === "string"
-        ? String(new Date().getFullYear() - new Date(profile.dob).getFullYear())
-        : undefined;
+      const age = getAgeFromDob(profile.dob);
 
       // Stored markers from blood_tests use a `code` field (e.g.
       // "testosterone_total") which is exactly what BIOMARKER_RANGES keys on,
@@ -2541,9 +2536,7 @@ export function registerBloodTestsRoutes(app: Express): void {
           }
           const profile = bt.patientProfile && typeof bt.patientProfile === "object" ? bt.patientProfile as any : {};
           const gender = (profile.gender as "homme" | "femme") || "homme";
-          const age = profile.dob && typeof profile.dob === "string"
-            ? String(new Date().getFullYear() - new Date(profile.dob).getFullYear())
-            : undefined;
+          const age = getAgeFromDob(profile.dob);
           // Map code -> markerId so analyzeBloodwork doesn't fall back to the
           // accented name and drop markers (see explanation in reprocess
           // endpoint above).
