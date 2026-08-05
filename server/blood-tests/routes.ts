@@ -453,6 +453,12 @@ const generateAIBloodAnalysisWithFallbackRetry = async (
   return "";
 };
 
+// A report may be picked up by the five-minute recovery cron while an admin
+// regeneration is still waiting on GPT. Keep one generation per report in the
+// active instance so the same client cannot be billed twice for concurrent work.
+const activeBloodReportGenerationIds = new Set<string>();
+const activeBloodReportGenerationKeys = new Set<string>();
+
 type BloodTestOperationalRecord = {
   id: string;
   userId: string;
@@ -461,6 +467,7 @@ type BloodTestOperationalRecord = {
   completedAt?: Date | string | null;
   markers?: unknown;
   analysis?: unknown;
+  patientProfile?: unknown;
 };
 
 const getStoredBloodNarrative = (analysisValue: unknown): string => {
@@ -490,6 +497,27 @@ const getBloodMarkerFingerprint = (markersValue: unknown): string => {
     .join("|");
 };
 
+const getBloodMarkerCodeSignature = (markersValue: unknown): string => {
+  if (!Array.isArray(markersValue) || markersValue.length === 0) return "";
+  return markersValue
+    .map((entry) => {
+      const marker = entry && typeof entry === "object" ? entry as Record<string, unknown> : {};
+      return String(marker.markerId || marker.code || marker.name || "").trim().toLowerCase();
+    })
+    .filter(Boolean)
+    .sort()
+    .join("|");
+};
+
+const getBloodReportGenerationKey = (record: BloodTestOperationalRecord): string => {
+  const profile = record.patientProfile && typeof record.patientProfile === "object"
+    ? record.patientProfile as Record<string, unknown>
+    : {};
+  const owner = String(profile.email || record.userId || "").trim().toLowerCase();
+  const markerCodes = getBloodMarkerCodeSignature(record.markers);
+  return owner && markerCodes ? `${owner}|${markerCodes}` : "";
+};
+
 const getBloodReportQualityRank = (record: BloodTestOperationalRecord): number => {
   const narrative = getStoredBloodNarrative(record.analysis);
   if (narrative && !isFallbackAnalysisText(narrative)) return 4;
@@ -512,7 +540,13 @@ const collapseRecentBloodDuplicates = <T extends BloodTestOperationalRecord>(rec
     }
     const duplicateIndex = kept.findIndex((existing) =>
       existing.userId === candidate.userId &&
-      getBloodMarkerFingerprint(existing.markers) === fingerprint &&
+      (
+        getBloodMarkerFingerprint(existing.markers) === fingerprint ||
+        (
+          getBloodMarkerCodeSignature(existing.markers) === getBloodMarkerCodeSignature(candidate.markers) &&
+          Math.abs(new Date(existing.createdAt).getTime() - new Date(candidate.createdAt).getTime()) <= 2 * 60 * 60 * 1000
+        )
+      ) &&
       Math.abs(new Date(existing.createdAt).getTime() - new Date(candidate.createdAt).getTime()) <= dayMs
     );
     if (duplicateIndex === -1) {
@@ -1045,6 +1079,13 @@ export function registerBloodTestsRoutes(app: Express): void {
     if (!requireAdmin(req, res)) return;
     try {
       const { id } = req.params;
+      if (activeBloodReportGenerationIds.has(id)) {
+        res.status(409).json({ error: "Blood report generation already in progress", reportId: id });
+        return;
+      }
+      activeBloodReportGenerationIds.add(id);
+      let generationKey = "";
+      try {
       const { db: reDb } = await import("../db.js");
       const { bloodTests: btTable } = await import("../../shared/drizzle-schema.js");
       const { eq: btEq } = await import("drizzle-orm");
@@ -1053,6 +1094,12 @@ export function registerBloodTestsRoutes(app: Express): void {
       if (!results.length) { res.status(404).json({ error: "Blood test not found" }); return; }
 
       const bt = results[0];
+      generationKey = getBloodReportGenerationKey(bt);
+      if (generationKey && activeBloodReportGenerationKeys.has(generationKey)) {
+        res.status(409).json({ error: "Equivalent Blood report generation already in progress", reportId: id });
+        return;
+      }
+      if (generationKey) activeBloodReportGenerationKeys.add(generationKey);
       const markers = Array.isArray(bt.markers) ? bt.markers : [];
 
       // generateAIBloodAnalysis expects a full BloodAnalysisResult (object with
@@ -1130,6 +1177,10 @@ export function registerBloodTestsRoutes(app: Express): void {
       }).where(btEq(btTable.id, id));
 
       res.json({ success: true, message: "Blood test reprocessed", markers: markers.length });
+      } finally {
+        activeBloodReportGenerationIds.delete(id);
+        if (generationKey) activeBloodReportGenerationKeys.delete(generationKey);
+      }
     } catch (error: any) {
       console.error("[Admin] Blood test reprocess error:", error);
       res.status(500).json({ error: error.message });
@@ -2300,7 +2351,13 @@ export function registerBloodTestsRoutes(app: Express): void {
           retryCount < 3 &&
           (!nextRetryAt || nextRetryAt <= Date.now());
       });
-      const recoveryQueue = [...stuck, ...dueFallbacks].slice(0, 25);
+      const recoveryQueue = [...stuck, ...dueFallbacks]
+        .filter((row) => {
+          const generationKey = getBloodReportGenerationKey(row);
+          return !activeBloodReportGenerationIds.has(row.id) &&
+            (!generationKey || !activeBloodReportGenerationKeys.has(generationKey));
+        })
+        .slice(0, 25);
       if (recoveryQueue.length) {
         console.log(`[BloodTests-Recovery] ${recoveryQueue.length} pending row(s), recovering...`);
       }
@@ -2308,6 +2365,11 @@ export function registerBloodTestsRoutes(app: Express): void {
         await import("../blood-analysis/index.js");
       const { sendBloodClientDeliveryEmail } = await import("../blood-analysis/routes.js");
       for (const bt of recoveryQueue) {
+        const generationKey = getBloodReportGenerationKey(bt);
+        if (activeBloodReportGenerationIds.has(bt.id) ||
+          (generationKey && activeBloodReportGenerationKeys.has(generationKey))) continue;
+        activeBloodReportGenerationIds.add(bt.id);
+        if (generationKey) activeBloodReportGenerationKeys.add(generationKey);
         try {
           const markers = Array.isArray(bt.markers) ? bt.markers : [];
           if (!markers.length) {
@@ -2415,6 +2477,9 @@ export function registerBloodTestsRoutes(app: Express): void {
           }
         } catch (innerErr) {
           console.error(`[BloodTests-Recovery] ${bt.id} failed:`, innerErr);
+        } finally {
+          activeBloodReportGenerationIds.delete(bt.id);
+          if (generationKey) activeBloodReportGenerationKeys.delete(generationKey);
         }
       }
 

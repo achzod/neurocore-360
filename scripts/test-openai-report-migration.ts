@@ -182,6 +182,11 @@ assert.match(bloodTestRoutes, /bRank - aRank \|\| b\.length - a\.length/);
 assert.match(bloodTestRoutes, /Ton credit a ete rembourse/);
 assert.match(bloodTestRoutes, /deliveryStatus: "RETRY_PENDING"/);
 assert.match(bloodTestRoutes, /BLOOD_DELIVERY_RETRY_SINCE/);
+assert.match(bloodTestRoutes, /activeBloodReportGenerationIds = new Set<string>/);
+assert.match(bloodTestRoutes, /activeBloodReportGenerationKeys = new Set<string>/);
+assert.match(bloodTestRoutes, /Blood report generation already in progress/);
+assert.match(bloodTestRoutes, /getBloodReportGenerationKey/);
+assert.match(bloodTestRoutes, /activeBloodReportGenerationKeys\.has\(generationKey\)/);
 
 const bloodRoutes = read("server/blood-analysis/routes.ts");
 assert.match(bloodRoutes, /Use \/api\/blood-tests\/upload for the tracked GPT report/);
