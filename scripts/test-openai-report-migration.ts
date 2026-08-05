@@ -70,6 +70,7 @@ assert.equal(isValidEmptySourcesDisclosure("Texte court sans preuve.", new Set()
 
 const knownAgeProfile = { dob: "78-10-10" };
 assert.equal(extractKnownAgeYears(knownAgeProfile, new Date("2026-08-06T00:00:00Z")), 47);
+assert.equal(extractKnownAgeYears({ dob: "2026-02-10" }, new Date("2026-08-06T00:00:00Z")), null);
 const ageContradictionSample = [
   "Ton âge manque et empêche une interprétation définitive.",
   "L’âge est non renseigné - cette absence limite directement l’interprétation de l’IGF-1, de la filtration rénale et du risque cardiovasculaire absolu.",
