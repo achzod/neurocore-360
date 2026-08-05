@@ -167,7 +167,7 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
           <Menu className="w-5 h-5" />
         </button>
 
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-16 pb-6 lg:py-10">
           <div className="mb-6">
             <p className="text-xs uppercase tracking-[0.2em]" style={{ color: currentTheme.colors.textMuted }}>
               Blood Analysis
