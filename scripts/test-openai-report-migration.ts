@@ -110,6 +110,7 @@ assert.match(emailService, /none, already direct recipient/);
 const bloodGenerator = read("server/blood-analysis/index.ts");
 assert.match(bloodGenerator, /BLOOD_ANALYSIS_BATCHED_MODE !== "false"/);
 assert.match(bloodGenerator, /allowCanonicalRecovery:\s*false/);
+assert.match(bloodGenerator, /repairReportTextForDelivery/);
 assert.match(bloodGenerator, /AI_REPORT_CLIENT_STYLE_GATE_FAILED/);
 assert.match(bloodGenerator, /AI_REPORT_QUALITY_GATE_FAILED/);
 

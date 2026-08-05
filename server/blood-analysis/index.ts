@@ -9,6 +9,7 @@ import { searchArticles, searchFullText } from "../knowledge/storage";
 import type { ScrapedArticle } from "../knowledge/storage";
 import { isOpenAIConfigured, runOpenAIText } from "../openaiResponses";
 import { auditClientFacingText, sanitizeClientFacingText } from "../clientFacingQuality";
+import { repairReportTextForDelivery } from "../reportTextRepair";
 
 // ============================================
 // BIOMARKERS - OPTIMAL RANGES
@@ -4030,9 +4031,12 @@ export async function generateAIBloodAnalysis(
     const sourceCatalog = parseKnowledgeSourceCatalog(knowledgeContext || "");
     const availableSourceIds = new Set(Array.from(sourceCatalog.keys()));
     const availableSourceIdArray = Array.from(availableSourceIds);
-    const candidate = sanitizeClientFacingText(trimAiAnalysis(reorderReportSections(
-      normalizeFrenchTypography(sanitizeSourceCitations(batched.markdown, availableSourceIdArray))
-    )));
+    const candidate = repairReportTextForDelivery(
+      sanitizeClientFacingText(trimAiAnalysis(reorderReportSections(
+        normalizeFrenchTypography(sanitizeSourceCitations(batched.markdown, availableSourceIdArray))
+      ))),
+      userProfile as Record<string, unknown>,
+    );
     const clientFacingAudit = auditClientFacingText(candidate);
     const structureCheck = validateReportStructure(candidate, analysisResult.markers, availableSourceIds);
     if (!clientFacingAudit.ok) {
