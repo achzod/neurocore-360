@@ -93,6 +93,16 @@ export function repairReportTextForDelivery(
     .replace(/\bn['’]h[ée]site pas\b/gi, "tu peux")
     .replace(/\bil est important de noter que\b/gi, "retiens que")
     .replace(/\bil convient de souligner que\b/gi, "garde en tête que")
+    .replace(/\ben conclusion\b/gi, "au final")
+    .replace(/\bpour r[ée]sumer\b/gi, "en bref")
+    .replace(/\bvoici les points cl[ée]s\b/gi, "les points à retenir")
+    .replace(/\bdans le cadre de cette\b/gi, "pour cette")
+    .replace(/\bdans le cadre de ce\b/gi, "pour ce")
+    .replace(/\bcomme mentionn[ée] pr[ée]c[ée]demment\b/gi, "comme vu plus haut")
+    .replace(/\bchaque individu est unique\b/gi, "ton contexte compte")
+    .replace(/\bdes millions de personnes\b/gi, "beaucoup de personnes")
+    .replace(/\b(?:ma|notre) source personnelle\b/gi, "la source retenue")
+    .replace(/\bquasi indolore\b/gi, "avec une gêne généralement limitée")
     .replace(/\bpour aller plus loin\b/gi, "prochaine étape")
     .replace(/\best fondamental pour\b/gi, "agit directement sur");
 

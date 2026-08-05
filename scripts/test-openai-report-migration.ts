@@ -112,10 +112,11 @@ assert.deepEqual(auditClientFacingText("Vous devez verifier votre plan.").vouvoi
   "votre",
 ]);
 const repairedClientText = repairReportTextForDelivery(
-  "Vous devez verifier votre plan. Ton rendez-vous reste demain. Proteines: 90 g par jour.",
+  "Vous devez verifier votre plan. Pour résumer, comme mentionné précédemment, ton rendez-vous reste demain. Proteines: 90 g par jour.",
   { poids: 80 },
 );
 assert.equal(auditClientFacingText(repairedClientText).vouvoiement.length, 0);
+assert.equal(auditClientFacingText(repairedClientText).roboticPhrases.length, 0);
 assert.match(repairedClientText, /rendez-vous/);
 assert.match(repairedClientText, /1,6 a 2,2 g\/kg\/jour/);
 assert.match(repairedClientText, /128 a 176 g par jour/);
