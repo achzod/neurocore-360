@@ -166,6 +166,13 @@ const repairedMeetingText = repairReportTextForDelivery(
 );
 assert.equal(repairedMeetingText, "Prends rapidement rendez-vous. Ton rendez-vous médical est confirmé.");
 assert.deepEqual(auditClientFacingText("Prends rendez-tu demain.").roboticPhrases, ["rendez-tu"]);
+const repairedDefinitionText = repairReportTextForDelivery(
+  "Ton ApoB (ce marqueur mesure le nombre de particules athérogènes) est à suivre. " +
+  "L'ApoB (ce marqueur mesure le nombre de particules athérogènes), qui mesure ce risque, reste utile. " +
+  "Ne transforme pas ce chiffre en conclusion définitive. ton profil compte.",
+);
+assert.equal((repairedDefinitionText.match(/ce marqueur mesure/g) || []).length, 1);
+assert.match(repairedDefinitionText, /en verdict définitif\. Ton profil compte\./);
 const sanitizedDashText = sanitizeClientFacingText("Phase 8\u201312 semaines \u2014 puis controle.");
 assert.equal(sanitizedDashText, "Phase 8-12 semaines, puis controle.");
 assert.equal(auditClientFacingText(sanitizedDashText).forbiddenDashes, 0);

@@ -183,6 +183,30 @@ function repairTutoiement(value: string): string {
   return text;
 }
 
+function deduplicateParentheticalMarkerDefinitions(value: string): string {
+  const seen = new Set<string>();
+  return value.replace(
+    /\s*\((ce\s+marqueur\s+(?:mesure|estime)[^)\n]{5,240})\)/gi,
+    (full, definition: string) => {
+      const key = definition
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (seen.has(key)) return "";
+      seen.add(key);
+      return ` (${definition})`;
+    },
+  );
+}
+
+function repairSentenceStarts(value: string): string {
+  return value.replace(/([.!?]\s+)(ton|ta|tes|tu|je)\b/g, (_full, prefix: string, word: string) =>
+    `${prefix}${word.charAt(0).toUpperCase()}${word.slice(1)}`,
+  );
+}
+
 export function repairReportTextForDelivery(
   value: string,
   responses: Record<string, unknown> = {},
@@ -192,6 +216,7 @@ export function repairReportTextForDelivery(
     .replace(/\bn['’]h[ée]site pas\b/gi, "tu peux")
     .replace(/\bil est important de noter que\b/gi, "retiens que")
     .replace(/\bil convient de souligner que\b/gi, "garde en tête que")
+    .replace(/\ben conclusion d[ée]finitive\b/gi, "en verdict définitif")
     .replace(/\ben conclusion\b/gi, "au final")
     .replace(/\bpour r[ée]sumer\b/gi, "en bref")
     .replace(/\bvoici les points cl[ée]s\b/gi, "les points à retenir")
@@ -206,6 +231,7 @@ export function repairReportTextForDelivery(
     .replace(/\best fondamental pour\b/gi, "agit directement sur");
 
   text = repairKnownAgeContext(text, responses);
+  text = repairSentenceStarts(deduplicateParentheticalMarkerDefinitions(text));
 
   if (PROTEIN_QUANTITY.test(text) && !PROTEIN_PER_KG.test(text)) {
     const weight = extractWeightKg(responses);
