@@ -434,9 +434,8 @@ export function AnalysisTab({ aiSections }: AnalysisTabProps) {
               className="mt-2 text-sm leading-relaxed max-w-2xl"
               style={{ color: theme.textSecondary }}
             >
-              Analyse détaillée de vos biomarqueurs par notre intelligence artificielle,
-              avec contexte scientifique et recommandations personnalisées basées sur
-              votre profil unique.
+              Analyse détaillée de tes biomarqueurs, avec contexte scientifique et
+              recommandations personnalisées adaptées à ton profil.
             </p>
           </div>
         </div>
@@ -489,8 +488,8 @@ export function AnalysisTab({ aiSections }: AnalysisTabProps) {
             className="text-sm max-w-md mx-auto"
             style={{ color: theme.textSecondary }}
           >
-            Notre IA analyse vos biomarqueurs pour générer un rapport personnalisé.
-            Veuillez patienter quelques instants.
+            Ton analyse se construit à partir de tes biomarqueurs et de ton profil.
+            Patiente encore quelques instants.
           </p>
 
           {/* Loading animation */}

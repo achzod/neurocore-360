@@ -28,7 +28,7 @@ export function SourcesTab({ aiSections }: SourcesTabProps) {
           </h2>
         </div>
         <p className="mt-2 text-sm" style={{ color: theme.textSecondary }}>
-          Références scientifiques et ressources utilisées pour votre analyse.
+          Références scientifiques et ressources utilisées pour ton analyse.
         </p>
       </div>
 

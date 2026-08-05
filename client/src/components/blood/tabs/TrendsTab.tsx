@@ -33,7 +33,7 @@ export function TrendsTab() {
           Tendances disponibles bientôt
         </h3>
         <p className="text-sm mb-6" style={{ color: theme.textSecondary }}>
-          Cette fonctionnalité sera disponible lorsque vous aurez plusieurs analyses sanguines. Vous pourrez suivre l'évolution de vos biomarqueurs dans le temps.
+          Cette fonctionnalité sera disponible quand tu auras plusieurs analyses sanguines. Tu pourras suivre l'évolution de tes biomarqueurs dans le temps.
         </p>
 
         <div className="grid gap-4 md:grid-cols-3 text-left">
@@ -65,7 +65,7 @@ export function TrendsTab() {
               Comparaison avant/après
             </div>
             <div className="text-xs" style={{ color: theme.textSecondary }}>
-              Mesurez l'impact de vos protocoles sur vos biomarqueurs
+              Mesure l'impact de tes protocoles sur tes biomarqueurs
             </div>
           </div>
 

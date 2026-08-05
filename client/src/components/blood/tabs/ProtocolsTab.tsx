@@ -142,7 +142,7 @@ export function ProtocolsTab({ aiSections, protocolPhases }: ProtocolsTabProps) 
           </h2>
         </div>
         <p className="mt-2 text-sm" style={{ color: theme.textSecondary }}>
-          Plan d'action détaillé sur 90 jours pour optimiser vos biomarqueurs.
+          Plan d'action détaillé sur 90 jours pour optimiser tes biomarqueurs.
         </p>
       </div>
 

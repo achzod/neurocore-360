@@ -218,6 +218,27 @@ assert.doesNotMatch(bloodRoutes, /blood-analysis\/analyze sync report/);
 assert.doesNotMatch(bloodRoutes, /withAIGenerationTimeout/);
 assert.match(bloodRoutes, /Retrying the whole eleven-section pipeline can overlap expensive reports/);
 
+const bloodClientFiles = [
+  "client/src/components/blood/tabs/AnalysisTab.tsx",
+  "client/src/components/blood/tabs/BiomarkersTab.tsx",
+  "client/src/components/blood/tabs/ProtocolsTab.tsx",
+  "client/src/components/blood/tabs/SourcesTab.tsx",
+  "client/src/components/blood/tabs/TrendsTab.tsx",
+];
+for (const file of bloodClientFiles) {
+  const source = read(file);
+  assert.doesNotMatch(source, /\b(?:vous|votre|vos)\b/i, `${file} contient encore du vouvoiement`);
+  assert.doesNotMatch(
+    source,
+    /\b(?:intelligence artificielle|notre IA|g[eé]n[eé]r[eé]e? par (?:une )?IA)\b/i,
+    `${file} expose encore une mention IA au client`,
+  );
+}
+
+const bloodReportHook = read("client/src/pages/BloodAnalysisDashboard/hooks/useBloodReport.ts");
+assert.match(bloodReportHook, /const token = localStorage\.getItem\("apexlabs_token"\);[\s\S]{0,120}let response = token/);
+assert.match(bloodReportHook, /: await fetch\(`\/api\/blood-analysis\/report\/\$\{reportId\}\/public`\)/);
+
 const bloodTests = read("server/blood-tests/routes.ts");
 assert.doesNotMatch(bloodTests, /runAIGenerationWithRetry/);
 assert.match(bloodTests, /const tenMinAgo = new Date\(Date\.now\(\) - 10 \* 60 \* 1000\)/);

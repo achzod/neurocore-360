@@ -198,7 +198,7 @@ export function BiomarkersTab({ markers }: BiomarkersTabProps) {
             }}
           >
             <p className="text-sm" style={{ color: theme.textSecondary }}>
-              Aucun marqueur ne correspond à vos critères de recherche.
+              Aucun marqueur ne correspond à tes critères de recherche.
             </p>
           </motion.div>
         )}

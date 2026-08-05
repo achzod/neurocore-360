@@ -41,15 +41,19 @@ export const useBloodReport = (reportId: string | undefined) => {
         throw new Error('Report ID is required');
       }
 
-      // Try auth'd endpoint first, fallback to public (direct link without login)
+      // Direct links must use the public UUID endpoint immediately when no
+      // session token exists. Calling the protected endpoint first produced a
+      // noisy 403 in the browser before the public fallback succeeded.
       const token = localStorage.getItem("apexlabs_token");
-      let response = await fetch(`/api/blood-analysis/report/${reportId}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      });
+      let response = token
+        ? await fetch(`/api/blood-analysis/report/${reportId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+        : await fetch(`/api/blood-analysis/report/${reportId}/public`);
       let data = await response.json();
 
-      // If auth fails, try public endpoint (UUID = unguessable)
-      if (!response.ok || !data?.success) {
+      // A stale session token must not break a valid direct UUID link.
+      if (token && (!response.ok || !data?.success)) {
         response = await fetch(`/api/blood-analysis/report/${reportId}/public`);
         data = await response.json();
       }
