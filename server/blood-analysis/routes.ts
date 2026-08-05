@@ -6,6 +6,7 @@
 import type { Express } from "express";
 import {
   analyzeBloodwork,
+  buildFallbackAnalysis,
   extractMarkersFromPdfText,
   extractPatientInfoFromPdfText,
   generateAIBloodAnalysis,
@@ -17,6 +18,7 @@ import {
   BloodMarkerInput,
   type MarkerAnalysis,
 } from "./index";
+import { OPENAI_REPORT_MODEL } from "../openaiResponses";
 import {
   generateComprehensiveRiskProfile,
   calculatePrediabetesRisk,
@@ -58,6 +60,35 @@ import { listBloodEmailDeliveries } from "./delivery-log";
 // Prevent duplicate background generation per instance.
 const BLOOD_AI_REPORT_IN_FLIGHT = new Set<string>();
 const ALLOW_DETERMINISTIC_FALLBACK = process.env.BLOOD_ANALYSIS_ALLOW_FALLBACK === "true";
+const FALLBACK_REPORT_FOOTER_PATTERN = /\*Rapport fallback deterministic/i;
+
+const isFallbackAnalysisText = (analysis: string): boolean => {
+  const normalized = String(analysis || "").trim();
+  if (!normalized) return true;
+  return FALLBACK_REPORT_FOOTER_PATTERN.test(normalized);
+};
+
+const deriveBloodTestAiMeta = (analysis: string, fallbackReason?: string) => {
+  const isFallback = isFallbackAnalysisText(analysis);
+  const generatedAt = new Date().toISOString();
+  if (isFallback) {
+    return {
+      aiStatus: "fallback" as const,
+      aiModel: "fallback",
+      aiGeneratedAt: generatedAt,
+      aiFallbackAt: generatedAt,
+      aiFallbackReason: fallbackReason || "fallback_generated",
+    };
+  }
+
+  return {
+    aiStatus: "generated" as const,
+    aiModel: OPENAI_REPORT_MODEL,
+    aiGeneratedAt: generatedAt,
+    aiFallbackAt: null,
+    aiFallbackReason: null,
+  };
+};
 
 const getBaseUrl = (): string => {
   return (
@@ -1560,17 +1591,27 @@ export function registerBloodAnalysisRoutes(app: Express): void {
                   bloodTestRow.analysis && typeof bloodTestRow.analysis === "object" && bloodTestRow.analysis !== null
                     ? (bloodTestRow.analysis as Record<string, unknown>)
                     : {};
+                const fallbackAnalysis = buildFallbackAnalysis(analysisResult, {
+                  gender,
+                  age:
+                    typeof rawProfile.age === "string" || typeof rawProfile.age === "number"
+                      ? String(rawProfile.age)
+                      : undefined,
+                });
                 const refreshedAnalysis: Record<string, unknown> = {
                   ...existingAnalysis,
                   ...analysisResult,
-                  aiModel: "gpt-5.6-sol",
-                  aiGeneratedAt: new Date().toISOString(),
-                  aiError,
+                  aiReport: fallbackAnalysis,
+                  aiAnalysis: fallbackAnalysis,
+                  aiError: null,
+                  ...deriveBloodTestAiMeta(fallbackAnalysis, "credit_balance_low_fallback"),
                 };
                 await db
                   .update(bloodTests)
                   .set({
                     analysis: refreshedAnalysis as any,
+                    status: "completed",
+                    completedAt: new Date(),
                   })
                   .where(eq(bloodTests.id, reportId));
               }
@@ -1581,13 +1622,13 @@ export function registerBloodAnalysisRoutes(app: Express): void {
               aiReport.length > 0
                 ? null
                 : "AI_UNAVAILABLE_AFTER_RETRIES";
-            if (aiError) {
-              console.error(
-                `[BloodAnalysis] AI generation failed for ${reportId}, keeping report in processing state.`
-              );
-            }
 
             if (reportSource === "legacy") {
+              if (aiError) {
+                console.error(
+                  `[BloodAnalysis] AI generation failed for ${reportId}, keeping report in processing state.`
+                );
+              }
               const updatePayload: Record<string, unknown> = {
                 analysis: analysisResult as any,
                 ...(aiError ? { aiError } : {}),
@@ -1614,25 +1655,42 @@ export function registerBloodAnalysisRoutes(app: Express): void {
               const refreshedAnalysis: Record<string, unknown> = {
                 ...existingAnalysis,
                 ...analysisResult,
-                aiModel: "gpt-5.6-sol",
-                aiGeneratedAt: new Date().toISOString(),
-                ...(aiError ? { aiError } : {}),
+                ...(aiError ? { aiError: null } : {}),
               };
-              if (aiReport) {
-                refreshedAnalysis.aiReport = aiReport;
-              }
+              const finalAiReport =
+                aiReport ||
+                buildFallbackAnalysis(analysisResult, {
+                  gender,
+                  age:
+                    typeof rawProfile.age === "string" || typeof rawProfile.age === "number"
+                      ? String(rawProfile.age)
+                      : undefined,
+                });
+              refreshedAnalysis.aiReport = finalAiReport;
+              refreshedAnalysis.aiAnalysis = finalAiReport;
+              Object.assign(
+                refreshedAnalysis,
+                deriveBloodTestAiMeta(
+                  finalAiReport,
+                  aiError ? "ai_unavailable_after_retries_fallback" : undefined
+                )
+              );
 
               await db
                 .update(bloodTests)
                 .set({
                   analysis: refreshedAnalysis as any,
+                  status: "completed",
+                  completedAt: new Date(),
                 })
                 .where(eq(bloodTests.id, reportId));
 
               if (aiReport) {
                 console.log(`[BloodAnalysis] AI report generated for blood_tests ${reportId} (${aiReport.length} chars)`);
               } else {
-                console.warn(`[BloodAnalysis] No AI report generated for blood_tests ${reportId}; awaiting retry.`);
+                console.warn(
+                  `[BloodAnalysis] No AI report generated for blood_tests ${reportId}; fallback completed instead of keeping processing.`
+                );
               }
             }
           } catch (err) {

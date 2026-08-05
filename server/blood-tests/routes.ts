@@ -1564,6 +1564,35 @@ export function registerBloodTestsRoutes(app: Express): void {
             }
           } catch (err) {
             console.error("[BloodTests] Upload async AI retry failed:", err);
+            try {
+              const fallbackAnalysis = buildFallbackAnalysis(analysisResult, {
+                gender: profile.gender as "homme" | "femme",
+                age,
+                sleepHours: profile.sleepHours,
+                stressLevel: profile.stressLevel,
+                fastingHours: profile.fastingHours,
+                drawTime: profile.drawTime,
+                lastTraining: profile.lastTraining,
+                alcoholLast72h: profile.alcoholLast72h,
+                nutritionPhase: profile.nutritionPhase,
+                supplementsUsed: profile.supplementsUsed,
+                medications: profile.medications,
+                infectionRecent: profile.infectionRecent,
+                poids: profile.poids,
+                taille: profile.taille,
+              });
+              await storage.updateBloodTest(baseRecord.id, {
+                analysis: {
+                  ...analysisPayload,
+                  aiAnalysis: fallbackAnalysis,
+                  ...deriveAiMeta(fallbackAnalysis, "async_generation_failed_catch_fallback"),
+                },
+                status: "completed",
+                completedAt: new Date(),
+              });
+            } catch (fallbackErr) {
+              console.error("[BloodTests] Upload async fallback completion failed:", fallbackErr);
+            }
           }
         });
       } else if (aiAnalysis && !syncAiNeedsBackgroundRetry) {
@@ -1833,11 +1862,11 @@ export function registerBloodTestsRoutes(app: Express): void {
   // setImmediate retry. Both Younes Y. (2026-05-07) and Alan Annequin
   // (2026-05-09) sat in "processing" indefinitely because the setImmediate
   // either never fired or threw silently. This cron finds rows older than
-  // 60 minutes still in "processing" and re-runs the analysis the same way
+  // 10 minutes still in "processing" and re-runs the analysis the same way
   // the admin reprocess endpoint does. After success it triggers
-  // auto-delivery so the client gets their report. The +/- 24h window keeps
-  // the cron from churning on truly broken historical rows that need manual
-  // intervention.
+  // auto-delivery so the client gets their report. We no longer cap recovery
+  // to the last 24h because genuinely stuck rows must still be rescued later
+  // (Abdou Diallo 2026-08-05).
   let recoveryRunning = false;
   setInterval(async () => {
     if (recoveryRunning) return;
@@ -1845,18 +1874,14 @@ export function registerBloodTestsRoutes(app: Express): void {
     try {
       const { db: rDb } = await import("../db.js");
       const { bloodTests: rBt } = await import("../../shared/drizzle-schema.js");
-      const { eq: rEq, and: rAnd, lt: rLt, gt: rGt } = await import("drizzle-orm");
-      // A complete GPT report contains eleven independently validated sections.
-      // Ten minutes is a normal generation time, not evidence of a stuck job.
-      const sixtyMinAgo = new Date(Date.now() - 60 * 60 * 1000);
-      const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const { eq: rEq, and: rAnd, lt: rLt, asc: rAsc } = await import("drizzle-orm");
+      const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000);
       const stuckCandidates = await rDb.select().from(rBt).where(
         rAnd(
           rEq(rBt.status, "processing"),
-          rLt(rBt.createdAt, sixtyMinAgo),
-          rGt(rBt.createdAt, dayAgo),
+          rLt(rBt.createdAt, tenMinAgo),
         ),
-      );
+      ).orderBy(rAsc(rBt.createdAt)).limit(25);
       const stuck = stuckCandidates.filter((row) => {
         const profile = row.patientProfile && typeof row.patientProfile === "object"
           ? row.patientProfile as Record<string, unknown>
@@ -1865,7 +1890,7 @@ export function registerBloodTestsRoutes(app: Express): void {
       });
       if (!stuck.length) return;
       console.log(`[BloodTests-Recovery] ${stuck.length} stuck row(s), recovering...`);
-      const { analyzeBloodwork, generateAIBloodAnalysis, getBloodworkKnowledgeContext } =
+      const { analyzeBloodwork, getBloodworkKnowledgeContext } =
         await import("../blood-analysis/index.js");
       const { sendBloodClientDeliveryEmail } = await import("../blood-analysis/routes.js");
       for (const bt of stuck) {
@@ -1892,18 +1917,37 @@ export function registerBloodTestsRoutes(app: Express): void {
           }));
           const analysisResult = await analyzeBloodwork(recoveryNormalizedInput as any, { gender, age });
           const knowledgeContext = await getBloodworkKnowledgeContext(analysisResult.markers, analysisResult.patterns).catch(() => undefined);
-          const aiText = await generateAIBloodAnalysis(
+          let aiText = await generateAIBloodAnalysisWithFallbackRetry(
             analysisResult,
             { ...profile, gender },
             knowledgeContext,
           );
+          if (!aiText) {
+            aiText = buildFallbackAnalysis(analysisResult, {
+              gender,
+              age,
+              sleepHours: profile.sleepHours,
+              stressLevel: profile.stressLevel,
+              fastingHours: profile.fastingHours,
+              drawTime: profile.drawTime,
+              lastTraining: profile.lastTraining,
+              alcoholLast72h: profile.alcoholLast72h,
+              nutritionPhase: profile.nutritionPhase,
+              supplementsUsed: profile.supplementsUsed,
+              medications: profile.medications,
+              infectionRecent: profile.infectionRecent,
+              poids: profile.poids,
+              taille: profile.taille,
+            });
+          }
           const mergedAnalysis: Record<string, unknown> = {
             ...(typeof bt.analysis === "object" && bt.analysis ? (bt.analysis as Record<string, unknown>) : {}),
             ...analysisResult,
             aiAnalysis: aiText,
-            aiStatus: "completed",
-            aiGeneratedAt: new Date().toISOString(),
-            aiModel: "gpt-5.6-sol",
+            ...deriveAiMeta(
+              aiText,
+              isFallbackAnalysisText(aiText) ? "recovery_cron_fallback" : undefined
+            ),
             recoveredByCronAt: new Date().toISOString(),
           };
           delete mergedAnalysis.aiFallbackReason;
