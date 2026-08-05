@@ -186,6 +186,12 @@ const repairedImmediateDefinition = repairReportTextForDelivery(
 );
 assert.doesNotMatch(repairedImmediateDefinition, /ce marqueur mesure/);
 assert.equal(repairedImmediateDefinition, "Ton ALT, qui mesure le stress hépatique, reste stable.");
+const repairedPluralDefinitions = repairReportTextForDelivery(
+  "Ton HDL (ce marqueur mesure ton cholestérol protecteur), c'est ton transport inverse. " +
+  "Tes triglycérides (ce marqueur mesure les graisses circulantes), qui représentent une réserve, sont bas. " +
+  "Ta T3 (ce marqueur mesure l'hormone active) est la forme disponible.",
+);
+assert.doesNotMatch(repairedPluralDefinitions, /ce marqueur mesure/);
 const sanitizedDashText = sanitizeClientFacingText("Phase 8\u201312 semaines \u2014 puis controle.");
 assert.equal(sanitizedDashText, "Phase 8-12 semaines, puis controle.");
 assert.equal(auditClientFacingText(sanitizedDashText).forbiddenDashes, 0);
