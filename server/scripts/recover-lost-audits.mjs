@@ -77,8 +77,14 @@ async function recoverLostAudits() {
 
     // Check for 3 photos if ELITE
     if (order.product_type === 'ELITE') {
-      const hasPhotos = [responses.photoFace, responses.photoProfile, responses.photoBack]
-        .filter(p => typeof p === 'string' && p.length > 10).length >= 3;
+      const photoVariants = [
+        ['photoFront', 'photo-front', 'photoFace'],
+        ['photoSide', 'photo-side', 'photoProfile'],
+        ['photoBack', 'photo-back'],
+      ];
+      const hasPhotos = photoVariants
+        .map((keys) => keys.map((key) => responses[key]).find((value) => typeof value === 'string' && value.length > 10))
+        .filter((value) => typeof value === 'string').length >= 3;
 
       if (!hasPhotos) {
         console.log(`📸 ${order.email} - Photos manquantes (Ultimate Scan)`);

@@ -487,6 +487,7 @@ async function sendEmailWithTracking(
     if (sendpulseTaskId) result.id = sendpulseTaskId;
     const liveLookupMetadata: Record<string, any> = {};
     const criticalEmail = isCriticalSendPulseEmail(trackingData.emailType, emailPayload.subject);
+    const allowAcceptedWithoutLiveVerification = trackingData.emailType === "sendReportReadyEmail";
     let liveDeliveryFailure: Record<string, unknown> | null = null;
 
     if (result.result && sendpulseTaskId) {
@@ -543,9 +544,12 @@ async function sendEmailWithTracking(
       } else {
         liveLookupMetadata.sendpulseLiveLookup = "not_found";
         liveLookupMetadata.sendpulseLiveLookupFromDate = new Date(sentStartedAt.getTime() - 10 * 60 * 1000).toISOString();
-        if (criticalEmail) {
+        if (criticalEmail && !allowAcceptedWithoutLiveVerification) {
           result.result = false;
           result.error = "SendPulse accepted API request but no live SMTP record was found";
+        } else if (criticalEmail) {
+          liveLookupMetadata.sendpulseLiveLookupWarning =
+            "accepted_by_api_but_live_record_not_found_yet";
         }
       }
     }

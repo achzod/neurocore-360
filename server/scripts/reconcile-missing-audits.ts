@@ -4,8 +4,15 @@ import { storage } from "../storage";
 
 // Helper to check if responses have 3 photos (required for ELITE)
 function hasThreePhotos(responses: Record<string, unknown>): boolean {
-  const photos = [responses.photoFace, responses.photoProfile, responses.photoBack];
-  return photos.filter(p => typeof p === "string" && p.length > 10).length >= 3;
+  const variants = [
+    ["photoFront", "photo-front", "photoFace"],
+    ["photoSide", "photo-side", "photoProfile"],
+    ["photoBack", "photo-back"],
+  ];
+  const photos = variants
+    .map((keys) => keys.map((key) => responses[key]).find((value) => typeof value === "string" && value.length > 10))
+    .filter((value): value is string => typeof value === "string");
+  return photos.length >= 3;
 }
 
 async function reconcileMissingAudits() {
