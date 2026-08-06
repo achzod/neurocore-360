@@ -502,6 +502,7 @@ export async function registerRoutes(
         ? new Date(deliveryAudit.reportScheduledFor)
         : null;
       if (
+        !opts?.bypassClaim &&
         !deliveryAudit?.reportSentAt &&
         scheduledFor &&
         Number.isFinite(scheduledFor.getTime()) &&
