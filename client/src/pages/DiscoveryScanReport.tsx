@@ -89,6 +89,7 @@ const DiscoveryScanReport: React.FC = () => {
   const [currentTheme, setCurrentTheme] = useState<Theme>(THEMES[0]);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [regenAttempts, setRegenAttempts] = useState(0);
+  const [refreshNonce, setRefreshNonce] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [showStickyCTA, setShowStickyCTA] = useState(false);
@@ -202,7 +203,7 @@ const DiscoveryScanReport: React.FC = () => {
         clearTimeout(regenTimer.current);
       }
     };
-  }, [auditId]);
+  }, [auditId, refreshNonce]);
 
   // Apply theme CSS variables
   useEffect(() => {
@@ -371,11 +372,17 @@ const DiscoveryScanReport: React.FC = () => {
                   setIsRegenerating(true);
                   setRegenAttempts(0);
                   try {
-                    await fetch(`/api/discovery-scan/${auditId}/regenerate`, { method: "POST" });
-                  } catch {
-                    // best-effort
-                  } finally {
+                    const response = await fetch(`/api/discovery-scan/${auditId}/regenerate`, { method: "POST" });
+                    const data = await response.json().catch(() => ({}));
+                    if (!response.ok || data?.success === false) {
+                      throw new Error(data?.error || 'Impossible de relancer le rapport');
+                    }
                     setLoading(true);
+                    setRefreshNonce((value) => value + 1);
+                  } catch {
+                    setError('Impossible de relancer le rapport maintenant. Reessaie dans quelques secondes.');
+                    setIsRegenerating(false);
+                    setLoading(false);
                   }
                 }}
               >

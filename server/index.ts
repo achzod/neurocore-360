@@ -217,6 +217,11 @@ if (process.env.NODE_ENV === "production") {
           // Audits (Anabolic 24h, Ultimate 48h)
           const scheduledAudits = await storage.getScheduledAuditsForDelivery();
           for (const audit of scheduledAudits) {
+            if (audit.type === "GRATUIT") {
+              await storage.updateAudit(audit.id, { reportDeliveryStatus: "READY" }).catch(() => {});
+              console.warn(`[Cron] Discovery ${audit.id} skipped by legacy scheduled sender; moved to READY for safe AutoSend`);
+              continue;
+            }
             try {
               await storage.updateAudit(audit.id, { reportDeliveryStatus: "READY" });
               const sent = await sendReportReadyEmail(audit.email, audit.id, audit.type, baseUrl);
@@ -276,13 +281,33 @@ if (process.env.NODE_ENV === "production") {
             const auditRecoveryResult = await pool.query(
               `UPDATE audits SET report_delivery_status = 'SCHEDULED'
                WHERE report_delivery_status IN ('READY', 'SENDING')
+                 AND type <> 'GRATUIT'
                  AND report_scheduled_for <= NOW() - INTERVAL '10 minutes'
+               RETURNING id`
+            );
+
+            // Discovery has no delayed schedule. If the process crashes after
+            // claiming READY -> SENDING but before finalizing SENT, it must go
+            // back to READY so the safe sender can retry or reconcile by
+            // email_tracking. Otherwise a generated Discovery can be stuck
+            // forever without another API call.
+            const discoverySendingRecoveryResult = await pool.query(
+              `UPDATE audits SET report_delivery_status = 'READY'
+               WHERE type = 'GRATUIT'
+                 AND report_delivery_status = 'SENDING'
+                 AND report_sent_at IS NULL
+                 AND created_at <= NOW() - INTERVAL '10 minutes'
+                 AND (narrative_report IS NOT NULL OR report_txt IS NOT NULL OR report_html IS NOT NULL)
                RETURNING id`
             );
 
             if (auditRecoveryResult.rows.length > 0) {
               const recoveredIds = auditRecoveryResult.rows.map((r: any) => r.id).join(', ');
               log(`Recovered ${auditRecoveryResult.rows.length} orphaned audits: ${recoveredIds}`);
+            }
+            if (discoverySendingRecoveryResult.rows.length > 0) {
+              const recoveredIds = discoverySendingRecoveryResult.rows.map((r: any) => r.id).join(', ');
+              log(`Recovered ${discoverySendingRecoveryResult.rows.length} orphaned Discovery sends: ${recoveredIds}`);
             }
           } catch (_recoveryErr) {
             // Non-critical ,  silently ignore if DB unavailable

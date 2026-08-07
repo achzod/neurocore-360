@@ -65,7 +65,14 @@ import { registerKnowledgeRoutes } from "./knowledge";
 import { registerBloodAnalysisRoutes } from "./blood-analysis/routes";
 import { registerBloodTestsRoutes } from "./blood-tests/routes";
 import { signAuthToken } from "./auth";
-import { analyzeDiscoveryScan, convertToNarrativeReport } from "./discovery-scan";
+import {
+  analyzeDiscoveryScan,
+  buildDiscoveryReportAssets,
+  buildDiscoveryReportHtml,
+  convertToNarrativeReport,
+  parseStoredDiscoveryTxt,
+  validateDiscoveryReportForDelivery,
+} from "./discovery-scan";
 import {
   generatePeptidesProtocol,
   checkPeptidesSafetyGate,
@@ -484,6 +491,32 @@ export async function registerRoutes(
   //      report_sent_at. This confirms provider acceptance, not inbox placement.
   //      On failure, reverts SENDING → READY so a retry path
   //      can pick it up.
+  async function persistDiscoveryReport(
+    auditId: string,
+    narrativeReport: any,
+    reportDeliveryStatus: string,
+  ): Promise<{ txt: string; html: string }> {
+    const discoveryAssets = buildDiscoveryReportAssets(narrativeReport);
+    await storage.updateAudit(auditId, {
+      narrativeReport,
+      reportTxt: discoveryAssets.txt,
+      reportHtml: discoveryAssets.html,
+      reportGeneratedAt: new Date(),
+      reportDeliveryStatus: reportDeliveryStatus as any,
+    });
+    await storage.createReportArtifact({
+      auditId,
+      tier: "GRATUIT",
+      engine: "discovery",
+      model: process.env.OPENAI_DISCOVERY_MODEL || process.env.OPENAI_REPORT_MODEL || process.env.GEMINI_MODEL || "discovery",
+      txt: discoveryAssets.txt,
+      html: discoveryAssets.html,
+    }).catch((error) => {
+      console.error(`[Discovery] Report artifact save failed for ${auditId}:`, error);
+    });
+    return discoveryAssets;
+  }
+
   async function safeSendReportReadyEmail(
     auditId: string,
     email: string,
@@ -523,7 +556,48 @@ export async function registerRoutes(
 
       // Completeness gate: block delivery if the report has truncation signatures.
       // Errors → flip audit to NEEDS_REVIEW and abort send (Achzod must inspect/fix first).
-      if (auditType === "ELITE" || auditType === "PREMIUM") {
+      if (auditType === "GRATUIT") {
+        try {
+          const audit = await storage.getAudit(auditId);
+          const storedTxt = String((audit as any)?.reportTxt || "").trim();
+          let report = audit?.narrativeReport as any;
+          if ((!report || !Array.isArray(report.sections)) && storedTxt) {
+            report = parseStoredDiscoveryTxt(storedTxt);
+          }
+          if (!report) {
+            console.error(`${prefix} 🚫 DISCOVERY DELIVERY GATE FAILED for audit ${auditId}: report_missing`);
+            await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" }).catch(() => {});
+            return { sent: false, skipped: "discovery_delivery_failed:report_missing" };
+          }
+
+          const assets =
+            String((audit as any)?.reportTxt || "").trim() && String((audit as any)?.reportHtml || "").trim()
+              ? { txt: (audit as any).reportTxt, html: (audit as any).reportHtml }
+              : buildDiscoveryReportAssets(report);
+          const check = validateDiscoveryReportForDelivery(report, assets);
+          if (!check.ok) {
+            const summary = check.errors.join(", ");
+            console.error(`${prefix} 🚫 DISCOVERY DELIVERY GATE FAILED for audit ${auditId}: ${summary}`);
+            await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" }).catch(() => {});
+            return { sent: false, skipped: `discovery_delivery_failed:${summary}` };
+          }
+
+          if (!String((audit as any)?.reportTxt || "").trim() || !String((audit as any)?.reportHtml || "").trim() || !(audit as any)?.reportGeneratedAt) {
+            await storage.updateAudit(auditId, {
+              narrativeReport: report,
+              reportTxt: assets.txt,
+              reportHtml: assets.html,
+              reportGeneratedAt: (audit as any)?.reportGeneratedAt || new Date(report.generatedAt || Date.now()),
+            }).catch((error) => {
+              console.error(`${prefix} ⚠️ Discovery asset hydration failed before send:`, error);
+            });
+          }
+        } catch (err) {
+          console.error(`${prefix} 🚫 Discovery delivery gate threw for audit ${auditId}:`, err);
+          await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" }).catch(() => {});
+          return { sent: false, skipped: "discovery_delivery_failed:gate_threw" };
+        }
+      } else if (auditType === "ELITE" || auditType === "PREMIUM") {
         try {
           const audit = await storage.getAudit(auditId);
           if (audit) {
@@ -1868,16 +1942,10 @@ export async function registerRoutes(
             const shouldDelay = scheduledFor && scheduledFor > new Date();
 
             if (shouldDelay) {
-              await storage.updateAudit(audit.id, {
-                narrativeReport,
-                reportDeliveryStatus: "SCHEDULED",
-              });
+              await persistDiscoveryReport(audit.id, narrativeReport, "SCHEDULED");
               console.log(`[Discovery Scan] Report SCHEDULED for audit ${audit.id} , delivery at ${scheduledFor.toISOString()}`);
             } else {
-              await storage.updateAudit(audit.id, {
-                narrativeReport,
-                reportDeliveryStatus: "READY",
-              });
+              await persistDiscoveryReport(audit.id, narrativeReport, "READY");
               console.log(`[Discovery Scan] Report READY for audit ${audit.id}`);
 
               const baseUrl = getBaseUrl();
@@ -2254,6 +2322,13 @@ export async function registerRoutes(
           res.status(404).json({ error: "Audit non trouvé" });
           return;
         }
+        if (audit.type === "GRATUIT") {
+          res.status(409).json({
+            error: "Discovery bloque sur un ancien job generique. Utilise la relance Discovery dediee.",
+            status: "needs_review",
+          });
+          return;
+        }
         await forceRegenerate(req.params.id);
         await storage.updateAudit(req.params.id, { reportDeliveryStatus: "GENERATING" });
         await startReportGeneration(req.params.id, audit.responses, audit.scores || {}, audit.type);
@@ -2318,6 +2393,35 @@ export async function registerRoutes(
 
       const narrativeReport = audit.narrativeReport as any;
       if (!narrativeReport) {
+        if (audit.type === "GRATUIT") {
+          const storedTxt = String((audit as any).reportTxt || "").trim();
+          const storedDiscovery = storedTxt ? parseStoredDiscoveryTxt(storedTxt) : null;
+          if (storedDiscovery?.sections?.length) {
+            const category = req.query.category as string;
+            const sections = storedDiscovery.sections.map((section: any, idx: number) => ({
+              id: section.id || `section-${idx}`,
+              title: section.title || "",
+              score: 0,
+              content: section.content || "",
+              order: idx,
+              category: section.id === "intro" || section.id === "global" ? "executive" : "analysis",
+              subtitle: section.subtitle || "",
+              chips: section.chips || [],
+            }));
+            res.json({
+              clientName: storedDiscovery.clientName || "Profil",
+              generatedAt: storedDiscovery.generatedAt || "",
+              global: storedDiscovery.globalScore || 0,
+              sections: category ? sections.filter((s: any) => s.category === category) : sections,
+              metrics: storedDiscovery.metrics || [],
+              metadata: {
+                totalSections: sections.length,
+                totalCharacters: sections.reduce((sum: number, s: any) => sum + (s.content?.length || 0), 0),
+              },
+            });
+            return;
+          }
+        }
         res.status(400).json({ error: "Rapport non disponible" });
         return;
       }
@@ -2463,6 +2567,13 @@ export async function registerRoutes(
       const generationAgeMs = generationStart ? Date.now() - generationStart : 0;
       const isGenerating = audit.reportDeliveryStatus === "GENERATING";
       const isStaleGeneration = isGenerating && generationAgeMs > 12 * 60 * 1000;
+      if (audit.type === "GRATUIT" && !audit.narrativeReport) {
+        const storedDiscovery = parseStoredDiscoveryTxt(String((audit as any).reportTxt || "").trim());
+        if (storedDiscovery?.sections?.length) {
+          res.json({ ...storedDiscovery, auditType: "GRATUIT" });
+          return;
+        }
+      }
 
       if (audit.narrativeReport) {
         const report = audit.narrativeReport as any;
@@ -2783,6 +2894,10 @@ export async function registerRoutes(
       }
 
       if (isStaleGeneration && !audit.narrativeReport) {
+        if (audit.type === "GRATUIT") {
+          res.status(409).json({ error: "Discovery bloque en generation. Utilise la relance Discovery dediee." });
+          return;
+        }
         console.warn(`[Narrative] Stale generation detected for ${req.params.id}, restarting...`);
         await storage.updateAudit(req.params.id, { reportDeliveryStatus: "GENERATING" });
         await startReportGeneration(req.params.id, audit.responses, audit.scores || {}, audit.type);
@@ -2802,6 +2917,10 @@ export async function registerRoutes(
       }
 
       if ((audit.reportDeliveryStatus === "SENT" || audit.reportDeliveryStatus === "READY") && !audit.narrativeReport) {
+        if (audit.type === "GRATUIT") {
+          res.status(409).json({ error: "Discovery incomplet. Utilise la relance Discovery dediee." });
+          return;
+        }
         console.log(`[Narrative] Regenerating lost report for audit ${req.params.id}`);
         await storage.updateAudit(req.params.id, { reportDeliveryStatus: "GENERATING" });
         await startReportGeneration(req.params.id, audit.responses, audit.scores || {}, audit.type);
@@ -3614,11 +3733,7 @@ export async function registerRoutes(
           // Generate new Discovery Scan report with AI content
           const result = await analyzeDiscoveryScan(audit.responses as any);
           const narrativeReport = await convertToNarrativeReport(result, audit.responses as any);
-
-          await storage.updateAudit(auditId, {
-            narrativeReport,
-            reportDeliveryStatus: "READY"
-          });
+          await persistDiscoveryReport(auditId, narrativeReport, "READY");
 
           console.log(`[Regenerate] Discovery Scan ${auditId} regenerated successfully`);
 
@@ -9514,12 +9629,7 @@ export async function registerRoutes(
         // Generate analysis and convert to NarrativeReport format with AI content
         const result = await analyzeDiscoveryScan(responses);
         const narrativeReport = await convertToNarrativeReport(result, responses);
-
-        // Update audit with report (same format as PREMIUM/ELITE)
-        await storage.updateAudit(audit.id, {
-          narrativeReport,
-          reportDeliveryStatus: "READY"
-        });
+        await persistDiscoveryReport(audit.id, narrativeReport, "READY");
 
         console.log(`[Discovery Scan] Audit ${audit.id} created for ${email}`);
 
@@ -9565,6 +9675,38 @@ export async function registerRoutes(
         return;
       }
 
+      const mapDashboardToDiscoveryReport = (
+        dashboard: ReturnType<typeof formatTxtToDashboard>,
+        fallbackReport?: any,
+      ) => ({
+        clientName: fallbackReport?.clientName || dashboard.clientName || "Profil",
+        generatedAt:
+          fallbackReport?.generatedAt ||
+          dashboard.generatedAt ||
+          (audit.reportGeneratedAt ? new Date(audit.reportGeneratedAt).toISOString() : "") ||
+          new Date().toISOString(),
+        globalScore:
+          typeof fallbackReport?.globalScore === "number"
+            ? fallbackReport.globalScore
+            : dashboard.global,
+        metrics: Array.isArray(fallbackReport?.metrics) ? fallbackReport.metrics : [],
+        sections: dashboard.sections.map((section) => ({
+          id: section.id,
+          title: section.title,
+          content: section.content,
+          score: section.score,
+          order: section.order,
+          category: section.category,
+        })),
+        metadata: {
+          ...(fallbackReport?.metadata || {}),
+          ...(dashboard.metadata || {}),
+        },
+        txt: (audit as any).reportTxt || fallbackReport?.txt || "",
+        html: (audit as any).reportHtml || fallbackReport?.html || "",
+        photoAnalysis: fallbackReport?.photoAnalysis || null,
+        auditType: "GRATUIT",
+      });
       const isGenerating = audit.reportDeliveryStatus === "GENERATING";
 
       // The audit creation time says nothing about the age of the current GPT
@@ -9577,22 +9719,77 @@ export async function registerRoutes(
         });
         return;
       }
-
       const existingReport = audit.narrativeReport as any;
+      const storedTxt = String((audit as any).reportTxt || existingReport?.txt || "").trim();
+      const storedHtml = String((audit as any).reportHtml || existingReport?.html || "").trim();
+      const reportHasEnoughSections =
+        existingReport &&
+        Array.isArray(existingReport.sections) &&
+        existingReport.sections.length >= 10;
+      const reportHasEnoughMetrics =
+        existingReport &&
+        Array.isArray(existingReport.metrics) &&
+        existingReport.metrics.length >= 6;
+      const weakSectionsCount =
+        existingReport && Array.isArray(existingReport.sections)
+          ? existingReport.sections.filter((section: any) => {
+              const plain = String(section?.content || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+              return plain.length < 80;
+            }).length
+          : 99;
       const hasInvalidScore =
         existingReport &&
-        (typeof existingReport.globalScore !== "number" || existingReport.globalScore <= 2);
+        (typeof existingReport.globalScore !== "number" || !Number.isFinite(existingReport.globalScore) || existingReport.globalScore < 0 || existingReport.globalScore > 10);
       const metricsEmpty =
         existingReport &&
         Array.isArray(existingReport.metrics) &&
         existingReport.metrics.length > 0 &&
-        existingReport.metrics.every((metric: any) => !metric?.value || metric.value <= 0);
-      const invalidReport = Boolean(hasInvalidScore || metricsEmpty);
+        existingReport.metrics.every((metric: any) => !Number.isFinite(metric?.value));
+      const invalidReport = Boolean(
+        hasInvalidScore ||
+        metricsEmpty ||
+        !reportHasEnoughSections ||
+        !reportHasEnoughMetrics ||
+        weakSectionsCount > 2
+      );
 
       // If report already exists and is valid, return it immediately
       if (existingReport && !invalidReport) {
+        if (storedTxt.length < 500 || storedHtml.length < 1000 || !audit.reportGeneratedAt) {
+          const hydratedAssets = buildDiscoveryReportAssets(existingReport);
+          await storage.updateAudit(audit.id, {
+            reportTxt: hydratedAssets.txt,
+            reportHtml: hydratedAssets.html,
+            reportGeneratedAt: audit.reportGeneratedAt || new Date(existingReport.generatedAt || Date.now()),
+          }).catch((error) => {
+            console.error("[Discovery Fetch] Unable to hydrate persisted assets:", error);
+          });
+        }
         res.json(existingReport);
         return;
+      }
+
+      if (storedTxt.length > 300) {
+        try {
+          const storedDiscoveryReport = parseStoredDiscoveryTxt(storedTxt);
+          if (storedDiscoveryReport && storedDiscoveryReport.sections.length >= 4) {
+            const fallbackHtml = storedHtml || buildDiscoveryReportHtml(storedDiscoveryReport);
+            res.json({
+              ...storedDiscoveryReport,
+              txt: storedTxt,
+              html: fallbackHtml,
+              auditType: "GRATUIT",
+            });
+            return;
+          }
+          const dashboard = formatTxtToDashboard(storedTxt);
+          if (dashboard.sections.length >= 4) {
+            res.json(mapDashboardToDiscoveryReport(dashboard, existingReport));
+            return;
+          }
+        } catch (parseError) {
+          console.error("[Discovery Fetch] TXT fallback parse error:", parseError);
+        }
       }
 
       // A recovery job may have started long after the audit was created. The
@@ -9657,26 +9854,20 @@ export async function registerRoutes(
         return;
       }
 
-      await storage.updateAudit(audit.id, {
-        narrativeReport: null,
-        reportGeneratedAt: null,
-      });
-      const job = await startReportGeneration(
-        audit.id,
-        audit.responses,
-        audit.scores || {},
-        audit.type,
-      );
-      processReportAndSendEmail(audit.id, audit.email, audit.type).catch((err) => {
-        console.error(`[Discovery Regenerate] Delivery workflow error for ${audit.id}:`, err);
-      });
-      res.status(202).json({
-        success: true,
-        auditId: audit.id,
-        started: true,
-        status: job.status,
-        progress: job.progress,
-      });
+      // Fire-and-forget regeneration to avoid blocking the UI
+      res.json({ success: true, auditId: audit.id, started: true });
+
+      (async () => {
+        try {
+          const result = await analyzeDiscoveryScan(audit.responses as any);
+          const narrativeReport = await convertToNarrativeReport(result, audit.responses as any);
+          await persistDiscoveryReport(audit.id, narrativeReport, "READY");
+          console.log(`[Discovery Regenerate] Success for ${audit.id}`);
+        } catch (err) {
+          console.error("[Discovery Regenerate] Error:", err);
+          await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" });
+        }
+      })();
     } catch (error) {
       console.error("[Discovery Scan] Regeneration error:", error);
       res.status(500).json({ success: false, error: "Erreur regénération" });
@@ -12311,7 +12502,10 @@ export async function registerRoutes(
       const stuck = allAudits.filter(a =>
         (a.reportDeliveryStatus === "READY" || a.reportDeliveryStatus === "SCHEDULED") &&
         !a.reportSentAt &&
-        !!(a as any).narrativeReport
+        (
+          !!(a as any).narrativeReport ||
+          (a.type === "GRATUIT" && (!!(a as any).reportTxt || !!(a as any).reportHtml))
+        )
       );
 
       const results: Array<{

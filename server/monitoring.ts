@@ -91,6 +91,9 @@ async function fixStuckGeneratingJobs(stats: MonitoringStats): Promise<void> {
 
     for (const audit of stuckAudits) {
       try {
+        if (audit.type === "GRATUIT") {
+          continue;
+        }
         log(`Monitoring: Restarting stuck audit ${audit.id}`, "monitoring");
 
         // Check retry count
@@ -149,6 +152,9 @@ async function fixNeedsReviewJobs(stats: MonitoringStats): Promise<void> {
 
     for (const audit of needsReviewAudits) {
       try {
+        if (audit.type === "GRATUIT") {
+          continue;
+        }
         // Check retry count
         const reportJob = await storage.getReportJob(audit.id);
         const attemptCount = reportJob?.attemptCount || 0;
@@ -215,6 +221,9 @@ async function retryFailedJobs(stats: MonitoringStats): Promise<void> {
 
     for (const audit of failedAudits) {
       try {
+        if (audit.type === "GRATUIT") {
+          continue;
+        }
         const reportJob = await storage.getReportJob(audit.id);
         const attemptCount = reportJob?.attemptCount || 0;
 

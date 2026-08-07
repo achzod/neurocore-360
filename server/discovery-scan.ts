@@ -1917,6 +1917,31 @@ interface ReportData {
   auditType: string;
 }
 
+function escapeHtml(value: string): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function stripHtmlToText(value: string): string {
+  return normalizeSingleVoice(stripInlineHtml(String(value ?? "")))
+    .replace(/\r/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function contentHtmlFromPlainText(value: string): string {
+  return String(value ?? "")
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+    .map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`)
+    .join("\n");
+}
+
 const DOMAIN_CONFIG: Record<string, { label: string; description: string }> = {
   sommeil: { label: "Sommeil", description: "Récupération" },
   stress: { label: "Stress", description: "Système Nerveux" },
@@ -2228,6 +2253,209 @@ export async function convertToNarrativeReport(
   console.log(`[Discovery Validation] ✅ OK: ${report.sections.length} sections, ${totalContent} chars, global=${report.globalScore}/10, ${report.metrics.length} metrics`);
 
   return report;
+}
+
+export function buildDiscoveryReportTxt(report: ReportData): string {
+  const lines: string[] = [
+    "DISCOVERY_REPORT_V1",
+    `CLIENT_NAME: ${report.clientName || "Profil"}`,
+    `GENERATED_AT: ${report.generatedAt || new Date().toISOString()}`,
+    `GLOBAL_SCORE: ${Number.isFinite(report.globalScore) ? report.globalScore : 0}`,
+    "",
+    "METRICS",
+  ];
+
+  for (const metric of Array.isArray(report.metrics) ? report.metrics : []) {
+    lines.push(
+      `- ${metric.key || ""}|${metric.label || ""}|${metric.value ?? ""}|${metric.max ?? 10}|${metric.description || ""}`,
+    );
+  }
+
+  lines.push("", "SECTIONS");
+
+  for (const section of Array.isArray(report.sections) ? report.sections : []) {
+    lines.push(
+      `=== ${section.id || ""}|${section.title || ""}|${section.subtitle || ""}|${(section.chips || []).join(" ~ ")} ===`,
+    );
+    lines.push(stripHtmlToText(section.content || ""));
+    lines.push("");
+  }
+
+  return lines.join("\n").trim();
+}
+
+export function buildDiscoveryReportHtml(report: ReportData): string {
+  const clientName = report.clientName || "Profil";
+  const generatedAt = report.generatedAt || new Date().toISOString();
+  const metricsHtml = (report.metrics || [])
+    .map((metric) => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:0.65rem 0;border-bottom:1px solid #1a1a1a;gap:1rem;">
+        <div>
+          <div style="color:#f5f5f5;font-size:0.9rem;font-weight:600;">${escapeHtml(metric.label || metric.key || "Metric")}</div>
+          ${metric.description ? `<div style="color:#888;font-size:0.75rem;margin-top:0.15rem;">${escapeHtml(metric.description)}</div>` : ""}
+        </div>
+        <div style="color:#E8C547;font-weight:800;font-size:1rem;white-space:nowrap;">${escapeHtml(String(metric.value ?? 0))}/${escapeHtml(String(metric.max ?? 10))}</div>
+      </div>
+    `)
+    .join("\n");
+  const sectionsHtml = (report.sections || [])
+    .map((section) => `
+      <div class="section" style="margin-bottom:2rem;padding:1.5rem;border-radius:12px;background:#111;border:1px solid #222;">
+        <h2 style="font-size:1.3rem;font-weight:700;color:#E8C547;margin-bottom:0.25rem;">${escapeHtml(section.title || "")}</h2>
+        ${section.subtitle ? `<p style="font-size:0.85rem;color:#888;margin-bottom:1rem;">${escapeHtml(section.subtitle)}</p>` : ""}
+        ${section.chips?.length ? `<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;">${section.chips.map((chip) => `<span style="padding:0.25rem 0.75rem;border-radius:99px;background:rgba(232,197,71,0.15);color:#E8C547;font-size:0.75rem;font-weight:500;">${escapeHtml(chip)}</span>`).join("")}</div>` : ""}
+        <div style="color:#ccc;line-height:1.7;font-size:0.95rem;">${section.content || ""}</div>
+      </div>
+    `)
+    .join("\n");
+
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Discovery Scan - ${escapeHtml(clientName)} | APEXLABS</title>
+  <style>
+    :root { --color-primary: #E8C547; --color-bg: #0a0a0a; --color-surface: #111; --color-border: #222; --color-text: #ccc; --color-text-muted: #888; --color-on-primary: #000; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: var(--color-bg); color: var(--color-text); line-height: 1.6; }
+    .container { max-width: 800px; margin: 0 auto; padding: 2rem 1.5rem; }
+    h1, h2, h3, strong { color: #fff; }
+    p { margin-bottom: 0.75rem; }
+    a { color: var(--color-primary); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header style="text-align:center;padding:2rem 0;margin-bottom:2rem;border-bottom:1px solid #222;">
+      <div style="font-size:0.75rem;letter-spacing:0.2em;color:#E8C547;text-transform:uppercase;margin-bottom:0.5rem;">APEXLABS</div>
+      <h1 style="font-size:2rem;font-weight:900;color:#fff;margin-bottom:0.5rem;">Discovery Scan</h1>
+      <p style="color:#888;">${escapeHtml(clientName)} , ${escapeHtml(new Date(generatedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }))}</p>
+      <div style="margin-top:1.5rem;font-size:3rem;font-weight:900;color:#E8C547;">${escapeHtml(String(report.globalScore ?? 0))}<span style="font-size:1.5rem;color:#888;">/10</span></div>
+      <p style="font-size:0.85rem;color:#888;margin-top:0.25rem;">Score Global</p>
+    </header>
+
+    ${metricsHtml ? `<div style="margin-bottom:2rem;padding:1.5rem;border-radius:12px;background:#111;border:1px solid #222;">${metricsHtml}</div>` : ""}
+
+    ${sectionsHtml}
+
+    <footer style="text-align:center;padding:2rem 0;margin-top:2rem;border-top:1px solid #222;color:#555;font-size:0.8rem;">
+      <p>APEXLABS by Achzod , apexlabs.achzodcoaching.com</p>
+    </footer>
+  </div>
+</body>
+</html>`;
+}
+
+export function buildDiscoveryReportAssets(report: ReportData): { txt: string; html: string } {
+  return {
+    txt: buildDiscoveryReportTxt(report),
+    html: buildDiscoveryReportHtml(report),
+  };
+}
+
+export function validateDiscoveryReportForDelivery(
+  report: Partial<ReportData> | null | undefined,
+  assets?: { txt?: string | null; html?: string | null },
+): { ok: boolean; errors: string[] } {
+  const errors: string[] = [];
+  const sections = Array.isArray(report?.sections) ? report.sections : [];
+  const metrics = Array.isArray(report?.metrics) ? report.metrics : [];
+  const stripHtml = (s: string) => String(s ?? "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  const totalContent = sections.reduce((sum, s) => sum + stripHtml((s as any).content || "").length, 0);
+  const weakSections = sections.filter((s) => stripHtml((s as any).content || "").length < 80);
+  const txt = String(assets?.txt || "").trim();
+  const html = String(assets?.html || "").trim();
+
+  if (sections.length < 10) errors.push(`sections:${sections.length}/10`);
+  if (weakSections.length > 2) errors.push(`weak_sections:${weakSections.length}`);
+  if (totalContent < 3000) errors.push(`total_content:${totalContent}/3000`);
+  if (typeof report?.globalScore !== "number" || !Number.isFinite(report.globalScore) || report.globalScore < 0 || report.globalScore > 10) {
+    errors.push(`global_score:${String(report?.globalScore)}`);
+  }
+  if (metrics.length !== 8) errors.push(`metrics:${metrics.length}/8`);
+  for (const metric of metrics as any[]) {
+    if (typeof metric?.value !== "number" || !Number.isFinite(metric.value) || metric.value < 0 || metric.value > 10) {
+      errors.push(`metric_value:${metric?.key || metric?.label || "unknown"}`);
+    }
+    if (!metric?.label) errors.push(`metric_label:${metric?.key || "unknown"}`);
+  }
+  if (!report?.clientName || /^(profil|client|prenom|utilisateur)$/i.test(String(report.clientName).trim())) {
+    errors.push(`client_name:${String(report?.clientName || "")}`);
+  } else {
+    const firstNameLower = String(report.clientName).toLowerCase();
+    const hasPersonalization = sections.some((s) => stripHtml((s as any).content || "").toLowerCase().includes(firstNameLower));
+    if (!hasPersonalization) errors.push(`personalization_missing:${report.clientName}`);
+  }
+  if (!report?.generatedAt) errors.push("generated_at_missing");
+  if (txt.length < 1000) errors.push(`report_txt:${txt.length}/1000`);
+  if (html.length < 2000 || !/(<!doctype html|<html[\s>])/i.test(html)) errors.push(`report_html:${html.length}/2000`);
+
+  return { ok: errors.length === 0, errors };
+}
+
+export function parseStoredDiscoveryTxt(txt: string): ReportData | null {
+  const normalizedTxt = String(txt || "").replace(/\r/g, "").trim();
+  if (!normalizedTxt.startsWith("DISCOVERY_REPORT_V1")) return null;
+
+  const clientName = normalizedTxt.match(/^CLIENT_NAME:\s*(.+)$/m)?.[1]?.trim() || "Profil";
+  const generatedAt = normalizedTxt.match(/^GENERATED_AT:\s*(.+)$/m)?.[1]?.trim() || new Date().toISOString();
+  const globalScore = Number(normalizedTxt.match(/^GLOBAL_SCORE:\s*([0-9.]+)$/m)?.[1] || "0");
+
+  const metricsBlock = normalizedTxt.match(/(?:^|\n)METRICS\n([\s\S]*?)\n\nSECTIONS(?:\n|$)/);
+  const metrics: Metric[] = metricsBlock
+    ? metricsBlock[1]
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line.startsWith("- "))
+        .map((line) => line.slice(2).split("|"))
+        .map((parts) => ({
+          key: (parts[0] || "").trim(),
+          label: (parts[1] || parts[0] || "").trim(),
+          value: Number((parts[2] || "0").trim()) || 0,
+          max: Number((parts[3] || "10").trim()) || 10,
+          description: (parts[4] || "").trim(),
+        }))
+    : [];
+
+  const sections: SectionContent[] = [];
+  const sectionsIndex = normalizedTxt.indexOf("\nSECTIONS\n");
+  if (sectionsIndex >= 0) {
+    const sectionsBlock = normalizedTxt.slice(sectionsIndex + "\nSECTIONS\n".length).trim();
+    const chunks = sectionsBlock
+      .split(/^===\s*/m)
+      .map((chunk) => chunk.trim())
+      .filter(Boolean);
+
+    for (const chunk of chunks) {
+      const headerEnd = chunk.indexOf("===");
+      if (headerEnd === -1) continue;
+      const header = chunk.slice(0, headerEnd).trim();
+      const contentText = chunk.slice(headerEnd + 3).trim();
+      const [id = "", title = "", subtitle = "", chipsRaw = ""] = header.split("|");
+      sections.push({
+        id: id.trim(),
+        title: title.trim(),
+        subtitle: subtitle.trim() || undefined,
+        chips: chipsRaw
+          .split("~")
+          .map((chip) => chip.trim())
+          .filter(Boolean),
+        content: contentHtmlFromPlainText(contentText),
+      });
+    }
+  }
+
+  if (sections.length === 0) return null;
+
+  return {
+    globalScore: Number.isFinite(globalScore) ? globalScore : 0,
+    metrics,
+    sections,
+    clientName,
+    generatedAt,
+    auditType: "GRATUIT",
+  };
 }
 
 function getDomainExpansion(
