@@ -363,6 +363,7 @@ export default function Checkout() {
   useEffect(() => {
     const savedEmail = localStorage.getItem("neurocore_email");
     const savedResponses = localStorage.getItem("neurocore_responses");
+    const savedPhotos = localStorage.getItem("neurocore_photos");
     const urlParams = new URLSearchParams(window.location.search);
     const urlPlan = normalizePlan(urlParams.get("plan"));
     const storedPlan = normalizePlan(localStorage.getItem("neurocore_plan"));
@@ -381,7 +382,9 @@ export default function Checkout() {
     }
 
     setEmail(savedEmail);
-    setResponses(JSON.parse(savedResponses));
+    const parsedResponses = JSON.parse(savedResponses);
+    const parsedPhotos = savedPhotos ? JSON.parse(savedPhotos) : {};
+    setResponses({ ...parsedResponses, ...parsedPhotos });
   }, [navigate]);
 
   const validatePromoCode = async () => {

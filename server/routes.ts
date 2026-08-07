@@ -4270,7 +4270,12 @@ export async function registerRoutes(
             finalAmountCents: 0,
             ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null,
             userAgent: req.headers["user-agent"] || null,
-            metadata: { planType, paymentMethod: "promo_100", freeViaPromo: true },
+            metadata: {
+              planType,
+              paymentMethod: "promo_100",
+              freeViaPromo: true,
+              questionnaireResponses: ["GRATUIT", "PREMIUM", "ELITE"].includes(planType) ? responses : undefined,
+            },
           });
           await storage.updateOrder(order.id, { status: "paid", paidAt: new Date() });
           await storage.incrementPromoCodeUse(validatedPromoCode);
@@ -4317,8 +4322,23 @@ export async function registerRoutes(
         ? `${baseUrl}/peptides-engine?cancelled=true`
         : `${baseUrl}/audit-complet/checkout?cancelled=true`;
 
-      // CRITICAL: Save responses to DB BEFORE creating Stripe session
-      // This ensures the webhook can find them even if the frontend save-progress fails
+      // CRITICAL: Save responses to DB BEFORE creating the payment session.
+      // Without this, a paid order can exist with no recoverable questionnaire
+      // if the client-side autosave missed its last write before checkout.
+      if (["PREMIUM", "ELITE"].includes(planType) && responses && Object.keys(responses).length >= 3) {
+        try {
+          await storage.saveProgress({
+            email,
+            currentSection: planType === "ELITE" ? 13 : 12,
+            totalSections: planType === "ELITE" ? 14 : 13,
+            responses,
+          });
+          console.log(`[Checkout] ✅ ${planType} responses saved server-side for ${email} (${Object.keys(responses).length} fields)`);
+        } catch (saveErr) {
+          console.error(`[Checkout] ⚠️ Failed to save ${planType} responses for ${email}:`, saveErr);
+        }
+      }
+
       if (planType === "PEPTIDES_ENGINE" && responses && Object.keys(responses).length >= 3) {
         try {
           await storage.saveBurnoutProgress({
@@ -4442,6 +4462,7 @@ export async function registerRoutes(
           userAgent: req.headers["user-agent"] || null,
           metadata: {
             planType,
+            questionnaireResponses: ["PREMIUM", "ELITE", "GRATUIT"].includes(planType) ? responses : undefined,
             peptidesTier: peptidesTier || undefined,
             peptidesResponses: planType === "PEPTIDES_ENGINE" ? responses : undefined,
             peptidesEngineConsent: peptidesConsentRecord,
@@ -4704,6 +4725,23 @@ export async function registerRoutes(
     let responses = progress?.responses as Record<string, unknown> | string | undefined;
     if (typeof responses === "string") {
       try { responses = JSON.parse(responses); } catch { responses = undefined; }
+    }
+    if ((!responses || Object.keys(responses).length === 0) && order) {
+      const fullOrder = await storage.getOrder(order.id).catch(() => undefined);
+      const orderResponses = (fullOrder?.metadata as Record<string, unknown> | undefined)?.questionnaireResponses;
+      if (orderResponses && typeof orderResponses === "object" && Object.keys(orderResponses as Record<string, unknown>).length > 0) {
+        responses = orderResponses as Record<string, unknown>;
+        try {
+          await storage.saveProgress({
+            email,
+            currentSection: planType === "ELITE" ? 13 : 12,
+            totalSections: planType === "ELITE" ? 14 : 13,
+            responses,
+          });
+        } catch (saveErr) {
+          console.warn(`[Audit] Unable to rehydrate questionnaire_progress from order metadata for ${email}:`, saveErr);
+        }
+      }
     }
 
     if (!responses || Object.keys(responses).length === 0) {
@@ -5042,7 +5080,12 @@ export async function registerRoutes(
           finalAmountCents: 0,
           ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null,
           userAgent: req.headers["user-agent"] || null,
-          metadata: { planType, paymentMethod: "promo_100", freeViaPromo: true },
+          metadata: {
+            planType,
+            paymentMethod: "promo_100",
+            freeViaPromo: true,
+            questionnaireResponses: ["GRATUIT", "PREMIUM", "ELITE"].includes(planType) ? responses : undefined,
+          },
         });
         await storage.updateOrder(order.id, { status: "paid", paidAt: new Date() });
         if (validatedPromoCode && promoObj) {
@@ -5077,7 +5120,22 @@ export async function registerRoutes(
         return;
       }
 
-      // Save peptides responses server-side before PayPal
+      // Same durability rule as Stripe: persist questionnaire server-side
+      // before leaving the app for payment.
+      if (["PREMIUM", "ELITE"].includes(planType) && responses && Object.keys(responses).length >= 3) {
+        try {
+          await storage.saveProgress({
+            email,
+            currentSection: planType === "ELITE" ? 13 : 12,
+            totalSections: planType === "ELITE" ? 14 : 13,
+            responses,
+          });
+          console.log(`[PayPal] ✅ ${planType} responses saved for ${email}`);
+        } catch (saveErr) {
+          console.error(`[PayPal] ⚠️ Failed to save ${planType} responses for ${email}:`, saveErr);
+        }
+      }
+
       if (planType === "PEPTIDES_ENGINE" && responses && Object.keys(responses).length >= 3) {
         try {
           await storage.saveBurnoutProgress({ email: `peptides::${email}`, currentSection: 6, totalSections: 6, responses });
@@ -5142,6 +5200,7 @@ export async function registerRoutes(
           userAgent: req.headers["user-agent"] || null,
           metadata: {
             planType,
+            questionnaireResponses: ["PREMIUM", "ELITE", "GRATUIT"].includes(planType) ? responses : undefined,
             peptidesTier: peptidesTier || undefined,
             paymentMethod: "paypal",
             peptidesResponses: planType === "PEPTIDES_ENGINE" ? responses : undefined,
@@ -10664,6 +10723,12 @@ export async function registerRoutes(
 
                 if (typeof responses === "string") {
                   try { responses = JSON.parse(responses); } catch { responses = undefined; }
+                }
+                if ((!responses || Object.keys(responses).length === 0) && order.metadata && typeof order.metadata === "object") {
+                  const orderResponses = (order.metadata as Record<string, unknown>).questionnaireResponses;
+                  if (orderResponses && typeof orderResponses === "object") {
+                    responses = orderResponses as Record<string, unknown>;
+                  }
                 }
 
                 if (responses && Object.keys(responses).length > 0) {
