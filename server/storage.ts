@@ -226,6 +226,15 @@ export interface IStorage {
   completeReportJob(auditId: string): Promise<void>;
   failReportJob(auditId: string, error: string): Promise<void>;
   deleteReportJob(auditId: string): Promise<void>;
+  /** True when a durable report artifact exists for the audit. */
+  hasReportArtifact(auditId: string): Promise<boolean>;
+  /**
+   * Atomically claims an artifact-less Discovery audit and inserts one pending
+   * report job. Returns false when a job/artifact/status race already won.
+   */
+  enqueueMissingDiscoveryReportJob(auditId: string, reason: string): Promise<boolean>;
+  /** Moves a duplicate Discovery audit out of NEEDS_REVIEW with durable provenance. */
+  markDiscoveryAuditSuperseded(auditId: string, replacementAuditId: string, reason: string): Promise<boolean>;
 
   // Traçabilité: conserver CHAQUE version générée (TXT + HTML)
   createReportArtifact(input: Omit<ReportArtifact, "id" | "createdAt"> & { createdAt?: Date }): Promise<ReportArtifact>;
@@ -775,6 +784,59 @@ export class MemStorage implements IStorage {
   async completeReportJob(_auditId: string): Promise<void> {}
   async failReportJob(_auditId: string, _error: string): Promise<void> {}
   async deleteReportJob(_auditId: string): Promise<void> {}
+  async hasReportArtifact(auditId: string): Promise<boolean> {
+    return this.reportArtifacts.some((artifact) => artifact.auditId === auditId);
+  }
+  async enqueueMissingDiscoveryReportJob(auditId: string, reason: string): Promise<boolean> {
+    const audit = this.audits.get(auditId);
+    if (!audit || audit.type !== "GRATUIT" || audit.reportDeliveryStatus !== "NEEDS_REVIEW") return false;
+    if ((audit as any).reportSentAt || this.hasStoredDiscoveryArtifact(audit)) return false;
+    if (await this.getReportJob(auditId)) return false;
+    audit.reportDeliveryStatus = "GENERATING" as any;
+    audit.narrativeReport = {
+      ...((audit.narrativeReport && typeof audit.narrativeReport === "object") ? audit.narrativeReport as object : {}),
+      recovery: { version: 1, disposition: "enqueued", reason, decidedAt: new Date().toISOString() },
+    };
+    await this.createOrUpdateReportJob({
+      auditId,
+      status: "pending",
+      progress: 0,
+      currentSection: "Reprise Discovery en attente...",
+      error: null,
+      attemptCount: 0,
+    });
+    return true;
+  }
+  async markDiscoveryAuditSuperseded(auditId: string, replacementAuditId: string, reason: string): Promise<boolean> {
+    const audit = this.audits.get(auditId);
+    if (!audit || audit.type !== "GRATUIT" || audit.reportDeliveryStatus !== "NEEDS_REVIEW" || (audit as any).reportSentAt) return false;
+    audit.reportDeliveryStatus = "SUPERSEDED" as any;
+    audit.narrativeReport = {
+      ...((audit.narrativeReport && typeof audit.narrativeReport === "object") ? audit.narrativeReport as object : {}),
+      recovery: {
+        version: 1,
+        disposition: "superseded",
+        reason,
+        replacementAuditId,
+        decidedAt: new Date().toISOString(),
+      },
+    };
+    return true;
+  }
+
+  private hasStoredDiscoveryArtifact(audit: Audit): boolean {
+    const narrative = audit.narrativeReport && typeof audit.narrativeReport === "object"
+      ? audit.narrativeReport as Record<string, unknown>
+      : {};
+    return Boolean(
+      String((audit as any).reportTxt || "").trim() ||
+      String((audit as any).reportHtml || "").trim() ||
+      Array.isArray(narrative.sections) ||
+      String(narrative.txt || "").trim() ||
+      String(narrative.html || "").trim() ||
+      this.reportArtifacts.some((artifact) => artifact.auditId === audit.id)
+    );
+  }
 
   async createReportArtifact(
     input: Omit<ReportArtifact, "id" | "createdAt"> & { createdAt?: Date }
@@ -2375,6 +2437,84 @@ export class PgStorage implements IStorage {
       );
       return this.rowToReportJob(result.rows[0]);
     }
+  }
+
+  async hasReportArtifact(auditId: string): Promise<boolean> {
+    await this.ensureReportArtifactsTable();
+    const result = await pool.query(
+      `SELECT 1 FROM report_artifacts WHERE audit_id = $1 LIMIT 1`,
+      [auditId],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async enqueueMissingDiscoveryReportJob(auditId: string, reason: string): Promise<boolean> {
+    const metadata = JSON.stringify({
+      recovery: {
+        version: 1,
+        disposition: "enqueued",
+        reason,
+        decidedAt: new Date().toISOString(),
+      },
+    });
+    const result = await pool.query(
+      `WITH candidate AS (
+         UPDATE audits AS a
+            SET report_delivery_status = 'GENERATING',
+                narrative_report = COALESCE(a.narrative_report, '{}'::jsonb) || $2::jsonb
+          WHERE a.id = $1
+            AND a.type = 'GRATUIT'
+            AND a.report_delivery_status = 'NEEDS_REVIEW'
+            AND a.report_sent_at IS NULL
+            AND COALESCE(NULLIF(a.report_txt, ''), NULLIF(a.report_html, '')) IS NULL
+            AND NOT (COALESCE(a.narrative_report, '{}'::jsonb) ?| ARRAY['sections','txt','html'])
+            AND NOT EXISTS (SELECT 1 FROM report_jobs j WHERE j.audit_id = a.id)
+            AND NOT EXISTS (SELECT 1 FROM report_artifacts r WHERE r.audit_id = a.id)
+          RETURNING a.id
+       )
+       INSERT INTO report_jobs
+         (audit_id, status, progress, current_section, error, attempt_count)
+       SELECT id, 'pending', 0, 'Reprise Discovery en attente...', NULL, 0
+         FROM candidate
+       ON CONFLICT (audit_id) DO NOTHING
+       RETURNING audit_id`,
+      [auditId, metadata],
+    );
+    return (result.rowCount ?? 0) === 1;
+  }
+
+  async markDiscoveryAuditSuperseded(
+    auditId: string,
+    replacementAuditId: string,
+    reason: string,
+  ): Promise<boolean> {
+    const metadata = JSON.stringify({
+      recovery: {
+        version: 1,
+        disposition: "superseded",
+        reason,
+        replacementAuditId,
+        decidedAt: new Date().toISOString(),
+      },
+    });
+    const result = await pool.query(
+      `UPDATE audits
+          SET report_delivery_status = 'SUPERSEDED',
+              narrative_report = COALESCE(narrative_report, '{}'::jsonb) || $3::jsonb
+        WHERE id = $1
+          AND type = 'GRATUIT'
+          AND report_delivery_status = 'NEEDS_REVIEW'
+          AND report_sent_at IS NULL
+          AND EXISTS (
+            SELECT 1 FROM audits replacement
+             WHERE replacement.id = $2
+               AND replacement.type = 'GRATUIT'
+               AND LOWER(replacement.email) = LOWER(audits.email)
+          )
+        RETURNING id`,
+      [auditId, replacementAuditId, metadata],
+    );
+    return (result.rowCount ?? 0) === 1;
   }
 
   async updateReportJobProgress(auditId: string, progress: number, currentSection: string): Promise<void> {

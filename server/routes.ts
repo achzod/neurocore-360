@@ -545,6 +545,35 @@ export async function registerRoutes(
     );
   }
 
+  async function markDiscoveryInlineGenerationFailed(
+    auditId: string,
+    source: string,
+    error: unknown,
+  ): Promise<void> {
+    const current = await storage.getAudit(auditId).catch(() => undefined);
+    const narrative = current?.narrativeReport && typeof current.narrativeReport === "object"
+      ? current.narrativeReport as Record<string, unknown>
+      : {};
+    const previousRecovery = narrative.recovery && typeof narrative.recovery === "object"
+      ? narrative.recovery as Record<string, unknown>
+      : {};
+    await storage.updateAudit(auditId, {
+      reportDeliveryStatus: "NEEDS_REVIEW",
+      narrativeReport: {
+        ...narrative,
+        recovery: {
+          ...previousRecovery,
+          version: 1,
+          disposition: "missing_artifacts",
+          reason: "inline_generation_failed",
+          source,
+          error: (error instanceof Error ? error.message : String(error)).slice(0, 1000),
+          failedAt: new Date().toISOString(),
+        },
+      },
+    });
+  }
+
   async function safeSendReportReadyEmail(
     auditId: string,
     email: string,
@@ -2086,7 +2115,7 @@ export async function registerRoutes(
           } catch (error: any) {
             console.error(`[Discovery Scan] Generation FAILED for audit ${audit.id}:`, error?.message || error);
             try {
-              await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" });
+              await markDiscoveryInlineGenerationFailed(audit.id, "api_audit_create", error);
             } catch (updateErr) {
               console.error(`[Discovery Scan] Failed to update status for ${audit.id}:`, updateErr);
             }
@@ -9834,7 +9863,7 @@ export async function registerRoutes(
         });
       } catch (error) {
         console.error("[Discovery Scan] Create error (generation):", error);
-        await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" });
+        await markDiscoveryInlineGenerationFailed(audit.id, "api_discovery_scan_create", error);
         res.status(500).json({ success: false, error: "Rapport en révision. Réessaie plus tard." });
       }
     } catch (error: any) {

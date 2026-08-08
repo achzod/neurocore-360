@@ -13,6 +13,7 @@
     "test:peptaura:live": "tsx scripts/test-peptaura-live.ts",
     "check:client-style": "tsx scripts/check-client-facing-style.ts",
     "test:email-report-layout": "tsx scripts/test-automatic-report-email-layout.ts",
+    "test:discovery:missing-job": "tsx scripts/test-discovery-missing-job-recovery.ts",
     "check:secret-source": "tsx scripts/check-secret-source-leaks.ts",
     "test:blood:regression": "tsx scripts/validate-blood-score-regression.ts",
     "qa:blood:dashboard": "tsx scripts/qa-blood-dashboard.ts",

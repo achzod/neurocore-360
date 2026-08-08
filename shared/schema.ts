@@ -42,6 +42,7 @@ export const ReportDeliveryStatus = {
   EMAIL_FAILED: "EMAIL_FAILED",
   NEEDS_REVIEW: "NEEDS_REVIEW",
   NEED_PHOTOS: "NEED_PHOTOS",
+  SUPERSEDED: "SUPERSEDED",
 } as const;
 
 export type ReportDeliveryStatusEnum = (typeof ReportDeliveryStatus)[keyof typeof ReportDeliveryStatus];
