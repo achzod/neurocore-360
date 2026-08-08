@@ -156,7 +156,18 @@ export async function startReportGeneration(
   const existingJob = await storage.getReportJob(auditId);
 
   if (existingJob) {
-    if (existingJob.status === "pending" || existingJob.status === "generating") {
+    if (existingJob.status === "pending") {
+      // A transactionally enqueued recovery job already exists. Start that
+      // exact persisted job without inserting a second row or incrementing its
+      // attempt counter. If another generation is active, the job stays pending
+      // and the queue drain below will start it later.
+      if (!activeGenerations.has(auditId) && activeGenerations.size < MAX_CONCURRENT_GENERATIONS) {
+        activeGenerations.add(auditId);
+        generateReportAsync(auditId, responses, scores, auditType);
+      }
+      return existingJob;
+    }
+    if (existingJob.status === "generating") {
       const lastProgressTime = existingJob.lastProgressAt ? new Date(existingJob.lastProgressAt).getTime() : 0;
       const startedTime = existingJob.startedAt ? new Date(existingJob.startedAt).getTime() : Date.now();
       const referenceTime = lastProgressTime || startedTime;

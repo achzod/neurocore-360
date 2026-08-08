@@ -14,6 +14,7 @@ import { startReportGeneration } from "./reportJobManager";
 import { isOpenAICreditError } from "./openaiResponses";
 import { log } from "./index";
 import { shouldAutoRegenerateNeedsReviewAudit } from "./discoveryDeliveryGate";
+import { recoverMissingDiscoveryJobs } from "./discoveryMissingJobRecovery";
 
 interface MonitoringStats {
   generatingStuck: number;
@@ -52,6 +53,35 @@ export async function runAutomaticMonitoring(): Promise<MonitoringStats> {
 
     // 2. Régénérer les NEEDS_REVIEW avec retry intelligent
     await fixNeedsReviewJobs(stats);
+
+    // 2b. Discovery failures from the legacy inline generator had no durable
+    // report_jobs row. Recover only artifact-less audits, once, after applying
+    // the recent duplicate policy.
+    await recoverMissingDiscoveryJobs({
+      listNeedsReviewAudits: async () => {
+        const summaries = await storage.getAllAuditsLight();
+        const ids = summaries
+          .filter((audit) =>
+            audit.type === "GRATUIT" && audit.reportDeliveryStatus === "NEEDS_REVIEW"
+          )
+          .map((audit) => audit.id);
+        const audits = await Promise.all(ids.map((id) => storage.getAudit(id)));
+        return audits.filter((audit): audit is NonNullable<typeof audit> => Boolean(audit));
+      },
+      listAuditSummaries: () => storage.getAllAuditsLight(),
+      hasReportJob: async (auditId) => Boolean(await storage.getReportJob(auditId)),
+      hasReportArtifact: (auditId) => storage.hasReportArtifact(auditId),
+      enqueueMissingReportJob: (auditId, reason) =>
+        storage.enqueueMissingDiscoveryReportJob(auditId, reason),
+      markSuperseded: (auditId, replacementAuditId, reason) =>
+        storage.markDiscoveryAuditSuperseded(auditId, replacementAuditId, reason),
+      startEnqueuedJob: async (auditId) => {
+        const audit = await storage.getAudit(auditId);
+        if (!audit) throw new Error(`Audit ${auditId} not found after enqueue`);
+        await startReportGeneration(audit.id, audit.responses, audit.scores || {}, audit.type);
+      },
+      log: logMonitoringAction,
+    });
 
     // 3. Retry les FAILED avec tentatives restantes
     await retryFailedJobs(stats);
