@@ -28,7 +28,51 @@ export interface CanonicalDiscoveryArtifacts {
   narrativeReport: Record<string, unknown>;
   txt: string;
   html: string;
-  source: "narrative_sections" | "report_txt" | "narrative_txt" | "missing";
+  source: "narrative_sections" | "report_txt" | "narrative_txt" | "legacy_validated_txt" | "missing";
+  legacyValidation: { ok: boolean; errors: string[] } | null;
+}
+
+export function validateHistoricalDiscoveryArtifacts(
+  txt: string,
+  html: string,
+  validationResult: unknown,
+): { ok: boolean; errors: string[] } {
+  const errors: string[] = [];
+  const validation = validationResult && typeof validationResult === "object"
+    ? validationResult as Record<string, any>
+    : {};
+  const details = validation.details && typeof validation.details === "object"
+    ? validation.details as Record<string, any>
+    : {};
+  if (txt.length < 5000) errors.push(`legacy_txt:${txt.length}/5000`);
+  if (html.length < 2000 || !/(<!doctype html|<html[\s>])/i.test(html)) {
+    errors.push(`legacy_html:${html.length}/2000`);
+  }
+  if (validation.isValid !== true || validation.score !== 100) errors.push("legacy_validation_not_100");
+  if (!Array.isArray(validation.errors) || validation.errors.length !== 0) errors.push("legacy_validation_errors");
+  if (details.sectionsFound !== 4 || details.sectionsExpected !== 4) errors.push("legacy_sections_not_4_4");
+  if (!Array.isArray(details.missingSections) || details.missingSections.length !== 0) errors.push("legacy_missing_sections");
+  if (!Array.isArray(details.shortSections) || details.shortSections.length !== 0) errors.push("legacy_short_sections");
+  if (details.hasCTA !== true || details.hasReviewSection !== true) errors.push("legacy_cta_or_review_missing");
+  if (typeof details.totalChars !== "number" || Math.abs(details.totalChars - txt.length) > 512) {
+    errors.push("legacy_length_mismatch");
+  }
+
+  const normalized = txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+  const requiredHeadings = [
+    "INFOS IMPORTANTES",
+    "EXECUTIVE SUMMARY",
+    "ANALYSE ENERGIE ET RECUPERATION",
+    "ANALYSE METABOLISME ET NUTRITION",
+    "SYNTHESE ET PROCHAINES ETAPES",
+  ];
+  let previousIndex = -1;
+  for (const heading of requiredHeadings) {
+    const index = normalized.indexOf(heading);
+    if (index <= previousIndex) errors.push(`legacy_heading:${heading.toLowerCase().replace(/ /g, "_")}`);
+    previousIndex = index;
+  }
+  return { ok: errors.length === 0, errors };
 }
 
 export function resolveCanonicalDiscoveryArtifacts(
@@ -46,21 +90,33 @@ export function resolveCanonicalDiscoveryArtifacts(
 
   let report: Parameters<typeof validateDiscoveryReportForDelivery>[0] | null = null;
   let source: CanonicalDiscoveryArtifacts["source"] = "missing";
+  let legacyValidation: { ok: boolean; errors: string[] } | null = null;
   if (Array.isArray(previousNarrative.sections)) {
     report = previousNarrative as Parameters<typeof validateDiscoveryReportForDelivery>[0];
     source = "narrative_sections";
   } else if (sourceTxt) {
     report = parseStoredDiscoveryTxt(sourceTxt);
     source = report ? (columnTxt ? "report_txt" : "narrative_txt") : "missing";
+    if (!report) {
+      legacyValidation = validateHistoricalDiscoveryArtifacts(
+        sourceTxt,
+        columnHtml || narrativeHtml,
+        previousNarrative.validationResult,
+      );
+      if (legacyValidation.ok) source = "legacy_validated_txt";
+    }
   }
 
   if (!report) {
     return {
       report: null,
-      narrativeReport: previousNarrative,
+      narrativeReport: legacyValidation?.ok
+        ? { ...previousNarrative, txt: sourceTxt, html: columnHtml || narrativeHtml }
+        : previousNarrative,
       txt: sourceTxt,
       html: columnHtml || narrativeHtml,
       source,
+      legacyValidation,
     };
   }
 
@@ -80,7 +136,28 @@ export function resolveCanonicalDiscoveryArtifacts(
     txt,
     html,
     source,
+    legacyValidation: null,
   };
+}
+
+export function evaluateCanonicalDiscoveryArtifacts(
+  canonical: CanonicalDiscoveryArtifacts,
+  checkedAt?: Date,
+): DiscoveryDeliveryGateResult {
+  if (canonical.report) {
+    return evaluateDiscoveryDeliveryGate(
+      canonical.report,
+      { txt: canonical.txt, html: canonical.html },
+      checkedAt,
+    );
+  }
+  if (canonical.legacyValidation?.ok) {
+    return createDiscoveryDeliveryGateResult(canonical.legacyValidation, checkedAt);
+  }
+  return createDiscoveryDeliveryGateResult(
+    canonical.legacyValidation || { ok: false, errors: ["report_missing"] },
+    checkedAt,
+  );
 }
 
 export function createDiscoveryDeliveryGateResult(
