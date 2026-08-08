@@ -77,6 +77,8 @@ import {
   createDiscoveryDeliveryGateResult,
   evaluateDiscoveryDeliveryGate,
   getPersistedDiscoveryDeliveryGate,
+  hasPassingPersistedDiscoveryDeliveryGate,
+  resolveCanonicalDiscoveryArtifacts,
   type DiscoveryDeliveryGateResult,
 } from "./discoveryDeliveryGate";
 import {
@@ -550,8 +552,12 @@ export async function registerRoutes(
     opts?: { logPrefix?: string; bypassClaim?: boolean }
   ): Promise<{ sent: boolean; skipped?: string }> {
     const prefix = opts?.logPrefix || "[SafeSend]";
+    // Discovery always goes through its persisted delivery gate and atomic
+    // send claim. Administrative raw-send flags may bypass paid-report claims,
+    // but can never bypass the free report safety contract.
+    const bypassClaim = opts?.bypassClaim === true && auditType !== "GRATUIT";
 
-    if (!opts?.bypassClaim) {
+    if (!bypassClaim) {
       // A READY write from a generator must never bypass a future delivery
       // date. Re-check the date at the final send boundary and restore the
       // scheduled state before any provider call or atomic send claim.
@@ -560,7 +566,7 @@ export async function registerRoutes(
         ? new Date(deliveryAudit.reportScheduledFor)
         : null;
       if (
-        !opts?.bypassClaim &&
+        !bypassClaim &&
         !deliveryAudit?.reportSentAt &&
         scheduledFor &&
         Number.isFinite(scheduledFor.getTime()) &&
@@ -584,11 +590,12 @@ export async function registerRoutes(
       if (auditType === "GRATUIT") {
         try {
           const audit = await storage.getAudit(auditId);
-          const storedTxt = String((audit as any)?.reportTxt || "").trim();
-          let report = audit?.narrativeReport as any;
-          if ((!report || !Array.isArray(report.sections)) && storedTxt) {
-            report = parseStoredDiscoveryTxt(storedTxt);
-          }
+          const canonical = resolveCanonicalDiscoveryArtifacts({
+            narrativeReport: (audit as any)?.narrativeReport,
+            reportTxt: (audit as any)?.reportTxt,
+            reportHtml: (audit as any)?.reportHtml,
+          });
+          const report = canonical.report;
           if (!report) {
             console.error(`${prefix} 🚫 DISCOVERY DELIVERY GATE FAILED for audit ${auditId}: report_missing`);
             const gate = evaluateDiscoveryDeliveryGate(null);
@@ -596,21 +603,18 @@ export async function registerRoutes(
             return { sent: false, skipped: "discovery_delivery_failed:report_missing" };
           }
 
-          const assets =
-            String((audit as any)?.reportTxt || "").trim() && String((audit as any)?.reportHtml || "").trim()
-              ? { txt: (audit as any).reportTxt, html: (audit as any).reportHtml }
-              : buildDiscoveryReportAssets(report);
+          const assets = { txt: canonical.txt, html: canonical.html };
           const gate = evaluateDiscoveryDeliveryGate(report, assets);
           if (!gate.ok) {
             const summary = gate.errors.join(", ");
             console.error(`${prefix} 🚫 DISCOVERY DELIVERY GATE FAILED for audit ${auditId}: ${summary}`);
-            await persistDiscoveryDeliveryGate(auditId, (audit as any)?.narrativeReport, gate, "NEEDS_REVIEW").catch(() => false);
+            await persistDiscoveryDeliveryGate(auditId, canonical.narrativeReport, gate, "NEEDS_REVIEW").catch(() => false);
             return { sent: false, skipped: `discovery_delivery_failed:${summary}` };
           }
 
           const gatePersisted = await persistDiscoveryDeliveryGate(
             auditId,
-            (audit as any)?.narrativeReport,
+            canonical.narrativeReport,
             gate,
           ).catch(() => false);
           if (!gatePersisted) {
@@ -618,15 +622,14 @@ export async function registerRoutes(
             return { sent: false, skipped: "discovery_delivery_failed:gate_persistence_failed" };
           }
 
-          if (!String((audit as any)?.reportTxt || "").trim() || !String((audit as any)?.reportHtml || "").trim() || !(audit as any)?.reportGeneratedAt) {
-            await storage.updateAudit(auditId, {
-              narrativeReport: attachDiscoveryDeliveryGateResult(report, gate),
-              reportTxt: assets.txt,
-              reportHtml: assets.html,
-              reportGeneratedAt: (audit as any)?.reportGeneratedAt || new Date(report.generatedAt || Date.now()),
-            }).catch((error) => {
-              console.error(`${prefix} ⚠️ Discovery asset hydration failed before send:`, error);
-            });
+          const hydrated = await storage.updateAudit(auditId, {
+            narrativeReport: attachDiscoveryDeliveryGateResult(canonical.narrativeReport, gate),
+            reportTxt: assets.txt,
+            reportHtml: assets.html,
+            reportGeneratedAt: (audit as any)?.reportGeneratedAt || new Date((report as any).generatedAt || Date.now()),
+          }).catch(() => null);
+          if (!hydrated) {
+            return { sent: false, skipped: "discovery_delivery_failed:artifact_persistence_failed" };
           }
         } catch (err) {
           console.error(`${prefix} 🚫 Discovery delivery gate threw for audit ${auditId}:`, err);
@@ -1014,6 +1017,87 @@ export async function registerRoutes(
   ): Promise<Record<string, unknown>> {
     const audit = await storage.getAudit(auditId);
     if (!audit) return { auditId, recovered: false, reason: "audit_not_found" };
+
+    if (audit.type === "GRATUIT") {
+      const canonical = resolveCanonicalDiscoveryArtifacts({
+        narrativeReport: audit.narrativeReport,
+        reportTxt: (audit as any).reportTxt,
+        reportHtml: (audit as any).reportHtml,
+      });
+      const gate = evaluateDiscoveryDeliveryGate(
+        canonical.report,
+        { txt: canonical.txt, html: canonical.html },
+      );
+      const discoveryResult = {
+        auditId,
+        email: audit.email,
+        type: audit.type,
+        previousStatus: audit.reportDeliveryStatus,
+        artifactSource: canonical.source,
+        valid: gate.ok,
+        errors: gate.errors,
+        txtChars: canonical.txt.length,
+        htmlChars: canonical.html.length,
+      };
+
+      if (!gate.ok) {
+        if (options.apply) {
+          await persistDiscoveryDeliveryGate(
+            auditId,
+            canonical.narrativeReport,
+            gate,
+            "NEEDS_REVIEW",
+          ).catch(() => false);
+        }
+        return {
+          ...discoveryResult,
+          recovered: false,
+          dryRun: !options.apply,
+          reason: canonical.report ? "discovery_gate_failed" : "stored_report_missing",
+        };
+      }
+      if (!options.apply) {
+        return { ...discoveryResult, recovered: false, dryRun: true };
+      }
+
+      const recoveryClaimed = await storage.claimAuditForGeneration(auditId).catch(() => false);
+      if (!recoveryClaimed) {
+        return { ...discoveryResult, recovered: false, reason: "recovery_claim_failed" };
+      }
+
+      const persisted = await storage.updateAudit(auditId, {
+        narrativeReport: attachDiscoveryDeliveryGateResult(canonical.narrativeReport, gate),
+        reportTxt: canonical.txt,
+        reportHtml: canonical.html,
+        reportGeneratedAt: new Date(),
+        reportDeliveryStatus: "READY",
+      });
+      if (!hasPassingPersistedDiscoveryDeliveryGate((persisted as any)?.narrativeReport)) {
+        await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" }).catch(() => {});
+        return { ...discoveryResult, recovered: false, reason: "gate_persistence_failed" };
+      }
+      await storage.completeReportJob(auditId).catch(() => {});
+
+      const delivery = options.deliver
+        ? await safeSendReportReadyEmail(
+            auditId,
+            audit.email,
+            audit.type,
+            getBaseUrl(),
+            { logPrefix: "[AutoRecovery]" },
+          )
+        : { sent: false, skipped: "delivery_not_requested" };
+      const verifiedAudit = await storage.getAudit(auditId);
+      return {
+        ...discoveryResult,
+        recovered: true,
+        delivered: delivery.sent,
+        deliverySkipped: delivery.skipped,
+        finalStatus: verifiedAudit?.reportDeliveryStatus,
+        reportSentAt: verifiedAudit?.reportSentAt,
+      };
+    }
+
     const sourceTxt = String(
       (audit as any).reportTxt || (audit.narrativeReport as any)?.txt || "",
     );
@@ -1066,11 +1150,11 @@ export async function registerRoutes(
       audit.narrativeReport && typeof audit.narrativeReport === "object"
         ? { ...(audit.narrativeReport as Record<string, unknown>) }
         : {};
-    delete (previousNarrative as any).txt;
-    delete (previousNarrative as any).html;
     await storage.updateAudit(auditId, {
       narrativeReport: {
         ...previousNarrative,
+        txt: repairedTxt,
+        html: repairedHtml,
         validationResult: validation,
         recovery: {
           method: "deterministic_client_facing_repair",
