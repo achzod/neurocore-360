@@ -4,6 +4,7 @@ import test from "node:test";
 import { buildDiscoveryReportAssets, validateDiscoveryReportForDelivery } from "./discovery-scan";
 import {
   attachDiscoveryDeliveryGateResult,
+  evaluateCanonicalDiscoveryArtifacts,
   evaluateDiscoveryDeliveryGate,
   getPersistedDiscoveryDeliveryGate,
   hasPassingPersistedDiscoveryDeliveryGate,
@@ -127,12 +128,51 @@ test("recovery cannot deliver when no valid artifact exists", () => {
   const canonical = resolveCanonicalDiscoveryArtifacts({
     narrativeReport: { validationResult: { score: 100 } },
   });
-  const gate = evaluateDiscoveryDeliveryGate(
-    canonical.report,
-    { txt: canonical.txt, html: canonical.html },
-  );
+  const gate = evaluateCanonicalDiscoveryArtifacts(canonical);
 
   assert.equal(canonical.report, null);
   assert.equal(gate.ok, false);
   assert.deepEqual(gate.errors, ["report_missing"]);
+});
+
+test("historical 4/4 artifacts for the three production shapes pass the exact dry-run gate", () => {
+  for (const auditId of ["409c90ce", "6d186e76", "d4466162"]) {
+    const txt = [
+      "INFOS IMPORTANTES",
+      "Texte anonyme ".repeat(90),
+      "EXECUTIVE SUMMARY",
+      "Analyse anonyme ".repeat(90),
+      "ANALYSE ENERGIE ET RECUPERATION",
+      "Analyse anonyme ".repeat(90),
+      "ANALYSE METABOLISME ET NUTRITION",
+      "Analyse anonyme ".repeat(90),
+      "SYNTHESE ET PROCHAINES ETAPES",
+      "Conclusion anonyme ".repeat(90),
+    ].join("\n");
+    const html = `<!doctype html><html><body>${"contenu anonyme ".repeat(180)}</body></html>`;
+    const validationResult = {
+      score: 100,
+      isValid: true,
+      errors: [],
+      warnings: [],
+      details: {
+        hasCTA: true,
+        totalChars: txt.length,
+        sectionsFound: 4,
+        shortSections: [],
+        missingSections: [],
+        hasReviewSection: true,
+        sectionsExpected: 4,
+      },
+    };
+    const canonical = resolveCanonicalDiscoveryArtifacts({
+      reportTxt: txt,
+      reportHtml: html,
+      narrativeReport: { validationResult },
+    });
+    assert.equal(canonical.source, "legacy_validated_txt", auditId);
+    assert.equal(evaluateCanonicalDiscoveryArtifacts(canonical).ok, true, auditId);
+    assert.equal(canonical.narrativeReport.txt, txt.trim(), auditId);
+    assert.equal(canonical.narrativeReport.html, html, auditId);
+  }
 });

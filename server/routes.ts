@@ -76,6 +76,7 @@ import {
   attachDiscoveryDeliveryGateResult,
   createDiscoveryDeliveryGateResult,
   evaluateDiscoveryDeliveryGate,
+  evaluateCanonicalDiscoveryArtifacts,
   getPersistedDiscoveryDeliveryGate,
   hasPassingPersistedDiscoveryDeliveryGate,
   resolveCanonicalDiscoveryArtifacts,
@@ -596,15 +597,14 @@ export async function registerRoutes(
             reportHtml: (audit as any)?.reportHtml,
           });
           const report = canonical.report;
-          if (!report) {
+          const gate = evaluateCanonicalDiscoveryArtifacts(canonical);
+          if (!report && !canonical.legacyValidation?.ok) {
             console.error(`${prefix} 🚫 DISCOVERY DELIVERY GATE FAILED for audit ${auditId}: report_missing`);
-            const gate = evaluateDiscoveryDeliveryGate(null);
             await persistDiscoveryDeliveryGate(auditId, (audit as any)?.narrativeReport, gate, "NEEDS_REVIEW").catch(() => false);
             return { sent: false, skipped: "discovery_delivery_failed:report_missing" };
           }
 
           const assets = { txt: canonical.txt, html: canonical.html };
-          const gate = evaluateDiscoveryDeliveryGate(report, assets);
           if (!gate.ok) {
             const summary = gate.errors.join(", ");
             console.error(`${prefix} 🚫 DISCOVERY DELIVERY GATE FAILED for audit ${auditId}: ${summary}`);
@@ -626,7 +626,7 @@ export async function registerRoutes(
             narrativeReport: attachDiscoveryDeliveryGateResult(canonical.narrativeReport, gate),
             reportTxt: assets.txt,
             reportHtml: assets.html,
-            reportGeneratedAt: (audit as any)?.reportGeneratedAt || new Date((report as any).generatedAt || Date.now()),
+            reportGeneratedAt: (audit as any)?.reportGeneratedAt || new Date((report as any)?.generatedAt || Date.now()),
           }).catch(() => null);
           if (!hydrated) {
             return { sent: false, skipped: "discovery_delivery_failed:artifact_persistence_failed" };
@@ -1024,10 +1024,7 @@ export async function registerRoutes(
         reportTxt: (audit as any).reportTxt,
         reportHtml: (audit as any).reportHtml,
       });
-      const gate = evaluateDiscoveryDeliveryGate(
-        canonical.report,
-        { txt: canonical.txt, html: canonical.html },
-      );
+      const gate = evaluateCanonicalDiscoveryArtifacts(canonical);
       const discoveryResult = {
         auditId,
         email: audit.email,
@@ -1053,7 +1050,7 @@ export async function registerRoutes(
           ...discoveryResult,
           recovered: false,
           dryRun: !options.apply,
-          reason: canonical.report ? "discovery_gate_failed" : "stored_report_missing",
+          reason: canonical.report || canonical.legacyValidation ? "discovery_gate_failed" : "stored_report_missing",
         };
       }
       if (!options.apply) {
