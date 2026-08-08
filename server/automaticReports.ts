@@ -357,43 +357,49 @@ function generateStatsHTML(stats: ReportStats): string {
     <div style="background: ${COLORS.background}; border: 1px solid ${COLORS.border}; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
       <h2 style="color: ${COLORS.text}; margin: 0 0 16px; font-size: 18px; font-weight: 700;">📊 Statistiques</h2>
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-        <div>
-          <div style="color: ${COLORS.textMuted}; font-size: 12px; margin-bottom: 4px;">Total audits</div>
-          <div style="color: ${COLORS.primary}; font-size: 24px; font-weight: 700;">${stats.totalAudits}</div>
-        </div>
-        <div>
-          <div style="color: ${COLORS.textMuted}; font-size: 12px; margin-bottom: 4px;">Nouveaux (6h)</div>
-          <div style="color: ${COLORS.primary}; font-size: 24px; font-weight: 700;">${stats.newAuditsLast6h}</div>
-        </div>
-      </div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 16px;">
+        <tr>
+          <td width="50%" valign="top" style="width: 50%; padding: 0 8px 0 0;">
+            <div style="color: ${COLORS.textMuted}; font-size: 12px; margin-bottom: 4px;">Total audits</div>
+            <div style="color: ${COLORS.primary}; font-size: 24px; font-weight: 700;">${stats.totalAudits}</div>
+          </td>
+          <td width="50%" valign="top" style="width: 50%; padding: 0 0 0 8px;">
+            <div style="color: ${COLORS.textMuted}; font-size: 12px; margin-bottom: 4px;">Nouveaux (6h)</div>
+            <div style="color: ${COLORS.primary}; font-size: 24px; font-weight: 700;">${stats.newAuditsLast6h}</div>
+          </td>
+        </tr>
+      </table>
 
       <div style="border-top: 1px solid ${COLORS.border}; padding-top: 16px;">
         <div style="color: ${COLORS.textMuted}; font-size: 12px; margin-bottom: 8px;">Par statut:</div>
-        ${Object.entries(stats.byStatus)
-          .map(
-            ([status, count]) => `
-          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span style="color: ${COLORS.text}; font-size: 14px;">${status}</span>
-            <span style="color: ${COLORS.primary}; font-weight: 600; font-size: 14px;">${count}</span>
-          </div>
-        `
-          )
-          .join("")}
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%; border-collapse: collapse; table-layout: fixed;">
+          ${Object.entries(stats.byStatus)
+            .map(
+              ([status, count]) => `
+            <tr>
+              <td valign="top" style="color: ${COLORS.text}; font-size: 14px; line-height: 20px; padding: 0 12px 4px 0; overflow-wrap: anywhere;">${status}</td>
+              <td width="72" align="right" valign="top" style="width: 72px; color: ${COLORS.primary}; font-weight: 600; font-size: 14px; line-height: 20px; padding: 0 0 4px 12px; white-space: nowrap;">${count}</td>
+            </tr>
+          `
+            )
+            .join("")}
+        </table>
       </div>
 
       <div style="border-top: 1px solid ${COLORS.border}; padding-top: 16px; margin-top: 16px;">
         <div style="color: ${COLORS.textMuted}; font-size: 12px; margin-bottom: 8px;">Par type:</div>
-        ${Object.entries(stats.byType)
-          .map(
-            ([type, count]) => `
-          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span style="color: ${COLORS.text}; font-size: 14px;">${type}</span>
-            <span style="color: ${COLORS.primary}; font-weight: 600; font-size: 14px;">${count}</span>
-          </div>
-        `
-          )
-          .join("")}
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%; border-collapse: collapse; table-layout: fixed;">
+          ${Object.entries(stats.byType)
+            .map(
+              ([type, count]) => `
+            <tr>
+              <td valign="top" style="color: ${COLORS.text}; font-size: 14px; line-height: 20px; padding: 0 12px 4px 0; overflow-wrap: anywhere;">${type}</td>
+              <td width="72" align="right" valign="top" style="width: 72px; color: ${COLORS.primary}; font-weight: 600; font-size: 14px; line-height: 20px; padding: 0 0 4px 12px; white-space: nowrap;">${count}</td>
+            </tr>
+          `
+            )
+            .join("")}
+        </table>
       </div>
     </div>
   `;

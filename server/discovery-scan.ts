@@ -138,6 +138,7 @@ export interface BlockageAnalysis {
 const MIN_KNOWLEDGE_CONTEXT_CHARS = 200;
 const MIN_DISCOVERY_SECTION_CHARS = 3000;
 const MIN_DISCOVERY_SECTION_LINES = 30;
+export const DISCOVERY_DELIVERY_MIN_SECTIONS = 4;
 const MIN_DISCOVERY_SECTION_WORDS = 400;
 const MIN_DISCOVERY_SECTION_PARAGRAPHS = 8;
 const DISCOVERY_AI_TIMEOUT_MS = Number(process.env.DISCOVERY_AI_TIMEOUT_MS ?? "360000");
@@ -2203,9 +2204,11 @@ export async function convertToNarrativeReport(
   // Any failure throws, caller's try/catch marks audit as NEEDS_REVIEW,
   // no email sent, admin reviews manually.
 
-  // CHECK 1: sections , Discovery has intro + global + 8 domains + 2 CTA = 12 expected
-  if (!Array.isArray(report.sections) || report.sections.length < 10) {
-    throw new Error(`[Discovery Validation] sections invalid: got ${report.sections?.length ?? 0}, expected >= 10`);
+  // CHECK 1: the persisted Discovery contract contains at least 4 substantial
+  // sections. New reports currently contain more, but valid legacy reports use
+  // the 4-section contract and must not be rejected only because of their shape.
+  if (!Array.isArray(report.sections) || report.sections.length < DISCOVERY_DELIVERY_MIN_SECTIONS) {
+    throw new Error(`[Discovery Validation] sections invalid: got ${report.sections?.length ?? 0}, expected >= ${DISCOVERY_DELIVERY_MIN_SECTIONS}`);
   }
 
   // CHECK 2: content length , each section must have real body (strip HTML, min 80 chars)
@@ -2367,7 +2370,9 @@ export function validateDiscoveryReportForDelivery(
   const txt = String(assets?.txt || "").trim();
   const html = String(assets?.html || "").trim();
 
-  if (sections.length < 10) errors.push(`sections:${sections.length}/10`);
+  if (sections.length < DISCOVERY_DELIVERY_MIN_SECTIONS) {
+    errors.push(`sections:${sections.length}/${DISCOVERY_DELIVERY_MIN_SECTIONS}`);
+  }
   if (weakSections.length > 2) errors.push(`weak_sections:${weakSections.length}`);
   if (totalContent < 3000) errors.push(`total_content:${totalContent}/3000`);
   if (typeof report?.globalScore !== "number" || !Number.isFinite(report.globalScore) || report.globalScore < 0 || report.globalScore > 10) {
