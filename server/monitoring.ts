@@ -13,6 +13,7 @@ import { storage } from "./storage";
 import { startReportGeneration } from "./reportJobManager";
 import { isOpenAICreditError } from "./openaiResponses";
 import { log } from "./index";
+import { shouldAutoRegenerateNeedsReviewAudit } from "./discoveryDeliveryGate";
 
 interface MonitoringStats {
   generatingStuck: number;
@@ -152,7 +153,7 @@ async function fixNeedsReviewJobs(stats: MonitoringStats): Promise<void> {
 
     for (const audit of needsReviewAudits) {
       try {
-        if (audit.type === "GRATUIT") {
+        if (!shouldAutoRegenerateNeedsReviewAudit(audit)) {
           continue;
         }
         // Check retry count

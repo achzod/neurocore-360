@@ -71,8 +71,14 @@ import {
   buildDiscoveryReportHtml,
   convertToNarrativeReport,
   parseStoredDiscoveryTxt,
-  validateDiscoveryReportForDelivery,
 } from "./discovery-scan";
+import {
+  attachDiscoveryDeliveryGateResult,
+  createDiscoveryDeliveryGateResult,
+  evaluateDiscoveryDeliveryGate,
+  getPersistedDiscoveryDeliveryGate,
+  type DiscoveryDeliveryGateResult,
+} from "./discoveryDeliveryGate";
 import {
   generatePeptidesProtocol,
   checkPeptidesSafetyGate,
@@ -517,6 +523,25 @@ export async function registerRoutes(
     return discoveryAssets;
   }
 
+  async function persistDiscoveryDeliveryGate(
+    auditId: string,
+    narrativeReport: any,
+    gate: DiscoveryDeliveryGateResult,
+    status?: "NEEDS_REVIEW",
+  ): Promise<boolean> {
+    const updated = await storage.updateAudit(auditId, {
+      narrativeReport: attachDiscoveryDeliveryGateResult(narrativeReport, gate),
+      ...(status ? { reportDeliveryStatus: status } : {}),
+    });
+    const persisted = getPersistedDiscoveryDeliveryGate((updated as any)?.narrativeReport);
+    return Boolean(
+      persisted &&
+      persisted.ok === gate.ok &&
+      persisted.checkedAt === gate.checkedAt &&
+      JSON.stringify(persisted.errors) === JSON.stringify(gate.errors),
+    );
+  }
+
   async function safeSendReportReadyEmail(
     auditId: string,
     email: string,
@@ -566,7 +591,8 @@ export async function registerRoutes(
           }
           if (!report) {
             console.error(`${prefix} 🚫 DISCOVERY DELIVERY GATE FAILED for audit ${auditId}: report_missing`);
-            await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" }).catch(() => {});
+            const gate = evaluateDiscoveryDeliveryGate(null);
+            await persistDiscoveryDeliveryGate(auditId, (audit as any)?.narrativeReport, gate, "NEEDS_REVIEW").catch(() => false);
             return { sent: false, skipped: "discovery_delivery_failed:report_missing" };
           }
 
@@ -574,17 +600,27 @@ export async function registerRoutes(
             String((audit as any)?.reportTxt || "").trim() && String((audit as any)?.reportHtml || "").trim()
               ? { txt: (audit as any).reportTxt, html: (audit as any).reportHtml }
               : buildDiscoveryReportAssets(report);
-          const check = validateDiscoveryReportForDelivery(report, assets);
-          if (!check.ok) {
-            const summary = check.errors.join(", ");
+          const gate = evaluateDiscoveryDeliveryGate(report, assets);
+          if (!gate.ok) {
+            const summary = gate.errors.join(", ");
             console.error(`${prefix} 🚫 DISCOVERY DELIVERY GATE FAILED for audit ${auditId}: ${summary}`);
-            await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" }).catch(() => {});
+            await persistDiscoveryDeliveryGate(auditId, (audit as any)?.narrativeReport, gate, "NEEDS_REVIEW").catch(() => false);
             return { sent: false, skipped: `discovery_delivery_failed:${summary}` };
+          }
+
+          const gatePersisted = await persistDiscoveryDeliveryGate(
+            auditId,
+            (audit as any)?.narrativeReport,
+            gate,
+          ).catch(() => false);
+          if (!gatePersisted) {
+            console.error(`${prefix} 🚫 Discovery delivery gate PASS could not be persisted for audit ${auditId}`);
+            return { sent: false, skipped: "discovery_delivery_failed:gate_persistence_failed" };
           }
 
           if (!String((audit as any)?.reportTxt || "").trim() || !String((audit as any)?.reportHtml || "").trim() || !(audit as any)?.reportGeneratedAt) {
             await storage.updateAudit(auditId, {
-              narrativeReport: report,
+              narrativeReport: attachDiscoveryDeliveryGateResult(report, gate),
               reportTxt: assets.txt,
               reportHtml: assets.html,
               reportGeneratedAt: (audit as any)?.reportGeneratedAt || new Date(report.generatedAt || Date.now()),
@@ -594,7 +630,10 @@ export async function registerRoutes(
           }
         } catch (err) {
           console.error(`${prefix} 🚫 Discovery delivery gate threw for audit ${auditId}:`, err);
-          await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" }).catch(() => {});
+          const audit = await storage.getAudit(auditId).catch(() => null);
+          const message = err instanceof Error ? err.message : String(err);
+          const gate = createDiscoveryDeliveryGateResult({ ok: false, errors: [`gate_threw:${message}`] });
+          await persistDiscoveryDeliveryGate(auditId, (audit as any)?.narrativeReport, gate, "NEEDS_REVIEW").catch(() => false);
           return { sent: false, skipped: "discovery_delivery_failed:gate_threw" };
         }
       } else if (auditType === "ELITE" || auditType === "PREMIUM") {
@@ -1013,6 +1052,14 @@ export async function registerRoutes(
     };
     if (!valid || !options.apply) {
       return { ...baseResult, recovered: false, dryRun: !options.apply };
+    }
+
+    // Claim the audit before changing persisted content or status. This keeps
+    // the 10-minute recovery worker, an admin recovery and a live generator
+    // from repairing or delivering the same audit concurrently.
+    const recoveryClaimed = await storage.claimAuditForGeneration(auditId).catch(() => false);
+    if (!recoveryClaimed) {
+      return { ...baseResult, recovered: false, reason: "recovery_claim_failed" };
     }
 
     const previousNarrative =
@@ -9784,7 +9831,7 @@ export async function registerRoutes(
       const reportHasEnoughSections =
         existingReport &&
         Array.isArray(existingReport.sections) &&
-        existingReport.sections.length >= 10;
+        existingReport.sections.length >= 4;
       const reportHasEnoughMetrics =
         existingReport &&
         Array.isArray(existingReport.metrics) &&
