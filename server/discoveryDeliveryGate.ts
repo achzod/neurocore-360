@@ -1,4 +1,8 @@
-import { validateDiscoveryReportForDelivery } from "./discovery-scan";
+import {
+  buildDiscoveryReportAssets,
+  parseStoredDiscoveryTxt,
+  validateDiscoveryReportForDelivery,
+} from "./discovery-scan";
 
 export const DISCOVERY_DELIVERY_GATE_VERSION = 2;
 
@@ -12,6 +16,72 @@ export interface DiscoveryDeliveryGateResult {
 }
 
 type NarrativeReport = Record<string, unknown> | null | undefined;
+
+export interface DiscoveryArtifactSource {
+  narrativeReport?: unknown;
+  reportTxt?: unknown;
+  reportHtml?: unknown;
+}
+
+export interface CanonicalDiscoveryArtifacts {
+  report: Parameters<typeof validateDiscoveryReportForDelivery>[0] | null;
+  narrativeReport: Record<string, unknown>;
+  txt: string;
+  html: string;
+  source: "narrative_sections" | "report_txt" | "narrative_txt" | "missing";
+}
+
+export function resolveCanonicalDiscoveryArtifacts(
+  audit: DiscoveryArtifactSource,
+): CanonicalDiscoveryArtifacts {
+  const previousNarrative =
+    audit.narrativeReport && typeof audit.narrativeReport === "object"
+      ? { ...(audit.narrativeReport as Record<string, unknown>) }
+      : {};
+  const columnTxt = String(audit.reportTxt || "").trim();
+  const narrativeTxt = String(previousNarrative.txt || "").trim();
+  const sourceTxt = columnTxt || narrativeTxt;
+  const columnHtml = String(audit.reportHtml || "").trim();
+  const narrativeHtml = String(previousNarrative.html || "").trim();
+
+  let report: Parameters<typeof validateDiscoveryReportForDelivery>[0] | null = null;
+  let source: CanonicalDiscoveryArtifacts["source"] = "missing";
+  if (Array.isArray(previousNarrative.sections)) {
+    report = previousNarrative as Parameters<typeof validateDiscoveryReportForDelivery>[0];
+    source = "narrative_sections";
+  } else if (sourceTxt) {
+    report = parseStoredDiscoveryTxt(sourceTxt);
+    source = report ? (columnTxt ? "report_txt" : "narrative_txt") : "missing";
+  }
+
+  if (!report) {
+    return {
+      report: null,
+      narrativeReport: previousNarrative,
+      txt: sourceTxt,
+      html: columnHtml || narrativeHtml,
+      source,
+    };
+  }
+
+  const generated = buildDiscoveryReportAssets(report as any);
+  // Existing non-empty artifacts are canonical. Deterministic generation only
+  // hydrates a missing sibling and never replaces the sole valid stored copy.
+  const txt = sourceTxt || generated.txt;
+  const html = columnHtml || narrativeHtml || generated.html;
+  return {
+    report,
+    narrativeReport: {
+      ...previousNarrative,
+      ...report,
+      txt,
+      html,
+    },
+    txt,
+    html,
+    source,
+  };
+}
 
 export function createDiscoveryDeliveryGateResult(
   check: { ok: boolean; errors: string[] },

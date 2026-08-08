@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { validateDiscoveryReportForDelivery } from "./discovery-scan";
+import { buildDiscoveryReportAssets, validateDiscoveryReportForDelivery } from "./discovery-scan";
 import {
   attachDiscoveryDeliveryGateResult,
   evaluateDiscoveryDeliveryGate,
   getPersistedDiscoveryDeliveryGate,
   hasPassingPersistedDiscoveryDeliveryGate,
+  resolveCanonicalDiscoveryArtifacts,
   shouldAutoRegenerateNeedsReviewAudit,
 } from "./discoveryDeliveryGate";
 
@@ -78,4 +79,60 @@ test("rechecking the gate replaces its trace instead of duplicating it", () => {
 
   assert.deepEqual(Object.keys(validation), ["deliveryGate"]);
   assert.equal(getPersistedDiscoveryDeliveryGate(twice)?.checkedAt, "2026-08-08T12:06:00.000Z");
+});
+
+test("recovery preserves canonical artifacts for the three blocked legacy shapes", () => {
+  const report = validDiscoveryReport();
+  const assets = buildDiscoveryReportAssets(report as any);
+  const fixtures = [
+    {
+      auditId: "409c90ce",
+      input: {
+        narrativeReport: { validationResult: { score: 100 } },
+        reportTxt: assets.txt,
+        reportHtml: assets.html,
+      },
+    },
+    {
+      auditId: "6d186e76",
+      input: {
+        narrativeReport: { txt: assets.txt, html: assets.html, validationResult: { score: 100 } },
+      },
+    },
+    {
+      auditId: "d4466162",
+      input: {
+        narrativeReport: { ...report, txt: assets.txt, html: assets.html, validationResult: { score: 100 } },
+      },
+    },
+  ];
+
+  for (const fixture of fixtures) {
+    const canonical = resolveCanonicalDiscoveryArtifacts(fixture.input);
+    assert.ok(canonical.report, `${fixture.auditId}: report must be recoverable`);
+    assert.equal((canonical.report as any).sections.length, 4, `${fixture.auditId}: sections`);
+    assert.equal(canonical.narrativeReport.txt, canonical.txt, `${fixture.auditId}: narrative txt`);
+    assert.equal(canonical.narrativeReport.html, canonical.html, `${fixture.auditId}: narrative html`);
+    assert.equal(
+      evaluateDiscoveryDeliveryGate(canonical.report, { txt: canonical.txt, html: canonical.html }).ok,
+      true,
+      `${fixture.auditId}: exact gate`,
+    );
+  }
+  assert.equal(resolveCanonicalDiscoveryArtifacts(fixtures[0].input).txt, assets.txt);
+  assert.equal(resolveCanonicalDiscoveryArtifacts(fixtures[1].input).html, assets.html);
+});
+
+test("recovery cannot deliver when no valid artifact exists", () => {
+  const canonical = resolveCanonicalDiscoveryArtifacts({
+    narrativeReport: { validationResult: { score: 100 } },
+  });
+  const gate = evaluateDiscoveryDeliveryGate(
+    canonical.report,
+    { txt: canonical.txt, html: canonical.html },
+  );
+
+  assert.equal(canonical.report, null);
+  assert.equal(gate.ok, false);
+  assert.deepEqual(gate.errors, ["report_missing"]);
 });
