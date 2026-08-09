@@ -33,6 +33,9 @@ type ClaimInput = {
   recipientEmail: string;
   auditId?: string | null;
   auditType?: string | null;
+  campaign?: string;
+  cohort?: string;
+  idempotencyCohort?: string;
 };
 
 export function buildRecoveryCtaClickIdempotencyKey(
@@ -284,7 +287,13 @@ export async function claimRecoveryCtaClickFollowup(
   input: ClaimInput,
   now = new Date(),
 ): Promise<RecoveryCtaClickClaimResult> {
-  const idempotencyKey = buildRecoveryCtaClickIdempotencyKey(input.recipientEmail);
+  const campaign = input.campaign || RECOVERY_CTA_CAMPAIGN;
+  const cohort = input.cohort || RECOVERY_CTA_CLICK_COHORT;
+  const idempotencyKey = buildRecoveryCtaClickIdempotencyKey(
+    input.recipientEmail,
+    campaign,
+    input.idempotencyCohort || cohort,
+  );
   const client = await pool.connect();
 
   try {
@@ -316,8 +325,8 @@ export async function claimRecoveryCtaClickFollowup(
     const trackingId = existing?.id || randomUUID();
     const metadata = {
       trackingId,
-      cohort: RECOVERY_CTA_CLICK_COHORT,
-      campaign: RECOVERY_CTA_CAMPAIGN,
+      cohort,
+      campaign,
       recoveryClickFollowupKey: idempotencyKey,
       sourceTrackingId: input.sourceTrackingId,
       claimAttempt: decision.attempt,

@@ -975,9 +975,9 @@ function formatDeadlineFR(daysFromNow: number): string {
 }
 
 // Reusable Apple-clean DISCOVERY30 banner at the top of each coaching email.
-// Visual: full-width Apple blue box, code in bold, deadline date personalisée.
-function getDiscoveryPromoBanner(daysLeft: number): string {
-  const deadline = formatDeadlineFR(daysLeft);
+// A deadline is shown only when the caller owns a real campaign deadline.
+function getDiscoveryPromoBanner(daysLeft?: number): string {
+  const deadline = typeof daysLeft === "number" ? formatDeadlineFR(daysLeft) : null;
   return `
     <div style="margin:0 0 28px;padding:18px 22px;background:${APPLE_COLORS.accent};border-radius:14px;text-align:center;">
       <p style="margin:0 0 4px;color:rgba(255,255,255,0.85);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Ton code clients Discovery</p>
@@ -985,7 +985,9 @@ function getDiscoveryPromoBanner(daysLeft: number): string {
       <p style="margin:0;color:rgba(255,255,255,0.95);font-size:14px;font-weight:500;line-height:1.5;">
         -30% sur formules coaching 8 et 12 sem<br/>
         <span style="font-size:12px;color:rgba(255,255,255,0.8);">A copier dans le champ <strong style="color:#ffffff;">Code promotionnel</strong> au checkout</span><br/>
-        <span style="font-size:12px;color:rgba(255,255,255,0.8);">Valide jusqu'au <strong style="color:#ffffff;">${deadline}</strong></span>
+        ${deadline
+          ? `<span style="font-size:12px;color:rgba(255,255,255,0.8);">Valide jusqu'au <strong style="color:#ffffff;">${deadline}</strong></span>`
+          : `<span style="font-size:12px;color:rgba(255,255,255,0.8);">Code actuellement actif</span>`}
       </p>
     </div>
   `;
@@ -3555,10 +3557,11 @@ export async function sendRecoveryCtaEmail(
   }
 ): Promise<boolean> {
   try {
-    const expiresText = opts.expiresText || "7 jours";
     const cohort = opts.cohort;
     const campaign = "recovery_cta_2026_06";
-    const coachingUrl = discoveryCoachingBridgeUrl(opts.baseUrl, campaign, cohort);
+    // Recovery contacts get one concrete recommendation instead of a six-offer
+    // decision wall. The bridge still exposes a comparison link if they need it.
+    const coachingUrl = discoveryCoachingBridgeUrl(opts.baseUrl, campaign, cohort, "ESSENTIAL");
     const trackedCoachingUrl = withEmailClickTracking(opts.baseUrl, opts.trackingId, coachingUrl);
     const trackingPixel = `${opts.baseUrl}/api/track/email/${opts.trackingId}/open.gif`;
     const safePercent = typeof opts.percentComplete === "number" && Number.isFinite(opts.percentComplete)
@@ -3583,7 +3586,7 @@ export async function sendRecoveryCtaEmail(
       clicked_no_conversion:
         "Tu avais cliqué mais tu n'es pas allé au bout. Je remets le lien proprement : le code n'est pas automatique, il faut le coller dans le champ Code promotionnel au checkout.",
       clicked_help:
-        "Tu as cliqué sur le coaching mais tu n'es pas allé au bout. Si c'est le choix de la formule, le budget ou le code promo qui bloque, réponds à ce mail avec ton objectif et je te dis exactement quoi prendre. Sinon je te remets le lien direct.",
+        "Tu as cliqué sur le coaching mais tu n'es pas allé au bout. Pour faire simple, Essential est le point de départ le plus logique : suivi hebdomadaire, plan d'entraînement et nutrition ajustés. Si tu veux un suivi plus rapproché, ou si le budget ou le code bloque, réponds à ce mail.",
       abandon_high:
         `Tu étais à ${safePercent ?? "plus de 75"}% du questionnaire. Ton scan est sauvegardé, reprends-le d'abord : derrière, je te garde DISCOVERY30 pour passer au coaching si tu veux appliquer le plan.`,
       abandon_medium:
@@ -3602,10 +3605,10 @@ export async function sendRecoveryCtaEmail(
 
     const primaryLabel = cohort.startsWith("abandon_") && resumeUrl
       ? "Reprendre mon Discovery"
-      : "Voir les formules coaching";
+      : "Voir Essential avec -30%";
 
     const content = `
-      ${getDiscoveryPromoBanner(7)}
+      ${getDiscoveryPromoBanner()}
 
       <p style="color:${APPLE_COLORS.inkSoft};font-size:16px;line-height:1.65;margin:0 0 20px;">
         ${escapeEmailHtml(introByCohort[cohort])}
@@ -3615,7 +3618,7 @@ export async function sendRecoveryCtaEmail(
         <p style="color:${APPLE_COLORS.ink};font-size:15px;line-height:1.65;margin:0;">
           <strong>Important :</strong> au paiement sur AchzodCoaching, colle
           <strong>DISCOVERY30</strong> dans le champ <strong>Code promotionnel ?</strong>.
-          Le code est valable ${escapeEmailHtml(expiresText)} sur les formules coaching 8 et 12 semaines.
+          Le code est actuellement actif sur les formules coaching 8 et 12 semaines.
         </p>
       </div>
 
@@ -3623,7 +3626,7 @@ export async function sendRecoveryCtaEmail(
 
       ${cohort.startsWith("abandon_") && resumeUrl ? `
       <p style="color:${APPLE_COLORS.muted};font-size:13px;line-height:1.55;margin:12px 0 0;text-align:center;">
-        Déjà prêt pour le coaching ? <a href="${trackedCoachingUrl}" style="color:${APPLE_COLORS.accent};text-decoration:none;font-weight:600;">Voir directement les formules</a>
+        Déjà prêt pour le coaching ? <a href="${trackedCoachingUrl}" style="color:${APPLE_COLORS.accent};text-decoration:none;font-weight:600;">Voir Essential avec -30%</a>
       </p>
       ` : ""}
 
@@ -3646,10 +3649,10 @@ export async function sendRecoveryCtaEmail(
 
     const plainText = `${introByCohort[cohort]}
 
-Code DISCOVERY30 : -30% sur formules coaching 8 et 12 semaines, valable ${expiresText}.
+Code DISCOVERY30 : -30% sur formules coaching 8 et 12 semaines, actuellement actif.
 Au paiement, copie DISCOVERY30 dans le champ "Code promotionnel ?".
 
-${cohort.startsWith("abandon_") && resumeUrl ? `Reprendre mon Discovery : ${resumeUrl}\nVoir les formules coaching : ${trackedCoachingUrl}` : `Voir les formules coaching : ${trackedCoachingUrl}`}
+${cohort.startsWith("abandon_") && resumeUrl ? `Reprendre mon Discovery : ${resumeUrl}\nVoir Essential avec -30% : ${trackedCoachingUrl}` : `Voir Essential avec -30% : ${trackedCoachingUrl}`}
 
 Si tu bloques sur le choix de la formule, réponds simplement à ce mail avec ton objectif.
 
@@ -5491,7 +5494,7 @@ export async function addSubscriberToList(
 
 // Discovery J+30 , long-tail nurture for Discovery Scan recipients who haven't
 // upgraded. Pushes COACHING directly (not more audits) since coaching is the
-// real revenue. Uses DISCOVERY30 code (20% off all coaching formulas).
+// real revenue. Uses DISCOVERY30 code (30% off eligible coaching formulas).
 // When a `recommendation` is passed, the CTA points to the matched formule
 // page (Essential/Elite/PrivateLab) and the intro surfaces the rationale.
 // One-shot per client, dedup via email_tracking.

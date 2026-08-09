@@ -64,6 +64,7 @@ import {
   applyRecoveryCtaReconciliation,
   claimRecoveryCtaClickFollowup,
   markRecoveryCtaProviderPostStarted,
+  RECOVERY_CTA_CAMPAIGN,
   RECOVERY_CTA_CLICK_CLAIM_TTL_MINUTES,
   RECOVERY_CTA_CLICK_RETRY_COOLDOWN_MINUTES,
   RECOVERY_CTA_RECONCILIATION_STATES,
@@ -208,6 +209,25 @@ export async function registerRoutes(
     "sendPromoCodeEmail",
     "sendReactivationCampaignEmail",
     "sendRecoveryCtaEmail",
+  ];
+
+  // Recovery is a last-mile conversion email, not another nurture blast.
+  // Keep it away from contacts who have just received a coaching/promo sequence;
+  // click-triggered follow-ups remain exempt because they reflect fresh intent.
+  const RECOVERY_CTA_FREQUENCY_CAP_HOURS = 120;
+  const RECOVERY_CTA_FREQUENCY_EMAIL_TYPES = [
+    "sendGratuitUpsellEmail",
+    "sendGratuitJ5Email",
+    "sendGratuitJ7Email",
+    "sendDiscoveryJ14CoachingEmail",
+    "sendDiscoveryJ30NurtureEmail",
+    "sendPremiumJ7Email",
+    "sendPremiumJ14Email",
+    "sendFinishDiscoveryEmail",
+    "sendCrossSellUpgradeEmail",
+    "sendCoachingFormulaChoiceLeadEmail",
+    "sendPromoCodeEmail",
+    "sendReactivationCampaignEmail",
   ];
 
   const REPORT_EMAIL_TYPES = [
@@ -770,7 +790,15 @@ export async function registerRoutes(
     const code = cleanParam(req.query.code, "DISCOVERY30").toUpperCase();
     const campaign = cleanParam(req.query.utm_campaign, "discovery30");
     const content = cleanParam(req.query.utm_content, "coaching_bridge");
-    const selectedTier = cleanParam(req.query.tier, "");
+    const requestedTier = cleanParam(req.query.tier, "").toUpperCase();
+    const selectedTier = ["ESSENTIAL", "ELITE", "PRIVATELAB"].includes(requestedTier)
+      ? requestedTier
+      : "";
+    const selectedTierLabel = selectedTier === "PRIVATELAB"
+      ? "Private Lab"
+      : selectedTier === "ELITE"
+        ? "Elite"
+        : "Essential";
     const productUrl = (path: string, tier: string) => {
       const url = new URL(path, "https://www.achzodcoaching.com");
       url.searchParams.set("utm_source", "apexlabs");
@@ -789,11 +817,11 @@ export async function registerRoutes(
       { tier: "ELITE", label: "Elite 12 semaines", before: "899 EUR", after: "629,30 EUR", href: productUrl("/product/coaching-elite-12", "elite12"), note: "Le meilleur ratio suivi/resultat sur 12 semaines." },
       { tier: "PRIVATELAB", label: "Private Lab 12 semaines", before: "1199 EUR", after: "839,30 EUR", href: productUrl("/product/12-semaines-private-lab", "privatelab12"), note: "Accompagnement premium long pour gros objectif." },
     ];
-    const sortedOffers = selectedTier
-      ? [...offers].sort((a, b) => Number(b.tier === selectedTier) - Number(a.tier === selectedTier))
+    const visibleOffers = selectedTier
+      ? offers.filter((offer) => offer.tier === selectedTier)
       : offers;
-    const offerCards = sortedOffers.map((offer) => `
-      <a class="offer${offer.tier === selectedTier ? " selected" : ""}" href="${escapeHtml(offer.href)}">
+    const offerCards = visibleOffers.map((offer) => `
+      <a class="offer${offer.tier === selectedTier ? " selected" : ""} copy-code-link" href="${escapeHtml(offer.href)}">
         <span class="offer-title">${escapeHtml(offer.label)}</span>
         <span class="prices"><span>${escapeHtml(offer.before)}</span><strong>${escapeHtml(offer.after)}</strong></span>
         <span class="note">${escapeHtml(offer.note)}</span>
@@ -825,6 +853,8 @@ export async function registerRoutes(
     .step strong { display:block; margin-bottom: 6px; }
     .step span { color: var(--muted); font-size: 14px; line-height: 1.45; }
     .offers { display:grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 18px 0 0; }
+    .offers.focused { grid-template-columns: repeat(2, 1fr); }
+    .recommendation { margin:20px 0 -4px; color:var(--ink); font-size:16px; font-weight:800; }
     .offer { display:flex; min-height: 154px; flex-direction:column; justify-content:space-between; text-decoration:none; color:var(--ink); border:1px solid var(--line); background:#fff; border-radius:8px; padding:16px; transition: border-color .15s, transform .15s; }
     .offer:hover { border-color: var(--blue); transform: translateY(-1px); }
     .offer.selected { border:2px solid var(--blue); }
@@ -835,7 +865,7 @@ export async function registerRoutes(
     .note { color: var(--muted); font-size: 13px; line-height: 1.4; }
     .compare { display:block; text-align:center; margin-top:16px; color:var(--blue); font-weight:800; text-decoration:none; }
     .warn { margin-top:18px; color:#7c2d12; background:#fff7ed; border:1px solid #fed7aa; border-radius:8px; padding:14px; line-height:1.45; }
-    @media (max-width: 760px) { main { width: min(100% - 22px, 960px); padding-top:18px; } .hero { padding: 20px; } .code-box, .steps, .offers { grid-template-columns:1fr; } .top { align-items:flex-start; flex-direction:column; } }
+    @media (max-width: 760px) { main { width: min(100% - 22px, 960px); padding-top:18px; } .hero { padding: 20px; } .code-box, .steps, .offers, .offers.focused { grid-template-columns:1fr; } .top { align-items:flex-start; flex-direction:column; } }
   </style>
 </head>
 <body>
@@ -843,26 +873,55 @@ export async function registerRoutes(
     <div class="top"><strong>APEXLABS -> ACHZOD COACHING</strong><span>Code reserve aux dossiers Discovery/ApexLabs</span></div>
     <section class="hero">
       <h1>Active ton -30% coaching</h1>
-      <p class="sub">Webflow ne peut pas appliquer le code automatiquement depuis l'email. La procedure correcte est simple : copie le code, choisis une formule 8 ou 12 semaines, puis colle-le dans <strong>Code promotionnel ?</strong> au checkout.</p>
+      <p class="sub">Choisis une formule 8 ou 12 semaines : le code sera copie automatiquement avant l'ouverture du produit. Il restera seulement a le coller dans <strong>Code promotionnel ?</strong> au checkout.</p>
       <div class="code-box">
         <div class="code" id="code">${escapeHtml(code)}</div>
         <button type="button" id="copy">Copier le code</button>
       </div>
       <div class="steps">
-        <div class="step"><strong>1. Copie ${escapeHtml(code)}</strong><span>Garde le code pret avant d'ouvrir le checkout.</span></div>
-        <div class="step"><strong>2. Choisis 8 ou 12 semaines</strong><span>Le code ne s'applique pas aux formules 4 semaines.</span></div>
+        <div class="step"><strong>1. Choisis ta duree</strong><span>8 ou 12 semaines. Le code ne s'applique pas aux formules 4 semaines.</span></div>
+        <div class="step"><strong>2. Le code est copie</strong><span>Ton clic copie automatiquement ${escapeHtml(code)} avant d'ouvrir le produit.</span></div>
         <div class="step"><strong>3. Clique APPLIQUER</strong><span>Au checkout, colle le code dans <strong>Code promotionnel ?</strong>.</span></div>
       </div>
-      <div class="offers">${offerCards}</div>
-      <a class="compare" href="${escapeHtml(formulasUrl)}">Comparer toutes les formules</a>
+      ${selectedTier ? `<p class="recommendation">Ta recommandation : ${escapeHtml(selectedTierLabel)}. Choisis simplement 8 ou 12 semaines.</p>` : ""}
+      <div class="offers${selectedTier ? " focused" : ""}">${offerCards}</div>
+      <a class="compare copy-code-link" href="${escapeHtml(formulasUrl)}">Comparer toutes les formules</a>
       <div class="warn"><strong>Important :</strong> si le total ne baisse pas au checkout, le code n'a pas ete applique. Recolle <strong>${escapeHtml(code)}</strong> puis clique <strong>APPLIQUER</strong> avant de payer.</div>
     </section>
   </main>
   <script>
     const code = ${JSON.stringify(code)};
+    const copyCode = async () => {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(code);
+        return;
+      }
+      const field = document.createElement("textarea");
+      field.value = code;
+      field.setAttribute("readonly", "");
+      field.style.position = "fixed";
+      field.style.opacity = "0";
+      document.body.appendChild(field);
+      field.select();
+      const copied = document.execCommand("copy");
+      field.remove();
+      if (!copied) throw new Error("clipboard unavailable");
+    };
     document.getElementById("copy").addEventListener("click", async () => {
-      try { await navigator.clipboard.writeText(code); document.getElementById("copy").textContent = "Code copie"; }
+      try { await copyCode(); document.getElementById("copy").textContent = "Code copie"; }
       catch { document.getElementById("copy").textContent = code; }
+    });
+    document.querySelectorAll(".copy-code-link").forEach((link) => {
+      link.addEventListener("click", async (event) => {
+        event.preventDefault();
+        const target = event.currentTarget;
+        const href = target.href;
+        try {
+          await copyCode();
+          target.setAttribute("data-code-copied", "true");
+        } catch {}
+        window.location.assign(href);
+      });
     });
   </script>
 </body>
@@ -6912,7 +6971,7 @@ export async function registerRoutes(
             AND (
               metadata->>'deliveryState' = ANY($3::text[])
               OR (
-                sent_at >= NOW() - INTERVAL '21 days'
+                metadata->>'campaign' = $4
                 AND (
                   sendpulse_task_id IS NOT NULL
                   OR LOWER(COALESCE(sendpulse_status, '')) IN ('success', 'sent', 'delivered')
@@ -6933,9 +6992,30 @@ export async function registerRoutes(
           String(RECOVERY_CTA_CLICK_CLAIM_TTL_MINUTES),
           String(RECOVERY_CTA_CLICK_RETRY_COOLDOWN_MINUTES),
           RECOVERY_CTA_RECONCILIATION_STATES,
+          RECOVERY_CTA_CAMPAIGN,
         ]
       );
       sentRows.rows.forEach((row: any) => sentRecovery.add(cleanEmail(row.email)));
+
+      const recentPromoRecipients = new Set<string>();
+      const recentPromoRows = await pool.query(
+        `SELECT DISTINCT LOWER(recipient_email) AS email
+           FROM email_tracking
+          WHERE recipient_email IS NOT NULL
+            AND sent_at >= NOW() - ($1 || ' hours')::interval
+            AND email_type = ANY($2::text[])
+            AND (
+              sendpulse_task_id IS NOT NULL
+              OR LOWER(COALESCE(sendpulse_status, '')) IN ('success', 'sent', 'delivered')
+              OR metadata->>'deliveryState' = ANY($3::text[])
+            )`,
+        [
+          String(RECOVERY_CTA_FREQUENCY_CAP_HOURS),
+          RECOVERY_CTA_FREQUENCY_EMAIL_TYPES,
+          RECOVERY_CTA_RECONCILIATION_STATES,
+        ],
+      );
+      recentPromoRows.rows.forEach((row: any) => recentPromoRecipients.add(cleanEmail(row.email)));
 
       const blockedRecipients = new Set<string>();
       const blockedRows = await pool.query(
@@ -6971,7 +7051,13 @@ export async function registerRoutes(
       const candidates = new Map<string, RecoveryCandidate>();
       const addCandidate = (candidate: RecoveryCandidate) => {
         const email = cleanEmail(candidate.email);
-        if (!email || isExcludedEmail(email) || sentRecovery.has(email) || blockedRecipients.has(email)) return;
+        if (
+          !email
+          || isExcludedEmail(email)
+          || sentRecovery.has(email)
+          || recentPromoRecipients.has(email)
+          || blockedRecipients.has(email)
+        ) return;
         const existing = candidates.get(email);
         if (!existing || candidate.priority > existing.priority) {
           candidates.set(email, { ...candidate, email });
@@ -7174,7 +7260,8 @@ export async function registerRoutes(
           batchLimited: requestedMaxToSend > maxToSend,
           preview: selected.slice(0, 25),
           excluded: {
-            alreadyRecoverySent21d: sentRecovery.size,
+            alreadySentThisRecoveryCampaign: sentRecovery.size,
+            recentPromoWithin120h: recentPromoRecipients.size,
             blockedOrConverted: blockedRecipients.size,
           },
         });
@@ -7184,6 +7271,7 @@ export async function registerRoutes(
       const results: Array<any> = [];
       let sent = 0;
       let failed = 0;
+      let skipped = 0;
       for (const candidate of selected) {
         try {
           const resumeToken = candidate.cohort.startsWith("abandon_")
@@ -7192,18 +7280,46 @@ export async function registerRoutes(
           const resumeUrl = resumeToken
             ? `${baseUrl}/audit-complet/questionnaire?resume=${resumeToken}`
             : null;
-          const trackingRecord = await storage.createEmailTracking(
-            candidate.auditId || crypto.randomUUID(),
-            "sendRecoveryCtaEmail",
-            candidate.email
-          );
+          const claim = await claimRecoveryCtaClickFollowup(pool, {
+            sourceTrackingId: candidate.auditId || `${candidate.source}:${candidate.lastSignalAt || "unknown"}`,
+            recipientEmail: candidate.email,
+            auditId: candidate.auditId,
+            auditType: candidate.auditType,
+            campaign: RECOVERY_CTA_CAMPAIGN,
+            cohort: candidate.cohort,
+            idempotencyCohort: "primary",
+          });
+          if (claim.action === "skip") {
+            skipped++;
+            results.push({
+              email: candidate.email,
+              cohort: candidate.cohort,
+              sent: false,
+              skipped: true,
+              skipReason: claim.reason,
+              trackingId: claim.trackingId,
+            });
+            continue;
+          }
           const ok = await sendRecoveryCtaEmail(candidate.email, {
             cohort: candidate.cohort,
             baseUrl,
-            trackingId: trackingRecord.id,
+            trackingId: claim.trackingId!,
             percentComplete: candidate.percentComplete,
             resumeUrl,
             expiresText: "7 jours",
+            recoveryClickFollowup: {
+              idempotencyKey: claim.idempotencyKey,
+              sourceTrackingId: candidate.auditId || `${candidate.source}:${candidate.lastSignalAt || "unknown"}`,
+              claimAttempt: claim.attempt,
+            },
+            beforeProviderPost: (context) => markRecoveryCtaProviderPostStarted(pool, {
+              trackingId: claim.trackingId!,
+              idempotencyKey: claim.idempotencyKey,
+              recipientEmail: context.recipientEmail,
+              subject: context.subject,
+              startedAt: context.startedAt,
+            }),
           });
 
           if (ok) {
@@ -7221,7 +7337,7 @@ export async function registerRoutes(
             failed++;
           }
 
-          results.push({ email: candidate.email, cohort: candidate.cohort, sent: ok, trackingId: trackingRecord.id });
+          results.push({ email: candidate.email, cohort: candidate.cohort, sent: ok, trackingId: claim.trackingId });
           await new Promise((resolve) => setTimeout(resolve, 650));
         } catch (error) {
           failed++;
@@ -7249,6 +7365,7 @@ export async function registerRoutes(
         attempted: selected.length,
         sent,
         failed,
+        skipped,
         results,
       });
     } catch (error) {

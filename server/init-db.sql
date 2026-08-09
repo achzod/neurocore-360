@@ -160,7 +160,7 @@ ON CONFLICT (code) DO NOTHING;
 
 -- Promo codes for review rewards (audit type specific)
 INSERT INTO promo_codes (code, discount_percent, description, valid_for)
-VALUES ('DISCOVERY30', 20, 'Code Discovery Scan - 20% coaching Achzod', 'ALL')
+VALUES ('DISCOVERY30', 30, 'Code Discovery Scan - 30% coaching Achzod', 'ALL')
 ON CONFLICT (code) DO NOTHING;
 
 INSERT INTO promo_codes (code, discount_percent, description, valid_for)
