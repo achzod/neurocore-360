@@ -260,6 +260,30 @@ assert.equal(concurrentClaims.filter(
 assert.equal(new Set(concurrentClaims.map((claim) => claim.trackingId)).size, 1);
 assert.equal(new Set(concurrentClaims.map((claim) => claim.idempotencyKey)).size, 1);
 
+const primaryCampaignPool = new FakeClaimPool();
+const primaryCampaignClaims = await Promise.all([
+  claimRecoveryCtaClickFollowup(primaryCampaignPool as unknown as Pool, {
+    sourceTrackingId: "warm-report",
+    recipientEmail: "buyer@example.net",
+    cohort: "warm_report",
+    idempotencyCohort: "primary",
+  }, NOW),
+  claimRecoveryCtaClickFollowup(primaryCampaignPool as unknown as Pool, {
+    sourceTrackingId: "cold-base",
+    recipientEmail: "BUYER@example.net",
+    cohort: "cold_base",
+    idempotencyCohort: "primary",
+  }, NOW),
+]);
+assert.equal(primaryCampaignClaims.filter((claim) => claim.action === "claim").length, 1);
+assert.equal(primaryCampaignClaims.filter((claim) => claim.action === "skip").length, 1);
+assert.equal(new Set(primaryCampaignClaims.map((claim) => claim.trackingId)).size, 1);
+assert.equal(new Set(primaryCampaignClaims.map((claim) => claim.idempotencyKey)).size, 1);
+assert.equal(
+  primaryCampaignClaims[0].idempotencyKey,
+  "recovery_cta_recipient:recovery_cta_2026_06:primary:buyer@example.net",
+);
+
 const claimed = concurrentClaims.find((claim) => claim.action === "claim")!;
 await markRecoveryCtaProviderPostStarted(fakePool as unknown as Pool, {
   trackingId: claimed.trackingId!,
