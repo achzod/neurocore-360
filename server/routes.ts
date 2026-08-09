@@ -7296,6 +7296,12 @@ export async function registerRoutes(
       ).catch(() => ({ rows: [] }));
       unsubscribeRows.rows.forEach((row: any) => unsubscribedRecipients.add(cleanEmail(row.email)));
 
+      // Keep the first pass bounded and cheap. The former query embedded three
+      // correlated NOT EXISTS scans over email_tracking for every clicked row;
+      // production requests routinely exceeded the cron timeout as the table
+      // grew. Suppression is now evaluated in batched set queries below.
+      const selectionStartedAt = Date.now();
+      const candidateScanLimit = Math.min(Math.max(maxToSend * 20, 250), 5_000);
       const result = await pool.query(
         `WITH clicked AS (
            SELECT DISTINCT ON (LOWER(recipient_email))
@@ -7320,59 +7326,6 @@ export async function registerRoutes(
          )
          SELECT c.*
            FROM clicked c
-          WHERE NOT EXISTS (
-            SELECT 1
-              FROM email_tracking f
-             WHERE LOWER(f.recipient_email) = c.email
-               AND f.email_type = 'sendRecoveryCtaEmail'
-               AND f.sent_at >= NOW() - INTERVAL '14 days'
-               AND f.metadata->>'cohort' = 'clicked_help'
-               AND (
-                 f.sendpulse_task_id IS NOT NULL
-                 OR LOWER(COALESCE(f.sendpulse_status, '')) IN ('success', 'sent', 'delivered')
-                 OR f.metadata->>'deliveryState' = ANY($8::text[])
-                 OR (
-                   LOWER(COALESCE(f.sendpulse_status, '')) IN ('', 'pending')
-                   AND f.sent_at >= NOW() - ($6 || ' minutes')::interval
-                 )
-                 OR (
-                   LOWER(COALESCE(f.sendpulse_status, '')) = 'failed'
-                   AND f.sent_at >= NOW() - ($7 || ' minutes')::interval
-                 )
-               )
-          )
-            AND NOT EXISTS (
-              SELECT 1
-                FROM email_tracking b
-                LEFT JOIN cta_tracking ct ON ct.email_tracking_id = b.id
-               WHERE LOWER(b.recipient_email) = c.email
-                 AND (
-                   b.converted IS NOT NULL
-                   OR LOWER(COALESCE(b.sendpulse_status, '')) IN ('unsubscribed', 'auth_failed')
-                   OR LOWER(COALESCE(b.sendpulse_error, '')) LIKE '%unsubscribe%'
-                   OR LOWER(COALESCE(b.sendpulse_error, '')) LIKE '%spam%'
-                   OR LOWER(COALESCE(b.sendpulse_error, '')) LIKE '%bounce%'
-                   OR ct.event_type IN ('unsubscribe', 'spam', 'bounce')
-                   OR LOWER(b.recipient_email) IN (
-                     SELECT LOWER(recipient_email)
-                       FROM email_tracking
-                      WHERE email_type = 'sendRecoveryCtaEmail'
-                        AND sent_at >= NOW() - INTERVAL '6 hours'
-                        AND sendpulse_task_id IS NULL
-                        AND LOWER(COALESCE(sendpulse_status, '')) NOT IN ('success', 'sent', 'delivered')
-                      GROUP BY LOWER(recipient_email)
-                     HAVING COUNT(*) >= 3
-                   )
-                 )
-            )
-            AND NOT EXISTS (
-              SELECT 1
-                FROM orders o
-               WHERE LOWER(o.email) = c.email
-                 AND o.status = 'paid'
-                 AND COALESCE(o.final_amount_cents, o.amount_cents, 0) > 0
-                 AND COALESCE(o.paid_at, o.created_at) >= c.last_signal_at
-            )
           ORDER BY c.last_signal_at DESC
           LIMIT $5`,
         [
@@ -7380,16 +7333,107 @@ export async function registerRoutes(
           String(minHoursSinceClick),
           PROMO_EMAIL_TYPES,
           PROMO_SUBJECT_PATTERNS,
-          maxToSend,
-          String(RECOVERY_CTA_CLICK_CLAIM_TTL_MINUTES),
-          String(RECOVERY_CTA_CLICK_RETRY_COOLDOWN_MINUTES),
-          RECOVERY_CTA_RECONCILIATION_STATES,
+          candidateScanLimit,
         ]
       );
 
-      const candidates = result.rows
+      const scannedCandidates = result.rows
         .map((row: any) => ({ ...row, email: cleanEmail(row.email) }))
         .filter((row: any) => row.email && !isExcludedEmail(row.email) && !unsubscribedRecipients.has(row.email));
+      const candidateEmails = [...new Set(scannedCandidates.map((row: any) => row.email))];
+      const suppressionStartedAt = Date.now();
+
+      let candidates = scannedCandidates;
+      if (candidateEmails.length > 0) {
+        const [followupRows, blockedRows, repeatedFailureRows, paidRows] = await Promise.all([
+          pool.query(
+            `SELECT DISTINCT LOWER(recipient_email) AS email
+               FROM email_tracking
+              WHERE LOWER(recipient_email) = ANY($1::text[])
+                AND email_type = 'sendRecoveryCtaEmail'
+                AND sent_at >= NOW() - INTERVAL '14 days'
+                AND metadata->>'cohort' = 'clicked_help'
+                AND (
+                  sendpulse_task_id IS NOT NULL
+                  OR LOWER(COALESCE(sendpulse_status, '')) IN ('success', 'sent', 'delivered')
+                  OR metadata->>'deliveryState' = ANY($4::text[])
+                  OR (
+                    LOWER(COALESCE(sendpulse_status, '')) IN ('', 'pending')
+                    AND sent_at >= NOW() - ($2 || ' minutes')::interval
+                  )
+                  OR (
+                    LOWER(COALESCE(sendpulse_status, '')) = 'failed'
+                    AND sent_at >= NOW() - ($3 || ' minutes')::interval
+                  )
+                )`,
+            [
+              candidateEmails,
+              String(RECOVERY_CTA_CLICK_CLAIM_TTL_MINUTES),
+              String(RECOVERY_CTA_CLICK_RETRY_COOLDOWN_MINUTES),
+              RECOVERY_CTA_RECONCILIATION_STATES,
+            ],
+          ),
+          pool.query(
+            `SELECT DISTINCT LOWER(b.recipient_email) AS email
+               FROM email_tracking b
+               LEFT JOIN cta_tracking ct ON ct.email_tracking_id = b.id
+              WHERE LOWER(b.recipient_email) = ANY($1::text[])
+                AND (
+                  b.converted IS NOT NULL
+                  OR LOWER(COALESCE(b.sendpulse_status, '')) IN ('unsubscribed', 'auth_failed')
+                  OR LOWER(COALESCE(b.sendpulse_error, '')) LIKE '%unsubscribe%'
+                  OR LOWER(COALESCE(b.sendpulse_error, '')) LIKE '%spam%'
+                  OR LOWER(COALESCE(b.sendpulse_error, '')) LIKE '%bounce%'
+                  OR ct.event_type IN ('unsubscribe', 'spam', 'bounce')
+                )`,
+            [candidateEmails],
+          ),
+          pool.query(
+            `SELECT LOWER(recipient_email) AS email
+               FROM email_tracking
+              WHERE LOWER(recipient_email) = ANY($1::text[])
+                AND email_type = 'sendRecoveryCtaEmail'
+                AND sent_at >= NOW() - INTERVAL '6 hours'
+                AND sendpulse_task_id IS NULL
+                AND LOWER(COALESCE(sendpulse_status, '')) NOT IN ('success', 'sent', 'delivered')
+              GROUP BY LOWER(recipient_email)
+             HAVING COUNT(*) >= 3`,
+            [candidateEmails],
+          ),
+          pool.query(
+            `SELECT LOWER(email) AS email,
+                    MAX(COALESCE(paid_at, created_at)) AS latest_paid_at
+               FROM orders
+              WHERE LOWER(email) = ANY($1::text[])
+                AND status = 'paid'
+                AND COALESCE(final_amount_cents, amount_cents, 0) > 0
+              GROUP BY LOWER(email)`,
+            [candidateEmails],
+          ),
+        ]);
+
+        const suppressed = new Set<string>([
+          ...followupRows.rows.map((row: any) => cleanEmail(row.email)),
+          ...blockedRows.rows.map((row: any) => cleanEmail(row.email)),
+          ...repeatedFailureRows.rows.map((row: any) => cleanEmail(row.email)),
+        ]);
+        const paidAfterByEmail = new Map<string, number>(
+          paidRows.rows.map((row: any) => [cleanEmail(row.email), new Date(row.latest_paid_at).getTime()]),
+        );
+
+        candidates = scannedCandidates
+          .filter((candidate: any) => {
+            if (suppressed.has(candidate.email)) return false;
+            const latestPaidAt = paidAfterByEmail.get(candidate.email);
+            if (!Number.isFinite(latestPaidAt)) return true;
+            const lastSignalAt = new Date(candidate.last_signal_at).getTime();
+            return !Number.isFinite(lastSignalAt) || latestPaidAt! < lastSignalAt;
+          })
+          .slice(0, maxToSend);
+      }
+
+      const selectionMs = suppressionStartedAt - selectionStartedAt;
+      const suppressionMs = Date.now() - suppressionStartedAt;
 
       if (dryRun) {
         res.json({
@@ -7399,6 +7443,8 @@ export async function registerRoutes(
           minHoursSinceClick,
           eligible: candidates.length,
           selectedCount: candidates.length,
+          scannedCount: scannedCandidates.length,
+          queryTimings: { selectionMs, suppressionMs },
           subject: "Tu hesites sur la formule ?",
           cohort: "clicked_help",
           preview: candidates.slice(0, 25),
