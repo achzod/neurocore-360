@@ -35,6 +35,7 @@ import {
   sendFinishDiscoveryEmail,
   sendCrossSellUpgradeEmail,
   sendRecoveryCtaEmail,
+  reconcileRecoveryCtaSendPulseOutcome,
   sendCoachingFormulaChoiceLeadEmail,
   type RecoveryCtaCohort,
   type CoachingFormulaLeadInput,
@@ -59,6 +60,14 @@ import {
   buildPeptidesBloodCreditsBlock,
   buildPeptidesCoachingDeductionBlock,
 } from "./cta";
+import {
+  applyRecoveryCtaReconciliation,
+  claimRecoveryCtaClickFollowup,
+  markRecoveryCtaProviderPostStarted,
+  RECOVERY_CTA_CLICK_CLAIM_TTL_MINUTES,
+  RECOVERY_CTA_CLICK_RETRY_COOLDOWN_MINUTES,
+  RECOVERY_CTA_RECONCILIATION_STATES,
+} from "./recoveryCtaClickFollowup";
 import { BLOOD_ANALYSIS_PURCHASE_CREDITS, clarifyBloodPurchaseEmail } from "./bloodOffer";
 
 import { registerKnowledgeRoutes } from "./knowledge";
@@ -6899,12 +6908,32 @@ export async function registerRoutes(
       const sentRows = await pool.query(
         `SELECT LOWER(recipient_email) AS email
            FROM email_tracking
-          WHERE email_type = 'sendRecoveryCtaEmail'
-            AND sent_at >= NOW() - INTERVAL '21 days'
+         WHERE email_type = 'sendRecoveryCtaEmail'
             AND (
-              sendpulse_task_id IS NOT NULL
-              OR LOWER(COALESCE(sendpulse_status, '')) IN ('success', 'sent', 'delivered')
-            )`
+              metadata->>'deliveryState' = ANY($3::text[])
+              OR (
+                sent_at >= NOW() - INTERVAL '21 days'
+                AND (
+                  sendpulse_task_id IS NOT NULL
+                  OR LOWER(COALESCE(sendpulse_status, '')) IN ('success', 'sent', 'delivered')
+                  OR (
+                    metadata->>'cohort' = 'clicked_help'
+                    AND LOWER(COALESCE(sendpulse_status, '')) IN ('', 'pending')
+                    AND sent_at >= NOW() - ($1 || ' minutes')::interval
+                  )
+                  OR (
+                    metadata->>'cohort' = 'clicked_help'
+                    AND LOWER(COALESCE(sendpulse_status, '')) = 'failed'
+                    AND sent_at >= NOW() - ($2 || ' minutes')::interval
+                  )
+                )
+              )
+            )`,
+        [
+          String(RECOVERY_CTA_CLICK_CLAIM_TTL_MINUTES),
+          String(RECOVERY_CTA_CLICK_RETRY_COOLDOWN_MINUTES),
+          RECOVERY_CTA_RECONCILIATION_STATES,
+        ]
       );
       sentRows.rows.forEach((row: any) => sentRecovery.add(cleanEmail(row.email)));
 
@@ -7301,6 +7330,15 @@ export async function registerRoutes(
                AND (
                  f.sendpulse_task_id IS NOT NULL
                  OR LOWER(COALESCE(f.sendpulse_status, '')) IN ('success', 'sent', 'delivered')
+                 OR f.metadata->>'deliveryState' = ANY($8::text[])
+                 OR (
+                   LOWER(COALESCE(f.sendpulse_status, '')) IN ('', 'pending')
+                   AND f.sent_at >= NOW() - ($6 || ' minutes')::interval
+                 )
+                 OR (
+                   LOWER(COALESCE(f.sendpulse_status, '')) = 'failed'
+                   AND f.sent_at >= NOW() - ($7 || ' minutes')::interval
+                 )
                )
           )
             AND NOT EXISTS (
@@ -7343,6 +7381,9 @@ export async function registerRoutes(
           PROMO_EMAIL_TYPES,
           PROMO_SUBJECT_PATTERNS,
           maxToSend,
+          String(RECOVERY_CTA_CLICK_CLAIM_TTL_MINUTES),
+          String(RECOVERY_CTA_CLICK_RETRY_COOLDOWN_MINUTES),
+          RECOVERY_CTA_RECONCILIATION_STATES,
         ]
       );
 
@@ -7368,25 +7409,53 @@ export async function registerRoutes(
       const results: Array<any> = [];
       let sent = 0;
       let failed = 0;
+      let skipped = 0;
       for (const candidate of candidates) {
         try {
-          const trackingRecord = await storage.createEmailTracking(
-            candidate.audit_id || crypto.randomUUID(),
-            "sendRecoveryCtaEmail",
-            candidate.email
-          );
+          const claim = await claimRecoveryCtaClickFollowup(pool, {
+            sourceTrackingId: candidate.source_tracking_id,
+            recipientEmail: candidate.email,
+            auditId: candidate.audit_id,
+            auditType: candidate.audit_type,
+          });
+          if (claim.action === "skip") {
+            skipped++;
+            results.push({
+              email: candidate.email,
+              sent: false,
+              skipped: true,
+              skipReason: claim.reason,
+              trackingId: claim.trackingId,
+              sourceTrackingId: candidate.source_tracking_id,
+              lastSignalAt: candidate.last_signal_at,
+            });
+            continue;
+          }
+
           const ok = await sendRecoveryCtaEmail(candidate.email, {
             cohort: "clicked_help",
             baseUrl,
-            trackingId: trackingRecord.id,
+            trackingId: claim.trackingId!,
             expiresText: "72 heures",
+            recoveryClickFollowup: {
+              idempotencyKey: claim.idempotencyKey,
+              sourceTrackingId: candidate.source_tracking_id,
+              claimAttempt: claim.attempt,
+            },
+            beforeProviderPost: (context) => markRecoveryCtaProviderPostStarted(pool, {
+              trackingId: claim.trackingId!,
+              idempotencyKey: claim.idempotencyKey,
+              recipientEmail: context.recipientEmail,
+              subject: context.subject,
+              startedAt: context.startedAt,
+            }),
           });
           if (ok) sent++;
           else failed++;
           results.push({
             email: candidate.email,
             sent: ok,
-            trackingId: trackingRecord.id,
+            trackingId: claim.trackingId,
             sourceTrackingId: candidate.source_tracking_id,
             lastSignalAt: candidate.last_signal_at,
           });
@@ -7410,6 +7479,7 @@ export async function registerRoutes(
         attempted: candidates.length,
         sent,
         failed,
+        skipped,
         results,
       });
     } catch (error) {
@@ -7417,6 +7487,81 @@ export async function registerRoutes(
       res.status(500).json({
         success: false,
         error: "Erreur recovery CTA click follow-up",
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  });
+
+  app.post("/api/admin/reconcile-recovery-cta-click-followups", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const dryRun = req.body?.dryRun !== false;
+      const maxToReconcile = Math.min(Math.max(Number(req.body?.maxToReconcile) || 25, 1), 100);
+      const pending = await pool.query(
+        `SELECT id,
+                recipient_email,
+                subject,
+                metadata->>'recoveryClickFollowupKey' AS idempotency_key,
+                metadata->>'providerPostStartedAt' AS provider_post_started_at,
+                metadata->>'deliveryState' AS delivery_state
+           FROM email_tracking
+          WHERE email_type = 'sendRecoveryCtaEmail'
+            AND metadata->>'deliveryState' = ANY($2::text[])
+          ORDER BY COALESCE(
+            NULLIF(metadata->>'providerPostStartedAt', '')::timestamptz,
+            sent_at
+          ) ASC
+          LIMIT $1`,
+        [maxToReconcile, RECOVERY_CTA_RECONCILIATION_STATES],
+      );
+
+      const results: Array<Record<string, unknown>> = [];
+      for (const row of pending.rows) {
+        const providerPostStartedAt = new Date(row.provider_post_started_at || "");
+        const hasIdentity = Boolean(
+          row.id
+          && row.recipient_email
+          && row.subject
+          && row.idempotency_key
+          && Number.isFinite(providerPostStartedAt.getTime())
+        );
+        const outcome = hasIdentity
+          ? await reconcileRecoveryCtaSendPulseOutcome({
+              recipientEmail: row.recipient_email,
+              subject: row.subject,
+              providerPostStartedAt,
+            })
+          : { outcome: "unknown" as const, reason: "missing_reconciliation_identity" };
+        const transition = dryRun || !hasIdentity
+          ? "not_applied"
+          : await applyRecoveryCtaReconciliation(pool, {
+              trackingId: row.id,
+              idempotencyKey: row.idempotency_key,
+              outcome,
+            });
+        results.push({
+          trackingId: row.id,
+          recipientEmail: row.recipient_email,
+          previousState: row.delivery_state,
+          outcome,
+          transition,
+        });
+      }
+
+      res.json({
+        success: true,
+        dryRun,
+        inspected: pending.rows.length,
+        resolvedSuccess: results.filter((item: any) => item.outcome?.outcome === "success").length,
+        confirmedNotSent: results.filter((item: any) => item.outcome?.outcome === "confirmed_not_sent").length,
+        stillUnknown: results.filter((item: any) => item.outcome?.outcome === "unknown").length,
+        results,
+      });
+    } catch (error) {
+      console.error("[RecoveryCTA-Reconcile] Error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Erreur reconciliation recovery CTA click follow-up",
         message: error instanceof Error ? error.message : String(error),
       });
     }

@@ -11,6 +11,7 @@ import { storage } from "./storage";
 import { sendReportReadyEmail, sendAdminEmailNewAudit } from "./emailService";
 import { sendScheduledBloodEmail } from "./blood-analysis/routes";
 import { startPeptauraCatalogCron } from "./peptidesEngine";
+import { summarizeRecoveryCtaClickCronResult } from "./recoveryCtaClickFollowup";
 
 const app = express();
 const httpServer = createServer(app);
@@ -433,6 +434,10 @@ if (process.env.NODE_ENV === "production") {
         Math.max(Number(process.env.RECOVERY_CTA_PER_TICK || 3), 1),
         10
       );
+      const RECOVERY_CTA_REQUEST_TIMEOUT_MS = Math.min(
+        Math.max(Number(process.env.RECOVERY_CTA_REQUEST_TIMEOUT_MS || 90_000), 30_000),
+        180_000
+      );
       const RECOVERY_CTA_ENABLED = process.env.RECOVERY_CTA_DRIP_ENABLED !== "0";
       const RECOVERY_CTA_PARIS_START_HOUR = Math.min(
         Math.max(Number(process.env.RECOVERY_CTA_PARIS_START_HOUR || 8), 0),
@@ -481,7 +486,7 @@ if (process.env.NODE_ENV === "production") {
 
             {
               const controller = new AbortController();
-              const timeout = setTimeout(() => controller.abort(), 55_000);
+              const timeout = setTimeout(() => controller.abort(), RECOVERY_CTA_REQUEST_TIMEOUT_MS);
               try {
                 const response = await fetch(`${baseUrl}/api/admin/recovery-cta-click-followup`, {
                   method: "POST",
@@ -499,9 +504,11 @@ if (process.env.NODE_ENV === "production") {
                     status: response.status,
                     error: result?.error || result?.message || "non-json response",
                   });
-                } else if (Number(result.sent || 0) > 0) {
-                  sent += Number(result.sent);
-                  sentThisAttempt = true;
+                } else {
+                  const clickOutcome = summarizeRecoveryCtaClickCronResult(result);
+                  sent += clickOutcome.sent;
+                  failed += clickOutcome.failed;
+                  sentThisAttempt = clickOutcome.shouldContinueClickLoop;
                 }
               } catch (err) {
                 failed++;
@@ -518,7 +525,7 @@ if (process.env.NODE_ENV === "production") {
 
             for (const day of recoveryCtaDays) {
               const controller = new AbortController();
-              const timeout = setTimeout(() => controller.abort(), 55_000);
+              const timeout = setTimeout(() => controller.abort(), RECOVERY_CTA_REQUEST_TIMEOUT_MS);
               try {
                 const response = await fetch(`${baseUrl}/api/admin/recovery-cta-campaign`, {
                   method: "POST",

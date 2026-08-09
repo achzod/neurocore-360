@@ -1,6 +1,11 @@
 import type { ComprehensiveRiskProfile, RiskScore } from "./blood-analysis/risk-scores";
 import { logBloodEmailDelivery } from "./blood-analysis/delivery-log";
 import { logEmail, ADMIN_EMAIL_CC, type EmailTrackingData } from "./emailTracking";
+import {
+  classifyRecoveryCtaProviderRecord,
+  classifySendPulsePostFailure,
+  type RecoveryCtaProviderOutcome,
+} from "./recoveryCtaClickFollowup";
 import nodemailer from "nodemailer";
 
 const SENDPULSE_USER_ID =
@@ -179,6 +184,7 @@ type SendPulseSendResult = {
   error?: any;
   message?: any;
   httpStatus?: number;
+  reconcileRequired?: boolean;
 };
 
 type SendPulseLiveRecord = Record<string, any>;
@@ -356,6 +362,31 @@ async function findRecentSendPulseLiveRecord(
   return null;
 }
 
+export async function reconcileRecoveryCtaSendPulseOutcome(input: {
+  recipientEmail: string;
+  subject: string;
+  providerPostStartedAt: Date;
+}): Promise<RecoveryCtaProviderOutcome> {
+  if (!input.recipientEmail || !input.subject || !Number.isFinite(input.providerPostStartedAt.getTime())) {
+    return { outcome: "unknown", reason: "missing_reconciliation_identity" };
+  }
+  try {
+    const token = await getAccessToken();
+    const record = await findRecentSendPulseLiveRecord(
+      token,
+      input.recipientEmail,
+      input.subject,
+      input.providerPostStartedAt,
+    );
+    return classifyRecoveryCtaProviderRecord(record);
+  } catch (error) {
+    return {
+      outcome: "unknown",
+      reason: error instanceof Error ? `provider_lookup_error:${error.message}` : "provider_lookup_error",
+    };
+  }
+}
+
 async function sendEmailWithTracking(
   emailPayload: {
     html: string;
@@ -372,8 +403,14 @@ async function sendEmailWithTracking(
     auditId?: string;
     auditType?: string;
     metadata?: Record<string, any>;
+    beforeProviderPost?: (context: {
+      recipientEmail: string;
+      subject: string;
+      startedAt: Date;
+    }) => Promise<void>;
   }
 ): Promise<SendPulseSendResult> {
+  let providerPostStarted = false;
   try {
     // Check unsubscribe before sending
     const { storage } = await import("./storage");
@@ -461,6 +498,12 @@ async function sendEmailWithTracking(
     );
 
     const sentStartedAt = new Date();
+    await trackingData.beforeProviderPost?.({
+      recipientEmail: trackingData.recipientEmail,
+      subject: emailPayload.subject,
+      startedAt: sentStartedAt,
+    });
+    providerPostStarted = Boolean(trackingData.beforeProviderPost);
     const response = await fetch("https://api.sendpulse.com/smtp/emails", {
       method: "POST",
       headers: {
@@ -483,6 +526,7 @@ async function sendEmailWithTracking(
       result: response.ok && parsed?.result === true,
       httpStatus: response.status,
     };
+    providerPostStarted = false;
     let sendpulseTaskId = extractSendPulseDeliveryId(result);
     if (sendpulseTaskId) result.id = sendpulseTaskId;
     const liveLookupMetadata: Record<string, any> = {};
@@ -692,8 +736,10 @@ async function sendEmailWithTracking(
     return result;
   } catch (error) {
     console.error(`[SendPulse] Error sending ${trackingData.emailType}:`, error);
+    const failure = classifySendPulsePostFailure(error, providerPostStarted);
 
-    // Log failed attempt
+    // An aborted provider POST has an unknown outcome: SendPulse may have accepted
+    // the message before the connection disappeared. Never mark it retryable.
     await logEmail({
       emailType: trackingData.emailType,
       recipientEmail: trackingData.recipientEmail,
@@ -702,12 +748,19 @@ async function sendEmailWithTracking(
       auditType: trackingData.auditType,
       subject: emailPayload.subject,
       previewText: emailPayload.text.substring(0, 100),
-      sendpulseStatus: "failed",
+      sendpulseStatus: failure.sendpulseStatus,
       sendpulseError: String(error),
-      metadata: trackingData.metadata,
+      metadata: {
+        ...(trackingData.metadata || {}),
+        ...failure.metadata,
+      },
     });
 
-    return { result: false, error: String(error) };
+    return {
+      result: false,
+      error: String(error),
+      ...(failure.reconcileRequired ? { reconcileRequired: true } : {}),
+    };
   }
 }
 
@@ -3489,6 +3542,16 @@ export async function sendRecoveryCtaEmail(
     percentComplete?: number | null;
     resumeUrl?: string | null;
     expiresText?: string;
+    recoveryClickFollowup?: {
+      idempotencyKey: string;
+      sourceTrackingId: string;
+      claimAttempt: number;
+    };
+    beforeProviderPost?: (context: {
+      recipientEmail: string;
+      subject: string;
+      startedAt: Date;
+    }) => Promise<void>;
   }
 ): Promise<boolean> {
   try {
@@ -3611,7 +3674,15 @@ Achzod`;
           trackedCoachingUrl,
           resumeUrl,
           campaign,
+          ...(opts.recoveryClickFollowup
+            ? {
+                recoveryClickFollowupKey: opts.recoveryClickFollowup.idempotencyKey,
+                sourceTrackingId: opts.recoveryClickFollowup.sourceTrackingId,
+                claimAttempt: opts.recoveryClickFollowup.claimAttempt,
+              }
+            : {}),
         },
+        beforeProviderPost: opts.beforeProviderPost,
       }
     );
 
