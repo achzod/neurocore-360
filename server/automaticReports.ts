@@ -337,7 +337,7 @@ function generateAlertsHTML(stats: ReportStats): string {
       }
       ${
         stats.alerts.needsReview > 0
-          ? `<div style="color: #FBBF24; font-size: 14px; margin-bottom: 8px;">⚠️ ${stats.alerts.needsReview} rapport(s) en NEEDS_REVIEW (validation échouée)</div>`
+          ? `<div style="color: #FBBF24; font-size: 14px; margin-bottom: 8px;">⚠️ ${stats.alerts.needsReview} rapport(s) en NEEDS_REVIEW (cause à vérifier)</div>`
           : ""
       }
       ${

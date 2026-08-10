@@ -183,15 +183,16 @@ async function fixNeedsReviewJobs(stats: MonitoringStats): Promise<void> {
 
     for (const audit of needsReviewAudits) {
       try {
-        if (!shouldAutoRegenerateNeedsReviewAudit(audit)) {
-          continue;
-        }
-        // Check retry count
         const reportJob = await storage.getReportJob(audit.id);
         const attemptCount = reportJob?.attemptCount || 0;
         const providerCreditFailure = isOpenAICreditError(
           new Error(String((reportJob as any)?.error || "")),
         );
+        if (!shouldAutoRegenerateNeedsReviewAudit(audit, {
+          operationalFailure: providerCreditFailure,
+        })) {
+          continue;
+        }
 
         if (attemptCount >= MAX_RETRY_ATTEMPTS && !providerCreditFailure) {
           log(
@@ -203,7 +204,7 @@ async function fixNeedsReviewJobs(stats: MonitoringStats): Promise<void> {
 
         if (providerCreditFailure) {
           console.warn(
-            `Monitoring: Audit ${audit.id} paused by OpenAI credit outage , retry counter will be reset`,
+            `Monitoring: Audit ${audit.id} has a previous OpenAI credit interruption , retry counter will be reset`,
           );
         }
 
@@ -223,7 +224,9 @@ async function fixNeedsReviewJobs(stats: MonitoringStats): Promise<void> {
         // Log to DB for audit trail
         await logMonitoringAction(audit.id, "REGENERATE_NEEDS_REVIEW", {
           attemptCount: attemptCount + 1,
-          reason: "Auto-regeneration after validation failure",
+          reason: providerCreditFailure
+            ? "Auto-regeneration after provider credit recovery"
+            : "Auto-regeneration after validation failure",
         });
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : "Unknown error";
