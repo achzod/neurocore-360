@@ -248,7 +248,13 @@ export function hasPassingPersistedDiscoveryDeliveryGate(
 export function shouldAutoRegenerateNeedsReviewAudit(audit: {
   type?: string | null;
   narrativeReport?: unknown;
+}, options?: {
+  operationalFailure?: boolean;
 }): boolean {
+  // Operational failures happen before the deterministic delivery gate. They
+  // remain retryable for every tier, including Discovery, once the provider is
+  // healthy again. A persisted gate failure stays non-retryable below.
+  if (options?.operationalFailure) return true;
   if (audit.type === "GRATUIT") return false;
 
   const gate = getPersistedDiscoveryDeliveryGate(

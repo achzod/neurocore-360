@@ -2144,7 +2144,6 @@ export async function registerRoutes(
         }
         res.json(audit);
 
-        const DISCOVERY_GENERATION_TIMEOUT = 5 * 60 * 1000; // 5 minutes max
         (async () => {
           try {
             console.log(`[Discovery Scan] Starting report generation for audit ${audit.id}`);
@@ -2155,12 +2154,11 @@ export async function registerRoutes(
               console.log(`[Discovery Scan] Narrative generated for ${audit.id} (${JSON.stringify(narrativeReport).length} chars)`);
               return narrativeReport;
             })();
-
-            const timeoutPromise = new Promise<never>((_, reject) => {
-              setTimeout(() => reject(new Error(`Discovery Scan generation timed out after ${DISCOVERY_GENERATION_TIMEOUT / 1000}s`)), DISCOVERY_GENERATION_TIMEOUT);
-            });
-
-            const narrativeReport = await Promise.race([generationPromise, timeoutPromise]);
+            // The Discovery engine owns its request-level timeouts and retries.
+            // A detached outer Promise.race used to abandon successful reports
+            // that completed shortly after five minutes, leaving the audit in
+            // NEEDS_REVIEW while the expensive generation continued in memory.
+            const narrativeReport = await generationPromise;
 
             // Check if delivery should be delayed (scheduled)
             const scheduledFor = audit.reportScheduledFor ? new Date(audit.reportScheduledFor) : null;

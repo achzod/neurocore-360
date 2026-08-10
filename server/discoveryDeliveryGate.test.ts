@@ -71,6 +71,16 @@ test("deterministic Discovery failures are never auto-regenerated", () => {
   assert.equal(shouldAutoRegenerateNeedsReviewAudit({ type: "GRATUIT", narrativeReport }), false);
 });
 
+test("operational provider recovery can regenerate a Discovery audit", () => {
+  assert.equal(
+    shouldAutoRegenerateNeedsReviewAudit(
+      { type: "GRATUIT", narrativeReport: null },
+      { operationalFailure: true },
+    ),
+    true,
+  );
+});
+
 test("rechecking the gate replaces its trace instead of duplicating it", () => {
   const first = evaluateDiscoveryDeliveryGate(validDiscoveryReport(), validAssets, new Date("2026-08-08T12:05:00.000Z"));
   const second = evaluateDiscoveryDeliveryGate(validDiscoveryReport(), validAssets, new Date("2026-08-08T12:06:00.000Z"));
