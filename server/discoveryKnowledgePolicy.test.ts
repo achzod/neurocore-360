@@ -23,7 +23,10 @@ import {
   validateDiscoverySectionContent,
 } from "./discovery-scan";
 import { deriveDiscoverySafetyPolicy } from "./discoverySafetyPolicy";
-import { runDiscoveryCanaryProviderStage } from "../scripts/discovery-unified-isolated-canary";
+import {
+  assertDiscoveryCanaryBudget,
+  runDiscoveryCanaryProviderStage,
+} from "../scripts/discovery-unified-isolated-canary";
 
 test("canonical English scientific evidence is preserved while source attribution is removed", () => {
   const raw = `Huberman Lab\nThe circadian system coordinates sleep timing with cortisol and melatonin.\nThis evidence explains how light exposure changes the phase response curve and sleep pressure.\nThe mechanism is directly relevant to recovery, glucose regulation and endocrine health.`;
@@ -189,6 +192,7 @@ test("isolated canary preflight-only mode succeeds without an OpenAI key and nev
     domains: Object.fromEntries(DISCOVERY_PREMIUM_DOMAINS.map((domain) => [domain, canonicalContext])),
   };
   let providerCalls = 0;
+  let budgetChecks = 0;
   const output: string[] = [];
   const result = await runDiscoveryCanaryProviderStage(
     knowledge,
@@ -202,11 +206,16 @@ test("isolated canary preflight-only mode succeeds without an OpenAI key and nev
         OPENAI_API_KEY: undefined,
       },
       emit: (line) => output.push(line),
+      validateBudget: () => {
+        budgetChecks += 1;
+        assertDiscoveryCanaryBudget(52_825);
+      },
     },
   );
 
   assert.equal(result, null);
   assert.equal(providerCalls, 0);
+  assert.equal(budgetChecks, 0, "preflight-only must return before the full prompt budget guard");
   assert.equal(output.length, 1);
   const summary = JSON.parse(output[0].slice(output[0].indexOf(":") + 1));
   assert.equal(summary.providerCalls, 0);
@@ -223,7 +232,7 @@ test("isolated canary preflight-only mode succeeds without an OpenAI key and nev
   const preflightOnlyBranch = source.indexOf(
     'if (env.DISCOVERY_CANARY_PREFLIGHT_ONLY === "true") {',
   );
-  const branchEnd = source.indexOf("\n}\n\nfunction invariant", preflightOnlyBranch);
+  const branchEnd = source.indexOf("\n  options.validateBudget?.();", preflightOnlyBranch);
   const providerPath = source.indexOf("const result = await runDiscoveryCanaryProviderStage(");
 
   assert.ok(preflightOnlyBranch >= 0, "explicit preflight-only flag is required");
@@ -233,6 +242,40 @@ test("isolated canary preflight-only mode succeeds without an OpenAI key and nev
   assert.match(branchSource, /providerCalls:\s*0/);
   assert.match(branchSource, /return null;/);
   assert.doesNotMatch(branchSource, /email|JSON\.stringify\(knowledge\)/);
+  assert.ok(
+    source.indexOf("options.validateBudget?.();") > branchEnd,
+    "full prompt budget validation must stay after the preflight-only return",
+  );
+});
+
+test("isolated canary normal mode rejects 52825/52800 at the budget guard before provider", async () => {
+  const canonicalContext = "Canonical scientific mechanism with enough precise evidence for premium generation. ".repeat(6);
+  const knowledge = {
+    synthesis: canonicalContext,
+    domains: Object.fromEntries(DISCOVERY_PREMIUM_DOMAINS.map((domain) => [domain, canonicalContext])),
+  };
+  let providerCalls = 0;
+
+  await assert.rejects(
+    runDiscoveryCanaryProviderStage(
+      knowledge,
+      async () => {
+        providerCalls += 1;
+        return { forbidden: true };
+      },
+      {
+        env: {
+          DISCOVERY_CANARY_PREFLIGHT_ONLY: "false",
+          OPENAI_API_KEY: "must-not-be-used",
+        },
+        validateBudget: () => {
+          assertDiscoveryCanaryBudget(52_825);
+        },
+      },
+    ),
+    /CANARY_PREFLIGHT_BLOCKED:input_budget:52825\/52800/,
+  );
+  assert.equal(providerCalls, 0);
 });
 
 test("isolated canary normal mode without an OpenAI key blocks before the provider", async () => {

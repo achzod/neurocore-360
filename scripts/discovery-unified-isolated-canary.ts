@@ -46,6 +46,7 @@ export async function runDiscoveryCanaryProviderStage<T>(
   options: {
     env?: Record<string, string | undefined>;
     emit?: (line: string) => void;
+    validateBudget?: () => void;
   } = {},
 ): Promise<T | null> {
   const env = options.env || process.env;
@@ -66,8 +67,17 @@ export async function runDiscoveryCanaryProviderStage<T>(
     return null;
   }
 
+  options.validateBudget?.();
   invariant(Boolean(env.OPENAI_API_KEY), "openai_key_missing");
   return provider();
+}
+
+export function assertDiscoveryCanaryBudget(inputTokenUpperBound: number): number {
+  const worstCaseCostUsd =
+    inputTokenUpperBound * INPUT_USD_PER_TOKEN + MAX_OUTPUT_TOKENS * OUTPUT_USD_PER_TOKEN;
+  invariant(inputTokenUpperBound <= MAX_INPUT_TOKEN_UPPER_BOUND, `input_budget:${inputTokenUpperBound}/${MAX_INPUT_TOKEN_UPPER_BOUND}`);
+  invariant(worstCaseCostUsd <= MAX_COST_USD, `cost_budget:${worstCaseCostUsd.toFixed(6)}`);
+  return worstCaseCostUsd;
 }
 
 function invariant(condition: unknown, message: string): asserts condition {
@@ -194,18 +204,9 @@ async function main(): Promise<void> {
   invariant(cachedKnowledge.synthesis.length >= 200, "knowledge_synthesis_too_short");
   invariant(Object.values(cachedKnowledge.domains).every((value) => value.length >= 200), "knowledge_domain_too_short");
 
-  // UTF-8 byte count is a conservative token upper bound. The multiplier on
-  // the small synthetic profile plus the fixed 40 kB allowance dominates all
-  // labels, duplicated formatting, system instructions, and JSON schema text.
-  const profileBytes = Buffer.byteLength(JSON.stringify(profile), "utf8");
-  const knowledgeBytes = Buffer.byteLength(JSON.stringify(cachedKnowledge), "utf8");
-  const inputTokenUpperBound = profileBytes * 3 + knowledgeBytes + FIXED_PROMPT_SCHEMA_OVERHEAD_BYTES;
-  const worstCaseCostUsd =
-    inputTokenUpperBound * INPUT_USD_PER_TOKEN + MAX_OUTPUT_TOKENS * OUTPUT_USD_PER_TOKEN;
-  invariant(inputTokenUpperBound <= MAX_INPUT_TOKEN_UPPER_BOUND, `input_budget:${inputTokenUpperBound}/${MAX_INPUT_TOKEN_UPPER_BOUND}`);
-  invariant(worstCaseCostUsd <= MAX_COST_USD, `cost_budget:${worstCaseCostUsd.toFixed(6)}`);
-
   const startedAt = new Date().toISOString();
+  let inputTokenUpperBound: number | null = null;
+  let worstCaseCostUsd: number | null = null;
   const result = await runDiscoveryCanaryProviderStage(
     cachedKnowledge,
     () => analyzeDiscoveryScan(profile, {
@@ -215,8 +216,20 @@ async function main(): Promise<void> {
         throw new Error("CANARY_PREFLIGHT_BLOCKED:unexpected_knowledge_retry");
       },
     }),
+    {
+      validateBudget: () => {
+        // UTF-8 byte count is a conservative token upper bound. The multiplier
+        // on the synthetic profile plus the fixed 40 kB allowance dominates
+        // labels, duplicated formatting, system instructions and schema text.
+        const profileBytes = Buffer.byteLength(JSON.stringify(profile), "utf8");
+        const knowledgeBytes = Buffer.byteLength(JSON.stringify(cachedKnowledge), "utf8");
+        inputTokenUpperBound = profileBytes * 3 + knowledgeBytes + FIXED_PROMPT_SCHEMA_OVERHEAD_BYTES;
+        worstCaseCostUsd = assertDiscoveryCanaryBudget(inputTokenUpperBound);
+      },
+    },
   );
   if (!result) return;
+  invariant(inputTokenUpperBound !== null && worstCaseCostUsd !== null, "budget_not_validated");
   const report = await convertToNarrativeReport(result, profile);
   const assets = buildDiscoveryReportAssets(report);
   const validation = validateDiscoveryReportForDelivery(report, assets);
