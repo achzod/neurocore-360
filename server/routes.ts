@@ -98,6 +98,7 @@ import {
   isDiscoveryReportDeliveryEnabled,
 } from "./discoveryAutomationPolicy";
 import { isDiscoverySupersededTerminal } from "./discoverySupersededPolicy";
+import { isDiscoveryGlobalLockActive } from "./discoveryBatchControl";
 import {
   claimRegeneratedReportNotification,
   isRegeneratedNotificationEnabled,
@@ -644,6 +645,11 @@ export async function registerRoutes(
     // send claim. Administrative raw-send flags may bypass paid-report claims,
     // but can never bypass the free report safety contract.
     const bypassClaim = opts?.bypassClaim === true && auditType !== "GRATUIT";
+
+    if (auditType === "GRATUIT" && await isDiscoveryGlobalLockActive()) {
+      console.warn(`${prefix} Discovery batch lock active or unverifiable for audit ${auditId}`);
+      return { sent: false, skipped: "discovery_batch_lock_active" };
+    }
 
     if (auditType === "GRATUIT" && !isDiscoveryReportDeliveryEnabled()) {
       console.warn(`${prefix} Discovery delivery disabled by DISCOVERY_REPORT_DELIVERY_ENABLED for audit ${auditId}`);
@@ -10110,6 +10116,10 @@ export async function registerRoutes(
   // Analyze Discovery Scan (free tier) - returns NarrativeReport format for dashboard
   app.post("/api/discovery-scan/analyze", discoveryLimiter, async (req, res) => {
     try {
+      if (await isDiscoveryGlobalLockActive()) {
+        res.status(503).json({ success: false, error: "Discovery Scan temporairement en maintenance" });
+        return;
+      }
       const { responses } = req.body;
 
       if (!responses) {
@@ -14656,12 +14666,16 @@ export async function registerRoutes(
       }
 
       // Light variant: we only need id/email/type/status/timestamps here.
+      // One fail-closed read protects the complete Discovery cycle from racing
+      // a controlled remediation batch.
+      const discoveryBatchLocked = await isDiscoveryGlobalLockActive();
       const allAudits = await storage.getAllAuditsLight();
       const now = new Date();
       let sent = 0;
 
       for (const audit of allAudits) {
         if (!audit.email || audit.email.includes("test") || audit.email.includes("debug") || audit.email.includes("achzodcoaching")) continue;
+        if (audit.type === "GRATUIT" && discoveryBatchLocked) continue;
         const status = audit.reportDeliveryStatus;
         if (audit.reportSentAt) {
           // Repair legacy/racing writes that replaced SENT with READY after the

@@ -10,6 +10,7 @@ import {
 } from "./discoveryDeliveryGate";
 import { storage } from "./storage";
 import { isDiscoverySupersededTerminal } from "./discoverySupersededPolicy";
+import { isDiscoveryGlobalLockActive } from "./discoveryBatchControl";
 
 const activeDiscoveryGenerations = new Set<string>();
 
@@ -17,6 +18,9 @@ const activeDiscoveryGenerations = new Set<string>();
 export async function generateAndPersistPremiumDiscoveryReport(
   auditId: string,
 ): Promise<boolean> {
+  // Batch remediation uses its own audited generator. Generic recovery must
+  // never race it or create an unledgered provider call.
+  if (await isDiscoveryGlobalLockActive()) return false;
   if (activeDiscoveryGenerations.has(auditId)) return false;
   activeDiscoveryGenerations.add(auditId);
   try {

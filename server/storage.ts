@@ -3429,6 +3429,13 @@ export class PgStorage implements IStorage {
         WHERE id = $1
           AND (report_delivery_status IS NULL
                OR report_delivery_status IN ('PENDING','NEEDS_REVIEW','EMAIL_FAILED','FAILED'))
+          AND (
+            type <> 'GRATUIT'
+            OR NOT EXISTS (
+              SELECT 1 FROM discovery_operation_lock l
+               WHERE l.lock_key = 'discovery-global' AND l.expires_at > NOW()
+            )
+          )
           AND ${DISCOVERY_SUPERSEDED_TERMINAL_SQL}
         RETURNING id`,
       [auditId]

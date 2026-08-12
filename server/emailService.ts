@@ -1137,6 +1137,18 @@ function getCoachingSection(auditType: string, color: string = COLORS.purple): s
   `;
 }
 
+export function getReportReadyEmailSubject(auditType: string, planLabel?: string): string {
+  return auditType === "GRATUIT"
+    ? "Ton rapport est la, on regarde ce qui bloque ?"
+    : auditType === "BLOOD_ANALYSIS"
+    ? "Tes marqueurs sanguins sont analyses, resultats dedans"
+    : auditType === "ELITE"
+    ? "Rapport Ultimate Scan : tes 18 axes + protocole complet"
+    : auditType === "PREMIUM"
+    ? "Rapport Anabolic Bioscan : tes 16 axes + plan d'action"
+    : `Ton ${planLabel || auditType || "rapport"} est pret`;
+}
+
 export async function sendReportReadyEmail(
   email: string,
   auditId: string,
@@ -1242,16 +1254,7 @@ export async function sendReportReadyEmail(
     // Subject tuned for deliverability + open rate. Previous "Ton X est pret"
     // was generic, robotic, flagged by spam filters as templated. Now: concrete
     // preview hook + audit name late enough to avoid subject-line-cutoff on mobile.
-    const subject =
-      auditType === "GRATUIT"
-        ? "Ton rapport est la, on regarde ce qui bloque ?"
-        : auditType === "BLOOD_ANALYSIS"
-        ? "Tes marqueurs sanguins sont analyses, resultats dedans"
-        : auditType === "ELITE"
-        ? "Rapport Ultimate Scan : tes 18 axes + protocole complet"
-        : auditType === "PREMIUM"
-        ? "Rapport Anabolic Bioscan : tes 16 axes + plan d'action"
-        : `Ton ${planLabel} est pret`;
+    const subject = getReportReadyEmailSubject(auditType, planLabel);
 
     const result = await sendEmailWithTracking(
       {

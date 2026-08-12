@@ -13,6 +13,7 @@ import {
   evaluateDiscoveryDeliveryGate,
   resolveCanonicalDiscoveryArtifacts,
 } from "./discoveryDeliveryGate";
+import { isDiscoveryGlobalLockActive } from "./discoveryBatchControl";
 import { isDiscoverySupersededTerminal } from "./discoverySupersededPolicy";
 
 export const REPORT_REGENERATED_EMAIL_TYPE = "sendReportRegeneratedEmail";
@@ -94,6 +95,9 @@ export async function regenerateSentDiscoveryInPlace(input: {
   auditId: string;
   expectedPreviousFallbackHash: string;
 }): Promise<SentDiscoveryRemediationResult> {
+  if (await isDiscoveryGlobalLockActive()) {
+    throw new Error("Discovery batch lock active; sent remediation is blocked");
+  }
   if (!isSentDiscoveryRemediationEnabled()) {
     throw new Error("DISCOVERY_SENT_REMEDIATION_ENABLED is not true");
   }

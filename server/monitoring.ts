@@ -17,6 +17,7 @@ import { shouldAutoRegenerateNeedsReviewAudit } from "./discoveryDeliveryGate";
 import { recoverMissingDiscoveryJobs } from "./discoveryMissingJobRecovery";
 import { generateAndPersistPremiumDiscoveryReport } from "./discoveryGenerationService";
 import { isDiscoverySupersededTerminal } from "./discoverySupersededPolicy";
+import { isDiscoveryGlobalLockActive } from "./discoveryBatchControl";
 
 interface MonitoringStats {
   generatingStuck: number;
@@ -47,6 +48,12 @@ export async function runAutomaticMonitoring(): Promise<MonitoringStats> {
     errors: [],
   };
 
+  // A remediation batch owns every Discovery mutation while its durable lock
+  // is alive. Paid-report monitoring remains available. The lock check fails
+  // closed, so a DB error cannot accidentally trigger an unbudgeted Discovery
+  // recovery call.
+  const discoveryBatchLocked = await isDiscoveryGlobalLockActive();
+
   try {
     log("Monitoring: Starting automatic job recovery", "monitoring");
 
@@ -54,12 +61,12 @@ export async function runAutomaticMonitoring(): Promise<MonitoringStats> {
     await fixStuckGeneratingJobs(stats);
 
     // 2. Régénérer les NEEDS_REVIEW avec retry intelligent
-    await fixNeedsReviewJobs(stats);
+    await fixNeedsReviewJobs(stats, discoveryBatchLocked);
 
     // 2b. Discovery failures from the legacy inline generator had no durable
     // report_jobs row. Recover only artifact-less audits, once, after applying
     // the recent duplicate policy.
-    await recoverMissingDiscoveryJobs({
+    if (!discoveryBatchLocked) await recoverMissingDiscoveryJobs({
       listNeedsReviewAudits: async () => {
         const summaries = await storage.getAllAuditsLight();
         const ids = summaries
@@ -172,7 +179,10 @@ async function fixStuckGeneratingJobs(stats: MonitoringStats): Promise<void> {
 /**
  * Régénère les audits NEEDS_REVIEW avec retry intelligent
  */
-async function fixNeedsReviewJobs(stats: MonitoringStats): Promise<void> {
+async function fixNeedsReviewJobs(
+  stats: MonitoringStats,
+  discoveryBatchLocked: boolean,
+): Promise<void> {
   try {
     const { db } = await import("./db.js");
     const { audits } = await import("../shared/drizzle-schema.js");
@@ -186,6 +196,7 @@ async function fixNeedsReviewJobs(stats: MonitoringStats): Promise<void> {
     for (const audit of needsReviewAudits) {
       try {
         if (isDiscoverySupersededTerminal(audit)) continue;
+        if (audit.type === "GRATUIT" && discoveryBatchLocked) continue;
         const reportJob = await storage.getReportJob(audit.id);
         const attemptCount = reportJob?.attemptCount || 0;
         const providerCreditFailure = isOpenAICreditError(
