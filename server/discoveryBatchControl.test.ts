@@ -357,4 +357,7 @@ test("reconciler is read-only by default and delivery claims before provider", (
   assert.match(source, /DISCOVERY_BATCH_REPAIR_COMPLETE/);
   assert.match(source, /deterministic-known-corruption-repair/);
   assert.match(source, /report_txt = \$5 AND report_html = \$6/);
+  assert.match(source, /repairZeroTrainingScore/);
+  assert.match(source, /trainingScoreRepaired: scoreRepair\.changed/);
+  assert.match(source, /scores = \$7::jsonb/);
 });

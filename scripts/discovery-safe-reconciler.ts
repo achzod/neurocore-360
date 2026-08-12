@@ -18,9 +18,11 @@ import { readFileSync, writeFileSync } from "node:fs";
 import {
   analyzeDiscoveryScan,
   buildDiscoveryReportAssets,
+  calculateDiscoveryGlobalScore,
   convertToNarrativeReport,
   DISCOVERY_PREMIUM_DOMAINS,
   repairDiscoveryKnownFrenchCorruptions,
+  scoreDiscoveryTraining,
   validateDiscoveryReportForDelivery,
   type DiscoveryKnowledgePreflight,
   type DiscoveryResponses,
@@ -101,6 +103,69 @@ function repairKnownCorruptionsDeep(value: unknown): { value: unknown; replaceme
     return { value: repaired, replacements };
   }
   return { value, replacements: 0 };
+}
+
+function repairZeroTrainingScore(
+  report: any,
+  responses: DiscoveryResponses,
+  storedScores: Record<string, unknown>,
+): { report: any; scores: Record<string, unknown>; changed: boolean } {
+  const oldTraining = Number(storedScores.training);
+  const canonicalTraining = scoreDiscoveryTraining(responses);
+  if (responses['sport-frequence'] !== '0'
+    || !Number.isFinite(oldTraining)
+    || oldTraining <= canonicalTraining) {
+    return { report, scores: storedScores, changed: false };
+  }
+
+  const scoresByDomain = {
+    sommeil: Number(storedScores.sommeil),
+    stress: Number(storedScores.stress),
+    energie: Number(storedScores.energie),
+    digestion: Number(storedScores.digestion),
+    training: canonicalTraining,
+    nutrition: Number(storedScores.nutrition),
+    lifestyle: Number(storedScores.lifestyle),
+    mindset: Number(storedScores.mindset),
+  };
+  if (Object.values(scoresByDomain).some((value) => !Number.isFinite(value))) {
+    throw new Error('DISCOVERY_BATCH_REPAIR_SCORE_INPUT_INVALID');
+  }
+  const globalScore = calculateDiscoveryGlobalScore(scoresByDomain);
+  const globalScore10 = Math.round(globalScore) / 10;
+  const metric = report?.metrics?.find((entry: any) => entry?.key === 'training');
+  const intro = report?.sections?.find((entry: any) => entry?.id === 'intro');
+  const training = report?.sections?.find((entry: any) => entry?.id === 'training');
+  if (!metric || !intro || !training || typeof intro.content !== 'string' || typeof training.content !== 'string') {
+    throw new Error('DISCOVERY_BATCH_REPAIR_SCORE_REPORT_SHAPE_INVALID');
+  }
+
+  const oldIntro = intro.content;
+  const oldTrainingContent = training.content;
+  report.globalScore = globalScore10;
+  metric.value = canonicalTraining / 10;
+  intro.content = intro.content.replace(
+    /Ton score global de <strong>[0-9.,]+\/10<\/strong>/,
+    `Ton score global de <strong>${globalScore10}/10</strong>`,
+  );
+  training.content = training.content
+    .replace(`ton score : ${oldTraining}/100`, `ton score : ${canonicalTraining}/100`)
+    .replace('[CORRECT]', '[INSUFFISANT]')
+    .replace(
+      `Ton score d’entraînement, ${oldTraining} sur 100, ne signifie pas que tu possèdes déjà une routine sportive.`,
+      `Ton score d’entraînement, ${canonicalTraining} sur 100, reflète l’absence actuelle de routine sportive.`,
+    );
+  training.chips = ['À corriger', 'Impact'];
+  if (intro.content === oldIntro || training.content === oldTrainingContent
+    || training.content.includes(`ton score : ${oldTraining}/100`)
+    || training.content.includes(`d’entraînement, ${oldTraining} sur 100`)) {
+    throw new Error('DISCOVERY_BATCH_REPAIR_SCORE_TEXT_CAS_FAILED');
+  }
+  return {
+    report,
+    scores: { ...storedScores, ...scoresByDomain, global: globalScore },
+    changed: true,
+  };
 }
 
 interface ManifestRow {
@@ -789,7 +854,7 @@ async function main(): Promise<void> {
       client = await pool.connect();
       await client.query("BEGIN");
       const current = await client.query(
-        `SELECT narrative_report, report_txt, report_html, report_sent_at,
+        `SELECT responses, scores, narrative_report, report_txt, report_html, report_sent_at,
                 report_delivery_status
            FROM audits WHERE id = $1 AND type = 'GRATUIT' FOR UPDATE`,
         [item.id],
@@ -802,8 +867,15 @@ async function main(): Promise<void> {
         throw new Error("DISCOVERY_BATCH_REPAIR_MANIFEST_HASH_CHANGED");
       }
       const repaired = repairKnownCorruptionsDeep(row.narrative_report);
-      if (repaired.replacements <= 0) throw new Error("DISCOVERY_BATCH_REPAIR_NOTHING_TO_CHANGE");
-      const report = repaired.value as any;
+      const scoreRepair = repairZeroTrainingScore(
+        repaired.value as any,
+        row.responses as DiscoveryResponses,
+        (row.scores || {}) as Record<string, unknown>,
+      );
+      if (repaired.replacements <= 0 && !scoreRepair.changed) {
+        throw new Error("DISCOVERY_BATCH_REPAIR_NOTHING_TO_CHANGE");
+      }
+      const report = scoreRepair.report;
       const assets = buildDiscoveryReportAssets(report);
       const nonRenderedMetadata = {
         blocages: report?.analysisMetadata?.blocages || [],
@@ -829,18 +901,27 @@ async function main(): Promise<void> {
       );
       const updated = await client.query(
         `UPDATE audits
-            SET narrative_report = $2::jsonb, report_txt = $3, report_html = $4,
+            SET narrative_report = $2::jsonb, report_txt = $3, report_html = $4, scores = $7::jsonb,
                 report_delivery_status = 'BATCH_READY'
           WHERE id = $1 AND report_sent_at IS NULL
             AND report_txt = $5 AND report_html = $6
           RETURNING id`,
-        [item.id, JSON.stringify(narrativeReport), assets.txt, assets.html, row.report_txt, row.report_html],
+        [
+          item.id,
+          JSON.stringify(narrativeReport),
+          assets.txt,
+          assets.html,
+          row.report_txt,
+          row.report_html,
+          JSON.stringify(scoreRepair.scores),
+        ],
       );
       if ((updated.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_BATCH_REPAIR_PERSISTENCE_CAS_FAILED");
       await client.query("COMMIT");
       console.log(`DISCOVERY_BATCH_REPAIR_COMPLETE:${JSON.stringify({
         auditId: item.id,
         replacements: repaired.replacements,
+        trainingScoreRepaired: scoreRepair.changed,
         artifactId: String(artifact.rows[0].id),
         txtSha256,
         htmlSha256,

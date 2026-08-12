@@ -987,7 +987,7 @@ function scoreDigestion(responses: DiscoveryResponses): number {
   return Math.max(0, score);
 }
 
-function scoreTraining(responses: DiscoveryResponses): number {
+export function scoreDiscoveryTraining(responses: DiscoveryResponses): number {
   let score = 100;
 
   // questionnaire: sport-frequence → 0/1-2/3-4/5+
@@ -1014,7 +1014,31 @@ function scoreTraining(responses: DiscoveryResponses): number {
   if (evolution === 'regression') score -= 25;
   else if (evolution === 'stagnation') score -= 15;
 
-  return Math.max(0, score);
+  // With no training at all, missing intensity/recovery fields are
+  // non-applicable rather than positive evidence. Prevent the absence of a
+  // routine from being presented as a "correct" 70/100 merely because those
+  // optional fields carry no deductions.
+  return Math.max(0, frequence === '0' ? Math.min(score, 45) : score);
+}
+
+export function calculateDiscoveryGlobalScore(
+  scoresByDomain: DiscoveryAnalysisResult['scoresByDomain'],
+): number {
+  const weights: Record<keyof DiscoveryAnalysisResult['scoresByDomain'], number> = {
+    sommeil: 0.15,
+    stress: 0.15,
+    energie: 0.15,
+    digestion: 0.12,
+    training: 0.12,
+    nutrition: 0.12,
+    lifestyle: 0.10,
+    mindset: 0.09,
+  };
+  return clampDiscoveryScore(Math.round(
+    Object.entries(scoresByDomain).reduce((acc, [key, value]) => {
+      return acc + value * weights[key as keyof typeof weights];
+    }, 0),
+  ));
 }
 
 function scoreNutrition(responses: DiscoveryResponses): number {
@@ -2385,7 +2409,7 @@ export async function analyzeDiscoveryScan(
     stress: scoreStress(normalized),
     energie: scoreEnergie(normalized),
     digestion: scoreDigestion(normalized),
-    training: scoreTraining(normalized),
+    training: scoreDiscoveryTraining(normalized),
     nutrition: scoreNutrition(normalized),
     lifestyle: scoreLifestyle(normalized),
     mindset: scoreMindset(normalized)
@@ -2395,22 +2419,7 @@ export async function analyzeDiscoveryScan(
   ) as DiscoveryAnalysisResult['scoresByDomain'];
 
   // Calculate global score (weighted average)
-  const weights = {
-    sommeil: 0.15,
-    stress: 0.15,
-    energie: 0.15,
-    digestion: 0.12,
-    training: 0.12,
-    nutrition: 0.12,
-    lifestyle: 0.10,
-    mindset: 0.09
-  };
-
-  const globalScore = clampDiscoveryScore(Math.round(
-    Object.entries(scoresByDomain).reduce((acc, [key, value]) => {
-      return acc + value * (weights[key as keyof typeof weights] || 0.1);
-    }, 0)
-  ));
+  const globalScore = calculateDiscoveryGlobalScore(scoresByDomain);
 
   // Detect blocages
   const blocages = detectBlocages(normalized, scoresByDomain);

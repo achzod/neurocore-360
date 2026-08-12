@@ -23,6 +23,8 @@ import {
   neutralizeDiscoverySourceAttribution,
   normalizeDiscoveryFrenchSurface,
   repairDiscoveryKnownFrenchCorruptions,
+  calculateDiscoveryGlobalScore,
+  scoreDiscoveryTraining,
   validateDiscoveryFactualConsistency,
   validateDiscoveryGeneratedNarrative,
   validateDiscoveryLinguisticQuality,
@@ -106,6 +108,22 @@ test("premium knowledge validation fails closed for empty or undersized context"
 test("premium knowledge validation accepts a canonical context above the threshold", () => {
   const context = "Scientific mechanism and clinically relevant detail. ".repeat(8);
   assert.equal(assertDiscoveryPremiumKnowledgeContext(context, "synthesis"), context.trim());
+});
+
+test("zero training cannot be presented as a correct 70/100", () => {
+  assert.equal(scoreDiscoveryTraining({ "sport-frequence": "0" }), 45);
+  assert.equal(scoreDiscoveryTraining({ "sport-frequence": "1-2" }), 85);
+  assert.equal(scoreDiscoveryTraining({ "sport-frequence": "3-4" }), 100);
+  assert.equal(calculateDiscoveryGlobalScore({
+    sommeil: 65,
+    stress: 55,
+    energie: 80,
+    digestion: 75,
+    training: 45,
+    nutrition: 75,
+    lifestyle: 55,
+    mindset: 95,
+  }), 67);
 });
 
 test("Discovery generation has no degraded path and preflights all knowledge before OpenAI", () => {
