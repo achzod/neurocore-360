@@ -25,6 +25,9 @@ import {
 import { deriveDiscoverySafetyPolicy } from "./discoverySafetyPolicy";
 import {
   assertDiscoveryCanaryBudget,
+  compactDiscoveryCanaryKnowledge,
+  DISCOVERY_CANARY_KNOWLEDGE_CHARS_PER_SCOPE,
+  estimateDiscoveryCanaryBudget,
   runDiscoveryCanaryProviderStage,
 } from "../scripts/discovery-unified-isolated-canary";
 
@@ -276,6 +279,77 @@ test("isolated canary normal mode rejects 52825/52800 at the budget guard before
     /CANARY_PREFLIGHT_BLOCKED:input_budget:52825\/52800/,
   );
   assert.equal(providerCalls, 0);
+});
+
+test("isolated canary normal mode keeps nine useful scientific excerpts and passes the real budget with one provider call", async () => {
+  const keywords: Record<string, string> = {
+    synthesis: "recovery",
+    sommeil: "circadian",
+    stress: "cortisol",
+    energie: "mitochondria",
+    digestion: "microbiome",
+    training: "hypertrophy",
+    nutrition: "protein",
+    lifestyle: "sunlight",
+    mindset: "adherence",
+  };
+  const evidence = (scope: string, keyword: string) => [
+    `${scope} evidence explains the ${keyword} mechanism with a direct physiological pathway.`,
+    `The observed response depends on dose, timing, baseline status, and recovery context.`,
+    `Controlled evidence supports a cautious interpretation instead of a diagnostic claim.`,
+    `The practical implication is measurable, reversible, and linked to the questionnaire facts.`,
+    `Limits and uncertainty remain explicit so the report never overstates causality.`,
+    `This final sentence preserves enough domain detail for a precise premium explanation.`,
+  ].join(" ");
+  const fullKnowledge = {
+    synthesis: evidence("synthesis", keywords.synthesis),
+    domains: Object.fromEntries(
+      DISCOVERY_PREMIUM_DOMAINS.map((domain) => [domain, evidence(domain, keywords[domain])]),
+    ),
+  };
+  const compactKnowledge = compactDiscoveryCanaryKnowledge(fullKnowledge);
+  const excerpts = [
+    ["synthesis", compactKnowledge.synthesis],
+    ...DISCOVERY_PREMIUM_DOMAINS.map((domain) => [domain, compactKnowledge.domains[domain]]),
+  ] as Array<[string, string]>;
+
+  assert.equal(excerpts.length, 9);
+  for (const [scope, excerpt] of excerpts) {
+    assert.equal(excerpt.length, DISCOVERY_CANARY_KNOWLEDGE_CHARS_PER_SCOPE);
+    assert.ok(excerpt.length >= 400, `${scope} must retain at least twice the 200-character gate`);
+    assert.match(excerpt, new RegExp(`\\b${keywords[scope]}\\b`, "i"));
+    assert.ok((excerpt.match(/[.!?]/g) || []).length >= 3, `${scope} must retain multiple complete evidence statements`);
+    assert.doesNotMatch(excerpt, /placeholder|lorem ipsum/i);
+  }
+
+  const budget = estimateDiscoveryCanaryBudget(compactKnowledge);
+  assert.ok(budget.inputTokenUpperBound <= 52_200, `expected robust input margin, got ${budget.inputTokenUpperBound}`);
+  assert.ok(52_800 - budget.inputTokenUpperBound >= 600);
+  assert.ok(0.75 - budget.worstCaseCostUsd >= 0.004);
+
+  let providerCalls = 0;
+  let budgetChecks = 0;
+  const result = await runDiscoveryCanaryProviderStage(
+    compactKnowledge,
+    async () => {
+      providerCalls += 1;
+      return { generated: true };
+    },
+    {
+      env: {
+        DISCOVERY_CANARY_PREFLIGHT_ONLY: "false",
+        OPENAI_API_KEY: "provider-mock-only",
+      },
+      validateBudget: () => {
+        budgetChecks += 1;
+        assertDiscoveryCanaryBudget(budget.inputTokenUpperBound);
+      },
+    },
+  );
+
+  assert.deepEqual(result, { generated: true });
+  assert.equal(budgetChecks, 1);
+  assert.equal(providerCalls, 1);
 });
 
 test("isolated canary normal mode without an OpenAI key blocks before the provider", async () => {

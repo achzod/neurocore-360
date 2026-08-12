@@ -33,7 +33,7 @@ const MAX_INPUT_TOKEN_UPPER_BOUND = Math.floor(
   (MAX_COST_USD - MAX_OUTPUT_TOKENS * OUTPUT_USD_PER_TOKEN) / INPUT_USD_PER_TOKEN,
 );
 const FIXED_PROMPT_SCHEMA_OVERHEAD_BYTES = 40_000;
-const KNOWLEDGE_CHARS_PER_SCOPE = 480;
+export const DISCOVERY_CANARY_KNOWLEDGE_CHARS_PER_SCOPE = 400;
 const DRY_RUN_SENTINEL = "DISCOVERY_CANARY_DRY_PREFLIGHT_COMPLETE";
 const PREFLIGHT_ONLY_SENTINEL = "DISCOVERY_CANARY_PREFLIGHT_ONLY_COMPLETE";
 const EXPECTED_DISCOVERY_SOURCE_SHA256 = "21afdf7cb3bb468199fd1352e6a01ac4f16ba9f5e9ee5427af828c194d5c0024";
@@ -80,6 +80,32 @@ export function assertDiscoveryCanaryBudget(inputTokenUpperBound: number): numbe
   return worstCaseCostUsd;
 }
 
+export function compactDiscoveryCanaryKnowledge(
+  knowledge: DiscoveryKnowledgePreflight,
+): DiscoveryKnowledgePreflight {
+  return {
+    synthesis: knowledge.synthesis.slice(0, DISCOVERY_CANARY_KNOWLEDGE_CHARS_PER_SCOPE),
+    domains: Object.fromEntries(
+      Object.entries(knowledge.domains).map(([domain, context]) => [
+        domain,
+        context.slice(0, DISCOVERY_CANARY_KNOWLEDGE_CHARS_PER_SCOPE),
+      ]),
+    ),
+  };
+}
+
+export function estimateDiscoveryCanaryBudget(
+  knowledge: DiscoveryKnowledgePreflight,
+): { inputTokenUpperBound: number; worstCaseCostUsd: number } {
+  const profileBytes = Buffer.byteLength(JSON.stringify(DISCOVERY_CANARY_PROFILE), "utf8");
+  const knowledgeBytes = Buffer.byteLength(JSON.stringify(knowledge), "utf8");
+  const inputTokenUpperBound = profileBytes * 3 + knowledgeBytes + FIXED_PROMPT_SCHEMA_OVERHEAD_BYTES;
+  return {
+    inputTokenUpperBound,
+    worstCaseCostUsd: assertDiscoveryCanaryBudget(inputTokenUpperBound),
+  };
+}
+
 function invariant(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(`CANARY_PREFLIGHT_BLOCKED:${message}`);
 }
@@ -88,7 +114,7 @@ function sha256(value: string): string {
   return createHash("sha256").update(value).digest("hex");
 }
 
-const profile: DiscoveryResponses = {
+export const DISCOVERY_CANARY_PROFILE: DiscoveryResponses = {
   prenom: "ApexTest",
   email: "discovery-canary-20260812@invalid.example",
   sexe: "homme",
@@ -174,7 +200,7 @@ async function main(): Promise<void> {
 
   let capturedKnowledge: DiscoveryKnowledgePreflight | null = null;
   try {
-    await analyzeDiscoveryScan(profile, {
+    await analyzeDiscoveryScan(DISCOVERY_CANARY_PROFILE, {
       generateNarrative: async (_responses, _scores, _blocages, knowledge) => {
         capturedKnowledge = knowledge;
         throw new Error(DRY_RUN_SENTINEL);
@@ -191,15 +217,7 @@ async function main(): Promise<void> {
   }
   invariant(capturedKnowledge, "knowledge_not_captured");
 
-  const cachedKnowledge: DiscoveryKnowledgePreflight = {
-    synthesis: capturedKnowledge.synthesis.slice(0, KNOWLEDGE_CHARS_PER_SCOPE),
-    domains: Object.fromEntries(
-      Object.entries(capturedKnowledge.domains).map(([domain, context]) => [
-        domain,
-        context.slice(0, KNOWLEDGE_CHARS_PER_SCOPE),
-      ]),
-    ),
-  };
+  const cachedKnowledge = compactDiscoveryCanaryKnowledge(capturedKnowledge);
   invariant(Object.keys(cachedKnowledge.domains).length === 8, "knowledge_domains_not_8");
   invariant(cachedKnowledge.synthesis.length >= 200, "knowledge_synthesis_too_short");
   invariant(Object.values(cachedKnowledge.domains).every((value) => value.length >= 200), "knowledge_domain_too_short");
@@ -209,7 +227,7 @@ async function main(): Promise<void> {
   let worstCaseCostUsd: number | null = null;
   const result = await runDiscoveryCanaryProviderStage(
     cachedKnowledge,
-    () => analyzeDiscoveryScan(profile, {
+    () => analyzeDiscoveryScan(DISCOVERY_CANARY_PROFILE, {
       loadSynthesisKnowledge: async () => cachedKnowledge.synthesis,
       loadDomainKnowledge: async (domain) => cachedKnowledge.domains[domain] || "",
       retryDelay: async () => {
@@ -221,16 +239,15 @@ async function main(): Promise<void> {
         // UTF-8 byte count is a conservative token upper bound. The multiplier
         // on the synthetic profile plus the fixed 40 kB allowance dominates
         // labels, duplicated formatting, system instructions and schema text.
-        const profileBytes = Buffer.byteLength(JSON.stringify(profile), "utf8");
-        const knowledgeBytes = Buffer.byteLength(JSON.stringify(cachedKnowledge), "utf8");
-        inputTokenUpperBound = profileBytes * 3 + knowledgeBytes + FIXED_PROMPT_SCHEMA_OVERHEAD_BYTES;
-        worstCaseCostUsd = assertDiscoveryCanaryBudget(inputTokenUpperBound);
+        const budget = estimateDiscoveryCanaryBudget(cachedKnowledge);
+        inputTokenUpperBound = budget.inputTokenUpperBound;
+        worstCaseCostUsd = budget.worstCaseCostUsd;
       },
     },
   );
   if (!result) return;
   invariant(inputTokenUpperBound !== null && worstCaseCostUsd !== null, "budget_not_validated");
-  const report = await convertToNarrativeReport(result, profile);
+  const report = await convertToNarrativeReport(result, DISCOVERY_CANARY_PROFILE);
   const assets = buildDiscoveryReportAssets(report);
   const validation = validateDiscoveryReportForDelivery(report, assets);
   const gate = evaluateDiscoveryDeliveryGate(report, assets);
@@ -253,7 +270,7 @@ async function main(): Promise<void> {
       worstCaseCostUsd: Number(worstCaseCostUsd.toFixed(6)),
       hardLimitUsd: MAX_COST_USD,
     },
-    profile,
+    profile: DISCOVERY_CANARY_PROFILE,
     startedAt,
     finishedAt,
     result,
@@ -262,7 +279,7 @@ async function main(): Promise<void> {
     validation,
     gate,
     hashes: {
-      profileSha256: sha256(JSON.stringify(profile)),
+      profileSha256: sha256(JSON.stringify(DISCOVERY_CANARY_PROFILE)),
       txtSha256: sha256(assets.txt),
       htmlSha256: sha256(assets.html),
     },
