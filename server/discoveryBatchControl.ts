@@ -20,6 +20,7 @@ export interface DiscoveryManifestTrackingSummary {
   accepted: number;
   failed: number;
   pending: number;
+  hardFailed?: number;
 }
 
 export interface DiscoveryManifestCandidate {
@@ -124,6 +125,38 @@ export function discoveryArtifactContentHash(txt: string, html: string): string 
   return discoverySha256(`txt\0${txt}\0html\0${html}`);
 }
 
+const DISCOVERY_APPROVAL_MAX_BYTES = 16 * 1024;
+
+/** Decode an approval transported through the dedicated environment variable.
+ * Errors are deliberately constant so neither the approval JSON nor PII can
+ * be reflected into stdout/stderr. */
+export function decodeDiscoveryApprovalBase64(encoded: unknown): DiscoveryApproval {
+  const value = typeof encoded === "string" ? encoded.trim() : "";
+  if (!value) throw new Error("DISCOVERY_BATCH_APPROVAL_B64_MISSING");
+  if (value.length > Math.ceil(DISCOVERY_APPROVAL_MAX_BYTES / 3) * 4) {
+    throw new Error("DISCOVERY_BATCH_APPROVAL_B64_TOO_LARGE");
+  }
+  if (value.length % 4 !== 0 || !/^[A-Za-z0-9+/]+={0,2}$/.test(value)) {
+    throw new Error("DISCOVERY_BATCH_APPROVAL_B64_INVALID");
+  }
+  const decoded = Buffer.from(value, "base64");
+  if (decoded.length === 0 || decoded.length > DISCOVERY_APPROVAL_MAX_BYTES
+    || decoded.toString("base64") !== value
+    || !Buffer.from(decoded.toString("utf8"), "utf8").equals(decoded)) {
+    throw new Error("DISCOVERY_BATCH_APPROVAL_B64_INVALID");
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(decoded.toString("utf8"));
+  } catch {
+    throw new Error("DISCOVERY_BATCH_APPROVAL_JSON_INVALID");
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("DISCOVERY_BATCH_APPROVAL_JSON_INVALID");
+  }
+  return parsed as DiscoveryApproval;
+}
+
 export function isValidDiscoveryRecipientEmail(email: unknown): boolean {
   const normalized = String(email || "").trim().toLowerCase();
   if (!normalized || normalized.length > 254 || /\s/.test(normalized)) return false;
@@ -202,6 +235,7 @@ export function classifyDiscoveryManifestCandidate(
   if (candidate.unsubscribed) reasons.push("recipient_unsubscribed");
   if (candidate.superseded || status === "SUPERSEDED") reasons.push("superseded_terminal");
   if (candidate.duplicateCandidate) reasons.push("duplicate_candidate");
+  if (Number(candidate.tracking.hardFailed || 0) > 0) reasons.push("smtp_hard_fail_proven_terminal");
   if (reasons.length > 0) return { cohort: "ambiguous", reasons };
 
   if (candidate.tracking.accepted > 0 || claimAccepted) {

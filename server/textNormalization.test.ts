@@ -67,3 +67,11 @@ test("inline artifacts are normalized without deleting valid French", () => {
   assert.equal(normalized, "Ta qualité du sommeil progresse et ta performance reste cohérente.");
   assert.equal(hasEnglishMarkers(normalized), false);
 });
+
+test("single-voice normalization preserves French words containing on after a cedilla", () => {
+  assert.equal(
+    normalizeSingleVoice("On avance de façon régulière avec une leçon utile pour ce garçon."),
+    "J'avance de façon régulière avec une leçon utile pour ce garçon.",
+  );
+  assert.doesNotMatch(normalizeSingleVoice("façon leçon garçon"), /çj/);
+});

@@ -88,6 +88,19 @@ Avant de signer l’approbation, confirmer pour chaque auditId : nom/client atte
 
 Pour `THREE`, `FIVE` et `REST`, refaire un manifeste après chaque palier et créer une nouvelle approbation avec la liste exacte des 3, 5 ou audits restants autorisés. Le budget global doit couvrir `nombre ciblé × 0,75` ; ce montant est un plafond réservé, pas une dépense attendue.
 
+### Transport sans fichier temporaire
+
+Le mode `--approval-base64` lit exclusivement `DISCOVERY_BATCH_APPROVAL_B64`. Le payload n'est jamais accepté directement dans les arguments du processus, ni écrit dans un fichier temporaire, ni affiché ou persisté. La valeur doit être un base64 canonique UTF-8 de 16 Kio maximum ; toute source multiple, donnée non canonique ou JSON invalide bloque l'exécution avec un code générique sans refléter le contenu.
+
+```bash
+DISCOVERY_BATCH_APPROVAL_B64="$APPROVAL_B64" \
+npx tsx scripts/discovery-safe-reconciler.ts \
+  --run-generation \
+  --approval-base64
+```
+
+Ne jamais mettre le base64 directement après un flag CLI : les arguments sont visibles dans la liste des processus et peuvent rester dans l'historique shell.
+
 ## 5. Génération contrôlée
 
 Variables obligatoires :
@@ -123,6 +136,10 @@ Même audit après `THREE` et `FIVE`. Le premier échec bloque `REST`.
 ## 6. Livraison contrôlée
 
 La livraison utilise un nouveau manifeste. Seuls `valid_never_sent`, gate vert, zéro tracking, zéro claim, hashes identiques sont éligibles.
+
+Un audit portant une preuve de hard-fail SMTP est représenté par `smtpHardFailProven: true`, `tracking.hardFailed > 0`, le cohort `ambiguous` et la raison `smtp_hard_fail_proven_terminal`. La preuve est limitée à un statut provider `bounced`, un événement structuré `hard_fail`/`bounce`, ou un code SMTP 5xx synchronisé lié à un identifiant provider. Un simple statut générique `failed` ne constitue pas à lui seul cette preuve. L'audit reste résolvable par son `targetAuditIds` exact pour revue opérateur, mais les étapes génération et livraison le rejettent avant tout provider : aucun envoi ni retry automatique.
+
+Garde-fou d'exploitation : laisser `DISCOVERY_REPORT_DELIVERY_ENABLED=false`. Le chemin historique hors reconciler traite encore certains statuts `failed` comme réessayables ; il ne doit pas être réactivé pour Discovery tant qu'il ne consomme pas lui aussi la disposition terminale hard-fail. Le contrôleur sûr n'emprunte pas ce chemin.
 
 Approbation : `stage = DELIVERY`, `globalBudgetUsd = 0`, `targetAuditIds` exacts et nouveau `approvalBindingSha256`, palier `ONE`, puis `THREE`, `FIVE`, `REST` avec un manifeste frais à chaque fois.
 

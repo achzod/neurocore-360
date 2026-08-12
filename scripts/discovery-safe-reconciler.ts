@@ -2,7 +2,8 @@
  * Discovery safe reconciler.
  *
  * Default: read-only manifest of every GRATUIT audit, regardless of status.
- * Generation: explicit approval file, durable global lock, one provider call
+ * Generation: explicit approval (file or fixed-name base64 environment value),
+ * durable global lock, one provider call
  * maximum per audit, hard budget reservation, real usage ledger, strict gate,
  * transactional storage, and stop on the first anomaly.
  *
@@ -33,6 +34,7 @@ import {
   classifyDiscoveryManifestCandidate,
   completeDiscoveryBatchRun,
   createDiscoveryBatchRun,
+  decodeDiscoveryApprovalBase64,
   discoverySha256,
   failDiscoveryBatchItem,
   markDiscoveryBatchItemPreflightOk,
@@ -85,13 +87,14 @@ interface ManifestRow {
   htmlSha256: string | null;
   deliveryGateOk: boolean;
   deliveryGateErrors: string[];
-  tracking: { total: number; accepted: number; failed: number; pending: number };
+  tracking: { total: number; accepted: number; failed: number; pending: number; hardFailed: number };
   deliveryClaimState: string | null;
   duplicateCandidate: boolean;
   superseded: boolean;
   unsubscribed: boolean;
   validEmail: boolean;
   testEmailBlocked: boolean;
+  smtpHardFailProven: boolean;
   cohort: DiscoveryManifestCohort;
   reasons: string[];
 }
@@ -187,7 +190,20 @@ async function buildManifest(): Promise<DiscoveryManifest> {
             COUNT(t.id) FILTER (WHERE LOWER(COALESCE(t.sendpulse_status,''))
               IN ('failed','auth_failed','unsubscribed','bounced','error'))::int AS tracking_failed,
             COUNT(t.id) FILTER (WHERE t.sendpulse_status IS NULL OR LOWER(t.sendpulse_status)
-              IN ('pending','queued','sending'))::int AS tracking_pending
+              IN ('pending','queued','sending'))::int AS tracking_pending,
+            COUNT(t.id) FILTER (WHERE
+              LOWER(COALESCE(t.sendpulse_status,'')) = 'bounced'
+              OR (
+                LOWER(COALESCE(t.sendpulse_status,'')) = 'failed'
+                AND (
+                  COALESCE(t.sendpulse_error,'') ~* '"eventType"[[:space:]]*:[[:space:]]*"(hard_fail|bounce)"'
+                  OR (
+                    t.sendpulse_task_id IS NOT NULL
+                    AND COALESCE(t.metadata->>'sendpulseSmtpAnswerCode','') ~ '^5[0-9]{2}$'
+                  )
+                )
+              )
+            )::int AS tracking_hard_failed
        FROM audits a
        LEFT JOIN email_tracking t
          ON t.audit_id = a.id AND t.email_type = 'sendReportReadyEmail'
@@ -213,6 +229,7 @@ async function buildManifest(): Promise<DiscoveryManifest> {
       accepted: Number(row.tracking_accepted || 0),
       failed: Number(row.tracking_failed || 0),
       pending: Number(row.tracking_pending || 0),
+      hardFailed: Number(row.tracking_hard_failed || 0),
     };
     const classification = classifyDiscoveryManifestCandidate({
       id: row.id,
@@ -248,6 +265,7 @@ async function buildManifest(): Promise<DiscoveryManifest> {
       unsubscribed: Boolean(row.unsubscribed),
       validEmail: isValidDiscoveryRecipientEmail(row.email),
       testEmailBlocked: isBlockedDiscoveryTestEmail(row.email),
+      smtpHardFailProven: tracking.hardFailed > 0,
       cohort: classification.cohort,
       reasons: classification.reasons,
     };
@@ -344,6 +362,7 @@ function assertExactTargetsEligible(
     if (item.unsubscribed) reasons.push("recipient_unsubscribed");
     if (item.superseded) reasons.push("superseded_terminal");
     if (item.duplicateCandidate) reasons.push("duplicate_candidate");
+    if (item.smtpHardFailProven) reasons.push("smtp_hard_fail_proven_terminal");
     if (stage === "GENERATION") {
       if (item.cohort !== "invalid") reasons.push(`cohort_${item.cohort}`);
     } else {
@@ -362,7 +381,7 @@ function assertExactTargetsEligible(
 async function runGeneration(
   manifest: DiscoveryManifest,
   approval: DiscoveryApproval,
-  approvalFile: string,
+  approvalSource: string,
 ): Promise<Record<string, unknown>> {
   assertGenerationEnvironment();
   if (!await hasBatchControlTables()) throw new Error("DISCOVERY_BATCH_MIGRATION_NOT_APPLIED");
@@ -391,7 +410,7 @@ async function runGeneration(
     batchId = await createDiscoveryBatchRun({
       manifestSha256: manifest.manifestSha256,
       commitSha: manifest.commitSha,
-      approvalReference: `${approval.approvalReference}|${approvalFile}|binding:${approval.approvalBindingSha256}`,
+      approvalReference: `${approval.approvalReference}|${approvalSource}|binding:${approval.approvalBindingSha256}`,
       stage: "GENERATION",
       tier,
       globalBudgetUsd: approval.globalBudgetUsd,
@@ -524,7 +543,7 @@ async function runGeneration(
 async function runDelivery(
   manifest: DiscoveryManifest,
   approval: DiscoveryApproval,
-  approvalFile: string,
+  approvalSource: string,
 ): Promise<Record<string, unknown>> {
   assertDeliveryEnvironment();
   if (!await hasBatchControlTables()) throw new Error("DISCOVERY_BATCH_MIGRATION_NOT_APPLIED");
@@ -553,7 +572,7 @@ async function runDelivery(
     batchId = await createDiscoveryBatchRun({
       manifestSha256: manifest.manifestSha256,
       commitSha: manifest.commitSha,
-      approvalReference: `${approval.approvalReference}|${approvalFile}|binding:${approval.approvalBindingSha256}`,
+      approvalReference: `${approval.approvalReference}|${approvalSource}|binding:${approval.approvalBindingSha256}`,
       stage: "DELIVERY",
       tier,
       globalBudgetUsd: 0,
@@ -676,14 +695,30 @@ async function main(): Promise<void> {
     return;
   }
   const approvalFile = valueAfter("--approval");
-  if (!approvalFile) throw new Error("DISCOVERY_BATCH_APPROVAL_FILE_REQUIRED");
-  const approval = JSON.parse(readFileSync(approvalFile, "utf8")) as DiscoveryApproval;
+  const approvalFromBase64 = args.has("--approval-base64");
+  if (approvalFile && approvalFromBase64) throw new Error("DISCOVERY_BATCH_APPROVAL_SOURCE_CONFLICT");
+  if (!approvalFile && !approvalFromBase64) throw new Error("DISCOVERY_BATCH_APPROVAL_REQUIRED");
+  let approval: DiscoveryApproval;
+  let approvalSource: string;
+  if (approvalFromBase64) {
+    // Fixed env name only: the base64 payload never appears in argv, a temp
+    // file, a log line or the persisted approval reference.
+    approval = decodeDiscoveryApprovalBase64(process.env.DISCOVERY_BATCH_APPROVAL_B64);
+    approvalSource = "env:DISCOVERY_BATCH_APPROVAL_B64";
+  } else {
+    try {
+      approval = JSON.parse(readFileSync(approvalFile!, "utf8")) as DiscoveryApproval;
+    } catch {
+      throw new Error("DISCOVERY_BATCH_APPROVAL_FILE_INVALID");
+    }
+    approvalSource = "file";
+  }
   if (args.has("--run-generation") && args.has("--run-delivery")) {
     throw new Error("DISCOVERY_BATCH_ONE_STAGE_ONLY");
   }
   const result = args.has("--run-generation")
-    ? await runGeneration(manifest, approval, approvalFile)
-    : await runDelivery(manifest, approval, approvalFile);
+    ? await runGeneration(manifest, approval, approvalSource)
+    : await runDelivery(manifest, approval, approvalSource);
   console.log(`DISCOVERY_BATCH_RESULT:${JSON.stringify(result)}`);
 }
 

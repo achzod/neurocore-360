@@ -22,6 +22,7 @@ import {
   filterDiscoveryRelevantArticles,
   neutralizeDiscoverySourceAttribution,
   normalizeDiscoveryFrenchSurface,
+  repairDiscoveryKnownFrenchCorruptions,
   validateDiscoveryFactualConsistency,
   validateDiscoveryGeneratedNarrative,
   validateDiscoveryLinguisticQuality,
@@ -491,15 +492,26 @@ test("a true bibliography label remains rejected when validation receives it", (
   assert.ok(validation.reasons.includes("explicit_sources"));
 });
 
-test("malformed French fragments are rejected even inside otherwise dense content", () => {
+test("known malformed French fragments are repaired exactly while the final gate rejects residual corruption", () => {
   const paragraph = "Ta récupération dépend du sommeil, du stress et de la disponibilité énergétique. ".repeat(10);
   const dense = Array.from({ length: 24 }, () => paragraph).join("\n\n");
 
+  assert.equal(
+    repairDiscoveryKnownFrenchCorruptions("La progression avance de façje linéaire avec une autre leçj'utile."),
+    "La progression avance de façon linéaire avec une autre leçon utile.",
+  );
+  assert.equal(
+    repairDiscoveryKnownFrenchCorruptions("Un fragment çj-inconnu reste visible."),
+    "Un fragment çj-inconnu reste visible.",
+  );
   for (const corrupted of ["manger de façje qualitative", "une autre leçj'utile"]) {
     const validation = validateDiscoverySectionContent(`${dense}\n\n${corrupted}.`);
     assert.equal(validation.isValid, false);
     assert.ok(validation.reasons.includes("malformed_french_fragment"));
   }
+  const residual = validateDiscoverySectionContent(`${dense}\n\nUn fragment çj-inconnu reste présent.`);
+  assert.equal(residual.isValid, false);
+  assert.ok(residual.reasons.includes("malformed_french_fragment"));
 });
 
 test("zero-blockage opening never claims invisible blockages or plateaus", () => {
@@ -822,6 +834,30 @@ test("unified end-to-end cleanup qualifies a provider medical assertion before t
   assert.ok(validateDiscoverySectionContent("Ton cortisol est élevé.", policy).reasons.includes("medical_assertion"));
 });
 
+test("unified end-to-end cleanup repairs known French corruption in stress before strict validation", () => {
+  const responses = { prenom: "ApexTest", objectif: "progresser durablement" };
+  const policy = deriveDiscoverySafetyPolicy(responses);
+  const paragraph = "Tu as décrit une routine structurée et des repères cohérents. Le mécanisme utile concerne la récupération et son interaction possible avec ton objectif, sans permettre de poser un diagnostic. Cette lecture distingue les faits déclarés des hypothèses prudentes qui restent à confirmer. ";
+  const section = Array.from({ length: 4 }, () => paragraph.repeat(3)).join("\n\n");
+  const raw = {
+    synthesis: section,
+    sections: DISCOVERY_PREMIUM_DOMAINS.map((domain) => ({
+      domain,
+      content: domain === "stress"
+        ? `${section}\n\nLa progression ne sera pas de façje linéaire. Une autre leçj'utile consiste à observer les tendances.`
+        : section,
+    })),
+  };
+
+  const validated = validateDiscoveryGeneratedNarrative(raw, responses, policy);
+  const stress = validated.sections.stress;
+  assert.match(stress, /de façon linéaire/);
+  assert.match(stress, /une autre leçon utile/i);
+  assert.doesNotMatch(stress, /çj/);
+  assert.equal(validateDiscoverySectionContent(stress, policy).isValid, true);
+  assert.ok(validateDiscoverySectionContent("Une corruption çj-inconnue.", policy).reasons.includes("malformed_french_fragment"));
+});
+
 test("unified prompt gives every domain enough visible-length margin", () => {
   const source = readFileSync(new URL("./discovery-scan.ts", import.meta.url), "utf8");
 
@@ -848,6 +884,9 @@ test("Discovery generation uses one bounded structured call and still rejects in
   assert.match(canaryRunner, /EXPECTED_DISCOVERY_SAFETY_SHA256/);
   assert.match(canaryRunner, /server\/discoverySafetyPolicy\.ts/);
   assert.match(canaryRunner, /discovery_safety_hash_mismatch/);
+  assert.match(canaryRunner, /EXPECTED_TEXT_NORMALIZATION_SHA256/);
+  assert.match(canaryRunner, /server\/textNormalization\.ts/);
+  assert.match(canaryRunner, /text_normalization_hash_mismatch/);
 });
 
 test("new Discovery persistence stores the same canonical score shown in the report", () => {

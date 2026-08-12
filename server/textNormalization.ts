@@ -139,7 +139,11 @@ export function normalizeSingleVoice(text: string): string {
     .replace(/\bnous\b/gi, (match) => (match[0] === "N" ? "Je" : "je"))
     .replace(/\bnotre\b/gi, (match) => (match[0] === "N" ? "Mon" : "mon"))
     .replace(/\bnos\b/gi, (match) => (match[0] === "N" ? "Mes" : "mes"))
-    .replace(/\bon\b/gi, (match) => (match[0] === "O" ? "Je" : "je"))
+    // JavaScript \b is ASCII-oriented: it sees the `on` inside `façon`,
+    // `leçon` or `garçon` as a standalone word after `ç`. Unicode-aware
+    // letter boundaries preserve those French words while still normalizing
+    // the actual pronoun `on`.
+    .replace(/(?<![\p{L}\p{N}_])on(?![\p{L}\p{N}_])/giu, (match) => (match[0] === "O" ? "Je" : "je"))
     .replace(/\bje ne peux pas\b/gi, "je n'ai pas les elements pour")
     .replace(/\bJe\s+([aeiouh])/g, "J'$1")
     .replace(/\bje\s+([aeiouh])/g, "j'$1");

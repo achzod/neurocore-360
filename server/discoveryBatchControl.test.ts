@@ -6,6 +6,7 @@ import {
   DISCOVERY_BATCH_HARD_COST_USD,
   DISCOVERY_BATCH_SOFT_COST_USD,
   classifyDiscoveryManifestCandidate,
+  decodeDiscoveryApprovalBase64,
   discoveryApprovalBindingHash,
   discoveryArtifactContentHash,
   discoverySha256,
@@ -96,6 +97,19 @@ test("test, malformed and unsubscribed recipients are blocked before any accepte
   assert.equal(isBlockedDiscoveryTestEmail("client@example.com"), true);
   assert.equal(isValidDiscoveryRecipientEmail("client@domain.com"), true);
   assert.equal(isValidDiscoveryRecipientEmail("client@localhost"), false);
+});
+
+test("proven SMTP hard-fail remains explicitly addressable but terminal for automation", () => {
+  const id = "11111111-1111-4111-8111-111111111111";
+  const candidate = {
+    id, email: "client@real-domain.fr", type: "GRATUIT",
+    deliveryGateOk: true,
+    tracking: { total: 1, accepted: 1, failed: 1, pending: 0, hardFailed: 1 },
+  };
+  const classification = classifyDiscoveryManifestCandidate(candidate);
+  assert.equal(classification.cohort, "ambiguous");
+  assert.ok(classification.reasons.includes("smtp_hard_fail_proven_terminal"));
+  assert.deepEqual(resolveExactDiscoveryTargets([candidate], [id]), [candidate]);
 });
 
 test("invalid untouched report is the only automatic generation cohort", () => {
@@ -226,6 +240,39 @@ test("approval binding changes with the exact target audit list and rejects reta
   assert.ok(errors.includes("approval_binding_hash_mismatch"));
 });
 
+test("base64 approval transport is canonical, bounded and never reflects its payload", () => {
+  const approval = {
+    schemaVersion: 1,
+    manifestSha256: "a".repeat(64),
+    commitSha: "commit",
+    approvalReference: "telegram:24478",
+    expiresAt: "2030-01-01T00:00:00.000Z",
+    stage: "GENERATION",
+    tier: "ONE",
+    targetAuditIds: ["11111111-1111-4111-8111-111111111111"],
+    approvalBindingSha256: "b".repeat(64),
+    maxItems: 1,
+    globalBudgetUsd: 0.75,
+    softPerScanUsd: 0.25,
+    hardPerScanUsd: 0.75,
+  } as const;
+  const encoded = Buffer.from(JSON.stringify(approval), "utf8").toString("base64");
+  assert.deepEqual(decodeDiscoveryApprovalBase64(encoded), approval);
+  assert.throws(
+    () => decodeDiscoveryApprovalBase64("not-base64:client@private.example"),
+    (error: unknown) => error instanceof Error
+      && error.message === "DISCOVERY_BATCH_APPROVAL_B64_INVALID"
+      && !error.message.includes("client@private.example"),
+  );
+  assert.throws(
+    () => decodeDiscoveryApprovalBase64(Buffer.from("client@private.example", "utf8").toString("base64")),
+    (error: unknown) => error instanceof Error
+      && error.message === "DISCOVERY_BATCH_APPROVAL_JSON_INVALID"
+      && !error.message.includes("client@private.example"),
+  );
+  assert.throws(() => decodeDiscoveryApprovalBase64("A".repeat(24_000)), /APPROVAL_B64_TOO_LARGE/);
+});
+
 test("target resolution is exact, ordered and fail-closed", () => {
   const idA = "11111111-1111-4111-8111-111111111111";
   const idB = "22222222-2222-4222-8222-222222222222";
@@ -292,4 +339,11 @@ test("reconciler is read-only by default and delivery claims before provider", (
   assert.match(source, /DISCOVERY_BATCH_TARGET_INELIGIBLE/);
   assert.match(source, /DISCOVERY_BATCH_UNSUBSCRIBE_TABLE_MISSING/);
   assert.doesNotMatch(source, /FALSE AS unsubscribed/);
+  assert.match(source, /process\.env\.DISCOVERY_BATCH_APPROVAL_B64/);
+  assert.match(source, /approvalSource = "env:DISCOVERY_BATCH_APPROVAL_B64"/);
+  assert.doesNotMatch(source, /valueAfter\("--approval-base64"\)/);
+  assert.match(source, /smtp_hard_fail_proven_terminal/);
+  assert.match(source, /tracking\.total !== 0/);
+  assert.match(source, /t\.sendpulse_task_id IS NOT NULL/);
+  assert.match(source, /sendpulseSmtpAnswerCode',''\) ~ '\^5\[0-9\]\{2\}\$'/);
 });

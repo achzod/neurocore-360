@@ -463,6 +463,21 @@ export function normalizeDiscoveryFrenchSurface(text: string): string {
   ));
 }
 
+/**
+ * Repairs only provider corruptions that have been observed verbatim in
+ * Discovery output. Unknown fragments are intentionally left untouched so the
+ * final malformed_french_fragment gate continues to fail closed.
+ */
+export function repairDiscoveryKnownFrenchCorruptions(text: string): string {
+  return String(text || "")
+    .replace(/\bfaçje\b/gi, (token) => (
+      token[0] === token[0]?.toUpperCase() ? "Façon" : "façon"
+    ))
+    .replace(/\bleçj[’']utile\b/gi, (token) => (
+      token[0] === token[0]?.toUpperCase() ? "Leçon utile" : "leçon utile"
+    ));
+}
+
 /** Returns deterministic visible-language defects that must block delivery. */
 export function validateDiscoveryLinguisticQuality(text: string): string[] {
   const visible = stripInlineHtml(String(text || ""));
@@ -1484,7 +1499,8 @@ REGLES ABSOLUES FORMAT:
 - Commence DIRECTEMENT par l'analyse
 - Ne cite JAMAIS de sources ni d'auteurs (pas de "Sources:", pas de noms propres).
 - Ne dis jamais "client", "nous", "notre" ou "on". Tu parles uniquement en "tu" et "je".
-- Francais uniquement, aucun mot en anglais.`;
+- Francais uniquement, aucun mot en anglais.
+- Orthographe francaise propre obligatoire. Relis chaque phrase avant de repondre : aucune suite Unicode corrompue ni mot francais mutile.`;
 
 // ============================================
 // SECTION-SPECIFIC AI GENERATION
@@ -1525,7 +1541,8 @@ FORMAT OBLIGATOIRE:
 - Paragraphes separes par lignes vides
 - Ne cite JAMAIS de sources ni d'auteurs
 - Ne dis jamais "client", "nous", "notre" ou "on".
-- Francais uniquement, aucun mot en anglais.`;
+- Francais uniquement, aucun mot en anglais.
+- Orthographe francaise propre obligatoire. Interdiction de produire une suite Unicode corrompue ou un mot francais mutile.`;
 
 const SECTION_INSTRUCTIONS: Record<string, string> = {
   sommeil: `Analyse uniquement la duree, la qualite, les reveils et la recuperation effectivement declares. Explique au maximum deux mecanismes plausibles et leur lien avec l'objectif, sans diagnostiquer une apnee, une hypoglycemie ou un dereglement hormonal.`,
@@ -1756,7 +1773,9 @@ export const DISCOVERY_UNIFIED_MAX_OUTPUT_TOKENS = 14_000;
 export const DISCOVERY_UNIFIED_MAX_ESTIMATED_COST_USD = 0.75;
 
 function cleanDiscoveryNarrativeProse(text: string): string {
-  let cleaned = normalizeDiscoveryFrenchSurface(stripInlineHtml(String(text || "")))
+  let cleaned = repairDiscoveryKnownFrenchCorruptions(
+    normalizeDiscoveryFrenchSurface(stripInlineHtml(String(text || ""))),
+  )
     .replace(/^(En tant qu['’]expert[^.]*\.?\s*)/gi, "")
     .replace(/^(Cette analyse (montre|revele|révèle|demontre|démontre)[^.]*\.?\s*)/gi, "")
     .replace(/^(Je vais (analyser|examiner|etudier|étudier)[^.]*\.?\s*)/gi, "")
@@ -1773,6 +1792,7 @@ function cleanDiscoveryNarrativeProse(text: string): string {
   cleaned = stripCitationLines(cleaned);
   cleaned = neutralizeDiscoverySourceAttribution(cleaned);
   cleaned = qualifyDiscoveryMedicalAssertions(cleaned);
+  cleaned = repairDiscoveryKnownFrenchCorruptions(cleaned);
   return normalizeParagraphs(cleaned);
 }
 
@@ -1884,6 +1904,7 @@ La synthese contient 4 a 6 paragraphes et 350 a 700 mots.
 Chaque domaine contient 4 a 6 paragraphes et 280 a 500 mots, avec au moins 1 400 caracteres visibles hors balises et espaces multiples.
 Les huit domaines doivent apparaitre exactement une fois: ${DISCOVERY_PREMIUM_DOMAINS.join(", ")}.
 Tout est en francais, au tutoiement, direct, humain et precis.
+Aucune corruption orthographique ni suite Unicode invalide : relis integralement le JSON avant de repondre.
 Aucun markdown, aucune liste, aucun emoji, aucun titre dans le contenu.
 Aucun diagnostic, aucun dosage, aucune prescription biologique, aucune causalite affirmee sans preuve.
 Chaque fait individuel doit correspondre exactement au profil. Une donnee presente ne peut jamais etre declaree absente.
