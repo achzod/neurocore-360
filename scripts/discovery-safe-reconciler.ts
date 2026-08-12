@@ -693,19 +693,50 @@ async function main(): Promise<void> {
 
   if (!args.has("--run-generation") && !args.has("--run-delivery")) {
     if (args.has("--summary-only")) {
-      const actionable = manifest.items
-        .filter((item) => item.cohort !== "already_accepted")
+      const compactCandidate = (item: ManifestRow) => ({
+        id: item.id,
+        emailSha256: discoverySha256(String(item.email || "").trim().toLowerCase()),
+        createdAt: item.createdAt,
+        reportDeliveryStatus: item.reportDeliveryStatus,
+        reportSentAt: item.reportSentAt,
+        responsesSha256: item.responsesSha256,
+        txtSha256: item.txtSha256,
+        htmlSha256: item.htmlSha256,
+        deliveryGateOk: item.deliveryGateOk,
+        deliveryGateErrors: item.deliveryGateErrors,
+        tracking: item.tracking,
+        deliveryClaimState: item.deliveryClaimState,
+        duplicateCandidate: item.duplicateCandidate,
+        superseded: item.superseded,
+        unsubscribed: item.unsubscribed,
+        validEmail: item.validEmail,
+        testEmailBlocked: item.testEmailBlocked,
+        smtpHardFailProven: item.smtpHardFailProven,
+        cohort: item.cohort,
+        reasons: item.reasons,
+      });
+      const generationCandidates = manifest.items
+        .filter((item) => item.cohort === "invalid")
+        .map(compactCandidate);
+      const deliveryCandidates = manifest.items
+        .filter((item) => item.cohort === "valid_never_sent")
+        .map(compactCandidate);
+      const ambiguousReasonCounts = manifest.items
+        .filter((item) => item.cohort === "ambiguous")
+        .flatMap((item) => item.reasons)
+        .reduce<Record<string, number>>((counts, reason) => {
+          counts[reason] = (counts[reason] || 0) + 1;
+          return counts;
+        }, {});
+      const recentAmbiguous = manifest.items
+        .filter((item) => item.cohort === "ambiguous"
+          && Date.parse(item.createdAt) >= Date.now() - 14 * 86_400_000)
         .map((item) => ({
           id: item.id,
           emailSha256: discoverySha256(String(item.email || "").trim().toLowerCase()),
           createdAt: item.createdAt,
           reportDeliveryStatus: item.reportDeliveryStatus,
           reportSentAt: item.reportSentAt,
-          responsesSha256: item.responsesSha256,
-          txtSha256: item.txtSha256,
-          htmlSha256: item.htmlSha256,
-          deliveryGateOk: item.deliveryGateOk,
-          deliveryGateErrors: item.deliveryGateErrors,
           tracking: item.tracking,
           deliveryClaimState: item.deliveryClaimState,
           duplicateCandidate: item.duplicateCandidate,
@@ -724,7 +755,10 @@ async function main(): Promise<void> {
         commitSha: manifest.commitSha,
         counts: manifest.counts,
         manifestSha256: manifest.manifestSha256,
-        actionable,
+        generationCandidates,
+        deliveryCandidates,
+        ambiguousReasonCounts,
+        recentAmbiguous,
       })}`);
     } else {
       console.log(JSON.stringify(manifest, null, 2));
