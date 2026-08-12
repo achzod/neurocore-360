@@ -94,6 +94,7 @@ test("test, malformed and unsubscribed recipients are blocked before any accepte
     assert.equal(result.cohort, "ambiguous");
   }
   assert.equal(isBlockedDiscoveryTestEmail("test+canary@real.tld"), true);
+  assert.equal(isBlockedDiscoveryTestEmail("final-test-discovery@real.tld"), true);
   assert.equal(isBlockedDiscoveryTestEmail("client@example.com"), true);
   assert.equal(isValidDiscoveryRecipientEmail("client@domain.com"), true);
   assert.equal(isValidDiscoveryRecipientEmail("client@localhost"), false);

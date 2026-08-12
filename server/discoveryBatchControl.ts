@@ -173,6 +173,7 @@ export function isBlockedDiscoveryTestEmail(email: unknown): boolean {
   const [local = "", domain = ""] = normalized.split("@");
   return normalized.includes("achzodcoaching")
     || normalized.includes("achkou")
+    || /(^|[+._-])test($|[+._-])/.test(local)
     || local === "test"
     || local.startsWith("test+")
     || local.startsWith("test-")
