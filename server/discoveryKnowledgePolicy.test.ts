@@ -9,6 +9,7 @@ import {
 import {
   analyzeDiscoveryScan,
   DISCOVERY_PREMIUM_DOMAINS,
+  neutralizeDiscoverySourceAttribution,
   validateDiscoverySectionContent,
 } from "./discovery-scan";
 
@@ -134,4 +135,33 @@ test("the same dense section remains fail-closed on forbidden qualitative conten
   assert.ok(validation.reasons.includes("client_voice"));
   assert.ok(validation.reasons.includes("collective_voice"));
   assert.ok(validation.reasons.includes("source_name"));
+});
+
+test("sleep prose mentioning physiological resources is not a source-name false positive", () => {
+  const paragraph = "Tes ressources physiologiques nocturnes dependent de la pression homeostatique, de l'adenosine et du rythme circadien. Cette interaction conserve le mecanisme scientifique et personnalise l'analyse de ton sommeil. ".repeat(5);
+  const sleep = Array.from({ length: 24 }, () => paragraph).join("\n\n").padEnd(13_910, " recuperation nocturne");
+  const validation = validateDiscoverySectionContent(sleep);
+
+  assert.equal(validation.isValid, true);
+  assert.doesNotMatch(validation.reasons.join(","), /source_name|explicit_sources/);
+});
+
+test("named source attribution is neutralized without deleting the scientific claim", () => {
+  const raw = "Selon Matthew Walker, la pression homeostatique augmente avec l'adenosine et interagit avec le rythme circadien. Tes ressources physiologiques restent mobilisees pendant la recuperation.";
+  const cleaned = neutralizeDiscoverySourceAttribution(raw);
+
+  assert.doesNotMatch(cleaned, /Matthew Walker/i);
+  assert.match(cleaned, /pression homeostatique augmente avec l'adenosine/i);
+  assert.match(cleaned, /rythme circadien/i);
+  assert.match(cleaned, /Tes ressources physiologiques/i);
+  assert.equal(validateDiscoverySectionContent(cleaned).reasons.includes("source_name"), false);
+});
+
+test("explicit bibliography lines are removed while neighboring evidence remains", () => {
+  const raw = "La melatonine avance ou retarde la phase circadienne selon l'heure d'exposition.\n\nSources: Huberman Lab, Matthew Walker.\n\nLa pression de sommeil continue d'augmenter avec l'adenosine.";
+  const cleaned = neutralizeDiscoverySourceAttribution(raw);
+
+  assert.doesNotMatch(cleaned, /Sources|Huberman|Matthew Walker/i);
+  assert.match(cleaned, /melatonine avance ou retarde la phase circadienne/i);
+  assert.match(cleaned, /pression de sommeil continue d'augmenter/i);
 });

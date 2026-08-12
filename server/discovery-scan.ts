@@ -229,6 +229,28 @@ export interface DiscoverySectionValidation {
   isValid: boolean;
 }
 
+function containsForbiddenDiscoverySourceName(text: string): boolean {
+  SOURCE_NAME_REGEX.lastIndex = 0;
+  const found = SOURCE_NAME_REGEX.test(text);
+  SOURCE_NAME_REGEX.lastIndex = 0;
+  return found;
+}
+
+export function neutralizeDiscoverySourceAttribution(text: string): string {
+  if (!text) return text;
+
+  return stripCitationLines(text)
+    .replace(
+      /\b(selon|d['’]apres|d['’]après|les\s+travaux\s+de|les\s+donnees\s+de|les\s+données\s+de)\s+(?:le\s+docteur\s+|dr\.?\s+)?(?:huberman|andrew\s+huberman|huberman\s+lab|peter\s+attia|attia|applied\s+metabolics|stronger\s+by\s+science|sbs|examine(?:\.com)?|renaissance\s+periodization|mpmd|more\s+plates|moreplates|newsletter|achzod|matthew\s+walker|sapolsky|layne\s+norton|ben\s+bikman|rhonda\s+patrick|robert\s+lustig|andy\s+galpin|brad\s+schoenfeld|mike\s+israetel|justin\s+sonnenburg|chris\s+kresser)\b\s*[:,]?/gi,
+      "Les donnees scientifiques indiquent que",
+    )
+    .replace(SOURCE_NAME_REGEX, "les donnees scientifiques")
+    .replace(/\b(?:sources?|references?|références?)\s*:\s*[^.\n]+\.?/gi, "")
+    .replace(/\s+([,.;:])/g, "$1")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+}
+
 export function validateDiscoverySectionContent(text: string): DiscoverySectionValidation {
   const lines = text.split(/\n+/).filter(line => line.trim().length > 30);
   const paragraphCount = text
@@ -248,7 +270,7 @@ export function validateDiscoverySectionContent(text: string): DiscoverySectionV
     reasons.push(`paragraphs:${paragraphCount}/${MIN_DISCOVERY_SECTION_PARAGRAPHS}`);
   }
   if (/(?:^|\b)(sources?|references?|références?)(?:\b|:)/i.test(lower)) reasons.push("explicit_sources");
-  if (SOURCE_MARKERS.some((marker) => lower.includes(marker))) reasons.push("source_name");
+  if (containsForbiddenDiscoverySourceName(text)) reasons.push("source_name");
   if (/\bclient\b/.test(lower)) reasons.push("client_voice");
   if (/\bnous\b/.test(lower) || /\bnotre\b/.test(lower)) reasons.push("collective_voice");
   if (hasEnglishMarkers(text, 4)) reasons.push("english_markers");
@@ -1321,6 +1343,7 @@ MISSION CRITIQUE: Redige une analyse TRES COMPLETE de MINIMUM 55-70 lignes pour 
 ${attempt > 1 ? `
 ATTENTION: Ta reponse precedente a ete refusee pour ces raisons exactes: ${previousRejectionReasons.join(', ')}.
 Corrige strictement ces interdits sans raccourcir ni appauvrir le fond scientifique. Conserve au minimum la meme densite, les memes mecanismes personnalises et 55-70 lignes de texte technique.
+${previousRejectionReasons.includes("source_name") || previousRejectionReasons.includes("explicit_sources") ? "Transforme toute attribution en explication scientifique directe. Ne reproduis aucun nom de chercheur, auteur, media, publication, newsletter, marque ou label provenant de la knowledge base." : ""}
 ` : ''}
 
 REGLES ABSOLUES:
@@ -1331,7 +1354,7 @@ REGLES ABSOLUES:
 5. Connecte avec les autres systemes corporels (ex: cortisol affecte testosterone, sommeil affecte GH)
 6. Integre les donnees scientifiques de la knowledge base ci-dessus
 7. Ton direct, expert, sans complaisance, comme un coach qui dit la verite
-8. Ne cite jamais de sources ni d'auteurs (pas de "Sources:", pas de noms propres)
+8. Ne cite jamais de sources ni d'auteurs (pas de "Sources:", pas de noms propres). La knowledge base sert uniquement a comprendre les mecanismes : ne reproduis jamais ses noms de chercheurs, medias, publications, newsletters, marques ou labels.
 9. Ne dis jamais "client", "nous", "notre" ou "on"
 10. Francais uniquement. Aucun mot ou phrase en anglais.
 
@@ -1382,6 +1405,7 @@ FORMAT OBLIGATOIRE:
       }
       rawText = normalizeSingleVoice(rawText);
       rawText = stripCitationLines(rawText);
+      rawText = neutralizeDiscoverySourceAttribution(rawText);
       rawText = normalizeParagraphs(rawText);
       rawText = normalizeParagraphs(rawText);
 
