@@ -655,7 +655,7 @@ test("visible French normalization repairs exact accentless tokens and the gate 
   );
   assert.equal(
     repairDiscoveryKnownFrenchCorruptions("Elle ne prouve aucun dérèglement hormonal ou métabolique, mais cela reste une hypothèse prudente et non diagnostique que le questionnaire ne permet pas de confirmer."),
-    "Elle ne prouve aucun dérèglement hormonal ou métabolique, et le questionnaire ne permet pas d’en confirmer la présence.",
+    "Elle ne prouve aucun dérèglement hormonal ou métabolique, et le questionnaire ne permet pas de conclure à leur présence.",
   );
 });
 
