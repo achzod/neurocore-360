@@ -1793,7 +1793,10 @@ function cleanDiscoveryNarrativeProse(text: string): string {
   cleaned = neutralizeDiscoverySourceAttribution(cleaned);
   cleaned = qualifyDiscoveryMedicalAssertions(cleaned);
   cleaned = repairDiscoveryKnownFrenchCorruptions(cleaned);
-  return normalizeParagraphs(cleaned);
+  cleaned = normalizeParagraphs(cleaned);
+  // Keep the cleanup pipeline idempotent: every transformer above may evolve,
+  // but no accentless delivery token can be reintroduced after this final pass.
+  return normalizeDiscoveryFrenchSurface(repairDiscoveryKnownFrenchCorruptions(cleaned));
 }
 
 export function validateDiscoveryGeneratedNarrative(

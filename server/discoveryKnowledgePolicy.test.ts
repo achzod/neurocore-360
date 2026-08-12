@@ -858,6 +858,35 @@ test("unified end-to-end cleanup repairs known French corruption in stress befor
   assert.ok(validateDiscoverySectionContent("Une corruption çj-inconnue.", policy).reasons.includes("malformed_french_fragment"));
 });
 
+test("unified end-to-end cleanup remains idempotent when voice normalization creates its fallback", () => {
+  const responses = { prenom: "ApexTest", objectif: "progresser durablement" };
+  const policy = deriveDiscoverySafetyPolicy(responses);
+  const paragraph = "Tu as décrit une routine structurée et des repères cohérents. Je ne peux pas confirmer une cause individuelle à partir de ce questionnaire. Cette lecture distingue les faits déclarés des hypothèses prudentes qui restent à confirmer sans poser de diagnostic. ";
+  const section = Array.from({ length: 4 }, () => paragraph.repeat(3)).join("\n\n");
+  const raw = {
+    synthesis: section,
+    sections: DISCOVERY_PREMIUM_DOMAINS.map((domain) => ({ domain, content: section })),
+  };
+
+  const validated = validateDiscoveryGeneratedNarrative(raw, responses, policy);
+  assert.match(validated.sections.energie, /je n'ai pas les éléments pour confirmer/i);
+  assert.doesNotMatch(validated.sections.energie, /\belements?\b/i);
+  assert.deepEqual(validateDiscoveryLinguisticQuality(validated.sections.energie), []);
+  assert.equal(validateDiscoverySectionContent(validated.sections.energie, policy).isValid, true);
+});
+
+test("every post-surface text transformer avoids forbidden accentless literals", () => {
+  const textNormalization = readFileSync(new URL("./textNormalization.ts", import.meta.url), "utf8");
+  const safetyPolicy = readFileSync(new URL("./discoverySafetyPolicy.ts", import.meta.url), "utf8");
+  const forbidden = /["'`](?:[^"'`\n]*\b(?:elements?|reponses?|mecanismes?|energie|entrainements?|durees?|facade|realite|details?|detaille(?:e|es|s)?|biomecanique|avancee|deduction|apres|deduit(?:e)?|supplementaires?|deja|priorites?)\b[^"'`\n]*)["'`]/gi;
+
+  assert.deepEqual(textNormalization.match(forbidden) || [], []);
+  assert.deepEqual(safetyPolicy.match(forbidden) || [], []);
+  const discoverySource = readFileSync(new URL("./discovery-scan.ts", import.meta.url), "utf8");
+  const tail = discoverySource.slice(discoverySource.indexOf("function cleanDiscoveryNarrativeProse"));
+  assert.match(tail, /return normalizeDiscoveryFrenchSurface\(repairDiscoveryKnownFrenchCorruptions\(cleaned\)\)/);
+});
+
 test("unified prompt gives every domain enough visible-length margin", () => {
   const source = readFileSync(new URL("./discovery-scan.ts", import.meta.url), "utf8");
 

@@ -144,7 +144,7 @@ export function normalizeSingleVoice(text: string): string {
     // letter boundaries preserve those French words while still normalizing
     // the actual pronoun `on`.
     .replace(/(?<![\p{L}\p{N}_])on(?![\p{L}\p{N}_])/giu, (match) => (match[0] === "O" ? "Je" : "je"))
-    .replace(/\bje ne peux pas\b/gi, "je n'ai pas les elements pour")
+    .replace(/\bje ne peux pas\b/gi, "je n'ai pas les éléments pour")
     .replace(/\bJe\s+([aeiouh])/g, "J'$1")
     .replace(/\bje\s+([aeiouh])/g, "j'$1");
   normalized = replaceEnglishArtifacts(normalized);
