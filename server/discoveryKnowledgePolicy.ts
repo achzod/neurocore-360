@@ -1,5 +1,64 @@
 export const DISCOVERY_MIN_KNOWLEDGE_CONTEXT_CHARS = 200;
 
+export interface DiscoveryKnowledgePreflightDiagnostic {
+  stage: "knowledge_preflight";
+  failureKind: "undersized_context" | "knowledge_loader_error";
+  scope: string;
+  actualChars: number | null;
+  minimumChars: number;
+  errorCode: string;
+}
+
+export class DiscoveryKnowledgeContextError extends Error {
+  readonly code = "DISCOVERY_KNOWLEDGE_CONTEXT_UNDERSIZED";
+
+  constructor(
+    readonly scope: string,
+    readonly actualChars: number,
+    readonly minimumChars = DISCOVERY_MIN_KNOWLEDGE_CONTEXT_CHARS,
+  ) {
+    super(
+      `[Discovery Premium] Knowledge context unavailable for ${scope}: ` +
+      `${actualChars}/${minimumChars} characters. ` +
+      `Premium generation is fail-closed; degraded generation is forbidden.`,
+    );
+    this.name = "DiscoveryKnowledgeContextError";
+  }
+}
+
+/**
+ * Return only bounded operational metadata. Knowledge text and the original
+ * error message are deliberately excluded so stdout can be retained safely.
+ */
+export function getDiscoveryKnowledgePreflightDiagnostic(
+  error: unknown,
+): DiscoveryKnowledgePreflightDiagnostic {
+  if (error instanceof DiscoveryKnowledgeContextError) {
+    return {
+      stage: "knowledge_preflight",
+      failureKind: "undersized_context",
+      scope: error.scope,
+      actualChars: error.actualChars,
+      minimumChars: error.minimumChars,
+      errorCode: error.code,
+    };
+  }
+
+  const candidate = error as { code?: unknown } | null;
+  const rawCode = String(candidate?.code || "DISCOVERY_KNOWLEDGE_LOAD_ERROR");
+  const safeCode = /^[A-Z0-9_-]{1,40}$/i.test(rawCode)
+    ? rawCode.toUpperCase()
+    : "DISCOVERY_KNOWLEDGE_LOAD_ERROR";
+  return {
+    stage: "knowledge_preflight",
+    failureKind: "knowledge_loader_error",
+    scope: "unknown",
+    actualChars: null,
+    minimumChars: DISCOVERY_MIN_KNOWLEDGE_CONTEXT_CHARS,
+    errorCode: safeCode,
+  };
+}
+
 const DISCOVERY_SOURCE_NAME_REGEX = new RegExp(
   "\\b(huberman|andrew\\s+huberman|huberman\\s+lab|peter\\s+attia|attia|applied\\s+metabolics|stronger\\s+by\\s+science|sbs|examine(?:\\.com)?|renaissance\\s+periodization|mpmd|more\\s+plates(?:\\s+more\\s+dates)?|moreplates|newsletter|achzod|matthew\\s+walker|sapolsky|layne\\s+norton|ben\\s+bikman|rhonda\\s+patrick|robert\\s+lustig|andy\\s+galpin|brad\\s+schoenfeld|mike\\s+israetel|justin\\s+sonnenburg|chris\\s+kresser)\\b",
   "gi",
@@ -30,11 +89,7 @@ export function assertDiscoveryPremiumKnowledgeContext(
 ): string {
   const context = sanitizeDiscoveryKnowledgeContext(value);
   if (context.length < DISCOVERY_MIN_KNOWLEDGE_CONTEXT_CHARS) {
-    throw new Error(
-      `[Discovery Premium] Knowledge context unavailable for ${scope}: ` +
-      `${context.length}/${DISCOVERY_MIN_KNOWLEDGE_CONTEXT_CHARS} characters. ` +
-      `Premium generation is fail-closed; degraded generation is forbidden.`,
-    );
+    throw new DiscoveryKnowledgeContextError(scope, context.length);
   }
   return context;
 }

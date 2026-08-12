@@ -1164,6 +1164,13 @@ const DISCOVERY_IRRELEVANT_KB_TERMS = [
   "pied", "cheville", "foot", "ankle", "adn", "genetic", "genom",
 ] as const;
 
+// Ranking happens after retrieval because the Discovery relevance policy also
+// excludes whole topics. Six newest SQL matches were not a candidate set: a
+// handful of recent generic articles could hide older, directly relevant
+// evidence. Keep the pool bounded while ranking before the final top-two cut.
+export const DISCOVERY_KNOWLEDGE_CANDIDATE_LIMIT = 48;
+const DISCOVERY_KNOWLEDGE_FALLBACK_QUERY_LIMIT = 12;
+
 export function filterDiscoveryRelevantArticles<T extends { title?: unknown; content?: unknown }>(
   articles: T[],
   keywords: string[],
@@ -1189,6 +1196,35 @@ export function filterDiscoveryRelevantArticles<T extends { title?: unknown; con
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
     .map(({ article }) => article);
+}
+
+export function buildDiscoveryKnowledgeFallbackQueries(keywords: string[]): string[] {
+  return [...new Set(
+    keywords
+      .map((keyword) => String(keyword).toLowerCase().trim())
+      .filter((keyword) => keyword.length >= 3),
+  )].slice(0, 5);
+}
+
+async function searchDiscoveryKnowledgeCandidates(keywords: string[]): Promise<Awaited<ReturnType<typeof searchArticles>>> {
+  return searchArticles(
+    keywords.slice(0, 5),
+    DISCOVERY_KNOWLEDGE_CANDIDATE_LIMIT,
+    ALLOWED_SOURCES as unknown as string[],
+  );
+}
+
+async function searchDiscoveryKnowledgeFallback(keywords: string[]): Promise<Awaited<ReturnType<typeof searchArticles>>> {
+  const byId = new Map<string, Awaited<ReturnType<typeof searchArticles>>[number]>();
+  for (const query of buildDiscoveryKnowledgeFallbackQueries(keywords)) {
+    const matches = await searchFullText(query, DISCOVERY_KNOWLEDGE_FALLBACK_QUERY_LIMIT);
+    for (const article of matches) {
+      if (!(ALLOWED_SOURCES as unknown as string[]).includes(article.source as string)) continue;
+      const key = String(article.id || `${article.source}:${article.url}:${article.title}`);
+      if (!byId.has(key)) byId.set(key, article);
+    }
+  }
+  return [...byId.values()];
 }
 
 async function getKnowledgeContextForBlocages(blocages: BlockageAnalysis[]): Promise<string> {
@@ -1229,13 +1265,12 @@ async function getKnowledgeContextForBlocages(blocages: BlockageAnalysis[]): Pro
   // Search in knowledge base. Operational errors intentionally propagate to
   // the bounded preflight retry; returning an empty string would erase the
   // distinction between an unavailable database and missing evidence.
-  let articles = await searchArticles(uniqueKeywords.slice(0, 5), 5, ALLOWED_SOURCES as unknown as string[]);
+  let articles = await searchDiscoveryKnowledgeCandidates(uniqueKeywords);
 
   articles = filterDiscoveryRelevantArticles(articles, uniqueKeywords, 2);
 
   if (articles.length === 0) {
-    const fallbackQuery = uniqueKeywords.slice(0, 6).join(" ");
-    const ft = await searchFullText(fallbackQuery, 6);
+    const ft = await searchDiscoveryKnowledgeFallback(uniqueKeywords);
     articles = filterDiscoveryRelevantArticles(
       ft.filter(a => (ALLOWED_SOURCES as unknown as string[]).includes(a.source as string)),
       uniqueKeywords,
@@ -1749,7 +1784,7 @@ async function getKnowledgeContextForDomain(domain: string): Promise<string> {
 
     // Sommeil & Recuperation
     'sommeil-recuperation': ['sleep', 'circadian', 'melatonin', 'GH', 'adenosine', 'deep sleep', 'REM', 'sleep architecture'],
-    sommeil: ['sleep', 'circadian', 'melatonin', 'GH', 'adenosine', 'sommeil', 'insomnia', 'sleep quality'],
+    sommeil: ['sleep', 'circadian', 'melatonin', 'adenosine', 'insomnia', 'sleep quality'],
 
     // HRV & Cardiaque
     'hrv-cardiaque': ['HRV', 'heart rate variability', 'parasympathetic', 'vagal tone', 'autonomic', 'resting HR'],
@@ -1799,14 +1834,17 @@ async function getKnowledgeContextForDomain(domain: string): Promise<string> {
 
   // Operational errors propagate into the single bounded/sequential preflight.
   const articles = filterDiscoveryRelevantArticles(
-    await searchArticles(keywords.slice(0, 5), 6, ALLOWED_SOURCES as unknown as string[]),
+    await searchDiscoveryKnowledgeCandidates(keywords),
     keywords,
     2,
   );
 
   if (articles.length === 0) {
     // Try full-text search as fallback
-    const ftArticles = await searchFullText(domain, 6);
+    // Use the scientific keywords rather than the UI domain label. The
+    // canonical evidence corpus is mostly English (for example `sleep`, not
+    // `sommeil`), and each query remains bounded and sequential.
+    const ftArticles = await searchDiscoveryKnowledgeFallback(keywords);
     const filteredFt = filterDiscoveryRelevantArticles(
       ftArticles.filter(a => ALLOWED_SOURCES.includes(a.source as any)),
       keywords,

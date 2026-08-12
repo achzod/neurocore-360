@@ -1,14 +1,17 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 import {
   analyzeDiscoveryScan,
   buildDiscoveryReportAssets,
   convertToNarrativeReport,
+  DISCOVERY_PREMIUM_DOMAINS,
   validateDiscoveryReportForDelivery,
   type DiscoveryKnowledgePreflight,
   type DiscoveryResponses,
 } from "../server/discovery-scan";
 import { evaluateDiscoveryDeliveryGate } from "../server/discoveryDeliveryGate";
+import { getDiscoveryKnowledgePreflightDiagnostic } from "../server/discoveryKnowledgePolicy";
 
 /**
  * Disposable Discovery canary.
@@ -32,9 +35,40 @@ const MAX_INPUT_TOKEN_UPPER_BOUND = Math.floor(
 const FIXED_PROMPT_SCHEMA_OVERHEAD_BYTES = 40_000;
 const KNOWLEDGE_CHARS_PER_SCOPE = 480;
 const DRY_RUN_SENTINEL = "DISCOVERY_CANARY_DRY_PREFLIGHT_COMPLETE";
-const EXPECTED_DISCOVERY_SOURCE_SHA256 = "2d7b0bff4b0637306e6e42da96a467aed05c14a6d2635a260a84b3a93d039f04";
+const PREFLIGHT_ONLY_SENTINEL = "DISCOVERY_CANARY_PREFLIGHT_ONLY_COMPLETE";
+const EXPECTED_DISCOVERY_SOURCE_SHA256 = "21afdf7cb3bb468199fd1352e6a01ac4f16ba9f5e9ee5427af828c194d5c0024";
 const EXPECTED_OPENAI_RUNNER_SHA256 = "cef5511112e9a1a985163400aad5cbe2284f047b78063c2bb1ab8df820bdd1d0";
 const ARTIFACT_CHUNK_BYTES = 12_000;
+
+export async function runDiscoveryCanaryProviderStage<T>(
+  knowledge: DiscoveryKnowledgePreflight,
+  provider: () => Promise<T>,
+  options: {
+    env?: Record<string, string | undefined>;
+    emit?: (line: string) => void;
+  } = {},
+): Promise<T | null> {
+  const env = options.env || process.env;
+  if (env.DISCOVERY_CANARY_PREFLIGHT_ONLY === "true") {
+    const emit = options.emit || console.log;
+    emit(`${PREFLIGHT_ONLY_SENTINEL}:${JSON.stringify({
+      stage: "knowledge_preflight",
+      status: "complete",
+      scopes: [
+        { scope: "synthesis", actualChars: knowledge.synthesis.length },
+        ...DISCOVERY_PREMIUM_DOMAINS.map((domain) => ({
+          scope: `section ${domain}`,
+          actualChars: knowledge.domains[domain]?.length ?? 0,
+        })),
+      ],
+      providerCalls: 0,
+    })}`);
+    return null;
+  }
+
+  invariant(Boolean(env.OPENAI_API_KEY), "openai_key_missing");
+  return provider();
+}
 
 function invariant(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(`CANARY_PREFLIGHT_BLOCKED:${message}`);
@@ -118,7 +152,6 @@ async function main(): Promise<void> {
   invariant(process.env.AI_USAGE_PERSISTENCE_DISABLED === "true", "usage_persistence_not_disabled");
   const model = process.env.OPENAI_REPORT_MODEL || EXPECTED_MODEL;
   invariant(model === EXPECTED_MODEL, `unexpected_model:${model}`);
-  invariant(Boolean(process.env.OPENAI_API_KEY), "openai_key_missing");
   invariant(Boolean(process.env.DATABASE_URL), "database_url_missing_for_readonly_knowledge");
   invariant(
     sha256(readFileSync("server/discovery-scan.ts", "utf8")) === EXPECTED_DISCOVERY_SOURCE_SHA256,
@@ -139,6 +172,11 @@ async function main(): Promise<void> {
     });
     throw new Error("CANARY_PREFLIGHT_BLOCKED:dry_preflight_did_not_stop");
   } catch (error) {
+    if (!(error instanceof Error && error.message.includes(DRY_RUN_SENTINEL))) {
+      console.error(`DISCOVERY_CANARY_KB_PREFLIGHT_DIAGNOSTIC:${JSON.stringify(
+        getDiscoveryKnowledgePreflightDiagnostic(error),
+      )}`);
+    }
     invariant(error instanceof Error && error.message.includes(DRY_RUN_SENTINEL), "knowledge_preflight_failed");
   }
   invariant(capturedKnowledge, "knowledge_not_captured");
@@ -168,13 +206,17 @@ async function main(): Promise<void> {
   invariant(worstCaseCostUsd <= MAX_COST_USD, `cost_budget:${worstCaseCostUsd.toFixed(6)}`);
 
   const startedAt = new Date().toISOString();
-  const result = await analyzeDiscoveryScan(profile, {
-    loadSynthesisKnowledge: async () => cachedKnowledge.synthesis,
-    loadDomainKnowledge: async (domain) => cachedKnowledge.domains[domain] || "",
-    retryDelay: async () => {
-      throw new Error("CANARY_PREFLIGHT_BLOCKED:unexpected_knowledge_retry");
-    },
-  });
+  const result = await runDiscoveryCanaryProviderStage(
+    cachedKnowledge,
+    () => analyzeDiscoveryScan(profile, {
+      loadSynthesisKnowledge: async () => cachedKnowledge.synthesis,
+      loadDomainKnowledge: async (domain) => cachedKnowledge.domains[domain] || "",
+      retryDelay: async () => {
+        throw new Error("CANARY_PREFLIGHT_BLOCKED:unexpected_knowledge_retry");
+      },
+    }),
+  );
+  if (!result) return;
   const report = await convertToNarrativeReport(result, profile);
   const assets = buildDiscoveryReportAssets(report);
   const validation = validateDiscoveryReportForDelivery(report, assets);
@@ -240,7 +282,9 @@ async function main(): Promise<void> {
   });
 }
 
-main().catch((error) => {
-  console.error(`DISCOVERY_ISOLATED_CANARY_FAILED:${error instanceof Error ? error.message : String(error)}`);
-  process.exitCode = 1;
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((error) => {
+    console.error(`DISCOVERY_ISOLATED_CANARY_FAILED:${error instanceof Error ? error.message : String(error)}`);
+    process.exitCode = 1;
+  });
+}

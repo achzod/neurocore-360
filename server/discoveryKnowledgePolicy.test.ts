@@ -4,11 +4,14 @@ import test from "node:test";
 
 import {
   assertDiscoveryPremiumKnowledgeContext,
+  getDiscoveryKnowledgePreflightDiagnostic,
   sanitizeDiscoveryKnowledgeContext,
 } from "./discoveryKnowledgePolicy";
 import {
   analyzeDiscoveryScan,
+  buildDiscoveryKnowledgeFallbackQueries,
   buildDiscoveryQuestionnaireFacts,
+  DISCOVERY_KNOWLEDGE_CANDIDATE_LIMIT,
   DISCOVERY_UNIFIED_MAX_ESTIMATED_COST_USD,
   DISCOVERY_UNIFIED_MAX_INPUT_CHARS,
   DISCOVERY_UNIFIED_MAX_OUTPUT_TOKENS,
@@ -20,6 +23,7 @@ import {
   validateDiscoverySectionContent,
 } from "./discovery-scan";
 import { deriveDiscoverySafetyPolicy } from "./discoverySafetyPolicy";
+import { runDiscoveryCanaryProviderStage } from "../scripts/discovery-unified-isolated-canary";
 
 test("canonical English scientific evidence is preserved while source attribution is removed", () => {
   const raw = `Huberman Lab\nThe circadian system coordinates sleep timing with cortisol and melatonin.\nThis evidence explains how light exposure changes the phase response curve and sleep pressure.\nThe mechanism is directly relevant to recovery, glucose regulation and endocrine health.`;
@@ -39,6 +43,38 @@ test("knowledge selection removes irrelevant disease filler and keeps direct dom
   ], ["sleep", "circadian", "melatonin"], 2);
 
   assert.deepEqual(selected.map((article) => article.title), ["Sleep regularity and circadian rhythm"]);
+});
+
+test("Discovery ranks a bounded candidate pool before top-two selection", () => {
+  const recentNoise = Array.from({ length: 6 }, (_, index) => ({
+    title: `Recent generic item ${index}`,
+    content: "sleep appears once beside unrelated Parkinson and foot material",
+  }));
+  const olderDirectEvidence = {
+    title: "Sleep regularity and circadian rhythm",
+    content: "sleep quality circadian rhythm melatonin adenosine recovery ".repeat(8),
+  };
+
+  assert.deepEqual(
+    filterDiscoveryRelevantArticles(recentNoise, ["sleep", "circadian", "melatonin"], 2),
+    [],
+    "the former SQL LIMIT 6 candidate window reproduces the 0/200 regression",
+  );
+  const selected = filterDiscoveryRelevantArticles(
+    [...recentNoise, olderDirectEvidence],
+    ["sleep", "circadian", "melatonin"],
+    2,
+  );
+  assert.deepEqual(selected.map((article) => article.title), [olderDirectEvidence.title]);
+  assert.ok(DISCOVERY_KNOWLEDGE_CANDIDATE_LIMIT > recentNoise.length);
+});
+
+test("sleep fallback queries use corpus-language scientific terms, not the French UI label", () => {
+  const queries = buildDiscoveryKnowledgeFallbackQueries([
+    "sleep", "circadian", "melatonin", "adenosine", "insomnia", "sommeil",
+  ]);
+  assert.deepEqual(queries, ["sleep", "circadian", "melatonin", "adenosine", "insomnia"]);
+  assert.equal(queries.includes("sommeil"), false);
 });
 
 test("premium knowledge validation fails closed for empty or undersized context", () => {
@@ -98,6 +134,132 @@ test("transient DB timeout exhausts bounded retries with zero OpenAI calls", asy
   assert.equal(domainCalls, 3);
   assert.deepEqual(retryDelays, [250, 750]);
   assert.equal(openAICalls, 0);
+});
+
+test("sleep 0/200 fails closed before OpenAI and exposes only safe structured metadata", async () => {
+  const canonicalContext = "Canonical scientific mechanism with enough precise evidence for premium generation. ".repeat(6);
+  let openAICalls = 0;
+  let capturedError: unknown;
+
+  try {
+    await analyzeDiscoveryScan(
+      { prenom: "Canary", email: "secret@example.test", objectif: "performance" },
+      {
+        loadSynthesisKnowledge: async () => canonicalContext,
+        loadDomainKnowledge: async (domain) => domain === "sommeil" ? "" : canonicalContext,
+        generateNarrative: async () => {
+          openAICalls += 1;
+          return { synthesis: "must not run", sections: {} };
+        },
+        retryDelay: async () => {},
+      },
+    );
+  } catch (error) {
+    capturedError = error;
+  }
+
+  assert.equal(openAICalls, 0);
+  assert.match(String(capturedError), /section sommeil: 0\/200 characters/i);
+  const diagnostic = getDiscoveryKnowledgePreflightDiagnostic(capturedError);
+  assert.deepEqual(diagnostic, {
+    stage: "knowledge_preflight",
+    failureKind: "undersized_context",
+    scope: "section sommeil",
+    actualChars: 0,
+    minimumChars: 200,
+    errorCode: "DISCOVERY_KNOWLEDGE_CONTEXT_UNDERSIZED",
+  });
+  const serialized = JSON.stringify(diagnostic);
+  assert.doesNotMatch(serialized, /secret@example\.test|Canonical scientific mechanism/);
+});
+
+test("knowledge loader diagnostics never echo an arbitrary error message or unsafe code", () => {
+  const error = new Error("password=top-secret knowledge body must never reach stdout") as Error & { code?: string };
+  error.code = "57P01 password=top-secret";
+  const serialized = JSON.stringify(getDiscoveryKnowledgePreflightDiagnostic(error));
+
+  assert.doesNotMatch(serialized, /top-secret|knowledge body|password/i);
+  assert.match(serialized, /DISCOVERY_KNOWLEDGE_LOAD_ERROR/);
+});
+
+test("isolated canary preflight-only mode succeeds without an OpenAI key and never enters the provider", async () => {
+  const canonicalContext = "Canonical scientific mechanism with enough precise evidence for premium generation. ".repeat(6);
+  const knowledge = {
+    synthesis: canonicalContext,
+    domains: Object.fromEntries(DISCOVERY_PREMIUM_DOMAINS.map((domain) => [domain, canonicalContext])),
+  };
+  let providerCalls = 0;
+  const output: string[] = [];
+  const result = await runDiscoveryCanaryProviderStage(
+    knowledge,
+    async () => {
+      providerCalls += 1;
+      return { forbidden: true };
+    },
+    {
+      env: {
+        DISCOVERY_CANARY_PREFLIGHT_ONLY: "true",
+        OPENAI_API_KEY: undefined,
+      },
+      emit: (line) => output.push(line),
+    },
+  );
+
+  assert.equal(result, null);
+  assert.equal(providerCalls, 0);
+  assert.equal(output.length, 1);
+  const summary = JSON.parse(output[0].slice(output[0].indexOf(":") + 1));
+  assert.equal(summary.providerCalls, 0);
+  assert.deepEqual(summary.scopes.map((scope: { scope: string }) => scope.scope), [
+    "synthesis",
+    ...DISCOVERY_PREMIUM_DOMAINS.map((domain) => `section ${domain}`),
+  ]);
+  assert.doesNotMatch(output[0], /Canonical scientific mechanism/);
+
+  const source = readFileSync(
+    new URL("../scripts/discovery-unified-isolated-canary.ts", import.meta.url),
+    "utf8",
+  );
+  const preflightOnlyBranch = source.indexOf(
+    'if (env.DISCOVERY_CANARY_PREFLIGHT_ONLY === "true") {',
+  );
+  const branchEnd = source.indexOf("\n}\n\nfunction invariant", preflightOnlyBranch);
+  const providerPath = source.indexOf("const result = await runDiscoveryCanaryProviderStage(");
+
+  assert.ok(preflightOnlyBranch >= 0, "explicit preflight-only flag is required");
+  assert.ok(branchEnd > preflightOnlyBranch, "preflight-only helper must have a bounded body");
+  assert.ok(providerPath > branchEnd, "provider stage must use the guarded helper");
+  const branchSource = source.slice(preflightOnlyBranch, branchEnd);
+  assert.match(branchSource, /providerCalls:\s*0/);
+  assert.match(branchSource, /return null;/);
+  assert.doesNotMatch(branchSource, /email|JSON\.stringify\(knowledge\)/);
+});
+
+test("isolated canary normal mode without an OpenAI key blocks before the provider", async () => {
+  const canonicalContext = "Canonical scientific mechanism with enough precise evidence for premium generation. ".repeat(6);
+  const knowledge = {
+    synthesis: canonicalContext,
+    domains: Object.fromEntries(DISCOVERY_PREMIUM_DOMAINS.map((domain) => [domain, canonicalContext])),
+  };
+  let providerCalls = 0;
+
+  await assert.rejects(
+    runDiscoveryCanaryProviderStage(
+      knowledge,
+      async () => {
+        providerCalls += 1;
+        return { forbidden: true };
+      },
+      {
+        env: {
+          DISCOVERY_CANARY_PREFLIGHT_ONLY: "false",
+          OPENAI_API_KEY: undefined,
+        },
+      },
+    ),
+    /CANARY_PREFLIGHT_BLOCKED:openai_key_missing/,
+  );
+  assert.equal(providerCalls, 0);
 });
 
 test("knowledge preflight is sequential and covers synthesis plus all eight domains", async () => {
