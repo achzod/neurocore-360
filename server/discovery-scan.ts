@@ -219,6 +219,41 @@ async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): P
     if (timeoutId) clearTimeout(timeoutId);
   }
 }
+
+export interface DiscoverySectionValidation {
+  lineCount: number;
+  charCount: number;
+  wordCount: number;
+  paragraphCount: number;
+  reasons: string[];
+  isValid: boolean;
+}
+
+export function validateDiscoverySectionContent(text: string): DiscoverySectionValidation {
+  const lines = text.split(/\n+/).filter(line => line.trim().length > 30);
+  const paragraphCount = text
+    .split(/\n\s*\n/)
+    .map(paragraph => paragraph.trim())
+    .filter(paragraph => paragraph.length > 80).length;
+  const lineCount = lines.length;
+  const charCount = text.length;
+  const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+  const lower = text.toLowerCase();
+  const reasons: string[] = [];
+  if (charCount < MIN_DISCOVERY_SECTION_CHARS) reasons.push(`chars:${charCount}/${MIN_DISCOVERY_SECTION_CHARS}`);
+  if (lineCount < MIN_DISCOVERY_SECTION_LINES && wordCount < MIN_DISCOVERY_SECTION_WORDS) {
+    reasons.push(`density:${lineCount}lines/${wordCount}words`);
+  }
+  if (paragraphCount < MIN_DISCOVERY_SECTION_PARAGRAPHS && charCount < MIN_DISCOVERY_SECTION_CHARS + 800) {
+    reasons.push(`paragraphs:${paragraphCount}/${MIN_DISCOVERY_SECTION_PARAGRAPHS}`);
+  }
+  if (/(?:^|\b)(sources?|references?|références?)(?:\b|:)/i.test(lower)) reasons.push("explicit_sources");
+  if (SOURCE_MARKERS.some((marker) => lower.includes(marker))) reasons.push("source_name");
+  if (/\bclient\b/.test(lower)) reasons.push("client_voice");
+  if (/\bnous\b/.test(lower) || /\bnotre\b/.test(lower)) reasons.push("collective_voice");
+  if (hasEnglishMarkers(text, 4)) reasons.push("english_markers");
+  return { lineCount, charCount, wordCount, paragraphCount, reasons, isValid: reasons.length === 0 };
+}
 const COACHING_OFFER_TIERS = [
   {
     label: "Essential",
@@ -1256,7 +1291,11 @@ async function generateSectionContentAI(
   const MIN_LINE_COUNT = MIN_DISCOVERY_SECTION_LINES;
   const MAX_RETRIES = 2; // Reduced from 5 to avoid 5min+ generation times
   let bestCandidate = "";
-  let bestValidation = { charCount: 0, wordCount: 0, lineCount: 0, paragraphCount: 0 };
+  let bestValidation: DiscoverySectionValidation = {
+    charCount: 0, wordCount: 0, lineCount: 0, paragraphCount: 0,
+    reasons: ["not_generated"], isValid: false,
+  };
+  let previousRejectionReasons: string[] = [];
 
   const buildPrompt = (attempt: number) => `SECTION A REDIGER: ${domainLabel.toUpperCase()}
 
@@ -1280,7 +1319,8 @@ ${instructions}
 
 MISSION CRITIQUE: Redige une analyse TRES COMPLETE de MINIMUM 55-70 lignes pour la section ${domainLabel.toUpperCase()}.
 ${attempt > 1 ? `
-ATTENTION: Ta reponse precedente etait TROP COURTE. Tu DOIS ecrire BEAUCOUP PLUS LONG. Developpe chaque mecanisme en detail. Minimum 55-70 lignes de texte dense et technique.
+ATTENTION: Ta reponse precedente a ete refusee pour ces raisons exactes: ${previousRejectionReasons.join(', ')}.
+Corrige strictement ces interdits sans raccourcir ni appauvrir le fond scientifique. Conserve au minimum la meme densite, les memes mecanismes personnalises et 55-70 lignes de texte technique.
 ` : ''}
 
 REGLES ABSOLUES:
@@ -1303,42 +1343,6 @@ FORMAT OBLIGATOIRE:
 - Prose fluide uniquement, paragraphes separes par lignes vides
 - Minimum ${MIN_DISCOVERY_SECTION_PARAGRAPHS} paragraphes, 3-5 phrases chacun
 - Ecris a la deuxieme personne du singulier, comme si TU parlais directement a ${prenom}`;
-
-  const isValidContent = (text: string) => {
-    const lines = text.split(/\n+/).filter(l => l.trim().length > 30);
-    const paragraphCount = text
-      .split(/\n\s*\n/)
-      .map(p => p.trim())
-      .filter(p => p.length > 80).length;
-    const lineCount = lines.length;
-    const charCount = text.length;
-    const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
-    const lower = text.toLowerCase();
-    const hasExplicitSources = /(?:^|\b)(sources?|references?|références?)(?:\b|:)/i.test(lower);
-    const hasSources = SOURCE_MARKERS.some((marker) => lower.includes(marker));
-    const hasClient = /\bclient\b/.test(lower);
-    const hasNous = /\bnous\b/.test(lower) || /\bnotre\b/.test(lower);
-    const hasEnglish = hasEnglishMarkers(text, 4);
-    const meetsLength =
-      charCount >= MIN_CONTENT_LENGTH &&
-      (lineCount >= MIN_LINE_COUNT || wordCount >= MIN_DISCOVERY_SECTION_WORDS);
-    const meetsParagraphs =
-      paragraphCount >= MIN_DISCOVERY_SECTION_PARAGRAPHS || charCount >= MIN_CONTENT_LENGTH + 800;
-    return {
-      lineCount,
-      charCount,
-      wordCount,
-      paragraphCount,
-      isValid:
-        meetsLength &&
-        meetsParagraphs &&
-        !hasSources &&
-        !hasExplicitSources &&
-        !hasClient &&
-        !hasNous &&
-        !hasEnglish,
-    };
-  };
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
@@ -1381,9 +1385,9 @@ FORMAT OBLIGATOIRE:
       rawText = normalizeParagraphs(rawText);
       rawText = normalizeParagraphs(rawText);
 
-      const validation = isValidContent(rawText);
+      const validation = validateDiscoverySectionContent(rawText);
       console.log(
-        `[Discovery] Section ${domain} attempt ${attempt}: ${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines, ${validation.paragraphCount} paragraphs`
+        `[Discovery] Section ${domain} attempt ${attempt}: ${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines, ${validation.paragraphCount} paragraphs, reasons=${validation.reasons.join('|') || 'none'}`
       );
 
       if (validation.charCount > bestValidation.charCount) {
@@ -1398,6 +1402,7 @@ FORMAT OBLIGATOIRE:
         );
         return cleanMarkdownToHTML(rawText);
       }
+      previousRejectionReasons = [...validation.reasons];
 
       // If last attempt, use what we have but log warning
       if (attempt === MAX_RETRIES) {
@@ -1407,9 +1412,7 @@ FORMAT OBLIGATOIRE:
         break;
       }
 
-      console.log(
-        `[Discovery] ✗ Section ${domain} TOO SHORT (${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines). Retrying...`
-      );
+      console.log(`[Discovery] Section ${domain} rejected (${validation.reasons.join(", ")}). Retrying with targeted correction...`);
     } catch (error) {
       console.error(`[Discovery] AI section ${domain} error (attempt ${attempt}):`, error);
       if (attempt === MAX_RETRIES) {
@@ -1420,7 +1423,7 @@ FORMAT OBLIGATOIRE:
 
   throw new Error(
     `[Discovery Premium] Section ${domain} non conforme apres ${MAX_RETRIES} tentatives ` +
-    `(best=${bestValidation.charCount} chars/${bestValidation.wordCount} words). Aucun fallback autorise.`,
+    `(best=${bestValidation.charCount} chars/${bestValidation.wordCount} words; reasons=${bestValidation.reasons.join("|")}). Aucun fallback autorise.`,
   );
 }
 

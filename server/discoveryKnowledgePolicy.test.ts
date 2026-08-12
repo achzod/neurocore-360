@@ -9,6 +9,7 @@ import {
 import {
   analyzeDiscoveryScan,
   DISCOVERY_PREMIUM_DOMAINS,
+  validateDiscoverySectionContent,
 } from "./discovery-scan";
 
 test("canonical English scientific evidence is preserved while source attribution is removed", () => {
@@ -110,4 +111,27 @@ test("knowledge preflight is sequential and covers synthesis plus all eight doma
   assert.equal(maxConcurrent, 1);
   assert.equal(openAICalls, 1);
   assert.deepEqual(Object.keys(result.knowledgePreflight.domains), [...DISCOVERY_PREMIUM_DOMAINS]);
+});
+
+test("a dense 13,910-char section with 24 paragraphs is not rejected for structure", () => {
+  const paragraph = "Ton energie cellulaire depend de mecanismes mitochondriaux precis, relies a ton sommeil, ton stress et ta nutrition quotidienne. ".repeat(5);
+  let clean = Array.from({ length: 24 }, () => paragraph).join("\n\n");
+  clean = clean.padEnd(13_910, " physiologie adaptee");
+  const validation = validateDiscoverySectionContent(clean);
+  assert.ok(validation.charCount >= 13_910);
+  assert.ok(validation.wordCount >= 2_115);
+  assert.ok(validation.lineCount >= 24);
+  assert.equal(validation.paragraphCount, 24);
+  assert.doesNotMatch(validation.reasons.join(","), /chars|density|paragraphs/);
+});
+
+test("the same dense section remains fail-closed on forbidden qualitative content", () => {
+  const paragraph = "Ton energie cellulaire depend de mecanismes mitochondriaux precis, relies a ton sommeil, ton stress et ta nutrition quotidienne. ".repeat(5);
+  let forbidden = Array.from({ length: 24 }, () => paragraph).join("\n\n");
+  forbidden = `${forbidden}\n\nNotre client doit suivre ce conseil selon Huberman.`.padEnd(13_910, " physiologie adaptee");
+  const validation = validateDiscoverySectionContent(forbidden);
+  assert.equal(validation.isValid, false);
+  assert.ok(validation.reasons.includes("client_voice"));
+  assert.ok(validation.reasons.includes("collective_voice"));
+  assert.ok(validation.reasons.includes("source_name"));
 });
