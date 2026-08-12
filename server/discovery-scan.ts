@@ -236,6 +236,11 @@ function containsForbiddenDiscoverySourceName(text: string): boolean {
   return found;
 }
 
+function containsExplicitDiscoverySourceBlock(text: string): boolean {
+  return /(?:^|\n)\s*(?:sources?|references?|références?)\s*[:\-]/im.test(text)
+    || /\b(?:sources?|references?|références?)\s*:\s*(?:https?:\/\/|doi\b|pmid\b)/i.test(text);
+}
+
 export function neutralizeDiscoverySourceAttribution(text: string): string {
   if (!text) return text;
 
@@ -269,7 +274,7 @@ export function validateDiscoverySectionContent(text: string): DiscoverySectionV
   if (paragraphCount < MIN_DISCOVERY_SECTION_PARAGRAPHS && charCount < MIN_DISCOVERY_SECTION_CHARS + 800) {
     reasons.push(`paragraphs:${paragraphCount}/${MIN_DISCOVERY_SECTION_PARAGRAPHS}`);
   }
-  if (/(?:^|\b)(sources?|references?|références?)(?:\b|:)/i.test(lower)) reasons.push("explicit_sources");
+  if (containsExplicitDiscoverySourceBlock(text)) reasons.push("explicit_sources");
   if (containsForbiddenDiscoverySourceName(text)) reasons.push("source_name");
   if (/\bclient\b/.test(lower)) reasons.push("client_voice");
   if (/\bnous\b/.test(lower) || /\bnotre\b/.test(lower)) reasons.push("collective_voice");
@@ -1375,7 +1380,11 @@ FORMAT OBLIGATOIRE:
           instructions: SECTION_SYSTEM_PROMPT,
           input: buildPrompt(attempt),
           safetyId: responses.email || prenom,
-          maxOutputTokens: 10_000,
+          // Reasoning tokens share this budget with the client-facing prose.
+          // Production nutrition sections have consumed ~7k reasoning tokens;
+          // 14k preserves the required complete 55-70-line answer without ever
+          // accepting a max_output_tokens-truncated response.
+          maxOutputTokens: 14_000,
           label: `discovery-section-${domain}-attempt-${attempt}`,
         }),
         DISCOVERY_AI_TIMEOUT_MS,

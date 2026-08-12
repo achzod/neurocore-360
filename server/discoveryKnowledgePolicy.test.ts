@@ -165,3 +165,30 @@ test("explicit bibliography lines are removed while neighboring evidence remains
   assert.match(cleaned, /melatonine avance ou retarde la phase circadienne/i);
   assert.match(cleaned, /pression de sommeil continue d'augmenter/i);
 });
+
+test("ordinary stress-source and reference-value wording is not treated as bibliography", () => {
+  const paragraph = "Ta principale source de stress maintient une activation sympathique mesurable. Cette valeur de référence permet de relier ton cortisol, ta variabilite cardiaque et la qualite de ta recuperation sans attribuer le mecanisme a un auteur. ".repeat(5);
+  const stress = Array.from({ length: 24 }, () => paragraph).join("\n\n").padEnd(13_910, " regulation autonome");
+  const validation = validateDiscoverySectionContent(stress);
+
+  assert.equal(validation.isValid, true);
+  assert.doesNotMatch(validation.reasons.join(","), /explicit_sources|source_name/);
+});
+
+test("a true bibliography label remains rejected when validation receives it", () => {
+  const paragraph = "Ta regulation du stress depend du cortisol, de l'axe HPA et du tonus vagal. ".repeat(10);
+  const withBibliography = `${Array.from({ length: 24 }, () => paragraph).join("\n\n")}\n\nSources: https://example.test, PMID 123456.`;
+  const validation = validateDiscoverySectionContent(withBibliography);
+
+  assert.equal(validation.isValid, false);
+  assert.ok(validation.reasons.includes("explicit_sources"));
+});
+
+test("Discovery section generation reserves enough tokens and still rejects incomplete responses", () => {
+  const source = readFileSync(new URL("./discovery-scan.ts", import.meta.url), "utf8");
+  const runner = readFileSync(new URL("./openaiResponses.ts", import.meta.url), "utf8");
+
+  assert.match(source, /maxOutputTokens:\s*14_000/);
+  assert.match(runner, /response\?\.status\s*!==\s*"completed"/);
+  assert.match(runner, /OpenAI response incomplete:/);
+});
