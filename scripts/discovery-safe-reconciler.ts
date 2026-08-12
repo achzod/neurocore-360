@@ -691,6 +691,37 @@ async function main(): Promise<void> {
   const outputPath = valueAfter("--out");
   if (outputPath) writeFileSync(outputPath, `${JSON.stringify(manifest, null, 2)}\n`, { flag: "wx" });
 
+  if (args.has("--preflight-generation")) {
+    if (args.has("--run-generation") || args.has("--run-delivery")) {
+      throw new Error("DISCOVERY_BATCH_PREFLIGHT_ONE_STAGE_ONLY");
+    }
+    const targetAuditId = valueAfter("--target-audit-id");
+    if (!targetAuditId) throw new Error("DISCOVERY_BATCH_PREFLIGHT_TARGET_REQUIRED");
+    const selected = resolveExactDiscoveryTargets(manifest.items, [targetAuditId]);
+    assertExactTargetsEligible(selected, "GENERATION");
+    const item = selected[0];
+    const knowledge = await captureKnowledge(item.responses);
+    const budget = assertRealProfileBudget(item.responses, knowledge);
+    console.log(`DISCOVERY_BATCH_GENERATION_PREFLIGHT_COMPLETE:${JSON.stringify({
+      manifestSha256: manifest.manifestSha256,
+      commitSha: manifest.commitSha,
+      auditId: item.id,
+      responsesSha256: item.responsesSha256,
+      scopes: [
+        { scope: "synthesis", actualChars: knowledge.synthesis.length },
+        ...DISCOVERY_PREMIUM_DOMAINS.map((domain) => ({
+          scope: `section ${domain}`,
+          actualChars: String(knowledge.domains[domain] || "").length,
+        })),
+      ],
+      inputTokenUpperBound: budget.inputTokenUpperBound,
+      worstCaseCostUsd: Number(budget.worstCaseCostUsd.toFixed(6)),
+      hardCostUsd: HARD_COST_USD,
+      providerCalls: 0,
+    })}`);
+    return;
+  }
+
   if (!args.has("--run-generation") && !args.has("--run-delivery")) {
     if (args.has("--summary-only")) {
       const compactCandidate = (item: ManifestRow) => ({

@@ -350,4 +350,7 @@ test("reconciler is read-only by default and delivery claims before provider", (
   assert.match(source, /args\.has\("--summary-only"\)/);
   assert.match(source, /DISCOVERY_BATCH_MANIFEST_SUMMARY/);
   assert.match(source, /emailSha256: discoverySha256/);
+  assert.match(source, /args\.has\("--preflight-generation"\)/);
+  assert.match(source, /DISCOVERY_BATCH_GENERATION_PREFLIGHT_COMPLETE/);
+  assert.match(source, /providerCalls: 0/);
 });
