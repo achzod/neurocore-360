@@ -15,6 +15,10 @@ import { searchArticles, searchFullText } from './knowledge/storage';
 import { ALLOWED_SOURCES } from './knowledge/search';
 import { normalizeResponses } from './responseNormalizer';
 import { normalizeSingleVoice, hasEnglishMarkers, stripEnglishLines, stripInlineHtml } from './textNormalization';
+import {
+  assertDiscoveryPremiumKnowledgeContext,
+  sanitizeDiscoveryKnowledgeContext,
+} from './discoveryKnowledgePolicy';
 
 // ============================================
 // TYPES
@@ -144,7 +148,6 @@ export interface BlockageAnalysis {
   sources: string[]; // Huberman, Attia, etc.
 }
 
-const MIN_KNOWLEDGE_CONTEXT_CHARS = 200;
 const MIN_DISCOVERY_SECTION_CHARS = 3000;
 const MIN_DISCOVERY_SECTION_LINES = 30;
 export const DISCOVERY_DELIVERY_MIN_SECTIONS = 4;
@@ -916,7 +919,7 @@ async function getKnowledgeContextForBlocages(blocages: BlockageAnalysis[]): Pro
       `TITRE: ${a.title}\nPOINTS CLES: ${a.content.substring(0, 500)}...`
     ).join('\n\n---\n\n');
 
-    return stripEnglishLines(context);
+    return sanitizeDiscoveryKnowledgeContext(context);
   } catch (error) {
     console.error('[Discovery] Knowledge search error:', error);
     return '';
@@ -1196,13 +1199,8 @@ async function generateSectionContentAI(
   const objectif = responses.objectif || 'tes objectifs';
   const sexe = responses.sexe || 'homme';
   const age = responses.age || 30;
-  const knowledgeOk = !!knowledgeContext && knowledgeContext.length >= MIN_KNOWLEDGE_CONTEXT_CHARS;
-  const contextForPrompt = knowledgeOk ? knowledgeContext : '';
+  const contextForPrompt = assertDiscoveryPremiumKnowledgeContext(knowledgeContext, `section ${domain}`);
   const domainLabel = DOMAIN_CONFIG[domain]?.label || domain;
-
-  if (!knowledgeOk) {
-    console.warn(`[Discovery] Knowledge context manquant pour ${domain}. Generation en mode degrade.`);
-  }
 
   // Extract relevant responses for this domain
   const domainResponses = extractDomainResponses(domain, responses);
@@ -1467,11 +1465,7 @@ async function getKnowledgeContextForDomain(domain: string): Promise<string> {
         const context = filteredFt.map(a =>
           `${a.title}:\n${a.content.substring(0, 800)}`
         ).join('\n\n---\n\n');
-        const cleaned = context
-          .replace(/^\[[^\]]+\]\s*/gm, '')
-          .replace(SOURCE_NAME_REGEX, '')
-          .trim();
-        return stripEnglishLines(cleaned);
+        return sanitizeDiscoveryKnowledgeContext(context);
       }
       return '';
     }
@@ -1480,11 +1474,7 @@ async function getKnowledgeContextForDomain(domain: string): Promise<string> {
     const context = articles.map(a =>
       `${a.title}:\n${a.content.substring(0, 800)}`
     ).join('\n\n---\n\n');
-    const cleaned = context
-      .replace(/^\[[^\]]+\]\s*/gm, '')
-      .replace(SOURCE_NAME_REGEX, '')
-      .trim();
-    return stripEnglishLines(cleaned);
+    return sanitizeDiscoveryKnowledgeContext(context);
   } catch (error) {
     console.error(`[Discovery] Knowledge search error for ${domain}:`, error);
     return '';
@@ -1651,11 +1641,7 @@ async function generateAISynthesis(
   blocages: BlockageAnalysis[],
   knowledgeContext: string
 ): Promise<string> {
-  const knowledgeOk = !!knowledgeContext && knowledgeContext.length >= MIN_KNOWLEDGE_CONTEXT_CHARS;
-  const contextForPrompt = knowledgeOk ? knowledgeContext : '';
-  if (!knowledgeOk) {
-    console.warn("[Discovery] Knowledge context manquant pour la synthese. Generation en mode degrade.");
-  }
+  const contextForPrompt = assertDiscoveryPremiumKnowledgeContext(knowledgeContext, "synthesis");
 
   const blocagesSummary = blocages.map(b =>
     `[${b.severity.toUpperCase()}] ${b.domain}: ${b.title}\n${b.mechanism}`
@@ -1873,6 +1859,7 @@ export async function analyzeDiscoveryScan(responses: DiscoveryResponses): Promi
 
   // Get knowledge context
   const knowledgeContext = await getKnowledgeContextForBlocages(blocages);
+  assertDiscoveryPremiumKnowledgeContext(knowledgeContext, "synthesis");
 
   // Generate AI synthesis
   const synthese = await generateAISynthesis(normalized, scoresByDomain, blocages, knowledgeContext);
@@ -1986,11 +1973,26 @@ export async function convertToNarrativeReport(
 
   console.log(`[Discovery] Generating AI content for 8 sections...`);
 
-  // Generate AI content for ALL 8 sections in parallel
+  // Resolve and validate ALL contexts before the first section OpenAI call.
+  // If one domain has no canonical evidence, the whole premium report fails closed.
   const domains = Object.keys(result.scoresByDomain);
+  const knowledgeContexts = await Promise.all(
+    domains.map(async (domain) => ({
+      domain,
+      context: await getKnowledgeContextForDomain(domain),
+    })),
+  );
+  const validatedKnowledgeByDomain = new Map(
+    knowledgeContexts.map(({ domain, context }) => [
+      domain,
+      assertDiscoveryPremiumKnowledgeContext(context, `section ${domain}`),
+    ]),
+  );
+
+  // Generate AI content for ALL 8 sections in parallel only after preflight passes.
   const aiContentPromises = domains.map(async (domain) => {
     const score = result.scoresByDomain[domain as keyof typeof result.scoresByDomain];
-    const knowledgeContext = await getKnowledgeContextForDomain(domain);
+    const knowledgeContext = validatedKnowledgeByDomain.get(domain)!;
     const content = await generateSectionContentAI(domain, score, normalized, knowledgeContext);
     return { domain, content };
   });
