@@ -12,6 +12,7 @@
  * call the canonical provider only after a durable, unique, fail-closed claim.
  */
 import { execFileSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 
 import {
@@ -19,6 +20,7 @@ import {
   buildDiscoveryReportAssets,
   convertToNarrativeReport,
   DISCOVERY_PREMIUM_DOMAINS,
+  repairDiscoveryKnownFrenchCorruptions,
   validateDiscoveryReportForDelivery,
   type DiscoveryKnowledgePreflight,
   type DiscoveryResponses,
@@ -35,6 +37,7 @@ import {
   completeDiscoveryBatchRun,
   createDiscoveryBatchRun,
   decodeDiscoveryApprovalBase64,
+  discoveryArtifactContentHash,
   discoverySha256,
   failDiscoveryBatchItem,
   markDiscoveryBatchItemPreflightOk,
@@ -73,6 +76,32 @@ const OUTPUT_USD_PER_TOKEN = 30 / 1_000_000;
 const HARD_COST_USD = 0.75;
 const KNOWLEDGE_CHARS_PER_SCOPE = 400;
 const PREFLIGHT_SENTINEL = "DISCOVERY_BATCH_READ_ONLY_PREFLIGHT_COMPLETE";
+
+function repairKnownCorruptionsDeep(value: unknown): { value: unknown; replacements: number } {
+  if (typeof value === "string") {
+    const repaired = repairDiscoveryKnownFrenchCorruptions(value);
+    return { value: repaired, replacements: repaired === value ? 0 : 1 };
+  }
+  if (Array.isArray(value)) {
+    let replacements = 0;
+    const repaired = value.map((entry) => {
+      const result = repairKnownCorruptionsDeep(entry);
+      replacements += result.replacements;
+      return result.value;
+    });
+    return { value: repaired, replacements };
+  }
+  if (value && typeof value === "object") {
+    let replacements = 0;
+    const repaired = Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([key, entry]) => {
+      const result = repairKnownCorruptionsDeep(entry);
+      replacements += result.replacements;
+      return [key, result.value];
+    }));
+    return { value: repaired, replacements };
+  }
+  return { value, replacements: 0 };
+}
 
 interface ManifestRow {
   id: string;
@@ -719,6 +748,112 @@ async function main(): Promise<void> {
       hardCostUsd: HARD_COST_USD,
       providerCalls: 0,
     })}`);
+    return;
+  }
+
+  if (args.has("--repair-known-corruptions")) {
+    if (args.has("--run-generation") || args.has("--run-delivery")) {
+      throw new Error("DISCOVERY_BATCH_REPAIR_ONE_STAGE_ONLY");
+    }
+    const targetAuditId = valueAfter("--target-audit-id");
+    if (!targetAuditId) throw new Error("DISCOVERY_BATCH_REPAIR_TARGET_REQUIRED");
+    if (String(process.env.DISCOVERY_REPORT_DELIVERY_ENABLED || "").toLowerCase() !== "false"
+      || String(process.env.REMEDIATION_SIDE_EFFECTS_DISABLED || "").toLowerCase() !== "true") {
+      throw new Error("DISCOVERY_BATCH_REPAIR_ENV_BLOCKED");
+    }
+    const [item] = resolveExactDiscoveryTargets(manifest.items, [targetAuditId]);
+    const blocked = [
+      !item.validEmail && "invalid_email",
+      item.testEmailBlocked && "test_email_blocked",
+      item.unsubscribed && "recipient_unsubscribed",
+      item.superseded && "superseded_terminal",
+      item.duplicateCandidate && "duplicate_candidate",
+      item.smtpHardFailProven && "smtp_hard_fail_proven_terminal",
+      item.reportSentAt && "already_sent",
+      item.tracking.total !== 0 && "prior_tracking_exists",
+      item.deliveryClaimState && "prior_delivery_claim_exists",
+      !item.txtSha256 && "txt_hash_missing",
+      !item.htmlSha256 && "html_hash_missing",
+    ].filter(Boolean);
+    if (blocked.length > 0) {
+      throw new Error(`DISCOVERY_BATCH_REPAIR_TARGET_INELIGIBLE:${blocked.join("|")}`);
+    }
+
+    const lock = await acquireDiscoveryGlobalLock({
+      owner: `discovery-safe-repair:${process.pid}`,
+      purpose: `known-corruption-repair:${item.id}:${manifest.manifestSha256}`,
+      ttlMinutes: 30,
+    });
+    let client: Awaited<ReturnType<typeof pool.connect>> | null = null;
+    try {
+      client = await pool.connect();
+      await client.query("BEGIN");
+      const current = await client.query(
+        `SELECT narrative_report, report_txt, report_html, report_sent_at,
+                report_delivery_status
+           FROM audits WHERE id = $1 AND type = 'GRATUIT' FOR UPDATE`,
+        [item.id],
+      );
+      if ((current.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_BATCH_REPAIR_AUDIT_MISSING");
+      const row = current.rows[0];
+      if (row.report_sent_at) throw new Error("DISCOVERY_BATCH_REPAIR_ALREADY_SENT");
+      if (discoverySha256(String(row.report_txt || "")) !== item.txtSha256
+        || discoverySha256(String(row.report_html || "")) !== item.htmlSha256) {
+        throw new Error("DISCOVERY_BATCH_REPAIR_MANIFEST_HASH_CHANGED");
+      }
+      const repaired = repairKnownCorruptionsDeep(row.narrative_report);
+      if (repaired.replacements <= 0) throw new Error("DISCOVERY_BATCH_REPAIR_NOTHING_TO_CHANGE");
+      const report = repaired.value as any;
+      const assets = buildDiscoveryReportAssets(report);
+      const nonRenderedMetadata = {
+        blocages: report?.analysisMetadata?.blocages || [],
+        ctaMessage: report?.analysisMetadata?.ctaMessage || "",
+      };
+      const validation = validateDiscoveryReportForDelivery(report, assets, nonRenderedMetadata);
+      const gate = evaluateDiscoveryDeliveryGate(report, assets, undefined, nonRenderedMetadata);
+      if (!validation.ok || !gate.ok) {
+        throw new Error(`DISCOVERY_BATCH_REPAIR_QUALITY_GATE:${[...validation.errors, ...gate.errors].join("|")}`);
+      }
+      const narrativeReport = attachDiscoveryDeliveryGateResult(report, gate);
+      const txtSha256 = discoverySha256(assets.txt);
+      const htmlSha256 = discoverySha256(assets.html);
+      const contentSha256 = discoveryArtifactContentHash(assets.txt, assets.html);
+      const artifact = await client.query(
+        `INSERT INTO report_artifacts
+           (id, audit_id, tier, engine, model, txt, html, content_sha256, created_at)
+         VALUES ($1,$2,'GRATUIT','discovery','deterministic-known-corruption-repair',$3,$4,$5,NOW())
+         ON CONFLICT (audit_id, content_sha256) WHERE content_sha256 IS NOT NULL
+         DO UPDATE SET model = EXCLUDED.model
+         RETURNING id`,
+        [randomUUID(), item.id, assets.txt, assets.html, contentSha256],
+      );
+      const updated = await client.query(
+        `UPDATE audits
+            SET narrative_report = $2::jsonb, report_txt = $3, report_html = $4,
+                report_delivery_status = 'BATCH_READY'
+          WHERE id = $1 AND report_sent_at IS NULL
+            AND report_txt = $5 AND report_html = $6
+          RETURNING id`,
+        [item.id, JSON.stringify(narrativeReport), assets.txt, assets.html, row.report_txt, row.report_html],
+      );
+      if ((updated.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_BATCH_REPAIR_PERSISTENCE_CAS_FAILED");
+      await client.query("COMMIT");
+      console.log(`DISCOVERY_BATCH_REPAIR_COMPLETE:${JSON.stringify({
+        auditId: item.id,
+        replacements: repaired.replacements,
+        artifactId: String(artifact.rows[0].id),
+        txtSha256,
+        htmlSha256,
+        providerCalls: 0,
+        emailsSent: 0,
+      })}`);
+    } catch (error) {
+      await client?.query("ROLLBACK").catch(() => {});
+      throw error;
+    } finally {
+      client?.release();
+      await releaseDiscoveryGlobalLock(lock.token).catch(() => false);
+    }
     return;
   }
 

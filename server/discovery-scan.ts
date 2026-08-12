@@ -459,7 +459,7 @@ export function normalizeDiscoveryFrenchSurface(text: string): string {
   const normalized = String(text || "").replace(/\b(element|elements|reponse|reponses|precis|precise|precises|mecanisme|mecanismes|energie|entrainement|entrainements|isole|isolee|isoles|isolees|duree|durees|facade|realite|detail|details|detaille|detaillee|detailles|detaillees|biomecanique|avancee|deduction|apres|deduit|deduite|supplementaire|supplementaires|deja|priorite|priorites)\b/gi, (token) => (
     replaceFrenchSurfaceToken(token, replacements[token.toLowerCase()])
   ));
-  return normalized.replace(/\bde\s+une\b/gi, (token) => (
+  return normalized.replace(/(?<![\p{L}\p{N}_])de\s+une(?![\p{L}\p{N}_])/giu, (token) => (
     token[0] === token[0]?.toUpperCase() ? "D’une" : "d’une"
   ));
 }
@@ -471,6 +471,9 @@ export function normalizeDiscoveryFrenchSurface(text: string): string {
  */
 export function repairDiscoveryKnownFrenchCorruptions(text: string): string {
   return String(text || "")
+    .replace(/\bpossèd[’'](un|une)\b/giu, (token, article: string) => (
+      `${token[0] === token[0]?.toUpperCase() ? "Possède" : "possède"} ${article.toLowerCase()}`
+    ))
     .replace(/\bfaçje\b/gi, (token) => (
       token[0] === token[0]?.toUpperCase() ? "Façon" : "façon"
     ))
@@ -508,7 +511,8 @@ export function validateDiscoveryLinguisticQuality(text: string): string[] {
   for (const [label, pattern] of forbiddenTokens) {
     if (pattern.test(visible)) reasons.push(`accentless_french:${label}`);
   }
-  if (/\bde\s+une\b/i.test(visible)) reasons.push("grammar:de_une");
+  if (/(?<![\p{L}\p{N}_])de\s+une(?![\p{L}\p{N}_])/iu.test(visible)) reasons.push("grammar:de_une");
+  if (/possèd[’'](?:un|une)\b/iu.test(visible)) reasons.push("grammar:possede_elision");
   return reasons;
 }
 

@@ -353,4 +353,8 @@ test("reconciler is read-only by default and delivery claims before provider", (
   assert.match(source, /args\.has\("--preflight-generation"\)/);
   assert.match(source, /DISCOVERY_BATCH_GENERATION_PREFLIGHT_COMPLETE/);
   assert.match(source, /providerCalls: 0/);
+  assert.match(source, /args\.has\("--repair-known-corruptions"\)/);
+  assert.match(source, /DISCOVERY_BATCH_REPAIR_COMPLETE/);
+  assert.match(source, /deterministic-known-corruption-repair/);
+  assert.match(source, /report_txt = \$5 AND report_html = \$6/);
 });

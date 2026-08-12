@@ -643,7 +643,16 @@ test("visible French normalization repairs exact accentless tokens and the gate 
     normalizeDiscoveryFrenchSurface("Une frequence de une a trois reponses apres entrainement."),
     "Une frequence d’une a trois réponses après entraînement.",
   );
+  assert.equal(
+    normalizeDiscoveryFrenchSurface("Le mouvement possède une fonction différente."),
+    "Le mouvement possède une fonction différente.",
+  );
   assert.ok(validateDiscoveryLinguisticQuality("Une fréquence de une à trois fois.").includes("grammar:de_une"));
+  assert.ok(validateDiscoveryLinguisticQuality("Le résultat possèd’une forte valeur.").includes("grammar:possede_elision"));
+  assert.equal(
+    repairDiscoveryKnownFrenchCorruptions("Le mouvement possèd’une fonction et le résultat possèd’un intérêt."),
+    "Le mouvement possède une fonction et le résultat possède un intérêt.",
+  );
 });
 
 test("factual gate rejects invented protein meal regularity and unsupported duplicate counts", () => {
