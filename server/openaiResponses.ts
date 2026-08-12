@@ -249,7 +249,13 @@ async function ensureAIUsageTable(): Promise<void> {
   await aiUsageTablePromise;
 }
 
-async function recordAIUsageEvent(params: {
+export function isAIUsagePersistenceDisabled(
+  env: Record<string, string | undefined> = process.env,
+): boolean {
+  return String(env.AI_USAGE_PERSISTENCE_DISABLED || "").trim().toLowerCase() === "true";
+}
+
+export async function recordAIUsageEvent(params: {
   response: any;
   profile: OpenAIReportProfile;
   label?: string;
@@ -263,6 +269,23 @@ async function recordAIUsageEvent(params: {
   console.log(
     `[AICost] profile=${params.profile} label=${params.label || "none"} status=${params.status} response=${responseId} input=${tokens.inputTokens} cached=${tokens.cachedInputTokens} output=${tokens.outputTokens} reasoning=${tokens.reasoningTokens} openai_usd=${costs.openaiGpt56SolUsd.toFixed(6)} sonnet46_equivalent_usd=${costs.sonnet46EquivalentUsd.toFixed(6)}`,
   );
+
+  // Explicit one-off isolation mode. Production remains persistent by
+  // default; only a process that opts in receives telemetry on stdout without
+  // importing the DB module, creating tables, inserting rows, or alerting.
+  if (isAIUsagePersistenceDisabled()) {
+    console.log(`AI_USAGE_STDOUT_ONLY:${JSON.stringify({
+      provider: "openai",
+      model: String(params.response?.model || OPENAI_REPORT_MODEL),
+      profile: params.profile,
+      label: params.label || null,
+      responseId,
+      status: params.status,
+      tokens,
+      costs,
+    })}`);
+    return telemetry;
+  }
 
   try {
     await ensureAIUsageTable();
