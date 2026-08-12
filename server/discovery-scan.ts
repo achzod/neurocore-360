@@ -1552,6 +1552,13 @@ const DISCOVERY_UNIFIED_SCHEMA = {
   },
 } as const;
 
+export const DISCOVERY_UNIFIED_MAX_INPUT_CHARS = 60_000;
+export const DISCOVERY_UNIFIED_MAX_OUTPUT_TOKENS = 14_000;
+// At current gpt-5.6-sol pricing: <=60k uncached input tokens ($0.30) plus
+// <=14k output/reasoning tokens ($0.42). The character ceiling is stricter
+// than the practical French token count, so $0.75 is a conservative stop.
+export const DISCOVERY_UNIFIED_MAX_ESTIMATED_COST_USD = 0.75;
+
 function cleanDiscoveryNarrativeProse(text: string): string {
   let cleaned = stripInlineHtml(String(text || ""))
     .replace(/^(En tant qu['’]expert[^.]*\.?\s*)/gi, "")
@@ -1685,6 +1692,12 @@ Chaque fait individuel doit correspondre exactement au profil. Une donnee presen
 Le Discovery donne une lecture et 2 ou 3 priorites, jamais un protocole complet.
 Ne remplis pas pour atteindre une longueur. Chaque paragraphe doit etre utile a ce profil.`;
 
+  if (input.length > DISCOVERY_UNIFIED_MAX_INPUT_CHARS) {
+    throw new Error(
+      `Discovery unified prompt exceeds budget: ${input.length}/${DISCOVERY_UNIFIED_MAX_INPUT_CHARS} chars`,
+    );
+  }
+
   const response = await withTimeout(
     runOpenAIText({
       profile: "discovery",
@@ -1693,7 +1706,7 @@ Ne remplis pas pour atteindre une longueur. Chaque paragraphe doit etre utile a 
       safetyId: responses.email || prenom,
       schema: DISCOVERY_UNIFIED_SCHEMA as unknown as Record<string, unknown>,
       schemaName: "discovery_unified_report_v1",
-      maxOutputTokens: 14_000,
+      maxOutputTokens: DISCOVERY_UNIFIED_MAX_OUTPUT_TOKENS,
       retries: 1,
       label: "discovery-unified-report",
     }),

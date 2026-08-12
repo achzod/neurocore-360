@@ -9,6 +9,9 @@ import {
 import {
   analyzeDiscoveryScan,
   buildDiscoveryQuestionnaireFacts,
+  DISCOVERY_UNIFIED_MAX_ESTIMATED_COST_USD,
+  DISCOVERY_UNIFIED_MAX_INPUT_CHARS,
+  DISCOVERY_UNIFIED_MAX_OUTPUT_TOKENS,
   DISCOVERY_PREMIUM_DOMAINS,
   filterDiscoveryRelevantArticles,
   neutralizeDiscoverySourceAttribution,
@@ -304,8 +307,11 @@ test("Discovery generation uses one bounded structured call and still rejects in
   const source = readFileSync(new URL("./discovery-scan.ts", import.meta.url), "utf8");
   const runner = readFileSync(new URL("./openaiResponses.ts", import.meta.url), "utf8");
 
-  assert.match(source, /schemaName:\s*"discovery_unified_report_v1"[\s\S]{0,220}maxOutputTokens:\s*14_000[\s\S]{0,120}retries:\s*1[\s\S]{0,120}label:\s*"discovery-unified-report"/);
+  assert.match(source, /schemaName:\s*"discovery_unified_report_v1"[\s\S]{0,260}maxOutputTokens:\s*DISCOVERY_UNIFIED_MAX_OUTPUT_TOKENS[\s\S]{0,120}retries:\s*1[\s\S]{0,120}label:\s*"discovery-unified-report"/);
   assert.match(source, /One structured provider call owns the synthesis and all eight domains/);
+  assert.equal(DISCOVERY_UNIFIED_MAX_INPUT_CHARS, 60_000);
+  assert.equal(DISCOVERY_UNIFIED_MAX_OUTPUT_TOKENS, 14_000);
+  assert.equal(DISCOVERY_UNIFIED_MAX_ESTIMATED_COST_USD, 0.75);
   assert.match(runner, /discovery:\s*{[\s\S]{0,260}effort:\s*"medium"[\s\S]{0,260}maxOutputTokens:\s*7_000[\s\S]{0,260}verbosity:\s*"medium"/);
   assert.match(runner, /response\?\.status\s*!==\s*"completed"/);
   assert.match(runner, /OpenAI response incomplete:/);
