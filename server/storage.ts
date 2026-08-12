@@ -20,6 +20,10 @@ import type {
 } from "@shared/schema";
 import { ProductDisplayNames, ProductPriceCents } from "@shared/schema";
 import { calculateScoresFromResponses, generateFullAnalysis } from "./analysisEngine";
+import {
+  DISCOVERY_SUPERSEDED_TERMINAL_SQL,
+  isDiscoverySupersededTerminal,
+} from "./discoverySupersededPolicy";
 
 // Configuration de la connexion PostgreSQL
 const getDatabaseUrl = (): string => {
@@ -532,6 +536,7 @@ export class MemStorage implements IStorage {
   async updateAudit(id: string, data: Partial<Audit>): Promise<Audit | undefined> {
     const audit = this.audits.get(id);
     if (!audit) return undefined;
+    if (isDiscoverySupersededTerminal(audit)) return undefined;
 
     const updated = { ...audit, ...data };
     this.audits.set(id, updated);
@@ -1099,6 +1104,7 @@ export class MemStorage implements IStorage {
   async claimAuditForGeneration(auditId: string): Promise<boolean> {
     const audit = this.audits.get(auditId);
     if (!audit) return false;
+    if (isDiscoverySupersededTerminal(audit)) return false;
     const s = audit.reportDeliveryStatus as any;
     if (s && !["PENDING", "NEEDS_REVIEW", "EMAIL_FAILED", "FAILED"].includes(s)) return false;
     audit.reportDeliveryStatus = "GENERATING" as any;
@@ -1108,6 +1114,7 @@ export class MemStorage implements IStorage {
   async claimAuditForSending(auditId: string): Promise<boolean> {
     const audit = this.audits.get(auditId);
     if (!audit) return false;
+    if (isDiscoverySupersededTerminal(audit)) return false;
     if ((audit as any).reportSentAt) return false;
     if (!["READY", "SCHEDULED"].includes(audit.reportDeliveryStatus as any)) return false;
     audit.reportDeliveryStatus = "SENDING" as any;
@@ -1117,6 +1124,7 @@ export class MemStorage implements IStorage {
   async finalizeAuditSend(auditId: string, sent: boolean): Promise<void> {
     const audit = this.audits.get(auditId);
     if (!audit) return;
+    if (isDiscoverySupersededTerminal(audit)) return;
     if (sent) {
       if (!(audit as any).reportSentAt) {
         audit.reportDeliveryStatus = "SENT" as any;
@@ -1682,7 +1690,11 @@ export class PgStorage implements IStorage {
     let result;
     try {
       result = await pool.query(
-        `UPDATE audits SET ${updates.join(", ")} WHERE id = $${paramIndex} RETURNING *`,
+        `UPDATE audits
+            SET ${updates.join(", ")}
+          WHERE id = $${paramIndex}
+            AND ${DISCOVERY_SUPERSEDED_TERMINAL_SQL}
+          RETURNING *`,
         values
       );
     } catch (e: any) {
@@ -1705,7 +1717,11 @@ export class PgStorage implements IStorage {
         if (strippedUpdates.length === 0) return this.getAudit(id);
         strippedValues.push(id);
         result = await pool.query(
-          `UPDATE audits SET ${strippedUpdates.join(", ")} WHERE id = $${idx} RETURNING *`,
+          `UPDATE audits
+              SET ${strippedUpdates.join(", ")}
+            WHERE id = $${idx}
+              AND ${DISCOVERY_SUPERSEDED_TERMINAL_SQL}
+            RETURNING *`,
           strippedValues
         );
       } else {
@@ -2465,6 +2481,10 @@ export class PgStorage implements IStorage {
           WHERE a.id = $1
             AND a.type = 'GRATUIT'
             AND a.report_delivery_status = 'NEEDS_REVIEW'
+            AND NOT (
+              LOWER(COALESCE(a.narrative_report->'recovery'->>'disposition', '')) = 'superseded'
+              OR NULLIF(BTRIM(COALESCE(a.narrative_report->'recovery'->>'replacementAuditId', '')), '') IS NOT NULL
+            )
             AND a.report_sent_at IS NULL
             AND COALESCE(NULLIF(a.report_txt, ''), NULLIF(a.report_html, '')) IS NULL
             AND NOT (COALESCE(a.narrative_report, '{}'::jsonb) ?| ARRAY['sections','txt','html'])
@@ -3404,6 +3424,7 @@ export class PgStorage implements IStorage {
         WHERE id = $1
           AND (report_delivery_status IS NULL
                OR report_delivery_status IN ('PENDING','NEEDS_REVIEW','EMAIL_FAILED','FAILED'))
+          AND ${DISCOVERY_SUPERSEDED_TERMINAL_SQL}
         RETURNING id`,
       [auditId]
     );
@@ -3420,6 +3441,7 @@ export class PgStorage implements IStorage {
         WHERE id = $1
           AND report_sent_at IS NULL
           AND report_delivery_status IN ('READY','SCHEDULED')
+          AND ${DISCOVERY_SUPERSEDED_TERMINAL_SQL}
         RETURNING id`,
       [auditId]
     );
@@ -3433,7 +3455,8 @@ export class PgStorage implements IStorage {
             SET report_delivery_status = 'SENT',
                 report_sent_at = NOW()
           WHERE id = $1
-            AND report_sent_at IS NULL`,
+            AND report_sent_at IS NULL
+            AND ${DISCOVERY_SUPERSEDED_TERMINAL_SQL}`,
         [auditId]
       );
     } else {
@@ -3442,7 +3465,8 @@ export class PgStorage implements IStorage {
             SET report_delivery_status = 'READY'
           WHERE id = $1
             AND report_delivery_status = 'SENDING'
-            AND report_sent_at IS NULL`,
+            AND report_sent_at IS NULL
+            AND ${DISCOVERY_SUPERSEDED_TERMINAL_SQL}`,
         [auditId]
       );
     }

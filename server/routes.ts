@@ -97,6 +97,7 @@ import {
   isAuditEligibleForPostDeliveryAutomation,
   isDiscoveryReportDeliveryEnabled,
 } from "./discoveryAutomationPolicy";
+import { isDiscoverySupersededTerminal } from "./discoverySupersededPolicy";
 import {
   claimRegeneratedReportNotification,
   isRegeneratedNotificationEnabled,
@@ -596,6 +597,10 @@ export async function registerRoutes(
     error: unknown,
   ): Promise<void> {
     const current = await storage.getAudit(auditId).catch(() => undefined);
+    if (isDiscoverySupersededTerminal(current)) {
+      console.warn(`[Discovery] Ignoring ${source} failure for terminal superseded audit ${auditId}`);
+      return;
+    }
     const narrative = current?.narrativeReport && typeof current.narrativeReport === "object"
       ? current.narrativeReport as Record<string, unknown>
       : {};
@@ -10222,6 +10227,19 @@ export async function registerRoutes(
         return;
       }
 
+      if (isDiscoverySupersededTerminal(audit)) {
+        const recovery = audit.narrativeReport && typeof audit.narrativeReport === "object"
+          ? (audit.narrativeReport as Record<string, any>).recovery
+          : null;
+        res.status(410).json({
+          success: false,
+          status: "superseded",
+          replacementAuditId: recovery?.replacementAuditId || null,
+          message: "Ce scan a été remplacé par un rapport plus récent.",
+        });
+        return;
+      }
+
       const mapDashboardToDiscoveryReport = (
         dashboard: ReturnType<typeof formatTxtToDashboard>,
         fallbackReport?: any,
@@ -10302,16 +10320,6 @@ export async function registerRoutes(
 
       // If report already exists and is valid, return it immediately
       if (existingReport && !invalidReport) {
-        if (storedTxt.length < 500 || storedHtml.length < 1000 || !audit.reportGeneratedAt) {
-          const hydratedAssets = buildDiscoveryReportAssets(existingReport);
-          await storage.updateAudit(audit.id, {
-            reportTxt: hydratedAssets.txt,
-            reportHtml: hydratedAssets.html,
-            reportGeneratedAt: audit.reportGeneratedAt || new Date(existingReport.generatedAt || Date.now()),
-          }).catch((error) => {
-            console.error("[Discovery Fetch] Unable to hydrate persisted assets:", error);
-          });
-        }
         res.json(existingReport);
         return;
       }
@@ -10358,14 +10366,13 @@ export async function registerRoutes(
         return;
       }
 
-      // A public GET is read-only. Missing or invalid content is handed to the
-      // persisted recovery worker instead of starting untracked GPT calls that
-      // can overlap, overwrite a scheduled status, and create duplicate cost.
-      await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" });
+      // A public GET is strictly read-only. Missing or invalid content is
+      // observed here; only the persisted monitoring/recovery worker may
+      // change lifecycle state or enqueue generation.
       res.status(202).json({
         success: true,
-        status: "needs_review",
-        message: "Rapport place dans la file de regeneration",
+        status: String(audit.reportDeliveryStatus || "needs_review").toLowerCase(),
+        message: "Rapport indisponible pour le moment",
       });
       return;
     } catch (error: any) {

@@ -13,6 +13,7 @@ import {
   evaluateDiscoveryDeliveryGate,
   resolveCanonicalDiscoveryArtifacts,
 } from "./discoveryDeliveryGate";
+import { isDiscoverySupersededTerminal } from "./discoverySupersededPolicy";
 
 export const REPORT_REGENERATED_EMAIL_TYPE = "sendReportRegeneratedEmail";
 
@@ -47,9 +48,11 @@ export function validateSentFallbackCandidate(input: {
   currentHash: string;
   expectedPreviousFallbackHash: string;
   currentPremium: boolean;
+  supersededTerminal?: boolean;
 }): string[] {
   const errors: string[] = [];
   if (input.type !== "GRATUIT") errors.push("not_discovery");
+  if (input.supersededTerminal) errors.push("superseded_terminal");
   if (input.status !== "SENT" || !input.reportSentAt) errors.push("not_delivered_sent");
   if (input.currentHash !== input.expectedPreviousFallbackHash.toLowerCase()) errors.push("fallback_hash_mismatch");
   if (input.currentPremium) errors.push("already_premium");
@@ -65,9 +68,11 @@ export function validateRegeneratedNotificationCandidate(input: {
   currentPremiumHash: string;
   provenancePremiumHash: unknown;
   alreadyClaimed: boolean;
+  supersededTerminal?: boolean;
 }): string[] {
   const errors: string[] = [];
   if (input.status !== "SENT" || !input.reportSentAt) errors.push("not_delivered_sent");
+  if (input.supersededTerminal) errors.push("superseded_terminal");
   if (input.provenancePreviousFallbackHash !== input.expectedPreviousFallbackHash.toLowerCase()) errors.push("fallback_provenance_mismatch");
   if (!input.currentPremium) errors.push("not_premium");
   if (input.provenancePremiumHash !== input.currentPremiumHash) errors.push("premium_hash_mismatch");
@@ -114,6 +119,11 @@ export async function regenerateSentDiscoveryInPlace(input: {
     currentHash: initialHash,
     expectedPreviousFallbackHash: input.expectedPreviousFallbackHash,
     currentPremium: evaluateCanonicalDiscoveryArtifacts(initialCanonical).ok,
+    supersededTerminal: isDiscoverySupersededTerminal({
+      type: row.type,
+      reportDeliveryStatus: row.report_delivery_status,
+      narrativeReport: row.narrative_report,
+    }),
   });
   if (candidateErrors.length) throw new Error(`Sent fallback candidate rejected: ${candidateErrors.join(",")}`);
 
@@ -143,13 +153,22 @@ export async function regenerateSentDiscoveryInPlace(input: {
   try {
     await client.query("BEGIN");
     const locked = await client.query(
-      `SELECT report_delivery_status, report_sent_at, report_txt, report_html,
+      `SELECT type, report_delivery_status, report_sent_at, narrative_report, report_txt, report_html,
               (SELECT COUNT(*)::int FROM email_tracking e WHERE e.audit_id = a.id) AS tracking_count
          FROM audits a WHERE id = $1 FOR UPDATE`,
       [input.auditId],
     );
     const current = locked.rows[0];
-    if (!current || current.report_delivery_status !== "SENT" || !current.report_sent_at) {
+    if (
+      !current ||
+      current.report_delivery_status !== "SENT" ||
+      !current.report_sent_at ||
+      isDiscoverySupersededTerminal({
+        type: current.type,
+        reportDeliveryStatus: current.report_delivery_status,
+        narrativeReport: current.narrative_report,
+      })
+    ) {
       throw new Error("SENT ownership changed during generation");
     }
     const lockedHash = discoveryArtifactHash(current.report_txt, current.report_html);
@@ -166,7 +185,9 @@ export async function regenerateSentDiscoveryInPlace(input: {
         WHERE id = $1
           AND type = 'GRATUIT'
           AND report_delivery_status = 'SENT'
-          AND report_sent_at IS NOT NULL`,
+          AND report_sent_at IS NOT NULL
+          AND LOWER(COALESCE(narrative_report->'recovery'->>'disposition', '')) <> 'superseded'
+          AND NULLIF(BTRIM(COALESCE(narrative_report->'recovery'->>'replacementAuditId', '')), '') IS NULL`,
       [input.auditId, JSON.stringify(narrativeReport), assets.txt, assets.html, replacedAt],
     );
     await client.query(
@@ -258,6 +279,11 @@ export async function claimRegeneratedReportNotification(input: {
       currentPremiumHash: premiumHash,
       provenancePremiumHash: remediation.premiumHash,
       alreadyClaimed: (existing.rowCount || 0) > 0,
+      supersededTerminal: isDiscoverySupersededTerminal({
+        type: audit.type,
+        reportDeliveryStatus: audit.report_delivery_status,
+        narrativeReport: audit.narrative_report,
+      }),
     });
     if (notificationErrors.length === 1 && notificationErrors[0] === "already_claimed") {
       await client.query("COMMIT");

@@ -1,4 +1,5 @@
 import { hasPassingPersistedDiscoveryDeliveryGate } from "./discoveryDeliveryGate";
+import { isDiscoverySupersededTerminal } from "./discoverySupersededPolicy";
 
 export interface AuditAutomationCandidate {
   type?: string | null;
@@ -25,6 +26,7 @@ export function isDiscoveryReportDeliveryEnabled(
 export function isAuditEligibleForPostDeliveryAutomation(
   audit: AuditAutomationCandidate,
 ): boolean {
+  if (isDiscoverySupersededTerminal(audit)) return false;
   if (audit.reportDeliveryStatus !== "SENT" || !audit.reportSentAt) return false;
   const type = audit.type || audit.auditType;
   if (type !== "GRATUIT") return true;

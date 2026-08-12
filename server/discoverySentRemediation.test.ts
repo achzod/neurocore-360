@@ -32,6 +32,10 @@ test("replacement requires exact delivered fallback hash and rejects premium", (
     type: "GRATUIT", status: "SENT", reportSentAt: new Date(), currentHash: hash,
     expectedPreviousFallbackHash: "b".repeat(64), currentPremium: true,
   }), ["fallback_hash_mismatch", "already_premium"]);
+  assert.deepEqual(validateSentFallbackCandidate({
+    type: "GRATUIT", status: "SENT", reportSentAt: new Date(), currentHash: hash,
+    expectedPreviousFallbackHash: hash, currentPremium: false, supersededTerminal: true,
+  }), ["superseded_terminal"]);
 });
 
 test("notification requires premium provenance and becomes one-shot after claim", () => {
@@ -47,4 +51,7 @@ test("notification requires premium provenance and becomes one-shot after claim"
   assert.ok(validateRegeneratedNotificationCandidate({
     ...base, provenancePremiumHash: "c".repeat(64), alreadyClaimed: false,
   }).includes("premium_hash_mismatch"));
+  assert.deepEqual(validateRegeneratedNotificationCandidate({
+    ...base, alreadyClaimed: false, supersededTerminal: true,
+  }), ["superseded_terminal"]);
 });

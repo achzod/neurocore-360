@@ -1,3 +1,5 @@
+import { isDiscoverySupersededTerminal } from "./discoverySupersededPolicy";
+
 export const DISCOVERY_RECOVERY_VERSION = 1;
 export const RECENT_DISCOVERY_HOLD_DAYS = 14;
 
@@ -12,6 +14,7 @@ export type DiscoveryRecoveryDecision =
       action: "skip";
       reason:
         | "not_discovery_needs_review"
+        | "superseded_terminal"
         | "already_sent"
         | "artifacts_present"
         | "job_present";
@@ -64,6 +67,9 @@ export function decideMissingDiscoveryRecovery(input: {
   recentHoldDays?: number;
 }): DiscoveryRecoveryDecision {
   const { audit } = input;
+  if (isDiscoverySupersededTerminal(audit)) {
+    return { action: "skip", reason: "superseded_terminal" };
+  }
   if (audit.type !== "GRATUIT" || audit.reportDeliveryStatus !== "NEEDS_REVIEW") {
     return { action: "skip", reason: "not_discovery_needs_review" };
   }

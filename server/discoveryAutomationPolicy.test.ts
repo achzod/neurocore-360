@@ -47,6 +47,15 @@ test("Discovery post-delivery automation requires the persisted premium gate", (
     reportSentAt: new Date(),
     narrativeReport: passingNarrative,
   }), true);
+  assert.equal(isAuditEligibleForPostDeliveryAutomation({
+    type: "GRATUIT",
+    reportDeliveryStatus: "SENT",
+    reportSentAt: new Date(),
+    narrativeReport: {
+      ...passingNarrative,
+      recovery: { disposition: "superseded", replacementAuditId: "replacement" },
+    },
+  }), false);
 });
 
 test("paid reports still require SENT plus reportSentAt", () => {

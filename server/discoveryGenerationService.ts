@@ -9,6 +9,7 @@ import {
   evaluateDiscoveryDeliveryGate,
 } from "./discoveryDeliveryGate";
 import { storage } from "./storage";
+import { isDiscoverySupersededTerminal } from "./discoverySupersededPolicy";
 
 const activeDiscoveryGenerations = new Set<string>();
 
@@ -20,7 +21,12 @@ export async function generateAndPersistPremiumDiscoveryReport(
   activeDiscoveryGenerations.add(auditId);
   try {
     const audit = await storage.getAudit(auditId);
-    if (!audit || audit.type !== "GRATUIT" || audit.reportSentAt) return false;
+    if (
+      !audit ||
+      audit.type !== "GRATUIT" ||
+      audit.reportSentAt ||
+      isDiscoverySupersededTerminal(audit)
+    ) return false;
     if (audit.reportDeliveryStatus !== "GENERATING") return false;
 
     await storage.createOrUpdateReportJob({
@@ -41,7 +47,12 @@ export async function generateAndPersistPremiumDiscoveryReport(
     const narrativeReport = attachDiscoveryDeliveryGateResult(report as any, gate);
 
     const current = await storage.getAudit(auditId);
-    if (!current || current.reportDeliveryStatus !== "GENERATING" || current.reportSentAt) {
+    if (
+      !current ||
+      current.reportDeliveryStatus !== "GENERATING" ||
+      current.reportSentAt ||
+      isDiscoverySupersededTerminal(current)
+    ) {
       throw new Error("Discovery generation ownership lost before persistence");
     }
     const persisted = await storage.updateAudit(auditId, {
@@ -67,7 +78,10 @@ export async function generateAndPersistPremiumDiscoveryReport(
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     await storage.failReportJob(auditId, message).catch(() => {});
-    await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" }).catch(() => {});
+    const current = await storage.getAudit(auditId).catch(() => undefined);
+    if (!isDiscoverySupersededTerminal(current)) {
+      await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" }).catch(() => {});
+    }
     throw error;
   } finally {
     activeDiscoveryGenerations.delete(auditId);

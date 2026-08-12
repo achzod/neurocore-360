@@ -36,6 +36,27 @@ assert.deepEqual(
   "an artifact-less Discovery audit must be enqueued",
 );
 
+const corruptedSuperseded = {
+  ...audit("corrupted-superseded", "duplicate@example.com", 1),
+  narrativeReport: {
+    recovery: {
+      disposition: "superseded",
+      replacementAuditId: "replacement",
+    },
+  },
+};
+assert.deepEqual(
+  decideMissingDiscoveryRecovery({
+    audit: corruptedSuperseded,
+    sameEmailAudits: [corruptedSuperseded],
+    hasJob: false,
+    hasArtifactRow: false,
+    now,
+  }),
+  { action: "skip", reason: "superseded_terminal" },
+  "superseded recovery provenance must remain terminal after status corruption",
+);
+
 const haraldCurrent = audit("harald-current", "harald@example.com", 0);
 const haraldSent = {
   ...audit("harald-sent", "HARALD@example.com", 1, "SENT"),
@@ -106,4 +127,4 @@ assert.equal(first.enqueued, 1);
 assert.equal(second.enqueued, 0);
 assert.equal(starts, 1, "two monitoring passes must start exactly one job");
 
-console.log("Discovery missing-job recovery: 5/5 tests passed");
+console.log("Discovery missing-job recovery: 6/6 tests passed");

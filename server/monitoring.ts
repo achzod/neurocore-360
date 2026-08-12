@@ -16,6 +16,7 @@ import { log } from "./index";
 import { shouldAutoRegenerateNeedsReviewAudit } from "./discoveryDeliveryGate";
 import { recoverMissingDiscoveryJobs } from "./discoveryMissingJobRecovery";
 import { generateAndPersistPremiumDiscoveryReport } from "./discoveryGenerationService";
+import { isDiscoverySupersededTerminal } from "./discoverySupersededPolicy";
 
 interface MonitoringStats {
   generatingStuck: number;
@@ -63,7 +64,9 @@ export async function runAutomaticMonitoring(): Promise<MonitoringStats> {
         const summaries = await storage.getAllAuditsLight();
         const ids = summaries
           .filter((audit) =>
-            audit.type === "GRATUIT" && audit.reportDeliveryStatus === "NEEDS_REVIEW"
+            audit.type === "GRATUIT" &&
+            audit.reportDeliveryStatus === "NEEDS_REVIEW" &&
+            !isDiscoverySupersededTerminal(audit)
           )
           .map((audit) => audit.id);
         const audits = await Promise.all(ids.map((id) => storage.getAudit(id)));
@@ -182,6 +185,7 @@ async function fixNeedsReviewJobs(stats: MonitoringStats): Promise<void> {
 
     for (const audit of needsReviewAudits) {
       try {
+        if (isDiscoverySupersededTerminal(audit)) continue;
         const reportJob = await storage.getReportJob(audit.id);
         const attemptCount = reportJob?.attemptCount || 0;
         const providerCreditFailure = isOpenAICreditError(
