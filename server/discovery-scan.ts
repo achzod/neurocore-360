@@ -418,9 +418,47 @@ export function normalizeDiscoveryFrenchSurface(text: string): string {
   const replacements: Record<string, string> = {
     element: "élément",
     elements: "éléments",
+    reponse: "réponse",
+    reponses: "réponses",
+    precis: "précis",
+    precise: "précise",
+    precises: "précises",
+    mecanisme: "mécanisme",
+    mecanismes: "mécanismes",
+    energie: "énergie",
+    entrainement: "entraînement",
+    entrainements: "entraînements",
+    isole: "isolé",
+    isolee: "isolée",
+    isoles: "isolés",
+    isolees: "isolées",
+    duree: "durée",
+    durees: "durées",
+    facade: "façade",
+    realite: "réalité",
+    detail: "détail",
+    details: "détails",
+    detaille: "détaillé",
+    detaillee: "détaillée",
+    detailles: "détaillés",
+    detaillees: "détaillées",
+    biomecanique: "biomécanique",
+    avancee: "avancée",
+    deduction: "déduction",
+    apres: "après",
+    deduit: "déduit",
+    deduite: "déduite",
+    supplementaire: "supplémentaire",
+    supplementaires: "supplémentaires",
+    deja: "déjà",
+    priorite: "priorité",
+    priorites: "priorités",
   };
-  return String(text || "").replace(/\b(elements?)\b/gi, (token) => (
+  const normalized = String(text || "").replace(/\b(element|elements|reponse|reponses|precis|precise|precises|mecanisme|mecanismes|energie|entrainement|entrainements|isole|isolee|isoles|isolees|duree|durees|facade|realite|detail|details|detaille|detaillee|detailles|detaillees|biomecanique|avancee|deduction|apres|deduit|deduite|supplementaire|supplementaires|deja|priorite|priorites)\b/gi, (token) => (
     replaceFrenchSurfaceToken(token, replacements[token.toLowerCase()])
+  ));
+  return normalized.replace(/\bde\s+une\b/gi, (token) => (
+    token[0] === token[0]?.toUpperCase() ? "D’une" : "d’une"
   ));
 }
 
@@ -428,7 +466,32 @@ export function normalizeDiscoveryFrenchSurface(text: string): string {
 export function validateDiscoveryLinguisticQuality(text: string): string[] {
   const visible = stripInlineHtml(String(text || ""));
   const reasons: string[] = [];
-  if (/\belements?\b/i.test(visible)) reasons.push("accentless_french:element");
+  const forbiddenTokens: Array<[string, RegExp]> = [
+    ["element", /\belements?\b/i],
+    ["reponse", /\breponses?\b/i],
+    ["precis", /\bprecis(?:e|es)?\b/i],
+    ["mecanisme", /\bmecanismes?\b/i],
+    ["energie", /\benergie\b/i],
+    ["entrainement", /\bentrainements?\b/i],
+    ["isole", /\bisole(?:e|es|s)?\b/i],
+    ["duree", /\bdurees?\b/i],
+    ["facade", /\bfacade\b/i],
+    ["realite", /\brealite\b/i],
+    ["detail", /\bdetails?\b/i],
+    ["detaille", /\bdetaille(?:e|es|s)?\b/i],
+    ["biomecanique", /\bbiomecanique\b/i],
+    ["avancee", /\bavancee\b/i],
+    ["deduction", /\bdeduction\b/i],
+    ["apres", /\bapres\b/i],
+    ["deduit", /\bdeduit(?:e)?\b/i],
+    ["supplementaire", /\bsupplementaires?\b/i],
+    ["deja", /\bdeja\b/i],
+    ["priorite", /\bpriorites?\b/i],
+  ];
+  for (const [label, pattern] of forbiddenTokens) {
+    if (pattern.test(visible)) reasons.push(`accentless_french:${label}`);
+  }
+  if (/\bde\s+une\b/i.test(visible)) reasons.push("grammar:de_une");
   return reasons;
 }
 
@@ -534,6 +597,28 @@ export function validateDiscoveryFactualConsistency(
     reasons.push("factual_value_contradiction:reveil-repose");
   }
 
+  const proteinAnswer = normalizeDiscoveryFactText(String(normalized["proteines-jour"] || "")).trim();
+  const proteinFrequencyExplicit = /\b(?:chaque|tous?\s+les)\s+repas\b|\bregulier/i.test(proteinAnswer);
+  const inventsProteinMealPresence = clauses.some((clause) => (
+    /\bpresence\b.{0,45}\b(?:proteines?|proteinee?s?)\b.{0,45}\brepas\b/.test(clause)
+    || /\bpresence\b.{0,45}\breguliere?\b.{0,45}\bproteines?\b/.test(clause)
+    || /\b(?:proteines?|source\s+proteinee?)\b.{0,35}\b(?:chaque|tous?\s+les)\s+repas\b/.test(clause)
+    || /\bpresence\b.{0,35}\baux\s+repas\b/.test(clause)
+  ));
+  if (hasDiscoveryFactValue(normalized["proteines-jour"]) && !proteinFrequencyExplicit && inventsProteinMealPresence) {
+    reasons.push("factual_value_contradiction:proteines-jour-frequency");
+  }
+
+  const claimsDuplicateQuestionnaireAnswer = clauses.some((clause) => (
+    /\btu\s+l[' ]indiques?\s+deux\s+fois\b/.test(clause)
+    || /\btu\s+l[' ]as\s+indique\s+deux\s+fois\b/.test(clause)
+    || /\btu\s+(?:le|la|l[' ])\s*mentionnes?\s+deux\s+fois\b/.test(clause)
+    || /\btu\s+l[' ]as\s+mentionne\s+deux\s+fois\b/.test(clause)
+    || /\btu\s+(?:l[' ]indiques?|le\s+mentionnes?|la\s+mentionnes?)\s+a\s+deux\s+reprises\b/.test(clause)
+    || /\b(?:indique|mentionne)\s+deux\s+fois\s+(?:dans|au\s+sein\s+de)\s+(?:tes|le)\s+reponses?\b/.test(clause)
+  ));
+  if (claimsDuplicateQuestionnaireAnswer) reasons.push("unsupported_questionnaire_count");
+
   return [...new Set(reasons)];
 }
 const COACHING_OFFER_TIERS = [
@@ -597,9 +682,9 @@ const renderCoachingOffersTable = (discountPercent: number) => {
       <thead>
         <tr style="color: var(--color-text-muted);">
           <th class="text-left py-2 pr-4">Formule</th>
-          <th class="text-center py-2 px-2">Duree</th>
+          <th class="text-center py-2 px-2">Durée</th>
           <th class="text-center py-2 px-2">Prix standard</th>
-          <th class="text-center py-2 px-2">Prix apres reduction</th>
+          <th class="text-center py-2 px-2">Prix après réduction</th>
         </tr>
       </thead>
       <tbody>
@@ -1021,7 +1106,7 @@ function detectBlocages(responses: DiscoveryResponses, scores: DiscoveryAnalysis
     blocages.push({
       domain: 'Sommeil',
       severity,
-      title: 'Déficit de sommeil chronique',
+      title: 'Récupération nocturne limitée',
       mechanism: `Ton sommeil insuffisant (<7h) et/ou de mauvaise qualité perturbe tes rythmes circadiens.
         Pendant le sommeil profond, ton corps sécrète 70% de sa GH (hormone de croissance) quotidienne.
         Le manque de sommeil augmente le cortisol matinal de 37-45%, dérègle la leptine/ghréline,
@@ -2397,10 +2482,8 @@ export async function analyzeDiscoveryScan(
   // Generate CTA message based on blocages
   let ctaMessage: string;
   const criticalCount = blocages.filter(b => b.severity === 'critique').length;
-  const objectif = normalized.objectif || 'tes objectifs';
-
   if (criticalCount >= 2) {
-    ctaMessage = `${criticalCount} priorités fortes ressortent de tes réponses et peuvent limiter ton objectif de ${objectif}.
+    ctaMessage = `${criticalCount} priorités fortes ressortent de tes réponses et peuvent ralentir la progression vers l'objectif que tu as décrit.
 
 L'Anabolic Bioscan (59€) approfondit ces mécanismes. ${safetyPolicy.strictEatingSafety ? "Pour ton profil, toute recommandation nutritionnelle doit rester encadrée et non chiffrée." : "L'Ultimate Scan (79€) ajoute l'analyse posturale et biomécanique."}`;
   } else if (blocages.length >= 3) {
@@ -2410,7 +2493,7 @@ Tu as maintenant une première cartographie de ce qui peut limiter ta progressio
   } else {
     ctaMessage = `Ton profil révèle surtout des axes d'optimisation, sans blocage critique calculé.
 
-Pour maximiser tes résultats sur ${objectif}, l'Anabolic Bioscan (59€) permet d'approfondir les données avant toute stratégie détaillée.`;
+Pour progresser vers l'objectif que tu as décrit, l'Anabolic Bioscan (59€) permet d'approfondir les données avant toute stratégie détaillée.`;
   }
 
   console.log(`[Discovery] Analysis complete. Score: ${globalScore}/100, Blocages: ${blocages.length}`);
@@ -2487,10 +2570,10 @@ const DOMAIN_CONFIG: Record<string, { label: string; description: string }> = {
   stress: { label: "Stress", description: "Système Nerveux" },
   energie: { label: "Énergie", description: "Vitalité" },
   digestion: { label: "Digestion", description: "Absorption" },
-  training: { label: "Entrainement", description: "Performance" },
+  training: { label: "Entraînement", description: "Performance" },
   nutrition: { label: "Nutrition", description: "Métabolisme" },
   lifestyle: { label: "Style de vie", description: "Habitudes" },
-  mindset: { label: "Mental", description: "Etat d'esprit" }
+  mindset: { label: "Mental", description: "État d'esprit" }
 };
 
 export async function convertToNarrativeReport(
@@ -2545,9 +2628,9 @@ export async function convertToNarrativeReport(
     id: "intro",
     title: "Message d'ouverture",
     subtitle: "Discovery Scan",
-    content: `<p>${prenom}, j'ai ouvert ton dossier et chaque reponse compte. Ce Discovery Scan est une radiographie rapide mais precise de tes mecanismes : ce qui tourne bien, ce qui cale, et pourquoi.</p>
-<p>Je relie sommeil, stress, energie, digestion, entrainement, nutrition, style de vie, mental. Rien n'est isole. Un axe faible tire les autres vers le bas, un axe solide compense mais fatigue sur la duree.</p>
-<p>Ton score global de <strong>${globalScore10}/10</strong> donne la facade, mais la realite est dans les details. ${openingDiagnosis}</p>
+    content: `<p>${prenom}, j'ai ouvert ton dossier et chaque réponse compte. Ce Discovery Scan est une radiographie rapide mais précise de tes mécanismes : ce qui tourne bien, ce qui cale, et pourquoi.</p>
+<p>Je relie sommeil, stress, énergie, digestion, entraînement, nutrition, style de vie, mental. Rien n'est isolé. Un axe faible tire les autres vers le bas, un axe solide compense mais fatigue sur la durée.</p>
+<p>Ton score global de <strong>${globalScore10}/10</strong> donne la façade, mais la réalité est dans les détails. ${openingDiagnosis}</p>
 <p>Je t'explique la logique biologique et je te donne des premiers repères concrets. Le plan complet, les priorités et les ajustements individualisés viennent ensuite si tu choisis d'approfondir.</p>`,
     chips: openingChips
   });
@@ -2585,19 +2668,19 @@ export async function convertToNarrativeReport(
       if (domainBlocages.length > 0) {
         const maxSeverity = domainBlocages.some(b => b.severity === 'critique') ? 'critique' :
                           domainBlocages.some(b => b.severity === 'modere') ? 'modere' : 'leger';
-        severityLabel = maxSeverity === 'critique' ? 'BLOCAGE CRITIQUE' : maxSeverity === 'modere' ? 'BLOCAGE MODERE' : 'BLOCAGE LEGER';
+        severityLabel = maxSeverity === 'critique' ? 'BLOCAGE CRITIQUE' : maxSeverity === 'modere' ? 'BLOCAGE MODÉRÉ' : 'BLOCAGE LÉGER';
         severityColor = primaryColor; // Unified yellow for all blocages
         chips = domainBlocages[0]?.consequences.slice(0, 3).map(c => c.split(':')[0]) || [];
       } else if (score < 40) {
         severityLabel = 'CRITIQUE';
         severityColor = primaryColor;
-        chips = ["Priorite Absolue", "Impact Direct"];
+        chips = ["Priorité absolue", "Impact direct"];
       } else if (score < 50) {
         severityLabel = 'INSUFFISANT';
         severityColor = primaryColor;
-        chips = ["A Corriger", "Impact"];
+        chips = ["À corriger", "Impact"];
       } else if (score < 70) {
-        severityLabel = 'A OPTIMISER';
+        severityLabel = 'À OPTIMISER';
         severityColor = primaryColor;
         chips = ["Potentiel", "Optimisable"];
       } else if (score < 80) {
@@ -2611,7 +2694,7 @@ export async function convertToNarrativeReport(
       }
 
       // Build content with header + AI content
-      let content = `<p><strong>Score: ${score}/100</strong> <span style="color: ${severityColor}; font-weight: bold;">[${severityLabel}]</span></p>\n\n`;
+      let content = `<p><strong>${prenom}, ton score : ${score}/100</strong> <span style="color: ${severityColor}; font-weight: bold;">[${severityLabel}]</span></p>\n\n`;
 
       // Add blocage info if exists
       if (domainBlocages.length > 0) {
@@ -2645,14 +2728,14 @@ export async function convertToNarrativeReport(
 
 <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
   <div class="p-6 rounded-xl" style="background: var(--color-surface); border: 2px solid var(--color-primary);">
-    <div class="text-xs uppercase tracking-widest mb-2" style="color: var(--color-primary);">Recommande</div>
+    <div class="text-xs uppercase tracking-widest mb-2" style="color: var(--color-primary);">Recommandé</div>
     <h4 class="text-xl font-bold mb-2" style="color: var(--color-text);">Anabolic Bioscan</h4>
     <div class="text-3xl font-bold mb-4" style="color: var(--color-primary);">59<span class="text-lg">€</span></div>
     <ul class="space-y-2 text-sm mb-6" style="color: var(--color-text-muted);">
       <li>- 16 analyses approfondies</li>
       <li>- Axes cliniques + hormones</li>
-      <li>- Protocoles 90 jours detailles</li>
-      ${result.safetyPolicy.strictEatingSafety ? '' : '<li>- Stack supplements personnalise</li>'}
+      <li>- Protocoles 90 jours détaillés</li>
+      ${result.safetyPolicy.strictEatingSafety ? '' : '<li>- Stack de suppléments personnalisée</li>'}
       <li>- Plan d'action semaine par semaine</li>
     </ul>
     <a href="/offers/anabolic-bioscan" class="block w-full py-3 rounded-lg text-center font-bold transition-all hover:opacity-90" style="background: var(--color-primary); color: var(--color-on-primary);">
@@ -2667,9 +2750,9 @@ export async function convertToNarrativeReport(
     <ul class="space-y-2 text-sm mb-6" style="color: var(--color-text-muted);">
       <li>- Tout l'Anabolic Bioscan inclus</li>
       ${result.safetyPolicy.strictEatingSafety ? '' : '<li>- Analyse photo posturale (face/profil/dos)</li>'}
-      <li>- Diagnostic biomecanique + correctifs</li>
-      <li>- HRV & cardio avancee</li>
-      <li>- Protocoles rehab + performance</li>
+      <li>- Diagnostic biomécanique + correctifs</li>
+      <li>- HRV & cardio avancée</li>
+      <li>- Protocoles de réadaptation + performance</li>
     </ul>
     <a href="/offers/ultimate-scan" class="block w-full py-3 rounded-lg text-center font-bold transition-all hover:bg-white/10" style="border: 1px solid var(--color-primary); color: var(--color-primary);">
       Choisir Ultimate Scan
@@ -2678,8 +2761,8 @@ export async function convertToNarrativeReport(
 </div>
 
 <div class="mt-8 p-4 rounded-lg" style="background: color-mix(in srgb, var(--color-primary) 12%, transparent); border: 1px solid color-mix(in srgb, var(--color-primary) 40%, transparent);">
-  <p class="text-sm font-medium" style="color: var(--color-primary);">Deduction coaching</p>
-  <p class="text-xs mt-1" style="color: var(--color-text-muted);">Si tu passes en coaching apres un scan, le montant du scan est deduit a 100%.</p>
+  <p class="text-sm font-medium" style="color: var(--color-primary);">Déduction coaching</p>
+  <p class="text-xs mt-1" style="color: var(--color-text-muted);">Si tu passes en coaching après un scan, le montant du scan est déduit à 100%.</p>
 </div>`,
     chips: result.safetyPolicy.strictEatingSafety ? ["Analyse approfondie", "Encadrement"] : ["Protocoles", "Stack Supplements", "Plan 90 Jours"]
   });
@@ -2688,10 +2771,10 @@ export async function convertToNarrativeReport(
   sections.push({
     id: "coaching",
     title: "Passer directement au coaching",
-    subtitle: "Sans scan supplementaire",
+    subtitle: "Sans scan supplémentaire",
     content: `<p>Tu n'as pas envie ou besoin de faire un autre scan ? Je te propose une alternative directe.</p>
 
-<p>Avec ton Discovery Scan tu as deja une vue d'ensemble de tes ${result.blocages.length > 0 ? 'priorites' : 'axes d’optimisation'}. Si tu veux passer a l'action maintenant, je t'offre <strong style="color: var(--color-primary);">-20% sur le coaching Achzod</strong> avec le code que tu recevras apres avoir laisse ton avis.</p>
+<p>Avec ton Discovery Scan tu as déjà une vue d'ensemble de tes ${result.blocages.length > 0 ? 'priorités' : 'axes d’optimisation'}. Si tu veux passer à l'action maintenant, je t'offre <strong style="color: var(--color-primary);">-20% sur le coaching Achzod</strong> avec le code que tu recevras après avoir laissé ton avis.</p>
 
 <div class="mt-8 p-6 rounded-xl" style="background: var(--color-surface); border: 1px solid var(--color-border);">
   <h4 class="text-lg font-bold mb-4" style="color: var(--color-text);">Coaching Achzod - Formules</h4>
@@ -2700,7 +2783,7 @@ export async function convertToNarrativeReport(
 
   <div class="mt-6 p-4 rounded-lg" style="background: color-mix(in srgb, var(--color-primary) 12%, transparent); border: 1px solid color-mix(in srgb, var(--color-primary) 35%, transparent);">
     <p class="text-sm" style="color: var(--color-text);"><strong style="color: var(--color-primary);">Comment obtenir le code -20% ?</strong></p>
-    <p class="text-xs mt-1" style="color: var(--color-text-muted);">Laisse un avis sur ton Discovery Scan ci-dessous. Apres validation, tu recevras ton code promo <code class="px-1 py-0.5 rounded" style="background: var(--color-border); color: var(--color-primary);">DISCOVERY20</code> par email.</p>
+    <p class="text-xs mt-1" style="color: var(--color-text-muted);">Laisse un avis sur ton Discovery Scan ci-dessous. Après validation, tu recevras ton code promo <code class="px-1 py-0.5 rounded" style="background: var(--color-border); color: var(--color-primary);">DISCOVERY20</code> par email.</p>
   </div>
 
   <a href="https://www.achzodcoaching.com/formules-coaching" target="_blank" class="mt-4 block w-full py-3 rounded-lg text-center font-bold transition-all hover:opacity-90" style="background: var(--color-primary); color: var(--color-on-primary);">
@@ -2988,6 +3071,10 @@ export function validateDiscoveryReportForDelivery(
     const firstNameLower = String(report.clientName).toLowerCase();
     const hasPersonalization = sections.some((s) => stripHtml((s as any).content || "").toLowerCase().includes(firstNameLower));
     if (!hasPersonalization) errors.push(`personalization_missing:${report.clientName}`);
+    for (const domain of expectedDomains) {
+      const domainText = stripHtml((sectionById.get(domain) as any)?.content || "").toLowerCase();
+      if (!domainText.includes(firstNameLower)) errors.push(`domain_personalization_missing:${domain}`);
+    }
   }
   if (!report?.generatedAt) errors.push("generated_at_missing");
   if (txt.length < 16_000) errors.push(`report_txt:${txt.length}/16000`);
@@ -2995,8 +3082,22 @@ export function validateDiscoveryReportForDelivery(
   if (html.length < 30_000 || !/(<!doctype html|<html[\s>])/i.test(html)) errors.push(`report_html:${html.length}/30000`);
 
   const assembledContent = sections.map((section: any) => stripHtml(section?.content || "")).join("\n");
-  for (const linguisticError of validateDiscoveryLinguisticQuality(assembledContent)) {
+  const completeVisibleArtifact = [
+    report?.clientName || "",
+    ...metrics.flatMap((metric: any) => [metric?.label || "", metric?.description || ""]),
+    ...sections.flatMap((section: any) => [
+      section?.title || "",
+      section?.subtitle || "",
+      ...(Array.isArray(section?.chips) ? section.chips : []),
+      stripHtml(section?.content || ""),
+    ]),
+    stripHtml(html),
+  ].join("\n");
+  for (const linguisticError of validateDiscoveryLinguisticQuality(completeVisibleArtifact)) {
     errors.push(`linguistic:${linguisticError}`);
+  }
+  if (/déficit\s+de\s+sommeil\s+chronique/i.test(completeVisibleArtifact)) {
+    errors.push("unsupported_medicalizing_title:sommeil");
   }
   for (const safetyError of validateDiscoverySafetyContent(assembledContent, safetyPolicy).errors) {
     errors.push(`safety:${safetyError}`);

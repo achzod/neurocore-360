@@ -43,7 +43,7 @@ function validDiscoveryReport() {
     sections: ["intro", "global", "sommeil", "stress", "energie", "digestion", "training", "nutrition", "lifestyle", "mindset", "scans", "coaching"].map((id, index) => ({
       id,
       title: `Section ${index}`,
-      content: `<p>${index === 0 ? `${clientName} ` : ""}${"contenu physiologique précis et personnalisé. ".repeat(72)}</p>`,
+      content: `<p>${["sommeil", "stress", "energie", "digestion", "training", "nutrition", "lifestyle", "mindset"].includes(id) || index === 0 ? `${clientName} ` : ""}${"contenu physiologique précis et personnalisé. ".repeat(72)}</p>`,
     })),
   };
 }
@@ -72,6 +72,33 @@ test("Discovery delivery rejects residual accentless customer prose", () => {
   const result = validateDiscoveryReportForDelivery(report, validAssets);
   assert.equal(result.ok, false);
   assert.ok(result.errors.includes("linguistic:accentless_french:element"));
+});
+
+test("Discovery delivery scans titles, chips and full artifacts, not only section bodies", () => {
+  const report = validDiscoveryReport();
+  report.sections.find((section) => section.id === "scans")!.title = "Deduction apres scan";
+  const assets = buildDiscoveryReportAssets(report as any);
+  const result = validateDiscoveryReportForDelivery(report, assets);
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.includes("linguistic:accentless_french:deduction"));
+  assert.ok(result.errors.includes("linguistic:accentless_french:apres"));
+});
+
+test("Discovery delivery requires the client first name in every premium domain", () => {
+  const report = validDiscoveryReport();
+  report.sections.find((section) => section.id === "nutrition")!.content = `<p>${"contenu physiologique précis et personnalisé. ".repeat(72)}</p>`;
+  const result = validateDiscoveryReportForDelivery(report, validAssets);
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.includes("domain_personalization_missing:nutrition"));
+});
+
+test("Discovery delivery rejects the former medicalizing sleep title", () => {
+  const report = validDiscoveryReport();
+  report.sections.find((section) => section.id === "sommeil")!.title = "Déficit de sommeil chronique";
+  const assets = buildDiscoveryReportAssets(report as any);
+  const result = validateDiscoveryReportForDelivery(report, assets);
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.includes("unsupported_medicalizing_title:sommeil"));
 });
 
 test("Discovery delivery rejects templated reports without premium AI evidence", () => {

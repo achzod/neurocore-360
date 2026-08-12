@@ -9,6 +9,7 @@ import {
 } from "./discoveryKnowledgePolicy";
 import {
   analyzeDiscoveryScan,
+  buildDiscoveryReportAssets,
   buildDiscoveryKnowledgeFallbackQueries,
   buildDiscoveryQuestionnaireFacts,
   countDiscoveryVisibleChars,
@@ -444,8 +445,8 @@ test("the same dense section remains fail-closed on forbidden qualitative conten
 });
 
 test("sleep prose mentioning physiological resources is not a source-name false positive", () => {
-  const paragraph = "Tes ressources physiologiques nocturnes dependent de la pression homeostatique, de l'adenosine et du rythme circadien. Cette interaction conserve le mecanisme scientifique et personnalise l'analyse de ton sommeil. ".repeat(3);
-  const sleep = Array.from({ length: 5 }, () => paragraph).join("\n\n").padEnd(1_600, " recuperation nocturne");
+  const paragraph = "Tes ressources physiologiques nocturnes dépendent de la pression homéostatique, de l'adénosine et du rythme circadien. Cette interaction conserve le mécanisme scientifique et personnalise l'analyse de ton sommeil. ".repeat(3);
+  const sleep = Array.from({ length: 5 }, () => paragraph).join("\n\n").padEnd(1_600, " récupération nocturne");
   const validation = validateDiscoverySectionContent(sleep);
 
   assert.equal(validation.isValid, true);
@@ -473,8 +474,8 @@ test("explicit bibliography lines are removed while neighboring evidence remains
 });
 
 test("ordinary stress-source and reference-value wording is not treated as bibliography", () => {
-  const paragraph = "Ta principale source de stress maintient une activation sympathique mesurable. Cette valeur de référence permet de relier ton cortisol, ta variabilite cardiaque et la qualite de ta recuperation sans attribuer le mecanisme a un auteur. ".repeat(3);
-  const stress = Array.from({ length: 5 }, () => paragraph).join("\n\n").padEnd(1_600, " regulation autonome");
+  const paragraph = "Ta principale source de stress maintient une activation sympathique mesurable. Cette valeur de référence permet de relier ton cortisol, ta variabilité cardiaque et la qualité de ta récupération sans attribuer le mécanisme à un auteur. ".repeat(3);
+  const stress = Array.from({ length: 5 }, () => paragraph).join("\n\n").padEnd(1_600, " régulation autonome");
   const validation = validateDiscoverySectionContent(stress);
 
   assert.equal(validation.isValid, true);
@@ -612,6 +613,65 @@ test("visible French normalization repairs exact accentless tokens and the gate 
     ["accentless_french:element"],
   );
   assert.deepEqual(validateDiscoveryLinguisticQuality("Les éléments sont connus."), []);
+  assert.equal(
+    normalizeDiscoveryFrenchSurface("Une frequence de une a trois reponses apres entrainement."),
+    "Une frequence d’une a trois réponses après entraînement.",
+  );
+  assert.ok(validateDiscoveryLinguisticQuality("Une fréquence de une à trois fois.").includes("grammar:de_une"));
+});
+
+test("factual gate rejects invented protein meal regularity and unsupported duplicate counts", () => {
+  assert.deepEqual(
+    validateDiscoveryFactualConsistency(
+      "Ton apport protéique est bon, y compris leur présence aux repas, alors conserve la présence régulière de protéines.",
+      { "proteines-jour": "bonne" },
+    ),
+    ["factual_value_contradiction:proteines-jour-frequency"],
+  );
+  assert.deepEqual(
+    validateDiscoveryFactualConsistency(
+      "Tu déclares une source protéinée à chaque repas.",
+      { "proteines-jour": "Une source protéinée à chaque repas" },
+    ),
+    [],
+  );
+  assert.deepEqual(
+    validateDiscoveryFactualConsistency(
+      "Ton organisation est solide. Tu l'indiques deux fois dans tes réponses.",
+      { organisation: "bonne" },
+    ),
+    ["unsupported_questionnaire_count"],
+  );
+  assert.deepEqual(
+    validateDiscoveryFactualConsistency(
+      "Tu l'as indiqué deux fois dans tes réponses.",
+      { organisation: "bonne" },
+    ),
+    ["unsupported_questionnaire_count"],
+  );
+});
+
+test("CTA is neutral toward first-person objectives and sleep title stays non-medicalizing", async () => {
+  const canonicalContext = "Canonical scientific mechanism with enough precise evidence for premium generation. ".repeat(6);
+  const result = await analyzeDiscoveryScan(
+    {
+      prenom: "ApexTest",
+      objectif: "perdre progressivement du gras tout en conservant mes performances",
+      "heures-sommeil": "5-6",
+      "qualite-sommeil": "mauvaise",
+    },
+    {
+      loadSynthesisKnowledge: async () => canonicalContext,
+      loadDomainKnowledge: async () => canonicalContext,
+      generateNarrative: async () => ({ synthesis: "Synthèse validée", sections: {} }),
+      retryDelay: async () => {},
+    },
+  );
+
+  assert.match(result.ctaMessage, /objectif que tu as décrit/);
+  assert.doesNotMatch(result.ctaMessage, /résultats sur perdre|mes performances/);
+  assert.ok(result.blocages.some((blocage) => blocage.title === "Récupération nocturne limitée"));
+  assert.ok(result.blocages.every((blocage) => blocage.title !== "Déficit de sommeil chronique"));
 });
 
 test("unified narrative requires exactly eight unique, valid domains", () => {
@@ -647,8 +707,8 @@ test("section length uses canonical visible characters at validation and assembl
   assert.equal(validation.isValid, false);
 });
 
-test("unified cleanup and report conversion preserve nutrition while normalizing visible French", async () => {
-  const responses = { prenom: "ApexTest", objectif: "progresser durablement" };
+test("unified cleanup and report conversion preserve nutrition while normalizing the complete visible artifact", async () => {
+  const responses = { prenom: "ApexTest", objectif: "perdre du gras tout en conservant mes performances" };
   const policy = deriveDiscoverySafetyPolicy(responses);
   const standardParagraph = "Tu as décrit une routine régulière qui donne une base concrète. Le mécanisme utile ici concerne la récupération et son interaction possible avec ton objectif, sans permettre de poser un diagnostic. Je n'ai pas les elements pour transformer cette hypothèse prudente en certitude. ";
   const standardSection = Array.from({ length: 4 }, () => standardParagraph.repeat(3)).join("\n\n");
@@ -685,7 +745,7 @@ test("unified cleanup and report conversion preserve nutrition while normalizing
     blocages: [],
     synthese: validated.synthesis,
     sectionContents: validated.sections,
-    ctaMessage: "Lecture premium validée.",
+    ctaMessage: "Pour progresser vers l'objectif que tu as décrit, approfondis les données avant toute stratégie détaillée.",
     knowledgePreflight: { synthesis: "", domains: {} },
     safetyPolicy: policy,
   }, responses);
@@ -697,11 +757,20 @@ test("unified cleanup and report conversion preserve nutrition while normalizing
   assert.doesNotMatch(report.sections.map((section) => section.content).join("\n"), /\belements?\b/i);
   assert.match(report.sections.map((section) => section.content).join("\n"), /éléments/i);
 
-  const assets = {
-    txt: "x".repeat(16_000),
-    html: `<!doctype html><html><body>${"x".repeat(30_000)}</body></html>`,
-  };
-  assert.deepEqual(validateDiscoveryReportForDelivery(report, assets).errors.filter((error) => error.startsWith("linguistic:")), []);
+  for (const domain of DISCOVERY_PREMIUM_DOMAINS) {
+    const domainSection = report.sections.find((section) => section.id === domain);
+    assert.ok(domainSection, `missing ${domain}`);
+    assert.match(domainSection.content, /Apextest/i);
+  }
+
+  const assets = buildDiscoveryReportAssets(report);
+  const completeArtifact = assets.html;
+  assert.doesNotMatch(completeArtifact, /\b(?:reponse|mecanisme|energie|entrainement|duree|facade|realite|biomecanique|avancee|deduction|apres|supplementaire|deja|priorites?)\b/i);
+  assert.doesNotMatch(completeArtifact, /\bde\s+une\b/i);
+  assert.doesNotMatch(completeArtifact, /Déficit de sommeil chronique/i);
+  assert.doesNotMatch(completeArtifact, /résultats sur perdre|mes performances/);
+
+  assert.deepEqual(validateDiscoveryReportForDelivery(report, assets), { ok: true, errors: [] });
 });
 
 test("unified end-to-end factual gate blocks the exact canary wake contradiction", () => {
