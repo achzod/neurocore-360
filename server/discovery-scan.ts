@@ -128,6 +128,24 @@ export interface DiscoveryAnalysisResult {
   blocages: BlockageAnalysis[];
   synthese: string;
   ctaMessage: string;
+  knowledgePreflight: DiscoveryKnowledgePreflight;
+}
+
+export const DISCOVERY_PREMIUM_DOMAINS = [
+  'sommeil', 'stress', 'energie', 'digestion',
+  'training', 'nutrition', 'lifestyle', 'mindset',
+] as const;
+
+export interface DiscoveryKnowledgePreflight {
+  synthesis: string;
+  domains: Record<string, string>;
+}
+
+export interface DiscoveryAnalysisDependencies {
+  loadSynthesisKnowledge?: (blocages: BlockageAnalysis[]) => Promise<string>;
+  loadDomainKnowledge?: (domain: string) => Promise<string>;
+  generateSynthesis?: typeof generateAISynthesis;
+  retryDelay?: (milliseconds: number) => Promise<void>;
 }
 
 export interface DiscoveryPremiumGenerationEvidence {
@@ -159,6 +177,36 @@ const DISCOVERY_AI_TIMEOUT_MS = Math.max(
   15 * 60 * 1000,
   Number(process.env.DISCOVERY_AI_TIMEOUT_MS ?? "900000"),
 );
+const DISCOVERY_KNOWLEDGE_MAX_ATTEMPTS = 3;
+const DISCOVERY_KNOWLEDGE_RETRY_DELAYS_MS = [250, 750] as const;
+
+function isTransientKnowledgeError(error: unknown): boolean {
+  const candidate = error as { code?: string; message?: string } | null;
+  const code = String(candidate?.code || '').toUpperCase();
+  const message = String(candidate?.message || error || '').toLowerCase();
+  return [
+    'ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'EPIPE',
+    '53300', '57P01', '57P02', '57P03', '08000', '08001', '08003', '08004', '08006', '08007',
+  ].includes(code) || /timeout|timed out|connection terminated|connection reset|too many clients/.test(message);
+}
+
+async function loadKnowledgeWithRetry(
+  scope: string,
+  loader: () => Promise<string>,
+  retryDelay: (milliseconds: number) => Promise<void>,
+): Promise<string> {
+  for (let attempt = 1; attempt <= DISCOVERY_KNOWLEDGE_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      return assertDiscoveryPremiumKnowledgeContext(await loader(), scope);
+    } catch (error) {
+      const retryable = isTransientKnowledgeError(error);
+      if (!retryable || attempt === DISCOVERY_KNOWLEDGE_MAX_ATTEMPTS) throw error;
+      console.warn(`[Discovery] Transient knowledge error for ${scope}; retry ${attempt}/${DISCOVERY_KNOWLEDGE_MAX_ATTEMPTS}`);
+      await retryDelay(DISCOVERY_KNOWLEDGE_RETRY_DELAYS_MS[attempt - 1] || 750);
+    }
+  }
+  throw new Error(`[Discovery Premium] Knowledge preflight exhausted for ${scope}`);
+}
 
 async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   let timeoutId: NodeJS.Timeout | undefined;
@@ -900,30 +948,27 @@ async function getKnowledgeContextForBlocages(blocages: BlockageAnalysis[]): Pro
   // Remove duplicates
   const uniqueKeywords = [...new Set(keywords)];
 
-  try {
-    // Search in knowledge base
-    let articles = await searchArticles(uniqueKeywords.slice(0, 5), 5, ALLOWED_SOURCES as unknown as string[]);
+  // Search in knowledge base. Operational errors intentionally propagate to
+  // the bounded preflight retry; returning an empty string would erase the
+  // distinction between an unavailable database and missing evidence.
+  let articles = await searchArticles(uniqueKeywords.slice(0, 5), 5, ALLOWED_SOURCES as unknown as string[]);
 
-    if (articles.length === 0) {
-      const fallbackQuery = uniqueKeywords.slice(0, 6).join(" ");
-      const ft = await searchFullText(fallbackQuery, 6);
-      articles = ft.filter(a => (ALLOWED_SOURCES as unknown as string[]).includes(a.source as string));
-    }
+  if (articles.length === 0) {
+    const fallbackQuery = uniqueKeywords.slice(0, 6).join(" ");
+    const ft = await searchFullText(fallbackQuery, 6);
+    articles = ft.filter(a => (ALLOWED_SOURCES as unknown as string[]).includes(a.source as string));
+  }
 
-    if (articles.length === 0) {
-      return '';
-    }
-
-    // Build context from relevant articles
-    const context = articles.map(a =>
-      `TITRE: ${a.title}\nPOINTS CLES: ${a.content.substring(0, 500)}...`
-    ).join('\n\n---\n\n');
-
-    return sanitizeDiscoveryKnowledgeContext(context);
-  } catch (error) {
-    console.error('[Discovery] Knowledge search error:', error);
+  if (articles.length === 0) {
     return '';
   }
+
+  // Build context from relevant articles
+  const context = articles.map(a =>
+    `TITRE: ${a.title}\nPOINTS CLES: ${a.content.substring(0, 500)}...`
+  ).join('\n\n---\n\n');
+
+  return sanitizeDiscoveryKnowledgeContext(context);
 }
 
 // ============================================
@@ -1453,32 +1498,27 @@ async function getKnowledgeContextForDomain(domain: string): Promise<string> {
   }
   keywords = keywords || [domain];
 
-  try {
-    // Search with more keywords and get more articles
-    const articles = await searchArticles(keywords.slice(0, 5), 6, ALLOWED_SOURCES as unknown as string[]);
+  // Operational errors propagate into the single bounded/sequential preflight.
+  const articles = await searchArticles(keywords.slice(0, 5), 6, ALLOWED_SOURCES as unknown as string[]);
 
-    if (articles.length === 0) {
-      // Try full-text search as fallback
-      const ftArticles = await searchFullText(domain, 6);
-      const filteredFt = ftArticles.filter(a => ALLOWED_SOURCES.includes(a.source as any));
-      if (filteredFt.length > 0) {
-        const context = filteredFt.map(a =>
-          `${a.title}:\n${a.content.substring(0, 800)}`
-        ).join('\n\n---\n\n');
-        return sanitizeDiscoveryKnowledgeContext(context);
-      }
-      return '';
+  if (articles.length === 0) {
+    // Try full-text search as fallback
+    const ftArticles = await searchFullText(domain, 6);
+    const filteredFt = ftArticles.filter(a => ALLOWED_SOURCES.includes(a.source as any));
+    if (filteredFt.length > 0) {
+      const context = filteredFt.map(a =>
+        `${a.title}:\n${a.content.substring(0, 800)}`
+      ).join('\n\n---\n\n');
+      return sanitizeDiscoveryKnowledgeContext(context);
     }
-
-    // Return more content per article (800 chars instead of 400)
-    const context = articles.map(a =>
-      `${a.title}:\n${a.content.substring(0, 800)}`
-    ).join('\n\n---\n\n');
-    return sanitizeDiscoveryKnowledgeContext(context);
-  } catch (error) {
-    console.error(`[Discovery] Knowledge search error for ${domain}:`, error);
     return '';
   }
+
+  // Return more content per article (800 chars instead of 400)
+  const context = articles.map(a =>
+    `${a.title}:\n${a.content.substring(0, 800)}`
+  ).join('\n\n---\n\n');
+  return sanitizeDiscoveryKnowledgeContext(context);
 }
 
 // Extract relevant responses for a specific domain
@@ -1817,7 +1857,37 @@ function cleanMarkdownToHTML(text: string): string {
 // MAIN ANALYSIS FUNCTION
 // ============================================
 
-export async function analyzeDiscoveryScan(responses: DiscoveryResponses): Promise<DiscoveryAnalysisResult> {
+export async function preflightDiscoveryKnowledge(
+  blocages: BlockageAnalysis[],
+  domains: readonly string[],
+  dependencies: DiscoveryAnalysisDependencies = {},
+): Promise<DiscoveryKnowledgePreflight> {
+  const retryDelay = dependencies.retryDelay || ((milliseconds: number) => new Promise(resolve => setTimeout(resolve, milliseconds)));
+  const loadSynthesis = dependencies.loadSynthesisKnowledge || getKnowledgeContextForBlocages;
+  const loadDomain = dependencies.loadDomainKnowledge || getKnowledgeContextForDomain;
+
+  // Sequential loading deliberately bounds PostgreSQL pool pressure in Render
+  // one-offs. Every context is present before any OpenAI call is permitted.
+  const synthesis = await loadKnowledgeWithRetry(
+    'synthesis',
+    () => loadSynthesis(blocages),
+    retryDelay,
+  );
+  const domainContexts: Record<string, string> = {};
+  for (const domain of domains) {
+    domainContexts[domain] = await loadKnowledgeWithRetry(
+      `section ${domain}`,
+      () => loadDomain(domain),
+      retryDelay,
+    );
+  }
+  return { synthesis, domains: domainContexts };
+}
+
+export async function analyzeDiscoveryScan(
+  responses: DiscoveryResponses,
+  dependencies: DiscoveryAnalysisDependencies = {},
+): Promise<DiscoveryAnalysisResult> {
   const normalized = normalizeResponses(responses as Record<string, unknown>, { mode: "discovery" }) as DiscoveryResponses;
   console.log(`[Discovery] Analyzing scan for ${getDiscoveryFirstName(normalized)}...`);
 
@@ -1857,12 +1927,21 @@ export async function analyzeDiscoveryScan(responses: DiscoveryResponses): Promi
   // Detect blocages
   const blocages = detectBlocages(normalized, scoresByDomain);
 
-  // Get knowledge context
-  const knowledgeContext = await getKnowledgeContextForBlocages(blocages);
-  assertDiscoveryPremiumKnowledgeContext(knowledgeContext, "synthesis");
+  // Fetch and validate synthesis + all eight domain contexts before the first
+  // OpenAI request. A DB timeout therefore produces zero provider calls.
+  const knowledgePreflight = await preflightDiscoveryKnowledge(
+    blocages,
+    DISCOVERY_PREMIUM_DOMAINS,
+    dependencies,
+  );
 
   // Generate AI synthesis
-  const synthese = await generateAISynthesis(normalized, scoresByDomain, blocages, knowledgeContext);
+  const synthese = await (dependencies.generateSynthesis || generateAISynthesis)(
+    normalized,
+    scoresByDomain,
+    blocages,
+    knowledgePreflight.synthesis,
+  );
 
   // Generate CTA message based on blocages
   let ctaMessage: string;
@@ -1890,7 +1969,8 @@ Pour maximiser tes résultats sur ${objectif}, l'Anabolic Bioscan (59€) te don
     scoresByDomain,
     blocages,
     synthese,
-    ctaMessage
+    ctaMessage,
+    knowledgePreflight,
   };
 }
 
@@ -1973,19 +2053,14 @@ export async function convertToNarrativeReport(
 
   console.log(`[Discovery] Generating AI content for 8 sections...`);
 
-  // Resolve and validate ALL contexts before the first section OpenAI call.
-  // If one domain has no canonical evidence, the whole premium report fails closed.
-  const domains = Object.keys(result.scoresByDomain);
-  const knowledgeContexts = await Promise.all(
-    domains.map(async (domain) => ({
-      domain,
-      context: await getKnowledgeContextForDomain(domain),
-    })),
-  );
+  // analyzeDiscoveryScan already resolved synthesis + all eight domains before
+  // its first OpenAI call. Reuse that immutable preflight to avoid a second DB
+  // burst and prevent partial section generation.
+  const domains = [...DISCOVERY_PREMIUM_DOMAINS];
   const validatedKnowledgeByDomain = new Map(
-    knowledgeContexts.map(({ domain, context }) => [
+    domains.map((domain) => [
       domain,
-      assertDiscoveryPremiumKnowledgeContext(context, `section ${domain}`),
+      assertDiscoveryPremiumKnowledgeContext(result.knowledgePreflight?.domains?.[domain] || '', `section ${domain}`),
     ]),
   );
 
@@ -2003,7 +2078,7 @@ export async function convertToNarrativeReport(
     const names = invalidSections.map(s => s.domain).join(", ");
     throw new Error(`[Discovery Premium] Sections OpenAI invalides: ${names}. Aucun fallback autorise.`);
   }
-  const aiContentMap = new Map(aiContents.map(({ domain, content }) => [domain, content]));
+  const aiContentMap = new Map<string, string>(aiContents.map(({ domain, content }) => [domain, content]));
 
   console.log(`[Discovery] AI content generated for all sections`);
 

@@ -6,6 +6,10 @@ import {
   assertDiscoveryPremiumKnowledgeContext,
   sanitizeDiscoveryKnowledgeContext,
 } from "./discoveryKnowledgePolicy";
+import {
+  analyzeDiscoveryScan,
+  DISCOVERY_PREMIUM_DOMAINS,
+} from "./discovery-scan";
 
 test("canonical English scientific evidence is preserved while source attribution is removed", () => {
   const raw = `Huberman Lab\nThe circadian system coordinates sleep timing with cortisol and melatonin.\nThis evidence explains how light exposure changes the phase response curve and sleep pressure.\nThe mechanism is directly relevant to recovery, glucose regulation and endocrine health.`;
@@ -32,11 +36,78 @@ test("premium knowledge validation accepts a canonical context above the thresho
   assert.equal(assertDiscoveryPremiumKnowledgeContext(context, "synthesis"), context.trim());
 });
 
-test("Discovery generation has no degraded path and preflights every section context", () => {
+test("Discovery generation has no degraded path and preflights all knowledge before OpenAI", () => {
   const source = readFileSync(new URL("./discovery-scan.ts", import.meta.url), "utf8");
 
   assert.doesNotMatch(source, /Generation en mode degrade/);
-  assert.match(source, /assertDiscoveryPremiumKnowledgeContext\(knowledgeContext, "synthesis"\)/);
-  assert.match(source, /const knowledgeContexts = await Promise\.all/);
-  assert.match(source, /assertDiscoveryPremiumKnowledgeContext\(context, `section \$\{domain\}`\)/);
+  assert.match(source, /const knowledgePreflight = await preflightDiscoveryKnowledge/);
+  assert.match(source, /for \(const domain of domains\)/);
+  assert.match(source, /dependencies\.generateSynthesis \|\| generateAISynthesis/);
+  assert.doesNotMatch(source, /knowledgeContexts = await Promise\.all/);
+});
+
+test("transient DB timeout exhausts bounded retries with zero OpenAI calls", async () => {
+  const canonicalContext = "Canonical scientific mechanism with enough precise evidence for premium generation. ".repeat(6);
+  let openAICalls = 0;
+  let domainCalls = 0;
+  const retryDelays: number[] = [];
+
+  await assert.rejects(
+    analyzeDiscoveryScan(
+      { prenom: "Canary", email: "canary@example.test", objectif: "performance" },
+      {
+        loadSynthesisKnowledge: async () => canonicalContext,
+        loadDomainKnowledge: async () => {
+          domainCalls += 1;
+          const error = new Error("timeout exceeded when trying to connect");
+          (error as Error & { code?: string }).code = "ETIMEDOUT";
+          throw error;
+        },
+        generateSynthesis: async () => {
+          openAICalls += 1;
+          return "must not run";
+        },
+        retryDelay: async (milliseconds) => { retryDelays.push(milliseconds); },
+      },
+    ),
+    /timeout exceeded/i,
+  );
+
+  assert.equal(domainCalls, 3);
+  assert.deepEqual(retryDelays, [250, 750]);
+  assert.equal(openAICalls, 0);
+});
+
+test("knowledge preflight is sequential and covers synthesis plus all eight domains", async () => {
+  const canonicalContext = "Canonical scientific mechanism with enough precise evidence for premium generation. ".repeat(6);
+  const loaded: string[] = [];
+  let concurrent = 0;
+  let maxConcurrent = 0;
+  let openAICalls = 0;
+  const load = async (scope: string) => {
+    concurrent += 1;
+    maxConcurrent = Math.max(maxConcurrent, concurrent);
+    await Promise.resolve();
+    loaded.push(scope);
+    concurrent -= 1;
+    return canonicalContext;
+  };
+
+  const result = await analyzeDiscoveryScan(
+    { prenom: "Canary", email: "canary@example.test", objectif: "performance" },
+    {
+      loadSynthesisKnowledge: async () => load("synthesis"),
+      loadDomainKnowledge: async (domain) => load(domain),
+      generateSynthesis: async () => {
+        openAICalls += 1;
+        assert.deepEqual(loaded, ["synthesis", ...DISCOVERY_PREMIUM_DOMAINS]);
+        return "Synthese premium valide";
+      },
+      retryDelay: async () => {},
+    },
+  );
+
+  assert.equal(maxConcurrent, 1);
+  assert.equal(openAICalls, 1);
+  assert.deepEqual(Object.keys(result.knowledgePreflight.domains), [...DISCOVERY_PREMIUM_DOMAINS]);
 });

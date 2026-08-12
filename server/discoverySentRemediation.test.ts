@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
@@ -54,4 +55,15 @@ test("notification requires premium provenance and becomes one-shot after claim"
   assert.deepEqual(validateRegeneratedNotificationCandidate({
     ...base, alreadyClaimed: false, supersededTerminal: true,
   }), ["superseded_terminal"]);
+});
+
+test("a knowledge or provider failure happens before remediation opens a mutation transaction", () => {
+  const source = readFileSync(new URL("./discoverySentRemediation.ts", import.meta.url), "utf8");
+  const analyzeIndex = source.indexOf("await analyzeDiscoveryScan");
+  const connectIndex = source.indexOf("const client = await pool.connect()");
+  const beginIndex = source.indexOf('await client.query("BEGIN")');
+
+  assert.ok(analyzeIndex >= 0);
+  assert.ok(connectIndex > analyzeIndex);
+  assert.ok(beginIndex > connectIndex);
 });
