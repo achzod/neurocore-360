@@ -18,11 +18,23 @@ import {
   buildKnowledgeBase,
   ScraperSource
 } from "./scraper";
+import { isKnowledgeAdminKeyValid } from "./adminAuth";
 
 export function registerKnowledgeRoutes(app: Express): void {
   // Initialize table on startup
   initKnowledgeTable().catch(err => {
     console.error("[Knowledge] Failed to init table:", err);
+  });
+
+  // SECURITY: the knowledge corpus is proprietary and every route below is
+  // operational/admin-only. This also blocks public build, scrape and DELETE.
+  app.use("/api/knowledge", (req, res, next) => {
+    const candidate = req.headers["x-admin-key"];
+    if (!isKnowledgeAdminKeyValid(candidate)) {
+      res.status(401).json({ success: false, error: "Unauthorized - admin key required" });
+      return;
+    }
+    next();
   });
 
   /**
