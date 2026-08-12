@@ -11,6 +11,8 @@ import {
   analyzeDiscoveryScan,
   buildDiscoveryKnowledgeFallbackQueries,
   buildDiscoveryQuestionnaireFacts,
+  countDiscoveryVisibleChars,
+  convertToNarrativeReport,
   DISCOVERY_KNOWLEDGE_CANDIDATE_LIMIT,
   DISCOVERY_UNIFIED_MAX_ESTIMATED_COST_USD,
   DISCOVERY_UNIFIED_MAX_INPUT_CHARS,
@@ -580,6 +582,79 @@ test("unified narrative requires exactly eight unique, valid domains", () => {
     () => validateDiscoveryGeneratedNarrative({ ...raw, sections: [...raw.sections.slice(0, 7), raw.sections[0]] }, responses, policy),
     /duplicate domain/,
   );
+});
+
+test("section length uses canonical visible characters at validation and assembly", () => {
+  const compactParagraph = "Tu as décrit une structure alimentaire régulière et une hydratation cohérente avec tes réponses. Cette lecture reste prudente, utile et sans protocole chiffré. ".repeat(2);
+  const visibleSection = Array.from({ length: 4 }, () => compactParagraph).join("\n\n");
+  const whitespaceInflated = visibleSection.replace(/ /g, "     ");
+
+  assert.ok(whitespaceInflated.length >= 1_400, "raw whitespace reproduces the former false pass");
+  assert.ok(countDiscoveryVisibleChars(whitespaceInflated) < 1_400);
+
+  const validation = validateDiscoverySectionContent(whitespaceInflated);
+  assert.equal(validation.charCount, countDiscoveryVisibleChars(whitespaceInflated));
+  assert.ok(validation.reasons.includes(`chars:${validation.charCount}/1400`));
+  assert.equal(validation.isValid, false);
+});
+
+test("unified cleanup and report conversion preserve a natural nutrition source-protein paragraph", async () => {
+  const responses = { prenom: "ApexTest", objectif: "progresser durablement" };
+  const policy = deriveDiscoverySafetyPolicy(responses);
+  const standardParagraph = "Tu as décrit une routine régulière qui donne une base concrète. Le mécanisme utile ici concerne la récupération et son interaction possible avec ton objectif, sans permettre de poser un diagnostic. Cette lecture distingue ce que tu as déclaré de ce qui reste seulement une hypothèse à approfondir. ";
+  const standardSection = Array.from({ length: 4 }, () => standardParagraph.repeat(3)).join("\n\n");
+  const nutritionParagraph = "Tu déclares une source protéinée à chaque repas, trois repas et une collation, avec une hydratation régulière. Cette structure donne un repère concret sans justifier un objectif calorique, des macros, un grammage ou un protocole complet. Je conserve donc cette information exactement comme tu l'as fournie et je distingue ce fait des mécanismes seulement plausibles. ";
+  const nutritionSection = Array.from({ length: 4 }, () => nutritionParagraph.repeat(2)).join("\n\n");
+  const raw = {
+    synthesis: standardSection,
+    sections: DISCOVERY_PREMIUM_DOMAINS.map((domain) => ({
+      domain,
+      content: domain === "nutrition" ? nutritionSection : standardSection,
+    })),
+  };
+
+  assert.equal(validateDiscoverySectionContent(nutritionSection, policy).isValid, true);
+  const validated = validateDiscoveryGeneratedNarrative(raw, responses, policy);
+  const nutrition = validated.sections.nutrition;
+
+  assert.match(nutrition, /source protéinée à chaque repas/i);
+  assert.equal(countDiscoveryVisibleChars(nutrition), countDiscoveryVisibleChars(nutritionSection));
+  assert.ok(countDiscoveryVisibleChars(nutrition) >= 1_400);
+
+  const report = await convertToNarrativeReport({
+    globalScore: 80,
+    scoresByDomain: {
+      sommeil: 80,
+      stress: 80,
+      energie: 80,
+      digestion: 80,
+      training: 80,
+      nutrition: 80,
+      lifestyle: 80,
+      mindset: 80,
+    },
+    blocages: [],
+    synthese: validated.synthesis,
+    sectionContents: validated.sections,
+    ctaMessage: "Lecture premium validée.",
+    knowledgePreflight: { synthesis: "", domains: {} },
+    safetyPolicy: policy,
+  }, responses);
+  const reportNutrition = report.sections.find((section) => section.id === "nutrition");
+
+  assert.ok(reportNutrition, "the converted report must contain nutrition");
+  assert.match(reportNutrition.content, /source protéinée à chaque repas/i);
+  assert.ok(countDiscoveryVisibleChars(reportNutrition.content) >= 1_400);
+});
+
+test("unified prompt gives every domain enough visible-length margin", () => {
+  const source = readFileSync(new URL("./discovery-scan.ts", import.meta.url), "utf8");
+
+  assert.match(source, /280 a 500 mots, 4 a 6 paragraphes substantiels/);
+  assert.match(source, /280 a 500 mots, avec au moins 1 400 caracteres visibles hors balises et espaces multiples/);
+  assert.match(source, /visibleChars: countDiscoveryVisibleChars\(content\)/);
+  assert.match(source, /\$\{domain\}:\$\{visibleChars\}\/\$\{MIN_DISCOVERY_SECTION_CHARS\} visible chars/);
+  assert.doesNotMatch(source, /\^\.\*\\b\(Sources\?\|References\?\|Références\?\)\\b\.\*\$/);
 });
 
 test("Discovery generation uses one bounded structured call and still rejects incomplete responses", () => {

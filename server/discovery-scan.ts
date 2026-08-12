@@ -258,6 +258,19 @@ export interface DiscoverySectionValidation {
   isValid: boolean;
 }
 
+/**
+ * Counts the text a customer can actually read after HTML removal and
+ * whitespace normalization. Both generation validation and report assembly
+ * must use this same metric: counting raw newlines or repeated spaces here
+ * would let a borderline section pass generation and fail seconds later.
+ */
+export function countDiscoveryVisibleChars(text: string): number {
+  return stripInlineHtml(String(text || ""))
+    .replace(/\s+/g, " ")
+    .trim()
+    .length;
+}
+
 function containsForbiddenDiscoverySourceName(text: string): boolean {
   SOURCE_NAME_REGEX.lastIndex = 0;
   const found = SOURCE_NAME_REGEX.test(text);
@@ -289,14 +302,15 @@ export function validateDiscoverySectionContent(
   text: string,
   safetyPolicy: DiscoverySafetyPolicy = deriveDiscoverySafetyPolicy({}),
 ): DiscoverySectionValidation {
+  const visibleText = stripInlineHtml(String(text || "")).replace(/\s+/g, " ").trim();
   const lines = text.split(/\n+/).filter(line => line.trim().length > 30);
   const paragraphCount = text
     .split(/\n\s*\n/)
     .map(paragraph => paragraph.trim())
     .filter(paragraph => paragraph.length > 80).length;
   const lineCount = lines.length;
-  const charCount = text.length;
-  const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+  const charCount = countDiscoveryVisibleChars(text);
+  const wordCount = visibleText.split(/\s+/).filter(Boolean).length;
   const lower = text.toLowerCase();
   const reasons: string[] = [];
   if (charCount < MIN_DISCOVERY_SECTION_CHARS) reasons.push(`chars:${charCount}/${MIN_DISCOVERY_SECTION_CHARS}`);
@@ -1356,7 +1370,7 @@ STYLE OBLIGATOIRE:
 - Analyse chirurgicale mais accessible
 
 FORMAT OBLIGATOIRE:
-- 250 a 500 mots, 4 a 6 paragraphes substantiels
+- 280 a 500 mots, 4 a 6 paragraphes substantiels
 - Texte brut fluide, PAS de markdown
 - JAMAIS de tiret long (,), JAMAIS d'emojis
 - NE JAMAIS repeter le titre de la section
@@ -1718,7 +1732,7 @@ ${knowledgeBlock}
 
 CONTRAT DE SORTIE:
 La synthese contient 4 a 6 paragraphes et 350 a 700 mots.
-Chaque domaine contient 4 a 6 paragraphes et 250 a 500 mots.
+Chaque domaine contient 4 a 6 paragraphes et 280 a 500 mots, avec au moins 1 400 caracteres visibles hors balises et espaces multiples.
 Les huit domaines doivent apparaitre exactement une fois: ${DISCOVERY_PREMIUM_DOMAINS.join(", ")}.
 Tout est en francais, au tutoiement, direct, humain et precis.
 Aucun markdown, aucune liste, aucun emoji, aucun titre dans le contenu.
@@ -2171,12 +2185,11 @@ RAPPELS CRITIQUES:
 // Convert markdown artifacts to clean HTML - CRITICAL: Remove all em dashes
 function cleanMarkdownToHTML(text: string): string {
   let cleaned = stripInlineHtml(text)
-    // Remove any explicit sources/references lines even if inline
+    // Remove only explicit bibliography labels/blocks. Natural nutrition
+    // wording such as "une source proteinee a chaque repas" is customer
+    // content and must never make an entire paragraph disappear.
     .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, '')
-    .replace(/Sources?\s*:.*$/gmi, '')
-    .replace(/\b(Sources?|References?|Références?)\s*:\s*[^.\n]+\.?/gi, '')
-    .replace(/<p[^>]*>[^<]*(Sources?|References?|Références?)\b[^<]*<\/p>/gi, '')
-    .replace(/^.*\b(Sources?|References?|Références?)\b.*$/gmi, '')
+    .replace(/\b(Sources?|References?|Références?)\s*:\s*(?:https?:\/\/|doi\b|pmid\b)[^.\n]+\.?/gi, '')
     // Remove any explicit source names
     .replace(SOURCE_NAME_REGEX, "")
     .replace(EMOJI_REGEX, "")
@@ -2206,7 +2219,7 @@ function cleanMarkdownToHTML(text: string): string {
     .replace(/`([^`]+)`/g, '$1')
     // Drop any lines that still contain "Sources:"
     .split(/\n/)
-    .filter((line) => !/sources?\s*:/i.test(line))
+    .filter((line) => !/^\s*(?:sources?|references?|références?)\s*:/i.test(line))
     .join('\n')
     // Strip inline styles/colors that can cause black-on-black
     .replace(/\s*style=(\"|')[^\"']*(\"|')/gi, '')
@@ -2426,9 +2439,6 @@ export async function convertToNarrativeReport(
   const prenom = getDiscoveryFirstName(normalized);
   const objectif = normalized.objectif || 'tes objectifs';
   const globalScore10 = Math.round((result.globalScore / 10) * 10) / 10;
-  const stripHtmlTags = (html: string) =>
-    html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-
   console.log(`[Discovery] Assembling unified AI content for 8 sections...`);
 
   // analyzeDiscoveryScan has already generated and validated the synthesis and
@@ -2436,10 +2446,14 @@ export async function convertToNarrativeReport(
   // and performs no provider work.
   const domains = [...DISCOVERY_PREMIUM_DOMAINS];
   const aiContents = domains.map((domain) => ({ domain, content: result.sectionContents?.[domain] || "" }));
-  const invalidSections = aiContents.filter(({ content }) => !content || stripHtmlTags(content).length < MIN_DISCOVERY_SECTION_CHARS);
+  const invalidSections = aiContents
+    .map(({ domain, content }) => ({ domain, content, visibleChars: countDiscoveryVisibleChars(content) }))
+    .filter(({ content, visibleChars }) => !content || visibleChars < MIN_DISCOVERY_SECTION_CHARS);
   if (invalidSections.length > 0) {
-    const names = invalidSections.map(s => s.domain).join(", ");
-    throw new Error(`[Discovery Premium] Sections OpenAI invalides: ${names}. Aucun fallback autorise.`);
+    const details = invalidSections
+      .map(({ domain, visibleChars }) => `${domain}:${visibleChars}/${MIN_DISCOVERY_SECTION_CHARS} visible chars`)
+      .join(", ");
+    throw new Error(`[Discovery Premium] Sections OpenAI invalides: ${details}. Aucun fallback autorise.`);
   }
   const aiContentMap = new Map<string, string>(aiContents.map(({ domain, content }) => [domain, content]));
 
