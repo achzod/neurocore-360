@@ -9,6 +9,10 @@ import {
   validateRegeneratedNotificationCandidate,
   validateSentFallbackCandidate,
 } from "./discoverySentRemediation";
+import {
+  areAIUsageCostAlertsEnabled,
+  areRemediationSideEffectsDisabled,
+} from "./openaiResponses";
 
 test("artifact hash is deterministic and separates TXT from HTML", () => {
   assert.equal(discoveryArtifactHash("abc", "def"), discoveryArtifactHash("abc", "def"));
@@ -66,4 +70,22 @@ test("a knowledge or provider failure happens before remediation opens a mutatio
   assert.ok(analyzeIndex >= 0);
   assert.ok(connectIndex > analyzeIndex);
   assert.ok(beginIndex > connectIndex);
+});
+
+test("generation-only remediation hard-locks every delivery and alert side effect", () => {
+  const source = readFileSync(new URL("../scripts/remediate-sent-discovery.ts", import.meta.url), "utf8");
+  assert.match(source, /REMEDIATION_SIDE_EFFECTS_DISABLED=true is mandatory/);
+  assert.match(source, /AI_COST_ALERTS_ENABLED=false is mandatory/);
+  assert.match(source, /DISCOVERY_REPORT_DELIVERY_ENABLED must not be true/);
+  assert.match(source, /DISCOVERY_REGENERATED_NOTIFICATION_ENABLED must not be true/);
+});
+
+test("remediation side-effect guard disables cost-alert emails while preserving normal defaults", () => {
+  assert.equal(areAIUsageCostAlertsEnabled({}), true);
+  assert.equal(areAIUsageCostAlertsEnabled({ AI_COST_ALERTS_ENABLED: "false" }), false);
+  assert.equal(areRemediationSideEffectsDisabled({ REMEDIATION_SIDE_EFFECTS_DISABLED: "true" }), true);
+  assert.equal(areAIUsageCostAlertsEnabled({
+    AI_COST_ALERTS_ENABLED: "true",
+    REMEDIATION_SIDE_EFFECTS_DISABLED: "true",
+  }), false);
 });

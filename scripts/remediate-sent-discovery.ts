@@ -25,6 +25,20 @@ if (generateOnly && notifyOnly) throw new Error("Choose one stage only");
 if ((generateOnly || notifyOnly) && (!auditId || !expectedPreviousFallbackHash)) {
   throw new Error("--expected-id and --expected-fallback-hash are mandatory for staged actions");
 }
+if (generateOnly) {
+  if (String(process.env.REMEDIATION_SIDE_EFFECTS_DISABLED || "").toLowerCase() !== "true") {
+    throw new Error("REMEDIATION_SIDE_EFFECTS_DISABLED=true is mandatory for generate-only");
+  }
+  if (String(process.env.AI_COST_ALERTS_ENABLED || "").toLowerCase() !== "false") {
+    throw new Error("AI_COST_ALERTS_ENABLED=false is mandatory for generate-only");
+  }
+  if (String(process.env.DISCOVERY_REPORT_DELIVERY_ENABLED || "").toLowerCase() === "true") {
+    throw new Error("DISCOVERY_REPORT_DELIVERY_ENABLED must not be true for generate-only");
+  }
+  if (String(process.env.DISCOVERY_REGENERATED_NOTIFICATION_ENABLED || "").toLowerCase() === "true") {
+    throw new Error("DISCOVERY_REGENERATED_NOTIFICATION_ENABLED must not be true for generate-only");
+  }
+}
 
 async function classify(id?: string) {
   const result = await pool.query(

@@ -300,9 +300,11 @@ async function recordAIUsageEvent(params: {
         costs.sonnet46EquivalentUsd,
       ],
     );
-    void maybeSendAIUsageCostAlert().catch((alertError: any) => {
-      console.error(`[AICost] Alert check failed: ${alertError?.message || alertError}`);
-    });
+    if (areAIUsageCostAlertsEnabled()) {
+      void maybeSendAIUsageCostAlert().catch((alertError: any) => {
+        console.error(`[AICost] Alert check failed: ${alertError?.message || alertError}`);
+      });
+    }
   } catch (error: any) {
     console.error(`[AICost] Persistence failed: ${error?.message || error}`);
   }
@@ -311,7 +313,21 @@ async function recordAIUsageEvent(params: {
 
 const DAILY_COST_ALERT_LEVELS_USD = [5, 10, 25, 50, 100, 250, 500, 1_000] as const;
 
+export function areRemediationSideEffectsDisabled(
+  env: Record<string, string | undefined> = process.env,
+): boolean {
+  return String(env.REMEDIATION_SIDE_EFFECTS_DISABLED || "").toLowerCase() === "true";
+}
+
+export function areAIUsageCostAlertsEnabled(
+  env: Record<string, string | undefined> = process.env,
+): boolean {
+  if (areRemediationSideEffectsDisabled(env)) return false;
+  return String(env.AI_COST_ALERTS_ENABLED || "true").toLowerCase() !== "false";
+}
+
 async function maybeSendAIUsageCostAlert(): Promise<void> {
+  if (!areAIUsageCostAlertsEnabled()) return;
   await ensureAIUsageTable();
   const { pool } = await import("./db");
   const spendResult = await pool.query(`
@@ -359,6 +375,7 @@ async function maybeSendAIUsageCostAlert(): Promise<void> {
 }
 
 export async function checkAIUsageCostAlert(): Promise<void> {
+  if (!areAIUsageCostAlertsEnabled()) return;
   await maybeSendAIUsageCostAlert();
 }
 
