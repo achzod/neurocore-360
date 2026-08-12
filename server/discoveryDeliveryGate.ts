@@ -4,7 +4,7 @@ import {
   validateDiscoveryReportForDelivery,
 } from "./discovery-scan";
 
-export const DISCOVERY_DELIVERY_GATE_VERSION = 2;
+export const DISCOVERY_DELIVERY_GATE_VERSION = 3;
 
 export interface DiscoveryDeliveryGateResult {
   name: "discovery_delivery";
@@ -152,7 +152,13 @@ export function evaluateCanonicalDiscoveryArtifacts(
     );
   }
   if (canonical.legacyValidation?.ok) {
-    return createDiscoveryDeliveryGateResult(canonical.legacyValidation, checkedAt);
+    // Historical structural validation cannot prove that OpenAI generated all
+    // premium sections. It remains readable but is never deliverable as a new
+    // premium Discovery report.
+    return createDiscoveryDeliveryGateResult(
+      { ok: false, errors: ["premium_ai_evidence_missing"] },
+      checkedAt,
+    );
   }
   return createDiscoveryDeliveryGateResult(
     canonical.legacyValidation || { ok: false, errors: ["report_missing"] },

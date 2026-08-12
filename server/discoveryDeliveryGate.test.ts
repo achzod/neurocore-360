@@ -25,20 +25,28 @@ function validDiscoveryReport() {
       value: 6,
       max: 10,
     })),
-    sections: Array.from({ length: 4 }, (_, index) => ({
-      id: `section_${index}`,
+    generationQuality: {
+      mode: "premium_ai" as const,
+      version: 1 as const,
+      provider: "openai" as const,
+      synthesis: "ai_validated" as const,
+      validatedDomains: ["digestion", "energie", "lifestyle", "mindset", "nutrition", "sommeil", "stress", "training"],
+      fallbackUsed: false as const,
+    },
+    sections: ["intro", "global", "sommeil", "stress", "energie", "digestion", "training", "nutrition", "lifestyle", "mindset", "scans", "coaching"].map((id, index) => ({
+      id,
       title: `Section ${index}`,
-      content: `<p>${index === 0 ? `${clientName} ` : ""}${"contenu physiologique précis ".repeat(35)}</p>`,
+      content: `<p>${index === 0 ? `${clientName} ` : ""}${"contenu physiologique précis ".repeat(140)}</p>`,
     })),
   };
 }
 
 const validAssets = {
-  txt: "T".repeat(1200),
-  html: `<!doctype html><html><body>${"H".repeat(2100)}</body></html>`,
+  txt: "T".repeat(40_000),
+  html: `<!doctype html><html><body>${"H".repeat(40_000)}</body></html>`,
 };
 
-test("Discovery delivery accepts the real four-section contract", () => {
+test("Discovery delivery accepts a complete premium AI contract", () => {
   const result = validateDiscoveryReportForDelivery(validDiscoveryReport(), validAssets);
   assert.deepEqual(result, { ok: true, errors: [] });
 });
@@ -49,6 +57,23 @@ test("Discovery delivery still fails a real content error", () => {
   const result = validateDiscoveryReportForDelivery(report, validAssets);
   assert.equal(result.ok, false);
   assert.ok(result.errors.includes("metric_value:domain_2"));
+});
+
+test("Discovery delivery rejects templated reports without premium AI evidence", () => {
+  const report = validDiscoveryReport();
+  delete (report as any).generationQuality;
+  const result = validateDiscoveryReportForDelivery(report, validAssets);
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.includes("premium_ai_evidence_missing"));
+});
+
+test("Discovery delivery rejects one short AI domain even when totals are large", () => {
+  const report = validDiscoveryReport();
+  const energy = report.sections.find((section) => section.id === "energie")!;
+  energy.content = "<p>court</p>";
+  const result = validateDiscoveryReportForDelivery(report, validAssets);
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.some((error) => error.startsWith("premium_section:energie:")));
 });
 
 test("delivery gate persists exact errors without hiding the quality score", () => {
@@ -92,7 +117,7 @@ test("rechecking the gate replaces its trace instead of duplicating it", () => {
   assert.equal(getPersistedDiscoveryDeliveryGate(twice)?.checkedAt, "2026-08-08T12:06:00.000Z");
 });
 
-test("recovery preserves canonical artifacts for the three blocked legacy shapes", () => {
+test("recovery preserves canonical premium artifacts for the three storage shapes", () => {
   const report = validDiscoveryReport();
   const assets = buildDiscoveryReportAssets(report as any);
   const fixtures = [
@@ -121,7 +146,7 @@ test("recovery preserves canonical artifacts for the three blocked legacy shapes
   for (const fixture of fixtures) {
     const canonical = resolveCanonicalDiscoveryArtifacts(fixture.input);
     assert.ok(canonical.report, `${fixture.auditId}: report must be recoverable`);
-    assert.equal((canonical.report as any).sections.length, 4, `${fixture.auditId}: sections`);
+    assert.equal((canonical.report as any).sections.length, 12, `${fixture.auditId}: sections`);
     assert.equal(canonical.narrativeReport.txt, canonical.txt, `${fixture.auditId}: narrative txt`);
     assert.equal(canonical.narrativeReport.html, canonical.html, `${fixture.auditId}: narrative html`);
     assert.equal(
@@ -145,7 +170,7 @@ test("recovery cannot deliver when no valid artifact exists", () => {
   assert.deepEqual(gate.errors, ["report_missing"]);
 });
 
-test("historical 4/4 artifacts for the three production shapes pass the exact dry-run gate", () => {
+test("historical structural artifacts remain readable but cannot be delivered as premium AI", () => {
   for (const auditId of ["409c90ce", "6d186e76", "d4466162"]) {
     const txt = [
       "INFOS IMPORTANTES",
@@ -181,7 +206,8 @@ test("historical 4/4 artifacts for the three production shapes pass the exact dr
       narrativeReport: { validationResult },
     });
     assert.equal(canonical.source, "legacy_validated_txt", auditId);
-    assert.equal(evaluateCanonicalDiscoveryArtifacts(canonical).ok, true, auditId);
+    assert.equal(evaluateCanonicalDiscoveryArtifacts(canonical).ok, false, auditId);
+    assert.deepEqual(evaluateCanonicalDiscoveryArtifacts(canonical).errors, ["premium_ai_evidence_missing"], auditId);
     assert.equal(canonical.narrativeReport.txt, txt.trim(), auditId);
     assert.equal(canonical.narrativeReport.html, html, auditId);
   }

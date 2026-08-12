@@ -126,6 +126,15 @@ export interface DiscoveryAnalysisResult {
   ctaMessage: string;
 }
 
+export interface DiscoveryPremiumGenerationEvidence {
+  mode: 'premium_ai';
+  version: 1;
+  provider: 'openai';
+  synthesis: 'ai_validated';
+  validatedDomains: string[];
+  fallbackUsed: false;
+}
+
 export interface BlockageAnalysis {
   domain: string;
   severity: 'critique' | 'modere' | 'leger';
@@ -141,7 +150,12 @@ const MIN_DISCOVERY_SECTION_LINES = 30;
 export const DISCOVERY_DELIVERY_MIN_SECTIONS = 4;
 const MIN_DISCOVERY_SECTION_WORDS = 400;
 const MIN_DISCOVERY_SECTION_PARAGRAPHS = 8;
-const DISCOVERY_AI_TIMEOUT_MS = Number(process.env.DISCOVERY_AI_TIMEOUT_MS ?? "360000");
+// Production generations have legitimately completed between 622s and 712s.
+// Never let an old 5/6-minute environment value abandon a live provider job.
+const DISCOVERY_AI_TIMEOUT_MS = Math.max(
+  15 * 60 * 1000,
+  Number(process.env.DISCOVERY_AI_TIMEOUT_MS ?? "900000"),
+);
 
 async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   let timeoutId: NodeJS.Timeout | undefined;
@@ -1361,14 +1375,10 @@ FORMAT OBLIGATOIRE:
     }
   }
 
-  if (bestCandidate) {
-    console.warn(
-      `[Discovery] Section ${domain} fallback to best candidate (${bestValidation.charCount} chars, ${bestValidation.wordCount} words)`
-    );
-    return cleanMarkdownToHTML(bestCandidate);
-  }
-
-  return '';
+  throw new Error(
+    `[Discovery Premium] Section ${domain} non conforme apres ${MAX_RETRIES} tentatives ` +
+    `(best=${bestValidation.charCount} chars/${bestValidation.wordCount} words). Aucun fallback autorise.`,
+  );
 }
 
 // Get knowledge context for a specific domain
@@ -1738,15 +1748,23 @@ RAPPELS CRITIQUES:
 
       rawText = normalizeSingleVoice(rawText);
       rawText = stripCitationLines(rawText);
-      rawText = ensureSynthesisLength(rawText, responses, scores, blocages);
+      const wordCount = stripHtmlTags(rawText).split(/\s+/).filter(Boolean).length;
+      const paragraphCount = rawText.split(/\n\s*\n/).filter((part) => part.trim().length > 120).length;
+      if (wordCount < 650 || paragraphCount < 4) {
+        if (attempt < 2) {
+          console.warn(`[Discovery] Synthese non conforme (${wordCount} mots/${paragraphCount} paragraphes), retry...`);
+          continue;
+        }
+        throw new Error(`Synthese trop courte: ${wordCount} mots/${paragraphCount} paragraphes`);
+      }
       return cleanMarkdownToHTML(rawText);
     }
     throw new Error("[Discovery] Synthese invalide apres retries");
   } catch (error) {
     console.error('[Discovery] AI synthesis error:', error);
-
-    return cleanMarkdownToHTML(
-      buildSynthesisFallback(responses, scores, blocages)
+    throw new Error(
+      `[Discovery Premium] Synthese OpenAI indisponible ou non conforme. Aucun fallback autorise: ` +
+      `${error instanceof Error ? error.message : String(error)}`,
     );
   }
 }
@@ -1909,13 +1927,14 @@ interface SectionContent {
   chips?: string[];
 }
 
-interface ReportData {
+export interface ReportData {
   globalScore: number;
   metrics: Metric[];
   sections: SectionContent[];
   clientName: string;
   generatedAt: string;
   auditType: string;
+  generationQuality?: DiscoveryPremiumGenerationEvidence;
 }
 
 function escapeHtml(value: string): string {
@@ -1976,19 +1995,11 @@ export async function convertToNarrativeReport(
     return { domain, content };
   });
 
-  const aiResults = await Promise.allSettled(aiContentPromises);
-  const aiContents = aiResults.map((result, idx) => {
-    if (result.status === "fulfilled") {
-      return result.value;
-    }
-    const domain = domains[idx];
-    console.warn(`[Discovery] Section ${domain} failed to generate:`, result.reason);
-    return { domain, content: "" };
-  });
-  const invalidSections = aiContents.filter(({ content }) => !content || content.length < MIN_DISCOVERY_SECTION_CHARS);
+  const aiContents = await Promise.all(aiContentPromises);
+  const invalidSections = aiContents.filter(({ content }) => !content || stripHtmlTags(content).length < MIN_DISCOVERY_SECTION_CHARS);
   if (invalidSections.length > 0) {
     const names = invalidSections.map(s => s.domain).join(", ");
-    console.warn(`[Discovery] Sections invalides ou vides (fallback template): ${names}`);
+    throw new Error(`[Discovery Premium] Sections OpenAI invalides: ${names}. Aucun fallback autorise.`);
   }
   const aiContentMap = new Map(aiContents.map(({ domain, content }) => [domain, content]));
 
@@ -2078,7 +2089,6 @@ export async function convertToNarrativeReport(
 
       // Build content with header + AI content
       let content = `<p><strong>Score: ${score}/100</strong> <span style="color: ${severityColor}; font-weight: bold;">[${severityLabel}]</span></p>\n\n`;
-      let appendedFallback = false;
 
       // Add blocage info if exists
       if (domainBlocages.length > 0) {
@@ -2090,20 +2100,8 @@ export async function convertToNarrativeReport(
       // Add AI-generated detailed analysis (40-50 lines)
       if (aiContent) {
         content += aiContent.split('\n\n').map(p => `<p>${p}</p>`).join('\n');
-        if (aiContent.length < MIN_DISCOVERY_SECTION_CHARS) {
-          // Complete with template if AI output is shorter than expected
-          content += generateDomainHTML(domain, score, responses);
-          appendedFallback = true;
-        }
       } else {
-        // Fallback to template if AI failed
-        content += generateDomainHTML(domain, score, responses);
-        appendedFallback = true;
-      }
-
-      const finalTextLength = stripHtmlTags(content).length;
-      if (finalTextLength < MIN_DISCOVERY_SECTION_CHARS && !appendedFallback) {
-        content += generateDomainHTML(domain, score, responses);
+        throw new Error(`[Discovery Premium] Section ${domain} absente. Aucun fallback autorise.`);
       }
 
       sections.push({
@@ -2195,7 +2193,15 @@ export async function convertToNarrativeReport(
     sections,
     clientName: prenom,
     generatedAt: new Date().toISOString(),
-    auditType: "GRATUIT"
+    auditType: "GRATUIT",
+    generationQuality: {
+      mode: 'premium_ai',
+      version: 1,
+      provider: 'openai',
+      synthesis: 'ai_validated',
+      validatedDomains: [...domains].sort(),
+      fallbackUsed: false,
+    },
   };
 
   // ════════════════════════════════════════════════════════════
@@ -2264,6 +2270,10 @@ export function buildDiscoveryReportTxt(report: ReportData): string {
     `CLIENT_NAME: ${report.clientName || "Profil"}`,
     `GENERATED_AT: ${report.generatedAt || new Date().toISOString()}`,
     `GLOBAL_SCORE: ${Number.isFinite(report.globalScore) ? report.globalScore : 0}`,
+    `QUALITY_MODE: ${report.generationQuality?.mode || "unknown"}`,
+    `QUALITY_VERSION: ${report.generationQuality?.version || 0}`,
+    `QUALITY_PROVIDER: ${report.generationQuality?.provider || "unknown"}`,
+    `FALLBACK_USED: ${String(report.generationQuality?.fallbackUsed ?? true)}`,
     "",
     "METRICS",
   ];
@@ -2369,12 +2379,44 @@ export function validateDiscoveryReportForDelivery(
   const weakSections = sections.filter((s) => stripHtml((s as any).content || "").length < 80);
   const txt = String(assets?.txt || "").trim();
   const html = String(assets?.html || "").trim();
+  const expectedSectionIds = [
+    "intro", "global", "sommeil", "stress", "energie", "digestion",
+    "training", "nutrition", "lifestyle", "mindset", "scans", "coaching",
+  ];
+  const sectionById = new Map(sections.map((section: any) => [String(section?.id || ""), section]));
+  const evidence = report?.generationQuality;
+
+  if (
+    evidence?.mode !== "premium_ai" ||
+    evidence?.version !== 1 ||
+    evidence?.provider !== "openai" ||
+    evidence?.synthesis !== "ai_validated" ||
+    evidence?.fallbackUsed !== false
+  ) {
+    errors.push("premium_ai_evidence_missing");
+  }
+  const validatedDomains = Array.isArray(evidence?.validatedDomains)
+    ? [...evidence.validatedDomains].sort()
+    : [];
+  const expectedDomains = ["digestion", "energie", "lifestyle", "mindset", "nutrition", "sommeil", "stress", "training"];
+  if (JSON.stringify(validatedDomains) !== JSON.stringify(expectedDomains)) {
+    errors.push(`validated_domains:${validatedDomains.length}/8`);
+  }
+  for (const sectionId of expectedSectionIds) {
+    if (!sectionById.has(sectionId)) errors.push(`section_missing:${sectionId}`);
+  }
+  for (const domain of expectedDomains) {
+    const domainChars = stripHtml((sectionById.get(domain) as any)?.content || "").length;
+    if (domainChars < MIN_DISCOVERY_SECTION_CHARS) {
+      errors.push(`premium_section:${domain}:${domainChars}/${MIN_DISCOVERY_SECTION_CHARS}`);
+    }
+  }
 
   if (sections.length < DISCOVERY_DELIVERY_MIN_SECTIONS) {
     errors.push(`sections:${sections.length}/${DISCOVERY_DELIVERY_MIN_SECTIONS}`);
   }
   if (weakSections.length > 2) errors.push(`weak_sections:${weakSections.length}`);
-  if (totalContent < 3000) errors.push(`total_content:${totalContent}/3000`);
+  if (totalContent < 30_000) errors.push(`total_content:${totalContent}/30000`);
   if (typeof report?.globalScore !== "number" || !Number.isFinite(report.globalScore) || report.globalScore < 0 || report.globalScore > 10) {
     errors.push(`global_score:${String(report?.globalScore)}`);
   }
@@ -2393,8 +2435,8 @@ export function validateDiscoveryReportForDelivery(
     if (!hasPersonalization) errors.push(`personalization_missing:${report.clientName}`);
   }
   if (!report?.generatedAt) errors.push("generated_at_missing");
-  if (txt.length < 1000) errors.push(`report_txt:${txt.length}/1000`);
-  if (html.length < 2000 || !/(<!doctype html|<html[\s>])/i.test(html)) errors.push(`report_html:${html.length}/2000`);
+  if (txt.length < 30_000) errors.push(`report_txt:${txt.length}/30000`);
+  if (html.length < 30_000 || !/(<!doctype html|<html[\s>])/i.test(html)) errors.push(`report_html:${html.length}/30000`);
 
   return { ok: errors.length === 0, errors };
 }
@@ -2406,6 +2448,10 @@ export function parseStoredDiscoveryTxt(txt: string): ReportData | null {
   const clientName = normalizedTxt.match(/^CLIENT_NAME:\s*(.+)$/m)?.[1]?.trim() || "Profil";
   const generatedAt = normalizedTxt.match(/^GENERATED_AT:\s*(.+)$/m)?.[1]?.trim() || new Date().toISOString();
   const globalScore = Number(normalizedTxt.match(/^GLOBAL_SCORE:\s*([0-9.]+)$/m)?.[1] || "0");
+  const qualityMode = normalizedTxt.match(/^QUALITY_MODE:\s*(.+)$/m)?.[1]?.trim();
+  const qualityVersion = Number(normalizedTxt.match(/^QUALITY_VERSION:\s*([0-9]+)$/m)?.[1] || "0");
+  const qualityProvider = normalizedTxt.match(/^QUALITY_PROVIDER:\s*(.+)$/m)?.[1]?.trim();
+  const fallbackUsed = normalizedTxt.match(/^FALLBACK_USED:\s*(.+)$/m)?.[1]?.trim();
 
   const metricsBlock = normalizedTxt.match(/(?:^|\n)METRICS\n([\s\S]*?)\n\nSECTIONS(?:\n|$)/);
   const metrics: Metric[] = metricsBlock
@@ -2460,6 +2506,18 @@ export function parseStoredDiscoveryTxt(txt: string): ReportData | null {
     clientName,
     generatedAt,
     auditType: "GRATUIT",
+    ...(qualityMode === "premium_ai" && qualityVersion === 1 && qualityProvider === "openai" && fallbackUsed === "false"
+      ? {
+          generationQuality: {
+            mode: "premium_ai" as const,
+            version: 1 as const,
+            provider: "openai" as const,
+            synthesis: "ai_validated" as const,
+            validatedDomains: ["digestion", "energie", "lifestyle", "mindset", "nutrition", "sommeil", "stress", "training"],
+            fallbackUsed: false as const,
+          },
+        }
+      : {}),
   };
 }
 

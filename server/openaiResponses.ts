@@ -26,7 +26,9 @@ const PROFILE_CONFIG: Record<OpenAIReportProfile, ProfileConfig> = {
   discovery: {
     effort: "high",
     maxOutputTokens: 10_000,
-    timeoutMs: 6 * 60 * 1000,
+    // Production Discovery responses commonly need 622-712 seconds.
+    // Keep enough headroom for a valid long-running response plus polling.
+    timeoutMs: 15 * 60 * 1000,
     verbosity: "high",
   },
   premium: {

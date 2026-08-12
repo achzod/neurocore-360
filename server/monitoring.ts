@@ -15,6 +15,7 @@ import { isOpenAICreditError } from "./openaiResponses";
 import { log } from "./index";
 import { shouldAutoRegenerateNeedsReviewAudit } from "./discoveryDeliveryGate";
 import { recoverMissingDiscoveryJobs } from "./discoveryMissingJobRecovery";
+import { generateAndPersistPremiumDiscoveryReport } from "./discoveryGenerationService";
 
 interface MonitoringStats {
   generatingStuck: number;
@@ -76,9 +77,7 @@ export async function runAutomaticMonitoring(): Promise<MonitoringStats> {
       markSuperseded: (auditId, replacementAuditId, reason) =>
         storage.markDiscoveryAuditSuperseded(auditId, replacementAuditId, reason),
       startEnqueuedJob: async (auditId) => {
-        const audit = await storage.getAudit(auditId);
-        if (!audit) throw new Error(`Audit ${auditId} not found after enqueue`);
-        await startReportGeneration(audit.id, audit.responses, audit.scores || {}, audit.type);
+        await generateAndPersistPremiumDiscoveryReport(auditId);
       },
       log: logMonitoringAction,
     });
@@ -191,6 +190,19 @@ async function fixNeedsReviewJobs(stats: MonitoringStats): Promise<void> {
         if (!shouldAutoRegenerateNeedsReviewAudit(audit, {
           operationalFailure: providerCreditFailure,
         })) {
+          continue;
+        }
+
+        if (audit.type === "GRATUIT") {
+          if (!providerCreditFailure) continue;
+          await storage.deleteReportJob(audit.id).catch(() => {});
+          const claimed = await storage.claimAuditForGeneration(audit.id).catch(() => false);
+          if (!claimed) continue;
+          await generateAndPersistPremiumDiscoveryReport(audit.id);
+          stats.needsReviewFixed++;
+          await logMonitoringAction(audit.id, "REGENERATE_DISCOVERY_PROVIDER_RECOVERY", {
+            reason: "OpenAI credit recovered; generation only, delivery remains gated",
+          });
           continue;
         }
 

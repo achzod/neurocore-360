@@ -93,6 +93,10 @@ import {
   type DiscoveryDeliveryGateResult,
 } from "./discoveryDeliveryGate";
 import {
+  isAuditEligibleForPostDeliveryAutomation,
+  isDiscoveryReportDeliveryEnabled,
+} from "./discoveryAutomationPolicy";
+import {
   generatePeptidesProtocol,
   checkPeptidesSafetyGate,
   fetchEnclomipheneSourceSnapshot,
@@ -535,8 +539,15 @@ export async function registerRoutes(
     reportDeliveryStatus: string,
   ): Promise<{ txt: string; html: string }> {
     const discoveryAssets = buildDiscoveryReportAssets(narrativeReport);
+    const gate = evaluateDiscoveryDeliveryGate(narrativeReport, discoveryAssets);
+    if (!gate.ok) {
+      throw new Error(
+        `[Discovery Premium] Refus de persistance: ${gate.errors.join(", ")}`,
+      );
+    }
+    const gatedNarrative = attachDiscoveryDeliveryGateResult(narrativeReport, gate);
     await storage.updateAudit(auditId, {
-      narrativeReport,
+      narrativeReport: gatedNarrative,
       reportTxt: discoveryAssets.txt,
       reportHtml: discoveryAssets.html,
       reportGeneratedAt: new Date(),
@@ -615,6 +626,11 @@ export async function registerRoutes(
     // send claim. Administrative raw-send flags may bypass paid-report claims,
     // but can never bypass the free report safety contract.
     const bypassClaim = opts?.bypassClaim === true && auditType !== "GRATUIT";
+
+    if (auditType === "GRATUIT" && !isDiscoveryReportDeliveryEnabled()) {
+      console.warn(`${prefix} Discovery delivery disabled by DISCOVERY_REPORT_DELIVERY_ENABLED for audit ${auditId}`);
+      return { sent: false, skipped: "discovery_delivery_disabled" };
+    }
 
     if (!bypassClaim) {
       // A READY write from a generator must never bypass a future delivery
@@ -7747,9 +7763,11 @@ export async function registerRoutes(
         if (!audit.email) continue;
         if (audit.createdAt && new Date(audit.createdAt) < new Date('2026-03-17')) continue; // Only post-launch
 
-        // Check if report was sent (has reportSentAt or status SENT)
-        const sentAt = (audit as any).reportSentAt || audit.createdAt;
-        if (!sentAt) continue;
+        // Never ask for feedback on an undelivered, superseded or non-premium
+        // Discovery report. The exact persisted premium gate is authoritative.
+        if (!isAuditEligibleForPostDeliveryAutomation(audit as any)) continue;
+
+        const sentAt = (audit as any).reportSentAt;
         const daysSinceSent = (now.getTime() - new Date(sentAt).getTime()) / (24 * 60 * 60 * 1000);
         const maxDays = req.body.catchUp ? 90 : 14; // catchUp=true → rattrapage tous les anciens clients
         if (daysSinceSent < 3 || daysSinceSent > maxDays) continue;
@@ -7781,7 +7799,7 @@ export async function registerRoutes(
           const result = await sendReviewRequestJ3Email(
             audit.email,
             audit.id,
-            audit.auditType || "GRATUIT",
+            audit.type || "GRATUIT",
             baseUrl,
             trackingRecord.id
           );
@@ -9614,7 +9632,9 @@ export async function registerRoutes(
 
       // Get all SENT audits
       const allAudits = await storage.getAllAudits();
-      const sentAudits = allAudits.filter(a => a.reportDeliveryStatus === "SENT" && a.reportSentAt);
+      const sentAudits = allAudits.filter(a =>
+        isAuditEligibleForPostDeliveryAutomation(a as any)
+      );
 
       for (const audit of sentAudits) {
         try {
@@ -14083,8 +14103,12 @@ export async function registerRoutes(
       for (const audit of allAudits) {
         if (!audit.email || sent >= 20) break;
         if (audit.createdAt && new Date(audit.createdAt) < new Date('2026-03-17')) continue;
-        const sentAt = (audit as any).reportSentAt || audit.createdAt;
-        if (!sentAt) continue;
+        if (audit.reportDeliveryStatus !== "SENT" || !audit.reportSentAt) continue;
+        if (audit.type === "GRATUIT") {
+          const discoveryAudit = await storage.getAudit(audit.id).catch(() => null);
+          if (!discoveryAudit || !isAuditEligibleForPostDeliveryAutomation(discoveryAudit as any)) continue;
+        }
+        const sentAt = audit.reportSentAt;
         const daysSinceSent = (now.getTime() - new Date(sentAt).getTime()) / (24 * 60 * 60 * 1000);
         if (daysSinceSent < 3 || daysSinceSent > 14) continue;
         const existingReview = await storage.getReviewByAuditId?.(audit.id);
@@ -14094,7 +14118,7 @@ export async function registerRoutes(
         if (alreadySent) continue;
         try {
           const trackingRecord = await storage.createEmailTracking(audit.id, "sendReviewRequestJ3Email", audit.email);
-          await sendReviewRequestJ3Email(audit.email, audit.id, audit.auditType || "GRATUIT", baseUrl, trackingRecord.id);
+          await sendReviewRequestJ3Email(audit.email, audit.id, audit.type || "GRATUIT", baseUrl, trackingRecord.id);
           sent++;
           console.log(`[ReviewCron] Sent review request to ${audit.email} (audit ${audit.id})`);
         } catch (e) {
@@ -14634,6 +14658,12 @@ export async function registerRoutes(
       for (const audit of allAudits) {
         if (!audit.email || audit.email.includes("test") || audit.email.includes("debug") || audit.email.includes("achzodcoaching") || audit.email.includes("achkou")) continue;
         if (!audit.reportSentAt) continue;
+        if (audit.type === "GRATUIT") {
+          const discoveryAudit = await storage.getAudit(audit.id).catch(() => null);
+          if (!discoveryAudit || !isAuditEligibleForPostDeliveryAutomation(discoveryAudit as any)) continue;
+        } else if (audit.reportDeliveryStatus !== "SENT") {
+          continue;
+        }
 
         const sentAt = new Date(audit.reportSentAt);
         const daysSinceSent = (now.getTime() - sentAt.getTime()) / (24 * 60 * 60 * 1000);
