@@ -313,6 +313,7 @@ async function fetchSendPulseLiveRecordDetails(
 const isCriticalSendPulseEmail = (emailType: string, subject: string): boolean => {
   const normalized = normalizeSendPulseText(subject);
   return emailType === "sendReportReadyEmail"
+    || emailType === "sendReportRegeneratedEmail"
     || emailType === "sendBloodAnalysisHtmlEmail"
     || emailType === "sendPeptidesOrderConfirmation"
     || (emailType === "sendCTAEmail" && (
@@ -531,7 +532,8 @@ async function sendEmailWithTracking(
     if (sendpulseTaskId) result.id = sendpulseTaskId;
     const liveLookupMetadata: Record<string, any> = {};
     const criticalEmail = isCriticalSendPulseEmail(trackingData.emailType, emailPayload.subject);
-    const allowAcceptedWithoutLiveVerification = trackingData.emailType === "sendReportReadyEmail";
+    const allowAcceptedWithoutLiveVerification = trackingData.emailType === "sendReportReadyEmail"
+      || trackingData.emailType === "sendReportRegeneratedEmail";
     let liveDeliveryFailure: Record<string, unknown> | null = null;
 
     if (result.result && sendpulseTaskId) {
@@ -1276,6 +1278,66 @@ export async function sendReportReadyEmail(
     return false;
   } catch (error) {
     console.error("[SendPulse] Error sending report email:", error);
+    return false;
+  }
+}
+
+/** Corrective notice for a Discovery report that was regenerated in place.
+ * Idempotency is owned by the caller's precreated tracking claim. logEmail
+ * updates that exact row via metadata.trackingId. */
+export async function sendReportRegeneratedEmail(
+  email: string,
+  auditId: string,
+  baseUrl: string,
+  input: {
+    trackingId: string;
+    previousFallbackHash: string;
+    premiumHash: string;
+  },
+): Promise<boolean> {
+  try {
+    const reportLink = `${baseUrl.replace(/\/$/, "")}/scan/${auditId}`;
+    const content = `
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 24px 0;">
+        <tr><td align="center"><span style="display:inline-block;background-color:${COLORS.discovery};color:#000;padding:7px 18px;border-radius:999px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;">Discovery Scan mis a jour</span></td></tr>
+      </table>
+      <h2 style="color:${COLORS.text};margin:0 0 18px;font-size:28px;line-height:1.2;text-align:center;font-weight:700;">Ton analyse complete est disponible</h2>
+      <p style="color:${COLORS.textMuted};font-size:16px;line-height:1.7;margin:0 0 14px;text-align:center;">J'ai repris ton Discovery Scan et remplace la premiere version par l'analyse complete de ton profil.</p>
+      <p style="color:${COLORS.textMuted};font-size:16px;line-height:1.7;margin:0 0 10px;text-align:center;">Ton lien reste le meme. Tu peux maintenant consulter la version approfondie, avec chaque domaine analyse en detail.</p>
+      ${getPrimaryButton("Consulter mon Discovery Scan", reportLink, COLORS.discovery)}
+      ${getCoachingSection("GRATUIT", COLORS.discovery)}
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top:28px;"><tr><td style="padding:18px 20px;background:${COLORS.background};border-radius:8px;border:1px solid ${COLORS.border};text-align:center;"><p style="color:${COLORS.textMuted};font-size:12px;margin:0 0 6px;">Lien direct :</p><p style="margin:0;"><a href="${reportLink}" style="color:${COLORS.discovery};font-size:11px;word-break:break-all;text-decoration:underline;">${reportLink}</a></p></td></tr></table>
+    `;
+    const html = getEmailWrapper(
+      content,
+      `linear-gradient(135deg, ${COLORS.discovery} 0%, ${COLORS.discovery}dd 100%)`,
+      "Discovery Scan",
+      "Analyse complete mise a jour",
+    );
+    const result = await sendEmailWithTracking(
+      {
+        html: encodeBase64(html),
+        text: `Ton Discovery Scan a ete mis a jour avec l'analyse complete. Consulte-le ici : ${reportLink}`,
+        subject: "Ton Discovery Scan complet est maintenant disponible",
+        from: { name: "Achzod", email: SENDER_EMAIL },
+        to: [{ email }],
+      },
+      {
+        emailType: "sendReportRegeneratedEmail",
+        recipientEmail: email,
+        auditId,
+        auditType: "GRATUIT",
+        metadata: {
+          trackingId: input.trackingId,
+          previousFallbackHash: input.previousFallbackHash,
+          premiumHash: input.premiumHash,
+          reportLink,
+        },
+      },
+    );
+    return result.result === true;
+  } catch (error) {
+    console.error("[DiscoveryRemediation] Corrective notification failed:", error);
     return false;
   }
 }

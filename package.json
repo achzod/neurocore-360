@@ -15,6 +15,7 @@
     "test:email-report-layout": "tsx scripts/test-automatic-report-email-layout.ts",
     "test:discovery:missing-job": "tsx scripts/test-discovery-missing-job-recovery.ts",
     "discovery:premium-recovery": "tsx scripts/discovery-premium-recovery.ts --dry-run",
+    "discovery:remediate-sent": "tsx scripts/remediate-sent-discovery.ts --dry-run",
     "test:recovery-cta-click": "tsx scripts/test-recovery-cta-click-followup.ts",
     "check:secret-source": "tsx scripts/check-secret-source-leaks.ts",
     "test:blood:regression": "tsx scripts/validate-blood-score-regression.ts",

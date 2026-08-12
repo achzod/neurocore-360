@@ -12,6 +12,7 @@ import { startReportGeneration, getJobStatus, forceRegenerate } from "./reportJo
 import {
   sendMagicLinkEmail,
   sendReportReadyEmail,
+  sendReportRegeneratedEmail,
   sendAdminEmailNewAudit,
   sendGratuitUpsellEmail,
   sendGratuitJ5Email,
@@ -96,6 +97,10 @@ import {
   isAuditEligibleForPostDeliveryAutomation,
   isDiscoveryReportDeliveryEnabled,
 } from "./discoveryAutomationPolicy";
+import {
+  claimRegeneratedReportNotification,
+  isRegeneratedNotificationEnabled,
+} from "./discoverySentRemediation";
 import {
   generatePeptidesProtocol,
   checkPeptidesSafetyGate,
@@ -13114,6 +13119,49 @@ export async function registerRoutes(
     } catch (error) {
       console.error("[Reconcile] error:", error);
       res.status(500).json({ error: "Erreur serveur", message: error instanceof Error ? error.message : String(error) });
+    }
+  });
+
+  app.post("/api/admin/discovery/:auditId/notify-regenerated", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    if (!isRegeneratedNotificationEnabled()) {
+      res.status(503).json({ error: "DISCOVERY_REGENERATED_NOTIFICATION_ENABLED is not true" });
+      return;
+    }
+    try {
+      const expectedPreviousFallbackHash = String(req.body?.expectedPreviousFallbackHash || "").toLowerCase();
+      const claim = await claimRegeneratedReportNotification({
+        auditId: req.params.auditId,
+        expectedPreviousFallbackHash,
+      });
+      if (!claim.claimed) {
+        res.json({ success: true, sent: false, skipped: claim.skipped });
+        return;
+      }
+      const sent = await sendReportRegeneratedEmail(
+        claim.email!,
+        req.params.auditId,
+        getBaseUrl(),
+        {
+          trackingId: claim.trackingId!,
+          previousFallbackHash: expectedPreviousFallbackHash,
+          premiumHash: claim.premiumHash!,
+        },
+      );
+      res.status(sent ? 200 : 502).json({
+        success: sent,
+        sent,
+        trackingId: claim.trackingId,
+        // A claimed notification is deliberately one-shot even on ambiguous
+        // provider failure. A later call cannot create a duplicate.
+        retryBlocked: !sent,
+      });
+    } catch (error) {
+      console.error("[DiscoveryRemediation] Notification error:", error);
+      res.status(409).json({
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   });
 
