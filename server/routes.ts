@@ -552,13 +552,12 @@ export async function registerRoutes(
       );
     }
     const gatedNarrative = attachDiscoveryDeliveryGateResult(narrativeReport, gate);
-    await storage.updateAudit(auditId, {
-      narrativeReport: gatedNarrative,
-      reportTxt: discoveryAssets.txt,
-      reportHtml: discoveryAssets.html,
-      reportGeneratedAt: new Date(),
-      reportDeliveryStatus: reportDeliveryStatus as any,
-    });
+    const canonicalScores: Record<string, number> = Object.fromEntries(
+      (Array.isArray(narrativeReport.metrics) ? narrativeReport.metrics : [])
+        .filter((metric: any) => metric?.key && Number.isFinite(metric?.value))
+        .map((metric: any) => [String(metric.key), Math.round(Number(metric.value) * 10)]),
+    );
+    canonicalScores.global = Math.round(Number(narrativeReport.globalScore) * 10);
     await storage.createReportArtifact({
       auditId,
       tier: "GRATUIT",
@@ -566,9 +565,18 @@ export async function registerRoutes(
       model: process.env.OPENAI_DISCOVERY_MODEL || process.env.OPENAI_REPORT_MODEL || process.env.GEMINI_MODEL || "discovery",
       txt: discoveryAssets.txt,
       html: discoveryAssets.html,
-    }).catch((error) => {
-      console.error(`[Discovery] Report artifact save failed for ${auditId}:`, error);
+    }, { strict: true });
+    const persisted = await storage.updateAudit(auditId, {
+      narrativeReport: gatedNarrative,
+      scores: canonicalScores,
+      reportTxt: discoveryAssets.txt,
+      reportHtml: discoveryAssets.html,
+      reportGeneratedAt: new Date(),
+      reportDeliveryStatus: reportDeliveryStatus as any,
     });
+    if (!persisted || persisted.reportDeliveryStatus !== reportDeliveryStatus) {
+      throw new Error(`[Discovery Premium] Persistance non verifiee pour ${auditId}`);
+    }
     return discoveryAssets;
   }
 

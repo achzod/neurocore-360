@@ -20,6 +20,25 @@ export function isDiscoveryReportDeliveryEnabled(
   return String(env.DISCOVERY_REPORT_DELIVERY_ENABLED || "").trim().toLowerCase() === "true";
 }
 
+/**
+ * Unified Discovery generation is a separate, fail-closed switch. This lets us
+ * deploy safety and persistence fixes while keeping every provider call off
+ * until the new single-call engine has passed human validation.
+ */
+export function isDiscoveryUnifiedGenerationEnabled(
+  env: Record<string, string | undefined> = process.env,
+): boolean {
+  return String(env.DISCOVERY_UNIFIED_GENERATION_ENABLED || "").trim().toLowerCase() === "true";
+}
+
+export function assertDiscoveryUnifiedGenerationEnabled(
+  env: Record<string, string | undefined> = process.env,
+): void {
+  if (!isDiscoveryUnifiedGenerationEnabled(env)) {
+    throw new Error("DISCOVERY_UNIFIED_GENERATION_ENABLED is not true");
+  }
+}
+
 /** Review/nurture automation may only follow a confirmed delivery. Discovery
  * additionally needs the persisted premium-AI gate from the exact report that
  * was delivered. SUPERSEDED and every non-terminal state fail closed. */

@@ -241,7 +241,10 @@ export interface IStorage {
   markDiscoveryAuditSuperseded(auditId: string, replacementAuditId: string, reason: string): Promise<boolean>;
 
   // Traçabilité: conserver CHAQUE version générée (TXT + HTML)
-  createReportArtifact(input: Omit<ReportArtifact, "id" | "createdAt"> & { createdAt?: Date }): Promise<ReportArtifact>;
+  createReportArtifact(
+    input: Omit<ReportArtifact, "id" | "createdAt"> & { createdAt?: Date },
+    options?: { strict?: boolean },
+  ): Promise<ReportArtifact>;
 
   // Promo codes
   getPromoCode(code: string): Promise<PromoCode | undefined>;
@@ -844,7 +847,8 @@ export class MemStorage implements IStorage {
   }
 
   async createReportArtifact(
-    input: Omit<ReportArtifact, "id" | "createdAt"> & { createdAt?: Date }
+    input: Omit<ReportArtifact, "id" | "createdAt"> & { createdAt?: Date },
+    _options?: { strict?: boolean },
   ): Promise<ReportArtifact> {
     const createdAt = input.createdAt ?? new Date();
     const art: ReportArtifact = {
@@ -2366,7 +2370,8 @@ export class PgStorage implements IStorage {
   }
 
   async createReportArtifact(
-    input: Omit<ReportArtifact, "id" | "createdAt"> & { createdAt?: Date }
+    input: Omit<ReportArtifact, "id" | "createdAt"> & { createdAt?: Date },
+    options?: { strict?: boolean },
   ): Promise<ReportArtifact> {
     await this.ensureReportArtifactsTable();
     const id = randomUUID();
@@ -2378,8 +2383,8 @@ export class PgStorage implements IStorage {
         [id, input.auditId, input.tier, input.engine, input.model, input.txt, input.html, createdAt]
       );
     } catch (e: any) {
-      // best-effort, ne pas casser le workflow si la DB refuse (quota, taille, etc.)
       console.error("[ReportArtifact] Insert failed (best-effort):", e?.message || e);
+      if (options?.strict) throw e;
     }
     return {
       id,

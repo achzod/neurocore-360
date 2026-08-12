@@ -32,11 +32,18 @@ function validDiscoveryReport() {
       synthesis: "ai_validated" as const,
       validatedDomains: ["digestion", "energie", "lifestyle", "mindset", "nutrition", "sommeil", "stress", "training"],
       fallbackUsed: false as const,
+      safety: {
+        version: 1 as const,
+        tcaMode: "none" as const,
+        bodyCheckingSignal: false,
+        strictEatingSafety: false,
+        gatePassed: true as const,
+      },
     },
     sections: ["intro", "global", "sommeil", "stress", "energie", "digestion", "training", "nutrition", "lifestyle", "mindset", "scans", "coaching"].map((id, index) => ({
       id,
       title: `Section ${index}`,
-      content: `<p>${index === 0 ? `${clientName} ` : ""}${"contenu physiologique précis ".repeat(140)}</p>`,
+      content: `<p>${index === 0 ? `${clientName} ` : ""}${"contenu physiologique précis et personnalisé. ".repeat(72)}</p>`,
     })),
   };
 }
@@ -65,6 +72,30 @@ test("Discovery delivery rejects templated reports without premium AI evidence",
   const result = validateDiscoveryReportForDelivery(report, validAssets);
   assert.equal(result.ok, false);
   assert.ok(result.errors.includes("premium_ai_evidence_missing"));
+});
+
+test("Discovery delivery rejects a premium report without deterministic safety evidence", () => {
+  const report = validDiscoveryReport();
+  delete (report.generationQuality as any).safety;
+  const result = validateDiscoveryReportForDelivery(report, validAssets);
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.includes("safety_evidence_missing"));
+});
+
+test("Discovery delivery rejects forbidden TCA tracking anywhere in the report", () => {
+  const report = validDiscoveryReport();
+  report.generationQuality.safety = {
+    version: 1,
+    tcaMode: "history",
+    bodyCheckingSignal: true,
+    strictEatingSafety: true,
+    gatePassed: true,
+  };
+  report.sections.find((section) => section.id === "nutrition")!.content += "<p>Vise 2 400 kcal puis prends des photos de progression.</p>";
+  const result = validateDiscoveryReportForDelivery(report, validAssets);
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.includes("safety:tca_calorie_target"));
+  assert.ok(result.errors.includes("safety:tca_progress_photos"));
 });
 
 test("Discovery delivery rejects one short AI domain even when totals are large", () => {

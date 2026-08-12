@@ -2,8 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  assertDiscoveryUnifiedGenerationEnabled,
   isAuditEligibleForPostDeliveryAutomation,
   isDiscoveryReportDeliveryEnabled,
+  isDiscoveryUnifiedGenerationEnabled,
 } from "./discoveryAutomationPolicy";
 import {
   attachDiscoveryDeliveryGateResult,
@@ -15,6 +17,14 @@ test("Discovery delivery kill switch defaults off and requires explicit true", (
   assert.equal(isDiscoveryReportDeliveryEnabled({ DISCOVERY_REPORT_DELIVERY_ENABLED: "false" }), false);
   assert.equal(isDiscoveryReportDeliveryEnabled({ DISCOVERY_REPORT_DELIVERY_ENABLED: "true" }), true);
   assert.equal(isDiscoveryReportDeliveryEnabled({ DISCOVERY_REPORT_DELIVERY_ENABLED: "TRUE" }), true);
+});
+
+test("Discovery unified generation defaults off and requires explicit true", () => {
+  assert.equal(isDiscoveryUnifiedGenerationEnabled({}), false);
+  assert.equal(isDiscoveryUnifiedGenerationEnabled({ DISCOVERY_UNIFIED_GENERATION_ENABLED: "false" }), false);
+  assert.equal(isDiscoveryUnifiedGenerationEnabled({ DISCOVERY_UNIFIED_GENERATION_ENABLED: "true" }), true);
+  assert.throws(() => assertDiscoveryUnifiedGenerationEnabled({}), /is not true/);
+  assert.doesNotThrow(() => assertDiscoveryUnifiedGenerationEnabled({ DISCOVERY_UNIFIED_GENERATION_ENABLED: "TRUE" }));
 });
 
 test("post-delivery automation rejects undelivered and superseded reports", () => {

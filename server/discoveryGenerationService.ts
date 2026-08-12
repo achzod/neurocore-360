@@ -55,8 +55,20 @@ export async function generateAndPersistPremiumDiscoveryReport(
     ) {
       throw new Error("Discovery generation ownership lost before persistence");
     }
+    await storage.createReportArtifact({
+      auditId,
+      tier: "GRATUIT",
+      engine: "discovery",
+      model: process.env.OPENAI_DISCOVERY_MODEL || process.env.OPENAI_REPORT_MODEL || "discovery",
+      txt: assets.txt,
+      html: assets.html,
+    }, { strict: true });
     const persisted = await storage.updateAudit(auditId, {
       narrativeReport,
+      scores: {
+        ...result.scoresByDomain,
+        global: result.globalScore,
+      },
       reportTxt: assets.txt,
       reportHtml: assets.html,
       reportGeneratedAt: new Date(),
@@ -65,14 +77,6 @@ export async function generateAndPersistPremiumDiscoveryReport(
     if (!persisted || persisted.reportDeliveryStatus !== "READY") {
       throw new Error("Discovery premium persistence verification failed");
     }
-    await storage.createReportArtifact({
-      auditId,
-      tier: "GRATUIT",
-      engine: "discovery",
-      model: process.env.OPENAI_DISCOVERY_MODEL || process.env.OPENAI_REPORT_MODEL || "discovery",
-      txt: assets.txt,
-      html: assets.html,
-    });
     await storage.completeReportJob(auditId);
     return true;
   } catch (error) {
