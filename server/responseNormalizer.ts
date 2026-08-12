@@ -93,10 +93,13 @@ function deriveResponses(responses: Responses, mode: NormalizeMode): Responses {
     return inverse[normalized];
   };
 
-  // These two questionnaire fields are semantic inverses, not aliases.
-  // Derive the missing side explicitly so downstream scoring and factual
-  // validation receive a coherent pair.
-  if (!hasValue(responses["reveil-repose"])) {
+  // These two questionnaire fields are semantic inverses, not aliases. In a
+  // Discovery report, never turn an explicit fatigue frequency into a new
+  // "rested" answer: "souvent fatigué" is the supplied fact, while
+  // "rarement reposé" is an inferred reformulation that the customer did not
+  // select. The reverse derivation remains useful for legacy questionnaires
+  // that only asked the positive, rested wording.
+  if (mode !== "discovery" && !hasValue(responses["reveil-repose"])) {
     const reveilFatigue = getString("reveil-fatigue");
     const reveilRepose = reveilFatigue && invertWakeFrequency(reveilFatigue);
     if (reveilRepose) derived["reveil-repose"] = reveilRepose;

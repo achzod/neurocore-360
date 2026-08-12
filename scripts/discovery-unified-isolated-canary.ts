@@ -36,7 +36,7 @@ const FIXED_PROMPT_SCHEMA_OVERHEAD_BYTES = 40_000;
 export const DISCOVERY_CANARY_KNOWLEDGE_CHARS_PER_SCOPE = 400;
 const DRY_RUN_SENTINEL = "DISCOVERY_CANARY_DRY_PREFLIGHT_COMPLETE";
 const PREFLIGHT_ONLY_SENTINEL = "DISCOVERY_CANARY_PREFLIGHT_ONLY_COMPLETE";
-const EXPECTED_DISCOVERY_SOURCE_SHA256 = "479f432905b0cbca88d33f6603dd805014df6bde489b8cafdc7b63b98360f30e";
+const EXPECTED_DISCOVERY_SOURCE_SHA256 = "ac2b465f636739554f00d42c156c9af45684b378171b4a869857c64a8383201f";
 const EXPECTED_DISCOVERY_SAFETY_SHA256 = "88090630768f33b37aafe3d588dd39c76c33b9e227b7c01d73a7c716b970a3e9";
 const EXPECTED_TEXT_NORMALIZATION_SHA256 = "80fe2698228af74d45d2d252c2067b27573c6d35d344e0f7f20022ac24b0cb1a";
 const EXPECTED_OPENAI_RUNNER_SHA256 = "cef5511112e9a1a985163400aad5cbe2284f047b78063c2bb1ab8df820bdd1d0";
@@ -264,8 +264,9 @@ async function main(): Promise<void> {
   invariant(inputTokenUpperBound !== null && worstCaseCostUsd !== null, "budget_not_validated");
   const report = await convertToNarrativeReport(result, DISCOVERY_CANARY_PROFILE);
   const assets = buildDiscoveryReportAssets(report);
-  const validation = validateDiscoveryReportForDelivery(report, assets);
-  const gate = evaluateDiscoveryDeliveryGate(report, assets);
+  const nonRenderedMetadata = { blocages: result.blocages, ctaMessage: result.ctaMessage };
+  const validation = validateDiscoveryReportForDelivery(report, assets, nonRenderedMetadata);
+  const gate = evaluateDiscoveryDeliveryGate(report, assets, undefined, nonRenderedMetadata);
   const finishedAt = new Date().toISOString();
 
   const artifact = {

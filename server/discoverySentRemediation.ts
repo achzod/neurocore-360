@@ -136,9 +136,10 @@ export async function regenerateSentDiscoveryInPlace(input: {
   const result = await analyzeDiscoveryScan(row.responses || {});
   const premiumReport = await convertToNarrativeReport(result, row.responses || {});
   const assets = buildDiscoveryReportAssets(premiumReport);
-  const validation = validateDiscoveryReportForDelivery(premiumReport, assets);
+  const nonRenderedMetadata = { blocages: result.blocages, ctaMessage: result.ctaMessage };
+  const validation = validateDiscoveryReportForDelivery(premiumReport, assets, nonRenderedMetadata);
   if (!validation.ok) throw new Error(`Premium replacement gate failed: ${validation.errors.join(", ")}`);
-  const gate = evaluateDiscoveryDeliveryGate(premiumReport, assets);
+  const gate = evaluateDiscoveryDeliveryGate(premiumReport, assets, undefined, nonRenderedMetadata);
   if (!gate.ok) throw new Error(`Premium replacement delivery gate failed: ${gate.errors.join(", ")}`);
   const premiumHash = discoveryArtifactHash(assets.txt, assets.html);
   const replacedAt = new Date();

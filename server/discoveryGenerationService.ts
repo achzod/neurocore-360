@@ -43,11 +43,12 @@ export async function generateAndPersistPremiumDiscoveryReport(
     const result = await analyzeDiscoveryScan(audit.responses as any);
     const report = await convertToNarrativeReport(result, audit.responses as any);
     const assets = buildDiscoveryReportAssets(report);
-    const validation = validateDiscoveryReportForDelivery(report, assets);
+    const nonRenderedMetadata = { blocages: result.blocages, ctaMessage: result.ctaMessage };
+    const validation = validateDiscoveryReportForDelivery(report, assets, nonRenderedMetadata);
     if (!validation.ok) {
       throw new Error(`Discovery premium quality gate: ${validation.errors.join(", ")}`);
     }
-    const gate = evaluateDiscoveryDeliveryGate(report, assets);
+    const gate = evaluateDiscoveryDeliveryGate(report, assets, undefined, nonRenderedMetadata);
     const narrativeReport = attachDiscoveryDeliveryGateResult(report as any, gate);
 
     const current = await storage.getAudit(auditId);

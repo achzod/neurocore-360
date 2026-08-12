@@ -56,6 +56,7 @@ export interface DiscoveryResponses {
   'endormissement'?: string;
   'reveils-nocturnes'?: string;
   'reveil-fatigue'?: string;
+  'reveil-repose'?: string;
   'heure-coucher'?: string;
 
   // Stress & Nerveux
@@ -612,6 +613,15 @@ export function validateDiscoveryFactualConsistency(
   if (["souvent", "toujours"].includes(wakeRested) && saysFrequentlyFatigued) {
     reasons.push("factual_value_contradiction:reveil-repose");
   }
+  const originalWakeFatigue = normalizeDiscoveryFactText(String(responses["reveil-fatigue"] || "")).trim();
+  const originalWakeRested = normalizeDiscoveryFactText(String((responses as Record<string, unknown>)["reveil-repose"] || "")).trim();
+  const restatesInferredWakeRested = clauses.some((clause) => (
+    /\b(?:jamais|rarement|parfois|souvent|toujours)\s+(?:bien\s+)?repose(?:e|es|s)?\b/i.test(clause)
+    || /\breveill(?:e|es|ez)\b.{0,28}\b(?:jamais|rarement|parfois|souvent|toujours)\b.{0,18}\brepose(?:e|es|s)?\b/i.test(clause)
+  ));
+  if (originalWakeFatigue && !originalWakeRested && restatesInferredWakeRested) {
+    reasons.push("unsupported_restatement:reveil-repose");
+  }
 
   const proteinAnswer = normalizeDiscoveryFactText(String(normalized["proteines-jour"] || "")).trim();
   const proteinFrequencyExplicit = /\b(?:chaque|tous?\s+les)\s+repas\b|\bregulier/i.test(proteinAnswer);
@@ -620,6 +630,8 @@ export function validateDiscoveryFactualConsistency(
     || /\bpresence\b.{0,45}\breguliere?\b.{0,45}\bproteines?\b/.test(clause)
     || /\b(?:proteines?|source\s+proteinee?)\b.{0,35}\b(?:chaque|tous?\s+les)\s+repas\b/.test(clause)
     || /\bpresence\b.{0,35}\baux\s+repas\b/.test(clause)
+    || /\b(?:proteines?|apports?\s+proteiques?)\b.{0,45}\b(?:reparti|repartie|repartis|reparties|distribution)\b.{0,35}\b(?:repas|journee)\b/.test(clause)
+    || /\b(?:reparti|repartie|repartis|reparties|distribution)\b.{0,45}\b(?:proteines?|apports?\s+proteiques?)\b/.test(clause)
   ));
   if (hasDiscoveryFactValue(normalized["proteines-jour"]) && !proteinFrequencyExplicit && inventsProteinMealPresence) {
     reasons.push("factual_value_contradiction:proteines-jour-frequency");
@@ -1115,216 +1127,124 @@ function clampDiscoveryScore(value: number): number {
 
 function detectBlocages(responses: DiscoveryResponses, scores: DiscoveryAnalysisResult['scoresByDomain']): BlockageAnalysis[] {
   const blocages: BlockageAnalysis[] = [];
+  const severityFor = (score: number): BlockageAnalysis["severity"] => (
+    score < 40 ? "critique" : score < 50 ? "modere" : "leger"
+  );
+
+  // These metadata are persisted and may be consumed outside the rendered
+  // narrative. Keep them strictly descriptive and questionnaire-grounded:
+  // no hidden diagnosis, biomarker inference, disease label or quantified
+  // physiological consequence is allowed here.
 
   // Sommeil
   if (scores.sommeil < 60) {
-    const severity = scores.sommeil < 40 ? 'critique' : scores.sommeil < 50 ? 'modere' : 'leger';
     blocages.push({
       domain: 'Sommeil',
-      severity,
+      severity: severityFor(scores.sommeil),
       title: 'Récupération nocturne limitée',
-      mechanism: `Ton sommeil insuffisant (<7h) et/ou de mauvaise qualité perturbe tes rythmes circadiens.
-        Pendant le sommeil profond, ton corps sécrète 70% de sa GH (hormone de croissance) quotidienne.
-        Le manque de sommeil augmente le cortisol matinal de 37-45%, dérègle la leptine/ghréline,
-        et diminue la sensibilité à l'insuline de 30% en seulement 4 nuits de restriction.`,
+      mechanism: `Tes réponses signalent une durée ou une qualité de sommeil perfectible. Cela peut réduire la récupération perçue et la régularité de tes performances, sans permettre d'en déterminer la cause.`,
       consequences: [
-        'MÉTABOLIQUE: Résistance à l\'insuline accrue, stockage abdominal favorisé',
-        'HORMONAL: Cortisol élevé, testostérone/progestérone diminuées, GH effondrée',
-        'COGNITIF: Mémoire, concentration et prise de décision altérées',
-        'RÉCUPÉRATION: Synthèse protéique musculaire réduite de 18-25%',
-        'COMPORTEMENTAL: Envies de sucre +45%, snacking compulsif'
+        'RÉCUPÉRATION: sensation de récupération à observer',
+        'PERFORMANCE: stabilité des séances à suivre',
+        'ÉNERGIE: évolution au réveil et dans la journée à comparer'
       ],
-      sources: ['Andrew Huberman - Sleep Toolkit', 'Matthew Walker - Why We Sleep', 'Peter Attia - Sleep Optimization']
+      sources: []
     });
   }
 
   // Stress
   if (scores.stress < 60) {
-    const severity = scores.stress < 40 ? 'critique' : scores.stress < 50 ? 'modere' : 'leger';
     blocages.push({
-      domain: 'Axe HPA (Stress)',
-      severity,
-      title: 'Dysrégulation de l\'axe hypothalamo-hypophyso-surrénalien',
-      mechanism: `Ton niveau de stress chronique maintient ton axe HPA en état d'hyperactivation.
-        Tes surrénales produisent du cortisol en excès, ce qui bloque la conversion T4→T3 (thyroïde),
-        inhibe la production de testostérone/progestérone, et augmente la perméabilité intestinale.
-        L'anxiété chronique consomme 20% de ton glucose sanguin via le cerveau en mode "survie".`,
+      domain: 'Stress',
+      severity: severityFor(scores.stress),
+      title: 'Charge de stress élevée',
+      mechanism: `Le niveau de stress déclaré peut rendre les transitions vers le repos et la récupération moins régulières. Le questionnaire ne permet pas d'attribuer ce ressenti à un mécanisme médical précis.`,
       consequences: [
-        'MÉTABOLIQUE: Catabolisme musculaire, stockage graisse viscérale',
-        'HORMONAL: Cortisol chronique → DHEA épuisée, thyroïde ralentie',
-        'DIGESTIF: Perméabilité intestinale (leaky gut), malabsorption',
-        'NERVEUX: Burn-out du système nerveux sympathique',
-        'INFLAMMATOIRE: CRP et cytokines pro-inflammatoires élevées'
+        'RÉCUPÉRATION: qualité du repos à suivre',
+        'ORGANISATION: charge quotidienne à rendre visible',
+        'ÉNERGIE: variations de fin de journée à observer'
       ],
-      sources: ['Andrew Huberman - Stress Management', 'Robert Sapolsky - Why Zebras Don\'t Get Ulcers', 'Chris Kresser - Adrenal Health']
+      sources: []
     });
   }
 
   // Énergie
   if (scores.energie < 60) {
-    const severity = scores.energie < 40 ? 'critique' : scores.energie < 50 ? 'modere' : 'leger';
-    const enviesSucre = responses['envies-sucre'];
-    const thermogenese = responses['thermogenese'];
-
-    let mechanism = `Tes patterns énergétiques révèlent un dysfonctionnement mitochondrial probable. `;
-
-    if (enviesSucre === 'souvent') {
-      mechanism += `Tes envies de sucre fréquentes indiquent une dépendance au glucose avec incapacité
-        à utiliser les graisses comme carburant (inflexibilité métabolique). `;
-    }
-    if (thermogenese === 'toujours' || thermogenese === 'souvent') {
-      mechanism += `Ta frilosité chronique suggère une thermogenèse réduite, potentiellement liée
-        à une hypothyroïdie subclinique ou un métabolisme de base abaissé. `;
-    }
-
     blocages.push({
-      domain: 'Énergie / Mitochondries',
-      severity,
-      title: 'Dysfonction énergétique et inflexibilité métabolique',
-      mechanism,
+      domain: 'Énergie',
+      severity: severityFor(scores.energie),
+      title: 'Énergie quotidienne irrégulière',
+      mechanism: `Tes réponses décrivent une énergie insuffisante ou variable à certains moments de la journée. Le sommeil, les repas, les temps assis et la charge d'entraînement sont des contextes à comparer, sans conclure à une cause métabolique ou hormonale.`,
       consequences: [
-        'MÉTABOLIQUE: Dépendance au glucose, incapacité à brûler les graisses',
-        'THYROÏDIEN: T3 libre possiblement basse, métabolisme ralenti',
-        'MITOCHONDRIAL: Production ATP inefficace, fatigue chronique',
-        'GLYCÉMIQUE: Pics et crashs glycémiques, envies compulsives',
-        'PERFORMANCE: Endurance limitée, récupération prolongée'
+        'ÉNERGIE: moments de baisse à identifier',
+        'REPAS: volume et horaire à comparer',
+        'PERFORMANCE: fatigue cumulée à distinguer de la fatigue normale'
       ],
-      sources: ['Peter Attia - Metabolic Health', 'Ben Bikman - Insulin Resistance', 'Rhonda Patrick - Mitochondrial Function']
+      sources: []
     });
   }
 
   // Digestion
   if (scores.digestion < 60) {
-    const severity = scores.digestion < 40 ? 'critique' : scores.digestion < 50 ? 'modere' : 'leger';
-    const transit = responses['transit'];
-    const ballonnements = responses['ballonnements'];
-
-    let mechanism = `Ton système digestif montre des signes de dysbiose et/ou d'hypochlorhydrie. `;
-
-    if (ballonnements === 'apres-repas' || ballonnements === 'souvent') {
-      mechanism += `Les ballonnements fréquents suggèrent une fermentation excessive (SIBO possible),
-        un manque d'enzymes digestives, ou une intolérance alimentaire non identifiée. `;
-    }
-    if (transit === 'constipe' || transit === 'variable') {
-      mechanism += `Ton transit perturbé indique un déséquilibre de la motilité intestinale,
-        souvent lié au stress (axe intestin-cerveau) ou à un manque de fibres/eau. `;
-    }
-
     blocages.push({
-      domain: 'Digestion / Microbiote',
-      severity,
-      title: 'Dysbiose intestinale et malabsorption',
-      mechanism,
+      domain: 'Digestion',
+      severity: severityFor(scores.digestion),
+      title: 'Confort digestif irrégulier',
+      mechanism: `Les symptômes digestifs déclarés méritent d'être replacés dans leur contexte de repas. Ils ne permettent pas de conclure à une intolérance, une infection, une malabsorption ou un trouble intestinal.`,
       consequences: [
-        'ABSORPTION: Carences en vitamines B, fer, zinc, magnésium',
-        'IMMUNITAIRE: 70% du système immunitaire dans l\'intestin compromis',
-        'INFLAMMATOIRE: Perméabilité intestinale → inflammation systémique',
-        'HORMONAL: Production de sérotonine (90% intestinale) altérée',
-        'MÉTABOLIQUE: Extraction calorique perturbée, prise de poids ou maigreur'
+        'CONFORT: fréquence et contexte des symptômes à observer',
+        'REPAS: taille, vitesse et horaire à comparer',
+        'PRUDENCE: aucune exclusion alimentaire sans donnée suffisante'
       ],
-      sources: ['Chris Kresser - Gut Health', 'Examine.com - Digestive Health', 'Justin Sonnenburg - The Good Gut']
+      sources: []
     });
   }
 
   // Training
   if (scores.training < 60) {
-    const severity = scores.training < 40 ? 'critique' : scores.training < 50 ? 'modere' : 'leger';
-    const evolution = responses['performance-evolution'];
-    const recuperation = responses['recuperation'];
-
-    let mechanism = `Ton entraînement actuel ne produit pas les adaptations attendues. `;
-
-    if (evolution === 'stagnation' || evolution === 'regression') {
-      mechanism += `La stagnation ou régression indique soit un surentraînement (volume/intensité excessifs
-        sans récupération), soit un sous-entraînement (stimulus insuffisant), soit un déficit nutritionnel. `;
-    }
-    if (recuperation === 'mauvaise') {
-      mechanism += `Ta mauvaise récupération révèle un déséquilibre entre le stress d'entraînement
-        et ta capacité à régénérer. Tes réserves de glycogène ne se reconstituent pas,
-        ta synthèse protéique est compromise. `;
-    }
-
     blocages.push({
-      domain: 'Entraînement / Récupération',
-      severity,
-      title: 'Déséquilibre stress-récupération',
-      mechanism,
+      domain: 'Entraînement',
+      severity: severityFor(scores.training),
+      title: 'Progression sportive ralentie',
+      mechanism: `Tes réponses signalent une progression ou une récupération perfectible. Sans le détail du programme, elles ne permettent pas de conclure à un excès, un manque de stimulus ou un déficit nutritionnel.`,
       consequences: [
-        'MUSCULAIRE: MPS (synthèse protéique) insuffisante, pas d\'hypertrophie',
-        'NERVEUX: Système nerveux central fatigué, force réduite',
-        'HORMONAL: Testostérone/cortisol ratio défavorable',
-        'MÉTABOLIQUE: Adaptations aérobies/anaérobies bloquées',
-        'BLESSURE: Risque accru de tendinopathies et blessures'
+        'PERFORMANCE: évolution des mouvements stables à suivre',
+        'RÉCUPÉRATION: courbatures et fraîcheur avant séance à comparer',
+        'PROGRAMMATION: aucune conclusion sans volume et intensité détaillés'
       ],
-      sources: ['Andy Galpin - Training Science', 'Brad Schoenfeld - Hypertrophy', 'Mike Israetel - Recovery']
+      sources: []
     });
   }
 
   // Nutrition
   if (scores.nutrition < 60) {
-    const severity = scores.nutrition < 40 ? 'critique' : scores.nutrition < 50 ? 'modere' : 'leger';
-    const proteines = responses['proteines-jour'];
-    const eau = responses['eau-jour'];
-
-    let mechanism = `Ton alimentation actuelle ne soutient pas tes objectifs. `;
-
-    if (proteines === 'faible' || proteines === 'moyen') {
-      mechanism += `Ton apport protéique insuffisant (<1.6g/kg) limite ta synthèse musculaire,
-        ta satiété, et ta thermogenèse alimentaire (TEF réduit de 20-30%). `;
-    }
-    if (eau === 'moins-1L' || eau === '1-1.5L') {
-      mechanism += `Ta déshydratation chronique réduit tes performances de 10-20%,
-        ralentit ton métabolisme, et compromet toutes tes fonctions enzymatiques. `;
-    }
-
     blocages.push({
       domain: 'Nutrition',
-      severity,
-      title: 'Déficits nutritionnels et déséquilibres alimentaires',
-      mechanism,
+      severity: severityFor(scores.nutrition),
+      title: 'Structure alimentaire à clarifier',
+      mechanism: `Les réponses disponibles indiquent des repères alimentaires à améliorer ou à préciser. Elles ne suffisent pas à établir un déficit, une carence, un apport calorique ou une répartition des nutriments.`,
       consequences: [
-        'PROTÉIQUE: MPS limitée, faim constante, métabolisme ralenti',
-        'HYDRATATION: Performance -15%, détox hépatique compromise',
-        'MICRONUTRIMENTS: Carences en magnésium, zinc, vitamine D probables',
-        'GLYCÉMIQUE: Pics d\'insuline, stockage favorisé',
-        'ÉNERGÉTIQUE: Calories vides, densité nutritionnelle insuffisante'
+        'STRUCTURE: régularité des repas à décrire',
+        'APPORTS: portions et répartition encore inconnues',
+        'DURABILITÉ: éviter toute restriction injustifiée'
       ],
-      sources: ['Layne Norton - Nutrition Science', 'Examine.com - Protein', 'Peter Attia - Nutritional Framework']
+      sources: []
     });
   }
 
   // Lifestyle
   if (scores.lifestyle < 60) {
-    const severity = scores.lifestyle < 40 ? 'critique' : scores.lifestyle < 50 ? 'modere' : 'leger';
-    const heuresAssis = responses['heures-assis'];
-    const soleil = responses['exposition-soleil'];
-
-    let mechanism = `Ton mode de vie moderne crée un environnement anti-physiologique. `;
-
-    if (heuresAssis === '8h+' || heuresAssis === '6-8h') {
-      mechanism += `La sédentarité prolongée (>6h assis) inactive ta NEAT (thermogenèse non-exercice),
-        réduit ta sensibilité à l'insuline, et comprime tes disques vertébraux.
-        Même l'exercice quotidien ne compense pas entièrement les heures assises. `;
-    }
-    if (soleil === 'rare') {
-      mechanism += `Le manque d'exposition solaire matinale dérègle ton rythme circadien,
-        maintient ta vitamine D sous-optimale, et prive ton corps du signal lumineux
-        nécessaire à la régulation du cortisol et de la mélatonine. `;
-    }
-
     blocages.push({
-      domain: 'Lifestyle / Environnement',
-      severity,
-      title: 'Mode de vie désynchronisé et sédentaire',
-      mechanism,
+      domain: 'Style de vie',
+      severity: severityFor(scores.lifestyle),
+      title: 'Journées peu favorables au mouvement',
+      mechanism: `Les longues périodes assises ou les habitudes quotidiennes déclarées peuvent réduire les occasions de mouvement. Leur impact individuel sur l'énergie ou le sommeil reste à observer.`,
       consequences: [
-        'CIRCADIEN: Rythmes hormonaux désynchronisés',
-        'MÉTABOLIQUE: NEAT effondré, métabolisme ralenti',
-        'POSTURAL: Compression discale, douleurs lombaires',
-        'VITAMINE D: Immunité, os, humeur, hormones affectés',
-        'CARDIOVASCULAIRE: Risque accru indépendant de l\'exercice'
+        'MOUVEMENT: ruptures de position assise à rendre visibles',
+        'ÉNERGIE: lien avec les moments de baisse à comparer',
+        "SOMMEIL: rôle des horaires d'écran encore inconnu"
       ],
-      sources: ['Andrew Huberman - Light Exposure', 'Katy Bowman - Movement', 'Peter Attia - NEAT']
+      sources: []
     });
   }
 
@@ -2516,8 +2436,12 @@ L'Anabolic Bioscan (59€) approfondit ces mécanismes. ${safetyPolicy.strictEat
     ctaMessage = `${blocages.length} axes prioritaires ressortent du questionnaire.
 
 Tu as maintenant une première cartographie de ce qui peut limiter ta progression. L'Anabolic Bioscan (59€) approfondit ces axes avant de construire une stratégie adaptée.`;
+  } else if (blocages.length > 0) {
+    ctaMessage = `${blocages.length} blocage${blocages.length > 1 ? "s" : ""} structurant${blocages.length > 1 ? "s" : ""} ressort${blocages.length > 1 ? "ent" : ""} de tes réponses, sans atteindre le niveau critique calculé.
+
+Pour progresser vers l'objectif que tu as décrit, l'Anabolic Bioscan (59€) permet d'approfondir les données avant toute stratégie détaillée.`;
   } else {
-    ctaMessage = `Ton profil révèle surtout des axes d'optimisation, sans blocage critique calculé.
+    ctaMessage = `Aucun blocage structurant n'est calculé à partir de tes réponses, mais certains axes peuvent encore être optimisés.
 
 Pour progresser vers l'objectif que tu as décrit, l'Anabolic Bioscan (59€) permet d'approfondir les données avant toute stratégie détaillée.`;
   }
@@ -2564,6 +2488,10 @@ export interface ReportData {
   generatedAt: string;
   auditType: string;
   generationQuality?: DiscoveryPremiumGenerationEvidence;
+  analysisMetadata?: {
+    blocages: BlockageAnalysis[];
+    ctaMessage: string;
+  };
 }
 
 function escapeHtml(value: string): string {
@@ -2826,6 +2754,14 @@ export async function convertToNarrativeReport(
     clientName: prenom,
     generatedAt: new Date().toISOString(),
     auditType: "GRATUIT",
+    analysisMetadata: {
+      blocages: result.blocages.map((blocage) => ({
+        ...blocage,
+        consequences: [...blocage.consequences],
+        sources: [...blocage.sources],
+      })),
+      ctaMessage: result.ctaMessage,
+    },
     generationQuality: {
       mode: 'premium_ai',
       version: 1,
@@ -3011,9 +2947,32 @@ export function buildDiscoveryReportAssets(report: ReportData): { txt: string; h
   };
 }
 
+/**
+ * Audits customer-analysis metadata that is persisted but not necessarily
+ * rendered in the narrative. Hidden fields must never be a bypass around the
+ * same medical-safety contract enforced on visible sections.
+ */
+export function validateDiscoveryNonRenderedMetadata(metadata: unknown): string[] {
+  const text = JSON.stringify(metadata ?? {});
+  const normalized = text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const forbidden: Array<[string, RegExp]> = [
+    ["mitochondrial_dysfunction", /\bdysfonction(?:nement)?\s+(?:energetique\s+et\s+)?mitochondrial(?:e)?\b/],
+    ["metabolic_inflexibility", /\binflexibilite\s+metabolique\b/],
+    ["glucose_dependency", /\bdependance\s+au\s+glucose\b|\bincapacite\s+a\s+(?:bruler|utiliser)\s+les\s+graisses\b/],
+    ["thyroid_inference", /\bt3\s+libre\b|\bhypothyroidie\b|\bthyroide\s+ralentie\b/],
+    ["growth_hormone_inference", /\bgh\s+(?:effondree|diminuee|basse)\b/],
+    ["insulin_inference", /\bresistance\s+a\s+l[' ]insuline\b|\bsensibilite\s+a\s+l[' ]insuline\s+(?:basse|diminuee)\b/],
+    ["hpa_dysregulation", /\bdysregulation\s+de\s+l[' ]axe\b|\baxe\s+hpa\b.{0,45}\bhyperactivation\b/],
+    ["digestive_diagnosis", /\bdysbiose\b|\bhypochlorhydrie\b|\bsibo\b|\bpermeabilite\s+intestinale\b|\bmalabsorption\b/],
+  ];
+  const errors = forbidden.filter(([, pattern]) => pattern.test(normalized)).map(([label]) => label);
+  return [...new Set(errors)];
+}
+
 export function validateDiscoveryReportForDelivery(
   report: Partial<ReportData> | null | undefined,
   assets?: { txt?: string | null; html?: string | null },
+  nonRenderedMetadata?: unknown,
 ): { ok: boolean; errors: string[] } {
   const errors: string[] = [];
   const sections = Array.isArray(report?.sections) ? report.sections : [];
@@ -3127,6 +3086,17 @@ export function validateDiscoveryReportForDelivery(
   }
   for (const safetyError of validateDiscoverySafetyContent(assembledContent, safetyPolicy).errors) {
     errors.push(`safety:${safetyError}`);
+  }
+  const metadata = nonRenderedMetadata ?? report?.analysisMetadata ?? {};
+  const metadataText = JSON.stringify(metadata);
+  for (const linguisticError of validateDiscoveryLinguisticQuality(metadataText)) {
+    errors.push(`metadata_linguistic:${linguisticError}`);
+  }
+  for (const safetyError of validateDiscoverySafetyContent(metadataText, safetyPolicy).errors) {
+    errors.push(`metadata_safety:${safetyError}`);
+  }
+  for (const metadataError of validateDiscoveryNonRenderedMetadata(metadata)) {
+    errors.push(`metadata_medicalizing:${metadataError}`);
   }
   if (safetyPolicy.strictEatingSafety && /photos?\s+(?:de\s+)?(?:progression|du\s+physique|du\s+corps)|analyse\s+photo/i.test(assembledContent)) {
     errors.push("safety:tca_progress_photos");

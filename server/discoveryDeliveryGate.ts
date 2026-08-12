@@ -4,7 +4,7 @@ import {
   validateDiscoveryReportForDelivery,
 } from "./discovery-scan";
 
-export const DISCOVERY_DELIVERY_GATE_VERSION = 3;
+export const DISCOVERY_DELIVERY_GATE_VERSION = 4;
 
 export interface DiscoveryDeliveryGateResult {
   name: "discovery_delivery";
@@ -187,6 +187,7 @@ export function evaluateDiscoveryDeliveryGate(
   report: Parameters<typeof validateDiscoveryReportForDelivery>[0],
   assets?: Parameters<typeof validateDiscoveryReportForDelivery>[1],
   checkedAt?: Date,
+  nonRenderedMetadata?: Parameters<typeof validateDiscoveryReportForDelivery>[2],
 ): DiscoveryDeliveryGateResult {
   if (!report) {
     return createDiscoveryDeliveryGateResult(
@@ -196,7 +197,7 @@ export function evaluateDiscoveryDeliveryGate(
   }
 
   return createDiscoveryDeliveryGateResult(
-    validateDiscoveryReportForDelivery(report, assets),
+    validateDiscoveryReportForDelivery(report, assets, nonRenderedMetadata),
     checkedAt,
   );
 }

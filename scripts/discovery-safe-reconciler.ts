@@ -476,8 +476,9 @@ async function runGeneration(
 
         const report = await convertToNarrativeReport(result, item.responses);
         const assets = buildDiscoveryReportAssets(report);
-        const validation = validateDiscoveryReportForDelivery(report, assets);
-        const gate = evaluateDiscoveryDeliveryGate(report, assets);
+        const nonRenderedMetadata = { blocages: result.blocages, ctaMessage: result.ctaMessage };
+        const validation = validateDiscoveryReportForDelivery(report, assets, nonRenderedMetadata);
+        const gate = evaluateDiscoveryDeliveryGate(report, assets, undefined, nonRenderedMetadata);
         if (!validation.ok || !gate.ok) {
           throw new Error(`DISCOVERY_BATCH_QUALITY_GATE:${[...validation.errors, ...gate.errors].join("|")}`);
         }

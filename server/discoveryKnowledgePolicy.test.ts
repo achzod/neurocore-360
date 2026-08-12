@@ -26,6 +26,7 @@ import {
   validateDiscoveryFactualConsistency,
   validateDiscoveryGeneratedNarrative,
   validateDiscoveryLinguisticQuality,
+  validateDiscoveryNonRenderedMetadata,
   validateDiscoveryReportForDelivery,
   validateDiscoverySectionContent,
 } from "./discovery-scan";
@@ -582,10 +583,10 @@ test("a supplied 3-4 session frequency rejects a claim of two weekly sessions", 
   );
 });
 
-test("wake fatigue and wake rested are normalized as semantic inverses", () => {
+test("Discovery keeps the exact wake-fatigue fact without inventing a rested answer", () => {
   const fromFatigue = normalizeResponses({ "reveil-fatigue": "souvent" }, { mode: "discovery" });
   assert.equal(fromFatigue["reveil-fatigue"], "souvent");
-  assert.equal(fromFatigue["reveil-repose"], "rarement");
+  assert.equal(fromFatigue["reveil-repose"], undefined);
 
   const fromRested = normalizeResponses({ "reveil-repose": "toujours" }, { mode: "discovery" });
   assert.equal(fromRested["reveil-repose"], "toujours");
@@ -593,8 +594,7 @@ test("wake fatigue and wake rested are normalized as semantic inverses", () => {
 
   const facts = buildDiscoveryQuestionnaireFacts({ "reveil-fatigue": "souvent" });
   assert.match(facts, /- reveil-fatigue: souvent/);
-  assert.match(facts, /- reveil-repose: rarement/);
-  assert.doesNotMatch(facts, /- reveil-repose: souvent/);
+  assert.doesNotMatch(facts, /- reveil-repose:/);
 });
 
 test("factual gate rejects an invented often-rested claim without blocking a negated statement", () => {
@@ -604,14 +604,28 @@ test("factual gate rejects an invented often-rested claim without blocking a neg
       "Tu indiques aussi te réveiller souvent reposé.",
       responses,
     ),
-    ["factual_value_contradiction:reveil-fatigue"],
+    ["factual_value_contradiction:reveil-fatigue", "unsupported_restatement:reveil-repose"],
   );
   assert.deepEqual(
     validateDiscoveryFactualConsistency(
       "Tu ne te réveilles pas souvent reposé, ce qui correspond à la fatigue déclarée.",
       responses,
     ),
+    ["unsupported_restatement:reveil-repose"],
+  );
+  assert.deepEqual(
+    validateDiscoveryFactualConsistency(
+      "Tu déclares être souvent fatigué au réveil.",
+      responses,
+    ),
     [],
+  );
+  assert.deepEqual(
+    validateDiscoveryFactualConsistency(
+      "Tu te réveilles rarement reposé.",
+      responses,
+    ),
+    ["unsupported_restatement:reveil-repose"],
   );
 });
 
@@ -636,6 +650,13 @@ test("factual gate rejects invented protein meal regularity and unsupported dupl
   assert.deepEqual(
     validateDiscoveryFactualConsistency(
       "Ton apport protéique est bon, y compris leur présence aux repas, alors conserve la présence régulière de protéines.",
+      { "proteines-jour": "bonne" },
+    ),
+    ["factual_value_contradiction:proteines-jour-frequency"],
+  );
+  assert.deepEqual(
+    validateDiscoveryFactualConsistency(
+      "Tes apports protéiques sont déclarés bons et répartis correctement entre les repas.",
       { "proteines-jour": "bonne" },
     ),
     ["factual_value_contradiction:proteines-jour-frequency"],
@@ -681,9 +702,16 @@ test("CTA is neutral toward first-person objectives and sleep title stays non-me
   );
 
   assert.match(result.ctaMessage, /objectif que tu as décrit/);
+  assert.match(result.ctaMessage, /^1 blocage structurant ressort de tes réponses/);
+  assert.doesNotMatch(result.ctaMessage, /sans blocage critique calculé/);
   assert.doesNotMatch(result.ctaMessage, /résultats sur perdre|mes performances/);
   assert.ok(result.blocages.some((blocage) => blocage.title === "Récupération nocturne limitée"));
   assert.ok(result.blocages.every((blocage) => blocage.title !== "Déficit de sommeil chronique"));
+  assert.doesNotMatch(
+    JSON.stringify(result.blocages),
+    /dysfonctionnement mitochondrial|inflexibilité métabolique|dépendance au glucose|T3 libre|GH effondrée|résistance à l'insuline/i,
+  );
+  assert.deepEqual(validateDiscoveryNonRenderedMetadata({ blocages: result.blocages, ctaMessage: result.ctaMessage }), []);
 });
 
 test("unified narrative requires exactly eight unique, valid domains", () => {
@@ -785,7 +813,7 @@ test("unified cleanup and report conversion preserve nutrition while normalizing
   assert.deepEqual(validateDiscoveryReportForDelivery(report, assets), { ok: true, errors: [] });
 });
 
-test("unified end-to-end factual gate blocks the exact canary wake contradiction", () => {
+test("unified end-to-end factual gate preserves the exact fatigue wording from the canary", () => {
   const responses = {
     prenom: "ApexTest",
     objectif: "progresser durablement",
@@ -799,14 +827,39 @@ test("unified end-to-end factual gate blocks the exact canary wake contradiction
     sections: DISCOVERY_PREMIUM_DOMAINS.map((domain) => ({
       domain,
       content: domain === "sommeil"
-        ? `${section}\n\nTu indiques aussi te réveiller souvent reposé.`
+        ? `${section}\n\nTu te réveilles rarement reposé.`
         : section,
     })),
   };
 
   assert.throws(
     () => validateDiscoveryGeneratedNarrative(raw, responses, policy),
-    /Discovery unified section sommeil invalid: factual_value_contradiction:reveil-fatigue/,
+    /Discovery unified section sommeil invalid: unsupported_restatement:reveil-repose/,
+  );
+});
+
+test("unified end-to-end factual gate rejects invented protein distribution", () => {
+  const responses = {
+    prenom: "ApexTest",
+    objectif: "progresser durablement",
+    "proteines-jour": "bonne",
+  };
+  const policy = deriveDiscoverySafetyPolicy(responses);
+  const paragraph = "Tu as décrit une routine structurée et des repères cohérents. Le mécanisme possible concerne l'organisation et son interaction avec ton objectif, sans permettre de poser un diagnostic ni d'inventer une donnée absente. Cette lecture distingue strictement les faits déclarés des hypothèses prudentes. ";
+  const section = Array.from({ length: 4 }, () => paragraph.repeat(3)).join("\n\n");
+  const raw = {
+    synthesis: section,
+    sections: DISCOVERY_PREMIUM_DOMAINS.map((domain) => ({
+      domain,
+      content: domain === "nutrition"
+        ? `${section}\n\nTes apports protéiques sont déclarés bons et répartis correctement entre les repas.`
+        : section,
+    })),
+  };
+
+  assert.throws(
+    () => validateDiscoveryGeneratedNarrative(raw, responses, policy),
+    /Discovery unified section nutrition invalid: factual_value_contradiction:proteines-jour-frequency/,
   );
 });
 

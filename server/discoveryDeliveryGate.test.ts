@@ -84,6 +84,34 @@ test("Discovery delivery scans titles, chips and full artifacts, not only sectio
   assert.ok(result.errors.includes("linguistic:accentless_french:apres"));
 });
 
+test("Discovery delivery scans non-rendered blockage metadata and fails closed", () => {
+  const report = validDiscoveryReport();
+  (report as any).analysisMetadata = {
+    blocages: [{
+      domain: "Énergie",
+      severity: "leger",
+      title: "Dysfonction énergétique",
+      mechanism: "Tes réponses révèlent un dysfonctionnement mitochondrial probable.",
+      consequences: ["T3 libre possiblement basse", "Dépendance au glucose"],
+      sources: [],
+    }],
+    ctaMessage: "Approfondir.",
+  };
+  const result = validateDiscoveryReportForDelivery(report, validAssets);
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.includes("metadata_medicalizing:mitochondrial_dysfunction"));
+  assert.ok(result.errors.includes("metadata_medicalizing:thyroid_inference"));
+  assert.ok(result.errors.includes("metadata_medicalizing:glucose_dependency"));
+
+  const explicitResultMetadata = validateDiscoveryReportForDelivery(
+    validDiscoveryReport(),
+    validAssets,
+    (report as any).analysisMetadata,
+  );
+  assert.equal(explicitResultMetadata.ok, false);
+  assert.ok(explicitResultMetadata.errors.includes("metadata_medicalizing:mitochondrial_dysfunction"));
+});
+
 test("Discovery delivery requires the client first name in every premium domain", () => {
   const report = validDiscoveryReport();
   report.sections.find((section) => section.id === "nutrition")!.content = `<p>${"contenu physiologique précis et personnalisé. ".repeat(72)}</p>`;
