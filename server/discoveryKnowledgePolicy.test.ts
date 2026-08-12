@@ -188,7 +188,9 @@ test("Discovery section generation reserves enough tokens and still rejects inco
   const source = readFileSync(new URL("./discovery-scan.ts", import.meta.url), "utf8");
   const runner = readFileSync(new URL("./openaiResponses.ts", import.meta.url), "utf8");
 
-  assert.match(source, /maxOutputTokens:\s*14_000/);
+  assert.match(source, /maxOutputTokens:\s*7_000,\s*retries:\s*1,\s*label:\s*`discovery-section-\$\{domain\}-attempt-\$\{attempt\}`/);
+  assert.match(source, /maxOutputTokens:\s*6_000,\s*retries:\s*1,\s*label:\s*`discovery-synthesis-attempt-\$\{attempt\}`/);
+  assert.match(runner, /discovery:\s*{[\s\S]{0,260}effort:\s*"medium"[\s\S]{0,260}maxOutputTokens:\s*7_000[\s\S]{0,260}verbosity:\s*"medium"/);
   assert.match(runner, /response\?\.status\s*!==\s*"completed"/);
   assert.match(runner, /OpenAI response incomplete:/);
 });

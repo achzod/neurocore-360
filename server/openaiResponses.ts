@@ -24,12 +24,15 @@ interface ProfileConfig {
 
 const PROFILE_CONFIG: Record<OpenAIReportProfile, ProfileConfig> = {
   discovery: {
-    effort: "high",
-    maxOutputTokens: 10_000,
+    // Discovery has its own strict scientific and delivery gates. Medium
+    // reasoning preserves those gates while preventing hidden reasoning
+    // tokens from consuming most of every response budget.
+    effort: "medium",
+    maxOutputTokens: 7_000,
     // Production Discovery responses commonly need 622-712 seconds.
     // Keep enough headroom for a valid long-running response plus polling.
     timeoutMs: 15 * 60 * 1000,
-    verbosity: "high",
+    verbosity: "medium",
   },
   premium: {
     effort: "xhigh",

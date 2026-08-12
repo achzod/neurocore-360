@@ -1380,11 +1380,11 @@ FORMAT OBLIGATOIRE:
           instructions: SECTION_SYSTEM_PROMPT,
           input: buildPrompt(attempt),
           safetyId: responses.email || prenom,
-          // Reasoning tokens share this budget with the client-facing prose.
-          // Production nutrition sections have consumed ~7k reasoning tokens;
-          // 14k preserves the required complete 55-70-line answer without ever
-          // accepting a max_output_tokens-truncated response.
-          maxOutputTokens: 14_000,
+          // Keep a strict per-call ceiling. The outer content-validation retry
+          // already handles a rejected section, so provider retries would
+          // multiply spend without improving the premium gate.
+          maxOutputTokens: 7_000,
+          retries: 1,
           label: `discovery-section-${domain}-attempt-${attempt}`,
         }),
         DISCOVERY_AI_TIMEOUT_MS,
@@ -1774,7 +1774,10 @@ RAPPELS CRITIQUES:
           instructions: DISCOVERY_SYSTEM_PROMPT,
           input: userPrompt,
           safetyId: responses.email || responses.prenom || "discovery",
-          maxOutputTokens: 10_000,
+          // One provider attempt per content attempt: the surrounding loop is
+          // the only retry owner and preserves a deterministic spend ceiling.
+          maxOutputTokens: 6_000,
+          retries: 1,
           label: `discovery-synthesis-attempt-${attempt}`,
         }),
         DISCOVERY_AI_TIMEOUT_MS,
