@@ -49,8 +49,9 @@ const RESPONSE_ALIASES: Record<string, string[]> = {
   "alcool-semaine": ["alcool"],
   "intensite": ["intensite-entrainement"],
   "intensite-entrainement": ["intensite"],
-  "reveil-fatigue": ["reveil-repose"],
-  "reveil-repose": ["reveil-fatigue"],
+  // reveil-fatigue and reveil-repose describe opposite semantics. They must
+  // never be copied as ordinary aliases: doing so turns "souvent fatigue" into
+  // "souvent repose" and exposes a contradictory fact to the report model.
   // Additional edge-case aliases (simplified questionnaire formats)
   "reveils-nocturnes": ["reveil-nocturne"],
   "reveil-nocturne": ["reveils-nocturnes"],
@@ -79,6 +80,32 @@ function deriveResponses(responses: Responses, mode: NormalizeMode): Responses {
     if (!Array.isArray(value)) return undefined;
     return value.filter((item) => typeof item === "string") as string[];
   };
+
+  const invertWakeFrequency = (value: string): string | undefined => {
+    const normalized = value.trim().toLowerCase();
+    const inverse: Record<string, string> = {
+      jamais: "toujours",
+      rarement: "souvent",
+      parfois: "parfois",
+      souvent: "rarement",
+      toujours: "jamais",
+    };
+    return inverse[normalized];
+  };
+
+  // These two questionnaire fields are semantic inverses, not aliases.
+  // Derive the missing side explicitly so downstream scoring and factual
+  // validation receive a coherent pair.
+  if (!hasValue(responses["reveil-repose"])) {
+    const reveilFatigue = getString("reveil-fatigue");
+    const reveilRepose = reveilFatigue && invertWakeFrequency(reveilFatigue);
+    if (reveilRepose) derived["reveil-repose"] = reveilRepose;
+  }
+  if (!hasValue(responses["reveil-fatigue"])) {
+    const reveilRepose = getString("reveil-repose");
+    const reveilFatigue = reveilRepose && invertWakeFrequency(reveilRepose);
+    if (reveilFatigue) derived["reveil-fatigue"] = reveilFatigue;
+  }
 
   if (!hasValue(responses["niveau-activite"])) {
     const profession = getString("profession");

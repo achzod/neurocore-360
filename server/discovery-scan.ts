@@ -331,6 +331,7 @@ export function validateDiscoverySectionContent(
   if (/\bclient\b/.test(lower)) reasons.push("client_voice");
   if (/\bnous\b/.test(lower) || /\bnotre\b/.test(lower)) reasons.push("collective_voice");
   if (hasEnglishMarkers(text, 4)) reasons.push("english_markers");
+  reasons.push(...validateDiscoveryLinguisticQuality(text));
   reasons.push(...validateDiscoverySafetyContent(text, safetyPolicy).errors);
   return { lineCount, charCount, wordCount, paragraphCount, reasons, isValid: reasons.length === 0 };
 }
@@ -397,6 +398,48 @@ function normalizeDiscoveryFactText(text: string): string {
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[’']/g, "'")
     .toLowerCase();
+}
+
+function replaceFrenchSurfaceToken(token: string, replacement: string): string {
+  if (token === token.toUpperCase()) return replacement.toUpperCase();
+  if (token[0] === token[0]?.toUpperCase()) {
+    return replacement[0].toUpperCase() + replacement.slice(1);
+  }
+  return replacement;
+}
+
+/**
+ * Repairs a deliberately small set of unambiguous French surface forms seen
+ * in generated customer prose. This is intentionally not a general spell
+ * checker: every replacement is an exact token, which avoids changing names,
+ * URLs, identifiers or medically meaningful wording.
+ */
+export function normalizeDiscoveryFrenchSurface(text: string): string {
+  const replacements: Record<string, string> = {
+    element: "élément",
+    elements: "éléments",
+  };
+  return String(text || "").replace(/\b(elements?)\b/gi, (token) => (
+    replaceFrenchSurfaceToken(token, replacements[token.toLowerCase()])
+  ));
+}
+
+/** Returns deterministic visible-language defects that must block delivery. */
+export function validateDiscoveryLinguisticQuality(text: string): string[] {
+  const visible = stripInlineHtml(String(text || ""));
+  const reasons: string[] = [];
+  if (/\belements?\b/i.test(visible)) reasons.push("accentless_french:element");
+  return reasons;
+}
+
+function clauseMakesAffirmativeClaim(clause: string, pattern: RegExp): boolean {
+  pattern.lastIndex = 0;
+  const match = pattern.exec(clause);
+  pattern.lastIndex = 0;
+  if (!match || match.index === undefined) return false;
+  const before = clause.slice(Math.max(0, match.index - 45), match.index);
+  return !/\b(?:ne|n[' ]|pas|jamais|rarement|sans)\s+(?:te\s+|se\s+|etre\s+|être\s+)?$/i.test(before)
+    && !/\b(?:pas|jamais|rarement)\b/i.test(before.slice(-24));
 }
 
 function clauseClaimsFactIsMissing(clause: string, factPattern: RegExp): boolean {
@@ -471,6 +514,24 @@ export function validateDiscoveryFactualConsistency(
       }
       if (reasons.includes("factual_value_contradiction:sport-frequence")) break;
     }
+  }
+
+  const wakeFatigue = normalizeDiscoveryFactText(String(normalized["reveil-fatigue"] || "")).trim();
+  const wakeRested = normalizeDiscoveryFactText(String(normalized["reveil-repose"] || "")).trim();
+  const saysFrequentlyRested = clauses.some((clause) => clauseMakesAffirmativeClaim(
+    clause,
+    /\b(?:souvent|toujours|generalement|regulierement)\s+(?:bien\s+)?repose(?:e|es|s)?\b|\breveill(?:e|es|ez)\b.{0,28}\b(?:souvent|toujours|generalement)\b.{0,18}\brepose(?:e|es|s)?\b/i,
+  ));
+  const saysFrequentlyFatigued = clauses.some((clause) => clauseMakesAffirmativeClaim(
+    clause,
+    /\b(?:souvent|toujours|generalement|regulierement)\s+fatigue(?:e|es|s)?\b|\breveill(?:e|es|ez)\b.{0,28}\b(?:souvent|toujours|generalement)\b.{0,18}\bfatigue(?:e|es|s)?\b/i,
+  ));
+
+  if (["souvent", "toujours"].includes(wakeFatigue) && saysFrequentlyRested) {
+    reasons.push("factual_value_contradiction:reveil-fatigue");
+  }
+  if (["souvent", "toujours"].includes(wakeRested) && saysFrequentlyFatigued) {
+    reasons.push("factual_value_contradiction:reveil-repose");
   }
 
   return [...new Set(reasons)];
@@ -1609,7 +1670,7 @@ export const DISCOVERY_UNIFIED_MAX_OUTPUT_TOKENS = 14_000;
 export const DISCOVERY_UNIFIED_MAX_ESTIMATED_COST_USD = 0.75;
 
 function cleanDiscoveryNarrativeProse(text: string): string {
-  let cleaned = stripInlineHtml(String(text || ""))
+  let cleaned = normalizeDiscoveryFrenchSurface(stripInlineHtml(String(text || "")))
     .replace(/^(En tant qu['’]expert[^.]*\.?\s*)/gi, "")
     .replace(/^(Cette analyse (montre|revele|révèle|demontre|démontre)[^.]*\.?\s*)/gi, "")
     .replace(/^(Je vais (analyser|examiner|etudier|étudier)[^.]*\.?\s*)/gi, "")
@@ -1642,6 +1703,7 @@ export function validateDiscoveryGeneratedNarrative(
   const synthesisParagraphs = synthesis.split(/\n\s*\n/).filter((part) => part.trim().length > 120).length;
   const synthesisErrors = [
     ...validateDiscoveryFactualConsistency(synthesis, responses),
+    ...validateDiscoveryLinguisticQuality(synthesis),
     ...validateDiscoverySafetyContent(synthesis, safetyPolicy).errors,
   ];
   if (containsExplicitDiscoverySourceBlock(synthesis)) synthesisErrors.push("explicit_sources");
@@ -2933,6 +2995,9 @@ export function validateDiscoveryReportForDelivery(
   if (html.length < 30_000 || !/(<!doctype html|<html[\s>])/i.test(html)) errors.push(`report_html:${html.length}/30000`);
 
   const assembledContent = sections.map((section: any) => stripHtml(section?.content || "")).join("\n");
+  for (const linguisticError of validateDiscoveryLinguisticQuality(assembledContent)) {
+    errors.push(`linguistic:${linguisticError}`);
+  }
   for (const safetyError of validateDiscoverySafetyContent(assembledContent, safetyPolicy).errors) {
     errors.push(`safety:${safetyError}`);
   }

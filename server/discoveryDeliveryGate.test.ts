@@ -66,6 +66,14 @@ test("Discovery delivery still fails a real content error", () => {
   assert.ok(result.errors.includes("metric_value:domain_2"));
 });
 
+test("Discovery delivery rejects residual accentless customer prose", () => {
+  const report = validDiscoveryReport();
+  report.sections.find((section) => section.id === "sommeil")!.content += "<p>Je n'ai pas les elements pour conclure.</p>";
+  const result = validateDiscoveryReportForDelivery(report, validAssets);
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.includes("linguistic:accentless_french:element"));
+});
+
 test("Discovery delivery rejects templated reports without premium AI evidence", () => {
   const report = validDiscoveryReport();
   delete (report as any).generationQuality;

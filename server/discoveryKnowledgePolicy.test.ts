@@ -20,11 +20,15 @@ import {
   DISCOVERY_PREMIUM_DOMAINS,
   filterDiscoveryRelevantArticles,
   neutralizeDiscoverySourceAttribution,
+  normalizeDiscoveryFrenchSurface,
   validateDiscoveryFactualConsistency,
   validateDiscoveryGeneratedNarrative,
+  validateDiscoveryLinguisticQuality,
+  validateDiscoveryReportForDelivery,
   validateDiscoverySectionContent,
 } from "./discovery-scan";
 import { deriveDiscoverySafetyPolicy } from "./discoverySafetyPolicy";
+import { normalizeResponses } from "./responseNormalizer";
 import {
   assertDiscoveryCanaryBudget,
   compactDiscoveryCanaryKnowledge,
@@ -565,6 +569,51 @@ test("a supplied 3-4 session frequency rejects a claim of two weekly sessions", 
   );
 });
 
+test("wake fatigue and wake rested are normalized as semantic inverses", () => {
+  const fromFatigue = normalizeResponses({ "reveil-fatigue": "souvent" }, { mode: "discovery" });
+  assert.equal(fromFatigue["reveil-fatigue"], "souvent");
+  assert.equal(fromFatigue["reveil-repose"], "rarement");
+
+  const fromRested = normalizeResponses({ "reveil-repose": "toujours" }, { mode: "discovery" });
+  assert.equal(fromRested["reveil-repose"], "toujours");
+  assert.equal(fromRested["reveil-fatigue"], "jamais");
+
+  const facts = buildDiscoveryQuestionnaireFacts({ "reveil-fatigue": "souvent" });
+  assert.match(facts, /- reveil-fatigue: souvent/);
+  assert.match(facts, /- reveil-repose: rarement/);
+  assert.doesNotMatch(facts, /- reveil-repose: souvent/);
+});
+
+test("factual gate rejects an invented often-rested claim without blocking a negated statement", () => {
+  const responses = { "reveil-fatigue": "souvent" };
+  assert.deepEqual(
+    validateDiscoveryFactualConsistency(
+      "Tu indiques aussi te réveiller souvent reposé.",
+      responses,
+    ),
+    ["factual_value_contradiction:reveil-fatigue"],
+  );
+  assert.deepEqual(
+    validateDiscoveryFactualConsistency(
+      "Tu ne te réveilles pas souvent reposé, ce qui correspond à la fatigue déclarée.",
+      responses,
+    ),
+    [],
+  );
+});
+
+test("visible French normalization repairs exact accentless tokens and the gate remains fail-closed", () => {
+  assert.equal(
+    normalizeDiscoveryFrenchSurface("Je n'ai pas les elements pour conclure."),
+    "Je n'ai pas les éléments pour conclure.",
+  );
+  assert.deepEqual(
+    validateDiscoveryLinguisticQuality("Je n'ai pas les elements pour conclure."),
+    ["accentless_french:element"],
+  );
+  assert.deepEqual(validateDiscoveryLinguisticQuality("Les éléments sont connus."), []);
+});
+
 test("unified narrative requires exactly eight unique, valid domains", () => {
   const responses = { prenom: "Thomas", objectif: "mieux recuperer" };
   const policy = deriveDiscoverySafetyPolicy(responses);
@@ -598,10 +647,10 @@ test("section length uses canonical visible characters at validation and assembl
   assert.equal(validation.isValid, false);
 });
 
-test("unified cleanup and report conversion preserve a natural nutrition source-protein paragraph", async () => {
+test("unified cleanup and report conversion preserve nutrition while normalizing visible French", async () => {
   const responses = { prenom: "ApexTest", objectif: "progresser durablement" };
   const policy = deriveDiscoverySafetyPolicy(responses);
-  const standardParagraph = "Tu as décrit une routine régulière qui donne une base concrète. Le mécanisme utile ici concerne la récupération et son interaction possible avec ton objectif, sans permettre de poser un diagnostic. Cette lecture distingue ce que tu as déclaré de ce qui reste seulement une hypothèse à approfondir. ";
+  const standardParagraph = "Tu as décrit une routine régulière qui donne une base concrète. Le mécanisme utile ici concerne la récupération et son interaction possible avec ton objectif, sans permettre de poser un diagnostic. Je n'ai pas les elements pour transformer cette hypothèse prudente en certitude. ";
   const standardSection = Array.from({ length: 4 }, () => standardParagraph.repeat(3)).join("\n\n");
   const nutritionParagraph = "Tu déclares une source protéinée à chaque repas, trois repas et une collation, avec une hydratation régulière. Cette structure donne un repère concret sans justifier un objectif calorique, des macros, un grammage ou un protocole complet. Je conserve donc cette information exactement comme tu l'as fournie et je distingue ce fait des mécanismes seulement plausibles. ";
   const nutritionSection = Array.from({ length: 4 }, () => nutritionParagraph.repeat(2)).join("\n\n");
@@ -645,6 +694,39 @@ test("unified cleanup and report conversion preserve a natural nutrition source-
   assert.ok(reportNutrition, "the converted report must contain nutrition");
   assert.match(reportNutrition.content, /source protéinée à chaque repas/i);
   assert.ok(countDiscoveryVisibleChars(reportNutrition.content) >= 1_400);
+  assert.doesNotMatch(report.sections.map((section) => section.content).join("\n"), /\belements?\b/i);
+  assert.match(report.sections.map((section) => section.content).join("\n"), /éléments/i);
+
+  const assets = {
+    txt: "x".repeat(16_000),
+    html: `<!doctype html><html><body>${"x".repeat(30_000)}</body></html>`,
+  };
+  assert.deepEqual(validateDiscoveryReportForDelivery(report, assets).errors.filter((error) => error.startsWith("linguistic:")), []);
+});
+
+test("unified end-to-end factual gate blocks the exact canary wake contradiction", () => {
+  const responses = {
+    prenom: "ApexTest",
+    objectif: "progresser durablement",
+    "reveil-fatigue": "souvent",
+  };
+  const policy = deriveDiscoverySafetyPolicy(responses);
+  const paragraph = "Tu déclares une fatigue fréquente au réveil et une routine qui reste structurée. Le mécanisme possible concerne la récupération, sans permettre de poser un diagnostic ni d'inventer une donnée absente. Cette lecture distingue strictement les faits déclarés des hypothèses prudentes. ";
+  const section = Array.from({ length: 4 }, () => paragraph.repeat(3)).join("\n\n");
+  const raw = {
+    synthesis: section,
+    sections: DISCOVERY_PREMIUM_DOMAINS.map((domain) => ({
+      domain,
+      content: domain === "sommeil"
+        ? `${section}\n\nTu indiques aussi te réveiller souvent reposé.`
+        : section,
+    })),
+  };
+
+  assert.throws(
+    () => validateDiscoveryGeneratedNarrative(raw, responses, policy),
+    /Discovery unified section sommeil invalid: factual_value_contradiction:reveil-fatigue/,
+  );
 });
 
 test("unified prompt gives every domain enough visible-length margin", () => {
