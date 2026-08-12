@@ -653,6 +653,10 @@ test("visible French normalization repairs exact accentless tokens and the gate 
     repairDiscoveryKnownFrenchCorruptions("Le mouvement possèd’une fonction et le résultat possèd’un intérêt."),
     "Le mouvement possède une fonction et le résultat possède un intérêt.",
   );
+  assert.equal(
+    repairDiscoveryKnownFrenchCorruptions("Elle ne prouve aucun dérèglement hormonal ou métabolique, mais cela reste une hypothèse prudente et non diagnostique que le questionnaire ne permet pas de confirmer."),
+    "Elle ne prouve aucun dérèglement hormonal ou métabolique, et le questionnaire ne permet pas d’en confirmer la présence.",
+  );
 });
 
 test("factual gate rejects invented protein meal regularity and unsupported duplicate counts", () => {

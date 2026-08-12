@@ -471,6 +471,10 @@ export function normalizeDiscoveryFrenchSurface(text: string): string {
  */
 export function repairDiscoveryKnownFrenchCorruptions(text: string): string {
   return String(text || "")
+    .replace(
+      "Elle ne prouve aucun dérèglement hormonal ou métabolique, mais cela reste une hypothèse prudente et non diagnostique que le questionnaire ne permet pas de confirmer.",
+      "Elle ne prouve aucun dérèglement hormonal ou métabolique, et le questionnaire ne permet pas d’en confirmer la présence.",
+    )
     .replace(/\bpossèd[’'](un|une)\b/giu, (token, article: string) => (
       `${token[0] === token[0]?.toUpperCase() ? "Possède" : "possède"} ${article.toLowerCase()}`
     ))
