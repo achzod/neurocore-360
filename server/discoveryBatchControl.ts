@@ -30,6 +30,7 @@ export interface DiscoveryManifestCandidate {
   reportSentAt?: Date | string | null;
   superseded?: boolean;
   duplicateCandidate?: boolean;
+  unsubscribed?: boolean;
   deliveryGateOk: boolean;
   deliveryGateErrors?: string[];
   tracking: DiscoveryManifestTrackingSummary;
@@ -65,6 +66,8 @@ export interface DiscoveryApproval {
   expiresAt: string;
   stage: "GENERATION" | "DELIVERY";
   tier: DiscoveryBatchTier;
+  targetAuditIds: string[];
+  approvalBindingSha256: string;
   maxItems: number;
   globalBudgetUsd: number;
   softPerScanUsd: number;
@@ -121,6 +124,70 @@ export function discoveryArtifactContentHash(txt: string, html: string): string 
   return discoverySha256(`txt\0${txt}\0html\0${html}`);
 }
 
+export function isValidDiscoveryRecipientEmail(email: unknown): boolean {
+  const normalized = String(email || "").trim().toLowerCase();
+  if (!normalized || normalized.length > 254 || /\s/.test(normalized)) return false;
+  if (!/^[^@]+@[^@]+\.[a-z]{2,63}$/.test(normalized)) return false;
+  const [local, domain] = normalized.split("@");
+  if (!local || local.length > 64 || local.startsWith(".") || local.endsWith(".") || local.includes("..")) return false;
+  if (!domain || domain.startsWith(".") || domain.endsWith(".") || domain.includes("..")) return false;
+  return true;
+}
+
+export function isBlockedDiscoveryTestEmail(email: unknown): boolean {
+  const normalized = String(email || "").trim().toLowerCase();
+  if (!normalized) return true;
+  const [local = "", domain = ""] = normalized.split("@");
+  return normalized.includes("achzodcoaching")
+    || normalized.includes("achkou")
+    || local === "test"
+    || local.startsWith("test+")
+    || local.startsWith("test-")
+    || local.startsWith("test_")
+    || local.includes("+test")
+    || local === "debug"
+    || local.startsWith("debug+")
+    || local.startsWith("debug-")
+    || local.startsWith("debug_")
+    || domain === "example.com"
+    || domain === "example.org"
+    || domain === "example.net"
+    || domain.endsWith(".example")
+    || domain.endsWith(".invalid")
+    || domain === "invalid.example"
+    || domain === "localhost"
+    || domain.includes("mailinator");
+}
+
+export function discoveryApprovalBindingHash(
+  approval: Omit<DiscoveryApproval, "approvalBindingSha256"> | DiscoveryApproval,
+): string {
+  const { approvalBindingSha256: _ignored, ...payload } = approval as DiscoveryApproval;
+  return discoverySha256(payload);
+}
+
+export function resolveExactDiscoveryTargets<T extends { id: string }>(
+  manifestItems: readonly T[],
+  targetAuditIds: readonly string[],
+): T[] {
+  if (!Array.isArray(targetAuditIds) || targetAuditIds.length === 0) {
+    throw new Error("DISCOVERY_BATCH_TARGETS_REQUIRED");
+  }
+  const normalized = targetAuditIds.map((id) => String(id || "").trim().toLowerCase());
+  if (normalized.some((id) => !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(id))) {
+    throw new Error("DISCOVERY_BATCH_TARGET_ID_INVALID");
+  }
+  if (new Set(normalized).size !== normalized.length) {
+    throw new Error("DISCOVERY_BATCH_TARGET_DUPLICATE");
+  }
+  const byId = new Map(manifestItems.map((item) => [String(item.id).toLowerCase(), item]));
+  return normalized.map((id) => {
+    const item = byId.get(id);
+    if (!item) throw new Error(`DISCOVERY_BATCH_TARGET_NOT_IN_MANIFEST:${id}`);
+    return item;
+  });
+}
+
 export function classifyDiscoveryManifestCandidate(
   candidate: DiscoveryManifestCandidate,
 ): DiscoveryManifestClassification {
@@ -129,15 +196,19 @@ export function classifyDiscoveryManifestCandidate(
   const claimState = String(candidate.deliveryClaimState || "").toUpperCase();
   const claimAccepted = ["PROVIDER_ACCEPTED", "SMTP_CONFIRMED"].includes(claimState);
 
+  if (candidate.type !== "GRATUIT") reasons.push("not_discovery");
+  if (!isValidDiscoveryRecipientEmail(candidate.email)) reasons.push("invalid_email");
+  if (isBlockedDiscoveryTestEmail(candidate.email)) reasons.push("test_email_blocked");
+  if (candidate.unsubscribed) reasons.push("recipient_unsubscribed");
+  if (candidate.superseded || status === "SUPERSEDED") reasons.push("superseded_terminal");
+  if (candidate.duplicateCandidate) reasons.push("duplicate_candidate");
+  if (reasons.length > 0) return { cohort: "ambiguous", reasons };
+
   if (candidate.tracking.accepted > 0 || claimAccepted) {
     reasons.push(candidate.tracking.accepted > 0 ? "accepted_tracking_exists" : "accepted_delivery_claim_exists");
     return { cohort: "already_accepted", reasons };
   }
 
-  if (candidate.type !== "GRATUIT") reasons.push("not_discovery");
-  if (!candidate.email || !candidate.email.includes("@")) reasons.push("invalid_email");
-  if (candidate.superseded || status === "SUPERSEDED") reasons.push("superseded_terminal");
-  if (candidate.duplicateCandidate) reasons.push("duplicate_candidate");
   if (candidate.reportSentAt) reasons.push("sent_marker_without_acceptance_proof");
   if (candidate.tracking.failed > 0) reasons.push("failed_delivery_attempt_exists");
   if (candidate.tracking.pending > 0) reasons.push("pending_delivery_attempt_exists");
@@ -208,6 +279,7 @@ export function validateDiscoveryApproval(
     commitSha: string;
     stage: "GENERATION" | "DELIVERY";
     tier: DiscoveryBatchTier;
+    targetAuditIds: string[];
     itemCount: number;
     now?: Date;
   },
@@ -219,13 +291,39 @@ export function validateDiscoveryApproval(
   if (approval.commitSha !== expected.commitSha) errors.push("approval_commit_mismatch");
   if (approval.stage !== expected.stage) errors.push("approval_stage_mismatch");
   if (approval.tier !== expected.tier) errors.push("approval_tier_mismatch");
+  if (!Array.isArray(approval.targetAuditIds) || approval.targetAuditIds.length === 0) {
+    errors.push("approval_target_ids_missing");
+  } else {
+    const normalizedApprovalTargets = approval.targetAuditIds.map((id) => String(id || "").trim().toLowerCase());
+    const normalizedExpectedTargets = expected.targetAuditIds.map((id) => String(id || "").trim().toLowerCase());
+    if (new Set(normalizedApprovalTargets).size !== normalizedApprovalTargets.length) {
+      errors.push("approval_target_ids_duplicate");
+    }
+    if (normalizedApprovalTargets.some((id) => !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(id))) {
+      errors.push("approval_target_id_invalid");
+    }
+    if (JSON.stringify(normalizedApprovalTargets) !== JSON.stringify(normalizedExpectedTargets)) {
+      errors.push("approval_target_ids_mismatch");
+    }
+  }
+  if (!/^[a-f0-9]{64}$/.test(String(approval.approvalBindingSha256 || ""))) {
+    errors.push("approval_binding_hash_format");
+  } else if (approval.approvalBindingSha256 !== discoveryApprovalBindingHash(approval)) {
+    errors.push("approval_binding_hash_mismatch");
+  }
   if (!approval.approvalReference.trim()) errors.push("approval_reference_missing");
   const expiresAt = new Date(approval.expiresAt);
   if (!Number.isFinite(expiresAt.getTime()) || expiresAt <= (expected.now || new Date())) {
     errors.push("approval_expired");
   }
   if (!Number.isInteger(approval.maxItems) || approval.maxItems <= 0) errors.push("approval_max_items_invalid");
-  if (approval.maxItems < expected.itemCount) errors.push("approval_item_limit_exceeded");
+  if (approval.maxItems !== expected.itemCount || approval.targetAuditIds?.length !== expected.itemCount) {
+    errors.push("approval_item_count_mismatch");
+  }
+  const tierExpectedCount = expected.tier === "ONE" ? 1 : expected.tier === "THREE" ? 3 : expected.tier === "FIVE" ? 5 : null;
+  if (tierExpectedCount !== null && expected.itemCount !== tierExpectedCount) {
+    errors.push("approval_tier_item_count_mismatch");
+  }
   if (approval.softPerScanUsd !== DISCOVERY_BATCH_SOFT_COST_USD) errors.push("approval_soft_limit_mismatch");
   if (approval.hardPerScanUsd !== DISCOVERY_BATCH_HARD_COST_USD) errors.push("approval_hard_limit_mismatch");
   if (expected.stage === "GENERATION" && approval.globalBudgetUsd < expected.itemCount * approval.hardPerScanUsd) {

@@ -44,7 +44,9 @@ import {
   recordDiscoveryProviderUsage,
   refreshDiscoveryGlobalLock,
   releaseDiscoveryGlobalLock,
-  selectDiscoveryTier,
+  resolveExactDiscoveryTargets,
+  isBlockedDiscoveryTestEmail,
+  isValidDiscoveryRecipientEmail,
   stableJson,
   validateDiscoveryApproval,
   type DiscoveryApproval,
@@ -87,6 +89,9 @@ interface ManifestRow {
   deliveryClaimState: string | null;
   duplicateCandidate: boolean;
   superseded: boolean;
+  unsubscribed: boolean;
+  validEmail: boolean;
+  testEmailBlocked: boolean;
   cohort: DiscoveryManifestCohort;
   reasons: string[];
 }
@@ -157,10 +162,19 @@ async function buildManifest(): Promise<DiscoveryManifest> {
           WHERE c.audit_id = a.id AND c.email_type = 'sendReportReadyEmail'
           ORDER BY c.created_at DESC LIMIT 1) AS delivery_claim_state`
     : `NULL::text AS delivery_claim_state`;
+  const hasUnsubscribes = Boolean((await pool.query(
+    `SELECT to_regclass('public.email_unsubscribes') IS NOT NULL AS ready`,
+  )).rows[0]?.ready);
+  if (!hasUnsubscribes) {
+    throw new Error("DISCOVERY_BATCH_UNSUBSCRIBE_TABLE_MISSING");
+  }
+  const unsubscribeSelect =
+    `EXISTS (SELECT 1 FROM email_unsubscribes u WHERE LOWER(u.email) = LOWER(a.email)) AS unsubscribed`;
   const result = await pool.query(
     `SELECT a.id, a.email, a.type, a.created_at, a.report_delivery_status,
             a.report_sent_at, a.responses, a.narrative_report, a.report_txt, a.report_html,
             ${claimSelect},
+            ${unsubscribeSelect},
             EXISTS (
               SELECT 1 FROM audits other
                WHERE other.type = 'GRATUIT' AND other.id <> a.id
@@ -208,6 +222,7 @@ async function buildManifest(): Promise<DiscoveryManifest> {
       reportSentAt: row.report_sent_at,
       superseded,
       duplicateCandidate: Boolean(row.duplicate_candidate),
+      unsubscribed: Boolean(row.unsubscribed),
       deliveryGateOk: gate.ok,
       deliveryGateErrors: gate.errors,
       tracking,
@@ -230,6 +245,9 @@ async function buildManifest(): Promise<DiscoveryManifest> {
       deliveryClaimState: row.delivery_claim_state || null,
       duplicateCandidate: Boolean(row.duplicate_candidate),
       superseded,
+      unsubscribed: Boolean(row.unsubscribed),
+      validEmail: isValidDiscoveryRecipientEmail(row.email),
+      testEmailBlocked: isBlockedDiscoveryTestEmail(row.email),
       cohort: classification.cohort,
       reasons: classification.reasons,
     };
@@ -315,6 +333,32 @@ async function usageEventsSince(startedAt: Date): Promise<any[]> {
   return result.rows;
 }
 
+function assertExactTargetsEligible(
+  selected: ManifestRow[],
+  stage: "GENERATION" | "DELIVERY",
+): void {
+  for (const item of selected) {
+    const reasons: string[] = [];
+    if (!item.validEmail) reasons.push("invalid_email");
+    if (item.testEmailBlocked) reasons.push("test_email_blocked");
+    if (item.unsubscribed) reasons.push("recipient_unsubscribed");
+    if (item.superseded) reasons.push("superseded_terminal");
+    if (item.duplicateCandidate) reasons.push("duplicate_candidate");
+    if (stage === "GENERATION") {
+      if (item.cohort !== "invalid") reasons.push(`cohort_${item.cohort}`);
+    } else {
+      if (item.cohort !== "valid_never_sent") reasons.push(`cohort_${item.cohort}`);
+      if (!item.deliveryGateOk) reasons.push("delivery_gate_failed");
+      if (item.tracking.total !== 0) reasons.push("prior_tracking_exists");
+      if (item.deliveryClaimState) reasons.push("prior_delivery_claim_exists");
+      if (!item.txtSha256 || !item.htmlSha256) reasons.push("artifact_hash_missing");
+    }
+    if (reasons.length > 0) {
+      throw new Error(`DISCOVERY_BATCH_TARGET_INELIGIBLE:${item.id}:${[...new Set(reasons)].join("|")}`);
+    }
+  }
+}
+
 async function runGeneration(
   manifest: DiscoveryManifest,
   approval: DiscoveryApproval,
@@ -324,14 +368,14 @@ async function runGeneration(
   if (!await hasBatchControlTables()) throw new Error("DISCOVERY_BATCH_MIGRATION_NOT_APPLIED");
   if (approval.stage !== "GENERATION") throw new Error("DISCOVERY_BATCH_APPROVAL_NOT_GENERATION");
   const tier = approval.tier as DiscoveryBatchTier;
-  const eligible = manifest.items.filter((item) => item.cohort === "invalid" && !item.superseded);
-  const selected = selectDiscoveryTier(eligible, tier);
-  if (selected.length === 0) throw new Error("DISCOVERY_BATCH_NO_INVALID_TARGETS");
+  const selected = resolveExactDiscoveryTargets(manifest.items, approval.targetAuditIds);
+  assertExactTargetsEligible(selected, "GENERATION");
   const approvalErrors = validateDiscoveryApproval(approval, {
     manifestSha256: manifest.manifestSha256,
     commitSha: manifest.commitSha,
     stage: "GENERATION",
     tier,
+    targetAuditIds: selected.map((item) => item.id),
     itemCount: selected.length,
   });
   if (approvalErrors.length > 0) throw new Error(`DISCOVERY_BATCH_APPROVAL_INVALID:${approvalErrors.join(",")}`);
@@ -347,7 +391,7 @@ async function runGeneration(
     batchId = await createDiscoveryBatchRun({
       manifestSha256: manifest.manifestSha256,
       commitSha: manifest.commitSha,
-      approvalReference: `${approval.approvalReference}|${approvalFile}`,
+      approvalReference: `${approval.approvalReference}|${approvalFile}|binding:${approval.approvalBindingSha256}`,
       stage: "GENERATION",
       tier,
       globalBudgetUsd: approval.globalBudgetUsd,
@@ -486,22 +530,14 @@ async function runDelivery(
   if (!await hasBatchControlTables()) throw new Error("DISCOVERY_BATCH_MIGRATION_NOT_APPLIED");
   if (approval.stage !== "DELIVERY") throw new Error("DISCOVERY_BATCH_APPROVAL_NOT_DELIVERY");
   const tier = approval.tier as DiscoveryBatchTier;
-  const eligible = manifest.items.filter((item) =>
-    item.cohort === "valid_never_sent"
-    && item.deliveryGateOk
-    && !item.superseded
-    && item.tracking.total === 0
-    && !item.deliveryClaimState
-    && Boolean(item.txtSha256)
-    && Boolean(item.htmlSha256)
-  );
-  const selected = selectDiscoveryTier(eligible, tier);
-  if (selected.length === 0) throw new Error("DISCOVERY_BATCH_NO_DELIVERY_TARGETS");
+  const selected = resolveExactDiscoveryTargets(manifest.items, approval.targetAuditIds);
+  assertExactTargetsEligible(selected, "DELIVERY");
   const approvalErrors = validateDiscoveryApproval(approval, {
     manifestSha256: manifest.manifestSha256,
     commitSha: manifest.commitSha,
     stage: "DELIVERY",
     tier,
+    targetAuditIds: selected.map((item) => item.id),
     itemCount: selected.length,
   });
   if (approvalErrors.length > 0) throw new Error(`DISCOVERY_BATCH_APPROVAL_INVALID:${approvalErrors.join(",")}`);
@@ -517,7 +553,7 @@ async function runDelivery(
     batchId = await createDiscoveryBatchRun({
       manifestSha256: manifest.manifestSha256,
       commitSha: manifest.commitSha,
-      approvalReference: `${approval.approvalReference}|${approvalFile}`,
+      approvalReference: `${approval.approvalReference}|${approvalFile}|binding:${approval.approvalBindingSha256}`,
       stage: "DELIVERY",
       tier,
       globalBudgetUsd: 0,

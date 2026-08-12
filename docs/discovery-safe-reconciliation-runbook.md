@@ -69,6 +69,10 @@ Audit obligatoire :
   "expiresAt": "2026-08-13T03:00:00.000Z",
   "stage": "GENERATION",
   "tier": "ONE",
+  "targetAuditIds": [
+    "AUDIT_ID_EXACT_DE_SOPHIE"
+  ],
+  "approvalBindingSha256": "SHA256_CANONIQUE_DE_TOUTE_L_APPROBATION_SANS_CE_CHAMP",
   "maxItems": 1,
   "globalBudgetUsd": 0.75,
   "softPerScanUsd": 0.25,
@@ -76,7 +80,13 @@ Audit obligatoire :
 }
 ```
 
-Pour `THREE`, `FIVE` et `REST`, refaire un manifeste après chaque palier et créer une nouvelle approbation. Le budget global doit couvrir `nombre sélectionné × 0,75` ; ce montant est un plafond réservé, pas une dépense attendue.
+`targetAuditIds` est obligatoire, ordonné et exhaustif. Le reconciler ne cherche plus « le premier invalide » : il résout uniquement ces identifiants exacts dans le manifeste. Un identifiant absent, dupliqué, mal formé ou inéligible bloque tout le palier avant le provider.
+
+`approvalBindingSha256` est calculé avec `discoveryApprovalBindingHash()` sur tous les champs de l’approbation sauf le hash lui-même. Changer un auditId, son ordre, le manifeste, le commit, le budget ou le palier invalide l’approbation.
+
+Avant de signer l’approbation, confirmer pour chaque auditId : nom/client attendu, email réel valide, non-test, non désabonné, non superseded et non doublon potentiel.
+
+Pour `THREE`, `FIVE` et `REST`, refaire un manifeste après chaque palier et créer une nouvelle approbation avec la liste exacte des 3, 5 ou audits restants autorisés. Le budget global doit couvrir `nombre ciblé × 0,75` ; ce montant est un plafond réservé, pas une dépense attendue.
 
 ## 5. Génération contrôlée
 
@@ -114,7 +124,7 @@ Même audit après `THREE` et `FIVE`. Le premier échec bloque `REST`.
 
 La livraison utilise un nouveau manifeste. Seuls `valid_never_sent`, gate vert, zéro tracking, zéro claim, hashes identiques sont éligibles.
 
-Approbation : `stage = DELIVERY`, `globalBudgetUsd = 0`, palier `ONE`, puis `THREE`, `FIVE`, `REST` avec un manifeste frais à chaque fois.
+Approbation : `stage = DELIVERY`, `globalBudgetUsd = 0`, `targetAuditIds` exacts et nouveau `approvalBindingSha256`, palier `ONE`, puis `THREE`, `FIVE`, `REST` avec un manifeste frais à chaque fois.
 
 Variables :
 

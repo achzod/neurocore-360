@@ -6,10 +6,14 @@ import {
   DISCOVERY_BATCH_HARD_COST_USD,
   DISCOVERY_BATCH_SOFT_COST_USD,
   classifyDiscoveryManifestCandidate,
+  discoveryApprovalBindingHash,
   discoveryArtifactContentHash,
   discoverySha256,
   evaluateDiscoveryBudgetReservation,
+  isBlockedDiscoveryTestEmail,
+  isValidDiscoveryRecipientEmail,
   isDiscoveryGlobalLockActive,
+  resolveExactDiscoveryTargets,
   selectDiscoveryTier,
   stableJson,
   validateDiscoveryApproval,
@@ -27,7 +31,7 @@ test("stable JSON and manifest hashes do not depend on object key order", () => 
 
 test("accepted provider tracking is terminal even if the stored report is invalid", () => {
   const result = classifyDiscoveryManifestCandidate({
-    id: "a", email: "client@example.com", type: "GRATUIT",
+    id: "a", email: "client@real-domain.fr", type: "GRATUIT",
     deliveryGateOk: false, tracking: { total: 1, accepted: 1, failed: 0, pending: 0 },
   });
   assert.equal(result.cohort, "already_accepted");
@@ -35,7 +39,7 @@ test("accepted provider tracking is terminal even if the stored report is invali
 
 test("a valid report with no attempt is classified valid-never-sent", () => {
   const result = classifyDiscoveryManifestCandidate({
-    id: "a", email: "client@example.com", type: "GRATUIT",
+    id: "a", email: "client@real-domain.fr", type: "GRATUIT",
     deliveryGateOk: true, tracking: emptyTracking,
   });
   assert.deepEqual(result, {
@@ -46,7 +50,7 @@ test("a valid report with no attempt is classified valid-never-sent", () => {
 
 test("sent marker without provider acceptance is ambiguous, never resendable", () => {
   const result = classifyDiscoveryManifestCandidate({
-    id: "a", email: "client@example.com", type: "GRATUIT",
+    id: "a", email: "client@real-domain.fr", type: "GRATUIT",
     reportSentAt: new Date(), deliveryGateOk: true, tracking: emptyTracking,
   });
   assert.equal(result.cohort, "ambiguous");
@@ -59,7 +63,7 @@ test("failed or pending delivery attempts are ambiguous", () => {
     { total: 1, accepted: 0, failed: 0, pending: 1 },
   ]) {
     assert.equal(classifyDiscoveryManifestCandidate({
-      id: "a", email: "client@example.com", type: "GRATUIT",
+      id: "a", email: "client@real-domain.fr", type: "GRATUIT",
       deliveryGateOk: true, tracking,
     }).cohort, "ambiguous");
   }
@@ -68,15 +72,35 @@ test("failed or pending delivery attempts are ambiguous", () => {
 test("superseded and duplicate candidates are ambiguous and excluded from automation", () => {
   for (const extra of [{ superseded: true }, { duplicateCandidate: true }]) {
     assert.equal(classifyDiscoveryManifestCandidate({
-      id: "a", email: "client@example.com", type: "GRATUIT",
+      id: "a", email: "client@real-domain.fr", type: "GRATUIT",
       deliveryGateOk: false, tracking: emptyTracking, ...extra,
     }).cohort, "ambiguous");
   }
 });
 
+test("test, malformed and unsubscribed recipients are blocked before any accepted classification", () => {
+  const blocked = [
+    { email: "test+canary@example.com" },
+    { email: "not-an-email" },
+    { email: "client@example.com", unsubscribed: true },
+  ];
+  for (const candidate of blocked) {
+    const result = classifyDiscoveryManifestCandidate({
+      id: "a", type: "GRATUIT", deliveryGateOk: false,
+      tracking: { total: 1, accepted: 1, failed: 0, pending: 0 },
+      ...candidate,
+    });
+    assert.equal(result.cohort, "ambiguous");
+  }
+  assert.equal(isBlockedDiscoveryTestEmail("test+canary@real.tld"), true);
+  assert.equal(isBlockedDiscoveryTestEmail("client@example.com"), true);
+  assert.equal(isValidDiscoveryRecipientEmail("client@domain.com"), true);
+  assert.equal(isValidDiscoveryRecipientEmail("client@localhost"), false);
+});
+
 test("invalid untouched report is the only automatic generation cohort", () => {
   const result = classifyDiscoveryManifestCandidate({
-    id: "a", email: "client@example.com", type: "GRATUIT",
+    id: "a", email: "client@real-domain.fr", type: "GRATUIT",
     deliveryGateOk: false, deliveryGateErrors: ["missing_sections"], tracking: emptyTracking,
   });
   assert.equal(result.cohort, "invalid");
@@ -124,7 +148,12 @@ test("policy refuses a per-scan hard limit above 0.75 USD", () => {
 
 test("approval is bound to manifest, commit, tier, item count and exact cost policy", () => {
   const manifestSha256 = "a".repeat(64);
-  const approval: DiscoveryApproval = {
+  const targetAuditIds = [
+    "11111111-1111-4111-8111-111111111111",
+    "22222222-2222-4222-8222-222222222222",
+    "33333333-3333-4333-8333-333333333333",
+  ];
+  const approvalWithoutBinding: Omit<DiscoveryApproval, "approvalBindingSha256"> = {
     schemaVersion: 1,
     manifestSha256,
     commitSha: "commit",
@@ -132,16 +161,22 @@ test("approval is bound to manifest, commit, tier, item count and exact cost pol
     expiresAt: "2030-01-01T00:00:00.000Z",
     stage: "GENERATION",
     tier: "THREE",
+    targetAuditIds,
     maxItems: 3,
     globalBudgetUsd: 2.25,
     softPerScanUsd: DISCOVERY_BATCH_SOFT_COST_USD,
     hardPerScanUsd: DISCOVERY_BATCH_HARD_COST_USD,
+  };
+  const approval: DiscoveryApproval = {
+    ...approvalWithoutBinding,
+    approvalBindingSha256: discoveryApprovalBindingHash(approvalWithoutBinding),
   };
   assert.deepEqual(validateDiscoveryApproval(approval, {
     manifestSha256,
     commitSha: "commit",
     stage: "GENERATION",
     tier: "THREE",
+    targetAuditIds,
     itemCount: 3,
     now: new Date("2029-01-01T00:00:00Z"),
   }), []);
@@ -150,9 +185,57 @@ test("approval is bound to manifest, commit, tier, item count and exact cost pol
     commitSha: "commit",
     stage: "GENERATION",
     tier: "THREE",
+    targetAuditIds,
     itemCount: 3,
     now: new Date("2029-01-01T00:00:00Z"),
   }).includes("approval_manifest_hash_mismatch"));
+});
+
+test("approval binding changes with the exact target audit list and rejects retargeting", () => {
+  const targetA = "11111111-1111-4111-8111-111111111111";
+  const targetB = "22222222-2222-4222-8222-222222222222";
+  const base: Omit<DiscoveryApproval, "approvalBindingSha256"> = {
+    schemaVersion: 1,
+    manifestSha256: "a".repeat(64),
+    commitSha: "commit",
+    approvalReference: "telegram:24478",
+    expiresAt: "2030-01-01T00:00:00.000Z",
+    stage: "GENERATION",
+    tier: "ONE",
+    targetAuditIds: [targetA],
+    maxItems: 1,
+    globalBudgetUsd: 0.75,
+    softPerScanUsd: DISCOVERY_BATCH_SOFT_COST_USD,
+    hardPerScanUsd: DISCOVERY_BATCH_HARD_COST_USD,
+  };
+  const approval: DiscoveryApproval = { ...base, approvalBindingSha256: discoveryApprovalBindingHash(base) };
+  assert.notEqual(
+    approval.approvalBindingSha256,
+    discoveryApprovalBindingHash({ ...base, targetAuditIds: [targetB] }),
+  );
+  const retargeted = { ...approval, targetAuditIds: [targetB] };
+  const errors = validateDiscoveryApproval(retargeted, {
+    manifestSha256: base.manifestSha256,
+    commitSha: base.commitSha,
+    stage: "GENERATION",
+    tier: "ONE",
+    targetAuditIds: [targetB],
+    itemCount: 1,
+    now: new Date("2029-01-01T00:00:00Z"),
+  });
+  assert.ok(errors.includes("approval_binding_hash_mismatch"));
+});
+
+test("target resolution is exact, ordered and fail-closed", () => {
+  const idA = "11111111-1111-4111-8111-111111111111";
+  const idB = "22222222-2222-4222-8222-222222222222";
+  const items = [{ id: idA, label: "Sophie" }, { id: idB, label: "Other" }];
+  assert.deepEqual(resolveExactDiscoveryTargets(items, [idA]), [items[0]]);
+  assert.deepEqual(resolveExactDiscoveryTargets(items, [idB, idA]), [items[1], items[0]]);
+  assert.throws(() => resolveExactDiscoveryTargets(items, []), /TARGETS_REQUIRED/);
+  assert.throws(() => resolveExactDiscoveryTargets(items, [idA, idA]), /TARGET_DUPLICATE/);
+  assert.throws(() => resolveExactDiscoveryTargets(items, ["33333333-3333-4333-8333-333333333333"]), /TARGET_NOT_IN_MANIFEST/);
+  assert.throws(() => resolveExactDiscoveryTargets(items, ["not-an-id"]), /TARGET_ID_INVALID/);
 });
 
 test("lock check fails closed when DB lookup fails", async () => {
@@ -202,4 +285,11 @@ test("reconciler is read-only by default and delivery claims before provider", (
   assert.ok(source.indexOf("markDiscoveryDeliveryProviderPostStarted(claimId)") < source.indexOf("sendReportReadyEmail(item.email"));
   assert.match(source, /AI_COST_ALERTS_ENABLED/);
   assert.match(source, /DISCOVERY_REPORT_DELIVERY_ENABLED/);
+  assert.match(source, /resolveExactDiscoveryTargets\(manifest\.items, approval\.targetAuditIds\)/);
+  assert.doesNotMatch(source, /selectDiscoveryTier\(eligible, tier\)/);
+  assert.match(source, /recipient_unsubscribed/);
+  assert.match(source, /test_email_blocked/);
+  assert.match(source, /DISCOVERY_BATCH_TARGET_INELIGIBLE/);
+  assert.match(source, /DISCOVERY_BATCH_UNSUBSCRIBE_TABLE_MISSING/);
+  assert.doesNotMatch(source, /FALSE AS unsubscribed/);
 });
