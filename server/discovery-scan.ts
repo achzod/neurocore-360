@@ -15,6 +15,7 @@ import { searchArticles, searchFullText } from './knowledge/storage';
 import {
   buildDiscoverySafetyPrompt,
   deriveDiscoverySafetyPolicy,
+  qualifyDiscoveryMedicalAssertions,
   type DiscoverySafetyPolicy,
   validateDiscoverySafetyContent,
 } from './discoverySafetyPolicy';
@@ -1771,6 +1772,7 @@ function cleanDiscoveryNarrativeProse(text: string): string {
   cleaned = normalizeSingleVoice(cleaned);
   cleaned = stripCitationLines(cleaned);
   cleaned = neutralizeDiscoverySourceAttribution(cleaned);
+  cleaned = qualifyDiscoveryMedicalAssertions(cleaned);
   return normalizeParagraphs(cleaned);
 }
 

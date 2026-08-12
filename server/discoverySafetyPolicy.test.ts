@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   buildDiscoverySafetyPrompt,
   deriveDiscoverySafetyPolicy,
+  qualifyDiscoveryMedicalAssertions,
   validateDiscoverySafetyContent,
 } from "./discoverySafetyPolicy";
 
@@ -55,6 +56,30 @@ test("le gate medical rejette l'affirmation et accepte la prudence", () => {
   assert.ok(validateDiscoverySafetyContent("Ton cortisol est élevé.", policy).errors.includes("medical_assertion"));
   assert.ok(validateDiscoverySafetyContent("Ton axe HPA est en activation chronique.", policy).errors.includes("medical_assertion"));
   assert.equal(validateDiscoverySafetyContent("Ce questionnaire ne permet pas de conclure à un dérèglement hormonal.", policy).ok, true);
+});
+
+test("la qualification déterministe couvre cortisol, insuline et thyroïde sans désarmer le gate", () => {
+  const policy = deriveDiscoverySafetyPolicy({});
+  const raw = "Ton cortisol est élevé. Ta sensibilité à l'insuline est basse. Ta thyroïde est ralentie.";
+  const qualified = qualifyDiscoveryMedicalAssertions(raw);
+
+  assert.match(qualified, /Ton cortisol est élevé, mais cela reste une hypothèse prudente et non diagnostique/);
+  assert.match(qualified, /Ta sensibilité à l'insuline est basse, mais cela reste une hypothèse prudente et non diagnostique/);
+  assert.match(qualified, /Ta thyroïde est ralentie, mais cela reste une hypothèse prudente et non diagnostique/);
+  assert.equal(validateDiscoverySafetyContent(qualified, policy).ok, true);
+  assert.ok(validateDiscoverySafetyContent(raw, policy).errors.includes("medical_assertion"));
+});
+
+test("la qualification ne masque ni prescription biologique ni règle TCA", () => {
+  const strictPolicy = deriveDiscoverySafetyPolicy({ "tca-historique": "passe" });
+  const testing = "Ton cortisol est élevé et fais doser le cortisol demain.";
+  const tca = "Ton cortisol est élevé. Vise 2 400 kcal par jour.";
+
+  assert.equal(qualifyDiscoveryMedicalAssertions(testing), testing);
+  assert.ok(validateDiscoverySafetyContent(qualifyDiscoveryMedicalAssertions(testing), strictPolicy).errors.includes("medical_testing_prescription"));
+  const qualifiedTca = qualifyDiscoveryMedicalAssertions(tca);
+  assert.match(qualifiedTca, /hypothèse prudente et non diagnostique/);
+  assert.ok(validateDiscoverySafetyContent(qualifiedTca, strictPolicy).errors.includes("tca_calorie_target"));
 });
 
 test("le gate strict accepte historique factuel et orientation TCA sobre", () => {

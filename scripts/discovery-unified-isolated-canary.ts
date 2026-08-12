@@ -36,7 +36,8 @@ const FIXED_PROMPT_SCHEMA_OVERHEAD_BYTES = 40_000;
 export const DISCOVERY_CANARY_KNOWLEDGE_CHARS_PER_SCOPE = 400;
 const DRY_RUN_SENTINEL = "DISCOVERY_CANARY_DRY_PREFLIGHT_COMPLETE";
 const PREFLIGHT_ONLY_SENTINEL = "DISCOVERY_CANARY_PREFLIGHT_ONLY_COMPLETE";
-const EXPECTED_DISCOVERY_SOURCE_SHA256 = "24a018d3166865d682194762f871938aeb0a6936fa7d98f6a5afb8551bb5165b";
+const EXPECTED_DISCOVERY_SOURCE_SHA256 = "f28f38519edf8c062ebc6896a8f05c6e357052c4db8a4b478ad9514e5d90478c";
+const EXPECTED_DISCOVERY_SAFETY_SHA256 = "88090630768f33b37aafe3d588dd39c76c33b9e227b7c01d73a7c716b970a3e9";
 const EXPECTED_OPENAI_RUNNER_SHA256 = "cef5511112e9a1a985163400aad5cbe2284f047b78063c2bb1ab8df820bdd1d0";
 const ARTIFACT_CHUNK_BYTES = 12_000;
 
@@ -197,6 +198,10 @@ async function main(): Promise<void> {
   invariant(
     sha256(readFileSync("server/discovery-scan.ts", "utf8")) === EXPECTED_DISCOVERY_SOURCE_SHA256,
     "discovery_source_hash_mismatch",
+  );
+  invariant(
+    sha256(readFileSync("server/discoverySafetyPolicy.ts", "utf8")) === EXPECTED_DISCOVERY_SAFETY_SHA256,
+    "discovery_safety_hash_mismatch",
   );
   invariant(
     sha256(readFileSync("server/openaiResponses.ts", "utf8")) === EXPECTED_OPENAI_RUNNER_SHA256,

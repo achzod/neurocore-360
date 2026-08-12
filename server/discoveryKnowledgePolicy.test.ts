@@ -798,6 +798,30 @@ test("unified end-to-end factual gate blocks the exact canary wake contradiction
   );
 });
 
+test("unified end-to-end cleanup qualifies a provider medical assertion before the strict final gate", () => {
+  const responses = { prenom: "ApexTest", objectif: "progresser durablement" };
+  const policy = deriveDiscoverySafetyPolicy(responses);
+  const paragraph = "Tu as décrit une routine structurée et des repères cohérents. Le mécanisme utile concerne la récupération et son interaction possible avec ton objectif, sans permettre de poser un diagnostic. Cette lecture distingue les faits déclarés des hypothèses prudentes qui restent à confirmer. ";
+  const section = Array.from({ length: 4 }, () => paragraph.repeat(3)).join("\n\n");
+  const raw = {
+    synthesis: section,
+    sections: DISCOVERY_PREMIUM_DOMAINS.map((domain) => ({
+      domain,
+      content: domain === "sommeil"
+        ? `${section}\n\nTon cortisol est élevé. Ta sensibilité à l'insuline est basse. Ta thyroïde est ralentie.`
+        : section,
+    })),
+  };
+
+  const validated = validateDiscoveryGeneratedNarrative(raw, responses, policy);
+  const sleep = validated.sections.sommeil;
+  assert.match(sleep, /Ton cortisol est élevé, mais cela reste une hypothèse prudente et non diagnostique/);
+  assert.match(sleep, /Ta sensibilité à l'insuline est basse, mais cela reste une hypothèse prudente et non diagnostique/);
+  assert.match(sleep, /Ta thyroïde est ralentie, mais cela reste une hypothèse prudente et non diagnostique/);
+  assert.equal(validateDiscoverySectionContent(sleep, policy).isValid, true);
+  assert.ok(validateDiscoverySectionContent("Ton cortisol est élevé.", policy).reasons.includes("medical_assertion"));
+});
+
 test("unified prompt gives every domain enough visible-length margin", () => {
   const source = readFileSync(new URL("./discovery-scan.ts", import.meta.url), "utf8");
 
@@ -811,6 +835,7 @@ test("unified prompt gives every domain enough visible-length margin", () => {
 test("Discovery generation uses one bounded structured call and still rejects incomplete responses", () => {
   const source = readFileSync(new URL("./discovery-scan.ts", import.meta.url), "utf8");
   const runner = readFileSync(new URL("./openaiResponses.ts", import.meta.url), "utf8");
+  const canaryRunner = readFileSync(new URL("../scripts/discovery-unified-isolated-canary.ts", import.meta.url), "utf8");
 
   assert.match(source, /schemaName:\s*"discovery_unified_report_v1"[\s\S]{0,260}maxOutputTokens:\s*DISCOVERY_UNIFIED_MAX_OUTPUT_TOKENS[\s\S]{0,120}retries:\s*1[\s\S]{0,120}label:\s*"discovery-unified-report"/);
   assert.match(source, /One structured provider call owns the synthesis and all eight domains/);
@@ -820,6 +845,9 @@ test("Discovery generation uses one bounded structured call and still rejects in
   assert.match(runner, /discovery:\s*{[\s\S]{0,260}effort:\s*"medium"[\s\S]{0,260}maxOutputTokens:\s*7_000[\s\S]{0,260}verbosity:\s*"medium"/);
   assert.match(runner, /response\?\.status\s*!==\s*"completed"/);
   assert.match(runner, /OpenAI response incomplete:/);
+  assert.match(canaryRunner, /EXPECTED_DISCOVERY_SAFETY_SHA256/);
+  assert.match(canaryRunner, /server\/discoverySafetyPolicy\.ts/);
+  assert.match(canaryRunner, /discovery_safety_hash_mismatch/);
 });
 
 test("new Discovery persistence stores the same canonical score shown in the report", () => {

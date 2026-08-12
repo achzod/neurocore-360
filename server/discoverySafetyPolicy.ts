@@ -78,13 +78,50 @@ export function deriveDiscoverySafetyPolicy(responses: Record<string, unknown>):
 }
 
 export function buildDiscoverySafetyPrompt(policy: DiscoverySafetyPolicy): string {
-  const universal = `SECURITE MEDICALE NON NEGOCIABLE : le questionnaire ne permet aucun diagnostic. Ne presente jamais comme certain un dereglement hormonal, neurologique, thyroidien, insulinique ou de l'axe HPA. Toute hypothese doit rester prudente, conditionnelle et explicitement non diagnostique. Ne prescris pas de bilan biologique.`;
+  const universal = `SECURITE MEDICALE NON NEGOCIABLE : le questionnaire ne permet aucun diagnostic. Ne presente jamais comme certain un dereglement hormonal, neurologique, thyroidien, insulinique ou de l'axe HPA. Toute hypothese doit rester prudente, conditionnelle et explicitement non diagnostique. Chaque phrase individuelle contenant cortisol, insuline, thyroide, testosterone ou axe HPA doit employer peut, pourrait ou hypothese non diagnostique. Les formulations affirmatives comme "ton cortisol est eleve", "ta sensibilite a l'insuline est basse" ou "ta thyroide est ralentie" sont interdites. Ne prescris pas de bilan biologique.`;
   if (!policy.strictEatingSafety) return universal;
   return `${universal}\nSECURITE TCA STRICTE : un signal actuel ou historique lie au comportement alimentaire ou au body-checking est present. Interdiction absolue de donner calories, deficit, surplus, macros, grammes/kg, pesee alimentaire ou corporelle, mensurations, tour de taille, photos de progression, journal de calories, jeune, seche, cheat meal, compensation par exercice, supplements ou panels biologiques. N'interprete pas les causes psychologiques et n'emploie pas auto-sabotage, obsession, besoin de controle ou peur de perdre le controle. Tu peux uniquement rappeler sobrement que ce signal impose d'eviter l'auto-suivi chiffre et recommander un professionnel de sante forme aux TCA, sans poser de diagnostic.`;
 }
 
 function splitSentences(text: string): string[] {
   return text.split(/(?<=[.!?])\s+|\n+/).map((part) => part.trim()).filter(Boolean);
+}
+
+const MEDICAL_SUBJECT_PATTERN = /\b(?:cortisol|thyroide|testosterone|axe\s+hpa|charge\s+allostatique|insuline|dysfonction|dereglement)\b/;
+const MEDICAL_AFFIRMATIVE_PATTERN = /\b(?:tu\s+as|ton|ta|tes)\b.{0,55}\b(?:est|sont|indique|revele|prouve|confirme|eleve|basse?|dereglement|dysfonction)\b|\b(?:indique|revele|prouve|confirme)\b/;
+const MEDICAL_QUALIFIER_PATTERN = /\b(?:peut|pourrait|hypothese|possible|a\s+confirmer|ne\s+permet\s+pas\s+de\s+conclure|sans\s+permettre\s+de\s+conclure)\b/;
+const MEDICAL_TESTING_PATTERN = /\b(?:fais|faire|demande|demander|dose|doser|controle|controler|mesure|mesurer)\b.{0,65}\b(?:tsh|t3|t4|testosterone|cortisol|insuline|bilan\s+(?:sanguin|biologique|hormonal)|panel\s+(?:sanguin|biologique|hormonal))\b/;
+
+function isUnqualifiedMedicalAssertion(sentence: string): boolean {
+  const normalizedSentence = normalized(sentence);
+  return MEDICAL_SUBJECT_PATTERN.test(normalizedSentence)
+    && MEDICAL_AFFIRMATIVE_PATTERN.test(normalizedSentence)
+    && !MEDICAL_QUALIFIER_PATTERN.test(normalizedSentence);
+}
+
+/**
+ * Adds an explicit non-diagnostic qualification to provider prose that would
+ * otherwise make an individual medical assertion. This deliberately does not
+ * remove or rewrite testing prescriptions, TCA instructions or numeric advice:
+ * those remain byte-for-byte visible to the final fail-closed safety gate.
+ */
+export function qualifyDiscoveryMedicalAssertions(text: string): string {
+  return String(text || "")
+    .split(/(\n+)/)
+    .map((block) => {
+      if (/^\n+$/.test(block)) return block;
+      return block.replace(/[^.!?]+[.!?]+|[^.!?]+$/g, (sentence) => {
+        const trimmed = sentence.trim();
+        if (!trimmed || !isUnqualifiedMedicalAssertion(trimmed)) return sentence;
+        if (MEDICAL_TESTING_PATTERN.test(normalized(trimmed))) return sentence;
+        const punctuation = trimmed.match(/[.!?]+$/)?.[0] || ".";
+        const core = trimmed.replace(/[.!?]+$/, "").trim();
+        const leading = sentence.match(/^\s*/)?.[0] || "";
+        const trailing = sentence.match(/\s*$/)?.[0] || "";
+        return `${leading}${core}, mais cela reste une hypothèse prudente et non diagnostique que le questionnaire ne permet pas de confirmer${punctuation}${trailing}`;
+      });
+    })
+    .join("");
 }
 
 export function validateDiscoverySafetyContent(
@@ -95,13 +132,9 @@ export function validateDiscoverySafetyContent(
   const errors = new Set<string>();
 
   for (const sentence of splitSentences(normalizedText)) {
-    const medicalSubject = /\b(?:cortisol|thyroide|testosterone|axe\s+hpa|charge\s+allostatique|insuline|dysfonction|dereglement)\b/.test(sentence);
-    const affirmative = /\b(?:tu\s+as|ton|ta|tes)\b.{0,55}\b(?:est|sont|indique|revele|prouve|confirme|eleve|basse?|dereglement|dysfonction)\b/.test(sentence)
-      || /\b(?:indique|revele|prouve|confirme)\b/.test(sentence);
-    const qualified = /\b(?:peut|pourrait|hypothese|possible|a\s+confirmer|ne\s+permet\s+pas\s+de\s+conclure|sans\s+permettre\s+de\s+conclure)\b/.test(sentence);
-    if (medicalSubject && affirmative && !qualified) errors.add("medical_assertion");
+    if (isUnqualifiedMedicalAssertion(sentence)) errors.add("medical_assertion");
   }
-  if (/\b(?:fais|faire|demande|demander|dose|doser|controle|controler|mesure|mesurer)\b.{0,65}\b(?:tsh|t3|t4|testosterone|cortisol|insuline|bilan\s+(?:sanguin|biologique|hormonal)|panel\s+(?:sanguin|biologique|hormonal))\b/.test(normalizedText)) {
+  if (MEDICAL_TESTING_PATTERN.test(normalizedText)) {
     errors.add("medical_testing_prescription");
   }
 
