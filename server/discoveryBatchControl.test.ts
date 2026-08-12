@@ -346,4 +346,7 @@ test("reconciler is read-only by default and delivery claims before provider", (
   assert.match(source, /tracking\.total !== 0/);
   assert.match(source, /t\.sendpulse_task_id IS NOT NULL/);
   assert.match(source, /sendpulseSmtpAnswerCode',''\) ~ '\^5\[0-9\]\{2\}\$'/);
+  assert.match(source, /args\.has\("--summary-only"\)/);
+  assert.match(source, /DISCOVERY_BATCH_MANIFEST_SUMMARY/);
+  assert.match(source, /emailSha256: discoverySha256/);
 });

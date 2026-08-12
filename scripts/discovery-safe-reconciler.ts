@@ -692,7 +692,43 @@ async function main(): Promise<void> {
   if (outputPath) writeFileSync(outputPath, `${JSON.stringify(manifest, null, 2)}\n`, { flag: "wx" });
 
   if (!args.has("--run-generation") && !args.has("--run-delivery")) {
-    console.log(JSON.stringify(manifest, null, 2));
+    if (args.has("--summary-only")) {
+      const actionable = manifest.items
+        .filter((item) => item.cohort !== "already_accepted")
+        .map((item) => ({
+          id: item.id,
+          emailSha256: discoverySha256(String(item.email || "").trim().toLowerCase()),
+          createdAt: item.createdAt,
+          reportDeliveryStatus: item.reportDeliveryStatus,
+          reportSentAt: item.reportSentAt,
+          responsesSha256: item.responsesSha256,
+          txtSha256: item.txtSha256,
+          htmlSha256: item.htmlSha256,
+          deliveryGateOk: item.deliveryGateOk,
+          deliveryGateErrors: item.deliveryGateErrors,
+          tracking: item.tracking,
+          deliveryClaimState: item.deliveryClaimState,
+          duplicateCandidate: item.duplicateCandidate,
+          superseded: item.superseded,
+          unsubscribed: item.unsubscribed,
+          validEmail: item.validEmail,
+          testEmailBlocked: item.testEmailBlocked,
+          smtpHardFailProven: item.smtpHardFailProven,
+          cohort: item.cohort,
+          reasons: item.reasons,
+        }));
+      console.log(`DISCOVERY_BATCH_MANIFEST_SUMMARY:${JSON.stringify({
+        schemaVersion: manifest.schemaVersion,
+        generatedAt: manifest.generatedAt,
+        source: manifest.source,
+        commitSha: manifest.commitSha,
+        counts: manifest.counts,
+        manifestSha256: manifest.manifestSha256,
+        actionable,
+      })}`);
+    } else {
+      console.log(JSON.stringify(manifest, null, 2));
+    }
     return;
   }
   const approvalFile = valueAfter("--approval");
