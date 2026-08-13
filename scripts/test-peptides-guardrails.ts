@@ -20,6 +20,7 @@ import {
 import { hasValidPeptidesConsent } from "../server/peptidesConsent";
 
 const engineSource = readFileSync(new URL("../server/peptidesEngine.ts", import.meta.url), "utf8");
+const purchasePlanSource = readFileSync(new URL("../server/peptidesPurchasePlan.ts", import.meta.url), "utf8");
 const routesSource = readFileSync(new URL("../server/routes.ts", import.meta.url), "utf8");
 const reportPageSource = readFileSync(new URL("../client/src/pages/PeptidesEngineReport.tsx", import.meta.url), "utf8");
 const peptidesPageSource = readFileSync(new URL("../client/src/pages/PeptidesEnginePage.tsx", import.meta.url), "utf8");
@@ -37,7 +38,7 @@ assert.match(engineSource, /entre 30000 et 38000 caracteres au total/);
 assert.match(engineSource, /Candidate rejected[\s\S]{0,600}strict full regeneration/);
 assert.match(engineSource, /Provider failure is terminal, duplicate paid generation blocked/);
 assert.doesNotMatch(engineSource, /@anthropic-ai\/sdk|ANTHROPIC_API_KEY|callClaudeForPeptides/);
-assert.match(engineSource, /Calcul conditionnel pour les deux volumes usuels de 1 ml et 2 ml/);
+assert.match(purchasePlanSource, /Calcul conditionnel pour les deux volumes usuels de 1 ml et 2 ml/);
 assert.doesNotMatch(engineSource, /confirmation ecrite du volume par le fabricant du lot ou un professionnel qualifie/);
 assert.match(peptidesPageSource, /peptides-engine-consent-v2-2026-08-13/);
 assert.match(peptidesPageSource, /assumer mes décisions d'achat et d'utilisation/);

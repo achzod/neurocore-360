@@ -8,6 +8,7 @@ import {
   collectClientFacingStrings,
   sanitizeClientFacingText,
 } from "./clientFacingQuality";
+import { withoutOperationalVialPolicySummary } from "./peptidesVialPlanning";
 
 type RepairableReport = PeptidesReport & {
   _peptauraLiveSync?: {
@@ -820,6 +821,9 @@ function synchronizeStandardShoppingNarrative(
     .split(/\n+/)
     .map((line) => sanitizeClientFacingText(line))
     .filter(Boolean);
+  // This report-wide policy is already rendered by the standalone interactive
+  // shopping list. Do not clone it into the synchronized narrative section.
+  const narrativeShoppingLines = withoutOperationalVialPolicySummary(shoppingLines);
   const totalUsd = extractLiveReportTotalUsd(report);
   const totalEur = Math.round(totalUsd * 0.92);
   const maxWeeks = Math.max(
@@ -839,7 +843,7 @@ function synchronizeStandardShoppingNarrative(
     shoppingSection.content = sanitizeClientFacingText(
       [
         `${firstName}, voici la liste de commande recalculee apres verification des pages Peptaura. Cette version remplace tous les chiffres generes avant le controle live.`,
-        ...shoppingLines,
+        ...narrativeShoppingLines,
         totalUsd > 0
           ? `TOTAL LIVE DU CYCLE\nEnviron $${totalUsd.toFixed(2)}, soit environ ${totalEur} euros hors frais de port. Sur ${maxWeeks} semaines, cela represente environ ${monthlyEur} euros par mois.`
           : "",

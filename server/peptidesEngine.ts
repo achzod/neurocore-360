@@ -29,7 +29,7 @@ import {
   PeptauraSourceUnavailableError,
 } from "./peptidesSourcePreflight";
 import {
-  buildConditionalReconstitutionExamples,
+  buildConditionalReconstitutionText,
   buildPurchasePlan,
   effectivePackagePrice,
   offerTotalPrice,
@@ -48,6 +48,7 @@ export {
 } from "./peptidesSourcePreflight";
 import {
   formatOperationalVials,
+  formatOperationalVialPolicySummary,
   parseDocumentedStabilityConfig,
   planOperationalVials,
 } from "./peptidesVialPlanning";
@@ -1155,40 +1156,6 @@ function buildLivePriceEstimate(pep: PeptideItem, listing: PeptauraLiveListing, 
   return `Environ $${packagePrice.toFixed(2)} par vial (${listing.dosage}, ${supplier}), ${qty} vial${qty > 1 ? "s" : ""}, total $${total.toFixed(2)} (conversion indicative: ${eur} euros)`;
 }
 
-function firstDoseForConditionalCalculation(
-  dosage: string | undefined,
-): { amount: number; unit: "mg" | "mcg" } | null {
-  const match = String(dosage || "").replace(/(\d),(\d)/g, "$1.$2")
-    .match(/(\d+(?:\.\d+)?)\s*(mcg|ug|µg|mg)\b/i);
-  if (!match) return null;
-  const amount = Number(match[1]);
-  if (!Number.isFinite(amount) || amount <= 0) return null;
-  return { amount, unit: /mg/i.test(match[2]) ? "mg" : "mcg" };
-}
-
-function buildConditionalReconstitutionText(
-  peptide: PeptideItem,
-  vialMg: number,
-): string | null {
-  const dose = firstDoseForConditionalCalculation(peptide.dosage);
-  if (!dose) return null;
-  const examples = buildConditionalReconstitutionExamples(vialMg, dose.amount, dose.unit);
-  if (examples.length < 2) return null;
-  const unitLabel = dose.unit === "mcg" ? "mcg" : "mg";
-  const lines = examples.map((example) => {
-    const capacityWarning = example.doseVolumeMl > 1
-      ? " Cette option depasse 1 ml et ne tient pas dans une seringue U-100 de 1 ml: elle ne doit pas etre utilisee avec ce materiel."
-      : "";
-    return `Si ${example.solventMl} ml est confirme: concentration ${example.concentrationPerMl.toFixed(3)} mg/ml; pour ${dose.amount} ${unitLabel}, volume ${example.doseVolumeMl.toFixed(3)} ml, soit ${example.u100Units.toFixed(1)} unites U-100.${capacityWarning}`;
-  });
-  return [
-    `Format live retenu: vial de ${vialMg} mg. Peptaura ne publie pas le volume de solvant du lot exact: aucun volume n'est choisi automatiquement.`,
-    `Calcul conditionnel pour les deux volumes usuels de 1 ml et 2 ml. Utilise uniquement la ligne qui correspond au volume reellement ajoute. Formule: concentration en mg/ml = ${vialMg} mg divise par le volume ajoute; volume de dose = dose en mg divisee par la concentration; unites U-100 = volume en ml multiplie par 100.`,
-    ...lines,
-    "Si le volume reellement ajoute est different de 1 ml ou 2 ml, recalcule concentration, volume de dose et unites U-100 avant de poursuivre.",
-  ].join(" ");
-}
-
 function parseListingMl(value: string): number | null {
   const match = String(value || "").replace(/(\d),(\d)/g, "$1.$2").match(
     /(\d+(?:\.\d+)?)\s*ml\b/i
@@ -1298,7 +1265,7 @@ async function applyLivePeptauraPricing(
     const naturalDurationLabel = durationLabel.charAt(0).toLowerCase() + durationLabel.slice(1);
     pep.vialsNeeded = `${qty} vial${qty > 1 ? "s" : ""} de ${bestMg} mg pour ${naturalDurationLabel} (besoin calcule ~${needMg.toFixed(2)} mg, capacite livree ${purchasePlan.deliveredMg.toFixed(2)} mg)`;
     if (/aucune offre live exploitable|format de vial.*(?:manque|indisponible)|(?:reconstitution.{0,80})?unit[ée]s?.{0,40}suspendues|feed officiel ne fournit pas le volume/i.test(pep.reconstitution || "")) {
-      const conditional = buildConditionalReconstitutionText(pep, bestMg);
+      const conditional = buildConditionalReconstitutionText(pep.dosage, bestMg);
       if (!conditional) {
         failures.push(`${pep.name}: dose illisible pour le calcul conditionnel de reconstitution`);
         continue;
@@ -1441,12 +1408,28 @@ async function applyLivePeptauraPricing(
     ...report.peptides.map((pep) =>
       `${pep.name}: ${pep.vialsNeeded}. ${pep.priceEstimate}. ${pep.purchaseUrl}`
     ),
+    formatOperationalVialPolicySummary(
+      report.peptides.map((peptide) => ({
+        name: peptide.name,
+        plan: peptide._vialPlanning || {
+          pharmacologicalNeedMg: null,
+          vialSizeMg: null,
+          mathematicalMinimumVials: null,
+          operationalVials: null,
+          optionalSealedReserveVials: null,
+          stabilityDays: null,
+          stabilitySource: null,
+          cadence: null,
+          status: "unparseable" as const,
+        },
+      }))
+    ),
     ...(bacWaterLine ? [bacWaterLine] : []),
     ...(report.peptides.some((pep) => isEnclomipheneName(pep.name))
       ? [`Avant de payer Enclomiphene, verifie une derniere fois le stock sur ${ENCLOMIPHENE_SOURCE_URL}.`]
       : []),
     `Avant de payer, verifie une derniere fois le stock et la livraison vers ${context.country} sur ${context.shippingUrl}.`,
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 
   return report;
 }

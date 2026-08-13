@@ -537,6 +537,31 @@ function extractFirstNumber(text: string | undefined): number | null {
   return parseFloat(m[1].replace(",", "."));
 }
 
+export function hasCompleteConditionalReconstitution(
+  reconstitution: string | undefined
+): boolean {
+  const text = String(reconstitution || "").replace(/(\d),(\d)/g, "$1.$2");
+  const hasFormula =
+    /concentration en mg\/ml\s*=/i.test(text)
+    && /volume de dose\s*=/i.test(text)
+    && /unites U-100\s*=/i.test(text);
+  if (!hasFormula) return false;
+
+  return [1, 2].every((solventMl) => {
+    const scenario = text.match(
+      new RegExp(
+        `Si\\s+${solventMl}(?:\\.0+)?\\s*ml\\s+est\\s+confirm(?:e|ee|é|ée)\\s*:\\s*` +
+        `[\\s\\S]{0,180}?concentration\\s+\\d+(?:\\.\\d+)?\\s*mg\\/ml\\s*;\\s*` +
+        `pour\\s+\\d+(?:\\.\\d+)?\\s*(?:mcg|ug|µg|mg)\\s*,\\s*` +
+        `volume\\s+\\d+(?:\\.\\d+)?\\s*ml\\s*,\\s*soit\\s+` +
+        `\\d+(?:\\.\\d+)?\\s*unites?\\s+U-100`,
+        "i"
+      )
+    );
+    return Boolean(scenario);
+  });
+}
+
 export function extractVialQty(vialsNeeded: string | undefined): number | null {
   if (!vialsNeeded) return null;
   const m = vialsNeeded.match(/(\d+)\s*vials?\b/i);
@@ -841,11 +866,7 @@ function checkPeptide(p: PeptidesPeptide): string[] {
     issues.push("reconstitution et unites U-100 non resolues");
   }
   if (/Peptaura ne publie pas le volume de solvant/i.test(p.reconstitution || "")) {
-    const conditionalExamples = String(p.reconstitution || "").match(/Si\s+\d+(?:[.,]\d+)?\s*ml\s+est confirme/gi) || [];
-    if (conditionalExamples.length < 2
-      || !/concentration en mg\/ml\s*=|concentration en mg\/ml =/i.test(p.reconstitution || "")
-      || !/unites U-100\s*=|unites U-100 =/i.test(p.reconstitution || "")
-      || !/ne reconstitue pas et n'injecte pas/i.test(p.reconstitution || "")) {
+    if (!hasCompleteConditionalReconstitution(p.reconstitution)) {
       issues.push("calcul conditionnel de reconstitution incomplet");
     }
   }

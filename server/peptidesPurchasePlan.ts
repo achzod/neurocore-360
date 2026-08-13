@@ -34,8 +34,7 @@ export interface ConditionalReconstitutionExample {
  * Computes syringe volumes without choosing a reconstitution volume for the
  * client. Peptaura's official feed confirms vial strength, not the solvent
  * volume for the exact lot. The returned examples are therefore conditional:
- * they become usable only after a qualified professional confirms one of the
- * displayed solvent volumes for the received product.
+ * the client uses the row matching the volume actually added to the vial.
  */
 export function buildConditionalReconstitutionExamples(
   vialMg: number,
@@ -57,6 +56,45 @@ export function buildConditionalReconstitutionExamples(
         u100Units: doseVolumeMl * 100,
       };
     });
+}
+
+function firstDoseForConditionalCalculation(
+  dosage: string | undefined,
+): { amount: number; unit: "mg" | "mcg" } | null {
+  const match = String(dosage || "").replace(/(\d),(\d)/g, "$1.$2")
+    .match(/(\d+(?:\.\d+)?)\s*(mcg|ug|µg|mg)\b/i);
+  if (!match) return null;
+  const amount = Number(match[1]);
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+  return { amount, unit: /mg/i.test(match[2]) ? "mg" : "mcg" };
+}
+
+/**
+ * Builds the exact client-facing conditional calculations used after the live
+ * vial format is known. Keeping this pure makes the paid-report recovery path
+ * replayable without importing the engine, database or provider client.
+ */
+export function buildConditionalReconstitutionText(
+  dosage: string | undefined,
+  vialMg: number,
+): string | null {
+  const dose = firstDoseForConditionalCalculation(dosage);
+  if (!dose) return null;
+  const examples = buildConditionalReconstitutionExamples(vialMg, dose.amount, dose.unit, [1, 2]);
+  if (examples.length !== 2) return null;
+  const unitLabel = dose.unit === "mcg" ? "mcg" : "mg";
+  const lines = examples.map((example) => {
+    const capacityWarning = example.doseVolumeMl > 1
+      ? " Cette option depasse 1 ml et ne tient pas dans une seringue U-100 de 1 ml: elle ne doit pas etre utilisee avec ce materiel."
+      : "";
+    return `Si ${example.solventMl} ml est confirme: concentration ${example.concentrationPerMl.toFixed(3)} mg/ml; pour ${dose.amount} ${unitLabel}, volume ${example.doseVolumeMl.toFixed(3)} ml, soit ${example.u100Units.toFixed(1)} unites U-100.${capacityWarning}`;
+  });
+  return [
+    `Format live retenu: vial de ${vialMg} mg. Peptaura ne publie pas le volume de solvant du lot exact: aucun volume n'est choisi automatiquement.`,
+    `Calcul conditionnel pour les deux volumes usuels de 1 ml et 2 ml. Utilise uniquement la ligne qui correspond au volume reellement ajoute. Formule: concentration en mg/ml = ${vialMg} mg divise par le volume ajoute; volume de dose = dose en mg divisee par la concentration; unites U-100 = volume en ml multiplie par 100.`,
+    ...lines,
+    "Si le volume reellement ajoute est different de 1 ml ou 2 ml, recalcule concentration, volume de dose et unites U-100 avant de poursuivre.",
+  ].join(" ");
 }
 
 export function parseListingMg(dosage: string): number | null {

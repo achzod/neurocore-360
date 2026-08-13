@@ -33,6 +33,11 @@ export interface PeptideVialPlan {
   status: "documented" | "stability-unverified" | "unparseable";
 }
 
+export interface NamedPeptideVialPlan {
+  name: string;
+  plan: PeptideVialPlan;
+}
+
 function normalizeName(value: string): string {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "");
 }
@@ -191,5 +196,47 @@ export function formatOperationalVials(plan: PeptideVialPlan, cycleDuration: str
   if (plan.status !== "documented" || plan.operationalVials == null) {
     return `Besoin brut ${need}mg. Minimum mathematique ${plan.mathematicalMinimumVials} vial${plan.mathematicalMinimumVials > 1 ? "s" : ""} de ${plan.vialSizeMg}mg pour ${cycleDuration}. Achat operationnel non chiffre: aucune politique de fenetre operationnelle apres reconstitution n'est configuree pour cette molecule. Aucune reserve n'est ajoutee.`;
   }
-  return `Achat operationnel ${plan.operationalVials} vial${plan.operationalVials > 1 ? "s" : ""} de ${plan.vialSizeMg}mg pour ${cycleDuration}. Besoin brut ${need}mg, minimum mathematique ${plan.mathematicalMinimumVials}. Fenetre operationnelle apres reconstitution ${plan.stabilityDays} jours, politique: ${plan.stabilitySource}. Cette fenetre sert au calcul logistique d'ouverture et ne constitue pas une affirmation de stabilite chimique. Reserve scellee facultative: ${plan.optionalSealedReserveVials} vials au total, sans augmenter la dose ni la duree.`;
+  return `Achat operationnel ${plan.operationalVials} vial${plan.operationalVials > 1 ? "s" : ""} de ${plan.vialSizeMg}mg pour ${cycleDuration}. Besoin brut ${need}mg, minimum mathematique ${plan.mathematicalMinimumVials}.`;
+}
+
+/**
+ * Report-wide explanation for operational vial planning. The policy, its
+ * non-chemical-stability disclaimer and the optional sealed reserve belong in
+ * one human-readable note, not repeated in every peptide card and every
+ * synchronized section.
+ */
+export function formatOperationalVialPolicySummary(
+  entries: NamedPeptideVialPlan[]
+): string {
+  const documented = entries.filter(
+    ({ plan }) =>
+      plan.status === "documented"
+      && plan.operationalVials != null
+      && plan.optionalSealedReserveVials != null
+      && plan.stabilityDays != null
+      && Boolean(plan.stabilitySource)
+  );
+  if (documented.length === 0) return "";
+
+  const groupedWindows = new Map<string, { days: number; source: string; names: string[] }>();
+  for (const { name, plan } of documented) {
+    const days = Number(plan.stabilityDays);
+    const source = String(plan.stabilitySource);
+    const key = `${days}\u0000${source}`;
+    const group = groupedWindows.get(key) || { days, source, names: [] };
+    group.names.push(name);
+    groupedWindows.set(key, group);
+  }
+  const windows = [...groupedWindows.values()]
+    .map(({ days, source, names }) => `${days} jours pour ${names.join(", ")} (${source})`)
+    .join(" ; ");
+  const reserves = documented
+    .map(({ name, plan }) => `${name}: ${plan.optionalSealedReserveVials} vials au total`)
+    .join(" ; ");
+
+  return `POLITIQUE LOGISTIQUE DES VIALS: fenetre operationnelle conservatrice de ${windows}. Elle sert uniquement a planifier les ouvertures et ne constitue pas une affirmation de stabilite chimique. Reserve scellee facultative, uniquement en secours et sans modifier la dose ni la duree: ${reserves}.`;
+}
+
+export function withoutOperationalVialPolicySummary(lines: string[]): string[] {
+  return lines.filter((line) => !/^POLITIQUE LOGISTIQUE DES VIALS\b/i.test(line.trim()));
 }
