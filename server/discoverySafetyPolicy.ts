@@ -99,6 +99,58 @@ function isUnqualifiedMedicalAssertion(sentence: string): boolean {
     && !MEDICAL_QUALIFIER_PATTERN.test(normalizedSentence);
 }
 
+// Keep the accented spelling distinguishable from the ordinary adjective
+// "jeune". Accentless fasting is accepted only with an explicit dietary
+// context (article or fasting qualifier), so "tu es jeune" is not treated as
+// a fasting prescription.
+const TCA_FASTING_TERM_SOURCE = String.raw`(?:jeûn(?:er|ez|ons|ent|ant|es?)|jeun(?:er|ez|ons|ent|ant)|(?:(?:le|du|un|ce|au|d'un)\s+jeunes?)|jeunes?\s+(?:intermittents?|prolong(?:e|es|é|és|ée|ées)|hydriques?|secs?|de\s+\d+\s*(?:h|heures?)))`;
+const TCA_DIETING_TERM_SOURCE = String.raw`(?:${TCA_FASTING_TERM_SOURCE}|s(?:e|è)ch(?:er|ez|ons|ent|ant|es?)|cheat\s*meals?)`;
+const TCA_COMPENSATORY_VERB_SOURCE = String.raw`(?:compens(?:e|es|er|ez|ons|ent|ant)|brul(?:e|es|er|ez|ons|ent|ant)|rattrap(?:e|es|er|ez|ons|ent|ant)|pa(?:y(?:e|es|er|ez|ons|ent|ant)|i(?:e|es|ent)))`;
+const TCA_COMPENSATORY_TARGET_SOURCE = String.raw`(?:repas|calories?|mang(?:e|es|er|ez|ons|ent)|ecarts?|exces)`;
+const TCA_COMPENSATORY_BEHAVIOR_SOURCE = String.raw`(?:\b${TCA_COMPENSATORY_VERB_SOURCE}\b[^.!?]{0,55}\b${TCA_COMPENSATORY_TARGET_SOURCE}\b|\b${TCA_COMPENSATORY_TARGET_SOURCE}\b[^.!?]{0,55}\b${TCA_COMPENSATORY_VERB_SOURCE}\b)`;
+// Protective wording must govern one local clause only. In particular, it
+// must never consume `, puis fais un jeûne` and hide the unsafe second clause.
+const TCA_DIRECT_GAP_SOURCE = String.raw`(?:(?!\b(?:puis|mais|ensuite|cependant|toutefois)\b)[^.!?,;:]){0,55}`;
+const TCA_DIRECT_COMPENSATORY_BEHAVIOR_SOURCE = String.raw`(?:\b${TCA_COMPENSATORY_VERB_SOURCE}\b${TCA_DIRECT_GAP_SOURCE}\b${TCA_COMPENSATORY_TARGET_SOURCE}\b|\b${TCA_COMPENSATORY_TARGET_SOURCE}\b${TCA_DIRECT_GAP_SOURCE}\b${TCA_COMPENSATORY_VERB_SOURCE}\b)`;
+const TCA_DIETING_LIST_SOURCE = String.raw`(?:(?:le|la|les|du|de\s+la|des|un|une|l'|d')\s*)?${TCA_DIETING_TERM_SOURCE}(?:(?:\s*,\s*|\s+(?:et|ou)\s+)(?:(?:le|la|les|du|de\s+la|des|un|une|l'|d')\s*)?${TCA_DIETING_TERM_SOURCE})*`;
+
+const TCA_DIRECT_PROTECTION_PATTERNS = [
+  // The negation must govern the risky practice itself. An unrelated "sans"
+  // or "pas" elsewhere in the sentence never exempts another clause.
+  new RegExp(String.raw`\b(?:n'utilise|ne\s+fais|ne\s+pratique|n'adopte|ne\s+planifie)\s+pas\s+${TCA_DIETING_LIST_SOURCE}(?:\s+pour\s+${TCA_DIRECT_COMPENSATORY_BEHAVIOR_SOURCE})?`, "g"),
+  new RegExp(String.raw`\b(?:evite|eviter|renonce|renoncer)\s+(?:(?:de|a|au|aux)\s+)?(?:${TCA_DIRECT_COMPENSATORY_BEHAVIOR_SOURCE}|${TCA_DIETING_LIST_SOURCE}(?:\s+pour\s+${TCA_DIRECT_COMPENSATORY_BEHAVIOR_SOURCE})?)`, "g"),
+  new RegExp(String.raw`\b(?:bannis|bannissez|bannir|proscris|proscrivez|proscrire)\s+(?:${TCA_DIRECT_COMPENSATORY_BEHAVIOR_SOURCE}|${TCA_DIETING_LIST_SOURCE}(?:\s+pour\s+${TCA_DIRECT_COMPENSATORY_BEHAVIOR_SOURCE})?)`, "g"),
+  new RegExp(String.raw`\b(?:${TCA_DIRECT_COMPENSATORY_BEHAVIOR_SOURCE}|${TCA_DIETING_LIST_SOURCE})\s+(?:est|sont)\s+(?:strictement\s+)?(?:interdit(?:e|es|s)?|a\s+proscrire|contre-indique(?:e|es|s)?|a\s+bannir)\b`, "g"),
+];
+
+function containsTcaCompensatoryInstruction(text: string): boolean {
+  return splitSentences(text).some((sentence) => {
+    // Fold ordinary French accents for stable matching while deliberately
+    // preserving û so the dietary noun "jeûne" remains distinct from the age
+    // adjective "jeune".
+    let unprotected = String(sentence || "")
+      .toLowerCase()
+      .replace(/[’]/g, "'")
+      .replace(/[àáâä]/g, "a")
+      .replace(/[éèêë]/g, "e")
+      .replace(/[íìîï]/g, "i")
+      .replace(/[óòôö]/g, "o")
+      .replace(/[ùúü]/g, "u")
+      .replace(/brû/g, "bru")
+      .replace(/ç/g, "c");
+
+    // Redact only an allowlisted protective construction that directly governs
+    // the risky behaviour. Every other occurrence remains visible to the
+    // fail-closed checks below, including a second clause in the same sentence.
+    for (const protectivePattern of TCA_DIRECT_PROTECTION_PATTERNS) {
+      unprotected = unprotected.replace(protectivePattern, " ");
+    }
+
+    return new RegExp(String.raw`\b${TCA_DIETING_TERM_SOURCE}\b`).test(unprotected)
+      || new RegExp(TCA_COMPENSATORY_BEHAVIOR_SOURCE).test(unprotected);
+  });
+}
+
 /**
  * Adds an explicit non-diagnostic qualification to provider prose that would
  * otherwise make an individual medical assertion. This deliberately does not
@@ -146,7 +198,7 @@ export function validateDiscoverySafetyContent(
     if (/\b(?:pese[- ]?toi|te\s+peser|pesee\s+(?:corporelle|du\s+poids)|monte\s+sur\s+la\s+balance)\b/.test(normalizedText)) errors.add("tca_body_weighing");
     if (/\b(?:mensurations?|tour\s+de\s+taille|mesure\s+(?:ton|le)\s+tour)\b/.test(normalizedText)) errors.add("tca_measurement_tracking");
     if (/\bphotos?\s+(?:de\s+)?(?:progression|du\s+physique|du\s+corps)\b|\bprends?\s+des\s+photos?\b/.test(normalizedText)) errors.add("tca_progress_photos");
-    if (/\b(?:compense|brule|rattrape|paye)\b.{0,55}\b(?:repas|calories?|mange)\b|\b(?:jeune|seche|cheat\s*meal)\b/.test(normalizedText)) errors.add("tca_compensatory_behavior");
+    if (containsTcaCompensatoryInstruction(text)) errors.add("tca_compensatory_behavior");
     if (/\b(?:auto[- ]?sabotage|besoin\s+de\s+controle|peur\s+de\s+perdre\s+le\s+controle|obsession)\b/.test(normalizedText)) errors.add("tca_psychologizing");
     if (/\b(?:creatine|supplement|complement\s+alimentaire)\b.{0,40}\b(?:prends?|prise|dose|grammes?)\b|\b(?:prends?|dose)\b.{0,40}\b(?:creatine|supplement|complement\s+alimentaire)\b/.test(normalizedText)) errors.add("tca_supplement_prescription");
   }
