@@ -97,6 +97,49 @@ function ensureWeightFact(report: PeptidesReport, responses: Record<string, unkn
   synthesis.content = `${String(synthesis.content || "").trim()}\n\nTon point de depart mesurable est ${weightDisplay} kg${height ? ` pour ${height} cm` : ""}. Ce repere sert au suivi et aux calculs exprimes par kilo.`;
 }
 
+const OBSOLETE_MISSING_LIVE_FORMAT_SENTENCE =
+  "Nombre de vials non calculable tant que le format live manque, aucune commande autorisée.";
+
+function hasVerifiedOfficialPricing(report: PeptidesReport): boolean {
+  return (report.peptides || []).length > 0 && (report.peptides || []).every((peptide) => {
+    const price = String(peptide.priceEstimate || "");
+    const url = String(peptide.purchaseUrl || "");
+    return /\d/.test(price)
+      && !/\b0(?:[.,]0+)?\s*(?:USD|\$|EUR|€)\b/i.test(price)
+      && /^https:\/\/(?:www\.)?peptaura\.com\/(?:product|catalog)\//i.test(url);
+  });
+}
+
+/**
+ * Stored candidates can contain a fail-closed sentence emitted when the old
+ * catalog pages were unavailable. Once the official feed has populated every
+ * peptide with a positive price and canonical link, that sentence is stale and
+ * contradictory. Remove only that exact sentence; never rewrite dosage or
+ * safety content and never run without verified official pricing.
+ */
+export function removeObsoleteMissingLiveFormatSentence(report: PeptidesReport): PeptidesReport {
+  if (!hasVerifiedOfficialPricing(report)) return report;
+  const scrub = (value: unknown): unknown => {
+    if (typeof value === "string") {
+      return value
+        .split(OBSOLETE_MISSING_LIVE_FORMAT_SENTENCE)
+        .join("")
+        .replace(/[ \t]+\n/g, "\n")
+        .replace(/\n{3,}/g, "\n\n")
+        .replace(/[ \t]{2,}/g, " ")
+        .trim();
+    }
+    if (Array.isArray(value)) return value.map(scrub);
+    if (value && typeof value === "object") {
+      for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
+        (value as Record<string, unknown>)[key] = scrub(nested);
+      }
+    }
+    return value;
+  };
+  return scrub(report) as PeptidesReport;
+}
+
 export function auditStoredRecoverySafety(
   report: PeptidesReport,
   responses: Record<string, unknown>,
@@ -147,6 +190,7 @@ export async function buildStoredPeptidesRecoveryCandidate(input: {
   report.clientName = firstName || "Profil";
   ensureWeightFact(report, input.responses);
   report = await input.refreshOfficialPricing(report, input.responses, input.tier);
+  report = removeObsoleteMissingLiveFormatSentence(report);
   report.tier = input.tier;
   report.promoCodesGenerated = [];
   report.clientName = firstName || report.clientName || "Profil";

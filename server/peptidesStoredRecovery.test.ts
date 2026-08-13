@@ -4,6 +4,7 @@ import {
   STORED_PEPTIDES_RECOVERY_CONFIRMATION,
   parseStoredPeptidesResponse,
   persistStoredPeptidesRecoveryUnderHold,
+  removeObsoleteMissingLiveFormatSentence,
   type RecoverySqlClient,
   type StoredPeptidesRecoveryCandidate,
 } from "./peptidesStoredRecovery";
@@ -11,6 +12,32 @@ import {
 test("parseStoredPeptidesResponse repairs fenced JSON without provider generation", () => {
   const parsed = parseStoredPeptidesResponse('```json\n{"clientName":"Clement",}\n```');
   assert.equal(parsed.clientName, "Clement");
+});
+
+test("obsolete source-unavailable sentence is removed only after official pricing is verified", () => {
+  const stale = "Nombre de vials non calculable tant que le format live manque, aucune commande autorisée.";
+  const priced = {
+    clientName: "Clement",
+    peptides: [{
+      name: "Ipamorelin",
+      priceEstimate: "66.70 USD",
+      purchaseUrl: "https://www.peptaura.com/product/204-ipamorelin-5mg-pepturion",
+      dosage: "100 mcg",
+      route: "SC",
+    }],
+    sections: [{ id: "shopping", title: "Commande", content: `Prix vérifié. ${stale}` }],
+  } as any;
+  assert.equal(
+    removeObsoleteMissingLiveFormatSentence(structuredClone(priced)).sections[0].content,
+    "Prix vérifié.",
+  );
+
+  const unpriced = structuredClone(priced);
+  unpriced.peptides[0].priceEstimate = "indisponible";
+  assert.match(
+    removeObsoleteMissingLiveFormatSentence(unpriced).sections[0].content,
+    /format live manque/,
+  );
 });
 
 function validCandidate(responseId = "resp_ABC123"): StoredPeptidesRecoveryCandidate {
