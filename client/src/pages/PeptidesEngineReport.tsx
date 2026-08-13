@@ -127,9 +127,9 @@ function FormatSectionContent({ content }: { content: string }) {
       elements.push(
         <ul key={key++} className="space-y-1.5 my-3 ml-1">
           {listItems.map((item, i) => (
-            <li key={i} className="flex items-start gap-2 text-sm text-white/65">
+            <li key={i} className="flex min-w-0 items-start gap-2 text-sm text-white/65">
               <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: AMBER }} />
-              <span>{item}</span>
+              <span className="min-w-0 break-words [overflow-wrap:anywhere]">{item}</span>
             </li>
           ))}
         </ul>
@@ -172,7 +172,7 @@ function FormatSectionContent({ content }: { content: string }) {
     if (kvMatch && !trimmed.startsWith("http")) {
       flushList();
       elements.push(
-        <p key={key++} className="text-sm text-white/65 my-1">
+        <p key={key++} className="min-w-0 break-words [overflow-wrap:anywhere] text-sm text-white/65 my-1">
           <span className="font-semibold text-white/90">{kvMatch[1]}:</span> {kvMatch[2]}
         </p>
       );
@@ -182,14 +182,14 @@ function FormatSectionContent({ content }: { content: string }) {
     // Normal paragraph
     flushList();
     elements.push(
-      <p key={key++} className="text-[15px] text-white/70 leading-[1.8] my-2">
+      <p key={key++} className="min-w-0 break-words [overflow-wrap:anywhere] text-[15px] text-white/70 leading-[1.8] my-2">
         {trimmed}
       </p>
     );
   }
 
   flushList();
-  return <div className="space-y-0.5">{elements}</div>;
+  return <div className="min-w-0 max-w-full overflow-hidden space-y-0.5">{elements}</div>;
 }
 
 // ============================================================================
