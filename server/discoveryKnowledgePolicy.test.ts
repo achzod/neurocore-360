@@ -821,6 +821,7 @@ test("occasional wake fatigue is not intensified into a difficult awakening", ()
     "Tu dors cinq à six heures, avec un réveil matinal difficile.",
     "La qualité est moyenne et le réveil du matin reste difficile.",
     "Tu gardes une bonne énergie malgré des réveils parfois difficiles.",
+    "Cela pourrait expliquer une partie de ton réveil difficile.",
   ];
 
   for (const generated of variants) {
@@ -829,8 +830,9 @@ test("occasional wake fatigue is not intensified into a difficult awakening", ()
       ["factual_intensity_contradiction:reveil-fatigue"],
     );
     const repaired = repairDiscoveryProvidedFactAbsenceClaims(generated, responses);
-    assert.match(repaired, /une fatigue parfois présente au réveil/);
+    assert.match(repaired, /(?:une|la) fatigue parfois présente au réveil/);
     assert.doesNotMatch(repaired, /réveils?.{0,28}difficile/i);
+    assert.doesNotMatch(repaired, /\bde une\b/i);
     assert.deepEqual(validateDiscoveryFactualConsistency(repaired, responses), []);
   }
 

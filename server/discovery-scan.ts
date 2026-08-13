@@ -624,6 +624,9 @@ export function repairDiscoveryProvidedFactAbsenceClaims(
     repaired = repaired.replace(
       /\b(?:un|le|ton|des|les|tes)\s+réveils?(?:\s+(?:du\s+matin|matinal|matinaux))?(?:\s+(?:reste(?:nt)?|est|sont|para(?:î|i)t|paraissent|semble(?:nt)?))?\s+(?:parfois\s+)?difficiles?\b/giu,
       "une fatigue parfois présente au réveil",
+    ).replace(
+      /\bde une fatigue parfois présente au réveil\b/giu,
+      "de la fatigue parfois présente au réveil",
     );
   }
 
