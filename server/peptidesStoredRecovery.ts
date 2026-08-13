@@ -186,10 +186,12 @@ export async function buildStoredPeptidesRecoveryCandidate(input: {
   responseId: string;
   responses: Record<string, unknown>;
   tier: "solo" | "coached" | "tracked";
+  consentAccepted: boolean;
   refreshOfficialPricing: (
     report: PeptidesReport,
     responses: Record<string, unknown>,
     tier: string,
+    consentAccepted: boolean,
   ) => Promise<PeptidesReport>;
 }): Promise<StoredPeptidesRecoveryCandidate> {
   const responseId = responseIdOrThrow(input.responseId);
@@ -199,7 +201,12 @@ export async function buildStoredPeptidesRecoveryCandidate(input: {
   const firstName = String(input.responses.pep_name || report.clientName || "Profil").trim().split(/\s+/)[0];
   report.clientName = firstName || "Profil";
   ensureWeightFact(report, input.responses);
-  report = await input.refreshOfficialPricing(report, input.responses, input.tier);
+  report = await input.refreshOfficialPricing(
+    report,
+    input.responses,
+    input.tier,
+    input.consentAccepted,
+  );
   report = removeObsoleteMissingLiveFormatSentence(report);
   report.tier = input.tier;
   report.promoCodesGenerated = [];

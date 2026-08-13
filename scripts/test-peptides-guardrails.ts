@@ -23,6 +23,10 @@ const engineSource = readFileSync(new URL("../server/peptidesEngine.ts", import.
 const routesSource = readFileSync(new URL("../server/routes.ts", import.meta.url), "utf8");
 const reportPageSource = readFileSync(new URL("../client/src/pages/PeptidesEngineReport.tsx", import.meta.url), "utf8");
 const peptidesPageSource = readFileSync(new URL("../client/src/pages/PeptidesEnginePage.tsx", import.meta.url), "utf8");
+const recoverStoredSource = readFileSync(new URL("./recover-peptides-stored.ts", import.meta.url), "utf8");
+const replaceStoredSource = readFileSync(new URL("./replace-peptides-stored.ts", import.meta.url), "utf8");
+const dryRunStoredSource = readFileSync(new URL("./dry-run-recover-peptides-stored.ts", import.meta.url), "utf8");
+const storedRecoverySource = readFileSync(new URL("../server/peptidesStoredRecovery.ts", import.meta.url), "utf8");
 assert.match(engineSource, /PEPTIDES_PRIMARY_MODEL[\s\S]{0,120}OPENAI_REPORT_MODEL/);
 assert.match(engineSource, /effort:\s*"xhigh"/);
 assert.match(engineSource, /mode:\s*"pro"/);
@@ -33,9 +37,11 @@ assert.match(engineSource, /entre 30000 et 38000 caracteres au total/);
 assert.match(engineSource, /Candidate rejected[\s\S]{0,600}strict full regeneration/);
 assert.match(engineSource, /Provider failure is terminal, duplicate paid generation blocked/);
 assert.doesNotMatch(engineSource, /@anthropic-ai\/sdk|ANTHROPIC_API_KEY|callClaudeForPeptides/);
+assert.match(engineSource, /Calcul conditionnel pour les deux volumes usuels de 1 ml et 2 ml/);
+assert.doesNotMatch(engineSource, /confirmation ecrite du volume par le fabricant du lot ou un professionnel qualifie/);
 assert.match(peptidesPageSource, /peptides-engine-consent-v2-2026-08-13/);
 assert.match(peptidesPageSource, /assumer mes décisions d'achat et d'utilisation/);
-assert.match(engineSource, /sourceReport\._validationContext\?\.consentAccepted === true/);
+assert.match(engineSource, /consentAccepted:\s*boolean/);
 assert.match(routesSource, /generatePeptidesProtocol\(responses, email, autoGenTier,[\s\S]{0,180}consentAccepted/);
 assert.match(routesSource, /generatePeptidesProtocol\(responses, order\.email, forcePaidTier,[\s\S]{0,180}consentAccepted/);
 assert.match(routesSource, /generatePeptidesProtocol\(responses, email, "coached",[\s\S]{0,180}consentAccepted/);
@@ -52,6 +58,21 @@ const signedConsent = {
 };
 assert.equal(hasValidPeptidesConsent(signedConsent), true);
 assert.equal(hasValidPeptidesConsent({ ...signedConsent, text: "court" }), false);
+for (const recoverySource of [routesSource, recoverStoredSource, replaceStoredSource, dryRunStoredSource]) {
+  assert.match(recoverySource, /hasValidPeptidesConsent/);
+  assert.match(recoverySource, /consentAccepted/);
+}
+assert.match(storedRecoverySource, /consentAccepted:\s*boolean/);
+assert.match(
+  storedRecoverySource,
+  /input\.refreshOfficialPricing\([\s\S]{0,180}input\.consentAccepted/,
+  "Le recovery doit transmettre explicitement le consentement au repair live"
+);
+assert.match(
+  engineSource,
+  /if \(consentAccepted\) report\.qualityVersion = "expert-standard-v1"/,
+  "Le recovery consenti ne doit pas auto-promouvoir le rapport en medical-review"
+);
 assert.match(engineSource, /PROTOCOLE OBLIGATOIRE SI TESTOSTERONE BASSE CONFIRMEE/i);
 assert.match(engineSource, /1\. Enclomiphene Citrate/);
 assert.match(engineSource, /2\. KissPeptin-10/);
@@ -659,6 +680,27 @@ assert.equal(
 assert.doesNotMatch(
   standardHardFlagReport.sections.map((section: any) => `${section.title}\n${section.content}`).join("\n"),
   /projet de protocole [àa] faire valider|s'il manque une seule case, tu ne commences pas/i
+);
+
+const standardGenericGateSource = structuredClone(legacyReport) as any;
+standardGenericGateSource.qualityVersion = "expert-standard-v1";
+standardGenericGateSource.sections[0].content +=
+  " Demande confirmation au fabricant du lot ou a un professionnel qualifie. Ne commence pas tant que le volume n'est pas confirme.";
+standardGenericGateSource.peptides[0].reconstitution +=
+  " Demande confirmation au fabricant du lot ou a un professionnel qualifie. Ne commence pas tant que le volume n'est pas confirme.";
+const standardGenericGateRepaired = repairPeptidesReportContent(
+  standardGenericGateSource,
+  { pep_name: "Luca", pep_country: "France" },
+  "solo"
+) as any;
+const standardGenericGateText = [
+  ...standardGenericGateRepaired.sections.map((section: any) => section.content),
+  ...standardGenericGateRepaired.peptides.map((peptide: any) => peptide.reconstitution),
+].join("\n");
+assert.doesNotMatch(
+  standardGenericGateText,
+  /fabricant du lot|professionnel qualifi[ée]|ne commence pas tant que le volume/i,
+  "Les textes standard consentis ne doivent pas reintroduire un gate generique fabricant/professionnel"
 );
 
 const standardWithoutMedicalVerification = structuredClone(repaired) as any;

@@ -1183,9 +1183,9 @@ function buildConditionalReconstitutionText(
   });
   return [
     `Format live retenu: vial de ${vialMg} mg. Peptaura ne publie pas le volume de solvant du lot exact: aucun volume n'est choisi automatiquement.`,
-    `Calcul conditionnel uniquement, apres confirmation ecrite du volume par le fabricant du lot ou un professionnel qualifie. Formule: concentration en mg/ml = ${vialMg} mg divise par le volume confirme; volume de dose = dose en mg divisee par la concentration; unites U-100 = volume en ml multiplie par 100.`,
+    `Calcul conditionnel pour les deux volumes usuels de 1 ml et 2 ml. Utilise uniquement la ligne qui correspond au volume reellement ajoute. Formule: concentration en mg/ml = ${vialMg} mg divise par le volume ajoute; volume de dose = dose en mg divisee par la concentration; unites U-100 = volume en ml multiplie par 100.`,
     ...lines,
-    "Tant que le volume exact et le materiel ne sont pas confirmes, ne reconstitue pas et n'injecte pas.",
+    "Si le volume reellement ajoute est different de 1 ml ou 2 ml, recalcule concentration, volume de dose et unites U-100 avant de poursuivre.",
   ].join(" ");
 }
 
@@ -1548,14 +1548,16 @@ async function buildPeptauraPromptContext(responses: Record<string, unknown>): P
 export async function refreshPeptauraPricingForDelivery(
   sourceReport: PeptidesReport,
   responses: Record<string, unknown>,
-  tier?: string | null
+  tier: string | null | undefined,
+  consentAccepted: boolean
 ): Promise<PeptidesReport> {
   const report = validateVialsMath(JSON.parse(JSON.stringify(sourceReport)));
+  if (consentAccepted) report.qualityVersion = "expert-standard-v1";
   const context = await buildPeptauraPromptContext(responses);
   report._validationContext = buildPeptidesValidationContext(
     responses,
     context.country,
-    sourceReport._validationContext?.consentAccepted === true
+    consentAccepted
   );
   await applyLivePeptauraPricing(report, context, true);
   const repaired = repairPeptidesReportContent(report, responses, tier);

@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { jsonrepair } from "jsonrepair";
+import { hasValidPeptidesConsent } from "../server/peptidesConsent";
 import { pruneUnintegratedBonusPeptides, repairPeptidesReportContent } from "../server/peptidesReportRepair";
 import { validatePeptidesReport } from "../server/peptidesReportValidator";
 import type { PeptidesReport } from "../server/peptidesEngine";
@@ -124,6 +125,7 @@ async function main(): Promise<void> {
   if (!responses || Object.keys(responses).length < 20) throw new Error("Peptides questionnaire is incomplete");
   const tier = String(order.metadata?.peptidesTier || "");
   if (tier !== "coached") throw new Error(`Unexpected tier: ${tier}`);
+  const consentAccepted = hasValidPeptidesConsent(order.metadata?.peptidesEngineConsent);
   await mkdir(outputDir, { recursive: true, mode: 0o700 });
 
   const audits: CandidateAudit[] = [];
@@ -147,8 +149,13 @@ async function main(): Promise<void> {
       report = pruneUnintegratedBonusPeptides(structuredClone(report));
       if (livePricing) {
         const { refreshPeptauraPricingForDelivery } = await import("../server/peptidesEngine");
-        report = await refreshPeptauraPricingForDelivery(report, responses, tier);
+        report = await refreshPeptauraPricingForDelivery(report, responses, tier, consentAccepted);
       } else {
+        report._validationContext = {
+          ...(report._validationContext || {}),
+          consentAccepted,
+        };
+        if (consentAccepted) report.qualityVersion = "expert-standard-v1";
         report = repairPeptidesReportContent(report, responses, tier);
       }
       report.tier = tier;
@@ -156,6 +163,8 @@ async function main(): Promise<void> {
       report.promoCodesGenerated = [];
       ensureRecoveryProfileFacts(report, responses);
       report._validationContext = {
+        ...(report._validationContext || {}),
+        consentAccepted,
         confirmedLowTestosterone: String(responses.pep_testo_bloodwork || "").toLowerCase() === "recent-low",
         profile: {
           weightKg: Number(responses.pep_weight || 0),

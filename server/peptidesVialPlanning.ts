@@ -12,6 +12,15 @@ export interface DocumentedStabilityWindow {
   source: string;
 }
 
+export const DEFAULT_OPERATIONAL_OPENING_WINDOW_SOURCE =
+  "APEXLABS politique conservatrice d'ouverture v1, 2026-08-13";
+
+const DEFAULT_OPERATIONAL_OPENING_WINDOWS: Record<string, DocumentedStabilityWindow> = {
+  cjc1295nodac: { days: 28, source: DEFAULT_OPERATIONAL_OPENING_WINDOW_SOURCE },
+  ipamorelin: { days: 28, source: DEFAULT_OPERATIONAL_OPENING_WINDOW_SOURCE },
+  motsc: { days: 28, source: DEFAULT_OPERATIONAL_OPENING_WINDOW_SOURCE },
+};
+
 export interface PeptideVialPlan {
   pharmacologicalNeedMg: number | null;
   vialSizeMg: number | null;
@@ -112,11 +121,13 @@ export function estimatePharmacologicalNeedMg(input: PeptideVialPlanningInput): 
 }
 
 export function parseDocumentedStabilityConfig(raw = process.env.PEPTIDES_RECONSTITUTED_STABILITY_JSON || ""): Record<string, DocumentedStabilityWindow> {
-  if (!raw.trim()) return {};
+  const result: Record<string, DocumentedStabilityWindow> = {
+    ...DEFAULT_OPERATIONAL_OPENING_WINDOWS,
+  };
+  if (!raw.trim()) return result;
   let parsed: unknown;
   try { parsed = JSON.parse(raw); } catch { throw new Error("PEPTIDES_RECONSTITUTED_STABILITY_JSON invalide: JSON attendu"); }
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("PEPTIDES_RECONSTITUTED_STABILITY_JSON invalide: objet attendu");
-  const result: Record<string, DocumentedStabilityWindow> = {};
   for (const [name, entry] of Object.entries(parsed as Record<string, unknown>)) {
     if (!entry || typeof entry !== "object") throw new Error(`Stabilite ${name}: objet attendu`);
     const days = Number((entry as any).days);
@@ -178,7 +189,7 @@ export function formatOperationalVials(plan: PeptideVialPlan, cycleDuration: str
   }
   const need = Number(plan.pharmacologicalNeedMg.toFixed(3));
   if (plan.status !== "documented" || plan.operationalVials == null) {
-    return `Besoin brut ${need}mg. Minimum mathematique ${plan.mathematicalMinimumVials} vial${plan.mathematicalMinimumVials > 1 ? "s" : ""} de ${plan.vialSizeMg}mg pour ${cycleDuration}. Achat operationnel non chiffre: aucune fenetre de stabilite apres reconstitution documentee n'est configuree. Aucune reserve n'est ajoutee.`;
+    return `Besoin brut ${need}mg. Minimum mathematique ${plan.mathematicalMinimumVials} vial${plan.mathematicalMinimumVials > 1 ? "s" : ""} de ${plan.vialSizeMg}mg pour ${cycleDuration}. Achat operationnel non chiffre: aucune politique de fenetre operationnelle apres reconstitution n'est configuree pour cette molecule. Aucune reserve n'est ajoutee.`;
   }
-  return `Achat operationnel ${plan.operationalVials} vial${plan.operationalVials > 1 ? "s" : ""} de ${plan.vialSizeMg}mg pour ${cycleDuration}. Besoin brut ${need}mg, minimum mathematique ${plan.mathematicalMinimumVials}. Fenetre apres reconstitution ${plan.stabilityDays} jours, source: ${plan.stabilitySource}. Reserve scellee facultative: ${plan.optionalSealedReserveVials} vials au total, sans augmenter la dose ni la duree.`;
+  return `Achat operationnel ${plan.operationalVials} vial${plan.operationalVials > 1 ? "s" : ""} de ${plan.vialSizeMg}mg pour ${cycleDuration}. Besoin brut ${need}mg, minimum mathematique ${plan.mathematicalMinimumVials}. Fenetre operationnelle apres reconstitution ${plan.stabilityDays} jours, politique: ${plan.stabilitySource}. Cette fenetre sert au calcul logistique d'ouverture et ne constitue pas une affirmation de stabilite chimique. Reserve scellee facultative: ${plan.optionalSealedReserveVials} vials au total, sans augmenter la dose ni la duree.`;
 }

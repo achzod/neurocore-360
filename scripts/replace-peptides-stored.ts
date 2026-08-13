@@ -1,6 +1,7 @@
 /** Zero-inference replacement of one already-linked Peptides report under HOLD. */
 import { Pool } from "pg";
 import { retrieveStoredOpenAIResponseText } from "../server/openaiResponses";
+import { hasValidPeptidesConsent } from "../server/peptidesConsent";
 import { refreshPeptauraPricingForDelivery, type PeptidesReport } from "../server/peptidesEngine";
 import { buildStoredPeptidesRecoveryCandidate, loadStoredPeptidesRecoveryOrder } from "../server/peptidesStoredRecovery";
 
@@ -30,14 +31,16 @@ async function main(): Promise<void> {
     const responses = metadata.peptidesResponses as Record<string, unknown> | undefined;
     if (!responses || Object.keys(responses).length < 20) throw new Error("QUESTIONNAIRE_INCOMPLETE");
     const tier = String(metadata.peptidesTier || "coached") as "solo" | "coached" | "tracked";
+    const consentAccepted = hasValidPeptidesConsent(metadata.peptidesEngineConsent);
     const stored = await retrieveStoredOpenAIResponseText(responseId);
     const candidate = await buildStoredPeptidesRecoveryCandidate({
       raw: stored.text,
       responseId,
       responses,
       tier,
-      refreshOfficialPricing: (report: PeptidesReport, sourceResponses, sourceTier) =>
-        refreshPeptauraPricingForDelivery(report, sourceResponses, sourceTier),
+      consentAccepted,
+      refreshOfficialPricing: (report: PeptidesReport, sourceResponses, sourceTier, sourceConsentAccepted) =>
+        refreshPeptauraPricingForDelivery(report, sourceResponses, sourceTier, sourceConsentAccepted),
     });
     console.log(JSON.stringify({ ready: candidate.ready, errors: candidate.validation.errors, warnings: candidate.validation.warnings, safetyErrors: candidate.safetyErrors, sectionCount: candidate.report.sections?.length || 0, providerInferenceUsed: false, emailSent: false }, null, 2));
     if (!candidate.ready) throw new Error("DELIVERY_GATE_BLOCKED");

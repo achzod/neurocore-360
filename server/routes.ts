@@ -6600,7 +6600,12 @@ export async function registerRoutes(
 
       const paidTier = String((order.metadata as any)?.peptidesTier || (existing.report as any)?.tier || "solo");
       const before = JSON.parse(JSON.stringify(existing.report));
-      const repaired = await refreshPeptauraPricingForDelivery(before, responses, paidTier);
+      const repaired = await refreshPeptauraPricingForDelivery(
+        before,
+        responses,
+        paidTier,
+        hasValidPeptidesConsent((order.metadata as any)?.peptidesEngineConsent)
+      );
       const { validatePeptidesReport } = await import("./peptidesReportValidator");
       const validation = validatePeptidesReport(repaired);
 
@@ -14677,7 +14682,8 @@ export async function registerRoutes(
             const repaired = await refreshPeptauraPricingForDelivery(
               JSON.parse(JSON.stringify(existingReport)),
               pricingResponses,
-              String((order.metadata as any)?.peptidesTier || existingReport?.tier || "solo")
+              String((order.metadata as any)?.peptidesTier || existingReport?.tier || "solo"),
+              hasValidPeptidesConsent((order.metadata as any)?.peptidesEngineConsent)
             );
             const repairedFingerprint = JSON.stringify(repaired);
             const originalFingerprint = JSON.stringify(existingReport);

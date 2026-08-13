@@ -376,6 +376,8 @@ function cleanStandardSections(report: RepairableReport): void {
         .replace(/(?:avant tout achat ou toute utilisation|avant de commencer)[^.]{0,220}(?:m[ée]decin|pharmacien|professionnel de sant[ée])[^.]*\./gi, "")
         .replace(/(?:demande|fais)[^.]{0,180}(?:validation|accord|confirmation)[^.]{0,100}(?:m[ée]decin|pharmacien|professionnel de sant[ée])[^.]*\./gi, "")
         .replace(/(?:m[ée]decin|pharmacien|professionnel de sant[ée])[^.]{0,160}(?:valider|valide|confirmer|confirme|autoriser|autorise)[^.]*\./gi, "")
+        .replace(/[^.\n]*(?:fabricant du lot|professionnel qualifi[ée])[^.\n]*\./gi, "")
+        .replace(/[^.\n]*ne commence pas tant que le volume[^.\n]*\./gi, "")
         .replace(/des milliers de personnes le font chaque jour et c'est beaucoup plus simple que tu ne l'imagines\./gi, "")
         .replace(/\n{3,}/g, "\n\n")
         .trim()
@@ -491,7 +493,7 @@ function cleanExpertPeptideFields(report: RepairableReport): void {
     peptide.dosage = sanitizeClientFacingText(stripProjectPrefix(peptide.dosage));
     peptide.timing = sanitizeClientFacingText(
       stripProjectPrefix(peptide.timing)
-        .replace(/peut [eê]tre m[ée]lang[ée][^.]*m[êe]me seringue[^.]*\.?/gi, "Garde ce produit separe dans sa propre seringue, sauf validation professionnelle contraire.")
+        .replace(/peut [eê]tre m[ée]lang[ée][^.]*m[êe]me seringue[^.]*\.?/gi, "Garde ce produit separe dans sa propre seringue.")
     );
     peptide.route = sanitizeClientFacingText(stripProjectPrefix(peptide.route));
     peptide.cycleDuration = removeUnsupportedDescent(
@@ -522,7 +524,9 @@ function cleanExpertPeptideFields(report: RepairableReport): void {
           .replace(/controle de coherence uniquement:\s*/i, "")
           .replace(/la reconstitution ne doit pas etre improvisee[^.]*\./gi, "")
           .replace(/fais verifier[^.]*\./gi, "")
-          .replace(/ne melange pas ce produit avec un autre[^.]*\./gi, "Garde ce produit separe du reste, sauf validation professionnelle contraire.")
+          .replace(/ne melange pas ce produit avec un autre[^.]*\./gi, "Garde ce produit separe du reste.")
+          .replace(/(?:fabricant du lot|professionnel qualifi[ée])[^.]*\./gi, "")
+          .replace(/ne commence pas tant que le volume[^.]*\./gi, "")
           .trim()
       );
     }

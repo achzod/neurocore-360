@@ -8,6 +8,7 @@
  */
 import { Pool } from "pg";
 import { retrieveStoredOpenAIResponseText } from "../server/openaiResponses";
+import { hasValidPeptidesConsent } from "../server/peptidesConsent";
 import { refreshPeptauraPricingForDelivery, type PeptidesReport } from "../server/peptidesEngine";
 import {
   STORED_PEPTIDES_RECOVERY_CONFIRMATION,
@@ -52,6 +53,7 @@ async function main(): Promise<void> {
     if (!responses || Object.keys(responses).length < 20) throw new Error("RECOVERY_QUESTIONNAIRE_INCOMPLETE");
     const tier = String(order.metadata.peptidesTier || "coached");
     if (!/^(solo|coached|tracked)$/.test(tier)) throw new Error(`RECOVERY_TIER_INVALID:${tier}`);
+    const consentAccepted = hasValidPeptidesConsent(order.metadata.peptidesEngineConsent);
 
     const stored = await retrieveStoredOpenAIResponseText(responseId);
     const candidate = await buildStoredPeptidesRecoveryCandidate({
@@ -59,11 +61,13 @@ async function main(): Promise<void> {
       responseId,
       responses,
       tier: tier as "solo" | "coached" | "tracked",
+      consentAccepted,
       refreshOfficialPricing: (
         report: PeptidesReport,
         sourceResponses: Record<string, unknown>,
         sourceTier: string,
-      ) => refreshPeptauraPricingForDelivery(report, sourceResponses, sourceTier),
+        sourceConsentAccepted: boolean,
+      ) => refreshPeptauraPricingForDelivery(report, sourceResponses, sourceTier, sourceConsentAccepted),
     });
     const audit = {
       mode: apply ? "apply" : "dry-run",
