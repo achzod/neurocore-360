@@ -266,6 +266,14 @@ export interface IStorage {
   /** Returns true if a peptides delivery email (subject contains "protocole peptides") has been sent to this recipient */
   hasPeptidesDeliveryEmailBeenSent(email: string): Promise<boolean>;
   hasPeptidesOrderConfirmationBeenSent(email: string): Promise<boolean>;
+  /** Atomic lease for the immediate paid-order confirmation. Prevents webhook,
+   * browser confirmation and multi-instance recovery from sending concurrently. */
+  claimPeptidesOrderConfirmation(orderId: string, leaseMs?: number): Promise<boolean>;
+  finalizePeptidesOrderConfirmation(orderId: string, state: "ACCEPTED" | "FAILED" | "UNKNOWN"): Promise<void>;
+  /** Atomic lease for one report delivery. The report id is part of the claim so
+   * an in-place replacement cannot accidentally authorize an older artifact. */
+  claimPeptidesReportDelivery(orderId: string, reportId: string, leaseMs?: number): Promise<boolean>;
+  finalizePeptidesReportDelivery(orderId: string, reportId: string, state: "ACCEPTED" | "FAILED" | "UNKNOWN"): Promise<void>;
   /** Returns true if a blood analysis HTML email has already been tracked for this report (audit_id) */
   hasBloodAnalysisEmailBeenSentForReport(reportId: string): Promise<boolean>;
   /** Returns true if a blood analysis HTML email was sent to this recipient within the last N hours */
@@ -286,7 +294,7 @@ export interface IStorage {
   /** Atomic CAS: set metadata.peptidesReportId only if currently null/absent. Returns true if we won the race. */
   claimPeptidesReportSlot(orderId: string, reportId: string): Promise<boolean>;
   /** Atomic JSONB merge: set a single metadata key without stomping concurrently-set keys. */
-  setOrderMetadataKey(orderId: string, key: string, value: string | number | boolean): Promise<boolean>;
+  setOrderMetadataKey(orderId: string, key: string, value: unknown): Promise<boolean>;
   /**
    * Atomically reserves one bounded Peptides provider attempt. The reservation
    * and cost budget survive restarts because they live in order metadata.
@@ -991,8 +999,10 @@ export class MemStorage implements IStorage {
   async hasPeptidesDeliveryEmailBeenSent(email: string): Promise<boolean> {
     return Array.from(this.emailTrackings.values()).some(
       (t: any) => String(t.recipientEmail || "").toLowerCase() === email.toLowerCase()
-        && t.emailType === "sendCTAEmail"
-        && /protocole peptides|peptides personnalis/i.test(String(t.subject || ""))
+        && (
+          t.emailType === "sendPeptidesReportReadyEmail"
+          || (t.emailType === "sendCTAEmail" && /protocole peptides|peptides personnalis/i.test(String(t.subject || "")))
+        )
         && !["failed", "auth_failed", "unsubscribed"].includes(String(t.sendpulseStatus || "").toLowerCase())
     );
   }
@@ -1003,6 +1013,69 @@ export class MemStorage implements IStorage {
         && t.emailType === "sendPeptidesOrderConfirmation"
         && !["failed", "auth_failed", "unsubscribed"].includes(String(t.sendpulseStatus || "").toLowerCase())
     );
+  }
+
+  async claimPeptidesOrderConfirmation(orderId: string, leaseMs = 10 * 60 * 1000): Promise<boolean> {
+    const order = this.memOrders.get(orderId);
+    if (!order || order.productType !== "PEPTIDES_ENGINE" || order.status !== "paid") return false;
+    const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
+    if (meta.peptidesEmailHold === true || meta.peptidesEmailHold === "true") return false;
+    if (["ACCEPTED", "UNKNOWN"].includes(String(meta.peptidesConfirmationState || "").toUpperCase())) return false;
+    const leaseUntil = new Date(String(meta.peptidesConfirmationLeaseUntil || 0)).getTime();
+    if (String(meta.peptidesConfirmationState || "").toUpperCase() === "SENDING" && leaseUntil > Date.now()) return false;
+    if (Number(meta.peptidesConfirmationAttempts || 0) >= 3) return false;
+    order.metadata = {
+      ...meta,
+      peptidesConfirmationState: "SENDING",
+      peptidesConfirmationAttempts: Number(meta.peptidesConfirmationAttempts || 0) + 1,
+      peptidesConfirmationLeaseUntil: new Date(Date.now() + leaseMs).toISOString(),
+      peptidesConfirmationStartedAt: new Date().toISOString(),
+    } as any;
+    return true;
+  }
+
+  async finalizePeptidesOrderConfirmation(orderId: string, state: "ACCEPTED" | "FAILED" | "UNKNOWN"): Promise<void> {
+    const order = this.memOrders.get(orderId);
+    if (!order) return;
+    order.metadata = {
+      ...((order.metadata as any) ?? {}),
+      peptidesConfirmationState: state,
+      peptidesConfirmationLeaseUntil: "",
+      peptidesConfirmationCompletedAt: new Date().toISOString(),
+    } as any;
+  }
+
+  async claimPeptidesReportDelivery(orderId: string, reportId: string, leaseMs = 10 * 60 * 1000): Promise<boolean> {
+    const order = this.memOrders.get(orderId);
+    if (!order || order.productType !== "PEPTIDES_ENGINE" || order.status !== "paid") return false;
+    const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
+    if (String(meta.peptidesReportId || "") !== reportId) return false;
+    if (meta.peptidesEmailHold === true || meta.peptidesEmailHold === "true") return false;
+    if (["ACCEPTED", "UNKNOWN"].includes(String(meta.peptidesDeliveryState || "").toUpperCase())) return false;
+    const leaseUntil = new Date(String(meta.peptidesDeliveryLeaseUntil || 0)).getTime();
+    if (String(meta.peptidesDeliveryState || "").toUpperCase() === "SENDING" && leaseUntil > Date.now()) return false;
+    if (Number(meta.peptidesDeliveryAttempts || 0) >= 3) return false;
+    order.metadata = {
+      ...meta,
+      peptidesDeliveryState: "SENDING",
+      peptidesDeliveryReportId: reportId,
+      peptidesDeliveryAttempts: Number(meta.peptidesDeliveryAttempts || 0) + 1,
+      peptidesDeliveryLeaseUntil: new Date(Date.now() + leaseMs).toISOString(),
+      peptidesDeliveryStartedAt: new Date().toISOString(),
+    } as any;
+    return true;
+  }
+
+  async finalizePeptidesReportDelivery(orderId: string, reportId: string, state: "ACCEPTED" | "FAILED" | "UNKNOWN"): Promise<void> {
+    const order = this.memOrders.get(orderId);
+    if (!order || String((order.metadata as any)?.peptidesReportId || "") !== reportId) return;
+    order.metadata = {
+      ...((order.metadata as any) ?? {}),
+      peptidesDeliveryState: state,
+      peptidesDeliveryReportId: reportId,
+      peptidesDeliveryLeaseUntil: "",
+      peptidesDeliveryCompletedAt: new Date().toISOString(),
+    } as any;
   }
 
   async hasBloodAnalysisEmailBeenSentForReport(reportId: string): Promise<boolean> {
@@ -1108,7 +1181,7 @@ export class MemStorage implements IStorage {
     return true;
   }
 
-  async setOrderMetadataKey(orderId: string, key: string, value: string | number | boolean): Promise<boolean> {
+  async setOrderMetadataKey(orderId: string, key: string, value: unknown): Promise<boolean> {
     const order = this.memOrders.get(orderId);
     if (!order) return false;
     const meta = (order.metadata as any) ?? {};
@@ -2843,12 +2916,18 @@ export class PgStorage implements IStorage {
 
   async hasPeptidesDeliveryEmailBeenSent(email: string): Promise<boolean> {
     try {
-      // Peptides delivery emails use sendCTAEmail with subject containing "protocole peptides"
+      // New deliveries have a dedicated tracking type. Keep the subject-based
+      // legacy branch so old accepted sends still block a duplicate.
       const result = await pool.query(
         `SELECT 1 FROM email_tracking
           WHERE LOWER(recipient_email) = LOWER($1)
-            AND email_type = 'sendCTAEmail'
-            AND (subject ILIKE '%protocole peptides%' OR subject ILIKE '%peptides personnalisé%' OR subject ILIKE '%peptides personnalise%')
+            AND (
+              email_type = 'sendPeptidesReportReadyEmail'
+              OR (
+                email_type = 'sendCTAEmail'
+                AND (subject ILIKE '%protocole peptides%' OR subject ILIKE '%peptides personnalisé%' OR subject ILIKE '%peptides personnalise%')
+              )
+            )
             AND (sendpulse_status IS NULL OR sendpulse_status NOT IN ('failed','auth_failed','unsubscribed'))
           LIMIT 1`,
         [email]
@@ -2876,6 +2955,100 @@ export class PgStorage implements IStorage {
       console.warn("[EmailTracking] hasPeptidesOrderConfirmationBeenSent query failed:", err);
       return false;
     }
+  }
+
+  async claimPeptidesOrderConfirmation(orderId: string, leaseMs = 10 * 60 * 1000): Promise<boolean> {
+    await this.ensureOrdersTableCreated();
+    const result = await pool.query(
+      `UPDATE orders
+          SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
+                'peptidesConfirmationState', 'SENDING',
+                'peptidesConfirmationAttempts', COALESCE((metadata->>'peptidesConfirmationAttempts')::int, 0) + 1,
+                'peptidesConfirmationLeaseUntil', (NOW() + ($1::bigint * INTERVAL '1 millisecond'))::text,
+                'peptidesConfirmationStartedAt', NOW()::text
+              ),
+              updated_at = NOW()
+        WHERE id = $2
+          AND product_type = 'PEPTIDES_ENGINE'
+          AND status = 'paid'
+          AND COALESCE(metadata->>'peptidesEmailHold', 'false') <> 'true'
+          AND COALESCE(metadata->>'peptidesConfirmationState', 'PENDING') NOT IN ('ACCEPTED', 'UNKNOWN')
+          AND (
+            COALESCE(metadata->>'peptidesConfirmationState', 'PENDING') <> 'SENDING'
+            OR COALESCE(NULLIF(metadata->>'peptidesConfirmationLeaseUntil', '')::timestamptz, '-infinity'::timestamptz) <= NOW()
+          )
+          AND COALESCE((metadata->>'peptidesConfirmationAttempts')::int, 0) < 3
+      RETURNING id`,
+      [leaseMs, orderId],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async finalizePeptidesOrderConfirmation(orderId: string, state: "ACCEPTED" | "FAILED" | "UNKNOWN"): Promise<void> {
+    await this.ensureOrdersTableCreated();
+    await pool.query(
+      `UPDATE orders
+          SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
+                'peptidesConfirmationState', $1::text,
+                'peptidesConfirmationLeaseUntil', '',
+                'peptidesConfirmationCompletedAt', NOW()::text
+              ),
+              updated_at = NOW()
+        WHERE id = $2
+          AND product_type = 'PEPTIDES_ENGINE'`,
+      [state, orderId],
+    );
+  }
+
+  async claimPeptidesReportDelivery(orderId: string, reportId: string, leaseMs = 10 * 60 * 1000): Promise<boolean> {
+    await this.ensureOrdersTableCreated();
+    const result = await pool.query(
+      `UPDATE orders
+          SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
+                'peptidesDeliveryState', 'SENDING',
+                'peptidesDeliveryReportId', $1::text,
+                'peptidesDeliveryAttempts', COALESCE((metadata->>'peptidesDeliveryAttempts')::int, 0) + 1,
+                'peptidesDeliveryLeaseUntil', (NOW() + ($2::bigint * INTERVAL '1 millisecond'))::text,
+                'peptidesDeliveryStartedAt', NOW()::text
+              ),
+              updated_at = NOW()
+        WHERE id = $3
+          AND product_type = 'PEPTIDES_ENGINE'
+          AND status = 'paid'
+          AND COALESCE(metadata->>'peptidesReportId', '') = $1::text
+          AND COALESCE(metadata->>'peptidesEmailHold', 'false') <> 'true'
+          AND COALESCE(metadata->>'peptidesDeliveryState', 'PENDING') NOT IN ('ACCEPTED', 'UNKNOWN')
+          AND (
+            COALESCE(metadata->>'peptidesDeliveryState', 'PENDING') <> 'SENDING'
+            OR COALESCE(NULLIF(metadata->>'peptidesDeliveryLeaseUntil', '')::timestamptz, '-infinity'::timestamptz) <= NOW()
+          )
+          AND COALESCE((metadata->>'peptidesDeliveryAttempts')::int, 0) < 3
+      RETURNING id`,
+      [reportId, leaseMs, orderId],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async finalizePeptidesReportDelivery(
+    orderId: string,
+    reportId: string,
+    state: "ACCEPTED" | "FAILED" | "UNKNOWN",
+  ): Promise<void> {
+    await this.ensureOrdersTableCreated();
+    await pool.query(
+      `UPDATE orders
+          SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
+                'peptidesDeliveryState', $1::text,
+                'peptidesDeliveryReportId', $2::text,
+                'peptidesDeliveryLeaseUntil', '',
+                'peptidesDeliveryCompletedAt', NOW()::text
+              ),
+              updated_at = NOW()
+        WHERE id = $3
+          AND product_type = 'PEPTIDES_ENGINE'
+          AND COALESCE(metadata->>'peptidesReportId', '') = $2::text`,
+      [state, reportId, orderId],
+    );
   }
 
   async hasBloodAnalysisEmailBeenSentForReport(reportId: string): Promise<boolean> {
@@ -3477,7 +3650,7 @@ export class PgStorage implements IStorage {
 
   // Atomic JSONB merge: set a single key without touching anything else. Avoids
   // the read-modify-write stomp pattern that wipes concurrently-set siblings.
-  async setOrderMetadataKey(orderId: string, key: string, value: string | number | boolean): Promise<boolean> {
+  async setOrderMetadataKey(orderId: string, key: string, value: unknown): Promise<boolean> {
     await this.ensureOrdersTableCreated();
     const jsonValue = JSON.stringify(value);
     const result = await pool.query(

@@ -31,7 +31,9 @@ import {
   sendPeptidesReviewS5Email,
   sendPeptidesReviewS12Email,
   sendPeptidesCycle2ReorderEmail,
-  sendPeptidesOrderConfirmationEmail,
+  sendPeptidesOrderConfirmationEmailResult,
+  sendPeptidesReportReadyEmail,
+  type SendPulseSendResult,
   sendDiscoveryJ30NurtureEmail,
   sendReactivationCampaignEmail,
   sendFinishDiscoveryEmail,
@@ -260,6 +262,7 @@ export async function registerRoutes(
   const REPORT_EMAIL_TYPES = [
     "sendReportReadyEmail",
     "sendPeptidesOrderConfirmation",
+    "sendPeptidesReportReadyEmail",
   ];
 
   const PROMO_SUBJECT_PATTERNS = [
@@ -4990,6 +4993,12 @@ export async function registerRoutes(
         ).catch(() => {});
       } else if (productType === "PEPTIDES_ENGINE") {
         await grantBloodCreditsForOrder(order.id, email, 2, "peptidesCreditsGranted").catch(() => {});
+        const paidOrder = await storage.getOrder(order.id).catch(() => undefined);
+        if (paidOrder) {
+          await ensurePeptidesOrderConfirmation(paidOrder).catch((error) => {
+            console.error(`[PayPal Reconcile] Peptides confirmation failed for ${email}:`, error);
+          });
+        }
       }
 
       // Admin payment notification (mirrors capture endpoint)
@@ -5277,6 +5286,12 @@ export async function registerRoutes(
         }
         if (existingOrder && email) {
           await grantBloodCreditsForOrder(existingOrder.id, email, 2, "peptidesCreditsGranted");
+          const paidOrder = await storage.getOrder(existingOrder.id).catch(() => undefined);
+          if (paidOrder) {
+            await ensurePeptidesOrderConfirmation(paidOrder).catch((error) => {
+              console.error(`[confirm-session] Peptides confirmation failed for ${email}:`, error);
+            });
+          }
         }
         res.json({ success: true, auditId: "", auditType: "PEPTIDES_ENGINE", email, generating: true });
         return;
@@ -5757,6 +5772,13 @@ export async function registerRoutes(
         // metadata flag and skips if already granted).
         await grantBloodCreditsForOrder(existingOrder.id, email, 2, "peptidesCreditsGranted");
 
+        const paidOrder = await storage.getOrder(existingOrder.id).catch(() => undefined);
+        if (paidOrder) {
+          await ensurePeptidesOrderConfirmation(paidOrder).catch((error) => {
+            console.error(`[PayPal] Peptides confirmation failed for ${email}:`, error);
+          });
+        }
+
         // DO NOT generate in background here , Render kills the process after HTTP response.
         // The auto-recovery cron will detect this order (paid, no reportId) and generate.
         // Respond immediately so the client gets redirected.
@@ -5931,29 +5953,24 @@ export async function registerRoutes(
             const coachingBlock = buildPeptidesCoachingDeductionBlock(
               (pepOrder?.metadata as any)?.peptidesTier ?? null
             );
-            await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
-              `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`
-            ).catch(() => {});
-            emailSent = true;
+            emailSent = pepOrder
+              ? await deliverPeptidesReportOnce({
+                  order: pepOrder,
+                  reportId: saved.id,
+                  report,
+                  promoText: promoBlock,
+                  coachingText: coachingBlock,
+                }).catch(() => false)
+              : false;
             await sendCTAEmail(adminNotifEmail, `PEPTIDES GENERE , ${email}`, `Rapport genere et livre pour ${email}\nReport ID: ${saved.id}\nPeptides: ${peptidesNames}\nLien: ${baseUrl}/peptides/${saved.id}`).catch(() => {});
           } else if (scheduledAt) {
             deliveryDeferred = true;
             deliveryScheduledAtIso = scheduledAt.toISOString();
             // Send the order confirmation so the client knows the payment landed.
-            const alreadyConfirmed = pepOrder ? await storage.hasPeptidesOrderConfirmationBeenSent(email).catch(() => false) : false;
-            if (!alreadyConfirmed && pepOrder) {
-              const firstName = (pepOrder.metadata as any)?.peptidesResponses?.prenom
-                || (responses as any)?.pep_name
-                || (email ? email.split("@")[0] : undefined);
-              sendPeptidesOrderConfirmationEmail(email, {
-                firstName,
-                amountEur: ((pepOrder as any).finalAmountCents || 0) / 100,
-                promoCode: (pepOrder as any).promoCode || null,
-                peptidesNames,
-                scheduledDeliveryAt: scheduledAt,
-                bloodCreditsCount: Array.isArray(report.promoCodesGenerated) ? report.promoCodesGenerated.length : 0,
-                orderId: pepOrder.id,
-              }).catch((err) => console.error("[Admin Manual Gen] Confirmation email failed:", err));
+            if (pepOrder) {
+              await ensurePeptidesOrderConfirmation(pepOrder, report).catch((err) => {
+                console.error("[Admin Manual Gen] Confirmation email failed:", err);
+              });
             }
             const parisLocal = scheduledAt.toLocaleString("fr-FR", { timeZone: "Europe/Paris" });
             await sendCTAEmail(
@@ -6446,7 +6463,7 @@ export async function registerRoutes(
   app.post("/api/admin/peptides/send-order-confirmation", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
-      const { orderId, force } = req.body as { orderId: string; force?: boolean };
+      const { orderId } = req.body as { orderId: string; force?: boolean };
       if (!orderId) {
         res.status(400).json({ success: false, error: "orderId required" });
         return;
@@ -6465,38 +6482,22 @@ export async function registerRoutes(
         res.status(400).json({ success: false, error: "order has no email" });
         return;
       }
-      if (!force) {
-        const alreadyConfirmed = await storage.hasPeptidesOrderConfirmationBeenSent(email).catch(() => false);
-        if (alreadyConfirmed) {
-          res.json({ success: false, skipped: "already_sent", email });
-          return;
-        }
-      }
-
       const meta = (order.metadata as any) || {};
       const reportId = meta?.peptidesReportId;
       let peptidesNames = "voir rapport";
       let bloodCreditsCount = 0;
+      let reportForConfirmation: any = undefined;
       if (reportId) {
         const existing = await storage.getBurnoutReport(reportId).catch(() => null);
         if (existing) {
           const r = existing.report as any;
+          reportForConfirmation = r;
           peptidesNames = r?.peptides?.map((p: any) => p.name).join(", ") || peptidesNames;
           bloodCreditsCount = Array.isArray(r?.promoCodesGenerated) ? r.promoCodesGenerated.length : 0;
         }
       }
       const scheduledAt = await resolvePeptidesEmailScheduledAt(order);
-      const firstName = meta?.peptidesResponses?.prenom || email.split("@")[0];
-
-      const sent = await sendPeptidesOrderConfirmationEmail(email, {
-        firstName,
-        amountEur: ((order as any).finalAmountCents || 0) / 100,
-        promoCode: (order as any).promoCode || null,
-        peptidesNames,
-        scheduledDeliveryAt: scheduledAt,
-        bloodCreditsCount,
-        orderId: order.id,
-      });
+      const sent = await ensurePeptidesOrderConfirmation(order, reportForConfirmation);
 
       res.json({ success: true, sent, email, scheduledAt: scheduledAt.toISOString(), peptidesNames, bloodCreditsCount });
     } catch (error: any) {
@@ -8864,25 +8865,14 @@ export async function registerRoutes(
           }
 
           const peptidesNames = (report.peptides || []).map((p: any) => p.name).join(", ");
-          const firstName = responses.pep_name || responses.prenom || (order.email.split("@")[0]);
-
           if (body.sendConfirmation !== false && claimed) {
-            const scheduledAt = await (async () => {
-              try {
-                const fresh = await storage.getOrder(order.id);
-                return fresh ? await resolvePeptidesEmailScheduledAt(fresh) : new Date();
-              } catch { return new Date(); }
-            })();
-            await sendPeptidesOrderConfirmationEmail(order.email, {
-              firstName,
-              amountEur: (order.finalAmountCents || 0) / 100,
-              promoCode: (order as any).promoCode || null,
-              peptidesNames,
-              scheduledDeliveryAt: scheduledAt,
-              bloodCreditsCount: Array.isArray(report.promoCodesGenerated) ? report.promoCodesGenerated.length : 0,
-              orderId: order.id,
-            }).catch((err) => console.error("[Force-Paid] Confirmation email failed:", err));
-            result.confirmationSent = true;
+            const fresh = await storage.getOrder(order.id).catch(() => undefined);
+            result.confirmationSent = fresh
+              ? await ensurePeptidesOrderConfirmation(fresh, report).catch((err) => {
+                  console.error("[Force-Paid] Confirmation email failed:", err);
+                  return false;
+                })
+              : false;
           }
           result.peptidesNames = peptidesNames;
           result.reportLink = `${getBaseUrl()}/peptides/${saved.id}`;
@@ -11230,6 +11220,15 @@ export async function registerRoutes(
             });
             console.log(`[Webhook] Order ${order.id} marked as paid via webhook`);
 
+            if (order.productType === "PEPTIDES_ENGINE") {
+              const paidOrder = await storage.getOrder(order.id).catch(() => undefined);
+              if (paidOrder) {
+                await ensurePeptidesOrderConfirmation(paidOrder).catch((error) => {
+                  console.error(`[Webhook] Peptides confirmation failed for ${order.email}:`, error);
+                });
+              }
+            }
+
             // Meta CAPI , server-side Purchase event (recovers 30-50% lost to ITP/adblockers)
             // event_id must match the client-side Pixel eventID for Meta to dedup correctly.
             // Any failure is swallowed , CAPI must never block the webhook response.
@@ -11308,7 +11307,7 @@ export async function registerRoutes(
               }
               const promo2 = promoByType2[order.productType];
               const prodLabel2 = order.productType === "ELITE" ? "Ultimate Scan" : order.productType === "PREMIUM" ? "Anabolic Bioscan" : order.productType === "BLOOD_ANALYSIS" ? "Blood Analysis" : order.productType === "PEPTIDES_ENGINE" ? "Peptides Engine" : order.productName;
-              if (["ELITE", "PREMIUM", "BLOOD_ANALYSIS", "PEPTIDES_ENGINE"].includes(order.productType)) {
+              if (["ELITE", "PREMIUM", "BLOOD_ANALYSIS"].includes(order.productType)) {
                 const isPeptides = order.productType === "PEPTIDES_ENGINE";
                 const isBlood = order.productType === "BLOOD_ANALYSIS";
                 let msg: string;
@@ -14140,13 +14139,16 @@ export async function registerRoutes(
     }
   });
 
-  // 2. Create order and trigger protocol generation
+  // 2. Legacy post-checkout bridge. Generation is deliberately NOT performed
+  // in this request: every paid protocol must go through the durable cron claim
+  // and shared provider budget. This closes the old public skipPaymentCheck
+  // path that could create duplicate orders and unmetered AI calls.
   app.post("/api/peptides-engine/create", peptidesLimiter, async (req, res) => {
     try {
       const schema = z.object({
         email: z.string().trim().toLowerCase().email("Email invalide. Verifie qu'il contient bien un @ et un point dans le domaine (par exemple ton@gmail.com)."),
         responses: z.record(z.unknown()),
-        stripeSessionId: z.string().optional(),
+        stripeSessionId: z.string().min(10),
         skipPaymentCheck: z.boolean().optional(),
       });
       const { email, responses, stripeSessionId, skipPaymentCheck } = schema.parse(req.body);
@@ -14156,7 +14158,12 @@ export async function registerRoutes(
         return;
       }
 
-      // Safety gate: hard block on cancer history
+      if (skipPaymentCheck) {
+        res.status(403).json({ error: "Le contournement du paiement est desactive" });
+        return;
+      }
+
+      // Safety gate remains deterministic and costs zero provider tokens.
       const safetyCheck = checkPeptidesSafetyGate(responses);
       if (!safetyCheck.safe) {
         console.warn(`[PeptidesEngine] Safety gate triggered for ${email}: ${safetyCheck.reason}`);
@@ -14167,169 +14174,44 @@ export async function registerRoutes(
         return;
       }
 
-      // Create order record
-      let order;
-      try {
-        order = await storage.createOrder({
-          email,
-          productType: "PEPTIDES_ENGINE",
-          productName: "Peptides Engine",
-          amountCents: 29900,
-          currency: "eur",
-          stripeCheckoutSessionId: stripeSessionId ?? null,
-          ipAddress: (req as any).ip ?? null,
-          userAgent: req.headers["user-agent"] ?? null,
-          metadata: { responsesCount: Object.keys(responses).length },
-        });
-        console.log(`[PeptidesEngine] Order created: ${order.id} for ${email}`);
-      } catch (orderErr) {
-        console.error("[PeptidesEngine] Order creation failed:", orderErr);
-        // Continue , don't block generation if order recording fails
+      const order = await storage.getOrderByStripeSession(stripeSessionId);
+      if (!order || order.productType !== "PEPTIDES_ENGINE" || order.email.trim().toLowerCase() !== email) {
+        res.status(404).json({ error: "Commande Peptides Engine introuvable" });
+        return;
       }
 
-      // Check payment confirmation (Stripe session or explicit override)
-      let paymentConfirmed = Boolean(skipPaymentCheck);
-      if (!paymentConfirmed && stripeSessionId) {
-        try {
-          const existingOrder = await storage.getOrderByStripeSession(stripeSessionId);
-          paymentConfirmed = existingOrder?.status === "paid";
-        } catch {
-          // Non-blocking
-        }
-      }
+      // Preserve the questionnaire on the canonical paid order. No duplicate
+      // order is ever created by this compatibility endpoint.
+      await storage.setOrderMetadataKey(order.id, "peptidesResponses", responses);
+      await storage.saveBurnoutProgress({
+        email: `peptides::${email}`,
+        currentSection: 38,
+        totalSections: 38,
+        responses,
+      }).catch(() => {});
 
-      if (!paymentConfirmed) {
+      if (order.status !== "paid") {
         res.status(202).json({
           success: true,
           status: "pending_payment",
           message: "Paiement en attente , le protocole sera généré après confirmation.",
-          orderId: order?.id ?? null,
+          orderId: order.id,
         });
         return;
       }
 
-      // CROSS-ORDER PROTECTION: before firing a 60s AI generation, check if ANY
-      // other paid Peptides order for this email already has a reportId. If yes,
-      // short-circuit with the existing report , prevents the inline path from
-      // racing with the autogen cron or a prior confirm-session call.
-      {
-        const cross = await storage.hasAnyPeptidesReportForEmail(email).catch(() => ({ exists: false } as any));
-        if (cross.exists) {
-          console.warn(`[PeptidesEngine inline] ⏭️ Existing report for ${email} → reusing ${cross.existingReportId}, NOT regenerating`);
-          res.json({
-            success: true,
-            reportId: cross.existingReportId,
-            reused: true,
-            existingOrderId: cross.existingOrderId,
-          });
-          return;
-        }
-      }
-
-      // Generate protocol (fire-and-forget for long operations, but we await here
-      // since we need the report ID for the response)
-      let reportId: string | null = null;
-      try {
-        const report = await generatePeptidesProtocol(responses, email, "coached", {
-          ...(order?.id ? { orderId: order.id } : {}),
-          consentAccepted: hasValidPeptidesConsent((order?.metadata as any)?.peptidesEngineConsent),
-        });
-
-        // Store report using burnout_reports table as generic JSON store
-        const record = await storage.createBurnoutReport({
-          email: `peptides::${email}`,
-          responses,
-          report,
-        });
-        reportId = record.id;
-
-        // Link order to report if order was created
-        if (order) {
-          await storage.updateOrder(order.id, {
-            status: "paid",
-            metadata: {
-              ...(order.metadata as object ?? {}),
-              peptidesReportId: reportId,
-            },
-          }).catch(() => {});
-        }
-
-        // Deliver via email
-        const promoCodesBlock = buildPeptidesBloodCreditsBlock(
-          (order?.metadata as any)?.peptidesTier ?? report.tier,
-          `${getBaseUrl(req)}/blood-dashboard`
-        );
-        const coachingBlock = buildPeptidesCoachingDeductionBlock(
-          (order?.metadata as any)?.peptidesTier ?? null
-        );
-
-        const peptidesNames = report.peptides?.map((p) => p.name).join(", ") ?? "voir rapport";
-        const deliveryMessage =
-          `Ton protocole peptides est prêt.\n\n` +
-          `Peptides recommandés : ${peptidesNames}\n\n` +
-          `Accède à ton rapport complet ici :\n${getBaseUrl(req)}/peptides/${reportId}` +
-          promoCodesBlock +
-          coachingBlock +
-          `\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`;
-
-        // Delivery scheduling: avoid the "20 min after payment" automation
-        // signal. Report is generated now, email goes out at scheduledAt
-        // (paidAt + 4-8h, business hours). Autogen recovery loop polls
-        // every 5 min and sends once due.
-        const { due: deliveryDue, scheduledAt: deliveryScheduledAt } = order
-          ? await isPeptidesEmailDeliveryDue(order)
-          : { due: true, scheduledAt: new Date() };
-        if (deliveryDue) {
-          await sendCTAEmail(
-            email,
-            "Ton protocole peptides personnalisé est prêt",
-            deliveryMessage
-          ).catch((err) => console.error("[PeptidesEngine] Delivery email failed:", err));
-        } else {
-          console.log(
-            `[PeptidesEngine] Delivery email DEFERRED for ${email} until ${deliveryScheduledAt.toISOString()} (anti-automation gate)`
-          );
-          // Immediate confirmation email so the client knows the payment landed.
-          // Without this, they pay 199-299 EUR and see zero feedback for hours.
-          if (order?.id) {
-            const alreadyConfirmed = await storage.hasPeptidesOrderConfirmationBeenSent(email).catch(() => false);
-            if (!alreadyConfirmed) {
-              const firstName = (order.metadata as any)?.peptidesResponses?.prenom
-                || (order.email ? order.email.split("@")[0] : undefined);
-              sendPeptidesOrderConfirmationEmail(email, {
-                firstName,
-                amountEur: ((order as any).finalAmountCents || 0) / 100,
-                promoCode: (order as any).promoCode || null,
-                peptidesNames,
-                scheduledDeliveryAt: deliveryScheduledAt,
-                bloodCreditsCount: Array.isArray(report.promoCodesGenerated) ? report.promoCodesGenerated.length : 0,
-                orderId: order.id,
-              }).catch((err) => console.error("[PeptidesEngine] Confirmation email failed:", err));
-            }
-          }
-        }
-
-        // Clean up progress
-        await storage.saveBurnoutProgress({
-          email: `peptides::${email}`,
-          currentSection: 99,
-          totalSections: 38,
-          responses: {},
-        }).catch(() => {});
-
-        res.json({
-          success: true,
-          status: "generated",
-          reportId,
-          peptideCount: report.peptides?.length ?? 0,
-        });
-      } catch (genErr: any) {
-        console.error("[PeptidesEngine] Generation error:", genErr);
-        res.status(500).json({
-          error: "Erreur lors de la génération du protocole. Réessaie dans quelques minutes.",
-          orderId: order?.id ?? null,
-        });
-      }
+      const paidOrder = await storage.getOrder(order.id) || order;
+      await ensurePeptidesOrderConfirmation(paidOrder).catch((error) => {
+        console.error(`[PeptidesEngine] Confirmation recovery failed for ${email}:`, error);
+      });
+      const reportId = ((paidOrder.metadata as any) || {}).peptidesReportId || null;
+      res.status(reportId ? 200 : 202).json({
+        success: true,
+        status: reportId ? "report_ready" : "queued",
+        orderId: order.id,
+        reportId,
+        generation: "durable_cron",
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
         res.status(400).json({ error: "Données invalides", details: error.errors });
@@ -14555,6 +14437,88 @@ export async function registerRoutes(
     return { due: Date.now() >= scheduledAt.getTime(), scheduledAt };
   }
 
+  const classifyPeptidesEmailResult = (
+    result: SendPulseSendResult,
+  ): "ACCEPTED" | "FAILED" | "UNKNOWN" => {
+    if (result.result === true) return "ACCEPTED";
+    return result.reconcileRequired ? "UNKNOWN" : "FAILED";
+  };
+
+  async function ensurePeptidesOrderConfirmation(order: any, report?: any): Promise<boolean> {
+    const email = String(order?.email || "").trim().toLowerCase();
+    if (!order?.id || !email || order?.productType !== "PEPTIDES_ENGINE" || order?.status !== "paid") return false;
+    const meta = (order.metadata || {}) as Record<string, any>;
+    if (meta.peptidesEmailHold === true || meta.peptidesEmailHold === "true") return false;
+
+    const tracked = await storage.hasPeptidesOrderConfirmationBeenSent(email).catch(() => false);
+    if (tracked) {
+      await storage.finalizePeptidesOrderConfirmation(order.id, "ACCEPTED").catch(() => {});
+      return true;
+    }
+
+    const claimed = await storage.claimPeptidesOrderConfirmation(order.id);
+    if (!claimed) return false;
+
+    const { scheduledAt } = await isPeptidesEmailDeliveryDue(order);
+    const peptidesNames = report?.peptides?.map((item: any) => item.name).filter(Boolean).join(", ") || undefined;
+    const result = await sendPeptidesOrderConfirmationEmailResult(email, {
+      firstName: meta?.peptidesResponses?.prenom || email.split("@")[0],
+      amountEur: Number(order.finalAmountCents || 0) / 100,
+      promoCode: order.promoCode || null,
+      peptidesNames,
+      scheduledDeliveryAt: scheduledAt,
+      bloodCreditsCount: Array.isArray(report?.promoCodesGenerated) ? report.promoCodesGenerated.length : 0,
+      orderId: order.id,
+    });
+    const state = classifyPeptidesEmailResult(result);
+    await storage.finalizePeptidesOrderConfirmation(order.id, state).catch(() => {});
+    if (state === "UNKNOWN") {
+      console.error(`[Peptides Automation] Confirmation outcome UNKNOWN for ${email}; blind retry blocked`);
+    }
+    return state === "ACCEPTED";
+  }
+
+  async function deliverPeptidesReportOnce(input: {
+    order: any;
+    reportId: string;
+    report: any;
+    promoText?: string;
+    coachingText?: string;
+  }): Promise<boolean> {
+    const { order, reportId, report } = input;
+    const email = String(order?.email || "").trim().toLowerCase();
+    if (!order?.id || !email || !reportId) return false;
+    const meta = (order.metadata || {}) as Record<string, any>;
+    if (meta.peptidesEmailHold === true || meta.peptidesEmailHold === "true") return false;
+
+    const tracked = await storage.hasPeptidesDeliveryEmailBeenSent(email).catch(() => false);
+    if (tracked) {
+      await storage.finalizePeptidesReportDelivery(order.id, reportId, "ACCEPTED").catch(() => {});
+      return true;
+    }
+
+    const claimed = await storage.claimPeptidesReportDelivery(order.id, reportId);
+    if (!claimed) return false;
+
+    const baseUrl = getBaseUrl();
+    const peptidesNames = report?.peptides?.map((item: any) => item.name).filter(Boolean).join(", ") || "voir le rapport";
+    const result = await sendPeptidesReportReadyEmail(email, {
+      firstName: meta?.peptidesResponses?.prenom || email.split("@")[0],
+      orderId: order.id,
+      reportId,
+      reportUrl: `${baseUrl}/peptides/${reportId}`,
+      peptidesNames,
+      promoText: input.promoText,
+      coachingText: input.coachingText,
+    });
+    const state = classifyPeptidesEmailResult(result);
+    await storage.finalizePeptidesReportDelivery(order.id, reportId, state).catch(() => {});
+    if (state === "UNKNOWN") {
+      console.error(`[Peptides Automation] Delivery outcome UNKNOWN for ${email} (${reportId}); blind retry blocked`);
+    }
+    return state === "ACCEPTED";
+  }
+
   // Auto-recovery: generate missing peptides reports every 5 minutes
   let autoGenRunning = false;
   let autoGenCycleCount = 0;
@@ -14617,6 +14581,13 @@ export async function registerRoutes(
           continue;
         }
 
+        // Payment confirmation is independent from AI generation. Even when
+        // the provider circuit is disabled or opens, every newly paid order
+        // receives one durable acknowledgement, protected by a DB lease.
+        await ensurePeptidesOrderConfirmation(order).catch((error) => {
+          console.error(`[Peptides Automation] Confirmation recovery failed for ${email}:`, error);
+        });
+
         // Recovery path: report exists but email never went out (e.g. SendPulse
         // returned false, network blip during initial autogen send). Without
         // this branch the cron skips forever because peptidesReportId is
@@ -14631,7 +14602,6 @@ export async function registerRoutes(
           const existingReport = existing.report as any;
 
           const baseUrl = getBaseUrl();
-          const peptidesNames = existingReport?.peptides?.map((p: any) => p.name).join(", ") ?? "voir rapport";
           const promoBlock = buildPeptidesBloodCreditsBlock(
             (order.metadata as any)?.peptidesTier ?? existingReport?.tier,
             `${baseUrl}/blood-dashboard`
@@ -14645,22 +14615,6 @@ export async function registerRoutes(
             console.log(
               `[AutoGen] Recovery email DEFERRED for ${email} until ${recoveryScheduledAt.toISOString()}`
             );
-            // Immediate confirmation email so client knows order is registered
-            // (no zero-feedback window during the 4-8h anti-automation deferral).
-            const alreadyConfirmed = await storage.hasPeptidesOrderConfirmationBeenSent(email).catch(() => false);
-            if (!alreadyConfirmed) {
-              const firstName = (order.metadata as any)?.peptidesResponses?.prenom
-                || (order.email ? order.email.split("@")[0] : undefined);
-              sendPeptidesOrderConfirmationEmail(email, {
-                firstName,
-                amountEur: ((order as any).finalAmountCents || 0) / 100,
-                promoCode: (order as any).promoCode || null,
-                peptidesNames,
-                scheduledDeliveryAt: recoveryScheduledAt,
-                bloodCreditsCount: Array.isArray(existingReport?.promoCodesGenerated) ? existingReport.promoCodesGenerated.length : 0,
-                orderId: order.id,
-              }).catch((err) => console.error("[AutoGen Recovery] Confirmation email failed:", err));
-            }
             continue;
           }
 
@@ -14730,18 +14684,19 @@ export async function registerRoutes(
             continue;
           }
 
-          try {
-            const recovered = await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
-              `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${meta.peptidesReportId}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`,
-            );
-            if (recovered) {
-              console.log(`[AutoGen] ✅ Recovered delivery email for ${email} (report ${meta.peptidesReportId})`);
-              autoGenLastResult = `RECOVERED_EMAIL: ${email}`;
-            } else {
-              console.warn(`[AutoGen] ⚠️ Recovery email send returned false for ${email}, will retry next cycle`);
-            }
-          } catch (recErr) {
+          const recovered = await deliverPeptidesReportOnce({
+            order,
+            reportId: meta.peptidesReportId,
+            report: existingReport,
+            promoText: promoBlock,
+            coachingText: coachingBlock,
+          }).catch((recErr) => {
             console.error(`[AutoGen] Recovery email send threw for ${email}:`, recErr);
+            return false;
+          });
+          if (recovered) {
+            console.log(`[AutoGen] ✅ Recovered delivery email for ${email} (report ${meta.peptidesReportId})`);
+            autoGenLastResult = `RECOVERED_EMAIL: ${email}`;
           }
           continue;
         }
@@ -14860,9 +14815,6 @@ export async function registerRoutes(
           continue;
         }
 
-        // SAFETY #4: Final email dedup check right before send (in case tracking was recorded after our earlier check)
-        const stillNotEmailed = !(await storage.hasPeptidesDeliveryEmailBeenSent(email).catch(() => false));
-
         const baseUrl = getBaseUrl();
         const peptidesNames = report.peptides?.map((p: any) => p.name).join(", ") ?? "voir rapport";
         const promoBlock = buildPeptidesBloodCreditsBlock(
@@ -14878,44 +14830,24 @@ export async function registerRoutes(
         let deliveryScheduledAtIso = "";
         // Anti-automation delivery gate: gen now, deliver later
         const { due: newReportDue, scheduledAt: newReportScheduledAt } = await isPeptidesEmailDeliveryDue(order);
-        if (stillNotEmailed && !newReportDue) {
+        if (!newReportDue) {
           deliveryDeferred = true;
           deliveryScheduledAtIso = newReportScheduledAt.toISOString();
           console.log(
             `[AutoGen] New report email DEFERRED for ${email} until ${deliveryScheduledAtIso} (recovery loop will retry)`
           );
-          // Immediate confirmation email so client knows order is registered
-          // (no zero-feedback window during the 4-8h anti-automation deferral).
-          const alreadyConfirmed = await storage.hasPeptidesOrderConfirmationBeenSent(email).catch(() => false);
-          if (!alreadyConfirmed) {
-            const firstName = (order.metadata as any)?.peptidesResponses?.prenom
-              || (responses as any)?.prenom
-              || (order.email ? order.email.split("@")[0] : undefined);
-            sendPeptidesOrderConfirmationEmail(email, {
-              firstName,
-              amountEur: ((order as any).finalAmountCents || 0) / 100,
-              promoCode: (order as any).promoCode || null,
-              peptidesNames,
-              scheduledDeliveryAt: newReportScheduledAt,
-              bloodCreditsCount: Array.isArray(report.promoCodesGenerated) ? report.promoCodesGenerated.length : 0,
-              orderId: order.id,
-            }).catch((err) => console.error("[AutoGen NewReport] Confirmation email failed:", err));
-          }
-        } else if (stillNotEmailed) {
-          try {
-            clientEmailSent = await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
-              `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`
-            );
-            if (clientEmailSent) {
-              console.log(`[AutoGen] ✅ Delivery email sent to ${email}`);
-            } else {
-              console.error(`[AutoGen] ⚠️ Delivery email returned false for ${email} , SendPulse probable issue`);
-            }
-          } catch (emailErr) {
-            console.error(`[AutoGen] ⚠️ Delivery email THREW for ${email}:`, emailErr);
-          }
         } else {
-          console.warn(`[AutoGen] ⚠️ Delivery email already sent to ${email} (last-moment check) , skipping`);
+          clientEmailSent = await deliverPeptidesReportOnce({
+            order,
+            reportId: saved.id,
+            report,
+            promoText: promoBlock,
+            coachingText: coachingBlock,
+          }).catch((emailErr) => {
+            console.error(`[AutoGen] ⚠️ Delivery email THREW for ${email}:`, emailErr);
+            return false;
+          });
+          if (clientEmailSent) console.log(`[AutoGen] ✅ Delivery email accepted for ${email}`);
         }
 
         try {

@@ -45,7 +45,13 @@ assert.match(peptidesPageSource, /assumer mes décisions d'achat et d'utilisatio
 assert.match(engineSource, /consentAccepted:\s*boolean/);
 assert.match(routesSource, /generatePeptidesProtocol\(responses, email, autoGenTier,[\s\S]{0,180}consentAccepted/);
 assert.match(routesSource, /generatePeptidesProtocol\(responses, order\.email, forcePaidTier,[\s\S]{0,180}consentAccepted/);
-assert.match(routesSource, /generatePeptidesProtocol\(responses, email, "coached",[\s\S]{0,180}consentAccepted/);
+const publicCreateStart = routesSource.indexOf('app.post("/api/peptides-engine/create"');
+const publicCreateEnd = routesSource.indexOf("// 3. Get generated report by ID", publicCreateStart);
+assert.ok(publicCreateStart >= 0 && publicCreateEnd > publicCreateStart);
+const publicCreateSource = routesSource.slice(publicCreateStart, publicCreateEnd);
+assert.match(publicCreateSource, /generation:\s*"durable_cron"/);
+assert.doesNotMatch(publicCreateSource, /generatePeptidesProtocol\(/);
+assert.doesNotMatch(publicCreateSource, /createOrder\(/);
 assert.match(routesSource, /generatePeptidesProtocol\(responses, email, manualTier,[\s\S]{0,180}consentAccepted/);
 assert.match(
   routesSource,

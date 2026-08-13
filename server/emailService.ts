@@ -178,7 +178,7 @@ function encodeBase64(str: string): string {
  * @param trackingData - Tracking metadata
  * @returns SendPulse response
  */
-type SendPulseSendResult = {
+export type SendPulseSendResult = {
   result: boolean;
   id?: string;
   error?: any;
@@ -313,6 +313,7 @@ async function fetchSendPulseLiveRecordDetails(
 const isCriticalSendPulseEmail = (emailType: string, subject: string): boolean => {
   const normalized = normalizeSendPulseText(subject);
   return emailType === "sendReportReadyEmail"
+    || emailType === "sendPeptidesReportReadyEmail"
     || emailType === "sendReportRegeneratedEmail"
     || emailType === "sendBloodAnalysisHtmlEmail"
     || emailType === "sendPeptidesOrderConfirmation"
@@ -533,6 +534,8 @@ async function sendEmailWithTracking(
     const liveLookupMetadata: Record<string, any> = {};
     const criticalEmail = isCriticalSendPulseEmail(trackingData.emailType, emailPayload.subject);
     const allowAcceptedWithoutLiveVerification = trackingData.emailType === "sendReportReadyEmail"
+      || trackingData.emailType === "sendPeptidesReportReadyEmail"
+      || trackingData.emailType === "sendPeptidesOrderConfirmation"
       || trackingData.emailType === "sendReportRegeneratedEmail";
     let liveDeliveryFailure: Record<string, unknown> | null = null;
 
@@ -5805,7 +5808,7 @@ export async function sendPeptidesCycle2ReorderEmail(
 // report delivery (4-8h anti-automation delay). Without this, clients pay
 // 199-299 EUR and receive zero feedback for hours, thinking the payment
 // failed. Apple-clean theme per Achzod brand policy (white + Apple blue).
-export async function sendPeptidesOrderConfirmationEmail(
+export async function sendPeptidesOrderConfirmationEmailResult(
   email: string,
   opts: {
     firstName?: string;
@@ -5816,7 +5819,7 @@ export async function sendPeptidesOrderConfirmationEmail(
     bloodCreditsCount?: number;
     orderId: string;
   }
-): Promise<boolean> {
+): Promise<SendPulseSendResult> {
   try {
     const firstName = (opts.firstName || email.split("@")[0]).trim();
     const deliveryParis = opts.scheduledDeliveryAt.toLocaleString("fr-FR", {
@@ -5948,6 +5951,14 @@ Réf. commande : ${opts.orderId.slice(0,8)}`;
       {
         emailType: "sendPeptidesOrderConfirmation",
         recipientEmail: email,
+        // The route already owns the persistent DB lease. This hook marks the
+        // exact point at which the provider POST begins so a network timeout is
+        // classified UNKNOWN (manual reconciliation), never as a safe retry.
+        beforeProviderPost: async () => {},
+        // Peptides transactional mail must stay on the configured SendPulse
+        // identity. A fallback provider would also create a second ambiguous
+        // POST surface that cannot be reconciled with the same task id.
+        allowProviderFallback: false,
         metadata: {
           orderId: opts.orderId,
           amountEur: opts.amountEur,
@@ -5956,9 +5967,89 @@ Réf. commande : ${opts.orderId.slice(0,8)}`;
         },
       }
     );
-    return result.result === true;
+    return result;
   } catch (error) {
     console.error("[SendPulse] Error sending peptides order confirmation:", error);
-    return false;
+    return { result: false, error: String(error) };
   }
+}
+
+export async function sendPeptidesOrderConfirmationEmail(
+  email: string,
+  opts: Parameters<typeof sendPeptidesOrderConfirmationEmailResult>[1],
+): Promise<boolean> {
+  const result = await sendPeptidesOrderConfirmationEmailResult(email, opts);
+  return result.result === true;
+}
+
+export async function sendPeptidesReportReadyEmail(
+  email: string,
+  opts: {
+    firstName?: string;
+    orderId: string;
+    reportId: string;
+    reportUrl: string;
+    peptidesNames: string;
+    promoText?: string;
+    coachingText?: string;
+  },
+): Promise<SendPulseSendResult> {
+  const esc = (value: unknown) => String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+  const firstName = esc((opts.firstName || email.split("@")[0]).trim());
+  const reportUrl = esc(opts.reportUrl);
+  const peptidesNames = esc(opts.peptidesNames || "voir le rapport");
+  const optionalRows = [opts.promoText, opts.coachingText]
+    .filter((value): value is string => Boolean(value && value.trim()))
+    .map((value) => `<div style="margin-top:12px;padding:14px 16px;background:#f5f5f7;border-radius:10px;color:#515154;font-size:13px;line-height:1.55;white-space:pre-line;">${esc(value.trim())}</div>`)
+    .join("");
+
+  const html = `<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ton protocole Peptides Engine est prêt</title></head>
+<body style="margin:0;padding:0;background:#f5f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1d1d1f;">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f5f5f7;padding:40px 14px;"><tr><td align="center">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:580px;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.05);">
+<tr><td style="padding:34px 38px 12px;"><p style="margin:0;color:#86868b;font-size:12px;letter-spacing:1px;text-transform:uppercase;font-weight:700;">ApexLabs , Peptides Engine</p><h1 style="margin:10px 0 0;font-size:29px;line-height:1.2;letter-spacing:-.6px;">Ton protocole est prêt</h1></td></tr>
+<tr><td style="padding:8px 38px 0;"><p style="margin:0;color:#515154;font-size:15px;line-height:1.65;">Salut ${firstName}, j'ai terminé la lecture de ton dossier et calibré ton protocole. Tu retrouves dans le rapport les dosages, le calendrier, les quantités opérationnelles, la reconstitution et le suivi.</p></td></tr>
+<tr><td style="padding:24px 38px 0;"><div style="padding:18px 20px;border:1px solid #d2d2d7;border-radius:12px;"><p style="margin:0;color:#86868b;font-size:12px;text-transform:uppercase;letter-spacing:.7px;font-weight:700;">Sélection</p><p style="margin:8px 0 0;color:#1d1d1f;font-size:15px;line-height:1.55;font-weight:600;">${peptidesNames}</p></div>${optionalRows}</td></tr>
+<tr><td align="center" style="padding:28px 38px 0;"><a href="${reportUrl}" style="display:inline-block;background:#0071e3;color:#fff;text-decoration:none;font-size:15px;font-weight:700;padding:15px 25px;border-radius:999px;">Ouvrir mon protocole complet</a></td></tr>
+<tr><td style="padding:26px 38px 38px;"><p style="margin:0;color:#515154;font-size:14px;line-height:1.6;">Conserve ce lien, il est personnel. Si quelque chose n'est pas clair après ta lecture, réponds directement à ce mail.</p><p style="margin:18px 0 0;color:#1d1d1f;font-size:15px;line-height:1.5;">À très vite,<br><strong>Achzod</strong></p><p style="margin:22px 0 0;padding-top:18px;border-top:1px solid #d2d2d7;color:#86868b;font-size:11px;line-height:1.5;">ApexLabs by Achzod , coaching@achzodcoaching.com<br>Commande ${esc(opts.orderId.slice(0, 8))} , rapport ${esc(opts.reportId.slice(0, 8))}</p></td></tr>
+</table></td></tr></table></body></html>`;
+
+  const text = `Salut ${opts.firstName || email.split("@")[0]},
+
+Ton protocole Peptides Engine est prêt.
+
+Sélection : ${opts.peptidesNames}
+
+Ouvre ton rapport complet : ${opts.reportUrl}
+${opts.promoText ? `\n${opts.promoText.trim()}\n` : ""}${opts.coachingText ? `\n${opts.coachingText.trim()}\n` : ""}
+Conserve ce lien, il est personnel. Si quelque chose n'est pas clair, réponds directement à ce mail.
+
+Achzod`;
+
+  return sendEmailWithTracking(
+    {
+      subject: "Ton protocole Peptides Engine personnalisé est prêt",
+      from: { name: SENDER_NAME, email: SENDER_EMAIL },
+      to: [{ email }],
+      html: encodeBase64(html),
+      text,
+    },
+    {
+      emailType: "sendPeptidesReportReadyEmail",
+      recipientEmail: email,
+      auditId: opts.reportId,
+      auditType: "PEPTIDES_ENGINE",
+      // See confirmation above: after the provider POST starts, ambiguity must
+      // block blind retries to prevent duplicate client delivery.
+      beforeProviderPost: async () => {},
+      allowProviderFallback: false,
+      metadata: { orderId: opts.orderId, reportId: opts.reportId },
+    },
+  );
 }
