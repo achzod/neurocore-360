@@ -59,6 +59,13 @@ test("production flow separates payment confirmation from provider generation", 
   assert.match(routes, /maxCandidates:\s*1/);
   assert.match(routes, /providerRetries:\s*1/);
   assert.match(routes, /deliverPeptidesReportOnce\(/);
+  assert.match(routes, /PEPTIDES_TRANSACTIONAL_AUTOMATION_ENABLED/);
+  assert.match(routes, /PEPTIDES_AUTOMATION_START_AT/);
+  assert.match(
+    routes,
+    /if \(!isPeptidesTransactionalAutomationEligible\(order\)\) continue;/,
+    "historical paid orders must be excluded before confirmation, recovery or generation",
+  );
 });
 
 test("public compatibility endpoint cannot bypass payment or call the provider", () => {

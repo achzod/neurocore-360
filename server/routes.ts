@@ -14444,11 +14444,22 @@ export async function registerRoutes(
     return result.reconcileRequired ? "UNKNOWN" : "FAILED";
   };
 
+  function isPeptidesTransactionalAutomationEligible(order: any): boolean {
+    if (String(process.env.PEPTIDES_TRANSACTIONAL_AUTOMATION_ENABLED || "").trim().toLowerCase() !== "true") {
+      return false;
+    }
+    const startAtMs = Date.parse(String(process.env.PEPTIDES_AUTOMATION_START_AT || ""));
+    if (!Number.isFinite(startAtMs)) return false;
+    const paidAtMs = order?.paidAt ? new Date(order.paidAt).getTime() : Number.NaN;
+    return Number.isFinite(paidAtMs) && paidAtMs >= startAtMs;
+  }
+
   async function ensurePeptidesOrderConfirmation(order: any, report?: any): Promise<boolean> {
     const email = String(order?.email || "").trim().toLowerCase();
     if (!order?.id || !email || order?.productType !== "PEPTIDES_ENGINE" || order?.status !== "paid") return false;
     const meta = (order.metadata || {}) as Record<string, any>;
     if (meta.peptidesEmailHold === true || meta.peptidesEmailHold === "true") return false;
+    if (!isPeptidesTransactionalAutomationEligible(order)) return false;
 
     const tracked = await storage.hasPeptidesOrderConfirmationBeenSent(email).catch(() => false);
     if (tracked) {
@@ -14490,6 +14501,7 @@ export async function registerRoutes(
     if (!order?.id || !email || !reportId) return false;
     const meta = (order.metadata || {}) as Record<string, any>;
     if (meta.peptidesEmailHold === true || meta.peptidesEmailHold === "true") return false;
+    if (!isPeptidesTransactionalAutomationEligible(order)) return false;
 
     const tracked = await storage.hasPeptidesDeliveryEmailBeenSent(email).catch(() => false);
     if (tracked) {
@@ -14535,6 +14547,9 @@ export async function registerRoutes(
       lastResult: autoGenLastResult,
       running: autoGenRunning,
       generationEnabled: isPeptidesAutogenEnabled(),
+      transactionalAutomationEnabled:
+        String(process.env.PEPTIDES_TRANSACTIONAL_AUTOMATION_ENABLED || "").trim().toLowerCase() === "true",
+      automationStartAt: process.env.PEPTIDES_AUTOMATION_START_AT || null,
       circuit: getPeptidesGenerationCircuitConfig(),
     });
   });
@@ -14580,6 +14595,7 @@ export async function registerRoutes(
           console.log(`[AutoGen] Peptides delivery HOLD for ${email} (order ${order.id})`);
           continue;
         }
+        if (!isPeptidesTransactionalAutomationEligible(order)) continue;
 
         // Payment confirmation is independent from AI generation. Even when
         // the provider circuit is disabled or opens, every newly paid order
