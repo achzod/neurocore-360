@@ -119,6 +119,13 @@ import {
   refreshPeptauraCatalog,
   refreshPeptauraPricingForDelivery,
 } from "./peptidesEngine";
+import {
+  evaluatePeptidesGenerationEligibility,
+  getPeptidesGenerationCircuitConfig,
+  isPeptidesAutogenEnabled,
+  sanitizePeptidesGenerationError,
+} from "./peptidesGenerationCircuitBreaker";
+import { getAICostBudgetSummary } from "./aiCostBudgetController";
 import { createRateLimiter } from "./middleware/rateLimit";
 import {
   scrapeArticleFromUrl,
@@ -1196,6 +1203,31 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("[Admin AI Usage Costs] Error:", error?.message || error);
       res.status(500).json({ success: false, error: "Impossible de charger les couts API" });
+    }
+  });
+
+  app.get("/api/admin/ai-cost-budget-summary", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    const product = String(req.query.product || "peptides").trim().toLowerCase();
+    // Only products with a configured pre-call controller may be queried.
+    // This prevents arbitrary profile/table scans through a free-form value.
+    const allowedProducts = new Set(["peptides"]);
+    if (!allowedProducts.has(product)) {
+      res.status(400).json({
+        success: false,
+        error: "Produit non supporte",
+        allowedProducts: [...allowedProducts],
+      });
+      return;
+    }
+    try {
+      res.json({ success: true, ...(await getAICostBudgetSummary(product)) });
+    } catch (error: any) {
+      console.error("[Admin AI Cost Budget Summary] Error:", error?.message || error);
+      res.status(500).json({
+        success: false,
+        error: "Impossible de charger le controle budget API",
+      });
     }
   });
 
@@ -5809,7 +5841,9 @@ export async function registerRoutes(
       // Generate synchronously (admin endpoint = manual trigger, can wait)
       const { generatePeptidesProtocol } = await import("./peptidesEngine");
       const manualTier = ((pepOrder?.metadata as any)?.peptidesTier as "solo" | "coached" | "tracked" | undefined) ?? "coached";
-      const report = await generatePeptidesProtocol(responses, email, manualTier);
+      const report = await generatePeptidesProtocol(responses, email, manualTier, {
+        ...(pepOrder?.id ? { orderId: pepOrder.id } : {}),
+      });
 
       let saved;
       let claimed = true;
@@ -6360,7 +6394,9 @@ export async function registerRoutes(
       (async () => {
         try {
           const { generatePeptidesProtocol } = await import("./peptidesEngine");
-          const report = await generatePeptidesProtocol(responses as any, testEmail);
+          const report = await generatePeptidesProtocol(responses as any, testEmail, "coached", {
+            orderId: `test:${jobTag}`,
+          });
           const rows = await storage.getAllBurnoutReports();
           const row = rows.find((r: any) => r.email === jobTag);
           if (row) {
@@ -8803,7 +8839,9 @@ export async function registerRoutes(
         try {
           const { generatePeptidesProtocol } = await import("./peptidesEngine");
           const forcePaidTier = ((order.metadata as any)?.peptidesTier as "solo" | "coached" | "tracked" | undefined) ?? "coached";
-          const report = await generatePeptidesProtocol(responses, order.email, forcePaidTier);
+          const report = await generatePeptidesProtocol(responses, order.email, forcePaidTier, {
+            orderId: order.id,
+          });
           const saved = await storage.createBurnoutReport({
             email: `peptides::${order.email}`,
             responses,
@@ -14184,7 +14222,9 @@ export async function registerRoutes(
       // since we need the report ID for the response)
       let reportId: string | null = null;
       try {
-        const report = await generatePeptidesProtocol(responses, email);
+        const report = await generatePeptidesProtocol(responses, email, "coached", {
+          ...(order?.id ? { orderId: order.id } : {}),
+        });
 
         // Store report using burnout_reports table as generic JSON store
         const record = await storage.createBurnoutReport({
@@ -14516,7 +14556,14 @@ export async function registerRoutes(
   // Diagnostic endpoint
   app.get("/api/admin/autogen-status", (req, res) => {
     if (!requireAdminAuth(req, res)) return;
-    res.json({ cycles: autoGenCycleCount, lastRun: autoGenLastRun, lastResult: autoGenLastResult, running: autoGenRunning });
+    res.json({
+      cycles: autoGenCycleCount,
+      lastRun: autoGenLastRun,
+      lastResult: autoGenLastResult,
+      running: autoGenRunning,
+      generationEnabled: isPeptidesAutogenEnabled(),
+      circuit: getPeptidesGenerationCircuitConfig(),
+    });
   });
 
   console.log("[AutoGen] ✅ setInterval registered (5min cycle)");
@@ -14549,6 +14596,8 @@ export async function registerRoutes(
       autoGenLastRun = new Date().toISOString();
       console.log(`[AutoGen] Cycle #${autoGenCycleCount}: ${orders.length} total orders, ${peptidesOrders.length} peptides paid, ${missing.length} missing reports`);
       const now = new Date();
+      const peptidesAutogenEnabled = isPeptidesAutogenEnabled();
+      const peptidesCircuitConfig = getPeptidesGenerationCircuitConfig();
 
       for (const order of peptidesOrders) {
         const meta = order.metadata as any;
@@ -14687,6 +14736,32 @@ export async function registerRoutes(
           continue;
         }
 
+        // Generation is independently kill-switched from delivery recovery.
+        // Existing valid reports above can still be delivered while legacy
+        // missing orders are forbidden from spending unless explicitly enabled.
+        if (!peptidesAutogenEnabled) {
+          console.warn(`[AutoGen] Generation disabled (fail-closed) for missing order ${order.id}`);
+          continue;
+        }
+
+        const circuitEligibility = evaluatePeptidesGenerationEligibility(
+          meta,
+          peptidesCircuitConfig,
+        );
+        if (!circuitEligibility.eligible) {
+          if (circuitEligibility.reason === "ATTEMPT_CAP" || circuitEligibility.reason === "COST_CAP") {
+            await storage.markPeptidesGenerationNeedsReview(
+              order.id,
+              circuitEligibility.reason.toLowerCase(),
+              `Persistent Peptides generation circuit opened: ${circuitEligibility.reason}`,
+            ).catch(() => false);
+          }
+          console.warn(
+            `[AutoGen] Peptides generation blocked for ${email}: ${circuitEligibility.reason}`,
+          );
+          continue;
+        }
+
         const hoursSincePaid = (now.getTime() - new Date(order.paidAt!).getTime()) / (1000 * 60 * 60);
         // Wait at least 10 min before autogen kicks in , gives the inline generation pipeline
         // time to finish first. Prevents double report generation (race condition).
@@ -14731,9 +14806,38 @@ export async function registerRoutes(
           continue;
         }
 
+        const generationClaim = await storage.claimPeptidesGenerationAttempt(
+          order.id,
+          peptidesCircuitConfig,
+        );
+        if (!generationClaim) {
+          console.warn(`[AutoGen] Peptides generation claim lost for ${email}; no provider call made`);
+          continue;
+        }
+
         const { generatePeptidesProtocol } = await import("./peptidesEngine");
         const autoGenTier = ((order.metadata as any)?.peptidesTier as "solo" | "coached" | "tracked" | undefined) ?? "coached";
-        const report = await generatePeptidesProtocol(responses, email, autoGenTier);
+        let report;
+        try {
+          // Autogen gets exactly one provider request. The engine's optional
+          // second quality candidate and transport retries are manual-only.
+          report = await generatePeptidesProtocol(responses, email, autoGenTier, {
+            maxCandidates: 1,
+            providerRetries: 1,
+            orderId: order.id,
+          });
+        } catch (generationError: any) {
+          const safeError = sanitizePeptidesGenerationError(generationError);
+          const reason = generationError?.code === "PEPTAURA_SOURCE_UNAVAILABLE"
+            ? "source_unavailable"
+            : "generation_failed";
+          await storage.markPeptidesGenerationNeedsReview(order.id, reason, safeError).catch(() => false);
+          autoGenLastResult = `NEEDS_REVIEW: ${email} (${reason})`;
+          console.error(
+            `[AutoGen] Peptides generation failed once for ${email}; circuit opened (${reason})`,
+          );
+          continue;
+        }
         const saved = await storage.createBurnoutReport({ email: `peptides::${email}`, responses, report });
 
         // SAFETY #3: Atomic CAS , "first writer wins". If another process already set peptidesReportId

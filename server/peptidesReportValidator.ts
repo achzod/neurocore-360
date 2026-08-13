@@ -128,6 +128,28 @@ function escaped(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function weightKgPattern(weightKg: number): RegExp | null {
+  if (!Number.isFinite(weightKg) || weightKg <= 0) return null;
+
+  const [integerPart, rawFraction = ""] = String(weightKg).split(".");
+  const fraction = rawFraction.replace(/0+$/, "");
+  const decimalPart = fraction
+    ? `\\s*[.,]\\s*${escaped(fraction)}0*`
+    : "(?:\\s*[.,]\\s*0+)?";
+
+  // Numeric boundaries are stricter than \b: they reject 174.5 kg and
+  // 74.55 kg while accepting French/English decimal separators, optional
+  // spaces around the separator and harmless trailing zeroes.
+  return new RegExp(
+    `(?:^|[^0-9.,])${escaped(integerPart)}${decimalPart}\\s*kg\\b`,
+    "i",
+  );
+}
+
+export function reportMentionsWeightKg(value: string, weightKg: number): boolean {
+  return weightKgPattern(weightKg)?.test(searchable(String(value || ""))) ?? false;
+}
+
 function searchable(value: string): string {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
@@ -160,9 +182,7 @@ function validateReportPersonalization(
 
   const matchedFacts: string[] = [];
   const weightKg = Number(profile.weightKg || 0);
-  const weightPattern = Number.isFinite(weightKg) && weightKg > 0
-    ? new RegExp(`\\b${escaped(String(weightKg))}(?:[.,]0+)?\\s*kg\\b`, "i")
-    : null;
+  const weightPattern = weightKgPattern(weightKg);
   if (Number.isFinite(weightKg) && weightKg > 0) {
     if (!weightPattern?.test(synthesisSearch)) {
       errors.push(`personnalisation: poids ${weightKg} kg absent de la synthese`);

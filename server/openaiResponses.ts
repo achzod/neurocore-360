@@ -1,5 +1,12 @@
 import { createHash } from "crypto";
 import OpenAI from "openai";
+import {
+  completeAICostBudgetReservation,
+  markAICostBudgetReservationUncertain,
+  reserveAICostBudget,
+  type AICostBudgetContext,
+  type AICostBudgetReservation,
+} from "./aiCostBudgetController";
 
 export const OPENAI_REPORT_MODEL =
   process.env.OPENAI_REPORT_MODEL || "gpt-5.6-sol";
@@ -615,6 +622,7 @@ export interface OpenAITextRequest {
   background?: boolean;
   retries?: number;
   label?: string;
+  costBudget?: Pick<AICostBudgetContext, "product" | "orderId" | "estimatedCostUsd">;
 }
 
 export interface OpenAITextResult {
@@ -637,6 +645,7 @@ export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAIT
   let lastError: unknown;
 
   for (let attempt = 1; attempt <= attempts; attempt++) {
+    let budgetReservation: AICostBudgetReservation | null = null;
     try {
       console.log(
         `[OpenAIResponses] Starting${label}: ${request.profile}/${model}, effort=${profile.effort}, mode=${profile.mode || "standard"}, attempt=${attempt}/${attempts}`
@@ -653,6 +662,26 @@ export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAIT
       }
 
       const deadline = Date.now() + profile.timeoutMs;
+      const budgetContext = request.costBudget || request.profile === "peptides"
+        ? {
+            product: request.costBudget?.product || "peptides",
+            // Existing callers are protected immediately even before they are
+            // upgraded to pass the exact order UUID. safetyId is the client
+            // email in Peptides Engine, so this conservative fallback prevents
+            // repeated paid calls for the same buyer.
+            orderId: request.costBudget?.orderId
+              || `unscoped:${safeIdentifier(request.safetyId || request.label || "anonymous", request.profile)}`,
+            estimatedCostUsd: request.costBudget?.estimatedCostUsd || 1,
+            profile: request.profile,
+            label: request.label,
+          }
+        : null;
+      if (budgetContext) {
+        // The controller reads historical ai_usage_events before authorizing
+        // a new provider call, so the collector table must exist pre-call.
+        await ensureAIUsageTable();
+        budgetReservation = await reserveAICostBudget(budgetContext);
+      }
       let response: any = await client.responses.create(
         {
           model,
@@ -688,12 +717,18 @@ export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAIT
               })),
             ]);
             if (cancelResult.completed && cancelResult.cancelledResponse) {
-              await recordAIUsageEvent({
+              const telemetry = await recordAIUsageEvent({
                 response: cancelResult.cancelledResponse,
                 profile: request.profile,
                 label: request.label,
                 status: "cancelled_timeout",
               });
+              await completeAICostBudgetReservation(
+                budgetReservation,
+                telemetry?.costs.openaiGpt56SolUsd,
+                String(cancelResult.cancelledResponse?.id || "") || undefined,
+              );
+              budgetReservation = null;
             } else {
               console.warn(
                 `[OpenAIResponses] Cancel did not complete within 10s: ${response?.id || "unknown"}`,
@@ -709,12 +744,18 @@ export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAIT
       }
 
       if (response?.status !== "completed") {
-        await recordAIUsageEvent({
+        const telemetry = await recordAIUsageEvent({
           response,
           profile: request.profile,
           label: request.label,
           status: String(response?.status || "incomplete"),
         });
+        await completeAICostBudgetReservation(
+          budgetReservation,
+          telemetry?.costs.openaiGpt56SolUsd,
+          String(response?.id || "") || undefined,
+        );
+        budgetReservation = null;
         const detail =
           response?.error?.message ||
           response?.incomplete_details?.reason ||
@@ -737,6 +778,12 @@ export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAIT
         label: request.label,
         status: "completed",
       });
+      await completeAICostBudgetReservation(
+        budgetReservation,
+        usage?.costs.openaiGpt56SolUsd,
+        String(response?.id || "") || undefined,
+      );
+      budgetReservation = null;
       return {
         text,
         responseId: response.id,
@@ -747,6 +794,15 @@ export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAIT
         usage,
       };
     } catch (error: any) {
+      if (budgetReservation) {
+        await markAICostBudgetReservationUncertain(
+          budgetReservation,
+          error?.message || error,
+        ).catch((budgetError: any) => {
+          console.error(`[AICostBudget] Failed to settle reservation: ${budgetError?.message || budgetError}`);
+        });
+        budgetReservation = null;
+      }
       lastError = error;
       console.error(
         `[OpenAIResponses] Failed${label}: attempt=${attempt}/${attempts}, ${error?.message || error}`

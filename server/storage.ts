@@ -20,6 +20,10 @@ import type {
 } from "@shared/schema";
 import { ProductDisplayNames, ProductPriceCents } from "@shared/schema";
 import { calculateScoresFromResponses, generateFullAnalysis } from "./analysisEngine";
+import type {
+  PeptidesGenerationAttemptClaim,
+  PeptidesGenerationCircuitConfig,
+} from "./peptidesGenerationCircuitBreaker";
 import {
   DISCOVERY_SUPERSEDED_TERMINAL_SQL,
   isDiscoverySupersededTerminal,
@@ -283,6 +287,20 @@ export interface IStorage {
   claimPeptidesReportSlot(orderId: string, reportId: string): Promise<boolean>;
   /** Atomic JSONB merge: set a single metadata key without stomping concurrently-set keys. */
   setOrderMetadataKey(orderId: string, key: string, value: string | number | boolean): Promise<boolean>;
+  /**
+   * Atomically reserves one bounded Peptides provider attempt. The reservation
+   * and cost budget survive restarts because they live in order metadata.
+   */
+  claimPeptidesGenerationAttempt(
+    orderId: string,
+    config: PeptidesGenerationCircuitConfig,
+  ): Promise<PeptidesGenerationAttemptClaim | null>;
+  /** Opens the persistent circuit after any failed/source-blocked generation. */
+  markPeptidesGenerationNeedsReview(
+    orderId: string,
+    reason: string,
+    error: string,
+  ): Promise<boolean>;
   /** Cross-order protection: true if ANY paid Peptides order for this email already has a reportId.
    *  Catches duplicate-payment case (2 orders same email) ,  without this, each order wins its own
    *  CAS and generates a separate report (alexm2220 incident 2026-03-30). */
@@ -1079,7 +1097,13 @@ export class MemStorage implements IStorage {
     if (!order) return false;
     const meta = (order.metadata as any) ?? {};
     if (meta.peptidesReportId) return false;
-    order.metadata = { ...meta, peptidesReportId: reportId } as any;
+    order.metadata = {
+      ...meta,
+      peptidesReportId: reportId,
+      peptidesGenerationState: "SUCCEEDED",
+      peptidesGenerationLeaseUntil: "",
+      peptidesGenerationCompletedAt: new Date().toISOString(),
+    } as any;
     order.updatedAt = new Date();
     return true;
   }
@@ -1089,6 +1113,79 @@ export class MemStorage implements IStorage {
     if (!order) return false;
     const meta = (order.metadata as any) ?? {};
     order.metadata = { ...meta, [key]: value } as any;
+    order.updatedAt = new Date();
+    return true;
+  }
+
+  async claimPeptidesGenerationAttempt(
+    orderId: string,
+    config: PeptidesGenerationCircuitConfig,
+  ): Promise<PeptidesGenerationAttemptClaim | null> {
+    const order = this.memOrders.get(orderId);
+    if (!order) return null;
+    if (order.productType !== "PEPTIDES_ENGINE" || order.status !== "paid") return null;
+    const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
+    const attempts = Math.max(0, Number(meta.peptidesGenerationAttempts || 0));
+    const reserved = Math.max(0, Number(meta.peptidesGenerationReservedCostMicroUsd || 0));
+    const state = String(meta.peptidesGenerationState || "PENDING").toUpperCase();
+    const leaseUntilMs = new Date(String(meta.peptidesGenerationLeaseUntil || "")).getTime();
+    const nowMs = Date.now();
+    let hourlyReserved = 0;
+    let dailyReserved = 0;
+    for (const candidateOrder of this.memOrders.values()) {
+      if (candidateOrder.productType !== "PEPTIDES_ENGINE" || candidateOrder.status !== "paid") continue;
+      const candidateMeta = ((candidateOrder.metadata as any) ?? {}) as Record<string, any>;
+      const startedAtMs = new Date(String(candidateMeta.peptidesGenerationStartedAt || "")).getTime();
+      if (!Number.isFinite(startedAtMs)) continue;
+      const candidateReserved = Math.max(
+        0,
+        Number(candidateMeta.peptidesGenerationReservedCostMicroUsd || 0),
+      );
+      if (startedAtMs > nowMs - 60 * 60 * 1000) hourlyReserved += candidateReserved;
+      if (startedAtMs > nowMs - 24 * 60 * 60 * 1000) dailyReserved += candidateReserved;
+    }
+    if (meta.peptidesReportId) return null;
+    if (state === "NEEDS_REVIEW") return null;
+    if (state === "GENERATING" && Number.isFinite(leaseUntilMs) && leaseUntilMs > Date.now()) return null;
+    if (attempts >= config.maxAttempts) return null;
+    if (reserved + config.attemptBudgetMicroUsd > config.maxBudgetMicroUsd) return null;
+    if (hourlyReserved + config.attemptBudgetMicroUsd > config.maxHourlyBudgetMicroUsd) return null;
+    if (dailyReserved + config.attemptBudgetMicroUsd > config.maxDailyBudgetMicroUsd) return null;
+
+    const claim: PeptidesGenerationAttemptClaim = {
+      attemptCount: attempts + 1,
+      reservedCostMicroUsd: reserved + config.attemptBudgetMicroUsd,
+      leaseUntil: new Date(Date.now() + config.leaseMs).toISOString(),
+    };
+    order.metadata = {
+      ...meta,
+      peptidesGenerationState: "GENERATING",
+      peptidesGenerationAttempts: claim.attemptCount,
+      peptidesGenerationReservedCostMicroUsd: claim.reservedCostMicroUsd,
+      peptidesGenerationLeaseUntil: claim.leaseUntil,
+      peptidesGenerationStartedAt: new Date().toISOString(),
+      peptidesGenerationLastError: "",
+      peptidesGenerationReviewReason: "",
+    } as any;
+    order.updatedAt = new Date();
+    return claim;
+  }
+
+  async markPeptidesGenerationNeedsReview(
+    orderId: string,
+    reason: string,
+    error: string,
+  ): Promise<boolean> {
+    const order = this.memOrders.get(orderId);
+    if (!order) return false;
+    order.metadata = {
+      ...((order.metadata as any) ?? {}),
+      peptidesGenerationState: "NEEDS_REVIEW",
+      peptidesGenerationReviewReason: reason,
+      peptidesGenerationLastError: error,
+      peptidesGenerationFailedAt: new Date().toISOString(),
+      peptidesGenerationLeaseUntil: "",
+    } as any;
     order.updatedAt = new Date();
     return true;
   }
@@ -3363,7 +3460,12 @@ export class PgStorage implements IStorage {
     await this.ensureOrdersTableCreated();
     const result = await pool.query(
       `UPDATE orders
-         SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('peptidesReportId', $1::text),
+         SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
+               'peptidesReportId', $1::text,
+               'peptidesGenerationState', 'SUCCEEDED',
+               'peptidesGenerationLeaseUntil', '',
+               'peptidesGenerationCompletedAt', NOW()::text
+             ),
              updated_at = NOW()
        WHERE id = $2
          AND (metadata IS NULL OR metadata->>'peptidesReportId' IS NULL OR metadata->>'peptidesReportId' = '')
@@ -3385,6 +3487,123 @@ export class PgStorage implements IStorage {
        WHERE id = $3
        RETURNING id`,
       [key, jsonValue, orderId]
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async claimPeptidesGenerationAttempt(
+    orderId: string,
+    config: PeptidesGenerationCircuitConfig,
+  ): Promise<PeptidesGenerationAttemptClaim | null> {
+    await this.ensureOrdersTableCreated();
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      // One global transaction lock serializes claims across different order
+      // rows. Row locks alone cannot enforce an hourly/day budget atomically.
+      await client.query("SELECT pg_advisory_xact_lock(hashtext('peptides_autogen_budget_v1'))");
+      const windowResult = await client.query(
+        `SELECT
+           COALESCE(SUM(
+             CASE WHEN NULLIF(metadata->>'peptidesGenerationStartedAt', '')::timestamptz > NOW() - INTERVAL '1 hour'
+               THEN COALESCE((metadata->>'peptidesGenerationReservedCostMicroUsd')::bigint, 0)
+               ELSE 0 END
+           ), 0)::bigint AS hourly_reserved,
+           COALESCE(SUM(
+             CASE WHEN NULLIF(metadata->>'peptidesGenerationStartedAt', '')::timestamptz > NOW() - INTERVAL '24 hours'
+               THEN COALESCE((metadata->>'peptidesGenerationReservedCostMicroUsd')::bigint, 0)
+               ELSE 0 END
+           ), 0)::bigint AS daily_reserved
+         FROM orders
+         WHERE product_type = 'PEPTIDES_ENGINE'
+           AND status = 'paid'
+           AND NULLIF(metadata->>'peptidesGenerationStartedAt', '') IS NOT NULL`,
+      );
+      const hourlyReserved = Number(windowResult.rows[0]?.hourly_reserved || 0);
+      const dailyReserved = Number(windowResult.rows[0]?.daily_reserved || 0);
+      if (
+        hourlyReserved + config.attemptBudgetMicroUsd > config.maxHourlyBudgetMicroUsd
+        || dailyReserved + config.attemptBudgetMicroUsd > config.maxDailyBudgetMicroUsd
+      ) {
+        await client.query("ROLLBACK");
+        return null;
+      }
+
+      const result = await client.query(
+        `UPDATE orders
+          SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
+                'peptidesGenerationState', 'GENERATING',
+                'peptidesGenerationAttempts', COALESCE((metadata->>'peptidesGenerationAttempts')::int, 0) + 1,
+                'peptidesGenerationReservedCostMicroUsd', COALESCE((metadata->>'peptidesGenerationReservedCostMicroUsd')::bigint, 0) + $1::bigint,
+                'peptidesGenerationLeaseUntil', (NOW() + ($2::bigint * INTERVAL '1 millisecond'))::text,
+                'peptidesGenerationStartedAt', NOW()::text,
+                'peptidesGenerationLastError', '',
+                'peptidesGenerationReviewReason', ''
+              ),
+              updated_at = NOW()
+        WHERE id = $3
+          AND product_type = 'PEPTIDES_ENGINE'
+          AND status = 'paid'
+          AND COALESCE(metadata->>'peptidesReportId', '') = ''
+          AND COALESCE(metadata->>'peptidesGenerationState', 'PENDING') <> 'NEEDS_REVIEW'
+          AND (
+            COALESCE(metadata->>'peptidesGenerationState', 'PENDING') <> 'GENERATING'
+            OR COALESCE(NULLIF(metadata->>'peptidesGenerationLeaseUntil', '')::timestamptz, '-infinity'::timestamptz) <= NOW()
+          )
+          AND COALESCE((metadata->>'peptidesGenerationAttempts')::int, 0) < $4::int
+          AND COALESCE((metadata->>'peptidesGenerationReservedCostMicroUsd')::bigint, 0) + $1::bigint <= $5::bigint
+      RETURNING
+        (metadata->>'peptidesGenerationAttempts')::int AS attempt_count,
+        (metadata->>'peptidesGenerationReservedCostMicroUsd')::bigint AS reserved_cost_micro_usd,
+        metadata->>'peptidesGenerationLeaseUntil' AS lease_until`,
+        [
+          config.attemptBudgetMicroUsd,
+          config.leaseMs,
+          orderId,
+          config.maxAttempts,
+          config.maxBudgetMicroUsd,
+        ],
+      );
+      if ((result.rowCount ?? 0) === 0) {
+        await client.query("ROLLBACK");
+        return null;
+      }
+      await client.query("COMMIT");
+      return {
+        attemptCount: Number(result.rows[0].attempt_count),
+        reservedCostMicroUsd: Number(result.rows[0].reserved_cost_micro_usd),
+        leaseUntil: String(result.rows[0].lease_until),
+      };
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => {});
+      // Fail closed: a DB/counter error must never fall through to provider.
+      console.error("[Peptides Circuit] Atomic budget claim failed:", error);
+      return null;
+    } finally {
+      client.release();
+    }
+  }
+
+  async markPeptidesGenerationNeedsReview(
+    orderId: string,
+    reason: string,
+    error: string,
+  ): Promise<boolean> {
+    await this.ensureOrdersTableCreated();
+    const result = await pool.query(
+      `UPDATE orders
+          SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
+                'peptidesGenerationState', 'NEEDS_REVIEW',
+                'peptidesGenerationReviewReason', $1::text,
+                'peptidesGenerationLastError', $2::text,
+                'peptidesGenerationFailedAt', NOW()::text,
+                'peptidesGenerationLeaseUntil', ''
+              ),
+              updated_at = NOW()
+        WHERE id = $3
+          AND COALESCE(metadata->>'peptidesReportId', '') = ''
+      RETURNING id`,
+      [reason.slice(0, 120), error.slice(0, 800), orderId],
     );
     return (result.rowCount ?? 0) > 0;
   }

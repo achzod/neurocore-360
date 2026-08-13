@@ -23,6 +23,18 @@ import {
   pruneUnintegratedBonusPeptides,
   repairPeptidesReportContent,
 } from "./peptidesReportRepair";
+import {
+  assertPeptauraGenerationPreflight,
+  PeptauraSourceUnavailableError,
+} from "./peptidesSourcePreflight";
+import {
+  PEPTAURA_PRODUCT_FEED_URL,
+  parsePeptauraProductFeed,
+} from "./peptauraProductFeed";
+export {
+  evaluatePeptauraGenerationPreflight,
+  PeptauraSourceUnavailableError,
+} from "./peptidesSourcePreflight";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -301,6 +313,7 @@ interface PeptauraLiveListing {
   suspended: boolean;
   boxSize: number;
   marginRate: number;
+  productUrl?: string;
 }
 
 interface PeptauraLiveProductSnapshot {
@@ -309,6 +322,8 @@ interface PeptauraLiveProductSnapshot {
   listings: PeptauraLiveListing[];
   fetchedAt: string;
   live: boolean;
+  source?: "catalog_page" | "product_feed";
+  sourceGeneratedAt?: string;
 }
 
 const PEPTAURA_CACHE_TTL_MS = Number(process.env.PEPTAURA_CACHE_TTL_MS || 15 * 60 * 1000);
@@ -317,6 +332,7 @@ const PEPTAURA_CRAWL_INTERVAL_MS = Number(process.env.PEPTAURA_CRAWL_INTERVAL_MS
 const PEPTAURA_CRAWL_CONCURRENCY = Math.max(1, Math.min(8, Number(process.env.PEPTAURA_CRAWL_CONCURRENCY || 4)));
 const PEPTAURA_FETCH_TIMEOUT_MS = Number(process.env.PEPTAURA_FETCH_TIMEOUT_MS || 8000);
 let peptauraSitemapCache: CacheEntry<string[] | null> | null = null;
+let peptauraProductFeedCache: CacheEntry<PeptauraLiveProductSnapshot[] | null> | null = null;
 const peptauraShippingCache = new Map<string, CacheEntry<PeptauraShippingAvailability>>();
 const peptauraProductCache = new Map<string, CacheEntry<PeptauraLiveProductSnapshot>>();
 let enclomipheneSourceCache: CacheEntry<EnclomipheneSourceSnapshot | null> | null = null;
@@ -440,6 +456,50 @@ async function fetchTextWithTimeout(
   } finally {
     clearTimeout(timeout);
   }
+}
+
+async function fetchPeptauraProductFeedSnapshots(
+  forceFresh = false,
+): Promise<PeptauraLiveProductSnapshot[] | null> {
+  const now = Date.now();
+  if (
+    !forceFresh
+    && peptauraProductFeedCache
+    && peptauraProductFeedCache.expiresAt > now
+  ) {
+    return peptauraProductFeedCache.value;
+  }
+
+  const raw = await fetchTextWithTimeout(
+    PEPTAURA_PRODUCT_FEED_URL,
+    Math.max(PEPTAURA_FETCH_TIMEOUT_MS, 12_000),
+    forceFresh,
+  );
+  const parsed = raw
+    ? parsePeptauraProductFeed(raw, {
+        nowMs: now,
+        maxAgeMs: PEPTAURA_CATALOG_MAX_AGE_MS,
+        fetchedAt: new Date(now).toISOString(),
+      })
+    : null;
+  if (!parsed) {
+    const cached = peptauraProductFeedCache?.value;
+    const newestCachedAt = Math.max(
+      ...(cached || []).map((snapshot) => Date.parse(snapshot.fetchedAt)),
+      0,
+    );
+    if (cached?.length && now - newestCachedAt <= PEPTAURA_CATALOG_MAX_AGE_MS) {
+      return cached;
+    }
+    return null;
+  }
+
+  const snapshots = parsed.snapshots as PeptauraLiveProductSnapshot[];
+  peptauraProductFeedCache = {
+    value: snapshots,
+    expiresAt: now + PEPTAURA_CACHE_TTL_MS,
+  };
+  return snapshots;
 }
 
 function decodePeptauraHtml(html: string): string {
@@ -730,6 +790,8 @@ async function fetchPeptauraProductSnapshot(
   if (isMissingPage) return null;
 
   const snapshot = parsePeptauraProductSnapshot(slug, html);
+  if (!snapshot.live || snapshot.listings.length === 0) return null;
+  snapshot.source = "catalog_page";
   peptauraProductCache.set(cacheKey, { value: snapshot, expiresAt: now + PEPTAURA_CACHE_TTL_MS });
   return snapshot;
 }
@@ -759,6 +821,39 @@ export async function refreshPeptauraCatalog(
         refreshedProducts: 0,
         failedProducts: ["sitemap"],
       };
+    }
+
+    // Prefer Peptaura's own robots-advertised product feed. One versioned,
+    // horodated response replaces 76 large dynamic page reads and avoids
+    // overloading the marketplace origin. Individual pages remain a final
+    // live check for the selected products; the fresh feed is their safe
+    // fallback when a page times out.
+    const feedSnapshots = await fetchPeptauraProductFeedSnapshots(forceFresh);
+    if (feedSnapshots?.length) {
+      const feedKeys = new Set(feedSnapshots.map((snapshot) => normalizePeptauraKey(snapshot.slug)));
+      const coveredSlugs = slugs.filter((slug) => feedKeys.has(normalizePeptauraKey(slug)));
+      const minimumCoverage = Math.ceil(slugs.length * 0.95);
+      if (coveredSlugs.length >= minimumCoverage) {
+        for (const snapshot of feedSnapshots) {
+          peptauraProductCache.set(normalizePeptauraKey(snapshot.slug), {
+            value: snapshot,
+            expiresAt: Date.now() + PEPTAURA_CACHE_TTL_MS,
+          });
+        }
+        const completedAt = new Date().toISOString();
+        peptauraCatalogLastRefreshAt = Date.parse(completedAt);
+        return {
+          ok: true,
+          startedAt,
+          completedAt,
+          sitemapProducts: slugs.length,
+          refreshedProducts: coveredSlugs.length,
+          failedProducts: slugs.filter((slug) => !feedKeys.has(normalizePeptauraKey(slug))),
+        };
+      }
+      console.warn(
+        `[Peptaura Catalog] Official product feed coverage too low: ${coveredSlugs.length}/${slugs.length}`,
+      );
     }
 
     const queue = [...slugs];
@@ -915,8 +1010,10 @@ function selectBestLiveListing(
   if (candidates.length === 0) return null;
 
   if (shipping.availableVendors.length > 0) {
-    const shippingMatches = candidates.filter((listing) => isVendorInList(listing, shipping.availableVendors));
-    if (shippingMatches.length > 0) candidates = shippingMatches;
+    candidates = candidates.filter((listing) =>
+      isVendorInList(listing, shipping.availableVendors)
+    );
+    if (candidates.length === 0) return null;
   }
 
   const maxAllowedVials = Math.max(qty, Math.floor(qty * 1.2));
@@ -1128,6 +1225,11 @@ async function applyLivePeptauraPricing(
       pep.vialsNeeded = `${qty} vial${qty > 1 ? "s" : ""} de ${bestMg}mg pour ${naturalDurationLabel} (besoin calcule ~${needMg.toFixed(2)}mg)`;
     }
 
+    // The official feed exposes the exact listing URL. Never synthesize a
+    // vendor URL; use it only after the listing passed country/stock/price
+    // selection, otherwise retain the canonical catalog page.
+    if (best.productUrl) pep.purchaseUrl = best.productUrl;
+
     const livePrice = buildLivePriceEstimate(pep, best, qty);
     if (livePrice) {
       pep.priceEstimate = livePrice;
@@ -1136,7 +1238,9 @@ async function applyLivePeptauraPricing(
       listingSnapshots.push({
         peptide: pep.name,
         slug,
-        url: snapshot.url,
+        url: best.productUrl || snapshot.url,
+        source: snapshot.source || "catalog_page",
+        sourceGeneratedAt: snapshot.sourceGeneratedAt,
         supplier: best.supplierDisplayName || best.supplier,
         dosage: best.dosage,
         requestedVials: qty,
@@ -2193,7 +2297,9 @@ async function callOpenAIForPeptides(
   systemPrompt: string,
   userPrompt: string,
   email: string,
-  label: string
+  label: string,
+  retries = 3,
+  orderId?: string,
 ): Promise<string> {
   console.log(
     `[PeptidesEngine] GPT generation starting: ${PEPTIDES_PRIMARY_MODEL}, effort=xhigh, mode=pro`
@@ -2207,6 +2313,10 @@ async function callOpenAIForPeptides(
     schemaName: "peptides_engine_report",
     maxOutputTokens: PEPTIDES_MAX_OUTPUT_TOKENS,
     label,
+    retries,
+    ...(orderId
+      ? { costBudget: { product: "peptides", orderId, estimatedCostUsd: 1 } }
+      : {}),
   });
 
   console.log(
@@ -2674,19 +2784,66 @@ export function checkPeptidesSafetyGate(
 export async function generatePeptidesProtocol(
   responses: Record<string, unknown>,
   email: string,
-  tier: "solo" | "coached" | "tracked" = "coached"
+  tier: "solo" | "coached" | "tracked" = "coached",
+  options: {
+    maxCandidates?: number;
+    providerRetries?: number;
+    orderId?: string;
+    peptauraContext?: PeptauraPromptContext;
+    providerGenerate?: (params: {
+      systemPrompt: string;
+      userPrompt: string;
+      email: string;
+      label: string;
+      retries: number;
+      orderId?: string;
+    }) => Promise<string>;
+  } = {},
 ): Promise<PeptidesReport> {
   console.log(`[PeptidesEngine] Starting generation for ${email} (tier=${tier})`);
 
   const firstName = extractFirstName(responses, email);
-  const peptauraContext = await buildPeptauraPromptContext(responses);
+  const peptauraContext = options.peptauraContext
+    || await buildPeptauraPromptContext(responses);
+  try {
+    assertPeptauraGenerationPreflight(responses, peptauraContext);
+  } catch (error) {
+    const sourcePreflight = error instanceof PeptauraSourceUnavailableError
+      ? error.preflight
+      : null;
+    console.error(
+      `[PeptidesEngine] Source preflight blocked paid generation for ${email}: ${sourcePreflight?.errors.join(" | ") || String(error)}`,
+    );
+    throw error;
+  }
   const userPrompt = buildUserPrompt(responses, firstName, peptauraContext, tier);
+  // Cost-safe defaults apply to every caller, including legacy/inline paths.
+  // A human-only recovery may explicitly request more, but no automatic caller
+  // can accidentally inherit the old 2 candidates x 3 transport attempts.
+  const providerRetries = Math.max(1, Math.min(3, options.providerRetries ?? 1));
+  const maxCandidates = Math.max(1, Math.min(2, options.maxCandidates ?? 1));
+  const generateProviderText = options.providerGenerate
+    || ((params: {
+      systemPrompt: string;
+      userPrompt: string;
+      email: string;
+      label: string;
+      retries: number;
+      orderId?: string;
+    }) => callOpenAIForPeptides(
+      params.systemPrompt,
+      params.userPrompt,
+      params.email,
+      params.label,
+      params.retries,
+      params.orderId,
+    ));
 
   // Each candidate uses GPT-5.6 Sol. A second independent generation is used
   // only when the first candidate fails a deterministic or client-facing gate.
   let report: PeptidesReport | null = null;
   let lastError = "";
-  const providers: Array<{
+  const providerCandidates: Array<{
     provider: "openai";
     model: string;
     generate: () => Promise<string>;
@@ -2694,20 +2851,30 @@ export async function generatePeptidesProtocol(
     {
       provider: "openai",
       model: PEPTIDES_PRIMARY_MODEL,
-      generate: () => callOpenAIForPeptides(SYSTEM_PROMPT, userPrompt, email, "peptides-primary"),
+      generate: () => generateProviderText({
+        systemPrompt: SYSTEM_PROMPT,
+        userPrompt,
+        email,
+        label: "peptides-primary",
+        retries: providerRetries,
+        orderId: options.orderId,
+      }),
     },
     {
       provider: "openai",
       model: PEPTIDES_PRIMARY_MODEL,
       generate: () =>
-        callOpenAIForPeptides(
-          SYSTEM_PROMPT,
-          `${userPrompt}\n\nREGENERATION QUALITE: repars de zero. Controle avant de repondre les credits du tier, la presence de chaque peptide dans toutes les sections operationnelles, l'alignement des doses et des durees, les quantites de vials, la BAC water et la liste de commande.`,
+        generateProviderText({
+          systemPrompt: SYSTEM_PROMPT,
+          userPrompt: `${userPrompt}\n\nREGENERATION QUALITE: repars de zero. Controle avant de repondre les credits du tier, la presence de chaque peptide dans toutes les sections operationnelles, l'alignement des doses et des durees, les quantites de vials, la BAC water et la liste de commande.`,
           email,
-          "peptides-strict-regeneration"
-        ),
+          label: "peptides-strict-regeneration",
+          retries: providerRetries,
+          orderId: options.orderId,
+        }),
     },
   ];
+  const providers = providerCandidates.slice(0, maxCandidates);
 
   for (let attempt = 0; attempt < providers.length; attempt++) {
     const selected = providers[attempt];
