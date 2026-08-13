@@ -299,6 +299,11 @@ if (process.env.NODE_ENV === "production") {
                  AND report_sent_at IS NULL
                  AND created_at <= NOW() - INTERVAL '10 minutes'
                  AND (narrative_report IS NOT NULL OR report_txt IS NOT NULL OR report_html IS NOT NULL)
+                 AND NOT EXISTS (
+                   SELECT 1 FROM discovery_email_delivery_claims claim
+                    WHERE claim.audit_id = audits.id
+                      AND claim.email_type = 'sendReportReadyEmail'
+                 )
                RETURNING id`
             );
 

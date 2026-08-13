@@ -301,6 +301,102 @@ test("migration enforces mono-call, unique delivery claim and unique artifact co
   assert.match(sql, /UNIQUE \(manifest_sha256, stage, tier\)/);
 });
 
+test("ordinary Discovery deliveries reuse the durable unique claim without requiring a batch", () => {
+  const baseSql = readFileSync(new URL("../migrations/003_discovery_batch_safety.sql", import.meta.url), "utf8");
+  const globalSql = readFileSync(new URL("../migrations/004_discovery_delivery_claims_global.sql", import.meta.url), "utf8");
+  const source = readFileSync(new URL("./discoveryBatchControl.ts", import.meta.url), "utf8");
+
+  assert.match(baseSql, /UNIQUE \(audit_id, email_type\)/);
+  assert.match(globalSql, /ALTER COLUMN batch_id DROP NOT NULL/);
+  assert.match(source, /export async function claimDiscoveryEmailDelivery/);
+  assert.match(source, /const allowedStatuses = isBatch \? \["BATCH_READY"\] : \["READY", "SCHEDULED"\]/);
+  assert.match(source, /report_delivery_status = 'SENDING'/);
+  assert.match(source, /DISCOVERY_DELIVERY_CLAIM_EXISTS/);
+  assert.match(source, /DISCOVERY_DELIVERY_PRIOR_TRACKING_EXISTS/);
+  assert.match(source, /DISCOVERY_DELIVERY_RECIPIENT_HARD_BOUNCED/);
+  assert.match(source, /'FAILED_FINAL' AND state = 'CLAIMED'/);
+  assert.match(source, /'AMBIGUOUS'\) AND state = 'PROVIDER_POST_STARTED'/);
+  assert.match(source, /DELIVERY_AMBIGUOUS/);
+  assert.match(source, /DELIVERY_BLOCKED/);
+});
+
+test("Discovery provider crash window is one-shot, single-provider and never auto-retried", () => {
+  const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
+  const email = readFileSync(new URL("./emailService.ts", import.meta.url), "utf8");
+  const index = readFileSync(new URL("./index.ts", import.meta.url), "utf8");
+  const safeSendStart = routes.indexOf("async function safeSendReportReadyEmail(");
+  const safeSendEnd = routes.indexOf("const auditCreateLimiter", safeSendStart);
+  assert.ok(safeSendStart >= 0 && safeSendEnd > safeSendStart);
+  const safeSend = routes.slice(safeSendStart, safeSendEnd);
+
+  assert.ok(safeSend.indexOf("claimDiscoveryEmailDelivery({") < safeSend.indexOf("sendReportReadyEmail(email"));
+  assert.match(safeSend, /beforeProviderPost: async/);
+  assert.match(safeSend, /markDiscoveryDeliveryProviderPostStarted/);
+  assert.match(safeSend, /discoveryProviderPostStarted\s*\?\s*"AMBIGUOUS"\s*:\s*"FAILED_FINAL"/s);
+  assert.match(safeSend, /allowProviderFallback: false/);
+  assert.doesNotMatch(safeSend, /finalizeAuditSend\(auditId, true\).*already_in_tracking/s);
+
+  assert.match(email, /trackingData\.allowProviderFallback !== false && BREVO_API_KEY/);
+  assert.match(email, /trackingData\.allowProviderFallback !== false\) \{/);
+  assert.match(email, /allowProviderFallback: auditType === "GRATUIT"\s*\? false/s);
+  assert.doesNotMatch(email, /providerPostStarted = false;\s*let sendpulseTaskId/);
+
+  assert.match(index, /NOT EXISTS \(\s*SELECT 1 FROM discovery_email_delivery_claims claim/s);
+  assert.match(index, /claim\.email_type = 'sendReportReadyEmail'/);
+});
+
+test("Discovery mutation endpoints are explicit, hash-bound and terminal-safe", () => {
+  const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
+
+  const reconcileGetStart = routes.indexOf('app.get("/api/admin/reconcile-ready-audits"');
+  const reconcilePostStart = routes.indexOf('app.post("/api/admin/reconcile-ready-audits"', reconcileGetStart);
+  assert.ok(reconcileGetStart >= 0 && reconcilePostStart > reconcileGetStart);
+  const reconcileGet = routes.slice(reconcileGetStart, reconcilePostStart);
+  assert.doesNotMatch(reconcileGet, /safeSendReportReadyEmail|finalizeAuditSend|updateAudit/);
+  assert.match(reconcileGet, /mode !== "dry-run"/);
+
+  const reconcilePostEnd = routes.indexOf('app.post("/api/admin/discovery/:auditId/notify-regenerated"', reconcilePostStart);
+  const reconcilePost = routes.slice(reconcilePostStart, reconcilePostEnd);
+  assert.match(reconcilePost, /expectedTxtSha256/);
+  assert.match(reconcilePost, /expectedHtmlSha256/);
+  assert.match(reconcilePost, /artifact_hash_changed/);
+  assert.match(reconcilePost, /acceptance_not_proven/);
+
+  const adminRegenerateStart = routes.indexOf('app.post("/api/audit/:id/regenerate"');
+  const adminRegenerateEnd = routes.indexOf('app.post("/api/audit/:id/resend-email"', adminRegenerateStart);
+  const adminRegenerate = routes.slice(adminRegenerateStart, adminRegenerateEnd);
+  const adminDiscoveryRegenerate = adminRegenerate.slice(
+    adminRegenerate.indexOf('if (audit.type === "GRATUIT")'),
+    adminRegenerate.indexOf("// For PREMIUM/ELITE audits"),
+  );
+  assert.ok(adminRegenerate.indexOf("isDiscoverySupersededTerminal") < adminRegenerate.indexOf("claimAuditForGeneration"));
+  assert.ok(adminRegenerate.indexOf("audit.reportSentAt") < adminRegenerate.indexOf("analyzeDiscoveryScan"));
+  assert.doesNotMatch(adminDiscoveryRegenerate, /reportDeliveryStatus: "PENDING"/);
+
+  const publicRegenerateStart = routes.indexOf('app.post("/api/discovery-scan/:auditId/regenerate"');
+  const publicRegenerateEnd = routes.indexOf('app.', publicRegenerateStart + 10);
+  const publicRegenerate = routes.slice(publicRegenerateStart, publicRegenerateEnd);
+  assert.match(publicRegenerate, /NODE_ENV === "production".*requireAdminAuth/s);
+  assert.ok(publicRegenerate.indexOf("isDiscoverySupersededTerminal") < publicRegenerate.indexOf("claimAuditForGeneration"));
+
+  const analyzeStart = routes.indexOf('app.post("/api/discovery-scan/analyze"');
+  const analyzeEnd = routes.indexOf('app.', analyzeStart + 10);
+  const analyzeRoute = routes.slice(analyzeStart, analyzeEnd);
+  assert.ok(analyzeRoute.indexOf("requireAdminAuth") < analyzeRoute.indexOf("analyzeDiscoveryScan"));
+});
+
+test("tracking lookup failures propagate and administrative raw Discovery resend is forbidden", () => {
+  const storage = readFileSync(new URL("./storage.ts", import.meta.url), "utf8");
+  const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
+  const dbMethodStart = storage.lastIndexOf("async hasReportReadyEmailBeenSent(");
+  const dbMethodEnd = storage.indexOf("async findRecentAuditByEmailAndType", dbMethodStart);
+  const dbMethod = storage.slice(dbMethodStart, dbMethodEnd);
+  assert.doesNotMatch(dbMethod, /catch|return false/);
+  assert.match(routes, /Discovery: renvoi brut interdit/);
+  assert.match(routes, /Discovery: force brut interdit/);
+  assert.doesNotMatch(routes, /hasReportReadyEmailBeenSent\([^\n]+\.catch\(\(\) => false\)/);
+});
+
 test("generation and persistence are transactionally claimed and use BATCH_READY", () => {
   const source = readFileSync(new URL("./discoveryBatchControl.ts", import.meta.url), "utf8");
   assert.match(source, /provider_calls = 1/);
@@ -330,7 +426,9 @@ test("reconciler is read-only by default and delivery claims before provider", (
   assert.match(source, /if \(!args\.has\("--run-generation"\) && !args\.has\("--run-delivery"\)\)/);
   assert.match(source, /Default: read-only manifest/);
   assert.ok(source.indexOf("claimDiscoveryBatchEmailDelivery({") < source.indexOf("sendReportReadyEmail(item.email"));
-  assert.ok(source.indexOf("markDiscoveryDeliveryProviderPostStarted(claimId)") < source.indexOf("sendReportReadyEmail(item.email"));
+  assert.match(source, /beforeProviderPost: async/);
+  assert.match(source, /markDiscoveryDeliveryProviderPostStarted\(claimId\)/);
+  assert.match(source, /providerPostStarted \? "AMBIGUOUS" : "FAILED_FINAL"/);
   assert.match(source, /AI_COST_ALERTS_ENABLED/);
   assert.match(source, /DISCOVERY_REPORT_DELIVERY_ENABLED/);
   assert.match(source, /resolveExactDiscoveryTargets\(manifest\.items, approval\.targetAuditIds\)/);

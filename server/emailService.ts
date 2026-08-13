@@ -409,6 +409,7 @@ async function sendEmailWithTracking(
       subject: string;
       startedAt: Date;
     }) => Promise<void>;
+    allowProviderFallback?: boolean;
   }
 ): Promise<SendPulseSendResult> {
   let providerPostStarted = false;
@@ -527,7 +528,6 @@ async function sendEmailWithTracking(
       result: response.ok && parsed?.result === true,
       httpStatus: response.status,
     };
-    providerPostStarted = false;
     let sendpulseTaskId = extractSendPulseDeliveryId(result);
     if (sendpulseTaskId) result.id = sendpulseTaskId;
     const liveLookupMetadata: Record<string, any> = {};
@@ -610,7 +610,7 @@ async function sendEmailWithTracking(
     // monthly quota/bandwidth is exhausted (HTTP 422). Orders, payment
     // notifications and paid report deliveries must not disappear with the
     // marketing provider, so critical messages fail over to Brevo.
-    if (!result.result && criticalEmail && BREVO_API_KEY) {
+    if (!result.result && criticalEmail && trackingData.allowProviderFallback !== false && BREVO_API_KEY) {
       try {
         const htmlContent = looksLikeBase64(emailPayload.html)
           ? Buffer.from(emailPayload.html, "base64").toString("utf8")
@@ -667,7 +667,7 @@ async function sendEmailWithTracking(
       }
     }
 
-    if (!result.result && criticalEmail) {
+    if (!result.result && criticalEmail && trackingData.allowProviderFallback !== false) {
       const smtpTransport = getSmtpFallbackTransport();
       if (smtpTransport) {
         try {
@@ -1153,10 +1153,17 @@ export async function sendReportReadyEmail(
   email: string,
   auditId: string,
   auditType: string,
-  baseUrl: string
+  baseUrl: string,
+  options?: {
+    beforeProviderPost?: (context: {
+      recipientEmail: string;
+      subject: string;
+      startedAt: Date;
+    }) => Promise<void>;
+    allowProviderFallback?: boolean;
+  },
 ): Promise<boolean> {
   try {
-    const token = await getAccessToken();
     const reportPath =
       auditType === "GRATUIT"
         ? `/scan/${auditId}`
@@ -1273,6 +1280,13 @@ export async function sendReportReadyEmail(
         auditId,
         auditType,
         metadata: { reportLink, planLabel, trackingId: pixelTrackingId },
+        beforeProviderPost: options?.beforeProviderPost,
+        // A Discovery delivery has its own durable one-shot claim. Starting a
+        // second provider after SendPulse creates an unresolvable duplicate
+        // window, so Discovery is always single-provider and fail-closed.
+        allowProviderFallback: auditType === "GRATUIT"
+          ? false
+          : options?.allowProviderFallback,
       }
     );
 

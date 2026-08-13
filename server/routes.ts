@@ -12,6 +12,7 @@ import { startReportGeneration, getJobStatus, forceRegenerate } from "./reportJo
 import {
   sendMagicLinkEmail,
   sendReportReadyEmail,
+  getReportReadyEmailSubject,
   sendReportRegeneratedEmail,
   sendAdminEmailNewAudit,
   sendGratuitUpsellEmail,
@@ -98,7 +99,13 @@ import {
   isDiscoveryReportDeliveryEnabled,
 } from "./discoveryAutomationPolicy";
 import { isDiscoverySupersededTerminal } from "./discoverySupersededPolicy";
-import { isDiscoveryGlobalLockActive } from "./discoveryBatchControl";
+import {
+  claimDiscoveryEmailDelivery,
+  discoverySha256,
+  finalizeDiscoveryDeliveryClaim,
+  isDiscoveryGlobalLockActive,
+  markDiscoveryDeliveryProviderPostStarted,
+} from "./discoveryBatchControl";
 import {
   claimRegeneratedReportNotification,
   isRegeneratedNotificationEnabled,
@@ -641,6 +648,8 @@ export async function registerRoutes(
     opts?: { logPrefix?: string; bypassClaim?: boolean }
   ): Promise<{ sent: boolean; skipped?: string }> {
     const prefix = opts?.logPrefix || "[SafeSend]";
+    let discoveryClaimId: string | null = null;
+    let discoveryProviderPostStarted = false;
     // Discovery always goes through its persisted delivery gate and atomic
     // send claim. Administrative raw-send flags may bypass paid-report claims,
     // but can never bypass the free report safety contract.
@@ -676,11 +685,17 @@ export async function registerRoutes(
         return { sent: false, skipped: "scheduled_for_future" };
       }
 
-      const alreadyTracked = await storage.hasReportReadyEmailBeenSent(auditId).catch(() => false);
+      let alreadyTracked: boolean;
+      try {
+        alreadyTracked = await storage.hasReportReadyEmailBeenSent(auditId);
+      } catch (error) {
+        console.error(`${prefix} Discovery tracking check unavailable for audit ${auditId}:`, error);
+        return { sent: false, skipped: "tracking_unverifiable" };
+      }
       if (alreadyTracked) {
         console.log(`${prefix} ⏭️ Report email already in email_tracking for audit ${auditId} , SKIP (no double send)`);
-        // Normalize audit state so UI shows SENT rather than stuck READY
-        await storage.finalizeAuditSend(auditId, true).catch(() => {});
+        // A tracking row proves that a prior attempt exists, but does not by
+        // itself prove provider acceptance. Never normalize to SENT here.
         return { sent: false, skipped: "already_in_tracking" };
       }
 
@@ -757,16 +772,60 @@ export async function registerRoutes(
         }
       }
 
-      const claimed = await storage.claimAuditForSending(auditId).catch(() => false);
-      if (!claimed) {
-        console.log(`${prefix} ⏭️ Could not claim audit ${auditId} for sending , another process owns it or already SENT`);
-        return { sent: false, skipped: "claim_failed" };
+      if (auditType === "GRATUIT") {
+        try {
+          const exact = await storage.getAudit(auditId);
+          if (!exact) return { sent: false, skipped: "audit_missing" };
+          const txt = String((exact as any).reportTxt || "");
+          const html = String((exact as any).reportHtml || "");
+          const claim = await claimDiscoveryEmailDelivery({
+            auditId,
+            recipientEmail: email,
+            subject: getReportReadyEmailSubject("GRATUIT", "Discovery Scan"),
+            expectedTxtSha256: discoverySha256(txt),
+            expectedHtmlSha256: discoverySha256(html),
+          });
+          discoveryClaimId = claim.claimId;
+        } catch (error) {
+          console.error(`${prefix} Discovery durable delivery claim failed for audit ${auditId}:`, error);
+          return { sent: false, skipped: "discovery_claim_failed" };
+        }
+      } else {
+        const claimed = await storage.claimAuditForSending(auditId).catch(() => false);
+        if (!claimed) {
+          console.log(`${prefix} ⏭️ Could not claim audit ${auditId} for sending , another process owns it or already SENT`);
+          return { sent: false, skipped: "claim_failed" };
+        }
       }
     }
 
     try {
-      const ok = await sendReportReadyEmail(email, auditId, auditType, baseUrl);
-      await storage.finalizeAuditSend(auditId, ok);
+      const ok = await sendReportReadyEmail(email, auditId, auditType, baseUrl, auditType === "GRATUIT"
+        ? {
+            allowProviderFallback: false,
+            beforeProviderPost: async () => {
+              if (!discoveryClaimId) throw new Error("DISCOVERY_DELIVERY_CLAIM_MISSING");
+              const started = await markDiscoveryDeliveryProviderPostStarted(discoveryClaimId);
+              if (!started) throw new Error("DISCOVERY_DELIVERY_PROVIDER_START_CAS_FAILED");
+              discoveryProviderPostStarted = true;
+            },
+          }
+        : undefined);
+      if (auditType === "GRATUIT") {
+        if (!discoveryClaimId) throw new Error("DISCOVERY_DELIVERY_CLAIM_MISSING");
+        const finalized = await finalizeDiscoveryDeliveryClaim({
+          claimId: discoveryClaimId,
+          outcome: ok
+            ? "PROVIDER_ACCEPTED"
+            : discoveryProviderPostStarted
+              ? "AMBIGUOUS"
+              : "FAILED_FINAL",
+          errorDetail: ok ? undefined : "provider result not durably confirmed",
+        });
+        if (!finalized) throw new Error("DISCOVERY_DELIVERY_FINALIZE_CAS_FAILED");
+      } else {
+        await storage.finalizeAuditSend(auditId, ok);
+      }
       if (ok) {
         console.log(`${prefix} ✅ Email accepted by SendPulse for audit ${auditId} to ${email}`);
       } else {
@@ -775,7 +834,15 @@ export async function registerRoutes(
       return { sent: ok };
     } catch (err) {
       console.error(`${prefix} ❌ sendReportReadyEmail THREW for audit ${auditId}:`, err);
-      await storage.finalizeAuditSend(auditId, false).catch(() => {});
+      if (auditType === "GRATUIT" && discoveryClaimId) {
+        await finalizeDiscoveryDeliveryClaim({
+          claimId: discoveryClaimId,
+          outcome: discoveryProviderPostStarted ? "AMBIGUOUS" : "FAILED_FINAL",
+          errorDetail: err instanceof Error ? err.message : String(err),
+        }).catch(() => {});
+      } else {
+        await storage.finalizeAuditSend(auditId, false).catch(() => {});
+      }
       return { sent: false, skipped: "threw" };
     }
   }
@@ -3980,12 +4047,18 @@ export async function registerRoutes(
 
       // Handle Discovery Scan (GRATUIT) differently - sync generation
       if (audit.type === "GRATUIT") {
+        if (audit.reportSentAt || audit.reportDeliveryStatus === "SENT"
+          || isDiscoverySupersededTerminal(audit)) {
+          res.status(409).json({
+            error: "Discovery terminal: utilise uniquement la remédiation in-place liée au hash exact",
+          });
+          return;
+        }
         console.log(`[Regenerate] Regenerating Discovery Scan for audit ${auditId}...`);
 
-        // Admin regenerate is an intentional action , reset delivery state so CAS
-        // can claim fresh ownership. Without this reset, an audit already in
-        // GENERATING from a prior crash would block admin retries forever.
-        await storage.updateAudit(auditId, { reportDeliveryStatus: "PENDING" });
+        // Never reset GENERATING/READY to PENDING here: doing so can erase an
+        // active owner's claim and pay for a concurrent duplicate generation.
+        // Stale ownership is handled by the persisted recovery workflow.
         const claimed = await storage.claimAuditForGeneration(auditId).catch(() => false);
         if (!claimed) {
           res.status(409).json({ error: "Regeneration déjà en cours" });
@@ -4066,6 +4139,12 @@ export async function registerRoutes(
 
       // Admin resend , block if already sent unless caller passes ?force=1
       const forceResend = req.query.force === "1" || (req.body as any)?.force === true;
+      if (audit.type === "GRATUIT" && forceResend) {
+        res.status(409).json({
+          error: "Discovery: renvoi brut interdit; utilise la remédiation exacte avec preuve de hash",
+        });
+        return;
+      }
       if (audit.reportSentAt && !forceResend) {
         res.status(409).json({
           error: "Report déjà envoyé , pass ?force=1 pour renvoyer volontairement",
@@ -4075,7 +4154,7 @@ export async function registerRoutes(
       }
 
       // Pré-flight: si email_tracking contient déjà un sendReportReadyEmail OK, abort
-      const alreadyTracked = await storage.hasReportReadyEmailBeenSent(auditId).catch(() => false);
+      const alreadyTracked = await storage.hasReportReadyEmailBeenSent(auditId);
       if (alreadyTracked && !forceResend) {
         res.status(409).json({
           error: "Email déjà tracé comme envoyé , pass ?force=1 pour renvoyer volontairement"
@@ -10116,6 +10195,7 @@ export async function registerRoutes(
   // Analyze Discovery Scan (free tier) - returns NarrativeReport format for dashboard
   app.post("/api/discovery-scan/analyze", discoveryLimiter, async (req, res) => {
     try {
+      if (process.env.NODE_ENV === "production" && !requireAdminAuth(req, res)) return;
       if (await isDiscoveryGlobalLockActive()) {
         res.status(503).json({ success: false, error: "Discovery Scan temporairement en maintenance" });
         return;
@@ -10405,6 +10485,7 @@ export async function registerRoutes(
   // Force regenerate a Discovery Scan if stuck
   app.post("/api/discovery-scan/:auditId/regenerate", async (req, res) => {
     try {
+      if (process.env.NODE_ENV === "production" && !requireAdminAuth(req, res)) return;
       const { auditId } = req.params;
       const audit = await storage.getAudit(auditId);
 
@@ -10415,6 +10496,15 @@ export async function registerRoutes(
 
       if (audit.type !== "GRATUIT") {
         res.status(400).json({ success: false, error: "Ce n'est pas un Discovery Scan" });
+        return;
+      }
+
+      if (audit.reportSentAt || audit.reportDeliveryStatus === "SENT"
+        || isDiscoverySupersededTerminal(audit)) {
+        res.status(409).json({
+          success: false,
+          error: "Discovery terminal: regeneration interdite",
+        });
         return;
       }
 
@@ -13061,18 +13151,16 @@ export async function registerRoutes(
   //   - "failed_only":  only failed rows. Client did NOT receive.
   //   - "never_tried":  no sendReportReadyEmail row at all. Client did NOT receive.
   //
-  // Modes:
-  //   ?mode=dry-run      → returns analysis only (DEFAULT, zero side effects)
-  //   ?mode=fix-state    → updates already_sent to SENT. NO email sent. Safe.
-  //   ?mode=send-missing → sends email for failed_only + never_tried. DANGEROUS,
-  //                        explicitly opt-in. Uses safeSendReportReadyEmail so
-  //                        the dedup CAS still guards against any race.
+  // GET is always dry-run. Every mutation requires POST, exact UUID targets,
+  // and hashes bound to the currently persisted artifacts.
   app.get("/api/admin/reconcile-ready-audits", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
       const mode = (req.query.mode as string) || "dry-run";
-      if (!["dry-run", "fix-state", "send-missing"].includes(mode)) {
-        res.status(400).json({ error: "mode invalide", allowed: ["dry-run", "fix-state", "send-missing"] });
+      if (mode !== "dry-run") {
+        res.status(405).json({
+          error: "GET est strictement read-only. Utilise POST /api/admin/reconcile-ready-audits avec des cibles exactes.",
+        });
         return;
       }
 
@@ -13088,7 +13176,7 @@ export async function registerRoutes(
 
       const results: Array<{
         auditId: string; email: string; type: string; ageDays: number;
-        classification: "already_sent" | "failed_only" | "never_tried";
+        classification: "already_sent" | "failed_only" | "never_tried" | "ambiguous";
         trackingRows: number;
         action: "none" | "fixed_state" | "email_sent" | "email_failed" | "skipped";
       }> = [];
@@ -13101,22 +13189,22 @@ export async function registerRoutes(
         );
         const hasSuccess = rows.rows.some(r => {
           const s = String(r.sendpulse_status ?? "").toLowerCase();
-          return s !== "failed" && s !== "auth_failed" && s !== "unsubscribed";
+          return ["success", "accepted", "sent", "delivered", "smtp_confirmed"].includes(s);
         });
         const hasAny = rows.rows.length > 0;
-        const classification = hasSuccess ? "already_sent" : hasAny ? "failed_only" : "never_tried";
+        const failedOnly = hasAny && rows.rows.every((r: any) =>
+          ["failed", "auth_failed", "unsubscribed"].includes(String(r.sendpulse_status ?? "").toLowerCase()),
+        );
+        const classification = hasSuccess
+          ? "already_sent"
+          : failedOnly
+            ? "failed_only"
+            : hasAny
+              ? "ambiguous"
+              : "never_tried";
 
         let action: typeof results[number]["action"] = "none";
         const ageDays = Math.floor((Date.now() - new Date(a.createdAt).getTime()) / 86400000);
-
-        if (mode === "fix-state" && classification === "already_sent") {
-          await storage.finalizeAuditSend(a.id, true).catch(() => {});
-          action = "fixed_state";
-        } else if (mode === "send-missing" && classification !== "already_sent") {
-          const baseUrl = getBaseUrl();
-          const out = await safeSendReportReadyEmail(a.id, a.email, a.type, baseUrl, { logPrefix: "[Reconcile]" });
-          action = out.sent ? "email_sent" : "email_failed";
-        }
 
         results.push({
           auditId: a.id,
@@ -13144,6 +13232,85 @@ export async function registerRoutes(
     } catch (error) {
       console.error("[Reconcile] error:", error);
       res.status(500).json({ error: "Erreur serveur", message: error instanceof Error ? error.message : String(error) });
+    }
+  });
+
+  app.post("/api/admin/reconcile-ready-audits", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const action = String(req.body?.action || "");
+      const targets = Array.isArray(req.body?.targets) ? req.body.targets : [];
+      if (!["fix-state", "send-missing"].includes(action)) {
+        res.status(400).json({ error: "action invalide", allowed: ["fix-state", "send-missing"] });
+        return;
+      }
+      if (targets.length === 0 || targets.length > 20) {
+        res.status(400).json({ error: "1 à 20 cibles exactes requises" });
+        return;
+      }
+      const ids = targets.map((target: any) => String(target?.auditId || "").toLowerCase());
+      if (new Set(ids).size !== ids.length || ids.some((id: string) =>
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(id))) {
+        res.status(400).json({ error: "auditId exact invalide ou dupliqué" });
+        return;
+      }
+
+      const results: Array<Record<string, unknown>> = [];
+      for (const target of targets) {
+        const auditId = String(target.auditId).toLowerCase();
+        const expectedTxtSha256 = String(target.expectedTxtSha256 || "").toLowerCase();
+        const expectedHtmlSha256 = String(target.expectedHtmlSha256 || "").toLowerCase();
+        if (!/^[a-f0-9]{64}$/.test(expectedTxtSha256) || !/^[a-f0-9]{64}$/.test(expectedHtmlSha256)) {
+          throw new Error(`RECONCILE_EXPECTED_HASH_REQUIRED:${auditId}`);
+        }
+        const audit = await storage.getAudit(auditId);
+        if (!audit || audit.type !== "GRATUIT" || audit.reportSentAt
+          || !["READY", "SCHEDULED"].includes(String(audit.reportDeliveryStatus))) {
+          results.push({ auditId, action: "skipped", reason: "not_exactly_deliverable" });
+          continue;
+        }
+        const txtHash = discoverySha256(String((audit as any).reportTxt || ""));
+        const htmlHash = discoverySha256(String((audit as any).reportHtml || ""));
+        if (txtHash !== expectedTxtSha256 || htmlHash !== expectedHtmlSha256) {
+          results.push({ auditId, action: "skipped", reason: "artifact_hash_changed" });
+          continue;
+        }
+        const tracking = await pool.query(
+          `SELECT sendpulse_status FROM email_tracking
+            WHERE audit_id = $1 AND email_type = 'sendReportReadyEmail'`,
+          [auditId],
+        );
+        const accepted = tracking.rows.some((row: any) =>
+          ["success", "accepted", "sent", "delivered", "smtp_confirmed"]
+            .includes(String(row.sendpulse_status || "").toLowerCase()),
+        );
+        if (action === "fix-state") {
+          if (!accepted) {
+            results.push({ auditId, action: "skipped", reason: "acceptance_not_proven" });
+            continue;
+          }
+          await storage.finalizeAuditSend(auditId, true);
+          results.push({ auditId, action: "fixed_state" });
+          continue;
+        }
+        if (tracking.rows.length > 0) {
+          results.push({ auditId, action: "skipped", reason: "prior_tracking_requires_reconciliation" });
+          continue;
+        }
+        const delivery = await safeSendReportReadyEmail(
+          auditId,
+          audit.email,
+          audit.type,
+          getBaseUrl(),
+          { logPrefix: "[ReconcileExact]" },
+        );
+        results.push({ auditId, action: delivery.sent ? "email_sent" : "stopped", reason: delivery.skipped });
+        if (!delivery.sent) break;
+      }
+      res.json({ action, results });
+    } catch (error) {
+      console.error("[ReconcileExact] error:", error);
+      res.status(409).json({ error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -13221,6 +13388,12 @@ export async function registerRoutes(
 
       // Check status , block silently unless admin explicitly opts in with ?force=1.
       const forceRawSend = req.query.force === "1" || (req.body as any)?.force === true;
+      if (audit.type === "GRATUIT" && forceRawSend) {
+        res.status(409).json({
+          error: "Discovery: force brut interdit; utilise la remédiation exacte avec preuve de hash",
+        });
+        return;
+      }
       if (audit.reportDeliveryStatus === "SENT" && !forceRawSend) {
         res.json({
           success: true,
@@ -13247,7 +13420,7 @@ export async function registerRoutes(
       console.log(`[ForceSend] Sending to ${audit.email} (audit: ${audit.id}, type: ${audit.type}, force=${forceRawSend})`);
 
       if (!forceRawSend) {
-        const alreadyTracked = await storage.hasReportReadyEmailBeenSent(audit.id).catch(() => false);
+        const alreadyTracked = await storage.hasReportReadyEmailBeenSent(audit.id);
         if (alreadyTracked) {
           res.status(409).json({
             error: "Email déjà tracé comme envoyé , pass ?force=1 pour renvoyer volontairement",

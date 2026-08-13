@@ -3485,21 +3485,19 @@ export class PgStorage implements IStorage {
   }
 
   async hasReportReadyEmailBeenSent(auditId: string): Promise<boolean> {
-    try {
-      const result = await pool.query(
-        `SELECT 1 FROM email_tracking
-          WHERE audit_id = $1
-            AND email_type = 'sendReportReadyEmail'
-            AND (sendpulse_status IS NULL
-                 OR sendpulse_status NOT IN ('failed','auth_failed','unsubscribed'))
-          LIMIT 1`,
-        [auditId]
-      );
-      return (result.rowCount ?? 0) > 0;
-    } catch (err) {
-      console.warn("[EmailTracking] hasReportReadyEmailBeenSent query failed ,  defaulting to false:", err);
-      return false;
-    }
+    // This is a duplicate-send guard, not acceptance proof: any prior attempt
+    // that is not explicitly terminal-failed must stop a blind retry. Database
+    // failures are intentionally propagated so callers fail closed.
+    const result = await pool.query(
+      `SELECT 1 FROM email_tracking
+        WHERE audit_id = $1
+          AND email_type = 'sendReportReadyEmail'
+          AND (sendpulse_status IS NULL
+               OR sendpulse_status NOT IN ('failed','auth_failed','unsubscribed'))
+        LIMIT 1`,
+      [auditId]
+    );
+    return (result.rowCount ?? 0) > 0;
   }
 
   async findRecentAuditByEmailAndType(email: string, type: string, minutes: number): Promise<Audit | undefined> {

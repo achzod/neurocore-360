@@ -835,13 +835,15 @@ export async function persistValidatedDiscoveryBatchItem(
   }
 }
 
-export async function claimDiscoveryBatchEmailDelivery(
+export async function claimDiscoveryEmailDelivery(
   input: {
-    batchId: string;
+    batchId?: string;
     auditId: string;
-    lockToken: string;
+    lockToken?: string;
     recipientEmail: string;
     subject: string;
+    expectedTxtSha256: string;
+    expectedHtmlSha256: string;
   },
   poolOverride?: Pool,
 ): Promise<{ claimId: string; claimedAt: Date }> {
@@ -849,29 +851,49 @@ export async function claimDiscoveryBatchEmailDelivery(
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    await assertBatchOwnership(client, input.batchId, input.lockToken);
-    const itemResult = await client.query(
-      `SELECT * FROM discovery_batch_items WHERE batch_id = $1 AND audit_id = $2 FOR UPDATE`,
-      [input.batchId, input.auditId],
-    );
-    if ((itemResult.rowCount ?? 0) !== 1 || String(itemResult.rows[0].state) !== "STORED") {
-      throw new Error("DISCOVERY_BATCH_ITEM_NOT_STORED");
+    const isBatch = Boolean(input.batchId || input.lockToken);
+    if (isBatch && (!input.batchId || !input.lockToken)) {
+      throw new Error("DISCOVERY_DELIVERY_BATCH_OWNERSHIP_INCOMPLETE");
     }
-    const item = itemResult.rows[0];
+    let item: any = null;
+    if (isBatch) {
+      await assertBatchOwnership(client, input.batchId!, input.lockToken!);
+      const itemResult = await client.query(
+        `SELECT * FROM discovery_batch_items WHERE batch_id = $1 AND audit_id = $2 FOR UPDATE`,
+        [input.batchId, input.auditId],
+      );
+      if ((itemResult.rowCount ?? 0) !== 1 || String(itemResult.rows[0].state) !== "STORED") {
+        throw new Error("DISCOVERY_BATCH_ITEM_NOT_STORED");
+      }
+      item = itemResult.rows[0];
+    }
     const auditResult = await client.query(
-      `SELECT id, email, report_sent_at, report_delivery_status, report_txt, report_html
+      `SELECT id, email, report_sent_at, report_delivery_status, report_txt, report_html,
+              narrative_report
          FROM audits WHERE id = $1 AND type = 'GRATUIT' FOR UPDATE`,
       [input.auditId],
     );
     if ((auditResult.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_AUDIT_MISSING");
     const audit = auditResult.rows[0];
     if (audit.report_sent_at) throw new Error("DISCOVERY_AUDIT_ALREADY_SENT");
-    if (String(audit.report_delivery_status) !== "BATCH_READY") throw new Error("DISCOVERY_AUDIT_NOT_BATCH_READY");
+    const allowedStatuses = isBatch ? ["BATCH_READY"] : ["READY", "SCHEDULED"];
+    if (!allowedStatuses.includes(String(audit.report_delivery_status))) {
+      throw new Error("DISCOVERY_AUDIT_NOT_DELIVERABLE");
+    }
+    const recovery = audit.narrative_report?.recovery || {};
+    if (String(audit.report_delivery_status) === "SUPERSEDED"
+      || String(recovery.disposition || "").toLowerCase() === "superseded"
+      || String(recovery.replacementAuditId || "").trim()) {
+      throw new Error("DISCOVERY_AUDIT_SUPERSEDED");
+    }
     if (String(audit.email).trim().toLowerCase() !== input.recipientEmail.trim().toLowerCase()) {
       throw new Error("DISCOVERY_DELIVERY_RECIPIENT_MISMATCH");
     }
-    if (discoverySha256(String(audit.report_txt || "")) !== String(item.generated_txt_sha256)
-      || discoverySha256(String(audit.report_html || "")) !== String(item.generated_html_sha256)) {
+    const txtSha256 = discoverySha256(String(audit.report_txt || ""));
+    const htmlSha256 = discoverySha256(String(audit.report_html || ""));
+    if (txtSha256 !== input.expectedTxtSha256 || htmlSha256 !== input.expectedHtmlSha256
+      || (isBatch && (txtSha256 !== String(item.generated_txt_sha256)
+        || htmlSha256 !== String(item.generated_html_sha256)))) {
       throw new Error("DISCOVERY_DELIVERY_ARTIFACT_HASH_MISMATCH");
     }
 
@@ -883,6 +905,31 @@ export async function claimDiscoveryBatchEmailDelivery(
     );
     if ((previousTracking.rowCount ?? 0) > 0) throw new Error("DISCOVERY_DELIVERY_PRIOR_TRACKING_EXISTS");
 
+    const blockedRecipient = await client.query(
+      `SELECT
+         EXISTS (
+           SELECT 1 FROM email_unsubscribes u
+            WHERE LOWER(u.email) = LOWER($1)
+         ) AS unsubscribed,
+         EXISTS (
+           SELECT 1 FROM email_tracking t
+            WHERE LOWER(t.recipient_email) = LOWER($1)
+              AND (
+                LOWER(COALESCE(t.sendpulse_status,'')) = 'bounced'
+                OR (
+                  LOWER(COALESCE(t.sendpulse_status,'')) = 'failed'
+                  AND (
+                    COALESCE(t.sendpulse_error,'') ~* '"eventType"[[:space:]]*:[[:space:]]*"(hard_fail|bounce)"'
+                    OR COALESCE(t.metadata->>'sendpulseSmtpAnswerCode','') ~ '^5[0-9]{2}$'
+                  )
+                )
+              )
+         ) AS hard_bounced`,
+      [input.recipientEmail],
+    );
+    if (blockedRecipient.rows[0]?.unsubscribed) throw new Error("DISCOVERY_DELIVERY_RECIPIENT_UNSUBSCRIBED");
+    if (blockedRecipient.rows[0]?.hard_bounced) throw new Error("DISCOVERY_DELIVERY_RECIPIENT_HARD_BOUNCED");
+
     const claimId = randomUUID();
     const claimed = await client.query(
       `INSERT INTO discovery_email_delivery_claims
@@ -891,15 +938,26 @@ export async function claimDiscoveryBatchEmailDelivery(
        VALUES ($1,$2,$3,'sendReportReadyEmail',$4,$5,$6,$7,'CLAIMED')
        ON CONFLICT (audit_id, email_type) DO NOTHING
        RETURNING id, created_at`,
-      [claimId, input.batchId, input.auditId, input.recipientEmail.trim().toLowerCase(),
-        item.generated_txt_sha256, item.generated_html_sha256, discoverySha256(input.subject)],
+      [claimId, input.batchId || null, input.auditId, input.recipientEmail.trim().toLowerCase(),
+        txtSha256, htmlSha256, discoverySha256(input.subject)],
     );
     if ((claimed.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_DELIVERY_CLAIM_EXISTS");
-    await client.query(
-      `UPDATE discovery_batch_items SET state = 'DELIVERY_CLAIMED', updated_at = NOW()
-        WHERE batch_id = $1 AND audit_id = $2`,
-      [input.batchId, input.auditId],
+    const auditClaimed = await client.query(
+      `UPDATE audits SET report_delivery_status = 'SENDING'
+        WHERE id = $1 AND report_sent_at IS NULL
+          AND report_delivery_status = ANY($2::text[])
+          AND ${DISCOVERY_SUPERSEDED_TERMINAL_SQL}
+        RETURNING id`,
+      [input.auditId, allowedStatuses],
     );
+    if ((auditClaimed.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_DELIVERY_AUDIT_CLAIM_CAS_FAILED");
+    if (isBatch) {
+      await client.query(
+        `UPDATE discovery_batch_items SET state = 'DELIVERY_CLAIMED', updated_at = NOW()
+          WHERE batch_id = $1 AND audit_id = $2`,
+        [input.batchId, input.auditId],
+      );
+    }
     await client.query("COMMIT");
     return { claimId, claimedAt: new Date(claimed.rows[0].created_at) };
   } catch (error) {
@@ -908,6 +966,32 @@ export async function claimDiscoveryBatchEmailDelivery(
   } finally {
     client.release();
   }
+}
+
+export async function claimDiscoveryBatchEmailDelivery(
+  input: {
+    batchId: string;
+    auditId: string;
+    lockToken: string;
+    recipientEmail: string;
+    subject: string;
+    expectedTxtSha256?: string;
+    expectedHtmlSha256?: string;
+  },
+  poolOverride?: Pool,
+): Promise<{ claimId: string; claimedAt: Date }> {
+  if (!input.expectedTxtSha256 || !input.expectedHtmlSha256) {
+    const pool = await resolvePool(poolOverride);
+    const item = await pool.query(
+      `SELECT generated_txt_sha256, generated_html_sha256
+         FROM discovery_batch_items WHERE batch_id = $1 AND audit_id = $2`,
+      [input.batchId, input.auditId],
+    );
+    if ((item.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_BATCH_ITEM_MISSING");
+    input.expectedTxtSha256 = String(item.rows[0].generated_txt_sha256 || "");
+    input.expectedHtmlSha256 = String(item.rows[0].generated_html_sha256 || "");
+  }
+  return claimDiscoveryEmailDelivery(input as Required<typeof input>, poolOverride);
 }
 
 export async function markDiscoveryDeliveryProviderPostStarted(
@@ -943,7 +1027,11 @@ export async function finalizeDiscoveryDeliveryClaim(
               provider_accepted_at = CASE WHEN $2 IN ('PROVIDER_ACCEPTED','SMTP_CONFIRMED') THEN NOW() ELSE provider_accepted_at END,
               smtp_confirmed_at = CASE WHEN $2 = 'SMTP_CONFIRMED' THEN NOW() ELSE smtp_confirmed_at END,
               error_detail = $4, updated_at = NOW()
-        WHERE id = $1 AND state IN ('CLAIMED','PROVIDER_POST_STARTED')
+        WHERE id = $1
+          AND (
+            ($2 IN ('PROVIDER_ACCEPTED','SMTP_CONFIRMED','AMBIGUOUS') AND state = 'PROVIDER_POST_STARTED')
+            OR ($2 = 'FAILED_FINAL' AND state = 'CLAIMED')
+          )
         RETURNING batch_id, audit_id`,
       [input.claimId, input.outcome, input.providerTaskId || null, input.errorDetail || null],
     );
@@ -955,7 +1043,7 @@ export async function finalizeDiscoveryDeliveryClaim(
     if (["PROVIDER_ACCEPTED", "SMTP_CONFIRMED"].includes(input.outcome)) {
       const auditFinalized = await client.query(
         `UPDATE audits SET report_delivery_status = 'SENT', report_sent_at = NOW()
-          WHERE id = $1 AND report_sent_at IS NULL AND report_delivery_status = 'BATCH_READY'
+          WHERE id = $1 AND report_sent_at IS NULL AND report_delivery_status = 'SENDING'
             AND ${DISCOVERY_SUPERSEDED_TERMINAL_SQL}
           RETURNING id`,
         [row.audit_id],
@@ -963,25 +1051,35 @@ export async function finalizeDiscoveryDeliveryClaim(
       if ((auditFinalized.rowCount ?? 0) !== 1) {
         throw new Error("DISCOVERY_DELIVERY_AUDIT_FINALIZE_CAS_FAILED");
       }
-      await client.query(
-        `UPDATE discovery_batch_items SET state = 'DELIVERED', updated_at = NOW()
-          WHERE batch_id = $1 AND audit_id = $2`,
-        [row.batch_id, row.audit_id],
-      );
+      if (row.batch_id) {
+        await client.query(
+          `UPDATE discovery_batch_items SET state = 'DELIVERED', updated_at = NOW()
+            WHERE batch_id = $1 AND audit_id = $2`,
+          [row.batch_id, row.audit_id],
+        );
+      }
     } else {
       await client.query(
-        `UPDATE discovery_batch_items
-            SET state = $3, error_code = $4, error_detail = $5, updated_at = NOW()
-          WHERE batch_id = $1 AND audit_id = $2`,
-        [row.batch_id, row.audit_id,
-          input.outcome === "AMBIGUOUS" ? "AMBIGUOUS" : "FAILED",
-          `delivery_${input.outcome.toLowerCase()}`, input.errorDetail || null],
+        `UPDATE audits SET report_delivery_status = $2
+          WHERE id = $1 AND report_sent_at IS NULL AND report_delivery_status = 'SENDING'
+            AND ${DISCOVERY_SUPERSEDED_TERMINAL_SQL}`,
+        [row.audit_id, input.outcome === "AMBIGUOUS" ? "DELIVERY_AMBIGUOUS" : "DELIVERY_BLOCKED"],
       );
-      await client.query(
-        `UPDATE discovery_batch_runs SET status = 'PAUSED', stop_reason = $2, updated_at = NOW()
-          WHERE id = $1`,
-        [row.batch_id, `delivery_${input.outcome.toLowerCase()}`],
-      );
+      if (row.batch_id) {
+        await client.query(
+          `UPDATE discovery_batch_items
+              SET state = $3, error_code = $4, error_detail = $5, updated_at = NOW()
+            WHERE batch_id = $1 AND audit_id = $2`,
+          [row.batch_id, row.audit_id,
+            input.outcome === "AMBIGUOUS" ? "AMBIGUOUS" : "FAILED",
+            `delivery_${input.outcome.toLowerCase()}`, input.errorDetail || null],
+        );
+        await client.query(
+          `UPDATE discovery_batch_runs SET status = 'PAUSED', stop_reason = $2, updated_at = NOW()
+            WHERE id = $1`,
+          [row.batch_id, `delivery_${input.outcome.toLowerCase()}`],
+        );
+      }
     }
     await client.query("COMMIT");
     return true;

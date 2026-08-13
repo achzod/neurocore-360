@@ -692,6 +692,7 @@ async function runDelivery(
         throw new Error("DISCOVERY_BATCH_LOCK_REFRESH_FAILED");
       }
       let claimId: string | null = null;
+      let providerPostStarted = false;
       try {
         const current = await pool.query(
           `SELECT email, report_sent_at, report_delivery_status,
@@ -732,17 +733,25 @@ async function runDelivery(
           subject,
         });
         claimId = claim.claimId;
-        if (!await markDiscoveryDeliveryProviderPostStarted(claimId)) {
-          throw new Error("DISCOVERY_DELIVERY_PROVIDER_START_CAS_FAILED");
-        }
-        const accepted = await sendReportReadyEmail(item.email, item.id, "GRATUIT", baseUrl);
+        const accepted = await sendReportReadyEmail(item.email, item.id, "GRATUIT", baseUrl, {
+          allowProviderFallback: false,
+          beforeProviderPost: async () => {
+            if (!claimId || !await markDiscoveryDeliveryProviderPostStarted(claimId)) {
+              throw new Error("DISCOVERY_DELIVERY_PROVIDER_START_CAS_FAILED");
+            }
+            providerPostStarted = true;
+          },
+        });
         if (!accepted) {
           await finalizeDiscoveryDeliveryClaim({
             claimId,
-            outcome: "AMBIGUOUS",
+            outcome: providerPostStarted ? "AMBIGUOUS" : "FAILED_FINAL",
             errorDetail: "provider result not durably confirmed",
           });
-          processed.push({ auditId: item.id, status: "AMBIGUOUS" });
+          processed.push({
+            auditId: item.id,
+            status: providerPostStarted ? "AMBIGUOUS" : "FAILED_FINAL",
+          });
           break;
         }
         const finalized = await finalizeDiscoveryDeliveryClaim({
@@ -756,7 +765,7 @@ async function runDelivery(
         if (claimId) {
           await finalizeDiscoveryDeliveryClaim({
             claimId,
-            outcome: "AMBIGUOUS",
+            outcome: providerPostStarted ? "AMBIGUOUS" : "FAILED_FINAL",
             errorDetail: detail,
           }).catch(() => {});
         } else {
