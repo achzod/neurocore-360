@@ -103,6 +103,7 @@ const OBSOLETE_MISSING_LIVE_FORMAT_SENTENCE =
 const OBSOLETE_LIVE_AVAILABILITY_PARAGRAPHS = [
   /Le point qui bloque aujourd'hui est concret\.[\s\S]*?jusqu'à l'apparition d'offres compatibles et à la validation de ton bilan de départ\./gi,
   /Je ne fixe aucun fournisseur aujourd'hui\.[\s\S]*?La commande reste donc à zéro tant qu'une offre réelle n'apparaît pas\./gi,
+  /Les stocks changent\. Si CJC-1295 sans DAC, Ipamorelin ou MOTS-c apparaît chez Retalux, Lumira, HelixBridge, Hang Sciences, Peptiva Sciences ou CorePeptide, vérifie encore https:\/\/www\.peptaura\.com\/shipping\?country=France avant de payer\./gi,
 ];
 
 function hasVerifiedOfficialPricing(report: PeptidesReport): boolean {

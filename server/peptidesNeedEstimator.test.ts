@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { preferredStagedVialMgForCycle } from "./peptidesEngine";
 import { estimateNeedMg } from "./peptidesReportValidator";
 
 test("French une fois par semaine is multiplied across the full cycle", () => {
@@ -23,4 +24,12 @@ test("an explicit weekly total is never multiplied again by another frequency ph
     dosage: "500 mcg par semaine, répartis sur 5 soirs par semaine",
     cycleDuration: "10 semaines",
   }), 5);
+});
+
+test("multi-week weekly MOTS-c uses staged two-dose vials", () => {
+  assert.equal(preferredStagedVialMgForCycle({
+    name: "MOTS-c",
+    dosage: "5 mg une fois par semaine, soit 67,11 mcg/kg par semaine pour 74,5 kg",
+    cycleDuration: "8 semaines, de la semaine 3 à la semaine 10",
+  }), 10);
 });

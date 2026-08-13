@@ -1069,6 +1069,20 @@ function selectBestLivePurchasePlan(
   return selectBestPurchasePlan(eligible, needMg, 1.2);
 }
 
+/**
+ * MOTS-c is administered weekly across multi-week cycles. Keep each opened
+ * vial limited to at most two weekly administrations instead of selecting a
+ * cheaper oversized vial whose post-reconstitution lifetime is not proven by
+ * the official feed.
+ */
+export function preferredStagedVialMgForCycle(pep: Pick<PeptideItem, "name" | "dosage" | "cycleDuration">): number | null {
+  if (!/^MOTS[- ]?c$/i.test(String(pep.name || "").trim())) return null;
+  const durationWeeks = Number(String(pep.cycleDuration || "").match(/(\d+(?:[.,]\d+)?)\s*semaines?/i)?.[1]?.replace(",", "."));
+  const weeklyDoseMg = Number(String(pep.dosage || "").match(/(\d+(?:[.,]\d+)?)\s*mg\s*(?:une|1)\s*fois\s*par\s*semaine/i)?.[1]?.replace(",", "."));
+  if (!Number.isFinite(durationWeeks) || durationWeeks < 3 || !Number.isFinite(weeklyDoseMg) || weeklyDoseMg <= 0) return null;
+  return weeklyDoseMg * 2;
+}
+
 function findPeptauraProductForPeptide(pepName: string): PeptaurProduct | null {
   const cleanName = normalizePeptauraKey(pepName)
     .replace("sansdac", "nodac")
@@ -1259,7 +1273,9 @@ async function applyLivePeptauraPricing(
       continue;
     }
 
-    const preferredVialMg = extractVialMg(pep.vialsNeeded) || extractVialMg(pep.reconstitution);
+    const preferredVialMg = preferredStagedVialMgForCycle(pep)
+      || extractVialMg(pep.vialsNeeded)
+      || extractVialMg(pep.reconstitution);
     const purchasePlan = selectBestLivePurchasePlan(snapshot, context.shippingAvailability, needMg, preferredVialMg);
     if (!purchasePlan) {
       failures.push(`${pep.name}: aucune offre en stock ne couvre le besoin de ${needMg.toFixed(2)} mg sans plus de 20 % de surstock`);
