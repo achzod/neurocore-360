@@ -1145,7 +1145,7 @@ function buildConditionalReconstitutionText(
   });
   return [
     `Format live retenu: vial de ${vialMg} mg. Peptaura ne publie pas le volume de solvant du lot exact: aucun volume n'est choisi automatiquement.`,
-    `Calcul conditionnel uniquement, apres confirmation ecrite du volume par le fabricant du lot, un medecin ou un pharmacien. Formule: concentration en mg/ml = ${vialMg} mg divise par le volume confirme; volume de dose = dose en mg divisee par la concentration; unites U-100 = volume en ml multiplie par 100.`,
+    `Calcul conditionnel uniquement, apres confirmation ecrite du volume par le fabricant du lot ou un professionnel qualifie. Formule: concentration en mg/ml = ${vialMg} mg divise par le volume confirme; volume de dose = dose en mg divisee par la concentration; unites U-100 = volume en ml multiplie par 100.`,
     ...lines,
     "Tant que le volume exact et le materiel ne sont pas confirmes, ne reconstitue pas et n'injecte pas.",
   ].join(" ");
@@ -1256,7 +1256,7 @@ async function applyLivePeptauraPricing(
     const durationLabel = String(pep.cycleDuration || "le cycle").split(/[,.]/)[0].trim();
     const naturalDurationLabel = durationLabel.charAt(0).toLowerCase() + durationLabel.slice(1);
     pep.vialsNeeded = `${qty} vial${qty > 1 ? "s" : ""} de ${bestMg} mg pour ${naturalDurationLabel} (besoin calcule ~${needMg.toFixed(2)} mg, capacite livree ${purchasePlan.deliveredMg.toFixed(2)} mg)`;
-    if (/aucune offre live exploitable|format de vial.*(?:manque|indisponible)|reconstitution et les unites.*suspendues|feed officiel ne fournit pas le volume/i.test(pep.reconstitution || "")) {
+    if (/aucune offre live exploitable|format de vial.*(?:manque|indisponible)|(?:reconstitution.{0,80})?unit[ée]s?.{0,40}suspendues|feed officiel ne fournit pas le volume/i.test(pep.reconstitution || "")) {
       const conditional = buildConditionalReconstitutionText(pep, bestMg);
       if (!conditional) {
         failures.push(`${pep.name}: dose illisible pour le calcul conditionnel de reconstitution`);
