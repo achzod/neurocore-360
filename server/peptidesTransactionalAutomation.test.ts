@@ -4,7 +4,11 @@ import test from "node:test";
 
 process.env.DATABASE_URL ||= "postgresql://test:test@127.0.0.1:5432/test";
 const { MemStorage } = await import("./storage");
-const { buildPeptidesCoachingDeductionBlock } = await import("./cta");
+const {
+  buildPeptidesCoachingDeductionBlock,
+  PEPTIDES_BLOOD_CREDITS,
+  PEPTIDES_COACHING_DEDUCTION,
+} = await import("./cta");
 
 async function paidPeptidesOrder(metadata: Record<string, unknown> = {}) {
   const storage = new MemStorage();
@@ -98,13 +102,32 @@ test("provider POST ambiguity is terminal for both transactional emails", () => 
   );
 });
 
-test("coached delivery always includes the PEPTIDES299 coaching conversion CTA", () => {
-  const coachingBlock = buildPeptidesCoachingDeductionBlock("coached", {
-    now: new Date("2026-08-13T14:36:00.000Z"),
-  });
-  assert.match(coachingBlock, /Code : PEPTIDES299/);
-  assert.match(coachingBlock, /299EUR deduits sur ton coaching Essential, Elite ou Private Lab/);
-  assert.match(coachingBlock, /achzodcoaching\.com\/coaching-essential/);
+test("every Peptides tier includes its exact coaching conversion code and deduction", () => {
+  const matrix = [
+    { tier: "solo", code: "PEPTIDES199", amount: 199, label: "Solo", bloodCredits: 0 },
+    { tier: "coached", code: "PEPTIDES299", amount: 299, label: "Coached", bloodCredits: 1 },
+    { tier: "tracked", code: "PEPTIDES399", amount: 399, label: "Tracked", bloodCredits: 2 },
+  ] as const;
+
+  for (const expected of matrix) {
+    assert.deepEqual(PEPTIDES_COACHING_DEDUCTION[expected.tier], {
+      code: expected.code,
+      amount: expected.amount,
+      label: expected.label,
+    });
+    assert.equal(PEPTIDES_BLOOD_CREDITS[expected.tier], expected.bloodCredits);
+    const coachingBlock = buildPeptidesCoachingDeductionBlock(expected.tier, {
+      now: new Date("2026-08-13T14:36:00.000Z"),
+    });
+    assert.match(coachingBlock, new RegExp(`TON BONUS COACHING \\(${expected.label}\\)`));
+    assert.match(coachingBlock, new RegExp(`Code : ${expected.code}`));
+    assert.match(coachingBlock, new RegExp(`${expected.amount}EUR deduits sur ton coaching Essential, Elite ou Private Lab`));
+    assert.match(coachingBlock, /Valable sur les engagements 8 ou 12 semaines uniquement/);
+    assert.match(coachingBlock, /Expire le 08 octobre 2026/);
+    assert.match(coachingBlock, /achzodcoaching\.com\/coaching-essential/);
+    assert.match(coachingBlock, /achzodcoaching\.com\/coaching-elite/);
+    assert.match(coachingBlock, /achzodcoaching\.com\/coaching-achzod-private-lab/);
+  }
 
   const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
   const delivery = routes.slice(
@@ -112,4 +135,9 @@ test("coached delivery always includes the PEPTIDES299 coaching conversion CTA",
     routes.indexOf("// Auto-recovery: generate missing peptides reports", routes.indexOf("async function deliverPeptidesReportOnce")),
   );
   assert.match(delivery, /coachingText:\s*input\.coachingText/);
+
+  const offerPage = readFileSync(new URL("../client/src/pages/PeptidesEnginePage.tsx", import.meta.url), "utf8");
+  assert.match(offerPage, /solo:\s*\{\s*label:\s*"Solo",\s*price:\s*199,\s*bloodCredits:\s*0,\s*supportDays:\s*0\s*\}/);
+  assert.match(offerPage, /coached:\s*\{\s*label:\s*"Coached",\s*price:\s*299,\s*bloodCredits:\s*1,\s*supportDays:\s*30\s*\}/);
+  assert.match(offerPage, /tracked:\s*\{\s*label:\s*"Tracked",\s*price:\s*399,\s*bloodCredits:\s*2,\s*supportDays:\s*90\s*\}/);
 });
