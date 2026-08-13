@@ -40,6 +40,25 @@ test("obsolete source-unavailable sentence is removed only after official pricin
   );
 });
 
+test("obsolete live-unavailable paragraphs are removed after all official prices are verified", () => {
+  const priced = {
+    clientName: "Clement",
+    peptides: [{
+      name: "Ipamorelin",
+      priceEstimate: "11.47 USD",
+      purchaseUrl: "https://www.peptaura.com/product/1289-ipamorelin-5mg-lumira",
+      dosage: "100 mcg",
+      route: "SC",
+    }],
+    sections: [{ id: "profile", title: "Profil", content: "" }],
+  } as any;
+  priced.sections[0].content = "Avant. Le point qui bloque aujourd'hui est concret. Le catalogue Peptaura du 13 août 2026 détecte bien les pages de CJC-1295 sans DAC, Ipamorelin et MOTS-c, mais ne présente aucune offre live exploitable pour la France. Il manque donc le fournisseur, le format de vial et le prix de chaque produit. Je te donne le plan technique et les quantités actives exactes, mais je suspends la commande, la reconstitution et la première injection jusqu'à l'apparition d'offres compatibles et à la validation de ton bilan de départ. Après.";
+  const cleaned = removeObsoleteMissingLiveFormatSentence(priced);
+  assert.doesNotMatch(cleaned.sections[0].content, /aucune offre live exploitable/i);
+  assert.match(cleaned.sections[0].content, /Avant/);
+  assert.match(cleaned.sections[0].content, /Après/);
+});
+
 function validCandidate(responseId = "resp_ABC123"): StoredPeptidesRecoveryCandidate {
   return {
     responseId,

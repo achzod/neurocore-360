@@ -100,6 +100,11 @@ function ensureWeightFact(report: PeptidesReport, responses: Record<string, unkn
 const OBSOLETE_MISSING_LIVE_FORMAT_SENTENCE =
   "Nombre de vials non calculable tant que le format live manque, aucune commande autorisée.";
 
+const OBSOLETE_LIVE_AVAILABILITY_PARAGRAPHS = [
+  /Le point qui bloque aujourd'hui est concret\.[\s\S]*?jusqu'à l'apparition d'offres compatibles et à la validation de ton bilan de départ\./gi,
+  /Je ne fixe aucun fournisseur aujourd'hui\.[\s\S]*?La commande reste donc à zéro tant qu'une offre réelle n'apparaît pas\./gi,
+];
+
 function hasVerifiedOfficialPricing(report: PeptidesReport): boolean {
   return (report.peptides || []).length > 0 && (report.peptides || []).every((peptide) => {
     const price = String(peptide.priceEstimate || "");
@@ -121,9 +126,13 @@ export function removeObsoleteMissingLiveFormatSentence(report: PeptidesReport):
   if (!hasVerifiedOfficialPricing(report)) return report;
   const scrub = (value: unknown): unknown => {
     if (typeof value === "string") {
-      return value
+      let cleaned = value
         .split(OBSOLETE_MISSING_LIVE_FORMAT_SENTENCE)
-        .join("")
+        .join("");
+      for (const pattern of OBSOLETE_LIVE_AVAILABILITY_PARAGRAPHS) {
+        cleaned = cleaned.replace(pattern, "");
+      }
+      return cleaned
         .replace(/[ \t]+\n/g, "\n")
         .replace(/\n{3,}/g, "\n\n")
         .replace(/[ \t]{2,}/g, " ")

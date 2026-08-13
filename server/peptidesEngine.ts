@@ -29,6 +29,7 @@ import {
 } from "./peptidesSourcePreflight";
 import {
   buildConditionalReconstitutionExamples,
+  buildPurchasePlan,
   effectivePackagePrice,
   offerTotalPrice,
   packageCountForVials,
@@ -1051,8 +1052,21 @@ function selectBestLivePurchasePlan(
   snapshot: PeptauraLiveProductSnapshot,
   shipping: PeptauraShippingAvailability,
   needMg: number,
+  preferredVialMg: number | null = null,
 ): PeptidePurchasePlan<PeptauraLiveListing> | null {
-  return selectBestPurchasePlan(eligibleLiveListings(snapshot, shipping), needMg, 1.2);
+  const eligible = eligibleLiveListings(snapshot, shipping);
+  if (preferredVialMg != null) {
+    const preferredPlans = eligible
+      .filter((listing) => {
+        const vialMg = parseListingMg(listing.dosage);
+        return vialMg != null && Math.abs(vialMg - preferredVialMg) < 0.05;
+      })
+      .map((listing) => buildPurchasePlan(listing, needMg, 1.2))
+      .filter((plan): plan is PeptidePurchasePlan<PeptauraLiveListing> => plan != null)
+      .sort((a, b) => a.totalPriceUsd - b.totalPriceUsd);
+    if (preferredPlans[0]) return preferredPlans[0];
+  }
+  return selectBestPurchasePlan(eligible, needMg, 1.2);
 }
 
 function findPeptauraProductForPeptide(pepName: string): PeptaurProduct | null {
@@ -1245,7 +1259,8 @@ async function applyLivePeptauraPricing(
       continue;
     }
 
-    const purchasePlan = selectBestLivePurchasePlan(snapshot, context.shippingAvailability, needMg);
+    const preferredVialMg = extractVialMg(pep.vialsNeeded) || extractVialMg(pep.reconstitution);
+    const purchasePlan = selectBestLivePurchasePlan(snapshot, context.shippingAvailability, needMg, preferredVialMg);
     if (!purchasePlan) {
       failures.push(`${pep.name}: aucune offre en stock ne couvre le besoin de ${needMg.toFixed(2)} mg sans plus de 20 % de surstock`);
       continue;

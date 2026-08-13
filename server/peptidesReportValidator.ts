@@ -713,7 +713,7 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
   // matches. Fallback to "first number with unit", but skip values that obviously refer to
   // body weight ("X kg") or to mcg/kg context.
   const valueMatch =
-    dose.match(/(\d+(?:[.,]\d+)?)\s*(mg|mcg|µg|ug)\s*(?:par\s*(?:injection|jour|semaine))/i) ||
+    dose.match(/(\d+(?:[.,]\d+)?)\s*(mg|mcg|µg|ug)\s*par\s*(administration|injection|jour|semaine)/i) ||
     dose.match(/(\d+(?:[.,]\d+)?)\s*(mg|mcg|µg|ug)\b(?!\s*\/\s*kg)/i);
   if (!valueMatch) return null;
   const doseVal = parseFloat(valueMatch[1].replace(",", "."));
@@ -740,7 +740,10 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
   if (!weeks && days) weeks = Math.ceil(days / 7);
   if (!weeks) return null;
 
-  const total = doseMg * perWeek * weeks;
+  // A value explicitly stated "par semaine" is already the weekly total.
+  // Do not multiply it again by a separate frequency phrase in the prose.
+  const cadence = String(valueMatch[3] || "").toLowerCase();
+  const total = doseMg * (cadence === "semaine" ? 1 : perWeek) * weeks;
   return total >= 0.5 ? total : null;
 }
 
