@@ -281,7 +281,7 @@ const DiscoveryScanReport: React.FC = () => {
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!auditId || reviewRating === 0 || reviewComment.length < 10 || !reviewEmail) {
-      setReviewError('Veuillez remplir tous les champs (note, email, et commentaire de 10 caracteres minimum)');
+      setReviewError('Veuillez remplir tous les champs (note, email et commentaire de 10 caractères minimum)');
       return;
     }
 
@@ -540,7 +540,7 @@ const DiscoveryScanReport: React.FC = () => {
                   <span style={{ color: currentTheme.colors.textMuted }}>voici ton scan.</span>
                 </h1>
                 <p className="text-lg leading-relaxed max-w-lg" style={{ color: 'var(--color-text-muted)' }}>
-                  {displayGlobalScore}/10 ,  {displayGlobalScore >= 7 ? 'Une base solide.' : displayGlobalScore >= 5 ? 'Des axes d\'optimisation identifies.' : 'Plusieurs blocages a debloquer.'}
+                  {displayGlobalScore}/10 ,  {displayGlobalScore >= 7 ? 'Une base solide.' : displayGlobalScore >= 5 ? 'Des axes d\'optimisation identifiés.' : 'Plusieurs axes à approfondir.'}
                 </p>
               </div>
 
@@ -710,12 +710,12 @@ const DiscoveryScanReport: React.FC = () => {
                 {idx === 2 && (
                   <UpgradeTeaser
                     theme={currentTheme}
-                    title="Tu veux aller 10x plus loin ?"
-                    description="Ton Discovery a détecté tes blocages. L'Ultimate Scan te donne les protocoles EXACTS + analyse en temps réel."
+                    title="Tu veux approfondir ces axes ?"
+                    description="Le Discovery donne une première lecture. Un scan avancé permet d'ajouter des données avant de choisir une stratégie détaillée."
                     features={[
                       'Analyse posturale 3D (upload 3 photos)',
                       'Analyse HRV & récupération avancée',
-                      'Protocoles Matin Anti-Cortisol + Soir Sommeil personnalisés',
+                      'Protocoles matin et soir personnalisés',
                       'Stack Suppléments basé sur TES données exactes',
                       "Plan d'action 30-60-90 jours avec milestones",
                       'Dashboard temps réel à vie'
@@ -728,7 +728,7 @@ const DiscoveryScanReport: React.FC = () => {
                   <SocialProofBlock
                     theme={currentTheme}
                     context="CLIENT ULTIMATE SCAN"
-                    quote="La version 2 du scan est incroyable, avoir autant d'informations et de déchiffrement des réponses apportées est d'une prousse inouïe. Bravo pour ces semaines de travail sur l'outil."
+                    quote="La version 2 du scan est incroyable, avoir autant d'informations et de déchiffrement des réponses apportées est d'une prouesse inouïe. Bravo pour ces semaines de travail sur l'outil."
                     author="Ksalex74"
                   />
                 )}
@@ -827,12 +827,12 @@ const DiscoveryScanReport: React.FC = () => {
                   {/* Comment */}
                   <div>
                     <label className="text-sm font-medium block mb-2" style={{ color: 'var(--color-text-muted)' }}>
-                      Ton commentaire (min. 10 caracteres)
+                      Ton commentaire (min. 10 caractères)
                     </label>
                     <textarea
                       value={reviewComment}
                       onChange={(e) => setReviewComment(e.target.value)}
-                      placeholder="Qu'as-tu pense de ce Discovery Scan ? Ton avis m aide a te livrer encore mieux..."
+                      placeholder="Qu'as-tu pensé de ce Discovery Scan ? Ton avis m'aide à te livrer encore mieux..."
                       rows={4}
                       required
                       minLength={10}
@@ -844,7 +844,7 @@ const DiscoveryScanReport: React.FC = () => {
                       }}
                     />
                     <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
-                      {reviewComment.length}/10 caracteres minimum
+                      {reviewComment.length}/10 caractères minimum
                     </p>
                   </div>
 

@@ -569,7 +569,7 @@ export const StickyCTA: React.FC<StickyCTAProps> = ({ theme, show, clientName })
       <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
         <div className="hidden md:block">
           <p className="text-sm font-bold" style={{ color: theme.colors.text }}>
-            Ton protocole peptides personnalise
+            Ton protocole peptides personnalisé
           </p>
           <p className="text-xs" style={{ color: theme.colors.textMuted }}>
             Dosages exacts, source -90%, 2 bilans sanguins inclus
@@ -708,12 +708,12 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({ theme, auditId }) => {
 
         {/* Title */}
         <h2 className="text-3xl md:text-5xl font-bold mb-4" style={{ color: theme.colors.text }}>
-          Passe a l'action
+          Passe à l'action
         </h2>
 
         <p className="text-base md:text-lg mb-8" style={{ color: theme.colors.textMuted }}>
-          Tu as identifie tes blocages.<br />
-          Maintenant il faut les corriger.
+          Tu as identifié tes axes prioritaires.<br />
+          Choisis maintenant la prochaine étape adaptée.
         </p>
 
         {/* Options */}
@@ -734,7 +734,7 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({ theme, auditId }) => {
               <h4 className="font-bold" style={{ color: theme.colors.text }}>Peptides Engine</h4>
             </div>
             <p className="text-sm mb-4" style={{ color: theme.colors.text }}>
-              Protocole peptides personnalise avec dosages exacts, acces a la source -90%, guide complet, 2 bilans sanguins inclus
+              Protocole peptides personnalisé avec dosages exacts, accès à la source, guide complet et 2 bilans sanguins inclus
             </p>
             <div className="text-xs" style={{ color: '#F59E0B' }}>
               399€ · Livraison 48h par email
@@ -754,10 +754,10 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({ theme, auditId }) => {
               <h4 className="font-bold" style={{ color: theme.colors.text }}>Coaching Achzod</h4>
             </div>
             <p className="text-sm mb-4" style={{ color: theme.colors.textMuted }}>
-              Suivi personnalise : nutrition, entrainement, supplementation. Ajustements en temps reel selon tes bilans.
+              Suivi personnalisé : nutrition, entraînement, supplémentation. Ajustements en temps réel selon tes bilans.
             </p>
             <div className="text-xs" style={{ color: theme.colors.primary }}>
-              A partir de 249€ · Code ANALYSE20 = -20%
+              À partir de 249€ · Code ANALYSE20 = -20%
             </div>
           </div>
         </div>
