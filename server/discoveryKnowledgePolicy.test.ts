@@ -23,6 +23,7 @@ import {
   neutralizeDiscoverySourceAttribution,
   normalizeDiscoveryFrenchSurface,
   repairDiscoveryKnownFrenchCorruptions,
+  repairDiscoveryProvidedFactAbsenceClaims,
   calculateDiscoveryGlobalScore,
   scoreDiscoveryTraining,
   validateDiscoveryFactualConsistency,
@@ -583,6 +584,65 @@ test("provided weight, height and training frequency cannot be declared absent",
     ),
     [],
   );
+});
+
+test("deterministic factual repair replaces only a missing supplied weight claim", () => {
+  const responses = { poids: "84" };
+  const repaired = repairDiscoveryProvidedFactAbsenceClaims(
+    "Sans ton poids, l'analyse ne peut pas être précise. Le reste de cette lecture demeure prudent.",
+    responses,
+  );
+
+  assert.equal(
+    repaired,
+    "Ton poids déclaré est de 84 kg. Le reste de cette lecture demeure prudent.",
+  );
+  assert.deepEqual(validateDiscoveryFactualConsistency(repaired, responses), []);
+});
+
+test("deterministic factual repair replaces a combined missing-facts clause with exact supplied values", () => {
+  const responses = { poids: "79", taille: "184", "sport-frequence": "3-4" };
+  const repaired = repairDiscoveryProvidedFactAbsenceClaims(
+    "Sans ton poids, ta taille ni ta fréquence d'entraînement, l'analyse reste incomplète.",
+    responses,
+  );
+
+  assert.equal(
+    repaired,
+    "Ton poids déclaré est de 79 kg. Ta taille déclarée est de 184 cm. Ta fréquence d’entraînement déclarée est de 3 à 4 séances par semaine.",
+  );
+  assert.deepEqual(validateDiscoveryFactualConsistency(repaired, responses), []);
+});
+
+test("deterministic factual repair leaves legitimate non-blocking weight and height prose unchanged", () => {
+  const responses = { poids: "79", taille: "184", "sport-frequence": "3-4" };
+  const legitimate = "Ni ton poids ni ta taille ne constituent un blocage, et ta fréquence d'entraînement est cohérente.";
+
+  assert.equal(repairDiscoveryProvidedFactAbsenceClaims(legitimate, responses), legitimate);
+  assert.deepEqual(validateDiscoveryFactualConsistency(legitimate, responses), []);
+});
+
+test("unified cleanup repairs supplied-fact absence claims in synthesis and sections before the final gate", () => {
+  const responses = { prenom: "Alex", poids: "84", taille: "185", "sport-frequence": "3-4" };
+  const policy = deriveDiscoverySafetyPolicy(responses);
+  const paragraph = "Tu as décrit une routine structurée et des repères cohérents. Le mécanisme utile concerne la récupération et son interaction possible avec ton objectif, sans permettre de poser un diagnostic. Cette lecture distingue les faits déclarés des hypothèses prudentes qui restent à confirmer. ";
+  const validBody = Array.from({ length: 4 }, () => paragraph.repeat(3)).join("\n\n");
+  const raw = {
+    synthesis: `${validBody}\n\nSans ton poids, l'analyse resterait incomplète.`,
+    sections: DISCOVERY_PREMIUM_DOMAINS.map((domain) => ({
+      domain,
+      content: domain === "digestion"
+        ? `${validBody}\n\nSans ta taille ni ta fréquence d'entraînement, l'analyse resterait incomplète.`
+        : validBody,
+    })),
+  };
+
+  const validated = validateDiscoveryGeneratedNarrative(raw, responses, policy);
+  assert.match(validated.synthesis, /Ton poids déclaré est de 84 kg/);
+  assert.match(validated.sections.digestion, /Ta taille déclarée est de 185 cm/);
+  assert.match(validated.sections.digestion, /Ta fréquence d’entraînement déclarée est de 3 à 4 séances par semaine/);
+  assert.deepEqual(validateDiscoveryFactualConsistency(validated.synthesis, responses), []);
+  assert.deepEqual(validateDiscoveryFactualConsistency(validated.sections.digestion, responses), []);
 });
 
 test("a supplied 3-4 session frequency rejects a claim of two weekly sessions", () => {

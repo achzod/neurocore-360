@@ -545,6 +545,66 @@ function clauseClaimsFactIsMissing(clause: string, factPattern: RegExp): boolean
   return missingListStarted || missingDirectlyBefore || missingDirectlyAfter;
 }
 
+const DISCOVERY_REPAIRABLE_PRESENT_FACTS: Array<{
+  key: "poids" | "taille" | "sport-frequence";
+  pattern: RegExp;
+}> = [
+  { key: "poids", pattern: /\bpoids\b/ },
+  { key: "taille", pattern: /\btaille\b/ },
+  { key: "sport-frequence", pattern: /\b(?:frequence\s+(?:d[' ]|de\s+l[' ])?entrainement|nombre\s+de\s+seances?|seances?\s+par\s+semaine)\b/ },
+];
+
+function buildDiscoveryProvidedFactStatement(
+  key: "poids" | "taille" | "sport-frequence",
+  value: unknown,
+): string {
+  const rendered = normalizeDiscoveryFrenchSurface(formatDiscoveryFactValue(key, value));
+  if (key === "poids") return `Ton poids déclaré est de ${rendered}`;
+  if (key === "taille") return `Ta taille déclarée est de ${rendered}`;
+  const frequencyLabels: Record<string, string> = {
+    "0": "0 séance par semaine",
+    "1-2": "1 à 2 séances par semaine",
+    "3-4": "3 à 4 séances par semaine",
+    "5+": "5 séances ou plus par semaine",
+  };
+  const normalizedFrequency = String(value || "").trim();
+  return `Ta fréquence d’entraînement déclarée est de ${frequencyLabels[normalizedFrequency] || rendered}`;
+}
+
+/**
+ * Replaces only clauses that the fail-closed factual gate already recognizes
+ * as claiming that a supplied weight, height or training frequency is absent.
+ * Unknown contradictions remain untouched and are still rejected by the gate.
+ */
+export function repairDiscoveryProvidedFactAbsenceClaims(
+  text: string,
+  responses: DiscoveryResponses,
+): string {
+  const normalized = normalizeResponses(
+    responses as Record<string, unknown>,
+    { mode: "discovery" },
+  ) as DiscoveryResponses;
+
+  return String(text || "")
+    .split(/([.!?;\n]+)/)
+    .map((part, index) => {
+      if (index % 2 === 1 || !part.trim()) return part;
+      const normalizedClause = normalizeDiscoveryFactText(part);
+      const contradicted = DISCOVERY_REPAIRABLE_PRESENT_FACTS.filter(({ key, pattern }) => (
+        hasDiscoveryFactValue(normalized[key])
+        && clauseClaimsFactIsMissing(normalizedClause, pattern)
+      ));
+      if (contradicted.length === 0) return part;
+
+      const leadingWhitespace = part.match(/^\s*/)?.[0] || "";
+      const trailingWhitespace = part.match(/\s*$/)?.[0] || "";
+      return `${leadingWhitespace}${contradicted
+        .map(({ key }) => buildDiscoveryProvidedFactStatement(key, normalized[key]))
+        .join(". ")}${trailingWhitespace}`;
+    })
+    .join("");
+}
+
 /** Returns fail-closed reasons when generated prose contradicts supplied facts. */
 export function validateDiscoveryFactualConsistency(
   text: string,
@@ -559,13 +619,7 @@ export function validateDiscoveryFactualConsistency(
     .map((clause) => clause.trim())
     .filter(Boolean);
   const reasons: string[] = [];
-  const presentFacts: Array<[string, RegExp]> = [
-    ["poids", /\bpoids\b/],
-    ["taille", /\btaille\b/],
-    ["sport-frequence", /\b(?:frequence\s+(?:d[' ]|de\s+l[' ])?entrainement|nombre\s+de\s+seances?|seances?\s+par\s+semaine)\b/],
-  ];
-
-  for (const [key, factPattern] of presentFacts) {
+  for (const { key, pattern: factPattern } of DISCOVERY_REPAIRABLE_PRESENT_FACTS) {
     if (!hasDiscoveryFactValue(normalized[key])) continue;
     if (clauses.some((clause) => clauseClaimsFactIsMissing(clause, factPattern))) {
       reasons.push(`factual_presence_contradiction:${key}`);
@@ -1760,7 +1814,10 @@ export function validateDiscoveryGeneratedNarrative(
     throw new Error("Discovery unified output is not an object");
   }
   const candidate = raw as { synthesis?: unknown; sections?: unknown };
-  const synthesis = cleanDiscoveryNarrativeProse(String(candidate.synthesis || ""));
+  const synthesis = repairDiscoveryProvidedFactAbsenceClaims(
+    cleanDiscoveryNarrativeProse(String(candidate.synthesis || "")),
+    responses,
+  );
   const synthesisWords = synthesis.split(/\s+/).filter(Boolean).length;
   const synthesisParagraphs = synthesis.split(/\n\s*\n/).filter((part) => part.trim().length > 120).length;
   const synthesisErrors = [
@@ -1788,7 +1845,10 @@ export function validateDiscoveryGeneratedNarrative(
       throw new Error(`Discovery unified domain invalid: ${domain || "empty"}`);
     }
     if (sections[domain]) throw new Error(`Discovery unified duplicate domain: ${domain}`);
-    const content = cleanDiscoveryNarrativeProse(String(item?.content || ""));
+    const content = repairDiscoveryProvidedFactAbsenceClaims(
+      cleanDiscoveryNarrativeProse(String(item?.content || "")),
+      responses,
+    );
     const baseValidation = validateDiscoverySectionContent(content, safetyPolicy);
     const reasons = [...new Set([
       ...baseValidation.reasons,
