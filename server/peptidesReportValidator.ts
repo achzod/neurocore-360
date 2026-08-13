@@ -26,6 +26,14 @@ export interface PeptidesPeptide {
   cycleDuration?: string;
   reconstitution?: string;
   whyThisPeptide?: string;
+  _vialPlanning?: {
+    status?: "documented" | "stability-unverified" | "unparseable";
+    pharmacologicalNeedMg?: number | null;
+    mathematicalMinimumVials?: number | null;
+    operationalVials?: number | null;
+    stabilityDays?: number | null;
+    stabilitySource?: string | null;
+  };
 }
 
 export interface PeptidesReport {
@@ -40,6 +48,7 @@ export interface PeptidesReport {
   bloodMarkers?: string[];
   _validationContext?: {
     confirmedLowTestosterone?: boolean;
+    consentAccepted?: boolean;
     profile?: {
       weightKg?: number;
       primaryGoal?: string;
@@ -74,6 +83,9 @@ export interface PeptidesReport {
       packageCount?: number;
       boxSize?: number;
       totalPriceUsd?: number;
+      totalPriceGbp?: number;
+      needMg?: number;
+      deliveredMg?: number;
     }>;
   };
 }
@@ -793,7 +805,12 @@ function checkPeptide(p: PeptidesPeptide): string[] {
       orderedVialMg != null &&
       orderedVialMg > 0 &&
       orderedVialMg >= needMg;
-    if (overshoot > 2.5 && !isSingleVialFloor) {
+    const documentedOperationalOrder =
+      p._vialPlanning?.status === "documented" &&
+      p._vialPlanning?.operationalVials === orderedVialCount &&
+      Number(p._vialPlanning?.stabilityDays || 0) > 0 &&
+      String(p._vialPlanning?.stabilitySource || "").length >= 8;
+    if (overshoot > 2.5 && !isSingleVialFloor && !documentedOperationalOrder) {
       issues.push(
         `surcommande detectee: ${totalMgOrdered}mg commandes vs ${needMg.toFixed(1)}mg besoin (x${overshoot.toFixed(1)})`
       );
@@ -1045,8 +1062,21 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
     `\\b(?:m[ée]decin|pharmacien)\\b[\\s\\S]{0,180}\\b${verificationAction}\\b|\\b${verificationAction}\\b[\\s\\S]{0,180}\\b(?:m[ée]decin|pharmacien)\\b`,
     "i"
   ).test(clientFacingText);
-  if (!hasMedicalVerification) {
+  if (report.qualityVersion === "medical-review-v1" && !hasMedicalVerification) {
     errors.push("warning de verification medecin ou pharmacien manquant");
+  }
+  if (
+    report.qualityVersion === "expert-standard-v1" &&
+    report._validationContext?.consentAccepted === true &&
+    !/contenu [ée]ducatif|ne remplace pas (?:un )?(?:diagnostic|avis m[ée]dical|ordonnance)/i.test(clientFacingText)
+  ) {
+    errors.push("disclaimer legal court manquant pour le protocole standard");
+  }
+  if (
+    report.qualityVersion === "expert-standard-v1" &&
+    /(?:sans validation[^.]{0,80}tu ne commences pas|projet de protocole [àa] faire valider|s['’]il manque une seule case[^.]{0,60}tu ne commences pas)/i.test(clientFacingText)
+  ) {
+    errors.push("gate medical bloquant reintroduit dans un protocole standard consenti");
   }
   const hasExperimentalPeptide = (report.peptides || []).some((peptide) =>
     /\b(?:retatrutide|bpc[\s-]?157|tb[\s-]?500|ipamorelin|cjc[\s-]?1295|dsip|epitalon)\b/i.test(peptide.name || "")
@@ -1156,15 +1186,18 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
       errors.push(`[${snapshot.peptide || "?"}] quantite prix live ${snapshot.requestedVials} differente de vialsNeeded ${declaredQty}`);
     }
     const declaredPriceTotal = String(peptide?.priceEstimate || "")
-      .match(/\btotal\s*\$(\d+(?:[.,]\d+)?)/i);
-    const declaredPriceUsd = declaredPriceTotal
-      ? Number(declaredPriceTotal[1].replace(",", "."))
+      .match(/\btotal\s*([$£])(\d+(?:[.,]\d+)?)/i);
+    const declaredPrice = declaredPriceTotal
+      ? Number(declaredPriceTotal[2].replace(",", "."))
       : null;
-    const livePriceUsd = Number(snapshot.totalPriceUsd);
-    if (declaredPriceUsd == null || !Number.isFinite(declaredPriceUsd)) {
+    const declaredCurrency = declaredPriceTotal?.[1];
+    const livePrice = declaredCurrency === "£"
+      ? Number(snapshot.totalPriceGbp)
+      : Number(snapshot.totalPriceUsd);
+    if (declaredPrice == null || !Number.isFinite(declaredPrice)) {
       errors.push(`[${snapshot.peptide || "?"}] total prix absent de priceEstimate`);
-    } else if (Number.isFinite(livePriceUsd) && Math.abs(declaredPriceUsd - livePriceUsd) > 0.01) {
-      errors.push(`[${snapshot.peptide || "?"}] total prix affiche $${declaredPriceUsd.toFixed(2)} different du live $${livePriceUsd.toFixed(2)}`);
+    } else if (Number.isFinite(livePrice) && Math.abs(declaredPrice - livePrice) > 0.01) {
+      errors.push(`[${snapshot.peptide || "?"}] total prix affiche ${declaredCurrency}${declaredPrice.toFixed(2)} different du live ${declaredCurrency}${livePrice.toFixed(2)}`);
     }
     const needMg = Number(snapshot.needMg);
     const deliveredMg = Number(snapshot.deliveredMg);

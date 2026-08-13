@@ -126,6 +126,7 @@ import {
   sanitizePeptidesGenerationError,
 } from "./peptidesGenerationCircuitBreaker";
 import { getAICostBudgetSummary } from "./aiCostBudgetController";
+import { hasValidPeptidesConsent } from "./peptidesConsent";
 import { createRateLimiter } from "./middleware/rateLimit";
 import {
   scrapeArticleFromUrl,
@@ -5843,6 +5844,7 @@ export async function registerRoutes(
       const manualTier = ((pepOrder?.metadata as any)?.peptidesTier as "solo" | "coached" | "tracked" | undefined) ?? "coached";
       const report = await generatePeptidesProtocol(responses, email, manualTier, {
         ...(pepOrder?.id ? { orderId: pepOrder.id } : {}),
+        consentAccepted: hasValidPeptidesConsent((pepOrder?.metadata as any)?.peptidesEngineConsent),
       });
 
       let saved;
@@ -8841,6 +8843,7 @@ export async function registerRoutes(
           const forcePaidTier = ((order.metadata as any)?.peptidesTier as "solo" | "coached" | "tracked" | undefined) ?? "coached";
           const report = await generatePeptidesProtocol(responses, order.email, forcePaidTier, {
             orderId: order.id,
+            consentAccepted: hasValidPeptidesConsent((order.metadata as any)?.peptidesEngineConsent),
           });
           const saved = await storage.createBurnoutReport({
             email: `peptides::${order.email}`,
@@ -14224,6 +14227,7 @@ export async function registerRoutes(
       try {
         const report = await generatePeptidesProtocol(responses, email, "coached", {
           ...(order?.id ? { orderId: order.id } : {}),
+          consentAccepted: hasValidPeptidesConsent((order?.metadata as any)?.peptidesEngineConsent),
         });
 
         // Store report using burnout_reports table as generic JSON store
@@ -14825,6 +14829,7 @@ export async function registerRoutes(
             maxCandidates: 1,
             providerRetries: 1,
             orderId: order.id,
+            consentAccepted: hasValidPeptidesConsent((order.metadata as any)?.peptidesEngineConsent),
           });
         } catch (generationError: any) {
           const safeError = sanitizePeptidesGenerationError(generationError);

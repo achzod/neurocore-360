@@ -74,9 +74,9 @@ function readTierFromUrl(): PeptidesTier {
 // bumper TERMS_VERSION quand la formulation change. Le serveur stocke la
 // version acceptée dans order.metadata.peptidesEngineConsent pour preuve en
 // cas de litige PayPal/Stripe.
-const PEPTIDES_TERMS_VERSION = "peptides-engine-cgv-v1-2026-05-18";
+const PEPTIDES_TERMS_VERSION = "peptides-engine-consent-v2-2026-08-13";
 const PEPTIDES_TERMS_TEXT =
-  "Je reconnais que le rapport Peptides Engine est un document personnalisé qu'Achzod rédige sur-mesure pour mon profil, livré sous 24 à 48h après ma commande. Je demande expressément qu'Achzod commence la préparation immédiatement après paiement. En raison de la nature digitale et personnalisée du rapport, aucun remboursement n'est possible une fois le rapport livré, et je renonce expressément et de manière irrévocable à mon droit de rétractation conformément à l'article L221-28 du Code de la consommation (contenu numérique personnalisé). Je confirme avoir lu et accepté les Conditions Générales de Vente.";
+  "Je demande la création immédiate d'un protocole Peptides Engine personnalisé à partir de mes réponses. Je comprends qu'il s'agit d'un contenu éducatif, que certaines molécules peuvent être expérimentales ou non approuvées pour cet usage, et que le rapport ne remplace ni diagnostic ni ordonnance. Je confirme avoir fourni des informations exactes, avoir lu les contre-indications et critères d'arrêt, accepter la confidentialité de mes données et de la source fournisseur, et assumer mes décisions d'achat et d'utilisation. En raison de la nature digitale et personnalisée du rapport, aucun remboursement n'est possible une fois le rapport livré, et je renonce expressément à mon droit de rétractation conformément à l'article L221-28 du Code de la consommation. Je confirme avoir lu et accepté les Conditions Générales de Vente.";
 
 const SECTION_ICONS: Record<string, React.ElementType> = {
   profil: User,
@@ -478,10 +478,13 @@ function CheckoutCard({
               aria-label="J'accepte les conditions de la commande Peptides Engine"
             />
             <span className="text-xs text-white/70 leading-relaxed">
-              Je reconnais que le rapport Peptides Engine est un document personnalisé qu'Achzod
-              rédige sur-mesure pour mon profil, livré sous 24 à 48h après ma commande. Je demande
-              expressément qu'Achzod commence la préparation immédiatement après paiement. En raison
-              de la nature digitale et personnalisée du rapport, <strong className="text-white">aucun
+              Je demande la création immédiate d'un protocole Peptides Engine personnalisé à partir
+              de mes réponses. Je comprends qu'il s'agit d'un contenu éducatif, que certaines molécules
+              peuvent être expérimentales ou non approuvées pour cet usage, et que le rapport ne remplace
+              ni diagnostic ni ordonnance. Je confirme avoir fourni des informations exactes, lu les
+              contre-indications et critères d'arrêt, accepté la confidentialité de mes données et de la
+              source fournisseur, et assumer mes décisions d'achat et d'utilisation. En raison de la nature
+              digitale et personnalisée du rapport, <strong className="text-white">aucun
               remboursement n'est possible une fois le rapport livré</strong>, et je renonce
               expressément à mon droit de rétractation conformément à l'article L221-28 du Code de
               la consommation. Je confirme avoir lu et accepté les{" "}

@@ -17,10 +17,12 @@ import {
   buildPeptidesBloodCreditsBlock,
   buildPeptidesCoachingDeductionBlock,
 } from "../server/cta";
+import { hasValidPeptidesConsent } from "../server/peptidesConsent";
 
 const engineSource = readFileSync(new URL("../server/peptidesEngine.ts", import.meta.url), "utf8");
 const routesSource = readFileSync(new URL("../server/routes.ts", import.meta.url), "utf8");
 const reportPageSource = readFileSync(new URL("../client/src/pages/PeptidesEngineReport.tsx", import.meta.url), "utf8");
+const peptidesPageSource = readFileSync(new URL("../client/src/pages/PeptidesEnginePage.tsx", import.meta.url), "utf8");
 assert.match(engineSource, /PEPTIDES_PRIMARY_MODEL[\s\S]{0,120}OPENAI_REPORT_MODEL/);
 assert.match(engineSource, /effort:\s*"xhigh"/);
 assert.match(engineSource, /mode:\s*"pro"/);
@@ -31,6 +33,25 @@ assert.match(engineSource, /entre 30000 et 38000 caracteres au total/);
 assert.match(engineSource, /Candidate rejected[\s\S]{0,600}strict full regeneration/);
 assert.match(engineSource, /Provider failure is terminal, duplicate paid generation blocked/);
 assert.doesNotMatch(engineSource, /@anthropic-ai\/sdk|ANTHROPIC_API_KEY|callClaudeForPeptides/);
+assert.match(peptidesPageSource, /peptides-engine-consent-v2-2026-08-13/);
+assert.match(peptidesPageSource, /assumer mes décisions d'achat et d'utilisation/);
+assert.match(engineSource, /sourceReport\._validationContext\?\.consentAccepted === true/);
+assert.match(routesSource, /generatePeptidesProtocol\(responses, email, autoGenTier,[\s\S]{0,180}consentAccepted/);
+assert.match(routesSource, /generatePeptidesProtocol\(responses, order\.email, forcePaidTier,[\s\S]{0,180}consentAccepted/);
+assert.match(routesSource, /generatePeptidesProtocol\(responses, email, "coached",[\s\S]{0,180}consentAccepted/);
+assert.match(routesSource, /generatePeptidesProtocol\(responses, email, manualTier,[\s\S]{0,180}consentAccepted/);
+assert.match(
+  routesSource,
+  /const repaired = await refreshPeptauraPricingForDelivery\([\s\S]{0,900}const validation = validatePeptidesReport\(repaired\)/,
+  "Le recovery doit reparer le meme artefact puis le revalider avant toute livraison"
+);
+const signedConsent = {
+  accepted: true,
+  version: "peptides-engine-consent-v2-2026-08-13",
+  text: "Je demande la creation immediate d'un protocole personnalise et je comprends le statut educatif du contenu, les contre-indications, les criteres d'arret, la confidentialite et ma responsabilite dans les decisions d'achat et d'utilisation.",
+};
+assert.equal(hasValidPeptidesConsent(signedConsent), true);
+assert.equal(hasValidPeptidesConsent({ ...signedConsent, text: "court" }), false);
 assert.match(engineSource, /PROTOCOLE OBLIGATOIRE SI TESTOSTERONE BASSE CONFIRMEE/i);
 assert.match(engineSource, /1\. Enclomiphene Citrate/);
 assert.match(engineSource, /2\. KissPeptin-10/);
@@ -74,7 +95,7 @@ const peptide = {
   purpose: "Exemple de verification mathematique, pas une automedication",
   purchaseUrl: "https://www.peptaura.com/catalog/Retatrutide",
   vialsNeeded: "8 vials de 10mg pour 12 semaines, total 79mg",
-  priceEstimate: "Environ 8 vials, prix live controle avant livraison",
+  priceEstimate: "Environ 8 vials, total $100, prix live controle avant livraison",
   cycleDuration: "12 semaines",
   reconstitution: "Vial de 10mg, manipulation uniquement apres formation par un professionnel",
   whyThisPeptide: "Molecule experimentale non approuvee, donnees humaines encore limitees",
@@ -613,7 +634,7 @@ assert.match(
 );
 
 const hardFlagReport = repairPeptidesReportContent(
-  structuredClone(legacyReport),
+  { ...structuredClone(legacyReport), qualityVersion: "medical-review-v1" },
   { pep_name: "Luca", pep_country: "France", pep_conditions: "Cancer en remission recente" },
   "solo"
 ) as any;
@@ -623,6 +644,44 @@ assert.doesNotMatch(
   hardFlagReport.sections.map((section: any) => `${section.title}\n${section.content}`).join("\n"),
   /\b2 credits Blood Analysis\b/i,
   "Le mode medical doit respecter le tier Solo lui aussi"
+);
+
+const standardHardFlagReport = repairPeptidesReportContent(
+  { ...structuredClone(legacyReport), qualityVersion: "expert-standard-v1" },
+  { pep_name: "Luca", pep_country: "France", pep_conditions: "Cancer en remission recente" },
+  "solo"
+) as any;
+assert.equal(
+  standardHardFlagReport.qualityVersion,
+  "expert-standard-v1",
+  "Le repair ne doit jamais transformer lui-meme un protocole standard en medical-review"
+);
+assert.doesNotMatch(
+  standardHardFlagReport.sections.map((section: any) => `${section.title}\n${section.content}`).join("\n"),
+  /projet de protocole [àa] faire valider|s'il manque une seule case, tu ne commences pas/i
+);
+
+const standardWithoutMedicalVerification = structuredClone(repaired) as any;
+standardWithoutMedicalVerification.qualityVersion = "expert-standard-v1";
+standardWithoutMedicalVerification._validationContext = {
+  ...(standardWithoutMedicalVerification._validationContext || {}),
+  consentAccepted: hasValidPeptidesConsent(signedConsent),
+};
+for (const section of standardWithoutMedicalVerification.sections) {
+  section.content = String(section.content)
+    .replace(/m[ée]decin/gi, "support")
+    .replace(/pharmacien/gi, "support");
+}
+const noGlobalMedicalGateAudit = validatePeptidesReport(standardWithoutMedicalVerification);
+assert.equal(
+  noGlobalMedicalGateAudit.ok,
+  true,
+  `Contrat consentement -> repair -> validation casse:\n${noGlobalMedicalGateAudit.errors.join("\n")}`
+);
+assert.doesNotMatch(
+  noGlobalMedicalGateAudit.errors.join("\n"),
+  /warning de verification medecin ou pharmacien manquant/,
+  "Un protocole standard consenti ne depend plus d'un gate medecin/pharmacien herite"
 );
 
 const missingLowTestosteroneStack = structuredClone(report) as any;
@@ -700,6 +759,7 @@ validLowTestosteroneStack._peptauraLiveSync.listingSnapshots.push(
     deliveredVials: 2,
     packageCount: 2,
     boxSize: 1,
+    totalPriceGbp: 79.98,
   },
   {
     peptide: "KissPeptin-10",

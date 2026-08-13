@@ -122,7 +122,7 @@ function hasAnyPattern(value: unknown, pattern: RegExp): boolean {
   return pattern.test(JSON.stringify(value));
 }
 
-function needsMedicalReview(responses: Record<string, unknown>): boolean {
+export function hasPeptidesHardRedFlag(responses: Record<string, unknown>): boolean {
   const hardRedFlag = /(cancer|tumeur|oncolog|chemio|radioth|grossesse|enceinte|allait|pancreat|insuffisance\s+(?:renale|hepatique)|cirrhose|hepatite\s+active|insuffisance\s+cardiaque|arythmi|bipolaire|schizoph|psychose)/i;
   const importantFields = [
     responses.pep_conditions,
@@ -335,7 +335,7 @@ function anchorExpertPeptideRationales(
 
 function upsertFinalDisclaimer(report: RepairableReport, firstName: string): void {
   const shortDisclaimer = sanitizeClientFacingText(
-    `${firstName}, point important pour finir: plusieurs molecules de ce rapport ont un statut experimental ou non approuve pour cet usage. Tu gardes une logique terrain, mais tu fais verifier le produit exact, la dose, la concentration, tes traitements, tes allergies et tes analyses par un medecin ou un pharmacien avant de passer a l'acte.`
+    `${firstName}, point important pour finir: ce protocole personnalise reste un contenu educatif et ne remplace pas un diagnostic ni une ordonnance. Plusieurs molecules ont un statut experimental ou non approuve pour cet usage. Respecte les contre-indications et les criteres d'arret propres a chaque molecule.`
   );
 
   const disclaimerSection = (report.sections || []).find((section) =>
@@ -373,10 +373,28 @@ function cleanStandardSections(report: RepairableReport): void {
         .replace(/consulte un professionnel de sant[ée] si tu as le moindre doute\./gi, "")
         .replace(/consulte un m[ée]decin si tu as le moindre doute[^.]*\./gi, "")
         .replace(/consulte un m[ée]decin avant toute suppl[ée]mentation\./gi, "")
+        .replace(/(?:avant tout achat ou toute utilisation|avant de commencer)[^.]{0,220}(?:m[ée]decin|pharmacien|professionnel de sant[ée])[^.]*\./gi, "")
+        .replace(/(?:demande|fais)[^.]{0,180}(?:validation|accord|confirmation)[^.]{0,100}(?:m[ée]decin|pharmacien|professionnel de sant[ée])[^.]*\./gi, "")
+        .replace(/(?:m[ée]decin|pharmacien|professionnel de sant[ée])[^.]{0,160}(?:valider|valide|confirmer|confirme|autoriser|autorise)[^.]*\./gi, "")
         .replace(/des milliers de personnes le font chaque jour et c'est beaucoup plus simple que tu ne l'imagines\./gi, "")
         .replace(/\n{3,}/g, "\n\n")
         .trim()
     );
+  }
+
+  const medicalMentions = () => collectClientFacingStrings(report)
+    .join("\n")
+    .match(/\b(?:m[ée]decin|pharmacien|professionnel de sant[ée])\b/gi)?.length || 0;
+  if (medicalMentions() > 8) {
+    for (const section of report.sections || []) {
+      if (/disclaimer|support|securite/i.test(`${section.id} ${section.title}`)) continue;
+      section.content = sanitizeClientFacingText(
+        String(section.content || "")
+          .replace(/[^.\n]*(?:m[ée]decin|pharmacien|professionnel de sant[ée])[^.\n]*\./gi, "")
+          .replace(/\n{3,}/g, "\n\n")
+          .trim()
+      );
+    }
   }
 }
 
@@ -1270,7 +1288,7 @@ export function repairPeptidesReportContent(
 
   report.clientName = sanitizeClientFacingText(firstName);
   if (tier) report.tier = sanitizeClientFacingText(tier);
-  if (needsMedicalReview(responses)) {
+  if (report.qualityVersion === "medical-review-v1" && hasPeptidesHardRedFlag(responses)) {
     (report as any).qualityVersion = "medical-review-v1";
     cleanUnsafePeptideFields(report);
     report.sections = buildSections(report, firstName);
@@ -1278,6 +1296,7 @@ export function repairPeptidesReportContent(
     normalizeTierCreditClaims(report, String(tier || report.tier || ""));
     normalizeSingleVialGrammar(report);
   } else {
+    (report as any).qualityVersion = "expert-standard-v1";
     repairStandardReportContent(
       report,
       firstName,

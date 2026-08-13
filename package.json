@@ -9,6 +9,7 @@
     "start": "NODE_ENV=production node --max-old-space-size=400 --heapsnapshot-near-heap-limit=1 dist/index.cjs",
     "check": "tsc",
     "test:peptides:guardrails": "tsx scripts/test-peptides-guardrails.ts",
+    "test:peptides:vial-planning": "tsx scripts/test-peptides-vial-planning.ts",
     "test:reports:openai": "tsx scripts/test-openai-report-migration.ts",
     "test:peptaura:live": "tsx scripts/test-peptaura-live.ts",
     "test:peptaura:feed-live": "tsx scripts/test-peptaura-product-feed-live.ts",

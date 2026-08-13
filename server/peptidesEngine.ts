@@ -20,6 +20,7 @@ import {
   sanitizeClientFacingText,
 } from "./clientFacingQuality";
 import {
+  hasPeptidesHardRedFlag,
   pruneUnintegratedBonusPeptides,
   repairPeptidesReportContent,
 } from "./peptidesReportRepair";
@@ -45,6 +46,11 @@ export {
   evaluatePeptauraGenerationPreflight,
   PeptauraSourceUnavailableError,
 } from "./peptidesSourcePreflight";
+import {
+  formatOperationalVials,
+  parseDocumentedStabilityConfig,
+  planOperationalVials,
+} from "./peptidesVialPlanning";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -60,6 +66,7 @@ export interface PeptideItem {
   reconstitution?: string;
   whyThisPeptide?: string;
   vialsNeeded?: string;
+  _vialPlanning?: ReturnType<typeof planOperationalVials>;
 }
 
 export interface ReportSection {
@@ -87,6 +94,7 @@ export interface PeptidesReport {
   };
   _validationContext?: {
     confirmedLowTestosterone: boolean;
+    consentAccepted?: boolean;
     profile?: {
       weightKg?: number;
       primaryGoal?: string;
@@ -416,7 +424,8 @@ function hasConfirmedLowTestosterone(responses: Record<string, unknown>): boolea
 
 function buildPeptidesValidationContext(
   responses: Record<string, unknown>,
-  country = normalizeDeliveryCountry(responses)
+  country = normalizeDeliveryCountry(responses),
+  consentAccepted = false
 ): NonNullable<PeptidesReport["_validationContext"]> {
   const weightKg = Number(responses.pep_weight || responses.poids || 0);
   const secondaryGoalsRaw = responses.pep_secondary_goals || responses.objectifSecondaire;
@@ -426,6 +435,7 @@ function buildPeptidesValidationContext(
 
   return {
     confirmedLowTestosterone: hasConfirmedLowTestosterone(responses),
+    consentAccepted,
     profile: {
       ...(Number.isFinite(weightKg) && weightKg > 0 ? { weightKg } : {}),
       primaryGoal: String(responses.pep_primary_goal || responses.objectifPrincipal || "").trim(),
@@ -1282,7 +1292,7 @@ async function applyLivePeptauraPricing(
       continue;
     }
     const best = purchasePlan.listing;
-    const qty = purchasePlan.requestedVials;
+    let qty = purchasePlan.requestedVials;
     const bestMg = purchasePlan.vialMg;
     const durationLabel = String(pep.cycleDuration || "le cycle").split(/[,.]/)[0].trim();
     const naturalDurationLabel = durationLabel.charAt(0).toLowerCase() + durationLabel.slice(1);
@@ -1295,6 +1305,21 @@ async function applyLivePeptauraPricing(
       }
       pep.reconstitution = conditional;
     }
+
+    const livePlan = planOperationalVials(
+      {
+        ...pep,
+        pharmacologicalNeedMg: needMg,
+        reconstitution: `Vial ${bestMg}mg. ${pep.reconstitution || ""}`,
+        vialsNeeded: `${qty} vials de ${bestMg}mg`,
+      },
+      parseDocumentedStabilityConfig()
+    );
+    pep._vialPlanning = livePlan;
+    qty = livePlan.status === "documented" && livePlan.operationalVials != null
+      ? livePlan.operationalVials
+      : livePlan.mathematicalMinimumVials || qty;
+    pep.vialsNeeded = formatOperationalVials(livePlan, pep.cycleDuration || "le cycle");
 
     // The official feed exposes the exact listing URL. Never synthesize a
     // vendor URL; use it only after the listing passed country/stock/price
@@ -1319,7 +1344,7 @@ async function applyLivePeptauraPricing(
         packageCount,
         deliveredVials: packageCount * best.boxSize,
         needMg,
-        deliveredMg: purchasePlan.deliveredMg,
+        deliveredMg: packageCount * best.boxSize * bestMg,
         unitPackagePriceUsd: effectivePackagePrice(best, qty),
         totalPriceUsd: offerTotalPrice(best, qty),
         marginRate: best.marginRate,
@@ -1527,7 +1552,11 @@ export async function refreshPeptauraPricingForDelivery(
 ): Promise<PeptidesReport> {
   const report = validateVialsMath(JSON.parse(JSON.stringify(sourceReport)));
   const context = await buildPeptauraPromptContext(responses);
-  report._validationContext = buildPeptidesValidationContext(responses, context.country);
+  report._validationContext = buildPeptidesValidationContext(
+    responses,
+    context.country,
+    sourceReport._validationContext?.consentAccepted === true
+  );
   await applyLivePeptauraPricing(report, context, true);
   const repaired = repairPeptidesReportContent(report, responses, tier);
   return cleanReportContent(repaired, repaired.clientName || extractFirstName(responses, ""));
@@ -2134,7 +2163,8 @@ function buildUserPrompt(
   responses: Record<string, unknown>,
   firstName: string,
   peptauraContext: PeptauraPromptContext,
-  tier: "solo" | "coached" | "tracked"
+  tier: "solo" | "coached" | "tracked",
+  consentAccepted = false
 ): string {
   const summary = buildResponsesSummary(responses);
 
@@ -2165,6 +2195,10 @@ CONTEXTE OFFRE:
 Tier exact: ${tier}
 Credits Blood Analysis ajoutes par cette commande: ${bloodCredits}
 ${bloodCreditInstructions}
+Consentement Peptides Engine signe et trace: ${consentAccepted ? "OUI" : "NON"}
+${consentAccepted
+  ? "Le client a demande le protocole personnalise direct et assume ses decisions apres lecture du cadre educatif, des contre-indications et des criteres d'arret. Ne transforme pas le rapport en demande d'autorisation medicale."
+  : "Aucun consentement trace n'est fourni a cette generation administrative: garde le disclaimer legal sans inventer une signature."}
 
 RÈGLES ABSOLUES:
 1. Adresse-toi à ${firstName} par son prénom à chaque section. Parle-lui comme un coach.
@@ -2760,6 +2794,22 @@ export function validateVialsMath(report: PeptidesReport): PeptidesReport {
       }
     }
   }
+  const documentedStability = parseDocumentedStabilityConfig();
+  for (const pep of report.peptides) {
+    if (isEnclomipheneName(pep.name)) continue;
+    const plan = planOperationalVials(
+      { ...pep, pharmacologicalNeedMg: estimateNeedMg(pep) },
+      documentedStability
+    );
+    pep._vialPlanning = plan;
+    if (plan.mathematicalMinimumVials != null) {
+      const pricedQty = plan.status === "documented" && plan.operationalVials != null
+        ? plan.operationalVials
+        : plan.mathematicalMinimumVials;
+      pep.vialsNeeded = formatOperationalVials(plan, pep.cycleDuration || "le cycle");
+      syncPriceEstimate(pep, pricedQty);
+    }
+  }
   return report;
 }
 
@@ -2862,6 +2912,7 @@ export async function generatePeptidesProtocol(
     maxCandidates?: number;
     providerRetries?: number;
     orderId?: string;
+    consentAccepted?: boolean;
     peptauraContext?: PeptauraPromptContext;
     providerGenerate?: (params: {
       systemPrompt: string;
@@ -2889,7 +2940,13 @@ export async function generatePeptidesProtocol(
     );
     throw error;
   }
-  const userPrompt = buildUserPrompt(responses, firstName, peptauraContext, tier);
+  const userPrompt = buildUserPrompt(
+    responses,
+    firstName,
+    peptauraContext,
+    tier,
+    options.consentAccepted === true
+  );
   // Cost-safe defaults apply to every caller, including legacy/inline paths.
   // A human-only recovery may explicitly request more, but no automatic caller
   // can accidentally inherit the old 2 candidates x 3 transport attempts.
@@ -2911,7 +2968,6 @@ export async function generatePeptidesProtocol(
       params.retries,
       params.orderId,
     ));
-
   // Each candidate uses GPT-5.6 Sol. A second independent generation is used
   // only when the first candidate fails a deterministic or client-facing gate.
   let report: PeptidesReport | null = null;
@@ -3047,9 +3103,16 @@ export async function generatePeptidesProtocol(
       report = validateAndFixPeptauraUrls(report);
       report = validateVialsMath(report);
       report = await applyLivePeptauraPricing(report, peptauraContext);
+      report.qualityVersion = hasPeptidesHardRedFlag(responses)
+        ? "medical-review-v1"
+        : "expert-standard-v1";
       report = repairPeptidesReportContent(report, responses, tier);
       report = cleanReportContent(report, firstName);
-      report._validationContext = buildPeptidesValidationContext(responses, peptauraContext.country);
+      report._validationContext = buildPeptidesValidationContext(
+        responses,
+        peptauraContext.country,
+        options.consentAccepted === true
+      );
       report.promoCodesGenerated = [];
       report.clientName = firstName;
       report._generationMeta = {
