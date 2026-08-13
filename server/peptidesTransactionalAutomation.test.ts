@@ -4,6 +4,7 @@ import test from "node:test";
 
 process.env.DATABASE_URL ||= "postgresql://test:test@127.0.0.1:5432/test";
 const { MemStorage } = await import("./storage");
+const { buildPeptidesCoachingDeductionBlock } = await import("./cta");
 
 async function paidPeptidesOrder(metadata: Record<string, unknown> = {}) {
   const storage = new MemStorage();
@@ -95,4 +96,20 @@ test("provider POST ambiguity is terminal for both transactional emails", () => 
     emailService,
     /allowAcceptedWithoutLiveVerification[\s\S]{0,220}sendPeptidesOrderConfirmation/,
   );
+});
+
+test("coached delivery always includes the PEPTIDES299 coaching conversion CTA", () => {
+  const coachingBlock = buildPeptidesCoachingDeductionBlock("coached", {
+    now: new Date("2026-08-13T14:36:00.000Z"),
+  });
+  assert.match(coachingBlock, /Code : PEPTIDES299/);
+  assert.match(coachingBlock, /299EUR deduits sur ton coaching Essential, Elite ou Private Lab/);
+  assert.match(coachingBlock, /achzodcoaching\.com\/coaching-essential/);
+
+  const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
+  const delivery = routes.slice(
+    routes.indexOf("async function deliverPeptidesReportOnce"),
+    routes.indexOf("// Auto-recovery: generate missing peptides reports", routes.indexOf("async function deliverPeptidesReportOnce")),
+  );
+  assert.match(delivery, /coachingText:\s*input\.coachingText/);
 });
