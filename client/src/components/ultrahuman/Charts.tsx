@@ -117,9 +117,9 @@ export const ProjectionChart: React.FC<ProjectionProps> = ({ color, currentScore
   const startPercentage = Math.round((currentScore / 10) * 100);
   const data = [
     { name: 'Actuel', Potential: startPercentage },
-    { name: '30 Jours', Potential: Math.min(startPercentage + 20, 100) },
-    { name: '60 Jours', Potential: Math.min(startPercentage + 35, 100) },
-    { name: '90 Jours', Potential: Math.min(startPercentage + 45, 100) },
+    { name: '30 Jours', Potential: null },
+    { name: '60 Jours', Potential: null },
+    { name: '90 Jours', Potential: null },
   ];
 
   return (

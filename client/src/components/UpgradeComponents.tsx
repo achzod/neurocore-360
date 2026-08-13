@@ -1,59 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Zap, Check, X, Clock, TrendingUp, Star, AlertTriangle, Target } from 'lucide-react';
-import { Theme, SectionContent } from './ultrahuman/types';
+import { Zap, Check, X, Clock, TrendingUp, Star, AlertTriangle } from 'lucide-react';
+import { Theme, Metric } from './ultrahuman/types';
 import { DiscoveryWhatsAppLink } from './DiscoveryWhatsAppCTA';
+import { analyzeDiscoveryRecommendation } from './upgradeRecommendation';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SCAN RECOMMENDATION LOGIC
 // ═══════════════════════════════════════════════════════════════════════════════
 
-type ScanRecommendation = 'ultimate' | 'anabolic' | 'default';
-
-interface RecommendationAnalysis {
-  type: ScanRecommendation;
-  hasHormonalIssues: boolean;
-  hasMultipleWeakAreas: boolean;
-  weakDomains: string[];
-}
-
-const HORMONAL_KEYWORDS = [
-  'hormonal', 'hormone', 'testostérone', 'testosterone', 'cortisol',
-  'anabolique', 'anabolic', 'métabolisme', 'metabolism', 'thyroïde', 'thyroid',
-  'insuline', 'insulin', 'oestrogène', 'estrogen', 'androgène', 'androgen',
-  'libido', 'récupération musculaire', 'muscle', 'masse musculaire',
-  'prise de masse', 'perte de poids', 'adipeux', 'adiposité', 'gras',
-  'énergie matinale', 'fatigue chronique'
-];
-
-const MULTI_WEAK_KEYWORDS = [
-  'sommeil', 'sleep', 'stress', 'digestion', 'intestin', 'microbiome',
-  'posture', 'biomécanique', 'entraînement', 'training', 'récupération',
-  'nutrition', 'hydratation', 'mental', 'mindset', 'cognition'
-];
-
-function analyzeWeakAreas(sections: SectionContent[], globalScore: number): RecommendationAnalysis {
-  const allText = sections
-    .map(s => `${s.title} ${s.subtitle ?? ''} ${s.content}`.toLowerCase())
-    .join(' ');
-
-  const hasHormonalIssues = HORMONAL_KEYWORDS.some(kw => allText.includes(kw.toLowerCase()));
-
-  const weakDomains = MULTI_WEAK_KEYWORDS.filter(kw => allText.includes(kw.toLowerCase()));
-  const hasMultipleWeakAreas = weakDomains.length >= 3 || globalScore < 5;
-
-  let type: ScanRecommendation = 'default';
-  if (globalScore < 5 || hasMultipleWeakAreas) {
-    type = 'ultimate';
-  } else if (hasHormonalIssues) {
-    type = 'anabolic';
-  } else {
-    type = 'ultimate';
-  }
-
-  return { type, hasHormonalIssues, hasMultipleWeakAreas, weakDomains };
-}
-
-function getHeroText(analysis: RecommendationAnalysis, globalScore: number): {
+function getHeroText(analysis: ReturnType<typeof analyzeDiscoveryRecommendation>, globalScore: number): {
   label: string;
   headline: string;
   subline: string;
@@ -63,41 +18,28 @@ function getHeroText(analysis: RecommendationAnalysis, globalScore: number): {
   secondaryLink: string;
   features: string[];
 } {
-  if (analysis.type === 'anabolic') {
-    return {
-      label: 'Optimisation hormonale possible',
-      headline: 'Ton profil suggere un potentiel de progression hormonal',
-      subline: "Peptides Engine te donne un protocole peptides personnalise avec dosages exacts, acces a la source a prix labo, et 2 bilans sanguins inclus pour suivre tes marqueurs.",
-      primaryCta: 'Peptides Engine · 399€',
-      primaryLink: '/offers/peptides-engine',
-      secondaryCta: 'Coaching Achzod',
-      secondaryLink: 'https://www.achzodcoaching.com/formules-coaching',
-      features: ['Protocole personnalise', 'Source peptides -90%', '2 Blood Analyses incluses', 'Support email 30j']
-    };
-  }
-
   if (analysis.type === 'ultimate' && globalScore < 5) {
     return {
-      label: 'Blocages detectes',
-      headline: `Ton score (${globalScore}/10) revele des axes d'amelioration`,
-      subline: "Un protocole peptides cible peut debloquer ta progression. Dosages ajustes a ton poids, guide complet, et acces a la source 60-90% moins chere.",
-      primaryCta: 'Peptides Engine · 399€',
-      primaryLink: '/offers/peptides-engine',
+      label: 'Axes prioritaires détectés',
+      headline: `Ton score (${globalScore}/10) révèle plusieurs axes à approfondir`,
+      subline: "Une analyse complète permet de préciser les causes possibles avant de choisir une stratégie adaptée.",
+      primaryCta: 'Ultimate Scan · 79€',
+      primaryLink: '/offers/ultimate-scan',
       secondaryCta: 'Coaching Achzod',
       secondaryLink: 'https://www.achzodcoaching.com/formules-coaching',
-      features: ['74 molecules disponibles', 'Dosages ajustes a ton poids', '2 Blood Analyses incluses', 'Guide injection complet']
+      features: ['18 domaines approfondis', 'Analyse posturale', 'Biomécanique', 'Plan 30-60-90 jours']
     };
   }
 
   return {
-    label: 'Passe au niveau superieur',
-    headline: 'Ton Discovery a identifie tes leviers de progression',
-    subline: 'Un protocole peptides personnalise peut accelerer tes resultats. 35 questions, dosages exacts, et acces a la source la moins chere du marche.',
-    primaryCta: 'Peptides Engine · 399€',
-    primaryLink: '/offers/peptides-engine',
+    label: 'Passe au niveau supérieur',
+    headline: 'Ton Discovery a identifié tes leviers de progression',
+    subline: 'Pour aller plus loin, approfondis les données avant de choisir une stratégie personnalisée.',
+    primaryCta: 'Anabolic Bioscan · 59€',
+    primaryLink: '/offers/anabolic-bioscan',
     secondaryCta: 'Coaching Achzod',
     secondaryLink: 'https://www.achzodcoaching.com/formules-coaching',
-    features: ['Protocole sur mesure', 'Source peptides -90%', '2 bilans sanguins inclus', 'Livraison 48h']
+    features: ['16 analyses approfondies', 'Axes cliniques et hormonaux', 'Protocoles détaillés', 'Plan 30-60-90 jours']
   };
 }
 
@@ -107,12 +49,12 @@ function getHeroText(analysis: RecommendationAnalysis, globalScore: number): {
 
 interface UpgradeHeroProps {
   theme: Theme;
-  sections?: SectionContent[];
+  metrics?: Metric[];
   globalScore?: number;
 }
 
-export const UpgradeHero: React.FC<UpgradeHeroProps> = ({ theme, sections = [], globalScore = 5 }) => {
-  const analysis = analyzeWeakAreas(sections, globalScore);
+export const UpgradeHero: React.FC<UpgradeHeroProps> = ({ theme, metrics = [], globalScore = 5 }) => {
+  const analysis = analyzeDiscoveryRecommendation(metrics, globalScore);
   const text = getHeroText(analysis, globalScore);
 
   return (
@@ -377,8 +319,6 @@ interface UpgradeTeaserProps {
   features: string[];
   ctaText?: string;
   ctaLink?: string;
-  sections?: SectionContent[];
-  globalScore?: number;
   context?: TeaserContext;
 }
 
@@ -389,13 +329,8 @@ export const UpgradeTeaser: React.FC<UpgradeTeaserProps> = ({
   features,
   ctaText,
   ctaLink,
-  sections = [],
-  globalScore = 5,
   context = 'generic'
 }) => {
-  // Derive smart CTA based on context + scores when no explicit override is provided
-  const analysis = analyzeWeakAreas(sections, globalScore);
-
   let resolvedCtaText: string;
   let resolvedCtaLink: string;
   let secondaryCtaText: string;
@@ -403,21 +338,21 @@ export const UpgradeTeaser: React.FC<UpgradeTeaserProps> = ({
   let contextNote: string;
 
   if (context === 'energy') {
-    resolvedCtaText = ctaText ?? 'Peptides Engine · 399€';
-    resolvedCtaLink = ctaLink ?? '/offers/peptides-engine';
+    resolvedCtaText = ctaText ?? 'Anabolic Bioscan · 59€';
+    resolvedCtaLink = ctaLink ?? '/offers/anabolic-bioscan';
     secondaryCtaText = 'Coaching Achzod (-20%)';
     secondaryCtaLink = 'https://www.achzodcoaching.com/formules-coaching';
-    contextNote = 'Protocole peptides personnalise pour ton profil hormonal';
+    contextNote = 'Analyse approfondie de l’énergie, de la nutrition et de la récupération';
   } else if (context === 'training') {
-    resolvedCtaText = ctaText ?? 'Peptides Engine · 399€';
-    resolvedCtaLink = ctaLink ?? '/offers/peptides-engine';
+    resolvedCtaText = ctaText ?? 'Ultimate Scan · 79€';
+    resolvedCtaLink = ctaLink ?? '/offers/ultimate-scan';
     secondaryCtaText = 'Coaching Achzod (-20%)';
     secondaryCtaLink = 'https://www.achzodcoaching.com/formules-coaching';
-    contextNote = 'Peptides pour la recuperation et la performance';
+    contextNote = 'Analyse approfondie de la récupération, de la posture et de la performance';
   } else {
-    resolvedCtaText = ctaText ?? 'Peptides Engine · 399€';
-    resolvedCtaLink = ctaLink ?? '/offers/peptides-engine';
-    secondaryCtaText = 'Coaching (-20% : ANALYSE20)';
+    resolvedCtaText = ctaText ?? 'Ultimate Scan · 79€';
+    resolvedCtaLink = ctaLink ?? '/offers/ultimate-scan';
+    secondaryCtaText = 'Coaching Achzod (-20%)';
     secondaryCtaLink = 'https://www.achzodcoaching.com/formules-coaching';
     contextNote = '';
   }
@@ -493,16 +428,16 @@ export const UpgradeTeaser: React.FC<UpgradeTeaserProps> = ({
 
 interface SmartRecommendationProps {
   theme: Theme;
-  sections?: SectionContent[];
+  metrics?: Metric[];
   globalScore?: number;
 }
 
 export const SmartRecommendation: React.FC<SmartRecommendationProps> = ({
   theme,
-  sections = [],
+  metrics = [],
   globalScore = 5
 }) => {
-  const analysis = analyzeWeakAreas(sections, globalScore);
+  const analysis = analyzeDiscoveryRecommendation(metrics, globalScore);
 
   let headline: string;
   let bodyText: string;
@@ -514,20 +449,12 @@ export const SmartRecommendation: React.FC<SmartRecommendationProps> = ({
 
   if (globalScore < 5 || analysis.hasMultipleWeakAreas) {
     headline = 'Analyse complète recommandée';
-    bodyText = `Tes résultats montrent des blocages importants sur plusieurs fronts. L'Ultimate Scan (79€) est le plus adapté car il couvre les 18 domaines + posture + biomécanique.`;
+    bodyText = `Au moins trois domaines mesurés sont sous 6/10. L'Ultimate Scan (79€) est le plus adapté pour approfondir ces axes, la posture et la biomécanique.`;
     primaryCta = 'Ultimate Scan - 79€ (acompte coaching)';
     primaryLink = '/offers/ultimate-scan';
     secondaryCta = 'Anabolic Bioscan - 59€ (acompte coaching)';
     secondaryLink = '/offers/anabolic-bioscan';
     icon = <AlertTriangle size={22} style={{ color: theme.colors.primary }} />;
-  } else if (analysis.hasHormonalIssues) {
-    headline = 'Profil hormonal à optimiser';
-    bodyText = "Ton profil suggère un déséquilibre hormonal. L'Anabolic Bioscan (59€) va identifier ton potentiel anabolique, tes axes hormonaux et les protocoles de correction associés.";
-    primaryCta = 'Anabolic Bioscan - 59€ (acompte coaching)';
-    primaryLink = '/offers/anabolic-bioscan';
-    secondaryCta = 'Ultimate Scan - 79€ (acompte coaching)';
-    secondaryLink = '/offers/ultimate-scan';
-    icon = <Target size={22} style={{ color: theme.colors.primary }} />;
   } else {
     headline = "Choisis l'analyse adaptée";
     bodyText = "Pour aller plus loin, choisis l'analyse adaptée à tes besoins. L'Ultimate Scan couvre 18 domaines pour une vue complète. L'Anabolic Bioscan cible spécifiquement ton profil hormonal et ton potentiel.";

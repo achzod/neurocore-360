@@ -626,10 +626,10 @@ const DiscoveryScanReport: React.FC = () => {
               <div className="lg:col-span-4 rounded-sm p-6 relative overflow-hidden flex flex-col md:flex-row gap-8 items-center" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
                 <div className="w-full md:w-1/3">
                   <h3 className="text-sm font-bold mb-2 flex items-center gap-2" style={{ color: 'var(--color-primary)' }}>
-                    <Zap size={16} /> Potentiel
+                    <Zap size={16} /> Suivi sur 90 jours
                   </h3>
                   <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                    En debloquant tes systemes prioritaires, projection d'amelioration sur 90 jours.
+                    Ton score actuel sert de référence. Mesure de nouveau les mêmes axes à 30, 60 et 90 jours pour suivre l'évolution réelle.
                   </p>
                 </div>
                 <div className="w-full md:w-2/3 h-[150px]">
@@ -642,7 +642,7 @@ const DiscoveryScanReport: React.FC = () => {
           {/* Upgrade Hero - CTA top */}
           <UpgradeHero
             theme={currentTheme}
-            sections={reportData.sections}
+            metrics={reportData.metrics}
             globalScore={displayGlobalScore}
           />
 
@@ -720,8 +720,6 @@ const DiscoveryScanReport: React.FC = () => {
                       "Plan d'action 30-60-90 jours avec milestones",
                       'Dashboard temps réel à vie'
                     ]}
-                    sections={reportData.sections}
-                    globalScore={displayGlobalScore}
                     context="energy"
                   />
                 )}
@@ -747,8 +745,6 @@ const DiscoveryScanReport: React.FC = () => {
                       'Ton niveau de stress en temps réel',
                       'Ta composition corporelle précise'
                     ]}
-                    sections={reportData.sections}
-                    globalScore={displayGlobalScore}
                     context="training"
                   />
                 )}
@@ -759,7 +755,7 @@ const DiscoveryScanReport: React.FC = () => {
           {/* Smart Recommendation - personalized scan suggestion */}
           <SmartRecommendation
             theme={currentTheme}
-            sections={reportData.sections}
+            metrics={reportData.metrics}
             globalScore={displayGlobalScore}
           />
 
@@ -770,7 +766,7 @@ const DiscoveryScanReport: React.FC = () => {
                 <Star className="w-10 h-10 mx-auto mb-4" style={{ color: currentTheme.colors.primary }} />
                 <h3 className="text-2xl font-bold mb-2">Ton avis compte</h3>
                 <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                  Laisse un avis et recois ton code promo <strong>-20%</strong> sur le coaching Achzod par email !
+                  Laisse un avis et reçois ton code promo <strong>-20%</strong> sur le coaching Achzod par email !
                 </p>
               </div>
 
