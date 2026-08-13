@@ -112,6 +112,50 @@ test("Discovery delivery scans non-rendered blockage metadata and fails closed",
   assert.ok(explicitResultMetadata.errors.includes("metadata_medicalizing:mitochondrial_dysfunction"));
 });
 
+test("Discovery delivery accepts factual digestive metadata without a hidden diagnosis", () => {
+  const report = validDiscoveryReport();
+  (report as any).analysisMetadata = {
+    blocages: [{
+      domain: "Digestion",
+      severity: "leger",
+      title: "Confort digestif irrégulier",
+      mechanism: "Les symptômes digestifs déclarés méritent d'être replacés dans leur contexte de repas. Ils ne permettent pas d'identifier une cause digestive précise ni un trouble intestinal.",
+      consequences: [
+        "CONFORT: fréquence et contexte des symptômes à observer",
+        "REPAS: taille, vitesse et horaire à comparer",
+      ],
+      sources: [],
+    }],
+    ctaMessage: "Approfondir.",
+  };
+  const result = validateDiscoveryReportForDelivery(report, validAssets);
+  assert.equal(result.errors.includes("metadata_medicalizing:digestive_diagnosis"), false);
+  assert.equal(result.errors.includes("metadata_safety:digestive_diagnosis"), false);
+  assert.equal(result.ok, true);
+});
+
+test("Discovery delivery rejects digestive diagnoses hidden in non-rendered metadata", () => {
+  const labels = ["dysbiose", "hypochlorhydrie", "SIBO", "perméabilité intestinale", "malabsorption"];
+  for (const label of labels) {
+    const report = validDiscoveryReport();
+    (report as any).analysisMetadata = {
+      blocages: [{
+        domain: "Digestion",
+        severity: "leger",
+        title: "Confort digestif irrégulier",
+        mechanism: `Cela pourrait indiquer une ${label}.`,
+        consequences: [],
+        sources: [],
+      }],
+      ctaMessage: "Approfondir.",
+    };
+    const result = validateDiscoveryReportForDelivery(report, validAssets);
+    assert.equal(result.ok, false, label);
+    assert.ok(result.errors.includes("metadata_medicalizing:digestive_diagnosis"), label);
+    assert.ok(result.errors.includes("metadata_safety:digestive_diagnosis"), label);
+  }
+});
+
 test("Discovery delivery requires the client first name in every premium domain", () => {
   const report = validDiscoveryReport();
   report.sections.find((section) => section.id === "nutrition")!.content = `<p>${"contenu physiologique précis et personnalisé. ".repeat(72)}</p>`;

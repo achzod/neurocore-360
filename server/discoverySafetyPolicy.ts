@@ -78,7 +78,7 @@ export function deriveDiscoverySafetyPolicy(responses: Record<string, unknown>):
 }
 
 export function buildDiscoverySafetyPrompt(policy: DiscoverySafetyPolicy): string {
-  const universal = `SECURITE MEDICALE NON NEGOCIABLE : le questionnaire ne permet aucun diagnostic. Ne presente jamais comme certain un dereglement hormonal, neurologique, thyroidien, insulinique ou de l'axe HPA. Toute hypothese doit rester prudente, conditionnelle et explicitement non diagnostique. Chaque phrase individuelle contenant cortisol, insuline, thyroide, testosterone ou axe HPA doit employer peut, pourrait ou hypothese non diagnostique. Les formulations affirmatives comme "ton cortisol est eleve", "ta sensibilite a l'insuline est basse" ou "ta thyroide est ralentie" sont interdites. Ne prescris pas de bilan biologique.`;
+  const universal = `SECURITE MEDICALE NON NEGOCIABLE : le questionnaire ne permet aucun diagnostic. Ne presente jamais comme certain un dereglement hormonal, neurologique, thyroidien, insulinique ou de l'axe HPA. Toute hypothese doit rester prudente, conditionnelle et explicitement non diagnostique. Chaque phrase individuelle contenant cortisol, insuline, thyroide, testosterone ou axe HPA doit employer peut, pourrait ou hypothese non diagnostique. Les formulations affirmatives comme "ton cortisol est eleve", "ta sensibilite a l'insuline est basse" ou "ta thyroide est ralentie" sont interdites. Pour la digestion, decris uniquement les symptomes et le transit declares : n'emploie jamais dysbiose, SIBO, hypochlorhydrie, permeabilite intestinale ou malabsorption, meme comme possibilite, hypothese, exemple ou diagnostic ecarte. Ne prescris pas de bilan biologique.`;
   if (!policy.strictEatingSafety) return universal;
   return `${universal}\nSECURITE TCA STRICTE : un signal actuel ou historique lie au comportement alimentaire ou au body-checking est present. Interdiction absolue de donner calories, deficit, surplus, macros, grammes/kg, pesee alimentaire ou corporelle, mensurations, tour de taille, photos de progression, journal de calories, jeune, seche, cheat meal, compensation par exercice, supplements ou panels biologiques. N'interprete pas les causes psychologiques et n'emploie pas auto-sabotage, obsession, besoin de controle ou peur de perdre le controle. Tu peux uniquement rappeler sobrement que ce signal impose d'eviter l'auto-suivi chiffre et recommander un professionnel de sante forme aux TCA, sans poser de diagnostic.`;
 }
@@ -91,6 +91,7 @@ const MEDICAL_SUBJECT_PATTERN = /\b(?:cortisol|thyroide|testosterone|axe\s+hpa|c
 const MEDICAL_AFFIRMATIVE_PATTERN = /\b(?:tu\s+as|ton|ta|tes)\b.{0,55}\b(?:est|sont|indique|revele|prouve|confirme|eleve|basse?|dereglement|dysfonction)\b|\b(?:indique|revele|prouve|confirme)\b/;
 const MEDICAL_QUALIFIER_PATTERN = /\b(?:peut|pourrait|hypothese|possible|a\s+confirmer|ne\s+permet\s+pas\s+de\s+conclure|sans\s+permettre\s+de\s+conclure)\b/;
 const MEDICAL_TESTING_PATTERN = /\b(?:fais|faire|demande|demander|dose|doser|controle|controler|mesure|mesurer)\b.{0,65}\b(?:tsh|t3|t4|testosterone|cortisol|insuline|bilan\s+(?:sanguin|biologique|hormonal)|panel\s+(?:sanguin|biologique|hormonal))\b/;
+const DIGESTIVE_DIAGNOSIS_PATTERN = /\b(?:dysbiose|hypochlorhydrie|sibo|permeabilite\s+intestinale|malabsorption)\b/;
 
 function isUnqualifiedMedicalAssertion(sentence: string): boolean {
   const normalizedSentence = normalized(sentence);
@@ -188,6 +189,12 @@ export function validateDiscoverySafetyContent(
   }
   if (MEDICAL_TESTING_PATTERN.test(normalizedText)) {
     errors.add("medical_testing_prescription");
+  }
+  // Preserve symptom observations but never infer a named digestive disorder.
+  // The ban is context-independent on purpose: a protective first clause must
+  // not hide a diagnosis later in the same sentence.
+  if (DIGESTIVE_DIAGNOSIS_PATTERN.test(normalizedText)) {
+    errors.add("digestive_diagnosis");
   }
 
   if (policy.strictEatingSafety) {

@@ -1318,7 +1318,7 @@ function detectBlocages(responses: DiscoveryResponses, scores: DiscoveryAnalysis
       domain: 'Digestion',
       severity: severityFor(scores.digestion),
       title: 'Confort digestif irrégulier',
-      mechanism: `Les symptômes digestifs déclarés méritent d'être replacés dans leur contexte de repas. Ils ne permettent pas de conclure à une intolérance, une infection, une malabsorption ou un trouble intestinal.`,
+      mechanism: `Les symptômes digestifs déclarés méritent d'être replacés dans leur contexte de repas. Ils ne permettent pas d'identifier une cause digestive précise ni un trouble intestinal.`,
       consequences: [
         'CONFORT: fréquence et contexte des symptômes à observer',
         'REPAS: taille, vitesse et horaire à comparer',
@@ -1596,7 +1596,7 @@ const SECTION_INSTRUCTIONS: Record<string, string> = {
   sommeil: `Analyse uniquement la duree, la qualite, les reveils et la recuperation effectivement declares. Explique au maximum deux mecanismes plausibles et leur lien avec l'objectif, sans diagnostiquer une apnee, une hypoglycemie ou un dereglement hormonal.`,
   stress: `Distingue stress percu, recuperation et retentissement fonctionnel a partir des reponses. Presente l'axe du stress comme un mecanisme general, jamais comme un diagnostic individuel.`,
   energie: `Decris le profil energetique declare et ses liens plausibles avec sommeil, alimentation et entrainement. Ne transforme jamais une fatigue ou une envie alimentaire en preuve d'inflexibilite metabolique ou de maladie thyroidienne.`,
-  digestion: `Reste sur les symptomes et le transit declares. Explique des mecanismes possibles sans conclure a une dysbiose, un SIBO, une intolerance, une permeabilite intestinale ou une malabsorption.`,
+  digestion: `Reste sur les symptomes et le transit declares. N'emploie jamais les etiquettes dysbiose, SIBO, hypochlorhydrie, permeabilite intestinale ou malabsorption, meme comme possibilite, hypothese, exemple ou diagnostic ecarte. Decris uniquement les observations factuelles puis indique qu'elles ne permettent pas d'identifier une cause digestive precise.`,
   training: `Analyse exactement la frequence, la duree, l'intensite, la progression et la recuperation fournies. Relie charge, stimulus et recuperation sans inventer de volume, de stagnation ou de dereglement hormonal.`,
   nutrition: `Analyse seulement la structure alimentaire, l'hydratation et les habitudes declarees. Le Discovery donne des priorites, jamais un plan : aucun objectif calorique, macro, grammage, supplement ou protocole complet.`,
   lifestyle: `Analyse sedentarite, lumiere, ecrans, cafeine, alcool et environnement uniquement lorsqu'ils sont renseignes. Garde les mecanismes simples, directement pertinents et non alarmistes.`,
@@ -1963,7 +1963,7 @@ Les huit domaines doivent apparaitre exactement une fois: ${DISCOVERY_PREMIUM_DO
 Tout est en francais, au tutoiement, direct, humain et precis.
 Aucune corruption orthographique ni suite Unicode invalide : relis integralement le JSON avant de repondre.
 Aucun markdown, aucune liste, aucun emoji, aucun titre dans le contenu.
-Aucun diagnostic, aucun dosage, aucune prescription biologique, aucune causalite affirmee sans preuve.
+Aucun diagnostic, aucun dosage, aucune prescription biologique, aucune causalite affirmee sans preuve. Les etiquettes dysbiose, SIBO, hypochlorhydrie, permeabilite intestinale et malabsorption sont interdites dans tous les champs, meme comme possibilite ou diagnostic ecarte.
 Chaque fait individuel doit correspondre exactement au profil. Une donnee presente ne peut jamais etre declaree absente.
 Le Discovery donne une lecture et 2 ou 3 priorites, jamais un protocole complet.
 Ne remplis pas pour atteindre une longueur. Chaque paragraphe doit etre utile a ce profil.`;

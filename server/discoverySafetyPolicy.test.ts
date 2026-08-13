@@ -36,6 +36,12 @@ test("un profil sans signal reste non strict", () => {
   assert.match(buildDiscoverySafetyPrompt(policy), /aucun diagnostic/i);
 });
 
+test("le prompt interdit les diagnostics digestifs meme presentes comme hypotheses", () => {
+  const prompt = buildDiscoverySafetyPrompt(deriveDiscoverySafetyPolicy({}));
+  assert.match(prompt, /n'emploie jamais dysbiose, SIBO, hypochlorhydrie, permeabilite intestinale ou malabsorption/i);
+  assert.match(prompt, /meme comme possibilite, hypothese, exemple ou diagnostic ecarte/i);
+});
+
 test("le gate strict rejette les prescriptions dangereuses", () => {
   const policy = deriveDiscoverySafetyPolicy({ "tca-historique": "passé" });
   const cases: Array<[string, string]> = [
@@ -56,6 +62,22 @@ test("le gate medical rejette l'affirmation et accepte la prudence", () => {
   assert.ok(validateDiscoverySafetyContent("Ton cortisol est élevé.", policy).errors.includes("medical_assertion"));
   assert.ok(validateDiscoverySafetyContent("Ton axe HPA est en activation chronique.", policy).errors.includes("medical_assertion"));
   assert.equal(validateDiscoverySafetyContent("Ce questionnaire ne permet pas de conclure à un dérèglement hormonal.", policy).ok, true);
+});
+
+test("le gate digestif conserve les observations factuelles et rejette toute etiquette diagnostique", () => {
+  const policy = deriveDiscoverySafetyPolicy({});
+  const safe = "Tu as déclaré des ballonnements après certains repas et un transit variable. Ces observations ne permettent pas d'identifier une cause digestive précise.";
+  assert.equal(validateDiscoverySafetyContent(safe, policy).errors.includes("digestive_diagnosis"), false);
+
+  const adversarial = [
+    "Tes ballonnements peuvent indiquer une dysbiose.",
+    "Une hypochlorhydrie reste une hypothèse non diagnostique.",
+    "Je ne conclus pas à un SIBO, mais tes symptômes prouvent une malabsorption.",
+    "Le questionnaire ne confirme pas une perméabilité intestinale.",
+  ];
+  for (const content of adversarial) {
+    assert.ok(validateDiscoverySafetyContent(content, policy).errors.includes("digestive_diagnosis"), content);
+  }
 });
 
 test("la qualification déterministe couvre cortisol, insuline et thyroïde sans désarmer le gate", () => {
