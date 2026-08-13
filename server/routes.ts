@@ -99,6 +99,7 @@ import {
   isDiscoveryReportDeliveryEnabled,
 } from "./discoveryAutomationPolicy";
 import { isDiscoverySupersededTerminal } from "./discoverySupersededPolicy";
+import { sanitizePublicDiscoveryAuditPayload } from "./publicDiscoveryAuditPayload";
 import {
   claimDiscoveryEmailDelivery,
   discoverySha256,
@@ -2571,12 +2572,21 @@ export async function registerRoutes(
 
   app.get("/api/audits/:id", async (req, res) => {
     try {
-      // UUID audit IDs are unguessable , allow direct access for report viewing
       const audit = await storage.getAudit(req.params.id);
       if (!audit) {
         res.status(404).json({ error: "Audit non trouvé" });
         return;
       }
+
+      // Discovery report URLs are public bearer links. They may expose only
+      // lifecycle metadata here; raw identity/questionnaire/report data is
+      // served through the purpose-built report flow, never this audit route.
+      if (audit.type === "GRATUIT") {
+        res.setHeader("Cache-Control", "private, no-store");
+        res.json(sanitizePublicDiscoveryAuditPayload(audit as unknown as Record<string, unknown>));
+        return;
+      }
+
       // Block report content if scheduled for future delivery
       if (audit.reportScheduledFor && new Date(audit.reportScheduledFor) > new Date()) {
         const sanitized = { ...audit, narrativeReport: null, reportTxt: undefined, reportHtml: undefined };

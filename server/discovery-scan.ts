@@ -572,9 +572,9 @@ function buildDiscoveryProvidedFactStatement(
 }
 
 /**
- * Replaces only clauses that the fail-closed factual gate already recognizes
- * as claiming that a supplied weight, height or training frequency is absent.
- * Unknown contradictions remain untouched and are still rejected by the gate.
+ * Repairs a deliberately narrow set of generated restatements before the
+ * fail-closed factual gate runs. Unknown contradictions remain untouched and
+ * are still rejected by the gate.
  */
 export function repairDiscoveryProvidedFactAbsenceClaims(
   text: string,
@@ -585,7 +585,7 @@ export function repairDiscoveryProvidedFactAbsenceClaims(
     { mode: "discovery" },
   ) as DiscoveryResponses;
 
-  return String(text || "")
+  let repaired = String(text || "")
     .split(/([.!?;\n]+)/)
     .map((part, index) => {
       if (index % 2 === 1 || !part.trim()) return part;
@@ -603,6 +603,38 @@ export function repairDiscoveryProvidedFactAbsenceClaims(
         .join(". ")}${trailingWhitespace}`;
     })
     .join("");
+
+  const proteinAnswer = normalizeDiscoveryFactText(String(normalized["proteines-jour"] || "")).trim();
+  const proteinFrequencyExplicit = /\b(?:chaque|tous?\s+les)\s+repas\b|\bregulier/i.test(proteinAnswer);
+  if (hasDiscoveryFactValue(normalized["proteines-jour"]) && !proteinFrequencyExplicit) {
+    // A qualitative protein answer (for example "bon") says nothing about
+    // distribution across meals. Remove only the generated coordinating
+    // phrase; broader unsupported claims are left for the gate to reject.
+    repaired = repaired.replace(
+      /\s+et\s+(?:leur|sa)\s+présence\s+(?:dans\s+les|aux)\s+repas(?:\s+l[’']est\s+(?:également|aussi))?/giu,
+      "",
+    );
+  }
+
+  const originalWakeFatigue = normalizeDiscoveryFactText(String(responses["reveil-fatigue"] || "")).trim();
+  const originalWakeRested = normalizeDiscoveryFactText(String((responses as Record<string, unknown>)["reveil-repose"] || "")).trim();
+  if (originalWakeFatigue === "parfois" && !originalWakeRested) {
+    // "Réveil difficile" intensifies the supplied fact "parfois fatigué".
+    // Keep the exact frequency and meaning selected by the customer.
+    repaired = repaired.replace(
+      /\b(?:un|le|ton|des|les|tes)\s+réveils?(?:\s+(?:du\s+matin|matinal|matinaux))?(?:\s+(?:reste(?:nt)?|est|sont|para(?:î|i)t|paraissent|semble(?:nt)?))?\s+(?:parfois\s+)?difficiles?\b/giu,
+      "une fatigue parfois présente au réveil",
+    );
+  }
+
+  return repaired
+    .replace(/\b([Ll])a violence mécanique\b/gu, (_match, initial: string) => (
+      initial === "L" ? "L’exigence mécanique" : "l’exigence mécanique"
+    ))
+    .replace(/\bviolence mécanique\b/giu, "exigence mécanique")
+    .replace(/\b([Tt])u déjeunes toujours le matin\b/gu, (_match, initial: string) => (
+      initial === "T" ? "Tu prends toujours un petit-déjeuner" : "tu prends toujours un petit-déjeuner"
+    ));
 }
 
 /** Returns fail-closed reasons when generated prose contradicts supplied facts. */
@@ -684,11 +716,18 @@ export function validateDiscoveryFactualConsistency(
   if (originalWakeFatigue && !originalWakeRested && restatesInferredWakeRested) {
     reasons.push("unsupported_restatement:reveil-repose");
   }
+  const intensifiesOccasionalWakeFatigue = clauses.some((clause) => (
+    /\breveils?(?:\s+(?:du\s+matin|matinal|matinaux))?(?:\s+(?:reste(?:nt)?|est|sont|parait|paraissent|semble(?:nt)?))?\s+(?:parfois\s+)?difficiles?\b/.test(clause)
+  ));
+  if (originalWakeFatigue === "parfois" && !originalWakeRested && intensifiesOccasionalWakeFatigue) {
+    reasons.push("factual_intensity_contradiction:reveil-fatigue");
+  }
 
   const proteinAnswer = normalizeDiscoveryFactText(String(normalized["proteines-jour"] || "")).trim();
   const proteinFrequencyExplicit = /\b(?:chaque|tous?\s+les)\s+repas\b|\bregulier/i.test(proteinAnswer);
   const inventsProteinMealPresence = clauses.some((clause) => (
     /\bpresence\b.{0,45}\b(?:proteines?|proteinee?s?)\b.{0,45}\brepas\b/.test(clause)
+    || /\b(?:proteines?|proteiques?)\b.{0,80}\b(?:leur|sa)\s+presence\s+(?:dans\s+les|aux)\s+repas\b/.test(clause)
     || /\bpresence\b.{0,45}\breguliere?\b.{0,45}\bproteines?\b/.test(clause)
     || /\b(?:proteines?|source\s+proteinee?)\b.{0,35}\b(?:chaque|tous?\s+les)\s+repas\b/.test(clause)
     || /\bpresence\b.{0,35}\baux\s+repas\b/.test(clause)

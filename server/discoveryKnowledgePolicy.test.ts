@@ -740,6 +740,13 @@ test("visible French normalization repairs exact accentless tokens and the gate 
 test("factual gate rejects invented protein meal regularity and unsupported duplicate counts", () => {
   assert.deepEqual(
     validateDiscoveryFactualConsistency(
+      "Tes apports en protéines sont déclarés bons et leur présence dans les repas l’est également.",
+      { "proteines-jour": "bon" },
+    ),
+    ["factual_value_contradiction:proteines-jour-frequency"],
+  );
+  assert.deepEqual(
+    validateDiscoveryFactualConsistency(
       "Ton apport protéique est bon, y compris leur présence aux repas, alors conserve la présence régulière de protéines.",
       { "proteines-jour": "bonne" },
     ),
@@ -772,6 +779,75 @@ test("factual gate rejects invented protein meal regularity and unsupported dupl
       { organisation: "bonne" },
     ),
     ["unsupported_questionnaire_count"],
+  );
+});
+
+test("deterministic factual repair removes only invented protein meal distribution", () => {
+  const generated = "Tes apports en protéines sont déclarés bons et leur présence dans les repas l’est également. La quantité totale reste à préciser.";
+  const repaired = repairDiscoveryProvidedFactAbsenceClaims(
+    generated,
+    { "proteines-jour": "bon" },
+  );
+
+  assert.equal(
+    repaired,
+    "Tes apports en protéines sont déclarés bons. La quantité totale reste à préciser.",
+  );
+  assert.deepEqual(
+    validateDiscoveryFactualConsistency(repaired, { "proteines-jour": "bon" }),
+    [],
+  );
+
+  const explicit = "Tu déclares une source protéinée à chaque repas et leur présence dans les repas est régulière.";
+  assert.equal(
+    repairDiscoveryProvidedFactAbsenceClaims(
+      explicit,
+      { "proteines-jour": "Une source protéinée à chaque repas" },
+    ),
+    explicit,
+  );
+  assert.deepEqual(
+    validateDiscoveryFactualConsistency(
+      explicit,
+      { "proteines-jour": "Une source protéinée à chaque repas" },
+    ),
+    [],
+  );
+});
+
+test("occasional wake fatigue is not intensified into a difficult awakening", () => {
+  const responses = { "reveil-fatigue": "parfois" };
+  const variants = [
+    "Tu dors cinq à six heures, avec un réveil matinal difficile.",
+    "La qualité est moyenne et le réveil du matin reste difficile.",
+    "Tu gardes une bonne énergie malgré des réveils parfois difficiles.",
+  ];
+
+  for (const generated of variants) {
+    assert.deepEqual(
+      validateDiscoveryFactualConsistency(generated, responses),
+      ["factual_intensity_contradiction:reveil-fatigue"],
+    );
+    const repaired = repairDiscoveryProvidedFactAbsenceClaims(generated, responses);
+    assert.match(repaired, /une fatigue parfois présente au réveil/);
+    assert.doesNotMatch(repaired, /réveils?.{0,28}difficile/i);
+    assert.deepEqual(validateDiscoveryFactualConsistency(repaired, responses), []);
+  }
+
+  const exact = "Tu te réveilles parfois fatigué, conformément à ta réponse.";
+  assert.equal(repairDiscoveryProvidedFactAbsenceClaims(exact, responses), exact);
+  assert.deepEqual(validateDiscoveryFactualConsistency(exact, responses), []);
+});
+
+test("generated prose cleanup uses neutral mechanical and breakfast wording", () => {
+  const repaired = repairDiscoveryProvidedFactAbsenceClaims(
+    "Ta récupération paraît limitée par rapport à la violence mécanique de tes séances. Tu déjeunes toujours le matin.",
+    { "petit-dejeuner": "toujours" },
+  );
+
+  assert.equal(
+    repaired,
+    "Ta récupération paraît limitée par rapport à l’exigence mécanique de tes séances. Tu prends toujours un petit-déjeuner.",
   );
 });
 
