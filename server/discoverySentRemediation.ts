@@ -5,6 +5,7 @@ import {
   analyzeDiscoveryScan,
   buildDiscoveryReportAssets,
   convertToNarrativeReport,
+  repairDiscoveryProvidedFactAbsenceClaims,
   validateDiscoveryReportForDelivery,
 } from "./discovery-scan";
 import {
@@ -89,6 +90,19 @@ export interface SentDiscoveryRemediationResult {
   reportSentAt: Date;
 }
 
+function canonicalDiscoveryScores(report: any): Record<string, number> {
+  const scores: Record<string, number> = Object.fromEntries(
+    (Array.isArray(report?.metrics) ? report.metrics : [])
+      .filter((metric: any) => metric?.key && Number.isFinite(metric?.value))
+      .map((metric: any) => [String(metric.key), Math.round(Number(metric.value) * 10)]),
+  );
+  scores.global = Math.round(Number(report?.globalScore) * 10);
+  if (Object.keys(scores).length !== 9 || !Object.values(scores).every(Number.isFinite)) {
+    throw new Error("Canonical Discovery scores are incomplete");
+  }
+  return scores;
+}
+
 /** Generate a premium replacement and atomically swap only the report fields.
  * SENT, report_sent_at and email_tracking are never modified. */
 export async function regenerateSentDiscoveryInPlace(input: {
@@ -153,6 +167,7 @@ export async function regenerateSentDiscoveryInPlace(input: {
       replacedAt: replacedAt.toISOString(),
     },
   }, gate);
+  const canonicalScores = canonicalDiscoveryScores(premiumReport);
 
   const client = await pool.connect();
   try {
@@ -186,14 +201,15 @@ export async function regenerateSentDiscoveryInPlace(input: {
           SET narrative_report = $2::jsonb,
               report_txt = $3,
               report_html = $4,
-              report_generated_at = $5
+              report_generated_at = $5,
+              scores = $6::jsonb
         WHERE id = $1
           AND type = 'GRATUIT'
           AND report_delivery_status = 'SENT'
           AND report_sent_at IS NOT NULL
           AND LOWER(COALESCE(narrative_report->'recovery'->>'disposition', '')) <> 'superseded'
           AND NULLIF(BTRIM(COALESCE(narrative_report->'recovery'->>'replacementAuditId', '')), '') IS NULL`,
-      [input.auditId, JSON.stringify(narrativeReport), assets.txt, assets.html, replacedAt],
+      [input.auditId, JSON.stringify(narrativeReport), assets.txt, assets.html, replacedAt, JSON.stringify(canonicalScores)],
     );
     await client.query(
       `INSERT INTO report_artifacts (id, audit_id, tier, engine, model, txt, html, created_at)
@@ -221,6 +237,144 @@ export async function regenerateSentDiscoveryInPlace(input: {
       premiumHash,
       reportDeliveryStatus: "SENT",
       reportSentAt: new Date(current.report_sent_at),
+    };
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => {});
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/** Repairs only known questionnaire restatement defects in an already premium
+ * SENT report. No provider or delivery function is reachable from this path. */
+export async function repairSentDiscoveryFactsInPlace(input: {
+  auditId: string;
+  expectedCurrentHash: string;
+}): Promise<SentDiscoveryRemediationResult & { replacements: number }> {
+  if (await isDiscoveryGlobalLockActive()) throw new Error("Discovery batch lock active; factual repair is blocked");
+  assertSha256(input.expectedCurrentHash, "expectedCurrentHash");
+  if (String(process.env.REMEDIATION_SIDE_EFFECTS_DISABLED || "").toLowerCase() !== "true") {
+    throw new Error("REMEDIATION_SIDE_EFFECTS_DISABLED=true is mandatory");
+  }
+  if (String(process.env.DISCOVERY_REPORT_DELIVERY_ENABLED || "").toLowerCase() === "true") {
+    throw new Error("DISCOVERY_REPORT_DELIVERY_ENABLED must not be true");
+  }
+
+  const initial = await pool.query(
+    `SELECT id, type, responses, scores, report_delivery_status, report_sent_at,
+            narrative_report, report_txt, report_html
+       FROM audits WHERE id = $1`,
+    [input.auditId],
+  );
+  const row = initial.rows[0];
+  if (!row || row.type !== "GRATUIT" || row.report_delivery_status !== "SENT" || !row.report_sent_at) {
+    throw new Error("Expected delivered Discovery audit not found");
+  }
+  if (isDiscoverySupersededTerminal({
+    type: row.type,
+    reportDeliveryStatus: row.report_delivery_status,
+    narrativeReport: row.narrative_report,
+  })) throw new Error("Superseded Discovery is terminal");
+  const initialHash = discoveryArtifactHash(row.report_txt, row.report_html);
+  if (initialHash !== input.expectedCurrentHash.toLowerCase()) throw new Error("Current report hash mismatch");
+  const currentGate = evaluateCanonicalDiscoveryArtifacts(resolveCanonicalDiscoveryArtifacts({
+    narrativeReport: row.narrative_report,
+    reportTxt: row.report_txt,
+    reportHtml: row.report_html,
+  }));
+  if (!currentGate.ok) throw new Error(`Current report is not premium: ${currentGate.errors.join(",")}`);
+
+  const report = structuredClone(row.narrative_report);
+  let replacements = 0;
+  for (const section of Array.isArray(report?.sections) ? report.sections : []) {
+    if (typeof section?.content !== "string") continue;
+    const repaired = repairDiscoveryProvidedFactAbsenceClaims(section.content, row.responses || {});
+    if (repaired !== section.content) {
+      section.content = repaired;
+      replacements += 1;
+    }
+  }
+  if (replacements === 0) throw new Error("No known factual defect found");
+
+  const assets = buildDiscoveryReportAssets(report);
+  const nonRenderedMetadata = {
+    blocages: report?.analysisMetadata?.blocages || [],
+    ctaMessage: report?.analysisMetadata?.ctaMessage || "",
+  };
+  const validation = validateDiscoveryReportForDelivery(report, assets, nonRenderedMetadata);
+  const gate = evaluateDiscoveryDeliveryGate(report, assets, undefined, nonRenderedMetadata);
+  if (!validation.ok || !gate.ok) {
+    throw new Error(`Repaired Discovery gate failed: ${[...validation.errors, ...gate.errors].join(",")}`);
+  }
+  const repairedAt = new Date();
+  const premiumHash = discoveryArtifactHash(assets.txt, assets.html);
+  if (premiumHash === initialHash) throw new Error("Factual repair did not change canonical artifacts");
+  const narrativeReport = attachDiscoveryDeliveryGateResult({
+    ...report,
+    remediation: {
+      ...(report.remediation || {}),
+      factualRepairAt: repairedAt.toISOString(),
+      preFactualRepairHash: initialHash,
+      premiumHash,
+    },
+  }, gate);
+  const canonicalScores = canonicalDiscoveryScores(report);
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const locked = await client.query(
+      `SELECT type, report_delivery_status, report_sent_at, narrative_report, report_txt, report_html,
+              (SELECT COUNT(*)::int FROM email_tracking e WHERE e.audit_id = a.id) AS tracking_count
+         FROM audits a WHERE id = $1 FOR UPDATE`,
+      [input.auditId],
+    );
+    const current = locked.rows[0];
+    if (!current || current.report_delivery_status !== "SENT" || !current.report_sent_at) {
+      throw new Error("SENT ownership changed during factual repair");
+    }
+    if (discoveryArtifactHash(current.report_txt, current.report_html) !== initialHash) {
+      throw new Error("Concurrent report mutation detected during factual repair");
+    }
+    const sentAtMs = new Date(current.report_sent_at).getTime();
+    const trackingCount = Number(current.tracking_count || 0);
+    const updated = await client.query(
+      `UPDATE audits
+          SET narrative_report = $2::jsonb, report_txt = $3, report_html = $4,
+              report_generated_at = $5, scores = $6::jsonb
+        WHERE id = $1 AND type = 'GRATUIT' AND report_delivery_status = 'SENT'
+          AND report_sent_at IS NOT NULL AND report_txt = $7 AND report_html = $8
+        RETURNING id`,
+      [input.auditId, JSON.stringify(narrativeReport), assets.txt, assets.html, repairedAt,
+        JSON.stringify(canonicalScores), current.report_txt, current.report_html],
+    );
+    if ((updated.rowCount || 0) !== 1) throw new Error("Factual repair persistence CAS failed");
+    await client.query(
+      `INSERT INTO report_artifacts (id, audit_id, tier, engine, model, txt, html, created_at)
+       VALUES ($1,$2,'GRATUIT','discovery-remediation','deterministic-factual-repair',$3,$4,$5)`,
+      [randomUUID(), input.auditId, assets.txt, assets.html, repairedAt],
+    );
+    const invariant = await client.query(
+      `SELECT report_delivery_status, report_sent_at,
+              (SELECT COUNT(*)::int FROM email_tracking e WHERE e.audit_id = a.id) AS tracking_count
+         FROM audits a WHERE id = $1`,
+      [input.auditId],
+    );
+    const verified = invariant.rows[0];
+    if (verified?.report_delivery_status !== "SENT"
+      || new Date(verified.report_sent_at).getTime() !== sentAtMs
+      || Number(verified.tracking_count || 0) !== trackingCount) {
+      throw new Error("SENT/reportSentAt/tracking invariant changed during factual repair");
+    }
+    await client.query("COMMIT");
+    return {
+      auditId: input.auditId,
+      previousFallbackHash: initialHash,
+      premiumHash,
+      reportDeliveryStatus: "SENT",
+      reportSentAt: new Date(current.report_sent_at),
+      replacements,
     };
   } catch (error) {
     await client.query("ROLLBACK").catch(() => {});

@@ -72,6 +72,25 @@ test("a knowledge or provider failure happens before remediation opens a mutatio
   assert.ok(beginIndex > connectIndex);
 });
 
+test("sent remediation stores canonical Discovery scores with the replacement artifacts", () => {
+  const source = readFileSync(new URL("./discoverySentRemediation.ts", import.meta.url), "utf8");
+  assert.match(source, /function canonicalDiscoveryScores[\s\S]*report\?\.metrics[\s\S]*scores\.global/);
+  assert.match(source, /const canonicalScores = canonicalDiscoveryScores\(premiumReport\)/);
+  assert.match(source, /report_generated_at = \$5,[\s\S]*scores = \$6::jsonb/);
+  assert.match(source, /JSON\.stringify\(canonicalScores\)/);
+});
+
+test("deterministic SENT factual repair is exact-hash bound and preserves delivery invariants", () => {
+  const source = readFileSync(new URL("./discoverySentRemediation.ts", import.meta.url), "utf8");
+  const tail = source.slice(source.indexOf("export async function repairSentDiscoveryFactsInPlace"));
+  assert.match(tail, /expectedCurrentHash/);
+  assert.match(tail, /repairDiscoveryProvidedFactAbsenceClaims/);
+  assert.match(tail, /report_delivery_status = 'SENT'/);
+  assert.match(tail, /report_sent_at IS NOT NULL/);
+  assert.match(tail, /tracking invariant changed during factual repair/);
+  assert.doesNotMatch(tail, /analyzeDiscoveryScan\(|sendReportReadyEmail\(/);
+});
+
 test("generation-only remediation hard-locks every delivery and alert side effect", () => {
   const source = readFileSync(new URL("../scripts/remediate-sent-discovery.ts", import.meta.url), "utf8");
   assert.match(source, /REMEDIATION_SIDE_EFFECTS_DISABLED=true is mandatory/);
