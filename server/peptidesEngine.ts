@@ -28,6 +28,15 @@ import {
   PeptauraSourceUnavailableError,
 } from "./peptidesSourcePreflight";
 import {
+  buildConditionalReconstitutionExamples,
+  effectivePackagePrice,
+  offerTotalPrice,
+  packageCountForVials,
+  parseListingMg,
+  selectBestPurchasePlan,
+  type PeptidePurchasePlan,
+} from "./peptidesPurchasePlan";
+import {
   PEPTAURA_PRODUCT_FEED_URL,
   parsePeptauraProductFeed,
 } from "./peptauraProductFeed";
@@ -966,29 +975,6 @@ function isVendorInList(listing: PeptauraLiveListing, vendors: string[]): boolea
   return listingVendorKeys(listing).some((key) => allowed.has(key));
 }
 
-function parseListingMg(dosage: string): number | null {
-  const match = dosage.match(/(\d+(?:[.,]\d+)?)\s*mg/i);
-  if (!match) return null;
-  return Number(match[1].replace(",", "."));
-}
-
-function packageCountForVials(listing: PeptauraLiveListing, vialQty: number): number {
-  return Math.max(1, Math.ceil(Math.max(1, vialQty) / Math.max(1, listing.boxSize)));
-}
-
-function effectivePackagePrice(listing: PeptauraLiveListing, vialQty: number): number {
-  const packageCount = packageCountForVials(listing, vialQty);
-  const eligible = listing.priceTiers
-    .filter((tier) => tier.minQty <= packageCount)
-    .sort((a, b) => a.price - b.price);
-  const rawPrice = (eligible[0] || listing.priceTiers.sort((a, b) => a.minQty - b.minQty)[0]).price;
-  return Math.round(rawPrice * (1 + listing.marginRate) * 100) / 100;
-}
-
-function offerTotalPrice(listing: PeptauraLiveListing, vialQty: number): number {
-  return effectivePackagePrice(listing, vialQty) * packageCountForVials(listing, vialQty);
-}
-
 function selectBestLiveListing(
   snapshot: PeptauraLiveProductSnapshot,
   shipping: PeptauraShippingAvailability,
@@ -1039,6 +1025,34 @@ function selectBestLiveListing(
   });
 
   return candidates[0];
+}
+
+function eligibleLiveListings(
+  snapshot: PeptauraLiveProductSnapshot,
+  shipping: PeptauraShippingAvailability,
+): PeptauraLiveListing[] {
+  let candidates = snapshot.listings.filter((listing) =>
+    listing.enabled
+    && !listing.suspended
+    && !listing.outOfStock
+    && listing.orderingMode === "available"
+    && listing.shippingOptionCount > 0
+  );
+  if (shipping.blockedVendors.length > 0) {
+    candidates = candidates.filter((listing) => !isVendorInList(listing, shipping.blockedVendors));
+  }
+  if (shipping.availableVendors.length > 0) {
+    candidates = candidates.filter((listing) => isVendorInList(listing, shipping.availableVendors));
+  }
+  return candidates;
+}
+
+function selectBestLivePurchasePlan(
+  snapshot: PeptauraLiveProductSnapshot,
+  shipping: PeptauraShippingAvailability,
+  needMg: number,
+): PeptidePurchasePlan<PeptauraLiveListing> | null {
+  return selectBestPurchasePlan(eligibleLiveListings(snapshot, shipping), needMg, 1.2);
 }
 
 function findPeptauraProductForPeptide(pepName: string): PeptaurProduct | null {
@@ -1101,6 +1115,40 @@ function buildLivePriceEstimate(pep: PeptideItem, listing: PeptauraLiveListing, 
     return `Environ $${packagePrice.toFixed(2)} la boite de ${listing.boxSize} vials (${listing.dosage}, ${supplier}), ${packageCount} boite${packageCount > 1 ? "s" : ""}, ${deliveredVials} vials recus, total $${total.toFixed(2)} (conversion indicative: ${eur} euros)`;
   }
   return `Environ $${packagePrice.toFixed(2)} par vial (${listing.dosage}, ${supplier}), ${qty} vial${qty > 1 ? "s" : ""}, total $${total.toFixed(2)} (conversion indicative: ${eur} euros)`;
+}
+
+function firstDoseForConditionalCalculation(
+  dosage: string | undefined,
+): { amount: number; unit: "mg" | "mcg" } | null {
+  const match = String(dosage || "").replace(/(\d),(\d)/g, "$1.$2")
+    .match(/(\d+(?:\.\d+)?)\s*(mcg|ug|µg|mg)\b/i);
+  if (!match) return null;
+  const amount = Number(match[1]);
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+  return { amount, unit: /mg/i.test(match[2]) ? "mg" : "mcg" };
+}
+
+function buildConditionalReconstitutionText(
+  peptide: PeptideItem,
+  vialMg: number,
+): string | null {
+  const dose = firstDoseForConditionalCalculation(peptide.dosage);
+  if (!dose) return null;
+  const examples = buildConditionalReconstitutionExamples(vialMg, dose.amount, dose.unit);
+  if (examples.length < 2) return null;
+  const unitLabel = dose.unit === "mcg" ? "mcg" : "mg";
+  const lines = examples.map((example) => {
+    const capacityWarning = example.doseVolumeMl > 1
+      ? " Cette option depasse 1 ml et ne tient pas dans une seringue U-100 de 1 ml: elle ne doit pas etre utilisee avec ce materiel."
+      : "";
+    return `Si ${example.solventMl} ml est confirme: concentration ${example.concentrationPerMl.toFixed(3)} mg/ml; pour ${dose.amount} ${unitLabel}, volume ${example.doseVolumeMl.toFixed(3)} ml, soit ${example.u100Units.toFixed(1)} unites U-100.${capacityWarning}`;
+  });
+  return [
+    `Format live retenu: vial de ${vialMg} mg. Peptaura ne publie pas le volume de solvant du lot exact: aucun volume n'est choisi automatiquement.`,
+    `Calcul conditionnel uniquement, apres confirmation ecrite du volume par le fabricant du lot, un medecin ou un pharmacien. Formule: concentration en mg/ml = ${vialMg} mg divise par le volume confirme; volume de dose = dose en mg divisee par la concentration; unites U-100 = volume en ml multiplie par 100.`,
+    ...lines,
+    "Tant que le volume exact et le materiel ne sont pas confirmes, ne reconstitue pas et n'injecte pas.",
+  ].join(" ");
 }
 
 function parseListingMl(value: string): number | null {
@@ -1175,8 +1223,11 @@ async function applyLivePeptauraPricing(
     }
 
     pep.purchaseUrl = peptauraProductUrl(slug);
-    let qty = extractVialQty(pep.vialsNeeded) || 1;
-    const targetVialMg = extractVialMg(pep.vialsNeeded) || extractVialMg(pep.reconstitution);
+    const needMg = estimateNeedMg(pep);
+    if (needMg == null || needMg <= 0) {
+      failures.push(`${pep.name}: quantite totale incalculable depuis le dosage et la duree`);
+      continue;
+    }
     const fetchedSnapshot = await fetchPeptauraProductSnapshot(slug, forceFresh);
     const cachedSnapshotAgeMs = cachedSnapshot
       ? Date.now() - new Date(cachedSnapshot.fetchedAt).getTime()
@@ -1194,35 +1245,24 @@ async function applyLivePeptauraPricing(
       continue;
     }
 
-    let best = selectBestLiveListing(snapshot, context.shippingAvailability, targetVialMg, qty);
-    if (!best) {
-      failures.push(`${pep.name}: aucune offre en stock compatible avec le pays, le dosage et la quantite`);
+    const purchasePlan = selectBestLivePurchasePlan(snapshot, context.shippingAvailability, needMg);
+    if (!purchasePlan) {
+      failures.push(`${pep.name}: aucune offre en stock ne couvre le besoin de ${needMg.toFixed(2)} mg sans plus de 20 % de surstock`);
       continue;
     }
-
-    let bestMg = parseListingMg(best.dosage);
-    if (targetVialMg != null && bestMg != null && Math.abs(bestMg - targetVialMg) > 0.05) {
-      const needMg = estimateNeedMg(pep);
-      if (needMg == null || needMg <= 0) {
-        failures.push(`${pep.name}: dosage live ${best.dosage} incompatible avec ${targetVialMg} mg par vial et besoin total incalculable`);
+    const best = purchasePlan.listing;
+    const qty = purchasePlan.requestedVials;
+    const bestMg = purchasePlan.vialMg;
+    const durationLabel = String(pep.cycleDuration || "le cycle").split(/[,.]/)[0].trim();
+    const naturalDurationLabel = durationLabel.charAt(0).toLowerCase() + durationLabel.slice(1);
+    pep.vialsNeeded = `${qty} vial${qty > 1 ? "s" : ""} de ${bestMg} mg pour ${naturalDurationLabel} (besoin calcule ~${needMg.toFixed(2)} mg, capacite livree ${purchasePlan.deliveredMg.toFixed(2)} mg)`;
+    if (/aucune offre live exploitable|format de vial.*(?:manque|indisponible)|reconstitution et les unites.*suspendues|feed officiel ne fournit pas le volume/i.test(pep.reconstitution || "")) {
+      const conditional = buildConditionalReconstitutionText(pep, bestMg);
+      if (!conditional) {
+        failures.push(`${pep.name}: dose illisible pour le calcul conditionnel de reconstitution`);
         continue;
       }
-      qty = Math.max(1, Math.ceil(needMg / bestMg));
-      const compatible = selectBestLiveListing(
-        snapshot,
-        context.shippingAvailability,
-        bestMg,
-        qty
-      );
-      if (!compatible || parseListingMg(compatible.dosage) !== bestMg) {
-        failures.push(`${pep.name}: impossible d'adapter le format live ${best.dosage} au besoin de ${needMg.toFixed(2)} mg`);
-        continue;
-      }
-      best = compatible;
-      bestMg = parseListingMg(best.dosage);
-      const durationLabel = String(pep.cycleDuration || "le cycle").split(/[,.]/)[0].trim();
-      const naturalDurationLabel = durationLabel.charAt(0).toLowerCase() + durationLabel.slice(1);
-      pep.vialsNeeded = `${qty} vial${qty > 1 ? "s" : ""} de ${bestMg}mg pour ${naturalDurationLabel} (besoin calcule ~${needMg.toFixed(2)}mg)`;
+      pep.reconstitution = conditional;
     }
 
     // The official feed exposes the exact listing URL. Never synthesize a
@@ -1247,6 +1287,8 @@ async function applyLivePeptauraPricing(
         boxSize: best.boxSize,
         packageCount,
         deliveredVials: packageCount * best.boxSize,
+        needMg,
+        deliveredMg: purchasePlan.deliveredMg,
         unitPackagePriceUsd: effectivePackagePrice(best, qty),
         totalPriceUsd: offerTotalPrice(best, qty),
         marginRate: best.marginRate,

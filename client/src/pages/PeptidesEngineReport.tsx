@@ -236,8 +236,8 @@ function WeeklyScheduleTable({ schedule }: { schedule: string }) {
   }
 
   return (
-    <div className="overflow-x-auto mt-4">
-      <table className="w-full text-sm border-collapse">
+    <div className="w-full max-w-full overflow-x-auto mt-4">
+      <table className="w-full min-w-[38rem] text-sm border-collapse table-fixed">
         <thead>
           <tr>
             <th className="text-left p-3 text-[10px] font-mono uppercase tracking-widest text-white/40 border-b border-white/10">Jour</th>
@@ -249,8 +249,8 @@ function WeeklyScheduleTable({ schedule }: { schedule: string }) {
           {sortedDays.map((day) => (
             <tr key={day} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
               <td className="p-3 font-semibold text-white text-xs">{day}</td>
-              <td className="p-3 text-white/60 text-xs">{days[day].am || <span className="text-white/20">repos</span>}</td>
-              <td className="p-3 text-white/60 text-xs">{days[day].pm || <span className="text-white/20">repos</span>}</td>
+              <td className="p-3 text-white/60 text-xs break-words [overflow-wrap:anywhere]">{days[day].am || <span className="text-white/20">repos</span>}</td>
+              <td className="p-3 text-white/60 text-xs break-words [overflow-wrap:anywhere]">{days[day].pm || <span className="text-white/20">repos</span>}</td>
             </tr>
           ))}
         </tbody>

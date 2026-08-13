@@ -817,6 +817,18 @@ function checkPeptide(p: PeptidesPeptide): string[] {
   if (/\b1\s+vials\b/i.test(`${p.vialsNeeded || ""} ${p.priceEstimate || ""}`)) {
     issues.push("grammaire quantite invalide: 1 vials");
   }
+  if (/reconstitution et (?:les )?unit[ée]s?.{0,80}(?:suspend|bloqu)|aucune offre live exploitable.{0,120}reconstitution/i.test(p.reconstitution || "")) {
+    issues.push("reconstitution et unites U-100 non resolues");
+  }
+  if (/Peptaura ne publie pas le volume de solvant/i.test(p.reconstitution || "")) {
+    const conditionalExamples = String(p.reconstitution || "").match(/Si\s+\d+(?:[.,]\d+)?\s*ml\s+est confirme/gi) || [];
+    if (conditionalExamples.length < 2
+      || !/concentration en mg\/ml\s*=|concentration en mg\/ml =/i.test(p.reconstitution || "")
+      || !/unites U-100\s*=|unites U-100 =/i.test(p.reconstitution || "")
+      || !/ne reconstitue pas et n'injecte pas/i.test(p.reconstitution || "")) {
+      issues.push("calcul conditionnel de reconstitution incomplet");
+    }
+  }
   for (const [field, value] of [
     ["dosage", p.dosage],
     ["timing", p.timing],
@@ -1139,6 +1151,22 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
     const declaredQty = extractVialQty(peptide?.vialsNeeded);
     if (declaredQty != null && snapshot.requestedVials != null && declaredQty !== snapshot.requestedVials) {
       errors.push(`[${snapshot.peptide || "?"}] quantite prix live ${snapshot.requestedVials} differente de vialsNeeded ${declaredQty}`);
+    }
+    const declaredPriceTotal = String(peptide?.priceEstimate || "")
+      .match(/\btotal\s*\$(\d+(?:[.,]\d+)?)/i);
+    const declaredPriceUsd = declaredPriceTotal
+      ? Number(declaredPriceTotal[1].replace(",", "."))
+      : null;
+    const livePriceUsd = Number(snapshot.totalPriceUsd);
+    if (declaredPriceUsd == null || !Number.isFinite(declaredPriceUsd)) {
+      errors.push(`[${snapshot.peptide || "?"}] total prix absent de priceEstimate`);
+    } else if (Number.isFinite(livePriceUsd) && Math.abs(declaredPriceUsd - livePriceUsd) > 0.01) {
+      errors.push(`[${snapshot.peptide || "?"}] total prix affiche $${declaredPriceUsd.toFixed(2)} different du live $${livePriceUsd.toFixed(2)}`);
+    }
+    const needMg = Number(snapshot.needMg);
+    const deliveredMg = Number(snapshot.deliveredMg);
+    if (Number.isFinite(needMg) && Number.isFinite(deliveredMg) && deliveredMg + 1e-9 < needMg) {
+      errors.push(`[${snapshot.peptide || "?"}] quantite livree ${deliveredMg} mg inferieure au besoin ${needMg} mg`);
     }
     if (snapshot.deliveredVials != null
       && snapshot.requestedVials != null
