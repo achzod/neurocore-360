@@ -9,9 +9,11 @@ import {
   calculateDiscoveryDeterministicProfile,
   DISCOVERY_PREMIUM_DOMAINS,
   validateDiscoveryFactualConsistency,
+  validateDiscoveryMechanismProse,
   validateDiscoveryPlainTextCandidate,
   validateDiscoveryQuestionnaireContract,
   validateDiscoveryReportAgainstResponses,
+  sanitizeDiscoveryMechanismProse,
 } from "./discovery-scan";
 import { validateDiscoverySafetyContent } from "./discoverySafetyPolicy";
 
@@ -142,6 +144,109 @@ test("case_06: HTML, URL, markdown et promo sont refusés avant assemblage", () 
   ]) {
     assert.ok(validateDiscoveryPlainTextCandidate(raw).length > 0, raw);
   }
+});
+
+test("case_07: la réécriture mécanistique reste grammaticale, informative et idempotente", () => {
+  const matrix = [
+    [
+      "Le signal est irrégulier.",
+      "La régularité du signal influence la stabilité des mécanismes.",
+    ],
+    [
+      "La récupération peut être insuffisante.",
+      "Un déséquilibre entre charge et récupération peut limiter les ressources adaptatives.",
+    ],
+    [
+      "La charge est élevée.",
+      "La charge mobilise des ressources adaptatives et influence la récupération.",
+    ],
+    [
+      "Le sommeil est fragmenté.",
+      "La continuité du sommeil influence la récupération et la régulation énergétique.",
+    ],
+    [
+      "Le stress reste faible.",
+      "La régulation du stress influence la mobilisation des ressources adaptatives.",
+    ],
+    [
+      "La régulation coordonne les deux dimensions du signal.",
+      "La régulation coordonne les dimensions du signal.",
+    ],
+    [
+      "Une contrainte élevée peut mobiliser les réserves adaptatives.",
+      "Une contrainte exercée peut mobiliser les réserves adaptatives.",
+    ],
+  ] as const;
+
+  for (const [raw, expected] of matrix) {
+    const sanitized = sanitizeDiscoveryMechanismProse(raw);
+    assert.equal(sanitized, expected, raw);
+    assert.deepEqual(validateDiscoveryMechanismProse(sanitized), [], raw);
+    assert.match(sanitized, /^\p{Lu}.*[.!?]$/u, raw);
+    assert.doesNotMatch(sanitized, /\b(?:est|être|etre)\s*[.!?]/iu, raw);
+    assert.ok(sanitized.split(/\s+/).length >= 6, raw);
+    assert.equal(sanitizeDiscoveryMechanismProse(sanitized), sanitized, raw);
+  }
+
+  const irregularSignal = sanitizeDiscoveryMechanismProse("Le signal est irrégulier.");
+  assert.match(irregularSignal, /régularité du signal influence/u);
+  assert.doesNotMatch(irregularSignal, /\bsignal\s+(?:est|devient|reste)\s+(?:régulier|stable)\b/iu);
+
+  const insufficientRecovery = sanitizeDiscoveryMechanismProse("La récupération peut être insuffisante.");
+  assert.match(insufficientRecovery, /déséquilibre.*peut limiter/u);
+  assert.doesNotMatch(insufficientRecovery, /\brécupération\s+(?:est|devient|reste)\s+(?:suffisante|optimale)\b/iu);
+
+  const highLoad = sanitizeDiscoveryMechanismProse("La charge est élevée.");
+  assert.match(highLoad, /mobilise.*ressources.*influence.*récupération/u);
+  assert.doesNotMatch(highLoad, /\bcharge\s+(?:est|devient|reste)\s+(?:faible|modérée)\b/iu);
+});
+
+test("case_08: l'ambigu et le personnalisé restent intacts pour un rejet fail-closed", () => {
+  const matrix = [
+    ["Un mécanisme difficile à interpréter persiste.", "provider_state_assertion"],
+    ["La capacité est excellente.", "provider_state_assertion"],
+    ["Le signal est excellent.", "provider_state_assertion"],
+    ["La récupération est excellente.", "provider_state_assertion"],
+    ["Ton signal est irrégulier.", "provider_personalized_claim"],
+    ["Ce profil présente une charge élevée.", "provider_profile_claim"],
+    ["La trajectoire montre une stagnation.", "provider_profile_claim"],
+  ] as const;
+
+  for (const [raw, expectedError] of matrix) {
+    const sanitized = sanitizeDiscoveryMechanismProse(raw);
+    assert.equal(sanitized, raw);
+    assert.ok(validateDiscoveryMechanismProse(sanitized).includes(expectedError), raw);
+  }
+});
+
+test("case_09: la neutralisation des comptes préserve la casse de phrase et des paragraphes", () => {
+  const matrix = [
+    ["Deux mécanismes interagissent.", "Plusieurs mécanismes interagissent."],
+    ["2 dimensions structurent le modèle.", "Plusieurs dimensions structurent le modèle."],
+    ["Trois axes organisent la régulation.", "Plusieurs axes organisent la régulation."],
+    ["La régulation relie deux mécanismes.", "La régulation relie plusieurs mécanismes."],
+    ["Le modèle articule 2 dimensions.", "Le modèle articule plusieurs dimensions."],
+  ] as const;
+
+  for (const [raw, expected] of matrix) {
+    const sanitized = sanitizeDiscoveryMechanismProse(raw);
+    assert.equal(sanitized, expected, raw);
+    assert.deepEqual(validateDiscoveryMechanismProse(sanitized), [], raw);
+    assert.equal(sanitizeDiscoveryMechanismProse(sanitized), sanitized, raw);
+  }
+
+  const paragraphs = [
+    "Deux mécanismes interagissent.",
+    "2 dimensions structurent le modèle. Trois axes organisent la régulation.",
+  ].join("\n\n");
+  const expectedParagraphs = [
+    "Plusieurs mécanismes interagissent.",
+    "Plusieurs dimensions structurent le modèle. Plusieurs axes organisent la régulation.",
+  ].join("\n\n");
+  const sanitizedParagraphs = sanitizeDiscoveryMechanismProse(paragraphs);
+  assert.equal(sanitizedParagraphs, expectedParagraphs);
+  assert.doesNotMatch(sanitizedParagraphs, /<[^>]+>/u);
+  assert.equal(sanitizeDiscoveryMechanismProse(sanitizedParagraphs), sanitizedParagraphs);
 });
 
 test("le reconciler expose un vrai cycle prepare/preflight/run de régénération", () => {

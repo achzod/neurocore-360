@@ -70,7 +70,7 @@ class FakeClient {
       const rowCount = this.state.failureItemCas ?? 1;
       return { rows: rowCount ? [{ audit_id: this.state.audit.id }] : [], rowCount };
     }
-    if (/UPDATE discovery_batch_runs[\s\S]*SET status = 'PAUSED'/.test(text)) {
+    if (/UPDATE discovery_batch_runs(?:\s+b)?[\s\S]*SET status = 'FAILED'/.test(text)) {
       const rowCount = this.state.failureRunCas ?? 1;
       return { rows: rowCount ? [{ id: this.state.batch.id }] : [], rowCount };
     }

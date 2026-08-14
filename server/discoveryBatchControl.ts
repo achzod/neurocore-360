@@ -2436,15 +2436,21 @@ export async function failDiscoveryBatchItem(
         DISCOVERY_GLOBAL_LOCK_KEY, input.lockToken, String(batch.status)],
     );
     if ((itemFailed.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_BATCH_ITEM_FAILURE_CAS_FAILED");
-    const runPaused = await client.query(
-      `UPDATE discovery_batch_runs
-          SET status = 'PAUSED', stop_reason = $2,
-              reserved_cost_usd = GREATEST(0, reserved_cost_usd - $3), updated_at = NOW()
+    const runFailed = await client.query(
+      `UPDATE discovery_batch_runs b
+          SET status = 'FAILED', stop_reason = $2,
+              reserved_cost_usd = GREATEST(0, reserved_cost_usd - $3),
+              processed_count = (
+                SELECT COUNT(*)::int FROM discovery_batch_items i
+                 WHERE i.batch_id = b.id
+                   AND i.state IN ('STORED','DELIVERED','SKIPPED','FAILED','AMBIGUOUS')
+              ),
+              completed_at = NOW(), updated_at = NOW()
         WHERE id = $1 AND lock_token = $4 AND status = $5
         RETURNING id`,
       [input.batchId, input.errorCode, reserved, input.lockToken, String(batch.status)],
     );
-    if ((runPaused.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_BATCH_RUN_FAILURE_CAS_FAILED");
+    if ((runFailed.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_BATCH_RUN_FAILURE_CAS_FAILED");
     const auditFailed = await client.query(
       `UPDATE audits SET report_delivery_status = 'BATCH_REVIEW'
         WHERE id = $1 AND type = 'GRATUIT' AND report_sent_at IS NULL
@@ -2645,17 +2651,23 @@ export async function recoverOrphanedDiscoveryProviderResult(
         proof.reservation_id, proof.usage_event_id, sourceState],
     );
     if ((itemFailed.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_ORPHAN_ITEM_CAS_FAILED");
-    const runPaused = await client.query(
-      `UPDATE discovery_batch_runs
-          SET status='PAUSED',stop_reason='DISCOVERY_PROVIDER_RESULT_LOST_AFTER_CRASH',
+    const runFailed = await client.query(
+      `UPDATE discovery_batch_runs b
+          SET status='FAILED',stop_reason='DISCOVERY_PROVIDER_RESULT_LOST_AFTER_CRASH',
               reserved_cost_usd=GREATEST(0,reserved_cost_usd-$2),
-              actual_cost_usd=actual_cost_usd+$3,updated_at=NOW()
+              actual_cost_usd=actual_cost_usd+$3,
+              processed_count=(
+                SELECT COUNT(*)::int FROM discovery_batch_items i
+                 WHERE i.batch_id=b.id
+                   AND i.state IN ('STORED','DELIVERED','SKIPPED','FAILED','AMBIGUOUS')
+              ),
+              completed_at=NOW(),updated_at=NOW()
         WHERE id=$1 AND lock_token=$4 AND status=$5 RETURNING id`,
       [input.batchId, Number(item.reserved_cost_usd || 0),
         sourceState === "PROVIDER_STARTED" ? actualCostUsd : 0,
         batchRun.lock_token, String(batchRun.status)],
     );
-    if ((runPaused.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_ORPHAN_RUN_CAS_FAILED");
+    if ((runFailed.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_ORPHAN_RUN_CAS_FAILED");
     const auditHeld = await client.query(
       `UPDATE audits SET report_delivery_status='BATCH_REVIEW'
         WHERE id=$1 AND type='GRATUIT' AND report_sent_at IS NULL
@@ -2686,7 +2698,22 @@ export async function completeDiscoveryBatchRun(
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    await assertBatchOwnership(client, input.batchId, input.lockToken);
+    const batch = await assertBatchOwnership(client, input.batchId, input.lockToken);
+    if (String(batch.status) === "FAILED") {
+      const terminalFailure = await client.query(
+        `SELECT
+            COUNT(*) FILTER (WHERE state IN ('FAILED','AMBIGUOUS'))::int AS failure_count,
+            COUNT(*) FILTER (WHERE state IN ('PREFLIGHT_OK','PROVIDER_STARTED','GENERATED','VALIDATED','DELIVERY_CLAIMED'))::int AS inflight_count
+           FROM discovery_batch_items WHERE batch_id = $1`,
+        [input.batchId],
+      );
+      const durable = Number(terminalFailure.rows[0]?.failure_count || 0) > 0
+        && Number(terminalFailure.rows[0]?.inflight_count || 0) === 0
+        && batch.completed_at != null
+        && Number(batch.reserved_cost_usd || 0) === 0;
+      await client.query(durable ? "COMMIT" : "ROLLBACK");
+      return durable;
+    }
     const unfinished = await client.query(
       `SELECT COUNT(*)::int AS count FROM discovery_batch_items
         WHERE batch_id = $1 AND state NOT IN ('STORED','DELIVERED','SKIPPED')`,

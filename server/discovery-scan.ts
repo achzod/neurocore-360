@@ -2188,6 +2188,88 @@ export function validateDiscoveryMechanismProse(text: string): string[] {
   return [...new Set(errors)];
 }
 
+/**
+ * Provider prose is intentionally generic. Small wording slips such as a
+ * counted set of mechanisms or a reviewed generic state must not force a paid
+ * retry when a complete phrase-level rewrite preserves the mechanism. This
+ * pass is deliberately narrow: unknown states, personal pronouns, profile
+ * claims and source attributions remain intact for fail-closed validation.
+ */
+export function sanitizeDiscoveryMechanismProse(text: string): string {
+  const numberWord = "deux|trois|quatre|cinq|six|sept|huit|neuf|dix|onze|douze|treize|quatorze|quinze|seize|vingt";
+  const personalOrProfileClaim = /\b(?:tu|toi|ton|ta|tes|te|t'|vous|votre|vos|profil|personne|individu|chez|declaree?s?|observee?s?|montre|presente)\b/;
+  const copularState = /^(.*?)\s+(?:(?:peut|pourrait)\s+[eê]tre|est|reste|devient)\s+(mauvais(?:e)?|difficile|[eé]lev[eé](?:e)?|faible|irr[eé]gulier(?:e)?|excellent(?:e)?|insuffisant(?:e)?|fragment[eé](?:e)?)([.!?])$/iu;
+
+  const rewriteGenericStateSentence = (sentence: string): string => {
+    const leading = sentence.match(/^\s*/)?.[0] || "";
+    const trailing = sentence.match(/\s*$/)?.[0] || "";
+    const core = sentence.trim();
+    if (!core) return sentence;
+    const normalized = normalizeDiscoveryFactText(core);
+    // Never sanitize evidence that the provider attempted to personalize.
+    // Leaving it byte-for-byte intact guarantees the strict validator rejects
+    // both the personal claim and any accompanying state assertion.
+    if (personalOrProfileClaim.test(normalized)) return sentence;
+
+    const stateMatch = core.match(copularState);
+    if (!stateMatch) return sentence;
+    const subject = stateMatch[1].trim();
+    const state = normalizeDiscoveryFactText(stateMatch[2]);
+    const punctuation = stateMatch[3];
+    const normalizedSubject = normalizeDiscoveryFactText(subject);
+    let replacement: string | null = null;
+    if (/^(?:la|une) recuperation$/.test(normalizedSubject) && state === "insuffisante") {
+      replacement = "Un déséquilibre entre charge et récupération peut limiter les ressources adaptatives";
+    } else if (/^(?:la|une) charge$/.test(normalizedSubject) && state === "elevee") {
+      replacement = `${subject} mobilise des ressources adaptatives et influence la récupération`;
+    } else if (/^(?:la|une) contrainte$/.test(normalizedSubject) && state === "elevee") {
+      replacement = `${subject} mobilise des ressources adaptatives et influence la récupération`;
+    } else if (/^(?:le|un) signal$/.test(normalizedSubject) && state === "irregulier") {
+      replacement = "La régularité du signal influence la stabilité des mécanismes";
+    } else if (/^(?:le|un) rythme$/.test(normalizedSubject) && state === "irregulier") {
+      replacement = "La régularité du rythme influence la stabilité des mécanismes";
+    } else if (/^(?:le|un) sommeil$/.test(normalizedSubject) && state === "fragmente") {
+      replacement = "La continuité du sommeil influence la récupération et la régulation énergétique";
+    } else if (/^(?:le|un) stress$/.test(normalizedSubject) && state === "faible") {
+      replacement = "La régulation du stress influence la mobilisation des ressources adaptatives";
+    }
+    // Unknown subjects have no reviewed semantic template.  Keep the original
+    // assertion so the strict gate rejects it instead of risking an inversion.
+    if (!replacement) return sentence;
+    return `${leading}${replacement}${punctuation}${trailing}`;
+  };
+
+  const sanitized = String(text || "").normalize("NFKC")
+    .replace(/[^\n.!?]+[.!?]?/gu, (sentence) => {
+      let rewritten = rewriteGenericStateSentence(sentence);
+      const normalized = normalizeDiscoveryFactText(rewritten);
+      if (personalOrProfileClaim.test(normalized)) return rewritten;
+      rewritten = rewritten
+        // Preserve a natural determiner when the provider needlessly counted
+        // a generic group: "les deux dimensions" becomes "les dimensions".
+        .replace(new RegExp(`\\b(les|ces|des)\\s+(?:${numberWord})\\s+(?=\\p{L})`, "giu"), "$1 ")
+        .replace(/\b(les|ces|des)\s+\d+\s+(?=\p{L})/giu, "$1 ")
+        .replace(
+          new RegExp(`\\b(${numberWord}|\\d+)\\s+(dimensions?|m[eé]canismes?|axes?|signaux?|facteurs?|variables?|syst[eè]mes?|processus)\\b`, "giu"),
+          (_match: string, _count: string, noun: string, offset: number, source: string) => {
+            const prefix = source.slice(0, offset);
+            const sentenceInitial = !/[\p{L}\p{N}]/u.test(prefix);
+            return `${sentenceInitial ? "Plusieurs" : "plusieurs"} ${noun}`;
+          },
+        )
+        // These noun phrases have one exact grammatical, non-personal rewrite.
+        // Any other state construction remains untouched and therefore fails
+        // validateDiscoveryMechanismProse instead of being silently damaged.
+        .replace(/\bcontraintes\s+[eé]lev[eé]es\b/giu, "contraintes exercées")
+        .replace(/\bcontrainte\s+[eé]lev[eé]e\b/giu, "contrainte exercée")
+        .replace(/[ \t]{2,}/g, " ")
+        .replace(/\s+([,.;:!?])/g, "$1");
+      return rewritten;
+    });
+
+  return normalizeParagraphs(sanitized.trim());
+}
+
 function cleanDiscoveryNarrativeProse(text: string): string {
   let cleaned = repairDiscoveryKnownFrenchCorruptions(
     normalizeDiscoveryFrenchSurface(stripInlineHtml(String(text || ""))),
@@ -2230,7 +2312,7 @@ export function validateDiscoveryGeneratedNarrative(
     throw new Error(`Discovery unified synthesis raw invalid: ${rawSynthesisErrors.join("|")}`);
   }
   const synthesis = repairDiscoveryProvidedFactAbsenceClaims(
-    cleanDiscoveryNarrativeProse(rawSynthesis),
+    sanitizeDiscoveryMechanismProse(cleanDiscoveryNarrativeProse(rawSynthesis)),
     responses,
   );
   const synthesisWords = synthesis.split(/\s+/).filter(Boolean).length;
@@ -2267,7 +2349,7 @@ export function validateDiscoveryGeneratedNarrative(
       throw new Error(`Discovery unified section ${domain} raw invalid: ${rawErrors.join("|")}`);
     }
     const content = repairDiscoveryProvidedFactAbsenceClaims(
-      cleanDiscoveryNarrativeProse(rawContent),
+      sanitizeDiscoveryMechanismProse(cleanDiscoveryNarrativeProse(rawContent)),
       responses,
     );
     const baseValidation = validateDiscoverySectionContent(content, safetyPolicy);
@@ -2346,7 +2428,7 @@ Aucun diagnostic, aucun dosage, aucune prescription biologique, aucune causalite
 Tu produis uniquement la prose explicative des mecanismes. Ne formule aucun constat individuel et ne repete aucune valeur personnelle, chiffre, score, quantite, frequence, priorite ou label de severite. Ils seront ajoutes ensuite par le moteur deterministe.
 N'ecris aucun chiffre ni nombre en lettres. N'emploie jamais les mots jamais, rarement, parfois, souvent, toujours, quotidien, critique ou critical.
 Interdiction absolue d'utiliser un prenom, tu, ton, tes, vous, votre, ce profil, cette personne, cet individu, le client, declare, observe, presente, montre, souffre ou semble.
-Le Discovery donne une lecture et 2 ou 3 priorites, jamais un protocole complet.
+Le Discovery donne une lecture et des axes de travail sans les denombrer dans la prose, jamais un protocole complet.
 Ne remplis pas pour atteindre une longueur. Chaque paragraphe doit expliquer un mecanisme du perimetre autorise.
 SORTIE BRUTE STRICTEMENT TEXTE: aucun HTML, URL, lien, markdown, code promo ou caractere de controle dans synthesis ou content.`;
 
