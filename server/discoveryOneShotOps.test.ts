@@ -79,6 +79,11 @@ test("Lenny quality repair is bound to the exact live artifact and replacement",
     sectionId: "sommeil",
     oldText: "La seule nuance se trouve au matin. une fatigue parfois présente au réveil, ton énergie matinale est moyenne et tu te réveilles parfois fatigué.",
     newText: "La seule nuance se trouve au réveil : une fatigue parfois présente et une énergie matinale moyenne.",
+    nutritionSectionIndex: 1,
+    nutritionSectionId: "global",
+    nutritionOldText: "la régularité et la qualité de l’apport protéique deviennent plus importantes. je n'ai pas les éléments pour juger les quantités, la répartition ni l’apport énergétique total avec les réponses disponibles.",
+    nutritionNewText: "la régularité et la qualité de l’apport protéique deviennent plus importantes. Je n'ai pas les éléments pour juger les quantités, la répartition ni l’apport énergétique total avec les réponses disponibles.",
+    expectedNutritionOccurrencesPerArtifact: 1,
     promoSectionIndex: 11,
     promoSectionId: "coaching",
     expectedPromoCodeOccurrencesPerArtifact: 1,
@@ -100,6 +105,8 @@ test("Lenny quality repair is bound to the exact live artifact and replacement",
   assert.match(trackingGateSource, /sendReportRegeneratedEmail/);
   assert.doesNotMatch(trackingGateSource, /sendAdminEmailNewAudit/);
   assert.match(source, /DISCOVERY_TEXT_REPAIR_EXACT_PHRASE_MISMATCH/);
+  assert.match(source, /DISCOVERY_TEXT_REPAIR_LEGACY_NUTRITION_DIVERGENCE/);
+  assert.match(source, /DISCOVERY_TEXT_REPAIR_PERSISTED_NUTRITION_MISMATCH/);
   assert.match(source, /DISCOVERY_TEXT_REPAIR_LEGACY_PROMO_DIVERGENCE/);
   assert.match(source, /expectedPromoCodeOccurrencesPerArtifact/);
   assert.match(source, /approvedNeutralPromoHtml/);

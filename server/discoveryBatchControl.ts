@@ -542,6 +542,11 @@ export const DISCOVERY_LENNY_QUALITY_FIX_TARGET = Object.freeze({
   sectionId: "sommeil",
   oldText: "La seule nuance se trouve au matin. une fatigue parfois présente au réveil, ton énergie matinale est moyenne et tu te réveilles parfois fatigué.",
   newText: "La seule nuance se trouve au réveil : une fatigue parfois présente et une énergie matinale moyenne.",
+  nutritionSectionIndex: 1,
+  nutritionSectionId: "global",
+  nutritionOldText: "la régularité et la qualité de l’apport protéique deviennent plus importantes. je n'ai pas les éléments pour juger les quantités, la répartition ni l’apport énergétique total avec les réponses disponibles.",
+  nutritionNewText: "la régularité et la qualité de l’apport protéique deviennent plus importantes. Je n'ai pas les éléments pour juger les quantités, la répartition ni l’apport énergétique total avec les réponses disponibles.",
+  expectedNutritionOccurrencesPerArtifact: 1,
   promoSectionIndex: 11,
   promoSectionId: "coaching",
   expectedPromoCodeOccurrencesPerArtifact: 1,
@@ -561,6 +566,11 @@ export interface ExactDiscoveryTextRepairTarget {
   sectionId: string;
   oldText: string;
   newText: string;
+  nutritionSectionIndex: number;
+  nutritionSectionId: string;
+  nutritionOldText: string;
+  nutritionNewText: string;
+  expectedNutritionOccurrencesPerArtifact: 1;
   promoSectionIndex: number;
   promoSectionId: "coaching";
   expectedPromoCodeOccurrencesPerArtifact: 1;
@@ -886,6 +896,14 @@ export async function repairExactDiscoveryTextUnderLock(
   if (!Number.isInteger(target.sectionIndex) || target.sectionIndex < 0 || !target.sectionId) {
     throw new Error("DISCOVERY_TEXT_REPAIR_SECTION_INVALID");
   }
+  if (!Number.isInteger(target.nutritionSectionIndex) || target.nutritionSectionIndex < 0
+    || !target.nutritionSectionId
+    || !target.nutritionOldText
+    || !target.nutritionNewText
+    || target.nutritionOldText === target.nutritionNewText
+    || target.expectedNutritionOccurrencesPerArtifact !== 1) {
+    throw new Error("DISCOVERY_TEXT_REPAIR_NUTRITION_TARGET_INVALID");
+  }
   if (!Number.isInteger(target.promoSectionIndex) || target.promoSectionIndex < 0
     || target.promoSectionId !== "coaching"
     || target.expectedPromoCodeOccurrencesPerArtifact !== 1
@@ -952,6 +970,7 @@ export async function repairExactDiscoveryTextUnderLock(
     }
     const repairedReport = structuredClone(audit.narrative_report) as Record<string, any>;
     const section = repairedReport.sections[target.sectionIndex];
+    const nutritionSection = repairedReport.sections[target.nutritionSectionIndex];
     const promoSection = repairedReport.sections[target.promoSectionIndex];
     const serializedBefore = JSON.stringify(repairedReport);
     if (!section || String(section.id) !== target.sectionId || typeof section.content !== "string"
@@ -959,6 +978,28 @@ export async function repairExactDiscoveryTextUnderLock(
       || countExactOccurrences(serializedBefore, target.newText) !== 0
       || countExactOccurrences(section.content, target.oldText) !== 1) {
       throw new Error("DISCOVERY_TEXT_REPAIR_EXACT_PHRASE_MISMATCH");
+    }
+    if (!nutritionSection
+      || String(nutritionSection.id) !== target.nutritionSectionId
+      || typeof nutritionSection.content !== "string"
+      || countExactOccurrences(serializedBefore, target.nutritionOldText)
+        !== target.expectedNutritionOccurrencesPerArtifact
+      || countExactOccurrences(serializedBefore, target.nutritionNewText) !== 0
+      || countExactOccurrences(nutritionSection.content, target.nutritionOldText)
+        !== target.expectedNutritionOccurrencesPerArtifact
+      || countExactOccurrences(previousTxt, target.nutritionOldText)
+        !== target.expectedNutritionOccurrencesPerArtifact
+      || countExactOccurrences(previousTxt, target.nutritionNewText) !== 0
+      || countExactOccurrences(previousHtml, target.nutritionOldText)
+        !== target.expectedNutritionOccurrencesPerArtifact
+      || countExactOccurrences(previousHtml, target.nutritionNewText) !== 0
+      || countExactOccurrences(String(artifact.txt || ""), target.nutritionOldText)
+        !== target.expectedNutritionOccurrencesPerArtifact
+      || countExactOccurrences(String(artifact.txt || ""), target.nutritionNewText) !== 0
+      || countExactOccurrences(String(artifact.html || ""), target.nutritionOldText)
+        !== target.expectedNutritionOccurrencesPerArtifact
+      || countExactOccurrences(String(artifact.html || ""), target.nutritionNewText) !== 0) {
+      throw new Error("DISCOVERY_TEXT_REPAIR_LEGACY_NUTRITION_DIVERGENCE");
     }
     const legacyPromoCode = ["DISCOVERY", "20"].join("");
     if (!promoSection
@@ -979,6 +1020,10 @@ export async function repairExactDiscoveryTextUnderLock(
       throw new Error("DISCOVERY_TEXT_REPAIR_LEGACY_PROMO_DIVERGENCE");
     }
     section.content = section.content.replace(target.oldText, target.newText);
+    nutritionSection.content = nutritionSection.content.replace(
+      target.nutritionOldText,
+      target.nutritionNewText,
+    );
     promoSection.content = promoSection.content.replace(
       target.legacyPromoHtml,
       target.approvedNeutralPromoHtml,
@@ -1010,6 +1055,15 @@ export async function repairExactDiscoveryTextUnderLock(
       || countExactOccurrences(serializedAfter, target.newText) !== 1
       || countExactOccurrences(assets.txt, target.oldText) !== 0
       || countExactOccurrences(assets.html, target.oldText) !== 0
+      || countExactOccurrences(serializedAfter, target.nutritionOldText) !== 0
+      || countExactOccurrences(serializedAfter, target.nutritionNewText)
+        !== target.expectedNutritionOccurrencesPerArtifact
+      || countExactOccurrences(assets.txt, target.nutritionOldText) !== 0
+      || countExactOccurrences(assets.txt, target.nutritionNewText)
+        !== target.expectedNutritionOccurrencesPerArtifact
+      || countExactOccurrences(assets.html, target.nutritionOldText) !== 0
+      || countExactOccurrences(assets.html, target.nutritionNewText)
+        !== target.expectedNutritionOccurrencesPerArtifact
       || countExactOccurrences(promoSection.content, target.legacyPromoHtml) !== 0
       || countExactOccurrences(promoSection.content, target.approvedNeutralPromoHtml) !== 1
       || countExactOccurrences(serializedAfter, legacyPromoCode) !== 0
@@ -1068,6 +1122,30 @@ export async function repairExactDiscoveryTextUnderLock(
         DISCOVERY_GLOBAL_LOCK_KEY, input.lockToken],
     );
     if ((auditUpdated.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_TEXT_REPAIR_AUDIT_CAS_FAILED");
+
+    const persisted = await client.query(
+      `SELECT a.narrative_report, a.report_txt, a.report_html,
+              r.txt AS artifact_txt, r.html AS artifact_html
+         FROM audits a
+         JOIN report_artifacts r ON r.audit_id = a.id
+        WHERE a.id = $1 AND r.id = $2`,
+      [target.id, artifact.id],
+    );
+    const persistedRow = persisted.rows[0];
+    const persistedRepresentations = [
+      JSON.stringify(persistedRow?.narrative_report ?? null),
+      String(persistedRow?.report_txt || ""),
+      String(persistedRow?.report_html || ""),
+      String(persistedRow?.artifact_txt || ""),
+      String(persistedRow?.artifact_html || ""),
+    ];
+    if ((persisted.rowCount ?? 0) !== 1
+      || persistedRepresentations.some((value) =>
+        countExactOccurrences(value, target.nutritionOldText) !== 0
+        || countExactOccurrences(value, target.nutritionNewText)
+          !== target.expectedNutritionOccurrencesPerArtifact)) {
+      throw new Error("DISCOVERY_TEXT_REPAIR_PERSISTED_NUTRITION_MISMATCH");
+    }
 
     await assertNoDiscoveryDeliveryTrackingOrClaim(client, target.id);
     await client.query("COMMIT");

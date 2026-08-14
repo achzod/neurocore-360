@@ -131,6 +131,8 @@ async function insertAudit(status = "PENDING"): Promise<string> {
 const LENNY_OLD_TEXT = "La seule nuance se trouve au matin. une fatigue parfois présente au réveil, ton énergie matinale est moyenne et tu te réveilles parfois fatigué.";
 const LENNY_NEW_TEXT = "La seule nuance se trouve au réveil : une fatigue parfois présente et une énergie matinale moyenne.";
 const LENNY_UNSAFE_TEXT = "La seule nuance se trouve au réveil : une fatigue parfois présente, une énergie matinale moyenne et un réveil parfois difficile.";
+const LENNY_NUTRITION_OLD_TEXT = "la régularité et la qualité de l’apport protéique deviennent plus importantes. je n'ai pas les éléments pour juger les quantités, la répartition ni l’apport énergétique total avec les réponses disponibles.";
+const LENNY_NUTRITION_NEW_TEXT = "la régularité et la qualité de l’apport protéique deviennent plus importantes. Je n'ai pas les éléments pour juger les quantités, la répartition ni l’apport énergétique total avec les réponses disponibles.";
 const LENNY_RESPONSES = {
   "reveil-fatigue": "parfois",
   "energie-matin": "moyenne",
@@ -156,7 +158,10 @@ function dee8LegacyCoachingSection(): string {
 </div>`;
 }
 
-function exactRepairReport(duplicatePhrase = false): ReportData {
+function exactRepairReport(
+  duplicatePhrase = false,
+  nutritionMode: "valid" | "duplicate" | "wrong-path" = "valid",
+): ReportData {
   const clientName = "Lenny";
   const sections = [
     "intro", "global", "digestion", "stress", "energie", "sommeil",
@@ -166,6 +171,8 @@ function exactRepairReport(duplicatePhrase = false): ReportData {
     title: id === "sommeil" ? "Sommeil" : `Section ${index}`,
     content: `<p>${["sommeil", "stress", "energie", "digestion", "training", "nutrition", "lifestyle", "mindset"].includes(id) || index === 0 ? `${clientName} ` : ""}${"Contenu physiologique précis et personnalisé. ".repeat(72)}</p>`,
   }));
+  sections[1].content += `<p>Dans ce contexte, ${LENNY_NUTRITION_OLD_TEXT}${nutritionMode === "duplicate" ? ` ${LENNY_NUTRITION_OLD_TEXT}` : ""}</p>`;
+  if (nutritionMode === "wrong-path") sections[1].id = "global-other";
   sections[5].content += `<p>${LENNY_OLD_TEXT}${duplicatePhrase ? ` ${LENNY_OLD_TEXT}` : ""}</p>`;
   sections[11].content = dee8LegacyCoachingSection();
   return {
@@ -199,10 +206,13 @@ function exactRepairReport(duplicatePhrase = false): ReportData {
   };
 }
 
-async function insertExactRepairFixture(duplicatePhrase = false) {
+async function insertExactRepairFixture(
+  duplicatePhrase = false,
+  nutritionMode: "valid" | "duplicate" | "wrong-path" = "valid",
+) {
   const id = randomUUID();
   const email = `${id}@example.test`;
-  const report = exactRepairReport(duplicatePhrase);
+  const report = exactRepairReport(duplicatePhrase, nutritionMode);
   const assets = buildDiscoveryReportAssets(report);
   const narrative = attachDiscoveryDeliveryGateResult(report, {
     name: "discovery_delivery",
@@ -245,6 +255,11 @@ async function insertExactRepairFixture(duplicatePhrase = false) {
       sectionId: "sommeil",
       oldText: LENNY_OLD_TEXT,
       newText: LENNY_NEW_TEXT,
+      nutritionSectionIndex: 1,
+      nutritionSectionId: "global",
+      nutritionOldText: LENNY_NUTRITION_OLD_TEXT,
+      nutritionNewText: LENNY_NUTRITION_NEW_TEXT,
+      expectedNutritionOccurrencesPerArtifact: 1 as const,
       promoSectionIndex: 11,
       promoSectionId: "coaching" as const,
       expectedPromoCodeOccurrencesPerArtifact: 1 as const,
@@ -564,6 +579,15 @@ test("exact Discovery text repair atomically replaces JSON, TXT, HTML, artifact 
   assert.equal(JSON.stringify(audit.narrative_report).split(LENNY_NEW_TEXT).length - 1, 1);
   assert.equal(audit.report_txt.includes(LENNY_OLD_TEXT), false);
   assert.equal(audit.report_html.includes(LENNY_OLD_TEXT), false);
+  assert.equal(JSON.stringify(audit.narrative_report).includes(LENNY_NUTRITION_OLD_TEXT), false);
+  assert.equal(
+    JSON.stringify(audit.narrative_report).split(LENNY_NUTRITION_NEW_TEXT).length - 1,
+    1,
+  );
+  assert.equal(audit.report_txt.includes(LENNY_NUTRITION_OLD_TEXT), false);
+  assert.equal(audit.report_txt.split(LENNY_NUTRITION_NEW_TEXT).length - 1, 1);
+  assert.equal(audit.report_html.includes(LENNY_NUTRITION_OLD_TEXT), false);
+  assert.equal(audit.report_html.split(LENNY_NUTRITION_NEW_TEXT).length - 1, 1);
   assert.equal(JSON.stringify(audit.narrative_report).includes("DISCOVERY20"), false);
   assert.equal(audit.report_txt.includes("DISCOVERY20"), false);
   assert.equal(audit.report_html.includes("DISCOVERY20"), false);
@@ -582,6 +606,10 @@ test("exact Discovery text repair atomically replaces JSON, TXT, HTML, artifact 
   assert.equal(artifacts.rows[0].html, audit.report_html);
   assert.equal(artifacts.rows[0].txt.includes("DISCOVERY20"), false);
   assert.equal(artifacts.rows[0].html.includes("DISCOVERY20"), false);
+  assert.equal(artifacts.rows[0].txt.includes(LENNY_NUTRITION_OLD_TEXT), false);
+  assert.equal(artifacts.rows[0].txt.split(LENNY_NUTRITION_NEW_TEXT).length - 1, 1);
+  assert.equal(artifacts.rows[0].html.includes(LENNY_NUTRITION_OLD_TEXT), false);
+  assert.equal(artifacts.rows[0].html.split(LENNY_NUTRITION_NEW_TEXT).length - 1, 1);
   assert.equal(
     artifacts.rows[0].content_sha256,
     batch.discoveryArtifactContentHash(audit.report_txt, audit.report_html),
@@ -655,6 +683,39 @@ test("exact Discovery text repair rolls back on phrase divergence", async () => 
   )).rows[0];
   assert.equal(artifact.txt, fixture.assets.txt);
   assert.equal(artifact.html, fixture.assets.html);
+});
+
+test("exact Discovery text repair rolls back on legacy nutrition path or occurrence divergence", async () => {
+  for (const mode of ["wrong-path", "duplicate"] as const) {
+    const fixture = await insertExactRepairFixture(false, mode);
+    const before = (await pool.query(
+      `SELECT narrative_report, report_txt, report_html FROM audits WHERE id = $1`,
+      [fixture.id],
+    )).rows[0];
+    const lock = await batch.acquireDiscoveryGlobalLock({
+      owner: "postgres-integration",
+      purpose: `exact-nutrition-${mode}-divergence`,
+      ttlMinutes: 5,
+    }, pool);
+    await assert.rejects(
+      batch.repairExactDiscoveryTextUnderLock({ lockToken: lock.token, target: fixture.target }, pool),
+      /DISCOVERY_TEXT_REPAIR_LEGACY_NUTRITION_DIVERGENCE/,
+    );
+    assert.equal(await batch.releaseDiscoveryGlobalLock(lock.token, pool), true);
+    const audit = (await pool.query(
+      `SELECT narrative_report, report_txt, report_html FROM audits WHERE id = $1`,
+      [fixture.id],
+    )).rows[0];
+    assert.deepEqual(audit.narrative_report, before.narrative_report);
+    assert.equal(audit.report_txt, before.report_txt);
+    assert.equal(audit.report_html, before.report_html);
+    const artifact = (await pool.query(
+      `SELECT txt, html FROM report_artifacts WHERE audit_id = $1`,
+      [fixture.id],
+    )).rows[0];
+    assert.equal(artifact.txt, before.report_txt);
+    assert.equal(artifact.html, before.report_html);
+  }
 });
 
 test("exact Discovery repair rolls back on legacy promo path or occurrence divergence", async () => {
