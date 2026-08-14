@@ -161,7 +161,7 @@ export async function registerRoutes(
         `SELECT id, txt, html, content_sha256 AS "contentSha256",
               batch_id AS "batchId", model
          FROM report_artifacts
-        WHERE audit_id = $1
+        WHERE audit_id = $1 AND artifact_state = 'ACTIVE'
         ORDER BY created_at ASC, id ASC`,
         [audit.id],
       );
@@ -9119,10 +9119,12 @@ export async function registerRoutes(
       // narrativeReport never hydrated (e.g. send marked SENT without delivery).
       const withContent = req.query.content === "1";
       const cols = withContent
-        ? "id, audit_id, tier, engine, model, txt, html, created_at"
-        : "id, audit_id, tier, engine, model, created_at";
+        ? "id, audit_id, tier, engine, model, txt, html, artifact_state, superseded_at, supersedes_artifact_id, created_at"
+        : "id, audit_id, tier, engine, model, artifact_state, superseded_at, supersedes_artifact_id, created_at";
       const result = await pool.query(
-        `SELECT ${cols} FROM report_artifacts WHERE audit_id = $1 ORDER BY created_at DESC`,
+        `SELECT ${cols} FROM report_artifacts
+          WHERE audit_id = $1 AND artifact_state = 'ACTIVE'
+          ORDER BY created_at DESC`,
         [auditId]
       );
       res.json({
@@ -9133,6 +9135,9 @@ export async function registerRoutes(
           tier: r.tier,
           engine: r.engine,
           model: r.model,
+          artifactState: r.artifact_state,
+          supersededAt: r.superseded_at,
+          supersedesArtifactId: r.supersedes_artifact_id,
           createdAt: r.created_at,
           ...(withContent ? { txt: r.txt, html: r.html } : {}),
         })),
@@ -10397,7 +10402,9 @@ export async function registerRoutes(
       const storedHtml = String((audit as any).reportHtml || existingReport?.html || "").trim();
       const canonicalArtifacts = await pool.query(
         `SELECT txt, html, content_sha256 AS "contentSha256"
-           FROM report_artifacts WHERE audit_id=$1 ORDER BY created_at ASC, id ASC`,
+           FROM report_artifacts
+          WHERE audit_id=$1 AND artifact_state='ACTIVE'
+          ORDER BY created_at ASC, id ASC`,
         [audit.id],
       );
       const canonicalDiscovery = resolveCanonicalDiscoveryArtifacts({

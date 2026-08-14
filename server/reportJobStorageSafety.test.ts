@@ -117,6 +117,9 @@ class ArtifactClient {
       };
     }
     if (/FROM discovery_operation_lock/.test(text)) return { rows: [], rowCount: 0 };
+    if (/FROM report_artifacts[\s\S]*artifact_state = 'ACTIVE'/.test(text)) {
+      return { rows: [], rowCount: 0 };
+    }
     if (/^\s*INSERT INTO report_artifacts/.test(text)) {
       return { rows: [{ id: values?.[0] }], rowCount: 1 };
     }
@@ -151,6 +154,8 @@ test("generic artifact persistence is fenced and uses an atomic INSERT SELECT pa
   assert.match(insert.text, /SELECT \$1, a\.id/);
   assert.match(insert.text, /a\.type <> 'GRATUIT'/);
   assert.match(insert.text, /\$3 <> 'GRATUIT'/);
+  assert.match(insert.text, /'ACTIVE', \$9/);
+  assert.ok(pool.client.calls.some((call) => /artifact_state = 'ACTIVE'[\s\S]*FOR UPDATE/.test(call.text)));
   assert.equal(pool.client.calls.at(-1)?.text, "COMMIT");
   assert.equal(pool.client.released, true);
 });
@@ -266,7 +271,8 @@ test("missing Discovery job enqueue is fenced, row-locked and atomically CASes a
     assert.match(update, /a\.responses IS NOT DISTINCT FROM \$4::jsonb/);
     assert.match(update, /a\.narrative_report IS NOT DISTINCT FROM \$5::jsonb/);
     assert.match(update, /NOT EXISTS \(SELECT 1 FROM report_jobs/);
-    assert.match(update, /NOT EXISTS \(SELECT 1 FROM report_artifacts/);
+    assert.match(update, /NOT EXISTS \([\s\S]*FROM report_artifacts/);
+    assert.match(update, /r\.artifact_state = 'ACTIVE'/);
     assert.match(update, /expires_at > NOW\(\)/);
     assert.match(update, /token::text/);
     assert.ok(texts.some((text) => /^\s*INSERT INTO report_jobs/.test(text)));
@@ -346,7 +352,8 @@ test("supersede locks both audits and applies full source/global-fence CAS", asy
     assert.match(update.text, /a\.created_at >= \$4/);
     assert.match(update.text, /a\.responses IS NOT DISTINCT FROM \$5::jsonb/);
     assert.match(update.text, /NOT EXISTS \(SELECT 1 FROM report_jobs/);
-    assert.match(update.text, /NOT EXISTS \(SELECT 1 FROM report_artifacts/);
+    assert.match(update.text, /NOT EXISTS \([\s\S]*FROM report_artifacts/);
+    assert.match(update.text, /r\.artifact_state = 'ACTIVE'/);
     assert.match(update.text, /replacement\.type = 'GRATUIT'/);
     assert.match(update.text, /LOWER\(replacement\.email\) = LOWER\(a\.email\)/);
     assert.equal(pool.client.calls.at(-1)?.text, "COMMIT");

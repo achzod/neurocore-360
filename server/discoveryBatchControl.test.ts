@@ -6,6 +6,7 @@ import {
   DISCOVERY_BATCH_HARD_COST_USD,
   DISCOVERY_BATCH_SOFT_COST_USD,
   classifyDiscoveryManifestCandidate,
+  classifyDiscoveryRegenerationArtifactTuple,
   decodeDiscoveryApprovalBase64,
   discoveryApprovalBindingHash,
   discoveryArtifactContentHash,
@@ -28,6 +29,32 @@ test("stable JSON and manifest hashes do not depend on object key order", () => 
   assert.equal(discoverySha256({ b: 2, a: 1 }), discoverySha256({ a: 1, b: 2 }));
   assert.match(discoveryArtifactContentHash("txt", "html"), /^[a-f0-9]{64}$/);
   assert.notEqual(discoveryArtifactContentHash("tx", "thtml"), discoveryArtifactContentHash("txt", "html"));
+});
+
+test("regeneration accepts only exact legacy and complete artifact tuples", () => {
+  assert.equal(classifyDiscoveryRegenerationArtifactTuple({
+    reportDeliveryStatus: "BATCH_REVIEW", narrativePresent: false, txtPresent: false, htmlPresent: false,
+  }), "LEGACY_LOST_CANDIDATE");
+  assert.equal(classifyDiscoveryRegenerationArtifactTuple({
+    reportDeliveryStatus: "BATCH_REVIEW", narrativePresent: true, txtPresent: false, htmlPresent: false,
+  }), "LEGACY_NARRATIVE_ONLY");
+  assert.equal(classifyDiscoveryRegenerationArtifactTuple({
+    reportDeliveryStatus: "BATCH_READY", narrativePresent: true, txtPresent: true, htmlPresent: true,
+  }), "PERSISTED_INVALID_REPORT");
+
+  for (const [narrativePresent, txtPresent, htmlPresent] of [
+    [false, false, true], [false, true, false], [false, true, true],
+    [true, false, true], [true, true, false],
+  ] as const) {
+    assert.throws(() => classifyDiscoveryRegenerationArtifactTuple({
+      reportDeliveryStatus: "BATCH_REVIEW", narrativePresent, txtPresent, htmlPresent,
+    }), /DISCOVERY_REGENERATION_PARTIAL_LEGACY_ARTIFACT/);
+  }
+  for (const reportDeliveryStatus of ["BATCH_READY", "NEEDS_REVIEW", "READY"]) {
+    assert.throws(() => classifyDiscoveryRegenerationArtifactTuple({
+      reportDeliveryStatus, narrativePresent: true, txtPresent: false, htmlPresent: false,
+    }), /DISCOVERY_REGENERATION_PARTIAL_LEGACY_ARTIFACT/);
+  }
 });
 
 test("accepted provider tracking is terminal even if the stored report is invalid", () => {
@@ -463,6 +490,8 @@ test("reconciler is read-only by default and delivery claims before provider", (
   assert.match(source, /sendpulseSmtpAnswerCode',''\) ~ '\^5\[0-9\]\{2\}\$'/);
   assert.match(source, /args\.has\("--summary-only"\)/);
   assert.match(source, /DISCOVERY_BATCH_MANIFEST_SUMMARY/);
+  assert.match(source, /narrativeSha256: row\.narrative_report == null/);
+  assert.match(source, /expectedNarrativeSha256: item\.narrativeSha256/);
   assert.match(source, /emailSha256: discoverySha256/);
   assert.match(source, /args\.has\("--preflight-generation"\).*args\.has\("--preflight-regeneration"\)/s);
   assert.match(source, /DISCOVERY_BATCH_\$\{preflightStage\}_PREFLIGHT_COMPLETE/);
@@ -471,4 +500,10 @@ test("reconciler is read-only by default and delivery claims before provider", (
   assert.match(source, /DISCOVERY_BATCH_REPAIR_RETIRED_USE_SIGNED_TRANSACTIONAL_OPERATION/);
   assert.doesNotMatch(source, /deterministic-known-corruption-repair/);
   assert.match(source, /promoteDiscoveryBatchItemForDelivery\(\{/);
+  assert.match(source, /ra\.audit_id=a\.id AND ra\.artifact_state='ACTIVE'/);
+  const batchControl = readFileSync(new URL("./discoveryBatchControl.ts", import.meta.url), "utf8");
+  assert.doesNotMatch(batchControl, /UPDATE report_artifacts\s+SET txt\s*=/);
+  assert.match(batchControl, /artifact_state = 'SUPERSEDED', superseded_at = NOW\(\)/);
+  assert.match(batchControl, /'ACTIVE',\$10::varchar,NOW\(\)/);
+  assert.match(batchControl, /WHERE audit_id=\$1 AND artifact_state='ACTIVE'\s+ORDER BY created_at DESC FOR UPDATE/);
 });

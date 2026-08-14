@@ -127,6 +127,57 @@ export interface DiscoveryBatchManifestItemInput {
   retryOfCandidateId?: string | null;
 }
 
+export type DiscoveryRegenerationArtifactTuple =
+  | "LEGACY_LOST_CANDIDATE"
+  | "LEGACY_NARRATIVE_ONLY"
+  | "PERSISTED_INVALID_REPORT";
+
+/**
+ * Only the two historical legacy shapes and the complete persisted shape are
+ * recoverable. Every other partial tuple is ambiguous and must remain held.
+ */
+export function classifyDiscoveryRegenerationArtifactTuple(input: {
+  reportDeliveryStatus: string | null;
+  narrativePresent: boolean;
+  txtPresent: boolean;
+  htmlPresent: boolean;
+}): DiscoveryRegenerationArtifactTuple {
+  const { reportDeliveryStatus, narrativePresent, txtPresent, htmlPresent } = input;
+  if (!narrativePresent && !txtPresent && !htmlPresent
+    && reportDeliveryStatus === "BATCH_REVIEW") {
+    return "LEGACY_LOST_CANDIDATE";
+  }
+  if (narrativePresent && !txtPresent && !htmlPresent
+    && reportDeliveryStatus === "BATCH_REVIEW") {
+    return "LEGACY_NARRATIVE_ONLY";
+  }
+  if (narrativePresent && txtPresent && htmlPresent) {
+    return "PERSISTED_INVALID_REPORT";
+  }
+  throw new Error("DISCOVERY_REGENERATION_PARTIAL_LEGACY_ARTIFACT");
+}
+
+function hasExactLegacyNarrativeProvenance(candidate: any): boolean {
+  const sourceKind = String(candidate?.source_kind || "");
+  if (sourceKind === "LEGACY_LOST_CANDIDATE") {
+    return candidate?.legacy_narrative_present === false
+      && candidate?.legacy_narrative_json == null
+      && candidate?.legacy_narrative_sha256 == null;
+  }
+  if (sourceKind !== "LEGACY_NARRATIVE_ONLY"
+    || candidate?.legacy_narrative_present !== true
+    || typeof candidate?.legacy_narrative_json !== "string"
+    || !/^[a-f0-9]{64}$/.test(String(candidate?.legacy_narrative_sha256 || ""))
+    || discoverySha256(candidate.legacy_narrative_json) !== String(candidate.legacy_narrative_sha256)) {
+    return false;
+  }
+  try {
+    return JSON.parse(candidate.legacy_narrative_json) != null;
+  } catch {
+    return false;
+  }
+}
+
 function normalizeNumber(value: unknown): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -1266,13 +1317,20 @@ export async function promoteExactValidDiscoveryWithoutDelivery(
       throw new Error("DISCOVERY_PROMOTION_AUDIT_HASH_MISMATCH");
     }
 
-    const artifacts = await client.query(
-      `SELECT txt, html FROM report_artifacts WHERE audit_id = $1 ORDER BY created_at ASC FOR UPDATE`,
+    const artifactHistoryCount = Number((await client.query(
+      `SELECT COUNT(*)::int AS count FROM report_artifacts WHERE audit_id = $1`,
       [DISCOVERY_VALID_NO_DELIVERY_TARGET.id],
-    );
-    if ((artifacts.rowCount ?? 0) !== DISCOVERY_VALID_NO_DELIVERY_TARGET.expectedArtifactCount) {
+    )).rows[0]?.count || 0);
+    if (artifactHistoryCount !== DISCOVERY_VALID_NO_DELIVERY_TARGET.expectedArtifactCount) {
       throw new Error("DISCOVERY_PROMOTION_ARTIFACT_COUNT_MISMATCH");
     }
+    const artifacts = await client.query(
+      `SELECT txt, html FROM report_artifacts
+        WHERE audit_id = $1 AND artifact_state = 'ACTIVE'
+        ORDER BY created_at ASC FOR UPDATE`,
+      [DISCOVERY_VALID_NO_DELIVERY_TARGET.id],
+    );
+    if ((artifacts.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_PROMOTION_ACTIVE_ARTIFACT_MISMATCH");
     const matchingArtifact = artifacts.rows.some((artifact: any) =>
       discoverySha256(String(artifact.txt || "")) === input.expectedTxtSha256
       && discoverySha256(String(artifact.html || "")) === input.expectedHtmlSha256);
@@ -1349,6 +1407,77 @@ function countExactOccurrences(value: string, needle: string): number {
     cursor += needle.length;
   }
   return count;
+}
+
+async function replaceActiveDiscoveryArtifactAppendOnly(
+  client: PoolClient,
+  input: {
+    auditId: string;
+    activeArtifact: {
+      id: unknown;
+      tier: unknown;
+      engine: unknown;
+      model: unknown;
+      batch_id: unknown;
+    };
+    previousTxt: string;
+    previousHtml: string;
+    previousContentSha256: string;
+    nextTxt: string;
+    nextHtml: string;
+    nextContentSha256: string;
+    lockToken: string;
+    errorPrefix: "DISCOVERY_TEXT_REPAIR" | "DISCOVERY_WAKE_SUMMARY_REPAIR";
+  },
+): Promise<string> {
+  const previousArtifactId = String(input.activeArtifact.id);
+  const nextArtifactId = randomUUID();
+  const superseded = await client.query(
+    `UPDATE report_artifacts
+        SET artifact_state = 'SUPERSEDED', superseded_at = NOW()
+      WHERE id = $1 AND audit_id = $2 AND artifact_state = 'ACTIVE'
+        AND txt IS NOT DISTINCT FROM $3
+        AND html IS NOT DISTINCT FROM $4
+        AND content_sha256 = $5
+        AND EXISTS (
+          SELECT 1 FROM discovery_operation_lock l
+           WHERE l.lock_key = $6 AND l.token = $7 AND l.expires_at > NOW()
+        )
+      RETURNING id`,
+    [previousArtifactId, input.auditId, input.previousTxt, input.previousHtml,
+      input.previousContentSha256, DISCOVERY_GLOBAL_LOCK_KEY, input.lockToken],
+  );
+  if ((superseded.rowCount ?? 0) !== 1) {
+    throw new Error(`${input.errorPrefix}_ARTIFACT_SUPERSEDE_CAS_FAILED`);
+  }
+
+  const inserted = await client.query(
+    `INSERT INTO report_artifacts
+       (id,audit_id,tier,engine,model,txt,html,content_sha256,batch_id,
+        artifact_state,supersedes_artifact_id,created_at)
+     SELECT $1::varchar,$2::varchar,$3,$4,$5,$6,$7,$8,$9::uuid,'ACTIVE',$10::varchar,NOW()
+      WHERE EXISTS (
+        SELECT 1 FROM report_artifacts previous
+         WHERE previous.id=$10::varchar AND previous.audit_id=$2::varchar
+           AND previous.artifact_state='SUPERSEDED'
+           AND previous.txt IS NOT DISTINCT FROM $11
+           AND previous.html IS NOT DISTINCT FROM $12
+           AND previous.content_sha256=$13
+      )
+        AND EXISTS (
+          SELECT 1 FROM discovery_operation_lock l
+           WHERE l.lock_key=$14 AND l.token=$15 AND l.expires_at > NOW()
+        )
+     RETURNING id`,
+    [nextArtifactId, input.auditId, input.activeArtifact.tier, input.activeArtifact.engine,
+      input.activeArtifact.model, input.nextTxt, input.nextHtml, input.nextContentSha256,
+      input.activeArtifact.batch_id, previousArtifactId, input.previousTxt, input.previousHtml,
+      input.previousContentSha256, DISCOVERY_GLOBAL_LOCK_KEY, input.lockToken],
+  );
+  if ((inserted.rowCount ?? 0) !== 1) {
+    throw new Error(`${input.errorPrefix}_ARTIFACT_INSERT_CAS_FAILED`);
+  }
+  return nextArtifactId;
 }
 
 /**
@@ -1428,8 +1557,8 @@ export async function repairExactDiscoveryTextUnderLock(
     }
 
     const artifactResult = await client.query(
-      `SELECT id, txt, html, content_sha256
-         FROM report_artifacts WHERE audit_id = $1
+      `SELECT id, tier, engine, model, batch_id, txt, html, content_sha256
+         FROM report_artifacts WHERE audit_id = $1 AND artifact_state = 'ACTIVE'
          ORDER BY created_at ASC FOR UPDATE`,
       [target.id],
     );
@@ -1563,25 +1692,18 @@ export async function repairExactDiscoveryTextUnderLock(
       throw new Error("DISCOVERY_TEXT_REPAIR_HASH_UNCHANGED");
     }
 
-    const artifactUpdated = await client.query(
-      `UPDATE report_artifacts
-          SET txt = $3, html = $4, content_sha256 = $5
-        WHERE id = $1 AND audit_id = $2
-          AND txt IS NOT DISTINCT FROM $6
-          AND html IS NOT DISTINCT FROM $7
-          AND content_sha256 = $8
-          AND EXISTS (
-            SELECT 1 FROM discovery_operation_lock l
-             WHERE l.lock_key = $9 AND l.token = $10 AND l.expires_at > NOW()
-          )
-        RETURNING id`,
-      [artifact.id, target.id, assets.txt, assets.html, contentSha256,
-        previousTxt, previousHtml, previousContentSha256,
-        DISCOVERY_GLOBAL_LOCK_KEY, input.lockToken],
-    );
-    if ((artifactUpdated.rowCount ?? 0) !== 1) {
-      throw new Error("DISCOVERY_TEXT_REPAIR_ARTIFACT_CAS_FAILED");
-    }
+    const nextArtifactId = await replaceActiveDiscoveryArtifactAppendOnly(client, {
+      auditId: target.id,
+      activeArtifact: artifact,
+      previousTxt,
+      previousHtml,
+      previousContentSha256,
+      nextTxt: assets.txt,
+      nextHtml: assets.html,
+      nextContentSha256: contentSha256,
+      lockToken: input.lockToken,
+      errorPrefix: "DISCOVERY_TEXT_REPAIR",
+    });
 
     const auditUpdated = await client.query(
       `UPDATE audits
@@ -1612,8 +1734,8 @@ export async function repairExactDiscoveryTextUnderLock(
               r.txt AS artifact_txt, r.html AS artifact_html
          FROM audits a
          JOIN report_artifacts r ON r.audit_id = a.id
-        WHERE a.id = $1 AND r.id = $2`,
-      [target.id, artifact.id],
+        WHERE a.id = $1 AND r.id = $2 AND r.artifact_state = 'ACTIVE'`,
+      [target.id, nextArtifactId],
     );
     const persistedRow = persisted.rows[0];
     const persistedRepresentations = [
@@ -1635,7 +1757,7 @@ export async function repairExactDiscoveryTextUnderLock(
     await client.query("COMMIT");
     return {
       auditId: target.id,
-      artifactId: String(artifact.id),
+      artifactId: nextArtifactId,
       status: "BATCH_READY",
       previousTxtSha256: target.expectedTxtSha256,
       previousHtmlSha256: target.expectedHtmlSha256,
@@ -1769,8 +1891,8 @@ export async function repairExactDiscoveryWakeSummaryUnderLock(
     }
 
     const artifactResult = await client.query(
-      `SELECT id, txt, html, content_sha256
-         FROM report_artifacts WHERE audit_id = $1
+      `SELECT id, tier, engine, model, batch_id, txt, html, content_sha256
+         FROM report_artifacts WHERE audit_id = $1 AND artifact_state = 'ACTIVE'
          ORDER BY created_at ASC FOR UPDATE`,
       [target.id],
     );
@@ -1897,25 +2019,18 @@ export async function repairExactDiscoveryWakeSummaryUnderLock(
       throw new Error("DISCOVERY_WAKE_SUMMARY_REPAIR_HASH_UNCHANGED");
     }
 
-    const artifactUpdated = await client.query(
-      `UPDATE report_artifacts
-          SET txt = $3, html = $4, content_sha256 = $5
-        WHERE id = $1 AND audit_id = $2
-          AND txt IS NOT DISTINCT FROM $6
-          AND html IS NOT DISTINCT FROM $7
-          AND content_sha256 = $8
-          AND EXISTS (
-            SELECT 1 FROM discovery_operation_lock l
-             WHERE l.lock_key = $9 AND l.token = $10 AND l.expires_at > NOW()
-          )
-        RETURNING id`,
-      [artifact.id, target.id, assets.txt, assets.html, contentSha256,
-        previousTxt, previousHtml, previousContentSha256,
-        DISCOVERY_GLOBAL_LOCK_KEY, input.lockToken],
-    );
-    if ((artifactUpdated.rowCount ?? 0) !== 1) {
-      throw new Error("DISCOVERY_WAKE_SUMMARY_REPAIR_ARTIFACT_CAS_FAILED");
-    }
+    const nextArtifactId = await replaceActiveDiscoveryArtifactAppendOnly(client, {
+      auditId: target.id,
+      activeArtifact: artifact,
+      previousTxt,
+      previousHtml,
+      previousContentSha256,
+      nextTxt: assets.txt,
+      nextHtml: assets.html,
+      nextContentSha256: contentSha256,
+      lockToken: input.lockToken,
+      errorPrefix: "DISCOVERY_WAKE_SUMMARY_REPAIR",
+    });
 
     const auditUpdated = await client.query(
       `UPDATE audits
@@ -1948,8 +2063,8 @@ export async function repairExactDiscoveryWakeSummaryUnderLock(
               r.txt AS artifact_txt, r.html AS artifact_html, r.content_sha256
          FROM audits a
          JOIN report_artifacts r ON r.audit_id = a.id
-        WHERE a.id = $1 AND r.id = $2`,
-      [target.id, artifact.id],
+        WHERE a.id = $1 AND r.id = $2 AND r.artifact_state = 'ACTIVE'`,
+      [target.id, nextArtifactId],
     );
     const persistedRow = persisted.rows[0];
     const persistedRepresentations = [
@@ -1979,7 +2094,7 @@ export async function repairExactDiscoveryWakeSummaryUnderLock(
     await client.query("COMMIT");
     return {
       auditId: target.id,
-      artifactId: String(artifact.id),
+      artifactId: nextArtifactId,
       status: "BATCH_READY",
       previousTxtSha256: target.expectedTxtSha256,
       previousHtmlSha256: target.expectedHtmlSha256,
@@ -2106,13 +2221,27 @@ export async function markDiscoveryBatchItemPreflightOk(
 
 /**
  * Converts a proven, never-delivered historical failure into the same central
- * quarantine used by new rejected candidates. Existing report bytes are kept
- * intact until a validated regeneration commits successfully.
+ * quarantine used by new rejected candidates. Complete report bytes are kept
+ * intact until a validated regeneration commits successfully. The one proven
+ * legacy narrative-only shape is preserved byte-for-byte in immutable
+ * provenance and cleared atomically so the subsequent regeneration can use
+ * the normal no-artifact source CAS.
  */
 export async function prepareDiscoveryAuditForRegeneration(
-  input: { auditId: string; lockToken: string },
+  input: {
+    auditId: string;
+    lockToken: string;
+    expectedResponsesSha256: string;
+    expectedSourceStatus: string | null;
+    expectedNarrativeSha256: string | null;
+    expectedTxtSha256: string | null;
+    expectedHtmlSha256: string | null;
+  },
   poolOverride?: Pool,
-): Promise<{ candidateId: string; sourceKind: "LEGACY_LOST_CANDIDATE" | "PERSISTED_INVALID_REPORT" }> {
+): Promise<{
+  candidateId: string;
+  sourceKind: "LEGACY_LOST_CANDIDATE" | "LEGACY_NARRATIVE_ONLY" | "PERSISTED_INVALID_REPORT";
+}> {
   const pool = await resolvePool(poolOverride);
   const client = await pool.connect();
   try {
@@ -2125,7 +2254,8 @@ export async function prepareDiscoveryAuditForRegeneration(
     );
     if ((lock.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_REGENERATION_LOCK_NOT_OWNED");
     const auditResult = await client.query(
-      `SELECT id,responses,scores,narrative_report,report_txt,report_html,
+      `SELECT id,responses,scores,narrative_report,narrative_report::text AS narrative_report_json,
+              report_txt,report_html,
               report_delivery_status,report_sent_at
          FROM audits WHERE id=$1 AND type='GRATUIT' FOR UPDATE`,
       [input.auditId],
@@ -2135,6 +2265,23 @@ export async function prepareDiscoveryAuditForRegeneration(
     if (audit.report_sent_at || !["BATCH_REVIEW", "BATCH_READY", "NEEDS_REVIEW", "READY"]
       .includes(String(audit.report_delivery_status || ""))) {
       throw new Error("DISCOVERY_REGENERATION_AUDIT_STATUS_BLOCKED");
+    }
+    const hashNullableJson = (value: unknown): string | null => (
+      value == null ? null : discoverySha256(value)
+    );
+    const hashNullableText = (value: unknown): string | null => (
+      value == null ? null : discoverySha256(String(value))
+    );
+    if (!/^[a-f0-9]{64}$/.test(input.expectedResponsesSha256)
+      || (input.expectedNarrativeSha256 != null && !/^[a-f0-9]{64}$/.test(input.expectedNarrativeSha256))
+      || (input.expectedTxtSha256 != null && !/^[a-f0-9]{64}$/.test(input.expectedTxtSha256))
+      || (input.expectedHtmlSha256 != null && !/^[a-f0-9]{64}$/.test(input.expectedHtmlSha256))
+      || discoverySha256(audit.responses || {}) !== input.expectedResponsesSha256
+      || (audit.report_delivery_status ?? null) !== input.expectedSourceStatus
+      || hashNullableJson(audit.narrative_report) !== input.expectedNarrativeSha256
+      || hashNullableText(audit.report_txt) !== input.expectedTxtSha256
+      || hashNullableText(audit.report_html) !== input.expectedHtmlSha256) {
+      throw new Error("DISCOVERY_REGENERATION_MANIFEST_SOURCE_CAS_FAILED");
     }
     const externalState = await client.query(
       `SELECT
@@ -2149,27 +2296,42 @@ export async function prepareDiscoveryAuditForRegeneration(
       throw new Error("DISCOVERY_REGENERATION_EXTERNAL_STATE_BLOCKED");
     }
     const ledger = await client.query(
-      `SELECT r.id AS reservation_id,r.response_id,
-              COALESCE(r.actual_cost_usd,r.reserved_cost_usd)::numeric AS actual_cost_usd,
-              e.id AS usage_event_id,e.estimated_openai_cost_usd,
-              COALESCE(NULLIF(e.model,''),'discovery') AS model
+      `SELECT r.id AS reservation_id,r.response_id,r.status AS reservation_status,
+              COALESCE(r.actual_cost_usd,r.reserved_cost_usd)::numeric AS actual_cost_usd
          FROM ai_cost_budget_reservations r
-         JOIN ai_usage_events e ON e.response_id=r.response_id
-        WHERE r.product='discovery' AND r.order_id=$1 AND r.status='COMPLETED'
-          AND e.profile='discovery' AND e.status='completed'
-        FOR UPDATE OF r,e`,
+        WHERE r.product='discovery' AND r.order_id=$1
+        FOR UPDATE`,
       [input.auditId],
     );
     if ((ledger.rowCount ?? 0) !== 1
       || !ledger.rows[0].response_id
-      || Math.abs(Number(ledger.rows[0].actual_cost_usd)
-        - Number(ledger.rows[0].estimated_openai_cost_usd)) > 0.000001
+      || String(ledger.rows[0].reservation_status) !== "COMPLETED"
       || Number(ledger.rows[0].actual_cost_usd) > DISCOVERY_BATCH_HARD_COST_USD + 1e-9) {
       throw new Error("DISCOVERY_REGENERATION_LEDGER_NOT_EXACT");
     }
+    const usageLedger = await client.query(
+      `SELECT id AS usage_event_id,profile,status,estimated_openai_cost_usd,
+              COALESCE(NULLIF(model,''),'discovery') AS model
+         FROM ai_usage_events WHERE response_id=$1 FOR UPDATE`,
+      [ledger.rows[0].response_id],
+    );
+    if ((usageLedger.rowCount ?? 0) !== 1
+      || String(usageLedger.rows[0].profile) !== "discovery"
+      || String(usageLedger.rows[0].status) !== "completed"
+      || Math.abs(Number(ledger.rows[0].actual_cost_usd)
+        - Number(usageLedger.rows[0].estimated_openai_cost_usd)) > 0.000001) {
+      throw new Error("DISCOVERY_REGENERATION_LEDGER_NOT_EXACT");
+    }
     const responsesSha256 = discoverySha256(audit.responses || {});
-    const hasPersisted = Boolean(audit.narrative_report && audit.report_txt && audit.report_html);
-    let sourceKind: "LEGACY_LOST_CANDIDATE" | "PERSISTED_INVALID_REPORT";
+    const artifactTuple = classifyDiscoveryRegenerationArtifactTuple({
+      reportDeliveryStatus: audit.report_delivery_status,
+      narrativePresent: audit.narrative_report != null,
+      txtPresent: audit.report_txt != null,
+      htmlPresent: audit.report_html != null,
+    });
+    const hasPersisted = artifactTuple === "PERSISTED_INVALID_REPORT";
+    const hasNarrativeOnly = artifactTuple === "LEGACY_NARRATIVE_ONLY";
+    let sourceKind: "LEGACY_LOST_CANDIDATE" | "LEGACY_NARRATIVE_ONLY" | "PERSISTED_INVALID_REPORT";
     let validationErrors: string[];
     let artifactId: string | null = null;
     let assembledSha256: string | null = null;
@@ -2177,10 +2339,6 @@ export async function prepareDiscoveryAuditForRegeneration(
     let htmlSha256: string | null = null;
     let artifactContentSha256: string | null = null;
     if (!hasPersisted) {
-      if (audit.narrative_report || audit.report_txt || audit.report_html
-        || String(audit.report_delivery_status) !== "BATCH_REVIEW") {
-        throw new Error("DISCOVERY_REGENERATION_PARTIAL_LEGACY_ARTIFACT");
-      }
       const artifacts = await client.query(
         `SELECT COUNT(*)::int AS count FROM report_artifacts WHERE audit_id=$1`,
         [input.auditId],
@@ -2188,12 +2346,15 @@ export async function prepareDiscoveryAuditForRegeneration(
       if (Number(artifacts.rows[0]?.count || 0) !== 0) {
         throw new Error("DISCOVERY_REGENERATION_LEGACY_ARTIFACT_EXISTS");
       }
-      sourceKind = "LEGACY_LOST_CANDIDATE";
-      validationErrors = ["legacy_provider_candidate_not_retained"];
+      sourceKind = hasNarrativeOnly ? "LEGACY_NARRATIVE_ONLY" : "LEGACY_LOST_CANDIDATE";
+      validationErrors = hasNarrativeOnly
+        ? [`legacy_narrative_only_preserved:${discoverySha256(String(audit.narrative_report_json))}`]
+        : ["legacy_provider_candidate_not_retained"];
     } else {
       const artifactRows = await client.query(
         `SELECT id,txt,html,content_sha256 FROM report_artifacts
-          WHERE audit_id=$1 ORDER BY created_at DESC FOR UPDATE`,
+          WHERE audit_id=$1 AND artifact_state='ACTIVE'
+          ORDER BY created_at DESC FOR UPDATE`,
         [input.auditId],
       );
       const canonical = resolveCanonicalDiscoveryArtifacts({
@@ -2238,17 +2399,36 @@ export async function prepareDiscoveryAuditForRegeneration(
         (id,audit_id,provider_response_id,attempt_no,model,source_kind,
          assembled_candidate,assembled_sha256,report_txt_sha256,report_html_sha256,
          artifact_content_sha256,artifact_id,reservation_id,usage_event_id,
-         responses_sha256,validation_errors,actual_cost_usd,state)
-       VALUES ($1,$2,$3,1,$4,$5,$6::jsonb,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb,$16,'QUARANTINED')
+         responses_sha256,validation_errors,actual_cost_usd,state,
+         legacy_narrative_present,legacy_narrative_json,legacy_narrative_sha256)
+       VALUES ($1,$2,$3,1,$4,$5,$6::jsonb,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb,$16,
+               'QUARANTINED',$17,$18,$19)
        RETURNING id`,
-      [candidateId, input.auditId, ledger.rows[0].response_id, ledger.rows[0].model,
+      [candidateId, input.auditId, ledger.rows[0].response_id, usageLedger.rows[0].model,
         sourceKind, sourceKind === "PERSISTED_INVALID_REPORT" ? JSON.stringify(audit.narrative_report) : null,
         assembledSha256, txtSha256, htmlSha256, artifactContentSha256, artifactId,
-        ledger.rows[0].reservation_id, ledger.rows[0].usage_event_id,
-        responsesSha256, JSON.stringify(validationErrors), Number(ledger.rows[0].actual_cost_usd)],
+        ledger.rows[0].reservation_id, usageLedger.rows[0].usage_event_id,
+        responsesSha256, JSON.stringify(validationErrors), Number(ledger.rows[0].actual_cost_usd),
+        hasNarrativeOnly, hasNarrativeOnly ? String(audit.narrative_report_json) : null,
+        hasNarrativeOnly ? discoverySha256(String(audit.narrative_report_json)) : null],
     );
     if ((inserted.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_REGENERATION_QUARANTINE_FAILED");
-    if (sourceKind === "PERSISTED_INVALID_REPORT") {
+    if (hasNarrativeOnly) {
+      const cleaned = await client.query(
+        `UPDATE audits SET narrative_report=NULL,report_txt=NULL,report_html=NULL
+          WHERE id=$1 AND type='GRATUIT' AND report_sent_at IS NULL
+            AND report_delivery_status IS NOT DISTINCT FROM $2
+            AND responses IS NOT DISTINCT FROM $3::jsonb
+            AND narrative_report IS NOT DISTINCT FROM $4::jsonb
+            AND report_txt IS NULL AND report_html IS NULL
+          RETURNING id`,
+        [input.auditId, audit.report_delivery_status, JSON.stringify(audit.responses),
+          String(audit.narrative_report_json)],
+      );
+      if ((cleaned.rowCount ?? 0) !== 1) {
+        throw new Error("DISCOVERY_REGENERATION_LEGACY_CLEANUP_CAS_FAILED");
+      }
+    } else if (sourceKind === "PERSISTED_INVALID_REPORT") {
       const held = await client.query(
         `UPDATE audits SET report_delivery_status='BATCH_REVIEW'
           WHERE id=$1 AND type='GRATUIT' AND report_sent_at IS NULL
@@ -2898,11 +3078,15 @@ export async function claimDiscoveryProviderAttempt(
                 e.id AS proven_usage_event_id,e.response_id AS usage_response_id,
                 e.estimated_openai_cost_usd AS usage_cost_usd,
                 a.id AS proven_artifact_id,a.txt AS artifact_txt,a.html AS artifact_html,
-                a.content_sha256 AS proven_artifact_content_sha256
+                a.content_sha256 AS proven_artifact_content_sha256,
+                (SELECT COUNT(*)::int FROM report_artifacts source_artifact
+                  WHERE source_artifact.audit_id=c.audit_id
+                    AND source_artifact.artifact_state='ACTIVE') AS live_artifact_count
            FROM discovery_rejected_candidates c
            JOIN ai_cost_budget_reservations r ON r.id=c.reservation_id
            JOIN ai_usage_events e ON e.id=c.usage_event_id
            LEFT JOIN report_artifacts a ON a.id=c.artifact_id AND a.audit_id=c.audit_id
+             AND a.artifact_state='ACTIVE'
           WHERE c.id=$1 AND c.audit_id=$2 AND c.state='QUARANTINED'
             AND c.attempt_no=1 AND c.responses_sha256=$3
             AND r.product='discovery' AND r.order_id=c.audit_id AND r.status='COMPLETED'
@@ -2918,6 +3102,9 @@ export async function claimDiscoveryProviderAttempt(
       const rawHash = rawValue == null ? null : discoverySha256(rawValue);
       const assembledHash = retryProof.assembled_candidate == null
         ? null : discoverySha256(retryProof.assembled_candidate);
+      const retrySourceKind = String(retryProof.source_kind || "");
+      const isLegacySource = ["LEGACY_LOST_CANDIDATE", "LEGACY_NARRATIVE_ONLY"]
+        .includes(retrySourceKind);
       if ((retrySource.rowCount ?? 0) !== 1
         || String(retryProof.provider_response_id) !== String(retryProof.reservation_response_id)
         || String(retryProof.provider_response_id) !== String(retryProof.usage_response_id)
@@ -2926,6 +3113,12 @@ export async function claimDiscoveryProviderAttempt(
         || Math.abs(Number(retryProof.actual_cost_usd) - Number(retryProof.reservation_cost_usd)) > 0.000001
         || Math.abs(Number(retryProof.actual_cost_usd) - Number(retryProof.usage_cost_usd)) > 0.000001
         || Math.abs(Number(retryProof.actual_cost_usd) - cumulativeCost) > 0.000001
+        || (isLegacySource
+          && (retryAudit.rows[0].narrative_report != null
+            || Number(retryProof.live_artifact_count || 0) !== 0
+            || !hasExactLegacyNarrativeProvenance(retryProof)))
+        || (retrySourceKind === "PERSISTED_INVALID_REPORT"
+          && discoverySha256(retryAudit.rows[0].narrative_report) !== String(retryProof.assembled_sha256 || ""))
         || (["PROVIDER_REJECTED", "ASSEMBLED_REJECTED"].includes(String(retryProof.source_kind))
           && (!retryProof.provider_raw_sha256 || rawHash !== String(retryProof.provider_raw_sha256)))
         || (["ASSEMBLED_REJECTED", "PERSISTED_INVALID_REPORT"].includes(String(retryProof.source_kind))
@@ -3190,6 +3383,53 @@ export async function persistValidatedDiscoveryBatchItem(
     if (!sourceTxtMatches || !sourceHtmlMatches) {
       throw new Error("DISCOVERY_AUDIT_SOURCE_ARTIFACT_CHANGED");
     }
+    let supersedesArtifactId: string | null = null;
+    if (item.retry_of_candidate_id) {
+      const retrySource = await client.query(
+        `SELECT c.*,a.id AS active_artifact_id,a.txt AS active_artifact_txt,
+                a.html AS active_artifact_html,a.content_sha256 AS active_artifact_content_sha256,
+                (SELECT COUNT(*)::int FROM report_artifacts live
+                  WHERE live.audit_id=c.audit_id AND live.artifact_state='ACTIVE') AS active_artifact_count
+           FROM discovery_rejected_candidates c
+           LEFT JOIN report_artifacts a ON a.id=c.artifact_id AND a.audit_id=c.audit_id
+             AND a.artifact_state='ACTIVE'
+          WHERE c.id=$1 AND c.audit_id=$2 AND c.state='RETRY_CLAIMED'
+            AND c.retried_by_batch_id=$3
+          FOR UPDATE OF c`,
+        [item.retry_of_candidate_id, input.auditId, input.batchId],
+      );
+      if ((retrySource.rowCount ?? 0) !== 1) {
+        throw new Error("DISCOVERY_REGENERATION_SOURCE_CANDIDATE_CAS_FAILED");
+      }
+      const source = retrySource.rows[0];
+      const sourceKind = String(source.source_kind || "");
+      if (["LEGACY_LOST_CANDIDATE", "LEGACY_NARRATIVE_ONLY"].includes(sourceKind)) {
+        if (audit.narrative_report != null
+          || Number(source.active_artifact_count || 0) !== 0
+          || !hasExactLegacyNarrativeProvenance(source)) {
+          throw new Error("DISCOVERY_REGENERATION_LEGACY_SOURCE_CHANGED");
+        }
+      } else if (sourceKind === "PERSISTED_INVALID_REPORT") {
+        const narrativeMatches = source.assembled_candidate != null
+          && discoverySha256(source.assembled_candidate) === String(source.assembled_sha256 || "")
+          && discoverySha256(audit.narrative_report) === String(source.assembled_sha256 || "");
+        const activeMatches = Number(source.active_artifact_count || 0) === 1
+          && String(source.active_artifact_id || "") === String(source.artifact_id || "")
+          && String(source.active_artifact_txt || "") === currentTxt
+          && String(source.active_artifact_html || "") === currentHtml
+          && String(source.active_artifact_content_sha256 || "") === String(source.artifact_content_sha256 || "")
+          && discoverySha256(currentTxt) === String(source.report_txt_sha256 || "")
+          && discoverySha256(currentHtml) === String(source.report_html_sha256 || "")
+          && discoveryArtifactContentHash(currentTxt, currentHtml)
+            === String(source.artifact_content_sha256 || "");
+        if (!narrativeMatches || !activeMatches) {
+          throw new Error("DISCOVERY_REGENERATION_VERSIONED_SOURCE_CHANGED");
+        }
+        supersedesArtifactId = String(source.artifact_id);
+      } else {
+        throw new Error("DISCOVERY_REGENERATION_SOURCE_KIND_INVALID");
+      }
+    }
     const persistenceGate = validateDiscoveryPersistenceContract({
       narrativeReport: input.narrativeReport,
       scores: input.scores,
@@ -3220,15 +3460,32 @@ export async function persistValidatedDiscoveryBatchItem(
       selection: catalogProvenance?.selection,
     });
 
+    if (supersedesArtifactId) {
+      const supersededArtifact = await client.query(
+        `UPDATE report_artifacts
+            SET artifact_state='SUPERSEDED',superseded_at=NOW()
+          WHERE id=$1 AND audit_id=$2 AND artifact_state='ACTIVE'
+            AND txt IS NOT DISTINCT FROM $3 AND html IS NOT DISTINCT FROM $4
+            AND content_sha256=$5
+          RETURNING id`,
+        [supersedesArtifactId, input.auditId, audit.report_txt, audit.report_html,
+          discoveryArtifactContentHash(currentTxt, currentHtml)],
+      );
+      if ((supersededArtifact.rowCount ?? 0) !== 1) {
+        throw new Error("DISCOVERY_REGENERATION_ARTIFACT_SUPERSEDE_CAS_FAILED");
+      }
+    }
     const artifactId = randomUUID();
     const artifact = await client.query(
       `INSERT INTO report_artifacts
-         (id, audit_id, tier, engine, model, txt, html, content_sha256, batch_id, created_at)
-       VALUES ($1,$2,'GRATUIT','discovery',$3,$4,$5,$6,$7,NOW())
+         (id,audit_id,tier,engine,model,txt,html,content_sha256,batch_id,
+          artifact_state,supersedes_artifact_id,created_at)
+       VALUES ($1,$2,'GRATUIT','discovery',$3,$4,$5,$6,$7,'ACTIVE',$8,NOW())
        ON CONFLICT (audit_id, content_sha256) WHERE content_sha256 IS NOT NULL
        DO NOTHING
        RETURNING id`,
-      [artifactId, input.auditId, String(proof.model || input.model), input.txt, input.html, contentSha256, input.batchId],
+      [artifactId, input.auditId, String(proof.model || input.model), input.txt, input.html,
+        contentSha256, input.batchId, supersedesArtifactId],
     );
     if ((artifact.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_BATCH_ARTIFACT_ALREADY_EXISTS");
     const persistedArtifactId = String(artifact.rows[0].id);
@@ -3243,6 +3500,7 @@ export async function persistValidatedDiscoveryBatchItem(
           AND responses IS NOT DISTINCT FROM $7::jsonb
           AND report_txt IS NOT DISTINCT FROM $8
           AND report_html IS NOT DISTINCT FROM $9
+          AND narrative_report IS NOT DISTINCT FROM $17::jsonb
           AND EXISTS (
             SELECT 1 FROM discovery_batch_items i
             JOIN discovery_batch_runs b ON b.id = i.batch_id
@@ -3263,7 +3521,8 @@ export async function persistValidatedDiscoveryBatchItem(
         input.expectedSourceStatus, JSON.stringify(audit.responses),
         audit.report_txt, audit.report_html, DISCOVERY_GLOBAL_LOCK_KEY, input.batchId,
         input.expectedResponsesSha256, input.expectedTxtSha256, input.expectedHtmlSha256,
-        String(batch.status), input.lockToken],
+        String(batch.status), input.lockToken,
+        audit.narrative_report == null ? null : JSON.stringify(audit.narrative_report)],
     );
     if ((updated.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_AUDIT_PERSISTENCE_CAS_FAILED");
     const itemStored = await client.query(
@@ -3395,7 +3654,8 @@ export async function promoteDiscoveryBatchItemForDelivery(
       reportHtml: audit.report_html,
       reportArtifacts: (await client.query(
         `SELECT txt,html,content_sha256 FROM report_artifacts
-          WHERE audit_id=$1 ORDER BY created_at DESC FOR UPDATE`,
+          WHERE audit_id=$1 AND artifact_state='ACTIVE'
+          ORDER BY created_at DESC FOR UPDATE`,
         [input.auditId],
       )).rows.map((row) => ({
         txt: row.txt,

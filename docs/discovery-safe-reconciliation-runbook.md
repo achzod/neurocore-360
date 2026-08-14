@@ -4,7 +4,7 @@ Ce runbook remplace les anciens batchs `batch_91` et `remediate-sent-discovery`.
 
 ## Contrat de sécurité
 
-1. Les migrations `003` à `006` sont appliquées avant le nouveau process. Le reconciler vérifie physiquement les colonnes, types, nullabilité, PK, contraintes, FK et index v006 avant toute opération ; un schéma partiel échoue fermé.
+1. Les migrations `003` à `008` sont appliquées avant le nouveau process. Le reconciler vérifie physiquement le schéma v008 avant toute opération, y compris le versioning append-only `ACTIVE`/`SUPERSEDED` des artefacts et la provenance narrative legacy immuable ; un schéma partiel échoue fermé.
 2. Le manifeste lit tous les audits `GRATUIT`, sans filtre de date ni de statut.
 3. Quatre cohortes seulement : `already_accepted`, `valid_never_sent`, `ambiguous`, `invalid`.
 4. Aucune action automatique sur `already_accepted`, `ambiguous`, un audit superseded ou un doublon potentiel.
@@ -41,23 +41,23 @@ Ordre obligatoire :
 3. Configurer sur le service Render actif le pre-deploy exact :
 
    ```text
-   npm run db:migrate:discovery-006
+   npm run db:migrate:discovery-006 && npm run db:migrate:discovery-007 && npm run db:migrate:discovery-008
    ```
 
-   `render.yaml` porte la même commande. Elle applique `006` et vérifie le catalogue dans une seule transaction sous advisory lock. Une erreur annule la transaction et bloque le déploiement avant le démarrage du nouveau process.
+   `render.yaml` porte la même chaîne fail-fast. Chaque runner applique sa migration dans sa propre transaction sous advisory lock, vérifie immédiatement son catalogue physique, puis autorise seulement la migration suivante. V008 exécute d'abord `CREATE EXTENSION IF NOT EXISTS pgcrypto`, puis vérifie physiquement l'extension et un digest SHA-256 connu ; une extension indisponible ou un rôle sans permission de création fait échouer la transaction avant toute mutation V008. Une erreur sur `006`, `007` ou `008` annule la transaction concernée, interrompt la chaîne `&&` et bloque le déploiement avant le démarrage du nouveau process. Ne jamais inverser l'ordre : `008` dépend du socle `007`.
 4. Déployer le commit audité. Ne lancer aucun job, shell applicatif, reconciler, one-shot ni worker entre le succès du pre-deploy et le démarrage automatique du nouveau process. Ne jamais utiliser une commande de démarrage qui exécute la migration en parallèle du serveur.
-5. Archiver la preuve `DISCOVERY_BATCH_SCHEMA_MIGRATION_OK:v6` du pre-deploy. Son absence est un NO-GO.
+5. Archiver les trois preuves distinctes et ordonnées `DISCOVERY_BATCH_SCHEMA_MIGRATION_OK:v6`, `DISCOVERY_BATCH_SCHEMA_MIGRATION_OK:v7` et `DISCOVERY_BATCH_SCHEMA_MIGRATION_OK:v8`. L'absence, l'inversion ou la duplication trompeuse d'une version est un NO-GO.
 6. Vérifier `/api/version`, `/api/health`, commit exact, HTTP 200 et DB connectée.
-7. Exécuter uniquement un manifeste `--summary-only`; son gate catalogue v006 doit passer avant la première lecture métier.
+7. Exécuter uniquement un manifeste `--summary-only`; son gate physique v008 doit passer avant la première lecture métier. Vérifier qu'il ne lit que l'unique artefact `ACTIVE` de chaque audit, jamais les versions `SUPERSEDED`.
 8. Vérifier zéro job actif avant toute approbation.
 
-Le service Render actif peut encore avoir un pre-deploy v005 au moment de la release. Ne jamais remplacer cette commande pendant que l'ancien SHA est susceptible de redémarrer : le script v006 n'existe pas dans cet ancien code. La séquence opérateur sûre est de confirmer les automatismes Discovery OFF, suspendre temporairement l'auto-deploy si Render peut redéployer sur la sauvegarde de configuration, enregistrer `npm run db:migrate:discovery-006` sur le service actif `apexlabs`, pousser uniquement le SHA audité, puis réactiver l'auto-deploy et exiger la preuve v6 avant le démarrage. Le comportement exact de Render doit être vérifié en lecture seule avant cette séquence ; toute incertitude est un NO-GO.
+Le service Render actif peut encore avoir un ancien pre-deploy au moment de la release. Ne jamais remplacer cette commande pendant qu'un SHA ne contenant pas les trois runners est susceptible de redémarrer. La séquence opérateur sûre est de confirmer les automatismes Discovery OFF, suspendre temporairement l'auto-deploy si Render peut redéployer sur la sauvegarde de configuration, enregistrer la chaîne exacte `006 && 007 && 008` sur le service actif `apexlabs`, pousser uniquement le SHA audité, puis réactiver l'auto-deploy et exiger les trois preuves avant le démarrage. Le comportement exact de Render doit être vérifié en lecture seule avant cette séquence ; toute incertitude est un NO-GO.
 
-Ne jamais démarrer le nouveau code avant la preuve v006. Pour une migration manuelle séparée, suspendre d'abord le service afin qu'aucun ancien worker ne tourne, exécuter `npm run db:migrate:discovery-006`, vérifier la preuve, puis seulement démarrer le SHA audité. Ne pas reprendre le service entre ces étapes.
+Ne jamais démarrer le nouveau code avant les preuves v6, v7 et v8. Pour une migration manuelle séparée, suspendre d'abord le service afin qu'aucun ancien worker ne tourne, exécuter la chaîne composite exacte, vérifier les trois preuves dans l'ordre, puis seulement démarrer le SHA audité. Ne pas reprendre le service entre ces étapes.
 
 ### Rollback release
 
-La migration v006 est additive et reste appliquée lors d'un rollback applicatif : ne jamais tenter de migration descendante en urgence. Garder génération, livraison, remédiation et worker batch Discovery OFF, vérifier qu'aucun lock, claim, job ou réservation provider n'est actif, puis redéployer le SHA antérieur exact. Après rollback, confirmer `/api/version`, `/api/health`, HTTP 200, DB connectée, zéro nouveau `READY`, `SENDING` ou `SENT`, et exécuter seulement `--summary-only`. Le SHA antérieur ne doit pas servir à reprendre une régénération centrale v006.
+Les migrations v006 à v008 sont additives et restent appliquées lors d'un rollback applicatif : ne jamais tenter de migration descendante en urgence. Garder génération, livraison, remédiation et worker batch Discovery OFF, vérifier qu'aucun lock, claim, job ou réservation provider n'est actif, puis redéployer uniquement un SHA explicitement audité comme compatible avec le schéma v008. Après rollback, confirmer `/api/version`, `/api/health`, HTTP 200, DB connectée, zéro nouveau `READY`, `SENDING` ou `SENT`, et exécuter seulement `--summary-only`. Un SHA ancien qui lit toutes les versions d'artefacts ou modifie un artefact en place est incompatible et ne doit pas être redémarré.
 
 ## 3. Manifeste read-only
 
@@ -151,13 +151,147 @@ Après `ONE`, auditer manuellement le rapport complet, son questionnaire et les 
 
 Même audit après `THREE` et `FIVE`. Le premier échec bloque `REST`.
 
-## 6. Livraison hors périmètre et désactivée
+## 6. Replay réel d’un Discovery historique invalide
+
+Le replay est un cycle en trois opérations distinctes : `prepare`, nouveau
+`preflight`, puis `run`. Il cible exactement un audit et s'arrête après sa
+persistance en `BATCH_READY`. Il ne livre rien. Ne jamais réutiliser le
+manifeste ou l'approbation de préparation pour le run : `prepare` change
+volontairement l'état canonique et les rend périmés.
+
+### 6.1 Inventaire et approbation fraîche de préparation
+
+1. Confirmer en lecture seule : identité et email attendus, audit non-test,
+   statut éligible, exactement un appel provider historique, zéro tracking,
+   zéro claim de livraison, aucun batch actif et un seul artefact `ACTIVE` si
+   la source est un rapport persisté invalide.
+2. Créer un manifeste dans un chemin neuf et non réutilisable :
+
+   ```bash
+   npx tsx scripts/discovery-safe-reconciler.ts \
+     --summary-only \
+     --out /preuves/replay/AUDIT_ID/01-manifest-prepare.json
+   ```
+
+3. Archiver le fichier, son `manifestSha256`, le commit exact et son hash de
+   fichier. Créer ensuite une approbation **fraîche**, non expirée, de stage
+   `REGENERATION`, tier `ONE`, ciblant uniquement `AUDIT_ID`. Son
+   `manifestSha256`, son `commitSha`, sa liste ordonnée, ses limites et son
+   `approvalBindingSha256` doivent correspondre exactement. Une ancienne
+   approbation ou une approbation couvrant plusieurs audits est un NO-GO.
+4. Exécuter `prepare` avec les automatismes persistants du service toujours
+   OFF. Les variables ci-dessous sont limitées à ce processus shell ; ne pas
+   les enregistrer dans Render :
+
+   ```bash
+   env \
+     DISCOVERY_UNIFIED_GENERATION_ENABLED=false \
+     DISCOVERY_REPORT_DELIVERY_ENABLED=false \
+     DISCOVERY_BATCH_DELIVERY_WORKER_ENABLED=false \
+     DISCOVERY_SENT_REMEDIATION_ENABLED=false \
+     REMEDIATION_SIDE_EFFECTS_DISABLED=true \
+     npx tsx scripts/discovery-safe-reconciler.ts \
+       --prepare-regeneration \
+       --approval /preuves/replay/AUDIT_ID/01-approval-prepare.json
+   ```
+
+5. Archiver immédiatement la ligne `DISCOVERY_REGENERATION_PREPARED` avec
+   `auditId`, `candidateId`, type de source et hashes de provenance. Vérifier
+   qu'aucun provider n'a été appelé, qu'aucun email/claim/tracking n'existe,
+   que le snapshot historique est présent et immuable, et que le statut est
+   maintenant `BATCH_REVIEW`. Toute sortie partielle ou incertaine bloque le
+   replay ; ne jamais relancer `prepare` à l'aveugle.
+
+### 6.2 Nouveau manifeste, nouvelle approbation et preflight
+
+Après `prepare`, reconstruire obligatoirement l'inventaire dans un **nouveau**
+fichier. Le manifeste et l'approbation précédents sont désormais invalides :
+
+```bash
+npx tsx scripts/discovery-safe-reconciler.ts \
+  --summary-only \
+  --out /preuves/replay/AUDIT_ID/02-manifest-run.json
+```
+
+Vérifier que l'audit expose le même `candidateId` en `QUARANTINED`,
+`retryCandidateAttemptNo=1`, `providerAttemptCount=1`, zéro tracking/claim,
+`BATCH_REVIEW`, `regenerationEligible=true` et les hashes attendus. Archiver le
+nouveau fichier et ses hashes. Créer une **deuxième approbation fraîche** de
+stage `REGENERATION` liée au nouveau `manifestSha256` et au même commit exact ;
+elle doit avoir une nouvelle référence, une nouvelle expiration et un nouveau
+`approvalBindingSha256`. Ne jamais copier seulement l'ancien hash.
+
+Lancer ensuite le preflight sans écriture de rapport ni appel provider :
+
+```bash
+env \
+  DISCOVERY_UNIFIED_GENERATION_ENABLED=false \
+  DISCOVERY_REPORT_DELIVERY_ENABLED=false \
+  DISCOVERY_BATCH_DELIVERY_WORKER_ENABLED=false \
+  DISCOVERY_SENT_REMEDIATION_ENABLED=false \
+  REMEDIATION_SIDE_EFFECTS_DISABLED=true \
+  npx tsx scripts/discovery-safe-reconciler.ts \
+    --preflight-regeneration \
+    --target-audit-id AUDIT_ID
+```
+
+Archiver `DISCOVERY_BATCH_REGENERATION_PREFLIGHT_COMPLETE` et vérifier : même
+`manifestSha256`, même commit, même auditId et `responsesSha256`, huit scopes
+présents, `providerCalls=0`, coût worst-case inférieur ou égal au hard cap.
+Tout changement entre manifeste et preflight impose un nouvel inventaire et
+une nouvelle approbation.
+
+### 6.3 Run one-shot et preuves postflight
+
+La génération n'est activée que pour le processus one-shot ci-dessous. La
+configuration persistante Render reste OFF avant, pendant et après la commande :
+
+```bash
+env \
+  DISCOVERY_UNIFIED_GENERATION_ENABLED=true \
+  DISCOVERY_REPORT_DELIVERY_ENABLED=false \
+  DISCOVERY_BATCH_DELIVERY_WORKER_ENABLED=false \
+  DISCOVERY_SENT_REMEDIATION_ENABLED=false \
+  REMEDIATION_SIDE_EFFECTS_DISABLED=true \
+  AI_COST_ALERTS_ENABLED=false \
+  AI_USAGE_PERSISTENCE_DISABLED=false \
+  npx tsx scripts/discovery-safe-reconciler.ts \
+    --run-regeneration \
+    --approval /preuves/replay/AUDIT_ID/02-approval-run.json
+```
+
+Arrêter au premier message autre qu'un résultat complet. Après succès,
+archiver dans un répertoire en lecture seule :
+
+1. les deux manifestes, leurs hashes de fichiers et `manifestSha256` ;
+2. les deux références d'approbation, expirations, `approvalBindingSha256` et
+   hashes des fichiers d'approbation (les fichiers restent à accès restreint) ;
+3. commit SHA, `auditId`, `candidateId`, `batchId`, item id et état final ;
+4. ancien et nouveau `artifactId`, relation
+   `new.supersedes_artifact_id = old.id`, états `SUPERSEDED`/`ACTIVE`,
+   `superseded_at`, hashes TXT/HTML/contenu et provenance historique ;
+5. ancien `response_id`, nouveau `response_id`, exactement deux tentatives
+   cumulées, tokens et coût réel du replay ;
+6. hash questionnaire identique au manifeste, gate final, statut
+   `BATCH_READY`, zéro tracking, zéro claim email, zéro nouveau `SENT` ;
+7. zéro lock, job, réservation ou batch actif, puis un troisième manifeste
+   read-only postflight créé sous un nouveau chemin avec `wx` ;
+8. `/api/version`, `/api/health`, HTTP 200 et DB connectée.
+
+L'artefact historique doit être byte-identique à sa preuve pré-run et protégé
+contre `UPDATE`/`DELETE`; seul son passage unique `ACTIVE` → `SUPERSEDED` avec
+`superseded_at` est autorisé. Le nouvel artefact doit être l'unique `ACTIVE`.
+Un ID/hash absent, un retry supplémentaire, une livraison, ou un état ambigu
+est un incident à conserver tel quel : aucune correction manuelle et aucun
+nouveau replay automatique.
+
+## 7. Livraison hors périmètre et désactivée
 
 Cette release ne livre aucun rapport. Le chemin livraison du reconciler est hard-disabled et ne possède aucune procédure opérateur autorisée. Conserver en permanence `DISCOVERY_REPORT_DELIVERY_ENABLED=false`, `DISCOVERY_BATCH_DELIVERY_WORKER_ENABLED=false`, `DISCOVERY_SENT_REMEDIATION_ENABLED=false` et `REMEDIATION_SIDE_EFFECTS_DISABLED=true` pendant tout le chantier.
 
 Ne jamais activer un worker, créer une approbation `DELIVERY`, appeler un flag de livraison, utiliser un endpoint de force-send ou modifier manuellement un rapport vers `READY`, `SCHEDULED`, `SENDING` ou `SENT`. Les rapports validés s'arrêtent en `BATCH_READY` pour revue humaine. Une future livraison exigera un code distinct, une nouvelle revue, de nouvelles preuves et une autorisation explicite ; ce runbook ne fournit aucun chemin d'activation.
 
-## 7. Postflight de chaque palier
+## 8. Postflight de chaque palier
 
 Vérifier et archiver :
 

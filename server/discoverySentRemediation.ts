@@ -178,6 +178,9 @@ export async function repairSentDiscoveryFactsInPlace(input: {
   }
   const repairedAt = new Date();
   const premiumHash = discoveryArtifactHash(assets.txt, assets.html);
+  const contentSha256 = createHash("sha256")
+    .update(`txt\0${assets.txt}\0html\0${assets.html}`)
+    .digest("hex");
   if (premiumHash === initialHash) throw new Error("Factual repair did not change canonical artifacts");
   const narrativeReport = attachDiscoveryDeliveryGateResult({
     ...report,
@@ -213,6 +216,17 @@ export async function repairSentDiscoveryFactsInPlace(input: {
     if (discoveryArtifactHash(current.report_txt, current.report_html) !== initialHash) {
       throw new Error("Concurrent report mutation detected during factual repair");
     }
+    const previousArtifact = await client.query(
+      `SELECT id, txt, html
+         FROM report_artifacts
+        WHERE audit_id = $1 AND artifact_state = 'ACTIVE'
+        FOR UPDATE`,
+      [input.auditId],
+    );
+    if ((previousArtifact.rowCount ?? 0) !== 1
+      || discoveryArtifactHash(previousArtifact.rows[0].txt, previousArtifact.rows[0].html) !== initialHash) {
+      throw new Error("Active artifact ownership changed during factual repair");
+    }
     const sentAtMs = new Date(current.report_sent_at).getTime();
     const trackingCount = Number(current.tracking_count || 0);
     const updated = await client.query(
@@ -226,10 +240,24 @@ export async function repairSentDiscoveryFactsInPlace(input: {
         JSON.stringify(canonicalScores), current.report_txt, current.report_html],
     );
     if ((updated.rowCount || 0) !== 1) throw new Error("Factual repair persistence CAS failed");
+    const superseded = await client.query(
+      `UPDATE report_artifacts
+          SET artifact_state = 'SUPERSEDED', superseded_at = $3
+        WHERE id = $1 AND audit_id = $2 AND artifact_state = 'ACTIVE'
+        RETURNING id`,
+      [previousArtifact.rows[0].id, input.auditId, repairedAt],
+    );
+    if ((superseded.rowCount ?? 0) !== 1) {
+      throw new Error("Active artifact supersede CAS failed during factual repair");
+    }
     await client.query(
-      `INSERT INTO report_artifacts (id, audit_id, tier, engine, model, txt, html, created_at)
-       VALUES ($1,$2,'GRATUIT','discovery-remediation','deterministic-factual-repair',$3,$4,$5)`,
-      [randomUUID(), input.auditId, assets.txt, assets.html, repairedAt],
+      `INSERT INTO report_artifacts
+         (id, audit_id, tier, engine, model, txt, html, content_sha256,
+          artifact_state, supersedes_artifact_id, created_at)
+       VALUES ($1,$2,'GRATUIT','discovery-remediation','deterministic-factual-repair',
+               $3,$4,$5,'ACTIVE',$6,$7)`,
+      [randomUUID(), input.auditId, assets.txt, assets.html, contentSha256,
+        previousArtifact.rows[0].id, repairedAt],
     );
     const invariant = await client.query(
       `SELECT report_delivery_status, report_sent_at,

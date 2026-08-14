@@ -157,7 +157,10 @@ test("Lenny quality repair is bound to the exact live artifact and replacement",
   assert.match(source, /DISCOVERY_TEXT_REPAIR_FACTUAL_CONSISTENCY_FAILED/);
   assert.match(source, /evaluateDiscoveryDeliveryGate/);
   assert.match(source, /report_delivery_status = 'BATCH_READY'/);
-  assert.match(source, /DISCOVERY_TEXT_REPAIR_ARTIFACT_CAS_FAILED/);
+  assert.match(source, /replaceActiveDiscoveryArtifactAppendOnly/);
+  assert.match(source, /errorPrefix: "DISCOVERY_TEXT_REPAIR"/);
+  assert.match(controlSource, /ARTIFACT_SUPERSEDE_CAS_FAILED/);
+  assert.match(controlSource, /ARTIFACT_INSERT_CAS_FAILED/);
   assert.match(source, /DISCOVERY_TEXT_REPAIR_AUDIT_CAS_FAILED/);
   assert.doesNotMatch(source, /sendReportReadyEmail\s*\(/);
   assert.doesNotMatch(source, /claimDiscoveryEmailDelivery\s*\(/);
@@ -240,7 +243,10 @@ test("Alexandre critical-copy repair is bound to both exact JSON paths and live 
   assert.match(source, /expectedRenderedOccurrences/);
   assert.match(source, /expectedPreexistingNewNarrativeOccurrences/);
   assert.match(source, /expectedPreexistingNewRenderedOccurrences/);
-  assert.match(source, /DISCOVERY_WAKE_SUMMARY_REPAIR_ARTIFACT_CAS_FAILED/);
+  assert.match(source, /replaceActiveDiscoveryArtifactAppendOnly/);
+  assert.match(source, /errorPrefix: "DISCOVERY_WAKE_SUMMARY_REPAIR"/);
+  assert.match(controlSource, /ARTIFACT_SUPERSEDE_CAS_FAILED/);
+  assert.match(controlSource, /ARTIFACT_INSERT_CAS_FAILED/);
   assert.match(source, /DISCOVERY_WAKE_SUMMARY_REPAIR_AUDIT_CAS_FAILED/);
   assert.match(source, /assertNoDiscoveryDeliveryTrackingOrClaim/);
   assert.doesNotMatch(source, /sendReportReadyEmail\s*\(/);

@@ -99,6 +99,7 @@ export async function hasDiscoveryCatalogLedgerBinding(
              ON e.id=i.provider_usage_event_id AND e.response_id=i.provider_response_id
             AND e.profile='discovery' AND e.status='completed'
           WHERE a.id=$2 AND a.audit_id=$1 AND a.batch_id=$3::uuid
+            AND a.artifact_state='ACTIVE'
             AND a.content_sha256=$4 AND a.model=$5
             AND b.stage IN ('GENERATION','REGENERATION') AND b.status='COMPLETED'
             AND i.state='STORED' AND i.provider_calls=1
@@ -123,6 +124,7 @@ export async function hasDiscoveryCatalogLedgerBinding(
            JOIN ai_usage_events e
              ON e.response_id=r.response_id AND e.profile='discovery' AND e.status='completed'
           WHERE a.id=$2 AND a.audit_id=$1 AND a.batch_id IS NULL
+            AND a.artifact_state='ACTIVE'
             AND a.content_sha256=$4 AND a.model=$5
             AND r.detail::jsonb=$7::jsonb
             AND e.model=a.model

@@ -2,7 +2,7 @@ import type { Pool, PoolClient } from "pg";
 
 type Queryable = Pick<Pool | PoolClient, "query">;
 
-export const DISCOVERY_BATCH_SCHEMA_VERSION = 6;
+export const DISCOVERY_BATCH_SCHEMA_VERSION = 8;
 
 const REQUIRED_COLUMNS = Object.freeze([
   ["discovery_batch_items", "expected_source_status", "text", "YES"],
@@ -218,7 +218,9 @@ export async function assertDiscoveryBatchSchemaV006(db: Queryable): Promise<voi
   for (const row of columns.rows as any[]) {
     const key = `${row.table_name}.${row.column_name}`;
     const actual = `${row.data_type}:${row.is_nullable}:${row.character_maximum_length ?? ""}:${row.column_default ?? ""}`;
-    if (expected.get(key) !== actual) errors.push(`invalid_column:${key}:${actual}`);
+    const expectedActual = expected.get(key);
+    if (expectedActual == null) continue;
+    if (expectedActual !== actual) errors.push(`invalid_column:${key}:${actual}`);
     expected.delete(key);
   }
   for (const key of expected.keys()) errors.push(`missing_column:${key}`);
@@ -304,7 +306,17 @@ export async function assertDiscoveryBatchSchemaV006(db: Queryable): Promise<voi
     ["discovery_batch_incidents_error_check", "c:CHECK (length(error_code) >= 1 AND length(error_code) <= 120 AND length(error_detail) >= 1 AND length(error_detail) <= 4000)"],
   ]);
   for (const [name, expectedDefinition] of exact) {
-    if (definitions.get(name) !== expectedDefinition) errors.push(`invalid_constraint:${name}`);
+    const actualDefinition = definitions.get(name);
+    const forwardCompatibleV008 = [
+      "discovery_rejected_candidates_source_check",
+      "discovery_rejected_candidates_origin_check",
+      "discovery_rejected_candidates_payload_check",
+    ].includes(name) && String(actualDefinition || "").includes("LEGACY_NARRATIVE_ONLY");
+    const forwardCompatibleSizeV008 = name === "discovery_rejected_candidates_size_check"
+      && String(actualDefinition || "").includes("legacy_narrative_json");
+    if (actualDefinition !== expectedDefinition && !forwardCompatibleV008 && !forwardCompatibleSizeV008) {
+      errors.push(`invalid_constraint:${name}`);
+    }
   }
   const indexes = await db.query(
     `SELECT indexname,indexdef FROM pg_indexes
@@ -329,4 +341,242 @@ export async function assertDiscoveryBatchSchemaV006(db: Queryable): Promise<voi
     errors.push("invalid_index:discovery_batch_incidents_audit_state_idx");
   }
   if (errors.length > 0) throw new Error(`DISCOVERY_BATCH_SCHEMA_V006_REQUIRED:${errors.join("|")}`);
+}
+
+/** Physical gate for append-only artifact version selection. */
+export async function assertDiscoveryBatchSchemaV007(db: Queryable): Promise<void> {
+  await assertDiscoveryBatchSchemaV006(db);
+  const errors: string[] = [];
+  const columns = await db.query(
+    `SELECT column_name,data_type,is_nullable,character_maximum_length,column_default
+       FROM information_schema.columns
+      WHERE table_schema=current_schema()
+        AND table_name='report_artifacts'
+        AND column_name=ANY($1::text[])`,
+    [["artifact_state", "superseded_at", "supersedes_artifact_id"]],
+  );
+  const actualColumns = new Map(columns.rows.map((row: any) => [
+    String(row.column_name),
+    `${row.data_type}:${row.is_nullable}:${row.character_maximum_length ?? ""}:${row.column_default ?? ""}`,
+  ]));
+  const expectedColumns = new Map<string, string>([
+    ["artifact_state", "text:NO::'ACTIVE'::text"],
+    ["superseded_at", "timestamp with time zone:YES::"],
+    ["supersedes_artifact_id", "character varying:YES:36:"],
+  ]);
+  for (const [name, expected] of expectedColumns) {
+    const actual = actualColumns.get(name);
+    if (!actual) errors.push(`missing_column:report_artifacts.${name}`);
+    else if (actual !== expected) errors.push(`invalid_column:report_artifacts.${name}:${actual}`);
+  }
+
+  const constraints = await db.query(
+    `SELECT con.conname,con.contype,pg_get_constraintdef(con.oid,true) AS definition
+       FROM pg_constraint con
+       JOIN pg_class rel ON rel.oid=con.conrelid
+       JOIN pg_namespace nsp ON nsp.oid=rel.relnamespace
+      WHERE nsp.nspname=current_schema()
+        AND rel.relname='report_artifacts'
+        AND con.conname=ANY($1::text[])`,
+    [[
+      "report_artifacts_state_check",
+      "report_artifacts_superseded_at_check",
+      "report_artifacts_supersedes_fkey",
+      "report_artifacts_not_self_superseding_check",
+    ]],
+  );
+  const definitions = new Map(constraints.rows.map((row: any) => [
+    String(row.conname),
+    `${String(row.contype)}:${String(row.definition || "").replace(/\s+/g, " ").trim()}`,
+  ]));
+  const expectedConstraints = new Map<string, string>([
+    ["report_artifacts_state_check", "c:CHECK (artifact_state = ANY (ARRAY['ACTIVE'::text, 'SUPERSEDED'::text]))"],
+    ["report_artifacts_superseded_at_check", "c:CHECK (artifact_state = 'ACTIVE'::text AND superseded_at IS NULL OR artifact_state = 'SUPERSEDED'::text AND superseded_at IS NOT NULL)"],
+    ["report_artifacts_supersedes_fkey", "f:FOREIGN KEY (supersedes_artifact_id) REFERENCES report_artifacts(id) ON DELETE RESTRICT"],
+    ["report_artifacts_not_self_superseding_check", "c:CHECK (supersedes_artifact_id IS NULL OR supersedes_artifact_id::text <> id::text)"],
+  ]);
+  for (const [name, expected] of expectedConstraints) {
+    if (definitions.get(name) !== expected) errors.push(`invalid_constraint:${name}`);
+  }
+
+  const indexes = await db.query(
+    `SELECT indexname,indexdef
+       FROM pg_indexes
+      WHERE schemaname=current_schema()
+        AND indexname=ANY($1::text[])`,
+    [["report_artifacts_one_active_per_audit_uq", "report_artifacts_audit_history_idx"]],
+  );
+  const indexMap = new Map(indexes.rows.map((row: any) => [String(row.indexname), String(row.indexdef)]));
+  const activeIndex = indexMap.get("report_artifacts_one_active_per_audit_uq") || "";
+  if (!/UNIQUE INDEX/.test(activeIndex)
+    || !/\(audit_id\)/.test(activeIndex)
+    || !/WHERE \(artifact_state = 'ACTIVE'::text\)/.test(activeIndex)) {
+    errors.push("invalid_index:report_artifacts_one_active_per_audit_uq");
+  }
+  const historyIndex = indexMap.get("report_artifacts_audit_history_idx") || "";
+  if (!/\(audit_id, created_at DESC, id DESC\)$/.test(historyIndex)) {
+    errors.push("invalid_index:report_artifacts_audit_history_idx");
+  }
+
+  const appendOnlyTrigger = await db.query(
+    `SELECT trigger.tgenabled,
+            pg_get_triggerdef(trigger.oid, true) AS trigger_definition,
+            proc.prosrc AS function_body,
+            proc.prosecdef,
+            proc.provolatile,
+            lang.lanname,
+            proc.prorettype::regtype::text AS return_type
+       FROM pg_trigger trigger
+       JOIN pg_class rel ON rel.oid=trigger.tgrelid
+       JOIN pg_namespace nsp ON nsp.oid=rel.relnamespace
+       JOIN pg_proc proc ON proc.oid=trigger.tgfoid
+       JOIN pg_language lang ON lang.oid=proc.prolang
+      WHERE nsp.nspname=current_schema()
+        AND rel.relname='report_artifacts'
+        AND trigger.tgname='report_artifacts_append_only'
+        AND NOT trigger.tgisinternal`,
+  );
+  if ((appendOnlyTrigger.rowCount ?? 0) !== 1) {
+    errors.push("missing_trigger:report_artifacts_append_only");
+  } else {
+    const row = appendOnlyTrigger.rows[0] as any;
+    const triggerDefinition = String(row.trigger_definition || "").replace(/\s+/g, " ").trim();
+    const functionBody = String(row.function_body || "").replace(/\s+/g, " ").trim();
+    const expectedFunctionBody = `BEGIN
+      IF TG_OP = 'DELETE' THEN
+        RAISE EXCEPTION 'REPORT_ARTIFACT_APPEND_ONLY_DELETE_BLOCKED'
+          USING ERRCODE = '55000';
+      END IF;
+      IF OLD.artifact_state = 'ACTIVE'
+         AND OLD.superseded_at IS NULL
+         AND NEW.artifact_state = 'SUPERSEDED'
+         AND NEW.superseded_at IS NOT NULL
+         AND (to_jsonb(NEW) - 'artifact_state' - 'superseded_at')
+             IS NOT DISTINCT FROM
+             (to_jsonb(OLD) - 'artifact_state' - 'superseded_at') THEN
+        RETURN NEW;
+      END IF;
+      RAISE EXCEPTION 'REPORT_ARTIFACT_APPEND_ONLY_UPDATE_BLOCKED'
+        USING ERRCODE = '55000';
+      END;`.replace(/\s+/g, " ").trim();
+    if (String(row.tgenabled) !== "O"
+      || triggerDefinition !== "CREATE TRIGGER report_artifacts_append_only BEFORE DELETE OR UPDATE ON report_artifacts FOR EACH ROW EXECUTE FUNCTION enforce_report_artifacts_append_only()") {
+      errors.push("invalid_trigger:report_artifacts_append_only");
+    }
+    if (functionBody !== expectedFunctionBody
+      || row.prosecdef !== false
+      || String(row.provolatile) !== "v"
+      || String(row.lanname) !== "plpgsql"
+      || String(row.return_type) !== "trigger") {
+      errors.push("invalid_function:enforce_report_artifacts_append_only");
+    }
+  }
+  if (errors.length > 0) throw new Error(`DISCOVERY_BATCH_SCHEMA_V007_REQUIRED:${errors.join("|")}`);
+}
+
+/** Physical gate for exact, immutable legacy narrative replay provenance. */
+export async function assertDiscoveryBatchSchemaV008(db: Queryable): Promise<void> {
+  await assertDiscoveryBatchSchemaV007(db);
+  const errors: string[] = [];
+  const pgcrypto = await db.query(
+    `SELECT EXISTS(
+       SELECT 1 FROM pg_extension ext WHERE ext.extname='pgcrypto'
+     ) AS extension_present,
+     to_regprocedure('digest(bytea,text)')::text AS digest_signature`,
+  );
+  if (pgcrypto.rows[0]?.extension_present !== true) {
+    errors.push("missing_extension:pgcrypto");
+  } else if (String(pgcrypto.rows[0]?.digest_signature || "") !== "digest(bytea,text)") {
+    errors.push("unavailable_function:pgcrypto.digest");
+  } else {
+    const digestGate = await db.query(
+      `SELECT encode(
+         digest(convert_to('discovery-pgcrypto-gate', 'UTF8'), 'sha256'),
+         'hex'
+       ) AS sha256`,
+    );
+    if (String(digestGate.rows[0]?.sha256 || "")
+      !== "4b3ea3e75d374edcde010d4dc06734450d7acd4c29dea2ed802de31fa791fc3c") {
+      errors.push("invalid_digest:pgcrypto.sha256");
+    }
+  }
+  const columns = await db.query(
+    `SELECT column_name,data_type,is_nullable,character_maximum_length,column_default
+       FROM information_schema.columns
+      WHERE table_schema=current_schema()
+        AND table_name='discovery_rejected_candidates'
+        AND column_name=ANY($1::text[])`,
+    [["legacy_narrative_present", "legacy_narrative_json", "legacy_narrative_sha256"]],
+  );
+  const columnMap = new Map(columns.rows.map((row: any) => [
+    String(row.column_name),
+    `${row.data_type}:${row.is_nullable}:${row.character_maximum_length ?? ""}:${row.column_default ?? ""}`,
+  ]));
+  const expectedColumns = new Map<string, string>([
+    ["legacy_narrative_present", "boolean:NO::false"],
+    ["legacy_narrative_json", "text:YES::"],
+    ["legacy_narrative_sha256", "character:YES:64:"],
+  ]);
+  for (const [name, expected] of expectedColumns) {
+    const actual = columnMap.get(name);
+    if (!actual) errors.push(`missing_column:discovery_rejected_candidates.${name}`);
+    else if (actual !== expected) errors.push(`invalid_column:discovery_rejected_candidates.${name}:${actual}`);
+  }
+
+  const constraints = await db.query(
+    `SELECT con.conname,pg_get_constraintdef(con.oid,true) AS definition
+       FROM pg_constraint con
+       JOIN pg_class rel ON rel.oid=con.conrelid
+       JOIN pg_namespace nsp ON nsp.oid=rel.relnamespace
+      WHERE nsp.nspname=current_schema()
+        AND rel.relname='discovery_rejected_candidates'
+        AND con.conname=ANY($1::text[])`,
+    [[
+      "discovery_rejected_candidates_origin_check",
+      "discovery_rejected_candidates_source_check",
+      "discovery_rejected_candidates_payload_check",
+      "discovery_rejected_candidates_legacy_narrative_check",
+      "discovery_rejected_candidates_size_check",
+    ]],
+  );
+  const constraintMap = new Map(constraints.rows.map((row: any) => [
+    String(row.conname),
+    String(row.definition || "").replace(/\s+/g, " ").trim(),
+  ]));
+  for (const name of [
+    "discovery_rejected_candidates_origin_check",
+    "discovery_rejected_candidates_source_check",
+    "discovery_rejected_candidates_payload_check",
+  ]) {
+    if (!constraintMap.get(name)?.includes("LEGACY_NARRATIVE_ONLY")) {
+      errors.push(`invalid_constraint:${name}`);
+    }
+  }
+  const narrativeCheck = constraintMap.get("discovery_rejected_candidates_legacy_narrative_check") || "";
+  if (!narrativeCheck.includes("legacy_narrative_present = false")
+    || !narrativeCheck.includes("digest(convert_to(legacy_narrative_json, 'UTF8'::name), 'sha256'::text)")) {
+    errors.push("invalid_constraint:discovery_rejected_candidates_legacy_narrative_check");
+  }
+  const sizeCheck = constraintMap.get("discovery_rejected_candidates_size_check") || "";
+  if (!sizeCheck.includes("octet_length(COALESCE(legacy_narrative_json")) {
+    errors.push("invalid_constraint:discovery_rejected_candidates_size_check");
+  }
+
+  const trigger = await db.query(
+    `SELECT pg_get_triggerdef(t.oid,true) AS definition
+       FROM pg_trigger t
+       JOIN pg_class rel ON rel.oid=t.tgrelid
+       JOIN pg_namespace nsp ON nsp.oid=rel.relnamespace
+      WHERE nsp.nspname=current_schema()
+        AND rel.relname='discovery_rejected_candidates'
+        AND t.tgname='discovery_legacy_narrative_provenance_append_only'
+        AND NOT t.tgisinternal`,
+  );
+  const triggerDefinition = String(trigger.rows[0]?.definition || "");
+  if ((trigger.rowCount ?? 0) !== 1
+    || !/BEFORE DELETE OR UPDATE/.test(triggerDefinition)
+    || !/prevent_discovery_legacy_narrative_provenance_mutation/.test(triggerDefinition)) {
+    errors.push("invalid_trigger:discovery_legacy_narrative_provenance_append_only");
+  }
+  if (errors.length > 0) throw new Error(`DISCOVERY_BATCH_SCHEMA_V008_REQUIRED:${errors.join("|")}`);
 }

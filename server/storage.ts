@@ -2782,7 +2782,9 @@ export class PgStorage implements IStorage {
   async hasReportArtifact(auditId: string): Promise<boolean> {
     await this.ensureReportArtifactsTable();
     const result = await pool.query(
-      `SELECT 1 FROM report_artifacts WHERE audit_id = $1 LIMIT 1`,
+      `SELECT 1 FROM report_artifacts
+        WHERE audit_id = $1 AND artifact_state = 'ACTIVE'
+        LIMIT 1`,
       [auditId],
     );
     return (result.rowCount ?? 0) > 0;

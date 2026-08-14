@@ -73,10 +73,34 @@ export async function insertGenericReportArtifactFenced(
     auditId: input.auditId,
     operation: "storage.createReportArtifact",
     mutate: async (client) => {
+      const previous = await client.query(
+        `SELECT id
+           FROM report_artifacts
+          WHERE audit_id = $1 AND artifact_state = 'ACTIVE'
+          FOR UPDATE`,
+        [input.auditId],
+      );
+      if ((previous.rowCount ?? 0) > 1) {
+        throw new Error("GENERIC_REPORT_ARTIFACT_ACTIVE_VERSION_CONFLICT");
+      }
+      const previousId = previous.rows[0]?.id ? String(previous.rows[0].id) : null;
+      if (previousId) {
+        const superseded = await client.query(
+          `UPDATE report_artifacts
+              SET artifact_state = 'SUPERSEDED', superseded_at = NOW()
+            WHERE id = $1 AND audit_id = $2 AND artifact_state = 'ACTIVE'
+            RETURNING id`,
+          [previousId, input.auditId],
+        );
+        if ((superseded.rowCount ?? 0) !== 1) {
+          throw new Error("GENERIC_REPORT_ARTIFACT_SUPERSEDE_CAS_FAILED");
+        }
+      }
       const inserted = await client.query(
         `INSERT INTO report_artifacts
-           (id, audit_id, tier, engine, model, txt, html, created_at)
-         SELECT $1, a.id, $3, $4, $5, $6, $7, $8
+           (id, audit_id, tier, engine, model, txt, html, artifact_state,
+            supersedes_artifact_id, created_at)
+         SELECT $1, a.id, $3, $4, $5, $6, $7, 'ACTIVE', $9, $8
            FROM audits a
           WHERE a.id = $2
             AND a.type <> 'GRATUIT'
@@ -91,6 +115,7 @@ export async function insertGenericReportArtifactFenced(
           input.txt,
           input.html,
           input.createdAt,
+          previousId,
         ],
       );
       if ((inserted.rowCount ?? 0) !== 1) {
@@ -286,7 +311,10 @@ export async function enqueueMissingDiscoveryReportJobFenced(
           AND COALESCE(NULLIF(a.report_txt, ''), NULLIF(a.report_html, '')) IS NULL
           AND NOT (COALESCE(a.narrative_report, '{}'::jsonb) ?| ARRAY['sections','txt','html'])
           AND NOT EXISTS (SELECT 1 FROM report_jobs j WHERE j.audit_id = a.id)
-          AND NOT EXISTS (SELECT 1 FROM report_artifacts r WHERE r.audit_id = a.id)
+          AND NOT EXISTS (
+            SELECT 1 FROM report_artifacts r
+             WHERE r.audit_id = a.id AND r.artifact_state = 'ACTIVE'
+          )
           AND NOT EXISTS (
             SELECT 1 FROM discovery_operation_lock l
              WHERE l.lock_key = 'discovery-global' AND l.expires_at > NOW()
@@ -393,7 +421,10 @@ export async function markDiscoveryAuditSupersededFenced(
           AND COALESCE(NULLIF(a.report_txt, ''), NULLIF(a.report_html, '')) IS NULL
           AND NOT (COALESCE(a.narrative_report, '{}'::jsonb) ?| ARRAY['sections','txt','html'])
           AND NOT EXISTS (SELECT 1 FROM report_jobs j WHERE j.audit_id = a.id)
-          AND NOT EXISTS (SELECT 1 FROM report_artifacts r WHERE r.audit_id = a.id)
+          AND NOT EXISTS (
+            SELECT 1 FROM report_artifacts r
+             WHERE r.audit_id = a.id AND r.artifact_state = 'ACTIVE'
+          )
           AND NOT EXISTS (
             SELECT 1 FROM discovery_operation_lock l
              WHERE l.lock_key = 'discovery-global' AND l.expires_at > NOW()

@@ -19,6 +19,8 @@
     "test:discovery:postgres": "tsx server/discoveryPostgres.integration.test.ts",
     "db:migrate:discovery-005": "tsx scripts/migrate-discovery-batch-v005.ts",
     "db:migrate:discovery-006": "tsx scripts/migrate-discovery-batch-v006.ts",
+    "db:migrate:discovery-007": "tsx scripts/migrate-discovery-batch-v007.ts",
+    "db:migrate:discovery-008": "tsx scripts/migrate-discovery-batch-v008.ts",
     "discovery:one-shot": "tsx scripts/discovery-one-shot-ops.ts",
     "knowledge:restore": "tsx scripts/restore-discovery-knowledge.ts",
     "test:knowledge:restore": "tsx scripts/test-knowledge-restore.ts",

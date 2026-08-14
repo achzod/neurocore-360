@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 
 import { Pool } from "pg";
 
-import { assertDiscoveryBatchSchemaV006 } from "../server/discoveryBatchSchema";
+import { assertDiscoveryBatchSchemaV007 } from "../server/discoveryBatchSchema";
 
 const databaseUrl = String(process.env.DATABASE_URL || "").trim();
 if (!databaseUrl) throw new Error("DATABASE_URL is required");
@@ -17,18 +17,18 @@ const pool = new Pool({
 });
 
 async function main(): Promise<void> {
-  const migrationPath = fileURLToPath(new URL("../migrations/006_discovery_rejected_candidate_retry.sql", import.meta.url));
+  const migrationPath = fileURLToPath(new URL("../migrations/007_report_artifact_versioning.sql", import.meta.url));
   const sql = readFileSync(migrationPath, "utf8");
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
     await client.query("SET LOCAL lock_timeout='15s'");
     await client.query("SET LOCAL statement_timeout='60s'");
-    await client.query("SELECT pg_advisory_xact_lock(hashtext('discovery-schema-migration-v006'))");
+    await client.query("SELECT pg_advisory_xact_lock(hashtext('discovery-schema-migration-v007'))");
     await client.query(sql);
-    await assertDiscoveryBatchSchemaV006(client);
+    await assertDiscoveryBatchSchemaV007(client);
     await client.query("COMMIT");
-    console.log("DISCOVERY_BATCH_SCHEMA_MIGRATION_OK:v6");
+    console.log("DISCOVERY_BATCH_SCHEMA_MIGRATION_OK:v7");
   } catch (error) {
     await client.query("ROLLBACK").catch(() => {});
     throw error;

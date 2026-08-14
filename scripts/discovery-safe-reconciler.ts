@@ -67,7 +67,7 @@ import {
   DISCOVERY_OTHER_AUDIT_ACTIVE_SQL,
   isDiscoverySupersededTerminal,
 } from "../server/discoverySupersededPolicy";
-import { assertDiscoveryBatchSchemaV006 } from "../server/discoveryBatchSchema";
+import { assertDiscoveryBatchSchemaV008 } from "../server/discoveryBatchSchema";
 import { pool } from "../server/db";
 
 const argv = process.argv.slice(2);
@@ -94,6 +94,7 @@ interface ManifestRow {
   reportSentAt: string | null;
   responses: DiscoveryResponses;
   responsesSha256: string;
+  narrativeSha256: string | null;
   txtSha256: string | null;
   htmlSha256: string | null;
   deliveryGateOk: boolean;
@@ -207,7 +208,8 @@ async function buildManifest(): Promise<DiscoveryManifest> {
                 'html', ra.html,
                 'contentSha256', ra.content_sha256
               ) ORDER BY ra.created_at ASC, ra.id ASC), '[]'::jsonb)
-               FROM report_artifacts ra WHERE ra.audit_id=a.id) AS report_artifacts,
+               FROM report_artifacts ra
+              WHERE ra.audit_id=a.id AND ra.artifact_state='ACTIVE') AS report_artifacts,
             EXISTS (
               SELECT 1 FROM audits other
                WHERE other.type = 'GRATUIT' AND other.id <> a.id
@@ -320,8 +322,10 @@ async function buildManifest(): Promise<DiscoveryManifest> {
       reportSentAt: row.report_sent_at ? new Date(row.report_sent_at).toISOString() : null,
       responses: row.responses || {},
       responsesSha256: discoverySha256(row.responses || {}),
-      txtSha256: row.report_txt ? discoverySha256(String(row.report_txt)) : null,
-      htmlSha256: row.report_html ? discoverySha256(String(row.report_html)) : null,
+      narrativeSha256: row.narrative_report == null
+        ? null : discoverySha256(row.narrative_report),
+      txtSha256: row.report_txt == null ? null : discoverySha256(String(row.report_txt)),
+      htmlSha256: row.report_html == null ? null : discoverySha256(String(row.report_html)),
       deliveryGateOk: gate.ok,
       deliveryGateErrors: gate.errors,
       tracking,
@@ -822,7 +826,7 @@ async function runDelivery(
 }
 
 async function main(): Promise<void> {
-  await assertDiscoveryBatchSchemaV006(pool);
+  await assertDiscoveryBatchSchemaV008(pool);
   const manifest = await buildManifest();
   const outputPath = valueAfter("--out");
   if (outputPath) writeFileSync(outputPath, `${JSON.stringify(manifest, null, 2)}\n`, { flag: "wx" });
@@ -1001,7 +1005,15 @@ async function main(): Promise<void> {
     });
     try {
       const prepared = await prepareDiscoveryAuditForRegeneration(
-        { auditId: item.id, lockToken: lock.token },
+        {
+          auditId: item.id,
+          lockToken: lock.token,
+          expectedResponsesSha256: item.responsesSha256,
+          expectedSourceStatus: item.reportDeliveryStatus,
+          expectedNarrativeSha256: item.narrativeSha256,
+          expectedTxtSha256: item.txtSha256,
+          expectedHtmlSha256: item.htmlSha256,
+        },
         pool,
       );
       console.log(`DISCOVERY_REGENERATION_PREPARED:${JSON.stringify({ auditId: item.id, ...prepared })}`);

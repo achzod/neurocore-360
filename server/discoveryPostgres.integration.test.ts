@@ -49,8 +49,6 @@ process.env.DISCOVERY_REPORT_DELIVERY_ENABLED = "false";
 const pool = new Pool({ connectionString: databaseUrl, max: 12 });
 
 const baselineSql = `
-  CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
   CREATE TABLE audits (
     id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id VARCHAR(36),
@@ -141,6 +139,11 @@ let batch: typeof import("./discoveryBatchControl");
 let transactional: typeof import("./discoveryTransactionalPersistence");
 let budget: typeof import("./aiCostBudgetController");
 let schema: typeof import("./discoveryBatchSchema");
+let migration007BackfillEvidence: Array<{
+  id: string;
+  artifact_state: string;
+  superseded_at: Date | null;
+}> = [];
 
 function migration(name: string): string {
   return readFileSync(new URL(`../migrations/${name}`, import.meta.url), "utf8");
@@ -154,6 +157,100 @@ async function insertAudit(status = "PENDING", responses?: Record<string, unknow
     [id, `${id}@example.test`, JSON.stringify(responses || { goal: "test", auditId: id }), status],
   );
   return id;
+}
+
+async function regenerationSourceBinding(auditId: string) {
+  const audit = (await pool.query(
+    `SELECT responses,report_delivery_status,narrative_report,report_txt,report_html
+       FROM audits WHERE id=$1`,
+    [auditId],
+  )).rows[0];
+  return {
+    expectedResponsesSha256: batch.discoverySha256(audit.responses || {}),
+    expectedSourceStatus: audit.report_delivery_status ?? null,
+    expectedNarrativeSha256: audit.narrative_report == null
+      ? null : batch.discoverySha256(audit.narrative_report),
+    expectedTxtSha256: audit.report_txt == null ? null : batch.discoverySha256(String(audit.report_txt)),
+    expectedHtmlSha256: audit.report_html == null ? null : batch.discoverySha256(String(audit.report_html)),
+  };
+}
+
+async function createRegenerationBatchForPreparedCandidate(input: {
+  auditId: string;
+  candidateId: string;
+  lockToken: string;
+  binding: Awaited<ReturnType<typeof regenerationSourceBinding>>;
+  label: string;
+}) {
+  const batchId = await batch.createDiscoveryBatchRun({
+    manifestSha256: batch.discoverySha256(`${input.label}:${input.auditId}`),
+    commitSha: "8".repeat(40),
+    approvalReference: input.label,
+    approvalExpiresAt: new Date(Date.now() + 60_000).toISOString(),
+    stage: "REGENERATION",
+    tier: "ONE",
+    softPerScanUsd: 0.25,
+    hardPerScanUsd: 0.75,
+    globalBudgetUsd: 0.75,
+    lockToken: input.lockToken,
+    items: [{
+      auditId: input.auditId,
+      sequenceNo: 1,
+      cohort: "ambiguous",
+      expectedResponsesSha256: input.binding.expectedResponsesSha256,
+      expectedSourceStatus: "BATCH_REVIEW",
+      expectedTxtSha256: input.binding.expectedTxtSha256,
+      expectedHtmlSha256: input.binding.expectedHtmlSha256,
+      retryOfCandidateId: input.candidateId,
+    }],
+  }, pool);
+  await batch.markDiscoveryBatchItemPreflightOk({
+    batchId, auditId: input.auditId, lockToken: input.lockToken,
+  }, pool);
+  return batchId;
+}
+
+async function setupPersistedInvalidRegeneration(label: string) {
+  const responses = completeV2Responses();
+  const auditId = await insertAudit("BATCH_READY", responses);
+  const oldNarrative = { legacyInvalid: label, sections: [] };
+  const oldTxt = `invalid-txt:${label}`;
+  const oldHtml = `<p>invalid-html:${label}</p>`;
+  await pool.query(
+    `UPDATE audits SET narrative_report=$2::jsonb,report_txt=$3,report_html=$4 WHERE id=$1`,
+    [auditId, JSON.stringify(oldNarrative), oldTxt, oldHtml],
+  );
+  const oldArtifactId = randomUUID();
+  await pool.query(
+    `INSERT INTO report_artifacts
+      (id,audit_id,tier,engine,model,txt,html,content_sha256,artifact_state)
+     VALUES ($1,$2,'GRATUIT','legacy','legacy',$3,$4,$5,'ACTIVE')`,
+    [oldArtifactId, auditId, oldTxt, oldHtml, batch.discoveryArtifactContentHash(oldTxt, oldHtml)],
+  );
+  await insertDiscoveryProviderProof(auditId, `resp_${randomUUID()}`, 0.12);
+  const binding = await regenerationSourceBinding(auditId);
+  const lock = await batch.acquireDiscoveryGlobalLock({
+    owner: "postgres-integration", purpose: label,
+  }, pool);
+  const prepared = await batch.prepareDiscoveryAuditForRegeneration({
+    auditId, lockToken: lock.token, ...binding,
+  }, pool);
+  assert.equal(prepared.sourceKind, "PERSISTED_INVALID_REPORT");
+  const batchId = await createRegenerationBatchForPreparedCandidate({
+    auditId, candidateId: prepared.candidateId, lockToken: lock.token, binding, label,
+  });
+  await batch.claimDiscoveryProviderAttempt({ batchId, auditId, lockToken: lock.token }, pool);
+  const responseId = `resp_${randomUUID()}`;
+  await insertDiscoveryProviderProof(auditId, responseId, 0.14);
+  await batch.recordDiscoveryProviderUsage({
+    batchId, auditId, lockToken: lock.token, responseId,
+    inputTokens: 100, outputTokens: 50, totalTokens: 150, actualCostUsd: 0.14,
+  }, pool);
+  const fixture = await buildValidPersistenceFixture(responses, responseId);
+  return {
+    auditId, oldArtifactId, oldNarrative, oldTxt, oldHtml, binding,
+    lock, prepared, batchId, responseId, fixture,
+  };
 }
 
 function completeV2Responses(): Record<string, unknown> {
@@ -427,7 +524,7 @@ async function insertExactRepairFixture(
 }
 
 async function insertExactWakeSummaryRepairFixture(
-  mode: "valid" | "duplicate" | "wrong-path" = "valid",
+  mode: "valid" | "duplicate" | "wrong-path" | "artifact-hash-divergent" = "valid",
 ) {
   const id = randomUUID();
   const email = `${id}@example.test`;
@@ -473,7 +570,8 @@ async function insertExactWakeSummaryRepairFixture(
     `INSERT INTO report_artifacts
       (id,audit_id,tier,engine,model,txt,html,content_sha256,created_at)
      VALUES ($1,$2,'GRATUIT','discovery','integration-test',$3,$4,$5,NOW())`,
-    [artifactId, id, assets.txt, assets.html, contentSha256],
+    [artifactId, id, assets.txt, assets.html,
+      mode === "artifact-hash-divergent" ? "0".repeat(64) : contentSha256],
   );
   const persisted = (await pool.query(
     `SELECT responses, narrative_report FROM audits WHERE id = $1`,
@@ -611,6 +709,7 @@ before(async () => {
   assert.equal(identity.rows[0]?.name, "apex_discovery_test");
   assert.match(String(identity.rows[0]?.host), /^(127\.0\.0\.1|::1)(?:\/\d+)?$/);
   await pool.query("DROP SCHEMA public CASCADE; CREATE SCHEMA public");
+  await pool.query("DROP EXTENSION IF EXISTS pgcrypto CASCADE");
   await pool.query(baselineSql);
   for (const name of [
     "001_create_email_tracking.sql",
@@ -622,6 +721,39 @@ before(async () => {
   ]) {
     await pool.query(migration(name));
   }
+  const migrationAuditId = randomUUID();
+  const matchingArtifactId = randomUUID();
+  const newerDivergentArtifactId = randomUUID();
+  await pool.query(
+    `INSERT INTO audits
+       (id,email,type,responses,scores,report_txt,report_html,report_delivery_status,created_at)
+     VALUES ($1,$2,'GRATUIT','{}'::jsonb,'{}'::jsonb,'canonical-txt','canonical-html',
+             'BATCH_REVIEW','2026-08-14T01:00:00.000Z')`,
+    [migrationAuditId, `${migrationAuditId}@example.test`],
+  );
+  await pool.query(
+    `INSERT INTO report_artifacts
+       (id,audit_id,tier,engine,model,txt,html,created_at)
+     VALUES
+       ($1,$3,'GRATUIT','legacy','legacy','canonical-txt','canonical-html','2026-08-14T01:00:00.000Z'),
+       ($2,$3,'GRATUIT','legacy','legacy','divergent-txt','divergent-html','2026-08-14T02:00:00.000Z')`,
+    [matchingArtifactId, newerDivergentArtifactId, migrationAuditId],
+  );
+  await pool.query(migration("007_report_artifact_versioning.sql"));
+  migration007BackfillEvidence = (await pool.query(
+    `SELECT id,artifact_state,superseded_at
+       FROM report_artifacts
+      WHERE audit_id=$1
+      ORDER BY id`,
+    [migrationAuditId],
+  )).rows;
+  assert.equal(
+    Number((await pool.query(
+      "SELECT COUNT(*)::int AS count FROM pg_extension WHERE extname='pgcrypto'",
+    )).rows[0]?.count),
+    0,
+  );
+  await pool.query(migration("008_discovery_legacy_narrative_provenance.sql"));
   schema = await import("./discoveryBatchSchema");
   batch = await import("./discoveryBatchControl");
   transactional = await import("./discoveryTransactionalPersistence");
@@ -720,6 +852,203 @@ test("migration 006 enforces exact rejected-candidate origins and one attempt ro
     client.release();
   }
   await schema.assertDiscoveryBatchSchemaV006(pool);
+});
+
+test("migration 007 preserves history and selects one canonical ACTIVE artifact", async () => {
+  await schema.assertDiscoveryBatchSchemaV007(pool);
+  assert.equal(migration007BackfillEvidence.length, 2);
+  const active = migration007BackfillEvidence.filter((row) => row.artifact_state === "ACTIVE");
+  const superseded = migration007BackfillEvidence.filter((row) => row.artifact_state === "SUPERSEDED");
+  assert.equal(active.length, 1);
+  assert.equal(superseded.length, 1);
+  assert.equal(superseded[0].superseded_at instanceof Date, true);
+
+  const auditId = await insertAudit();
+  await pool.query(
+    `INSERT INTO report_artifacts
+       (id,audit_id,tier,engine,model,txt,html,artifact_state)
+     VALUES ($1,$2,'GRATUIT','test','test','txt-a','html-a','ACTIVE')`,
+    [randomUUID(), auditId],
+  );
+  await assert.rejects(
+    pool.query(
+      `INSERT INTO report_artifacts
+         (id,audit_id,tier,engine,model,txt,html,artifact_state)
+       VALUES ($1,$2,'GRATUIT','test','test','txt-b','html-b','ACTIVE')`,
+      [randomUUID(), auditId],
+    ),
+    /report_artifacts_one_active_per_audit_uq/,
+  );
+
+  const protectedArtifact = (await pool.query(
+    `SELECT id,txt,html,content_sha256,batch_id,created_at
+       FROM report_artifacts
+      WHERE audit_id=$1 AND artifact_state='ACTIVE'`,
+    [auditId],
+  )).rows[0];
+  for (const mutation of [
+    "txt='mutated'",
+    "html='mutated'",
+    "content_sha256=repeat('0',64)",
+    "engine='mutated'",
+    "model='mutated'",
+    "audit_id='00000000-0000-0000-0000-000000000000'",
+    "supersedes_artifact_id=id",
+    "created_at=created_at + interval '1 second'",
+  ]) {
+    await assert.rejects(
+      pool.query(`UPDATE report_artifacts SET ${mutation} WHERE id=$1`, [protectedArtifact.id]),
+      /REPORT_ARTIFACT_APPEND_ONLY_UPDATE_BLOCKED/,
+      mutation,
+    );
+  }
+  await assert.rejects(
+    pool.query("DELETE FROM report_artifacts WHERE id=$1", [protectedArtifact.id]),
+    /REPORT_ARTIFACT_APPEND_ONLY_DELETE_BLOCKED/,
+  );
+  await assert.rejects(
+    pool.query(
+      `UPDATE report_artifacts SET artifact_state='SUPERSEDED' WHERE id=$1`,
+      [protectedArtifact.id],
+    ),
+    /REPORT_ARTIFACT_APPEND_ONLY_UPDATE_BLOCKED/,
+  );
+  const supersededAt = new Date();
+  assert.equal((await pool.query(
+    `UPDATE report_artifacts
+        SET artifact_state='SUPERSEDED',superseded_at=$2
+      WHERE id=$1 AND artifact_state='ACTIVE'`,
+    [protectedArtifact.id, supersededAt],
+  )).rowCount, 1);
+  await assert.rejects(
+    pool.query(
+      `UPDATE report_artifacts
+          SET artifact_state='ACTIVE',superseded_at=NULL
+        WHERE id=$1`,
+      [protectedArtifact.id],
+    ),
+    /REPORT_ARTIFACT_APPEND_ONLY_UPDATE_BLOCKED/,
+  );
+  await assert.rejects(
+    pool.query(
+      `UPDATE report_artifacts SET superseded_at=superseded_at + interval '1 second' WHERE id=$1`,
+      [protectedArtifact.id],
+    ),
+    /REPORT_ARTIFACT_APPEND_ONLY_UPDATE_BLOCKED/,
+  );
+  const replacementId = randomUUID();
+  await pool.query(
+    `INSERT INTO report_artifacts
+       (id,audit_id,tier,engine,model,txt,html,artifact_state,supersedes_artifact_id)
+     VALUES ($1,$2,'GRATUIT','test','test','replacement-txt','replacement-html','ACTIVE',$3)`,
+    [replacementId, auditId, protectedArtifact.id],
+  );
+  const history = (await pool.query(
+    `SELECT id,artifact_state,superseded_at,supersedes_artifact_id,txt,html,
+            content_sha256,batch_id,created_at
+       FROM report_artifacts WHERE audit_id=$1 ORDER BY created_at,id`,
+    [auditId],
+  )).rows;
+  const historical = history.find((row) => row.id === protectedArtifact.id);
+  const replacement = history.find((row) => row.id === replacementId);
+  assert.equal(historical.artifact_state, "SUPERSEDED");
+  assert.equal(new Date(historical.superseded_at).toISOString(), supersededAt.toISOString());
+  assert.equal(historical.txt, protectedArtifact.txt);
+  assert.equal(historical.html, protectedArtifact.html);
+  assert.equal(historical.content_sha256, protectedArtifact.content_sha256);
+  assert.equal(historical.batch_id, protectedArtifact.batch_id);
+  assert.equal(new Date(historical.created_at).toISOString(), new Date(protectedArtifact.created_at).toISOString());
+  assert.equal(replacement.artifact_state, "ACTIVE");
+  assert.equal(replacement.supersedes_artifact_id, protectedArtifact.id);
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query("DROP INDEX report_artifacts_one_active_per_audit_uq");
+    await assert.rejects(
+      schema.assertDiscoveryBatchSchemaV007(client),
+      /DISCOVERY_BATCH_SCHEMA_V007_REQUIRED:.*invalid_index:report_artifacts_one_active_per_audit_uq/,
+    );
+    await client.query("ROLLBACK");
+  } finally {
+    client.release();
+  }
+  const triggerClient = await pool.connect();
+  try {
+    await triggerClient.query("BEGIN");
+    await triggerClient.query("DROP TRIGGER report_artifacts_append_only ON report_artifacts");
+    await assert.rejects(
+      schema.assertDiscoveryBatchSchemaV007(triggerClient),
+      /DISCOVERY_BATCH_SCHEMA_V007_REQUIRED:.*missing_trigger:report_artifacts_append_only/,
+    );
+    await triggerClient.query("ROLLBACK");
+  } finally {
+    triggerClient.release();
+  }
+  const functionClient = await pool.connect();
+  try {
+    await functionClient.query("BEGIN");
+    await functionClient.query(
+      `CREATE OR REPLACE FUNCTION enforce_report_artifacts_append_only()
+       RETURNS TRIGGER LANGUAGE plpgsql AS $$ BEGIN RETURN NEW; END; $$`,
+    );
+    await assert.rejects(
+      schema.assertDiscoveryBatchSchemaV007(functionClient),
+      /DISCOVERY_BATCH_SCHEMA_V007_REQUIRED:.*invalid_function:enforce_report_artifacts_append_only/,
+    );
+    await functionClient.query("ROLLBACK");
+  } finally {
+    functionClient.release();
+  }
+  await schema.assertDiscoveryBatchSchemaV007(pool);
+});
+
+test("migration 008 enforces exact immutable legacy narrative provenance", async () => {
+  await schema.assertDiscoveryBatchSchemaV008(pool);
+  await pool.query(migration("008_discovery_legacy_narrative_provenance.sql"));
+  await schema.assertDiscoveryBatchSchemaV008(pool);
+  assert.equal(
+    Number((await pool.query(
+      "SELECT COUNT(*)::int AS count FROM pg_extension WHERE extname='pgcrypto'",
+    )).rows[0]?.count),
+    1,
+  );
+  assert.equal(
+    (await pool.query(
+      `SELECT encode(digest(convert_to('discovery-pgcrypto-gate','UTF8'),'sha256'),'hex') AS sha256`,
+    )).rows[0]?.sha256,
+    "4b3ea3e75d374edcde010d4dc06734450d7acd4c29dea2ed802de31fa791fc3c",
+  );
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query(
+      `DROP TRIGGER discovery_legacy_narrative_provenance_append_only
+         ON discovery_rejected_candidates`,
+    );
+    await assert.rejects(
+      schema.assertDiscoveryBatchSchemaV008(client),
+      /DISCOVERY_BATCH_SCHEMA_V008_REQUIRED:.*invalid_trigger:discovery_legacy_narrative_provenance_append_only/,
+    );
+    await client.query("ROLLBACK");
+  } finally {
+    client.release();
+  }
+  await schema.assertDiscoveryBatchSchemaV008(pool);
+
+  const missingExtensionClient = await pool.connect();
+  try {
+    await missingExtensionClient.query("BEGIN");
+    await missingExtensionClient.query("DROP EXTENSION pgcrypto CASCADE");
+    await assert.rejects(
+      schema.assertDiscoveryBatchSchemaV008(missingExtensionClient),
+      /DISCOVERY_BATCH_SCHEMA_V008_REQUIRED:.*missing_extension:pgcrypto/,
+    );
+    await missingExtensionClient.query("ROLLBACK");
+  } finally {
+    missingExtensionClient.release();
+  }
+  await schema.assertDiscoveryBatchSchemaV008(pool);
 });
 
 test("Discovery reconciler CLI compiles and executes summary-only against the real schema", () => {
@@ -1304,7 +1633,9 @@ test("legacy lost output becomes a retryable tombstone without inventing provide
   const responseId = `resp_${randomUUID()}`;
   await insertDiscoveryProviderProof(auditId, responseId, 0.157);
   const lock = await batch.acquireDiscoveryGlobalLock({ owner: "postgres-integration", purpose: "legacy-prepare" }, pool);
-  const prepared = await batch.prepareDiscoveryAuditForRegeneration({ auditId, lockToken: lock.token }, pool);
+  const prepared = await batch.prepareDiscoveryAuditForRegeneration({
+    auditId, lockToken: lock.token, ...await regenerationSourceBinding(auditId),
+  }, pool);
   assert.equal(prepared.sourceKind, "LEGACY_LOST_CANDIDATE");
   const candidate = await pool.query(
     `SELECT source_kind,provider_raw,provider_raw_text,assembled_candidate,state,attempt_no
@@ -1318,6 +1649,419 @@ test("legacy lost output becomes a retryable tombstone without inventing provide
   await batch.releaseDiscoveryGlobalLock(lock.token, pool);
 });
 
+test("legacy preparation rejects one completed proof plus any extra reservation", async () => {
+  const auditId = await insertAudit();
+  const originalNarrative = { legacy: "must-not-be-cleaned" };
+  await pool.query(
+    `UPDATE audits SET report_delivery_status='BATCH_REVIEW',narrative_report=$2::jsonb,
+       report_txt=NULL,report_html=NULL WHERE id=$1`,
+    [auditId, JSON.stringify(originalNarrative)],
+  );
+  await insertDiscoveryProviderProof(auditId, `resp_${randomUUID()}`, 0.157);
+  await pool.query(
+    `INSERT INTO ai_cost_budget_reservations
+      (id,product,order_id,profile,label,status,reserved_cost_usd,response_id)
+     VALUES ($1,'discovery',$2,'discovery','unexpected-extra','FAILED',0,NULL)`,
+    [randomUUID(), auditId],
+  );
+  const lock = await batch.acquireDiscoveryGlobalLock({
+    owner: "postgres-integration", purpose: "legacy-ledger-cardinality",
+  }, pool);
+  await assert.rejects(batch.prepareDiscoveryAuditForRegeneration({
+    auditId, lockToken: lock.token, ...await regenerationSourceBinding(auditId),
+  }, pool), /DISCOVERY_REGENERATION_LEDGER_NOT_EXACT/);
+  const state = (await pool.query(
+    `SELECT narrative_report,(SELECT COUNT(*)::int FROM discovery_rejected_candidates c
+       WHERE c.audit_id=audits.id) AS candidate_count FROM audits WHERE id=$1`,
+    [auditId],
+  )).rows[0];
+  assert.deepEqual(state.narrative_report, originalNarrative);
+  assert.equal(state.candidate_count, 0);
+  await batch.releaseDiscoveryGlobalLock(lock.token, pool);
+});
+
+test("narrative-only legacy output is tombstoned and cleaned atomically under manifest CAS", async () => {
+  const auditId = await insertAudit();
+  const legacyNarrative = { legacy: true, sections: [{ id: "sleep", content: "partial" }] };
+  await pool.query(
+    `UPDATE audits SET report_delivery_status='BATCH_REVIEW',narrative_report=$2::jsonb,
+       report_txt=NULL,report_html=NULL WHERE id=$1`,
+    [auditId, JSON.stringify(legacyNarrative)],
+  );
+  await insertDiscoveryProviderProof(auditId, `resp_${randomUUID()}`, 0.157);
+  const legacyNarrativeBytes = String((await pool.query(
+    `SELECT narrative_report::text AS bytes FROM audits WHERE id=$1`,
+    [auditId],
+  )).rows[0].bytes);
+  const binding = await regenerationSourceBinding(auditId);
+  const lock = await batch.acquireDiscoveryGlobalLock({
+    owner: "postgres-integration", purpose: "legacy-narrative-prepare",
+  }, pool);
+  const prepared = await batch.prepareDiscoveryAuditForRegeneration({
+    auditId, lockToken: lock.token, ...binding,
+  }, pool);
+  assert.equal(prepared.sourceKind, "LEGACY_NARRATIVE_ONLY");
+  const state = (await pool.query(
+    `SELECT a.narrative_report,a.report_txt,a.report_html,c.source_kind,c.assembled_candidate,
+            c.validation_errors,c.state,c.legacy_narrative_present,c.legacy_narrative_json,
+            c.legacy_narrative_sha256
+       FROM audits a JOIN discovery_rejected_candidates c ON c.audit_id=a.id
+      WHERE a.id=$1`,
+    [auditId],
+  )).rows[0];
+  assert.equal(state.narrative_report, null);
+  assert.equal(state.report_txt, null);
+  assert.equal(state.report_html, null);
+  assert.equal(state.source_kind, "LEGACY_NARRATIVE_ONLY");
+  assert.equal(state.assembled_candidate, null);
+  assert.equal(state.legacy_narrative_present, true);
+  assert.equal(state.legacy_narrative_json, legacyNarrativeBytes);
+  assert.equal(state.legacy_narrative_sha256, batch.discoverySha256(legacyNarrativeBytes));
+  assert.deepEqual(state.validation_errors, [
+    `legacy_narrative_only_preserved:${batch.discoverySha256(legacyNarrativeBytes)}`,
+  ]);
+  assert.equal(state.state, "QUARANTINED");
+  await assert.rejects(
+    pool.query(
+      `UPDATE discovery_rejected_candidates SET legacy_narrative_json='{}' WHERE id=$1`,
+      [prepared.candidateId],
+    ),
+    /DISCOVERY_LEGACY_NARRATIVE_PROVENANCE_APPEND_ONLY/,
+  );
+  await assert.rejects(
+    pool.query(`DELETE FROM discovery_rejected_candidates WHERE id=$1`, [prepared.candidateId]),
+    /DISCOVERY_LEGACY_NARRATIVE_PROVENANCE_APPEND_ONLY/,
+  );
+  await batch.releaseDiscoveryGlobalLock(lock.token, pool);
+});
+
+test("narrative-only preparation rejects stale manifest hashes before tombstone or cleanup", async () => {
+  const auditId = await insertAudit();
+  const legacyNarrative = { legacy: "original" };
+  await pool.query(
+    `UPDATE audits SET report_delivery_status='BATCH_REVIEW',narrative_report=$2::jsonb,
+       report_txt=NULL,report_html=NULL WHERE id=$1`,
+    [auditId, JSON.stringify(legacyNarrative)],
+  );
+  await insertDiscoveryProviderProof(auditId, `resp_${randomUUID()}`, 0.157);
+  const binding = await regenerationSourceBinding(auditId);
+  await pool.query(`UPDATE audits SET narrative_report='{"legacy":"changed"}'::jsonb WHERE id=$1`, [auditId]);
+  const lock = await batch.acquireDiscoveryGlobalLock({
+    owner: "postgres-integration", purpose: "legacy-narrative-stale-manifest",
+  }, pool);
+  await assert.rejects(batch.prepareDiscoveryAuditForRegeneration({
+    auditId, lockToken: lock.token, ...binding,
+  }, pool), /DISCOVERY_REGENERATION_MANIFEST_SOURCE_CAS_FAILED/);
+  const state = (await pool.query(
+    `SELECT narrative_report,(SELECT COUNT(*)::int FROM discovery_rejected_candidates c
+       WHERE c.audit_id=audits.id) AS candidate_count FROM audits WHERE id=$1`,
+    [auditId],
+  )).rows[0];
+  assert.deepEqual(state.narrative_report, { legacy: "changed" });
+  assert.equal(state.candidate_count, 0);
+  await batch.releaseDiscoveryGlobalLock(lock.token, pool);
+});
+
+test("failed narrative-only cleanup rolls back its tombstone in the same transaction", async () => {
+  const auditId = await insertAudit();
+  const legacyNarrative = { legacy: "must-survive-rollback" };
+  await pool.query(
+    `UPDATE audits SET report_delivery_status='BATCH_REVIEW',narrative_report=$2::jsonb,
+       report_txt=NULL,report_html=NULL WHERE id=$1`,
+    [auditId, JSON.stringify(legacyNarrative)],
+  );
+  await insertDiscoveryProviderProof(auditId, `resp_${randomUUID()}`, 0.157);
+  const binding = await regenerationSourceBinding(auditId);
+  await pool.query(`
+    CREATE FUNCTION block_legacy_cleanup() RETURNS trigger LANGUAGE plpgsql AS $$
+    BEGIN
+      IF OLD.narrative_report IS NOT NULL AND NEW.narrative_report IS NULL THEN
+        RETURN NULL;
+      END IF;
+      RETURN NEW;
+    END $$;
+    CREATE TRIGGER block_legacy_cleanup BEFORE UPDATE ON audits
+      FOR EACH ROW EXECUTE FUNCTION block_legacy_cleanup();
+  `);
+  const lock = await batch.acquireDiscoveryGlobalLock({
+    owner: "postgres-integration", purpose: "legacy-narrative-atomicity",
+  }, pool);
+  await assert.rejects(batch.prepareDiscoveryAuditForRegeneration({
+    auditId, lockToken: lock.token, ...binding,
+  }, pool), /DISCOVERY_REGENERATION_LEGACY_CLEANUP_CAS_FAILED/);
+  await pool.query(`DROP TRIGGER block_legacy_cleanup ON audits; DROP FUNCTION block_legacy_cleanup()`);
+  const state = (await pool.query(
+    `SELECT narrative_report,(SELECT COUNT(*)::int FROM discovery_rejected_candidates c
+       WHERE c.audit_id=audits.id) AS candidate_count FROM audits WHERE id=$1`,
+    [auditId],
+  )).rows[0];
+  assert.deepEqual(state.narrative_report, legacyNarrative);
+  assert.equal(state.candidate_count, 0);
+  await batch.releaseDiscoveryGlobalLock(lock.token, pool);
+});
+
+test("narrative-only preparation requires zero artifacts, claims, tracking and prior candidates", async () => {
+  const makeNarrativeOnly = async (label: string) => {
+    const auditId = await insertAudit();
+    await pool.query(
+      `UPDATE audits SET report_delivery_status='BATCH_REVIEW',narrative_report=$2::jsonb,
+         report_txt=NULL,report_html=NULL WHERE id=$1`,
+      [auditId, JSON.stringify({ legacy: label })],
+    );
+    await insertDiscoveryProviderProof(auditId, `resp_${randomUUID()}`, 0.157);
+    return auditId;
+  };
+
+  const artifactAuditId = await makeNarrativeOnly("artifact");
+  await pool.query(
+    `INSERT INTO report_artifacts (audit_id,tier,engine,model,txt,html,content_sha256)
+     VALUES ($1,'ONE','legacy','legacy','txt','html',$2)`,
+    [artifactAuditId, batch.discoveryArtifactContentHash("txt", "html")],
+  );
+  const artifactLock = await batch.acquireDiscoveryGlobalLock({
+    owner: "postgres-integration", purpose: "legacy-narrative-artifact-block",
+  }, pool);
+  await assert.rejects(batch.prepareDiscoveryAuditForRegeneration({
+    auditId: artifactAuditId, lockToken: artifactLock.token,
+    ...await regenerationSourceBinding(artifactAuditId),
+  }, pool), /DISCOVERY_REGENERATION_LEGACY_ARTIFACT_EXISTS/);
+  await batch.releaseDiscoveryGlobalLock(artifactLock.token, pool);
+
+  const trackingAuditId = await makeNarrativeOnly("tracking");
+  await pool.query(
+    `INSERT INTO email_tracking (email_type,recipient_email,audit_id,sendpulse_status)
+     VALUES ('sendReportReadyEmail','blocked@example.test',$1,'pending')`,
+    [trackingAuditId],
+  );
+  const trackingLock = await batch.acquireDiscoveryGlobalLock({
+    owner: "postgres-integration", purpose: "legacy-narrative-tracking-block",
+  }, pool);
+  await assert.rejects(batch.prepareDiscoveryAuditForRegeneration({
+    auditId: trackingAuditId, lockToken: trackingLock.token,
+    ...await regenerationSourceBinding(trackingAuditId),
+  }, pool), /DISCOVERY_REGENERATION_EXTERNAL_STATE_BLOCKED/);
+  await batch.releaseDiscoveryGlobalLock(trackingLock.token, pool);
+
+  const claimAuditId = await makeNarrativeOnly("claim");
+  const claimLock = await batch.acquireDiscoveryGlobalLock({
+    owner: "postgres-integration", purpose: "legacy-narrative-claim-block",
+  }, pool);
+  const claimBinding = await regenerationSourceBinding(claimAuditId);
+  const claimBatchId = await batch.createDiscoveryBatchRun({
+    manifestSha256: batch.discoverySha256(randomUUID()), commitSha: "a".repeat(40),
+    approvalReference: "legacy-claim-block", approvalExpiresAt: new Date(Date.now() + 60_000).toISOString(),
+    stage: "GENERATION", tier: "ONE", globalBudgetUsd: 0.75,
+    softPerScanUsd: 0.25, hardPerScanUsd: 0.75, lockToken: claimLock.token,
+    items: [{ auditId: claimAuditId, sequenceNo: 1, cohort: "ambiguous",
+      expectedResponsesSha256: claimBinding.expectedResponsesSha256,
+      expectedSourceStatus: "BATCH_REVIEW", expectedTxtSha256: null, expectedHtmlSha256: null }],
+  }, pool);
+  await pool.query(
+    `INSERT INTO discovery_email_delivery_claims
+      (batch_id,audit_id,email_type,recipient_email,report_txt_sha256,report_html_sha256,subject_sha256)
+     VALUES ($1,$2,'sendReportReadyEmail','blocked@example.test',$3,$3,$3)`,
+    [claimBatchId, claimAuditId, "b".repeat(64)],
+  );
+  await assert.rejects(batch.prepareDiscoveryAuditForRegeneration({
+    auditId: claimAuditId, lockToken: claimLock.token, ...claimBinding,
+  }, pool), /DISCOVERY_REGENERATION_EXTERNAL_STATE_BLOCKED/);
+  await pool.query(
+    `UPDATE discovery_email_delivery_claims SET state='FAILED_FINAL',error_detail='test cleanup'
+      WHERE batch_id=$1`,
+    [claimBatchId],
+  );
+  await pool.query(`UPDATE discovery_batch_items SET state='SKIPPED' WHERE batch_id=$1`, [claimBatchId]);
+  await pool.query(
+    `UPDATE discovery_batch_runs SET status='FAILED',completed_at=NOW(),stop_reason='test cleanup'
+      WHERE id=$1`,
+    [claimBatchId],
+  );
+  await batch.releaseDiscoveryGlobalLock(claimLock.token, pool);
+
+  const candidateAuditId = await makeNarrativeOnly("candidate");
+  const candidateLock = await batch.acquireDiscoveryGlobalLock({
+    owner: "postgres-integration", purpose: "legacy-narrative-candidate-block",
+  }, pool);
+  await batch.prepareDiscoveryAuditForRegeneration({
+    auditId: candidateAuditId, lockToken: candidateLock.token,
+    ...await regenerationSourceBinding(candidateAuditId),
+  }, pool);
+  await pool.query(`UPDATE audits SET narrative_report='{"legacy":"reappeared"}'::jsonb WHERE id=$1`, [candidateAuditId]);
+  await assert.rejects(batch.prepareDiscoveryAuditForRegeneration({
+    auditId: candidateAuditId, lockToken: candidateLock.token,
+    ...await regenerationSourceBinding(candidateAuditId),
+  }, pool), /DISCOVERY_REGENERATION_EXTERNAL_STATE_BLOCKED/);
+  await batch.releaseDiscoveryGlobalLock(candidateLock.token, pool);
+});
+
+test("a legacy narrative that reappears after prepare is rejected before provider claim", async () => {
+  const auditId = await insertAudit("BATCH_REVIEW", completeV2Responses());
+  await pool.query(
+    `UPDATE audits SET narrative_report='{"legacy":"sealed-before-claim"}'::jsonb,
+       report_txt=NULL,report_html=NULL WHERE id=$1`,
+    [auditId],
+  );
+  await insertDiscoveryProviderProof(auditId, `resp_${randomUUID()}`, 0.12);
+  const binding = await regenerationSourceBinding(auditId);
+  const lock = await batch.acquireDiscoveryGlobalLock({
+    owner: "postgres-integration", purpose: "legacy-race-before-claim",
+  }, pool);
+  const prepared = await batch.prepareDiscoveryAuditForRegeneration({
+    auditId, lockToken: lock.token, ...binding,
+  }, pool);
+  const batchId = await createRegenerationBatchForPreparedCandidate({
+    auditId, candidateId: prepared.candidateId, lockToken: lock.token,
+    binding: { ...binding, expectedTxtSha256: null, expectedHtmlSha256: null },
+    label: "legacy-race-before-claim",
+  });
+  await pool.query(
+    `UPDATE audits SET narrative_report='{"legacy":"interleaving-mutation"}'::jsonb WHERE id=$1`,
+    [auditId],
+  );
+  await assert.rejects(batch.claimDiscoveryProviderAttempt({
+    batchId, auditId, lockToken: lock.token,
+  }, pool), /DISCOVERY_REGENERATION_SOURCE_NOT_ELIGIBLE/);
+  const evidence = (await pool.query(
+    `SELECT c.state,c.legacy_narrative_json,c.legacy_narrative_sha256,i.state AS item_state
+       FROM discovery_rejected_candidates c
+       JOIN discovery_batch_items i ON i.retry_of_candidate_id=c.id
+      WHERE c.id=$1`,
+    [prepared.candidateId],
+  )).rows[0];
+  assert.equal(evidence.state, "QUARANTINED");
+  assert.equal(evidence.item_state, "PREFLIGHT_OK");
+  assert.equal(batch.discoverySha256(evidence.legacy_narrative_json), evidence.legacy_narrative_sha256);
+  await batch.releaseDiscoveryGlobalLock(lock.token, pool);
+});
+
+test("a legacy narrative that reappears after claim rolls back persistence fail-closed", async () => {
+  const responses = completeV2Responses();
+  const auditId = await insertAudit("BATCH_REVIEW", responses);
+  await pool.query(
+    `UPDATE audits SET narrative_report='{"legacy":"sealed-before-persist"}'::jsonb,
+       report_txt=NULL,report_html=NULL WHERE id=$1`,
+    [auditId],
+  );
+  await insertDiscoveryProviderProof(auditId, `resp_${randomUUID()}`, 0.12);
+  const binding = await regenerationSourceBinding(auditId);
+  const lock = await batch.acquireDiscoveryGlobalLock({
+    owner: "postgres-integration", purpose: "legacy-race-before-persist",
+  }, pool);
+  const prepared = await batch.prepareDiscoveryAuditForRegeneration({
+    auditId, lockToken: lock.token, ...binding,
+  }, pool);
+  const batchId = await createRegenerationBatchForPreparedCandidate({
+    auditId, candidateId: prepared.candidateId, lockToken: lock.token,
+    binding: { ...binding, expectedTxtSha256: null, expectedHtmlSha256: null },
+    label: "legacy-race-before-persist",
+  });
+  await batch.claimDiscoveryProviderAttempt({ batchId, auditId, lockToken: lock.token }, pool);
+  const responseId = `resp_${randomUUID()}`;
+  await insertDiscoveryProviderProof(auditId, responseId, 0.14);
+  await batch.recordDiscoveryProviderUsage({
+    batchId, auditId, lockToken: lock.token, responseId,
+    inputTokens: 100, outputTokens: 50, totalTokens: 150, actualCostUsd: 0.14,
+  }, pool);
+  const fixture = await buildValidPersistenceFixture(responses, responseId);
+  await pool.query(
+    `UPDATE audits SET narrative_report='{"legacy":"interleaving-after-claim"}'::jsonb WHERE id=$1`,
+    [auditId],
+  );
+  await assert.rejects(batch.persistValidatedDiscoveryBatchItem({
+    batchId, auditId, lockToken: lock.token,
+    expectedResponsesSha256: binding.expectedResponsesSha256,
+    expectedSourceStatus: "BATCH_REVIEW", expectedTxtSha256: null, expectedHtmlSha256: null,
+    narrativeReport: fixture.narrativeReport, scores: fixture.scores,
+    txt: fixture.assets.txt, html: fixture.assets.html, model: "gpt-test",
+  }, pool), /DISCOVERY_REGENERATION_LEGACY_SOURCE_CHANGED/);
+  const state = (await pool.query(
+    `SELECT a.narrative_report,c.state,i.state AS item_state,
+            (SELECT COUNT(*)::int FROM report_artifacts r WHERE r.audit_id=a.id) AS artifact_count
+       FROM audits a
+       JOIN discovery_rejected_candidates c ON c.audit_id=a.id
+       JOIN discovery_batch_items i ON i.retry_of_candidate_id=c.id
+      WHERE a.id=$1`,
+    [auditId],
+  )).rows[0];
+  assert.deepEqual(state.narrative_report, { legacy: "interleaving-after-claim" });
+  assert.equal(state.state, "RETRY_CLAIMED");
+  assert.equal(state.item_state, "GENERATED");
+  assert.equal(state.artifact_count, 0);
+  await batch.releaseDiscoveryGlobalLock(lock.token, pool);
+});
+
+test("persisted invalid replay supersedes exactly one ACTIVE artifact and links the new version", async () => {
+  const setup = await setupPersistedInvalidRegeneration("versioned-invalid-replay");
+  const persisted = await batch.persistValidatedDiscoveryBatchItem({
+    batchId: setup.batchId, auditId: setup.auditId, lockToken: setup.lock.token,
+    expectedResponsesSha256: setup.binding.expectedResponsesSha256,
+    expectedSourceStatus: "BATCH_REVIEW",
+    expectedTxtSha256: setup.binding.expectedTxtSha256,
+    expectedHtmlSha256: setup.binding.expectedHtmlSha256,
+    narrativeReport: setup.fixture.narrativeReport, scores: setup.fixture.scores,
+    txt: setup.fixture.assets.txt, html: setup.fixture.assets.html, model: "gpt-test",
+  }, pool);
+  const versions = (await pool.query(
+    `SELECT id,artifact_state,superseded_at,supersedes_artifact_id
+       FROM report_artifacts WHERE audit_id=$1 ORDER BY created_at,id`,
+    [setup.auditId],
+  )).rows;
+  assert.equal(versions.length, 2);
+  const oldVersion = versions.find((row) => row.id === setup.oldArtifactId);
+  const newVersion = versions.find((row) => row.id === persisted.artifactId);
+  assert.equal(oldVersion.artifact_state, "SUPERSEDED");
+  assert.ok(oldVersion.superseded_at);
+  assert.equal(newVersion.artifact_state, "ACTIVE");
+  assert.equal(newVersion.supersedes_artifact_id, setup.oldArtifactId);
+  assert.equal(versions.filter((row) => row.artifact_state === "ACTIVE").length, 1);
+  await batch.releaseDiscoveryGlobalLock(setup.lock.token, pool);
+});
+
+test("a late item CAS failure rolls back artifact supersede, insertion and audit replacement", async () => {
+  const setup = await setupPersistedInvalidRegeneration("versioned-invalid-rollback");
+  await pool.query(`
+    CREATE FUNCTION block_discovery_item_store() RETURNS trigger LANGUAGE plpgsql AS $$
+    BEGIN
+      IF OLD.state='GENERATED' AND NEW.state='STORED' THEN RETURN NULL; END IF;
+      RETURN NEW;
+    END $$;
+    CREATE TRIGGER block_discovery_item_store BEFORE UPDATE ON discovery_batch_items
+      FOR EACH ROW EXECUTE FUNCTION block_discovery_item_store();
+  `);
+  await assert.rejects(batch.persistValidatedDiscoveryBatchItem({
+    batchId: setup.batchId, auditId: setup.auditId, lockToken: setup.lock.token,
+    expectedResponsesSha256: setup.binding.expectedResponsesSha256,
+    expectedSourceStatus: "BATCH_REVIEW",
+    expectedTxtSha256: setup.binding.expectedTxtSha256,
+    expectedHtmlSha256: setup.binding.expectedHtmlSha256,
+    narrativeReport: setup.fixture.narrativeReport, scores: setup.fixture.scores,
+    txt: setup.fixture.assets.txt, html: setup.fixture.assets.html, model: "gpt-test",
+  }, pool), /DISCOVERY_BATCH_ITEM_PERSISTENCE_CAS_FAILED/);
+  await pool.query(
+    `DROP TRIGGER block_discovery_item_store ON discovery_batch_items;
+     DROP FUNCTION block_discovery_item_store()`,
+  );
+  const state = (await pool.query(
+    `SELECT a.narrative_report,a.report_txt,a.report_html,i.state AS item_state,
+            jsonb_agg(jsonb_build_object(
+              'id',r.id,'state',r.artifact_state,'supersededAt',r.superseded_at
+            ) ORDER BY r.created_at,r.id) AS artifacts
+       FROM audits a
+       JOIN discovery_batch_items i ON i.audit_id=a.id AND i.batch_id=$2
+       JOIN report_artifacts r ON r.audit_id=a.id
+      WHERE a.id=$1 GROUP BY a.id,i.state`,
+    [setup.auditId, setup.batchId],
+  )).rows[0];
+  assert.deepEqual(state.narrative_report, setup.oldNarrative);
+  assert.equal(state.report_txt, setup.oldTxt);
+  assert.equal(state.report_html, setup.oldHtml);
+  assert.equal(state.item_state, "GENERATED");
+  assert.deepEqual(state.artifacts, [{
+    id: setup.oldArtifactId, state: "ACTIVE", supersededAt: null,
+  }]);
+  await batch.releaseDiscoveryGlobalLock(setup.lock.token, pool);
+});
+
 test("a regeneration failure becomes terminally ambiguous and cannot consume a third call", async () => {
   const auditId = await insertAudit();
   await pool.query(
@@ -1327,7 +2071,9 @@ test("a regeneration failure becomes terminally ambiguous and cannot consume a t
   );
   await insertDiscoveryProviderProof(auditId, `resp_${randomUUID()}`, 0.12);
   const lock = await batch.acquireDiscoveryGlobalLock({ owner: "postgres-integration", purpose: "retry-lifecycle" }, pool);
-  const prepared = await batch.prepareDiscoveryAuditForRegeneration({ auditId, lockToken: lock.token }, pool);
+  const prepared = await batch.prepareDiscoveryAuditForRegeneration({
+    auditId, lockToken: lock.token, ...await regenerationSourceBinding(auditId),
+  }, pool);
   const audit = (await pool.query(`SELECT responses FROM audits WHERE id=$1`, [auditId])).rows[0];
   const batchId = await batch.createDiscoveryBatchRun({
     manifestSha256: "a".repeat(64), commitSha: "b".repeat(40), approvalReference: "postgres-test",
@@ -1440,7 +2186,9 @@ test("regeneration binds a distinct second reservation and usage row and rejects
   const lock = await batch.acquireDiscoveryGlobalLock({
     owner: "postgres-integration", purpose: "ledger-reuse",
   }, pool);
-  const prepared = await batch.prepareDiscoveryAuditForRegeneration({ auditId, lockToken: lock.token }, pool);
+  const prepared = await batch.prepareDiscoveryAuditForRegeneration({
+    auditId, lockToken: lock.token, ...await regenerationSourceBinding(auditId),
+  }, pool);
   const audit = (await pool.query(`SELECT responses FROM audits WHERE id=$1`, [auditId])).rows[0];
   const batchId = await batch.createDiscoveryBatchRun({
     manifestSha256: "e".repeat(64), commitSha: "f".repeat(40), approvalReference: "ledger-test",
@@ -1620,6 +2368,17 @@ test("generic catalogue persistence binds the exact provider ledger and public a
     reportArtifacts: [artifact],
     catalogLedgerBound: false,
   }), false);
+  await pool.query(
+    `UPDATE report_artifacts
+        SET artifact_state='SUPERSEDED',superseded_at=NOW()
+      WHERE id=$1 AND audit_id=$2 AND artifact_state='ACTIVE'`,
+    [persisted.artifactId, auditId],
+  );
+  assert.equal(
+    await hasDiscoveryCatalogLedgerBinding(pool, auditId, artifact, provenance),
+    false,
+    "a superseded artifact must never satisfy the public ledger gate",
+  );
 });
 
 test("a rotated durable batch epoch rejects stale generation persistence", async () => {
@@ -2038,6 +2797,11 @@ test("exact duplicate resolution rejects a one-microsecond canonical created_at 
 
 test("exact Discovery text repair atomically replaces JSON, TXT, HTML, artifact and gate", async () => {
   const fixture = await insertExactRepairFixture();
+  const sourceArtifact = (await pool.query(
+    `SELECT id, txt, html, content_sha256 FROM report_artifacts
+      WHERE audit_id = $1 AND artifact_state = 'ACTIVE'`,
+    [fixture.id],
+  )).rows[0];
   await pool.query(
     `INSERT INTO email_tracking
       (id, email_type, recipient_email, audit_id, audit_type, sendpulse_status, sent_at)
@@ -2089,19 +2853,32 @@ test("exact Discovery text repair atomically replaces JSON, TXT, HTML, artifact 
   assert.deepEqual(audit.narrative_report.validationResult.deliveryGate.errors, []);
 
   const artifacts = await pool.query(
-    `SELECT txt, html, content_sha256 FROM report_artifacts WHERE audit_id = $1`, [fixture.id],
+    `SELECT id, txt, html, content_sha256, artifact_state, superseded_at,
+            supersedes_artifact_id
+       FROM report_artifacts WHERE audit_id = $1 ORDER BY created_at, id`,
+    [fixture.id],
   );
-  assert.equal(artifacts.rowCount, 1);
-  assert.equal(artifacts.rows[0].txt, audit.report_txt);
-  assert.equal(artifacts.rows[0].html, audit.report_html);
-  assert.equal(artifacts.rows[0].txt.includes("DISCOVERY20"), false);
-  assert.equal(artifacts.rows[0].html.includes("DISCOVERY20"), false);
-  assert.equal(artifacts.rows[0].txt.includes(LENNY_NUTRITION_OLD_TEXT), false);
-  assert.equal(artifacts.rows[0].txt.split(LENNY_NUTRITION_NEW_TEXT).length - 1, 1);
-  assert.equal(artifacts.rows[0].html.includes(LENNY_NUTRITION_OLD_TEXT), false);
-  assert.equal(artifacts.rows[0].html.split(LENNY_NUTRITION_NEW_TEXT).length - 1, 1);
+  assert.equal(artifacts.rowCount, 2);
+  const activeArtifact = artifacts.rows.find((row) => row.artifact_state === "ACTIVE");
+  const supersededArtifact = artifacts.rows.find((row) => row.artifact_state === "SUPERSEDED");
+  assert.equal(result.artifactId, activeArtifact.id);
+  assert.notEqual(result.artifactId, sourceArtifact.id);
+  assert.equal(activeArtifact.supersedes_artifact_id, sourceArtifact.id);
+  assert.equal(supersededArtifact.id, sourceArtifact.id);
+  assert.ok(supersededArtifact.superseded_at);
+  assert.equal(supersededArtifact.txt, sourceArtifact.txt);
+  assert.equal(supersededArtifact.html, sourceArtifact.html);
+  assert.equal(supersededArtifact.content_sha256, sourceArtifact.content_sha256);
+  assert.equal(activeArtifact.txt, audit.report_txt);
+  assert.equal(activeArtifact.html, audit.report_html);
+  assert.equal(activeArtifact.txt.includes("DISCOVERY20"), false);
+  assert.equal(activeArtifact.html.includes("DISCOVERY20"), false);
+  assert.equal(activeArtifact.txt.includes(LENNY_NUTRITION_OLD_TEXT), false);
+  assert.equal(activeArtifact.txt.split(LENNY_NUTRITION_NEW_TEXT).length - 1, 1);
+  assert.equal(activeArtifact.html.includes(LENNY_NUTRITION_OLD_TEXT), false);
+  assert.equal(activeArtifact.html.split(LENNY_NUTRITION_NEW_TEXT).length - 1, 1);
   assert.equal(
-    artifacts.rows[0].content_sha256,
+    activeArtifact.content_sha256,
     batch.discoveryArtifactContentHash(audit.report_txt, audit.report_html),
   );
   const tracking = await pool.query(
@@ -2133,7 +2910,7 @@ test("exact Lenny wake-summary repair atomically updates JSON, TXT, HTML and art
   }, pool);
   assert.equal(await batch.releaseDiscoveryGlobalLock(lock.token, pool), true);
   assert.equal(result.status, "BATCH_READY");
-  assert.equal(result.artifactId, fixture.artifactId);
+  assert.notEqual(result.artifactId, fixture.artifactId);
   assert.equal(result.emailsSent, 0);
 
   const audit = (await pool.query(
@@ -2147,10 +2924,15 @@ test("exact Lenny wake-summary repair atomically updates JSON, TXT, HTML and art
   assert.equal(audit.responses["reveil-fatigue"], "parfois");
   assert.equal(audit.responses["energie-matin"], "moyenne");
   assert.equal(audit.narrative_report.sections[1].id, "global");
-  const artifact = (await pool.query(
-    `SELECT id, txt, html, content_sha256 FROM report_artifacts WHERE audit_id = $1`,
+  const artifactVersions = (await pool.query(
+    `SELECT id, txt, html, content_sha256, artifact_state, superseded_at,
+            supersedes_artifact_id
+       FROM report_artifacts WHERE audit_id = $1 ORDER BY created_at, id`,
     [fixture.id],
-  )).rows[0];
+  )).rows;
+  assert.equal(artifactVersions.length, 2);
+  const artifact = artifactVersions.find((row) => row.artifact_state === "ACTIVE");
+  const previousArtifact = artifactVersions.find((row) => row.artifact_state === "SUPERSEDED");
   const representations = [
     JSON.stringify(audit.narrative_report),
     audit.report_txt,
@@ -2165,7 +2947,12 @@ test("exact Lenny wake-summary repair atomically updates JSON, TXT, HTML and art
     assert.equal(value.split(LENNY_NUTRITION_NEW_TEXT).length - 1, 1);
     assert.equal(value.includes("DISCOVERY20"), false);
   }
-  assert.equal(artifact.id, fixture.artifactId);
+  assert.equal(artifact.id, result.artifactId);
+  assert.equal(artifact.supersedes_artifact_id, fixture.artifactId);
+  assert.equal(previousArtifact.id, fixture.artifactId);
+  assert.ok(previousArtifact.superseded_at);
+  assert.equal(previousArtifact.txt, fixture.assets.txt);
+  assert.equal(previousArtifact.html, fixture.assets.html);
   assert.equal(artifact.txt, audit.report_txt);
   assert.equal(artifact.html, audit.report_html);
   assert.equal(
@@ -2219,13 +3006,10 @@ test("exact Lenny wake-summary repair rolls back on JSON path or occurrence dive
 
 test("exact Lenny wake-summary repair rolls back on artifact or response hash divergence", async () => {
   for (const divergence of ["artifact", "responses"] as const) {
-    const fixture = await insertExactWakeSummaryRepairFixture();
-    if (divergence === "artifact") {
-      await pool.query(
-        `UPDATE report_artifacts SET content_sha256 = repeat('0', 64) WHERE audit_id = $1`,
-        [fixture.id],
-      );
-    } else {
+    const fixture = await insertExactWakeSummaryRepairFixture(
+      divergence === "artifact" ? "artifact-hash-divergent" : "valid",
+    );
+    if (divergence === "responses") {
       await pool.query(
         `UPDATE audits SET responses = jsonb_set(responses, '{reveil-fatigue}', '"souvent"'::jsonb)
           WHERE id = $1`,
@@ -2301,7 +3085,7 @@ test("exact Alexandre critical-copy repair atomically updates both JSON paths an
   }, pool);
   assert.equal(await batch.releaseDiscoveryGlobalLock(lock.token, pool), true);
   assert.equal(result.status, "BATCH_READY");
-  assert.equal(result.artifactId, fixture.artifactId);
+  assert.notEqual(result.artifactId, fixture.artifactId);
   assert.equal(result.emailsSent, 0);
 
   const audit = (await pool.query(
@@ -2309,10 +3093,15 @@ test("exact Alexandre critical-copy repair atomically updates both JSON paths an
        FROM audits WHERE id = $1`,
     [fixture.id],
   )).rows[0];
-  const artifact = (await pool.query(
-    `SELECT id, txt, html, content_sha256 FROM report_artifacts WHERE audit_id = $1`,
+  const artifactVersions = (await pool.query(
+    `SELECT id, txt, html, content_sha256, artifact_state, superseded_at,
+            supersedes_artifact_id
+       FROM report_artifacts WHERE audit_id = $1 ORDER BY created_at, id`,
     [fixture.id],
-  )).rows[0];
+  )).rows;
+  assert.equal(artifactVersions.length, 2);
+  const artifact = artifactVersions.find((row) => row.artifact_state === "ACTIVE");
+  const previousArtifact = artifactVersions.find((row) => row.artifact_state === "SUPERSEDED");
   const narrative = JSON.stringify(audit.narrative_report);
   assert.equal(audit.report_delivery_status, "BATCH_READY");
   assert.equal(audit.report_sent_at, null);
@@ -2330,7 +3119,12 @@ test("exact Alexandre critical-copy repair atomically updates both JSON paths an
     assert.equal(value.split(ALEXANDRE_CRITICAL_OLD_TEXT).length - 1, 0);
     assert.equal(value.split(ALEXANDRE_CRITICAL_NEW_TEXT).length - 1, 2);
   }
-  assert.equal(artifact.id, fixture.artifactId);
+  assert.equal(artifact.id, result.artifactId);
+  assert.equal(artifact.supersedes_artifact_id, fixture.artifactId);
+  assert.equal(previousArtifact.id, fixture.artifactId);
+  assert.ok(previousArtifact.superseded_at);
+  assert.equal(previousArtifact.txt, fixture.assets.txt);
+  assert.equal(previousArtifact.html, fixture.assets.html);
   assert.equal(artifact.txt, audit.report_txt);
   assert.equal(artifact.html, audit.report_html);
   assert.equal(
