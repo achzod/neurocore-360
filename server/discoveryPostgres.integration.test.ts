@@ -430,7 +430,7 @@ async function insertExactWakeSummaryRepairFixture(
 }
 
 async function insertExactAlexandreCriticalCopyFixture(
-  mode: "valid" | "duplicate-visible" | "wrong-metadata-path" = "valid",
+  mode: "valid" | "duplicate-visible" | "wrong-metadata-path" | "duplicate-preexisting-new" = "valid",
 ) {
   const id = randomUUID();
   const email = `${id}@example.test`;
@@ -449,6 +449,10 @@ async function insertExactAlexandreCriticalCopyFixture(
     DISCOVERY_APPROVED_NEUTRAL_PROMO_HTML,
   );
   report.sections[5].title = "Sommeil 25/100 [BLOCAGE CRITIQUE]";
+  report.sections[9].content += `<p>${ALEXANDRE_CRITICAL_NEW_TEXT}</p>`;
+  if (mode === "duplicate-preexisting-new") {
+    report.sections[9].content += `<p>${ALEXANDRE_CRITICAL_NEW_TEXT}</p>`;
+  }
   report.sections[10].content += `<p>${ALEXANDRE_CRITICAL_OLD_TEXT}</p>`;
   if (mode === "duplicate-visible") {
     report.sections[10].content += `<p>${ALEXANDRE_CRITICAL_OLD_TEXT}</p>`;
@@ -512,6 +516,8 @@ async function insertExactAlexandreCriticalCopyFixture(
       newText: ALEXANDRE_CRITICAL_NEW_TEXT,
       expectedNarrativeOccurrences: 2 as const,
       expectedRenderedOccurrences: 1 as const,
+      expectedPreexistingNewNarrativeOccurrences: 1,
+      expectedPreexistingNewRenderedOccurrences: 1,
     },
   };
 }
@@ -1309,7 +1315,7 @@ test("exact Alexandre critical-copy repair atomically updates both JSON paths an
   assert.equal(audit.report_delivery_status, "BATCH_READY");
   assert.equal(audit.report_sent_at, null);
   assert.equal(narrative.split(ALEXANDRE_CRITICAL_OLD_TEXT).length - 1, 0);
-  assert.equal(narrative.split(ALEXANDRE_CRITICAL_NEW_TEXT).length - 1, 2);
+  assert.equal(narrative.split(ALEXANDRE_CRITICAL_NEW_TEXT).length - 1, 3);
   assert.equal(
     audit.narrative_report.sections[10].content.split(ALEXANDRE_CRITICAL_NEW_TEXT).length - 1,
     1,
@@ -1320,7 +1326,7 @@ test("exact Alexandre critical-copy repair atomically updates both JSON paths an
   );
   for (const value of [audit.report_txt, audit.report_html, artifact.txt, artifact.html]) {
     assert.equal(value.split(ALEXANDRE_CRITICAL_OLD_TEXT).length - 1, 0);
-    assert.equal(value.split(ALEXANDRE_CRITICAL_NEW_TEXT).length - 1, 1);
+    assert.equal(value.split(ALEXANDRE_CRITICAL_NEW_TEXT).length - 1, 2);
   }
   assert.equal(artifact.id, fixture.artifactId);
   assert.equal(artifact.txt, audit.report_txt);
@@ -1340,7 +1346,11 @@ test("exact Alexandre critical-copy repair atomically updates both JSON paths an
 });
 
 test("exact Alexandre critical-copy repair rolls back on either bound path divergence", async () => {
-  for (const mode of ["duplicate-visible", "wrong-metadata-path"] as const) {
+  for (const mode of [
+    "duplicate-visible",
+    "wrong-metadata-path",
+    "duplicate-preexisting-new",
+  ] as const) {
     const fixture = await insertExactAlexandreCriticalCopyFixture(mode);
     const beforeAudit = (await pool.query(
       `SELECT narrative_report, report_txt, report_html FROM audits WHERE id = $1`,

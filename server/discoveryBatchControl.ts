@@ -642,6 +642,8 @@ export const DISCOVERY_ALEXANDRE_CRITICAL_COPY_FIX_TARGET = Object.freeze({
   newText: "2 blocages structurants ressortent de tes réponses.",
   expectedNarrativeOccurrences: 2,
   expectedRenderedOccurrences: 1,
+  expectedPreexistingNewNarrativeOccurrences: 1,
+  expectedPreexistingNewRenderedOccurrences: 1,
 } satisfies ExactDiscoveryCriticalCopyRepairTarget);
 
 export interface ExactDiscoveryCriticalCopyRepairTarget {
@@ -663,6 +665,8 @@ export interface ExactDiscoveryCriticalCopyRepairTarget {
   newText: string;
   expectedNarrativeOccurrences: 2;
   expectedRenderedOccurrences: 1;
+  expectedPreexistingNewNarrativeOccurrences: number;
+  expectedPreexistingNewRenderedOccurrences: number;
 }
 
 export interface ExactDiscoveryDuplicateResolutionAudit {
@@ -1602,6 +1606,16 @@ export async function repairExactDiscoveryWakeSummaryUnderLock(
   const expectedRenderedOccurrences = isCriticalCopyRepair
     ? target.expectedRenderedOccurrences
     : target.expectedOccurrencesPerRepresentation;
+  const expectedPreexistingNewNarrativeOccurrences = isCriticalCopyRepair
+    ? target.expectedPreexistingNewNarrativeOccurrences
+    : 0;
+  const expectedPreexistingNewRenderedOccurrences = isCriticalCopyRepair
+    ? target.expectedPreexistingNewRenderedOccurrences
+    : 0;
+  const expectedFinalNewNarrativeOccurrences =
+    expectedPreexistingNewNarrativeOccurrences + expectedNarrativeOccurrences;
+  const expectedFinalNewRenderedOccurrences =
+    expectedPreexistingNewRenderedOccurrences + expectedRenderedOccurrences;
   const hasPriorFixInvariants = !isCriticalCopyRepair;
   for (const hash of [
     target.emailSha256,
@@ -1626,6 +1640,10 @@ export async function repairExactDiscoveryWakeSummaryUnderLock(
     || target.sectionIndex < 0
     || !target.sectionId
     || (metadataKey && expectedNarrativeOccurrences !== 2)
+    || !Number.isInteger(expectedPreexistingNewNarrativeOccurrences)
+    || expectedPreexistingNewNarrativeOccurrences < 0
+    || !Number.isInteger(expectedPreexistingNewRenderedOccurrences)
+    || expectedPreexistingNewRenderedOccurrences < 0
     || (hasPriorFixInvariants && (
       !("alreadyFixedSleepText" in target)
       || !target.alreadyFixedSleepText
@@ -1717,10 +1735,12 @@ export async function repairExactDiscoveryWakeSummaryUnderLock(
       || countExactOccurrences(section.content, target.oldText) !== 1
       || countExactOccurrences(section.content, target.newText) !== 0
       || countExactOccurrences(serializedBefore, target.oldText) !== expectedNarrativeOccurrences
-      || countExactOccurrences(serializedBefore, target.newText) !== 0
+      || countExactOccurrences(serializedBefore, target.newText)
+        !== expectedPreexistingNewNarrativeOccurrences
       || beforeRepresentations.slice(1).some((value) =>
         countExactOccurrences(value, target.oldText) !== expectedRenderedOccurrences
-        || countExactOccurrences(value, target.newText) !== 0)
+        || countExactOccurrences(value, target.newText)
+          !== expectedPreexistingNewRenderedOccurrences)
       || (metadataKey && (
         typeof metadataValue !== "string"
         || countExactOccurrences(metadataValue, target.oldText) !== 1
@@ -1781,10 +1801,11 @@ export async function repairExactDiscoveryWakeSummaryUnderLock(
     const serializedAfter = JSON.stringify(finalNarrative);
     const afterRepresentations = [serializedAfter, assets.txt, assets.html];
     if (countExactOccurrences(serializedAfter, target.oldText) !== 0
-      || countExactOccurrences(serializedAfter, target.newText) !== expectedNarrativeOccurrences
+      || countExactOccurrences(serializedAfter, target.newText)
+        !== expectedFinalNewNarrativeOccurrences
       || afterRepresentations.slice(1).some((value) =>
         countExactOccurrences(value, target.oldText) !== 0
-        || countExactOccurrences(value, target.newText) !== expectedRenderedOccurrences)
+        || countExactOccurrences(value, target.newText) !== expectedFinalNewRenderedOccurrences)
       || (hasPriorFixInvariants && "alreadyFixedSleepText" in target
         && afterRepresentations.some((value) =>
         countExactOccurrences(value, target.alreadyFixedSleepText) !== 1
@@ -1866,10 +1887,10 @@ export async function repairExactDiscoveryWakeSummaryUnderLock(
       || String(persistedRow?.content_sha256 || "") !== contentSha256
       || countExactOccurrences(persistedRepresentations[0], target.oldText) !== 0
       || countExactOccurrences(persistedRepresentations[0], target.newText)
-        !== expectedNarrativeOccurrences
+        !== expectedFinalNewNarrativeOccurrences
       || persistedRepresentations.slice(1).some((value) =>
         countExactOccurrences(value, target.oldText) !== 0
-        || countExactOccurrences(value, target.newText) !== expectedRenderedOccurrences)
+        || countExactOccurrences(value, target.newText) !== expectedFinalNewRenderedOccurrences)
       || (hasPriorFixInvariants && "alreadyFixedSleepText" in target
         && persistedRepresentations.some((value) =>
         countExactOccurrences(value, target.alreadyFixedSleepText) !== 1

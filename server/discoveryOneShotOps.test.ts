@@ -229,6 +229,8 @@ test("Alexandre critical-copy repair is bound to both exact JSON paths and live 
     newText: "2 blocages structurants ressortent de tes réponses.",
     expectedNarrativeOccurrences: 2,
     expectedRenderedOccurrences: 1,
+    expectedPreexistingNewNarrativeOccurrences: 1,
+    expectedPreexistingNewRenderedOccurrences: 1,
   });
   const start = controlSource.indexOf("export async function repairExactDiscoveryWakeSummaryUnderLock");
   const end = controlSource.indexOf("export async function createDiscoveryBatchRun", start);
@@ -236,6 +238,8 @@ test("Alexandre critical-copy repair is bound to both exact JSON paths and live 
   assert.match(source, /metadataKey/);
   assert.match(source, /expectedNarrativeOccurrences/);
   assert.match(source, /expectedRenderedOccurrences/);
+  assert.match(source, /expectedPreexistingNewNarrativeOccurrences/);
+  assert.match(source, /expectedPreexistingNewRenderedOccurrences/);
   assert.match(source, /DISCOVERY_WAKE_SUMMARY_REPAIR_ARTIFACT_CAS_FAILED/);
   assert.match(source, /DISCOVERY_WAKE_SUMMARY_REPAIR_AUDIT_CAS_FAILED/);
   assert.match(source, /assertNoDiscoveryDeliveryTrackingOrClaim/);
