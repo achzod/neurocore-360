@@ -18,9 +18,11 @@ import {
   getDiscoveryMechanismCatalogSnapshot,
   validateDiscoveryFactualConsistency,
   validateDiscoveryGeneratedNarrative,
+  validateDiscoveryLinguisticQuality,
   validateDiscoveryPlainTextCandidate,
   validateDiscoveryQuestionnaireContract,
   validateDiscoveryReportAgainstResponses,
+  validateDiscoveryReportForDelivery,
 } from "./discovery-scan";
 import {
   attachDiscoveryDeliveryGateResult,
@@ -203,6 +205,18 @@ test("case_07: le catalogue éditorial et le catalogue runtime sont scellés sé
   assert.deepEqual(editorial.map(({ domain }) => domain).sort(), [...DISCOVERY_PREMIUM_DOMAINS].sort());
   assert.equal(new Set(editorial.map(({ domain }) => domain)).size, DISCOVERY_PREMIUM_DOMAINS.length);
   assert.equal(editorial.every(({ snippets }) => snippets.length === 4), true);
+  for (const { domain, synthesis, snippets } of editorial) {
+    for (const [label, text] of [
+      [`${domain}:synthesis`, synthesis],
+      ...snippets.map(({ id, text }) => [`${domain}:${id}`, text]),
+    ] as Array<[string, string]>) {
+      assert.deepEqual(
+        validateDiscoveryLinguisticQuality(text).filter((error) => error.startsWith("accentless_french:")),
+        [],
+        `editorial:${label}`,
+      );
+    }
+  }
 
   const snapshot = getDiscoveryMechanismCatalogSnapshot() as any;
   const expectedSnapshot = {
@@ -215,6 +229,18 @@ test("case_07: le catalogue éditorial et le catalogue runtime sont scellés sé
     }])),
   };
   assert.deepEqual(snapshot, expectedSnapshot, "editorial JSON and runtime TypeScript catalog diverged");
+  for (const domain of DISCOVERY_PREMIUM_DOMAINS) {
+    for (const [label, text] of [
+      [`${domain}:synthesis`, snapshot.synthesis[domain]],
+      ...Object.entries(snapshot.sections[domain].entries).map(([id, text]) => [`${domain}:${id}`, String(text)]),
+    ] as Array<[string, string]>) {
+      assert.deepEqual(
+        validateDiscoveryLinguisticQuality(text).filter((error) => error.startsWith("accentless_french:")),
+        [],
+        `runtime:${label}`,
+      );
+    }
+  }
   assert.doesNotMatch(snapshot.sections.lifestyle.entries.lifestyle_01, /réduit[^.]+réduit/u);
   assert.equal(createHash("sha256").update(JSON.stringify(snapshot)).digest("hex"), DISCOVERY_MECHANISM_CATALOG_SHA256);
   const mutated = structuredClone(snapshot);
@@ -245,12 +271,39 @@ test("case_09: les six paires possibles par domaine restent déterministes et co
         const selection = buildDiscoveryDefaultMechanismSelection();
         selection.sections[domain] = [ids[left], ids[right]];
         const validated = validateDiscoveryGeneratedNarrative(selection, responses, policy);
+        assert.deepEqual(
+          validateDiscoveryLinguisticQuality([
+            validated.synthesis,
+            ...Object.values(validated.sections),
+          ].join("\n\n")).filter((error) => error.startsWith("accentless_french:")),
+          [],
+          `selection:${domain}:${ids[left]}:${ids[right]}`,
+        );
         const paragraphs = validated.sections[domain].split(/\n{2,}/u);
         assert.equal(paragraphs.length, 5, domain + ":" + ids[left] + ":" + ids[right]);
         assert.equal(new Set(paragraphs).size, 5, domain);
       }
     }
   }
+});
+
+test("case_09b: la sélection Alexandre garde les enums apres-* internes hors du gate linguistique", () => {
+  const responses = baseResponses({
+    prenom: "Alexandre",
+    "heure-coucher": "apres-00h",
+    ballonnements: "apres-repas",
+  });
+  const report = exactCatalogReport(responses);
+  const assets = buildDiscoveryReportAssets(report);
+  assert.equal(responses["heure-coucher"], "apres-00h");
+  assert.equal(responses.ballonnements, "apres-repas");
+  const visibleProse = report.sections.map((section) => section.content).join("\n");
+  assert.match(visibleProse, /ballonnements\s*:\s*après-repas/u);
+  assert.doesNotMatch(visibleProse, /\bapres\b/iu);
+  const validation = validateDiscoveryReportForDelivery(report, assets, report.analysisMetadata);
+  assert.equal(validation.ok, true, JSON.stringify(validation.errors));
+  assert.equal(validation.errors.includes("linguistic:accentless_french:apres"), false);
+  assert.equal(validation.errors.includes("metadata_linguistic:accentless_french:apres"), false);
 });
 
 test("case_10: champs libres, ID inconnu, doublon, hash et version divergent sont refusés", () => {

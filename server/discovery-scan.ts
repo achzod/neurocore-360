@@ -3469,7 +3469,7 @@ function buildDiscoveryDeterministicObservation(
 ): string {
   return DISCOVERY_OBSERVATION_KEYS[domain]
     .filter((key) => hasDiscoveryFactValue(normalized[key]))
-    .map((key) => `${DISCOVERY_OBSERVATION_LABELS[key] || normalizeDiscoveryFrenchSurface(key.replace(/-/g, " "))} : ${formatDiscoveryFactValue(key, normalized[key])}`)
+    .map((key) => `${DISCOVERY_OBSERVATION_LABELS[key] || normalizeDiscoveryFrenchSurface(key.replace(/-/g, " "))} : ${normalizeDiscoveryFrenchSurface(formatDiscoveryFactValue(key, normalized[key]))}`)
     .join(" ; ");
 }
 
