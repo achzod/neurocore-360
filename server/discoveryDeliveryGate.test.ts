@@ -43,7 +43,7 @@ function validDiscoveryReport() {
     sections: ["intro", "global", "sommeil", "stress", "energie", "digestion", "training", "nutrition", "lifestyle", "mindset", "scans", "coaching"].map((id, index) => ({
       id,
       title: `Section ${index}`,
-      content: `<p>${["sommeil", "stress", "energie", "digestion", "training", "nutrition", "lifestyle", "mindset"].includes(id) || index === 0 ? `${clientName} ` : ""}${"contenu physiologique précis et personnalisé. ".repeat(72)}</p>`,
+      content: `<p>${["sommeil", "stress", "energie", "digestion", "training", "nutrition", "lifestyle", "mindset"].includes(id) || index === 0 ? `${clientName} ` : ""}${"Contenu physiologique précis et personnalisé. ".repeat(72)}</p>`,
     })),
   };
 }
@@ -72,6 +72,16 @@ test("Discovery delivery rejects residual accentless customer prose", () => {
   const result = validateDiscoveryReportForDelivery(report, validAssets);
   assert.equal(result.ok, false);
   assert.ok(result.errors.includes("linguistic:accentless_french:element"));
+});
+
+test("Discovery delivery rejects Lenny's exact lowercase sentence start", () => {
+  const report = validDiscoveryReport();
+  report.sections.find((section) => section.id === "sommeil")!.content +=
+    "<p>La seule nuance se trouve au matin. une fatigue parfois présente au réveil, ton énergie matinale est moyenne et tu te réveilles parfois fatigué.</p>";
+  const assets = buildDiscoveryReportAssets(report as any);
+  const result = validateDiscoveryReportForDelivery(report, assets);
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.includes("linguistic:grammar:lowercase_sentence_start"));
 });
 
 test("Discovery delivery scans titles, chips and full artifacts, not only section bodies", () => {
@@ -158,7 +168,7 @@ test("Discovery delivery rejects digestive diagnoses hidden in non-rendered meta
 
 test("Discovery delivery requires the client first name in every premium domain", () => {
   const report = validDiscoveryReport();
-  report.sections.find((section) => section.id === "nutrition")!.content = `<p>${"contenu physiologique précis et personnalisé. ".repeat(72)}</p>`;
+  report.sections.find((section) => section.id === "nutrition")!.content = `<p>${"Contenu physiologique précis et personnalisé. ".repeat(72)}</p>`;
   const result = validateDiscoveryReportForDelivery(report, validAssets);
   assert.equal(result.ok, false);
   assert.ok(result.errors.includes("domain_personalization_missing:nutrition"));

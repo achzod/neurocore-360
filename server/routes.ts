@@ -1,6 +1,7 @@
 import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { storage, reviewStorage, PROMO_CODES_BY_AUDIT_TYPE } from "./storage";
+import { buildPublicReviewCheckResponse } from "./reviewPublicResponse";
 import { autoSendAbandonmentReminders, sendDailyReport } from "./abandonmentReminders";
 import { startMonitoring, generateMonitoringReport, checkNewConversions } from "./abandonmentMonitor";
 import { pool } from "./db";
@@ -8090,7 +8091,7 @@ export async function registerRoutes(
         }
       }
 
-      res.json({ success: true, review });
+      res.json({ success: true, review, promoCode: promoConfig?.code ?? null });
     } catch (error) {
       console.error("[Admin Approve] Error:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
@@ -8142,11 +8143,10 @@ export async function registerRoutes(
     try {
       const { auditId } = req.params;
       const review = await reviewStorage.getReviewByAuditId(auditId);
-      res.json({
-        success: true,
-        hasReview: !!review,
-        review: review || null
-      });
+      const approvedPromoCode = review?.status === "approved"
+        ? (review.promoCode || PROMO_CODES_BY_AUDIT_TYPE[review.auditType]?.code || null)
+        : null;
+      res.json(buildPublicReviewCheckResponse(review, approvedPromoCode));
     } catch (error) {
       console.error("[Review Check] Error:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });

@@ -3,10 +3,17 @@ import type { Pool, PoolClient } from "pg";
 
 import { isDiscoveryTransactionalAutomationEligible } from "./discoveryAutomationPolicy";
 import {
+  attachDiscoveryDeliveryGateResult,
   evaluateCanonicalDiscoveryArtifacts,
+  evaluateDiscoveryDeliveryGate,
   hasPassingPersistedDiscoveryDeliveryGate,
   resolveCanonicalDiscoveryArtifacts,
 } from "./discoveryDeliveryGate";
+import {
+  DISCOVERY_APPROVED_NEUTRAL_PROMO_HTML,
+  buildDiscoveryReportAssets,
+  validateDiscoveryFactualConsistency,
+} from "./discovery-scan";
 import { DISCOVERY_SUPERSEDED_TERMINAL_SQL } from "./discoverySupersededPolicy";
 import { DISCOVERY_TRANSACTION_FENCE_KEY } from "./discoveryTransactionalPersistence";
 
@@ -520,6 +527,47 @@ export const DISCOVERY_VALID_NO_DELIVERY_TARGET = Object.freeze({
   expectedArtifactCount: 4,
 });
 
+export const DISCOVERY_LENNY_QUALITY_FIX_TARGET = Object.freeze({
+  id: "b9abc7a5-8767-49a0-9e6c-c90798cc67f5",
+  emailSha256: "b012445572ab0daac016bba32823e79213345600658d35871f58b7b3655041d0",
+  expectedCurrentStatus: "BATCH_READY" as const,
+  expectedTxtSha256: "80d68e14a50c38559bbebfbc29899018773b0cbbeda12ec37803af3ccb6fcb8b",
+  expectedHtmlSha256: "37d00ff2824bfc2471dffe532110162c1ec4a53a8be3754a88885c68061e9600",
+  expectedArtifactCount: 1,
+  expectedNarrativeTopLevelKeys: Object.freeze([
+    "analysisMetadata", "auditType", "clientName", "generatedAt", "generationQuality",
+    "globalScore", "metrics", "sections", "validationResult",
+  ]),
+  sectionIndex: 5,
+  sectionId: "sommeil",
+  oldText: "La seule nuance se trouve au matin. une fatigue parfois présente au réveil, ton énergie matinale est moyenne et tu te réveilles parfois fatigué.",
+  newText: "La seule nuance se trouve au réveil : une fatigue parfois présente et une énergie matinale moyenne.",
+  promoSectionIndex: 11,
+  promoSectionId: "coaching",
+  expectedPromoCodeOccurrencesPerArtifact: 1,
+  legacyPromoHtml: `<p class="text-xs mt-1" style="color: var(--color-text-muted);">Laisse un avis sur ton Discovery Scan ci-dessous. Après validation, tu recevras ton code promo <code class="px-1 py-0.5 rounded" style="background: var(--color-border); color: var(--color-primary);">${["DISCOVERY", "20"].join("")}</code> par email.</p>`,
+  approvedNeutralPromoHtml: DISCOVERY_APPROVED_NEUTRAL_PROMO_HTML,
+});
+
+export interface ExactDiscoveryTextRepairTarget {
+  id: string;
+  emailSha256: string;
+  expectedCurrentStatus: "BATCH_READY";
+  expectedTxtSha256: string;
+  expectedHtmlSha256: string;
+  expectedArtifactCount: 1;
+  expectedNarrativeTopLevelKeys: readonly string[];
+  sectionIndex: number;
+  sectionId: string;
+  oldText: string;
+  newText: string;
+  promoSectionIndex: number;
+  promoSectionId: "coaching";
+  expectedPromoCodeOccurrencesPerArtifact: 1;
+  legacyPromoHtml: string;
+  approvedNeutralPromoHtml: string;
+}
+
 async function assertDiscoveryOneShotLock(
   client: PoolClient,
   lockToken: string,
@@ -552,6 +600,30 @@ async function assertNoDiscoveryDeliveryAttempt(
   );
   if ((priorDelivery.rowCount ?? 0) !== 0) {
     throw new Error("DISCOVERY_ONE_SHOT_PRIOR_DELIVERY_ATTEMPT");
+  }
+}
+
+// Administrative audit notifications are not report delivery attempts. Only
+// client-facing report delivery tracking blocks a deterministic repair; every
+// delivery claim still blocks, regardless of its recorded email type.
+async function assertNoDiscoveryDeliveryTrackingOrClaim(
+  client: PoolClient,
+  auditId: string,
+): Promise<void> {
+  const priorSideEffect = await client.query(
+    `SELECT audit_id, 'tracking' AS source
+       FROM email_tracking
+      WHERE audit_id = $1
+        AND email_type IN ('sendReportReadyEmail', 'sendReportRegeneratedEmail')
+     UNION ALL
+     SELECT audit_id, 'claim' AS source
+       FROM discovery_email_delivery_claims
+      WHERE audit_id = $1
+     LIMIT 1`,
+    [auditId],
+  );
+  if ((priorSideEffect.rowCount ?? 0) !== 0) {
+    throw new Error("DISCOVERY_TEXT_REPAIR_PRIOR_DELIVERY_TRACKING_OR_CLAIM");
   }
 }
 
@@ -772,6 +844,259 @@ export async function promoteExactValidDiscoveryWithoutDelivery(
   } finally {
     client.release();
   }
+}
+
+function countExactOccurrences(value: string, needle: string): number {
+  if (!needle) return 0;
+  let count = 0;
+  let cursor = 0;
+  while ((cursor = value.indexOf(needle, cursor)) >= 0) {
+    count += 1;
+    cursor += needle.length;
+  }
+  return count;
+}
+
+/**
+ * Safe primitive for a pre-authorized, exact deterministic text repair. It is
+ * not exposed through HTTP and cannot generate or deliver anything. The
+ * caller must own discovery-global; artifact + audit + gate are updated in one
+ * transaction under the durable epoch and exact source CAS.
+ */
+export async function repairExactDiscoveryTextUnderLock(
+  input: { lockToken: string; target: ExactDiscoveryTextRepairTarget },
+  poolOverride?: Pool,
+): Promise<{
+  auditId: string;
+  artifactId: string;
+  status: "BATCH_READY";
+  previousTxtSha256: string;
+  previousHtmlSha256: string;
+  txtSha256: string;
+  htmlSha256: string;
+  emailsSent: 0;
+}> {
+  const { target } = input;
+  for (const hash of [target.emailSha256, target.expectedTxtSha256, target.expectedHtmlSha256]) {
+    if (!/^[a-f0-9]{64}$/.test(hash)) throw new Error("DISCOVERY_TEXT_REPAIR_EXPECTED_HASH_INVALID");
+  }
+  if (!target.oldText || !target.newText || target.oldText === target.newText) {
+    throw new Error("DISCOVERY_TEXT_REPAIR_REPLACEMENT_INVALID");
+  }
+  if (!Number.isInteger(target.sectionIndex) || target.sectionIndex < 0 || !target.sectionId) {
+    throw new Error("DISCOVERY_TEXT_REPAIR_SECTION_INVALID");
+  }
+  if (!Number.isInteger(target.promoSectionIndex) || target.promoSectionIndex < 0
+    || target.promoSectionId !== "coaching"
+    || target.expectedPromoCodeOccurrencesPerArtifact !== 1
+    || !target.legacyPromoHtml
+    || !target.approvedNeutralPromoHtml
+    || target.legacyPromoHtml === target.approvedNeutralPromoHtml) {
+    throw new Error("DISCOVERY_TEXT_REPAIR_PROMO_TARGET_INVALID");
+  }
+
+  const pool = await resolvePool(poolOverride);
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [DISCOVERY_TRANSACTION_FENCE_KEY]);
+    await assertDiscoveryOneShotLock(client, input.lockToken);
+
+    const auditResult = await client.query(
+      `SELECT id, email, type, responses, report_delivery_status, report_sent_at,
+              narrative_report, report_txt, report_html
+         FROM audits WHERE id = $1 FOR UPDATE`,
+      [target.id],
+    );
+    if ((auditResult.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_TEXT_REPAIR_TARGET_MISSING");
+    const audit = auditResult.rows[0];
+    if (audit.type !== "GRATUIT"
+      || audit.report_delivery_status !== target.expectedCurrentStatus
+      || audit.report_sent_at
+      || discoverySha256(String(audit.email || "").trim().toLowerCase()) !== target.emailSha256) {
+      throw new Error("DISCOVERY_TEXT_REPAIR_TARGET_PRECONDITION_FAILED");
+    }
+    await assertNoDiscoveryDeliveryTrackingOrClaim(client, target.id);
+
+    const previousTxt = String(audit.report_txt || "");
+    const previousHtml = String(audit.report_html || "");
+    if (discoverySha256(previousTxt) !== target.expectedTxtSha256
+      || discoverySha256(previousHtml) !== target.expectedHtmlSha256) {
+      throw new Error("DISCOVERY_TEXT_REPAIR_AUDIT_HASH_MISMATCH");
+    }
+
+    const artifactResult = await client.query(
+      `SELECT id, txt, html, content_sha256
+         FROM report_artifacts WHERE audit_id = $1
+         ORDER BY created_at ASC FOR UPDATE`,
+      [target.id],
+    );
+    if ((artifactResult.rowCount ?? 0) !== target.expectedArtifactCount) {
+      throw new Error("DISCOVERY_TEXT_REPAIR_ARTIFACT_COUNT_MISMATCH");
+    }
+    const artifact = artifactResult.rows[0];
+    const previousContentSha256 = discoveryArtifactContentHash(previousTxt, previousHtml);
+    if (discoverySha256(String(artifact.txt || "")) !== target.expectedTxtSha256
+      || discoverySha256(String(artifact.html || "")) !== target.expectedHtmlSha256
+      || String(artifact.content_sha256 || "") !== previousContentSha256) {
+      throw new Error("DISCOVERY_TEXT_REPAIR_ARTIFACT_HASH_MISMATCH");
+    }
+
+    if (!audit.narrative_report || typeof audit.narrative_report !== "object"
+      || !Array.isArray(audit.narrative_report.sections)) {
+      throw new Error("DISCOVERY_TEXT_REPAIR_STRUCTURED_REPORT_MISSING");
+    }
+    if (JSON.stringify(Object.keys(audit.narrative_report).sort())
+      !== JSON.stringify([...target.expectedNarrativeTopLevelKeys].sort())) {
+      throw new Error("DISCOVERY_TEXT_REPAIR_STRUCTURED_REPORT_SHAPE_MISMATCH");
+    }
+    const repairedReport = structuredClone(audit.narrative_report) as Record<string, any>;
+    const section = repairedReport.sections[target.sectionIndex];
+    const promoSection = repairedReport.sections[target.promoSectionIndex];
+    const serializedBefore = JSON.stringify(repairedReport);
+    if (!section || String(section.id) !== target.sectionId || typeof section.content !== "string"
+      || countExactOccurrences(serializedBefore, target.oldText) !== 1
+      || countExactOccurrences(serializedBefore, target.newText) !== 0
+      || countExactOccurrences(section.content, target.oldText) !== 1) {
+      throw new Error("DISCOVERY_TEXT_REPAIR_EXACT_PHRASE_MISMATCH");
+    }
+    const legacyPromoCode = ["DISCOVERY", "20"].join("");
+    if (!promoSection
+      || String(promoSection.id) !== target.promoSectionId
+      || typeof promoSection.content !== "string"
+      || countExactOccurrences(promoSection.content, target.legacyPromoHtml) !== 1
+      || countExactOccurrences(promoSection.content, target.approvedNeutralPromoHtml) !== 0
+      || countExactOccurrences(serializedBefore, legacyPromoCode)
+        !== target.expectedPromoCodeOccurrencesPerArtifact
+      || countExactOccurrences(previousTxt, legacyPromoCode)
+        !== target.expectedPromoCodeOccurrencesPerArtifact
+      || countExactOccurrences(previousHtml, legacyPromoCode)
+        !== target.expectedPromoCodeOccurrencesPerArtifact
+      || countExactOccurrences(String(artifact.txt || ""), legacyPromoCode)
+        !== target.expectedPromoCodeOccurrencesPerArtifact
+      || countExactOccurrences(String(artifact.html || ""), legacyPromoCode)
+        !== target.expectedPromoCodeOccurrencesPerArtifact) {
+      throw new Error("DISCOVERY_TEXT_REPAIR_LEGACY_PROMO_DIVERGENCE");
+    }
+    section.content = section.content.replace(target.oldText, target.newText);
+    promoSection.content = promoSection.content.replace(
+      target.legacyPromoHtml,
+      target.approvedNeutralPromoHtml,
+    );
+
+    const assets = buildDiscoveryReportAssets(repairedReport as any);
+    const factualErrors = validateDiscoveryFactualConsistency(
+      [assets.txt, JSON.stringify(repairedReport.analysisMetadata ?? {})].join("\n"),
+      (audit.responses && typeof audit.responses === "object") ? audit.responses : {},
+    );
+    if (factualErrors.length !== 0) {
+      throw new Error(`DISCOVERY_TEXT_REPAIR_FACTUAL_CONSISTENCY_FAILED:${factualErrors.join("|")}`);
+    }
+    const gate = evaluateDiscoveryDeliveryGate(
+      repairedReport as any,
+      assets,
+      new Date(),
+      repairedReport.analysisMetadata,
+    );
+    if (!gate.ok || gate.errors.length !== 0) {
+      throw new Error(`DISCOVERY_TEXT_REPAIR_GATE_FAILED:${gate.errors.join("|")}`);
+    }
+    const finalNarrative = attachDiscoveryDeliveryGateResult(repairedReport, gate);
+    if (!hasPassingPersistedDiscoveryDeliveryGate(finalNarrative)) {
+      throw new Error("DISCOVERY_TEXT_REPAIR_PERSISTED_GATE_FAILED");
+    }
+    const serializedAfter = JSON.stringify(finalNarrative);
+    if (countExactOccurrences(serializedAfter, target.oldText) !== 0
+      || countExactOccurrences(serializedAfter, target.newText) !== 1
+      || countExactOccurrences(assets.txt, target.oldText) !== 0
+      || countExactOccurrences(assets.html, target.oldText) !== 0
+      || countExactOccurrences(promoSection.content, target.legacyPromoHtml) !== 0
+      || countExactOccurrences(promoSection.content, target.approvedNeutralPromoHtml) !== 1
+      || countExactOccurrences(serializedAfter, legacyPromoCode) !== 0
+      || countExactOccurrences(assets.txt, legacyPromoCode) !== 0
+      || countExactOccurrences(assets.html, legacyPromoCode) !== 0) {
+      throw new Error("DISCOVERY_TEXT_REPAIR_RENDER_MISMATCH");
+    }
+
+    const txtSha256 = discoverySha256(assets.txt);
+    const htmlSha256 = discoverySha256(assets.html);
+    const contentSha256 = discoveryArtifactContentHash(assets.txt, assets.html);
+    if (txtSha256 === target.expectedTxtSha256 || htmlSha256 === target.expectedHtmlSha256) {
+      throw new Error("DISCOVERY_TEXT_REPAIR_HASH_UNCHANGED");
+    }
+
+    const artifactUpdated = await client.query(
+      `UPDATE report_artifacts
+          SET txt = $3, html = $4, content_sha256 = $5
+        WHERE id = $1 AND audit_id = $2
+          AND txt IS NOT DISTINCT FROM $6
+          AND html IS NOT DISTINCT FROM $7
+          AND content_sha256 = $8
+          AND EXISTS (
+            SELECT 1 FROM discovery_operation_lock l
+             WHERE l.lock_key = $9 AND l.token = $10 AND l.expires_at > NOW()
+          )
+        RETURNING id`,
+      [artifact.id, target.id, assets.txt, assets.html, contentSha256,
+        previousTxt, previousHtml, previousContentSha256,
+        DISCOVERY_GLOBAL_LOCK_KEY, input.lockToken],
+    );
+    if ((artifactUpdated.rowCount ?? 0) !== 1) {
+      throw new Error("DISCOVERY_TEXT_REPAIR_ARTIFACT_CAS_FAILED");
+    }
+
+    const auditUpdated = await client.query(
+      `UPDATE audits
+          SET narrative_report = $2::jsonb,
+              report_txt = $3,
+              report_html = $4,
+              report_delivery_status = 'BATCH_READY'
+        WHERE id = $1 AND type = 'GRATUIT'
+          AND email IS NOT DISTINCT FROM $5
+          AND report_delivery_status = 'BATCH_READY'
+          AND report_sent_at IS NULL
+          AND narrative_report IS NOT DISTINCT FROM $6::jsonb
+          AND report_txt IS NOT DISTINCT FROM $7
+          AND report_html IS NOT DISTINCT FROM $8
+          AND EXISTS (
+            SELECT 1 FROM discovery_operation_lock l
+             WHERE l.lock_key = $9 AND l.token = $10 AND l.expires_at > NOW()
+          )
+        RETURNING id`,
+      [target.id, JSON.stringify(finalNarrative), assets.txt, assets.html,
+        audit.email, JSON.stringify(audit.narrative_report), previousTxt, previousHtml,
+        DISCOVERY_GLOBAL_LOCK_KEY, input.lockToken],
+    );
+    if ((auditUpdated.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_TEXT_REPAIR_AUDIT_CAS_FAILED");
+
+    await assertNoDiscoveryDeliveryTrackingOrClaim(client, target.id);
+    await client.query("COMMIT");
+    return {
+      auditId: target.id,
+      artifactId: String(artifact.id),
+      status: "BATCH_READY",
+      previousTxtSha256: target.expectedTxtSha256,
+      previousHtmlSha256: target.expectedHtmlSha256,
+      txtSha256,
+      htmlSha256,
+      emailsSent: 0,
+    };
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => {});
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function repairExactLennyDiscoveryQualityWithoutDelivery(
+  input: { lockToken: string },
+  poolOverride?: Pool,
+) {
+  return repairExactDiscoveryTextUnderLock({
+    lockToken: input.lockToken,
+    target: DISCOVERY_LENNY_QUALITY_FIX_TARGET,
+  }, poolOverride);
 }
 
 export async function createDiscoveryBatchRun(

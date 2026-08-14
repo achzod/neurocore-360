@@ -79,7 +79,11 @@ test("single-voice normalization preserves French words containing on after a ce
 test("single-voice fallback emits accented éléments directly", () => {
   assert.equal(
     normalizeSingleVoice("Je ne peux pas confirmer cette hypothèse."),
-    "je n'ai pas les éléments pour confirmer cette hypothèse.",
+    "Je n'ai pas les éléments pour confirmer cette hypothèse.",
+  );
+  assert.equal(
+    normalizeSingleVoice("Quand je ne peux pas confirmer cette hypothèse."),
+    "Quand je n'ai pas les éléments pour confirmer cette hypothèse.",
   );
   assert.doesNotMatch(normalizeSingleVoice("Je ne peux pas conclure."), /\belements?\b/i);
 });

@@ -531,7 +531,35 @@ export function validateDiscoveryLinguisticQuality(text: string): string[] {
   }
   if (/(?<![\p{L}\p{N}_])de\s+une(?![\p{L}\p{N}_])/iu.test(visible)) reasons.push("grammar:de_une");
   if (/possèd[’'](?:un|une)\b/iu.test(visible)) reasons.push("grammar:possede_elision");
+  if (hasLowercaseDiscoverySentenceStart(visible)) reasons.push("grammar:lowercase_sentence_start");
   return reasons;
+}
+
+const DISCOVERY_LOWERCASE_SENTENCE_START = /[.!?]\s+\p{Ll}/gu;
+const DISCOVERY_SENTENCE_START_ABBREVIATION = /(?:\b(?:etc|cf|env|approx|ex|min|max|art|fig|vol|chap|p)\.|\bp\.\s*ex\.|\bc\.-à-d\.)$/iu;
+
+/**
+ * Detects a new customer-facing sentence that starts with a lowercase letter.
+ * The narrow exemptions cover punctuation that belongs to a URL/email, common
+ * French abbreviations, ellipses and line-leading numeric list markers rather than a real
+ * sentence boundary.
+ */
+function hasLowercaseDiscoverySentenceStart(text: string): boolean {
+  DISCOVERY_LOWERCASE_SENTENCE_START.lastIndex = 0;
+  for (const match of text.matchAll(DISCOVERY_LOWERCASE_SENTENCE_START)) {
+    const punctuationIndex = match.index ?? -1;
+    if (punctuationIndex < 0) continue;
+    const before = text.slice(Math.max(0, punctuationIndex - 160), punctuationIndex + 1);
+    if (/\.\.\.$/u.test(before)) continue;
+    if (/(?:https?:\/\/|www\.)\S+\.$/iu.test(before)) continue;
+    if (/[\p{L}\p{N}._%+-]+@[\p{L}\p{N}.-]+\.[\p{L}]{2,}\.$/iu.test(before)) continue;
+    if (DISCOVERY_SENTENCE_START_ABBREVIATION.test(before)) continue;
+    const lineStart = text.lastIndexOf("\n", punctuationIndex - 1) + 1;
+    const currentLinePrefix = text.slice(lineStart, punctuationIndex + 1);
+    if (/^[ \t]*\d{1,3}\.$/u.test(currentLinePrefix)) continue;
+    return true;
+  }
+  return false;
 }
 
 function clauseMakesAffirmativeClaim(clause: string, pattern: RegExp): boolean {
@@ -800,7 +828,7 @@ const formatEuro = (value: number): string => {
   const formatted = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(value);
   return `${formatted}€`;
 };
-const renderCoachingOffersTable = (discountPercent: number) => {
+export const renderDiscoveryCoachingOffersTable = (discountPercent: number) => {
   const hasDiscount = discountPercent > 0;
   const rows = COACHING_OFFER_TIERS.flatMap((tier) =>
     tier.offers.map((offer) => {
@@ -840,6 +868,7 @@ const renderCoachingOffersTable = (discountPercent: number) => {
   </div>
   `;
 };
+export const DISCOVERY_APPROVED_NEUTRAL_PROMO_HTML = `<p class="text-xs mt-1" style="color: var(--color-text-muted);">Laisse un avis validé pour recevoir -20 % par email.</p>`;
 const SOURCE_MARKERS = [
   "sources",
   "source",
@@ -2893,11 +2922,11 @@ export async function convertToNarrativeReport(
 <div class="mt-8 p-6 rounded-xl" style="background: var(--color-surface); border: 1px solid var(--color-border);">
   <h4 class="text-lg font-bold mb-4" style="color: var(--color-text);">Coaching Achzod - Formules</h4>
 
-  ${renderCoachingOffersTable(20)}
+  ${renderDiscoveryCoachingOffersTable(20)}
 
   <div class="mt-6 p-4 rounded-lg" style="background: color-mix(in srgb, var(--color-primary) 12%, transparent); border: 1px solid color-mix(in srgb, var(--color-primary) 35%, transparent);">
     <p class="text-sm" style="color: var(--color-text);"><strong style="color: var(--color-primary);">Comment obtenir le code -20% ?</strong></p>
-    <p class="text-xs mt-1" style="color: var(--color-text-muted);">Laisse un avis sur ton Discovery Scan ci-dessous. Après validation, tu recevras ton code promo <code class="px-1 py-0.5 rounded" style="background: var(--color-border); color: var(--color-primary);">DISCOVERY20</code> par email.</p>
+    ${DISCOVERY_APPROVED_NEUTRAL_PROMO_HTML}
   </div>
 
   <a href="https://www.achzodcoaching.com/formules-coaching" target="_blank" class="mt-4 block w-full py-3 rounded-lg text-center font-bold transition-all hover:opacity-90" style="background: var(--color-primary); color: var(--color-on-primary);">

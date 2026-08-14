@@ -17,7 +17,15 @@ import {
 } from '@/components/UpgradeComponents';
 import { ExitIntentPopup } from '@/components/ExitIntentPopup';
 import { CoachingPromoBanner } from '@/components/CoachingPromoBanner';
+import type { ReviewModerationStatus } from '@/components/coachingPromoPolicy';
 import { DiscoveryWhatsAppLink } from '@/components/DiscoveryWhatsAppCTA';
+import {
+  beginDiscoveryReviewModerationRequest,
+  createDiscoveryReviewModerationState,
+  settleDiscoveryReviewModerationRequest,
+  visibleDiscoveryPromoCode,
+  visibleDiscoveryReviewStatus,
+} from './discoveryReviewModeration';
 import {
   Menu,
   ArrowUp,
@@ -95,6 +103,7 @@ const DiscoveryScanReport: React.FC = () => {
   const [showStickyCTA, setShowStickyCTA] = useState(false);
   const mainContentRef = useRef<HTMLDivElement>(null);
   const regenTimer = useRef<number | null>(null);
+  const reviewRequestSequence = useRef(0);
   const displayName = reportData ? formatName(reportData.clientName) : "Profil";
   const rawMetrics = reportData?.metrics ?? [];
   const displayMetrics = rawMetrics.map(metric => ({
@@ -128,6 +137,11 @@ const DiscoveryScanReport: React.FC = () => {
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [hasExistingReview, setHasExistingReview] = useState(false);
+  const [reviewModeration, setReviewModeration] = useState(() => (
+    createDiscoveryReviewModerationState(auditId)
+  ));
+  const reviewStatus = visibleDiscoveryReviewStatus(reviewModeration, auditId);
+  const reviewPromoCode = visibleDiscoveryPromoCode(reviewModeration, auditId);
 
   const maxRegenAttempts = 60;
 
@@ -261,20 +275,58 @@ const DiscoveryScanReport: React.FC = () => {
 
   // Check if review already exists
   useEffect(() => {
+    const requestId = ++reviewRequestSequence.current;
+    const controller = new AbortController();
+
+    setReviewModeration(beginDiscoveryReviewModerationRequest(auditId || '', requestId));
+    setHasExistingReview(false);
+    setReviewSubmitted(false);
+    setReviewError(null);
+
     const checkExistingReview = async () => {
       if (!auditId) return;
       try {
-        const response = await fetch(`/api/review/check/${auditId}`);
+        const response = await fetch(`/api/review/check/${auditId}`, { signal: controller.signal });
         const data = await response.json();
-        if (data.success && data.hasReview) {
+        if (controller.signal.aborted || requestId !== reviewRequestSequence.current) return;
+        if (!response.ok || data.success !== true) {
+          setReviewModeration((current) => (
+            settleDiscoveryReviewModerationRequest(current, auditId, requestId, 'unknown')
+          ));
+          return;
+        }
+        if (data.hasReview) {
+          const persistedStatus = data.review?.status;
+          const nextStatus: ReviewModerationStatus =
+            persistedStatus === 'pending' || persistedStatus === 'approved' || persistedStatus === 'rejected'
+              ? persistedStatus
+              : 'unknown';
+          setReviewModeration((current) => (
+            settleDiscoveryReviewModerationRequest(
+              current,
+              auditId,
+              requestId,
+              nextStatus,
+              typeof data.review?.promoCode === 'string' ? data.review.promoCode : null,
+            )
+          ));
           setHasExistingReview(true);
           setReviewSubmitted(true);
+        } else {
+          setReviewModeration((current) => (
+            settleDiscoveryReviewModerationRequest(current, auditId, requestId, 'none')
+          ));
         }
       } catch (err) {
+        if (controller.signal.aborted || requestId !== reviewRequestSequence.current) return;
         console.error('Error checking review:', err);
+        setReviewModeration((current) => (
+          settleDiscoveryReviewModerationRequest(current, auditId, requestId, 'unknown')
+        ));
       }
     };
     checkExistingReview();
+    return () => controller.abort();
   }, [auditId]);
 
   // Submit review handler
@@ -305,6 +357,11 @@ const DiscoveryScanReport: React.FC = () => {
 
       if (data.success) {
         setReviewSubmitted(true);
+        if (auditId) {
+          setReviewModeration((current) => (
+            current.auditId === auditId ? { ...current, status: 'pending', promoCode: null } : current
+          ));
+        }
       } else {
         const detailMessages = Array.isArray(data.details)
           ? data.details.map((detail: { message?: string }) => detail.message).filter(Boolean).join(" ")
@@ -523,8 +580,14 @@ const DiscoveryScanReport: React.FC = () => {
               </div>
             </section>
 
-            {/* Coaching bonus banner ,  stays visible so client never loses their code */}
-            <CoachingPromoBanner auditType="GRATUIT" className="-mx-6 lg:-mx-12" />
+            {/* Review-gated coaching banner; the server supplies the code only after approval. */}
+            <CoachingPromoBanner
+              key={auditId}
+              auditType="GRATUIT"
+              reviewStatus={reviewStatus}
+              promoCode={reviewPromoCode}
+              className="-mx-6 lg:-mx-12"
+            />
           </div>
 
           {/* Hero Section */}

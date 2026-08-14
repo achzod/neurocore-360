@@ -41,11 +41,11 @@ const AUDIT_TYPE_LABELS: Record<string, string> = {
   'BLOOD_ANALYSIS': 'Blood Analysis',
 };
 
-const PROMO_CODES: Record<string, { code: string; description: string }> = {
-  'DISCOVERY': { code: 'DISCOVERY20', description: '-20% coaching' },
-  'ANABOLIC_BIOSCAN': { code: 'ANABOLICBIOSCAN', description: '59€ deduits' },
-  'ULTIMATE_SCAN': { code: 'ULTIMATESCAN', description: '79€ deduits' },
-  'BLOOD_ANALYSIS': { code: 'BLOOD', description: '99€ deduits' },
+const PROMO_DESCRIPTIONS: Record<string, string> = {
+  'DISCOVERY': '-20% coaching',
+  'ANABOLIC_BIOSCAN': '59€ déduits',
+  'ULTIMATE_SCAN': '79€ déduits',
+  'BLOOD_ANALYSIS': '99€ déduits',
 };
 
 export default function AdminReviews() {
@@ -113,11 +113,10 @@ export default function AdminReviews() {
       const data = await response.json();
       if (data.success) {
         setReviews((prev) => prev.filter((r) => r.id !== reviewId));
-        const promoInfo = review ? PROMO_CODES[review.auditType] : null;
         toast({
           title: "Avis approuve",
-          description: promoInfo
-            ? `Code promo ${promoInfo.code} envoye a ${review?.email}`
+          description: data.promoCode
+            ? `Code promo ${data.promoCode} envoye a ${review?.email}`
             : "L'avis sera affiche sur le site",
         });
       }
@@ -251,20 +250,17 @@ export default function AdminReviews() {
                       <p className="text-base">{review.comment}</p>
                     </div>
 
-                    {/* Promo code info */}
-                    {PROMO_CODES[review.auditType] && (
+                    {/* Promo information; the concrete code remains server-owned. */}
+                    {PROMO_DESCRIPTIONS[review.auditType] && (
                       <div className="mb-4 p-3 rounded-lg bg-primary/5 border border-primary/20">
                         <p className="text-sm">
-                          <span className="font-medium text-primary">Code promo:</span>{" "}
-                          <code className="font-mono bg-background px-1.5 py-0.5 rounded">
-                            {PROMO_CODES[review.auditType].code}
-                          </code>
-                          <span className="text-muted-foreground ml-2">
-                            ({PROMO_CODES[review.auditType].description})
+                          <span className="font-medium text-primary">Avantage après validation :</span>{" "}
+                          <span className="text-muted-foreground">
+                            {PROMO_DESCRIPTIONS[review.auditType]}
                           </span>
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Ce code sera envoye automatiquement a {review.email} apres approbation
+                          Le code sera fourni par le serveur après approbation et envoyé à {review.email}.
                         </p>
                       </div>
                     )}

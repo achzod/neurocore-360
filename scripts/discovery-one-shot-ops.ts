@@ -1,5 +1,5 @@
 /**
- * Exact, non-discovery one-shot remediation operations.
+ * Exact Discovery one-shot remediation operations.
  *
  * This CLI cannot generate reports or deliver email. Both modes acquire the
  * durable discovery-global lock and delegate one all-or-nothing transaction
@@ -9,6 +9,7 @@ import {
   acquireDiscoveryGlobalLock,
   promoteExactValidDiscoveryWithoutDelivery,
   quarantineExactDiscoveryPrelaunchTests,
+  repairExactLennyDiscoveryQualityWithoutDelivery,
   releaseDiscoveryGlobalLock,
 } from "../server/discoveryBatchControl";
 import { assertDiscoveryBatchSchemaV005 } from "../server/discoveryBatchSchema";
@@ -36,13 +37,18 @@ function requireOfflineRemediationEnvironment(): void {
 async function main(): Promise<void> {
   const quarantine = args.has("--quarantine-test");
   const promote = args.has("--promote-valid-no-delivery");
-  if (Number(quarantine) + Number(promote) !== 1) {
+  const repairLenny = args.has("--repair-lenny-quality");
+  if (Number(quarantine) + Number(promote) + Number(repairLenny) !== 1) {
     throw new Error("DISCOVERY_ONE_SHOT_EXACTLY_ONE_OPERATION_REQUIRED");
   }
   requireOfflineRemediationEnvironment();
   await assertDiscoveryBatchSchemaV005(pool);
 
-  const purpose = quarantine ? "one-shot:quarantine-test" : "one-shot:promote-valid-no-delivery";
+  const purpose = quarantine
+    ? "one-shot:quarantine-test"
+    : promote
+      ? "one-shot:promote-valid-no-delivery"
+      : "one-shot:repair-lenny-quality";
   const lock = await acquireDiscoveryGlobalLock({
     owner: `discovery-one-shot:${process.pid}`,
     purpose,
@@ -52,6 +58,12 @@ async function main(): Promise<void> {
     if (quarantine) {
       const result = await quarantineExactDiscoveryPrelaunchTests({ lockToken: lock.token }, pool);
       console.log(`DISCOVERY_ONE_SHOT_QUARANTINE_COMPLETE:${JSON.stringify(result)}`);
+      return;
+    }
+
+    if (repairLenny) {
+      const result = await repairExactLennyDiscoveryQualityWithoutDelivery({ lockToken: lock.token }, pool);
+      console.log(`DISCOVERY_ONE_SHOT_LENNY_QUALITY_COMPLETE:${JSON.stringify(result)}`);
       return;
     }
 
