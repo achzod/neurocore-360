@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import test, { after, before, beforeEach } from "node:test";
+import { fileURLToPath } from "node:url";
 
 import { Pool } from "pg";
 import {
@@ -699,6 +701,35 @@ test("migration 006 enforces exact rejected-candidate origins and one attempt ro
     client.release();
   }
   await schema.assertDiscoveryBatchSchemaV006(pool);
+});
+
+test("Discovery reconciler CLI compiles and executes summary-only against the real schema", () => {
+  const cliPath = fileURLToPath(new URL("../scripts/discovery-safe-reconciler.ts", import.meta.url));
+  const child = spawnSync(
+    process.execPath,
+    ["--import", "tsx", cliPath, "--summary-only"],
+    {
+      cwd: fileURLToPath(new URL("..", import.meta.url)),
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        DATABASE_URL: databaseUrl,
+        RENDER_GIT_COMMIT: "c".repeat(40),
+      },
+      timeout: 30_000,
+    },
+  );
+  assert.equal(child.error, undefined, child.error?.message);
+  assert.equal(child.signal, null, child.stderr);
+  assert.equal(child.status, 0, child.stderr);
+  const prefix = "DISCOVERY_BATCH_MANIFEST_SUMMARY:";
+  const summaryLine = child.stdout.split(/\r?\n/).find((line) => line.startsWith(prefix));
+  assert.ok(summaryLine, child.stdout);
+  const summary = JSON.parse(summaryLine.slice(prefix.length));
+  assert.equal(summary.schemaVersion, 1);
+  assert.equal(summary.source, "database_read_only");
+  assert.equal(summary.commitSha, "c".repeat(40));
+  assert.equal(summary.counts.total, 0);
 });
 
 async function insertDiscoveryProviderProof(auditId: string, responseId: string, cost = 0.15) {

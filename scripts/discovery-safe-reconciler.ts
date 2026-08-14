@@ -66,7 +66,6 @@ import {
   isDiscoverySupersededTerminal,
 } from "../server/discoverySupersededPolicy";
 import { assertDiscoveryBatchSchemaV006 } from "../server/discoveryBatchSchema";
-import { getReportReadyEmailSubject, sendReportReadyEmail } from "../server/emailService";
 import { pool } from "../server/db";
 
 const argv = process.argv.slice(2);
@@ -660,6 +659,7 @@ async function runDelivery(
   approvalSource: string,
 ): Promise<Record<string, unknown>> {
   assertDeliveryEnvironment();
+  const { getReportReadyEmailSubject, sendReportReadyEmail } = await import("../server/emailService");
   if (!await hasBatchControlTables()) throw new Error("DISCOVERY_BATCH_MIGRATION_NOT_APPLIED");
   if (approval.stage !== "DELIVERY") throw new Error("DISCOVERY_BATCH_APPROVAL_NOT_DELIVERY");
   const tier = approval.tier as DiscoveryBatchTier;
@@ -679,6 +679,7 @@ async function runDelivery(
     owner: `discovery-safe-delivery:${process.pid}`,
     purpose: `delivery:${manifest.manifestSha256}:${tier}`,
     ttlMinutes: 60,
+  });
   let batchId: string | null = null;
   const processed: Array<Record<string, unknown>> = [];
   try {
