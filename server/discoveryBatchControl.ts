@@ -635,14 +635,14 @@ export const DISCOVERY_SUZIE_DUPLICATE_RESOLUTION_TARGET = Object.freeze({
   userIdSha256: "1fa9d5c6a4cfb690db1740a98be4d4eb9988389956cf8ae175aa2ab19988846c",
   superseded: Object.freeze({
     id: "be690349-aaa7-4524-854c-ae38f5c05f6f",
-    createdAt: "2026-08-13T14:45:03.692Z",
+    createdAt: "2026-08-13T14:45:03.692385Z",
     responsesSha256: "7b27c6698121fc07c553527054b84e39b38eab7fb6d07fa5015936be24043151",
     responseKeyCount: 65,
     expectedJobAttemptCount: 0,
   }),
   canonical: Object.freeze({
     id: "311cbe89-30a7-40ae-94ba-ad906bf711d8",
-    createdAt: "2026-08-14T09:17:12.089Z",
+    createdAt: "2026-08-14T09:17:12.089686Z",
     responsesSha256: "a08310574a9c5cc4d2a4b4f6ea23334bd9c0e89590b8378f2ac850174df79786",
     responseKeyCount: 62,
     expectedJobAttemptCount: 1,
@@ -832,7 +832,23 @@ export async function resolveExactDiscoveryDuplicateUnderLock(
   poolOverride?: Pool,
 ): Promise<{ supersededAuditId: string; canonicalAuditId: string; status: "SUPERSEDED"; emailsSent: 0 }> {
   const { target } = input;
-  const strictUtcTimestamp = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+  const strictUtcTimestamp = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})\.(\d{6})Z$/;
+  const normalizeUtcTimestamp = (value: string): string | null => {
+    const match = strictUtcTimestamp.exec(value);
+    if (!match) return null;
+    const millisecondTimestamp = `${match[1]}.${match[2].slice(0, 3)}Z`;
+    const parsed = Date.parse(millisecondTimestamp);
+    if (!Number.isFinite(parsed) || new Date(parsed).toISOString() !== millisecondTimestamp) {
+      return null;
+    }
+    return `${match[1]}.${match[2].padEnd(6, "0")}Z`;
+  };
+  const databaseTimestampMatchesTarget = (actualUtc: string, expectedUtc: string): boolean => {
+    const normalizedExpected = normalizeUtcTimestamp(expectedUtc);
+    return normalizedExpected !== null && actualUtc === normalizedExpected;
+  };
+  const supersededCreatedAtUtc = normalizeUtcTimestamp(target.superseded.createdAt);
+  const canonicalCreatedAtUtc = normalizeUtcTimestamp(target.canonical.createdAt);
   const supersededCreatedAtMs = Date.parse(target.superseded.createdAt);
   const canonicalCreatedAtMs = Date.parse(target.canonical.createdAt);
   if (target.superseded.id === target.canonical.id
@@ -840,12 +856,10 @@ export async function resolveExactDiscoveryDuplicateUnderLock(
     || !/^[a-f0-9]{64}$/.test(target.userIdSha256)
     || !/^[a-f0-9]{64}$/.test(target.superseded.responsesSha256)
     || !/^[a-f0-9]{64}$/.test(target.canonical.responsesSha256)
-    || !strictUtcTimestamp.test(target.superseded.createdAt)
-    || !strictUtcTimestamp.test(target.canonical.createdAt)
+    || !supersededCreatedAtUtc
+    || !canonicalCreatedAtUtc
     || !Number.isFinite(supersededCreatedAtMs)
     || !Number.isFinite(canonicalCreatedAtMs)
-    || new Date(supersededCreatedAtMs).toISOString() !== target.superseded.createdAt
-    || new Date(canonicalCreatedAtMs).toISOString() !== target.canonical.createdAt
     || supersededCreatedAtMs >= canonicalCreatedAtMs) {
     throw new Error("DISCOVERY_DUPLICATE_RESOLUTION_TARGET_INVALID");
   }
@@ -861,7 +875,11 @@ export async function resolveExactDiscoveryDuplicateUnderLock(
     const auditResult = await client.query(
       `SELECT id, email, user_id, type, status, responses, narrative_report,
               report_txt, report_html, report_generated_at,
-              report_delivery_status, report_sent_at, created_at
+              report_delivery_status, report_sent_at, created_at,
+              to_char(
+                created_at AT TIME ZONE 'UTC',
+                'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
+              ) AS created_at_utc_exact
          FROM audits
         WHERE id = ANY($1::text[])
         ORDER BY id
@@ -874,6 +892,7 @@ export async function resolveExactDiscoveryDuplicateUnderLock(
     const byId = new Map(auditResult.rows.map((row: any) => [String(row.id), row]));
     for (const expected of [target.superseded, target.canonical]) {
       const audit = byId.get(expected.id);
+      const expectedCreatedAtUtc = normalizeUtcTimestamp(expected.createdAt);
       if (!audit
         || audit.type !== "GRATUIT"
         || audit.status !== "COMPLETED"
@@ -884,7 +903,8 @@ export async function resolveExactDiscoveryDuplicateUnderLock(
         || audit.report_html !== null
         || discoverySha256(String(audit.email || "").trim().toLowerCase()) !== target.emailSha256
         || discoverySha256(String(audit.user_id || "")) !== target.userIdSha256
-        || new Date(audit.created_at).toISOString() !== expected.createdAt
+        || !expectedCreatedAtUtc
+        || !databaseTimestampMatchesTarget(audit.created_at_utc_exact, expected.createdAt)
         || discoverySha256(audit.responses || {}) !== expected.responsesSha256
         || Object.keys(audit.responses || {}).length !== expected.responseKeyCount) {
         throw new Error(`DISCOVERY_DUPLICATE_RESOLUTION_TARGET_PRECONDITION_FAILED:${expected.id}`);
@@ -969,7 +989,10 @@ export async function resolveExactDiscoveryDuplicateUnderLock(
           AND report_html IS NULL
           AND email IS NOT DISTINCT FROM $3
           AND user_id IS NOT DISTINCT FROM $4
-          AND created_at = $5::timestamptz
+          AND to_char(
+                created_at AT TIME ZONE 'UTC',
+                'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
+              ) = $5
           AND responses IS NOT DISTINCT FROM $6::jsonb
           AND narrative_report IS NOT DISTINCT FROM $7::jsonb
           AND EXISTS (
@@ -982,7 +1005,7 @@ export async function resolveExactDiscoveryDuplicateUnderLock(
         JSON.stringify(provenance),
         supersededAudit.email,
         supersededAudit.user_id,
-        target.superseded.createdAt,
+        supersededCreatedAtUtc,
         JSON.stringify(supersededAudit.responses || {}),
         JSON.stringify(supersededAudit.narrative_report),
         DISCOVERY_GLOBAL_LOCK_KEY,

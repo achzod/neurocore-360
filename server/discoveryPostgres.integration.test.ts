@@ -137,8 +137,11 @@ async function insertExactDuplicateResolutionFixture() {
   const userId = randomUUID();
   const supersededResponses = { prenom: "Suzie", age: 61, objectif: "perte-graisse" };
   const canonicalResponses = { prenom: "Suzie ", age: 61, objectif: "sante", "tca-historique": "passe" };
-  const supersededCreatedAt = "2026-08-13T14:45:03.692Z";
-  const canonicalCreatedAt = "2026-08-14T09:17:12.089Z";
+  // Production stores PostgreSQL microseconds while the JavaScript Date
+  // decoder truncates to milliseconds. Keep the exact live-like precision so
+  // the one-shot CAS proves it binds the locked database value losslessly.
+  const supersededCreatedAt = "2026-08-13T14:45:03.692385Z";
+  const canonicalCreatedAt = "2026-08-14T09:17:12.089686Z";
   for (const row of [
     { id: supersededId, responses: supersededResponses, createdAt: supersededCreatedAt, attempts: 0 },
     { id: canonicalId, responses: canonicalResponses, createdAt: canonicalCreatedAt, attempts: 1 },
@@ -703,6 +706,14 @@ test("Discovery reserves exactly 0.75 USD once and permanently rejects a second 
 
 test("exact duplicate resolution supersedes only the old audit and unlocks the canonical resubmission", async () => {
   const fixture = await insertExactDuplicateResolutionFixture();
+  const storedPrecision = (await pool.query(
+    `SELECT created_at,
+            to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS created_at_utc_exact
+       FROM audits WHERE id = $1`,
+    [fixture.supersededId],
+  )).rows[0];
+  assert.equal(new Date(storedPrecision.created_at).toISOString(), "2026-08-13T14:45:03.692Z");
+  assert.equal(storedPrecision.created_at_utc_exact, "2026-08-13T14:45:03.692385Z");
   const beforeCanonical = (await pool.query(
     `SELECT responses, narrative_report FROM audits WHERE id = $1`, [fixture.canonicalId],
   )).rows[0];
@@ -851,6 +862,80 @@ test("exact duplicate resolution rolls back both audits on any bound response di
   );
   assert.notDeepEqual(diverged.rows, before.rows);
   assert.deepEqual(after.rows, diverged.rows);
+  assert.equal(after.rows.every((row) => row.report_delivery_status === "NEEDS_REVIEW"), true);
+});
+
+test("exact duplicate resolution rejects a one-microsecond created_at divergence atomically", async () => {
+  const fixture = await insertExactDuplicateResolutionFixture();
+  const before = await pool.query(
+    `SELECT id, report_delivery_status, narrative_report, responses,
+            to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS created_at_utc_exact
+       FROM audits WHERE id = ANY($1::text[]) ORDER BY id`,
+    [[fixture.supersededId, fixture.canonicalId]],
+  );
+  const lock = await batch.acquireDiscoveryGlobalLock({
+    owner: "postgres-integration",
+    purpose: "exact-duplicate-created-at-rollback",
+    ttlMinutes: 5,
+  }, pool);
+  await assert.rejects(
+    batch.resolveExactDiscoveryDuplicateUnderLock({
+      lockToken: lock.token,
+      target: {
+        ...fixture.target,
+        superseded: {
+          ...fixture.target.superseded,
+          createdAt: "2026-08-13T14:45:03.692386Z",
+        },
+      },
+    }, pool),
+    /DISCOVERY_DUPLICATE_RESOLUTION_TARGET_PRECONDITION_FAILED/,
+  );
+  assert.equal(await batch.releaseDiscoveryGlobalLock(lock.token, pool), true);
+  const after = await pool.query(
+    `SELECT id, report_delivery_status, narrative_report, responses,
+            to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS created_at_utc_exact
+       FROM audits WHERE id = ANY($1::text[]) ORDER BY id`,
+    [[fixture.supersededId, fixture.canonicalId]],
+  );
+  assert.deepEqual(after.rows, before.rows);
+  assert.equal(after.rows.every((row) => row.report_delivery_status === "NEEDS_REVIEW"), true);
+});
+
+test("exact duplicate resolution rejects a one-microsecond canonical created_at divergence atomically", async () => {
+  const fixture = await insertExactDuplicateResolutionFixture();
+  const before = await pool.query(
+    `SELECT id, report_delivery_status, narrative_report, responses,
+            to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS created_at_utc_exact
+       FROM audits WHERE id = ANY($1::text[]) ORDER BY id`,
+    [[fixture.supersededId, fixture.canonicalId]],
+  );
+  const lock = await batch.acquireDiscoveryGlobalLock({
+    owner: "postgres-integration",
+    purpose: "exact-duplicate-canonical-created-at-rollback",
+    ttlMinutes: 5,
+  }, pool);
+  await assert.rejects(
+    batch.resolveExactDiscoveryDuplicateUnderLock({
+      lockToken: lock.token,
+      target: {
+        ...fixture.target,
+        canonical: {
+          ...fixture.target.canonical,
+          createdAt: "2026-08-14T09:17:12.089687Z",
+        },
+      },
+    }, pool),
+    /DISCOVERY_DUPLICATE_RESOLUTION_TARGET_PRECONDITION_FAILED/,
+  );
+  assert.equal(await batch.releaseDiscoveryGlobalLock(lock.token, pool), true);
+  const after = await pool.query(
+    `SELECT id, report_delivery_status, narrative_report, responses,
+            to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS created_at_utc_exact
+       FROM audits WHERE id = ANY($1::text[]) ORDER BY id`,
+    [[fixture.supersededId, fixture.canonicalId]],
+  );
+  assert.deepEqual(after.rows, before.rows);
   assert.equal(after.rows.every((row) => row.report_delivery_status === "NEEDS_REVIEW"), true);
 });
 

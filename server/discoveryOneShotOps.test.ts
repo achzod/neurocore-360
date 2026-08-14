@@ -71,14 +71,14 @@ test("Suzie duplicate resolution is exact, fenced, atomic and cannot generate or
     userIdSha256: "1fa9d5c6a4cfb690db1740a98be4d4eb9988389956cf8ae175aa2ab19988846c",
     superseded: {
       id: "be690349-aaa7-4524-854c-ae38f5c05f6f",
-      createdAt: "2026-08-13T14:45:03.692Z",
+      createdAt: "2026-08-13T14:45:03.692385Z",
       responsesSha256: "7b27c6698121fc07c553527054b84e39b38eab7fb6d07fa5015936be24043151",
       responseKeyCount: 65,
       expectedJobAttemptCount: 0,
     },
     canonical: {
       id: "311cbe89-30a7-40ae-94ba-ad906bf711d8",
-      createdAt: "2026-08-14T09:17:12.089Z",
+      createdAt: "2026-08-14T09:17:12.089686Z",
       responsesSha256: "a08310574a9c5cc4d2a4b4f6ea23334bd9c0e89590b8378f2ac850174df79786",
       responseKeyCount: 62,
       expectedJobAttemptCount: 1,
@@ -96,6 +96,8 @@ test("Suzie duplicate resolution is exact, fenced, atomic and cannot generate or
   assert.match(source, /report_delivery_status = 'SUPERSEDED'/);
   assert.match(source, /replacementAuditId/);
   assert.match(source, /DISCOVERY_DUPLICATE_RESOLUTION_CAS_FAILED/);
+  assert.match(source, /created_at_utc_exact/);
+  assert.match(source, /SS\.US/);
   assert.match(source, /DISCOVERY_DUPLICATE_RESOLUTION_CANONICAL_STILL_DUPLICATE/);
   assert.match(source, /await client\.query\("ROLLBACK"\)/);
   assert.doesNotMatch(source, /analyzeDiscoveryScan|sendReportReadyEmail\s*\(|claimDiscoveryEmailDelivery\s*\(/);
