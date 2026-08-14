@@ -139,6 +139,7 @@ let batch: typeof import("./discoveryBatchControl");
 let transactional: typeof import("./discoveryTransactionalPersistence");
 let budget: typeof import("./aiCostBudgetController");
 let schema: typeof import("./discoveryBatchSchema");
+let offlineReplay: typeof import("./discoveryAlexandreOfflineReplay");
 let migration007BackfillEvidence: Array<{
   id: string;
   artifact_state: string;
@@ -308,6 +309,48 @@ async function buildValidPersistenceFixture(responses: Record<string, unknown>, 
     narrativeReport: attachDiscoveryDeliveryGateResult(report, gate),
     scores: { ...deterministic.scoresByDomain, global: deterministic.globalScore },
     assets,
+  };
+}
+
+async function insertGenerationVersioningFixture(label: string) {
+  const responses = { ...completeV2Responses(), prenom: `Generation-${label}` };
+  const auditId = await insertAudit("PENDING", responses);
+  const sourceTxt = `invalid-source-txt:${label}`;
+  const sourceHtml = `<p>invalid-source-html:${label}</p>`;
+  await pool.query(
+    `UPDATE audits
+        SET narrative_report=$2::jsonb,report_txt=$3,report_html=$4
+      WHERE id=$1`,
+    [auditId, JSON.stringify({ legacyInvalid: label }), sourceTxt, sourceHtml],
+  );
+  const artifactIds = [randomUUID(), randomUUID(), randomUUID(), randomUUID()];
+  for (let index = 0; index < artifactIds.length; index += 1) {
+    const active = index === artifactIds.length - 1;
+    const txt = active ? sourceTxt : `historical-txt:${label}:${index}`;
+    const html = active ? sourceHtml : `<p>historical-html:${label}:${index}</p>`;
+    await pool.query(
+      `INSERT INTO report_artifacts
+        (id,audit_id,tier,engine,model,txt,html,content_sha256,
+         artifact_state,superseded_at,created_at)
+       VALUES ($1,$2,'GRATUIT','legacy','legacy',$3,$4,$5,$6,$7,$8::timestamptz)`,
+      [artifactIds[index], auditId, txt, html, batch.discoveryArtifactContentHash(txt, html),
+        active ? "ACTIVE" : "SUPERSEDED", active ? null : "2026-08-14T02:00:00.000Z",
+        `2026-08-14T0${index + 1}:00:00.000Z`],
+    );
+  }
+  const before = (await pool.query(
+    `SELECT id,tier,engine,model,txt,html,content_sha256,batch_id,
+            artifact_state,superseded_at,supersedes_artifact_id,created_at
+       FROM report_artifacts WHERE audit_id=$1 ORDER BY created_at,id`,
+    [auditId],
+  )).rows;
+  return {
+    auditId,
+    responses,
+    sourceTxt,
+    sourceHtml,
+    activeArtifactId: artifactIds[3],
+    before,
   };
 }
 
@@ -754,10 +797,13 @@ before(async () => {
     0,
   );
   await pool.query(migration("008_discovery_legacy_narrative_provenance.sql"));
+  await pool.query(migration("009_discovery_generation_active_artifact_binding.sql"));
+  await pool.query(migration("010_discovery_offline_replay_proof.sql"));
   schema = await import("./discoveryBatchSchema");
   batch = await import("./discoveryBatchControl");
   transactional = await import("./discoveryTransactionalPersistence");
   budget = await import("./aiCostBudgetController");
+  offlineReplay = await import("./discoveryAlexandreOfflineReplay");
 });
 
 beforeEach(async () => {
@@ -1051,6 +1097,391 @@ test("migration 008 enforces exact immutable legacy narrative provenance", async
   await schema.assertDiscoveryBatchSchemaV008(pool);
 });
 
+test("migration 009 seals complete optional ACTIVE artifact bindings", async () => {
+  await schema.assertDiscoveryBatchSchemaV009(pool);
+  await pool.query(migration("009_discovery_generation_active_artifact_binding.sql"));
+  await schema.assertDiscoveryBatchSchemaV009(pool);
+  const columns = await pool.query(
+    `SELECT column_name,data_type,is_nullable,character_maximum_length
+       FROM information_schema.columns
+      WHERE table_schema=current_schema()
+        AND table_name='discovery_batch_items'
+        AND column_name LIKE 'expected_active_artifact_%'
+      ORDER BY column_name`,
+  );
+  assert.deepEqual(columns.rows, [
+    { column_name: "expected_active_artifact_content_sha256", data_type: "character", is_nullable: "YES", character_maximum_length: 64 },
+    { column_name: "expected_active_artifact_html_sha256", data_type: "character", is_nullable: "YES", character_maximum_length: 64 },
+    { column_name: "expected_active_artifact_id", data_type: "character varying", is_nullable: "YES", character_maximum_length: 36 },
+    { column_name: "expected_active_artifact_txt_sha256", data_type: "character", is_nullable: "YES", character_maximum_length: 64 },
+  ]);
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query(
+      "ALTER TABLE discovery_batch_items DROP CONSTRAINT discovery_batch_items_active_artifact_binding_check",
+    );
+    await assert.rejects(
+      schema.assertDiscoveryBatchSchemaV009(client),
+      /DISCOVERY_BATCH_SCHEMA_V009_REQUIRED:.*missing_constraint:discovery_batch_items_active_artifact_binding_check/,
+    );
+    await client.query("ROLLBACK");
+  } finally {
+    client.release();
+  }
+  await schema.assertDiscoveryBatchSchemaV009(pool);
+
+  const permissiveClient = await pool.connect();
+  try {
+    await permissiveClient.query("BEGIN");
+    await permissiveClient.query(
+      `ALTER TABLE discovery_batch_items
+         DROP CONSTRAINT discovery_batch_items_active_artifact_binding_check,
+         ADD CONSTRAINT discovery_batch_items_active_artifact_binding_check CHECK (
+           (expected_active_artifact_id IS NULL
+             AND expected_active_artifact_txt_sha256 IS NULL
+             AND expected_active_artifact_html_sha256 IS NULL
+             AND expected_active_artifact_content_sha256 IS NULL)
+           OR (expected_active_artifact_id IS NOT NULL
+             AND expected_active_artifact_txt_sha256 IS NOT NULL
+             AND expected_active_artifact_html_sha256 IS NOT NULL
+             AND expected_active_artifact_content_sha256 IS NOT NULL)
+           OR TRUE
+         )`,
+    );
+    await assert.rejects(
+      schema.assertDiscoveryBatchSchemaV009(permissiveClient),
+      /DISCOVERY_BATCH_SCHEMA_V009_REQUIRED:.*invalid_constraint:discovery_batch_items_active_artifact_binding_check/,
+    );
+    await permissiveClient.query("ROLLBACK");
+  } finally {
+    permissiveClient.release();
+  }
+  await schema.assertDiscoveryBatchSchemaV009(pool);
+});
+
+test("migration 010 exact gate rejects permissive checks, altered FKs, function and trigger", async () => {
+  await offlineReplay.assertDiscoveryOfflineReplaySchemaV010(pool);
+  await pool.query(migration("010_discovery_offline_replay_proof.sql"));
+  await offlineReplay.assertDiscoveryOfflineReplaySchemaV010(pool);
+
+  const sabotageCases: Array<{
+    sql: string;
+    expected: RegExp;
+  }> = [
+    {
+      sql: `ALTER TABLE discovery_offline_replay_proofs
+              DROP CONSTRAINT discovery_offline_replay_operation_check,
+              ADD CONSTRAINT discovery_offline_replay_operation_check
+                CHECK (operation = 'ALEXANDRE_ATTEMPT2_CANONICAL_REPLAY' OR TRUE)`,
+      expected: /DISCOVERY_OFFLINE_REPLAY_SCHEMA_V010_REQUIRED:.*constraint:discovery_offline_replay_operation_check/,
+    },
+    {
+      sql: `ALTER TABLE discovery_offline_replay_proofs
+              DROP CONSTRAINT discovery_offline_replay_hashes_check,
+              ADD CONSTRAINT discovery_offline_replay_hashes_check CHECK (TRUE)`,
+      expected: /DISCOVERY_OFFLINE_REPLAY_SCHEMA_V010_REQUIRED:.*constraint:discovery_offline_replay_hashes_check/,
+    },
+    {
+      sql: `ALTER TABLE discovery_offline_replay_proofs
+              DROP CONSTRAINT discovery_offline_replay_proofs_audit_id_fkey,
+              ADD CONSTRAINT discovery_offline_replay_proofs_audit_id_fkey
+                FOREIGN KEY (audit_id) REFERENCES audits(id) ON DELETE CASCADE`,
+      expected: /DISCOVERY_OFFLINE_REPLAY_SCHEMA_V010_REQUIRED:.*constraint:discovery_offline_replay_proofs_audit_id_fkey/,
+    },
+    {
+      sql: `ALTER TABLE discovery_offline_replay_proofs
+              ALTER COLUMN created_at DROP DEFAULT`,
+      expected: /DISCOVERY_OFFLINE_REPLAY_SCHEMA_V010_REQUIRED:.*column:created_at/,
+    },
+    {
+      sql: `ALTER TABLE discovery_offline_replay_proofs
+              ADD CONSTRAINT discovery_offline_replay_extra_check CHECK (TRUE)`,
+      expected: /DISCOVERY_OFFLINE_REPLAY_SCHEMA_V010_REQUIRED:.*constraint_cardinality/,
+    },
+    {
+      sql: `DROP INDEX discovery_offline_replay_audit_operation_uq;
+            CREATE INDEX discovery_offline_replay_audit_operation_uq
+              ON discovery_offline_replay_proofs(audit_id, operation)`,
+      expected: /DISCOVERY_OFFLINE_REPLAY_SCHEMA_V010_REQUIRED:.*append_only_physical_gate/,
+    },
+    {
+      sql: `CREATE OR REPLACE FUNCTION enforce_discovery_offline_replay_append_only()
+              RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NEW; END; $$`,
+      expected: /DISCOVERY_OFFLINE_REPLAY_SCHEMA_V010_REQUIRED:.*append_only_physical_gate/,
+    },
+    {
+      sql: `DROP TRIGGER discovery_offline_replay_append_only ON discovery_offline_replay_proofs;
+            CREATE TRIGGER discovery_offline_replay_append_only
+              BEFORE UPDATE ON discovery_offline_replay_proofs
+              FOR EACH ROW EXECUTE FUNCTION enforce_discovery_offline_replay_append_only()`,
+      expected: /DISCOVERY_OFFLINE_REPLAY_SCHEMA_V010_REQUIRED:.*append_only_physical_gate/,
+    },
+  ];
+  for (const sabotage of sabotageCases) {
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query(sabotage.sql);
+      await assert.rejects(
+        offlineReplay.assertDiscoveryOfflineReplaySchemaV010(client),
+        sabotage.expected,
+      );
+      await client.query("ROLLBACK");
+    } finally {
+      client.release();
+    }
+    await offlineReplay.assertDiscoveryOfflineReplaySchemaV010(pool);
+  }
+});
+
+test("Alexandre offline replay versions the ACTIVE artifact, binds ledger provenance and remains append-only", async () => {
+  const fixture = await insertAlexandreOfflineReplayFixture("success");
+  const candidatesBefore = (await pool.query(
+    `SELECT id,batch_id,generation_claim_token,audit_id,provider_response_id,attempt_no,model,
+            source_kind,provider_raw,provider_raw_text,assembled_candidate,provider_raw_sha256,
+            assembled_sha256,report_txt_sha256,report_html_sha256,artifact_content_sha256,
+            artifact_id,reservation_id,usage_event_id,responses_sha256,validation_errors,
+            actual_cost_usd,state,retried_by_batch_id,created_at,updated_at
+       FROM discovery_rejected_candidates WHERE audit_id=$1 ORDER BY attempt_no`,
+    [fixture.target.auditId],
+  )).rows;
+  const ledgersBefore = (await pool.query(
+    `SELECT r.id::text AS reservation_id,r.status,r.actual_cost_usd,r.response_id,
+            e.id::bigint AS usage_event_id,e.model,e.status AS usage_status,
+            e.input_tokens,e.output_tokens,e.total_tokens,e.estimated_openai_cost_usd
+       FROM ai_cost_budget_reservations r
+       JOIN ai_usage_events e ON e.response_id=r.response_id
+      WHERE r.order_id=$1 ORDER BY r.response_id`,
+    [fixture.target.auditId],
+  )).rows;
+  const inspected = await offlineReplay.inspectExactAlexandreOfflineReplay(pool);
+  const lock = await offlineReplay.acquireAlexandreOfflineReplayLock(pool);
+  let result: Awaited<ReturnType<typeof offlineReplay.replayExactAlexandreDiscoveryOffline>>;
+  try {
+    result = await offlineReplay.replayExactAlexandreDiscoveryOffline({
+      lockToken: lock.token,
+      expectedManifestSha256: inspected.manifestSha256,
+    }, pool);
+  } finally {
+    await offlineReplay.releaseAlexandreOfflineReplayLock(pool, lock.token);
+  }
+  assert.equal(result.auditId, fixture.target.auditId);
+  assert.equal(result.supersedesArtifactId, fixture.sourceArtifactId);
+  assert.equal(result.manifestSha256, inspected.manifestSha256);
+  assert.equal(result.status, "BATCH_READY");
+  assert.equal(result.providerCalls, 0);
+  assert.equal(result.emailsSent, 0);
+
+  const artifacts = (await pool.query(
+    `SELECT id,audit_id,tier,engine,model,txt,html,content_sha256,batch_id,
+            artifact_state,superseded_at,supersedes_artifact_id,created_at
+       FROM report_artifacts WHERE audit_id=$1 ORDER BY created_at,id`,
+    [fixture.target.auditId],
+  )).rows;
+  assert.equal(artifacts.length, 2);
+  const sourceArtifact = artifacts.find((row) => row.id === fixture.sourceArtifactId);
+  const replacementArtifact = artifacts.find((row) => row.id === result.artifactId);
+  assert.ok(sourceArtifact);
+  assert.ok(replacementArtifact);
+  assert.equal(sourceArtifact.artifact_state, "SUPERSEDED");
+  assert.ok(sourceArtifact.superseded_at instanceof Date);
+  assert.equal(sourceArtifact.txt, fixture.oldTxt);
+  assert.equal(sourceArtifact.html, fixture.oldHtml);
+  assert.equal(sourceArtifact.content_sha256, batch.discoveryArtifactContentHash(fixture.oldTxt, fixture.oldHtml));
+  assert.equal(sourceArtifact.tier, "GRATUIT");
+  assert.equal(sourceArtifact.engine, "legacy");
+  assert.equal(sourceArtifact.model, "legacy");
+  assert.equal(sourceArtifact.supersedes_artifact_id, null);
+  assert.equal(replacementArtifact.artifact_state, "ACTIVE");
+  assert.equal(replacementArtifact.superseded_at, null);
+  assert.equal(replacementArtifact.supersedes_artifact_id, fixture.sourceArtifactId);
+  assert.equal(replacementArtifact.batch_id, null);
+  assert.equal(replacementArtifact.model, "gpt-test");
+  assert.equal(
+    replacementArtifact.content_sha256,
+    batch.discoveryArtifactContentHash(replacementArtifact.txt, replacementArtifact.html),
+  );
+  assert.equal(artifacts.filter((row) => row.artifact_state === "ACTIVE").length, 1);
+
+  const audit = (await pool.query(
+    `SELECT responses,scores,narrative_report,report_txt,report_html,report_generated_at,
+            report_delivery_status,report_sent_at
+       FROM audits WHERE id=$1`,
+    [fixture.target.auditId],
+  )).rows[0];
+  assert.deepEqual(audit.responses, fixture.responses);
+  assert.equal(audit.report_delivery_status, "BATCH_READY");
+  assert.equal(audit.report_sent_at, null);
+  assert.equal(audit.report_txt, replacementArtifact.txt);
+  assert.equal(audit.report_html, replacementArtifact.html);
+  assert.ok(audit.narrative_report?.analysisMetadata?.catalogProvenance);
+
+  const proof = (await pool.query(
+    `SELECT operation,audit_id,candidate_id,source_artifact_id,replacement_artifact_id,
+            reservation_id,usage_event_id,provider_response_id,responses_sha256,
+            assembled_candidate_sha256,report_txt_sha256,report_html_sha256,
+            artifact_content_sha256,catalog_provenance,catalog_provenance_sha256,
+            encode(digest(convert_to(catalog_provenance::text,'UTF8'),'sha256'),'hex')
+              AS recomputed_catalog_provenance_sha256
+       FROM discovery_offline_replay_proofs WHERE audit_id=$1`,
+    [fixture.target.auditId],
+  )).rows[0];
+  assert.ok(proof);
+  assert.equal(proof.operation, "ALEXANDRE_ATTEMPT2_CANONICAL_REPLAY");
+  assert.equal(proof.candidate_id, fixture.secondCandidateId);
+  assert.equal(proof.source_artifact_id, fixture.sourceArtifactId);
+  assert.equal(proof.replacement_artifact_id, result.artifactId);
+  assert.equal(proof.reservation_id, fixture.secondLedger.reservationId);
+  assert.equal(Number(proof.usage_event_id), fixture.secondLedger.usageEventId);
+  assert.equal(proof.provider_response_id, fixture.secondResponseId);
+  assert.equal(proof.report_txt_sha256, offlineReplay.discoveryAlexandreReplaySha256(replacementArtifact.txt));
+  assert.equal(proof.report_html_sha256, offlineReplay.discoveryAlexandreReplaySha256(replacementArtifact.html));
+  assert.equal(proof.artifact_content_sha256, replacementArtifact.content_sha256);
+  assert.equal(
+    proof.catalog_provenance_sha256,
+    proof.recomputed_catalog_provenance_sha256,
+  );
+  assert.equal(await hasDiscoveryCatalogLedgerBinding(
+    pool,
+    fixture.target.auditId,
+    {
+      id: replacementArtifact.id,
+      batchId: replacementArtifact.batch_id,
+      model: replacementArtifact.model,
+      txt: replacementArtifact.txt,
+      html: replacementArtifact.html,
+      contentSha256: replacementArtifact.content_sha256,
+    },
+    audit.narrative_report.analysisMetadata.catalogProvenance,
+  ), true);
+
+  assert.deepEqual((await pool.query(
+    `SELECT id,batch_id,generation_claim_token,audit_id,provider_response_id,attempt_no,model,
+            source_kind,provider_raw,provider_raw_text,assembled_candidate,provider_raw_sha256,
+            assembled_sha256,report_txt_sha256,report_html_sha256,artifact_content_sha256,
+            artifact_id,reservation_id,usage_event_id,responses_sha256,validation_errors,
+            actual_cost_usd,state,retried_by_batch_id,created_at,updated_at
+       FROM discovery_rejected_candidates WHERE audit_id=$1 ORDER BY attempt_no`,
+    [fixture.target.auditId],
+  )).rows, candidatesBefore);
+  assert.deepEqual((await pool.query(
+    `SELECT r.id::text AS reservation_id,r.status,r.actual_cost_usd,r.response_id,
+            e.id::bigint AS usage_event_id,e.model,e.status AS usage_status,
+            e.input_tokens,e.output_tokens,e.total_tokens,e.estimated_openai_cost_usd
+       FROM ai_cost_budget_reservations r
+       JOIN ai_usage_events e ON e.response_id=r.response_id
+      WHERE r.order_id=$1 ORDER BY r.response_id`,
+    [fixture.target.auditId],
+  )).rows, ledgersBefore);
+  const sideEffects = (await pool.query(
+    `SELECT
+       (SELECT COUNT(*)::int FROM email_tracking WHERE audit_id=$1) AS emails,
+       (SELECT COUNT(*)::int FROM discovery_email_delivery_claims WHERE audit_id=$1) AS claims,
+       (SELECT COUNT(*)::int FROM discovery_batch_items WHERE audit_id=$1) AS batch_items`,
+    [fixture.target.auditId],
+  )).rows[0];
+  assert.deepEqual(sideEffects, { emails: 0, claims: 0, batch_items: 0 });
+
+  await assert.rejects(
+    pool.query(
+      `UPDATE discovery_offline_replay_proofs
+          SET provider_response_id=provider_response_id WHERE audit_id=$1`,
+      [fixture.target.auditId],
+    ),
+    /DISCOVERY_OFFLINE_REPLAY_PROOF_APPEND_ONLY/,
+  );
+  await assert.rejects(
+    pool.query("DELETE FROM discovery_offline_replay_proofs WHERE audit_id=$1", [fixture.target.auditId]),
+    /DISCOVERY_OFFLINE_REPLAY_PROOF_APPEND_ONLY/,
+  );
+});
+
+test("Alexandre offline replay rolls back artifact versioning and audit persistence on a late failure", async () => {
+  const fixture = await insertAlexandreOfflineReplayFixture("rollback");
+  const artifactsBefore = (await pool.query(
+    `SELECT id,audit_id,tier,engine,model,txt,html,content_sha256,batch_id,
+            artifact_state,superseded_at,supersedes_artifact_id,created_at
+       FROM report_artifacts WHERE audit_id=$1 ORDER BY created_at,id`,
+    [fixture.target.auditId],
+  )).rows;
+  const auditBefore = (await pool.query(
+    `SELECT responses,scores,narrative_report,report_txt,report_html,report_generated_at,
+            report_delivery_status,report_sent_at
+       FROM audits WHERE id=$1`,
+    [fixture.target.auditId],
+  )).rows[0];
+  const candidatesBefore = (await pool.query(
+    `SELECT id,state,updated_at FROM discovery_rejected_candidates
+      WHERE audit_id=$1 ORDER BY attempt_no`,
+    [fixture.target.auditId],
+  )).rows;
+  const ledgersBefore = (await pool.query(
+    `SELECT r.id::text AS reservation_id,r.status,r.actual_cost_usd,r.response_id,
+            e.id::bigint AS usage_event_id,e.status AS usage_status,e.estimated_openai_cost_usd
+       FROM ai_cost_budget_reservations r
+       JOIN ai_usage_events e ON e.response_id=r.response_id
+      WHERE r.order_id=$1 ORDER BY r.response_id`,
+    [fixture.target.auditId],
+  )).rows;
+  const inspected = await offlineReplay.inspectExactAlexandreOfflineReplay(pool);
+  await pool.query(
+    `CREATE OR REPLACE FUNCTION force_alexandre_replay_audit_failure()
+       RETURNS trigger LANGUAGE plpgsql AS $$
+       BEGIN
+         IF NEW.id='e860b380-3a6e-4c64-b823-3422476b7cd2' THEN
+           RAISE EXCEPTION 'forced_alexandre_audit_failure';
+         END IF;
+         RETURN NEW;
+       END $$;
+     CREATE TRIGGER force_alexandre_replay_audit_failure
+       BEFORE UPDATE ON audits FOR EACH ROW EXECUTE FUNCTION force_alexandre_replay_audit_failure()`,
+  );
+  const lock = await offlineReplay.acquireAlexandreOfflineReplayLock(pool);
+  try {
+    await assert.rejects(
+      offlineReplay.replayExactAlexandreDiscoveryOffline({
+        lockToken: lock.token,
+        expectedManifestSha256: inspected.manifestSha256,
+      }, pool),
+      /forced_alexandre_audit_failure/,
+    );
+  } finally {
+    await pool.query("DROP TRIGGER force_alexandre_replay_audit_failure ON audits");
+    await pool.query("DROP FUNCTION force_alexandre_replay_audit_failure() ");
+    await offlineReplay.releaseAlexandreOfflineReplayLock(pool, lock.token);
+  }
+  assert.deepEqual((await pool.query(
+    `SELECT id,audit_id,tier,engine,model,txt,html,content_sha256,batch_id,
+            artifact_state,superseded_at,supersedes_artifact_id,created_at
+       FROM report_artifacts WHERE audit_id=$1 ORDER BY created_at,id`,
+    [fixture.target.auditId],
+  )).rows, artifactsBefore);
+  assert.deepEqual((await pool.query(
+    `SELECT responses,scores,narrative_report,report_txt,report_html,report_generated_at,
+            report_delivery_status,report_sent_at
+       FROM audits WHERE id=$1`,
+    [fixture.target.auditId],
+  )).rows[0], auditBefore);
+  assert.deepEqual((await pool.query(
+    `SELECT id,state,updated_at FROM discovery_rejected_candidates
+      WHERE audit_id=$1 ORDER BY attempt_no`,
+    [fixture.target.auditId],
+  )).rows, candidatesBefore);
+  assert.deepEqual((await pool.query(
+    `SELECT r.id::text AS reservation_id,r.status,r.actual_cost_usd,r.response_id,
+            e.id::bigint AS usage_event_id,e.status AS usage_status,e.estimated_openai_cost_usd
+       FROM ai_cost_budget_reservations r
+       JOIN ai_usage_events e ON e.response_id=r.response_id
+      WHERE r.order_id=$1 ORDER BY r.response_id`,
+    [fixture.target.auditId],
+  )).rows, ledgersBefore);
+  assert.equal(Number((await pool.query(
+    "SELECT COUNT(*)::int AS count FROM discovery_offline_replay_proofs WHERE audit_id=$1",
+    [fixture.target.auditId],
+  )).rows[0].count), 0);
+});
+
 test("Discovery reconciler CLI compiles and executes summary-only against the real schema", () => {
   const cliPath = fileURLToPath(new URL("../scripts/discovery-safe-reconciler.ts", import.meta.url));
   const child = spawnSync(
@@ -1099,6 +1530,89 @@ async function insertDiscoveryProviderProof(auditId: string, responseId: string,
   return { reservationId, usageEventId: Number(usage.rows[0].id) };
 }
 
+async function insertAlexandreOfflineReplayFixture(label: string) {
+  const target = offlineReplay.DISCOVERY_ALEXANDRE_OFFLINE_REPLAY_TARGET;
+  const responses = { ...completeV2Responses(), prenom: "Alexandre" };
+  const oldScores = { legacy: 1 };
+  const oldNarrative = { invalidLegacyReport: label, sections: [] };
+  const oldTxt = `alexandre-invalid-txt:${label}`;
+  const oldHtml = `<p>alexandre-invalid-html:${label}</p>`;
+  const reportGeneratedAt = "2026-08-14T01:00:00.000Z";
+  await pool.query(
+    `INSERT INTO audits
+       (id,email,type,status,responses,scores,narrative_report,report_txt,report_html,
+        report_generated_at,report_delivery_status,report_sent_at,created_at)
+     VALUES ($1,'alexrey47@gmail.com','GRATUIT','COMPLETED',$2::jsonb,$3::jsonb,$4::jsonb,
+             $5,$6,$7::timestamptz,'BATCH_REVIEW',NULL,'2026-08-14T00:00:00.000Z')`,
+    [target.auditId, JSON.stringify(responses), JSON.stringify(oldScores),
+      JSON.stringify(oldNarrative), oldTxt, oldHtml, reportGeneratedAt],
+  );
+  const sourceArtifactId = randomUUID();
+  await pool.query(
+    `INSERT INTO report_artifacts
+       (id,audit_id,tier,engine,model,txt,html,content_sha256,artifact_state,created_at)
+     VALUES ($1,$2,'GRATUIT','legacy','legacy',$3,$4,$5,'ACTIVE','2026-08-14T01:00:00.000Z')`,
+    [sourceArtifactId, target.auditId, oldTxt, oldHtml,
+      batch.discoveryArtifactContentHash(oldTxt, oldHtml)],
+  );
+
+  const firstResponseId = `resp_alexandre_first_${label}`;
+  const secondResponseId = `resp_alexandre_second_${label}`;
+  const firstLedger = await insertDiscoveryProviderProof(target.auditId, firstResponseId, 0.12);
+  const secondLedger = await insertDiscoveryProviderProof(target.auditId, secondResponseId, 0.14);
+  const firstProviderRaw = { rejected: true, reason: label };
+  const secondProviderRaw = buildDiscoveryDefaultMechanismSelection();
+  const replayFixture = await buildValidPersistenceFixture(responses, secondResponseId);
+  const responsesSha256 = offlineReplay.discoveryAlexandreReplaySha256(responses);
+  const firstCandidateId = randomUUID();
+  const secondCandidateId = randomUUID();
+  await pool.query(
+    `INSERT INTO discovery_rejected_candidates
+       (id,generation_claim_token,audit_id,provider_response_id,attempt_no,model,source_kind,
+        provider_raw,provider_raw_sha256,reservation_id,usage_event_id,responses_sha256,
+        validation_errors,actual_cost_usd,state)
+     VALUES ($1,$2,$3,$4,1,'gpt-test','PROVIDER_REJECTED',$5::jsonb,$6,$7,$8,$9,
+             '["synthetic_attempt_1_rejected"]'::jsonb,0.12,'SUPERSEDED')`,
+    [firstCandidateId, randomUUID(), target.auditId, firstResponseId,
+      JSON.stringify(firstProviderRaw), offlineReplay.discoveryAlexandreReplaySha256(firstProviderRaw),
+      firstLedger.reservationId, firstLedger.usageEventId, responsesSha256],
+  );
+  await pool.query(
+    `INSERT INTO discovery_rejected_candidates
+       (id,generation_claim_token,audit_id,provider_response_id,attempt_no,model,source_kind,
+        provider_raw,provider_raw_sha256,assembled_candidate,assembled_sha256,
+        report_txt_sha256,report_html_sha256,artifact_content_sha256,
+        reservation_id,usage_event_id,responses_sha256,validation_errors,actual_cost_usd,state)
+     VALUES ($1,$2,$3,$4,2,'gpt-test','ASSEMBLED_REJECTED',$5::jsonb,$6,$7::jsonb,$8,
+             $9,$10,$11,$12,$13,$14,'["synthetic_attempt_2_rejected"]'::jsonb,
+             0.14,'TERMINAL_REJECTED')`,
+    [secondCandidateId, randomUUID(), target.auditId, secondResponseId,
+      JSON.stringify(secondProviderRaw), offlineReplay.discoveryAlexandreReplaySha256(secondProviderRaw),
+      JSON.stringify(replayFixture.narrativeReport),
+      offlineReplay.discoveryAlexandreReplaySha256(replayFixture.narrativeReport),
+      offlineReplay.discoveryAlexandreReplaySha256(replayFixture.assets.txt),
+      offlineReplay.discoveryAlexandreReplaySha256(replayFixture.assets.html),
+      batch.discoveryArtifactContentHash(replayFixture.assets.txt, replayFixture.assets.html),
+      secondLedger.reservationId, secondLedger.usageEventId, responsesSha256],
+  );
+  return {
+    target,
+    responses,
+    oldScores,
+    oldNarrative,
+    oldTxt,
+    oldHtml,
+    reportGeneratedAt,
+    sourceArtifactId,
+    firstCandidateId,
+    secondCandidateId,
+    firstLedger,
+    secondLedger,
+    secondResponseId,
+    replayFixture,
+  };
+}
+
 function buildDiscoveryProviderEvidence(responseId: string, cost = 0.15) {
   const selection = buildDiscoveryDefaultMechanismSelection();
   return {
@@ -1121,8 +1635,13 @@ async function createSyntheticGenerationBatch(
   label: string,
 ): Promise<string> {
   const rows = await pool.query(
-    `SELECT id,responses,report_delivery_status,report_txt,report_html
-       FROM audits WHERE id=ANY($1::varchar[]) ORDER BY id`,
+    `SELECT a.id,a.responses,a.report_delivery_status,a.report_txt,a.report_html,
+            r.id AS active_artifact_id,r.txt AS active_artifact_txt,
+            r.html AS active_artifact_html,r.content_sha256 AS active_artifact_content_sha256
+       FROM audits a
+       LEFT JOIN report_artifacts r ON r.audit_id=a.id AND r.artifact_state='ACTIVE'
+      WHERE a.id=ANY($1::varchar[])
+      ORDER BY a.id`,
     [auditIds],
   );
   const byId = new Map(rows.rows.map((row) => [String(row.id), row]));
@@ -1148,9 +1667,42 @@ async function createSyntheticGenerationBatch(
         expectedSourceStatus: String(audit.report_delivery_status),
         expectedTxtSha256: audit.report_txt ? batch.discoverySha256(String(audit.report_txt)) : null,
         expectedHtmlSha256: audit.report_html ? batch.discoverySha256(String(audit.report_html)) : null,
+        expectedActiveArtifactId: audit.active_artifact_id || null,
+        expectedActiveArtifactTxtSha256: audit.active_artifact_id
+          ? batch.discoverySha256(String(audit.active_artifact_txt)) : null,
+        expectedActiveArtifactHtmlSha256: audit.active_artifact_id
+          ? batch.discoverySha256(String(audit.active_artifact_html)) : null,
+        expectedActiveArtifactContentSha256: audit.active_artifact_content_sha256 || null,
       };
     }),
   }, pool);
+}
+
+async function startSyntheticGenerationAttempt(auditId: string, label: string) {
+  const lock = await batch.acquireDiscoveryGlobalLock({
+    owner: "postgres-integration",
+    purpose: label,
+  }, pool);
+  const batchId = await createSyntheticGenerationBatch(lock.token, [auditId], label);
+  await batch.markDiscoveryBatchItemPreflightOk({
+    batchId, auditId, lockToken: lock.token,
+  }, pool);
+  await batch.claimDiscoveryProviderAttempt({
+    batchId, auditId, lockToken: lock.token,
+  }, pool);
+  const responseId = `resp_${randomUUID()}`;
+  await insertDiscoveryProviderProof(auditId, responseId, 0.15);
+  await batch.recordDiscoveryProviderUsage({
+    batchId,
+    auditId,
+    lockToken: lock.token,
+    responseId,
+    inputTokens: 100,
+    outputTokens: 50,
+    totalTokens: 150,
+    actualCostUsd: 0.15,
+  }, pool);
+  return { lock, batchId, responseId };
 }
 
 async function runSyntheticRejectedBatchAttempt(input: {
@@ -1621,6 +2173,241 @@ test("a successful soft-cost stop atomically stores one item, skips the remainde
     errorDetail: "synthetic cleanup after proving epoch rotation",
   }, pool);
   await batch.releaseDiscoveryGlobalLock(nextLock.token, pool);
+});
+
+test("GENERATION versions an exact bound ACTIVE artifact among four historical versions", async () => {
+  const source = await insertGenerationVersioningFixture("four-versions");
+  const attempt = await startSyntheticGenerationAttempt(source.auditId, "generation-active-versioning");
+  const itemBinding = (await pool.query(
+    `SELECT expected_active_artifact_id,expected_active_artifact_txt_sha256,
+            expected_active_artifact_html_sha256,expected_active_artifact_content_sha256
+       FROM discovery_batch_items WHERE batch_id=$1 AND audit_id=$2`,
+    [attempt.batchId, source.auditId],
+  )).rows[0];
+  assert.deepEqual(itemBinding, {
+    expected_active_artifact_id: source.activeArtifactId,
+    expected_active_artifact_txt_sha256: batch.discoverySha256(source.sourceTxt),
+    expected_active_artifact_html_sha256: batch.discoverySha256(source.sourceHtml),
+    expected_active_artifact_content_sha256:
+      batch.discoveryArtifactContentHash(source.sourceTxt, source.sourceHtml),
+  });
+  const generated = await buildValidPersistenceFixture(source.responses, attempt.responseId);
+  const persisted = await batch.persistValidatedDiscoveryBatchItem({
+    batchId: attempt.batchId,
+    auditId: source.auditId,
+    lockToken: attempt.lock.token,
+    expectedResponsesSha256: batch.discoverySha256(source.responses),
+    expectedSourceStatus: "PENDING",
+    expectedTxtSha256: batch.discoverySha256(source.sourceTxt),
+    expectedHtmlSha256: batch.discoverySha256(source.sourceHtml),
+    narrativeReport: generated.narrativeReport,
+    scores: generated.scores,
+    txt: generated.assets.txt,
+    html: generated.assets.html,
+    model: "gpt-test",
+  }, pool);
+  const after = (await pool.query(
+    `SELECT id,tier,engine,model,txt,html,content_sha256,batch_id,
+            artifact_state,superseded_at,supersedes_artifact_id,created_at
+       FROM report_artifacts WHERE audit_id=$1 ORDER BY created_at,id`,
+    [source.auditId],
+  )).rows;
+  assert.equal(after.length, 5);
+  const active = after.filter((row) => row.artifact_state === "ACTIVE");
+  assert.equal(active.length, 1);
+  assert.equal(active[0].id, persisted.artifactId);
+  assert.equal(active[0].supersedes_artifact_id, source.activeArtifactId);
+  assert.equal(active[0].batch_id, attempt.batchId);
+  assert.equal(active[0].txt, generated.assets.txt);
+  assert.equal(active[0].html, generated.assets.html);
+  assert.equal(
+    active[0].content_sha256,
+    batch.discoveryArtifactContentHash(generated.assets.txt, generated.assets.html),
+  );
+  for (const historical of source.before) {
+    const preserved = after.find((row) => row.id === historical.id);
+    assert.ok(preserved, historical.id);
+    for (const field of ["id", "tier", "engine", "model", "txt", "html", "content_sha256", "batch_id", "supersedes_artifact_id"] as const) {
+      assert.equal(preserved[field], historical[field], `${historical.id}:${field}`);
+    }
+    assert.equal(new Date(preserved.created_at).toISOString(), new Date(historical.created_at).toISOString());
+  }
+  const priorActive = after.find((row) => row.id === source.activeArtifactId);
+  assert.equal(priorActive.artifact_state, "SUPERSEDED");
+  assert.ok(priorActive.superseded_at);
+  const audit = (await pool.query(
+    `SELECT report_delivery_status,report_sent_at,narrative_report,report_txt,report_html
+       FROM audits WHERE id=$1`,
+    [source.auditId],
+  )).rows[0];
+  assert.equal(audit.report_delivery_status, "BATCH_READY");
+  assert.equal(audit.report_sent_at, null);
+  assert.equal(audit.report_txt, generated.assets.txt);
+  assert.equal(audit.report_html, generated.assets.html);
+  assert.deepEqual(audit.narrative_report, generated.narrativeReport);
+  const providerState = (await pool.query(
+    `SELECT i.provider_calls,
+            (SELECT COUNT(*)::int FROM ai_cost_budget_reservations r
+              WHERE r.product='discovery' AND r.order_id=i.audit_id) AS reservation_count
+       FROM discovery_batch_items i WHERE i.batch_id=$1 AND i.audit_id=$2`,
+    [attempt.batchId, source.auditId],
+  )).rows[0];
+  assert.deepEqual({
+    providerCalls: Number(providerState.provider_calls),
+    reservationCount: Number(providerState.reservation_count),
+  }, { providerCalls: 1, reservationCount: 1 });
+  await batch.releaseDiscoveryGlobalLock(attempt.lock.token, pool);
+});
+
+test("GENERATION fails closed on ACTIVE drift without a second simulated provider attempt", async () => {
+  const source = await insertGenerationVersioningFixture("late-active-drift");
+  const attempt = await startSyntheticGenerationAttempt(source.auditId, "generation-active-drift");
+  const driftedArtifactId = randomUUID();
+  const driftedTxt = "drifted-active-txt";
+  const driftedHtml = "<p>drifted-active-html</p>";
+  await pool.query("BEGIN");
+  try {
+    await pool.query(
+      `UPDATE report_artifacts
+          SET artifact_state='SUPERSEDED',superseded_at=NOW()
+        WHERE id=$1 AND artifact_state='ACTIVE'`,
+      [source.activeArtifactId],
+    );
+    await pool.query(
+      `INSERT INTO report_artifacts
+        (id,audit_id,tier,engine,model,txt,html,content_sha256,
+         artifact_state,supersedes_artifact_id)
+       VALUES ($1,$2,'GRATUIT','external','external',$3,$4,$5,'ACTIVE',$6)`,
+      [driftedArtifactId, source.auditId, driftedTxt, driftedHtml,
+        batch.discoveryArtifactContentHash(driftedTxt, driftedHtml), source.activeArtifactId],
+    );
+    await pool.query("COMMIT");
+  } catch (error) {
+    await pool.query("ROLLBACK");
+    throw error;
+  }
+  const generated = await buildValidPersistenceFixture(source.responses, attempt.responseId);
+  await assert.rejects(
+    batch.persistValidatedDiscoveryBatchItem({
+      batchId: attempt.batchId,
+      auditId: source.auditId,
+      lockToken: attempt.lock.token,
+      expectedResponsesSha256: batch.discoverySha256(source.responses),
+      expectedSourceStatus: "PENDING",
+      expectedTxtSha256: batch.discoverySha256(source.sourceTxt),
+      expectedHtmlSha256: batch.discoverySha256(source.sourceHtml),
+      narrativeReport: generated.narrativeReport,
+      scores: generated.scores,
+      txt: generated.assets.txt,
+      html: generated.assets.html,
+      model: "gpt-test",
+    }, pool),
+    /DISCOVERY_GENERATION_ACTIVE_ARTIFACT_CAS_FAILED/,
+  );
+  const state = (await pool.query(
+    `SELECT i.state,i.provider_calls,
+            (SELECT COUNT(*)::int FROM ai_cost_budget_reservations r
+              WHERE r.product='discovery' AND r.order_id=i.audit_id) AS reservation_count,
+            (SELECT COUNT(*)::int FROM report_artifacts a
+              WHERE a.audit_id=i.audit_id AND a.batch_id=i.batch_id) AS generated_artifact_count,
+            (SELECT COUNT(*)::int FROM report_artifacts a
+              WHERE a.audit_id=i.audit_id AND a.artifact_state='ACTIVE') AS active_count
+       FROM discovery_batch_items i WHERE i.batch_id=$1 AND i.audit_id=$2`,
+    [attempt.batchId, source.auditId],
+  )).rows[0];
+  assert.deepEqual({
+    state: state.state,
+    providerCalls: Number(state.provider_calls),
+    reservationCount: Number(state.reservation_count),
+    generatedArtifactCount: Number(state.generated_artifact_count),
+    activeCount: Number(state.active_count),
+  }, {
+    state: "GENERATED",
+    providerCalls: 1,
+    reservationCount: 1,
+    generatedArtifactCount: 0,
+    activeCount: 1,
+  });
+  assert.equal(
+    (await pool.query(
+      `SELECT id FROM report_artifacts WHERE audit_id=$1 AND artifact_state='ACTIVE'`,
+      [source.auditId],
+    )).rows[0].id,
+    driftedArtifactId,
+  );
+  await batch.releaseDiscoveryGlobalLock(attempt.lock.token, pool);
+});
+
+test("GENERATION rolls back supersede and insert when the final audit write fails", async () => {
+  const source = await insertGenerationVersioningFixture("audit-write-rollback");
+  const attempt = await startSyntheticGenerationAttempt(source.auditId, "generation-audit-write-rollback");
+  const generated = await buildValidPersistenceFixture(source.responses, attempt.responseId);
+  await pool.query(
+    `CREATE OR REPLACE FUNCTION fail_generation_audit_update()
+     RETURNS TRIGGER LANGUAGE plpgsql AS $$
+     BEGIN
+       IF OLD.id = '${source.auditId}' THEN
+         RAISE EXCEPTION 'forced_generation_audit_cas_failure';
+       END IF;
+       RETURN NEW;
+     END;
+     $$`,
+  );
+  await pool.query(
+    `CREATE TRIGGER fail_generation_audit_update_trigger
+       BEFORE UPDATE ON audits FOR EACH ROW EXECUTE FUNCTION fail_generation_audit_update()`,
+  );
+  try {
+    await assert.rejects(
+      batch.persistValidatedDiscoveryBatchItem({
+        batchId: attempt.batchId,
+        auditId: source.auditId,
+        lockToken: attempt.lock.token,
+        expectedResponsesSha256: batch.discoverySha256(source.responses),
+        expectedSourceStatus: "PENDING",
+        expectedTxtSha256: batch.discoverySha256(source.sourceTxt),
+        expectedHtmlSha256: batch.discoverySha256(source.sourceHtml),
+        narrativeReport: generated.narrativeReport,
+        scores: generated.scores,
+        txt: generated.assets.txt,
+        html: generated.assets.html,
+        model: "gpt-test",
+      }, pool),
+      /forced_generation_audit_cas_failure/,
+    );
+  } finally {
+    await pool.query("DROP TRIGGER fail_generation_audit_update_trigger ON audits");
+    await pool.query("DROP FUNCTION fail_generation_audit_update()");
+  }
+  const after = (await pool.query(
+    `SELECT id,tier,engine,model,txt,html,content_sha256,batch_id,
+            artifact_state,superseded_at,supersedes_artifact_id,created_at
+       FROM report_artifacts WHERE audit_id=$1 ORDER BY created_at,id`,
+    [source.auditId],
+  )).rows;
+  assert.deepEqual(after, source.before);
+  const audit = (await pool.query(
+    `SELECT report_delivery_status,narrative_report,report_txt,report_html
+       FROM audits WHERE id=$1`,
+    [source.auditId],
+  )).rows[0];
+  assert.deepEqual(audit, {
+    report_delivery_status: "PENDING",
+    narrative_report: { legacyInvalid: "audit-write-rollback" },
+    report_txt: source.sourceTxt,
+    report_html: source.sourceHtml,
+  });
+  const item = (await pool.query(
+    `SELECT state,provider_calls,artifact_id FROM discovery_batch_items
+      WHERE batch_id=$1 AND audit_id=$2`,
+    [attempt.batchId, source.auditId],
+  )).rows[0];
+  assert.deepEqual({
+    state: item.state,
+    providerCalls: Number(item.provider_calls),
+    artifactId: item.artifact_id,
+  }, { state: "GENERATED", providerCalls: 1, artifactId: null });
+  await batch.releaseDiscoveryGlobalLock(attempt.lock.token, pool);
 });
 
 test("legacy lost output becomes a retryable tombstone without inventing provider bytes", async () => {

@@ -3897,6 +3897,86 @@ export function buildDiscoveryReportAssets(report: ReportData): { txt: string; h
 }
 
 /**
+ * Rebuild a catalogue-backed Discovery report without a provider call.
+ *
+ * This is deliberately narrower than `analyzeDiscoveryScan`: the only prose
+ * accepted here is selected from the immutable catalogue and the selection is
+ * accepted only when every provenance hash still binds.  It is intended for
+ * forensic replay of a previously completed provider selection.
+ */
+export function reconstructDiscoveryCatalogReport(input: {
+  responses: DiscoveryResponses;
+  catalogProvenance: DiscoveryCatalogProvenance;
+  expectedProviderResponseId: string;
+  generatedAt: string;
+}): {
+  narrativeReport: ReportData;
+  scores: Record<string, number>;
+  txt: string;
+  html: string;
+} {
+  const providerResponseId = String(input.expectedProviderResponseId || "").trim();
+  const generatedAt = String(input.generatedAt || "").trim();
+  if (!providerResponseId) throw new Error("DISCOVERY_CATALOG_REPLAY_PROVIDER_RESPONSE_REQUIRED");
+  if (!generatedAt || Number.isNaN(Date.parse(generatedAt))) {
+    throw new Error("DISCOVERY_CATALOG_REPLAY_GENERATED_AT_INVALID");
+  }
+  const questionnaireErrors = validateDiscoveryQuestionnaireContract(input.responses);
+  if (questionnaireErrors.length > 0) {
+    throw new Error(`DISCOVERY_CATALOG_REPLAY_QUESTIONNAIRE_INVALID:${questionnaireErrors.join("|")}`);
+  }
+
+  const provenance = structuredClone(input.catalogProvenance);
+  const selection = validateDiscoveryMechanismSelection(provenance?.selection);
+  const expectedSelectionSha256 = discoveryCatalogSelectionSha256(selection);
+  if (provenance.editorialSourceSha256 !== DISCOVERY_MECHANISM_EDITORIAL_SOURCE_SHA256
+    || provenance.catalogVersion !== DISCOVERY_MECHANISM_CATALOG_VERSION
+    || provenance.catalogSha256 !== DISCOVERY_MECHANISM_CATALOG_SHA256
+    || provenance.selectionSha256 !== expectedSelectionSha256
+    || provenance.providerResponseId !== providerResponseId) {
+    throw new Error("DISCOVERY_CATALOG_REPLAY_PROVENANCE_MISMATCH");
+  }
+
+  const deterministic = calculateDiscoveryDeterministicProfile(input.responses);
+  const assembled = assembleDiscoveryMechanismSelection(selection);
+  const narrativeReport = convertToNarrativeReport({
+    globalScore: deterministic.globalScore,
+    scoresByDomain: deterministic.scoresByDomain,
+    blocages: deterministic.blocages,
+    synthese: assembled.synthesis,
+    sectionContents: assembled.sections,
+    ctaMessage: buildDiscoveryDeterministicCta(
+      deterministic.blocages,
+      deterministic.safetyPolicy,
+    ),
+    knowledgePreflight: { synthesis: "", domains: {} },
+    safetyPolicy: deterministic.safetyPolicy,
+    questionnaireCoverage: deterministic.questionnaireCoverage,
+    catalogProvenance: provenance,
+  }, input.responses, { generatedAt });
+  const provenanceErrors = validateDiscoveryCatalogReportProvenance(
+    narrativeReport,
+    providerResponseId,
+  );
+  if (provenanceErrors.length > 0) {
+    throw new Error(`DISCOVERY_CATALOG_REPLAY_REPORT_PROVENANCE_INVALID:${provenanceErrors.join("|")}`);
+  }
+  const { txt, html } = buildDiscoveryReportAssets(narrativeReport);
+  const scores = { ...deterministic.scoresByDomain, global: deterministic.globalScore };
+  const persistence = validateDiscoveryPersistenceContract({
+    narrativeReport,
+    scores,
+    txt,
+    html,
+    responses: input.responses,
+  });
+  if (!persistence.ok) {
+    throw new Error(`DISCOVERY_CATALOG_REPLAY_PERSISTENCE_INVALID:${persistence.errors.join("|")}`);
+  }
+  return { narrativeReport, scores, txt, html };
+}
+
+/**
  * Audits customer-analysis metadata that is persisted but not necessarily
  * rendered in the narrative. Hidden fields must never be a bypass around the
  * same medical-safety contract enforced on visible sections.

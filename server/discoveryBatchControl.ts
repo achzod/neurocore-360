@@ -123,6 +123,10 @@ export interface DiscoveryBatchManifestItemInput {
   expectedSourceStatus: string | null;
   expectedTxtSha256?: string | null;
   expectedHtmlSha256?: string | null;
+  expectedActiveArtifactId?: string | null;
+  expectedActiveArtifactTxtSha256?: string | null;
+  expectedActiveArtifactHtmlSha256?: string | null;
+  expectedActiveArtifactContentSha256?: string | null;
   initialState?: "QUEUED" | "STORED";
   retryOfCandidateId?: string | null;
 }
@@ -204,6 +208,43 @@ export function discoverySha256(value: unknown): string {
 
 export function discoveryArtifactContentHash(txt: string, html: string): string {
   return discoverySha256(`txt\0${txt}\0html\0${html}`);
+}
+
+function assertExactGenerationActiveArtifact(
+  item: any,
+  rows: any[],
+  errorCode: string,
+): any | null {
+  const expected = {
+    id: item.expected_active_artifact_id == null
+      ? null : String(item.expected_active_artifact_id),
+    txtSha256: item.expected_active_artifact_txt_sha256 == null
+      ? null : String(item.expected_active_artifact_txt_sha256),
+    htmlSha256: item.expected_active_artifact_html_sha256 == null
+      ? null : String(item.expected_active_artifact_html_sha256),
+    contentSha256: item.expected_active_artifact_content_sha256 == null
+      ? null : String(item.expected_active_artifact_content_sha256),
+  };
+  const expectedValues = Object.values(expected);
+  const expectsNoActive = expectedValues.every((value) => value == null);
+  const expectsExactActive = expectedValues.every((value) => value != null);
+  if ((!expectsNoActive && !expectsExactActive)
+    || (expectsNoActive && rows.length !== 0)
+    || (expectsExactActive && rows.length !== 1)) {
+    throw new Error(errorCode);
+  }
+  if (expectsNoActive) return null;
+  const active = rows[0];
+  const txt = String(active.txt);
+  const html = String(active.html);
+  if (String(active.id) !== expected.id
+    || discoverySha256(txt) !== expected.txtSha256
+    || discoverySha256(html) !== expected.htmlSha256
+    || String(active.content_sha256 || "") !== expected.contentSha256
+    || discoveryArtifactContentHash(txt, html) !== expected.contentSha256) {
+    throw new Error(errorCode);
+  }
+  return active;
 }
 
 const DISCOVERY_APPROVAL_MAX_BYTES = 16 * 1024;
@@ -2174,11 +2215,17 @@ export async function createDiscoveryBatchRun(
            (batch_id, audit_id, sequence_no, cohort, state,
             expected_responses_sha256, expected_source_status,
             expected_txt_sha256, expected_html_sha256,
+            expected_active_artifact_id, expected_active_artifact_txt_sha256,
+            expected_active_artifact_html_sha256, expected_active_artifact_content_sha256,
             generated_txt_sha256, generated_html_sha256, retry_of_candidate_id)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
         [batchId, item.auditId, item.sequenceNo, item.cohort,
           item.initialState || "QUEUED", item.expectedResponsesSha256,
           item.expectedSourceStatus, item.expectedTxtSha256 || null, item.expectedHtmlSha256 || null,
+          item.expectedActiveArtifactId || null,
+          item.expectedActiveArtifactTxtSha256 || null,
+          item.expectedActiveArtifactHtmlSha256 || null,
+          item.expectedActiveArtifactContentSha256 || null,
           item.initialState === "STORED" ? item.expectedTxtSha256 || null : null,
           item.initialState === "STORED" ? item.expectedHtmlSha256 || null : null,
           item.retryOfCandidateId || null],
@@ -3047,6 +3094,40 @@ export async function claimDiscoveryProviderAttempt(
       if (item.retry_of_candidate_id || priorCount !== 0) {
         throw new Error("DISCOVERY_BATCH_PRIOR_PROVIDER_ATTEMPT");
       }
+      const generationAudit = await client.query(
+        `SELECT id,responses,report_delivery_status,report_sent_at,report_txt,report_html
+           FROM audits
+          WHERE id=$1 AND type='GRATUIT'
+          FOR UPDATE`,
+        [input.auditId],
+      );
+      const source = generationAudit.rows[0];
+      const liveTxt = String(source?.report_txt || "");
+      const liveHtml = String(source?.report_html || "");
+      if ((generationAudit.rowCount ?? 0) !== 1
+        || source.report_sent_at
+        || String(source.report_delivery_status ?? "") !== String(item.expected_source_status ?? "")
+        || discoverySha256(source.responses) !== String(item.expected_responses_sha256)
+        || (item.expected_txt_sha256 == null
+          ? liveTxt.length !== 0
+          : discoverySha256(liveTxt) !== String(item.expected_txt_sha256))
+        || (item.expected_html_sha256 == null
+          ? liveHtml.length !== 0
+          : discoverySha256(liveHtml) !== String(item.expected_html_sha256))) {
+        throw new Error("DISCOVERY_GENERATION_AUDIT_CAS_FAILED");
+      }
+      const activeArtifacts = await client.query(
+        `SELECT id,txt,html,content_sha256
+           FROM report_artifacts
+          WHERE audit_id=$1 AND artifact_state='ACTIVE'
+          FOR UPDATE`,
+        [input.auditId],
+      );
+      assertExactGenerationActiveArtifact(
+        item,
+        activeArtifacts.rows,
+        "DISCOVERY_GENERATION_ACTIVE_ARTIFACT_CAS_FAILED",
+      );
     } else if (String(batch.stage) === "REGENERATION") {
       if (!item.retry_of_candidate_id || priorCount !== 1 || unsettled !== 0
         || cumulativeCost + DISCOVERY_BATCH_HARD_COST_USD > DISCOVERY_REGENERATION_CUMULATIVE_HARD_COST_USD + 1e-9) {
@@ -3384,7 +3465,29 @@ export async function persistValidatedDiscoveryBatchItem(
       throw new Error("DISCOVERY_AUDIT_SOURCE_ARTIFACT_CHANGED");
     }
     let supersedesArtifactId: string | null = null;
-    if (item.retry_of_candidate_id) {
+    let supersedesArtifactTxt: string | null = null;
+    let supersedesArtifactHtml: string | null = null;
+    let supersedesArtifactContentSha256: string | null = null;
+    if (String(batch.stage) === "GENERATION") {
+      const activeArtifacts = await client.query(
+        `SELECT id,txt,html,content_sha256
+           FROM report_artifacts
+          WHERE audit_id=$1 AND artifact_state='ACTIVE'
+          FOR UPDATE`,
+        [input.auditId],
+      );
+      const activeArtifact = assertExactGenerationActiveArtifact(
+        item,
+        activeArtifacts.rows,
+        "DISCOVERY_GENERATION_ACTIVE_ARTIFACT_CAS_FAILED",
+      );
+      if (activeArtifact) {
+        supersedesArtifactId = String(activeArtifact.id);
+        supersedesArtifactTxt = String(activeArtifact.txt);
+        supersedesArtifactHtml = String(activeArtifact.html);
+        supersedesArtifactContentSha256 = String(activeArtifact.content_sha256);
+      }
+    } else if (item.retry_of_candidate_id) {
       const retrySource = await client.query(
         `SELECT c.*,a.id AS active_artifact_id,a.txt AS active_artifact_txt,
                 a.html AS active_artifact_html,a.content_sha256 AS active_artifact_content_sha256,
@@ -3426,6 +3529,9 @@ export async function persistValidatedDiscoveryBatchItem(
           throw new Error("DISCOVERY_REGENERATION_VERSIONED_SOURCE_CHANGED");
         }
         supersedesArtifactId = String(source.artifact_id);
+        supersedesArtifactTxt = String(source.active_artifact_txt);
+        supersedesArtifactHtml = String(source.active_artifact_html);
+        supersedesArtifactContentSha256 = String(source.active_artifact_content_sha256);
       } else {
         throw new Error("DISCOVERY_REGENERATION_SOURCE_KIND_INVALID");
       }
@@ -3468,11 +3574,13 @@ export async function persistValidatedDiscoveryBatchItem(
             AND txt IS NOT DISTINCT FROM $3 AND html IS NOT DISTINCT FROM $4
             AND content_sha256=$5
           RETURNING id`,
-        [supersedesArtifactId, input.auditId, audit.report_txt, audit.report_html,
-          discoveryArtifactContentHash(currentTxt, currentHtml)],
+        [supersedesArtifactId, input.auditId, supersedesArtifactTxt, supersedesArtifactHtml,
+          supersedesArtifactContentSha256],
       );
       if ((supersededArtifact.rowCount ?? 0) !== 1) {
-        throw new Error("DISCOVERY_REGENERATION_ARTIFACT_SUPERSEDE_CAS_FAILED");
+        throw new Error(String(batch.stage) === "GENERATION"
+          ? "DISCOVERY_GENERATION_ARTIFACT_SUPERSEDE_CAS_FAILED"
+          : "DISCOVERY_REGENERATION_ARTIFACT_SUPERSEDE_CAS_FAILED");
       }
     }
     const artifactId = randomUUID();

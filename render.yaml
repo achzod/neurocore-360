@@ -7,7 +7,7 @@ services:
     # Render runs this after a successful build and before the new process is
     # started. Migrations are strictly ordered and chained with && so the first
     # failed physical schema gate aborts the deployment before the app starts.
-    preDeployCommand: npm run db:migrate:discovery-006 && npm run db:migrate:discovery-007 && npm run db:migrate:discovery-008
+    preDeployCommand: npm run db:migrate:discovery-006 && npm run db:migrate:discovery-007 && npm run db:migrate:discovery-008 && npm run db:migrate:discovery-009 && npm run db:migrate:discovery-010
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:

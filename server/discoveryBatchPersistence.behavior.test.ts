@@ -56,6 +56,9 @@ class FakeClient {
       || /SELECT id, responses, report_delivery_status, report_sent_at, report_txt/.test(text)) {
       return { rows: [this.state.audit], rowCount: 1 };
     }
+    if (/SELECT id,txt,html,content_sha256[\s\S]*FROM report_artifacts[\s\S]*artifact_state='ACTIVE'/.test(text)) {
+      return { rows: [], rowCount: 0 };
+    }
     if (/INSERT INTO report_artifacts/.test(text)) {
       return { rows: [{ id: "artifact-batch-1" }], rowCount: 1 };
     }
@@ -120,6 +123,10 @@ function makeState(overrides: Partial<FakeState> = {}): FakeState {
       expected_source_status: "NEEDS_REVIEW",
       expected_txt_sha256: null,
       expected_html_sha256: null,
+      expected_active_artifact_id: null,
+      expected_active_artifact_txt_sha256: null,
+      expected_active_artifact_html_sha256: null,
+      expected_active_artifact_content_sha256: null,
     },
     audit: {
       id: "audit-1",

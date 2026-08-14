@@ -123,13 +123,53 @@ export async function hasDiscoveryCatalogLedgerBinding(
             AND r.status='COMPLETED' AND r.response_id=$6
            JOIN ai_usage_events e
              ON e.response_id=r.response_id AND e.profile='discovery' AND e.status='completed'
-          WHERE a.id=$2 AND a.audit_id=$1 AND a.batch_id IS NULL
+         WHERE a.id=$2 AND a.audit_id=$1 AND a.batch_id IS NULL
             AND a.artifact_state='ACTIVE'
             AND a.content_sha256=$4 AND a.model=$5
             AND r.detail::jsonb=$7::jsonb
             AND e.model=a.model
             AND e.total_tokens=e.input_tokens+e.output_tokens
             AND ABS(r.actual_cost_usd-e.estimated_openai_cost_usd)<=0.000001
+         UNION ALL
+         SELECT a.id
+           FROM report_artifacts a
+           JOIN discovery_offline_replay_proofs p
+             ON p.replacement_artifact_id=a.id AND p.audit_id=a.audit_id
+           JOIN report_artifacts source
+             ON source.id=p.source_artifact_id AND source.audit_id=p.audit_id
+           JOIN discovery_rejected_candidates c
+             ON c.id=p.candidate_id AND c.audit_id=p.audit_id
+           JOIN ai_cost_budget_reservations r
+             ON r.id=p.reservation_id AND r.id=c.reservation_id
+            AND r.order_id=p.audit_id AND r.product='discovery'
+            AND r.profile='discovery' AND r.status='COMPLETED'
+            AND r.response_id=p.provider_response_id
+           JOIN ai_usage_events e
+             ON e.id=p.usage_event_id AND e.id=c.usage_event_id
+            AND e.response_id=p.provider_response_id
+            AND e.profile='discovery' AND e.status='completed'
+          WHERE a.id=$2 AND a.audit_id=$1 AND a.batch_id IS NULL
+            AND a.artifact_state='ACTIVE'
+            AND a.supersedes_artifact_id=source.id
+            AND source.artifact_state='SUPERSEDED'
+            AND a.content_sha256=$4 AND a.content_sha256=p.artifact_content_sha256
+            AND a.model=$5 AND a.model=e.model AND c.model=e.model
+            AND p.operation='ALEXANDRE_ATTEMPT2_CANONICAL_REPLAY'
+            AND c.attempt_no=2 AND c.source_kind='ASSEMBLED_REJECTED'
+            AND c.state='TERMINAL_REJECTED'
+            AND c.provider_response_id=$6
+            AND c.provider_response_id=p.provider_response_id
+            AND c.responses_sha256=p.responses_sha256
+            AND c.assembled_sha256=p.assembled_candidate_sha256
+            AND p.report_txt_sha256=encode(digest(a.txt,'sha256'),'hex')
+            AND p.report_html_sha256=encode(digest(a.html,'sha256'),'hex')
+            AND p.catalog_provenance=$7::jsonb
+            AND p.catalog_provenance_sha256=encode(
+              digest(convert_to(p.catalog_provenance::text,'UTF8'),'sha256'),'hex'
+            )
+            AND e.total_tokens=e.input_tokens+e.output_tokens
+            AND ABS(r.actual_cost_usd-c.actual_cost_usd)<=0.000001
+            AND ABS(e.estimated_openai_cost_usd-c.actual_cost_usd)<=0.000001
        ) exact_binding`,
     [String(auditId), id, artifact.batchId || null, contentSha256, model, responseId, provenanceJson],
   );

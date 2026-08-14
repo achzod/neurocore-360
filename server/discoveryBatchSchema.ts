@@ -2,7 +2,7 @@ import type { Pool, PoolClient } from "pg";
 
 type Queryable = Pick<Pool | PoolClient, "query">;
 
-export const DISCOVERY_BATCH_SCHEMA_VERSION = 8;
+export const DISCOVERY_BATCH_SCHEMA_VERSION = 9;
 
 const REQUIRED_COLUMNS = Object.freeze([
   ["discovery_batch_items", "expected_source_status", "text", "YES"],
@@ -579,4 +579,62 @@ export async function assertDiscoveryBatchSchemaV008(db: Queryable): Promise<voi
     errors.push("invalid_trigger:discovery_legacy_narrative_provenance_append_only");
   }
   if (errors.length > 0) throw new Error(`DISCOVERY_BATCH_SCHEMA_V008_REQUIRED:${errors.join("|")}`);
+}
+
+/** Physical gate for exact optional ACTIVE artifact binding during GENERATION. */
+export async function assertDiscoveryBatchSchemaV009(db: Queryable): Promise<void> {
+  await assertDiscoveryBatchSchemaV008(db);
+  const errors: string[] = [];
+  const columns = await db.query(
+    `SELECT column_name,data_type,is_nullable,character_maximum_length,column_default
+       FROM information_schema.columns
+      WHERE table_schema=current_schema()
+        AND table_name='discovery_batch_items'
+        AND column_name=ANY($1::text[])`,
+    [[
+      "expected_active_artifact_id",
+      "expected_active_artifact_txt_sha256",
+      "expected_active_artifact_html_sha256",
+      "expected_active_artifact_content_sha256",
+    ]],
+  );
+  const actualColumns = new Map(columns.rows.map((row: any) => [
+    String(row.column_name),
+    `${row.data_type}:${row.is_nullable}:${row.character_maximum_length ?? ""}:${row.column_default ?? ""}`,
+  ]));
+  const expectedColumns = new Map<string, string>([
+    ["expected_active_artifact_id", "character varying:YES:36:"],
+    ["expected_active_artifact_txt_sha256", "character:YES:64:"],
+    ["expected_active_artifact_html_sha256", "character:YES:64:"],
+    ["expected_active_artifact_content_sha256", "character:YES:64:"],
+  ]);
+  for (const [name, expected] of expectedColumns) {
+    const actual = actualColumns.get(name);
+    if (!actual) errors.push(`missing_column:discovery_batch_items.${name}`);
+    else if (actual !== expected) errors.push(`invalid_column:discovery_batch_items.${name}:${actual}`);
+  }
+  const constraint = await db.query(
+    `SELECT pg_get_constraintdef(con.oid,true) AS definition
+       FROM pg_constraint con
+       JOIN pg_class rel ON rel.oid=con.conrelid
+       JOIN pg_namespace nsp ON nsp.oid=rel.relnamespace
+      WHERE nsp.nspname=current_schema()
+        AND rel.relname='discovery_batch_items'
+        AND con.conname='discovery_batch_items_active_artifact_binding_check'`,
+  );
+  const definition = String(constraint.rows[0]?.definition || "").replace(/\s+/g, " ").trim();
+  const expectedDefinition = `CHECK (expected_active_artifact_id IS NULL
+    AND expected_active_artifact_txt_sha256 IS NULL
+    AND expected_active_artifact_html_sha256 IS NULL
+    AND expected_active_artifact_content_sha256 IS NULL
+    OR expected_active_artifact_id IS NOT NULL
+    AND expected_active_artifact_txt_sha256 IS NOT NULL
+    AND expected_active_artifact_html_sha256 IS NOT NULL
+    AND expected_active_artifact_content_sha256 IS NOT NULL)`.replace(/\s+/g, " ").trim();
+  if ((constraint.rowCount ?? 0) !== 1) {
+    errors.push("missing_constraint:discovery_batch_items_active_artifact_binding_check");
+  } else if (definition !== expectedDefinition) {
+    errors.push("invalid_constraint:discovery_batch_items_active_artifact_binding_check");
+  }
+  if (errors.length > 0) throw new Error(`DISCOVERY_BATCH_SCHEMA_V009_REQUIRED:${errors.join("|")}`);
 }

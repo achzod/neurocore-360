@@ -41,6 +41,7 @@ import {
   completeDiscoveryBatchRun,
   createDiscoveryBatchRun,
   decodeDiscoveryApprovalBase64,
+  discoveryArtifactContentHash,
   discoverySha256,
   failDiscoveryBatchItem,
   markDiscoveryBatchItemPreflightOk,
@@ -67,7 +68,7 @@ import {
   DISCOVERY_OTHER_AUDIT_ACTIVE_SQL,
   isDiscoverySupersededTerminal,
 } from "../server/discoverySupersededPolicy";
-import { assertDiscoveryBatchSchemaV008 } from "../server/discoveryBatchSchema";
+import { assertDiscoveryBatchSchemaV009 } from "../server/discoveryBatchSchema";
 import { pool } from "../server/db";
 
 const argv = process.argv.slice(2);
@@ -97,6 +98,11 @@ interface ManifestRow {
   narrativeSha256: string | null;
   txtSha256: string | null;
   htmlSha256: string | null;
+  activeArtifactId: string | null;
+  activeArtifactTxtSha256: string | null;
+  activeArtifactHtmlSha256: string | null;
+  activeArtifactContentSha256: string | null;
+  activeArtifactBindingOk: boolean;
   deliveryGateOk: boolean;
   deliveryGateErrors: string[];
   tracking: { total: number; accepted: number; failed: number; pending: number; hardFailed: number };
@@ -204,6 +210,7 @@ async function buildManifest(): Promise<DiscoveryManifest> {
             (SELECT c.source_kind FROM discovery_rejected_candidates c
               WHERE c.audit_id=a.id ORDER BY c.attempt_no DESC LIMIT 1) AS retry_candidate_source_kind,
             (SELECT COALESCE(jsonb_agg(jsonb_build_object(
+                'id', ra.id,
                 'txt', ra.txt,
                 'html', ra.html,
                 'contentSha256', ra.content_sha256
@@ -246,11 +253,26 @@ async function buildManifest(): Promise<DiscoveryManifest> {
   );
 
   const items: ManifestRow[] = result.rows.map((row: any) => {
+    const activeArtifacts = Array.isArray(row.report_artifacts) ? row.report_artifacts : [];
+    const activeArtifact = activeArtifacts.length === 1 ? activeArtifacts[0] : null;
+    const activeArtifactTxtSha256 = activeArtifact == null
+      ? null : discoverySha256(String(activeArtifact.txt));
+    const activeArtifactHtmlSha256 = activeArtifact == null
+      ? null : discoverySha256(String(activeArtifact.html));
+    const activeArtifactContentSha256 = activeArtifact?.contentSha256 == null
+      ? null : String(activeArtifact.contentSha256);
+    const activeArtifactBindingOk = activeArtifacts.length === 0
+      || (activeArtifacts.length === 1
+        && typeof activeArtifact.id === "string"
+        && /^[a-f0-9-]{36}$/i.test(activeArtifact.id)
+        && /^[a-f0-9]{64}$/.test(String(activeArtifactContentSha256 || ""))
+        && discoveryArtifactContentHash(String(activeArtifact.txt), String(activeArtifact.html))
+          === activeArtifactContentSha256);
     const canonical = resolveCanonicalDiscoveryArtifacts({
       narrativeReport: row.narrative_report,
       reportTxt: row.report_txt,
       reportHtml: row.report_html,
-      reportArtifacts: row.report_artifacts,
+      reportArtifacts: activeArtifacts,
     });
     const structuralGate = evaluateCanonicalDiscoveryArtifacts(canonical);
     const questionnaireErrors = validateDiscoveryQuestionnaireContract(row.responses || {});
@@ -326,6 +348,11 @@ async function buildManifest(): Promise<DiscoveryManifest> {
         ? null : discoverySha256(row.narrative_report),
       txtSha256: row.report_txt == null ? null : discoverySha256(String(row.report_txt)),
       htmlSha256: row.report_html == null ? null : discoverySha256(String(row.report_html)),
+      activeArtifactId: activeArtifact?.id == null ? null : String(activeArtifact.id),
+      activeArtifactTxtSha256,
+      activeArtifactHtmlSha256,
+      activeArtifactContentSha256,
+      activeArtifactBindingOk,
       deliveryGateOk: gate.ok,
       deliveryGateErrors: gate.errors,
       tracking,
@@ -440,6 +467,7 @@ function assertExactTargetsEligible(
     if (stage === "GENERATION") {
       if (item.cohort !== "invalid") reasons.push(`cohort_${item.cohort}`);
       if (item.providerAttemptCount !== 0) reasons.push("prior_provider_attempt_exists");
+      if (!item.activeArtifactBindingOk) reasons.push("active_artifact_binding_incomplete");
     } else if (stage === "REGENERATION") {
       if (!item.regenerationEligible) reasons.push("regeneration_not_classified");
       if (item.reportDeliveryStatus !== "BATCH_REVIEW") reasons.push("not_batch_review");
@@ -511,6 +539,10 @@ async function runGeneration(
         expectedSourceStatus: item.reportDeliveryStatus,
         expectedTxtSha256: item.txtSha256,
         expectedHtmlSha256: item.htmlSha256,
+        expectedActiveArtifactId: item.activeArtifactId,
+        expectedActiveArtifactTxtSha256: item.activeArtifactTxtSha256,
+        expectedActiveArtifactHtmlSha256: item.activeArtifactHtmlSha256,
+        expectedActiveArtifactContentSha256: item.activeArtifactContentSha256,
         retryOfCandidateId: stage === "REGENERATION" ? item.retryCandidateId : null,
       })),
     });
@@ -826,7 +858,7 @@ async function runDelivery(
 }
 
 async function main(): Promise<void> {
-  await assertDiscoveryBatchSchemaV008(pool);
+  await assertDiscoveryBatchSchemaV009(pool);
   const manifest = await buildManifest();
   const outputPath = valueAfter("--out");
   if (outputPath) writeFileSync(outputPath, `${JSON.stringify(manifest, null, 2)}\n`, { flag: "wx" });
