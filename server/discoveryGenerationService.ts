@@ -2,8 +2,13 @@ import {
   analyzeDiscoveryScan,
   buildDiscoveryReportAssets,
   convertToNarrativeReport,
+  DISCOVERY_MECHANISM_CATALOG_SHA256,
+  DISCOVERY_MECHANISM_CATALOG_VERSION,
+  DISCOVERY_MECHANISM_EDITORIAL_SOURCE_SHA256,
   DiscoveryRejectedCandidateError,
+  discoveryCatalogSelectionSha256,
   isDiscoveryRejectedCandidateError,
+  validateDiscoveryCatalogReportProvenance,
   validateDiscoveryReportAgainstResponses,
   validateDiscoveryReportForDelivery,
 } from "./discovery-scan";
@@ -47,10 +52,24 @@ async function runClaimedDiscoveryGeneration(
       costBudgetGenerationToken: claim.token,
       costBudgetFenceToken: claim.fenceToken,
     });
+    const evidence = result.providerEvidence;
+    const catalogProvenance = result.catalogProvenance;
+    if (!evidence?.responseId || !catalogProvenance
+      || catalogProvenance.editorialSourceSha256 !== DISCOVERY_MECHANISM_EDITORIAL_SOURCE_SHA256
+      || evidence.catalogVersion !== DISCOVERY_MECHANISM_CATALOG_VERSION
+      || evidence.catalogSha256 !== DISCOVERY_MECHANISM_CATALOG_SHA256
+      || evidence.selectionSha256 !== discoveryCatalogSelectionSha256(catalogProvenance.selection)
+      || catalogProvenance.catalogVersion !== evidence.catalogVersion
+      || catalogProvenance.catalogSha256 !== evidence.catalogSha256
+      || catalogProvenance.selectionSha256 !== evidence.selectionSha256
+      || catalogProvenance.providerResponseId !== evidence.responseId) {
+      throw new Error("DISCOVERY_GENERIC_CATALOG_PROVIDER_EVIDENCE_MISMATCH");
+    }
     const nonRenderedMetadata = {
       blocages: result.blocages,
       ctaMessage: result.ctaMessage,
       questionnaireCoverage: result.questionnaireCoverage,
+      catalogProvenance,
     };
     let report: Awaited<ReturnType<typeof convertToNarrativeReport>> | undefined;
     let assets: ReturnType<typeof buildDiscoveryReportAssets> | undefined;
@@ -65,8 +84,9 @@ async function runClaimedDiscoveryGeneration(
         nonRenderedMetadata,
       );
       gate = evaluateDiscoveryDeliveryGate(report, assets, undefined, nonRenderedMetadata);
-      if (!validation.ok || !factual.ok || !gate.ok) {
-        throw new Error([...validation.errors, ...factual.errors, ...gate.errors].join("|"));
+      const catalogErrors = validateDiscoveryCatalogReportProvenance(report, evidence.responseId);
+      if (!validation.ok || !factual.ok || !gate.ok || catalogErrors.length > 0) {
+        throw new Error([...validation.errors, ...factual.errors, ...gate.errors, ...catalogErrors].join("|"));
       }
     } catch (assemblyError) {
       const evidence = result.providerEvidence;
@@ -102,7 +122,8 @@ async function runClaimedDiscoveryGeneration(
       html: assets.html,
       expectedTxtSha256: discoveryTransactionalSha256(assets.txt),
       expectedHtmlSha256: discoveryTransactionalSha256(assets.html),
-      model: process.env.OPENAI_DISCOVERY_MODEL || process.env.OPENAI_REPORT_MODEL || "discovery",
+      model: evidence.model,
+      providerEvidence: evidence,
     });
     return true;
   } catch (error) {

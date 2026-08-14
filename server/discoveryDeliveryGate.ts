@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import type { Pool, PoolClient } from "pg";
 
 import {
   buildDiscoveryReportAssets,
@@ -19,6 +20,119 @@ export interface DiscoveryDeliveryGateResult {
 }
 
 type NarrativeReport = Record<string, unknown> | null | undefined;
+type Queryable = Pick<Pool | PoolClient, "query">;
+
+const CATALOG_PROVENANCE_KEYS = [
+  "catalogSha256",
+  "catalogVersion",
+  "editorialSourceSha256",
+  "providerResponseId",
+  "selection",
+  "selectionSha256",
+] as const;
+
+/** Canonical durable representation shared by persistence and public exposure. */
+export function normalizeDiscoveryCatalogProvenanceForLedger(
+  raw: unknown,
+): Record<string, unknown> | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const candidate = raw as Record<string, unknown>;
+  if (Object.keys(candidate).sort().join(",") !== [...CATALOG_PROVENANCE_KEYS].sort().join(",")) {
+    return null;
+  }
+  for (const key of ["catalogSha256", "editorialSourceSha256", "selectionSha256"] as const) {
+    if (!/^[a-f0-9]{64}$/.test(String(candidate[key] || ""))) return null;
+  }
+  if (!String(candidate.catalogVersion || "").trim()
+    || !String(candidate.providerResponseId || "").trim()
+    || !candidate.selection || typeof candidate.selection !== "object"
+    || Array.isArray(candidate.selection)) return null;
+  return Object.fromEntries(CATALOG_PROVENANCE_KEYS.map((key) => [key, candidate[key]]));
+}
+
+export interface DiscoveryCatalogExposureArtifact {
+  id?: unknown;
+  batchId?: unknown;
+  model?: unknown;
+  txt?: unknown;
+  html?: unknown;
+  contentSha256?: unknown;
+}
+
+/**
+ * Proves that the exact public artifact is owned by exactly one completed
+ * provider ledger. Batch artifacts additionally require their STORED item,
+ * terminal batch and the complete catalogue provenance captured at storage.
+ */
+export async function hasDiscoveryCatalogLedgerBinding(
+  db: Queryable,
+  auditId: unknown,
+  artifact: DiscoveryCatalogExposureArtifact,
+  rawProvenance: unknown,
+): Promise<boolean> {
+  const provenance = normalizeDiscoveryCatalogProvenanceForLedger(rawProvenance);
+  const id = String(artifact.id || "").trim();
+  const model = String(artifact.model || "").trim();
+  const txt = String(artifact.txt || "");
+  const html = String(artifact.html || "");
+  const contentSha256 = String(artifact.contentSha256 || "").trim();
+  const expectedContentSha256 = createHash("sha256")
+    .update(`txt\0${txt}\0html\0${html}`)
+    .digest("hex");
+  if (!provenance || !id || !String(auditId || "").trim() || !model
+    || contentSha256 !== expectedContentSha256) return false;
+  const responseId = String(provenance.providerResponseId);
+  const provenanceJson = JSON.stringify(provenance);
+  const result = await db.query(
+    `SELECT COUNT(*)::int AS match_count
+       FROM (
+         SELECT a.id
+           FROM report_artifacts a
+           JOIN discovery_batch_runs b ON b.id=a.batch_id
+           JOIN discovery_batch_items i
+             ON i.artifact_id=a.id AND i.audit_id=a.audit_id AND i.batch_id=a.batch_id
+           JOIN ai_cost_budget_reservations r
+             ON r.id=i.provider_reservation_id AND r.order_id=i.audit_id
+            AND r.product='discovery' AND r.profile='discovery'
+            AND r.status='COMPLETED' AND r.response_id=i.provider_response_id
+           JOIN ai_usage_events e
+             ON e.id=i.provider_usage_event_id AND e.response_id=i.provider_response_id
+            AND e.profile='discovery' AND e.status='completed'
+          WHERE a.id=$2 AND a.audit_id=$1 AND a.batch_id=$3::uuid
+            AND a.content_sha256=$4 AND a.model=$5
+            AND b.stage IN ('GENERATION','REGENERATION') AND b.status='COMPLETED'
+            AND i.state='STORED' AND i.provider_calls=1
+            AND i.provider_response_id=$6
+            AND i.error_code='DISCOVERY_CATALOG_PROVENANCE'
+            AND i.error_detail::jsonb=$7::jsonb
+            AND i.generated_txt_sha256=encode(digest(a.txt,'sha256'),'hex')
+            AND i.generated_html_sha256=encode(digest(a.html,'sha256'),'hex')
+            AND r.created_at>=i.provider_started_at AND e.created_at>=i.provider_started_at
+            AND e.input_tokens=i.input_tokens AND e.output_tokens=i.output_tokens
+            AND e.total_tokens=i.total_tokens
+            AND e.total_tokens=e.input_tokens+e.output_tokens
+            AND ABS(r.actual_cost_usd-i.actual_cost_usd)<=0.000001
+            AND ABS(e.estimated_openai_cost_usd-i.actual_cost_usd)<=0.000001
+            AND e.model=a.model
+         UNION ALL
+         SELECT a.id
+           FROM report_artifacts a
+           JOIN ai_cost_budget_reservations r
+             ON r.order_id=a.audit_id AND r.product='discovery' AND r.profile='discovery'
+            AND r.status='COMPLETED' AND r.response_id=$6
+           JOIN ai_usage_events e
+             ON e.response_id=r.response_id AND e.profile='discovery' AND e.status='completed'
+          WHERE a.id=$2 AND a.audit_id=$1 AND a.batch_id IS NULL
+            AND a.content_sha256=$4 AND a.model=$5
+            AND r.detail::jsonb=$7::jsonb
+            AND e.model=a.model
+            AND e.total_tokens=e.input_tokens+e.output_tokens
+            AND ABS(r.actual_cost_usd-e.estimated_openai_cost_usd)<=0.000001
+       ) exact_binding`,
+    [String(auditId), id, artifact.batchId || null, contentSha256, model, responseId, provenanceJson],
+  );
+  return Number(result.rows[0]?.match_count || 0) === 1;
+}
 
 export interface DiscoveryArtifactSource {
   narrativeReport?: unknown;
@@ -37,6 +151,10 @@ export interface DiscoveryPublicExposureSource extends DiscoveryArtifactSource {
   type?: unknown;
   reportDeliveryStatus?: unknown;
   responses?: unknown;
+  /** Durable provider/ledger ownership proof loaded from PostgreSQL.  New
+   * catalogue reports remain private unless their exact artifact and
+   * response provenance are bound to one completed provider ledger row. */
+  catalogLedgerBound?: boolean;
 }
 
 /** A QA hold (BATCH_READY/BATCH_REVIEW) is never a public report. */
@@ -45,6 +163,7 @@ export function canExposeDiscoveryReport(source: DiscoveryPublicExposureSource):
   if (!["READY", "SENT"].includes(String(source.reportDeliveryStatus || "").toUpperCase())) return false;
   const canonical = resolveCanonicalDiscoveryArtifacts(source);
   if (!canonical.report || !source.responses || typeof source.responses !== "object") return false;
+  if (canonical.report.generationQuality?.version === 2 && source.catalogLedgerBound !== true) return false;
   return evaluateCanonicalDiscoveryArtifacts(canonical).ok
     && hasPassingPersistedDiscoveryDeliveryGate(source.narrativeReport as NarrativeReport)
     && validateDiscoveryReportAgainstResponses(

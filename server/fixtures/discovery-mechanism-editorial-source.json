@@ -1,0 +1,178 @@
+[
+  {
+    "domain": "sommeil",
+    "synthesis": "Le sommeil structure la récupération, la régulation de l'appétit, la sensibilité à l'insuline et la qualité de la vigilance. Quand sa durée, sa continuité ou son ancrage circadien deviennent irréguliers, l'ensemble de la physiologie quotidienne tend à fonctionner avec moins de marge et plus de variabilité.",
+    "snippets": [
+      {
+        "id": "sommeil_01",
+        "text": "Le sommeil n'est pas un simple temps d'arrêt. Il organise une alternance de phases profondes et paradoxales qui participent à la restauration nerveuse, à la consolidation mnésique et à la récupération tissulaire. Quand cette architecture se fragmente, la sensation de repos peut diminuer même si le temps passé au lit paraît suffisant."
+      },
+      {
+        "id": "sommeil_02",
+        "text": "L'horloge circadienne synchronise la température corporelle, la vigilance, l'appétit et la sécrétion de plusieurs signaux hormonaux sur vingt-quatre heures. Des horaires de coucher et de lever instables déplacent ce tempo biologique et augmentent souvent l'écart entre le moment où l'organisme veut dormir et celui où la journée sociale l'impose."
+      },
+      {
+        "id": "sommeil_03",
+        "text": "Une restriction de sommeil répétée modifie rapidement la régulation énergétique. La faim tend à devenir plus présente, les aliments denses en énergie deviennent plus attractifs et la sensibilité à l'insuline peut se dégrader transitoirement. Ce terrain favorise une impression de contrôle plus coûteuse au fil de la journée."
+      },
+      {
+        "id": "sommeil_04",
+        "text": "Le sommeil influence aussi la récupération de l'effort. Une nuit de qualité insuffisante réduit souvent la tolérance à la charge, la précision motrice et la vitesse de restauration entre deux séances. Le ressenti de fatigue peut alors refléter moins un manque de volonté qu'une récupération biologique incomplète."
+      }
+    ]
+  },
+  {
+    "domain": "energie",
+    "synthesis": "L'énergie perçue émerge d'un dialogue entre sommeil, disponibilité du carburant, fonction cellulaire, charge mentale et rythme quotidien. Lorsqu'un de ces étages devient instable, la journée paraît souvent irrégulière, avec des pics brefs suivis de replis plus marqués.",
+    "snippets": [
+      {
+        "id": "energie_01",
+        "text": "La sensation d'énergie dépend en grande partie de la capacité des cellules à produire de l'ATP à partir du glucose, des acides gras et de l'oxygène. Quand cette production devient moins fluide, la motivation et la clarté mentale peuvent baisser sans que le besoin de repos soit toujours évident au premier regard."
+      },
+      {
+        "id": "energie_02",
+        "text": "La stabilité glycémique pèse fortement sur le niveau d'énergie. Un apport très rapide en glucides, surtout lorsqu'il est peu freiné par des protéines, des fibres ou des lipides, peut être suivi d'une réponse insulinique marquée puis d'une baisse de tonus plus nette une à deux heures plus tard."
+      },
+      {
+        "id": "energie_03",
+        "text": "Le système nerveux autonome joue un rôle central dans l'énergie ressentie. Un état de tension prolongée peut maintenir une vigilance apparente tout en réduisant progressivement la sensation de réserve physiologique. Cette dissociation peut s'accompagner d'un niveau d'activation visible alors même que la stabilité énergétique devient plus fragile."
+      },
+      {
+        "id": "energie_04",
+        "text": "L'énergie quotidienne suit aussi une logique circadienne. Une exposition lumineuse tardive, des repas décalés ou un sommeil mal aligné déplacent les fenêtres naturelles d'éveil et de récupération. Le résultat n'est pas forcément une fatigue constante, mais plus souvent une énergie imprévisible et difficile à stabiliser."
+      }
+    ]
+  },
+  {
+    "domain": "digestion",
+    "synthesis": "La digestion ne se limite pas au confort abdominal. Elle conditionne l'assimilation, influence la motricité digestive et dialogue en permanence avec le système nerveux. Lorsqu'elle devient irrégulière, les répercussions dépassent souvent le repas lui-même.",
+    "snippets": [
+      {
+        "id": "digestion_01",
+        "text": "La digestion repose sur une succession d'étapes coordonnées, de la mastication à l'absorption intestinale. Si le rythme de vidange, le brassage ou le transit deviennent moins harmonieux, la perception digestive peut changer avec des sensations de lourdeur, de tension ou d'inconfort après les repas."
+      },
+      {
+        "id": "digestion_02",
+        "text": "L'intestin représente une interface majeure entre les apports alimentaires, la motricité digestive et l'assimilation. Quand ce fonctionnement est exposé à des repas très irréguliers, peu diversifiés ou mal tolérés, le confort digestif et la qualité du transit peuvent devenir plus variables, avec un retentissement possible sur le ressenti général après les repas."
+      },
+      {
+        "id": "digestion_03",
+        "text": "Le stress modifie directement la fonction digestive. En contexte de tension, la motricité, les sécrétions et la perception viscérale changent souvent de profil, ce qui peut rendre la digestion plus lente, plus sensible ou plus variable. Cette relation explique pourquoi le même repas peut être vécu différemment selon le contexte nerveux."
+      },
+      {
+        "id": "digestion_04",
+        "text": "Le confort digestif influence aussi l'énergie postprandiale. Lorsqu'un repas s'accompagne d'une somnolence ou d'une baisse de clarté mentale ensuite, ce ressenti peut refléter plusieurs mécanismes physiologiques concomitants sans permettre, à lui seul, d'en identifier la cause exacte."
+      }
+    ]
+  },
+  {
+    "domain": "nutrition",
+    "synthesis": "La nutrition façonne à la fois le signal énergétique, la disponibilité des matériaux de réparation et la qualité de la régulation hormonale. Sa cohérence ne tient pas seulement à la quantité totale, mais aussi à la densité nutritionnelle, à la répartition et à la répétition des choix dans le temps.",
+    "snippets": [
+      {
+        "id": "nutrition_01",
+        "text": "La composition d'un repas modifie la cinétique d'absorption et la réponse de satiété. Les protéines, les fibres et une matrice alimentaire peu transformée ralentissent généralement la montée glycémique et prolongent la stabilité de l'énergie. À l'inverse, des aliments riches en glucides rapidement assimilables favorisent souvent des oscillations plus marquées."
+      },
+      {
+        "id": "nutrition_02",
+        "text": "L'apport protéique ne sert pas uniquement à la masse musculaire. Il participe aussi au renouvellement enzymatique, à la structure des tissus et au maintien d'une satiété plus solide. Une distribution trop irrégulière au cours de la journée peut laisser des périodes où la réparation et le contrôle de l'appétit deviennent moins efficaces."
+      },
+      {
+        "id": "nutrition_03",
+        "text": "La densité micronutritionnelle conditionne une grande partie du rendement métabolique. Les vitamines, minéraux et cofacteurs soutiennent la production d'énergie, la transmission nerveuse et de nombreuses réactions de régulation. Une alimentation suffisante en volume peut donc rester qualitativement pauvre si cette densité n'est pas au rendez-vous."
+      },
+      {
+        "id": "nutrition_04",
+        "text": "L'hydratation fait partie intégrante de la nutrition fonctionnelle. Une baisse modérée du statut hydrique peut déjà altérer la concentration, la perception de l'effort et certains paramètres digestifs. Ce levier paraît discret, mais il influence la qualité d'exécution de nombreuses fonctions simultanément."
+      }
+    ]
+  },
+  {
+    "domain": "training",
+    "synthesis": "L'entraînement agit comme un stimulus d'adaptation, pas comme un bénéfice automatique. Son effet dépend de la dose, de la répétition, de la variété du signal et de la capacité de récupération. Sans cet équilibre, la charge peut produire plus de bruit que de progression.",
+    "snippets": [
+      {
+        "id": "training_01",
+        "text": "Une séance d'entraînement crée un stress mécanique, métabolique et nerveux auquel l'organisme répond par adaptation. Cette réponse n'apparaît que si la charge est suffisamment lisible pour le corps, puis suivie d'un temps de récupération adapté. Sans cette séquence complète, le stimulus peut rester inachevé."
+      },
+      {
+        "id": "training_02",
+        "text": "La progression repose sur une logique de surcharge maîtrisée. Lorsque le volume, l'intensité ou la fréquence augmentent sans coordination claire, la fatigue accumulée peut masquer le gain réel d'adaptation. Le ressenti d'effort grimpe alors plus vite que la capacité à performer."
+      },
+      {
+        "id": "training_03",
+        "text": "La récupération est une composante interne de l'entraînement. Sommeil, apports nutritionnels, système nerveux et disponibilité énergétique déterminent si la séance sera intégrée comme un signal constructif ou comme une contrainte supplémentaire. Deux charges identiques peuvent donc produire des effets très différents selon le terrain physiologique."
+      },
+      {
+        "id": "training_04",
+        "text": "Le travail cardiovasculaire et le travail de force n'agissent pas sur les mêmes adaptations, mais ils dialoguent fortement. Une base aérobie plus solide améliore souvent la récupération entre les efforts, tandis qu'un meilleur niveau de force augmente l'économie de mouvement. L'équilibre entre ces qualités contribue à une progression plus stable."
+      }
+    ]
+  },
+  {
+    "domain": "stress",
+    "synthesis": "Le stress est une réponse d'adaptation utile à court terme, mais coûteuse lorsqu'elle s'installe sans relâche réelle. Dans ce contexte, les conséquences se lisent souvent dans le sommeil, la digestion, l'énergie, la concentration et la capacité à récupérer d'un effort ordinaire.",
+    "snippets": [
+      {
+        "id": "stress_01",
+        "text": "Face à une contrainte perçue, l'organisme mobilise une réponse neuroendocrinienne destinée à protéger la performance immédiate. Cette mobilisation améliore brièvement la vigilance et la disponibilité du carburant. Lorsqu'elle persiste trop souvent, elle cesse d'être économique et devient plus perturbatrice que productive."
+      },
+      {
+        "id": "stress_02",
+        "text": "Le stress chronique modifie la qualité du repos en maintenant un niveau d'alerte trop élevé au moment où le corps devrait ralentir. L'endormissement peut devenir moins fluide, les réveils plus fréquents et la profondeur du sommeil plus difficile à atteindre. La fatigue du lendemain reflète alors autant la tension de la veille que la nuit elle-même."
+      },
+      {
+        "id": "stress_03",
+        "text": "L'axe du stress interagit aussi avec la régulation digestive et immunitaire. Une activation répétée du système sympathique réduit souvent la priorité donnée aux fonctions de repos et de digestion. Cette réallocation physiologique peut rendre l'intestin plus sensible et le confort digestif plus variable."
+      },
+      {
+        "id": "stress_04",
+        "text": "La charge mentale prolongée altère fréquemment la qualité de l'attention et la stabilité émotionnelle. Lorsque les sollicitations cognitives s'accumulent, la concentration devient moins stable, les arbitrages paraissent plus laborieux et la dispersion peut augmenter. Ce terrain favorise souvent l'irritabilité et la recherche de compensations rapides."
+      }
+    ]
+  },
+  {
+    "domain": "lifestyle",
+    "synthesis": "Le mode de vie constitue le décor biologique permanent dans lequel tous les autres leviers opèrent. Lumière, mouvement spontané, position assise, écrans, caféine et rythme social peuvent soit renforcer la physiologie de base, soit lui imposer une friction continue.",
+    "snippets": [
+      {
+        "id": "lifestyle_01",
+        "text": "La sédentarité prolongée agit indépendamment de la présence d'un entraînement formel. Passer de longues heures assis réduit l'activité musculaire de fond et les occasions de mouvement spontané, tout en abaissant la dépense quotidienne non structurée. Cette baisse du mouvement diffus influence la gestion énergétique sur l'ensemble de la journée."
+      },
+      {
+        "id": "lifestyle_02",
+        "text": "La lumière ambiante sert de synchroniseur majeur pour l'horloge biologique. Une exposition trop faible le matin ou trop intense le soir déplace la chronologie interne et perturbe la relation entre éveil, appétit et sommeil. Ce décalage paraît parfois discret, mais il modifie le rendement du rythme quotidien."
+      },
+      {
+        "id": "lifestyle_03",
+        "text": "La caféine modifie la perception de fatigue en bloquant temporairement certains signaux de pression de sommeil. Son effet peut être utile, mais sa demi-vie relativement longue signifie qu'une consommation tardive continue souvent d'agir alors que la soirée commence. La sensation d'éveil immédiat peut donc dégrader le sommeil plus tard dans le cycle."
+      },
+      {
+        "id": "lifestyle_04",
+        "text": "Le temps d'écran n'agit pas seulement par sa lumière. Il prolonge souvent la stimulation cognitive, fragmente l'attention et retarde les transitions vers des états de calme. Dans une journée déjà dense, cette stimulation résiduelle peut entretenir un système nerveux encore actif au moment où la récupération devrait prendre le relais."
+      }
+    ]
+  },
+  {
+    "domain": "mindset",
+    "synthesis": "La dimension mentale n'est pas détachée du corps. Motivation, constance, tolérance à la frustration et qualité des décisions dépendent d'une base neurobiologique qui intègre sommeil, stress, énergie et expériences passées. La dimension mentale est donc réelle, mais rarement isolée du reste du terrain.",
+    "snippets": [
+      {
+        "id": "mindset_01",
+        "text": "La motivation fluctue avec la disponibilité du système nerveux. Quand le sommeil est insuffisant ou que la charge de stress reste élevée, la poursuite d'un objectif demande souvent plus d'effort conscient pour un même résultat comportemental. Ce décalage peut être interprété à tort comme un manque de discipline alors qu'il reflète une baisse de réserve adaptative."
+      },
+      {
+        "id": "mindset_02",
+        "text": "Le cerveau apprend par répétition et par récompense perçue. Si les signaux de progression restent trop diffus ou trop tardifs, l'engagement devient plus fragile et la recherche de gratifications immédiates prend plus de place. Cette dynamique n'est pas un défaut de caractère, mais une logique de priorisation du système de décision."
+      },
+      {
+        "id": "mindset_03",
+        "text": "Les expériences antérieures influencent fortement l'adhésion future. Des phases d'échec, d'effort mal récompensé ou de règles trop rigides peuvent abaisser la confiance opérationnelle et rendre l'action plus hésitante. Le mental se construit alors moins sur l'intention déclarée que sur la mémoire des résultats réellement vécus."
+      },
+      {
+        "id": "mindset_04",
+        "text": "L'environnement comportemental module directement la qualité des choix. Quand les obstacles à l'action sont faibles et les sollicitations parasites plus rares, la constance devient moins coûteuse à maintenir. À l'inverse, un environnement saturé en arbitrages rapides use la capacité de décision et favorise la dispersion."
+      }
+    ]
+  }
+]

@@ -7,10 +7,15 @@ import {
 } from "./discoveryAutomationPolicy";
 import { DISCOVERY_SUPERSEDED_TERMINAL_SQL } from "./discoverySupersededPolicy";
 import {
+  type DiscoveryProviderEvidence,
   type DiscoveryRejectedCandidatePayload,
+  validateDiscoveryCatalogReportProvenance,
   validateDiscoveryPersistenceContract,
 } from "./discovery-scan";
-import { hasPassingPersistedDiscoveryDeliveryGate } from "./discoveryDeliveryGate";
+import {
+  hasPassingPersistedDiscoveryDeliveryGate,
+  normalizeDiscoveryCatalogProvenanceForLedger,
+} from "./discoveryDeliveryGate";
 
 export const DISCOVERY_TRANSACTION_FENCE_KEY = "discovery-automation-fence-v1";
 
@@ -19,6 +24,7 @@ export interface DiscoveryGenerationClaim {
   token: string;
   fenceToken: string | null;
   expectedResponsesSha256: string;
+  claimedAt: string;
 }
 
 export interface DiscoveryAtomicPersistenceInput {
@@ -30,6 +36,7 @@ export interface DiscoveryAtomicPersistenceInput {
   expectedTxtSha256: string;
   expectedHtmlSha256: string;
   model: string;
+  providerEvidence: DiscoveryProviderEvidence;
 }
 
 type PoolLike = Pick<Pool, "connect">;
@@ -106,6 +113,7 @@ export async function claimDiscoveryGeneration(
   const pool = await resolvePool(poolOverride);
   const client = await pool.connect();
   const token = randomUUID();
+  const claimedAt = new Date().toISOString();
   try {
     await beginFencedTransaction(client as PoolClient);
     const fenceToken = await readInactiveGlobalFence(client as PoolClient);
@@ -136,7 +144,7 @@ export async function claimDiscoveryGeneration(
       token,
       fenceToken,
       responsesSha256: expectedResponsesSha256,
-      claimedAt: new Date().toISOString(),
+      claimedAt,
     });
     const updated = await client.query(
       `UPDATE audits
@@ -182,7 +190,7 @@ export async function claimDiscoveryGeneration(
       return null;
     }
     await client.query("COMMIT");
-    return { auditId, token, fenceToken, expectedResponsesSha256 };
+    return { auditId, token, fenceToken, expectedResponsesSha256, claimedAt };
   } catch (error) {
     await client.query("ROLLBACK").catch(() => {});
     throw error;
@@ -234,6 +242,57 @@ export async function persistClaimedDiscoveryGeneration(
     }
     if (discoveryTransactionalSha256(audit.responses) !== input.claim.expectedResponsesSha256) {
       throw new Error("DISCOVERY_GENERATION_RESPONSES_CHANGED");
+    }
+    const evidence = input.providerEvidence;
+    const catalogErrors = validateDiscoveryCatalogReportProvenance(
+      input.narrativeReport as any,
+      evidence.responseId,
+    );
+    if ((input.narrativeReport as any)?.generationQuality?.version !== 2
+      || catalogErrors.length > 0) {
+      throw new Error(`DISCOVERY_GENERIC_CATALOG_PROVENANCE_FAILED:${catalogErrors.join("|")}`);
+    }
+    const ledger = await client.query(
+      `SELECT r.id AS reservation_id,r.actual_cost_usd,e.id AS usage_event_id,
+              e.input_tokens,e.output_tokens,e.total_tokens,
+              e.estimated_openai_cost_usd,e.model
+         FROM ai_cost_budget_reservations r
+         JOIN ai_usage_events e ON e.response_id=r.response_id
+        WHERE r.product='discovery' AND r.order_id=$1
+          AND r.response_id=$2 AND r.status='COMPLETED'
+          AND r.created_at >= $3::timestamptz
+          AND e.created_at >= $3::timestamptz
+          AND e.profile='discovery' AND e.status='completed'
+        FOR UPDATE OF r,e`,
+      [input.claim.auditId, evidence.responseId, input.claim.claimedAt],
+    );
+    const proof = ledger.rows[0];
+    if ((ledger.rowCount ?? 0) !== 1
+      || Number(proof.input_tokens) !== Number(evidence.inputTokens)
+      || Number(proof.output_tokens) !== Number(evidence.outputTokens)
+      || Number(proof.total_tokens) !== Number(evidence.totalTokens)
+      || String(proof.model || "") !== String(evidence.model || "")
+      || Math.abs(Number(proof.actual_cost_usd) - Number(evidence.actualCostUsd)) > 0.000001
+      || Math.abs(Number(proof.estimated_openai_cost_usd) - Number(evidence.actualCostUsd)) > 0.000001) {
+      throw new Error("DISCOVERY_GENERIC_PROVIDER_LEDGER_MISMATCH");
+    }
+    const durableCatalogProvenance = normalizeDiscoveryCatalogProvenanceForLedger(
+      (input.narrativeReport as any)?.analysisMetadata?.catalogProvenance,
+    );
+    if (!durableCatalogProvenance) {
+      throw new Error("DISCOVERY_GENERIC_CATALOG_PROVENANCE_NOT_CANONICAL");
+    }
+    const boundReservation = await client.query(
+      `UPDATE ai_cost_budget_reservations
+          SET detail=$2,updated_at=NOW()
+        WHERE id=$1 AND product='discovery' AND profile='discovery'
+          AND order_id=$3 AND response_id=$4 AND status='COMPLETED'
+        RETURNING id`,
+      [proof.reservation_id, JSON.stringify(durableCatalogProvenance),
+        input.claim.auditId, evidence.responseId],
+    );
+    if ((boundReservation.rowCount ?? 0) !== 1) {
+      throw new Error("DISCOVERY_GENERIC_CATALOG_LEDGER_BINDING_FAILED");
     }
     const persistenceGate = validateDiscoveryPersistenceContract({
       narrativeReport: input.narrativeReport,

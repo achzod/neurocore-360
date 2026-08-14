@@ -14,6 +14,7 @@ import {
   buildDiscoveryReportAssets,
   type DiscoveryRejectedCandidatePayload,
   validateDiscoveryFactualConsistency,
+  validateDiscoveryCatalogReportProvenance,
   validateDiscoveryPersistenceContract,
   validateDiscoveryReportAgainstResponses,
   validateDiscoveryReportForDelivery,
@@ -506,7 +507,6 @@ export async function acquireDiscoveryGlobalLock(
              FROM discovery_batch_items i
              JOIN discovery_batch_runs b ON b.id = i.batch_id
             WHERE b.stage IN ('GENERATION','REGENERATION')
-              AND b.status IN ('PREPARED','RUNNING','PAUSED')
               AND i.provider_calls = 1
               AND i.state IN ('PROVIDER_STARTED','GENERATED','VALIDATED')
          ) AS provider_result_unsettled`,
@@ -2272,6 +2272,35 @@ export async function prepareDiscoveryAuditForRegeneration(
   }
 }
 
+async function terminalizeRemainingDiscoveryBatchItems(
+  client: PoolClient,
+  batchId: string,
+  failedAuditId: string,
+  stopReason: string,
+): Promise<number> {
+  const skipped = await client.query(
+    `UPDATE discovery_batch_items
+        SET state='SKIPPED',reserved_cost_usd=0,
+            error_code='DISCOVERY_BATCH_ABORTED_AFTER_ITEM_FAILURE',
+            error_detail=$3,updated_at=NOW()
+      WHERE batch_id=$1 AND audit_id<>$2 AND provider_calls=0
+        AND state IN ('QUEUED','PREFLIGHT_OK')
+      RETURNING audit_id`,
+    [batchId, failedAuditId, `batch terminalized after prior item failure: ${stopReason}`.slice(0, 4000)],
+  );
+  const unfinished = await client.query(
+    `SELECT audit_id,state FROM discovery_batch_items
+      WHERE batch_id=$1
+        AND state NOT IN ('STORED','DELIVERED','SKIPPED','FAILED','AMBIGUOUS')
+      LIMIT 1 FOR UPDATE`,
+    [batchId],
+  );
+  if ((unfinished.rowCount ?? 0) !== 0) {
+    throw new Error("DISCOVERY_BATCH_OTHER_ITEM_STILL_ACTIVE");
+  }
+  return skipped.rowCount ?? 0;
+}
+
 export async function failDiscoveryBatchItem(
   input: {
     batchId: string;
@@ -2436,6 +2465,12 @@ export async function failDiscoveryBatchItem(
         DISCOVERY_GLOBAL_LOCK_KEY, input.lockToken, String(batch.status)],
     );
     if ((itemFailed.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_BATCH_ITEM_FAILURE_CAS_FAILED");
+    await terminalizeRemainingDiscoveryBatchItems(
+      client,
+      input.batchId,
+      input.auditId,
+      input.errorCode,
+    );
     const runFailed = await client.query(
       `UPDATE discovery_batch_runs b
           SET status = 'FAILED', stop_reason = $2,
@@ -2503,10 +2538,10 @@ export async function recoverOrphanedDiscoveryProviderResult(
     const ownership = await client.query(
       `SELECT b.*,l.token AS current_fence_token,l.expires_at AS fence_expires_at
          FROM discovery_batch_runs b
-         JOIN discovery_operation_lock l
+        JOIN discovery_operation_lock l
            ON l.lock_key=$2 AND l.token=b.lock_token
         WHERE b.id=$1 AND b.stage IN ('GENERATION','REGENERATION')
-          AND b.status IN ('RUNNING','PAUSED') AND l.expires_at <= NOW()
+          AND b.status IN ('RUNNING','PAUSED','FAILED') AND l.expires_at <= NOW()
         FOR UPDATE OF b,l`,
       [input.batchId, DISCOVERY_GLOBAL_LOCK_KEY],
     );
@@ -2651,6 +2686,12 @@ export async function recoverOrphanedDiscoveryProviderResult(
         proof.reservation_id, proof.usage_event_id, sourceState],
     );
     if ((itemFailed.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_ORPHAN_ITEM_CAS_FAILED");
+    await terminalizeRemainingDiscoveryBatchItems(
+      client,
+      input.batchId,
+      input.auditId,
+      "DISCOVERY_PROVIDER_RESULT_LOST_AFTER_CRASH",
+    );
     const runFailed = await client.query(
       `UPDATE discovery_batch_runs b
           SET status='FAILED',stop_reason='DISCOVERY_PROVIDER_RESULT_LOST_AFTER_CRASH',
@@ -2699,16 +2740,32 @@ export async function completeDiscoveryBatchRun(
   try {
     await client.query("BEGIN");
     const batch = await assertBatchOwnership(client, input.batchId, input.lockToken);
+    if (String(batch.status) === "COMPLETED") {
+      const terminalCompletion = await client.query(
+        `SELECT
+            COUNT(*)::int AS item_count,
+            COUNT(*) FILTER (WHERE state NOT IN ('STORED','DELIVERED','SKIPPED'))::int AS unfinished_count
+           FROM discovery_batch_items WHERE batch_id = $1`,
+        [input.batchId],
+      );
+      const durable = Number(terminalCompletion.rows[0]?.item_count || 0) === Number(batch.target_count)
+        && Number(terminalCompletion.rows[0]?.unfinished_count || 0) === 0
+        && Number(batch.processed_count || 0) === Number(batch.target_count)
+        && batch.completed_at != null
+        && Number(batch.reserved_cost_usd || 0) === 0;
+      await client.query(durable ? "COMMIT" : "ROLLBACK");
+      return durable;
+    }
     if (String(batch.status) === "FAILED") {
       const terminalFailure = await client.query(
         `SELECT
             COUNT(*) FILTER (WHERE state IN ('FAILED','AMBIGUOUS'))::int AS failure_count,
-            COUNT(*) FILTER (WHERE state IN ('PREFLIGHT_OK','PROVIDER_STARTED','GENERATED','VALIDATED','DELIVERY_CLAIMED'))::int AS inflight_count
+            COUNT(*) FILTER (WHERE state NOT IN ('STORED','DELIVERED','SKIPPED','FAILED','AMBIGUOUS'))::int AS unfinished_count
            FROM discovery_batch_items WHERE batch_id = $1`,
         [input.batchId],
       );
       const durable = Number(terminalFailure.rows[0]?.failure_count || 0) > 0
-        && Number(terminalFailure.rows[0]?.inflight_count || 0) === 0
+        && Number(terminalFailure.rows[0]?.unfinished_count || 0) === 0
         && batch.completed_at != null
         && Number(batch.reserved_cost_usd || 0) === 0;
       await client.query(durable ? "COMMIT" : "ROLLBACK");
@@ -2779,6 +2836,19 @@ export async function claimDiscoveryProviderAttempt(
     const item = itemResult.rows[0];
     if (!["QUEUED", "PREFLIGHT_OK"].includes(String(item.state))) throw new Error("DISCOVERY_BATCH_ITEM_NOT_QUEUED");
     if (Number(item.provider_calls) !== 0) throw new Error("DISCOVERY_BATCH_MONO_CALL_VIOLATION");
+    const otherActive = await client.query(
+      `SELECT i.audit_id
+         FROM discovery_batch_items i
+         JOIN discovery_batch_runs b ON b.id=i.batch_id
+        WHERE b.lock_token=$3 AND b.stage IN ('GENERATION','REGENERATION')
+          AND NOT (i.batch_id=$1 AND i.audit_id=$2)
+          AND i.state IN ('PROVIDER_STARTED','GENERATED','VALIDATED')
+        LIMIT 1 FOR UPDATE OF i`,
+      [input.batchId, input.auditId, input.lockToken],
+    );
+    if ((otherActive.rowCount ?? 0) !== 0) {
+      throw new Error("DISCOVERY_BATCH_ANOTHER_PROVIDER_ATTEMPT_ACTIVE");
+    }
     const priorGenericAttempt = await client.query(
       `SELECT COUNT(*)::int AS count,
               COALESCE(SUM(CASE
@@ -3048,6 +3118,13 @@ export async function persistValidatedDiscoveryBatchItem(
     if (Number(item.actual_cost_usd) > Number(batch.hard_per_scan_usd)) {
       throw new Error("DISCOVERY_BATCH_HARD_COST_BREACH");
     }
+    const mustCloseAfterSoftCostStop = String(batch.status) === "PAUSED"
+      && String(batch.stop_reason || "").startsWith("soft_cost_limit_exceeded:")
+      && Number(item.actual_cost_usd) > Number(batch.soft_per_scan_usd)
+      && Number(item.actual_cost_usd) <= Number(batch.hard_per_scan_usd);
+    if (String(batch.status) === "PAUSED" && !mustCloseAfterSoftCostStop) {
+      throw new Error("DISCOVERY_BATCH_INVALID_PAUSED_PERSISTENCE_STATE");
+    }
     if (!item.provider_reservation_id || !item.provider_usage_event_id || !item.provider_response_id) {
       throw new Error("DISCOVERY_BATCH_PROVIDER_PROVENANCE_MISSING");
     }
@@ -3120,10 +3197,28 @@ export async function persistValidatedDiscoveryBatchItem(
       html: input.html,
       responses: audit.responses || {},
     });
-    if (!persistenceGate.ok
+    const catalogErrors = validateDiscoveryCatalogReportProvenance(
+      input.narrativeReport as any,
+      String(item.provider_response_id),
+    );
+    if ((input.narrativeReport as any)?.generationQuality?.version !== 2
+      || catalogErrors.length > 0
+      || !persistenceGate.ok
       || !hasPassingPersistedDiscoveryDeliveryGate(input.narrativeReport as any)) {
-      throw new Error(`DISCOVERY_BATCH_PERSISTENCE_GATE_FAILED:${persistenceGate.errors.join("|")}`);
+      throw new Error(`DISCOVERY_BATCH_PERSISTENCE_GATE_FAILED:${[
+        ...catalogErrors,
+        ...persistenceGate.errors,
+      ].join("|")}`);
     }
+    const catalogProvenance = (input.narrativeReport as any)?.analysisMetadata?.catalogProvenance;
+    const catalogProvenanceJson = JSON.stringify({
+      editorialSourceSha256: catalogProvenance?.editorialSourceSha256,
+      catalogVersion: catalogProvenance?.catalogVersion,
+      catalogSha256: catalogProvenance?.catalogSha256,
+      selectionSha256: catalogProvenance?.selectionSha256,
+      providerResponseId: catalogProvenance?.providerResponseId,
+      selection: catalogProvenance?.selection,
+    });
 
     const artifactId = randomUUID();
     const artifact = await client.query(
@@ -3174,7 +3269,9 @@ export async function persistValidatedDiscoveryBatchItem(
     const itemStored = await client.query(
       `UPDATE discovery_batch_items
           SET state = 'STORED', generated_txt_sha256 = $3,
-              generated_html_sha256 = $4, artifact_id = $5, updated_at = NOW()
+              generated_html_sha256 = $4, artifact_id = $5,
+              error_code='DISCOVERY_CATALOG_PROVENANCE',error_detail=$13,
+              updated_at = NOW()
         WHERE batch_id = $1 AND audit_id = $2
           AND state = 'GENERATED' AND provider_calls = 1
           AND expected_responses_sha256 = $6
@@ -3193,7 +3290,7 @@ export async function persistValidatedDiscoveryBatchItem(
       [input.batchId, input.auditId, txtSha256, htmlSha256, persistedArtifactId,
         input.expectedResponsesSha256, input.expectedSourceStatus,
         input.expectedTxtSha256, input.expectedHtmlSha256, DISCOVERY_GLOBAL_LOCK_KEY,
-        String(batch.status), input.lockToken],
+        String(batch.status), input.lockToken, catalogProvenanceJson],
     );
     if ((itemStored.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_BATCH_ITEM_PERSISTENCE_CAS_FAILED");
     if (item.retry_of_candidate_id) {
@@ -3206,6 +3303,39 @@ export async function persistValidatedDiscoveryBatchItem(
       );
       if ((superseded.rowCount ?? 0) !== 1) {
         throw new Error("DISCOVERY_REGENERATION_SOURCE_CANDIDATE_CAS_FAILED");
+      }
+    }
+    if (mustCloseAfterSoftCostStop) {
+      await client.query(
+        `UPDATE discovery_batch_items
+            SET state='SKIPPED',reserved_cost_usd=0,
+                error_code='DISCOVERY_BATCH_SOFT_COST_STOP',
+                error_detail=$3,updated_at=NOW()
+          WHERE batch_id=$1 AND audit_id<>$2 AND provider_calls=0
+            AND state IN ('QUEUED','PREFLIGHT_OK')`,
+        [input.batchId, input.auditId,
+          `batch stopped after stored item exceeded soft cost: ${String(batch.stop_reason)}`.slice(0, 4000)],
+      );
+      const nonterminal = await client.query(
+        `SELECT audit_id,state FROM discovery_batch_items
+          WHERE batch_id=$1 AND state NOT IN ('STORED','SKIPPED')
+          LIMIT 1 FOR UPDATE`,
+        [input.batchId],
+      );
+      if ((nonterminal.rowCount ?? 0) !== 0) {
+        throw new Error("DISCOVERY_BATCH_ATOMIC_SOFT_STOP_ITEM_ACTIVE");
+      }
+      const runClosed = await client.query(
+        `UPDATE discovery_batch_runs
+            SET status='COMPLETED',processed_count=target_count,
+                reserved_cost_usd=0,completed_at=NOW(),updated_at=NOW()
+          WHERE id=$1 AND lock_token=$2 AND status='PAUSED'
+            AND stop_reason LIKE 'soft_cost_limit_exceeded:%'
+          RETURNING id`,
+        [input.batchId, input.lockToken],
+      );
+      if ((runClosed.rowCount ?? 0) !== 1) {
+        throw new Error("DISCOVERY_BATCH_ATOMIC_SOFT_STOP_RUN_CAS_FAILED");
       }
     }
     await client.query("COMMIT");

@@ -10,6 +10,7 @@
  * Utilise GPT-5.6 Sol + Knowledge Base (Huberman, Attia, etc.)
  */
 
+import { createHash } from 'node:crypto';
 import { runOpenAIText } from './openaiResponses';
 import { searchArticles, searchFullText } from './knowledge/storage';
 import {
@@ -151,6 +152,7 @@ export interface DiscoveryAnalysisResult {
   safetyPolicy: DiscoverySafetyPolicy;
   questionnaireCoverage: ReturnType<typeof getDiscoveryQuestionnaireCoverage>;
   providerEvidence?: DiscoveryProviderEvidence;
+  catalogProvenance?: DiscoveryCatalogProvenance;
 }
 
 export const DISCOVERY_PREMIUM_DOMAINS = [
@@ -194,6 +196,16 @@ export interface DiscoveryGeneratedNarrative {
   synthesis: string;
   sections: Record<string, string>;
   providerEvidence?: DiscoveryProviderEvidence;
+  catalogProvenance?: DiscoveryCatalogProvenance;
+}
+
+export interface DiscoveryCatalogProvenance {
+  editorialSourceSha256: string;
+  catalogVersion: string;
+  catalogSha256: string;
+  selectionSha256: string;
+  selection: DiscoveryMechanismSelection;
+  providerResponseId?: string;
 }
 
 export interface DiscoveryProviderEvidence {
@@ -204,6 +216,9 @@ export interface DiscoveryProviderEvidence {
   outputTokens: number;
   totalTokens: number;
   actualCostUsd: number;
+  catalogVersion: string;
+  catalogSha256: string;
+  selectionSha256: string;
 }
 
 export interface DiscoveryRejectedCandidatePayload {
@@ -213,7 +228,10 @@ export interface DiscoveryRejectedCandidatePayload {
   responseId: string;
   model: string;
   validationErrors: string[];
-  usage: Omit<DiscoveryProviderEvidence, "rawCandidate" | "responseId" | "model">;
+  usage: Pick<
+    DiscoveryProviderEvidence,
+    "inputTokens" | "outputTokens" | "totalTokens" | "actualCostUsd"
+  >;
 }
 
 /**
@@ -239,10 +257,11 @@ export function isDiscoveryRejectedCandidateError(
 }
 
 export interface DiscoveryPremiumGenerationEvidence {
-  mode: 'premium_ai';
-  version: 1;
+  mode: 'premium_ai' | 'catalog_selected';
+  version: 1 | 2;
   provider: 'openai';
-  synthesis: 'ai_validated';
+  providerRole?: 'selection';
+  synthesis: 'ai_validated' | 'catalog_rendered';
   validatedDomains: string[];
   fallbackUsed: false;
   safety: {
@@ -328,6 +347,10 @@ export interface DiscoverySectionValidation {
   isValid: boolean;
 }
 
+export interface DiscoverySectionValidationContext {
+  generationQualityVersion?: 1 | 2;
+}
+
 /**
  * Counts the text a customer can actually read after HTML removal and
  * whitespace normalization. Both generation validation and report assembly
@@ -371,6 +394,7 @@ export function neutralizeDiscoverySourceAttribution(text: string): string {
 export function validateDiscoverySectionContent(
   text: string,
   safetyPolicy: DiscoverySafetyPolicy = deriveDiscoverySafetyPolicy({}),
+  context: DiscoverySectionValidationContext = {},
 ): DiscoverySectionValidation {
   const visibleText = stripInlineHtml(String(text || "")).replace(/\s+/g, " ").trim();
   const lines = text.split(/\n+/).filter(line => line.trim().length > 30);
@@ -383,14 +407,21 @@ export function validateDiscoverySectionContent(
   const wordCount = visibleText.split(/\s+/).filter(Boolean).length;
   const lower = text.toLowerCase();
   const reasons: string[] = [];
-  if (charCount < MIN_DISCOVERY_SECTION_CHARS) reasons.push(`chars:${charCount}/${MIN_DISCOVERY_SECTION_CHARS}`);
-  if (charCount > MAX_DISCOVERY_SECTION_CHARS) reasons.push(`chars_max:${charCount}/${MAX_DISCOVERY_SECTION_CHARS}`);
-  if (wordCount > MAX_DISCOVERY_SECTION_WORDS) reasons.push(`words_max:${wordCount}/${MAX_DISCOVERY_SECTION_WORDS}`);
-  if (lineCount < MIN_DISCOVERY_SECTION_LINES && wordCount < MIN_DISCOVERY_SECTION_WORDS) {
-    reasons.push(`density:${lineCount}lines/${wordCount}words`);
-  }
-  if (paragraphCount < MIN_DISCOVERY_SECTION_PARAGRAPHS) {
-    reasons.push(`paragraphs:${paragraphCount}/${MIN_DISCOVERY_SECTION_PARAGRAPHS}`);
+  if (context.generationQualityVersion === 2) {
+    if (charCount < MIN_DISCOVERY_SECTION_CHARS) reasons.push(`chars:${charCount}/${MIN_DISCOVERY_SECTION_CHARS}`);
+    if (wordCount < 200) reasons.push(`words:${wordCount}/200`);
+    if (wordCount > 260) reasons.push(`words_max:${wordCount}/260`);
+    if (paragraphCount !== 5) reasons.push(`paragraphs:${paragraphCount}/5`);
+  } else {
+    if (charCount < MIN_DISCOVERY_SECTION_CHARS) reasons.push(`chars:${charCount}/${MIN_DISCOVERY_SECTION_CHARS}`);
+    if (charCount > MAX_DISCOVERY_SECTION_CHARS) reasons.push(`chars_max:${charCount}/${MAX_DISCOVERY_SECTION_CHARS}`);
+    if (wordCount > MAX_DISCOVERY_SECTION_WORDS) reasons.push(`words_max:${wordCount}/${MAX_DISCOVERY_SECTION_WORDS}`);
+    if (lineCount < MIN_DISCOVERY_SECTION_LINES && wordCount < MIN_DISCOVERY_SECTION_WORDS) {
+      reasons.push(`density:${lineCount}lines/${wordCount}words`);
+    }
+    if (paragraphCount < MIN_DISCOVERY_SECTION_PARAGRAPHS) {
+      reasons.push(`paragraphs:${paragraphCount}/${MIN_DISCOVERY_SECTION_PARAGRAPHS}`);
+    }
   }
   // Reject corrupted French fragments observed in provider output (for
   // example "façje" or "leçj'utile") instead of publishing a report that is
@@ -2099,26 +2130,212 @@ FORMAT OBLIGATOIRE:
   /* c8 ignore stop */
 }
 
+export const DISCOVERY_MECHANISM_CATALOG_VERSION = "discovery-mechanisms-v1";
+export const DISCOVERY_MECHANISM_EDITORIAL_SOURCE_SHA256 = "9436be277b6de93a954c8fa13e961163040859cea709927ec9a3f408fecb297c";
+const DISCOVERY_MECHANISM_CATALOG = {
+  "editorialSourceSha256": DISCOVERY_MECHANISM_EDITORIAL_SOURCE_SHA256,
+  "version": DISCOVERY_MECHANISM_CATALOG_VERSION,
+  "domainOrder": [...DISCOVERY_PREMIUM_DOMAINS],
+  "synthesis": {
+    "sommeil": "Le sommeil structure la récupération, la régulation de l'appétit, la sensibilité à l'insuline et la qualité de la vigilance. Quand sa durée, sa continuité ou son ancrage circadien deviennent irréguliers, l'ensemble de la physiologie quotidienne tend à fonctionner avec moins de marge et plus de variabilité.",
+    "energie": "L'énergie perçue émerge d'un dialogue entre sommeil, disponibilité du carburant, fonction cellulaire, charge mentale et rythme quotidien. Lorsqu'un de ces étages devient instable, la journée paraît souvent irrégulière, avec des pics brefs suivis de replis plus marqués.",
+    "digestion": "La digestion ne se limite pas au confort abdominal. Elle conditionne l'assimilation, influence la motricité digestive et dialogue en permanence avec le système nerveux. Lorsqu'elle devient irrégulière, les répercussions dépassent souvent le repas lui-même.",
+    "nutrition": "La nutrition façonne à la fois le signal énergétique, la disponibilité des matériaux de réparation et la qualité de la régulation hormonale. Sa cohérence ne tient pas seulement à la quantité totale, mais aussi à la densité nutritionnelle, à la répartition et à la répétition des choix dans le temps.",
+    "training": "L'entraînement agit comme un stimulus d'adaptation, pas comme un bénéfice automatique. Son effet dépend de la dose, de la répétition, de la variété du signal et de la capacité de récupération. Sans cet équilibre, la charge peut produire plus de bruit que de progression.",
+    "stress": "Le stress est une réponse d'adaptation utile à court terme, mais coûteuse lorsqu'elle s'installe sans relâche réelle. Dans ce contexte, les conséquences se lisent souvent dans le sommeil, la digestion, l'énergie, la concentration et la capacité à récupérer d'un effort ordinaire.",
+    "lifestyle": "Le mode de vie constitue le décor biologique permanent dans lequel tous les autres leviers opèrent. Lumière, mouvement spontané, position assise, écrans, caféine et rythme social peuvent soit renforcer la physiologie de base, soit lui imposer une friction continue.",
+    "mindset": "La dimension mentale n'est pas détachée du corps. Motivation, constance, tolérance à la frustration et qualité des décisions dépendent d'une base neurobiologique qui intègre sommeil, stress, énergie et expériences passées. La dimension mentale est donc réelle, mais rarement isolée du reste du terrain."
+  },
+  "sections": {
+    "sommeil": {
+      "entries": {
+        "sommeil_01": "Le sommeil n'est pas un simple temps d'arrêt. Il organise une alternance de phases profondes et paradoxales qui participent à la restauration nerveuse, à la consolidation mnésique et à la récupération tissulaire. Quand cette architecture se fragmente, la sensation de repos peut diminuer même si le temps passé au lit paraît suffisant.",
+        "sommeil_02": "L'horloge circadienne synchronise la température corporelle, la vigilance, l'appétit et la sécrétion de plusieurs signaux hormonaux sur vingt-quatre heures. Des horaires de coucher et de lever instables déplacent ce tempo biologique et augmentent souvent l'écart entre le moment où l'organisme veut dormir et celui où la journée sociale l'impose.",
+        "sommeil_03": "Une restriction de sommeil répétée modifie rapidement la régulation énergétique. La faim tend à devenir plus présente, les aliments denses en énergie deviennent plus attractifs et la sensibilité à l'insuline peut se dégrader transitoirement. Ce terrain favorise une impression de contrôle plus coûteuse au fil de la journée.",
+        "sommeil_04": "Le sommeil influence aussi la récupération de l'effort. Une nuit de qualité insuffisante réduit souvent la tolérance à la charge, la précision motrice et la vitesse de restauration entre deux séances. Le ressenti de fatigue peut alors refléter moins un manque de volonté qu'une récupération biologique incomplète."
+      }
+    },
+    "energie": {
+      "entries": {
+        "energie_01": "La sensation d'énergie dépend en grande partie de la capacité des cellules à produire de l'ATP à partir du glucose, des acides gras et de l'oxygène. Quand cette production devient moins fluide, la motivation et la clarté mentale peuvent baisser sans que le besoin de repos soit toujours évident au premier regard.",
+        "energie_02": "La stabilité glycémique pèse fortement sur le niveau d'énergie. Un apport très rapide en glucides, surtout lorsqu'il est peu freiné par des protéines, des fibres ou des lipides, peut être suivi d'une réponse insulinique marquée puis d'une baisse de tonus plus nette une à deux heures plus tard.",
+        "energie_03": "Le système nerveux autonome joue un rôle central dans l'énergie ressentie. Un état de tension prolongée peut maintenir une vigilance apparente tout en réduisant progressivement la sensation de réserve physiologique. Cette dissociation peut s'accompagner d'un niveau d'activation visible alors même que la stabilité énergétique devient plus fragile.",
+        "energie_04": "L'énergie quotidienne suit aussi une logique circadienne. Une exposition lumineuse tardive, des repas décalés ou un sommeil mal aligné déplacent les fenêtres naturelles d'éveil et de récupération. Le résultat n'est pas forcément une fatigue constante, mais plus souvent une énergie imprévisible et difficile à stabiliser."
+      }
+    },
+    "digestion": {
+      "entries": {
+        "digestion_01": "La digestion repose sur une succession d'étapes coordonnées, de la mastication à l'absorption intestinale. Si le rythme de vidange, le brassage ou le transit deviennent moins harmonieux, la perception digestive peut changer avec des sensations de lourdeur, de tension ou d'inconfort après les repas.",
+        "digestion_02": "L'intestin représente une interface majeure entre les apports alimentaires, la motricité digestive et l'assimilation. Quand ce fonctionnement est exposé à des repas très irréguliers, peu diversifiés ou mal tolérés, le confort digestif et la qualité du transit peuvent devenir plus variables, avec un retentissement possible sur le ressenti général après les repas.",
+        "digestion_03": "Le stress modifie directement la fonction digestive. En contexte de tension, la motricité, les sécrétions et la perception viscérale changent souvent de profil, ce qui peut rendre la digestion plus lente, plus sensible ou plus variable. Cette relation explique pourquoi le même repas peut être vécu différemment selon le contexte nerveux.",
+        "digestion_04": "Le confort digestif influence aussi l'énergie postprandiale. Lorsqu'un repas s'accompagne d'une somnolence ou d'une baisse de clarté mentale ensuite, ce ressenti peut refléter plusieurs mécanismes physiologiques concomitants sans permettre, à lui seul, d'en identifier la cause exacte."
+      }
+    },
+    "nutrition": {
+      "entries": {
+        "nutrition_01": "La composition d'un repas modifie la cinétique d'absorption et la réponse de satiété. Les protéines, les fibres et une matrice alimentaire peu transformée ralentissent généralement la montée glycémique et prolongent la stabilité de l'énergie. À l'inverse, des aliments riches en glucides rapidement assimilables favorisent souvent des oscillations plus marquées.",
+        "nutrition_02": "L'apport protéique ne sert pas uniquement à la masse musculaire. Il participe aussi au renouvellement enzymatique, à la structure des tissus et au maintien d'une satiété plus solide. Une distribution trop irrégulière au cours de la journée peut laisser des périodes où la réparation et le contrôle de l'appétit deviennent moins efficaces.",
+        "nutrition_03": "La densité micronutritionnelle conditionne une grande partie du rendement métabolique. Les vitamines, minéraux et cofacteurs soutiennent la production d'énergie, la transmission nerveuse et de nombreuses réactions de régulation. Une alimentation suffisante en volume peut donc rester qualitativement pauvre si cette densité n'est pas au rendez-vous.",
+        "nutrition_04": "L'hydratation fait partie intégrante de la nutrition fonctionnelle. Une baisse modérée du statut hydrique peut déjà altérer la concentration, la perception de l'effort et certains paramètres digestifs. Ce levier paraît discret, mais il influence la qualité d'exécution de nombreuses fonctions simultanément."
+      }
+    },
+    "training": {
+      "entries": {
+        "training_01": "Une séance d'entraînement crée un stress mécanique, métabolique et nerveux auquel l'organisme répond par adaptation. Cette réponse n'apparaît que si la charge est suffisamment lisible pour le corps, puis suivie d'un temps de récupération adapté. Sans cette séquence complète, le stimulus peut rester inachevé.",
+        "training_02": "La progression repose sur une logique de surcharge maîtrisée. Lorsque le volume, l'intensité ou la fréquence augmentent sans coordination claire, la fatigue accumulée peut masquer le gain réel d'adaptation. Le ressenti d'effort grimpe alors plus vite que la capacité à performer.",
+        "training_03": "La récupération est une composante interne de l'entraînement. Sommeil, apports nutritionnels, système nerveux et disponibilité énergétique déterminent si la séance sera intégrée comme un signal constructif ou comme une contrainte supplémentaire. Deux charges identiques peuvent donc produire des effets très différents selon le terrain physiologique.",
+        "training_04": "Le travail cardiovasculaire et le travail de force n'agissent pas sur les mêmes adaptations, mais ils dialoguent fortement. Une base aérobie plus solide améliore souvent la récupération entre les efforts, tandis qu'un meilleur niveau de force augmente l'économie de mouvement. L'équilibre entre ces qualités contribue à une progression plus stable."
+      }
+    },
+    "stress": {
+      "entries": {
+        "stress_01": "Face à une contrainte perçue, l'organisme mobilise une réponse neuroendocrinienne destinée à protéger la performance immédiate. Cette mobilisation améliore brièvement la vigilance et la disponibilité du carburant. Lorsqu'elle persiste trop souvent, elle cesse d'être économique et devient plus perturbatrice que productive.",
+        "stress_02": "Le stress chronique modifie la qualité du repos en maintenant un niveau d'alerte trop élevé au moment où le corps devrait ralentir. L'endormissement peut devenir moins fluide, les réveils plus fréquents et la profondeur du sommeil plus difficile à atteindre. La fatigue du lendemain reflète alors autant la tension de la veille que la nuit elle-même.",
+        "stress_03": "L'axe du stress interagit aussi avec la régulation digestive et immunitaire. Une activation répétée du système sympathique réduit souvent la priorité donnée aux fonctions de repos et de digestion. Cette réallocation physiologique peut rendre l'intestin plus sensible et le confort digestif plus variable.",
+        "stress_04": "La charge mentale prolongée altère fréquemment la qualité de l'attention et la stabilité émotionnelle. Lorsque les sollicitations cognitives s'accumulent, la concentration devient moins stable, les arbitrages paraissent plus laborieux et la dispersion peut augmenter. Ce terrain favorise souvent l'irritabilité et la recherche de compensations rapides."
+      }
+    },
+    "lifestyle": {
+      "entries": {
+        "lifestyle_01": "La sédentarité prolongée agit indépendamment de la présence d'un entraînement formel. Passer de longues heures assis réduit l'activité musculaire de fond et les occasions de mouvement spontané, tout en abaissant la dépense quotidienne non structurée. Cette baisse du mouvement diffus influence la gestion énergétique sur l'ensemble de la journée.",
+        "lifestyle_02": "La lumière ambiante sert de synchroniseur majeur pour l'horloge biologique. Une exposition trop faible le matin ou trop intense le soir déplace la chronologie interne et perturbe la relation entre éveil, appétit et sommeil. Ce décalage paraît parfois discret, mais il modifie le rendement du rythme quotidien.",
+        "lifestyle_03": "La caféine modifie la perception de fatigue en bloquant temporairement certains signaux de pression de sommeil. Son effet peut être utile, mais sa demi-vie relativement longue signifie qu'une consommation tardive continue souvent d'agir alors que la soirée commence. La sensation d'éveil immédiat peut donc dégrader le sommeil plus tard dans le cycle.",
+        "lifestyle_04": "Le temps d'écran n'agit pas seulement par sa lumière. Il prolonge souvent la stimulation cognitive, fragmente l'attention et retarde les transitions vers des états de calme. Dans une journée déjà dense, cette stimulation résiduelle peut entretenir un système nerveux encore actif au moment où la récupération devrait prendre le relais."
+      }
+    },
+    "mindset": {
+      "entries": {
+        "mindset_01": "La motivation fluctue avec la disponibilité du système nerveux. Quand le sommeil est insuffisant ou que la charge de stress reste élevée, la poursuite d'un objectif demande souvent plus d'effort conscient pour un même résultat comportemental. Ce décalage peut être interprété à tort comme un manque de discipline alors qu'il reflète une baisse de réserve adaptative.",
+        "mindset_02": "Le cerveau apprend par répétition et par récompense perçue. Si les signaux de progression restent trop diffus ou trop tardifs, l'engagement devient plus fragile et la recherche de gratifications immédiates prend plus de place. Cette dynamique n'est pas un défaut de caractère, mais une logique de priorisation du système de décision.",
+        "mindset_03": "Les expériences antérieures influencent fortement l'adhésion future. Des phases d'échec, d'effort mal récompensé ou de règles trop rigides peuvent abaisser la confiance opérationnelle et rendre l'action plus hésitante. Le mental se construit alors moins sur l'intention déclarée que sur la mémoire des résultats réellement vécus.",
+        "mindset_04": "L'environnement comportemental module directement la qualité des choix. Quand les obstacles à l'action sont faibles et les sollicitations parasites plus rares, la constance devient moins coûteuse à maintenir. À l'inverse, un environnement saturé en arbitrages rapides use la capacité de décision et favorise la dispersion."
+      }
+    }
+  }
+} as const;
+
+const DISCOVERY_MECHANISM_CATALOG_IDS = Object.fromEntries(
+  DISCOVERY_PREMIUM_DOMAINS.map((domain) => [
+    domain,
+    Object.keys(DISCOVERY_MECHANISM_CATALOG.sections[domain].entries),
+  ]),
+) as Record<typeof DISCOVERY_PREMIUM_DOMAINS[number], string[]>;
+
+export const DISCOVERY_MECHANISM_CATALOG_SHA256 = createHash("sha256")
+  .update(JSON.stringify(DISCOVERY_MECHANISM_CATALOG))
+  .digest("hex");
+
+export function getDiscoveryMechanismCatalogSnapshot(): unknown {
+  return JSON.parse(JSON.stringify(DISCOVERY_MECHANISM_CATALOG));
+}
+
+export interface DiscoveryMechanismSelection {
+  catalogVersion: string;
+  catalogSha256: string;
+  synthesisDomains: string[];
+  sections: Record<string, string[]>;
+}
+
+export function buildDiscoveryDefaultMechanismSelection(): DiscoveryMechanismSelection {
+  return {
+    catalogVersion: DISCOVERY_MECHANISM_CATALOG_VERSION,
+    catalogSha256: DISCOVERY_MECHANISM_CATALOG_SHA256,
+    synthesisDomains: [...DISCOVERY_PREMIUM_DOMAINS.slice(0, 4)],
+    sections: Object.fromEntries(DISCOVERY_PREMIUM_DOMAINS.map((domain) => [
+      domain,
+      [`${domain}_03`, `${domain}_04`],
+    ])),
+  };
+}
+
+function stableDiscoveryCatalogJson(value: unknown): string {
+  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(stableDiscoveryCatalogJson).join(",")}]`;
+  return `{${Object.keys(value as Record<string, unknown>).sort().map((key) => (
+    `${JSON.stringify(key)}:${stableDiscoveryCatalogJson((value as Record<string, unknown>)[key])}`
+  )).join(",")}}`;
+}
+
+export function discoveryCatalogSelectionSha256(selection: unknown): string {
+  return createHash("sha256").update(stableDiscoveryCatalogJson(selection)).digest("hex");
+}
+
+function validateDiscoveryMechanismSelection(raw: unknown): DiscoveryMechanismSelection {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    throw new Error("Discovery mechanism selection is not an object");
+  }
+  const candidate = raw as Record<string, unknown>;
+  if (Object.keys(candidate).sort().join(",") !== ["catalogSha256", "catalogVersion", "sections", "synthesisDomains"].sort().join(",")) {
+    throw new Error("Discovery mechanism selection has unknown fields");
+  }
+  if (candidate.catalogVersion !== DISCOVERY_MECHANISM_CATALOG_VERSION
+    || candidate.catalogSha256 !== DISCOVERY_MECHANISM_CATALOG_SHA256) {
+    throw new Error("Discovery mechanism catalog binding mismatch");
+  }
+  if (!Array.isArray(candidate.synthesisDomains) || candidate.synthesisDomains.length !== 4
+    || new Set(candidate.synthesisDomains).size !== 4
+    || candidate.synthesisDomains.some((domain) => !DISCOVERY_PREMIUM_DOMAINS.includes(domain as any))) {
+    throw new Error("Discovery synthesis domain selection invalid");
+  }
+  if (!candidate.sections || typeof candidate.sections !== "object" || Array.isArray(candidate.sections)
+    || Object.keys(candidate.sections as object).sort().join(",") !== [...DISCOVERY_PREMIUM_DOMAINS].sort().join(",")) {
+    throw new Error("Discovery mechanism section map invalid");
+  }
+  const sections = candidate.sections as Record<string, unknown>;
+  for (const domain of DISCOVERY_PREMIUM_DOMAINS) {
+    const ids = sections[domain];
+    const allowed = new Set(DISCOVERY_MECHANISM_CATALOG_IDS[domain]);
+    if (!Array.isArray(ids) || ids.length !== 2 || new Set(ids).size !== 2
+      || ids.some((id) => typeof id !== "string" || !allowed.has(id))) {
+      throw new Error(`Discovery mechanism IDs invalid:${domain}`);
+    }
+  }
+  return candidate as unknown as DiscoveryMechanismSelection;
+}
+
+function assembleDiscoveryMechanismSelection(selection: DiscoveryMechanismSelection): DiscoveryGeneratedNarrative {
+  const synthesis = selection.synthesisDomains
+    .map((domain) => DISCOVERY_MECHANISM_CATALOG.synthesis[domain as typeof DISCOVERY_PREMIUM_DOMAINS[number]])
+    .join("\n\n");
+  const sections = Object.fromEntries(DISCOVERY_PREMIUM_DOMAINS.map((domain) => {
+    const catalogSection = DISCOVERY_MECHANISM_CATALOG.sections[domain];
+    const selectedIds = selection.sections[domain];
+    const orderedIds = [
+      ...selectedIds,
+      ...DISCOVERY_MECHANISM_CATALOG_IDS[domain].filter((id) => !selectedIds.includes(id)),
+    ];
+    return [domain, [
+      DISCOVERY_MECHANISM_CATALOG.synthesis[domain],
+      ...orderedIds.map((id) => catalogSection.entries[id as keyof typeof catalogSection.entries]),
+    ].join("\n\n")];
+  }));
+  return {
+    synthesis,
+    sections,
+    catalogProvenance: {
+      editorialSourceSha256: DISCOVERY_MECHANISM_EDITORIAL_SOURCE_SHA256,
+      catalogVersion: DISCOVERY_MECHANISM_CATALOG_VERSION,
+      catalogSha256: DISCOVERY_MECHANISM_CATALOG_SHA256,
+      selectionSha256: discoveryCatalogSelectionSha256(selection),
+      selection,
+    },
+  };
+}
+
 const DISCOVERY_UNIFIED_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["synthesis", "sections"],
+  required: ["catalogVersion", "catalogSha256", "synthesisDomains", "sections"],
   properties: {
-    synthesis: { type: "string" },
-    sections: {
-      type: "array",
-      minItems: 8,
-      maxItems: 8,
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["domain", "content"],
-        properties: {
-          domain: { type: "string", enum: [...DISCOVERY_PREMIUM_DOMAINS] },
-          content: { type: "string" },
-        },
-      },
-    },
+    catalogVersion: { type: "string", enum: [DISCOVERY_MECHANISM_CATALOG_VERSION] },
+    catalogSha256: { type: "string", enum: [DISCOVERY_MECHANISM_CATALOG_SHA256] },
+    synthesisDomains: { type: "array", minItems: 4, maxItems: 4,
+      items: { type: "string", enum: [...DISCOVERY_PREMIUM_DOMAINS] } },
+    sections: { type: "object", additionalProperties: false, required: [...DISCOVERY_PREMIUM_DOMAINS],
+      properties: Object.fromEntries(DISCOVERY_PREMIUM_DOMAINS.map((domain) => [domain, {
+        type: "array", minItems: 2, maxItems: 2,
+        items: { type: "string", enum: DISCOVERY_MECHANISM_CATALOG_IDS[domain] },
+      }])) },
   },
 } as const;
 
@@ -2299,74 +2516,10 @@ function cleanDiscoveryNarrativeProse(text: string): string {
 
 export function validateDiscoveryGeneratedNarrative(
   raw: unknown,
-  responses: DiscoveryResponses,
-  safetyPolicy: DiscoverySafetyPolicy,
+  _responses: DiscoveryResponses,
+  _safetyPolicy: DiscoverySafetyPolicy,
 ): DiscoveryGeneratedNarrative {
-  if (!raw || typeof raw !== "object") {
-    throw new Error("Discovery unified output is not an object");
-  }
-  const candidate = raw as { synthesis?: unknown; sections?: unknown };
-  const rawSynthesis = String(candidate.synthesis || "");
-  const rawSynthesisErrors = validateDiscoveryPlainTextCandidate(rawSynthesis);
-  if (rawSynthesisErrors.length > 0) {
-    throw new Error(`Discovery unified synthesis raw invalid: ${rawSynthesisErrors.join("|")}`);
-  }
-  const synthesis = repairDiscoveryProvidedFactAbsenceClaims(
-    sanitizeDiscoveryMechanismProse(cleanDiscoveryNarrativeProse(rawSynthesis)),
-    responses,
-  );
-  const synthesisWords = synthesis.split(/\s+/).filter(Boolean).length;
-  const synthesisParagraphs = synthesis.split(/\n\s*\n/).filter((part) => part.trim().length > 120).length;
-  const synthesisErrors = [
-    ...validateDiscoveryMechanismProse(synthesis),
-    ...validateDiscoveryFactualConsistency(synthesis, responses, { source: "provider" }),
-    ...validateDiscoveryLinguisticQuality(synthesis),
-    ...validateDiscoverySafetyContent(synthesis, safetyPolicy).errors,
-  ];
-  if (containsExplicitDiscoverySourceBlock(synthesis)) synthesisErrors.push("explicit_sources");
-  if (containsForbiddenDiscoverySourceName(synthesis)) synthesisErrors.push("source_name");
-  if (hasEnglishMarkers(synthesis, 4)) synthesisErrors.push("english_markers");
-  if (synthesisWords < 350 || synthesisWords > 700) synthesisErrors.push(`synthesis_words:${synthesisWords}`);
-  if (synthesisParagraphs < 4 || synthesisParagraphs > 6) synthesisErrors.push(`synthesis_paragraphs:${synthesisParagraphs}`);
-  if (synthesisErrors.length > 0) {
-    throw new Error(`Discovery unified synthesis invalid: ${[...new Set(synthesisErrors)].join("|")}`);
-  }
-
-  if (!Array.isArray(candidate.sections) || candidate.sections.length !== DISCOVERY_PREMIUM_DOMAINS.length) {
-    throw new Error(`Discovery unified sections invalid: ${Array.isArray(candidate.sections) ? candidate.sections.length : "not_array"}/8`);
-  }
-
-  const sections: Record<string, string> = {};
-  for (const item of candidate.sections as Array<Record<string, unknown>>) {
-    const domain = String(item?.domain || "");
-    if (!DISCOVERY_PREMIUM_DOMAINS.includes(domain as any)) {
-      throw new Error(`Discovery unified domain invalid: ${domain || "empty"}`);
-    }
-    if (sections[domain]) throw new Error(`Discovery unified duplicate domain: ${domain}`);
-    const rawContent = String(item?.content || "");
-    const rawErrors = validateDiscoveryPlainTextCandidate(rawContent);
-    if (rawErrors.length > 0) {
-      throw new Error(`Discovery unified section ${domain} raw invalid: ${rawErrors.join("|")}`);
-    }
-    const content = repairDiscoveryProvidedFactAbsenceClaims(
-      sanitizeDiscoveryMechanismProse(cleanDiscoveryNarrativeProse(rawContent)),
-      responses,
-    );
-    const baseValidation = validateDiscoverySectionContent(content, safetyPolicy);
-    const reasons = [...new Set([
-      ...validateDiscoveryMechanismProse(content),
-      ...baseValidation.reasons,
-      ...validateDiscoveryFactualConsistency(content, responses, { source: "provider" }),
-    ])];
-    if (reasons.length > 0) {
-      throw new Error(`Discovery unified section ${domain} invalid: ${reasons.join("|")}`);
-    }
-    sections[domain] = content;
-  }
-
-  const missing = DISCOVERY_PREMIUM_DOMAINS.filter((domain) => !sections[domain]);
-  if (missing.length > 0) throw new Error(`Discovery unified missing domains: ${missing.join(",")}`);
-  return { synthesis, sections };
+  return assembleDiscoveryMechanismSelection(validateDiscoveryMechanismSelection(raw));
 }
 
 async function generateDiscoveryNarrativeAI(
@@ -2404,7 +2557,7 @@ async function generateDiscoveryNarrativeAI(
     )),
   ].join("\n\n=== DOMAINE SUIVANT ===\n\n");
 
-  const input = `MISSION UNIQUE: produire uniquement des explications generales de mecanismes pour un Discovery Scan dans un seul JSON structure.
+  const input = `MISSION UNIQUE: selectionner uniquement des identifiants de mecanismes approuves pour un Discovery Scan.
 
 Aucune donnee personnelle, reponse, identite, score, priorite ou information medicale ne t'est fournie. N'en deduis aucune. La personnalisation factuelle sera ajoutee apres ton appel par un moteur deterministe.
 
@@ -2417,20 +2570,13 @@ ${instructionBlock}
 BASE SCIENTIFIQUE INTERNE. Elle sert seulement a expliquer les mecanismes pertinents. Ne cite aucun titre, auteur, media, marque ou source. Ignore tout exemple hors profil:
 ${knowledgeBlock}
 
-CONTRAT DE SORTIE:
-La synthese contient 4 a 6 paragraphes et 350 a 700 mots.
-Chaque domaine contient 4 a 6 paragraphes et 280 a 500 mots, avec au moins 1 400 caracteres visibles hors balises et espaces multiples.
-Les huit domaines doivent apparaitre exactement une fois: ${DISCOVERY_PREMIUM_DOMAINS.join(", ")}.
-Tout est en francais, neutre, direct, humain et precis. Aucun prenom ni pronom de deuxieme personne.
-Aucune corruption orthographique ni suite Unicode invalide : relis integralement le JSON avant de repondre.
-Aucun markdown, aucune liste, aucun emoji, aucun titre dans le contenu.
-Aucun diagnostic, aucun dosage, aucune prescription biologique, aucune causalite affirmee sans preuve. Les etiquettes dysbiose, SIBO, hypochlorhydrie, permeabilite intestinale et malabsorption sont interdites dans tous les champs, meme comme possibilite ou diagnostic ecarte.
-Tu produis uniquement la prose explicative des mecanismes. Ne formule aucun constat individuel et ne repete aucune valeur personnelle, chiffre, score, quantite, frequence, priorite ou label de severite. Ils seront ajoutes ensuite par le moteur deterministe.
-N'ecris aucun chiffre ni nombre en lettres. N'emploie jamais les mots jamais, rarement, parfois, souvent, toujours, quotidien, critique ou critical.
-Interdiction absolue d'utiliser un prenom, tu, ton, tes, vous, votre, ce profil, cette personne, cet individu, le client, declare, observe, presente, montre, souffre ou semble.
-Le Discovery donne une lecture et des axes de travail sans les denombrer dans la prose, jamais un protocole complet.
-Ne remplis pas pour atteindre une longueur. Chaque paragraphe doit expliquer un mecanisme du perimetre autorise.
-SORTIE BRUTE STRICTEMENT TEXTE: aucun HTML, URL, lien, markdown, code promo ou caractere de controle dans synthesis ou content.`;
+CONTRAT DE SORTIE FERME:
+catalogVersion doit etre exactement ${DISCOVERY_MECHANISM_CATALOG_VERSION}.
+catalogSha256 doit etre exactement ${DISCOVERY_MECHANISM_CATALOG_SHA256}.
+synthesisDomains contient exactement quatre domaines distincts parmi: ${DISCOVERY_PREMIUM_DOMAINS.join(", ")}.
+sections contient exactement les huit domaines. Chaque domaine contient exactement deux identifiants distincts choisis dans sa liste:
+${DISCOVERY_PREMIUM_DOMAINS.map((domain) => `${domain}: ${DISCOVERY_MECHANISM_CATALOG_IDS[domain].join(", ")}`).join("\n")}
+Ne redige aucun texte. Ne renvoie aucun champ libre, commentaire, explication, nom, valeur ou propriete supplementaire. Le moteur local assemble toute la prose depuis le catalogue scelle.`;
 
   if (input.length > DISCOVERY_UNIFIED_MAX_INPUT_CHARS) {
     throw new Error(
@@ -2441,7 +2587,7 @@ SORTIE BRUTE STRICTEMENT TEXTE: aucun HTML, URL, lien, markdown, code promo ou c
   const response = await withTimeout(
     runOpenAIText({
       profile: "discovery",
-      instructions: `Tu rediges en francais une explication scientifique generale, claire et non diagnostique. Tu ne connais aucune personne et ne dois produire aucune affirmation individuelle. Reponds uniquement dans le JSON structure demande, sans markdown, HTML, URL, source, auteur, marque, code promo ni caractere de controle.`,
+      instructions: `Tu selectionnes uniquement des identifiants enum dans le JSON strict demande. Tu ne rediges aucune prose et n'ajoutes aucune propriete.`,
       input,
       safetyId: `discovery:${costBudgetAuditId}`,
       schema: DISCOVERY_UNIFIED_SCHEMA as unknown as Record<string, unknown>,
@@ -2488,12 +2634,18 @@ SORTIE BRUTE STRICTEMENT TEXTE: aucun HTML, URL, lien, markdown, code promo ou c
     outputTokens: Number(response.usage?.tokens.outputTokens || 0),
     totalTokens: Number(response.usage?.tokens.totalTokens || 0),
     actualCostUsd: Number(response.usage?.costs.openaiGpt56SolUsd || 0),
+    catalogVersion: DISCOVERY_MECHANISM_CATALOG_VERSION,
+    catalogSha256: DISCOVERY_MECHANISM_CATALOG_SHA256,
+    selectionSha256: discoveryCatalogSelectionSha256(parsed),
   };
   try {
-    return {
-      ...validateDiscoveryGeneratedNarrative(parsed, responses, safetyPolicy),
-      providerEvidence,
-    };
+    const generated = validateDiscoveryGeneratedNarrative(parsed, responses, safetyPolicy);
+    if (!generated.catalogProvenance
+      || generated.catalogProvenance.selectionSha256 !== providerEvidence.selectionSha256) {
+      throw new Error("Discovery mechanism selection provenance mismatch");
+    }
+    generated.catalogProvenance.providerResponseId = response.responseId;
+    return { ...generated, providerEvidence };
   } catch (error) {
     const validationErrors = error instanceof Error
       ? [error.message]
@@ -3155,6 +3307,7 @@ export async function analyzeDiscoveryScan(
     safetyPolicy,
     questionnaireCoverage: deterministic.questionnaireCoverage,
     providerEvidence: generatedNarrative.providerEvidence,
+    catalogProvenance: generatedNarrative.catalogProvenance,
   };
 }
 
@@ -3190,6 +3343,7 @@ export interface ReportData {
     blocages: BlockageAnalysis[];
     ctaMessage: string;
     questionnaireCoverage: ReturnType<typeof getDiscoveryQuestionnaireCoverage>;
+    catalogProvenance?: DiscoveryCatalogProvenance;
   };
 }
 
@@ -3218,6 +3372,55 @@ function contentHtmlFromPlainText(value: string): string {
     .join("\n");
 }
 
+export function validateDiscoveryCatalogReportProvenance(
+  report: Partial<ReportData> | null | undefined,
+  expectedProviderResponseId?: string,
+): string[] {
+  if (report?.generationQuality?.version !== 2) return [];
+  const provenance = report.analysisMetadata?.catalogProvenance;
+  if (!provenance) return ["catalog_provenance_missing"];
+  try {
+    const selection = validateDiscoveryMechanismSelection(provenance.selection);
+    const selectionSha256 = discoveryCatalogSelectionSha256(selection);
+    if (provenance.catalogVersion !== DISCOVERY_MECHANISM_CATALOG_VERSION
+      || provenance.editorialSourceSha256 !== DISCOVERY_MECHANISM_EDITORIAL_SOURCE_SHA256
+      || provenance.catalogSha256 !== DISCOVERY_MECHANISM_CATALOG_SHA256
+      || provenance.selectionSha256 !== selectionSha256) {
+      return ["catalog_provenance_binding_mismatch"];
+    }
+    if (expectedProviderResponseId && provenance.providerResponseId !== expectedProviderResponseId) {
+      return ["catalog_provider_response_mismatch"];
+    }
+    const assembled = assembleDiscoveryMechanismSelection(selection);
+    const sectionMap = new Map((report.sections || []).map((section) => [String(section.id), section]));
+    if (String(sectionMap.get("global")?.content || "") !== contentHtmlFromPlainText(assembled.synthesis)) {
+      return ["catalog_synthesis_render_mismatch"];
+    }
+    for (const domain of DISCOVERY_PREMIUM_DOMAINS) {
+      const rendered = String(sectionMap.get(domain)?.content || "");
+      const expected = contentHtmlFromPlainText(assembled.sections[domain]);
+      if (!rendered.endsWith(expected)) return [`catalog_section_render_mismatch:${domain}`];
+      const deterministicBlockageCount = Array.isArray(report.analysisMetadata?.blocages)
+        ? report.analysisMetadata.blocages.filter((blocage) => discoveryBlockageMatchesDomain(blocage, domain)).length
+        : 0;
+      const expectedParagraphCount = 2 + deterministicBlockageCount
+        + assembled.sections[domain].split(/\n{2,}/u).length;
+      const actualParagraphCount = (rendered.match(/<p\b[^>]*>[\s\S]*?<\/p>/giu) || []).length;
+      if (actualParagraphCount !== expectedParagraphCount) {
+        return [`catalog_section_paragraph_count_mismatch:${domain}`];
+      }
+      for (const paragraph of assembled.sections[domain].split(/\n{2,}/u)) {
+        if (rendered.split(escapeHtml(paragraph)).length - 1 !== 1) {
+          return [`catalog_section_occurrence_mismatch:${domain}`];
+        }
+      }
+    }
+    return [];
+  } catch (error) {
+    return [`catalog_provenance_invalid:${error instanceof Error ? error.message : String(error)}`];
+  }
+}
+
 const DOMAIN_CONFIG: Record<string, { label: string; description: string }> = {
   sommeil: { label: "Sommeil", description: "Récupération" },
   stress: { label: "Stress", description: "Système Nerveux" },
@@ -3229,10 +3432,102 @@ const DOMAIN_CONFIG: Record<string, { label: string; description: string }> = {
   mindset: { label: "Mental", description: "État d'esprit" }
 };
 
-export async function convertToNarrativeReport(
+const DISCOVERY_OBSERVATION_KEYS: Record<string, readonly string[]> = {
+  sommeil: ["heures-sommeil", "qualite-sommeil", "reveils-nocturnes", "reveil-fatigue"],
+  stress: ["niveau-stress", "anxiete", "concentration", "irritabilite", "humeur-fluctuation"],
+  energie: ["energie-matin", "energie-aprem", "coup-fatigue", "envies-sucre", "motivation"],
+  digestion: ["digestion-qualite", "ballonnements", "transit", "reflux", "energie-post-repas"],
+  training: ["sport-frequence", "type-sport", "intensite", "recuperation", "performance-evolution"],
+  nutrition: ["nb-repas", "petit-dejeuner", "proteines-jour", "eau-jour", "regime-alimentaire", "alcool"],
+  lifestyle: ["cafe-jour", "tabac", "temps-ecran", "exposition-soleil", "profession", "heures-assis"],
+  mindset: ["engagement-niveau", "motivation-principale", "consignes-strictes", "temps-training-semaine"],
+};
+
+const DISCOVERY_OBSERVATION_LABELS: Readonly<Record<string, string>> = Object.freeze({
+  "heures-sommeil": "durée de sommeil", "qualite-sommeil": "qualité du sommeil",
+  "reveils-nocturnes": "réveils nocturnes", "reveil-fatigue": "fatigue au réveil",
+  "niveau-stress": "niveau de stress", anxiete: "anxiété", concentration: "concentration",
+  irritabilite: "irritabilité", "humeur-fluctuation": "fluctuation de l’humeur",
+  "energie-matin": "énergie matinale", "energie-aprem": "énergie l’après-midi",
+  "coup-fatigue": "coups de fatigue", "envies-sucre": "envies de sucre", motivation: "motivation",
+  "digestion-qualite": "qualité digestive", ballonnements: "ballonnements", transit: "transit",
+  reflux: "reflux", "energie-post-repas": "énergie après les repas",
+  "sport-frequence": "fréquence sportive", "type-sport": "type de sport", intensite: "intensité",
+  recuperation: "récupération", "performance-evolution": "évolution des performances",
+  "nb-repas": "nombre de repas", "petit-dejeuner": "petit-déjeuner",
+  "proteines-jour": "apport protéique", "eau-jour": "hydratation",
+  "regime-alimentaire": "régime alimentaire", alcool: "alcool", "cafe-jour": "café",
+  tabac: "tabac", "temps-ecran": "temps d’écran", "exposition-soleil": "exposition au soleil",
+  profession: "activité professionnelle", "heures-assis": "temps assis",
+  "engagement-niveau": "niveau d’engagement", "motivation-principale": "motivation principale",
+  "consignes-strictes": "préférence de cadre", "temps-training-semaine": "temps d’entraînement hebdomadaire",
+});
+
+function buildDiscoveryDeterministicObservation(
+  domain: string,
+  normalized: DiscoveryResponses,
+): string {
+  return DISCOVERY_OBSERVATION_KEYS[domain]
+    .filter((key) => hasDiscoveryFactValue(normalized[key]))
+    .map((key) => `${DISCOVERY_OBSERVATION_LABELS[key] || normalizeDiscoveryFrenchSurface(key.replace(/-/g, " "))} : ${formatDiscoveryFactValue(key, normalized[key])}`)
+    .join(" ; ");
+}
+
+function discoveryBlockageMatchesDomain(blocage: BlockageAnalysis, domain: string): boolean {
+  const normalizedBlocageDomain = normalizeDiscoveryFactText(String(blocage.domain || ""));
+  const normalizedDomain = normalizeDiscoveryFactText(domain);
+  const normalizedLabel = normalizeDiscoveryFactText(DOMAIN_CONFIG[domain]?.label || domain);
+  return normalizedBlocageDomain.includes(normalizedDomain)
+    || normalizedBlocageDomain.includes(normalizedLabel)
+    || normalizedDomain.includes(normalizedBlocageDomain.split(" ")[0] || "__never__");
+}
+
+function buildDiscoveryExactDomainPresentation(input: {
+  domain: string;
+  score: number;
+  blocages: BlockageAnalysis[];
+  normalized: DiscoveryResponses;
+  prenom: string;
+  catalogContent: string;
+}): { content: string; chips: string[] } {
+  const { domain, score, blocages, normalized, prenom, catalogContent } = input;
+  const domainBlocages = blocages.filter((blocage) => discoveryBlockageMatchesDomain(blocage, domain));
+  let severityLabel: string;
+  let chips: string[];
+  if (domainBlocages.length > 0) {
+    const maxSeverity = domainBlocages.some((blocage) => blocage.severity === "critique") ? "critique"
+      : domainBlocages.some((blocage) => blocage.severity === "modere") ? "modere" : "leger";
+    severityLabel = maxSeverity === "critique" ? "BLOCAGE CRITIQUE"
+      : maxSeverity === "modere" ? "BLOCAGE MODÉRÉ" : "BLOCAGE LÉGER";
+    chips = domainBlocages[0]?.consequences.slice(0, 3).map((value) => value.split(":")[0]) || [];
+  } else if (score < 40) {
+    severityLabel = "SCORE À EXAMINER"; chips = ["Priorité absolue", "Impact direct"];
+  } else if (score < 50) {
+    severityLabel = "INSUFFISANT"; chips = ["À corriger", "Impact"];
+  } else if (score < 70) {
+    severityLabel = "À OPTIMISER"; chips = ["Potentiel", "Optimisable"];
+  } else if (score < 80) {
+    severityLabel = "CORRECT"; chips = ["Base Solide", "Affinable"];
+  } else {
+    severityLabel = "POINT FORT"; chips = ["Excellence", "Maintenir"];
+  }
+  const blockageHtml = domainBlocages
+    .map((blocage) => `<p><strong>${blocage.title}</strong></p>`)
+    .join("");
+  return {
+    content: `<p><strong>${prenom}, ton score : ${score}/100</strong> <span style="color: var(--color-primary); font-weight: bold;">[${severityLabel}]</span></p>\n\n`
+      + `<p><strong>Observations déclarées :</strong> ${escapeHtml(buildDiscoveryDeterministicObservation(domain, normalized))}</p>\n\n`
+      + blockageHtml
+      + contentHtmlFromPlainText(catalogContent),
+    chips,
+  };
+}
+
+export function convertToNarrativeReport(
   result: DiscoveryAnalysisResult,
-  responses: DiscoveryResponses
-): Promise<ReportData> {
+  responses: DiscoveryResponses,
+  options: { generatedAt?: string } = {},
+): ReportData {
   const normalized = normalizeResponses(responses as Record<string, unknown>, { mode: "discovery" }) as DiscoveryResponses;
   const prenom = getDiscoveryFirstName(normalized);
   const objectif = normalized.objectif || 'tes objectifs';
@@ -3254,40 +3549,6 @@ export async function convertToNarrativeReport(
     throw new Error(`[Discovery Premium] Sections OpenAI invalides: ${details}. Aucun fallback autorise.`);
   }
   const aiContentMap = new Map<string, string>(aiContents.map(({ domain, content }) => [domain, content]));
-
-  const observationKeys: Record<string, readonly string[]> = {
-    sommeil: ["heures-sommeil", "qualite-sommeil", "reveils-nocturnes", "reveil-fatigue"],
-    stress: ["niveau-stress", "anxiete", "concentration", "irritabilite", "humeur-fluctuation"],
-    energie: ["energie-matin", "energie-aprem", "coup-fatigue", "envies-sucre", "motivation"],
-    digestion: ["digestion-qualite", "ballonnements", "transit", "reflux", "energie-post-repas"],
-    training: ["sport-frequence", "type-sport", "intensite", "recuperation", "performance-evolution"],
-    nutrition: ["nb-repas", "petit-dejeuner", "proteines-jour", "eau-jour", "regime-alimentaire", "alcool"],
-    lifestyle: ["cafe-jour", "tabac", "temps-ecran", "exposition-soleil", "profession", "heures-assis"],
-    mindset: ["engagement-niveau", "motivation-principale", "consignes-strictes", "temps-training-semaine"],
-  };
-  const observationLabels: Readonly<Record<string, string>> = Object.freeze({
-    "heures-sommeil": "durée de sommeil", "qualite-sommeil": "qualité du sommeil",
-    "reveils-nocturnes": "réveils nocturnes", "reveil-fatigue": "fatigue au réveil",
-    "niveau-stress": "niveau de stress", anxiete: "anxiété", concentration: "concentration",
-    irritabilite: "irritabilité", "humeur-fluctuation": "fluctuation de l’humeur",
-    "energie-matin": "énergie matinale", "energie-aprem": "énergie l’après-midi",
-    "coup-fatigue": "coups de fatigue", "envies-sucre": "envies de sucre", motivation: "motivation",
-    "digestion-qualite": "qualité digestive", ballonnements: "ballonnements", transit: "transit",
-    reflux: "reflux", "energie-post-repas": "énergie après les repas",
-    "sport-frequence": "fréquence sportive", "type-sport": "type de sport", intensite: "intensité",
-    recuperation: "récupération", "performance-evolution": "évolution des performances",
-    "nb-repas": "nombre de repas", "petit-dejeuner": "petit-déjeuner",
-    "proteines-jour": "apport protéique", "eau-jour": "hydratation",
-    "regime-alimentaire": "régime alimentaire", alcool: "alcool", "cafe-jour": "café",
-    tabac: "tabac", "temps-ecran": "temps d’écran", "exposition-soleil": "exposition au soleil",
-    profession: "activité professionnelle", "heures-assis": "temps assis",
-    "engagement-niveau": "niveau d’engagement", "motivation-principale": "motivation principale",
-    "consignes-strictes": "préférence de cadre", "temps-training-semaine": "temps d’entraînement hebdomadaire",
-  });
-  const deterministicObservation = (domain: string): string => observationKeys[domain]
-    .filter((key) => hasDiscoveryFactValue(normalized[key]))
-    .map((key) => `${observationLabels[key] || normalizeDiscoveryFrenchSurface(key.replace(/-/g, " "))} : ${formatDiscoveryFactValue(key, normalized[key])}`)
-    .join(" ; ");
 
   console.log(`[Discovery] Unified AI content assembled for all sections`);
 
@@ -3338,75 +3599,23 @@ export async function convertToNarrativeReport(
         - DISCOVERY_PREMIUM_DOMAINS.indexOf(b[0] as typeof DISCOVERY_PREMIUM_DOMAINS[number]))
     .forEach(([domain, score]) => {
       const config = DOMAIN_CONFIG[domain];
-      const domainBlocages = result.blocages.filter(b =>
-        b.domain.toLowerCase().includes(domain) ||
-        domain.includes(b.domain.toLowerCase().split(' ')[0])
-      );
-
-      // Get AI-generated content for this domain
       const aiContent = aiContentMap.get(domain) || '';
-
-      // Determine severity and color
-      let severityLabel: string;
-      let severityColor: string;
-      let chips: string[] = [];
-
-      // Theme-aware primary color for severity indicators
-      const primaryColor = 'var(--color-primary)';
-
-      if (domainBlocages.length > 0) {
-        const maxSeverity = domainBlocages.some(b => b.severity === 'critique') ? 'critique' :
-                          domainBlocages.some(b => b.severity === 'modere') ? 'modere' : 'leger';
-        severityLabel = maxSeverity === 'critique' ? 'BLOCAGE CRITIQUE' : maxSeverity === 'modere' ? 'BLOCAGE MODÉRÉ' : 'BLOCAGE LÉGER';
-        severityColor = primaryColor; // Unified yellow for all blocages
-        chips = domainBlocages[0]?.consequences.slice(0, 3).map(c => c.split(':')[0]) || [];
-      } else if (score < 40) {
-        severityLabel = 'SCORE À EXAMINER';
-        severityColor = primaryColor;
-        chips = ["Priorité absolue", "Impact direct"];
-      } else if (score < 50) {
-        severityLabel = 'INSUFFISANT';
-        severityColor = primaryColor;
-        chips = ["À corriger", "Impact"];
-      } else if (score < 70) {
-        severityLabel = 'À OPTIMISER';
-        severityColor = primaryColor;
-        chips = ["Potentiel", "Optimisable"];
-      } else if (score < 80) {
-        severityLabel = 'CORRECT';
-        severityColor = primaryColor;
-        chips = ["Base Solide", "Affinable"];
-      } else {
-        severityLabel = 'POINT FORT';
-        severityColor = primaryColor;
-        chips = ["Excellence", "Maintenir"];
-      }
-
-      // Build content with header + AI content
-      let content = `<p><strong>${prenom}, ton score : ${score}/100</strong> <span style="color: ${severityColor}; font-weight: bold;">[${severityLabel}]</span></p>\n\n`;
-
-      content += `<p><strong>Observations déclarées :</strong> ${escapeHtml(deterministicObservation(domain))}</p>\n\n`;
-
-      // Add blocage info if exists
-      if (domainBlocages.length > 0) {
-        domainBlocages.forEach(b => {
-          content += `<p><strong>${b.title}</strong></p>`;
-        });
-      }
-
-      // Add AI-generated detailed analysis (40-50 lines)
-      if (aiContent) {
-        content += contentHtmlFromPlainText(aiContent);
-      } else {
-        throw new Error(`[Discovery Premium] Section ${domain} absente. Aucun fallback autorise.`);
-      }
+      if (!aiContent) throw new Error(`[Discovery Premium] Section ${domain} absente. Aucun fallback autorise.`);
+      const presentation = buildDiscoveryExactDomainPresentation({
+        domain,
+        score,
+        blocages: result.blocages,
+        normalized,
+        prenom,
+        catalogContent: aiContent,
+      });
 
       sections.push({
         id: domain,
         title: config?.label || domain,
         subtitle: config?.description || '',
-        content,
-        chips
+        content: presentation.content,
+        chips: presentation.chips,
       });
     });
 
@@ -3489,7 +3698,7 @@ export async function convertToNarrativeReport(
     metrics,
     sections,
     clientName: prenom,
-    generatedAt: new Date().toISOString(),
+    generatedAt: options.generatedAt || new Date().toISOString(),
     auditType: "GRATUIT",
     analysisMetadata: {
       blocages: result.blocages.map((blocage) => ({
@@ -3499,12 +3708,14 @@ export async function convertToNarrativeReport(
       })),
       ctaMessage: result.ctaMessage,
       questionnaireCoverage: result.questionnaireCoverage,
+      catalogProvenance: result.catalogProvenance,
     },
     generationQuality: {
-      mode: 'premium_ai',
-      version: 1,
+      mode: result.catalogProvenance ? 'catalog_selected' : 'premium_ai',
+      version: result.catalogProvenance ? 2 : 1,
       provider: 'openai',
-      synthesis: 'ai_validated',
+      ...(result.catalogProvenance ? { providerRole: 'selection' as const } : {}),
+      synthesis: result.catalogProvenance ? 'catalog_rendered' : 'ai_validated',
       validatedDomains: [...domains].sort(),
       fallbackUsed: false,
       safety: {
@@ -3736,14 +3947,37 @@ export function validateDiscoveryReportForDelivery(
     triggerKeys: [],
   };
 
-  if (
-    evidence?.mode !== "premium_ai" ||
-    evidence?.version !== 1 ||
-    evidence?.provider !== "openai" ||
-    evidence?.synthesis !== "ai_validated" ||
-    evidence?.fallbackUsed !== false
-  ) {
+  const legacyEvidenceValid = evidence?.version === 1
+    && evidence.mode === "premium_ai"
+    && evidence.provider === "openai"
+    && evidence.synthesis === "ai_validated"
+    && evidence.providerRole === undefined;
+  const catalogEvidenceValid = evidence?.version === 2
+    && evidence.mode === "catalog_selected"
+    && evidence.provider === "openai"
+    && evidence.providerRole === "selection"
+    && evidence.synthesis === "catalog_rendered";
+  if ((!legacyEvidenceValid && !catalogEvidenceValid) || evidence?.fallbackUsed !== false) {
     errors.push("premium_ai_evidence_missing");
+  }
+  errors.push(...validateDiscoveryCatalogReportProvenance(report));
+  if (catalogEvidenceValid && report?.analysisMetadata?.catalogProvenance) {
+    try {
+      const selection = validateDiscoveryMechanismSelection(report.analysisMetadata.catalogProvenance.selection);
+      const assembled = assembleDiscoveryMechanismSelection(selection);
+      for (const domain of DISCOVERY_PREMIUM_DOMAINS) {
+        const validation = validateDiscoverySectionContent(
+          assembled.sections[domain],
+          safetyPolicy,
+          { generationQualityVersion: 2 },
+        );
+        if (!validation.isValid) {
+          errors.push(...validation.reasons.map((reason) => `catalog_section:${domain}:${reason}`));
+        }
+      }
+    } catch (error) {
+      errors.push(`catalog_section_validation:${error instanceof Error ? error.message : String(error)}`);
+    }
   }
   if (
     safetyEvidence?.version !== 1
@@ -3843,7 +4077,9 @@ export function validateDiscoveryReportForDelivery(
   }
   const metadataProse = metadata && typeof metadata === "object"
     ? JSON.stringify(Object.fromEntries(
-      Object.entries(metadata).filter(([key]) => key !== "questionnaireCoverage"),
+      Object.entries(metadata).filter(([key]) => (
+        key !== "questionnaireCoverage" && key !== "catalogProvenance"
+      )),
     ))
     : metadataText;
   for (const linguisticError of validateDiscoveryLinguisticQuality(metadataProse)) {
@@ -3887,6 +4123,10 @@ export function validateDiscoveryReportAgainstResponses(
   const factualText = `${visible}\n${metadataText}`;
   const errors = validateDiscoveryFactualConsistency(factualText, responses)
     .map((error) => `factual:${error}`);
+  const catalogBacked = report?.generationQuality?.version === 2;
+  if (catalogBacked) {
+    errors.push(...validateDiscoveryCatalogReportProvenance(report).map((error) => `catalog:${error}`));
+  }
   const metadata = nonRenderedMetadata && typeof nonRenderedMetadata === "object"
     ? nonRenderedMetadata as Record<string, unknown>
     : report?.analysisMetadata && typeof report.analysisMetadata === "object"
@@ -3931,14 +4171,15 @@ export function validateDiscoveryReportAgainstResponses(
   }
   const metadataBlocages = Array.isArray(metadata.blocages)
     ? metadata.blocages as Array<Record<string, unknown>> : [];
-  if (JSON.stringify(metadataBlocages) !== JSON.stringify(deterministic.blocages)) {
+  if (stableDiscoveryCatalogJson(metadataBlocages) !== stableDiscoveryCatalogJson(deterministic.blocages)) {
     errors.push("metadata:deterministic_blockages_mismatch");
   }
   const expectedCta = buildDiscoveryDeterministicCta(deterministic.blocages, deterministic.safetyPolicy);
   if (String(metadata.ctaMessage || "") !== expectedCta) {
     errors.push("metadata:deterministic_cta_mismatch");
   }
-  if (JSON.stringify(metadata.questionnaireCoverage) !== JSON.stringify(deterministic.questionnaireCoverage)) {
+  if (stableDiscoveryCatalogJson(metadata.questionnaireCoverage)
+    !== stableDiscoveryCatalogJson(deterministic.questionnaireCoverage)) {
     errors.push("metadata:questionnaire_coverage_mismatch");
   }
   if (nonRenderedMetadata !== undefined
@@ -3954,22 +4195,27 @@ export function validateDiscoveryReportAgainstResponses(
   if (JSON.stringify(actualSectionOrder) !== JSON.stringify(expectedSectionOrder)) {
     errors.push("sections:deterministic_order_mismatch");
   }
-  const deterministicBlockageTitles = new Set(deterministic.blocages.map((blocage) => blocage.title));
-  const providerProse = sections
-    .filter((section) => String(section?.id || "") === "global"
-      || DISCOVERY_PREMIUM_DOMAINS.includes(String(section?.id || "") as any))
-    .flatMap((section) => {
-      const paragraphs = String(section?.content || "").match(/<p\b[^>]*>[\s\S]*?<\/p>/gi) || [];
-      return paragraphs.map((paragraph) => stripInlineHtml(paragraph)).filter((paragraph) => {
-        if (String(section?.id || "") === "global") return true;
-        return !/^.+, ton score\s*:/i.test(paragraph)
-          && !/^Observations déclarées\s*:/i.test(paragraph)
-          && !deterministicBlockageTitles.has(paragraph.trim());
-      });
-    })
-    .join("\n");
-  for (const mechanismError of validateDiscoveryMechanismProse(providerProse)) {
-    errors.push(`content:${mechanismError}`);
+  // v2 prose is assembled locally from the immutable, hash-bound catalogue.
+  // Its exact render/provenance gate above replaces the obsolete free-prose
+  // parser. Legacy v1 reports retain that parser until they are regenerated.
+  if (!catalogBacked) {
+    const deterministicBlockageTitles = new Set(deterministic.blocages.map((blocage) => blocage.title));
+    const providerProse = sections
+      .filter((section) => String(section?.id || "") === "global"
+        || DISCOVERY_PREMIUM_DOMAINS.includes(String(section?.id || "") as any))
+      .flatMap((section) => {
+        const paragraphs = String(section?.content || "").match(/<p\b[^>]*>[\s\S]*?<\/p>/gi) || [];
+        return paragraphs.map((paragraph) => stripInlineHtml(paragraph)).filter((paragraph) => {
+          if (String(section?.id || "") === "global") return true;
+          return !/^.+, ton score\s*:/i.test(paragraph)
+            && !/^Observations déclarées\s*:/i.test(paragraph)
+            && !deterministicBlockageTitles.has(paragraph.trim());
+        });
+      })
+      .join("\n");
+    for (const mechanismError of validateDiscoveryMechanismProse(providerProse)) {
+      errors.push(`content:${mechanismError}`);
+    }
   }
   const qualitySafety = report?.generationQuality?.safety;
   const expectedSafety = {
@@ -3979,8 +4225,48 @@ export function validateDiscoveryReportAgainstResponses(
     strictEatingSafety: deterministic.safetyPolicy.strictEatingSafety,
     gatePassed: true,
   };
-  if (JSON.stringify(qualitySafety) !== JSON.stringify(expectedSafety)) {
+  if (stableDiscoveryCatalogJson(qualitySafety) !== stableDiscoveryCatalogJson(expectedSafety)) {
     errors.push("safety:deterministic_metadata_mismatch");
+  }
+  if (catalogBacked && report?.analysisMetadata?.catalogProvenance) {
+    try {
+      const provenance = report.analysisMetadata.catalogProvenance;
+      const selection = validateDiscoveryMechanismSelection(provenance.selection);
+      const assembled = assembleDiscoveryMechanismSelection(selection);
+      const expectedReport = convertToNarrativeReport({
+        globalScore: deterministic.globalScore,
+        scoresByDomain: deterministic.scoresByDomain,
+        blocages: deterministic.blocages,
+        synthese: assembled.synthesis,
+        sectionContents: assembled.sections,
+        ctaMessage: expectedCta,
+        knowledgePreflight: { synthesis: "", domains: {} },
+        safetyPolicy: deterministic.safetyPolicy,
+        questionnaireCoverage: deterministic.questionnaireCoverage,
+        catalogProvenance: provenance,
+      }, responses, { generatedAt: String(report.generatedAt || "") });
+      const normalizeForDeterministicSeal = (value: Partial<ReportData>): Partial<ReportData> => {
+        const cloned = structuredClone(value);
+        if (cloned && typeof cloned === "object" && "validationResult" in cloned) {
+          const validationResult = (cloned as Record<string, unknown>).validationResult;
+          if (validationResult && typeof validationResult === "object" && !Array.isArray(validationResult)) {
+            const { deliveryGate: _deliveryGate, ...sealedValidationResult } = validationResult as Record<string, unknown>;
+            if (Object.keys(sealedValidationResult).length === 0) {
+              delete (cloned as Record<string, unknown>).validationResult;
+            } else {
+              (cloned as Record<string, unknown>).validationResult = sealedValidationResult;
+            }
+          }
+        }
+        return cloned;
+      };
+      if (stableDiscoveryCatalogJson(normalizeForDeterministicSeal(report))
+        !== stableDiscoveryCatalogJson(normalizeForDeterministicSeal(expectedReport))) {
+        errors.push("report:catalog_deterministic_reconstruction_mismatch");
+      }
+    } catch (error) {
+      errors.push(`report:catalog_deterministic_reconstruction_failed:${error instanceof Error ? error.message : String(error)}`);
+    }
   }
   return { ok: errors.length === 0, errors: [...new Set(errors)] };
 }

@@ -7,11 +7,12 @@ import {
   persistValidatedDiscoveryBatchItem,
 } from "./discoveryBatchControl";
 import {
-  DISCOVERY_PREMIUM_DOMAINS,
+  buildDiscoveryDefaultMechanismSelection,
   buildDiscoveryDeterministicCta,
   buildDiscoveryReportAssets,
   calculateDiscoveryDeterministicProfile,
   convertToNarrativeReport,
+  validateDiscoveryGeneratedNarrative,
 } from "./discovery-scan";
 import { attachDiscoveryDeliveryGateResult } from "./discoveryDeliveryGate";
 
@@ -151,18 +152,21 @@ async function persistenceInput(state: FakeState) {
   state.audit.responses = responses;
   state.item.expected_responses_sha256 = discoverySha256(responses);
   const deterministic = calculateDiscoveryDeterministicProfile(responses);
-  const paragraph = "La régularité des rythmes soutient les mécanismes de récupération. Les adaptations reposent sur la répétition des signaux, la qualité du sommeil et la gestion de la charge. Cette explication générale reste prudente et ne permet aucun diagnostic individuel. ";
-  const section = Array.from({ length: 4 }, () => paragraph.repeat(3)).join("\n\n");
-  const report = await convertToNarrativeReport({
+  const selection = buildDiscoveryDefaultMechanismSelection();
+  const generated = validateDiscoveryGeneratedNarrative(selection, responses, deterministic.safetyPolicy);
+  assert.ok(generated.catalogProvenance);
+  generated.catalogProvenance.providerResponseId = String(state.item.provider_response_id);
+  const report = convertToNarrativeReport({
     globalScore: deterministic.globalScore,
     scoresByDomain: deterministic.scoresByDomain,
     blocages: deterministic.blocages,
-    synthese: section,
-    sectionContents: Object.fromEntries(DISCOVERY_PREMIUM_DOMAINS.map((domain) => [domain, section])),
+    synthese: generated.synthesis,
+    sectionContents: generated.sections,
     ctaMessage: buildDiscoveryDeterministicCta(deterministic.blocages, deterministic.safetyPolicy),
     knowledgePreflight: { synthesis: "", domains: {} },
     safetyPolicy: deterministic.safetyPolicy,
     questionnaireCoverage: deterministic.questionnaireCoverage,
+    catalogProvenance: generated.catalogProvenance,
   }, responses);
   const assets = buildDiscoveryReportAssets(report);
   const narrativeReport = attachDiscoveryDeliveryGateResult(report, {

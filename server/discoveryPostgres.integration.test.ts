@@ -8,15 +8,29 @@ import { fileURLToPath } from "node:url";
 import { Pool } from "pg";
 import {
   DISCOVERY_APPROVED_NEUTRAL_PROMO_HTML,
+  DISCOVERY_MECHANISM_CATALOG_SHA256,
+  DISCOVERY_MECHANISM_CATALOG_VERSION,
+  DISCOVERY_MECHANISM_EDITORIAL_SOURCE_SHA256,
   DISCOVERY_PREMIUM_DOMAINS,
   buildDiscoveryDeterministicCta,
+  buildDiscoveryDefaultMechanismSelection,
   buildDiscoveryReportAssets,
   calculateDiscoveryDeterministicProfile,
   convertToNarrativeReport,
+  discoveryCatalogSelectionSha256,
+  validateDiscoveryReportAgainstResponses,
+  validateDiscoveryGeneratedNarrative,
   renderDiscoveryCoachingOffersTable,
   type ReportData,
 } from "./discovery-scan";
-import { attachDiscoveryDeliveryGateResult } from "./discoveryDeliveryGate";
+import {
+  attachDiscoveryDeliveryGateResult,
+  canExposeDiscoveryReport,
+  evaluateCanonicalDiscoveryArtifacts,
+  hasDiscoveryCatalogLedgerBinding,
+  hasPassingPersistedDiscoveryDeliveryGate,
+  resolveCanonicalDiscoveryArtifacts,
+} from "./discoveryDeliveryGate";
 import { DISCOVERY_OTHER_AUDIT_ACTIVE_SQL } from "./discoverySupersededPolicy";
 
 const databaseUrl = String(process.env.DATABASE_URL || "").trim();
@@ -163,20 +177,25 @@ function completeV2Responses(): Record<string, unknown> {
   };
 }
 
-async function buildValidPersistenceFixture(responses: Record<string, unknown>) {
+async function buildValidPersistenceFixture(responses: Record<string, unknown>, providerResponseId?: string) {
   const deterministic = calculateDiscoveryDeterministicProfile(responses);
-  const paragraph = "La régularité des rythmes soutient les mécanismes de récupération. Les adaptations reposent sur la répétition des signaux, la qualité du sommeil et la gestion de la charge. Cette explication générale reste prudente et ne permet aucun diagnostic individuel. ";
-  const section = Array.from({ length: 4 }, () => paragraph.repeat(3)).join("\n\n");
+  const generated = validateDiscoveryGeneratedNarrative(
+    buildDiscoveryDefaultMechanismSelection(),
+    responses,
+    deterministic.safetyPolicy,
+  );
+  if (generated.catalogProvenance) generated.catalogProvenance.providerResponseId = providerResponseId;
   const result = {
     globalScore: deterministic.globalScore,
     scoresByDomain: deterministic.scoresByDomain,
     blocages: deterministic.blocages,
-    synthese: section,
-    sectionContents: Object.fromEntries(DISCOVERY_PREMIUM_DOMAINS.map((domain) => [domain, section])),
+    synthese: generated.synthesis,
+    sectionContents: generated.sections,
     ctaMessage: buildDiscoveryDeterministicCta(deterministic.blocages, deterministic.safetyPolicy),
     knowledgePreflight: { synthesis: "", domains: {} },
     safetyPolicy: deterministic.safetyPolicy,
     questionnaireCoverage: deterministic.questionnaireCoverage,
+    catalogProvenance: generated.catalogProvenance,
   };
   const report = await convertToNarrativeReport(result, responses);
   const assets = buildDiscoveryReportAssets(report);
@@ -751,6 +770,60 @@ async function insertDiscoveryProviderProof(auditId: string, responseId: string,
   return { reservationId, usageEventId: Number(usage.rows[0].id) };
 }
 
+function buildDiscoveryProviderEvidence(responseId: string, cost = 0.15) {
+  const selection = buildDiscoveryDefaultMechanismSelection();
+  return {
+    responseId,
+    model: "gpt-test",
+    rawCandidate: selection,
+    inputTokens: 100,
+    outputTokens: 50,
+    totalTokens: 150,
+    actualCostUsd: cost,
+    catalogVersion: DISCOVERY_MECHANISM_CATALOG_VERSION,
+    catalogSha256: DISCOVERY_MECHANISM_CATALOG_SHA256,
+    selectionSha256: discoveryCatalogSelectionSha256(selection),
+  };
+}
+
+async function createSyntheticGenerationBatch(
+  lockToken: string,
+  auditIds: string[],
+  label: string,
+): Promise<string> {
+  const rows = await pool.query(
+    `SELECT id,responses,report_delivery_status,report_txt,report_html
+       FROM audits WHERE id=ANY($1::varchar[]) ORDER BY id`,
+    [auditIds],
+  );
+  const byId = new Map(rows.rows.map((row) => [String(row.id), row]));
+  return batch.createDiscoveryBatchRun({
+    manifestSha256: batch.discoverySha256(`${label}:${randomUUID()}`),
+    commitSha: "c".repeat(40),
+    approvalReference: label,
+    approvalExpiresAt: new Date(Date.now() + 60_000).toISOString(),
+    stage: "GENERATION",
+    tier: "REST",
+    softPerScanUsd: 0.25,
+    hardPerScanUsd: 0.75,
+    globalBudgetUsd: Math.max(0.75, auditIds.length * 0.75),
+    lockToken,
+    items: auditIds.map((auditId, index) => {
+      const audit = byId.get(auditId);
+      assert.ok(audit, auditId);
+      return {
+        auditId,
+        sequenceNo: index + 1,
+        cohort: "invalid" as const,
+        expectedResponsesSha256: batch.discoverySha256(audit.responses),
+        expectedSourceStatus: String(audit.report_delivery_status),
+        expectedTxtSha256: audit.report_txt ? batch.discoverySha256(String(audit.report_txt)) : null,
+        expectedHtmlSha256: audit.report_html ? batch.discoverySha256(String(audit.report_html)) : null,
+      };
+    }),
+  }, pool);
+}
+
 async function runSyntheticRejectedBatchAttempt(input: {
   auditId: string;
   stage: "GENERATION" | "REGENERATION";
@@ -998,6 +1071,229 @@ test("a rejected canary terminalizes durably and one sealed retry respects the t
   await batch.releaseDiscoveryGlobalLock(thirdLock.token, pool);
 });
 
+test("two concurrent items in one batch yield one provider claim and terminalize the remainder", async () => {
+  const auditIds = [await insertAudit(), await insertAudit()];
+  const lock = await batch.acquireDiscoveryGlobalLock({
+    owner: "postgres-integration", purpose: "same-batch-single-active-provider",
+  }, pool);
+  const batchId = await createSyntheticGenerationBatch(lock.token, auditIds, "same-batch-race");
+  for (const auditId of auditIds) {
+    await batch.markDiscoveryBatchItemPreflightOk({ batchId, auditId, lockToken: lock.token }, pool);
+  }
+  const results = await Promise.allSettled(auditIds.map((auditId) => (
+    batch.claimDiscoveryProviderAttempt({ batchId, auditId, lockToken: lock.token }, pool)
+  )));
+  assert.equal(results.filter((result) => result.status === "fulfilled").length, 1);
+  assert.equal(results.filter((result) => result.status === "rejected"
+    && /DISCOVERY_BATCH_ANOTHER_PROVIDER_ATTEMPT_ACTIVE/.test(String(result.reason))).length, 1);
+  const itemStates = await pool.query(
+    `SELECT audit_id,state,reserved_cost_usd FROM discovery_batch_items
+      WHERE batch_id=$1 ORDER BY sequence_no`,
+    [batchId],
+  );
+  const active = itemStates.rows.find((row) => row.state === "PROVIDER_STARTED");
+  const waiting = itemStates.rows.find((row) => row.state === "PREFLIGHT_OK");
+  assert.ok(active);
+  assert.ok(waiting);
+  assert.equal(Number(active.reserved_cost_usd), 0.75);
+  assert.equal(Number(waiting.reserved_cost_usd), 0);
+  assert.equal(Number((await pool.query(
+    `SELECT COUNT(*) FROM ai_cost_budget_reservations
+      WHERE product='discovery' AND order_id=ANY($1::text[])`,
+    [auditIds],
+  )).rows[0].count), 0);
+
+  await batch.failDiscoveryBatchItem({
+    batchId,
+    auditId: String(active.audit_id),
+    lockToken: lock.token,
+    errorCode: "DISCOVERY_PROVIDER_PRE_ACCEPT_FAILURE",
+    errorDetail: "provider not accepted; terminalize batch",
+  }, pool);
+  const terminal = await pool.query(
+    `SELECT b.status,b.reserved_cost_usd,b.completed_at,
+            array_agg(i.state ORDER BY i.sequence_no) AS item_states
+       FROM discovery_batch_runs b JOIN discovery_batch_items i ON i.batch_id=b.id
+      WHERE b.id=$1 GROUP BY b.id`,
+    [batchId],
+  );
+  assert.equal(terminal.rows[0].status, "FAILED");
+  assert.equal(Number(terminal.rows[0].reserved_cost_usd), 0);
+  assert.ok(terminal.rows[0].completed_at);
+  assert.deepEqual([...terminal.rows[0].item_states].sort(), ["FAILED", "SKIPPED"]);
+  await assert.rejects(
+    batch.claimDiscoveryProviderAttempt({
+      batchId, auditId: String(waiting.audit_id), lockToken: lock.token,
+    }, pool),
+    /DISCOVERY_BATCH_NOT_RUNNABLE/,
+  );
+  await batch.releaseDiscoveryGlobalLock(lock.token, pool);
+});
+
+test("one epoch serializes provider claims across batches and releases after terminalization", async () => {
+  const auditIds = [await insertAudit(), await insertAudit()];
+  const lock = await batch.acquireDiscoveryGlobalLock({
+    owner: "postgres-integration", purpose: "cross-batch-single-active-provider",
+  }, pool);
+  const firstBatchId = await createSyntheticGenerationBatch(lock.token, [auditIds[0]], "cross-batch-a");
+  const secondBatchId = await createSyntheticGenerationBatch(lock.token, [auditIds[1]], "cross-batch-b");
+  await batch.markDiscoveryBatchItemPreflightOk({
+    batchId: firstBatchId, auditId: auditIds[0], lockToken: lock.token,
+  }, pool);
+  await batch.markDiscoveryBatchItemPreflightOk({
+    batchId: secondBatchId, auditId: auditIds[1], lockToken: lock.token,
+  }, pool);
+  const claims = await Promise.allSettled([
+    batch.claimDiscoveryProviderAttempt({
+      batchId: firstBatchId, auditId: auditIds[0], lockToken: lock.token,
+    }, pool),
+    batch.claimDiscoveryProviderAttempt({
+      batchId: secondBatchId, auditId: auditIds[1], lockToken: lock.token,
+    }, pool),
+  ]);
+  assert.equal(claims.filter((result) => result.status === "fulfilled").length, 1);
+  assert.equal(claims.filter((result) => result.status === "rejected"
+    && /DISCOVERY_BATCH_ANOTHER_PROVIDER_ATTEMPT_ACTIVE/.test(String(result.reason))).length, 1);
+  const states = await pool.query(
+    `SELECT batch_id,audit_id,state,reserved_cost_usd FROM discovery_batch_items
+      WHERE batch_id=ANY($1::uuid[])`,
+    [[firstBatchId, secondBatchId]],
+  );
+  const active = states.rows.find((row) => row.state === "PROVIDER_STARTED");
+  const waiting = states.rows.find((row) => row.state === "PREFLIGHT_OK");
+  assert.ok(active);
+  assert.ok(waiting);
+  assert.equal(Number(waiting.reserved_cost_usd), 0);
+
+  await batch.failDiscoveryBatchItem({
+    batchId: String(active.batch_id),
+    auditId: String(active.audit_id),
+    lockToken: lock.token,
+    errorCode: "DISCOVERY_PROVIDER_PRE_ACCEPT_FAILURE",
+    errorDetail: "provider not accepted; release epoch slot",
+  }, pool);
+  await batch.claimDiscoveryProviderAttempt({
+    batchId: String(waiting.batch_id),
+    auditId: String(waiting.audit_id),
+    lockToken: lock.token,
+  }, pool);
+  const postTerminal = await pool.query(
+    `SELECT batch_id,state,reserved_cost_usd FROM discovery_batch_items
+      WHERE batch_id=ANY($1::uuid[]) ORDER BY batch_id`,
+    [[firstBatchId, secondBatchId]],
+  );
+  assert.equal(postTerminal.rows.filter((row) => row.state === "PROVIDER_STARTED").length, 1);
+  assert.equal(postTerminal.rows.filter((row) => row.state === "FAILED").length, 1);
+  await batch.failDiscoveryBatchItem({
+    batchId: String(waiting.batch_id),
+    auditId: String(waiting.audit_id),
+    lockToken: lock.token,
+    errorCode: "DISCOVERY_PROVIDER_PRE_ACCEPT_FAILURE",
+    errorDetail: "provider not accepted; cleanup",
+  }, pool);
+  await batch.releaseDiscoveryGlobalLock(lock.token, pool);
+});
+
+test("a successful soft-cost stop atomically stores one item, skips the remainder, and permits a new epoch", async () => {
+  const responses = completeV2Responses();
+  const auditIds = [
+    await insertAudit("PENDING", responses),
+    await insertAudit("PENDING", { ...responses, prenom: "SyntheticB" }),
+  ];
+  const lock = await batch.acquireDiscoveryGlobalLock({
+    owner: "postgres-integration", purpose: "soft-cost-terminalization",
+  }, pool);
+  const batchId = await createSyntheticGenerationBatch(lock.token, auditIds, "soft-cost-stop");
+  for (const auditId of auditIds) {
+    await batch.markDiscoveryBatchItemPreflightOk({ batchId, auditId, lockToken: lock.token }, pool);
+  }
+  await batch.claimDiscoveryProviderAttempt({
+    batchId, auditId: auditIds[0], lockToken: lock.token,
+  }, pool);
+  const responseId = `resp_${randomUUID()}`;
+  await insertDiscoveryProviderProof(auditIds[0], responseId, 0.30);
+  const usageDecision = await batch.recordDiscoveryProviderUsage({
+    batchId,
+    auditId: auditIds[0],
+    lockToken: lock.token,
+    responseId,
+    inputTokens: 100,
+    outputTokens: 50,
+    totalTokens: 150,
+    actualCostUsd: 0.30,
+  }, pool);
+  assert.equal(usageDecision.stop, true);
+  assert.match(String(usageDecision.stopReason), /^soft_cost_limit_exceeded:/);
+  const fixture = await buildValidPersistenceFixture(responses, responseId);
+  await batch.persistValidatedDiscoveryBatchItem({
+    batchId,
+    auditId: auditIds[0],
+    lockToken: lock.token,
+    expectedResponsesSha256: batch.discoverySha256(responses),
+    expectedSourceStatus: "PENDING",
+    expectedTxtSha256: null,
+    expectedHtmlSha256: null,
+    narrativeReport: fixture.narrativeReport,
+    scores: fixture.scores,
+    txt: fixture.assets.txt,
+    html: fixture.assets.html,
+    model: "gpt-test",
+  }, pool);
+  assert.equal(await batch.completeDiscoveryBatchRun({ batchId, lockToken: lock.token }, pool), true);
+  const terminal = await pool.query(
+    `SELECT b.status,b.processed_count,b.target_count,b.reserved_cost_usd,b.actual_cost_usd,
+            b.stop_reason,b.completed_at,
+            array_agg(i.state ORDER BY i.sequence_no) AS item_states,
+            array_agg(i.error_code ORDER BY i.sequence_no) AS error_codes,
+            array_agg(i.error_detail ORDER BY i.sequence_no) AS error_details
+       FROM discovery_batch_runs b JOIN discovery_batch_items i ON i.batch_id=b.id
+      WHERE b.id=$1 GROUP BY b.id`,
+    [batchId],
+  );
+  assert.equal(terminal.rows[0].status, "COMPLETED");
+  assert.equal(Number(terminal.rows[0].processed_count), 2);
+  assert.equal(Number(terminal.rows[0].target_count), 2);
+  assert.equal(Number(terminal.rows[0].reserved_cost_usd), 0);
+  assert.equal(Number(terminal.rows[0].actual_cost_usd), 0.30);
+  assert.match(String(terminal.rows[0].stop_reason), /^soft_cost_limit_exceeded:/);
+  assert.ok(terminal.rows[0].completed_at);
+  assert.deepEqual(terminal.rows[0].item_states, ["STORED", "SKIPPED"]);
+  assert.deepEqual(terminal.rows[0].error_codes, ["DISCOVERY_CATALOG_PROVENANCE", "DISCOVERY_BATCH_SOFT_COST_STOP"]);
+  const storedProvenance = JSON.parse(String(terminal.rows[0].error_details[0]));
+  assert.equal(storedProvenance.editorialSourceSha256, DISCOVERY_MECHANISM_EDITORIAL_SOURCE_SHA256);
+  assert.equal(storedProvenance.catalogVersion, DISCOVERY_MECHANISM_CATALOG_VERSION);
+  assert.equal(storedProvenance.catalogSha256, DISCOVERY_MECHANISM_CATALOG_SHA256);
+  assert.equal(storedProvenance.providerResponseId, responseId);
+  await assert.rejects(
+    batch.claimDiscoveryProviderAttempt({
+      batchId, auditId: auditIds[1], lockToken: lock.token,
+    }, pool),
+    /DISCOVERY_BATCH_NOT_RUNNABLE/,
+  );
+  assert.equal(await batch.releaseDiscoveryGlobalLock(lock.token, pool), true);
+
+  const nextAuditId = await insertAudit("PENDING", { ...responses, prenom: "SyntheticC" });
+  const nextLock = await batch.acquireDiscoveryGlobalLock({
+    owner: "postgres-integration", purpose: "post-soft-cost-new-epoch",
+  }, pool);
+  assert.notEqual(nextLock.token, lock.token);
+  const nextBatchId = await createSyntheticGenerationBatch(nextLock.token, [nextAuditId], "post-soft-cost");
+  await batch.markDiscoveryBatchItemPreflightOk({
+    batchId: nextBatchId, auditId: nextAuditId, lockToken: nextLock.token,
+  }, pool);
+  await batch.claimDiscoveryProviderAttempt({
+    batchId: nextBatchId, auditId: nextAuditId, lockToken: nextLock.token,
+  }, pool);
+  await batch.failDiscoveryBatchItem({
+    batchId: nextBatchId,
+    auditId: nextAuditId,
+    lockToken: nextLock.token,
+    errorCode: "DISCOVERY_PROVIDER_PRE_ACCEPT_FAILURE",
+    errorDetail: "synthetic cleanup after proving epoch rotation",
+  }, pool);
+  await batch.releaseDiscoveryGlobalLock(nextLock.token, pool);
+});
+
 test("legacy lost output becomes a retryable tombstone without inventing provider bytes", async () => {
   const auditId = await insertAudit();
   await pool.query(
@@ -1080,6 +1376,14 @@ test("a completed provider result fences epoch rotation until crash recovery qua
     batchId, auditId, lockToken: lock.token, responseId,
     inputTokens: 100, outputTokens: 50, totalTokens: 150, actualCostUsd: 0.16,
   }, pool);
+  // A process can crash after marking its run failed but before quarantining
+  // the already completed provider result.  FAILED is not settled while the
+  // item itself is still GENERATED/VALIDATED.
+  await pool.query(
+    `UPDATE discovery_batch_runs SET status='FAILED',completed_at=NOW(),stop_reason='synthetic crash'
+      WHERE id=$1`,
+    [batchId],
+  );
   await pool.query(
     `UPDATE discovery_operation_lock
         SET acquired_at=NOW()-INTERVAL '2 minutes',expires_at=NOW()-INTERVAL '1 microsecond'
@@ -1245,6 +1549,79 @@ test("two concurrent generation claims have exactly one winner", async () => {
   });
 });
 
+test("generic catalogue persistence binds the exact provider ledger and public artifact fail-closed", async () => {
+  const responses = completeV2Responses();
+  const auditId = await insertAudit("PENDING", responses);
+  const claim = await transactional.claimDiscoveryGeneration(auditId, pool);
+  assert.ok(claim);
+  const responseId = `resp_${randomUUID()}`;
+  await insertDiscoveryProviderProof(auditId, responseId, 0.15);
+  const fixture = await buildValidPersistenceFixture(responses, responseId);
+  const { txt, html } = fixture.assets;
+
+  const persisted = await transactional.persistClaimedDiscoveryGeneration({
+    claim,
+    narrativeReport: fixture.narrativeReport,
+    scores: fixture.scores,
+    txt,
+    html,
+    expectedTxtSha256: transactional.discoveryTransactionalSha256(txt),
+    expectedHtmlSha256: transactional.discoveryTransactionalSha256(html),
+    model: "gpt-test",
+    providerEvidence: buildDiscoveryProviderEvidence(responseId, 0.15),
+  }, pool);
+  const audit = (await pool.query(
+    `SELECT responses,narrative_report,report_txt,report_html,report_delivery_status
+       FROM audits WHERE id=$1`,
+    [auditId],
+  )).rows[0];
+  const artifact = (await pool.query(
+    `SELECT id,batch_id AS "batchId",model,txt,html,content_sha256 AS "contentSha256"
+       FROM report_artifacts WHERE id=$1 AND audit_id=$2`,
+    [persisted.artifactId, auditId],
+  )).rows[0];
+  const provenance = audit.narrative_report.analysisMetadata.catalogProvenance;
+
+  assert.equal(await hasDiscoveryCatalogLedgerBinding(pool, auditId, artifact, provenance), true);
+  const exposureSource = {
+    type: "GRATUIT",
+    reportDeliveryStatus: audit.report_delivery_status,
+    narrativeReport: audit.narrative_report,
+    reportTxt: audit.report_txt,
+    reportHtml: audit.report_html,
+    responses: audit.responses,
+    reportArtifacts: [artifact],
+    catalogLedgerBound: true,
+  };
+  const canonical = resolveCanonicalDiscoveryArtifacts(exposureSource);
+  const diagnostics = {
+    exactness: canonical.exactnessErrors,
+    gate: evaluateCanonicalDiscoveryArtifacts(canonical).errors,
+    persistedGate: hasPassingPersistedDiscoveryDeliveryGate(audit.narrative_report),
+    responseBinding: validateDiscoveryReportAgainstResponses(
+      canonical.report,
+      audit.responses,
+      canonical.report?.analysisMetadata,
+    ).errors,
+  };
+  assert.equal(canExposeDiscoveryReport(exposureSource), true, JSON.stringify(diagnostics));
+
+  const mutatedArtifact = { ...artifact, txt: `${artifact.txt}\nmutation` };
+  assert.equal(await hasDiscoveryCatalogLedgerBinding(pool, auditId, mutatedArtifact, provenance), false);
+  const mutatedProvenance = { ...provenance, selectionSha256: "0".repeat(64) };
+  assert.equal(await hasDiscoveryCatalogLedgerBinding(pool, auditId, artifact, mutatedProvenance), false);
+  assert.equal(canExposeDiscoveryReport({
+    type: "GRATUIT",
+    reportDeliveryStatus: audit.report_delivery_status,
+    narrativeReport: audit.narrative_report,
+    reportTxt: audit.report_txt,
+    reportHtml: audit.report_html,
+    responses: audit.responses,
+    reportArtifacts: [artifact],
+    catalogLedgerBound: false,
+  }), false);
+});
+
 test("a rotated durable batch epoch rejects stale generation persistence", async () => {
   const auditId = await insertAudit();
   const claim = await transactional.claimDiscoveryGeneration(auditId, pool);
@@ -1268,6 +1645,7 @@ test("a rotated durable batch epoch rejects stale generation persistence", async
       expectedTxtSha256: transactional.discoveryTransactionalSha256(txt),
       expectedHtmlSha256: transactional.discoveryTransactionalSha256(html),
       model: "integration-test",
+      providerEvidence: buildDiscoveryProviderEvidence("unreachable-stale-fence"),
     }, pool),
     /DISCOVERY_GENERATION_FENCE_STALE/,
   );
@@ -1281,10 +1659,12 @@ test("a rotated durable batch epoch rejects stale generation persistence", async
 
 test("artifact, audit and job persistence rolls back atomically when the final job CAS is lost", async () => {
   const responses = completeV2Responses();
-  const fixture = await buildValidPersistenceFixture(responses);
   const auditId = await insertAudit("PENDING", responses);
   const claim = await transactional.claimDiscoveryGeneration(auditId, pool);
   assert.ok(claim);
+  const responseId = `resp_${randomUUID()}`;
+  await insertDiscoveryProviderProof(auditId, responseId, 0.15);
+  const fixture = await buildValidPersistenceFixture(responses, responseId);
   await pool.query("UPDATE report_jobs SET status = 'failed' WHERE audit_id = $1", [auditId]);
   const { txt, html } = fixture.assets;
   await assert.rejects(
@@ -1296,7 +1676,8 @@ test("artifact, audit and job persistence rolls back atomically when the final j
       html,
       expectedTxtSha256: transactional.discoveryTransactionalSha256(txt),
       expectedHtmlSha256: transactional.discoveryTransactionalSha256(html),
-      model: "integration-test",
+      model: "gpt-test",
+      providerEvidence: buildDiscoveryProviderEvidence(responseId, 0.15),
     }, pool),
     /DISCOVERY_REPORT_JOB_COMPLETION_CAS_FAILED/,
   );

@@ -18,6 +18,8 @@ import {
   analyzeDiscoveryScan,
   buildDiscoveryReportAssets,
   convertToNarrativeReport,
+  DISCOVERY_MECHANISM_CATALOG_SHA256,
+  DISCOVERY_MECHANISM_CATALOG_VERSION,
   DiscoveryRejectedCandidateError,
   DISCOVERY_PREMIUM_DOMAINS,
   isDiscoveryRejectedCandidateError,
@@ -116,6 +118,8 @@ interface ManifestRow {
 
 interface DiscoveryManifest {
   schemaVersion: 1;
+  catalogVersion: string;
+  catalogSha256: string;
   generatedAt: string;
   source: "database_read_only";
   commitSha: string;
@@ -341,10 +345,18 @@ async function buildManifest(): Promise<DiscoveryManifest> {
   });
   const commitSha = currentCommitSha();
   const hashPayload = items.map(({ responses, ...item }) => item);
-  const manifestSha256 = discoverySha256({ schemaVersion: 1, commitSha, items: hashPayload });
+  const manifestSha256 = discoverySha256({
+    schemaVersion: 1,
+    catalogVersion: DISCOVERY_MECHANISM_CATALOG_VERSION,
+    catalogSha256: DISCOVERY_MECHANISM_CATALOG_SHA256,
+    commitSha,
+    items: hashPayload,
+  });
   const count = (cohort: DiscoveryManifestCohort) => items.filter((item) => item.cohort === cohort).length;
   return {
     schemaVersion: 1,
+    catalogVersion: DISCOVERY_MECHANISM_CATALOG_VERSION,
+    catalogSha256: DISCOVERY_MECHANISM_CATALOG_SHA256,
     generatedAt: new Date().toISOString(),
     source: "database_read_only",
     commitSha,
@@ -533,6 +545,26 @@ async function runGeneration(
         if (!usage?.responseId || usage.totalTokens <= 0 || usage.actualCostUsd <= 0) {
           throw new Error("DISCOVERY_BATCH_USAGE_AMBIGUOUS:provider_evidence_missing");
         }
+        if (usage.catalogVersion !== DISCOVERY_MECHANISM_CATALOG_VERSION
+          || usage.catalogSha256 !== DISCOVERY_MECHANISM_CATALOG_SHA256
+          || !usage.selectionSha256
+          || result.catalogProvenance?.catalogVersion !== usage.catalogVersion
+          || result.catalogProvenance?.catalogSha256 !== usage.catalogSha256
+          || result.catalogProvenance?.selectionSha256 !== usage.selectionSha256
+          || result.catalogProvenance?.providerResponseId !== usage.responseId) {
+          throw new DiscoveryRejectedCandidateError({
+            providerRaw: usage.rawCandidate,
+            responseId: usage.responseId,
+            model: usage.model,
+            validationErrors: ["DISCOVERY_CATALOG_PROVIDER_PROVENANCE_MISMATCH"],
+            usage: {
+              inputTokens: usage.inputTokens,
+              outputTokens: usage.outputTokens,
+              totalTokens: usage.totalTokens,
+              actualCostUsd: usage.actualCostUsd,
+            },
+          });
+        }
         const usageDecision = await recordDiscoveryProviderUsage({
           batchId,
           auditId: item.id,
@@ -555,6 +587,7 @@ async function runGeneration(
           blocages: result.blocages,
           ctaMessage: result.ctaMessage,
           questionnaireCoverage: result.questionnaireCoverage,
+          catalogProvenance: result.catalogProvenance,
         };
         try {
           report = await convertToNarrativeReport(result, item.responses);

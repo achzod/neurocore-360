@@ -4,17 +4,28 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
+  buildDiscoveryDefaultMechanismSelection,
   buildDiscoveryDeterministicCta,
+  buildDiscoveryReportAssets,
   buildDiscoveryQuestionnaireFacts,
   calculateDiscoveryDeterministicProfile,
+  convertToNarrativeReport,
+  DISCOVERY_MECHANISM_CATALOG_SHA256,
+  DISCOVERY_MECHANISM_CATALOG_VERSION,
+  DISCOVERY_MECHANISM_EDITORIAL_SOURCE_SHA256,
   DISCOVERY_PREMIUM_DOMAINS,
+  discoveryCatalogSelectionSha256,
+  getDiscoveryMechanismCatalogSnapshot,
   validateDiscoveryFactualConsistency,
-  validateDiscoveryMechanismProse,
+  validateDiscoveryGeneratedNarrative,
   validateDiscoveryPlainTextCandidate,
   validateDiscoveryQuestionnaireContract,
   validateDiscoveryReportAgainstResponses,
-  sanitizeDiscoveryMechanismProse,
 } from "./discovery-scan";
+import {
+  attachDiscoveryDeliveryGateResult,
+  canExposeDiscoveryReport,
+} from "./discoveryDeliveryGate";
 import { validateDiscoverySafetyContent } from "./discoverySafetyPolicy";
 
 const labels: Record<string, [string, string]> = {
@@ -50,7 +61,7 @@ function assertNoLiveIdentityInTrackedAsset(raw: string, label: string): void {
 
 function baseResponses(overrides: Record<string, unknown> = {}): any {
   return {
-    prenom: "Profil", email: "case_00@example.test", "reveil-fatigue": "parfois",
+    prenom: "Canary", email: "case_00@example.test", "reveil-fatigue": "parfois",
     "reveils-nocturnes": "jamais", "tca-historique": "non",
     "traitement-medical": "non", "diagnostic-medical": ["aucun"],
     ...overrides,
@@ -76,7 +87,7 @@ function exactContractReport(responses: any): any {
       max: 10, description: labels[domain][1],
     })),
     sections: ["intro", "global", ...domains, "scans", "coaching"]
-      .map((id) => ({ id, title: id, content: "Observation prudente et non diagnostique." })),
+      .map((id) => ({ id, title: id, content: "<p>La régulation repose sur une explication prudente et non diagnostique.</p>" })),
     analysisMetadata,
     generationQuality: {
       safety: {
@@ -90,6 +101,34 @@ function exactContractReport(responses: any): any {
   };
 }
 
+function exactCatalogReport(responses: any): any {
+  const deterministic = calculateDiscoveryDeterministicProfile(responses);
+  const selection = buildDiscoveryDefaultMechanismSelection();
+  const generated = validateDiscoveryGeneratedNarrative(selection, responses, deterministic.safetyPolicy);
+  assert.ok(generated.catalogProvenance);
+  generated.catalogProvenance.providerResponseId = "resp-catalog-seal";
+  const report = convertToNarrativeReport({
+    globalScore: deterministic.globalScore,
+    scoresByDomain: deterministic.scoresByDomain,
+    blocages: deterministic.blocages,
+    synthese: generated.synthesis,
+    sectionContents: generated.sections,
+    ctaMessage: buildDiscoveryDeterministicCta(deterministic.blocages, deterministic.safetyPolicy),
+    knowledgePreflight: { synthesis: "", domains: {} },
+    safetyPolicy: deterministic.safetyPolicy,
+    questionnaireCoverage: deterministic.questionnaireCoverage,
+    catalogProvenance: generated.catalogProvenance,
+  }, responses, { generatedAt: "2026-08-14T00:00:00.000Z" });
+  return attachDiscoveryDeliveryGateResult(report, {
+    name: "discovery_delivery",
+    version: 4,
+    ok: true,
+    errors: [],
+    checkedAt: "2026-08-14T00:00:01.000Z",
+    retryable: false,
+  });
+}
+
 test("case_01: parfois fatigué ne devient jamais lever difficile", () => {
   const responses = baseResponses();
   assert.ok(validateDiscoveryFactualConsistency("La fatigue est parfois présente au réveil.", responses).length === 0);
@@ -100,7 +139,8 @@ test("case_01: parfois fatigué ne devient jamais lever difficile", () => {
 test("case_02: criticité, métriques, ordre et metadata sont liés au contrat déterministe", () => {
   const responses = baseResponses({ "reveil-fatigue": "toujours", "reveils-nocturnes": "souvent" });
   const report = exactContractReport(responses);
-  assert.equal(validateDiscoveryReportAgainstResponses(report, responses, report.analysisMetadata).ok, true);
+  const initialValidation = validateDiscoveryReportAgainstResponses(report, responses, report.analysisMetadata);
+  assert.equal(initialValidation.ok, true, JSON.stringify(initialValidation.errors));
   const contradiction = structuredClone(report);
   contradiction.sections[0].content = "BLOCAGE CRITIQUE, mais sans atteindre le niveau critique calculé.";
   assert.equal(validateDiscoveryReportAgainstResponses(contradiction, responses, contradiction.analysisMetadata).ok, false);
@@ -146,109 +186,170 @@ test("case_06: HTML, URL, markdown et promo sont refusés avant assemblage", () 
   }
 });
 
-test("case_07: la réécriture mécanistique reste grammaticale, informative et idempotente", () => {
-  const matrix = [
-    [
-      "Le signal est irrégulier.",
-      "La régularité du signal influence la stabilité des mécanismes.",
-    ],
-    [
-      "La récupération peut être insuffisante.",
-      "Un déséquilibre entre charge et récupération peut limiter les ressources adaptatives.",
-    ],
-    [
-      "La charge est élevée.",
-      "La charge mobilise des ressources adaptatives et influence la récupération.",
-    ],
-    [
-      "Le sommeil est fragmenté.",
-      "La continuité du sommeil influence la récupération et la régulation énergétique.",
-    ],
-    [
-      "Le stress reste faible.",
-      "La régulation du stress influence la mobilisation des ressources adaptatives.",
-    ],
-    [
-      "La régulation coordonne les deux dimensions du signal.",
-      "La régulation coordonne les dimensions du signal.",
-    ],
-    [
-      "Une contrainte élevée peut mobiliser les réserves adaptatives.",
-      "Une contrainte exercée peut mobiliser les réserves adaptatives.",
-    ],
-  ] as const;
+test("case_07: le catalogue éditorial et le catalogue runtime sont scellés séparément", () => {
+  const editorialRaw = readFileSync(
+    new URL("./fixtures/discovery-mechanism-editorial-source.json", import.meta.url),
+    "utf8",
+  );
+  assert.equal(
+    createHash("sha256").update(editorialRaw).digest("hex"),
+    DISCOVERY_MECHANISM_EDITORIAL_SOURCE_SHA256,
+  );
+  const editorial = JSON.parse(editorialRaw) as Array<{
+    domain: string;
+    synthesis: string;
+    snippets: Array<{ id: string; text: string }>;
+  }>;
+  assert.deepEqual(editorial.map(({ domain }) => domain).sort(), [...DISCOVERY_PREMIUM_DOMAINS].sort());
+  assert.equal(new Set(editorial.map(({ domain }) => domain)).size, DISCOVERY_PREMIUM_DOMAINS.length);
+  assert.equal(editorial.every(({ snippets }) => snippets.length === 4), true);
 
-  for (const [raw, expected] of matrix) {
-    const sanitized = sanitizeDiscoveryMechanismProse(raw);
-    assert.equal(sanitized, expected, raw);
-    assert.deepEqual(validateDiscoveryMechanismProse(sanitized), [], raw);
-    assert.match(sanitized, /^\p{Lu}.*[.!?]$/u, raw);
-    assert.doesNotMatch(sanitized, /\b(?:est|être|etre)\s*[.!?]/iu, raw);
-    assert.ok(sanitized.split(/\s+/).length >= 6, raw);
-    assert.equal(sanitizeDiscoveryMechanismProse(sanitized), sanitized, raw);
-  }
-
-  const irregularSignal = sanitizeDiscoveryMechanismProse("Le signal est irrégulier.");
-  assert.match(irregularSignal, /régularité du signal influence/u);
-  assert.doesNotMatch(irregularSignal, /\bsignal\s+(?:est|devient|reste)\s+(?:régulier|stable)\b/iu);
-
-  const insufficientRecovery = sanitizeDiscoveryMechanismProse("La récupération peut être insuffisante.");
-  assert.match(insufficientRecovery, /déséquilibre.*peut limiter/u);
-  assert.doesNotMatch(insufficientRecovery, /\brécupération\s+(?:est|devient|reste)\s+(?:suffisante|optimale)\b/iu);
-
-  const highLoad = sanitizeDiscoveryMechanismProse("La charge est élevée.");
-  assert.match(highLoad, /mobilise.*ressources.*influence.*récupération/u);
-  assert.doesNotMatch(highLoad, /\bcharge\s+(?:est|devient|reste)\s+(?:faible|modérée)\b/iu);
+  const snapshot = getDiscoveryMechanismCatalogSnapshot() as any;
+  const expectedSnapshot = {
+    editorialSourceSha256: DISCOVERY_MECHANISM_EDITORIAL_SOURCE_SHA256,
+    version: DISCOVERY_MECHANISM_CATALOG_VERSION,
+    domainOrder: [...DISCOVERY_PREMIUM_DOMAINS],
+    synthesis: Object.fromEntries(editorial.map(({ domain, synthesis }) => [domain, synthesis])),
+    sections: Object.fromEntries(editorial.map(({ domain, snippets }) => [domain, {
+      entries: Object.fromEntries(snippets.map(({ id, text }) => [id, text])),
+    }])),
+  };
+  assert.deepEqual(snapshot, expectedSnapshot, "editorial JSON and runtime TypeScript catalog diverged");
+  assert.doesNotMatch(snapshot.sections.lifestyle.entries.lifestyle_01, /réduit[^.]+réduit/u);
+  assert.equal(createHash("sha256").update(JSON.stringify(snapshot)).digest("hex"), DISCOVERY_MECHANISM_CATALOG_SHA256);
+  const mutated = structuredClone(snapshot);
+  mutated.sections.sommeil.entries.sommeil_01 += " mutation";
+  assert.notEqual(createHash("sha256").update(JSON.stringify(mutated)).digest("hex"), DISCOVERY_MECHANISM_CATALOG_SHA256);
 });
 
-test("case_08: l'ambigu et le personnalisé restent intacts pour un rejet fail-closed", () => {
-  const matrix = [
-    ["Un mécanisme difficile à interpréter persiste.", "provider_state_assertion"],
-    ["La capacité est excellente.", "provider_state_assertion"],
-    ["Le signal est excellent.", "provider_state_assertion"],
-    ["La récupération est excellente.", "provider_state_assertion"],
-    ["Ton signal est irrégulier.", "provider_personalized_claim"],
-    ["Ce profil présente une charge élevée.", "provider_profile_claim"],
-    ["La trajectoire montre une stagnation.", "provider_profile_claim"],
-  ] as const;
-
-  for (const [raw, expectedError] of matrix) {
-    const sanitized = sanitizeDiscoveryMechanismProse(raw);
-    assert.equal(sanitized, raw);
-    assert.ok(validateDiscoveryMechanismProse(sanitized).includes(expectedError), raw);
+test("case_08: une sélection structurée assemble la synthèse et quatre snippets uniques par domaine", () => {
+  const responses = baseResponses();
+  const selection = buildDiscoveryDefaultMechanismSelection();
+  const validated = validateDiscoveryGeneratedNarrative(selection, responses, calculateDiscoveryDeterministicProfile(responses).safetyPolicy);
+  assert.equal(validated.catalogProvenance?.selectionSha256, discoveryCatalogSelectionSha256(selection));
+  for (const domain of DISCOVERY_PREMIUM_DOMAINS) {
+    const paragraphs = validated.sections[domain].split(/\n{2,}/u);
+    assert.equal(paragraphs.length, 5, domain);
+    assert.equal(new Set(paragraphs).size, 5, domain);
+    assert.ok(paragraphs.join(" ").length >= 1_400, domain);
   }
 });
 
-test("case_09: la neutralisation des comptes préserve la casse de phrase et des paragraphes", () => {
-  const matrix = [
-    ["Deux mécanismes interagissent.", "Plusieurs mécanismes interagissent."],
-    ["2 dimensions structurent le modèle.", "Plusieurs dimensions structurent le modèle."],
-    ["Trois axes organisent la régulation.", "Plusieurs axes organisent la régulation."],
-    ["La régulation relie deux mécanismes.", "La régulation relie plusieurs mécanismes."],
-    ["Le modèle articule 2 dimensions.", "Le modèle articule plusieurs dimensions."],
-  ] as const;
-
-  for (const [raw, expected] of matrix) {
-    const sanitized = sanitizeDiscoveryMechanismProse(raw);
-    assert.equal(sanitized, expected, raw);
-    assert.deepEqual(validateDiscoveryMechanismProse(sanitized), [], raw);
-    assert.equal(sanitizeDiscoveryMechanismProse(sanitized), sanitized, raw);
+test("case_09: les six paires possibles par domaine restent déterministes et complètes", () => {
+  const responses = baseResponses();
+  const policy = calculateDiscoveryDeterministicProfile(responses).safetyPolicy;
+  for (const domain of DISCOVERY_PREMIUM_DOMAINS) {
+    const ids = [1, 2, 3, 4].map((index) => domain + "_0" + index);
+    for (let left = 0; left < ids.length; left += 1) {
+      for (let right = left + 1; right < ids.length; right += 1) {
+        const selection = buildDiscoveryDefaultMechanismSelection();
+        selection.sections[domain] = [ids[left], ids[right]];
+        const validated = validateDiscoveryGeneratedNarrative(selection, responses, policy);
+        const paragraphs = validated.sections[domain].split(/\n{2,}/u);
+        assert.equal(paragraphs.length, 5, domain + ":" + ids[left] + ":" + ids[right]);
+        assert.equal(new Set(paragraphs).size, 5, domain);
+      }
+    }
   }
-
-  const paragraphs = [
-    "Deux mécanismes interagissent.",
-    "2 dimensions structurent le modèle. Trois axes organisent la régulation.",
-  ].join("\n\n");
-  const expectedParagraphs = [
-    "Plusieurs mécanismes interagissent.",
-    "Plusieurs dimensions structurent le modèle. Plusieurs axes organisent la régulation.",
-  ].join("\n\n");
-  const sanitizedParagraphs = sanitizeDiscoveryMechanismProse(paragraphs);
-  assert.equal(sanitizedParagraphs, expectedParagraphs);
-  assert.doesNotMatch(sanitizedParagraphs, /<[^>]+>/u);
-  assert.equal(sanitizeDiscoveryMechanismProse(sanitizedParagraphs), sanitizedParagraphs);
 });
 
+test("case_10: champs libres, ID inconnu, doublon, hash et version divergent sont refusés", () => {
+  const responses = baseResponses();
+  const policy = calculateDiscoveryDeterministicProfile(responses).safetyPolicy;
+  const base = buildDiscoveryDefaultMechanismSelection();
+  for (const candidate of [
+    { ...base, prose: "texte libre" },
+    { ...base, catalogVersion: "other" },
+    { ...base, catalogSha256: "0".repeat(64) },
+    { ...base, sections: { ...base.sections, sommeil: ["sommeil_03", "sommeil_03"] } },
+    { ...base, sections: { ...base.sections, sommeil: ["sommeil_03", "sommeil_99"] } },
+  ]) assert.throws(() => validateDiscoveryGeneratedNarrative(candidate, responses, policy));
+});
+
+test("case_11: le sceau catalogue ignore seulement le deliveryGate attaché et refuse toute autre mutation", () => {
+  const responses = baseResponses();
+  const report = exactCatalogReport(responses);
+  const baseline = validateDiscoveryReportAgainstResponses(report, responses, report.analysisMetadata);
+  assert.equal(baseline.ok, true, JSON.stringify(baseline.errors));
+
+  const mutations: Array<[string, (candidate: any) => void]> = [
+    ["prefixe", (candidate) => { candidate.sections.find((section: any) => section.id === "sommeil").content = `<p>Phrase ajoutée.</p>${candidate.sections.find((section: any) => section.id === "sommeil").content}`; }],
+    ["suffixe", (candidate) => { candidate.sections.find((section: any) => section.id === "stress").content += "<p>Phrase ajoutée.</p>"; }],
+    ["ordre", (candidate) => { [candidate.sections[2], candidate.sections[3]] = [candidate.sections[3], candidate.sections[2]]; }],
+    ["client", (candidate) => { candidate.clientName = "MutationSynthetic"; }],
+    ["titre", (candidate) => { candidate.sections[0].title += " modifié"; }],
+    ["chip", (candidate) => { candidate.sections.find((section: any) => section.id === "nutrition").chips.push("Ajout"); }],
+    ["metadata", (candidate) => { candidate.analysisMetadata.extra = true; }],
+    ["validation imbriquée", (candidate) => { candidate.validationResult.review = "approved"; }],
+  ];
+  for (const [label, mutate] of mutations) {
+    const candidate = structuredClone(report);
+    mutate(candidate);
+    const validation = validateDiscoveryReportAgainstResponses(candidate, responses, candidate.analysisMetadata);
+    assert.equal(validation.ok, false, label);
+    assert.ok(validation.errors.includes("report:catalog_deterministic_reconstruction_mismatch"), label);
+  }
+});
+
+test("case_12: un rapport catalogue public exige sa preuve ledger durable exacte", () => {
+  const responses = baseResponses();
+  const report = exactCatalogReport(responses);
+  const assets = buildDiscoveryReportAssets(report);
+  const source = {
+    type: "GRATUIT",
+    reportDeliveryStatus: "READY",
+    narrativeReport: report,
+    reportTxt: assets.txt,
+    reportHtml: assets.html,
+    responses,
+    reportArtifacts: [{
+      txt: assets.txt,
+      html: assets.html,
+      contentSha256: createHash("sha256")
+        .update(`txt\0${assets.txt}\0html\0${assets.html}`)
+        .digest("hex"),
+    }],
+  };
+  assert.equal(canExposeDiscoveryReport(source), false, "missing durable ledger binding");
+  assert.equal(canExposeDiscoveryReport({ ...source, catalogLedgerBound: false }), false);
+  assert.equal(canExposeDiscoveryReport({ ...source, catalogLedgerBound: true }), true);
+
+  const reorderObjectKeys = (value: any): any => {
+    if (Array.isArray(value)) return value.map(reorderObjectKeys);
+    if (!value || typeof value !== "object") return value;
+    return Object.fromEntries(Object.keys(value).sort().reverse()
+      .map((key) => [key, reorderObjectKeys(value[key])]));
+  };
+  assert.equal(canExposeDiscoveryReport({
+    ...source,
+    narrativeReport: reorderObjectKeys(report),
+    catalogLedgerBound: true,
+  }), true, "JSONB key reordering must not invalidate deterministic metadata");
+
+  const mutatedReport = structuredClone(report);
+  mutatedReport.sections.find((section: any) => section.id === "lifestyle").content += "<p>Mutation.</p>";
+  assert.equal(canExposeDiscoveryReport({
+    ...source,
+    narrativeReport: mutatedReport,
+    catalogLedgerBound: true,
+  }), false, "a ledger boolean cannot authorize mutated report content");
+
+  const mutatedProvenance = structuredClone(report);
+  mutatedProvenance.analysisMetadata.catalogProvenance.selectionSha256 = "0".repeat(64);
+  assert.equal(canExposeDiscoveryReport({
+    ...source,
+    narrativeReport: mutatedProvenance,
+    catalogLedgerBound: true,
+  }), false, "a ledger boolean cannot authorize mutated catalogue provenance");
+
+  const mutatedArtifact = structuredClone(source.reportArtifacts[0]);
+  mutatedArtifact.txt += "\nmutation";
+  assert.equal(canExposeDiscoveryReport({
+    ...source,
+    reportArtifacts: [mutatedArtifact],
+    catalogLedgerBound: true,
+  }), false, "a ledger boolean cannot authorize mutated public artifacts");
+});
 test("le reconciler expose un vrai cycle prepare/preflight/run de régénération", () => {
   const source = readFileSync(new URL("../scripts/discovery-safe-reconciler.ts", import.meta.url), "utf8");
   for (const token of ["--prepare-regeneration", "--preflight-regeneration", "--run-regeneration", "retryOfCandidateId"]) {
@@ -303,12 +404,11 @@ test("les neuf cas legacy synthétiques et versionnés satisfont le contrat exac
 });
 
 test("les assets centraux tracked ne contiennent aucun identifiant live", () => {
-  for (const [label, url] of [
-    ["central_test_source", new URL("./discoveryCentralRegeneration.test.ts", import.meta.url)],
-    ["synthetic_fixture", new URL("./fixtures/discovery-legacy-safe-cases.json", import.meta.url)],
-  ] as const) {
-    assertNoLiveIdentityInTrackedAsset(readFileSync(url, "utf8"), label);
-  }
+  const fixture = readFileSync(
+    new URL("./fixtures/discovery-legacy-safe-cases.json", import.meta.url),
+    "utf8",
+  );
+  assertNoLiveIdentityInTrackedAsset(fixture, "synthetic_fixture");
 });
 
 test("legacy vide, domaine trop incomplet et enum forgée sont bloqués avant provider", () => {

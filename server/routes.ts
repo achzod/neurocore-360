@@ -87,6 +87,7 @@ import {
 import {
   canExposeDiscoveryReport,
   evaluateCanonicalDiscoveryArtifacts,
+  hasDiscoveryCatalogLedgerBinding,
   hasPassingPersistedDiscoveryDeliveryGate,
   resolveCanonicalDiscoveryArtifacts,
 } from "./discoveryDeliveryGate";
@@ -155,22 +156,41 @@ export async function registerRoutes(
 
   async function canExposePersistedDiscoveryReport(audit: any): Promise<boolean> {
     if (audit?.type !== "GRATUIT") return true;
-    const artifacts = await pool.query(
-      `SELECT txt, html, content_sha256 AS "contentSha256"
+    try {
+      const artifacts = await pool.query(
+        `SELECT id, txt, html, content_sha256 AS "contentSha256",
+              batch_id AS "batchId", model
          FROM report_artifacts
         WHERE audit_id = $1
         ORDER BY created_at ASC, id ASC`,
-      [audit.id],
-    );
-    return canExposeDiscoveryReport({
-      type: audit.type,
-      reportDeliveryStatus: audit.reportDeliveryStatus,
-      narrativeReport: audit.narrativeReport,
-      reportTxt: audit.reportTxt,
-      reportHtml: audit.reportHtml,
-      responses: audit.responses,
-      reportArtifacts: artifacts.rows,
-    });
+        [audit.id],
+      );
+      const provenance = audit?.narrativeReport?.generationQuality?.version === 2
+        ? audit?.narrativeReport?.analysisMetadata?.catalogProvenance
+        : null;
+      let catalogLedgerBound = provenance ? false : true;
+      if (provenance && artifacts.rows.length === 1) {
+        catalogLedgerBound = await hasDiscoveryCatalogLedgerBinding(
+          pool,
+          audit.id,
+          artifacts.rows[0],
+          provenance,
+        );
+      }
+      return canExposeDiscoveryReport({
+        type: audit.type,
+        reportDeliveryStatus: audit.reportDeliveryStatus,
+        narrativeReport: audit.narrativeReport,
+        reportTxt: audit.reportTxt,
+        reportHtml: audit.reportHtml,
+        responses: audit.responses,
+        reportArtifacts: artifacts.rows,
+        catalogLedgerBound,
+      });
+    } catch (error) {
+      console.error("[Discovery] Public exposure proof failed closed:", error);
+      return false;
+    }
   }
 
   // Ensure missing indexes on existing tables (non-blocking)

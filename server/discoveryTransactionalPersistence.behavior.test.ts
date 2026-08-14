@@ -14,11 +14,15 @@ import {
   type DiscoveryGenerationClaim,
 } from "./discoveryTransactionalPersistence";
 import {
-  DISCOVERY_PREMIUM_DOMAINS,
+  DISCOVERY_MECHANISM_CATALOG_SHA256,
+  DISCOVERY_MECHANISM_CATALOG_VERSION,
+  buildDiscoveryDefaultMechanismSelection,
   buildDiscoveryDeterministicCta,
   buildDiscoveryReportAssets,
   calculateDiscoveryDeterministicProfile,
   convertToNarrativeReport,
+  discoveryCatalogSelectionSha256,
+  validateDiscoveryGeneratedNarrative,
 } from "./discovery-scan";
 import { attachDiscoveryDeliveryGateResult } from "./discoveryDeliveryGate";
 
@@ -58,6 +62,14 @@ interface FakeDatabase {
   failureCasRowCount?: number;
   jobClaimRowCount?: number;
   jobUpdates: string[];
+  providerProof: {
+    responseId: string;
+    model: string;
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+    actualCostUsd: number;
+  };
 }
 
 interface QueryCall {
@@ -108,6 +120,31 @@ class FakePoolClient {
         generationClaim: JSON.parse(String(values?.[1])),
       };
       return { rows: [{ id: this.database.audit.id }] as Row[], rowCount: 1 };
+    }
+    if (/^\s*SELECT r\.id AS reservation_id,r\.actual_cost_usd,e\.id AS usage_event_id/.test(text)) {
+      const proof = this.database.providerProof;
+      const matches = values?.[0] === this.database.audit.id && values?.[1] === proof.responseId;
+      const rows = matches ? [{
+        reservation_id: "reservation-generic-1",
+        usage_event_id: 1,
+        actual_cost_usd: proof.actualCostUsd,
+        estimated_openai_cost_usd: proof.actualCostUsd,
+        input_tokens: proof.inputTokens,
+        output_tokens: proof.outputTokens,
+        total_tokens: proof.totalTokens,
+        model: proof.model,
+      }] : [];
+      return { rows: rows as Row[], rowCount: rows.length };
+    }
+    if (/^\s*UPDATE ai_cost_budget_reservations[\s\S]*SET detail=\$2,updated_at=NOW\(\)/.test(text)) {
+      const proof = this.database.providerProof;
+      const matches = values?.[0] === "reservation-generic-1"
+        && values?.[2] === this.database.audit.id
+        && values?.[3] === proof.responseId;
+      return {
+        rows: matches ? [{ id: "reservation-generic-1" }] as Row[] : [],
+        rowCount: matches ? 1 : 0,
+      };
     }
     if (/^\s*INSERT INTO report_jobs AS existing/.test(text)) {
       const rowCount = this.database.jobClaimRowCount ?? 1;
@@ -198,6 +235,14 @@ function makeDatabase(overrides: Partial<FakeDatabase> = {}): FakeDatabase {
     fence: { token: null, active: false },
     committedArtifacts: new Set<string>(),
     jobUpdates: [],
+    providerProof: {
+      responseId: "resp-generic-1",
+      model: "gpt-test",
+      inputTokens: 100,
+      outputTokens: 50,
+      totalTokens: 150,
+      actualCostUsd: 0.1,
+    },
     ...overrides,
   };
 }
@@ -225,6 +270,7 @@ function makeClaim(database: FakeDatabase, overrides: Partial<DiscoveryGeneratio
     token: "claim-token-current",
     fenceToken: database.fence.token,
     expectedResponsesSha256: discoveryTransactionalSha256(database.audit.responses),
+    claimedAt: "2026-08-14T00:00:00.000Z",
     ...overrides,
   };
 }
@@ -234,18 +280,22 @@ async function makePersistenceInput(
 ): Promise<DiscoveryAtomicPersistenceInput> {
   const responses = completeV2Responses();
   const deterministic = calculateDiscoveryDeterministicProfile(responses);
-  const paragraph = "La régularité des rythmes soutient les mécanismes de récupération. Les adaptations reposent sur la répétition des signaux, la qualité du sommeil et la gestion de la charge. Cette explication générale reste prudente et ne permet aucun diagnostic individuel. ";
-  const section = Array.from({ length: 4 }, () => paragraph.repeat(3)).join("\n\n");
-  const report = await convertToNarrativeReport({
+  const selection = buildDiscoveryDefaultMechanismSelection();
+  const generated = validateDiscoveryGeneratedNarrative(selection, responses, deterministic.safetyPolicy);
+  const responseId = "resp-generic-1";
+  assert.ok(generated.catalogProvenance);
+  generated.catalogProvenance.providerResponseId = responseId;
+  const report = convertToNarrativeReport({
     globalScore: deterministic.globalScore,
     scoresByDomain: deterministic.scoresByDomain,
     blocages: deterministic.blocages,
-    synthese: section,
-    sectionContents: Object.fromEntries(DISCOVERY_PREMIUM_DOMAINS.map((domain) => [domain, section])),
+    synthese: generated.synthesis,
+    sectionContents: generated.sections,
     ctaMessage: buildDiscoveryDeterministicCta(deterministic.blocages, deterministic.safetyPolicy),
     knowledgePreflight: { synthesis: "", domains: {} },
     safetyPolicy: deterministic.safetyPolicy,
     questionnaireCoverage: deterministic.questionnaireCoverage,
+    catalogProvenance: generated.catalogProvenance,
   }, responses);
   const assets = buildDiscoveryReportAssets(report);
   const narrativeReport = attachDiscoveryDeliveryGateResult(report, {
@@ -262,7 +312,19 @@ async function makePersistenceInput(
     html,
     expectedTxtSha256: discoveryTransactionalSha256(txt),
     expectedHtmlSha256: discoveryTransactionalSha256(html),
-    model: "fake-model-without-provider-call",
+    model: "gpt-test",
+    providerEvidence: {
+      responseId,
+      model: "gpt-test",
+      rawCandidate: selection,
+      inputTokens: 100,
+      outputTokens: 50,
+      totalTokens: 150,
+      actualCostUsd: 0.1,
+      catalogVersion: DISCOVERY_MECHANISM_CATALOG_VERSION,
+      catalogSha256: DISCOVERY_MECHANISM_CATALOG_SHA256,
+      selectionSha256: discoveryCatalogSelectionSha256(selection),
+    },
   };
 }
 
