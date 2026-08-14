@@ -219,8 +219,7 @@ if (process.env.NODE_ENV === "production") {
           const scheduledAudits = await storage.getScheduledAuditsForDelivery();
           for (const audit of scheduledAudits) {
             if (audit.type === "GRATUIT") {
-              await storage.updateAudit(audit.id, { reportDeliveryStatus: "READY" }).catch(() => {});
-              console.warn(`[Cron] Discovery ${audit.id} skipped by legacy scheduled sender; moved to READY for safe AutoSend`);
+              console.warn(`[Cron] Discovery ${audit.id} ignored by legacy scheduled sender; explicit claim reconciliation required`);
               continue;
             }
             try {
@@ -287,25 +286,11 @@ if (process.env.NODE_ENV === "production") {
                RETURNING id`
             );
 
-            // Discovery has no delayed schedule. If the process crashes after
-            // claiming READY -> SENDING but before finalizing SENT, it must go
-            // back to READY so the safe sender can retry or reconcile by
-            // email_tracking. Otherwise a generated Discovery can be stuck
-            // forever without another API call.
-            const discoverySendingRecoveryResult = await pool.query(
-              `UPDATE audits SET report_delivery_status = 'READY'
-               WHERE type = 'GRATUIT'
-                 AND report_delivery_status = 'SENDING'
-                 AND report_sent_at IS NULL
-                 AND created_at <= NOW() - INTERVAL '10 minutes'
-                 AND (narrative_report IS NOT NULL OR report_txt IS NOT NULL OR report_html IS NOT NULL)
-                 AND NOT EXISTS (
-                   SELECT 1 FROM discovery_email_delivery_claims claim
-                    WHERE claim.audit_id = audits.id
-                      AND claim.email_type = 'sendReportReadyEmail'
-                 )
-               RETURNING id`
-            );
+            // Discovery delivery claims are durable and deliberately never
+            // rewound by this generic cron. A SENDING audit requires explicit
+            // claim reconciliation so an accepted/ambiguous provider outcome
+            // cannot be converted back into a resendable READY state.
+            const discoverySendingRecoveryResult = { rows: [] as Array<{ id: string }> };
 
             if (auditRecoveryResult.rows.length > 0) {
               const recoveredIds = auditRecoveryResult.rows.map((r: any) => r.id).join(', ');

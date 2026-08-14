@@ -28,6 +28,31 @@ import {
   DISCOVERY_SUPERSEDED_TERMINAL_SQL,
   isDiscoverySupersededTerminal,
 } from "./discoverySupersededPolicy";
+import { isDiscoveryTransactionalAutomationEligible } from "./discoveryAutomationPolicy";
+import {
+  GenericAuditMutationBarrierError,
+  runGenericAuditMutation,
+} from "./discoveryGenericMutationBarrier";
+import {
+  completeGenericReportJob,
+  deleteGenericReportJob,
+  enqueueMissingDiscoveryReportJobFenced,
+  failGenericReportJob,
+  insertGenericReportArtifactFenced,
+  listActiveGenericReportJobRows,
+  markDiscoveryAuditSupersededFenced,
+  updateGenericReportJobProgress,
+  upsertGenericReportJobRow,
+} from "./reportJobStorageSafety";
+import { DISCOVERY_TRANSACTION_FENCE_KEY } from "./discoveryTransactionalPersistence";
+
+const DISCOVERY_GENERIC_PROTECTED_STATE_SQL = `NOT (
+  type = 'GRATUIT'
+  AND (
+    report_sent_at IS NOT NULL
+    OR report_delivery_status IN ('BATCH_READY','SENDING','SENT','SUPERSEDED')
+  )
+)`;
 
 // Configuration de la connexion PostgreSQL
 const getDatabaseUrl = (): string => {
@@ -197,6 +222,7 @@ export interface IStorage {
   getAllAuditSummaries(): Promise<AuditSummary[]>;
   getScheduledAuditsForDelivery(): Promise<Audit[]>;
   createAudit(audit: InsertAudit & { email: string; responses: Record<string, unknown> }): Promise<Audit>;
+  createDiscoveryAudit(audit: InsertAudit & { email: string; responses: Record<string, unknown> }): Promise<Audit>;
   updateAudit(id: string, data: Partial<Audit>): Promise<Audit | undefined>;
 
   getProgress(email: string): Promise<QuestionnaireProgress | undefined>;
@@ -360,6 +386,7 @@ export class MemStorage implements IStorage {
   private bloodReports: Map<string, BloodReportRecord>;
   private bloodTests: Map<string, BloodTestRecord>;
   private magicTokens: Map<string, MagicToken>;
+  private reportJobs: Map<string, ReportJob>;
   private reportArtifacts: ReportArtifact[];
   private promoCodes: Map<string, PromoCode>;
   private emailTrackings: Map<string, EmailTracking>;
@@ -373,6 +400,7 @@ export class MemStorage implements IStorage {
     this.bloodReports = new Map();
     this.bloodTests = new Map();
     this.magicTokens = new Map();
+    this.reportJobs = new Map();
     this.reportArtifacts = [];
     this.promoCodes = new Map();
     this.emailTrackings = new Map();
@@ -521,6 +549,22 @@ export class MemStorage implements IStorage {
   async createAudit(
     input: InsertAudit & { email: string; responses: Record<string, unknown> }
   ): Promise<Audit> {
+    if (input.type === "GRATUIT") {
+      throw new Error("DISCOVERY_AUDIT_REQUIRES_TRANSACTIONAL_CREATION");
+    }
+    return this.createAuditUnchecked(input);
+  }
+
+  async createDiscoveryAudit(
+    input: InsertAudit & { email: string; responses: Record<string, unknown> }
+  ): Promise<Audit> {
+    if (input.type !== "GRATUIT") throw new Error("DISCOVERY_AUDIT_TYPE_REQUIRED");
+    return this.createAuditUnchecked(input);
+  }
+
+  private async createAuditUnchecked(
+    input: InsertAudit & { email: string; responses: Record<string, unknown> }
+  ): Promise<Audit> {
     // Same lowercase-normalize policy as PgStorage.createAudit, keeps the
     // in-memory backend consistent with prod when used in dev/tests.
     const normalizedEmail = input.email.trim().toLowerCase();
@@ -566,6 +610,7 @@ export class MemStorage implements IStorage {
     const audit = this.audits.get(id);
     if (!audit) return undefined;
     if (isDiscoverySupersededTerminal(audit)) return undefined;
+    if (audit.type === "GRATUIT") return undefined;
 
     const updated = { ...audit, ...data };
     this.audits.set(id, updated);
@@ -809,41 +854,112 @@ export class MemStorage implements IStorage {
     return magicToken.email;
   }
 
-  async getReportJob(_auditId: string): Promise<ReportJob | undefined> { return undefined; }
-  async getActiveReportJobs(): Promise<ReportJob[]> { return []; }
-  async createOrUpdateReportJob(job: Partial<ReportJob> & { auditId: string }): Promise<ReportJob> {
-    return { auditId: job.auditId, status: 'pending', progress: 0, currentSection: '', error: null, attemptCount: 0, startedAt: new Date(), updatedAt: new Date(), lastProgressAt: new Date(), completedAt: null };
+  async getReportJob(auditId: string): Promise<ReportJob | undefined> {
+    return this.reportJobs.get(auditId);
   }
-  async updateReportJobProgress(_auditId: string, _progress: number, _currentSection: string): Promise<void> {}
-  async completeReportJob(_auditId: string): Promise<void> {}
-  async failReportJob(_auditId: string, _error: string): Promise<void> {}
-  async deleteReportJob(_auditId: string): Promise<void> {}
+  async getActiveReportJobs(): Promise<ReportJob[]> {
+    return Array.from(this.reportJobs.values()).filter((job) => {
+      const audit = this.audits.get(job.auditId);
+      return audit?.type !== "GRATUIT" && ["pending", "generating"].includes(job.status);
+    });
+  }
+  async createOrUpdateReportJob(job: Partial<ReportJob> & { auditId: string }): Promise<ReportJob> {
+    const audit = this.audits.get(job.auditId);
+    if (!audit || audit.type === "GRATUIT") {
+      throw new Error("DISCOVERY_REPORT_JOB_REQUIRES_TRANSACTIONAL_WORKFLOW");
+    }
+    const now = new Date();
+    const existing = this.reportJobs.get(job.auditId);
+    const updated: ReportJob = {
+      auditId: job.auditId,
+      status: job.status ?? existing?.status ?? "pending",
+      progress: job.progress ?? existing?.progress ?? 0,
+      currentSection: job.currentSection ?? existing?.currentSection ?? "",
+      error: job.error !== undefined ? job.error : existing?.error ?? null,
+      attemptCount: job.attemptCount ?? existing?.attemptCount ?? 0,
+      startedAt: existing?.startedAt ?? now,
+      updatedAt: now,
+      lastProgressAt: now,
+      completedAt: job.completedAt !== undefined ? job.completedAt : existing?.completedAt ?? null,
+    };
+    this.reportJobs.set(job.auditId, updated);
+    return updated;
+  }
+  async updateReportJobProgress(auditId: string, progress: number, currentSection: string): Promise<void> {
+    const audit = this.audits.get(auditId);
+    const job = this.reportJobs.get(auditId);
+    if (!job || audit?.type === "GRATUIT") return;
+    const now = new Date();
+    this.reportJobs.set(auditId, { ...job, progress, currentSection, updatedAt: now, lastProgressAt: now });
+  }
+  async completeReportJob(auditId: string): Promise<void> {
+    const audit = this.audits.get(auditId);
+    const job = this.reportJobs.get(auditId);
+    if (!job || audit?.type === "GRATUIT") return;
+    const now = new Date();
+    this.reportJobs.set(auditId, {
+      ...job,
+      status: "completed",
+      progress: 100,
+      currentSection: "Rapport termine !",
+      completedAt: now,
+      updatedAt: now,
+    });
+  }
+  async failReportJob(auditId: string, error: string): Promise<void> {
+    const audit = this.audits.get(auditId);
+    const job = this.reportJobs.get(auditId);
+    if (!job || audit?.type === "GRATUIT") return;
+    const now = new Date();
+    this.reportJobs.set(auditId, { ...job, status: "failed", error, completedAt: now, updatedAt: now });
+  }
+  async deleteReportJob(auditId: string): Promise<void> {
+    if (this.audits.get(auditId)?.type === "GRATUIT") return;
+    this.reportJobs.delete(auditId);
+  }
   async hasReportArtifact(auditId: string): Promise<boolean> {
     return this.reportArtifacts.some((artifact) => artifact.auditId === auditId);
   }
   async enqueueMissingDiscoveryReportJob(auditId: string, reason: string): Promise<boolean> {
     const audit = this.audits.get(auditId);
     if (!audit || audit.type !== "GRATUIT" || audit.reportDeliveryStatus !== "NEEDS_REVIEW") return false;
+    if (!isDiscoveryTransactionalAutomationEligible(audit)) return false;
     if ((audit as any).reportSentAt || this.hasStoredDiscoveryArtifact(audit)) return false;
     if (await this.getReportJob(auditId)) return false;
-    audit.reportDeliveryStatus = "GENERATING" as any;
     audit.narrativeReport = {
       ...((audit.narrativeReport && typeof audit.narrativeReport === "object") ? audit.narrativeReport as object : {}),
       recovery: { version: 1, disposition: "enqueued", reason, decidedAt: new Date().toISOString() },
     };
-    await this.createOrUpdateReportJob({
+    const now = new Date();
+    this.reportJobs.set(auditId, {
       auditId,
       status: "pending",
       progress: 0,
       currentSection: "Reprise Discovery en attente...",
       error: null,
       attemptCount: 0,
+      startedAt: now,
+      updatedAt: now,
+      lastProgressAt: now,
+      completedAt: null,
     });
     return true;
   }
   async markDiscoveryAuditSuperseded(auditId: string, replacementAuditId: string, reason: string): Promise<boolean> {
     const audit = this.audits.get(auditId);
-    if (!audit || audit.type !== "GRATUIT" || audit.reportDeliveryStatus !== "NEEDS_REVIEW" || (audit as any).reportSentAt) return false;
+    const replacement = this.audits.get(replacementAuditId);
+    if (
+      !audit
+      || !replacement
+      || audit.type !== "GRATUIT"
+      || replacement.type !== "GRATUIT"
+      || audit.email.trim().toLowerCase() !== replacement.email.trim().toLowerCase()
+      || audit.reportDeliveryStatus !== "NEEDS_REVIEW"
+      || (audit as any).reportSentAt
+      || !isDiscoveryTransactionalAutomationEligible(audit)
+      || this.hasStoredDiscoveryArtifact(audit)
+      || this.reportJobs.has(auditId)
+    ) return false;
     audit.reportDeliveryStatus = "SUPERSEDED" as any;
     audit.narrativeReport = {
       ...((audit.narrativeReport && typeof audit.narrativeReport === "object") ? audit.narrativeReport as object : {}),
@@ -876,6 +992,10 @@ export class MemStorage implements IStorage {
     input: Omit<ReportArtifact, "id" | "createdAt"> & { createdAt?: Date },
     _options?: { strict?: boolean },
   ): Promise<ReportArtifact> {
+    const audit = this.audits.get(input.auditId);
+    if (input.tier === "GRATUIT" || audit?.type === "GRATUIT") {
+      throw new Error("DISCOVERY_ARTIFACT_REQUIRES_TRANSACTIONAL_PERSISTENCE");
+    }
     const createdAt = input.createdAt ?? new Date();
     const art: ReportArtifact = {
       id: randomUUID(),
@@ -1279,6 +1399,7 @@ export class MemStorage implements IStorage {
     const audit = this.audits.get(auditId);
     if (!audit) return false;
     if (isDiscoverySupersededTerminal(audit)) return false;
+    if (audit.type === "GRATUIT") return false;
     const s = audit.reportDeliveryStatus as any;
     if (s && !["PENDING", "NEEDS_REVIEW", "EMAIL_FAILED", "FAILED"].includes(s)) return false;
     audit.reportDeliveryStatus = "GENERATING" as any;
@@ -1289,6 +1410,7 @@ export class MemStorage implements IStorage {
     const audit = this.audits.get(auditId);
     if (!audit) return false;
     if (isDiscoverySupersededTerminal(audit)) return false;
+    if (audit.type === "GRATUIT") return false;
     if ((audit as any).reportSentAt) return false;
     if (!["READY", "SCHEDULED"].includes(audit.reportDeliveryStatus as any)) return false;
     audit.reportDeliveryStatus = "SENDING" as any;
@@ -1299,6 +1421,7 @@ export class MemStorage implements IStorage {
     const audit = this.audits.get(auditId);
     if (!audit) return;
     if (isDiscoverySupersededTerminal(audit)) return;
+    if (audit.type === "GRATUIT") return;
     if (sent) {
       if (!(audit as any).reportSentAt) {
         audit.reportDeliveryStatus = "SENT" as any;
@@ -1786,6 +1909,9 @@ export class PgStorage implements IStorage {
   }
 
   async createAudit(input: InsertAudit & { email: string; responses: Record<string, unknown> }): Promise<Audit> {
+    if (input.type === "GRATUIT") {
+      throw new Error("DISCOVERY_AUDIT_REQUIRES_TRANSACTIONAL_CREATION");
+    }
     // Normalize email at write so string compares against order.email (already
     // stored lowercase) match. Without this, audits.email keeps whatever case
     // the user typed at checkout, which silently breaks audit↔order linking
@@ -1814,11 +1940,50 @@ export class PgStorage implements IStorage {
 
     const result = await pool.query(
       `INSERT INTO audits (id, user_id, email, type, status, responses, scores, report_delivery_status, report_scheduled_for, completed_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW()) RETURNING *`,
+       SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, NOW()
+       WHERE $4 <> 'GRATUIT'
+       RETURNING *`,
       [id, user.id, normalizedEmail, input.type, "COMPLETED", JSON.stringify(input.responses), JSON.stringify(scores), "PENDING", scheduledDate]
     );
 
     return this.rowToAudit(result.rows[0]);
+  }
+
+  async createDiscoveryAudit(
+    input: InsertAudit & { email: string; responses: Record<string, unknown> },
+  ): Promise<Audit> {
+    if (input.type !== "GRATUIT") throw new Error("DISCOVERY_AUDIT_TYPE_REQUIRED");
+    const normalizedEmail = input.email.trim().toLowerCase();
+    let user = await this.getUserByEmail(normalizedEmail);
+    if (!user) user = await this.createUser({ email: normalizedEmail });
+    const id = randomUUID();
+    const scores = this.calculateScores(input.responses);
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [DISCOVERY_TRANSACTION_FENCE_KEY]);
+      const activeLock = await client.query(
+        `SELECT 1 FROM discovery_operation_lock
+          WHERE lock_key = 'discovery-global' AND expires_at > NOW()
+          LIMIT 1`,
+      );
+      if ((activeLock.rowCount ?? 0) !== 0) throw new Error("DISCOVERY_GLOBAL_LOCK_ACTIVE");
+      const result = await client.query(
+        `INSERT INTO audits
+           (id, user_id, email, type, status, responses, scores,
+            report_delivery_status, report_scheduled_for, completed_at)
+         VALUES ($1,$2,$3,'GRATUIT','COMPLETED',$4,$5,'PENDING',NULL,NOW())
+         RETURNING *`,
+        [id, user.id, normalizedEmail, JSON.stringify(input.responses), JSON.stringify(scores)],
+      );
+      await client.query("COMMIT");
+      return this.rowToAudit(result.rows[0]);
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => {});
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async updateAudit(id: string, data: Partial<Audit>): Promise<Audit | undefined> {
@@ -1860,51 +2025,65 @@ export class PgStorage implements IStorage {
 
     if (updates.length === 0) return this.getAudit(id);
 
-    values.push(id);
-    let result;
     try {
-      result = await pool.query(
-        `UPDATE audits
-            SET ${updates.join(", ")}
-          WHERE id = $${paramIndex}
-            AND ${DISCOVERY_SUPERSEDED_TERMINAL_SQL}
-          RETURNING *`,
-        values
-      );
-    } catch (e: any) {
-      // Si la DB n'a pas encore les colonnes (rollout), on retente sans elles (best-effort)
-      if (e?.code === "42703" || String(e?.message || "").includes("column") && String(e?.message || "").includes("does not exist")) {
-        const strippedUpdates: string[] = [];
-        const strippedValues: unknown[] = [];
-        let idx = 1;
-
-        for (const [k, v] of [
-          ["report_delivery_status", data.reportDeliveryStatus],
-          ["report_sent_at", data.reportSentAt],
-          ["narrative_report", (data as any).narrativeReport],
-        ] as const) {
-          if (v !== undefined) {
-            strippedUpdates.push(`${k} = $${idx++}`);
-            strippedValues.push(k === "narrative_report" ? JSON.stringify(v) : v);
+      return await runGenericAuditMutation({
+        auditId: id,
+        operation: "storage.updateAudit",
+        mutate: async (client) => {
+          const primaryValues = [...values, id];
+          await client.query("SAVEPOINT generic_update_audit");
+          let result;
+          try {
+            result = await client.query(
+              `UPDATE audits
+                  SET ${updates.join(", ")}
+                WHERE id = $${paramIndex}
+                  AND type <> 'GRATUIT'
+                  AND ${DISCOVERY_SUPERSEDED_TERMINAL_SQL}
+                  AND ${DISCOVERY_GENERIC_PROTECTED_STATE_SQL}
+                RETURNING *`,
+              primaryValues,
+            );
+          } catch (e: any) {
+            const missingColumn = e?.code === "42703"
+              || (String(e?.message || "").includes("column")
+                && String(e?.message || "").includes("does not exist"));
+            if (!missingColumn) throw e;
+            await client.query("ROLLBACK TO SAVEPOINT generic_update_audit");
+            const strippedUpdates: string[] = [];
+            const strippedValues: unknown[] = [];
+            let idx = 1;
+            for (const [k, v] of [
+              ["report_delivery_status", data.reportDeliveryStatus],
+              ["report_sent_at", data.reportSentAt],
+              ["narrative_report", (data as any).narrativeReport],
+            ] as const) {
+              if (v !== undefined) {
+                strippedUpdates.push(`${k} = $${idx++}`);
+                strippedValues.push(k === "narrative_report" ? JSON.stringify(v) : v);
+              }
+            }
+            if (strippedUpdates.length === 0) return undefined;
+            strippedValues.push(id);
+            result = await client.query(
+              `UPDATE audits
+                  SET ${strippedUpdates.join(", ")}
+                WHERE id = $${idx}
+                  AND type <> 'GRATUIT'
+                  AND ${DISCOVERY_SUPERSEDED_TERMINAL_SQL}
+                  AND ${DISCOVERY_GENERIC_PROTECTED_STATE_SQL}
+                RETURNING *`,
+              strippedValues,
+            );
           }
-        }
-        if (strippedUpdates.length === 0) return this.getAudit(id);
-        strippedValues.push(id);
-        result = await pool.query(
-          `UPDATE audits
-              SET ${strippedUpdates.join(", ")}
-            WHERE id = $${idx}
-              AND ${DISCOVERY_SUPERSEDED_TERMINAL_SQL}
-            RETURNING *`,
-          strippedValues
-        );
-      } else {
-        throw e;
-      }
+          if (result.rows.length === 0) return undefined;
+          return this.rowToAudit(result.rows[0]);
+        },
+      }, pool);
+    } catch (error) {
+      if (error instanceof GenericAuditMutationBarrierError) return undefined;
+      throw error;
     }
-
-    if (result.rows.length === 0) return undefined;
-    return this.rowToAudit(result.rows[0]);
   }
 
   async getProgress(email: string): Promise<QuestionnaireProgress | undefined> {
@@ -2543,16 +2722,18 @@ export class PgStorage implements IStorage {
     input: Omit<ReportArtifact, "id" | "createdAt"> & { createdAt?: Date },
     options?: { strict?: boolean },
   ): Promise<ReportArtifact> {
+    if (input.tier === "GRATUIT") {
+      throw new Error("DISCOVERY_ARTIFACT_REQUIRES_TRANSACTIONAL_PERSISTENCE");
+    }
     await this.ensureReportArtifactsTable();
     const id = randomUUID();
     const createdAt = input.createdAt ?? new Date();
     try {
-      await pool.query(
-        `INSERT INTO report_artifacts (id, audit_id, tier, engine, model, txt, html, created_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-        [id, input.auditId, input.tier, input.engine, input.model, input.txt, input.html, createdAt]
-      );
+      await insertGenericReportArtifactFenced(pool, { id, ...input, createdAt });
     } catch (e: any) {
+      if (e instanceof GenericAuditMutationBarrierError) {
+        throw new Error("DISCOVERY_ARTIFACT_REQUIRES_TRANSACTIONAL_PERSISTENCE");
+      }
       console.error("[ReportArtifact] Insert failed (best-effort):", e?.message || e);
       if (options?.strict) throw e;
     }
@@ -2590,44 +2771,12 @@ export class PgStorage implements IStorage {
   }
 
   async getActiveReportJobs(): Promise<ReportJob[]> {
-    const result = await pool.query(
-      "SELECT * FROM report_jobs WHERE status IN ('pending', 'generating')"
-    );
-    return result.rows.map(row => this.rowToReportJob(row));
+    const rows = await listActiveGenericReportJobRows(pool);
+    return rows.map(row => this.rowToReportJob(row));
   }
 
   async createOrUpdateReportJob(job: Partial<ReportJob> & { auditId: string }): Promise<ReportJob> {
-    const existing = await this.getReportJob(job.auditId);
-
-    if (existing) {
-      const updates: string[] = [];
-      const values: unknown[] = [];
-      let idx = 1;
-
-      if (job.status !== undefined) { updates.push(`status = $${idx++}`); values.push(job.status); }
-      if (job.progress !== undefined) { updates.push(`progress = $${idx++}`); values.push(job.progress); }
-      if (job.currentSection !== undefined) { updates.push(`current_section = $${idx++}`); values.push(job.currentSection); }
-      if (job.error !== undefined) { updates.push(`error = $${idx++}`); values.push(job.error); }
-      if (job.attemptCount !== undefined) { updates.push(`attempt_count = $${idx++}`); values.push(job.attemptCount); }
-      if (job.completedAt !== undefined) { updates.push(`completed_at = $${idx++}`); values.push(job.completedAt); }
-
-      updates.push(`updated_at = NOW()`);
-      updates.push(`last_progress_at = NOW()`);
-
-      values.push(job.auditId);
-      const result = await pool.query(
-        `UPDATE report_jobs SET ${updates.join(", ")} WHERE audit_id = $${idx} RETURNING *`,
-        values
-      );
-      return this.rowToReportJob(result.rows[0]);
-    } else {
-      const result = await pool.query(
-        `INSERT INTO report_jobs (audit_id, status, progress, current_section, error, attempt_count)
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-        [job.auditId, job.status || 'pending', job.progress || 0, job.currentSection || 'Initialisation...', job.error || null, job.attemptCount || 0]
-      );
-      return this.rowToReportJob(result.rows[0]);
-    }
+    return this.rowToReportJob(await upsertGenericReportJobRow(pool, job));
   }
 
   async hasReportArtifact(auditId: string): Promise<boolean> {
@@ -2640,42 +2789,7 @@ export class PgStorage implements IStorage {
   }
 
   async enqueueMissingDiscoveryReportJob(auditId: string, reason: string): Promise<boolean> {
-    const metadata = JSON.stringify({
-      recovery: {
-        version: 1,
-        disposition: "enqueued",
-        reason,
-        decidedAt: new Date().toISOString(),
-      },
-    });
-    const result = await pool.query(
-      `WITH candidate AS (
-         UPDATE audits AS a
-            SET report_delivery_status = 'GENERATING',
-                narrative_report = COALESCE(a.narrative_report, '{}'::jsonb) || $2::jsonb
-          WHERE a.id = $1
-            AND a.type = 'GRATUIT'
-            AND a.report_delivery_status = 'NEEDS_REVIEW'
-            AND NOT (
-              LOWER(COALESCE(a.narrative_report->'recovery'->>'disposition', '')) = 'superseded'
-              OR NULLIF(BTRIM(COALESCE(a.narrative_report->'recovery'->>'replacementAuditId', '')), '') IS NOT NULL
-            )
-            AND a.report_sent_at IS NULL
-            AND COALESCE(NULLIF(a.report_txt, ''), NULLIF(a.report_html, '')) IS NULL
-            AND NOT (COALESCE(a.narrative_report, '{}'::jsonb) ?| ARRAY['sections','txt','html'])
-            AND NOT EXISTS (SELECT 1 FROM report_jobs j WHERE j.audit_id = a.id)
-            AND NOT EXISTS (SELECT 1 FROM report_artifacts r WHERE r.audit_id = a.id)
-          RETURNING a.id
-       )
-       INSERT INTO report_jobs
-         (audit_id, status, progress, current_section, error, attempt_count)
-       SELECT id, 'pending', 0, 'Reprise Discovery en attente...', NULL, 0
-         FROM candidate
-       ON CONFLICT (audit_id) DO NOTHING
-       RETURNING audit_id`,
-      [auditId, metadata],
-    );
-    return (result.rowCount ?? 0) === 1;
+    return enqueueMissingDiscoveryReportJobFenced(pool, auditId, reason);
   }
 
   async markDiscoveryAuditSuperseded(
@@ -2683,58 +2797,23 @@ export class PgStorage implements IStorage {
     replacementAuditId: string,
     reason: string,
   ): Promise<boolean> {
-    const metadata = JSON.stringify({
-      recovery: {
-        version: 1,
-        disposition: "superseded",
-        reason,
-        replacementAuditId,
-        decidedAt: new Date().toISOString(),
-      },
-    });
-    const result = await pool.query(
-      `UPDATE audits
-          SET report_delivery_status = 'SUPERSEDED',
-              narrative_report = COALESCE(narrative_report, '{}'::jsonb) || $3::jsonb
-        WHERE id = $1
-          AND type = 'GRATUIT'
-          AND report_delivery_status = 'NEEDS_REVIEW'
-          AND report_sent_at IS NULL
-          AND EXISTS (
-            SELECT 1 FROM audits replacement
-             WHERE replacement.id = $2
-               AND replacement.type = 'GRATUIT'
-               AND LOWER(replacement.email) = LOWER(audits.email)
-          )
-        RETURNING id`,
-      [auditId, replacementAuditId, metadata],
-    );
-    return (result.rowCount ?? 0) === 1;
+    return markDiscoveryAuditSupersededFenced(pool, auditId, replacementAuditId, reason);
   }
 
   async updateReportJobProgress(auditId: string, progress: number, currentSection: string): Promise<void> {
-    await pool.query(
-      `UPDATE report_jobs SET progress = $1, current_section = $2, updated_at = NOW(), last_progress_at = NOW() WHERE audit_id = $3`,
-      [progress, currentSection, auditId]
-    );
+    await updateGenericReportJobProgress(pool, auditId, progress, currentSection);
   }
 
   async completeReportJob(auditId: string): Promise<void> {
-    await pool.query(
-      `UPDATE report_jobs SET status = 'completed', progress = 100, current_section = 'Rapport termine !', completed_at = NOW(), updated_at = NOW() WHERE audit_id = $1`,
-      [auditId]
-    );
+    await completeGenericReportJob(pool, auditId);
   }
 
   async failReportJob(auditId: string, error: string): Promise<void> {
-    await pool.query(
-      `UPDATE report_jobs SET status = 'failed', error = $1, completed_at = NOW(), updated_at = NOW() WHERE audit_id = $2`,
-      [error, auditId]
-    );
+    await failGenericReportJob(pool, auditId, error);
   }
 
   async deleteReportJob(auditId: string): Promise<void> {
-    await pool.query("DELETE FROM report_jobs WHERE audit_id = $1", [auditId]);
+    await deleteGenericReportJob(pool, auditId);
   }
 
   // Promo codes methods (PgStorage)
@@ -3815,19 +3894,17 @@ export class PgStorage implements IStorage {
   // create + Stripe webhook, or admin regenerate + scheduled cron) from producing two
   // different reports for the same client.
   async claimAuditForGeneration(auditId: string): Promise<boolean> {
+    const audit = await this.getAudit(auditId);
+    if (!audit || audit.type === "GRATUIT") {
+      return false;
+    }
     const result = await pool.query(
       `UPDATE audits
           SET report_delivery_status = 'GENERATING'
         WHERE id = $1
+          AND type <> 'GRATUIT'
           AND (report_delivery_status IS NULL
                OR report_delivery_status IN ('PENDING','NEEDS_REVIEW','EMAIL_FAILED','FAILED'))
-          AND (
-            type <> 'GRATUIT'
-            OR NOT EXISTS (
-              SELECT 1 FROM discovery_operation_lock l
-               WHERE l.lock_key = 'discovery-global' AND l.expires_at > NOW()
-            )
-          )
           AND ${DISCOVERY_SUPERSEDED_TERMINAL_SQL}
         RETURNING id`,
       [auditId]
@@ -3839,10 +3916,15 @@ export class PgStorage implements IStorage {
   // Prevents the same audit from being emailed twice concurrently (inline send + admin
   // resend + scheduled delivery cron all racing).
   async claimAuditForSending(auditId: string): Promise<boolean> {
+    const audit = await this.getAudit(auditId);
+    if (!audit || audit.type === "GRATUIT") {
+      return false;
+    }
     const result = await pool.query(
       `UPDATE audits
           SET report_delivery_status = 'SENDING'
         WHERE id = $1
+          AND type <> 'GRATUIT'
           AND report_sent_at IS NULL
           AND report_delivery_status IN ('READY','SCHEDULED')
           AND ${DISCOVERY_SUPERSEDED_TERMINAL_SQL}
@@ -3853,12 +3935,17 @@ export class PgStorage implements IStorage {
   }
 
   async finalizeAuditSend(auditId: string, sent: boolean): Promise<void> {
+    const audit = await this.getAudit(auditId);
+    if (!audit || audit.type === "GRATUIT") {
+      return;
+    }
     if (sent) {
       await pool.query(
         `UPDATE audits
             SET report_delivery_status = 'SENT',
                 report_sent_at = NOW()
           WHERE id = $1
+            AND type <> 'GRATUIT'
             AND report_sent_at IS NULL
             AND ${DISCOVERY_SUPERSEDED_TERMINAL_SQL}`,
         [auditId]
@@ -3868,6 +3955,7 @@ export class PgStorage implements IStorage {
         `UPDATE audits
             SET report_delivery_status = 'READY'
           WHERE id = $1
+            AND type <> 'GRATUIT'
             AND report_delivery_status = 'SENDING'
             AND report_sent_at IS NULL
             AND ${DISCOVERY_SUPERSEDED_TERMINAL_SQL}`,

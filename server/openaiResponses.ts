@@ -622,7 +622,16 @@ export interface OpenAITextRequest {
   background?: boolean;
   retries?: number;
   label?: string;
-  costBudget?: Pick<AICostBudgetContext, "product" | "orderId" | "estimatedCostUsd">;
+  costBudget?: Pick<
+    AICostBudgetContext,
+    | "product"
+    | "orderId"
+    | "estimatedCostUsd"
+    | "discoveryGenerationToken"
+    | "discoveryFenceToken"
+    | "discoveryBatchId"
+    | "discoveryBatchLockToken"
+  >;
 }
 
 export interface OpenAITextResult {
@@ -636,11 +645,22 @@ export interface OpenAITextResult {
 }
 
 export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAITextResult> {
+  if (request.profile === "discovery") {
+    const budget = request.costBudget;
+    const hasGenericOwnership = Boolean(budget?.discoveryGenerationToken);
+    const hasBatchOwnership = Boolean(budget?.discoveryBatchId && budget?.discoveryBatchLockToken);
+    if (!budget || budget.product !== "discovery" || !budget.orderId
+      || hasGenericOwnership === hasBatchOwnership) {
+      throw new Error("DISCOVERY_DURABLE_PROVIDER_AUTHORIZATION_REQUIRED");
+    }
+  }
   const client = getOpenAIClient();
   const profile = PROFILE_CONFIG[request.profile];
   const model = OPENAI_REPORT_MODEL;
   const background = request.background ?? Boolean(profile.mode === "pro");
-  const attempts = Math.max(1, request.retries ?? 3);
+  const attempts = request.profile === "discovery"
+    ? 1
+    : Math.max(1, request.retries ?? 3);
   const label = request.label ? ` ${request.label}` : "";
   let lastError: unknown;
 
@@ -662,20 +682,25 @@ export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAIT
       }
 
       const deadline = Date.now() + profile.timeoutMs;
-      const budgetContext = request.costBudget || request.profile === "peptides"
+      const budgetContext: AICostBudgetContext | null = request.costBudget
         ? {
-            product: request.costBudget?.product || "peptides",
+            ...request.costBudget,
+            profile: request.profile,
+            label: request.label,
+          }
+        : request.profile === "peptides"
+          ? {
+            product: "peptides",
             // Existing callers are protected immediately even before they are
             // upgraded to pass the exact order UUID. safetyId is the client
             // email in Peptides Engine, so this conservative fallback prevents
             // repeated paid calls for the same buyer.
-            orderId: request.costBudget?.orderId
-              || `unscoped:${safeIdentifier(request.safetyId || request.label || "anonymous", request.profile)}`,
-            estimatedCostUsd: request.costBudget?.estimatedCostUsd || 1,
+            orderId: `unscoped:${safeIdentifier(request.safetyId || request.label || "anonymous", request.profile)}`,
+            estimatedCostUsd: 1,
             profile: request.profile,
             label: request.label,
           }
-        : null;
+          : null;
       if (budgetContext) {
         // The controller reads historical ai_usage_events before authorizing
         // a new provider call, so the collector table must exist pre-call.

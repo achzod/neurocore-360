@@ -5,6 +5,9 @@ import {
   type DiscoveryRecoveryAudit,
 } from "../server/discoveryMissingJobRecovery";
 
+process.env.DISCOVERY_TRANSACTIONAL_AUTOMATION_ENABLED = "true";
+process.env.DISCOVERY_AUTOMATION_START_AT = "2026-01-01T00:00:00.000Z";
+
 const now = new Date("2026-08-08T12:00:00.000Z");
 const day = 24 * 60 * 60 * 1000;
 

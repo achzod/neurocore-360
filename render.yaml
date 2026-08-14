@@ -4,6 +4,10 @@ services:
     runtime: node
     plan: starter
     buildCommand: npm install && npm run build
+    # Render runs this after a successful build and before the new process is
+    # started. It applies migration 005 and verifies the physical PostgreSQL
+    # catalog in the same transaction; a failed gate aborts the deployment.
+    preDeployCommand: npm run db:migrate:discovery-005
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:

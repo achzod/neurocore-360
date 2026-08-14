@@ -12,17 +12,13 @@
  * call the canonical provider only after a durable, unique, fail-closed claim.
  */
 import { execFileSync } from "node:child_process";
-import { randomUUID } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 
 import {
   analyzeDiscoveryScan,
   buildDiscoveryReportAssets,
-  calculateDiscoveryGlobalScore,
   convertToNarrativeReport,
   DISCOVERY_PREMIUM_DOMAINS,
-  repairDiscoveryKnownFrenchCorruptions,
-  scoreDiscoveryTraining,
   validateDiscoveryReportForDelivery,
   type DiscoveryKnowledgePreflight,
   type DiscoveryResponses,
@@ -39,7 +35,6 @@ import {
   completeDiscoveryBatchRun,
   createDiscoveryBatchRun,
   decodeDiscoveryApprovalBase64,
-  discoveryArtifactContentHash,
   discoverySha256,
   failDiscoveryBatchItem,
   markDiscoveryBatchItemPreflightOk,
@@ -48,6 +43,7 @@ import {
   claimDiscoveryBatchEmailDelivery,
   finalizeDiscoveryDeliveryClaim,
   markDiscoveryDeliveryProviderPostStarted,
+  promoteDiscoveryBatchItemForDelivery,
   recordDiscoveryProviderUsage,
   refreshDiscoveryGlobalLock,
   releaseDiscoveryGlobalLock,
@@ -60,6 +56,7 @@ import {
   type DiscoveryBatchTier,
   type DiscoveryManifestCohort,
 } from "../server/discoveryBatchControl";
+import { assertDiscoveryBatchSchemaV005 } from "../server/discoveryBatchSchema";
 import { getReportReadyEmailSubject, sendReportReadyEmail } from "../server/emailService";
 import { isDiscoverySupersededTerminal } from "../server/discoverySupersededPolicy";
 import { pool } from "../server/db";
@@ -79,95 +76,6 @@ const HARD_COST_USD = 0.75;
 const KNOWLEDGE_CHARS_PER_SCOPE = 400;
 const PREFLIGHT_SENTINEL = "DISCOVERY_BATCH_READ_ONLY_PREFLIGHT_COMPLETE";
 
-function repairKnownCorruptionsDeep(value: unknown): { value: unknown; replacements: number } {
-  if (typeof value === "string") {
-    const repaired = repairDiscoveryKnownFrenchCorruptions(value);
-    return { value: repaired, replacements: repaired === value ? 0 : 1 };
-  }
-  if (Array.isArray(value)) {
-    let replacements = 0;
-    const repaired = value.map((entry) => {
-      const result = repairKnownCorruptionsDeep(entry);
-      replacements += result.replacements;
-      return result.value;
-    });
-    return { value: repaired, replacements };
-  }
-  if (value && typeof value === "object") {
-    let replacements = 0;
-    const repaired = Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([key, entry]) => {
-      const result = repairKnownCorruptionsDeep(entry);
-      replacements += result.replacements;
-      return [key, result.value];
-    }));
-    return { value: repaired, replacements };
-  }
-  return { value, replacements: 0 };
-}
-
-function repairZeroTrainingScore(
-  report: any,
-  responses: DiscoveryResponses,
-  storedScores: Record<string, unknown>,
-): { report: any; scores: Record<string, unknown>; changed: boolean } {
-  const oldTraining = Number(storedScores.training);
-  const canonicalTraining = scoreDiscoveryTraining(responses);
-  if (responses['sport-frequence'] !== '0'
-    || !Number.isFinite(oldTraining)
-    || oldTraining <= canonicalTraining) {
-    return { report, scores: storedScores, changed: false };
-  }
-
-  const scoresByDomain = {
-    sommeil: Number(storedScores.sommeil),
-    stress: Number(storedScores.stress),
-    energie: Number(storedScores.energie),
-    digestion: Number(storedScores.digestion),
-    training: canonicalTraining,
-    nutrition: Number(storedScores.nutrition),
-    lifestyle: Number(storedScores.lifestyle),
-    mindset: Number(storedScores.mindset),
-  };
-  if (Object.values(scoresByDomain).some((value) => !Number.isFinite(value))) {
-    throw new Error('DISCOVERY_BATCH_REPAIR_SCORE_INPUT_INVALID');
-  }
-  const globalScore = calculateDiscoveryGlobalScore(scoresByDomain);
-  const globalScore10 = Math.round(globalScore) / 10;
-  const metric = report?.metrics?.find((entry: any) => entry?.key === 'training');
-  const intro = report?.sections?.find((entry: any) => entry?.id === 'intro');
-  const training = report?.sections?.find((entry: any) => entry?.id === 'training');
-  if (!metric || !intro || !training || typeof intro.content !== 'string' || typeof training.content !== 'string') {
-    throw new Error('DISCOVERY_BATCH_REPAIR_SCORE_REPORT_SHAPE_INVALID');
-  }
-
-  const oldIntro = intro.content;
-  const oldTrainingContent = training.content;
-  report.globalScore = globalScore10;
-  metric.value = canonicalTraining / 10;
-  intro.content = intro.content.replace(
-    /Ton score global de <strong>[0-9.,]+\/10<\/strong>/,
-    `Ton score global de <strong>${globalScore10}/10</strong>`,
-  );
-  training.content = training.content
-    .replace(`ton score : ${oldTraining}/100`, `ton score : ${canonicalTraining}/100`)
-    .replace('[CORRECT]', '[INSUFFISANT]')
-    .replace(
-      `Ton score d’entraînement, ${oldTraining} sur 100, ne signifie pas que tu possèdes déjà une routine sportive.`,
-      `Ton score d’entraînement, ${canonicalTraining} sur 100, reflète l’absence actuelle de routine sportive.`,
-    );
-  training.chips = ['À corriger', 'Impact'];
-  if (intro.content === oldIntro || training.content === oldTrainingContent
-    || training.content.includes(`ton score : ${oldTraining}/100`)
-    || training.content.includes(`d’entraînement, ${oldTraining} sur 100`)) {
-    throw new Error('DISCOVERY_BATCH_REPAIR_SCORE_TEXT_CAS_FAILED');
-  }
-  return {
-    report,
-    scores: { ...storedScores, ...scoresByDomain, global: globalScore },
-    changed: true,
-  };
-}
-
 interface ManifestRow {
   id: string;
   email: string;
@@ -183,6 +91,7 @@ interface ManifestRow {
   deliveryGateErrors: string[];
   tracking: { total: number; accepted: number; failed: number; pending: number; hardFailed: number };
   deliveryClaimState: string | null;
+  providerAttemptCount: number;
   duplicateCandidate: boolean;
   superseded: boolean;
   unsubscribed: boolean;
@@ -251,6 +160,12 @@ async function hasBatchControlTables(): Promise<boolean> {
 }
 
 async function buildManifest(): Promise<DiscoveryManifest> {
+  const hasBudgetReservations = Boolean((await pool.query(
+    `SELECT to_regclass('public.ai_cost_budget_reservations') IS NOT NULL AS ready`,
+  )).rows[0]?.ready);
+  if (!hasBudgetReservations) {
+    throw new Error("DISCOVERY_BATCH_AI_COST_RESERVATION_TABLE_MISSING");
+  }
   const hasClaims = Boolean((await pool.query(
     `SELECT to_regclass('public.discovery_email_delivery_claims') IS NOT NULL AS ready`,
   )).rows[0]?.ready);
@@ -272,6 +187,8 @@ async function buildManifest(): Promise<DiscoveryManifest> {
             a.report_sent_at, a.responses, a.narrative_report, a.report_txt, a.report_html,
             ${claimSelect},
             ${unsubscribeSelect},
+            (SELECT COUNT(*)::int FROM ai_cost_budget_reservations r
+              WHERE r.product = 'discovery' AND r.order_id = a.id) AS provider_attempt_count,
             EXISTS (
               SELECT 1 FROM audits other
                WHERE other.type = 'GRATUIT' AND other.id <> a.id
@@ -338,6 +255,7 @@ async function buildManifest(): Promise<DiscoveryManifest> {
       deliveryGateErrors: gate.errors,
       tracking,
       deliveryClaimState: row.delivery_claim_state,
+      providerAttemptCount: Number(row.provider_attempt_count || 0),
     });
     return {
       id: row.id,
@@ -354,6 +272,7 @@ async function buildManifest(): Promise<DiscoveryManifest> {
       deliveryGateErrors: gate.errors,
       tracking,
       deliveryClaimState: row.delivery_claim_state || null,
+      providerAttemptCount: Number(row.provider_attempt_count || 0),
       duplicateCandidate: Boolean(row.duplicate_candidate),
       superseded,
       unsubscribed: Boolean(row.unsubscribed),
@@ -516,6 +435,7 @@ async function runGeneration(
         sequenceNo: index + 1,
         cohort: item.cohort,
         expectedResponsesSha256: item.responsesSha256,
+        expectedSourceStatus: item.reportDeliveryStatus,
         expectedTxtSha256: item.txtSha256,
         expectedHtmlSha256: item.htmlSha256,
       })),
@@ -547,6 +467,9 @@ async function runGeneration(
           loadSynthesisKnowledge: async () => knowledge.synthesis,
           loadDomainKnowledge: async (domain) => knowledge.domains[domain] || "",
           retryDelay: async () => { throw new Error("DISCOVERY_BATCH_UNEXPECTED_KNOWLEDGE_RETRY"); },
+          costBudgetAuditId: item.id,
+          costBudgetBatchId: batchId,
+          costBudgetBatchLockToken: lock.token,
         });
         const usageRows = await usageEventsSince(providerStartedAt);
         if (usageRows.length !== 1) {
@@ -582,6 +505,9 @@ async function runGeneration(
           auditId: item.id,
           lockToken: lock.token,
           expectedResponsesSha256: item.responsesSha256,
+          expectedSourceStatus: item.reportDeliveryStatus,
+          expectedTxtSha256: item.txtSha256,
+          expectedHtmlSha256: item.htmlSha256,
           narrativeReport,
           scores: { ...result.scoresByDomain, global: result.globalScore },
           txt: assets.txt,
@@ -679,6 +605,7 @@ async function runDelivery(
         sequenceNo: index + 1,
         cohort: item.cohort,
         expectedResponsesSha256: item.responsesSha256,
+        expectedSourceStatus: item.reportDeliveryStatus,
         expectedTxtSha256: item.txtSha256,
         expectedHtmlSha256: item.htmlSha256,
         initialState: "STORED",
@@ -694,36 +621,11 @@ async function runDelivery(
       let claimId: string | null = null;
       let providerPostStarted = false;
       try {
-        const current = await pool.query(
-          `SELECT email, report_sent_at, report_delivery_status,
-                  narrative_report, report_txt, report_html
-             FROM audits WHERE id = $1 AND type = 'GRATUIT'`,
-          [item.id],
-        );
-        if ((current.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_DELIVERY_AUDIT_MISSING");
-        const row = current.rows[0];
-        if (row.report_sent_at) throw new Error("DISCOVERY_DELIVERY_ALREADY_SENT");
-        if (discoverySha256(String(row.report_txt || "")) !== item.txtSha256
-          || discoverySha256(String(row.report_html || "")) !== item.htmlSha256) {
-          throw new Error("DISCOVERY_DELIVERY_MANIFEST_HASH_CHANGED");
-        }
-        const canonical = resolveCanonicalDiscoveryArtifacts({
-          narrativeReport: row.narrative_report,
-          reportTxt: row.report_txt,
-          reportHtml: row.report_html,
+        await promoteDiscoveryBatchItemForDelivery({
+          batchId,
+          auditId: item.id,
+          lockToken: lock.token,
         });
-        const gate = evaluateCanonicalDiscoveryArtifacts(canonical);
-        if (!gate.ok) throw new Error(`DISCOVERY_DELIVERY_GATE_CHANGED:${gate.errors.join("|")}`);
-
-        // Existing valid reports are promoted to BATCH_READY only after every
-        // manifest/hash/gate check passes under the durable lock.
-        const promoted = await pool.query(
-          `UPDATE audits SET report_delivery_status = 'BATCH_READY'
-            WHERE id = $1 AND report_sent_at IS NULL
-              AND report_delivery_status = $2 RETURNING id`,
-          [item.id, row.report_delivery_status],
-        );
-        if ((promoted.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_DELIVERY_PROMOTION_CAS_FAILED");
 
         const claim = await claimDiscoveryBatchEmailDelivery({
           batchId,
@@ -790,6 +692,7 @@ async function runDelivery(
 }
 
 async function main(): Promise<void> {
+  await assertDiscoveryBatchSchemaV005(pool);
   const manifest = await buildManifest();
   const outputPath = valueAfter("--out");
   if (outputPath) writeFileSync(outputPath, `${JSON.stringify(manifest, null, 2)}\n`, { flag: "wx" });
@@ -826,125 +729,7 @@ async function main(): Promise<void> {
   }
 
   if (args.has("--repair-known-corruptions")) {
-    if (args.has("--run-generation") || args.has("--run-delivery")) {
-      throw new Error("DISCOVERY_BATCH_REPAIR_ONE_STAGE_ONLY");
-    }
-    const targetAuditId = valueAfter("--target-audit-id");
-    if (!targetAuditId) throw new Error("DISCOVERY_BATCH_REPAIR_TARGET_REQUIRED");
-    if (String(process.env.DISCOVERY_REPORT_DELIVERY_ENABLED || "").toLowerCase() !== "false"
-      || String(process.env.REMEDIATION_SIDE_EFFECTS_DISABLED || "").toLowerCase() !== "true") {
-      throw new Error("DISCOVERY_BATCH_REPAIR_ENV_BLOCKED");
-    }
-    const [item] = resolveExactDiscoveryTargets(manifest.items, [targetAuditId]);
-    const blocked = [
-      !item.validEmail && "invalid_email",
-      item.testEmailBlocked && "test_email_blocked",
-      item.unsubscribed && "recipient_unsubscribed",
-      item.superseded && "superseded_terminal",
-      item.duplicateCandidate && "duplicate_candidate",
-      item.smtpHardFailProven && "smtp_hard_fail_proven_terminal",
-      item.reportSentAt && "already_sent",
-      item.tracking.total !== 0 && "prior_tracking_exists",
-      item.deliveryClaimState && "prior_delivery_claim_exists",
-      !item.txtSha256 && "txt_hash_missing",
-      !item.htmlSha256 && "html_hash_missing",
-    ].filter(Boolean);
-    if (blocked.length > 0) {
-      throw new Error(`DISCOVERY_BATCH_REPAIR_TARGET_INELIGIBLE:${blocked.join("|")}`);
-    }
-
-    const lock = await acquireDiscoveryGlobalLock({
-      owner: `discovery-safe-repair:${process.pid}`,
-      purpose: `known-corruption-repair:${item.id}:${manifest.manifestSha256}`,
-      ttlMinutes: 30,
-    });
-    let client: Awaited<ReturnType<typeof pool.connect>> | null = null;
-    try {
-      client = await pool.connect();
-      await client.query("BEGIN");
-      const current = await client.query(
-        `SELECT responses, scores, narrative_report, report_txt, report_html, report_sent_at,
-                report_delivery_status
-           FROM audits WHERE id = $1 AND type = 'GRATUIT' FOR UPDATE`,
-        [item.id],
-      );
-      if ((current.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_BATCH_REPAIR_AUDIT_MISSING");
-      const row = current.rows[0];
-      if (row.report_sent_at) throw new Error("DISCOVERY_BATCH_REPAIR_ALREADY_SENT");
-      if (discoverySha256(String(row.report_txt || "")) !== item.txtSha256
-        || discoverySha256(String(row.report_html || "")) !== item.htmlSha256) {
-        throw new Error("DISCOVERY_BATCH_REPAIR_MANIFEST_HASH_CHANGED");
-      }
-      const repaired = repairKnownCorruptionsDeep(row.narrative_report);
-      const scoreRepair = repairZeroTrainingScore(
-        repaired.value as any,
-        row.responses as DiscoveryResponses,
-        (row.scores || {}) as Record<string, unknown>,
-      );
-      if (repaired.replacements <= 0 && !scoreRepair.changed) {
-        throw new Error("DISCOVERY_BATCH_REPAIR_NOTHING_TO_CHANGE");
-      }
-      const report = scoreRepair.report;
-      const assets = buildDiscoveryReportAssets(report);
-      const nonRenderedMetadata = {
-        blocages: report?.analysisMetadata?.blocages || [],
-        ctaMessage: report?.analysisMetadata?.ctaMessage || "",
-      };
-      const validation = validateDiscoveryReportForDelivery(report, assets, nonRenderedMetadata);
-      const gate = evaluateDiscoveryDeliveryGate(report, assets, undefined, nonRenderedMetadata);
-      if (!validation.ok || !gate.ok) {
-        throw new Error(`DISCOVERY_BATCH_REPAIR_QUALITY_GATE:${[...validation.errors, ...gate.errors].join("|")}`);
-      }
-      const narrativeReport = attachDiscoveryDeliveryGateResult(report, gate);
-      const txtSha256 = discoverySha256(assets.txt);
-      const htmlSha256 = discoverySha256(assets.html);
-      const contentSha256 = discoveryArtifactContentHash(assets.txt, assets.html);
-      const artifact = await client.query(
-        `INSERT INTO report_artifacts
-           (id, audit_id, tier, engine, model, txt, html, content_sha256, created_at)
-         VALUES ($1,$2,'GRATUIT','discovery','deterministic-known-corruption-repair',$3,$4,$5,NOW())
-         ON CONFLICT (audit_id, content_sha256) WHERE content_sha256 IS NOT NULL
-         DO UPDATE SET model = EXCLUDED.model
-         RETURNING id`,
-        [randomUUID(), item.id, assets.txt, assets.html, contentSha256],
-      );
-      const updated = await client.query(
-        `UPDATE audits
-            SET narrative_report = $2::jsonb, report_txt = $3, report_html = $4, scores = $7::jsonb,
-                report_delivery_status = 'BATCH_READY'
-          WHERE id = $1 AND report_sent_at IS NULL
-            AND report_txt = $5 AND report_html = $6
-          RETURNING id`,
-        [
-          item.id,
-          JSON.stringify(narrativeReport),
-          assets.txt,
-          assets.html,
-          row.report_txt,
-          row.report_html,
-          JSON.stringify(scoreRepair.scores),
-        ],
-      );
-      if ((updated.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_BATCH_REPAIR_PERSISTENCE_CAS_FAILED");
-      await client.query("COMMIT");
-      console.log(`DISCOVERY_BATCH_REPAIR_COMPLETE:${JSON.stringify({
-        auditId: item.id,
-        replacements: repaired.replacements,
-        trainingScoreRepaired: scoreRepair.changed,
-        artifactId: String(artifact.rows[0].id),
-        txtSha256,
-        htmlSha256,
-        providerCalls: 0,
-        emailsSent: 0,
-      })}`);
-    } catch (error) {
-      await client?.query("ROLLBACK").catch(() => {});
-      throw error;
-    } finally {
-      client?.release();
-      await releaseDiscoveryGlobalLock(lock.token).catch(() => false);
-    }
-    return;
+    throw new Error("DISCOVERY_BATCH_REPAIR_RETIRED_USE_SIGNED_TRANSACTIONAL_OPERATION");
   }
 
   if (!args.has("--run-generation") && !args.has("--run-delivery")) {

@@ -4,6 +4,7 @@ import { generatePremiumHTMLFromTxt } from "./exportServicePremium";
 import { storage } from "./storage";
 import type { ClientData, AuditTier } from "./types";
 import { isOpenAICreditError, OPENAI_REPORT_MODEL } from "./openaiResponses";
+import { isDiscoveryTransactionalAutomationEligible } from "./discoveryAutomationPolicy";
 import { validateReport, logValidation, quickValidate } from "./reportValidator";
 import { normalizeResponses } from "./responseNormalizer";
 import { repairReportTextForDelivery } from "./reportTextRepair";
@@ -130,6 +131,27 @@ export async function startReportGeneration(
 ): Promise<ReportJob> {
   console.log(`[ReportJobManager] startReportGeneration called for audit ${auditId}`);
   installShutdownHooksOnce();
+
+  // Discovery owns a separate, single-call, quality-gated and budgeted runner.
+  // Never let a legacy route feed a free audit into the generic paid-report
+  // engine: that path has different prompts, retries and cost accounting.
+  const storedAudit = await storage.getAudit(auditId);
+  if (auditType === "GRATUIT" || storedAudit?.type === "GRATUIT") {
+    if (
+      !storedAudit ||
+      storedAudit.type !== "GRATUIT" ||
+      auditType !== "GRATUIT" ||
+      !isDiscoveryTransactionalAutomationEligible(storedAudit)
+    ) {
+      throw new Error("DISCOVERY_TRANSACTIONAL_AUTOMATION_INELIGIBLE");
+    }
+    const { startPremiumDiscoveryReportGeneration } = await import("./discoveryGenerationService");
+    const discoveryJob = await startPremiumDiscoveryReportGeneration(auditId);
+    if (!discoveryJob) {
+      throw new Error("DISCOVERY_TRANSACTIONAL_GENERATION_CLAIM_FAILED");
+    }
+    return discoveryJob;
+  }
 
   // ============================================
   // CONCURRENCY LIMIT: 1 rapport à la fois
@@ -614,17 +636,22 @@ export async function resumePendingJobs(): Promise<number> {
     const currentAttempts = job.attemptCount || 0;
     console.log(`[ReportJobManager] Found interrupted job ${job.auditId} (status: ${job.status}, attempts: ${currentAttempts})`);
 
-    if (currentAttempts >= MAX_RETRY_ATTEMPTS) {
-      console.log(`[ReportJobManager] Job ${job.auditId} already at max retries (${MAX_RETRY_ATTEMPTS}), marking as FAILED`);
-      await storage.failReportJob(job.auditId, "Max retries exceeded");
-      await storage.updateAudit(job.auditId, { reportDeliveryStatus: "FAILED" });
-      continue;
-    }
-
     const audit = await storage.getAudit(job.auditId);
     if (!audit) {
       console.log(`[ReportJobManager] Could not find audit ${job.auditId}, cleaning up orphan job`);
       await storage.deleteReportJob(job.auditId);
+      continue;
+    }
+
+    if (audit.type === "GRATUIT") {
+      console.warn(`[ReportJobManager] Generic resume ignores Discovery audit: ${job.auditId}`);
+      continue;
+    }
+
+    if (currentAttempts >= MAX_RETRY_ATTEMPTS) {
+      console.log(`[ReportJobManager] Job ${job.auditId} already at max retries (${MAX_RETRY_ATTEMPTS}), marking as FAILED`);
+      await storage.failReportJob(job.auditId, "Max retries exceeded");
+      await storage.updateAudit(job.auditId, { reportDeliveryStatus: "FAILED" });
       continue;
     }
 

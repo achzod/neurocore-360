@@ -22,7 +22,7 @@ async function recoverLostAudits() {
     WHERE o.status = 'paid'
       AND o.audit_id IS NOT NULL
       AND a.id IS NULL
-      AND o.product_type IN ('GRATUIT', 'PREMIUM', 'ELITE')
+      AND o.product_type IN ('PREMIUM', 'ELITE')
       AND o.created_at >= '2026-03-17'
     ORDER BY o.created_at ASC
   `);
@@ -102,7 +102,8 @@ async function recoverLostAudits() {
       // Recreate the audit with the ORIGINAL audit_id from the order!
       const insertResult = await pool.query(`
         INSERT INTO audits (id, user_id, type, email, responses, created_at, updated_at, report_delivery_status)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        SELECT $1, $2, $3, $4, $5, $6, $7, $8
+        WHERE $3 <> 'GRATUIT'
         ON CONFLICT (id) DO NOTHING
         RETURNING id
       `, [

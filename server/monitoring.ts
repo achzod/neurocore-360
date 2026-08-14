@@ -18,6 +18,7 @@ import { recoverMissingDiscoveryJobs } from "./discoveryMissingJobRecovery";
 import { generateAndPersistPremiumDiscoveryReport } from "./discoveryGenerationService";
 import { isDiscoverySupersededTerminal } from "./discoverySupersededPolicy";
 import { isDiscoveryGlobalLockActive } from "./discoveryBatchControl";
+import { isDiscoveryTransactionalAutomationEligible } from "./discoveryAutomationPolicy";
 
 interface MonitoringStats {
   generatingStuck: number;
@@ -73,7 +74,8 @@ export async function runAutomaticMonitoring(): Promise<MonitoringStats> {
           .filter((audit) =>
             audit.type === "GRATUIT" &&
             audit.reportDeliveryStatus === "NEEDS_REVIEW" &&
-            !isDiscoverySupersededTerminal(audit)
+            !isDiscoverySupersededTerminal(audit) &&
+            isDiscoveryTransactionalAutomationEligible(audit)
           )
           .map((audit) => audit.id);
         const audits = await Promise.all(ids.map((id) => storage.getAudit(id)));
@@ -197,6 +199,7 @@ async function fixNeedsReviewJobs(
       try {
         if (isDiscoverySupersededTerminal(audit)) continue;
         if (audit.type === "GRATUIT" && discoveryBatchLocked) continue;
+        if (audit.type === "GRATUIT" && !isDiscoveryTransactionalAutomationEligible(audit)) continue;
         const reportJob = await storage.getReportJob(audit.id);
         const attemptCount = reportJob?.attemptCount || 0;
         const providerCreditFailure = isOpenAICreditError(
@@ -211,8 +214,6 @@ async function fixNeedsReviewJobs(
         if (audit.type === "GRATUIT") {
           if (!providerCreditFailure) continue;
           await storage.deleteReportJob(audit.id).catch(() => {});
-          const claimed = await storage.claimAuditForGeneration(audit.id).catch(() => false);
-          if (!claimed) continue;
           await generateAndPersistPremiumDiscoveryReport(audit.id);
           stats.needsReviewFixed++;
           await logMonitoringAction(audit.id, "REGENERATE_DISCOVERY_PROVIDER_RECOVERY", {

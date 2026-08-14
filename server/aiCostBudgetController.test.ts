@@ -80,6 +80,31 @@ test("thresholds can only be changed explicitly and stay bounded", () => {
   });
 });
 
+test("Discovery has its own fail-closed audit/hour/day budget", () => {
+  const discovery = getAICostBudgetLimits("discovery", {});
+  assert.deepEqual(discovery, {
+    perOrderUsd: 0.75,
+    perHourUsd: 1.5,
+    perDayUsd: 5,
+    reservationTtlMinutes: 45,
+  });
+  assert.equal(evaluateAICostBudget(
+    { orderUsd: 0, hourUsd: 0, dayUsd: 0 },
+    0.75,
+    discovery,
+  ).allowed, true);
+  assert.equal(evaluateAICostBudget(
+    { orderUsd: 0.1, hourUsd: 0.1, dayUsd: 0.1 },
+    0.75,
+    discovery,
+  ).blockedBy, "order");
+
+  const controllerSource = readFileSync(new URL("./aiCostBudgetController.ts", import.meta.url), "utf8");
+  assert.match(controllerSource, /requestedProduct !== "discovery" && !isAICostBudgetControllerEnabled/);
+  assert.match(controllerSource, /context\.product === "discovery"[\s\S]*DEFAULT_DISCOVERY_LIMITS\.perOrderUsd/);
+  assert.match(controllerSource, /DISCOVERY_MONO_CALL_ALREADY_RESERVED/);
+});
+
 test("Peptides provider calls inherit the pre-call controller and exact order context", () => {
   const responsesSource = readFileSync(new URL("./openaiResponses.ts", import.meta.url), "utf8");
   const runStart = responsesSource.indexOf("export async function runOpenAIText");
@@ -89,6 +114,7 @@ test("Peptides provider calls inherit the pre-call controller and exact order co
       < runSource.indexOf("client.responses.create"),
     "budget reservation must be acquired before the paid provider call",
   );
+  assert.match(runSource, /request\.costBudget\s*\?\s*\{\s*\.\.\.request\.costBudget,[\s\S]*profile: request\.profile/);
 
   const routesSource = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
   const cronCall = routesSource.indexOf("maxCandidates: 1");
@@ -105,7 +131,7 @@ test("admin cost summary endpoint is authenticated, allowlisted and read-only", 
   );
   const endpointSource = routesSource.slice(endpointStart, endpointEnd);
   assert.match(endpointSource, /requireAdminAuth\(req, res\)/);
-  assert.match(endpointSource, /new Set\(\["peptides"\]\)/);
+  assert.match(endpointSource, /new Set\(\["peptides", "discovery"\]\)/);
   assert.match(endpointSource, /allowedProducts\.has\(product\)/);
   assert.match(endpointSource, /getAICostBudgetSummary\(product\)/);
   assert.doesNotMatch(endpointSource, /app\.(?:post|put|patch|delete)\(/);

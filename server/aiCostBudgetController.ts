@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import { isDiscoveryTransactionalAutomationEligible } from "./discoveryAutomationPolicy";
+import { DISCOVERY_TRANSACTION_FENCE_KEY } from "./discoveryTransactionalPersistence";
 
 export interface AICostBudgetLimits {
   perOrderUsd: number;
@@ -13,6 +15,10 @@ export interface AICostBudgetContext {
   profile: string;
   label?: string;
   estimatedCostUsd?: number;
+  discoveryGenerationToken?: string;
+  discoveryFenceToken?: string | null;
+  discoveryBatchId?: string;
+  discoveryBatchLockToken?: string;
 }
 
 export interface AICostBudgetSpendSnapshot {
@@ -41,6 +47,13 @@ const DEFAULT_PEPTIDES_LIMITS: AICostBudgetLimits = {
   perOrderUsd: 1,
   perHourUsd: 5,
   perDayUsd: 15,
+  reservationTtlMinutes: 45,
+};
+
+const DEFAULT_DISCOVERY_LIMITS: AICostBudgetLimits = {
+  perOrderUsd: 0.75,
+  perHourUsd: 1.5,
+  perDayUsd: 5,
   reservationTtlMinutes: 45,
 };
 
@@ -78,7 +91,7 @@ export function getAICostBudgetLimits(
   env: Record<string, string | undefined> = process.env,
 ): AICostBudgetLimits {
   const normalizedProduct = normalizeProduct(product);
-  if (normalizedProduct !== "peptides") {
+  if (normalizedProduct !== "peptides" && normalizedProduct !== "discovery") {
     // No implicit budget for other products yet. They must opt in with
     // product-specific limits before this controller is applied to them.
     return {
@@ -86,6 +99,35 @@ export function getAICostBudgetLimits(
       perHourUsd: Number.POSITIVE_INFINITY,
       perDayUsd: Number.POSITIVE_INFINITY,
       reservationTtlMinutes: 45,
+    };
+  }
+
+  if (normalizedProduct === "discovery") {
+    return {
+      perOrderUsd: boundedNumber(
+        env.AI_COST_DISCOVERY_PER_AUDIT_USD,
+        DEFAULT_DISCOVERY_LIMITS.perOrderUsd,
+        0.01,
+        DEFAULT_DISCOVERY_LIMITS.perOrderUsd,
+      ),
+      perHourUsd: boundedNumber(
+        env.AI_COST_DISCOVERY_PER_HOUR_USD,
+        DEFAULT_DISCOVERY_LIMITS.perHourUsd,
+        0.01,
+        1_000,
+      ),
+      perDayUsd: boundedNumber(
+        env.AI_COST_DISCOVERY_PER_DAY_USD,
+        DEFAULT_DISCOVERY_LIMITS.perDayUsd,
+        0.01,
+        10_000,
+      ),
+      reservationTtlMinutes: boundedNumber(
+        env.AI_COST_BUDGET_RESERVATION_TTL_MINUTES,
+        DEFAULT_DISCOVERY_LIMITS.reservationTtlMinutes,
+        5,
+        180,
+      ),
     };
   }
 
@@ -275,21 +317,28 @@ export async function reserveAICostBudget(
   rawContext: AICostBudgetContext,
   env: Record<string, string | undefined> = process.env,
 ): Promise<AICostBudgetReservation | null> {
-  if (!isAICostBudgetControllerEnabled(env)) return null;
+  const requestedProduct = normalizeProduct(rawContext.product);
+  if (requestedProduct !== "discovery" && !isAICostBudgetControllerEnabled(env)) return null;
 
   const context: AICostBudgetContext = {
     ...rawContext,
-    product: normalizeProduct(rawContext.product),
+    product: requestedProduct,
     orderId: normalizeOrderId(rawContext.orderId),
     profile: String(rawContext.profile || "unknown").trim().slice(0, 80),
     label: rawContext.label ? String(rawContext.label).trim().slice(0, 160) : undefined,
+    discoveryGenerationToken: rawContext.discoveryGenerationToken,
+    discoveryFenceToken: rawContext.discoveryFenceToken ?? null,
+    discoveryBatchId: rawContext.discoveryBatchId,
+    discoveryBatchLockToken: rawContext.discoveryBatchLockToken,
   };
   if (!context.orderId) {
     throw new Error("AI cost budget requires an orderId");
   }
   const limits = getAICostBudgetLimits(context.product, env);
   if (!Number.isFinite(limits.perOrderUsd)) return null;
-  const reservedUsd = boundedNumber(context.estimatedCostUsd, 1, 0.01, limits.perOrderUsd);
+  const reservedUsd = context.product === "discovery"
+    ? DEFAULT_DISCOVERY_LIMITS.perOrderUsd
+    : boundedNumber(context.estimatedCostUsd, 1, 0.01, limits.perOrderUsd);
 
   await ensureBudgetTables();
   const { pool } = await import("./db");
@@ -299,12 +348,76 @@ export async function reserveAICostBudget(
   try {
     await client.query("BEGIN");
     await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
-      `ai-cost-budget:${context.product}`,
+      context.product === "discovery"
+        ? DISCOVERY_TRANSACTION_FENCE_KEY
+        : `ai-cost-budget:${context.product}`,
     ]);
+    if (context.product === "discovery") {
+      const hasGenericOwnership = Boolean(context.discoveryGenerationToken);
+      const hasBatchOwnership = Boolean(
+        context.discoveryBatchId && context.discoveryBatchLockToken,
+      );
+      if (hasGenericOwnership === hasBatchOwnership) {
+        throw new Error("DISCOVERY_PROVIDER_OWNERSHIP_REQUIRED");
+      }
+      if (hasBatchOwnership) {
+        const batchOwnership = await client.query(
+          `SELECT 1
+             FROM discovery_batch_items i
+             JOIN discovery_batch_runs b ON b.id = i.batch_id
+             JOIN discovery_operation_lock l
+               ON l.lock_key = 'discovery-global' AND l.token = b.lock_token
+            WHERE i.batch_id = $1 AND i.audit_id = $2
+              AND b.lock_token = $3 AND l.expires_at > NOW()
+              AND i.state = 'PROVIDER_STARTED' AND i.provider_calls = 1
+            FOR UPDATE OF i, b`,
+          [context.discoveryBatchId, context.orderId, context.discoveryBatchLockToken],
+        );
+        if ((batchOwnership.rowCount ?? 0) !== 1) {
+          throw new Error("DISCOVERY_BATCH_PROVIDER_OWNERSHIP_LOST");
+        }
+      } else {
+        const genericOwnership = await client.query(
+          `SELECT id, type, created_at, report_delivery_status, report_sent_at,
+                  narrative_report
+             FROM audits WHERE id = $1 FOR UPDATE`,
+          [context.orderId],
+        );
+        const audit = genericOwnership.rows[0];
+        if (!audit || !isDiscoveryTransactionalAutomationEligible({
+          type: audit.type,
+          createdAt: audit.created_at,
+          reportDeliveryStatus: audit.report_delivery_status,
+          reportSentAt: audit.report_sent_at,
+          narrativeReport: audit.narrative_report,
+        }) || audit.report_delivery_status !== "GENERATING" || audit.report_sent_at
+          || String(audit.narrative_report?.generationClaim?.token || "") !== context.discoveryGenerationToken) {
+          throw new Error("DISCOVERY_GENERATION_PROVIDER_OWNERSHIP_LOST");
+        }
+        const fence = await client.query(
+          `SELECT token::text AS token, (expires_at > NOW()) AS active
+             FROM discovery_operation_lock WHERE lock_key = 'discovery-global'`,
+        );
+        const currentFenceToken = fence.rows[0]?.token ? String(fence.rows[0].token) : null;
+        if (fence.rows[0]?.active || currentFenceToken !== context.discoveryFenceToken) {
+          throw new Error("DISCOVERY_GENERATION_PROVIDER_FENCE_STALE");
+        }
+      }
+      const previousDiscoveryAttempt = await client.query(
+        `SELECT 1 FROM ai_cost_budget_reservations
+          WHERE product = 'discovery' AND order_id = $1
+          LIMIT 1`,
+        [context.orderId],
+      );
+      if ((previousDiscoveryAttempt.rowCount ?? 0) !== 0) {
+        throw new Error("DISCOVERY_MONO_CALL_ALREADY_RESERVED");
+      }
+    }
     await client.query(
       `UPDATE ai_cost_budget_reservations
        SET status = 'EXPIRED', updated_at = NOW(), detail = 'reservation_ttl_expired'
        WHERE status = 'RESERVED'
+         AND product <> 'discovery'
          AND created_at < NOW() - ($1::double precision * INTERVAL '1 minute')`,
       [limits.reservationTtlMinutes],
     );

@@ -1141,10 +1141,10 @@ test("Discovery generation uses one bounded structured call and still rejects in
 });
 
 test("new Discovery persistence stores the same canonical score shown in the report", () => {
-  const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
   const service = readFileSync(new URL("./discoveryGenerationService.ts", import.meta.url), "utf8");
+  const persistence = readFileSync(new URL("./discoveryTransactionalPersistence.ts", import.meta.url), "utf8");
 
-  assert.match(routes, /canonicalScores\.global\s*=\s*Math\.round\(Number\(narrativeReport\.globalScore\)\s*\*\s*10\)/);
-  assert.match(routes, /narrativeReport:\s*gatedNarrative,\s*scores:\s*canonicalScores/);
   assert.match(service, /scores:\s*{\s*\.\.\.result\.scoresByDomain,\s*global:\s*result\.globalScore/);
+  assert.match(persistence, /narrative_report = \$3::jsonb, scores = \$4::jsonb/);
+  assert.match(persistence, /report_delivery_status = 'READY'/);
 });

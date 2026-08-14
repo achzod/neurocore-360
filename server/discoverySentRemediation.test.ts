@@ -61,21 +61,19 @@ test("notification requires premium provenance and becomes one-shot after claim"
   }), ["superseded_terminal"]);
 });
 
-test("a knowledge or provider failure happens before remediation opens a mutation transaction", () => {
+test("provider-based SENT remediation is fail-closed before any provider or transaction", () => {
   const source = readFileSync(new URL("./discoverySentRemediation.ts", import.meta.url), "utf8");
-  const analyzeIndex = source.indexOf("await analyzeDiscoveryScan");
-  const connectIndex = source.indexOf("const client = await pool.connect()");
-  const beginIndex = source.indexOf('await client.query("BEGIN")');
-
-  assert.ok(analyzeIndex >= 0);
-  assert.ok(connectIndex > analyzeIndex);
-  assert.ok(beginIndex > connectIndex);
+  const start = source.indexOf("export async function regenerateSentDiscoveryInPlace");
+  const end = source.indexOf("export async function repairSentDiscoveryFactsInPlace", start);
+  const providerRemediation = source.slice(start, end);
+  assert.match(providerRemediation, /DISCOVERY_SENT_REMEDIATION_PROVIDER_DISABLED/);
+  assert.doesNotMatch(providerRemediation, /analyzeDiscoveryScan|pool\.connect|BEGIN/);
 });
 
 test("sent remediation stores canonical Discovery scores with the replacement artifacts", () => {
   const source = readFileSync(new URL("./discoverySentRemediation.ts", import.meta.url), "utf8");
   assert.match(source, /function canonicalDiscoveryScores[\s\S]*report\?\.metrics[\s\S]*scores\.global/);
-  assert.match(source, /const canonicalScores = canonicalDiscoveryScores\(premiumReport\)/);
+  assert.match(source, /const canonicalScores = canonicalDiscoveryScores\(report\)/);
   assert.match(source, /report_generated_at = \$5,[\s\S]*scores = \$6::jsonb/);
   assert.match(source, /JSON\.stringify\(canonicalScores\)/);
 });
@@ -88,7 +86,17 @@ test("deterministic SENT factual repair is exact-hash bound and preserves delive
   assert.match(tail, /report_delivery_status = 'SENT'/);
   assert.match(tail, /report_sent_at IS NOT NULL/);
   assert.match(tail, /tracking invariant changed during factual repair/);
+  assert.match(tail, /pg_advisory_xact_lock/);
+  assert.match(tail, /discovery-global/);
   assert.doesNotMatch(tail, /analyzeDiscoveryScan\(|sendReportReadyEmail\(/);
+});
+
+test("regenerated notification path is retired until it owns a durable delivery claim", () => {
+  const source = readFileSync(new URL("./discoverySentRemediation.ts", import.meta.url), "utf8");
+  const start = source.indexOf("export async function claimRegeneratedReportNotification");
+  const retired = source.slice(start);
+  assert.match(retired, /DISCOVERY_REGENERATED_NOTIFICATION_RETIRED/);
+  assert.doesNotMatch(retired, /INSERT INTO email_tracking/);
 });
 
 test("generation-only remediation hard-locks every delivery and alert side effect", () => {

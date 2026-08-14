@@ -80,27 +80,25 @@ import { registerBloodAnalysisRoutes } from "./blood-analysis/routes";
 import { registerBloodTestsRoutes } from "./blood-tests/routes";
 import { signAuthToken } from "./auth";
 import {
-  analyzeDiscoveryScan,
-  buildDiscoveryReportAssets,
   buildDiscoveryReportHtml,
-  convertToNarrativeReport,
   parseStoredDiscoveryTxt,
 } from "./discovery-scan";
 import {
-  attachDiscoveryDeliveryGateResult,
-  createDiscoveryDeliveryGateResult,
-  evaluateDiscoveryDeliveryGate,
   evaluateCanonicalDiscoveryArtifacts,
-  getPersistedDiscoveryDeliveryGate,
   hasPassingPersistedDiscoveryDeliveryGate,
   resolveCanonicalDiscoveryArtifacts,
-  type DiscoveryDeliveryGateResult,
 } from "./discoveryDeliveryGate";
 import {
+  getGenericDiscoveryMutationBlockReason,
   isAuditEligibleForPostDeliveryAutomation,
   isDiscoveryReportDeliveryEnabled,
+  isDiscoveryTransactionalAutomationEligible,
 } from "./discoveryAutomationPolicy";
 import { isDiscoverySupersededTerminal } from "./discoverySupersededPolicy";
+import {
+  GenericAuditMutationBarrierError,
+  runGenericAuditMutation,
+} from "./discoveryGenericMutationBarrier";
 import { sanitizePublicDiscoveryAuditPayload } from "./publicDiscoveryAuditPayload";
 import {
   claimDiscoveryEmailDelivery,
@@ -128,6 +126,7 @@ import {
   sanitizePeptidesGenerationError,
 } from "./peptidesGenerationCircuitBreaker";
 import { getAICostBudgetSummary } from "./aiCostBudgetController";
+import { generateAndPersistPremiumDiscoveryReport } from "./discoveryGenerationService";
 import { hasValidPeptidesConsent } from "./peptidesConsent";
 import { createRateLimiter } from "./middleware/rateLimit";
 import {
@@ -559,99 +558,6 @@ export async function registerRoutes(
   //      report_sent_at. This confirms provider acceptance, not inbox placement.
   //      On failure, reverts SENDING → READY so a retry path
   //      can pick it up.
-  async function persistDiscoveryReport(
-    auditId: string,
-    narrativeReport: any,
-    reportDeliveryStatus: string,
-  ): Promise<{ txt: string; html: string }> {
-    const discoveryAssets = buildDiscoveryReportAssets(narrativeReport);
-    const gate = evaluateDiscoveryDeliveryGate(narrativeReport, discoveryAssets);
-    if (!gate.ok) {
-      throw new Error(
-        `[Discovery Premium] Refus de persistance: ${gate.errors.join(", ")}`,
-      );
-    }
-    const gatedNarrative = attachDiscoveryDeliveryGateResult(narrativeReport, gate);
-    const canonicalScores: Record<string, number> = Object.fromEntries(
-      (Array.isArray(narrativeReport.metrics) ? narrativeReport.metrics : [])
-        .filter((metric: any) => metric?.key && Number.isFinite(metric?.value))
-        .map((metric: any) => [String(metric.key), Math.round(Number(metric.value) * 10)]),
-    );
-    canonicalScores.global = Math.round(Number(narrativeReport.globalScore) * 10);
-    await storage.createReportArtifact({
-      auditId,
-      tier: "GRATUIT",
-      engine: "discovery",
-      model: process.env.OPENAI_DISCOVERY_MODEL || process.env.OPENAI_REPORT_MODEL || process.env.GEMINI_MODEL || "discovery",
-      txt: discoveryAssets.txt,
-      html: discoveryAssets.html,
-    }, { strict: true });
-    const persisted = await storage.updateAudit(auditId, {
-      narrativeReport: gatedNarrative,
-      scores: canonicalScores,
-      reportTxt: discoveryAssets.txt,
-      reportHtml: discoveryAssets.html,
-      reportGeneratedAt: new Date(),
-      reportDeliveryStatus: reportDeliveryStatus as any,
-    });
-    if (!persisted || persisted.reportDeliveryStatus !== reportDeliveryStatus) {
-      throw new Error(`[Discovery Premium] Persistance non verifiee pour ${auditId}`);
-    }
-    return discoveryAssets;
-  }
-
-  async function persistDiscoveryDeliveryGate(
-    auditId: string,
-    narrativeReport: any,
-    gate: DiscoveryDeliveryGateResult,
-    status?: "NEEDS_REVIEW",
-  ): Promise<boolean> {
-    const updated = await storage.updateAudit(auditId, {
-      narrativeReport: attachDiscoveryDeliveryGateResult(narrativeReport, gate),
-      ...(status ? { reportDeliveryStatus: status } : {}),
-    });
-    const persisted = getPersistedDiscoveryDeliveryGate((updated as any)?.narrativeReport);
-    return Boolean(
-      persisted &&
-      persisted.ok === gate.ok &&
-      persisted.checkedAt === gate.checkedAt &&
-      JSON.stringify(persisted.errors) === JSON.stringify(gate.errors),
-    );
-  }
-
-  async function markDiscoveryInlineGenerationFailed(
-    auditId: string,
-    source: string,
-    error: unknown,
-  ): Promise<void> {
-    const current = await storage.getAudit(auditId).catch(() => undefined);
-    if (isDiscoverySupersededTerminal(current)) {
-      console.warn(`[Discovery] Ignoring ${source} failure for terminal superseded audit ${auditId}`);
-      return;
-    }
-    const narrative = current?.narrativeReport && typeof current.narrativeReport === "object"
-      ? current.narrativeReport as Record<string, unknown>
-      : {};
-    const previousRecovery = narrative.recovery && typeof narrative.recovery === "object"
-      ? narrative.recovery as Record<string, unknown>
-      : {};
-    await storage.updateAudit(auditId, {
-      reportDeliveryStatus: "NEEDS_REVIEW",
-      narrativeReport: {
-        ...narrative,
-        recovery: {
-          ...previousRecovery,
-          version: 1,
-          disposition: "missing_artifacts",
-          reason: "inline_generation_failed",
-          source,
-          error: (error instanceof Error ? error.message : String(error)).slice(0, 1000),
-          failedAt: new Date().toISOString(),
-        },
-      },
-    });
-  }
-
   async function safeSendReportReadyEmail(
     auditId: string,
     email: string,
@@ -666,6 +572,18 @@ export async function registerRoutes(
     // send claim. Administrative raw-send flags may bypass paid-report claims,
     // but can never bypass the free report safety contract.
     const bypassClaim = opts?.bypassClaim === true && auditType !== "GRATUIT";
+    const transactionalDiscoveryAudit = auditType === "GRATUIT"
+      ? await storage.getAudit(auditId).catch(() => null)
+      : null;
+
+    if (
+      auditType === "GRATUIT" &&
+      (!transactionalDiscoveryAudit ||
+        !isDiscoveryTransactionalAutomationEligible(transactionalDiscoveryAudit))
+    ) {
+      console.warn(`${prefix} Discovery audit is outside the transactional automation window: ${auditId}`);
+      return { sent: false, skipped: "discovery_transactional_automation_ineligible" };
+    }
 
     if (auditType === "GRATUIT" && await isDiscoveryGlobalLockActive()) {
       console.warn(`${prefix} Discovery batch lock active or unverifiable for audit ${auditId}`);
@@ -681,7 +599,8 @@ export async function registerRoutes(
       // A READY write from a generator must never bypass a future delivery
       // date. Re-check the date at the final send boundary and restore the
       // scheduled state before any provider call or atomic send claim.
-      const deliveryAudit = await storage.getAudit(auditId).catch(() => null);
+      const deliveryAudit = transactionalDiscoveryAudit
+        || await storage.getAudit(auditId).catch(() => null);
       const scheduledFor = deliveryAudit?.reportScheduledFor
         ? new Date(deliveryAudit.reportScheduledFor)
         : null;
@@ -692,7 +611,9 @@ export async function registerRoutes(
         Number.isFinite(scheduledFor.getTime()) &&
         scheduledFor.getTime() > Date.now()
       ) {
-        await storage.updateAudit(auditId, { reportDeliveryStatus: "SCHEDULED" }).catch(() => {});
+        if (auditType !== "GRATUIT") {
+          await storage.updateAudit(auditId, { reportDeliveryStatus: "SCHEDULED" }).catch(() => {});
+        }
         console.log(`${prefix} Report ${auditId} scheduled for ${scheduledFor.toISOString()} , send deferred`);
         return { sent: false, skipped: "scheduled_for_future" };
       }
@@ -725,43 +646,21 @@ export async function registerRoutes(
           const gate = evaluateCanonicalDiscoveryArtifacts(canonical);
           if (!report && !canonical.legacyValidation?.ok) {
             console.error(`${prefix} 🚫 DISCOVERY DELIVERY GATE FAILED for audit ${auditId}: report_missing`);
-            await persistDiscoveryDeliveryGate(auditId, (audit as any)?.narrativeReport, gate, "NEEDS_REVIEW").catch(() => false);
             return { sent: false, skipped: "discovery_delivery_failed:report_missing" };
           }
 
-          const assets = { txt: canonical.txt, html: canonical.html };
           if (!gate.ok) {
             const summary = gate.errors.join(", ");
             console.error(`${prefix} 🚫 DISCOVERY DELIVERY GATE FAILED for audit ${auditId}: ${summary}`);
-            await persistDiscoveryDeliveryGate(auditId, canonical.narrativeReport, gate, "NEEDS_REVIEW").catch(() => false);
             return { sent: false, skipped: `discovery_delivery_failed:${summary}` };
           }
 
-          const gatePersisted = await persistDiscoveryDeliveryGate(
-            auditId,
-            canonical.narrativeReport,
-            gate,
-          ).catch(() => false);
-          if (!gatePersisted) {
-            console.error(`${prefix} 🚫 Discovery delivery gate PASS could not be persisted for audit ${auditId}`);
-            return { sent: false, skipped: "discovery_delivery_failed:gate_persistence_failed" };
-          }
-
-          const hydrated = await storage.updateAudit(auditId, {
-            narrativeReport: attachDiscoveryDeliveryGateResult(canonical.narrativeReport, gate),
-            reportTxt: assets.txt,
-            reportHtml: assets.html,
-            reportGeneratedAt: (audit as any)?.reportGeneratedAt || new Date((report as any)?.generatedAt || Date.now()),
-          }).catch(() => null);
-          if (!hydrated) {
-            return { sent: false, skipped: "discovery_delivery_failed:artifact_persistence_failed" };
+          if (!hasPassingPersistedDiscoveryDeliveryGate((audit as any)?.narrativeReport)) {
+            console.error(`${prefix} 🚫 Discovery delivery gate PASS is not durably bound to audit ${auditId}`);
+            return { sent: false, skipped: "discovery_delivery_failed:persisted_gate_missing" };
           }
         } catch (err) {
           console.error(`${prefix} 🚫 Discovery delivery gate threw for audit ${auditId}:`, err);
-          const audit = await storage.getAudit(auditId).catch(() => null);
-          const message = err instanceof Error ? err.message : String(err);
-          const gate = createDiscoveryDeliveryGateResult({ ok: false, errors: [`gate_threw:${message}`] });
-          await persistDiscoveryDeliveryGate(auditId, (audit as any)?.narrativeReport, gate, "NEEDS_REVIEW").catch(() => false);
           return { sent: false, skipped: "discovery_delivery_failed:gate_threw" };
         }
       } else if (auditType === "ELITE" || auditType === "PREMIUM") {
@@ -1215,7 +1114,7 @@ export async function registerRoutes(
     const product = String(req.query.product || "peptides").trim().toLowerCase();
     // Only products with a configured pre-call controller may be queried.
     // This prevents arbitrary profile/table scans through a free-form value.
-    const allowedProducts = new Set(["peptides"]);
+    const allowedProducts = new Set(["peptides", "discovery"]);
     if (!allowedProducts.has(product)) {
       res.status(400).json({
         success: false,
@@ -1260,6 +1159,13 @@ export async function registerRoutes(
     if (!audit) return { auditId, recovered: false, reason: "audit_not_found" };
 
     if (audit.type === "GRATUIT") {
+      if (!isDiscoveryTransactionalAutomationEligible(audit)) {
+        return {
+          auditId,
+          recovered: false,
+          reason: "discovery_transactional_automation_ineligible",
+        };
+      }
       const canonical = resolveCanonicalDiscoveryArtifacts({
         narrativeReport: audit.narrativeReport,
         reportTxt: (audit as any).reportTxt,
@@ -1279,14 +1185,6 @@ export async function registerRoutes(
       };
 
       if (!gate.ok) {
-        if (options.apply) {
-          await persistDiscoveryDeliveryGate(
-            auditId,
-            canonical.narrativeReport,
-            gate,
-            "NEEDS_REVIEW",
-          ).catch(() => false);
-        }
         return {
           ...discoveryResult,
           recovered: false,
@@ -1297,42 +1195,10 @@ export async function registerRoutes(
       if (!options.apply) {
         return { ...discoveryResult, recovered: false, dryRun: true };
       }
-
-      const recoveryClaimed = await storage.claimAuditForGeneration(auditId).catch(() => false);
-      if (!recoveryClaimed) {
-        return { ...discoveryResult, recovered: false, reason: "recovery_claim_failed" };
-      }
-
-      const persisted = await storage.updateAudit(auditId, {
-        narrativeReport: attachDiscoveryDeliveryGateResult(canonical.narrativeReport, gate),
-        reportTxt: canonical.txt,
-        reportHtml: canonical.html,
-        reportGeneratedAt: new Date(),
-        reportDeliveryStatus: "READY",
-      });
-      if (!hasPassingPersistedDiscoveryDeliveryGate((persisted as any)?.narrativeReport)) {
-        await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" }).catch(() => {});
-        return { ...discoveryResult, recovered: false, reason: "gate_persistence_failed" };
-      }
-      await storage.completeReportJob(auditId).catch(() => {});
-
-      const delivery = options.deliver
-        ? await safeSendReportReadyEmail(
-            auditId,
-            audit.email,
-            audit.type,
-            getBaseUrl(),
-            { logPrefix: "[AutoRecovery]" },
-          )
-        : { sent: false, skipped: "delivery_not_requested" };
-      const verifiedAudit = await storage.getAudit(auditId);
       return {
         ...discoveryResult,
-        recovered: true,
-        delivered: delivery.sent,
-        deliverySkipped: delivery.skipped,
-        finalStatus: verifiedAudit?.reportDeliveryStatus,
-        reportSentAt: verifiedAudit?.reportSentAt,
+        recovered: false,
+        reason: "discovery_explicit_transactional_workflow_required",
       };
     }
 
@@ -1474,7 +1340,7 @@ export async function registerRoutes(
     automaticReportRecoveryRunning = true;
     try {
       const candidates = await pool.query(`
-        SELECT id
+        SELECT id, type, created_at AS "createdAt"
         FROM audits
         WHERE report_sent_at IS NULL
           AND report_delivery_status IN ('FAILED', 'NEEDS_REVIEW', 'PENDING')
@@ -1489,6 +1355,12 @@ export async function registerRoutes(
         LIMIT 3
       `);
       for (const row of candidates.rows) {
+        if (
+          row.type === "GRATUIT" &&
+          !isDiscoveryTransactionalAutomationEligible(row)
+        ) {
+          continue;
+        }
         const result = await recoverStoredAuditReport(String(row.id), {
           apply: true,
           deliver: true,
@@ -2206,7 +2078,7 @@ export async function registerRoutes(
           return;
         }
 
-        const audit = await storage.createAudit({
+        const audit = await storage.createDiscoveryAudit({
           userId: "",
           type: data.type,
           email: data.email,
@@ -2278,41 +2150,30 @@ export async function registerRoutes(
             console.error(`[Admin Email] ❌ Error in admin notification for ${audit.id}:`, err);
           });
 
-        // Atomic claim , if another process already claimed this audit (e.g. idempotency
-        // window collided, or webhook raced), we skip generation to avoid duplicate work.
-        const claimedForGen = await storage.claimAuditForGeneration(audit.id).catch(() => false);
-        if (!claimedForGen) {
-          console.warn(`[Discovery Scan] ⏭️ Could not claim audit ${audit.id} for generation , already in progress or done`);
+        // The cut-over is fail-closed: a disabled/malformed configuration must
+        // never turn this new row into generic recovery backlog.
+        if (!isDiscoveryTransactionalAutomationEligible(audit)) {
+          console.warn(`[Discovery Scan] Transactional automation disabled or audit before cutoff: ${audit.id}`);
           res.json(audit);
           return;
         }
+
         res.json(audit);
 
         (async () => {
           try {
             console.log(`[Discovery Scan] Starting report generation for audit ${audit.id}`);
-            const generationPromise = (async () => {
-              const result = await analyzeDiscoveryScan(mergedResponses as any);
-              console.log(`[Discovery Scan] Analysis complete for ${audit.id}, generating narrative...`);
-              const narrativeReport = await convertToNarrativeReport(result, mergedResponses as any);
-              console.log(`[Discovery Scan] Narrative generated for ${audit.id} (${JSON.stringify(narrativeReport).length} chars)`);
-              return narrativeReport;
-            })();
-            // The Discovery engine owns its request-level timeouts and retries.
-            // A detached outer Promise.race used to abandon successful reports
-            // that completed shortly after five minutes, leaving the audit in
-            // NEEDS_REVIEW while the expensive generation continued in memory.
-            const narrativeReport = await generationPromise;
+            const generated = await generateAndPersistPremiumDiscoveryReport(audit.id);
+            if (!generated) throw new Error("DISCOVERY_GENERATION_CLAIM_REJECTED");
 
             // Check if delivery should be delayed (scheduled)
             const scheduledFor = audit.reportScheduledFor ? new Date(audit.reportScheduledFor) : null;
             const shouldDelay = scheduledFor && scheduledFor > new Date();
 
             if (shouldDelay) {
-              await persistDiscoveryReport(audit.id, narrativeReport, "SCHEDULED");
+              await storage.updateAudit(audit.id, { reportDeliveryStatus: "SCHEDULED" });
               console.log(`[Discovery Scan] Report SCHEDULED for audit ${audit.id} , delivery at ${scheduledFor.toISOString()}`);
             } else {
-              await persistDiscoveryReport(audit.id, narrativeReport, "READY");
               console.log(`[Discovery Scan] Report READY for audit ${audit.id}`);
 
               const baseUrl = getBaseUrl();
@@ -2324,11 +2185,6 @@ export async function registerRoutes(
             }
           } catch (error: any) {
             console.error(`[Discovery Scan] Generation FAILED for audit ${audit.id}:`, error?.message || error);
-            try {
-              await markDiscoveryInlineGenerationFailed(audit.id, "api_audit_create", error);
-            } catch (updateErr) {
-              console.error(`[Discovery Scan] Failed to update status for ${audit.id}:`, updateErr);
-            }
           }
         })().catch((unhandled) => {
           console.error(`[Discovery Scan] UNHANDLED error for audit ${audit.id}:`, unhandled);
@@ -2389,7 +2245,12 @@ export async function registerRoutes(
       if (!claimedForGenPaid) {
         console.warn(`[Audit Create] ⏭️ Could not claim audit ${audit.id} for generation , another process owns it`);
       } else {
-        await startReportGeneration(audit.id, audit.responses, audit.scores || {}, audit.type);
+        await startReportGeneration(
+          audit.id,
+          audit.responses as Record<string, unknown>,
+          (audit.scores || {}) as Record<string, number>,
+          audit.type,
+        );
         processReportAndSendEmail(audit.id, audit.email, audit.type).catch((err) => {
           console.error(`[processReportAndSendEmail] Unhandled error for audit ${audit.id}:`, err);
           storage.updateAudit(audit.id, { reportDeliveryStatus: "EMAIL_FAILED" }).catch(() => {});
@@ -2439,6 +2300,13 @@ export async function registerRoutes(
         console.error(`[Email] Audit ${auditId} not found , skipping`);
         return;
       }
+      if (
+        completedAudit.type === "GRATUIT" &&
+        !isDiscoveryTransactionalAutomationEligible(completedAudit)
+      ) {
+        console.warn(`[Email] Discovery ${auditId} blocked outside transactional automation window`);
+        return;
+      }
 
       const deliveryStatus = completedAudit.reportDeliveryStatus;
 
@@ -2451,6 +2319,10 @@ export async function registerRoutes(
       }
       if (deliveryStatus === 'SENT') {
         console.log(`[Email] ⏭️ Status already SENT for ${auditId} , SKIPPING`);
+        return;
+      }
+      if (deliveryStatus === "BATCH_READY") {
+        console.log(`[Email] ⏭️ Discovery ${auditId} is BATCH_READY , generic delivery worker must ignore it`);
         return;
       }
 
@@ -2537,6 +2409,13 @@ export async function registerRoutes(
       console.error(`[Email] ❌ Error in processReportAndSendEmail for audit ${auditId}:`, error);
       // Don't overwrite SCHEDULED status on error , let cron handle delivery
       const currentAudit = await storage.getAudit(auditId).catch(() => null);
+      if (
+        currentAudit?.type === "GRATUIT" &&
+        (!isDiscoveryTransactionalAutomationEligible(currentAudit) ||
+          String(currentAudit.reportDeliveryStatus) === "BATCH_READY")
+      ) {
+        return;
+      }
       if (currentAudit?.reportDeliveryStatus !== "SCHEDULED") {
         await storage.updateAudit(auditId, { reportDeliveryStatus: "READY" }).catch(() => {});
       }
@@ -2653,10 +2532,15 @@ export async function registerRoutes(
   });
 
   app.post("/api/audits/:id/generate-narrative", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
     try {
       const audit = await storage.getAudit(req.params.id);
       if (!audit) {
         res.status(404).json({ error: "Audit non trouvé" });
+        return;
+      }
+      if (audit.type === "GRATUIT") {
+        res.status(409).json({ error: "Discovery exige le workflow transactionnel dédié" });
         return;
       }
       const job = await startReportGeneration(
@@ -3564,8 +3448,15 @@ export async function registerRoutes(
     try {
       const pendingAudits = await storage.getPendingAudits();
       const queued: string[] = [];
+      const skipped: { auditId: string; reason: string }[] = [];
 
       for (const audit of pendingAudits) {
+        const discoveryBlockReason = getGenericDiscoveryMutationBlockReason(audit);
+        if (discoveryBlockReason) {
+          skipped.push({ auditId: audit.id, reason: discoveryBlockReason });
+          continue;
+        }
+
         await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
 
         await startReportGeneration(audit.id, audit.responses, audit.scores, audit.type);
@@ -3579,7 +3470,8 @@ export async function registerRoutes(
 
       res.json({
         message: `${queued.length} rapport(s) en cours de generation`,
-        queued
+        queued,
+        skipped,
       });
     } catch (error) {
       console.error("[Admin] Error processing pending reports:", error);
@@ -3839,6 +3731,12 @@ export async function registerRoutes(
             continue;
           }
 
+          const discoveryBlockReason = getGenericDiscoveryMutationBlockReason(audit);
+          if (discoveryBlockReason) {
+            errors.push({ auditId, error: discoveryBlockReason });
+            continue;
+          }
+
           console.log(`[Admin] Force-regenerating NEEDS_REVIEW audit ${auditId}`);
 
           // Reset EVERYTHING and restart generation
@@ -3884,10 +3782,20 @@ export async function registerRoutes(
     try {
       const { auditId } = req.body;
       if (!auditId) { res.status(400).json({ error: "auditId requis" }); return; }
-      const { pool } = await import("./db");
-      await pool.query("UPDATE audits SET report_scheduled_for = NULL, report_delivery_status = 'READY' WHERE id = $1", [auditId]);
+      await runGenericAuditMutation({
+        auditId: String(auditId),
+        operation: "admin.reset-scheduled",
+        mutate: async (client) => client.query(
+          "UPDATE audits SET report_scheduled_for = NULL, report_delivery_status = 'READY' WHERE id = $1 AND type <> 'GRATUIT'",
+          [auditId],
+        ),
+      }, pool);
       res.json({ success: true, message: `scheduledFor reset + status READY for ${auditId}` });
     } catch (error) {
+      if (error instanceof GenericAuditMutationBarrierError) {
+        res.status(error.code === "AUDIT_NOT_FOUND" ? 404 : 409).json({ error: error.reason || error.code });
+        return;
+      }
       console.error("[Admin] reset-scheduled error:", error);
       res.status(500).json({ error: "Erreur serveur" });
     }
@@ -3919,10 +3827,20 @@ export async function registerRoutes(
     try {
       const { auditId, responses } = req.body;
       if (!auditId || !responses) { res.status(400).json({ error: "auditId et responses requis" }); return; }
-      const { pool } = await import("./db");
-      await pool.query("UPDATE audits SET responses = $1 WHERE id = $2", [JSON.stringify(responses), auditId]);
+      await runGenericAuditMutation({
+        auditId: String(auditId),
+        operation: "admin.update-audit-responses",
+        mutate: async (client) => client.query(
+          "UPDATE audits SET responses = $1::jsonb WHERE id = $2 AND type <> 'GRATUIT'",
+          [JSON.stringify(responses), auditId],
+        ),
+      }, pool);
       res.json({ success: true, fieldCount: Object.keys(responses).length });
     } catch (error: any) {
+      if (error instanceof GenericAuditMutationBarrierError) {
+        res.status(error.code === "AUDIT_NOT_FOUND" ? 404 : 409).json({ error: error.reason || error.code });
+        return;
+      }
       console.error("[Admin] Update audit responses error:", error);
       res.status(500).json({ error: error.message });
     }
@@ -3936,10 +3854,20 @@ export async function registerRoutes(
       if (!auditId) { res.status(400).json({ error: "auditId requis" }); return; }
       const hours = delayHours || 24;
       const scheduledFor = new Date(Date.now() + hours * 60 * 60 * 1000);
-      const { pool } = await import("./db");
-      await pool.query("UPDATE audits SET report_scheduled_for = $1, report_delivery_status = 'SCHEDULED' WHERE id = $2", [scheduledFor, auditId]);
+      await runGenericAuditMutation({
+        auditId: String(auditId),
+        operation: "admin.set-scheduled",
+        mutate: async (client) => client.query(
+          "UPDATE audits SET report_scheduled_for = $1, report_delivery_status = 'SCHEDULED' WHERE id = $2 AND type <> 'GRATUIT'",
+          [scheduledFor, auditId],
+        ),
+      }, pool);
       res.json({ success: true, scheduledFor: scheduledFor.toISOString() });
     } catch (error) {
+      if (error instanceof GenericAuditMutationBarrierError) {
+        res.status(error.code === "AUDIT_NOT_FOUND" ? 404 : 409).json({ success: false, error: error.reason || error.code });
+        return;
+      }
       console.error("[Admin] set-scheduled error:", error);
       res.status(500).json({ error: "Erreur serveur" });
     }
@@ -3968,8 +3896,15 @@ export async function registerRoutes(
         );
 
       const restarted: string[] = [];
+      const skipped: { auditId: string; reason: string }[] = [];
 
       for (const audit of stuckAudits) {
+        const discoveryBlockReason = getGenericDiscoveryMutationBlockReason(audit);
+        if (discoveryBlockReason) {
+          skipped.push({ auditId: audit.id, reason: discoveryBlockReason });
+          continue;
+        }
+
         console.log(`[Admin] Force-restarting stuck audit ${audit.id} (created ${audit.createdAt})`);
 
         // Reset to PENDING so it can be picked up by process-pending-reports
@@ -3977,7 +3912,12 @@ export async function registerRoutes(
 
         // Immediately restart generation
         await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
-        await startReportGeneration(audit.id, audit.responses, audit.scores || {}, audit.type);
+        await startReportGeneration(
+          audit.id,
+          audit.responses as Record<string, unknown>,
+          (audit.scores || {}) as Record<string, number>,
+          audit.type,
+        );
 
         processReportAndSendEmail(audit.id, audit.email, audit.type).catch((err) => {
           console.error(`[processReportAndSendEmail] Unhandled error for audit ${audit.id}:`, err);
@@ -3990,7 +3930,8 @@ export async function registerRoutes(
       res.json({
         success: true,
         message: `${restarted.length} rapport(s) bloqué(s) relancé(s)`,
-        restarted
+        restarted,
+        skipped,
       });
     } catch (error) {
       console.error("[Admin] Error restarting stuck jobs:", error);
@@ -4093,6 +4034,10 @@ export async function registerRoutes(
 
       // Handle Discovery Scan (GRATUIT) differently - sync generation
       if (audit.type === "GRATUIT") {
+        if (!isDiscoveryTransactionalAutomationEligible(audit)) {
+          res.status(409).json({ error: "Discovery hors fenêtre d'automatisation transactionnelle" });
+          return;
+        }
         if (audit.reportSentAt || audit.reportDeliveryStatus === "SENT"
           || isDiscoverySupersededTerminal(audit)) {
           res.status(409).json({
@@ -4102,20 +4047,13 @@ export async function registerRoutes(
         }
         console.log(`[Regenerate] Regenerating Discovery Scan for audit ${auditId}...`);
 
-        // Never reset GENERATING/READY to PENDING here: doing so can erase an
-        // active owner's claim and pay for a concurrent duplicate generation.
-        // Stale ownership is handled by the persisted recovery workflow.
-        const claimed = await storage.claimAuditForGeneration(auditId).catch(() => false);
-        if (!claimed) {
-          res.status(409).json({ error: "Regeneration déjà en cours" });
-          return;
-        }
-
         try {
-          // Generate new Discovery Scan report with AI content
-          const result = await analyzeDiscoveryScan(audit.responses as any);
-          const narrativeReport = await convertToNarrativeReport(result, audit.responses as any);
-          await persistDiscoveryReport(auditId, narrativeReport, "READY");
+          const generated = await generateAndPersistPremiumDiscoveryReport(auditId);
+          if (!generated) {
+            res.status(409).json({ error: "Regeneration déjà en cours ou interdite" });
+            return;
+          }
+          const persisted = await storage.getAudit(auditId);
 
           console.log(`[Regenerate] Discovery Scan ${auditId} regenerated successfully`);
 
@@ -4123,11 +4061,10 @@ export async function registerRoutes(
             success: true,
             message: "Discovery Scan regenere",
             auditId,
-            narrativeReport
+            narrativeReport: persisted?.narrativeReport,
           });
         } catch (genError) {
           console.error("[Regenerate] Discovery Scan generation error:", genError);
-          await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" });
           res.status(500).json({ error: "Rapport en révision. Réessaie plus tard." });
         }
         return;
@@ -4268,6 +4205,16 @@ export async function registerRoutes(
     if (success) {
       const baseUrl = getBaseUrl();
       console.log(`[Admin] Sending email to ${email} for audit ${auditId} (baseUrl: ${baseUrl})`);
+      const completedAudit = await storage.getAudit(auditId);
+      if (
+        !completedAudit ||
+        (completedAudit.type === "GRATUIT" &&
+          (!isDiscoveryTransactionalAutomationEligible(completedAudit) ||
+            String(completedAudit.reportDeliveryStatus) === "BATCH_READY"))
+      ) {
+        console.warn(`[Admin] Discovery ${auditId} blocked outside transactional automation window`);
+        return;
+      }
       await storage.updateAudit(auditId, { reportDeliveryStatus: "READY" }).catch(() => {});
       const { sent: emailSent } = await safeSendReportReadyEmail(auditId, email, auditType, baseUrl, { logPrefix: "[Admin]" });
       if (!emailSent) {
@@ -5110,6 +5057,9 @@ export async function registerRoutes(
     planType: "GRATUIT" | "PREMIUM" | "ELITE",
     order?: { id: string; auditId: string | null } | null
   ): Promise<{ success: true; auditId: string; auditType: string; existing?: boolean } | { success: false; error: string; message?: string }> {
+    if (planType === "GRATUIT") {
+      return { success: false, error: "DISCOVERY_PAID_ORDER_CREATION_BLOCKED" };
+    }
     // Check if an audit is already linked to this order
     if (order?.auditId) {
       return { success: true, auditId: order.auditId, auditType: planType, existing: true };
@@ -5168,7 +5118,7 @@ export async function registerRoutes(
       console.log(`[Audit] Report scheduled for ${email} at ${scheduledFor.toISOString()} (+24h)`);
       try {
         const { pool: dbPool } = await import("./db");
-        await dbPool.query("UPDATE audits SET report_scheduled_for = $1, report_delivery_status = 'SCHEDULED' WHERE id = $2", [scheduledFor, audit.id]);
+        await dbPool.query("UPDATE audits SET report_scheduled_for = $1, report_delivery_status = 'SCHEDULED' WHERE id = $2 AND type <> 'GRATUIT'", [scheduledFor, audit.id]);
       } catch {}
     }
 
@@ -6279,6 +6229,12 @@ export async function registerRoutes(
         return;
       }
 
+      const discoveryBlockReason = getGenericDiscoveryMutationBlockReason(audit);
+      if (discoveryBlockReason) {
+        res.status(409).json({ success: false, error: discoveryBlockReason });
+        return;
+      }
+
       await storage.updateAudit(auditId, { reportDeliveryStatus: status });
       console.log(`[Admin] Audit ${auditId} status changed to ${status}`);
 
@@ -6880,7 +6836,11 @@ export async function registerRoutes(
           const newHtml = generatePremiumHTMLFromTxt(txt, lite.id, photos, responses);
           const delta = newHtml.length - oldHtml.length;
           if (!dryRun) {
-            await storage.updateAudit(lite.id, { reportHtml: newHtml } as any);
+            const updated = await storage.updateAudit(lite.id, { reportHtml: newHtml } as any);
+            if (!updated) {
+              results.push({ id: lite.id, email: lite.email, type: lite.type as string, status: lite.reportDeliveryStatus as string, txtLen: txt.length, oldHtmlLen: oldHtml.length, newHtmlLen: 0, delta: 0, skipped: "generic_mutation_blocked" });
+              continue;
+            }
             rebuilt++;
           }
           totalDelta += delta;
@@ -6929,7 +6889,11 @@ export async function registerRoutes(
         res.status(400).json({ success: false, error: "no fields to restore" });
         return;
       }
-      await storage.updateAudit(auditId, updates);
+      const updated = await storage.updateAudit(auditId, updates);
+      if (!updated) {
+        res.status(409).json({ success: false, error: "DISCOVERY_GENERIC_MUTATION_BLOCKED" });
+        return;
+      }
       console.log(`[Admin Restore] audit=${auditId} restored: ${Object.keys(updates).join(", ")}`);
       res.json({
         success: true,
@@ -6964,7 +6928,11 @@ export async function registerRoutes(
       const responses = (audit.responses as any) || {};
       const beforeLen = ((audit as any).reportHtml || "").length;
       const newHtml = generatePremiumHTMLFromTxt(txt, auditId, photos, responses);
-      await storage.updateAudit(auditId, { reportHtml: newHtml } as any);
+      const updated = await storage.updateAudit(auditId, { reportHtml: newHtml } as any);
+      if (!updated) {
+        res.status(409).json({ success: false, error: "DISCOVERY_GENERIC_MUTATION_BLOCKED" });
+        return;
+      }
       console.log(`[Admin Rebuild HTML] audit=${auditId} txt=${txt.length}ch oldHtml=${beforeLen}ch newHtml=${newHtml.length}ch`);
       res.json({
         success: true,
@@ -7028,7 +6996,11 @@ export async function registerRoutes(
       );
       const patchedNarrative = { ...narrative, sections: patchedSections };
 
-      await storage.updateAudit(auditId, { narrativeReport: patchedNarrative } as any);
+      const updated = await storage.updateAudit(auditId, { narrativeReport: patchedNarrative } as any);
+      if (!updated) {
+        res.status(409).json({ success: false, error: "DISCOVERY_GENERIC_MUTATION_BLOCKED" });
+        return;
+      }
       console.log(`[Admin Patch] audit=${auditId} section=${sectionIndex} mode=${op} added=${html.length}ch`);
 
       res.json({
@@ -8760,17 +8732,24 @@ export async function registerRoutes(
   app.post("/api/admin/audits/:id/mark-handled", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
-      const { pool } = await import("./db");
-      const result = await pool.query(
-        "UPDATE audits SET report_delivery_status = 'SENT', report_sent_at = NOW() WHERE id = $1 AND report_delivery_status IN ('SCHEDULED','READY') RETURNING id",
-        [req.params.id]
-      );
+      const result = await runGenericAuditMutation({
+        auditId: String(req.params.id),
+        operation: "admin.mark-handled",
+        mutate: async (client) => client.query(
+          "UPDATE audits SET report_delivery_status = 'SENT', report_sent_at = NOW() WHERE id = $1 AND type <> 'GRATUIT' AND report_delivery_status IN ('SCHEDULED','READY') RETURNING id",
+          [req.params.id],
+        ),
+      }, pool);
       if (result.rowCount === 0) {
         res.status(404).json({ success: false, error: "Audit introuvable ou déjà traité (pas SCHEDULED/READY)" });
         return;
       }
       res.json({ success: true, auditId: req.params.id });
     } catch (error) {
+      if (error instanceof GenericAuditMutationBarrierError) {
+        res.status(error.code === "AUDIT_NOT_FOUND" ? 404 : 409).json({ success: false, error: error.reason || error.code });
+        return;
+      }
       console.error("[Admin] mark-handled error:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
     }
@@ -10090,99 +10069,11 @@ export async function registerRoutes(
     }
   });
 
-  // Create test data for relances (TEMPORARY - DELETE AFTER TESTING)
+  // Retired: this endpoint used to create synthetic Discovery audits directly
+  // in production and could leave them PENDING outside the transactional flow.
   app.post("/api/admin/create-test-relances", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
-    try {
-      const results: string[] = [];
-
-      // Get existing audits to find a valid userId
-      const existingAudits = await storage.getAllAudits();
-      const userId = existingAudits[0]?.userId || "test-user";
-
-      // Create 2 GRATUIT audits (sent 3-5 days ago)
-      const gratuit1 = await storage.createAudit({
-        email: "achkou+gratuit1@gmail.com",
-        type: "GRATUIT",
-        responses: { test: true },
-        userId,
-      });
-      await storage.updateAudit(gratuit1.id, {
-        status: "COMPLETED",
-        reportDeliveryStatus: "SENT",
-        reportSentAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
-      });
-
-      const gratuit2 = await storage.createAudit({
-        email: "achkou+gratuit2@gmail.com",
-        type: "GRATUIT",
-        responses: { test: true },
-        userId,
-      });
-      await storage.updateAudit(gratuit2.id, {
-        status: "COMPLETED",
-        reportDeliveryStatus: "SENT",
-        reportSentAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
-      });
-      results.push("2 GRATUIT audits créés");
-
-      // Create 2 PREMIUM J+7 audits (sent 8-10 days ago)
-      const premium7a = await storage.createAudit({
-        email: "achkou+premium7a@gmail.com",
-        type: "PREMIUM",
-        responses: { test: true },
-        userId,
-      });
-      await storage.updateAudit(premium7a.id, {
-        status: "COMPLETED",
-        reportDeliveryStatus: "SENT",
-        reportSentAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000)
-      });
-
-      const premium7b = await storage.createAudit({
-        email: "achkou+premium7b@gmail.com",
-        type: "PREMIUM",
-        responses: { test: true },
-        userId,
-      });
-      await storage.updateAudit(premium7b.id, {
-        status: "COMPLETED",
-        reportDeliveryStatus: "SENT",
-        reportSentAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000)
-      });
-      results.push("2 PREMIUM J+7 audits créés");
-
-      // Create 2 PREMIUM J+14 audits (sent 15-20 days ago)
-      const premium14a = await storage.createAudit({
-        email: "achkou+premium14a@gmail.com",
-        type: "PREMIUM",
-        responses: { test: true },
-        userId,
-      });
-      await storage.updateAudit(premium14a.id, {
-        status: "COMPLETED",
-        reportDeliveryStatus: "SENT",
-        reportSentAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000)
-      });
-
-      const premium14b = await storage.createAudit({
-        email: "achkou+premium14b@gmail.com",
-        type: "ELITE",
-        responses: { test: true },
-        userId,
-      });
-      await storage.updateAudit(premium14b.id, {
-        status: "COMPLETED",
-        reportDeliveryStatus: "SENT",
-        reportSentAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000)
-      });
-      results.push("2 PREMIUM J+14 audits créés");
-
-      res.json({ success: true, results });
-    } catch (error: any) {
-      console.error("[Test Data] Error:", error);
-      res.status(500).json({ success: false, error: "Erreur création données test" });
-    }
+    res.status(410).json({ success: false, error: "ADMIN_TEST_AUDIT_CREATION_RETIRED" });
   });
 
   // Manual trigger for testing specific email sequence
@@ -10241,27 +10132,10 @@ export async function registerRoutes(
   // Analyze Discovery Scan (free tier) - returns NarrativeReport format for dashboard
   app.post("/api/discovery-scan/analyze", discoveryLimiter, async (req, res) => {
     try {
-      if (process.env.NODE_ENV === "production" && !requireAdminAuth(req, res)) return;
-      if (await isDiscoveryGlobalLockActive()) {
-        res.status(503).json({ success: false, error: "Discovery Scan temporairement en maintenance" });
-        return;
-      }
-      const { responses } = req.body;
-
-      if (!responses) {
-        res.status(400).json({ success: false, error: "Responses manquantes" });
-        return;
-      }
-
-      console.log(`[Discovery Scan] Starting analysis for ${responses.prenom || 'Client'}...`);
-
-      // Analyze and convert to dashboard format with AI content
-      const result = await analyzeDiscoveryScan(responses);
-      const narrativeReport = await convertToNarrativeReport(result, responses);
-
-      res.json({
-        success: true,
-        narrativeReport
+      if (!requireAdminAuth(req, res)) return;
+      res.status(410).json({
+        success: false,
+        error: "Endpoint désactivé: utilise la création Discovery transactionnelle",
       });
     } catch (error: any) {
       console.error("[Discovery Scan] Error:", error);
@@ -10298,34 +10172,31 @@ export async function registerRoutes(
       }
 
       // Create audit record
-      const audit = await storage.createAudit({
+      const audit = await storage.createDiscoveryAudit({
         userId: "",
         type: "GRATUIT",
         email,
         responses,
       });
 
-      // Atomic generation claim , if we lose the CAS, another process is already
-      // generating this audit's report. We serve the existing state instead of
-      // kicking off a parallel generator.
-      const claimedGen = await storage.claimAuditForGeneration(audit.id).catch(() => false);
-      if (!claimedGen) {
-        const fresh = await storage.getAudit(audit.id).catch(() => undefined);
-        console.warn(`[Discovery Scan] ⏭️ Could not claim audit ${audit.id} for generation , returning current state`);
-        res.json({
+      if (!isDiscoveryTransactionalAutomationEligible(audit)) {
+        console.warn(`[Discovery Scan] Transactional automation disabled or audit before cutoff: ${audit.id}`);
+        res.status(202).json({
           success: true,
           auditId: audit.id,
-          narrativeReport: (fresh as any)?.narrativeReport ?? null,
-          idempotent: true,
+          narrativeReport: null,
+          status: "needs_review",
         });
         return;
       }
 
       try {
-        // Generate analysis and convert to NarrativeReport format with AI content
-        const result = await analyzeDiscoveryScan(responses);
-        const narrativeReport = await convertToNarrativeReport(result, responses);
-        await persistDiscoveryReport(audit.id, narrativeReport, "READY");
+        const generated = await generateAndPersistPremiumDiscoveryReport(audit.id);
+        if (!generated) {
+          res.status(409).json({ success: false, error: "Génération déjà en cours ou interdite" });
+          return;
+        }
+        const persisted = await storage.getAudit(audit.id);
 
         console.log(`[Discovery Scan] Audit ${audit.id} created for ${email}`);
 
@@ -10339,11 +10210,10 @@ export async function registerRoutes(
         res.json({
           success: true,
           auditId: audit.id,
-          narrativeReport
+          narrativeReport: persisted?.narrativeReport,
         });
       } catch (error) {
         console.error("[Discovery Scan] Create error (generation):", error);
-        await markDiscoveryInlineGenerationFailed(audit.id, "api_discovery_scan_create", error);
         res.status(500).json({ success: false, error: "Rapport en révision. Réessaie plus tard." });
       }
     } catch (error: any) {
@@ -10531,7 +10401,7 @@ export async function registerRoutes(
   // Force regenerate a Discovery Scan if stuck
   app.post("/api/discovery-scan/:auditId/regenerate", async (req, res) => {
     try {
-      if (process.env.NODE_ENV === "production" && !requireAdminAuth(req, res)) return;
+      if (!requireAdminAuth(req, res)) return;
       const { auditId } = req.params;
       const audit = await storage.getAudit(auditId);
 
@@ -10545,6 +10415,14 @@ export async function registerRoutes(
         return;
       }
 
+      if (!isDiscoveryTransactionalAutomationEligible(audit)) {
+        res.status(409).json({
+          success: false,
+          error: "Discovery hors fenêtre d'automatisation transactionnelle",
+        });
+        return;
+      }
+
       if (audit.reportSentAt || audit.reportDeliveryStatus === "SENT"
         || isDiscoverySupersededTerminal(audit)) {
         res.status(409).json({
@@ -10554,26 +10432,16 @@ export async function registerRoutes(
         return;
       }
 
-      // Atomic claim first so two concurrent regenerate clicks cannot both
-      // start work for the same audit.
-      const claimedDisc = await storage.claimAuditForGeneration(audit.id).catch(() => false);
-      if (!claimedDisc) {
-        res.status(409).json({ success: false, error: "Regeneration déjà en cours" });
-        return;
-      }
-
       // Fire-and-forget regeneration to avoid blocking the UI
       res.json({ success: true, auditId: audit.id, started: true });
 
       (async () => {
         try {
-          const result = await analyzeDiscoveryScan(audit.responses as any);
-          const narrativeReport = await convertToNarrativeReport(result, audit.responses as any);
-          await persistDiscoveryReport(audit.id, narrativeReport, "READY");
+          const generated = await generateAndPersistPremiumDiscoveryReport(audit.id);
+          if (!generated) throw new Error("DISCOVERY_GENERATION_CLAIM_REJECTED");
           console.log(`[Discovery Regenerate] Success for ${audit.id}`);
         } catch (err) {
           console.error("[Discovery Regenerate] Error:", err);
-          await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" });
         }
       })();
     } catch (error) {
@@ -11372,7 +11240,7 @@ export async function registerRoutes(
               console.log(`[Webhook] Peptides Engine paid for ${email} , setInterval will generate`);
             }
 
-            if (email && planType && !order.auditId && ["GRATUIT", "PREMIUM", "ELITE"].includes(planType)) {
+            if (email && planType && !order.auditId && ["PREMIUM", "ELITE"].includes(planType)) {
               console.log(`[Webhook] Creating audit automatically for order ${order.id} (${email}, ${planType})`);
 
               try {
@@ -11548,7 +11416,7 @@ export async function registerRoutes(
         FROM orders o
         WHERE o.status = 'paid'
           AND o.audit_id IS NULL
-          AND o.product_type IN ('GRATUIT', 'PREMIUM', 'ELITE')
+          AND o.product_type IN ('PREMIUM', 'ELITE')
           AND o.created_at >= '2026-03-17'
         ORDER BY o.created_at ASC
       `);
@@ -11695,10 +11563,19 @@ export async function registerRoutes(
         }
 
         try {
+          if (order.product_type === "GRATUIT") {
+            errors.push({
+              email: order.email,
+              orderId: order.order_id,
+              reason: "DISCOVERY_GENERIC_AUDIT_RECOVERY_BLOCKED",
+            });
+            continue;
+          }
           // Recreate audit with ORIGINAL audit_id from order!
           const insertResult = await pool.query(`
             INSERT INTO audits (id, user_id, type, email, responses, created_at, updated_at, report_delivery_status)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            SELECT $1, $2, $3, $4, $5, $6, $7, $8
+            WHERE $3 <> 'GRATUIT'
             ON CONFLICT (id) DO NOTHING
             RETURNING id
           `, [
@@ -14922,6 +14799,7 @@ export async function registerRoutes(
       for (const audit of allAudits) {
         if (!audit.email || audit.email.includes("test") || audit.email.includes("debug") || audit.email.includes("achzodcoaching")) continue;
         if (audit.type === "GRATUIT" && discoveryBatchLocked) continue;
+        if (audit.type === "GRATUIT" && !isDiscoveryTransactionalAutomationEligible(audit)) continue;
         const status = audit.reportDeliveryStatus;
         if (audit.reportSentAt) {
           // Repair legacy/racing writes that replaced SENT with READY after the

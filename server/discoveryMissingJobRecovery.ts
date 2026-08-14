@@ -1,4 +1,5 @@
 import { isDiscoverySupersededTerminal } from "./discoverySupersededPolicy";
+import { isDiscoveryTransactionalAutomationEligible } from "./discoveryAutomationPolicy";
 
 export const DISCOVERY_RECOVERY_VERSION = 1;
 export const RECENT_DISCOVERY_HOLD_DAYS = 14;
@@ -14,6 +15,7 @@ export type DiscoveryRecoveryDecision =
       action: "skip";
       reason:
         | "not_discovery_needs_review"
+        | "outside_transactional_automation_window"
         | "superseded_terminal"
         | "already_sent"
         | "artifacts_present"
@@ -72,6 +74,9 @@ export function decideMissingDiscoveryRecovery(input: {
   }
   if (audit.type !== "GRATUIT" || audit.reportDeliveryStatus !== "NEEDS_REVIEW") {
     return { action: "skip", reason: "not_discovery_needs_review" };
+  }
+  if (!isDiscoveryTransactionalAutomationEligible(audit)) {
+    return { action: "skip", reason: "outside_transactional_automation_window" };
   }
   if (audit.reportSentAt) return { action: "skip", reason: "already_sent" };
   if (hasDiscoveryArtifacts(audit) || input.hasArtifactRow) {

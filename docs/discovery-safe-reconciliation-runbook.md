@@ -4,7 +4,7 @@ Ce runbook remplace les anciens batchs `batch_91` et `remediate-sent-discovery`.
 
 ## Contrat de sécurité
 
-1. La migration `003_discovery_batch_safety.sql` est appliquée avant le code. En cas de table absente ou de panne DB, les automatisations Discovery échouent fermées.
+1. Les migrations `003` à `005` sont appliquées avant le nouveau process. Le reconciler et le one-shot vérifient physiquement les colonnes, PK, contraintes, FK et index v005 avant toute opération ; un schéma partiel échoue fermé.
 2. Le manifeste lit tous les audits `GRATUIT`, sans filtre de date ni de statut.
 3. Quatre cohortes seulement : `already_accepted`, `valid_never_sent`, `ambiguous`, `invalid`.
 4. Aucune action automatique sur `already_accepted`, `ambiguous`, un audit superseded ou un doublon potentiel.
@@ -23,6 +23,10 @@ Ce runbook remplace les anciens batchs `batch_91` et `remediate-sent-discovery`.
 DATABASE_URL=postgresql://x:x@127.0.0.1:1/x \
   npx tsx --test server/discovery*.test.ts server/openaiResponsesIsolation.test.ts
 
+# Cette suite exige un vrai PostgreSQL éphémère local, jamais la production.
+DATABASE_URL=postgresql://postgres@127.0.0.1:PORT/apex_discovery_test \
+  npm run test:discovery:postgres
+
 git diff --check
 ```
 
@@ -33,13 +37,21 @@ Attendu : tous les tests Discovery passent. Le typecheck global peut rester roug
 Ordre obligatoire :
 
 1. Sauvegarde DB.
-2. Appliquer `migrations/003_discovery_batch_safety.sql`.
-3. Vérifier les quatre tables/index et que `report_artifacts.content_sha256` existe.
-4. Déployer le code.
-5. Vérifier `/api/version`, `/api/health`, commit exact, HTTP 200 et DB connectée.
-6. Vérifier zéro job actif avant le manifeste.
+2. Confirmer avant le déploiement que génération, livraison et workers batch Discovery sont OFF.
+3. Configurer sur le service Render actif le pre-deploy exact :
 
-Ne jamais déployer le code avant la migration : le comportement fail-closed bloquerait la génération et la livraison Discovery, ce qui est sûr mais non opérationnel.
+   ```text
+   npm run db:migrate:discovery-005
+   ```
+
+   `render.yaml` porte la même commande. Elle applique `005` et vérifie le catalogue dans une seule transaction sous advisory lock. Une erreur annule la transaction et bloque le déploiement avant le démarrage du nouveau process.
+4. Déployer le commit audité. Ne lancer aucun job, shell applicatif, reconciler, one-shot ni worker entre le succès du pre-deploy et le démarrage automatique du nouveau process. Ne jamais utiliser une commande de démarrage qui exécute la migration en parallèle du serveur.
+5. Archiver la preuve `DISCOVERY_BATCH_SCHEMA_MIGRATION_OK:v5` du pre-deploy. Son absence est un NO-GO.
+6. Vérifier `/api/version`, `/api/health`, commit exact, HTTP 200 et DB connectée.
+7. Exécuter uniquement un manifeste `--summary-only`; son gate catalogue v005 doit passer avant la première lecture métier.
+8. Vérifier zéro job actif avant toute approbation.
+
+Ne jamais démarrer le nouveau code avant la preuve v005. Pour une migration manuelle séparée, suspendre d'abord le service afin qu'aucun ancien worker ne tourne, exécuter `npm run db:migrate:discovery-005`, vérifier la preuve, puis seulement démarrer le SHA audité. Ne pas reprendre le service entre ces étapes.
 
 ## 3. Manifeste read-only
 

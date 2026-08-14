@@ -295,10 +295,13 @@ test("lock check fails closed when DB lookup fails", async () => {
 
 test("migration enforces mono-call, unique delivery claim and unique artifact content", () => {
   const sql = readFileSync(new URL("../migrations/003_discovery_batch_safety.sql", import.meta.url), "utf8");
+  const sourceCasSql = readFileSync(new URL("../migrations/005_discovery_batch_source_cas.sql", import.meta.url), "utf8");
   assert.match(sql, /CHECK \(provider_calls >= 0 AND provider_calls <= 1\)/);
   assert.match(sql, /UNIQUE \(audit_id, email_type\)/);
   assert.match(sql, /report_artifacts_audit_content_uq/);
   assert.match(sql, /UNIQUE \(manifest_sha256, stage, tier\)/);
+  assert.match(sourceCasSql, /ADD COLUMN IF NOT EXISTS expected_source_status TEXT/);
+  assert.match(sourceCasSql, /ADD COLUMN IF NOT EXISTS fence_token UUID/);
 });
 
 test("ordinary Discovery deliveries reuse the durable unique claim without requiring a batch", () => {
@@ -314,8 +317,13 @@ test("ordinary Discovery deliveries reuse the durable unique claim without requi
   assert.match(source, /DISCOVERY_DELIVERY_CLAIM_EXISTS/);
   assert.match(source, /DISCOVERY_DELIVERY_PRIOR_TRACKING_EXISTS/);
   assert.match(source, /DISCOVERY_DELIVERY_RECIPIENT_HARD_BOUNCED/);
+  assert.match(source, /hasPassingPersistedDiscoveryDeliveryGate\(audit\.narrative_report\)/);
+  assert.match(source, /DISCOVERY_DELIVERY_PERSISTED_GATE_MISSING/);
   assert.match(source, /'FAILED_FINAL' AND state = 'CLAIMED'/);
   assert.match(source, /'AMBIGUOUS'\) AND state = 'PROVIDER_POST_STARTED'/);
+  assert.match(source, /assertDiscoveryDeliveryFenceOwnership/);
+  assert.match(source, /DISCOVERY_DELIVERY_FENCE_STALE/);
+  assert.match(source, /fence_token IS NOT DISTINCT FROM/);
   assert.match(source, /DELIVERY_AMBIGUOUS/);
   assert.match(source, /DELIVERY_BLOCKED/);
 });
@@ -323,7 +331,7 @@ test("ordinary Discovery deliveries reuse the durable unique claim without requi
 test("Discovery provider crash window is one-shot, single-provider and never auto-retried", () => {
   const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
   const email = readFileSync(new URL("./emailService.ts", import.meta.url), "utf8");
-  const index = readFileSync(new URL("./index.ts", import.meta.url), "utf8");
+  const batch = readFileSync(new URL("./discoveryBatchControl.ts", import.meta.url), "utf8");
   const safeSendStart = routes.indexOf("async function safeSendReportReadyEmail(");
   const safeSendEnd = routes.indexOf("const auditCreateLimiter", safeSendStart);
   assert.ok(safeSendStart >= 0 && safeSendEnd > safeSendStart);
@@ -334,6 +342,8 @@ test("Discovery provider crash window is one-shot, single-provider and never aut
   assert.match(safeSend, /markDiscoveryDeliveryProviderPostStarted/);
   assert.match(safeSend, /discoveryProviderPostStarted\s*\?\s*"AMBIGUOUS"\s*:\s*"FAILED_FINAL"/s);
   assert.match(safeSend, /allowProviderFallback: false/);
+  assert.match(safeSend, /discovery_delivery_failed:persisted_gate_missing/);
+  assert.doesNotMatch(safeSend, /persistDiscoveryDeliveryGate/);
   assert.doesNotMatch(safeSend, /finalizeAuditSend\(auditId, true\).*already_in_tracking/s);
 
   assert.match(email, /trackingData\.allowProviderFallback !== false && BREVO_API_KEY/);
@@ -341,8 +351,10 @@ test("Discovery provider crash window is one-shot, single-provider and never aut
   assert.match(email, /allowProviderFallback: auditType === "GRATUIT"\s*\? false/s);
   assert.doesNotMatch(email, /providerPostStarted = false;\s*let sendpulseTaskId/);
 
-  assert.match(index, /NOT EXISTS \(\s*SELECT 1 FROM discovery_email_delivery_claims claim/s);
-  assert.match(index, /claim\.email_type = 'sendReportReadyEmail'/);
+  assert.match(batch, /state IN \('CLAIMED','PROVIDER_POST_STARTED','AMBIGUOUS'\)/);
+  assert.match(batch, /status IN \('RESERVED','UNCERTAIN'\)/);
+  assert.match(batch, /DISCOVERY_BATCH_IN_FLIGHT_OPERATION/);
+  assert.match(batch, /fence_token IS NOT DISTINCT FROM/);
 });
 
 test("Discovery mutation endpoints are explicit, hash-bound and terminal-safe", () => {
@@ -369,20 +381,22 @@ test("Discovery mutation endpoints are explicit, hash-bound and terminal-safe", 
     adminRegenerate.indexOf('if (audit.type === "GRATUIT")'),
     adminRegenerate.indexOf("// For PREMIUM/ELITE audits"),
   );
-  assert.ok(adminRegenerate.indexOf("isDiscoverySupersededTerminal") < adminRegenerate.indexOf("claimAuditForGeneration"));
-  assert.ok(adminRegenerate.indexOf("audit.reportSentAt") < adminRegenerate.indexOf("analyzeDiscoveryScan"));
+  assert.ok(adminRegenerate.indexOf("isDiscoverySupersededTerminal") < adminRegenerate.indexOf("generateAndPersistPremiumDiscoveryReport"));
+  assert.ok(adminRegenerate.indexOf("audit.reportSentAt") < adminRegenerate.indexOf("generateAndPersistPremiumDiscoveryReport"));
   assert.doesNotMatch(adminDiscoveryRegenerate, /reportDeliveryStatus: "PENDING"/);
 
   const publicRegenerateStart = routes.indexOf('app.post("/api/discovery-scan/:auditId/regenerate"');
   const publicRegenerateEnd = routes.indexOf('app.', publicRegenerateStart + 10);
   const publicRegenerate = routes.slice(publicRegenerateStart, publicRegenerateEnd);
-  assert.match(publicRegenerate, /NODE_ENV === "production".*requireAdminAuth/s);
-  assert.ok(publicRegenerate.indexOf("isDiscoverySupersededTerminal") < publicRegenerate.indexOf("claimAuditForGeneration"));
+  assert.match(publicRegenerate, /if \(!requireAdminAuth\(req, res\)\) return/);
+  assert.ok(publicRegenerate.indexOf("isDiscoverySupersededTerminal") < publicRegenerate.indexOf("generateAndPersistPremiumDiscoveryReport"));
 
   const analyzeStart = routes.indexOf('app.post("/api/discovery-scan/analyze"');
   const analyzeEnd = routes.indexOf('app.', analyzeStart + 10);
   const analyzeRoute = routes.slice(analyzeStart, analyzeEnd);
-  assert.ok(analyzeRoute.indexOf("requireAdminAuth") < analyzeRoute.indexOf("analyzeDiscoveryScan"));
+  assert.match(analyzeRoute, /requireAdminAuth/);
+  assert.match(analyzeRoute, /status\(410\)/);
+  assert.doesNotMatch(analyzeRoute, /analyzeDiscoveryScan/);
 });
 
 test("tracking lookup failures propagate and administrative raw Discovery resend is forbidden", () => {
@@ -412,13 +426,15 @@ test("generic monitoring, generation and AutoSend all honor the durable lock", (
   const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
   const storage = readFileSync(new URL("./storage.ts", import.meta.url), "utf8");
   const sentRemediation = readFileSync(new URL("./discoverySentRemediation.ts", import.meta.url), "utf8");
+  const transactional = readFileSync(new URL("./discoveryTransactionalPersistence.ts", import.meta.url), "utf8");
   assert.match(monitoring, /await isDiscoveryGlobalLockActive\(\)/);
-  assert.match(generation, /await isDiscoveryGlobalLockActive\(\)/);
+  assert.match(generation, /claimDiscoveryGeneration/);
+  assert.match(transactional, /pg_advisory_xact_lock\(hashtext\(\$1\)\)/);
+  assert.match(transactional, /DISCOVERY_GENERATION_FENCE_STALE/);
   assert.match(routes, /discovery_batch_lock_active/);
   assert.match(routes, /audit\.type === "GRATUIT" && discoveryBatchLocked/);
-  assert.match(routes, /Discovery Scan temporairement en maintenance/);
-  assert.match(storage, /SELECT 1 FROM discovery_operation_lock l/);
-  assert.match(sentRemediation, /Discovery batch lock active; sent remediation is blocked/);
+  assert.match(storage, /if \(!audit \|\| audit\.type === "GRATUIT"\)/);
+  assert.match(sentRemediation, /DISCOVERY_SENT_REMEDIATION_PROVIDER_DISABLED/);
 });
 
 test("reconciler is read-only by default and delivery claims before provider", () => {
@@ -452,10 +468,7 @@ test("reconciler is read-only by default and delivery claims before provider", (
   assert.match(source, /DISCOVERY_BATCH_GENERATION_PREFLIGHT_COMPLETE/);
   assert.match(source, /providerCalls: 0/);
   assert.match(source, /args\.has\("--repair-known-corruptions"\)/);
-  assert.match(source, /DISCOVERY_BATCH_REPAIR_COMPLETE/);
-  assert.match(source, /deterministic-known-corruption-repair/);
-  assert.match(source, /report_txt = \$5 AND report_html = \$6/);
-  assert.match(source, /repairZeroTrainingScore/);
-  assert.match(source, /trainingScoreRepaired: scoreRepair\.changed/);
-  assert.match(source, /scores = \$7::jsonb/);
+  assert.match(source, /DISCOVERY_BATCH_REPAIR_RETIRED_USE_SIGNED_TRANSACTIONAL_OPERATION/);
+  assert.doesNotMatch(source, /deterministic-known-corruption-repair/);
+  assert.match(source, /promoteDiscoveryBatchItemForDelivery\(\{/);
 });

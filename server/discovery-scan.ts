@@ -161,8 +161,22 @@ export interface DiscoveryAnalysisDependencies {
     blocages: BlockageAnalysis[],
     knowledge: DiscoveryKnowledgePreflight,
     safetyPolicy: DiscoverySafetyPolicy,
+    costBudgetAuditId?: string,
+    costBudgetGenerationToken?: string,
+    costBudgetFenceToken?: string | null,
+    costBudgetBatchId?: string,
+    costBudgetBatchLockToken?: string,
   ) => Promise<DiscoveryGeneratedNarrative>;
   retryDelay?: (milliseconds: number) => Promise<void>;
+  /** Exact audit UUID used by the pre-provider cost reservation. */
+  costBudgetAuditId?: string;
+  /** Durable generic generation ownership used by the budget fence. */
+  costBudgetGenerationToken?: string;
+  /** Global-lock epoch captured when the generic generation was claimed. */
+  costBudgetFenceToken?: string | null;
+  /** Explicit batch ownership; mutually exclusive with generic generation ownership. */
+  costBudgetBatchId?: string;
+  costBudgetBatchLockToken?: string;
 }
 
 export interface DiscoveryGeneratedNarrative {
@@ -1913,8 +1927,21 @@ async function generateDiscoveryNarrativeAI(
   blocages: BlockageAnalysis[],
   knowledge: DiscoveryKnowledgePreflight,
   safetyPolicy: DiscoverySafetyPolicy,
+  costBudgetAuditId?: string,
+  costBudgetGenerationToken?: string,
+  costBudgetFenceToken?: string | null,
+  costBudgetBatchId?: string,
+  costBudgetBatchLockToken?: string,
 ): Promise<DiscoveryGeneratedNarrative> {
   assertDiscoveryUnifiedGenerationEnabled();
+  if (!costBudgetAuditId) {
+    throw new Error("DISCOVERY_DURABLE_COST_BUDGET_REQUIRED");
+  }
+  const hasGenericOwnership = Boolean(costBudgetGenerationToken);
+  const hasBatchOwnership = Boolean(costBudgetBatchId && costBudgetBatchLockToken);
+  if (hasGenericOwnership === hasBatchOwnership) {
+    throw new Error("DISCOVERY_PROVIDER_OWNERSHIP_REQUIRED");
+  }
   const prenom = getDiscoveryFirstName(responses);
   const facts = buildDiscoveryQuestionnaireFacts(responses);
   const safetyPrompt = buildDiscoverySafetyPrompt(safetyPolicy);
@@ -1985,6 +2012,15 @@ Ne remplis pas pour atteindre une longueur. Chaque paragraphe doit etre utile a 
       maxOutputTokens: DISCOVERY_UNIFIED_MAX_OUTPUT_TOKENS,
       retries: 1,
       label: "discovery-unified-report",
+      costBudget: {
+        product: "discovery",
+        orderId: costBudgetAuditId,
+        estimatedCostUsd: DISCOVERY_UNIFIED_MAX_ESTIMATED_COST_USD,
+        discoveryGenerationToken: costBudgetGenerationToken,
+        discoveryFenceToken: costBudgetFenceToken,
+        discoveryBatchId: costBudgetBatchId,
+        discoveryBatchLockToken: costBudgetBatchLockToken,
+      },
     }),
     DISCOVERY_AI_TIMEOUT_MS,
     "OpenAI unified Discovery report",
@@ -2542,6 +2578,11 @@ export async function analyzeDiscoveryScan(
     blocages,
     knowledgePreflight,
     safetyPolicy,
+    dependencies.costBudgetAuditId,
+    dependencies.costBudgetGenerationToken,
+    dependencies.costBudgetFenceToken,
+    dependencies.costBudgetBatchId,
+    dependencies.costBudgetBatchLockToken,
   );
 
   // Generate CTA message based on blocages
