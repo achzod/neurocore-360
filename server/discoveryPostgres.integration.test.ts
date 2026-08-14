@@ -11,6 +11,7 @@ import {
   type ReportData,
 } from "./discovery-scan";
 import { attachDiscoveryDeliveryGateResult } from "./discoveryDeliveryGate";
+import { DISCOVERY_OTHER_AUDIT_ACTIVE_SQL } from "./discoverySupersededPolicy";
 
 const databaseUrl = String(process.env.DATABASE_URL || "").trim();
 const parsedDatabaseUrl = databaseUrl ? new URL(databaseUrl) : null;
@@ -32,6 +33,7 @@ const baselineSql = `
 
   CREATE TABLE audits (
     id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id VARCHAR(36),
     email VARCHAR(255) NOT NULL,
     type VARCHAR(20) NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'COMPLETED',
@@ -126,6 +128,70 @@ async function insertAudit(status = "PENDING"): Promise<string> {
     [id, `${id}@example.test`, JSON.stringify({ goal: "test", auditId: id }), status],
   );
   return id;
+}
+
+async function insertExactDuplicateResolutionFixture() {
+  const supersededId = randomUUID();
+  const canonicalId = randomUUID();
+  const email = `${randomUUID()}@example.test`;
+  const userId = randomUUID();
+  const supersededResponses = { prenom: "Suzie", age: 61, objectif: "perte-graisse" };
+  const canonicalResponses = { prenom: "Suzie ", age: 61, objectif: "sante", "tca-historique": "passe" };
+  const supersededCreatedAt = "2026-08-13T14:45:03.692Z";
+  const canonicalCreatedAt = "2026-08-14T09:17:12.089Z";
+  for (const row of [
+    { id: supersededId, responses: supersededResponses, createdAt: supersededCreatedAt, attempts: 0 },
+    { id: canonicalId, responses: canonicalResponses, createdAt: canonicalCreatedAt, attempts: 1 },
+  ]) {
+    await pool.query(
+      `INSERT INTO audits
+        (id,user_id,email,type,status,responses,scores,narrative_report,
+         report_txt,report_html,report_generated_at,report_delivery_status,report_sent_at,created_at)
+       VALUES ($1,$2,$3,'GRATUIT','COMPLETED',$4::jsonb,'{}'::jsonb,$5::jsonb,
+               NULL,NULL,NULL,'NEEDS_REVIEW',NULL,$6::timestamptz)`,
+      [row.id, userId, email, JSON.stringify(row.responses),
+        JSON.stringify({ recovery: { reason: "missing_artifacts" }, auditId: row.id }), row.createdAt],
+    );
+    await pool.query(
+      `INSERT INTO report_jobs
+        (audit_id,status,progress,current_section,error,attempt_count,started_at,updated_at,last_progress_at)
+       VALUES ($1,'failed',10,'Génération Discovery premium OpenAI...',
+               'DISCOVERY_UNIFIED_GENERATION_ENABLED is not true',$2,NOW(),NOW(),NOW())`,
+      [row.id, row.attempts],
+    );
+    await pool.query(
+      `INSERT INTO email_tracking
+        (id,email_type,recipient_email,audit_id,audit_type,sendpulse_status,sent_at)
+       VALUES ($1,'sendAdminEmailNewAudit',$2,$3,'GRATUIT','success',NOW())`,
+      [randomUUID(), email, row.id],
+    );
+  }
+  return {
+    supersededId,
+    canonicalId,
+    email,
+    userId,
+    supersededResponses,
+    canonicalResponses,
+    target: {
+      emailSha256: batch.discoverySha256(email),
+      userIdSha256: batch.discoverySha256(userId),
+      superseded: {
+        id: supersededId,
+        createdAt: supersededCreatedAt,
+        responsesSha256: batch.discoverySha256(supersededResponses),
+        responseKeyCount: Object.keys(supersededResponses).length,
+        expectedJobAttemptCount: 0,
+      },
+      canonical: {
+        id: canonicalId,
+        createdAt: canonicalCreatedAt,
+        responsesSha256: batch.discoverySha256(canonicalResponses),
+        responseKeyCount: Object.keys(canonicalResponses).length,
+        expectedJobAttemptCount: 1,
+      },
+    },
+  };
 }
 
 const LENNY_OLD_TEXT = "La seule nuance se trouve au matin. une fatigue parfois présente au réveil, ton énergie matinale est moyenne et tu te réveilles parfois fatigué.";
@@ -633,6 +699,159 @@ test("Discovery reserves exactly 0.75 USD once and permanently rejects a second 
     [auditId],
   );
   assert.deepEqual(reservations.rows[0], { count: 1, total: 0.75 });
+});
+
+test("exact duplicate resolution supersedes only the old audit and unlocks the canonical resubmission", async () => {
+  const fixture = await insertExactDuplicateResolutionFixture();
+  const beforeCanonical = (await pool.query(
+    `SELECT responses, narrative_report FROM audits WHERE id = $1`, [fixture.canonicalId],
+  )).rows[0];
+  const duplicateBefore = await pool.query(
+    `SELECT EXISTS (
+       SELECT 1 FROM audits other
+        WHERE other.type = 'GRATUIT' AND other.id <> $1
+          AND LOWER(other.email) = LOWER($2)
+          AND ABS(EXTRACT(EPOCH FROM (other.created_at - $3::timestamptz))) <= 14 * 86400
+          AND ${DISCOVERY_OTHER_AUDIT_ACTIVE_SQL}
+     ) AS duplicate_candidate`,
+    [fixture.canonicalId, fixture.email, fixture.target.canonical.createdAt],
+  );
+  assert.equal(duplicateBefore.rows[0].duplicate_candidate, true);
+  const lock = await batch.acquireDiscoveryGlobalLock({
+    owner: "postgres-integration",
+    purpose: "exact-duplicate-resolution",
+    ttlMinutes: 5,
+  }, pool);
+  const result = await batch.resolveExactDiscoveryDuplicateUnderLock({
+    lockToken: lock.token,
+    target: fixture.target,
+  }, pool);
+  assert.equal(await batch.releaseDiscoveryGlobalLock(lock.token, pool), true);
+  assert.deepEqual(result, {
+    supersededAuditId: fixture.supersededId,
+    canonicalAuditId: fixture.canonicalId,
+    status: "SUPERSEDED",
+    emailsSent: 0,
+  });
+
+  const audits = await pool.query(
+    `SELECT id, report_delivery_status, report_sent_at, responses, narrative_report
+       FROM audits WHERE id = ANY($1::text[]) ORDER BY id`,
+    [[fixture.supersededId, fixture.canonicalId]],
+  );
+  const byId = new Map(audits.rows.map((row) => [row.id, row]));
+  const oldAudit = byId.get(fixture.supersededId);
+  const canonicalAudit = byId.get(fixture.canonicalId);
+  assert.equal(oldAudit.report_delivery_status, "SUPERSEDED");
+  assert.equal(oldAudit.report_sent_at, null);
+  assert.equal(oldAudit.narrative_report.recovery.disposition, "superseded");
+  assert.equal(oldAudit.narrative_report.recovery.replacementAuditId, fixture.canonicalId);
+  assert.equal(canonicalAudit.report_delivery_status, "NEEDS_REVIEW");
+  assert.equal(canonicalAudit.report_sent_at, null);
+  assert.deepEqual(canonicalAudit.responses, beforeCanonical.responses);
+  assert.deepEqual(canonicalAudit.narrative_report, beforeCanonical.narrative_report);
+
+  const duplicate = await pool.query(
+    `SELECT EXISTS (
+       SELECT 1 FROM audits other
+        WHERE other.type = 'GRATUIT' AND other.id <> $1
+          AND LOWER(other.email) = LOWER($2)
+          AND ABS(EXTRACT(EPOCH FROM (other.created_at - $3::timestamptz))) <= 14 * 86400
+          AND ${DISCOVERY_OTHER_AUDIT_ACTIVE_SQL}
+     ) AS duplicate_candidate`,
+    [fixture.canonicalId, fixture.email, fixture.target.canonical.createdAt],
+  );
+  assert.equal(duplicate.rows[0].duplicate_candidate, false);
+  assert.deepEqual(batch.classifyDiscoveryManifestCandidate({
+    id: fixture.canonicalId,
+    email: fixture.email,
+    type: "GRATUIT",
+    reportDeliveryStatus: "NEEDS_REVIEW",
+    reportSentAt: null,
+    superseded: false,
+    duplicateCandidate: duplicate.rows[0].duplicate_candidate,
+    unsubscribed: false,
+    deliveryGateOk: false,
+    deliveryGateErrors: ["missing_artifact"],
+    tracking: { total: 0, accepted: 0, failed: 0, pending: 0, hardFailed: 0 },
+    deliveryClaimState: null,
+    providerAttemptCount: 0,
+  }), {
+    cohort: "invalid",
+    reasons: ["delivery_gate:missing_artifact"],
+  });
+
+  // Durable provenance remains terminal even if a later direct SQL mistake
+  // corrupts the presentation status. Generic workers cannot perform this
+  // update, but the duplicate classifier must still fail closed.
+  await pool.query(
+    `UPDATE audits SET report_delivery_status = 'NEEDS_REVIEW' WHERE id = $1`,
+    [fixture.supersededId],
+  );
+  const duplicateWithCorruptedStatus = await pool.query(
+    `SELECT EXISTS (
+       SELECT 1 FROM audits other
+        WHERE other.type = 'GRATUIT' AND other.id <> $1
+          AND LOWER(other.email) = LOWER($2)
+          AND ABS(EXTRACT(EPOCH FROM (other.created_at - $3::timestamptz))) <= 14 * 86400
+          AND ${DISCOVERY_OTHER_AUDIT_ACTIVE_SQL}
+     ) AS duplicate_candidate`,
+    [fixture.canonicalId, fixture.email, fixture.target.canonical.createdAt],
+  );
+  assert.equal(duplicateWithCorruptedStatus.rows[0].duplicate_candidate, false);
+  assert.equal(Number((await pool.query(
+    `SELECT COUNT(*) FROM report_artifacts WHERE audit_id = ANY($1::text[])`,
+    [[fixture.supersededId, fixture.canonicalId]],
+  )).rows[0].count), 0);
+  assert.equal(Number((await pool.query(
+    `SELECT COUNT(*) FROM discovery_batch_items WHERE audit_id = ANY($1::text[])`,
+    [[fixture.supersededId, fixture.canonicalId]],
+  )).rows[0].count), 0);
+  assert.equal(Number((await pool.query(
+    `SELECT COUNT(*) FROM discovery_email_delivery_claims WHERE audit_id = ANY($1::text[])`,
+    [[fixture.supersededId, fixture.canonicalId]],
+  )).rows[0].count), 0);
+  assert.deepEqual((await pool.query(
+    `SELECT audit_id, email_type FROM email_tracking
+      WHERE audit_id = ANY($1::text[]) ORDER BY audit_id`,
+    [[fixture.supersededId, fixture.canonicalId]],
+  )).rows.map((row) => row.email_type), ["sendAdminEmailNewAudit", "sendAdminEmailNewAudit"]);
+});
+
+test("exact duplicate resolution rolls back both audits on any bound response divergence", async () => {
+  const fixture = await insertExactDuplicateResolutionFixture();
+  const before = await pool.query(
+    `SELECT id, report_delivery_status, narrative_report, responses
+       FROM audits WHERE id = ANY($1::text[]) ORDER BY id`,
+    [[fixture.supersededId, fixture.canonicalId]],
+  );
+  await pool.query(
+    `UPDATE audits SET responses = responses || '{"late_change":true}'::jsonb WHERE id = $1`,
+    [fixture.canonicalId],
+  );
+  const diverged = await pool.query(
+    `SELECT id, report_delivery_status, narrative_report, responses
+       FROM audits WHERE id = ANY($1::text[]) ORDER BY id`,
+    [[fixture.supersededId, fixture.canonicalId]],
+  );
+  const lock = await batch.acquireDiscoveryGlobalLock({
+    owner: "postgres-integration",
+    purpose: "exact-duplicate-resolution-rollback",
+    ttlMinutes: 5,
+  }, pool);
+  await assert.rejects(
+    batch.resolveExactDiscoveryDuplicateUnderLock({ lockToken: lock.token, target: fixture.target }, pool),
+    /DISCOVERY_DUPLICATE_RESOLUTION_TARGET_PRECONDITION_FAILED/,
+  );
+  assert.equal(await batch.releaseDiscoveryGlobalLock(lock.token, pool), true);
+  const after = await pool.query(
+    `SELECT id, report_delivery_status, narrative_report, responses
+       FROM audits WHERE id = ANY($1::text[]) ORDER BY id`,
+    [[fixture.supersededId, fixture.canonicalId]],
+  );
+  assert.notDeepEqual(diverged.rows, before.rows);
+  assert.deepEqual(after.rows, diverged.rows);
+  assert.equal(after.rows.every((row) => row.report_delivery_status === "NEEDS_REVIEW"), true);
 });
 
 test("exact Discovery text repair atomically replaces JSON, TXT, HTML, artifact and gate", async () => {

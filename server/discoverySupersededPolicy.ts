@@ -45,3 +45,15 @@ export const DISCOVERY_SUPERSEDED_TERMINAL_SQL = `NOT (
     OR NULLIF(BTRIM(COALESCE(narrative_report->'recovery'->>'replacementAuditId', '')), '') IS NOT NULL
   )
 )`;
+
+/**
+ * Alias-qualified inverse used when looking for a competing Discovery audit.
+ * A deliberately superseded row must not keep its replacement permanently
+ * classified as a duplicate, while status or durable provenance alone is
+ * enough to keep the old row terminal after any later status corruption.
+ */
+export const DISCOVERY_OTHER_AUDIT_ACTIVE_SQL = `NOT (
+  other.report_delivery_status = 'SUPERSEDED'
+  OR LOWER(COALESCE(other.narrative_report->'recovery'->>'disposition', '')) = 'superseded'
+  OR NULLIF(BTRIM(COALESCE(other.narrative_report->'recovery'->>'replacementAuditId', '')), '') IS NOT NULL
+)`;

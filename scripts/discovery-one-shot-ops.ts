@@ -10,6 +10,7 @@ import {
   promoteExactValidDiscoveryWithoutDelivery,
   quarantineExactDiscoveryPrelaunchTests,
   repairExactLennyDiscoveryQualityWithoutDelivery,
+  resolveExactSuzieDiscoveryDuplicateWithoutDelivery,
   releaseDiscoveryGlobalLock,
 } from "../server/discoveryBatchControl";
 import { assertDiscoveryBatchSchemaV005 } from "../server/discoveryBatchSchema";
@@ -38,7 +39,8 @@ async function main(): Promise<void> {
   const quarantine = args.has("--quarantine-test");
   const promote = args.has("--promote-valid-no-delivery");
   const repairLenny = args.has("--repair-lenny-quality");
-  if (Number(quarantine) + Number(promote) + Number(repairLenny) !== 1) {
+  const resolveSuzie = args.has("--resolve-suzie-duplicate");
+  if (Number(quarantine) + Number(promote) + Number(repairLenny) + Number(resolveSuzie) !== 1) {
     throw new Error("DISCOVERY_ONE_SHOT_EXACTLY_ONE_OPERATION_REQUIRED");
   }
   requireOfflineRemediationEnvironment();
@@ -48,7 +50,9 @@ async function main(): Promise<void> {
     ? "one-shot:quarantine-test"
     : promote
       ? "one-shot:promote-valid-no-delivery"
-      : "one-shot:repair-lenny-quality";
+      : repairLenny
+        ? "one-shot:repair-lenny-quality"
+        : "one-shot:resolve-suzie-duplicate";
   const lock = await acquireDiscoveryGlobalLock({
     owner: `discovery-one-shot:${process.pid}`,
     purpose,
@@ -64,6 +68,15 @@ async function main(): Promise<void> {
     if (repairLenny) {
       const result = await repairExactLennyDiscoveryQualityWithoutDelivery({ lockToken: lock.token }, pool);
       console.log(`DISCOVERY_ONE_SHOT_LENNY_QUALITY_COMPLETE:${JSON.stringify(result)}`);
+      return;
+    }
+
+    if (resolveSuzie) {
+      const result = await resolveExactSuzieDiscoveryDuplicateWithoutDelivery(
+        { lockToken: lock.token },
+        pool,
+      );
+      console.log(`DISCOVERY_ONE_SHOT_SUZIE_DUPLICATE_COMPLETE:${JSON.stringify(result)}`);
       return;
     }
 

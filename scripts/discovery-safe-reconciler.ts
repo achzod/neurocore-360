@@ -56,9 +56,12 @@ import {
   type DiscoveryBatchTier,
   type DiscoveryManifestCohort,
 } from "../server/discoveryBatchControl";
+import {
+  DISCOVERY_OTHER_AUDIT_ACTIVE_SQL,
+  isDiscoverySupersededTerminal,
+} from "../server/discoverySupersededPolicy";
 import { assertDiscoveryBatchSchemaV005 } from "../server/discoveryBatchSchema";
 import { getReportReadyEmailSubject, sendReportReadyEmail } from "../server/emailService";
-import { isDiscoverySupersededTerminal } from "../server/discoverySupersededPolicy";
 import { pool } from "../server/db";
 
 const argv = process.argv.slice(2);
@@ -194,6 +197,7 @@ async function buildManifest(): Promise<DiscoveryManifest> {
                WHERE other.type = 'GRATUIT' AND other.id <> a.id
                  AND LOWER(other.email) = LOWER(a.email)
                  AND ABS(EXTRACT(EPOCH FROM (other.created_at - a.created_at))) <= 14 * 86400
+                 AND ${DISCOVERY_OTHER_AUDIT_ACTIVE_SQL}
             ) AS duplicate_candidate,
             COUNT(t.id)::int AS tracking_total,
             COUNT(t.id) FILTER (WHERE LOWER(COALESCE(t.sendpulse_status,''))

@@ -14,7 +14,10 @@ import {
   buildDiscoveryReportAssets,
   validateDiscoveryFactualConsistency,
 } from "./discovery-scan";
-import { DISCOVERY_SUPERSEDED_TERMINAL_SQL } from "./discoverySupersededPolicy";
+import {
+  DISCOVERY_OTHER_AUDIT_ACTIVE_SQL,
+  DISCOVERY_SUPERSEDED_TERMINAL_SQL,
+} from "./discoverySupersededPolicy";
 import { DISCOVERY_TRANSACTION_FENCE_KEY } from "./discoveryTransactionalPersistence";
 
 export const DISCOVERY_GLOBAL_LOCK_KEY = "discovery-global";
@@ -612,6 +615,40 @@ export interface ExactDiscoveryWakeSummaryRepairTarget {
   approvedNeutralPromoHtml: string;
 }
 
+export interface ExactDiscoveryDuplicateResolutionAudit {
+  id: string;
+  createdAt: string;
+  responsesSha256: string;
+  responseKeyCount: number;
+  expectedJobAttemptCount: number;
+}
+
+export interface ExactDiscoveryDuplicateResolutionTarget {
+  emailSha256: string;
+  userIdSha256: string;
+  superseded: ExactDiscoveryDuplicateResolutionAudit;
+  canonical: ExactDiscoveryDuplicateResolutionAudit;
+}
+
+export const DISCOVERY_SUZIE_DUPLICATE_RESOLUTION_TARGET = Object.freeze({
+  emailSha256: "ef7b4f356d8a3fe70f3ab85bc2306690b99cc73bc9003b7fc1b4f9fd4ec06b7c",
+  userIdSha256: "1fa9d5c6a4cfb690db1740a98be4d4eb9988389956cf8ae175aa2ab19988846c",
+  superseded: Object.freeze({
+    id: "be690349-aaa7-4524-854c-ae38f5c05f6f",
+    createdAt: "2026-08-13T14:45:03.692Z",
+    responsesSha256: "7b27c6698121fc07c553527054b84e39b38eab7fb6d07fa5015936be24043151",
+    responseKeyCount: 65,
+    expectedJobAttemptCount: 0,
+  }),
+  canonical: Object.freeze({
+    id: "311cbe89-30a7-40ae-94ba-ad906bf711d8",
+    createdAt: "2026-08-14T09:17:12.089Z",
+    responsesSha256: "a08310574a9c5cc4d2a4b4f6ea23334bd9c0e89590b8378f2ac850174df79786",
+    responseKeyCount: 62,
+    expectedJobAttemptCount: 1,
+  }),
+}) satisfies ExactDiscoveryDuplicateResolutionTarget;
+
 export interface ExactDiscoveryTextRepairTarget {
   id: string;
   emailSha256: string;
@@ -783,6 +820,242 @@ export async function quarantineExactDiscoveryPrelaunchTests(
   } finally {
     client.release();
   }
+}
+
+/**
+ * Resolve one exact, proven re-submission without generating or delivering a
+ * report. The newer audit remains byte-for-byte untouched; only the older
+ * audit receives a terminal SUPERSEDED disposition linked to its replacement.
+ */
+export async function resolveExactDiscoveryDuplicateUnderLock(
+  input: { lockToken: string; target: ExactDiscoveryDuplicateResolutionTarget },
+  poolOverride?: Pool,
+): Promise<{ supersededAuditId: string; canonicalAuditId: string; status: "SUPERSEDED"; emailsSent: 0 }> {
+  const { target } = input;
+  const strictUtcTimestamp = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+  const supersededCreatedAtMs = Date.parse(target.superseded.createdAt);
+  const canonicalCreatedAtMs = Date.parse(target.canonical.createdAt);
+  if (target.superseded.id === target.canonical.id
+    || !/^[a-f0-9]{64}$/.test(target.emailSha256)
+    || !/^[a-f0-9]{64}$/.test(target.userIdSha256)
+    || !/^[a-f0-9]{64}$/.test(target.superseded.responsesSha256)
+    || !/^[a-f0-9]{64}$/.test(target.canonical.responsesSha256)
+    || !strictUtcTimestamp.test(target.superseded.createdAt)
+    || !strictUtcTimestamp.test(target.canonical.createdAt)
+    || !Number.isFinite(supersededCreatedAtMs)
+    || !Number.isFinite(canonicalCreatedAtMs)
+    || new Date(supersededCreatedAtMs).toISOString() !== target.superseded.createdAt
+    || new Date(canonicalCreatedAtMs).toISOString() !== target.canonical.createdAt
+    || supersededCreatedAtMs >= canonicalCreatedAtMs) {
+    throw new Error("DISCOVERY_DUPLICATE_RESOLUTION_TARGET_INVALID");
+  }
+
+  const pool = await resolvePool(poolOverride);
+  const client = await pool.connect();
+  const targetIds = [target.superseded.id, target.canonical.id];
+  try {
+    await client.query("BEGIN");
+    await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [DISCOVERY_TRANSACTION_FENCE_KEY]);
+    await assertDiscoveryOneShotLock(client, input.lockToken);
+
+    const auditResult = await client.query(
+      `SELECT id, email, user_id, type, status, responses, narrative_report,
+              report_txt, report_html, report_generated_at,
+              report_delivery_status, report_sent_at, created_at
+         FROM audits
+        WHERE id = ANY($1::text[])
+        ORDER BY id
+        FOR UPDATE`,
+      [targetIds],
+    );
+    if ((auditResult.rowCount ?? 0) !== 2) {
+      throw new Error("DISCOVERY_DUPLICATE_RESOLUTION_EXACT_TARGET_SET_MISMATCH");
+    }
+    const byId = new Map(auditResult.rows.map((row: any) => [String(row.id), row]));
+    for (const expected of [target.superseded, target.canonical]) {
+      const audit = byId.get(expected.id);
+      if (!audit
+        || audit.type !== "GRATUIT"
+        || audit.status !== "COMPLETED"
+        || audit.report_delivery_status !== "NEEDS_REVIEW"
+        || audit.report_sent_at
+        || audit.report_generated_at
+        || audit.report_txt !== null
+        || audit.report_html !== null
+        || discoverySha256(String(audit.email || "").trim().toLowerCase()) !== target.emailSha256
+        || discoverySha256(String(audit.user_id || "")) !== target.userIdSha256
+        || new Date(audit.created_at).toISOString() !== expected.createdAt
+        || discoverySha256(audit.responses || {}) !== expected.responsesSha256
+        || Object.keys(audit.responses || {}).length !== expected.responseKeyCount) {
+        throw new Error(`DISCOVERY_DUPLICATE_RESOLUTION_TARGET_PRECONDITION_FAILED:${expected.id}`);
+      }
+    }
+    const supersededAudit = byId.get(target.superseded.id);
+    const canonicalAudit = byId.get(target.canonical.id);
+    if (String(supersededAudit.email).trim().toLowerCase()
+        !== String(canonicalAudit.email).trim().toLowerCase()
+      || String(supersededAudit.user_id || "") !== String(canonicalAudit.user_id || "")) {
+      throw new Error("DISCOVERY_DUPLICATE_RESOLUTION_IDENTITY_MISMATCH");
+    }
+
+    await assertNoDiscoveryDeliveryTrackingOrClaim(client, target.superseded.id);
+    await assertNoDiscoveryDeliveryTrackingOrClaim(client, target.canonical.id);
+    const forbiddenState = await client.query(
+      `SELECT audit_id, source FROM (
+         SELECT audit_id, 'artifact'::text AS source
+           FROM report_artifacts WHERE audit_id = ANY($1::text[])
+         UNION ALL
+         SELECT audit_id, 'batch_item'::text AS source
+           FROM discovery_batch_items WHERE audit_id = ANY($1::text[])
+         UNION ALL
+         SELECT order_id AS audit_id, 'budget_reservation'::text AS source
+           FROM ai_cost_budget_reservations
+          WHERE product = 'discovery' AND order_id = ANY($1::text[])
+       ) forbidden
+       LIMIT 1`,
+      [targetIds],
+    );
+    if ((forbiddenState.rowCount ?? 0) !== 0) {
+      throw new Error("DISCOVERY_DUPLICATE_RESOLUTION_PRIOR_ARTIFACT_OR_PROVIDER_STATE");
+    }
+    const jobResult = await client.query(
+      `SELECT audit_id, status, error, attempt_count
+         FROM report_jobs WHERE audit_id = ANY($1::text[])
+         ORDER BY audit_id
+         FOR UPDATE`,
+      [targetIds],
+    );
+    if ((jobResult.rowCount ?? 0) !== 2) {
+      throw new Error("DISCOVERY_DUPLICATE_RESOLUTION_JOB_SET_MISMATCH");
+    }
+    const jobsById = new Map(jobResult.rows.map((row: any) => [String(row.audit_id), row]));
+    for (const expected of [target.superseded, target.canonical]) {
+      const job = jobsById.get(expected.id);
+      if (!job
+        || String(job.status).toLowerCase() !== "failed"
+        || String(job.error || "") !== "DISCOVERY_UNIFIED_GENERATION_ENABLED is not true"
+        || Number(job.attempt_count) !== expected.expectedJobAttemptCount) {
+        throw new Error(`DISCOVERY_DUPLICATE_RESOLUTION_JOB_PRECONDITION_FAILED:${expected.id}`);
+      }
+    }
+
+    const provenance = {
+      version: 1,
+      disposition: "superseded",
+      reason: "newer_distinct_resubmission_canonicalized",
+      operation: "resolve-suzie-duplicate",
+      replacementAuditId: target.canonical.id,
+      supersededResponsesSha256: target.superseded.responsesSha256,
+      replacementResponsesSha256: target.canonical.responsesSha256,
+      exactTargetSetSha256: discoverySha256(targetIds),
+      decidedAt: new Date().toISOString(),
+    };
+    const updated = await client.query(
+      `UPDATE audits
+          SET report_delivery_status = 'SUPERSEDED',
+              narrative_report = jsonb_set(
+                COALESCE(narrative_report, '{}'::jsonb),
+                '{recovery}',
+                COALESCE(narrative_report->'recovery', '{}'::jsonb) || $2::jsonb,
+                true
+              )
+        WHERE id = $1
+          AND type = 'GRATUIT'
+          AND status = 'COMPLETED'
+          AND report_delivery_status = 'NEEDS_REVIEW'
+          AND report_sent_at IS NULL
+          AND report_generated_at IS NULL
+          AND report_txt IS NULL
+          AND report_html IS NULL
+          AND email IS NOT DISTINCT FROM $3
+          AND user_id IS NOT DISTINCT FROM $4
+          AND created_at = $5::timestamptz
+          AND responses IS NOT DISTINCT FROM $6::jsonb
+          AND narrative_report IS NOT DISTINCT FROM $7::jsonb
+          AND EXISTS (
+            SELECT 1 FROM discovery_operation_lock lock
+             WHERE lock.lock_key = $8 AND lock.token = $9 AND lock.expires_at > NOW()
+          )
+        RETURNING id`,
+      [
+        target.superseded.id,
+        JSON.stringify(provenance),
+        supersededAudit.email,
+        supersededAudit.user_id,
+        target.superseded.createdAt,
+        JSON.stringify(supersededAudit.responses || {}),
+        JSON.stringify(supersededAudit.narrative_report),
+        DISCOVERY_GLOBAL_LOCK_KEY,
+        input.lockToken,
+      ],
+    );
+    if ((updated.rowCount ?? 0) !== 1) {
+      throw new Error("DISCOVERY_DUPLICATE_RESOLUTION_CAS_FAILED");
+    }
+
+    const postflight = await client.query(
+      `SELECT id, report_delivery_status, report_sent_at, narrative_report,
+              responses, report_txt, report_html, report_generated_at
+         FROM audits WHERE id = ANY($1::text[]) ORDER BY id`,
+      [targetIds],
+    );
+    const postById = new Map(postflight.rows.map((row: any) => [String(row.id), row]));
+    const oldPost = postById.get(target.superseded.id);
+    const newPost = postById.get(target.canonical.id);
+    const recovery = oldPost?.narrative_report?.recovery;
+    if (!oldPost
+      || oldPost.report_delivery_status !== "SUPERSEDED"
+      || oldPost.report_sent_at
+      || recovery?.disposition !== "superseded"
+      || recovery?.replacementAuditId !== target.canonical.id
+      || !newPost
+      || newPost.report_delivery_status !== "NEEDS_REVIEW"
+      || newPost.report_sent_at
+      || newPost.report_generated_at
+      || newPost.report_txt !== null
+      || newPost.report_html !== null
+      || discoverySha256(newPost.responses || {}) !== target.canonical.responsesSha256
+      || JSON.stringify(newPost.narrative_report) !== JSON.stringify(canonicalAudit.narrative_report)) {
+      throw new Error("DISCOVERY_DUPLICATE_RESOLUTION_POSTFLIGHT_FAILED");
+    }
+    const duplicateCandidate = await client.query(
+      `SELECT EXISTS (
+         SELECT 1 FROM audits other
+          WHERE other.type = 'GRATUIT' AND other.id <> $1
+            AND LOWER(other.email) = LOWER($2)
+            AND ABS(EXTRACT(EPOCH FROM (other.created_at - $3::timestamptz))) <= 14 * 86400
+            AND ${DISCOVERY_OTHER_AUDIT_ACTIVE_SQL}
+       ) AS duplicate_candidate`,
+      [target.canonical.id, canonicalAudit.email, target.canonical.createdAt],
+    );
+    if (duplicateCandidate.rows[0]?.duplicate_candidate !== false) {
+      throw new Error("DISCOVERY_DUPLICATE_RESOLUTION_CANONICAL_STILL_DUPLICATE");
+    }
+    await assertNoDiscoveryDeliveryTrackingOrClaim(client, target.superseded.id);
+    await assertNoDiscoveryDeliveryTrackingOrClaim(client, target.canonical.id);
+    await client.query("COMMIT");
+    return {
+      supersededAuditId: target.superseded.id,
+      canonicalAuditId: target.canonical.id,
+      status: "SUPERSEDED",
+      emailsSent: 0,
+    };
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => {});
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function resolveExactSuzieDiscoveryDuplicateWithoutDelivery(
+  input: { lockToken: string },
+  poolOverride?: Pool,
+) {
+  return resolveExactDiscoveryDuplicateUnderLock({
+    lockToken: input.lockToken,
+    target: DISCOVERY_SUZIE_DUPLICATE_RESOLUTION_TARGET,
+  }, poolOverride);
 }
 
 /**

@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
+  DISCOVERY_OTHER_AUDIT_ACTIVE_SQL,
   DISCOVERY_SUPERSEDED_TERMINAL_SQL,
   isDiscoverySupersededTerminal,
 } from "./discoverySupersededPolicy";
@@ -43,6 +44,14 @@ test("atomic SQL guard covers status, disposition and replacement provenance", (
   assert.match(DISCOVERY_SUPERSEDED_TERMINAL_SQL, /report_delivery_status = 'SUPERSEDED'/);
   assert.match(DISCOVERY_SUPERSEDED_TERMINAL_SQL, /disposition/);
   assert.match(DISCOVERY_SUPERSEDED_TERMINAL_SQL, /replacementAuditId/);
+});
+
+test("duplicate discovery search ignores only terminally superseded competitors", () => {
+  assert.match(DISCOVERY_OTHER_AUDIT_ACTIVE_SQL, /other\.report_delivery_status = 'SUPERSEDED'/);
+  assert.match(DISCOVERY_OTHER_AUDIT_ACTIVE_SQL, /other\.narrative_report.*disposition/s);
+  assert.match(DISCOVERY_OTHER_AUDIT_ACTIVE_SQL, /replacementAuditId/);
+  const reconciler = readFileSync(new URL("../scripts/discovery-safe-reconciler.ts", import.meta.url), "utf8");
+  assert.match(reconciler, /AND \$\{DISCOVERY_OTHER_AUDIT_ACTIVE_SQL\}/);
 });
 
 test("public Discovery GET contains no mutation, generation or queue side effect", () => {

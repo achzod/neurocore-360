@@ -6,6 +6,7 @@ import {
   DISCOVERY_PRELAUNCH_TEST_TARGETS,
   DISCOVERY_LENNY_QUALITY_FIX_TARGET,
   DISCOVERY_LENNY_WAKE_SUMMARY_FIX_TARGET,
+  DISCOVERY_SUZIE_DUPLICATE_RESOLUTION_TARGET,
   DISCOVERY_VALID_NO_DELIVERY_TARGET,
 } from "./discoveryBatchControl";
 
@@ -62,6 +63,42 @@ test("promote-valid-no-delivery is exact, hash/gate bound and cannot deliver", (
   assert.match(source, /emailsSent: 0/);
   assert.doesNotMatch(source, /sendReportReadyEmail\s*\(/);
   assert.doesNotMatch(source, /claimDiscoveryEmailDelivery\s*\(/);
+});
+
+test("Suzie duplicate resolution is exact, fenced, atomic and cannot generate or deliver", () => {
+  assert.deepEqual(DISCOVERY_SUZIE_DUPLICATE_RESOLUTION_TARGET, {
+    emailSha256: "ef7b4f356d8a3fe70f3ab85bc2306690b99cc73bc9003b7fc1b4f9fd4ec06b7c",
+    userIdSha256: "1fa9d5c6a4cfb690db1740a98be4d4eb9988389956cf8ae175aa2ab19988846c",
+    superseded: {
+      id: "be690349-aaa7-4524-854c-ae38f5c05f6f",
+      createdAt: "2026-08-13T14:45:03.692Z",
+      responsesSha256: "7b27c6698121fc07c553527054b84e39b38eab7fb6d07fa5015936be24043151",
+      responseKeyCount: 65,
+      expectedJobAttemptCount: 0,
+    },
+    canonical: {
+      id: "311cbe89-30a7-40ae-94ba-ad906bf711d8",
+      createdAt: "2026-08-14T09:17:12.089Z",
+      responsesSha256: "a08310574a9c5cc4d2a4b4f6ea23334bd9c0e89590b8378f2ac850174df79786",
+      responseKeyCount: 62,
+      expectedJobAttemptCount: 1,
+    },
+  });
+  const start = controlSource.indexOf("export async function resolveExactDiscoveryDuplicateUnderLock");
+  const end = controlSource.indexOf("export async function promoteExactValidDiscoveryWithoutDelivery", start);
+  const source = controlSource.slice(start, end);
+  assert.match(source, /pg_advisory_xact_lock/);
+  assert.match(source, /assertDiscoveryOneShotLock/);
+  assert.match(source, /FOR UPDATE/);
+  assert.match(source, /DISCOVERY_DUPLICATE_RESOLUTION_EXACT_TARGET_SET_MISMATCH/);
+  assert.match(source, /DISCOVERY_DUPLICATE_RESOLUTION_PRIOR_ARTIFACT_OR_PROVIDER_STATE/);
+  assert.match(source, /assertNoDiscoveryDeliveryTrackingOrClaim/);
+  assert.match(source, /report_delivery_status = 'SUPERSEDED'/);
+  assert.match(source, /replacementAuditId/);
+  assert.match(source, /DISCOVERY_DUPLICATE_RESOLUTION_CAS_FAILED/);
+  assert.match(source, /DISCOVERY_DUPLICATE_RESOLUTION_CANONICAL_STILL_DUPLICATE/);
+  assert.match(source, /await client\.query\("ROLLBACK"\)/);
+  assert.doesNotMatch(source, /analyzeDiscoveryScan|sendReportReadyEmail\s*\(|claimDiscoveryEmailDelivery\s*\(/);
 });
 
 test("Lenny quality repair is bound to the exact live artifact and replacement", () => {
@@ -175,6 +212,7 @@ test("one-shot CLI requires offline kill switches and the discovery-global lock"
   assert.match(cliSource, /--quarantine-test/);
   assert.match(cliSource, /--promote-valid-no-delivery/);
   assert.match(cliSource, /--repair-lenny-quality/);
+  assert.match(cliSource, /--resolve-suzie-duplicate/);
   assert.match(cliSource, /--expected-current-status/);
   assert.match(cliSource, /--expected-txt-sha256/);
   assert.match(cliSource, /--expected-html-sha256/);
