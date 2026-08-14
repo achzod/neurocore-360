@@ -334,7 +334,7 @@ export async function reserveAICostBudget(
   if (!context.orderId) {
     throw new Error("AI cost budget requires an orderId");
   }
-  const limits = getAICostBudgetLimits(context.product, env);
+  let limits = getAICostBudgetLimits(context.product, env);
   if (!Number.isFinite(limits.perOrderUsd)) return null;
   const reservedUsd = context.product === "discovery"
     ? DEFAULT_DISCOVERY_LIMITS.perOrderUsd
@@ -362,19 +362,29 @@ export async function reserveAICostBudget(
       }
       if (hasBatchOwnership) {
         const batchOwnership = await client.query(
-          `SELECT 1
+          `SELECT b.stage,i.retry_of_candidate_id
              FROM discovery_batch_items i
              JOIN discovery_batch_runs b ON b.id = i.batch_id
              JOIN discovery_operation_lock l
                ON l.lock_key = 'discovery-global' AND l.token = b.lock_token
             WHERE i.batch_id = $1 AND i.audit_id = $2
               AND b.lock_token = $3 AND l.expires_at > NOW()
+              AND b.approval_expires_at > NOW()
               AND i.state = 'PROVIDER_STARTED' AND i.provider_calls = 1
             FOR UPDATE OF i, b`,
           [context.discoveryBatchId, context.orderId, context.discoveryBatchLockToken],
         );
         if ((batchOwnership.rowCount ?? 0) !== 1) {
           throw new Error("DISCOVERY_BATCH_PROVIDER_OWNERSHIP_LOST");
+        }
+        const batchStage = String(batchOwnership.rows[0].stage || "");
+        if (batchStage === "REGENERATION") {
+          if (!batchOwnership.rows[0].retry_of_candidate_id) {
+            throw new Error("DISCOVERY_REGENERATION_PROVIDER_OWNERSHIP_LOST");
+          }
+          limits = { ...limits, perOrderUsd: 1.50 };
+        } else if (batchStage !== "GENERATION") {
+          throw new Error("DISCOVERY_PROVIDER_BATCH_STAGE_BLOCKED");
         }
       } else {
         const genericOwnership = await client.query(
@@ -404,12 +414,21 @@ export async function reserveAICostBudget(
         }
       }
       const previousDiscoveryAttempt = await client.query(
-        `SELECT 1 FROM ai_cost_budget_reservations
-          WHERE product = 'discovery' AND order_id = $1
-          LIMIT 1`,
+        `SELECT COUNT(*)::int AS count,
+                COUNT(*) FILTER (WHERE status <> 'COMPLETED')::int AS unsettled
+           FROM ai_cost_budget_reservations
+          WHERE product = 'discovery' AND order_id = $1`,
         [context.orderId],
       );
-      if ((previousDiscoveryAttempt.rowCount ?? 0) !== 0) {
+      const previousCount = Number(previousDiscoveryAttempt.rows[0]?.count || 0);
+      const unsettled = Number(previousDiscoveryAttempt.rows[0]?.unsettled || 0);
+      const regenerationAuthorized = hasBatchOwnership
+        && String((await client.query(
+          `SELECT b.stage FROM discovery_batch_runs b WHERE b.id=$1 AND b.lock_token=$2 FOR UPDATE`,
+          [context.discoveryBatchId, context.discoveryBatchLockToken],
+        )).rows[0]?.stage || "") === "REGENERATION";
+      if ((!regenerationAuthorized && previousCount !== 0)
+        || (regenerationAuthorized && (previousCount !== 1 || unsettled !== 0))) {
         throw new Error("DISCOVERY_MONO_CALL_ALREADY_RESERVED");
       }
     }

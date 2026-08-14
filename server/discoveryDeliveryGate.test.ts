@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import test from "node:test";
 
 import { buildDiscoveryReportAssets, validateDiscoveryReportForDelivery } from "./discovery-scan";
@@ -303,9 +304,16 @@ test("rechecking the gate replaces its trace instead of duplicating it", () => {
   assert.equal(getPersistedDiscoveryDeliveryGate(twice)?.checkedAt, "2026-08-08T12:06:00.000Z");
 });
 
-test("recovery preserves canonical premium artifacts for the three storage shapes", () => {
+test("recovery parses historical storage shapes but exposes only exact synchronized artifacts", () => {
   const report = validDiscoveryReport();
   const assets = buildDiscoveryReportAssets(report as any);
+  const exactArtifact = {
+    txt: assets.txt,
+    html: assets.html,
+    contentSha256: createHash("sha256")
+      .update(`txt\0${assets.txt}\0html\0${assets.html}`)
+      .digest("hex"),
+  };
   const fixtures = [
     {
       auditId: "409c90ce",
@@ -313,18 +321,23 @@ test("recovery preserves canonical premium artifacts for the three storage shape
         narrativeReport: { validationResult: { score: 100 } },
         reportTxt: assets.txt,
         reportHtml: assets.html,
+        reportArtifacts: [exactArtifact],
       },
     },
     {
       auditId: "6d186e76",
       input: {
         narrativeReport: { txt: assets.txt, html: assets.html, validationResult: { score: 100 } },
+        reportArtifacts: [exactArtifact],
       },
     },
     {
       auditId: "d4466162",
       input: {
         narrativeReport: { ...report, txt: assets.txt, html: assets.html, validationResult: { score: 100 } },
+        reportTxt: assets.txt,
+        reportHtml: assets.html,
+        reportArtifacts: [exactArtifact],
       },
     },
   ];
@@ -335,14 +348,35 @@ test("recovery preserves canonical premium artifacts for the three storage shape
     assert.equal((canonical.report as any).sections.length, 12, `${fixture.auditId}: sections`);
     assert.equal(canonical.narrativeReport.txt, canonical.txt, `${fixture.auditId}: narrative txt`);
     assert.equal(canonical.narrativeReport.html, canonical.html, `${fixture.auditId}: narrative html`);
-    assert.equal(
-      evaluateDiscoveryDeliveryGate(canonical.report, { txt: canonical.txt, html: canonical.html }).ok,
-      true,
-      `${fixture.auditId}: exact gate`,
-    );
   }
-  assert.equal(resolveCanonicalDiscoveryArtifacts(fixtures[0].input).txt, assets.txt);
-  assert.equal(resolveCanonicalDiscoveryArtifacts(fixtures[1].input).html, assets.html);
+  assert.equal(evaluateCanonicalDiscoveryArtifacts(resolveCanonicalDiscoveryArtifacts(fixtures[0].input)).ok, false);
+  assert.equal(evaluateCanonicalDiscoveryArtifacts(resolveCanonicalDiscoveryArtifacts(fixtures[1].input)).ok, false);
+  assert.equal(evaluateCanonicalDiscoveryArtifacts(resolveCanonicalDiscoveryArtifacts(fixtures[2].input)).ok, true);
+});
+
+test("exposure rejects any divergent column, narrative sibling, artifact or artifact hash", () => {
+  const report = validDiscoveryReport();
+  const assets = buildDiscoveryReportAssets(report as any);
+  const contentSha256 = createHash("sha256")
+    .update(`txt\0${assets.txt}\0html\0${assets.html}`)
+    .digest("hex");
+  const exact = {
+    narrativeReport: { ...report, txt: assets.txt, html: assets.html },
+    reportTxt: assets.txt,
+    reportHtml: assets.html,
+    reportArtifacts: [{ txt: assets.txt, html: assets.html, contentSha256 }],
+  };
+  assert.equal(evaluateCanonicalDiscoveryArtifacts(resolveCanonicalDiscoveryArtifacts(exact)).ok, true);
+  for (const mutation of [
+    { ...exact, reportTxt: `${assets.txt}x` },
+    { ...exact, reportHtml: `${assets.html}x` },
+    { ...exact, narrativeReport: { ...exact.narrativeReport, txt: `${assets.txt}x` } },
+    { ...exact, reportArtifacts: [] },
+    { ...exact, reportArtifacts: [{ txt: `${assets.txt}x`, html: assets.html, contentSha256 }] },
+    { ...exact, reportArtifacts: [{ txt: assets.txt, html: assets.html, contentSha256: "0".repeat(64) }] },
+  ]) {
+    assert.equal(evaluateCanonicalDiscoveryArtifacts(resolveCanonicalDiscoveryArtifacts(mutation)).ok, false);
+  }
 });
 
 test("recovery cannot deliver when no valid artifact exists", () => {

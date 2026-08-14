@@ -1,6 +1,9 @@
+import { createHash } from "node:crypto";
+
 import {
   buildDiscoveryReportAssets,
   parseStoredDiscoveryTxt,
+  validateDiscoveryReportAgainstResponses,
   validateDiscoveryReportForDelivery,
 } from "./discovery-scan";
 
@@ -21,6 +24,34 @@ export interface DiscoveryArtifactSource {
   narrativeReport?: unknown;
   reportTxt?: unknown;
   reportHtml?: unknown;
+  /** Exact immutable artifact rows loaded from report_artifacts. Public
+   * exposure requires one and only one row matching the deterministic assets. */
+  reportArtifacts?: ReadonlyArray<{
+    txt?: unknown;
+    html?: unknown;
+    contentSha256?: unknown;
+  }>;
+}
+
+export interface DiscoveryPublicExposureSource extends DiscoveryArtifactSource {
+  type?: unknown;
+  reportDeliveryStatus?: unknown;
+  responses?: unknown;
+}
+
+/** A QA hold (BATCH_READY/BATCH_REVIEW) is never a public report. */
+export function canExposeDiscoveryReport(source: DiscoveryPublicExposureSource): boolean {
+  if (String(source.type || "") !== "GRATUIT") return true;
+  if (!["READY", "SENT"].includes(String(source.reportDeliveryStatus || "").toUpperCase())) return false;
+  const canonical = resolveCanonicalDiscoveryArtifacts(source);
+  if (!canonical.report || !source.responses || typeof source.responses !== "object") return false;
+  return evaluateCanonicalDiscoveryArtifacts(canonical).ok
+    && hasPassingPersistedDiscoveryDeliveryGate(source.narrativeReport as NarrativeReport)
+    && validateDiscoveryReportAgainstResponses(
+      canonical.report,
+      source.responses as Record<string, unknown>,
+      canonical.report.analysisMetadata,
+    ).ok;
 }
 
 export interface CanonicalDiscoveryArtifacts {
@@ -30,6 +61,7 @@ export interface CanonicalDiscoveryArtifacts {
   html: string;
   source: "narrative_sections" | "report_txt" | "narrative_txt" | "legacy_validated_txt" | "missing";
   legacyValidation: { ok: boolean; errors: string[] } | null;
+  exactnessErrors: string[];
 }
 
 export function validateHistoricalDiscoveryArtifacts(
@@ -117,14 +149,38 @@ export function resolveCanonicalDiscoveryArtifacts(
       html: columnHtml || narrativeHtml,
       source,
       legacyValidation,
+      exactnessErrors: [],
     };
   }
 
   const generated = buildDiscoveryReportAssets(report as any);
-  // Existing non-empty artifacts are canonical. Deterministic generation only
-  // hydrates a missing sibling and never replaces the sole valid stored copy.
-  const txt = sourceTxt || generated.txt;
-  const html = columnHtml || narrativeHtml || generated.html;
+  const exactnessErrors: string[] = [];
+  if (!columnTxt) exactnessErrors.push("stored_report_txt_missing");
+  else if (columnTxt !== generated.txt) exactnessErrors.push("stored_report_txt_mismatch");
+  if (!columnHtml) exactnessErrors.push("stored_report_html_missing");
+  else if (columnHtml !== generated.html) exactnessErrors.push("stored_report_html_mismatch");
+  if (narrativeTxt && narrativeTxt !== generated.txt) exactnessErrors.push("narrative_report_txt_mismatch");
+  if (narrativeHtml && narrativeHtml !== generated.html) exactnessErrors.push("narrative_report_html_mismatch");
+
+  const artifacts = Array.isArray(audit.reportArtifacts) ? audit.reportArtifacts : [];
+  if (artifacts.length !== 1) {
+    exactnessErrors.push(`report_artifact_count:${artifacts.length}/1`);
+  } else {
+    const artifactTxt = String(artifacts[0]?.txt || "");
+    const artifactHtml = String(artifacts[0]?.html || "");
+    const artifactContentSha256 = String(artifacts[0]?.contentSha256 || "");
+    const expectedContentSha256 = createHash("sha256")
+      .update(`txt\0${generated.txt}\0html\0${generated.html}`)
+      .digest("hex");
+    if (artifactTxt !== generated.txt) exactnessErrors.push("report_artifact_txt_mismatch");
+    if (artifactHtml !== generated.html) exactnessErrors.push("report_artifact_html_mismatch");
+    if (artifactContentSha256 !== expectedContentSha256) {
+      exactnessErrors.push("report_artifact_content_hash_mismatch");
+    }
+  }
+
+  const txt = generated.txt;
+  const html = generated.html;
   return {
     report,
     narrativeReport: {
@@ -137,6 +193,7 @@ export function resolveCanonicalDiscoveryArtifacts(
     html,
     source,
     legacyValidation: null,
+    exactnessErrors: [...new Set(exactnessErrors)],
   };
 }
 
@@ -144,6 +201,12 @@ export function evaluateCanonicalDiscoveryArtifacts(
   canonical: CanonicalDiscoveryArtifacts,
   checkedAt?: Date,
 ): DiscoveryDeliveryGateResult {
+  if (canonical.exactnessErrors.length > 0) {
+    return createDiscoveryDeliveryGateResult(
+      { ok: false, errors: canonical.exactnessErrors },
+      checkedAt,
+    );
+  }
   if (canonical.report) {
     return evaluateDiscoveryDeliveryGate(
       canonical.report,

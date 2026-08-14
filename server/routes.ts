@@ -85,6 +85,7 @@ import {
   parseStoredDiscoveryTxt,
 } from "./discovery-scan";
 import {
+  canExposeDiscoveryReport,
   evaluateCanonicalDiscoveryArtifacts,
   hasPassingPersistedDiscoveryDeliveryGate,
   resolveCanonicalDiscoveryArtifacts,
@@ -151,6 +152,26 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  async function canExposePersistedDiscoveryReport(audit: any): Promise<boolean> {
+    if (audit?.type !== "GRATUIT") return true;
+    const artifacts = await pool.query(
+      `SELECT txt, html, content_sha256 AS "contentSha256"
+         FROM report_artifacts
+        WHERE audit_id = $1
+        ORDER BY created_at ASC, id ASC`,
+      [audit.id],
+    );
+    return canExposeDiscoveryReport({
+      type: audit.type,
+      reportDeliveryStatus: audit.reportDeliveryStatus,
+      narrativeReport: audit.narrativeReport,
+      reportTxt: audit.reportTxt,
+      reportHtml: audit.reportHtml,
+      responses: audit.responses,
+      reportArtifacts: artifacts.rows,
+    });
+  }
 
   // Ensure missing indexes on existing tables (non-blocking)
   storage.ensureExistingTableIndexes().catch((err: any) => {
@@ -2075,7 +2096,16 @@ export async function registerRoutes(
         const existingRecent = await storage.findRecentAuditByEmailAndType(data.email, data.type, 10).catch(() => undefined);
         if (existingRecent) {
           console.warn(`[Audit Create] ⏭️ Idempotency hit , returning existing audit ${existingRecent.id} for ${data.email} (${data.type}) created ${existingRecent.createdAt}`);
-          res.json(existingRecent);
+          if (existingRecent.type === "GRATUIT"
+            && !await canExposePersistedDiscoveryReport(existingRecent)) {
+            const held = { ...existingRecent } as any;
+            delete held.narrativeReport;
+            delete held.reportTxt;
+            delete held.reportHtml;
+            res.json(held);
+          } else {
+            res.json(existingRecent);
+          }
           return;
         }
 
@@ -2441,7 +2471,14 @@ export async function registerRoutes(
       }
       const audits = await storage.getAuditsByEmail(email);
       const light = req.query.light === "1";
-      res.json(light ? audits.map(sanitizeAuditPayload) : audits);
+      const visibleAudits = await Promise.all(audits.map(async (audit) => {
+        if (audit.type !== "GRATUIT") return light ? sanitizeAuditPayload(audit) : audit;
+        const expose = await canExposePersistedDiscoveryReport(audit);
+        return expose && !light
+          ? audit
+          : sanitizePublicDiscoveryAuditPayload(audit as unknown as Record<string, unknown>);
+      }));
+      res.json(visibleAudits);
     } catch (error) {
       res.status(500).json({ error: "Erreur serveur" });
     }
@@ -2525,6 +2562,10 @@ export async function registerRoutes(
         res.status(404).json({ error: "Audit non trouvé" });
         return;
       }
+      if (audit.type === "GRATUIT") {
+        res.status(409).json({ error: "Analyse Discovery indisponible hors rapport validé" });
+        return;
+      }
       const analysis = generateFullAnalysis(audit.responses);
       res.json(analysis);
     } catch (error) {
@@ -2602,7 +2643,8 @@ export async function registerRoutes(
       const hasDeliveredReport =
         audit &&
         (audit.reportDeliveryStatus === "READY" || audit.reportDeliveryStatus === "SENT") &&
-        (!!(audit as any).reportTxt || !!(audit as any).reportHtml || !!audit.narrativeReport);
+        (!!(audit as any).reportTxt || !!(audit as any).reportHtml || !!audit.narrativeReport)
+        && await canExposePersistedDiscoveryReport(audit);
       if (hasDeliveredReport) {
         res.json({
           status: "completed",
@@ -2642,6 +2684,11 @@ export async function registerRoutes(
         return;
       }
 
+      if (audit.type === "GRATUIT" && !await canExposePersistedDiscoveryReport(audit)) {
+        res.status(202).json({ status: "review", message: "Rapport indisponible pour le moment" });
+        return;
+      }
+
       // Block report content if scheduled for future delivery
       if (audit.reportScheduledFor && new Date(audit.reportScheduledFor) > new Date()) {
         res.status(202).json({
@@ -2649,6 +2696,10 @@ export async function registerRoutes(
           scheduledFor: audit.reportScheduledFor,
           message: "Ton analyse approfondie est en cours de rédaction. Tu recevras ton rapport complet par email.",
         });
+        return;
+      }
+      if (audit.type === "GRATUIT" && !await canExposePersistedDiscoveryReport(audit)) {
+        res.status(409).json({ error: "Rapport Discovery encore en validation" });
         return;
       }
 
@@ -2802,6 +2853,11 @@ export async function registerRoutes(
       const audit = await storage.getAudit(req.params.id);
       if (!audit) {
         res.status(404).json({ error: "Audit non trouve" });
+        return;
+      }
+
+      if (audit.type === "GRATUIT" && !await canExposePersistedDiscoveryReport(audit)) {
+        res.status(202).json({ status: "review", message: "Rapport indisponible pour le moment" });
         return;
       }
 
@@ -4240,6 +4296,10 @@ export async function registerRoutes(
         res.status(404).json({ error: "Audit non trouve" });
         return;
       }
+      if (audit.type === "GRATUIT" && !await canExposePersistedDiscoveryReport(audit)) {
+        res.status(409).json({ error: "Rapport Discovery encore en validation" });
+        return;
+      }
 
       const narrativeReport = audit.narrativeReport as any;
       if (!narrativeReport) {
@@ -4271,6 +4331,10 @@ export async function registerRoutes(
       const audit = await storage.getAudit(auditId);
       if (!audit) {
         res.status(404).json({ error: "Audit non trouve" });
+        return;
+      }
+      if (audit.type === "GRATUIT" && !await canExposePersistedDiscoveryReport(audit)) {
+        res.status(409).json({ error: "Rapport Discovery encore en validation" });
         return;
       }
 
@@ -4376,6 +4440,10 @@ export async function registerRoutes(
       const audit = await storage.getAudit(auditId);
       if (!audit) {
         res.status(404).json({ error: "Audit non trouve" });
+        return;
+      }
+      if (audit.type === "GRATUIT" && !await canExposePersistedDiscoveryReport(audit)) {
+        res.status(409).json({ error: "Rapport Discovery encore en validation" });
         return;
       }
 
@@ -10162,10 +10230,12 @@ export async function registerRoutes(
       const existingRecent = await storage.findRecentAuditByEmailAndType(email, "GRATUIT", 10).catch(() => undefined);
       if (existingRecent) {
         console.warn(`[Discovery Scan] ⏭️ Idempotency hit , returning existing audit ${existingRecent.id} for ${email}`);
+        const exposeExisting = await canExposePersistedDiscoveryReport(existingRecent);
         res.json({
           success: true,
           auditId: existingRecent.id,
-          narrativeReport: (existingRecent as any).narrativeReport ?? null,
+          narrativeReport: exposeExisting ? (existingRecent as any).narrativeReport ?? null : null,
+          status: exposeExisting ? "ready" : "review",
           idempotent: true,
         });
         return;
@@ -10207,10 +10277,14 @@ export async function registerRoutes(
           await sendAdminEmailNewAudit(email, clientName, audit.type, audit.id);
         }
 
+        const exposePersisted = persisted
+          ? await canExposePersistedDiscoveryReport(persisted)
+          : false;
         res.json({
           success: true,
           auditId: audit.id,
-          narrativeReport: persisted?.narrativeReport,
+          narrativeReport: exposePersisted ? persisted?.narrativeReport : null,
+          status: exposePersisted ? "ready" : "review",
         });
       } catch (error) {
         console.error("[Discovery Scan] Create error (generation):", error);
@@ -10301,6 +10375,20 @@ export async function registerRoutes(
       const existingReport = audit.narrativeReport as any;
       const storedTxt = String((audit as any).reportTxt || existingReport?.txt || "").trim();
       const storedHtml = String((audit as any).reportHtml || existingReport?.html || "").trim();
+      const canonicalArtifacts = await pool.query(
+        `SELECT txt, html, content_sha256 AS "contentSha256"
+           FROM report_artifacts WHERE audit_id=$1 ORDER BY created_at ASC, id ASC`,
+        [audit.id],
+      );
+      const canonicalDiscovery = resolveCanonicalDiscoveryArtifacts({
+        narrativeReport: existingReport,
+        reportTxt: storedTxt,
+        reportHtml: storedHtml,
+        reportArtifacts: canonicalArtifacts.rows,
+      });
+      const canonicalDiscoveryGate = evaluateCanonicalDiscoveryArtifacts(canonicalDiscovery);
+      const publicReportEligible = await canExposePersistedDiscoveryReport(audit)
+        && canonicalDiscoveryGate.ok;
       const reportHasEnoughSections =
         existingReport &&
         Array.isArray(existingReport.sections) &&
@@ -10333,12 +10421,12 @@ export async function registerRoutes(
       );
 
       // If report already exists and is valid, return it immediately
-      if (existingReport && !invalidReport) {
+      if (publicReportEligible && existingReport && !invalidReport) {
         res.json(existingReport);
         return;
       }
 
-      if (storedTxt.length > 300) {
+      if (publicReportEligible && storedTxt.length > 300) {
         try {
           const storedDiscoveryReport = parseStoredDiscoveryTxt(storedTxt);
           if (storedDiscoveryReport && storedDiscoveryReport.sections.length >= 4) {

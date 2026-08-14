@@ -12,7 +12,11 @@ import {
 import {
   DISCOVERY_APPROVED_NEUTRAL_PROMO_HTML,
   buildDiscoveryReportAssets,
+  type DiscoveryRejectedCandidatePayload,
   validateDiscoveryFactualConsistency,
+  validateDiscoveryPersistenceContract,
+  validateDiscoveryReportAgainstResponses,
+  validateDiscoveryReportForDelivery,
 } from "./discovery-scan";
 import {
   DISCOVERY_OTHER_AUDIT_ACTIVE_SQL,
@@ -23,6 +27,8 @@ import { DISCOVERY_TRANSACTION_FENCE_KEY } from "./discoveryTransactionalPersist
 export const DISCOVERY_GLOBAL_LOCK_KEY = "discovery-global";
 export const DISCOVERY_BATCH_SOFT_COST_USD = 0.25;
 export const DISCOVERY_BATCH_HARD_COST_USD = 0.75;
+export const DISCOVERY_REGENERATION_CUMULATIVE_HARD_COST_USD = 1.50;
+export const DISCOVERY_MAX_PROVIDER_ATTEMPTS_PER_AUDIT = 2;
 export const DISCOVERY_BATCH_TIERS = ["ONE", "THREE", "FIVE", "REST"] as const;
 
 export type DiscoveryBatchTier = typeof DISCOVERY_BATCH_TIERS[number];
@@ -83,7 +89,7 @@ export interface DiscoveryApproval {
   commitSha: string;
   approvalReference: string;
   expiresAt: string;
-  stage: "GENERATION" | "DELIVERY";
+  stage: "GENERATION" | "REGENERATION" | "DELIVERY";
   tier: DiscoveryBatchTier;
   targetAuditIds: string[];
   approvalBindingSha256: string;
@@ -117,6 +123,7 @@ export interface DiscoveryBatchManifestItemInput {
   expectedTxtSha256?: string | null;
   expectedHtmlSha256?: string | null;
   initialState?: "QUEUED" | "STORED";
+  retryOfCandidateId?: string | null;
 }
 
 function normalizeNumber(value: unknown): number {
@@ -335,7 +342,7 @@ export function validateDiscoveryApproval(
   expected: {
     manifestSha256: string;
     commitSha: string;
-    stage: "GENERATION" | "DELIVERY";
+    stage: "GENERATION" | "REGENERATION" | "DELIVERY";
     tier: DiscoveryBatchTier;
     targetAuditIds: string[];
     itemCount: number;
@@ -370,9 +377,12 @@ export function validateDiscoveryApproval(
     errors.push("approval_binding_hash_mismatch");
   }
   if (!approval.approvalReference.trim()) errors.push("approval_reference_missing");
+  const now = expected.now || new Date();
   const expiresAt = new Date(approval.expiresAt);
-  if (!Number.isFinite(expiresAt.getTime()) || expiresAt <= (expected.now || new Date())) {
+  if (!Number.isFinite(expiresAt.getTime()) || expiresAt <= now) {
     errors.push("approval_expired");
+  } else if (expiresAt.getTime() > now.getTime() + 20 * 60_000) {
+    errors.push("approval_expiry_too_long");
   }
   if (!Number.isInteger(approval.maxItems) || approval.maxItems <= 0) errors.push("approval_max_items_invalid");
   if (approval.maxItems !== expected.itemCount || approval.targetAuditIds?.length !== expected.itemCount) {
@@ -384,8 +394,9 @@ export function validateDiscoveryApproval(
   }
   if (approval.softPerScanUsd !== DISCOVERY_BATCH_SOFT_COST_USD) errors.push("approval_soft_limit_mismatch");
   if (approval.hardPerScanUsd !== DISCOVERY_BATCH_HARD_COST_USD) errors.push("approval_hard_limit_mismatch");
-  if (expected.stage === "GENERATION" && approval.globalBudgetUsd < expected.itemCount * approval.hardPerScanUsd) {
-    errors.push("approval_global_budget_too_low");
+  if (["GENERATION", "REGENERATION"].includes(expected.stage)
+    && approval.globalBudgetUsd !== expected.itemCount * DISCOVERY_BATCH_HARD_COST_USD) {
+    errors.push("approval_global_budget_mismatch");
   }
   if (expected.stage === "DELIVERY" && approval.globalBudgetUsd !== 0) {
     errors.push("approval_delivery_budget_must_be_zero");
@@ -396,6 +407,61 @@ export function validateDiscoveryApproval(
 async function resolvePool(poolOverride?: Pool): Promise<Pool> {
   if (poolOverride) return poolOverride;
   return (await import("./db")).pool;
+}
+
+export type DiscoveryBatchIncidentOperation =
+  | "FAIL_BATCH_ITEM"
+  | "FAIL_CLAIMED_GENERATION"
+  | "PERSIST_BATCH_ITEM"
+  | "QUARANTINE_CANDIDATE"
+  | "ORPHAN_RECOVERY";
+
+/**
+ * Append-only, idempotent evidence for a fail-closed transition that itself
+ * failed. Call this only after the mutation transaction has rolled back. It
+ * deliberately does not change the audit or batch state and therefore cannot
+ * hide or partially repair the original incident.
+ */
+export async function recordDiscoveryBatchIncident(
+  input: {
+    operation: DiscoveryBatchIncidentOperation;
+    auditId: string;
+    batchId?: string | null;
+    fenceToken?: string | null;
+    reservationId?: string | null;
+    usageEventId?: number | string | null;
+    errorCode: string;
+    errorDetail: string;
+  },
+  poolOverride?: Pool,
+): Promise<{ incidentId: string; incidentKey: string }> {
+  const pool = await resolvePool(poolOverride);
+  const errorCode = String(input.errorCode || "DISCOVERY_UNKNOWN_FAILURE").slice(0, 120);
+  const errorDetail = String(input.errorDetail || errorCode).slice(0, 4000);
+  const incidentKey = discoverySha256(JSON.stringify({
+    operation: input.operation,
+    auditId: input.auditId,
+    batchId: input.batchId || null,
+    fenceToken: input.fenceToken || null,
+    reservationId: input.reservationId || null,
+    usageEventId: input.usageEventId == null ? null : String(input.usageEventId),
+    errorCode,
+    errorDetail,
+  }));
+  const result = await pool.query(
+    `INSERT INTO discovery_batch_incidents
+       (incident_key,batch_id,audit_id,operation,fence_token,reservation_id,
+        usage_event_id,error_code,error_detail,state)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'OPEN')
+     ON CONFLICT (incident_key) DO UPDATE SET incident_key=EXCLUDED.incident_key
+     RETURNING id`,
+    [incidentKey, input.batchId || null, input.auditId, input.operation,
+      input.fenceToken || null, input.reservationId || null,
+      input.usageEventId == null ? null : input.usageEventId,
+      errorCode, errorDetail],
+  );
+  if ((result.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_BATCH_INCIDENT_PERSISTENCE_FAILED");
+  return { incidentId: String(result.rows[0].id), incidentKey };
 }
 
 export async function isDiscoveryGlobalLockActive(poolOverride?: Pool): Promise<boolean> {
@@ -434,9 +500,19 @@ export async function acquireDiscoveryGlobalLock(
          EXISTS (
            SELECT 1 FROM discovery_email_delivery_claims
             WHERE state IN ('CLAIMED','PROVIDER_POST_STARTED','AMBIGUOUS')
-         ) AS delivery_in_flight`,
+         ) AS delivery_in_flight,
+         EXISTS (
+           SELECT 1
+             FROM discovery_batch_items i
+             JOIN discovery_batch_runs b ON b.id = i.batch_id
+            WHERE b.stage IN ('GENERATION','REGENERATION')
+              AND b.status IN ('PREPARED','RUNNING','PAUSED')
+              AND i.provider_calls = 1
+              AND i.state IN ('PROVIDER_STARTED','GENERATED','VALIDATED')
+         ) AS provider_result_unsettled`,
     );
-    if (inFlight.rows[0]?.provider_in_flight || inFlight.rows[0]?.delivery_in_flight) {
+    if (inFlight.rows[0]?.provider_in_flight || inFlight.rows[0]?.delivery_in_flight
+      || inFlight.rows[0]?.provider_result_unsettled) {
       throw new Error("DISCOVERY_BATCH_IN_FLIGHT_OPERATION");
     }
     const result = await client.query(
@@ -1944,7 +2020,8 @@ export async function createDiscoveryBatchRun(
     manifestSha256: string;
     commitSha: string;
     approvalReference: string;
-    stage: "GENERATION" | "DELIVERY";
+    approvalExpiresAt: string;
+    stage: "GENERATION" | "REGENERATION" | "DELIVERY";
     tier: DiscoveryBatchTier;
     globalBudgetUsd: number;
     softPerScanUsd: number;
@@ -1966,13 +2043,14 @@ export async function createDiscoveryBatchRun(
       [DISCOVERY_GLOBAL_LOCK_KEY, input.lockToken],
     );
     if ((lock.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_BATCH_LOCK_NOT_OWNED");
-    await client.query(
+    const usageRecorded = await client.query(
       `INSERT INTO discovery_batch_runs
-         (id, manifest_sha256, commit_sha, approval_reference, status, stage, tier,
+         (id, manifest_sha256, commit_sha, approval_reference, approval_expires_at, status, stage, tier,
           soft_per_scan_usd, hard_per_scan_usd, global_budget_usd, target_count, lock_token)
-       VALUES ($1,$2,$3,$4,'PREPARED',$5,$6,$7,$8,$9,$10,$11)`,
+       SELECT $1,$2,$3,$4,$5::timestamptz,'PREPARED',$6,$7,$8,$9,$10,$11,$12
+        WHERE $5::timestamptz > NOW()`,
       [batchId, input.manifestSha256, input.commitSha, input.approvalReference,
-        input.stage, input.tier, input.softPerScanUsd, input.hardPerScanUsd,
+        input.approvalExpiresAt, input.stage, input.tier, input.softPerScanUsd, input.hardPerScanUsd,
         input.globalBudgetUsd, input.items.length, input.lockToken],
     );
     for (const item of input.items) {
@@ -1981,13 +2059,14 @@ export async function createDiscoveryBatchRun(
            (batch_id, audit_id, sequence_no, cohort, state,
             expected_responses_sha256, expected_source_status,
             expected_txt_sha256, expected_html_sha256,
-            generated_txt_sha256, generated_html_sha256)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+            generated_txt_sha256, generated_html_sha256, retry_of_candidate_id)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
         [batchId, item.auditId, item.sequenceNo, item.cohort,
           item.initialState || "QUEUED", item.expectedResponsesSha256,
           item.expectedSourceStatus, item.expectedTxtSha256 || null, item.expectedHtmlSha256 || null,
           item.initialState === "STORED" ? item.expectedTxtSha256 || null : null,
-          item.initialState === "STORED" ? item.expectedHtmlSha256 || null : null],
+          item.initialState === "STORED" ? item.expectedHtmlSha256 || null : null,
+          item.retryOfCandidateId || null],
       );
     }
     await client.query("COMMIT");
@@ -2025,6 +2104,174 @@ export async function markDiscoveryBatchItemPreflightOk(
   }
 }
 
+/**
+ * Converts a proven, never-delivered historical failure into the same central
+ * quarantine used by new rejected candidates. Existing report bytes are kept
+ * intact until a validated regeneration commits successfully.
+ */
+export async function prepareDiscoveryAuditForRegeneration(
+  input: { auditId: string; lockToken: string },
+  poolOverride?: Pool,
+): Promise<{ candidateId: string; sourceKind: "LEGACY_LOST_CANDIDATE" | "PERSISTED_INVALID_REPORT" }> {
+  const pool = await resolvePool(poolOverride);
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [DISCOVERY_TRANSACTION_FENCE_KEY]);
+    const lock = await client.query(
+      `SELECT token FROM discovery_operation_lock
+        WHERE lock_key=$1 AND token=$2 AND expires_at>NOW() FOR UPDATE`,
+      [DISCOVERY_GLOBAL_LOCK_KEY, input.lockToken],
+    );
+    if ((lock.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_REGENERATION_LOCK_NOT_OWNED");
+    const auditResult = await client.query(
+      `SELECT id,responses,scores,narrative_report,report_txt,report_html,
+              report_delivery_status,report_sent_at
+         FROM audits WHERE id=$1 AND type='GRATUIT' FOR UPDATE`,
+      [input.auditId],
+    );
+    if ((auditResult.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_REGENERATION_AUDIT_MISSING");
+    const audit = auditResult.rows[0];
+    if (audit.report_sent_at || !["BATCH_REVIEW", "BATCH_READY", "NEEDS_REVIEW", "READY"]
+      .includes(String(audit.report_delivery_status || ""))) {
+      throw new Error("DISCOVERY_REGENERATION_AUDIT_STATUS_BLOCKED");
+    }
+    const externalState = await client.query(
+      `SELECT
+         EXISTS (SELECT 1 FROM discovery_email_delivery_claims c WHERE c.audit_id=$1) AS has_claim,
+         EXISTS (SELECT 1 FROM email_tracking t WHERE t.audit_id=$1
+           AND t.email_type IN ('sendReportReadyEmail','sendReportRegeneratedEmail')) AS has_tracking,
+         (SELECT COUNT(*)::int FROM discovery_rejected_candidates c WHERE c.audit_id=$1) AS candidate_count`,
+      [input.auditId],
+    );
+    if (externalState.rows[0]?.has_claim || externalState.rows[0]?.has_tracking
+      || Number(externalState.rows[0]?.candidate_count || 0) !== 0) {
+      throw new Error("DISCOVERY_REGENERATION_EXTERNAL_STATE_BLOCKED");
+    }
+    const ledger = await client.query(
+      `SELECT r.id AS reservation_id,r.response_id,
+              COALESCE(r.actual_cost_usd,r.reserved_cost_usd)::numeric AS actual_cost_usd,
+              e.id AS usage_event_id,e.estimated_openai_cost_usd,
+              COALESCE(NULLIF(e.model,''),'discovery') AS model
+         FROM ai_cost_budget_reservations r
+         JOIN ai_usage_events e ON e.response_id=r.response_id
+        WHERE r.product='discovery' AND r.order_id=$1 AND r.status='COMPLETED'
+          AND e.profile='discovery' AND e.status='completed'
+        FOR UPDATE OF r,e`,
+      [input.auditId],
+    );
+    if ((ledger.rowCount ?? 0) !== 1
+      || !ledger.rows[0].response_id
+      || Math.abs(Number(ledger.rows[0].actual_cost_usd)
+        - Number(ledger.rows[0].estimated_openai_cost_usd)) > 0.000001
+      || Number(ledger.rows[0].actual_cost_usd) > DISCOVERY_BATCH_HARD_COST_USD + 1e-9) {
+      throw new Error("DISCOVERY_REGENERATION_LEDGER_NOT_EXACT");
+    }
+    const responsesSha256 = discoverySha256(audit.responses || {});
+    const hasPersisted = Boolean(audit.narrative_report && audit.report_txt && audit.report_html);
+    let sourceKind: "LEGACY_LOST_CANDIDATE" | "PERSISTED_INVALID_REPORT";
+    let validationErrors: string[];
+    let artifactId: string | null = null;
+    let assembledSha256: string | null = null;
+    let txtSha256: string | null = null;
+    let htmlSha256: string | null = null;
+    let artifactContentSha256: string | null = null;
+    if (!hasPersisted) {
+      if (audit.narrative_report || audit.report_txt || audit.report_html
+        || String(audit.report_delivery_status) !== "BATCH_REVIEW") {
+        throw new Error("DISCOVERY_REGENERATION_PARTIAL_LEGACY_ARTIFACT");
+      }
+      const artifacts = await client.query(
+        `SELECT COUNT(*)::int AS count FROM report_artifacts WHERE audit_id=$1`,
+        [input.auditId],
+      );
+      if (Number(artifacts.rows[0]?.count || 0) !== 0) {
+        throw new Error("DISCOVERY_REGENERATION_LEGACY_ARTIFACT_EXISTS");
+      }
+      sourceKind = "LEGACY_LOST_CANDIDATE";
+      validationErrors = ["legacy_provider_candidate_not_retained"];
+    } else {
+      const artifactRows = await client.query(
+        `SELECT id,txt,html,content_sha256 FROM report_artifacts
+          WHERE audit_id=$1 ORDER BY created_at DESC FOR UPDATE`,
+        [input.auditId],
+      );
+      const canonical = resolveCanonicalDiscoveryArtifacts({
+        narrativeReport: audit.narrative_report,
+        reportTxt: audit.report_txt,
+        reportHtml: audit.report_html,
+        reportArtifacts: artifactRows.rows.map((row) => ({
+          txt: row.txt,
+          html: row.html,
+          contentSha256: row.content_sha256,
+        })),
+      });
+      const structural = validateDiscoveryReportForDelivery(
+        audit.narrative_report,
+        { txt: String(audit.report_txt), html: String(audit.report_html) },
+        audit.narrative_report?.analysisMetadata,
+      );
+      const factual = validateDiscoveryReportAgainstResponses(
+        audit.narrative_report,
+        audit.responses || {},
+        audit.narrative_report?.analysisMetadata,
+      );
+      const canonicalGate = evaluateCanonicalDiscoveryArtifacts(canonical);
+      validationErrors = [...new Set([...structural.errors, ...factual.errors, ...canonicalGate.errors])];
+      if (validationErrors.length === 0) throw new Error("DISCOVERY_REGENERATION_REPORT_IS_VALID");
+      txtSha256 = discoverySha256(String(audit.report_txt));
+      htmlSha256 = discoverySha256(String(audit.report_html));
+      assembledSha256 = discoverySha256(audit.narrative_report);
+      artifactContentSha256 = discoveryArtifactContentHash(String(audit.report_txt), String(audit.report_html));
+      const artifact = artifactRows.rows.filter((row) => (
+        String(row.content_sha256) === artifactContentSha256
+        && String(row.txt) === String(audit.report_txt)
+        && String(row.html) === String(audit.report_html)
+      ));
+      if (artifact.length !== 1) throw new Error("DISCOVERY_REGENERATION_ARTIFACT_NOT_EXACT");
+      artifactId = String(artifact[0].id);
+      sourceKind = "PERSISTED_INVALID_REPORT";
+    }
+    const candidateId = randomUUID();
+    const inserted = await client.query(
+      `INSERT INTO discovery_rejected_candidates
+        (id,audit_id,provider_response_id,attempt_no,model,source_kind,
+         assembled_candidate,assembled_sha256,report_txt_sha256,report_html_sha256,
+         artifact_content_sha256,artifact_id,reservation_id,usage_event_id,
+         responses_sha256,validation_errors,actual_cost_usd,state)
+       VALUES ($1,$2,$3,1,$4,$5,$6::jsonb,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb,$16,'QUARANTINED')
+       RETURNING id`,
+      [candidateId, input.auditId, ledger.rows[0].response_id, ledger.rows[0].model,
+        sourceKind, sourceKind === "PERSISTED_INVALID_REPORT" ? JSON.stringify(audit.narrative_report) : null,
+        assembledSha256, txtSha256, htmlSha256, artifactContentSha256, artifactId,
+        ledger.rows[0].reservation_id, ledger.rows[0].usage_event_id,
+        responsesSha256, JSON.stringify(validationErrors), Number(ledger.rows[0].actual_cost_usd)],
+    );
+    if ((inserted.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_REGENERATION_QUARANTINE_FAILED");
+    if (sourceKind === "PERSISTED_INVALID_REPORT") {
+      const held = await client.query(
+        `UPDATE audits SET report_delivery_status='BATCH_REVIEW'
+          WHERE id=$1 AND type='GRATUIT' AND report_sent_at IS NULL
+            AND report_delivery_status IS NOT DISTINCT FROM $2
+            AND responses IS NOT DISTINCT FROM $3::jsonb
+            AND narrative_report IS NOT DISTINCT FROM $4::jsonb
+            AND report_txt IS NOT DISTINCT FROM $5 AND report_html IS NOT DISTINCT FROM $6
+          RETURNING id`,
+        [input.auditId, audit.report_delivery_status, JSON.stringify(audit.responses),
+          JSON.stringify(audit.narrative_report), audit.report_txt, audit.report_html],
+      );
+      if ((held.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_REGENERATION_HOLD_CAS_FAILED");
+    }
+    await client.query("COMMIT");
+    return { candidateId, sourceKind };
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => {});
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 export async function failDiscoveryBatchItem(
   input: {
     batchId: string;
@@ -2033,15 +2280,16 @@ export async function failDiscoveryBatchItem(
     errorCode: string;
     errorDetail: string;
     ambiguous?: boolean;
+    rejectedCandidate?: DiscoveryRejectedCandidatePayload;
   },
   poolOverride?: Pool,
-): Promise<void> {
+): Promise<boolean> {
   const pool = await resolvePool(poolOverride);
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
     const batch = await assertBatchOwnership(client, input.batchId, input.lockToken);
-    if (String(batch.stage) !== "GENERATION"
+    if (!["GENERATION", "REGENERATION"].includes(String(batch.stage))
       || !["PREPARED", "RUNNING", "PAUSED"].includes(String(batch.status))) {
       throw new Error("DISCOVERY_BATCH_NOT_FAILABLE");
     }
@@ -2078,6 +2326,90 @@ export async function failDiscoveryBatchItem(
       || !txtMatches || !htmlMatches) {
       throw new Error("DISCOVERY_BATCH_FAILURE_SOURCE_CAS_FAILED");
     }
+    if (input.rejectedCandidate) {
+      const payload = input.rejectedCandidate;
+      const validationErrors = [...new Set(payload.validationErrors.map((value) => String(value).slice(0, 1000)))];
+      if (!payload.responseId || payload.responseId !== String(item.provider_response_id || "")
+        || validationErrors.length === 0 || Number(item.provider_calls) !== 1
+        || String(item.state) !== "GENERATED") {
+        throw new Error("DISCOVERY_REJECTED_CANDIDATE_PROVENANCE_MISMATCH");
+      }
+      const priorAttempts = await client.query(
+        `SELECT COUNT(*)::int AS count FROM discovery_rejected_candidates
+          WHERE audit_id=$1`,
+        [input.auditId],
+      );
+      const attemptNo = Number(priorAttempts.rows[0]?.count || 0) + 1;
+      if (attemptNo > DISCOVERY_MAX_PROVIDER_ATTEMPTS_PER_AUDIT) {
+        throw new Error("DISCOVERY_REJECTED_CANDIDATE_ATTEMPT_LIMIT");
+      }
+      const providerProof = await client.query(
+        `SELECT r.id AS reservation_id,e.id AS usage_event_id,
+                e.estimated_openai_cost_usd
+           FROM ai_cost_budget_reservations r
+           JOIN ai_usage_events e ON e.response_id=r.response_id
+          WHERE r.product='discovery' AND r.order_id=$1
+            AND r.response_id=$2 AND r.status='COMPLETED'
+            AND e.profile='discovery' AND e.status='completed'
+          FOR UPDATE OF r,e`,
+        [input.auditId, payload.responseId],
+      );
+      if ((providerProof.rowCount ?? 0) !== 1
+        || Math.abs(Number(providerProof.rows[0].estimated_openai_cost_usd) - Number(item.actual_cost_usd)) > 0.000001) {
+        throw new Error("DISCOVERY_REJECTED_CANDIDATE_LEDGER_MISMATCH");
+      }
+      const providerRawIsText = typeof payload.providerRaw === "string";
+      const providerRawSha256 = discoverySha256(payload.providerRaw);
+      const assembledSha256 = payload.assembledCandidate == null
+        ? null : discoverySha256(payload.assembledCandidate);
+      const reportTxtSha256 = payload.assembledAssets?.txt
+        ? discoverySha256(payload.assembledAssets.txt) : null;
+      const reportHtmlSha256 = payload.assembledAssets?.html
+        ? discoverySha256(payload.assembledAssets.html) : null;
+      const artifactContentSha256 = payload.assembledAssets
+        ? discoveryArtifactContentHash(payload.assembledAssets.txt, payload.assembledAssets.html) : null;
+      const inserted = await client.query(
+        `INSERT INTO discovery_rejected_candidates
+          (id,batch_id,audit_id,provider_response_id,attempt_no,model,source_kind,
+           provider_raw,provider_raw_text,assembled_candidate,provider_raw_sha256,
+           assembled_sha256,report_txt_sha256,report_html_sha256,artifact_content_sha256,
+           reservation_id,usage_event_id,responses_sha256,validation_errors,
+           actual_cost_usd,state)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10::jsonb,$11,$12,$13,$14,$15,$16,$17,$18,$19::jsonb,$20,$21)
+         ON CONFLICT DO NOTHING RETURNING id`,
+        [randomUUID(), input.batchId, input.auditId, payload.responseId, attemptNo,
+          String(payload.model || "discovery").slice(0, 120),
+          payload.assembledCandidate == null ? "PROVIDER_REJECTED" : "ASSEMBLED_REJECTED",
+          providerRawIsText ? null : JSON.stringify(payload.providerRaw),
+          providerRawIsText ? payload.providerRaw : null,
+          payload.assembledCandidate == null ? null : JSON.stringify(payload.assembledCandidate),
+          providerRawSha256, assembledSha256, reportTxtSha256, reportHtmlSha256,
+          artifactContentSha256, providerProof.rows[0].reservation_id,
+          providerProof.rows[0].usage_event_id, String(item.expected_responses_sha256),
+          JSON.stringify(validationErrors), Number(item.actual_cost_usd || 0),
+          attemptNo === DISCOVERY_MAX_PROVIDER_ATTEMPTS_PER_AUDIT
+            ? "TERMINAL_REJECTED" : "QUARANTINED"],
+      );
+      if ((inserted.rowCount ?? 0) !== 1) {
+        throw new Error("DISCOVERY_REJECTED_CANDIDATE_QUARANTINE_FAILED");
+      }
+    }
+    if (item.retry_of_candidate_id) {
+      const retryState = input.rejectedCandidate
+        ? "SUPERSEDED"
+        : "RETRY_AMBIGUOUS";
+      const retriedByBatchId = input.batchId;
+      const transitioned = await client.query(
+        `UPDATE discovery_rejected_candidates
+            SET state=$4,retried_by_batch_id=$5,updated_at=NOW()
+          WHERE id=$1 AND audit_id=$2 AND state='RETRY_CLAIMED'
+            AND retried_by_batch_id=$3 RETURNING id`,
+        [item.retry_of_candidate_id, input.auditId, input.batchId, retryState, retriedByBatchId],
+      );
+      if ((transitioned.rowCount ?? 0) !== 1) {
+        throw new Error("DISCOVERY_REGENERATION_SOURCE_CANDIDATE_CAS_FAILED");
+      }
+    }
     const itemFailed = await client.query(
       `UPDATE discovery_batch_items
           SET state = $3, reserved_cost_usd = 0, error_code = $4,
@@ -2093,7 +2425,7 @@ export async function failDiscoveryBatchItem(
             JOIN discovery_operation_lock l
               ON l.lock_key = $12 AND l.token = b.lock_token
             WHERE b.id = discovery_batch_items.batch_id
-              AND b.lock_token = $13 AND b.stage = 'GENERATION'
+              AND b.lock_token = $13 AND b.stage IN ('GENERATION','REGENERATION')
               AND b.status = $14 AND l.expires_at > NOW()
           )
         RETURNING audit_id`,
@@ -2126,6 +2458,218 @@ export async function failDiscoveryBatchItem(
     );
     if ((auditFailed.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_BATCH_FAILURE_AUDIT_CAS_FAILED");
     await client.query("COMMIT");
+    return true;
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => {});
+    try {
+      await recordDiscoveryBatchIncident({
+        operation: "FAIL_BATCH_ITEM",
+        auditId: input.auditId,
+        batchId: input.batchId,
+        fenceToken: input.lockToken,
+        errorCode: error instanceof Error ? error.message.split(":")[0] : "DISCOVERY_BATCH_ITEM_FAILURE_UNKNOWN",
+        errorDetail: error instanceof Error ? error.message : String(error),
+      }, pool);
+    } catch (incidentError) {
+      throw new AggregateError([error, incidentError], "DISCOVERY_BATCH_FAILURE_AND_INCIDENT_PERSISTENCE_FAILED");
+    }
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Terminalizes a provider result whose process crashed after durable usage
+ * accounting but before persistence/quarantine.  The old lock token is a
+ * durable epoch: recovery is allowed only while that exact epoch is still the
+ * latest (and expired), so a newer batch can never race this cleanup.
+ */
+export async function recoverOrphanedDiscoveryProviderResult(
+  input: { batchId: string; auditId: string },
+  poolOverride?: Pool,
+): Promise<{ candidateId: string; responseId: string; state: "TERMINAL_REJECTED" }> {
+  const pool = await resolvePool(poolOverride);
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [DISCOVERY_TRANSACTION_FENCE_KEY]);
+    const ownership = await client.query(
+      `SELECT b.*,l.token AS current_fence_token,l.expires_at AS fence_expires_at
+         FROM discovery_batch_runs b
+         JOIN discovery_operation_lock l
+           ON l.lock_key=$2 AND l.token=b.lock_token
+        WHERE b.id=$1 AND b.stage IN ('GENERATION','REGENERATION')
+          AND b.status IN ('RUNNING','PAUSED') AND l.expires_at <= NOW()
+        FOR UPDATE OF b,l`,
+      [input.batchId, DISCOVERY_GLOBAL_LOCK_KEY],
+    );
+    if ((ownership.rowCount ?? 0) !== 1) {
+      throw new Error("DISCOVERY_ORPHAN_EPOCH_NOT_RECOVERABLE");
+    }
+    const batchRun = ownership.rows[0];
+    const itemResult = await client.query(
+      `SELECT * FROM discovery_batch_items
+        WHERE batch_id=$1 AND audit_id=$2 AND provider_calls=1
+          AND state IN ('PROVIDER_STARTED','GENERATED','VALIDATED')
+        FOR UPDATE`,
+      [input.batchId, input.auditId],
+    );
+    if ((itemResult.rowCount ?? 0) !== 1) {
+      throw new Error("DISCOVERY_ORPHAN_ITEM_NOT_RECOVERABLE");
+    }
+    const item = itemResult.rows[0];
+    const sourceState = String(item.state);
+    const auditResult = await client.query(
+      `SELECT id,responses,report_delivery_status,report_sent_at,report_txt,report_html
+         FROM audits WHERE id=$1 AND type='GRATUIT' FOR UPDATE`,
+      [input.auditId],
+    );
+    if ((auditResult.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_ORPHAN_AUDIT_MISSING");
+    const audit = auditResult.rows[0];
+    const currentTxt = String(audit.report_txt || "");
+    const currentHtml = String(audit.report_html || "");
+    const sourceMatches = !audit.report_sent_at
+      && String(audit.report_delivery_status ?? "") === String(item.expected_source_status ?? "")
+      && discoverySha256(audit.responses) === String(item.expected_responses_sha256)
+      && (item.expected_txt_sha256 == null
+        ? currentTxt.length === 0
+        : discoverySha256(currentTxt) === String(item.expected_txt_sha256))
+      && (item.expected_html_sha256 == null
+        ? currentHtml.length === 0
+        : discoverySha256(currentHtml) === String(item.expected_html_sha256));
+    if (!sourceMatches) throw new Error("DISCOVERY_ORPHAN_SOURCE_CAS_FAILED");
+
+    const externalState = await client.query(
+      `SELECT
+         EXISTS (SELECT 1 FROM discovery_email_delivery_claims c WHERE c.audit_id=$1) AS has_claim,
+         EXISTS (SELECT 1 FROM email_tracking t WHERE t.audit_id=$1
+           AND t.email_type IN ('sendReportReadyEmail','sendReportRegeneratedEmail')) AS has_tracking,
+         EXISTS (SELECT 1 FROM report_artifacts a WHERE a.batch_id=$2 AND a.audit_id=$1) AS has_batch_artifact`,
+      [input.auditId, input.batchId],
+    );
+    if (externalState.rows[0]?.has_claim || externalState.rows[0]?.has_tracking
+      || externalState.rows[0]?.has_batch_artifact) {
+      throw new Error("DISCOVERY_ORPHAN_EXTERNAL_STATE_BLOCKED");
+    }
+
+    const providerProof = await client.query(
+      `SELECT r.id AS reservation_id,r.response_id,
+              COALESCE(r.actual_cost_usd,r.reserved_cost_usd)::numeric AS reservation_cost_usd,
+              e.id AS usage_event_id,e.model,e.input_tokens,e.output_tokens,e.total_tokens,
+              e.estimated_openai_cost_usd AS usage_cost_usd
+         FROM ai_cost_budget_reservations r
+         JOIN ai_usage_events e ON e.response_id=r.response_id
+        WHERE r.product='discovery' AND r.order_id=$1 AND r.status='COMPLETED'
+          AND e.profile='discovery' AND e.status='completed'
+          AND r.response_id IS NOT NULL
+          AND r.created_at >= $2::timestamptz AND e.created_at >= $2::timestamptz
+          AND ($3::uuid IS NULL OR r.id=$3)
+          AND ($4::bigint IS NULL OR e.id=$4)
+          AND ($5::text IS NULL OR r.response_id=$5)
+          AND NOT EXISTS (SELECT 1 FROM discovery_rejected_candidates c
+            WHERE c.provider_response_id=r.response_id)
+        FOR UPDATE OF r,e`,
+      [input.auditId, item.provider_started_at, item.provider_reservation_id,
+        item.provider_usage_event_id, item.provider_response_id],
+    );
+    const proof = providerProof.rows[0];
+    const actualCostUsd = Number(proof?.reservation_cost_usd);
+    if ((providerProof.rowCount ?? 0) !== 1 || !proof?.response_id
+      || !Number.isFinite(actualCostUsd) || actualCostUsd < 0
+      || actualCostUsd > DISCOVERY_BATCH_HARD_COST_USD + 1e-9
+      || Math.abs(actualCostUsd - Number(proof.usage_cost_usd)) > 0.000001
+      || (sourceState !== "PROVIDER_STARTED" && (
+        String(item.provider_reservation_id) !== String(proof.reservation_id)
+        || String(item.provider_usage_event_id) !== String(proof.usage_event_id)
+        || String(item.provider_response_id) !== String(proof.response_id)
+        || Number(item.input_tokens) !== Number(proof.input_tokens)
+        || Number(item.output_tokens) !== Number(proof.output_tokens)
+        || Number(item.total_tokens) !== Number(proof.total_tokens)
+        || Math.abs(Number(item.actual_cost_usd) - actualCostUsd) > 0.000001
+      ))) {
+      throw new Error("DISCOVERY_ORPHAN_PROVIDER_PROOF_MISMATCH");
+    }
+
+    const candidateCount = await client.query(
+      `SELECT COUNT(*)::int AS count FROM discovery_rejected_candidates
+        WHERE audit_id=$1`,
+      [input.auditId],
+    );
+    const attemptNo = Number(candidateCount.rows[0]?.count || 0) + 1;
+    if (attemptNo > DISCOVERY_MAX_PROVIDER_ATTEMPTS_PER_AUDIT
+      || (String(batchRun.stage) === "GENERATION" && attemptNo !== 1)
+      || (String(batchRun.stage) === "REGENERATION" && attemptNo !== 2)) {
+      throw new Error("DISCOVERY_ORPHAN_ATTEMPT_PROVENANCE_MISMATCH");
+    }
+    if (String(batchRun.stage) === "REGENERATION") {
+      const prior = await client.query(
+        `UPDATE discovery_rejected_candidates
+            SET state='SUPERSEDED',updated_at=NOW()
+          WHERE id=$1 AND audit_id=$2 AND state='RETRY_CLAIMED'
+            AND retried_by_batch_id=$3 RETURNING id`,
+        [item.retry_of_candidate_id, input.auditId, input.batchId],
+      );
+      if ((prior.rowCount ?? 0) !== 1) {
+        throw new Error("DISCOVERY_ORPHAN_RETRY_SOURCE_CAS_FAILED");
+      }
+    }
+
+    const candidateId = randomUUID();
+    const inserted = await client.query(
+      `INSERT INTO discovery_rejected_candidates
+        (id,batch_id,audit_id,provider_response_id,attempt_no,model,source_kind,
+         reservation_id,usage_event_id,responses_sha256,validation_errors,
+         actual_cost_usd,state)
+       VALUES ($1,$2,$3,$4,$5,$6,'PROVIDER_RESULT_LOST',$7,$8,$9,$10::jsonb,$11,'TERMINAL_REJECTED')
+       RETURNING id`,
+      [candidateId, input.batchId, input.auditId, proof.response_id, attemptNo,
+        String(proof.model || "discovery").slice(0, 120), proof.reservation_id,
+        proof.usage_event_id, item.expected_responses_sha256,
+        JSON.stringify(["crash_after_provider_completion_before_candidate_persistence"]),
+        actualCostUsd],
+    );
+    if ((inserted.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_ORPHAN_QUARANTINE_FAILED");
+
+    const itemFailed = await client.query(
+      `UPDATE discovery_batch_items
+          SET state='FAILED',provider_response_id=$3,input_tokens=$4,output_tokens=$5,
+              total_tokens=$6,actual_cost_usd=$7,reserved_cost_usd=0,
+              provider_reservation_id=$8,provider_usage_event_id=$9,
+              error_code='DISCOVERY_PROVIDER_RESULT_LOST_AFTER_CRASH',
+              error_detail='provider usage completed; candidate bytes were not durably retained',updated_at=NOW()
+        WHERE batch_id=$1 AND audit_id=$2 AND state=$10 AND provider_calls=1
+        RETURNING audit_id`,
+      [input.batchId, input.auditId, proof.response_id, Number(proof.input_tokens),
+        Number(proof.output_tokens), Number(proof.total_tokens), actualCostUsd,
+        proof.reservation_id, proof.usage_event_id, sourceState],
+    );
+    if ((itemFailed.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_ORPHAN_ITEM_CAS_FAILED");
+    const runPaused = await client.query(
+      `UPDATE discovery_batch_runs
+          SET status='PAUSED',stop_reason='DISCOVERY_PROVIDER_RESULT_LOST_AFTER_CRASH',
+              reserved_cost_usd=GREATEST(0,reserved_cost_usd-$2),
+              actual_cost_usd=actual_cost_usd+$3,updated_at=NOW()
+        WHERE id=$1 AND lock_token=$4 AND status=$5 RETURNING id`,
+      [input.batchId, Number(item.reserved_cost_usd || 0),
+        sourceState === "PROVIDER_STARTED" ? actualCostUsd : 0,
+        batchRun.lock_token, String(batchRun.status)],
+    );
+    if ((runPaused.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_ORPHAN_RUN_CAS_FAILED");
+    const auditHeld = await client.query(
+      `UPDATE audits SET report_delivery_status='BATCH_REVIEW'
+        WHERE id=$1 AND type='GRATUIT' AND report_sent_at IS NULL
+          AND report_delivery_status IS NOT DISTINCT FROM $2
+          AND responses IS NOT DISTINCT FROM $3::jsonb
+          AND report_txt IS NOT DISTINCT FROM $4 AND report_html IS NOT DISTINCT FROM $5
+          AND ${DISCOVERY_SUPERSEDED_TERMINAL_SQL}
+        RETURNING id`,
+      [input.auditId, item.expected_source_status, JSON.stringify(audit.responses),
+        audit.report_txt, audit.report_html],
+    );
+    if ((auditHeld.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_ORPHAN_AUDIT_CAS_FAILED");
+    await client.query("COMMIT");
+    return { candidateId, responseId: String(proof.response_id), state: "TERMINAL_REJECTED" };
   } catch (error) {
     await client.query("ROLLBACK").catch(() => {});
     throw error;
@@ -2180,6 +2724,7 @@ async function assertBatchOwnership(
        JOIN discovery_operation_lock l
          ON l.lock_key = $2 AND l.token = b.lock_token
       WHERE b.id = $1 AND b.lock_token = $3 AND l.expires_at > NOW()
+        AND b.approval_expires_at > NOW()
       FOR UPDATE OF b, l`,
     [batchId, DISCOVERY_GLOBAL_LOCK_KEY, lockToken],
   );
@@ -2208,13 +2753,111 @@ export async function claimDiscoveryProviderAttempt(
     if (!["QUEUED", "PREFLIGHT_OK"].includes(String(item.state))) throw new Error("DISCOVERY_BATCH_ITEM_NOT_QUEUED");
     if (Number(item.provider_calls) !== 0) throw new Error("DISCOVERY_BATCH_MONO_CALL_VIOLATION");
     const priorGenericAttempt = await client.query(
-      `SELECT 1 FROM ai_cost_budget_reservations
-        WHERE product = 'discovery' AND order_id = $1
-        LIMIT 1`,
+      `SELECT COUNT(*)::int AS count,
+              COALESCE(SUM(CASE
+                WHEN status='COMPLETED' THEN COALESCE(actual_cost_usd,reserved_cost_usd)
+                WHEN status IN ('RESERVED','UNCERTAIN') THEN reserved_cost_usd
+                ELSE 0 END),0)::numeric AS cumulative_cost,
+              COUNT(*) FILTER (WHERE status <> 'COMPLETED')::int AS unsettled
+         FROM ai_cost_budget_reservations
+        WHERE product = 'discovery' AND order_id = $1`,
       [input.auditId],
     );
-    if ((priorGenericAttempt.rowCount ?? 0) !== 0) {
-      throw new Error("DISCOVERY_BATCH_PRIOR_PROVIDER_ATTEMPT");
+    const priorCount = Number(priorGenericAttempt.rows[0]?.count || 0);
+    const cumulativeCost = Number(priorGenericAttempt.rows[0]?.cumulative_cost || 0);
+    const unsettled = Number(priorGenericAttempt.rows[0]?.unsettled || 0);
+    if (String(batch.stage) === "GENERATION") {
+      if (item.retry_of_candidate_id || priorCount !== 0) {
+        throw new Error("DISCOVERY_BATCH_PRIOR_PROVIDER_ATTEMPT");
+      }
+    } else if (String(batch.stage) === "REGENERATION") {
+      if (!item.retry_of_candidate_id || priorCount !== 1 || unsettled !== 0
+        || cumulativeCost + DISCOVERY_BATCH_HARD_COST_USD > DISCOVERY_REGENERATION_CUMULATIVE_HARD_COST_USD + 1e-9) {
+        throw new Error("DISCOVERY_REGENERATION_BUDGET_OR_ATTEMPT_BLOCKED");
+      }
+      const retryAudit = await client.query(
+        `SELECT id,responses,narrative_report,report_txt,report_html FROM audits
+          WHERE id=$1 AND type='GRATUIT' AND report_sent_at IS NULL
+            AND report_delivery_status='BATCH_REVIEW'
+          FOR UPDATE`,
+        [input.auditId],
+      );
+      if ((retryAudit.rowCount ?? 0) !== 1
+        || discoverySha256(retryAudit.rows[0].responses) !== String(item.expected_responses_sha256)) {
+        throw new Error("DISCOVERY_REGENERATION_AUDIT_CAS_FAILED");
+      }
+      const liveTxt = String(retryAudit.rows[0].report_txt || "");
+      const liveHtml = String(retryAudit.rows[0].report_html || "");
+      if ((item.expected_txt_sha256 == null ? liveTxt.length !== 0
+        : discoverySha256(liveTxt) !== String(item.expected_txt_sha256))
+        || (item.expected_html_sha256 == null ? liveHtml.length !== 0
+          : discoverySha256(liveHtml) !== String(item.expected_html_sha256))) {
+        throw new Error("DISCOVERY_REGENERATION_LIVE_ARTIFACT_CHANGED");
+      }
+      const retrySource = await client.query(
+        `SELECT c.*,
+                r.id AS proven_reservation_id,r.response_id AS reservation_response_id,
+                COALESCE(r.actual_cost_usd,r.reserved_cost_usd)::numeric AS reservation_cost_usd,
+                e.id AS proven_usage_event_id,e.response_id AS usage_response_id,
+                e.estimated_openai_cost_usd AS usage_cost_usd,
+                a.id AS proven_artifact_id,a.txt AS artifact_txt,a.html AS artifact_html,
+                a.content_sha256 AS proven_artifact_content_sha256
+           FROM discovery_rejected_candidates c
+           JOIN ai_cost_budget_reservations r ON r.id=c.reservation_id
+           JOIN ai_usage_events e ON e.id=c.usage_event_id
+           LEFT JOIN report_artifacts a ON a.id=c.artifact_id AND a.audit_id=c.audit_id
+          WHERE c.id=$1 AND c.audit_id=$2 AND c.state='QUARANTINED'
+            AND c.attempt_no=1 AND c.responses_sha256=$3
+            AND r.product='discovery' AND r.order_id=c.audit_id AND r.status='COMPLETED'
+            AND e.profile='discovery' AND e.status='completed'
+            AND NOT EXISTS (SELECT 1 FROM discovery_email_delivery_claims d WHERE d.audit_id=c.audit_id)
+            AND NOT EXISTS (SELECT 1 FROM email_tracking t WHERE t.audit_id=c.audit_id
+              AND t.email_type IN ('sendReportReadyEmail','sendReportRegeneratedEmail'))
+          FOR UPDATE OF c,r,e`,
+        [item.retry_of_candidate_id, input.auditId, item.expected_responses_sha256],
+      );
+      const retryProof = retrySource.rows[0];
+      const rawValue = retryProof.provider_raw_text ?? retryProof.provider_raw;
+      const rawHash = rawValue == null ? null : discoverySha256(rawValue);
+      const assembledHash = retryProof.assembled_candidate == null
+        ? null : discoverySha256(retryProof.assembled_candidate);
+      if ((retrySource.rowCount ?? 0) !== 1
+        || String(retryProof.provider_response_id) !== String(retryProof.reservation_response_id)
+        || String(retryProof.provider_response_id) !== String(retryProof.usage_response_id)
+        || String(retryProof.reservation_id) !== String(retryProof.proven_reservation_id)
+        || String(retryProof.usage_event_id) !== String(retryProof.proven_usage_event_id)
+        || Math.abs(Number(retryProof.actual_cost_usd) - Number(retryProof.reservation_cost_usd)) > 0.000001
+        || Math.abs(Number(retryProof.actual_cost_usd) - Number(retryProof.usage_cost_usd)) > 0.000001
+        || Math.abs(Number(retryProof.actual_cost_usd) - cumulativeCost) > 0.000001
+        || (["PROVIDER_REJECTED", "ASSEMBLED_REJECTED"].includes(String(retryProof.source_kind))
+          && (!retryProof.provider_raw_sha256 || rawHash !== String(retryProof.provider_raw_sha256)))
+        || (["ASSEMBLED_REJECTED", "PERSISTED_INVALID_REPORT"].includes(String(retryProof.source_kind))
+          && (!retryProof.assembled_sha256 || assembledHash !== String(retryProof.assembled_sha256)))
+        || (String(retryProof.source_kind) === "PERSISTED_INVALID_REPORT"
+          && (!retryProof.report_txt_sha256 || !retryProof.report_html_sha256
+            || !retryProof.artifact_content_sha256 || !retryProof.artifact_id
+            || String(retryProof.proven_artifact_id || "") !== String(retryProof.artifact_id)
+            || String(retryProof.proven_artifact_content_sha256 || "") !== String(retryProof.artifact_content_sha256)
+            || String(retryProof.artifact_txt || "") !== liveTxt
+            || String(retryProof.artifact_html || "") !== liveHtml))
+        || (retryProof.report_txt_sha256 != null
+          && discoverySha256(liveTxt) !== String(retryProof.report_txt_sha256))
+        || (retryProof.report_html_sha256 != null
+          && discoverySha256(liveHtml) !== String(retryProof.report_html_sha256))
+        || (retryProof.artifact_content_sha256 != null
+          && discoveryArtifactContentHash(liveTxt, liveHtml) !== String(retryProof.artifact_content_sha256))) {
+        throw new Error("DISCOVERY_REGENERATION_SOURCE_NOT_ELIGIBLE");
+      }
+      const retryClaimed = await client.query(
+        `UPDATE discovery_rejected_candidates
+            SET state='RETRY_CLAIMED',retried_by_batch_id=$2,updated_at=NOW()
+          WHERE id=$1 AND state='QUARANTINED' AND retried_by_batch_id IS NULL
+          RETURNING id`,
+        [item.retry_of_candidate_id, input.batchId],
+      );
+      if ((retryClaimed.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_REGENERATION_CLAIM_RACE");
+    } else {
+      throw new Error("DISCOVERY_BATCH_STAGE_NOT_GENERATION");
     }
 
     const budget = evaluateDiscoveryBudgetReservation({
@@ -2283,6 +2926,32 @@ export async function recordDiscoveryProviderUsage(
       throw new Error("DISCOVERY_BATCH_USAGE_WITHOUT_PROVIDER_CLAIM");
     }
     const actualCostUsd = roundUsd(input.actualCostUsd);
+    const providerProof = await client.query(
+      `SELECT r.id AS reservation_id,r.response_id,
+              COALESCE(r.actual_cost_usd,r.reserved_cost_usd)::numeric AS reservation_cost_usd,
+              e.id AS usage_event_id,e.input_tokens,e.output_tokens,e.total_tokens,
+              e.estimated_openai_cost_usd
+         FROM ai_cost_budget_reservations r
+         JOIN ai_usage_events e ON e.response_id=r.response_id
+        WHERE r.product='discovery' AND r.order_id=$1 AND r.response_id=$2
+          AND r.status='COMPLETED' AND e.profile='discovery' AND e.status='completed'
+          AND r.created_at >= $3::timestamptz AND e.created_at >= $3::timestamptz
+          AND NOT EXISTS (
+            SELECT 1 FROM discovery_rejected_candidates c
+             WHERE c.id = $4::uuid AND c.provider_response_id = r.response_id
+          )
+        FOR UPDATE OF r,e`,
+      [input.auditId, input.responseId, item.provider_started_at, item.retry_of_candidate_id],
+    );
+    const proof = providerProof.rows[0];
+    if ((providerProof.rowCount ?? 0) !== 1
+      || Number(proof.input_tokens) !== input.inputTokens
+      || Number(proof.output_tokens) !== input.outputTokens
+      || Number(proof.total_tokens) !== input.totalTokens
+      || Math.abs(Number(proof.reservation_cost_usd) - actualCostUsd) > 0.000001
+      || Math.abs(Number(proof.estimated_openai_cost_usd) - actualCostUsd) > 0.000001) {
+      throw new Error("DISCOVERY_BATCH_PROVIDER_LEDGER_MISMATCH");
+    }
     const hard = roundUsd(Number(batch.hard_per_scan_usd));
     const soft = roundUsd(Number(batch.soft_per_scan_usd));
     const stopReason = actualCostUsd > hard
@@ -2290,14 +2959,21 @@ export async function recordDiscoveryProviderUsage(
       : actualCostUsd > soft
         ? `soft_cost_limit_exceeded:${actualCostUsd.toFixed(6)}/${soft.toFixed(6)}`
         : undefined;
-    await client.query(
+    const usageRecorded = await client.query(
       `UPDATE discovery_batch_items
           SET state = 'GENERATED', provider_response_id = $3,
               input_tokens = $4, output_tokens = $5, total_tokens = $6,
-              actual_cost_usd = $7, reserved_cost_usd = 0, updated_at = NOW()
-        WHERE batch_id = $1 AND audit_id = $2`,
-      [input.batchId, input.auditId, input.responseId, input.inputTokens, input.outputTokens, input.totalTokens, actualCostUsd],
+              actual_cost_usd = $7, reserved_cost_usd = 0,
+              provider_reservation_id = $8, provider_usage_event_id = $9,
+              updated_at = NOW()
+        WHERE batch_id = $1 AND audit_id = $2
+          AND state='PROVIDER_STARTED' AND provider_calls=1`,
+      [input.batchId, input.auditId, input.responseId, input.inputTokens, input.outputTokens,
+        input.totalTokens, actualCostUsd, proof.reservation_id, proof.usage_event_id],
     );
+    if ((usageRecorded.rowCount ?? 0) !== 1) {
+      throw new Error("DISCOVERY_BATCH_USAGE_CAS_FAILED");
+    }
     await client.query(
       `UPDATE discovery_batch_runs
           SET reserved_cost_usd = GREATEST(0, reserved_cost_usd - $2),
@@ -2329,7 +3005,7 @@ export async function persistValidatedDiscoveryBatchItem(
   try {
     await client.query("BEGIN");
     const batch = await assertBatchOwnership(client, input.batchId, input.lockToken);
-    if (String(batch.stage) !== "GENERATION"
+    if (!["GENERATION", "REGENERATION"].includes(String(batch.stage))
       || !["RUNNING", "PAUSED"].includes(String(batch.status))) {
       throw new Error("DISCOVERY_BATCH_NOT_PERSISTABLE");
     }
@@ -2344,6 +3020,35 @@ export async function persistValidatedDiscoveryBatchItem(
     }
     if (Number(item.actual_cost_usd) > Number(batch.hard_per_scan_usd)) {
       throw new Error("DISCOVERY_BATCH_HARD_COST_BREACH");
+    }
+    if (!item.provider_reservation_id || !item.provider_usage_event_id || !item.provider_response_id) {
+      throw new Error("DISCOVERY_BATCH_PROVIDER_PROVENANCE_MISSING");
+    }
+    const providerProof = await client.query(
+      `SELECT r.response_id,r.actual_cost_usd,e.input_tokens,e.output_tokens,e.total_tokens,
+              e.estimated_openai_cost_usd,e.model
+         FROM ai_cost_budget_reservations r
+         JOIN ai_usage_events e ON e.id=$2 AND e.response_id=r.response_id
+        WHERE r.id=$1 AND r.product='discovery' AND r.order_id=$3
+          AND r.status='COMPLETED' AND e.profile='discovery' AND e.status='completed'
+          AND r.created_at >= $4::timestamptz AND e.created_at >= $4::timestamptz
+          AND r.response_id=$5
+          AND NOT EXISTS (
+            SELECT 1 FROM discovery_rejected_candidates c
+             WHERE c.id=$6::uuid AND c.provider_response_id=r.response_id
+          )
+        FOR UPDATE OF r,e`,
+      [item.provider_reservation_id, item.provider_usage_event_id, input.auditId,
+        item.provider_started_at, item.provider_response_id, item.retry_of_candidate_id],
+    );
+    const proof = providerProof.rows[0];
+    if ((providerProof.rowCount ?? 0) !== 1
+      || Number(proof.input_tokens) !== Number(item.input_tokens)
+      || Number(proof.output_tokens) !== Number(item.output_tokens)
+      || Number(proof.total_tokens) !== Number(item.total_tokens)
+      || Math.abs(Number(proof.actual_cost_usd) - Number(item.actual_cost_usd)) > 0.000001
+      || Math.abs(Number(proof.estimated_openai_cost_usd) - Number(item.actual_cost_usd)) > 0.000001) {
+      throw new Error("DISCOVERY_BATCH_PROVIDER_PROVENANCE_MISMATCH");
     }
     const auditResult = await client.query(
       `SELECT id, responses, report_sent_at, report_delivery_status, narrative_report,
@@ -2381,6 +3086,17 @@ export async function persistValidatedDiscoveryBatchItem(
     if (!sourceTxtMatches || !sourceHtmlMatches) {
       throw new Error("DISCOVERY_AUDIT_SOURCE_ARTIFACT_CHANGED");
     }
+    const persistenceGate = validateDiscoveryPersistenceContract({
+      narrativeReport: input.narrativeReport,
+      scores: input.scores,
+      txt: input.txt,
+      html: input.html,
+      responses: audit.responses || {},
+    });
+    if (!persistenceGate.ok
+      || !hasPassingPersistedDiscoveryDeliveryGate(input.narrativeReport as any)) {
+      throw new Error(`DISCOVERY_BATCH_PERSISTENCE_GATE_FAILED:${persistenceGate.errors.join("|")}`);
+    }
 
     const artifactId = randomUUID();
     const artifact = await client.query(
@@ -2390,7 +3106,7 @@ export async function persistValidatedDiscoveryBatchItem(
        ON CONFLICT (audit_id, content_sha256) WHERE content_sha256 IS NOT NULL
        DO NOTHING
        RETURNING id`,
-      [artifactId, input.auditId, input.model, input.txt, input.html, contentSha256, input.batchId],
+      [artifactId, input.auditId, String(proof.model || input.model), input.txt, input.html, contentSha256, input.batchId],
     );
     if ((artifact.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_BATCH_ARTIFACT_ALREADY_EXISTS");
     const persistedArtifactId = String(artifact.rows[0].id);
@@ -2416,7 +3132,7 @@ export async function persistValidatedDiscoveryBatchItem(
               AND i.expected_source_status IS NOT DISTINCT FROM $6
               AND i.expected_txt_sha256 IS NOT DISTINCT FROM $13
               AND i.expected_html_sha256 IS NOT DISTINCT FROM $14
-              AND b.stage = 'GENERATION' AND b.status = $15
+              AND b.stage IN ('GENERATION','REGENERATION') AND b.status = $15
               AND b.lock_token = $16 AND l.expires_at > NOW()
           )
           AND ${DISCOVERY_SUPERSEDED_TERMINAL_SQL}
@@ -2443,7 +3159,7 @@ export async function persistValidatedDiscoveryBatchItem(
             JOIN discovery_operation_lock l
               ON l.lock_key = $10 AND l.token = b.lock_token
             WHERE b.id = discovery_batch_items.batch_id
-              AND b.stage = 'GENERATION' AND b.status = $11
+              AND b.stage IN ('GENERATION','REGENERATION') AND b.status = $11
               AND b.lock_token = $12 AND l.expires_at > NOW()
           )
         RETURNING audit_id`,
@@ -2453,6 +3169,18 @@ export async function persistValidatedDiscoveryBatchItem(
         String(batch.status), input.lockToken],
     );
     if ((itemStored.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_BATCH_ITEM_PERSISTENCE_CAS_FAILED");
+    if (item.retry_of_candidate_id) {
+      const superseded = await client.query(
+        `UPDATE discovery_rejected_candidates
+            SET state='SUPERSEDED',updated_at=NOW()
+          WHERE id=$1 AND audit_id=$2 AND state='RETRY_CLAIMED'
+            AND retried_by_batch_id=$3 RETURNING id`,
+        [item.retry_of_candidate_id, input.auditId, input.batchId],
+      );
+      if ((superseded.rowCount ?? 0) !== 1) {
+        throw new Error("DISCOVERY_REGENERATION_SOURCE_CANDIDATE_CAS_FAILED");
+      }
+    }
     await client.query("COMMIT");
     return { artifactId: persistedArtifactId, txtSha256, htmlSha256 };
   } catch (error) {
@@ -2508,6 +3236,15 @@ export async function promoteDiscoveryBatchItemForDelivery(
       narrativeReport: audit.narrative_report,
       reportTxt: audit.report_txt,
       reportHtml: audit.report_html,
+      reportArtifacts: (await client.query(
+        `SELECT txt,html,content_sha256 FROM report_artifacts
+          WHERE audit_id=$1 ORDER BY created_at DESC FOR UPDATE`,
+        [input.auditId],
+      )).rows.map((row) => ({
+        txt: row.txt,
+        html: row.html,
+        contentSha256: row.content_sha256,
+      })),
     });
     const gate = evaluateCanonicalDiscoveryArtifacts(canonical);
     if (!gate.ok || !hasPassingPersistedDiscoveryDeliveryGate(audit.narrative_report)) {

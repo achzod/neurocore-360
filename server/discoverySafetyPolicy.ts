@@ -91,7 +91,7 @@ const MEDICAL_SUBJECT_PATTERN = /\b(?:cortisol|thyroide|testosterone|axe\s+hpa|c
 const MEDICAL_AFFIRMATIVE_PATTERN = /\b(?:tu\s+as|ton|ta|tes)\b.{0,55}\b(?:est|sont|indique|revele|prouve|confirme|eleve|basse?|dereglement|dysfonction)\b|\b(?:indique|revele|prouve|confirme)\b/;
 const MEDICAL_QUALIFIER_PATTERN = /\b(?:peut|pourrait|hypothese|possible|a\s+confirmer|ne\s+permet\s+pas\s+de\s+conclure|sans\s+permettre\s+de\s+conclure)\b/;
 const MEDICAL_TESTING_PATTERN = /\b(?:fais|faire|demande|demander|dose|doser|controle|controler|mesure|mesurer)\b.{0,65}\b(?:tsh|t3|t4|testosterone|cortisol|insuline|bilan\s+(?:sanguin|biologique|hormonal)|panel\s+(?:sanguin|biologique|hormonal))\b/;
-const DIGESTIVE_DIAGNOSIS_PATTERN = /\b(?:dysbiose|hypochlorhydrie|sibo|permeabilite\s+intestinale|malabsorption)\b/;
+const DIGESTIVE_DIAGNOSIS_PATTERN = /\b(?:dysbiose|hypochlorhydrie|sibo|permeabilite\s+intestinale|intestin\s+permeable|malabsorption|mauvaise\s+absorption|surcroissance\s+bacterienne|(?:desequilibre|flore)\s+(?:de\s+la\s+)?flore\s+intestinale|flore\s+intestinale\s+desequilibree)\b/;
 
 function isUnqualifiedMedicalAssertion(sentence: string): boolean {
   const normalizedSentence = normalized(sentence);

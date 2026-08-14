@@ -71,6 +71,12 @@ import {
   type Question,
 } from "@/lib/questionnaire-tiers";
 import {
+  DISCOVERY_QUESTIONNAIRE_CONTRACT_VERSION_KEY,
+  DISCOVERY_QUESTIONNAIRE_CURRENT_VERSION,
+  DISCOVERY_REQUIRED_RESPONSE_KEY_SET,
+  hasDiscoveryRequiredResponseValue,
+} from "@shared/discoveryQuestionnaireContract";
+import {
   ChevronLeft,
   ChevronRight,
   Check,
@@ -634,6 +640,9 @@ function QuestionnaireContent() {
     if (emailSubmitted) {
       localStorage.setItem("neurocore_email", email);
       const responsesToSave = { ...responses };
+      if (selectedPlan === "gratuit") {
+        responsesToSave[DISCOVERY_QUESTIONNAIRE_CONTRACT_VERSION_KEY] = DISCOVERY_QUESTIONNAIRE_CURRENT_VERSION;
+      }
       PHOTO_FIELDS.forEach((f) => delete responsesToSave[f]);
       localStorage.setItem("neurocore_responses", JSON.stringify(responsesToSave));
       localStorage.setItem("neurocore_section", String(currentSectionIndex));
@@ -759,6 +768,21 @@ function QuestionnaireContent() {
       return;
     }
 
+    if (selectedPlan === "gratuit") {
+      const missingRequired = sectionQuestions
+        .filter(shouldShowQuestion)
+        .filter((question) => DISCOVERY_REQUIRED_RESPONSE_KEY_SET.has(question.id))
+        .filter((question) => !hasDiscoveryRequiredResponseValue(responses[question.id]));
+      if (missingRequired.length > 0) {
+        toast({
+          title: "Réponses nécessaires",
+          description: "Complète les champs signalés avant de continuer. Ils déterminent les scores de ton rapport.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     // Vérifier les photos UNIQUEMENT pour Ultimate Scan
     const isLastSection = currentSectionIndex === filteredSections.length - 1;
     if (isLastSection && selectedPlan === "ultimate") {
@@ -785,6 +809,9 @@ function QuestionnaireContent() {
         }
       }
       const responsesToSave = { ...responses };
+      if (selectedPlan === "gratuit") {
+        responsesToSave[DISCOVERY_QUESTIONNAIRE_CONTRACT_VERSION_KEY] = DISCOVERY_QUESTIONNAIRE_CURRENT_VERSION;
+      }
       PHOTO_FIELDS.forEach((f) => delete responsesToSave[f]);
       localStorage.setItem("neurocore_responses", JSON.stringify(responsesToSave));
       // Photos stored in localStorage instead of sessionStorage (more reliable)
@@ -1137,7 +1164,8 @@ function QuestionnaireContent() {
                         <div className="flex items-start gap-2">
                           <Label className="text-base font-medium">
                             {question.label}
-                            {question.required && <span className="ml-1 text-destructive">*</span>}
+                            {(question.required || (selectedPlan === "gratuit" && DISCOVERY_REQUIRED_RESPONSE_KEY_SET.has(question.id)))
+                              && <span className="ml-1 text-destructive">*</span>}
                           </Label>
                         </div>
                         {question.helpText && (

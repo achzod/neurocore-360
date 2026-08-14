@@ -18,8 +18,12 @@ import {
   analyzeDiscoveryScan,
   buildDiscoveryReportAssets,
   convertToNarrativeReport,
+  DiscoveryRejectedCandidateError,
   DISCOVERY_PREMIUM_DOMAINS,
+  isDiscoveryRejectedCandidateError,
+  validateDiscoveryReportAgainstResponses,
   validateDiscoveryReportForDelivery,
+  validateDiscoveryQuestionnaireContract,
   type DiscoveryKnowledgePreflight,
   type DiscoveryResponses,
 } from "../server/discovery-scan";
@@ -38,6 +42,7 @@ import {
   discoverySha256,
   failDiscoveryBatchItem,
   markDiscoveryBatchItemPreflightOk,
+  prepareDiscoveryAuditForRegeneration,
   persistValidatedDiscoveryBatchItem,
   claimDiscoveryProviderAttempt,
   claimDiscoveryBatchEmailDelivery,
@@ -60,7 +65,7 @@ import {
   DISCOVERY_OTHER_AUDIT_ACTIVE_SQL,
   isDiscoverySupersededTerminal,
 } from "../server/discoverySupersededPolicy";
-import { assertDiscoveryBatchSchemaV005 } from "../server/discoveryBatchSchema";
+import { assertDiscoveryBatchSchemaV006 } from "../server/discoveryBatchSchema";
 import { getReportReadyEmailSubject, sendReportReadyEmail } from "../server/emailService";
 import { pool } from "../server/db";
 
@@ -95,12 +100,17 @@ interface ManifestRow {
   tracking: { total: number; accepted: number; failed: number; pending: number; hardFailed: number };
   deliveryClaimState: string | null;
   providerAttemptCount: number;
+  retryCandidateId: string | null;
+  retryCandidateState: string | null;
+  retryCandidateAttemptNo: number | null;
+  retryCandidateSourceKind: string | null;
   duplicateCandidate: boolean;
   superseded: boolean;
   unsubscribed: boolean;
   validEmail: boolean;
   testEmailBlocked: boolean;
   smtpHardFailProven: boolean;
+  regenerationEligible: boolean;
   cohort: DiscoveryManifestCohort;
   reasons: string[];
 }
@@ -110,7 +120,7 @@ interface DiscoveryManifest {
   generatedAt: string;
   source: "database_read_only";
   commitSha: string;
-  counts: Record<DiscoveryManifestCohort | "total", number>;
+  counts: Record<DiscoveryManifestCohort | "total", number> & { regeneration: number };
   items: ManifestRow[];
   manifestSha256: string;
 }
@@ -139,18 +149,7 @@ function assertGenerationEnvironment(): void {
 }
 
 function assertDeliveryEnvironment(): void {
-  const required: Array<[string, string]> = [
-    ["DISCOVERY_BATCH_DELIVERY_WORKER_ENABLED", "true"],
-    ["DISCOVERY_REPORT_DELIVERY_ENABLED", "false"],
-    ["REMEDIATION_SIDE_EFFECTS_DISABLED", "true"],
-  ];
-  for (const [key, value] of required) {
-    if (String(process.env[key] || "").toLowerCase() !== value) {
-      throw new Error(`DISCOVERY_BATCH_ENV_BLOCKED:${key}=${value} is mandatory`);
-    }
-  }
-  const baseUrl = String(process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || "").replace(/\/$/, "");
-  if (!baseUrl.startsWith("https://")) throw new Error("DISCOVERY_BATCH_ENV_BLOCKED:https base URL required");
+  throw new Error("DISCOVERY_DELIVERY_HARD_DISABLED");
 }
 
 async function hasBatchControlTables(): Promise<boolean> {
@@ -192,6 +191,20 @@ async function buildManifest(): Promise<DiscoveryManifest> {
             ${unsubscribeSelect},
             (SELECT COUNT(*)::int FROM ai_cost_budget_reservations r
               WHERE r.product = 'discovery' AND r.order_id = a.id) AS provider_attempt_count,
+            (SELECT c.id FROM discovery_rejected_candidates c
+              WHERE c.audit_id=a.id ORDER BY c.attempt_no DESC LIMIT 1) AS retry_candidate_id,
+            (SELECT c.state FROM discovery_rejected_candidates c
+              WHERE c.audit_id=a.id ORDER BY c.attempt_no DESC LIMIT 1) AS retry_candidate_state,
+            (SELECT c.attempt_no FROM discovery_rejected_candidates c
+              WHERE c.audit_id=a.id ORDER BY c.attempt_no DESC LIMIT 1) AS retry_candidate_attempt_no,
+            (SELECT c.source_kind FROM discovery_rejected_candidates c
+              WHERE c.audit_id=a.id ORDER BY c.attempt_no DESC LIMIT 1) AS retry_candidate_source_kind,
+            (SELECT COALESCE(jsonb_agg(jsonb_build_object(
+                'txt', ra.txt,
+                'html', ra.html,
+                'contentSha256', ra.content_sha256
+              ) ORDER BY ra.created_at ASC, ra.id ASC), '[]'::jsonb)
+               FROM report_artifacts ra WHERE ra.audit_id=a.id) AS report_artifacts,
             EXISTS (
               SELECT 1 FROM audits other
                WHERE other.type = 'GRATUIT' AND other.id <> a.id
@@ -232,8 +245,27 @@ async function buildManifest(): Promise<DiscoveryManifest> {
       narrativeReport: row.narrative_report,
       reportTxt: row.report_txt,
       reportHtml: row.report_html,
+      reportArtifacts: row.report_artifacts,
     });
-    const gate = evaluateCanonicalDiscoveryArtifacts(canonical);
+    const structuralGate = evaluateCanonicalDiscoveryArtifacts(canonical);
+    const questionnaireErrors = validateDiscoveryQuestionnaireContract(row.responses || {});
+    const factual = canonical.report && questionnaireErrors.length === 0
+      ? validateDiscoveryReportAgainstResponses(
+        canonical.report,
+        row.responses || {},
+        canonical.report.analysisMetadata,
+      )
+      : { ok: false, errors: [
+        ...(canonical.report ? [] : ["report_missing"]),
+        ...questionnaireErrors,
+      ] };
+    const gate = {
+      ok: structuralGate.ok && factual.ok,
+      errors: [...new Set([
+        ...structuralGate.errors,
+        ...factual.errors.map((error) => `factual:${error}`),
+      ])],
+    };
     const superseded = isDiscoverySupersededTerminal({
       type: row.type,
       reportDeliveryStatus: row.report_delivery_status,
@@ -260,7 +292,22 @@ async function buildManifest(): Promise<DiscoveryManifest> {
       tracking,
       deliveryClaimState: row.delivery_claim_state,
       providerAttemptCount: Number(row.provider_attempt_count || 0),
+      retryCandidateId: row.retry_candidate_id || null,
+      retryCandidateState: row.retry_candidate_state || null,
+      retryCandidateAttemptNo: row.retry_candidate_attempt_no == null
+        ? null : Number(row.retry_candidate_attempt_no),
+      retryCandidateSourceKind: row.retry_candidate_source_kind || null,
     });
+    const regenerationEligible = Number(row.provider_attempt_count || 0) === 1
+      && !row.report_sent_at
+      && tracking.total === 0
+      && !row.delivery_claim_state
+      && !superseded
+      && !Boolean(row.duplicate_candidate)
+      && !Boolean(row.unsubscribed)
+      && !gate.ok
+      && ["BATCH_REVIEW", "BATCH_READY", "NEEDS_REVIEW", "READY"]
+        .includes(String(row.report_delivery_status || ""));
     return {
       id: row.id,
       email: row.email,
@@ -277,12 +324,18 @@ async function buildManifest(): Promise<DiscoveryManifest> {
       tracking,
       deliveryClaimState: row.delivery_claim_state || null,
       providerAttemptCount: Number(row.provider_attempt_count || 0),
+      retryCandidateId: row.retry_candidate_id || null,
+      retryCandidateState: row.retry_candidate_state || null,
+      retryCandidateAttemptNo: row.retry_candidate_attempt_no == null
+        ? null : Number(row.retry_candidate_attempt_no),
+      retryCandidateSourceKind: row.retry_candidate_source_kind || null,
       duplicateCandidate: Boolean(row.duplicate_candidate),
       superseded,
       unsubscribed: Boolean(row.unsubscribed),
       validEmail: isValidDiscoveryRecipientEmail(row.email),
       testEmailBlocked: isBlockedDiscoveryTestEmail(row.email),
       smtpHardFailProven: tracking.hardFailed > 0,
+      regenerationEligible,
       cohort: classification.cohort,
       reasons: classification.reasons,
     };
@@ -302,6 +355,7 @@ async function buildManifest(): Promise<DiscoveryManifest> {
       valid_never_sent: count("valid_never_sent"),
       ambiguous: count("ambiguous"),
       invalid: count("invalid"),
+      regeneration: items.filter((item) => item.regenerationEligible).length,
     },
     items,
     manifestSha256,
@@ -356,21 +410,9 @@ async function captureKnowledge(responses: DiscoveryResponses): Promise<Discover
   return compacted;
 }
 
-async function usageEventsSince(startedAt: Date): Promise<any[]> {
-  const result = await pool.query(
-    `SELECT response_id, input_tokens, output_tokens, total_tokens, estimated_openai_cost_usd
-       FROM ai_usage_events
-      WHERE created_at >= $1::timestamptz
-        AND profile = 'discovery' AND label = 'discovery-unified-report'
-      ORDER BY created_at ASC`,
-    [startedAt.toISOString()],
-  );
-  return result.rows;
-}
-
 function assertExactTargetsEligible(
   selected: ManifestRow[],
-  stage: "GENERATION" | "DELIVERY",
+  stage: "GENERATION" | "REGENERATION" | "DELIVERY",
 ): void {
   for (const item of selected) {
     const reasons: string[] = [];
@@ -382,6 +424,16 @@ function assertExactTargetsEligible(
     if (item.smtpHardFailProven) reasons.push("smtp_hard_fail_proven_terminal");
     if (stage === "GENERATION") {
       if (item.cohort !== "invalid") reasons.push(`cohort_${item.cohort}`);
+      if (item.providerAttemptCount !== 0) reasons.push("prior_provider_attempt_exists");
+    } else if (stage === "REGENERATION") {
+      if (!item.regenerationEligible) reasons.push("regeneration_not_classified");
+      if (item.reportDeliveryStatus !== "BATCH_REVIEW") reasons.push("not_batch_review");
+      if (item.providerAttemptCount !== 1) reasons.push("provider_attempt_count_not_one");
+      if (!item.retryCandidateId) reasons.push("retry_candidate_missing");
+      if (item.retryCandidateState !== "QUARANTINED") reasons.push("retry_candidate_not_quarantined");
+      if (item.retryCandidateAttemptNo !== 1) reasons.push("retry_candidate_attempt_not_one");
+      if (item.tracking.total !== 0) reasons.push("prior_tracking_exists");
+      if (item.deliveryClaimState) reasons.push("prior_delivery_claim_exists");
     } else {
       if (item.cohort !== "valid_never_sent") reasons.push(`cohort_${item.cohort}`);
       if (!item.deliveryGateOk) reasons.push("delivery_gate_failed");
@@ -399,17 +451,18 @@ async function runGeneration(
   manifest: DiscoveryManifest,
   approval: DiscoveryApproval,
   approvalSource: string,
+  stage: "GENERATION" | "REGENERATION" = "GENERATION",
 ): Promise<Record<string, unknown>> {
   assertGenerationEnvironment();
   if (!await hasBatchControlTables()) throw new Error("DISCOVERY_BATCH_MIGRATION_NOT_APPLIED");
-  if (approval.stage !== "GENERATION") throw new Error("DISCOVERY_BATCH_APPROVAL_NOT_GENERATION");
+  if (approval.stage !== stage) throw new Error(`DISCOVERY_BATCH_APPROVAL_NOT_${stage}`);
   const tier = approval.tier as DiscoveryBatchTier;
   const selected = resolveExactDiscoveryTargets(manifest.items, approval.targetAuditIds);
-  assertExactTargetsEligible(selected, "GENERATION");
+  assertExactTargetsEligible(selected, stage);
   const approvalErrors = validateDiscoveryApproval(approval, {
     manifestSha256: manifest.manifestSha256,
     commitSha: manifest.commitSha,
-    stage: "GENERATION",
+    stage,
     tier,
     targetAuditIds: selected.map((item) => item.id),
     itemCount: selected.length,
@@ -418,7 +471,7 @@ async function runGeneration(
 
   const lock = await acquireDiscoveryGlobalLock({
     owner: `discovery-safe-reconciler:${process.pid}`,
-    purpose: `generation:${manifest.manifestSha256}:${tier}`,
+    purpose: `${stage.toLowerCase()}:${manifest.manifestSha256}:${tier}`,
     ttlMinutes: 60,
   });
   let batchId: string | null = null;
@@ -428,7 +481,8 @@ async function runGeneration(
       manifestSha256: manifest.manifestSha256,
       commitSha: manifest.commitSha,
       approvalReference: `${approval.approvalReference}|${approvalSource}|binding:${approval.approvalBindingSha256}`,
-      stage: "GENERATION",
+      approvalExpiresAt: approval.expiresAt,
+      stage,
       tier,
       globalBudgetUsd: approval.globalBudgetUsd,
       softPerScanUsd: approval.softPerScanUsd,
@@ -442,6 +496,7 @@ async function runGeneration(
         expectedSourceStatus: item.reportDeliveryStatus,
         expectedTxtSha256: item.txtSha256,
         expectedHtmlSha256: item.htmlSha256,
+        retryOfCandidateId: stage === "REGENERATION" ? item.retryCandidateId : null,
       })),
     });
 
@@ -475,34 +530,59 @@ async function runGeneration(
           costBudgetBatchId: batchId,
           costBudgetBatchLockToken: lock.token,
         });
-        const usageRows = await usageEventsSince(providerStartedAt);
-        if (usageRows.length !== 1) {
-          throw new Error(`DISCOVERY_BATCH_USAGE_AMBIGUOUS:${usageRows.length}`);
+        const usage = result.providerEvidence;
+        if (!usage?.responseId || usage.totalTokens <= 0 || usage.actualCostUsd <= 0) {
+          throw new Error("DISCOVERY_BATCH_USAGE_AMBIGUOUS:provider_evidence_missing");
         }
-        const usage = usageRows[0];
         const usageDecision = await recordDiscoveryProviderUsage({
           batchId,
           auditId: item.id,
           lockToken: lock.token,
-          responseId: usage.response_id,
-          inputTokens: Number(usage.input_tokens),
-          outputTokens: Number(usage.output_tokens),
-          totalTokens: Number(usage.total_tokens),
-          actualCostUsd: Number(usage.estimated_openai_cost_usd),
+          responseId: usage.responseId,
+          inputTokens: usage.inputTokens,
+          outputTokens: usage.outputTokens,
+          totalTokens: usage.totalTokens,
+          actualCostUsd: usage.actualCostUsd,
         });
         usageRecorded = true;
-        if (Number(usage.estimated_openai_cost_usd) > approval.hardPerScanUsd) {
-          throw new Error(`DISCOVERY_BATCH_HARD_COST_BREACH:${usage.estimated_openai_cost_usd}`);
+        if (usage.actualCostUsd > approval.hardPerScanUsd) {
+          throw new Error(`DISCOVERY_BATCH_HARD_COST_BREACH:${usage.actualCostUsd}`);
         }
 
-        const report = await convertToNarrativeReport(result, item.responses);
-        const assets = buildDiscoveryReportAssets(report);
-        const nonRenderedMetadata = { blocages: result.blocages, ctaMessage: result.ctaMessage };
-        const validation = validateDiscoveryReportForDelivery(report, assets, nonRenderedMetadata);
-        const gate = evaluateDiscoveryDeliveryGate(report, assets, undefined, nonRenderedMetadata);
-        if (!validation.ok || !gate.ok) {
-          throw new Error(`DISCOVERY_BATCH_QUALITY_GATE:${[...validation.errors, ...gate.errors].join("|")}`);
+        let report: Awaited<ReturnType<typeof convertToNarrativeReport>> | undefined;
+        let assets: ReturnType<typeof buildDiscoveryReportAssets> | undefined;
+        let gate: ReturnType<typeof evaluateDiscoveryDeliveryGate> | undefined;
+        const nonRenderedMetadata = {
+          blocages: result.blocages,
+          ctaMessage: result.ctaMessage,
+          questionnaireCoverage: result.questionnaireCoverage,
+        };
+        try {
+          report = await convertToNarrativeReport(result, item.responses);
+          assets = buildDiscoveryReportAssets(report);
+          const validation = validateDiscoveryReportForDelivery(report, assets, nonRenderedMetadata);
+          const factual = validateDiscoveryReportAgainstResponses(report, item.responses, nonRenderedMetadata);
+          gate = evaluateDiscoveryDeliveryGate(report, assets, undefined, nonRenderedMetadata);
+          if (!validation.ok || !factual.ok || !gate.ok) {
+            throw new Error([...validation.errors, ...factual.errors, ...gate.errors].join("|"));
+          }
+        } catch (assemblyError) {
+          throw new DiscoveryRejectedCandidateError({
+            providerRaw: usage.rawCandidate,
+            assembledCandidate: report,
+            assembledAssets: assets,
+            responseId: usage.responseId,
+            model: process.env.OPENAI_DISCOVERY_MODEL || process.env.OPENAI_REPORT_MODEL || "discovery",
+            validationErrors: [`assembly_or_gate_failure:${assemblyError instanceof Error ? assemblyError.message : String(assemblyError)}`],
+            usage: {
+              inputTokens: usage.inputTokens,
+              outputTokens: usage.outputTokens,
+              totalTokens: usage.totalTokens,
+              actualCostUsd: usage.actualCostUsd,
+            },
+          });
         }
+        if (!report || !assets || !gate) throw new Error("DISCOVERY_BATCH_ASSEMBLY_EVIDENCE_MISSING");
         const narrativeReport = attachDiscoveryDeliveryGateResult(report as any, gate);
         const persisted = await persistValidatedDiscoveryBatchItem({
           batchId,
@@ -521,7 +601,7 @@ async function runGeneration(
         processed.push({
           auditId: item.id,
           status: "STORED",
-          actualCostUsd: Number(usage.estimated_openai_cost_usd),
+          actualCostUsd: usage.actualCostUsd,
           worstCaseCostUsd: Number(budget.worstCaseCostUsd.toFixed(6)),
           providerCalls: 1,
           ...persisted,
@@ -529,37 +609,46 @@ async function runGeneration(
         if (usageDecision.stop) break;
       } catch (error) {
         const detail = error instanceof Error ? error.message : String(error);
-        if (providerStartedAt && !usageRecorded) {
-          const usageRows = await usageEventsSince(providerStartedAt).catch(() => []);
-          if (usageRows.length === 1) {
-            const usage = usageRows[0];
-            await recordDiscoveryProviderUsage({
-              batchId,
-              auditId: item.id,
-              lockToken: lock.token,
-              responseId: usage.response_id,
-              inputTokens: Number(usage.input_tokens),
-              outputTokens: Number(usage.output_tokens),
-              totalTokens: Number(usage.total_tokens),
-              actualCostUsd: Number(usage.estimated_openai_cost_usd),
-            }).catch(() => {});
-            usageRecorded = true;
-          }
+        if (providerStartedAt && !usageRecorded && isDiscoveryRejectedCandidateError(error)) {
+          const rejected = error.payload;
+          await recordDiscoveryProviderUsage({
+            batchId,
+            auditId: item.id,
+            lockToken: lock.token,
+            responseId: rejected.responseId,
+            inputTokens: rejected.usage.inputTokens,
+            outputTokens: rejected.usage.outputTokens,
+            totalTokens: rejected.usage.totalTokens,
+            actualCostUsd: rejected.usage.actualCostUsd,
+          });
+          usageRecorded = true;
         }
-        await failDiscoveryBatchItem({
-          batchId,
-          auditId: item.id,
-          lockToken: lock.token,
-          errorCode: detail.split(":")[0].slice(0, 120),
-          errorDetail: detail,
-          ambiguous: Boolean(providerStartedAt && !usageRecorded),
-        }).catch(() => {});
+        try {
+          const failed = await failDiscoveryBatchItem({
+            batchId,
+            auditId: item.id,
+            lockToken: lock.token,
+            errorCode: detail.split(":")[0].slice(0, 120),
+            errorDetail: detail,
+            ambiguous: Boolean(providerStartedAt && !isDiscoveryRejectedCandidateError(error)),
+            rejectedCandidate: isDiscoveryRejectedCandidateError(error)
+              ? error.payload
+              : undefined,
+          });
+          if (!failed) throw new Error("DISCOVERY_BATCH_FAILURE_NOT_DURABLY_RECORDED");
+        } catch (failureError) {
+          throw new AggregateError(
+            [error, failureError],
+            "DISCOVERY_BATCH_FAILURE_RECORDING_FAILED",
+          );
+        }
         processed.push({ auditId: item.id, status: "STOPPED", error: detail });
         break;
       }
     }
-    const complete = await completeDiscoveryBatchRun({ batchId, lockToken: lock.token }).catch(() => false);
-    return { batchId, tier, selected: selected.length, processed, complete };
+    const complete = await completeDiscoveryBatchRun({ batchId, lockToken: lock.token });
+    if (!complete) throw new Error("DISCOVERY_BATCH_COMPLETION_NOT_DURABLE");
+    return { batchId, stage, tier, selected: selected.length, processed, complete };
   } finally {
     await releaseDiscoveryGlobalLock(lock.token).catch(() => false);
   }
@@ -590,7 +679,6 @@ async function runDelivery(
     owner: `discovery-safe-delivery:${process.pid}`,
     purpose: `delivery:${manifest.manifestSha256}:${tier}`,
     ttlMinutes: 60,
-  });
   let batchId: string | null = null;
   const processed: Array<Record<string, unknown>> = [];
   try {
@@ -598,6 +686,7 @@ async function runDelivery(
       manifestSha256: manifest.manifestSha256,
       commitSha: manifest.commitSha,
       approvalReference: `${approval.approvalReference}|${approvalSource}|binding:${approval.approvalBindingSha256}`,
+      approvalExpiresAt: approval.expiresAt,
       stage: "DELIVERY",
       tier,
       globalBudgetUsd: 0,
@@ -669,26 +758,29 @@ async function runDelivery(
       } catch (error) {
         const detail = error instanceof Error ? error.message : String(error);
         if (claimId) {
-          await finalizeDiscoveryDeliveryClaim({
+          const finalized = await finalizeDiscoveryDeliveryClaim({
             claimId,
             outcome: providerPostStarted ? "AMBIGUOUS" : "FAILED_FINAL",
             errorDetail: detail,
-          }).catch(() => {});
+          });
+          if (!finalized) throw new Error("DISCOVERY_DELIVERY_FAILURE_NOT_DURABLE");
         } else {
-          await failDiscoveryBatchItem({
+          const failed = await failDiscoveryBatchItem({
             batchId,
             auditId: item.id,
             lockToken: lock.token,
             errorCode: detail.split(":")[0].slice(0, 120),
             errorDetail: detail,
             ambiguous: true,
-          }).catch(() => {});
+          });
+          if (!failed) throw new Error("DISCOVERY_BATCH_FAILURE_NOT_DURABLY_RECORDED");
         }
         processed.push({ auditId: item.id, status: "STOPPED", error: detail });
         break;
       }
     }
-    const complete = await completeDiscoveryBatchRun({ batchId, lockToken: lock.token }).catch(() => false);
+    const complete = await completeDiscoveryBatchRun({ batchId, lockToken: lock.token });
+    if (!complete) throw new Error("DISCOVERY_BATCH_COMPLETION_NOT_DURABLE");
     return { batchId, tier, selected: selected.length, processed, complete };
   } finally {
     await releaseDiscoveryGlobalLock(lock.token).catch(() => false);
@@ -696,23 +788,25 @@ async function runDelivery(
 }
 
 async function main(): Promise<void> {
-  await assertDiscoveryBatchSchemaV005(pool);
+  await assertDiscoveryBatchSchemaV006(pool);
   const manifest = await buildManifest();
   const outputPath = valueAfter("--out");
   if (outputPath) writeFileSync(outputPath, `${JSON.stringify(manifest, null, 2)}\n`, { flag: "wx" });
 
-  if (args.has("--preflight-generation")) {
-    if (args.has("--run-generation") || args.has("--run-delivery")) {
+  if (args.has("--preflight-generation") || args.has("--preflight-regeneration")) {
+    if (args.has("--run-generation") || args.has("--run-regeneration")
+      || args.has("--run-delivery") || args.has("--prepare-regeneration")) {
       throw new Error("DISCOVERY_BATCH_PREFLIGHT_ONE_STAGE_ONLY");
     }
     const targetAuditId = valueAfter("--target-audit-id");
     if (!targetAuditId) throw new Error("DISCOVERY_BATCH_PREFLIGHT_TARGET_REQUIRED");
     const selected = resolveExactDiscoveryTargets(manifest.items, [targetAuditId]);
-    assertExactTargetsEligible(selected, "GENERATION");
+    const preflightStage = args.has("--preflight-regeneration") ? "REGENERATION" : "GENERATION";
+    assertExactTargetsEligible(selected, preflightStage);
     const item = selected[0];
     const knowledge = await captureKnowledge(item.responses);
     const budget = assertRealProfileBudget(item.responses, knowledge);
-    console.log(`DISCOVERY_BATCH_GENERATION_PREFLIGHT_COMPLETE:${JSON.stringify({
+    console.log(`DISCOVERY_BATCH_${preflightStage}_PREFLIGHT_COMPLETE:${JSON.stringify({
       manifestSha256: manifest.manifestSha256,
       commitSha: manifest.commitSha,
       auditId: item.id,
@@ -736,7 +830,8 @@ async function main(): Promise<void> {
     throw new Error("DISCOVERY_BATCH_REPAIR_RETIRED_USE_SIGNED_TRANSACTIONAL_OPERATION");
   }
 
-  if (!args.has("--run-generation") && !args.has("--run-delivery")) {
+  if (!args.has("--run-generation") && !args.has("--run-regeneration")
+    && !args.has("--run-delivery") && !args.has("--prepare-regeneration")) {
     if (args.has("--summary-only")) {
       const compactCandidate = (item: ManifestRow) => ({
         id: item.id,
@@ -751,12 +846,18 @@ async function main(): Promise<void> {
         deliveryGateErrors: item.deliveryGateErrors,
         tracking: item.tracking,
         deliveryClaimState: item.deliveryClaimState,
+        providerAttemptCount: item.providerAttemptCount,
+        retryCandidateId: item.retryCandidateId,
+        retryCandidateState: item.retryCandidateState,
+        retryCandidateAttemptNo: item.retryCandidateAttemptNo,
+        retryCandidateSourceKind: item.retryCandidateSourceKind,
         duplicateCandidate: item.duplicateCandidate,
         superseded: item.superseded,
         unsubscribed: item.unsubscribed,
         validEmail: item.validEmail,
         testEmailBlocked: item.testEmailBlocked,
         smtpHardFailProven: item.smtpHardFailProven,
+        regenerationEligible: item.regenerationEligible,
         cohort: item.cohort,
         reasons: item.reasons,
       });
@@ -765,6 +866,9 @@ async function main(): Promise<void> {
         .map(compactCandidate);
       const deliveryCandidates = manifest.items
         .filter((item) => item.cohort === "valid_never_sent")
+        .map(compactCandidate);
+      const regenerationCandidates = manifest.items
+        .filter((item) => item.regenerationEligible)
         .map(compactCandidate);
       const ambiguousReasonCounts = manifest.items
         .filter((item) => item.cohort === "ambiguous")
@@ -801,6 +905,7 @@ async function main(): Promise<void> {
         counts: manifest.counts,
         manifestSha256: manifest.manifestSha256,
         generationCandidates,
+        regenerationCandidates,
         deliveryCandidates,
         ambiguousReasonCounts,
         recentAmbiguous,
@@ -829,12 +934,53 @@ async function main(): Promise<void> {
     }
     approvalSource = "file";
   }
-  if (args.has("--run-generation") && args.has("--run-delivery")) {
+  const stageFlags = ["--run-generation", "--run-regeneration", "--run-delivery", "--prepare-regeneration"]
+    .filter((flag) => args.has(flag));
+  if (stageFlags.length !== 1) {
     throw new Error("DISCOVERY_BATCH_ONE_STAGE_ONLY");
   }
+  if (args.has("--prepare-regeneration")) {
+    const selected = resolveExactDiscoveryTargets(manifest.items, approval.targetAuditIds);
+    if (selected.length !== 1) throw new Error("DISCOVERY_REGENERATION_PREPARE_ONE_TARGET_ONLY");
+    const item = selected[0];
+    if (!item.regenerationEligible || item.providerAttemptCount !== 1
+      || item.reportSentAt || item.tracking.total !== 0
+      || item.deliveryClaimState || !["BATCH_REVIEW", "BATCH_READY", "NEEDS_REVIEW", "READY"]
+        .includes(String(item.reportDeliveryStatus || ""))) {
+      throw new Error("DISCOVERY_REGENERATION_PREPARE_TARGET_INELIGIBLE");
+    }
+    const approvalErrors = validateDiscoveryApproval(approval, {
+      manifestSha256: manifest.manifestSha256,
+      commitSha: manifest.commitSha,
+      stage: "REGENERATION",
+      tier: approval.tier,
+      targetAuditIds: [item.id],
+      itemCount: 1,
+    });
+    if (approvalErrors.length > 0) {
+      throw new Error(`DISCOVERY_BATCH_APPROVAL_INVALID:${approvalErrors.join(",")}`);
+    }
+    const lock = await acquireDiscoveryGlobalLock({
+      owner: `discovery-regeneration-prepare:${process.pid}`,
+      purpose: `regeneration-prepare:${manifest.manifestSha256}`,
+      ttlMinutes: 20,
+    });
+    try {
+      const prepared = await prepareDiscoveryAuditForRegeneration(
+        { auditId: item.id, lockToken: lock.token },
+        pool,
+      );
+      console.log(`DISCOVERY_REGENERATION_PREPARED:${JSON.stringify({ auditId: item.id, ...prepared })}`);
+      return;
+    } finally {
+      await releaseDiscoveryGlobalLock(lock.token).catch(() => false);
+    }
+  }
   const result = args.has("--run-generation")
-    ? await runGeneration(manifest, approval, approvalSource)
-    : await runDelivery(manifest, approval, approvalSource);
+    ? await runGeneration(manifest, approval, approvalSource, "GENERATION")
+    : args.has("--run-regeneration")
+      ? await runGeneration(manifest, approval, approvalSource, "REGENERATION")
+      : await runDelivery(manifest, approval, approvalSource);
   console.log(`DISCOVERY_BATCH_RESULT:${JSON.stringify(result)}`);
 }
 

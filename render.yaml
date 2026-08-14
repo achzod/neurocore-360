@@ -1,13 +1,13 @@
 services:
   - type: web
-    name: neurocore-360
+    name: apexlabs
     runtime: node
-    plan: starter
+    plan: standard
     buildCommand: npm install && npm run build
     # Render runs this after a successful build and before the new process is
-    # started. It applies migration 005 and verifies the physical PostgreSQL
+    # started. It applies migration 006 and verifies the physical PostgreSQL
     # catalog in the same transaction; a failed gate aborts the deployment.
-    preDeployCommand: npm run db:migrate:discovery-005
+    preDeployCommand: npm run db:migrate:discovery-006
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:

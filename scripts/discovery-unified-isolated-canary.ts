@@ -264,7 +264,11 @@ async function main(): Promise<void> {
   invariant(inputTokenUpperBound !== null && worstCaseCostUsd !== null, "budget_not_validated");
   const report = await convertToNarrativeReport(result, DISCOVERY_CANARY_PROFILE);
   const assets = buildDiscoveryReportAssets(report);
-  const nonRenderedMetadata = { blocages: result.blocages, ctaMessage: result.ctaMessage };
+  const nonRenderedMetadata = {
+    blocages: result.blocages,
+    ctaMessage: result.ctaMessage,
+    questionnaireCoverage: result.questionnaireCoverage,
+  };
   const validation = validateDiscoveryReportForDelivery(report, assets, nonRenderedMetadata);
   const gate = evaluateDiscoveryDeliveryGate(report, assets, undefined, nonRenderedMetadata);
   const finishedAt = new Date().toISOString();

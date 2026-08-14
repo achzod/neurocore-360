@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "fixtureSource": "synthetic",
+  "cases": [
+    {
+      "caseId": "case_01",
+      "typedResponses": {
+        "age": 31, "poids": 64, "sexe": "femme", "objectif": "sante",
+        "heures-sommeil": "5-6", "qualite-sommeil": "moyenne", "reveil-fatigue": "parfois", "reveils-nocturnes": "jamais",
+        "niveau-stress": "modere", "anxiete": "parfois", "concentration": "bonne", "irritabilite": "parfois", "humeur-fluctuation": "stable",
+        "energie-matin": "moyenne", "coup-fatigue": "parfois", "motivation": "eleve",
+        "digestion-qualite": "bonne", "ballonnements": "parfois", "transit": "regulier",
+        "sport-frequence": "1-2", "intensite": "modere",
+        "nb-repas": "3", "petit-dejeuner": "toujours", "proteines-jour": "moyen", "eau-jour": "1.5-2L", "regime-alimentaire": "aucun", "aliments-transformes": "rarement", "sucres-ajoutes": "faible", "alcool": "0",
+        "cafe-jour": "1-2", "tabac": "non", "temps-ecran": "2-4h", "exposition-soleil": "parfois", "profession": "bureau", "heures-assis": "6-8h",
+        "engagement-niveau": "8-9", "motivation-principale": "sante"
+      },
+      "sensitiveFlags": {"treatmentDeclared": false, "diagnosisDeclared": false, "tcaContextDeclared": false, "tcaCurrentConcern": false, "intoleranceDeclared": false, "injuryContextDeclared": false, "freeTextMindsetDeclared": false}
+    },
+    {
+      "caseId": "case_02",
+      "typedResponses": {
+        "age": 44, "poids": 91, "sexe": "homme", "objectif": "recomposition",
+        "heures-sommeil": "6-7", "qualite-sommeil": "mauvaise", "reveil-fatigue": "souvent", "reveils-nocturnes": "parfois",
+        "niveau-stress": "eleve", "anxiete": "souvent", "concentration": "moyenne", "irritabilite": "souvent", "humeur-fluctuation": "souvent",
+        "energie-matin": "faible", "coup-fatigue": "quotidien", "motivation": "bon",
+        "digestion-qualite": "moyenne", "ballonnements": "souvent", "transit": "variable",
+        "sport-frequence": "3-4", "intensite": "intense",
+        "nb-repas": "4-5", "petit-dejeuner": "souvent", "proteines-jour": "eleve", "eau-jour": "2-3L", "regime-alimentaire": "mediteraneen", "aliments-transformes": "parfois", "sucres-ajoutes": "modere", "alcool": "1-3",
+        "cafe-jour": "3-4", "tabac": "ex-fumeur", "temps-ecran": "4-6h", "exposition-soleil": "rare", "profession": "mixte", "heures-assis": "4-6h",
+        "engagement-niveau": "6-7", "motivation-principale": "confiance"
+      },
+      "sensitiveFlags": {"treatmentDeclared": true, "diagnosisDeclared": true, "tcaContextDeclared": false, "tcaCurrentConcern": false, "intoleranceDeclared": false, "injuryContextDeclared": false, "freeTextMindsetDeclared": false}
+    },
+    {
+      "caseId": "case_03",
+      "typedResponses": {
+        "age": 27, "poids": 58, "sexe": "femme", "objectif": "performance",
+        "heures-sommeil": "7-8", "qualite-sommeil": "bonne", "reveil-fatigue": "rarement", "reveils-nocturnes": "parfois",
+        "niveau-stress": "bas", "anxiete": "rarement", "concentration": "excellente", "irritabilite": "jamais", "humeur-fluctuation": "stable",
+        "energie-matin": "bonne", "coup-fatigue": "jamais", "motivation": "tres-eleve",
+        "digestion-qualite": "excellente", "ballonnements": "jamais", "transit": "tres-regulier",
+        "sport-frequence": "5+", "intensite": "intense",
+        "nb-repas": "4-5", "petit-dejeuner": "toujours", "proteines-jour": "eleve", "eau-jour": "3L+", "regime-alimentaire": "vegetarien", "aliments-transformes": "jamais", "sucres-ajoutes": "zero", "alcool": "0",
+        "cafe-jour": "0", "tabac": "non", "temps-ecran": "1-2h", "exposition-soleil": "regulier", "profession": "actif", "heures-assis": "moins-4h",
+        "engagement-niveau": "10", "motivation-principale": "performance"
+      },
+      "sensitiveFlags": {"treatmentDeclared": false, "diagnosisDeclared": false, "tcaContextDeclared": true, "tcaCurrentConcern": false, "intoleranceDeclared": false, "injuryContextDeclared": false, "freeTextMindsetDeclared": true}
+    },
+    {
+      "caseId": "case_04",
+      "typedResponses": {
+        "age": 52, "poids": 83, "sexe": "homme", "objectif": "perte-graisse",
+        "heures-sommeil": "moins-5", "qualite-sommeil": "mauvaise", "reveil-fatigue": "toujours", "reveils-nocturnes": "chaque-nuit",
+        "niveau-stress": "tres-eleve", "anxiete": "souvent", "concentration": "difficile", "irritabilite": "tres-souvent", "humeur-fluctuation": "constamment",
+        "energie-matin": "tres-faible", "coup-fatigue": "toujours", "motivation": "bas",
+        "digestion-qualite": "mauvaise", "ballonnements": "apres-repas", "transit": "irregulier",
+        "sport-frequence": "0", "intensite": "leger",
+        "nb-repas": "1-2", "petit-dejeuner": "jamais", "proteines-jour": "faible", "eau-jour": "moins-1L", "regime-alimentaire": "aucun", "aliments-transformes": "souvent", "sucres-ajoutes": "eleve", "alcool": "4-7",
+        "cafe-jour": "5+", "tabac": "quotidien", "temps-ecran": "6h+", "exposition-soleil": "rarement", "profession": "teletravail", "heures-assis": "10h+",
+        "engagement-niveau": "4-5", "motivation-principale": "mental"
+      },
+      "sensitiveFlags": {"treatmentDeclared": true, "diagnosisDeclared": false, "tcaContextDeclared": true, "tcaCurrentConcern": true, "intoleranceDeclared": true, "injuryContextDeclared": false, "freeTextMindsetDeclared": true}
+    },
+    {
+      "caseId": "case_05",
+      "typedResponses": {
+        "age": 36, "poids": 72, "sexe": "femme", "objectif": "prise-muscle",
+        "heures-sommeil": "8-9", "qualite-sommeil": "excellente", "reveil-fatigue": "jamais", "reveils-nocturnes": "jamais",
+        "niveau-stress": "leger", "anxiete": "aucune", "concentration": "bonne", "irritabilite": "jamais", "humeur-fluctuation": "stable",
+        "energie-matin": "excellente", "coup-fatigue": "jamais", "motivation": "excellent",
+        "digestion-qualite": "bonne", "ballonnements": "parfois", "transit": "normal",
+        "sport-frequence": "3-4", "intensite": "modere",
+        "nb-repas": "3", "petit-dejeuner": "parfois", "proteines-jour": "bonne", "eau-jour": "2-3L", "regime-alimentaire": "paleo", "aliments-transformes": "rarement", "sucres-ajoutes": "faible", "alcool": "1-3",
+        "cafe-jour": "1-2", "tabac": "non", "temps-ecran": "moins-2h", "exposition-soleil": "regulier", "profession": "terrain", "heures-assis": "moins-4h",
+        "engagement-niveau": "8-9", "motivation-principale": "esthetique"
+      },
+      "sensitiveFlags": {"treatmentDeclared": false, "diagnosisDeclared": false, "tcaContextDeclared": false, "tcaCurrentConcern": false, "intoleranceDeclared": false, "injuryContextDeclared": true, "freeTextMindsetDeclared": true}
+    },
+    {
+      "caseId": "case_06",
+      "typedResponses": {
+        "age": 63, "poids": 77, "sexe": "homme", "objectif": "sante",
+        "heures-sommeil": "6-7", "qualite-sommeil": "moyenne", "reveil-fatigue": "parfois", "reveils-nocturnes": "souvent",
+        "niveau-stress": "modere", "anxiete": "legere", "concentration": "moyenne", "irritabilite": "parfois", "humeur-fluctuation": "parfois",
+        "energie-matin": "moyenne", "coup-fatigue": "souvent", "motivation": "moyen",
+        "digestion-qualite": "moyenne", "ballonnements": "parfois", "transit": "constipation",
+        "sport-frequence": "1-2", "intensite": "leger",
+        "nb-repas": "3", "petit-dejeuner": "souvent", "proteines-jour": "moyenne", "eau-jour": "1-1.5L", "regime-alimentaire": "jeune-intermittent", "aliments-transformes": "parfois", "sucres-ajoutes": "moderee", "alcool": "0",
+        "cafe-jour": "0", "tabac": "ex-fumeur", "temps-ecran": "2-4h", "exposition-soleil": "parfois", "profession": "autre", "heures-assis": "6-8h",
+        "engagement-niveau": "6-7", "motivation-principale": "sante"
+      },
+      "sensitiveFlags": {"treatmentDeclared": false, "diagnosisDeclared": true, "tcaContextDeclared": false, "tcaCurrentConcern": false, "intoleranceDeclared": false, "injuryContextDeclared": true, "freeTextMindsetDeclared": false}
+    },
+    {
+      "caseId": "case_07",
+      "typedResponses": {
+        "age": 22, "poids": 66, "sexe": "femme", "objectif": "performance",
+        "heures-sommeil": "9+", "qualite-sommeil": "bonne", "reveil-fatigue": "rarement", "reveils-nocturnes": "jamais",
+        "niveau-stress": "tres-bas", "anxiete": "jamais", "concentration": "excellente", "irritabilite": "jamais", "humeur-fluctuation": "stable",
+        "energie-matin": "bonne", "coup-fatigue": "jamais", "motivation": "tres-eleve",
+        "digestion-qualite": "excellente", "ballonnements": "jamais", "transit": "tres-regulier",
+        "sport-frequence": "5+", "intensite": "extreme",
+        "nb-repas": "6+", "petit-dejeuner": "toujours", "proteines-jour": "haute", "eau-jour": "3L+", "regime-alimentaire": "vegan", "aliments-transformes": "jamais", "sucres-ajoutes": "zero", "alcool": "0",
+        "cafe-jour": "0", "tabac": "non", "temps-ecran": "moins-1h", "exposition-soleil": "regulier", "profession": "etudiant", "heures-assis": "4-6h",
+        "engagement-niveau": "10", "motivation-principale": "performance"
+      },
+      "sensitiveFlags": {"treatmentDeclared": true, "diagnosisDeclared": false, "tcaContextDeclared": false, "tcaCurrentConcern": false, "intoleranceDeclared": false, "injuryContextDeclared": false, "freeTextMindsetDeclared": false}
+    },
+    {
+      "caseId": "case_08",
+      "typedResponses": {
+        "age": 47, "poids": 102, "sexe": "homme", "objectif": "recomposition",
+        "heures-sommeil": "7-8", "qualite-sommeil": "moyenne", "reveil-fatigue": "parfois", "reveils-nocturnes": "rarement",
+        "niveau-stress": "bas", "anxiete": "rarement", "concentration": "bonne", "irritabilite": "parfois", "humeur-fluctuation": "parfois",
+        "energie-matin": "moyenne", "coup-fatigue": "parfois", "motivation": "eleve",
+        "digestion-qualite": "bonne", "ballonnements": "souvent", "transit": "regulier",
+        "sport-frequence": "3-4", "intensite": "intense",
+        "nb-repas": "4-5", "petit-dejeuner": "jamais", "proteines-jour": "bon", "eau-jour": "1.5-2L", "regime-alimentaire": "keto", "aliments-transformes": "rarement", "sucres-ajoutes": "faible", "alcool": "8+",
+        "cafe-jour": "3-4", "tabac": "occasionnel", "temps-ecran": "4-6h", "exposition-soleil": "rare", "profession": "bureau", "heures-assis": "8-10h",
+        "engagement-niveau": "8-9", "motivation-principale": "esthetique"
+      },
+      "sensitiveFlags": {"treatmentDeclared": false, "diagnosisDeclared": false, "tcaContextDeclared": true, "tcaCurrentConcern": false, "intoleranceDeclared": true, "injuryContextDeclared": false, "freeTextMindsetDeclared": true}
+    },
+    {
+      "caseId": "case_09",
+      "typedResponses": {
+        "age": 39, "poids": 69, "sexe": "femme", "objectif": "energie",
+        "heures-sommeil": "5-6", "qualite-sommeil": "mauvaise", "reveil-fatigue": "souvent", "reveils-nocturnes": "souvent",
+        "niveau-stress": "extreme", "anxiete": "forte", "concentration": "mauvaise", "irritabilite": "souvent", "humeur-fluctuation": "souvent",
+        "energie-matin": "faible", "coup-fatigue": "quotidien", "motivation": "tres-bas",
+        "digestion-qualite": "mauvaise", "ballonnements": "toujours", "transit": "constipe",
+        "sport-frequence": "1-2", "intensite": "modere",
+        "nb-repas": "1-2", "petit-dejeuner": "jamais", "proteines-jour": "inconnu", "eau-jour": "moins-1L", "regime-alimentaire": "aucun", "aliments-transformes": "souvent", "sucres-ajoutes": "elevee", "alcool": "15+",
+        "cafe-jour": "5+", "tabac": "quotidien", "temps-ecran": "6h+", "exposition-soleil": "rarement", "profession": "teletravail", "heures-assis": "10h+",
+        "engagement-niveau": "1-3", "motivation-principale": "mental"
+      },
+      "sensitiveFlags": {"treatmentDeclared": true, "diagnosisDeclared": true, "tcaContextDeclared": true, "tcaCurrentConcern": true, "intoleranceDeclared": true, "injuryContextDeclared": true, "freeTextMindsetDeclared": true}
+    }
+  ]
+}

@@ -4,7 +4,7 @@ Ce runbook remplace les anciens batchs `batch_91` et `remediate-sent-discovery`.
 
 ## Contrat de sécurité
 
-1. Les migrations `003` à `005` sont appliquées avant le nouveau process. Le reconciler et le one-shot vérifient physiquement les colonnes, PK, contraintes, FK et index v005 avant toute opération ; un schéma partiel échoue fermé.
+1. Les migrations `003` à `006` sont appliquées avant le nouveau process. Le reconciler vérifie physiquement les colonnes, types, nullabilité, PK, contraintes, FK et index v006 avant toute opération ; un schéma partiel échoue fermé.
 2. Le manifeste lit tous les audits `GRATUIT`, sans filtre de date ni de statut.
 3. Quatre cohortes seulement : `already_accepted`, `valid_never_sent`, `ambiguous`, `invalid`.
 4. Aucune action automatique sur `already_accepted`, `ambiguous`, un audit superseded ou un doublon potentiel.
@@ -37,21 +37,27 @@ Attendu : tous les tests Discovery passent. Le typecheck global peut rester roug
 Ordre obligatoire :
 
 1. Sauvegarde DB.
-2. Confirmer avant le déploiement que génération, livraison et workers batch Discovery sont OFF.
+2. Capturer et archiver les variables du service Render actif avant le push. Exiger au minimum `DISCOVERY_UNIFIED_GENERATION_ENABLED=false`, `DISCOVERY_REPORT_DELIVERY_ENABLED=false`, `DISCOVERY_BATCH_DELIVERY_WORKER_ENABLED=false`, `DISCOVERY_SENT_REMEDIATION_ENABLED=false` et `REMEDIATION_SIDE_EFFECTS_DISABLED=true`. Toute valeur absente, opposée ou non vérifiable est un NO-GO.
 3. Configurer sur le service Render actif le pre-deploy exact :
 
    ```text
-   npm run db:migrate:discovery-005
+   npm run db:migrate:discovery-006
    ```
 
-   `render.yaml` porte la même commande. Elle applique `005` et vérifie le catalogue dans une seule transaction sous advisory lock. Une erreur annule la transaction et bloque le déploiement avant le démarrage du nouveau process.
+   `render.yaml` porte la même commande. Elle applique `006` et vérifie le catalogue dans une seule transaction sous advisory lock. Une erreur annule la transaction et bloque le déploiement avant le démarrage du nouveau process.
 4. Déployer le commit audité. Ne lancer aucun job, shell applicatif, reconciler, one-shot ni worker entre le succès du pre-deploy et le démarrage automatique du nouveau process. Ne jamais utiliser une commande de démarrage qui exécute la migration en parallèle du serveur.
-5. Archiver la preuve `DISCOVERY_BATCH_SCHEMA_MIGRATION_OK:v5` du pre-deploy. Son absence est un NO-GO.
+5. Archiver la preuve `DISCOVERY_BATCH_SCHEMA_MIGRATION_OK:v6` du pre-deploy. Son absence est un NO-GO.
 6. Vérifier `/api/version`, `/api/health`, commit exact, HTTP 200 et DB connectée.
-7. Exécuter uniquement un manifeste `--summary-only`; son gate catalogue v005 doit passer avant la première lecture métier.
+7. Exécuter uniquement un manifeste `--summary-only`; son gate catalogue v006 doit passer avant la première lecture métier.
 8. Vérifier zéro job actif avant toute approbation.
 
-Ne jamais démarrer le nouveau code avant la preuve v005. Pour une migration manuelle séparée, suspendre d'abord le service afin qu'aucun ancien worker ne tourne, exécuter `npm run db:migrate:discovery-005`, vérifier la preuve, puis seulement démarrer le SHA audité. Ne pas reprendre le service entre ces étapes.
+Le service Render actif peut encore avoir un pre-deploy v005 au moment de la release. Ne jamais remplacer cette commande pendant que l'ancien SHA est susceptible de redémarrer : le script v006 n'existe pas dans cet ancien code. La séquence opérateur sûre est de confirmer les automatismes Discovery OFF, suspendre temporairement l'auto-deploy si Render peut redéployer sur la sauvegarde de configuration, enregistrer `npm run db:migrate:discovery-006` sur le service actif `apexlabs`, pousser uniquement le SHA audité, puis réactiver l'auto-deploy et exiger la preuve v6 avant le démarrage. Le comportement exact de Render doit être vérifié en lecture seule avant cette séquence ; toute incertitude est un NO-GO.
+
+Ne jamais démarrer le nouveau code avant la preuve v006. Pour une migration manuelle séparée, suspendre d'abord le service afin qu'aucun ancien worker ne tourne, exécuter `npm run db:migrate:discovery-006`, vérifier la preuve, puis seulement démarrer le SHA audité. Ne pas reprendre le service entre ces étapes.
+
+### Rollback release
+
+La migration v006 est additive et reste appliquée lors d'un rollback applicatif : ne jamais tenter de migration descendante en urgence. Garder génération, livraison, remédiation et worker batch Discovery OFF, vérifier qu'aucun lock, claim, job ou réservation provider n'est actif, puis redéployer le SHA antérieur exact. Après rollback, confirmer `/api/version`, `/api/health`, HTTP 200, DB connectée, zéro nouveau `READY`, `SENDING` ou `SENT`, et exécuter seulement `--summary-only`. Le SHA antérieur ne doit pas servir à reprendre une régénération centrale v006.
 
 ## 3. Manifeste read-only
 
@@ -60,7 +66,7 @@ npx tsx scripts/discovery-safe-reconciler.ts \
   --out /chemin/unique/discovery-manifest.json
 ```
 
-Sans `--run-generation` ni `--run-delivery`, aucune écriture DB, aucun provider et aucun email. Le fichier est créé avec `wx` : un fichier existant n’est jamais écrasé.
+Sans mode d'exécution génération ou régénération, aucune écriture DB, aucun provider et aucun email. Le fichier est créé avec `wx` : un fichier existant n’est jamais écrasé.
 
 Audit obligatoire :
 
@@ -145,43 +151,11 @@ Après `ONE`, auditer manuellement le rapport complet, son questionnaire et les 
 
 Même audit après `THREE` et `FIVE`. Le premier échec bloque `REST`.
 
-## 6. Livraison contrôlée
+## 6. Livraison hors périmètre et désactivée
 
-La livraison utilise un nouveau manifeste. Seuls `valid_never_sent`, gate vert, zéro tracking, zéro claim, hashes identiques sont éligibles.
+Cette release ne livre aucun rapport. Le chemin livraison du reconciler est hard-disabled et ne possède aucune procédure opérateur autorisée. Conserver en permanence `DISCOVERY_REPORT_DELIVERY_ENABLED=false`, `DISCOVERY_BATCH_DELIVERY_WORKER_ENABLED=false`, `DISCOVERY_SENT_REMEDIATION_ENABLED=false` et `REMEDIATION_SIDE_EFFECTS_DISABLED=true` pendant tout le chantier.
 
-Un audit portant une preuve de hard-fail SMTP est représenté par `smtpHardFailProven: true`, `tracking.hardFailed > 0`, le cohort `ambiguous` et la raison `smtp_hard_fail_proven_terminal`. La preuve est limitée à un statut provider `bounced`, un événement structuré `hard_fail`/`bounce`, ou un code SMTP 5xx synchronisé lié à un identifiant provider. Un simple statut générique `failed` ne constitue pas à lui seul cette preuve. L'audit reste résolvable par son `targetAuditIds` exact pour revue opérateur, mais les étapes génération et livraison le rejettent avant tout provider : aucun envoi ni retry automatique.
-
-Garde-fou d'exploitation : laisser `DISCOVERY_REPORT_DELIVERY_ENABLED=false`. Le chemin historique hors reconciler traite encore certains statuts `failed` comme réessayables ; il ne doit pas être réactivé pour Discovery tant qu'il ne consomme pas lui aussi la disposition terminale hard-fail. Le contrôleur sûr n'emprunte pas ce chemin.
-
-Approbation : `stage = DELIVERY`, `globalBudgetUsd = 0`, `targetAuditIds` exacts et nouveau `approvalBindingSha256`, palier `ONE`, puis `THREE`, `FIVE`, `REST` avec un manifeste frais à chaque fois.
-
-Variables :
-
-```bash
-DISCOVERY_BATCH_DELIVERY_WORKER_ENABLED=true
-DISCOVERY_REPORT_DELIVERY_ENABLED=false
-REMEDIATION_SIDE_EFFECTS_DISABLED=true
-APP_URL=https://apexlabs.onrender.com
-```
-
-Commande opérateur :
-
-```bash
-npx tsx scripts/discovery-safe-reconciler.ts \
-  --run-delivery \
-  --approval /chemin/approval-delivery-one.json
-```
-
-Le worker :
-
-1. revalide rapport, destinataire et hashes ;
-2. promeut par CAS vers `BATCH_READY` ;
-3. crée le claim unique ;
-4. marque `PROVIDER_POST_STARTED` avant le POST ;
-5. n’écrit `SENT` que si SendPulse confirme l’acceptation ;
-6. marque toute issue incertaine `AMBIGUOUS` et arrête le palier.
-
-Une acceptation SendPulse ne garantit pas l’arrivée en inbox. La preuve de livraison finale doit être enrichie par SMTP confirmé, ouverture ou retour client lorsque disponible.
+Ne jamais activer un worker, créer une approbation `DELIVERY`, appeler un flag de livraison, utiliser un endpoint de force-send ou modifier manuellement un rapport vers `READY`, `SCHEDULED`, `SENDING` ou `SENT`. Les rapports validés s'arrêtent en `BATCH_READY` pour revue humaine. Une future livraison exigera un code distinct, une nouvelle revue, de nouvelles preuves et une autorisation explicite ; ce runbook ne fournit aucun chemin d'activation.
 
 ## 7. Postflight de chaque palier
 

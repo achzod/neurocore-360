@@ -13,6 +13,14 @@ import {
   type DiscoveryAtomicPersistenceInput,
   type DiscoveryGenerationClaim,
 } from "./discoveryTransactionalPersistence";
+import {
+  DISCOVERY_PREMIUM_DOMAINS,
+  buildDiscoveryDeterministicCta,
+  buildDiscoveryReportAssets,
+  calculateDiscoveryDeterministicProfile,
+  convertToNarrativeReport,
+} from "./discovery-scan";
+import { attachDiscoveryDeliveryGateResult } from "./discoveryDeliveryGate";
 
 const VALID_ENV = {
   DISCOVERY_TRANSACTIONAL_AUTOMATION_ENABLED: "true",
@@ -124,7 +132,7 @@ class FakePoolClient {
         rowCount,
       };
     }
-    if (/^\s*UPDATE audits[\s\S]*SET report_delivery_status = 'NEEDS_REVIEW'/.test(text)) {
+    if (/^\s*UPDATE audits[\s\S]*SET report_delivery_status = \$6/.test(text)) {
       const currentToken = String(
         this.database.audit.narrative_report?.generationClaim?.token || "",
       );
@@ -182,7 +190,7 @@ function makeDatabase(overrides: Partial<FakeDatabase> = {}): FakeDatabase {
       id: "audit-transactional-1",
       type: "GRATUIT",
       created_at: "2026-08-14T00:00:00Z",
-      responses: { age: 34, objectif: "energie" },
+      responses: completeV2Responses(),
       report_delivery_status: "PENDING",
       report_sent_at: null,
       narrative_report: {},
@@ -191,6 +199,23 @@ function makeDatabase(overrides: Partial<FakeDatabase> = {}): FakeDatabase {
     committedArtifacts: new Set<string>(),
     jobUpdates: [],
     ...overrides,
+  };
+}
+
+function completeV2Responses(): Record<string, unknown> {
+  return {
+    _discoveryQuestionnaireVersion: 2, sexe: "homme", prenom: "Canary", age: "30", taille: "180", poids: "80",
+    objectif: "performance", "traitement-medical": "non", "diagnostic-medical": ["aucun"], "tca-historique": "jamais",
+    "heures-sommeil": "7-8", "qualite-sommeil": "bonne", endormissement: "jamais", "reveil-fatigue": "jamais",
+    "reveils-nocturnes": "jamais", "heure-coucher": "22h-23h", "niveau-stress": "modere", anxiete: "jamais",
+    concentration: "bonne", "humeur-fluctuation": "stable", "energie-matin": "bonne", "energie-aprem": "stable",
+    "coup-fatigue": "jamais", "envies-sucre": "rarement", motivation: "eleve", thermogenese: "non",
+    "digestion-qualite": "bonne", ballonnements: "jamais", transit: "regulier", reflux: "jamais", intolerance: ["aucune"],
+    "sport-frequence": "3-4", intensite: "intense", recuperation: "bonne", courbatures: "parfois",
+    "performance-evolution": "progression", "nb-repas": "3", "proteines-jour": "bonne", "eau-jour": "2-3L",
+    "aliments-transformes": "rarement", "sucres-ajoutes": "faible", alcool: "0", "cafe-jour": "1-2", tabac: "non",
+    "temps-ecran": "2-4h", "exposition-soleil": "regulier", "heures-assis": "4-6h", "engagement-niveau": "8-9",
+    "motivation-principale": "performance", "consignes-strictes": "oui", "temps-training-semaine": "4-6h",
   };
 }
 
@@ -204,15 +229,35 @@ function makeClaim(database: FakeDatabase, overrides: Partial<DiscoveryGeneratio
   };
 }
 
-function makePersistenceInput(
+async function makePersistenceInput(
   claim: DiscoveryGenerationClaim,
-): DiscoveryAtomicPersistenceInput {
-  const txt = "Rapport Discovery transactionnel";
-  const html = "<main><h1>Rapport Discovery transactionnel</h1></main>";
+): Promise<DiscoveryAtomicPersistenceInput> {
+  const responses = completeV2Responses();
+  const deterministic = calculateDiscoveryDeterministicProfile(responses);
+  const paragraph = "La régularité des rythmes soutient les mécanismes de récupération. Les adaptations reposent sur la répétition des signaux, la qualité du sommeil et la gestion de la charge. Cette explication générale reste prudente et ne permet aucun diagnostic individuel. ";
+  const section = Array.from({ length: 4 }, () => paragraph.repeat(3)).join("\n\n");
+  const report = await convertToNarrativeReport({
+    globalScore: deterministic.globalScore,
+    scoresByDomain: deterministic.scoresByDomain,
+    blocages: deterministic.blocages,
+    synthese: section,
+    sectionContents: Object.fromEntries(DISCOVERY_PREMIUM_DOMAINS.map((domain) => [domain, section])),
+    ctaMessage: buildDiscoveryDeterministicCta(deterministic.blocages, deterministic.safetyPolicy),
+    knowledgePreflight: { synthesis: "", domains: {} },
+    safetyPolicy: deterministic.safetyPolicy,
+    questionnaireCoverage: deterministic.questionnaireCoverage,
+  }, responses);
+  const assets = buildDiscoveryReportAssets(report);
+  const narrativeReport = attachDiscoveryDeliveryGateResult(report, {
+    name: "discovery_delivery", version: 4, ok: true, errors: [],
+    checkedAt: "2026-08-14T00:00:00.000Z", retryable: false,
+  });
+  const txt = assets.txt;
+  const html = assets.html;
   return {
     claim,
-    narrativeReport: { version: 4, generationClaim: { token: claim.token } },
-    scores: { recovery: 81, sleep: 73 },
+    narrativeReport,
+    scores: { ...deterministic.scoresByDomain, global: deterministic.globalScore },
     txt,
     html,
     expectedTxtSha256: discoveryTransactionalSha256(txt),
@@ -269,7 +314,7 @@ test("artifact and audit persistence commit atomically under the winning claim",
       },
     });
     const claim = makeClaim(database);
-    const input = makePersistenceInput(claim);
+    const input = await makePersistenceInput(claim);
     const pool = new FakePool(database);
 
     const result = await persistClaimedDiscoveryGeneration(input, pool as any);
@@ -302,7 +347,7 @@ test("a lost audit CAS rolls back the artifact inserted in the same transaction"
       persistCasRowCount: 0,
     });
     const pool = new FakePool(database);
-    const input = makePersistenceInput(makeClaim(database));
+    const input = await makePersistenceInput(makeClaim(database));
 
     await assert.rejects(
       persistClaimedDiscoveryGeneration(input, pool as any),
@@ -332,7 +377,7 @@ test("an inactive but renewed global fence epoch makes a pre-batch claim stale",
     const pool = new FakePool(database);
 
     await assert.rejects(
-      persistClaimedDiscoveryGeneration(makePersistenceInput(staleClaim), pool as any),
+      persistClaimedDiscoveryGeneration(await makePersistenceInput(staleClaim), pool as any),
       /DISCOVERY_GENERATION_FENCE_STALE/,
     );
 

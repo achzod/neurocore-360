@@ -2,6 +2,9 @@ import {
   analyzeDiscoveryScan,
   buildDiscoveryReportAssets,
   convertToNarrativeReport,
+  DiscoveryRejectedCandidateError,
+  isDiscoveryRejectedCandidateError,
+  validateDiscoveryReportAgainstResponses,
   validateDiscoveryReportForDelivery,
 } from "./discovery-scan";
 import {
@@ -44,14 +47,48 @@ async function runClaimedDiscoveryGeneration(
       costBudgetGenerationToken: claim.token,
       costBudgetFenceToken: claim.fenceToken,
     });
-    const report = await convertToNarrativeReport(result, audit.responses as any);
-    const assets = buildDiscoveryReportAssets(report);
-    const nonRenderedMetadata = { blocages: result.blocages, ctaMessage: result.ctaMessage };
-    const validation = validateDiscoveryReportForDelivery(report, assets, nonRenderedMetadata);
-    if (!validation.ok) {
-      throw new Error(`Discovery premium quality gate: ${validation.errors.join(", ")}`);
+    const nonRenderedMetadata = {
+      blocages: result.blocages,
+      ctaMessage: result.ctaMessage,
+      questionnaireCoverage: result.questionnaireCoverage,
+    };
+    let report: Awaited<ReturnType<typeof convertToNarrativeReport>> | undefined;
+    let assets: ReturnType<typeof buildDiscoveryReportAssets> | undefined;
+    let gate: ReturnType<typeof evaluateDiscoveryDeliveryGate> | undefined;
+    try {
+      report = await convertToNarrativeReport(result, audit.responses as any);
+      assets = buildDiscoveryReportAssets(report);
+      const validation = validateDiscoveryReportForDelivery(report, assets, nonRenderedMetadata);
+      const factual = validateDiscoveryReportAgainstResponses(
+        report,
+        audit.responses as any,
+        nonRenderedMetadata,
+      );
+      gate = evaluateDiscoveryDeliveryGate(report, assets, undefined, nonRenderedMetadata);
+      if (!validation.ok || !factual.ok || !gate.ok) {
+        throw new Error([...validation.errors, ...factual.errors, ...gate.errors].join("|"));
+      }
+    } catch (assemblyError) {
+      const evidence = result.providerEvidence;
+      if (!evidence?.responseId || evidence.totalTokens <= 0 || evidence.actualCostUsd <= 0) {
+        throw assemblyError;
+      }
+      throw new DiscoveryRejectedCandidateError({
+        providerRaw: evidence.rawCandidate,
+        assembledCandidate: report,
+        assembledAssets: assets,
+        responseId: evidence.responseId,
+        model: evidence.model,
+        validationErrors: [`assembly_or_gate_failure:${assemblyError instanceof Error ? assemblyError.message : String(assemblyError)}`],
+        usage: {
+          inputTokens: evidence.inputTokens,
+          outputTokens: evidence.outputTokens,
+          totalTokens: evidence.totalTokens,
+          actualCostUsd: evidence.actualCostUsd,
+        },
+      });
     }
-    const gate = evaluateDiscoveryDeliveryGate(report, assets, undefined, nonRenderedMetadata);
+    if (!report || !assets || !gate) throw new Error("DISCOVERY_GENERIC_ASSEMBLY_EVIDENCE_MISSING");
     const narrativeReport = attachDiscoveryDeliveryGateResult(report as any, gate);
 
     await persistClaimedDiscoveryGeneration({
@@ -70,11 +107,20 @@ async function runClaimedDiscoveryGeneration(
     return true;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    await failClaimedDiscoveryGeneration(
-      claim,
-      "discovery_generation_service",
-      message,
-    ).catch(() => false);
+    try {
+      const failed = await failClaimedDiscoveryGeneration(
+        claim,
+        "discovery_generation_service",
+        message,
+        isDiscoveryRejectedCandidateError(error) ? error.payload : undefined,
+      );
+      if (!failed) throw new Error("DISCOVERY_GENERIC_FAILURE_NOT_DURABLY_RECORDED");
+    } catch (failureError) {
+      throw new AggregateError(
+        [error, failureError],
+        "DISCOVERY_GENERIC_FAILURE_RECORDING_FAILED",
+      );
+    }
     throw error;
   } finally {
     activeDiscoveryGenerations.delete(auditId);

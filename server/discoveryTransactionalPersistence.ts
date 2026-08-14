@@ -6,6 +6,11 @@ import {
   isDiscoveryTransactionalAutomationEligible,
 } from "./discoveryAutomationPolicy";
 import { DISCOVERY_SUPERSEDED_TERMINAL_SQL } from "./discoverySupersededPolicy";
+import {
+  type DiscoveryRejectedCandidatePayload,
+  validateDiscoveryPersistenceContract,
+} from "./discovery-scan";
+import { hasPassingPersistedDiscoveryDeliveryGate } from "./discoveryDeliveryGate";
 
 export const DISCOVERY_TRANSACTION_FENCE_KEY = "discovery-automation-fence-v1";
 
@@ -28,6 +33,36 @@ export interface DiscoveryAtomicPersistenceInput {
 }
 
 type PoolLike = Pick<Pool, "connect">;
+
+async function recordClaimedGenerationFailureIncident(
+  pool: PoolLike,
+  claim: DiscoveryGenerationClaim,
+  error: unknown,
+): Promise<void> {
+  const errorCode = (error instanceof Error ? error.message.split(":")[0] : "DISCOVERY_CLAIM_FAILURE_UNKNOWN").slice(0, 120);
+  const errorDetail = (error instanceof Error ? error.message : String(error)).slice(0, 4000);
+  const incidentKey = discoveryTransactionalSha256(JSON.stringify({
+    operation: "FAIL_CLAIMED_GENERATION",
+    auditId: claim.auditId,
+    fenceToken: claim.fenceToken,
+    errorCode,
+    errorDetail,
+  }));
+  const client = await pool.connect();
+  try {
+    const inserted = await client.query(
+      `INSERT INTO discovery_batch_incidents
+         (incident_key,audit_id,operation,fence_token,error_code,error_detail,state)
+       VALUES ($1,$2,'FAIL_CLAIMED_GENERATION',$3,$4,$5,'OPEN')
+       ON CONFLICT (incident_key) DO UPDATE SET incident_key=EXCLUDED.incident_key
+       RETURNING id`,
+      [incidentKey, claim.auditId, claim.fenceToken, errorCode, errorDetail],
+    );
+    if ((inserted.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_BATCH_INCIDENT_PERSISTENCE_FAILED");
+  } finally {
+    client.release();
+  }
+}
 
 function stableJson(value: unknown): string {
   if (value === null || typeof value !== "object") return JSON.stringify(value);
@@ -200,6 +235,17 @@ export async function persistClaimedDiscoveryGeneration(
     if (discoveryTransactionalSha256(audit.responses) !== input.claim.expectedResponsesSha256) {
       throw new Error("DISCOVERY_GENERATION_RESPONSES_CHANGED");
     }
+    const persistenceGate = validateDiscoveryPersistenceContract({
+      narrativeReport: input.narrativeReport,
+      scores: input.scores,
+      txt: input.txt,
+      html: input.html,
+      responses: audit.responses || {},
+    });
+    if (!persistenceGate.ok
+      || !hasPassingPersistedDiscoveryDeliveryGate(input.narrativeReport as any)) {
+      throw new Error(`DISCOVERY_GENERIC_PERSISTENCE_GATE_FAILED:${persistenceGate.errors.join("|")}`);
+    }
     const artifact = await client.query(
       `INSERT INTO report_artifacts
          (id, audit_id, tier, engine, model, txt, html, content_sha256, created_at)
@@ -259,8 +305,13 @@ export async function failClaimedDiscoveryGeneration(
   claim: DiscoveryGenerationClaim,
   source: string,
   error: unknown,
-  poolOverride?: PoolLike,
+  rejectedCandidateOrPool?: DiscoveryRejectedCandidatePayload | PoolLike,
+  poolOverrideMaybe?: PoolLike,
 ): Promise<boolean> {
+  const rejectedCandidate = rejectedCandidateOrPool
+    && "connect" in rejectedCandidateOrPool ? undefined : rejectedCandidateOrPool;
+  const poolOverride = rejectedCandidateOrPool
+    && "connect" in rejectedCandidateOrPool ? rejectedCandidateOrPool : poolOverrideMaybe;
   const startAt = getDiscoveryAutomationStartAt();
   if (!startAt) return false;
   const pool = await resolvePool(poolOverride);
@@ -280,9 +331,88 @@ export async function failClaimedDiscoveryGeneration(
       await client.query("ROLLBACK");
       return false;
     }
+    if (rejectedCandidate) {
+      const validationErrors = [...new Set(
+        rejectedCandidate.validationErrors.map((value) => String(value).slice(0, 1000)),
+      )];
+      if (!rejectedCandidate.responseId || validationErrors.length === 0) {
+        throw new Error("DISCOVERY_GENERIC_REJECTED_CANDIDATE_INVALID");
+      }
+      const auditProof = await client.query(
+        `SELECT responses, narrative_report, report_delivery_status, report_sent_at
+           FROM audits WHERE id=$1 AND type='GRATUIT' FOR UPDATE`,
+        [claim.auditId],
+      );
+      const audit = auditProof.rows[0];
+      if (!audit || audit.report_delivery_status !== "GENERATING" || audit.report_sent_at
+        || String(audit.narrative_report?.generationClaim?.token || "") !== claim.token
+        || discoveryTransactionalSha256(audit.responses) !== claim.expectedResponsesSha256) {
+        throw new Error("DISCOVERY_GENERIC_REJECTED_CANDIDATE_CLAIM_STALE");
+      }
+      const ledger = await client.query(
+        `SELECT r.id AS reservation_id, r.actual_cost_usd, e.id AS usage_event_id,
+                e.estimated_openai_cost_usd
+           FROM ai_cost_budget_reservations r
+           JOIN ai_usage_events e ON e.response_id=r.response_id
+          WHERE r.product='discovery' AND r.order_id=$1
+            AND r.response_id=$2 AND r.status='COMPLETED'
+            AND e.profile='discovery' AND e.status='completed'
+          FOR UPDATE OF r,e`,
+        [claim.auditId, rejectedCandidate.responseId],
+      );
+      if ((ledger.rowCount ?? 0) !== 1
+        || Math.abs(Number(ledger.rows[0].actual_cost_usd)
+          - Number(rejectedCandidate.usage.actualCostUsd)) > 0.000001
+        || Math.abs(Number(ledger.rows[0].estimated_openai_cost_usd)
+          - Number(rejectedCandidate.usage.actualCostUsd)) > 0.000001) {
+        throw new Error("DISCOVERY_GENERIC_REJECTED_CANDIDATE_LEDGER_MISMATCH");
+      }
+      const priorAttempts = await client.query(
+        `SELECT COUNT(*)::int AS count FROM discovery_rejected_candidates WHERE audit_id=$1`,
+        [claim.auditId],
+      );
+      if (Number(priorAttempts.rows[0]?.count || 0) !== 0) {
+        throw new Error("DISCOVERY_GENERIC_REJECTED_CANDIDATE_ATTEMPT_LIMIT");
+      }
+      const rawIsText = typeof rejectedCandidate.providerRaw === "string";
+      const providerRawSha256 = discoveryTransactionalSha256(rejectedCandidate.providerRaw);
+      const assembledSha256 = rejectedCandidate.assembledCandidate == null
+        ? null : discoveryTransactionalSha256(rejectedCandidate.assembledCandidate);
+      const txtSha256 = rejectedCandidate.assembledAssets?.txt
+        ? discoveryTransactionalSha256(rejectedCandidate.assembledAssets.txt) : null;
+      const htmlSha256 = rejectedCandidate.assembledAssets?.html
+        ? discoveryTransactionalSha256(rejectedCandidate.assembledAssets.html) : null;
+      const artifactContentSha256 = rejectedCandidate.assembledAssets
+        ? discoveryTransactionalSha256(
+          `txt\0${rejectedCandidate.assembledAssets.txt}\0html\0${rejectedCandidate.assembledAssets.html}`,
+        ) : null;
+      const quarantined = await client.query(
+        `INSERT INTO discovery_rejected_candidates
+          (id,generation_claim_token,audit_id,provider_response_id,attempt_no,model,source_kind,
+           provider_raw,provider_raw_text,assembled_candidate,provider_raw_sha256,
+           assembled_sha256,report_txt_sha256,report_html_sha256,artifact_content_sha256,
+           reservation_id,usage_event_id,responses_sha256,validation_errors,actual_cost_usd,state)
+         VALUES ($1,$2,$3,$4,1,$5,$6,$7::jsonb,$8,$9::jsonb,$10,$11,$12,$13,$14,$15,$16,$17,$18::jsonb,$19,'QUARANTINED')
+         ON CONFLICT DO NOTHING RETURNING id`,
+        [randomUUID(), claim.token, claim.auditId, rejectedCandidate.responseId,
+          String(rejectedCandidate.model || "discovery").slice(0, 120),
+          rejectedCandidate.assembledCandidate == null ? "PROVIDER_REJECTED" : "ASSEMBLED_REJECTED",
+          rawIsText ? null : JSON.stringify(rejectedCandidate.providerRaw),
+          rawIsText ? rejectedCandidate.providerRaw : null,
+          rejectedCandidate.assembledCandidate == null
+            ? null : JSON.stringify(rejectedCandidate.assembledCandidate),
+          providerRawSha256, assembledSha256, txtSha256, htmlSha256, artifactContentSha256,
+          ledger.rows[0].reservation_id, ledger.rows[0].usage_event_id,
+          claim.expectedResponsesSha256, JSON.stringify(validationErrors),
+          Number(rejectedCandidate.usage.actualCostUsd)],
+      );
+      if ((quarantined.rowCount ?? 0) !== 1) {
+        throw new Error("DISCOVERY_GENERIC_REJECTED_CANDIDATE_QUARANTINE_FAILED");
+      }
+    }
     const updated = await client.query(
       `UPDATE audits
-          SET report_delivery_status = 'NEEDS_REVIEW',
+          SET report_delivery_status = $6,
               narrative_report = jsonb_set(
                 COALESCE(narrative_report, '{}'::jsonb), '{recovery}', $3::jsonb, true
               )
@@ -302,7 +432,8 @@ export async function failClaimedDiscoveryGeneration(
           ), '') = COALESCE($5::text, '')
           AND ${DISCOVERY_SUPERSEDED_TERMINAL_SQL}
         RETURNING id`,
-      [claim.auditId, claim.token, failure, startAt, claim.fenceToken],
+      [claim.auditId, claim.token, failure, startAt, claim.fenceToken,
+        rejectedCandidate ? "BATCH_REVIEW" : "NEEDS_REVIEW"],
     );
     if ((updated.rowCount ?? 0) === 1) {
       const jobFailed = await client.query(
@@ -319,6 +450,11 @@ export async function failClaimedDiscoveryGeneration(
     return (updated.rowCount ?? 0) === 1;
   } catch (caught) {
     await client.query("ROLLBACK").catch(() => {});
+    try {
+      await recordClaimedGenerationFailureIncident(pool, claim, caught);
+    } catch (incidentError) {
+      throw new AggregateError([caught, incidentError], "DISCOVERY_CLAIM_FAILURE_AND_INCIDENT_PERSISTENCE_FAILED");
+    }
     throw caught;
   } finally {
     client.release();

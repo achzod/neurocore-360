@@ -173,7 +173,7 @@ test("approval is bound to manifest, commit, tier, item count and exact cost pol
     manifestSha256,
     commitSha: "commit",
     approvalReference: "telegram:24478",
-    expiresAt: "2030-01-01T00:00:00.000Z",
+    expiresAt: "2029-01-01T00:10:00.000Z",
     stage: "GENERATION",
     tier: "THREE",
     targetAuditIds,
@@ -439,7 +439,7 @@ test("generic monitoring, generation and AutoSend all honor the durable lock", (
 
 test("reconciler is read-only by default and delivery claims before provider", () => {
   const source = readFileSync(new URL("../scripts/discovery-safe-reconciler.ts", import.meta.url), "utf8");
-  assert.match(source, /if \(!args\.has\("--run-generation"\) && !args\.has\("--run-delivery"\)\)/);
+  assert.match(source, /!args\.has\("--run-generation"\).* !args\.has\("--run-regeneration"\)/s);
   assert.match(source, /Default: read-only manifest/);
   assert.ok(source.indexOf("claimDiscoveryBatchEmailDelivery({") < source.indexOf("sendReportReadyEmail(item.email"));
   assert.match(source, /beforeProviderPost: async/);
@@ -464,8 +464,8 @@ test("reconciler is read-only by default and delivery claims before provider", (
   assert.match(source, /args\.has\("--summary-only"\)/);
   assert.match(source, /DISCOVERY_BATCH_MANIFEST_SUMMARY/);
   assert.match(source, /emailSha256: discoverySha256/);
-  assert.match(source, /args\.has\("--preflight-generation"\)/);
-  assert.match(source, /DISCOVERY_BATCH_GENERATION_PREFLIGHT_COMPLETE/);
+  assert.match(source, /args\.has\("--preflight-generation"\).*args\.has\("--preflight-regeneration"\)/s);
+  assert.match(source, /DISCOVERY_BATCH_\$\{preflightStage\}_PREFLIGHT_COMPLETE/);
   assert.match(source, /providerCalls: 0/);
   assert.match(source, /args\.has\("--repair-known-corruptions"\)/);
   assert.match(source, /DISCOVERY_BATCH_REPAIR_RETIRED_USE_SIGNED_TRANSACTIONAL_OPERATION/);

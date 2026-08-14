@@ -24,6 +24,7 @@ import {
   normalizeDiscoveryFrenchSurface,
   repairDiscoveryKnownFrenchCorruptions,
   repairDiscoveryProvidedFactAbsenceClaims,
+  calculateDiscoveryDeterministicProfile,
   calculateDiscoveryGlobalScore,
   scoreDiscoveryTraining,
   validateDiscoveryFactualConsistency,
@@ -34,6 +35,34 @@ import {
   validateDiscoverySectionContent,
 } from "./discovery-scan";
 import { deriveDiscoverySafetyPolicy } from "./discoverySafetyPolicy";
+
+function completeDiscoveryResponses(overrides: Record<string, unknown> = {}) {
+  return {
+    _discoveryQuestionnaireVersion: 2,
+    sexe: "homme", prenom: "Canary", email: "canary@example.test", age: "30", taille: "180", poids: "80",
+    objectif: "performance", "heures-sommeil": "7-8", "qualite-sommeil": "bonne",
+    "reveils-nocturnes": "jamais", "reveil-fatigue": "jamais", "niveau-stress": "modere",
+    "energie-matin": "bonne", "digestion-qualite": "bonne", "sport-frequence": "3-4",
+    "type-sport": ["musculation"], recuperation: "bonne", "eau-jour": "2-3L",
+    "cafe-jour": "1-2", alcool: "0", profession: "bureau", "engagement-niveau": "8-9",
+    "motivation-principale": "performance", "tca-historique": "jamais",
+    "traitement-medical": "non", "diagnostic-medical": ["aucun"],
+    endormissement: "jamais", "heure-coucher": "22h-23h",
+    anxiete: "jamais", concentration: "bonne", irritabilite: "jamais",
+    "humeur-fluctuation": "stable", "gestion-stress": ["sport"],
+    "energie-aprem": "stable", "coup-fatigue": "jamais", "envies-sucre": "rarement",
+    motivation: "eleve", thermogenese: "non",
+    ballonnements: "jamais", transit: "regulier", reflux: "jamais", intolerance: ["aucune"],
+    "energie-post-repas": "stable",
+    intensite: "intense", courbatures: "parfois", "performance-evolution": "progression",
+    "nb-repas": "3", "petit-dejeuner": "toujours", "proteines-jour": "bonne",
+    "regime-alimentaire": "aucun", "aliments-transformes": "rarement",
+    "sucres-ajoutes": "faible", tabac: "non", "temps-ecran": "2-4h",
+    "exposition-soleil": "regulier", "heures-assis": "4-6h",
+    "consignes-strictes": "oui", "temps-training-semaine": "4-6h",
+    ...overrides,
+  };
+}
 import { normalizeResponses } from "./responseNormalizer";
 import {
   assertDiscoveryCanaryBudget,
@@ -146,7 +175,7 @@ test("transient DB timeout exhausts bounded retries with zero OpenAI calls", asy
 
   await assert.rejects(
     analyzeDiscoveryScan(
-      { prenom: "Canary", email: "canary@example.test", objectif: "performance" },
+      completeDiscoveryResponses(),
       {
         loadSynthesisKnowledge: async () => canonicalContext,
         loadDomainKnowledge: async () => {
@@ -177,7 +206,7 @@ test("sleep 0/200 fails closed before OpenAI and exposes only safe structured me
 
   try {
     await analyzeDiscoveryScan(
-      { prenom: "Canary", email: "secret@example.test", objectif: "performance" },
+      completeDiscoveryResponses({ email: "secret@example.test" }),
       {
         loadSynthesisKnowledge: async () => canonicalContext,
         loadDomainKnowledge: async (domain) => domain === "sommeil" ? "" : canonicalContext,
@@ -423,7 +452,7 @@ test("knowledge preflight is sequential and covers synthesis plus all eight doma
   };
 
   const result = await analyzeDiscoveryScan(
-    { prenom: "Canary", email: "canary@example.test", objectif: "performance" },
+    completeDiscoveryResponses(),
     {
       loadSynthesisKnowledge: async () => load("synthesis"),
       loadDomainKnowledge: async (domain) => load(domain),
@@ -540,7 +569,7 @@ test("zero-blockage opening never claims invisible blockages or plateaus", () =>
   assert.doesNotMatch(source, /\$\{result\.blocages\.length\} blocages structurants, souvent invisibles/);
 });
 
-test("synthesis and every domain receive all supplied questionnaire facts", () => {
+test("provider receives mechanism scopes and no supplied questionnaire facts", () => {
   const facts = buildDiscoveryQuestionnaireFacts({
     prenom: "Thomas",
     email: "private@example.test",
@@ -553,17 +582,13 @@ test("synthesis and every domain receive all supplied questionnaire facts", () =
     "qualite-sommeil": "moyenne",
   });
 
-  assert.match(facts, /- poids: 79 kg/);
-  assert.match(facts, /- taille: 184 cm/);
-  assert.match(facts, /- sport-frequence: 3 a 4 seances par semaine/);
-  assert.match(facts, /- type-sport: musculation/);
-  assert.match(facts, /- profession: bureau/);
-  assert.match(facts, /- qualite-sommeil: moyenne/);
-  assert.doesNotMatch(facts, /private@example\.test/);
+  assert.match(facts, /sommeil: rythmes circadiens/);
+  assert.match(facts, /training: stimulus, charge, adaptation/);
+  assert.doesNotMatch(facts, /79|184|3 a 4|musculation|bureau|moyenne|private@example\.test/);
 
   const source = readFileSync(new URL("./discovery-scan.ts", import.meta.url), "utf8");
   assert.ok((source.match(/buildDiscoveryQuestionnaireFacts\(responses\)/g) || []).length >= 1);
-  assert.match(source, /MISSION UNIQUE: produire tout le Discovery Scan/);
+  assert.match(source, /MISSION UNIQUE: produire uniquement des explications generales de mecanismes/);
 });
 
 test("provided weight, height and training frequency cannot be declared absent", () => {
@@ -622,7 +647,7 @@ test("deterministic factual repair leaves legitimate non-blocking weight and hei
   assert.deepEqual(validateDiscoveryFactualConsistency(legitimate, responses), []);
 });
 
-test("unified cleanup repairs supplied-fact absence claims in synthesis and sections before the final gate", () => {
+test("unified provider prose cannot restate personal numeric facts", () => {
   const responses = { prenom: "Alex", poids: "84", taille: "185", "sport-frequence": "3-4" };
   const policy = deriveDiscoverySafetyPolicy(responses);
   const paragraph = "Tu as décrit une routine structurée et des repères cohérents. Le mécanisme utile concerne la récupération et son interaction possible avec ton objectif, sans permettre de poser un diagnostic. Cette lecture distingue les faits déclarés des hypothèses prudentes qui restent à confirmer. ";
@@ -637,12 +662,7 @@ test("unified cleanup repairs supplied-fact absence claims in synthesis and sect
     })),
   };
 
-  const validated = validateDiscoveryGeneratedNarrative(raw, responses, policy);
-  assert.match(validated.synthesis, /Ton poids déclaré est de 84 kg/);
-  assert.match(validated.sections.digestion, /Ta taille déclarée est de 185 cm/);
-  assert.match(validated.sections.digestion, /Ta fréquence d’entraînement déclarée est de 3 à 4 séances par semaine/);
-  assert.deepEqual(validateDiscoveryFactualConsistency(validated.synthesis, responses), []);
-  assert.deepEqual(validateDiscoveryFactualConsistency(validated.sections.digestion, responses), []);
+  assert.throws(() => validateDiscoveryGeneratedNarrative(raw, responses, policy), /provider_numeric_value/);
 });
 
 test("a supplied 3-4 session frequency rejects a claim of two weekly sessions", () => {
@@ -671,7 +691,7 @@ test("Discovery keeps the exact wake-fatigue fact without inventing a rested ans
   assert.equal(fromRested["reveil-fatigue"], "jamais");
 
   const facts = buildDiscoveryQuestionnaireFacts({ "reveil-fatigue": "souvent" });
-  assert.match(facts, /- reveil-fatigue: souvent/);
+  assert.doesNotMatch(facts, /reveil-fatigue|souvent/);
   assert.doesNotMatch(facts, /- reveil-repose:/);
 });
 
@@ -858,12 +878,12 @@ test("generated prose cleanup uses neutral mechanical and breakfast wording", ()
 test("CTA is neutral toward first-person objectives and sleep title stays non-medicalizing", async () => {
   const canonicalContext = "Canonical scientific mechanism with enough precise evidence for premium generation. ".repeat(6);
   const result = await analyzeDiscoveryScan(
-    {
+    completeDiscoveryResponses({
       prenom: "ApexTest",
-      objectif: "perdre progressivement du gras tout en conservant mes performances",
+      objectif: "perte-graisse",
       "heures-sommeil": "5-6",
       "qualite-sommeil": "mauvaise",
-    },
+    }),
     {
       loadSynthesisKnowledge: async () => canonicalContext,
       loadDomainKnowledge: async () => canonicalContext,
@@ -888,7 +908,7 @@ test("CTA is neutral toward first-person objectives and sleep title stays non-me
 test("unified narrative requires exactly eight unique, valid domains", () => {
   const responses = { prenom: "Thomas", objectif: "mieux recuperer" };
   const policy = deriveDiscoverySafetyPolicy(responses);
-  const paragraph = "Tu as décrit une routine régulière qui donne une base concrète. Le mécanisme utile ici concerne la récupération et son interaction possible avec ton objectif, sans permettre de poser un diagnostic. Cette lecture distingue ce que tu as déclaré de ce qui reste seulement une hypothèse à approfondir. ";
+  const paragraph = "La régularité des rythmes soutient les mécanismes de récupération. Les adaptations reposent notamment sur la répétition des signaux, la qualité du sommeil et la gestion de la charge. Cette explication générale ne permet pas de déduire un état individuel ni de poser un diagnostic. ";
   const section = Array.from({ length: 4 }, () => paragraph.repeat(3)).join("\n\n");
   const synthesis = Array.from({ length: 4 }, () => paragraph.repeat(3)).join("\n\n");
   const raw = {
@@ -921,9 +941,9 @@ test("section length uses canonical visible characters at validation and assembl
 test("unified cleanup and report conversion preserve nutrition while normalizing the complete visible artifact", async () => {
   const responses = { prenom: "ApexTest", objectif: "perdre du gras tout en conservant mes performances" };
   const policy = deriveDiscoverySafetyPolicy(responses);
-  const standardParagraph = "Tu as décrit une routine régulière qui donne une base concrète. Le mécanisme utile ici concerne la récupération et son interaction possible avec ton objectif, sans permettre de poser un diagnostic. Je n'ai pas les elements pour transformer cette hypothèse prudente en certitude. ";
+  const standardParagraph = "La régularité des rythmes soutient les mécanismes de récupération. Les adaptations reposent sur la répétition des signaux, la qualité du sommeil et la gestion de la charge. Cette explication générale ne permet pas de transformer une hypothèse prudente en certitude individuelle. ";
   const standardSection = Array.from({ length: 4 }, () => standardParagraph.repeat(3)).join("\n\n");
-  const nutritionParagraph = "Tu déclares une source protéinée à chaque repas, trois repas et une collation, avec une hydratation régulière. Cette structure donne un repère concret sans justifier un objectif calorique, des macros, un grammage ou un protocole complet. Je conserve donc cette information exactement comme tu l'as fournie et je distingue ce fait des mécanismes seulement plausibles. ";
+  const nutritionParagraph = "La structure nutritionnelle donne un repère général sans justifier un objectif calorique, des macros, un grammage ou un protocole complet. Cette lecture reste centrée sur les mécanismes plausibles et distingue clairement les faits déterministes des explications générales. L'analyse demeure prudente, utile et non prescriptive. ";
   const nutritionSection = Array.from({ length: 4 }, () => nutritionParagraph.repeat(2)).join("\n\n");
   const raw = {
     synthesis: standardSection,
@@ -937,7 +957,7 @@ test("unified cleanup and report conversion preserve nutrition while normalizing
   const validated = validateDiscoveryGeneratedNarrative(raw, responses, policy);
   const nutrition = validated.sections.nutrition;
 
-  assert.match(nutrition, /source protéinée à chaque repas/i);
+  assert.match(nutrition, /structure nutritionnelle donne un repère général/i);
   assert.equal(countDiscoveryVisibleChars(nutrition), countDiscoveryVisibleChars(nutritionSection));
   assert.ok(countDiscoveryVisibleChars(nutrition) >= 1_400);
 
@@ -959,14 +979,14 @@ test("unified cleanup and report conversion preserve nutrition while normalizing
     ctaMessage: "Pour progresser vers l'objectif que tu as décrit, approfondis les données avant toute stratégie détaillée.",
     knowledgePreflight: { synthesis: "", domains: {} },
     safetyPolicy: policy,
+    questionnaireCoverage: calculateDiscoveryDeterministicProfile(responses).questionnaireCoverage,
   }, responses);
   const reportNutrition = report.sections.find((section) => section.id === "nutrition");
 
   assert.ok(reportNutrition, "the converted report must contain nutrition");
-  assert.match(reportNutrition.content, /source protéinée à chaque repas/i);
+  assert.match(reportNutrition.content, /structure nutritionnelle donne un repère général/i);
   assert.ok(countDiscoveryVisibleChars(reportNutrition.content) >= 1_400);
   assert.doesNotMatch(report.sections.map((section) => section.content).join("\n"), /\belements?\b/i);
-  assert.match(report.sections.map((section) => section.content).join("\n"), /éléments/i);
 
   for (const domain of DISCOVERY_PREMIUM_DOMAINS) {
     const domainSection = report.sections.find((section) => section.id === domain);
@@ -984,14 +1004,14 @@ test("unified cleanup and report conversion preserve nutrition while normalizing
   assert.deepEqual(validateDiscoveryReportForDelivery(report, assets), { ok: true, errors: [] });
 });
 
-test("unified end-to-end factual gate preserves the exact fatigue wording from the canary", () => {
+test("unified provider gate rejects any personal fatigue restatement before deterministic assembly", () => {
   const responses = {
     prenom: "ApexTest",
     objectif: "progresser durablement",
     "reveil-fatigue": "souvent",
   };
   const policy = deriveDiscoverySafetyPolicy(responses);
-  const paragraph = "Tu déclares une fatigue fréquente au réveil et une routine qui reste structurée. Le mécanisme possible concerne la récupération, sans permettre de poser un diagnostic ni d'inventer une donnée absente. Cette lecture distingue strictement les faits déclarés des hypothèses prudentes. ";
+  const paragraph = "La fatigue au réveil peut refléter plusieurs mécanismes généraux de récupération. Le sommeil, la régularité des horaires et la charge globale interagissent sans permettre de poser un diagnostic individuel. Cette explication reste distincte des faits issus du questionnaire. ";
   const section = Array.from({ length: 4 }, () => paragraph.repeat(3)).join("\n\n");
   const raw = {
     synthesis: section,
@@ -1005,7 +1025,7 @@ test("unified end-to-end factual gate preserves the exact fatigue wording from t
 
   assert.throws(
     () => validateDiscoveryGeneratedNarrative(raw, responses, policy),
-    /Discovery unified section sommeil invalid: unsupported_restatement:reveil-repose/,
+    /Discovery unified section sommeil invalid: .*provider_personalized_claim/,
   );
 });
 
@@ -1016,7 +1036,7 @@ test("unified end-to-end factual gate rejects invented protein distribution", ()
     "proteines-jour": "bonne",
   };
   const policy = deriveDiscoverySafetyPolicy(responses);
-  const paragraph = "Tu as décrit une routine structurée et des repères cohérents. Le mécanisme possible concerne l'organisation et son interaction avec ton objectif, sans permettre de poser un diagnostic ni d'inventer une donnée absente. Cette lecture distingue strictement les faits déclarés des hypothèses prudentes. ";
+  const paragraph = "La répartition des apports peut soutenir la récupération et la régularité énergétique. Les mécanismes généraux dépendent de la qualité, de la fréquence et du contexte global. Cette explication ne permet pas de déduire une fréquence individuelle absente du questionnaire. ";
   const section = Array.from({ length: 4 }, () => paragraph.repeat(3)).join("\n\n");
   const raw = {
     synthesis: section,
@@ -1030,14 +1050,14 @@ test("unified end-to-end factual gate rejects invented protein distribution", ()
 
   assert.throws(
     () => validateDiscoveryGeneratedNarrative(raw, responses, policy),
-    /Discovery unified section nutrition invalid: factual_value_contradiction:proteines-jour-frequency/,
+    /Discovery unified section nutrition invalid: .*factual_value_contradiction:proteines-jour-frequency/,
   );
 });
 
-test("unified end-to-end cleanup qualifies a provider medical assertion before the strict final gate", () => {
+test("unified end-to-end gate rejects provider medical and personalized assertions", () => {
   const responses = { prenom: "ApexTest", objectif: "progresser durablement" };
   const policy = deriveDiscoverySafetyPolicy(responses);
-  const paragraph = "Tu as décrit une routine structurée et des repères cohérents. Le mécanisme utile concerne la récupération et son interaction possible avec ton objectif, sans permettre de poser un diagnostic. Cette lecture distingue les faits déclarés des hypothèses prudentes qui restent à confirmer. ";
+  const paragraph = "Les rythmes réguliers soutiennent les mécanismes de récupération. Leur interaction avec la charge globale reste générale et ne permet pas de poser un diagnostic. Toute interprétation individuelle doit rester liée aux données déterministes du questionnaire. ";
   const section = Array.from({ length: 4 }, () => paragraph.repeat(3)).join("\n\n");
   const raw = {
     synthesis: section,
@@ -1049,19 +1069,17 @@ test("unified end-to-end cleanup qualifies a provider medical assertion before t
     })),
   };
 
-  const validated = validateDiscoveryGeneratedNarrative(raw, responses, policy);
-  const sleep = validated.sections.sommeil;
-  assert.match(sleep, /Ton cortisol est élevé, mais cela reste une hypothèse prudente et non diagnostique/);
-  assert.match(sleep, /Ta sensibilité à l'insuline est basse, mais cela reste une hypothèse prudente et non diagnostique/);
-  assert.match(sleep, /Ta thyroïde est ralentie, mais cela reste une hypothèse prudente et non diagnostique/);
-  assert.equal(validateDiscoverySectionContent(sleep, policy).isValid, true);
+  assert.throws(
+    () => validateDiscoveryGeneratedNarrative(raw, responses, policy),
+    /provider_(?:personalized|state)_claim|medical_assertion/,
+  );
   assert.ok(validateDiscoverySectionContent("Ton cortisol est élevé.", policy).reasons.includes("medical_assertion"));
 });
 
 test("unified end-to-end cleanup repairs known French corruption in stress before strict validation", () => {
   const responses = { prenom: "ApexTest", objectif: "progresser durablement" };
   const policy = deriveDiscoverySafetyPolicy(responses);
-  const paragraph = "Tu as décrit une routine structurée et des repères cohérents. Le mécanisme utile concerne la récupération et son interaction possible avec ton objectif, sans permettre de poser un diagnostic. Cette lecture distingue les faits déclarés des hypothèses prudentes qui restent à confirmer. ";
+  const paragraph = "Les rythmes réguliers soutiennent les mécanismes de récupération. Leur interaction avec la charge globale reste générale et ne permet pas de poser un diagnostic. Toute interprétation individuelle doit rester liée aux données déterministes du questionnaire. ";
   const section = Array.from({ length: 4 }, () => paragraph.repeat(3)).join("\n\n");
   const raw = {
     synthesis: section,
@@ -1085,7 +1103,7 @@ test("unified end-to-end cleanup repairs known French corruption in stress befor
 test("unified end-to-end cleanup remains idempotent when voice normalization creates its fallback", () => {
   const responses = { prenom: "ApexTest", objectif: "progresser durablement" };
   const policy = deriveDiscoverySafetyPolicy(responses);
-  const paragraph = "Tu as décrit une routine structurée et des repères cohérents. Je ne peux pas confirmer une cause individuelle à partir de ce questionnaire. Cette lecture distingue les faits déclarés des hypothèses prudentes qui restent à confirmer sans poser de diagnostic. ";
+  const paragraph = "Les rythmes réguliers soutiennent les mécanismes de récupération. Une cause individuelle ne peut pas être confirmée à partir d'un questionnaire. Cette lecture générale distingue les mécanismes plausibles des conclusions diagnostiques. ";
   const section = Array.from({ length: 4 }, () => paragraph.repeat(3)).join("\n\n");
   const raw = {
     synthesis: section,
@@ -1093,7 +1111,7 @@ test("unified end-to-end cleanup remains idempotent when voice normalization cre
   };
 
   const validated = validateDiscoveryGeneratedNarrative(raw, responses, policy);
-  assert.match(validated.sections.energie, /je n'ai pas les éléments pour confirmer/i);
+  assert.match(validated.sections.energie, /ne peut pas être confirmée/i);
   assert.doesNotMatch(validated.sections.energie, /\belements?\b/i);
   assert.deepEqual(validateDiscoveryLinguisticQuality(validated.sections.energie), []);
   assert.equal(validateDiscoverySectionContent(validated.sections.energie, policy).isValid, true);
