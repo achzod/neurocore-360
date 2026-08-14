@@ -204,6 +204,8 @@ const LENNY_NUTRITION_OLD_TEXT = "la régularité et la qualité de l’apport p
 const LENNY_NUTRITION_NEW_TEXT = "la régularité et la qualité de l’apport protéique deviennent plus importantes. Je n'ai pas les éléments pour juger les quantités, la répartition ni l’apport énergétique total avec les réponses disponibles.";
 const LENNY_WAKE_SUMMARY_OLD_TEXT = "ton énergie matinale est moyenne, le lever est difficile et tu te réveilles parfois fatigué";
 const LENNY_WAKE_SUMMARY_NEW_TEXT = "ton énergie matinale est moyenne et tu te réveilles parfois fatigué";
+const ALEXANDRE_CRITICAL_OLD_TEXT = "2 blocages structurants ressortent de tes réponses, sans atteindre le niveau critique calculé.";
+const ALEXANDRE_CRITICAL_NEW_TEXT = "2 blocages structurants ressortent de tes réponses.";
 const LENNY_RESPONSES = {
   "reveil-fatigue": "parfois",
   "energie-matin": "moyenne",
@@ -423,6 +425,93 @@ async function insertExactWakeSummaryRepairFixture(
       promoSectionIndex: 11,
       promoSectionId: "coaching" as const,
       approvedNeutralPromoHtml: DISCOVERY_APPROVED_NEUTRAL_PROMO_HTML,
+    },
+  };
+}
+
+async function insertExactAlexandreCriticalCopyFixture(
+  mode: "valid" | "duplicate-visible" | "wrong-metadata-path" = "valid",
+) {
+  const id = randomUUID();
+  const email = `${id}@example.test`;
+  const report = exactRepairReport();
+  report.clientName = "Alexandre";
+  for (const section of report.sections) {
+    section.content = section.content.replaceAll("Lenny", "Alexandre");
+  }
+  report.sections[5].content = report.sections[5].content.replace(LENNY_OLD_TEXT, LENNY_NEW_TEXT);
+  report.sections[1].content = report.sections[1].content.replace(
+    LENNY_NUTRITION_OLD_TEXT,
+    LENNY_NUTRITION_NEW_TEXT,
+  );
+  report.sections[11].content = report.sections[11].content.replace(
+    LEGACY_DISCOVERY_PROMO_HTML,
+    DISCOVERY_APPROVED_NEUTRAL_PROMO_HTML,
+  );
+  report.sections[5].title = "Sommeil 25/100 [BLOCAGE CRITIQUE]";
+  report.sections[10].content += `<p>${ALEXANDRE_CRITICAL_OLD_TEXT}</p>`;
+  if (mode === "duplicate-visible") {
+    report.sections[10].content += `<p>${ALEXANDRE_CRITICAL_OLD_TEXT}</p>`;
+  }
+  report.analysisMetadata = mode === "wrong-metadata-path"
+    ? { summary: ALEXANDRE_CRITICAL_OLD_TEXT }
+    : { ctaMessage: ALEXANDRE_CRITICAL_OLD_TEXT };
+  const assets = buildDiscoveryReportAssets(report);
+  const narrative = attachDiscoveryDeliveryGateResult(report, {
+    name: "discovery_delivery",
+    version: 4,
+    ok: true,
+    errors: [],
+    checkedAt: "2026-08-14T01:00:00.000Z",
+    retryable: false,
+  });
+  const artifactId = randomUUID();
+  const responses = { source: "integration-test" };
+  const contentSha256 = batch.discoveryArtifactContentHash(assets.txt, assets.html);
+  await pool.query(
+    `INSERT INTO audits
+      (id,email,type,responses,scores,report_delivery_status,report_sent_at,
+       narrative_report,report_txt,report_html,created_at)
+     VALUES ($1,$2,'GRATUIT',$3::jsonb,'{}'::jsonb,'BATCH_READY',NULL,$4::jsonb,$5,$6,'2026-08-14T01:00:00.000Z')`,
+    [id, email, JSON.stringify(responses), JSON.stringify(narrative), assets.txt, assets.html],
+  );
+  await pool.query(
+    `INSERT INTO report_artifacts
+      (id,audit_id,tier,engine,model,txt,html,content_sha256,created_at)
+     VALUES ($1,$2,'GRATUIT','discovery','integration-test',$3,$4,$5,NOW())`,
+    [artifactId, id, assets.txt, assets.html, contentSha256],
+  );
+  const persisted = (await pool.query(
+    `SELECT responses, narrative_report FROM audits WHERE id = $1`,
+    [id],
+  )).rows[0];
+  return {
+    id,
+    email,
+    artifactId,
+    assets,
+    target: {
+      id,
+      emailSha256: batch.discoverySha256(email),
+      expectedCurrentStatus: "BATCH_READY" as const,
+      expectedResponsesJsonSha256: batch.discoverySha256(JSON.stringify(persisted.responses)),
+      expectedNarrativeJsonSha256: batch.discoverySha256(JSON.stringify(persisted.narrative_report)),
+      expectedTxtSha256: batch.discoverySha256(assets.txt),
+      expectedHtmlSha256: batch.discoverySha256(assets.html),
+      expectedArtifactId: artifactId,
+      expectedArtifactContentSha256: contentSha256,
+      expectedArtifactCount: 1 as const,
+      expectedNarrativeTopLevelKeys: [
+        "analysisMetadata", "auditType", "clientName", "generatedAt", "generationQuality",
+        "globalScore", "metrics", "sections", "validationResult",
+      ],
+      sectionIndex: 10,
+      sectionId: "scans" as const,
+      metadataKey: "ctaMessage" as const,
+      oldText: ALEXANDRE_CRITICAL_OLD_TEXT,
+      newText: ALEXANDRE_CRITICAL_NEW_TEXT,
+      expectedNarrativeOccurrences: 2 as const,
+      expectedRenderedOccurrences: 1 as const,
     },
   };
 }
@@ -1189,6 +1278,102 @@ test("exact Lenny wake-summary repair rolls back on client delivery evidence", a
   )).rows[0];
   assert.equal(audit.report_txt, fixture.assets.txt);
   assert.equal(audit.report_html, fixture.assets.html);
+});
+
+test("exact Alexandre critical-copy repair atomically updates both JSON paths and every artifact", async () => {
+  const fixture = await insertExactAlexandreCriticalCopyFixture();
+  const lock = await batch.acquireDiscoveryGlobalLock({
+    owner: "postgres-integration",
+    purpose: "exact-alexandre-critical-copy-repair",
+    ttlMinutes: 5,
+  }, pool);
+  const result = await batch.repairExactDiscoveryWakeSummaryUnderLock({
+    lockToken: lock.token,
+    target: fixture.target,
+  }, pool);
+  assert.equal(await batch.releaseDiscoveryGlobalLock(lock.token, pool), true);
+  assert.equal(result.status, "BATCH_READY");
+  assert.equal(result.artifactId, fixture.artifactId);
+  assert.equal(result.emailsSent, 0);
+
+  const audit = (await pool.query(
+    `SELECT report_delivery_status, report_sent_at, narrative_report, report_txt, report_html
+       FROM audits WHERE id = $1`,
+    [fixture.id],
+  )).rows[0];
+  const artifact = (await pool.query(
+    `SELECT id, txt, html, content_sha256 FROM report_artifacts WHERE audit_id = $1`,
+    [fixture.id],
+  )).rows[0];
+  const narrative = JSON.stringify(audit.narrative_report);
+  assert.equal(audit.report_delivery_status, "BATCH_READY");
+  assert.equal(audit.report_sent_at, null);
+  assert.equal(narrative.split(ALEXANDRE_CRITICAL_OLD_TEXT).length - 1, 0);
+  assert.equal(narrative.split(ALEXANDRE_CRITICAL_NEW_TEXT).length - 1, 2);
+  assert.equal(
+    audit.narrative_report.sections[10].content.split(ALEXANDRE_CRITICAL_NEW_TEXT).length - 1,
+    1,
+  );
+  assert.equal(
+    audit.narrative_report.analysisMetadata.ctaMessage,
+    ALEXANDRE_CRITICAL_NEW_TEXT,
+  );
+  for (const value of [audit.report_txt, audit.report_html, artifact.txt, artifact.html]) {
+    assert.equal(value.split(ALEXANDRE_CRITICAL_OLD_TEXT).length - 1, 0);
+    assert.equal(value.split(ALEXANDRE_CRITICAL_NEW_TEXT).length - 1, 1);
+  }
+  assert.equal(artifact.id, fixture.artifactId);
+  assert.equal(artifact.txt, audit.report_txt);
+  assert.equal(artifact.html, audit.report_html);
+  assert.equal(
+    artifact.content_sha256,
+    batch.discoveryArtifactContentHash(audit.report_txt, audit.report_html),
+  );
+  assert.equal(audit.narrative_report.validationResult.deliveryGate.ok, true);
+  assert.deepEqual(audit.narrative_report.validationResult.deliveryGate.errors, []);
+  assert.equal(Number((await pool.query(
+    `SELECT COUNT(*) FROM email_tracking WHERE audit_id = $1`, [fixture.id],
+  )).rows[0].count), 0);
+  assert.equal(Number((await pool.query(
+    `SELECT COUNT(*) FROM discovery_email_delivery_claims WHERE audit_id = $1`, [fixture.id],
+  )).rows[0].count), 0);
+});
+
+test("exact Alexandre critical-copy repair rolls back on either bound path divergence", async () => {
+  for (const mode of ["duplicate-visible", "wrong-metadata-path"] as const) {
+    const fixture = await insertExactAlexandreCriticalCopyFixture(mode);
+    const beforeAudit = (await pool.query(
+      `SELECT narrative_report, report_txt, report_html FROM audits WHERE id = $1`,
+      [fixture.id],
+    )).rows[0];
+    const beforeArtifact = (await pool.query(
+      `SELECT txt, html, content_sha256 FROM report_artifacts WHERE audit_id = $1`,
+      [fixture.id],
+    )).rows[0];
+    const lock = await batch.acquireDiscoveryGlobalLock({
+      owner: "postgres-integration",
+      purpose: `exact-alexandre-critical-copy-${mode}`,
+      ttlMinutes: 5,
+    }, pool);
+    await assert.rejects(
+      batch.repairExactDiscoveryWakeSummaryUnderLock({
+        lockToken: lock.token,
+        target: fixture.target,
+      }, pool),
+      /DISCOVERY_WAKE_SUMMARY_REPAIR_EXACT_PATH_OR_OCCURRENCE_MISMATCH/,
+    );
+    assert.equal(await batch.releaseDiscoveryGlobalLock(lock.token, pool), true);
+    const afterAudit = (await pool.query(
+      `SELECT narrative_report, report_txt, report_html FROM audits WHERE id = $1`,
+      [fixture.id],
+    )).rows[0];
+    const afterArtifact = (await pool.query(
+      `SELECT txt, html, content_sha256 FROM report_artifacts WHERE audit_id = $1`,
+      [fixture.id],
+    )).rows[0];
+    assert.deepEqual(afterAudit, beforeAudit);
+    assert.deepEqual(afterArtifact, beforeArtifact);
+  }
 });
 
 test("exact Discovery text repair rolls back on client report delivery tracking", async () => {

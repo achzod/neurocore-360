@@ -9,6 +9,7 @@ import {
   acquireDiscoveryGlobalLock,
   promoteExactValidDiscoveryWithoutDelivery,
   quarantineExactDiscoveryPrelaunchTests,
+  repairExactAlexandreDiscoveryCriticalCopyWithoutDelivery,
   repairExactLennyDiscoveryQualityWithoutDelivery,
   resolveExactSuzieDiscoveryDuplicateWithoutDelivery,
   releaseDiscoveryGlobalLock,
@@ -39,8 +40,10 @@ async function main(): Promise<void> {
   const quarantine = args.has("--quarantine-test");
   const promote = args.has("--promote-valid-no-delivery");
   const repairLenny = args.has("--repair-lenny-quality");
+  const repairAlexandre = args.has("--repair-alexandre-critical-copy");
   const resolveSuzie = args.has("--resolve-suzie-duplicate");
-  if (Number(quarantine) + Number(promote) + Number(repairLenny) + Number(resolveSuzie) !== 1) {
+  if (Number(quarantine) + Number(promote) + Number(repairLenny)
+      + Number(repairAlexandre) + Number(resolveSuzie) !== 1) {
     throw new Error("DISCOVERY_ONE_SHOT_EXACTLY_ONE_OPERATION_REQUIRED");
   }
   requireOfflineRemediationEnvironment();
@@ -52,7 +55,9 @@ async function main(): Promise<void> {
       ? "one-shot:promote-valid-no-delivery"
       : repairLenny
         ? "one-shot:repair-lenny-quality"
-        : "one-shot:resolve-suzie-duplicate";
+        : repairAlexandre
+          ? "one-shot:repair-alexandre-critical-copy"
+          : "one-shot:resolve-suzie-duplicate";
   const lock = await acquireDiscoveryGlobalLock({
     owner: `discovery-one-shot:${process.pid}`,
     purpose,
@@ -68,6 +73,15 @@ async function main(): Promise<void> {
     if (repairLenny) {
       const result = await repairExactLennyDiscoveryQualityWithoutDelivery({ lockToken: lock.token }, pool);
       console.log(`DISCOVERY_ONE_SHOT_LENNY_QUALITY_COMPLETE:${JSON.stringify(result)}`);
+      return;
+    }
+
+    if (repairAlexandre) {
+      const result = await repairExactAlexandreDiscoveryCriticalCopyWithoutDelivery(
+        { lockToken: lock.token },
+        pool,
+      );
+      console.log(`DISCOVERY_ONE_SHOT_ALEXANDRE_CRITICAL_COPY_COMPLETE:${JSON.stringify(result)}`);
       return;
     }
 

@@ -3285,6 +3285,20 @@ export function validateDiscoveryReportForDelivery(
   }
   const metadata = nonRenderedMetadata ?? report?.analysisMetadata ?? {};
   const metadataText = JSON.stringify(metadata);
+  const criticalConsistencyText = [completeVisibleArtifact, metadataText]
+    .join("\n")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  const hasCalculatedCriticalBlockage = /\[\s*blocage\s+critique\s*\]/.test(
+    criticalConsistencyText,
+  );
+  const deniesCalculatedCriticalLevel = /\bsans\s+atteindre\s+le\s+niveau\s+critique\s+calcule\b/.test(
+    criticalConsistencyText,
+  );
+  if (hasCalculatedCriticalBlockage && deniesCalculatedCriticalLevel) {
+    errors.push("content:critical_level_contradiction");
+  }
   for (const linguisticError of validateDiscoveryLinguisticQuality(metadataText)) {
     errors.push(`metadata_linguistic:${linguisticError}`);
   }

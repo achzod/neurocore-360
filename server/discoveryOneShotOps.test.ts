@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
+  DISCOVERY_ALEXANDRE_CRITICAL_COPY_FIX_TARGET,
   DISCOVERY_PRELAUNCH_TEST_TARGETS,
   DISCOVERY_LENNY_QUALITY_FIX_TARGET,
   DISCOVERY_LENNY_WAKE_SUMMARY_FIX_TARGET,
@@ -205,6 +206,43 @@ test("Lenny wake-summary repair is bound to the exact post-repair live revision"
   assert.doesNotMatch(source, /claimDiscoveryEmailDelivery\s*\(/);
 });
 
+test("Alexandre critical-copy repair is bound to both exact JSON paths and live artifact", () => {
+  assert.deepEqual(DISCOVERY_ALEXANDRE_CRITICAL_COPY_FIX_TARGET, {
+    id: "e860b380-3a6e-4c64-b823-3422476b7cd2",
+    emailSha256: "0ae1447d6dd547ce59b3d116435794a73f7b36965b5fe03f5c3698127411ecce",
+    expectedCurrentStatus: "BATCH_READY",
+    expectedResponsesJsonSha256: "b3dd042c5ba5b64989348646347cc9c21d474d85ce96b7617a2a849d91b40971",
+    expectedNarrativeJsonSha256: "2147a235dd65955d4d8f9ebdf829ecc1b2d0b19ef7052776d7ac27c4548a206f",
+    expectedTxtSha256: "ce268c2cf958cb7bd917e615402a12200095a4954ef1cc01d65094245c5627f3",
+    expectedHtmlSha256: "d74285b0493264ccf97e35a2a4e97bce4c49b2689cc9213cfbd7f4a2dc982b34",
+    expectedArtifactId: "f27134ab-123e-483f-b18d-a24993dc324a",
+    expectedArtifactContentSha256: "3789fdeaa4d2f2b6278aa4a56da5ad3e0e7fc46f0b89a126f32c9461b57396eb",
+    expectedArtifactCount: 1,
+    expectedNarrativeTopLevelKeys: [
+      "analysisMetadata", "auditType", "clientName", "generatedAt", "generationQuality",
+      "globalScore", "metrics", "sections", "validationResult",
+    ],
+    sectionIndex: 10,
+    sectionId: "scans",
+    metadataKey: "ctaMessage",
+    oldText: "2 blocages structurants ressortent de tes réponses, sans atteindre le niveau critique calculé.",
+    newText: "2 blocages structurants ressortent de tes réponses.",
+    expectedNarrativeOccurrences: 2,
+    expectedRenderedOccurrences: 1,
+  });
+  const start = controlSource.indexOf("export async function repairExactDiscoveryWakeSummaryUnderLock");
+  const end = controlSource.indexOf("export async function createDiscoveryBatchRun", start);
+  const source = controlSource.slice(start, end);
+  assert.match(source, /metadataKey/);
+  assert.match(source, /expectedNarrativeOccurrences/);
+  assert.match(source, /expectedRenderedOccurrences/);
+  assert.match(source, /DISCOVERY_WAKE_SUMMARY_REPAIR_ARTIFACT_CAS_FAILED/);
+  assert.match(source, /DISCOVERY_WAKE_SUMMARY_REPAIR_AUDIT_CAS_FAILED/);
+  assert.match(source, /assertNoDiscoveryDeliveryTrackingOrClaim/);
+  assert.doesNotMatch(source, /sendReportReadyEmail\s*\(/);
+  assert.doesNotMatch(source, /claimDiscoveryEmailDelivery\s*\(/);
+});
+
 test("one-shot CLI requires offline kill switches and the discovery-global lock", () => {
   assert.match(cliSource, /REMEDIATION_SIDE_EFFECTS_DISABLED/);
   assert.match(cliSource, /DISCOVERY_REPORT_DELIVERY_ENABLED/);
@@ -214,6 +252,7 @@ test("one-shot CLI requires offline kill switches and the discovery-global lock"
   assert.match(cliSource, /--quarantine-test/);
   assert.match(cliSource, /--promote-valid-no-delivery/);
   assert.match(cliSource, /--repair-lenny-quality/);
+  assert.match(cliSource, /--repair-alexandre-critical-copy/);
   assert.match(cliSource, /--resolve-suzie-duplicate/);
   assert.match(cliSource, /--expected-current-status/);
   assert.match(cliSource, /--expected-txt-sha256/);

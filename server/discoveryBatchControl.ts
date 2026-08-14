@@ -615,6 +615,56 @@ export interface ExactDiscoveryWakeSummaryRepairTarget {
   approvedNeutralPromoHtml: string;
 }
 
+/**
+ * Exact live Alexandre revision generated on 0680bb9c. The same contradictory
+ * sentence is stored once in the visible scans section and once in the hidden
+ * CTA metadata, while each rendered representation contains it exactly once.
+ */
+export const DISCOVERY_ALEXANDRE_CRITICAL_COPY_FIX_TARGET = Object.freeze({
+  id: "e860b380-3a6e-4c64-b823-3422476b7cd2",
+  emailSha256: "0ae1447d6dd547ce59b3d116435794a73f7b36965b5fe03f5c3698127411ecce",
+  expectedCurrentStatus: "BATCH_READY" as const,
+  expectedResponsesJsonSha256: "b3dd042c5ba5b64989348646347cc9c21d474d85ce96b7617a2a849d91b40971",
+  expectedNarrativeJsonSha256: "2147a235dd65955d4d8f9ebdf829ecc1b2d0b19ef7052776d7ac27c4548a206f",
+  expectedTxtSha256: "ce268c2cf958cb7bd917e615402a12200095a4954ef1cc01d65094245c5627f3",
+  expectedHtmlSha256: "d74285b0493264ccf97e35a2a4e97bce4c49b2689cc9213cfbd7f4a2dc982b34",
+  expectedArtifactId: "f27134ab-123e-483f-b18d-a24993dc324a",
+  expectedArtifactContentSha256: "3789fdeaa4d2f2b6278aa4a56da5ad3e0e7fc46f0b89a126f32c9461b57396eb",
+  expectedArtifactCount: 1,
+  expectedNarrativeTopLevelKeys: Object.freeze([
+    "analysisMetadata", "auditType", "clientName", "generatedAt", "generationQuality",
+    "globalScore", "metrics", "sections", "validationResult",
+  ]),
+  sectionIndex: 10,
+  sectionId: "scans",
+  metadataKey: "ctaMessage" as const,
+  oldText: "2 blocages structurants ressortent de tes réponses, sans atteindre le niveau critique calculé.",
+  newText: "2 blocages structurants ressortent de tes réponses.",
+  expectedNarrativeOccurrences: 2,
+  expectedRenderedOccurrences: 1,
+} satisfies ExactDiscoveryCriticalCopyRepairTarget);
+
+export interface ExactDiscoveryCriticalCopyRepairTarget {
+  id: string;
+  emailSha256: string;
+  expectedCurrentStatus: "BATCH_READY";
+  expectedResponsesJsonSha256: string;
+  expectedNarrativeJsonSha256: string;
+  expectedTxtSha256: string;
+  expectedHtmlSha256: string;
+  expectedArtifactId: string;
+  expectedArtifactContentSha256: string;
+  expectedArtifactCount: 1;
+  expectedNarrativeTopLevelKeys: readonly string[];
+  sectionIndex: number;
+  sectionId: "scans";
+  metadataKey: "ctaMessage";
+  oldText: string;
+  newText: string;
+  expectedNarrativeOccurrences: 2;
+  expectedRenderedOccurrences: 1;
+}
+
 export interface ExactDiscoveryDuplicateResolutionAudit {
   id: string;
   createdAt: string;
@@ -1522,13 +1572,16 @@ export async function repairExactDiscoveryTextUnderLock(
 }
 
 /**
- * Second-stage deterministic repair for Lenny's exact post-repair artifact.
- * It changes one sentence in sections[1].content, then rebuilds and persists
- * JSON/TXT/HTML/artifact atomically. Every live identity, path, occurrence,
- * hash, lock and side-effect invariant is fail-closed.
+ * Exact deterministic copy repair for a hash-bound post-generation artifact.
+ * It supports a single visible section path and, when explicitly bound, the
+ * matching hidden CTA metadata path. JSON/TXT/HTML/artifact are rebuilt and
+ * persisted atomically; every identity, occurrence, lock and CAS fails closed.
  */
 export async function repairExactDiscoveryWakeSummaryUnderLock(
-  input: { lockToken: string; target: ExactDiscoveryWakeSummaryRepairTarget },
+  input: {
+    lockToken: string;
+    target: ExactDiscoveryWakeSummaryRepairTarget | ExactDiscoveryCriticalCopyRepairTarget;
+  },
   poolOverride?: Pool,
 ): Promise<{
   auditId: string;
@@ -1541,6 +1594,15 @@ export async function repairExactDiscoveryWakeSummaryUnderLock(
   emailsSent: 0;
 }> {
   const { target } = input;
+  const isCriticalCopyRepair = "metadataKey" in target;
+  const metadataKey = isCriticalCopyRepair ? target.metadataKey : undefined;
+  const expectedNarrativeOccurrences = isCriticalCopyRepair
+    ? target.expectedNarrativeOccurrences
+    : target.expectedOccurrencesPerRepresentation;
+  const expectedRenderedOccurrences = isCriticalCopyRepair
+    ? target.expectedRenderedOccurrences
+    : target.expectedOccurrencesPerRepresentation;
+  const hasPriorFixInvariants = !isCriticalCopyRepair;
   for (const hash of [
     target.emailSha256,
     target.expectedResponsesJsonSha256,
@@ -1555,19 +1617,24 @@ export async function repairExactDiscoveryWakeSummaryUnderLock(
   }
   if (!target.expectedArtifactId
     || target.expectedArtifactCount !== 1
-    || target.expectedOccurrencesPerRepresentation !== 1
+    || ![1, 2].includes(Number(expectedNarrativeOccurrences))
+    || expectedRenderedOccurrences !== 1
     || !target.oldText
     || !target.newText
     || target.oldText === target.newText
     || !Number.isInteger(target.sectionIndex)
     || target.sectionIndex < 0
     || !target.sectionId
-    || !target.alreadyFixedSleepText
-    || !target.alreadyFixedNutritionText
-    || !Number.isInteger(target.promoSectionIndex)
-    || target.promoSectionIndex < 0
-    || target.promoSectionId !== "coaching"
-    || !target.approvedNeutralPromoHtml) {
+    || (metadataKey && expectedNarrativeOccurrences !== 2)
+    || (hasPriorFixInvariants && (
+      !("alreadyFixedSleepText" in target)
+      || !target.alreadyFixedSleepText
+      || !target.alreadyFixedNutritionText
+      || !Number.isInteger(target.promoSectionIndex)
+      || target.promoSectionIndex < 0
+      || target.promoSectionId !== "coaching"
+      || !target.approvedNeutralPromoHtml
+    ))) {
     throw new Error("DISCOVERY_WAKE_SUMMARY_REPAIR_TARGET_INVALID");
   }
 
@@ -1634,7 +1701,12 @@ export async function repairExactDiscoveryWakeSummaryUnderLock(
     }
     const repairedReport = structuredClone(audit.narrative_report) as Record<string, any>;
     const section = repairedReport.sections[target.sectionIndex];
-    const promoSection = repairedReport.sections[target.promoSectionIndex];
+    const promoSection = hasPriorFixInvariants && "promoSectionIndex" in target
+      ? repairedReport.sections[target.promoSectionIndex]
+      : undefined;
+    const metadataValue = metadataKey
+      ? repairedReport.analysisMetadata?.[metadataKey]
+      : undefined;
     const serializedBefore = JSON.stringify(repairedReport);
     const artifactTxt = String(artifact.txt || "");
     const artifactHtml = String(artifact.html || "");
@@ -1644,31 +1716,46 @@ export async function repairExactDiscoveryWakeSummaryUnderLock(
       || typeof section.content !== "string"
       || countExactOccurrences(section.content, target.oldText) !== 1
       || countExactOccurrences(section.content, target.newText) !== 0
-      || beforeRepresentations.some((value) =>
-        countExactOccurrences(value, target.oldText) !== target.expectedOccurrencesPerRepresentation
-        || countExactOccurrences(value, target.newText) !== 0)) {
+      || countExactOccurrences(serializedBefore, target.oldText) !== expectedNarrativeOccurrences
+      || countExactOccurrences(serializedBefore, target.newText) !== 0
+      || beforeRepresentations.slice(1).some((value) =>
+        countExactOccurrences(value, target.oldText) !== expectedRenderedOccurrences
+        || countExactOccurrences(value, target.newText) !== 0)
+      || (metadataKey && (
+        typeof metadataValue !== "string"
+        || countExactOccurrences(metadataValue, target.oldText) !== 1
+        || countExactOccurrences(metadataValue, target.newText) !== 0
+      ))) {
       throw new Error("DISCOVERY_WAKE_SUMMARY_REPAIR_EXACT_PATH_OR_OCCURRENCE_MISMATCH");
     }
 
     const legacyPromoCode = ["DISCOVERY", "20"].join("");
-    for (const [representationIndex, value] of beforeRepresentations.entries()) {
-      const sleepCount = countExactOccurrences(value, target.alreadyFixedSleepText);
-      const nutritionCount = countExactOccurrences(value, target.alreadyFixedNutritionText);
-      const promoCodeCount = countExactOccurrences(value, legacyPromoCode);
-      if (sleepCount !== 1 || nutritionCount !== 1 || promoCodeCount !== 0) {
-        throw new Error(
-          `DISCOVERY_WAKE_SUMMARY_REPAIR_PRIOR_FIX_INVARIANT_MISMATCH:${representationIndex}:${sleepCount}:${nutritionCount}:${promoCodeCount}`,
-        );
+    if (hasPriorFixInvariants && "alreadyFixedSleepText" in target) {
+      for (const [representationIndex, value] of beforeRepresentations.entries()) {
+        const sleepCount = countExactOccurrences(value, target.alreadyFixedSleepText);
+        const nutritionCount = countExactOccurrences(value, target.alreadyFixedNutritionText);
+        const promoCodeCount = countExactOccurrences(value, legacyPromoCode);
+        if (sleepCount !== 1 || nutritionCount !== 1 || promoCodeCount !== 0) {
+          throw new Error(
+            `DISCOVERY_WAKE_SUMMARY_REPAIR_PRIOR_FIX_INVARIANT_MISMATCH:${representationIndex}:${sleepCount}:${nutritionCount}:${promoCodeCount}`,
+          );
+        }
       }
-    }
-    if (!promoSection
-      || String(promoSection.id) !== target.promoSectionId
-      || typeof promoSection.content !== "string"
-      || countExactOccurrences(promoSection.content, target.approvedNeutralPromoHtml) !== 1) {
-      throw new Error("DISCOVERY_WAKE_SUMMARY_REPAIR_PRIOR_PROMO_INVARIANT_MISMATCH");
+      if (!promoSection
+        || String(promoSection.id) !== target.promoSectionId
+        || typeof promoSection.content !== "string"
+        || countExactOccurrences(promoSection.content, target.approvedNeutralPromoHtml) !== 1) {
+        throw new Error("DISCOVERY_WAKE_SUMMARY_REPAIR_PRIOR_PROMO_INVARIANT_MISMATCH");
+      }
     }
 
     section.content = section.content.replace(target.oldText, target.newText);
+    if (metadataKey) {
+      repairedReport.analysisMetadata[metadataKey] = metadataValue.replace(
+        target.oldText,
+        target.newText,
+      );
+    }
     const assets = buildDiscoveryReportAssets(repairedReport as any);
     const factualErrors = validateDiscoveryFactualConsistency(
       [assets.txt, JSON.stringify(repairedReport.analysisMetadata ?? {})].join("\n"),
@@ -1693,12 +1780,16 @@ export async function repairExactDiscoveryWakeSummaryUnderLock(
 
     const serializedAfter = JSON.stringify(finalNarrative);
     const afterRepresentations = [serializedAfter, assets.txt, assets.html];
-    if (afterRepresentations.some((value) =>
-      countExactOccurrences(value, target.oldText) !== 0
-      || countExactOccurrences(value, target.newText) !== target.expectedOccurrencesPerRepresentation
-      || countExactOccurrences(value, target.alreadyFixedSleepText) !== 1
-      || countExactOccurrences(value, target.alreadyFixedNutritionText) !== 1
-      || countExactOccurrences(value, legacyPromoCode) !== 0)) {
+    if (countExactOccurrences(serializedAfter, target.oldText) !== 0
+      || countExactOccurrences(serializedAfter, target.newText) !== expectedNarrativeOccurrences
+      || afterRepresentations.slice(1).some((value) =>
+        countExactOccurrences(value, target.oldText) !== 0
+        || countExactOccurrences(value, target.newText) !== expectedRenderedOccurrences)
+      || (hasPriorFixInvariants && "alreadyFixedSleepText" in target
+        && afterRepresentations.some((value) =>
+        countExactOccurrences(value, target.alreadyFixedSleepText) !== 1
+        || countExactOccurrences(value, target.alreadyFixedNutritionText) !== 1
+        || countExactOccurrences(value, legacyPromoCode) !== 0))) {
       throw new Error("DISCOVERY_WAKE_SUMMARY_REPAIR_RENDER_MISMATCH");
     }
 
@@ -1773,12 +1864,17 @@ export async function repairExactDiscoveryWakeSummaryUnderLock(
     ];
     if ((persisted.rowCount ?? 0) !== 1
       || String(persistedRow?.content_sha256 || "") !== contentSha256
-      || persistedRepresentations.some((value) =>
+      || countExactOccurrences(persistedRepresentations[0], target.oldText) !== 0
+      || countExactOccurrences(persistedRepresentations[0], target.newText)
+        !== expectedNarrativeOccurrences
+      || persistedRepresentations.slice(1).some((value) =>
         countExactOccurrences(value, target.oldText) !== 0
-        || countExactOccurrences(value, target.newText) !== target.expectedOccurrencesPerRepresentation
-        || countExactOccurrences(value, target.alreadyFixedSleepText) !== 1
+        || countExactOccurrences(value, target.newText) !== expectedRenderedOccurrences)
+      || (hasPriorFixInvariants && "alreadyFixedSleepText" in target
+        && persistedRepresentations.some((value) =>
+        countExactOccurrences(value, target.alreadyFixedSleepText) !== 1
         || countExactOccurrences(value, target.alreadyFixedNutritionText) !== 1
-        || countExactOccurrences(value, legacyPromoCode) !== 0)) {
+        || countExactOccurrences(value, legacyPromoCode) !== 0))) {
       throw new Error("DISCOVERY_WAKE_SUMMARY_REPAIR_PERSISTED_REPRESENTATION_MISMATCH");
     }
 
@@ -1809,6 +1905,16 @@ export async function repairExactLennyDiscoveryQualityWithoutDelivery(
   return repairExactDiscoveryWakeSummaryUnderLock({
     lockToken: input.lockToken,
     target: DISCOVERY_LENNY_WAKE_SUMMARY_FIX_TARGET,
+  }, poolOverride);
+}
+
+export async function repairExactAlexandreDiscoveryCriticalCopyWithoutDelivery(
+  input: { lockToken: string },
+  poolOverride?: Pool,
+) {
+  return repairExactDiscoveryWakeSummaryUnderLock({
+    lockToken: input.lockToken,
+    target: DISCOVERY_ALEXANDRE_CRITICAL_COPY_FIX_TARGET,
   }, poolOverride);
 }
 

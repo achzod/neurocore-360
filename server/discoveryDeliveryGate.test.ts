@@ -84,6 +84,44 @@ test("Discovery delivery rejects Lenny's exact lowercase sentence start", () => 
   assert.ok(result.errors.includes("linguistic:grammar:lowercase_sentence_start"));
 });
 
+test("Discovery delivery rejects a cross-section critical-level contradiction", () => {
+  for (const contradictionPath of ["visible", "metadata"] as const) {
+    const report = validDiscoveryReport();
+    report.sections.find((section) => section.id === "sommeil")!.title =
+      "Sommeil 25/100 [BLOCAGE CRITIQUE]";
+    report.sections.find((section) => section.id === "scans")!.content += contradictionPath === "visible"
+      ? "<p>2 blocages structurants ressortent de tes réponses, sans atteindre le niveau critique calculé.</p>"
+      : "<p>2 blocages structurants ressortent de tes réponses.</p>";
+    (report as any).analysisMetadata = {
+      ctaMessage: contradictionPath === "metadata"
+        ? "2 blocages structurants ressortent de tes réponses, sans atteindre le niveau critique calculé."
+        : "2 blocages structurants ressortent de tes réponses.",
+    };
+    const assets = buildDiscoveryReportAssets(report as any);
+    const result = validateDiscoveryReportForDelivery(report, assets);
+    assert.equal(result.ok, false, contradictionPath);
+    assert.ok(
+      result.errors.includes("content:critical_level_contradiction"),
+      contradictionPath,
+    );
+  }
+});
+
+test("Discovery delivery accepts the exact neutral critical-copy correction", () => {
+  const report = validDiscoveryReport();
+  report.sections.find((section) => section.id === "sommeil")!.title =
+    "Sommeil 25/100 [BLOCAGE CRITIQUE]";
+  report.sections.find((section) => section.id === "scans")!.content +=
+    "<p>2 blocages structurants ressortent de tes réponses.</p>";
+  (report as any).analysisMetadata = {
+    ctaMessage: "2 blocages structurants ressortent de tes réponses.",
+  };
+  const assets = buildDiscoveryReportAssets(report as any);
+  const result = validateDiscoveryReportForDelivery(report, assets);
+  assert.equal(result.errors.includes("content:critical_level_contradiction"), false);
+  assert.equal(result.ok, true);
+});
+
 test("Discovery delivery scans titles, chips and full artifacts, not only section bodies", () => {
   const report = validDiscoveryReport();
   report.sections.find((section) => section.id === "scans")!.title = "Deduction apres scan";
