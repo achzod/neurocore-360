@@ -1133,6 +1133,46 @@ test("generic Discovery persistence uses the provider evidence model, never an e
   }
 });
 
+test("batch rejection quarantine uses the provider evidence model with absent or divergent env", () => {
+  const reconciler = readFileSync(new URL("../scripts/discovery-safe-reconciler.ts", import.meta.url), "utf8");
+  const rejectionStart = reconciler.indexOf("throw new DiscoveryRejectedCandidateError({", reconciler.indexOf("catch (assemblyError)"));
+  const rejectionEnd = reconciler.indexOf("validationErrors:", rejectionStart);
+  assert.ok(rejectionStart >= 0 && rejectionEnd > rejectionStart);
+  const quarantinePayload = reconciler.slice(rejectionStart, rejectionEnd);
+
+  assert.match(quarantinePayload, /responseId:\s*usage\.responseId/);
+  assert.match(quarantinePayload, /model:\s*usage\.model/);
+  assert.doesNotMatch(quarantinePayload, /OPENAI_DISCOVERY_MODEL|OPENAI_REPORT_MODEL|process\.env|["']discovery["']/);
+
+  const actualProviderModel = "gpt-provider-returned";
+  const previousDiscoveryModel = process.env.OPENAI_DISCOVERY_MODEL;
+  const previousReportModel = process.env.OPENAI_REPORT_MODEL;
+  try {
+    for (const envModels of [
+      { discovery: undefined, report: undefined },
+      { discovery: "gpt-env-different", report: "gpt-report-env-different" },
+    ]) {
+      if (envModels.discovery === undefined) delete process.env.OPENAI_DISCOVERY_MODEL;
+      else process.env.OPENAI_DISCOVERY_MODEL = envModels.discovery;
+      if (envModels.report === undefined) delete process.env.OPENAI_REPORT_MODEL;
+      else process.env.OPENAI_REPORT_MODEL = envModels.report;
+
+      const usage = { model: actualProviderModel };
+      const rejectedCandidate = { model: usage.model };
+      assert.equal(rejectedCandidate.model, actualProviderModel);
+      assert.notEqual(
+        rejectedCandidate.model,
+        process.env.OPENAI_DISCOVERY_MODEL || process.env.OPENAI_REPORT_MODEL || "discovery",
+      );
+    }
+  } finally {
+    if (previousDiscoveryModel === undefined) delete process.env.OPENAI_DISCOVERY_MODEL;
+    else process.env.OPENAI_DISCOVERY_MODEL = previousDiscoveryModel;
+    if (previousReportModel === undefined) delete process.env.OPENAI_REPORT_MODEL;
+    else process.env.OPENAI_REPORT_MODEL = previousReportModel;
+  }
+});
+
 test("new Discovery persistence stores the same canonical score shown in the report", () => {
   const service = readFileSync(new URL("./discoveryGenerationService.ts", import.meta.url), "utf8");
   const persistence = readFileSync(new URL("./discoveryTransactionalPersistence.ts", import.meta.url), "utf8");

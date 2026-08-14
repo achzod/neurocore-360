@@ -604,7 +604,7 @@ async function runGeneration(
             assembledCandidate: report,
             assembledAssets: assets,
             responseId: usage.responseId,
-            model: process.env.OPENAI_DISCOVERY_MODEL || process.env.OPENAI_REPORT_MODEL || "discovery",
+            model: usage.model,
             validationErrors: [`assembly_or_gate_failure:${assemblyError instanceof Error ? assemblyError.message : String(assemblyError)}`],
             usage: {
               inputTokens: usage.inputTokens,
