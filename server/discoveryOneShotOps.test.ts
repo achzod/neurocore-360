@@ -5,6 +5,7 @@ import test from "node:test";
 import {
   DISCOVERY_PRELAUNCH_TEST_TARGETS,
   DISCOVERY_LENNY_QUALITY_FIX_TARGET,
+  DISCOVERY_LENNY_WAKE_SUMMARY_FIX_TARGET,
   DISCOVERY_VALID_NO_DELIVERY_TARGET,
 } from "./discoveryBatchControl";
 
@@ -118,6 +119,49 @@ test("Lenny quality repair is bound to the exact live artifact and replacement",
   assert.match(source, /report_delivery_status = 'BATCH_READY'/);
   assert.match(source, /DISCOVERY_TEXT_REPAIR_ARTIFACT_CAS_FAILED/);
   assert.match(source, /DISCOVERY_TEXT_REPAIR_AUDIT_CAS_FAILED/);
+  assert.doesNotMatch(source, /sendReportReadyEmail\s*\(/);
+  assert.doesNotMatch(source, /claimDiscoveryEmailDelivery\s*\(/);
+});
+
+test("Lenny wake-summary repair is bound to the exact post-repair live revision", () => {
+  assert.deepEqual(DISCOVERY_LENNY_WAKE_SUMMARY_FIX_TARGET, {
+    id: "b9abc7a5-8767-49a0-9e6c-c90798cc67f5",
+    emailSha256: "b012445572ab0daac016bba32823e79213345600658d35871f58b7b3655041d0",
+    expectedCurrentStatus: "BATCH_READY",
+    expectedResponsesJsonSha256: "0c5a9a85e1229063ba0c804ed3a67bda829244a47cef8edbd75ad4a71a585baf",
+    expectedNarrativeJsonSha256: "7b8832dd52f574e66faaa792e68a4e08e4527160d3730cdfcb35162c4829344e",
+    expectedTxtSha256: "61013575279537114f4def26e22deabf62299bc25c66fb6feac0c7ad293719a4",
+    expectedHtmlSha256: "fa0dffd8246e3d46e6824f0bf7da70e30027f26fa8d6fe47682d7b8efce3e20a",
+    expectedArtifactId: "6488d309-2ad3-45b2-8488-5a659f6d4d1e",
+    expectedArtifactContentSha256: "3cd304c3af49870341f64a1f11321046e9b40727379026fdc1f09c1ed7a2c1d0",
+    expectedArtifactCount: 1,
+    expectedNarrativeTopLevelKeys: [
+      "analysisMetadata", "auditType", "clientName", "generatedAt", "generationQuality",
+      "globalScore", "metrics", "sections", "validationResult",
+    ],
+    sectionIndex: 1,
+    sectionId: "global",
+    oldText: "ton énergie matinale est moyenne, le lever est difficile et tu te réveilles parfois fatigué",
+    newText: "ton énergie matinale est moyenne et tu te réveilles parfois fatigué",
+    expectedOccurrencesPerRepresentation: 1,
+    alreadyFixedSleepText: "La seule nuance se trouve au réveil : une fatigue parfois présente et une énergie matinale moyenne.",
+    alreadyFixedNutritionText: "la régularité et la qualité de l’apport protéique deviennent plus importantes. Je n'ai pas les éléments pour juger les quantités, la répartition ni l’apport énergétique total avec les réponses disponibles.",
+    promoSectionIndex: 11,
+    promoSectionId: "coaching",
+    approvedNeutralPromoHtml: `<p class="text-xs mt-1" style="color: var(--color-text-muted);">Laisse un avis validé pour recevoir -20 % par email.</p>`,
+  });
+  const start = controlSource.indexOf("export async function repairExactDiscoveryWakeSummaryUnderLock");
+  const end = controlSource.indexOf("export async function createDiscoveryBatchRun", start);
+  const source = controlSource.slice(start, end);
+  assert.match(source, /expectedResponsesJsonSha256/);
+  assert.match(source, /expectedNarrativeJsonSha256/);
+  assert.match(source, /expectedArtifactId/);
+  assert.match(source, /DISCOVERY_WAKE_SUMMARY_REPAIR_EXACT_PATH_OR_OCCURRENCE_MISMATCH/);
+  assert.match(source, /DISCOVERY_WAKE_SUMMARY_REPAIR_PRIOR_FIX_INVARIANT_MISMATCH/);
+  assert.match(source, /validateDiscoveryFactualConsistency/);
+  assert.match(source, /DISCOVERY_WAKE_SUMMARY_REPAIR_PERSISTED_REPRESENTATION_MISMATCH/);
+  assert.match(source, /pg_advisory_xact_lock/);
+  assert.match(source, /assertNoDiscoveryDeliveryTrackingOrClaim/);
   assert.doesNotMatch(source, /sendReportReadyEmail\s*\(/);
   assert.doesNotMatch(source, /claimDiscoveryEmailDelivery\s*\(/);
 });

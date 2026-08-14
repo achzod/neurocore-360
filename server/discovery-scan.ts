@@ -664,6 +664,12 @@ export function repairDiscoveryProvidedFactAbsenceClaims(
     // "Réveil difficile" intensifies the supplied fact "parfois fatigué".
     // Keep the exact frequency and meaning selected by the customer.
     repaired = repaired.replace(
+      /\b(?:le|ton)\s+lever(?:\s+(?:du\s+matin|matinal))?(?:\s+(?:reste|est|par(?:a|â)(?:i|î)t|semble))?\s+(?:parfois\s+)?difficile\s+et\s+(?=tu\s+te\s+r[ée]veilles?\s+parfois\s+fatigu[ée])/giu,
+      "",
+    ).replace(
+      /\b(?:le|ton)\s+lever(?:\s+(?:du\s+matin|matinal))?(?:\s+(?:reste|est|par(?:a|â)(?:i|î)t|semble))?\s+(?:parfois\s+)?difficile\b/giu,
+      "une fatigue parfois présente au réveil",
+    ).replace(
       /\b(?:un|le|ton|des|les|tes)\s+réveils?(?:\s+(?:du\s+matin|matinal|matinaux))?(?:\s+(?:reste(?:nt)?|est|sont|para(?:î|i)t|paraissent|semble(?:nt)?))?\s+(?:parfois\s+)?difficiles?\b/giu,
       "une fatigue parfois présente au réveil",
     ).replace(
@@ -763,6 +769,7 @@ export function validateDiscoveryFactualConsistency(
   }
   const intensifiesOccasionalWakeFatigue = clauses.some((clause) => (
     /\breveils?(?:\s+(?:du\s+matin|matinal|matinaux))?(?:\s+(?:reste(?:nt)?|est|sont|parait|paraissent|semble(?:nt)?))?\s+(?:parfois\s+)?difficiles?\b/.test(clause)
+    || /\b(?:le|ton)\s+lever(?:\s+(?:du\s+matin|matinal))?(?:\s+(?:reste|est|parait|semble))?\s+(?:parfois\s+)?difficile\b/.test(clause)
   ));
   if (originalWakeFatigue === "parfois" && !originalWakeRested && intensifiesOccasionalWakeFatigue) {
     reasons.push("factual_intensity_contradiction:reveil-fatigue");

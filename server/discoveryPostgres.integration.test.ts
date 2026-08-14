@@ -133,6 +133,8 @@ const LENNY_NEW_TEXT = "La seule nuance se trouve au réveil : une fatigue parfo
 const LENNY_UNSAFE_TEXT = "La seule nuance se trouve au réveil : une fatigue parfois présente, une énergie matinale moyenne et un réveil parfois difficile.";
 const LENNY_NUTRITION_OLD_TEXT = "la régularité et la qualité de l’apport protéique deviennent plus importantes. je n'ai pas les éléments pour juger les quantités, la répartition ni l’apport énergétique total avec les réponses disponibles.";
 const LENNY_NUTRITION_NEW_TEXT = "la régularité et la qualité de l’apport protéique deviennent plus importantes. Je n'ai pas les éléments pour juger les quantités, la répartition ni l’apport énergétique total avec les réponses disponibles.";
+const LENNY_WAKE_SUMMARY_OLD_TEXT = "ton énergie matinale est moyenne, le lever est difficile et tu te réveilles parfois fatigué";
+const LENNY_WAKE_SUMMARY_NEW_TEXT = "ton énergie matinale est moyenne et tu te réveilles parfois fatigué";
 const LENNY_RESPONSES = {
   "reveil-fatigue": "parfois",
   "energie-matin": "moyenne",
@@ -264,6 +266,93 @@ async function insertExactRepairFixture(
       promoSectionId: "coaching" as const,
       expectedPromoCodeOccurrencesPerArtifact: 1 as const,
       legacyPromoHtml: LEGACY_DISCOVERY_PROMO_HTML,
+      approvedNeutralPromoHtml: DISCOVERY_APPROVED_NEUTRAL_PROMO_HTML,
+    },
+  };
+}
+
+async function insertExactWakeSummaryRepairFixture(
+  mode: "valid" | "duplicate" | "wrong-path" = "valid",
+) {
+  const id = randomUUID();
+  const email = `${id}@example.test`;
+  const report = exactRepairReport();
+  report.sections[5].content = report.sections[5].content.replace(LENNY_OLD_TEXT, LENNY_NEW_TEXT);
+  report.sections[1].content = report.sections[1].content.replace(
+    LENNY_NUTRITION_OLD_TEXT,
+    LENNY_NUTRITION_NEW_TEXT,
+  );
+  report.sections[1].content += `<p>La petite zone à observer se situe au réveil: ${LENNY_WAKE_SUMMARY_OLD_TEXT}. Ce n’est pas un signal alarmant.</p>`;
+  if (mode === "duplicate") {
+    report.sections[1].content += `<p>${LENNY_WAKE_SUMMARY_OLD_TEXT}.</p>`;
+  }
+  if (mode === "wrong-path") report.sections[1].id = "global-other";
+  report.sections[11].content = report.sections[11].content.replace(
+    LEGACY_DISCOVERY_PROMO_HTML,
+    DISCOVERY_APPROVED_NEUTRAL_PROMO_HTML,
+  );
+  assert.equal(
+    report.sections[11].content.includes(DISCOVERY_APPROVED_NEUTRAL_PROMO_HTML),
+    true,
+    "wake-summary fixture must reproduce the exact post-first-repair promo state",
+  );
+  const assets = buildDiscoveryReportAssets(report);
+  const narrative = attachDiscoveryDeliveryGateResult(report, {
+    name: "discovery_delivery",
+    version: 4,
+    ok: true,
+    errors: [],
+    checkedAt: "2026-08-14T01:00:00.000Z",
+    retryable: false,
+  });
+  const artifactId = randomUUID();
+  const contentSha256 = batch.discoveryArtifactContentHash(assets.txt, assets.html);
+  await pool.query(
+    `INSERT INTO audits
+      (id,email,type,responses,scores,report_delivery_status,report_sent_at,
+       narrative_report,report_txt,report_html,created_at)
+     VALUES ($1,$2,'GRATUIT',$3::jsonb,'{}'::jsonb,'BATCH_READY',NULL,$4::jsonb,$5,$6,'2026-08-14T01:00:00.000Z')`,
+    [id, email, JSON.stringify(LENNY_RESPONSES), JSON.stringify(narrative), assets.txt, assets.html],
+  );
+  await pool.query(
+    `INSERT INTO report_artifacts
+      (id,audit_id,tier,engine,model,txt,html,content_sha256,created_at)
+     VALUES ($1,$2,'GRATUIT','discovery','integration-test',$3,$4,$5,NOW())`,
+    [artifactId, id, assets.txt, assets.html, contentSha256],
+  );
+  const persisted = (await pool.query(
+    `SELECT responses, narrative_report FROM audits WHERE id = $1`,
+    [id],
+  )).rows[0];
+  return {
+    id,
+    email,
+    artifactId,
+    assets,
+    target: {
+      id,
+      emailSha256: batch.discoverySha256(email),
+      expectedCurrentStatus: "BATCH_READY" as const,
+      expectedResponsesJsonSha256: batch.discoverySha256(JSON.stringify(persisted.responses)),
+      expectedNarrativeJsonSha256: batch.discoverySha256(JSON.stringify(persisted.narrative_report)),
+      expectedTxtSha256: batch.discoverySha256(assets.txt),
+      expectedHtmlSha256: batch.discoverySha256(assets.html),
+      expectedArtifactId: artifactId,
+      expectedArtifactContentSha256: contentSha256,
+      expectedArtifactCount: 1 as const,
+      expectedNarrativeTopLevelKeys: [
+        "analysisMetadata", "auditType", "clientName", "generatedAt", "generationQuality",
+        "globalScore", "metrics", "sections", "validationResult",
+      ],
+      sectionIndex: 1,
+      sectionId: "global",
+      oldText: LENNY_WAKE_SUMMARY_OLD_TEXT,
+      newText: LENNY_WAKE_SUMMARY_NEW_TEXT,
+      expectedOccurrencesPerRepresentation: 1 as const,
+      alreadyFixedSleepText: LENNY_NEW_TEXT,
+      alreadyFixedNutritionText: LENNY_NUTRITION_NEW_TEXT,
+      promoSectionIndex: 11,
+      promoSectionId: "coaching" as const,
       approvedNeutralPromoHtml: DISCOVERY_APPROVED_NEUTRAL_PROMO_HTML,
     },
   };
@@ -622,6 +711,180 @@ test("exact Discovery text repair atomically replaces JSON, TXT, HTML, artifact 
   assert.equal(Number((await pool.query(
     `SELECT COUNT(*) FROM discovery_email_delivery_claims WHERE audit_id = $1`, [fixture.id],
   )).rows[0].count), 0);
+});
+
+test("exact Lenny wake-summary repair atomically updates JSON, TXT, HTML and artifact", async () => {
+  const fixture = await insertExactWakeSummaryRepairFixture();
+  await pool.query(
+    `INSERT INTO email_tracking
+      (id, email_type, recipient_email, audit_id, audit_type, sendpulse_status, sent_at)
+     VALUES ($1, 'sendAdminEmailNewAudit', $2, $3, 'GRATUIT', 'success', NOW())`,
+    [randomUUID(), fixture.email, fixture.id],
+  );
+  const lock = await batch.acquireDiscoveryGlobalLock({
+    owner: "postgres-integration",
+    purpose: "exact-lenny-wake-summary-repair",
+    ttlMinutes: 5,
+  }, pool);
+  const result = await batch.repairExactDiscoveryWakeSummaryUnderLock({
+    lockToken: lock.token,
+    target: fixture.target,
+  }, pool);
+  assert.equal(await batch.releaseDiscoveryGlobalLock(lock.token, pool), true);
+  assert.equal(result.status, "BATCH_READY");
+  assert.equal(result.artifactId, fixture.artifactId);
+  assert.equal(result.emailsSent, 0);
+
+  const audit = (await pool.query(
+    `SELECT responses, report_delivery_status, report_sent_at,
+            narrative_report, report_txt, report_html
+       FROM audits WHERE id = $1`,
+    [fixture.id],
+  )).rows[0];
+  assert.equal(audit.report_delivery_status, "BATCH_READY");
+  assert.equal(audit.report_sent_at, null);
+  assert.equal(audit.responses["reveil-fatigue"], "parfois");
+  assert.equal(audit.responses["energie-matin"], "moyenne");
+  assert.equal(audit.narrative_report.sections[1].id, "global");
+  const artifact = (await pool.query(
+    `SELECT id, txt, html, content_sha256 FROM report_artifacts WHERE audit_id = $1`,
+    [fixture.id],
+  )).rows[0];
+  const representations = [
+    JSON.stringify(audit.narrative_report),
+    audit.report_txt,
+    audit.report_html,
+    artifact.txt,
+    artifact.html,
+  ];
+  for (const value of representations) {
+    assert.equal(value.split(LENNY_WAKE_SUMMARY_OLD_TEXT).length - 1, 0);
+    assert.equal(value.split(LENNY_WAKE_SUMMARY_NEW_TEXT).length - 1, 1);
+    assert.equal(value.split(LENNY_NEW_TEXT).length - 1, 1);
+    assert.equal(value.split(LENNY_NUTRITION_NEW_TEXT).length - 1, 1);
+    assert.equal(value.includes("DISCOVERY20"), false);
+  }
+  assert.equal(artifact.id, fixture.artifactId);
+  assert.equal(artifact.txt, audit.report_txt);
+  assert.equal(artifact.html, audit.report_html);
+  assert.equal(
+    artifact.content_sha256,
+    batch.discoveryArtifactContentHash(audit.report_txt, audit.report_html),
+  );
+  assert.equal(audit.narrative_report.validationResult.deliveryGate.ok, true);
+  assert.deepEqual(audit.narrative_report.validationResult.deliveryGate.errors, []);
+  assert.deepEqual(
+    (await pool.query(
+      `SELECT email_type FROM email_tracking WHERE audit_id = $1 ORDER BY email_type`,
+      [fixture.id],
+    )).rows,
+    [{ email_type: "sendAdminEmailNewAudit" }],
+  );
+});
+
+test("exact Lenny wake-summary repair rolls back on JSON path or occurrence divergence", async () => {
+  for (const mode of ["wrong-path", "duplicate"] as const) {
+    const fixture = await insertExactWakeSummaryRepairFixture(mode);
+    const before = (await pool.query(
+      `SELECT narrative_report, report_txt, report_html FROM audits WHERE id = $1`,
+      [fixture.id],
+    )).rows[0];
+    const lock = await batch.acquireDiscoveryGlobalLock({
+      owner: "postgres-integration",
+      purpose: `exact-lenny-wake-summary-${mode}`,
+      ttlMinutes: 5,
+    }, pool);
+    await assert.rejects(
+      batch.repairExactDiscoveryWakeSummaryUnderLock({
+        lockToken: lock.token,
+        target: fixture.target,
+      }, pool),
+      /DISCOVERY_WAKE_SUMMARY_REPAIR_EXACT_PATH_OR_OCCURRENCE_MISMATCH/,
+    );
+    assert.equal(await batch.releaseDiscoveryGlobalLock(lock.token, pool), true);
+    const after = (await pool.query(
+      `SELECT narrative_report, report_txt, report_html FROM audits WHERE id = $1`,
+      [fixture.id],
+    )).rows[0];
+    assert.deepEqual(after, before);
+    const artifact = (await pool.query(
+      `SELECT txt, html FROM report_artifacts WHERE audit_id = $1`,
+      [fixture.id],
+    )).rows[0];
+    assert.equal(artifact.txt, before.report_txt);
+    assert.equal(artifact.html, before.report_html);
+  }
+});
+
+test("exact Lenny wake-summary repair rolls back on artifact or response hash divergence", async () => {
+  for (const divergence of ["artifact", "responses"] as const) {
+    const fixture = await insertExactWakeSummaryRepairFixture();
+    if (divergence === "artifact") {
+      await pool.query(
+        `UPDATE report_artifacts SET content_sha256 = repeat('0', 64) WHERE audit_id = $1`,
+        [fixture.id],
+      );
+    } else {
+      await pool.query(
+        `UPDATE audits SET responses = jsonb_set(responses, '{reveil-fatigue}', '"souvent"'::jsonb)
+          WHERE id = $1`,
+        [fixture.id],
+      );
+    }
+    const before = (await pool.query(
+      `SELECT narrative_report, report_txt, report_html FROM audits WHERE id = $1`,
+      [fixture.id],
+    )).rows[0];
+    const lock = await batch.acquireDiscoveryGlobalLock({
+      owner: "postgres-integration",
+      purpose: `exact-lenny-wake-summary-${divergence}`,
+      ttlMinutes: 5,
+    }, pool);
+    await assert.rejects(
+      batch.repairExactDiscoveryWakeSummaryUnderLock({
+        lockToken: lock.token,
+        target: fixture.target,
+      }, pool),
+      divergence === "artifact"
+        ? /DISCOVERY_WAKE_SUMMARY_REPAIR_ARTIFACT_HASH_MISMATCH/
+        : /DISCOVERY_WAKE_SUMMARY_REPAIR_AUDIT_HASH_MISMATCH/,
+    );
+    assert.equal(await batch.releaseDiscoveryGlobalLock(lock.token, pool), true);
+    const after = (await pool.query(
+      `SELECT narrative_report, report_txt, report_html FROM audits WHERE id = $1`,
+      [fixture.id],
+    )).rows[0];
+    assert.deepEqual(after, before);
+  }
+});
+
+test("exact Lenny wake-summary repair rolls back on client delivery evidence", async () => {
+  const fixture = await insertExactWakeSummaryRepairFixture();
+  await pool.query(
+    `INSERT INTO email_tracking
+      (id,email_type,recipient_email,audit_id,audit_type,sendpulse_status,sent_at)
+     VALUES ($1,'sendReportReadyEmail',$2,$3,'GRATUIT','success',NOW())`,
+    [randomUUID(), fixture.email, fixture.id],
+  );
+  const lock = await batch.acquireDiscoveryGlobalLock({
+    owner: "postgres-integration",
+    purpose: "exact-lenny-wake-summary-delivery-evidence",
+    ttlMinutes: 5,
+  }, pool);
+  await assert.rejects(
+    batch.repairExactDiscoveryWakeSummaryUnderLock({
+      lockToken: lock.token,
+      target: fixture.target,
+    }, pool),
+    /DISCOVERY_TEXT_REPAIR_PRIOR_DELIVERY_TRACKING_OR_CLAIM/,
+  );
+  assert.equal(await batch.releaseDiscoveryGlobalLock(lock.token, pool), true);
+  const audit = (await pool.query(
+    `SELECT report_txt, report_html FROM audits WHERE id = $1`,
+    [fixture.id],
+  )).rows[0];
+  assert.equal(audit.report_txt, fixture.assets.txt);
+  assert.equal(audit.report_html, fixture.assets.html);
 });
 
 test("exact Discovery text repair rolls back on client report delivery tracking", async () => {

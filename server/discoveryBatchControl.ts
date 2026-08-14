@@ -554,6 +554,64 @@ export const DISCOVERY_LENNY_QUALITY_FIX_TARGET = Object.freeze({
   approvedNeutralPromoHtml: DISCOVERY_APPROVED_NEUTRAL_PROMO_HTML,
 });
 
+/**
+ * Exact live state after the first Lenny repair on a2958c26. A second,
+ * independent generated sentence in the global summary still overstated the
+ * questionnaire answer `reveil-fatigue=parfois`. This target is deliberately
+ * bound to the post-repair hashes and artifact identity so it cannot be used
+ * against another report revision.
+ */
+export const DISCOVERY_LENNY_WAKE_SUMMARY_FIX_TARGET = Object.freeze({
+  id: "b9abc7a5-8767-49a0-9e6c-c90798cc67f5",
+  emailSha256: "b012445572ab0daac016bba32823e79213345600658d35871f58b7b3655041d0",
+  expectedCurrentStatus: "BATCH_READY" as const,
+  expectedResponsesJsonSha256: "0c5a9a85e1229063ba0c804ed3a67bda829244a47cef8edbd75ad4a71a585baf",
+  expectedNarrativeJsonSha256: "7b8832dd52f574e66faaa792e68a4e08e4527160d3730cdfcb35162c4829344e",
+  expectedTxtSha256: "61013575279537114f4def26e22deabf62299bc25c66fb6feac0c7ad293719a4",
+  expectedHtmlSha256: "fa0dffd8246e3d46e6824f0bf7da70e30027f26fa8d6fe47682d7b8efce3e20a",
+  expectedArtifactId: "6488d309-2ad3-45b2-8488-5a659f6d4d1e",
+  expectedArtifactContentSha256: "3cd304c3af49870341f64a1f11321046e9b40727379026fdc1f09c1ed7a2c1d0",
+  expectedArtifactCount: 1,
+  expectedNarrativeTopLevelKeys: Object.freeze([
+    "analysisMetadata", "auditType", "clientName", "generatedAt", "generationQuality",
+    "globalScore", "metrics", "sections", "validationResult",
+  ]),
+  sectionIndex: 1,
+  sectionId: "global",
+  oldText: "ton énergie matinale est moyenne, le lever est difficile et tu te réveilles parfois fatigué",
+  newText: "ton énergie matinale est moyenne et tu te réveilles parfois fatigué",
+  expectedOccurrencesPerRepresentation: 1,
+  alreadyFixedSleepText: "La seule nuance se trouve au réveil : une fatigue parfois présente et une énergie matinale moyenne.",
+  alreadyFixedNutritionText: "la régularité et la qualité de l’apport protéique deviennent plus importantes. Je n'ai pas les éléments pour juger les quantités, la répartition ni l’apport énergétique total avec les réponses disponibles.",
+  promoSectionIndex: 11,
+  promoSectionId: "coaching",
+  approvedNeutralPromoHtml: DISCOVERY_APPROVED_NEUTRAL_PROMO_HTML,
+});
+
+export interface ExactDiscoveryWakeSummaryRepairTarget {
+  id: string;
+  emailSha256: string;
+  expectedCurrentStatus: "BATCH_READY";
+  expectedResponsesJsonSha256: string;
+  expectedNarrativeJsonSha256: string;
+  expectedTxtSha256: string;
+  expectedHtmlSha256: string;
+  expectedArtifactId: string;
+  expectedArtifactContentSha256: string;
+  expectedArtifactCount: 1;
+  expectedNarrativeTopLevelKeys: readonly string[];
+  sectionIndex: number;
+  sectionId: string;
+  oldText: string;
+  newText: string;
+  expectedOccurrencesPerRepresentation: 1;
+  alreadyFixedSleepText: string;
+  alreadyFixedNutritionText: string;
+  promoSectionIndex: number;
+  promoSectionId: "coaching";
+  approvedNeutralPromoHtml: string;
+}
+
 export interface ExactDiscoveryTextRepairTarget {
   id: string;
   emailSha256: string;
@@ -1167,13 +1225,294 @@ export async function repairExactDiscoveryTextUnderLock(
   }
 }
 
+/**
+ * Second-stage deterministic repair for Lenny's exact post-repair artifact.
+ * It changes one sentence in sections[1].content, then rebuilds and persists
+ * JSON/TXT/HTML/artifact atomically. Every live identity, path, occurrence,
+ * hash, lock and side-effect invariant is fail-closed.
+ */
+export async function repairExactDiscoveryWakeSummaryUnderLock(
+  input: { lockToken: string; target: ExactDiscoveryWakeSummaryRepairTarget },
+  poolOverride?: Pool,
+): Promise<{
+  auditId: string;
+  artifactId: string;
+  status: "BATCH_READY";
+  previousTxtSha256: string;
+  previousHtmlSha256: string;
+  txtSha256: string;
+  htmlSha256: string;
+  emailsSent: 0;
+}> {
+  const { target } = input;
+  for (const hash of [
+    target.emailSha256,
+    target.expectedResponsesJsonSha256,
+    target.expectedNarrativeJsonSha256,
+    target.expectedTxtSha256,
+    target.expectedHtmlSha256,
+    target.expectedArtifactContentSha256,
+  ]) {
+    if (!/^[a-f0-9]{64}$/.test(hash)) {
+      throw new Error("DISCOVERY_WAKE_SUMMARY_REPAIR_EXPECTED_HASH_INVALID");
+    }
+  }
+  if (!target.expectedArtifactId
+    || target.expectedArtifactCount !== 1
+    || target.expectedOccurrencesPerRepresentation !== 1
+    || !target.oldText
+    || !target.newText
+    || target.oldText === target.newText
+    || !Number.isInteger(target.sectionIndex)
+    || target.sectionIndex < 0
+    || !target.sectionId
+    || !target.alreadyFixedSleepText
+    || !target.alreadyFixedNutritionText
+    || !Number.isInteger(target.promoSectionIndex)
+    || target.promoSectionIndex < 0
+    || target.promoSectionId !== "coaching"
+    || !target.approvedNeutralPromoHtml) {
+    throw new Error("DISCOVERY_WAKE_SUMMARY_REPAIR_TARGET_INVALID");
+  }
+
+  const pool = await resolvePool(poolOverride);
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [DISCOVERY_TRANSACTION_FENCE_KEY]);
+    await assertDiscoveryOneShotLock(client, input.lockToken);
+
+    const auditResult = await client.query(
+      `SELECT id, email, type, responses, report_delivery_status, report_sent_at,
+              narrative_report, report_txt, report_html
+         FROM audits WHERE id = $1 FOR UPDATE`,
+      [target.id],
+    );
+    if ((auditResult.rowCount ?? 0) !== 1) {
+      throw new Error("DISCOVERY_WAKE_SUMMARY_REPAIR_TARGET_MISSING");
+    }
+    const audit = auditResult.rows[0];
+    if (audit.type !== "GRATUIT"
+      || audit.report_delivery_status !== target.expectedCurrentStatus
+      || audit.report_sent_at
+      || discoverySha256(String(audit.email || "").trim().toLowerCase()) !== target.emailSha256) {
+      throw new Error("DISCOVERY_WAKE_SUMMARY_REPAIR_TARGET_PRECONDITION_FAILED");
+    }
+    await assertNoDiscoveryDeliveryTrackingOrClaim(client, target.id);
+
+    const previousTxt = String(audit.report_txt || "");
+    const previousHtml = String(audit.report_html || "");
+    if (discoverySha256(JSON.stringify(audit.responses ?? null))
+        !== target.expectedResponsesJsonSha256
+      || discoverySha256(JSON.stringify(audit.narrative_report ?? null))
+        !== target.expectedNarrativeJsonSha256
+      || discoverySha256(previousTxt) !== target.expectedTxtSha256
+      || discoverySha256(previousHtml) !== target.expectedHtmlSha256) {
+      throw new Error("DISCOVERY_WAKE_SUMMARY_REPAIR_AUDIT_HASH_MISMATCH");
+    }
+
+    const artifactResult = await client.query(
+      `SELECT id, txt, html, content_sha256
+         FROM report_artifacts WHERE audit_id = $1
+         ORDER BY created_at ASC FOR UPDATE`,
+      [target.id],
+    );
+    if ((artifactResult.rowCount ?? 0) !== target.expectedArtifactCount) {
+      throw new Error("DISCOVERY_WAKE_SUMMARY_REPAIR_ARTIFACT_COUNT_MISMATCH");
+    }
+    const artifact = artifactResult.rows[0];
+    const previousContentSha256 = discoveryArtifactContentHash(previousTxt, previousHtml);
+    if (String(artifact.id) !== target.expectedArtifactId
+      || discoverySha256(String(artifact.txt || "")) !== target.expectedTxtSha256
+      || discoverySha256(String(artifact.html || "")) !== target.expectedHtmlSha256
+      || String(artifact.content_sha256 || "") !== target.expectedArtifactContentSha256
+      || previousContentSha256 !== target.expectedArtifactContentSha256) {
+      throw new Error("DISCOVERY_WAKE_SUMMARY_REPAIR_ARTIFACT_HASH_MISMATCH");
+    }
+
+    if (!audit.narrative_report || typeof audit.narrative_report !== "object"
+      || !Array.isArray(audit.narrative_report.sections)
+      || JSON.stringify(Object.keys(audit.narrative_report).sort())
+        !== JSON.stringify([...target.expectedNarrativeTopLevelKeys].sort())) {
+      throw new Error("DISCOVERY_WAKE_SUMMARY_REPAIR_STRUCTURED_REPORT_SHAPE_MISMATCH");
+    }
+    const repairedReport = structuredClone(audit.narrative_report) as Record<string, any>;
+    const section = repairedReport.sections[target.sectionIndex];
+    const promoSection = repairedReport.sections[target.promoSectionIndex];
+    const serializedBefore = JSON.stringify(repairedReport);
+    const artifactTxt = String(artifact.txt || "");
+    const artifactHtml = String(artifact.html || "");
+    const beforeRepresentations = [serializedBefore, previousTxt, previousHtml, artifactTxt, artifactHtml];
+    if (!section
+      || String(section.id) !== target.sectionId
+      || typeof section.content !== "string"
+      || countExactOccurrences(section.content, target.oldText) !== 1
+      || countExactOccurrences(section.content, target.newText) !== 0
+      || beforeRepresentations.some((value) =>
+        countExactOccurrences(value, target.oldText) !== target.expectedOccurrencesPerRepresentation
+        || countExactOccurrences(value, target.newText) !== 0)) {
+      throw new Error("DISCOVERY_WAKE_SUMMARY_REPAIR_EXACT_PATH_OR_OCCURRENCE_MISMATCH");
+    }
+
+    const legacyPromoCode = ["DISCOVERY", "20"].join("");
+    for (const [representationIndex, value] of beforeRepresentations.entries()) {
+      const sleepCount = countExactOccurrences(value, target.alreadyFixedSleepText);
+      const nutritionCount = countExactOccurrences(value, target.alreadyFixedNutritionText);
+      const promoCodeCount = countExactOccurrences(value, legacyPromoCode);
+      if (sleepCount !== 1 || nutritionCount !== 1 || promoCodeCount !== 0) {
+        throw new Error(
+          `DISCOVERY_WAKE_SUMMARY_REPAIR_PRIOR_FIX_INVARIANT_MISMATCH:${representationIndex}:${sleepCount}:${nutritionCount}:${promoCodeCount}`,
+        );
+      }
+    }
+    if (!promoSection
+      || String(promoSection.id) !== target.promoSectionId
+      || typeof promoSection.content !== "string"
+      || countExactOccurrences(promoSection.content, target.approvedNeutralPromoHtml) !== 1) {
+      throw new Error("DISCOVERY_WAKE_SUMMARY_REPAIR_PRIOR_PROMO_INVARIANT_MISMATCH");
+    }
+
+    section.content = section.content.replace(target.oldText, target.newText);
+    const assets = buildDiscoveryReportAssets(repairedReport as any);
+    const factualErrors = validateDiscoveryFactualConsistency(
+      [assets.txt, JSON.stringify(repairedReport.analysisMetadata ?? {})].join("\n"),
+      (audit.responses && typeof audit.responses === "object") ? audit.responses : {},
+    );
+    if (factualErrors.length !== 0) {
+      throw new Error(`DISCOVERY_WAKE_SUMMARY_REPAIR_FACTUAL_CONSISTENCY_FAILED:${factualErrors.join("|")}`);
+    }
+    const gate = evaluateDiscoveryDeliveryGate(
+      repairedReport as any,
+      assets,
+      new Date(),
+      repairedReport.analysisMetadata,
+    );
+    if (!gate.ok || gate.errors.length !== 0) {
+      throw new Error(`DISCOVERY_WAKE_SUMMARY_REPAIR_GATE_FAILED:${gate.errors.join("|")}`);
+    }
+    const finalNarrative = attachDiscoveryDeliveryGateResult(repairedReport, gate);
+    if (!hasPassingPersistedDiscoveryDeliveryGate(finalNarrative)) {
+      throw new Error("DISCOVERY_WAKE_SUMMARY_REPAIR_PERSISTED_GATE_FAILED");
+    }
+
+    const serializedAfter = JSON.stringify(finalNarrative);
+    const afterRepresentations = [serializedAfter, assets.txt, assets.html];
+    if (afterRepresentations.some((value) =>
+      countExactOccurrences(value, target.oldText) !== 0
+      || countExactOccurrences(value, target.newText) !== target.expectedOccurrencesPerRepresentation
+      || countExactOccurrences(value, target.alreadyFixedSleepText) !== 1
+      || countExactOccurrences(value, target.alreadyFixedNutritionText) !== 1
+      || countExactOccurrences(value, legacyPromoCode) !== 0)) {
+      throw new Error("DISCOVERY_WAKE_SUMMARY_REPAIR_RENDER_MISMATCH");
+    }
+
+    const txtSha256 = discoverySha256(assets.txt);
+    const htmlSha256 = discoverySha256(assets.html);
+    const contentSha256 = discoveryArtifactContentHash(assets.txt, assets.html);
+    if (txtSha256 === target.expectedTxtSha256 || htmlSha256 === target.expectedHtmlSha256) {
+      throw new Error("DISCOVERY_WAKE_SUMMARY_REPAIR_HASH_UNCHANGED");
+    }
+
+    const artifactUpdated = await client.query(
+      `UPDATE report_artifacts
+          SET txt = $3, html = $4, content_sha256 = $5
+        WHERE id = $1 AND audit_id = $2
+          AND txt IS NOT DISTINCT FROM $6
+          AND html IS NOT DISTINCT FROM $7
+          AND content_sha256 = $8
+          AND EXISTS (
+            SELECT 1 FROM discovery_operation_lock l
+             WHERE l.lock_key = $9 AND l.token = $10 AND l.expires_at > NOW()
+          )
+        RETURNING id`,
+      [artifact.id, target.id, assets.txt, assets.html, contentSha256,
+        previousTxt, previousHtml, previousContentSha256,
+        DISCOVERY_GLOBAL_LOCK_KEY, input.lockToken],
+    );
+    if ((artifactUpdated.rowCount ?? 0) !== 1) {
+      throw new Error("DISCOVERY_WAKE_SUMMARY_REPAIR_ARTIFACT_CAS_FAILED");
+    }
+
+    const auditUpdated = await client.query(
+      `UPDATE audits
+          SET narrative_report = $2::jsonb,
+              report_txt = $3,
+              report_html = $4,
+              report_delivery_status = 'BATCH_READY'
+        WHERE id = $1 AND type = 'GRATUIT'
+          AND email IS NOT DISTINCT FROM $5
+          AND report_delivery_status = 'BATCH_READY'
+          AND report_sent_at IS NULL
+          AND narrative_report IS NOT DISTINCT FROM $6::jsonb
+          AND report_txt IS NOT DISTINCT FROM $7
+          AND report_html IS NOT DISTINCT FROM $8
+          AND EXISTS (
+            SELECT 1 FROM discovery_operation_lock l
+             WHERE l.lock_key = $9 AND l.token = $10 AND l.expires_at > NOW()
+          )
+        RETURNING id`,
+      [target.id, JSON.stringify(finalNarrative), assets.txt, assets.html,
+        audit.email, JSON.stringify(audit.narrative_report), previousTxt, previousHtml,
+        DISCOVERY_GLOBAL_LOCK_KEY, input.lockToken],
+    );
+    if ((auditUpdated.rowCount ?? 0) !== 1) {
+      throw new Error("DISCOVERY_WAKE_SUMMARY_REPAIR_AUDIT_CAS_FAILED");
+    }
+
+    const persisted = await client.query(
+      `SELECT a.narrative_report, a.report_txt, a.report_html,
+              r.txt AS artifact_txt, r.html AS artifact_html, r.content_sha256
+         FROM audits a
+         JOIN report_artifacts r ON r.audit_id = a.id
+        WHERE a.id = $1 AND r.id = $2`,
+      [target.id, artifact.id],
+    );
+    const persistedRow = persisted.rows[0];
+    const persistedRepresentations = [
+      JSON.stringify(persistedRow?.narrative_report ?? null),
+      String(persistedRow?.report_txt || ""),
+      String(persistedRow?.report_html || ""),
+      String(persistedRow?.artifact_txt || ""),
+      String(persistedRow?.artifact_html || ""),
+    ];
+    if ((persisted.rowCount ?? 0) !== 1
+      || String(persistedRow?.content_sha256 || "") !== contentSha256
+      || persistedRepresentations.some((value) =>
+        countExactOccurrences(value, target.oldText) !== 0
+        || countExactOccurrences(value, target.newText) !== target.expectedOccurrencesPerRepresentation
+        || countExactOccurrences(value, target.alreadyFixedSleepText) !== 1
+        || countExactOccurrences(value, target.alreadyFixedNutritionText) !== 1
+        || countExactOccurrences(value, legacyPromoCode) !== 0)) {
+      throw new Error("DISCOVERY_WAKE_SUMMARY_REPAIR_PERSISTED_REPRESENTATION_MISMATCH");
+    }
+
+    await assertNoDiscoveryDeliveryTrackingOrClaim(client, target.id);
+    await client.query("COMMIT");
+    return {
+      auditId: target.id,
+      artifactId: String(artifact.id),
+      status: "BATCH_READY",
+      previousTxtSha256: target.expectedTxtSha256,
+      previousHtmlSha256: target.expectedHtmlSha256,
+      txtSha256,
+      htmlSha256,
+      emailsSent: 0,
+    };
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => {});
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 export async function repairExactLennyDiscoveryQualityWithoutDelivery(
   input: { lockToken: string },
   poolOverride?: Pool,
 ) {
-  return repairExactDiscoveryTextUnderLock({
+  return repairExactDiscoveryWakeSummaryUnderLock({
     lockToken: input.lockToken,
-    target: DISCOVERY_LENNY_QUALITY_FIX_TARGET,
+    target: DISCOVERY_LENNY_WAKE_SUMMARY_FIX_TARGET,
   }, poolOverride);
 }
 
