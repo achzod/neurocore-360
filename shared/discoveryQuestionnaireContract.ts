@@ -28,6 +28,14 @@ export const DISCOVERY_LEGACY_DOMAIN_KEYS = Object.freeze({
   mindset: ["engagement-niveau", "motivation-principale", "consignes-strictes", "temps-training-semaine"],
 } as const);
 
+// These fields existed in the historical form but were optional. Their
+// absence must stay explicit in provenance instead of being converted to a
+// negative answer such as `non` or `aucune`.
+const DISCOVERY_LEGACY_OPTIONAL_UNKNOWN_KEYS = Object.freeze([
+  "traitement-medical",
+  "intolerance",
+] as const);
+
 export type DiscoveryQuestionnaireDomain = keyof typeof DISCOVERY_LEGACY_DOMAIN_KEYS;
 
 // These thresholds are the minimum evidence needed to score a historical
@@ -66,7 +74,10 @@ export function getDiscoveryQuestionnaireCoverage(responses: Record<string, unkn
     { answered: keys.filter((key) => hasDiscoveryRequiredResponseValue(responses[key])).length, total: keys.length },
   ])) as DiscoveryQuestionnaireCoverage["domainCoverage"];
   const unknownKeys = version === 1
-    ? [...new Set(Object.values(DISCOVERY_LEGACY_DOMAIN_KEYS).flat().filter((key) => !hasDiscoveryRequiredResponseValue(responses[key])))].sort()
+    ? [...new Set([
+      ...Object.values(DISCOVERY_LEGACY_DOMAIN_KEYS).flat(),
+      ...DISCOVERY_LEGACY_OPTIONAL_UNKNOWN_KEYS,
+    ].filter((key) => !hasDiscoveryRequiredResponseValue(responses[key])))].sort()
     : [];
   return {
     version,

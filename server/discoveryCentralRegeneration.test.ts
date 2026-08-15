@@ -456,6 +456,45 @@ test("les neuf cas legacy synthétiques et versionnés satisfont le contrat exac
   }
 });
 
+test("les questions legacy optionnelles non répondues restent inconnues sans bloquer le provider", () => {
+  const document = JSON.parse(readFileSync(
+    new URL("./fixtures/discovery-legacy-safe-cases.json", import.meta.url),
+    "utf8",
+  ));
+  const responses = {
+    prenom: "Profil",
+    ...document.cases[0].typedResponses,
+    "diagnostic-medical": ["aucun"],
+    "tca-historique": "jamais",
+    intolerance: [],
+  };
+
+  assert.equal(Object.prototype.hasOwnProperty.call(responses, "traitement-medical"), false);
+  assert.deepEqual(validateDiscoveryQuestionnaireContract(responses), []);
+
+  const profile = calculateDiscoveryDeterministicProfile(responses);
+  assert.equal(profile.questionnaireCoverage.version, 1);
+  assert.equal(profile.questionnaireCoverage.confidence, "legacy_partial");
+  assert.ok(profile.questionnaireCoverage.unknownKeys.includes("traitement-medical"));
+  assert.ok(profile.questionnaireCoverage.unknownKeys.includes("intolerance"));
+  assert.equal(profile.normalized["traitement-medical"], undefined);
+  assert.deepEqual(profile.normalized.intolerance, []);
+  assert.equal(Object.values(profile.scoresByDomain).every(Number.isFinite), true);
+});
+
+test("le contrat version 2 reste strict sur traitement et intolérances", () => {
+  const responses = baseResponses({
+    _discoveryQuestionnaireVersion: 2,
+    intolerance: [],
+  });
+  delete responses["traitement-medical"];
+
+  const errors = validateDiscoveryQuestionnaireContract(responses);
+  assert.ok(errors.includes("questionnaire:missing:traitement-medical"));
+  assert.ok(errors.includes("questionnaire:missing:intolerance"));
+  assert.ok(errors.includes("questionnaire:invalid:intolerance"));
+});
+
 test("les assets centraux tracked ne contiennent aucun identifiant live", () => {
   const fixture = readFileSync(
     new URL("./fixtures/discovery-legacy-safe-cases.json", import.meta.url),

@@ -620,7 +620,7 @@ const DISCOVERY_PROVIDER_SAFE_ARRAY_KEYS = Object.freeze([
 
 const DISCOVERY_LEGACY_BASE_REQUIRED_KEYS = Object.freeze([
   "sexe", "prenom", "age", "poids", "objectif",
-  "traitement-medical", "diagnostic-medical", "tca-historique",
+  "diagnostic-medical", "tca-historique",
 ] as const);
 
 /**
@@ -651,7 +651,8 @@ export function validateDiscoveryQuestionnaireContract(responses: DiscoveryRespo
   }
   for (const [key, allowed] of Object.entries(DISCOVERY_REQUIRED_ARRAYS)) {
     const values = normalized[key];
-    if (values !== undefined && (!Array.isArray(values) || values.length === 0
+    const legacyUnanswered = version === 1 && !hasDiscoveryRequiredResponseValue(values);
+    if (values !== undefined && !legacyUnanswered && (!Array.isArray(values) || values.length === 0
       || values.some((value) => !allowed.includes(String(value)))
       || (values.includes("aucun") && values.length !== 1)
       || (values.includes("aucune") && values.length !== 1))) {
