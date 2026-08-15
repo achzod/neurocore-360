@@ -21,6 +21,9 @@ export type OpenAIReportProfile =
 
 type ReasoningEffort = "low" | "medium" | "high" | "xhigh" | "max";
 
+/** Discovery has one reasoning contract across generation, recovery and ops. */
+export const DISCOVERY_REASONING_EFFORT = "high" as const;
+
 interface ProfileConfig {
   effort: ReasoningEffort;
   mode?: "pro";
@@ -31,10 +34,9 @@ interface ProfileConfig {
 
 const PROFILE_CONFIG: Record<OpenAIReportProfile, ProfileConfig> = {
   discovery: {
-    // Discovery has its own strict scientific and delivery gates. Medium
-    // reasoning preserves those gates while preventing hidden reasoning
-    // tokens from consuming most of every response budget.
-    effort: "medium",
+    // Keep every Discovery caller on the same high-reasoning contract. All
+    // generation, recovery and operations paths route through this profile.
+    effort: DISCOVERY_REASONING_EFFORT,
     maxOutputTokens: 7_000,
     // Production Discovery responses commonly need 622-712 seconds.
     // Keep enough headroom for a valid long-running response plus polling.

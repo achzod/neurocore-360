@@ -105,10 +105,14 @@ app.use((req, res, next) => {
   const path = req.path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
   const maxJsonLogChars = Number(process.env.API_RESPONSE_LOG_MAX_CHARS || 2000);
+  const omitResponseBodyFromLogs = req.path === "/api/admin/audits"
+    || /^\/api\/admin\/audits\/[^/]+(?:\/report-artifacts)?$/.test(req.path);
 
   const originalResJson = res.json;
   res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
+    // Avoid a second full JSON serialization of large admin responses solely
+    // for logging. Express still serializes the actual response exactly once.
+    if (!omitResponseBodyFromLogs) capturedJsonResponse = bodyJson;
     return originalResJson.apply(res, [bodyJson, ...args]);
   };
 

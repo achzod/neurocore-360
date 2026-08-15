@@ -1093,7 +1093,8 @@ test("Discovery generation uses one bounded structured call and still rejects in
   assert.equal(DISCOVERY_UNIFIED_MAX_INPUT_CHARS, 60_000);
   assert.equal(DISCOVERY_UNIFIED_MAX_OUTPUT_TOKENS, 14_000);
   assert.equal(DISCOVERY_UNIFIED_MAX_ESTIMATED_COST_USD, 0.75);
-  assert.match(runner, /discovery:\s*{[\s\S]{0,260}effort:\s*"medium"[\s\S]{0,260}maxOutputTokens:\s*7_000[\s\S]{0,260}verbosity:\s*"medium"/);
+  assert.match(runner, /DISCOVERY_REASONING_EFFORT\s*=\s*"high"/);
+  assert.match(runner, /discovery:\s*{[\s\S]{0,300}effort:\s*DISCOVERY_REASONING_EFFORT[\s\S]{0,300}maxOutputTokens:\s*7_000[\s\S]{0,300}verbosity:\s*"medium"/);
   assert.match(runner, /response\?\.status\s*!==\s*"completed"/);
   assert.match(runner, /OpenAI response incomplete:/);
   assert.match(runner, /const attempts = request\.profile === "discovery"\s*\? 1\s*:/);

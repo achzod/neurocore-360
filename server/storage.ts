@@ -206,6 +206,22 @@ export type BloodReportSummary = Pick<
   "id" | "email" | "deliveryStatus" | "emailSentAt" | "createdAt"
 >;
 
+export interface AdminAuditSummary {
+  id: string;
+  email: string;
+  type: string;
+  status: string;
+  reportDeliveryStatus: string | null;
+  reportSentAt: Date | string | null;
+  createdAt: Date | string;
+  completedAt: Date | string | null;
+}
+
+export interface AdminAuditSummaryPage {
+  items: AdminAuditSummary[];
+  total: number;
+}
+
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
@@ -220,6 +236,7 @@ export interface IStorage {
   /** Memory-safe variant of getAllAudits that omits heavy JSONB columns (narrative_report, responses, scores). Use in long-running crons. */
   getAllAuditsLight(): Promise<Audit[]>;
   getAllAuditSummaries(): Promise<AuditSummary[]>;
+  getAdminAuditSummariesPage(limit: number, offset: number): Promise<AdminAuditSummaryPage>;
   getScheduledAuditsForDelivery(): Promise<Audit[]>;
   createAudit(audit: InsertAudit & { email: string; responses: Record<string, unknown> }): Promise<Audit>;
   createDiscoveryAudit(audit: InsertAudit & { email: string; responses: Record<string, unknown> }): Promise<Audit>;
@@ -534,6 +551,32 @@ export class MemStorage implements IStorage {
       createdAt: audit.createdAt,
       completedAt: audit.completedAt,
     }));
+  }
+
+  async getAdminAuditSummariesPage(limit: number, offset: number): Promise<AdminAuditSummaryPage> {
+    const audits = (await this.getAllAuditSummaries()).map((audit) => ({
+      id: audit.id,
+      email: audit.email,
+      type: audit.type,
+      status: audit.status,
+      reportDeliveryStatus: audit.reportDeliveryStatus ?? null,
+      reportSentAt: audit.reportSentAt ?? null,
+      createdAt: audit.createdAt,
+      completedAt: audit.completedAt ?? null,
+    }));
+    const blood = (await this.getAllBloodReportSummaries()).map((report) => ({
+      id: report.id,
+      email: report.email,
+      type: "BLOOD_ANALYSIS",
+      status: "COMPLETED",
+      reportDeliveryStatus: "SENT",
+      reportSentAt: report.createdAt,
+      createdAt: report.createdAt,
+      completedAt: report.createdAt,
+    }));
+    const items = [...audits, ...blood].sort((a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return { items: items.slice(offset, offset + limit), total: items.length };
   }
 
   async getScheduledAuditsForDelivery(): Promise<Audit[]> {
@@ -1899,6 +1942,43 @@ export class PgStorage implements IStorage {
       createdAt: row.created_at,
       completedAt: row.completed_at,
     }));
+  }
+
+  async getAdminAuditSummariesPage(limit: number, offset: number): Promise<AdminAuditSummaryPage> {
+    await this.ensureBloodReportsTable();
+    const result = await pool.query(
+      `WITH combined AS (
+         SELECT id, email, type::text AS type, status::text AS status,
+                report_delivery_status::text AS report_delivery_status,
+                report_sent_at, created_at, completed_at
+           FROM audits
+         UNION ALL
+         SELECT id, email, 'BLOOD_ANALYSIS'::text AS type, 'COMPLETED'::text AS status,
+                'SENT'::text AS report_delivery_status,
+                created_at AS report_sent_at, created_at, created_at AS completed_at
+           FROM blood_reports
+       )
+       SELECT id, email, type, status, report_delivery_status,
+              report_sent_at, created_at, completed_at,
+              COUNT(*) OVER()::int AS total_count
+         FROM combined
+        ORDER BY created_at DESC
+        LIMIT $1 OFFSET $2`,
+      [limit, offset],
+    );
+    return {
+      total: Number(result.rows[0]?.total_count || 0),
+      items: result.rows.map((row) => ({
+        id: row.id,
+        email: row.email,
+        type: row.type,
+        status: row.status,
+        reportDeliveryStatus: row.report_delivery_status,
+        reportSentAt: row.report_sent_at,
+        createdAt: row.created_at,
+        completedAt: row.completed_at,
+      })),
+    };
   }
 
   async getScheduledAuditsForDelivery(): Promise<Audit[]> {

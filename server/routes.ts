@@ -1883,7 +1883,7 @@ export async function registerRoutes(
         return;
       }
 
-      const allAudits = await storage.getAllAudits();
+      const allAudits = await storage.getAllAuditsLight();
       const discovery = allAudits.filter((a: any) => a.type === "GRATUIT" && a.email && !a.email.includes("test") && !a.email.includes("debug") && !a.email.includes("achzodcoaching") && !a.email.includes("achkou"));
 
       // Unique emails only, skip already sent (tracked via emailTracking)
@@ -6256,29 +6256,25 @@ export async function registerRoutes(
   app.get("/api/admin/audits", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
-      // Keep this collection endpoint deliberately lightweight. Full reports and
-      // questionnaire payloads are available from the authenticated detail route.
-      const allAudits = await storage.getAllAuditSummaries();
-      const bloodReports = await storage.getAllBloodReportSummaries();
-
-      const mappedBlood = bloodReports.map((report) => ({
-        id: report.id,
-        email: report.email,
-        type: "BLOOD_ANALYSIS",
-        status: "COMPLETED",
-        reportDeliveryStatus: "SENT",
-        reportSentAt: report.createdAt,
-        createdAt: report.createdAt,
-        completedAt: report.createdAt,
-      }));
-
-      const audits = [...mappedBlood, ...allAudits].sort((a: any, b: any) => {
-        const dateA = new Date(a.createdAt).getTime();
-        const dateB = new Date(b.createdAt).getTime();
-        return dateB - dateA;
+      // Never materialize the whole audit corpus in the Node heap. Full reports
+      // and questionnaire payloads remain available from the detail route.
+      const requestedLimit = Number.parseInt(String(req.query.limit || "100"), 10);
+      const requestedPage = Number.parseInt(String(req.query.page || "1"), 10);
+      const limit = Math.min(100, Math.max(1, Number.isFinite(requestedLimit) ? requestedLimit : 100));
+      const page = Math.max(1, Number.isFinite(requestedPage) ? requestedPage : 1);
+      const offset = (page - 1) * limit;
+      const result = await storage.getAdminAuditSummariesPage(limit, offset);
+      res.setHeader("Cache-Control", "no-store");
+      res.json({
+        success: true,
+        audits: result.items,
+        pagination: {
+          page,
+          limit,
+          total: result.total,
+          totalPages: Math.max(1, Math.ceil(result.total / limit)),
+        },
       });
-
-      res.json({ success: true, audits });
     } catch (error) {
       console.error("[Admin Audits] Error:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
@@ -9118,14 +9114,17 @@ export async function registerRoutes(
       // txt + html ,  used by admin recovery flows when an artifact exists but
       // narrativeReport never hydrated (e.g. send marked SENT without delivery).
       const withContent = req.query.content === "1";
+      const requestedLimit = Number.parseInt(String(req.query.limit || "10"), 10);
+      const limit = Math.min(10, Math.max(1, Number.isFinite(requestedLimit) ? requestedLimit : 10));
       const cols = withContent
         ? "id, audit_id, tier, engine, model, txt, html, artifact_state, superseded_at, supersedes_artifact_id, created_at"
         : "id, audit_id, tier, engine, model, artifact_state, superseded_at, supersedes_artifact_id, created_at";
       const result = await pool.query(
         `SELECT ${cols} FROM report_artifacts
           WHERE audit_id = $1 AND artifact_state = 'ACTIVE'
-          ORDER BY created_at DESC`,
-        [auditId]
+          ORDER BY created_at DESC
+          LIMIT $2`,
+        [auditId, limit]
       );
       res.json({
         success: true,
@@ -11923,7 +11922,7 @@ export async function registerRoutes(
       const stats = await getEmailTrackingStats();
 
       // Get pending/ready from audits
-      const allAudits = await storage.getAllAudits();
+      const allAudits = await storage.getAllAuditsLight();
       const pending = allAudits.filter(a => a.reportDeliveryStatus === 'SCHEDULED' && !a.reportSentAt).length;
       const ready = allAudits.filter(a => a.reportDeliveryStatus === 'READY' && !a.reportSentAt).length;
 
@@ -13119,7 +13118,7 @@ export async function registerRoutes(
     if (!requireAdminAuth(req, res)) return;
 
     try {
-      const allAudits = await storage.getAllAudits();
+      const allAudits = await storage.getAllAuditsLight();
 
       const scheduled = allAudits.filter(a => a.reportDeliveryStatus === 'SCHEDULED' && !a.reportSentAt);
       const ready = allAudits.filter(a => a.reportDeliveryStatus === 'READY' && !a.reportSentAt);
@@ -13211,15 +13210,19 @@ export async function registerRoutes(
         return;
       }
 
-      const allAudits = await storage.getAllAudits();
-      const stuck = allAudits.filter(a =>
-        (a.reportDeliveryStatus === "READY" || a.reportDeliveryStatus === "SCHEDULED") &&
-        !a.reportSentAt &&
-        (
-          !!(a as any).narrativeReport ||
-          (a.type === "GRATUIT" && (!!(a as any).reportTxt || !!(a as any).reportHtml))
-        )
+      // Query only the bounded lifecycle cohort instead of hydrating every
+      // report body in the database into the application heap.
+      const stuckRows = await pool.query(
+        `SELECT id, email, type, created_at AS "createdAt"
+           FROM audits
+          WHERE report_delivery_status IN ('READY','SCHEDULED')
+            AND report_sent_at IS NULL
+            AND (narrative_report IS NOT NULL
+              OR (type='GRATUIT' AND (report_txt IS NOT NULL OR report_html IS NOT NULL)))
+          ORDER BY created_at ASC
+          LIMIT 100`,
       );
+      const stuck = stuckRows.rows;
 
       const results: Array<{
         auditId: string; email: string; type: string; ageDays: number;
@@ -13423,8 +13426,8 @@ export async function registerRoutes(
         audit = await storage.getAudit(auditId);
       } else if (email) {
         const normalizedEmail = email.trim().toLowerCase();
-        const allAudits = await storage.getAllAudits();
-        audit = allAudits.find(a => a.email.toLowerCase() === normalizedEmail &&
+        const matchingAudits = await storage.getAuditsByEmail(normalizedEmail);
+        audit = matchingAudits.find(a => a.email.toLowerCase() === normalizedEmail &&
           (a.reportDeliveryStatus === "SCHEDULED" || a.reportDeliveryStatus === "READY"));
       }
 
