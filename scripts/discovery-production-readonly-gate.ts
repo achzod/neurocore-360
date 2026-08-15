@@ -82,6 +82,7 @@ async function main(): Promise<void> {
       active_jobs: string;
       delivery_claims: string;
       tracking_rows: string;
+      report_delivery_tracking_rows: string;
     }>(
       `SELECT a.id, a.created_at, a.report_delivery_status, a.report_sent_at,
               (SELECT COUNT(*) FROM report_artifacts ra
@@ -91,7 +92,10 @@ async function main(): Promise<void> {
               (SELECT COUNT(*) FROM discovery_email_delivery_claims dc
                 WHERE dc.audit_id = a.id)::text AS delivery_claims,
               (SELECT COUNT(*) FROM email_tracking et
-                WHERE et.audit_id = a.id)::text AS tracking_rows
+                WHERE et.audit_id = a.id)::text AS tracking_rows,
+              (SELECT COUNT(*) FROM email_tracking et
+                WHERE et.audit_id = a.id
+                  AND et.email_type = 'sendReportReadyEmail')::text AS report_delivery_tracking_rows
          FROM audits a
         WHERE a.id = ANY($1::text[])
         ORDER BY a.created_at`,
@@ -104,7 +108,7 @@ async function main(): Promise<void> {
       assert.equal(Number(row.active_artifacts), 1, `${row.id}:ACTIVE_ARTIFACT_COUNT`);
       assert.equal(Number(row.active_jobs), 0, `${row.id}:ACTIVE_JOB_PRESENT`);
       assert.equal(Number(row.delivery_claims), 0, `${row.id}:DELIVERY_CLAIM_PRESENT`);
-      assert.equal(Number(row.tracking_rows), 0, `${row.id}:TRACKING_ROW_PRESENT`);
+      assert.equal(Number(row.report_delivery_tracking_rows), 0, `${row.id}:REPORT_DELIVERY_TRACKING_PRESENT`);
     }
 
     const state = await client.query<{
@@ -148,6 +152,8 @@ async function main(): Promise<void> {
         createdAt: row.created_at.toISOString(),
         status: row.report_delivery_status,
         activeArtifacts: Number(row.active_artifacts),
+        trackingRows: Number(row.tracking_rows),
+        reportDeliveryTrackingRows: Number(row.report_delivery_tracking_rows),
       })),
     })}`);
   } catch (error) {
