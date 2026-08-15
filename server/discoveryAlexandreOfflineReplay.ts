@@ -56,7 +56,7 @@ function artifactContentSha256(txt: string, html: string): string {
 }
 
 export interface AlexandreOfflineReplayManifest {
-  schemaVersion: 1;
+  schemaVersion: 2;
   operation: typeof OPERATION;
   target: typeof DISCOVERY_ALEXANDRE_OFFLINE_REPLAY_TARGET;
   audit: {
@@ -65,7 +65,7 @@ export interface AlexandreOfflineReplayManifest {
     narrativeSha256: string;
     txtSha256: string;
     htmlSha256: string;
-    reportGeneratedAt: string | null;
+    reportGeneratedAtDbText: string | null;
   };
   activeArtifact: {
     id: string;
@@ -123,7 +123,8 @@ async function loadReplayState(db: Queryable, lockRows: boolean): Promise<Loaded
   const suffix = lockRows ? " FOR UPDATE" : "";
   const auditResult = await db.query(
     `SELECT id,email,responses,scores,narrative_report,report_txt,report_html,
-            report_generated_at,report_delivery_status,report_sent_at
+            report_generated_at::text AS report_generated_at_db_text,
+            report_delivery_status,report_sent_at
        FROM audits WHERE id=$1 AND type='GRATUIT'${suffix}`,
     [DISCOVERY_ALEXANDRE_OFFLINE_REPLAY_TARGET.auditId],
   );
@@ -244,7 +245,7 @@ async function loadReplayState(db: Queryable, lockRows: boolean): Promise<Loaded
   }
 
   const manifest: AlexandreOfflineReplayManifest = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     operation: OPERATION,
     target: DISCOVERY_ALEXANDRE_OFFLINE_REPLAY_TARGET,
     audit: {
@@ -253,8 +254,8 @@ async function loadReplayState(db: Queryable, lockRows: boolean): Promise<Loaded
       narrativeSha256: discoveryAlexandreReplaySha256(audit.narrative_report),
       txtSha256: discoveryAlexandreReplaySha256(currentTxt),
       htmlSha256: discoveryAlexandreReplaySha256(currentHtml),
-      reportGeneratedAt: audit.report_generated_at == null
-        ? null : new Date(audit.report_generated_at).toISOString(),
+      reportGeneratedAtDbText: audit.report_generated_at_db_text == null
+        ? null : String(audit.report_generated_at_db_text),
     },
     activeArtifact: {
       id: String(activeArtifact.id), tier: String(activeArtifact.tier),
@@ -600,7 +601,7 @@ export async function replayExactAlexandreDiscoveryOffline(input: {
           AND narrative_report IS NOT DISTINCT FROM $9::jsonb
           AND report_txt IS NOT DISTINCT FROM $10
           AND report_html IS NOT DISTINCT FROM $11
-          AND report_generated_at IS NOT DISTINCT FROM $12::timestamptz
+          AND report_generated_at::text IS NOT DISTINCT FROM $12::text
           AND EXISTS (SELECT 1 FROM discovery_operation_lock
             WHERE lock_key=$13 AND token=$14 AND expires_at>NOW())
         RETURNING id`,
@@ -610,7 +611,7 @@ export async function replayExactAlexandreDiscoveryOffline(input: {
         loaded.audit.scores == null ? null : JSON.stringify(loaded.audit.scores),
         loaded.audit.narrative_report == null ? null : JSON.stringify(loaded.audit.narrative_report),
         loaded.audit.report_txt,
-        loaded.audit.report_html, loaded.audit.report_generated_at, LOCK_KEY, input.lockToken],
+        loaded.audit.report_html, loaded.audit.report_generated_at_db_text, LOCK_KEY, input.lockToken],
     );
     if ((updatedAudit.rowCount ?? 0) !== 1) throw new Error("ALEXANDRE_REPLAY_AUDIT_CAS_FAILED");
 

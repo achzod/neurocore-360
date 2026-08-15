@@ -1256,6 +1256,27 @@ test("Alexandre offline replay versions the ACTIVE artifact, binds ledger proven
     [fixture.target.auditId],
   )).rows;
   const inspected = await offlineReplay.inspectExactAlexandreOfflineReplay(pool);
+  assert.equal(inspected.manifest.schemaVersion, 2);
+  assert.equal(inspected.manifest.audit.reportGeneratedAtDbText, fixture.reportGeneratedAtDbText);
+  assert.equal(
+    inspected.manifestSha256,
+    offlineReplay.discoveryAlexandreReplaySha256(inspected.manifest),
+  );
+  const legacyTruncatedManifest = structuredClone(inspected.manifest);
+  legacyTruncatedManifest.audit.reportGeneratedAtDbText = "2026-08-14 01:00:00.992";
+  assert.notEqual(
+    offlineReplay.discoveryAlexandreReplaySha256(legacyTruncatedManifest),
+    inspected.manifestSha256,
+  );
+  const timestampPrecision = (await pool.query(
+    `SELECT report_generated_at IS NOT DISTINCT FROM $2::timestamp AS legacy_js_date_matches,
+            report_generated_at::text IS NOT DISTINCT FROM $3::text AS exact_db_text_matches
+       FROM audits WHERE id=$1`,
+    [fixture.target.auditId, new Date("2026-08-14T01:00:00.992486Z"),
+      fixture.reportGeneratedAtDbText],
+  )).rows[0];
+  assert.equal(timestampPrecision.legacy_js_date_matches, false);
+  assert.equal(timestampPrecision.exact_db_text_matches, true);
   const lock = await offlineReplay.acquireAlexandreOfflineReplayLock(pool);
   let result: Awaited<ReturnType<typeof offlineReplay.replayExactAlexandreDiscoveryOffline>>;
   try {
@@ -1482,6 +1503,67 @@ test("Alexandre offline replay rolls back artifact versioning and audit persiste
   )).rows[0].count), 0);
 });
 
+test("Alexandre offline replay detects one-microsecond timestamp drift and rolls back every write", async () => {
+  const fixture = await insertAlexandreOfflineReplayFixture("timestamp-drift");
+  const inspected = await offlineReplay.inspectExactAlexandreOfflineReplay(pool);
+  const artifactsBefore = (await pool.query(
+    `SELECT id,artifact_state,superseded_at,supersedes_artifact_id,txt,html,content_sha256
+       FROM report_artifacts WHERE audit_id=$1 ORDER BY created_at,id`,
+    [fixture.target.auditId],
+  )).rows;
+  const auditBefore = (await pool.query(
+    `SELECT report_generated_at::text AS report_generated_at_db_text,
+            report_delivery_status,narrative_report,scores,report_txt,report_html
+       FROM audits WHERE id=$1`,
+    [fixture.target.auditId],
+  )).rows[0];
+  await pool.query(
+    `CREATE OR REPLACE FUNCTION force_alexandre_timestamp_microsecond_drift()
+       RETURNS trigger LANGUAGE plpgsql AS $$
+       BEGIN
+         IF OLD.audit_id='e860b380-3a6e-4c64-b823-3422476b7cd2'
+            AND OLD.artifact_state='ACTIVE' AND NEW.artifact_state='SUPERSEDED' THEN
+           UPDATE audits
+              SET report_generated_at=report_generated_at+INTERVAL '1 microsecond'
+            WHERE id=OLD.audit_id;
+         END IF;
+         RETURN NEW;
+       END $$;
+     CREATE TRIGGER force_alexandre_timestamp_microsecond_drift
+       BEFORE UPDATE ON report_artifacts
+       FOR EACH ROW EXECUTE FUNCTION force_alexandre_timestamp_microsecond_drift()`,
+  );
+  const lock = await offlineReplay.acquireAlexandreOfflineReplayLock(pool);
+  try {
+    await assert.rejects(
+      offlineReplay.replayExactAlexandreDiscoveryOffline({
+        lockToken: lock.token,
+        expectedManifestSha256: inspected.manifestSha256,
+      }, pool),
+      /ALEXANDRE_REPLAY_AUDIT_CAS_FAILED/,
+    );
+  } finally {
+    await pool.query("DROP TRIGGER force_alexandre_timestamp_microsecond_drift ON report_artifacts");
+    await pool.query("DROP FUNCTION force_alexandre_timestamp_microsecond_drift() ");
+    await offlineReplay.releaseAlexandreOfflineReplayLock(pool, lock.token);
+  }
+  assert.deepEqual((await pool.query(
+    `SELECT id,artifact_state,superseded_at,supersedes_artifact_id,txt,html,content_sha256
+       FROM report_artifacts WHERE audit_id=$1 ORDER BY created_at,id`,
+    [fixture.target.auditId],
+  )).rows, artifactsBefore);
+  assert.deepEqual((await pool.query(
+    `SELECT report_generated_at::text AS report_generated_at_db_text,
+            report_delivery_status,narrative_report,scores,report_txt,report_html
+       FROM audits WHERE id=$1`,
+    [fixture.target.auditId],
+  )).rows[0], auditBefore);
+  assert.equal(Number((await pool.query(
+    "SELECT COUNT(*)::int AS count FROM discovery_offline_replay_proofs WHERE audit_id=$1",
+    [fixture.target.auditId],
+  )).rows[0].count), 0);
+});
+
 test("Discovery reconciler CLI compiles and executes summary-only against the real schema", () => {
   const cliPath = fileURLToPath(new URL("../scripts/discovery-safe-reconciler.ts", import.meta.url));
   const child = spawnSync(
@@ -1537,15 +1619,15 @@ async function insertAlexandreOfflineReplayFixture(label: string) {
   const oldNarrative = { invalidLegacyReport: label, sections: [] };
   const oldTxt = `alexandre-invalid-txt:${label}`;
   const oldHtml = `<p>alexandre-invalid-html:${label}</p>`;
-  const reportGeneratedAt = "2026-08-14T01:00:00.000Z";
+  const reportGeneratedAtDbText = "2026-08-14 01:00:00.992486";
   await pool.query(
     `INSERT INTO audits
        (id,email,type,status,responses,scores,narrative_report,report_txt,report_html,
         report_generated_at,report_delivery_status,report_sent_at,created_at)
      VALUES ($1,'alexrey47@gmail.com','GRATUIT','COMPLETED',$2::jsonb,$3::jsonb,$4::jsonb,
-             $5,$6,$7::timestamptz,'BATCH_REVIEW',NULL,'2026-08-14T00:00:00.000Z')`,
+             $5,$6,$7::timestamp,'BATCH_REVIEW',NULL,'2026-08-14T00:00:00.000Z')`,
     [target.auditId, JSON.stringify(responses), JSON.stringify(oldScores),
-      JSON.stringify(oldNarrative), oldTxt, oldHtml, reportGeneratedAt],
+      JSON.stringify(oldNarrative), oldTxt, oldHtml, reportGeneratedAtDbText],
   );
   const sourceArtifactId = randomUUID();
   await pool.query(
@@ -1602,7 +1684,7 @@ async function insertAlexandreOfflineReplayFixture(label: string) {
     oldNarrative,
     oldTxt,
     oldHtml,
-    reportGeneratedAt,
+    reportGeneratedAtDbText,
     sourceArtifactId,
     firstCandidateId,
     secondCandidateId,

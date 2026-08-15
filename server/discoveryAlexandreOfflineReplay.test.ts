@@ -35,6 +35,9 @@ test("apply is manifest-CAS, transactional, append-only and leaves candidate/led
   assert.match(source, /BEGIN/);
   assert.match(source, /FOR UPDATE/);
   assert.match(source, /ALEXANDRE_REPLAY_MANIFEST_CAS_MISMATCH/);
+  assert.match(source, /report_generated_at::text AS report_generated_at_db_text/);
+  assert.match(source, /report_generated_at::text IS NOT DISTINCT FROM \$12::text/);
+  assert.doesNotMatch(source, /new Date\(audit\.report_generated_at\)/);
   assert.match(source, /reconstructDiscoveryCatalogReport/);
   assert.match(source, /evaluateDiscoveryDeliveryGate/);
   assert.match(source, /validateDiscoveryPersistenceContract/);
