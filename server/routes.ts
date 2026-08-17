@@ -129,7 +129,10 @@ import {
   readPeptidesGenerationCircuitSnapshot,
   sanitizePeptidesGenerationError,
 } from "./peptidesGenerationCircuitBreaker";
-import { getAICostBudgetSummary } from "./aiCostBudgetController";
+import {
+  getAICostBudgetSummary,
+  resetAICostBudgetReservations,
+} from "./aiCostBudgetController";
 import { generateAndPersistPremiumDiscoveryReport } from "./discoveryGenerationService";
 import { hasValidPeptidesConsent } from "./peptidesConsent";
 import { createRateLimiter } from "./middleware/rateLimit";
@@ -5887,9 +5890,14 @@ export async function registerRoutes(
         ) {
           const reset = await storage.resetPeptidesGenerationCircuit(pepOrder.id).catch(() => false);
           if (reset) {
+            const clearedReservations = await resetAICostBudgetReservations({
+              product: "peptides",
+              orderId: pepOrder.id,
+              profile: "peptides",
+            }).catch(() => 0);
             console.warn(
               `[Admin] Reset stale peptides circuit for ${email} on ${pepOrder.id} before manual retry `
-              + `(reason=${circuit.reason}, attempts=${circuit.snapshot.attempts}, reserved=${circuit.snapshot.reservedCostMicroUsd})`,
+              + `(reason=${circuit.reason}, attempts=${circuit.snapshot.attempts}, reserved=${circuit.snapshot.reservedCostMicroUsd}, aiReservations=${clearedReservations})`,
             );
             pepOrder = await storage.getOrder(pepOrder.id) ?? pepOrder;
           }
@@ -6083,6 +6091,13 @@ export async function registerRoutes(
 
       const before = readPeptidesGenerationCircuitSnapshot(order.metadata);
       const reset = await storage.resetPeptidesGenerationCircuit(order.id);
+      const clearedReservations = reset
+        ? await resetAICostBudgetReservations({
+            product: "peptides",
+            orderId: order.id,
+            profile: "peptides",
+          }).catch(() => 0)
+        : 0;
       const fresh = await storage.getOrder(order.id);
       const after = readPeptidesGenerationCircuitSnapshot(fresh?.metadata);
 
@@ -6090,6 +6105,7 @@ export async function registerRoutes(
         success: reset,
         orderId: order.id,
         email: order.email,
+        clearedReservations,
         before,
         after,
       });

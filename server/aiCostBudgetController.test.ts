@@ -119,6 +119,7 @@ test("Peptides provider calls inherit the pre-call controller and exact order co
   const routesSource = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
   const cronCall = routesSource.indexOf("maxCandidates: 1");
   assert.match(routesSource.slice(cronCall, cronCall + 240), /orderId:\s*order\.id/);
+  assert.match(routesSource, /resetAICostBudgetReservations\(/);
 });
 
 test("admin cost summary endpoint is authenticated, allowlisted and read-only", () => {
@@ -145,4 +146,11 @@ test("missing or malformed provider usage keeps the reservation fail-closed", ()
   assert.equal(resolveAICostBudgetActualUsd(reservation, Number.POSITIVE_INFINITY), 1);
   assert.equal(resolveAICostBudgetActualUsd(reservation, 0.74), 0.74);
   assert.equal(resolveAICostBudgetActualUsd(reservation, 0), 0);
+});
+
+test("manual admin recovery can expire unsettled reservations for the exact order", () => {
+  const controllerSource = readFileSync(new URL("./aiCostBudgetController.ts", import.meta.url), "utf8");
+  assert.match(controllerSource, /export async function resetAICostBudgetReservations/);
+  assert.match(controllerSource, /status IN \('RESERVED', 'UNCERTAIN'\)/);
+  assert.match(controllerSource, /SET status = 'EXPIRED'/);
 });

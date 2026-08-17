@@ -544,6 +544,31 @@ export async function markAICostBudgetReservationUncertain(
   );
 }
 
+export async function resetAICostBudgetReservations(
+  rawContext: Pick<AICostBudgetContext, "product" | "orderId" | "profile">,
+  detail = "manual_admin_reset",
+): Promise<number> {
+  await ensureBudgetTables();
+  const { pool } = await import("./db");
+  const result = await pool.query(
+    `UPDATE ai_cost_budget_reservations
+        SET status = 'EXPIRED',
+            updated_at = NOW(),
+            detail = $4
+      WHERE product = $1
+        AND order_id = $2
+        AND profile = $3
+        AND status IN ('RESERVED', 'UNCERTAIN')`,
+    [
+      normalizeProduct(rawContext.product),
+      normalizeOrderId(rawContext.orderId),
+      String(rawContext.profile || "unknown").trim().slice(0, 80),
+      String(detail || "manual_admin_reset").replace(/[\r\n\t]+/g, " ").slice(0, 400),
+    ],
+  );
+  return result.rowCount ?? 0;
+}
+
 export async function getAICostBudgetSnapshot(
   rawContext: Pick<AICostBudgetContext, "product" | "orderId" | "profile">,
 ): Promise<AICostBudgetSpendSnapshot> {
