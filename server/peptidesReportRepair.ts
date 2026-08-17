@@ -742,7 +742,7 @@ function synchronizeReconstitutionNarrative(
         (peptide) =>
           `${String(peptide.name || "").toUpperCase()}\n` +
           `Dose et frequence: ${asSentence(peptide.dosage)}\n` +
-          `Format commande: ${asSentence(peptide.vialsNeeded)}\n` +
+          "Format commande: voir la liste de commande verifiee pour le detail exact des vials et des limites de commande.\n" +
           `Reconstitution exacte: ${asSentence(peptide.reconstitution)}`
       ),
       ...(injectablePeptides.length > 0
@@ -1035,7 +1035,7 @@ function peptideIdentity(peptide: PeptideItem): string {
       `Dosage: ${asSentence(peptide.dosage)}`,
       `Timing: ${asSentence(peptide.timing)}`,
       `Duree: ${asSentence(peptide.cycleDuration)}`,
-      `Quantite calculee: ${asSentence(peptide.vialsNeeded)}`,
+      "Quantite calculee: voir la liste de commande verifiee pour le detail exact des vials, du prix live et des limites de commande.",
       `Verification live: ${asSentence(peptide.priceEstimate)}`,
       `Lien catalogue: ${asSentence(peptide.purchaseUrl)}`,
       `Point de securite: ${asSentence(peptide.reconstitution)}`,
