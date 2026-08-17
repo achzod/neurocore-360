@@ -45,7 +45,10 @@ const noInventedStability = planOperationalVials({
 assert.equal(noInventedStability.status, "stability-unverified");
 assert.equal(noInventedStability.mathematicalMinimumVials, 1);
 assert.equal(noInventedStability.operationalVials, null);
-assert.match(formatOperationalVials(noInventedStability, "10 semaines"), /Achat operationnel non chiffre/);
+assert.match(
+  formatOperationalVials(noInventedStability, "10 semaines", "BPC-157"),
+  /Achat operationnel non chiffre pour BPC-157/
+);
 assert.throws(
   () => parseDocumentedStabilityConfig('{"Ipamorelin":{"days":28}}'),
   /source documentee obligatoires/,
@@ -66,7 +69,11 @@ const overriddenIpa = planOperationalVials({
 assert.equal(overriddenIpa.stabilityDays, 21);
 assert.equal(overriddenIpa.stabilitySource, "APEXLABS politique test override 21 jours");
 assert.equal(overriddenIpa.operationalVials, 4);
-const clementOperationalLine = formatOperationalVials(clementCjc, "10 semaines");
+const clementOperationalLine = formatOperationalVials(
+  clementCjc,
+  "10 semaines",
+  "CJC-1295 sans DAC"
+);
 assert.match(clementOperationalLine, /Achat operationnel 3 vials de 5mg/i);
 assert.doesNotMatch(clementOperationalLine, /fenetre operationnelle|stabilite chimique|reserve/i);
 
@@ -132,7 +139,7 @@ const clementDryRun = [
   return {
     ...entry,
     reconstitution,
-    vialsNeeded: formatOperationalVials(entry.plan, entry.cycleDuration),
+    vialsNeeded: formatOperationalVials(entry.plan, entry.cycleDuration, entry.name),
     totalPriceUsd: Math.round(entry.unitPriceUsd * operational * 100) / 100,
   };
 });

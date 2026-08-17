@@ -188,13 +188,17 @@ export function planOperationalVials(
   };
 }
 
-export function formatOperationalVials(plan: PeptideVialPlan, cycleDuration: string): string {
+export function formatOperationalVials(
+  plan: PeptideVialPlan,
+  cycleDuration: string,
+  peptideName = "cette molecule"
+): string {
   if (plan.pharmacologicalNeedMg == null || plan.vialSizeMg == null || plan.mathematicalMinimumVials == null) {
     return "Calcul de flacons impossible: dosage, frequence, duree ou taille de vial non lisible.";
   }
   const need = Number(plan.pharmacologicalNeedMg.toFixed(3));
   if (plan.status !== "documented" || plan.operationalVials == null) {
-    return `Besoin brut ${need}mg. Minimum mathematique ${plan.mathematicalMinimumVials} vial${plan.mathematicalMinimumVials > 1 ? "s" : ""} de ${plan.vialSizeMg}mg pour ${cycleDuration}. Achat operationnel non chiffre: aucune politique de fenetre operationnelle apres reconstitution n'est configuree pour cette molecule. Aucune reserve n'est ajoutee.`;
+    return `Besoin brut ${need}mg. Minimum mathematique ${plan.mathematicalMinimumVials} vial${plan.mathematicalMinimumVials > 1 ? "s" : ""} de ${plan.vialSizeMg}mg pour ${cycleDuration}. Achat operationnel non chiffre pour ${peptideName}: aucune politique de fenetre operationnelle apres reconstitution n'est configuree. Aucune reserve n'est ajoutee.`;
   }
   return `Achat operationnel ${plan.operationalVials} vial${plan.operationalVials > 1 ? "s" : ""} de ${plan.vialSizeMg}mg pour ${cycleDuration}. Besoin brut ${need}mg, minimum mathematique ${plan.mathematicalMinimumVials}.`;
 }

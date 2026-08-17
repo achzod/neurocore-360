@@ -1289,7 +1289,11 @@ async function applyLivePeptauraPricing(
     qty = livePlan.status === "documented" && livePlan.operationalVials != null
       ? livePlan.operationalVials
       : livePlan.mathematicalMinimumVials || qty;
-    pep.vialsNeeded = formatOperationalVials(livePlan, pep.cycleDuration || "le cycle");
+    pep.vialsNeeded = formatOperationalVials(
+      livePlan,
+      pep.cycleDuration || "le cycle",
+      pep.name || "cette molecule"
+    );
 
     // The official feed exposes the exact listing URL. Never synthesize a
     // vendor URL; use it only after the listing passed country/stock/price
@@ -2794,7 +2798,11 @@ export function validateVialsMath(report: PeptidesReport): PeptidesReport {
       const pricedQty = plan.status === "documented" && plan.operationalVials != null
         ? plan.operationalVials
         : plan.mathematicalMinimumVials;
-      pep.vialsNeeded = formatOperationalVials(plan, pep.cycleDuration || "le cycle");
+      pep.vialsNeeded = formatOperationalVials(
+        plan,
+        pep.cycleDuration || "le cycle",
+        pep.name || "cette molecule"
+      );
       syncPriceEstimate(pep, pricedQty);
     }
   }
