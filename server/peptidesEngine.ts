@@ -1151,9 +1151,9 @@ function buildLivePriceEstimate(pep: PeptideItem, listing: PeptauraLiveListing, 
   const eur = Math.round(total * 0.92);
   const supplier = listing.supplierDisplayName || listing.supplier;
   if (listing.boxSize > 1) {
-    return `Environ $${packagePrice.toFixed(2)} la boite de ${listing.boxSize} vials (${listing.dosage}, ${supplier}), ${packageCount} boite${packageCount > 1 ? "s" : ""}, ${deliveredVials} vials recus, total $${total.toFixed(2)} (conversion indicative: ${eur} euros)`;
+    return `Environ $${packagePrice.toFixed(2)} la boite de ${listing.boxSize} vials (${listing.dosage}, ${supplier}), x ${packageCount} boite${packageCount > 1 ? "s" : ""}, ${deliveredVials} vials recus, prix total $${total.toFixed(2)} (conversion indicative: ${eur} euros)`;
   }
-  return `Environ $${packagePrice.toFixed(2)} par vial (${listing.dosage}, ${supplier}), ${qty} vial${qty > 1 ? "s" : ""}, total $${total.toFixed(2)} (conversion indicative: ${eur} euros)`;
+  return `Environ $${packagePrice.toFixed(2)} par vial (${listing.dosage}, ${supplier}), x ${qty} vial${qty > 1 ? "s" : ""}, prix total $${total.toFixed(2)} (conversion indicative: ${eur} euros)`;
 }
 
 function parseListingMl(value: string): number | null {
@@ -1228,7 +1228,9 @@ async function applyLivePeptauraPricing(
     }
 
     pep.purchaseUrl = peptauraProductUrl(slug);
-    const needMg = estimateNeedMg(pep);
+    const estimatedNeedMg = estimateNeedMg(pep);
+    const orderedNeedMg = extractTotalMgFromVials(pep.vialsNeeded);
+    const needMg = estimatedNeedMg ?? orderedNeedMg;
     if (needMg == null || needMg <= 0) {
       failures.push(`${pep.name}: quantite totale incalculable depuis le dosage et la duree`);
       continue;
@@ -1263,7 +1265,8 @@ async function applyLivePeptauraPricing(
     const bestMg = purchasePlan.vialMg;
     const durationLabel = String(pep.cycleDuration || "le cycle").split(/[,.]/)[0].trim();
     const naturalDurationLabel = durationLabel.charAt(0).toLowerCase() + durationLabel.slice(1);
-    pep.vialsNeeded = `${qty} vial${qty > 1 ? "s" : ""} de ${bestMg} mg pour ${naturalDurationLabel} (besoin calcule ~${needMg.toFixed(2)} mg, capacite livree ${purchasePlan.deliveredMg.toFixed(2)} mg)`;
+    const needSourceLabel = estimatedNeedMg != null ? "besoin calcule" : "besoin reconstruit depuis la quantite initiale";
+    pep.vialsNeeded = `${qty} vial${qty > 1 ? "s" : ""} de ${bestMg} mg pour ${naturalDurationLabel} (${needSourceLabel} ~${needMg.toFixed(2)} mg, capacite livree ${purchasePlan.deliveredMg.toFixed(2)} mg)`;
     if (/aucune offre live exploitable|format de vial.*(?:manque|indisponible)|(?:reconstitution.{0,80})?unit[ée]s?.{0,40}suspendues|feed officiel ne fournit pas le volume/i.test(pep.reconstitution || "")) {
       const conditional = buildConditionalReconstitutionText(pep.dosage, bestMg);
       if (!conditional) {
@@ -1365,7 +1368,7 @@ async function applyLivePeptauraPricing(
       bacWaterLine =
         `BAC Water: besoin calcule ${bacWaterNeedMl.toFixed(1)} ml, ` +
         `${finalBottleQty} flacon${finalBottleQty > 1 ? "s" : ""} de ${bottleMl}ml. ` +
-        `Environ $${packagePrice.toFixed(2)} par flacon (${supplier}), total $${totalPrice.toFixed(2)}. ` +
+        `Environ $${packagePrice.toFixed(2)} par flacon (${supplier}), prix total $${totalPrice.toFixed(2)}. ` +
         `${peptauraProductUrl(bacSlug)}`;
       liveNotes.push(`BAC Water: ${bacListing.dosage} via ${supplier}`);
       listingSnapshots.push({

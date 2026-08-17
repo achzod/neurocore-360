@@ -84,6 +84,9 @@ assert.match(engineSource, /PROTOCOLE OBLIGATOIRE SI TESTOSTERONE BASSE CONFIRME
 assert.match(engineSource, /1\. Enclomiphene Citrate/);
 assert.match(engineSource, /2\. KissPeptin-10/);
 assert.match(engineSource, /https:\/\/receptorchem\.co\.uk\/enclomiphene-citrate\//);
+assert.match(engineSource, /const orderedNeedMg = extractTotalMgFromVials\(pep\.vialsNeeded\);/);
+assert.match(engineSource, /const needMg = estimatedNeedMg \?\? orderedNeedMg;/);
+assert.match(engineSource, /prix total \$\$\{total\.toFixed\(2\)\}/);
 assert.match(routesSource, /DELIVERY BLOCKED[\s\S]{0,1800}continue;/);
 assert.doesNotMatch(routesSource, /Tes 2 Blood Analysis offertes/);
 assert.match(reportPageSource, /data-testid=\{`peptides-whatsapp-/);
