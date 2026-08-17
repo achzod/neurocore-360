@@ -558,7 +558,7 @@ export async function resetAICostBudgetReservations(
       WHERE product = $1
         AND order_id = $2
         AND profile = $3
-        AND status IN ('RESERVED', 'UNCERTAIN')`,
+        AND status IN ('RESERVED', 'UNCERTAIN', 'COMPLETED')`,
     [
       normalizeProduct(rawContext.product),
       normalizeOrderId(rawContext.orderId),

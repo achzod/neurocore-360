@@ -151,6 +151,6 @@ test("missing or malformed provider usage keeps the reservation fail-closed", ()
 test("manual admin recovery can expire unsettled reservations for the exact order", () => {
   const controllerSource = readFileSync(new URL("./aiCostBudgetController.ts", import.meta.url), "utf8");
   assert.match(controllerSource, /export async function resetAICostBudgetReservations/);
-  assert.match(controllerSource, /status IN \('RESERVED', 'UNCERTAIN'\)/);
+  assert.match(controllerSource, /status IN \('RESERVED', 'UNCERTAIN', 'COMPLETED'\)/);
   assert.match(controllerSource, /SET status = 'EXPIRED'/);
 });
