@@ -2533,7 +2533,7 @@ function deriveVialsForPeptide(pep: PeptideItem): VialsDerivation | null {
   if (weeks <= 0 || weeks > 52) return null;
 
   // Extract vial size from reconstitution (e.g. "Vial 10mg + 2ml")
-  const vialMatch = reconstitution.match(/vial\s*(\d+(?:\.\d+)?)\s*(mg|mcg)/i);
+  const vialMatch = reconstitution.match(/vial\s*(?:de\s+)?(\d+(?:\.\d+)?)\s*(mg|mcg)/i);
   if (!vialMatch) return null;
   const vialMg = parseDoseToMg(parseFloat(vialMatch[1]), vialMatch[2]);
   if (!isFinite(vialMg) || vialMg <= 0) return null;
@@ -2694,7 +2694,7 @@ function syncPriceEstimate(pep: PeptideItem, newQty: number): void {
   if (!unit) return;
   const total = Math.round(unit * newQty * 100) / 100;
   const eur = Math.round(total * 0.92);
-  pep.priceEstimate = `~$${unit.toFixed(2)}/vial × ${newQty} vials = $${total.toFixed(2)} total (~${eur}€)`;
+  pep.priceEstimate = `~$${unit.toFixed(2)}/vial × ${newQty} vial${newQty > 1 ? "s" : ""} = $${total.toFixed(2)} total (~${eur}€)`;
 }
 
 export function validateVialsMath(report: PeptidesReport): PeptidesReport {

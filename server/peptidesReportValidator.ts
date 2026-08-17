@@ -765,12 +765,14 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
   const threePerWeek = /\b3\s*(?:fois|soirs?|jours?|injections?)\s*(?:par|\/)\s*semaine/i.test(dose);
   const twoPerWeek = /\b2\s*(?:fois|soirs?|jours?|injections?)\s*(?:par|\/)\s*semaine/i.test(dose);
   const oncePerWeek = /(?:\b1\s*|\bune\s+)(?:fois|injection)\s*(?:par|\/)\s*semaine|hebdomadaire|chaque\s+semaine|1x\/sem/i.test(dose);
+  const barePerWeek = /\bpar\s+semaine\b/i.test(dose);
 
   if (fivePerWeek) perWeek = 5;
   else if (fourPerWeek) perWeek = 4;
   else if (threePerWeek) perWeek = 3;
   else if (twoPerWeek) perWeek = 2;
   else if (oncePerWeek) perWeek = 1;
+  else if (barePerWeek) perWeek = 1;
   else if (everyDay) perWeek = 7;
   else return null;
 

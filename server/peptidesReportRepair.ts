@@ -338,6 +338,10 @@ function upsertFinalDisclaimer(report: RepairableReport, firstName: string): voi
   const shortDisclaimer = sanitizeClientFacingText(
     `${firstName}, point important pour finir: ce protocole personnalise reste un contenu educatif et ne remplace pas un diagnostic ni une ordonnance. Plusieurs molecules ont un statut experimental ou non approuve pour cet usage. Respecte les contre-indications et les criteres d'arret propres a chaque molecule.`
   );
+  const shortDisclaimerPattern = new RegExp(
+    `${firstName}, point important pour finir: ce protocole personnalise reste un contenu educatif et ne remplace pas un diagnostic ni une ordonnance\\. Plusieurs molecules ont un statut experimental ou non approuve pour cet usage\\. Respecte les contre-indications et les criteres d'arret propres a chaque molecule\\.`,
+    "gi"
+  );
 
   const disclaimerSection = (report.sections || []).find((section) =>
     /disclaimer|support|important|securite/i.test(`${section.id} ${section.title}`)
@@ -349,6 +353,7 @@ function upsertFinalDisclaimer(report: RepairableReport, firstName: string): voi
     `${String(disclaimerSection.content || "")
       .replace(/ce protocole est fourni a titre educatif[^.]*\./gi, "")
       .replace(/consulte un professionnel de sante[^.]*\./gi, "")
+      .replace(shortDisclaimerPattern, "")
       .trim()}\n\n${shortDisclaimer}`
   );
 }
