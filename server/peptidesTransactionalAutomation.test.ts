@@ -61,6 +61,8 @@ test("production flow separates payment confirmation from provider generation", 
     "confirmation must run before the paid-provider generation kill switch",
   );
   assert.match(routes, /claimPeptidesGenerationAttempt\(/);
+  assert.match(routes, /resetPeptidesGenerationCircuit\(/);
+  assert.match(routes, /\/api\/admin\/orders\/:id\/peptides-reset-generation-lock/);
   assert.match(routes, /maxCandidates:\s*1/);
   assert.match(routes, /providerRetries:\s*1/);
   assert.match(routes, /deliverPeptidesReportOnce\(/);

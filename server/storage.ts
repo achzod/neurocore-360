@@ -338,6 +338,8 @@ export interface IStorage {
   claimPeptidesReportSlot(orderId: string, reportId: string): Promise<boolean>;
   /** Atomic JSONB merge: set a single metadata key without stomping concurrently-set keys. */
   setOrderMetadataKey(orderId: string, key: string, value: unknown): Promise<boolean>;
+  /** Human-reviewed retry path: clears the persisted generation circuit on an undelivered order. */
+  resetPeptidesGenerationCircuit(orderId: string): Promise<boolean>;
   /**
    * Atomically reserves one bounded Peptides provider attempt. The reservation
    * and cost budget survive restarts because they live in order metadata.
@@ -1349,6 +1351,27 @@ export class MemStorage implements IStorage {
     if (!order) return false;
     const meta = (order.metadata as any) ?? {};
     order.metadata = { ...meta, [key]: value } as any;
+    order.updatedAt = new Date();
+    return true;
+  }
+
+  async resetPeptidesGenerationCircuit(orderId: string): Promise<boolean> {
+    const order = this.memOrders.get(orderId);
+    if (!order) return false;
+    const meta = ((order.metadata as any) ?? {}) as Record<string, unknown>;
+    if (meta.peptidesReportId) return false;
+    order.metadata = {
+      ...meta,
+      peptidesGenerationState: "PENDING",
+      peptidesGenerationAttempts: 0,
+      peptidesGenerationReservedCostMicroUsd: 0,
+      peptidesGenerationLeaseUntil: "",
+      peptidesGenerationStartedAt: "",
+      peptidesGenerationFailedAt: "",
+      peptidesGenerationCompletedAt: "",
+      peptidesGenerationLastError: "",
+      peptidesGenerationReviewReason: "",
+    } as any;
     order.updatedAt = new Date();
     return true;
   }
@@ -3821,6 +3844,30 @@ export class PgStorage implements IStorage {
        WHERE id = $3
        RETURNING id`,
       [key, jsonValue, orderId]
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async resetPeptidesGenerationCircuit(orderId: string): Promise<boolean> {
+    await this.ensureOrdersTableCreated();
+    const result = await pool.query(
+      `UPDATE orders
+          SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
+                'peptidesGenerationState', 'PENDING',
+                'peptidesGenerationAttempts', 0,
+                'peptidesGenerationReservedCostMicroUsd', 0,
+                'peptidesGenerationLeaseUntil', '',
+                'peptidesGenerationStartedAt', '',
+                'peptidesGenerationFailedAt', '',
+                'peptidesGenerationCompletedAt', '',
+                'peptidesGenerationLastError', '',
+                'peptidesGenerationReviewReason', ''
+              ),
+              updated_at = NOW()
+        WHERE id = $1
+          AND COALESCE(metadata->>'peptidesReportId', '') = ''
+      RETURNING id`,
+      [orderId],
     );
     return (result.rowCount ?? 0) > 0;
   }

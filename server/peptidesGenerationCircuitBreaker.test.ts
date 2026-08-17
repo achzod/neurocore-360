@@ -227,3 +227,22 @@ test("persistent claims are idempotent and the hourly reservation cap blocks the
   await storage.markPeptidesGenerationNeedsReview(orders[1].id, "quality", "invalid");
   assert.equal(await storage.claimPeptidesGenerationAttempt(orders[1].id, config), null);
 });
+
+test("manual reset clears the persisted circuit on an undelivered order", async () => {
+  process.env.DATABASE_URL ||= "postgresql://test:test@127.0.0.1:1/test";
+  const { MemStorage } = await import("./storage");
+  const storage = new MemStorage();
+  const order = await storage.createOrder({
+    email: "reset@example.test",
+    productType: "PEPTIDES_ENGINE",
+    amountCents: 19900,
+  });
+  await storage.updateOrder(order.id, { status: "paid", paidAt: new Date() });
+
+  assert.ok(await storage.claimPeptidesGenerationAttempt(order.id, config));
+  await storage.markPeptidesGenerationNeedsReview(order.id, "generation_failed", "locked");
+  assert.equal(await storage.claimPeptidesGenerationAttempt(order.id, config), null);
+
+  assert.equal(await storage.resetPeptidesGenerationCircuit(order.id), true);
+  assert.ok(await storage.claimPeptidesGenerationAttempt(order.id, config));
+});

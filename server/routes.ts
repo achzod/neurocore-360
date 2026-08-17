@@ -126,6 +126,7 @@ import {
   evaluatePeptidesGenerationEligibility,
   getPeptidesGenerationCircuitConfig,
   isPeptidesAutogenEnabled,
+  readPeptidesGenerationCircuitSnapshot,
   sanitizePeptidesGenerationError,
 } from "./peptidesGenerationCircuitBreaker";
 import { getAICostBudgetSummary } from "./aiCostBudgetController";
@@ -5869,7 +5870,31 @@ export async function registerRoutes(
 
       // Find the paid order for this email up-front (needed for CAS)
       const orders = await storage.getOrdersByEmail(email);
-      const pepOrder = orders.find((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid");
+      let pepOrder = orders.find((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid");
+
+      // Manual admin retries are explicitly human-reviewed. If a previous
+      // autogen attempt opened the persistent circuit on an undelivered order,
+      // clear the stale reservation before spending again.
+      if (pepOrder && !replaceReportId && !(pepOrder.metadata as any)?.peptidesReportId) {
+        const circuit = evaluatePeptidesGenerationEligibility(
+          pepOrder.metadata,
+          getPeptidesGenerationCircuitConfig(),
+        );
+        const resettableReasons = new Set(["NEEDS_REVIEW", "ATTEMPT_CAP", "COST_CAP"]);
+        if (
+          resettableReasons.has(circuit.reason)
+          || circuit.snapshot.reservedCostMicroUsd > 0
+        ) {
+          const reset = await storage.resetPeptidesGenerationCircuit(pepOrder.id).catch(() => false);
+          if (reset) {
+            console.warn(
+              `[Admin] Reset stale peptides circuit for ${email} on ${pepOrder.id} before manual retry `
+              + `(reason=${circuit.reason}, attempts=${circuit.snapshot.attempts}, reserved=${circuit.snapshot.reservedCostMicroUsd})`,
+            );
+            pepOrder = await storage.getOrder(pepOrder.id) ?? pepOrder;
+          }
+        }
+      }
 
       // CROSS-ORDER PROTECTION: if the client paid twice (2 distinct orders), scan
       // ALL paid orders of the same email , not just the first. Without this, the
@@ -6040,6 +6065,37 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("[Admin] Peptides generate error:", error);
       res.status(500).json({ error: error.message || "Erreur generation" });
+    }
+  });
+
+  app.post("/api/admin/orders/:id/peptides-reset-generation-lock", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const order = await storage.getOrder(req.params.id);
+      if (!order) {
+        res.status(404).json({ error: "Order introuvable" });
+        return;
+      }
+      if (order.productType !== "PEPTIDES_ENGINE") {
+        res.status(400).json({ error: `Order productType=${order.productType}, attendu PEPTIDES_ENGINE` });
+        return;
+      }
+
+      const before = readPeptidesGenerationCircuitSnapshot(order.metadata);
+      const reset = await storage.resetPeptidesGenerationCircuit(order.id);
+      const fresh = await storage.getOrder(order.id);
+      const after = readPeptidesGenerationCircuitSnapshot(fresh?.metadata);
+
+      res.json({
+        success: reset,
+        orderId: order.id,
+        email: order.email,
+        before,
+        after,
+      });
+    } catch (error: any) {
+      console.error("[Admin] peptides reset generation lock error:", error);
+      res.status(500).json({ error: error?.message || "Erreur reset circuit peptides" });
     }
   });
 
