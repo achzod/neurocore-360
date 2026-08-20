@@ -5857,9 +5857,13 @@ export async function registerRoutes(
   // Accepts optional skipEmail=true to generate without sending (for validation before delivery)
   // Accepts optional replaceReportId to update an existing report in-place (same URL)
   app.post("/api/admin/peptides-generate", async (req, res) => {
+    let pepOrder: any = null;
+    let replaceReportId: string | undefined;
+    let manualCircuitClaimed = false;
     if (!requireAdminAuth(req, res)) return;
     try {
-      const { email, skipEmail, replaceReportId } = req.body;
+      const { email, skipEmail, replaceReportId: requestedReplaceReportId } = req.body;
+      replaceReportId = requestedReplaceReportId;
       if (!email) { res.status(400).json({ error: "email requis" }); return; }
 
       // Get saved responses
@@ -5874,7 +5878,7 @@ export async function registerRoutes(
 
       // Find the paid order for this email up-front (needed for CAS)
       const orders = await storage.getOrdersByEmail(email);
-      let pepOrder = orders.find((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid");
+      pepOrder = orders.find((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid");
 
       // Manual admin retries are explicitly human-reviewed. If a previous
       // autogen attempt opened the persistent circuit on an undelivered order,
@@ -5932,6 +5936,30 @@ export async function registerRoutes(
           });
           return;
         }
+      }
+
+      // Claim the same generation circuit used by autogen so a manual retry
+      // blocks the cron from racing another expensive provider call mid-flight.
+      if (pepOrder && !replaceReportId && !(pepOrder.metadata as any)?.peptidesReportId) {
+        const claim = await storage.claimPeptidesGenerationAttempt(
+          pepOrder.id,
+          getPeptidesGenerationCircuitConfig(),
+        ).catch(() => null);
+        if (!claim) {
+          const fresh = await storage.getOrder(pepOrder.id).catch(() => null);
+          const circuit = evaluatePeptidesGenerationEligibility(
+            fresh?.metadata ?? pepOrder.metadata,
+            getPeptidesGenerationCircuitConfig(),
+          );
+          res.status(409).json({
+            error: "Generation peptides deja verrouillee ou non eligible",
+            orderId: pepOrder.id,
+            circuit,
+          });
+          return;
+        }
+        manualCircuitClaimed = true;
+        pepOrder = await storage.getOrder(pepOrder.id).catch(() => null) ?? pepOrder;
       }
 
       // Generate synchronously (admin endpoint = manual trigger, can wait)
@@ -6072,6 +6100,13 @@ export async function registerRoutes(
         replaced: !!replaceReportId,
       });
     } catch (error: any) {
+      if (pepOrder?.id && manualCircuitClaimed && !replaceReportId) {
+        await storage.markPeptidesGenerationNeedsReview(
+          pepOrder.id,
+          "manual_generation_failed",
+          String(error?.message || error || "unknown error"),
+        ).catch(() => false);
+      }
       console.error("[Admin] Peptides generate error:", error);
       res.status(500).json({ error: error.message || "Erreur generation" });
     }
