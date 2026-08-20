@@ -1542,7 +1542,13 @@ export async function refreshPeptauraPricingForDelivery(
   consentAccepted: boolean
 ): Promise<PeptidesReport> {
   const report = validateVialsMath(JSON.parse(JSON.stringify(sourceReport)));
-  if (consentAccepted) report.qualityVersion = "expert-standard-v1";
+  report.qualityVersion = hasPeptidesHardRedFlag(responses)
+    ? "medical-review-v1"
+    : consentAccepted
+    ? "expert-standard-v1"
+    : String(report.qualityVersion || "").toLowerCase() === "medical-review-v1"
+    ? "medical-review-v1"
+    : "expert-standard-v1";
   const context = await buildPeptauraPromptContext(responses);
   report._validationContext = buildPeptidesValidationContext(
     responses,

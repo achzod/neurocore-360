@@ -77,8 +77,8 @@ assert.match(
 );
 assert.match(
   engineSource,
-  /if \(consentAccepted\) report\.qualityVersion = "expert-standard-v1"/,
-  "Le recovery consenti ne doit pas auto-promouvoir le rapport en medical-review"
+  /export async function refreshPeptauraPricingForDelivery[\s\S]{0,500}report\.qualityVersion = hasPeptidesHardRedFlag\(responses\)[\s\S]{0,160}\? "medical-review-v1"[\s\S]{0,160}: consentAccepted[\s\S]{0,120}\? "expert-standard-v1"/,
+  "Le refresh pre-livraison doit recalculer la qualityVersion depuis les hard red flags avant toute promotion standard"
 );
 assert.match(engineSource, /PROTOCOLE OBLIGATOIRE SI TESTOSTERONE BASSE CONFIRMEE/i);
 assert.match(engineSource, /1\. Enclomiphene Citrate/);
