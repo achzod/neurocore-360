@@ -55,6 +55,7 @@ import { createPayPalOrder, capturePayPalOrder, isPayPalConfigured } from "./pay
 import { getAuthPayload, type AuthPayload } from "./auth";
 import crypto from "crypto";
 import {
+  getConfiguredOpenAIKeySource,
   OPENAI_REPORT_MODEL,
   checkAIUsageCostAlert,
   getAIUsageCostSummary,
@@ -1118,7 +1119,7 @@ export async function registerRoutes(
     checks.openai = {
       ok: isOpenAIConfigured(),
       detail: isOpenAIConfigured()
-        ? `configured , ${OPENAI_REPORT_MODEL} ready for all report engines`
+        ? `configured via ${getConfiguredOpenAIKeySource() || "unknown"} , ${OPENAI_REPORT_MODEL} ready for all report engines`
         : "OPENAI_API_KEY missing , report generation unavailable",
     };
 
@@ -2077,7 +2078,7 @@ export async function registerRoutes(
         res.status(500).json({
           status: "error",
           message: "OPENAI_API_KEY not configured",
-          config: { hasKey, model: OPENAI_REPORT_MODEL }
+          config: { hasKey, model: OPENAI_REPORT_MODEL, keySource: getConfiguredOpenAIKeySource() }
         });
         return;
       }
@@ -2094,7 +2095,7 @@ export async function registerRoutes(
         status: "success",
         message: "OpenAI Responses API is working",
         response: response.text,
-        config: { model: response.model }
+        config: { model: response.model, keySource: getConfiguredOpenAIKeySource() }
       });
     } catch (error: any) {
       console.error("[Test OpenAI] Error:", error);

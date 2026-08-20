@@ -11,6 +11,12 @@ import {
 export const OPENAI_REPORT_MODEL =
   process.env.OPENAI_REPORT_MODEL || "gpt-5.6-sol";
 
+const OPENAI_KEY_ENV_CANDIDATES = [
+  "OPENAI_API_KEY_ACTIVE",
+  "OPENAI_API_KEY_RUNTIME",
+  "OPENAI_API_KEY",
+] as const;
+
 export type OpenAIReportProfile =
   | "discovery"
   | "premium"
@@ -519,22 +525,41 @@ export async function getAIUsageCostSummary(requestedDays = 30): Promise<Record<
 }
 
 let openAIClient: OpenAI | null = null;
+let openAIClientKeySource: string | null = null;
 
 export function isOpenAIConfigured(): boolean {
-  return Boolean(process.env.OPENAI_API_KEY);
+  return Boolean(getConfiguredOpenAIKey());
+}
+
+export function getConfiguredOpenAIKey(): string {
+  for (const envKey of OPENAI_KEY_ENV_CANDIDATES) {
+    const value = String(process.env[envKey] || "").trim();
+    if (value) return value;
+  }
+  return "";
+}
+
+export function getConfiguredOpenAIKeySource(): string | null {
+  for (const envKey of OPENAI_KEY_ENV_CANDIDATES) {
+    const value = String(process.env[envKey] || "").trim();
+    if (value) return envKey;
+  }
+  return null;
 }
 
 export function getOpenAIClient(): OpenAI {
-  const apiKey = process.env.OPENAI_API_KEY || "";
+  const apiKey = getConfiguredOpenAIKey();
   if (!apiKey) {
     throw new Error("OPENAI_API_KEY missing");
   }
-  if (!openAIClient) {
+  const keySource = getConfiguredOpenAIKeySource();
+  if (!openAIClient || openAIClientKeySource !== keySource) {
     openAIClient = new OpenAI({
       apiKey,
       maxRetries: 2,
       timeout: 15 * 60 * 1000,
     });
+    openAIClientKeySource = keySource;
   }
   return openAIClient;
 }

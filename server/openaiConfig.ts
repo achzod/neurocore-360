@@ -1,4 +1,4 @@
-import { OPENAI_REPORT_MODEL } from "./openaiResponses";
+import { getConfiguredOpenAIKey, OPENAI_REPORT_MODEL } from "./openaiResponses";
 
 /**
  * Configuration OpenAI commune à tous les moteurs de rapports.
@@ -6,7 +6,7 @@ import { OPENAI_REPORT_MODEL } from "./openaiResponses";
  */
 
 export const OPENAI_CONFIG = {
-  OPENAI_API_KEY: process.env.OPENAI_API_KEY || "",
+  OPENAI_API_KEY: getConfiguredOpenAIKey(),
   OPENAI_MODEL: OPENAI_REPORT_MODEL,
   OPENAI_MAX_TOKENS: 18000,
   OPENAI_MAX_RETRIES: Number(process.env.OPENAI_MAX_RETRIES ?? "3"),
