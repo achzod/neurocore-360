@@ -156,6 +156,23 @@ export interface BurnoutReportRecord {
   createdAt: Date | string;
 }
 
+function normalizeBurnoutProgressState(currentSection: number, totalSections?: number) {
+  const safeTotalSections = Math.max(1, totalSections ?? 6);
+  const requestedSection = Number.isFinite(currentSection) ? Math.trunc(currentSection) : 0;
+  const clampedSection = Math.min(Math.max(0, requestedSection), safeTotalSections - 1);
+  const completed = requestedSection >= safeTotalSections - 1;
+  const percentComplete = completed
+    ? 100
+    : Math.round(((clampedSection + 1) / safeTotalSections) * 100);
+
+  return {
+    totalSections: safeTotalSections,
+    currentSection: clampedSection,
+    percentComplete,
+    status: completed ? "COMPLETED" : "IN_PROGRESS" as AuditStatusEnum,
+  };
+}
+
 export interface BloodReportRecord {
   id: string;
   email: string;
@@ -701,17 +718,16 @@ export class MemStorage implements IStorage {
 
   async saveBurnoutProgress(input: SaveBurnoutProgressInput): Promise<BurnoutProgress> {
     const existing = this.burnoutProgress.get(input.email);
-    const totalSections = input.totalSections ?? 6;
-    const percentComplete = Math.round(((input.currentSection + 1) / totalSections) * 100);
+    const normalized = normalizeBurnoutProgressState(input.currentSection, input.totalSections);
 
     const progress: BurnoutProgress = {
       id: existing?.id || randomUUID(),
       email: input.email,
-      currentSection: input.currentSection,
-      totalSections,
-      percentComplete,
+      currentSection: normalized.currentSection,
+      totalSections: normalized.totalSections,
+      percentComplete: normalized.percentComplete,
       responses: input.responses,
-      status: input.currentSection >= totalSections - 1 ? "COMPLETED" : "IN_PROGRESS",
+      status: normalized.status,
       startedAt: existing?.startedAt || new Date(),
       lastActivityAt: new Date(),
     };
@@ -2269,19 +2285,17 @@ export class PgStorage implements IStorage {
   async saveBurnoutProgress(input: SaveBurnoutProgressInput): Promise<BurnoutProgress> {
     await this.ensureBurnoutProgressTable();
     const existing = await this.getBurnoutProgress(input.email);
-    const totalSections = input.totalSections ?? 6;
-    const percentComplete = Math.round(((input.currentSection + 1) / totalSections) * 100);
-    const status: AuditStatusEnum = input.currentSection >= totalSections - 1 ? "COMPLETED" : "IN_PROGRESS";
+    const normalized = normalizeBurnoutProgressState(input.currentSection, input.totalSections);
 
     if (existing) {
       const result = await pool.query(
         `UPDATE burnout_progress SET current_section = $1, total_sections = $2, percent_complete = $3, responses = $4, status = $5, last_activity_at = NOW() WHERE email = $6 RETURNING *`,
         [
-          input.currentSection.toString(),
-          totalSections.toString(),
-          percentComplete.toString(),
+          normalized.currentSection.toString(),
+          normalized.totalSections.toString(),
+          normalized.percentComplete.toString(),
           JSON.stringify(input.responses || {}),
-          status,
+          normalized.status,
           input.email,
         ]
       );
@@ -2306,11 +2320,11 @@ export class PgStorage implements IStorage {
       [
         id,
         input.email,
-        input.currentSection.toString(),
-        totalSections.toString(),
-        percentComplete.toString(),
+        normalized.currentSection.toString(),
+        normalized.totalSections.toString(),
+        normalized.percentComplete.toString(),
         JSON.stringify(input.responses || {}),
-        status,
+        normalized.status,
       ]
     );
     const row = result.rows[0];
