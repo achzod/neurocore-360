@@ -1209,11 +1209,12 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
       errors.push(`[${snapshot.peptide || "?"}] quantite prix live ${snapshot.requestedVials} differente de vialsNeeded ${declaredQty}`);
     }
     const declaredPriceTotal = String(peptide?.priceEstimate || "")
-      .match(/\btotal\s*([$£])(\d+(?:[.,]\d+)?)/i);
-    const declaredPrice = declaredPriceTotal
-      ? Number(declaredPriceTotal[2].replace(",", "."))
+      .match(/(?:\btotal\b\s*[:=]?\s*([$£])\s*(\d+(?:[.,]\d+)?)|\b([$£])\s*(\d+(?:[.,]\d+)?)\s*\btotal\b)/i);
+    const declaredCurrency = declaredPriceTotal?.[1] || declaredPriceTotal?.[3];
+    const declaredPriceRaw = declaredPriceTotal?.[2] || declaredPriceTotal?.[4];
+    const declaredPrice = declaredPriceRaw
+      ? Number(declaredPriceRaw.replace(",", "."))
       : null;
-    const declaredCurrency = declaredPriceTotal?.[1];
     const livePrice = declaredCurrency === "£"
       ? Number(snapshot.totalPriceGbp)
       : Number(snapshot.totalPriceUsd);

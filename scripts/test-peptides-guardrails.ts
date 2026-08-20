@@ -828,6 +828,34 @@ validLowTestosteroneStack._peptauraLiveSync.listingSnapshots.push(
 const validLowTestosteroneAudit = validatePeptidesReport(validLowTestosteroneStack);
 assert.equal(validLowTestosteroneAudit.ok, true, validLowTestosteroneAudit.errors.join("\n"));
 
+const bacWaterTrailingTotal = structuredClone(validLowTestosteroneStack) as any;
+bacWaterTrailingTotal.peptides.push({
+  name: "BAC Water",
+  route: "Support",
+  dosage: "5 ml",
+  timing: "Avoir 1 flacon en reserve",
+  purpose: "Solvant pour reconstitution",
+  purchaseUrl: "https://www.peptaura.com/catalog/BAC-Water",
+  vialsNeeded: "1 flacon de 5 ml",
+  priceEstimate: "Environ $3.01 par flacon (Lumira), $3.01 total",
+  cycleDuration: "8 semaines",
+  reconstitution: "A utiliser uniquement comme support de reconstitution",
+  whyThisPeptide: "BAC Water couvre le support de reconstitution sans modifier la logique du stack principal.",
+});
+bacWaterTrailingTotal._peptauraLiveSync.listingSnapshots.push({
+  peptide: "BAC Water",
+  fetchedAt: now,
+  supplier: "Lumira",
+  dosage: "5ml",
+  requestedVials: 1,
+  deliveredVials: 1,
+  boxSize: 1,
+  packageCount: 1,
+  totalPriceUsd: 3.01,
+});
+const bacWaterTrailingTotalAudit = validatePeptidesReport(bacWaterTrailingTotal);
+assert.equal(bacWaterTrailingTotalAudit.ok, true, bacWaterTrailingTotalAudit.errors.join("\n"));
+
 const wrongEnclomipheneSource = structuredClone(validLowTestosteroneStack);
 wrongEnclomipheneSource.peptides.find((entry: any) => /enclomiphene/i.test(entry.name)).purchaseUrl =
   "https://www.peptaura.com/catalog/Enclomiphene";
