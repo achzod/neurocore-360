@@ -581,6 +581,53 @@ function extractPriceQty(priceEstimate: string | undefined): number | null {
   return m ? parseInt(m[1], 10) : null;
 }
 
+function extractDeclaredPriceTotal(
+  priceEstimate: string | undefined,
+  requestedQty: number | null | undefined,
+): { currency: "$" | "£"; amount: number } | null {
+  const raw = String(priceEstimate || "");
+  if (!raw) return null;
+  const explicitTotal = raw.match(
+    /(?:\btotal\b\s*[:=]?\s*([$£])\s*(\d+(?:[.,]\d+)?)|\b([$£])\s*(\d+(?:[.,]\d+)?)\s*\btotal\b)/i,
+  );
+  const explicitCurrency = explicitTotal?.[1] || explicitTotal?.[3];
+  const explicitAmount = explicitTotal?.[2] || explicitTotal?.[4];
+  if (
+    (explicitCurrency === "$" || explicitCurrency === "£")
+    && explicitAmount
+  ) {
+    return {
+      currency: explicitCurrency,
+      amount: Number(explicitAmount.replace(",", ".")),
+    };
+  }
+
+  const amounts = [...raw.matchAll(/([$£])\s*(\d+(?:[.,]\d+)?)/g)];
+  if (amounts.length >= 2) {
+    const last = amounts[amounts.length - 1];
+    const currency = last[1];
+    if (currency === "$" || currency === "£") {
+      return {
+        currency,
+        amount: Number(last[2].replace(",", ".")),
+      };
+    }
+  }
+
+  if (amounts.length === 1 && Number(requestedQty || 0) === 1) {
+    const only = amounts[0];
+    const currency = only[1];
+    if (currency === "$" || currency === "£") {
+      return {
+        currency,
+        amount: Number(only[2].replace(",", ".")),
+      };
+    }
+  }
+
+  return null;
+}
+
 export function extractTotalMgFromVials(vialsNeeded: string | undefined): number | null {
   if (!vialsNeeded) return null;
   // Prefer the actual capacity (qty × vialMg) over the AI's "total ~Xmg"
@@ -1208,13 +1255,12 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
     if (declaredQty != null && snapshot.requestedVials != null && declaredQty !== snapshot.requestedVials) {
       errors.push(`[${snapshot.peptide || "?"}] quantite prix live ${snapshot.requestedVials} differente de vialsNeeded ${declaredQty}`);
     }
-    const declaredPriceTotal = String(peptide?.priceEstimate || "")
-      .match(/(?:\btotal\b\s*[:=]?\s*([$£])\s*(\d+(?:[.,]\d+)?)|\b([$£])\s*(\d+(?:[.,]\d+)?)\s*\btotal\b)/i);
-    const declaredCurrency = declaredPriceTotal?.[1] || declaredPriceTotal?.[3];
-    const declaredPriceRaw = declaredPriceTotal?.[2] || declaredPriceTotal?.[4];
-    const declaredPrice = declaredPriceRaw
-      ? Number(declaredPriceRaw.replace(",", "."))
-      : null;
+    const declaredPriceTotal = extractDeclaredPriceTotal(
+      peptide?.priceEstimate,
+      snapshot.requestedVials,
+    );
+    const declaredCurrency = declaredPriceTotal?.currency;
+    const declaredPrice = declaredPriceTotal?.amount ?? null;
     const livePrice = declaredCurrency === "£"
       ? Number(snapshot.totalPriceGbp)
       : Number(snapshot.totalPriceUsd);
