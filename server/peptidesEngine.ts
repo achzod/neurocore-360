@@ -1150,10 +1150,11 @@ function buildLivePriceEstimate(pep: PeptideItem, listing: PeptauraLiveListing, 
   const total = Math.round(packagePrice * packageCount * 100) / 100;
   const eur = Math.round(total * 0.92);
   const supplier = listing.supplierDisplayName || listing.supplier;
+  const effectiveUnit = Math.round((total / Math.max(qty, 1)) * 100) / 100;
   if (listing.boxSize > 1) {
-    return `Environ $${packagePrice.toFixed(2)} la boite de ${listing.boxSize} vials (${listing.dosage}, ${supplier}), x ${packageCount} boite${packageCount > 1 ? "s" : ""}, ${deliveredVials} vials recus, prix total $${total.toFixed(2)} (conversion indicative: ${eur} euros)`;
+    return `~$${effectiveUnit.toFixed(2)}/vial effectif × ${qty} vial${qty > 1 ? "s" : ""} = $${total.toFixed(2)} total (~${eur}€), commande reelle ${packageCount} boite${packageCount > 1 ? "s" : ""} de ${listing.boxSize} vials (${listing.dosage}, ${supplier}), ${deliveredVials} vials recus`;
   }
-  return `Environ $${packagePrice.toFixed(2)} par vial (${listing.dosage}, ${supplier}), x ${qty} vial${qty > 1 ? "s" : ""}, prix total $${total.toFixed(2)} (conversion indicative: ${eur} euros)`;
+  return `~$${packagePrice.toFixed(2)}/vial × ${qty} vial${qty > 1 ? "s" : ""} = $${total.toFixed(2)} total (~${eur}€) (${listing.dosage}, ${supplier})`;
 }
 
 function parseListingMl(value: string): number | null {
@@ -1369,10 +1370,12 @@ async function applyLivePeptauraPricing(
       const totalPrice = offerTotalPrice(bacListing, finalBottleQty);
       const supplier =
         bacListing.supplierDisplayName || bacListing.supplier;
+      const effectiveBottlePrice = Math.round((totalPrice / Math.max(finalBottleQty, 1)) * 100) / 100;
       bacWaterLine =
         `BAC Water: besoin calcule ${bacWaterNeedMl.toFixed(1)} ml, ` +
-        `${finalBottleQty} flacon${finalBottleQty > 1 ? "s" : ""} de ${bottleMl}ml. ` +
-        `Environ $${packagePrice.toFixed(2)} par flacon (${supplier}), prix total $${totalPrice.toFixed(2)}. ` +
+        `${finalBottleQty} vial${finalBottleQty > 1 ? "s" : ""} de ${bottleMl}ml. ` +
+        `~$${effectiveBottlePrice.toFixed(2)}/vial × ${finalBottleQty} vial${finalBottleQty > 1 ? "s" : ""} = $${totalPrice.toFixed(2)} total (${supplier}). ` +
+        `Commande reelle: ${packageCount} boite${packageCount > 1 ? "s" : ""}, ${deliveredBottles} vials recus. ` +
         `${peptauraProductUrl(bacSlug)}`;
       liveNotes.push(`BAC Water: ${bacListing.dosage} via ${supplier}`);
       listingSnapshots.push({
