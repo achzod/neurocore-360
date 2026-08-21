@@ -127,7 +127,7 @@ const MAX_PEPTAURA_DELIVERY_AGE_MS = Number(
 const PRIMARY_GOAL_PATTERNS: Record<string, RegExp> = {
   recovery: /\b(?:recuperation|guerison|tendon|articulation|blessure)\b/i,
   "gh-antiaging": /\b(?:gh|hormone de croissance|anti[ -]?age|longevite)\b/i,
-  fatloss: /\b(?:perte de (?:gras|graisse|masse grasse)|fat loss|seche|recomposition)\b/i,
+  fatloss: /\b(?:perte de (?:gras|graisse|masse grasse|poids)|perdre (?:du poids|du gras|de la graisse)|maigrir|amaigrissement|fat loss|seche|recomposition|appetit|sati[ée]t[ée]|fringales?)\b/i,
   sleep: /\b(?:sommeil|endormissement|reveils? nocturnes?|nuit)\b/i,
   cognitive: /\b(?:cognitif|focus|memoire|concentration|brain fog)\b/i,
   libido: /\b(?:libido|sexuel|erection)\b/i,

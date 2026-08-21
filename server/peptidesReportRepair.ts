@@ -109,6 +109,130 @@ export function pruneUnintegratedBonusPeptides(
   return report;
 }
 
+function clientRequestedPeptideNames(responses: Record<string, unknown>): string {
+  return [
+    responses.pep_requested_peptides,
+    responses.peptidesDemandes,
+    responses.requestedPeptides,
+    responses.pep_requested,
+  ]
+    .map((value) => String(value || ""))
+    .filter(Boolean)
+    .join("\n");
+}
+
+function isClientRequestedPeptide(
+  peptideName: string,
+  responses: Record<string, unknown>
+): boolean {
+  const requested = clientRequestedPeptideNames(responses);
+  return Boolean(requested) && mentionsPeptide(requested, peptideName);
+}
+
+function peptideNameFromPeptauraFailure(failure: string): string {
+  return sanitizeClientFacingText(String(failure || "").split(":")[0] || "");
+}
+
+function isUnavailablePeptauraFailure(failure: string): boolean {
+  return /\b(?:aucune offre en stock|ne couvre le besoin|surstock|livraison indisponible|stock indisponible)\b/i.test(
+    sanitizeClientFacingText(failure)
+  );
+}
+
+function removeOperationalLinesForPeptides(value: string, peptideNames: string[]): string {
+  const operationalSignal =
+    /\b(?:dose|dosage|inject|injection|sous cutan|vial|vials|flacon|flacons|commande|commander|acheter|achat|matin|soir|coucher|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|protocole|cycle)\b|\b\d+(?:[.,]\d+)?\s*(?:mcg|ug|mg|ml|iu|ui)\b|(?:x|×)\s*\d+\b/i;
+  return String(value || "")
+    .split(/\n+/)
+    .flatMap((line) => line.split(/\s*\|\s*/))
+    .map((line) => sanitizeClientFacingText(line))
+    .filter(Boolean)
+    .filter((line) => {
+      const mentionsRemoved = peptideNames.some((name) => mentionsPeptide(line, name));
+      return !mentionsRemoved || !operationalSignal.test(line);
+    })
+    .join("\n");
+}
+
+function removeSectionOperationalMentions(
+  report: RepairableReport,
+  peptideNames: string[]
+): void {
+  const operationalSignal =
+    /\b(?:dose|dosage|inject|injection|sous cutan|vial|vials|flacon|flacons|commande|commander|acheter|achat|matin|soir|coucher|protocole|cycle|stack|retenu|retenue|ajouter|j'ajouterais)\b|\b\d+(?:[.,]\d+)?\s*(?:mcg|ug|mg|ml|iu|ui)\b/i;
+
+  for (const section of report.sections || []) {
+    section.content = sanitizeClientFacingText(
+      String(section.content || "")
+        .split(/\n{2,}/)
+        .map((paragraph) => paragraph.trim())
+        .filter(Boolean)
+        .filter((paragraph) => {
+          const mentionsRemoved = peptideNames.some((name) =>
+            mentionsPeptide(paragraph, name)
+          );
+          return !mentionsRemoved || !operationalSignal.test(paragraph);
+        })
+        .join("\n\n")
+    );
+  }
+}
+
+function pruneUnavailableUnrequestedPeptides(
+  report: RepairableReport,
+  responses: Record<string, unknown>
+): void {
+  const failures = report._peptauraLiveSync?.failures || [];
+  const unavailableNames = failures
+    .filter(isUnavailablePeptauraFailure)
+    .map(peptideNameFromPeptauraFailure)
+    .filter(Boolean)
+    .filter((name) => !isClientRequestedPeptide(name, responses));
+
+  if (unavailableNames.length === 0 || (report.peptides || []).length === 0) return;
+
+  const removablePeptides = (report.peptides || []).filter((peptide) =>
+    unavailableNames.some((name) => mentionsPeptide(peptide.name || "", name))
+  );
+  if (removablePeptides.length === 0) return;
+
+  // Do not silently turn a paid protocol into a one-peptide report. In that
+  // case the candidate must fail and the model must regenerate a valid stack.
+  if ((report.peptides || []).length - removablePeptides.length < 2) return;
+
+  const removedNames = removablePeptides.map((peptide) => peptide.name || "");
+  report.peptides = (report.peptides || []).filter(
+    (peptide) => !removedNames.some((name) => mentionsPeptide(peptide.name || "", name))
+  );
+  report.weeklySchedule = removeOperationalLinesForPeptides(
+    report.weeklySchedule || "",
+    removedNames
+  );
+  report.shoppingList = removeOperationalLinesForPeptides(
+    report.shoppingList || "",
+    removedNames
+  );
+  removeSectionOperationalMentions(report, removedNames);
+
+  if (report._peptauraLiveSync) {
+    report._peptauraLiveSync.failures = failures.filter((failure) => {
+      const failureName = peptideNameFromPeptauraFailure(failure);
+      return !removedNames.some((name) => mentionsPeptide(failureName, name));
+    });
+    report._peptauraLiveSync.applied = (report._peptauraLiveSync.applied || []).filter(
+      (name) => !removedNames.some((removed) => mentionsPeptide(String(name || ""), removed))
+    );
+    report._peptauraLiveSync.listingSnapshots = (
+      report._peptauraLiveSync.listingSnapshots || []
+    ).filter(
+      (snapshot) =>
+        !removedNames.some((name) =>
+          mentionsPeptide(String(snapshot.peptide || ""), name)
+        )
+    );
+  }
+}
+
 function isTruthy(value: unknown): boolean {
   if (typeof value === "boolean") return value;
   if (typeof value === "string") {
@@ -213,7 +337,7 @@ type RationaleProfileFact = {
 const RATIONALE_GOAL_LABELS: Record<string, { text: string; pattern: RegExp }> = {
   recovery: { text: "ton objectif principal est la recuperation", pattern: /\b(?:recuperation|guerison|tendon|articulation|blessure)\b/i },
   "gh-antiaging": { text: "ton objectif principal porte sur l'axe GH et l'anti-age", pattern: /\b(?:gh|hormone de croissance|anti[ -]?age|longevite)\b/i },
-  fatloss: { text: "ton objectif principal est la perte de graisse", pattern: /\b(?:perte de (?:gras|graisse|masse grasse)|fat loss|seche|recomposition)\b/i },
+  fatloss: { text: "ton objectif principal est la perte de graisse", pattern: /\b(?:perte de (?:gras|graisse|masse grasse|poids)|perdre (?:du poids|du gras|de la graisse)|maigrir|amaigrissement|fat loss|seche|recomposition|appetit|sati[ée]t[ée]|fringales?)\b/i },
   sleep: { text: "ton objectif principal est le sommeil", pattern: /\b(?:sommeil|endormissement|reveils? nocturnes?|nuit)\b/i },
   cognitive: { text: "ton objectif principal est la performance cognitive", pattern: /\b(?:cognitif|focus|memoire|concentration|brain fog)\b/i },
   libido: { text: "ton objectif principal concerne la libido", pattern: /\b(?:libido|sexuel|erection)\b/i },
@@ -1044,6 +1168,7 @@ function repairStandardReportContent(
   normalizeUnsupportedStandardClaims(report);
   normalizeTierCreditClaims(report, tier);
   removeUnsupportedDescentNarrative(report);
+  pruneUnavailableUnrequestedPeptides(report, responses);
   clampManifestOverorders(report);
   normalizeOperationalPlaceholders(report);
   synchronizeReconstitutionNarrative(report, firstName);

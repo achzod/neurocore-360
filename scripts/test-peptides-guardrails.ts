@@ -37,6 +37,9 @@ assert.doesNotMatch(engineSource, /PEPTIDES_OPENAI_MAX_OUTPUT_TOKENS \|\| 48_000
 assert.match(engineSource, /entre 30000 et 38000 caracteres au total/);
 assert.match(engineSource, /Candidate rejected[\s\S]{0,600}strict full regeneration/);
 assert.match(engineSource, /Provider failure is terminal, duplicate paid generation blocked/);
+assert.doesNotMatch(engineSource, /TOUJOURS penser à inclure un peptide orienté prise de masse musculaire/);
+assert.doesNotMatch(engineSource, /Tu dois TOUJOURS inclure un peptide BONUS/);
+assert.match(engineSource, /Interdiction d'ajouter CJC-1295 avec DAC/);
 assert.doesNotMatch(engineSource, /@anthropic-ai\/sdk|ANTHROPIC_API_KEY|callClaudeForPeptides/);
 assert.match(purchasePlanSource, /Calcul conditionnel pour les deux volumes usuels de 1 ml et 2 ml/);
 assert.doesNotMatch(engineSource, /confirmation ecrite du volume par le fabricant du lot ou un professionnel qualifie/);
@@ -259,6 +262,18 @@ personalizedReport.peptides[0].timing = "Jour fixe, 1 fois par semaine.";
 personalizedReport.sections[2].content += " LUNDI: injection au dosage de la fiche. Les autres jours sont des jours de repos hors protocole.";
 const personalizedAudit = validatePeptidesReport(personalizedReport);
 assert.equal(personalizedAudit.ok, true, personalizedAudit.errors.join("\n"));
+
+const fatlossSynonymReport = structuredClone(personalizedReport) as any;
+fatlossSynonymReport.sections[3].content = fatlossSynonymReport.sections[3].content.replace(
+  /ton objectif principal est la perte de graisse/i,
+  "ton objectif principal est la perte de poids avec une meilleure maitrise de l'appetit"
+);
+const fatlossSynonymAudit = validatePeptidesReport(fatlossSynonymReport);
+assert.equal(
+  fatlossSynonymAudit.ok,
+  true,
+  fatlossSynonymAudit.errors.join("\n")
+);
 
 const genericProfileFailure = structuredClone(personalizedReport) as any;
 genericProfileFailure.sections[3].content = genericProfileFailure.sections[3].content
@@ -908,6 +923,50 @@ assert.equal(
   bacWaterSnapshotResolvedFromShoppingListAudit.ok,
   true,
   bacWaterSnapshotResolvedFromShoppingListAudit.errors.join("\n")
+);
+
+const unavailableUnrequestedBonus = structuredClone(validLowTestosteroneStack) as any;
+unavailableUnrequestedBonus.peptides.push({
+  name: "CJC-1295 avec DAC",
+  route: "Sous cutanee",
+  dosage: "2 mg par semaine",
+  timing: "Lundi soir",
+  purpose: "BONUS masse musculaire non demande",
+  purchaseUrl: "https://www.peptaura.com/catalog/CJC-1295-with-DAC",
+  vialsNeeded: "6 vials de 2mg pour 12 semaines",
+  priceEstimate: "Environ $27.30 par vial, 6 vials, total $163.80",
+  cycleDuration: "12 semaines",
+  reconstitution: "Vial 2mg + 2ml BAC water = 1mg/ml",
+  whyThisPeptide: "Bonus ajoute automatiquement sans demande explicite du client.",
+});
+unavailableUnrequestedBonus.weeklySchedule += " | LUNDI SOIR: CJC-1295 avec DAC 2 mg";
+unavailableUnrequestedBonus.shoppingList +=
+  "\nCJC-1295 avec DAC: 6 vials de 2mg, total $163.80. https://www.peptaura.com/catalog/CJC-1295-with-DAC";
+unavailableUnrequestedBonus._peptauraLiveSync.failures = [
+  "CJC-1295 avec DAC: aucune offre en stock ne couvre le besoin de 12.00 mg sans plus de 20 % de surstock",
+];
+const unavailableBonusRepaired = repairPeptidesReportContent(
+  unavailableUnrequestedBonus,
+  {
+    pep_name: "Bilel",
+    pep_requested_peptides: "Retatrutide",
+    pep_primary_goal: "fatloss",
+  },
+  "coached"
+) as any;
+assert.equal(
+  unavailableBonusRepaired.peptides.some((entry: any) => /cjc/i.test(entry.name)),
+  false,
+  "Un CJC avec DAC non demande et non achetable doit etre retire du rapport final"
+);
+assert.doesNotMatch(unavailableBonusRepaired.weeklySchedule, /CJC-1295 avec DAC/i);
+assert.doesNotMatch(unavailableBonusRepaired.shoppingList, /CJC-1295 avec DAC/i);
+assert.deepEqual(unavailableBonusRepaired._peptauraLiveSync.failures, []);
+const unavailableBonusAudit = validatePeptidesReport(unavailableBonusRepaired);
+assert.equal(
+  unavailableBonusAudit.ok,
+  true,
+  unavailableBonusAudit.errors.join("\n")
 );
 
 const wrongEnclomipheneSource = structuredClone(validLowTestosteroneStack);
