@@ -6539,6 +6539,133 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/admin/orders/:id/peptides-deliver-report", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const order = await storage.getOrder(req.params.id);
+      if (!order || order.productType !== "PEPTIDES_ENGINE" || order.status !== "paid") {
+        res.status(404).json({ success: false, error: "Commande Peptides Engine payee introuvable" });
+        return;
+      }
+
+      const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
+      const reportId = String((req.body as any)?.reportId || meta.peptidesReportId || "").trim();
+      const resetFailedDelivery = (req.body as any)?.resetFailedDelivery === true;
+      if (!reportId || String(meta.peptidesReportId || "") !== reportId) {
+        res.status(400).json({
+          success: false,
+          error: "reportId manquant ou different du reportId lie a la commande",
+          linkedReportId: meta.peptidesReportId || null,
+        });
+        return;
+      }
+
+      const existing = await storage.getBurnoutReport(reportId);
+      if (!existing || !String(existing.email ?? "").startsWith("peptides::")) {
+        res.status(404).json({ success: false, error: "Rapport Peptides introuvable", reportId });
+        return;
+      }
+
+      if (resetFailedDelivery) {
+        const reset = await storage.resetPeptidesReportDeliveryCircuit(order.id, reportId);
+        if (!reset) {
+          res.status(409).json({
+            success: false,
+            error: "Reset delivery refuse (deja accepte, report different ou commande non eligible)",
+            orderId: order.id,
+            reportId,
+          });
+          return;
+        }
+        await storage.setOrderMetadataKey(
+          order.id,
+          "peptidesDeliveryResetReason",
+          String((req.body as any)?.reason || "admin_retry_after_provider_fix").slice(0, 240),
+        ).catch(() => {});
+      } else if (Number(meta.peptidesDeliveryAttempts || 0) >= 3) {
+        res.status(409).json({
+          success: false,
+          error: "Circuit livraison epuise; relance avec resetFailedDelivery=true apres verification humaine",
+          orderId: order.id,
+          reportId,
+          deliveryAttempts: meta.peptidesDeliveryAttempts,
+          deliveryState: meta.peptidesDeliveryState || null,
+        });
+        return;
+      }
+
+      let report = existing.report as any;
+      const pricingResponses = (
+        (existing as any)?.responses
+        || meta.peptidesResponses
+        || {}
+      ) as Record<string, unknown>;
+      if (Object.keys(pricingResponses).length < 3) {
+        res.status(422).json({
+          success: false,
+          error: "Reponses client manquantes pour verifier le rapport avant livraison",
+          orderId: order.id,
+          reportId,
+        });
+        return;
+      }
+
+      report = await refreshPeptauraPricingForDelivery(
+        JSON.parse(JSON.stringify(report)),
+        pricingResponses,
+        String(meta.peptidesTier || report?.tier || "solo"),
+        hasValidPeptidesConsent(meta.peptidesEngineConsent),
+      );
+      const { validatePeptidesReport } = await import("./peptidesReportValidator");
+      const validation = validatePeptidesReport(report);
+      if (!validation.ok) {
+        res.status(422).json({ success: false, orderId: order.id, reportId, validation });
+        return;
+      }
+      await storage.updateBurnoutReport(reportId, report).catch(() => {});
+
+      const baseUrl = getBaseUrl();
+      const freshOrder = await storage.getOrder(order.id).catch(() => null);
+      const delivered = await deliverPeptidesReportOnce({
+        order: freshOrder || order,
+        reportId,
+        report,
+        promoText: buildPeptidesBloodCreditsBlock(meta.peptidesTier ?? report?.tier, `${baseUrl}/blood-dashboard`),
+        coachingText: buildPeptidesCoachingDeductionBlock(meta.peptidesTier ?? null),
+      });
+      const after = await storage.getOrder(order.id).catch(() => null);
+      if (!delivered) {
+        res.status(409).json({
+          success: false,
+          orderId: order.id,
+          reportId,
+          validation,
+          delivery: {
+            state: (after?.metadata as any)?.peptidesDeliveryState || null,
+            attempts: (after?.metadata as any)?.peptidesDeliveryAttempts || null,
+          },
+        });
+        return;
+      }
+
+      res.json({
+        success: true,
+        orderId: order.id,
+        email: order.email,
+        reportId,
+        validation,
+        delivery: {
+          state: (after?.metadata as any)?.peptidesDeliveryState || "ACCEPTED",
+          attempts: (after?.metadata as any)?.peptidesDeliveryAttempts || null,
+          completedAt: (after?.metadata as any)?.peptidesDeliveryCompletedAt || null,
+        },
+      });
+    } catch (error: any) {
+      console.error("[Admin Peptides Deliver] Error:", error);
+      res.status(500).json({ success: false, error: error?.message || "Erreur livraison peptides" });
+    }
+  });
+
   app.post("/api/admin/peptides/test-generate", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {

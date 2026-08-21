@@ -50,6 +50,21 @@ test("report delivery claim is bound to the linked artifact and single-writer", 
   assert.equal(await storage.claimPeptidesReportDelivery(order.id, reportId), false);
 });
 
+test("admin reset reopens exhausted peptides delivery circuit for the linked report only", async () => {
+  const reportId = "report-retry";
+  const { storage, order } = await paidPeptidesOrder({ peptidesReportId: reportId });
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    assert.equal(await storage.claimPeptidesReportDelivery(order.id, reportId), true);
+    await storage.finalizePeptidesReportDelivery(order.id, reportId, "FAILED");
+  }
+
+  assert.equal(await storage.claimPeptidesReportDelivery(order.id, reportId), false);
+  assert.equal(await storage.resetPeptidesReportDeliveryCircuit(order.id, "report-old"), false);
+  assert.equal(await storage.resetPeptidesReportDeliveryCircuit(order.id, reportId), true);
+  assert.equal(await storage.claimPeptidesReportDelivery(order.id, reportId), true);
+});
+
 test("production flow separates payment confirmation from provider generation", () => {
   const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
   const confirmation = routes.indexOf("await ensurePeptidesOrderConfirmation(order)");
@@ -63,6 +78,8 @@ test("production flow separates payment confirmation from provider generation", 
   assert.match(routes, /claimPeptidesGenerationAttempt\(/);
   assert.match(routes, /resetPeptidesGenerationCircuit\(/);
   assert.match(routes, /\/api\/admin\/orders\/:id\/peptides-reset-generation-lock/);
+  assert.match(routes, /\/api\/admin\/orders\/:id\/peptides-deliver-report/);
+  assert.match(routes, /resetPeptidesReportDeliveryCircuit\(/);
   assert.match(routes, /maxCandidates:\s*1/);
   assert.match(routes, /providerRetries:\s*1/);
   assert.match(routes, /deliverPeptidesReportOnce\(/);

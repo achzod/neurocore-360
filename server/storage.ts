@@ -317,6 +317,7 @@ export interface IStorage {
    * an in-place replacement cannot accidentally authorize an older artifact. */
   claimPeptidesReportDelivery(orderId: string, reportId: string, leaseMs?: number): Promise<boolean>;
   finalizePeptidesReportDelivery(orderId: string, reportId: string, state: "ACCEPTED" | "FAILED" | "UNKNOWN"): Promise<void>;
+  resetPeptidesReportDeliveryCircuit(orderId: string, reportId: string): Promise<boolean>;
   /** Returns true if a blood analysis HTML email has already been tracked for this report (audit_id) */
   hasBloodAnalysisEmailBeenSentForReport(reportId: string): Promise<boolean>;
   /** Returns true if a blood analysis HTML email was sent to this recipient within the last N hours */
@@ -1241,6 +1242,23 @@ export class MemStorage implements IStorage {
       peptidesDeliveryLeaseUntil: "",
       peptidesDeliveryCompletedAt: new Date().toISOString(),
     } as any;
+  }
+
+  async resetPeptidesReportDeliveryCircuit(orderId: string, reportId: string): Promise<boolean> {
+    const order = this.memOrders.get(orderId);
+    if (!order || order.productType !== "PEPTIDES_ENGINE" || order.status !== "paid") return false;
+    const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
+    if (String(meta.peptidesReportId || "") !== reportId) return false;
+    if (["ACCEPTED", "UNKNOWN"].includes(String(meta.peptidesDeliveryState || "").toUpperCase())) return false;
+    order.metadata = {
+      ...meta,
+      peptidesDeliveryState: "PENDING",
+      peptidesDeliveryReportId: reportId,
+      peptidesDeliveryAttempts: 0,
+      peptidesDeliveryLeaseUntil: "",
+      peptidesDeliveryResetAt: new Date().toISOString(),
+    } as any;
+    return true;
   }
 
   async hasBloodAnalysisEmailBeenSentForReport(reportId: string): Promise<boolean> {
@@ -3233,6 +3251,29 @@ export class PgStorage implements IStorage {
           AND COALESCE(metadata->>'peptidesReportId', '') = $2::text`,
       [state, reportId, orderId],
     );
+  }
+
+  async resetPeptidesReportDeliveryCircuit(orderId: string, reportId: string): Promise<boolean> {
+    await this.ensureOrdersTableCreated();
+    const result = await pool.query(
+      `UPDATE orders
+          SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
+                'peptidesDeliveryState', 'PENDING',
+                'peptidesDeliveryReportId', $1::text,
+                'peptidesDeliveryAttempts', 0,
+                'peptidesDeliveryLeaseUntil', '',
+                'peptidesDeliveryResetAt', NOW()::text
+              ),
+              updated_at = NOW()
+        WHERE id = $2
+          AND product_type = 'PEPTIDES_ENGINE'
+          AND status = 'paid'
+          AND COALESCE(metadata->>'peptidesReportId', '') = $1::text
+          AND COALESCE(metadata->>'peptidesDeliveryState', 'PENDING') NOT IN ('ACCEPTED', 'UNKNOWN')
+      RETURNING id`,
+      [reportId, orderId],
+    );
+    return (result.rowCount ?? 0) > 0;
   }
 
   async hasBloodAnalysisEmailBeenSentForReport(reportId: string): Promise<boolean> {
