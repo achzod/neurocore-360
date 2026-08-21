@@ -479,6 +479,45 @@ const repetitionAudit = validatePeptidesReport(repetitionFailure);
 assert.equal(repetitionAudit.ok, false);
 assert.match(repetitionAudit.errors.join("\n"), /phrases repetees detectees/);
 
+const repeatedRestCalendar = structuredClone(personalizedReport) as any;
+repeatedRestCalendar.weeklySchedule = [
+  "LUNDI: Retatrutide au dosage de la fiche",
+  "Du MARDI au DIMANCHE: aucune injection, jour de repos hors protocole injectable.",
+  "Du MARDI au DIMANCHE: aucune injection, jour de repos hors protocole injectable.",
+  "Du MARDI au DIMANCHE: aucune injection, jour de repos hors protocole injectable.",
+  "Du MARDI au DIMANCHE: aucune injection, jour de repos hors protocole injectable.",
+].join(" | ");
+const repeatedRestCalendarRepaired = repairPeptidesReportContent(
+  repeatedRestCalendar,
+  {
+    pep_name: "Luca",
+    pep_weight: 80,
+    pep_primary_goal: "fatloss",
+    pep_country: "France",
+    pep_budget: "100-200",
+    pep_timeline: "solid",
+    pep_experience: "none",
+    pep_injection_comfort: "anxious",
+  },
+  "solo"
+) as any;
+const repeatedRestCalendarAudit = validatePeptidesReport(repeatedRestCalendarRepaired);
+assert.equal(
+  repeatedRestCalendarAudit.ok,
+  true,
+  repeatedRestCalendarAudit.errors.join("\n")
+);
+assert.equal(
+  (
+    repeatedRestCalendarRepaired.sections
+      .map((section: any) => section.content)
+      .join("\n")
+      .match(/Du MARDI au DIMANCHE: aucune injection, jour de repos hors protocole injectable/gi) || []
+  ).length,
+  1,
+  "Le calendrier repare doit compresser les jours off repetes"
+);
+
 const medicalWallFailure = structuredClone(report) as any;
 medicalWallFailure.qualityVersion = "expert-standard-v1";
 medicalWallFailure.sections[0].content +=

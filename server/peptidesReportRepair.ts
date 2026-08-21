@@ -850,6 +850,22 @@ function normalizeOperationalPlaceholders(report: RepairableReport): void {
   );
 }
 
+function dedupeScheduleLines(lines: string[]): string[] {
+  const seen = new Set<string>();
+  return lines.filter((line) => {
+    const normalized = normalizePeptideMention(line);
+    const repeatedRestDay =
+      /aucuneinjectionjourdereposhorsprotocoleinjectable/i.test(normalized)
+      || /aucuneinjectionjourdereposhorsprotocole/i.test(normalized);
+    const key = repeatedRestDay
+      ? normalized.replace(/^(?:du)?(?:lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)+/i, "")
+      : normalized;
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function synchronizeReconstitutionNarrative(
   report: RepairableReport,
   firstName: string
@@ -896,6 +912,7 @@ function synchronizeProtocolNarrative(
     .split(/\s*\|\s*/)
     .map((line) => line.trim())
     .filter(Boolean);
+  const dedupedScheduleLines = dedupeScheduleLines(scheduleLines);
   let content = sanitizeClientFacingText(
     [
       `${firstName}, cette section est la source de verite pour les doses, les durees et le calendrier. Elle reprend exactement les fiches validees, sans ajouter une phase differente ailleurs dans le rapport.`,
@@ -907,7 +924,7 @@ function synchronizeProtocolNarrative(
           `Duree: ${asSentence(peptide.cycleDuration)}`
       ),
       "CALENDRIER HEBDOMADAIRE",
-      ...scheduleLines,
+      ...dedupedScheduleLines,
     ].join("\n\n")
   );
   if (!/[.!?:)»\]]$/.test(content)) content = `${content}.`;

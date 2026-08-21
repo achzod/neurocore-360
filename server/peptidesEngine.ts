@@ -2257,7 +2257,7 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
     {
       "id": "protocole-pratique",
       "title": "Protocole pratique : ta semaine type",
-      "content": "${firstName}, voici exactement ce que tu fais chaque jour de la semaine. Je t'ai organisé ça pour que ce soit le plus simple possible.\\n\\nDURÉE DU CYCLE: [X] semaines\\nPHASE 1: [description]\\nPHASE 2: [description]\\n\\nCalendrier détaillé jour par jour. IMPORTANT: enumere les sept jours en clair (LUNDI, MARDI, MERCREDI, JEUDI, VENDREDI, SAMEDI, DIMANCHE) meme si certains sont des jours sans injection. Pour les jours sans injection, ecris explicitement 'aucune injection, jour de repos hors protocole'. Pour les jours avec injection, donne : peptide, dose, timing (à jeun / avant sommeil / post-training), site d'injection, notes specifiques."
+      "content": "${firstName}, voici exactement ce que tu fais chaque jour de la semaine. Je t'ai organisé ça pour que ce soit le plus simple possible.\\n\\nDURÉE DU CYCLE: [X] semaines\\nPHASE 1: [description]\\nPHASE 2: [description]\\n\\nCalendrier détaillé. IMPORTANT: donne les jours avec injection en clair. Pour les jours sans injection, regroupe-les en une seule ligne du type 'Du MARDI au DIMANCHE: aucune injection, jour de repos hors protocole injectable' au lieu de repeter la meme phrase jour par jour. Pour les jours avec injection, donne : peptide, dose, timing (à jeun / avant sommeil / post-training), site d'injection, notes specifiques."
     },
     {
       "id": "shopping-list",
