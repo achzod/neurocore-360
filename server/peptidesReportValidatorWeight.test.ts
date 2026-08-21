@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { reportMentionsWeightKg } from "./peptidesReportValidator";
+import { reportMentionsWeightKg } from "./peptidesReportValidator.ts";
 
 test("weight validator accepts equivalent point and comma decimals", () => {
   assert.equal(reportMentionsWeightKg("Poids mesure : 74.5 kg.", 74.5), true);

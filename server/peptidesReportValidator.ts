@@ -628,6 +628,55 @@ function extractDeclaredPriceTotal(
   return null;
 }
 
+function extractDeclaredOrderQty(value: string | undefined): number | null {
+  if (!value) return null;
+  const m = value.match(
+    /(\d+)\s*(?:vials?|flacons?|flasks?|bottles?)\b/i
+  );
+  return m ? parseInt(m[1], 10) : null;
+}
+
+function findShoppingListLineForItem(
+  shoppingList: string | undefined,
+  itemName: string | undefined,
+): string | null {
+  const target = searchable(String(itemName || "").trim());
+  if (!target) return null;
+  for (const line of String(shoppingList || "").split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const [label] = trimmed.split(":");
+    if (searchable(label.trim()) === target) {
+      return trimmed;
+    }
+  }
+  return null;
+}
+
+function resolveDeclaredLiveItem(
+  report: Pick<PeptidesReport, "peptides" | "shoppingList">,
+  itemName: string | undefined,
+): {
+  qtyText: string | undefined;
+  priceText: string | undefined;
+} {
+  const peptide = (report.peptides || []).find((entry) =>
+    searchable(String(entry.name || "")) === searchable(String(itemName || ""))
+  );
+  if (peptide) {
+    return {
+      qtyText: peptide.vialsNeeded,
+      priceText: peptide.priceEstimate,
+    };
+  }
+
+  const shoppingLine = findShoppingListLineForItem(report.shoppingList, itemName);
+  return {
+    qtyText: shoppingLine || undefined,
+    priceText: shoppingLine || undefined,
+  };
+}
+
 export function extractTotalMgFromVials(vialsNeeded: string | undefined): number | null {
   if (!vialsNeeded) return null;
   // Prefer the actual capacity (qty × vialMg) over the AI's "total ~Xmg"
@@ -1248,15 +1297,13 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
       || Date.now() - fetchedAtMs > MAX_PEPTAURA_DELIVERY_AGE_MS) {
       errors.push(`offre Peptaura trop ancienne ou invalide: ${snapshot.peptide || "?"}`);
     }
-    const peptide = peptides.find((entry) =>
-      String(entry.name || "").toLowerCase() === String(snapshot.peptide || "").toLowerCase()
-    );
-    const declaredQty = extractVialQty(peptide?.vialsNeeded);
+    const declaredItem = resolveDeclaredLiveItem(report, String(snapshot.peptide || ""));
+    const declaredQty = extractDeclaredOrderQty(declaredItem.qtyText);
     if (declaredQty != null && snapshot.requestedVials != null && declaredQty !== snapshot.requestedVials) {
       errors.push(`[${snapshot.peptide || "?"}] quantite prix live ${snapshot.requestedVials} differente de vialsNeeded ${declaredQty}`);
     }
     const declaredPriceTotal = extractDeclaredPriceTotal(
-      peptide?.priceEstimate,
+      declaredItem.priceText,
       snapshot.requestedVials,
     );
     const declaredCurrency = declaredPriceTotal?.currency;

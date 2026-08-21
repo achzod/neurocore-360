@@ -86,7 +86,10 @@ assert.match(engineSource, /2\. KissPeptin-10/);
 assert.match(engineSource, /https:\/\/receptorchem\.co\.uk\/enclomiphene-citrate\//);
 assert.match(engineSource, /const orderedNeedMg = extractTotalMgFromVials\(pep\.vialsNeeded\);/);
 assert.match(engineSource, /const needMg = estimatedNeedMg \?\? orderedNeedMg;/);
-assert.match(engineSource, /prix total \$\$\{total\.toFixed\(2\)\}/);
+assert.match(
+  engineSource,
+  /BAC Water:[\s\S]{0,220}~\$\$\{effectiveBottlePrice\.toFixed\(2\)\}\/vial[\s\S]{0,120}=\s*\$\$\{totalPrice\.toFixed\(2\)\}\s*total/,
+);
 assert.match(routesSource, /DELIVERY BLOCKED[\s\S]{0,1800}continue;/);
 assert.doesNotMatch(routesSource, /Tes 2 Blood Analysis offertes/);
 assert.match(reportPageSource, /data-testid=\{`peptides-whatsapp-/);
@@ -883,6 +886,29 @@ bacWaterSingleAmount._peptauraLiveSync.listingSnapshots.push({
 });
 const bacWaterSingleAmountAudit = validatePeptidesReport(bacWaterSingleAmount);
 assert.equal(bacWaterSingleAmountAudit.ok, true, bacWaterSingleAmountAudit.errors.join("\n"));
+
+const bacWaterSnapshotResolvedFromShoppingList = structuredClone(validLowTestosteroneStack) as any;
+bacWaterSnapshotResolvedFromShoppingList.shoppingList +=
+  "\nBAC Water: besoin calcule 5.0 ml, 1 vial de 5ml. ~$3.01/vial × 1 vial = $3.01 total (Lumira). Commande reelle: 1 boite, 1 vial recu. https://www.peptaura.com/catalog/BAC-Water";
+bacWaterSnapshotResolvedFromShoppingList._peptauraLiveSync.listingSnapshots.push({
+  peptide: "BAC Water",
+  fetchedAt: now,
+  supplier: "Lumira",
+  dosage: "5ml",
+  requestedVials: 1,
+  deliveredVials: 1,
+  boxSize: 1,
+  packageCount: 1,
+  totalPriceUsd: 3.01,
+});
+const bacWaterSnapshotResolvedFromShoppingListAudit = validatePeptidesReport(
+  bacWaterSnapshotResolvedFromShoppingList
+);
+assert.equal(
+  bacWaterSnapshotResolvedFromShoppingListAudit.ok,
+  true,
+  bacWaterSnapshotResolvedFromShoppingListAudit.errors.join("\n")
+);
 
 const wrongEnclomipheneSource = structuredClone(validLowTestosteroneStack);
 wrongEnclomipheneSource.peptides.find((entry: any) => /enclomiphene/i.test(entry.name)).purchaseUrl =

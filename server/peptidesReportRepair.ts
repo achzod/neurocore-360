@@ -1,5 +1,7 @@
 import type { PeptidesReport, PeptideItem, ReportSection } from "./peptidesEngine";
 import {
+  estimateNeedMg,
+  extractTotalMgFromVials,
   extractVialMg,
   extractVialQty,
 } from "./peptidesReportValidator";
@@ -890,6 +892,114 @@ function normalizeSingleVialGrammar(report: RepairableReport): void {
   }
 }
 
+function extractUnitPriceUsd(priceEstimate: string | undefined): number | null {
+  const match = String(priceEstimate || "").match(
+    /[~≈]?\$?\s*(\d+(?:[.,]\d+)?)\s*(?:USD|\$|US)?\s*\/?\s*vial/i
+  );
+  return match ? Number(match[1].replace(",", ".")) : null;
+}
+
+function liveUnitPriceUsdForPeptide(
+  report: RepairableReport,
+  peptideName: string,
+): number | null {
+  const snapshot = (report._peptauraLiveSync?.listingSnapshots || []).find((entry) =>
+    normalizePeptideMention(String(entry.peptide || "")) === normalizePeptideMention(peptideName)
+  );
+  if (!snapshot) return null;
+  const totalUsd = Number(snapshot.totalPriceUsd);
+  const requestedVials = Number(snapshot.requestedVials);
+  if (!Number.isFinite(totalUsd) || !Number.isFinite(requestedVials) || requestedVials <= 0) {
+    return null;
+  }
+  return Math.round((totalUsd / requestedVials) * 100) / 100;
+}
+
+function syncPeptidePriceEstimate(
+  report: RepairableReport,
+  peptide: PeptideItem,
+  vialCount: number
+): void {
+  const unit = liveUnitPriceUsdForPeptide(report, peptide.name || "")
+    ?? extractUnitPriceUsd(peptide.priceEstimate);
+  if (!Number.isFinite(unit) || unit == null || unit <= 0) return;
+  const total = Math.round(unit * vialCount * 100) / 100;
+  const eur = Math.round(total * 0.92);
+  peptide.priceEstimate =
+    `~$${unit.toFixed(2)}/vial × ${vialCount} vial${vialCount > 1 ? "s" : ""} = ` +
+    `$${total.toFixed(2)} total (~${eur}€)`;
+}
+
+function syncLiveSnapshotAfterClamp(
+  report: RepairableReport,
+  peptideName: string,
+  vialCount: number,
+): void {
+  const snapshot = (report._peptauraLiveSync?.listingSnapshots || []).find((entry) =>
+    normalizePeptideMention(String(entry.peptide || "")) === normalizePeptideMention(peptideName)
+  );
+  if (!snapshot) return;
+
+  const boxSize = Math.max(1, Number(snapshot.boxSize) || 1);
+  const packageCount = Math.max(1, Number(snapshot.packageCount) || 1);
+  const nextPackageCount = Math.max(1, Math.ceil(vialCount / boxSize));
+  const deliveredVials = nextPackageCount * boxSize;
+
+  snapshot.requestedVials = vialCount;
+  snapshot.packageCount = nextPackageCount;
+  snapshot.deliveredVials = deliveredVials;
+
+  const totalUsd = Number(snapshot.totalPriceUsd);
+  if (Number.isFinite(totalUsd) && totalUsd > 0) {
+    const unitPackagePrice = totalUsd / packageCount;
+    snapshot.totalPriceUsd = Math.round(unitPackagePrice * nextPackageCount * 100) / 100;
+  }
+  const totalGbp = Number(snapshot.totalPriceGbp);
+  if (Number.isFinite(totalGbp) && totalGbp > 0) {
+    const unitPackagePrice = totalGbp / packageCount;
+    snapshot.totalPriceGbp = Math.round(unitPackagePrice * nextPackageCount * 100) / 100;
+  }
+}
+
+function clampManifestOverorders(report: RepairableReport): void {
+  for (const peptide of report.peptides || []) {
+    const orderedMg = extractTotalMgFromVials(peptide.vialsNeeded);
+    const needMg = estimateNeedMg(peptide);
+    const vialMg = extractVialMg(peptide.vialsNeeded) || extractVialMg(peptide.reconstitution);
+    const orderedQty = extractVialQty(peptide.vialsNeeded);
+    const documentedOperationalOrder =
+      peptide._vialPlanning?.status === "documented" &&
+      peptide._vialPlanning?.operationalVials === orderedQty &&
+      Number(peptide._vialPlanning?.stabilityDays || 0) > 0 &&
+      String(peptide._vialPlanning?.stabilitySource || "").length >= 8;
+
+    if (
+      documentedOperationalOrder ||
+      orderedMg == null ||
+      needMg == null ||
+      vialMg == null ||
+      orderedQty == null ||
+      needMg <= 0 ||
+      vialMg <= 0
+    ) {
+      continue;
+    }
+
+    const overshoot = orderedMg / needMg;
+    if (overshoot <= 2.5) continue;
+
+    const clampedCount = Math.max(1, Math.ceil((needMg * 1.2) / vialMg));
+    if (clampedCount >= orderedQty) continue;
+
+    const durationLabel = sanitizeClientFacingText(peptide.cycleDuration || "le cycle");
+    peptide.vialsNeeded =
+      `${clampedCount} vial${clampedCount > 1 ? "s" : ""} de ${vialMg}mg pour ${durationLabel} ` +
+      `(besoin calcule ~${needMg.toFixed(1)}mg, ${clampedCount * vialMg}mg livres par le format minimum)`;
+    syncPeptidePriceEstimate(report, peptide, clampedCount);
+    syncLiveSnapshotAfterClamp(report, peptide.name || "", clampedCount);
+  }
+}
+
 function upsertPersonalizedNutritionTarget(
   report: RepairableReport,
   responses: Record<string, unknown>
@@ -934,6 +1044,7 @@ function repairStandardReportContent(
   normalizeUnsupportedStandardClaims(report);
   normalizeTierCreditClaims(report, tier);
   removeUnsupportedDescentNarrative(report);
+  clampManifestOverorders(report);
   normalizeOperationalPlaceholders(report);
   synchronizeReconstitutionNarrative(report, firstName);
   synchronizeProtocolNarrative(report, firstName);
