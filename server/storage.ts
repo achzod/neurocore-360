@@ -2061,8 +2061,8 @@ export class PgStorage implements IStorage {
 
     const result = await pool.query(
       `INSERT INTO audits (id, user_id, email, type, status, responses, scores, report_delivery_status, report_scheduled_for, completed_at)
-       SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, NOW()
-       WHERE $4 <> 'GRATUIT'
+       SELECT $1, $2, $3, $4::varchar(20), $5, $6, $7, $8, $9, NOW()
+       WHERE $4::text <> 'GRATUIT'
        RETURNING *`,
       [id, user.id, normalizedEmail, input.type, "COMPLETED", JSON.stringify(input.responses), JSON.stringify(scores), "PENDING", scheduledDate]
     );
