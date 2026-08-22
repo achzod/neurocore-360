@@ -104,7 +104,7 @@ export async function insertGenericReportArtifactFenced(
            FROM audits a
           WHERE a.id = $2
             AND a.type <> 'GRATUIT'
-            AND $3 <> 'GRATUIT'
+            AND $3::varchar(20) <> 'GRATUIT'::varchar(20)
          RETURNING id`,
         [
           input.id,

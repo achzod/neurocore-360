@@ -170,7 +170,7 @@ test("generic artifact persistence is fenced and uses an atomic INSERT SELECT pa
   const insert = pool.client.calls.find((call) => /^\s*INSERT INTO report_artifacts/.test(call.text))!;
   assert.match(insert.text, /SELECT \$1, a\.id/);
   assert.match(insert.text, /a\.type <> 'GRATUIT'/);
-  assert.match(insert.text, /\$3 <> 'GRATUIT'/);
+  assert.match(insert.text, /\$3::varchar\(20\) <> 'GRATUIT'::varchar\(20\)/);
   assert.match(insert.text, /'ACTIVE', \$9/);
   assert.ok(pool.client.calls.some((call) => /artifact_state = 'ACTIVE'[\s\S]*FOR UPDATE/.test(call.text)));
   assert.equal(pool.client.calls.at(-1)?.text, "COMMIT");
