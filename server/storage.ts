@@ -34,6 +34,7 @@ import {
   runGenericAuditMutation,
 } from "./discoveryGenericMutationBarrier";
 import {
+  claimPendingGenericReportJob,
   completeGenericReportJob,
   deleteGenericReportJob,
   enqueueMissingDiscoveryReportJobFenced,
@@ -273,6 +274,8 @@ export interface IStorage {
   getReportJob(auditId: string): Promise<ReportJob | undefined>;
   getActiveReportJobs(): Promise<ReportJob[]>;
   createOrUpdateReportJob(job: Partial<ReportJob> & { auditId: string }): Promise<ReportJob>;
+  /** Atomic cross-instance claim: pending -> generating. */
+  claimPendingReportJob(auditId: string): Promise<ReportJob | undefined>;
   updateReportJobProgress(auditId: string, progress: number, currentSection: string): Promise<void>;
   completeReportJob(auditId: string): Promise<void>;
   failReportJob(auditId: string, error: string): Promise<void>;
@@ -930,6 +933,15 @@ export class MemStorage implements IStorage {
     };
     this.reportJobs.set(job.auditId, updated);
     return updated;
+  }
+  async claimPendingReportJob(auditId: string): Promise<ReportJob | undefined> {
+    const audit = this.audits.get(auditId);
+    const job = this.reportJobs.get(auditId);
+    if (!audit || audit.type === "GRATUIT" || !job || job.status !== "pending") return undefined;
+    const now = new Date();
+    const claimed = { ...job, status: "generating" as ReportJobStatusEnum, updatedAt: now, lastProgressAt: now };
+    this.reportJobs.set(auditId, claimed);
+    return claimed;
   }
   async updateReportJobProgress(auditId: string, progress: number, currentSection: string): Promise<void> {
     const audit = this.audits.get(auditId);
@@ -2898,6 +2910,11 @@ export class PgStorage implements IStorage {
 
   async createOrUpdateReportJob(job: Partial<ReportJob> & { auditId: string }): Promise<ReportJob> {
     return this.rowToReportJob(await upsertGenericReportJobRow(pool, job));
+  }
+
+  async claimPendingReportJob(auditId: string): Promise<ReportJob | undefined> {
+    const row = await claimPendingGenericReportJob(pool, auditId);
+    return row ? this.rowToReportJob(row) : undefined;
   }
 
   async hasReportArtifact(auditId: string): Promise<boolean> {

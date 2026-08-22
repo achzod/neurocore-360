@@ -5,7 +5,7 @@ import { buildPublicReviewCheckResponse } from "./reviewPublicResponse";
 import { autoSendAbandonmentReminders, sendDailyReport } from "./abandonmentReminders";
 import { startMonitoring, generateMonitoringReport, checkNewConversions } from "./abandonmentMonitor";
 import { pool } from "./db";
-import { saveProgressSchema, insertAuditSchema, insertReviewSchema, ProductPriceCents, ProductDisplayNames, type ProductTypeEnum } from "@shared/schema";
+import { saveProgressSchema, insertAuditSchema, insertReviewSchema, ProductPriceCents, ProductDisplayNames, type Order, type ProductTypeEnum } from "@shared/schema";
 import { z } from "zod";
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
 import { calculateScoresFromResponses, generateFullAnalysis } from "./analysisEngine";
@@ -76,6 +76,12 @@ import {
   RECOVERY_CTA_RECONCILIATION_STATES,
 } from "./recoveryCtaClickFollowup";
 import { BLOOD_ANALYSIS_PURCHASE_CREDITS, clarifyBloodPurchaseEmail } from "./bloodOffer";
+import {
+  needsPaidAuditGenerationRecovery,
+  needsPaidAuditRecovery,
+  runOrderEffectOnce,
+  withPaidAuditOrderLock,
+} from "./paidAuditRecovery";
 
 import { registerKnowledgeRoutes } from "./knowledge";
 import { registerBloodAnalysisRoutes } from "./blood-analysis/routes";
@@ -4516,18 +4522,15 @@ export async function registerRoutes(
     op: () => Promise<void | boolean>,
   ): Promise<void> => {
     try {
-      const fresh = await storage.getOrder(orderId);
-      const meta = (fresh?.metadata as Record<string, unknown> | null) ?? {};
-      if (meta[flagName]) return;
-      const completed = await op();
-      if (completed === false) {
+      const outcome = await runOrderEffectOnce(pool, orderId, flagName, op);
+      if (outcome.state === "FAILED") {
         console.warn(`[runOnceOnOrder] ${flagName} not confirmed for ${orderId}, flag left unset`);
-        return;
+      } else if (outcome.state === "UNKNOWN") {
+        console.error(
+          `[runOnceOnOrder] ${flagName} provider outcome unknown for ${orderId}; retry blocked to prevent duplicates`,
+          outcome.error,
+        );
       }
-      await pool.query(
-        `UPDATE orders SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object($1::text, true) WHERE id = $2`,
-        [flagName, orderId],
-      );
     } catch (err) {
       console.error(`[runOnceOnOrder] ${flagName} failed for ${orderId}:`, err);
     }
@@ -4990,7 +4993,13 @@ export async function registerRoutes(
   }> {
     const order = await storage.getOrder(orderId).catch(() => null);
     if (!order) return { status: "not_found", orderId };
-    if (order.status === "paid") return { status: "already_paid", orderId };
+    if (order.status === "paid") {
+      const recovered = await recoverMissingPaidAudit(order, "paypal-reconcile-already-paid");
+      if (recovered && !recovered.success) {
+        return { status: "error", orderId, error: recovered.error };
+      }
+      return { status: "already_paid", orderId };
+    }
     const paypalOrderId = (order as any).paypalOrderId;
     if (!paypalOrderId) return { status: "no_paypal_id", orderId };
 
@@ -5054,6 +5063,14 @@ export async function registerRoutes(
         );
       } catch (notifErr) {
         console.error("[PayPal Reconcile] Admin notif failed:", notifErr);
+      }
+
+      const paidOrder = await storage.getOrder(order.id).catch(() => undefined);
+      if (paidOrder) {
+        const recovered = await recoverMissingPaidAudit(paidOrder, "paypal-reconcile-completed");
+        if (recovered && !recovered.success) {
+          return { status: "error", orderId, paypalOrderId, paypalStatus: ppStatus, captureId, error: recovered.error };
+        }
       }
 
       console.log(`[PayPal Reconcile] ✅ Order ${order.id} (${email}) marked paid from PayPal status COMPLETED`);
@@ -5145,18 +5162,40 @@ export async function registerRoutes(
     }
   }, 10 * 60 * 1000);
 
+  const paidAuditDeliveryWaiters = new Set<string>();
+  const ensurePaidAuditDeliveryWaiter = (audit: {
+    id: string;
+    email: string;
+    type: string;
+  }): void => {
+    if (paidAuditDeliveryWaiters.has(audit.id)) return;
+    paidAuditDeliveryWaiters.add(audit.id);
+    processReportAndSendEmail(audit.id, audit.email, audit.type)
+      .catch((err) => {
+        console.error(`[processReportAndSendEmail] Unhandled error for audit ${audit.id}:`, err);
+        storage.updateAudit(audit.id, { reportDeliveryStatus: "EMAIL_FAILED" }).catch(() => {});
+      })
+      .finally(() => {
+        paidAuditDeliveryWaiters.delete(audit.id);
+      });
+  };
+
   // Used by both Stripe confirm-session and PayPal capture-order
   async function createAuditFromPaidOrder(
     email: string,
     planType: "GRATUIT" | "PREMIUM" | "ELITE",
-    order?: { id: string; auditId: string | null } | null
+    order?: Order | null
   ): Promise<{ success: true; auditId: string; auditType: string; existing?: boolean } | { success: false; error: string; message?: string }> {
     if (planType === "GRATUIT") {
       return { success: false, error: "DISCOVERY_PAID_ORDER_CREATION_BLOCKED" };
     }
-    // Check if an audit is already linked to this order
-    if (order?.auditId) {
-      return { success: true, auditId: order.auditId, auditType: planType, existing: true };
+    // Always refresh before deciding an audit is missing. Callers often hold the
+    // pre-payment order object after another path (webhook/confirm) has linked it.
+    if (order) {
+      const freshOrder = await storage.getOrder(order.id).catch(() => undefined);
+      if (freshOrder?.auditId) {
+        return { success: true, auditId: freshOrder.auditId, auditType: planType, existing: true };
+      }
     }
 
     const progress = await storage.getProgress(email);
@@ -5200,31 +5239,65 @@ export async function registerRoutes(
       ? new Date(Date.now() + 24 * 60 * 60 * 1000)
       : undefined;
 
-    const audit = await storage.createAudit({
-      userId: "",
-      type: planType,
-      email,
-      responses: responses as Record<string, unknown>,
-      ...(scheduledFor ? { reportScheduledFor: scheduledFor } : {}),
-    });
+    let reusedExistingAudit = false;
+    const audit = order
+      ? await withPaidAuditOrderLock(pool, order.id, async () => {
+          const freshOrder = await storage.getOrder(order.id);
+          if (!freshOrder || freshOrder.status !== "paid") {
+            throw new Error("PAID_ORDER_REQUIRED_FOR_AUDIT_CREATION");
+          }
+          if (freshOrder.auditId) {
+            const linked = await storage.getAudit(freshOrder.auditId);
+            if (!linked) throw new Error("LINKED_AUDIT_NOT_FOUND");
+            reusedExistingAudit = true;
+            return linked;
+          }
 
-    if (scheduledFor) {
+          // A browser submission can create the audit just before payment
+          // confirmation. Reuse it and atomically attach it to the paid order.
+          const recent = await storage.findRecentAuditByEmailAndType(email, planType, 30).catch(() => undefined);
+          if (recent && await storage.claimOrderForAudit(order.id, recent.id)) {
+            reusedExistingAudit = true;
+            return recent;
+          }
+
+          const created = await storage.createAudit({
+            userId: "",
+            type: planType,
+            email,
+            responses: responses as Record<string, unknown>,
+            ...(scheduledFor ? { reportScheduledFor: scheduledFor } : {}),
+          });
+          const claimed = await storage.claimOrderForAudit(order.id, created.id);
+          if (!claimed) {
+            const winner = await storage.getOrder(order.id);
+            if (winner?.auditId) {
+              const linked = await storage.getAudit(winner.auditId);
+              if (linked) {
+                reusedExistingAudit = true;
+                return linked;
+              }
+            }
+            throw new Error("ORDER_AUDIT_LINK_CLAIM_FAILED");
+          }
+          return created;
+        })
+      : await storage.createAudit({
+          userId: "",
+          type: planType,
+          email,
+          responses: responses as Record<string, unknown>,
+          ...(scheduledFor ? { reportScheduledFor: scheduledFor } : {}),
+        });
+
+    if (scheduledFor && !reusedExistingAudit) {
       console.log(`[Audit] Report scheduled for ${email} at ${scheduledFor.toISOString()} (+24h)`);
       try {
-        const { pool: dbPool } = await import("./db");
-        await dbPool.query("UPDATE audits SET report_scheduled_for = $1, report_delivery_status = 'SCHEDULED' WHERE id = $2 AND type <> 'GRATUIT'", [scheduledFor, audit.id]);
+        // Keep the audit PENDING until the generation CAS below claims it.
+        // Delivery timing is carried by report_scheduled_for, not by skipping
+        // generation with a premature SCHEDULED status.
+        await pool.query("UPDATE audits SET report_scheduled_for = $1 WHERE id = $2 AND type <> 'GRATUIT'", [scheduledFor, audit.id]);
       } catch {}
-    }
-
-    // Atomically link order to audit (prevents race on double-click)
-    if (order) {
-      const claimed = await storage.claimOrderForAudit(order.id, audit.id);
-      if (!claimed) {
-        const refreshed = await storage.getOrder(order.id);
-        if (refreshed?.auditId) {
-          return { success: true, auditId: refreshed.auditId, auditType: planType, existing: true };
-        }
-      }
     }
 
     // Clean up questionnaire progress now that audit is created
@@ -5232,18 +5305,20 @@ export async function registerRoutes(
 
     // Envoyer notification admin immédiatement à la création (pas à la livraison)
     const clientName = (responses as any)?.prenom || (responses as any)?.name || email.split('@')[0];
-    console.log(`[Admin Email] 📧 Triggering admin notification for audit ${audit.id}...`);
-    sendAdminEmailNewAudit(email, clientName, planType, audit.id)
-      .then((success) => {
-        if (success) {
-          console.log(`[Admin Email] ✅ Admin notification sent successfully for ${audit.id}`);
-        } else {
-          console.error(`[Admin Email] ❌ Admin notification failed for ${audit.id}`);
-        }
-      })
-      .catch((err) => {
-        console.error(`[Admin Email] ❌ Error in admin notification for ${audit.id}:`, err);
-      });
+    if (!reusedExistingAudit) {
+      console.log(`[Admin Email] 📧 Triggering admin notification for audit ${audit.id}...`);
+      sendAdminEmailNewAudit(email, clientName, planType, audit.id)
+        .then((success) => {
+          if (success) {
+            console.log(`[Admin Email] ✅ Admin notification sent successfully for ${audit.id}`);
+          } else {
+            console.error(`[Admin Email] ❌ Admin notification failed for ${audit.id}`);
+          }
+        })
+        .catch((err) => {
+          console.error(`[Admin Email] ❌ Error in admin notification for ${audit.id}:`, err);
+        });
+    }
 
     // Send order confirmation email to client (don't leave them in the dark)
     const promoByType: Record<string, { code: string; label: string }> = {
@@ -5253,23 +5328,151 @@ export async function registerRoutes(
     const promo = promoByType[planType];
     const productLabel = planType === "ELITE" ? "Ultimate Scan" : planType === "PREMIUM" ? "Anabolic Bioscan" : "Analyse";
     const confirmMsg = `Salut ${clientName},\n\nMerci pour ta commande ${productLabel}. Ton paiement est bien recu et toutes tes reponses sont enregistrees.\n\nTon rapport est en cours de generation. Tu le recevras par email d'ici 24h.\n\n${promo ? `En attendant, voici ton code promo : ${promo.code}\n${promo.label}\nUtilise-le sur achzodcoaching.com/formules-coaching\n\n` : ""}Si tu as des questions, reponds directement a cet email.\n\nAchzod`;
-    sendCTAEmail(email, `${productLabel} : commande recue, rapport sous 24h`, confirmMsg).catch(() => {});
+    if (!reusedExistingAudit) {
+      if (order) {
+        await runOnceOnOrder(order.id, "customerConfirmEmailSentAt", () =>
+          sendCTAEmail(email, `${productLabel} : commande recue, rapport sous 24h`, confirmMsg),
+        );
+      } else {
+        sendCTAEmail(email, `${productLabel} : commande recue, rapport sous 24h`, confirmMsg).catch(() => {});
+      }
+    }
 
-    // Mettre à jour Google Sheet automatiquement via webhook
-    const { notifyGoogleSheetUpdate } = await import("./googleSheetsTracking.js");
-    notifyGoogleSheetUpdate().catch((err) => {
-      console.error(`[GoogleSheets] Failed to update sheet for ${audit.id}:`, err);
-    });
+    if (!reusedExistingAudit) {
+      // Mettre à jour Google Sheet automatiquement via webhook
+      const { notifyGoogleSheetUpdate } = await import("./googleSheetsTracking.js");
+      notifyGoogleSheetUpdate().catch((err) => {
+        console.error(`[GoogleSheets] Failed to update sheet for ${audit.id}:`, err);
+      });
+    }
 
-    await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
-    await startReportGeneration(audit.id, audit.responses, audit.scores || {}, planType);
-    processReportAndSendEmail(audit.id, audit.email, planType).catch((err) => {
-      console.error(`[processReportAndSendEmail] Unhandled error for audit ${audit.id}:`, err);
-      storage.updateAudit(audit.id, { reportDeliveryStatus: "EMAIL_FAILED" }).catch(() => {});
-    });
+    const claimedForGeneration = await storage.claimAuditForGeneration(audit.id).catch(() => false);
+    if (claimedForGeneration) {
+      await startReportGeneration(audit.id, audit.responses, audit.scores || {}, planType);
+    } else {
+      console.log(`[Audit] Audit ${audit.id} already claimed for generation; skipping duplicate start`);
+    }
+    const generationJob = await storage.getReportJob(audit.id).catch(() => undefined);
+    if (generationJob && ["pending", "generating", "completed"].includes(generationJob.status)) {
+      ensurePaidAuditDeliveryWaiter(audit);
+    }
 
-    return { success: true, auditId: audit.id, auditType: audit.type };
+    return { success: true, auditId: audit.id, auditType: audit.type, ...(reusedExistingAudit ? { existing: true } : {}) };
   }
+
+  async function recoverMissingPaidAudit(order: Order, source: string) {
+    const freshOrder = await storage.getOrder(order.id).catch(() => undefined);
+    if (!freshOrder) return null;
+
+    if (needsPaidAuditRecovery(freshOrder)) {
+      console.log(`[Paid Audit Recovery] ${source}: recovering ${freshOrder.productType} order ${freshOrder.id}`);
+      return createAuditFromPaidOrder(
+        freshOrder.email,
+        freshOrder.productType as "PREMIUM" | "ELITE",
+        freshOrder,
+      );
+    }
+
+    if (
+      freshOrder.status !== "paid"
+      || !freshOrder.auditId
+      || !["PREMIUM", "ELITE"].includes(freshOrder.productType)
+    ) {
+      return null;
+    }
+
+    return withPaidAuditOrderLock(pool, freshOrder.id, async () => {
+      const lockedOrder = await storage.getOrder(freshOrder.id);
+      if (!lockedOrder?.auditId) return null;
+      const audit = await storage.getAudit(lockedOrder.auditId);
+      if (!audit) {
+        return { success: false as const, error: "LINKED_AUDIT_NOT_FOUND" };
+      }
+      const job = await storage.getReportJob(audit.id).catch(() => undefined);
+      if (!needsPaidAuditGenerationRecovery(lockedOrder, audit, job)) return null;
+
+      console.log(`[Paid Audit Recovery] ${source}: resuming audit ${audit.id} for order ${lockedOrder.id}`);
+      if (audit.reportDeliveryStatus === "PENDING") {
+        const claimed = await storage.claimAuditForGeneration(audit.id).catch(() => false);
+        if (!claimed) {
+          const refreshed = await storage.getAudit(audit.id);
+          if (refreshed?.reportDeliveryStatus !== "GENERATING") {
+            return { success: false as const, error: "AUDIT_GENERATION_CLAIM_FAILED" };
+          }
+        }
+      }
+
+      const startedJob = await startReportGeneration(
+        audit.id,
+        audit.responses as Record<string, unknown>,
+        (audit.scores || {}) as Record<string, number>,
+        audit.type,
+      );
+      if (!["pending", "generating", "completed"].includes(startedJob.status)) {
+        return { success: false as const, error: `AUDIT_JOB_NOT_RECOVERABLE:${startedJob.status}` };
+      }
+      ensurePaidAuditDeliveryWaiter(audit);
+      return {
+        success: true as const,
+        auditId: audit.id,
+        auditType: audit.type,
+        existing: true as const,
+      };
+    });
+  }
+
+  // Durable safety net for orders that were marked paid immediately before a
+  // process crash. This does not depend on the browser returning or Stripe /
+  // PayPal redelivering an event, so historical paid orphans self-heal too.
+  let paidAuditRecoveryRunning = false;
+  async function reconcilePaidOrdersMissingAudits(): Promise<void> {
+    if (paidAuditRecoveryRunning) return;
+    paidAuditRecoveryRunning = true;
+    try {
+      const memRssMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
+      if (memRssMb > 440) {
+        console.warn(`[Paid Audit Recovery] Skipping scan: RSS ${memRssMb}MB > 440MB`);
+        return;
+      }
+
+      const candidates: Order[] = [];
+      let offset = 0;
+      let total = 0;
+      do {
+        const page = await storage.getAllOrders({ status: "paid", limit: 250, offset });
+        total = page.total;
+        candidates.push(...page.orders.filter((candidate) =>
+          candidate.productType === "PREMIUM" || candidate.productType === "ELITE"));
+        offset += page.orders.length;
+        if (page.orders.length === 0) break;
+      } while (offset < total);
+
+      let recoveredCount = 0;
+      for (const candidate of candidates) {
+        try {
+          const result = await recoverMissingPaidAudit(candidate, "periodic-scan");
+          if (result?.success) recoveredCount++;
+          else if (result && !result.success) {
+            console.warn(`[Paid Audit Recovery] Order ${candidate.id} deferred: ${result.error}`);
+          }
+        } catch (error) {
+          console.error(`[Paid Audit Recovery] Order ${candidate.id} failed:`, error);
+        }
+      }
+      if (candidates.length > 0) {
+        console.log(`[Paid Audit Recovery] Scan complete: ${recoveredCount}/${candidates.length} recovered`);
+      }
+    } finally {
+      paidAuditRecoveryRunning = false;
+    }
+  }
+
+  setTimeout(() => {
+    void reconcilePaidOrdersMissingAudits();
+  }, 2 * 60 * 1000).unref();
+  setInterval(() => {
+    void reconcilePaidOrdersMissingAudits();
+  }, 10 * 60 * 1000).unref();
 
   app.post("/api/stripe/confirm-session", async (req, res) => {
     try {
@@ -5703,8 +5906,17 @@ export async function registerRoutes(
         if (existingOrder.auditId) {
           res.json({ success: true, auditId: existingOrder.auditId, auditType: existingOrder.productType, existing: true });
         } else {
-          // BLOOD_ANALYSIS or other product without auditId
-          res.json({ success: true, auditId: "", auditType: existingOrder.productType, email: existingOrder.email, existing: true });
+          const recovered = await recoverMissingPaidAudit(existingOrder, "paypal-capture-retry");
+          if (recovered) {
+            if (!recovered.success) {
+              res.status(409).json(recovered);
+              return;
+            }
+            res.json({ ...recovered, existing: true });
+          } else {
+            // BLOOD_ANALYSIS, PEPTIDES_ENGINE and other products intentionally have no auditId.
+            res.json({ success: true, auditId: "", auditType: existingOrder.productType, email: existingOrder.email, existing: true });
+          }
         }
         return;
       }
@@ -11589,79 +11801,17 @@ export async function registerRoutes(
               console.log(`[Webhook] Peptides Engine paid for ${email} , setInterval will generate`);
             }
 
-            if (email && planType && !order.auditId && ["PREMIUM", "ELITE"].includes(planType)) {
-              console.log(`[Webhook] Creating audit automatically for order ${order.id} (${email}, ${planType})`);
+          }
 
-              try {
-                const progress = await storage.getProgress(email);
-                let responses = progress?.responses as Record<string, unknown> | string | undefined;
-
-                if (typeof responses === "string") {
-                  try { responses = JSON.parse(responses); } catch { responses = undefined; }
-                }
-                if ((!responses || Object.keys(responses).length === 0) && order.metadata && typeof order.metadata === "object") {
-                  const orderResponses = (order.metadata as Record<string, unknown>).questionnaireResponses;
-                  if (orderResponses && typeof orderResponses === "object") {
-                    responses = orderResponses as Record<string, unknown>;
-                  }
-                }
-
-                if (responses && Object.keys(responses).length > 0) {
-                  // Check for 3 photos if ELITE
-                  if (planType === "ELITE" && !hasThreePhotos(responses as Record<string, unknown>)) {
-                    console.warn(`[Webhook] ⚠️  3 photos obligatoires pour Ultimate Scan: ${email}`);
-                  } else {
-                    // IDEMPOTENCY: if /api/audit/create already ran, or the webhook fires
-                    // twice (Stripe retries), we reuse the recent audit. Prevents two
-                    // audits → two generations → two different reports landing in inbox.
-                    const recent = await storage.findRecentAuditByEmailAndType(email, planType as any, 30).catch(() => undefined);
-                    const audit = recent ?? await storage.createAudit({
-                      userId: "",
-                      type: planType as any,
-                      email,
-                      responses: responses as Record<string, unknown>,
-                    });
-
-                    if (recent) {
-                      console.log(`[Webhook] ♻️  Reusing recent audit ${audit.id} for ${email} (${planType}) , no duplicate creation`);
-                    } else {
-                      console.log(`[Webhook] ✅ Audit ${audit.id} created automatically for order ${order.id}`);
-                    }
-
-                    // Link order to audit (CAS-style: sets audit_id only if currently NULL)
-                    await storage.claimOrderForAudit(order.id, audit.id);
-
-                    // Clean up questionnaire progress
-                    await storage.deleteProgress(email).catch(() => {});
-
-                    // Trigger report generation + email for PREMIUM/ELITE, but only if we
-                    // win the atomic CAS on report_delivery_status. Losing the CAS means
-                    // another caller (inline create, prior webhook fire) already has it.
-                    if (planType === "PREMIUM" || planType === "ELITE") {
-                      const claimed = await storage.claimAuditForGeneration(audit.id).catch(() => false);
-                      if (!claimed) {
-                        console.warn(`[Webhook] ⏭️ Could not claim audit ${audit.id} for generation , another process owns it, NOT triggering parallel gen`);
-                      } else {
-                        try {
-                          await startReportGeneration(audit.id, responses as Record<string, unknown>, {}, planType);
-                          processReportAndSendEmail(audit.id, email, planType).catch((err) => {
-                            console.error(`[Webhook] processReportAndSendEmail failed for ${audit.id}:`, err);
-                            storage.updateAudit(audit.id, { reportDeliveryStatus: "EMAIL_FAILED" }).catch(() => {});
-                          });
-                          console.log(`[Webhook] ✅ Report generation triggered for ${audit.id} (${planType})`);
-                        } catch (genErr) {
-                          console.error(`[Webhook] ❌ Failed to trigger generation for ${audit.id}:`, genErr);
-                        }
-                      }
-                    }
-                  }
-                } else {
-                  console.warn(`[Webhook] ⚠️  No questionnaire data found for ${email}, audit not created`);
-                }
-              } catch (auditError) {
-                console.error(`[Webhook] ❌ Failed to create audit for order ${order.id}:`, auditError);
-                // Don't fail the webhook, just log the error
-              }
+          // Recovery must run even when a prior confirm-session attempt already
+          // marked the order paid but crashed before linking the audit. Stripe
+          // redeliveries otherwise skip the entire pending-only block forever.
+          if (order) {
+            const recovered = await recoverMissingPaidAudit(order, "stripe-webhook");
+            if (recovered && !recovered.success) {
+              // Fail the webhook so Stripe redelivers it. Side effects above are
+              // protected by order flags, and the recovery itself is locked.
+              throw new Error(`PAID_AUDIT_RECOVERY_DEFERRED:${recovered.error}`);
             }
           }
           break;

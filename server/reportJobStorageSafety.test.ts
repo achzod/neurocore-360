@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   DISCOVERY_REPORT_JOB_MUTATION_BLOCKED,
+  claimPendingGenericReportJob,
   completeGenericReportJob,
   deleteGenericReportJob,
   enqueueMissingDiscoveryReportJobFenced,
@@ -50,6 +51,9 @@ class GenericPool {
         : [];
       return { rows, rowCount: rows.length };
     }
+    if (/^\s*UPDATE report_jobs AS j[\s\S]*status = 'generating'/.test(text)) {
+      return { rows: [{ audit_id: values?.[0], status: "generating" }], rowCount: 1 };
+    }
     if (/^\s*(UPDATE|DELETE FROM) report_jobs AS j/.test(text)) {
       return { rows: [], rowCount: 1 };
     }
@@ -92,6 +96,19 @@ test("generic report_jobs upsert fails closed when audit is Discovery or absent"
     (error: unknown) => error instanceof Error
       && error.message === DISCOVERY_REPORT_JOB_MUTATION_BLOCKED,
   );
+});
+
+test("pending generic report jobs are claimed with one atomic paid-only CAS", async () => {
+  const pool = new GenericPool();
+  const claimed = await claimPendingGenericReportJob(pool as any, "paid-1");
+
+  assert.equal(claimed?.status, "generating");
+  assert.equal(pool.calls.length, 1);
+  assert.match(pool.calls[0].text, /status = 'generating'/);
+  assert.match(pool.calls[0].text, /j\.status = 'pending'/);
+  assert.match(pool.calls[0].text, /a\.type <> 'GRATUIT'/);
+  assert.match(pool.calls[0].text, /RETURNING j\.\*/);
+  assert.deepEqual(pool.calls[0].values, ["paid-1"]);
 });
 
 class ArtifactClient {

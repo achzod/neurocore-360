@@ -173,6 +173,30 @@ export async function upsertGenericReportJobRow(
   return result.rows[0];
 }
 
+/**
+ * Cross-instance generation claim. A durable pending row is the queue; only
+ * the process that wins this CAS may start the provider work.
+ */
+export async function claimPendingGenericReportJob(
+  pool: PoolLike,
+  auditId: string,
+): Promise<any | null> {
+  const result = await pool.query(
+    `UPDATE report_jobs AS j
+        SET status = 'generating', updated_at = NOW(), last_progress_at = NOW()
+      WHERE j.audit_id = $1
+        AND j.status = 'pending'
+        AND EXISTS (
+          SELECT 1 FROM audits a
+           WHERE a.id = j.audit_id
+             AND a.type <> 'GRATUIT'
+        )
+      RETURNING j.*`,
+    [auditId],
+  );
+  return (result.rowCount ?? 0) === 1 ? result.rows[0] : null;
+}
+
 export async function updateGenericReportJobProgress(
   pool: PoolLike,
   auditId: string,

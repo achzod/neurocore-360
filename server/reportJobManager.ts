@@ -179,15 +179,17 @@ export async function startReportGeneration(
 
   if (existingJob) {
     if (existingJob.status === "pending") {
-      // A transactionally enqueued recovery job already exists. Start that
-      // exact persisted job without inserting a second row or incrementing its
-      // attempt counter. If another generation is active, the job stays pending
-      // and the queue drain below will start it later.
+      // The durable row is the cross-instance queue. Only the process that wins
+      // pending -> generating may call the provider.
       if (!activeGenerations.has(auditId) && activeGenerations.size < MAX_CONCURRENT_GENERATIONS) {
-        activeGenerations.add(auditId);
-        generateReportAsync(auditId, responses, scores, auditType);
+        const claimedJob = await storage.claimPendingReportJob(auditId);
+        if (claimedJob) {
+          activeGenerations.add(auditId);
+          generateReportAsync(auditId, responses, scores, auditType);
+          return claimedJob;
+        }
       }
-      return existingJob;
+      return await storage.getReportJob(auditId) || existingJob;
     }
     if (existingJob.status === "generating") {
       const lastProgressTime = existingJob.lastProgressAt ? new Date(existingJob.lastProgressAt).getTime() : 0;
@@ -226,10 +228,16 @@ export async function startReportGeneration(
 
   console.log(`[ReportJobManager] Created/updated job for ${auditId}, attempt #${job.attemptCount}`);
 
+  const claimedJob = await storage.claimPendingReportJob(auditId);
+  if (!claimedJob) {
+    console.log(`[ReportJobManager] Job ${auditId} generation claim lost to another process`);
+    return await storage.getReportJob(auditId) || job;
+  }
+
   activeGenerations.add(auditId);
   generateReportAsync(auditId, responses, scores, auditType);
 
-  return job;
+  return claimedJob;
 }
 
 async function generateReportAsync(
@@ -666,9 +674,8 @@ export async function resumePendingJobs(): Promise<number> {
       attemptCount: currentAttempts,
     });
 
-    activeGenerations.add(job.auditId);
-    generateReportAsync(job.auditId, audit.responses, audit.scores, audit.type);
-    resumedCount++;
+    const resumed = await startReportGeneration(job.auditId, audit.responses, audit.scores, audit.type);
+    if (resumed.status === "generating") resumedCount++;
   }
 
   console.log(`[ReportJobManager] Resume check complete. Resumed ${resumedCount} jobs out of ${activeJobs.length} active.`);
