@@ -2430,6 +2430,7 @@ async function callOpenAIForPeptides(
   label: string,
   retries = 3,
   orderId?: string,
+  estimatedCostUsd = 1,
 ): Promise<string> {
   console.log(
     `[PeptidesEngine] GPT generation starting: ${PEPTIDES_PRIMARY_MODEL}, effort=xhigh, mode=pro`
@@ -2445,7 +2446,7 @@ async function callOpenAIForPeptides(
     label,
     retries,
     ...(orderId
-      ? { costBudget: { product: "peptides", orderId, estimatedCostUsd: 1 } }
+      ? { costBudget: { product: "peptides", orderId, estimatedCostUsd } }
       : {}),
   });
 
@@ -2939,6 +2940,8 @@ export async function generatePeptidesProtocol(
     maxCandidates?: number;
     providerRetries?: number;
     orderId?: string;
+    costBudgetEstimatedUsd?: number;
+    initialPreviousError?: string;
     consentAccepted?: boolean;
     peptauraContext?: PeptauraPromptContext;
     providerGenerate?: (params: {
@@ -2948,6 +2951,7 @@ export async function generatePeptidesProtocol(
       label: string;
       retries: number;
       orderId?: string;
+      estimatedCostUsd?: number;
     }) => Promise<string>;
   } = {},
 ): Promise<PeptidesReport> {
@@ -2994,11 +2998,18 @@ export async function generatePeptidesProtocol(
       params.label,
       params.retries,
       params.orderId,
+      params.estimatedCostUsd,
     ));
   // Each candidate uses GPT-5.6 Sol. A second independent generation is used
   // only when the first candidate fails a deterministic or client-facing gate.
   let report: PeptidesReport | null = null;
-  let lastError = "";
+  let lastError = String(options.initialPreviousError || "").trim();
+  const manualErrorContext = lastError
+    ? `\n\nREPRISE MANUELLE APRES ECHEC SERVEUR:\n${lastError.slice(0, 2200)}\n\nCorrige cette cause des le premier jet: si une molecule est citee dans l'echec pour stock, prix live incomplet, surstock ou whyThisPeptide, retire-la sauf couverture live deterministe avec moins de 20% de marge.`
+    : "";
+  const costBudgetEstimatedUsd = Number.isFinite(Number(options.costBudgetEstimatedUsd))
+    ? Math.max(0.01, Math.min(1, Number(options.costBudgetEstimatedUsd)))
+    : 1;
   const providerCandidates: Array<{
     provider: "openai";
     model: string;
@@ -3009,11 +3020,12 @@ export async function generatePeptidesProtocol(
       model: PEPTIDES_PRIMARY_MODEL,
       generate: () => generateProviderText({
         systemPrompt: SYSTEM_PROMPT,
-        userPrompt,
+        userPrompt: `${userPrompt}${manualErrorContext}`,
         email,
         label: "peptides-primary",
         retries: providerRetries,
         orderId: options.orderId,
+        estimatedCostUsd: costBudgetEstimatedUsd,
       }),
     },
     {
@@ -3027,6 +3039,7 @@ export async function generatePeptidesProtocol(
           label: "peptides-strict-regeneration",
           retries: providerRetries,
           orderId: options.orderId,
+          estimatedCostUsd: costBudgetEstimatedUsd,
         }),
     },
     {
@@ -3040,6 +3053,7 @@ export async function generatePeptidesProtocol(
           label: "peptides-final-stock-regeneration",
           retries: providerRetries,
           orderId: options.orderId,
+          estimatedCostUsd: costBudgetEstimatedUsd,
         }),
     },
   ];

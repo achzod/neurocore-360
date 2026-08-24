@@ -6080,6 +6080,7 @@ export async function registerRoutes(
         replaceReportId: requestedReplaceReportId,
         maxCandidates: requestedMaxCandidates,
         providerRetries: requestedProviderRetries,
+        costBudgetEstimatedUsd: requestedCostBudgetEstimatedUsd,
       } = req.body;
       replaceReportId = requestedReplaceReportId;
       if (!email) { res.status(400).json({ error: "email requis" }); return; }
@@ -6188,6 +6189,8 @@ export async function registerRoutes(
         consentAccepted: hasValidPeptidesConsent((pepOrder?.metadata as any)?.peptidesEngineConsent),
         maxCandidates: Number.isFinite(Number(requestedMaxCandidates)) ? Number(requestedMaxCandidates) : 3,
         providerRetries: Number.isFinite(Number(requestedProviderRetries)) ? Number(requestedProviderRetries) : 1,
+        costBudgetEstimatedUsd: Number.isFinite(Number(requestedCostBudgetEstimatedUsd)) ? Number(requestedCostBudgetEstimatedUsd) : 1,
+        initialPreviousError: String((pepOrder?.metadata as any)?.peptidesGenerationLastError || ""),
       });
 
       let saved;
