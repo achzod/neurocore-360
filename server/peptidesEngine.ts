@@ -1480,9 +1480,16 @@ async function applyLivePeptauraPricing(
     listingSnapshots,
   };
 
+  const shoppingSentenceFragment = (value: string | undefined): string =>
+    sanitizeClientFacingText(String(value || "")).replace(/[.!?:]+\s*$/g, "");
+
   report.shoppingList = [
     ...report.peptides.map((pep) =>
-      `${pep.name}: ${pep.vialsNeeded}. ${pep.priceEstimate}. ${pep.purchaseUrl}`
+      [
+        `${pep.name}: ${shoppingSentenceFragment(pep.vialsNeeded)}`,
+        shoppingSentenceFragment(pep.priceEstimate),
+        shoppingSentenceFragment(pep.purchaseUrl),
+      ].filter(Boolean).join(". ")
     ),
     formatOperationalVialPolicySummary(
       report.peptides.map((peptide) => ({
@@ -1642,6 +1649,7 @@ function cleanReportContent(report: PeptidesReport, firstName: string): Peptides
     let cleaned = sanitizeClientFacingText(text);
     // Fix double commas from replacement
     cleaned = cleaned.replace(/,\s*,/g, ",");
+    cleaned = cleaned.replace(/\.{2,}/g, ".");
     // Fix 3rd person: "Prénom cherche" → "Tu cherches"
     const namePattern = new RegExp(`${firstName}\\s+(cherche|veut|souhaite|a besoin|desire|préfère|prefere|fait|pratique|s'entraîne|s'entraine)`, "gi");
     cleaned = cleaned.replace(namePattern, (_match, verb) => {

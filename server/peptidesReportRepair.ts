@@ -1313,9 +1313,9 @@ function allPeptideIdentities(report: RepairableReport): string {
 function liveShoppingLines(report: RepairableReport): string {
   return (report.peptides || []).map((peptide, index) => [
     `${index + 1}. ${peptide.name}`,
-    `Quantite calculee: ${peptide.vialsNeeded}.`,
-    `Offre live retenue: ${peptide.priceEstimate}.`,
-    `Page produit: ${peptide.purchaseUrl}.`,
+    `Quantite calculee: ${asSentence(peptide.vialsNeeded)}`,
+    `Offre live retenue: ${asSentence(peptide.priceEstimate)}`,
+    `Page produit: ${asSentence(peptide.purchaseUrl)}`,
   ].join("\n")).join("\n\n");
 }
 
