@@ -1163,6 +1163,25 @@ function findLiveSnapshotForPeptide(
   return bestMatch?.score ? bestMatch.snapshot : null;
 }
 
+function findTargetedProductFeedSnapshot(
+  peptideName: string,
+  slug: string,
+  snapshots: PeptauraLiveProductSnapshot[] | null,
+): PeptauraLiveProductSnapshot | null {
+  if (!snapshots?.length) return null;
+  const slugKey = normalizePeptauraKey(slug);
+  const exactSlugMatch = snapshots.find((snapshot) =>
+    normalizePeptauraKey(snapshot.slug) === slugKey
+  );
+  const snapshot = exactSlugMatch || findLiveSnapshotForPeptide(peptideName, snapshots);
+  if (!snapshot?.live || snapshot.listings.length === 0) return null;
+  peptauraProductCache.set(normalizePeptauraKey(snapshot.slug), {
+    value: snapshot,
+    expiresAt: Date.now() + PEPTAURA_CACHE_TTL_MS,
+  });
+  return snapshot;
+}
+
 function buildLivePriceEstimate(pep: PeptideItem, listing: PeptauraLiveListing, qty: number): string | null {
   const packagePrice = effectivePackagePrice(listing, qty);
   if (!Number.isFinite(packagePrice) || packagePrice <= 0) return null;
@@ -1193,6 +1212,7 @@ async function applyLivePeptauraPricing(
   const liveNotes: string[] = [];
   const failures: string[] = [];
   const listingSnapshots: Array<Record<string, unknown>> = [];
+  let targetedProductFeedSnapshotsPromise: Promise<PeptauraLiveProductSnapshot[] | null> | null = null;
 
   for (const pep of report.peptides) {
     if (isEnclomipheneName(pep.name)) {
@@ -1261,14 +1281,21 @@ async function applyLivePeptauraPricing(
     const cachedSnapshotAgeMs = cachedSnapshot
       ? Date.now() - new Date(cachedSnapshot.fetchedAt).getTime()
       : Number.POSITIVE_INFINITY;
-    const snapshot = fetchedSnapshot
-      || (
-        cachedSnapshot
-        && Number.isFinite(cachedSnapshotAgeMs)
-        && cachedSnapshotAgeMs <= PEPTAURA_CATALOG_MAX_AGE_MS
-          ? cachedSnapshot
-          : null
+    const freshCachedSnapshot = (
+      cachedSnapshot
+      && Number.isFinite(cachedSnapshotAgeMs)
+      && cachedSnapshotAgeMs <= PEPTAURA_CATALOG_MAX_AGE_MS
+    ) ? cachedSnapshot : null;
+    let targetedFeedSnapshot: PeptauraLiveProductSnapshot | null = null;
+    if (!fetchedSnapshot && !freshCachedSnapshot) {
+      targetedProductFeedSnapshotsPromise ||= fetchPeptauraProductFeedSnapshots(true);
+      targetedFeedSnapshot = findTargetedProductFeedSnapshot(
+        pep.name,
+        slug,
+        await targetedProductFeedSnapshotsPromise,
       );
+    }
+    const snapshot = fetchedSnapshot || freshCachedSnapshot || targetedFeedSnapshot;
     if (!snapshot || snapshot.listings.length === 0) {
       failures.push(`${pep.name}: page produit live indisponible`);
       continue;
@@ -1365,7 +1392,24 @@ async function applyLivePeptauraPricing(
       bacSlug,
       forceFresh
     );
-    const bacSnapshot = fetchedBacSnapshot || bacCachedSnapshot;
+    const bacCachedSnapshotAgeMs = bacCachedSnapshot
+      ? Date.now() - new Date(bacCachedSnapshot.fetchedAt).getTime()
+      : Number.POSITIVE_INFINITY;
+    const freshBacCachedSnapshot = (
+      bacCachedSnapshot
+      && Number.isFinite(bacCachedSnapshotAgeMs)
+      && bacCachedSnapshotAgeMs <= PEPTAURA_CATALOG_MAX_AGE_MS
+    ) ? bacCachedSnapshot : null;
+    let targetedBacFeedSnapshot: PeptauraLiveProductSnapshot | null = null;
+    if (!fetchedBacSnapshot && !freshBacCachedSnapshot) {
+      targetedProductFeedSnapshotsPromise ||= fetchPeptauraProductFeedSnapshots(true);
+      targetedBacFeedSnapshot = findTargetedProductFeedSnapshot(
+        bacProduct?.name || "BAC Water",
+        bacSlug,
+        await targetedProductFeedSnapshotsPromise,
+      );
+    }
+    const bacSnapshot = fetchedBacSnapshot || freshBacCachedSnapshot || targetedBacFeedSnapshot;
     const nominalBottleMl = Math.max(
       1,
       ...((bacSnapshot?.listings || [])
