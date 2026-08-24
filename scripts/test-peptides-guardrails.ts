@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import {
   calculateBacWaterNeedMl,
   estimateNeedMg,
+  extractTotalMgFromVials,
   findOperationalPeptidesMissingFromArray,
   findStructuredPeptideCoverageIssues,
   validatePeptidesReport,
@@ -139,6 +140,16 @@ const peptide = {
 };
 
 assert.equal(estimateNeedMg(peptide), 79, "La titration naturelle doit totaliser 79 mg");
+assert.equal(
+  extractTotalMgFromVials("1 flacon de 10mg pour usage ponctuel"),
+  10,
+  "La quantite explicite en flacon doit etre exploitable par le gate live"
+);
+assert.equal(
+  extractTotalMgFromVials("2 x 5mg pour usage ponctuel"),
+  10,
+  "La quantite explicite au format x doit etre exploitable par le gate live"
+);
 assert.equal(
   estimateNeedMg({
     dosage: "150 mcg au coucher",

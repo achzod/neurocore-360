@@ -564,15 +564,19 @@ export function hasCompleteConditionalReconstitution(
 
 export function extractVialQty(vialsNeeded: string | undefined): number | null {
   if (!vialsNeeded) return null;
-  const m = vialsNeeded.match(/(\d+)\s*vials?\b/i);
-  return m ? parseInt(m[1], 10) : null;
+  const m = vialsNeeded.match(/(\d+)\s*(?:vials?|flacons?|flasks?|bottles?)\b/i);
+  if (m) return parseInt(m[1], 10);
+  const xMatch = vialsNeeded.match(/(\d+)\s*(?:x|×)\s*\d+(?:[.,]\d+)?\s*mg\b/i);
+  return xMatch ? parseInt(xMatch[1], 10) : null;
 }
 
 export function extractVialMg(vialsNeeded: string | undefined): number | null {
   if (!vialsNeeded) return null;
-  const m = vialsNeeded.match(/vials?\s*(?:de|of)?\s*(\d+(?:[.,]\d+)?)\s*mg\b/i);
-  if (!m) return null;
-  return parseFloat(m[1].replace(",", "."));
+  const m = vialsNeeded.match(/(?:vials?|flacons?|flasks?|bottles?)\s*(?:de|of)?\s*(\d+(?:[.,]\d+)?)\s*mg\b/i);
+  if (m) return parseFloat(m[1].replace(",", "."));
+  const xMatch = vialsNeeded.match(/\d+\s*(?:x|×)\s*(\d+(?:[.,]\d+)?)\s*mg\b/i);
+  if (xMatch) return parseFloat(xMatch[1].replace(",", "."));
+  return null;
 }
 
 function extractPriceQty(priceEstimate: string | undefined): number | null {
