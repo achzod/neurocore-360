@@ -1286,10 +1286,16 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
   const appliedNames = new Set(
     (liveSync?.listingSnapshots || [])
       .map((entry) => String(entry.peptide || "").toLowerCase())
-      .filter(Boolean)
+      .filter((name) => Boolean(name) && name !== "bac water")
   );
-  if (peptides.length > 0 && appliedNames.size < peptides.length) {
-    errors.push(`prix live incomplets: ${appliedNames.size}/${peptides.length} peptides verifies`);
+  const missingLivePricePeptides = peptides
+    .map((p) => String(p.name || ""))
+    .filter((name) => {
+      const normalized = name.toLowerCase();
+      return name && normalized !== "bac water" && !appliedNames.has(normalized);
+    });
+  if (missingLivePricePeptides.length > 0) {
+    errors.push(`prix live incomplets: ${missingLivePricePeptides.join(", ")} non verifies`);
   }
   for (const snapshot of liveSync?.listingSnapshots || []) {
     const fetchedAtMs = new Date(String(snapshot.fetchedAt || "")).getTime();

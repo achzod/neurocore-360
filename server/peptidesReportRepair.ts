@@ -1202,36 +1202,36 @@ function cautiousPurpose(peptide: PeptideItem): { purpose: string; rationale: st
   if (/retatrutide/.test(name)) {
     return {
       purpose: "Hypothese experimentale liee a la regulation de l'appetit et du metabolisme, a discuter avec un medecin",
-      rationale: "Cette molecule a ete evoquee a cause de ton objectif de perte de masse grasse. Elle reste experimentale et non approuvee hors essai clinique. Son mecanisme ne prouve ni un benefice personnel, ni une preservation automatique du muscle, ni un rapport benefice-risque favorable pour toi.",
+      rationale: "Dans ton cas, cette molecule a ete evoquee a cause de ton objectif de perte de masse grasse et de ton besoin de cadre metabolique. Elle reste experimentale et non approuvee hors essai clinique. Son mecanisme ne prouve ni un benefice personnel, ni une preservation automatique du muscle, ni un rapport benefice-risque favorable pour toi.",
     };
   }
   if (/cjc/.test(name)) {
     return {
       purpose: "Hypothese experimentale autour de l'axe GH et de la recuperation, sans efficacite personnelle garantie",
-      rationale: "Cette molecule a ete evoquee en lien avec tes objectifs de recuperation et de sommeil. Les promesses de hausse utile de GH, de lipolyse ou d'effet anti-age sont retirees. Le statut du produit, les donnees humaines limitees et ton bilan doivent etre examines par un medecin.",
+      rationale: "Dans ton cas, cette molecule a ete evoquee en lien avec tes objectifs de recuperation et de sommeil. Les promesses de hausse utile de GH, de lipolyse ou d'effet anti-age sont retirees. Le statut du produit, les donnees humaines limitees et ton bilan doivent etre examines par un medecin.",
     };
   }
   if (/ipamorelin/.test(name)) {
     return {
       purpose: "Hypothese experimentale de secretagogue de GH, a evaluer sans promesse sur le sommeil ou la composition corporelle",
-      rationale: "Cette molecule a ete evoquee pour completer une discussion sur l'axe GH. Le rapport ne peut pas affirmer qu'elle sera selective, qu'elle evitera un effet hormonal indesirable ou qu'elle ameliorera ton sommeil et ta recuperation. Un medecin doit evaluer le niveau de preuve et les risques.",
+      rationale: "Dans ton cas, cette molecule a ete evoquee pour completer une discussion sur ton axe GH, ton sommeil et ta recuperation. Le rapport ne peut pas affirmer qu'elle sera selective, qu'elle evitera un effet hormonal indesirable ou qu'elle ameliorera automatiquement ton sommeil et ta recuperation. Un medecin doit evaluer le niveau de preuve et les risques.",
     };
   }
   if (/dsip/.test(name)) {
     return {
       purpose: "Hypothese experimentale autour du sommeil, avec donnees humaines limitees et sans effet hormonal garanti",
-      rationale: "Cette molecule a ete evoquee a cause de ton objectif de sommeil. Une amelioration du sommeil ou de la testostérone ne peut pas etre promise a partir du mecanisme suppose. Le produit est experimental pour cet usage et une evaluation medicale des causes du sommeil perturbe reste prioritaire.",
+      rationale: "Dans ton cas, cette molecule a ete evoquee a cause de ton objectif de sommeil et de ton besoin de recuperation plus stable. Une amelioration du sommeil ou de ta testosterone ne peut pas etre promise a partir du mecanisme suppose. Le produit est experimental pour cet usage et une evaluation medicale des causes du sommeil perturbe reste prioritaire.",
     };
   }
   if (/epitalon/.test(name)) {
     return {
       purpose: "Hypothese experimentale de longevite, sans benefice clinique anti-age etabli pour ton cas",
-      rationale: "Cette molecule a ete evoquee pour ton interet envers la longevite. Le rapport retire les affirmations sur l'activation utile de la telomerase, le rajeunissement cellulaire ou un profil de securite exceptionnel. Les preuves humaines et le statut reglementaire doivent etre verifies avec un professionnel.",
+      rationale: "Dans ton cas, cette molecule a ete evoquee pour ton interet envers la longevite et ta volonte d'optimiser le vieillissement. Le rapport retire les affirmations sur l'activation utile de la telomerase, le rajeunissement cellulaire ou un profil de securite exceptionnel. Les preuves humaines et le statut reglementaire doivent etre verifies avec un professionnel.",
     };
   }
   return {
     purpose: "Hypothese a discuter avec un medecin, sans efficacite ni securite garanties",
-    rationale: "Cette molecule a ete evoquee a partir de ton questionnaire. Cela ne suffit pas a conclure qu'elle est adaptee. Son statut, les donnees humaines, les risques, les alternatives approuvees et ton bilan doivent etre verifies avant toute decision.",
+    rationale: "Dans ton cas, cette molecule a ete evoquee a partir de ton questionnaire et de tes objectifs declares. Cela ne suffit pas a conclure qu'elle est adaptee pour toi. Son statut, les donnees humaines, les risques, les alternatives approuvees et ton bilan doivent etre verifies avant toute decision.",
   };
 }
 
@@ -1557,6 +1557,7 @@ export function repairPeptidesReportContent(
   if (report.qualityVersion === "medical-review-v1" && hasPeptidesHardRedFlag(responses)) {
     (report as any).qualityVersion = "medical-review-v1";
     cleanUnsafePeptideFields(report);
+    anchorExpertPeptideRationales(report, responses);
     report.sections = buildSections(report, firstName);
     report.shoppingList = sanitizeClientFacingText(liveShoppingLines(report));
     normalizeTierCreditClaims(report, String(tier || report.tier || ""));

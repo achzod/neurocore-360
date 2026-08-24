@@ -6074,7 +6074,13 @@ export async function registerRoutes(
     let manualCircuitClaimed = false;
     if (!requireAdminAuth(req, res)) return;
     try {
-      const { email, skipEmail, replaceReportId: requestedReplaceReportId } = req.body;
+      const {
+        email,
+        skipEmail,
+        replaceReportId: requestedReplaceReportId,
+        maxCandidates: requestedMaxCandidates,
+        providerRetries: requestedProviderRetries,
+      } = req.body;
       replaceReportId = requestedReplaceReportId;
       if (!email) { res.status(400).json({ error: "email requis" }); return; }
 
@@ -6180,6 +6186,8 @@ export async function registerRoutes(
       const report = await generatePeptidesProtocol(responses, email, manualTier, {
         ...(pepOrder?.id ? { orderId: pepOrder.id } : {}),
         consentAccepted: hasValidPeptidesConsent((pepOrder?.metadata as any)?.peptidesEngineConsent),
+        maxCandidates: Number.isFinite(Number(requestedMaxCandidates)) ? Number(requestedMaxCandidates) : 3,
+        providerRetries: Number.isFinite(Number(requestedProviderRetries)) ? Number(requestedProviderRetries) : 1,
       });
 
       let saved;

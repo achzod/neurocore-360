@@ -1080,6 +1080,27 @@ function selectBestLivePurchasePlan(
   return selectBestPurchasePlan(eligible, needMg, 1.2);
 }
 
+function formatLiveStockCoverageFailure(
+  peptideName: string,
+  snapshot: PeptauraLiveProductSnapshot,
+  shipping: PeptauraShippingAvailability,
+  needMg: number,
+): string {
+  const minimumDeliverableMg = eligibleLiveListings(snapshot, shipping)
+    .map((listing) => {
+      const listingMg = parseListingMg(listing.dosage);
+      if (listingMg == null || listingMg <= 0) return null;
+      return listingMg * Math.max(1, listing.boxSize);
+    })
+    .filter((value): value is number => value != null && Number.isFinite(value) && value > 0)
+    .sort((a, b) => a - b)[0];
+  if (minimumDeliverableMg == null) {
+    return `${peptideName}: aucune offre en stock compatible avec le pays, le dosage et la quantite`;
+  }
+  const ratio = minimumDeliverableMg / needMg;
+  return `${peptideName}: offre live impossible, besoin ${needMg.toFixed(2)} mg, minimum livrable ${minimumDeliverableMg.toFixed(2)} mg, surstock x${ratio.toFixed(2)} > x1.20`;
+}
+
 /**
  * MOTS-c is administered weekly across multi-week cycles. Keep each opened
  * vial limited to at most two weekly administrations instead of selecting a
@@ -1258,7 +1279,7 @@ async function applyLivePeptauraPricing(
       || extractVialMg(pep.reconstitution);
     const purchasePlan = selectBestLivePurchasePlan(snapshot, context.shippingAvailability, needMg, preferredVialMg);
     if (!purchasePlan) {
-      failures.push(`${pep.name}: aucune offre en stock ne couvre le besoin de ${needMg.toFixed(2)} mg sans plus de 20 % de surstock`);
+      failures.push(formatLiveStockCoverageFailure(pep.name, snapshot, context.shippingAvailability, needMg));
       continue;
     }
     const best = purchasePlan.listing;
@@ -2208,6 +2229,7 @@ RÈGLES ABSOLUES:
 4. Sélectionne 2 à 4 peptides AU TOTAL. Un bonus n'est autorise que s'il respecte le budget et s'il apparait partout: justification, reconstitution, calendrier, shopping list et tableau peptides. Pour un debutant a l'injection ou un budget contraint, reste plutot a 2 ou 3 peptides et n'ajoute aucun bonus gadget.
 5. Utilise UNIQUEMENT le catalogue Peptaura. URLs réelles.
 6. Pour le choix du fournisseur (pays de livraison ${peptauraContext.country}, ${budgetNote}) : suis STRICTEMENT CONTEXTE PEPTAURA LIVE. Recommande un fournisseur qui livre vers ${peptauraContext.country}, evite tout fournisseur liste comme bloque, et rappelle que le client doit verifier ${peptauraContext.shippingUrl} avant de payer.
+6b. Stock live et quantite achetable: ne choisis une molecule que si le besoin total calcule peut etre couvert par les formats live avec au maximum 20% de marge. Exemple: si le plus petit format live est 5 mg, le besoin total doit etre au moins 4.17 mg pour commander 1 vial; si le besoin coherent du protocole est plus bas, retire cette molecule et choisis une alternative dont le format Peptaura passe. Ne rallonge jamais une cure uniquement pour consommer un vial.
 7. Le rapport doit contenir entre 30000 et 38000 caracteres au total. Chaque section doit etre substantielle, sans repetitions ni remplissage. Ne depasse pas 38000 caracteres.
 8. Chaque entree de "peptides" doit apparaitre dans la section de justification, le guide de reconstitution, le calendrier pratique, "weeklySchedule" et la liste de courses. Si tu ne l'integres pas partout, retire-la du tableau.
 9. Le dosage, la duree et toute phase de descente doivent etre strictement identiques dans les cartes, les sections et le calendrier. N'invente jamais une descente dans une seule section.
@@ -2956,7 +2978,7 @@ export async function generatePeptidesProtocol(
   // A human-only recovery may explicitly request more, but no automatic caller
   // can accidentally inherit the old 2 candidates x 3 transport attempts.
   const providerRetries = Math.max(1, Math.min(3, options.providerRetries ?? 1));
-  const maxCandidates = Math.max(1, Math.min(2, options.maxCandidates ?? 1));
+  const maxCandidates = Math.max(1, Math.min(3, options.maxCandidates ?? 1));
   const generateProviderText = options.providerGenerate
     || ((params: {
       systemPrompt: string;
@@ -2980,7 +3002,7 @@ export async function generatePeptidesProtocol(
   const providerCandidates: Array<{
     provider: "openai";
     model: string;
-    generate: () => Promise<string>;
+    generate: (previousError: string) => Promise<string>;
   }> = [
     {
       provider: "openai",
@@ -2997,12 +3019,25 @@ export async function generatePeptidesProtocol(
     {
       provider: "openai",
       model: PEPTIDES_PRIMARY_MODEL,
-      generate: () =>
+      generate: (previousError) =>
         generateProviderText({
           systemPrompt: SYSTEM_PROMPT,
-          userPrompt: `${userPrompt}\n\nREGENERATION QUALITE: repars de zero. Controle avant de repondre les credits du tier, la presence de chaque peptide dans toutes les sections operationnelles, l'alignement des doses et des durees, les quantites de vials, la BAC water et la liste de commande.`,
+          userPrompt: `${userPrompt}\n\nREGENERATION QUALITE: repars de zero. Controle avant de repondre les credits du tier, la presence de chaque peptide dans toutes les sections operationnelles, l'alignement des doses et des durees, les quantites de vials, la BAC water et la liste de commande.\n\nECHEC PRECEDENT DU GATE SERVEUR:\n${previousError.slice(0, 2200)}\n\nCONSIGNE DE CORRECTION OBLIGATOIRE:\n- Si l'echec cite une molecule precise entre crochets ou avant deux-points, retire cette molecule de la nouvelle version sauf si tu peux changer le protocole de maniere coherente pour couvrir le format live avec maximum 20% de marge.\n- Si l'echec cite BPC-157 ou un besoin de 2.80 mg non couvert, ne repropose pas BPC-157 dans cette regeneration; choisis une alternative Peptaura compatible et integre-la partout.\n- Chaque whyThisPeptide doit parler directement au client avec tu/ton/ta/tes et relier au moins deux faits du questionnaire.`,
           email,
           label: "peptides-strict-regeneration",
+          retries: providerRetries,
+          orderId: options.orderId,
+        }),
+    },
+    {
+      provider: "openai",
+      model: PEPTIDES_PRIMARY_MODEL,
+      generate: (previousError) =>
+        generateProviderText({
+          systemPrompt: SYSTEM_PROMPT,
+          userPrompt: `${userPrompt}\n\nREGENERATION FINALE STOCK-AWARE: la version precedente a encore echoue. Repars de zero avec un stack plus simple, 2 peptides maximum si necessaire, aucun bonus si le bonus complique le stock live. Priorite absolue: validation Peptaura live, quantites achetables avec maximum 20% de marge, prix live pour chaque peptide, whyThisPeptide direct et personnalise.\n\nDERNIER ECHEC SERVEUR:\n${previousError.slice(0, 2600)}\n\nINTERDICTION: ne choisis aucun peptide mentionne dans cet echec si le message parle d'offre, stock, prix live incomplet, surstock ou whyThisPeptide.`,
+          email,
+          label: "peptides-final-stock-regeneration",
           retries: providerRetries,
           orderId: options.orderId,
         }),
@@ -3016,7 +3051,7 @@ export async function generatePeptidesProtocol(
       console.log(
         `[PeptidesEngine] Candidate ${attempt + 1}/${providers.length}: ${selected.provider}/${selected.model} for ${email}`
       );
-      const rawResponse = await selected.generate();
+      const rawResponse = await selected.generate(lastError);
       report = await extractJsonFromResponse(rawResponse);
 
       // ════════════════════════════════════════════════════════════
@@ -3108,6 +3143,26 @@ export async function generatePeptidesProtocol(
       report = validateAndFixPeptauraUrls(report);
       report = validateVialsMath(report);
       report = await applyLivePeptauraPricing(report, peptauraContext);
+      const liveSync = (report as any)._peptauraLiveSync;
+      const pricedPeptides = new Set(
+        (liveSync?.listingSnapshots || [])
+          .map((entry: any) => String(entry.peptide || "").toLowerCase())
+          .filter((name: string) => name && name !== "bac water")
+      );
+      const missingLivePricing = (report.peptides || [])
+        .map((pep: any) => String(pep.name || ""))
+        .filter((name: string) => name && !pricedPeptides.has(name.toLowerCase()));
+      const liveFailures = liveSync?.failures || [];
+      if (liveFailures.length > 0 || missingLivePricing.length > 0) {
+        throw new Error(
+          `LIVE_PRICING_GATE: ${[
+            ...liveFailures,
+            ...(missingLivePricing.length > 0
+              ? [`prix live manquant pour ${missingLivePricing.join(", ")}`]
+              : []),
+          ].slice(0, 8).join(" | ")}`
+        );
+      }
       report.qualityVersion = hasPeptidesHardRedFlag(responses)
         ? "medical-review-v1"
         : "expert-standard-v1";
