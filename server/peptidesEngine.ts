@@ -3163,7 +3163,7 @@ export async function generatePeptidesProtocol(
       // CHECK 6: dosages not placeholders/zeros/empty
       // Reject strings that look like templates (e.g., "[X mcg]", "TBD", "?mcg", "X mg/kg"),
       // or that have no digit at all, or dosages of 0.
-      const placeholderPattern = /^\s*$|\[|\]|TBD|\bX\b|XXX|\?\?\?|^\?/i;
+      const placeholderPattern = /^\s*$|\[|\]|TBD|\bX(?=\s*(?:mcg|µg|ug|mg|ml|kg|unit|unite|semaine|jour|$))\b|XXX|\?\?\?|^\?/i;
       for (const pep of report.peptides) {
         const dose = String(pep.dosage || "");
         if (placeholderPattern.test(dose)) {
