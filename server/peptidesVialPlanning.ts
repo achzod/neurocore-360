@@ -195,7 +195,8 @@ export function formatOperationalVials(
   peptideName = "cette molecule"
 ): string {
   const duration = String(cycleDuration || "le cycle")
-    .replace(/\s*,\s*/g, ", ")
+    .replace(/([A-Za-zÀ-ÿ)]),\s*/g, "$1, ")
+    .replace(/(\d),\s+(\d)/g, "$1,$2")
     .replace(/\s+\./g, ".")
     .replace(/\.{2,}/g, ".")
     .replace(/\b(?:puis|et)\s+arr[êe]t\s+sans\b\.?/gi, "puis arret")

@@ -633,7 +633,10 @@ function cleanExpertPeptideFields(report: RepairableReport): void {
     peptide.cycleDuration = removeUnsupportedDescent(
       peptide.cycleDuration,
       peptide.dosage
-    );
+    ).replace(/\b(?:puis|et)\s+arr[êe]t\s+sans\b\.?/gi, "puis arrêt")
+      .replace(/\barr[êe]t\s+sans\b\.?/gi, "arrêt")
+      .replace(/([A-Za-zÀ-ÿ)]),(\d)/g, "$1, $2")
+      .replace(/(\d),\s+(\d)/g, "$1,$2");
 
     const vialMatch = String(peptide.reconstitution || "").replace(/(\d),(\d)/g, "$1.$2").match(/vial(?: de)?\s*(\d+(?:\.\d+)?)\s*mg\s*\+\s*(\d+(?:\.\d+)?)\s*ml/i);
     const doseMatch = Array.from(String(peptide.dosage || "").replace(/(\d),(\d)/g, "$1.$2").matchAll(/(\d+(?:\.\d+)?)\s*mg/gi))
