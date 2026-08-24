@@ -201,6 +201,7 @@ export function formatOperationalVials(
     .replace(/\.{2,}/g, ".")
     .replace(/\b(?:puis|et)\s+arr[êe]t\s+sans\b\.?/gi, "puis arret")
     .replace(/\barr[êe]t\s+sans\b\.?/gi, "arret")
+    .replace(/[.\s]+$/g, "")
     .trim();
   if (plan.pharmacologicalNeedMg == null || plan.vialSizeMg == null || plan.mathematicalMinimumVials == null) {
     return "Calcul de flacons impossible: dosage, frequence, duree ou taille de vial non lisible.";
