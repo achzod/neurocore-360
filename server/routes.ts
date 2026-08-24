@@ -7232,6 +7232,113 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/admin/peptides/deliver-existing", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { orderId, reportId } = req.body as { orderId?: string; reportId?: string };
+      if (!orderId || !reportId) {
+        res.status(400).json({ success: false, error: "orderId et reportId requis" });
+        return;
+      }
+
+      const order = await storage.getOrder(orderId);
+      if (!order || order.productType !== "PEPTIDES_ENGINE" || order.status !== "paid") {
+        res.status(404).json({ success: false, error: "Commande Peptides Engine payee introuvable" });
+        return;
+      }
+
+      const email = String(order.email || "").trim().toLowerCase();
+      const meta = ((order.metadata as any) || {}) as Record<string, any>;
+      if (!email) {
+        res.status(400).json({ success: false, error: "Email commande manquant" });
+        return;
+      }
+      if (String(meta.peptidesReportId || "") !== reportId) {
+        res.status(409).json({
+          success: false,
+          error: "ReportId non lie a cette commande",
+          orderReportId: meta.peptidesReportId || null,
+        });
+        return;
+      }
+      if (meta.peptidesEmailHold === true || meta.peptidesEmailHold === "true") {
+        res.status(409).json({ success: false, error: "Livraison bloquee par peptidesEmailHold" });
+        return;
+      }
+
+      const existing = await storage.getBurnoutReport(reportId);
+      if (!existing || !String(existing.email ?? "").startsWith("peptides::")) {
+        res.status(404).json({ success: false, error: "Rapport Peptides introuvable" });
+        return;
+      }
+      const reportEmail = String(existing.email ?? "").replace(/^peptides::/i, "").trim().toLowerCase();
+      if (reportEmail !== email) {
+        res.status(409).json({ success: false, error: "Email rapport different de la commande", reportEmail });
+        return;
+      }
+
+      const { validatePeptidesReport } = await import("./peptidesReportValidator");
+      const report = existing.report as any;
+      const validation = validatePeptidesReport(report);
+      if (!validation.ok) {
+        res.status(422).json({
+          success: false,
+          error: "Validation pre-livraison echouee",
+          validation,
+        });
+        return;
+      }
+
+      const alreadyEmailed = await storage.hasPeptidesDeliveryEmailBeenSent(email).catch(() => false);
+      if (alreadyEmailed) {
+        await storage.finalizePeptidesReportDelivery(order.id, reportId, "ACCEPTED").catch(() => {});
+        res.json({ success: true, email, reportId, state: "ACCEPTED", alreadyEmailed: true, sent: false });
+        return;
+      }
+
+      const claimed = await storage.claimPeptidesReportDelivery(order.id, reportId);
+      if (!claimed) {
+        const fresh = await storage.getOrder(order.id).catch(() => null);
+        res.status(409).json({
+          success: false,
+          error: "Delivery deja claim, acceptee, inconnue, ou tentatives epuisees",
+          deliveryState: (fresh?.metadata as any)?.peptidesDeliveryState || null,
+          deliveryAttempts: (fresh?.metadata as any)?.peptidesDeliveryAttempts || null,
+          deliveryLeaseUntil: (fresh?.metadata as any)?.peptidesDeliveryLeaseUntil || null,
+        });
+        return;
+      }
+
+      const baseUrl = getBaseUrl();
+      const tier = meta.peptidesTier ?? report?.tier ?? null;
+      const peptidesNames = report?.peptides?.map((item: any) => item.name).filter(Boolean).join(", ") || "voir le rapport";
+      const result = await sendPeptidesReportReadyEmail(email, {
+        firstName: meta?.peptidesResponses?.prenom || email.split("@")[0],
+        orderId: order.id,
+        reportId,
+        reportUrl: `${baseUrl}/peptides/${reportId}`,
+        peptidesNames,
+        promoText: buildPeptidesBloodCreditsBlock(tier, `${baseUrl}/blood-dashboard`),
+        coachingText: buildPeptidesCoachingDeductionBlock(tier),
+      });
+      const state = classifyPeptidesEmailResult(result);
+      await storage.finalizePeptidesReportDelivery(order.id, reportId, state).catch(() => {});
+
+      res.status(state === "ACCEPTED" ? 200 : state === "UNKNOWN" ? 202 : 502).json({
+        success: state === "ACCEPTED",
+        email,
+        reportId,
+        state,
+        sent: state === "ACCEPTED",
+        reconcileRequired: result.reconcileRequired || false,
+        providerMessageId: (result as any).messageId || null,
+      });
+    } catch (error: any) {
+      console.error("[Admin Peptides Deliver Existing] Error:", error);
+      res.status(500).json({ success: false, error: error?.message || "Erreur serveur" });
+    }
+  });
+
   app.post("/api/admin/audit/:auditId/check-completeness", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
