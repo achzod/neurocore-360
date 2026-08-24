@@ -1333,7 +1333,7 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
     }
     if (snapshot.deliveredVials != null
       && snapshot.requestedVials != null
-      && snapshot.deliveredVials / snapshot.requestedVials > 1.2) {
+      && snapshot.deliveredVials / snapshot.requestedVials > 1.3) {
       errors.push(`[${snapshot.peptide || "?"}] boite live impose trop de surstock: ${snapshot.deliveredVials} recus pour ${snapshot.requestedVials} demandes`);
     }
   }

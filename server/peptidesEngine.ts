@@ -350,6 +350,7 @@ const PEPTAURA_CATALOG_MAX_AGE_MS = Number(process.env.PEPTAURA_CATALOG_MAX_AGE_
 const PEPTAURA_CRAWL_INTERVAL_MS = Number(process.env.PEPTAURA_CRAWL_INTERVAL_MS || 15 * 60 * 1000);
 const PEPTAURA_CRAWL_CONCURRENCY = Math.max(1, Math.min(8, Number(process.env.PEPTAURA_CRAWL_CONCURRENCY || 4)));
 const PEPTAURA_FETCH_TIMEOUT_MS = Number(process.env.PEPTAURA_FETCH_TIMEOUT_MS || 8000);
+const PEPTAURA_MAX_PACKAGING_OVERSTOCK_RATIO = Number(process.env.PEPTAURA_MAX_PACKAGING_OVERSTOCK_RATIO || 1.3);
 let peptauraSitemapCache: CacheEntry<string[] | null> | null = null;
 let peptauraProductFeedCache: CacheEntry<PeptauraLiveProductSnapshot[] | null> | null = null;
 const peptauraShippingCache = new Map<string, CacheEntry<PeptauraShippingAvailability>>();
@@ -1014,7 +1015,7 @@ function selectBestLiveListing(
     if (candidates.length === 0) return null;
   }
 
-  const maxAllowedVials = Math.max(qty, Math.floor(qty * 1.2));
+  const maxAllowedVials = Math.max(qty, Math.floor(qty * PEPTAURA_MAX_PACKAGING_OVERSTOCK_RATIO));
   const withoutForcedOverstock = candidates.filter((listing) => {
     const deliveredVials = packageCountForVials(listing, qty) * listing.boxSize;
     return deliveredVials <= maxAllowedVials;
@@ -1072,12 +1073,12 @@ function selectBestLivePurchasePlan(
         const vialMg = parseListingMg(listing.dosage);
         return vialMg != null && Math.abs(vialMg - preferredVialMg) < 0.05;
       })
-      .map((listing) => buildPurchasePlan(listing, needMg, 1.2))
+      .map((listing) => buildPurchasePlan(listing, needMg, PEPTAURA_MAX_PACKAGING_OVERSTOCK_RATIO))
       .filter((plan): plan is PeptidePurchasePlan<PeptauraLiveListing> => plan != null)
       .sort((a, b) => a.totalPriceUsd - b.totalPriceUsd);
     if (preferredPlans[0]) return preferredPlans[0];
   }
-  return selectBestPurchasePlan(eligible, needMg, 1.2);
+  return selectBestPurchasePlan(eligible, needMg, PEPTAURA_MAX_PACKAGING_OVERSTOCK_RATIO);
 }
 
 function formatLiveStockCoverageFailure(
@@ -1098,7 +1099,7 @@ function formatLiveStockCoverageFailure(
     return `${peptideName}: aucune offre en stock compatible avec le pays, le dosage et la quantite`;
   }
   const ratio = minimumDeliverableMg / needMg;
-  return `${peptideName}: offre live impossible, besoin ${needMg.toFixed(2)} mg, minimum livrable ${minimumDeliverableMg.toFixed(2)} mg, surstock x${ratio.toFixed(2)} > x1.20`;
+  return `${peptideName}: offre live impossible, besoin ${needMg.toFixed(2)} mg, minimum livrable ${minimumDeliverableMg.toFixed(2)} mg, surstock x${ratio.toFixed(2)} > x${PEPTAURA_MAX_PACKAGING_OVERSTOCK_RATIO.toFixed(2)}`;
 }
 
 /**
@@ -1901,7 +1902,7 @@ DEUX CAS :
 1. Protocole CONTINU (BPC-157, CJC, Ipamorelin, Retatrutide en titration) = dose moyenne par injection × fréquence par semaine × nombre de semaines.
 2. Protocole CURE (Epitalon, Thymosin Alpha, MOTS-c parfois) = dose par jour × NOMBRE DE JOURS CONSECUTIFS DE LA CURE. PAS × 12 semaines × 7 jours. Si Epitalon = 10 mg/jour pendant 20 jours, le besoin total c'est 200 mg, donc 20 vials de 10 mg, PAS 84 vials.
 
-Puis recommande le nombre de vials qui couvre ce besoin + 20 % de marge MAX (pour reconstitution et test). JAMAIS plus.
+Puis recommande le nombre de vials qui couvre ce besoin + 30 % de marge MAX quand le format live impose une capacite minimale (pour reconstitution et test). JAMAIS plus.
 
 ALIGNEMENT vialsNeeded ↔ priceEstimate (NON NEGOCIABLE)
 La quantite annoncee dans "vialsNeeded" DOIT EXACTEMENT egaler la quantite utilisee dans le calcul "priceEstimate". Si vialsNeeded = "3 vials", priceEstimate calcule sur 3 vials. JAMAIS l'inverse. Pas de "3 vials mais commander 10 pour le prix degressif" : c'est une suggestion de sur-commande qui appauvrit le client. UN SEUL CHIFFRE, le bon.
@@ -2172,7 +2173,7 @@ MASSE MUSCULAIRE (RÈGLE DE COHÉRENCE, PAS D'AJOUT AVEUGLE)
 Tu peux envisager un peptide orienté récupération / maintien de masse maigre si le profil sportif le justifie, mais uniquement s'il reste cohérent avec l'objectif principal, le budget, le niveau d'expérience injection et le catalogue Peptaura live. Ne force jamais un axe GH/anabolisme si l'objectif primaire est surtout fat loss, si le client est anxieux avec les injections, ou si l'ajout rend la liste de commande instable. Interdiction d'ajouter CJC-1295 avec DAC comme variante automatique ou bonus non demandé. Si tu utilises CJC-1295, privilégie uniquement la version sans DAC ou le blend CJC-1295 sans DAC + Ipamorelin quand il est vraiment justifié et achetable avec un surstock raisonnable. Mieux vaut un stack plus simple, livrable et vérifiable qu'un stack impressionnant mais impossible à sourcer proprement.
 
 PEPTIDE BONUS (RÈGLE CONDITIONNELLE)
-Tu peux proposer un peptide BONUS seulement s'il ne casse aucun gate: pas de doublon, pas de peptide non demandé impossible à acheter, pas de dépassement absurde du budget, pas de surstock > 20 %, pas d'ajout qui complique inutilement la sécurité. Le bonus doit rester une option réellement complémentaire et live-coverable. Si aucun bonus propre n'est disponible, n'en invente pas. Le rapport final doit prioriser la stabilité, la lisibilité et la livraison validée au client.
+Tu peux proposer un peptide BONUS seulement s'il ne casse aucun gate: pas de doublon, pas de peptide non demandé impossible à acheter, pas de dépassement absurde du budget, pas de surstock > 30 %, pas d'ajout qui complique inutilement la sécurité. Le bonus doit rester une option réellement complémentaire et live-coverable. Si aucun bonus propre n'est disponible, n'en invente pas. Le rapport final doit prioriser la stabilité, la lisibilité et la livraison validée au client.
 
 RECOMMANDATIONS DIÉTÉTIQUES (OBLIGATOIRE, section dédiée "nutrition-protocole")
 Chaque protocole DOIT inclure une section nutrition complète et personnalisée. Voici les règles par objectif :
@@ -2273,7 +2274,7 @@ RÈGLES ABSOLUES:
 4. Sélectionne 2 à 4 peptides AU TOTAL. Un bonus n'est autorise que s'il respecte le budget et s'il apparait partout: justification, reconstitution, calendrier, shopping list et tableau peptides. Pour un debutant a l'injection ou un budget contraint, reste plutot a 2 ou 3 peptides et n'ajoute aucun bonus gadget.
 5. Utilise UNIQUEMENT le catalogue Peptaura. URLs réelles.
 6. Pour le choix du fournisseur (pays de livraison ${peptauraContext.country}, ${budgetNote}) : suis STRICTEMENT CONTEXTE PEPTAURA LIVE. Recommande un fournisseur qui livre vers ${peptauraContext.country}, evite tout fournisseur liste comme bloque, et rappelle que le client doit verifier ${peptauraContext.shippingUrl} avant de payer.
-6b. Stock live et quantite achetable: ne choisis une molecule que si le besoin total calcule peut etre couvert par les formats live avec au maximum 20% de marge. Exemple: si le plus petit format live est 5 mg, le besoin total doit etre au moins 4.17 mg pour commander 1 vial; si le besoin coherent du protocole est plus bas, retire cette molecule et choisis une alternative dont le format Peptaura passe. Ne rallonge jamais une cure uniquement pour consommer un vial.
+6b. Stock live et quantite achetable: ne choisis une molecule que si le besoin total calcule peut etre couvert par les formats live avec au maximum 30% de marge quand le packaging live l'impose. Exemple: si le plus petit format live est 5 mg, le besoin total doit etre au moins 3.85 mg pour commander 1 vial; si le besoin coherent du protocole est plus bas, retire cette molecule et choisis une alternative dont le format Peptaura passe. Ne rallonge jamais une cure uniquement pour consommer un vial.
 7. Le rapport doit contenir entre 30000 et 38000 caracteres au total. Chaque section doit etre substantielle, sans repetitions ni remplissage. Ne depasse pas 38000 caracteres.
 8. Chaque entree de "peptides" doit apparaitre dans la section de justification, le guide de reconstitution, le calendrier pratique, "weeklySchedule" et la liste de courses. Si tu ne l'integres pas partout, retire-la du tableau.
 9. Le dosage, la duree et toute phase de descente doivent etre strictement identiques dans les cartes, les sections et le calendrier. N'invente jamais une descente dans une seule section.
@@ -3049,7 +3050,7 @@ export async function generatePeptidesProtocol(
   let report: PeptidesReport | null = null;
   let lastError = String(options.initialPreviousError || "").trim();
   const manualErrorContext = lastError
-    ? `\n\nREPRISE MANUELLE APRES ECHEC SERVEUR:\n${lastError.slice(0, 2200)}\n\nCorrige cette cause des le premier jet: si une molecule est citee dans l'echec pour stock, prix live incomplet, surstock ou whyThisPeptide, retire-la sauf couverture live deterministe avec moins de 20% de marge.`
+    ? `\n\nREPRISE MANUELLE APRES ECHEC SERVEUR:\n${lastError.slice(0, 2200)}\n\nCorrige cette cause des le premier jet: si une molecule est citee dans l'echec pour stock, prix live incomplet, surstock ou whyThisPeptide, retire-la sauf couverture live deterministe avec moins de 30% de marge.`
     : "";
   const costBudgetEstimatedUsd = Number.isFinite(Number(options.costBudgetEstimatedUsd))
     ? Math.max(0.01, Math.min(1, Number(options.costBudgetEstimatedUsd)))
@@ -3078,7 +3079,7 @@ export async function generatePeptidesProtocol(
       generate: (previousError) =>
         generateProviderText({
           systemPrompt: SYSTEM_PROMPT,
-          userPrompt: `${userPrompt}\n\nREGENERATION QUALITE: repars de zero. Controle avant de repondre les credits du tier, la presence de chaque peptide dans toutes les sections operationnelles, l'alignement des doses et des durees, les quantites de vials, la BAC water et la liste de commande.\n\nECHEC PRECEDENT DU GATE SERVEUR:\n${previousError.slice(0, 2200)}\n\nCONSIGNE DE CORRECTION OBLIGATOIRE:\n- Si l'echec cite une molecule precise entre crochets ou avant deux-points, retire cette molecule de la nouvelle version sauf si tu peux changer le protocole de maniere coherente pour couvrir le format live avec maximum 20% de marge.\n- Si l'echec cite BPC-157 ou un besoin de 2.80 mg non couvert, ne repropose pas BPC-157 dans cette regeneration; choisis une alternative Peptaura compatible et integre-la partout.\n- Chaque whyThisPeptide doit parler directement au client avec tu/ton/ta/tes et relier au moins deux faits du questionnaire.`,
+          userPrompt: `${userPrompt}\n\nREGENERATION QUALITE: repars de zero. Controle avant de repondre les credits du tier, la presence de chaque peptide dans toutes les sections operationnelles, l'alignement des doses et des durees, les quantites de vials, la BAC water et la liste de commande.\n\nECHEC PRECEDENT DU GATE SERVEUR:\n${previousError.slice(0, 2200)}\n\nCONSIGNE DE CORRECTION OBLIGATOIRE:\n- Si l'echec cite une molecule precise entre crochets ou avant deux-points, retire cette molecule de la nouvelle version sauf si tu peux changer le protocole de maniere coherente pour couvrir le format live avec maximum 30% de marge.\n- Si l'echec cite BPC-157 ou un besoin de 2.80 mg non couvert, ne repropose pas BPC-157 dans cette regeneration; choisis une alternative Peptaura compatible et integre-la partout.\n- Chaque whyThisPeptide doit parler directement au client avec tu/ton/ta/tes et relier au moins deux faits du questionnaire.`,
           email,
           label: "peptides-strict-regeneration",
           retries: providerRetries,
@@ -3092,7 +3093,7 @@ export async function generatePeptidesProtocol(
       generate: (previousError) =>
         generateProviderText({
           systemPrompt: SYSTEM_PROMPT,
-          userPrompt: `${userPrompt}\n\nREGENERATION FINALE STOCK-AWARE: la version precedente a encore echoue. Repars de zero avec un stack plus simple, 2 peptides maximum si necessaire, aucun bonus si le bonus complique le stock live. Priorite absolue: validation Peptaura live, quantites achetables avec maximum 20% de marge, prix live pour chaque peptide, whyThisPeptide direct et personnalise.\n\nDERNIER ECHEC SERVEUR:\n${previousError.slice(0, 2600)}\n\nINTERDICTION: ne choisis aucun peptide mentionne dans cet echec si le message parle d'offre, stock, prix live incomplet, surstock ou whyThisPeptide.`,
+          userPrompt: `${userPrompt}\n\nREGENERATION FINALE STOCK-AWARE: la version precedente a encore echoue. Repars de zero avec un stack plus simple, 2 peptides maximum si necessaire, aucun bonus si le bonus complique le stock live. Priorite absolue: validation Peptaura live, quantites achetables avec maximum 30% de marge, prix live pour chaque peptide, whyThisPeptide direct et personnalise.\n\nDERNIER ECHEC SERVEUR:\n${previousError.slice(0, 2600)}\n\nINTERDICTION: ne choisis aucun peptide mentionne dans cet echec si le message parle d'offre, stock, prix live incomplet, surstock ou whyThisPeptide.`,
           email,
           label: "peptides-final-stock-regeneration",
           retries: providerRetries,
