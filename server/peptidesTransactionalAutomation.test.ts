@@ -80,8 +80,9 @@ test("production flow separates payment confirmation from provider generation", 
   assert.match(routes, /\/api\/admin\/orders\/:id\/peptides-reset-generation-lock/);
   assert.match(routes, /\/api\/admin\/orders\/:id\/peptides-deliver-report/);
   assert.match(routes, /resetPeptidesReportDeliveryCircuit\(/);
-  assert.match(routes, /maxCandidates:\s*1/);
+  assert.match(routes, /maxCandidates:\s*2/);
   assert.match(routes, /providerRetries:\s*1/);
+  assert.match(routes, /costBudgetEstimatedUsd:\s*0\.05/);
   assert.match(routes, /deliverPeptidesReportOnce\(/);
   assert.match(routes, /PEPTIDES_TRANSACTIONAL_AUTOMATION_ENABLED/);
   assert.match(routes, /PEPTIDES_AUTOMATION_START_AT/);

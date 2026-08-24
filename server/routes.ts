@@ -15191,12 +15191,15 @@ export async function registerRoutes(
         const autoGenTier = ((order.metadata as any)?.peptidesTier as "solo" | "coached" | "tracked" | undefined) ?? "coached";
         let report;
         try {
-          // Autogen gets exactly one provider request. The engine's optional
-          // second quality candidate and transport retries are manual-only.
+          // Autogen gets one transport try per candidate, but two quality
+          // candidates. If the first report fails a deterministic gate
+          // (stock/pricing/content), the engine can self-recover without
+          // opening NEEDS_REVIEW for a human-only retry.
           report = await generatePeptidesProtocol(responses, email, autoGenTier, {
-            maxCandidates: 1,
+            maxCandidates: 2,
             providerRetries: 1,
             orderId: order.id,
+            costBudgetEstimatedUsd: 0.05,
             consentAccepted: hasValidPeptidesConsent((order.metadata as any)?.peptidesEngineConsent),
           });
         } catch (generationError: any) {
