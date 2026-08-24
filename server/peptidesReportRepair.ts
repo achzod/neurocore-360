@@ -596,6 +596,8 @@ function removeUnsupportedDescent(
     )
     .replace(/\s*,\s*,/g, ",")
     .replace(/\(\s*\)/g, "")
+    .replace(/\b(?:puis|et)\s+arr[êe]t\s+sans\b\.?/gi, "puis arrêt")
+    .replace(/\barr[êe]t\s+sans\b\.?/gi, "arrêt")
     .replace(/\s{2,}/g, " ")
     .replace(/[\s,;]+$/g, "")
     .trim();

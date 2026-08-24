@@ -194,14 +194,21 @@ export function formatOperationalVials(
   cycleDuration: string,
   peptideName = "cette molecule"
 ): string {
+  const duration = String(cycleDuration || "le cycle")
+    .replace(/\s*,\s*/g, ", ")
+    .replace(/\s+\./g, ".")
+    .replace(/\.{2,}/g, ".")
+    .replace(/\b(?:puis|et)\s+arr[êe]t\s+sans\b\.?/gi, "puis arret")
+    .replace(/\barr[êe]t\s+sans\b\.?/gi, "arret")
+    .trim();
   if (plan.pharmacologicalNeedMg == null || plan.vialSizeMg == null || plan.mathematicalMinimumVials == null) {
     return "Calcul de flacons impossible: dosage, frequence, duree ou taille de vial non lisible.";
   }
   const need = Number(plan.pharmacologicalNeedMg.toFixed(3));
   if (plan.status !== "documented" || plan.operationalVials == null) {
-    return `Besoin brut ${need}mg. Minimum mathematique ${plan.mathematicalMinimumVials} vial${plan.mathematicalMinimumVials > 1 ? "s" : ""} de ${plan.vialSizeMg}mg pour ${cycleDuration}. Achat operationnel non chiffre pour ${peptideName}: aucune politique de fenetre operationnelle apres reconstitution n'est configuree. Aucune reserve n'est ajoutee.`;
+    return `Achat minimum ${plan.mathematicalMinimumVials} vial${plan.mathematicalMinimumVials > 1 ? "s" : ""} de ${plan.vialSizeMg}mg pour ${duration}. Besoin brut ${need}mg. Aucune reserve scellee n'est ajoutee pour ${peptideName}, car aucune fenetre operationnelle documentee apres reconstitution n'est configuree.`;
   }
-  return `Achat operationnel ${plan.operationalVials} vial${plan.operationalVials > 1 ? "s" : ""} de ${plan.vialSizeMg}mg pour ${cycleDuration}. Besoin brut ${need}mg, minimum mathematique ${plan.mathematicalMinimumVials}.`;
+  return `Achat operationnel ${plan.operationalVials} vial${plan.operationalVials > 1 ? "s" : ""} de ${plan.vialSizeMg}mg pour ${duration}. Besoin brut ${need}mg, minimum mathematique ${plan.mathematicalMinimumVials}.`;
 }
 
 /**

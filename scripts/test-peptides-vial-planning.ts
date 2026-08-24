@@ -47,7 +47,7 @@ assert.equal(noInventedStability.mathematicalMinimumVials, 1);
 assert.equal(noInventedStability.operationalVials, null);
 assert.match(
   formatOperationalVials(noInventedStability, "10 semaines", "BPC-157"),
-  /Achat operationnel non chiffre pour BPC-157/
+  /Achat minimum 1 vial de 5mg[\s\S]*Aucune reserve scellee n'est ajoutee pour BPC-157/
 );
 assert.throws(
   () => parseDocumentedStabilityConfig('{"Ipamorelin":{"days":28}}'),
