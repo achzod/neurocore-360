@@ -736,7 +736,7 @@ export default function BloodAnalysisOffer() {
               Obtenir mes 2 analyses ,  99€
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
-            <p className="mt-4 text-center text-xs text-white/30">Paiement securise par Stripe · Carte ou PayPal</p>
+            <p className="mt-4 text-center text-xs text-white/30">Paiement securise par Stripe · Carte bancaire</p>
           </motion.div>
         </div>
       </section>
@@ -787,7 +787,7 @@ export default function BloodAnalysisOffer() {
                 step: "01",
                 icon: Zap,
                 title: "Obtiens tes 2 credits",
-                desc: "Paiement unique de 99\u20ac par carte ou PayPal. Tes 2 credits sont ajoutes a ton dashboard et n'expirent pas.",
+                desc: "Paiement unique de 99\u20ac par carte bancaire. Tes 2 credits sont ajoutes a ton dashboard et n'expirent pas.",
                 time: "< 1 min",
               },
               {

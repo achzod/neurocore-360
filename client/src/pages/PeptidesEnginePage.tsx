@@ -73,7 +73,7 @@ function readTierFromUrl(): PeptidesTier {
 // IMPORTANT : ne JAMAIS modifier silencieusement le texte ci-dessous, toujours
 // bumper TERMS_VERSION quand la formulation change. Le serveur stocke la
 // version acceptée dans order.metadata.peptidesEngineConsent pour preuve en
-// cas de litige PayPal/Stripe.
+// cas de litige Stripe.
 const PEPTIDES_TERMS_VERSION = "peptides-engine-consent-v2-2026-08-13";
 const PEPTIDES_TERMS_TEXT =
   "Je demande la création immédiate d'un protocole Peptides Engine personnalisé à partir de mes réponses. Je comprends qu'il s'agit d'un contenu éducatif, que certaines molécules peuvent être expérimentales ou non approuvées pour cet usage, et que le rapport ne remplace ni diagnostic ni ordonnance. Je confirme avoir fourni des informations exactes, avoir lu les contre-indications et critères d'arrêt, accepter la confidentialité de mes données et de la source fournisseur, et assumer mes décisions d'achat et d'utilisation. En raison de la nature digitale et personnalisée du rapport, aucun remboursement n'est possible une fois le rapport livré, et je renonce expressément à mon droit de rétractation conformément à l'article L221-28 du Code de la consommation. Je confirme avoir lu et accepté les Conditions Générales de Vente.";
@@ -289,10 +289,7 @@ function SafetyBanner({ reason }: { reason: string }) {
 function CheckoutCard({
   responses,
   onConfirmStripe,
-  onConfirmPaypal,
   isLoading,
-  paymentMethod,
-  onPaymentMethodChange,
   promoCode,
   onPromoCodeChange,
   acceptedTerms,
@@ -302,10 +299,7 @@ function CheckoutCard({
 }: {
   responses: Record<string, unknown>;
   onConfirmStripe: () => void;
-  onConfirmPaypal: () => void;
   isLoading: boolean;
-  paymentMethod: "stripe" | "paypal";
-  onPaymentMethodChange: (m: "stripe" | "paypal") => void;
   promoCode: string;
   onPromoCodeChange: (v: string) => void;
   acceptedTerms: boolean;
@@ -424,31 +418,9 @@ function CheckoutCard({
         <SafetyBanner reason={safetyCheck.reason} />
       )}
 
-      {/* Payment method toggle */}
       {!safetyCheck.blocked && (
-        <div className="flex gap-2">
-          <button
-            onClick={() => onPaymentMethodChange("stripe")}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
-              paymentMethod === "stripe"
-                ? "border-amber-500 bg-amber-500/10 text-amber-400"
-                : "border-white/10 bg-white/5 text-white/50 hover:border-white/30"
-            }`}
-            aria-pressed={paymentMethod === "stripe"}
-          >
-            Carte bancaire
-          </button>
-          <button
-            onClick={() => onPaymentMethodChange("paypal")}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
-              paymentMethod === "paypal"
-                ? "border-amber-500 bg-amber-500/10 text-amber-400"
-                : "border-white/10 bg-white/5 text-white/50 hover:border-white/30"
-            }`}
-            aria-pressed={paymentMethod === "paypal"}
-          >
-            PayPal
-          </button>
+        <div className="rounded-lg border border-amber-500 bg-amber-500/10 py-2 text-center text-sm font-medium text-amber-400">
+          Carte bancaire
         </div>
       )}
 
@@ -467,7 +439,7 @@ function CheckoutCard({
 
       {/* Consent ,  required before any payment can be initiated.
           Acceptance is captured server-side with timestamp + IP + UA + text
-          version for legal traceability against PayPal/Stripe disputes. */}
+          version for legal traceability against Stripe disputes. */}
       {!safetyCheck.blocked && (
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4">
           <label className="flex items-start gap-3 cursor-pointer">
@@ -504,7 +476,7 @@ function CheckoutCard({
 
       {/* CTA */}
       <Button
-        onClick={paymentMethod === "paypal" ? onConfirmPaypal : onConfirmStripe}
+        onClick={onConfirmStripe}
         disabled={safetyCheck.blocked || isLoading || !acceptedTerms}
         className="w-full bg-amber-500 hover:bg-amber-400 text-black font-bold text-base h-12 disabled:opacity-40 disabled:cursor-not-allowed"
         aria-disabled={safetyCheck.blocked || !acceptedTerms}
@@ -548,7 +520,6 @@ export default function PeptidesEnginePage() {
 
   const [sectionIndex, setSectionIndex] = useState(0);
   const [responses, setResponses] = useState<Record<string, unknown>>({});
-  const [paymentMethod, setPaymentMethod] = useState<"stripe" | "paypal">("stripe");
   const [showCheckout, setShowCheckout] = useState(false);
   const [promoCode, setPromoCode] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -598,10 +569,7 @@ export default function PeptidesEnginePage() {
     }
   }, [responses, sectionIndex, showCheckout]);
 
-  // Handle ?cancelled=true return from Stripe/PayPal cancel flow.
-  // Without this toast, clients who hit "Cancel" on PayPal land back here
-  // with no feedback, get confused, and abandon (this caused 77% pending
-  // PayPal orders in May 2026).
+  // Handle ?cancelled=true return from Stripe cancel flow.
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get("cancelled") === "true") {
@@ -679,7 +647,7 @@ export default function PeptidesEnginePage() {
 
   // Stripe mutation
   const checkoutMutation = useMutation({
-    mutationFn: async (method: "stripe" | "paypal") => {
+    mutationFn: async () => {
       const email = (responses["pep_email"] as string) || "";
 
       // Guard: server also rejects PEPTIDES_ENGINE without consent, but we
@@ -691,11 +659,7 @@ export default function PeptidesEnginePage() {
 
       // Save responses to server BEFORE checkout. Server also re-saves them at
       // order creation time from the checkout payload (belt-and-suspenders),
-      // so we tolerate a save failure here to keep the flow fast , what matters
-      // is that the click-to-PayPal-redirect stays under ~1.5s, otherwise
-      // Safari iOS treats the cross-origin nav as non-user-gesture and silently
-      // blocks it (this caused ~77% PayPal pending rate in May 2026 with 64%
-      // of pendings being mobile vs 43% of paid).
+      // so we tolerate a save failure here to keep the flow fast.
       try {
         const saveRes = await apiRequest("POST", "/api/peptides-engine/save-progress", {
           email,
@@ -710,9 +674,8 @@ export default function PeptidesEnginePage() {
         console.warn("[PeptidesEngine] save-progress errored, server will re-save from checkout payload:", saveErr);
       }
       // NOTE: verify-responses removed , its 1-3s read-after-write polling was
-      // the dominant cause of Safari iOS dropping the user-gesture window on
-      // window.location.href. The responses payload below + server-side
-      // re-save in /api/paypal/create-order is enough redundancy.
+      // the dominant cause of Safari iOS dropping the redirect gesture window.
+      // The responses payload below + server-side re-save is enough redundancy.
 
       // Capture referrer from URL
       const urlRef = new URLSearchParams(window.location.search).get("ref") || "";
@@ -722,26 +685,13 @@ export default function PeptidesEnginePage() {
       // Versioned consent payload. The server timestamps acceptance with its
       // own clock to prevent client-side tampering, and pairs it with IP + UA
       // already captured from request headers. Used as legal evidence in any
-      // PayPal/Stripe dispute.
+      // Stripe dispute.
       const peptidesEngineConsent = {
         accepted: true,
         version: PEPTIDES_TERMS_VERSION,
         text: PEPTIDES_TERMS_TEXT,
         clientAcceptedAt: new Date().toISOString(),
       };
-
-      if (method === "paypal") {
-        const res = await apiRequest("POST", "/api/paypal/create-order", {
-          email,
-          planType: "PEPTIDES_ENGINE",
-          peptidesTier: tier,
-          responses,
-          promoCode: promoCode.trim() || undefined,
-          peptidesEngineConsent,
-          ...metaAttr,
-        });
-        return res.json();
-      }
 
       const res = await apiRequest("POST", "/api/stripe/create-checkout-session", {
         email,
@@ -769,8 +719,6 @@ export default function PeptidesEnginePage() {
       } else if (data?.url) {
         // Stripe checkout redirect
         window.location.href = data.url;
-      } else if (data?.approvalUrl) {
-        window.location.href = data.approvalUrl;
       } else {
         toast({
           title: "Erreur",
@@ -907,11 +855,8 @@ export default function PeptidesEnginePage() {
 
               <CheckoutCard
                 responses={responses}
-                onConfirmStripe={() => checkoutMutation.mutate("stripe")}
-                onConfirmPaypal={() => checkoutMutation.mutate("paypal")}
+                onConfirmStripe={() => checkoutMutation.mutate()}
                 isLoading={checkoutMutation.isPending}
-                paymentMethod={paymentMethod}
-                onPaymentMethodChange={setPaymentMethod}
                 promoCode={promoCode}
                 onPromoCodeChange={setPromoCode}
                 acceptedTerms={acceptedTerms}

@@ -21,35 +21,6 @@ export default function BloodAnalysisStart() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const sessionId = urlParams.get("session_id");
-    const paypalToken = urlParams.get("token");
-    const isPaypal = urlParams.get("paypal") === "true";
-
-    // PayPal return
-    if (isPaypal && paypalToken) {
-      setConfirming(true);
-      window.history.replaceState({}, "", "/blood-analysis");
-      (async () => {
-        try {
-          const response = await fetch("/api/paypal/capture-order", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ paypalOrderId: paypalToken }),
-          });
-          const data = await response.json();
-          if (response.ok && data.success) {
-            if (data.email) localStorage.setItem("neurocore_email", data.email);
-            navigate("/auth/login?next=/blood-dashboard&paid=true");
-            return;
-          }
-          setConfirmError(data?.error || "Erreur de confirmation PayPal.");
-        } catch {
-          setConfirmError("Erreur de confirmation du paiement PayPal.");
-        } finally {
-          setConfirming(false);
-        }
-      })();
-      return;
-    }
 
     // Stripe return
     if (sessionId) {

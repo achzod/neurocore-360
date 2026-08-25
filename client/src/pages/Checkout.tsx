@@ -357,7 +357,6 @@ export default function Checkout() {
   const [promoValidating, setPromoValidating] = useState(false);
   const [validatedPromo, setValidatedPromo] = useState<{ code: string; discount: number } | null>(null);
   const [promoError, setPromoError] = useState<string | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<"stripe" | "paypal">("stripe");
   const [cgvAccepted, setCgvAccepted] = useState(false);
 
   useEffect(() => {
@@ -455,17 +454,6 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
         });
       }
 
-      if (paymentMethod === "paypal") {
-        const response = await apiRequest("POST", "/api/paypal/create-order", {
-          email,
-          planType: type,
-          responses,
-          promoCode: validatedPromo?.code || null,
-          ...metaAttr,
-        });
-        return response.json();
-      }
-
       // Default: Stripe ,  server has fallback price IDs if frontend VITE vars are missing
       const checkoutPayload: Record<string, unknown> = {
         email,
@@ -483,6 +471,10 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
       return response.json();
     },
     onSuccess: (data: any) => {
+      const selectedPlanInfo = selectedPlan ? PRICING_PLANS.find((p) => p.id === selectedPlan) : undefined;
+      const selectedAuditType = selectedPlan ? PLAN_ID_TO_AUDIT_TYPE[selectedPlan] : "audit";
+      const selectedPrice = selectedPlanInfo ? Number(selectedPlanInfo.priceLabel.replace(/[^0-9]/g, "")) || 0 : 0;
+
       if (selectedPlan === "gratuit") {
         try { trackDiscoveryScanLead(data?.auditId || 'free'); } catch {}
         toast({
@@ -494,7 +486,7 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
         navigate("/auth/check-email");
       } else if (data?.free && data?.success && data?.auditId) {
         // 100% promo: audit created directly without payment
-        try { trackPurchase(data.auditId || 'promo-100', type || 'audit', type || 'Audit', 0); } catch {}
+        try { trackPurchase(data.auditId || 'promo-100', selectedAuditType, selectedPlanInfo?.name || selectedAuditType, 0); } catch {}
         toast({
           title: "Code promo 100% appliqué !",
           description: "Ton audit a été créé gratuitement.",
@@ -514,11 +506,8 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
         });
         navigate("/auth/login?next=/blood-dashboard&paid=true");
       } else if (data?.url) {
-        try { trackBeginCheckout(type || 'audit', type || 'Audit', selectedPlanData?.price || 0); } catch {}
+        try { trackBeginCheckout(selectedAuditType, selectedPlanInfo?.name || selectedAuditType, selectedPrice); } catch {}
         window.location.href = data.url; // Stripe redirect
-      } else if (data?.approvalUrl) {
-        try { trackBeginCheckout(type || 'audit', type || 'Audit', selectedPlanData?.price || 0); } catch {}
-        window.location.href = data.approvalUrl; // PayPal redirect
       } else {
         toast({
           title: "Erreur",
@@ -720,7 +709,7 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
           </motion.div>
         )}
 
-        {/* Payment Method Selector */}
+        {/* Payment Method */}
         {selectedPlan && selectedPlan !== "gratuit" && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -734,35 +723,11 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
                   <CreditCard className="h-4 w-4 text-primary" />
                   <span className="text-sm font-medium">Moyen de paiement</span>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod("stripe")}
-                    className={`flex items-center justify-center gap-2 rounded-md border px-4 py-3 text-sm font-medium transition-all ${
-                      paymentMethod === "stripe"
-                        ? "border-primary bg-primary/10 text-primary ring-1 ring-primary"
-                        : "border-border hover:border-primary/50"
-                    }`}
-                  >
-                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
-                      <path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.591-7.305z"/>
-                    </svg>
-                    Carte bancaire
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod("paypal")}
-                    className={`flex items-center justify-center gap-2 rounded-md border px-4 py-3 text-sm font-medium transition-all ${
-                      paymentMethod === "paypal"
-                        ? "border-[#0070ba] bg-[#0070ba]/10 text-[#0070ba] ring-1 ring-[#0070ba]"
-                        : "border-border hover:border-[#0070ba]/50"
-                    }`}
-                  >
-                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
-                      <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 0 0-.607-.541c1.67 0 3.44-.175 4.857-1.344 1.287-1.06 2.072-2.71 2.072-5.044 0-2.508-.953-4.285-2.63-5.24C23.456.266 21.573 0 19.295 0h-8.38c-.79 0-1.467.574-1.59 1.353L5.793 22.766a.964.964 0 0 0 .952 1.114h4.945l1.246-7.907a1.588 1.588 0 0 1 1.564-1.353h2.602c5.246 0 9.353-2.132 10.546-8.297.037-.193.068-.382.097-.569a6.04 6.04 0 0 0-6.523-6.837z"/>
-                    </svg>
-                    PayPal
-                  </button>
+                <div className="flex items-center justify-center gap-2 rounded-md border border-primary bg-primary/10 px-4 py-3 text-sm font-medium text-primary ring-1 ring-primary">
+                  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
+                    <path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.591-7.305z"/>
+                  </svg>
+                  Carte bancaire
                 </div>
               </CardContent>
             </Card>
@@ -820,7 +785,7 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
                   {selectedPlan === "gratuit"
                     ? "Tu recevras un email avec un lien vers ton rapport de base."
                     : selectedPlan
-                    ? `Tu seras redirigé vers ${paymentMethod === "paypal" ? "PayPal" : "le paiement sécurisé par carte"}.`
+                    ? "Tu seras redirigé vers le paiement sécurisé par carte."
                     : "Clique sur l'une des offres ci-dessus."}
                 </p>
                 {validatedPromo && selectedPlan && selectedPlan !== "gratuit" && (

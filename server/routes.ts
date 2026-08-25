@@ -51,7 +51,7 @@ import { formatTxtToDashboard, formatSectionToHTML, getSectionsByCategory } from
 import { ClientData, PhotoAnalysis } from "./types";
 import { generateEnhancedSupplementsHTML, generateSupplementStack } from "./supplementEngine";
 import { streamAuditZip } from "./exportZipService";
-import { createPayPalOrder, capturePayPalOrder, isPayPalConfigured } from "./paypalClient";
+import { createPayPalOrder, capturePayPalOrder, isPayPalCheckoutEnabled } from "./paypalClient";
 import { getAuthPayload, type AuthPayload } from "./auth";
 import crypto from "crypto";
 import {
@@ -5147,6 +5147,7 @@ export async function registerRoutes(
   let paypalReconcileRunning = false;
   setInterval(async () => {
     if (paypalReconcileRunning) return;
+    if (!isPayPalCheckoutEnabled()) return;
     paypalReconcileRunning = true;
     try {
       const memRssMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
@@ -5621,8 +5622,11 @@ export async function registerRoutes(
 
   app.post("/api/paypal/create-order", checkoutLimiter, async (req, res) => {
     try {
-      if (!isPayPalConfigured()) {
-        res.status(503).json({ error: "PayPal non configuré" });
+      if (!isPayPalCheckoutEnabled()) {
+        res.status(410).json({
+          error: "PAYPAL_DISABLED",
+          message: "PayPal n'est plus disponible sur APEXLABS. Utilise le paiement par carte bancaire.",
+        });
         return;
       }
 
@@ -5886,6 +5890,14 @@ export async function registerRoutes(
 
   app.post("/api/paypal/capture-order", checkoutLimiter, async (req, res) => {
     try {
+      if (!isPayPalCheckoutEnabled()) {
+        res.status(410).json({
+          error: "PAYPAL_DISABLED",
+          message: "PayPal n'est plus disponible sur APEXLABS.",
+        });
+        return;
+      }
+
       const { paypalOrderId } = req.body;
       if (!paypalOrderId || typeof paypalOrderId !== "string" || !/^[A-Z0-9]+$/.test(paypalOrderId)) {
         res.status(400).json({ error: "paypalOrderId invalide" });

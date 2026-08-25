@@ -85,7 +85,7 @@ const puppeteer = require('puppeteer');
   });
 
   await test('Ultimate: Checkout shows payment methods', async () => {
-    return eliteCheckoutText.includes('Carte') || eliteCheckoutText.includes('PayPal') || eliteCheckoutText.includes('paiement');
+    return eliteCheckoutText.includes('Carte') && !eliteCheckoutText.includes('PayPal');
   });
 
   await test('Ultimate: Checkout shows price 79€', async () => {
@@ -114,15 +114,7 @@ const puppeteer = require('puppeteer');
     console.log('⚠️  No promo input found on Ultimate checkout');
   }
 
-  // 6. Select PayPal
-  await page.evaluate(() => {
-    const buttons = Array.from(document.querySelectorAll('button'));
-    const paypalBtn = buttons.find(b => b.textContent.includes('PayPal'));
-    if (paypalBtn) paypalBtn.click();
-  });
-  await new Promise(r => setTimeout(r, 500));
-
-  // 7. Click confirm — ELITE needs photos, so should show error
+  // 6. Click confirm - ELITE needs photos, so should show error
   const apiCalls = [];
   page.on('response', async (response) => {
     const url = response.url();
@@ -408,7 +400,7 @@ const puppeteer = require('puppeteer');
     return data.valid && data.discount === 100;
   });
 
-  await test('Blood: PayPal + TEST100 → free (no redirect)', async () => {
+  await test('Blood: PayPal API disabled on APEXLABS', async () => {
     const data = await page.evaluate(async () => {
       const res = await fetch('/api/paypal/create-order', {
         method: 'POST',
@@ -422,8 +414,8 @@ const puppeteer = require('puppeteer');
       });
       return res.json();
     });
-    console.log(`    free=${data.free}, auditType=${data.auditType}`);
-    return data.free === true && data.auditType === 'BLOOD_ANALYSIS';
+    console.log(`    error=${data.error}`);
+    return data.error === 'PAYPAL_DISABLED';
   });
 
   await test('Blood: Stripe + TEST100 → free (bypass Stripe)', async () => {

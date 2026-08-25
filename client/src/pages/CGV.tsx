@@ -160,8 +160,8 @@ export default function CGV() {
             <h2 className="mb-4 text-xl font-bold text-white">Article 5 - Prix et Paiement</h2>
             <p className="text-white/60 leading-relaxed">
               Les prix indiques en euros sont TTC. Le paiement est exigible immediatement a la commande
-              via Stripe (carte bancaire) ou PayPal. Le paiement securise en ligne est realise par l'intermediaire
-              de Stripe ou PayPal. Les informations transmises sont chiffrees selon les standards de securite les
+              via Stripe (carte bancaire). Le paiement securise en ligne est realise par l'intermediaire
+              de Stripe. Les informations transmises sont chiffrees selon les standards de securite les
               plus eleves.
             </p>
             <p className="mt-3 text-white/60 leading-relaxed">
@@ -243,7 +243,7 @@ export default function CGV() {
               </ul>
               <p className="mt-3 text-sm text-white/60">
                 Cette acceptation est horodatee cote serveur et conservee en preuve. En cas de litige
-                introduit aupres de Stripe, PayPal ou de tout autre prestataire de paiement, cette preuve
+                introduit aupres de Stripe ou de tout autre prestataire de paiement, cette preuve
                 d'acceptation explicite (version du texte, date, heure, adresse IP, user-agent) sera transmise
                 au prestataire et opposable au client.
               </p>

@@ -49,7 +49,7 @@ export default function PolitiqueConfidentialite() {
             <ul className="list-disc list-inside space-y-1 text-white/60">
               <li><strong className="text-white">Donnees d'identification :</strong> adresse email, nom/prenom (si fourni)</li>
               <li><strong className="text-white">Donnees de sante :</strong> reponses aux questionnaires (sommeil, stress, nutrition, entrainement, hormones), resultats d'analyses sanguines (PDF uploade), photos corporelles (Ultimate Scan)</li>
-              <li><strong className="text-white">Donnees de paiement :</strong> traitees directement par Stripe et PayPal ,  nous ne stockons jamais vos coordonnees bancaires</li>
+              <li><strong className="text-white">Donnees de paiement :</strong> traitees directement par Stripe ,  nous ne stockons jamais vos coordonnees bancaires</li>
               <li><strong className="text-white">Donnees techniques :</strong> adresse IP, user-agent, cookies essentiels</li>
               <li><strong className="text-white">Donnees analytiques :</strong> pages visitees, interactions (uniquement avec votre consentement via Google Analytics)</li>
             </ul>
@@ -85,7 +85,7 @@ export default function PolitiqueConfidentialite() {
           <Section title="6. Destinataires des donnees">
             <p className="mb-3">Vos donnees peuvent etre partagees avec :</p>
             <ul className="list-disc list-inside space-y-1 text-white/60">
-              <li><strong className="text-white">Stripe / PayPal :</strong> traitement des paiements</li>
+              <li><strong className="text-white">Stripe :</strong> traitement des paiements</li>
               <li><strong className="text-white">Google AI (Gemini) :</strong> generation des rapports d'analyse (donnees anonymisees)</li>
               <li><strong className="text-white">SendPulse :</strong> envoi des emails transactionnels</li>
               <li><strong className="text-white">Render :</strong> hebergement des serveurs</li>

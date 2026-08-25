@@ -6,6 +6,8 @@
 const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID || "";
 const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET || "";
 const PAYPAL_MODE = process.env.PAYPAL_MODE || "sandbox";
+const PAYPAL_CHECKOUT_ENABLED =
+  (process.env.PAYPAL_CHECKOUT_ENABLED || "").toLowerCase() === "true";
 
 const PAYPAL_BASE_URL =
   PAYPAL_MODE === "live"
@@ -17,6 +19,10 @@ let cachedToken: { token: string; expiresAt: number } | null = null;
 
 export function isPayPalConfigured(): boolean {
   return !!(PAYPAL_CLIENT_ID && PAYPAL_CLIENT_SECRET);
+}
+
+export function isPayPalCheckoutEnabled(): boolean {
+  return PAYPAL_CHECKOUT_ENABLED && isPayPalConfigured();
 }
 
 export async function getPayPalAccessToken(): Promise<string> {

@@ -1653,7 +1653,7 @@ function TrustSection() {
           </div>
           <div className="flex items-center gap-2">
             <Shield className="w-4 h-4" />
-            <span>PayPal Buyer Protection</span>
+            <span>Paiement carte sécurisé</span>
           </div>
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-4 h-4" />
@@ -1767,7 +1767,7 @@ function FinalCTA() {
             </span>
             <span className="flex items-center gap-1.5">
               <Lock className="h-3 w-3" style={{ color: PRIMARY }} />
-              Paiement sécurisé Stripe + PayPal
+              Paiement sécurisé Stripe
             </span>
           </div>
         </motion.div>
@@ -1979,7 +1979,7 @@ function PricingTiers() {
         </div>
 
         <p className="mt-10 text-center text-xs text-[#86868B] font-mono">
-          Paiement Stripe ou PayPal · TVA incluse · Aucun remboursement après livraison du rapport (CGV art. 7)
+          Paiement Stripe par carte · TVA incluse · Aucun remboursement après livraison du rapport (CGV art. 7)
         </p>
       </div>
     </section>
