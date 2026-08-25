@@ -312,6 +312,8 @@ export function isBlockedDiscoveryTestEmail(email: unknown): boolean {
     || domain.endsWith(".invalid")
     || domain === "invalid.example"
     || domain === "localhost"
+    || domain === "agentmail.to"
+    || domain.endsWith(".agentmail.to")
     || domain.includes("mailinator");
 }
 

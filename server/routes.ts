@@ -1402,6 +1402,7 @@ export async function registerRoutes(
           AND email ~* '^[^@[:space:]]+@[^@[:space:]]+\\.[^@[:space:]]+$'
           AND email NOT ILIKE '%test%'
           AND email NOT ILIKE '%debug%'
+          AND email NOT ILIKE '%agentmail.to%'
           AND email NOT ILIKE '%achkou%'
           AND email NOT ILIKE '%achzodcoaching%'
         ORDER BY created_at ASC
@@ -7754,12 +7755,13 @@ export async function registerRoutes(
         "test.com",
         "test.fr",
         "example.com",
+        "agentmail.to",
         "gmai.com",
         "yahlo.com",
         "hormail.fr",
         "tahoo.fr",
       ]);
-      const disallowedFragments = ["achkou", "achzodcoaching", "test", "debug", "noemail"];
+      const disallowedFragments = ["achkou", "achzodcoaching", "agentmail", "test", "debug", "noemail"];
       const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       const cleanEmail = (email: unknown) => String(email || "").trim().toLowerCase();
       const emailDomain = (email: string) => email.includes("@") ? email.split("@").pop() || "" : "";
@@ -8199,12 +8201,13 @@ export async function registerRoutes(
         "test.com",
         "test.fr",
         "example.com",
+        "agentmail.to",
         "gmai.com",
         "yahlo.com",
         "hormail.fr",
         "tahoo.fr",
       ]);
-      const disallowedFragments = ["achkou", "achzodcoaching", "test", "debug", "noemail"];
+      const disallowedFragments = ["achkou", "achzodcoaching", "agentmail", "test", "debug", "noemail"];
       const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       const cleanEmail = (email: unknown) => String(email || "").trim().toLowerCase();
       const emailDomain = (email: string) => email.includes("@") ? email.split("@").pop() || "" : "";
