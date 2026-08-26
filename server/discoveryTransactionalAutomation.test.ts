@@ -44,6 +44,26 @@ test("Discovery admin notifications are throttled before SendPulse", () => {
   assert.match(admin, /Skipping duplicate Discovery admin notification/);
 });
 
+test("public Discovery creation blocks test/disposable emails before DB insertion", () => {
+  const routes = source("./routes.ts");
+  const storage = source("./storage.ts");
+  const createStart = routes.indexOf('app.post("/api/discovery-scan/create"');
+  const createEnd = routes.indexOf('app.get("/api/discovery-scan/:auditId"', createStart);
+  const create = routes.slice(createStart, createEnd);
+  const storageStart = storage.indexOf("async createDiscoveryAudit(");
+  const storageEnd = storage.indexOf("async updateAudit(", storageStart);
+  const storageCreate = storage.slice(storageStart, storageEnd);
+
+  assert.match(routes, /isBlockedDiscoveryTestEmail/);
+  assert.ok(
+    create.indexOf("isBlockedDiscoveryTestEmail(email)")
+      < create.indexOf("storage.createDiscoveryAudit"),
+  );
+  assert.match(create, /Email invalide/);
+  assert.match(storageCreate, /isBlockedDiscoveryTestEmail\(normalizedEmail\)/);
+  assert.match(storageCreate, /DISCOVERY_TEST_EMAIL_BLOCKED/);
+});
+
 test("every automatic Discovery delivery path enforces the same cutoff", () => {
   const routes = source("./routes.ts");
   const index = source("./index.ts");

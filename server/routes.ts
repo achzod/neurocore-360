@@ -118,6 +118,7 @@ import {
   discoverySha256,
   finalizeDiscoveryDeliveryClaim,
   isDiscoveryGlobalLockActive,
+  isBlockedDiscoveryTestEmail,
   markDiscoveryDeliveryProviderPostStarted,
 } from "./discoveryBatchControl";
 import {
@@ -10945,6 +10946,12 @@ export async function registerRoutes(
 
       if (!email || !responses) {
         res.status(400).json({ success: false, error: "Email et responses requis" });
+        return;
+      }
+
+      if (isBlockedDiscoveryTestEmail(email)) {
+        console.warn(`[Discovery Scan] ⏭️ Blocked test/disposable email before audit creation: ${email}`);
+        res.status(400).json({ success: false, error: "Email invalide" });
         return;
       }
 

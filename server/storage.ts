@@ -46,6 +46,7 @@ import {
   upsertGenericReportJobRow,
 } from "./reportJobStorageSafety";
 import { DISCOVERY_TRANSACTION_FENCE_KEY } from "./discoveryTransactionalPersistence";
+import { isBlockedDiscoveryTestEmail } from "./discoveryBatchControl";
 
 const DISCOVERY_GENERIC_PROTECTED_STATE_SQL = `NOT (
   type = 'GRATUIT'
@@ -608,6 +609,10 @@ export class MemStorage implements IStorage {
     input: InsertAudit & { email: string; responses: Record<string, unknown> }
   ): Promise<Audit> {
     if (input.type !== "GRATUIT") throw new Error("DISCOVERY_AUDIT_TYPE_REQUIRED");
+    const normalizedEmail = input.email.trim().toLowerCase();
+    if (isBlockedDiscoveryTestEmail(normalizedEmail)) {
+      throw new Error("DISCOVERY_TEST_EMAIL_BLOCKED");
+    }
     return this.createAuditUnchecked(input);
   }
 
@@ -2087,6 +2092,9 @@ export class PgStorage implements IStorage {
   ): Promise<Audit> {
     if (input.type !== "GRATUIT") throw new Error("DISCOVERY_AUDIT_TYPE_REQUIRED");
     const normalizedEmail = input.email.trim().toLowerCase();
+    if (isBlockedDiscoveryTestEmail(normalizedEmail)) {
+      throw new Error("DISCOVERY_TEST_EMAIL_BLOCKED");
+    }
     let user = await this.getUserByEmail(normalizedEmail);
     if (!user) user = await this.createUser({ email: normalizedEmail });
     const id = randomUUID();
