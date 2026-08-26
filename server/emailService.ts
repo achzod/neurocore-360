@@ -22,6 +22,74 @@ export const SENDER_NAME = process.env.SENDER_NAME || "ApexLabs by Achzod";
 
 let smtpFallbackTransport: ReturnType<typeof nodemailer.createTransport> | null = null;
 
+type AdminDiscoveryNotificationBucket = {
+  count: number;
+  resetAt: number;
+};
+
+const ADMIN_DISCOVERY_EMAIL_COOLDOWN_MS = 60 * 60 * 1000;
+const ADMIN_DISCOVERY_NAME_WINDOW_MS = 15 * 60 * 1000;
+const ADMIN_DISCOVERY_NAME_MAX_PER_WINDOW = 3;
+const adminDiscoveryNotificationBuckets = new Map<string, AdminDiscoveryNotificationBucket>();
+
+function normalizeAdminDiscoveryToken(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9@._+-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function claimAdminDiscoveryBucket(key: string, windowMs: number, max: number, now: number): boolean {
+  const existing = adminDiscoveryNotificationBuckets.get(key);
+  if (!existing || existing.resetAt <= now) {
+    adminDiscoveryNotificationBuckets.set(key, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+
+  existing.count += 1;
+  return existing.count <= max;
+}
+
+function cleanupAdminDiscoveryBuckets(now: number): void {
+  for (const [key, bucket] of adminDiscoveryNotificationBuckets) {
+    if (bucket.resetAt <= now) {
+      adminDiscoveryNotificationBuckets.delete(key);
+    }
+  }
+}
+
+function shouldSendAdminDiscoveryNotification(clientEmail: string, clientName: string, auditType: string): boolean {
+  if (auditType !== "GRATUIT") return true;
+
+  const now = Date.now();
+  cleanupAdminDiscoveryBuckets(now);
+
+  const normalizedEmail = normalizeAdminDiscoveryToken(clientEmail);
+  const normalizedName = normalizeAdminDiscoveryToken(clientName);
+  if (!normalizedEmail) return false;
+
+  const emailAllowed = claimAdminDiscoveryBucket(
+    `discovery-admin-email:${normalizedEmail}`,
+    ADMIN_DISCOVERY_EMAIL_COOLDOWN_MS,
+    1,
+    now,
+  );
+  const nameAllowed = normalizedName
+    ? claimAdminDiscoveryBucket(
+      `discovery-admin-name:${normalizedName}`,
+      ADMIN_DISCOVERY_NAME_WINDOW_MS,
+      ADMIN_DISCOVERY_NAME_MAX_PER_WINDOW,
+      now,
+    )
+    : true;
+
+  return emailAllowed && nameAllowed;
+}
+
 function getSmtpFallbackTransport() {
   if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) return null;
   if (!smtpFallbackTransport) {
@@ -3421,6 +3489,13 @@ export async function sendAdminEmailNewAudit(
 ): Promise<boolean> {
   console.log(`[Admin Email] 🚀 Starting admin notification for audit ${auditId}`);
   try {
+    if (!shouldSendAdminDiscoveryNotification(clientEmail, clientName, auditType)) {
+      console.warn(
+        `[Admin Email] ⏭️ Skipping duplicate Discovery admin notification for ${clientName || "unknown"} (${clientEmail})`,
+      );
+      return false;
+    }
+
     const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
     console.log(`[Admin Email] Target admin email: ${adminEmail}`);
     console.log(`[Admin Email] Preparing email...`);

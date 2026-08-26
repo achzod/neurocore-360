@@ -28,6 +28,22 @@ test("transactional Discovery generation is cutoff-gated and budgeted by exact a
   assert.ok(create.indexOf("generateAndPersistPremiumDiscoveryReport(audit.id)") < create.indexOf("safeSendReportReadyEmail"));
 });
 
+test("Discovery admin notifications are throttled before SendPulse", () => {
+  const emailService = source("./emailService.ts");
+  const adminStart = emailService.indexOf("export async function sendAdminEmailNewAudit(");
+  const adminEnd = emailService.indexOf("export async function sendCTAEmail(", adminStart);
+  const admin = emailService.slice(adminStart, adminEnd);
+
+  assert.match(emailService, /ADMIN_DISCOVERY_EMAIL_COOLDOWN_MS = 60 \* 60 \* 1000/);
+  assert.match(emailService, /ADMIN_DISCOVERY_NAME_WINDOW_MS = 15 \* 60 \* 1000/);
+  assert.match(emailService, /ADMIN_DISCOVERY_NAME_MAX_PER_WINDOW = 3/);
+  assert.ok(
+    admin.indexOf("!shouldSendAdminDiscoveryNotification")
+      < admin.indexOf("sendEmailWithTracking"),
+  );
+  assert.match(admin, /Skipping duplicate Discovery admin notification/);
+});
+
 test("every automatic Discovery delivery path enforces the same cutoff", () => {
   const routes = source("./routes.ts");
   const index = source("./index.ts");
