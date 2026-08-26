@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { Client } from "pg";
 
 const DISCOVERY_REASONING_EFFORT = "high" as const;
+const DISCOVERY_DELIVERY_GATE_VERSION = 4;
 
 const TARGET_AUDIT_IDS = [
   "dd5fe306-d9d4-4370-98cc-9c4e74f9c729", // Bilal
@@ -220,10 +221,54 @@ async function main(): Promise<void> {
                   WHERE ra.audit_id = a.id AND ra.artifact_state = 'ACTIVE') AS active_artifacts,
                 (SELECT COUNT(*) FROM report_jobs rj
                   WHERE rj.audit_id = a.id AND rj.status IN ('pending','generating')) AS active_jobs,
+                (
+                  COALESCE(a.narrative_report->'validationResult'->'deliveryGate'->>'name', '') = 'discovery_delivery'
+                  AND COALESCE(a.narrative_report->'validationResult'->'deliveryGate'->>'version', '') = '${DISCOVERY_DELIVERY_GATE_VERSION}'
+                  AND COALESCE(a.narrative_report->'validationResult'->'deliveryGate'->>'ok', '') = 'true'
+                  AND jsonb_typeof(a.narrative_report->'validationResult'->'deliveryGate'->'errors') = 'array'
+                  AND jsonb_array_length(a.narrative_report->'validationResult'->'deliveryGate'->'errors') = 0
+                  AND COALESCE(a.narrative_report->'validationResult'->'deliveryGate'->>'retryable', '') = 'false'
+                ) AS delivery_gate_ok,
+                (a.email ~* '^[^@[:space:]]+@[^@[:space:]]+[.][a-z]{2,63}$') AS valid_email,
+                (
+                  LOWER(a.email) LIKE '%achzodcoaching%'
+                  OR LOWER(a.email) LIKE '%achkou%'
+                  OR split_part(LOWER(a.email), '@', 1) ~ '(^|[+._-])test($|[+._-])'
+                  OR split_part(LOWER(a.email), '@', 1) IN ('test', 'debug')
+                  OR split_part(LOWER(a.email), '@', 1) LIKE 'test+%'
+                  OR split_part(LOWER(a.email), '@', 1) LIKE 'test-%'
+                  OR split_part(LOWER(a.email), '@', 1) LIKE 'test_%'
+                  OR split_part(LOWER(a.email), '@', 1) LIKE '%+test%'
+                  OR split_part(LOWER(a.email), '@', 1) LIKE 'debug+%'
+                  OR split_part(LOWER(a.email), '@', 1) LIKE 'debug-%'
+                  OR split_part(LOWER(a.email), '@', 1) LIKE 'debug_%'
+                  OR split_part(LOWER(a.email), '@', 2) IN ('example.com','example.org','example.net','invalid.example','localhost','agentmail.to')
+                  OR split_part(LOWER(a.email), '@', 2) LIKE '%.example'
+                  OR split_part(LOWER(a.email), '@', 2) LIKE '%.invalid'
+                  OR split_part(LOWER(a.email), '@', 2) LIKE '%.agentmail.to'
+                  OR split_part(LOWER(a.email), '@', 2) LIKE '%mailinator%'
+                ) AS test_email_blocked,
+                (SELECT COUNT(*) FROM ai_cost_budget_reservations r
+                  WHERE r.product = 'discovery' AND r.order_id = a.id) AS provider_attempt_count,
                 (SELECT COUNT(*) FROM discovery_email_delivery_claims dc
                   WHERE dc.audit_id = a.id AND dc.email_type = 'sendReportReadyEmail') AS delivery_claims,
                 (SELECT COUNT(*) FROM email_tracking et
                   WHERE et.audit_id = a.id AND et.email_type = 'sendReportReadyEmail') AS report_delivery_tracking_rows,
+                (SELECT COUNT(*) FROM email_tracking et
+                  WHERE et.audit_id = a.id AND et.email_type = 'sendReportReadyEmail'
+                    AND (
+                      LOWER(COALESCE(et.sendpulse_status,'')) = 'bounced'
+                      OR (
+                        LOWER(COALESCE(et.sendpulse_status,'')) = 'failed'
+                        AND (
+                          COALESCE(et.sendpulse_error,'') ~* '"eventType"[[:space:]]*:[[:space:]]*"(hard_fail|bounce)"'
+                          OR (
+                            et.sendpulse_task_id IS NOT NULL
+                            AND COALESCE(et.metadata->>'sendpulseSmtpAnswerCode','') ~ '^5[0-9]{2}$'
+                          )
+                        )
+                      )
+                    )) AS tracking_hard_failed,
                 EXISTS (SELECT 1 FROM email_unsubscribes u
                   WHERE LOWER(u.email) = LOWER(a.email)) AS unsubscribed,
                 EXISTS (
@@ -249,10 +294,14 @@ async function main(): Promise<void> {
        )
        SELECT COUNT(*)::text AS batch_ready_unsent,
               COUNT(*) FILTER (
-                WHERE active_artifacts = 1
+                WHERE delivery_gate_ok
+                  AND valid_email
+                  AND NOT test_email_blocked
+                  AND active_artifacts = 1
                   AND active_jobs = 0
                   AND delivery_claims = 0
                   AND report_delivery_tracking_rows = 0
+                  AND tracking_hard_failed = 0
                   AND NOT unsubscribed
                   AND NOT duplicate_candidate
                   AND NOT superseded_terminal
@@ -287,6 +336,31 @@ async function main(): Promise<void> {
         WHERE a.type = 'GRATUIT'
           AND a.report_delivery_status = 'BATCH_READY'
           AND a.report_sent_at IS NULL
+          AND COALESCE(a.narrative_report->'validationResult'->'deliveryGate'->>'name', '') = 'discovery_delivery'
+          AND COALESCE(a.narrative_report->'validationResult'->'deliveryGate'->>'version', '') = '${DISCOVERY_DELIVERY_GATE_VERSION}'
+          AND COALESCE(a.narrative_report->'validationResult'->'deliveryGate'->>'ok', '') = 'true'
+          AND jsonb_typeof(a.narrative_report->'validationResult'->'deliveryGate'->'errors') = 'array'
+          AND jsonb_array_length(a.narrative_report->'validationResult'->'deliveryGate'->'errors') = 0
+          AND COALESCE(a.narrative_report->'validationResult'->'deliveryGate'->>'retryable', '') = 'false'
+          AND a.email ~* '^[^@[:space:]]+@[^@[:space:]]+[.][a-z]{2,63}$'
+          AND NOT (
+            LOWER(a.email) LIKE '%achzodcoaching%'
+            OR LOWER(a.email) LIKE '%achkou%'
+            OR split_part(LOWER(a.email), '@', 1) ~ '(^|[+._-])test($|[+._-])'
+            OR split_part(LOWER(a.email), '@', 1) IN ('test', 'debug')
+            OR split_part(LOWER(a.email), '@', 1) LIKE 'test+%'
+            OR split_part(LOWER(a.email), '@', 1) LIKE 'test-%'
+            OR split_part(LOWER(a.email), '@', 1) LIKE 'test_%'
+            OR split_part(LOWER(a.email), '@', 1) LIKE '%+test%'
+            OR split_part(LOWER(a.email), '@', 1) LIKE 'debug+%'
+            OR split_part(LOWER(a.email), '@', 1) LIKE 'debug-%'
+            OR split_part(LOWER(a.email), '@', 1) LIKE 'debug_%'
+            OR split_part(LOWER(a.email), '@', 2) IN ('example.com','example.org','example.net','invalid.example','localhost','agentmail.to')
+            OR split_part(LOWER(a.email), '@', 2) LIKE '%.example'
+            OR split_part(LOWER(a.email), '@', 2) LIKE '%.invalid'
+            OR split_part(LOWER(a.email), '@', 2) LIKE '%.agentmail.to'
+            OR split_part(LOWER(a.email), '@', 2) LIKE '%mailinator%'
+          )
           AND (SELECT COUNT(*) FROM report_artifacts ra
                 WHERE ra.audit_id = a.id AND ra.artifact_state = 'ACTIVE') = 1
           AND (SELECT COUNT(*) FROM report_jobs rj
@@ -295,6 +369,21 @@ async function main(): Promise<void> {
                 WHERE dc.audit_id = a.id AND dc.email_type = 'sendReportReadyEmail') = 0
           AND (SELECT COUNT(*) FROM email_tracking et
                 WHERE et.audit_id = a.id AND et.email_type = 'sendReportReadyEmail') = 0
+          AND (SELECT COUNT(*) FROM email_tracking et
+                WHERE et.audit_id = a.id AND et.email_type = 'sendReportReadyEmail'
+                  AND (
+                    LOWER(COALESCE(et.sendpulse_status,'')) = 'bounced'
+                    OR (
+                      LOWER(COALESCE(et.sendpulse_status,'')) = 'failed'
+                      AND (
+                        COALESCE(et.sendpulse_error,'') ~* '"eventType"[[:space:]]*:[[:space:]]*"(hard_fail|bounce)"'
+                        OR (
+                          et.sendpulse_task_id IS NOT NULL
+                          AND COALESCE(et.metadata->>'sendpulseSmtpAnswerCode','') ~ '^5[0-9]{2}$'
+                        )
+                      )
+                    )
+                  )) = 0
           AND NOT EXISTS (SELECT 1 FROM email_unsubscribes u
                 WHERE LOWER(u.email) = LOWER(a.email))
           AND NOT EXISTS (
