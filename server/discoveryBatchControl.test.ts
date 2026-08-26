@@ -117,6 +117,17 @@ test("failed or pending delivery attempts are ambiguous", () => {
   }
 });
 
+test("blocked delivery statuses never re-enter the sendable cohort", () => {
+  for (const reportDeliveryStatus of ["DELIVERY_BLOCKED", "DELIVERY_AMBIGUOUS"]) {
+    const result = classifyDiscoveryManifestCandidate({
+      id: "a", email: "client@real-domain.fr", type: "GRATUIT",
+      reportDeliveryStatus, deliveryGateOk: true, tracking: emptyTracking,
+    });
+    assert.equal(result.cohort, "ambiguous");
+    assert.ok(result.reasons.includes(`delivery_${reportDeliveryStatus.toLowerCase()}`));
+  }
+});
+
 test("superseded and duplicate candidates are ambiguous and excluded from automation", () => {
   for (const extra of [{ superseded: true }, { duplicateCandidate: true }]) {
     assert.equal(classifyDiscoveryManifestCandidate({

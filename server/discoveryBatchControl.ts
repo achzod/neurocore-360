@@ -359,6 +359,9 @@ export function classifyDiscoveryManifestCandidate(
   if (isBlockedDiscoveryTestEmail(candidate.email)) reasons.push("test_email_blocked");
   if (candidate.unsubscribed) reasons.push("recipient_unsubscribed");
   if (candidate.superseded || status === "SUPERSEDED") reasons.push("superseded_terminal");
+  if (["DELIVERY_BLOCKED", "DELIVERY_AMBIGUOUS"].includes(status)) {
+    reasons.push(`delivery_${status.toLowerCase()}`);
+  }
   if (candidate.duplicateCandidate) reasons.push("duplicate_candidate");
   if (Number(candidate.providerAttemptCount || 0) > 0 && !candidate.deliveryGateOk) {
     reasons.push("prior_provider_attempt_exists");
