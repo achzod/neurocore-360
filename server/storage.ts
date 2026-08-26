@@ -3805,6 +3805,7 @@ export class PgStorage implements IStorage {
       userId: "user_id",
       email: "email",
       status: "status",
+      stripeCheckoutSessionId: "stripe_checkout_session_id",
       stripePaymentIntentId: "stripe_payment_intent_id",
       stripeCustomerId: "stripe_customer_id",
       paypalOrderId: "paypal_order_id",

@@ -9,7 +9,7 @@ import { saveProgressSchema, insertAuditSchema, insertReviewSchema, ProductPrice
 import { z } from "zod";
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
 import { createCheckoutSessionWithPaymentMethodFallback } from "./stripeCheckoutPaymentMethods";
-import { createBloodAnalysisCheckoutLineItem } from "./stripeCheckoutProducts";
+import { createProductCheckoutLineItem, usesInlineCheckoutLineItem } from "./stripeCheckoutProducts";
 import { calculateScoresFromResponses, generateFullAnalysis } from "./analysisEngine";
 import { startReportGeneration, getJobStatus, forceRegenerate } from "./reportJobManager";
 import {
@@ -4604,6 +4604,8 @@ export async function registerRoutes(
   }
 
   app.post("/api/stripe/create-checkout-session", checkoutLimiter, async (req, res) => {
+    let pendingStripeOrder: Order | undefined;
+    let checkoutSessionCreated = false;
     try {
       const { priceId: clientPriceId, email, planType, responses, promoCode, referrer, fbp, fbc, userAgent, sourceUrl, peptidesEngineConsent, peptidesTier: rawTier } = req.body;
       if (!isValidEmailFormat(email)) {
@@ -4680,9 +4682,9 @@ export async function registerRoutes(
         BLOOD_ANALYSIS: process.env.BLOOD_ANALYSIS_PRICE_ID || process.env.VITE_STRIPE_PRICE_BLOOD_ANALYSIS,
         PEPTIDES_ENGINE: process.env.STRIPE_PEPTIDES_ENGINE_PRICE_ID || "price_1TFzR9BTm0rdlVFq7HZDJQHs",
       };
-      const isBloodAnalysis = planType === "BLOOD_ANALYSIS";
-      const priceId = isBloodAnalysis ? undefined : clientPriceId || PRICE_ID_MAP[planType];
-      if (!isBloodAnalysis && !priceId) {
+      const usesInlineProductPrice = usesInlineCheckoutLineItem(planType);
+      const priceId = usesInlineProductPrice ? undefined : clientPriceId || PRICE_ID_MAP[planType];
+      if (!usesInlineProductPrice && !priceId) {
         res.status(400).json({ error: "INVALID_PLAN", message: `No Stripe price configured for plan: ${planType}` });
         return;
       }
@@ -4783,6 +4785,7 @@ export async function registerRoutes(
         }
       }
 
+      const isBloodAnalysis = planType === "BLOOD_ANALYSIS";
       const isPeptides = planType === "PEPTIDES_ENGINE";
       const successUrl = isBloodAnalysis
         ? `${baseUrl}/blood-analysis?session_id={CHECKOUT_SESSION_ID}`
@@ -4850,8 +4853,8 @@ export async function registerRoutes(
               },
             },
           }]
-        : isBloodAnalysis
-        ? [createBloodAnalysisCheckoutLineItem()]
+        : usesInlineProductPrice
+        ? [createProductCheckoutLineItem(planType)]
         : [{ price: priceId!, quantity: 1 }];
 
       const sessionParams: any = {
@@ -4883,96 +4886,163 @@ export async function registerRoutes(
         sessionParams.discounts = discounts;
       }
 
+      const pType = (planType as ProductTypeEnum) || "PREMIUM";
+      // For PEPTIDES_ENGINE the amount depends on the selected tier (Solo
+      // 199 / Coached 299 / Tracked 399). For other product types we still
+      // use the static ProductPriceCents map.
+      const baseCents = pType === "PEPTIDES_ENGINE" && peptidesTier
+        ? PEPTIDES_TIER_PRICE_CENTS[peptidesTier]
+        : (ProductPriceCents[pType] ?? 0);
+      const promoObj = validatedPromoCode ? await storage.getPromoCode(validatedPromoCode) : null;
+      // PEPTIDES100 uses amount_off=10000 cents at Stripe, regardless of stored %.
+      // Guard on planType so the flat -100€ never applies to another product
+      // (Marc M. 2026-05-11 ELITE 0€ incident).
+      const discountCents = promoObj
+        ? (validatedPromoCode?.toUpperCase() === 'PEPTIDES100' && pType === 'PEPTIDES_ENGINE'
+            ? 10000
+            : Math.round(baseCents * promoObj.discountPercent / 100))
+        : 0;
+
+      // Persist consent record with server-authoritative timestamp + IP + UA.
+      // This is the legal evidence pack we hand to Stripe/PayPal in a dispute.
+      const peptidesConsentRecord = (planType === "PEPTIDES_ENGINE" && peptidesEngineConsent)
+        ? {
+            accepted: true,
+            version: String(peptidesEngineConsent.version),
+            text: typeof peptidesEngineConsent.text === "string"
+              ? String(peptidesEngineConsent.text).slice(0, 4000)
+              : undefined,
+            clientAcceptedAt: typeof peptidesEngineConsent.clientAcceptedAt === "string"
+              ? peptidesEngineConsent.clientAcceptedAt
+              : undefined,
+            serverAcceptedAt: new Date().toISOString(),
+            ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null,
+            userAgent: req.headers["user-agent"] || null,
+            paymentMethod: "stripe" as const,
+          }
+        : undefined;
+
+      pendingStripeOrder = await storage.createOrder({
+        email,
+        productType: pType,
+        amountCents: baseCents,
+        discountCents,
+        promoCode: validatedPromoCode,
+        promoCodeId: promoObj?.id || null,
+        finalAmountCents: Math.max(0, baseCents - discountCents),
+        stripeCheckoutSessionId: null,
+        ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null,
+        userAgent: req.headers["user-agent"] || null,
+        metadata: {
+          planType,
+          questionnaireResponses: ["PREMIUM", "ELITE", "GRATUIT"].includes(planType) ? responses : undefined,
+          peptidesTier: peptidesTier || undefined,
+          peptidesResponses: planType === "PEPTIDES_ENGINE" ? responses : undefined,
+          peptidesEngineConsent: peptidesConsentRecord,
+        },
+      });
+      sessionParams.metadata.orderId = pendingStripeOrder.id;
+
+      const pricingMode = peptidesTier
+        ? `inline:peptides:${peptidesTier}`
+        : usesInlineProductPrice
+        ? `inline:${planType}`
+        : "stripe_price_id";
+      const emailDomain = typeof email === "string" && email.includes("@")
+        ? email.split("@").pop()
+        : "";
+      console.log("[Checkout] Creating Stripe checkout session", {
+        planType,
+        pricingMode,
+        emailDomain,
+        hasPromoCode: Boolean(validatedPromoCode),
+      });
+
       const session = await createCheckoutSessionWithPaymentMethodFallback(
         stripe,
         sessionParams,
         `planType=${planType}`,
       );
+      checkoutSessionCreated = true;
 
-      // Create pending order
-      try {
-        const pType = (planType as ProductTypeEnum) || "PREMIUM";
-        // For PEPTIDES_ENGINE the amount depends on the selected tier (Solo
-        // 199 / Coached 299 / Tracked 399). For other product types we still
-        // use the static ProductPriceCents map.
-        const baseCents = pType === "PEPTIDES_ENGINE" && peptidesTier
-          ? PEPTIDES_TIER_PRICE_CENTS[peptidesTier]
-          : (ProductPriceCents[pType] ?? 0);
-        const promoObj = validatedPromoCode ? await storage.getPromoCode(validatedPromoCode) : null;
-        // PEPTIDES100 uses amount_off=10000 cents at Stripe, regardless of stored %.
-        // Guard on planType so the flat -100€ never applies to another product
-        // (Marc M. 2026-05-11 ELITE 0€ incident).
-        const discountCents = promoObj
-          ? (validatedPromoCode?.toUpperCase() === 'PEPTIDES100' && pType === 'PEPTIDES_ENGINE'
-              ? 10000
-              : Math.round(baseCents * promoObj.discountPercent / 100))
-          : 0;
+      console.log("[Checkout] Stripe checkout session created", {
+        planType,
+        pricingMode,
+        sessionId: session.id,
+      });
 
-        // Persist consent record with server-authoritative timestamp + IP + UA.
-        // This is the legal evidence pack we hand to Stripe/PayPal in a dispute.
-        const peptidesConsentRecord = (planType === "PEPTIDES_ENGINE" && peptidesEngineConsent)
-          ? {
-              accepted: true,
-              version: String(peptidesEngineConsent.version),
-              text: typeof peptidesEngineConsent.text === "string"
-                ? String(peptidesEngineConsent.text).slice(0, 4000)
-                : undefined,
-              clientAcceptedAt: typeof peptidesEngineConsent.clientAcceptedAt === "string"
-                ? peptidesEngineConsent.clientAcceptedAt
-                : undefined,
-              serverAcceptedAt: new Date().toISOString(),
-              ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null,
-              userAgent: req.headers["user-agent"] || null,
-              paymentMethod: "stripe" as const,
-            }
-          : undefined;
+      const updatedOrder = await storage.updateOrder(pendingStripeOrder.id, {
+        stripeCheckoutSessionId: session.id,
+      });
+      if (!updatedOrder) {
+        throw new Error(`ORDER_SESSION_LINK_FAILED:${pendingStripeOrder.id}`);
+      }
 
-        const order = await storage.createOrder({
-          email,
-          productType: pType,
-          amountCents: baseCents,
-          discountCents,
-          promoCode: validatedPromoCode,
-          promoCodeId: promoObj?.id || null,
-          finalAmountCents: Math.max(0, baseCents - discountCents),
-          stripeCheckoutSessionId: session.id,
-          ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null,
-          userAgent: req.headers["user-agent"] || null,
-          metadata: {
-            planType,
-            questionnaireResponses: ["PREMIUM", "ELITE", "GRATUIT"].includes(planType) ? responses : undefined,
-            peptidesTier: peptidesTier || undefined,
-            peptidesResponses: planType === "PEPTIDES_ENGINE" ? responses : undefined,
-            peptidesEngineConsent: peptidesConsentRecord,
-          },
-        });
-
-        // Track promo code usage on the order
-        if (validatedPromoCode && promoObj) {
+      // Track promo code usage on the order only after Stripe accepted the
+      // checkout session. A Stripe failure leaves a cancelled pending order
+      // instead of consuming the promo.
+      if (validatedPromoCode && promoObj) {
+        try {
           await storage.incrementPromoCodeUse(validatedPromoCode);
           await storage.createPromoCodeUsage({
             promoCodeId: promoObj.id,
             promoCode: validatedPromoCode,
             userId: null,
             email,
-            orderId: order.id,
+            orderId: pendingStripeOrder.id,
             discountPercent: promoObj.discountPercent,
             discountAmountCents: discountCents,
           });
+        } catch (promoUsageError) {
+          console.error("[Checkout] Promo usage tracking failed after Stripe session creation:", promoUsageError);
         }
-      } catch (orderErr) {
-        console.error("[Orders] Error creating pending order:", orderErr);
-        // Non-blocking: checkout still works even if order tracking fails
       }
 
       res.json({ sessionId: session.id, url: session.url });
     } catch (error: any) {
+      if (pendingStripeOrder && pendingStripeOrder.status === "pending" && !checkoutSessionCreated) {
+        await storage.updateOrder(pendingStripeOrder.id, { status: "cancelled" }).catch((cancelError) => {
+          console.error("[Orders] Failed to cancel pending order after checkout error:", cancelError);
+        });
+      }
       console.error("Stripe checkout error:", error);
       res.status(500).json({ error: "Erreur création session" });
     }
   });
 
   // ==================== SHARED AUDIT CREATION HELPER ====================
+  async function getOrderByStripeSessionOrMetadata(
+    sessionId: string,
+    metadata?: Record<string, unknown> | null,
+  ): Promise<Order | undefined> {
+    const orderBySession = await storage.getOrderByStripeSession(sessionId);
+    if (orderBySession) return orderBySession;
+
+    const metadataOrderId = metadata?.orderId;
+    if (typeof metadataOrderId !== "string" || !metadataOrderId) return undefined;
+
+    const orderByMetadata = await storage.getOrder(metadataOrderId).catch(() => undefined);
+    if (!orderByMetadata) return undefined;
+
+    if (orderByMetadata.stripeCheckoutSessionId && orderByMetadata.stripeCheckoutSessionId !== sessionId) {
+      console.warn("[Checkout] Metadata orderId points to an order with a different Stripe session", {
+        orderId: orderByMetadata.id,
+        expectedSessionId: sessionId,
+        actualSessionId: orderByMetadata.stripeCheckoutSessionId,
+      });
+      return undefined;
+    }
+
+    if (!orderByMetadata.stripeCheckoutSessionId) {
+      const linkedOrder = await storage.updateOrder(orderByMetadata.id, {
+        stripeCheckoutSessionId: sessionId,
+      });
+      return linkedOrder || orderByMetadata;
+    }
+
+    return orderByMetadata;
+  }
+
   // Idempotent blood credit grant for paid orders. Both Stripe confirm-session
   // and the Stripe webhook can race; whichever wins marks the order as paid
   // and the loser's credit-grant block is skipped. We track grant status on the
@@ -5569,7 +5639,7 @@ export async function registerRoutes(
       // generation separately from the audit pipeline. Confirm-session should
       // acknowledge the payment and redirect without trying to create an audit.
       if (planType === "PEPTIDES_ENGINE") {
-        const existingOrder = await storage.getOrderByStripeSession(sessionId);
+        const existingOrder = await getOrderByStripeSessionOrMetadata(sessionId, session.metadata as Record<string, unknown> | null);
         if (existingOrder && existingOrder.status !== "paid") {
           await storage.updateOrder(existingOrder.id, {
             status: "paid",
@@ -5598,7 +5668,7 @@ export async function registerRoutes(
       }
 
       // Update order to paid if exists
-      const existingOrder = await storage.getOrderByStripeSession(sessionId);
+      const existingOrder = await getOrderByStripeSessionOrMetadata(sessionId, session.metadata as Record<string, unknown> | null);
       if (existingOrder && existingOrder.status === "paid" && existingOrder.auditId) {
         res.json({ success: true, auditId: existingOrder.auditId, auditType: planType, existing: true });
         return;
@@ -11823,7 +11893,7 @@ export async function registerRoutes(
       switch (event.type) {
         case "checkout.session.completed": {
           const session = event.data.object;
-          const order = await storage.getOrderByStripeSession(session.id);
+          const order = await getOrderByStripeSessionOrMetadata(session.id, session.metadata as Record<string, unknown> | null);
           if (order && order.status === "pending") {
             await storage.updateOrder(order.id, {
               status: "paid",
@@ -12020,7 +12090,7 @@ export async function registerRoutes(
         }
         case "checkout.session.expired": {
           const session = event.data.object;
-          const order = await storage.getOrderByStripeSession(session.id);
+          const order = await getOrderByStripeSessionOrMetadata(session.id, session.metadata as Record<string, unknown> | null);
           if (order && order.status === "pending") {
             await storage.updateOrder(order.id, { status: "cancelled" });
             console.log(`[Webhook] Order ${order.id} cancelled (session expired)`);

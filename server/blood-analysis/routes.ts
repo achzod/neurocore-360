@@ -734,6 +734,8 @@ export function registerBloodAnalysisRoutes(app: Express): void {
    * Create Stripe payment intent for Blood Analysis
    */
   app.post("/api/blood-analysis/purchase", bloodPurchaseLimiter, async (req, res) => {
+    let pendingOrder: Awaited<ReturnType<typeof storage.createOrder>> | undefined;
+    let checkoutSessionCreated = false;
     try {
       const { userId, email } = req.body as {
         userId?: string;
@@ -748,6 +750,26 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 
       const stripe = await getUncachableStripeClient();
       const baseUrl = getBaseUrl();
+      pendingOrder = await storage.createOrder({
+        email: recipientEmail,
+        userId: userId || null,
+        productType: "BLOOD_ANALYSIS",
+        amountCents: 9900,
+        stripeCheckoutSessionId: null,
+        ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null,
+        userAgent: req.headers["user-agent"] || null,
+        metadata: {
+          planType: "BLOOD_ANALYSIS",
+          email: recipientEmail,
+          userId: userId || "",
+          endpoint: "blood-analysis/purchase",
+        },
+      });
+      console.log("[BloodAnalysis] Creating Stripe checkout session", {
+        endpoint: "blood-analysis/purchase",
+        pricingMode: "inline:BLOOD_ANALYSIS",
+        emailDomain: recipientEmail.includes("@") ? recipientEmail.split("@").pop() : "",
+      });
       const session = await createCheckoutSessionWithPaymentMethodFallback(stripe, {
         line_items: [createBloodAnalysisCheckoutLineItem()],
         mode: "payment",
@@ -758,22 +780,20 @@ export function registerBloodAnalysisRoutes(app: Express): void {
           planType: "BLOOD_ANALYSIS",
           email: recipientEmail,
           userId: userId || "",
+          orderId: pendingOrder.id,
         },
       }, "blood-analysis/purchase");
+      checkoutSessionCreated = true;
+      console.log("[BloodAnalysis] Stripe checkout session created", {
+        endpoint: "blood-analysis/purchase",
+        sessionId: session.id,
+      });
 
-      // Create pending order for blood analysis
-      try {
-        await storage.createOrder({
-          email: recipientEmail,
-          userId: userId || null,
-          productType: "BLOOD_ANALYSIS",
-          amountCents: 9900,
-          stripeCheckoutSessionId: session.id,
-          ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null,
-          userAgent: req.headers["user-agent"] || null,
-        });
-      } catch (orderErr) {
-        console.error("[BloodAnalysis] Error creating order:", orderErr);
+      const updatedOrder = await storage.updateOrder(pendingOrder.id, {
+        stripeCheckoutSessionId: session.id,
+      });
+      if (!updatedOrder) {
+        throw new Error(`BLOOD_ORDER_SESSION_LINK_FAILED:${pendingOrder.id}`);
       }
 
       res.json({
@@ -782,6 +802,11 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         url: session.url,
       });
     } catch (error) {
+      if (pendingOrder && pendingOrder.status === "pending" && !checkoutSessionCreated) {
+        await storage.updateOrder(pendingOrder.id, { status: "cancelled" }).catch((cancelError) => {
+          console.error("[BloodAnalysis] Failed to cancel pending order after checkout error:", cancelError);
+        });
+      }
       console.error("[BloodAnalysis] Purchase error:", error);
       res.status(500).json({ error: "Erreur lors de l'achat" });
     }
