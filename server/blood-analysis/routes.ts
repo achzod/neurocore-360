@@ -55,6 +55,7 @@ import {
 } from "../emailService";
 import { getUncachableStripeClient } from "../stripeClient";
 import { createCheckoutSessionWithPaymentMethodFallback } from "../stripeCheckoutPaymentMethods";
+import { createBloodAnalysisCheckoutLineItem } from "../stripeCheckoutProducts";
 import pdf from "pdf-parse";
 import { listBloodEmailDeliveries } from "./delivery-log";
 
@@ -734,10 +735,9 @@ export function registerBloodAnalysisRoutes(app: Express): void {
    */
   app.post("/api/blood-analysis/purchase", bloodPurchaseLimiter, async (req, res) => {
     try {
-      const { userId, email, priceId } = req.body as {
+      const { userId, email } = req.body as {
         userId?: string;
         email?: string;
-        priceId?: string;
       };
 
       const recipientEmail = email || userId;
@@ -746,16 +746,10 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         return;
       }
 
-      const stripePriceId = priceId || process.env.BLOOD_ANALYSIS_PRICE_ID;
-      if (!stripePriceId) {
-        res.status(400).json({ error: "priceId required" });
-        return;
-      }
-
       const stripe = await getUncachableStripeClient();
       const baseUrl = getBaseUrl();
       const session = await createCheckoutSessionWithPaymentMethodFallback(stripe, {
-        line_items: [{ price: stripePriceId, quantity: 1 }],
+        line_items: [createBloodAnalysisCheckoutLineItem()],
         mode: "payment",
         success_url: `${baseUrl}/blood-analysis?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${baseUrl}/offers/blood-analysis?cancelled=true`,

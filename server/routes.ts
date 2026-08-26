@@ -9,6 +9,7 @@ import { saveProgressSchema, insertAuditSchema, insertReviewSchema, ProductPrice
 import { z } from "zod";
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
 import { createCheckoutSessionWithPaymentMethodFallback } from "./stripeCheckoutPaymentMethods";
+import { createBloodAnalysisCheckoutLineItem } from "./stripeCheckoutProducts";
 import { calculateScoresFromResponses, generateFullAnalysis } from "./analysisEngine";
 import { startReportGeneration, getJobStatus, forceRegenerate } from "./reportJobManager";
 import {
@@ -4679,8 +4680,9 @@ export async function registerRoutes(
         BLOOD_ANALYSIS: process.env.BLOOD_ANALYSIS_PRICE_ID || process.env.VITE_STRIPE_PRICE_BLOOD_ANALYSIS,
         PEPTIDES_ENGINE: process.env.STRIPE_PEPTIDES_ENGINE_PRICE_ID || "price_1TFzR9BTm0rdlVFq7HZDJQHs",
       };
-      const priceId = clientPriceId || PRICE_ID_MAP[planType];
-      if (!priceId) {
+      const isBloodAnalysis = planType === "BLOOD_ANALYSIS";
+      const priceId = isBloodAnalysis ? undefined : clientPriceId || PRICE_ID_MAP[planType];
+      if (!isBloodAnalysis && !priceId) {
         res.status(400).json({ error: "INVALID_PLAN", message: `No Stripe price configured for plan: ${planType}` });
         return;
       }
@@ -4781,7 +4783,6 @@ export async function registerRoutes(
         }
       }
 
-      const isBloodAnalysis = planType === "BLOOD_ANALYSIS";
       const isPeptides = planType === "PEPTIDES_ENGINE";
       const successUrl = isBloodAnalysis
         ? `${baseUrl}/blood-analysis?session_id={CHECKOUT_SESSION_ID}`
@@ -4849,7 +4850,9 @@ export async function registerRoutes(
               },
             },
           }]
-        : [{ price: priceId, quantity: 1 }];
+        : isBloodAnalysis
+        ? [createBloodAnalysisCheckoutLineItem()]
+        : [{ price: priceId!, quantity: 1 }];
 
       const sessionParams: any = {
         line_items: lineItems,
