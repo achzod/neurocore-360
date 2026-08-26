@@ -12,15 +12,6 @@ export function getCheckoutPaymentMethodTypes(): Stripe.Checkout.SessionCreatePa
   return isKlarnaCheckoutEnabled() ? ["card", "klarna"] : ["card"];
 }
 
-export function getCheckoutPaymentMethodParams(): Pick<
-  Stripe.Checkout.SessionCreateParams,
-  "automatic_payment_methods" | "payment_method_types"
-> {
-  return isKlarnaCheckoutEnabled()
-    ? { automatic_payment_methods: { enabled: true } }
-    : { payment_method_types: ["card"] };
-}
-
 export function isKlarnaUnsupportedCheckoutError(error: unknown): boolean {
   const err = error as {
     code?: string;
@@ -57,13 +48,12 @@ export async function createCheckoutSessionWithPaymentMethodFallback(
   params: Stripe.Checkout.SessionCreateParams,
   context: string,
 ): Promise<Stripe.Response<Stripe.Checkout.Session>> {
-  const paymentMethodParams = getCheckoutPaymentMethodParams();
-  const paymentMethodTypes = paymentMethodParams.payment_method_types || [];
+  const paymentMethodTypes = getCheckoutPaymentMethodTypes();
 
   try {
     return await stripe.checkout.sessions.create({
       ...params,
-      ...paymentMethodParams,
+      payment_method_types: paymentMethodTypes,
     });
   } catch (error) {
     if (paymentMethodTypes.includes("klarna") && isKlarnaUnsupportedCheckoutError(error)) {

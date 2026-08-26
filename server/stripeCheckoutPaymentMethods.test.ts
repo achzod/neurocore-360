@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  getCheckoutPaymentMethodParams,
   getCheckoutPaymentMethodTypes,
   isKlarnaCheckoutEnabled,
   isKlarnaUnsupportedCheckoutError,
@@ -22,13 +21,11 @@ test("Klarna is enabled by default and can be disabled by env", () => {
   delete process.env.STRIPE_ENABLE_KLARNA;
   assert.equal(isKlarnaCheckoutEnabled(), true);
   assert.deepEqual(getCheckoutPaymentMethodTypes(), ["card", "klarna"]);
-  assert.deepEqual(getCheckoutPaymentMethodParams(), { automatic_payment_methods: { enabled: true } });
 
   for (const value of ["false", "0", "off", "no", " FALSE "]) {
     process.env.STRIPE_ENABLE_KLARNA = value;
     assert.equal(isKlarnaCheckoutEnabled(), false);
     assert.deepEqual(getCheckoutPaymentMethodTypes(), ["card"]);
-    assert.deepEqual(getCheckoutPaymentMethodParams(), { payment_method_types: ["card"] });
   }
 });
 
