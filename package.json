@@ -23,6 +23,7 @@
     "db:migrate:discovery-008": "tsx scripts/migrate-discovery-batch-v008.ts",
     "db:migrate:discovery-009": "tsx scripts/migrate-discovery-batch-v009.ts",
     "db:migrate:discovery-010": "tsx scripts/migrate-discovery-batch-v010.ts",
+    "db:migrate:discovery-011": "tsx scripts/migrate-discovery-batch-v011.ts",
     "discovery:one-shot": "tsx scripts/discovery-one-shot-ops.ts",
     "discovery:replay-alexandre-offline": "tsx scripts/replay-alexandre-discovery-offline.ts",
     "knowledge:restore": "tsx scripts/restore-discovery-knowledge.ts",

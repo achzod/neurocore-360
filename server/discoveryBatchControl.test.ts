@@ -345,10 +345,16 @@ test("lock check fails closed when DB lookup fails", async () => {
 test("migration enforces mono-call, unique delivery claim and unique artifact content", () => {
   const sql = readFileSync(new URL("../migrations/003_discovery_batch_safety.sql", import.meta.url), "utf8");
   const sourceCasSql = readFileSync(new URL("../migrations/005_discovery_batch_source_cas.sql", import.meta.url), "utf8");
+  const resumableDeliverySql = readFileSync(
+    new URL("../migrations/011_discovery_resumable_delivery_batches.sql", import.meta.url),
+    "utf8",
+  );
   assert.match(sql, /CHECK \(provider_calls >= 0 AND provider_calls <= 1\)/);
   assert.match(sql, /UNIQUE \(audit_id, email_type\)/);
   assert.match(sql, /report_artifacts_audit_content_uq/);
   assert.match(sql, /UNIQUE \(manifest_sha256, stage, tier\)/);
+  assert.match(resumableDeliverySql, /DROP CONSTRAINT IF EXISTS discovery_batch_runs_manifest_sha256_stage_tier_key/);
+  assert.match(resumableDeliverySql, /CREATE INDEX IF NOT EXISTS discovery_batch_runs_manifest_stage_tier_idx/);
   assert.match(sourceCasSql, /ADD COLUMN IF NOT EXISTS expected_source_status TEXT/);
   assert.match(sourceCasSql, /ADD COLUMN IF NOT EXISTS fence_token UUID/);
 });

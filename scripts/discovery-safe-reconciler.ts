@@ -68,7 +68,7 @@ import {
   DISCOVERY_OTHER_AUDIT_ACTIVE_SQL,
   isDiscoverySupersededTerminal,
 } from "../server/discoverySupersededPolicy";
-import { assertDiscoveryBatchSchemaV009 } from "../server/discoveryBatchSchema";
+import { assertDiscoveryBatchSchemaV011 } from "../server/discoveryBatchSchema";
 import { pool } from "../server/db";
 
 const argv = process.argv.slice(2);
@@ -862,7 +862,7 @@ async function runDelivery(
 }
 
 async function main(): Promise<void> {
-  await assertDiscoveryBatchSchemaV009(pool);
+  await assertDiscoveryBatchSchemaV011(pool);
   const manifest = await buildManifest();
   const outputPath = valueAfter("--out");
   if (outputPath) writeFileSync(outputPath, `${JSON.stringify(manifest, null, 2)}\n`, { flag: "wx" });

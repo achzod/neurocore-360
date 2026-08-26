@@ -2,7 +2,7 @@ import type { Pool, PoolClient } from "pg";
 
 type Queryable = Pick<Pool | PoolClient, "query">;
 
-export const DISCOVERY_BATCH_SCHEMA_VERSION = 9;
+export const DISCOVERY_BATCH_SCHEMA_VERSION = 11;
 
 const REQUIRED_COLUMNS = Object.freeze([
   ["discovery_batch_items", "expected_source_status", "text", "YES"],
@@ -11,7 +11,6 @@ const REQUIRED_COLUMNS = Object.freeze([
 
 const REQUIRED_INDEXES = Object.freeze([
   "discovery_batch_runs_pkey",
-  "discovery_batch_runs_manifest_sha256_stage_tier_key",
   "discovery_batch_items_pkey",
   "discovery_batch_items_batch_id_sequence_no_key",
   "discovery_batch_items_provider_response_id_key",
@@ -33,7 +32,6 @@ const REQUIRED_CONSTRAINTS = Object.freeze([
   ["discovery_operation_lock_lock_key_check", "c"],
   ["discovery_operation_lock_check", "c"],
   ["discovery_batch_runs_pkey", "p"],
-  ["discovery_batch_runs_manifest_sha256_stage_tier_key", "u"],
   ["discovery_batch_runs_status_check", "c"],
   ["discovery_batch_runs_stage_check", "c"],
   ["discovery_batch_runs_tier_check", "c"],
@@ -111,6 +109,27 @@ export async function assertDiscoveryBatchSchemaV005(db: Queryable): Promise<voi
   if (artifactIndex && (!/UNIQUE INDEX/.test(artifactIndex)
     || !/WHERE \(content_sha256 IS NOT NULL\)/.test(artifactIndex))) {
     errors.push("invalid_index:report_artifacts_audit_content_uq");
+  }
+  const runUniqueness = await db.query(
+    `SELECT
+       EXISTS (
+         SELECT 1 FROM pg_constraint con
+         JOIN pg_class rel ON rel.oid=con.conrelid
+         JOIN pg_namespace nsp ON nsp.oid=rel.relnamespace
+         WHERE nsp.nspname=current_schema()
+           AND rel.relname='discovery_batch_runs'
+           AND con.conname='discovery_batch_runs_manifest_sha256_stage_tier_key'
+           AND con.contype='u'
+       ) AS legacy_unique,
+       EXISTS (
+         SELECT 1 FROM pg_indexes
+         WHERE schemaname=current_schema()
+           AND tablename='discovery_batch_runs'
+           AND indexname='discovery_batch_runs_manifest_stage_tier_idx'
+       ) AS resumable_index`,
+  );
+  if (!runUniqueness.rows[0]?.legacy_unique && !runUniqueness.rows[0]?.resumable_index) {
+    errors.push("missing_index:discovery_batch_runs_manifest_stage_tier_idx");
   }
 
   const foreignKeys = await db.query(
@@ -637,4 +656,37 @@ export async function assertDiscoveryBatchSchemaV009(db: Queryable): Promise<voi
     errors.push("invalid_constraint:discovery_batch_items_active_artifact_binding_check");
   }
   if (errors.length > 0) throw new Error(`DISCOVERY_BATCH_SCHEMA_V009_REQUIRED:${errors.join("|")}`);
+}
+
+/** Physical gate for resumable approved delivery batches on the same manifest. */
+export async function assertDiscoveryBatchSchemaV011(db: Queryable): Promise<void> {
+  await assertDiscoveryBatchSchemaV009(db);
+  const errors: string[] = [];
+  const catalog = await db.query(
+    `SELECT
+       EXISTS (
+         SELECT 1 FROM pg_constraint con
+         JOIN pg_class rel ON rel.oid=con.conrelid
+         JOIN pg_namespace nsp ON nsp.oid=rel.relnamespace
+         WHERE nsp.nspname=current_schema()
+           AND rel.relname='discovery_batch_runs'
+           AND con.conname='discovery_batch_runs_manifest_sha256_stage_tier_key'
+       ) AS legacy_unique_exists,
+       COALESCE((
+         SELECT indexdef FROM pg_indexes
+         WHERE schemaname=current_schema()
+           AND tablename='discovery_batch_runs'
+           AND indexname='discovery_batch_runs_manifest_stage_tier_idx'
+       ), '') AS resumable_indexdef`,
+  );
+  const row = catalog.rows[0] || {};
+  const indexDef = String(row.resumable_indexdef || "");
+  if (row.legacy_unique_exists) {
+    errors.push("legacy_unique_constraint_present:discovery_batch_runs_manifest_sha256_stage_tier_key");
+  }
+  if (!/CREATE INDEX discovery_batch_runs_manifest_stage_tier_idx/.test(indexDef)
+    || !/\(manifest_sha256, stage, tier, created_at DESC\)/.test(indexDef)) {
+    errors.push("invalid_index:discovery_batch_runs_manifest_stage_tier_idx");
+  }
+  if (errors.length > 0) throw new Error(`DISCOVERY_BATCH_SCHEMA_V011_REQUIRED:${errors.join("|")}`);
 }
