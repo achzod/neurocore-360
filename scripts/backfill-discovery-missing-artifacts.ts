@@ -7,7 +7,7 @@
  * BATCH_READY audits.
  */
 import { execFileSync } from "node:child_process";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { Pool, type PoolClient } from "pg";
 
 const EXPECTED_BASE_COMMIT = "805892bc907a68bad21128b08a09551b784eb41b";
@@ -73,6 +73,7 @@ interface Args {
   mode: Mode;
   auditIds: string[];
   json: boolean;
+  includeEmails: boolean;
   help: boolean;
 }
 
@@ -127,6 +128,7 @@ function parseArgs(argv: string[]): Args {
   const auditIds: string[] = [];
   let mode: Mode = "dry-run";
   let json = false;
+  let includeEmails = false;
   let help = false;
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -139,6 +141,8 @@ function parseArgs(argv: string[]): Args {
       mode = "apply";
     } else if (arg === "--json") {
       json = true;
+    } else if (arg === "--include-emails") {
+      includeEmails = true;
     } else if (arg === "--run-delivery") {
       throw new Error("DISCOVERY_BACKFILL_DELIVERY_FORBIDDEN");
     } else if (arg === "--target-audit-id") {
@@ -168,17 +172,18 @@ function parseArgs(argv: string[]): Args {
     throw new Error("DISCOVERY_BACKFILL_APPLY_REQUIRES_EXACT_TARGET_IDS");
   }
 
-  return { mode, auditIds: normalizedIds, json, help };
+  return { mode, auditIds: normalizedIds, json, includeEmails, help };
 }
 
 function usage(): string {
   return [
     "Usage:",
-    "  tsx scripts/backfill-discovery-missing-artifacts.ts --dry-run [--target-audit-id <uuid> ...] [--json]",
+    "  tsx scripts/backfill-discovery-missing-artifacts.ts --dry-run [--target-audit-id <uuid> ...] [--json] [--include-emails]",
     "  tsx scripts/backfill-discovery-missing-artifacts.ts --apply --target-audit-id <uuid> [--target-audit-id <uuid> ...]",
     "",
     "Safety:",
     "  Dry-run is default. --apply never sends email and refuses to run without exact target audit ids.",
+    "  Raw emails are redacted by default; use --include-emails only for local operator inspection.",
   ].join("\n");
 }
 
@@ -191,6 +196,12 @@ function assertOfflineEnvironment(mode: Mode): void {
       ["REMEDIATION_SIDE_EFFECTS_DISABLED", "true"],
       ["DISCOVERY_REPORT_DELIVERY_ENABLED", "false"],
       ["DISCOVERY_UNIFIED_GENERATION_ENABLED", "false"],
+      ["DISCOVERY_BATCH_DELIVERY_WORKER_ENABLED", "false"],
+      ["DISCOVERY_BATCH_SEND_APPROVED", "false"],
+      ["DISCOVERY_TRANSACTIONAL_AUTOMATION_ENABLED", "false"],
+      ["DISCOVERY_SENT_REMEDIATION_ENABLED", "false"],
+      ["DISCOVERY_REGENERATED_NOTIFICATION_ENABLED", "false"],
+      ["AI_COST_ALERTS_ENABLED", "false"],
     ];
     for (const [key, expected] of required) {
       if (String(process.env[key] || "").toLowerCase() !== expected) {
@@ -601,10 +612,17 @@ async function dryRun(pool: Pool, auditIds: string[], deps: DiscoveryDeps): Prom
   return inspections;
 }
 
-function printResult(mode: Mode, inspections: Inspection[], json: boolean): void {
+function redactEmail(email: string | undefined): string | undefined {
+  const normalized = String(email || "").trim().toLowerCase();
+  if (!normalized) return undefined;
+  return createHash("sha256").update(normalized).digest("hex");
+}
+
+function printResult(mode: Mode, inspections: Inspection[], args: Args): void {
   const safeItems = inspections.map((inspection) => ({
     auditId: inspection.auditId,
-    email: inspection.email,
+    emailSha256: redactEmail(inspection.email),
+    ...(args.includeEmails ? { email: inspection.email } : {}),
     ok: inspection.ok,
     reasons: inspection.reasons,
     reportTxtSha256: inspection.reportTxtSha256,
@@ -627,7 +645,7 @@ function printResult(mode: Mode, inspections: Inspection[], json: boolean): void
     },
     items: safeItems,
   };
-  if (json) {
+  if (args.json) {
     console.log(JSON.stringify(payload, null, 2));
     return;
   }
@@ -649,7 +667,7 @@ async function main(): Promise<void> {
     const inspections = args.mode === "apply"
       ? await applyBackfill(pool, args.auditIds, deps)
       : await dryRun(pool, args.auditIds, deps);
-    printResult(args.mode, inspections, args.json);
+    printResult(args.mode, inspections, args);
   } finally {
     await pool.end().catch(() => {});
   }

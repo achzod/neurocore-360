@@ -397,6 +397,7 @@ test("ordinary Discovery deliveries reuse the durable unique claim without requi
 test("Discovery provider crash window is one-shot, single-provider and never auto-retried", () => {
   const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
   const email = readFileSync(new URL("./emailService.ts", import.meta.url), "utf8");
+  const emailTracking = readFileSync(new URL("./emailTracking.ts", import.meta.url), "utf8");
   const batch = readFileSync(new URL("./discoveryBatchControl.ts", import.meta.url), "utf8");
   const safeSendStart = routes.indexOf("async function safeSendReportReadyEmail(");
   const safeSendEnd = routes.indexOf("const auditCreateLimiter", safeSendStart);
@@ -415,7 +416,14 @@ test("Discovery provider crash window is one-shot, single-provider and never aut
   assert.match(email, /trackingData\.allowProviderFallback !== false && BREVO_API_KEY/);
   assert.match(email, /trackingData\.allowProviderFallback !== false\) \{/);
   assert.match(email, /allowProviderFallback: auditType === "GRATUIT"\s*\? false/s);
+  assert.match(email, /trackingData\.auditType === "GRATUIT"/);
+  assert.match(email, /EMAIL_TRACKING_DURABLE_INSERT_FAILED/);
+  assert.match(email, /result\.trackingId = trackingId/);
   assert.doesNotMatch(email, /providerPostStarted = false;\s*let sendpulseTaskId/);
+  assert.match(emailTracking, /const precreatedTrackingId = isUuid\(data\.metadata\?\.trackingId\)/);
+  assert.match(emailTracking, /\.\.\.\(precreatedTrackingId \? \{ id: precreatedTrackingId \} : \{\}\)/);
+  assert.match(emailTracking, /\.onConflictDoUpdate\(\{/);
+  assert.match(emailTracking, /target: emailTracking\.id/);
 
   assert.match(batch, /state IN \('CLAIMED','PROVIDER_POST_STARTED','AMBIGUOUS'\)/);
   assert.match(batch, /status IN \('RESERVED','UNCERTAIN'\)/);

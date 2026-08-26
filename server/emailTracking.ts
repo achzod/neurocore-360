@@ -72,8 +72,12 @@ export async function logEmail(data: EmailTrackingData): Promise<string> {
 
     if (result.length === 0) {
       result = await db.insert(emailTracking).values({
+        ...(precreatedTrackingId ? { id: precreatedTrackingId } : {}),
         ...values,
         createdAt: new Date(),
+      }).onConflictDoUpdate({
+        target: emailTracking.id,
+        set: values,
       }).returning({ id: emailTracking.id });
     }
 

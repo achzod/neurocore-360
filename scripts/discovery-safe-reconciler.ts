@@ -160,6 +160,7 @@ function assertGenerationEnvironment(): void {
 
 function assertDeliveryEnvironment(): void {
   const required: Array<[string, string]> = [
+    ["DISCOVERY_BATCH_SEND_APPROVED", "true"],
     ["DISCOVERY_BATCH_DELIVERY_WORKER_ENABLED", "true"],
     ["DISCOVERY_REPORT_DELIVERY_ENABLED", "false"],
     ["DISCOVERY_UNIFIED_GENERATION_ENABLED", "false"],
@@ -889,6 +890,9 @@ async function runDelivery(
 }
 
 async function main(): Promise<void> {
+  if (args.has("--run-delivery")) {
+    assertDeliveryEnvironment();
+  }
   await assertDiscoveryBatchSchemaV011(pool);
   const manifest = await buildManifest();
   const outputPath = valueAfter("--out");

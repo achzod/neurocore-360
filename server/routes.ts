@@ -237,6 +237,29 @@ export async function registerRoutes(
     return `http://localhost:${process.env.PORT || 5000}`;
   }
 
+  function isProductionRuntime(): boolean {
+    const nodeEnv = String(process.env.NODE_ENV || "").toLowerCase();
+    const publicBaseUrl = String(process.env.PUBLIC_BASE_URL || process.env.APP_URL || "").toLowerCase();
+    return nodeEnv === "production"
+      || process.env.RENDER === "true"
+      || !!process.env.RENDER_SERVICE_NAME
+      || !!process.env.RENDER_EXTERNAL_URL
+      || publicBaseUrl.includes("apexlabs.achzodcoaching.com")
+      || publicBaseUrl.includes("apexlabs.onrender.com");
+  }
+
+  function requireNonProductionEmailTrackingMutation(res: any, operation: string): boolean {
+    if (!isProductionRuntime()) return true;
+    console.warn(`[AdminSafety] Blocked destructive email_tracking operation in production: ${operation}`);
+    res.status(403).json({
+      success: false,
+      error: "EMAIL_TRACKING_DESTRUCTIVE_ADMIN_BLOCKED_IN_PROD",
+      operation,
+      message: "Destructive email_tracking admin operations are disabled in production to preserve Discovery delivery evidence.",
+    });
+    return false;
+  }
+
   function getSendPulseCredentials(): { userId: string; secret: string; missing: string[] } {
     const userId = process.env.SENDPULSE_USER_ID || process.env.SENDPULSE_API_USER_ID || process.env.SENDPULSE_ID || "";
     const secret = process.env.SENDPULSE_SECRET || process.env.SENDPULSE_API_SECRET || "";
@@ -9787,6 +9810,7 @@ export async function registerRoutes(
   // fresh emails the next time they tick.
   app.post("/api/admin/email-trackings/purge-failed", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
+    if (!requireNonProductionEmailTrackingMutation(res, "admin.email-trackings.purge-failed")) return;
     try {
       const sinceParam = (req.query.since as string) || (req.body as any)?.since;
       const since = sinceParam ? new Date(sinceParam) : new Date(Date.now() - 48 * 60 * 60 * 1000);
@@ -9799,9 +9823,11 @@ export async function registerRoutes(
       // errors during the window. Doesn't touch delivered-but-unopened rows.
       const resBefore = await pool.query(
         `SELECT email_type, COUNT(*)::int AS c
-           FROM email_tracking
+          FROM email_tracking
           WHERE sendpulse_status = 'failed'
             AND sent_at >= $1
+            AND COALESCE(audit_type, '') <> 'GRATUIT'
+            AND COALESCE(email_type, '') <> 'sendReportReadyEmail'
             AND (sendpulse_error ILIKE '%auth%' OR sendpulse_error ILIKE '%credentials%' OR sendpulse_error ILIKE '%invalid_client%')
           GROUP BY email_type
           ORDER BY c DESC`,
@@ -9820,6 +9846,8 @@ export async function registerRoutes(
         `DELETE FROM email_tracking
           WHERE sendpulse_status = 'failed'
             AND sent_at >= $1
+            AND COALESCE(audit_type, '') <> 'GRATUIT'
+            AND COALESCE(email_type, '') <> 'sendReportReadyEmail'
             AND (sendpulse_error ILIKE '%auth%' OR sendpulse_error ILIKE '%credentials%' OR sendpulse_error ILIKE '%invalid_client%')
           RETURNING id`,
         [since.toISOString()]
@@ -11645,6 +11673,7 @@ export async function registerRoutes(
   // Create waitlist table if it doesn't exist (one-time migration)
   app.post("/api/admin/db-migrate", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
+    if (!requireNonProductionEmailTrackingMutation(res, "admin.db-migrate.drop-email-tracking")) return;
     try {
       const { Pool } = await import("pg");
       const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
@@ -12546,6 +12575,7 @@ export async function registerRoutes(
   // ==================== BACKFILL: Sync SendPulse → email_tracking ====================
   app.post("/api/admin/backfill-email-tracking", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
+    if (!requireNonProductionEmailTrackingMutation(res, "admin.backfill-email-tracking.delete-all")) return;
 
     try {
       const { userId: SENDPULSE_USER_ID, secret: SENDPULSE_SECRET } = getSendPulseCredentials();
@@ -14220,6 +14250,7 @@ export async function registerRoutes(
   // ==================== FIX: Recreate email_tracking table ====================
   app.post("/api/admin/fix-email-tracking-table", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
+    if (!requireNonProductionEmailTrackingMutation(res, "admin.fix-email-tracking-table.drop-table")) return;
 
     try {
       const { Pool } = await import("pg");

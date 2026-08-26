@@ -181,6 +181,7 @@ function encodeBase64(str: string): string {
 export type SendPulseSendResult = {
   result: boolean;
   id?: string;
+  trackingId?: string;
   error?: any;
   message?: any;
   httpStatus?: number;
@@ -414,6 +415,16 @@ async function sendEmailWithTracking(
   }
 ): Promise<SendPulseSendResult> {
   let providerPostStarted = false;
+  const requireDurableTracking =
+    trackingData.auditType === "GRATUIT" &&
+    (trackingData.emailType === "sendReportReadyEmail" ||
+      trackingData.emailType === "sendReportRegeneratedEmail");
+  const assertTracked = (trackingId: string): string => {
+    if (requireDurableTracking && trackingId === "error") {
+      throw new Error("EMAIL_TRACKING_DURABLE_INSERT_FAILED");
+    }
+    return trackingId;
+  };
   try {
     // Check unsubscribe before sending
     const { storage } = await import("./storage");
@@ -723,7 +734,7 @@ async function sendEmailWithTracking(
     };
 
     // Log provider acceptance. Real mailbox delivery is checked later through SendPulse SMTP status.
-    await logEmail({
+    const trackingId = assertTracked(await logEmail({
       emailType: trackingData.emailType,
       recipientEmail: trackingData.recipientEmail,
       recipientName: trackingData.recipientName,
@@ -735,7 +746,8 @@ async function sendEmailWithTracking(
       sendpulseStatus: result.result ? "success" : "failed",
       sendpulseError,
       metadata: trackingMetadata,
-    });
+    }));
+    result.trackingId = trackingId;
 
     console.log(`[SendPulse] Email ${result.result ? "✅ accepted" : "❌ failed"}:`, result);
     return result;
@@ -745,7 +757,7 @@ async function sendEmailWithTracking(
 
     // An aborted provider POST has an unknown outcome: SendPulse may have accepted
     // the message before the connection disappeared. Never mark it retryable.
-    await logEmail({
+    const trackingId = assertTracked(await logEmail({
       emailType: trackingData.emailType,
       recipientEmail: trackingData.recipientEmail,
       recipientName: trackingData.recipientName,
@@ -759,11 +771,12 @@ async function sendEmailWithTracking(
         ...(trackingData.metadata || {}),
         ...failure.metadata,
       },
-    });
+    }));
 
     return {
       result: false,
       error: String(error),
+      trackingId,
       ...(failure.reconcileRequired ? { reconcileRequired: true } : {}),
     };
   }
