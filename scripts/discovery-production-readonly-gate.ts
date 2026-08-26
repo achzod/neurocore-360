@@ -319,8 +319,6 @@ async function main(): Promise<void> {
         Number(population.rows[0].delivery_population_ready) >= targets.length,
         "DELIVERY_POPULATION_SMALLER_THAN_TARGETS",
       );
-    } else {
-      assert.equal(Number(population.rows[0].delivery_population_ready), 0, "AUTONOMOUS_DELIVERY_CANDIDATE_PRESENT");
     }
 
     const populationSample = await client.query<{
@@ -407,6 +405,28 @@ async function main(): Promise<void> {
     );
 
     const cutoff = getDiscoveryAutomationStartAt();
+    if (config.mode === "autonomous" && Number(population.rows[0].delivery_population_ready) !== 0) {
+      console.error(`DISCOVERY_AUTONOMOUS_DELIVERY_CANDIDATES ${JSON.stringify({
+        population: {
+          batchReadyUnsent: Number(population.rows[0].batch_ready_unsent),
+          deliveryPopulationReady: Number(population.rows[0].delivery_population_ready),
+          missingOrAmbiguousArtifacts: Number(population.rows[0].missing_or_ambiguous_artifacts),
+          blockedByClaims: Number(population.rows[0].blocked_by_claims),
+          blockedByTracking: Number(population.rows[0].blocked_by_tracking),
+          blockedByUnsubscribes: Number(population.rows[0].blocked_by_unsubscribes),
+          duplicateCandidates: Number(population.rows[0].duplicate_candidates),
+          supersededTerminal: Number(population.rows[0].superseded_terminal),
+        },
+        sample: populationSample.rows.map((row) => ({
+          id: row.id,
+          emailSha256: emailSha256(row.email),
+          createdAt: row.created_at.toISOString(),
+          activeArtifacts: Number(row.active_artifacts),
+        })),
+      })}`);
+      assert.equal(Number(population.rows[0].delivery_population_ready), 0, "AUTONOMOUS_DELIVERY_CANDIDATE_PRESENT");
+    }
+
     if (expectedAutomation === "on") {
       assert.ok(cutoff, "DISCOVERY_CUTOFF_REQUIRED");
       if (config.mode === "target-preflight") {
