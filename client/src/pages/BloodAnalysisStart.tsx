@@ -189,7 +189,7 @@ export default function BloodAnalysisStart() {
 
           <div className="flex items-center justify-center gap-3 text-[10px] text-white/30">
             <Shield className="w-3 h-3" />
-            <span>Paiement securise Stripe · RGPD</span>
+            <span>Paiement securise Stripe · Klarna selon eligibilite · RGPD</span>
           </div>
         </Card>
       </div>

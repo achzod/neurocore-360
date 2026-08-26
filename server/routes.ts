@@ -8,6 +8,7 @@ import { pool } from "./db";
 import { saveProgressSchema, insertAuditSchema, insertReviewSchema, ProductPriceCents, ProductDisplayNames, type Order, type ProductTypeEnum } from "@shared/schema";
 import { z } from "zod";
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
+import { createCheckoutSessionWithPaymentMethodFallback } from "./stripeCheckoutPaymentMethods";
 import { calculateScoresFromResponses, generateFullAnalysis } from "./analysisEngine";
 import { startReportGeneration, getJobStatus, forceRegenerate } from "./reportJobManager";
 import {
@@ -4851,7 +4852,6 @@ export async function registerRoutes(
         : [{ price: priceId, quantity: 1 }];
 
       const sessionParams: any = {
-        payment_method_types: ['card'],
         line_items: lineItems,
         mode: 'payment',
         success_url: successUrl,
@@ -4880,7 +4880,11 @@ export async function registerRoutes(
         sessionParams.discounts = discounts;
       }
 
-      const session = await stripe.checkout.sessions.create(sessionParams);
+      const session = await createCheckoutSessionWithPaymentMethodFallback(
+        stripe,
+        sessionParams,
+        `planType=${planType}`,
+      );
 
       // Create pending order
       try {

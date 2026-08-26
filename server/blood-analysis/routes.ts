@@ -54,6 +54,7 @@ import {
   type BloodReportMarkerSnapshot,
 } from "../emailService";
 import { getUncachableStripeClient } from "../stripeClient";
+import { createCheckoutSessionWithPaymentMethodFallback } from "../stripeCheckoutPaymentMethods";
 import pdf from "pdf-parse";
 import { listBloodEmailDeliveries } from "./delivery-log";
 
@@ -753,8 +754,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 
       const stripe = await getUncachableStripeClient();
       const baseUrl = getBaseUrl();
-      const session = await stripe.checkout.sessions.create({
-        payment_method_types: ["card"],
+      const session = await createCheckoutSessionWithPaymentMethodFallback(stripe, {
         line_items: [{ price: stripePriceId, quantity: 1 }],
         mode: "payment",
         success_url: `${baseUrl}/blood-analysis?session_id={CHECKOUT_SESSION_ID}`,
@@ -765,7 +765,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
           email: recipientEmail,
           userId: userId || "",
         },
-      });
+      }, "blood-analysis/purchase");
 
       // Create pending order for blood analysis
       try {

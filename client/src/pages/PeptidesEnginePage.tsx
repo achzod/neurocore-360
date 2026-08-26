@@ -420,7 +420,7 @@ function CheckoutCard({
 
       {!safetyCheck.blocked && (
         <div className="rounded-lg border border-amber-500 bg-amber-500/10 py-2 text-center text-sm font-medium text-amber-400">
-          Carte bancaire
+          Carte bancaire ou Klarna
         </div>
       )}
 
