@@ -203,6 +203,8 @@ function assertOfflineEnvironment(mode: Mode): void {
 function assertExpectedBaseCommit(): void {
   const current = String(process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || "").trim()
     || execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+  const explicitRuntimeCommit = String(process.env.DISCOVERY_BACKFILL_ALLOWED_RUNTIME_COMMIT || "").trim();
+  if (/^[a-f0-9]{40}$/.test(explicitRuntimeCommit) && current === explicitRuntimeCommit) return;
   if (ALLOWED_RUNTIME_COMMITS.has(current)) return;
   try {
     execFileSync("git", ["merge-base", "--is-ancestor", EXPECTED_BASE_COMMIT, current], {
