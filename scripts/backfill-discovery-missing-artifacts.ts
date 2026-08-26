@@ -11,6 +11,10 @@ import { randomUUID } from "node:crypto";
 import { Pool, type PoolClient } from "pg";
 
 const EXPECTED_BASE_COMMIT = "805892bc907a68bad21128b08a09551b784eb41b";
+const ALLOWED_RUNTIME_COMMITS = new Set([
+  EXPECTED_BASE_COMMIT,
+  "324d3861c034599090635e0a49d5694dd969e50e",
+]);
 const DISCOVERY_GLOBAL_LOCK_KEY = "discovery-global";
 const DISCOVERY_TRANSACTION_FENCE_KEY = "discovery-automation-fence-v1";
 const DISCOVERY_OTHER_AUDIT_ACTIVE_SQL = `NOT (
@@ -199,7 +203,7 @@ function assertOfflineEnvironment(mode: Mode): void {
 function assertExpectedBaseCommit(): void {
   const current = String(process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || "").trim()
     || execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
-  if (current === EXPECTED_BASE_COMMIT) return;
+  if (ALLOWED_RUNTIME_COMMITS.has(current)) return;
   try {
     execFileSync("git", ["merge-base", "--is-ancestor", EXPECTED_BASE_COMMIT, current], {
       stdio: "ignore",
