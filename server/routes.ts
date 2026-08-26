@@ -13,6 +13,7 @@ import { startReportGeneration, getJobStatus, forceRegenerate } from "./reportJo
 import {
   sendMagicLinkEmail,
   sendReportReadyEmail,
+  sendReportReadyEmailResult,
   getReportReadyEmailSubject,
   sendReportRegeneratedEmail,
   sendAdminEmailNewAudit,
@@ -347,6 +348,15 @@ export async function registerRoutes(
   const isEmailSequenceAttempted = (tracking: any): boolean => {
     const status = String(tracking?.sendpulseStatus || "").toLowerCase();
     return !["failed", "auth_failed", "unsubscribed"].includes(status);
+  };
+
+  const isTerminalSendPulseHardFail = (result: SendPulseSendResult): boolean => {
+    const error = result.error as Record<string, unknown> | undefined;
+    const eventType = String(error?.eventType || error?.event_type || "").toLowerCase();
+    const smtpCode = Number(error?.smtpAnswerCode ?? error?.smtp_answer_code ?? error?.smtp_code);
+    return eventType === "hard_fail"
+      || eventType === "bounce"
+      || (Number.isFinite(smtpCode) && smtpCode >= 500);
   };
 
   const normalizeSearchText = (value: unknown): string =>
@@ -764,26 +774,31 @@ export async function registerRoutes(
     }
 
     try {
-      const ok = await sendReportReadyEmail(email, auditId, auditType, baseUrl, auditType === "GRATUIT"
-        ? {
-            allowProviderFallback: false,
-            beforeProviderPost: async () => {
-              if (!discoveryClaimId) throw new Error("DISCOVERY_DELIVERY_CLAIM_MISSING");
-              const started = await markDiscoveryDeliveryProviderPostStarted(discoveryClaimId);
-              if (!started) throw new Error("DISCOVERY_DELIVERY_PROVIDER_START_CAS_FAILED");
-              discoveryProviderPostStarted = true;
-            },
-          }
-        : undefined);
+      const discoveryResult = auditType === "GRATUIT"
+        ? await sendReportReadyEmailResult(email, auditId, auditType, baseUrl, {
+          allowProviderFallback: false,
+          beforeProviderPost: async () => {
+            if (!discoveryClaimId) throw new Error("DISCOVERY_DELIVERY_CLAIM_MISSING");
+            const started = await markDiscoveryDeliveryProviderPostStarted(discoveryClaimId);
+            if (!started) throw new Error("DISCOVERY_DELIVERY_PROVIDER_START_CAS_FAILED");
+            discoveryProviderPostStarted = true;
+          },
+        })
+        : null;
+      const ok = discoveryResult
+        ? discoveryResult.result === true
+        : await sendReportReadyEmail(email, auditId, auditType, baseUrl);
       if (auditType === "GRATUIT") {
         if (!discoveryClaimId) throw new Error("DISCOVERY_DELIVERY_CLAIM_MISSING");
+        const terminalHardFail = discoveryResult ? isTerminalSendPulseHardFail(discoveryResult) : false;
         const finalized = await finalizeDiscoveryDeliveryClaim({
           claimId: discoveryClaimId,
           outcome: ok
             ? "PROVIDER_ACCEPTED"
-            : discoveryProviderPostStarted
-              ? "AMBIGUOUS"
-              : "FAILED_FINAL",
+            : terminalHardFail || !discoveryProviderPostStarted
+              ? "FAILED_FINAL"
+              : "AMBIGUOUS",
+          providerTaskId: discoveryResult?.id,
           errorDetail: ok ? undefined : "provider result not durably confirmed",
         });
         if (!finalized) throw new Error("DISCOVERY_DELIVERY_FINALIZE_CAS_FAILED");

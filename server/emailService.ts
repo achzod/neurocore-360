@@ -1152,7 +1152,7 @@ export function getReportReadyEmailSubject(auditType: string, planLabel?: string
     : `Ton ${planLabel || auditType || "rapport"} est pret`;
 }
 
-export async function sendReportReadyEmail(
+export async function sendReportReadyEmailResult(
   email: string,
   auditId: string,
   auditType: string,
@@ -1165,7 +1165,7 @@ export async function sendReportReadyEmail(
     }) => Promise<void>;
     allowProviderFallback?: boolean;
   },
-): Promise<boolean> {
+): Promise<SendPulseSendResult> {
   try {
     const reportPath =
       auditType === "GRATUIT"
@@ -1293,13 +1293,24 @@ export async function sendReportReadyEmail(
       }
     );
 
-    if (result.result === true) return true;
+    if (result.result === true) return result;
     console.warn("[SendPulse] Report email not confirmed sent:", result);
-    return false;
+    return result;
   } catch (error) {
     console.error("[SendPulse] Error sending report email:", error);
-    return false;
+    return { result: false, error: String(error) };
   }
+}
+
+export async function sendReportReadyEmail(
+  email: string,
+  auditId: string,
+  auditType: string,
+  baseUrl: string,
+  options?: Parameters<typeof sendReportReadyEmailResult>[4],
+): Promise<boolean> {
+  const result = await sendReportReadyEmailResult(email, auditId, auditType, baseUrl, options);
+  return result.result === true;
 }
 
 /** Corrective notice for a Discovery report that was regenerated in place.

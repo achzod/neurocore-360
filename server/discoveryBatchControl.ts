@@ -4095,7 +4095,7 @@ export async function finalizeDiscoveryDeliveryClaim(
         WHERE id = $1 AND fence_token IS NOT DISTINCT FROM $5
           AND (
             ($2 IN ('PROVIDER_ACCEPTED','SMTP_CONFIRMED','AMBIGUOUS') AND state = 'PROVIDER_POST_STARTED')
-            OR ($2 = 'FAILED_FINAL' AND state = 'CLAIMED')
+            OR ($2 = 'FAILED_FINAL' AND state IN ('CLAIMED','PROVIDER_POST_STARTED'))
           )
         RETURNING batch_id, audit_id`,
       [input.claimId, input.outcome, input.providerTaskId || null, input.errorDetail || null,
@@ -4155,7 +4155,9 @@ export async function finalizeDiscoveryDeliveryClaim(
           throw new Error("DISCOVERY_DELIVERY_ITEM_FAILURE_CAS_FAILED");
         }
         const batchPaused = await client.query(
-          `UPDATE discovery_batch_runs SET status = 'PAUSED', stop_reason = $2, updated_at = NOW()
+          `UPDATE discovery_batch_runs
+              SET status = 'FAILED', stop_reason = $2,
+                  completed_at = COALESCE(completed_at, NOW()), updated_at = NOW()
             WHERE id = $1 AND status IN ('RUNNING','PAUSED')
             RETURNING id`,
           [row.batch_id, `delivery_${input.outcome.toLowerCase()}`],

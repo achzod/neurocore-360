@@ -731,13 +731,34 @@ async function runGeneration(
   }
 }
 
+function isTerminalSendPulseHardFail(result: { error?: unknown }): boolean {
+  const error = result.error as Record<string, unknown> | undefined;
+  const eventType = String(error?.eventType || error?.event_type || "").toLowerCase();
+  const smtpCode = Number(error?.smtpAnswerCode ?? error?.smtp_answer_code ?? error?.smtp_code);
+  return eventType === "hard_fail"
+    || eventType === "bounce"
+    || (Number.isFinite(smtpCode) && smtpCode >= 500);
+}
+
+function summarizeSendPulseFailure(result: { id?: unknown; error?: unknown }): string {
+  const error = result.error as Record<string, unknown> | undefined;
+  const providerTaskId = String(result.id || error?.providerTaskId || error?.provider_task_id || "").trim();
+  const smtpCode = Number(error?.smtpAnswerCode ?? error?.smtp_answer_code ?? error?.smtp_code);
+  const smtpData = String(error?.smtpAnswerData || error?.smtp_answer_data || error?.message || "").slice(0, 240);
+  return [
+    providerTaskId ? `task=${providerTaskId}` : null,
+    Number.isFinite(smtpCode) ? `smtp=${smtpCode}` : null,
+    smtpData ? `detail=${smtpData}` : null,
+  ].filter(Boolean).join(" ");
+}
+
 async function runDelivery(
   manifest: DiscoveryManifest,
   approval: DiscoveryApproval,
   approvalSource: string,
 ): Promise<Record<string, unknown>> {
   assertDeliveryEnvironment();
-  const { getReportReadyEmailSubject, sendReportReadyEmail } = await import("../server/emailService");
+  const { getReportReadyEmailSubject, sendReportReadyEmailResult } = await import("../server/emailService");
   if (!await hasBatchControlTables()) throw new Error("DISCOVERY_BATCH_MIGRATION_NOT_APPLIED");
   if (approval.stage !== "DELIVERY") throw new Error("DISCOVERY_BATCH_APPROVAL_NOT_DELIVERY");
   const tier = approval.tier as DiscoveryBatchTier;
@@ -807,7 +828,7 @@ async function runDelivery(
           subject,
         });
         claimId = claim.claimId;
-        const accepted = await sendReportReadyEmail(item.email, item.id, "GRATUIT", baseUrl, {
+        const result = await sendReportReadyEmailResult(item.email, item.id, "GRATUIT", baseUrl, {
           allowProviderFallback: false,
           beforeProviderPost: async () => {
             if (!claimId || !await markDiscoveryDeliveryProviderPostStarted(claimId)) {
@@ -816,21 +837,27 @@ async function runDelivery(
             providerPostStarted = true;
           },
         });
-        if (!accepted) {
+        if (!result.result) {
+          const terminalHardFail = isTerminalSendPulseHardFail(result);
           await finalizeDiscoveryDeliveryClaim({
             claimId,
-            outcome: providerPostStarted ? "AMBIGUOUS" : "FAILED_FINAL",
-            errorDetail: "provider result not durably confirmed",
+            outcome: terminalHardFail || !providerPostStarted ? "FAILED_FINAL" : "AMBIGUOUS",
+            providerTaskId: typeof result.id === "string" ? result.id : undefined,
+            errorDetail: terminalHardFail
+              ? `provider terminal hard fail: ${summarizeSendPulseFailure(result)}`
+              : "provider result not durably confirmed",
           });
           processed.push({
             auditId: item.id,
-            status: providerPostStarted ? "AMBIGUOUS" : "FAILED_FINAL",
+            status: terminalHardFail || !providerPostStarted ? "FAILED_FINAL" : "AMBIGUOUS",
+            ...(typeof result.id === "string" ? { providerTaskId: result.id } : {}),
           });
           break;
         }
         const finalized = await finalizeDiscoveryDeliveryClaim({
           claimId,
           outcome: "PROVIDER_ACCEPTED",
+          providerTaskId: typeof result.id === "string" ? result.id : undefined,
         });
         if (!finalized) throw new Error("DISCOVERY_DELIVERY_FINALIZE_CAS_FAILED");
         processed.push({ auditId: item.id, status: "PROVIDER_ACCEPTED" });

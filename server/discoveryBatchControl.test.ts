@@ -374,7 +374,7 @@ test("ordinary Discovery deliveries reuse the durable unique claim without requi
   assert.match(source, /DISCOVERY_DELIVERY_RECIPIENT_HARD_BOUNCED/);
   assert.match(source, /hasPassingPersistedDiscoveryDeliveryGate\(audit\.narrative_report\)/);
   assert.match(source, /DISCOVERY_DELIVERY_PERSISTED_GATE_MISSING/);
-  assert.match(source, /'FAILED_FINAL' AND state = 'CLAIMED'/);
+  assert.match(source, /'FAILED_FINAL' AND state IN \('CLAIMED','PROVIDER_POST_STARTED'\)/);
   assert.match(source, /'AMBIGUOUS'\) AND state = 'PROVIDER_POST_STARTED'/);
   assert.match(source, /assertDiscoveryDeliveryFenceOwnership/);
   assert.match(source, /DISCOVERY_DELIVERY_FENCE_STALE/);
@@ -395,7 +395,7 @@ test("Discovery provider crash window is one-shot, single-provider and never aut
   assert.ok(safeSend.indexOf("claimDiscoveryEmailDelivery({") < safeSend.indexOf("sendReportReadyEmail(email"));
   assert.match(safeSend, /beforeProviderPost: async/);
   assert.match(safeSend, /markDiscoveryDeliveryProviderPostStarted/);
-  assert.match(safeSend, /discoveryProviderPostStarted\s*\?\s*"AMBIGUOUS"\s*:\s*"FAILED_FINAL"/s);
+  assert.match(safeSend, /terminalHardFail \|\| !discoveryProviderPostStarted\s*\?\s*"FAILED_FINAL"\s*:\s*"AMBIGUOUS"/s);
   assert.match(safeSend, /allowProviderFallback: false/);
   assert.match(safeSend, /discovery_delivery_failed:persisted_gate_missing/);
   assert.doesNotMatch(safeSend, /persistDiscoveryDeliveryGate/);
@@ -496,10 +496,11 @@ test("reconciler is read-only by default and delivery claims before provider", (
   const source = readFileSync(new URL("../scripts/discovery-safe-reconciler.ts", import.meta.url), "utf8");
   assert.match(source, /!args\.has\("--run-generation"\).* !args\.has\("--run-regeneration"\)/s);
   assert.match(source, /Default: read-only manifest/);
-  assert.ok(source.indexOf("claimDiscoveryBatchEmailDelivery({") < source.indexOf("sendReportReadyEmail(item.email"));
+  assert.ok(source.indexOf("claimDiscoveryBatchEmailDelivery({") < source.indexOf("sendReportReadyEmailResult(item.email"));
   assert.match(source, /beforeProviderPost: async/);
   assert.match(source, /markDiscoveryDeliveryProviderPostStarted\(claimId\)/);
-  assert.match(source, /providerPostStarted \? "AMBIGUOUS" : "FAILED_FINAL"/);
+  assert.match(source, /isTerminalSendPulseHardFail\(result\)/);
+  assert.match(source, /providerTaskId: typeof result\.id === "string" \? result\.id : undefined/);
   assert.match(source, /AI_COST_ALERTS_ENABLED/);
   assert.match(source, /DISCOVERY_REPORT_DELIVERY_ENABLED/);
   assert.match(source, /resolveExactDiscoveryTargets\(manifest\.items, approval\.targetAuditIds\)/);
