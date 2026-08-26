@@ -260,7 +260,9 @@ const PDFExtractionAnimation = () => {
             {mol}
           </motion.text>
         ))}
-        <motion.line x1="20" y1="20" x2="80" y2="20" stroke="#fff" strokeWidth="0.5" className="drop-shadow-[0_0_8px_#06b6d4]" animate={{ y1: [15, 75, 15], y2: [15, 75, 15] }} transition={t} />
+        <motion.g animate={{ y: [-5, 55, -5] }} transition={t}>
+          <line x1="20" y1="20" x2="80" y2="20" stroke="#fff" strokeWidth="0.5" className="drop-shadow-[0_0_8px_#06b6d4]" />
+        </motion.g>
       </svg>
     </AnimationWrapper>
   );
