@@ -76,6 +76,26 @@ test("a valid report with no attempt is classified valid-never-sent", () => {
   });
 });
 
+test("a generated report with a passing delivery gate remains deliverable", () => {
+  const result = classifyDiscoveryManifestCandidate({
+    id: "a", email: "client@real-domain.fr", type: "GRATUIT",
+    deliveryGateOk: true, providerAttemptCount: 1, tracking: emptyTracking,
+  });
+  assert.deepEqual(result, {
+    cohort: "valid_never_sent",
+    reasons: ["delivery_gate_pass", "no_delivery_attempt"],
+  });
+});
+
+test("prior provider attempts still block reports without a passing delivery gate", () => {
+  const result = classifyDiscoveryManifestCandidate({
+    id: "a", email: "client@real-domain.fr", type: "GRATUIT",
+    deliveryGateOk: false, providerAttemptCount: 1, tracking: emptyTracking,
+  });
+  assert.equal(result.cohort, "ambiguous");
+  assert.ok(result.reasons.includes("prior_provider_attempt_exists"));
+});
+
 test("sent marker without provider acceptance is ambiguous, never resendable", () => {
   const result = classifyDiscoveryManifestCandidate({
     id: "a", email: "client@real-domain.fr", type: "GRATUIT",

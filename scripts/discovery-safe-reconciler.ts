@@ -159,7 +159,16 @@ function assertGenerationEnvironment(): void {
 }
 
 function assertDeliveryEnvironment(): void {
-  throw new Error("DISCOVERY_DELIVERY_HARD_DISABLED");
+  const required: Array<[string, string]> = [
+    ["DISCOVERY_BATCH_DELIVERY_WORKER_ENABLED", "true"],
+    ["DISCOVERY_REPORT_DELIVERY_ENABLED", "false"],
+    ["DISCOVERY_UNIFIED_GENERATION_ENABLED", "false"],
+  ];
+  for (const [key, value] of required) {
+    if (String(process.env[key] || "").toLowerCase() !== value) {
+      throw new Error(`DISCOVERY_BATCH_DELIVERY_ENV_BLOCKED:${key}=${value} is mandatory`);
+    }
+  }
 }
 
 async function hasBatchControlTables(): Promise<boolean> {

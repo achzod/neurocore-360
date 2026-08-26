@@ -360,7 +360,9 @@ export function classifyDiscoveryManifestCandidate(
   if (candidate.unsubscribed) reasons.push("recipient_unsubscribed");
   if (candidate.superseded || status === "SUPERSEDED") reasons.push("superseded_terminal");
   if (candidate.duplicateCandidate) reasons.push("duplicate_candidate");
-  if (Number(candidate.providerAttemptCount || 0) > 0) reasons.push("prior_provider_attempt_exists");
+  if (Number(candidate.providerAttemptCount || 0) > 0 && !candidate.deliveryGateOk) {
+    reasons.push("prior_provider_attempt_exists");
+  }
   if (Number(candidate.tracking.hardFailed || 0) > 0) reasons.push("smtp_hard_fail_proven_terminal");
   if (reasons.length > 0) return { cohort: "ambiguous", reasons };
 
