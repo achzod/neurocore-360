@@ -602,6 +602,20 @@ async function dryRun(pool: Pool, auditIds: string[], deps: DiscoveryDeps): Prom
 }
 
 function printResult(mode: Mode, inspections: Inspection[], json: boolean): void {
+  const safeItems = inspections.map((inspection) => ({
+    auditId: inspection.auditId,
+    email: inspection.email,
+    ok: inspection.ok,
+    reasons: inspection.reasons,
+    reportTxtSha256: inspection.reportTxtSha256,
+    reportHtmlSha256: inspection.reportHtmlSha256,
+    contentSha256: inspection.contentSha256,
+    batchId: inspection.batchId,
+    model: inspection.model,
+    artifactId: inspection.artifactId,
+    deliveryGateAfterBackfillOk: inspection.deliveryGateAfterBackfillOk,
+    catalogLedgerBindingOk: inspection.catalogLedgerBindingOk,
+  }));
   const payload = {
     operation: "discovery_missing_artifact_backfill",
     mode,
@@ -611,7 +625,7 @@ function printResult(mode: Mode, inspections: Inspection[], json: boolean): void
       eligible: inspections.filter((item) => item.ok).length,
       blocked: inspections.filter((item) => !item.ok).length,
     },
-    items: inspections.map(({ ok, reasons, ...item }) => ({ ...item, ok, reasons })),
+    items: safeItems,
   };
   if (json) {
     console.log(JSON.stringify(payload, null, 2));
