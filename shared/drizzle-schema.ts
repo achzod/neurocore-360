@@ -90,7 +90,7 @@ export const bloodAnalysisReports = pgTable("blood_analysis_reports", {
   // Questionnaire
   questionnaireData: jsonb("questionnaireData"),
 
-  // Analysis (full JSON from GPT-5.6 Sol)
+  // Analysis (full JSON from GPT-5.5)
   analysis: jsonb("analysis"),
 
   // PDF
@@ -99,7 +99,7 @@ export const bloodAnalysisReports = pgTable("blood_analysis_reports", {
   // Metadata
   processingStatus: varchar("processingStatus", { length: 20 }).notNull().default("pending"), // pending | processing | completed | failed
   processingError: text("processingError"),
-  aiModel: varchar("aiModel", { length: 50 }).default("gpt-5.6-sol"),
+  aiModel: varchar("aiModel", { length: 50 }).default("gpt-5.5"),
 
   // Timestamps
   testDate: timestamp("testDate"),

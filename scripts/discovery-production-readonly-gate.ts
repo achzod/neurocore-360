@@ -16,7 +16,7 @@ function enabled(name: string): boolean {
 async function main(): Promise<void> {
   const databaseUrl = String(process.env.DATABASE_URL || "").trim();
   assert.ok(databaseUrl, "DATABASE_URL_REQUIRED");
-  assert.equal(process.env.OPENAI_REPORT_MODEL || "gpt-5.6-sol", "gpt-5.6-sol");
+  assert.equal(process.env.OPENAI_REPORT_MODEL || "gpt-5.5", "gpt-5.5");
   assert.equal(DISCOVERY_REASONING_EFFORT, "high");
 
   const expectedAutomation = String(process.env.DISCOVERY_GATE_EXPECT_AUTOMATION || "off")

@@ -9,7 +9,7 @@ import {
 } from "./aiCostBudgetController";
 
 export const OPENAI_REPORT_MODEL =
-  process.env.OPENAI_REPORT_MODEL || "gpt-5.6-sol";
+  process.env.OPENAI_REPORT_MODEL || "gpt-5.5";
 
 const OPENAI_KEY_ENV_CANDIDATES = [
   "OPENAI_API_KEY_ACTIVE",
@@ -50,7 +50,7 @@ const PROFILE_CONFIG: Record<OpenAIReportProfile, ProfileConfig> = {
     verbosity: "medium",
   },
   premium: {
-    effort: "xhigh",
+    effort: "high",
     mode: "pro",
     maxOutputTokens: 18_000,
     timeoutMs: 12 * 60 * 1000,
@@ -79,10 +79,9 @@ const PROFILE_CONFIG: Record<OpenAIReportProfile, ProfileConfig> = {
     verbosity: "low",
   },
   peptides: {
-    // Empirical production telemetry: max consumed the entire reasoning
-    // budget without emitting the strict JSON, even after 30 minutes. xhigh
-    // preserves deep reasoning while reliably leaving room for the report.
-    effort: "xhigh",
+    // Keep peptides on the same high-reasoning contract as the rest of the
+    // reporting stack.
+    effort: "high",
     mode: "pro",
     maxOutputTokens: 32_000,
     timeoutMs: 30 * 60 * 1000,
@@ -99,7 +98,7 @@ const PRICING = {
     longContextThresholdTokens: 272_000,
     longContextInputMultiplier: 2,
     longContextOutputMultiplier: 1.5,
-    source: "https://developers.openai.com/api/docs/models/gpt-5.6-sol",
+    source: "https://platform.openai.com/docs/models/gpt-5.5",
   },
   sonnet46Equivalent: {
     uncachedInputPerMillion: 3,

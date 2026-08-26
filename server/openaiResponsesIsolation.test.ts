@@ -26,7 +26,7 @@ test("stdout-only telemetry returns usage without importing or writing the DB", 
     const telemetry = await recordAIUsageEvent({
       response: {
         id: "resp_isolated_test",
-        model: "gpt-5.6-sol",
+        model: "gpt-5.5",
         usage: {
           input_tokens: 100,
           output_tokens: 50,

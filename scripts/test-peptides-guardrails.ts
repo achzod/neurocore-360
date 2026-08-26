@@ -30,7 +30,7 @@ const replaceStoredSource = readFileSync(new URL("./replace-peptides-stored.ts",
 const dryRunStoredSource = readFileSync(new URL("./dry-run-recover-peptides-stored.ts", import.meta.url), "utf8");
 const storedRecoverySource = readFileSync(new URL("../server/peptidesStoredRecovery.ts", import.meta.url), "utf8");
 assert.match(engineSource, /PEPTIDES_PRIMARY_MODEL[\s\S]{0,120}OPENAI_REPORT_MODEL/);
-assert.match(engineSource, /effort:\s*"xhigh"/);
+assert.match(engineSource, /effort:\s*"high"/);
 assert.match(engineSource, /mode:\s*"pro"/);
 assert.match(engineSource, /PEPTIDES_MAX_OUTPUT_TOKENS[\s\S]{0,180}32_000/);
 assert.match(engineSource, /Math\.min\(40_000, Math\.max\(28_000/);

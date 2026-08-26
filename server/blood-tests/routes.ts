@@ -1423,7 +1423,7 @@ export function registerBloodTestsRoutes(app: Express): void {
           globalLevel: newGlobalLevel,
           aiReport: aiResult,
           aiAnalysis: aiResult,
-          aiModel: "gpt-5.6-sol",
+          aiModel: OPENAI_REPORT_MODEL,
           aiStatus: "generated",
           aiGeneratedAt: new Date().toISOString(),
           aiError: null,

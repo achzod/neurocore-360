@@ -6,16 +6,16 @@ function source(name: string): string {
   return readFileSync(new URL(name, import.meta.url), "utf8");
 }
 
-test("every Discovery call uses the central gpt-5.6-sol high profile", () => {
+test("every Discovery call uses the central gpt-5.5 high profile", () => {
   const runner = source("./openaiResponses.ts");
   const scan = source("./discovery-scan.ts");
   const reconciler = source("../scripts/discovery-safe-reconciler.ts");
   const generation = source("./discoveryGenerationService.ts");
 
-  assert.match(runner, /OPENAI_REPORT_MODEL\s*=\s*\n\s*process\.env\.OPENAI_REPORT_MODEL\s*\|\|\s*"gpt-5\.6-sol"/);
+  assert.match(runner, /OPENAI_REPORT_MODEL\s*=\s*\n\s*process\.env\.OPENAI_REPORT_MODEL\s*\|\|\s*"gpt-5\.5"/);
   assert.match(runner, /DISCOVERY_REASONING_EFFORT\s*=\s*"high"/);
   assert.doesNotMatch(runner, /discovery:\s*{[\s\S]{0,300}effort:\s*["']medium["']/);
-  assert.doesNotMatch(runner, /OPENAI_REPORT_MODEL\s*\|\|\s*["'](?!gpt-5\.6-sol)[^"']+/);
+  assert.doesNotMatch(runner, /OPENAI_REPORT_MODEL\s*\|\|\s*["'](?!gpt-5\.5)[^"']+/);
   assert.match(scan, /profile:\s*"discovery"/);
   assert.doesNotMatch(scan, /profile:\s*["'](?:premium|extraction|vision)["'][\s\S]{0,160}discovery/i);
   assert.match(generation, /analyzeDiscoveryScan\(audit\.responses/);

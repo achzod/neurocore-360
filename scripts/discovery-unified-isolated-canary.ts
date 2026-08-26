@@ -22,7 +22,7 @@ import { getDiscoveryKnowledgePreflightDiagnostic } from "../server/discoveryKno
  * to stdout only. Nothing is persisted to a customer table.
  */
 
-const EXPECTED_MODEL = "gpt-5.6-sol";
+const EXPECTED_MODEL = "gpt-5.5";
 const MAX_OUTPUT_TOKENS = 14_000;
 const MAX_COST_USD = 0.75;
 // Cache writes are the most expensive possible input class for this model.

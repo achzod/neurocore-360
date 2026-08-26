@@ -39,11 +39,11 @@ for (const file of coreFiles) {
 }
 
 const shared = read("server/openaiResponses.ts");
-assert.match(shared, /"gpt-5\.6-sol"/);
-assert.match(shared, /premium:[\s\S]*effort:\s*"xhigh"[\s\S]*mode:\s*"pro"/);
+assert.match(shared, /"gpt-5\.5"/);
+assert.match(shared, /premium:[\s\S]*effort:\s*"high"[\s\S]*mode:\s*"pro"/);
 assert.match(shared, /blood:[\s\S]*effort:\s*"high"[\s\S]*mode:\s*"pro"/);
 assert.match(shared, /blood:[\s\S]*maxOutputTokens:\s*24_000/);
-assert.match(shared, /peptides:[\s\S]*effort:\s*"xhigh"[\s\S]*mode:\s*"pro"/);
+assert.match(shared, /peptides:[\s\S]*effort:\s*"high"[\s\S]*mode:\s*"pro"/);
 assert.match(shared, /client\.responses\.create/);
 assert.doesNotMatch(shared, /chat\.completions/);
 assert.match(shared, /peptides:[\s\S]*maxOutputTokens:\s*32_000/);

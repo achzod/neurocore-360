@@ -125,7 +125,7 @@ export const PEPTIDES_MAX_OUTPUT_TOKENS = Number.isFinite(configuredPeptidesOutp
   : 32_000;
 export const ENCLOMIPHENE_SOURCE_URL = "https://receptorchem.co.uk/enclomiphene-citrate/";
 export const PEPTIDES_REASONING = Object.freeze({
-  effort: "xhigh",
+  effort: "high",
   mode: "pro",
 });
 

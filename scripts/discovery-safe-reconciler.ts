@@ -844,15 +844,10 @@ async function runDelivery(
           });
           if (!finalized) throw new Error("DISCOVERY_DELIVERY_FAILURE_NOT_DURABLE");
         } else {
-          const failed = await failDiscoveryBatchItem({
-            batchId,
-            auditId: item.id,
-            lockToken: lock.token,
-            errorCode: detail.split(":")[0].slice(0, 120),
-            errorDetail: detail,
-            ambiguous: true,
-          });
-          if (!failed) throw new Error("DISCOVERY_BATCH_FAILURE_NOT_DURABLY_RECORDED");
+          // Delivery batches start from already-stored artifacts. Generation
+          // failure transitions deliberately reject DELIVERY batches, so keep
+          // the item stored and expose the original pre-claim error instead of
+          // masking it behind DISCOVERY_BATCH_NOT_FAILABLE.
         }
         processed.push({ auditId: item.id, status: "STOPPED", error: detail });
         break;

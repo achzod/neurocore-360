@@ -2342,7 +2342,7 @@ const DISCOVERY_UNIFIED_SCHEMA = {
 
 export const DISCOVERY_UNIFIED_MAX_INPUT_CHARS = 60_000;
 export const DISCOVERY_UNIFIED_MAX_OUTPUT_TOKENS = 14_000;
-// At current gpt-5.6-sol pricing: <=60k uncached input tokens ($0.30) plus
+// At current GPT-5.5 pricing: <=60k uncached input tokens plus
 // <=14k output/reasoning tokens ($0.42). The character ceiling is stricter
 // than the practical French token count, so $0.75 is a conservative stop.
 export const DISCOVERY_UNIFIED_MAX_ESTIMATED_COST_USD = 0.75;
