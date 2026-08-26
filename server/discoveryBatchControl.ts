@@ -4158,7 +4158,7 @@ export async function finalizeDiscoveryDeliveryClaim(
           `UPDATE discovery_batch_runs
               SET status = 'FAILED', stop_reason = $2,
                   completed_at = COALESCE(completed_at, NOW()), updated_at = NOW()
-            WHERE id = $1 AND status IN ('RUNNING','PAUSED')
+            WHERE id = $1 AND stage = 'DELIVERY' AND status IN ('PREPARED','RUNNING','PAUSED')
             RETURNING id`,
           [row.batch_id, `delivery_${input.outcome.toLowerCase()}`],
         );
