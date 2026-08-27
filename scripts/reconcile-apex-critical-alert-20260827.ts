@@ -34,13 +34,14 @@ const AGENTMAIL_AUDIT_IDS = [
   "629a77fe-8733-4f46-9b86-a70bfd05cffd",
 ];
 
-function parseArgs(): { apply: boolean; confirm: string } {
+function parseArgs(): { apply: boolean; confirm: string; terminalOnly: boolean } {
   const argv = process.argv.slice(2);
   const apply = argv.includes("--apply");
+  const terminalOnly = argv.includes("--terminal-only");
   const confirmIndex = argv.indexOf("--confirm");
   const confirm = confirmIndex >= 0 ? String(argv[confirmIndex + 1] || "") : "";
   if (apply) assert.equal(confirm, CONFIRM_TOKEN, `--apply requires --confirm ${CONFIRM_TOKEN}`);
-  return { apply, confirm };
+  return { apply, confirm, terminalOnly };
 }
 
 function databaseUrl(): string {
@@ -344,7 +345,7 @@ async function applyTerminalStatuses(pool: Pool) {
           SET status='failed',progress=100,
               current_section='Submission de test agentmail neutralisee',
               error='APEX_TEST_EMAIL_SUPERSEDED_NO_ORDER',
-              completed_at=COALESCE(completed_at,NOW()),updated_at=NOW(),last_progress_at=NOW()
+              completed_at=COALESCE(j.completed_at,NOW()),updated_at=NOW(),last_progress_at=NOW()
          FROM audits a
         WHERE a.id=j.audit_id AND a.id=ANY($1::text[])`,
       [AGENTMAIL_AUDIT_IDS],
@@ -400,7 +401,7 @@ async function applyTerminalStatuses(pool: Pool) {
           SET status='failed',progress=100,
               current_section='Questionnaire legacy incomplet - livraison bloquee',
               error='DISCOVERY_QUESTIONNAIRE_INVALID_LEGACY_MISSING_REQUIRED_FIELDS',
-              completed_at=COALESCE(completed_at,NOW()),updated_at=NOW(),last_progress_at=NOW()
+              completed_at=COALESCE(report_jobs.completed_at,NOW()),updated_at=NOW(),last_progress_at=NOW()
         WHERE audit_id=$1`,
       [MAPASSA_AUDIT_ID],
     );
@@ -428,16 +429,21 @@ async function applyTerminalStatuses(pool: Pool) {
 }
 
 async function main(): Promise<void> {
-  const { apply } = parseArgs();
+  const { apply, terminalOnly } = parseArgs();
   const pool = poolFor(databaseUrl());
   try {
     const before = await loadAlertRows(pool);
-    const nabilReplay = await buildNabilReplay(pool);
+    const nabilReplay = terminalOnly ? null : await buildNabilReplay(pool);
     const applied = apply
-      ? {
-        terminal: await applyTerminalStatuses(pool),
-        nabil: await applyNabilReplay(pool, nabilReplay),
-      }
+      ? terminalOnly
+        ? {
+          terminal: await applyTerminalStatuses(pool),
+          nabil: null,
+        }
+        : {
+          terminal: await applyTerminalStatuses(pool),
+          nabil: await applyNabilReplay(pool, nabilReplay),
+        }
       : null;
     const after = await loadAlertRows(pool);
     const statusCounts = (await pool.query(
@@ -446,6 +452,7 @@ async function main(): Promise<void> {
     )).rows;
     console.log(`APEX_CRITICAL_ALERT_RECONCILE ${JSON.stringify({
       mode: apply ? "apply" : "dry-run",
+      terminalOnly,
       marker: MARKER,
       emailSent: false,
       before,
