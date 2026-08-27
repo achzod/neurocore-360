@@ -68,6 +68,32 @@ async function grouped(client: Client, since: string) {
   return { audits: audits.rows, jobs: jobs.rows };
 }
 
+async function strictPendingCount(client: Client, since: string) {
+  const result = await client.query(
+    `SELECT COUNT(*)::int AS count
+       FROM audits
+      WHERE type='GRATUIT'
+        AND created_at >= $1::timestamptz
+        AND lower(split_part(email,'@',2))='agentmail.to'
+        AND report_delivery_status='PENDING'
+        AND report_sent_at IS NULL
+        AND LENGTH(COALESCE(report_txt,''))=0
+        AND LENGTH(COALESCE(report_html,''))=0
+        AND narrative_report IS NULL
+        AND NOT EXISTS (SELECT 1 FROM report_jobs j WHERE j.audit_id=audits.id)
+        AND NOT EXISTS (SELECT 1 FROM report_artifacts ra WHERE ra.audit_id=audits.id)
+        AND NOT EXISTS (
+          SELECT 1 FROM email_tracking et
+           WHERE et.audit_id=audits.id AND et.email_type='sendReportReadyEmail'
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM discovery_email_delivery_claims dc WHERE dc.audit_id=audits.id
+        )`,
+    [since],
+  );
+  return Number(result.rows[0]?.count ?? 0);
+}
+
 async function main(): Promise<void> {
   const { apply, since, marker, pendingEmptyOnly } = parseArgs();
   const databaseUrl = String(process.env.DATABASE_URL || "").trim();
@@ -83,7 +109,68 @@ async function main(): Promise<void> {
 
   try {
     await client.query("BEGIN");
-    await client.query("SET LOCAL statement_timeout = '30s'");
+    await client.query("SET LOCAL statement_timeout = '15s'");
+
+    if (pendingEmptyOnly) {
+      const strictBefore = await strictPendingCount(client, since);
+      const recovery = {
+        version: 1,
+        disposition: "superseded",
+        reason: "test_email_blocked_agentmail_pending_empty_flood",
+        resolvedAt: new Date().toISOString(),
+        resolvedBy: marker,
+        emailSent: false,
+      };
+      const quarantinedAudits = apply
+        ? await client.query(
+          `WITH candidates AS (
+             SELECT id
+               FROM audits
+              WHERE type='GRATUIT'
+                AND created_at >= $1::timestamptz
+                AND lower(split_part(email,'@',2))='agentmail.to'
+                AND report_delivery_status='PENDING'
+                AND report_sent_at IS NULL
+                AND LENGTH(COALESCE(report_txt,''))=0
+                AND LENGTH(COALESCE(report_html,''))=0
+                AND narrative_report IS NULL
+                AND NOT EXISTS (SELECT 1 FROM report_jobs j WHERE j.audit_id=audits.id)
+                AND NOT EXISTS (SELECT 1 FROM report_artifacts ra WHERE ra.audit_id=audits.id)
+                AND NOT EXISTS (
+                  SELECT 1 FROM email_tracking et
+                   WHERE et.audit_id=audits.id AND et.email_type='sendReportReadyEmail'
+                )
+                AND NOT EXISTS (
+                  SELECT 1 FROM discovery_email_delivery_claims dc WHERE dc.audit_id=audits.id
+                )
+              FOR UPDATE SKIP LOCKED
+           )
+           UPDATE audits a
+              SET report_delivery_status='SUPERSEDED',
+                  report_scheduled_for=NULL,
+                  narrative_report=jsonb_build_object('recovery',$2::jsonb)
+             FROM candidates c
+            WHERE a.id=c.id
+            RETURNING a.id`,
+          [since, JSON.stringify(recovery)],
+        )
+        : { rowCount: 0 };
+      const strictAfter = await strictPendingCount(client, since);
+      if (apply) {
+        assert.equal(strictAfter, 0, "STRICT_PENDING_AGENTMAIL_REMAINING");
+      }
+      await client.query(apply ? "COMMIT" : "ROLLBACK");
+      console.log(`APEX_DISCOVERY_AGENTMAIL_QUARANTINE ${JSON.stringify({
+        apply,
+        since,
+        marker,
+        pendingEmptyOnly,
+        strictBefore,
+        updatedAudits: quarantinedAudits.rowCount ?? 0,
+        strictAfter,
+      })}`);
+      return;
+    }
 
     const before = await grouped(client, since);
     let closedJobs = { rowCount: 0 };
