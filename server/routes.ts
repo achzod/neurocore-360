@@ -13815,7 +13815,24 @@ export async function registerRoutes(
              (SELECT COUNT(*)::int FROM discovery_email_delivery_claims dc WHERE dc.audit_id=a.id) AS claims,
              EXISTS (SELECT 1 FROM email_unsubscribes u WHERE lower(u.email)=lower(a.email)) AS unsubscribed,
              (SELECT COUNT(*)::int FROM audits other WHERE lower(other.email)=lower(a.email) AND other.id<>a.id) AS same_email_other_audits,
-             (SELECT COUNT(*)::int FROM audits other WHERE lower(other.email)=lower(a.email) AND other.id<>a.id AND other.report_delivery_status='SENT') AS same_email_sent_audits
+             (SELECT COUNT(*)::int FROM audits other WHERE lower(other.email)=lower(a.email) AND other.id<>a.id AND other.report_delivery_status='SENT') AS same_email_sent_audits,
+             (SELECT COALESCE(array_agg(key ORDER BY key), ARRAY[]::text[]) FROM jsonb_object_keys(COALESCE(a.responses,'{}'::jsonb)) AS key) AS response_keys,
+             (SELECT COALESCE(json_agg(json_build_object(
+                 'id', o.id,
+                 'status', o.status,
+                 'productType', o.product_type,
+                 'amountCents', o.final_amount_cents,
+                 'createdAt', o.created_at
+               ) ORDER BY o.created_at), '[]'::json)
+                FROM orders o WHERE o.audit_id=a.id) AS order_details,
+             (SELECT COALESCE(json_agg(json_build_object(
+                 'emailType', et.email_type,
+                 'status', et.sendpulse_status,
+                 'subject', et.subject,
+                 'sentAt', et.sent_at,
+                 'createdAt', et.created_at
+               ) ORDER BY et.created_at), '[]'::json)
+                FROM email_tracking et WHERE et.audit_id=a.id) AS tracking_details
            FROM audits a
            WHERE a.type='GRATUIT'
              AND a.report_delivery_status='PENDING'
