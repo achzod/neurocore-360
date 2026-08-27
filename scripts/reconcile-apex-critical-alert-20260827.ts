@@ -61,6 +61,20 @@ function json(value: unknown): string {
   return JSON.stringify(value);
 }
 
+async function withTimeout<T>(promise: Promise<T>, milliseconds: number, label: string): Promise<T> {
+  let timeout: NodeJS.Timeout | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timeout = setTimeout(() => reject(new Error(`${label}_TIMEOUT_${milliseconds}MS`)), milliseconds);
+      }),
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
+
 function getClaim(raw: any): DiscoveryGenerationClaim {
   const claim = raw?.generationClaim;
   assert.ok(claim && typeof claim === "object", "NABIL_GENERATION_CLAIM_MISSING");
@@ -134,7 +148,13 @@ async function buildNabilReplay(pool: Pool) {
   assert.ok(new Date(ledger.reservation_created).getTime() >= new Date(claim.claimedAt).getTime(),
     "NABIL_LEDGER_BEFORE_CLAIM");
 
-  const stored = await retrieveStoredOpenAIResponseText(String(ledger.response_id));
+  console.log(`APEX_CRITICAL_ALERT_RECONCILE_STEP retrieve_stored_response ${ledger.response_id}`);
+  const stored = await withTimeout(
+    retrieveStoredOpenAIResponseText(String(ledger.response_id)),
+    45_000,
+    "NABIL_STORED_RESPONSE_RETRIEVE",
+  );
+  console.log(`APEX_CRITICAL_ALERT_RECONCILE_STEP reconstruct_nabil ${ledger.response_id}`);
   const parsed = JSON.parse(stored.text);
   const generated = validateDiscoveryGeneratedNarrative(parsed, audit.responses, {} as any);
   assert.ok(generated.catalogProvenance, "NABIL_CATALOG_PROVENANCE_MISSING");
