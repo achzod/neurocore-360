@@ -379,7 +379,7 @@ async function applyTerminalStatuses(pool: Pool) {
           SET report_delivery_status='DELIVERY_BLOCKED',
               report_scheduled_for=NULL,
               narrative_report=COALESCE(narrative_report,'{}'::jsonb)
-                || jsonb_build_object('recovery',$4::jsonb)
+                || jsonb_build_object('recovery',$3::jsonb)
         WHERE id=$1 AND email=$2 AND type='GRATUIT'
           AND report_delivery_status='NEEDS_REVIEW'
           AND report_sent_at IS NULL
