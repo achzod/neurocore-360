@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   isAIUsagePersistenceDisabled,
+  openAIProfileMetadata,
   recordAIUsageEvent,
 } from "./openaiResponses";
 
@@ -9,6 +10,13 @@ test("AI usage stdout-only mode defaults off and requires explicit true", () => 
   assert.equal(isAIUsagePersistenceDisabled({}), false);
   assert.equal(isAIUsagePersistenceDisabled({ AI_USAGE_PERSISTENCE_DISABLED: "false" }), false);
   assert.equal(isAIUsagePersistenceDisabled({ AI_USAGE_PERSISTENCE_DISABLED: "TRUE" }), true);
+});
+
+test("gpt-5.5 report profiles do not request unsupported reasoning mode", () => {
+  for (const profile of ["discovery", "premium", "blood", "vision", "extraction", "peptides"] as const) {
+    assert.equal(openAIProfileMetadata(profile).reasoningEffort, "high");
+    assert.equal(openAIProfileMetadata(profile).reasoningMode, "standard");
+  }
 });
 
 test("stdout-only telemetry returns usage without importing or writing the DB", async () => {

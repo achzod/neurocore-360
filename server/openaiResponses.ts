@@ -51,17 +51,15 @@ const PROFILE_CONFIG: Record<OpenAIReportProfile, ProfileConfig> = {
   },
   premium: {
     effort: "high",
-    mode: "pro",
     maxOutputTokens: 18_000,
     timeoutMs: 12 * 60 * 1000,
     verbosity: "high",
   },
   blood: {
     // Max and xhigh consumed most of the output budget in hidden reasoning on
-    // long multi-section reports. High keeps the pro reasoning path while
-    // leaving enough budget and time for all three client-facing batches.
+    // long multi-section reports. High leaves enough budget and time for all
+    // three client-facing batches.
     effort: "high",
-    mode: "pro",
     maxOutputTokens: 24_000,
     timeoutMs: 12 * 60 * 1000,
     verbosity: "high",
@@ -82,7 +80,6 @@ const PROFILE_CONFIG: Record<OpenAIReportProfile, ProfileConfig> = {
     // Keep peptides on the same high-reasoning contract as the rest of the
     // reporting stack.
     effort: "high",
-    mode: "pro",
     maxOutputTokens: 32_000,
     timeoutMs: 30 * 60 * 1000,
     verbosity: "high",
@@ -733,6 +730,9 @@ export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAIT
         await ensureAIUsageTable();
         budgetReservation = await reserveAICostBudget(budgetContext);
       }
+      const reasoningConfig: Record<string, unknown> = { effort: profile.effort };
+      if (profile.mode) reasoningConfig.mode = profile.mode;
+
       let response: any = await client.responses.create(
         {
           model,
@@ -741,10 +741,7 @@ export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAIT
           instructions: request.instructions,
           input: request.input,
           max_output_tokens: request.maxOutputTokens || profile.maxOutputTokens,
-          reasoning: {
-            effort: profile.effort,
-            ...(profile.mode ? { mode: profile.mode } : {}),
-          },
+          reasoning: reasoningConfig,
           text: textConfig,
           safety_identifier: safeIdentifier(request.safetyId || request.label || "anonymous", request.profile),
         } as any,
@@ -820,8 +817,9 @@ export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAIT
         throw new Error("OpenAI returned an empty response");
       }
 
+      const providerModel = String(response?.model || model);
       console.log(
-        `[OpenAIResponses] Completed${label}: ${request.profile}/${model}, response=${response.id}, chars=${text.length}`
+        `[OpenAIResponses] Completed${label}: ${request.profile}/${model} (${providerModel}), response=${response.id}, chars=${text.length}`
       );
       const usage = await recordAIUsageEvent({
         response,
@@ -838,7 +836,7 @@ export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAIT
       return {
         text,
         responseId: response.id,
-        model,
+        model: providerModel,
         profile: request.profile,
         reasoningEffort: profile.effort,
         reasoningMode: profile.mode || "standard",
