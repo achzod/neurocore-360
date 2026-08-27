@@ -13775,7 +13775,7 @@ export async function registerRoutes(
     }
 
     const applyMode = String(req.query.apply || "audit-only");
-    if (!["audit-only", "empty-delivery-blocked"].includes(applyMode)) {
+    if (!["audit-only", "empty-delivery-blocked", "dedupe-review-blocked"].includes(applyMode)) {
       res.status(400).json({ success: false, error: "invalid_apply_mode" });
       return;
     }
@@ -13907,6 +13907,119 @@ export async function registerRoutes(
              VALUES ($1,'APEX_PENDING_DISCOVERY_DELIVERY_BLOCKED',$2::jsonb,NOW())`,
             [row.id, JSON.stringify({ marker, email: row.email, emailSent: false })],
           );
+        }
+      }
+      if (applyMode === "dedupe-review-blocked") {
+        const eligible = pendingRows.filter((row: any) =>
+          row.type === "GRATUIT"
+          && row.report_delivery_status === "PENDING"
+          && row.report_sent_at === null
+          && Number(row.txt_len) === 0
+          && Number(row.html_len) === 0
+          && row.has_narrative === false
+          && Number(row.jobs) === 0
+          && Number(row.active_jobs) === 0
+          && Number(row.artifacts) === 0
+          && Number(row.report_tracking) === 0
+          && Number(row.claims) === 0
+          && new Date(row.created_at).getTime() < Date.now() - 30 * 60 * 1000
+        );
+        const byEmail = new Map<string, any[]>();
+        for (const row of eligible) {
+          const key = String(row.email || "").toLowerCase();
+          byEmail.set(key, [...(byEmail.get(key) || []), row]);
+        }
+
+        const operations: Array<{ row: any; status: string; action: string; recovery: Record<string, unknown> }> = [];
+        for (const rowsForEmail of byEmail.values()) {
+          const sorted = [...rowsForEmail].sort((a: any, b: any) =>
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
+          if (sorted.some((row: any) => row.unsubscribed)) {
+            for (const row of sorted) {
+              operations.push({
+                row,
+                status: "DELIVERY_BLOCKED",
+                action: "APEX_PENDING_DISCOVERY_UNSUBSCRIBED_BLOCKED",
+                recovery: {
+                  version: 1,
+                  disposition: "delivery_blocked",
+                  reason: "pending_complete_discovery_email_unsubscribed",
+                  resolvedAt: new Date().toISOString(),
+                  resolvedBy: marker,
+                  emailSent: false,
+                },
+              });
+            }
+            continue;
+          }
+
+          const canonical = sorted[sorted.length - 1];
+          for (const row of sorted.slice(0, -1)) {
+            operations.push({
+              row,
+              status: "SUPERSEDED",
+              action: "APEX_PENDING_DISCOVERY_DUPLICATE_SUPERSEDED",
+              recovery: {
+                version: 1,
+                disposition: "superseded",
+                reason: "duplicate_pending_complete_discovery_kept_latest_submission",
+                replacementAuditId: canonical.id,
+                resolvedAt: new Date().toISOString(),
+                resolvedBy: marker,
+                emailSent: false,
+              },
+            });
+          }
+          operations.push({
+            row: canonical,
+            status: "NEEDS_REVIEW",
+            action: "APEX_PENDING_DISCOVERY_MARKED_NEEDS_REVIEW",
+            recovery: {
+              version: 1,
+              disposition: "needs_review",
+              reason: "latest_complete_discovery_pending_without_generation_or_client_delivery",
+              resolvedAt: new Date().toISOString(),
+              resolvedBy: marker,
+              emailSent: false,
+            },
+          });
+        }
+
+        for (const operation of operations) {
+          const result = await client.query(
+            `UPDATE audits a
+                SET report_delivery_status=$2,
+                    report_scheduled_for=NULL,
+                    narrative_report=jsonb_build_object('recovery',$3::jsonb)
+              WHERE a.id=$1
+                AND a.type='GRATUIT'
+                AND a.report_delivery_status='PENDING'
+                AND a.report_sent_at IS NULL
+                AND LENGTH(COALESCE(a.report_txt,''))=0
+                AND LENGTH(COALESCE(a.report_html,''))=0
+                AND a.narrative_report IS NULL
+                AND NOT EXISTS (SELECT 1 FROM report_jobs j WHERE j.audit_id=a.id)
+                AND NOT EXISTS (SELECT 1 FROM report_artifacts ra WHERE ra.audit_id=a.id)
+                AND NOT EXISTS (SELECT 1 FROM email_tracking et WHERE et.audit_id=a.id AND et.email_type='sendReportReadyEmail')
+                AND NOT EXISTS (SELECT 1 FROM discovery_email_delivery_claims dc WHERE dc.audit_id=a.id)
+                AND a.created_at < NOW() - INTERVAL '30 minutes'
+              RETURNING a.id,a.email,a.report_delivery_status`,
+            [operation.row.id, operation.status, JSON.stringify(operation.recovery)],
+          );
+          for (const row of result.rows) {
+            updatedRows.push({ ...row, action: operation.action });
+            await client.query(
+              `INSERT INTO monitoring_logs (audit_id, action, metadata, created_at)
+               VALUES ($1,$2,$3::jsonb,NOW())`,
+              [row.id, operation.action, JSON.stringify({
+                marker,
+                email: row.email,
+                emailSent: false,
+                recovery: operation.recovery,
+              })],
+            );
+          }
         }
       }
 
