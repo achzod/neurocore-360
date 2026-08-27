@@ -394,7 +394,7 @@ async function applyTerminalStatuses(pool: Pool) {
             OR responses->>'coup-fatigue' IS NULL
           )
         RETURNING id,email,report_delivery_status`,
-      [MAPASSA_AUDIT_ID, MAPASSA_EMAIL, MARKER, json(mapassaRecovery)],
+      [MAPASSA_AUDIT_ID, MAPASSA_EMAIL, json(mapassaRecovery)],
     );
     await client.query(
       `UPDATE report_jobs
@@ -456,7 +456,7 @@ async function main(): Promise<void> {
       marker: MARKER,
       emailSent: false,
       before,
-      nabilReplay: nabilReplay.audit,
+      nabilReplay: nabilReplay?.audit ?? null,
       applied,
       after,
       statusCounts,
