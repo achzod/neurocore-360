@@ -17,10 +17,12 @@ test.afterEach(() => {
   }
 });
 
-test("Klarna is enabled by default and can be disabled by env", () => {
+test("standard rail is card-only; Klarna rail is explicit", () => {
   delete process.env.STRIPE_ENABLE_KLARNA;
   assert.equal(isKlarnaCheckoutEnabled(), true);
-  assert.deepEqual(getCheckoutPaymentMethodTypes(), ["card", "klarna"]);
+  assert.deepEqual(getCheckoutPaymentMethodTypes(), ["card"]);
+  assert.deepEqual(getCheckoutPaymentMethodTypes("standard"), ["card"]);
+  assert.deepEqual(getCheckoutPaymentMethodTypes("klarna"), ["klarna"]);
 
   for (const value of ["false", "0", "off", "no", " FALSE "]) {
     process.env.STRIPE_ENABLE_KLARNA = value;

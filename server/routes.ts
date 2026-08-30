@@ -7,8 +7,8 @@ import { startMonitoring, generateMonitoringReport, checkNewConversions } from "
 import { pool } from "./db";
 import { saveProgressSchema, insertAuditSchema, insertReviewSchema, ProductPriceCents, ProductDisplayNames, type Order, type ProductTypeEnum } from "@shared/schema";
 import { z } from "zod";
-import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
-import { createCheckoutSessionWithPaymentMethodFallback } from "./stripeCheckoutPaymentMethods";
+import { getStripeKlarnaClient, getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
+import { createCheckoutSessionWithPaymentMethodFallback, isKlarnaCheckoutEnabled } from "./stripeCheckoutPaymentMethods";
 import { createProductCheckoutLineItem, usesInlineCheckoutLineItem } from "./stripeCheckoutProducts";
 import { calculateScoresFromResponses, generateFullAnalysis } from "./analysisEngine";
 import { startReportGeneration, getJobStatus, forceRegenerate } from "./reportJobManager";
@@ -1877,12 +1877,26 @@ export async function registerRoutes(
     if (!requireAdminAuth(req, res)) return;
     try {
       const stripe = await getUncachableStripeClient();
+      const klarnaStripe = process.env.STRIPE_SECRET_KEY_FR
+        ? getStripeKlarnaClient()
+        : null;
       const account = await stripe.accounts.retrieve();
+      const klarnaAccount = klarnaStripe ? await klarnaStripe.accounts.retrieve() : null;
       res.json({
         success: true,
         id: account.id,
         email: account.email,
         country: account.country,
+        primary: {
+          id: account.id,
+          email: account.email,
+          country: account.country,
+        },
+        klarna: klarnaAccount ? {
+          id: klarnaAccount.id,
+          email: klarnaAccount.email,
+          country: klarnaAccount.country,
+        } : null,
         business_profile: account.business_profile,
         company: account.company,
         individual: (account as any).individual,
@@ -4608,7 +4622,16 @@ export async function registerRoutes(
     let pendingStripeOrder: Order | undefined;
     let checkoutSessionCreated = false;
     try {
-      const { priceId: clientPriceId, email, planType, responses, promoCode, referrer, fbp, fbc, userAgent, sourceUrl, peptidesEngineConsent, peptidesTier: rawTier } = req.body;
+      const { priceId: clientPriceId, email, planType, responses, promoCode, referrer, fbp, fbc, userAgent, sourceUrl, peptidesEngineConsent, peptidesTier: rawTier, paymentRail } = req.body;
+      const useKlarnaRail = paymentRail === "klarna";
+      if (useKlarnaRail && !isKlarnaCheckoutEnabled()) {
+        res.status(400).json({ error: "KLARNA_DISABLED", message: "Klarna est temporairement indisponible." });
+        return;
+      }
+      if (useKlarnaRail && !process.env.STRIPE_SECRET_KEY_FR) {
+        res.status(400).json({ error: "KLARNA_UNAVAILABLE", message: "Klarna est temporairement indisponible." });
+        return;
+      }
       if (!isValidEmailFormat(email)) {
         res.status(400).json({ error: "EMAIL_INVALID", message: "Adresse email invalide. Verifie qu'il y a bien un point dans le domaine (par exemple @gmail.com et non @gmailcom)." });
         return;
@@ -4690,7 +4713,9 @@ export async function registerRoutes(
         return;
       }
 
-      const stripe = await getUncachableStripeClient();
+      const stripe = useKlarnaRail
+        ? getStripeKlarnaClient()
+        : await getUncachableStripeClient();
 
       const baseUrl = getBaseUrl();
 
@@ -4940,9 +4965,11 @@ export async function registerRoutes(
           peptidesTier: peptidesTier || undefined,
           peptidesResponses: planType === "PEPTIDES_ENGINE" ? responses : undefined,
           peptidesEngineConsent: peptidesConsentRecord,
+          stripeRail: useKlarnaRail ? "klarna_fr" : "primary_ae",
         },
       });
       sessionParams.metadata.orderId = pendingStripeOrder.id;
+      sessionParams.metadata.stripeRail = useKlarnaRail ? "klarna_fr" : "primary_ae";
 
       const pricingMode = peptidesTier
         ? `inline:peptides:${peptidesTier}`
@@ -4955,6 +4982,7 @@ export async function registerRoutes(
       console.log("[Checkout] Creating Stripe checkout session", {
         planType,
         pricingMode,
+        stripeRail: useKlarnaRail ? "klarna_fr" : "primary_ae",
         emailDomain,
         hasPromoCode: Boolean(validatedPromoCode),
       });
@@ -4963,12 +4991,14 @@ export async function registerRoutes(
         stripe,
         sessionParams,
         `planType=${planType}`,
+        useKlarnaRail ? "klarna" : "standard",
       );
       checkoutSessionCreated = true;
 
       console.log("[Checkout] Stripe checkout session created", {
         planType,
         pricingMode,
+        stripeRail: useKlarnaRail ? "klarna_fr" : "primary_ae",
         sessionId: session.id,
       });
 
@@ -5592,6 +5622,23 @@ export async function registerRoutes(
     void reconcilePaidOrdersMissingAudits();
   }, 10 * 60 * 1000).unref();
 
+  async function retrieveCheckoutSessionAcrossStripeRails(sessionId: string) {
+    const primaryStripe = await getUncachableStripeClient();
+    try {
+      return await primaryStripe.checkout.sessions.retrieve(sessionId, {
+        expand: ["customer"],
+      });
+    } catch (error: any) {
+      if (!process.env.STRIPE_SECRET_KEY_FR) throw error;
+      const message = String(error?.message || "");
+      if (!message.toLowerCase().includes("no such checkout.session")) throw error;
+      const klarnaStripe = getStripeKlarnaClient();
+      return await klarnaStripe.checkout.sessions.retrieve(sessionId, {
+        expand: ["customer"],
+      });
+    }
+  }
+
   app.post("/api/stripe/confirm-session", async (req, res) => {
     try {
       const sessionId = req.body?.sessionId || req.query?.session_id;
@@ -5613,10 +5660,7 @@ export async function registerRoutes(
         return;
       }
 
-      const stripe = await getUncachableStripeClient();
-      const session = await stripe.checkout.sessions.retrieve(sessionId, {
-        expand: ["customer"],
-      });
+      const session = await retrieveCheckoutSessionAcrossStripeRails(sessionId);
 
       const isPaid = session.payment_status === "paid" || session.status === "complete";
       if (!isPaid) {
@@ -11872,9 +11916,12 @@ export async function registerRoutes(
 
   app.post("/api/stripe/webhook", async (req, res) => {
     const sig = req.headers["stripe-signature"];
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    const webhookSecrets = [
+      process.env.STRIPE_WEBHOOK_SECRET,
+      process.env.STRIPE_WEBHOOK_SECRET_FR,
+    ].filter((value, index, arr): value is string => Boolean(value) && arr.indexOf(value) === index);
 
-    if (!webhookSecret || !sig) {
+    if (!webhookSecrets.length || !sig) {
       res.status(400).json({ error: "Missing webhook configuration" });
       return;
     }
@@ -11882,7 +11929,16 @@ export async function registerRoutes(
     let event: any;
     try {
       const stripe = await getUncachableStripeClient();
-      event = stripe.webhooks.constructEvent(req.rawBody as string | Buffer, sig as string, webhookSecret);
+      let lastError: any;
+      for (const webhookSecret of webhookSecrets) {
+        try {
+          event = stripe.webhooks.constructEvent(req.rawBody as string | Buffer, sig as string, webhookSecret);
+          break;
+        } catch (err) {
+          lastError = err;
+        }
+      }
+      if (!event) throw lastError;
     } catch (err: any) {
       console.error("[Webhook] Signature verification failed:", err.message);
       res.status(400).json({ error: "Invalid signature" });

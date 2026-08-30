@@ -9,6 +9,7 @@ import { getMetaAttribution } from "@/lib/analytics";
 import { LiveStatsBar } from "@/components/LiveStatsBar";
 
 const PRIMARY_BLUE = "rgb(2,121,232)";
+type PaymentRail = "card" | "klarna";
 
 export default function BloodAnalysisStart() {
   const [, navigate] = useLocation();
@@ -17,6 +18,7 @@ export default function BloodAnalysisStart() {
   const [email, setEmail] = useState("");
   const [promoCode, setPromoCode] = useState("");
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [paymentRail, setPaymentRail] = useState<PaymentRail>("card");
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -67,7 +69,7 @@ export default function BloodAnalysisStart() {
       const res = await fetch("/api/stripe/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, planType: "BLOOD_ANALYSIS", promoCode: promoCode.trim() || undefined, ...getMetaAttribution() }),
+        body: JSON.stringify({ email, planType: "BLOOD_ANALYSIS", promoCode: promoCode.trim() || undefined, paymentRail, ...getMetaAttribution() }),
       });
       const data = await res.json();
       if (data.url) {
@@ -170,6 +172,33 @@ export default function BloodAnalysisStart() {
             <p className="text-sm text-red-400 text-center">{confirmError}</p>
           )}
 
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setPaymentRail("card")}
+              className={`rounded-lg border px-4 py-3 text-sm font-semibold transition-colors ${
+                paymentRail === "card"
+                  ? "border-blue-500 bg-blue-500/15 text-white"
+                  : "border-white/10 bg-white/5 text-white/50 hover:border-white/30"
+              }`}
+              aria-pressed={paymentRail === "card"}
+            >
+              Carte
+            </button>
+            <button
+              type="button"
+              onClick={() => setPaymentRail("klarna")}
+              className={`rounded-lg border px-4 py-3 text-sm font-semibold transition-colors ${
+                paymentRail === "klarna"
+                  ? "border-blue-500 bg-blue-500/15 text-white"
+                  : "border-white/10 bg-white/5 text-white/50 hover:border-white/30"
+              }`}
+              aria-pressed={paymentRail === "klarna"}
+            >
+              Klarna
+            </button>
+          </div>
+
           {/* CTA */}
           <Button
             className="w-full py-6 text-sm font-semibold rounded-lg flex items-center justify-center gap-2"
@@ -181,7 +210,11 @@ export default function BloodAnalysisStart() {
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <>
-                {promoCode.trim() ? "Utiliser mon code promo" : "Payer 99€ et obtenir mes 2 analyses"}
+                {promoCode.trim()
+                  ? "Utiliser mon code promo"
+                  : paymentRail === "klarna"
+                  ? "Payer 99€ avec Klarna"
+                  : "Payer 99€ par carte"}
                 <ArrowRight className="h-4 w-4" />
               </>
             )}
@@ -189,7 +222,7 @@ export default function BloodAnalysisStart() {
 
           <div className="flex items-center justify-center gap-3 text-[10px] text-white/30">
             <Shield className="w-3 h-3" />
-            <span>Paiement securise Stripe · Klarna selon eligibilite · RGPD</span>
+            <span>Paiement securise Stripe · RGPD</span>
           </div>
         </Card>
       </div>

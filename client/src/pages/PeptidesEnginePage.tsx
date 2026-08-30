@@ -50,6 +50,7 @@ const STORAGE_KEY = "peptides_engine_responses";
 // 3 tiers : Solo (entry, no blood, no support) / Coached (recommandé, 1 blood, 30j support) / Tracked (2 blood, 90j support, 1 reécriture).
 // Le rapport généré est IDENTIQUE dans les 3 tiers ; seul l'écosystème autour change.
 export type PeptidesTier = "solo" | "coached" | "tracked";
+type PaymentRail = "card" | "klarna";
 
 const TIER_CONFIG: Record<PeptidesTier, {
   label: string;
@@ -294,6 +295,8 @@ function CheckoutCard({
   onPromoCodeChange,
   acceptedTerms,
   onAcceptedTermsChange,
+  paymentRail,
+  onPaymentRailChange,
   tier,
   onTierChange,
 }: {
@@ -304,6 +307,8 @@ function CheckoutCard({
   onPromoCodeChange: (v: string) => void;
   acceptedTerms: boolean;
   onAcceptedTermsChange: (v: boolean) => void;
+  paymentRail: PaymentRail;
+  onPaymentRailChange: (v: PaymentRail) => void;
   tier: PeptidesTier;
   onTierChange: (t: PeptidesTier) => void;
 }) {
@@ -419,8 +424,31 @@ function CheckoutCard({
       )}
 
       {!safetyCheck.blocked && (
-        <div className="rounded-lg border border-amber-500 bg-amber-500/10 py-2 text-center text-sm font-medium text-amber-400">
-          Carte bancaire ou Klarna
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => onPaymentRailChange("card")}
+            className={`rounded-lg border px-4 py-3 text-sm font-semibold transition-colors ${
+              paymentRail === "card"
+                ? "border-amber-500 bg-amber-500/10 text-amber-400"
+                : "border-white/10 bg-white/5 text-white/50 hover:border-white/30"
+            }`}
+            aria-pressed={paymentRail === "card"}
+          >
+            Carte
+          </button>
+          <button
+            type="button"
+            onClick={() => onPaymentRailChange("klarna")}
+            className={`rounded-lg border px-4 py-3 text-sm font-semibold transition-colors ${
+              paymentRail === "klarna"
+                ? "border-amber-500 bg-amber-500/10 text-amber-400"
+                : "border-white/10 bg-white/5 text-white/50 hover:border-white/30"
+            }`}
+            aria-pressed={paymentRail === "klarna"}
+          >
+            Klarna
+          </button>
         </div>
       )}
 
@@ -498,8 +526,10 @@ function CheckoutCard({
           </span>
         ) : promoCode.trim() ? (
           `Utiliser mon code promo`
+        ) : paymentRail === "klarna" ? (
+          `Confirmer avec Klarna , ${tierCfg.price}€`
         ) : (
-          `Confirmer , ${tierCfg.price}€`
+          `Confirmer par carte , ${tierCfg.price}€`
         )}
       </Button>
 
@@ -523,6 +553,7 @@ export default function PeptidesEnginePage() {
   const [showCheckout, setShowCheckout] = useState(false);
   const [promoCode, setPromoCode] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [paymentRail, setPaymentRail] = useState<PaymentRail>("card");
   // Tier preselected from ?tier= URL param (set by landing page CTAs).
   // Default to "coached" (sweet spot) so direct visits land on the recommended.
   const [tier, setTier] = useState<PeptidesTier>(() => readTierFromUrl());
@@ -700,6 +731,7 @@ export default function PeptidesEnginePage() {
         responses,
         referrer: urlRef || undefined,
         promoCode: promoCode.trim() || undefined,
+        paymentRail,
         peptidesEngineConsent,
         ...metaAttr,
       });
@@ -861,6 +893,8 @@ export default function PeptidesEnginePage() {
                 onPromoCodeChange={setPromoCode}
                 acceptedTerms={acceptedTerms}
                 onAcceptedTermsChange={setAcceptedTerms}
+                paymentRail={paymentRail}
+                onPaymentRailChange={setPaymentRail}
                 tier={tier}
                 onTierChange={setTier}
               />
