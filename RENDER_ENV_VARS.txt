@@ -47,7 +47,8 @@ GA4_API_KEY = AIzaSyCpThTEt2CKIb5V1WZItG0xTPDv8ko66i8
 SENDPULSE_USER_ID = (ton SendPulse User ID)
 SENDPULSE_SECRET = (ton SendPulse Secret)
 SENDPULSE_SENDER_EMAIL = coaching@achzodcoaching.com
-SENDPULSE_SENDER_NAME = NEUROCORE 360
+SENDPULSE_SENDER_NAME = APEXLABS
+SENDER_NAME = APEXLABS
 
 # Les variables SMTP_* ne sont PAS utilisées (on utilise l'API SendPulse)
 

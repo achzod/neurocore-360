@@ -18,7 +18,7 @@ const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
 const SMTP_USER = process.env.SMTP_USER || "";
 const SMTP_PASS = process.env.SMTP_PASS || "";
 export const SENDER_EMAIL = process.env.SENDER_EMAIL || "coaching@achzodcoaching.com";
-export const SENDER_NAME = process.env.SENDER_NAME || "ApexLabs by Achzod";
+export const SENDER_NAME = process.env.SENDER_NAME || process.env.SENDPULSE_SENDER_NAME || "APEXLABS";
 
 let smtpFallbackTransport: ReturnType<typeof nodemailer.createTransport> | null = null;
 
