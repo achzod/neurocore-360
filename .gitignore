@@ -8,6 +8,8 @@ dist/
 .env
 .env.local
 .env.*.local
+RENDER_ENV_VARS.txt
+ADD_TO_RENDER_ENV.txt
 
 # IDE
 .vscode/

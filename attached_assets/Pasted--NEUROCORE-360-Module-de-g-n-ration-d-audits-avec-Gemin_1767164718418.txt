@@ -9,7 +9,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 // ============================================================
 // CONFIGURATION GEMINI (identique au Python)
 // ============================================================
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "AIzaSyAuBRz_TJg44GeVUJT2dyHpVu5iRjck3ms";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "REDACTED_GOOGLE_API_KEY";
 const MODEL = "gemini-3-pro-preview"; // Gemini 3 Pro - dernier modèle
 const MAX_RETRIES = 3;
 const SLEEP_BETWEEN = 5; // secondes

@@ -10,7 +10,7 @@ FICHIER 1: server/config.ts
 
 export const CONFIG = {
   // Gemini API
-  GEMINI_API_KEY: process.env.GEMINI_API_KEY || "AIzaSyCYpRQifyhMTFu-q0dihbomcOdB0eaogc4",
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY || "REDACTED_GOOGLE_API_KEY",
   GEMINI_MODEL: "gemini-3-pro-preview",
   GEMINI_TEMPERATURE: 0.85,
   GEMINI_MAX_TOKENS: 8000,
@@ -976,7 +976,7 @@ APRÈS CRÉATION DES FICHIERS :
 
 1. npm install @google/generative-ai express cors dotenv
 2. npm install -D typescript ts-node @types/node @types/express @types/cors
-3. Créer .env avec : GEMINI_API_KEY=AIzaSyCYpRQifyhMTFu-q0dihbomcOdB0eaogc4
+3. Créer .env avec : GEMINI_API_KEY=REDACTED_GOOGLE_API_KEY
 4. npm run dev
 
 ==========================================
