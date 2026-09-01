@@ -8,9 +8,25 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { motion, useScroll, useTransform, useMotionValue, animate, AnimatePresence } from "framer-motion";
 import { ArrowRight, Check, ChevronDown, Smartphone, MessageCircle, FileText, Target, Ruler, Dumbbell, X } from "lucide-react";
-import { WHATSAPP_NUMBER } from "@/lib/whatsapp";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
 const ACCENT = "#25D366";
+
+type FormCheckWhatsAppIntent = "trial" | "packs";
+
+function buildFormCheckWhatsAppUrl(intent: FormCheckWhatsAppIntent, packName?: string): string {
+  if (intent === "trial") {
+    return buildWhatsAppUrl(
+      "Salut Achzod, je viens de la page FormCheck. Je veux tester ma premiere analyse gratuite. Quelle video je dois t'envoyer ?"
+    );
+  }
+
+  const packLine = packName ? ` Je regarde la formule ${packName}.` : "";
+
+  return buildWhatsAppUrl(
+    `Salut Achzod, je viens de la page FormCheck.${packLine} Je veux demarrer via WhatsApp.`
+  );
+}
 
 // ============================================================================
 // FAQ ACCORDION ITEM
@@ -654,12 +670,21 @@ export default function FormCheck() {
             transition={{ duration: 0.6, delay: 0.5 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
-            <span
-              aria-disabled="true"
-              className="inline-flex items-center gap-3 text-white/70 font-semibold text-base px-8 py-4 rounded-sm cursor-not-allowed select-none border border-white/15 bg-white/[0.04]"
+            <a
+              href={buildFormCheckWhatsAppUrl("trial")}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="formcheck-whatsapp-hero"
+              className="inline-flex items-center gap-3 text-white font-semibold text-base px-8 py-4 rounded-sm border transition-all hover:-translate-y-0.5"
+              style={{
+                background: ACCENT,
+                borderColor: ACCENT,
+                boxShadow: `0 18px 48px ${ACCENT}30`,
+              }}
             >
-              Indisponible pour le moment
-            </span>
+              <MessageCircle className="h-5 w-5" aria-hidden="true" />
+              Tester gratuitement
+            </a>
             <a
               href="#packs"
               className="inline-flex items-center gap-2 text-white/60 font-semibold text-base px-8 py-4 rounded-sm border border-white/20 hover:border-white/40 transition-all"
@@ -1081,7 +1106,7 @@ export default function FormCheck() {
                 badge: "GRATUIT",
                 highlight: false,
                 cta: "Tester gratuitement",
-                ctaHref: `https://wa.me/${WHATSAPP_NUMBER}?text=menu`,
+                ctaHref: buildFormCheckWhatsAppUrl("trial"),
               },
               {
                 name: "Solo",
@@ -1094,7 +1119,7 @@ export default function FormCheck() {
                 badge: null,
                 highlight: false,
                 cta: "Commencer a 9,90€",
-                ctaHref: `https://wa.me/${WHATSAPP_NUMBER}?text=forfaits`,
+                ctaHref: buildFormCheckWhatsAppUrl("packs", "Solo"),
               },
               {
                 name: "Pro",
@@ -1107,7 +1132,7 @@ export default function FormCheck() {
                 badge: "LE + POPULAIRE",
                 highlight: true,
                 cta: "Passer Pro maintenant",
-                ctaHref: `https://wa.me/${WHATSAPP_NUMBER}?text=forfaits`,
+                ctaHref: buildFormCheckWhatsAppUrl("packs", "Pro"),
               },
               {
                 name: "Coach",
@@ -1120,7 +1145,7 @@ export default function FormCheck() {
                 badge: "ILLIMITE",
                 highlight: false,
                 cta: "Devenir Coach",
-                ctaHref: `https://wa.me/${WHATSAPP_NUMBER}?text=forfaits`,
+                ctaHref: buildFormCheckWhatsAppUrl("packs", "Coach"),
               },
             ].map((pack, i) => (
               <motion.div
@@ -1167,12 +1192,20 @@ export default function FormCheck() {
                   ))}
                 </ul>
                 {pack.cta && (
-                  <span
-                    aria-disabled="true"
-                    className="block w-full text-center py-3 rounded-sm text-sm font-bold uppercase tracking-wider cursor-not-allowed select-none border border-white/15 bg-white/[0.04] text-white/60"
+                  <a
+                    href={pack.ctaHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid={`formcheck-whatsapp-pack-${pack.name.toLowerCase()}`}
+                    className="block w-full text-center py-3 rounded-sm text-sm font-bold uppercase tracking-wider border transition-all hover:-translate-y-0.5"
+                    style={{
+                      background: pack.highlight ? ACCENT : `${ACCENT}1A`,
+                      borderColor: pack.highlight ? ACCENT : `${ACCENT}66`,
+                      color: "#FFFFFF",
+                    }}
                   >
-                    Indisponible pour le moment
-                  </span>
+                    {pack.cta}
+                  </a>
                 )}
               </motion.div>
             ))}
@@ -1404,10 +1437,21 @@ export default function FormCheck() {
           <p className="text-white/50 text-lg mb-12 max-w-xl mx-auto">
             Une video. Un score. Des corrections. C'est tout ce qu'il te faut pour progresser.
           </p>
-          <div className="flex items-center justify-center gap-3">
-            <div className="aspect-square w-12 rounded-sm flex items-center justify-center" style={{ background: `${ACCENT}1A`, border: `1px solid ${ACCENT}33` }}>
-              <MessageCircle className="w-6 h-6" style={{ color: ACCENT }} />
-            </div>
+          <div className="flex flex-col items-center justify-center gap-4">
+            <a
+              href={buildFormCheckWhatsAppUrl("trial")}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="formcheck-whatsapp-final"
+              className="inline-flex items-center justify-center gap-3 rounded-sm px-8 py-4 text-base font-bold text-white transition-all hover:-translate-y-0.5"
+              style={{
+                background: ACCENT,
+                boxShadow: `0 18px 48px ${ACCENT}30`,
+              }}
+            >
+              <MessageCircle className="h-5 w-5" aria-hidden="true" />
+              Envoyer ma video sur WhatsApp
+            </a>
             <span className="text-white/60">100% via WhatsApp ,  aucune app a telecharger</span>
           </div>
         </motion.div>
