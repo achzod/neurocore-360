@@ -1212,6 +1212,7 @@ async function applyLivePeptauraPricing(
 ): Promise<PeptidesReport> {
   const liveNotes: string[] = [];
   const failures: string[] = [];
+  const warnings: string[] = [];
   const listingSnapshots: Array<Record<string, unknown>> = [];
   let targetedProductFeedSnapshotsPromise: Promise<PeptauraLiveProductSnapshot[] | null> | null = null;
 
@@ -1460,10 +1461,25 @@ async function applyLivePeptauraPricing(
         fetchedAt: bacSnapshot.fetchedAt,
       });
     } else {
-      failures.push("BAC Water: aucune offre live compatible avec le pays");
+      // BAC water is an ancillary supply, not a protocol molecule. A temporary
+      // Peptaura country/stock gap must not discard an otherwise valid paid
+      // report or trigger another expensive full AI generation. Keep the
+      // calculated need, fail closed on the unavailable vendor, and tell the
+      // client to source it locally from a regulated channel instead.
+      bacWaterLine =
+        `BAC Water: besoin calcule ${bacWaterNeedMl.toFixed(1)} ml. ` +
+        `Aucune offre Peptaura compatible avec ${context.country} n'est disponible actuellement. ` +
+        `Ne commande pas via un fournisseur bloque; verifie une source locale reglementee avec un professionnel de sante avant utilisation. ` +
+        `${context.shippingUrl}`;
+      warnings.push("BAC Water: aucune offre live compatible avec le pays; sourcing local reglemente requis");
     }
   } else if (bacWaterNeedMl > 0) {
-    failures.push("BAC Water: page produit Peptaura introuvable");
+    bacWaterLine =
+      `BAC Water: besoin calcule ${bacWaterNeedMl.toFixed(1)} ml. ` +
+      `La page produit Peptaura est indisponible actuellement. ` +
+      `Ne commande pas a l'aveugle; verifie une source locale reglementee avec un professionnel de sante avant utilisation. ` +
+      `${context.shippingUrl}`;
+    warnings.push("BAC Water: page produit Peptaura introuvable; sourcing local reglemente requis");
   }
 
   (report as any)._peptauraLiveSync = {
@@ -1477,6 +1493,7 @@ async function applyLivePeptauraPricing(
     syncedAt: new Date().toISOString(),
     applied: liveNotes,
     failures,
+    warnings,
     listingSnapshots,
   };
 

@@ -6360,7 +6360,9 @@ export async function registerRoutes(
       const report = await generatePeptidesProtocol(responses, email, manualTier, {
         ...(pepOrder?.id ? { orderId: pepOrder.id } : {}),
         consentAccepted: hasValidPeptidesConsent((pepOrder?.metadata as any)?.peptidesEngineConsent),
-        maxCandidates: Number.isFinite(Number(requestedMaxCandidates)) ? Number(requestedMaxCandidates) : 3,
+        // One provider call by default. Deterministic repair handles ancillary
+        // stock gaps; extra full generations require an explicit admin choice.
+        maxCandidates: Number.isFinite(Number(requestedMaxCandidates)) ? Number(requestedMaxCandidates) : 1,
         providerRetries: Number.isFinite(Number(requestedProviderRetries)) ? Number(requestedProviderRetries) : 1,
         costBudgetEstimatedUsd: Number.isFinite(Number(requestedCostBudgetEstimatedUsd)) ? Number(requestedCostBudgetEstimatedUsd) : 1,
         initialPreviousError: String((pepOrder?.metadata as any)?.peptidesGenerationLastError || ""),
