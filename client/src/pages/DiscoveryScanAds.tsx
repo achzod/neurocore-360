@@ -143,7 +143,7 @@ export default function DiscoveryScanAds() {
 
             {/* Subtitle */}
             <p className="text-xl text-white/70 mb-10 leading-relaxed max-w-3xl mx-auto">
-              Réponds à 66 questions sur 10 domaines : sommeil, énergie, récupération, entraînement, nutrition, lifestyle.
+              Réponds à 66 questions sur 10 domaines : sommeil, énergie, récupération, entraînement, nutrition, mode de vie.
               Reçois un rapport personnalisé avec tes points forts et tes axes d'amélioration.
             </p>
 
@@ -226,11 +226,11 @@ export default function DiscoveryScanAds() {
               { name: "Récupération", desc: "Comment ton corps récupère" },
               { name: "Entraînement", desc: "Tes performances à l'effort" },
               { name: "Nutrition", desc: "Tes habitudes alimentaires" },
-              { name: "Lifestyle", desc: "Ton mode de vie global" },
-              { name: "Mindset", desc: "Ta mentalité et motivation" },
+              { name: "Mode de vie", desc: "Ton mode de vie global" },
+              { name: "Mental", desc: "Ta mentalité et motivation" },
               { name: "Mobilité", desc: "Ta souplesse et amplitude" },
               { name: "Performance", desc: "Tes résultats globaux" },
-              { name: "Stress Management", desc: "Ta gestion du stress" },
+              { name: "Gestion du stress", desc: "Ta gestion du stress" },
             ].map((domain, idx) => (
               <div key={idx} className="bg-white/5 border border-white/10 rounded-xl p-6">
                 <h3 className="text-lg font-bold text-white mb-2">{domain.name}</h3>
@@ -409,9 +409,9 @@ export default function DiscoveryScanAds() {
 
               <ul className="space-y-3 mb-8">
                 {[
-                  "Upload tes données existantes",
-                  "50+ indicateurs analysés sur 6 panels",
-                  "Comparaison avec les ranges optimaux",
+                  "Importe tes données existantes",
+                  "50+ indicateurs analysés sur 6 catégories",
+                  "Comparaison avec les plages optimales",
                   "Protocoles de correction personnalisés",
                   "Rapport complet avec visuels radar",
                 ].map((item, idx) => (

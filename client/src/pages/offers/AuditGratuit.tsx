@@ -334,9 +334,9 @@ export default function AuditGratuit() {
             transition={{ duration: 0.8, delay: 0.1 }}
             className="text-white text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black leading-[0.9] tracking-tighter mb-8"
           >
-            Discover what's
+            Découvre
             <br />
-            <span className="text-[#FCDD00]">holding you back.</span>
+            <span className="text-[#FCDD00]">ce qui te bloque.</span>
           </motion.h1>
 
           {/* Subtitle */}
@@ -346,8 +346,8 @@ export default function AuditGratuit() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="text-white/60 text-lg sm:text-xl max-w-2xl mx-auto mb-12 leading-relaxed"
           >
-            ~66 questions sur 10 domaines essentiels: sommeil, stress, energie, digestion,
-            entrainement, nutrition, lifestyle. J'identifie tes blocages metaboliques et hormonaux.
+            ~66 questions sur 10 domaines essentiels : sommeil, stress, énergie, digestion,
+            entraînement, nutrition, mode de vie. J'identifie tes blocages métaboliques et hormonaux.
           </motion.p>
 
           {/* CTA Button - Ultrahuman Green */}
@@ -410,12 +410,12 @@ export default function AuditGratuit() {
                 Identifie ce qui te bloque vraiment.
               </h2>
               <p className="text-white/50 text-lg leading-relaxed mb-8">
-                66 questions ciblees analysent chaque aspect de ta sante : sommeil,
-                hormones, digestion, stress, metabolisme, lifestyle. Je detecte
-                les desequilibres caches que tu ne soupconnes meme pas.
+                66 questions ciblées analysent chaque aspect de ta santé : sommeil,
+                hormones, digestion, stress, métabolisme, mode de vie. Je détecte
+                les déséquilibres cachés que tu ne soupçonnes même pas.
               </p>
               <ul className="space-y-4">
-                {["10 domaines analyses en profondeur", "Patterns metaboliques identifies", "Desequilibres hormonaux reveles"].map((item, i) => (
+                {["10 domaines analysés en profondeur", "Schémas métaboliques identifiés", "Déséquilibres hormonaux révélés"].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-white/70">
                     <div className="w-1.5 h-1.5 rounded-full bg-[#FCDD00]" />
                     {item}
@@ -512,7 +512,7 @@ export default function AuditGratuit() {
                 signifient pour ta sante au quotidien.
               </p>
               <ul className="space-y-4">
-                {["Executive summary clair", "Analyse par domaine", "Points d'attention prioritaires"].map((item, i) => (
+                {["Synthèse claire", "Analyse par domaine", "Points d'attention prioritaires"].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-white/70">
                     <div className="w-1.5 h-1.5 rounded-full bg-[#FCDD00]" />
                     {item}
@@ -656,7 +656,7 @@ export default function AuditGratuit() {
                 {[
                   "Tout le Discovery Scan",
                   "Protocoles d'action personnalises",
-                  "Stack supplements optimise",
+                  "Compléments optimisés",
                   "Plan 30-60-90 jours",
                   "16 sections d'analyse",
                 ].map((item, i) => (
@@ -716,7 +716,7 @@ export default function AuditGratuit() {
           <div className="text-center mb-14">
             <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">Exemple de rapport</h2>
             <p className="mt-4 text-white/50 max-w-3xl mx-auto">
-              Voici a quoi ressemble ton rapport Discovery. Score global, breakdown par domaine, blocages identifies et prochaines etapes.
+              Voici à quoi ressemble ton rapport Discovery. Score global, détail par domaine, blocages identifiés et prochaines étapes.
             </p>
           </div>
 
@@ -727,25 +727,25 @@ export default function AuditGratuit() {
             panels={[
               { name: "Sommeil", score: 45 },
               { name: "Stress", score: 58 },
-              { name: "Energie", score: 62 },
+              { name: "Énergie", score: 62 },
               { name: "Digestion", score: 71 },
-              { name: "Entrainement", score: 78 },
+              { name: "Entraînement", score: 78 },
               { name: "Nutrition", score: 55 },
-              { name: "Lifestyle", score: 68 },
+              { name: "Mode de vie", score: 68 },
               { name: "Hormones", score: 52 },
-              { name: "Mindset", score: 73 },
-              { name: "Recovery", score: 60 },
+              { name: "Mental", score: 73 },
+              { name: "Récupération", score: 60 },
             ]}
             alert={{
-              title: "3 blocages identifies",
-              detail: "deficit sommeil, cortisol eleve, proteines insuffisantes",
+              title: "3 blocages identifiés",
+              detail: "déficit sommeil, cortisol élevé, protéines insuffisantes",
             }}
             protocol={{
-              title: "Prochaines etapes",
+              title: "Prochaines étapes",
               items: [
                 "Instaurer un rituel sommeil: coucher avant 23h, pas d'ecran 1h avant",
                 "Integrer 30g de proteines au petit-dejeuner pour stabiliser le cortisol matin",
-                "Completer avec l'Anabolic Bioscan pour les protocoles d'action complets",
+                "Compléter avec l'Anabolic Bioscan pour les protocoles d'action complets",
               ],
             }}
           />
@@ -761,11 +761,11 @@ export default function AuditGratuit() {
           </motion.div>
           <div className="divide-y divide-white/10">
             {[
-              { q: "Combien de temps prend le Discovery Scan ?", a: "Environ 5 minutes. 66 questions sur 10 domaines essentiels : sommeil, stress, energie, digestion, entrainement, nutrition, hormones, lifestyle, metabolisme, biomecanique. Tes reponses sont sauvegardees automatiquement si tu dois t'interrompre." },
-              { q: "Que contient le rapport gratuit ?", a: "Un rapport de 5-7 pages avec 4 sections debloquees : executive summary avec ton score global sur 100, analyse energie et recuperation, analyse metabolisme et nutrition, synthese et prochaines etapes. Tu verras aussi des sections verrouillees qui te montrent ce que tu debloques avec l'Anabolic Bioscan." },
-              { q: "C'est vraiment 100% gratuit ?", a: "Oui, entierement gratuit, sans engagement, sans carte bancaire. Tu recois un vrai diagnostic personnalise genere par mon moteur IA. Si tu veux aller plus loin avec les protocoles d'action, le stack supplements et le plan 30-60-90 jours, l'Anabolic Bioscan est a 59\u20ac (paiement unique)." },
-              { q: "Quelle est la difference avec l'Anabolic Bioscan ?", a: "Le Discovery te donne le diagnostic : tes blocages, ton score, tes priorites (4 sections). L'Anabolic Bioscan (59\u20ac) te donne les solutions : 16 sections completes avec 6 analyses approfondies, 5 protocoles d'action (matin anti-cortisol, soir sommeil, digestion 14j, bureau anti-sedentarite, entrainement), stack supplements personnalise et plan 30-60-90 jours." },
-              { q: "Comment est genere mon rapport ?", a: "Ton rapport est genere par mon moteur IA qui croise tes 66 reponses pour identifier les patterns, desequilibres et priorites. Chaque rapport est unique ,  deux personnes avec des reponses differentes recoivent des analyses completement differentes. Tu recois ton rapport sous 24h par email." },
+              { q: "Combien de temps prend le Discovery Scan ?", a: "Environ 5 minutes. 66 questions sur 10 domaines essentiels : sommeil, stress, énergie, digestion, entraînement, nutrition, hormones, mode de vie, métabolisme, biomécanique. Tes réponses sont sauvegardées automatiquement si tu dois t'interrompre." },
+              { q: "Que contient le rapport gratuit ?", a: "Un rapport de 5-7 pages avec 4 sections débloquées : synthèse avec ton score global sur 100, analyse énergie et récupération, analyse métabolisme et nutrition, synthèse et prochaines étapes. Tu verras aussi des sections verrouillées qui te montrent ce que tu débloques avec l'Anabolic Bioscan." },
+              { q: "C'est vraiment 100% gratuit ?", a: "Oui, entièrement gratuit, sans engagement, sans carte bancaire. Tu reçois un vrai diagnostic personnalisé généré par mon moteur IA. Si tu veux aller plus loin avec les protocoles d'action, les compléments et le plan 30-60-90 jours, l'Anabolic Bioscan est à 59\u20ac (paiement unique)." },
+              { q: "Quelle est la différence avec l'Anabolic Bioscan ?", a: "Le Discovery te donne le diagnostic : tes blocages, ton score, tes priorités (4 sections). L'Anabolic Bioscan (59\u20ac) te donne les solutions : 16 sections complètes avec 6 analyses approfondies, 5 protocoles d'action (matin anti-cortisol, soir sommeil, digestion 14j, bureau anti-sédentarité, entraînement), compléments personnalisés et plan 30-60-90 jours." },
+              { q: "Comment est généré mon rapport ?", a: "Ton rapport est généré par mon moteur IA qui croise tes 66 réponses pour identifier les schémas, déséquilibres et priorités. Chaque rapport est unique : deux personnes avec des réponses différentes reçoivent des analyses complètement différentes. Tu reçois ton rapport sous 24h par email." },
             ].map((faq, i) => (
               <FAQItem key={i} q={faq.q} a={faq.a} index={i} />
             ))}
