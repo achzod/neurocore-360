@@ -810,8 +810,8 @@ function removeUnsupportedDescentNarrative(report: RepairableReport): void {
           canonicalCorrectionEmitted.add(peptideKey);
           return (
             `FIN DE CYCLE ${String(peptide.name || "").toUpperCase()}\n` +
-            `La fin du cycle suit exactement le dosage et la duree indiques dans la fiche ${peptide.name}. ` +
-            "N'ajoute aucune dose ni phase de descente qui n'y figure pas."
+        `Pour ${peptide.name}, respecte uniquement la dose et la duree de sa fiche. ` +
+        `N'ajoute pour ${peptide.name} ni dose supplementaire ni phase de descente absente de cette fiche.`
           );
         })
         .filter((paragraph) => paragraph.trim().length > 0)
