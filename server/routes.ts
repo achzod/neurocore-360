@@ -69,6 +69,7 @@ import {
   buildPeptidesBloodCreditsBlock,
   buildPeptidesCoachingDeductionBlock,
 } from "./cta";
+import { decidePeptidesDeliverySchedule } from "./peptidesDeliverySchedule";
 import {
   applyRecoveryCtaReconciliation,
   claimRecoveryCtaClickFollowup,
@@ -15084,53 +15085,27 @@ export async function registerRoutes(
   // -----------------------------------------------------------------------
   // Peptides delivery scheduling
   // -----------------------------------------------------------------------
-  // Generation is instant (the engine assembles the protocol in seconds), but
-  // delivering the email 5-15 minutes after payment makes the protocol feel
-  // mass-produced. Clients have complained that the speed reveals automation.
-  //
-  // Strategy: generate immediately (so the protocol is ready and no risk of
-  // loss), but gate the email send to a randomised "scheduled delivery" time
-  // = paidAt + random(4-8h), clamped to Paris business hours (09:00-22:00).
-  // The autogen recovery loop will pick up scheduled-but-unsent orders.
+  // Generate and validate first, then deliver exactly 24 hours after the
+  // successful generation. Before a report exists, the confirmation email may
+  // show a provisional paidAt + 24h estimate; the successful CAS rewrites it
+  // from peptidesGenerationCompletedAt so payment latency never shortens the
+  // promised review window.
   async function resolvePeptidesEmailScheduledAt(order: any): Promise<Date> {
-    const meta = (order?.metadata as any) || {};
-    const existing = meta.peptidesEmailScheduledAt;
-    if (existing) {
-      const parsed = new Date(existing);
-      if (!Number.isNaN(parsed.getTime())) return parsed;
-    }
-    const paidAt = order?.paidAt ? new Date(order.paidAt) : new Date();
-    if (Number.isNaN(paidAt.getTime())) return new Date();
+    const freshOrder = order?.id
+      ? await storage.getOrder(order.id).catch(() => null)
+      : null;
+    const effectiveOrder = freshOrder || order;
+    const decision = decidePeptidesDeliverySchedule(effectiveOrder);
 
-    // Random delay 4-8h
-    const delayMs = (4 + Math.random() * 4) * 3600 * 1000;
-    let target = new Date(paidAt.getTime() + delayMs);
-
-    // Clamp to Paris business hours 09:00-22:00
-    const getParisHour = (d: Date) =>
-      Number(d.toLocaleString("en-GB", { hour: "2-digit", hour12: false, timeZone: "Europe/Paris" }));
-    const parisHour = getParisHour(target);
-    if (parisHour < 9) {
-      // Push forward to 09h + 0-2h Paris
-      target = new Date(target.getTime() + (9 - parisHour) * 3600 * 1000 + Math.floor(Math.random() * 2 * 3600 * 1000));
-    } else if (parisHour >= 22) {
-      // Push to next day 09h + 0-3h Paris
-      const hoursToNext9 = (24 - parisHour) + 9;
-      target = new Date(target.getTime() + hoursToNext9 * 3600 * 1000 + Math.floor(Math.random() * 3 * 3600 * 1000));
-    }
-
-    // Persist on the order so the schedule is stable across cycles. Atomic
-    // JSONB merge ,  does not stomp other metadata keys (e.g. peptidesReportId
-    // set concurrently by the claim CAS). Earlier read-modify-write pattern
-    // was wiping the reportId set by claimPeptidesReportSlot, causing endless
-    // regeneration loops and false admin "ECHOUE" alerts (Julien Baldy +
-    // parrinello cases 2026-05-11).
-    if (order?.id) {
+    if (effectiveOrder?.id && decision.shouldPersist) {
       await storage
-        .setOrderMetadataKey(order.id, "peptidesEmailScheduledAt", target.toISOString())
+        .setOrderMetadataKey(effectiveOrder.id, "peptidesEmailScheduledAt", decision.scheduledAt.toISOString())
         .catch((err: any) => console.warn("[Peptides Delivery] Failed to persist scheduledAt:", err));
+      await storage
+        .setOrderMetadataKey(effectiveOrder.id, "peptidesEmailScheduleAnchor", decision.anchor)
+        .catch((err: any) => console.warn("[Peptides Delivery] Failed to persist schedule anchor:", err));
     }
-    return target;
+    return decision.scheduledAt;
   }
 
   async function isPeptidesEmailDeliveryDue(order: any): Promise<{ due: boolean; scheduledAt: Date }> {

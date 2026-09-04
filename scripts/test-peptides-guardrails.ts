@@ -716,7 +716,7 @@ const repairedRepeatedText = repairedRepeatedUnsupportedDescent.sections
   .map((section: any) => section.content)
   .join("\n");
 assert.equal(
-  (repairedRepeatedText.match(/N'ajoute aucune dose ni phase de descente qui n'y figure pas\./g) || []).length,
+  (repairedRepeatedText.match(/N'ajoute pour .+? ni dose supplementaire ni phase de descente absente de cette fiche\./g) || []).length,
   1,
   "La correction canonique d'une descente non supportee ne doit apparaitre qu'une fois"
 );
