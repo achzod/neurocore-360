@@ -2490,6 +2490,11 @@ async function callOpenAIForPeptides(
   );
   const response = await runOpenAIText({
     profile: "peptides",
+    // Peptides reports routinely need more than the provider's synchronous
+    // five-minute request window. Create a durable background response and
+    // poll it through runOpenAIText's 30-minute profile deadline instead of
+    // losing a paid generation to "Request timed out".
+    background: true,
     instructions: systemPrompt,
     input: userPrompt,
     safetyId: email,

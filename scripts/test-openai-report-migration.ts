@@ -328,6 +328,7 @@ assert.match(monitoring, /retry counter will be reset/);
 
 const peptides = read("server/peptidesEngine.ts");
 assert.match(peptides, /profile:\s*"peptides"/);
+assert.match(peptides, /profile:\s*"peptides"[\s\S]*background:\s*true/);
 assert.match(peptides, /schemaName:\s*"peptides_engine_report"/);
 assert.match(peptides, /strict full regeneration/);
 
