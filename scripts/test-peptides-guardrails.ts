@@ -702,6 +702,30 @@ for (const cycleDuration of unsupportedDescentVariants) {
   );
 }
 
+const repeatedUnsupportedDescent = structuredClone(report) as any;
+repeatedUnsupportedDescent.peptides[0].dosage = "1 mg par semaine pendant 12 semaines";
+for (const section of repeatedUnsupportedDescent.sections.slice(0, 4)) {
+  section.content = `${repeatedUnsupportedDescent.peptides[0].name}: ne jamais arreter brutalement; ajoute une reduction progressive en fin de cycle.\n\n${section.content}`;
+}
+const repairedRepeatedUnsupportedDescent = repairPeptidesReportContent(
+  repeatedUnsupportedDescent,
+  { pep_name: "Luca", pep_country: "France" },
+  "solo"
+) as any;
+const repairedRepeatedText = repairedRepeatedUnsupportedDescent.sections
+  .map((section: any) => section.content)
+  .join("\n");
+assert.equal(
+  (repairedRepeatedText.match(/N'ajoute aucune dose ni phase de descente qui n'y figure pas\./g) || []).length,
+  1,
+  "La correction canonique d'une descente non supportee ne doit apparaitre qu'une fois"
+);
+assert.equal(
+  validatePeptidesReport(repairedRepeatedUnsupportedDescent).ok,
+  true,
+  validatePeptidesReport(repairedRepeatedUnsupportedDescent).errors.join("\n")
+);
+
 const singleVialsGrammar = structuredClone(report) as any;
 singleVialsGrammar.peptides[0].vialsNeeded = "1 vials de 10mg pour 12 semaines";
 singleVialsGrammar.peptides[0].priceEstimate =

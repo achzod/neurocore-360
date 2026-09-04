@@ -786,6 +786,12 @@ function removeUnsupportedDescentNarrative(report: RepairableReport): void {
   );
   if (peptidesWithoutDescent.length === 0) return;
 
+  // The model can repeat the same unsupported taper advice in several
+  // sections. Keep one canonical correction per peptide and remove later
+  // duplicates; replacing every occurrence with the same boilerplate makes
+  // the final repetition gate reject an otherwise valid paid report.
+  const canonicalCorrectionEmitted = new Set<string>();
+
   for (const section of report.sections || []) {
     const paragraphs = String(section.content || "").split(/\n{2,}/);
     section.content = sanitizeClientFacingText(
@@ -799,12 +805,16 @@ function removeUnsupportedDescentNarrative(report: RepairableReport): void {
               )
           );
           if (!peptide) return paragraph;
+          const peptideKey = String(peptide.name || "").trim().toLowerCase();
+          if (canonicalCorrectionEmitted.has(peptideKey)) return "";
+          canonicalCorrectionEmitted.add(peptideKey);
           return (
             `FIN DE CYCLE ${String(peptide.name || "").toUpperCase()}\n` +
             `La fin du cycle suit exactement le dosage et la duree indiques dans la fiche ${peptide.name}. ` +
             "N'ajoute aucune dose ni phase de descente qui n'y figure pas."
           );
         })
+        .filter((paragraph) => paragraph.trim().length > 0)
         .join("\n\n")
     );
   }
