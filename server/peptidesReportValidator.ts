@@ -1323,7 +1323,10 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
       : Number(snapshot.totalPriceUsd);
     if (declaredPrice == null || !Number.isFinite(declaredPrice)) {
       errors.push(`[${snapshot.peptide || "?"}] total prix absent de priceEstimate`);
-    } else if (Number.isFinite(livePrice) && Math.abs(declaredPrice - livePrice) > 0.01) {
+    } else if (
+      Number.isFinite(livePrice)
+      && Math.abs(Math.round(declaredPrice * 100) - Math.round(livePrice * 100)) > 1
+    ) {
       errors.push(`[${snapshot.peptide || "?"}] total prix affiche ${declaredCurrency}${declaredPrice.toFixed(2)} different du live ${declaredCurrency}${livePrice.toFixed(2)}`);
     }
     const needMg = Number(snapshot.needMg);

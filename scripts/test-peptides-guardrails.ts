@@ -920,6 +920,16 @@ validLowTestosteroneStack._peptauraLiveSync.listingSnapshots.push(
 const validLowTestosteroneAudit = validatePeptidesReport(validLowTestosteroneStack);
 assert.equal(validLowTestosteroneAudit.ok, true, validLowTestosteroneAudit.errors.join("\n"));
 
+const oneCentLivePriceRounding = structuredClone(report) as any;
+oneCentLivePriceRounding.peptides[0].priceEstimate =
+  "Environ 8 vials, total $99.99, prix live controle avant livraison";
+const oneCentLivePriceRoundingAudit = validatePeptidesReport(oneCentLivePriceRounding);
+assert.equal(
+  oneCentLivePriceRoundingAudit.ok,
+  true,
+  `Un ecart d'arrondi de 1 centime ne doit pas bloquer la livraison:\n${oneCentLivePriceRoundingAudit.errors.join("\n")}`
+);
+
 const bacWaterTrailingTotal = structuredClone(validLowTestosteroneStack) as any;
 bacWaterTrailingTotal.peptides.push({
   name: "BAC Water",
