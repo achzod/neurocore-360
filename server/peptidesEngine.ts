@@ -1111,7 +1111,7 @@ function formatLiveStockCoverageFailure(
 export function preferredStagedVialMgForCycle(pep: Pick<PeptideItem, "name" | "dosage" | "cycleDuration">): number | null {
   if (!/^MOTS[- ]?c$/i.test(String(pep.name || "").trim())) return null;
   const durationWeeks = Number(String(pep.cycleDuration || "").match(/(\d+(?:[.,]\d+)?)\s*semaines?/i)?.[1]?.replace(",", "."));
-  const weeklyDoseMg = Number(String(pep.dosage || "").match(/(\d+(?:[.,]\d+)?)\s*mg\s*(?:une|1)\s*fois\s*par\s*semaine/i)?.[1]?.replace(",", "."));
+  const weeklyDoseMg = Number(String(pep.dosage || "").match(/(\d+(?:[.,]\d+)?)\s*mg\s*(?:(?:une|1)\s*fois\s*par\s*semaine|\/\s*semaine)/i)?.[1]?.replace(",", "."));
   if (!Number.isFinite(durationWeeks) || durationWeeks < 3 || !Number.isFinite(weeklyDoseMg) || weeklyDoseMg <= 0) return null;
   return weeklyDoseMg * 2;
 }
@@ -2778,8 +2778,8 @@ function deriveVialsForPeptide(pep: PeptideItem): VialsDerivation | null {
     return { totalMg, vialMg, weeks, computed: Math.ceil(totalMg / vialMg) };
   }
 
-  // Pattern D ,  fixed weekly dose ("X mg par semaine")
-  const perWeekMatch = dosage.match(/(\d+(?:\.\d+)?)\s*(mg|mcg)\s*par\s*semaine/i);
+  // Pattern D ,  fixed weekly dose ("X mg par semaine" / "X mg/semaine")
+  const perWeekMatch = dosage.match(/(\d+(?:\.\d+)?)\s*(mg|mcg)\s*(?:par\s*|\/\s*)semaine/i);
   if (perWeekMatch) {
     const perWeekMg = parseDoseToMg(parseFloat(perWeekMatch[1]), perWeekMatch[2]);
     const totalMg = perWeekMg * weeks;

@@ -92,7 +92,7 @@ export function parsePeptideCadence(input: PeptideVialPlanningInput): { cycleDay
   let administrationsPerWeek = 0;
   const explicit = dosage.match(/(\d+)\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine/i);
   if (explicit) administrationsPerWeek = Number(explicit[1]);
-  else if (/\bpar\s+semaine\b/i.test(dosage)) administrationsPerWeek = 1;
+  else if (/(?:\bpar\s+|\/)semaine\b/i.test(dosage)) administrationsPerWeek = 1;
   else if (/une fois par semaine|hebdomadaire|1x\s*\/\s*sem/i.test(dosage)) administrationsPerWeek = 1;
   else if (/deux fois par semaine/i.test(dosage)) administrationsPerWeek = 2;
   else if (/trois fois par semaine/i.test(dosage)) administrationsPerWeek = 3;

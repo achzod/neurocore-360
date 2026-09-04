@@ -33,3 +33,11 @@ test("multi-week weekly MOTS-c uses staged two-dose vials", () => {
     cycleDuration: "8 semaines, de la semaine 3 à la semaine 10",
   }), 10);
 });
+
+test("compact French weekly notation remains parseable for MOTS-c delivery repair", () => {
+  assert.equal(preferredStagedVialMgForCycle({
+    name: "MOTS-c",
+    dosage: "5 mg/semaine, soit 5000 mcg/semaine et 51.5 mcg/kg/semaine pour 97 kg, pendant 8 semaines.",
+    cycleDuration: "8 semaines, uniquement semaines 1 a 8 du cycle Retatrutide, puis arret.",
+  }), 10);
+});
