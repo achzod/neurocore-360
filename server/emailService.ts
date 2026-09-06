@@ -3774,6 +3774,120 @@ export async function sendWhatsAppLeadFollowupEmail(
   }
 }
 
+export async function sendWhatsAppLeadAdminAlert(lead: {
+  email?: string | null;
+  phone?: string | null;
+  offer?: string | null;
+  placement?: string | null;
+  tier?: string | null;
+  eventType?: string | null;
+  goal?: string | null;
+  blocker?: string | null;
+  urgency?: string | null;
+  details?: string | null;
+  path?: string | null;
+  sourceUrl?: string | null;
+}): Promise<boolean> {
+  try {
+    const adminEmail = process.env.WHATSAPP_LEAD_ADMIN_EMAIL || process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
+    const email = compactEmailLine(lead.email, 180);
+    const phone = compactEmailLine(lead.phone, 80);
+    const offer = compactEmailLine(lead.offer || "APEXLABS", 120);
+    const placement = compactEmailLine(lead.placement, 140);
+    const tier = compactEmailLine(lead.tier, 120);
+    const goal = compactEmailLine(lead.goal, 260);
+    const blocker = compactEmailLine(lead.blocker, 360);
+    const urgency = compactEmailLine(lead.urgency, 180);
+    const details = compactEmailLine(lead.details, 520);
+    const path = compactEmailLine(lead.path, 320);
+    const sourceUrl = compactEmailLine(lead.sourceUrl, 700);
+    const whatsappMessage = [
+      "Salut Achzod, je viens de remplir le formulaire coaching/WhatsApp.",
+      offer ? `Page: ${offer}.` : "",
+      goal ? `Objectif: ${goal}.` : "",
+      blocker ? `Blocage: ${blocker}.` : "",
+      urgency ? `Timing: ${urgency}.` : "",
+      details ? `Contexte: ${details}.` : "",
+    ].filter(Boolean).join(" ");
+    const whatsappHref = buildWhatsAppUrl(whatsappMessage);
+
+    const row = (label: string, value?: string | null) =>
+      value
+        ? `<p style="margin:0 0 8px;color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.55;"><strong style="color:${APPLE_COLORS.ink};">${escapeEmailHtml(label)} :</strong> ${escapeEmailHtml(value)}</p>`
+        : "";
+
+    const content = `
+      <p style="color:${APPLE_COLORS.inkSoft};font-size:16px;line-height:1.65;margin:0 0 18px;">
+        Nouveau formulaire WhatsApp qualifie. Le lead a laisse un contact : a traiter vite pendant que l'intention est chaude.
+      </p>
+
+      <div style="padding:16px 18px;background:#f5f5f7;border-radius:12px;margin:0 0 22px;">
+        ${row("Email", email)}
+        ${row("Telephone", phone)}
+        ${row("Page", offer)}
+        ${row("Placement", placement)}
+        ${row("Formule", tier)}
+        ${row("Objectif", goal)}
+        ${row("Blocage", blocker)}
+        ${row("Timing", urgency)}
+        ${row("Contexte", details)}
+        ${row("Chemin", path)}
+        ${row("Source", sourceUrl)}
+      </div>
+
+      ${getCoachingAppleButton("Ouvrir WhatsApp avec le contexte", whatsappHref)}
+    `;
+
+    const emailContent = getCoachingAppleWrapper(
+      content,
+      "Nouveau lead WhatsApp a traiter",
+      offer || "Formulaire coaching/APEXLABS"
+    );
+
+    const result = await sendEmailWithTracking(
+      {
+        subject: `Lead WhatsApp chaud - ${offer || "APEXLABS"}`,
+        from: { name: "APEXLABS", email: SENDER_EMAIL },
+        to: [{ email: adminEmail }],
+        html: encodeBase64(emailContent),
+        text: [
+          "Nouveau formulaire WhatsApp qualifie.",
+          email ? `Email: ${email}` : "",
+          phone ? `Telephone: ${phone}` : "",
+          offer ? `Page: ${offer}` : "",
+          goal ? `Objectif: ${goal}` : "",
+          blocker ? `Blocage: ${blocker}` : "",
+          urgency ? `Timing: ${urgency}` : "",
+          details ? `Contexte: ${details}` : "",
+          `WhatsApp: ${whatsappHref}`,
+        ].filter(Boolean).join("\n"),
+      },
+      {
+        emailType: "sendWhatsAppLeadAdminAlert",
+        recipientEmail: adminEmail,
+        metadata: {
+          leadEmail: email || null,
+          leadPhone: phone || null,
+          offer: lead.offer || null,
+          placement: lead.placement || null,
+          tier: lead.tier || null,
+          eventType: lead.eventType || null,
+          goal: lead.goal || null,
+          blocker: lead.blocker || null,
+          urgency: lead.urgency || null,
+          path: lead.path || null,
+          whatsappHref,
+        },
+      }
+    );
+
+    return result.result === true;
+  } catch (error) {
+    console.error("[SendPulse] Error sending WhatsApp lead admin alert:", error);
+    return false;
+  }
+}
+
 export async function sendCoachingFormulaChoiceLeadEmail(
   email: string,
   lead: CoachingFormulaLeadInput,

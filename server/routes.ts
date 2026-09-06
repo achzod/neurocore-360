@@ -37,6 +37,7 @@ import {
   sendRecoveryCtaEmail,
   sendCoachingFormulaChoiceLeadEmail,
   sendWhatsAppLeadFollowupEmail,
+  sendWhatsAppLeadAdminAlert,
   type RecoveryCtaCohort,
   type CoachingFormulaLeadInput,
 } from "./emailService";
@@ -674,6 +675,7 @@ export async function registerRoutes(
         user_agent TEXT,
         ip_hash VARCHAR(64),
         has_coaching BOOLEAN DEFAULT FALSE,
+        admin_alerted_at TIMESTAMP,
         followup_count INTEGER DEFAULT 0,
         last_followup_at TIMESTAMP,
         converted_at TIMESTAMP,
@@ -685,6 +687,7 @@ export async function registerRoutes(
     await pool.query(`ALTER TABLE whatsapp_leads ADD COLUMN IF NOT EXISTS source_url TEXT`);
     await pool.query(`ALTER TABLE whatsapp_leads ADD COLUMN IF NOT EXISTS referrer TEXT`);
     await pool.query(`ALTER TABLE whatsapp_leads ADD COLUMN IF NOT EXISTS utm JSONB`);
+    await pool.query(`ALTER TABLE whatsapp_leads ADD COLUMN IF NOT EXISTS admin_alerted_at TIMESTAMP`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_whatsapp_leads_email ON whatsapp_leads (LOWER(email))`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_whatsapp_leads_phone ON whatsapp_leads (phone)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_whatsapp_leads_activity ON whatsapp_leads (last_activity_at DESC)`);
@@ -711,6 +714,65 @@ export async function registerRoutes(
     if (!text) return null;
     return text.slice(0, maxLength);
   };
+
+  async function maybeSendWhatsAppLeadAdminAlert(lead: {
+    id: string;
+    email: string | null;
+    phone: string | null;
+    offer: string | null;
+    placement: string | null;
+    tier: string | null;
+    eventType: string | null;
+    pagePath: string | null;
+    goal: string | null;
+    blocker: string | null;
+    urgency: string | null;
+    details: string | null;
+    sourceUrl: string | null;
+    hasCoaching: boolean;
+  }): Promise<void> {
+    if (process.env.WHATSAPP_LEAD_ADMIN_ALERTS === "false") return;
+    if (lead.hasCoaching) return;
+    if (!lead.email && !lead.phone) return;
+
+    const event = (lead.eventType || "").toLowerCase();
+    const placement = (lead.placement || "").toLowerCase();
+    const isFormLead = event.includes("form") || placement.includes("form");
+    if (!isFormLead) return;
+
+    const dedupe = await pool.query(
+      `SELECT 1
+         FROM whatsapp_leads
+        WHERE id <> $1
+          AND admin_alerted_at IS NOT NULL
+          AND created_at >= NOW() - INTERVAL '2 hours'
+          AND (
+            ($2::text IS NOT NULL AND LOWER(email) = LOWER($2))
+            OR ($3::text IS NOT NULL AND phone = $3)
+          )
+        LIMIT 1`,
+      [lead.id, lead.email, lead.phone]
+    );
+    if (dedupe.rowCount > 0) return;
+
+    const ok = await sendWhatsAppLeadAdminAlert({
+      email: lead.email,
+      phone: lead.phone,
+      offer: lead.offer,
+      placement: lead.placement,
+      tier: lead.tier,
+      eventType: lead.eventType,
+      goal: lead.goal,
+      blocker: lead.blocker,
+      urgency: lead.urgency,
+      details: lead.details,
+      path: lead.pagePath,
+      sourceUrl: lead.sourceUrl,
+    });
+    if (ok) {
+      await pool.query(`UPDATE whatsapp_leads SET admin_alerted_at = NOW() WHERE id = $1`, [lead.id]);
+    }
+  }
 
   async function selectWhatsAppLeadFollowupCandidates(options: {
     lookbackDays: number;
@@ -905,13 +967,14 @@ export async function registerRoutes(
         .digest("hex");
       const hasCoaching = email ? await storage.hasUserPurchasedCoaching(email) : false;
 
-      await pool.query(
+      const inserted = await pool.query(
         `INSERT INTO whatsapp_leads (
           email, phone, offer, placement, tier, event_type, page_path,
           goal, blocker, urgency, details, source_url, referrer, utm,
           destination, message, user_agent, ip_hash,
           has_coaching, last_activity_at
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,NOW())`,
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,NOW())
+        RETURNING id`,
         [
           email,
           phone,
@@ -936,6 +999,28 @@ export async function registerRoutes(
       );
 
       res.json({ success: true, captured: true, hasContact: Boolean(email || phone), excludedFromFollowup: hasCoaching });
+
+      const leadId = inserted.rows[0]?.id;
+      if (leadId) {
+        void maybeSendWhatsAppLeadAdminAlert({
+          id: leadId,
+          email,
+          phone,
+          offer,
+          placement,
+          tier,
+          eventType,
+          pagePath,
+          goal,
+          blocker,
+          urgency,
+          details,
+          sourceUrl,
+          hasCoaching,
+        }).catch((alertError) => {
+          console.error("[WhatsAppLead] admin alert error:", alertError);
+        });
+      }
     } catch (error) {
       console.error("[WhatsAppLead] capture error:", error);
       // Never break the public WhatsApp UX because tracking failed.
