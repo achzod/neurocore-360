@@ -1,6 +1,8 @@
 import { Link, useLocation } from "wouter";
-import { Menu, X, LogOut, User, ChevronDown } from "lucide-react";
+import { Menu, X, LogOut, User, ChevronDown, MessageCircle } from "lucide-react";
 import { useState, useEffect } from "react";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
+import { trackWhatsAppClick } from "@/lib/analytics";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,6 +37,9 @@ export function Header() {
   };
 
   const isDashboard = location.startsWith("/dashboard");
+  const whatsappDestination = buildWhatsAppUrl(
+    "Salut Achzod, je suis sur APEXLABS. Je veux ton avis pour choisir entre un scan, une analyse avancee ou un coaching."
+  );
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[#333333] bg-[#000000]" role="banner">
@@ -71,6 +76,28 @@ export function Header() {
 
           {/* Right side actions */}
           <div className="flex items-center gap-2 2xl:gap-3">
+            <a
+              href={whatsappDestination}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => {
+                try {
+                  trackWhatsAppClick({
+                    offer: "APEXLABS",
+                    placement: "header",
+                    tier: "orientation",
+                    destination: whatsappDestination,
+                  });
+                } catch {
+                  // Analytics must never block contact.
+                }
+              }}
+              className="hidden items-center gap-2 border border-[#25D366]/45 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-[#25D366] transition-all hover:border-[#25D366] hover:bg-[#25D366] hover:text-black md:flex"
+              data-testid="link-header-whatsapp"
+            >
+              <MessageCircle className="h-3.5 w-3.5" />
+              WhatsApp
+            </a>
             <a 
               href="https://www.achzodcoaching.com" 
               target="_blank" 
@@ -158,6 +185,28 @@ export function Header() {
                 Blog
               </Link>
               <div className="my-2 border-t border-[#333333]" />
+              <a
+                href={whatsappDestination}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-2 py-2 text-xs font-bold uppercase text-[#25D366] transition-colors hover:text-white"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  try {
+                    trackWhatsAppClick({
+                      offer: "APEXLABS",
+                      placement: "mobile_menu",
+                      tier: "orientation",
+                      destination: whatsappDestination,
+                    });
+                  } catch {
+                    // Analytics must never block contact.
+                  }
+                }}
+              >
+                <MessageCircle className="h-4 w-4" />
+                WhatsApp Achzod
+              </a>
               {userEmail ? (
                 <>
                   <Link

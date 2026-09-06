@@ -1,8 +1,14 @@
 import { Link } from "wouter";
 import { SiInstagram, SiYoutube, SiFacebook } from "react-icons/si";
 import { resetCookieConsent } from "@/components/CookieConsent";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
+import { trackWhatsAppClick } from "@/lib/analytics";
 
 export function Footer() {
+  const whatsappDestination = buildWhatsAppUrl(
+    "Salut Achzod, je viens d'APEXLABS. Je veux ton avis pour savoir quelle offre ou quel coaching est adapte a mon cas."
+  );
+
   return (
     <footer className="border-t border-[#333333] bg-[#000000]" role="contentinfo">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
@@ -101,8 +107,25 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <a href="mailto:coaching@achzodcoaching.com" className="hover:text-white transition-colors">
-                  Contact
+                <a
+                  href={whatsappDestination}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-[#25D366] hover:text-white transition-colors"
+                  onClick={() => {
+                    try {
+                      trackWhatsAppClick({
+                        offer: "APEXLABS",
+                        placement: "footer_contact",
+                        tier: "orientation",
+                        destination: whatsappDestination,
+                      });
+                    } catch {
+                      // Analytics must never block contact.
+                    }
+                  }}
+                >
+                  WhatsApp Achzod
                 </a>
               </li>
               <li>

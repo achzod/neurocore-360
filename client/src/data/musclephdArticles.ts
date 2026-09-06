@@ -3489,7 +3489,7 @@ Nous savons depuis au moins 1887 que la nutrition peut fortement influencer à l
     slug: "un-bref-guide-de-la-coupe",
     title: "Un « bref » guide de la coupe",
     excerpt: "Ah oui, le printemps est dans l'air et tous les bodybuilders du nord de la Floride et de SoCal envisagent leur coupe estivale annuelle pour afficher leur meilleur physique sur la plage. Tout leur hiv...",
-    category: "peptides",
+    category: "nutrition",
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "19 min",

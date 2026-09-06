@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
 import { CookieConsent } from "@/components/CookieConsent";
+import { WhatsAppConversionHub } from "@/components/WhatsAppConversionHub";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   constructor(props: { children: ReactNode }) {
@@ -222,6 +223,7 @@ function App() {
             <ScrollToTop />
             <Toaster />
             <Router />
+            <WhatsAppConversionHub />
             <CookieConsent />
           </TooltipProvider>
         </ThemeProvider>

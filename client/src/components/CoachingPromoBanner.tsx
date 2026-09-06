@@ -1,12 +1,19 @@
-import React, { useState } from "react";
-import {
-  canRevealCoachingPromoCode,
-  DISCOVERY_REVIEW_PROMO_MESSAGE,
-  type CoachingPromoAuditKind,
-  type ReviewModerationStatus,
-} from "./coachingPromoPolicy";
+import { useState } from "react";
+import { MessageCircle } from "lucide-react";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
+import { trackWhatsAppClick } from "@/lib/analytics";
 
-type AuditKind = CoachingPromoAuditKind;
+type AuditKind =
+  | "GRATUIT"
+  | "DISCOVERY"
+  | "PREMIUM"
+  | "ANABOLIC"
+  | "ELITE"
+  | "ULTIMATE"
+  | "BLOOD_ANALYSIS"
+  | "BLOOD"
+  | "PEPTIDES_ENGINE"
+  | "PEPTIDES";
 
 interface PromoInfo {
   code: string;
@@ -26,7 +33,7 @@ const PEPTIDES_PROMOS: Record<PeptidesTier, Pick<PromoInfo, "code" | "descriptio
   tracked: { code: "PEPTIDES399", description: "399 EUR deduits sur ton coaching" },
 };
 
-function getPromoInfo(kind: AuditKind, peptidesTier?: PeptidesTier, serverPromoCode?: string): PromoInfo {
+function getPromoInfo(kind: AuditKind, peptidesTier?: PeptidesTier): PromoInfo {
   switch (kind) {
     case "PREMIUM":
     case "ANABOLIC":
@@ -61,20 +68,37 @@ function getPromoInfo(kind: AuditKind, peptidesTier?: PeptidesTier, serverPromoC
     case "DISCOVERY":
     default:
       return {
-        code: serverPromoCode || "",
+        code: "DISCOVERY20",
         description: "-20% sur toutes les formules coaching",
         recommendedFormules: [FORMULE_ESSENTIAL, FORMULE_ELITE, FORMULE_PRIVATELAB],
       };
   }
 }
 
+function getAuditLabel(kind: AuditKind): string {
+  switch (kind) {
+    case "PREMIUM":
+    case "ANABOLIC":
+      return "Anabolic Bioscan";
+    case "ELITE":
+    case "ULTIMATE":
+      return "Ultimate Scan";
+    case "BLOOD_ANALYSIS":
+    case "BLOOD":
+      return "Blood Analysis";
+    case "PEPTIDES_ENGINE":
+    case "PEPTIDES":
+      return "Peptides Engine";
+    case "GRATUIT":
+    case "DISCOVERY":
+    default:
+      return "Discovery Scan";
+  }
+}
+
 interface CoachingPromoBannerProps {
   auditType: AuditKind;
   peptidesTier?: PeptidesTier;
-  /** Persisted review moderation status. Required to unlock Discovery codes. */
-  reviewStatus?: ReviewModerationStatus | null;
-  /** Server-returned code. Required for Discovery and absent before approval. */
-  promoCode?: string | null;
   /** Optional extra className for outer wrapper. */
   className?: string;
   /** If true, allow the user to dismiss the banner via local-storage flag. */
@@ -87,8 +111,6 @@ interface CoachingPromoBannerProps {
 export function CoachingPromoBanner({
   auditType,
   peptidesTier,
-  reviewStatus,
-  promoCode,
   className = "",
   dismissible = true,
 }: CoachingPromoBannerProps) {
@@ -101,8 +123,11 @@ export function CoachingPromoBanner({
 
   if (dismissed) return null;
 
-  const promo = getPromoInfo(auditType, peptidesTier, promoCode?.trim());
-  const canRevealCode = canRevealCoachingPromoCode(auditType, reviewStatus, promoCode);
+  const promo = getPromoInfo(auditType, peptidesTier);
+  const auditLabel = getAuditLabel(auditType);
+  const whatsappDestination = buildWhatsAppUrl(
+    `Salut Achzod, je viens de recevoir mon rapport ${auditLabel} APEXLABS. Je veux ton avis pour savoir si je dois appliquer seul, faire une analyse plus avancee ou partir sur coaching.`
+  );
 
   const copyCode = async () => {
     try {
@@ -127,36 +152,49 @@ export function CoachingPromoBanner({
     >
       <div className="mx-auto max-w-6xl px-4 py-3 sm:py-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex min-w-0 items-start gap-3 sm:items-center">
+          <div className="flex items-start gap-3 sm:items-center">
             <div className="flex-shrink-0 rounded-sm bg-[#FCDD00]/20 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-[#FCDD00]">
               Bonus
             </div>
             <div className="min-w-0">
-              {canRevealCode ? (
-                <>
-                  <p className="flex flex-wrap items-center gap-x-1 gap-y-2 text-sm font-semibold text-white">
-                    <span>Ton code coaching :</span>
-                    <button
-                      onClick={copyCode}
-                      className="inline-flex shrink-0 items-center gap-1 rounded-sm bg-[#FCDD00] px-2 py-0.5 font-mono text-black transition-colors hover:bg-[#fce844]"
-                      title="Cliquer pour copier"
-                    >
-                      {promo.code}
-                      <span className="text-[10px] opacity-70">{copied ? "✓" : "📋"}</span>
-                    </button>
-                  </p>
-                  <p className="mt-1 text-xs text-white/60">{promo.description}</p>
-                </>
-              ) : (
-                <p className="text-sm font-semibold text-white" data-testid="discovery-promo-review-required">
-                  {DISCOVERY_REVIEW_PROMO_MESSAGE}
-                </p>
-              )}
+              <p className="text-sm font-semibold text-white">
+                Ton code coaching :{" "}
+                <button
+                  onClick={copyCode}
+                  className="inline-flex items-center gap-1 rounded-sm bg-[#FCDD00] px-2 py-0.5 font-mono text-black transition-colors hover:bg-[#fce844]"
+                  title="Cliquer pour copier"
+                >
+                  {promo.code}
+                  <span className="text-[10px] opacity-70">{copied ? "✓" : "📋"}</span>
+                </button>
+              </p>
+              <p className="mt-1 text-xs text-white/60">{promo.description}</p>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {canRevealCode && promo.recommendedFormules.map((f) => (
+            <a
+              href={whatsappDestination}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-sm bg-[#25D366] px-3 py-1.5 text-xs font-black uppercase tracking-wide text-black transition-colors hover:bg-white"
+              onClick={() => {
+                try {
+                  trackWhatsAppClick({
+                    offer: auditLabel,
+                    placement: "report_coaching_banner",
+                    tier: peptidesTier || auditType,
+                    destination: whatsappDestination,
+                  });
+                } catch {
+                  // Analytics must never block WhatsApp access.
+                }
+              }}
+            >
+              <MessageCircle className="h-3.5 w-3.5" />
+              Avis WhatsApp
+            </a>
+            {promo.recommendedFormules.map((f) => (
               <a
                 key={f.name}
                 href={f.href}

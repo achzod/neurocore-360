@@ -20,41 +20,6 @@ import type {
 } from "@shared/schema";
 import { ProductDisplayNames, ProductPriceCents } from "@shared/schema";
 import { calculateScoresFromResponses, generateFullAnalysis } from "./analysisEngine";
-import type {
-  PeptidesGenerationAttemptClaim,
-  PeptidesGenerationCircuitConfig,
-} from "./peptidesGenerationCircuitBreaker";
-import {
-  DISCOVERY_SUPERSEDED_TERMINAL_SQL,
-  isDiscoverySupersededTerminal,
-} from "./discoverySupersededPolicy";
-import { isDiscoveryTransactionalAutomationEligible } from "./discoveryAutomationPolicy";
-import {
-  GenericAuditMutationBarrierError,
-  runGenericAuditMutation,
-} from "./discoveryGenericMutationBarrier";
-import {
-  claimPendingGenericReportJob,
-  completeGenericReportJob,
-  deleteGenericReportJob,
-  enqueueMissingDiscoveryReportJobFenced,
-  failGenericReportJob,
-  insertGenericReportArtifactFenced,
-  listActiveGenericReportJobRows,
-  markDiscoveryAuditSupersededFenced,
-  updateGenericReportJobProgress,
-  upsertGenericReportJobRow,
-} from "./reportJobStorageSafety";
-import { DISCOVERY_TRANSACTION_FENCE_KEY } from "./discoveryTransactionalPersistence";
-import { isBlockedDiscoveryTestEmail } from "./discoveryBatchControl";
-
-const DISCOVERY_GENERIC_PROTECTED_STATE_SQL = `NOT (
-  type = 'GRATUIT'
-  AND (
-    report_sent_at IS NOT NULL
-    OR report_delivery_status IN ('BATCH_READY','SENDING','SENT','SUPERSEDED')
-  )
-)`;
 
 // Configuration de la connexion PostgreSQL
 const getDatabaseUrl = (): string => {
@@ -208,22 +173,6 @@ export type BloodReportSummary = Pick<
   "id" | "email" | "deliveryStatus" | "emailSentAt" | "createdAt"
 >;
 
-export interface AdminAuditSummary {
-  id: string;
-  email: string;
-  type: string;
-  status: string;
-  reportDeliveryStatus: string | null;
-  reportSentAt: Date | string | null;
-  createdAt: Date | string;
-  completedAt: Date | string | null;
-}
-
-export interface AdminAuditSummaryPage {
-  items: AdminAuditSummary[];
-  total: number;
-}
-
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
@@ -238,10 +187,8 @@ export interface IStorage {
   /** Memory-safe variant of getAllAudits that omits heavy JSONB columns (narrative_report, responses, scores). Use in long-running crons. */
   getAllAuditsLight(): Promise<Audit[]>;
   getAllAuditSummaries(): Promise<AuditSummary[]>;
-  getAdminAuditSummariesPage(limit: number, offset: number): Promise<AdminAuditSummaryPage>;
   getScheduledAuditsForDelivery(): Promise<Audit[]>;
   createAudit(audit: InsertAudit & { email: string; responses: Record<string, unknown> }): Promise<Audit>;
-  createDiscoveryAudit(audit: InsertAudit & { email: string; responses: Record<string, unknown> }): Promise<Audit>;
   updateAudit(id: string, data: Partial<Audit>): Promise<Audit | undefined>;
 
   getProgress(email: string): Promise<QuestionnaireProgress | undefined>;
@@ -275,27 +222,13 @@ export interface IStorage {
   getReportJob(auditId: string): Promise<ReportJob | undefined>;
   getActiveReportJobs(): Promise<ReportJob[]>;
   createOrUpdateReportJob(job: Partial<ReportJob> & { auditId: string }): Promise<ReportJob>;
-  /** Atomic cross-instance claim: pending -> generating. */
-  claimPendingReportJob(auditId: string): Promise<ReportJob | undefined>;
   updateReportJobProgress(auditId: string, progress: number, currentSection: string): Promise<void>;
   completeReportJob(auditId: string): Promise<void>;
   failReportJob(auditId: string, error: string): Promise<void>;
   deleteReportJob(auditId: string): Promise<void>;
-  /** True when a durable report artifact exists for the audit. */
-  hasReportArtifact(auditId: string): Promise<boolean>;
-  /**
-   * Atomically claims an artifact-less Discovery audit and inserts one pending
-   * report job. Returns false when a job/artifact/status race already won.
-   */
-  enqueueMissingDiscoveryReportJob(auditId: string, reason: string): Promise<boolean>;
-  /** Moves a duplicate Discovery audit out of NEEDS_REVIEW with durable provenance. */
-  markDiscoveryAuditSuperseded(auditId: string, replacementAuditId: string, reason: string): Promise<boolean>;
 
   // Traçabilité: conserver CHAQUE version générée (TXT + HTML)
-  createReportArtifact(
-    input: Omit<ReportArtifact, "id" | "createdAt"> & { createdAt?: Date },
-    options?: { strict?: boolean },
-  ): Promise<ReportArtifact>;
+  createReportArtifact(input: Omit<ReportArtifact, "id" | "createdAt"> & { createdAt?: Date }): Promise<ReportArtifact>;
 
   // Promo codes
   getPromoCode(code: string): Promise<PromoCode | undefined>;
@@ -313,15 +246,6 @@ export interface IStorage {
   /** Returns true if a peptides delivery email (subject contains "protocole peptides") has been sent to this recipient */
   hasPeptidesDeliveryEmailBeenSent(email: string): Promise<boolean>;
   hasPeptidesOrderConfirmationBeenSent(email: string): Promise<boolean>;
-  /** Atomic lease for the immediate paid-order confirmation. Prevents webhook,
-   * browser confirmation and multi-instance recovery from sending concurrently. */
-  claimPeptidesOrderConfirmation(orderId: string, leaseMs?: number): Promise<boolean>;
-  finalizePeptidesOrderConfirmation(orderId: string, state: "ACCEPTED" | "FAILED" | "UNKNOWN"): Promise<void>;
-  /** Atomic lease for one report delivery. The report id is part of the claim so
-   * an in-place replacement cannot accidentally authorize an older artifact. */
-  claimPeptidesReportDelivery(orderId: string, reportId: string, leaseMs?: number): Promise<boolean>;
-  finalizePeptidesReportDelivery(orderId: string, reportId: string, state: "ACCEPTED" | "FAILED" | "UNKNOWN"): Promise<void>;
-  resetPeptidesReportDeliveryCircuit(orderId: string, reportId: string): Promise<boolean>;
   /** Returns true if a blood analysis HTML email has already been tracked for this report (audit_id) */
   hasBloodAnalysisEmailBeenSentForReport(reportId: string): Promise<boolean>;
   /** Returns true if a blood analysis HTML email was sent to this recipient within the last N hours */
@@ -336,29 +260,16 @@ export interface IStorage {
   getOrderByPaypalOrderId(paypalOrderId: string): Promise<Order | undefined>;
   getOrdersByUserId(userId: string): Promise<Order[]>;
   getOrdersByEmail(email: string): Promise<Order[]>;
+  hasUserPurchased(email: string): Promise<boolean>;
+  hasUserPurchasedCoaching(email: string): Promise<boolean>;
+  markCoachingBuyers(emails: string[], source?: string): Promise<{ inserted: number; updated: number; total: number }>;
   getAllOrders(opts?: { limit?: number; offset?: number; status?: OrderStatusEnum; productType?: ProductTypeEnum; email?: string }): Promise<{ orders: Order[]; total: number }>;
   updateOrder(id: string, data: Partial<Order>): Promise<Order | undefined>;
   claimOrderForAudit(orderId: string, auditId: string): Promise<boolean>;
   /** Atomic CAS: set metadata.peptidesReportId only if currently null/absent. Returns true if we won the race. */
   claimPeptidesReportSlot(orderId: string, reportId: string): Promise<boolean>;
   /** Atomic JSONB merge: set a single metadata key without stomping concurrently-set keys. */
-  setOrderMetadataKey(orderId: string, key: string, value: unknown): Promise<boolean>;
-  /** Human-reviewed retry path: clears the persisted generation circuit on an undelivered order. */
-  resetPeptidesGenerationCircuit(orderId: string): Promise<boolean>;
-  /**
-   * Atomically reserves one bounded Peptides provider attempt. The reservation
-   * and cost budget survive restarts because they live in order metadata.
-   */
-  claimPeptidesGenerationAttempt(
-    orderId: string,
-    config: PeptidesGenerationCircuitConfig,
-  ): Promise<PeptidesGenerationAttemptClaim | null>;
-  /** Opens the persistent circuit after any failed/source-blocked generation. */
-  markPeptidesGenerationNeedsReview(
-    orderId: string,
-    reason: string,
-    error: string,
-  ): Promise<boolean>;
+  setOrderMetadataKey(orderId: string, key: string, value: string | number | boolean): Promise<boolean>;
   /** Cross-order protection: true if ANY paid Peptides order for this email already has a reportId.
    *  Catches duplicate-payment case (2 orders same email) ,  without this, each order wins its own
    *  CAS and generates a separate report (alexm2220 incident 2026-03-30). */
@@ -410,10 +321,10 @@ export class MemStorage implements IStorage {
   private bloodReports: Map<string, BloodReportRecord>;
   private bloodTests: Map<string, BloodTestRecord>;
   private magicTokens: Map<string, MagicToken>;
-  private reportJobs: Map<string, ReportJob>;
   private reportArtifacts: ReportArtifact[];
   private promoCodes: Map<string, PromoCode>;
   private emailTrackings: Map<string, EmailTracking>;
+  private coachingBuyerEmails: Set<string>;
 
   constructor() {
     this.users = new Map();
@@ -424,10 +335,10 @@ export class MemStorage implements IStorage {
     this.bloodReports = new Map();
     this.bloodTests = new Map();
     this.magicTokens = new Map();
-    this.reportJobs = new Map();
     this.reportArtifacts = [];
     this.promoCodes = new Map();
     this.emailTrackings = new Map();
+    this.coachingBuyerEmails = new Set();
 
     // Default promo codes
     const analyse20: PromoCode = {
@@ -560,32 +471,6 @@ export class MemStorage implements IStorage {
     }));
   }
 
-  async getAdminAuditSummariesPage(limit: number, offset: number): Promise<AdminAuditSummaryPage> {
-    const audits = (await this.getAllAuditSummaries()).map((audit) => ({
-      id: audit.id,
-      email: audit.email,
-      type: audit.type,
-      status: audit.status,
-      reportDeliveryStatus: audit.reportDeliveryStatus ?? null,
-      reportSentAt: audit.reportSentAt ?? null,
-      createdAt: audit.createdAt,
-      completedAt: audit.completedAt ?? null,
-    }));
-    const blood = (await this.getAllBloodReportSummaries()).map((report) => ({
-      id: report.id,
-      email: report.email,
-      type: "BLOOD_ANALYSIS",
-      status: "COMPLETED",
-      reportDeliveryStatus: "SENT",
-      reportSentAt: report.createdAt,
-      createdAt: report.createdAt,
-      completedAt: report.createdAt,
-    }));
-    const items = [...audits, ...blood].sort((a, b) =>
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    return { items: items.slice(offset, offset + limit), total: items.length };
-  }
-
   async getScheduledAuditsForDelivery(): Promise<Audit[]> {
     const now = new Date();
     return Array.from(this.audits.values()).filter(
@@ -597,26 +482,6 @@ export class MemStorage implements IStorage {
   }
 
   async createAudit(
-    input: InsertAudit & { email: string; responses: Record<string, unknown> }
-  ): Promise<Audit> {
-    if (input.type === "GRATUIT") {
-      throw new Error("DISCOVERY_AUDIT_REQUIRES_TRANSACTIONAL_CREATION");
-    }
-    return this.createAuditUnchecked(input);
-  }
-
-  async createDiscoveryAudit(
-    input: InsertAudit & { email: string; responses: Record<string, unknown> }
-  ): Promise<Audit> {
-    if (input.type !== "GRATUIT") throw new Error("DISCOVERY_AUDIT_TYPE_REQUIRED");
-    const normalizedEmail = input.email.trim().toLowerCase();
-    if (isBlockedDiscoveryTestEmail(normalizedEmail)) {
-      throw new Error("DISCOVERY_TEST_EMAIL_BLOCKED");
-    }
-    return this.createAuditUnchecked(input);
-  }
-
-  private async createAuditUnchecked(
     input: InsertAudit & { email: string; responses: Record<string, unknown> }
   ): Promise<Audit> {
     // Same lowercase-normalize policy as PgStorage.createAudit, keeps the
@@ -663,8 +528,6 @@ export class MemStorage implements IStorage {
   async updateAudit(id: string, data: Partial<Audit>): Promise<Audit | undefined> {
     const audit = this.audits.get(id);
     if (!audit) return undefined;
-    if (isDiscoverySupersededTerminal(audit)) return undefined;
-    if (audit.type === "GRATUIT") return undefined;
 
     const updated = { ...audit, ...data };
     this.audits.set(id, updated);
@@ -908,157 +771,19 @@ export class MemStorage implements IStorage {
     return magicToken.email;
   }
 
-  async getReportJob(auditId: string): Promise<ReportJob | undefined> {
-    return this.reportJobs.get(auditId);
-  }
-  async getActiveReportJobs(): Promise<ReportJob[]> {
-    return Array.from(this.reportJobs.values()).filter((job) => {
-      const audit = this.audits.get(job.auditId);
-      return audit?.type !== "GRATUIT" && ["pending", "generating"].includes(job.status);
-    });
-  }
+  async getReportJob(_auditId: string): Promise<ReportJob | undefined> { return undefined; }
+  async getActiveReportJobs(): Promise<ReportJob[]> { return []; }
   async createOrUpdateReportJob(job: Partial<ReportJob> & { auditId: string }): Promise<ReportJob> {
-    const audit = this.audits.get(job.auditId);
-    if (!audit || audit.type === "GRATUIT") {
-      throw new Error("DISCOVERY_REPORT_JOB_REQUIRES_TRANSACTIONAL_WORKFLOW");
-    }
-    const now = new Date();
-    const existing = this.reportJobs.get(job.auditId);
-    const updated: ReportJob = {
-      auditId: job.auditId,
-      status: job.status ?? existing?.status ?? "pending",
-      progress: job.progress ?? existing?.progress ?? 0,
-      currentSection: job.currentSection ?? existing?.currentSection ?? "",
-      error: job.error !== undefined ? job.error : existing?.error ?? null,
-      attemptCount: job.attemptCount ?? existing?.attemptCount ?? 0,
-      startedAt: existing?.startedAt ?? now,
-      updatedAt: now,
-      lastProgressAt: now,
-      completedAt: job.completedAt !== undefined ? job.completedAt : existing?.completedAt ?? null,
-    };
-    this.reportJobs.set(job.auditId, updated);
-    return updated;
+    return { auditId: job.auditId, status: 'pending', progress: 0, currentSection: '', error: null, attemptCount: 0, startedAt: new Date(), updatedAt: new Date(), lastProgressAt: new Date(), completedAt: null };
   }
-  async claimPendingReportJob(auditId: string): Promise<ReportJob | undefined> {
-    const audit = this.audits.get(auditId);
-    const job = this.reportJobs.get(auditId);
-    if (!audit || audit.type === "GRATUIT" || !job || job.status !== "pending") return undefined;
-    const now = new Date();
-    const claimed = { ...job, status: "generating" as ReportJobStatusEnum, updatedAt: now, lastProgressAt: now };
-    this.reportJobs.set(auditId, claimed);
-    return claimed;
-  }
-  async updateReportJobProgress(auditId: string, progress: number, currentSection: string): Promise<void> {
-    const audit = this.audits.get(auditId);
-    const job = this.reportJobs.get(auditId);
-    if (!job || audit?.type === "GRATUIT") return;
-    const now = new Date();
-    this.reportJobs.set(auditId, { ...job, progress, currentSection, updatedAt: now, lastProgressAt: now });
-  }
-  async completeReportJob(auditId: string): Promise<void> {
-    const audit = this.audits.get(auditId);
-    const job = this.reportJobs.get(auditId);
-    if (!job || audit?.type === "GRATUIT") return;
-    const now = new Date();
-    this.reportJobs.set(auditId, {
-      ...job,
-      status: "completed",
-      progress: 100,
-      currentSection: "Rapport termine !",
-      completedAt: now,
-      updatedAt: now,
-    });
-  }
-  async failReportJob(auditId: string, error: string): Promise<void> {
-    const audit = this.audits.get(auditId);
-    const job = this.reportJobs.get(auditId);
-    if (!job || audit?.type === "GRATUIT") return;
-    const now = new Date();
-    this.reportJobs.set(auditId, { ...job, status: "failed", error, completedAt: now, updatedAt: now });
-  }
-  async deleteReportJob(auditId: string): Promise<void> {
-    if (this.audits.get(auditId)?.type === "GRATUIT") return;
-    this.reportJobs.delete(auditId);
-  }
-  async hasReportArtifact(auditId: string): Promise<boolean> {
-    return this.reportArtifacts.some((artifact) => artifact.auditId === auditId);
-  }
-  async enqueueMissingDiscoveryReportJob(auditId: string, reason: string): Promise<boolean> {
-    const audit = this.audits.get(auditId);
-    if (!audit || audit.type !== "GRATUIT" || audit.reportDeliveryStatus !== "NEEDS_REVIEW") return false;
-    if (!isDiscoveryTransactionalAutomationEligible(audit)) return false;
-    if ((audit as any).reportSentAt || this.hasStoredDiscoveryArtifact(audit)) return false;
-    if (await this.getReportJob(auditId)) return false;
-    audit.narrativeReport = {
-      ...((audit.narrativeReport && typeof audit.narrativeReport === "object") ? audit.narrativeReport as object : {}),
-      recovery: { version: 1, disposition: "enqueued", reason, decidedAt: new Date().toISOString() },
-    };
-    const now = new Date();
-    this.reportJobs.set(auditId, {
-      auditId,
-      status: "pending",
-      progress: 0,
-      currentSection: "Reprise Discovery en attente...",
-      error: null,
-      attemptCount: 0,
-      startedAt: now,
-      updatedAt: now,
-      lastProgressAt: now,
-      completedAt: null,
-    });
-    return true;
-  }
-  async markDiscoveryAuditSuperseded(auditId: string, replacementAuditId: string, reason: string): Promise<boolean> {
-    const audit = this.audits.get(auditId);
-    const replacement = this.audits.get(replacementAuditId);
-    if (
-      !audit
-      || !replacement
-      || audit.type !== "GRATUIT"
-      || replacement.type !== "GRATUIT"
-      || audit.email.trim().toLowerCase() !== replacement.email.trim().toLowerCase()
-      || audit.reportDeliveryStatus !== "NEEDS_REVIEW"
-      || (audit as any).reportSentAt
-      || !isDiscoveryTransactionalAutomationEligible(audit)
-      || this.hasStoredDiscoveryArtifact(audit)
-      || this.reportJobs.has(auditId)
-    ) return false;
-    audit.reportDeliveryStatus = "SUPERSEDED" as any;
-    audit.narrativeReport = {
-      ...((audit.narrativeReport && typeof audit.narrativeReport === "object") ? audit.narrativeReport as object : {}),
-      recovery: {
-        version: 1,
-        disposition: "superseded",
-        reason,
-        replacementAuditId,
-        decidedAt: new Date().toISOString(),
-      },
-    };
-    return true;
-  }
-
-  private hasStoredDiscoveryArtifact(audit: Audit): boolean {
-    const narrative = audit.narrativeReport && typeof audit.narrativeReport === "object"
-      ? audit.narrativeReport as Record<string, unknown>
-      : {};
-    return Boolean(
-      String((audit as any).reportTxt || "").trim() ||
-      String((audit as any).reportHtml || "").trim() ||
-      Array.isArray(narrative.sections) ||
-      String(narrative.txt || "").trim() ||
-      String(narrative.html || "").trim() ||
-      this.reportArtifacts.some((artifact) => artifact.auditId === audit.id)
-    );
-  }
+  async updateReportJobProgress(_auditId: string, _progress: number, _currentSection: string): Promise<void> {}
+  async completeReportJob(_auditId: string): Promise<void> {}
+  async failReportJob(_auditId: string, _error: string): Promise<void> {}
+  async deleteReportJob(_auditId: string): Promise<void> {}
 
   async createReportArtifact(
-    input: Omit<ReportArtifact, "id" | "createdAt"> & { createdAt?: Date },
-    _options?: { strict?: boolean },
+    input: Omit<ReportArtifact, "id" | "createdAt"> & { createdAt?: Date }
   ): Promise<ReportArtifact> {
-    const audit = this.audits.get(input.auditId);
-    if (input.tier === "GRATUIT" || audit?.type === "GRATUIT") {
-      throw new Error("DISCOVERY_ARTIFACT_REQUIRES_TRANSACTIONAL_PERSISTENCE");
-    }
     const createdAt = input.createdAt ?? new Date();
     const art: ReportArtifact = {
       id: randomUUID(),
@@ -1182,10 +907,8 @@ export class MemStorage implements IStorage {
   async hasPeptidesDeliveryEmailBeenSent(email: string): Promise<boolean> {
     return Array.from(this.emailTrackings.values()).some(
       (t: any) => String(t.recipientEmail || "").toLowerCase() === email.toLowerCase()
-        && (
-          t.emailType === "sendPeptidesReportReadyEmail"
-          || (t.emailType === "sendCTAEmail" && /protocole peptides|peptides personnalis/i.test(String(t.subject || "")))
-        )
+        && t.emailType === "sendCTAEmail"
+        && /protocole peptides|peptides personnalis/i.test(String(t.subject || ""))
         && !["failed", "auth_failed", "unsubscribed"].includes(String(t.sendpulseStatus || "").toLowerCase())
     );
   }
@@ -1196,86 +919,6 @@ export class MemStorage implements IStorage {
         && t.emailType === "sendPeptidesOrderConfirmation"
         && !["failed", "auth_failed", "unsubscribed"].includes(String(t.sendpulseStatus || "").toLowerCase())
     );
-  }
-
-  async claimPeptidesOrderConfirmation(orderId: string, leaseMs = 10 * 60 * 1000): Promise<boolean> {
-    const order = this.memOrders.get(orderId);
-    if (!order || order.productType !== "PEPTIDES_ENGINE" || order.status !== "paid") return false;
-    const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
-    if (meta.peptidesEmailHold === true || meta.peptidesEmailHold === "true") return false;
-    if (["ACCEPTED", "UNKNOWN"].includes(String(meta.peptidesConfirmationState || "").toUpperCase())) return false;
-    const leaseUntil = new Date(String(meta.peptidesConfirmationLeaseUntil || 0)).getTime();
-    if (String(meta.peptidesConfirmationState || "").toUpperCase() === "SENDING" && leaseUntil > Date.now()) return false;
-    if (Number(meta.peptidesConfirmationAttempts || 0) >= 3) return false;
-    order.metadata = {
-      ...meta,
-      peptidesConfirmationState: "SENDING",
-      peptidesConfirmationAttempts: Number(meta.peptidesConfirmationAttempts || 0) + 1,
-      peptidesConfirmationLeaseUntil: new Date(Date.now() + leaseMs).toISOString(),
-      peptidesConfirmationStartedAt: new Date().toISOString(),
-    } as any;
-    return true;
-  }
-
-  async finalizePeptidesOrderConfirmation(orderId: string, state: "ACCEPTED" | "FAILED" | "UNKNOWN"): Promise<void> {
-    const order = this.memOrders.get(orderId);
-    if (!order) return;
-    order.metadata = {
-      ...((order.metadata as any) ?? {}),
-      peptidesConfirmationState: state,
-      peptidesConfirmationLeaseUntil: "",
-      peptidesConfirmationCompletedAt: new Date().toISOString(),
-    } as any;
-  }
-
-  async claimPeptidesReportDelivery(orderId: string, reportId: string, leaseMs = 10 * 60 * 1000): Promise<boolean> {
-    const order = this.memOrders.get(orderId);
-    if (!order || order.productType !== "PEPTIDES_ENGINE" || order.status !== "paid") return false;
-    const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
-    if (String(meta.peptidesReportId || "") !== reportId) return false;
-    if (meta.peptidesEmailHold === true || meta.peptidesEmailHold === "true") return false;
-    if (["ACCEPTED", "UNKNOWN"].includes(String(meta.peptidesDeliveryState || "").toUpperCase())) return false;
-    const leaseUntil = new Date(String(meta.peptidesDeliveryLeaseUntil || 0)).getTime();
-    if (String(meta.peptidesDeliveryState || "").toUpperCase() === "SENDING" && leaseUntil > Date.now()) return false;
-    if (Number(meta.peptidesDeliveryAttempts || 0) >= 3) return false;
-    order.metadata = {
-      ...meta,
-      peptidesDeliveryState: "SENDING",
-      peptidesDeliveryReportId: reportId,
-      peptidesDeliveryAttempts: Number(meta.peptidesDeliveryAttempts || 0) + 1,
-      peptidesDeliveryLeaseUntil: new Date(Date.now() + leaseMs).toISOString(),
-      peptidesDeliveryStartedAt: new Date().toISOString(),
-    } as any;
-    return true;
-  }
-
-  async finalizePeptidesReportDelivery(orderId: string, reportId: string, state: "ACCEPTED" | "FAILED" | "UNKNOWN"): Promise<void> {
-    const order = this.memOrders.get(orderId);
-    if (!order || String((order.metadata as any)?.peptidesReportId || "") !== reportId) return;
-    order.metadata = {
-      ...((order.metadata as any) ?? {}),
-      peptidesDeliveryState: state,
-      peptidesDeliveryReportId: reportId,
-      peptidesDeliveryLeaseUntil: "",
-      peptidesDeliveryCompletedAt: new Date().toISOString(),
-    } as any;
-  }
-
-  async resetPeptidesReportDeliveryCircuit(orderId: string, reportId: string): Promise<boolean> {
-    const order = this.memOrders.get(orderId);
-    if (!order || order.productType !== "PEPTIDES_ENGINE" || order.status !== "paid") return false;
-    const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
-    if (String(meta.peptidesReportId || "") !== reportId) return false;
-    if (["ACCEPTED", "UNKNOWN"].includes(String(meta.peptidesDeliveryState || "").toUpperCase())) return false;
-    order.metadata = {
-      ...meta,
-      peptidesDeliveryState: "PENDING",
-      peptidesDeliveryReportId: reportId,
-      peptidesDeliveryAttempts: 0,
-      peptidesDeliveryLeaseUntil: "",
-      peptidesDeliveryResetAt: new Date().toISOString(),
-    } as any;
-    return true;
   }
 
   async hasBloodAnalysisEmailBeenSentForReport(reportId: string): Promise<boolean> {
@@ -1340,6 +983,35 @@ export class MemStorage implements IStorage {
     const norm = email.trim().toLowerCase();
     return Array.from(this.memOrders.values()).filter(o => o.email === norm).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
+  async hasUserPurchased(email: string): Promise<boolean> {
+    const norm = email.trim().toLowerCase();
+    return Array.from(this.memOrders.values()).some(
+      (o) => o.email === norm && (o.status === "paid" || o.status === "partial_refund") && o.finalAmountCents > 0
+    );
+  }
+  async hasUserPurchasedCoaching(email: string): Promise<boolean> {
+    const norm = email.trim().toLowerCase();
+    if (this.coachingBuyerEmails.has(norm)) return true;
+    return Array.from(this.emailTrackings.values()).some(
+      (t: any) =>
+        String(t.recipientEmail || "").trim().toLowerCase() === norm &&
+        String(t.conversionType || "").toLowerCase() === "coaching_purchase"
+    );
+  }
+  async markCoachingBuyers(emails: string[], _source = "manual_import"): Promise<{ inserted: number; updated: number; total: number }> {
+    const normalized = Array.from(new Set(emails.map((email) => email.trim().toLowerCase()).filter(Boolean)));
+    let inserted = 0;
+    let updated = 0;
+    for (const email of normalized) {
+      if (this.coachingBuyerEmails.has(email)) {
+        updated += 1;
+      } else {
+        this.coachingBuyerEmails.add(email);
+        inserted += 1;
+      }
+    }
+    return { inserted, updated, total: normalized.length };
+  }
   async getAllOrders(opts?: { limit?: number; offset?: number; status?: OrderStatusEnum; productType?: ProductTypeEnum; email?: string }): Promise<{ orders: Order[]; total: number }> {
     let list = Array.from(this.memOrders.values());
     if (opts?.status) list = list.filter(o => o.status === opts.status);
@@ -1370,116 +1042,16 @@ export class MemStorage implements IStorage {
     if (!order) return false;
     const meta = (order.metadata as any) ?? {};
     if (meta.peptidesReportId) return false;
-    order.metadata = {
-      ...meta,
-      peptidesReportId: reportId,
-      peptidesGenerationState: "SUCCEEDED",
-      peptidesGenerationLeaseUntil: "",
-      peptidesGenerationCompletedAt: new Date().toISOString(),
-    } as any;
+    order.metadata = { ...meta, peptidesReportId: reportId } as any;
     order.updatedAt = new Date();
     return true;
   }
 
-  async setOrderMetadataKey(orderId: string, key: string, value: unknown): Promise<boolean> {
+  async setOrderMetadataKey(orderId: string, key: string, value: string | number | boolean): Promise<boolean> {
     const order = this.memOrders.get(orderId);
     if (!order) return false;
     const meta = (order.metadata as any) ?? {};
     order.metadata = { ...meta, [key]: value } as any;
-    order.updatedAt = new Date();
-    return true;
-  }
-
-  async resetPeptidesGenerationCircuit(orderId: string): Promise<boolean> {
-    const order = this.memOrders.get(orderId);
-    if (!order) return false;
-    const meta = ((order.metadata as any) ?? {}) as Record<string, unknown>;
-    if (meta.peptidesReportId) return false;
-    order.metadata = {
-      ...meta,
-      peptidesGenerationState: "PENDING",
-      peptidesGenerationAttempts: 0,
-      peptidesGenerationReservedCostMicroUsd: 0,
-      peptidesGenerationLeaseUntil: "",
-      peptidesGenerationStartedAt: "",
-      peptidesGenerationFailedAt: "",
-      peptidesGenerationCompletedAt: "",
-      peptidesGenerationLastError: "",
-      peptidesGenerationReviewReason: "",
-    } as any;
-    order.updatedAt = new Date();
-    return true;
-  }
-
-  async claimPeptidesGenerationAttempt(
-    orderId: string,
-    config: PeptidesGenerationCircuitConfig,
-  ): Promise<PeptidesGenerationAttemptClaim | null> {
-    const order = this.memOrders.get(orderId);
-    if (!order) return null;
-    if (order.productType !== "PEPTIDES_ENGINE" || order.status !== "paid") return null;
-    const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
-    const attempts = Math.max(0, Number(meta.peptidesGenerationAttempts || 0));
-    const reserved = Math.max(0, Number(meta.peptidesGenerationReservedCostMicroUsd || 0));
-    const state = String(meta.peptidesGenerationState || "PENDING").toUpperCase();
-    const leaseUntilMs = new Date(String(meta.peptidesGenerationLeaseUntil || "")).getTime();
-    const nowMs = Date.now();
-    let hourlyReserved = 0;
-    let dailyReserved = 0;
-    for (const candidateOrder of this.memOrders.values()) {
-      if (candidateOrder.productType !== "PEPTIDES_ENGINE" || candidateOrder.status !== "paid") continue;
-      const candidateMeta = ((candidateOrder.metadata as any) ?? {}) as Record<string, any>;
-      const startedAtMs = new Date(String(candidateMeta.peptidesGenerationStartedAt || "")).getTime();
-      if (!Number.isFinite(startedAtMs)) continue;
-      const candidateReserved = Math.max(
-        0,
-        Number(candidateMeta.peptidesGenerationReservedCostMicroUsd || 0),
-      );
-      if (startedAtMs > nowMs - 60 * 60 * 1000) hourlyReserved += candidateReserved;
-      if (startedAtMs > nowMs - 24 * 60 * 60 * 1000) dailyReserved += candidateReserved;
-    }
-    if (meta.peptidesReportId) return null;
-    if (state === "NEEDS_REVIEW") return null;
-    if (state === "GENERATING" && Number.isFinite(leaseUntilMs) && leaseUntilMs > Date.now()) return null;
-    if (attempts >= config.maxAttempts) return null;
-    if (reserved + config.attemptBudgetMicroUsd > config.maxBudgetMicroUsd) return null;
-    if (hourlyReserved + config.attemptBudgetMicroUsd > config.maxHourlyBudgetMicroUsd) return null;
-    if (dailyReserved + config.attemptBudgetMicroUsd > config.maxDailyBudgetMicroUsd) return null;
-
-    const claim: PeptidesGenerationAttemptClaim = {
-      attemptCount: attempts + 1,
-      reservedCostMicroUsd: reserved + config.attemptBudgetMicroUsd,
-      leaseUntil: new Date(Date.now() + config.leaseMs).toISOString(),
-    };
-    order.metadata = {
-      ...meta,
-      peptidesGenerationState: "GENERATING",
-      peptidesGenerationAttempts: claim.attemptCount,
-      peptidesGenerationReservedCostMicroUsd: claim.reservedCostMicroUsd,
-      peptidesGenerationLeaseUntil: claim.leaseUntil,
-      peptidesGenerationStartedAt: new Date().toISOString(),
-      peptidesGenerationLastError: "",
-      peptidesGenerationReviewReason: "",
-    } as any;
-    order.updatedAt = new Date();
-    return claim;
-  }
-
-  async markPeptidesGenerationNeedsReview(
-    orderId: string,
-    reason: string,
-    error: string,
-  ): Promise<boolean> {
-    const order = this.memOrders.get(orderId);
-    if (!order) return false;
-    order.metadata = {
-      ...((order.metadata as any) ?? {}),
-      peptidesGenerationState: "NEEDS_REVIEW",
-      peptidesGenerationReviewReason: reason,
-      peptidesGenerationLastError: error,
-      peptidesGenerationFailedAt: new Date().toISOString(),
-      peptidesGenerationLeaseUntil: "",
-    } as any;
     order.updatedAt = new Date();
     return true;
   }
@@ -1499,8 +1071,6 @@ export class MemStorage implements IStorage {
   async claimAuditForGeneration(auditId: string): Promise<boolean> {
     const audit = this.audits.get(auditId);
     if (!audit) return false;
-    if (isDiscoverySupersededTerminal(audit)) return false;
-    if (audit.type === "GRATUIT") return false;
     const s = audit.reportDeliveryStatus as any;
     if (s && !["PENDING", "NEEDS_REVIEW", "EMAIL_FAILED", "FAILED"].includes(s)) return false;
     audit.reportDeliveryStatus = "GENERATING" as any;
@@ -1510,8 +1080,6 @@ export class MemStorage implements IStorage {
   async claimAuditForSending(auditId: string): Promise<boolean> {
     const audit = this.audits.get(auditId);
     if (!audit) return false;
-    if (isDiscoverySupersededTerminal(audit)) return false;
-    if (audit.type === "GRATUIT") return false;
     if ((audit as any).reportSentAt) return false;
     if (!["READY", "SCHEDULED"].includes(audit.reportDeliveryStatus as any)) return false;
     audit.reportDeliveryStatus = "SENDING" as any;
@@ -1521,8 +1089,6 @@ export class MemStorage implements IStorage {
   async finalizeAuditSend(auditId: string, sent: boolean): Promise<void> {
     const audit = this.audits.get(auditId);
     if (!audit) return;
-    if (isDiscoverySupersededTerminal(audit)) return;
-    if (audit.type === "GRATUIT") return;
     if (sent) {
       if (!(audit as any).reportSentAt) {
         audit.reportDeliveryStatus = "SENT" as any;
@@ -2002,43 +1568,6 @@ export class PgStorage implements IStorage {
     }));
   }
 
-  async getAdminAuditSummariesPage(limit: number, offset: number): Promise<AdminAuditSummaryPage> {
-    await this.ensureBloodReportsTable();
-    const result = await pool.query(
-      `WITH combined AS (
-         SELECT id, email, type::text AS type, status::text AS status,
-                report_delivery_status::text AS report_delivery_status,
-                report_sent_at, created_at, completed_at
-           FROM audits
-         UNION ALL
-         SELECT id, email, 'BLOOD_ANALYSIS'::text AS type, 'COMPLETED'::text AS status,
-                'SENT'::text AS report_delivery_status,
-                created_at AS report_sent_at, created_at, created_at AS completed_at
-           FROM blood_reports
-       )
-       SELECT id, email, type, status, report_delivery_status,
-              report_sent_at, created_at, completed_at,
-              COUNT(*) OVER()::int AS total_count
-         FROM combined
-        ORDER BY created_at DESC
-        LIMIT $1 OFFSET $2`,
-      [limit, offset],
-    );
-    return {
-      total: Number(result.rows[0]?.total_count || 0),
-      items: result.rows.map((row) => ({
-        id: row.id,
-        email: row.email,
-        type: row.type,
-        status: row.status,
-        reportDeliveryStatus: row.report_delivery_status,
-        reportSentAt: row.report_sent_at,
-        createdAt: row.created_at,
-        completedAt: row.completed_at,
-      })),
-    };
-  }
-
   async getScheduledAuditsForDelivery(): Promise<Audit[]> {
     const result = await pool.query(
       "SELECT * FROM audits WHERE report_delivery_status = 'SCHEDULED' AND report_scheduled_for <= NOW()"
@@ -2047,9 +1576,6 @@ export class PgStorage implements IStorage {
   }
 
   async createAudit(input: InsertAudit & { email: string; responses: Record<string, unknown> }): Promise<Audit> {
-    if (input.type === "GRATUIT") {
-      throw new Error("DISCOVERY_AUDIT_REQUIRES_TRANSACTIONAL_CREATION");
-    }
     // Normalize email at write so string compares against order.email (already
     // stored lowercase) match. Without this, audits.email keeps whatever case
     // the user typed at checkout, which silently breaks audit↔order linking
@@ -2078,53 +1604,11 @@ export class PgStorage implements IStorage {
 
     const result = await pool.query(
       `INSERT INTO audits (id, user_id, email, type, status, responses, scores, report_delivery_status, report_scheduled_for, completed_at)
-       SELECT $1, $2, $3, $4::varchar(20), $5, $6, $7, $8, $9, NOW()
-       WHERE $4::text <> 'GRATUIT'
-       RETURNING *`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW()) RETURNING *`,
       [id, user.id, normalizedEmail, input.type, "COMPLETED", JSON.stringify(input.responses), JSON.stringify(scores), "PENDING", scheduledDate]
     );
 
     return this.rowToAudit(result.rows[0]);
-  }
-
-  async createDiscoveryAudit(
-    input: InsertAudit & { email: string; responses: Record<string, unknown> },
-  ): Promise<Audit> {
-    if (input.type !== "GRATUIT") throw new Error("DISCOVERY_AUDIT_TYPE_REQUIRED");
-    const normalizedEmail = input.email.trim().toLowerCase();
-    if (isBlockedDiscoveryTestEmail(normalizedEmail)) {
-      throw new Error("DISCOVERY_TEST_EMAIL_BLOCKED");
-    }
-    let user = await this.getUserByEmail(normalizedEmail);
-    if (!user) user = await this.createUser({ email: normalizedEmail });
-    const id = randomUUID();
-    const scores = this.calculateScores(input.responses);
-    const client = await pool.connect();
-    try {
-      await client.query("BEGIN");
-      await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [DISCOVERY_TRANSACTION_FENCE_KEY]);
-      const activeLock = await client.query(
-        `SELECT 1 FROM discovery_operation_lock
-          WHERE lock_key = 'discovery-global' AND expires_at > NOW()
-          LIMIT 1`,
-      );
-      if ((activeLock.rowCount ?? 0) !== 0) throw new Error("DISCOVERY_GLOBAL_LOCK_ACTIVE");
-      const result = await client.query(
-        `INSERT INTO audits
-           (id, user_id, email, type, status, responses, scores,
-            report_delivery_status, report_scheduled_for, completed_at)
-         VALUES ($1,$2,$3,'GRATUIT','COMPLETED',$4,$5,'PENDING',NULL,NOW())
-         RETURNING *`,
-        [id, user.id, normalizedEmail, JSON.stringify(input.responses), JSON.stringify(scores)],
-      );
-      await client.query("COMMIT");
-      return this.rowToAudit(result.rows[0]);
-    } catch (error) {
-      await client.query("ROLLBACK").catch(() => {});
-      throw error;
-    } finally {
-      client.release();
-    }
   }
 
   async updateAudit(id: string, data: Partial<Audit>): Promise<Audit | undefined> {
@@ -2166,65 +1650,43 @@ export class PgStorage implements IStorage {
 
     if (updates.length === 0) return this.getAudit(id);
 
+    values.push(id);
+    let result;
     try {
-      return await runGenericAuditMutation({
-        auditId: id,
-        operation: "storage.updateAudit",
-        mutate: async (client) => {
-          const primaryValues = [...values, id];
-          await client.query("SAVEPOINT generic_update_audit");
-          let result;
-          try {
-            result = await client.query(
-              `UPDATE audits
-                  SET ${updates.join(", ")}
-                WHERE id = $${paramIndex}
-                  AND type <> 'GRATUIT'
-                  AND ${DISCOVERY_SUPERSEDED_TERMINAL_SQL}
-                  AND ${DISCOVERY_GENERIC_PROTECTED_STATE_SQL}
-                RETURNING *`,
-              primaryValues,
-            );
-          } catch (e: any) {
-            const missingColumn = e?.code === "42703"
-              || (String(e?.message || "").includes("column")
-                && String(e?.message || "").includes("does not exist"));
-            if (!missingColumn) throw e;
-            await client.query("ROLLBACK TO SAVEPOINT generic_update_audit");
-            const strippedUpdates: string[] = [];
-            const strippedValues: unknown[] = [];
-            let idx = 1;
-            for (const [k, v] of [
-              ["report_delivery_status", data.reportDeliveryStatus],
-              ["report_sent_at", data.reportSentAt],
-              ["narrative_report", (data as any).narrativeReport],
-            ] as const) {
-              if (v !== undefined) {
-                strippedUpdates.push(`${k} = $${idx++}`);
-                strippedValues.push(k === "narrative_report" ? JSON.stringify(v) : v);
-              }
-            }
-            if (strippedUpdates.length === 0) return undefined;
-            strippedValues.push(id);
-            result = await client.query(
-              `UPDATE audits
-                  SET ${strippedUpdates.join(", ")}
-                WHERE id = $${idx}
-                  AND type <> 'GRATUIT'
-                  AND ${DISCOVERY_SUPERSEDED_TERMINAL_SQL}
-                  AND ${DISCOVERY_GENERIC_PROTECTED_STATE_SQL}
-                RETURNING *`,
-              strippedValues,
-            );
+      result = await pool.query(
+        `UPDATE audits SET ${updates.join(", ")} WHERE id = $${paramIndex} RETURNING *`,
+        values
+      );
+    } catch (e: any) {
+      // Si la DB n'a pas encore les colonnes (rollout), on retente sans elles (best-effort)
+      if (e?.code === "42703" || String(e?.message || "").includes("column") && String(e?.message || "").includes("does not exist")) {
+        const strippedUpdates: string[] = [];
+        const strippedValues: unknown[] = [];
+        let idx = 1;
+
+        for (const [k, v] of [
+          ["report_delivery_status", data.reportDeliveryStatus],
+          ["report_sent_at", data.reportSentAt],
+          ["narrative_report", (data as any).narrativeReport],
+        ] as const) {
+          if (v !== undefined) {
+            strippedUpdates.push(`${k} = $${idx++}`);
+            strippedValues.push(k === "narrative_report" ? JSON.stringify(v) : v);
           }
-          if (result.rows.length === 0) return undefined;
-          return this.rowToAudit(result.rows[0]);
-        },
-      }, pool);
-    } catch (error) {
-      if (error instanceof GenericAuditMutationBarrierError) return undefined;
-      throw error;
+        }
+        if (strippedUpdates.length === 0) return this.getAudit(id);
+        strippedValues.push(id);
+        result = await pool.query(
+          `UPDATE audits SET ${strippedUpdates.join(", ")} WHERE id = $${idx} RETURNING *`,
+          strippedValues
+        );
+      } else {
+        throw e;
+      }
     }
+
+    if (result.rows.length === 0) return undefined;
+    return this.rowToAudit(result.rows[0]);
   }
 
   async getProgress(email: string): Promise<QuestionnaireProgress | undefined> {
@@ -2860,23 +2322,20 @@ export class PgStorage implements IStorage {
   }
 
   async createReportArtifact(
-    input: Omit<ReportArtifact, "id" | "createdAt"> & { createdAt?: Date },
-    options?: { strict?: boolean },
+    input: Omit<ReportArtifact, "id" | "createdAt"> & { createdAt?: Date }
   ): Promise<ReportArtifact> {
-    if (input.tier === "GRATUIT") {
-      throw new Error("DISCOVERY_ARTIFACT_REQUIRES_TRANSACTIONAL_PERSISTENCE");
-    }
     await this.ensureReportArtifactsTable();
     const id = randomUUID();
     const createdAt = input.createdAt ?? new Date();
     try {
-      await insertGenericReportArtifactFenced(pool, { id, ...input, createdAt });
+      await pool.query(
+        `INSERT INTO report_artifacts (id, audit_id, tier, engine, model, txt, html, created_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+        [id, input.auditId, input.tier, input.engine, input.model, input.txt, input.html, createdAt]
+      );
     } catch (e: any) {
-      if (e instanceof GenericAuditMutationBarrierError) {
-        throw new Error("DISCOVERY_ARTIFACT_REQUIRES_TRANSACTIONAL_PERSISTENCE");
-      }
+      // best-effort, ne pas casser le workflow si la DB refuse (quota, taille, etc.)
       console.error("[ReportArtifact] Insert failed (best-effort):", e?.message || e);
-      if (options?.strict) throw e;
     }
     return {
       id,
@@ -2912,56 +2371,69 @@ export class PgStorage implements IStorage {
   }
 
   async getActiveReportJobs(): Promise<ReportJob[]> {
-    const rows = await listActiveGenericReportJobRows(pool);
-    return rows.map(row => this.rowToReportJob(row));
+    const result = await pool.query(
+      "SELECT * FROM report_jobs WHERE status IN ('pending', 'generating')"
+    );
+    return result.rows.map(row => this.rowToReportJob(row));
   }
 
   async createOrUpdateReportJob(job: Partial<ReportJob> & { auditId: string }): Promise<ReportJob> {
-    return this.rowToReportJob(await upsertGenericReportJobRow(pool, job));
-  }
+    const existing = await this.getReportJob(job.auditId);
 
-  async claimPendingReportJob(auditId: string): Promise<ReportJob | undefined> {
-    const row = await claimPendingGenericReportJob(pool, auditId);
-    return row ? this.rowToReportJob(row) : undefined;
-  }
+    if (existing) {
+      const updates: string[] = [];
+      const values: unknown[] = [];
+      let idx = 1;
 
-  async hasReportArtifact(auditId: string): Promise<boolean> {
-    await this.ensureReportArtifactsTable();
-    const result = await pool.query(
-      `SELECT 1 FROM report_artifacts
-        WHERE audit_id = $1 AND artifact_state = 'ACTIVE'
-        LIMIT 1`,
-      [auditId],
-    );
-    return (result.rowCount ?? 0) > 0;
-  }
+      if (job.status !== undefined) { updates.push(`status = $${idx++}`); values.push(job.status); }
+      if (job.progress !== undefined) { updates.push(`progress = $${idx++}`); values.push(job.progress); }
+      if (job.currentSection !== undefined) { updates.push(`current_section = $${idx++}`); values.push(job.currentSection); }
+      if (job.error !== undefined) { updates.push(`error = $${idx++}`); values.push(job.error); }
+      if (job.attemptCount !== undefined) { updates.push(`attempt_count = $${idx++}`); values.push(job.attemptCount); }
+      if (job.completedAt !== undefined) { updates.push(`completed_at = $${idx++}`); values.push(job.completedAt); }
 
-  async enqueueMissingDiscoveryReportJob(auditId: string, reason: string): Promise<boolean> {
-    return enqueueMissingDiscoveryReportJobFenced(pool, auditId, reason);
-  }
+      updates.push(`updated_at = NOW()`);
+      updates.push(`last_progress_at = NOW()`);
 
-  async markDiscoveryAuditSuperseded(
-    auditId: string,
-    replacementAuditId: string,
-    reason: string,
-  ): Promise<boolean> {
-    return markDiscoveryAuditSupersededFenced(pool, auditId, replacementAuditId, reason);
+      values.push(job.auditId);
+      const result = await pool.query(
+        `UPDATE report_jobs SET ${updates.join(", ")} WHERE audit_id = $${idx} RETURNING *`,
+        values
+      );
+      return this.rowToReportJob(result.rows[0]);
+    } else {
+      const result = await pool.query(
+        `INSERT INTO report_jobs (audit_id, status, progress, current_section, error, attempt_count)
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+        [job.auditId, job.status || 'pending', job.progress || 0, job.currentSection || 'Initialisation...', job.error || null, job.attemptCount || 0]
+      );
+      return this.rowToReportJob(result.rows[0]);
+    }
   }
 
   async updateReportJobProgress(auditId: string, progress: number, currentSection: string): Promise<void> {
-    await updateGenericReportJobProgress(pool, auditId, progress, currentSection);
+    await pool.query(
+      `UPDATE report_jobs SET progress = $1, current_section = $2, updated_at = NOW(), last_progress_at = NOW() WHERE audit_id = $3`,
+      [progress, currentSection, auditId]
+    );
   }
 
   async completeReportJob(auditId: string): Promise<void> {
-    await completeGenericReportJob(pool, auditId);
+    await pool.query(
+      `UPDATE report_jobs SET status = 'completed', progress = 100, current_section = 'Rapport termine !', completed_at = NOW(), updated_at = NOW() WHERE audit_id = $1`,
+      [auditId]
+    );
   }
 
   async failReportJob(auditId: string, error: string): Promise<void> {
-    await failGenericReportJob(pool, auditId, error);
+    await pool.query(
+      `UPDATE report_jobs SET status = 'failed', error = $1, completed_at = NOW(), updated_at = NOW() WHERE audit_id = $2`,
+      [error, auditId]
+    );
   }
 
   async deleteReportJob(auditId: string): Promise<void> {
-    await deleteGenericReportJob(pool, auditId);
+    await pool.query("DELETE FROM report_jobs WHERE audit_id = $1", [auditId]);
   }
 
   // Promo codes methods (PgStorage)
@@ -3143,18 +2615,12 @@ export class PgStorage implements IStorage {
 
   async hasPeptidesDeliveryEmailBeenSent(email: string): Promise<boolean> {
     try {
-      // New deliveries have a dedicated tracking type. Keep the subject-based
-      // legacy branch so old accepted sends still block a duplicate.
+      // Peptides delivery emails use sendCTAEmail with subject containing "protocole peptides"
       const result = await pool.query(
         `SELECT 1 FROM email_tracking
           WHERE LOWER(recipient_email) = LOWER($1)
-            AND (
-              email_type = 'sendPeptidesReportReadyEmail'
-              OR (
-                email_type = 'sendCTAEmail'
-                AND (subject ILIKE '%protocole peptides%' OR subject ILIKE '%peptides personnalisé%' OR subject ILIKE '%peptides personnalise%')
-              )
-            )
+            AND email_type = 'sendCTAEmail'
+            AND (subject ILIKE '%protocole peptides%' OR subject ILIKE '%peptides personnalisé%' OR subject ILIKE '%peptides personnalise%')
             AND (sendpulse_status IS NULL OR sendpulse_status NOT IN ('failed','auth_failed','unsubscribed'))
           LIMIT 1`,
         [email]
@@ -3182,123 +2648,6 @@ export class PgStorage implements IStorage {
       console.warn("[EmailTracking] hasPeptidesOrderConfirmationBeenSent query failed:", err);
       return false;
     }
-  }
-
-  async claimPeptidesOrderConfirmation(orderId: string, leaseMs = 10 * 60 * 1000): Promise<boolean> {
-    await this.ensureOrdersTableCreated();
-    const result = await pool.query(
-      `UPDATE orders
-          SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
-                'peptidesConfirmationState', 'SENDING',
-                'peptidesConfirmationAttempts', COALESCE((metadata->>'peptidesConfirmationAttempts')::int, 0) + 1,
-                'peptidesConfirmationLeaseUntil', (NOW() + ($1::bigint * INTERVAL '1 millisecond'))::text,
-                'peptidesConfirmationStartedAt', NOW()::text
-              ),
-              updated_at = NOW()
-        WHERE id = $2
-          AND product_type = 'PEPTIDES_ENGINE'
-          AND status = 'paid'
-          AND COALESCE(metadata->>'peptidesEmailHold', 'false') <> 'true'
-          AND COALESCE(metadata->>'peptidesConfirmationState', 'PENDING') NOT IN ('ACCEPTED', 'UNKNOWN')
-          AND (
-            COALESCE(metadata->>'peptidesConfirmationState', 'PENDING') <> 'SENDING'
-            OR COALESCE(NULLIF(metadata->>'peptidesConfirmationLeaseUntil', '')::timestamptz, '-infinity'::timestamptz) <= NOW()
-          )
-          AND COALESCE((metadata->>'peptidesConfirmationAttempts')::int, 0) < 3
-      RETURNING id`,
-      [leaseMs, orderId],
-    );
-    return (result.rowCount ?? 0) > 0;
-  }
-
-  async finalizePeptidesOrderConfirmation(orderId: string, state: "ACCEPTED" | "FAILED" | "UNKNOWN"): Promise<void> {
-    await this.ensureOrdersTableCreated();
-    await pool.query(
-      `UPDATE orders
-          SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
-                'peptidesConfirmationState', $1::text,
-                'peptidesConfirmationLeaseUntil', '',
-                'peptidesConfirmationCompletedAt', NOW()::text
-              ),
-              updated_at = NOW()
-        WHERE id = $2
-          AND product_type = 'PEPTIDES_ENGINE'`,
-      [state, orderId],
-    );
-  }
-
-  async claimPeptidesReportDelivery(orderId: string, reportId: string, leaseMs = 10 * 60 * 1000): Promise<boolean> {
-    await this.ensureOrdersTableCreated();
-    const result = await pool.query(
-      `UPDATE orders
-          SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
-                'peptidesDeliveryState', 'SENDING',
-                'peptidesDeliveryReportId', $1::text,
-                'peptidesDeliveryAttempts', COALESCE((metadata->>'peptidesDeliveryAttempts')::int, 0) + 1,
-                'peptidesDeliveryLeaseUntil', (NOW() + ($2::bigint * INTERVAL '1 millisecond'))::text,
-                'peptidesDeliveryStartedAt', NOW()::text
-              ),
-              updated_at = NOW()
-        WHERE id = $3
-          AND product_type = 'PEPTIDES_ENGINE'
-          AND status = 'paid'
-          AND COALESCE(metadata->>'peptidesReportId', '') = $1::text
-          AND COALESCE(metadata->>'peptidesEmailHold', 'false') <> 'true'
-          AND COALESCE(metadata->>'peptidesDeliveryState', 'PENDING') NOT IN ('ACCEPTED', 'UNKNOWN')
-          AND (
-            COALESCE(metadata->>'peptidesDeliveryState', 'PENDING') <> 'SENDING'
-            OR COALESCE(NULLIF(metadata->>'peptidesDeliveryLeaseUntil', '')::timestamptz, '-infinity'::timestamptz) <= NOW()
-          )
-          AND COALESCE((metadata->>'peptidesDeliveryAttempts')::int, 0) < 3
-      RETURNING id`,
-      [reportId, leaseMs, orderId],
-    );
-    return (result.rowCount ?? 0) > 0;
-  }
-
-  async finalizePeptidesReportDelivery(
-    orderId: string,
-    reportId: string,
-    state: "ACCEPTED" | "FAILED" | "UNKNOWN",
-  ): Promise<void> {
-    await this.ensureOrdersTableCreated();
-    await pool.query(
-      `UPDATE orders
-          SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
-                'peptidesDeliveryState', $1::text,
-                'peptidesDeliveryReportId', $2::text,
-                'peptidesDeliveryLeaseUntil', '',
-                'peptidesDeliveryCompletedAt', NOW()::text
-              ),
-              updated_at = NOW()
-        WHERE id = $3
-          AND product_type = 'PEPTIDES_ENGINE'
-          AND COALESCE(metadata->>'peptidesReportId', '') = $2::text`,
-      [state, reportId, orderId],
-    );
-  }
-
-  async resetPeptidesReportDeliveryCircuit(orderId: string, reportId: string): Promise<boolean> {
-    await this.ensureOrdersTableCreated();
-    const result = await pool.query(
-      `UPDATE orders
-          SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
-                'peptidesDeliveryState', 'PENDING',
-                'peptidesDeliveryReportId', $1::text,
-                'peptidesDeliveryAttempts', 0,
-                'peptidesDeliveryLeaseUntil', '',
-                'peptidesDeliveryResetAt', NOW()::text
-              ),
-              updated_at = NOW()
-        WHERE id = $2
-          AND product_type = 'PEPTIDES_ENGINE'
-          AND status = 'paid'
-          AND COALESCE(metadata->>'peptidesReportId', '') = $1::text
-          AND COALESCE(metadata->>'peptidesDeliveryState', 'PENDING') NOT IN ('ACCEPTED', 'UNKNOWN')
-      RETURNING id`,
-      [reportId, orderId],
-    );
-    return (result.rowCount ?? 0) > 0;
   }
 
   async hasBloodAnalysisEmailBeenSentForReport(reportId: string): Promise<boolean> {
@@ -3527,6 +2876,7 @@ export class PgStorage implements IStorage {
         COUNT(*) FILTER (WHERE has_ultimate) as ultimate,
         COUNT(*) FILTER (WHERE has_blood) as blood,
         COUNT(*) FILTER (WHERE has_peptides) as peptides,
+        COUNT(*) FILTER (WHERE has_coaching) as coaching,
         SUM(total_spent_cents) as total_revenue_cents
       FROM contacts
     `);
@@ -3763,6 +3113,104 @@ export class PgStorage implements IStorage {
     return result.rows.map((r: any) => this.rowToOrder(r));
   }
 
+  async hasUserPurchased(email: string): Promise<boolean> {
+    await this.ensureOrdersTableCreated();
+    const result = await pool.query(
+      `SELECT 1
+         FROM orders
+        WHERE LOWER(email) = $1
+          AND status IN ('paid', 'partial_refund')
+          AND final_amount_cents > 0
+        LIMIT 1`,
+      [email.trim().toLowerCase()]
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async hasUserPurchasedCoaching(email: string): Promise<boolean> {
+    const normalized = email.trim().toLowerCase();
+    if (!normalized) return false;
+
+    try {
+      await this.ensureContactsTableCreated();
+      const contactsResult = await pool.query(
+        `SELECT 1
+           FROM contacts
+          WHERE LOWER(email) = $1
+            AND has_coaching = TRUE
+          LIMIT 1`,
+        [normalized]
+      );
+      if ((contactsResult.rowCount ?? 0) > 0) return true;
+    } catch (err) {
+      console.warn("[Storage] Coaching purchase contacts check failed; failing closed:", err);
+      return true;
+    }
+
+    try {
+      const trackingResult = await pool.query(
+        `SELECT 1
+           FROM email_tracking
+          WHERE LOWER(recipient_email) = $1
+            AND LOWER(COALESCE(conversion_type, '')) = 'coaching_purchase'
+          LIMIT 1`,
+        [normalized]
+      );
+      return (trackingResult.rowCount ?? 0) > 0;
+    } catch (err) {
+      console.warn("[Storage] Coaching purchase tracking check failed; failing closed:", err);
+      return true;
+    }
+  }
+
+  async markCoachingBuyers(emails: string[], source = "manual_import"): Promise<{ inserted: number; updated: number; total: number }> {
+    const normalized = Array.from(
+      new Set(
+        emails
+          .map((email) => String(email || "").trim().toLowerCase())
+          .filter((email) =>
+            email.includes("@") &&
+            !email.includes("test") &&
+            !email.includes("debug") &&
+            !email.includes("achzodcoaching") &&
+            !email.includes("achkou")
+          )
+      )
+    );
+
+    if (normalized.length === 0) {
+      return { inserted: 0, updated: 0, total: 0 };
+    }
+
+    await this.ensureContactsTableCreated();
+
+    const existingResult = await pool.query(
+      `SELECT COUNT(*)::int as count
+         FROM contacts
+        WHERE LOWER(email) = ANY($1::text[])`,
+      [normalized]
+    );
+    const updated = parseInt(existingResult.rows[0]?.count || "0", 10);
+
+    await pool.query(
+      `INSERT INTO contacts (email, source, has_coaching, last_activity_at, updated_at)
+       SELECT email, $2, TRUE, NOW(), NOW()
+         FROM unnest($1::text[]) AS email
+       ON CONFLICT (email) DO UPDATE SET
+         has_coaching = TRUE,
+         source = COALESCE(contacts.source, EXCLUDED.source),
+         last_activity_at = GREATEST(contacts.last_activity_at, EXCLUDED.last_activity_at),
+         updated_at = NOW()`,
+      [normalized, source || "manual_import"]
+    );
+
+    return {
+      inserted: Math.max(0, normalized.length - updated),
+      updated,
+      total: normalized.length,
+    };
+  }
+
   async getAllOrders(opts?: {
     limit?: number;
     offset?: number;
@@ -3813,7 +3261,6 @@ export class PgStorage implements IStorage {
       userId: "user_id",
       email: "email",
       status: "status",
-      stripeCheckoutSessionId: "stripe_checkout_session_id",
       stripePaymentIntentId: "stripe_payment_intent_id",
       stripeCustomerId: "stripe_customer_id",
       paypalOrderId: "paypal_order_id",
@@ -3884,12 +3331,7 @@ export class PgStorage implements IStorage {
     await this.ensureOrdersTableCreated();
     const result = await pool.query(
       `UPDATE orders
-         SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
-               'peptidesReportId', $1::text,
-               'peptidesGenerationState', 'SUCCEEDED',
-               'peptidesGenerationLeaseUntil', '',
-               'peptidesGenerationCompletedAt', NOW()::text
-             ),
+         SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('peptidesReportId', $1::text),
              updated_at = NOW()
        WHERE id = $2
          AND (metadata IS NULL OR metadata->>'peptidesReportId' IS NULL OR metadata->>'peptidesReportId' = '')
@@ -3901,7 +3343,7 @@ export class PgStorage implements IStorage {
 
   // Atomic JSONB merge: set a single key without touching anything else. Avoids
   // the read-modify-write stomp pattern that wipes concurrently-set siblings.
-  async setOrderMetadataKey(orderId: string, key: string, value: unknown): Promise<boolean> {
+  async setOrderMetadataKey(orderId: string, key: string, value: string | number | boolean): Promise<boolean> {
     await this.ensureOrdersTableCreated();
     const jsonValue = JSON.stringify(value);
     const result = await pool.query(
@@ -3911,147 +3353,6 @@ export class PgStorage implements IStorage {
        WHERE id = $3
        RETURNING id`,
       [key, jsonValue, orderId]
-    );
-    return (result.rowCount ?? 0) > 0;
-  }
-
-  async resetPeptidesGenerationCircuit(orderId: string): Promise<boolean> {
-    await this.ensureOrdersTableCreated();
-    const result = await pool.query(
-      `UPDATE orders
-          SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
-                'peptidesGenerationState', 'PENDING',
-                'peptidesGenerationAttempts', 0,
-                'peptidesGenerationReservedCostMicroUsd', 0,
-                'peptidesGenerationLeaseUntil', '',
-                'peptidesGenerationStartedAt', '',
-                'peptidesGenerationFailedAt', '',
-                'peptidesGenerationCompletedAt', '',
-                'peptidesGenerationLastError', '',
-                'peptidesGenerationReviewReason', ''
-              ),
-              updated_at = NOW()
-        WHERE id = $1
-          AND COALESCE(metadata->>'peptidesReportId', '') = ''
-      RETURNING id`,
-      [orderId],
-    );
-    return (result.rowCount ?? 0) > 0;
-  }
-
-  async claimPeptidesGenerationAttempt(
-    orderId: string,
-    config: PeptidesGenerationCircuitConfig,
-  ): Promise<PeptidesGenerationAttemptClaim | null> {
-    await this.ensureOrdersTableCreated();
-    const client = await pool.connect();
-    try {
-      await client.query("BEGIN");
-      // One global transaction lock serializes claims across different order
-      // rows. Row locks alone cannot enforce an hourly/day budget atomically.
-      await client.query("SELECT pg_advisory_xact_lock(hashtext('peptides_autogen_budget_v1'))");
-      const windowResult = await client.query(
-        `SELECT
-           COALESCE(SUM(
-             CASE WHEN NULLIF(metadata->>'peptidesGenerationStartedAt', '')::timestamptz > NOW() - INTERVAL '1 hour'
-               THEN COALESCE((metadata->>'peptidesGenerationReservedCostMicroUsd')::bigint, 0)
-               ELSE 0 END
-           ), 0)::bigint AS hourly_reserved,
-           COALESCE(SUM(
-             CASE WHEN NULLIF(metadata->>'peptidesGenerationStartedAt', '')::timestamptz > NOW() - INTERVAL '24 hours'
-               THEN COALESCE((metadata->>'peptidesGenerationReservedCostMicroUsd')::bigint, 0)
-               ELSE 0 END
-           ), 0)::bigint AS daily_reserved
-         FROM orders
-         WHERE product_type = 'PEPTIDES_ENGINE'
-           AND status = 'paid'
-           AND NULLIF(metadata->>'peptidesGenerationStartedAt', '') IS NOT NULL`,
-      );
-      const hourlyReserved = Number(windowResult.rows[0]?.hourly_reserved || 0);
-      const dailyReserved = Number(windowResult.rows[0]?.daily_reserved || 0);
-      if (
-        hourlyReserved + config.attemptBudgetMicroUsd > config.maxHourlyBudgetMicroUsd
-        || dailyReserved + config.attemptBudgetMicroUsd > config.maxDailyBudgetMicroUsd
-      ) {
-        await client.query("ROLLBACK");
-        return null;
-      }
-
-      const result = await client.query(
-        `UPDATE orders
-          SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
-                'peptidesGenerationState', 'GENERATING',
-                'peptidesGenerationAttempts', COALESCE((metadata->>'peptidesGenerationAttempts')::int, 0) + 1,
-                'peptidesGenerationReservedCostMicroUsd', COALESCE((metadata->>'peptidesGenerationReservedCostMicroUsd')::bigint, 0) + $1::bigint,
-                'peptidesGenerationLeaseUntil', (NOW() + ($2::bigint * INTERVAL '1 millisecond'))::text,
-                'peptidesGenerationStartedAt', NOW()::text,
-                'peptidesGenerationLastError', '',
-                'peptidesGenerationReviewReason', ''
-              ),
-              updated_at = NOW()
-        WHERE id = $3
-          AND product_type = 'PEPTIDES_ENGINE'
-          AND status = 'paid'
-          AND COALESCE(metadata->>'peptidesReportId', '') = ''
-          AND COALESCE(metadata->>'peptidesGenerationState', 'PENDING') <> 'NEEDS_REVIEW'
-          AND (
-            COALESCE(metadata->>'peptidesGenerationState', 'PENDING') <> 'GENERATING'
-            OR COALESCE(NULLIF(metadata->>'peptidesGenerationLeaseUntil', '')::timestamptz, '-infinity'::timestamptz) <= NOW()
-          )
-          AND COALESCE((metadata->>'peptidesGenerationAttempts')::int, 0) < $4::int
-          AND COALESCE((metadata->>'peptidesGenerationReservedCostMicroUsd')::bigint, 0) + $1::bigint <= $5::bigint
-      RETURNING
-        (metadata->>'peptidesGenerationAttempts')::int AS attempt_count,
-        (metadata->>'peptidesGenerationReservedCostMicroUsd')::bigint AS reserved_cost_micro_usd,
-        metadata->>'peptidesGenerationLeaseUntil' AS lease_until`,
-        [
-          config.attemptBudgetMicroUsd,
-          config.leaseMs,
-          orderId,
-          config.maxAttempts,
-          config.maxBudgetMicroUsd,
-        ],
-      );
-      if ((result.rowCount ?? 0) === 0) {
-        await client.query("ROLLBACK");
-        return null;
-      }
-      await client.query("COMMIT");
-      return {
-        attemptCount: Number(result.rows[0].attempt_count),
-        reservedCostMicroUsd: Number(result.rows[0].reserved_cost_micro_usd),
-        leaseUntil: String(result.rows[0].lease_until),
-      };
-    } catch (error) {
-      await client.query("ROLLBACK").catch(() => {});
-      // Fail closed: a DB/counter error must never fall through to provider.
-      console.error("[Peptides Circuit] Atomic budget claim failed:", error);
-      return null;
-    } finally {
-      client.release();
-    }
-  }
-
-  async markPeptidesGenerationNeedsReview(
-    orderId: string,
-    reason: string,
-    error: string,
-  ): Promise<boolean> {
-    await this.ensureOrdersTableCreated();
-    const result = await pool.query(
-      `UPDATE orders
-          SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
-                'peptidesGenerationState', 'NEEDS_REVIEW',
-                'peptidesGenerationReviewReason', $1::text,
-                'peptidesGenerationLastError', $2::text,
-                'peptidesGenerationFailedAt', NOW()::text,
-                'peptidesGenerationLeaseUntil', ''
-              ),
-              updated_at = NOW()
-        WHERE id = $3
-          AND COALESCE(metadata->>'peptidesReportId', '') = ''
-      RETURNING id`,
-      [reason.slice(0, 120), error.slice(0, 800), orderId],
     );
     return (result.rowCount ?? 0) > 0;
   }
@@ -4090,18 +3391,12 @@ export class PgStorage implements IStorage {
   // create + Stripe webhook, or admin regenerate + scheduled cron) from producing two
   // different reports for the same client.
   async claimAuditForGeneration(auditId: string): Promise<boolean> {
-    const audit = await this.getAudit(auditId);
-    if (!audit || audit.type === "GRATUIT") {
-      return false;
-    }
     const result = await pool.query(
       `UPDATE audits
           SET report_delivery_status = 'GENERATING'
         WHERE id = $1
-          AND type <> 'GRATUIT'
           AND (report_delivery_status IS NULL
                OR report_delivery_status IN ('PENDING','NEEDS_REVIEW','EMAIL_FAILED','FAILED'))
-          AND ${DISCOVERY_SUPERSEDED_TERMINAL_SQL}
         RETURNING id`,
       [auditId]
     );
@@ -4112,18 +3407,12 @@ export class PgStorage implements IStorage {
   // Prevents the same audit from being emailed twice concurrently (inline send + admin
   // resend + scheduled delivery cron all racing).
   async claimAuditForSending(auditId: string): Promise<boolean> {
-    const audit = await this.getAudit(auditId);
-    if (!audit || audit.type === "GRATUIT") {
-      return false;
-    }
     const result = await pool.query(
       `UPDATE audits
           SET report_delivery_status = 'SENDING'
         WHERE id = $1
-          AND type <> 'GRATUIT'
           AND report_sent_at IS NULL
           AND report_delivery_status IN ('READY','SCHEDULED')
-          AND ${DISCOVERY_SUPERSEDED_TERMINAL_SQL}
         RETURNING id`,
       [auditId]
     );
@@ -4131,19 +3420,13 @@ export class PgStorage implements IStorage {
   }
 
   async finalizeAuditSend(auditId: string, sent: boolean): Promise<void> {
-    const audit = await this.getAudit(auditId);
-    if (!audit || audit.type === "GRATUIT") {
-      return;
-    }
     if (sent) {
       await pool.query(
         `UPDATE audits
             SET report_delivery_status = 'SENT',
                 report_sent_at = NOW()
           WHERE id = $1
-            AND type <> 'GRATUIT'
-            AND report_sent_at IS NULL
-            AND ${DISCOVERY_SUPERSEDED_TERMINAL_SQL}`,
+            AND report_sent_at IS NULL`,
         [auditId]
       );
     } else {
@@ -4151,29 +3434,29 @@ export class PgStorage implements IStorage {
         `UPDATE audits
             SET report_delivery_status = 'READY'
           WHERE id = $1
-            AND type <> 'GRATUIT'
             AND report_delivery_status = 'SENDING'
-            AND report_sent_at IS NULL
-            AND ${DISCOVERY_SUPERSEDED_TERMINAL_SQL}`,
+            AND report_sent_at IS NULL`,
         [auditId]
       );
     }
   }
 
   async hasReportReadyEmailBeenSent(auditId: string): Promise<boolean> {
-    // This is a duplicate-send guard, not acceptance proof: any prior attempt
-    // that is not explicitly terminal-failed must stop a blind retry. Database
-    // failures are intentionally propagated so callers fail closed.
-    const result = await pool.query(
-      `SELECT 1 FROM email_tracking
-        WHERE audit_id = $1
-          AND email_type = 'sendReportReadyEmail'
-          AND (sendpulse_status IS NULL
-               OR sendpulse_status NOT IN ('failed','auth_failed','unsubscribed'))
-        LIMIT 1`,
-      [auditId]
-    );
-    return (result.rowCount ?? 0) > 0;
+    try {
+      const result = await pool.query(
+        `SELECT 1 FROM email_tracking
+          WHERE audit_id = $1
+            AND email_type = 'sendReportReadyEmail'
+            AND (sendpulse_status IS NULL
+                 OR sendpulse_status NOT IN ('failed','auth_failed','unsubscribed'))
+          LIMIT 1`,
+        [auditId]
+      );
+      return (result.rowCount ?? 0) > 0;
+    } catch (err) {
+      console.warn("[EmailTracking] hasReportReadyEmailBeenSent query failed ,  defaulting to false:", err);
+      return false;
+    }
   }
 
   async findRecentAuditByEmailAndType(email: string, type: string, minutes: number): Promise<Audit | undefined> {
@@ -4517,7 +3800,7 @@ export interface InsertReview {
 
 // Promo codes mapping by audit type
 export const PROMO_CODES_BY_AUDIT_TYPE: Record<ReviewAuditTypeEnum, { code: string; description: string }> = {
-  'DISCOVERY': { code: 'DISCOVERY20', description: '-20% sur le coaching Achzod' },
+  'DISCOVERY': { code: 'DISCOVERY30', description: '-20% sur le coaching Achzod' },
   'ANABOLIC_BIOSCAN': { code: 'BIOSCAN59', description: '59€ déduits du coaching' },
   'ULTIMATE_SCAN': { code: 'ULTIMATE79', description: '79€ déduits du coaching' },
   'BLOOD_ANALYSIS': { code: 'BLOOD99', description: '99€ déduits du coaching' },

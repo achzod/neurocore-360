@@ -47,6 +47,14 @@ export interface ReminderStats {
 // SENDER_EMAIL imported from emailService is used as admin email
 const MIN_HOURS_BEFORE_REMINDER = 6; // Ne pas relancer avant 6h
 const MAX_HOURS_OPTIMAL = 48; // Fenêtre optimale jusqu'à 48h
+const WHATSAPP_NUMBER = "971585210514";
+
+function buildWhatsAppUrl(message: string): string {
+  const encoded = encodeURIComponent(message.trim()).replace(/[!'()*]/g, (char) =>
+    `%${char.charCodeAt(0).toString(16).toUpperCase()}`
+  );
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encoded}`;
+}
 
 /**
  * Segmente les abandons par priorité
@@ -109,6 +117,9 @@ function getReminderEmailTemplate(
   // not a paid product upsell on a user who hasn't even validated interest
   // yet.
   const resumeUrl = `${APP_URL}/audit-complet/questionnaire?resume=${resumeToken}`;
+  const whatsappUrl = buildWhatsAppUrl(
+    `Salut Achzod, j'ai commence mon Discovery APEXLABS et je suis bloque a ${percentComplete}%. Je veux ton avis pour savoir si je dois finir le scan, faire une analyse avancee ou partir sur coaching.`
+  );
   const remaining = Math.max(0, 100 - percentComplete);
 
   const subject = `Ton audit s'arrête à ${percentComplete}% ,  reprends en un clic`;
@@ -120,6 +131,9 @@ Tu as commencé ton audit APEXLABS hier ,  il te reste ${remaining}% à remplir.
 Quand tu cliques sur le lien, tu reprends exactement où tu t'étais arrêté, peu importe l'appareil :
 
 ${resumeUrl}
+
+Si tu veux que je t'oriente directement sur WhatsApp :
+${whatsappUrl}
 
 Ce que tu débloques en finissant : un rapport personnalisé sur ton profil métabolique, hormonal et de récupération. Gratuit. Pas de carte bancaire.
 
@@ -148,6 +162,11 @@ Achzod`;
         <tr><td align="center" style="padding:32px 36px 12px;">
           <a href="${resumeUrl}" style="display:inline-block;background:#FCDD00;color:#0a0a0a;padding:16px 32px;border-radius:999px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.06em;text-transform:uppercase;">
             Reprendre où je m'étais arrêté →
+          </a>
+        </td></tr>
+        <tr><td align="center" style="padding:8px 36px 12px;">
+          <a href="${whatsappUrl}" style="display:inline-block;background:#25D366;color:#07130b;padding:14px 26px;border-radius:999px;text-decoration:none;font-weight:800;font-size:13px;letter-spacing:0.05em;text-transform:uppercase;">
+            Demander l'avis d'Achzod sur WhatsApp
           </a>
         </td></tr>
         <tr><td style="padding:24px 36px 0;">
@@ -193,6 +212,12 @@ export async function sendReminderSegment(
 
   for (const abandon of segment.emails) {
     try {
+      const hasPurchasedCoaching = await storage.hasUserPurchasedCoaching(abandon.email);
+      if (hasPurchasedCoaching) {
+        console.log(`[AbandonmentReminder] ⏭️  ${abandon.email} - deja client coaching`);
+        continue;
+      }
+
       // Vérifier si déjà relancé dans les dernières 24h
       const alreadyReminded = await storage.hasRecentReminder(abandon.email, 24);
       if (alreadyReminded) {

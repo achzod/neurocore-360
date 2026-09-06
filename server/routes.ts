@@ -1,23 +1,17 @@
 import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { storage, reviewStorage, PROMO_CODES_BY_AUDIT_TYPE } from "./storage";
-import { buildPublicReviewCheckResponse } from "./reviewPublicResponse";
 import { autoSendAbandonmentReminders, sendDailyReport } from "./abandonmentReminders";
 import { startMonitoring, generateMonitoringReport, checkNewConversions } from "./abandonmentMonitor";
 import { pool } from "./db";
-import { saveProgressSchema, insertAuditSchema, insertReviewSchema, ProductPriceCents, ProductDisplayNames, type Order, type ProductTypeEnum } from "@shared/schema";
+import { saveProgressSchema, insertAuditSchema, insertReviewSchema, ProductPriceCents, ProductDisplayNames, type ProductTypeEnum } from "@shared/schema";
 import { z } from "zod";
-import { getStripeKlarnaClient, getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
-import { createCheckoutSessionWithPaymentMethodFallback, isKlarnaCheckoutEnabled } from "./stripeCheckoutPaymentMethods";
-import { createProductCheckoutLineItem, usesInlineCheckoutLineItem } from "./stripeCheckoutProducts";
+import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
 import { calculateScoresFromResponses, generateFullAnalysis } from "./analysisEngine";
 import { startReportGeneration, getJobStatus, forceRegenerate } from "./reportJobManager";
 import {
   sendMagicLinkEmail,
   sendReportReadyEmail,
-  sendReportReadyEmailResult,
-  getReportReadyEmailSubject,
-  sendReportRegeneratedEmail,
   sendAdminEmailNewAudit,
   sendGratuitUpsellEmail,
   sendGratuitJ5Email,
@@ -35,15 +29,12 @@ import {
   sendPeptidesReviewS5Email,
   sendPeptidesReviewS12Email,
   sendPeptidesCycle2ReorderEmail,
-  sendPeptidesOrderConfirmationEmailResult,
-  sendPeptidesReportReadyEmail,
-  type SendPulseSendResult,
+  sendPeptidesOrderConfirmationEmail,
   sendDiscoveryJ30NurtureEmail,
   sendReactivationCampaignEmail,
   sendFinishDiscoveryEmail,
   sendCrossSellUpgradeEmail,
   sendRecoveryCtaEmail,
-  reconcileRecoveryCtaSendPulseOutcome,
   sendCoachingFormulaChoiceLeadEmail,
   type RecoveryCtaCohort,
   type CoachingFormulaLeadInput,
@@ -54,11 +45,10 @@ import { formatTxtToDashboard, formatSectionToHTML, getSectionsByCategory } from
 import { ClientData, PhotoAnalysis } from "./types";
 import { generateEnhancedSupplementsHTML, generateSupplementStack } from "./supplementEngine";
 import { streamAuditZip } from "./exportZipService";
-import { createPayPalOrder, capturePayPalOrder, isPayPalCheckoutEnabled } from "./paypalClient";
+import { createPayPalOrder, capturePayPalOrder, isPayPalConfigured } from "./paypalClient";
 import { getAuthPayload, type AuthPayload } from "./auth";
 import crypto from "crypto";
 import {
-  getConfiguredOpenAIKeySource,
   OPENAI_REPORT_MODEL,
   checkAIUsageCostAlert,
   getAIUsageCostSummary,
@@ -69,63 +59,20 @@ import {
   buildPeptidesBloodCreditsBlock,
   buildPeptidesCoachingDeductionBlock,
 } from "./cta";
-import { decidePeptidesDeliverySchedule } from "./peptidesDeliverySchedule";
-import {
-  applyRecoveryCtaReconciliation,
-  claimRecoveryCtaClickFollowup,
-  markRecoveryCtaProviderPostStarted,
-  RECOVERY_CTA_CAMPAIGN,
-  RECOVERY_CTA_CLICK_CLAIM_TTL_MINUTES,
-  RECOVERY_CTA_CLICK_RETRY_COOLDOWN_MINUTES,
-  RECOVERY_CTA_RECONCILIATION_STATES,
-} from "./recoveryCtaClickFollowup";
 import { BLOOD_ANALYSIS_PURCHASE_CREDITS, clarifyBloodPurchaseEmail } from "./bloodOffer";
-import {
-  needsPaidAuditGenerationRecovery,
-  needsPaidAuditRecovery,
-  runOrderEffectOnce,
-  withPaidAuditOrderLock,
-} from "./paidAuditRecovery";
 
 import { registerKnowledgeRoutes } from "./knowledge";
 import { registerBloodAnalysisRoutes } from "./blood-analysis/routes";
 import { registerBloodTestsRoutes } from "./blood-tests/routes";
 import { signAuthToken } from "./auth";
 import {
+  analyzeDiscoveryScan,
+  buildDiscoveryReportAssets,
   buildDiscoveryReportHtml,
+  convertToNarrativeReport,
   parseStoredDiscoveryTxt,
+  validateDiscoveryReportForDelivery,
 } from "./discovery-scan";
-import {
-  canExposeDiscoveryReport,
-  evaluateCanonicalDiscoveryArtifacts,
-  hasDiscoveryCatalogLedgerBinding,
-  hasPassingPersistedDiscoveryDeliveryGate,
-  resolveCanonicalDiscoveryArtifacts,
-} from "./discoveryDeliveryGate";
-import {
-  getGenericDiscoveryMutationBlockReason,
-  isAuditEligibleForPostDeliveryAutomation,
-  isDiscoveryReportDeliveryEnabled,
-  isDiscoveryTransactionalAutomationEligible,
-} from "./discoveryAutomationPolicy";
-import { isDiscoverySupersededTerminal } from "./discoverySupersededPolicy";
-import {
-  GenericAuditMutationBarrierError,
-  runGenericAuditMutation,
-} from "./discoveryGenericMutationBarrier";
-import { sanitizePublicDiscoveryAuditPayload } from "./publicDiscoveryAuditPayload";
-import {
-  claimDiscoveryEmailDelivery,
-  discoverySha256,
-  finalizeDiscoveryDeliveryClaim,
-  isDiscoveryGlobalLockActive,
-  isBlockedDiscoveryTestEmail,
-  markDiscoveryDeliveryProviderPostStarted,
-} from "./discoveryBatchControl";
-import {
-  claimRegeneratedReportNotification,
-  isRegeneratedNotificationEnabled,
-} from "./discoverySentRemediation";
 import {
   generatePeptidesProtocol,
   checkPeptidesSafetyGate,
@@ -134,19 +81,6 @@ import {
   refreshPeptauraCatalog,
   refreshPeptauraPricingForDelivery,
 } from "./peptidesEngine";
-import {
-  evaluatePeptidesGenerationEligibility,
-  getPeptidesGenerationCircuitConfig,
-  isPeptidesAutogenEnabled,
-  readPeptidesGenerationCircuitSnapshot,
-  sanitizePeptidesGenerationError,
-} from "./peptidesGenerationCircuitBreaker";
-import {
-  getAICostBudgetSummary,
-  resetAICostBudgetReservations,
-} from "./aiCostBudgetController";
-import { generateAndPersistPremiumDiscoveryReport } from "./discoveryGenerationService";
-import { hasValidPeptidesConsent } from "./peptidesConsent";
 import { createRateLimiter } from "./middleware/rateLimit";
 import {
   scrapeArticleFromUrl,
@@ -169,45 +103,6 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-
-  async function canExposePersistedDiscoveryReport(audit: any): Promise<boolean> {
-    if (audit?.type !== "GRATUIT") return true;
-    try {
-      const artifacts = await pool.query(
-        `SELECT id, txt, html, content_sha256 AS "contentSha256",
-              batch_id AS "batchId", model
-         FROM report_artifacts
-        WHERE audit_id = $1 AND artifact_state = 'ACTIVE'
-        ORDER BY created_at ASC, id ASC`,
-        [audit.id],
-      );
-      const provenance = audit?.narrativeReport?.generationQuality?.version === 2
-        ? audit?.narrativeReport?.analysisMetadata?.catalogProvenance
-        : null;
-      let catalogLedgerBound = provenance ? false : true;
-      if (provenance && artifacts.rows.length === 1) {
-        catalogLedgerBound = await hasDiscoveryCatalogLedgerBinding(
-          pool,
-          audit.id,
-          artifacts.rows[0],
-          provenance,
-        );
-      }
-      return canExposeDiscoveryReport({
-        type: audit.type,
-        reportDeliveryStatus: audit.reportDeliveryStatus,
-        narrativeReport: audit.narrativeReport,
-        reportTxt: audit.reportTxt,
-        reportHtml: audit.reportHtml,
-        responses: audit.responses,
-        reportArtifacts: artifacts.rows,
-        catalogLedgerBound,
-      });
-    } catch (error) {
-      console.error("[Discovery] Public exposure proof failed closed:", error);
-      return false;
-    }
-  }
 
   // Ensure missing indexes on existing tables (non-blocking)
   storage.ensureExistingTableIndexes().catch((err: any) => {
@@ -239,29 +134,6 @@ export async function registerRoutes(
       return `https://${replitDomain}`;
     }
     return `http://localhost:${process.env.PORT || 5000}`;
-  }
-
-  function isProductionRuntime(): boolean {
-    const nodeEnv = String(process.env.NODE_ENV || "").toLowerCase();
-    const publicBaseUrl = String(process.env.PUBLIC_BASE_URL || process.env.APP_URL || "").toLowerCase();
-    return nodeEnv === "production"
-      || process.env.RENDER === "true"
-      || !!process.env.RENDER_SERVICE_NAME
-      || !!process.env.RENDER_EXTERNAL_URL
-      || publicBaseUrl.includes("apexlabs.achzodcoaching.com")
-      || publicBaseUrl.includes("apexlabs.onrender.com");
-  }
-
-  function requireNonProductionEmailTrackingMutation(res: any, operation: string): boolean {
-    if (!isProductionRuntime()) return true;
-    console.warn(`[AdminSafety] Blocked destructive email_tracking operation in production: ${operation}`);
-    res.status(403).json({
-      success: false,
-      error: "EMAIL_TRACKING_DESTRUCTIVE_ADMIN_BLOCKED_IN_PROD",
-      operation,
-      message: "Destructive email_tracking admin operations are disabled in production to preserve Discovery delivery evidence.",
-    });
-    return false;
   }
 
   function getSendPulseCredentials(): { userId: string; secret: string; missing: string[] } {
@@ -320,29 +192,9 @@ export async function registerRoutes(
     "sendRecoveryCtaEmail",
   ];
 
-  // Recovery is a last-mile conversion email, not another nurture blast.
-  // Keep it away from contacts who have just received a coaching/promo sequence;
-  // click-triggered follow-ups remain exempt because they reflect fresh intent.
-  const RECOVERY_CTA_FREQUENCY_CAP_HOURS = 120;
-  const RECOVERY_CTA_FREQUENCY_EMAIL_TYPES = [
-    "sendGratuitUpsellEmail",
-    "sendGratuitJ5Email",
-    "sendGratuitJ7Email",
-    "sendDiscoveryJ14CoachingEmail",
-    "sendDiscoveryJ30NurtureEmail",
-    "sendPremiumJ7Email",
-    "sendPremiumJ14Email",
-    "sendFinishDiscoveryEmail",
-    "sendCrossSellUpgradeEmail",
-    "sendCoachingFormulaChoiceLeadEmail",
-    "sendPromoCodeEmail",
-    "sendReactivationCampaignEmail",
-  ];
-
   const REPORT_EMAIL_TYPES = [
     "sendReportReadyEmail",
     "sendPeptidesOrderConfirmation",
-    "sendPeptidesReportReadyEmail",
   ];
 
   const PROMO_SUBJECT_PATTERNS = [
@@ -375,15 +227,6 @@ export async function registerRoutes(
   const isEmailSequenceAttempted = (tracking: any): boolean => {
     const status = String(tracking?.sendpulseStatus || "").toLowerCase();
     return !["failed", "auth_failed", "unsubscribed"].includes(status);
-  };
-
-  const isTerminalSendPulseHardFail = (result: SendPulseSendResult): boolean => {
-    const error = result.error as Record<string, unknown> | undefined;
-    const eventType = String(error?.eventType || error?.event_type || "").toLowerCase();
-    const smtpCode = Number(error?.smtpAnswerCode ?? error?.smtp_answer_code ?? error?.smtp_code);
-    return eventType === "hard_fail"
-      || eventType === "bounce"
-      || (Number.isFinite(smtpCode) && smtpCode >= 500);
   };
 
   const normalizeSearchText = (value: unknown): string =>
@@ -648,6 +491,32 @@ export async function registerRoutes(
   //      report_sent_at. This confirms provider acceptance, not inbox placement.
   //      On failure, reverts SENDING → READY so a retry path
   //      can pick it up.
+  async function persistDiscoveryReport(
+    auditId: string,
+    narrativeReport: any,
+    reportDeliveryStatus: string,
+  ): Promise<{ txt: string; html: string }> {
+    const discoveryAssets = buildDiscoveryReportAssets(narrativeReport);
+    await storage.updateAudit(auditId, {
+      narrativeReport,
+      reportTxt: discoveryAssets.txt,
+      reportHtml: discoveryAssets.html,
+      reportGeneratedAt: new Date(),
+      reportDeliveryStatus: reportDeliveryStatus as any,
+    });
+    await storage.createReportArtifact({
+      auditId,
+      tier: "GRATUIT",
+      engine: "discovery",
+      model: process.env.OPENAI_DISCOVERY_MODEL || process.env.OPENAI_REPORT_MODEL || process.env.GEMINI_MODEL || "discovery",
+      txt: discoveryAssets.txt,
+      html: discoveryAssets.html,
+    }).catch((error) => {
+      console.error(`[Discovery] Report artifact save failed for ${auditId}:`, error);
+    });
+    return discoveryAssets;
+  }
+
   async function safeSendReportReadyEmail(
     auditId: string,
     email: string,
@@ -656,69 +525,32 @@ export async function registerRoutes(
     opts?: { logPrefix?: string; bypassClaim?: boolean }
   ): Promise<{ sent: boolean; skipped?: string }> {
     const prefix = opts?.logPrefix || "[SafeSend]";
-    let discoveryClaimId: string | null = null;
-    let discoveryProviderPostStarted = false;
-    // Discovery always goes through its persisted delivery gate and atomic
-    // send claim. Administrative raw-send flags may bypass paid-report claims,
-    // but can never bypass the free report safety contract.
-    const bypassClaim = opts?.bypassClaim === true && auditType !== "GRATUIT";
-    const transactionalDiscoveryAudit = auditType === "GRATUIT"
-      ? await storage.getAudit(auditId).catch(() => null)
-      : null;
 
-    if (
-      auditType === "GRATUIT" &&
-      (!transactionalDiscoveryAudit ||
-        !isDiscoveryTransactionalAutomationEligible(transactionalDiscoveryAudit))
-    ) {
-      console.warn(`${prefix} Discovery audit is outside the transactional automation window: ${auditId}`);
-      return { sent: false, skipped: "discovery_transactional_automation_ineligible" };
-    }
-
-    if (auditType === "GRATUIT" && await isDiscoveryGlobalLockActive()) {
-      console.warn(`${prefix} Discovery batch lock active or unverifiable for audit ${auditId}`);
-      return { sent: false, skipped: "discovery_batch_lock_active" };
-    }
-
-    if (auditType === "GRATUIT" && !isDiscoveryReportDeliveryEnabled()) {
-      console.warn(`${prefix} Discovery delivery disabled by DISCOVERY_REPORT_DELIVERY_ENABLED for audit ${auditId}`);
-      return { sent: false, skipped: "discovery_delivery_disabled" };
-    }
-
-    if (!bypassClaim) {
+    if (!opts?.bypassClaim) {
       // A READY write from a generator must never bypass a future delivery
       // date. Re-check the date at the final send boundary and restore the
       // scheduled state before any provider call or atomic send claim.
-      const deliveryAudit = transactionalDiscoveryAudit
-        || await storage.getAudit(auditId).catch(() => null);
+      const deliveryAudit = await storage.getAudit(auditId).catch(() => null);
       const scheduledFor = deliveryAudit?.reportScheduledFor
         ? new Date(deliveryAudit.reportScheduledFor)
         : null;
       if (
-        !bypassClaim &&
+        !opts?.bypassClaim &&
         !deliveryAudit?.reportSentAt &&
         scheduledFor &&
         Number.isFinite(scheduledFor.getTime()) &&
         scheduledFor.getTime() > Date.now()
       ) {
-        if (auditType !== "GRATUIT") {
-          await storage.updateAudit(auditId, { reportDeliveryStatus: "SCHEDULED" }).catch(() => {});
-        }
+        await storage.updateAudit(auditId, { reportDeliveryStatus: "SCHEDULED" }).catch(() => {});
         console.log(`${prefix} Report ${auditId} scheduled for ${scheduledFor.toISOString()} , send deferred`);
         return { sent: false, skipped: "scheduled_for_future" };
       }
 
-      let alreadyTracked: boolean;
-      try {
-        alreadyTracked = await storage.hasReportReadyEmailBeenSent(auditId);
-      } catch (error) {
-        console.error(`${prefix} Discovery tracking check unavailable for audit ${auditId}:`, error);
-        return { sent: false, skipped: "tracking_unverifiable" };
-      }
+      const alreadyTracked = await storage.hasReportReadyEmailBeenSent(auditId).catch(() => false);
       if (alreadyTracked) {
         console.log(`${prefix} ⏭️ Report email already in email_tracking for audit ${auditId} , SKIP (no double send)`);
-        // A tracking row proves that a prior attempt exists, but does not by
-        // itself prove provider acceptance. Never normalize to SENT here.
+        // Normalize audit state so UI shows SENT rather than stuck READY
+        await storage.finalizeAuditSend(auditId, true).catch(() => {});
         return { sent: false, skipped: "already_in_tracking" };
       }
 
@@ -727,30 +559,42 @@ export async function registerRoutes(
       if (auditType === "GRATUIT") {
         try {
           const audit = await storage.getAudit(auditId);
-          const canonical = resolveCanonicalDiscoveryArtifacts({
-            narrativeReport: (audit as any)?.narrativeReport,
-            reportTxt: (audit as any)?.reportTxt,
-            reportHtml: (audit as any)?.reportHtml,
-          });
-          const report = canonical.report;
-          const gate = evaluateCanonicalDiscoveryArtifacts(canonical);
-          if (!report && !canonical.legacyValidation?.ok) {
+          const storedTxt = String((audit as any)?.reportTxt || "").trim();
+          let report = audit?.narrativeReport as any;
+          if ((!report || !Array.isArray(report.sections)) && storedTxt) {
+            report = parseStoredDiscoveryTxt(storedTxt);
+          }
+          if (!report) {
             console.error(`${prefix} 🚫 DISCOVERY DELIVERY GATE FAILED for audit ${auditId}: report_missing`);
+            await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" }).catch(() => {});
             return { sent: false, skipped: "discovery_delivery_failed:report_missing" };
           }
 
-          if (!gate.ok) {
-            const summary = gate.errors.join(", ");
+          const assets =
+            String((audit as any)?.reportTxt || "").trim() && String((audit as any)?.reportHtml || "").trim()
+              ? { txt: (audit as any).reportTxt, html: (audit as any).reportHtml }
+              : buildDiscoveryReportAssets(report);
+          const check = validateDiscoveryReportForDelivery(report, assets);
+          if (!check.ok) {
+            const summary = check.errors.join(", ");
             console.error(`${prefix} 🚫 DISCOVERY DELIVERY GATE FAILED for audit ${auditId}: ${summary}`);
+            await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" }).catch(() => {});
             return { sent: false, skipped: `discovery_delivery_failed:${summary}` };
           }
 
-          if (!hasPassingPersistedDiscoveryDeliveryGate((audit as any)?.narrativeReport)) {
-            console.error(`${prefix} 🚫 Discovery delivery gate PASS is not durably bound to audit ${auditId}`);
-            return { sent: false, skipped: "discovery_delivery_failed:persisted_gate_missing" };
+          if (!String((audit as any)?.reportTxt || "").trim() || !String((audit as any)?.reportHtml || "").trim() || !(audit as any)?.reportGeneratedAt) {
+            await storage.updateAudit(auditId, {
+              narrativeReport: report,
+              reportTxt: assets.txt,
+              reportHtml: assets.html,
+              reportGeneratedAt: (audit as any)?.reportGeneratedAt || new Date(report.generatedAt || Date.now()),
+            }).catch((error) => {
+              console.error(`${prefix} ⚠️ Discovery asset hydration failed before send:`, error);
+            });
           }
         } catch (err) {
           console.error(`${prefix} 🚫 Discovery delivery gate threw for audit ${auditId}:`, err);
+          await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" }).catch(() => {});
           return { sent: false, skipped: "discovery_delivery_failed:gate_threw" };
         }
       } else if (auditType === "ELITE" || auditType === "PREMIUM") {
@@ -773,65 +617,16 @@ export async function registerRoutes(
         }
       }
 
-      if (auditType === "GRATUIT") {
-        try {
-          const exact = await storage.getAudit(auditId);
-          if (!exact) return { sent: false, skipped: "audit_missing" };
-          const txt = String((exact as any).reportTxt || "");
-          const html = String((exact as any).reportHtml || "");
-          const claim = await claimDiscoveryEmailDelivery({
-            auditId,
-            recipientEmail: email,
-            subject: getReportReadyEmailSubject("GRATUIT", "Discovery Scan"),
-            expectedTxtSha256: discoverySha256(txt),
-            expectedHtmlSha256: discoverySha256(html),
-          });
-          discoveryClaimId = claim.claimId;
-        } catch (error) {
-          console.error(`${prefix} Discovery durable delivery claim failed for audit ${auditId}:`, error);
-          return { sent: false, skipped: "discovery_claim_failed" };
-        }
-      } else {
-        const claimed = await storage.claimAuditForSending(auditId).catch(() => false);
-        if (!claimed) {
-          console.log(`${prefix} ⏭️ Could not claim audit ${auditId} for sending , another process owns it or already SENT`);
-          return { sent: false, skipped: "claim_failed" };
-        }
+      const claimed = await storage.claimAuditForSending(auditId).catch(() => false);
+      if (!claimed) {
+        console.log(`${prefix} ⏭️ Could not claim audit ${auditId} for sending , another process owns it or already SENT`);
+        return { sent: false, skipped: "claim_failed" };
       }
     }
 
     try {
-      const discoveryResult = auditType === "GRATUIT"
-        ? await sendReportReadyEmailResult(email, auditId, auditType, baseUrl, {
-          allowProviderFallback: false,
-          beforeProviderPost: async () => {
-            if (!discoveryClaimId) throw new Error("DISCOVERY_DELIVERY_CLAIM_MISSING");
-            const started = await markDiscoveryDeliveryProviderPostStarted(discoveryClaimId);
-            if (!started) throw new Error("DISCOVERY_DELIVERY_PROVIDER_START_CAS_FAILED");
-            discoveryProviderPostStarted = true;
-          },
-        })
-        : null;
-      const ok = discoveryResult
-        ? discoveryResult.result === true
-        : await sendReportReadyEmail(email, auditId, auditType, baseUrl);
-      if (auditType === "GRATUIT") {
-        if (!discoveryClaimId) throw new Error("DISCOVERY_DELIVERY_CLAIM_MISSING");
-        const terminalHardFail = discoveryResult ? isTerminalSendPulseHardFail(discoveryResult) : false;
-        const finalized = await finalizeDiscoveryDeliveryClaim({
-          claimId: discoveryClaimId,
-          outcome: ok
-            ? "PROVIDER_ACCEPTED"
-            : terminalHardFail || !discoveryProviderPostStarted
-              ? "FAILED_FINAL"
-              : "AMBIGUOUS",
-          providerTaskId: discoveryResult?.id,
-          errorDetail: ok ? undefined : "provider result not durably confirmed",
-        });
-        if (!finalized) throw new Error("DISCOVERY_DELIVERY_FINALIZE_CAS_FAILED");
-      } else {
-        await storage.finalizeAuditSend(auditId, ok);
-      }
+      const ok = await sendReportReadyEmail(email, auditId, auditType, baseUrl);
+      await storage.finalizeAuditSend(auditId, ok);
       if (ok) {
         console.log(`${prefix} ✅ Email accepted by SendPulse for audit ${auditId} to ${email}`);
       } else {
@@ -840,15 +635,7 @@ export async function registerRoutes(
       return { sent: ok };
     } catch (err) {
       console.error(`${prefix} ❌ sendReportReadyEmail THREW for audit ${auditId}:`, err);
-      if (auditType === "GRATUIT" && discoveryClaimId) {
-        await finalizeDiscoveryDeliveryClaim({
-          claimId: discoveryClaimId,
-          outcome: discoveryProviderPostStarted ? "AMBIGUOUS" : "FAILED_FINAL",
-          errorDetail: err instanceof Error ? err.message : String(err),
-        }).catch(() => {});
-      } else {
-        await storage.finalizeAuditSend(auditId, false).catch(() => {});
-      }
+      await storage.finalizeAuditSend(auditId, false).catch(() => {});
       return { sent: false, skipped: "threw" };
     }
   }
@@ -903,15 +690,7 @@ export async function registerRoutes(
     const code = cleanParam(req.query.code, "DISCOVERY30").toUpperCase();
     const campaign = cleanParam(req.query.utm_campaign, "discovery30");
     const content = cleanParam(req.query.utm_content, "coaching_bridge");
-    const requestedTier = cleanParam(req.query.tier, "").toUpperCase();
-    const selectedTier = ["ESSENTIAL", "ELITE", "PRIVATELAB"].includes(requestedTier)
-      ? requestedTier
-      : "";
-    const selectedTierLabel = selectedTier === "PRIVATELAB"
-      ? "Private Lab"
-      : selectedTier === "ELITE"
-        ? "Elite"
-        : "Essential";
+    const selectedTier = cleanParam(req.query.tier, "");
     const productUrl = (path: string, tier: string) => {
       const url = new URL(path, "https://www.achzodcoaching.com");
       url.searchParams.set("utm_source", "apexlabs");
@@ -930,11 +709,11 @@ export async function registerRoutes(
       { tier: "ELITE", label: "Elite 12 semaines", before: "899 EUR", after: "629,30 EUR", href: productUrl("/product/coaching-elite-12", "elite12"), note: "Le meilleur ratio suivi/resultat sur 12 semaines." },
       { tier: "PRIVATELAB", label: "Private Lab 12 semaines", before: "1199 EUR", after: "839,30 EUR", href: productUrl("/product/12-semaines-private-lab", "privatelab12"), note: "Accompagnement premium long pour gros objectif." },
     ];
-    const visibleOffers = selectedTier
-      ? offers.filter((offer) => offer.tier === selectedTier)
+    const sortedOffers = selectedTier
+      ? [...offers].sort((a, b) => Number(b.tier === selectedTier) - Number(a.tier === selectedTier))
       : offers;
-    const offerCards = visibleOffers.map((offer) => `
-      <a class="offer${offer.tier === selectedTier ? " selected" : ""} copy-code-link" href="${escapeHtml(offer.href)}">
+    const offerCards = sortedOffers.map((offer) => `
+      <a class="offer${offer.tier === selectedTier ? " selected" : ""}" href="${escapeHtml(offer.href)}">
         <span class="offer-title">${escapeHtml(offer.label)}</span>
         <span class="prices"><span>${escapeHtml(offer.before)}</span><strong>${escapeHtml(offer.after)}</strong></span>
         <span class="note">${escapeHtml(offer.note)}</span>
@@ -966,8 +745,6 @@ export async function registerRoutes(
     .step strong { display:block; margin-bottom: 6px; }
     .step span { color: var(--muted); font-size: 14px; line-height: 1.45; }
     .offers { display:grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 18px 0 0; }
-    .offers.focused { grid-template-columns: repeat(2, 1fr); }
-    .recommendation { margin:20px 0 -4px; color:var(--ink); font-size:16px; font-weight:800; }
     .offer { display:flex; min-height: 154px; flex-direction:column; justify-content:space-between; text-decoration:none; color:var(--ink); border:1px solid var(--line); background:#fff; border-radius:8px; padding:16px; transition: border-color .15s, transform .15s; }
     .offer:hover { border-color: var(--blue); transform: translateY(-1px); }
     .offer.selected { border:2px solid var(--blue); }
@@ -978,7 +755,7 @@ export async function registerRoutes(
     .note { color: var(--muted); font-size: 13px; line-height: 1.4; }
     .compare { display:block; text-align:center; margin-top:16px; color:var(--blue); font-weight:800; text-decoration:none; }
     .warn { margin-top:18px; color:#7c2d12; background:#fff7ed; border:1px solid #fed7aa; border-radius:8px; padding:14px; line-height:1.45; }
-    @media (max-width: 760px) { main { width: min(100% - 22px, 960px); padding-top:18px; } .hero { padding: 20px; } .code-box, .steps, .offers, .offers.focused { grid-template-columns:1fr; } .top { align-items:flex-start; flex-direction:column; } }
+    @media (max-width: 760px) { main { width: min(100% - 22px, 960px); padding-top:18px; } .hero { padding: 20px; } .code-box, .steps, .offers { grid-template-columns:1fr; } .top { align-items:flex-start; flex-direction:column; } }
   </style>
 </head>
 <body>
@@ -986,55 +763,26 @@ export async function registerRoutes(
     <div class="top"><strong>APEXLABS -> ACHZOD COACHING</strong><span>Code reserve aux dossiers Discovery/ApexLabs</span></div>
     <section class="hero">
       <h1>Active ton -30% coaching</h1>
-      <p class="sub">Choisis une formule 8 ou 12 semaines : le code sera copie automatiquement avant l'ouverture du produit. Il restera seulement a le coller dans <strong>Code promotionnel ?</strong> au checkout.</p>
+      <p class="sub">Webflow ne peut pas appliquer le code automatiquement depuis l'email. La procedure correcte est simple : copie le code, choisis une formule 8 ou 12 semaines, puis colle-le dans <strong>Code promotionnel ?</strong> au checkout.</p>
       <div class="code-box">
         <div class="code" id="code">${escapeHtml(code)}</div>
         <button type="button" id="copy">Copier le code</button>
       </div>
       <div class="steps">
-        <div class="step"><strong>1. Choisis ta duree</strong><span>8 ou 12 semaines. Le code ne s'applique pas aux formules 4 semaines.</span></div>
-        <div class="step"><strong>2. Le code est copie</strong><span>Ton clic copie automatiquement ${escapeHtml(code)} avant d'ouvrir le produit.</span></div>
+        <div class="step"><strong>1. Copie ${escapeHtml(code)}</strong><span>Garde le code pret avant d'ouvrir le checkout.</span></div>
+        <div class="step"><strong>2. Choisis 8 ou 12 semaines</strong><span>Le code ne s'applique pas aux formules 4 semaines.</span></div>
         <div class="step"><strong>3. Clique APPLIQUER</strong><span>Au checkout, colle le code dans <strong>Code promotionnel ?</strong>.</span></div>
       </div>
-      ${selectedTier ? `<p class="recommendation">Ta recommandation : ${escapeHtml(selectedTierLabel)}. Choisis simplement 8 ou 12 semaines.</p>` : ""}
-      <div class="offers${selectedTier ? " focused" : ""}">${offerCards}</div>
-      <a class="compare copy-code-link" href="${escapeHtml(formulasUrl)}">Comparer toutes les formules</a>
+      <div class="offers">${offerCards}</div>
+      <a class="compare" href="${escapeHtml(formulasUrl)}">Comparer toutes les formules</a>
       <div class="warn"><strong>Important :</strong> si le total ne baisse pas au checkout, le code n'a pas ete applique. Recolle <strong>${escapeHtml(code)}</strong> puis clique <strong>APPLIQUER</strong> avant de payer.</div>
     </section>
   </main>
   <script>
     const code = ${JSON.stringify(code)};
-    const copyCode = async () => {
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(code);
-        return;
-      }
-      const field = document.createElement("textarea");
-      field.value = code;
-      field.setAttribute("readonly", "");
-      field.style.position = "fixed";
-      field.style.opacity = "0";
-      document.body.appendChild(field);
-      field.select();
-      const copied = document.execCommand("copy");
-      field.remove();
-      if (!copied) throw new Error("clipboard unavailable");
-    };
     document.getElementById("copy").addEventListener("click", async () => {
-      try { await copyCode(); document.getElementById("copy").textContent = "Code copie"; }
+      try { await navigator.clipboard.writeText(code); document.getElementById("copy").textContent = "Code copie"; }
       catch { document.getElementById("copy").textContent = code; }
-    });
-    document.querySelectorAll(".copy-code-link").forEach((link) => {
-      link.addEventListener("click", async (event) => {
-        event.preventDefault();
-        const target = event.currentTarget;
-        const href = target.href;
-        try {
-          await copyCode();
-          target.setAttribute("data-code-copied", "true");
-        } catch {}
-        window.location.assign(href);
-      });
     });
   </script>
 </body>
@@ -1148,11 +896,33 @@ export async function registerRoutes(
     }
 
     // 2. Stripe
+    const stripeSecretKey =
+      process.env.STRIPE_SECRET_KEY ||
+      process.env.STRIPE_PRIVATE_KEY ||
+      "";
+    const stripePublishableKey =
+      process.env.STRIPE_PUBLISHABLE_KEY ||
+      process.env.STRIPE_PUBLIC_KEY ||
+      process.env.VITE_STRIPE_PUBLISHABLE_KEY ||
+      "";
+
     checks.stripe = {
-      ok: Boolean(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_WEBHOOK_SECRET),
-      detail: !process.env.STRIPE_SECRET_KEY ? "STRIPE_SECRET_KEY missing" :
+      ok: Boolean(stripeSecretKey && stripePublishableKey && process.env.STRIPE_WEBHOOK_SECRET),
+      detail: !stripeSecretKey ? "Stripe secret missing (STRIPE_SECRET_KEY / STRIPE_PRIVATE_KEY)" :
+              !stripePublishableKey ? "Stripe publishable missing (STRIPE_PUBLISHABLE_KEY / STRIPE_PUBLIC_KEY)" :
               !process.env.STRIPE_WEBHOOK_SECRET ? "STRIPE_WEBHOOK_SECRET missing" :
-              process.env.STRIPE_SECRET_KEY.startsWith("sk_live_") ? "LIVE mode" : "TEST mode",
+              stripeSecretKey.startsWith("sk_live_") ? "LIVE mode" : "TEST mode",
+    };
+
+    const paypalClientId = process.env.PAYPAL_CLIENT_ID || process.env.PAYPAL_ID || "";
+    const paypalClientSecret = process.env.PAYPAL_CLIENT_SECRET || process.env.PAYPAL_SECRET || "";
+    const paypalMode = (process.env.PAYPAL_MODE || process.env.PAYPAL_ENV || (process.env.NODE_ENV === "production" ? "live" : "sandbox")).toLowerCase();
+
+    checks.paypal = {
+      ok: Boolean(paypalClientId && paypalClientSecret),
+      detail: !paypalClientId ? "PayPal client id missing (PAYPAL_CLIENT_ID / PAYPAL_ID)" :
+              !paypalClientSecret ? "PayPal secret missing (PAYPAL_CLIENT_SECRET / PAYPAL_SECRET)" :
+              `configured (${paypalMode})`,
     };
 
     // 3. Email (SendPulse API)
@@ -1167,7 +937,7 @@ export async function registerRoutes(
     checks.openai = {
       ok: isOpenAIConfigured(),
       detail: isOpenAIConfigured()
-        ? `configured via ${getConfiguredOpenAIKeySource() || "unknown"} , ${OPENAI_REPORT_MODEL} ready for all report engines`
+        ? `configured , ${OPENAI_REPORT_MODEL} ready for all report engines`
         : "OPENAI_API_KEY missing , report generation unavailable",
     };
 
@@ -1204,31 +974,6 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/admin/ai-cost-budget-summary", async (req, res) => {
-    if (!requireAdminAuth(req, res)) return;
-    const product = String(req.query.product || "peptides").trim().toLowerCase();
-    // Only products with a configured pre-call controller may be queried.
-    // This prevents arbitrary profile/table scans through a free-form value.
-    const allowedProducts = new Set(["peptides", "discovery"]);
-    if (!allowedProducts.has(product)) {
-      res.status(400).json({
-        success: false,
-        error: "Produit non supporte",
-        allowedProducts: [...allowedProducts],
-      });
-      return;
-    }
-    try {
-      res.json({ success: true, ...(await getAICostBudgetSummary(product)) });
-    } catch (error: any) {
-      console.error("[Admin AI Cost Budget Summary] Error:", error?.message || error);
-      res.status(500).json({
-        success: false,
-        error: "Impossible de charger le controle budget API",
-      });
-    }
-  });
-
   app.post("/api/admin/ai-usage-costs/check-alert", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
@@ -1252,51 +997,6 @@ export async function registerRoutes(
   ): Promise<Record<string, unknown>> {
     const audit = await storage.getAudit(auditId);
     if (!audit) return { auditId, recovered: false, reason: "audit_not_found" };
-
-    if (audit.type === "GRATUIT") {
-      if (!isDiscoveryTransactionalAutomationEligible(audit)) {
-        return {
-          auditId,
-          recovered: false,
-          reason: "discovery_transactional_automation_ineligible",
-        };
-      }
-      const canonical = resolveCanonicalDiscoveryArtifacts({
-        narrativeReport: audit.narrativeReport,
-        reportTxt: (audit as any).reportTxt,
-        reportHtml: (audit as any).reportHtml,
-      });
-      const gate = evaluateCanonicalDiscoveryArtifacts(canonical);
-      const discoveryResult = {
-        auditId,
-        email: audit.email,
-        type: audit.type,
-        previousStatus: audit.reportDeliveryStatus,
-        artifactSource: canonical.source,
-        valid: gate.ok,
-        errors: gate.errors,
-        txtChars: canonical.txt.length,
-        htmlChars: canonical.html.length,
-      };
-
-      if (!gate.ok) {
-        return {
-          ...discoveryResult,
-          recovered: false,
-          dryRun: !options.apply,
-          reason: canonical.report || canonical.legacyValidation ? "discovery_gate_failed" : "stored_report_missing",
-        };
-      }
-      if (!options.apply) {
-        return { ...discoveryResult, recovered: false, dryRun: true };
-      }
-      return {
-        ...discoveryResult,
-        recovered: false,
-        reason: "discovery_explicit_transactional_workflow_required",
-      };
-    }
-
     const sourceTxt = String(
       (audit as any).reportTxt || (audit.narrativeReport as any)?.txt || "",
     );
@@ -1337,23 +1037,15 @@ export async function registerRoutes(
       return { ...baseResult, recovered: false, dryRun: !options.apply };
     }
 
-    // Claim the audit before changing persisted content or status. This keeps
-    // the 10-minute recovery worker, an admin recovery and a live generator
-    // from repairing or delivering the same audit concurrently.
-    const recoveryClaimed = await storage.claimAuditForGeneration(auditId).catch(() => false);
-    if (!recoveryClaimed) {
-      return { ...baseResult, recovered: false, reason: "recovery_claim_failed" };
-    }
-
     const previousNarrative =
       audit.narrativeReport && typeof audit.narrativeReport === "object"
         ? { ...(audit.narrativeReport as Record<string, unknown>) }
         : {};
+    delete (previousNarrative as any).txt;
+    delete (previousNarrative as any).html;
     await storage.updateAudit(auditId, {
       narrativeReport: {
         ...previousNarrative,
-        txt: repairedTxt,
-        html: repairedHtml,
         validationResult: validation,
         recovery: {
           method: "deterministic_client_facing_repair",
@@ -1435,7 +1127,7 @@ export async function registerRoutes(
     automaticReportRecoveryRunning = true;
     try {
       const candidates = await pool.query(`
-        SELECT id, type, created_at AS "createdAt"
+        SELECT id
         FROM audits
         WHERE report_sent_at IS NULL
           AND report_delivery_status IN ('FAILED', 'NEEDS_REVIEW', 'PENDING')
@@ -1444,19 +1136,12 @@ export async function registerRoutes(
           AND email ~* '^[^@[:space:]]+@[^@[:space:]]+\\.[^@[:space:]]+$'
           AND email NOT ILIKE '%test%'
           AND email NOT ILIKE '%debug%'
-          AND email NOT ILIKE '%agentmail.to%'
           AND email NOT ILIKE '%achkou%'
           AND email NOT ILIKE '%achzodcoaching%'
         ORDER BY created_at ASC
         LIMIT 3
       `);
       for (const row of candidates.rows) {
-        if (
-          row.type === "GRATUIT" &&
-          !isDiscoveryTransactionalAutomationEligible(row)
-        ) {
-          continue;
-        }
         const result = await recoverStoredAuditReport(String(row.id), {
           apply: true,
           deliver: true,
@@ -1878,26 +1563,12 @@ export async function registerRoutes(
     if (!requireAdminAuth(req, res)) return;
     try {
       const stripe = await getUncachableStripeClient();
-      const klarnaStripe = process.env.STRIPE_SECRET_KEY_FR
-        ? getStripeKlarnaClient()
-        : null;
       const account = await stripe.accounts.retrieve();
-      const klarnaAccount = klarnaStripe ? await klarnaStripe.accounts.retrieve() : null;
       res.json({
         success: true,
         id: account.id,
         email: account.email,
         country: account.country,
-        primary: {
-          id: account.id,
-          email: account.email,
-          country: account.country,
-        },
-        klarna: klarnaAccount ? {
-          id: klarnaAccount.id,
-          email: klarnaAccount.email,
-          country: klarnaAccount.country,
-        } : null,
         business_profile: account.business_profile,
         company: account.company,
         individual: (account as any).individual,
@@ -1917,6 +1588,23 @@ export async function registerRoutes(
       res.json({ success: true, ...result });
     } catch (error: any) {
       console.error("[Admin] Contacts sync error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/admin/contacts/mark-coaching-buyers", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const rawEmails = Array.isArray(req.body?.emails)
+        ? req.body.emails
+        : String(req.body?.emails || "")
+            .split(/[\s,;]+/)
+            .filter(Boolean);
+      const source = String(req.body?.source || "manual_import").trim() || "manual_import";
+      const result = await storage.markCoachingBuyers(rawEmails, source);
+      res.json({ success: true, ...result });
+    } catch (error: any) {
+      console.error("[Admin] Mark coaching buyers error:", error);
       res.status(500).json({ error: error.message });
     }
   });
@@ -1951,7 +1639,7 @@ export async function registerRoutes(
         return;
       }
 
-      const allAudits = await storage.getAllAuditsLight();
+      const allAudits = await storage.getAllAudits();
       const discovery = allAudits.filter((a: any) => a.type === "GRATUIT" && a.email && !a.email.includes("test") && !a.email.includes("debug") && !a.email.includes("achzodcoaching") && !a.email.includes("achkou"));
 
       // Unique emails only, skip already sent (tracked via emailTracking)
@@ -1964,6 +1652,7 @@ export async function registerRoutes(
       const unique: string[] = [];
       for (const a of discovery) {
         const email = a.email.toLowerCase();
+        if (await storage.hasUserPurchasedCoaching(email)) continue;
         if (!seen.has(email) && !alreadySent.has(email)) {
           seen.add(email);
           unique.push(a.email);
@@ -2141,7 +1830,7 @@ export async function registerRoutes(
         res.status(500).json({
           status: "error",
           message: "OPENAI_API_KEY not configured",
-          config: { hasKey, model: OPENAI_REPORT_MODEL, keySource: getConfiguredOpenAIKeySource() }
+          config: { hasKey, model: OPENAI_REPORT_MODEL }
         });
         return;
       }
@@ -2158,7 +1847,7 @@ export async function registerRoutes(
         status: "success",
         message: "OpenAI Responses API is working",
         response: response.text,
-        config: { model: response.model, keySource: getConfiguredOpenAIKeySource() }
+        config: { model: response.model }
       });
     } catch (error: any) {
       console.error("[Test OpenAI] Error:", error);
@@ -2184,20 +1873,11 @@ export async function registerRoutes(
         const existingRecent = await storage.findRecentAuditByEmailAndType(data.email, data.type, 10).catch(() => undefined);
         if (existingRecent) {
           console.warn(`[Audit Create] ⏭️ Idempotency hit , returning existing audit ${existingRecent.id} for ${data.email} (${data.type}) created ${existingRecent.createdAt}`);
-          if (existingRecent.type === "GRATUIT"
-            && !await canExposePersistedDiscoveryReport(existingRecent)) {
-            const held = { ...existingRecent } as any;
-            delete held.narrativeReport;
-            delete held.reportTxt;
-            delete held.reportHtml;
-            res.json(held);
-          } else {
-            res.json(existingRecent);
-          }
+          res.json(existingRecent);
           return;
         }
 
-        const audit = await storage.createDiscoveryAudit({
+        const audit = await storage.createAudit({
           userId: "",
           type: data.type,
           email: data.email,
@@ -2269,30 +1949,43 @@ export async function registerRoutes(
             console.error(`[Admin Email] ❌ Error in admin notification for ${audit.id}:`, err);
           });
 
-        // The cut-over is fail-closed: a disabled/malformed configuration must
-        // never turn this new row into generic recovery backlog.
-        if (!isDiscoveryTransactionalAutomationEligible(audit)) {
-          console.warn(`[Discovery Scan] Transactional automation disabled or audit before cutoff: ${audit.id}`);
+        // Atomic claim , if another process already claimed this audit (e.g. idempotency
+        // window collided, or webhook raced), we skip generation to avoid duplicate work.
+        const claimedForGen = await storage.claimAuditForGeneration(audit.id).catch(() => false);
+        if (!claimedForGen) {
+          console.warn(`[Discovery Scan] ⏭️ Could not claim audit ${audit.id} for generation , already in progress or done`);
           res.json(audit);
           return;
         }
-
         res.json(audit);
 
+        const DISCOVERY_GENERATION_TIMEOUT = 5 * 60 * 1000; // 5 minutes max
         (async () => {
           try {
             console.log(`[Discovery Scan] Starting report generation for audit ${audit.id}`);
-            const generated = await generateAndPersistPremiumDiscoveryReport(audit.id);
-            if (!generated) throw new Error("DISCOVERY_GENERATION_CLAIM_REJECTED");
+            const generationPromise = (async () => {
+              const result = await analyzeDiscoveryScan(mergedResponses as any);
+              console.log(`[Discovery Scan] Analysis complete for ${audit.id}, generating narrative...`);
+              const narrativeReport = await convertToNarrativeReport(result, mergedResponses as any);
+              console.log(`[Discovery Scan] Narrative generated for ${audit.id} (${JSON.stringify(narrativeReport).length} chars)`);
+              return narrativeReport;
+            })();
+
+            const timeoutPromise = new Promise<never>((_, reject) => {
+              setTimeout(() => reject(new Error(`Discovery Scan generation timed out after ${DISCOVERY_GENERATION_TIMEOUT / 1000}s`)), DISCOVERY_GENERATION_TIMEOUT);
+            });
+
+            const narrativeReport = await Promise.race([generationPromise, timeoutPromise]);
 
             // Check if delivery should be delayed (scheduled)
             const scheduledFor = audit.reportScheduledFor ? new Date(audit.reportScheduledFor) : null;
             const shouldDelay = scheduledFor && scheduledFor > new Date();
 
             if (shouldDelay) {
-              await storage.updateAudit(audit.id, { reportDeliveryStatus: "SCHEDULED" });
+              await persistDiscoveryReport(audit.id, narrativeReport, "SCHEDULED");
               console.log(`[Discovery Scan] Report SCHEDULED for audit ${audit.id} , delivery at ${scheduledFor.toISOString()}`);
             } else {
+              await persistDiscoveryReport(audit.id, narrativeReport, "READY");
               console.log(`[Discovery Scan] Report READY for audit ${audit.id}`);
 
               const baseUrl = getBaseUrl();
@@ -2304,6 +1997,11 @@ export async function registerRoutes(
             }
           } catch (error: any) {
             console.error(`[Discovery Scan] Generation FAILED for audit ${audit.id}:`, error?.message || error);
+            try {
+              await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" });
+            } catch (updateErr) {
+              console.error(`[Discovery Scan] Failed to update status for ${audit.id}:`, updateErr);
+            }
           }
         })().catch((unhandled) => {
           console.error(`[Discovery Scan] UNHANDLED error for audit ${audit.id}:`, unhandled);
@@ -2364,12 +2062,7 @@ export async function registerRoutes(
       if (!claimedForGenPaid) {
         console.warn(`[Audit Create] ⏭️ Could not claim audit ${audit.id} for generation , another process owns it`);
       } else {
-        await startReportGeneration(
-          audit.id,
-          audit.responses as Record<string, unknown>,
-          (audit.scores || {}) as Record<string, number>,
-          audit.type,
-        );
+        await startReportGeneration(audit.id, audit.responses, audit.scores || {}, audit.type);
         processReportAndSendEmail(audit.id, audit.email, audit.type).catch((err) => {
           console.error(`[processReportAndSendEmail] Unhandled error for audit ${audit.id}:`, err);
           storage.updateAudit(audit.id, { reportDeliveryStatus: "EMAIL_FAILED" }).catch(() => {});
@@ -2388,7 +2081,7 @@ export async function registerRoutes(
   });
 
   async function processReportAndSendEmail(auditId: string, email: string, auditType: string) {
-    // Ultimate and Anabolic use many xhigh sections. Keep the delivery waiter
+    // Ultimate and Anabolic use many high-reasoning sections. Keep the delivery waiter
     // beyond the 90 minute generation window so a valid report is not reset to
     // PENDING seconds before the job persists its final state.
     const maxWait = 95 * 60 * 1000;
@@ -2419,13 +2112,6 @@ export async function registerRoutes(
         console.error(`[Email] Audit ${auditId} not found , skipping`);
         return;
       }
-      if (
-        completedAudit.type === "GRATUIT" &&
-        !isDiscoveryTransactionalAutomationEligible(completedAudit)
-      ) {
-        console.warn(`[Email] Discovery ${auditId} blocked outside transactional automation window`);
-        return;
-      }
 
       const deliveryStatus = completedAudit.reportDeliveryStatus;
 
@@ -2438,10 +2124,6 @@ export async function registerRoutes(
       }
       if (deliveryStatus === 'SENT') {
         console.log(`[Email] ⏭️ Status already SENT for ${auditId} , SKIPPING`);
-        return;
-      }
-      if (deliveryStatus === "BATCH_READY") {
-        console.log(`[Email] ⏭️ Discovery ${auditId} is BATCH_READY , generic delivery worker must ignore it`);
         return;
       }
 
@@ -2528,13 +2210,6 @@ export async function registerRoutes(
       console.error(`[Email] ❌ Error in processReportAndSendEmail for audit ${auditId}:`, error);
       // Don't overwrite SCHEDULED status on error , let cron handle delivery
       const currentAudit = await storage.getAudit(auditId).catch(() => null);
-      if (
-        currentAudit?.type === "GRATUIT" &&
-        (!isDiscoveryTransactionalAutomationEligible(currentAudit) ||
-          String(currentAudit.reportDeliveryStatus) === "BATCH_READY")
-      ) {
-        return;
-      }
       if (currentAudit?.reportDeliveryStatus !== "SCHEDULED") {
         await storage.updateAudit(auditId, { reportDeliveryStatus: "READY" }).catch(() => {});
       }
@@ -2559,14 +2234,7 @@ export async function registerRoutes(
       }
       const audits = await storage.getAuditsByEmail(email);
       const light = req.query.light === "1";
-      const visibleAudits = await Promise.all(audits.map(async (audit) => {
-        if (audit.type !== "GRATUIT") return light ? sanitizeAuditPayload(audit) : audit;
-        const expose = await canExposePersistedDiscoveryReport(audit);
-        return expose && !light
-          ? audit
-          : sanitizePublicDiscoveryAuditPayload(audit as unknown as Record<string, unknown>);
-      }));
-      res.json(visibleAudits);
+      res.json(light ? audits.map(sanitizeAuditPayload) : audits);
     } catch (error) {
       res.status(500).json({ error: "Erreur serveur" });
     }
@@ -2613,21 +2281,12 @@ export async function registerRoutes(
 
   app.get("/api/audits/:id", async (req, res) => {
     try {
+      // UUID audit IDs are unguessable , allow direct access for report viewing
       const audit = await storage.getAudit(req.params.id);
       if (!audit) {
         res.status(404).json({ error: "Audit non trouvé" });
         return;
       }
-
-      // Discovery report URLs are public bearer links. They may expose only
-      // lifecycle metadata here; raw identity/questionnaire/report data is
-      // served through the purpose-built report flow, never this audit route.
-      if (audit.type === "GRATUIT") {
-        res.setHeader("Cache-Control", "private, no-store");
-        res.json(sanitizePublicDiscoveryAuditPayload(audit as unknown as Record<string, unknown>));
-        return;
-      }
-
       // Block report content if scheduled for future delivery
       if (audit.reportScheduledFor && new Date(audit.reportScheduledFor) > new Date()) {
         const sanitized = { ...audit, narrativeReport: null, reportTxt: undefined, reportHtml: undefined };
@@ -2650,10 +2309,6 @@ export async function registerRoutes(
         res.status(404).json({ error: "Audit non trouvé" });
         return;
       }
-      if (audit.type === "GRATUIT") {
-        res.status(409).json({ error: "Analyse Discovery indisponible hors rapport validé" });
-        return;
-      }
       const analysis = generateFullAnalysis(audit.responses);
       res.json(analysis);
     } catch (error) {
@@ -2662,15 +2317,10 @@ export async function registerRoutes(
   });
 
   app.post("/api/audits/:id/generate-narrative", async (req, res) => {
-    if (!requireAdminAuth(req, res)) return;
     try {
       const audit = await storage.getAudit(req.params.id);
       if (!audit) {
         res.status(404).json({ error: "Audit non trouvé" });
-        return;
-      }
-      if (audit.type === "GRATUIT") {
-        res.status(409).json({ error: "Discovery exige le workflow transactionnel dédié" });
         return;
       }
       const job = await startReportGeneration(
@@ -2731,8 +2381,7 @@ export async function registerRoutes(
       const hasDeliveredReport =
         audit &&
         (audit.reportDeliveryStatus === "READY" || audit.reportDeliveryStatus === "SENT") &&
-        (!!(audit as any).reportTxt || !!(audit as any).reportHtml || !!audit.narrativeReport)
-        && await canExposePersistedDiscoveryReport(audit);
+        (!!(audit as any).reportTxt || !!(audit as any).reportHtml || !!audit.narrativeReport);
       if (hasDeliveredReport) {
         res.json({
           status: "completed",
@@ -2772,11 +2421,6 @@ export async function registerRoutes(
         return;
       }
 
-      if (audit.type === "GRATUIT" && !await canExposePersistedDiscoveryReport(audit)) {
-        res.status(202).json({ status: "review", message: "Rapport indisponible pour le moment" });
-        return;
-      }
-
       // Block report content if scheduled for future delivery
       if (audit.reportScheduledFor && new Date(audit.reportScheduledFor) > new Date()) {
         res.status(202).json({
@@ -2784,10 +2428,6 @@ export async function registerRoutes(
           scheduledFor: audit.reportScheduledFor,
           message: "Ton analyse approfondie est en cours de rédaction. Tu recevras ton rapport complet par email.",
         });
-        return;
-      }
-      if (audit.type === "GRATUIT" && !await canExposePersistedDiscoveryReport(audit)) {
-        res.status(409).json({ error: "Rapport Discovery encore en validation" });
         return;
       }
 
@@ -2941,11 +2581,6 @@ export async function registerRoutes(
       const audit = await storage.getAudit(req.params.id);
       if (!audit) {
         res.status(404).json({ error: "Audit non trouve" });
-        return;
-      }
-
-      if (audit.type === "GRATUIT" && !await canExposePersistedDiscoveryReport(audit)) {
-        res.status(202).json({ status: "review", message: "Rapport indisponible pour le moment" });
         return;
       }
 
@@ -3593,15 +3228,8 @@ export async function registerRoutes(
     try {
       const pendingAudits = await storage.getPendingAudits();
       const queued: string[] = [];
-      const skipped: { auditId: string; reason: string }[] = [];
 
       for (const audit of pendingAudits) {
-        const discoveryBlockReason = getGenericDiscoveryMutationBlockReason(audit);
-        if (discoveryBlockReason) {
-          skipped.push({ auditId: audit.id, reason: discoveryBlockReason });
-          continue;
-        }
-
         await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
 
         await startReportGeneration(audit.id, audit.responses, audit.scores, audit.type);
@@ -3615,8 +3243,7 @@ export async function registerRoutes(
 
       res.json({
         message: `${queued.length} rapport(s) en cours de generation`,
-        queued,
-        skipped,
+        queued
       });
     } catch (error) {
       console.error("[Admin] Error processing pending reports:", error);
@@ -3876,12 +3503,6 @@ export async function registerRoutes(
             continue;
           }
 
-          const discoveryBlockReason = getGenericDiscoveryMutationBlockReason(audit);
-          if (discoveryBlockReason) {
-            errors.push({ auditId, error: discoveryBlockReason });
-            continue;
-          }
-
           console.log(`[Admin] Force-regenerating NEEDS_REVIEW audit ${auditId}`);
 
           // Reset EVERYTHING and restart generation
@@ -3927,20 +3548,10 @@ export async function registerRoutes(
     try {
       const { auditId } = req.body;
       if (!auditId) { res.status(400).json({ error: "auditId requis" }); return; }
-      await runGenericAuditMutation({
-        auditId: String(auditId),
-        operation: "admin.reset-scheduled",
-        mutate: async (client) => client.query(
-          "UPDATE audits SET report_scheduled_for = NULL, report_delivery_status = 'READY' WHERE id = $1 AND type <> 'GRATUIT'",
-          [auditId],
-        ),
-      }, pool);
+      const { pool } = await import("./db");
+      await pool.query("UPDATE audits SET report_scheduled_for = NULL, report_delivery_status = 'READY' WHERE id = $1", [auditId]);
       res.json({ success: true, message: `scheduledFor reset + status READY for ${auditId}` });
     } catch (error) {
-      if (error instanceof GenericAuditMutationBarrierError) {
-        res.status(error.code === "AUDIT_NOT_FOUND" ? 404 : 409).json({ error: error.reason || error.code });
-        return;
-      }
       console.error("[Admin] reset-scheduled error:", error);
       res.status(500).json({ error: "Erreur serveur" });
     }
@@ -3972,20 +3583,10 @@ export async function registerRoutes(
     try {
       const { auditId, responses } = req.body;
       if (!auditId || !responses) { res.status(400).json({ error: "auditId et responses requis" }); return; }
-      await runGenericAuditMutation({
-        auditId: String(auditId),
-        operation: "admin.update-audit-responses",
-        mutate: async (client) => client.query(
-          "UPDATE audits SET responses = $1::jsonb WHERE id = $2 AND type <> 'GRATUIT'",
-          [JSON.stringify(responses), auditId],
-        ),
-      }, pool);
+      const { pool } = await import("./db");
+      await pool.query("UPDATE audits SET responses = $1 WHERE id = $2", [JSON.stringify(responses), auditId]);
       res.json({ success: true, fieldCount: Object.keys(responses).length });
     } catch (error: any) {
-      if (error instanceof GenericAuditMutationBarrierError) {
-        res.status(error.code === "AUDIT_NOT_FOUND" ? 404 : 409).json({ error: error.reason || error.code });
-        return;
-      }
       console.error("[Admin] Update audit responses error:", error);
       res.status(500).json({ error: error.message });
     }
@@ -3999,20 +3600,10 @@ export async function registerRoutes(
       if (!auditId) { res.status(400).json({ error: "auditId requis" }); return; }
       const hours = delayHours || 24;
       const scheduledFor = new Date(Date.now() + hours * 60 * 60 * 1000);
-      await runGenericAuditMutation({
-        auditId: String(auditId),
-        operation: "admin.set-scheduled",
-        mutate: async (client) => client.query(
-          "UPDATE audits SET report_scheduled_for = $1, report_delivery_status = 'SCHEDULED' WHERE id = $2 AND type <> 'GRATUIT'",
-          [scheduledFor, auditId],
-        ),
-      }, pool);
+      const { pool } = await import("./db");
+      await pool.query("UPDATE audits SET report_scheduled_for = $1, report_delivery_status = 'SCHEDULED' WHERE id = $2", [scheduledFor, auditId]);
       res.json({ success: true, scheduledFor: scheduledFor.toISOString() });
     } catch (error) {
-      if (error instanceof GenericAuditMutationBarrierError) {
-        res.status(error.code === "AUDIT_NOT_FOUND" ? 404 : 409).json({ success: false, error: error.reason || error.code });
-        return;
-      }
       console.error("[Admin] set-scheduled error:", error);
       res.status(500).json({ error: "Erreur serveur" });
     }
@@ -4041,15 +3632,8 @@ export async function registerRoutes(
         );
 
       const restarted: string[] = [];
-      const skipped: { auditId: string; reason: string }[] = [];
 
       for (const audit of stuckAudits) {
-        const discoveryBlockReason = getGenericDiscoveryMutationBlockReason(audit);
-        if (discoveryBlockReason) {
-          skipped.push({ auditId: audit.id, reason: discoveryBlockReason });
-          continue;
-        }
-
         console.log(`[Admin] Force-restarting stuck audit ${audit.id} (created ${audit.createdAt})`);
 
         // Reset to PENDING so it can be picked up by process-pending-reports
@@ -4057,12 +3641,7 @@ export async function registerRoutes(
 
         // Immediately restart generation
         await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
-        await startReportGeneration(
-          audit.id,
-          audit.responses as Record<string, unknown>,
-          (audit.scores || {}) as Record<string, number>,
-          audit.type,
-        );
+        await startReportGeneration(audit.id, audit.responses, audit.scores || {}, audit.type);
 
         processReportAndSendEmail(audit.id, audit.email, audit.type).catch((err) => {
           console.error(`[processReportAndSendEmail] Unhandled error for audit ${audit.id}:`, err);
@@ -4075,8 +3654,7 @@ export async function registerRoutes(
       res.json({
         success: true,
         message: `${restarted.length} rapport(s) bloqué(s) relancé(s)`,
-        restarted,
-        skipped,
+        restarted
       });
     } catch (error) {
       console.error("[Admin] Error restarting stuck jobs:", error);
@@ -4179,26 +3757,23 @@ export async function registerRoutes(
 
       // Handle Discovery Scan (GRATUIT) differently - sync generation
       if (audit.type === "GRATUIT") {
-        if (!isDiscoveryTransactionalAutomationEligible(audit)) {
-          res.status(409).json({ error: "Discovery hors fenêtre d'automatisation transactionnelle" });
-          return;
-        }
-        if (audit.reportSentAt || audit.reportDeliveryStatus === "SENT"
-          || isDiscoverySupersededTerminal(audit)) {
-          res.status(409).json({
-            error: "Discovery terminal: utilise uniquement la remédiation in-place liée au hash exact",
-          });
-          return;
-        }
         console.log(`[Regenerate] Regenerating Discovery Scan for audit ${auditId}...`);
 
+        // Admin regenerate is an intentional action , reset delivery state so CAS
+        // can claim fresh ownership. Without this reset, an audit already in
+        // GENERATING from a prior crash would block admin retries forever.
+        await storage.updateAudit(auditId, { reportDeliveryStatus: "PENDING" });
+        const claimed = await storage.claimAuditForGeneration(auditId).catch(() => false);
+        if (!claimed) {
+          res.status(409).json({ error: "Regeneration déjà en cours" });
+          return;
+        }
+
         try {
-          const generated = await generateAndPersistPremiumDiscoveryReport(auditId);
-          if (!generated) {
-            res.status(409).json({ error: "Regeneration déjà en cours ou interdite" });
-            return;
-          }
-          const persisted = await storage.getAudit(auditId);
+          // Generate new Discovery Scan report with AI content
+          const result = await analyzeDiscoveryScan(audit.responses as any);
+          const narrativeReport = await convertToNarrativeReport(result, audit.responses as any);
+          await persistDiscoveryReport(auditId, narrativeReport, "READY");
 
           console.log(`[Regenerate] Discovery Scan ${auditId} regenerated successfully`);
 
@@ -4206,10 +3781,11 @@ export async function registerRoutes(
             success: true,
             message: "Discovery Scan regenere",
             auditId,
-            narrativeReport: persisted?.narrativeReport,
+            narrativeReport
           });
         } catch (genError) {
           console.error("[Regenerate] Discovery Scan generation error:", genError);
+          await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" });
           res.status(500).json({ error: "Rapport en révision. Réessaie plus tard." });
         }
         return;
@@ -4267,12 +3843,6 @@ export async function registerRoutes(
 
       // Admin resend , block if already sent unless caller passes ?force=1
       const forceResend = req.query.force === "1" || (req.body as any)?.force === true;
-      if (audit.type === "GRATUIT" && forceResend) {
-        res.status(409).json({
-          error: "Discovery: renvoi brut interdit; utilise la remédiation exacte avec preuve de hash",
-        });
-        return;
-      }
       if (audit.reportSentAt && !forceResend) {
         res.status(409).json({
           error: "Report déjà envoyé , pass ?force=1 pour renvoyer volontairement",
@@ -4282,7 +3852,7 @@ export async function registerRoutes(
       }
 
       // Pré-flight: si email_tracking contient déjà un sendReportReadyEmail OK, abort
-      const alreadyTracked = await storage.hasReportReadyEmailBeenSent(auditId);
+      const alreadyTracked = await storage.hasReportReadyEmailBeenSent(auditId).catch(() => false);
       if (alreadyTracked && !forceResend) {
         res.status(409).json({
           error: "Email déjà tracé comme envoyé , pass ?force=1 pour renvoyer volontairement"
@@ -4350,16 +3920,6 @@ export async function registerRoutes(
     if (success) {
       const baseUrl = getBaseUrl();
       console.log(`[Admin] Sending email to ${email} for audit ${auditId} (baseUrl: ${baseUrl})`);
-      const completedAudit = await storage.getAudit(auditId);
-      if (
-        !completedAudit ||
-        (completedAudit.type === "GRATUIT" &&
-          (!isDiscoveryTransactionalAutomationEligible(completedAudit) ||
-            String(completedAudit.reportDeliveryStatus) === "BATCH_READY"))
-      ) {
-        console.warn(`[Admin] Discovery ${auditId} blocked outside transactional automation window`);
-        return;
-      }
       await storage.updateAudit(auditId, { reportDeliveryStatus: "READY" }).catch(() => {});
       const { sent: emailSent } = await safeSendReportReadyEmail(auditId, email, auditType, baseUrl, { logPrefix: "[Admin]" });
       if (!emailSent) {
@@ -4382,10 +3942,6 @@ export async function registerRoutes(
       const audit = await storage.getAudit(auditId);
       if (!audit) {
         res.status(404).json({ error: "Audit non trouve" });
-        return;
-      }
-      if (audit.type === "GRATUIT" && !await canExposePersistedDiscoveryReport(audit)) {
-        res.status(409).json({ error: "Rapport Discovery encore en validation" });
         return;
       }
 
@@ -4419,10 +3975,6 @@ export async function registerRoutes(
       const audit = await storage.getAudit(auditId);
       if (!audit) {
         res.status(404).json({ error: "Audit non trouve" });
-        return;
-      }
-      if (audit.type === "GRATUIT" && !await canExposePersistedDiscoveryReport(audit)) {
-        res.status(409).json({ error: "Rapport Discovery encore en validation" });
         return;
       }
 
@@ -4530,10 +4082,6 @@ export async function registerRoutes(
         res.status(404).json({ error: "Audit non trouve" });
         return;
       }
-      if (audit.type === "GRATUIT" && !await canExposePersistedDiscoveryReport(audit)) {
-        res.status(409).json({ error: "Rapport Discovery encore en validation" });
-        return;
-      }
 
       const narrativeReport = audit.narrativeReport as any;
       if (!narrativeReport) {
@@ -4579,15 +4127,18 @@ export async function registerRoutes(
     op: () => Promise<void | boolean>,
   ): Promise<void> => {
     try {
-      const outcome = await runOrderEffectOnce(pool, orderId, flagName, op);
-      if (outcome.state === "FAILED") {
+      const fresh = await storage.getOrder(orderId);
+      const meta = (fresh?.metadata as Record<string, unknown> | null) ?? {};
+      if (meta[flagName]) return;
+      const completed = await op();
+      if (completed === false) {
         console.warn(`[runOnceOnOrder] ${flagName} not confirmed for ${orderId}, flag left unset`);
-      } else if (outcome.state === "UNKNOWN") {
-        console.error(
-          `[runOnceOnOrder] ${flagName} provider outcome unknown for ${orderId}; retry blocked to prevent duplicates`,
-          outcome.error,
-        );
+        return;
       }
+      await pool.query(
+        `UPDATE orders SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object($1::text, true) WHERE id = $2`,
+        [flagName, orderId],
+      );
     } catch (err) {
       console.error(`[runOnceOnOrder] ${flagName} failed for ${orderId}:`, err);
     }
@@ -4620,19 +4171,8 @@ export async function registerRoutes(
   }
 
   app.post("/api/stripe/create-checkout-session", checkoutLimiter, async (req, res) => {
-    let pendingStripeOrder: Order | undefined;
-    let checkoutSessionCreated = false;
     try {
-      const { priceId: clientPriceId, email, planType, responses, promoCode, referrer, fbp, fbc, userAgent, sourceUrl, peptidesEngineConsent, peptidesTier: rawTier, paymentRail } = req.body;
-      const useKlarnaRail = paymentRail === "klarna";
-      if (useKlarnaRail && !isKlarnaCheckoutEnabled()) {
-        res.status(400).json({ error: "KLARNA_DISABLED", message: "Klarna est temporairement indisponible." });
-        return;
-      }
-      if (useKlarnaRail && !process.env.STRIPE_SECRET_KEY_FR) {
-        res.status(400).json({ error: "KLARNA_UNAVAILABLE", message: "Klarna est temporairement indisponible." });
-        return;
-      }
+      const { priceId: clientPriceId, email, planType, responses, promoCode, referrer, fbp, fbc, userAgent, sourceUrl, peptidesEngineConsent, peptidesTier: rawTier } = req.body;
       if (!isValidEmailFormat(email)) {
         res.status(400).json({ error: "EMAIL_INVALID", message: "Adresse email invalide. Verifie qu'il y a bien un point dans le domaine (par exemple @gmail.com et non @gmailcom)." });
         return;
@@ -4705,18 +4245,18 @@ export async function registerRoutes(
         ELITE: process.env.VITE_STRIPE_PRICE_ULTIMATE,
         BURNOUT: process.env.STRIPE_BURNOUT_PRICE_ID,
         BLOOD_ANALYSIS: process.env.BLOOD_ANALYSIS_PRICE_ID || process.env.VITE_STRIPE_PRICE_BLOOD_ANALYSIS,
-        PEPTIDES_ENGINE: process.env.STRIPE_PEPTIDES_ENGINE_PRICE_ID || "price_1TFzR9BTm0rdlVFq7HZDJQHs",
+        PEPTIDES_ENGINE:
+          process.env.STRIPE_PEPTIDES_ENGINE_PRICE_ID ||
+          process.env.STRIPE_PEPTIDES_PRICE_ID ||
+          "price_1TFzR9BTm0rdlVFq7HZDJQHs",
       };
-      const usesInlineProductPrice = usesInlineCheckoutLineItem(planType);
-      const priceId = usesInlineProductPrice ? undefined : clientPriceId || PRICE_ID_MAP[planType];
-      if (!usesInlineProductPrice && !priceId) {
+      const priceId = clientPriceId || PRICE_ID_MAP[planType];
+      if (!priceId) {
         res.status(400).json({ error: "INVALID_PLAN", message: `No Stripe price configured for plan: ${planType}` });
         return;
       }
 
-      const stripe = useKlarnaRail
-        ? getStripeKlarnaClient()
-        : await getUncachableStripeClient();
+      const stripe = await getUncachableStripeClient();
 
       const baseUrl = getBaseUrl();
 
@@ -4880,11 +4420,10 @@ export async function registerRoutes(
               },
             },
           }]
-        : usesInlineProductPrice
-        ? [createProductCheckoutLineItem(planType)]
-        : [{ price: priceId!, quantity: 1 }];
+        : [{ price: priceId, quantity: 1 }];
 
       const sessionParams: any = {
+        payment_method_types: ['card'],
         line_items: lineItems,
         mode: 'payment',
         success_url: successUrl,
@@ -4913,168 +4452,92 @@ export async function registerRoutes(
         sessionParams.discounts = discounts;
       }
 
-      const pType = (planType as ProductTypeEnum) || "PREMIUM";
-      // For PEPTIDES_ENGINE the amount depends on the selected tier (Solo
-      // 199 / Coached 299 / Tracked 399). For other product types we still
-      // use the static ProductPriceCents map.
-      const baseCents = pType === "PEPTIDES_ENGINE" && peptidesTier
-        ? PEPTIDES_TIER_PRICE_CENTS[peptidesTier]
-        : (ProductPriceCents[pType] ?? 0);
-      const promoObj = validatedPromoCode ? await storage.getPromoCode(validatedPromoCode) : null;
-      // PEPTIDES100 uses amount_off=10000 cents at Stripe, regardless of stored %.
-      // Guard on planType so the flat -100€ never applies to another product
-      // (Marc M. 2026-05-11 ELITE 0€ incident).
-      const discountCents = promoObj
-        ? (validatedPromoCode?.toUpperCase() === 'PEPTIDES100' && pType === 'PEPTIDES_ENGINE'
-            ? 10000
-            : Math.round(baseCents * promoObj.discountPercent / 100))
-        : 0;
+      const session = await stripe.checkout.sessions.create(sessionParams);
 
-      // Persist consent record with server-authoritative timestamp + IP + UA.
-      // This is the legal evidence pack we hand to Stripe/PayPal in a dispute.
-      const peptidesConsentRecord = (planType === "PEPTIDES_ENGINE" && peptidesEngineConsent)
-        ? {
-            accepted: true,
-            version: String(peptidesEngineConsent.version),
-            text: typeof peptidesEngineConsent.text === "string"
-              ? String(peptidesEngineConsent.text).slice(0, 4000)
-              : undefined,
-            clientAcceptedAt: typeof peptidesEngineConsent.clientAcceptedAt === "string"
-              ? peptidesEngineConsent.clientAcceptedAt
-              : undefined,
-            serverAcceptedAt: new Date().toISOString(),
-            ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null,
-            userAgent: req.headers["user-agent"] || null,
-            paymentMethod: "stripe" as const,
-          }
-        : undefined;
+      // Create pending order
+      try {
+        const pType = (planType as ProductTypeEnum) || "PREMIUM";
+        // For PEPTIDES_ENGINE the amount depends on the selected tier (Solo
+        // 199 / Coached 299 / Tracked 399). For other product types we still
+        // use the static ProductPriceCents map.
+        const baseCents = pType === "PEPTIDES_ENGINE" && peptidesTier
+          ? PEPTIDES_TIER_PRICE_CENTS[peptidesTier]
+          : (ProductPriceCents[pType] ?? 0);
+        const promoObj = validatedPromoCode ? await storage.getPromoCode(validatedPromoCode) : null;
+        // PEPTIDES100 uses amount_off=10000 cents at Stripe, regardless of stored %.
+        // Guard on planType so the flat -100€ never applies to another product
+        // (Marc M. 2026-05-11 ELITE 0€ incident).
+        const discountCents = promoObj
+          ? (validatedPromoCode?.toUpperCase() === 'PEPTIDES100' && pType === 'PEPTIDES_ENGINE'
+              ? 10000
+              : Math.round(baseCents * promoObj.discountPercent / 100))
+          : 0;
 
-      pendingStripeOrder = await storage.createOrder({
-        email,
-        productType: pType,
-        amountCents: baseCents,
-        discountCents,
-        promoCode: validatedPromoCode,
-        promoCodeId: promoObj?.id || null,
-        finalAmountCents: Math.max(0, baseCents - discountCents),
-        stripeCheckoutSessionId: null,
-        ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null,
-        userAgent: req.headers["user-agent"] || null,
-        metadata: {
-          planType,
-          questionnaireResponses: ["PREMIUM", "ELITE", "GRATUIT"].includes(planType) ? responses : undefined,
-          peptidesTier: peptidesTier || undefined,
-          peptidesResponses: planType === "PEPTIDES_ENGINE" ? responses : undefined,
-          peptidesEngineConsent: peptidesConsentRecord,
-          stripeRail: useKlarnaRail ? "klarna_fr" : "primary_ae",
-        },
-      });
-      sessionParams.metadata.orderId = pendingStripeOrder.id;
-      sessionParams.metadata.stripeRail = useKlarnaRail ? "klarna_fr" : "primary_ae";
+        // Persist consent record with server-authoritative timestamp + IP + UA.
+        // This is the legal evidence pack we hand to Stripe/PayPal in a dispute.
+        const peptidesConsentRecord = (planType === "PEPTIDES_ENGINE" && peptidesEngineConsent)
+          ? {
+              accepted: true,
+              version: String(peptidesEngineConsent.version),
+              text: typeof peptidesEngineConsent.text === "string"
+                ? String(peptidesEngineConsent.text).slice(0, 4000)
+                : undefined,
+              clientAcceptedAt: typeof peptidesEngineConsent.clientAcceptedAt === "string"
+                ? peptidesEngineConsent.clientAcceptedAt
+                : undefined,
+              serverAcceptedAt: new Date().toISOString(),
+              ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null,
+              userAgent: req.headers["user-agent"] || null,
+              paymentMethod: "stripe" as const,
+            }
+          : undefined;
 
-      const pricingMode = peptidesTier
-        ? `inline:peptides:${peptidesTier}`
-        : usesInlineProductPrice
-        ? `inline:${planType}`
-        : "stripe_price_id";
-      const emailDomain = typeof email === "string" && email.includes("@")
-        ? email.split("@").pop()
-        : "";
-      console.log("[Checkout] Creating Stripe checkout session", {
-        planType,
-        pricingMode,
-        stripeRail: useKlarnaRail ? "klarna_fr" : "primary_ae",
-        emailDomain,
-        hasPromoCode: Boolean(validatedPromoCode),
-      });
+        const order = await storage.createOrder({
+          email,
+          productType: pType,
+          amountCents: baseCents,
+          discountCents,
+          promoCode: validatedPromoCode,
+          promoCodeId: promoObj?.id || null,
+          finalAmountCents: Math.max(0, baseCents - discountCents),
+          stripeCheckoutSessionId: session.id,
+          ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null,
+          userAgent: req.headers["user-agent"] || null,
+          metadata: {
+            planType,
+            questionnaireResponses: ["PREMIUM", "ELITE", "GRATUIT"].includes(planType) ? responses : undefined,
+            peptidesTier: peptidesTier || undefined,
+            peptidesResponses: planType === "PEPTIDES_ENGINE" ? responses : undefined,
+            peptidesEngineConsent: peptidesConsentRecord,
+          },
+        });
 
-      const session = await createCheckoutSessionWithPaymentMethodFallback(
-        stripe,
-        sessionParams,
-        `planType=${planType}`,
-        useKlarnaRail ? "klarna" : "standard",
-      );
-      checkoutSessionCreated = true;
-
-      console.log("[Checkout] Stripe checkout session created", {
-        planType,
-        pricingMode,
-        stripeRail: useKlarnaRail ? "klarna_fr" : "primary_ae",
-        sessionId: session.id,
-      });
-
-      const updatedOrder = await storage.updateOrder(pendingStripeOrder.id, {
-        stripeCheckoutSessionId: session.id,
-      });
-      if (!updatedOrder) {
-        throw new Error(`ORDER_SESSION_LINK_FAILED:${pendingStripeOrder.id}`);
-      }
-
-      // Track promo code usage on the order only after Stripe accepted the
-      // checkout session. A Stripe failure leaves a cancelled pending order
-      // instead of consuming the promo.
-      if (validatedPromoCode && promoObj) {
-        try {
+        // Track promo code usage on the order
+        if (validatedPromoCode && promoObj) {
           await storage.incrementPromoCodeUse(validatedPromoCode);
           await storage.createPromoCodeUsage({
             promoCodeId: promoObj.id,
             promoCode: validatedPromoCode,
             userId: null,
             email,
-            orderId: pendingStripeOrder.id,
+            orderId: order.id,
             discountPercent: promoObj.discountPercent,
             discountAmountCents: discountCents,
           });
-        } catch (promoUsageError) {
-          console.error("[Checkout] Promo usage tracking failed after Stripe session creation:", promoUsageError);
         }
+      } catch (orderErr) {
+        console.error("[Orders] Error creating pending order:", orderErr);
+        // Non-blocking: checkout still works even if order tracking fails
       }
 
       res.json({ sessionId: session.id, url: session.url });
     } catch (error: any) {
-      if (pendingStripeOrder && pendingStripeOrder.status === "pending" && !checkoutSessionCreated) {
-        await storage.updateOrder(pendingStripeOrder.id, { status: "cancelled" }).catch((cancelError) => {
-          console.error("[Orders] Failed to cancel pending order after checkout error:", cancelError);
-        });
-      }
       console.error("Stripe checkout error:", error);
       res.status(500).json({ error: "Erreur création session" });
     }
   });
 
   // ==================== SHARED AUDIT CREATION HELPER ====================
-  async function getOrderByStripeSessionOrMetadata(
-    sessionId: string,
-    metadata?: Record<string, unknown> | null,
-  ): Promise<Order | undefined> {
-    const orderBySession = await storage.getOrderByStripeSession(sessionId);
-    if (orderBySession) return orderBySession;
-
-    const metadataOrderId = metadata?.orderId;
-    if (typeof metadataOrderId !== "string" || !metadataOrderId) return undefined;
-
-    const orderByMetadata = await storage.getOrder(metadataOrderId).catch(() => undefined);
-    if (!orderByMetadata) return undefined;
-
-    if (orderByMetadata.stripeCheckoutSessionId && orderByMetadata.stripeCheckoutSessionId !== sessionId) {
-      console.warn("[Checkout] Metadata orderId points to an order with a different Stripe session", {
-        orderId: orderByMetadata.id,
-        expectedSessionId: sessionId,
-        actualSessionId: orderByMetadata.stripeCheckoutSessionId,
-      });
-      return undefined;
-    }
-
-    if (!orderByMetadata.stripeCheckoutSessionId) {
-      const linkedOrder = await storage.updateOrder(orderByMetadata.id, {
-        stripeCheckoutSessionId: sessionId,
-      });
-      return linkedOrder || orderByMetadata;
-    }
-
-    return orderByMetadata;
-  }
-
   // Idempotent blood credit grant for paid orders. Both Stripe confirm-session
   // and the Stripe webhook can race; whichever wins marks the order as paid
   // and the loser's credit-grant block is skipped. We track grant status on the
@@ -5141,13 +4604,7 @@ export async function registerRoutes(
   }> {
     const order = await storage.getOrder(orderId).catch(() => null);
     if (!order) return { status: "not_found", orderId };
-    if (order.status === "paid") {
-      const recovered = await recoverMissingPaidAudit(order, "paypal-reconcile-already-paid");
-      if (recovered && !recovered.success) {
-        return { status: "error", orderId, error: recovered.error };
-      }
-      return { status: "already_paid", orderId };
-    }
+    if (order.status === "paid") return { status: "already_paid", orderId };
     const paypalOrderId = (order as any).paypalOrderId;
     if (!paypalOrderId) return { status: "no_paypal_id", orderId };
 
@@ -5191,12 +4648,6 @@ export async function registerRoutes(
         ).catch(() => {});
       } else if (productType === "PEPTIDES_ENGINE") {
         await grantBloodCreditsForOrder(order.id, email, 2, "peptidesCreditsGranted").catch(() => {});
-        const paidOrder = await storage.getOrder(order.id).catch(() => undefined);
-        if (paidOrder) {
-          await ensurePeptidesOrderConfirmation(paidOrder).catch((error) => {
-            console.error(`[PayPal Reconcile] Peptides confirmation failed for ${email}:`, error);
-          });
-        }
       }
 
       // Admin payment notification (mirrors capture endpoint)
@@ -5211,14 +4662,6 @@ export async function registerRoutes(
         );
       } catch (notifErr) {
         console.error("[PayPal Reconcile] Admin notif failed:", notifErr);
-      }
-
-      const paidOrder = await storage.getOrder(order.id).catch(() => undefined);
-      if (paidOrder) {
-        const recovered = await recoverMissingPaidAudit(paidOrder, "paypal-reconcile-completed");
-        if (recovered && !recovered.success) {
-          return { status: "error", orderId, paypalOrderId, paypalStatus: ppStatus, captureId, error: recovered.error };
-        }
       }
 
       console.log(`[PayPal Reconcile] ✅ Order ${order.id} (${email}) marked paid from PayPal status COMPLETED`);
@@ -5295,7 +4738,6 @@ export async function registerRoutes(
   let paypalReconcileRunning = false;
   setInterval(async () => {
     if (paypalReconcileRunning) return;
-    if (!isPayPalCheckoutEnabled()) return;
     paypalReconcileRunning = true;
     try {
       const memRssMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
@@ -5311,40 +4753,15 @@ export async function registerRoutes(
     }
   }, 10 * 60 * 1000);
 
-  const paidAuditDeliveryWaiters = new Set<string>();
-  const ensurePaidAuditDeliveryWaiter = (audit: {
-    id: string;
-    email: string;
-    type: string;
-  }): void => {
-    if (paidAuditDeliveryWaiters.has(audit.id)) return;
-    paidAuditDeliveryWaiters.add(audit.id);
-    processReportAndSendEmail(audit.id, audit.email, audit.type)
-      .catch((err) => {
-        console.error(`[processReportAndSendEmail] Unhandled error for audit ${audit.id}:`, err);
-        storage.updateAudit(audit.id, { reportDeliveryStatus: "EMAIL_FAILED" }).catch(() => {});
-      })
-      .finally(() => {
-        paidAuditDeliveryWaiters.delete(audit.id);
-      });
-  };
-
   // Used by both Stripe confirm-session and PayPal capture-order
   async function createAuditFromPaidOrder(
     email: string,
     planType: "GRATUIT" | "PREMIUM" | "ELITE",
-    order?: Order | null
+    order?: { id: string; auditId: string | null } | null
   ): Promise<{ success: true; auditId: string; auditType: string; existing?: boolean } | { success: false; error: string; message?: string }> {
-    if (planType === "GRATUIT") {
-      return { success: false, error: "DISCOVERY_PAID_ORDER_CREATION_BLOCKED" };
-    }
-    // Always refresh before deciding an audit is missing. Callers often hold the
-    // pre-payment order object after another path (webhook/confirm) has linked it.
-    if (order) {
-      const freshOrder = await storage.getOrder(order.id).catch(() => undefined);
-      if (freshOrder?.auditId) {
-        return { success: true, auditId: freshOrder.auditId, auditType: planType, existing: true };
-      }
+    // Check if an audit is already linked to this order
+    if (order?.auditId) {
+      return { success: true, auditId: order.auditId, auditType: planType, existing: true };
     }
 
     const progress = await storage.getProgress(email);
@@ -5388,65 +4805,31 @@ export async function registerRoutes(
       ? new Date(Date.now() + 24 * 60 * 60 * 1000)
       : undefined;
 
-    let reusedExistingAudit = false;
-    const audit = order
-      ? await withPaidAuditOrderLock(pool, order.id, async () => {
-          const freshOrder = await storage.getOrder(order.id);
-          if (!freshOrder || freshOrder.status !== "paid") {
-            throw new Error("PAID_ORDER_REQUIRED_FOR_AUDIT_CREATION");
-          }
-          if (freshOrder.auditId) {
-            const linked = await storage.getAudit(freshOrder.auditId);
-            if (!linked) throw new Error("LINKED_AUDIT_NOT_FOUND");
-            reusedExistingAudit = true;
-            return linked;
-          }
+    const audit = await storage.createAudit({
+      userId: "",
+      type: planType,
+      email,
+      responses: responses as Record<string, unknown>,
+      ...(scheduledFor ? { reportScheduledFor: scheduledFor } : {}),
+    });
 
-          // A browser submission can create the audit just before payment
-          // confirmation. Reuse it and atomically attach it to the paid order.
-          const recent = await storage.findRecentAuditByEmailAndType(email, planType, 30).catch(() => undefined);
-          if (recent && await storage.claimOrderForAudit(order.id, recent.id)) {
-            reusedExistingAudit = true;
-            return recent;
-          }
-
-          const created = await storage.createAudit({
-            userId: "",
-            type: planType,
-            email,
-            responses: responses as Record<string, unknown>,
-            ...(scheduledFor ? { reportScheduledFor: scheduledFor } : {}),
-          });
-          const claimed = await storage.claimOrderForAudit(order.id, created.id);
-          if (!claimed) {
-            const winner = await storage.getOrder(order.id);
-            if (winner?.auditId) {
-              const linked = await storage.getAudit(winner.auditId);
-              if (linked) {
-                reusedExistingAudit = true;
-                return linked;
-              }
-            }
-            throw new Error("ORDER_AUDIT_LINK_CLAIM_FAILED");
-          }
-          return created;
-        })
-      : await storage.createAudit({
-          userId: "",
-          type: planType,
-          email,
-          responses: responses as Record<string, unknown>,
-          ...(scheduledFor ? { reportScheduledFor: scheduledFor } : {}),
-        });
-
-    if (scheduledFor && !reusedExistingAudit) {
+    if (scheduledFor) {
       console.log(`[Audit] Report scheduled for ${email} at ${scheduledFor.toISOString()} (+24h)`);
       try {
-        // Keep the audit PENDING until the generation CAS below claims it.
-        // Delivery timing is carried by report_scheduled_for, not by skipping
-        // generation with a premature SCHEDULED status.
-        await pool.query("UPDATE audits SET report_scheduled_for = $1 WHERE id = $2 AND type <> 'GRATUIT'", [scheduledFor, audit.id]);
+        const { pool: dbPool } = await import("./db");
+        await dbPool.query("UPDATE audits SET report_scheduled_for = $1, report_delivery_status = 'SCHEDULED' WHERE id = $2", [scheduledFor, audit.id]);
       } catch {}
+    }
+
+    // Atomically link order to audit (prevents race on double-click)
+    if (order) {
+      const claimed = await storage.claimOrderForAudit(order.id, audit.id);
+      if (!claimed) {
+        const refreshed = await storage.getOrder(order.id);
+        if (refreshed?.auditId) {
+          return { success: true, auditId: refreshed.auditId, auditType: planType, existing: true };
+        }
+      }
     }
 
     // Clean up questionnaire progress now that audit is created
@@ -5454,20 +4837,18 @@ export async function registerRoutes(
 
     // Envoyer notification admin immédiatement à la création (pas à la livraison)
     const clientName = (responses as any)?.prenom || (responses as any)?.name || email.split('@')[0];
-    if (!reusedExistingAudit) {
-      console.log(`[Admin Email] 📧 Triggering admin notification for audit ${audit.id}...`);
-      sendAdminEmailNewAudit(email, clientName, planType, audit.id)
-        .then((success) => {
-          if (success) {
-            console.log(`[Admin Email] ✅ Admin notification sent successfully for ${audit.id}`);
-          } else {
-            console.error(`[Admin Email] ❌ Admin notification failed for ${audit.id}`);
-          }
-        })
-        .catch((err) => {
-          console.error(`[Admin Email] ❌ Error in admin notification for ${audit.id}:`, err);
-        });
-    }
+    console.log(`[Admin Email] 📧 Triggering admin notification for audit ${audit.id}...`);
+    sendAdminEmailNewAudit(email, clientName, planType, audit.id)
+      .then((success) => {
+        if (success) {
+          console.log(`[Admin Email] ✅ Admin notification sent successfully for ${audit.id}`);
+        } else {
+          console.error(`[Admin Email] ❌ Admin notification failed for ${audit.id}`);
+        }
+      })
+      .catch((err) => {
+        console.error(`[Admin Email] ❌ Error in admin notification for ${audit.id}:`, err);
+      });
 
     // Send order confirmation email to client (don't leave them in the dark)
     const promoByType: Record<string, { code: string; label: string }> = {
@@ -5477,167 +4858,22 @@ export async function registerRoutes(
     const promo = promoByType[planType];
     const productLabel = planType === "ELITE" ? "Ultimate Scan" : planType === "PREMIUM" ? "Anabolic Bioscan" : "Analyse";
     const confirmMsg = `Salut ${clientName},\n\nMerci pour ta commande ${productLabel}. Ton paiement est bien recu et toutes tes reponses sont enregistrees.\n\nTon rapport est en cours de generation. Tu le recevras par email d'ici 24h.\n\n${promo ? `En attendant, voici ton code promo : ${promo.code}\n${promo.label}\nUtilise-le sur achzodcoaching.com/formules-coaching\n\n` : ""}Si tu as des questions, reponds directement a cet email.\n\nAchzod`;
-    if (!reusedExistingAudit) {
-      if (order) {
-        await runOnceOnOrder(order.id, "customerConfirmEmailSentAt", () =>
-          sendCTAEmail(email, `${productLabel} : commande recue, rapport sous 24h`, confirmMsg),
-        );
-      } else {
-        sendCTAEmail(email, `${productLabel} : commande recue, rapport sous 24h`, confirmMsg).catch(() => {});
-      }
-    }
+    sendCTAEmail(email, `${productLabel} : commande recue, rapport sous 24h`, confirmMsg).catch(() => {});
 
-    if (!reusedExistingAudit) {
-      // Mettre à jour Google Sheet automatiquement via webhook
-      const { notifyGoogleSheetUpdate } = await import("./googleSheetsTracking.js");
-      notifyGoogleSheetUpdate().catch((err) => {
-        console.error(`[GoogleSheets] Failed to update sheet for ${audit.id}:`, err);
-      });
-    }
-
-    const claimedForGeneration = await storage.claimAuditForGeneration(audit.id).catch(() => false);
-    if (claimedForGeneration) {
-      await startReportGeneration(audit.id, audit.responses, audit.scores || {}, planType);
-    } else {
-      console.log(`[Audit] Audit ${audit.id} already claimed for generation; skipping duplicate start`);
-    }
-    const generationJob = await storage.getReportJob(audit.id).catch(() => undefined);
-    if (generationJob && ["pending", "generating", "completed"].includes(generationJob.status)) {
-      ensurePaidAuditDeliveryWaiter(audit);
-    }
-
-    return { success: true, auditId: audit.id, auditType: audit.type, ...(reusedExistingAudit ? { existing: true } : {}) };
-  }
-
-  async function recoverMissingPaidAudit(order: Order, source: string) {
-    const freshOrder = await storage.getOrder(order.id).catch(() => undefined);
-    if (!freshOrder) return null;
-
-    if (needsPaidAuditRecovery(freshOrder)) {
-      console.log(`[Paid Audit Recovery] ${source}: recovering ${freshOrder.productType} order ${freshOrder.id}`);
-      return createAuditFromPaidOrder(
-        freshOrder.email,
-        freshOrder.productType as "PREMIUM" | "ELITE",
-        freshOrder,
-      );
-    }
-
-    if (
-      freshOrder.status !== "paid"
-      || !freshOrder.auditId
-      || !["PREMIUM", "ELITE"].includes(freshOrder.productType)
-    ) {
-      return null;
-    }
-
-    return withPaidAuditOrderLock(pool, freshOrder.id, async () => {
-      const lockedOrder = await storage.getOrder(freshOrder.id);
-      if (!lockedOrder?.auditId) return null;
-      const audit = await storage.getAudit(lockedOrder.auditId);
-      if (!audit) {
-        return { success: false as const, error: "LINKED_AUDIT_NOT_FOUND" };
-      }
-      const job = await storage.getReportJob(audit.id).catch(() => undefined);
-      if (!needsPaidAuditGenerationRecovery(lockedOrder, audit, job)) return null;
-
-      console.log(`[Paid Audit Recovery] ${source}: resuming audit ${audit.id} for order ${lockedOrder.id}`);
-      if (audit.reportDeliveryStatus === "PENDING") {
-        const claimed = await storage.claimAuditForGeneration(audit.id).catch(() => false);
-        if (!claimed) {
-          const refreshed = await storage.getAudit(audit.id);
-          if (refreshed?.reportDeliveryStatus !== "GENERATING") {
-            return { success: false as const, error: "AUDIT_GENERATION_CLAIM_FAILED" };
-          }
-        }
-      }
-
-      const startedJob = await startReportGeneration(
-        audit.id,
-        audit.responses as Record<string, unknown>,
-        (audit.scores || {}) as Record<string, number>,
-        audit.type,
-      );
-      if (!["pending", "generating", "completed"].includes(startedJob.status)) {
-        return { success: false as const, error: `AUDIT_JOB_NOT_RECOVERABLE:${startedJob.status}` };
-      }
-      ensurePaidAuditDeliveryWaiter(audit);
-      return {
-        success: true as const,
-        auditId: audit.id,
-        auditType: audit.type,
-        existing: true as const,
-      };
+    // Mettre à jour Google Sheet automatiquement via webhook
+    const { notifyGoogleSheetUpdate } = await import("./googleSheetsTracking.js");
+    notifyGoogleSheetUpdate().catch((err) => {
+      console.error(`[GoogleSheets] Failed to update sheet for ${audit.id}:`, err);
     });
-  }
 
-  // Durable safety net for orders that were marked paid immediately before a
-  // process crash. This does not depend on the browser returning or Stripe /
-  // PayPal redelivering an event, so historical paid orphans self-heal too.
-  let paidAuditRecoveryRunning = false;
-  async function reconcilePaidOrdersMissingAudits(): Promise<void> {
-    if (paidAuditRecoveryRunning) return;
-    paidAuditRecoveryRunning = true;
-    try {
-      const memRssMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
-      if (memRssMb > 440) {
-        console.warn(`[Paid Audit Recovery] Skipping scan: RSS ${memRssMb}MB > 440MB`);
-        return;
-      }
+    await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
+    await startReportGeneration(audit.id, audit.responses, audit.scores || {}, planType);
+    processReportAndSendEmail(audit.id, audit.email, planType).catch((err) => {
+      console.error(`[processReportAndSendEmail] Unhandled error for audit ${audit.id}:`, err);
+      storage.updateAudit(audit.id, { reportDeliveryStatus: "EMAIL_FAILED" }).catch(() => {});
+    });
 
-      const candidates: Order[] = [];
-      let offset = 0;
-      let total = 0;
-      do {
-        const page = await storage.getAllOrders({ status: "paid", limit: 250, offset });
-        total = page.total;
-        candidates.push(...page.orders.filter((candidate) =>
-          candidate.productType === "PREMIUM" || candidate.productType === "ELITE"));
-        offset += page.orders.length;
-        if (page.orders.length === 0) break;
-      } while (offset < total);
-
-      let recoveredCount = 0;
-      for (const candidate of candidates) {
-        try {
-          const result = await recoverMissingPaidAudit(candidate, "periodic-scan");
-          if (result?.success) recoveredCount++;
-          else if (result && !result.success) {
-            console.warn(`[Paid Audit Recovery] Order ${candidate.id} deferred: ${result.error}`);
-          }
-        } catch (error) {
-          console.error(`[Paid Audit Recovery] Order ${candidate.id} failed:`, error);
-        }
-      }
-      if (candidates.length > 0) {
-        console.log(`[Paid Audit Recovery] Scan complete: ${recoveredCount}/${candidates.length} recovered`);
-      }
-    } finally {
-      paidAuditRecoveryRunning = false;
-    }
-  }
-
-  setTimeout(() => {
-    void reconcilePaidOrdersMissingAudits();
-  }, 2 * 60 * 1000).unref();
-  setInterval(() => {
-    void reconcilePaidOrdersMissingAudits();
-  }, 10 * 60 * 1000).unref();
-
-  async function retrieveCheckoutSessionAcrossStripeRails(sessionId: string) {
-    const primaryStripe = await getUncachableStripeClient();
-    try {
-      return await primaryStripe.checkout.sessions.retrieve(sessionId, {
-        expand: ["customer"],
-      });
-    } catch (error: any) {
-      if (!process.env.STRIPE_SECRET_KEY_FR) throw error;
-      const message = String(error?.message || "");
-      if (!message.toLowerCase().includes("no such checkout.session")) throw error;
-      const klarnaStripe = getStripeKlarnaClient();
-      return await klarnaStripe.checkout.sessions.retrieve(sessionId, {
-        expand: ["customer"],
-      });
-    }
+    return { success: true, auditId: audit.id, auditType: audit.type };
   }
 
   app.post("/api/stripe/confirm-session", async (req, res) => {
@@ -5661,7 +4897,10 @@ export async function registerRoutes(
         return;
       }
 
-      const session = await retrieveCheckoutSessionAcrossStripeRails(sessionId);
+      const stripe = await getUncachableStripeClient();
+      const session = await stripe.checkout.sessions.retrieve(sessionId, {
+        expand: ["customer"],
+      });
 
       const isPaid = session.payment_status === "paid" || session.status === "complete";
       if (!isPaid) {
@@ -5685,7 +4924,7 @@ export async function registerRoutes(
       // generation separately from the audit pipeline. Confirm-session should
       // acknowledge the payment and redirect without trying to create an audit.
       if (planType === "PEPTIDES_ENGINE") {
-        const existingOrder = await getOrderByStripeSessionOrMetadata(sessionId, session.metadata as Record<string, unknown> | null);
+        const existingOrder = await storage.getOrderByStripeSession(sessionId);
         if (existingOrder && existingOrder.status !== "paid") {
           await storage.updateOrder(existingOrder.id, {
             status: "paid",
@@ -5696,12 +4935,6 @@ export async function registerRoutes(
         }
         if (existingOrder && email) {
           await grantBloodCreditsForOrder(existingOrder.id, email, 2, "peptidesCreditsGranted");
-          const paidOrder = await storage.getOrder(existingOrder.id).catch(() => undefined);
-          if (paidOrder) {
-            await ensurePeptidesOrderConfirmation(paidOrder).catch((error) => {
-              console.error(`[confirm-session] Peptides confirmation failed for ${email}:`, error);
-            });
-          }
         }
         res.json({ success: true, auditId: "", auditType: "PEPTIDES_ENGINE", email, generating: true });
         return;
@@ -5714,7 +4947,7 @@ export async function registerRoutes(
       }
 
       // Update order to paid if exists
-      const existingOrder = await getOrderByStripeSessionOrMetadata(sessionId, session.metadata as Record<string, unknown> | null);
+      const existingOrder = await storage.getOrderByStripeSession(sessionId);
       if (existingOrder && existingOrder.status === "paid" && existingOrder.auditId) {
         res.json({ success: true, auditId: existingOrder.auditId, auditType: planType, existing: true });
         return;
@@ -5784,11 +5017,8 @@ export async function registerRoutes(
 
   app.post("/api/paypal/create-order", checkoutLimiter, async (req, res) => {
     try {
-      if (!isPayPalCheckoutEnabled()) {
-        res.status(410).json({
-          error: "PAYPAL_DISABLED",
-          message: "PayPal n'est plus disponible sur APEXLABS. Utilise le paiement par carte bancaire.",
-        });
+      if (!isPayPalConfigured()) {
+        res.status(503).json({ error: "PayPal non configuré" });
         return;
       }
 
@@ -6052,14 +5282,6 @@ export async function registerRoutes(
 
   app.post("/api/paypal/capture-order", checkoutLimiter, async (req, res) => {
     try {
-      if (!isPayPalCheckoutEnabled()) {
-        res.status(410).json({
-          error: "PAYPAL_DISABLED",
-          message: "PayPal n'est plus disponible sur APEXLABS.",
-        });
-        return;
-      }
-
       const { paypalOrderId } = req.body;
       if (!paypalOrderId || typeof paypalOrderId !== "string" || !/^[A-Z0-9]+$/.test(paypalOrderId)) {
         res.status(400).json({ error: "paypalOrderId invalide" });
@@ -6080,17 +5302,8 @@ export async function registerRoutes(
         if (existingOrder.auditId) {
           res.json({ success: true, auditId: existingOrder.auditId, auditType: existingOrder.productType, existing: true });
         } else {
-          const recovered = await recoverMissingPaidAudit(existingOrder, "paypal-capture-retry");
-          if (recovered) {
-            if (!recovered.success) {
-              res.status(409).json(recovered);
-              return;
-            }
-            res.json({ ...recovered, existing: true });
-          } else {
-            // BLOOD_ANALYSIS, PEPTIDES_ENGINE and other products intentionally have no auditId.
-            res.json({ success: true, auditId: "", auditType: existingOrder.productType, email: existingOrder.email, existing: true });
-          }
+          // BLOOD_ANALYSIS or other product without auditId
+          res.json({ success: true, auditId: "", auditType: existingOrder.productType, email: existingOrder.email, existing: true });
         }
         return;
       }
@@ -6202,13 +5415,6 @@ export async function registerRoutes(
         // metadata flag and skips if already granted).
         await grantBloodCreditsForOrder(existingOrder.id, email, 2, "peptidesCreditsGranted");
 
-        const paidOrder = await storage.getOrder(existingOrder.id).catch(() => undefined);
-        if (paidOrder) {
-          await ensurePeptidesOrderConfirmation(paidOrder).catch((error) => {
-            console.error(`[PayPal] Peptides confirmation failed for ${email}:`, error);
-          });
-        }
-
         // DO NOT generate in background here , Render kills the process after HTTP response.
         // The auto-recovery cron will detect this order (paid, no reportId) and generate.
         // Respond immediately so the client gets redirected.
@@ -6243,20 +5449,9 @@ export async function registerRoutes(
   // Accepts optional skipEmail=true to generate without sending (for validation before delivery)
   // Accepts optional replaceReportId to update an existing report in-place (same URL)
   app.post("/api/admin/peptides-generate", async (req, res) => {
-    let pepOrder: any = null;
-    let replaceReportId: string | undefined;
-    let manualCircuitClaimed = false;
     if (!requireAdminAuth(req, res)) return;
     try {
-      const {
-        email,
-        skipEmail,
-        replaceReportId: requestedReplaceReportId,
-        maxCandidates: requestedMaxCandidates,
-        providerRetries: requestedProviderRetries,
-        costBudgetEstimatedUsd: requestedCostBudgetEstimatedUsd,
-      } = req.body;
-      replaceReportId = requestedReplaceReportId;
+      const { email, skipEmail, replaceReportId } = req.body;
       if (!email) { res.status(400).json({ error: "email requis" }); return; }
 
       // Get saved responses
@@ -6271,36 +5466,7 @@ export async function registerRoutes(
 
       // Find the paid order for this email up-front (needed for CAS)
       const orders = await storage.getOrdersByEmail(email);
-      pepOrder = orders.find((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid");
-
-      // Manual admin retries are explicitly human-reviewed. If a previous
-      // autogen attempt opened the persistent circuit on an undelivered order,
-      // clear the stale reservation before spending again.
-      if (pepOrder && !replaceReportId && !(pepOrder.metadata as any)?.peptidesReportId) {
-        const circuit = evaluatePeptidesGenerationEligibility(
-          pepOrder.metadata,
-          getPeptidesGenerationCircuitConfig(),
-        );
-        const resettableReasons = new Set(["NEEDS_REVIEW", "ATTEMPT_CAP", "COST_CAP"]);
-        if (
-          resettableReasons.has(circuit.reason)
-          || circuit.snapshot.reservedCostMicroUsd > 0
-        ) {
-          const reset = await storage.resetPeptidesGenerationCircuit(pepOrder.id).catch(() => false);
-          if (reset) {
-            const clearedReservations = await resetAICostBudgetReservations({
-              product: "peptides",
-              orderId: pepOrder.id,
-              profile: "peptides",
-            }).catch(() => 0);
-            console.warn(
-              `[Admin] Reset stale peptides circuit for ${email} on ${pepOrder.id} before manual retry `
-              + `(reason=${circuit.reason}, attempts=${circuit.snapshot.attempts}, reserved=${circuit.snapshot.reservedCostMicroUsd}, aiReservations=${clearedReservations})`,
-            );
-            pepOrder = await storage.getOrder(pepOrder.id) ?? pepOrder;
-          }
-        }
-      }
+      const pepOrder = orders.find((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid");
 
       // CROSS-ORDER PROTECTION: if the client paid twice (2 distinct orders), scan
       // ALL paid orders of the same email , not just the first. Without this, the
@@ -6331,43 +5497,10 @@ export async function registerRoutes(
         }
       }
 
-      // Claim the same generation circuit used by autogen so a manual retry
-      // blocks the cron from racing another expensive provider call mid-flight.
-      if (pepOrder && !replaceReportId && !(pepOrder.metadata as any)?.peptidesReportId) {
-        const claim = await storage.claimPeptidesGenerationAttempt(
-          pepOrder.id,
-          getPeptidesGenerationCircuitConfig(),
-        ).catch(() => null);
-        if (!claim) {
-          const fresh = await storage.getOrder(pepOrder.id).catch(() => null);
-          const circuit = evaluatePeptidesGenerationEligibility(
-            fresh?.metadata ?? pepOrder.metadata,
-            getPeptidesGenerationCircuitConfig(),
-          );
-          res.status(409).json({
-            error: "Generation peptides deja verrouillee ou non eligible",
-            orderId: pepOrder.id,
-            circuit,
-          });
-          return;
-        }
-        manualCircuitClaimed = true;
-        pepOrder = await storage.getOrder(pepOrder.id).catch(() => null) ?? pepOrder;
-      }
-
       // Generate synchronously (admin endpoint = manual trigger, can wait)
       const { generatePeptidesProtocol } = await import("./peptidesEngine");
       const manualTier = ((pepOrder?.metadata as any)?.peptidesTier as "solo" | "coached" | "tracked" | undefined) ?? "coached";
-      const report = await generatePeptidesProtocol(responses, email, manualTier, {
-        ...(pepOrder?.id ? { orderId: pepOrder.id } : {}),
-        consentAccepted: hasValidPeptidesConsent((pepOrder?.metadata as any)?.peptidesEngineConsent),
-        // One provider call by default. Deterministic repair handles ancillary
-        // stock gaps; extra full generations require an explicit admin choice.
-        maxCandidates: Number.isFinite(Number(requestedMaxCandidates)) ? Number(requestedMaxCandidates) : 1,
-        providerRetries: Number.isFinite(Number(requestedProviderRetries)) ? Number(requestedProviderRetries) : 1,
-        costBudgetEstimatedUsd: Number.isFinite(Number(requestedCostBudgetEstimatedUsd)) ? Number(requestedCostBudgetEstimatedUsd) : 1,
-        initialPreviousError: String((pepOrder?.metadata as any)?.peptidesGenerationLastError || ""),
-      });
+      const report = await generatePeptidesProtocol(responses, email, manualTier);
 
       let saved;
       let claimed = true;
@@ -6453,24 +5586,29 @@ export async function registerRoutes(
             const coachingBlock = buildPeptidesCoachingDeductionBlock(
               (pepOrder?.metadata as any)?.peptidesTier ?? null
             );
-            emailSent = pepOrder
-              ? await deliverPeptidesReportOnce({
-                  order: pepOrder,
-                  reportId: saved.id,
-                  report,
-                  promoText: promoBlock,
-                  coachingText: coachingBlock,
-                }).catch(() => false)
-              : false;
+            await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
+              `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`
+            ).catch(() => {});
+            emailSent = true;
             await sendCTAEmail(adminNotifEmail, `PEPTIDES GENERE , ${email}`, `Rapport genere et livre pour ${email}\nReport ID: ${saved.id}\nPeptides: ${peptidesNames}\nLien: ${baseUrl}/peptides/${saved.id}`).catch(() => {});
           } else if (scheduledAt) {
             deliveryDeferred = true;
             deliveryScheduledAtIso = scheduledAt.toISOString();
             // Send the order confirmation so the client knows the payment landed.
-            if (pepOrder) {
-              await ensurePeptidesOrderConfirmation(pepOrder, report).catch((err) => {
-                console.error("[Admin Manual Gen] Confirmation email failed:", err);
-              });
+            const alreadyConfirmed = pepOrder ? await storage.hasPeptidesOrderConfirmationBeenSent(email).catch(() => false) : false;
+            if (!alreadyConfirmed && pepOrder) {
+              const firstName = (pepOrder.metadata as any)?.peptidesResponses?.prenom
+                || (responses as any)?.pep_name
+                || (email ? email.split("@")[0] : undefined);
+              sendPeptidesOrderConfirmationEmail(email, {
+                firstName,
+                amountEur: ((pepOrder as any).finalAmountCents || 0) / 100,
+                promoCode: (pepOrder as any).promoCode || null,
+                peptidesNames,
+                scheduledDeliveryAt: scheduledAt,
+                bloodCreditsCount: Array.isArray(report.promoCodesGenerated) ? report.promoCodesGenerated.length : 0,
+                orderId: pepOrder.id,
+              }).catch((err) => console.error("[Admin Manual Gen] Confirmation email failed:", err));
             }
             const parisLocal = scheduledAt.toLocaleString("fr-FR", { timeZone: "Europe/Paris" });
             await sendCTAEmail(
@@ -6499,54 +5637,8 @@ export async function registerRoutes(
         replaced: !!replaceReportId,
       });
     } catch (error: any) {
-      if (pepOrder?.id && manualCircuitClaimed && !replaceReportId) {
-        await storage.markPeptidesGenerationNeedsReview(
-          pepOrder.id,
-          "manual_generation_failed",
-          String(error?.message || error || "unknown error"),
-        ).catch(() => false);
-      }
       console.error("[Admin] Peptides generate error:", error);
       res.status(500).json({ error: error.message || "Erreur generation" });
-    }
-  });
-
-  app.post("/api/admin/orders/:id/peptides-reset-generation-lock", async (req, res) => {
-    if (!requireAdminAuth(req, res)) return;
-    try {
-      const order = await storage.getOrder(req.params.id);
-      if (!order) {
-        res.status(404).json({ error: "Order introuvable" });
-        return;
-      }
-      if (order.productType !== "PEPTIDES_ENGINE") {
-        res.status(400).json({ error: `Order productType=${order.productType}, attendu PEPTIDES_ENGINE` });
-        return;
-      }
-
-      const before = readPeptidesGenerationCircuitSnapshot(order.metadata);
-      const reset = await storage.resetPeptidesGenerationCircuit(order.id);
-      const clearedReservations = reset
-        ? await resetAICostBudgetReservations({
-            product: "peptides",
-            orderId: order.id,
-            profile: "peptides",
-          }).catch(() => 0)
-        : 0;
-      const fresh = await storage.getOrder(order.id);
-      const after = readPeptidesGenerationCircuitSnapshot(fresh?.metadata);
-
-      res.json({
-        success: reset,
-        orderId: order.id,
-        email: order.email,
-        clearedReservations,
-        before,
-        after,
-      });
-    } catch (error: any) {
-      console.error("[Admin] peptides reset generation lock error:", error);
-      res.status(500).json({ error: error?.message || "Erreur reset circuit peptides" });
     }
   });
 
@@ -6763,25 +5855,29 @@ export async function registerRoutes(
   app.get("/api/admin/audits", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
-      // Never materialize the whole audit corpus in the Node heap. Full reports
-      // and questionnaire payloads remain available from the detail route.
-      const requestedLimit = Number.parseInt(String(req.query.limit || "100"), 10);
-      const requestedPage = Number.parseInt(String(req.query.page || "1"), 10);
-      const limit = Math.min(100, Math.max(1, Number.isFinite(requestedLimit) ? requestedLimit : 100));
-      const page = Math.max(1, Number.isFinite(requestedPage) ? requestedPage : 1);
-      const offset = (page - 1) * limit;
-      const result = await storage.getAdminAuditSummariesPage(limit, offset);
-      res.setHeader("Cache-Control", "no-store");
-      res.json({
-        success: true,
-        audits: result.items,
-        pagination: {
-          page,
-          limit,
-          total: result.total,
-          totalPages: Math.max(1, Math.ceil(result.total / limit)),
-        },
+      // Keep this collection endpoint deliberately lightweight. Full reports and
+      // questionnaire payloads are available from the authenticated detail route.
+      const allAudits = await storage.getAllAuditSummaries();
+      const bloodReports = await storage.getAllBloodReportSummaries();
+
+      const mappedBlood = bloodReports.map((report) => ({
+        id: report.id,
+        email: report.email,
+        type: "BLOOD_ANALYSIS",
+        status: "COMPLETED",
+        reportDeliveryStatus: "SENT",
+        reportSentAt: report.createdAt,
+        createdAt: report.createdAt,
+        completedAt: report.createdAt,
+      }));
+
+      const audits = [...mappedBlood, ...allAudits].sort((a: any, b: any) => {
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
+        return dateB - dateA;
       });
+
+      res.json({ success: true, audits });
     } catch (error) {
       console.error("[Admin Audits] Error:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
@@ -6818,12 +5914,6 @@ export async function registerRoutes(
       const audit = await storage.getAudit(auditId);
       if (!audit) {
         res.status(404).json({ success: false, error: "Audit non trouvé" });
-        return;
-      }
-
-      const discoveryBlockReason = getGenericDiscoveryMutationBlockReason(audit);
-      if (discoveryBlockReason) {
-        res.status(409).json({ success: false, error: discoveryBlockReason });
         return;
       }
 
@@ -6938,133 +6028,6 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/admin/orders/:id/peptides-deliver-report", async (req, res) => {
-    if (!requireAdminAuth(req, res)) return;
-    try {
-      const order = await storage.getOrder(req.params.id);
-      if (!order || order.productType !== "PEPTIDES_ENGINE" || order.status !== "paid") {
-        res.status(404).json({ success: false, error: "Commande Peptides Engine payee introuvable" });
-        return;
-      }
-
-      const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
-      const reportId = String((req.body as any)?.reportId || meta.peptidesReportId || "").trim();
-      const resetFailedDelivery = (req.body as any)?.resetFailedDelivery === true;
-      if (!reportId || String(meta.peptidesReportId || "") !== reportId) {
-        res.status(400).json({
-          success: false,
-          error: "reportId manquant ou different du reportId lie a la commande",
-          linkedReportId: meta.peptidesReportId || null,
-        });
-        return;
-      }
-
-      const existing = await storage.getBurnoutReport(reportId);
-      if (!existing || !String(existing.email ?? "").startsWith("peptides::")) {
-        res.status(404).json({ success: false, error: "Rapport Peptides introuvable", reportId });
-        return;
-      }
-
-      if (resetFailedDelivery) {
-        const reset = await storage.resetPeptidesReportDeliveryCircuit(order.id, reportId);
-        if (!reset) {
-          res.status(409).json({
-            success: false,
-            error: "Reset delivery refuse (deja accepte, report different ou commande non eligible)",
-            orderId: order.id,
-            reportId,
-          });
-          return;
-        }
-        await storage.setOrderMetadataKey(
-          order.id,
-          "peptidesDeliveryResetReason",
-          String((req.body as any)?.reason || "admin_retry_after_provider_fix").slice(0, 240),
-        ).catch(() => {});
-      } else if (Number(meta.peptidesDeliveryAttempts || 0) >= 3) {
-        res.status(409).json({
-          success: false,
-          error: "Circuit livraison epuise; relance avec resetFailedDelivery=true apres verification humaine",
-          orderId: order.id,
-          reportId,
-          deliveryAttempts: meta.peptidesDeliveryAttempts,
-          deliveryState: meta.peptidesDeliveryState || null,
-        });
-        return;
-      }
-
-      let report = existing.report as any;
-      const pricingResponses = (
-        (existing as any)?.responses
-        || meta.peptidesResponses
-        || {}
-      ) as Record<string, unknown>;
-      if (Object.keys(pricingResponses).length < 3) {
-        res.status(422).json({
-          success: false,
-          error: "Reponses client manquantes pour verifier le rapport avant livraison",
-          orderId: order.id,
-          reportId,
-        });
-        return;
-      }
-
-      report = await refreshPeptauraPricingForDelivery(
-        JSON.parse(JSON.stringify(report)),
-        pricingResponses,
-        String(meta.peptidesTier || report?.tier || "solo"),
-        hasValidPeptidesConsent(meta.peptidesEngineConsent),
-      );
-      const { validatePeptidesReport } = await import("./peptidesReportValidator");
-      const validation = validatePeptidesReport(report);
-      if (!validation.ok) {
-        res.status(422).json({ success: false, orderId: order.id, reportId, validation });
-        return;
-      }
-      await storage.updateBurnoutReport(reportId, report).catch(() => {});
-
-      const baseUrl = getBaseUrl();
-      const freshOrder = await storage.getOrder(order.id).catch(() => null);
-      const delivered = await deliverPeptidesReportOnce({
-        order: freshOrder || order,
-        reportId,
-        report,
-        promoText: buildPeptidesBloodCreditsBlock(meta.peptidesTier ?? report?.tier, `${baseUrl}/blood-dashboard`),
-        coachingText: buildPeptidesCoachingDeductionBlock(meta.peptidesTier ?? null),
-      });
-      const after = await storage.getOrder(order.id).catch(() => null);
-      if (!delivered) {
-        res.status(409).json({
-          success: false,
-          orderId: order.id,
-          reportId,
-          validation,
-          delivery: {
-            state: (after?.metadata as any)?.peptidesDeliveryState || null,
-            attempts: (after?.metadata as any)?.peptidesDeliveryAttempts || null,
-          },
-        });
-        return;
-      }
-
-      res.json({
-        success: true,
-        orderId: order.id,
-        email: order.email,
-        reportId,
-        validation,
-        delivery: {
-          state: (after?.metadata as any)?.peptidesDeliveryState || "ACCEPTED",
-          attempts: (after?.metadata as any)?.peptidesDeliveryAttempts || null,
-          completedAt: (after?.metadata as any)?.peptidesDeliveryCompletedAt || null,
-        },
-      });
-    } catch (error: any) {
-      console.error("[Admin Peptides Deliver] Error:", error);
-      res.status(500).json({ success: false, error: error?.message || "Erreur livraison peptides" });
-    }
-  });
-
   app.post("/api/admin/peptides/test-generate", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
@@ -7088,9 +6051,7 @@ export async function registerRoutes(
       (async () => {
         try {
           const { generatePeptidesProtocol } = await import("./peptidesEngine");
-          const report = await generatePeptidesProtocol(responses as any, testEmail, "coached", {
-            orderId: `test:${jobTag}`,
-          });
+          const report = await generatePeptidesProtocol(responses as any, testEmail);
           const rows = await storage.getAllBurnoutReports();
           const row = rows.find((r: any) => r.email === jobTag);
           if (row) {
@@ -7138,7 +6099,7 @@ export async function registerRoutes(
   app.post("/api/admin/peptides/send-order-confirmation", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
-      const { orderId } = req.body as { orderId: string; force?: boolean };
+      const { orderId, force } = req.body as { orderId: string; force?: boolean };
       if (!orderId) {
         res.status(400).json({ success: false, error: "orderId required" });
         return;
@@ -7157,22 +6118,38 @@ export async function registerRoutes(
         res.status(400).json({ success: false, error: "order has no email" });
         return;
       }
+      if (!force) {
+        const alreadyConfirmed = await storage.hasPeptidesOrderConfirmationBeenSent(email).catch(() => false);
+        if (alreadyConfirmed) {
+          res.json({ success: false, skipped: "already_sent", email });
+          return;
+        }
+      }
+
       const meta = (order.metadata as any) || {};
       const reportId = meta?.peptidesReportId;
       let peptidesNames = "voir rapport";
       let bloodCreditsCount = 0;
-      let reportForConfirmation: any = undefined;
       if (reportId) {
         const existing = await storage.getBurnoutReport(reportId).catch(() => null);
         if (existing) {
           const r = existing.report as any;
-          reportForConfirmation = r;
           peptidesNames = r?.peptides?.map((p: any) => p.name).join(", ") || peptidesNames;
           bloodCreditsCount = Array.isArray(r?.promoCodesGenerated) ? r.promoCodesGenerated.length : 0;
         }
       }
       const scheduledAt = await resolvePeptidesEmailScheduledAt(order);
-      const sent = await ensurePeptidesOrderConfirmation(order, reportForConfirmation);
+      const firstName = meta?.peptidesResponses?.prenom || email.split("@")[0];
+
+      const sent = await sendPeptidesOrderConfirmationEmail(email, {
+        firstName,
+        amountEur: ((order as any).finalAmountCents || 0) / 100,
+        promoCode: (order as any).promoCode || null,
+        peptidesNames,
+        scheduledDeliveryAt: scheduledAt,
+        bloodCreditsCount,
+        orderId: order.id,
+      });
 
       res.json({ success: true, sent, email, scheduledAt: scheduledAt.toISOString(), peptidesNames, bloodCreditsCount });
     } catch (error: any) {
@@ -7276,12 +6253,7 @@ export async function registerRoutes(
 
       const paidTier = String((order.metadata as any)?.peptidesTier || (existing.report as any)?.tier || "solo");
       const before = JSON.parse(JSON.stringify(existing.report));
-      const repaired = await refreshPeptauraPricingForDelivery(
-        before,
-        responses,
-        paidTier,
-        hasValidPeptidesConsent((order.metadata as any)?.peptidesEngineConsent)
-      );
+      const repaired = await refreshPeptauraPricingForDelivery(before, responses, paidTier);
       const { validatePeptidesReport } = await import("./peptidesReportValidator");
       const validation = validatePeptidesReport(repaired);
 
@@ -7404,113 +6376,6 @@ export async function registerRoutes(
       res.json({ success: true, reportId, validation });
     } catch (error: any) {
       console.error("[Admin Peptides Validate] Error:", error);
-      res.status(500).json({ success: false, error: error?.message || "Erreur serveur" });
-    }
-  });
-
-  app.post("/api/admin/peptides/deliver-existing", async (req, res) => {
-    if (!requireAdminAuth(req, res)) return;
-    try {
-      const { orderId, reportId } = req.body as { orderId?: string; reportId?: string };
-      if (!orderId || !reportId) {
-        res.status(400).json({ success: false, error: "orderId et reportId requis" });
-        return;
-      }
-
-      const order = await storage.getOrder(orderId);
-      if (!order || order.productType !== "PEPTIDES_ENGINE" || order.status !== "paid") {
-        res.status(404).json({ success: false, error: "Commande Peptides Engine payee introuvable" });
-        return;
-      }
-
-      const email = String(order.email || "").trim().toLowerCase();
-      const meta = ((order.metadata as any) || {}) as Record<string, any>;
-      if (!email) {
-        res.status(400).json({ success: false, error: "Email commande manquant" });
-        return;
-      }
-      if (String(meta.peptidesReportId || "") !== reportId) {
-        res.status(409).json({
-          success: false,
-          error: "ReportId non lie a cette commande",
-          orderReportId: meta.peptidesReportId || null,
-        });
-        return;
-      }
-      if (meta.peptidesEmailHold === true || meta.peptidesEmailHold === "true") {
-        res.status(409).json({ success: false, error: "Livraison bloquee par peptidesEmailHold" });
-        return;
-      }
-
-      const existing = await storage.getBurnoutReport(reportId);
-      if (!existing || !String(existing.email ?? "").startsWith("peptides::")) {
-        res.status(404).json({ success: false, error: "Rapport Peptides introuvable" });
-        return;
-      }
-      const reportEmail = String(existing.email ?? "").replace(/^peptides::/i, "").trim().toLowerCase();
-      if (reportEmail !== email) {
-        res.status(409).json({ success: false, error: "Email rapport different de la commande", reportEmail });
-        return;
-      }
-
-      const { validatePeptidesReport } = await import("./peptidesReportValidator");
-      const report = existing.report as any;
-      const validation = validatePeptidesReport(report);
-      if (!validation.ok) {
-        res.status(422).json({
-          success: false,
-          error: "Validation pre-livraison echouee",
-          validation,
-        });
-        return;
-      }
-
-      const alreadyEmailed = await storage.hasPeptidesDeliveryEmailBeenSent(email).catch(() => false);
-      if (alreadyEmailed) {
-        await storage.finalizePeptidesReportDelivery(order.id, reportId, "ACCEPTED").catch(() => {});
-        res.json({ success: true, email, reportId, state: "ACCEPTED", alreadyEmailed: true, sent: false });
-        return;
-      }
-
-      const claimed = await storage.claimPeptidesReportDelivery(order.id, reportId);
-      if (!claimed) {
-        const fresh = await storage.getOrder(order.id).catch(() => null);
-        res.status(409).json({
-          success: false,
-          error: "Delivery deja claim, acceptee, inconnue, ou tentatives epuisees",
-          deliveryState: (fresh?.metadata as any)?.peptidesDeliveryState || null,
-          deliveryAttempts: (fresh?.metadata as any)?.peptidesDeliveryAttempts || null,
-          deliveryLeaseUntil: (fresh?.metadata as any)?.peptidesDeliveryLeaseUntil || null,
-        });
-        return;
-      }
-
-      const baseUrl = getBaseUrl();
-      const tier = meta.peptidesTier ?? report?.tier ?? null;
-      const peptidesNames = report?.peptides?.map((item: any) => item.name).filter(Boolean).join(", ") || "voir le rapport";
-      const result = await sendPeptidesReportReadyEmail(email, {
-        firstName: meta?.peptidesResponses?.prenom || email.split("@")[0],
-        orderId: order.id,
-        reportId,
-        reportUrl: `${baseUrl}/peptides/${reportId}`,
-        peptidesNames,
-        promoText: buildPeptidesBloodCreditsBlock(tier, `${baseUrl}/blood-dashboard`),
-        coachingText: buildPeptidesCoachingDeductionBlock(tier),
-      });
-      const state = classifyPeptidesEmailResult(result);
-      await storage.finalizePeptidesReportDelivery(order.id, reportId, state).catch(() => {});
-
-      res.status(state === "ACCEPTED" ? 200 : state === "UNKNOWN" ? 202 : 502).json({
-        success: state === "ACCEPTED",
-        email,
-        reportId,
-        state,
-        sent: state === "ACCEPTED",
-        reconcileRequired: result.reconcileRequired || false,
-        providerMessageId: (result as any).messageId || null,
-      });
-    } catch (error: any) {
-      console.error("[Admin Peptides Deliver Existing] Error:", error);
       res.status(500).json({ success: false, error: error?.message || "Erreur serveur" });
     }
   });
@@ -7662,11 +6527,7 @@ export async function registerRoutes(
           const newHtml = generatePremiumHTMLFromTxt(txt, lite.id, photos, responses);
           const delta = newHtml.length - oldHtml.length;
           if (!dryRun) {
-            const updated = await storage.updateAudit(lite.id, { reportHtml: newHtml } as any);
-            if (!updated) {
-              results.push({ id: lite.id, email: lite.email, type: lite.type as string, status: lite.reportDeliveryStatus as string, txtLen: txt.length, oldHtmlLen: oldHtml.length, newHtmlLen: 0, delta: 0, skipped: "generic_mutation_blocked" });
-              continue;
-            }
+            await storage.updateAudit(lite.id, { reportHtml: newHtml } as any);
             rebuilt++;
           }
           totalDelta += delta;
@@ -7715,11 +6576,7 @@ export async function registerRoutes(
         res.status(400).json({ success: false, error: "no fields to restore" });
         return;
       }
-      const updated = await storage.updateAudit(auditId, updates);
-      if (!updated) {
-        res.status(409).json({ success: false, error: "DISCOVERY_GENERIC_MUTATION_BLOCKED" });
-        return;
-      }
+      await storage.updateAudit(auditId, updates);
       console.log(`[Admin Restore] audit=${auditId} restored: ${Object.keys(updates).join(", ")}`);
       res.json({
         success: true,
@@ -7754,11 +6611,7 @@ export async function registerRoutes(
       const responses = (audit.responses as any) || {};
       const beforeLen = ((audit as any).reportHtml || "").length;
       const newHtml = generatePremiumHTMLFromTxt(txt, auditId, photos, responses);
-      const updated = await storage.updateAudit(auditId, { reportHtml: newHtml } as any);
-      if (!updated) {
-        res.status(409).json({ success: false, error: "DISCOVERY_GENERIC_MUTATION_BLOCKED" });
-        return;
-      }
+      await storage.updateAudit(auditId, { reportHtml: newHtml } as any);
       console.log(`[Admin Rebuild HTML] audit=${auditId} txt=${txt.length}ch oldHtml=${beforeLen}ch newHtml=${newHtml.length}ch`);
       res.json({
         success: true,
@@ -7822,11 +6675,7 @@ export async function registerRoutes(
       );
       const patchedNarrative = { ...narrative, sections: patchedSections };
 
-      const updated = await storage.updateAudit(auditId, { narrativeReport: patchedNarrative } as any);
-      if (!updated) {
-        res.status(409).json({ success: false, error: "DISCOVERY_GENERIC_MUTATION_BLOCKED" });
-        return;
-      }
+      await storage.updateAudit(auditId, { narrativeReport: patchedNarrative } as any);
       console.log(`[Admin Patch] audit=${auditId} section=${sectionIndex} mode=${op} added=${html.length}ch`);
 
       res.json({
@@ -7918,13 +6767,12 @@ export async function registerRoutes(
         "test.com",
         "test.fr",
         "example.com",
-        "agentmail.to",
         "gmai.com",
         "yahlo.com",
         "hormail.fr",
         "tahoo.fr",
       ]);
-      const disallowedFragments = ["achkou", "achzodcoaching", "agentmail", "test", "debug", "noemail"];
+      const disallowedFragments = ["achkou", "achzodcoaching", "test", "debug", "noemail"];
       const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       const cleanEmail = (email: unknown) => String(email || "").trim().toLowerCase();
       const emailDomain = (email: string) => email.includes("@") ? email.split("@").pop() || "" : "";
@@ -7937,55 +6785,14 @@ export async function registerRoutes(
       const sentRows = await pool.query(
         `SELECT LOWER(recipient_email) AS email
            FROM email_tracking
-         WHERE email_type = 'sendRecoveryCtaEmail'
-            AND (
-              metadata->>'deliveryState' = ANY($3::text[])
-              OR (
-                metadata->>'campaign' = $4
-                AND (
-                  sendpulse_task_id IS NOT NULL
-                  OR LOWER(COALESCE(sendpulse_status, '')) IN ('success', 'sent', 'delivered')
-                  OR (
-                    metadata->>'cohort' = 'clicked_help'
-                    AND LOWER(COALESCE(sendpulse_status, '')) IN ('', 'pending')
-                    AND sent_at >= NOW() - ($1 || ' minutes')::interval
-                  )
-                  OR (
-                    metadata->>'cohort' = 'clicked_help'
-                    AND LOWER(COALESCE(sendpulse_status, '')) = 'failed'
-                    AND sent_at >= NOW() - ($2 || ' minutes')::interval
-                  )
-                )
-              )
-            )`,
-        [
-          String(RECOVERY_CTA_CLICK_CLAIM_TTL_MINUTES),
-          String(RECOVERY_CTA_CLICK_RETRY_COOLDOWN_MINUTES),
-          RECOVERY_CTA_RECONCILIATION_STATES,
-          RECOVERY_CTA_CAMPAIGN,
-        ]
-      );
-      sentRows.rows.forEach((row: any) => sentRecovery.add(cleanEmail(row.email)));
-
-      const recentPromoRecipients = new Set<string>();
-      const recentPromoRows = await pool.query(
-        `SELECT DISTINCT LOWER(recipient_email) AS email
-           FROM email_tracking
-          WHERE recipient_email IS NOT NULL
-            AND sent_at >= NOW() - ($1 || ' hours')::interval
-            AND email_type = ANY($2::text[])
+          WHERE email_type = 'sendRecoveryCtaEmail'
+            AND sent_at >= NOW() - INTERVAL '21 days'
             AND (
               sendpulse_task_id IS NOT NULL
               OR LOWER(COALESCE(sendpulse_status, '')) IN ('success', 'sent', 'delivered')
-              OR metadata->>'deliveryState' = ANY($3::text[])
-            )`,
-        [
-          String(RECOVERY_CTA_FREQUENCY_CAP_HOURS),
-          RECOVERY_CTA_FREQUENCY_EMAIL_TYPES,
-          RECOVERY_CTA_RECONCILIATION_STATES,
-        ],
+            )`
       );
-      recentPromoRows.rows.forEach((row: any) => recentPromoRecipients.add(cleanEmail(row.email)));
+      sentRows.rows.forEach((row: any) => sentRecovery.add(cleanEmail(row.email)));
 
       const blockedRecipients = new Set<string>();
       const blockedRows = await pool.query(
@@ -8021,13 +6828,7 @@ export async function registerRoutes(
       const candidates = new Map<string, RecoveryCandidate>();
       const addCandidate = (candidate: RecoveryCandidate) => {
         const email = cleanEmail(candidate.email);
-        if (
-          !email
-          || isExcludedEmail(email)
-          || sentRecovery.has(email)
-          || recentPromoRecipients.has(email)
-          || blockedRecipients.has(email)
-        ) return;
+        if (!email || isExcludedEmail(email) || sentRecovery.has(email) || blockedRecipients.has(email)) return;
         const existing = candidates.get(email);
         if (!existing || candidate.priority > existing.priority) {
           candidates.set(email, { ...candidate, email });
@@ -8230,8 +7031,7 @@ export async function registerRoutes(
           batchLimited: requestedMaxToSend > maxToSend,
           preview: selected.slice(0, 25),
           excluded: {
-            alreadySentThisRecoveryCampaign: sentRecovery.size,
-            recentPromoWithin120h: recentPromoRecipients.size,
+            alreadyRecoverySent21d: sentRecovery.size,
             blockedOrConverted: blockedRecipients.size,
           },
         });
@@ -8241,7 +7041,6 @@ export async function registerRoutes(
       const results: Array<any> = [];
       let sent = 0;
       let failed = 0;
-      let skipped = 0;
       for (const candidate of selected) {
         try {
           const resumeToken = candidate.cohort.startsWith("abandon_")
@@ -8250,46 +7049,18 @@ export async function registerRoutes(
           const resumeUrl = resumeToken
             ? `${baseUrl}/audit-complet/questionnaire?resume=${resumeToken}`
             : null;
-          const claim = await claimRecoveryCtaClickFollowup(pool, {
-            sourceTrackingId: candidate.auditId || `${candidate.source}:${candidate.lastSignalAt || "unknown"}`,
-            recipientEmail: candidate.email,
-            auditId: candidate.auditId,
-            auditType: candidate.auditType,
-            campaign: RECOVERY_CTA_CAMPAIGN,
-            cohort: candidate.cohort,
-            idempotencyCohort: "primary",
-          });
-          if (claim.action === "skip") {
-            skipped++;
-            results.push({
-              email: candidate.email,
-              cohort: candidate.cohort,
-              sent: false,
-              skipped: true,
-              skipReason: claim.reason,
-              trackingId: claim.trackingId,
-            });
-            continue;
-          }
+          const trackingRecord = await storage.createEmailTracking(
+            candidate.auditId || crypto.randomUUID(),
+            "sendRecoveryCtaEmail",
+            candidate.email
+          );
           const ok = await sendRecoveryCtaEmail(candidate.email, {
             cohort: candidate.cohort,
             baseUrl,
-            trackingId: claim.trackingId!,
+            trackingId: trackingRecord.id,
             percentComplete: candidate.percentComplete,
             resumeUrl,
             expiresText: "7 jours",
-            recoveryClickFollowup: {
-              idempotencyKey: claim.idempotencyKey,
-              sourceTrackingId: candidate.auditId || `${candidate.source}:${candidate.lastSignalAt || "unknown"}`,
-              claimAttempt: claim.attempt,
-            },
-            beforeProviderPost: (context) => markRecoveryCtaProviderPostStarted(pool, {
-              trackingId: claim.trackingId!,
-              idempotencyKey: claim.idempotencyKey,
-              recipientEmail: context.recipientEmail,
-              subject: context.subject,
-              startedAt: context.startedAt,
-            }),
           });
 
           if (ok) {
@@ -8307,7 +7078,7 @@ export async function registerRoutes(
             failed++;
           }
 
-          results.push({ email: candidate.email, cohort: candidate.cohort, sent: ok, trackingId: claim.trackingId });
+          results.push({ email: candidate.email, cohort: candidate.cohort, sent: ok, trackingId: trackingRecord.id });
           await new Promise((resolve) => setTimeout(resolve, 650));
         } catch (error) {
           failed++;
@@ -8335,7 +7106,6 @@ export async function registerRoutes(
         attempted: selected.length,
         sent,
         failed,
-        skipped,
         results,
       });
     } catch (error) {
@@ -8364,13 +7134,12 @@ export async function registerRoutes(
         "test.com",
         "test.fr",
         "example.com",
-        "agentmail.to",
         "gmai.com",
         "yahlo.com",
         "hormail.fr",
         "tahoo.fr",
       ]);
-      const disallowedFragments = ["achkou", "achzodcoaching", "agentmail", "test", "debug", "noemail"];
+      const disallowedFragments = ["achkou", "achzodcoaching", "test", "debug", "noemail"];
       const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       const cleanEmail = (email: unknown) => String(email || "").trim().toLowerCase();
       const emailDomain = (email: string) => email.includes("@") ? email.split("@").pop() || "" : "";
@@ -8384,12 +7153,6 @@ export async function registerRoutes(
       ).catch(() => ({ rows: [] }));
       unsubscribeRows.rows.forEach((row: any) => unsubscribedRecipients.add(cleanEmail(row.email)));
 
-      // Keep the first pass bounded and cheap. The former query embedded three
-      // correlated NOT EXISTS scans over email_tracking for every clicked row;
-      // production requests routinely exceeded the cron timeout as the table
-      // grew. Suppression is now evaluated in batched set queries below.
-      const selectionStartedAt = Date.now();
-      const candidateScanLimit = Math.min(Math.max(maxToSend * 20, 250), 5_000);
       const result = await pool.query(
         `WITH clicked AS (
            SELECT DISTINCT ON (LOWER(recipient_email))
@@ -8414,6 +7177,50 @@ export async function registerRoutes(
          )
          SELECT c.*
            FROM clicked c
+          WHERE NOT EXISTS (
+            SELECT 1
+              FROM email_tracking f
+             WHERE LOWER(f.recipient_email) = c.email
+               AND f.email_type = 'sendRecoveryCtaEmail'
+               AND f.sent_at >= NOW() - INTERVAL '14 days'
+               AND f.metadata->>'cohort' = 'clicked_help'
+               AND (
+                 f.sendpulse_task_id IS NOT NULL
+                 OR LOWER(COALESCE(f.sendpulse_status, '')) IN ('success', 'sent', 'delivered')
+               )
+          )
+            AND NOT EXISTS (
+              SELECT 1
+                FROM email_tracking b
+                LEFT JOIN cta_tracking ct ON ct.email_tracking_id = b.id
+               WHERE LOWER(b.recipient_email) = c.email
+                 AND (
+                   b.converted IS NOT NULL
+                   OR LOWER(COALESCE(b.sendpulse_status, '')) IN ('unsubscribed', 'auth_failed')
+                   OR LOWER(COALESCE(b.sendpulse_error, '')) LIKE '%unsubscribe%'
+                   OR LOWER(COALESCE(b.sendpulse_error, '')) LIKE '%spam%'
+                   OR LOWER(COALESCE(b.sendpulse_error, '')) LIKE '%bounce%'
+                   OR ct.event_type IN ('unsubscribe', 'spam', 'bounce')
+                   OR LOWER(b.recipient_email) IN (
+                     SELECT LOWER(recipient_email)
+                       FROM email_tracking
+                      WHERE email_type = 'sendRecoveryCtaEmail'
+                        AND sent_at >= NOW() - INTERVAL '6 hours'
+                        AND sendpulse_task_id IS NULL
+                        AND LOWER(COALESCE(sendpulse_status, '')) NOT IN ('success', 'sent', 'delivered')
+                      GROUP BY LOWER(recipient_email)
+                     HAVING COUNT(*) >= 3
+                   )
+                 )
+            )
+            AND NOT EXISTS (
+              SELECT 1
+                FROM orders o
+               WHERE LOWER(o.email) = c.email
+                 AND o.status = 'paid'
+                 AND COALESCE(o.final_amount_cents, o.amount_cents, 0) > 0
+                 AND COALESCE(o.paid_at, o.created_at) >= c.last_signal_at
+            )
           ORDER BY c.last_signal_at DESC
           LIMIT $5`,
         [
@@ -8421,107 +7228,13 @@ export async function registerRoutes(
           String(minHoursSinceClick),
           PROMO_EMAIL_TYPES,
           PROMO_SUBJECT_PATTERNS,
-          candidateScanLimit,
+          maxToSend,
         ]
       );
 
-      const scannedCandidates = result.rows
+      const candidates = result.rows
         .map((row: any) => ({ ...row, email: cleanEmail(row.email) }))
         .filter((row: any) => row.email && !isExcludedEmail(row.email) && !unsubscribedRecipients.has(row.email));
-      const candidateEmails = [...new Set(scannedCandidates.map((row: any) => row.email))];
-      const suppressionStartedAt = Date.now();
-
-      let candidates = scannedCandidates;
-      if (candidateEmails.length > 0) {
-        const [followupRows, blockedRows, repeatedFailureRows, paidRows] = await Promise.all([
-          pool.query(
-            `SELECT DISTINCT LOWER(recipient_email) AS email
-               FROM email_tracking
-              WHERE LOWER(recipient_email) = ANY($1::text[])
-                AND email_type = 'sendRecoveryCtaEmail'
-                AND sent_at >= NOW() - INTERVAL '14 days'
-                AND metadata->>'cohort' = 'clicked_help'
-                AND (
-                  sendpulse_task_id IS NOT NULL
-                  OR LOWER(COALESCE(sendpulse_status, '')) IN ('success', 'sent', 'delivered')
-                  OR metadata->>'deliveryState' = ANY($4::text[])
-                  OR (
-                    LOWER(COALESCE(sendpulse_status, '')) IN ('', 'pending')
-                    AND sent_at >= NOW() - ($2 || ' minutes')::interval
-                  )
-                  OR (
-                    LOWER(COALESCE(sendpulse_status, '')) = 'failed'
-                    AND sent_at >= NOW() - ($3 || ' minutes')::interval
-                  )
-                )`,
-            [
-              candidateEmails,
-              String(RECOVERY_CTA_CLICK_CLAIM_TTL_MINUTES),
-              String(RECOVERY_CTA_CLICK_RETRY_COOLDOWN_MINUTES),
-              RECOVERY_CTA_RECONCILIATION_STATES,
-            ],
-          ),
-          pool.query(
-            `SELECT DISTINCT LOWER(b.recipient_email) AS email
-               FROM email_tracking b
-               LEFT JOIN cta_tracking ct ON ct.email_tracking_id = b.id
-              WHERE LOWER(b.recipient_email) = ANY($1::text[])
-                AND (
-                  b.converted IS NOT NULL
-                  OR LOWER(COALESCE(b.sendpulse_status, '')) IN ('unsubscribed', 'auth_failed')
-                  OR LOWER(COALESCE(b.sendpulse_error, '')) LIKE '%unsubscribe%'
-                  OR LOWER(COALESCE(b.sendpulse_error, '')) LIKE '%spam%'
-                  OR LOWER(COALESCE(b.sendpulse_error, '')) LIKE '%bounce%'
-                  OR ct.event_type IN ('unsubscribe', 'spam', 'bounce')
-                )`,
-            [candidateEmails],
-          ),
-          pool.query(
-            `SELECT LOWER(recipient_email) AS email
-               FROM email_tracking
-              WHERE LOWER(recipient_email) = ANY($1::text[])
-                AND email_type = 'sendRecoveryCtaEmail'
-                AND sent_at >= NOW() - INTERVAL '6 hours'
-                AND sendpulse_task_id IS NULL
-                AND LOWER(COALESCE(sendpulse_status, '')) NOT IN ('success', 'sent', 'delivered')
-              GROUP BY LOWER(recipient_email)
-             HAVING COUNT(*) >= 3`,
-            [candidateEmails],
-          ),
-          pool.query(
-            `SELECT LOWER(email) AS email,
-                    MAX(COALESCE(paid_at, created_at)) AS latest_paid_at
-               FROM orders
-              WHERE LOWER(email) = ANY($1::text[])
-                AND status = 'paid'
-                AND COALESCE(final_amount_cents, amount_cents, 0) > 0
-              GROUP BY LOWER(email)`,
-            [candidateEmails],
-          ),
-        ]);
-
-        const suppressed = new Set<string>([
-          ...followupRows.rows.map((row: any) => cleanEmail(row.email)),
-          ...blockedRows.rows.map((row: any) => cleanEmail(row.email)),
-          ...repeatedFailureRows.rows.map((row: any) => cleanEmail(row.email)),
-        ]);
-        const paidAfterByEmail = new Map<string, number>(
-          paidRows.rows.map((row: any) => [cleanEmail(row.email), new Date(row.latest_paid_at).getTime()]),
-        );
-
-        candidates = scannedCandidates
-          .filter((candidate: any) => {
-            if (suppressed.has(candidate.email)) return false;
-            const latestPaidAt = paidAfterByEmail.get(candidate.email);
-            if (!Number.isFinite(latestPaidAt)) return true;
-            const lastSignalAt = new Date(candidate.last_signal_at).getTime();
-            return !Number.isFinite(lastSignalAt) || latestPaidAt! < lastSignalAt;
-          })
-          .slice(0, maxToSend);
-      }
-
-      const selectionMs = suppressionStartedAt - selectionStartedAt;
-      const suppressionMs = Date.now() - suppressionStartedAt;
 
       if (dryRun) {
         res.json({
@@ -8531,8 +7244,6 @@ export async function registerRoutes(
           minHoursSinceClick,
           eligible: candidates.length,
           selectedCount: candidates.length,
-          scannedCount: scannedCandidates.length,
-          queryTimings: { selectionMs, suppressionMs },
           subject: "Tu hesites sur la formule ?",
           cohort: "clicked_help",
           preview: candidates.slice(0, 25),
@@ -8543,53 +7254,25 @@ export async function registerRoutes(
       const results: Array<any> = [];
       let sent = 0;
       let failed = 0;
-      let skipped = 0;
       for (const candidate of candidates) {
         try {
-          const claim = await claimRecoveryCtaClickFollowup(pool, {
-            sourceTrackingId: candidate.source_tracking_id,
-            recipientEmail: candidate.email,
-            auditId: candidate.audit_id,
-            auditType: candidate.audit_type,
-          });
-          if (claim.action === "skip") {
-            skipped++;
-            results.push({
-              email: candidate.email,
-              sent: false,
-              skipped: true,
-              skipReason: claim.reason,
-              trackingId: claim.trackingId,
-              sourceTrackingId: candidate.source_tracking_id,
-              lastSignalAt: candidate.last_signal_at,
-            });
-            continue;
-          }
-
+          const trackingRecord = await storage.createEmailTracking(
+            candidate.audit_id || crypto.randomUUID(),
+            "sendRecoveryCtaEmail",
+            candidate.email
+          );
           const ok = await sendRecoveryCtaEmail(candidate.email, {
             cohort: "clicked_help",
             baseUrl,
-            trackingId: claim.trackingId!,
+            trackingId: trackingRecord.id,
             expiresText: "72 heures",
-            recoveryClickFollowup: {
-              idempotencyKey: claim.idempotencyKey,
-              sourceTrackingId: candidate.source_tracking_id,
-              claimAttempt: claim.attempt,
-            },
-            beforeProviderPost: (context) => markRecoveryCtaProviderPostStarted(pool, {
-              trackingId: claim.trackingId!,
-              idempotencyKey: claim.idempotencyKey,
-              recipientEmail: context.recipientEmail,
-              subject: context.subject,
-              startedAt: context.startedAt,
-            }),
           });
           if (ok) sent++;
           else failed++;
           results.push({
             email: candidate.email,
             sent: ok,
-            trackingId: claim.trackingId,
+            trackingId: trackingRecord.id,
             sourceTrackingId: candidate.source_tracking_id,
             lastSignalAt: candidate.last_signal_at,
           });
@@ -8613,7 +7296,6 @@ export async function registerRoutes(
         attempted: candidates.length,
         sent,
         failed,
-        skipped,
         results,
       });
     } catch (error) {
@@ -8621,81 +7303,6 @@ export async function registerRoutes(
       res.status(500).json({
         success: false,
         error: "Erreur recovery CTA click follow-up",
-        message: error instanceof Error ? error.message : String(error),
-      });
-    }
-  });
-
-  app.post("/api/admin/reconcile-recovery-cta-click-followups", async (req, res) => {
-    if (!requireAdminAuth(req, res)) return;
-    try {
-      const dryRun = req.body?.dryRun !== false;
-      const maxToReconcile = Math.min(Math.max(Number(req.body?.maxToReconcile) || 25, 1), 100);
-      const pending = await pool.query(
-        `SELECT id,
-                recipient_email,
-                subject,
-                metadata->>'recoveryClickFollowupKey' AS idempotency_key,
-                metadata->>'providerPostStartedAt' AS provider_post_started_at,
-                metadata->>'deliveryState' AS delivery_state
-           FROM email_tracking
-          WHERE email_type = 'sendRecoveryCtaEmail'
-            AND metadata->>'deliveryState' = ANY($2::text[])
-          ORDER BY COALESCE(
-            NULLIF(metadata->>'providerPostStartedAt', '')::timestamptz,
-            sent_at
-          ) ASC
-          LIMIT $1`,
-        [maxToReconcile, RECOVERY_CTA_RECONCILIATION_STATES],
-      );
-
-      const results: Array<Record<string, unknown>> = [];
-      for (const row of pending.rows) {
-        const providerPostStartedAt = new Date(row.provider_post_started_at || "");
-        const hasIdentity = Boolean(
-          row.id
-          && row.recipient_email
-          && row.subject
-          && row.idempotency_key
-          && Number.isFinite(providerPostStartedAt.getTime())
-        );
-        const outcome = hasIdentity
-          ? await reconcileRecoveryCtaSendPulseOutcome({
-              recipientEmail: row.recipient_email,
-              subject: row.subject,
-              providerPostStartedAt,
-            })
-          : { outcome: "unknown" as const, reason: "missing_reconciliation_identity" };
-        const transition = dryRun || !hasIdentity
-          ? "not_applied"
-          : await applyRecoveryCtaReconciliation(pool, {
-              trackingId: row.id,
-              idempotencyKey: row.idempotency_key,
-              outcome,
-            });
-        results.push({
-          trackingId: row.id,
-          recipientEmail: row.recipient_email,
-          previousState: row.delivery_state,
-          outcome,
-          transition,
-        });
-      }
-
-      res.json({
-        success: true,
-        dryRun,
-        inspected: pending.rows.length,
-        resolvedSuccess: results.filter((item: any) => item.outcome?.outcome === "success").length,
-        confirmedNotSent: results.filter((item: any) => item.outcome?.outcome === "confirmed_not_sent").length,
-        stillUnknown: results.filter((item: any) => item.outcome?.outcome === "unknown").length,
-        results,
-      });
-    } catch (error) {
-      console.error("[RecoveryCTA-Reconcile] Error:", error);
-      res.status(500).json({
-        success: false,
-        error: "Erreur reconciliation recovery CTA click follow-up",
         message: error instanceof Error ? error.message : String(error),
       });
     }
@@ -8720,11 +7327,9 @@ export async function registerRoutes(
         if (!audit.email) continue;
         if (audit.createdAt && new Date(audit.createdAt) < new Date('2026-03-17')) continue; // Only post-launch
 
-        // Never ask for feedback on an undelivered, superseded or non-premium
-        // Discovery report. The exact persisted premium gate is authoritative.
-        if (!isAuditEligibleForPostDeliveryAutomation(audit as any)) continue;
-
-        const sentAt = (audit as any).reportSentAt;
+        // Check if report was sent (has reportSentAt or status SENT)
+        const sentAt = (audit as any).reportSentAt || audit.createdAt;
+        if (!sentAt) continue;
         const daysSinceSent = (now.getTime() - new Date(sentAt).getTime()) / (24 * 60 * 60 * 1000);
         const maxDays = req.body.catchUp ? 90 : 14; // catchUp=true → rattrapage tous les anciens clients
         if (daysSinceSent < 3 || daysSinceSent > maxDays) continue;
@@ -8756,7 +7361,7 @@ export async function registerRoutes(
           const result = await sendReviewRequestJ3Email(
             audit.email,
             audit.id,
-            audit.type || "GRATUIT",
+            audit.auditType || "GRATUIT",
             baseUrl,
             trackingRecord.id
           );
@@ -8918,7 +7523,7 @@ export async function registerRoutes(
         }
       }
 
-      res.json({ success: true, review, promoCode: promoConfig?.code ?? null });
+      res.json({ success: true, review });
     } catch (error) {
       console.error("[Admin Approve] Error:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
@@ -8970,10 +7575,11 @@ export async function registerRoutes(
     try {
       const { auditId } = req.params;
       const review = await reviewStorage.getReviewByAuditId(auditId);
-      const approvedPromoCode = review?.status === "approved"
-        ? (review.promoCode || PROMO_CODES_BY_AUDIT_TYPE[review.auditType]?.code || null)
-        : null;
-      res.json(buildPublicReviewCheckResponse(review, approvedPromoCode));
+      res.json({
+        success: true,
+        hasReview: !!review,
+        review: review || null
+      });
     } catch (error) {
       console.error("[Review Check] Error:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
@@ -9412,7 +8018,12 @@ export async function registerRoutes(
         res.status(400).json({ success: false, error: "email requis" });
         return;
       }
-      const sent = await sendReactivationCampaignEmail(email.trim().toLowerCase(), {
+      const normalizedEmail = email.trim().toLowerCase();
+      if (await storage.hasUserPurchasedCoaching(normalizedEmail)) {
+        res.json({ success: true, skipped: true, reason: "already_purchased_coaching", email: normalizedEmail });
+        return;
+      }
+      const sent = await sendReactivationCampaignEmail(normalizedEmail, {
         apexPromoCode,
         coachingPromoCode,
         expiresText,
@@ -9421,7 +8032,7 @@ export async function registerRoutes(
         res.status(500).json({ success: false, error: "Echec envoi" });
         return;
       }
-      res.json({ success: true, email });
+      res.json({ success: true, email: normalizedEmail });
     } catch (error) {
       console.error("[Admin] send-reactivation-campaign error:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
@@ -9439,6 +8050,10 @@ export async function registerRoutes(
 
       if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         res.status(400).json({ success: false, error: "email valide requis" });
+        return;
+      }
+      if (await storage.hasUserPurchasedCoaching(email)) {
+        res.json({ success: true, skipped: true, reason: "already_purchased_coaching", email });
         return;
       }
 
@@ -9515,7 +8130,12 @@ export async function registerRoutes(
         res.status(400).json({ success: false, error: "email requis" });
         return;
       }
-      const sent = await sendFinishDiscoveryEmail(email.trim().toLowerCase(), {
+      const normalizedEmail = email.trim().toLowerCase();
+      if (await storage.hasUserPurchasedCoaching(normalizedEmail)) {
+        res.json({ success: true, skipped: true, reason: "already_purchased_coaching", email: normalizedEmail });
+        return;
+      }
+      const sent = await sendFinishDiscoveryEmail(normalizedEmail, {
         apexPromoCode,
         expiresText,
       });
@@ -9523,7 +8143,7 @@ export async function registerRoutes(
         res.status(500).json({ success: false, error: "Echec envoi" });
         return;
       }
-      res.json({ success: true, email });
+      res.json({ success: true, email: normalizedEmail });
     } catch (error) {
       console.error("[Admin] send-finish-discovery error:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
@@ -9540,7 +8160,12 @@ export async function registerRoutes(
         res.status(400).json({ success: false, error: "email requis" });
         return;
       }
-      const sent = await sendCrossSellUpgradeEmail(email.trim().toLowerCase(), {
+      const normalizedEmail = email.trim().toLowerCase();
+      if (await storage.hasUserPurchasedCoaching(normalizedEmail)) {
+        res.json({ success: true, skipped: true, reason: "already_purchased_coaching", email: normalizedEmail });
+        return;
+      }
+      const sent = await sendCrossSellUpgradeEmail(normalizedEmail, {
         apexPromoCode,
         coachingPromoCode,
         expiresText,
@@ -9549,7 +8174,7 @@ export async function registerRoutes(
         res.status(500).json({ success: false, error: "Echec envoi" });
         return;
       }
-      res.json({ success: true, email });
+      res.json({ success: true, email: normalizedEmail });
     } catch (error) {
       console.error("[Admin] send-cross-sell-upgrade error:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
@@ -9559,24 +8184,17 @@ export async function registerRoutes(
   app.post("/api/admin/audits/:id/mark-handled", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
-      const result = await runGenericAuditMutation({
-        auditId: String(req.params.id),
-        operation: "admin.mark-handled",
-        mutate: async (client) => client.query(
-          "UPDATE audits SET report_delivery_status = 'SENT', report_sent_at = NOW() WHERE id = $1 AND type <> 'GRATUIT' AND report_delivery_status IN ('SCHEDULED','READY') RETURNING id",
-          [req.params.id],
-        ),
-      }, pool);
+      const { pool } = await import("./db");
+      const result = await pool.query(
+        "UPDATE audits SET report_delivery_status = 'SENT', report_sent_at = NOW() WHERE id = $1 AND report_delivery_status IN ('SCHEDULED','READY') RETURNING id",
+        [req.params.id]
+      );
       if (result.rowCount === 0) {
         res.status(404).json({ success: false, error: "Audit introuvable ou déjà traité (pas SCHEDULED/READY)" });
         return;
       }
       res.json({ success: true, auditId: req.params.id });
     } catch (error) {
-      if (error instanceof GenericAuditMutationBarrierError) {
-        res.status(error.code === "AUDIT_NOT_FOUND" ? 404 : 409).json({ success: false, error: error.reason || error.code });
-        return;
-      }
       console.error("[Admin] mark-handled error:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
     }
@@ -9653,10 +8271,7 @@ export async function registerRoutes(
         try {
           const { generatePeptidesProtocol } = await import("./peptidesEngine");
           const forcePaidTier = ((order.metadata as any)?.peptidesTier as "solo" | "coached" | "tracked" | undefined) ?? "coached";
-          const report = await generatePeptidesProtocol(responses, order.email, forcePaidTier, {
-            orderId: order.id,
-            consentAccepted: hasValidPeptidesConsent((order.metadata as any)?.peptidesEngineConsent),
-          });
+          const report = await generatePeptidesProtocol(responses, order.email, forcePaidTier);
           const saved = await storage.createBurnoutReport({
             email: `peptides::${order.email}`,
             responses,
@@ -9671,14 +8286,25 @@ export async function registerRoutes(
           }
 
           const peptidesNames = (report.peptides || []).map((p: any) => p.name).join(", ");
+          const firstName = responses.pep_name || responses.prenom || (order.email.split("@")[0]);
+
           if (body.sendConfirmation !== false && claimed) {
-            const fresh = await storage.getOrder(order.id).catch(() => undefined);
-            result.confirmationSent = fresh
-              ? await ensurePeptidesOrderConfirmation(fresh, report).catch((err) => {
-                  console.error("[Force-Paid] Confirmation email failed:", err);
-                  return false;
-                })
-              : false;
+            const scheduledAt = await (async () => {
+              try {
+                const fresh = await storage.getOrder(order.id);
+                return fresh ? await resolvePeptidesEmailScheduledAt(fresh) : new Date();
+              } catch { return new Date(); }
+            })();
+            await sendPeptidesOrderConfirmationEmail(order.email, {
+              firstName,
+              amountEur: (order.finalAmountCents || 0) / 100,
+              promoCode: (order as any).promoCode || null,
+              peptidesNames,
+              scheduledDeliveryAt: scheduledAt,
+              bloodCreditsCount: Array.isArray(report.promoCodesGenerated) ? report.promoCodesGenerated.length : 0,
+              orderId: order.id,
+            }).catch((err) => console.error("[Force-Paid] Confirmation email failed:", err));
+            result.confirmationSent = true;
           }
           result.peptidesNames = peptidesNames;
           result.reportLink = `${getBaseUrl()}/peptides/${saved.id}`;
@@ -9857,17 +8483,12 @@ export async function registerRoutes(
       // txt + html ,  used by admin recovery flows when an artifact exists but
       // narrativeReport never hydrated (e.g. send marked SENT without delivery).
       const withContent = req.query.content === "1";
-      const requestedLimit = Number.parseInt(String(req.query.limit || "10"), 10);
-      const limit = Math.min(10, Math.max(1, Number.isFinite(requestedLimit) ? requestedLimit : 10));
       const cols = withContent
-        ? "id, audit_id, tier, engine, model, txt, html, artifact_state, superseded_at, supersedes_artifact_id, created_at"
-        : "id, audit_id, tier, engine, model, artifact_state, superseded_at, supersedes_artifact_id, created_at";
+        ? "id, audit_id, tier, engine, model, txt, html, created_at"
+        : "id, audit_id, tier, engine, model, created_at";
       const result = await pool.query(
-        `SELECT ${cols} FROM report_artifacts
-          WHERE audit_id = $1 AND artifact_state = 'ACTIVE'
-          ORDER BY created_at DESC
-          LIMIT $2`,
-        [auditId, limit]
+        `SELECT ${cols} FROM report_artifacts WHERE audit_id = $1 ORDER BY created_at DESC`,
+        [auditId]
       );
       res.json({
         success: true,
@@ -9877,9 +8498,6 @@ export async function registerRoutes(
           tier: r.tier,
           engine: r.engine,
           model: r.model,
-          artifactState: r.artifact_state,
-          supersededAt: r.superseded_at,
-          supersedesArtifactId: r.supersedes_artifact_id,
           createdAt: r.created_at,
           ...(withContent ? { txt: r.txt, html: r.html } : {}),
         })),
@@ -9935,7 +8553,6 @@ export async function registerRoutes(
   // fresh emails the next time they tick.
   app.post("/api/admin/email-trackings/purge-failed", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
-    if (!requireNonProductionEmailTrackingMutation(res, "admin.email-trackings.purge-failed")) return;
     try {
       const sinceParam = (req.query.since as string) || (req.body as any)?.since;
       const since = sinceParam ? new Date(sinceParam) : new Date(Date.now() - 48 * 60 * 60 * 1000);
@@ -9948,11 +8565,9 @@ export async function registerRoutes(
       // errors during the window. Doesn't touch delivered-but-unopened rows.
       const resBefore = await pool.query(
         `SELECT email_type, COUNT(*)::int AS c
-          FROM email_tracking
+           FROM email_tracking
           WHERE sendpulse_status = 'failed'
             AND sent_at >= $1
-            AND COALESCE(audit_type, '') <> 'GRATUIT'
-            AND COALESCE(email_type, '') <> 'sendReportReadyEmail'
             AND (sendpulse_error ILIKE '%auth%' OR sendpulse_error ILIKE '%credentials%' OR sendpulse_error ILIKE '%invalid_client%')
           GROUP BY email_type
           ORDER BY c DESC`,
@@ -9971,8 +8586,6 @@ export async function registerRoutes(
         `DELETE FROM email_tracking
           WHERE sendpulse_status = 'failed'
             AND sent_at >= $1
-            AND COALESCE(audit_type, '') <> 'GRATUIT'
-            AND COALESCE(email_type, '') <> 'sendReportReadyEmail'
             AND (sendpulse_error ILIKE '%auth%' OR sendpulse_error ILIKE '%credentials%' OR sendpulse_error ILIKE '%invalid_client%')
           RETURNING id`,
         [since.toISOString()]
@@ -10600,12 +9213,14 @@ export async function registerRoutes(
 
       // Get all SENT audits
       const allAudits = await storage.getAllAudits();
-      const sentAudits = allAudits.filter(a =>
-        isAuditEligibleForPostDeliveryAutomation(a as any)
-      );
+      const sentAudits = allAudits.filter(a => a.reportDeliveryStatus === "SENT" && a.reportSentAt);
 
       for (const audit of sentAudits) {
         try {
+          if (!audit.email) continue;
+          const hasPurchasedCoaching = await storage.hasUserPurchasedCoaching(audit.email);
+          if (hasPurchasedCoaching) continue;
+
           const sentAt = new Date(audit.reportSentAt!);
           const daysSinceSent = Math.floor((now.getTime() - sentAt.getTime()) / (1000 * 60 * 60 * 24));
 
@@ -10726,6 +9341,7 @@ export async function registerRoutes(
             const daysSincePaid = Math.floor((now.getTime() - paidAt.getTime()) / (1000 * 60 * 60 * 24));
             const email = order.email;
             if (!email || email.includes("test") || email.includes("debug") || email.includes("audit.final")) continue;
+            if (await storage.hasUserPurchasedCoaching(email)) continue;
 
             // Get tracking for this order
             const { db } = await import("./db");
@@ -10845,6 +9461,7 @@ export async function registerRoutes(
         for (const order of pendingPeptides) {
           const email = order.email;
           if (!email || email.includes("test") || email.includes("debug") || email.includes("achzodcoaching")) continue;
+          if (await storage.hasUserPurchasedCoaching(email)) continue;
 
           // Skip if this email already has a paid peptides order
           const hasPaid = peptidesOrders.some((p: any) => p.email === email);
@@ -10909,11 +9526,99 @@ export async function registerRoutes(
     }
   });
 
-  // Retired: this endpoint used to create synthetic Discovery audits directly
-  // in production and could leave them PENDING outside the transactional flow.
+  // Create test data for relances (TEMPORARY - DELETE AFTER TESTING)
   app.post("/api/admin/create-test-relances", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
-    res.status(410).json({ success: false, error: "ADMIN_TEST_AUDIT_CREATION_RETIRED" });
+    try {
+      const results: string[] = [];
+
+      // Get existing audits to find a valid userId
+      const existingAudits = await storage.getAllAudits();
+      const userId = existingAudits[0]?.userId || "test-user";
+
+      // Create 2 GRATUIT audits (sent 3-5 days ago)
+      const gratuit1 = await storage.createAudit({
+        email: "achkou+gratuit1@gmail.com",
+        type: "GRATUIT",
+        responses: { test: true },
+        userId,
+      });
+      await storage.updateAudit(gratuit1.id, {
+        status: "COMPLETED",
+        reportDeliveryStatus: "SENT",
+        reportSentAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
+      });
+
+      const gratuit2 = await storage.createAudit({
+        email: "achkou+gratuit2@gmail.com",
+        type: "GRATUIT",
+        responses: { test: true },
+        userId,
+      });
+      await storage.updateAudit(gratuit2.id, {
+        status: "COMPLETED",
+        reportDeliveryStatus: "SENT",
+        reportSentAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
+      });
+      results.push("2 GRATUIT audits créés");
+
+      // Create 2 PREMIUM J+7 audits (sent 8-10 days ago)
+      const premium7a = await storage.createAudit({
+        email: "achkou+premium7a@gmail.com",
+        type: "PREMIUM",
+        responses: { test: true },
+        userId,
+      });
+      await storage.updateAudit(premium7a.id, {
+        status: "COMPLETED",
+        reportDeliveryStatus: "SENT",
+        reportSentAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000)
+      });
+
+      const premium7b = await storage.createAudit({
+        email: "achkou+premium7b@gmail.com",
+        type: "PREMIUM",
+        responses: { test: true },
+        userId,
+      });
+      await storage.updateAudit(premium7b.id, {
+        status: "COMPLETED",
+        reportDeliveryStatus: "SENT",
+        reportSentAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000)
+      });
+      results.push("2 PREMIUM J+7 audits créés");
+
+      // Create 2 PREMIUM J+14 audits (sent 15-20 days ago)
+      const premium14a = await storage.createAudit({
+        email: "achkou+premium14a@gmail.com",
+        type: "PREMIUM",
+        responses: { test: true },
+        userId,
+      });
+      await storage.updateAudit(premium14a.id, {
+        status: "COMPLETED",
+        reportDeliveryStatus: "SENT",
+        reportSentAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000)
+      });
+
+      const premium14b = await storage.createAudit({
+        email: "achkou+premium14b@gmail.com",
+        type: "ELITE",
+        responses: { test: true },
+        userId,
+      });
+      await storage.updateAudit(premium14b.id, {
+        status: "COMPLETED",
+        reportDeliveryStatus: "SENT",
+        reportSentAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000)
+      });
+      results.push("2 PREMIUM J+14 audits créés");
+
+      res.json({ success: true, results });
+    } catch (error: any) {
+      console.error("[Test Data] Error:", error);
+      res.status(500).json({ success: false, error: "Erreur création données test" });
+    }
   });
 
   // Manual trigger for testing specific email sequence
@@ -10930,6 +9635,15 @@ export async function registerRoutes(
       const audit = await storage.getAudit(auditId);
       if (!audit) {
         res.status(404).json({ success: false, error: "Audit non trouvé" });
+        return;
+      }
+      if (await storage.hasUserPurchasedCoaching(audit.email)) {
+        res.json({
+          success: true,
+          skipped: true,
+          reason: "already_purchased_coaching",
+          email: audit.email,
+        });
         return;
       }
 
@@ -10972,10 +9686,22 @@ export async function registerRoutes(
   // Analyze Discovery Scan (free tier) - returns NarrativeReport format for dashboard
   app.post("/api/discovery-scan/analyze", discoveryLimiter, async (req, res) => {
     try {
-      if (!requireAdminAuth(req, res)) return;
-      res.status(410).json({
-        success: false,
-        error: "Endpoint désactivé: utilise la création Discovery transactionnelle",
+      const { responses } = req.body;
+
+      if (!responses) {
+        res.status(400).json({ success: false, error: "Responses manquantes" });
+        return;
+      }
+
+      console.log(`[Discovery Scan] Starting analysis for ${responses.prenom || 'Client'}...`);
+
+      // Analyze and convert to dashboard format with AI content
+      const result = await analyzeDiscoveryScan(responses);
+      const narrativeReport = await convertToNarrativeReport(result, responses);
+
+      res.json({
+        success: true,
+        narrativeReport
       });
     } catch (error: any) {
       console.error("[Discovery Scan] Error:", error);
@@ -10996,55 +9722,50 @@ export async function registerRoutes(
         return;
       }
 
-      if (isBlockedDiscoveryTestEmail(email)) {
-        console.warn(`[Discovery Scan] ⏭️ Blocked test/disposable email before audit creation: ${email}`);
-        res.status(400).json({ success: false, error: "Email invalide" });
-        return;
-      }
-
       // IDEMPOTENCY: same email + GRATUIT within 10 min → return existing audit + narrative.
       // This endpoint is particularly exposed to double-submit because the landing funnel
       // re-submits on navigation back/forward and on network retries.
       const existingRecent = await storage.findRecentAuditByEmailAndType(email, "GRATUIT", 10).catch(() => undefined);
       if (existingRecent) {
         console.warn(`[Discovery Scan] ⏭️ Idempotency hit , returning existing audit ${existingRecent.id} for ${email}`);
-        const exposeExisting = await canExposePersistedDiscoveryReport(existingRecent);
         res.json({
           success: true,
           auditId: existingRecent.id,
-          narrativeReport: exposeExisting ? (existingRecent as any).narrativeReport ?? null : null,
-          status: exposeExisting ? "ready" : "review",
+          narrativeReport: (existingRecent as any).narrativeReport ?? null,
           idempotent: true,
         });
         return;
       }
 
       // Create audit record
-      const audit = await storage.createDiscoveryAudit({
+      const audit = await storage.createAudit({
         userId: "",
         type: "GRATUIT",
         email,
         responses,
       });
 
-      if (!isDiscoveryTransactionalAutomationEligible(audit)) {
-        console.warn(`[Discovery Scan] Transactional automation disabled or audit before cutoff: ${audit.id}`);
-        res.status(202).json({
+      // Atomic generation claim , if we lose the CAS, another process is already
+      // generating this audit's report. We serve the existing state instead of
+      // kicking off a parallel generator.
+      const claimedGen = await storage.claimAuditForGeneration(audit.id).catch(() => false);
+      if (!claimedGen) {
+        const fresh = await storage.getAudit(audit.id).catch(() => undefined);
+        console.warn(`[Discovery Scan] ⏭️ Could not claim audit ${audit.id} for generation , returning current state`);
+        res.json({
           success: true,
           auditId: audit.id,
-          narrativeReport: null,
-          status: "needs_review",
+          narrativeReport: (fresh as any)?.narrativeReport ?? null,
+          idempotent: true,
         });
         return;
       }
 
       try {
-        const generated = await generateAndPersistPremiumDiscoveryReport(audit.id);
-        if (!generated) {
-          res.status(409).json({ success: false, error: "Génération déjà en cours ou interdite" });
-          return;
-        }
-        const persisted = await storage.getAudit(audit.id);
+        // Generate analysis and convert to NarrativeReport format with AI content
+        const result = await analyzeDiscoveryScan(responses);
+        const narrativeReport = await convertToNarrativeReport(result, responses);
+        await persistDiscoveryReport(audit.id, narrativeReport, "READY");
 
         console.log(`[Discovery Scan] Audit ${audit.id} created for ${email}`);
 
@@ -11055,17 +9776,14 @@ export async function registerRoutes(
           await sendAdminEmailNewAudit(email, clientName, audit.type, audit.id);
         }
 
-        const exposePersisted = persisted
-          ? await canExposePersistedDiscoveryReport(persisted)
-          : false;
         res.json({
           success: true,
           auditId: audit.id,
-          narrativeReport: exposePersisted ? persisted?.narrativeReport : null,
-          status: exposePersisted ? "ready" : "review",
+          narrativeReport
         });
       } catch (error) {
         console.error("[Discovery Scan] Create error (generation):", error);
+        await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" });
         res.status(500).json({ success: false, error: "Rapport en révision. Réessaie plus tard." });
       }
     } catch (error: any) {
@@ -11090,19 +9808,6 @@ export async function registerRoutes(
 
       if (audit.type !== "GRATUIT") {
         res.status(400).json({ success: false, error: "Ce n'est pas un Discovery Scan" });
-        return;
-      }
-
-      if (isDiscoverySupersededTerminal(audit)) {
-        const recovery = audit.narrativeReport && typeof audit.narrativeReport === "object"
-          ? (audit.narrativeReport as Record<string, any>).recovery
-          : null;
-        res.status(410).json({
-          success: false,
-          status: "superseded",
-          replacementAuditId: recovery?.replacementAuditId || null,
-          message: "Ce scan a été remplacé par un rapport plus récent.",
-        });
         return;
       }
 
@@ -11153,26 +9858,10 @@ export async function registerRoutes(
       const existingReport = audit.narrativeReport as any;
       const storedTxt = String((audit as any).reportTxt || existingReport?.txt || "").trim();
       const storedHtml = String((audit as any).reportHtml || existingReport?.html || "").trim();
-      const canonicalArtifacts = await pool.query(
-        `SELECT txt, html, content_sha256 AS "contentSha256"
-           FROM report_artifacts
-          WHERE audit_id=$1 AND artifact_state='ACTIVE'
-          ORDER BY created_at ASC, id ASC`,
-        [audit.id],
-      );
-      const canonicalDiscovery = resolveCanonicalDiscoveryArtifacts({
-        narrativeReport: existingReport,
-        reportTxt: storedTxt,
-        reportHtml: storedHtml,
-        reportArtifacts: canonicalArtifacts.rows,
-      });
-      const canonicalDiscoveryGate = evaluateCanonicalDiscoveryArtifacts(canonicalDiscovery);
-      const publicReportEligible = await canExposePersistedDiscoveryReport(audit)
-        && canonicalDiscoveryGate.ok;
       const reportHasEnoughSections =
         existingReport &&
         Array.isArray(existingReport.sections) &&
-        existingReport.sections.length >= 4;
+        existingReport.sections.length >= 10;
       const reportHasEnoughMetrics =
         existingReport &&
         Array.isArray(existingReport.metrics) &&
@@ -11201,12 +9890,22 @@ export async function registerRoutes(
       );
 
       // If report already exists and is valid, return it immediately
-      if (publicReportEligible && existingReport && !invalidReport) {
+      if (existingReport && !invalidReport) {
+        if (storedTxt.length < 500 || storedHtml.length < 1000 || !audit.reportGeneratedAt) {
+          const hydratedAssets = buildDiscoveryReportAssets(existingReport);
+          await storage.updateAudit(audit.id, {
+            reportTxt: hydratedAssets.txt,
+            reportHtml: hydratedAssets.html,
+            reportGeneratedAt: audit.reportGeneratedAt || new Date(existingReport.generatedAt || Date.now()),
+          }).catch((error) => {
+            console.error("[Discovery Fetch] Unable to hydrate persisted assets:", error);
+          });
+        }
         res.json(existingReport);
         return;
       }
 
-      if (publicReportEligible && storedTxt.length > 300) {
+      if (storedTxt.length > 300) {
         try {
           const storedDiscoveryReport = parseStoredDiscoveryTxt(storedTxt);
           if (storedDiscoveryReport && storedDiscoveryReport.sections.length >= 4) {
@@ -11248,13 +9947,14 @@ export async function registerRoutes(
         return;
       }
 
-      // A public GET is strictly read-only. Missing or invalid content is
-      // observed here; only the persisted monitoring/recovery worker may
-      // change lifecycle state or enqueue generation.
+      // A public GET is read-only. Missing or invalid content is handed to the
+      // persisted recovery worker instead of starting untracked GPT calls that
+      // can overlap, overwrite a scheduled status, and create duplicate cost.
+      await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" });
       res.status(202).json({
         success: true,
-        status: String(audit.reportDeliveryStatus || "needs_review").toLowerCase(),
-        message: "Rapport indisponible pour le moment",
+        status: "needs_review",
+        message: "Rapport place dans la file de regeneration",
       });
       return;
     } catch (error: any) {
@@ -11269,7 +9969,6 @@ export async function registerRoutes(
   // Force regenerate a Discovery Scan if stuck
   app.post("/api/discovery-scan/:auditId/regenerate", async (req, res) => {
     try {
-      if (!requireAdminAuth(req, res)) return;
       const { auditId } = req.params;
       const audit = await storage.getAudit(auditId);
 
@@ -11283,20 +9982,11 @@ export async function registerRoutes(
         return;
       }
 
-      if (!isDiscoveryTransactionalAutomationEligible(audit)) {
-        res.status(409).json({
-          success: false,
-          error: "Discovery hors fenêtre d'automatisation transactionnelle",
-        });
-        return;
-      }
-
-      if (audit.reportSentAt || audit.reportDeliveryStatus === "SENT"
-        || isDiscoverySupersededTerminal(audit)) {
-        res.status(409).json({
-          success: false,
-          error: "Discovery terminal: regeneration interdite",
-        });
+      // Atomic claim first so two concurrent regenerate clicks cannot both
+      // start work for the same audit.
+      const claimedDisc = await storage.claimAuditForGeneration(audit.id).catch(() => false);
+      if (!claimedDisc) {
+        res.status(409).json({ success: false, error: "Regeneration déjà en cours" });
         return;
       }
 
@@ -11305,11 +9995,13 @@ export async function registerRoutes(
 
       (async () => {
         try {
-          const generated = await generateAndPersistPremiumDiscoveryReport(audit.id);
-          if (!generated) throw new Error("DISCOVERY_GENERATION_CLAIM_REJECTED");
+          const result = await analyzeDiscoveryScan(audit.responses as any);
+          const narrativeReport = await convertToNarrativeReport(result, audit.responses as any);
+          await persistDiscoveryReport(audit.id, narrativeReport, "READY");
           console.log(`[Discovery Regenerate] Success for ${audit.id}`);
         } catch (err) {
           console.error("[Discovery Regenerate] Error:", err);
+          await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" });
         }
       })();
     } catch (error) {
@@ -11804,7 +10496,6 @@ export async function registerRoutes(
   // Create waitlist table if it doesn't exist (one-time migration)
   app.post("/api/admin/db-migrate", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
-    if (!requireNonProductionEmailTrackingMutation(res, "admin.db-migrate.drop-email-tracking")) return;
     try {
       const { Pool } = await import("pg");
       const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
@@ -11919,12 +10610,9 @@ export async function registerRoutes(
 
   app.post("/api/stripe/webhook", async (req, res) => {
     const sig = req.headers["stripe-signature"];
-    const webhookSecrets = [
-      process.env.STRIPE_WEBHOOK_SECRET,
-      process.env.STRIPE_WEBHOOK_SECRET_FR,
-    ].filter((value, index, arr): value is string => Boolean(value) && arr.indexOf(value) === index);
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-    if (!webhookSecrets.length || !sig) {
+    if (!webhookSecret || !sig) {
       res.status(400).json({ error: "Missing webhook configuration" });
       return;
     }
@@ -11932,16 +10620,7 @@ export async function registerRoutes(
     let event: any;
     try {
       const stripe = await getUncachableStripeClient();
-      let lastError: any;
-      for (const webhookSecret of webhookSecrets) {
-        try {
-          event = stripe.webhooks.constructEvent(req.rawBody as string | Buffer, sig as string, webhookSecret);
-          break;
-        } catch (err) {
-          lastError = err;
-        }
-      }
-      if (!event) throw lastError;
+      event = stripe.webhooks.constructEvent(req.rawBody as string | Buffer, sig as string, webhookSecret);
     } catch (err: any) {
       console.error("[Webhook] Signature verification failed:", err.message);
       res.status(400).json({ error: "Invalid signature" });
@@ -11959,7 +10638,7 @@ export async function registerRoutes(
       switch (event.type) {
         case "checkout.session.completed": {
           const session = event.data.object;
-          const order = await getOrderByStripeSessionOrMetadata(session.id, session.metadata as Record<string, unknown> | null);
+          const order = await storage.getOrderByStripeSession(session.id);
           if (order && order.status === "pending") {
             await storage.updateOrder(order.id, {
               status: "paid",
@@ -11968,15 +10647,6 @@ export async function registerRoutes(
               stripeCustomerId: session.customer || null,
             });
             console.log(`[Webhook] Order ${order.id} marked as paid via webhook`);
-
-            if (order.productType === "PEPTIDES_ENGINE") {
-              const paidOrder = await storage.getOrder(order.id).catch(() => undefined);
-              if (paidOrder) {
-                await ensurePeptidesOrderConfirmation(paidOrder).catch((error) => {
-                  console.error(`[Webhook] Peptides confirmation failed for ${order.email}:`, error);
-                });
-              }
-            }
 
             // Meta CAPI , server-side Purchase event (recovers 30-50% lost to ITP/adblockers)
             // event_id must match the client-side Pixel eventID for Meta to dedup correctly.
@@ -12056,7 +10726,7 @@ export async function registerRoutes(
               }
               const promo2 = promoByType2[order.productType];
               const prodLabel2 = order.productType === "ELITE" ? "Ultimate Scan" : order.productType === "PREMIUM" ? "Anabolic Bioscan" : order.productType === "BLOOD_ANALYSIS" ? "Blood Analysis" : order.productType === "PEPTIDES_ENGINE" ? "Peptides Engine" : order.productName;
-              if (["ELITE", "PREMIUM", "BLOOD_ANALYSIS"].includes(order.productType)) {
+              if (["ELITE", "PREMIUM", "BLOOD_ANALYSIS", "PEPTIDES_ENGINE"].includes(order.productType)) {
                 const isPeptides = order.productType === "PEPTIDES_ENGINE";
                 const isBlood = order.productType === "BLOOD_ANALYSIS";
                 let msg: string;
@@ -12121,17 +10791,79 @@ export async function registerRoutes(
               console.log(`[Webhook] Peptides Engine paid for ${email} , setInterval will generate`);
             }
 
-          }
+            if (email && planType && !order.auditId && ["GRATUIT", "PREMIUM", "ELITE"].includes(planType)) {
+              console.log(`[Webhook] Creating audit automatically for order ${order.id} (${email}, ${planType})`);
 
-          // Recovery must run even when a prior confirm-session attempt already
-          // marked the order paid but crashed before linking the audit. Stripe
-          // redeliveries otherwise skip the entire pending-only block forever.
-          if (order) {
-            const recovered = await recoverMissingPaidAudit(order, "stripe-webhook");
-            if (recovered && !recovered.success) {
-              // Fail the webhook so Stripe redelivers it. Side effects above are
-              // protected by order flags, and the recovery itself is locked.
-              throw new Error(`PAID_AUDIT_RECOVERY_DEFERRED:${recovered.error}`);
+              try {
+                const progress = await storage.getProgress(email);
+                let responses = progress?.responses as Record<string, unknown> | string | undefined;
+
+                if (typeof responses === "string") {
+                  try { responses = JSON.parse(responses); } catch { responses = undefined; }
+                }
+                if ((!responses || Object.keys(responses).length === 0) && order.metadata && typeof order.metadata === "object") {
+                  const orderResponses = (order.metadata as Record<string, unknown>).questionnaireResponses;
+                  if (orderResponses && typeof orderResponses === "object") {
+                    responses = orderResponses as Record<string, unknown>;
+                  }
+                }
+
+                if (responses && Object.keys(responses).length > 0) {
+                  // Check for 3 photos if ELITE
+                  if (planType === "ELITE" && !hasThreePhotos(responses as Record<string, unknown>)) {
+                    console.warn(`[Webhook] ⚠️  3 photos obligatoires pour Ultimate Scan: ${email}`);
+                  } else {
+                    // IDEMPOTENCY: if /api/audit/create already ran, or the webhook fires
+                    // twice (Stripe retries), we reuse the recent audit. Prevents two
+                    // audits → two generations → two different reports landing in inbox.
+                    const recent = await storage.findRecentAuditByEmailAndType(email, planType as any, 30).catch(() => undefined);
+                    const audit = recent ?? await storage.createAudit({
+                      userId: "",
+                      type: planType as any,
+                      email,
+                      responses: responses as Record<string, unknown>,
+                    });
+
+                    if (recent) {
+                      console.log(`[Webhook] ♻️  Reusing recent audit ${audit.id} for ${email} (${planType}) , no duplicate creation`);
+                    } else {
+                      console.log(`[Webhook] ✅ Audit ${audit.id} created automatically for order ${order.id}`);
+                    }
+
+                    // Link order to audit (CAS-style: sets audit_id only if currently NULL)
+                    await storage.claimOrderForAudit(order.id, audit.id);
+
+                    // Clean up questionnaire progress
+                    await storage.deleteProgress(email).catch(() => {});
+
+                    // Trigger report generation + email for PREMIUM/ELITE, but only if we
+                    // win the atomic CAS on report_delivery_status. Losing the CAS means
+                    // another caller (inline create, prior webhook fire) already has it.
+                    if (planType === "PREMIUM" || planType === "ELITE") {
+                      const claimed = await storage.claimAuditForGeneration(audit.id).catch(() => false);
+                      if (!claimed) {
+                        console.warn(`[Webhook] ⏭️ Could not claim audit ${audit.id} for generation , another process owns it, NOT triggering parallel gen`);
+                      } else {
+                        try {
+                          await startReportGeneration(audit.id, responses as Record<string, unknown>, {}, planType);
+                          processReportAndSendEmail(audit.id, email, planType).catch((err) => {
+                            console.error(`[Webhook] processReportAndSendEmail failed for ${audit.id}:`, err);
+                            storage.updateAudit(audit.id, { reportDeliveryStatus: "EMAIL_FAILED" }).catch(() => {});
+                          });
+                          console.log(`[Webhook] ✅ Report generation triggered for ${audit.id} (${planType})`);
+                        } catch (genErr) {
+                          console.error(`[Webhook] ❌ Failed to trigger generation for ${audit.id}:`, genErr);
+                        }
+                      }
+                    }
+                  }
+                } else {
+                  console.warn(`[Webhook] ⚠️  No questionnaire data found for ${email}, audit not created`);
+                }
+              } catch (auditError) {
+                console.error(`[Webhook] ❌ Failed to create audit for order ${order.id}:`, auditError);
+                // Don't fail the webhook, just log the error
+              }
             }
           }
           break;
@@ -12156,7 +10888,7 @@ export async function registerRoutes(
         }
         case "checkout.session.expired": {
           const session = event.data.object;
-          const order = await getOrderByStripeSessionOrMetadata(session.id, session.metadata as Record<string, unknown> | null);
+          const order = await storage.getOrderByStripeSession(session.id);
           if (order && order.status === "pending") {
             await storage.updateOrder(order.id, { status: "cancelled" });
             console.log(`[Webhook] Order ${order.id} cancelled (session expired)`);
@@ -12235,7 +10967,7 @@ export async function registerRoutes(
         FROM orders o
         WHERE o.status = 'paid'
           AND o.audit_id IS NULL
-          AND o.product_type IN ('PREMIUM', 'ELITE')
+          AND o.product_type IN ('GRATUIT', 'PREMIUM', 'ELITE')
           AND o.created_at >= '2026-03-17'
         ORDER BY o.created_at ASC
       `);
@@ -12382,19 +11114,10 @@ export async function registerRoutes(
         }
 
         try {
-          if (order.product_type === "GRATUIT") {
-            errors.push({
-              email: order.email,
-              orderId: order.order_id,
-              reason: "DISCOVERY_GENERIC_AUDIT_RECOVERY_BLOCKED",
-            });
-            continue;
-          }
           // Recreate audit with ORIGINAL audit_id from order!
           const insertResult = await pool.query(`
             INSERT INTO audits (id, user_id, type, email, responses, created_at, updated_at, report_delivery_status)
-            SELECT $1, $2, $3, $4, $5, $6, $7, $8
-            WHERE $3 <> 'GRATUIT'
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             ON CONFLICT (id) DO NOTHING
             RETURNING id
           `, [
@@ -12627,7 +11350,7 @@ export async function registerRoutes(
       const stats = await getEmailTrackingStats();
 
       // Get pending/ready from audits
-      const allAudits = await storage.getAllAuditsLight();
+      const allAudits = await storage.getAllAudits();
       const pending = allAudits.filter(a => a.reportDeliveryStatus === 'SCHEDULED' && !a.reportSentAt).length;
       const ready = allAudits.filter(a => a.reportDeliveryStatus === 'READY' && !a.reportSentAt).length;
 
@@ -12718,7 +11441,6 @@ export async function registerRoutes(
   // ==================== BACKFILL: Sync SendPulse → email_tracking ====================
   app.post("/api/admin/backfill-email-tracking", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
-    if (!requireNonProductionEmailTrackingMutation(res, "admin.backfill-email-tracking.delete-all")) return;
 
     try {
       const { userId: SENDPULSE_USER_ID, secret: SENDPULSE_SECRET } = getSendPulseCredentials();
@@ -13824,7 +12546,7 @@ export async function registerRoutes(
     if (!requireAdminAuth(req, res)) return;
 
     try {
-      const allAudits = await storage.getAllAuditsLight();
+      const allAudits = await storage.getAllAudits();
 
       const scheduled = allAudits.filter(a => a.reportDeliveryStatus === 'SCHEDULED' && !a.reportSentAt);
       const ready = allAudits.filter(a => a.reportDeliveryStatus === 'READY' && !a.reportSentAt);
@@ -13903,36 +12625,34 @@ export async function registerRoutes(
   //   - "failed_only":  only failed rows. Client did NOT receive.
   //   - "never_tried":  no sendReportReadyEmail row at all. Client did NOT receive.
   //
-  // GET is always dry-run. Every mutation requires POST, exact UUID targets,
-  // and hashes bound to the currently persisted artifacts.
+  // Modes:
+  //   ?mode=dry-run      → returns analysis only (DEFAULT, zero side effects)
+  //   ?mode=fix-state    → updates already_sent to SENT. NO email sent. Safe.
+  //   ?mode=send-missing → sends email for failed_only + never_tried. DANGEROUS,
+  //                        explicitly opt-in. Uses safeSendReportReadyEmail so
+  //                        the dedup CAS still guards against any race.
   app.get("/api/admin/reconcile-ready-audits", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
       const mode = (req.query.mode as string) || "dry-run";
-      if (mode !== "dry-run") {
-        res.status(405).json({
-          error: "GET est strictement read-only. Utilise POST /api/admin/reconcile-ready-audits avec des cibles exactes.",
-        });
+      if (!["dry-run", "fix-state", "send-missing"].includes(mode)) {
+        res.status(400).json({ error: "mode invalide", allowed: ["dry-run", "fix-state", "send-missing"] });
         return;
       }
 
-      // Query only the bounded lifecycle cohort instead of hydrating every
-      // report body in the database into the application heap.
-      const stuckRows = await pool.query(
-        `SELECT id, email, type, created_at AS "createdAt"
-           FROM audits
-          WHERE report_delivery_status IN ('READY','SCHEDULED')
-            AND report_sent_at IS NULL
-            AND (narrative_report IS NOT NULL
-              OR (type='GRATUIT' AND (report_txt IS NOT NULL OR report_html IS NOT NULL)))
-          ORDER BY created_at ASC
-          LIMIT 100`,
+      const allAudits = await storage.getAllAudits();
+      const stuck = allAudits.filter(a =>
+        (a.reportDeliveryStatus === "READY" || a.reportDeliveryStatus === "SCHEDULED") &&
+        !a.reportSentAt &&
+        (
+          !!(a as any).narrativeReport ||
+          (a.type === "GRATUIT" && (!!(a as any).reportTxt || !!(a as any).reportHtml))
+        )
       );
-      const stuck = stuckRows.rows;
 
       const results: Array<{
         auditId: string; email: string; type: string; ageDays: number;
-        classification: "already_sent" | "failed_only" | "never_tried" | "ambiguous";
+        classification: "already_sent" | "failed_only" | "never_tried";
         trackingRows: number;
         action: "none" | "fixed_state" | "email_sent" | "email_failed" | "skipped";
       }> = [];
@@ -13945,22 +12665,22 @@ export async function registerRoutes(
         );
         const hasSuccess = rows.rows.some(r => {
           const s = String(r.sendpulse_status ?? "").toLowerCase();
-          return ["success", "accepted", "sent", "delivered", "smtp_confirmed"].includes(s);
+          return s !== "failed" && s !== "auth_failed" && s !== "unsubscribed";
         });
         const hasAny = rows.rows.length > 0;
-        const failedOnly = hasAny && rows.rows.every((r: any) =>
-          ["failed", "auth_failed", "unsubscribed"].includes(String(r.sendpulse_status ?? "").toLowerCase()),
-        );
-        const classification = hasSuccess
-          ? "already_sent"
-          : failedOnly
-            ? "failed_only"
-            : hasAny
-              ? "ambiguous"
-              : "never_tried";
+        const classification = hasSuccess ? "already_sent" : hasAny ? "failed_only" : "never_tried";
 
         let action: typeof results[number]["action"] = "none";
         const ageDays = Math.floor((Date.now() - new Date(a.createdAt).getTime()) / 86400000);
+
+        if (mode === "fix-state" && classification === "already_sent") {
+          await storage.finalizeAuditSend(a.id, true).catch(() => {});
+          action = "fixed_state";
+        } else if (mode === "send-missing" && classification !== "already_sent") {
+          const baseUrl = getBaseUrl();
+          const out = await safeSendReportReadyEmail(a.id, a.email, a.type, baseUrl, { logPrefix: "[Reconcile]" });
+          action = out.sent ? "email_sent" : "email_failed";
+        }
 
         results.push({
           auditId: a.id,
@@ -13991,128 +12711,6 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/admin/reconcile-ready-audits", async (req, res) => {
-    if (!requireAdminAuth(req, res)) return;
-    try {
-      const action = String(req.body?.action || "");
-      const targets = Array.isArray(req.body?.targets) ? req.body.targets : [];
-      if (!["fix-state", "send-missing"].includes(action)) {
-        res.status(400).json({ error: "action invalide", allowed: ["fix-state", "send-missing"] });
-        return;
-      }
-      if (targets.length === 0 || targets.length > 20) {
-        res.status(400).json({ error: "1 à 20 cibles exactes requises" });
-        return;
-      }
-      const ids = targets.map((target: any) => String(target?.auditId || "").toLowerCase());
-      if (new Set(ids).size !== ids.length || ids.some((id: string) =>
-        !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(id))) {
-        res.status(400).json({ error: "auditId exact invalide ou dupliqué" });
-        return;
-      }
-
-      const results: Array<Record<string, unknown>> = [];
-      for (const target of targets) {
-        const auditId = String(target.auditId).toLowerCase();
-        const expectedTxtSha256 = String(target.expectedTxtSha256 || "").toLowerCase();
-        const expectedHtmlSha256 = String(target.expectedHtmlSha256 || "").toLowerCase();
-        if (!/^[a-f0-9]{64}$/.test(expectedTxtSha256) || !/^[a-f0-9]{64}$/.test(expectedHtmlSha256)) {
-          throw new Error(`RECONCILE_EXPECTED_HASH_REQUIRED:${auditId}`);
-        }
-        const audit = await storage.getAudit(auditId);
-        if (!audit || audit.type !== "GRATUIT" || audit.reportSentAt
-          || !["READY", "SCHEDULED"].includes(String(audit.reportDeliveryStatus))) {
-          results.push({ auditId, action: "skipped", reason: "not_exactly_deliverable" });
-          continue;
-        }
-        const txtHash = discoverySha256(String((audit as any).reportTxt || ""));
-        const htmlHash = discoverySha256(String((audit as any).reportHtml || ""));
-        if (txtHash !== expectedTxtSha256 || htmlHash !== expectedHtmlSha256) {
-          results.push({ auditId, action: "skipped", reason: "artifact_hash_changed" });
-          continue;
-        }
-        const tracking = await pool.query(
-          `SELECT sendpulse_status FROM email_tracking
-            WHERE audit_id = $1 AND email_type = 'sendReportReadyEmail'`,
-          [auditId],
-        );
-        const accepted = tracking.rows.some((row: any) =>
-          ["success", "accepted", "sent", "delivered", "smtp_confirmed"]
-            .includes(String(row.sendpulse_status || "").toLowerCase()),
-        );
-        if (action === "fix-state") {
-          if (!accepted) {
-            results.push({ auditId, action: "skipped", reason: "acceptance_not_proven" });
-            continue;
-          }
-          await storage.finalizeAuditSend(auditId, true);
-          results.push({ auditId, action: "fixed_state" });
-          continue;
-        }
-        if (tracking.rows.length > 0) {
-          results.push({ auditId, action: "skipped", reason: "prior_tracking_requires_reconciliation" });
-          continue;
-        }
-        const delivery = await safeSendReportReadyEmail(
-          auditId,
-          audit.email,
-          audit.type,
-          getBaseUrl(),
-          { logPrefix: "[ReconcileExact]" },
-        );
-        results.push({ auditId, action: delivery.sent ? "email_sent" : "stopped", reason: delivery.skipped });
-        if (!delivery.sent) break;
-      }
-      res.json({ action, results });
-    } catch (error) {
-      console.error("[ReconcileExact] error:", error);
-      res.status(409).json({ error: error instanceof Error ? error.message : String(error) });
-    }
-  });
-
-  app.post("/api/admin/discovery/:auditId/notify-regenerated", async (req, res) => {
-    if (!requireAdminAuth(req, res)) return;
-    if (!isRegeneratedNotificationEnabled()) {
-      res.status(503).json({ error: "DISCOVERY_REGENERATED_NOTIFICATION_ENABLED is not true" });
-      return;
-    }
-    try {
-      const expectedPreviousFallbackHash = String(req.body?.expectedPreviousFallbackHash || "").toLowerCase();
-      const claim = await claimRegeneratedReportNotification({
-        auditId: req.params.auditId,
-        expectedPreviousFallbackHash,
-      });
-      if (!claim.claimed) {
-        res.json({ success: true, sent: false, skipped: claim.skipped });
-        return;
-      }
-      const sent = await sendReportRegeneratedEmail(
-        claim.email!,
-        req.params.auditId,
-        getBaseUrl(),
-        {
-          trackingId: claim.trackingId!,
-          previousFallbackHash: expectedPreviousFallbackHash,
-          premiumHash: claim.premiumHash!,
-        },
-      );
-      res.status(sent ? 200 : 502).json({
-        success: sent,
-        sent,
-        trackingId: claim.trackingId,
-        // A claimed notification is deliberately one-shot even on ambiguous
-        // provider failure. A later call cannot create a duplicate.
-        retryBlocked: !sent,
-      });
-    } catch (error) {
-      console.error("[DiscoveryRemediation] Notification error:", error);
-      res.status(409).json({
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
-  });
-
   app.post("/api/admin/force-send-email", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
 
@@ -14132,8 +12730,8 @@ export async function registerRoutes(
         audit = await storage.getAudit(auditId);
       } else if (email) {
         const normalizedEmail = email.trim().toLowerCase();
-        const matchingAudits = await storage.getAuditsByEmail(normalizedEmail);
-        audit = matchingAudits.find(a => a.email.toLowerCase() === normalizedEmail &&
+        const allAudits = await storage.getAllAudits();
+        audit = allAudits.find(a => a.email.toLowerCase() === normalizedEmail &&
           (a.reportDeliveryStatus === "SCHEDULED" || a.reportDeliveryStatus === "READY"));
       }
 
@@ -14144,12 +12742,6 @@ export async function registerRoutes(
 
       // Check status , block silently unless admin explicitly opts in with ?force=1.
       const forceRawSend = req.query.force === "1" || (req.body as any)?.force === true;
-      if (audit.type === "GRATUIT" && forceRawSend) {
-        res.status(409).json({
-          error: "Discovery: force brut interdit; utilise la remédiation exacte avec preuve de hash",
-        });
-        return;
-      }
       if (audit.reportDeliveryStatus === "SENT" && !forceRawSend) {
         res.json({
           success: true,
@@ -14176,7 +12768,7 @@ export async function registerRoutes(
       console.log(`[ForceSend] Sending to ${audit.email} (audit: ${audit.id}, type: ${audit.type}, force=${forceRawSend})`);
 
       if (!forceRawSend) {
-        const alreadyTracked = await storage.hasReportReadyEmailBeenSent(audit.id);
+        const alreadyTracked = await storage.hasReportReadyEmailBeenSent(audit.id).catch(() => false);
         if (alreadyTracked) {
           res.status(409).json({
             error: "Email déjà tracé comme envoyé , pass ?force=1 pour renvoyer volontairement",
@@ -14393,7 +12985,6 @@ export async function registerRoutes(
   // ==================== FIX: Recreate email_tracking table ====================
   app.post("/api/admin/fix-email-tracking-table", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
-    if (!requireNonProductionEmailTrackingMutation(res, "admin.fix-email-tracking-table.drop-table")) return;
 
     try {
       const { Pool } = await import("pg");
@@ -14841,16 +13432,13 @@ export async function registerRoutes(
     }
   });
 
-  // 2. Legacy post-checkout bridge. Generation is deliberately NOT performed
-  // in this request: every paid protocol must go through the durable cron claim
-  // and shared provider budget. This closes the old public skipPaymentCheck
-  // path that could create duplicate orders and unmetered AI calls.
+  // 2. Create order and trigger protocol generation
   app.post("/api/peptides-engine/create", peptidesLimiter, async (req, res) => {
     try {
       const schema = z.object({
         email: z.string().trim().toLowerCase().email("Email invalide. Verifie qu'il contient bien un @ et un point dans le domaine (par exemple ton@gmail.com)."),
         responses: z.record(z.unknown()),
-        stripeSessionId: z.string().min(10),
+        stripeSessionId: z.string().optional(),
         skipPaymentCheck: z.boolean().optional(),
       });
       const { email, responses, stripeSessionId, skipPaymentCheck } = schema.parse(req.body);
@@ -14860,12 +13448,7 @@ export async function registerRoutes(
         return;
       }
 
-      if (skipPaymentCheck) {
-        res.status(403).json({ error: "Le contournement du paiement est desactive" });
-        return;
-      }
-
-      // Safety gate remains deterministic and costs zero provider tokens.
+      // Safety gate: hard block on cancer history
       const safetyCheck = checkPeptidesSafetyGate(responses);
       if (!safetyCheck.safe) {
         console.warn(`[PeptidesEngine] Safety gate triggered for ${email}: ${safetyCheck.reason}`);
@@ -14876,44 +13459,166 @@ export async function registerRoutes(
         return;
       }
 
-      const order = await storage.getOrderByStripeSession(stripeSessionId);
-      if (!order || order.productType !== "PEPTIDES_ENGINE" || order.email.trim().toLowerCase() !== email) {
-        res.status(404).json({ error: "Commande Peptides Engine introuvable" });
-        return;
+      // Create order record
+      let order;
+      try {
+        order = await storage.createOrder({
+          email,
+          productType: "PEPTIDES_ENGINE",
+          productName: "Peptides Engine",
+          amountCents: 29900,
+          currency: "eur",
+          stripeCheckoutSessionId: stripeSessionId ?? null,
+          ipAddress: (req as any).ip ?? null,
+          userAgent: req.headers["user-agent"] ?? null,
+          metadata: { responsesCount: Object.keys(responses).length },
+        });
+        console.log(`[PeptidesEngine] Order created: ${order.id} for ${email}`);
+      } catch (orderErr) {
+        console.error("[PeptidesEngine] Order creation failed:", orderErr);
+        // Continue , don't block generation if order recording fails
       }
 
-      // Preserve the questionnaire on the canonical paid order. No duplicate
-      // order is ever created by this compatibility endpoint.
-      await storage.setOrderMetadataKey(order.id, "peptidesResponses", responses);
-      await storage.saveBurnoutProgress({
-        email: `peptides::${email}`,
-        currentSection: 38,
-        totalSections: 38,
-        responses,
-      }).catch(() => {});
+      // Check payment confirmation (Stripe session or explicit override)
+      let paymentConfirmed = Boolean(skipPaymentCheck);
+      if (!paymentConfirmed && stripeSessionId) {
+        try {
+          const existingOrder = await storage.getOrderByStripeSession(stripeSessionId);
+          paymentConfirmed = existingOrder?.status === "paid";
+        } catch {
+          // Non-blocking
+        }
+      }
 
-      if (order.status !== "paid") {
+      if (!paymentConfirmed) {
         res.status(202).json({
           success: true,
           status: "pending_payment",
           message: "Paiement en attente , le protocole sera généré après confirmation.",
-          orderId: order.id,
+          orderId: order?.id ?? null,
         });
         return;
       }
 
-      const paidOrder = await storage.getOrder(order.id) || order;
-      await ensurePeptidesOrderConfirmation(paidOrder).catch((error) => {
-        console.error(`[PeptidesEngine] Confirmation recovery failed for ${email}:`, error);
-      });
-      const reportId = ((paidOrder.metadata as any) || {}).peptidesReportId || null;
-      res.status(reportId ? 200 : 202).json({
-        success: true,
-        status: reportId ? "report_ready" : "queued",
-        orderId: order.id,
-        reportId,
-        generation: "durable_cron",
-      });
+      // CROSS-ORDER PROTECTION: before firing a 60s AI generation, check if ANY
+      // other paid Peptides order for this email already has a reportId. If yes,
+      // short-circuit with the existing report , prevents the inline path from
+      // racing with the autogen cron or a prior confirm-session call.
+      {
+        const cross = await storage.hasAnyPeptidesReportForEmail(email).catch(() => ({ exists: false } as any));
+        if (cross.exists) {
+          console.warn(`[PeptidesEngine inline] ⏭️ Existing report for ${email} → reusing ${cross.existingReportId}, NOT regenerating`);
+          res.json({
+            success: true,
+            reportId: cross.existingReportId,
+            reused: true,
+            existingOrderId: cross.existingOrderId,
+          });
+          return;
+        }
+      }
+
+      // Generate protocol (fire-and-forget for long operations, but we await here
+      // since we need the report ID for the response)
+      let reportId: string | null = null;
+      try {
+        const report = await generatePeptidesProtocol(responses, email);
+
+        // Store report using burnout_reports table as generic JSON store
+        const record = await storage.createBurnoutReport({
+          email: `peptides::${email}`,
+          responses,
+          report,
+        });
+        reportId = record.id;
+
+        // Link order to report if order was created
+        if (order) {
+          await storage.updateOrder(order.id, {
+            status: "paid",
+            metadata: {
+              ...(order.metadata as object ?? {}),
+              peptidesReportId: reportId,
+            },
+          }).catch(() => {});
+        }
+
+        // Deliver via email
+        const promoCodesBlock = buildPeptidesBloodCreditsBlock(
+          (order?.metadata as any)?.peptidesTier ?? report.tier,
+          `${getBaseUrl(req)}/blood-dashboard`
+        );
+        const coachingBlock = buildPeptidesCoachingDeductionBlock(
+          (order?.metadata as any)?.peptidesTier ?? null
+        );
+
+        const peptidesNames = report.peptides?.map((p) => p.name).join(", ") ?? "voir rapport";
+        const deliveryMessage =
+          `Ton protocole peptides est prêt.\n\n` +
+          `Peptides recommandés : ${peptidesNames}\n\n` +
+          `Accède à ton rapport complet ici :\n${getBaseUrl(req)}/peptides/${reportId}` +
+          promoCodesBlock +
+          coachingBlock +
+          `\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`;
+
+        // Delivery scheduling: avoid the "20 min after payment" automation
+        // signal. Report is generated now, email goes out at scheduledAt
+        // (paidAt + 4-8h, business hours). Autogen recovery loop polls
+        // every 5 min and sends once due.
+        const { due: deliveryDue, scheduledAt: deliveryScheduledAt } = order
+          ? await isPeptidesEmailDeliveryDue(order)
+          : { due: true, scheduledAt: new Date() };
+        if (deliveryDue) {
+          await sendCTAEmail(
+            email,
+            "Ton protocole peptides personnalisé est prêt",
+            deliveryMessage
+          ).catch((err) => console.error("[PeptidesEngine] Delivery email failed:", err));
+        } else {
+          console.log(
+            `[PeptidesEngine] Delivery email DEFERRED for ${email} until ${deliveryScheduledAt.toISOString()} (anti-automation gate)`
+          );
+          // Immediate confirmation email so the client knows the payment landed.
+          // Without this, they pay 199-299 EUR and see zero feedback for hours.
+          if (order?.id) {
+            const alreadyConfirmed = await storage.hasPeptidesOrderConfirmationBeenSent(email).catch(() => false);
+            if (!alreadyConfirmed) {
+              const firstName = (order.metadata as any)?.peptidesResponses?.prenom
+                || (order.email ? order.email.split("@")[0] : undefined);
+              sendPeptidesOrderConfirmationEmail(email, {
+                firstName,
+                amountEur: ((order as any).finalAmountCents || 0) / 100,
+                promoCode: (order as any).promoCode || null,
+                peptidesNames,
+                scheduledDeliveryAt: deliveryScheduledAt,
+                bloodCreditsCount: Array.isArray(report.promoCodesGenerated) ? report.promoCodesGenerated.length : 0,
+                orderId: order.id,
+              }).catch((err) => console.error("[PeptidesEngine] Confirmation email failed:", err));
+            }
+          }
+        }
+
+        // Clean up progress
+        await storage.saveBurnoutProgress({
+          email: `peptides::${email}`,
+          currentSection: 99,
+          totalSections: 38,
+          responses: {},
+        }).catch(() => {});
+
+        res.json({
+          success: true,
+          status: "generated",
+          reportId,
+          peptideCount: report.peptides?.length ?? 0,
+        });
+      } catch (genErr: any) {
+        console.error("[PeptidesEngine] Generation error:", genErr);
+        res.status(500).json({
+          error: "Erreur lors de la génération du protocole. Réessaie dans quelques minutes.",
+          orderId: order?.id ?? null,
+        });
+      }
     } catch (error) {
       if (error instanceof z.ZodError) {
         res.status(400).json({ error: "Données invalides", details: error.errors });
@@ -14992,12 +13697,8 @@ export async function registerRoutes(
       for (const audit of allAudits) {
         if (!audit.email || sent >= 20) break;
         if (audit.createdAt && new Date(audit.createdAt) < new Date('2026-03-17')) continue;
-        if (audit.reportDeliveryStatus !== "SENT" || !audit.reportSentAt) continue;
-        if (audit.type === "GRATUIT") {
-          const discoveryAudit = await storage.getAudit(audit.id).catch(() => null);
-          if (!discoveryAudit || !isAuditEligibleForPostDeliveryAutomation(discoveryAudit as any)) continue;
-        }
-        const sentAt = audit.reportSentAt;
+        const sentAt = (audit as any).reportSentAt || audit.createdAt;
+        if (!sentAt) continue;
         const daysSinceSent = (now.getTime() - new Date(sentAt).getTime()) / (24 * 60 * 60 * 1000);
         if (daysSinceSent < 3 || daysSinceSent > 14) continue;
         const existingReview = await storage.getReviewByAuditId?.(audit.id);
@@ -15007,7 +13708,7 @@ export async function registerRoutes(
         if (alreadySent) continue;
         try {
           const trackingRecord = await storage.createEmailTracking(audit.id, "sendReviewRequestJ3Email", audit.email);
-          await sendReviewRequestJ3Email(audit.email, audit.id, audit.type || "GRATUIT", baseUrl, trackingRecord.id);
+          await sendReviewRequestJ3Email(audit.email, audit.id, audit.auditType || "GRATUIT", baseUrl, trackingRecord.id);
           sent++;
           console.log(`[ReviewCron] Sent review request to ${audit.email} (audit ${audit.id})`);
         } catch (e) {
@@ -15085,126 +13786,58 @@ export async function registerRoutes(
   // -----------------------------------------------------------------------
   // Peptides delivery scheduling
   // -----------------------------------------------------------------------
-  // Generate and validate first, then deliver exactly 24 hours after the
-  // successful generation. Before a report exists, the confirmation email may
-  // show a provisional paidAt + 24h estimate; the successful CAS rewrites it
-  // from peptidesGenerationCompletedAt so payment latency never shortens the
-  // promised review window.
+  // Generation is instant (the engine assembles the protocol in seconds), but
+  // delivering the email 5-15 minutes after payment makes the protocol feel
+  // mass-produced. Clients have complained that the speed reveals automation.
+  //
+  // Strategy: generate immediately (so the protocol is ready and no risk of
+  // loss), but gate the email send to a randomised "scheduled delivery" time
+  // = paidAt + random(4-8h), clamped to Paris business hours (09:00-22:00).
+  // The autogen recovery loop will pick up scheduled-but-unsent orders.
   async function resolvePeptidesEmailScheduledAt(order: any): Promise<Date> {
-    const freshOrder = order?.id
-      ? await storage.getOrder(order.id).catch(() => null)
-      : null;
-    const effectiveOrder = freshOrder || order;
-    const decision = decidePeptidesDeliverySchedule(effectiveOrder);
-
-    if (effectiveOrder?.id && decision.shouldPersist) {
-      await storage
-        .setOrderMetadataKey(effectiveOrder.id, "peptidesEmailScheduledAt", decision.scheduledAt.toISOString())
-        .catch((err: any) => console.warn("[Peptides Delivery] Failed to persist scheduledAt:", err));
-      await storage
-        .setOrderMetadataKey(effectiveOrder.id, "peptidesEmailScheduleAnchor", decision.anchor)
-        .catch((err: any) => console.warn("[Peptides Delivery] Failed to persist schedule anchor:", err));
+    const meta = (order?.metadata as any) || {};
+    const existing = meta.peptidesEmailScheduledAt;
+    if (existing) {
+      const parsed = new Date(existing);
+      if (!Number.isNaN(parsed.getTime())) return parsed;
     }
-    return decision.scheduledAt;
+    const paidAt = order?.paidAt ? new Date(order.paidAt) : new Date();
+    if (Number.isNaN(paidAt.getTime())) return new Date();
+
+    // Random delay 4-8h
+    const delayMs = (4 + Math.random() * 4) * 3600 * 1000;
+    let target = new Date(paidAt.getTime() + delayMs);
+
+    // Clamp to Paris business hours 09:00-22:00
+    const getParisHour = (d: Date) =>
+      Number(d.toLocaleString("en-GB", { hour: "2-digit", hour12: false, timeZone: "Europe/Paris" }));
+    const parisHour = getParisHour(target);
+    if (parisHour < 9) {
+      // Push forward to 09h + 0-2h Paris
+      target = new Date(target.getTime() + (9 - parisHour) * 3600 * 1000 + Math.floor(Math.random() * 2 * 3600 * 1000));
+    } else if (parisHour >= 22) {
+      // Push to next day 09h + 0-3h Paris
+      const hoursToNext9 = (24 - parisHour) + 9;
+      target = new Date(target.getTime() + hoursToNext9 * 3600 * 1000 + Math.floor(Math.random() * 3 * 3600 * 1000));
+    }
+
+    // Persist on the order so the schedule is stable across cycles. Atomic
+    // JSONB merge ,  does not stomp other metadata keys (e.g. peptidesReportId
+    // set concurrently by the claim CAS). Earlier read-modify-write pattern
+    // was wiping the reportId set by claimPeptidesReportSlot, causing endless
+    // regeneration loops and false admin "ECHOUE" alerts (Julien Baldy +
+    // parrinello cases 2026-05-11).
+    if (order?.id) {
+      await storage
+        .setOrderMetadataKey(order.id, "peptidesEmailScheduledAt", target.toISOString())
+        .catch((err: any) => console.warn("[Peptides Delivery] Failed to persist scheduledAt:", err));
+    }
+    return target;
   }
 
   async function isPeptidesEmailDeliveryDue(order: any): Promise<{ due: boolean; scheduledAt: Date }> {
     const scheduledAt = await resolvePeptidesEmailScheduledAt(order);
     return { due: Date.now() >= scheduledAt.getTime(), scheduledAt };
-  }
-
-  const classifyPeptidesEmailResult = (
-    result: SendPulseSendResult,
-  ): "ACCEPTED" | "FAILED" | "UNKNOWN" => {
-    if (result.result === true) return "ACCEPTED";
-    return result.reconcileRequired ? "UNKNOWN" : "FAILED";
-  };
-
-  function isPeptidesTransactionalAutomationEligible(order: any): boolean {
-    if (String(process.env.PEPTIDES_TRANSACTIONAL_AUTOMATION_ENABLED || "").trim().toLowerCase() !== "true") {
-      return false;
-    }
-    const startAtMs = Date.parse(String(process.env.PEPTIDES_AUTOMATION_START_AT || ""));
-    if (!Number.isFinite(startAtMs)) return false;
-    const paidAtMs = order?.paidAt ? new Date(order.paidAt).getTime() : Number.NaN;
-    return Number.isFinite(paidAtMs) && paidAtMs >= startAtMs;
-  }
-
-  async function ensurePeptidesOrderConfirmation(order: any, report?: any): Promise<boolean> {
-    const email = String(order?.email || "").trim().toLowerCase();
-    if (!order?.id || !email || order?.productType !== "PEPTIDES_ENGINE" || order?.status !== "paid") return false;
-    const meta = (order.metadata || {}) as Record<string, any>;
-    if (meta.peptidesEmailHold === true || meta.peptidesEmailHold === "true") return false;
-    if (!isPeptidesTransactionalAutomationEligible(order)) return false;
-
-    const tracked = await storage.hasPeptidesOrderConfirmationBeenSent(email).catch(() => false);
-    if (tracked) {
-      await storage.finalizePeptidesOrderConfirmation(order.id, "ACCEPTED").catch(() => {});
-      return true;
-    }
-
-    const claimed = await storage.claimPeptidesOrderConfirmation(order.id);
-    if (!claimed) return false;
-
-    const { scheduledAt } = await isPeptidesEmailDeliveryDue(order);
-    const peptidesNames = report?.peptides?.map((item: any) => item.name).filter(Boolean).join(", ") || undefined;
-    const result = await sendPeptidesOrderConfirmationEmailResult(email, {
-      firstName: meta?.peptidesResponses?.prenom || email.split("@")[0],
-      amountEur: Number(order.finalAmountCents || 0) / 100,
-      promoCode: order.promoCode || null,
-      peptidesNames,
-      scheduledDeliveryAt: scheduledAt,
-      bloodCreditsCount: Array.isArray(report?.promoCodesGenerated) ? report.promoCodesGenerated.length : 0,
-      orderId: order.id,
-    });
-    const state = classifyPeptidesEmailResult(result);
-    await storage.finalizePeptidesOrderConfirmation(order.id, state).catch(() => {});
-    if (state === "UNKNOWN") {
-      console.error(`[Peptides Automation] Confirmation outcome UNKNOWN for ${email}; blind retry blocked`);
-    }
-    return state === "ACCEPTED";
-  }
-
-  async function deliverPeptidesReportOnce(input: {
-    order: any;
-    reportId: string;
-    report: any;
-    promoText?: string;
-    coachingText?: string;
-  }): Promise<boolean> {
-    const { order, reportId, report } = input;
-    const email = String(order?.email || "").trim().toLowerCase();
-    if (!order?.id || !email || !reportId) return false;
-    const meta = (order.metadata || {}) as Record<string, any>;
-    if (meta.peptidesEmailHold === true || meta.peptidesEmailHold === "true") return false;
-    if (!isPeptidesTransactionalAutomationEligible(order)) return false;
-
-    const tracked = await storage.hasPeptidesDeliveryEmailBeenSent(email).catch(() => false);
-    if (tracked) {
-      await storage.finalizePeptidesReportDelivery(order.id, reportId, "ACCEPTED").catch(() => {});
-      return true;
-    }
-
-    const claimed = await storage.claimPeptidesReportDelivery(order.id, reportId);
-    if (!claimed) return false;
-
-    const baseUrl = getBaseUrl();
-    const peptidesNames = report?.peptides?.map((item: any) => item.name).filter(Boolean).join(", ") || "voir le rapport";
-    const result = await sendPeptidesReportReadyEmail(email, {
-      firstName: meta?.peptidesResponses?.prenom || email.split("@")[0],
-      orderId: order.id,
-      reportId,
-      reportUrl: `${baseUrl}/peptides/${reportId}`,
-      peptidesNames,
-      promoText: input.promoText,
-      coachingText: input.coachingText,
-    });
-    const state = classifyPeptidesEmailResult(result);
-    await storage.finalizePeptidesReportDelivery(order.id, reportId, state).catch(() => {});
-    if (state === "UNKNOWN") {
-      console.error(`[Peptides Automation] Delivery outcome UNKNOWN for ${email} (${reportId}); blind retry blocked`);
-    }
-    return state === "ACCEPTED";
   }
 
   // Auto-recovery: generate missing peptides reports every 5 minutes
@@ -15217,17 +13850,7 @@ export async function registerRoutes(
   // Diagnostic endpoint
   app.get("/api/admin/autogen-status", (req, res) => {
     if (!requireAdminAuth(req, res)) return;
-    res.json({
-      cycles: autoGenCycleCount,
-      lastRun: autoGenLastRun,
-      lastResult: autoGenLastResult,
-      running: autoGenRunning,
-      generationEnabled: isPeptidesAutogenEnabled(),
-      transactionalAutomationEnabled:
-        String(process.env.PEPTIDES_TRANSACTIONAL_AUTOMATION_ENABLED || "").trim().toLowerCase() === "true",
-      automationStartAt: process.env.PEPTIDES_AUTOMATION_START_AT || null,
-      circuit: getPeptidesGenerationCircuitConfig(),
-    });
+    res.json({ cycles: autoGenCycleCount, lastRun: autoGenLastRun, lastResult: autoGenLastResult, running: autoGenRunning });
   });
 
   console.log("[AutoGen] ✅ setInterval registered (5min cycle)");
@@ -15260,8 +13883,6 @@ export async function registerRoutes(
       autoGenLastRun = new Date().toISOString();
       console.log(`[AutoGen] Cycle #${autoGenCycleCount}: ${orders.length} total orders, ${peptidesOrders.length} peptides paid, ${missing.length} missing reports`);
       const now = new Date();
-      const peptidesAutogenEnabled = isPeptidesAutogenEnabled();
-      const peptidesCircuitConfig = getPeptidesGenerationCircuitConfig();
 
       for (const order of peptidesOrders) {
         const meta = order.metadata as any;
@@ -15271,14 +13892,6 @@ export async function registerRoutes(
           console.log(`[AutoGen] Peptides delivery HOLD for ${email} (order ${order.id})`);
           continue;
         }
-        if (!isPeptidesTransactionalAutomationEligible(order)) continue;
-
-        // Payment confirmation is independent from AI generation. Even when
-        // the provider circuit is disabled or opens, every newly paid order
-        // receives one durable acknowledgement, protected by a DB lease.
-        await ensurePeptidesOrderConfirmation(order).catch((error) => {
-          console.error(`[Peptides Automation] Confirmation recovery failed for ${email}:`, error);
-        });
 
         // Recovery path: report exists but email never went out (e.g. SendPulse
         // returned false, network blip during initial autogen send). Without
@@ -15294,6 +13907,7 @@ export async function registerRoutes(
           const existingReport = existing.report as any;
 
           const baseUrl = getBaseUrl();
+          const peptidesNames = existingReport?.peptides?.map((p: any) => p.name).join(", ") ?? "voir rapport";
           const promoBlock = buildPeptidesBloodCreditsBlock(
             (order.metadata as any)?.peptidesTier ?? existingReport?.tier,
             `${baseUrl}/blood-dashboard`
@@ -15307,6 +13921,22 @@ export async function registerRoutes(
             console.log(
               `[AutoGen] Recovery email DEFERRED for ${email} until ${recoveryScheduledAt.toISOString()}`
             );
+            // Immediate confirmation email so client knows order is registered
+            // (no zero-feedback window during the 4-8h anti-automation deferral).
+            const alreadyConfirmed = await storage.hasPeptidesOrderConfirmationBeenSent(email).catch(() => false);
+            if (!alreadyConfirmed) {
+              const firstName = (order.metadata as any)?.peptidesResponses?.prenom
+                || (order.email ? order.email.split("@")[0] : undefined);
+              sendPeptidesOrderConfirmationEmail(email, {
+                firstName,
+                amountEur: ((order as any).finalAmountCents || 0) / 100,
+                promoCode: (order as any).promoCode || null,
+                peptidesNames,
+                scheduledDeliveryAt: recoveryScheduledAt,
+                bloodCreditsCount: Array.isArray(existingReport?.promoCodesGenerated) ? existingReport.promoCodesGenerated.length : 0,
+                orderId: order.id,
+              }).catch((err) => console.error("[AutoGen Recovery] Confirmation email failed:", err));
+            }
             continue;
           }
 
@@ -15328,8 +13958,7 @@ export async function registerRoutes(
             const repaired = await refreshPeptauraPricingForDelivery(
               JSON.parse(JSON.stringify(existingReport)),
               pricingResponses,
-              String((order.metadata as any)?.peptidesTier || existingReport?.tier || "solo"),
-              hasValidPeptidesConsent((order.metadata as any)?.peptidesEngineConsent)
+              String((order.metadata as any)?.peptidesTier || existingReport?.tier || "solo")
             );
             const repairedFingerprint = JSON.stringify(repaired);
             const originalFingerprint = JSON.stringify(existingReport);
@@ -15376,46 +14005,19 @@ export async function registerRoutes(
             continue;
           }
 
-          const recovered = await deliverPeptidesReportOnce({
-            order,
-            reportId: meta.peptidesReportId,
-            report: existingReport,
-            promoText: promoBlock,
-            coachingText: coachingBlock,
-          }).catch((recErr) => {
+          try {
+            const recovered = await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
+              `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${meta.peptidesReportId}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`,
+            );
+            if (recovered) {
+              console.log(`[AutoGen] ✅ Recovered delivery email for ${email} (report ${meta.peptidesReportId})`);
+              autoGenLastResult = `RECOVERED_EMAIL: ${email}`;
+            } else {
+              console.warn(`[AutoGen] ⚠️ Recovery email send returned false for ${email}, will retry next cycle`);
+            }
+          } catch (recErr) {
             console.error(`[AutoGen] Recovery email send threw for ${email}:`, recErr);
-            return false;
-          });
-          if (recovered) {
-            console.log(`[AutoGen] ✅ Recovered delivery email for ${email} (report ${meta.peptidesReportId})`);
-            autoGenLastResult = `RECOVERED_EMAIL: ${email}`;
           }
-          continue;
-        }
-
-        // Generation is independently kill-switched from delivery recovery.
-        // Existing valid reports above can still be delivered while legacy
-        // missing orders are forbidden from spending unless explicitly enabled.
-        if (!peptidesAutogenEnabled) {
-          console.warn(`[AutoGen] Generation disabled (fail-closed) for missing order ${order.id}`);
-          continue;
-        }
-
-        const circuitEligibility = evaluatePeptidesGenerationEligibility(
-          meta,
-          peptidesCircuitConfig,
-        );
-        if (!circuitEligibility.eligible) {
-          if (circuitEligibility.reason === "ATTEMPT_CAP" || circuitEligibility.reason === "COST_CAP") {
-            await storage.markPeptidesGenerationNeedsReview(
-              order.id,
-              circuitEligibility.reason.toLowerCase(),
-              `Persistent Peptides generation circuit opened: ${circuitEligibility.reason}`,
-            ).catch(() => false);
-          }
-          console.warn(
-            `[AutoGen] Peptides generation blocked for ${email}: ${circuitEligibility.reason}`,
-          );
           continue;
         }
 
@@ -15463,42 +14065,9 @@ export async function registerRoutes(
           continue;
         }
 
-        const generationClaim = await storage.claimPeptidesGenerationAttempt(
-          order.id,
-          peptidesCircuitConfig,
-        );
-        if (!generationClaim) {
-          console.warn(`[AutoGen] Peptides generation claim lost for ${email}; no provider call made`);
-          continue;
-        }
-
         const { generatePeptidesProtocol } = await import("./peptidesEngine");
         const autoGenTier = ((order.metadata as any)?.peptidesTier as "solo" | "coached" | "tracked" | undefined) ?? "coached";
-        let report;
-        try {
-          // Autogen gets one transport try per candidate, but two quality
-          // candidates. If the first report fails a deterministic gate
-          // (stock/pricing/content), the engine can self-recover without
-          // opening NEEDS_REVIEW for a human-only retry.
-          report = await generatePeptidesProtocol(responses, email, autoGenTier, {
-            maxCandidates: 2,
-            providerRetries: 1,
-            orderId: order.id,
-            costBudgetEstimatedUsd: 0.05,
-            consentAccepted: hasValidPeptidesConsent((order.metadata as any)?.peptidesEngineConsent),
-          });
-        } catch (generationError: any) {
-          const safeError = sanitizePeptidesGenerationError(generationError);
-          const reason = generationError?.code === "PEPTAURA_SOURCE_UNAVAILABLE"
-            ? "source_unavailable"
-            : "generation_failed";
-          await storage.markPeptidesGenerationNeedsReview(order.id, reason, safeError).catch(() => false);
-          autoGenLastResult = `NEEDS_REVIEW: ${email} (${reason})`;
-          console.error(
-            `[AutoGen] Peptides generation failed once for ${email}; circuit opened (${reason})`,
-          );
-          continue;
-        }
+        const report = await generatePeptidesProtocol(responses, email, autoGenTier);
         const saved = await storage.createBurnoutReport({ email: `peptides::${email}`, responses, report });
 
         // SAFETY #3: Atomic CAS , "first writer wins". If another process already set peptidesReportId
@@ -15509,6 +14078,9 @@ export async function registerRoutes(
           autoGenLastResult = `RACE_LOST: ${email} → orphan report ${saved.id}`;
           continue;
         }
+
+        // SAFETY #4: Final email dedup check right before send (in case tracking was recorded after our earlier check)
+        const stillNotEmailed = !(await storage.hasPeptidesDeliveryEmailBeenSent(email).catch(() => false));
 
         const baseUrl = getBaseUrl();
         const peptidesNames = report.peptides?.map((p: any) => p.name).join(", ") ?? "voir rapport";
@@ -15525,24 +14097,44 @@ export async function registerRoutes(
         let deliveryScheduledAtIso = "";
         // Anti-automation delivery gate: gen now, deliver later
         const { due: newReportDue, scheduledAt: newReportScheduledAt } = await isPeptidesEmailDeliveryDue(order);
-        if (!newReportDue) {
+        if (stillNotEmailed && !newReportDue) {
           deliveryDeferred = true;
           deliveryScheduledAtIso = newReportScheduledAt.toISOString();
           console.log(
             `[AutoGen] New report email DEFERRED for ${email} until ${deliveryScheduledAtIso} (recovery loop will retry)`
           );
-        } else {
-          clientEmailSent = await deliverPeptidesReportOnce({
-            order,
-            reportId: saved.id,
-            report,
-            promoText: promoBlock,
-            coachingText: coachingBlock,
-          }).catch((emailErr) => {
+          // Immediate confirmation email so client knows order is registered
+          // (no zero-feedback window during the 4-8h anti-automation deferral).
+          const alreadyConfirmed = await storage.hasPeptidesOrderConfirmationBeenSent(email).catch(() => false);
+          if (!alreadyConfirmed) {
+            const firstName = (order.metadata as any)?.peptidesResponses?.prenom
+              || (responses as any)?.prenom
+              || (order.email ? order.email.split("@")[0] : undefined);
+            sendPeptidesOrderConfirmationEmail(email, {
+              firstName,
+              amountEur: ((order as any).finalAmountCents || 0) / 100,
+              promoCode: (order as any).promoCode || null,
+              peptidesNames,
+              scheduledDeliveryAt: newReportScheduledAt,
+              bloodCreditsCount: Array.isArray(report.promoCodesGenerated) ? report.promoCodesGenerated.length : 0,
+              orderId: order.id,
+            }).catch((err) => console.error("[AutoGen NewReport] Confirmation email failed:", err));
+          }
+        } else if (stillNotEmailed) {
+          try {
+            clientEmailSent = await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
+              `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`
+            );
+            if (clientEmailSent) {
+              console.log(`[AutoGen] ✅ Delivery email sent to ${email}`);
+            } else {
+              console.error(`[AutoGen] ⚠️ Delivery email returned false for ${email} , SendPulse probable issue`);
+            }
+          } catch (emailErr) {
             console.error(`[AutoGen] ⚠️ Delivery email THREW for ${email}:`, emailErr);
-            return false;
-          });
-          if (clientEmailSent) console.log(`[AutoGen] ✅ Delivery email accepted for ${email}`);
+          }
+        } else {
+          console.warn(`[AutoGen] ⚠️ Delivery email already sent to ${email} (last-moment check) , skipping`);
         }
 
         try {
@@ -15591,17 +14183,12 @@ export async function registerRoutes(
       }
 
       // Light variant: we only need id/email/type/status/timestamps here.
-      // One fail-closed read protects the complete Discovery cycle from racing
-      // a controlled remediation batch.
-      const discoveryBatchLocked = await isDiscoveryGlobalLockActive();
       const allAudits = await storage.getAllAuditsLight();
       const now = new Date();
       let sent = 0;
 
       for (const audit of allAudits) {
         if (!audit.email || audit.email.includes("test") || audit.email.includes("debug") || audit.email.includes("achzodcoaching")) continue;
-        if (audit.type === "GRATUIT" && discoveryBatchLocked) continue;
-        if (audit.type === "GRATUIT" && !isDiscoveryTransactionalAutomationEligible(audit)) continue;
         const status = audit.reportDeliveryStatus;
         if (audit.reportSentAt) {
           // Repair legacy/racing writes that replaced SENT with READY after the
@@ -15661,12 +14248,8 @@ export async function registerRoutes(
       for (const audit of allAudits) {
         if (!audit.email || audit.email.includes("test") || audit.email.includes("debug") || audit.email.includes("achzodcoaching") || audit.email.includes("achkou")) continue;
         if (!audit.reportSentAt) continue;
-        if (audit.type === "GRATUIT") {
-          const discoveryAudit = await storage.getAudit(audit.id).catch(() => null);
-          if (!discoveryAudit || !isAuditEligibleForPostDeliveryAutomation(discoveryAudit as any)) continue;
-        } else if (audit.reportDeliveryStatus !== "SENT") {
-          continue;
-        }
+        const hasPurchasedCoaching = await storage.hasUserPurchasedCoaching(audit.email);
+        if (hasPurchasedCoaching) continue;
 
         const sentAt = new Date(audit.reportSentAt);
         const daysSinceSent = (now.getTime() - sentAt.getTime()) / (24 * 60 * 60 * 1000);
@@ -15762,6 +14345,7 @@ export async function registerRoutes(
         const email = String((report as any).email || "").replace(/^peptides::/, "");
         if (!email) continue;
         if (email.includes("test") || email.includes("debug") || email.includes("achzodcoaching") || email.includes("achkou")) continue;
+        if (await storage.hasUserPurchasedCoaching(email)) continue;
         const createdAt = new Date((report as any).createdAt);
         if (Number.isNaN(createdAt.getTime())) continue;
         if (createdAt < new Date("2026-03-17")) continue;

@@ -1,11 +1,6 @@
 import type { ComprehensiveRiskProfile, RiskScore } from "./blood-analysis/risk-scores";
 import { logBloodEmailDelivery } from "./blood-analysis/delivery-log";
 import { logEmail, ADMIN_EMAIL_CC, type EmailTrackingData } from "./emailTracking";
-import {
-  classifyRecoveryCtaProviderRecord,
-  classifySendPulsePostFailure,
-  type RecoveryCtaProviderOutcome,
-} from "./recoveryCtaClickFollowup";
 import nodemailer from "nodemailer";
 
 const SENDPULSE_USER_ID =
@@ -18,77 +13,9 @@ const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
 const SMTP_USER = process.env.SMTP_USER || "";
 const SMTP_PASS = process.env.SMTP_PASS || "";
 export const SENDER_EMAIL = process.env.SENDER_EMAIL || "coaching@achzodcoaching.com";
-export const SENDER_NAME = process.env.SENDER_NAME || process.env.SENDPULSE_SENDER_NAME || "APEXLABS";
+export const SENDER_NAME = process.env.SENDER_NAME || "ApexLabs by Achzod";
 
 let smtpFallbackTransport: ReturnType<typeof nodemailer.createTransport> | null = null;
-
-type AdminDiscoveryNotificationBucket = {
-  count: number;
-  resetAt: number;
-};
-
-const ADMIN_DISCOVERY_EMAIL_COOLDOWN_MS = 60 * 60 * 1000;
-const ADMIN_DISCOVERY_NAME_WINDOW_MS = 15 * 60 * 1000;
-const ADMIN_DISCOVERY_NAME_MAX_PER_WINDOW = 3;
-const adminDiscoveryNotificationBuckets = new Map<string, AdminDiscoveryNotificationBucket>();
-
-function normalizeAdminDiscoveryToken(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9@._+-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function claimAdminDiscoveryBucket(key: string, windowMs: number, max: number, now: number): boolean {
-  const existing = adminDiscoveryNotificationBuckets.get(key);
-  if (!existing || existing.resetAt <= now) {
-    adminDiscoveryNotificationBuckets.set(key, { count: 1, resetAt: now + windowMs });
-    return true;
-  }
-
-  existing.count += 1;
-  return existing.count <= max;
-}
-
-function cleanupAdminDiscoveryBuckets(now: number): void {
-  for (const [key, bucket] of adminDiscoveryNotificationBuckets) {
-    if (bucket.resetAt <= now) {
-      adminDiscoveryNotificationBuckets.delete(key);
-    }
-  }
-}
-
-function shouldSendAdminDiscoveryNotification(clientEmail: string, clientName: string, auditType: string): boolean {
-  if (auditType !== "GRATUIT") return true;
-
-  const now = Date.now();
-  cleanupAdminDiscoveryBuckets(now);
-
-  const normalizedEmail = normalizeAdminDiscoveryToken(clientEmail);
-  const normalizedName = normalizeAdminDiscoveryToken(clientName);
-  if (!normalizedEmail) return false;
-
-  const emailAllowed = claimAdminDiscoveryBucket(
-    `discovery-admin-email:${normalizedEmail}`,
-    ADMIN_DISCOVERY_EMAIL_COOLDOWN_MS,
-    1,
-    now,
-  );
-  const nameAllowed = normalizedName
-    ? claimAdminDiscoveryBucket(
-      `discovery-admin-name:${normalizedName}`,
-      ADMIN_DISCOVERY_NAME_WINDOW_MS,
-      ADMIN_DISCOVERY_NAME_MAX_PER_WINDOW,
-      now,
-    )
-    : true;
-
-  return emailAllowed && nameAllowed;
-}
 
 function getSmtpFallbackTransport() {
   if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) return null;
@@ -246,14 +173,12 @@ function encodeBase64(str: string): string {
  * @param trackingData - Tracking metadata
  * @returns SendPulse response
  */
-export type SendPulseSendResult = {
+type SendPulseSendResult = {
   result: boolean;
   id?: string;
-  trackingId?: string;
   error?: any;
   message?: any;
   httpStatus?: number;
-  reconcileRequired?: boolean;
 };
 
 type SendPulseLiveRecord = Record<string, any>;
@@ -382,8 +307,6 @@ async function fetchSendPulseLiveRecordDetails(
 const isCriticalSendPulseEmail = (emailType: string, subject: string): boolean => {
   const normalized = normalizeSendPulseText(subject);
   return emailType === "sendReportReadyEmail"
-    || emailType === "sendPeptidesReportReadyEmail"
-    || emailType === "sendReportRegeneratedEmail"
     || emailType === "sendBloodAnalysisHtmlEmail"
     || emailType === "sendPeptidesOrderConfirmation"
     || (emailType === "sendCTAEmail" && (
@@ -433,31 +356,6 @@ async function findRecentSendPulseLiveRecord(
   return null;
 }
 
-export async function reconcileRecoveryCtaSendPulseOutcome(input: {
-  recipientEmail: string;
-  subject: string;
-  providerPostStartedAt: Date;
-}): Promise<RecoveryCtaProviderOutcome> {
-  if (!input.recipientEmail || !input.subject || !Number.isFinite(input.providerPostStartedAt.getTime())) {
-    return { outcome: "unknown", reason: "missing_reconciliation_identity" };
-  }
-  try {
-    const token = await getAccessToken();
-    const record = await findRecentSendPulseLiveRecord(
-      token,
-      input.recipientEmail,
-      input.subject,
-      input.providerPostStartedAt,
-    );
-    return classifyRecoveryCtaProviderRecord(record);
-  } catch (error) {
-    return {
-      outcome: "unknown",
-      reason: error instanceof Error ? `provider_lookup_error:${error.message}` : "provider_lookup_error",
-    };
-  }
-}
-
 async function sendEmailWithTracking(
   emailPayload: {
     html: string;
@@ -474,25 +372,8 @@ async function sendEmailWithTracking(
     auditId?: string;
     auditType?: string;
     metadata?: Record<string, any>;
-    beforeProviderPost?: (context: {
-      recipientEmail: string;
-      subject: string;
-      startedAt: Date;
-    }) => Promise<void>;
-    allowProviderFallback?: boolean;
   }
 ): Promise<SendPulseSendResult> {
-  let providerPostStarted = false;
-  const requireDurableTracking =
-    trackingData.auditType === "GRATUIT" &&
-    (trackingData.emailType === "sendReportReadyEmail" ||
-      trackingData.emailType === "sendReportRegeneratedEmail");
-  const assertTracked = (trackingId: string): string => {
-    if (requireDurableTracking && trackingId === "error") {
-      throw new Error("EMAIL_TRACKING_DURABLE_INSERT_FAILED");
-    }
-    return trackingId;
-  };
   try {
     // Check unsubscribe before sending
     const { storage } = await import("./storage");
@@ -580,12 +461,6 @@ async function sendEmailWithTracking(
     );
 
     const sentStartedAt = new Date();
-    await trackingData.beforeProviderPost?.({
-      recipientEmail: trackingData.recipientEmail,
-      subject: emailPayload.subject,
-      startedAt: sentStartedAt,
-    });
-    providerPostStarted = Boolean(trackingData.beforeProviderPost);
     const response = await fetch("https://api.sendpulse.com/smtp/emails", {
       method: "POST",
       headers: {
@@ -612,10 +487,7 @@ async function sendEmailWithTracking(
     if (sendpulseTaskId) result.id = sendpulseTaskId;
     const liveLookupMetadata: Record<string, any> = {};
     const criticalEmail = isCriticalSendPulseEmail(trackingData.emailType, emailPayload.subject);
-    const allowAcceptedWithoutLiveVerification = trackingData.emailType === "sendReportReadyEmail"
-      || trackingData.emailType === "sendPeptidesReportReadyEmail"
-      || trackingData.emailType === "sendPeptidesOrderConfirmation"
-      || trackingData.emailType === "sendReportRegeneratedEmail";
+    const allowAcceptedWithoutLiveVerification = trackingData.emailType === "sendReportReadyEmail";
     let liveDeliveryFailure: Record<string, unknown> | null = null;
 
     if (result.result && sendpulseTaskId) {
@@ -692,7 +564,7 @@ async function sendEmailWithTracking(
     // monthly quota/bandwidth is exhausted (HTTP 422). Orders, payment
     // notifications and paid report deliveries must not disappear with the
     // marketing provider, so critical messages fail over to Brevo.
-    if (!result.result && criticalEmail && trackingData.allowProviderFallback !== false && BREVO_API_KEY) {
+    if (!result.result && criticalEmail && BREVO_API_KEY) {
       try {
         const htmlContent = looksLikeBase64(emailPayload.html)
           ? Buffer.from(emailPayload.html, "base64").toString("utf8")
@@ -749,7 +621,7 @@ async function sendEmailWithTracking(
       }
     }
 
-    if (!result.result && criticalEmail && trackingData.allowProviderFallback !== false) {
+    if (!result.result && criticalEmail) {
       const smtpTransport = getSmtpFallbackTransport();
       if (smtpTransport) {
         try {
@@ -802,7 +674,7 @@ async function sendEmailWithTracking(
     };
 
     // Log provider acceptance. Real mailbox delivery is checked later through SendPulse SMTP status.
-    const trackingId = assertTracked(await logEmail({
+    await logEmail({
       emailType: trackingData.emailType,
       recipientEmail: trackingData.recipientEmail,
       recipientName: trackingData.recipientName,
@@ -814,18 +686,15 @@ async function sendEmailWithTracking(
       sendpulseStatus: result.result ? "success" : "failed",
       sendpulseError,
       metadata: trackingMetadata,
-    }));
-    result.trackingId = trackingId;
+    });
 
     console.log(`[SendPulse] Email ${result.result ? "✅ accepted" : "❌ failed"}:`, result);
     return result;
   } catch (error) {
     console.error(`[SendPulse] Error sending ${trackingData.emailType}:`, error);
-    const failure = classifySendPulsePostFailure(error, providerPostStarted);
 
-    // An aborted provider POST has an unknown outcome: SendPulse may have accepted
-    // the message before the connection disappeared. Never mark it retryable.
-    const trackingId = assertTracked(await logEmail({
+    // Log failed attempt
+    await logEmail({
       emailType: trackingData.emailType,
       recipientEmail: trackingData.recipientEmail,
       recipientName: trackingData.recipientName,
@@ -833,20 +702,12 @@ async function sendEmailWithTracking(
       auditType: trackingData.auditType,
       subject: emailPayload.subject,
       previewText: emailPayload.text.substring(0, 100),
-      sendpulseStatus: failure.sendpulseStatus,
+      sendpulseStatus: "failed",
       sendpulseError: String(error),
-      metadata: {
-        ...(trackingData.metadata || {}),
-        ...failure.metadata,
-      },
-    }));
+      metadata: trackingData.metadata,
+    });
 
-    return {
-      result: false,
-      error: String(error),
-      trackingId,
-      ...(failure.reconcileRequired ? { reconcileRequired: true } : {}),
-    };
+    return { result: false, error: String(error) };
   }
 }
 
@@ -1061,9 +922,9 @@ function formatDeadlineFR(daysFromNow: number): string {
 }
 
 // Reusable Apple-clean DISCOVERY30 banner at the top of each coaching email.
-// A deadline is shown only when the caller owns a real campaign deadline.
-function getDiscoveryPromoBanner(daysLeft?: number): string {
-  const deadline = typeof daysLeft === "number" ? formatDeadlineFR(daysLeft) : null;
+// Visual: full-width Apple blue box, code in bold, deadline date personalisée.
+function getDiscoveryPromoBanner(daysLeft: number): string {
+  const deadline = formatDeadlineFR(daysLeft);
   return `
     <div style="margin:0 0 28px;padding:18px 22px;background:${APPLE_COLORS.accent};border-radius:14px;text-align:center;">
       <p style="margin:0 0 4px;color:rgba(255,255,255,0.85);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Ton code clients Discovery</p>
@@ -1071,9 +932,7 @@ function getDiscoveryPromoBanner(daysLeft?: number): string {
       <p style="margin:0;color:rgba(255,255,255,0.95);font-size:14px;font-weight:500;line-height:1.5;">
         -30% sur formules coaching 8 et 12 sem<br/>
         <span style="font-size:12px;color:rgba(255,255,255,0.8);">A copier dans le champ <strong style="color:#ffffff;">Code promotionnel</strong> au checkout</span><br/>
-        ${deadline
-          ? `<span style="font-size:12px;color:rgba(255,255,255,0.8);">Valide jusqu'au <strong style="color:#ffffff;">${deadline}</strong></span>`
-          : `<span style="font-size:12px;color:rgba(255,255,255,0.8);">Code actuellement actif</span>`}
+        <span style="font-size:12px;color:rgba(255,255,255,0.8);">Valide jusqu'au <strong style="color:#ffffff;">${deadline}</strong></span>
       </p>
     </div>
   `;
@@ -1097,6 +956,28 @@ function discoveryCoachingBridgeUrl(
 
 function withEmailClickTracking(baseUrl: string, trackingId: string, url: string): string {
   return `${baseUrl}/api/track/email/${encodeURIComponent(trackingId)}/click?url=${encodeURIComponent(url)}`;
+}
+
+const WHATSAPP_NUMBER = "971585210514";
+
+function buildWhatsAppUrl(message: string): string {
+  const encoded = encodeURIComponent(message.trim()).replace(/[!'()*]/g, (char) =>
+    `%${char.charCodeAt(0).toString(16).toUpperCase()}`
+  );
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encoded}`;
+}
+
+function getWhatsAppContactButton(text: string, message: string): string {
+  const href = buildWhatsAppUrl(message);
+  return `
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:14px 0 22px;">
+      <tr>
+        <td align="center">
+          <a href="${href}" target="_blank" style="background-color:#25D366;border:1px solid #25D366;border-radius:10px;color:#07130b;display:inline-block;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:14px;font-weight:800;line-height:48px;min-width:230px;padding:0 28px;text-align:center;text-decoration:none;letter-spacing:0.3px;">${text}</a>
+        </td>
+      </tr>
+    </table>
+  `;
 }
 
 function getCoachingAppleButton(text: string, href: string, variant: 'primary' | 'secondary' = 'primary'): string {
@@ -1167,6 +1048,7 @@ function getCoachingSection(auditType: string, color: string = COLORS.purple): s
   const coachingLink = "https://www.achzodcoaching.com/formules-coaching";
   const deductionAmount = getDeductionAmount(auditType);
   const promo = getPromoCodeForAuditType(auditType);
+  const whatsappMessage = `Salut Achzod, je viens de recevoir mon rapport APEXLABS (${auditType}). Je veux ton avis pour savoir si je dois appliquer seul, faire une analyse plus avancee ou partir sur coaching.`;
 
   // GRATUIT / DISCOVERY uses DISCOVERY30 (-30% on all coaching formulas)
   const isDiscovery = auditType === "GRATUIT" || auditType === "DISCOVERY";
@@ -1217,37 +1099,19 @@ function getCoachingSection(auditType: string, color: string = COLORS.purple): s
       ${renderCoachingOffersTable(deductionArg, color)}
 
       ${getPrimaryButton('Decouvrir les formules', coachingLink, color)}
+      ${getWhatsAppContactButton("Demander l'avis d'Achzod sur WhatsApp", whatsappMessage)}
     </div>
   `;
 }
 
-export function getReportReadyEmailSubject(auditType: string, planLabel?: string): string {
-  return auditType === "GRATUIT"
-    ? "Ton rapport est la, on regarde ce qui bloque ?"
-    : auditType === "BLOOD_ANALYSIS"
-    ? "Tes marqueurs sanguins sont analyses, resultats dedans"
-    : auditType === "ELITE"
-    ? "Rapport Ultimate Scan : tes 18 axes + protocole complet"
-    : auditType === "PREMIUM"
-    ? "Rapport Anabolic Bioscan : tes 16 axes + plan d'action"
-    : `Ton ${planLabel || auditType || "rapport"} est pret`;
-}
-
-export async function sendReportReadyEmailResult(
+export async function sendReportReadyEmail(
   email: string,
   auditId: string,
   auditType: string,
-  baseUrl: string,
-  options?: {
-    beforeProviderPost?: (context: {
-      recipientEmail: string;
-      subject: string;
-      startedAt: Date;
-    }) => Promise<void>;
-    allowProviderFallback?: boolean;
-  },
-): Promise<SendPulseSendResult> {
+  baseUrl: string
+): Promise<boolean> {
   try {
+    const token = await getAccessToken();
     const reportPath =
       auditType === "GRATUIT"
         ? `/scan/${auditId}`
@@ -1345,7 +1209,16 @@ export async function sendReportReadyEmailResult(
     // Subject tuned for deliverability + open rate. Previous "Ton X est pret"
     // was generic, robotic, flagged by spam filters as templated. Now: concrete
     // preview hook + audit name late enough to avoid subject-line-cutoff on mobile.
-    const subject = getReportReadyEmailSubject(auditType, planLabel);
+    const subject =
+      auditType === "GRATUIT"
+        ? "Ton rapport est la, on regarde ce qui bloque ?"
+        : auditType === "BLOOD_ANALYSIS"
+        ? "Tes marqueurs sanguins sont analyses, resultats dedans"
+        : auditType === "ELITE"
+        ? "Rapport Ultimate Scan : tes 18 axes + protocole complet"
+        : auditType === "PREMIUM"
+        ? "Rapport Anabolic Bioscan : tes 16 axes + plan d'action"
+        : `Ton ${planLabel} est pret`;
 
     const result = await sendEmailWithTracking(
       {
@@ -1364,92 +1237,14 @@ export async function sendReportReadyEmailResult(
         auditId,
         auditType,
         metadata: { reportLink, planLabel, trackingId: pixelTrackingId },
-        beforeProviderPost: options?.beforeProviderPost,
-        // A Discovery delivery has its own durable one-shot claim. Starting a
-        // second provider after SendPulse creates an unresolvable duplicate
-        // window, so Discovery is always single-provider and fail-closed.
-        allowProviderFallback: auditType === "GRATUIT"
-          ? false
-          : options?.allowProviderFallback,
       }
     );
 
-    if (result.result === true) return result;
+    if (result.result === true) return true;
     console.warn("[SendPulse] Report email not confirmed sent:", result);
-    return result;
+    return false;
   } catch (error) {
     console.error("[SendPulse] Error sending report email:", error);
-    return { result: false, error: String(error) };
-  }
-}
-
-export async function sendReportReadyEmail(
-  email: string,
-  auditId: string,
-  auditType: string,
-  baseUrl: string,
-  options?: Parameters<typeof sendReportReadyEmailResult>[4],
-): Promise<boolean> {
-  const result = await sendReportReadyEmailResult(email, auditId, auditType, baseUrl, options);
-  return result.result === true;
-}
-
-/** Corrective notice for a Discovery report that was regenerated in place.
- * Idempotency is owned by the caller's precreated tracking claim. logEmail
- * updates that exact row via metadata.trackingId. */
-export async function sendReportRegeneratedEmail(
-  email: string,
-  auditId: string,
-  baseUrl: string,
-  input: {
-    trackingId: string;
-    previousFallbackHash: string;
-    premiumHash: string;
-  },
-): Promise<boolean> {
-  try {
-    const reportLink = `${baseUrl.replace(/\/$/, "")}/scan/${auditId}`;
-    const content = `
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 24px 0;">
-        <tr><td align="center"><span style="display:inline-block;background-color:${COLORS.discovery};color:#000;padding:7px 18px;border-radius:999px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;">Discovery Scan mis a jour</span></td></tr>
-      </table>
-      <h2 style="color:${COLORS.text};margin:0 0 18px;font-size:28px;line-height:1.2;text-align:center;font-weight:700;">Ton analyse complete est disponible</h2>
-      <p style="color:${COLORS.textMuted};font-size:16px;line-height:1.7;margin:0 0 14px;text-align:center;">J'ai repris ton Discovery Scan et remplace la premiere version par l'analyse complete de ton profil.</p>
-      <p style="color:${COLORS.textMuted};font-size:16px;line-height:1.7;margin:0 0 10px;text-align:center;">Ton lien reste le meme. Tu peux maintenant consulter la version approfondie, avec chaque domaine analyse en detail.</p>
-      ${getPrimaryButton("Consulter mon Discovery Scan", reportLink, COLORS.discovery)}
-      ${getCoachingSection("GRATUIT", COLORS.discovery)}
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top:28px;"><tr><td style="padding:18px 20px;background:${COLORS.background};border-radius:8px;border:1px solid ${COLORS.border};text-align:center;"><p style="color:${COLORS.textMuted};font-size:12px;margin:0 0 6px;">Lien direct :</p><p style="margin:0;"><a href="${reportLink}" style="color:${COLORS.discovery};font-size:11px;word-break:break-all;text-decoration:underline;">${reportLink}</a></p></td></tr></table>
-    `;
-    const html = getEmailWrapper(
-      content,
-      `linear-gradient(135deg, ${COLORS.discovery} 0%, ${COLORS.discovery}dd 100%)`,
-      "Discovery Scan",
-      "Analyse complete mise a jour",
-    );
-    const result = await sendEmailWithTracking(
-      {
-        html: encodeBase64(html),
-        text: `Ton Discovery Scan a ete mis a jour avec l'analyse complete. Consulte-le ici : ${reportLink}`,
-        subject: "Ton Discovery Scan complet est maintenant disponible",
-        from: { name: "Achzod", email: SENDER_EMAIL },
-        to: [{ email }],
-      },
-      {
-        emailType: "sendReportRegeneratedEmail",
-        recipientEmail: email,
-        auditId,
-        auditType: "GRATUIT",
-        metadata: {
-          trackingId: input.trackingId,
-          previousFallbackHash: input.previousFallbackHash,
-          premiumHash: input.premiumHash,
-          reportLink,
-        },
-      },
-    );
-    return result.result === true;
-  } catch (error) {
-    console.error("[DiscoveryRemediation] Corrective notification failed:", error);
     return false;
   }
 }
@@ -3489,13 +3284,6 @@ export async function sendAdminEmailNewAudit(
 ): Promise<boolean> {
   console.log(`[Admin Email] 🚀 Starting admin notification for audit ${auditId}`);
   try {
-    if (!shouldSendAdminDiscoveryNotification(clientEmail, clientName, auditType)) {
-      console.warn(
-        `[Admin Email] ⏭️ Skipping duplicate Discovery admin notification for ${clientName || "unknown"} (${clientEmail})`,
-      );
-      return false;
-    }
-
     const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
     console.log(`[Admin Email] Target admin email: ${adminEmail}`);
     console.log(`[Admin Email] Preparing email...`);
@@ -3725,24 +3513,13 @@ export async function sendRecoveryCtaEmail(
     percentComplete?: number | null;
     resumeUrl?: string | null;
     expiresText?: string;
-    recoveryClickFollowup?: {
-      idempotencyKey: string;
-      sourceTrackingId: string;
-      claimAttempt: number;
-    };
-    beforeProviderPost?: (context: {
-      recipientEmail: string;
-      subject: string;
-      startedAt: Date;
-    }) => Promise<void>;
   }
 ): Promise<boolean> {
   try {
+    const expiresText = opts.expiresText || "7 jours";
     const cohort = opts.cohort;
     const campaign = "recovery_cta_2026_06";
-    // Recovery contacts get one concrete recommendation instead of a six-offer
-    // decision wall. The bridge still exposes a comparison link if they need it.
-    const coachingUrl = discoveryCoachingBridgeUrl(opts.baseUrl, campaign, cohort, "ESSENTIAL");
+    const coachingUrl = discoveryCoachingBridgeUrl(opts.baseUrl, campaign, cohort);
     const trackedCoachingUrl = withEmailClickTracking(opts.baseUrl, opts.trackingId, coachingUrl);
     const trackingPixel = `${opts.baseUrl}/api/track/email/${opts.trackingId}/open.gif`;
     const safePercent = typeof opts.percentComplete === "number" && Number.isFinite(opts.percentComplete)
@@ -3767,7 +3544,7 @@ export async function sendRecoveryCtaEmail(
       clicked_no_conversion:
         "Tu avais cliqué mais tu n'es pas allé au bout. Je remets le lien proprement : le code n'est pas automatique, il faut le coller dans le champ Code promotionnel au checkout.",
       clicked_help:
-        "Tu as cliqué sur le coaching mais tu n'es pas allé au bout. Pour faire simple, Essential est le point de départ le plus logique : suivi hebdomadaire, plan d'entraînement et nutrition ajustés. Si tu veux un suivi plus rapproché, ou si le budget ou le code bloque, réponds à ce mail.",
+        "Tu as cliqué sur le coaching mais tu n'es pas allé au bout. Si c'est le choix de la formule, le budget ou le code promo qui bloque, réponds à ce mail avec ton objectif et je te dis exactement quoi prendre. Sinon je te remets le lien direct.",
       abandon_high:
         `Tu étais à ${safePercent ?? "plus de 75"}% du questionnaire. Ton scan est sauvegardé, reprends-le d'abord : derrière, je te garde DISCOVERY30 pour passer au coaching si tu veux appliquer le plan.`,
       abandon_medium:
@@ -3786,10 +3563,10 @@ export async function sendRecoveryCtaEmail(
 
     const primaryLabel = cohort.startsWith("abandon_") && resumeUrl
       ? "Reprendre mon Discovery"
-      : "Voir Essential avec -30%";
+      : "Voir les formules coaching";
 
     const content = `
-      ${getDiscoveryPromoBanner()}
+      ${getDiscoveryPromoBanner(7)}
 
       <p style="color:${APPLE_COLORS.inkSoft};font-size:16px;line-height:1.65;margin:0 0 20px;">
         ${escapeEmailHtml(introByCohort[cohort])}
@@ -3799,7 +3576,7 @@ export async function sendRecoveryCtaEmail(
         <p style="color:${APPLE_COLORS.ink};font-size:15px;line-height:1.65;margin:0;">
           <strong>Important :</strong> au paiement sur AchzodCoaching, colle
           <strong>DISCOVERY30</strong> dans le champ <strong>Code promotionnel ?</strong>.
-          Le code est actuellement actif sur les formules coaching 8 et 12 semaines.
+          Le code est valable ${escapeEmailHtml(expiresText)} sur les formules coaching 8 et 12 semaines.
         </p>
       </div>
 
@@ -3807,7 +3584,7 @@ export async function sendRecoveryCtaEmail(
 
       ${cohort.startsWith("abandon_") && resumeUrl ? `
       <p style="color:${APPLE_COLORS.muted};font-size:13px;line-height:1.55;margin:12px 0 0;text-align:center;">
-        Déjà prêt pour le coaching ? <a href="${trackedCoachingUrl}" style="color:${APPLE_COLORS.accent};text-decoration:none;font-weight:600;">Voir Essential avec -30%</a>
+        Déjà prêt pour le coaching ? <a href="${trackedCoachingUrl}" style="color:${APPLE_COLORS.accent};text-decoration:none;font-weight:600;">Voir directement les formules</a>
       </p>
       ` : ""}
 
@@ -3830,10 +3607,10 @@ export async function sendRecoveryCtaEmail(
 
     const plainText = `${introByCohort[cohort]}
 
-Code DISCOVERY30 : -30% sur formules coaching 8 et 12 semaines, actuellement actif.
+Code DISCOVERY30 : -30% sur formules coaching 8 et 12 semaines, valable ${expiresText}.
 Au paiement, copie DISCOVERY30 dans le champ "Code promotionnel ?".
 
-${cohort.startsWith("abandon_") && resumeUrl ? `Reprendre mon Discovery : ${resumeUrl}\nVoir Essential avec -30% : ${trackedCoachingUrl}` : `Voir Essential avec -30% : ${trackedCoachingUrl}`}
+${cohort.startsWith("abandon_") && resumeUrl ? `Reprendre mon Discovery : ${resumeUrl}\nVoir les formules coaching : ${trackedCoachingUrl}` : `Voir les formules coaching : ${trackedCoachingUrl}`}
 
 Si tu bloques sur le choix de la formule, réponds simplement à ce mail avec ton objectif.
 
@@ -3858,15 +3635,7 @@ Achzod`;
           trackedCoachingUrl,
           resumeUrl,
           campaign,
-          ...(opts.recoveryClickFollowup
-            ? {
-                recoveryClickFollowupKey: opts.recoveryClickFollowup.idempotencyKey,
-                sourceTrackingId: opts.recoveryClickFollowup.sourceTrackingId,
-                claimAttempt: opts.recoveryClickFollowup.claimAttempt,
-              }
-            : {}),
         },
-        beforeProviderPost: opts.beforeProviderPost,
       }
     );
 
@@ -4186,6 +3955,9 @@ export async function sendFinishDiscoveryEmail(
     const EXPIRES = opts.expiresText || "7 jours";
     const resumeHref = `https://apexlabs.achzodcoaching.com/audit-complet/questionnaire`;
     const peptidesHref = `https://apexlabs.achzodcoaching.com/peptides-engine?promo=${APEX_CODE}`;
+    const whatsappHref = buildWhatsAppUrl(
+      "Salut Achzod, j'avais commence mon Discovery Scan APEXLABS sans le finir. Je veux ton avis pour savoir si je dois reprendre le scan ou partir directement sur une analyse/coaching."
+    );
 
     const content = `
       <p style="color: ${COLORS.textMuted}; font-size: 13px; text-align: center; margin: 0 0 8px 0; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 600;">Rappel personnel</p>
@@ -4207,6 +3979,7 @@ export async function sendFinishDiscoveryEmail(
           Tu reprends la ou tu t'etais arrete , ou tu repars de zero si tu veux.
         </p>
         ${getPrimaryButton('Finir mon scan gratuit', resumeHref, COLORS.discovery)}
+        ${getWhatsAppContactButton("Demander l'avis d'Achzod", "Salut Achzod, j'avais commence mon Discovery Scan APEXLABS sans le finir. Je veux ton avis pour savoir si je dois reprendre le scan ou partir directement sur une analyse/coaching.")}
       </div>
 
       <!-- Divider -->
@@ -4235,6 +4008,7 @@ export async function sendFinishDiscoveryEmail(
     const plainText = `Il te reste 2 minutes pour finir ton Discovery APEXLABS gratuit. Tu reprends la ou tu t'etais arrete. 66 questions, 10 domaines analyses, rapport personnalise immediat.
 
 Finir mon scan : ${resumeHref}
+Demander l'avis d'Achzod sur WhatsApp : ${whatsappHref}
 
 Ou si tu veux skip et aller direct a l'action : code ${APEX_CODE} (-30% tout le site pendant ${EXPIRES}). Focus Peptides Engine 209EUR au lieu de 299EUR + -150EUR deduits du coaching Elite/Private Lab apres : ${peptidesHref}
 
@@ -4276,6 +4050,9 @@ export async function sendCrossSellUpgradeEmail(
     const EXPIRES = opts.expiresText || "7 jours";
     const coachingHref = "https://www.achzodcoaching.com/";
     const peptidesHref = `https://apexlabs.achzodcoaching.com/peptides-engine?promo=${APEX_CODE}`;
+    const whatsappHref = buildWhatsAppUrl(
+      "Salut Achzod, j'ai deja fait un audit APEXLABS. Je veux ton avis pour savoir quelle suite est la plus logique : appliquer seul, Peptides Engine, coaching ou Private Lab."
+    );
 
     const content = `
       <p style="color: ${COLORS.textMuted}; font-size: 13px; text-align: center; margin: 0 0 8px 0; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 600;">Entre nous , deja client</p>
@@ -4304,6 +4081,7 @@ export async function sendCrossSellUpgradeEmail(
           <span style="color: ${COLORS.text}; font-size: 16px; font-weight: 800; letter-spacing: 1.5px;">${COACHING_CODE}</span>
         </div>
         ${getPrimaryButton('Voir les formules coaching', coachingHref, COLORS.purple)}
+        ${getWhatsAppContactButton("Demander l'avis d'Achzod", "Salut Achzod, j'ai deja fait un audit APEXLABS. Je veux ton avis pour savoir quelle suite est la plus logique : appliquer seul, Peptides Engine, coaching ou Private Lab.")}
       </div>
 
       <!-- BLOCK 2: Peptides (urgency) -->
@@ -4340,6 +4118,7 @@ export async function sendCrossSellUpgradeEmail(
 
 1. COACHING ACHZOD -20% avec ${COACHING_CODE} : ${coachingHref}
 Essential, Elite, Private Lab. Rappel : ton audit est deduit du coaching (acompte, pas supplement).
+Avis WhatsApp Achzod : ${whatsappHref}
 
 2. PEPTIDES ENGINE -30% avec ${APEX_CODE} : ${peptidesHref}
 Protocole base sur mes sources direct fournisseur. 209EUR au lieu de 299EUR + -150EUR deduits du coaching Elite/Private Lab apres. Sources bientot coupees.
@@ -4387,6 +4166,9 @@ export async function sendGratuitUpsellEmail(
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
     const DAYS_LEFT = 7;
     const deadlineDate = formatDeadlineFR(DAYS_LEFT);
+    const whatsappHref = buildWhatsAppUrl(
+      "Salut Achzod, j'ai recu mon Discovery Scan APEXLABS. Je veux ton avis pour choisir entre appliquer seul, prendre une formule coaching ou approfondir avec une analyse payante."
+    );
 
     const content = `
       ${getDiscoveryPromoBanner(DAYS_LEFT)}
@@ -4422,6 +4204,7 @@ export async function sendGratuitUpsellEmail(
       </p>
 
       ${getCoachingAppleButton('Activer mon code -30% maintenant', trackedCoachingLink)}
+      ${getWhatsAppContactButton("Demander l'avis d'Achzod", "Salut Achzod, j'ai recu mon Discovery Scan APEXLABS. Je veux ton avis pour choisir entre appliquer seul, prendre une formule coaching ou approfondir avec une analyse payante.")}
 
       <div style="text-align:center;margin:18px 0 14px;">
         <a href="${trackedAllFormulesLink}" style="color:${APPLE_COLORS.accent};font-size:14px;text-decoration:none;font-weight:500;">
@@ -4455,7 +4238,7 @@ export async function sendGratuitUpsellEmail(
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
-        text: `Ton code DISCOVERY30 est actif : -30% sur formules coaching 8 et 12 semaines, valable jusqu'au ${deadlineDate}.\n\nChoisir ma formule : ${trackedCoachingLink}\nComparer les 3 formules : ${trackedAllFormulesLink}\n\nAu paiement, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`,
+        text: `Ton code DISCOVERY30 est actif : -30% sur formules coaching 8 et 12 semaines, valable jusqu'au ${deadlineDate}.\n\nChoisir ma formule : ${trackedCoachingLink}\nDemander mon avis sur WhatsApp : ${whatsappHref}\nComparer les 3 formules : ${trackedAllFormulesLink}\n\nAu paiement, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`,
         subject: `DISCOVERY30 actif , 7 jours pour activer ton coaching -30%`,
         from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
@@ -4465,7 +4248,7 @@ export async function sendGratuitUpsellEmail(
         recipientEmail: email,
         auditId,
         auditType: "GRATUIT",
-        metadata: { promoCode: "DISCOVERY30", reportLink, coachingLink, allFormulesLink, trackedCoachingLink, trackedAllFormulesLink, trackingId },
+        metadata: { promoCode: "DISCOVERY30", reportLink, coachingLink, allFormulesLink, trackedCoachingLink, trackedAllFormulesLink, whatsappHref, trackingId },
       }
     );
 
@@ -4812,12 +4595,15 @@ export async function sendPremiumJ7Email(
 
     const promoJ7 = getPromoCodeForAuditType(auditType);
     const promoJ7Label = promoJ7 ? `${promoJ7.code} (-${promoJ7.amount}EUR)` : "deduction coaching";
+    const whatsappHref = buildWhatsAppUrl(
+      `Salut Achzod, j'ai recu mon rapport APEXLABS (${auditType}) il y a une semaine. Je veux ton avis pour passer a l'action correctement.`
+    );
     const emailContent = getEmailWrapper(content, `linear-gradient(135deg, ${COLORS.purple} 0%, #7c3aed 100%)`);
 
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
-        text: `Ca fait une semaine ! Pret a passer a l'action ? Ton code promo : ${promoJ7Label}. Decouvre le coaching personnalise.`,
+        text: `Ca fait une semaine ! Pret a passer a l'action ? Ton code promo : ${promoJ7Label}. Decouvre le coaching personnalise.\n\nDemander mon avis sur WhatsApp : ${whatsappHref}`,
         subject: `Pret a transformer ta sante ? (${promoJ7Label})`,
         from: { name: SENDER_NAME, email: SENDER_EMAIL },
         to: [{ email }],
@@ -4827,7 +4613,7 @@ export async function sendPremiumJ7Email(
         recipientEmail: email,
         auditId,
         auditType,
-        metadata: { trackingId, hasLeftReview, promoCode: promoJ7?.code, dashboardLink },
+        metadata: { trackingId, hasLeftReview, promoCode: promoJ7?.code, dashboardLink, whatsappHref },
       }
     );
 
@@ -4870,12 +4656,15 @@ export async function sendPremiumJ14Email(
 
     const promoJ14 = getPromoCodeForAuditType(auditType);
     const promoJ14Label = promoJ14 ? `${promoJ14.code} (-${promoJ14.amount}EUR)` : "deduction coaching";
+    const whatsappHref = buildWhatsAppUrl(
+      `Salut Achzod, j'ai recu mon rapport APEXLABS (${auditType}). Je veux ton avis pour savoir si je dois continuer seul ou partir sur coaching.`
+    );
     const emailContent = getEmailWrapper(content, `linear-gradient(135deg, ${COLORS.warning} 0%, #d97706 100%)`);
 
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
-        text: `Coaching Achzod. Ton code promo : ${promoJ14Label}. Utilise-le sur achzodcoaching.com.`,
+        text: `Coaching Achzod. Ton code promo : ${promoJ14Label}. Utilise-le sur achzodcoaching.com.\n\nDemander mon avis sur WhatsApp : ${whatsappHref}`,
         subject: `Coaching Achzod - code ${promoJ14Label}`,
         from: { name: SENDER_NAME, email: SENDER_EMAIL },
         to: [{ email }],
@@ -4885,7 +4674,7 @@ export async function sendPremiumJ14Email(
         recipientEmail: email,
         auditId,
         auditType,
-        metadata: { trackingId, promoCode: promoJ14?.code },
+        metadata: { trackingId, promoCode: promoJ14?.code, whatsappHref },
       }
     );
 
@@ -4922,6 +4711,11 @@ export async function sendDiscoveryJ14CoachingEmail(
       : null;
     const DAYS_LEFT = 7;
     const deadlineDate = formatDeadlineFR(DAYS_LEFT);
+    const whatsappHref = buildWhatsAppUrl(
+      tierLabel
+        ? `Salut Achzod, j'ai recu mon Discovery Scan APEXLABS et la recommandation ${tierLabel}. Je veux ton avis avant de choisir ma formule coaching.`
+        : "Salut Achzod, j'ai recu mon Discovery Scan APEXLABS. Je veux ton avis pour choisir la bonne formule coaching ou savoir si je dois approfondir avant."
+    );
 
     const content = `
       ${getDiscoveryPromoBanner(DAYS_LEFT)}
@@ -4957,6 +4751,10 @@ export async function sendDiscoveryJ14CoachingEmail(
       </table>
 
       ${getCoachingAppleButton(tierLabel ? `Activer mon code -30% sur ${tierLabel}` : 'Activer mon code -30% maintenant', trackedCoachingLink)}
+      ${getWhatsAppContactButton("Demander l'avis d'Achzod", tierLabel
+        ? `Salut Achzod, j'ai recu mon Discovery Scan APEXLABS et la recommandation ${tierLabel}. Je veux ton avis avant de choisir ma formule coaching.`
+        : "Salut Achzod, j'ai recu mon Discovery Scan APEXLABS. Je veux ton avis pour choisir la bonne formule coaching ou savoir si je dois approfondir avant."
+      )}
 
       <p style="color:${APPLE_COLORS.muted};font-size:12px;line-height:1.55;margin:20px 0 0;text-align:center;">
         Code valable jusqu'au <strong style="color:${APPLE_COLORS.ink};">${deadlineDate}</strong>. Au checkout, copie <strong style="color:${APPLE_COLORS.ink};">DISCOVERY30</strong> dans le champ "Code promotionnel ?".
@@ -4987,8 +4785,8 @@ export async function sendDiscoveryJ14CoachingEmail(
       {
         html: encodeBase64(emailContent),
         text: tierLabel
-          ? `Je te recommande ${tierLabel} d'après ton Discovery.\n${recommendation!.reason}\n\nCode DISCOVERY30 : -30% jusqu'au ${deadlineDate} (7 jours).\nChoisir ma formule : ${trackedCoachingLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`
-          : `Tu as les données. Le coaching, c'est l'application pratique sur la durée.\n\nCode DISCOVERY30 : -30% sur formules 8 et 12 sem, jusqu'au ${deadlineDate} (7 jours).\nChoisir ma formule : ${trackedCoachingLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`,
+          ? `Je te recommande ${tierLabel} d'après ton Discovery.\n${recommendation!.reason}\n\nCode DISCOVERY30 : -30% jusqu'au ${deadlineDate} (7 jours).\nChoisir ma formule : ${trackedCoachingLink}\nDemander mon avis sur WhatsApp : ${whatsappHref}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`
+          : `Tu as les données. Le coaching, c'est l'application pratique sur la durée.\n\nCode DISCOVERY30 : -30% sur formules 8 et 12 sem, jusqu'au ${deadlineDate} (7 jours).\nChoisir ma formule : ${trackedCoachingLink}\nDemander mon avis sur WhatsApp : ${whatsappHref}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`,
         subject: tierLabel
           ? `${tierLabel} avec DISCOVERY30 , 7 jours pour activer`
           : `7 jours pour activer DISCOVERY30 , -30% coaching`,
@@ -5000,7 +4798,7 @@ export async function sendDiscoveryJ14CoachingEmail(
         recipientEmail: email,
         auditId,
         auditType: "GRATUIT",
-        metadata: { promoCode: "DISCOVERY30", coachingLink, trackedCoachingLink, trackingId, recommendedTier: recommendation?.tier },
+        metadata: { promoCode: "DISCOVERY30", coachingLink, trackedCoachingLink, whatsappHref, trackingId, recommendedTier: recommendation?.tier },
       }
     );
 
@@ -5029,6 +4827,9 @@ export async function sendGratuitJ5Email(
     const reportLink = `${baseUrl}/analysis/${auditId}`;
     const DAYS_LEFT = 5;
     const deadlineDate = formatDeadlineFR(DAYS_LEFT);
+    const whatsappHref = buildWhatsAppUrl(
+      "Salut Achzod, j'ai mon Discovery Scan APEXLABS depuis quelques jours. Je veux ton avis pour transformer le diagnostic en plan concret."
+    );
 
     const content = `
       ${getDiscoveryPromoBanner(DAYS_LEFT)}
@@ -5081,6 +4882,7 @@ export async function sendGratuitJ5Email(
         </p>
 
         ${getCoachingAppleButton('Activer mon code -30% maintenant', trackedPrimaryCtaLink)}
+        ${getWhatsAppContactButton("Demander l'avis d'Achzod", "Salut Achzod, j'ai mon Discovery Scan APEXLABS depuis quelques jours. Je veux ton avis pour transformer le diagnostic en plan concret.")}
       </div>
 
       <div style="text-align:center;margin-bottom:14px;">
@@ -5115,7 +4917,7 @@ export async function sendGratuitJ5Email(
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
-        text: `Ton code DISCOVERY30 est actif : -30% sur formules coaching 8 et 12 semaines, valable jusqu'au ${deadlineDate} (5 jours).\n\nLe Discovery te donne le diagnostic. Le coaching te donne le plan jour-par-jour, l'ajustement hebdo, et le contrat moral.\n\nChoisir ma formule : ${trackedPrimaryCtaLink}\nComparer les 3 formules : ${trackedSecondaryCtaLink}\nRelire le Discovery : ${reportLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`,
+        text: `Ton code DISCOVERY30 est actif : -30% sur formules coaching 8 et 12 semaines, valable jusqu'au ${deadlineDate} (5 jours).\n\nLe Discovery te donne le diagnostic. Le coaching te donne le plan jour-par-jour, l'ajustement hebdo, et le contrat moral.\n\nChoisir ma formule : ${trackedPrimaryCtaLink}\nDemander mon avis sur WhatsApp : ${whatsappHref}\nComparer les 3 formules : ${trackedSecondaryCtaLink}\nRelire le Discovery : ${reportLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`,
         subject: `5 jours pour activer DISCOVERY30 , -30% coaching`,
         from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
@@ -5125,7 +4927,7 @@ export async function sendGratuitJ5Email(
         recipientEmail: email,
         auditId,
         auditType: "GRATUIT",
-        metadata: { promoCode: "DISCOVERY30", primaryCtaLink, secondaryCtaLink, trackedPrimaryCtaLink, trackedSecondaryCtaLink, trackingId },
+        metadata: { promoCode: "DISCOVERY30", primaryCtaLink, secondaryCtaLink, trackedPrimaryCtaLink, trackedSecondaryCtaLink, whatsappHref, trackingId },
       }
     );
 
@@ -5156,6 +4958,9 @@ export async function sendGratuitJ7Email(
     const trackedAllFormulesLink = withEmailClickTracking(baseUrl, trackingId, allFormulesLink);
     const DAYS_LEFT = 3;
     const deadlineDate = formatDeadlineFR(DAYS_LEFT);
+    const whatsappHref = buildWhatsAppUrl(
+      "Salut Achzod, j'ai DISCOVERY30 mais j'hesite entre Essential, Elite et Private Lab. Je veux ton avis pour choisir la bonne formule."
+    );
 
     const content = `
       ${getDiscoveryPromoBanner(DAYS_LEFT)}
@@ -5216,6 +5021,7 @@ export async function sendGratuitJ7Email(
       </table>
 
       ${getCoachingAppleButton('Comparer les 3 formules', trackedAllFormulesLink)}
+      ${getWhatsAppContactButton("Demander l'avis d'Achzod", "Salut Achzod, j'ai DISCOVERY30 mais j'hesite entre Essential, Elite et Private Lab. Je veux ton avis pour choisir la bonne formule.")}
 
       <p style="color:${APPLE_COLORS.muted};font-size:13px;margin:20px 0 0;text-align:center;line-height:1.55;">
         Les 4 semaines ne sont pas éligibles au code DISCOVERY30, seules les 8 et 12 sem le sont.
@@ -5237,7 +5043,7 @@ export async function sendGratuitJ7Email(
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
-        text: `Plus que 3 jours pour activer DISCOVERY30 (jusqu'au ${deadlineDate}).\n\nComparaison des 3 formules coaching avec DISCOVERY30 :\n\nEssential 8 sem : 279€ (au lieu de 399€) , ${trackedEssentialLink}\nElite 8 sem : 454€ (au lieu de 649€) , ${trackedEliteLink}\nPrivate Lab 8 sem : 559€ (au lieu de 799€) , ${trackedPrivateLabLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?". Les 4 semaines ne sont pas éligibles au code, seules les 8 et 12 sem le sont.\n\nAchzod`,
+        text: `Plus que 3 jours pour activer DISCOVERY30 (jusqu'au ${deadlineDate}).\n\nComparaison des 3 formules coaching avec DISCOVERY30 :\n\nEssential 8 sem : 279€ (au lieu de 399€) , ${trackedEssentialLink}\nElite 8 sem : 454€ (au lieu de 649€) , ${trackedEliteLink}\nPrivate Lab 8 sem : 559€ (au lieu de 799€) , ${trackedPrivateLabLink}\n\nDemander mon avis sur WhatsApp : ${whatsappHref}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?". Les 4 semaines ne sont pas éligibles au code, seules les 8 et 12 sem le sont.\n\nAchzod`,
         subject: `3 jours avant que DISCOVERY30 expire , -30% coaching`,
         from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
@@ -5247,7 +5053,7 @@ export async function sendGratuitJ7Email(
         recipientEmail: email,
         auditId,
         auditType: "GRATUIT",
-        metadata: { promoCode: "DISCOVERY30", essentialLink, eliteLink, privateLabLink, allFormulesLink, trackedEssentialLink, trackedEliteLink, trackedPrivateLabLink, trackedAllFormulesLink, trackingId },
+        metadata: { promoCode: "DISCOVERY30", essentialLink, eliteLink, privateLabLink, allFormulesLink, trackedEssentialLink, trackedEliteLink, trackedPrivateLabLink, trackedAllFormulesLink, whatsappHref, trackingId },
       }
     );
 
@@ -5675,7 +5481,7 @@ export async function addSubscriberToList(
 
 // Discovery J+30 , long-tail nurture for Discovery Scan recipients who haven't
 // upgraded. Pushes COACHING directly (not more audits) since coaching is the
-// real revenue. Uses DISCOVERY30 code (30% off eligible coaching formulas).
+// real revenue. Uses DISCOVERY30 code (20% off all coaching formulas).
 // When a `recommendation` is passed, the CTA points to the matched formule
 // page (Essential/Elite/PrivateLab) and the intro surfaces the rationale.
 // One-shot per client, dedup via email_tracking.
@@ -5907,7 +5713,7 @@ export async function sendPeptidesCycle2ReorderEmail(
 // report delivery (4-8h anti-automation delay). Without this, clients pay
 // 199-299 EUR and receive zero feedback for hours, thinking the payment
 // failed. Apple-clean theme per Achzod brand policy (white + Apple blue).
-export async function sendPeptidesOrderConfirmationEmailResult(
+export async function sendPeptidesOrderConfirmationEmail(
   email: string,
   opts: {
     firstName?: string;
@@ -5918,7 +5724,7 @@ export async function sendPeptidesOrderConfirmationEmailResult(
     bloodCreditsCount?: number;
     orderId: string;
   }
-): Promise<SendPulseSendResult> {
+): Promise<boolean> {
   try {
     const firstName = (opts.firstName || email.split("@")[0]).trim();
     const deliveryParis = opts.scheduledDeliveryAt.toLocaleString("fr-FR", {
@@ -6050,14 +5856,6 @@ Réf. commande : ${opts.orderId.slice(0,8)}`;
       {
         emailType: "sendPeptidesOrderConfirmation",
         recipientEmail: email,
-        // The route already owns the persistent DB lease. This hook marks the
-        // exact point at which the provider POST begins so a network timeout is
-        // classified UNKNOWN (manual reconciliation), never as a safe retry.
-        beforeProviderPost: async () => {},
-        // Peptides transactional mail must stay on the configured SendPulse
-        // identity. A fallback provider would also create a second ambiguous
-        // POST surface that cannot be reconciled with the same task id.
-        allowProviderFallback: false,
         metadata: {
           orderId: opts.orderId,
           amountEur: opts.amountEur,
@@ -6066,89 +5864,9 @@ Réf. commande : ${opts.orderId.slice(0,8)}`;
         },
       }
     );
-    return result;
+    return result.result === true;
   } catch (error) {
     console.error("[SendPulse] Error sending peptides order confirmation:", error);
-    return { result: false, error: String(error) };
+    return false;
   }
-}
-
-export async function sendPeptidesOrderConfirmationEmail(
-  email: string,
-  opts: Parameters<typeof sendPeptidesOrderConfirmationEmailResult>[1],
-): Promise<boolean> {
-  const result = await sendPeptidesOrderConfirmationEmailResult(email, opts);
-  return result.result === true;
-}
-
-export async function sendPeptidesReportReadyEmail(
-  email: string,
-  opts: {
-    firstName?: string;
-    orderId: string;
-    reportId: string;
-    reportUrl: string;
-    peptidesNames: string;
-    promoText?: string;
-    coachingText?: string;
-  },
-): Promise<SendPulseSendResult> {
-  const esc = (value: unknown) => String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-  const firstName = esc((opts.firstName || email.split("@")[0]).trim());
-  const reportUrl = esc(opts.reportUrl);
-  const peptidesNames = esc(opts.peptidesNames || "voir le rapport");
-  const optionalRows = [opts.promoText, opts.coachingText]
-    .filter((value): value is string => Boolean(value && value.trim()))
-    .map((value) => `<div style="margin-top:12px;padding:14px 16px;background:#f5f5f7;border-radius:10px;color:#515154;font-size:13px;line-height:1.55;white-space:pre-line;">${esc(value.trim())}</div>`)
-    .join("");
-
-  const html = `<!DOCTYPE html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ton protocole Peptides Engine est prêt</title></head>
-<body style="margin:0;padding:0;background:#f5f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1d1d1f;">
-<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f5f5f7;padding:40px 14px;"><tr><td align="center">
-<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:580px;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.05);">
-<tr><td style="padding:34px 38px 12px;"><p style="margin:0;color:#86868b;font-size:12px;letter-spacing:1px;text-transform:uppercase;font-weight:700;">ApexLabs , Peptides Engine</p><h1 style="margin:10px 0 0;font-size:29px;line-height:1.2;letter-spacing:-.6px;">Ton protocole est prêt</h1></td></tr>
-<tr><td style="padding:8px 38px 0;"><p style="margin:0;color:#515154;font-size:15px;line-height:1.65;">Salut ${firstName}, j'ai terminé la lecture de ton dossier et calibré ton protocole. Tu retrouves dans le rapport les dosages, le calendrier, les quantités opérationnelles, la reconstitution et le suivi.</p></td></tr>
-<tr><td style="padding:24px 38px 0;"><div style="padding:18px 20px;border:1px solid #d2d2d7;border-radius:12px;"><p style="margin:0;color:#86868b;font-size:12px;text-transform:uppercase;letter-spacing:.7px;font-weight:700;">Sélection</p><p style="margin:8px 0 0;color:#1d1d1f;font-size:15px;line-height:1.55;font-weight:600;">${peptidesNames}</p></div>${optionalRows}</td></tr>
-<tr><td align="center" style="padding:28px 38px 0;"><a href="${reportUrl}" style="display:inline-block;background:#0071e3;color:#fff;text-decoration:none;font-size:15px;font-weight:700;padding:15px 25px;border-radius:999px;">Ouvrir mon protocole complet</a></td></tr>
-<tr><td style="padding:26px 38px 38px;"><p style="margin:0;color:#515154;font-size:14px;line-height:1.6;">Conserve ce lien, il est personnel. Si quelque chose n'est pas clair après ta lecture, réponds directement à ce mail.</p><p style="margin:18px 0 0;color:#1d1d1f;font-size:15px;line-height:1.5;">À très vite,<br><strong>Achzod</strong></p><p style="margin:22px 0 0;padding-top:18px;border-top:1px solid #d2d2d7;color:#86868b;font-size:11px;line-height:1.5;">ApexLabs by Achzod , coaching@achzodcoaching.com<br>Commande ${esc(opts.orderId.slice(0, 8))} , rapport ${esc(opts.reportId.slice(0, 8))}</p></td></tr>
-</table></td></tr></table></body></html>`;
-
-  const text = `Salut ${opts.firstName || email.split("@")[0]},
-
-Ton protocole Peptides Engine est prêt.
-
-Sélection : ${opts.peptidesNames}
-
-Ouvre ton rapport complet : ${opts.reportUrl}
-${opts.promoText ? `\n${opts.promoText.trim()}\n` : ""}${opts.coachingText ? `\n${opts.coachingText.trim()}\n` : ""}
-Conserve ce lien, il est personnel. Si quelque chose n'est pas clair, réponds directement à ce mail.
-
-Achzod`;
-
-  return sendEmailWithTracking(
-    {
-      subject: "Ton protocole Peptides Engine personnalisé est prêt",
-      from: { name: SENDER_NAME, email: SENDER_EMAIL },
-      to: [{ email }],
-      html: encodeBase64(html),
-      text,
-    },
-    {
-      emailType: "sendPeptidesReportReadyEmail",
-      recipientEmail: email,
-      auditId: opts.reportId,
-      auditType: "PEPTIDES_ENGINE",
-      // See confirmation above: after the provider POST starts, ambiguity must
-      // block blind retries to prevent duplicate client delivery.
-      beforeProviderPost: async () => {},
-      allowProviderFallback: false,
-      metadata: { orderId: opts.orderId, reportId: opts.reportId },
-    },
-  );
 }
