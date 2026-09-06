@@ -45,6 +45,8 @@ export function WhatsAppConversionHub() {
   const [formError, setFormError] = useState("");
   const { offer, context } = useMemo(() => inferOffer(location), [location]);
   const hidden = HIDDEN_PREFIXES.some((prefix) => location.startsWith(prefix));
+  const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+  const isCoachingHost = hostname === "achzodcoaching.com" || hostname === "www.achzodcoaching.com";
 
   useEffect(() => {
     if (hidden) return;
@@ -128,7 +130,14 @@ export function WhatsAppConversionHub() {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-[10010] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 sm:bottom-6 sm:right-6">
+    <div
+      className="fixed right-4 z-[10010] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 sm:right-6"
+      style={{
+        bottom: isCoachingHost
+          ? "calc(env(safe-area-inset-bottom, 0px) + 96px)"
+          : "calc(env(safe-area-inset-bottom, 0px) + 16px)",
+      }}
+    >
       {open && (
         <div className="w-[min(380px,calc(100vw-2rem))] border border-[#25D366]/40 bg-black/95 p-4 text-white shadow-[0_24px_80px_rgba(0,0,0,0.55)] backdrop-blur-md">
           <div className="mb-4 flex items-start justify-between gap-4">

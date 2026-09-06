@@ -3774,7 +3774,7 @@ export async function sendWhatsAppLeadFollowupEmail(
   }
 }
 
-export async function sendWhatsAppLeadAdminAlert(lead: {
+type WhatsAppLeadAdminAlertLead = {
   email?: string | null;
   phone?: string | null;
   offer?: string | null;
@@ -3787,7 +3787,92 @@ export async function sendWhatsAppLeadAdminAlert(lead: {
   details?: string | null;
   path?: string | null;
   sourceUrl?: string | null;
-}): Promise<boolean> {
+};
+
+type WhatsAppLeadOrientation = {
+  primary: string;
+  alternative: string;
+  reason: string;
+  copyReply: string;
+};
+
+const leadTextIncludes = (haystack: string, needles: string[]): boolean =>
+  needles.some((needle) => haystack.includes(needle));
+
+function buildWhatsAppLeadOrientation(lead: WhatsAppLeadAdminAlertLead): WhatsAppLeadOrientation {
+  const offer = compactEmailLine(lead.offer || "APEXLABS", 120);
+  const goal = compactEmailLine(lead.goal, 220);
+  const blocker = compactEmailLine(lead.blocker, 260);
+  const urgency = compactEmailLine(lead.urgency, 160);
+  const details = compactEmailLine(lead.details, 320);
+  const text = [offer, goal, blocker, urgency, details, lead.path, lead.sourceUrl]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  const wantsCoaching = leadTextIncludes(text, ["coaching", "suivi", "accompagnement", "elite", "private", "programme complet"]);
+  const wantsFast = leadTextIncludes(text, ["urgent", "vite", "rapid", "maintenant", "asap", "cette semaine"]);
+  const peptide = leadTextIncludes(text, ["peptide", "peptides", "sarm", "sarms", "ped", "retatrutide", "tirzepatide", "semaglutide", "mots-c"]);
+  const blood = leadTextIncludes(text, ["blood", "sang", "prise de sang", "bilan sanguin", "biomarqueur", "marqueurs"]);
+  const hormone = leadTextIncludes(text, ["testo", "libido", "hormone", "hormonal", "energie", "énergie", "fatigue", "drive", "recuperation", "récupération"]);
+  const physique = leadTextIncludes(text, ["perte de poids", "perdre du poids", "gras", "seche", "sèche", "stagne", "stagnation", "recomposition", "muscle"]);
+
+  let primary = "Coaching Elite";
+  let alternative = "Ultimate Scan";
+  let reason = "il a déjà levé la main avec un objectif physique clair; il faut transformer vite en conversation qualifiée.";
+
+  if (peptide && wantsCoaching) {
+    primary = "Coaching Elite + Peptides Engine";
+    alternative = "Peptides Engine seul si budget/engagement pas encore prêt";
+    reason = "intention avancée + demande d'accompagnement : vendre le cadre complet, puis proposer Peptides Engine comme porte d'entrée si besoin.";
+  } else if (peptide) {
+    primary = "Peptides Engine";
+    alternative = "Coaching Elite si objectif transformation complet";
+    reason = "le sujet est avancé; il faut cadrer la stratégie sans donner de conseil risqué au hasard.";
+  } else if (blood) {
+    primary = "Blood Analysis";
+    alternative = "Coaching Elite si l'objectif est une transformation complète";
+    reason = "il parle de marqueurs ou d'analyse sanguine; commencer par objectiver avant de vendre l'exécution.";
+  } else if (hormone) {
+    primary = "Anabolic Bioscan";
+    alternative = "Coaching Elite si fatigue/libido/performance bloquent aussi l'exécution";
+    reason = "la douleur énergie/libido/récupération doit être orientée vers diagnostic hormonal, avec coaching si le profil veut être pris en charge.";
+  } else if (wantsCoaching || wantsFast) {
+    primary = "Coaching Elite";
+    alternative = "Coaching Essential si budget plus léger";
+    reason = "il exprime déjà une intention d'accompagnement ou un timing serré; le risque est de le laisser refroidir avec un simple scan.";
+  } else if (physique) {
+    primary = "Ultimate Scan";
+    alternative = "Coaching Elite si son historique montre qu'il n'appliquera pas seul";
+    reason = "la douleur physique est claire mais l'intention coaching n'est pas certaine; Ultimate qualifie et ouvre naturellement le coaching.";
+  }
+
+  const contextParts = [
+    goal ? `objectif: ${goal}` : "",
+    blocker ? `blocage: ${blocker}` : "",
+    urgency ? `timing: ${urgency}` : "",
+  ].filter(Boolean);
+  const contextSentence = contextParts.length > 0
+    ? `J'ai vu ton message (${contextParts.join(" / ")}).`
+    : "J'ai vu ton message.";
+
+  const copyReply = [
+    `Salut, ${contextSentence}`,
+    "",
+    "Je vais être direct : je ne te conseillerais pas un truc au hasard sans lire ton profil, parce que c'est exactement comme ça qu'on perd du temps avec le mauvais levier.",
+    "",
+    `Option 1, la plus logique pour toi : ${primary}.`,
+    `Pourquoi : ${reason}`,
+    "",
+    `Option 2, si tu veux commencer plus léger : ${alternative}.`,
+    "",
+    "Envoie-moi ici ton âge, taille, poids, objectif exact sur 8-12 semaines, ce que tu as déjà essayé, et 2 photos récentes si tu es à l'aise. Je te dis honnêtement quelle option est la plus adaptée, sans te vendre un truc inutile.",
+  ].join("\n");
+
+  return { primary, alternative, reason, copyReply };
+}
+
+export async function sendWhatsAppLeadAdminAlert(lead: WhatsAppLeadAdminAlertLead): Promise<boolean> {
   try {
     const adminEmail = process.env.WHATSAPP_LEAD_ADMIN_EMAIL || process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
     const email = compactEmailLine(lead.email, 180);
@@ -3801,15 +3886,8 @@ export async function sendWhatsAppLeadAdminAlert(lead: {
     const details = compactEmailLine(lead.details, 520);
     const path = compactEmailLine(lead.path, 320);
     const sourceUrl = compactEmailLine(lead.sourceUrl, 700);
-    const whatsappMessage = [
-      "Salut Achzod, je viens de remplir le formulaire coaching/WhatsApp.",
-      offer ? `Page: ${offer}.` : "",
-      goal ? `Objectif: ${goal}.` : "",
-      blocker ? `Blocage: ${blocker}.` : "",
-      urgency ? `Timing: ${urgency}.` : "",
-      details ? `Contexte: ${details}.` : "",
-    ].filter(Boolean).join(" ");
-    const whatsappHref = buildWhatsAppUrl(whatsappMessage);
+    const orientation = buildWhatsAppLeadOrientation(lead);
+    const whatsappHref = buildWhatsAppUrl(orientation.copyReply);
 
     const row = (label: string, value?: string | null) =>
       value
@@ -3833,20 +3911,33 @@ export async function sendWhatsAppLeadAdminAlert(lead: {
         ${row("Contexte", details)}
         ${row("Chemin", path)}
         ${row("Source", sourceUrl)}
+        ${row("Orientation 1", orientation.primary)}
+        ${row("Orientation 2", orientation.alternative)}
       </div>
 
-      ${getCoachingAppleButton("Ouvrir WhatsApp avec le contexte", whatsappHref)}
+      <div style="padding:18px 20px;background:#eef6ff;border-radius:12px;border-left:4px solid ${APPLE_COLORS.accent};margin:0 0 22px;">
+        <p style="margin:0 0 10px;color:${APPLE_COLORS.accent};font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;">
+          Reponse prete a copier-coller
+        </p>
+        <p style="margin:0;color:${APPLE_COLORS.ink};font-size:15px;line-height:1.65;">${escapeEmailHtml(orientation.copyReply).replace(/\n/g, "<br>")}</p>
+      </div>
+
+      ${getCoachingAppleButton("Ouvrir WhatsApp avec la reponse prete", whatsappHref)}
+
+      <p style="color:${APPLE_COLORS.muted};font-size:12px;line-height:1.55;margin:0;">
+        Note interne : ne pas envoyer de dosage, protocole medical ou promesse. Orienter vers diagnostic/coaching selon le profil.
+      </p>
     `;
 
     const emailContent = getCoachingAppleWrapper(
       content,
-      "Nouveau lead WhatsApp a traiter",
-      offer || "Formulaire coaching/APEXLABS"
+      `Lead WhatsApp chaud - ${orientation.primary}`,
+      "Reponse prete + deux orientations"
     );
 
     const result = await sendEmailWithTracking(
       {
-        subject: `Lead WhatsApp chaud - ${offer || "APEXLABS"}`,
+        subject: `Lead WhatsApp chaud - ${orientation.primary}`,
         from: { name: "APEXLABS", email: SENDER_EMAIL },
         to: [{ email: adminEmail }],
         html: encodeBase64(emailContent),
@@ -3859,6 +3950,13 @@ export async function sendWhatsAppLeadAdminAlert(lead: {
           blocker ? `Blocage: ${blocker}` : "",
           urgency ? `Timing: ${urgency}` : "",
           details ? `Contexte: ${details}` : "",
+          "",
+          `Orientation 1: ${orientation.primary}`,
+          `Orientation 2: ${orientation.alternative}`,
+          "",
+          "Reponse prete a copier-coller:",
+          orientation.copyReply,
+          "",
           `WhatsApp: ${whatsappHref}`,
         ].filter(Boolean).join("\n"),
       },
@@ -3876,6 +3974,8 @@ export async function sendWhatsAppLeadAdminAlert(lead: {
           blocker: lead.blocker || null,
           urgency: lead.urgency || null,
           path: lead.path || null,
+          primary: orientation.primary,
+          alternative: orientation.alternative,
           whatsappHref,
         },
       }
