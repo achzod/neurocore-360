@@ -2032,6 +2032,70 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/admin/whatsapp-leads/recent", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      await ensureWhatsAppLeadsTable();
+      const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 50);
+      const leads = await pool.query(
+        `SELECT id,
+                created_at,
+                CASE
+                  WHEN email IS NULL THEN NULL
+                  ELSE LEFT(email, 1) || '***' || SUBSTRING(email FROM POSITION('@' IN email))
+                END AS email_mask,
+                CASE
+                  WHEN phone IS NULL THEN NULL
+                  ELSE REPEAT('*', GREATEST(LENGTH(phone) - 4, 0)) || RIGHT(phone, 4)
+                END AS phone_mask,
+                offer,
+                placement,
+                event_type,
+                goal,
+                blocker,
+                urgency,
+                page_path,
+                has_coaching,
+                admin_alerted_at,
+                followup_count,
+                last_followup_at
+           FROM whatsapp_leads
+          ORDER BY created_at DESC
+          LIMIT $1`,
+        [limit]
+      );
+      const alerts = await pool.query(
+        `SELECT sent_at,
+                email_type,
+                CASE
+                  WHEN recipient_email IS NULL THEN NULL
+                  ELSE LEFT(recipient_email, 1) || '***' || SUBSTRING(recipient_email FROM POSITION('@' IN recipient_email))
+                END AS recipient_mask,
+                sendpulse_status,
+                sendpulse_task_id IS NOT NULL AS has_task,
+                metadata->>'offer' AS offer,
+                metadata->>'placement' AS placement,
+                CASE
+                  WHEN metadata->>'leadEmail' IS NULL THEN NULL
+                  ELSE LEFT(metadata->>'leadEmail', 1) || '***' || SUBSTRING(metadata->>'leadEmail' FROM POSITION('@' IN metadata->>'leadEmail'))
+                END AS lead_email_mask,
+                CASE
+                  WHEN metadata->>'leadPhone' IS NULL THEN NULL
+                  ELSE REPEAT('*', GREATEST(LENGTH(metadata->>'leadPhone') - 4, 0)) || RIGHT(metadata->>'leadPhone', 4)
+                END AS lead_phone_mask
+           FROM email_tracking
+          WHERE email_type IN ('sendWhatsAppLeadAdminAlert', 'sendWhatsAppLeadFollowupEmail')
+          ORDER BY COALESCE(sent_at, created_at) DESC
+          LIMIT $1`,
+        [limit]
+      );
+      res.json({ success: true, leads: leads.rows, alerts: alerts.rows });
+    } catch (error: any) {
+      console.error("[Admin] WhatsApp recent leads error:", error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   app.post("/api/admin/whatsapp-leads/followup", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
