@@ -71,11 +71,27 @@ export function trackWhatsAppClick({
   placement,
   tier,
   destination,
+  eventType = 'click',
+  path,
+  contactEmail,
+  phone,
+  goal,
+  blocker,
+  urgency,
+  message,
 }: {
   offer: string;
   placement: string;
   tier?: string;
   destination: string;
+  eventType?: 'click' | 'form';
+  path?: string;
+  contactEmail?: string;
+  phone?: string;
+  goal?: string;
+  blocker?: string;
+  urgency?: string;
+  message?: string;
 }) {
   gtag('event', 'whatsapp_click', {
     event_category: 'contact',
@@ -94,6 +110,31 @@ export function trackWhatsAppClick({
     placement,
     tier: tier || 'unspecified',
   });
+
+  try {
+    const payload = JSON.stringify({
+      eventType,
+      offer,
+      placement,
+      tier: tier || 'unspecified',
+      destination,
+      path: path || window.location.pathname,
+      contactEmail,
+      phone,
+      goal,
+      blocker,
+      urgency,
+      message,
+    });
+    fetch('/api/track/whatsapp-lead', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: payload,
+      keepalive: true,
+    }).catch(() => {});
+  } catch {
+    // First-party lead capture must never block WhatsApp access.
+  }
 }
 
 // Track form submissions (Discovery Scan questionnaire, etc.)

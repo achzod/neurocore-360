@@ -36,6 +36,7 @@ import {
   sendCrossSellUpgradeEmail,
   sendRecoveryCtaEmail,
   sendCoachingFormulaChoiceLeadEmail,
+  sendWhatsAppLeadFollowupEmail,
   type RecoveryCtaCohort,
   type CoachingFormulaLeadInput,
 } from "./emailService";
@@ -645,6 +646,200 @@ export async function registerRoutes(
   const checkoutLimiter = createRateLimiter({ windowMs: 60_000, max: 5 });
   const magicLinkLimiter = createRateLimiter({ windowMs: 15 * 60_000, max: 5 }); // 5 per 15min per IP
   const adminLimiter = createRateLimiter({ windowMs: 60_000, max: 20 }); // 20 per min per IP
+  const whatsappLeadLimiter = createRateLimiter({ windowMs: 60_000, max: 20 });
+
+  let whatsappLeadsTableEnsured = false;
+  async function ensureWhatsAppLeadsTable(): Promise<void> {
+    if (whatsappLeadsTableEnsured) return;
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS whatsapp_leads (
+        id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+        email VARCHAR(255),
+        phone VARCHAR(64),
+        offer VARCHAR(120) NOT NULL DEFAULT 'APEXLABS',
+        placement VARCHAR(120) NOT NULL DEFAULT 'unknown',
+        tier VARCHAR(120),
+        event_type VARCHAR(40) NOT NULL DEFAULT 'click',
+        page_path TEXT,
+        goal TEXT,
+        blocker TEXT,
+        urgency TEXT,
+        destination TEXT,
+        message TEXT,
+        source VARCHAR(60) NOT NULL DEFAULT 'apexlabs',
+        user_agent TEXT,
+        ip_hash VARCHAR(64),
+        has_coaching BOOLEAN DEFAULT FALSE,
+        followup_count INTEGER DEFAULT 0,
+        last_followup_at TIMESTAMP,
+        converted_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT NOW(),
+        last_activity_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_whatsapp_leads_email ON whatsapp_leads (LOWER(email))`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_whatsapp_leads_activity ON whatsapp_leads (last_activity_at DESC)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_whatsapp_leads_followup ON whatsapp_leads (followup_count, last_followup_at)`);
+    whatsappLeadsTableEnsured = true;
+  }
+
+  const cleanLeadEmail = (email: unknown): string | null => {
+    const normalized = String(email || "").trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) return null;
+    if (["example.", "test", "debug", "achkou", "achzodcoaching"].some((fragment) => normalized.includes(fragment))) return null;
+    return normalized;
+  };
+
+  const cleanLeadPhone = (phone: unknown): string | null => {
+    const normalized = String(phone || "").trim().replace(/[^\d+]/g, "");
+    if (normalized.length < 7 || normalized.length > 20) return null;
+    return normalized;
+  };
+
+  const safeLeadText = (value: unknown, maxLength = 600): string | null => {
+    const text = String(value || "").replace(/\s+/g, " ").trim();
+    if (!text) return null;
+    return text.slice(0, maxLength);
+  };
+
+  async function selectWhatsAppLeadFollowupCandidates(options: {
+    lookbackDays: number;
+    minHoursSinceLead: number;
+    maxToSend: number;
+  }): Promise<any[]> {
+    await ensureWhatsAppLeadsTable();
+    const fromDate = new Date(Date.now() - options.lookbackDays * 24 * 60 * 60 * 1000).toISOString();
+    const result = await pool.query(
+      `WITH latest AS (
+         SELECT DISTINCT ON (LOWER(w.email))
+                w.id,
+                LOWER(w.email) AS email,
+                w.offer,
+                w.goal,
+                w.blocker,
+                w.urgency,
+                w.page_path,
+                w.last_activity_at,
+                w.followup_count
+           FROM whatsapp_leads w
+          WHERE w.email IS NOT NULL
+            AND w.email <> ''
+            AND w.created_at >= $1
+            AND w.last_activity_at <= NOW() - ($2 || ' hours')::interval
+            AND COALESCE(w.has_coaching, FALSE) = FALSE
+          ORDER BY LOWER(w.email), w.last_activity_at DESC
+       )
+       SELECT l.*
+         FROM latest l
+        WHERE NOT EXISTS (
+          SELECT 1 FROM contacts c
+           WHERE LOWER(c.email) = l.email
+             AND c.has_coaching = TRUE
+        )
+          AND NOT EXISTS (
+            SELECT 1 FROM orders o
+             WHERE LOWER(o.email) = l.email
+               AND o.status IN ('paid', 'partial_refund')
+               AND COALESCE(o.final_amount_cents, o.amount_cents, 0) > 0
+               AND COALESCE(o.paid_at, o.created_at) >= l.last_activity_at
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM email_unsubscribes u
+             WHERE LOWER(u.email) = l.email
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM email_tracking et
+             WHERE LOWER(et.recipient_email) = l.email
+               AND et.email_type = 'sendWhatsAppLeadFollowupEmail'
+               AND et.sent_at >= NOW() - INTERVAL '14 days'
+               AND (
+                 et.sendpulse_task_id IS NOT NULL
+                 OR LOWER(COALESCE(et.sendpulse_status, '')) IN ('success', 'sent', 'delivered', 'unsubscribed')
+               )
+          )
+        ORDER BY l.last_activity_at DESC
+        LIMIT $3`,
+      [fromDate, String(options.minHoursSinceLead), options.maxToSend]
+    );
+    return result.rows;
+  }
+
+  async function processWhatsAppLeadFollowups(options: {
+    dryRun: boolean;
+    maxToSend: number;
+    lookbackDays: number;
+    minHoursSinceLead: number;
+    baseUrl: string;
+  }): Promise<any> {
+    const candidates = await selectWhatsAppLeadFollowupCandidates(options);
+    if (options.dryRun) {
+      return {
+        success: true,
+        dryRun: true,
+        eligible: candidates.length,
+        selectedCount: candidates.length,
+        preview: candidates.slice(0, 25),
+      };
+    }
+
+    const results: any[] = [];
+    let sent = 0;
+    let failed = 0;
+    for (const candidate of candidates.slice(0, Math.min(options.maxToSend, 1))) {
+      try {
+        if (await storage.hasUserPurchasedCoaching(candidate.email)) {
+          results.push({ email: candidate.email, skipped: true, reason: "already_purchased_coaching" });
+          continue;
+        }
+        const trackingRecord = await storage.createEmailTracking(
+          crypto.randomUUID(),
+          "sendWhatsAppLeadFollowupEmail",
+          candidate.email
+        );
+        const ok = await sendWhatsAppLeadFollowupEmail(candidate.email, {
+          offer: candidate.offer,
+          goal: candidate.goal,
+          blocker: candidate.blocker,
+          urgency: candidate.urgency,
+          path: candidate.page_path,
+        }, {
+          baseUrl: options.baseUrl,
+          trackingId: trackingRecord.id,
+        });
+        if (ok) {
+          sent++;
+          await pool.query(
+            `UPDATE whatsapp_leads
+                SET followup_count = COALESCE(followup_count, 0) + 1,
+                    last_followup_at = NOW()
+              WHERE LOWER(email) = $1`,
+            [candidate.email]
+          );
+        } else {
+          failed++;
+        }
+        results.push({ email: candidate.email, sent: ok, trackingId: trackingRecord.id });
+      } catch (error) {
+        failed++;
+        results.push({
+          email: candidate.email,
+          sent: false,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    return {
+      success: true,
+      dryRun: false,
+      eligible: candidates.length,
+      attempted: results.length,
+      sent,
+      failed,
+      results,
+      batchLimited: options.maxToSend > 1,
+    };
+  }
 
   app.get("/api/health", async (_req, res) => {
     try {
@@ -664,6 +859,61 @@ export async function registerRoutes(
       });
     } catch (err) {
       res.status(503).json({ status: "unhealthy", db: "disconnected", timestamp: new Date().toISOString() });
+    }
+  });
+
+  app.post("/api/track/whatsapp-lead", whatsappLeadLimiter, async (req, res) => {
+    try {
+      await ensureWhatsAppLeadsTable();
+      const body = req.body || {};
+      const email = cleanLeadEmail(body.contactEmail || body.email);
+      const phone = cleanLeadPhone(body.phone);
+      const offer = safeLeadText(body.offer, 120) || "APEXLABS";
+      const placement = safeLeadText(body.placement, 120) || "unknown";
+      const tier = safeLeadText(body.tier, 120);
+      const eventType = safeLeadText(body.eventType, 40) || "click";
+      const pagePath = safeLeadText(body.path || body.pagePath, 500);
+      const goal = safeLeadText(body.goal, 400);
+      const blocker = safeLeadText(body.blocker, 600);
+      const urgency = safeLeadText(body.urgency, 220);
+      const destination = safeLeadText(body.destination, 1200);
+      const message = safeLeadText(body.message, 1200);
+      const ipHash = crypto
+        .createHash("sha256")
+        .update(String(req.ip || req.headers["x-forwarded-for"] || "unknown"))
+        .digest("hex");
+      const hasCoaching = email ? await storage.hasUserPurchasedCoaching(email) : false;
+
+      await pool.query(
+        `INSERT INTO whatsapp_leads (
+          email, phone, offer, placement, tier, event_type, page_path,
+          goal, blocker, urgency, destination, message, user_agent, ip_hash,
+          has_coaching, last_activity_at
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,NOW())`,
+        [
+          email,
+          phone,
+          offer,
+          placement,
+          tier,
+          eventType,
+          pagePath,
+          goal,
+          blocker,
+          urgency,
+          destination,
+          message,
+          safeLeadText(req.get("user-agent"), 1000),
+          ipHash,
+          hasCoaching,
+        ]
+      );
+
+      res.json({ success: true, captured: true, hasContact: Boolean(email || phone), excludedFromFollowup: hasCoaching });
+    } catch (error) {
+      console.error("[WhatsAppLead] capture error:", error);
+      // Never break the public WhatsApp UX because tracking failed.
+      res.status(202).json({ success: false, captured: false });
     }
   });
 
@@ -1626,6 +1876,67 @@ export async function registerRoutes(
       res.json({ success: true, stats });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/admin/whatsapp-leads/stats", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      await ensureWhatsAppLeadsTable();
+      const totals = await pool.query(`
+        SELECT
+          COUNT(*)::int AS total_events,
+          COUNT(DISTINCT NULLIF(LOWER(email), ''))::int AS unique_emails,
+          COUNT(*) FILTER (WHERE email IS NOT NULL OR phone IS NOT NULL)::int AS contactable_events,
+          COUNT(*) FILTER (WHERE has_coaching = TRUE)::int AS already_coaching_events,
+          COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '24 hours')::int AS last24h,
+          COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '7 days')::int AS last7d
+        FROM whatsapp_leads
+      `);
+      const byPlacement = await pool.query(`
+        SELECT placement, COUNT(*)::int AS events, COUNT(DISTINCT NULLIF(LOWER(email), ''))::int AS unique_emails
+          FROM whatsapp_leads
+         GROUP BY placement
+         ORDER BY events DESC
+         LIMIT 20
+      `);
+      const byOffer = await pool.query(`
+        SELECT offer, COUNT(*)::int AS events, COUNT(DISTINCT NULLIF(LOWER(email), ''))::int AS unique_emails
+          FROM whatsapp_leads
+         GROUP BY offer
+         ORDER BY events DESC
+         LIMIT 20
+      `);
+      res.json({
+        success: true,
+        stats: totals.rows[0] || {},
+        byPlacement: byPlacement.rows,
+        byOffer: byOffer.rows,
+      });
+    } catch (error: any) {
+      console.error("[Admin] WhatsApp leads stats error:", error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.post("/api/admin/whatsapp-leads/followup", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const dryRun = req.body?.dryRun !== false;
+      const maxToSend = Math.min(Math.max(Number(req.body?.maxToSend) || 25, 1), 250);
+      const lookbackDays = Math.min(Math.max(Number(req.body?.lookbackDays) || 30, 1), 180);
+      const minHoursSinceLead = Math.min(Math.max(Number(req.body?.minHoursSinceLead) || 2, 0), 168);
+      const result = await processWhatsAppLeadFollowups({
+        dryRun,
+        maxToSend,
+        lookbackDays,
+        minHoursSinceLead,
+        baseUrl: getBaseUrl(req),
+      });
+      res.json(result);
+    } catch (error: any) {
+      console.error("[Admin] WhatsApp leads followup error:", error);
+      res.status(500).json({ success: false, error: error.message });
     }
   });
 
@@ -14382,6 +14693,38 @@ export async function registerRoutes(
     }
   }, 12 * 60 * 60 * 1000).unref(); // Every 12 hours
   console.log("[PeptidesReorderCron] ✅ setInterval registered (12h cycle)");
+
+  // WhatsApp lead follow-up automation. Disabled by default because this can
+  // email real prospects; enable with WHATSAPP_LEAD_FOLLOWUP_ENABLED=true
+  // after validating the dry-run. Non-dry production is hard-limited to 1/cycle.
+  let whatsappLeadFollowupRunning = false;
+  setInterval(async () => {
+    if (process.env.WHATSAPP_LEAD_FOLLOWUP_ENABLED !== "true") return;
+    if (whatsappLeadFollowupRunning) return;
+    whatsappLeadFollowupRunning = true;
+    try {
+      const dryRun = process.env.WHATSAPP_LEAD_FOLLOWUP_DRY_RUN !== "false";
+      const maxToSend = Math.min(Math.max(Number(process.env.WHATSAPP_LEAD_FOLLOWUP_MAX || "25"), 1), 250);
+      const result = await processWhatsAppLeadFollowups({
+        dryRun,
+        maxToSend,
+        lookbackDays: 30,
+        minHoursSinceLead: 2,
+        baseUrl: getBaseUrl(),
+      });
+      console.log("[WhatsAppLeadFollowup] cycle:", {
+        dryRun,
+        eligible: result.eligible,
+        sent: result.sent || 0,
+        failed: result.failed || 0,
+      });
+    } catch (error) {
+      console.error("[WhatsAppLeadFollowup] cycle error:", error);
+    } finally {
+      whatsappLeadFollowupRunning = false;
+    }
+  }, 60 * 60 * 1000).unref();
+  console.log("[WhatsAppLeadFollowup] setInterval registered (1h cycle, env-gated)");
 
   // startMonitoring DISABLED , daily reports and abandonment alerts turned off
   // startMonitoring(storage, 30).catch(err => {

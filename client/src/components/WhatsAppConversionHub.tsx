@@ -69,10 +69,14 @@ export function WhatsAppConversionHub() {
     const goal = String(form.get("goal") || "").trim();
     const blocker = String(form.get("blocker") || "").trim();
     const urgency = String(form.get("urgency") || "").trim();
+    const contactEmail = String(form.get("contactEmail") || "").trim();
+    const phone = String(form.get("phone") || "").trim();
 
     const message = [
       "Salut Achzod, je veux une orientation rapide.",
       `Page: ${offer}.`,
+      contactEmail ? `Email: ${contactEmail}.` : "",
+      phone ? `Tel: ${phone}.` : "",
       goal ? `Objectif: ${goal}.` : "",
       blocker ? `Blocage principal: ${blocker}.` : "",
       urgency ? `Urgence: ${urgency}.` : "",
@@ -86,6 +90,13 @@ export function WhatsAppConversionHub() {
         placement: "global_floating_form",
         tier: "orientation_form",
         destination,
+        eventType: "form",
+        contactEmail,
+        phone,
+        goal,
+        blocker,
+        urgency,
+        message,
       });
     } catch {
       // Analytics must never block WhatsApp access.
@@ -133,6 +144,30 @@ export function WhatsAppConversionHub() {
                 <option>Coaching complet</option>
               </select>
             </label>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-1 block text-xs font-bold uppercase text-white/55">Email</span>
+                <input
+                  name="contactEmail"
+                  type="email"
+                  autoComplete="email"
+                  className="h-11 w-full border border-white/10 bg-[#0b0b0b] px-3 text-sm text-white placeholder:text-white/30 outline-none transition-colors focus:border-[#25D366]"
+                  placeholder="ton@email.com"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-1 block text-xs font-bold uppercase text-white/55">Tel</span>
+                <input
+                  name="phone"
+                  type="tel"
+                  autoComplete="tel"
+                  className="h-11 w-full border border-white/10 bg-[#0b0b0b] px-3 text-sm text-white placeholder:text-white/30 outline-none transition-colors focus:border-[#25D366]"
+                  placeholder="+33..."
+                />
+              </label>
+            </div>
 
             <label className="block">
               <span className="mb-1 block text-xs font-bold uppercase text-white/55">Blocage</span>

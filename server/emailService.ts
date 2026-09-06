@@ -3646,6 +3646,128 @@ Achzod`;
   }
 }
 
+export async function sendWhatsAppLeadFollowupEmail(
+  email: string,
+  lead: {
+    offer?: string | null;
+    goal?: string | null;
+    blocker?: string | null;
+    urgency?: string | null;
+    path?: string | null;
+  },
+  opts: {
+    baseUrl: string;
+    trackingId: string;
+  }
+): Promise<boolean> {
+  try {
+    const offer = compactEmailLine(lead.offer || "APEXLABS", 120);
+    const goal = compactEmailLine(lead.goal, 220);
+    const blocker = compactEmailLine(lead.blocker, 260);
+    const urgency = compactEmailLine(lead.urgency, 160);
+    const campaign = "whatsapp_lead_followup_2026_09";
+    const whatsappMessage = [
+      "Salut Achzod, j'ai ouvert WhatsApp depuis APEXLABS.",
+      offer ? `Offre vue: ${offer}.` : "",
+      goal ? `Objectif: ${goal}.` : "",
+      blocker ? `Blocage: ${blocker}.` : "",
+      "Je veux ton avis pour choisir la bonne suite.",
+    ].filter(Boolean).join(" ");
+    const whatsappUrl = buildWhatsAppUrl(whatsappMessage);
+    const trackedWhatsAppUrl = withEmailClickTracking(opts.baseUrl, opts.trackingId, whatsappUrl);
+    const discoveryUrl = new URL("/offers/discovery-scan", opts.baseUrl);
+    discoveryUrl.searchParams.set("utm_source", "apexlabs");
+    discoveryUrl.searchParams.set("utm_medium", "email");
+    discoveryUrl.searchParams.set("utm_campaign", campaign);
+    discoveryUrl.searchParams.set("utm_content", "whatsapp_lead");
+    const trackedDiscoveryUrl = withEmailClickTracking(opts.baseUrl, opts.trackingId, discoveryUrl.toString());
+    const trackingPixel = `${opts.baseUrl}/api/track/email/${opts.trackingId}/open.gif`;
+
+    const contextRows = [
+      offer ? `<p style="margin:0 0 8px;color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.55;"><strong style="color:${APPLE_COLORS.ink};">Page :</strong> ${escapeEmailHtml(offer)}</p>` : "",
+      goal ? `<p style="margin:0 0 8px;color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.55;"><strong style="color:${APPLE_COLORS.ink};">Objectif :</strong> ${escapeEmailHtml(goal)}</p>` : "",
+      blocker ? `<p style="margin:0 0 8px;color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.55;"><strong style="color:${APPLE_COLORS.ink};">Blocage :</strong> ${escapeEmailHtml(blocker)}</p>` : "",
+      urgency ? `<p style="margin:0;color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.55;"><strong style="color:${APPLE_COLORS.ink};">Timing :</strong> ${escapeEmailHtml(urgency)}</p>` : "",
+    ].filter(Boolean).join("");
+
+    const content = `
+      <p style="color:${APPLE_COLORS.inkSoft};font-size:16px;line-height:1.65;margin:0 0 18px;">
+        Tu as ouvert une orientation WhatsApp depuis APEXLABS. Je te remets le chemin le plus simple : envoie ton contexte et je te dis si tu dois partir sur Discovery, une analyse avancee ou un coaching.
+      </p>
+
+      ${contextRows ? `
+      <div style="padding:16px 18px;background:#f5f5f7;border-radius:12px;margin:0 0 22px;">
+        ${contextRows}
+      </div>
+      ` : ""}
+
+      ${getCoachingAppleButton("Reprendre sur WhatsApp", trackedWhatsAppUrl)}
+
+      <p style="color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.65;margin:24px 0 14px;">
+        Si tu preferes commencer seul, fais le Discovery Scan gratuit : il sert a identifier ton frein dominant avant de changer encore de plan.
+      </p>
+
+      ${getCoachingAppleButton("Faire mon Discovery Scan", trackedDiscoveryUrl)}
+
+      <p style="color:${APPLE_COLORS.muted};font-size:12px;margin:24px 0 0;">
+        Achzod
+      </p>
+
+      <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
+    `;
+
+    const emailContent = getCoachingAppleWrapper(
+      content,
+      "Ton orientation WhatsApp APEXLABS",
+      "Reprends la discussion ou fais ton Discovery Scan"
+    );
+
+    const plainText = [
+      "Tu as ouvert une orientation WhatsApp depuis APEXLABS.",
+      offer ? `Page : ${offer}` : "",
+      goal ? `Objectif : ${goal}` : "",
+      blocker ? `Blocage : ${blocker}` : "",
+      urgency ? `Timing : ${urgency}` : "",
+      "",
+      `Reprendre sur WhatsApp : ${trackedWhatsAppUrl}`,
+      `Faire le Discovery Scan : ${trackedDiscoveryUrl}`,
+      "",
+      "Achzod",
+    ].filter((part) => part !== "").join("\n");
+
+    const result = await sendEmailWithTracking(
+      {
+        subject: "Ton orientation WhatsApp APEXLABS",
+        from: { name: "Achzod Coaching", email: SENDER_EMAIL },
+        to: [{ email }],
+        html: encodeBase64(emailContent),
+        text: plainText,
+      },
+      {
+        emailType: "sendWhatsAppLeadFollowupEmail",
+        recipientEmail: email,
+        metadata: {
+          trackingId: opts.trackingId,
+          campaign,
+          offer: lead.offer || null,
+          goal: lead.goal || null,
+          blocker: lead.blocker || null,
+          urgency: lead.urgency || null,
+          path: lead.path || null,
+          whatsappUrl,
+          trackedWhatsAppUrl,
+          trackedDiscoveryUrl,
+        },
+      }
+    );
+
+    return result.result === true;
+  } catch (error) {
+    console.error("[SendPulse] Error sending WhatsApp lead follow-up email:", error);
+    return false;
+  }
+}
+
 export async function sendCoachingFormulaChoiceLeadEmail(
   email: string,
   lead: CoachingFormulaLeadInput,
