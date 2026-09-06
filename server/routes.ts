@@ -686,6 +686,7 @@ export async function registerRoutes(
   const cleanLeadEmail = (email: unknown): string | null => {
     const normalized = String(email || "").trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) return null;
+    if (normalized.endsWith(".invalid")) return null;
     if (["example.", "test", "debug", "achkou", "achzodcoaching"].some((fragment) => normalized.includes(fragment))) return null;
     return normalized;
   };
@@ -724,6 +725,8 @@ export async function registerRoutes(
            FROM whatsapp_leads w
           WHERE w.email IS NOT NULL
             AND w.email <> ''
+            AND w.email ~* '^[^@[:space:]]+@[^@[:space:]]+\\.[^@[:space:]]+$'
+            AND w.email NOT ILIKE '%.invalid'
             AND w.created_at >= $1
             AND w.last_activity_at <= NOW() - ($2 || ' hours')::interval
             AND COALESCE(w.has_coaching, FALSE) = FALSE
