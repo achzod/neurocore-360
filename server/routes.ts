@@ -76,6 +76,11 @@ import {
   validateDiscoveryReportForDelivery,
 } from "./discovery-scan";
 import {
+  generateAndPersistPremiumDiscoveryReport,
+} from "./discoveryGenerationService";
+import { isDiscoveryTransactionalAutomationEligible } from "./discoveryAutomationPolicy";
+import { isDiscoverySupersededTerminal } from "./discoverySupersededPolicy";
+import {
   generatePeptidesProtocol,
   checkPeptidesSafetyGate,
   fetchEnclomipheneSourceSnapshot,
@@ -2521,59 +2526,29 @@ export async function registerRoutes(
             console.error(`[Admin Email] ❌ Error in admin notification for ${audit.id}:`, err);
           });
 
-        // Atomic claim , if another process already claimed this audit (e.g. idempotency
-        // window collided, or webhook raced), we skip generation to avoid duplicate work.
-        const claimedForGen = await storage.claimAuditForGeneration(audit.id).catch(() => false);
-        if (!claimedForGen) {
-          console.warn(`[Discovery Scan] ⏭️ Could not claim audit ${audit.id} for generation , already in progress or done`);
-          res.json(audit);
-          return;
-        }
         res.json(audit);
 
-        const DISCOVERY_GENERATION_TIMEOUT = 5 * 60 * 1000; // 5 minutes max
         (async () => {
           try {
             console.log(`[Discovery Scan] Starting report generation for audit ${audit.id}`);
-            const generationPromise = (async () => {
-              const result = await analyzeDiscoveryScan(mergedResponses as any);
-              console.log(`[Discovery Scan] Analysis complete for ${audit.id}, generating narrative...`);
-              const narrativeReport = await convertToNarrativeReport(result, mergedResponses as any);
-              console.log(`[Discovery Scan] Narrative generated for ${audit.id} (${JSON.stringify(narrativeReport).length} chars)`);
-              return narrativeReport;
-            })();
-
-            const timeoutPromise = new Promise<never>((_, reject) => {
-              setTimeout(() => reject(new Error(`Discovery Scan generation timed out after ${DISCOVERY_GENERATION_TIMEOUT / 1000}s`)), DISCOVERY_GENERATION_TIMEOUT);
-            });
-
-            const narrativeReport = await Promise.race([generationPromise, timeoutPromise]);
-
-            // Check if delivery should be delayed (scheduled)
-            const scheduledFor = audit.reportScheduledFor ? new Date(audit.reportScheduledFor) : null;
-            const shouldDelay = scheduledFor && scheduledFor > new Date();
-
-            if (shouldDelay) {
-              await persistDiscoveryReport(audit.id, narrativeReport, "SCHEDULED");
-              console.log(`[Discovery Scan] Report SCHEDULED for audit ${audit.id} , delivery at ${scheduledFor.toISOString()}`);
-            } else {
-              await persistDiscoveryReport(audit.id, narrativeReport, "READY");
-              console.log(`[Discovery Scan] Report READY for audit ${audit.id}`);
-
-              const baseUrl = getBaseUrl();
-              const { sent: emailSent } = await safeSendReportReadyEmail(audit.id, audit.email, audit.type, baseUrl, { logPrefix: "[Discovery Scan]" });
-              if (emailSent) {
-                const clientName = (mergedResponses as any)?.prenom || data.email.split("@")[0];
-                await sendAdminEmailNewAudit(audit.email, clientName, audit.type, audit.id);
-              }
+            if (!isDiscoveryTransactionalAutomationEligible(audit)) {
+              await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" });
+              console.warn(`[Discovery Scan] ⏭️ Audit ${audit.id} outside transactional automation window`);
+              return;
+            }
+            const generated = await generateAndPersistPremiumDiscoveryReport(audit.id);
+            if (!generated) {
+              console.warn(`[Discovery Scan] ⏭️ Could not claim audit ${audit.id} for generation , already in progress or done`);
+              return;
+            }
+            const baseUrl = getBaseUrl();
+            const { sent: emailSent } = await safeSendReportReadyEmail(audit.id, audit.email, audit.type, baseUrl, { logPrefix: "[Discovery Scan]" });
+            if (emailSent) {
+              const clientName = (mergedResponses as any)?.prenom || data.email.split("@")[0];
+              await sendAdminEmailNewAudit(audit.email, clientName, audit.type, audit.id);
             }
           } catch (error: any) {
             console.error(`[Discovery Scan] Generation FAILED for audit ${audit.id}:`, error?.message || error);
-            try {
-              await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" });
-            } catch (updateErr) {
-              console.error(`[Discovery Scan] Failed to update status for ${audit.id}:`, updateErr);
-            }
           }
         })().catch((unhandled) => {
           console.error(`[Discovery Scan] UNHANDLED error for audit ${audit.id}:`, unhandled);
@@ -4331,21 +4306,23 @@ export async function registerRoutes(
       if (audit.type === "GRATUIT") {
         console.log(`[Regenerate] Regenerating Discovery Scan for audit ${auditId}...`);
 
-        // Admin regenerate is an intentional action , reset delivery state so CAS
-        // can claim fresh ownership. Without this reset, an audit already in
-        // GENERATING from a prior crash would block admin retries forever.
-        await storage.updateAudit(auditId, { reportDeliveryStatus: "PENDING" });
-        const claimed = await storage.claimAuditForGeneration(auditId).catch(() => false);
-        if (!claimed) {
-          res.status(409).json({ error: "Regeneration déjà en cours" });
+        if (!isDiscoveryTransactionalAutomationEligible(audit)) {
+          res.status(409).json({ error: "Discovery hors fenêtre d'automatisation transactionnelle" });
+          return;
+        }
+        if (audit.reportSentAt || audit.reportDeliveryStatus === "SENT"
+          || isDiscoverySupersededTerminal(audit)) {
+          res.status(409).json({ error: "Discovery terminal: regeneration interdite" });
           return;
         }
 
         try {
-          // Generate new Discovery Scan report with AI content
-          const result = await analyzeDiscoveryScan(audit.responses as any);
-          const narrativeReport = await convertToNarrativeReport(result, audit.responses as any);
-          await persistDiscoveryReport(auditId, narrativeReport, "READY");
+          const generated = await generateAndPersistPremiumDiscoveryReport(auditId);
+          if (!generated) {
+            res.status(409).json({ error: "Regeneration déjà en cours" });
+            return;
+          }
+          const fresh = await storage.getAudit(auditId);
 
           console.log(`[Regenerate] Discovery Scan ${auditId} regenerated successfully`);
 
@@ -4353,11 +4330,10 @@ export async function registerRoutes(
             success: true,
             message: "Discovery Scan regenere",
             auditId,
-            narrativeReport
+            narrativeReport: (fresh as any)?.narrativeReport ?? null
           });
         } catch (genError) {
           console.error("[Regenerate] Discovery Scan generation error:", genError);
-          await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" });
           res.status(500).json({ error: "Rapport en révision. Réessaie plus tard." });
         }
         return;
@@ -10317,30 +10293,32 @@ export async function registerRoutes(
         responses,
       });
 
-      // Atomic generation claim , if we lose the CAS, another process is already
-      // generating this audit's report. We serve the existing state instead of
-      // kicking off a parallel generator.
-      const claimedGen = await storage.claimAuditForGeneration(audit.id).catch(() => false);
-      if (!claimedGen) {
-        const fresh = await storage.getAudit(audit.id).catch(() => undefined);
-        console.warn(`[Discovery Scan] ⏭️ Could not claim audit ${audit.id} for generation , returning current state`);
-        res.json({
-          success: true,
-          auditId: audit.id,
-          narrativeReport: (fresh as any)?.narrativeReport ?? null,
-          idempotent: true,
-        });
-        return;
-      }
-
       try {
-        // Generate analysis and convert to NarrativeReport format with AI content
-        const result = await analyzeDiscoveryScan(responses);
-        const narrativeReport = await convertToNarrativeReport(result, responses);
-        await persistDiscoveryReport(audit.id, narrativeReport, "READY");
+        if (!isDiscoveryTransactionalAutomationEligible(audit)) {
+          await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" });
+          res.status(202).json({
+            success: true,
+            auditId: audit.id,
+            status: "needs_review",
+            message: "Rapport place dans la file de regeneration",
+          });
+          return;
+        }
+
+        const generated = await generateAndPersistPremiumDiscoveryReport(audit.id);
+        if (!generated) {
+          const fresh = await storage.getAudit(audit.id).catch(() => undefined);
+          console.warn(`[Discovery Scan] ⏭️ Could not claim audit ${audit.id} for generation , returning current state`);
+          res.json({
+            success: true,
+            auditId: audit.id,
+            narrativeReport: (fresh as any)?.narrativeReport ?? null,
+            idempotent: true,
+          });
+          return;
+        }
 
         console.log(`[Discovery Scan] Audit ${audit.id} created for ${email}`);
-
         const baseUrl = getBaseUrl();
         const { sent: emailSent } = await safeSendReportReadyEmail(audit.id, email, audit.type, baseUrl, { logPrefix: "[Discovery Scan create]" });
         if (emailSent) {
@@ -10348,10 +10326,11 @@ export async function registerRoutes(
           await sendAdminEmailNewAudit(email, clientName, audit.type, audit.id);
         }
 
+        const fresh = await storage.getAudit(audit.id);
         res.json({
           success: true,
           auditId: audit.id,
-          narrativeReport
+          narrativeReport: (fresh as any)?.narrativeReport ?? null
         });
       } catch (error) {
         console.error("[Discovery Scan] Create error (generation):", error);
@@ -10554,11 +10533,20 @@ export async function registerRoutes(
         return;
       }
 
-      // Atomic claim first so two concurrent regenerate clicks cannot both
-      // start work for the same audit.
-      const claimedDisc = await storage.claimAuditForGeneration(audit.id).catch(() => false);
-      if (!claimedDisc) {
-        res.status(409).json({ success: false, error: "Regeneration déjà en cours" });
+      if (!isDiscoveryTransactionalAutomationEligible(audit)) {
+        res.status(409).json({
+          success: false,
+          error: "Discovery hors fenêtre d'automatisation transactionnelle",
+        });
+        return;
+      }
+
+      if (audit.reportSentAt || audit.reportDeliveryStatus === "SENT"
+        || isDiscoverySupersededTerminal(audit)) {
+        res.status(409).json({
+          success: false,
+          error: "Discovery terminal: regeneration interdite",
+        });
         return;
       }
 
@@ -10567,13 +10555,11 @@ export async function registerRoutes(
 
       (async () => {
         try {
-          const result = await analyzeDiscoveryScan(audit.responses as any);
-          const narrativeReport = await convertToNarrativeReport(result, audit.responses as any);
-          await persistDiscoveryReport(audit.id, narrativeReport, "READY");
+          const generated = await generateAndPersistPremiumDiscoveryReport(audit.id);
+          if (!generated) throw new Error("DISCOVERY_GENERATION_CLAIM_REJECTED");
           console.log(`[Discovery Regenerate] Success for ${audit.id}`);
         } catch (err) {
           console.error("[Discovery Regenerate] Error:", err);
-          await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" });
         }
       })();
     } catch (error) {
