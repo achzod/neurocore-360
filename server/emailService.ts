@@ -3653,6 +3653,7 @@ export async function sendWhatsAppLeadFollowupEmail(
     goal?: string | null;
     blocker?: string | null;
     urgency?: string | null;
+    details?: string | null;
     path?: string | null;
   },
   opts: {
@@ -3665,12 +3666,14 @@ export async function sendWhatsAppLeadFollowupEmail(
     const goal = compactEmailLine(lead.goal, 220);
     const blocker = compactEmailLine(lead.blocker, 260);
     const urgency = compactEmailLine(lead.urgency, 160);
+    const details = compactEmailLine(lead.details, 320);
     const campaign = "whatsapp_lead_followup_2026_09";
     const whatsappMessage = [
       "Salut Achzod, j'ai ouvert WhatsApp depuis APEXLABS.",
       offer ? `Offre vue: ${offer}.` : "",
       goal ? `Objectif: ${goal}.` : "",
       blocker ? `Blocage: ${blocker}.` : "",
+      details ? `Contexte: ${details}.` : "",
       "Je veux ton avis pour choisir la bonne suite.",
     ].filter(Boolean).join(" ");
     const whatsappUrl = buildWhatsAppUrl(whatsappMessage);
@@ -3687,7 +3690,8 @@ export async function sendWhatsAppLeadFollowupEmail(
       offer ? `<p style="margin:0 0 8px;color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.55;"><strong style="color:${APPLE_COLORS.ink};">Page :</strong> ${escapeEmailHtml(offer)}</p>` : "",
       goal ? `<p style="margin:0 0 8px;color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.55;"><strong style="color:${APPLE_COLORS.ink};">Objectif :</strong> ${escapeEmailHtml(goal)}</p>` : "",
       blocker ? `<p style="margin:0 0 8px;color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.55;"><strong style="color:${APPLE_COLORS.ink};">Blocage :</strong> ${escapeEmailHtml(blocker)}</p>` : "",
-      urgency ? `<p style="margin:0;color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.55;"><strong style="color:${APPLE_COLORS.ink};">Timing :</strong> ${escapeEmailHtml(urgency)}</p>` : "",
+      urgency ? `<p style="margin:0 0 8px;color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.55;"><strong style="color:${APPLE_COLORS.ink};">Timing :</strong> ${escapeEmailHtml(urgency)}</p>` : "",
+      details ? `<p style="margin:0;color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.55;"><strong style="color:${APPLE_COLORS.ink};">Contexte :</strong> ${escapeEmailHtml(details)}</p>` : "",
     ].filter(Boolean).join("");
 
     const content = `
@@ -3728,6 +3732,7 @@ export async function sendWhatsAppLeadFollowupEmail(
       goal ? `Objectif : ${goal}` : "",
       blocker ? `Blocage : ${blocker}` : "",
       urgency ? `Timing : ${urgency}` : "",
+      details ? `Contexte : ${details}` : "",
       "",
       `Reprendre sur WhatsApp : ${trackedWhatsAppUrl}`,
       `Faire le Discovery Scan : ${trackedDiscoveryUrl}`,
@@ -3753,6 +3758,7 @@ export async function sendWhatsAppLeadFollowupEmail(
           goal: lead.goal || null,
           blocker: lead.blocker || null,
           urgency: lead.urgency || null,
+          details: lead.details || null,
           path: lead.path || null,
           whatsappUrl,
           trackedWhatsAppUrl,

@@ -664,6 +664,10 @@ export async function registerRoutes(
         goal TEXT,
         blocker TEXT,
         urgency TEXT,
+        details TEXT,
+        source_url TEXT,
+        referrer TEXT,
+        utm JSONB,
         destination TEXT,
         message TEXT,
         source VARCHAR(60) NOT NULL DEFAULT 'apexlabs',
@@ -677,7 +681,12 @@ export async function registerRoutes(
         last_activity_at TIMESTAMP DEFAULT NOW()
       )
     `);
+    await pool.query(`ALTER TABLE whatsapp_leads ADD COLUMN IF NOT EXISTS details TEXT`);
+    await pool.query(`ALTER TABLE whatsapp_leads ADD COLUMN IF NOT EXISTS source_url TEXT`);
+    await pool.query(`ALTER TABLE whatsapp_leads ADD COLUMN IF NOT EXISTS referrer TEXT`);
+    await pool.query(`ALTER TABLE whatsapp_leads ADD COLUMN IF NOT EXISTS utm JSONB`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_whatsapp_leads_email ON whatsapp_leads (LOWER(email))`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_whatsapp_leads_phone ON whatsapp_leads (phone)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_whatsapp_leads_activity ON whatsapp_leads (last_activity_at DESC)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_whatsapp_leads_followup ON whatsapp_leads (followup_count, last_followup_at)`);
     whatsappLeadsTableEnsured = true;
@@ -719,6 +728,7 @@ export async function registerRoutes(
                 w.goal,
                 w.blocker,
                 w.urgency,
+                w.details,
                 w.page_path,
                 w.last_activity_at,
                 w.followup_count
@@ -804,6 +814,7 @@ export async function registerRoutes(
           goal: candidate.goal,
           blocker: candidate.blocker,
           urgency: candidate.urgency,
+          details: candidate.details,
           path: candidate.page_path,
         }, {
           baseUrl: options.baseUrl,
@@ -879,6 +890,10 @@ export async function registerRoutes(
       const goal = safeLeadText(body.goal, 400);
       const blocker = safeLeadText(body.blocker, 600);
       const urgency = safeLeadText(body.urgency, 220);
+      const details = safeLeadText(body.details, 800);
+      const sourceUrl = safeLeadText(body.sourceUrl || body.source_url, 1200);
+      const referrer = safeLeadText(body.referrer, 1200);
+      const utm = body.utm && typeof body.utm === "object" && !Array.isArray(body.utm) ? body.utm : null;
       const destination = safeLeadText(body.destination, 1200);
       const message = safeLeadText(body.message, 1200);
       const ipHash = crypto
@@ -890,9 +905,10 @@ export async function registerRoutes(
       await pool.query(
         `INSERT INTO whatsapp_leads (
           email, phone, offer, placement, tier, event_type, page_path,
-          goal, blocker, urgency, destination, message, user_agent, ip_hash,
+          goal, blocker, urgency, details, source_url, referrer, utm,
+          destination, message, user_agent, ip_hash,
           has_coaching, last_activity_at
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,NOW())`,
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,NOW())`,
         [
           email,
           phone,
@@ -904,6 +920,10 @@ export async function registerRoutes(
           goal,
           blocker,
           urgency,
+          details,
+          sourceUrl,
+          referrer,
+          utm ? JSON.stringify(utm) : null,
           destination,
           message,
           safeLeadText(req.get("user-agent"), 1000),
@@ -1890,7 +1910,9 @@ export async function registerRoutes(
         SELECT
           COUNT(*)::int AS total_events,
           COUNT(DISTINCT NULLIF(LOWER(email), ''))::int AS unique_emails,
+          COUNT(DISTINCT NULLIF(phone, ''))::int AS unique_phones,
           COUNT(*) FILTER (WHERE email IS NOT NULL OR phone IS NOT NULL)::int AS contactable_events,
+          COUNT(*) FILTER (WHERE event_type = 'form' AND (email IS NOT NULL OR phone IS NOT NULL))::int AS qualified_form_events,
           COUNT(*) FILTER (WHERE has_coaching = TRUE)::int AS already_coaching_events,
           COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '24 hours')::int AS last24h,
           COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '7 days')::int AS last7d

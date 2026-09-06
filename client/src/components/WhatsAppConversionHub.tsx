@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { MessageCircle, Send, X } from "lucide-react";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
@@ -42,9 +42,22 @@ function buildQuickMessage(offer: string, context: string): string {
 export function WhatsAppConversionHub() {
   const [location] = useLocation();
   const [open, setOpen] = useState(false);
+  const [formError, setFormError] = useState("");
   const { offer, context } = useMemo(() => inferOffer(location), [location]);
+  const hidden = HIDDEN_PREFIXES.some((prefix) => location.startsWith(prefix));
 
-  if (HIDDEN_PREFIXES.some((prefix) => location.startsWith(prefix))) {
+  useEffect(() => {
+    if (hidden) return;
+    const key = "apexlabs_whatsapp_orientation_prompted_v1";
+    if (sessionStorage.getItem(key)) return;
+    const timeout = window.setTimeout(() => {
+      sessionStorage.setItem(key, "1");
+      setOpen(true);
+    }, 14000);
+    return () => window.clearTimeout(timeout);
+  }, [hidden, location]);
+
+  if (hidden) {
     return null;
   }
 
@@ -71,6 +84,13 @@ export function WhatsAppConversionHub() {
     const urgency = String(form.get("urgency") || "").trim();
     const contactEmail = String(form.get("contactEmail") || "").trim();
     const phone = String(form.get("phone") || "").trim();
+    const details = String(form.get("details") || "").trim();
+
+    if (!contactEmail && !phone) {
+      setFormError("Laisse au moins ton email ou ton tel pour que je puisse te relancer proprement.");
+      return;
+    }
+    setFormError("");
 
     const message = [
       "Salut Achzod, je veux une orientation rapide.",
@@ -80,6 +100,7 @@ export function WhatsAppConversionHub() {
       goal ? `Objectif: ${goal}.` : "",
       blocker ? `Blocage principal: ${blocker}.` : "",
       urgency ? `Urgence: ${urgency}.` : "",
+      details ? `Contexte: ${details}.` : "",
       "Dis-moi si je dois faire un Discovery, une analyse avancee, Peptides/Blood, ou partir sur coaching.",
     ].filter(Boolean).join(" ");
 
@@ -96,6 +117,7 @@ export function WhatsAppConversionHub() {
         goal,
         blocker,
         urgency,
+        details,
         message,
       });
     } catch {
@@ -106,17 +128,20 @@ export function WhatsAppConversionHub() {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-[70] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 sm:bottom-6 sm:right-6">
+    <div className="fixed bottom-4 right-4 z-[10010] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 sm:bottom-6 sm:right-6">
       {open && (
-        <div className="w-[min(360px,calc(100vw-2rem))] border border-[#25D366]/40 bg-black/95 p-4 text-white shadow-[0_24px_80px_rgba(0,0,0,0.55)] backdrop-blur-md">
+        <div className="w-[min(380px,calc(100vw-2rem))] border border-[#25D366]/40 bg-black/95 p-4 text-white shadow-[0_24px_80px_rgba(0,0,0,0.55)] backdrop-blur-md">
           <div className="mb-4 flex items-start justify-between gap-4">
             <div>
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-[#25D366]">
-                Orientation WhatsApp
+                Coaching / scan / analyse
               </p>
               <h2 className="mt-1 text-base font-black leading-tight">
-                Je t'aide a choisir la bonne suite.
+                Envoie ton cas, Achzod te route.
               </h2>
+              <p className="mt-2 text-xs leading-relaxed text-white/60">
+                Tu ne sais pas si tu dois faire un scan, une analyse ou prendre le coaching ? Laisse ton contact et le message WhatsApp part deja structure.
+              </p>
             </div>
             <button
               type="button"
@@ -130,9 +155,10 @@ export function WhatsAppConversionHub() {
 
           <form className="space-y-3" onSubmit={handleSubmit}>
             <label className="block">
-              <span className="mb-1 block text-xs font-bold uppercase text-white/55">Objectif</span>
+              <span className="mb-1 block text-xs font-bold uppercase text-white/55">Objectif principal</span>
               <select
                 name="goal"
+                required
                 className="h-11 w-full border border-white/10 bg-[#0b0b0b] px-3 text-sm text-white outline-none transition-colors focus:border-[#25D366]"
                 defaultValue=""
               >
@@ -173,6 +199,7 @@ export function WhatsAppConversionHub() {
               <span className="mb-1 block text-xs font-bold uppercase text-white/55">Blocage</span>
               <input
                 name="blocker"
+                required
                 className="h-11 w-full border border-white/10 bg-[#0b0b0b] px-3 text-sm text-white placeholder:text-white/30 outline-none transition-colors focus:border-[#25D366]"
                 placeholder="Ex: je stagne depuis 6 semaines"
               />
@@ -191,12 +218,28 @@ export function WhatsAppConversionHub() {
               </select>
             </label>
 
+            <label className="block">
+              <span className="mb-1 block text-xs font-bold uppercase text-white/55">Contexte rapide</span>
+              <textarea
+                name="details"
+                rows={3}
+                className="w-full resize-none border border-white/10 bg-[#0b0b0b] px-3 py-2 text-sm text-white placeholder:text-white/30 outline-none transition-colors focus:border-[#25D366]"
+                placeholder="Age, objectif, ce que tu as deja essaye..."
+              />
+            </label>
+
+            {formError && (
+              <p className="border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-100">
+                {formError}
+              </p>
+            )}
+
             <button
               type="submit"
               className="flex h-12 w-full items-center justify-center gap-2 bg-[#25D366] px-4 text-sm font-black uppercase tracking-wide text-black transition-colors hover:bg-white"
             >
               <Send className="h-4 w-4" />
-              Envoyer a Achzod
+              Recevoir l'orientation
             </button>
           </form>
         </div>
@@ -212,15 +255,18 @@ export function WhatsAppConversionHub() {
           data-testid="global-whatsapp-quick"
         >
           <MessageCircle className="h-5 w-5" />
-          WhatsApp Achzod
+          Parler coaching
         </a>
         <button
           type="button"
-          onClick={() => setOpen((value) => !value)}
+          onClick={() => {
+            setFormError("");
+            setOpen((value) => !value);
+          }}
           className="flex h-12 items-center justify-center border border-[#25D366]/50 bg-black/90 px-4 text-xs font-black uppercase tracking-wide text-[#25D366] shadow-[0_14px_35px_rgba(0,0,0,0.35)] backdrop-blur transition-colors hover:border-[#25D366] hover:bg-[#25D366]/10"
           data-testid="global-whatsapp-form-toggle"
         >
-          Petit formulaire
+          Etre oriente
         </button>
       </div>
     </div>

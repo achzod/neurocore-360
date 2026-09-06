@@ -78,6 +78,7 @@ export function trackWhatsAppClick({
   goal,
   blocker,
   urgency,
+  details,
   message,
 }: {
   offer: string;
@@ -91,6 +92,7 @@ export function trackWhatsAppClick({
   goal?: string;
   blocker?: string;
   urgency?: string;
+  details?: string;
   message?: string;
 }) {
   gtag('event', 'whatsapp_click', {
@@ -111,7 +113,34 @@ export function trackWhatsAppClick({
     tier: tier || 'unspecified',
   });
 
+  if (eventType === 'form' && (contactEmail || phone)) {
+    gtag('event', 'generate_lead', {
+      event_category: 'contact',
+      event_label: `${offer}:${placement}`,
+      method: 'whatsapp_form',
+      offer,
+      placement,
+      tier: tier || 'unspecified',
+      currency: 'EUR',
+      value: 0,
+    });
+
+    fbq('track', 'Lead', {
+      content_name: offer,
+      content_category: 'whatsapp_form',
+      placement,
+      tier: tier || 'unspecified',
+    });
+  }
+
   try {
+    const params = new URLSearchParams(window.location.search);
+    const utm: Record<string, string> = {};
+    params.forEach((value, key) => {
+      if (key.toLowerCase().startsWith('utm_')) {
+        utm[key] = value;
+      }
+    });
     const payload = JSON.stringify({
       eventType,
       offer,
@@ -119,11 +148,15 @@ export function trackWhatsAppClick({
       tier: tier || 'unspecified',
       destination,
       path: path || window.location.pathname,
+      sourceUrl: window.location.href,
+      referrer: document.referrer || undefined,
+      utm,
       contactEmail,
       phone,
       goal,
       blocker,
       urgency,
+      details,
       message,
     });
     fetch('/api/track/whatsapp-lead', {
