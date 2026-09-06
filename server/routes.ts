@@ -737,6 +737,9 @@ export async function registerRoutes(
             AND w.email <> ''
             AND w.email ~* '^[^@[:space:]]+@[^@[:space:]]+\\.[^@[:space:]]+$'
             AND w.email NOT ILIKE '%.invalid'
+            AND w.email NOT ILIKE '%probe%'
+            AND w.email NOT ILIKE '%test%'
+            AND w.email NOT ILIKE '%@achzodcoaching.com'
             AND w.created_at >= $1
             AND w.last_activity_at <= NOW() - ($2 || ' hours')::interval
             AND COALESCE(w.has_coaching, FALSE) = FALSE
@@ -11590,7 +11593,7 @@ export async function registerRoutes(
         "audits", "orders", "blood_reports", "blood_tests",
         "reviews", "email_tracking", "questionnaire_progress",
         "burnout_progress", "burnout_reports",
-        "magic_tokens", "promo_code_usages",
+        "magic_tokens", "promo_code_usages", "whatsapp_leads",
       ];
       for (const table of tables) {
         try {
