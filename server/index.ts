@@ -55,6 +55,8 @@ const allowedOrigins = [
   process.env.RENDER_EXTERNAL_URL,
   process.env.PUBLIC_BASE_URL,
   "https://apexlabs.achzodcoaching.com",
+  "https://achzodcoaching.com",
+  "https://www.achzodcoaching.com",
   "https://www.nopainnogain.fr",
   "http://localhost:5000",
   "http://localhost:3000",
