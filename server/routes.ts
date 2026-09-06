@@ -14807,18 +14807,17 @@ export async function registerRoutes(
   }, 12 * 60 * 60 * 1000).unref(); // Every 12 hours
   console.log("[PeptidesReorderCron] ✅ setInterval registered (12h cycle)");
 
-  // WhatsApp lead follow-up automation. It runs as an automatic dry-run by
-  // default so lead volume stays visible without emailing real prospects.
-  // Set WHATSAPP_LEAD_FOLLOWUP_ENABLED=false to disable it, and only set
-  // WHATSAPP_LEAD_FOLLOWUP_DRY_RUN=false after manual campaign validation.
-  // Non-dry production is hard-limited to 1/cycle.
+  // WhatsApp lead follow-up automation. Achzod asked for the lead engine to
+  // run on autopilot, but non-dry production remains hard-limited to 1/cycle.
+  // Set WHATSAPP_LEAD_FOLLOWUP_ENABLED=false to disable it, or
+  // WHATSAPP_LEAD_FOLLOWUP_DRY_RUN=true to observe candidates without sends.
   let whatsappLeadFollowupRunning = false;
   setInterval(async () => {
     if (process.env.WHATSAPP_LEAD_FOLLOWUP_ENABLED === "false") return;
     if (whatsappLeadFollowupRunning) return;
     whatsappLeadFollowupRunning = true;
     try {
-      const dryRun = process.env.WHATSAPP_LEAD_FOLLOWUP_DRY_RUN !== "false";
+      const dryRun = process.env.WHATSAPP_LEAD_FOLLOWUP_DRY_RUN === "true";
       const maxToSend = Math.min(Math.max(Number(process.env.WHATSAPP_LEAD_FOLLOWUP_MAX || "25"), 1), 250);
       const result = await processWhatsAppLeadFollowups({
         dryRun,
@@ -14839,7 +14838,7 @@ export async function registerRoutes(
       whatsappLeadFollowupRunning = false;
     }
   }, 60 * 60 * 1000).unref();
-  console.log("[WhatsAppLeadFollowup] setInterval registered (1h cycle, dry-run by default)");
+  console.log("[WhatsAppLeadFollowup] setInterval registered (1h cycle, live by default, max 1/cycle)");
 
   // startMonitoring DISABLED , daily reports and abandonment alerts turned off
   // startMonitoring(storage, 30).catch(err => {
