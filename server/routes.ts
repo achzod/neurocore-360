@@ -2096,6 +2096,90 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/admin/whatsapp-leads/alert-pending", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      await ensureWhatsAppLeadsTable();
+      const maxToAlert = Math.min(Math.max(Number(req.body?.maxToAlert) || 5, 1), 10);
+      const candidates = await pool.query(
+        `SELECT w.id,
+                w.email,
+                w.phone,
+                w.offer,
+                w.placement,
+                w.tier,
+                w.event_type,
+                w.page_path,
+                w.goal,
+                w.blocker,
+                w.urgency,
+                w.details,
+                w.source_url,
+                w.has_coaching
+           FROM whatsapp_leads w
+          WHERE w.admin_alerted_at IS NULL
+            AND (w.email IS NOT NULL OR w.phone IS NOT NULL)
+            AND (
+              LOWER(COALESCE(w.event_type, '')) LIKE '%form%'
+              OR LOWER(COALESCE(w.placement, '')) LIKE '%form%'
+            )
+            AND LOWER(COALESCE(w.placement, '')) NOT LIKE '%probe%'
+            AND LOWER(COALESCE(w.offer, '')) NOT LIKE '%probe%'
+            AND LOWER(COALESCE(w.email, '')) NOT LIKE '%test%'
+            AND LOWER(COALESCE(w.email, '')) NOT LIKE '%debug%'
+            AND LOWER(COALESCE(w.email, '')) NOT LIKE '%achzodcoaching%'
+            AND COALESCE(w.has_coaching, FALSE) = FALSE
+            AND NOT EXISTS (
+              SELECT 1 FROM contacts c
+               WHERE w.email IS NOT NULL
+                 AND LOWER(c.email) = LOWER(w.email)
+                 AND c.has_coaching = TRUE
+            )
+          ORDER BY w.created_at DESC
+          LIMIT $1`,
+        [maxToAlert]
+      );
+
+      const results: any[] = [];
+      for (const candidate of candidates.rows) {
+        if (candidate.email && await storage.hasUserPurchasedCoaching(candidate.email)) {
+          results.push({ id: candidate.id, skipped: true, reason: "already_purchased_coaching" });
+          continue;
+        }
+        const ok = await sendWhatsAppLeadAdminAlert({
+          email: candidate.email,
+          phone: candidate.phone,
+          offer: candidate.offer,
+          placement: candidate.placement,
+          tier: candidate.tier,
+          eventType: candidate.event_type,
+          goal: candidate.goal,
+          blocker: candidate.blocker,
+          urgency: candidate.urgency,
+          details: candidate.details,
+          path: candidate.page_path,
+          sourceUrl: candidate.source_url,
+        });
+        if (ok) {
+          await pool.query(`UPDATE whatsapp_leads SET admin_alerted_at = NOW() WHERE id = $1`, [candidate.id]);
+        }
+        results.push({
+          id: candidate.id,
+          sent: ok,
+          emailMask: candidate.email ? `${candidate.email.slice(0, 1)}***${candidate.email.slice(candidate.email.indexOf("@"))}` : null,
+          phoneMask: candidate.phone ? `${"*".repeat(Math.max(candidate.phone.length - 4, 0))}${candidate.phone.slice(-4)}` : null,
+          offer: candidate.offer,
+          placement: candidate.placement,
+        });
+      }
+
+      res.json({ success: true, attempted: results.length, results });
+    } catch (error: any) {
+      console.error("[Admin] WhatsApp pending alert error:", error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   app.post("/api/admin/whatsapp-leads/followup", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
