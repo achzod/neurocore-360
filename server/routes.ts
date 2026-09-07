@@ -13172,6 +13172,154 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/admin/discovery-delivery-audit", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+
+    const rawDays = Number(req.query.days ?? 3650);
+    const rawLimit = Number(req.query.limit ?? 50);
+    const days = Number.isFinite(rawDays) ? Math.min(Math.max(Math.floor(rawDays), 1), 3650) : 3650;
+    const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(Math.floor(rawLimit), 1), 200) : 50;
+
+    const realDiscoveryFilter = `
+      a.type = 'GRATUIT'
+      AND a.email IS NOT NULL
+      AND a.email ~* '^[^@[:space:]]+@[^@[:space:]]+\\.[^@[:space:]]+$'
+      AND a.email NOT ILIKE '%test%'
+      AND a.email NOT ILIKE '%debug%'
+      AND a.email NOT ILIKE '%achkou%'
+      AND a.email NOT ILIKE '%achzodcoaching%'
+      AND a.email NOT ILIKE '%agentmail%'
+      AND a.email NOT ILIKE '%onikai%'
+      AND a.created_at >= NOW() - ($1::int * INTERVAL '1 day')
+    `;
+
+    try {
+      const totals = await pool.query(`
+        WITH tracking AS (
+          SELECT
+            audit_id,
+            COUNT(*)::int AS tracking_rows,
+            COUNT(*) FILTER (
+              WHERE LOWER(COALESCE(sendpulse_status, '')) NOT IN ('failed', 'auth_failed', 'unsubscribed')
+            )::int AS success_rows,
+            MAX(opened_at) AS opened_at
+          FROM email_tracking
+          WHERE email_type = 'sendReportReadyEmail'
+          GROUP BY audit_id
+        ),
+        discovery AS (
+          SELECT
+            a.id,
+            COALESCE(a.report_delivery_status, 'NULL') AS delivery_status,
+            a.report_sent_at,
+            (
+              LENGTH(COALESCE(a.report_txt, '')) >= 5000
+              OR LENGTH(COALESCE(a.report_html, '')) >= 5000
+              OR a.narrative_report IS NOT NULL
+            ) AS has_report,
+            COALESCE(t.tracking_rows, 0) AS tracking_rows,
+            COALESCE(t.success_rows, 0) AS success_rows,
+            t.opened_at
+          FROM audits a
+          LEFT JOIN tracking t ON t.audit_id = a.id
+          WHERE ${realDiscoveryFilter}
+        )
+        SELECT
+          COUNT(*)::int AS total,
+          COUNT(*) FILTER (WHERE has_report)::int AS with_report,
+          COUNT(*) FILTER (WHERE delivery_status = 'SENT')::int AS sent,
+          COUNT(*) FILTER (WHERE delivery_status = 'SENT' AND tracking_rows > 0)::int AS sent_with_tracking,
+          COUNT(*) FILTER (WHERE delivery_status = 'SENT' AND tracking_rows = 0)::int AS sent_without_tracking,
+          COUNT(*) FILTER (WHERE delivery_status = 'SENT' AND success_rows > 0 AND opened_at IS NULL)::int AS sent_not_opened,
+          COUNT(*) FILTER (WHERE delivery_status = 'SENT' AND opened_at IS NOT NULL)::int AS opened,
+          COUNT(*) FILTER (
+            WHERE delivery_status IN ('READY', 'SCHEDULED') AND report_sent_at IS NULL
+          )::int AS ready_not_sent,
+          COUNT(*) FILTER (
+            WHERE delivery_status IN ('NULL', 'PENDING', 'NEEDS_REVIEW', 'FAILED', 'EMAIL_FAILED')
+              AND NOT has_report
+          )::int AS stuck_without_report
+        FROM discovery
+      `, [days]);
+
+      const byStatus = await pool.query(`
+        SELECT
+          COALESCE(a.report_delivery_status, 'NULL') AS delivery_status,
+          COUNT(*)::int AS count,
+          COUNT(*) FILTER (
+            WHERE LENGTH(COALESCE(a.report_txt, '')) >= 5000
+              OR LENGTH(COALESCE(a.report_html, '')) >= 5000
+              OR a.narrative_report IS NOT NULL
+          )::int AS with_report,
+          COUNT(*) FILTER (WHERE a.report_sent_at IS NOT NULL)::int AS with_sent_at
+        FROM audits a
+        WHERE ${realDiscoveryFilter}
+        GROUP BY 1
+        ORDER BY count DESC
+      `, [days]);
+
+      const actionable = await pool.query(`
+        WITH tracking AS (
+          SELECT
+            audit_id,
+            COUNT(*)::int AS tracking_rows,
+            COUNT(*) FILTER (
+              WHERE LOWER(COALESCE(sendpulse_status, '')) NOT IN ('failed', 'auth_failed', 'unsubscribed')
+            )::int AS success_rows,
+            MAX(opened_at) AS opened_at,
+            MAX(sent_at) AS last_tracked_at
+          FROM email_tracking
+          WHERE email_type = 'sendReportReadyEmail'
+          GROUP BY audit_id
+        ),
+        discovery AS (
+          SELECT
+            a.id,
+            REGEXP_REPLACE(LOWER(a.email), '(^.).*(@.*$)', '\\1***\\2') AS email_masked,
+            a.created_at,
+            a.completed_at,
+            a.report_generated_at,
+            a.report_sent_at,
+            COALESCE(a.report_delivery_status, 'NULL') AS delivery_status,
+            LENGTH(COALESCE(a.report_txt, ''))::int AS report_txt_len,
+            (
+              LENGTH(COALESCE(a.report_txt, '')) >= 5000
+              OR LENGTH(COALESCE(a.report_html, '')) >= 5000
+              OR a.narrative_report IS NOT NULL
+            ) AS has_report,
+            COALESCE(t.tracking_rows, 0) AS tracking_rows,
+            COALESCE(t.success_rows, 0) AS success_rows,
+            t.opened_at,
+            t.last_tracked_at
+          FROM audits a
+          LEFT JOIN tracking t ON t.audit_id = a.id
+          WHERE ${realDiscoveryFilter}
+        )
+        SELECT *
+        FROM discovery
+        WHERE
+          (delivery_status IN ('READY', 'SCHEDULED') AND report_sent_at IS NULL)
+          OR (delivery_status = 'SENT' AND tracking_rows = 0)
+          OR (delivery_status IN ('NULL', 'PENDING', 'NEEDS_REVIEW', 'FAILED', 'EMAIL_FAILED') AND NOT has_report)
+        ORDER BY created_at ASC
+        LIMIT $2
+      `, [days, limit]);
+
+      res.json({
+        success: true,
+        checkedAt: new Date().toISOString(),
+        days,
+        totals: totals.rows[0],
+        byStatus: byStatus.rows,
+        actionableCount: actionable.rows.length,
+        actionable: actionable.rows,
+      });
+    } catch (error: any) {
+      console.error("[DiscoveryDeliveryAudit] Error:", error?.message || error);
+      res.status(500).json({ success: false, error: error?.message || "Erreur audit Discovery delivery" });
+    }
+  });
+
   // ==================== FORCE SEND EMAIL ====================
   // Reconcile audits stuck in READY/SCHEDULED that have never been moved to SENT,
   // but may already have been emailed (crashed between SendPulse success and the
