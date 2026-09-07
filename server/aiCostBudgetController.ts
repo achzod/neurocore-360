@@ -431,8 +431,17 @@ export async function reserveAICostBudget(
           `SELECT b.stage FROM discovery_batch_runs b WHERE b.id=$1 AND b.lock_token=$2 FOR UPDATE`,
           [context.discoveryBatchId, context.discoveryBatchLockToken],
         )).rows[0]?.stage || "") === "REGENERATION";
-      if ((!regenerationAuthorized && previousCount !== 0)
-        || (regenerationAuthorized && (previousCount !== 1 || unsettled !== 0))) {
+      const legacyRepairRetryAuthorized = !hasBatchOwnership
+        && context.discoveryAllowLegacy
+        && previousCount === 1
+        && unsettled === 0;
+      if (regenerationAuthorized || legacyRepairRetryAuthorized) {
+        limits = { ...limits, perOrderUsd: 1.50 };
+      }
+      if (
+        (!regenerationAuthorized && !legacyRepairRetryAuthorized && previousCount !== 0)
+        || (regenerationAuthorized && (previousCount !== 1 || unsettled !== 0))
+      ) {
         throw new Error("DISCOVERY_MONO_CALL_ALREADY_RESERVED");
       }
     }

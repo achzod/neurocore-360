@@ -103,6 +103,8 @@ test("Discovery has its own fail-closed audit/hour/day budget", () => {
   assert.match(controllerSource, /requestedProduct !== "discovery" && !isAICostBudgetControllerEnabled/);
   assert.match(controllerSource, /context\.product === "discovery"[\s\S]*DEFAULT_DISCOVERY_LIMITS\.perOrderUsd/);
   assert.match(controllerSource, /DISCOVERY_MONO_CALL_ALREADY_RESERVED/);
+  assert.match(controllerSource, /legacyRepairRetryAuthorized[\s\S]*context\.discoveryAllowLegacy[\s\S]*previousCount === 1[\s\S]*unsettled === 0/);
+  assert.match(controllerSource, /regenerationAuthorized \|\| legacyRepairRetryAuthorized[\s\S]*perOrderUsd: 1\.50/);
 });
 
 test("Peptides provider calls inherit the pre-call controller and exact order context", () => {
