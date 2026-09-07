@@ -13336,6 +13336,9 @@ export async function registerRoutes(
 
     const apply = req.body?.apply === true;
     const deliver = apply && req.body?.deliver !== false;
+    const allowLegacy = apply
+      && req.body?.allowLegacy === true
+      && req.body?.confirm === "repair-legacy-discovery";
     const rawLimit = Number(req.body?.limit ?? 1);
     const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(Math.floor(rawLimit), 1), 3) : 1;
 
@@ -13437,8 +13440,11 @@ export async function registerRoutes(
         }
 
         if (!isDiscoveryTransactionalAutomationEligible(audit)) {
-          results.push({ auditId: row.id, email: row.email_masked, action: "skipped_ineligible" });
-          continue;
+          if (!allowLegacy) {
+            results.push({ auditId: row.id, email: row.email_masked, action: "skipped_ineligible" });
+            continue;
+          }
+          console.warn(`[DiscoveryRepair] Legacy override accepted for audit ${row.id}`);
         }
 
         const generated = await generateAndPersistPremiumDiscoveryReport(row.id);
