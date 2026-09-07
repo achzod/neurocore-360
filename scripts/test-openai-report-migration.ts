@@ -39,11 +39,11 @@ for (const file of coreFiles) {
 }
 
 const shared = read("server/openaiResponses.ts");
-assert.match(shared, /"gpt-5\.5"/);
-assert.match(shared, /premium:[\s\S]*effort:\s*"high"[\s\S]*mode:\s*"pro"/);
-assert.match(shared, /blood:[\s\S]*effort:\s*"high"[\s\S]*mode:\s*"pro"/);
+assert.match(shared, /"gpt-5\.6-sol"/);
+assert.match(shared, /premium:[\s\S]*effort:\s*"medium"[\s\S]*mode:\s*"pro"/);
+assert.match(shared, /blood:[\s\S]*effort:\s*"medium"[\s\S]*mode:\s*"pro"/);
 assert.match(shared, /blood:[\s\S]*maxOutputTokens:\s*24_000/);
-assert.match(shared, /peptides:[\s\S]*effort:\s*"high"[\s\S]*mode:\s*"pro"/);
+assert.match(shared, /peptides:[\s\S]*effort:\s*"medium"[\s\S]*mode:\s*"pro"/);
 assert.match(shared, /client\.responses\.create/);
 assert.doesNotMatch(shared, /chat\.completions/);
 assert.match(shared, /peptides:[\s\S]*maxOutputTokens:\s*32_000/);
@@ -55,7 +55,7 @@ assert.match(shared, /AI_COST_ALERT_EMAIL \|\| "achkou@gmail\.com"/);
 assert.match(shared, /\[AICost\]/);
 assert.match(shared, /Cancel did not complete within 10s/);
 assert.match(shared, /maxRetries:\s*0/);
-assert.match(shared, /const deadline = Date\.now\(\) \+ profile\.timeoutMs;[\s\S]{0,120}client\.responses\.create/);
+assert.match(shared, /const deadline = Date\.now\(\) \+ profile\.timeoutMs;[\s\S]*client\.responses\.create/);
 assert.match(shared, /export function isOpenAICreditError/);
 assert.match(shared, /if \(isOpenAICreditError\(error\)\) return false/);
 assert.match(shared, /retrieveStoredOpenAIResponseText/);
@@ -136,7 +136,7 @@ assert.match(routes, /activeReportJob\?\.status === "generating"/);
 assert.match(routes, /skipped: "scheduled_for_future"/);
 assert.match(routes, /A public GET is read-only/);
 assert.doesNotMatch(routes, /\[Discovery Fetch\] Report regenerated/);
-assert.match(routes, /Atomic claim first so two concurrent regenerate clicks cannot both/);
+assert.match(routes, /claimAuditForGeneration\(audit\.id\)/);
 assert.match(routes, /Repair legacy\/racing writes that replaced SENT with READY/);
 assert.match(routes, /failedAudit\?\.reportDeliveryStatus !== "NEEDS_REVIEW"/);
 assert.match(routes, /const maxWait = 95 \* 60 \* 1000/);

@@ -9,7 +9,7 @@ import {
 } from "./aiCostBudgetController";
 
 export const OPENAI_REPORT_MODEL =
-  process.env.OPENAI_REPORT_MODEL || "gpt-5.5";
+  process.env.OPENAI_REPORT_MODEL || "gpt-5.6-sol";
 
 const OPENAI_KEY_ENV_CANDIDATES = [
   "OPENAI_API_KEY_ACTIVE",
@@ -25,10 +25,10 @@ export type OpenAIReportProfile =
   | "extraction"
   | "peptides";
 
-type ReasoningEffort = "low" | "medium" | "high" | "xhigh" | "max";
+type ReasoningEffort = "low" | "medium" | "high";
 
 /** Discovery has one reasoning contract across generation, recovery and ops. */
-export const DISCOVERY_REASONING_EFFORT = "high" as const;
+export const DISCOVERY_REASONING_EFFORT = "medium" as const;
 
 interface ProfileConfig {
   effort: ReasoningEffort;
@@ -40,7 +40,7 @@ interface ProfileConfig {
 
 const PROFILE_CONFIG: Record<OpenAIReportProfile, ProfileConfig> = {
   discovery: {
-    // Keep every Discovery caller on the same high-reasoning contract. All
+    // Keep every Discovery caller on the same medium-reasoning contract. All
     // generation, recovery and operations paths route through this profile.
     effort: DISCOVERY_REASONING_EFFORT,
     maxOutputTokens: 7_000,
@@ -50,36 +50,39 @@ const PROFILE_CONFIG: Record<OpenAIReportProfile, ProfileConfig> = {
     verbosity: "medium",
   },
   premium: {
-    effort: "high",
+    effort: "medium",
+    mode: "pro",
     maxOutputTokens: 18_000,
     timeoutMs: 12 * 60 * 1000,
     verbosity: "high",
   },
   blood: {
-    // Max and xhigh consumed most of the output budget in hidden reasoning on
-    // long multi-section reports. High leaves enough budget and time for all
+    // Max, xhigh and high consumed too much output budget in hidden reasoning on
+    // long multi-section reports. Medium leaves enough budget and time for all
     // three client-facing batches.
-    effort: "high",
+    effort: "medium",
+    mode: "pro",
     maxOutputTokens: 24_000,
     timeoutMs: 12 * 60 * 1000,
     verbosity: "high",
   },
   vision: {
-    effort: "high",
+    effort: "medium",
     maxOutputTokens: 10_000,
     timeoutMs: 8 * 60 * 1000,
     verbosity: "high",
   },
   extraction: {
-    effort: "high",
+    effort: "medium",
     maxOutputTokens: 8_000,
     timeoutMs: 6 * 60 * 1000,
     verbosity: "low",
   },
   peptides: {
-    // Keep peptides on the same high-reasoning contract as the rest of the
+    // Keep peptides on the same medium-reasoning contract as the rest of the
     // reporting stack.
-    effort: "high",
+    effort: "medium",
+    mode: "pro",
     maxOutputTokens: 32_000,
     timeoutMs: 30 * 60 * 1000,
     verbosity: "high",
@@ -95,7 +98,7 @@ const PRICING = {
     longContextThresholdTokens: 272_000,
     longContextInputMultiplier: 2,
     longContextOutputMultiplier: 1.5,
-    source: "https://platform.openai.com/docs/models/gpt-5.5",
+    source: "https://platform.openai.com/docs/models/gpt-5.6-sol",
   },
   sonnet46Equivalent: {
     uncachedInputPerMillion: 3,

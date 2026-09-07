@@ -125,7 +125,7 @@ export const PEPTIDES_MAX_OUTPUT_TOKENS = Number.isFinite(configuredPeptidesOutp
   : 32_000;
 export const ENCLOMIPHENE_SOURCE_URL = "https://receptorchem.co.uk/enclomiphene-citrate/";
 export const PEPTIDES_REASONING = Object.freeze({
-  effort: "high",
+  effort: "medium",
   mode: "pro",
 });
 
@@ -2503,7 +2503,7 @@ async function callOpenAIForPeptides(
   estimatedCostUsd = 1,
 ): Promise<string> {
   console.log(
-    `[PeptidesEngine] GPT generation starting: ${PEPTIDES_PRIMARY_MODEL}, effort=xhigh, mode=pro`
+    `[PeptidesEngine] GPT generation starting: ${PEPTIDES_PRIMARY_MODEL}, effort=medium, mode=pro`
   );
   const response = await runOpenAIText({
     profile: "peptides",
@@ -3300,7 +3300,7 @@ export async function generatePeptidesProtocol(
         break;
       }
       if (attempt + 1 < providers.length) {
-        console.log(`[PeptidesEngine] Starting strict full regeneration with ${PEPTIDES_PRIMARY_MODEL}, effort=xhigh, mode=pro`);
+        console.log(`[PeptidesEngine] Starting strict full regeneration with ${PEPTIDES_PRIMARY_MODEL}, effort=medium, mode=pro`);
       }
     }
   }
