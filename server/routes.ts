@@ -13436,6 +13436,13 @@ export async function registerRoutes(
             reportGeneratedAt: null,
             reportDeliveryStatus: "PENDING",
           } as any).catch(() => {});
+          await pool.query(
+            `UPDATE report_jobs
+                SET status='failed', error='legacy repair reset invalid short report',
+                    updated_at=NOW(), last_progress_at=NOW()
+              WHERE audit_id=$1 AND status IN ('generating','pending')`,
+            [row.id],
+          ).catch(() => {});
         }
 
         if (existingReportLooksDeliverable) {
