@@ -13312,6 +13312,7 @@ export async function registerRoutes(
           (delivery_status IN ('READY', 'SCHEDULED') AND report_sent_at IS NULL)
           OR (delivery_status IN ('NULL', 'PENDING', 'NEEDS_REVIEW', 'FAILED', 'EMAIL_FAILED', 'GENERATING') AND NOT has_report)
           OR (delivery_status IN ('SENDING', 'GENERATING') AND report_sent_at IS NULL AND has_report)
+          OR (delivery_status = 'NEEDS_REVIEW' AND report_sent_at IS NULL AND report_txt_len < 5000)
         ORDER BY created_at ASC
         LIMIT $2
       `, [days, limit]);
@@ -13394,6 +13395,8 @@ export async function registerRoutes(
                 OR LENGTH(COALESCE(a.report_html, '')) >= 5000
                 OR a.narrative_report IS NOT NULL
               ))
+            OR (a.report_delivery_status = 'NEEDS_REVIEW'
+              AND LENGTH(COALESCE(a.report_txt, '')) < 5000)
           )
         ORDER BY a.created_at ASC
         LIMIT $1
@@ -13423,7 +13426,19 @@ export async function registerRoutes(
           continue;
         }
 
-        if (row.has_report) {
+        const existingReportLooksDeliverable = row.has_report && Number(row.report_txt_len || 0) >= 5000;
+
+        if (row.has_report && !existingReportLooksDeliverable) {
+          await storage.updateAudit(row.id, {
+            narrativeReport: null,
+            reportTxt: null,
+            reportHtml: null,
+            reportGeneratedAt: null,
+            reportDeliveryStatus: "PENDING",
+          } as any).catch(() => {});
+        }
+
+        if (existingReportLooksDeliverable) {
           await storage.updateAudit(row.id, { reportDeliveryStatus: "READY" }).catch(() => {});
           const sent = deliver
             ? await safeSendReportReadyEmail(row.id, row.email, "GRATUIT", getBaseUrl(), { logPrefix: "[DiscoveryRepair]" })
