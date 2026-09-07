@@ -164,7 +164,7 @@ async function acquireDiscoveryGeneration(
   if (!isEligibleDiscoveryAudit(audit, options)) return null;
   activeDiscoveryGenerations.add(auditId);
   try {
-    const claim = await claimDiscoveryGeneration(auditId);
+    const claim = await claimDiscoveryGeneration(auditId, undefined, options);
     if (!claim) {
       activeDiscoveryGenerations.delete(auditId);
       return null;

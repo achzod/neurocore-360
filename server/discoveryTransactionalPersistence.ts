@@ -27,6 +27,10 @@ export interface DiscoveryGenerationClaim {
   claimedAt: string;
 }
 
+export interface DiscoveryGenerationClaimOptions {
+  allowLegacy?: boolean;
+}
+
 export interface DiscoveryAtomicPersistenceInput {
   claim: DiscoveryGenerationClaim;
   narrativeReport: unknown;
@@ -107,6 +111,7 @@ async function readInactiveGlobalFence(client: PoolClient): Promise<string | nul
 export async function claimDiscoveryGeneration(
   auditId: string,
   poolOverride?: PoolLike,
+  options: DiscoveryGenerationClaimOptions = {},
 ): Promise<DiscoveryGenerationClaim | null> {
   const startAt = getDiscoveryAutomationStartAt();
   if (!startAt) return null;
@@ -124,13 +129,14 @@ export async function claimDiscoveryGeneration(
       [auditId],
     );
     const audit = selected.rows[0];
-    if (!audit || !isDiscoveryTransactionalAutomationEligible({
+    const automationEligible = audit && isDiscoveryTransactionalAutomationEligible({
       type: audit.type,
       createdAt: audit.created_at,
       reportDeliveryStatus: audit.report_delivery_status,
       reportSentAt: audit.report_sent_at,
       narrativeReport: audit.narrative_report,
-    })) {
+    });
+    if (!audit || (!automationEligible && !options.allowLegacy)) {
       await client.query("ROLLBACK");
       return null;
     }
@@ -155,7 +161,7 @@ export async function claimDiscoveryGeneration(
               )
         WHERE id = $1
           AND type = 'GRATUIT'
-          AND created_at >= $3
+          AND ($4::boolean OR created_at >= $3)
           AND report_sent_at IS NULL
           AND (report_delivery_status IS NULL OR report_delivery_status IN ('PENDING','NEEDS_REVIEW','EMAIL_FAILED','FAILED'))
           AND NOT EXISTS (
@@ -164,7 +170,7 @@ export async function claimDiscoveryGeneration(
           )
           AND ${DISCOVERY_SUPERSEDED_TERMINAL_SQL}
         RETURNING id`,
-      [auditId, claimMetadata, startAt],
+      [auditId, claimMetadata, startAt, Boolean(options.allowLegacy)],
     );
     if ((updated.rowCount ?? 0) !== 1) {
       await client.query("ROLLBACK");
