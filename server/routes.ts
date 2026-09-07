@@ -13331,6 +13331,148 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/admin/discovery-delivery-repair", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+
+    const apply = req.body?.apply === true;
+    const deliver = apply && req.body?.deliver !== false;
+    const rawLimit = Number(req.body?.limit ?? 1);
+    const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(Math.floor(rawLimit), 1), 3) : 1;
+
+    try {
+      const candidates = await pool.query(`
+        WITH tracking AS (
+          SELECT
+            audit_id,
+            COUNT(*) FILTER (
+              WHERE LOWER(COALESCE(sendpulse_status, '')) NOT IN ('failed', 'auth_failed', 'unsubscribed')
+            )::int AS success_rows
+          FROM email_tracking
+          WHERE email_type = 'sendReportReadyEmail'
+          GROUP BY audit_id
+        )
+        SELECT
+          a.id,
+          REGEXP_REPLACE(LOWER(a.email), '(^.).*(@.*$)', '\\1***\\2') AS email_masked,
+          a.email,
+          a.created_at,
+          COALESCE(a.report_delivery_status, 'NULL') AS delivery_status,
+          a.report_sent_at,
+          LENGTH(COALESCE(a.report_txt, ''))::int AS report_txt_len,
+          (
+            LENGTH(COALESCE(a.report_txt, '')) >= 5000
+            OR LENGTH(COALESCE(a.report_html, '')) >= 5000
+            OR a.narrative_report IS NOT NULL
+          ) AS has_report,
+          COALESCE(t.success_rows, 0) AS success_rows
+        FROM audits a
+        LEFT JOIN tracking t ON t.audit_id = a.id
+        WHERE a.type = 'GRATUIT'
+          AND a.report_sent_at IS NULL
+          AND COALESCE(t.success_rows, 0) = 0
+          AND a.email IS NOT NULL
+          AND a.email ~* '^[^@[:space:]]+@[^@[:space:]]+\\.[^@[:space:]]+$'
+          AND a.email NOT ILIKE '%test%'
+          AND a.email NOT ILIKE '%debug%'
+          AND a.email NOT ILIKE '%achkou%'
+          AND a.email NOT ILIKE '%achzodcoaching%'
+          AND a.email NOT ILIKE '%agentmail%'
+          AND a.email NOT ILIKE '%onikai%'
+          AND (
+            (COALESCE(a.report_delivery_status, 'NULL') IN ('NULL', 'PENDING', 'NEEDS_REVIEW', 'FAILED', 'EMAIL_FAILED')
+              AND NOT (
+                LENGTH(COALESCE(a.report_txt, '')) >= 5000
+                OR LENGTH(COALESCE(a.report_html, '')) >= 5000
+                OR a.narrative_report IS NOT NULL
+              ))
+            OR (a.report_delivery_status = 'SENDING'
+              AND (
+                LENGTH(COALESCE(a.report_txt, '')) >= 5000
+                OR LENGTH(COALESCE(a.report_html, '')) >= 5000
+                OR a.narrative_report IS NOT NULL
+              ))
+          )
+        ORDER BY a.created_at ASC
+        LIMIT $1
+      `, [limit]);
+
+      const results: any[] = [];
+      for (const row of candidates.rows) {
+        const audit = await storage.getAudit(row.id);
+        if (!audit || audit.reportSentAt || audit.reportDeliveryStatus === "SENT") {
+          results.push({ auditId: row.id, email: row.email_masked, action: "skipped_terminal" });
+          continue;
+        }
+        if (await storage.hasReportReadyEmailBeenSent(row.id).catch(() => false)) {
+          await storage.finalizeAuditSend(row.id, true).catch(() => {});
+          results.push({ auditId: row.id, email: row.email_masked, action: apply ? "fixed_state_from_tracking" : "would_fix_state_from_tracking" });
+          continue;
+        }
+
+        if (!apply) {
+          results.push({
+            auditId: row.id,
+            email: row.email_masked,
+            status: row.delivery_status,
+            hasReport: row.has_report,
+            action: row.has_report ? "would_send_existing_report" : "would_generate_and_send",
+          });
+          continue;
+        }
+
+        if (row.has_report) {
+          await storage.updateAudit(row.id, { reportDeliveryStatus: "READY" }).catch(() => {});
+          const sent = deliver
+            ? await safeSendReportReadyEmail(row.id, row.email, "GRATUIT", getBaseUrl(), { logPrefix: "[DiscoveryRepair]" })
+            : { sent: false, skipped: "delivery_not_requested" };
+          const fresh = await storage.getAudit(row.id);
+          results.push({
+            auditId: row.id,
+            email: row.email_masked,
+            action: sent.sent ? "sent_existing_report" : "existing_report_not_sent",
+            skipped: sent.skipped,
+            finalStatus: fresh?.reportDeliveryStatus,
+          });
+          continue;
+        }
+
+        if (!isDiscoveryTransactionalAutomationEligible(audit)) {
+          results.push({ auditId: row.id, email: row.email_masked, action: "skipped_ineligible" });
+          continue;
+        }
+
+        const generated = await generateAndPersistPremiumDiscoveryReport(row.id);
+        if (!generated) {
+          results.push({ auditId: row.id, email: row.email_masked, action: "generation_already_running" });
+          continue;
+        }
+
+        const sent = deliver
+          ? await safeSendReportReadyEmail(row.id, row.email, "GRATUIT", getBaseUrl(), { logPrefix: "[DiscoveryRepair]" })
+          : { sent: false, skipped: "delivery_not_requested" };
+        const fresh = await storage.getAudit(row.id);
+        results.push({
+          auditId: row.id,
+          email: row.email_masked,
+          action: sent.sent ? "generated_and_sent" : "generated_not_sent",
+          skipped: sent.skipped,
+          finalStatus: fresh?.reportDeliveryStatus,
+        });
+      }
+
+      res.json({
+        success: true,
+        mode: apply ? "apply" : "dry-run",
+        deliver,
+        selected: candidates.rows.length,
+        results,
+      });
+    } catch (error: any) {
+      console.error("[DiscoveryDeliveryRepair] Error:", error?.message || error);
+      res.status(500).json({ success: false, error: error?.message || "Erreur repair Discovery delivery" });
+    }
+  });
+
   // ==================== FORCE SEND EMAIL ====================
   // Reconcile audits stuck in READY/SCHEDULED that have never been moved to SENT,
   // but may already have been emailed (crashed between SendPulse success and the
