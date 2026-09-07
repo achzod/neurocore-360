@@ -13447,7 +13447,7 @@ export async function registerRoutes(
           console.warn(`[DiscoveryRepair] Legacy override accepted for audit ${row.id}`);
         }
 
-        const generated = await generateAndPersistPremiumDiscoveryReport(row.id);
+        const generated = await generateAndPersistPremiumDiscoveryReport(row.id, { allowLegacy });
         if (!generated) {
           results.push({ auditId: row.id, email: row.email_masked, action: "generation_already_running" });
           continue;

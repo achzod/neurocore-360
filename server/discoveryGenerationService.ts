@@ -31,13 +31,20 @@ const activeDiscoveryGenerations = new Set<string>();
 type DiscoveryAudit = NonNullable<Awaited<ReturnType<typeof storage.getAudit>>>;
 type DiscoveryClaim = NonNullable<Awaited<ReturnType<typeof claimDiscoveryGeneration>>>;
 
-function isEligibleDiscoveryAudit(audit: DiscoveryAudit | undefined): audit is DiscoveryAudit {
+interface DiscoveryGenerationOptions {
+  allowLegacy?: boolean;
+}
+
+function isEligibleDiscoveryAudit(
+  audit: DiscoveryAudit | undefined,
+  options: DiscoveryGenerationOptions = {},
+): audit is DiscoveryAudit {
   return Boolean(
     audit
     && audit.type === "GRATUIT"
     && !audit.reportSentAt
     && !isDiscoverySupersededTerminal(audit)
-    && isDiscoveryTransactionalAutomationEligible(audit),
+    && (options.allowLegacy || isDiscoveryTransactionalAutomationEligible(audit)),
   );
 }
 
@@ -150,10 +157,11 @@ async function runClaimedDiscoveryGeneration(
 
 async function acquireDiscoveryGeneration(
   auditId: string,
+  options: DiscoveryGenerationOptions = {},
 ): Promise<{ audit: DiscoveryAudit; claim: DiscoveryClaim } | null> {
   if (activeDiscoveryGenerations.has(auditId)) return null;
   const audit = await storage.getAudit(auditId);
-  if (!isEligibleDiscoveryAudit(audit)) return null;
+  if (!isEligibleDiscoveryAudit(audit, options)) return null;
   activeDiscoveryGenerations.add(auditId);
   try {
     const claim = await claimDiscoveryGeneration(auditId);
@@ -187,8 +195,9 @@ export async function startPremiumDiscoveryReportGeneration(
 /** Durable generation-only runner used by recovery. It never sends email. */
 export async function generateAndPersistPremiumDiscoveryReport(
   auditId: string,
+  options: DiscoveryGenerationOptions = {},
 ): Promise<boolean> {
-  const acquired = await acquireDiscoveryGeneration(auditId);
+  const acquired = await acquireDiscoveryGeneration(auditId, options);
   if (!acquired) return false;
   return runClaimedDiscoveryGeneration(acquired.audit, acquired.claim);
 }
