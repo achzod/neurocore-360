@@ -13395,7 +13395,7 @@ export async function registerRoutes(
                 OR LENGTH(COALESCE(a.report_html, '')) >= 5000
                 OR a.narrative_report IS NOT NULL
               ))
-            OR (a.report_delivery_status = 'NEEDS_REVIEW'
+            OR (a.report_delivery_status IN ('PENDING', 'NEEDS_REVIEW')
               AND LENGTH(COALESCE(a.report_txt, '')) < 5000)
           )
         ORDER BY a.created_at ASC

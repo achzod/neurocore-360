@@ -487,7 +487,11 @@ export async function failClaimedDiscoveryGeneration(
       `UPDATE audits
           SET report_delivery_status = $6,
               narrative_report = jsonb_set(
-                COALESCE(narrative_report, '{}'::jsonb), '{recovery}', $3::jsonb, true
+                CASE
+                  WHEN jsonb_typeof(narrative_report) = 'object' THEN narrative_report
+                  ELSE '{}'::jsonb
+                END,
+                '{recovery}', $3::jsonb, true
               )
         WHERE id = $1
           AND type = 'GRATUIT'
