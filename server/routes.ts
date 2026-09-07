@@ -13311,7 +13311,7 @@ export async function registerRoutes(
         WHERE
           (delivery_status IN ('READY', 'SCHEDULED') AND report_sent_at IS NULL)
           OR (delivery_status IN ('NULL', 'PENDING', 'NEEDS_REVIEW', 'FAILED', 'EMAIL_FAILED', 'GENERATING') AND NOT has_report)
-          OR (delivery_status = 'SENDING' AND report_sent_at IS NULL)
+          OR (delivery_status IN ('SENDING', 'GENERATING') AND report_sent_at IS NULL AND has_report)
         ORDER BY created_at ASC
         LIMIT $2
       `, [days, limit]);
@@ -13388,7 +13388,7 @@ export async function registerRoutes(
                 OR LENGTH(COALESCE(a.report_html, '')) >= 5000
                 OR a.narrative_report IS NOT NULL
               ))
-            OR (a.report_delivery_status = 'SENDING'
+            OR (a.report_delivery_status IN ('SENDING', 'GENERATING')
               AND (
                 LENGTH(COALESCE(a.report_txt, '')) >= 5000
                 OR LENGTH(COALESCE(a.report_html, '')) >= 5000
