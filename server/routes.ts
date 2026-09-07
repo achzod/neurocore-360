@@ -13236,7 +13236,7 @@ export async function registerRoutes(
             WHERE delivery_status IN ('READY', 'SCHEDULED') AND report_sent_at IS NULL
           )::int AS ready_not_sent,
           COUNT(*) FILTER (
-            WHERE delivery_status IN ('NULL', 'PENDING', 'NEEDS_REVIEW', 'FAILED', 'EMAIL_FAILED')
+            WHERE delivery_status IN ('NULL', 'PENDING', 'NEEDS_REVIEW', 'FAILED', 'EMAIL_FAILED', 'GENERATING')
               AND NOT has_report
           )::int AS stuck_without_report
         FROM discovery
@@ -13310,7 +13310,7 @@ export async function registerRoutes(
         FROM discovery
         WHERE
           (delivery_status IN ('READY', 'SCHEDULED') AND report_sent_at IS NULL)
-          OR (delivery_status IN ('NULL', 'PENDING', 'NEEDS_REVIEW', 'FAILED', 'EMAIL_FAILED') AND NOT has_report)
+          OR (delivery_status IN ('NULL', 'PENDING', 'NEEDS_REVIEW', 'FAILED', 'EMAIL_FAILED', 'GENERATING') AND NOT has_report)
           OR (delivery_status = 'SENDING' AND report_sent_at IS NULL)
         ORDER BY created_at ASC
         LIMIT $2
@@ -13382,7 +13382,7 @@ export async function registerRoutes(
           AND a.email NOT ILIKE '%agentmail%'
           AND a.email NOT ILIKE '%onikai%'
           AND (
-            (COALESCE(a.report_delivery_status, 'NULL') IN ('NULL', 'PENDING', 'NEEDS_REVIEW', 'FAILED', 'EMAIL_FAILED')
+            (COALESCE(a.report_delivery_status, 'NULL') IN ('NULL', 'PENDING', 'NEEDS_REVIEW', 'FAILED', 'EMAIL_FAILED', 'GENERATING')
               AND NOT (
                 LENGTH(COALESCE(a.report_txt, '')) >= 5000
                 OR LENGTH(COALESCE(a.report_html, '')) >= 5000
@@ -13437,6 +13437,17 @@ export async function registerRoutes(
             finalStatus: fresh?.reportDeliveryStatus,
           });
           continue;
+        }
+
+        if (row.delivery_status === "GENERATING") {
+          await storage.updateAudit(row.id, { reportDeliveryStatus: "PENDING" }).catch(() => {});
+          await pool.query(
+            `UPDATE report_jobs
+                SET status='failed', error='legacy repair reset stale generation',
+                    updated_at=NOW(), last_progress_at=NOW()
+              WHERE audit_id=$1 AND status='generating'`,
+            [row.id],
+          ).catch(() => {});
         }
 
         if (!isDiscoveryTransactionalAutomationEligible(audit)) {

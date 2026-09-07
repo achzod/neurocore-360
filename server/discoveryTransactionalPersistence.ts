@@ -234,13 +234,16 @@ export async function persistClaimedDiscoveryGeneration(
       [input.claim.auditId],
     );
     const audit = selected.rows[0];
-    if (!audit || !isDiscoveryTransactionalAutomationEligible({
+    const automationEligible = audit && isDiscoveryTransactionalAutomationEligible({
       type: audit.type,
       createdAt: audit.created_at,
       reportDeliveryStatus: audit.report_delivery_status,
       reportSentAt: audit.report_sent_at,
       narrativeReport: audit.narrative_report,
-    })) throw new Error("DISCOVERY_TRANSACTIONAL_AUTOMATION_INELIGIBLE");
+    });
+    if (!audit || (!automationEligible && !input.claim.allowLegacy)) {
+      throw new Error("DISCOVERY_TRANSACTIONAL_AUTOMATION_INELIGIBLE");
+    }
     if (audit.report_delivery_status !== "GENERATING" || audit.report_sent_at) {
       throw new Error("DISCOVERY_GENERATION_OWNERSHIP_LOST");
     }
@@ -328,7 +331,7 @@ export async function persistClaimedDiscoveryGeneration(
               report_delivery_status = 'READY'
         WHERE id = $1
           AND type = 'GRATUIT'
-          AND created_at >= $7
+          AND ($9::boolean OR created_at >= $7)
           AND report_delivery_status = 'GENERATING'
           AND report_sent_at IS NULL
           AND narrative_report->'generationClaim'->>'token' = $2
@@ -343,7 +346,8 @@ export async function persistClaimedDiscoveryGeneration(
           AND ${DISCOVERY_SUPERSEDED_TERMINAL_SQL}
         RETURNING id`,
       [input.claim.auditId, input.claim.token, JSON.stringify(input.narrativeReport),
-        JSON.stringify(input.scores), input.txt, input.html, startAt, input.claim.fenceToken],
+        JSON.stringify(input.scores), input.txt, input.html, startAt, input.claim.fenceToken,
+        Boolean(input.claim.allowLegacy)],
     );
     if ((updated.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_AUDIT_PERSISTENCE_CAS_FAILED");
     const jobCompleted = await client.query(
@@ -484,7 +488,7 @@ export async function failClaimedDiscoveryGeneration(
               )
         WHERE id = $1
           AND type = 'GRATUIT'
-          AND created_at >= $4
+          AND ($7::boolean OR created_at >= $4)
           AND report_delivery_status = 'GENERATING'
           AND report_sent_at IS NULL
           AND narrative_report->'generationClaim'->>'token' = $2
@@ -499,7 +503,7 @@ export async function failClaimedDiscoveryGeneration(
           AND ${DISCOVERY_SUPERSEDED_TERMINAL_SQL}
         RETURNING id`,
       [claim.auditId, claim.token, failure, startAt, claim.fenceToken,
-        rejectedCandidate ? "BATCH_REVIEW" : "NEEDS_REVIEW"],
+        rejectedCandidate ? "BATCH_REVIEW" : "NEEDS_REVIEW", Boolean(claim.allowLegacy)],
     );
     if ((updated.rowCount ?? 0) === 1) {
       const jobFailed = await client.query(
