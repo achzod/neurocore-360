@@ -13295,7 +13295,18 @@ export async function registerRoutes(
           LEFT JOIN tracking t ON t.audit_id = a.id
           WHERE ${realDiscoveryFilter}
         )
-        SELECT *
+        SELECT
+          id,
+          email_masked,
+          created_at,
+          completed_at,
+          report_generated_at,
+          report_sent_at,
+          delivery_status,
+          report_txt_len,
+          has_report,
+          tracking_rows,
+          success_rows
         FROM discovery
         WHERE
           (delivery_status IN ('READY', 'SCHEDULED') AND report_sent_at IS NULL)
