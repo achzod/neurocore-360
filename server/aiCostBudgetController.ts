@@ -17,6 +17,7 @@ export interface AICostBudgetContext {
   estimatedCostUsd?: number;
   discoveryGenerationToken?: string;
   discoveryFenceToken?: string | null;
+  discoveryAllowLegacy?: boolean;
   discoveryBatchId?: string;
   discoveryBatchLockToken?: string;
 }
@@ -328,6 +329,7 @@ export async function reserveAICostBudget(
     label: rawContext.label ? String(rawContext.label).trim().slice(0, 160) : undefined,
     discoveryGenerationToken: rawContext.discoveryGenerationToken,
     discoveryFenceToken: rawContext.discoveryFenceToken ?? null,
+    discoveryAllowLegacy: rawContext.discoveryAllowLegacy === true,
     discoveryBatchId: rawContext.discoveryBatchId,
     discoveryBatchLockToken: rawContext.discoveryBatchLockToken,
   };
@@ -394,13 +396,15 @@ export async function reserveAICostBudget(
           [context.orderId],
         );
         const audit = genericOwnership.rows[0];
-        if (!audit || !isDiscoveryTransactionalAutomationEligible({
+        const automationEligible = audit && isDiscoveryTransactionalAutomationEligible({
           type: audit.type,
           createdAt: audit.created_at,
           reportDeliveryStatus: audit.report_delivery_status,
           reportSentAt: audit.report_sent_at,
           narrativeReport: audit.narrative_report,
-        }) || audit.report_delivery_status !== "GENERATING" || audit.report_sent_at
+        });
+        if (!audit || (!automationEligible && !context.discoveryAllowLegacy)
+          || audit.report_delivery_status !== "GENERATING" || audit.report_sent_at
           || String(audit.narrative_report?.generationClaim?.token || "") !== context.discoveryGenerationToken) {
           throw new Error("DISCOVERY_GENERATION_PROVIDER_OWNERSHIP_LOST");
         }

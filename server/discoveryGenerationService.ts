@@ -58,6 +58,7 @@ async function runClaimedDiscoveryGeneration(
       costBudgetAuditId: audit.id,
       costBudgetGenerationToken: claim.token,
       costBudgetFenceToken: claim.fenceToken,
+      costBudgetAllowLegacy: claim.allowLegacy,
     });
     const evidence = result.providerEvidence;
     const catalogProvenance = result.catalogProvenance;

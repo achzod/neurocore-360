@@ -25,6 +25,7 @@ export interface DiscoveryGenerationClaim {
   fenceToken: string | null;
   expectedResponsesSha256: string;
   claimedAt: string;
+  allowLegacy?: boolean;
 }
 
 export interface DiscoveryGenerationClaimOptions {
@@ -196,7 +197,7 @@ export async function claimDiscoveryGeneration(
       return null;
     }
     await client.query("COMMIT");
-    return { auditId, token, fenceToken, expectedResponsesSha256, claimedAt };
+    return { auditId, token, fenceToken, expectedResponsesSha256, claimedAt, allowLegacy: Boolean(options.allowLegacy) };
   } catch (error) {
     await client.query("ROLLBACK").catch(() => {});
     throw error;

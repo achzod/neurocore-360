@@ -652,6 +652,7 @@ export interface OpenAITextRequest {
     | "estimatedCostUsd"
     | "discoveryGenerationToken"
     | "discoveryFenceToken"
+    | "discoveryAllowLegacy"
     | "discoveryBatchId"
     | "discoveryBatchLockToken"
   >;

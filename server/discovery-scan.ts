@@ -177,6 +177,7 @@ export interface DiscoveryAnalysisDependencies {
     costBudgetAuditId?: string,
     costBudgetGenerationToken?: string,
     costBudgetFenceToken?: string | null,
+    costBudgetAllowLegacy?: boolean,
     costBudgetBatchId?: string,
     costBudgetBatchLockToken?: string,
   ) => Promise<DiscoveryGeneratedNarrative>;
@@ -187,6 +188,8 @@ export interface DiscoveryAnalysisDependencies {
   costBudgetGenerationToken?: string;
   /** Global-lock epoch captured when the generic generation was claimed. */
   costBudgetFenceToken?: string | null;
+  /** Explicit admin-only legacy repair bypass for the cut-over date. */
+  costBudgetAllowLegacy?: boolean;
   /** Explicit batch ownership; mutually exclusive with generic generation ownership. */
   costBudgetBatchId?: string;
   costBudgetBatchLockToken?: string;
@@ -2532,6 +2535,7 @@ async function generateDiscoveryNarrativeAI(
   costBudgetAuditId?: string,
   costBudgetGenerationToken?: string,
   costBudgetFenceToken?: string | null,
+  costBudgetAllowLegacy?: boolean,
   costBudgetBatchId?: string,
   costBudgetBatchLockToken?: string,
 ): Promise<DiscoveryGeneratedNarrative> {
@@ -2602,6 +2606,7 @@ Ne redige aucun texte. Ne renvoie aucun champ libre, commentaire, explication, n
         estimatedCostUsd: DISCOVERY_UNIFIED_MAX_ESTIMATED_COST_USD,
         discoveryGenerationToken: costBudgetGenerationToken,
         discoveryFenceToken: costBudgetFenceToken,
+        discoveryAllowLegacy: costBudgetAllowLegacy,
         discoveryBatchId: costBudgetBatchId,
         discoveryBatchLockToken: costBudgetBatchLockToken,
       },
@@ -3289,6 +3294,7 @@ export async function analyzeDiscoveryScan(
     dependencies.costBudgetAuditId,
     dependencies.costBudgetGenerationToken,
     dependencies.costBudgetFenceToken,
+    dependencies.costBudgetAllowLegacy,
     dependencies.costBudgetBatchId,
     dependencies.costBudgetBatchLockToken,
   );
