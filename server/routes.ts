@@ -13299,8 +13299,8 @@ export async function registerRoutes(
         FROM discovery
         WHERE
           (delivery_status IN ('READY', 'SCHEDULED') AND report_sent_at IS NULL)
-          OR (delivery_status = 'SENT' AND tracking_rows = 0)
           OR (delivery_status IN ('NULL', 'PENDING', 'NEEDS_REVIEW', 'FAILED', 'EMAIL_FAILED') AND NOT has_report)
+          OR (delivery_status = 'SENDING' AND report_sent_at IS NULL)
         ORDER BY created_at ASC
         LIMIT $2
       `, [days, limit]);
