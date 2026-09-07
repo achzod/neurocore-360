@@ -13202,7 +13202,7 @@ export async function registerRoutes(
             COUNT(*) FILTER (
               WHERE LOWER(COALESCE(sendpulse_status, '')) NOT IN ('failed', 'auth_failed', 'unsubscribed')
             )::int AS success_rows,
-            MAX(opened_at) AS opened_at
+            MAX(opened) AS opened
           FROM email_tracking
           WHERE email_type = 'sendReportReadyEmail'
           GROUP BY audit_id
@@ -13219,7 +13219,7 @@ export async function registerRoutes(
             ) AS has_report,
             COALESCE(t.tracking_rows, 0) AS tracking_rows,
             COALESCE(t.success_rows, 0) AS success_rows,
-            t.opened_at
+            t.opened
           FROM audits a
           LEFT JOIN tracking t ON t.audit_id = a.id
           WHERE ${realDiscoveryFilter}
@@ -13230,8 +13230,8 @@ export async function registerRoutes(
           COUNT(*) FILTER (WHERE delivery_status = 'SENT')::int AS sent,
           COUNT(*) FILTER (WHERE delivery_status = 'SENT' AND tracking_rows > 0)::int AS sent_with_tracking,
           COUNT(*) FILTER (WHERE delivery_status = 'SENT' AND tracking_rows = 0)::int AS sent_without_tracking,
-          COUNT(*) FILTER (WHERE delivery_status = 'SENT' AND success_rows > 0 AND opened_at IS NULL)::int AS sent_not_opened,
-          COUNT(*) FILTER (WHERE delivery_status = 'SENT' AND opened_at IS NOT NULL)::int AS opened,
+          COUNT(*) FILTER (WHERE delivery_status = 'SENT' AND success_rows > 0 AND opened IS NULL)::int AS sent_not_opened,
+          COUNT(*) FILTER (WHERE delivery_status = 'SENT' AND opened IS NOT NULL)::int AS opened,
           COUNT(*) FILTER (
             WHERE delivery_status IN ('READY', 'SCHEDULED') AND report_sent_at IS NULL
           )::int AS ready_not_sent,
@@ -13266,7 +13266,7 @@ export async function registerRoutes(
             COUNT(*) FILTER (
               WHERE LOWER(COALESCE(sendpulse_status, '')) NOT IN ('failed', 'auth_failed', 'unsubscribed')
             )::int AS success_rows,
-            MAX(opened_at) AS opened_at,
+            MAX(opened) AS opened,
             MAX(sent_at) AS last_tracked_at
           FROM email_tracking
           WHERE email_type = 'sendReportReadyEmail'
@@ -13289,7 +13289,7 @@ export async function registerRoutes(
             ) AS has_report,
             COALESCE(t.tracking_rows, 0) AS tracking_rows,
             COALESCE(t.success_rows, 0) AS success_rows,
-            t.opened_at,
+            t.opened,
             t.last_tracked_at
           FROM audits a
           LEFT JOIN tracking t ON t.audit_id = a.id
