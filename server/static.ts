@@ -33,6 +33,16 @@ type BlogIntentCta = {
   label: string;
 };
 
+type BlogPillar = {
+  slug: string;
+  label: string;
+  title: string;
+  description: string;
+  offerHref: string;
+  offerLabel: string;
+  keywords: RegExp;
+};
+
 // Escape HTML entities for safe injection
 function esc(str: string): string {
   return str
@@ -278,6 +288,22 @@ function getRelatedArticles(
   return same.slice(0, limit);
 }
 
+function getArticlePillars(article: BlogArticle): BlogPillar[] {
+  const text = `${article.slug} ${article.title} ${article.excerpt} ${normalizeBlogCategory(article.category)}`;
+  return BLOG_PILLARS.filter((pillar) => pillar.keywords.test(text)).slice(0, 2);
+}
+
+function renderPillarLinksHtml(pillars = BLOG_PILLARS): string {
+  return `<nav aria-label="Guides piliers APEXLABS">
+<h2>Guides piliers</h2>
+<ul>
+${pillars
+  .map((pillar) => `<li><a href="${BASE_URL}/blog/pilier/${esc(pillar.slug)}">${esc(pillar.label)}</a> , ${esc(pillar.description.slice(0, 120))}</li>`)
+  .join("\n")}
+</ul>
+</nav>`;
+}
+
 // Matches client/src/data/blogTypes.ts BLOG_CATEGORIES ,  kept in sync here
 // so the server can render category pillar pages without importing client code.
 const CATEGORY_LABELS: Record<string, string> = {
@@ -321,6 +347,65 @@ const CATEGORY_INTROS: Record<string, string> = {
   femmes:
     "Cycle menstruel, contraception, ménopause, entraînement par phase, anomalies hormonales. Protocoles calibrés sur la physiologie féminine.",
 };
+
+const BLOG_PILLARS: BlogPillar[] = [
+  {
+    slug: "perte-de-gras",
+    label: "Perte de gras",
+    title: "Perte de gras : métabolisme, nutrition et progression",
+    description:
+      "Articles APEXLABS pour comprendre pourquoi la perte de gras bloque : calories, glycémie, sommeil, stress, NEAT, digestion et signaux hormonaux.",
+    offerHref: `${BASE_URL}/offers/discovery-scan?utm_source=blog&utm_medium=pillar_cta&utm_campaign=fat_loss_pillar`,
+    offerLabel: "Faire le Discovery Scan",
+    keywords: /perte de gras|maigr|seche|sèche|cut|coupe|calorie|recomposition|glyc|insuline|metabol|métabol|ventre|graisse|poids/i,
+  },
+  {
+    slug: "testosterone-hormones",
+    label: "Testostérone & hormones",
+    title: "Testostérone et hormones : lire les vrais signaux",
+    description:
+      "Guides sur testostérone, cortisol, thyroïde, libido, récupération et hormones pour relier les symptômes, l'entraînement et les données.",
+    offerHref: `${BASE_URL}/offers/anabolic-bioscan?utm_source=blog&utm_medium=pillar_cta&utm_campaign=hormone_pillar`,
+    offerLabel: "Faire l'Anabolic Bioscan",
+    keywords: /testost|hormone|cortisol|thyro|libido|estradiol|igf|anabol|récup|recup|stress/i,
+  },
+  {
+    slug: "bilan-sanguin",
+    label: "Bilan sanguin",
+    title: "Bilan sanguin : biomarqueurs pour performance et santé",
+    description:
+      "Articles pour savoir quels marqueurs regarder : glycémie, lipides, CRP, ferritine, vitamine D, foie, reins, thyroïde et inflammation.",
+    offerHref: `${BASE_URL}/offers/blood-analysis?utm_source=blog&utm_medium=pillar_cta&utm_campaign=blood_pillar`,
+    offerLabel: "Analyser mon bilan",
+    keywords: /bilan sanguin|biomarqueur|prise de sang|glyc|cholest|ldl|hdl|foie|rein|crp|ferritine|vitamine d|insuline|inflammation/i,
+  },
+  {
+    slug: "peptides-peds",
+    label: "Peptides & PEDs",
+    title: "Peptides, SARMs et PEDs : risques, logique et monitoring",
+    description:
+      "Analyses éducatives sur peptides, SARMs, HGH, IGF-1, bénéfices supposés, limites, risques et suivi nécessaire avant toute décision.",
+    offerHref: `${BASE_URL}/offers/peptides-engine?utm_source=blog&utm_medium=pillar_cta&utm_campaign=peptides_pillar`,
+    offerLabel: "Voir Peptides Engine",
+    keywords: /peptide|sarm|peds|hgh|igf|mk-677|rad-140|lgd|ostarine|pct|steroid|stéro/i,
+  },
+];
+
+function getPillarArticles(pillar: BlogPillar, all: BlogArticle[], limit = 50): BlogArticle[] {
+  return all
+    .filter((article) =>
+      pillar.keywords.test(
+        `${article.slug} ${article.title} ${article.excerpt} ${normalizeBlogCategory(article.category)}`,
+      ),
+    )
+    .sort((a, b) => {
+      const aPri = (a as any).priority ?? 0;
+      const bPri = (b as any).priority ?? 0;
+      if (aPri !== bPri) return bPri - aPri;
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    })
+    .slice(0, limit);
+}
 
 export function serveStatic(app: Express) {
   const distPath = path.resolve(__dirname, "public");
@@ -686,6 +771,7 @@ ${links ? `<nav aria-label="Pages principales"><ul>${links}</ul></nav>` : ""}
     // Related articles as crawlable <a> links inside a <noscript> block,
     // so Google follows them even before the SPA hydrates.
     const related = getRelatedArticles(article, articles, 4);
+    const articlePillars = getArticlePillars(article);
     const relatedHtml =
       related.length > 0
         ? `<nav aria-label="Articles connexes">
@@ -701,6 +787,7 @@ ${related
 </ul>
 </nav>`
         : "";
+    const pillarLinksHtml = articlePillars.length > 0 ? renderPillarLinksHtml(articlePillars) : "";
 
     // Server-rendered article body for crawlers. Wraps the converted markdown
     // in <noscript> so users (JS-enabled) see the React render, while
@@ -714,6 +801,7 @@ ${related
 ${intentCtaHtml}
 ${articleBodyHtml}
 ${intentCtaHtml}
+${pillarLinksHtml}
 ${relatedHtml}
 </article></noscript>`;
 
@@ -803,6 +891,7 @@ ${relatedHtml}
           `<li><a href="${BASE_URL}/blog/categorie/${esc(slug)}">${esc(label)}</a> (${(byCategory.get(slug) || []).length} articles)</li>`,
       )
       .join("\n");
+    const pillarLinks = renderPillarLinksHtml();
     const latestLinks = latest
       .map(
         (a) =>
@@ -816,6 +905,7 @@ ${relatedHtml}
 <h2>Categories</h2>
 <ul>${categoryLinks}</ul>
 </section>
+${pillarLinks}
 <section>
 <h2>Derniers articles</h2>
 <ul>${latestLinks}</ul>
@@ -834,6 +924,85 @@ ${relatedHtml}
         `<script type="application/ld+json">${JSON.stringify(blogListSchema)}</script>\n</head>`,
       )
       .replace("</body>", `${blogBody}\n</body>`);
+
+    res.setHeader("Cache-Control", "public, max-age=3600");
+    res.send(injectedHtml);
+  });
+
+  // Business SEO pillar pages ,  /blog/pilier/:slug
+  app.get("/blog/pilier/:slug", (req, res) => {
+    const pillar = BLOG_PILLARS.find((p) => p.slug === req.params.slug);
+    if (!pillar) {
+      res.setHeader("Cache-Control", "no-cache");
+      return res.send(indexHtml);
+    }
+
+    const pillarArticles = getPillarArticles(pillar, articles, 60);
+    const url = `${BASE_URL}/blog/pilier/${pillar.slug}`;
+    const collection = {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      name: pillar.title,
+      description: pillar.description,
+      url,
+      inLanguage: "fr-FR",
+      isPartOf: { "@type": "WebSite", url: BASE_URL, name: "APEXLABS" },
+      about: pillar.label,
+      mainEntity: {
+        "@type": "ItemList",
+        numberOfItems: pillarArticles.length,
+        itemListElement: pillarArticles.slice(0, 30).map((a, idx) => ({
+          "@type": "ListItem",
+          position: idx + 1,
+          url: `${BASE_URL}/blog/${encodePathSegment(a.slug)}`,
+          name: a.title,
+        })),
+      },
+    };
+
+    const breadcrumb = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Accueil", item: `${BASE_URL}/` },
+        { "@type": "ListItem", position: 2, name: "Blog", item: `${BASE_URL}/blog` },
+        { "@type": "ListItem", position: 3, name: pillar.label, item: url },
+      ],
+    };
+
+    const articleLinks = pillarArticles
+      .map(
+        (a) =>
+          `<li><a href="${BASE_URL}/blog/${esc(encodePathSegment(a.slug))}">${esc(a.title)}</a> , ${esc(
+            buildMetaDescription(a).slice(0, 125),
+          )}</li>`,
+      )
+      .join("\n");
+
+    const body = `<noscript><main>
+<h1>${esc(pillar.title)}</h1>
+<p>${esc(pillar.description)}</p>
+<p><a href="${esc(pillar.offerHref)}">${esc(pillar.offerLabel)}</a></p>
+<section>
+<h2>Articles prioritaires</h2>
+<ul>${articleLinks}</ul>
+</section>
+${renderPillarLinksHtml(BLOG_PILLARS.filter((p) => p.slug !== pillar.slug))}
+</main></noscript>`;
+
+    const schemaBlobs = [collection, breadcrumb]
+      .map((s) => `<script type="application/ld+json">${JSON.stringify(s)}</script>`)
+      .join("\n");
+
+    const injectedHtml = indexHtml
+      .replace(/<title>[^<]*<\/title>/, `<title>${esc(pillar.label)} | Guides APEXLABS by Achzod</title>`)
+      .replace(/<meta name="description" content="[^"]*"/, `<meta name="description" content="${esc(pillar.description)}"`)
+      .replace(/<meta property="og:title" content="[^"]*"/, `<meta property="og:title" content="${esc(pillar.title)}"`)
+      .replace(/<meta property="og:description" content="[^"]*"/, `<meta property="og:description" content="${esc(pillar.description)}"`)
+      .replace(/<meta property="og:url" content="[^"]*"/, `<meta property="og:url" content="${url}"`)
+      .replace(/<link rel="canonical" href="[^"]*"/, `<link rel="canonical" href="${url}"`)
+      .replace("</head>", `${schemaBlobs}\n</head>`)
+      .replace("</body>", `${body}\n</body>`);
 
     res.setHeader("Cache-Control", "public, max-age=3600");
     res.send(injectedHtml);
@@ -906,6 +1075,7 @@ ${relatedHtml}
 <p>${esc(label)} regroupe les articles APEXLABS qui aident a relier les donnees, les habitudes et les decisions de terrain. L'objectif est de donner une lecture pratique, pas seulement theorique.</p>
 <p>Chaque contenu est pense pour mieux comprendre les blocages de progression, les erreurs frequentes, les signaux a surveiller et les leviers qui peuvent ensuite etre verifies dans un scan ou un accompagnement plus complet.</p>
 </section>
+${renderPillarLinksHtml()}
 <section>
 <h2>Articles a lire</h2>
 <ul>

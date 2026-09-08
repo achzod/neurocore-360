@@ -67,8 +67,14 @@ async function buildAll() {
     { loc: "/press", priority: "0.6", changefreq: "monthly" },
     { loc: "/deduction-coaching", priority: "0.6", changefreq: "monthly" },
   ];
+  const pillarPages = [
+    { loc: "/blog/pilier/perte-de-gras", priority: "0.85", changefreq: "weekly" },
+    { loc: "/blog/pilier/testosterone-hormones", priority: "0.85", changefreq: "weekly" },
+    { loc: "/blog/pilier/bilan-sanguin", priority: "0.85", changefreq: "weekly" },
+    { loc: "/blog/pilier/peptides-peds", priority: "0.85", changefreq: "weekly" },
+  ];
   const today = new Date().toISOString().split("T")[0];
-  const sitemapEntries = staticPages.map(
+  const sitemapEntries = [...staticPages, ...pillarPages].map(
     (p) => `  <url><loc>${sitemapLoc(p.loc)}</loc><lastmod>${today}</lastmod><changefreq>${p.changefreq}</changefreq><priority>${p.priority}</priority></url>`
   );
   for (const article of articles) {

@@ -6,6 +6,29 @@ import { ArrowRight, Clock, Calendar, Search, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { BLOG_CATEGORIES, type BlogArticle } from "@/data/blogTypes";
 
+const BLOG_PILLARS = [
+  {
+    slug: "perte-de-gras",
+    label: "Perte de gras",
+    description: "Métabolisme, nutrition, glycémie, sommeil et blocages de progression.",
+  },
+  {
+    slug: "testosterone-hormones",
+    label: "Testostérone & hormones",
+    description: "Cortisol, libido, thyroïde, récupération et signaux hormonaux.",
+  },
+  {
+    slug: "bilan-sanguin",
+    label: "Bilan sanguin",
+    description: "Biomarqueurs, CRP, ferritine, lipides, glycémie et vitamine D.",
+  },
+  {
+    slug: "peptides-peds",
+    label: "Peptides & PEDs",
+    description: "SARMs, peptides, risques, logique de protocole et monitoring.",
+  },
+];
+
 export default function Blog() {
   const [articles, setArticles] = useState<BlogArticle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -125,6 +148,34 @@ export default function Blog() {
                 sommeil, nutrition et performance.
               </p>
             </motion.div>
+          </div>
+        </section>
+
+        <section className="py-10 border-b border-white/5">
+          <div className="mx-auto max-w-7xl px-4">
+            <p className="text-[#FCDD00] text-xs font-mono tracking-[0.3em] uppercase mb-4">
+              [ GUIDES PILIERS ]
+            </p>
+            <div className="grid gap-4 md:grid-cols-4">
+              {BLOG_PILLARS.map((pillar) => (
+                <Link
+                  key={pillar.slug}
+                  href={`/blog/pilier/${pillar.slug}`}
+                  className="group rounded-sm border border-white/10 bg-white/[0.03] p-5 transition hover:border-[#FCDD00]/40 hover:bg-white/[0.05]"
+                >
+                  <h2 className="mb-2 text-base font-bold text-white group-hover:text-[#FCDD00]">
+                    {pillar.label}
+                  </h2>
+                  <p className="text-sm leading-relaxed text-white/50">
+                    {pillar.description}
+                  </p>
+                  <span className="mt-4 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#FCDD00]/80">
+                    Lire
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </span>
+                </Link>
+              ))}
+            </div>
           </div>
         </section>
 

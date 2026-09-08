@@ -65,6 +65,7 @@ const PeptidesEngineReport = lazy(() => import("@/pages/PeptidesEngineReport"));
 const Blog = lazy(() => import("@/pages/Blog"));
 const BlogArticle = lazy(() => import("@/pages/BlogArticle"));
 const BlogCategory = lazy(() => import("@/pages/BlogCategory"));
+const BlogPillar = lazy(() => import("@/pages/BlogPillar"));
 const Press = lazy(() => import("@/pages/Press"));
 const DeductionCoaching = lazy(() => import("@/pages/DeductionCoaching"));
 const ApexLabs = lazy(() => import("@/pages/ApexLabs"));
@@ -108,6 +109,10 @@ const PAGE_TITLES: Record<string, string> = {
   "/cgv": "Conditions Generales de Vente | APEXLABS",
   "/politique-confidentialite": "Politique de Confidentialite | APEXLABS",
   "/deduction-coaching": "Deduction Coaching | APEXLABS",
+  "/blog/pilier/perte-de-gras": "Perte de Gras | Guides APEXLABS",
+  "/blog/pilier/testosterone-hormones": "Testostérone & Hormones | Guides APEXLABS",
+  "/blog/pilier/bilan-sanguin": "Bilan Sanguin | Guides APEXLABS",
+  "/blog/pilier/peptides-peds": "Peptides & PEDs | Guides APEXLABS",
 };
 
 // Scroll to top + dynamic title + canonical URL + analytics on route change
@@ -197,6 +202,7 @@ function Router() {
         <Route path="/politique-confidentialite" component={PolitiqueConfidentialite} />
         <Route path="/faq" component={FAQ} />
         <Route path="/blog" component={Blog} />
+        <Route path="/blog/pilier/:slug" component={BlogPillar} />
         <Route path="/blog/categorie/:slug" component={BlogCategory} />
         <Route path="/blog/:slug" component={BlogArticle} />
         <Route path="/press" component={Press} />
