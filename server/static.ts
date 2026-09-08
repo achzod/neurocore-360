@@ -23,6 +23,16 @@ interface BlogArticle {
   readTime?: string;
 }
 
+type BlogIntent = "discovery" | "anabolic" | "blood" | "ultimate" | "formcheck" | "peptides";
+
+type BlogIntentCta = {
+  intent: BlogIntent;
+  title: string;
+  body: string;
+  href: string;
+  label: string;
+};
+
 // Escape HTML entities for safe injection
 function esc(str: string): string {
   return str
@@ -37,10 +47,16 @@ function esc(str: string): string {
 // a server-side <noscript> region so Googlebot sees the full prose, headings,
 // lists and in-article links. Fixes "crawled but not indexed" caused by the
 // React SPA shell that ships an empty <div id="root"></div> to crawlers.
-function renderArticleBodyHtml(content: string | undefined): string {
+function renderArticleBodyHtml(content: string | undefined, articleTitle?: string): string {
   if (!content) return "";
   try {
-    return marked.parse(content, { async: false }) as string;
+    let markdown = content;
+    if (articleTitle) {
+      const escapedTitle = articleTitle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      markdown = markdown.replace(new RegExp(`^\\s*#\\s+${escapedTitle}\\s*\\n+`, "i"), "");
+    }
+    const html = marked.parse(markdown, { async: false }) as string;
+    return html.replace(/^\s*<h1\b[\s\S]*?<\/h1>\s*/i, "");
   } catch {
     return `<p>${esc(content).slice(0, 2000)}</p>`;
   }
@@ -106,6 +122,92 @@ function normalizeRequestPath(value: string): string {
   const pathOnly = value.split("?")[0].split("#")[0] || "/";
   if (pathOnly.length > 1 && pathOnly.endsWith("/")) return pathOnly.slice(0, -1);
   return pathOnly;
+}
+
+function normalizeBlogCategory(category: string | undefined): string {
+  if (!category) return "fitness";
+  // Legacy import created one orphan `peptides` category. Keep the article in
+  // the closest real pillar so sitemap/category pages do not create a dead hub.
+  if (category === "peptides") return "nutrition";
+  return category;
+}
+
+function getBlogIntentCta(article: BlogArticle): BlogIntentCta {
+  const category = normalizeBlogCategory(article.category);
+  const text = `${category} ${article.title} ${article.excerpt}`.toLowerCase();
+
+  if (category === "sarms" || /peptide|sarm|mk-677|rad-140|lgd|ostarine|pct/.test(text)) {
+    return {
+      intent: "peptides",
+      title: "Avant de toucher aux peptides, cadre le protocole et le monitoring.",
+      body:
+        "Peptides Engine aide a relier objectif, contexte, risques, bilan sanguin, timing et coherence du protocole avant toute decision.",
+      href: `${BASE_URL}/offers/peptides-engine?utm_source=blog&utm_medium=article_cta&utm_campaign=peptides_intent`,
+      label: "Voir Peptides Engine",
+    };
+  }
+
+  if (category === "hormones" || /testost|hormone|libido|cortisol|thyro|estradiol|igf/.test(text)) {
+    return {
+      intent: "anabolic",
+      title: "Si tu stagnes malgre l'entrainement, lis ton profil complet.",
+      body:
+        "Anabolic Bioscan relie sommeil, stress, recuperation, nutrition et signaux hormonaux pour sortir du conseil generique.",
+      href: `${BASE_URL}/offers/anabolic-bioscan?utm_source=blog&utm_medium=article_cta&utm_campaign=hormone_intent`,
+      label: "Faire l'Anabolic Bioscan",
+    };
+  }
+
+  if (/bilan sanguin|biomarqueur|glyc|cholest|foie|rein|crp|ferritine|vitamine d|thyro/.test(text)) {
+    return {
+      intent: "blood",
+      title: "Ton bilan sanguin peut expliquer ce que les photos ne montrent pas.",
+      body:
+        "Blood Analysis transforme les marqueurs en priorites concretes pour energie, recuperation, metabolisme et suivi.",
+      href: `${BASE_URL}/offers/blood-analysis?utm_source=blog&utm_medium=article_cta&utm_campaign=blood_intent`,
+      label: "Analyser mon bilan",
+    };
+  }
+
+  if (category === "performance" || /squat|bench|developpe|souleve|mouvement|technique|biomecanique|douleur/.test(text)) {
+    return {
+      intent: "formcheck",
+      title: "Si le blocage vient du mouvement, il faut voir l'execution.",
+      body:
+        "FormCheck donne une lecture biomecanique sur video avec les corrections prioritaires a appliquer des la prochaine seance.",
+      href: `${BASE_URL}/offers/formcheck?utm_source=blog&utm_medium=article_cta&utm_campaign=formcheck_intent`,
+      label: "Faire analyser ma technique",
+    };
+  }
+
+  if (["sommeil", "stress", "biohacking"].includes(category) || /hrv|sommeil|stress|recup|fatigue|wearable|oura|whoop/.test(text)) {
+    return {
+      intent: "ultimate",
+      title: "Quand plusieurs signaux se croisent, priorise le vrai limiteur.",
+      body:
+        "Ultimate Scan relie sommeil, stress, recuperation, nutrition, posture et habitudes pour savoir quoi corriger en premier.",
+      href: `${BASE_URL}/offers/ultimate-scan?utm_source=blog&utm_medium=article_cta&utm_campaign=recovery_intent`,
+      label: "Voir Ultimate Scan",
+    };
+  }
+
+  return {
+    intent: "discovery",
+    title: "Tu veux savoir ce qui bloque vraiment ta progression ?",
+    body:
+      "Le Discovery Scan gratuit analyse les grands leviers en quelques minutes et sort une prochaine action claire.",
+    href: `${BASE_URL}/offers/discovery-scan?utm_source=blog&utm_medium=article_cta&utm_campaign=general_intent`,
+    label: "Faire mon Discovery Scan",
+  };
+}
+
+function renderBlogIntentCtaHtml(article: BlogArticle): string {
+  const cta = getBlogIntentCta(article);
+  return `<aside aria-label="Prochaine action APEXLABS" data-blog-cta-intent="${esc(cta.intent)}">
+<h2>${esc(cta.title)}</h2>
+<p>${esc(cta.body)}</p>
+<p><a href="${esc(cta.href)}">${esc(cta.label)}</a></p>
+</aside>`;
 }
 
 // Detect FAQ pairs from markdown content ,  headings that end with "?" or
@@ -245,9 +347,10 @@ export function serveStatic(app: Express) {
   const byCategory = new Map<string, BlogArticle[]>();
   for (const a of articles) {
     articleMap.set(a.slug, a);
-    const bucket = byCategory.get(a.category) || [];
+    const category = normalizeBlogCategory(a.category);
+    const bucket = byCategory.get(category) || [];
     bucket.push(a);
-    byCategory.set(a.category, bucket);
+    byCategory.set(category, bucket);
   }
 
   // Read the base index.html template
@@ -499,7 +602,7 @@ ${links ? `<nav aria-label="Pages principales"><ul>${links}</ul></nav>` : ""}
     const image = article.image || article.imageUrl || DEFAULT_OG_IMAGE;
     const author = esc(article.author || "ACHZOD");
     const date = article.date || "2026-01-01";
-    const category = article.category || "fitness";
+    const category = normalizeBlogCategory(article.category);
     const categoryLabel = CATEGORY_LABELS[category] || category;
     void author; // kept for future extensions (authorLinked JSON-LD)
 
@@ -603,11 +706,14 @@ ${related
     // in <noscript> so users (JS-enabled) see the React render, while
     // Googlebot indexes the full text. This is the fix for the 123 blog URLs
     // marked "crawled, currently not indexed" by Search Console.
-    const articleBodyHtml = renderArticleBodyHtml(article.content);
+    const articleBodyHtml = renderArticleBodyHtml(article.content, article.title);
+    const intentCtaHtml = renderBlogIntentCtaHtml(article);
     const noscriptBlock = `<noscript><article>
 <h1>${esc(article.title)}</h1>
 <p><em>${esc(categoryLabel)} , ${esc(article.date || "")}${article.readTime ? " , " + esc(article.readTime) : ""}</em></p>
+${intentCtaHtml}
 ${articleBodyHtml}
+${intentCtaHtml}
 ${relatedHtml}
 </article></noscript>`;
 

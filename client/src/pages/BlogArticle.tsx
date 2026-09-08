@@ -17,28 +17,28 @@ import { BLOG_CATEGORIES, type BlogArticle } from "@/data/blogTypes";
 import ReactMarkdown from "react-markdown";
 import { useEffect, useMemo, useState } from "react";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
-import { trackWhatsAppClick } from "@/lib/analytics";
+import { trackClick, trackWhatsAppClick } from "@/lib/analytics";
 
 const SITE_ORIGIN = "https://apexlabs.achzodcoaching.com";
 
-const CATEGORY_CONVERSION: Record<
-  string,
-  {
-    eyebrow: string;
-    title: string;
-    body: string;
-    href: string;
-    cta: string;
-    offer: string;
-    sideStat: string;
-    sideLabel: string;
-  }
-> = {
+type BlogConversion = {
+  intent: string;
+  eyebrow: string;
+  title: string;
+  body: string;
+  href: string;
+  cta: string;
+  offer: string;
+  sideStat: string;
+  sideLabel: string;
+};
+
+const CATEGORY_CONVERSION: Record<string, Omit<BlogConversion, "intent">> = {
   musculation: {
     eyebrow: "Lecture complete",
     title: "Tu veux savoir si ton plan construit vraiment du muscle ?",
     body: "Le Discovery Scan identifie les blocages nutrition, recuperation, progression et adherence avant de changer encore de programme.",
-    href: "/audit-complet?plan=gratuit&source=blog_musculation",
+    href: "/offers/discovery-scan?utm_source=blog&utm_medium=article_cta&utm_campaign=musculation_intent",
     cta: "Identifier mon frein",
     offer: "Discovery Scan",
     sideStat: "7 min",
@@ -48,7 +48,7 @@ const CATEGORY_CONVERSION: Record<
     eyebrow: "Cadre avance",
     title: "Avant de toucher aux PEDs, lis ton contexte complet.",
     body: "Le Peptides Engine et les analyses APEXLABS aident a cadrer les decisions avancees avec donnees, prudence et orientation claire.",
-    href: "/offers/peptides-engine?source=blog_sarms",
+    href: "/offers/peptides-engine?utm_source=blog&utm_medium=article_cta&utm_campaign=peptides_intent",
     cta: "Voir Peptides Engine",
     offer: "Peptides Engine",
     sideStat: "74",
@@ -58,7 +58,7 @@ const CATEGORY_CONVERSION: Record<
     eyebrow: "Priorites d'abord",
     title: "Ne rajoute pas un supplement si le vrai frein est ailleurs.",
     body: "Commence par verifier sommeil, stress, digestion, nutrition et entrainement pour savoir ce qui merite vraiment d'etre corrige.",
-    href: "/audit-complet?plan=gratuit&source=blog_supplements",
+    href: "/offers/discovery-scan?utm_source=blog&utm_medium=article_cta&utm_campaign=supplements_intent",
     cta: "Faire le scan gratuit",
     offer: "Discovery Scan",
     sideStat: "8",
@@ -68,7 +68,7 @@ const CATEGORY_CONVERSION: Record<
     eyebrow: "Signal hormonal",
     title: "Energie, libido, recuperation : arrete de deviner.",
     body: "L'Anabolic Bioscan route les signaux hormonaux, le contexte lifestyle et les blocages de performance vers une lecture claire.",
-    href: "/offers/anabolic-bioscan?source=blog_hormones",
+    href: "/offers/anabolic-bioscan?utm_source=blog&utm_medium=article_cta&utm_campaign=hormone_intent",
     cta: "Analyser mon signal",
     offer: "Anabolic Bioscan",
     sideStat: "59€",
@@ -78,7 +78,7 @@ const CATEGORY_CONVERSION: Record<
     eyebrow: "Sommeil & recovery",
     title: "Si ton sommeil bloque, ton physique bloque aussi.",
     body: "Le Discovery Scan met en relation sommeil, stress, energie, faim, digestion et performance pour isoler le levier prioritaire.",
-    href: "/audit-complet?plan=gratuit&source=blog_sommeil",
+    href: "/offers/ultimate-scan?utm_source=blog&utm_medium=article_cta&utm_campaign=recovery_intent",
     cta: "Tester mes signaux",
     offer: "Discovery Scan",
     sideStat: "5 min",
@@ -88,7 +88,7 @@ const CATEGORY_CONVERSION: Record<
     eyebrow: "Stress & HRV",
     title: "Ton systeme nerveux peut etre le frein invisible.",
     body: "APEXLABS relie HRV, sommeil, charge mentale, entrainement et recuperation pour eviter de pousser le mauvais levier.",
-    href: "/audit-complet?plan=gratuit&source=blog_stress",
+    href: "/offers/ultimate-scan?utm_source=blog&utm_medium=article_cta&utm_campaign=stress_intent",
     cta: "Voir ce qui bloque",
     offer: "Discovery Scan",
     sideStat: "HRV",
@@ -98,7 +98,7 @@ const CATEGORY_CONVERSION: Record<
     eyebrow: "Nutrition utile",
     title: "Avant de baisser les calories, identifie le vrai levier.",
     body: "Le scan APEXLABS te montre si le probleme vient de la faim, du timing, de l'adherence, de la recuperation ou du metabolisme.",
-    href: "/offers/ultimate-scan?source=blog_nutrition",
+    href: "/offers/ultimate-scan?utm_source=blog&utm_medium=article_cta&utm_campaign=nutrition_intent",
     cta: "Faire une lecture complete",
     offer: "Ultimate Scan",
     sideStat: "79€",
@@ -108,7 +108,7 @@ const CATEGORY_CONVERSION: Record<
     eyebrow: "Performance",
     title: "Plus d'effort ne suffit pas si la recuperation ne suit pas.",
     body: "Ultimate Scan croise entrainement, sommeil, HRV, nutrition et fatigue pour choisir le bon ajustement.",
-    href: "/offers/ultimate-scan?source=blog_performance",
+    href: "/offers/ultimate-scan?utm_source=blog&utm_medium=article_cta&utm_campaign=performance_intent",
     cta: "Analyser ma performance",
     offer: "Ultimate Scan",
     sideStat: "16",
@@ -118,7 +118,7 @@ const CATEGORY_CONVERSION: Record<
     eyebrow: "Metabolisme",
     title: "Si ton moteur ralentit, il faut le lire avant de couper plus.",
     body: "Ultimate Scan analyse energie, NEAT, faim, glycemie percue, digestion, sommeil et contexte pour prioriser la correction.",
-    href: "/offers/ultimate-scan?source=blog_metabolisme",
+    href: "/offers/ultimate-scan?utm_source=blog&utm_medium=article_cta&utm_campaign=metabolism_intent",
     cta: "Lire mon metabolisme",
     offer: "Ultimate Scan",
     sideStat: "16",
@@ -128,7 +128,7 @@ const CATEGORY_CONVERSION: Record<
     eyebrow: "Biomarqueurs",
     title: "On ne pilote pas la longevite avec des impressions.",
     body: "Blood Analysis transforme tes marqueurs en priorites actionnables pour performance, sante metabolique et prevention.",
-    href: "/offers/blood-analysis?source=blog_longevite",
+    href: "/offers/blood-analysis?utm_source=blog&utm_medium=article_cta&utm_campaign=blood_intent",
     cta: "Analyser mes marqueurs",
     offer: "Blood Analysis",
     sideStat: "99€",
@@ -138,7 +138,7 @@ const CATEGORY_CONVERSION: Record<
     eyebrow: "Data utile",
     title: "Le tracking ne sert a rien sans decision derriere.",
     body: "APEXLABS transforme les signaux wearable, lifestyle et performance en prochaines actions au lieu d'accumuler des chiffres.",
-    href: "/offers/ultimate-scan?source=blog_biohacking",
+    href: "/offers/ultimate-scan?utm_source=blog&utm_medium=article_cta&utm_campaign=recovery_intent",
     cta: "Transformer mes donnees",
     offer: "Ultimate Scan",
     sideStat: "data",
@@ -148,7 +148,7 @@ const CATEGORY_CONVERSION: Record<
     eyebrow: "Physiologie feminine",
     title: "Cycle, energie, sommeil : ton plan doit respecter ton contexte.",
     body: "Le Discovery Scan aide a poser les priorites avant de choisir nutrition, entrainement ou accompagnement.",
-    href: "/audit-complet?plan=gratuit&source=blog_femmes",
+    href: "/offers/discovery-scan?utm_source=blog&utm_medium=article_cta&utm_campaign=femmes_intent",
     cta: "Faire le point",
     offer: "Discovery Scan",
     sideStat: "8",
@@ -156,16 +156,55 @@ const CATEGORY_CONVERSION: Record<
   },
 };
 
-const DEFAULT_CONVERSION = {
+const DEFAULT_CONVERSION: BlogConversion = {
+  intent: "discovery",
   eyebrow: "Diagnostic APEXLABS",
   title: "Tu veux savoir quel levier bloque vraiment ton corps ?",
   body: "Commence par un diagnostic clair avant de changer encore de plan, de calories ou de supplements.",
-  href: "/audit-complet?plan=gratuit&source=blog_article",
+  href: "/offers/discovery-scan?utm_source=blog&utm_medium=article_cta&utm_campaign=general_intent",
   cta: "Faire mon Discovery Scan",
   offer: "Discovery Scan",
   sideStat: "0€",
   sideLabel: "depart",
 };
+
+function getBlogIntentConversion(article: BlogArticle): BlogConversion {
+  const category = article.category || "fitness";
+  const text = `${category} ${article.title} ${article.excerpt}`.toLowerCase();
+
+  if (category === "sarms" || /peptide|sarm|mk-677|rad-140|lgd|ostarine|pct/.test(text)) {
+    return { ...CATEGORY_CONVERSION.sarms, intent: "peptides" };
+  }
+
+  if (category === "hormones" || /testost|hormone|libido|cortisol|thyro|estradiol|igf/.test(text)) {
+    return { ...CATEGORY_CONVERSION.hormones, intent: "anabolic" };
+  }
+
+  if (/bilan sanguin|biomarqueur|glyc|cholest|foie|rein|crp|ferritine|vitamine d|thyro/.test(text)) {
+    return { ...CATEGORY_CONVERSION.longevite, intent: "blood" };
+  }
+
+  if (category === "performance" || /squat|bench|developpe|souleve|mouvement|technique|biomecanique|douleur/.test(text)) {
+    return {
+      intent: "formcheck",
+      eyebrow: "Execution",
+      title: "Si le blocage vient du mouvement, il faut voir l'execution.",
+      body: "FormCheck donne une lecture biomecanique sur video avec les corrections prioritaires a appliquer des la prochaine seance.",
+      href: "/offers/formcheck?utm_source=blog&utm_medium=article_cta&utm_campaign=formcheck_intent",
+      cta: "Faire analyser ma technique",
+      offer: "FormCheck",
+      sideStat: "video",
+      sideLabel: "analyse",
+    };
+  }
+
+  if (["sommeil", "stress", "biohacking"].includes(category) || /hrv|sommeil|stress|recup|fatigue|wearable|oura|whoop/.test(text)) {
+    return { ...CATEGORY_CONVERSION.biohacking, intent: "ultimate" };
+  }
+
+  const categoryConversion = CATEGORY_CONVERSION[category];
+  return categoryConversion ? { ...categoryConversion, intent: category } : DEFAULT_CONVERSION;
+}
 
 export default function BlogArticlePage() {
   const params = useParams<{ slug: string }>();
@@ -341,7 +380,7 @@ export default function BlogArticlePage() {
 
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
   const heroImage = article.image || article.imageUrl || "https://placehold.co/1200x600/0a0a0a/ffffff?text=APEXLABS";
-  const conversion = CATEGORY_CONVERSION[article.category] || DEFAULT_CONVERSION;
+  const conversion = getBlogIntentConversion(article);
   const whatsappMessage = `Salut Achzod, je viens de lire l'article "${article.title}" sur APEXLABS. Je veux ton avis : est-ce que mon cas releve plutot d'un scan, d'une analyse avancee ou d'un coaching ?`;
   const whatsappUrl = buildWhatsAppUrl(whatsappMessage);
 
@@ -428,6 +467,50 @@ export default function BlogArticlePage() {
                 </div>
               </div>
 
+              {/* Early contextual CTA for readers who already recognise their problem. */}
+              <div className="mb-10 rounded-sm border border-[#FCDD00]/30 bg-[#FCDD00]/[0.04] p-5 sm:p-6">
+                <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-[#FCDD00]">
+                  {conversion.eyebrow}
+                </p>
+                <h2 className="mb-3 text-xl font-bold tracking-tight text-white sm:text-2xl">
+                  {conversion.title}
+                </h2>
+                <p className="mb-5 text-sm leading-relaxed text-white/70 sm:text-base">
+                  {conversion.body}
+                </p>
+                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+                  <a
+                    href={conversion.href}
+                    className="inline-flex items-center justify-center gap-2 rounded-sm bg-[#FCDD00] px-5 py-3 text-sm font-bold text-black transition-colors hover:bg-[#fce844]"
+                    onClick={() => trackClick(`blog_cta_intro_${conversion.intent}`, conversion.href)}
+                  >
+                    {conversion.cta}
+                    <ArrowRight className="h-4 w-4" />
+                  </a>
+                  <a
+                    href={whatsappUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 rounded-sm border border-[#25D366]/40 px-5 py-3 text-sm font-semibold text-[#25D366] transition-colors hover:bg-[#25D366]/10"
+                    onClick={() => {
+                      try {
+                        trackWhatsAppClick({
+                          offer: conversion.offer,
+                          placement: "blog_article_intro",
+                          tier: conversion.intent,
+                          destination: whatsappUrl,
+                        });
+                      } catch {
+                        // Analytics must never block WhatsApp access.
+                      }
+                    }}
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    Demander l'avis d'Achzod
+                  </a>
+                </div>
+              </div>
+
               {/* Content */}
               <div className="prose prose-lg dark:prose-invert max-w-none">
                 <ReactMarkdown
@@ -479,13 +562,13 @@ export default function BlogArticlePage() {
               {/* End-of-article CTA ,  converts SEO readers into Discovery leads */}
               <div className="mt-10 rounded-sm border border-[#FCDD00]/40 bg-gradient-to-br from-[#FCDD00]/5 to-transparent p-6 sm:p-8">
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FCDD00] mb-2">
-                  Va plus loin avec Achzod
+                  {conversion.eyebrow}
                 </p>
                 <h3 className="text-xl sm:text-2xl font-bold text-white mb-3 tracking-tight">
-                  Tu veux savoir quoi faire avec ton cas précis ?
+                  {conversion.title}
                 </h3>
                 <p className="text-sm sm:text-base text-white/70 leading-relaxed mb-5">
-                  Si tu te reconnais dans cet article, ne repars pas avec une idée de plus à tester au hasard. Envoie ton contexte à Achzod sur WhatsApp ou commence par un scan APEXLABS pour identifier le levier prioritaire.
+                  {conversion.body}
                 </p>
                 <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3">
                   <a
@@ -510,14 +593,12 @@ export default function BlogArticlePage() {
                     Demander l'avis d'Achzod
                   </a>
                   <a
-                    href="/audit-complet?plan=gratuit"
+                    href={conversion.href}
                     className="inline-flex items-center justify-center gap-2 bg-[#FCDD00] text-black px-5 py-3 rounded-sm font-bold text-sm hover:bg-[#fce844] transition-colors"
+                    onClick={() => trackClick(`blog_cta_end_${conversion.intent}`, conversion.href)}
                   >
-                    Faire mon Discovery Scan (gratuit)
+                    {conversion.cta}
                   </a>
-                  <span className="text-xs text-white/40 sm:w-full">
-                    Sans carte bancaire · Résultats immédiats
-                  </span>
                 </div>
               </div>
 
@@ -623,6 +704,7 @@ export default function BlogArticlePage() {
                     <a
                       href={conversion.href}
                       className="inline-flex items-center gap-3 px-8 py-4 bg-amber-500 text-black text-xs font-black uppercase tracking-[0.2em] hover:bg-amber-400 transition-all rounded-sm shadow-[0_0_20px_rgba(245,158,11,0.2)]"
+                      onClick={() => trackClick(`blog_cta_category_${conversion.intent}`, conversion.href)}
                     >
                       {conversion.cta}
                       <ArrowRight className="h-4 w-4" />
@@ -637,7 +719,7 @@ export default function BlogArticlePage() {
                           trackWhatsAppClick({
                             offer: conversion.offer,
                             placement: "blog_category_cta",
-                            tier: article.category,
+                            tier: conversion.intent,
                             destination: whatsappUrl,
                           });
                         } catch {
