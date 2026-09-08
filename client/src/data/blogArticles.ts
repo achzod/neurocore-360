@@ -31862,24 +31862,104 @@ const ALL_ARTICLES: BlogArticle[] = [
   ...YAMAMOTO_ARTICLES
 ];
 
+const ANABOLIC_CODE_PROMO_RE =
+  /\n---\s*\n\[!\[Anabolic Code\]\([^)]+\)\]\([^)]+\)\s*\n\s*\*\*(?:Découvre|Decouvre|Decouvrez|REJOINDRE L[’']ÉLITE)[\s\S]*?(?=\n---`?$|$)/gi;
+const ANABOLIC_PRODUCT_PROMO_RE =
+  /\n---\s*\n\[!\[Anabolic Code\]\([^)]+\)\]\(https:\/\/www\.achzodcoaching\.com\/product\/anabolic-code[^)]*\)[\s\S]*?Accéder à l[’']Anabolic Code[\s\S]*?\n---/gi;
+
+const BLOG_CATEGORY_OVERRIDES: Record<string, string> = {
+  "erreurs-courantes-liees-aux-supplements": "supplements",
+  "calendrier-des-nutriments": "nutrition",
+  "memoire-musculaire": "musculation",
+  "genetique-et-athletes-delite": "performance",
+  "entrainement-a-jeun": "nutrition",
+  "le-livre-de-regles-du-partenaire-de-formation": "musculation",
+  "entrainement-des-types-de-fibres-musculaires": "musculation",
+  "soyez-excite": "musculation",
+  "mesaventures-de-musculation": "musculation",
+  "quest-ce-qui-cause-la-croissance": "musculation",
+  "la-connexion-esprit-muscle": "musculation",
+  "les-squats-sont-ils-mauvais-pour-vos-genoux": "musculation",
+  "biomecanique-et-croissance": "musculation",
+  "variation-dexercice": "musculation",
+  "differences-entre-les-sexes-dans-la-formation": "femmes",
+  "sentrainer-jusqua-lechec": "musculation",
+  "quantification-de-la-tension-mecanique": "musculation",
+  "musculation-vs-dynamophilie": "musculation",
+  "ecrire-votre-propre-programme-partie-3": "musculation",
+  "excentriques-et-croissance": "musculation",
+  "nutrition-post-entrainement": "nutrition",
+  "potentiel-genetique": "musculation",
+  "formation-a-la-maison": "musculation",
+  "entrainement-pendant-la-maladie": "musculation",
+  "la-salle-daudience-des-gains": "musculation",
+  "alcool-et-gains": "nutrition",
+  "le-pouvoir-de-la-musculation": "musculation",
+  "calories-et-bilan-energetique": "nutrition",
+  "cyclisme-des-glucides": "nutrition",
+  "fatigue-du-snc": "performance",
+  "tout-sur-la-creatine": "supplements",
+  "tout-sur-la-cafeine": "supplements",
+  "frequence-de-formation": "musculation",
+  "dechargements": "musculation",
+  "la-boite-a-lunch": "nutrition",
+  "recomposition-corporelle": "nutrition",
+  "ecrire-votre-propre-programme-partie-2": "musculation",
+  "inconvenient-nutritionnel": "nutrition",
+  "mode-bete": "musculation",
+  "etirement-et-performance": "performance",
+  "periodisation-en-musculation": "musculation",
+  "entrainement-thoracique-101": "musculation",
+  "ce-que-je-ferais-differemment": "musculation",
+  "une-histoire-de-trois-bodybuilders": "musculation",
+  "ecrire-votre-propre-programme-partie-4": "musculation",
+  "un-secret-de-motivation": "performance",
+};
+
+const PEDS_INTENT_RE = /peptide|peptides|sarm|sarms|hgh|igf|anabolic code|anabolique|stéroïde|steroide|testostérone|testosterone/i;
+
+function normalizeArticleForTraffic(article: BlogArticle): BlogArticle {
+  const category = BLOG_CATEGORY_OVERRIDES[article.slug] || article.category;
+  const haystack = `${article.slug} ${article.title} ${article.excerpt} ${category}`;
+  const shouldKeepAnabolicPromo = PEDS_INTENT_RE.test(haystack);
+  const content = shouldKeepAnabolicPromo
+    ? article.content
+    : article.content
+        .replace(ANABOLIC_PRODUCT_PROMO_RE, "\n---")
+        .replace(ANABOLIC_CODE_PROMO_RE, "\n---")
+        .replace(/\n---\s*\n---/g, "\n---");
+
+  if (category === article.category && content === article.content) {
+    return article;
+  }
+
+  return {
+    ...article,
+    category,
+    content,
+  };
+}
+
 export function getArticleBySlug(slug: string): BlogArticle | undefined {
-  return ALL_ARTICLES.find((article) => article.slug === slug);
+  return getAllArticles().find((article) => article.slug === slug);
 }
 
 export function getArticlesByCategory(category: string): BlogArticle[] {
-  if (category === "all") return ALL_ARTICLES;
-  return ALL_ARTICLES.filter((article) => article.category === category);
+  const articles = getAllArticles();
+  if (category === "all") return articles;
+  return articles.filter((article) => article.category === category);
 }
 
 export function getFeaturedArticles(): BlogArticle[] {
-  return ALL_ARTICLES.filter((article) => article.featured);
+  return getAllArticles().filter((article) => article.featured);
 }
 
 export function getAllArticles(): BlogArticle[] {
-  return ALL_ARTICLES;
+  return ALL_ARTICLES.map(normalizeArticleForTraffic);
 }
 
 export function getArticleCountByCategory(categoryId: string): number {
-  if (categoryId === "all") return ALL_ARTICLES.length;
-  return ALL_ARTICLES.filter((article) => article.category === categoryId).length;
+  const articles = getAllArticles();
+  if (categoryId === "all") return articles.length;
+  return articles.filter((article) => article.category === categoryId).length;
 }
