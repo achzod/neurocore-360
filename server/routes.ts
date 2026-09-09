@@ -11168,9 +11168,12 @@ export async function registerRoutes(
 
   app.post("/api/stripe/webhook", async (req, res) => {
     const sig = req.headers["stripe-signature"];
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    const webhookSecrets = [
+      process.env.STRIPE_WEBHOOK_SECRET,
+      process.env.STRIPE_WEBHOOK_SECRET_FR,
+    ].filter((value, index, arr): value is string => Boolean(value) && arr.indexOf(value) === index);
 
-    if (!webhookSecret || !sig) {
+    if (!webhookSecrets.length || !sig) {
       res.status(400).json({ error: "Missing webhook configuration" });
       return;
     }
@@ -11178,7 +11181,16 @@ export async function registerRoutes(
     let event: any;
     try {
       const stripe = await getUncachableStripeClient();
-      event = stripe.webhooks.constructEvent(req.rawBody as string | Buffer, sig as string, webhookSecret);
+      let lastError: any;
+      for (const webhookSecret of webhookSecrets) {
+        try {
+          event = stripe.webhooks.constructEvent(req.rawBody as string | Buffer, sig as string, webhookSecret);
+          break;
+        } catch (err) {
+          lastError = err;
+        }
+      }
+      if (!event) throw lastError;
     } catch (err: any) {
       console.error("[Webhook] Signature verification failed:", err.message);
       res.status(400).json({ error: "Invalid signature" });
