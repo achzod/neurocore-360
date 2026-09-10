@@ -143,18 +143,23 @@ export async function registerRoutes(
     return `http://localhost:${process.env.PORT || 5000}`;
   }
 
-  function getSendPulseCredentials(): { userId: string; secret: string; missing: string[] } {
+  function getSendPulseCredentials(): { apiKey: string; userId: string; secret: string; missing: string[] } {
+    const apiKey = process.env.SENDPULSE_API_KEY || "";
     const userId = process.env.SENDPULSE_USER_ID || process.env.SENDPULSE_API_USER_ID || process.env.SENDPULSE_ID || "";
     const secret = process.env.SENDPULSE_SECRET || process.env.SENDPULSE_API_SECRET || "";
-    const missing = [
+    const missing = apiKey ? [] : [
       ...(!userId ? ["SENDPULSE_USER_ID or SENDPULSE_API_USER_ID"] : []),
       ...(!secret ? ["SENDPULSE_SECRET or SENDPULSE_API_SECRET"] : []),
     ];
-    return { userId, secret, missing };
+    return { apiKey, userId, secret, missing };
   }
 
   async function getSendPulseAdminToken(): Promise<string> {
-    const { userId, secret, missing } = getSendPulseCredentials();
+    const { apiKey, userId, secret, missing } = getSendPulseCredentials();
+    if (apiKey) {
+      return apiKey;
+    }
+
     if (missing.length) {
       throw new Error(`SendPulse credentials not configured: ${missing.join(", ")}`);
     }

@@ -7,6 +7,7 @@ const SENDPULSE_USER_ID =
   process.env.SENDPULSE_USER_ID || process.env.SENDPULSE_API_USER_ID || "";
 const SENDPULSE_SECRET =
   process.env.SENDPULSE_SECRET || process.env.SENDPULSE_API_SECRET || "";
+const SENDPULSE_API_KEY = process.env.SENDPULSE_API_KEY || "";
 const BREVO_API_KEY = process.env.BREVO_API_KEY || "";
 const SMTP_HOST = process.env.SMTP_HOST || "";
 const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
@@ -128,9 +129,13 @@ let accessToken: string | null = null;
 let tokenExpiry: number = 0;
 
 export async function getAccessToken(): Promise<string> {
+  if (SENDPULSE_API_KEY) {
+    return SENDPULSE_API_KEY;
+  }
+
   if (!SENDPULSE_USER_ID || !SENDPULSE_SECRET) {
     console.error(
-      "[SendPulse] MISSING CREDENTIALS - configure SENDPULSE_USER_ID/SENDPULSE_SECRET or SENDPULSE_API_USER_ID/SENDPULSE_API_SECRET",
+      "[SendPulse] MISSING CREDENTIALS - configure SENDPULSE_API_KEY or SENDPULSE_USER_ID/SENDPULSE_SECRET",
     );
     throw new Error("SendPulse credentials not configured");
   }
