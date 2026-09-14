@@ -14293,6 +14293,51 @@ export async function registerRoutes(
 
   const peptidesLimiter = createRateLimiter({ windowMs: 60_000, max: 10 });
 
+  // Free pre-conversion preview. This deliberately stays deterministic: it
+  // reveals the likely molecule count, rationale and a live Peptaura starter
+  // estimate, while dosages, schedules and reconstitution remain paid output.
+  app.post("/api/peptides-preview/analyze", createRateLimiter({ windowMs: 60_000, max: 5 }), async (req, res) => {
+    try {
+      const {
+        peptidesPreviewInputSchema,
+        buildPeptidesPreview,
+        getLivePeptauraPreviewCatalog,
+      } = await import("./peptidesPreview");
+      const input = peptidesPreviewInputSchema.parse(req.body);
+      const liveCatalog = await getLivePeptauraPreviewCatalog(input.country);
+      const result = buildPeptidesPreview(input, liveCatalog.snapshots, liveCatalog.checkedAt, liveCatalog.shippingVendors);
+      const capturedAt = new Date().toISOString();
+      const progress = await storage.saveBurnoutProgress({
+        email: `peptides-preview::${input.email}`,
+        currentSection: 5,
+        totalSections: 5,
+        responses: {
+          ...input,
+          previewResult: result,
+          previewStatus: "completed",
+          capturedAt,
+          followUpEligibleAt: new Date(Date.now() + 12 * 60 * 60_000).toISOString(),
+        },
+      });
+      const checkoutUrl = result.nextStep === "blood_analysis"
+        ? "/offers/blood-analysis?utm_source=peptides_preview&utm_medium=result&utm_campaign=pre_peptides_engine"
+        : result.nextStep === "peptides_engine"
+          ? "/peptides-engine?tier=solo&utm_source=peptides_preview&utm_medium=result&utm_campaign=pre_peptides_engine"
+          : "/offers/peptides-engine?utm_source=peptides_preview&utm_medium=result&utm_campaign=pre_peptides_engine#offres";
+      res.json({ success: true, leadId: progress.id, result, checkoutUrl });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Données invalides", details: error.errors });
+        return;
+      }
+      console.error("[PeptidesPreview] analysis unavailable", error instanceof Error ? error.message : "unknown_error");
+      res.status(503).json({
+        error: "catalog_unavailable",
+        message: "Le catalogue partenaire ne peut pas être vérifié maintenant. Réessaie dans quelques minutes.",
+      });
+    }
+  });
+
   // 1. Save questionnaire progress
   app.post("/api/peptides-engine/save-progress", peptidesLimiter, async (req, res) => {
     try {

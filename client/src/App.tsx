@@ -61,6 +61,7 @@ const BloodAnalysisStart = lazy(() => import("@/pages/BloodAnalysisStart"));
 const BloodAnalysisLegacyRedirect = lazy(() => import("@/pages/BloodAnalysisLegacyRedirect"));
 const PeptidesEngineOffer = lazy(() => import("@/pages/offers/PeptidesEngineOffer"));
 const PeptidesEnginePage = lazy(() => import("@/pages/PeptidesEnginePage"));
+const PeptidesPreviewPage = lazy(() => import("@/pages/PeptidesPreviewPage"));
 const PeptidesEngineReport = lazy(() => import("@/pages/PeptidesEngineReport"));
 const Blog = lazy(() => import("@/pages/Blog"));
 const BlogArticle = lazy(() => import("@/pages/BlogArticle"));
@@ -93,6 +94,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/offers/formcheck": "FormCheck ,  Analyse Video | APEXLABS",
   "/offers/peptides-engine": "Peptides Engine ,  Protocole Personnalise | APEXLABS",
   "/peptides-engine": "Questionnaire Peptides | APEXLABS",
+  "/peptides-preview": "Aperçu Peptides Personnalisé | APEXLABS",
   "/questionnaire": "Questionnaire | APEXLABS",
   "/audit-complet/questionnaire": "Questionnaire | APEXLABS",
   "/audit-complet/checkout": "Checkout | APEXLABS",
@@ -151,6 +153,12 @@ function ScrollToTop() {
   return null;
 }
 
+function ConditionalWhatsAppConversionHub() {
+  const [location] = useLocation();
+  if (location === "/peptides-preview" || location === "/offers/peptides-engine") return null;
+  return <WhatsAppConversionHub />;
+}
+
 function Router() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-black text-white flex items-center justify-center">Chargement...</div>}>
@@ -173,6 +181,7 @@ function Router() {
         <Route path="/offers/ultimate-scan" component={ProPanel} />
         <Route path="/offers/formcheck" component={FormCheck} />
         <Route path="/offers/peptides-engine" component={PeptidesEngineOffer} />
+        <Route path="/peptides-preview" component={PeptidesPreviewPage} />
         <Route path="/peptides-engine" component={PeptidesEnginePage} />
         <Route path="/peptides/:id" component={PeptidesEngineReport} />
 
@@ -229,7 +238,7 @@ function App() {
             <ScrollToTop />
             <Toaster />
             <Router />
-            <WhatsAppConversionHub />
+            <ConditionalWhatsAppConversionHub />
             <CookieConsent />
           </TooltipProvider>
         </ThemeProvider>

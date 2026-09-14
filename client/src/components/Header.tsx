@@ -56,7 +56,7 @@ export function Header() {
           </Link>
 
           {/* Desktop Navigation - Inter Bold, uppercase, gray */}
-          <nav className="hidden flex-1 items-center gap-3 min-[1360px]:flex 2xl:gap-6" aria-label="Navigation principale">
+          <nav className="hidden flex-1 items-center gap-3 2xl:flex 2xl:gap-6" aria-label="Navigation principale">
             {PRODUCTS.map((product) => (
               <Link
                 key={product.name}
@@ -152,7 +152,7 @@ export function Header() {
 
             {/* Mobile menu toggle */}
             <button
-              className="p-2 text-[#9CA3AF] transition-colors hover:text-white min-[1360px]:hidden"
+              className="p-2 text-[#9CA3AF] transition-colors hover:text-white 2xl:hidden"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label={mobileMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
               aria-expanded={mobileMenuOpen}
@@ -165,7 +165,7 @@ export function Header() {
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <nav className="border-t border-[#333333] bg-[#000000] py-4 min-[1360px]:hidden" aria-label="Navigation mobile">
+          <nav className="border-t border-[#333333] bg-[#000000] py-4 2xl:hidden" aria-label="Navigation mobile">
             <div className="flex flex-col gap-1">
               {PRODUCTS.map((product) => (
                 <Link

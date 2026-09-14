@@ -48,7 +48,7 @@ const CATEGORY_CONVERSION: Record<string, Omit<BlogConversion, "intent">> = {
     eyebrow: "Cadre avance",
     title: "Avant de toucher aux PEDs, lis ton contexte complet.",
     body: "Le Peptides Engine et les analyses APEXLABS aident a cadrer les decisions avancees avec donnees, prudence et orientation claire.",
-    href: "/offers/peptides-engine?utm_source=blog&utm_medium=article_cta&utm_campaign=peptides_intent",
+    href: "/peptides-preview?utm_source=blog&utm_medium=article_cta&utm_campaign=pre_peptides_engine",
     cta: "Voir Peptides Engine",
     offer: "Peptides Engine",
     sideStat: "74",
