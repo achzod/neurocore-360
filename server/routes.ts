@@ -30,8 +30,6 @@ import {
   sendPeptidesReviewS12Email,
   sendPeptidesCycle2ReorderEmail,
   sendPeptidesOrderConfirmationEmail,
-  sendPeptidesPreviewAdminNotification,
-  sendPeptidesPreviewResultEmail,
   sendDiscoveryJ30NurtureEmail,
   sendReactivationCampaignEmail,
   sendFinishDiscoveryEmail,
@@ -43,6 +41,7 @@ import {
   type RecoveryCtaCohort,
   type CoachingFormulaLeadInput,
 } from "./emailService";
+import { kickPeptidesPreviewDeliveryQueue, startPeptidesPreviewDeliveryWorker } from "./peptidesPreviewDeliveryQueue";
 import { generateExportHTML, generateExportPDF } from "./exportService";
 import { generateAndConvertAuditWithOpenAI } from "./openaiPremiumEngine";
 import { formatTxtToDashboard, formatSectionToHTML, getSectionsByCategory } from "./formatDashboard";
@@ -14293,6 +14292,7 @@ export async function registerRoutes(
 
   // ==================== PEPTIDES ENGINE ROUTES ====================
 
+  startPeptidesPreviewDeliveryWorker();
   const peptidesLimiter = createRateLimiter({ windowMs: 60_000, max: 10 });
 
   // Free pre-conversion preview. This deliberately stays deterministic: it
@@ -14341,16 +14341,30 @@ export async function registerRoutes(
             notificationFingerprint,
             notificationStatus: "pending",
           }];
+      const queuedNotifications = isRecentDuplicate ? previousNotifications : {
+        fingerprint: notificationFingerprint,
+        submissionId,
+        queuedAt: capturedAt,
+        attemptedAt: null,
+        clientEmailSent: false,
+        adminEmailSent: false,
+        backgroundAttempts: 0,
+        deliveryState: "queued",
+        nextRetryAt: null,
+        deduplicated: false,
+      };
       const progress = await storage.saveBurnoutProgress({
         email: storageEmail,
         currentSection: 5,
         totalSections: 5,
         responses: {
           ...input,
+          previewInput: input,
           previewResult: result,
           previewStatus: "completed",
           capturedAt,
           followUpEligibleAt: new Date(Date.now() + 12 * 60 * 60_000).toISOString(),
+          previewNotifications: queuedNotifications,
           previewHistory: pendingHistory,
         },
       });
@@ -14359,55 +14373,17 @@ export async function registerRoutes(
         : result.nextStep === "peptides_engine"
           ? "/peptides-engine?tier=solo&utm_source=peptides_preview&utm_medium=result&utm_campaign=pre_peptides_engine"
           : "/offers/peptides-engine?utm_source=peptides_preview&utm_medium=result&utm_campaign=pre_peptides_engine#offres";
-      const attemptDelivery = async (label: string, operation: () => Promise<boolean>) => {
-        for (let attempt = 1; attempt <= 2; attempt += 1) {
-          try {
-            if (await operation()) return { sent: true, attempts: attempt };
-          } catch (error) {
-            console.error(`[PeptidesPreview] ${label} attempt ${attempt} failed`, error instanceof Error ? error.message : "unknown_error");
-          }
-          if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 300));
-        }
-        return { sent: false, attempts: 2 };
-      };
-      const clientDelivery = isRecentDuplicate && previousNotifications?.clientEmailSent === true
-        ? { sent: true, attempts: 0 }
-        : await attemptDelivery("client email", () => sendPeptidesPreviewResultEmail(input, result, checkoutUrl, progress.id));
-      const adminDelivery = isRecentDuplicate && previousNotifications?.adminEmailSent === true
-        ? { sent: true, attempts: 0 }
-        : await attemptDelivery("admin notification", () => sendPeptidesPreviewAdminNotification(input, result, progress.id, clientDelivery.sent));
-      const clientEmailSent = clientDelivery.sent;
-      const adminEmailSent = adminDelivery.sent;
-      await storage.saveBurnoutProgress({
-        email: storageEmail,
-        currentSection: 5,
-        totalSections: 5,
-        responses: {
-          ...input,
-          previewResult: result,
-          previewStatus: "completed",
-          capturedAt,
-          followUpEligibleAt: new Date(Date.now() + 12 * 60 * 60_000).toISOString(),
-          previewNotifications: {
-            fingerprint: notificationFingerprint,
-            attemptedAt: new Date().toISOString(),
-            clientEmailSent,
-            adminEmailSent,
-            clientAttempts: clientDelivery.attempts,
-            adminAttempts: adminDelivery.attempts,
-            deduplicated: isRecentDuplicate,
-          },
-          previewHistory: pendingHistory.map((entry: Record<string, any>) => entry.submissionId === submissionId ? {
-            ...entry,
-            notificationStatus: clientEmailSent && adminEmailSent ? "sent" : "partial_failure",
-            clientEmailSent,
-            adminEmailSent,
-            clientAttempts: clientDelivery.attempts,
-            adminAttempts: adminDelivery.attempts,
-          } : entry),
-        },
+      kickPeptidesPreviewDeliveryQueue();
+      const resultEmailSent = queuedNotifications?.clientEmailSent === true;
+      res.json({
+        success: true,
+        leadId: progress.id,
+        submissionId,
+        result,
+        checkoutUrl,
+        resultEmailSent,
+        resultEmailQueued: !resultEmailSent,
       });
-      res.json({ success: true, leadId: progress.id, submissionId, result, checkoutUrl, resultEmailSent: clientEmailSent });
     } catch (error) {
       if (error instanceof z.ZodError) {
         res.status(400).json({ error: "Données invalides", details: error.errors });

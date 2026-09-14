@@ -5,6 +5,7 @@ import fs from "node:fs";
 const routesSource = fs.readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
 const emailSource = fs.readFileSync(new URL("./emailService.ts", import.meta.url), "utf8");
 const previewSource = fs.readFileSync(new URL("./peptidesPreview.ts", import.meta.url), "utf8");
+const queueSource = fs.readFileSync(new URL("./peptidesPreviewDeliveryQueue.ts", import.meta.url), "utf8");
 
 const routeStart = routesSource.indexOf('app.post("/api/peptides-preview/analyze"');
 const routeEnd = routesSource.indexOf('app.post("/api/peptides-engine/save-progress"', routeStart);
@@ -17,16 +18,17 @@ test("completed previews persist inputs, result, attribution and delivery state"
   assert.match(previewRoute, /previewNotifications/);
   assert.match(previewRoute, /clientEmailSent/);
   assert.match(previewRoute, /adminEmailSent/);
-  assert.match(previewRoute, /clientAttempts/);
-  assert.match(previewRoute, /adminAttempts/);
+  assert.match(previewRoute, /backgroundAttempts/);
   assert.match(previewRoute, /notificationFingerprint/);
   assert.match(previewRoute, /previewHistory/);
   assert.match(previewRoute, /submissionId/);
 });
 
-test("every completed preview attempts the client result and admin notification", () => {
-  assert.match(previewRoute, /sendPeptidesPreviewResultEmail\(input, result, checkoutUrl, progress\.id\)/);
-  assert.match(previewRoute, /sendPeptidesPreviewAdminNotification\(input, result, progress\.id, clientDelivery\.sent\)/);
+test("every completed preview queues the client result and admin notification", () => {
+  assert.match(previewRoute, /kickPeptidesPreviewDeliveryQueue\(\)/);
+  assert.match(previewRoute, /resultEmailQueued/);
+  assert.match(queueSource, /sendPeptidesPreviewResultEmail/);
+  assert.match(queueSource, /sendPeptidesPreviewAdminNotification/);
   assert.match(emailSource, /export async function sendPeptidesPreviewResultEmail/);
   assert.match(emailSource, /export async function sendPeptidesPreviewAdminNotification/);
   assert.equal((emailSource.match(/html: encodeBase64\(html\)/g) || []).length >= 2, true);
@@ -35,14 +37,17 @@ test("every completed preview attempts the client result and admin notification"
 
 test("rapid duplicate submissions do not resend successful messages", () => {
   assert.match(previewRoute, /15 \* 60_000/);
-  assert.match(previewRoute, /isRecentDuplicate && previousNotifications\?\.clientEmailSent === true/);
-  assert.match(previewRoute, /isRecentDuplicate && previousNotifications\?\.adminEmailSent === true/);
+  assert.match(previewRoute, /isRecentDuplicate \? previousNotifications/);
+  assert.match(queueSource, /if \(!clientEmailSent\)/);
+  assert.match(queueSource, /if \(!adminEmailSent\)/);
 });
 
-test("explicit delivery failures receive one bounded retry", () => {
-  assert.match(previewRoute, /attempt <= 2/);
-  assert.match(previewRoute, /setTimeout\(resolve, 300\)/);
-  assert.match(previewRoute, /return \{ sent: false, attempts: 2 \}/);
+test("delivery uses a persistent bounded retry queue", () => {
+  assert.match(queueSource, /MAX_ATTEMPTS = 3/);
+  assert.match(queueSource, /retry_scheduled/);
+  assert.match(queueSource, /pg_try_advisory_lock/);
+  assert.match(queueSource, /UPDATE burnout_progress/);
+  assert.match(queueSource, /setInterval/);
 });
 
 test("the free preview has no paid AI model call", () => {
