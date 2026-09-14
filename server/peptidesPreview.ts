@@ -281,7 +281,24 @@ export function buildPeptidesPreview(
   }).filter((item): item is PeptidesPreviewMolecule => item !== null);
 
   if (selected.length !== desiredCandidates.length) {
-    throw new Error("PEPTAURA_PREVIEW_INCOMPLETE_OPERATIONAL_PLAN");
+    return {
+      status: "review_required",
+      moleculeCount: 0,
+      molecules: [],
+      estimatedStarterCostUsd: null,
+      estimatedProtocolCostUsd: null,
+      totalVialsRequired: null,
+      totalVialsPurchased: null,
+      totalPackages: null,
+      priceCheckedAt: checkedAt,
+      durationLabel: "À confirmer selon les formats livrables dans ton pays",
+      budgetFit: "unknown",
+      headline: "Je ne t'affiche pas un prix incomplet.",
+      rationale: "Au moins un format nécessaire au stack n'est pas achetable et livrable dans ton pays au moment du calcul. Plutôt que de masquer une molécule ou de sous-estimer le total, ton profil passe en revue personnalisée.",
+      budgetExplanation: "Aucun total n'est annoncé tant que toutes les boîtes du protocole ne sont pas disponibles pour ta destination.",
+      blockers: ["catalogue_incomplet_pour_pays"],
+      nextStep: "manual_review",
+    };
   }
 
   const starterCostCents = selected.reduce((sum, item) => sum + Math.round(item.startingPackagePriceUsd * 100), 0);

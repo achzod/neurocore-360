@@ -88,9 +88,14 @@ test("a secondary testosterone goal is also blocked without recent bloodwork", (
   assert.equal(result.nextStep, "blood_analysis");
 });
 
-test("preview fails closed when one required live product is unavailable", () => {
+test("preview explains the review path instead of exposing a partial price when one product is unavailable", () => {
   const input = peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "recovery" });
-  assert.throws(() => buildPeptidesPreview(input, [snapshot("BPC-157", 15)]), /INCOMPLETE_OPERATIONAL_PLAN/);
+  const result = buildPeptidesPreview(input, [snapshot("BPC-157", 15)]);
+  assert.equal(result.status, "review_required");
+  assert.equal(result.estimatedProtocolCostUsd, null);
+  assert.deepEqual(result.molecules, []);
+  assert.ok(result.blockers.includes("catalogue_incomplet_pour_pays"));
+  assert.match(result.headline, /prix incomplet/);
 });
 
 test("none cannot be combined with a medical condition", () => {
