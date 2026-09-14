@@ -1062,7 +1062,7 @@ function ReviewsSection() {
 
   // Load real approved reviews from API
   useEffect(() => {
-    fetch('/api/reviews/approved')
+    fetch('/api/reviews')
       .then(res => res.json())
       .then(data => {
         if (data.success && data.reviews) {
