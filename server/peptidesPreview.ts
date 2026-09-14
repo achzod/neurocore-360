@@ -5,7 +5,7 @@ import {
   type PeptauraFeedListing,
   type PeptauraFeedProductSnapshot,
 } from "./peptauraProductFeed";
-import { effectivePackagePrice } from "./peptidesPurchasePlan";
+import { selectBestPurchasePlan } from "./peptidesPurchasePlan";
 
 const goalValues = [
   "recovery",
@@ -72,6 +72,14 @@ export interface PeptidesPreviewMolecule {
   reason: string;
   startingFormat: string;
   startingPackagePriceUsd: number;
+  cycleDurationLabel: string;
+  calculationBasis: string;
+  totalRequiredMg: number;
+  vialStrengthMg: number;
+  vialsRequired: number;
+  vialsPurchased: number;
+  packageCount: number;
+  estimatedTotalPriceUsd: number;
 }
 
 export interface PeptidesPreviewResult {
@@ -79,6 +87,10 @@ export interface PeptidesPreviewResult {
   moleculeCount: number;
   molecules: PeptidesPreviewMolecule[];
   estimatedStarterCostUsd: number | null;
+  estimatedProtocolCostUsd: number | null;
+  totalVialsRequired: number | null;
+  totalVialsPurchased: number | null;
+  totalPackages: number | null;
   priceCheckedAt: string;
   durationLabel: string;
   budgetFit: "within" | "above" | "unknown";
@@ -95,39 +107,45 @@ type Candidate = {
   aliases?: string[];
   role: string;
   reason: (input: PeptidesPreviewInput) => string;
+  planning: {
+    durationLabel: string;
+    calculationBasis: string;
+    totalNeedMg: number;
+    maxOverstockRatio?: number;
+  };
 };
 
 const candidatesByGoal: Record<Goal, Candidate[]> = {
   recovery: [
-    { name: "BPC-157", role: "Récupération tissulaire ciblée", reason: () => "Ton objectif principal concerne la récupération : cet axe est retenu pour construire la partie locale du protocole." },
-    { name: "TB-500", aliases: ["TB500"], role: "Récupération systémique et mobilité tissulaire", reason: () => "Il complète l'axe local lorsque la récupération doit couvrir plusieurs tissus ou une charge d'entraînement élevée." },
+    { name: "BPC-157", role: "Récupération tissulaire ciblée", reason: () => "Ton objectif principal concerne la récupération : cet axe est retenu pour construire la partie locale du protocole.", planning: { durationLabel: "8 semaines", calculationBasis: "250 mcg deux fois par jour × 56 jours = 28 mg", totalNeedMg: 28 } },
+    { name: "TB-500", aliases: ["TB500"], role: "Récupération systémique et mobilité tissulaire", reason: () => "Il complète l'axe local lorsque la récupération doit couvrir plusieurs tissus ou une charge d'entraînement élevée.", planning: { durationLabel: "4 semaines d'induction", calculationBasis: "2,5 mg deux fois par semaine × 4 semaines = 20 mg", totalNeedMg: 20 } },
   ],
   "gh-antiaging": [
-    { name: "CJC-1295 (no DAC)", aliases: ["CJC-1295 sans DAC", "CJC1295 no DAC"], role: "Signal pulsatile de l'axe GH", reason: () => "Ton objectif vise l'axe GH : la version sans DAC permet au rapport complet de préserver une logique pulsatile plutôt qu'une exposition continue." },
-    { name: "Ipamorelin", role: "Sécrétagogue complémentaire", reason: () => "Il complète le signal GHRH sans ajouter automatiquement un stack plus lourd que nécessaire." },
+    { name: "CJC-1295 (no DAC)", aliases: ["CJC-1295 sans DAC", "CJC1295 no DAC"], role: "Signal pulsatile de l'axe GH", reason: () => "Ton objectif vise l'axe GH : la version sans DAC permet au rapport complet de préserver une logique pulsatile plutôt qu'une exposition continue.", planning: { durationLabel: "8 semaines", calculationBasis: "100 mcg, 5 fois/semaine × 8 semaines = 4 mg", totalNeedMg: 4 } },
+    { name: "Ipamorelin", role: "Sécrétagogue complémentaire", reason: () => "Il complète le signal GHRH sans ajouter automatiquement un stack plus lourd que nécessaire.", planning: { durationLabel: "8 semaines", calculationBasis: "100 mcg, 5 fois/semaine × 8 semaines = 4 mg", totalNeedMg: 4 } },
   ],
   fatloss: [
-    { name: "Retatrutide", aliases: ["Tirzepatide", "Semaglutide"], role: "Contrôle de l'appétit et axe métabolique", reason: (input) => `Ton objectif prioritaire est la perte de graisse et ton poids déclaré est ${input.weightKg} kg : le rapport complet devra calibrer progressivement l'axe métabolique au lieu d'empiler plusieurs molécules.` },
+    { name: "Semaglutide", role: "Contrôle de l'appétit et axe métabolique", reason: (input) => `Ton objectif prioritaire est la perte de graisse et ton poids déclaré est ${input.weightKg} kg : la base de chiffrage utilise une titration progressive plutôt qu'un dosage maximal artificiel.`, planning: { durationLabel: "12 semaines", calculationBasis: "0,25 mg/sem × 4 + 0,5 mg/sem × 4 + 1 mg/sem × 4 = 7 mg", totalNeedMg: 7, maxOverstockRatio: 1.5 } },
   ],
   sleep: [
-    { name: "DSIP", role: "Architecture et qualité du sommeil", reason: () => "Le sommeil est ton axe principal : l'algorithme privilégie un seul levier ciblé avant d'ajouter des molécules de récupération indirectes." },
+    { name: "DSIP", role: "Architecture et qualité du sommeil", reason: () => "Le sommeil est ton axe principal : l'algorithme privilégie un seul levier ciblé avant d'ajouter des molécules de récupération indirectes.", planning: { durationLabel: "4 semaines", calculationBasis: "175 mcg au coucher × 28 jours = 4,9 mg", totalNeedMg: 4.9 } },
   ],
   cognitive: [
-    { name: "Semax", role: "Focus et performance cognitive", reason: () => "Ton objectif demande un levier orienté attention et clarté mentale plutôt qu'un peptide métabolique sans rapport avec ta priorité." },
-    { name: "Selank", role: "Stabilité cognitive sous stress", reason: () => "Il complète l'axe focus lorsque la qualité cognitive doit rester stable sous pression, sans multiplier les injections." },
+    { name: "Semax", role: "Focus et performance cognitive", reason: () => "Ton objectif demande un levier orienté attention et clarté mentale plutôt qu'un peptide métabolique sans rapport avec ta priorité.", planning: { durationLabel: "4 semaines", calculationBasis: "500 mcg par jour × 28 jours = 14 mg", totalNeedMg: 14 } },
+    { name: "Selank", role: "Stabilité cognitive sous stress", reason: () => "Il complète l'axe focus lorsque la qualité cognitive doit rester stable sous pression, sans multiplier les injections.", planning: { durationLabel: "4 semaines", calculationBasis: "250 mcg deux fois par jour × 28 jours = 14 mg", totalNeedMg: 14 } },
   ],
   libido: [
-    { name: "PT-141", role: "Réponse sexuelle centrale", reason: () => "La priorité libido oriente vers un levier central spécifique ; les facteurs hormonaux restent séparés et doivent être vérifiés par bilan." },
+    { name: "PT-141", role: "Réponse sexuelle centrale", reason: () => "La priorité libido oriente vers un levier central spécifique ; les facteurs hormonaux restent séparés et doivent être vérifiés par bilan.", planning: { durationLabel: "8 utilisations ponctuelles", calculationBasis: "Base de chiffrage à 1 mg par utilisation = 8 mg", totalNeedMg: 8 } },
   ],
   "testo-boost": [
-    { name: "KissPeptin-10", aliases: ["Kisspeptin-10", "Kisspeptin 10"], role: "Axe hypothalamo-hypophyso-gonadique", reason: () => "L'objectif testostérone demande d'abord de vérifier LH, FSH, SHBG, estradiol et prolactine avant toute décision finale sur cet axe." },
+    { name: "KissPeptin-10", aliases: ["Kisspeptin-10", "Kisspeptin 10"], role: "Axe hypothalamo-hypophyso-gonadique", reason: () => "L'objectif testostérone demande d'abord de vérifier LH, FSH, SHBG, estradiol et prolactine avant toute décision finale sur cet axe.", planning: { durationLabel: "Après validation hormonale", calculationBasis: "Aucun chiffrage automatique sans protocole HPG validé", totalNeedMg: 0 } },
   ],
   "skin-hair": [
-    { name: "GHK-Cu", aliases: ["GHK Cu"], role: "Peau, cheveux et matrice extracellulaire", reason: () => "Ton objectif peau et cheveux permet de rester sur un axe unique et directement cohérent, sans ajouter un stack GH automatique." },
+    { name: "GHK-Cu", aliases: ["GHK Cu"], role: "Peau, cheveux et matrice extracellulaire", reason: () => "Ton objectif peau et cheveux permet de rester sur un axe unique et directement cohérent, sans ajouter un stack GH automatique.", planning: { durationLabel: "8 semaines", calculationBasis: "2 mg cinq fois par semaine × 8 semaines = 80 mg", totalNeedMg: 80 } },
   ],
   endurance: [
-    { name: "MOTS-c", aliases: ["MOTS c"], role: "Efficience métabolique et endurance", reason: () => "Ton objectif endurance oriente vers l'efficience énergétique avant tout axe esthétique." },
-    { name: "SS-31", aliases: ["SS-31 (Elamipretide)", "Elamipretide"], role: "Fonction mitochondriale", reason: () => "Il complète l'axe endurance lorsque la priorité est la capacité de travail plutôt que la simple perte de poids." },
+    { name: "MOTS-c", aliases: ["MOTS c"], role: "Efficience métabolique et endurance", reason: () => "Ton objectif endurance oriente vers l'efficience énergétique avant tout axe esthétique.", planning: { durationLabel: "8 semaines", calculationBasis: "5 mg par semaine × 8 semaines = 40 mg", totalNeedMg: 40 } },
+    { name: "SS-31", aliases: ["SS-31 (Elamipretide)", "Elamipretide"], role: "Fonction mitochondriale", reason: () => "Il complète l'axe endurance lorsque la priorité est la capacité de travail plutôt que la simple perte de poids.", planning: { durationLabel: "4 semaines", calculationBasis: "1 mg par jour × 28 jours = 28 mg", totalNeedMg: 28 } },
   ],
 };
 
@@ -158,10 +176,6 @@ function availableListings(snapshot: PeptauraFeedProductSnapshot, shippingVendor
     && listing.shippingOptionCount > 0
     && (allowed.length === 0 || allowed.some((vendor) => normalize(listing.supplier).includes(vendor) || vendor.includes(normalize(listing.supplier))))
   );
-}
-
-function cheapestListing(listings: PeptauraFeedListing[]): PeptauraFeedListing | null {
-  return [...listings].sort((a, b) => effectivePackagePrice(a, 1) - effectivePackagePrice(b, 1))[0] || null;
 }
 
 function budgetCeilingUsd(budget: PeptidesPreviewInput["budget"]): number | null {
@@ -196,6 +210,7 @@ export function buildPeptidesPreview(
     if (hardReviewConditions.has(condition)) blockers.push(condition);
   }
   if (goals.includes("testo-boost") && input.bloodwork !== "recent") blockers.push("bilan_hormonal_recent_requis");
+  if (goals.includes("testo-boost") && input.bloodwork === "recent") blockers.push("protocole_hpg_a_personnaliser");
   if (goals.includes("libido") && input.conditions.includes("hypertension")) blockers.push("pression_arterielle_a_verifier");
   if (goals.includes("fatloss") && input.conditions.includes("diabetes")) blockers.push("profil_glycemique_a_revoir");
   if (input.injectionComfort === "refuse" && goals.some((goal) => goal !== "cognitive")) blockers.push("injections_refusees");
@@ -206,6 +221,10 @@ export function buildPeptidesPreview(
       moleculeCount: 0,
       molecules: [],
       estimatedStarterCostUsd: null,
+      estimatedProtocolCostUsd: null,
+      totalVialsRequired: null,
+      totalVialsPurchased: null,
+      totalPackages: null,
       priceCheckedAt: checkedAt,
       durationLabel: "À confirmer après revue du profil",
       budgetFit: "unknown",
@@ -219,36 +238,59 @@ export function buildPeptidesPreview(
   const desiredCandidates = uniqueCandidates(input);
   const selected = desiredCandidates.map((candidate) => {
     const snapshot = findSnapshot(candidate, snapshots, shippingVendors);
-    const listing = snapshot ? cheapestListing(availableListings(snapshot, shippingVendors)) : null;
-    if (!snapshot || !listing) return null;
-    const price = effectivePackagePrice(listing, 1);
-    if (!Number.isFinite(price) || price <= 0) return null;
+    const purchasePlan = snapshot
+      ? selectBestPurchasePlan(
+          availableListings(snapshot, shippingVendors),
+          candidate.planning.totalNeedMg,
+          candidate.planning.maxOverstockRatio || 1.3,
+        )
+      : null;
+    if (!snapshot || !purchasePlan) return null;
     return {
       name: snapshot.slug,
       role: candidate.role,
       reason: candidate.reason(input),
-      startingFormat: `${listing.dosage} · boîte de ${listing.boxSize}`,
-      startingPackagePriceUsd: price,
+      startingFormat: `${purchasePlan.listing.dosage} · boîte de ${purchasePlan.listing.boxSize}`,
+      startingPackagePriceUsd: purchasePlan.packagePriceUsd,
+      cycleDurationLabel: candidate.planning.durationLabel,
+      calculationBasis: candidate.planning.calculationBasis,
+      totalRequiredMg: purchasePlan.needMg,
+      vialStrengthMg: purchasePlan.vialMg,
+      vialsRequired: purchasePlan.requestedVials,
+      vialsPurchased: purchasePlan.deliveredVials,
+      packageCount: purchasePlan.packageCount,
+      estimatedTotalPriceUsd: purchasePlan.totalPriceUsd,
     } satisfies PeptidesPreviewMolecule;
   }).filter((item): item is PeptidesPreviewMolecule => item !== null);
 
   if (selected.length !== desiredCandidates.length) {
-    throw new Error("PEPTAURA_PREVIEW_INCOMPLETE_LIVE_MATCH");
+    throw new Error("PEPTAURA_PREVIEW_INCOMPLETE_OPERATIONAL_PLAN");
   }
 
   const estimatedStarterCostUsd = Math.round(selected.reduce((sum, item) => sum + item.startingPackagePriceUsd, 0) * 100) / 100;
+  const estimatedProtocolCostUsd = Math.round(selected.reduce((sum, item) => sum + item.estimatedTotalPriceUsd, 0) * 100) / 100;
+  const totalVialsRequired = selected.reduce((sum, item) => sum + item.vialsRequired, 0);
+  const totalVialsPurchased = selected.reduce((sum, item) => sum + item.vialsPurchased, 0);
+  const totalPackages = selected.reduce((sum, item) => sum + item.packageCount, 0);
   const ceiling = budgetCeilingUsd(input.budget);
-  const budgetFit = ceiling == null || estimatedStarterCostUsd <= ceiling ? "within" : "above";
+  const budgetFit = ceiling == null || estimatedProtocolCostUsd <= ceiling ? "within" : "above";
+  const durations = Array.from(new Set(selected.map((item) => item.cycleDurationLabel)));
   return {
     status: "eligible",
     moleculeCount: selected.length,
     molecules: selected,
+    // Preserve the legacy field's original meaning for existing API consumers.
+    // The UI and emails use estimatedProtocolCostUsd for the complete cycle.
     estimatedStarterCostUsd,
+    estimatedProtocolCostUsd,
+    totalVialsRequired,
+    totalVialsPurchased,
+    totalPackages,
     priceCheckedAt: checkedAt,
-    durationLabel: input.primaryGoal === "fatloss" ? "Cycle progressif, durée exacte calculée dans le rapport" : "Base de 8 à 12 semaines, durée exacte calculée dans le rapport",
+    durationLabel: durations.length === 1 ? durations[0] : "Durée indiquée pour chaque molécule",
     budgetFit,
-    headline: `Ton aperçu retient ${selected.length} molécule${selected.length > 1 ? "s" : ""}, sans empiler d'axes inutiles.`,
-    rationale: "Le résultat croise ta priorité, tes objectifs secondaires, tes contraintes, ton bilan et les produits réellement disponibles dans notre catalogue partenaire au moment du calcul.",
+    headline: `Ton aperçu retient ${selected.length} molécule${selected.length > 1 ? "s" : ""} pour environ $${estimatedProtocolCostUsd.toFixed(2)} sur les durées affichées.`,
+    rationale: "Le résultat croise ton profil avec le catalogue partenaire live, puis convertit une base de dosage et de durée explicite en milligrammes totaux, fioles entières, boîtes réellement achetables et coût total hors livraison.",
     blockers: [],
     nextStep: "peptides_engine",
   };

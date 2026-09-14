@@ -6243,8 +6243,20 @@ type PeptidesPreviewEmailResult = {
     reason: string;
     startingFormat: string;
     startingPackagePriceUsd: number;
+    cycleDurationLabel: string;
+    calculationBasis: string;
+    totalRequiredMg: number;
+    vialStrengthMg: number;
+    vialsRequired: number;
+    vialsPurchased: number;
+    packageCount: number;
+    estimatedTotalPriceUsd: number;
   }>;
   estimatedStarterCostUsd: number | null;
+  estimatedProtocolCostUsd: number | null;
+  totalVialsRequired: number | null;
+  totalVialsPurchased: number | null;
+  totalPackages: number | null;
   durationLabel: string;
   budgetFit: string;
   blockers: string[];
@@ -6261,7 +6273,7 @@ function buildPeptidesPreviewSummaryRows(result: PeptidesPreviewEmailResult): st
       <div style="margin-top:4px;font-size:20px;font-weight:800;color:#fff;">${escapeHtml(molecule.name)}</div>
       <div style="margin-top:4px;color:#ddd;">${escapeHtml(molecule.role)}</div>
       <div style="margin-top:10px;font-size:14px;line-height:1.6;color:#aaa;">${escapeHtml(molecule.reason)}</div>
-      <div style="margin-top:10px;font-size:12px;color:#777;">Format vérifié : ${escapeHtml(molecule.startingFormat)} · $${Number(molecule.startingPackagePriceUsd).toFixed(2)}</div>
+      <div style="margin-top:12px;padding:12px;border-radius:10px;background:#0a0b0d;border:1px solid #24262a;font-size:12px;line-height:1.65;color:#aaa;"><strong style="color:#fff;">${escapeHtml(molecule.cycleDurationLabel)}</strong> · ${molecule.vialsRequired} fiole${molecule.vialsRequired > 1 ? "s" : ""} à prévoir · ${molecule.packageCount} boîte${molecule.packageCount > 1 ? "s" : ""} à commander<br>Hypothèse de chiffrage : ${escapeHtml(molecule.calculationBasis)}<br>Format catalogue partenaire live : ${escapeHtml(molecule.startingFormat)} à $${Number(molecule.startingPackagePriceUsd).toFixed(2)} la boîte<br><strong style="color:#f5b942;">Total molécule : $${Number(molecule.estimatedTotalPriceUsd).toFixed(2)}</strong>${molecule.vialsPurchased !== molecule.vialsRequired ? `<br>Conditionnement réel : ${molecule.vialsPurchased} fioles reçues.` : ""}</div>
     </div>`).join("");
 }
 
@@ -6274,9 +6286,9 @@ export async function sendPeptidesPreviewResultEmail(
   const firstName = escapeHtml(input.firstName);
   const appUrl = String(process.env.APP_URL || "https://apexlabs.onrender.com").replace(/\/$/, "");
   const destination = checkoutUrl.startsWith("/") ? `${appUrl}${checkoutUrl}` : checkoutUrl;
-  const budget = result.estimatedStarterCostUsd == null ? "À valider" : `$${result.estimatedStarterCostUsd.toFixed(2)}`;
-  const html = `<!doctype html><html lang="fr"><body style="margin:0;background:#08090b;color:#fff;font-family:Arial,sans-serif;"><div style="display:none;max-height:0;overflow:hidden;">Molécules, logique et budget de départ vérifiés pour ton profil.</div><div style="max-width:680px;margin:0 auto;padding:28px 16px;"><div style="font-size:17px;font-weight:900;letter-spacing:.16em;">APEX<span style="color:#f5b942;">LABS</span></div><div style="margin-top:24px;padding:28px;border:1px solid #292929;border-radius:20px;background:#101114;"><div style="font-size:11px;font-weight:800;letter-spacing:.16em;color:#f5b942;">TON APERÇU PEPTIDES ENGINE</div><h1 style="margin:10px 0 0;font-size:30px;line-height:1.15;color:#fff;">${escapeHtml(result.headline)}</h1><p style="margin:16px 0 0;font-size:15px;line-height:1.7;color:#bbb;">${escapeHtml(result.rationale)}</p><div style="margin-top:24px;">${buildPeptidesPreviewSummaryRows(result)}</div><div style="display:flex;gap:12px;margin-top:20px;"><div style="flex:1;padding:16px;border:1px solid #292929;border-radius:12px;"><div style="font-size:11px;color:#888;">BUDGET INITIAL ESTIMÉ</div><div style="margin-top:6px;font-size:25px;font-weight:900;">${budget}</div></div><div style="flex:1;padding:16px;border:1px solid #292929;border-radius:12px;"><div style="font-size:11px;color:#888;">DURÉE ENVISAGÉE</div><div style="margin-top:6px;font-size:14px;font-weight:700;line-height:1.4;">${escapeHtml(result.durationLabel)}</div></div></div><a href="${escapeHtml(destination)}" style="display:block;margin-top:24px;padding:16px 20px;border-radius:999px;background:#f5b942;color:#08090b;text-align:center;text-decoration:none;font-weight:900;">${result.nextStep === "blood_analysis" ? "Vérifier mes marqueurs" : result.nextStep === "manual_review" ? "Voir mes options Peptides Engine" : "Débloquer mon protocole complet"}</a><p style="margin:16px 0 0;text-align:center;font-size:12px;line-height:1.5;color:#777;">L’aperçu montre les axes et le coût de départ. Les dosages, quantités, reconstitution et calendrier restent calculés dans le rapport complet.</p></div><p style="margin:18px 0 0;text-align:center;font-size:11px;color:#555;">Tu reçois cet email après avoir demandé ton aperçu gratuit sur APEXLABS.</p></div></body></html>`;
-  const text = `${input.firstName}, ton aperçu Peptides Engine est prêt.\n\n${result.headline}\n${result.rationale}\n\n${result.molecules.map((molecule) => `${molecule.name} — ${molecule.role} — $${molecule.startingPackagePriceUsd.toFixed(2)}`).join("\n") || "Une étape de personnalisation supplémentaire est nécessaire."}\n\nBudget initial estimé : ${budget}\nDurée envisagée : ${result.durationLabel}\n\nContinuer : ${destination}`;
+  const budget = result.estimatedProtocolCostUsd == null ? "À valider" : `$${result.estimatedProtocolCostUsd.toFixed(2)}`;
+  const html = `<!doctype html><html lang="fr"><body style="margin:0;background:#08090b;color:#fff;font-family:Arial,sans-serif;"><div style="display:none;max-height:0;overflow:hidden;">Molécules, durée, fioles et coût total vérifiés pour ton profil.</div><div style="max-width:680px;margin:0 auto;padding:28px 16px;"><div style="font-size:17px;font-weight:900;letter-spacing:.16em;">APEX<span style="color:#f5b942;">LABS</span></div><div style="margin-top:24px;padding:28px;border:1px solid #292929;border-radius:20px;background:#101114;"><div style="font-size:11px;font-weight:800;letter-spacing:.16em;color:#f5b942;">TON APERÇU PEPTIDES ENGINE</div><h1 style="margin:10px 0 0;font-size:30px;line-height:1.15;color:#fff;">${escapeHtml(result.headline)}</h1><p style="margin:16px 0 0;font-size:15px;line-height:1.7;color:#bbb;">${escapeHtml(result.rationale)}</p><div style="margin-top:24px;">${buildPeptidesPreviewSummaryRows(result)}</div><div style="display:flex;gap:12px;margin-top:20px;"><div style="flex:1;padding:16px;border:1px solid #292929;border-radius:12px;"><div style="font-size:11px;color:#888;">COÛT TOTAL MOLÉCULES</div><div style="margin-top:6px;font-size:25px;font-weight:900;">${budget}</div></div><div style="flex:1;padding:16px;border:1px solid #292929;border-radius:12px;"><div style="font-size:11px;color:#888;">DURÉE ENVISAGÉE</div><div style="margin-top:6px;font-size:14px;font-weight:700;line-height:1.4;">${escapeHtml(result.durationLabel)}</div></div></div><a href="${escapeHtml(destination)}" style="display:block;margin-top:24px;padding:16px 20px;border-radius:999px;background:#f5b942;color:#08090b;text-align:center;text-decoration:none;font-weight:900;">${result.nextStep === "blood_analysis" ? "Vérifier mes marqueurs" : result.nextStep === "manual_review" ? "Voir mes options Peptides Engine" : "Débloquer mon protocole complet"}</a><p style="margin:16px 0 0;text-align:center;font-size:12px;line-height:1.5;color:#777;">Les quantités sont calculées sur les durées affichées et les boîtes du catalogue partenaire réellement achetables. Hors livraison. Le calendrier opérationnel, la reconstitution et les ajustements restent détaillés dans le rapport complet.</p></div><p style="margin:18px 0 0;text-align:center;font-size:11px;color:#555;">Tu reçois cet email après avoir demandé ton aperçu gratuit sur APEXLABS.</p></div></body></html>`;
+  const text = `${input.firstName}, ton aperçu Peptides Engine est prêt.\n\n${result.headline}\n${result.rationale}\n\n${result.molecules.map((molecule) => `${molecule.name} — ${molecule.cycleDurationLabel} — ${molecule.vialsRequired} fiole(s), ${molecule.packageCount} boîte(s) — $${molecule.estimatedTotalPriceUsd.toFixed(2)} total — ${molecule.calculationBasis}`).join("\n") || "Une étape de personnalisation supplémentaire est nécessaire."}\n\nCoût total molécules estimé : ${budget}\nFioles nécessaires : ${result.totalVialsRequired ?? "À valider"}\nBoîtes à commander : ${result.totalPackages ?? "À valider"}\nDurée envisagée : ${result.durationLabel}\n\nContinuer : ${destination}`;
   const delivery = await sendEmailWithTracking({
     html: encodeBase64(html),
     text,
@@ -6303,7 +6315,7 @@ export async function sendPeptidesPreviewAdminNotification(
   const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
   const attribution = input.attribution || {};
   const molecules = result.molecules.map((item) => item.name).join(", ") || "Aucune — orientation personnalisée";
-  const budget = result.estimatedStarterCostUsd == null ? "À valider" : `$${result.estimatedStarterCostUsd.toFixed(2)}`;
+  const budget = result.estimatedProtocolCostUsd == null ? "À valider" : `$${result.estimatedProtocolCostUsd.toFixed(2)}`;
   const rows = [
     ["Lead", `${input.firstName} · ${input.email}`],
     ["Âge / pays", `${input.age} ans · ${input.country}`],
@@ -6314,7 +6326,11 @@ export async function sendPeptidesPreviewAdminNotification(
     ["Confort injections", input.injectionComfort],
     ["Résultat", result.status],
     ["Molécules", molecules],
-    ["Budget calculé", budget],
+    ["Coût total calculé", budget],
+    ["Durée", result.durationLabel],
+    ["Fioles nécessaires", result.totalVialsRequired == null ? "À valider" : String(result.totalVialsRequired)],
+    ["Fioles reçues", result.totalVialsPurchased == null ? "À valider" : String(result.totalVialsPurchased)],
+    ["Boîtes à commander", result.totalPackages == null ? "À valider" : String(result.totalPackages)],
     ["Prochaine étape", result.nextStep],
     ["Email résultat client", clientEmailSent ? "Envoyé" : "Échec — résultat affiché à l’écran"],
     ["Attribution", Object.entries(attribution).filter(([, value]) => value).map(([key, value]) => `${key}=${String(value)}`).join(" · ") || "Direct"],
