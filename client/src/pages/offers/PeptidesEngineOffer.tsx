@@ -42,7 +42,7 @@ import {
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { trackWhatsAppClick } from "@/lib/analytics";
+import { trackClick, trackWhatsAppClick } from "@/lib/analytics";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
 // ============================================================================
