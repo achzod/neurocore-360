@@ -766,13 +766,21 @@ function Hero() {
         </motion.p>
 
 
-        {/* Secondary Buttons */}
+        {/* Primary conversion entry points */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.7, duration: 0.6 }}
-          className="flex flex-col sm:flex-row gap-5 w-full justify-center opacity-80 hover:opacity-100 transition-opacity"
+          className="flex w-full flex-col justify-center gap-4 sm:flex-row"
         >
+          <a
+            href="/peptides-preview?utm_source=homepage&utm_medium=hero&utm_campaign=pre_peptides_engine"
+            data-testid="homepage-peptides-preview-cta"
+            className="inline-flex items-center justify-center gap-2 rounded-sm bg-[#FCDD00] px-8 py-4 text-sm font-black uppercase tracking-wide text-black shadow-[0_0_28px_rgba(252,221,0,0.28)] transition-all hover:scale-[1.02] hover:bg-white"
+          >
+            Estimer mon stack peptides gratuitement
+            <span aria-hidden="true">&gt;</span>
+          </a>
           <Button onClick={scrollToOffers} variant="outline" className="text-xs hover:!border-[#FCDD00] hover:text-[#FCDD00]">
             Découvrir les offres
           </Button>
