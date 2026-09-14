@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { BETA_REVIEWS } from "@/data/betaReviews";
+import { trackClick } from "@/lib/analytics";
 
 // ============================================================================
 // TYPES
@@ -792,6 +793,7 @@ function Hero() {
           <a
             href="/peptides-preview?utm_source=apexlabs_homepage&utm_medium=hero&utm_campaign=pre_peptides_engine"
             data-testid="homepage-peptides-preview-cta"
+            onClick={() => trackClick("peptides_preview_entry_apexlabs", "/peptides-preview")}
             className="inline-flex items-center justify-center gap-2 rounded-sm bg-[#FCDD00] px-8 py-4 text-sm font-black uppercase tracking-wide text-black shadow-[0_0_28px_rgba(252,221,0,0.28)] transition-all hover:scale-[1.02] hover:bg-white"
           >
             Estimer mon stack peptides gratuitement

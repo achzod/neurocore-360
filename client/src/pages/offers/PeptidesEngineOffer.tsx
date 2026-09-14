@@ -2294,6 +2294,7 @@ function Hero() {
             <a
               href="/peptides-preview?utm_source=peptides_offer&utm_medium=hero&utm_campaign=pre_peptides_engine"
               data-testid="peptides-offer-preview-cta"
+              onClick={() => trackClick("peptides_preview_entry_offer", "/peptides-preview")}
               className="inline-flex items-center justify-center gap-2 rounded-full px-8 py-5 text-base font-semibold text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl"
               style={{ backgroundColor: PRIMARY }}
             >

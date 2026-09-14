@@ -14343,18 +14343,25 @@ export async function registerRoutes(
       const isRecentDuplicate = previousNotifications?.fingerprint === notificationFingerprint
         && Number.isFinite(previousAt)
         && Date.now() - previousAt < 15 * 60_000;
-      const clientEmailSent = isRecentDuplicate && previousNotifications?.clientEmailSent === true
-        ? true
-        : await sendPeptidesPreviewResultEmail(input, result, checkoutUrl, progress.id).catch((error) => {
-            console.error("[PeptidesPreview] client email failed", error instanceof Error ? error.message : "unknown_error");
-            return false;
-          });
-      const adminEmailSent = isRecentDuplicate && previousNotifications?.adminEmailSent === true
-        ? true
-        : await sendPeptidesPreviewAdminNotification(input, result, progress.id, clientEmailSent).catch((error) => {
-            console.error("[PeptidesPreview] admin notification failed", error instanceof Error ? error.message : "unknown_error");
-            return false;
-          });
+      const attemptDelivery = async (label: string, operation: () => Promise<boolean>) => {
+        for (let attempt = 1; attempt <= 2; attempt += 1) {
+          try {
+            if (await operation()) return { sent: true, attempts: attempt };
+          } catch (error) {
+            console.error(`[PeptidesPreview] ${label} attempt ${attempt} failed`, error instanceof Error ? error.message : "unknown_error");
+          }
+          if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 300));
+        }
+        return { sent: false, attempts: 2 };
+      };
+      const clientDelivery = isRecentDuplicate && previousNotifications?.clientEmailSent === true
+        ? { sent: true, attempts: 0 }
+        : await attemptDelivery("client email", () => sendPeptidesPreviewResultEmail(input, result, checkoutUrl, progress.id));
+      const adminDelivery = isRecentDuplicate && previousNotifications?.adminEmailSent === true
+        ? { sent: true, attempts: 0 }
+        : await attemptDelivery("admin notification", () => sendPeptidesPreviewAdminNotification(input, result, progress.id, clientDelivery.sent));
+      const clientEmailSent = clientDelivery.sent;
+      const adminEmailSent = adminDelivery.sent;
       await storage.saveBurnoutProgress({
         email: storageEmail,
         currentSection: 5,
@@ -14370,6 +14377,8 @@ export async function registerRoutes(
             attemptedAt: new Date().toISOString(),
             clientEmailSent,
             adminEmailSent,
+            clientAttempts: clientDelivery.attempts,
+            adminAttempts: adminDelivery.attempts,
             deduplicated: isRecentDuplicate,
           },
         },
