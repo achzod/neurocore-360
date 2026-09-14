@@ -14321,6 +14321,26 @@ export async function registerRoutes(
           nextStep: result.nextStep,
         },
       })).digest("hex");
+      const previousNotifications = previousResponses.previewNotifications as Record<string, any> | undefined;
+      const previousAt = Date.parse(String(previousNotifications?.attemptedAt || ""));
+      const isRecentDuplicate = previousNotifications?.fingerprint === notificationFingerprint
+        && Number.isFinite(previousAt)
+        && Date.now() - previousAt < 15 * 60_000;
+      const previousHistory = Array.isArray(previousResponses.previewHistory) ? previousResponses.previewHistory : [];
+      const previousSubmission = previousHistory.at(-1) as Record<string, any> | undefined;
+      const submissionId = isRecentDuplicate && previousSubmission?.submissionId
+        ? String(previousSubmission.submissionId)
+        : crypto.randomUUID();
+      const pendingHistory = isRecentDuplicate
+        ? previousHistory
+        : [...previousHistory, {
+            submissionId,
+            capturedAt,
+            input,
+            result,
+            notificationFingerprint,
+            notificationStatus: "pending",
+          }];
       const progress = await storage.saveBurnoutProgress({
         email: storageEmail,
         currentSection: 5,
@@ -14331,6 +14351,7 @@ export async function registerRoutes(
           previewStatus: "completed",
           capturedAt,
           followUpEligibleAt: new Date(Date.now() + 12 * 60 * 60_000).toISOString(),
+          previewHistory: pendingHistory,
         },
       });
       const checkoutUrl = result.nextStep === "blood_analysis"
@@ -14338,11 +14359,6 @@ export async function registerRoutes(
         : result.nextStep === "peptides_engine"
           ? "/peptides-engine?tier=solo&utm_source=peptides_preview&utm_medium=result&utm_campaign=pre_peptides_engine"
           : "/offers/peptides-engine?utm_source=peptides_preview&utm_medium=result&utm_campaign=pre_peptides_engine#offres";
-      const previousNotifications = previousResponses.previewNotifications as Record<string, any> | undefined;
-      const previousAt = Date.parse(String(previousNotifications?.attemptedAt || ""));
-      const isRecentDuplicate = previousNotifications?.fingerprint === notificationFingerprint
-        && Number.isFinite(previousAt)
-        && Date.now() - previousAt < 15 * 60_000;
       const attemptDelivery = async (label: string, operation: () => Promise<boolean>) => {
         for (let attempt = 1; attempt <= 2; attempt += 1) {
           try {
@@ -14381,9 +14397,17 @@ export async function registerRoutes(
             adminAttempts: adminDelivery.attempts,
             deduplicated: isRecentDuplicate,
           },
+          previewHistory: pendingHistory.map((entry: Record<string, any>) => entry.submissionId === submissionId ? {
+            ...entry,
+            notificationStatus: clientEmailSent && adminEmailSent ? "sent" : "partial_failure",
+            clientEmailSent,
+            adminEmailSent,
+            clientAttempts: clientDelivery.attempts,
+            adminAttempts: adminDelivery.attempts,
+          } : entry),
         },
       });
-      res.json({ success: true, leadId: progress.id, result, checkoutUrl, resultEmailSent: clientEmailSent });
+      res.json({ success: true, leadId: progress.id, submissionId, result, checkoutUrl, resultEmailSent: clientEmailSent });
     } catch (error) {
       if (error instanceof z.ZodError) {
         res.status(400).json({ error: "Données invalides", details: error.errors });
