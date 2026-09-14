@@ -248,7 +248,7 @@ export function buildPeptidesPreview(
     durationLabel: input.primaryGoal === "fatloss" ? "Cycle progressif, durée exacte calculée dans le rapport" : "Base de 8 à 12 semaines, durée exacte calculée dans le rapport",
     budgetFit,
     headline: `Ton aperçu retient ${selected.length} molécule${selected.length > 1 ? "s" : ""}, sans empiler d'axes inutiles.`,
-    rationale: "Le résultat croise ta priorité, tes objectifs secondaires, tes contraintes, ton bilan et les produits réellement disponibles sur PeptAura au moment du calcul.",
+    rationale: "Le résultat croise ta priorité, tes objectifs secondaires, tes contraintes, ton bilan et les produits réellement disponibles dans notre catalogue partenaire au moment du calcul.",
     blockers: [],
     nextStep: "peptides_engine",
   };

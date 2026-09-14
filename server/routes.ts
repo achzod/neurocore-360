@@ -14333,7 +14333,7 @@ export async function registerRoutes(
       console.error("[PeptidesPreview] analysis unavailable", error instanceof Error ? error.message : "unknown_error");
       res.status(503).json({
         error: "catalog_unavailable",
-        message: "Le catalogue PeptAura ne peut pas être vérifié maintenant. Réessaie dans quelques minutes.",
+        message: "Le catalogue partenaire ne peut pas être vérifié maintenant. Réessaie dans quelques minutes.",
       });
     }
   });

@@ -15,6 +15,15 @@ Transformer un visiteur intéressé par les peptides en lead qualifié avant le 
 7. Les réponses, le consentement, l'attribution UTM et le résultat sont sauvegardés sous la clé `peptides-preview::<email>` dans le stockage de progression existant.
 8. Le CTA envoie vers Peptides Engine Solo, Blood Analysis si un bilan hormonal récent est indispensable, ou la page offre lorsqu'une revue ciblée est nécessaire.
 
+## Visibilité sans pollution du parcours
+
+- CTA principal dans le hero de l'offre Peptides Engine.
+- CTA permanent dans le footer global APEXLABS.
+- Les CTA des articles et piliers peptides entrent directement dans le preview avec attribution UTM.
+- Le header continue d'ouvrir la page offre afin de préserver la navigation produit existante.
+- Le hub WhatsApp flottant est masqué sur le preview et l'offre Peptides Engine, où des CTA WhatsApp contextuels existent déjà.
+- Le hub global passe sous la bannière cookies pour ne plus bloquer ses boutons sur mobile.
+
 ## Garde-fous
 
 - Aucun appel IA pour le preview.
@@ -27,6 +36,7 @@ Transformer un visiteur intéressé par les peptides en lead qualifié avant le 
 - Le frontend ne reçoit pas les URLs fournisseurs.
 - Rate limit : cinq analyses par minute et par client réseau.
 - L'analytics reçoit uniquement le nom d'événement, jamais l'email ni les réponses.
+- L'interface ne montre aucun avertissement médical générique. Elle explique positivement que la personnalisation écarte ce qui ne correspond pas au profil et oriente vers l'étape utile.
 
 ## Coût affiché
 

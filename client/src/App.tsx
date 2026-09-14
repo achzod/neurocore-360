@@ -155,7 +155,7 @@ function ScrollToTop() {
 
 function ConditionalWhatsAppConversionHub() {
   const [location] = useLocation();
-  if (location === "/peptides-preview") return null;
+  if (location === "/peptides-preview" || location === "/offers/peptides-engine") return null;
   return <WhatsAppConversionHub />;
 }
 

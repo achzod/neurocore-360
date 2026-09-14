@@ -131,7 +131,7 @@ export function WhatsAppConversionHub() {
 
   return (
     <div
-      className="fixed right-4 z-[10010] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 sm:right-6"
+      className="fixed right-4 z-[9990] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 sm:right-6"
       style={{
         bottom: isCoachingHost
           ? "calc(env(safe-area-inset-bottom, 0px) + 96px)"

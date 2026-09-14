@@ -52,7 +52,7 @@ const PILLARS: Pillar[] = [
     title: "Peptides, SARMs et PEDs : risques, logique et monitoring",
     description:
       "Analyses éducatives sur peptides, SARMs, HGH, IGF-1, bénéfices supposés, limites, risques et suivi nécessaire avant toute décision.",
-    offerHref: "/offers/peptides-engine?utm_source=blog&utm_medium=pillar_cta&utm_campaign=peptides_pillar",
+    offerHref: "/peptides-preview?utm_source=blog&utm_medium=pillar_cta&utm_campaign=pre_peptides_engine",
     offerLabel: "Voir Peptides Engine",
     keywords: /peptide|sarm|peds|hgh|igf|mk-677|rad-140|lgd|ostarine|pct|steroid|stéro/i,
   },

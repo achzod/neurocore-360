@@ -85,6 +85,16 @@ export function Footer() {
                   FormCheck
                 </Link>
               </li>
+              <li>
+                <Link href="/offers/peptides-engine" className="hover:text-white transition-colors">
+                  Peptides Engine
+                </Link>
+              </li>
+              <li>
+                <Link href="/peptides-preview?utm_source=footer&utm_medium=sitewide&utm_campaign=pre_peptides_engine" className="font-semibold text-[#FCDD00] hover:text-white transition-colors">
+                  Estimer mon stack gratuitement
+                </Link>
+              </li>
             </ul>
           </div>
 

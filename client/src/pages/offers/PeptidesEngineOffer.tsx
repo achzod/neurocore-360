@@ -2290,11 +2290,18 @@ function Hero() {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="mt-2 flex flex-col items-center gap-4 md:mt-8"
         >
-          <div className="flex w-full max-w-2xl flex-col items-stretch justify-center gap-3 sm:flex-row">
+          <div className="flex w-full max-w-3xl flex-col items-stretch justify-center gap-3 sm:flex-row">
             <a
-              href="#offres"
+              href="/peptides-preview?utm_source=peptides_offer&utm_medium=hero&utm_campaign=pre_peptides_engine"
               className="inline-flex items-center justify-center gap-2 rounded-full px-8 py-5 text-base font-semibold text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl"
               style={{ backgroundColor: PRIMARY }}
+            >
+              Estimer mon stack gratuitement
+              <ArrowRight className="h-5 w-5" />
+            </a>
+            <a
+              href="#offres"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-[#D2D2D7] bg-white px-8 py-5 text-base font-semibold text-[#1D1D1F] transition-all hover:border-[#0071E3]"
               onClick={(e) => {
                 e.preventDefault();
                 document.getElementById("offres")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -2303,13 +2310,13 @@ function Hero() {
               Voir les 3 offres
               <ArrowRight className="h-5 w-5" />
             </a>
-            <PeptidesWhatsAppLink
-              placement="hero"
-              label="Parler à Achzod sur WhatsApp"
-              filled
-              className="order-first border-0 px-8 py-5 text-base shadow-[0_12px_30px_rgba(18,140,126,0.26)] sm:order-last"
-            />
           </div>
+
+          <PeptidesWhatsAppLink
+            placement="hero"
+            label="Une question ? Parler à Achzod"
+            className="border-0 bg-transparent px-4 py-2 text-sm text-[#128C7E] shadow-none"
+          />
 
           <motion.p
             animate={{ opacity: [0.7, 1, 0.7] }}
