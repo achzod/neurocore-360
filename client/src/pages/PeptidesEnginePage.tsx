@@ -776,6 +776,18 @@ export default function PeptidesEnginePage() {
       <Header />
 
       <main className="max-w-2xl mx-auto px-4 py-10 pb-24">
+        <a
+          href="/peptides-preview?utm_source=peptides_questionnaire&utm_medium=top_banner&utm_campaign=pre_peptides_engine"
+          data-testid="peptides-questionnaire-preview-cta"
+          className="mb-8 flex items-center justify-between gap-4 rounded-2xl border border-amber-400/35 bg-amber-400/10 px-5 py-4 transition hover:border-amber-300 hover:bg-amber-400/15"
+        >
+          <span>
+            <span className="block text-xs font-bold uppercase tracking-[0.18em] text-amber-400">Nouveau · gratuit</span>
+            <span className="mt-1 block text-sm font-semibold text-white">Estime d'abord les molécules et le budget adaptés à ton profil</span>
+          </span>
+          <ChevronRight className="h-5 w-5 shrink-0 text-amber-400" aria-hidden="true" />
+        </a>
+
         {/* Progress bar */}
         <div className="mb-8 space-y-2" aria-label={`Progression: ${progress}%`}>
           <div className="flex justify-between text-xs text-white/40">
