@@ -27,6 +27,7 @@ test("every completed preview attempts the client result and admin notification"
   assert.match(previewRoute, /sendPeptidesPreviewAdminNotification\(input, result, progress\.id, clientDelivery\.sent\)/);
   assert.match(emailSource, /export async function sendPeptidesPreviewResultEmail/);
   assert.match(emailSource, /export async function sendPeptidesPreviewAdminNotification/);
+  assert.equal((emailSource.match(/html: encodeBase64\(html\)/g) || []).length >= 2, true);
   assert.match(emailSource, /Email résultat client/);
 });
 
