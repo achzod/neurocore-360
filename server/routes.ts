@@ -14316,8 +14316,14 @@ export async function registerRoutes(
         input: { ...input, attribution: undefined },
         result: {
           status: result.status,
-          molecules: result.molecules.map((item) => ({ name: item.name, price: item.startingPackagePriceUsd })),
-          estimatedStarterCostUsd: result.estimatedStarterCostUsd,
+          molecules: result.molecules.map((item) => ({
+            name: item.name,
+            duration: item.cycleDurationLabel,
+            vials: item.vialsRequired,
+            packages: item.packageCount,
+            totalPriceUsd: item.estimatedTotalPriceUsd,
+          })),
+          estimatedProtocolCostUsd: result.estimatedProtocolCostUsd,
           nextStep: result.nextStep,
         },
       })).digest("hex");

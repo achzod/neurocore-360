@@ -54,3 +54,13 @@ test("the free preview has no paid AI model call", () => {
   assert.doesNotMatch(previewSource, /OpenAI|Anthropic|Gemini|generateContent|chat\.completions/i);
   assert.match(previewSource, /www\.peptaura\.com/);
 });
+
+test("client and admin emails use full protocol quantities and totals", () => {
+  assert.match(emailSource, /estimatedProtocolCostUsd/);
+  assert.match(emailSource, /vialsRequired/);
+  assert.match(emailSource, /packageCount/);
+  assert.match(emailSource, /estimatedTotalPriceUsd/);
+  assert.match(emailSource, /COÛT TOTAL MOLÉCULES/);
+  assert.doesNotMatch(emailSource, /BUDGET INITIAL ESTIMÉ/);
+  assert.match(previewRoute, /estimatedProtocolCostUsd/);
+});
