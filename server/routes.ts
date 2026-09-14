@@ -30,6 +30,8 @@ import {
   sendPeptidesReviewS12Email,
   sendPeptidesCycle2ReorderEmail,
   sendPeptidesOrderConfirmationEmail,
+  sendPeptidesPreviewAdminNotification,
+  sendPeptidesPreviewResultEmail,
   sendDiscoveryJ30NurtureEmail,
   sendReactivationCampaignEmail,
   sendFinishDiscoveryEmail,
@@ -14307,8 +14309,20 @@ export async function registerRoutes(
       const liveCatalog = await getLivePeptauraPreviewCatalog(input.country);
       const result = buildPeptidesPreview(input, liveCatalog.snapshots, liveCatalog.checkedAt, liveCatalog.shippingVendors);
       const capturedAt = new Date().toISOString();
+      const storageEmail = `peptides-preview::${input.email}`;
+      const previous = await storage.getBurnoutProgress(storageEmail);
+      const previousResponses = previous?.responses && typeof previous.responses === "object" ? previous.responses as Record<string, any> : {};
+      const notificationFingerprint = crypto.createHash("sha256").update(JSON.stringify({
+        input: { ...input, attribution: undefined },
+        result: {
+          status: result.status,
+          molecules: result.molecules.map((item) => ({ name: item.name, price: item.startingPackagePriceUsd })),
+          estimatedStarterCostUsd: result.estimatedStarterCostUsd,
+          nextStep: result.nextStep,
+        },
+      })).digest("hex");
       const progress = await storage.saveBurnoutProgress({
-        email: `peptides-preview::${input.email}`,
+        email: storageEmail,
         currentSection: 5,
         totalSections: 5,
         responses: {
@@ -14324,7 +14338,52 @@ export async function registerRoutes(
         : result.nextStep === "peptides_engine"
           ? "/peptides-engine?tier=solo&utm_source=peptides_preview&utm_medium=result&utm_campaign=pre_peptides_engine"
           : "/offers/peptides-engine?utm_source=peptides_preview&utm_medium=result&utm_campaign=pre_peptides_engine#offres";
-      res.json({ success: true, leadId: progress.id, result, checkoutUrl });
+      const previousNotifications = previousResponses.previewNotifications as Record<string, any> | undefined;
+      const previousAt = Date.parse(String(previousNotifications?.attemptedAt || ""));
+      const isRecentDuplicate = previousNotifications?.fingerprint === notificationFingerprint
+        && Number.isFinite(previousAt)
+        && Date.now() - previousAt < 15 * 60_000;
+      const attemptDelivery = async (label: string, operation: () => Promise<boolean>) => {
+        for (let attempt = 1; attempt <= 2; attempt += 1) {
+          try {
+            if (await operation()) return { sent: true, attempts: attempt };
+          } catch (error) {
+            console.error(`[PeptidesPreview] ${label} attempt ${attempt} failed`, error instanceof Error ? error.message : "unknown_error");
+          }
+          if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 300));
+        }
+        return { sent: false, attempts: 2 };
+      };
+      const clientDelivery = isRecentDuplicate && previousNotifications?.clientEmailSent === true
+        ? { sent: true, attempts: 0 }
+        : await attemptDelivery("client email", () => sendPeptidesPreviewResultEmail(input, result, checkoutUrl, progress.id));
+      const adminDelivery = isRecentDuplicate && previousNotifications?.adminEmailSent === true
+        ? { sent: true, attempts: 0 }
+        : await attemptDelivery("admin notification", () => sendPeptidesPreviewAdminNotification(input, result, progress.id, clientDelivery.sent));
+      const clientEmailSent = clientDelivery.sent;
+      const adminEmailSent = adminDelivery.sent;
+      await storage.saveBurnoutProgress({
+        email: storageEmail,
+        currentSection: 5,
+        totalSections: 5,
+        responses: {
+          ...input,
+          previewResult: result,
+          previewStatus: "completed",
+          capturedAt,
+          followUpEligibleAt: new Date(Date.now() + 12 * 60 * 60_000).toISOString(),
+          previewNotifications: {
+            fingerprint: notificationFingerprint,
+            attemptedAt: new Date().toISOString(),
+            clientEmailSent,
+            adminEmailSent,
+            clientAttempts: clientDelivery.attempts,
+            adminAttempts: adminDelivery.attempts,
+            deduplicated: isRecentDuplicate,
+          },
+        },
+      });
+      res.json({ success: true, leadId: progress.id, result, checkoutUrl, resultEmailSent: clientEmailSent });
     } catch (error) {
       if (error instanceof z.ZodError) {
         res.status(400).json({ error: "Données invalides", details: error.errors });

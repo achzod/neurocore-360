@@ -33,7 +33,7 @@ import {
 import { Header } from "@/components/Header";
 import { LiveStatsBar } from "@/components/LiveStatsBar";
 import { apiRequest } from "@/lib/queryClient";
-import { trackBeginCheckout, getMetaAttribution } from "@/lib/analytics";
+import { trackBeginCheckout, trackClick, getMetaAttribution } from "@/lib/analytics";
 import { useToast } from "@/hooks/use-toast";
 import {
   PEPTIDES_SECTIONS,
@@ -779,6 +779,7 @@ export default function PeptidesEnginePage() {
         <a
           href="/peptides-preview?utm_source=peptides_questionnaire&utm_medium=top_banner&utm_campaign=pre_peptides_engine"
           data-testid="peptides-questionnaire-preview-cta"
+          onClick={() => trackClick("peptides_preview_entry_questionnaire", "/peptides-preview")}
           className="mb-8 flex items-center justify-between gap-4 rounded-2xl border border-amber-400/35 bg-amber-400/10 px-5 py-4 transition hover:border-amber-300 hover:bg-amber-400/15"
         >
           <span>
