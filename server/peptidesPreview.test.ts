@@ -182,6 +182,28 @@ test("cognitive plus sleep exposes four-week vials and full live purchase cost",
   ]);
 });
 
+test("secondary goals are explained as secondary and never mislabeled as the primary goal", () => {
+  const input = peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "fatloss", secondaryGoals: ["recovery"] });
+  const result = buildPeptidesPreview(input, [snapshot("Semaglutide", 35), snapshot("BPC-157", 15)]);
+  assert.match(result.molecules[0].reason, /priorité principale/);
+  assert.match(result.molecules[1].reason, /objectif secondaire/);
+  assert.doesNotMatch(result.molecules[1].reason, /objectif principal concerne la récupération/);
+});
+
+test("budget explanation states whether the complete protocol fits the declared ceiling", () => {
+  const input = peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "recovery", budget: "under100" });
+  const result = buildPeptidesPreview(input, [snapshot("BPC-157", 70), snapshot("TB500", 60)]);
+  assert.equal(result.budgetFit, "above");
+  assert.match(result.budgetExplanation, /\$330\.00 ne tient pas dans ton budget déclaré de moins de 100 USD/);
+});
+
+test("the under-100 budget boundary treats exactly $100.00 as above", () => {
+  const input = peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "sleep", budget: "under100" });
+  const result = buildPeptidesPreview(input, [snapshot("DSIP", 100, "5mg")]);
+  assert.equal(result.estimatedProtocolCostUsd, 100);
+  assert.equal(result.budgetFit, "above");
+});
+
 test("identity and consent validation rejects incomplete leads", () => {
   assert.equal(peptidesPreviewInputSchema.safeParse({ ...base, email: "invalid" }).success, false);
   assert.equal(peptidesPreviewInputSchema.safeParse({ ...base, age: 17 }).success, false);

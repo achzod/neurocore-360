@@ -122,7 +122,11 @@ export function effectivePackagePrice(
   const eligible = tiers.filter((tier) => tier.minQty <= packageCount);
   const selected = eligible.length > 0 ? eligible[eligible.length - 1] : tiers[0];
   if (!selected) return Number.NaN;
-  return Math.round(selected.price * (1 + listing.marginRate) * 100) / 100;
+  // Convert the supplier amount to integer cents before applying any margin.
+  // All client-facing totals are then composed from cents, never binary floats.
+  const supplierCents = Math.round(selected.price * 100);
+  const finalCents = Math.round(supplierCents * (1 + listing.marginRate));
+  return finalCents / 100;
 }
 
 export function offerTotalPrice(
@@ -130,7 +134,8 @@ export function offerTotalPrice(
   vialQty: number,
 ): number {
   const packagePrice = effectivePackagePrice(listing, vialQty);
-  return Math.round(packagePrice * packageCountForVials(listing, vialQty) * 100) / 100;
+  const packagePriceCents = Math.round(packagePrice * 100);
+  return (packagePriceCents * packageCountForVials(listing, vialQty)) / 100;
 }
 
 export function buildPurchasePlan<Listing extends PurchasePlanListing>(
