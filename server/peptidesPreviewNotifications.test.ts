@@ -20,6 +20,8 @@ test("completed previews persist inputs, result, attribution and delivery state"
   assert.match(previewRoute, /clientAttempts/);
   assert.match(previewRoute, /adminAttempts/);
   assert.match(previewRoute, /notificationFingerprint/);
+  assert.match(previewRoute, /previewHistory/);
+  assert.match(previewRoute, /submissionId/);
 });
 
 test("every completed preview attempts the client result and admin notification", () => {
