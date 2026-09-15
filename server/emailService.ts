@@ -4,6 +4,7 @@ import { logEmail, ADMIN_EMAIL_CC, type EmailTrackingData } from "./emailTrackin
 import nodemailer from "nodemailer";
 import {
   buildPeptidesPreviewAdminNotificationContent,
+  buildPeptidesPreviewDestinationPath,
   buildPeptidesPreviewResultEmailContent,
   type PeptidesPreviewEmailInput,
   type PeptidesPreviewEmailResult,
@@ -6227,10 +6228,10 @@ Réf. commande : ${opts.orderId.slice(0,8)}`;
 export async function sendPeptidesPreviewResultEmail(
   input: PeptidesPreviewEmailInput,
   result: PeptidesPreviewEmailResult,
-  checkoutUrl: string,
   leadId: string,
 ): Promise<boolean> {
-  const content = buildPeptidesPreviewResultEmailContent(input, result, checkoutUrl, String(process.env.APP_URL || "https://apexlabs.onrender.com"));
+  const emailCheckoutUrl = buildPeptidesPreviewDestinationPath(result.nextStep, "email");
+  const content = buildPeptidesPreviewResultEmailContent(input, result, emailCheckoutUrl, String(process.env.APP_URL || "https://apexlabs.onrender.com"));
   const delivery = await sendEmailWithTracking({ html: encodeBase64(content.html), text: content.text, subject: content.subject, from: { name: SENDER_NAME, email: SENDER_EMAIL }, to: [{ email: input.email, name: input.firstName }] }, { emailType: "peptidesPreviewResult", recipientEmail: input.email, recipientName: input.firstName, auditId: leadId, auditType: "PEPTIDES_PREVIEW", metadata: { leadId, status: result.status, nextStep: result.nextStep, grandTotalUsd: result.estimatedGrandTotalUsd } });
   return delivery.result === true;
 }

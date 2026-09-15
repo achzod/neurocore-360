@@ -72,11 +72,13 @@ test("client and admin emails expose arithmetic, landed quote and conversion cop
   assert.match(emailContentSource, /DEVIS COMPLET ESTIMÉ/);
   assert.match(emailContentSource, /MAIL PRÊT À COPIER COLLER/);
   assert.match(emailContentSource, /Tu peux débloquer ton analyse complète ici/);
-  assert.match(emailContentSource, /POURQUOI LE DEVIS EST SUSPENDU/);
-  assert.match(emailContentSource, /Aucun faux devis n’est donc affiché/);
+  assert.match(emailContentSource, /DÉCISION DU PRÉ-CALCUL/);
+  assert.match(emailContentSource, /Aucune molécule, aucun dosage et aucun prix/);
   assert.doesNotMatch(emailContentSource, /BUDGET INITIAL ESTIMÉ/);
   assert.match(previewRoute, /estimatedShippingCostUsd/);
   assert.match(previewRoute, /estimatedGrandTotalUsd/);
+  assert.match(previewRoute, /adminNotificationSent/);
+  assert.match(previewRoute, /notificationDeliveryState/);
   assert.match(previewRoute, /publicResult/);
   assert.match(previewRoute, /supplier: _supplier/);
   assert.match(previewRoute, /productUrl: _productUrl/);

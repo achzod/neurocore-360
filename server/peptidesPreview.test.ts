@@ -113,7 +113,8 @@ test("preview explains the review path instead of exposing a partial price when 
   assert.equal(result.estimatedProtocolCostUsd, null);
   assert.deepEqual(result.molecules, []);
   assert.ok(result.blockers.includes("catalogue_incomplet_pour_pays"));
-  assert.match(result.headline, /devis incomplet/);
+  assert.ok(result.analysisPoints.some((point) => /produit nécessaire.*livrable/.test(point)));
+  assert.doesNotMatch(result.rationale, /Au moins une réponse/);
 });
 
 test("none cannot be combined with a medical condition", () => {
@@ -189,10 +190,10 @@ test("cognitive plus sleep exposes four-week vials and full live purchase cost",
     snapshot("Selank", 12.97, "5mg"),
     snapshot("DSIP", 13.95, "5mg"),
   ]);
-  assert.equal(result.estimatedProtocolCostUsd, 93.18);
-  assert.equal(result.totalVialsRequired, 7);
-  assert.equal(result.totalVialsPurchased, 7);
-  assert.equal(result.totalPackages, 7);
+  assert.equal(result.estimatedProtocolCostUsd, 79.23);
+  assert.equal(result.totalVialsRequired, 6);
+  assert.equal(result.totalVialsPurchased, 6);
+  assert.equal(result.totalPackages, 6);
   assert.deepEqual(result.molecules.map((item) => ({
     name: item.name,
     duration: item.cycleDurationLabel,
@@ -201,15 +202,14 @@ test("cognitive plus sleep exposes four-week vials and full live purchase cost",
   })), [
     { name: "Semax", duration: "4 semaines", vials: 3, total: 40.32 },
     { name: "Selank", duration: "4 semaines", vials: 3, total: 38.91 },
-    { name: "DSIP", duration: "4 semaines", vials: 1, total: 13.95 },
   ]);
 });
 
 test("secondary goals are explained as secondary and never mislabeled as the primary goal", () => {
   const input = peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "fatloss", secondaryGoals: ["recovery"] });
   const result = buildPeptidesPreview(input, [snapshot("Semaglutide", 35), snapshot("BPC-157", 15)]);
-  assert.match(result.molecules[0].reason, /priorité principale/);
-  assert.match(result.molecules[1].reason, /objectif secondaire/);
+  assert.match(result.molecules[0].reason, /IMC 24\.8.*historique GLP-1/);
+  assert.match(result.molecules[1].reason, /La récupération fait partie de tes priorités/);
   assert.doesNotMatch(result.molecules[1].reason, /objectif principal concerne la récupération/);
 });
 

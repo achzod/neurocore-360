@@ -44,6 +44,9 @@ export type PeptidesPreviewEmailResult = {
   status: "eligible" | "review_required";
   headline: string;
   rationale: string;
+  analysisPoints: string[];
+  requiredMarkers: string[];
+  nextStepExplanation: string;
   budgetExplanation: string;
   quoteExplanation: string;
   molecules: Array<{
@@ -86,6 +89,24 @@ function money(value: number | null): string {
   return value == null ? "À valider" : `$${Number(value).toFixed(2)}`;
 }
 
+const profileLabels: Record<string, string> = {
+  male: "Homme", female: "Femme",
+  recovery: "Récupération", "gh-antiaging": "Axe GH", fatloss: "Perte de graisse", sleep: "Sommeil", cognitive: "Cognition", libido: "Libido", "testo-boost": "Axe testostérone", "skin-hair": "Peau et cheveux", endurance: "Endurance",
+  none: "Aucune", diabetes: "Diabète", cancer: "Cancer actif ou antécédent", pregnant: "Grossesse", breastfeeding: "Allaitement", autoimmune: "Maladie auto-immune", cardiac: "Problème cardiaque", hypertension: "Hypertension", thyroid: "Trouble thyroïdien", "renal-hepatic": "Atteinte rénale ou hépatique",
+  recent: "Bilan de moins de trois mois", old: "Bilan de plus de trois mois", never: "Aucun bilan",
+  normal: "Tension normale", controlled: "Tension traitée et contrôlée", high: "Tension élevée", unknown: "Non renseigné",
+  comfortable: "À l’aise avec les injections", possible: "Injection possible si nécessaire", anxious: "Anxieux mais ouvert aux injections", refuse: "Refuse les injections",
+  "twice-daily": "Jusqu’à deux fois par jour", daily: "Une fois par jour", "few-week": "Deux à cinq fois par semaine", weekly: "Une fois par semaine", minimal: "Fréquence minimale",
+  "yes-private": "Réfrigérateur privé", "yes-shared": "Réfrigérateur partagé", no: "Pas de stockage au froid",
+  "4-6": "Quatre à six semaines", "8-12": "Huit à douze semaines", "12plus": "Plus de douze semaines",
+  asap: "Dès que possible", "1-2weeks": "Dans une à deux semaines", "1month": "Dans un mois", planning: "Préparation pour plus tard",
+  FR: "France", BE: "Belgique", CH: "Suisse", LU: "Luxembourg", AE: "Émirats arabes unis", CA: "Canada", US: "États-Unis", GB: "Royaume-Uni", DE: "Allemagne", ES: "Espagne", IT: "Italie", NL: "Pays-Bas", PT: "Portugal", MA: "Maroc", DZ: "Algérie", TN: "Tunisie",
+};
+
+function profileLabel(value: string): string {
+  return profileLabels[value] || value;
+}
+
 function previewStatusLabel(result: PeptidesPreviewEmailResult): string {
   if (result.status === "eligible") return "Pré-sélection et devis disponibles";
   if (result.nextStep === "blood_analysis") return "Bilan biologique requis avant sélection";
@@ -98,26 +119,8 @@ function previewNextStepLabel(result: PeptidesPreviewEmailResult): string {
   return "Débloquer le protocole Peptides Engine complet";
 }
 
-function describePreviewBlocker(blocker: string): string {
-  const labels: Record<string, string> = {
-    bilan_hormonal_recent_requis: "Un bilan hormonal récent est nécessaire pour éviter une sélection fondée sur des suppositions.",
-    medicaments_a_integrer: "Le traitement actuellement déclaré doit être intégré avant de confirmer une molécule, un dosage ou un devis.",
-    stack_actuel_a_revoir: "Le stack actuel doit être revu pour éviter doublons et incompatibilités.",
-    frequence_incompatible: "La fréquence d’administration acceptée n’est pas compatible avec la présélection envisagée.",
-    stockage_incompatible: "Les conditions de stockage déclarées ne permettent pas de confirmer la présélection en sécurité.",
-    injection_refusee: "Le refus d’injection impose une sélection adaptée avant tout chiffrage.",
-  };
-  return labels[blocker] || blocker.replace(/_/g, " ");
-}
-
-function previewBlockerText(result: PeptidesPreviewEmailResult): string {
-  return result.blockers.length
-    ? result.blockers.map((blocker) => `- ${describePreviewBlocker(blocker)}`).join("\n")
-    : "- Une réponse du profil modifie directement la compatibilité ou le chiffrage.";
-}
-
-function previewDestinationPath(nextStep: string, medium: "result" | "email"): string {
-  const source = medium === "email" ? "peptides_preview_admin" : "peptides_preview";
+export function buildPeptidesPreviewDestinationPath(nextStep: string, medium: "result" | "email"): string {
+  const source = medium === "email" ? "peptides_preview_email" : "peptides_preview";
   if (nextStep === "blood_analysis") {
     return `/offers/blood-analysis?utm_source=${source}&utm_medium=${medium}&utm_campaign=pre_peptides_engine`;
   }
@@ -158,31 +161,32 @@ export function buildPeptidesPreviewCopyReadyReply(
 ): string {
   const objective = input.goalDetails.trim();
   if (result.status === "review_required") {
-    const nextStep = result.nextStep === "blood_analysis"
-      ? "La prochaine étape utile est de vérifier tes marqueurs avant toute recommandation. Blood Analysis permet d’éviter de choisir à l’aveugle, puis de construire la stratégie à partir de données récentes."
-      : "La prochaine étape utile est une validation individualisée de ton profil. Elle permettra d’intégrer la variable bloquante avant de confirmer la sélection, les quantités et le budget.";
+    const analysis = result.analysisPoints.map((point) => `- ${point}`).join("\n");
+    const markers = result.requiredMarkers.length
+      ? `\n\nMarqueurs à vérifier\n\n${result.requiredMarkers.map((marker) => `- ${marker}`).join("\n")}`
+      : "";
     return `Bonjour ${input.firstName},
 
 J’ai repris ton profil complet, pas seulement ton objectif principal. Tu as indiqué : ${objective}
 
-Mon analyse
+Ce que ton profil montre
 
 ${result.rationale}
 
-Pourquoi je ne t’envoie pas un faux devis
+${analysis}${markers}
 
-${previewBlockerText(result)}
+Ma décision
 
-Dans ton cas, afficher une molécule, un dosage ou un prix maintenant donnerait une précision trompeuse. La présélection et le devis sont donc volontairement suspendus jusqu’à validation de ce point.
+Je ne vais pas afficher une molécule, un dosage ou un devis tant que ces éléments ne sont pas résolus. Ce serait une précision artificielle, pas une recommandation personnalisée.
 
 La prochaine étape
 
-${nextStep}
+${result.nextStepExplanation}
 
 Continuer ici :
 ${destination}
 
-Une recommandation utile doit être adaptée à tes données, compatible avec ton profil et chiffrée complètement — pas remplie automatiquement pour faire joli.
+La prochaine recommandation devra expliquer ce qui est retenu, ce qui est écarté et pourquoi, avec un chiffrage complet uniquement lorsqu’il devient fiable.
 
 Achzod
 APEXLABS`;
@@ -205,6 +209,10 @@ J’ai repris ton profil complet, pas seulement ton objectif principal. Tu as in
 Ma recommandation préliminaire
 
 ${result.rationale}
+
+Ce que ton profil a changé dans la sélection
+
+${result.analysisPoints.map((point) => `- ${point}`).join("\n")}
 
 ${moleculeText}
 
@@ -252,14 +260,13 @@ export function buildPeptidesPreviewResultEmailContent(
   const objectiveCard = `<div style="margin-top:18px;padding:15px;border-radius:12px;background:#0b0c0e;border:1px solid #27292e;"><div style="font-size:10px;font-weight:900;letter-spacing:.14em;color:#888;">CE QUE TU NOUS AS INDIQUÉ</div><p style="margin:7px 0 0;font-size:13px;line-height:1.65;color:#ddd;">${escapeHtml(input.goalDetails.trim())}</p></div>`;
   const ctaLabel = result.nextStep === "blood_analysis" ? "Vérifier mes marqueurs" : result.nextStep === "manual_review" ? "Obtenir ma validation personnalisée" : "Débloquer mon protocole complet";
   const cta = `<a href="${escapeHtml(destination)}" style="display:block;margin-top:22px;padding:16px 20px;border-radius:999px;background:#f5b942;color:#08090b;text-align:center;text-decoration:none;font-weight:900;">${ctaLabel}</a>`;
-  const eligibleBody = `<div style="margin-top:24px;">${buildPeptidesPreviewSummaryRows(result)}</div><div style="margin-top:20px;padding:18px;border:1px solid #3d341c;border-radius:14px;background:#17140c;"><div style="font-size:11px;letter-spacing:.12em;color:#f5b942;font-weight:800;">DEVIS COMPLET ESTIMÉ</div><table style="width:100%;margin-top:8px;border-collapse:collapse;font-size:13px;"><tr><td style="padding:7px 0;color:#999;">Produits</td><td style="padding:7px 0;text-align:right;font-weight:800;">${money(result.estimatedProtocolCostUsd)}</td></tr><tr><td style="padding:7px 0;color:#999;">Livraison</td><td style="padding:7px 0;text-align:right;font-weight:800;">${money(result.estimatedShippingCostUsd)}</td></tr><tr><td style="padding:10px 0 7px;border-top:1px solid #42391f;color:#fff;font-weight:800;">Total rendu estimé</td><td style="padding:10px 0 7px;border-top:1px solid #42391f;text-align:right;color:#f5b942;font-size:22px;font-weight:900;">${money(result.estimatedGrandTotalUsd)}</td></tr><tr><td style="padding:7px 0;color:#999;">Équivalent quatre semaines</td><td style="padding:7px 0;text-align:right;font-weight:800;">${money(result.monthlyEquivalentUsd)}</td></tr></table></div>${result.shippingBreakdown.length ? `<div style="margin-top:14px;overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">${buildShippingRows(result)}</table></div>` : ""}<div style="margin-top:14px;padding:13px 15px;border:1px solid ${result.budgetFit === "above" ? "#5a461d" : "#244b38"};border-radius:12px;background:${result.budgetFit === "above" ? "#1c170c" : "#0d1812"};font-size:13px;line-height:1.6;color:${result.budgetFit === "above" ? "#f5cf7a" : "#9ee0b8"};">${escapeHtml(result.budgetExplanation)}</div><div style="margin-top:22px;padding:18px;border-radius:14px;background:#0b0c0e;border:1px solid #27292e;"><strong style="color:#fff;">Ce que débloque l’analyse complète</strong><p style="margin:9px 0 0;color:#aaa;font-size:13px;line-height:1.7;">Le calendrier semaine par semaine, les ajustements liés à ton historique, les incompatibilités, la reconstitution, les unités et la liste d’achat finale. L’objectif est d’éviter un stack générique, une quantité manquante ou un budget sous estimé.</p></div>${cta}`;
-  const blockerHtml = result.blockers.length
-    ? result.blockers.map((blocker) => `<li style="margin:0 0 8px;">${escapeHtml(describePreviewBlocker(blocker))}</li>`).join("")
-    : `<li>Une réponse du profil modifie directement la compatibilité ou le chiffrage.</li>`;
-  const nextStepText = result.nextStep === "blood_analysis"
-    ? "Vérifie d’abord tes marqueurs avec Blood Analysis. La recommandation pourra ensuite être construite sur des données récentes plutôt que sur des suppositions."
-    : "Fais valider ton profil individuellement afin d’intégrer la variable bloquante avant de confirmer la sélection, les quantités et le budget.";
-  const reviewBody = `<div style="margin-top:24px;padding:18px;border:1px solid #4b3b1c;border-radius:14px;background:#18140c;"><div style="font-size:11px;letter-spacing:.12em;color:#f5b942;font-weight:800;">POURQUOI LE DEVIS EST SUSPENDU</div><ul style="margin:12px 0 0;padding-left:20px;color:#ddd;font-size:13px;line-height:1.65;">${blockerHtml}</ul><p style="margin:12px 0 0;color:#aaa;font-size:13px;line-height:1.65;">Afficher une molécule, un dosage ou un prix maintenant donnerait une précision trompeuse. Aucun faux devis n’est donc affiché.</p></div><div style="margin-top:18px;padding:18px;border-radius:14px;background:#0b0c0e;border:1px solid #27292e;"><strong style="color:#fff;">Ta prochaine étape</strong><p style="margin:9px 0 0;color:#aaa;font-size:13px;line-height:1.7;">${escapeHtml(nextStepText)}</p></div>${cta}`;
+  const analysisHtml = result.analysisPoints.map((point) => `<li style="margin:0 0 8px;">${escapeHtml(point)}</li>`).join("");
+  const analysisCard = `<div style="margin-top:18px;padding:18px;border-radius:14px;background:#0b0c0e;border:1px solid #27292e;"><div style="font-size:11px;letter-spacing:.12em;color:#f5b942;font-weight:800;">CE QUE TON PROFIL CHANGE DANS LA DÉCISION</div><ul style="margin:12px 0 0;padding-left:20px;color:#ddd;font-size:13px;line-height:1.65;">${analysisHtml}</ul></div>`;
+  const eligibleBody = `${analysisCard}<div style="margin-top:24px;">${buildPeptidesPreviewSummaryRows(result)}</div><div style="margin-top:20px;padding:18px;border:1px solid #3d341c;border-radius:14px;background:#17140c;"><div style="font-size:11px;letter-spacing:.12em;color:#f5b942;font-weight:800;">DEVIS COMPLET ESTIMÉ</div><table style="width:100%;margin-top:8px;border-collapse:collapse;font-size:13px;"><tr><td style="padding:7px 0;color:#999;">Produits</td><td style="padding:7px 0;text-align:right;font-weight:800;">${money(result.estimatedProtocolCostUsd)}</td></tr><tr><td style="padding:7px 0;color:#999;">Livraison</td><td style="padding:7px 0;text-align:right;font-weight:800;">${money(result.estimatedShippingCostUsd)}</td></tr><tr><td style="padding:10px 0 7px;border-top:1px solid #42391f;color:#fff;font-weight:800;">Total rendu estimé</td><td style="padding:10px 0 7px;border-top:1px solid #42391f;text-align:right;color:#f5b942;font-size:22px;font-weight:900;">${money(result.estimatedGrandTotalUsd)}</td></tr><tr><td style="padding:7px 0;color:#999;">Équivalent quatre semaines</td><td style="padding:7px 0;text-align:right;font-weight:800;">${money(result.monthlyEquivalentUsd)}</td></tr></table></div>${result.shippingBreakdown.length ? `<div style="margin-top:14px;overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">${buildShippingRows(result)}</table></div>` : ""}<div style="margin-top:14px;padding:13px 15px;border:1px solid ${result.budgetFit === "above" ? "#5a461d" : "#244b38"};border-radius:12px;background:${result.budgetFit === "above" ? "#1c170c" : "#0d1812"};font-size:13px;line-height:1.6;color:${result.budgetFit === "above" ? "#f5cf7a" : "#9ee0b8"};">${escapeHtml(result.budgetExplanation)}</div><div style="margin-top:22px;padding:18px;border-radius:14px;background:#0b0c0e;border:1px solid #27292e;"><strong style="color:#fff;">Ce que débloque l’analyse complète</strong><p style="margin:9px 0 0;color:#aaa;font-size:13px;line-height:1.7;">Le calendrier semaine par semaine, les ajustements liés à ton historique, les incompatibilités, la reconstitution, les unités et la liste d’achat finale. L’objectif est d’éviter un stack générique, une quantité manquante ou un budget sous estimé.</p></div>${cta}`;
+  const markersHtml = result.requiredMarkers.length
+    ? `<div style="margin-top:18px;padding:18px;border:1px solid #2d4560;border-radius:14px;background:#0b131d;"><div style="font-size:11px;letter-spacing:.12em;color:#7fc4ff;font-weight:800;">MARQUEURS À VÉRIFIER</div><ul style="margin:12px 0 0;padding-left:20px;color:#d8e9f8;font-size:13px;line-height:1.65;">${result.requiredMarkers.map((marker) => `<li style="margin:0 0 7px;">${escapeHtml(marker)}</li>`).join("")}</ul></div>`
+    : "";
+  const reviewBody = `<div style="margin-top:24px;padding:18px;border:1px solid #4b3b1c;border-radius:14px;background:#18140c;"><div style="font-size:11px;letter-spacing:.12em;color:#f5b942;font-weight:800;">DÉCISION DU PRÉ-CALCUL</div><ul style="margin:12px 0 0;padding-left:20px;color:#ddd;font-size:13px;line-height:1.65;">${analysisHtml}</ul><p style="margin:12px 0 0;color:#aaa;font-size:13px;line-height:1.65;">Aucune molécule, aucun dosage et aucun prix ne sont affichés tant que ces éléments ne sont pas résolus.</p></div>${markersHtml}<div style="margin-top:18px;padding:18px;border-radius:14px;background:#0b0c0e;border:1px solid #27292e;"><strong style="color:#fff;">Ta prochaine étape</strong><p style="margin:9px 0 0;color:#aaa;font-size:13px;line-height:1.7;">${escapeHtml(result.nextStepExplanation)}</p></div>${cta}`;
   const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#08090b;color:#fff;font-family:Arial,sans-serif;"><div style="display:none;max-height:0;overflow:hidden;">${escapeHtml(preheader)}</div><div style="max-width:720px;margin:0 auto;padding:28px 14px;"><div style="font-size:17px;font-weight:900;letter-spacing:.16em;">APEX<span style="color:#f5b942;">LABS</span></div><div style="margin-top:24px;padding:28px;border:1px solid #292929;border-radius:20px;background:#101114;"><div style="font-size:11px;font-weight:800;letter-spacing:.16em;color:#f5b942;">TON RÉSULTAT PEPTIDES ENGINE</div><h1 style="margin:10px 0 0;font-size:30px;line-height:1.15;color:#fff;">${escapeHtml(result.headline)}</h1>${objectiveCard}<p style="margin:16px 0 0;font-size:15px;line-height:1.7;color:#bbb;">${escapeHtml(result.rationale)}</p>${result.status === "eligible" ? eligibleBody : reviewBody}</div></div></body></html>`;
   return { subject, html, text: buildPeptidesPreviewCopyReadyReply(input, result, destination) };
 }
@@ -272,23 +279,25 @@ export function buildPeptidesPreviewAdminNotificationContent(
   appUrlInput = "https://apexlabs.onrender.com",
 ): { subject: string; html: string; text: string } {
   const appUrl = appUrlInput.replace(/\/$/, "");
-  const path = previewDestinationPath(result.nextStep, "result");
+  const path = buildPeptidesPreviewDestinationPath(result.nextStep, "email");
   const clientContent = buildPeptidesPreviewResultEmailContent(input, result, path, appUrl);
   const readyReply = clientContent.text;
   const copySubject = clientContent.subject;
   const profileRows: Array<[string, string]> = [
-    ["Lead", `${input.firstName} · ${input.email}`], ["Profil", `${input.age} ans · ${input.weightKg} kg · ${input.heightCm} cm · ${input.sex}`],
+    ["Lead", `${input.firstName} · ${input.email}`], ["Profil", `${input.age} ans · ${input.weightKg} kg · ${input.heightCm} cm · ${profileLabel(input.sex)}`],
     ["Verdict", previewStatusLabel(result)], ["Prochaine étape", previewNextStepLabel(result)],
     ["Recommandation", result.molecules.length ? result.molecules.map((molecule) => molecule.name).join(" + ") : "Aucune molécule affichée tant que la revue n’est pas terminée"],
-    ["Blocage", result.blockers.length ? result.blockers.map(describePreviewBlocker).join(" ") : "Aucun"],
-    ["Objectif", `${input.primaryGoal} · ${input.secondaryGoals.join(", ") || "aucun secondaire"}`], ["Détail exprimé", input.goalDetails],
-    ["Horizon", input.timeline], ["Santé", input.conditions.join(", ")], ["Bilan / tension / sommeil", `${input.bloodwork} · ${input.bloodPressure} · ${input.sleepHours} h`],
+    ["Décision expliquée", result.analysisPoints.join(" • ")],
+    ["Marqueurs requis", result.requiredMarkers.length ? result.requiredMarkers.join(", ") : "Aucun avant cette présélection"],
+    ["Objectif", `${profileLabel(input.primaryGoal)} · ${input.secondaryGoals.length ? input.secondaryGoals.map(profileLabel).join(", ") : "aucun objectif secondaire"}`], ["Détail exprimé", input.goalDetails],
+    ["Horizon", profileLabel(input.timeline)], ["Santé", input.conditions.map(profileLabel).join(", ")], ["Bilan / tension / sommeil", `${profileLabel(input.bloodwork)} · ${profileLabel(input.bloodPressure)} · ${input.sleepHours} h`],
     ["Médicaments", input.medications], ["Allergies", input.allergies], ["Peptides actuels", input.currentPeptides], ["Peptides passés", input.pastPeptides],
-    ["Injections / fréquence / froid", `${input.injectionComfort} · ${input.injectionFrequency} · ${input.refrigeration}`], ["Budget total", `$${input.budgetTotalUsd.toFixed(2)}`],
-    ["Devis rendu", result.status === "eligible" ? money(result.estimatedGrandTotalUsd) : "Suspendu — aucune estimation partielle"], ["Email automatique client", clientEmailSent ? "Envoyé" : "Non envoyé"],
+    ["Injections / fréquence / froid", `${profileLabel(input.injectionComfort)} · ${profileLabel(input.injectionFrequency)} · ${profileLabel(input.refrigeration)}`], ["Budget total", `$${input.budgetTotalUsd.toFixed(2)}`],
+    ["Pays / début", `${profileLabel(input.country)} · ${profileLabel(input.startWhen)}`],
+    ["Devis rendu", result.status === "eligible" ? money(result.estimatedGrandTotalUsd) : "Suspendu : aucune estimation partielle"], ["Email automatique client", clientEmailSent ? "Envoyé" : "Non envoyé"],
   ];
   const htmlRows = profileRows.map(([label, value]) => `<tr><td style="padding:9px 12px;border-bottom:1px solid #ececec;color:#666;font-size:12px;vertical-align:top;">${escapeHtml(label)}</td><td style="padding:9px 12px;border-bottom:1px solid #ececec;color:#111;font-size:13px;font-weight:700;">${escapeHtml(value)}</td></tr>`).join("");
-  const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#f3f4f2;font-family:Arial,sans-serif;color:#111;"><div style="max-width:760px;margin:0 auto;padding:24px 12px;"><div style="padding:25px;background:#111;color:#fff;border-radius:18px 18px 0 0;"><div style="font-size:12px;font-weight:900;letter-spacing:.14em;color:#f5b942;">APEXLABS · LEAD PRÉ PEPTIDES</div><h1 style="margin:10px 0 0;font-size:25px;">${escapeHtml(input.firstName)} · ${escapeHtml(previewStatusLabel(result))}</h1><p style="margin:10px 0 0;color:#bbb;">Verdict, état de l’email client et réponse prête à copier sont réunis ci-dessous.</p></div><div style="padding:22px;background:#fff;border:1px solid #ddd;overflow-x:auto;"><table style="width:100%;border-collapse:collapse;">${htmlRows}</table></div><div style="padding:22px;background:#fff;border:1px solid #ddd;border-top:0;"><div style="font-size:12px;font-weight:900;letter-spacing:.12em;color:#a46b00;">OBJET À COPIER</div><div style="margin-top:8px;padding:13px;border-radius:10px;background:#fff7df;border:1px solid #ead59a;font-weight:800;">${escapeHtml(copySubject)}</div><div style="margin-top:20px;font-size:12px;font-weight:900;letter-spacing:.12em;color:#a46b00;">MAIL PRÊT À COPIER COLLER</div><div style="margin-top:8px;padding:18px;border-radius:12px;background:#f6f7f5;border:1px solid #dfe2dc;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.65;color:#171717;">${escapeHtml(readyReply)}</div><p style="margin:16px 0 0;color:#777;font-size:11px;">Lead ID : ${escapeHtml(leadId)}. Le profil, les calculs, le devis et le CTA sont inclus dans ce mail, pas seulement un tableau.</p></div></div></body></html>`;
+  const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#f3f4f2;font-family:Arial,sans-serif;color:#111;"><div style="max-width:760px;margin:0 auto;padding:24px 12px;"><div style="padding:25px;background:#111;color:#fff;border-radius:18px 18px 0 0;"><div style="font-size:12px;font-weight:900;letter-spacing:.14em;color:#f5b942;">APEXLABS · LEAD PRÉ PEPTIDES</div><h1 style="margin:10px 0 0;font-size:25px;">${escapeHtml(input.firstName)} · ${escapeHtml(previewStatusLabel(result))}</h1><p style="margin:10px 0 0;color:#bbb;">Verdict, état de l’email client et réponse prête à copier sont réunis ci-dessous.</p></div><div style="padding:22px;background:#fff;border:1px solid #ddd;overflow-x:auto;"><table style="width:100%;border-collapse:collapse;">${htmlRows}</table></div><div style="padding:22px;background:#fff;border:1px solid #ddd;border-top:0;"><div style="font-size:12px;font-weight:900;letter-spacing:.12em;color:#a46b00;">OBJET À COPIER</div><div style="margin-top:8px;padding:13px;border-radius:10px;background:#fff7df;border:1px solid #ead59a;font-weight:800;">${escapeHtml(copySubject)}</div><div style="margin-top:20px;font-size:12px;font-weight:900;letter-spacing:.12em;color:#a46b00;">MAIL PRÊT À COPIER COLLER</div><div style="margin-top:8px;padding:18px;border-radius:12px;background:#f6f7f5;border:1px solid #dfe2dc;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.65;color:#171717;">${escapeHtml(readyReply)}</div><p style="margin:16px 0 0;color:#777;font-size:11px;">Lead ID : ${escapeHtml(leadId)}. ${result.status === "eligible" ? "Le profil, la logique de sélection, les calculs, le devis et le CTA sont inclus." : "Le profil, la raison de suspension, les marqueurs utiles et la prochaine étape sont inclus, sans faux devis."}</p></div></div></body></html>`;
   const text = `Nouveau lead Pré Peptides\n\nVerdict : ${previewStatusLabel(result)}\nProchaine étape : ${previewNextStepLabel(result)}\nEmail automatique client : ${clientEmailSent ? "Envoyé" : "Non envoyé"}\n\nObjet à copier :\n${copySubject}\n\nMAIL PRÊT À COPIER COLLER\n\n${readyReply}\n\nLead ID: ${leadId}`;
   const subject = result.status === "eligible"
     ? `[APEXLABS] Lead prêt à convertir · ${input.firstName} · ${money(result.estimatedGrandTotalUsd)}`
