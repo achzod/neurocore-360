@@ -63,6 +63,9 @@ export type PeptidesPreviewEmailResult = {
     cycleDurationLabel: string;
     calculationBasis: string;
     totalRequiredMg: number;
+    bufferedRequiredMg?: number;
+    purchasedCapacityMg?: number;
+    reserveCapacityMg?: number;
     vialStrengthMg: number;
     mathematicalVials: number;
     operationalVials: number;
@@ -70,6 +73,7 @@ export type PeptidesPreviewEmailResult = {
     vialsRequired: number;
     vialsPurchased: number;
     packageCount: number;
+    purchaseLines?: Array<{ format: string; boxSize: number; packageCount: number; deliveredVials: number; packagePriceUsd: number; totalPriceUsd: number; productUrl: string }>;
     estimatedTotalPriceUsd: number;
   }>;
   estimatedStarterCostUsd: number | null;
@@ -143,10 +147,10 @@ Ton estimation rapide
 Nombre de molécules estimé : ${result.moleculeCount}
 Durée estimée : ${result.durationLabel}
 Produits : ${products}
-Livraison : ${shipping}
+Livraison (une seule fois pour la commande complète) : ${shipping}
 Total rendu estimé : ${total}
 
-Les noms des molécules et les dosages sont réservés à ton analyse Peptides Engine complète. Le prix inclut une réserve de fioles pour éviter un rachat en milieu de protocole.
+Les noms des molécules et les dosages sont réservés à ton analyse Peptides Engine complète. Le prix intègre une marge de 20 % dans la quantité totale pour limiter le risque de rachat en milieu de protocole, sans ajouter automatiquement une fiole entière par molécule. La livraison est comptée une seule fois pour la commande complète.
 
 Ce que ton profil change dans l’analyse
 
@@ -180,7 +184,7 @@ export function buildPeptidesPreviewResultEmailContent(
   const cta = `<a href="${escapeHtml(destination)}" style="display:block;margin-top:22px;padding:16px 20px;border-radius:999px;background:#f5b942;color:#08090b;text-align:center;text-decoration:none;font-weight:900;">Débloquer mon analyse Peptides Engine</a>`;
   const analysisHtml = result.analysisPoints.map((point) => `<li style="margin:0 0 8px;">${escapeHtml(point)}</li>`).join("");
   const value = (amount: number | null, fallback: string) => amount == null ? fallback : money(amount);
-  const estimateBody = `<div style="margin-top:22px;padding:18px;border:1px solid #3d341c;border-radius:14px;background:#17140c;"><div style="font-size:11px;letter-spacing:.12em;color:#f5b942;font-weight:800;">TON ESTIMATION RAPIDE</div><table style="width:100%;margin-top:9px;border-collapse:collapse;font-size:13px;"><tr><td style="padding:7px 0;color:#999;">Nombre de molécules</td><td style="padding:7px 0;text-align:right;font-weight:800;">${result.moleculeCount}</td></tr><tr><td style="padding:7px 0;color:#999;">Durée estimée</td><td style="padding:7px 0;text-align:right;font-weight:800;">${escapeHtml(result.durationLabel)}</td></tr><tr><td style="padding:7px 0;color:#999;">Produits</td><td style="padding:7px 0;text-align:right;font-weight:800;">${value(result.estimatedProtocolCostUsd, "Finalisé dans Peptides Engine")}</td></tr><tr><td style="padding:7px 0;color:#999;">Livraison</td><td style="padding:7px 0;text-align:right;font-weight:800;">${value(result.estimatedShippingCostUsd, "Finalisée dans Peptides Engine")}</td></tr><tr><td style="padding:11px 0 7px;border-top:1px solid #42391f;color:#fff;font-weight:800;">Total rendu estimé</td><td style="padding:11px 0 7px;border-top:1px solid #42391f;text-align:right;color:#f5b942;font-size:22px;font-weight:900;">${value(result.estimatedGrandTotalUsd, "Dans Peptides Engine")}</td></tr></table><p style="margin:12px 0 0;color:#aaa;font-size:12px;line-height:1.6;">Les noms des molécules et les dosages sont réservés à l’analyse complète. Le prix inclut une réserve de fioles pour éviter un rachat en milieu de protocole.</p></div>`;
+  const estimateBody = `<div style="margin-top:22px;padding:18px;border:1px solid #3d341c;border-radius:14px;background:#17140c;"><div style="font-size:11px;letter-spacing:.12em;color:#f5b942;font-weight:800;">TON ESTIMATION RAPIDE</div><table style="width:100%;margin-top:9px;border-collapse:collapse;font-size:13px;"><tr><td style="padding:7px 0;color:#999;">Nombre de molécules</td><td style="padding:7px 0;text-align:right;font-weight:800;">${result.moleculeCount}</td></tr><tr><td style="padding:7px 0;color:#999;">Durée estimée</td><td style="padding:7px 0;text-align:right;font-weight:800;">${escapeHtml(result.durationLabel)}</td></tr><tr><td style="padding:7px 0;color:#999;">Produits</td><td style="padding:7px 0;text-align:right;font-weight:800;">${value(result.estimatedProtocolCostUsd, "Finalisé dans Peptides Engine")}</td></tr><tr><td style="padding:7px 0;color:#999;">Livraison · une seule fois</td><td style="padding:7px 0;text-align:right;font-weight:800;">${value(result.estimatedShippingCostUsd, "Finalisée dans Peptides Engine")}</td></tr><tr><td style="padding:11px 0 7px;border-top:1px solid #42391f;color:#fff;font-weight:800;">Total rendu estimé</td><td style="padding:11px 0 7px;border-top:1px solid #42391f;text-align:right;color:#f5b942;font-size:22px;font-weight:900;">${value(result.estimatedGrandTotalUsd, "Dans Peptides Engine")}</td></tr></table><p style="margin:12px 0 0;color:#aaa;font-size:12px;line-height:1.6;">Les noms des molécules et les dosages sont réservés à l’analyse complète. Le prix intègre une marge de 20 % dans la quantité totale pour limiter le risque de rachat en milieu de protocole, sans ajouter automatiquement une fiole entière par molécule. La livraison est comptée une seule fois pour la commande complète.</p></div>`;
   const analysisCard = `<div style="margin-top:18px;padding:18px;border-radius:14px;background:#0b0c0e;border:1px solid #27292e;"><div style="font-size:11px;letter-spacing:.12em;color:#f5b942;font-weight:800;">CE QUE TON PROFIL CHANGE DANS L’ANALYSE</div><ul style="margin:12px 0 0;padding-left:20px;color:#ddd;font-size:13px;line-height:1.65;">${analysisHtml}</ul></div>`;
   const precisionCard = `<div style="margin-top:18px;padding:18px;border-radius:14px;background:#0b0c0e;border:1px solid #27292e;"><strong style="color:#fff;">Un protocole plus poussé et plus précis après l’achat</strong><p style="margin:9px 0 0;color:#aaa;font-size:13px;line-height:1.7;">${escapeHtml(result.nextStepExplanation)}</p><p style="margin:9px 0 0;color:#ddd;font-size:13px;line-height:1.7;">Cette estimation peut évoluer après l’achat de Peptides Engine, lorsque l’analyse complète affine la sélection, le calendrier, les quantités et la liste d’achat selon ton profil.</p></div>`;
   const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#08090b;color:#fff;font-family:Arial,sans-serif;"><div style="display:none;max-height:0;overflow:hidden;">${escapeHtml(preheader)}</div><div style="max-width:720px;margin:0 auto;padding:28px 14px;"><div style="font-size:17px;font-weight:900;letter-spacing:.16em;">APEX<span style="color:#f5b942;">LABS</span></div><div style="margin-top:24px;padding:28px;border:1px solid #292929;border-radius:20px;background:#101114;"><div style="font-size:11px;font-weight:800;letter-spacing:.16em;color:#f5b942;">TON RÉSULTAT PEPTIDES ENGINE</div><h1 style="margin:10px 0 0;font-size:30px;line-height:1.15;color:#fff;">${escapeHtml(result.headline)}</h1>${objectiveCard}<p style="margin:16px 0 0;font-size:15px;line-height:1.7;color:#bbb;">${escapeHtml(result.rationale)}</p>${estimateBody}${analysisCard}${precisionCard}${cta}</div></div></body></html>`;
@@ -203,8 +207,9 @@ export function buildPeptidesPreviewAdminNotificationContent(
     ? result.molecules.map((molecule, index) => [
         `${index + 1}. ${molecule.name} — ${molecule.doseSummary}`,
         molecule.calculationBasis,
-        `Besoin ${molecule.totalRequiredMg} mg · fiole ${molecule.vialStrengthMg} mg · ${molecule.mathematicalVials} fiole(s) mathématiques · ${molecule.operationalVials} opérationnelle(s) · réserve ${molecule.safetyReserveVials} fiole(s) · ${molecule.vialsRequired} à commander · ${molecule.vialsPurchased} achetée(s) après arrondi boîte · ${molecule.packageCount} boîte(s) · ${money(molecule.estimatedTotalPriceUsd)}`,
-      ].join(" | ")).join("\n")
+        `Besoin actif ${molecule.totalRequiredMg} mg · cible avec marge 20 % ${molecule.bufferedRequiredMg ?? "—"} mg · capacité achetée ${molecule.purchasedCapacityMg ?? "—"} mg · réserve réelle ${molecule.reserveCapacityMg ?? "—"} mg · fiole ${molecule.vialStrengthMg} mg · ${molecule.mathematicalVials} fiole(s) mathématiques · ${molecule.operationalVials} opérationnelle(s) · ${molecule.vialsRequired} à commander · ${molecule.vialsPurchased} achetée(s) · ${molecule.packageCount} boîte(s) · ${money(molecule.estimatedTotalPriceUsd)}`,
+        molecule.purchaseLines?.length ? `Panier exact : ${molecule.purchaseLines.map((line) => `${line.packageCount} × boîte de ${line.boxSize} (${line.deliveredVials} fioles, ${money(line.totalPriceUsd)})`).join(" + ")}` : "",
+      ].filter(Boolean).join(" | ")).join("\n")
     : "Calcul indisponible";
   const shippingDetail = result.shippingBreakdown.length
     ? result.shippingBreakdown.map((line, index) => `Expédition ${index + 1} : ${money(line.subtotalUsd)} de produits + ${money(line.shippingUsd)} de livraison · ${line.speed}`).join("\n")

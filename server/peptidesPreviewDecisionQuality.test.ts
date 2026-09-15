@@ -13,8 +13,8 @@ test("Karim produces a two-molecule twelve-week estimate with complete internal 
   assert.equal(result.nextStep, "peptides_engine");
   assert.equal(result.moleculeCount, 2);
   assert.equal(result.durationLabel, "12 semaines");
-  assert.equal(result.totalVialsRequired, 5);
-  assert.ok(result.molecules.every((m) => m.totalRequiredMg > 0 && m.safetyReserveVials >= 1 && m.vialsRequired > m.operationalVials && m.estimatedTotalPriceUsd > 0));
+  assert.equal(result.totalVialsRequired, 2);
+  assert.ok(result.molecules.every((m) => m.totalRequiredMg > 0 && m.vialsPurchased === m.vialsRequired && m.vialsPurchased * m.vialStrengthMg >= m.totalRequiredMg * 1.2 && m.estimatedTotalPriceUsd > 0));
   assert.match(result.quoteExplanation, /2 molécules.*12 semaines/);
   assert.doesNotMatch(result.nextStepExplanation, /Blood Analysis|bilan|marqueur|informations supplémentaires/);
 });
@@ -26,7 +26,7 @@ test("medicines and history change internal personalization without diverting pu
   assert.ok(result.blockers.includes("medicaments_a_integrer"));
   assert.ok(result.blockers.includes("historique_peptides_a_interpreter"));
   assert.equal(result.molecules.length, 2);
-  assert.equal(result.totalVialsRequired, 5);
+  assert.equal(result.totalVialsRequired, 2);
 });
 
 test("two secondary goals can raise a protocol to four but never beyond four", () => {
