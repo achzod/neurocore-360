@@ -29,7 +29,7 @@ const emiratesShipping: PeptauraShippingQuote[] = [{ supplier: "Verified", displ
 test("Karim receives two fully calculated molecules over twelve weeks for France", () => {
   const result = buildPeptidesPreview(peptidesPreviewInputSchema.parse(base), catalog, "2026-09-15T09:00:00Z", franceShipping);
   assert.equal(result.moleculeCount, 2);
-  assert.equal(result.durationLabel, "12 semaines");
+  assert.equal(result.durationLabel, "Stratégie 12 semaines · phases actives de 8 à 12 semaines");
   assert.deepEqual(result.molecules.map((m) => ({ name: m.name, dose: m.doseSummary, need: m.totalRequiredMg, vials: m.vialsRequired, bought: m.vialsPurchased, cost: m.estimatedTotalPriceUsd })), [
     { name: "KissPeptin-10", dose: "100 mcg par administration, 3 fois par semaine pendant 8 semaines actives dans une stratégie de 12 semaines", need: 2.4, vials: 1, bought: 1, cost: 31.19 },
     { name: "PT-141", dose: "500 mcg par semaine pendant 12 semaines", need: 6, vials: 1, bought: 1, cost: 20.03 },
@@ -52,15 +52,16 @@ test("all primary goals produce between two and four molecules and never less th
     assert.ok(result.moleculeCount >= 2 && result.moleculeCount <= 4, primaryGoal);
     assert.equal(result.molecules.length, result.moleculeCount, primaryGoal);
     assert.ok(result.molecules.every((m) => m.cycleDurationLabel === "12 semaines"), primaryGoal);
-    assert.equal(result.durationLabel, "12 semaines", primaryGoal);
-    assert.ok(result.molecules.every((m) => m.calculationBasis.length > 20 && m.totalRequiredMg > 0 && m.vialsRequired >= m.operationalVials && m.vialsPurchased === m.vialsRequired && m.safetyReserveVials === m.vialsPurchased - m.operationalVials && m.vialsPurchased * m.vialStrengthMg >= m.totalRequiredMg * 1.2), primaryGoal);
+    assert.match(result.durationLabel, /12 semaines/, primaryGoal);
+    assert.match(result.durationLabel, /actives/, primaryGoal);
+    assert.ok(result.molecules.every((m) => m.calculationBasis.length > 20 && m.totalRequiredMg > 0 && m.vialsRequired >= m.operationalVials && m.vialsPurchased >= m.vialsRequired && m.safetyReserveVials === m.vialsPurchased - m.operationalVials && m.vialsPurchased * m.vialStrengthMg >= m.totalRequiredMg * 1.2), primaryGoal);
   }
 });
 
 test("reference phases never stretch every molecule across twelve active weeks", () => {
   const expectedNeeds: Record<string, Record<string, number>> = {
     recovery: { "BPC-157": 28, TB500: 30 },
-    "gh-antiaging": { "CJC-1295 (no DAC)": 5.6, Ipamorelin: 5.6 },
+    "gh-antiaging": { "CJC-1295 (no DAC)": 8.4, Ipamorelin: 8.4 },
     fatloss: { Semaglutide: 7, "MOTS-c": 40 },
     sleep: { DSIP: 4.9, Selank: 7 },
     cognitive: { Semax: 5.6, Selank: 7 },
@@ -102,6 +103,16 @@ test("review-class profiles retain exact vial and price totals instead of a one-
   assert.equal(result.estimatedGrandTotalUsd, 111.22);
 });
 
+test("a blend cannot impersonate and double-price two standalone molecules", () => {
+  const blend = snapshot("CJC-1295 (no DAC) + Ipamorelin", 40, "10mg");
+  const result = buildPeptidesPreview(peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "gh-antiaging" }), [blend], new Date().toISOString(), franceShipping);
+  assert.equal(result.status, "review_required");
+  assert.equal(result.estimatedProtocolCostUsd, null);
+  assert.equal(result.estimatedGrandTotalUsd, null);
+  assert.deepEqual(result.molecules, []);
+  assert.ok(result.blockers.includes("catalogue_incomplet_pour_pays"));
+});
+
 test("missing one molecule closes the whole quote rather than pricing a partial stack", () => {
   const result = buildPeptidesPreview(peptidesPreviewInputSchema.parse(base), [snapshot("KissPeptin-10", 31.19)], new Date().toISOString(), franceShipping);
   assert.equal(result.moleculeCount, 2);
@@ -137,6 +148,32 @@ test("a cheaper bulk box never creates a second blind reserve", () => {
   assert.deepEqual(selected.purchaseLines?.map((line) => ({ boxSize: line.boxSize, packages: line.packageCount })), [{ boxSize: 1, packages: 4 }]);
   assert.equal(result.estimatedShippingCostUsd, 60);
   assert.equal(result.shippingBreakdown.length, 1);
+});
+
+test("a same-format listing with the better quantity tier is not discarded", () => {
+  const bpc = snapshot("BPC-157", 20, "10mg", "One Lab", 1);
+  const tiered = snapshot("BPC-157", 30, "10mg", "One Lab", 1).listings[0];
+  tiered.id = 9999;
+  tiered.priceTiers = [{ minQty: 1, price: 30 }, { minQty: 4, price: 10 }];
+  bpc.listings.push(tiered);
+  const tb = snapshot("TB500", 20, "10mg", "One Lab", 1);
+  const shipping: PeptauraShippingQuote[] = [{ supplier: "One Lab", displayName: "One Lab", available: true, minimumOrderUsd: null, tiers: [{ minOrderUsd: 0, maxOrderUsd: null, costUsd: 60, speed: "standard" }] }];
+  const result = buildPeptidesPreview(peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "recovery" }), [bpc, tb], new Date().toISOString(), shipping);
+  const selected = result.molecules.find((molecule) => molecule.name === "BPC-157")!;
+  assert.equal(selected.vialsPurchased, 4);
+  assert.equal(selected.estimatedTotalPriceUsd, 40);
+  assert.equal(selected.purchaseLines?.[0].packagePriceUsd, 10);
+});
+
+test("an oversized mandatory box is rejected instead of funding unused stock", () => {
+  const bpc = snapshot("BPC-157", 100, "10mg", "One Lab", 10);
+  const tb = snapshot("TB500", 20, "10mg", "One Lab", 1);
+  const shipping: PeptauraShippingQuote[] = [{ supplier: "One Lab", displayName: "One Lab", available: true, minimumOrderUsd: null, tiers: [{ minOrderUsd: 0, maxOrderUsd: null, costUsd: 60, speed: "standard" }] }];
+  const result = buildPeptidesPreview(peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "recovery" }), [bpc, tb], new Date().toISOString(), shipping);
+  assert.equal(result.status, "review_required");
+  assert.equal(result.estimatedGrandTotalUsd, null);
+  assert.deepEqual(result.molecules, []);
+  assert.ok(result.blockers.includes("catalogue_incomplet_pour_pays"));
 });
 
 test("bulk and single SKUs can be combined instead of buying every vial singly", () => {

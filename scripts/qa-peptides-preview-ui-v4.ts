@@ -97,7 +97,7 @@ for (const [index, row] of checkpoint.results.entries()) {
   const rawEnumLeak = /twice-daily|few-week|yes-private|yes-shared|review_required|bilan_hormonal_recent_requis|medicaments_a_integrer/.test(text);
   const fakeQuote = /À valider/.test(text);
   const textLower = text.toLocaleLowerCase("fr");
-  const completeEstimate = textLower.includes("nombre de molécules") && text.includes(String(result.moleculeCount)) && textLower.includes("durée estimée") && text.includes(result.durationLabel) && textLower.includes("produits") && textLower.includes("livraison") && textLower.includes("total rendu estimé") && textLower.includes("protocole plus poussé et plus précis") && textLower.includes("débloquer mon analyse peptides engine");
+  const completeEstimate = textLower.includes("nombre de molécules") && text.includes(String(result.moleculeCount)) && textLower.includes("durée de la stratégie") && text.includes(result.durationLabel) && textLower.includes("produits") && textLower.includes("livraison") && textLower.includes("total rendu estimé") && textLower.includes("protocole plus poussé et plus précis") && textLower.includes("débloquer mon analyse peptides engine");
   const namesOrDosesLeaked = result.molecules.some((molecule) => text.includes(molecule.name) || text.includes(molecule.doseSummary) || text.includes(molecule.calculationBasis));
   const directConversion = result.nextStep === "peptides_engine" && !/Blood Analysis|Vérifier mes marqueurs|validation personnalisée|informations supplémentaires/i.test(text);
   const pass = !overflow && !rawEnumLeak && !fakeQuote && completeEstimate && !namesOrDosesLeaked && directConversion && errors.length === 0;
