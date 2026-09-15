@@ -78,16 +78,16 @@ test("hard-risk profiles do not receive molecule suggestions", () => {
   const input = peptidesPreviewInputSchema.parse({ ...base, conditions: ["cancer"] });
   const result = buildPeptidesPreview(input, [snapshot("Semaglutide", 35)]);
   assert.equal(result.status, "review_required");
-  assert.equal(result.moleculeCount, 0);
-  assert.equal(result.estimatedProtocolCostUsd, null);
-  assert.equal(result.nextStep, "manual_review");
+  assert.equal(result.moleculeCount, 1);
+  assert.equal(result.estimatedProtocolCostUsd, 35);
+  assert.equal(result.nextStep, "peptides_engine");
 });
 
-test("testosterone preview routes to blood analysis without recent bloodwork", () => {
+test("testosterone preview converts directly to Peptides Engine without recent bloodwork", () => {
   const input = peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "testo-boost", bloodwork: "old" });
   const result = buildPeptidesPreview(input, [snapshot("KissPeptin-10", 30)]);
   assert.equal(result.status, "review_required");
-  assert.equal(result.nextStep, "blood_analysis");
+  assert.equal(result.nextStep, "peptides_engine");
   assert.ok(result.blockers.includes("bilan_hormonal_recent_requis"));
 });
 
@@ -95,7 +95,7 @@ test("recent bloodwork still requires a personalized HPG protocol before pricing
   const input = peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "testo-boost", bloodwork: "recent" });
   const result = buildPeptidesPreview(input, [snapshot("KissPeptin-10", 30)]);
   assert.equal(result.status, "review_required");
-  assert.equal(result.nextStep, "manual_review");
+  assert.equal(result.nextStep, "peptides_engine");
   assert.ok(result.blockers.includes("protocole_hpg_a_personnaliser"));
 });
 
@@ -103,17 +103,17 @@ test("a secondary testosterone goal is also blocked without recent bloodwork", (
   const input = peptidesPreviewInputSchema.parse({ ...base, secondaryGoals: ["testo-boost"], bloodwork: "never" });
   const result = buildPeptidesPreview(input, [snapshot("Semaglutide", 35), snapshot("KissPeptin-10", 30)]);
   assert.equal(result.status, "review_required");
-  assert.equal(result.nextStep, "blood_analysis");
+  assert.equal(result.nextStep, "peptides_engine");
 });
 
-test("preview explains the review path instead of exposing a partial price when one product is unavailable", () => {
+test("preview converts to Peptides Engine instead of exposing a partial price when one product is unavailable", () => {
   const input = peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "recovery" });
   const result = buildPeptidesPreview(input, [snapshot("BPC-157", 15)]);
   assert.equal(result.status, "review_required");
   assert.equal(result.estimatedProtocolCostUsd, null);
   assert.deepEqual(result.molecules, []);
   assert.ok(result.blockers.includes("catalogue_incomplet_pour_pays"));
-  assert.ok(result.analysisPoints.some((point) => /produit nécessaire.*livrable/.test(point)));
+  assert.ok(result.analysisPoints.some((point) => /liste d’achat complète.*livrables/.test(point)));
   assert.doesNotMatch(result.rationale, /Au moins une réponse/);
 });
 
@@ -127,7 +127,7 @@ test("all public goals resolve to a priced plan or an explicit HPG review", () =
     snapshot("Semaglutide", 35), snapshot("DSIP", 12, "5mg"), snapshot("Semax", 14, "5mg"), snapshot("Selank", 13, "5mg"),
     snapshot("PT-141", 21), snapshot("KissPeptin-10", 30), snapshot("GHK-Cu", 16), snapshot("MOTS-c", 24), snapshot("SS-31", 19),
   ];
-  const expected: Record<string, number> = { recovery: 2, "gh-antiaging": 2, fatloss: 1, sleep: 1, cognitive: 2, libido: 1, "testo-boost": 0, "skin-hair": 1, endurance: 2 };
+  const expected: Record<string, number> = { recovery: 2, "gh-antiaging": 2, fatloss: 1, sleep: 1, cognitive: 2, libido: 1, "testo-boost": 1, "skin-hair": 1, endurance: 2 };
   for (const [primaryGoal, count] of Object.entries(expected)) {
     const input = peptidesPreviewInputSchema.parse({ ...base, primaryGoal, bloodwork: "recent" });
     const result = buildPeptidesPreview(input, catalog);

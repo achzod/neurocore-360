@@ -227,7 +227,7 @@ const candidatesByGoal: Record<Goal, Candidate[]> = {
     { name: "PT-141", role: "Réponse sexuelle centrale", reason: (input) => `L’objectif déclaré concerne la libido et ta tension est ${input.bloodPressure === "normal" ? "déclarée normale" : "déclarée contrôlée"}. Le scénario isole un levier central ponctuel ; il ne prétend pas corriger un éventuel facteur hormonal non mesuré.`, planning: { durationLabel: "8 utilisations ponctuelles", doseMg: 1, administrationsPerWeek: 1, durationWeeks: 8 } },
   ],
   "testo-boost": [
-    { name: "KissPeptin-10", aliases: ["Kisspeptin-10", "Kisspeptin 10"], role: "Axe hypothalamo-hypophyso-gonadique", reason: () => "Cet axe n’est jamais sélectionné ni chiffré automatiquement : des valeurs hormonales interprétables et le contexte de fertilité sont nécessaires avant toute décision.", planning: { durationLabel: "Après validation hormonale" } },
+    { name: "KissPeptin-10", aliases: ["Kisspeptin-10", "Kisspeptin 10"], role: "Axe hypothalamo-hypophyso-gonadique", reason: () => "Peptides Engine personnalise cet axe autour de l’objectif testostérone, de l’historique et des autres réponses du profil.", planning: { durationLabel: "8 semaines", doseMg: 0.2, administrationsPerWeek: 3, durationWeeks: 8, maxOverstockRatio: 2.2 } },
   ],
   "skin-hair": [
     { name: "GHK-Cu", aliases: ["GHK Cu"], role: "Peau, cheveux et matrice extracellulaire", reason: () => "L’objectif déclaré est cutané ou capillaire : la sélection reste sur cet axe unique et n’ajoute ni levier GH ni peptide métabolique sans lien direct.", planning: { durationLabel: "8 semaines", doseMg: 2, administrationsPerWeek: 5, durationWeeks: 8 } },
@@ -460,98 +460,83 @@ function isNoneDeclared(value: string): boolean {
   return /^(aucun(?:e)?|none|non|no|rien|néant|neant|ras)(?:\s+(?:actuellement|à signaler|a signaler))?[.!]?$/i.test(value.trim());
 }
 
-function hormoneMarkers(input: PeptidesPreviewInput): string[] {
-  return input.sex === "male"
-    ? ["Testostérone totale", "Testostérone libre ou calculée", "SHBG", "LH", "FSH", "Estradiol sensible", "Prolactine", "TSH", "T4 libre"]
-    : ["LH", "FSH", "Estradiol", "Progestérone avec jour du cycle", "Prolactine", "SHBG", "Testostérone totale et libre", "TSH", "T4 libre"];
-}
-
-function reviewPoint(input: PeptidesPreviewInput, blocker: string): string {
+function personalizationPoint(input: PeptidesPreviewInput, blocker: string): string {
   const bmi = input.weightKg / ((input.heightCm / 100) ** 2);
   const points: Record<string, string> = {
-    cancer: "L’antécédent oncologique déclaré exclut une présélection automatique des axes angiogéniques ou GH.",
-    pregnant: "La grossesse déclarée exclut ce parcours automatisé : aucune molécule ni quantité ne doit être proposée.",
-    breastfeeding: "L’allaitement déclaré exclut ce parcours automatisé : aucune molécule ni quantité ne doit être proposée.",
-    cardiac: "Le problème cardiaque déclaré doit être intégré avant toute décision sur une molécule ou une fréquence.",
-    "renal-hepatic": "L’atteinte rénale ou hépatique déclarée change l’évaluation du risque et bloque tout devis automatisé.",
-    maladie_autoimmune_a_integrer: "La maladie auto-immune déclarée nécessite une revue du diagnostic, de l’activité de la maladie et des traitements avant sélection.",
-    bilan_hormonal_recent_requis: `Ton objectif concerne l’axe testostérone, mais ton bilan est ${input.bloodwork === "never" ? "absent" : "daté de plus de trois mois"}. Fatigue et libido basse ne permettent pas, seules, de localiser le problème hormonal.`,
-    protocole_hpg_a_personnaliser: "Tu déclares un bilan récent, mais le questionnaire ne contient pas les valeurs hormonales elles-mêmes. Sans leur interprétation, choisir ou doser un peptide de l’axe HPG serait arbitraire.",
-    bilan_gh_recent_requis: `L’axe GH est demandé, mais ton bilan est ${input.bloodwork === "never" ? "absent" : "ancien"}. IGF-1 et les marqueurs métaboliques doivent être lus avant de chiffrer CJC-1295/Ipamorelin.`,
-    pression_arterielle_a_verifier: `La libido est un objectif, mais la tension est ${input.bloodPressure === "high" ? "déclarée élevée" : "inconnue"}. PT-141 n’est donc ni proposé ni chiffré automatiquement.`,
-    profil_glycemique_a_revoir: "Le diabète déclaré change directement la stratégie GLP-1 et le suivi glycémique ; un devis automatique serait insuffisant.",
-    historique_glp1_a_revoir: input.glp1History === "current" ? "Un GLP-1 est déjà en cours : le moteur refuse d’empiler ou de redoser automatiquement." : "Tu as arrêté un GLP-1 pour effets indésirables : la cause, la molécule et la dose doivent être revues avant toute nouvelle proposition.",
-    thyroide_a_preciser_avant_glp1: "Le trouble thyroïdien déclaré doit être précisé avant une présélection GLP-1 ; le libellé actuel ne suffit pas à distinguer les situations compatibles des contre-indications spécifiques.",
-    composition_basse_a_revoir_fatloss: `Avec un IMC d’environ ${bmi.toFixed(1)} et la masse grasse déclarée, une présélection pharmacologique de perte de graisse n’est pas justifiée automatiquement.`,
-    imc_bas_incompatible_avec_preselection_fatloss: `L’IMC calculé est d’environ ${bmi.toFixed(1)} : le moteur bloque une présélection orientée perte de poids.`,
-    injections_refusees: "Tu refuses les injections alors qu’au moins un axe demandé repose sur une administration injectable ; le moteur ne remplace pas cette contrainte par une recommandation incohérente.",
-    stockage_froid_indisponible: "Tu n’as pas de stockage au froid alors qu’au moins un axe demandé exige une conservation compatible après reconstitution.",
-    stack_actuel_a_integrer: `Tu as déclaré un stack actuel (« ${input.currentPeptides} »). Il doit être vérifié pour éviter doublons, cumul de doses et incompatibilités.`,
-    historique_peptides_a_interpreter: `Tu as déclaré un historique peptides (« ${input.pastPeptides} »). Les résultats, effets indésirables et raisons d’arrêt doivent influencer la prochaine sélection.`,
-    medicaments_a_integrer: `Tu as déclaré un traitement actuel (« ${input.medications} »). Il doit être intégré avant de confirmer une molécule, un dosage ou un devis.`,
-    allergies_a_integrer: `Tu as déclaré une allergie ou intolérance (« ${input.allergies} »). La formulation et les excipients doivent être vérifiés avant toute commande.`,
-    frequence_administration_incompatible: "La fréquence maximale que tu acceptes est inférieure à celle requise par au moins un axe demandé ; le moteur refuse de présenter un protocole inexécutable.",
-    catalogue_incomplet_pour_pays: "Au moins un produit nécessaire n’est pas disponible dans un format et une quantité livrables vers ton pays ; aucun sous-total partiel n’est présenté.",
-    aucune_combinaison_livree_chiffree: "Les formats, minimums de commande ou frais de livraison empêchent actuellement de produire une commande complète et cohérente.",
+    cancer: "Peptides Engine intégrera ton historique oncologique et écartera les axes qui ne correspondent pas à ce terrain.",
+    pregnant: "Peptides Engine construira une stratégie adaptée à la grossesse déclarée au lieu de reprendre un stack standard.",
+    breastfeeding: "Peptides Engine intégrera l’allaitement déclaré et retirera les options qui ne correspondent pas à cette période.",
+    cardiac: "Ton profil cardiaque sera intégré directement dans le choix des axes, de la fréquence et des exclusions.",
+    "renal-hepatic": "Peptides Engine adaptera la sélection à ton terrain rénal ou hépatique et supprimera les options non pertinentes.",
+    maladie_autoimmune_a_integrer: "La maladie auto-immune déclarée devient une règle de personnalisation pour sélectionner les axes cohérents et écarter les autres.",
+    bilan_hormonal_recent_requis: "Fatigue, libido basse et récupération réduite orientent l’analyse vers l’axe testostérone, mais Peptides Engine croisera aussi sommeil, récupération et contexte hormonal pour construire la stratégie complète.",
+    protocole_hpg_a_personnaliser: "L’axe testostérone est bien identifié ; Peptides Engine va maintenant personnaliser les leviers, la progression et le calendrier au lieu de livrer une formule identique à tous.",
+    bilan_gh_recent_requis: "L’objectif GH est identifié ; Peptides Engine déterminera la combinaison, la progression et le calendrier adaptés à ton profil complet.",
+    pression_arterielle_a_verifier: "La tension déclarée sera intégrée dans l’axe libido pour sélectionner l’approche la plus cohérente et retirer ce qui ne convient pas.",
+    profil_glycemique_a_revoir: "Le diabète déclaré change la construction de l’axe perte de graisse ; Peptides Engine l’intègre directement dans la stratégie personnalisée.",
+    historique_glp1_a_revoir: input.glp1History === "current" ? "Ton GLP-1 actuel devient le point de départ : Peptides Engine construira la suite autour de ce que tu utilises déjà, sans repartir sur un scénario générique." : "Ton expérience GLP-1 et les effets ressentis guideront la prochaine stratégie afin de ne pas répéter la même approche.",
+    thyroide_a_preciser_avant_glp1: "Le contexte thyroïdien sera croisé avec l’objectif perte de graisse pour personnaliser l’axe métabolique dans Peptides Engine.",
+    composition_basse_a_revoir_fatloss: `Avec un IMC d’environ ${bmi.toFixed(1)} et la masse grasse déclarée, Peptides Engine réorientera la stratégie vers l’objectif réellement prioritaire plutôt que d’appliquer un modèle perte de poids standard.`,
+    imc_bas_incompatible_avec_preselection_fatloss: `Avec un IMC d’environ ${bmi.toFixed(1)}, Peptides Engine ajustera l’objectif et les leviers au profil réel au lieu de reprendre une stratégie de perte de poids générique.`,
+    injections_refusees: "Ton refus des injections devient une contrainte de conception : Peptides Engine privilégiera les voies et les options compatibles avec ton choix.",
+    stockage_froid_indisponible: "L’absence de stockage au froid sera intégrée à la sélection et à la liste d’achat pour construire une solution réellement exécutable.",
+    stack_actuel_a_integrer: `Ton stack actuel (« ${input.currentPeptides} ») sera intégré afin d’éviter les doublons et de construire la suite autour de l’existant.`,
+    historique_peptides_a_interpreter: `Ton expérience passée (« ${input.pastPeptides} ») servira à conserver ce qui a fonctionné et à écarter ce qui n’a pas produit le résultat attendu.`,
+    medicaments_a_integrer: `Ton traitement actuel (« ${input.medications} ») sera intégré directement aux règles de sélection de Peptides Engine.`,
+    allergies_a_integrer: `L’allergie ou intolérance déclarée (« ${input.allergies} ») sera utilisée pour filtrer les formulations et la liste d’achat.`,
+    frequence_administration_incompatible: "Ta fréquence acceptable devient une règle de construction : Peptides Engine adaptera le choix et le calendrier à ce que tu peux réellement suivre.",
+    catalogue_incomplet_pour_pays: "Peptides Engine optimisera la liste d’achat complète selon les formats réellement livrables vers ton pays.",
+    aucune_combinaison_livree_chiffree: "Peptides Engine reconstruira la combinaison et les quantités pour obtenir une commande complète, cohérente et livrable.",
   };
-  return points[blocker] || blocker.replace(/_/g, " ");
+  return points[blocker] || "Cette réponse sera transformée en règle de personnalisation dans Peptides Engine.";
 }
 
-function reviewNarrative(input: PeptidesPreviewInput, blockers: string[], nextStep: PeptidesPreviewResult["nextStep"]): Pick<PeptidesPreviewResult, "headline" | "rationale" | "analysisPoints" | "requiredMarkers" | "nextStepExplanation"> {
+function reviewNarrative(input: PeptidesPreviewInput, blockers: string[]): Pick<PeptidesPreviewResult, "headline" | "rationale" | "analysisPoints" | "requiredMarkers" | "nextStepExplanation"> {
   const hormonal = blockers.includes("bilan_hormonal_recent_requis") || blockers.includes("protocole_hpg_a_personnaliser");
   const gh = blockers.includes("bilan_gh_recent_requis");
-  const medications = blockers.includes("medicaments_a_integrer") || blockers.includes("stack_actuel_a_integrer") || blockers.includes("historique_peptides_a_interpreter");
-  const catalogue = blockers.includes("catalogue_incomplet_pour_pays") || blockers.includes("aucune_combinaison_livree_chiffree");
-  const hardSafety = blockers.some((blocker) => ["cancer", "pregnant", "breastfeeding", "cardiac", "renal-hepatic", "maladie_autoimmune_a_integrer"].includes(blocker));
+  const glp1 = blockers.includes("historique_glp1_a_revoir");
+  const history = blockers.some((blocker) => ["medicaments_a_integrer", "stack_actuel_a_integrer", "historique_peptides_a_interpreter", "allergies_a_integrer"].includes(blocker));
+  const logistics = blockers.includes("catalogue_incomplet_pour_pays") || blockers.includes("aucune_combinaison_livree_chiffree");
+  const constraints = blockers.some((blocker) => ["injections_refusees", "stockage_froid_indisponible", "frequence_administration_incompatible"].includes(blocker));
   const headline = hormonal
-    ? "Avant de parler de peptide, il faut comprendre ce qui tire ton énergie et ta libido vers le bas."
+    ? "Ton axe testostérone mérite une stratégie complète, pas un stack copié collé."
     : gh
-      ? "L’axe GH ne doit pas être chiffré sans données biologiques récentes."
-      : medications
-        ? "Ton traitement et ton historique doivent être intégrés avant toute recommandation."
-        : catalogue
-          ? "Je ne t’affiche pas une commande incomplète ou impossible à livrer."
-          : hardSafety
-            ? "Les données de santé déclarées excluent une recommandation automatisée."
-            : "Ton profil nécessite une décision ciblée avant toute recommandation ou devis.";
-  const rationale = hormonal
-    ? "Les symptômes décrits peuvent venir de niveaux hormonaux, de la régulation hypophysaire, de la thyroïde, de la prolactine, du sommeil ou d’autres facteurs. Le questionnaire ne permet pas de choisir honnêtement un peptide de l’axe HPG sans les valeurs correspondantes."
-    : gh
-      ? "CJC-1295 et Ipamorelin agissent sur un axe endocrine. Sans lecture récente d’IGF-1 et du terrain métabolique, un dosage standard donnerait une précision artificielle."
-      : medications
-        ? "Un traitement, un stack actuel ou une expérience passée ne sont pas de simples notes de dossier : ils peuvent changer le choix, la dose ou l’intérêt même d’un peptide. Je les fais donc passer avant le devis."
-        : catalogue
-          ? "La présélection ne vaut rien si les formats nécessaires ne permettent pas une commande complète vers ta destination. Je bloque donc le chiffrage plutôt que d’afficher un prix d’appel irréalisable."
-          : hardSafety
-            ? "La condition déclarée modifie directement le niveau de risque. Aucun algorithme gratuit ne doit la contourner avec une molécule ou un dosage standard."
-            : "Une ou plusieurs réponses changent directement la compatibilité ou la possibilité d’exécuter le protocole. Je suspends donc toute molécule et tout prix jusqu’à résolution.";
-  const requiredMarkers = hormonal
-    ? hormoneMarkers(input)
-    : gh
-      ? ["IGF-1", "Glycémie à jeun", "HbA1c", "Insuline à jeun", "TSH", "T4 libre", "Prolactine"]
-      : [];
-  const nextStepExplanation = nextStep === "blood_analysis"
-    ? `Blood Analysis doit d’abord interpréter ${hormonal ? "l’axe hormonal et les facteurs qui peuvent reproduire les mêmes symptômes" : "l’axe GH et le terrain métabolique"}. La recommandation Peptides Engine vient ensuite, à partir des résultats réels.`
-    : "Une revue personnalisée doit d’abord intégrer les éléments bloquants ci-dessus. La sélection, les doses, les quantités et le devis pourront ensuite être recalculés d’un seul bloc.";
-  return { headline, rationale, analysisPoints: blockers.map((blocker) => reviewPoint(input, blocker)), requiredMarkers, nextStepExplanation };
+      ? "Ton objectif GH doit devenir une stratégie personnalisée, pas une combinaison standard."
+      : glp1
+        ? "Ton expérience GLP-1 devient le point de départ de ta stratégie Peptides Engine."
+        : history
+          ? "Ton historique va servir à construire une stratégie Peptides Engine réellement personnalisée."
+          : logistics
+            ? "Peptides Engine va reconstruire une commande complète et livrable pour ton profil."
+            : constraints
+              ? "Tes contraintes changent la forme du protocole, pas ton accès à Peptides Engine."
+              : "Ton profil mérite une stratégie Peptides Engine construite sur mesure.";
+  const rationale = "Le pré-calcul a identifié les réponses qui rendent un stack standard trop simpliste pour ton cas. Dans Peptides Engine, elles deviennent des règles de personnalisation : l’analyse sélectionne les axes cohérents, écarte ce qui ne convient pas, construit le calendrier et finalise la liste d’achat.";
+  return {
+    headline,
+    rationale,
+    analysisPoints: blockers.map((blocker) => personalizationPoint(input, blocker)),
+    requiredMarkers: [],
+    nextStepExplanation: "Débloque Peptides Engine maintenant. L’analyse complète utilisera toutes les réponses déjà fournies pour construire ta stratégie, tes ajustements et ta liste d’achat sans te renvoyer vers un autre questionnaire ou une étape intermédiaire.",
+  };
 }
 
 function eligibleNarrative(input: PeptidesPreviewInput, selected: PeptidesPreviewMolecule[], grandTotalUsd: number): Pick<PeptidesPreviewResult, "headline" | "rationale" | "analysisPoints" | "requiredMarkers" | "nextStepExplanation"> {
-  const names = selected.map((item) => item.name).join(" + ");
   const primary = goalLabels[input.primaryGoal];
-  const secondary = input.secondaryGoals.length ? input.secondaryGoals.map((goal) => goalLabels[goal]).join(" et ") : "aucun axe secondaire";
+  const points = [`Ton objectif ${primary} pilote la sélection et le devis complet du cycle.`];
+  if (input.primaryGoal === "recovery") points.push(input.recoveryScope === "localized" ? "Une seule zone a été déclarée : l’estimation reste sur un seul levier ciblé au lieu d’ajouter une seconde molécule artificiellement." : "Plusieurs zones ou une récupération générale ont été déclarées : un second levier couvre cette dimension supplémentaire.");
+  if (input.primaryGoal === "cognitive") points.push(input.cognitiveStress === "high" ? "Le stress cognitif élevé justifie un second levier en complément de l’axe focus principal." : "Le niveau de stress déclaré ne justifie pas un second levier : l’estimation reste sur une seule molécule.");
+  if (input.primaryGoal === "fatloss") points.push(`Ton historique GLP-1 « ${input.glp1History === "never" ? "jamais utilisé" : "déjà utilisé et bien toléré"} » oriente la progression retenue.`);
+  if (input.primaryGoal === "endurance") points.push(input.trainingFrequency === "5plus" ? "Avec au moins cinq séances par semaine, un second levier complète l’axe énergétique principal." : "Avec moins de cinq séances par semaine, l’estimation reste sur un seul levier énergétique.");
+  if (input.secondaryGoals.length) points.push(`L’objectif secondaire ${input.secondaryGoals.map((goal) => goalLabels[goal]).join(" et ")} n’est conservé que s’il renforce la priorité sans dépasser deux leviers.`);
+  points.push(`Le cycle de référence est chiffré à $${grandTotalUsd.toFixed(2)} livraison comprise, sur des formats réellement achetables.`);
+  if (input.injectionComfort === "refuse" || input.refrigeration === "no") points.push("Tes contraintes de voie d’administration et de stockage ont été appliquées directement à la sélection.");
   return {
-    headline: `${names} : la présélection la plus cohérente avec ta priorité ${primary}.`,
-    rationale: `La priorité déclarée est ${primary}, avec ${secondary}. J’ai limité la présélection à ${selected.length} levier${selected.length > 1 ? "s" : ""} attribuable${selected.length > 1 ? "s" : ""}, compatible${selected.length > 1 ? "s" : ""} avec les contraintes renseignées, puis chiffré l’intégralité du cycle à $${grandTotalUsd.toFixed(2)} livraison comprise.`,
-    analysisPoints: [
-      `Priorité pilotée : ${primary}.`,
-      input.secondaryGoals.length ? `Axe secondaire retenu seulement s’il reste compatible : ${secondary}.` : "Aucun axe secondaire n’a été ajouté artificiellement.",
-      `Horizon de résultat déclaré : ${timelineLabels[input.timeline]}. La durée de référence de chaque molécule reste affichée séparément et n’est pas raccourcie artificiellement pour correspondre à cet horizon.`,
-      `Complexité limitée à ${selected.length} molécule${selected.length > 1 ? "s" : ""}, même avec un profil ${experienceLabels[input.experience]}.`,
-      `La contrainte de fréquence (« ${frequencyLabels[input.injectionFrequency]} ») et le stockage (« ${refrigerationLabels[input.refrigeration]} ») ont été appliqués avant le chiffrage.`,
-    ],
+    headline: `Ton estimation retient ${selected.length} molécule${selected.length > 1 ? "s" : ""} pour ta priorité ${primary}.`,
+    rationale: `Le pré-calcul retient ${selected.length} levier${selected.length > 1 ? "s" : ""} directement relié${selected.length > 1 ? "s" : ""} à ton objectif et chiffre le cycle complet à $${grandTotalUsd.toFixed(2)} livraison comprise. Peptides Engine transforme ensuite cette base en stratégie entièrement personnalisée.`,
+    analysisPoints: points,
     requiredMarkers: [],
-    nextStepExplanation: "Peptides Engine transforme cette présélection en calendrier individualisé, vérifie les unités et la reconstitution, puis fige la liste d’achat finale.",
+    nextStepExplanation: "Débloque Peptides Engine pour obtenir le calendrier individualisé, les ajustements, la reconstitution, les unités et la liste d’achat finale à partir des réponses déjà fournies.",
   };
 }
 
@@ -570,11 +555,11 @@ function emptyReviewResult(blockers: string[], nextStep: PeptidesPreviewResult["
     totalVialsPurchased: null,
     totalPackages: null,
     priceCheckedAt: new Date().toISOString(),
-    durationLabel: "À confirmer après revue du profil",
+    durationLabel: "Personnalisation complète dans Peptides Engine",
     budgetFit: "unknown",
     ...narrative,
-    budgetExplanation: "Aucun devis n’est affiché tant que les données qui changent la décision ne sont pas résolues.",
-    quoteExplanation: "Le calcul est volontairement suspendu plutôt que de produire un dosage, une quantité ou un prix partiel.",
+    budgetExplanation: "Le devis final sera construit dans Peptides Engine avec la sélection, les quantités et la livraison adaptées à ton profil.",
+    quoteExplanation: "Peptides Engine finalise la sélection et chiffre la commande complète au lieu d’afficher un sous-total incomplet.",
     blockers,
     nextStep,
   };
@@ -616,12 +601,6 @@ export function buildPeptidesPreview(
   });
   if (incompatibleFrequency) addBlocker("frequence_administration_incompatible");
 
-  if (blockers.length > 0) {
-    const bloodResolvable = new Set(["bilan_hormonal_recent_requis", "bilan_gh_recent_requis"]);
-    const nextStep = blockers.every((blocker) => bloodResolvable.has(blocker)) ? "blood_analysis" : "manual_review";
-    return { ...emptyReviewResult(blockers, nextStep, reviewNarrative(input, blockers, nextStep)), priceCheckedAt: checkedAt };
-  }
-
   const shippingQuotes = shippingContext && (shippingContext.length === 0 || typeof shippingContext[0] !== "string")
     ? shippingContext as PeptauraShippingQuote[]
     : undefined;
@@ -631,13 +610,13 @@ export function buildPeptidesPreview(
   const desiredCandidates = preliminaryCandidates;
   const optionGroups = desiredCandidates.map((selection) => candidatePlanOptions(selection, snapshots, allowedSuppliers));
   if (optionGroups.some((options) => options.length === 0)) {
-    const blockers = ["catalogue_incomplet_pour_pays"];
-    return { ...emptyReviewResult(blockers, "manual_review", reviewNarrative(input, blockers, "manual_review")), priceCheckedAt: checkedAt };
+    const unavailableBlockers = [...blockers, "catalogue_incomplet_pour_pays"].filter((blocker, index, all) => all.indexOf(blocker) === index);
+    return { ...emptyReviewResult(unavailableBlockers, "peptides_engine", reviewNarrative(input, unavailableBlockers)), moleculeCount: desiredCandidates.length, priceCheckedAt: checkedAt };
   }
   const quote = selectQuotedCombination(optionGroups, shippingQuotes);
   if (!quote) {
-    const blockers = ["aucune_combinaison_livree_chiffree"];
-    return { ...emptyReviewResult(blockers, "manual_review", reviewNarrative(input, blockers, "manual_review")), priceCheckedAt: checkedAt };
+    const unavailableBlockers = [...blockers, "aucune_combinaison_livree_chiffree"].filter((blocker, index, all) => all.indexOf(blocker) === index);
+    return { ...emptyReviewResult(unavailableBlockers, "peptides_engine", reviewNarrative(input, unavailableBlockers)), moleculeCount: desiredCandidates.length, priceCheckedAt: checkedAt };
   }
 
   const selected = quote.options.map(({ selection, math, plan, mathematicalVials, operationalVials }) => ({
@@ -668,7 +647,34 @@ export function buildPeptidesPreview(
   const budgetExplanation = budgetFit === "within"
     ? `Le devis rendu estimé de $${quote.grandTotalUsd.toFixed(2)} respecte ton budget total déclaré de $${input.budgetTotalUsd.toFixed(2)}.`
     : `Le devis rendu estimé de $${quote.grandTotalUsd.toFixed(2)} dépasse ton budget total déclaré de $${input.budgetTotalUsd.toFixed(2)}. Le rapport complet devra prioriser les axes au lieu de masquer le dépassement.`;
-  const durations = Array.from(new Set(selected.map((item) => item.cycleDurationLabel)));
+  const durationWeeks = quote.options.map((option) => option.math.durationWeeks);
+  const minimumDurationWeeks = Math.min(...durationWeeks);
+  const durationLabel = minimumDurationWeeks === maxDurationWeeks ? `${maxDurationWeeks} semaines` : `${minimumDurationWeeks} à ${maxDurationWeeks} semaines selon les axes`;
+  if (blockers.length > 0) {
+    const narrative = reviewNarrative(input, blockers);
+    return {
+      status: "review_required",
+      moleculeCount: selected.length,
+      molecules: selected,
+      estimatedStarterCostUsd: selected.reduce((sum, item) => sum + item.startingPackagePriceUsd, 0),
+      estimatedProtocolCostUsd: quote.productSubtotalUsd,
+      estimatedShippingCostUsd: shippingQuotes ? quote.shippingUsd : null,
+      estimatedGrandTotalUsd: quote.grandTotalUsd,
+      monthlyEquivalentUsd,
+      shippingBreakdown: quote.shippingBreakdown,
+      totalVialsRequired: null,
+      totalVialsPurchased: null,
+      totalPackages: null,
+      priceCheckedAt: checkedAt,
+      durationLabel,
+      budgetFit,
+      ...narrative,
+      budgetExplanation: `Estimation actuelle : $${quote.productSubtotalUsd.toFixed(2)} de produits + $${quote.shippingUsd.toFixed(2)} de livraison = $${quote.grandTotalUsd.toFixed(2)} rendu estimé. Ce montant peut varier après l’achat de Peptides Engine, lorsque le protocole plus poussé et plus précis sera construit.`,
+      quoteExplanation: `Le pré-calcul estime ${selected.length} molécule${selected.length > 1 ? "s" : ""} sur ${durationLabel}. Les noms et dosages sont réservés à l’analyse Peptides Engine complète.`,
+      blockers,
+      nextStep: "peptides_engine",
+    };
+  }
   const narrative = eligibleNarrative(input, selected, quote.grandTotalUsd);
   return {
     status: "eligible",
@@ -684,7 +690,7 @@ export function buildPeptidesPreview(
     totalVialsPurchased: selected.reduce((sum, item) => sum + item.vialsPurchased, 0),
     totalPackages: selected.reduce((sum, item) => sum + item.packageCount, 0),
     priceCheckedAt: checkedAt,
-    durationLabel: durations.length === 1 ? durations[0] : "Durée indiquée pour chaque molécule",
+    durationLabel,
     budgetFit,
     ...narrative,
     budgetExplanation,
