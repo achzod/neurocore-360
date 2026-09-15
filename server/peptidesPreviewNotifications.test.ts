@@ -4,6 +4,8 @@ import fs from "node:fs";
 
 const routesSource = fs.readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
 const emailSource = fs.readFileSync(new URL("./emailService.ts", import.meta.url), "utf8");
+const emailContentSource = fs.readFileSync(new URL("./peptidesPreviewEmailContent.ts", import.meta.url), "utf8");
+const allEmailSource = `${emailSource}\n${emailContentSource}`;
 const previewSource = fs.readFileSync(new URL("./peptidesPreview.ts", import.meta.url), "utf8");
 const queueSource = fs.readFileSync(new URL("./peptidesPreviewDeliveryQueue.ts", import.meta.url), "utf8");
 
@@ -31,10 +33,11 @@ test("every completed preview queues the client result and admin notification", 
   assert.match(queueSource, /sendPeptidesPreviewAdminNotification/);
   assert.match(emailSource, /export async function sendPeptidesPreviewResultEmail/);
   assert.match(emailSource, /export async function sendPeptidesPreviewAdminNotification/);
-  assert.equal((emailSource.match(/html: encodeBase64\(html\)/g) || []).length >= 2, true);
-  assert.match(emailSource, /Email automatique client/);
-  assert.match(emailSource, /MAIL PRÊT À COPIER COLLER/);
-  assert.match(emailSource, /buildPeptidesPreviewCopyReadyReply/);
+  assert.match(allEmailSource, /buildPeptidesPreviewResultEmailContent/);
+  assert.match(emailSource, /html: encodeBase64\(content\.html\)/);
+  assert.match(emailContentSource, /Email automatique client/);
+  assert.match(emailContentSource, /MAIL PRÊT À COPIER COLLER/);
+  assert.match(emailContentSource, /buildPeptidesPreviewCopyReadyReply/);
 });
 
 test("rapid duplicate submissions do not resend successful messages", () => {
@@ -58,22 +61,24 @@ test("the free preview has no paid AI model call", () => {
 });
 
 test("client and admin emails expose arithmetic, landed quote and conversion copy", () => {
-  assert.match(emailSource, /estimatedProtocolCostUsd/);
-  assert.match(emailSource, /estimatedShippingCostUsd/);
-  assert.match(emailSource, /estimatedGrandTotalUsd/);
-  assert.match(emailSource, /monthlyEquivalentUsd/);
-  assert.match(emailSource, /mathematicalVials/);
-  assert.match(emailSource, /operationalVials/);
-  assert.match(emailSource, /packageCount/);
-  assert.match(emailSource, /estimatedTotalPriceUsd/);
-  assert.match(emailSource, /DEVIS COMPLET ESTIMÉ/);
-  assert.match(emailSource, /MAIL PRÊT À COPIER COLLER/);
-  assert.match(emailSource, /Tu peux débloquer ton analyse complète ici/);
-  assert.doesNotMatch(emailSource, /BUDGET INITIAL ESTIMÉ/);
+  assert.match(emailContentSource, /estimatedProtocolCostUsd/);
+  assert.match(emailContentSource, /estimatedShippingCostUsd/);
+  assert.match(emailContentSource, /estimatedGrandTotalUsd/);
+  assert.match(emailContentSource, /monthlyEquivalentUsd/);
+  assert.match(emailContentSource, /mathematicalVials/);
+  assert.match(emailContentSource, /operationalVials/);
+  assert.match(emailContentSource, /packageCount/);
+  assert.match(emailContentSource, /estimatedTotalPriceUsd/);
+  assert.match(emailContentSource, /DEVIS COMPLET ESTIMÉ/);
+  assert.match(emailContentSource, /MAIL PRÊT À COPIER COLLER/);
+  assert.match(emailContentSource, /Tu peux débloquer ton analyse complète ici/);
+  assert.match(emailContentSource, /POURQUOI LE DEVIS EST SUSPENDU/);
+  assert.match(emailContentSource, /Aucun faux devis n’est donc affiché/);
+  assert.doesNotMatch(emailContentSource, /BUDGET INITIAL ESTIMÉ/);
   assert.match(previewRoute, /estimatedShippingCostUsd/);
   assert.match(previewRoute, /estimatedGrandTotalUsd/);
   assert.match(previewRoute, /publicResult/);
   assert.match(previewRoute, /supplier: _supplier/);
   assert.match(previewRoute, /productUrl: _productUrl/);
-  assert.doesNotMatch(emailSource, /\$\{molecule\.supplier\}/);
+  assert.doesNotMatch(allEmailSource, /\$\{molecule\.supplier\}/);
 });
