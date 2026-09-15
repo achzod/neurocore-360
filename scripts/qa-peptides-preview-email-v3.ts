@@ -41,17 +41,14 @@ for (const [index, row] of checkpoint.results.entries()) {
   await adminPage.screenshot({ path: path.join(outputDir, `${prefix}-admin-mobile.png`), fullPage: true });
   await adminPage.close();
 
-  const clientHasRecommendation = result.status === "eligible"
-    ? result.molecules.every((molecule) => client.text.includes(molecule.name) && client.text.includes(molecule.doseSummary) && client.text.includes(molecule.calculationBasis))
-    : client.text.includes("Ma décision") && result.analysisPoints.every((point) => client.text.includes(point)) && !client.text.includes("Ton devis estimatif complet");
-  const clientHasQuote = result.status === "eligible"
-    ? client.text.includes(`Total rendu estimé : $${result.estimatedGrandTotalUsd?.toFixed(2)}`) && client.text.includes(`Livraison : $${result.estimatedShippingCostUsd?.toFixed(2)}`)
-    : !client.html.includes("DEVIS COMPLET ESTIMÉ") && !client.text.includes("À valider");
+  const clientHasEstimate = client.text.includes(`Nombre de molécules estimé : ${result.moleculeCount}`) && client.text.includes(`Durée estimée : ${result.durationLabel}`) && (result.estimatedProtocolCostUsd == null || client.text.includes(`Produits : $${result.estimatedProtocolCostUsd.toFixed(2)}`)) && (result.estimatedShippingCostUsd == null || client.text.includes(`Livraison : $${result.estimatedShippingCostUsd.toFixed(2)}`)) && (result.estimatedGrandTotalUsd == null || client.text.includes(`Total rendu estimé : $${result.estimatedGrandTotalUsd.toFixed(2)}`));
+  const namesOrDosesLeaked = result.molecules.some((molecule) => client.text.includes(molecule.name) || client.text.includes(molecule.doseSummary) || client.text.includes(molecule.calculationBasis));
+  const directConversion = result.nextStep === "peptides_engine" && client.text.includes("protocole plus poussé et plus précis") && client.text.includes("Accéder à Peptides Engine") && !/Blood Analysis|Vérifier mes marqueurs|validation personnalisée|informations supplémentaires/i.test(client.text);
   const adminHasCopy = admin.text.includes("MAIL PRÊT À COPIER COLLER") && admin.text.includes(client.text);
   const supplierLeak = [client.html, client.text, admin.html, admin.text].some((value) => /Supplier Secret|productUrl|https:\/\/www\.peptaura\.com\/products/i.test(value));
   const trackingCorrect = client.text.includes("utm_source=peptides_preview_email&utm_medium=email") && ![client.html, client.text, admin.html, admin.text].some((value) => value.includes("peptides_preview_admin"));
-  const pass = clientHasRecommendation && clientHasQuote && adminHasCopy && trackingCorrect && !supplierLeak && !clientOverflow && !adminOverflow && clientErrors.length === 0 && adminErrors.length === 0;
-  audits.push({ id: row.id, status: result.status, nextStep: result.nextStep, clientSubject: client.subject, adminSubject: admin.subject, clientHasRecommendation, clientHasQuote, adminHasCopy, trackingCorrect, supplierLeak, clientOverflow, adminOverflow, clientErrors, adminErrors, pass });
+  const pass = clientHasEstimate && !namesOrDosesLeaked && directConversion && adminHasCopy && trackingCorrect && !supplierLeak && !clientOverflow && !adminOverflow && clientErrors.length === 0 && adminErrors.length === 0;
+  audits.push({ id: row.id, status: result.status, nextStep: result.nextStep, clientSubject: client.subject, adminSubject: admin.subject, clientHasEstimate, namesOrDosesLeaked, directConversion, adminHasCopy, trackingCorrect, supplierLeak, clientOverflow, adminOverflow, clientErrors, adminErrors, pass });
 }
 await browser.close();
 const report = { status: audits.every((audit) => audit.pass) ? "PASS" : "FAIL", auditedAt: new Date().toISOString(), cases: audits };

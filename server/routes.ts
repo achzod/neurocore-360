@@ -14377,18 +14377,14 @@ export async function registerRoutes(
           previewHistory: pendingHistory,
         },
       });
-      const checkoutUrl = result.nextStep === "blood_analysis"
-        ? "/offers/blood-analysis?utm_source=peptides_preview&utm_medium=result&utm_campaign=pre_peptides_engine"
-        : result.nextStep === "peptides_engine"
-          ? "/peptides-engine?tier=solo&utm_source=peptides_preview&utm_medium=result&utm_campaign=pre_peptides_engine"
-          : "/offers/peptides-engine?utm_source=peptides_preview&utm_medium=result&utm_campaign=pre_peptides_engine#offres";
+      const checkoutUrl = "/peptides-engine?tier=solo&utm_source=peptides_preview&utm_medium=result&utm_campaign=pre_peptides_engine";
       kickPeptidesPreviewDeliveryQueue();
       const resultEmailSent = queuedNotifications?.clientEmailSent === true;
       const adminNotificationSent = queuedNotifications?.adminEmailSent === true;
       const notificationDeliveryState = String(queuedNotifications?.deliveryState || "queued");
       const publicResult = {
         ...result,
-        molecules: result.molecules.map(({ supplier: _supplier, productUrl: _productUrl, ...molecule }) => molecule),
+        molecules: [],
         shippingBreakdown: result.shippingBreakdown.map(({ supplier: _supplier, ...line }, index) => ({ ...line, supplier: `Expédition ${index + 1}` })),
       };
       res.json({

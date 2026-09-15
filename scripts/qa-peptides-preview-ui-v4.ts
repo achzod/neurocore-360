@@ -95,13 +95,15 @@ for (const [index, row] of checkpoint.results.entries()) {
   const text = (await page.locator("body").innerText()).replace(/\s+/g, " ");
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
   const rawEnumLeak = /twice-daily|few-week|yes-private|yes-shared|review_required|bilan_hormonal_recent_requis|medicaments_a_integrer/.test(text);
-  const fakeQuote = result.status === "review_required" && (/À valider|DEVIS COMPLET ESTIMÉ/.test(text) || /\$\d+\.\d{2}/.test(text));
-  const completeEligible = result.status !== "eligible" || (text.includes("Calcul vérifiable") && text.includes("Total rendu estimé") && result.molecules.every((molecule) => text.includes(molecule.reason)));
-  const completeReview = result.status !== "review_required" || (text.includes("Aucune molécule, aucun dosage et aucun prix affichés") && result.analysisPoints.every((point) => text.includes(point)) && result.requiredMarkers.every((marker) => text.includes(marker)));
-  const pass = !overflow && !rawEnumLeak && !fakeQuote && completeEligible && completeReview && errors.length === 0;
+  const fakeQuote = /À valider/.test(text);
+  const textLower = text.toLocaleLowerCase("fr");
+  const completeEstimate = textLower.includes("nombre de molécules") && text.includes(String(result.moleculeCount)) && textLower.includes("durée estimée") && text.includes(result.durationLabel) && textLower.includes("produits") && textLower.includes("livraison") && textLower.includes("total rendu estimé") && textLower.includes("protocole plus poussé et plus précis") && textLower.includes("débloquer mon analyse peptides engine");
+  const namesOrDosesLeaked = result.molecules.some((molecule) => text.includes(molecule.name) || text.includes(molecule.doseSummary) || text.includes(molecule.calculationBasis));
+  const directConversion = result.nextStep === "peptides_engine" && !/Blood Analysis|Vérifier mes marqueurs|validation personnalisée|informations supplémentaires/i.test(text);
+  const pass = !overflow && !rawEnumLeak && !fakeQuote && completeEstimate && !namesOrDosesLeaked && directConversion && errors.length === 0;
   const screenshot = path.join(outputDir, `${index + 1}-${row.id}-${index % 2 === 0 ? "mobile" : "desktop"}.png`);
   await page.screenshot({ path: screenshot, fullPage: true });
-  audits.push({ id: row.id, status: result.status, headline: result.headline, molecules: result.molecules.map((molecule) => molecule.name), overflow, rawEnumLeak, fakeQuote, completeEligible, completeReview, errors, screenshot, pass });
+  audits.push({ id: row.id, status: result.status, headline: result.headline, moleculeCount: result.moleculeCount, overflow, rawEnumLeak, fakeQuote, completeEstimate, namesOrDosesLeaked, directConversion, errors, screenshot, pass });
   await page.close();
 }
 await browser.close();

@@ -35,16 +35,16 @@ const scenarios: Scenario[] = [
   { id: "endurance-four", patch: { primaryGoal: "endurance", trainingFrequency: "3-4" }, status: "eligible", molecules: ["MOTS-c"] },
   { id: "endurance-five", patch: { primaryGoal: "endurance", trainingFrequency: "5plus" }, status: "eligible", molecules: ["MOTS-c", "SS-31"] },
   { id: "gh-recent", patch: { primaryGoal: "gh-antiaging" }, status: "eligible", molecules: ["CJC-1295 (no DAC)", "Ipamorelin"] },
-  { id: "cancer", patch: { conditions: ["cancer"] }, status: "review_required", blocker: "cancer", next: "manual_review" },
-  { id: "pregnancy", patch: { sex: "female", conditions: ["pregnant"] }, status: "review_required", blocker: "pregnant", next: "manual_review" },
-  { id: "breastfeeding", patch: { sex: "female", conditions: ["breastfeeding"] }, status: "review_required", blocker: "breastfeeding", next: "manual_review" },
-  { id: "cardiac", patch: { conditions: ["cardiac"] }, status: "review_required", blocker: "cardiac", next: "manual_review" },
-  { id: "renal-hepatic", patch: { conditions: ["renal-hepatic"] }, status: "review_required", blocker: "renal-hepatic", next: "manual_review" },
-  { id: "autoimmune", patch: { conditions: ["autoimmune"] }, status: "review_required", blocker: "maladie_autoimmune_a_integrer", next: "manual_review" },
-  { id: "testo-no-blood", patch: { primaryGoal: "testo-boost", bloodwork: "never" }, status: "review_required", blocker: "bilan_hormonal_recent_requis", next: "blood_analysis" },
-  { id: "testo-old-blood", patch: { primaryGoal: "testo-boost", bloodwork: "old" }, status: "review_required", blocker: "bilan_hormonal_recent_requis", next: "blood_analysis" },
-  { id: "testo-values-missing", patch: { primaryGoal: "testo-boost", bloodwork: "recent" }, status: "review_required", blocker: "protocole_hpg_a_personnaliser", next: "manual_review" },
-  { id: "gh-old-blood", patch: { primaryGoal: "gh-antiaging", bloodwork: "old" }, status: "review_required", blocker: "bilan_gh_recent_requis", next: "blood_analysis" },
+  { id: "cancer", patch: { conditions: ["cancer"] }, status: "review_required", blocker: "cancer", next: "peptides_engine" },
+  { id: "pregnancy", patch: { sex: "female", conditions: ["pregnant"] }, status: "review_required", blocker: "pregnant", next: "peptides_engine" },
+  { id: "breastfeeding", patch: { sex: "female", conditions: ["breastfeeding"] }, status: "review_required", blocker: "breastfeeding", next: "peptides_engine" },
+  { id: "cardiac", patch: { conditions: ["cardiac"] }, status: "review_required", blocker: "cardiac", next: "peptides_engine" },
+  { id: "renal-hepatic", patch: { conditions: ["renal-hepatic"] }, status: "review_required", blocker: "renal-hepatic", next: "peptides_engine" },
+  { id: "autoimmune", patch: { conditions: ["autoimmune"] }, status: "review_required", blocker: "maladie_autoimmune_a_integrer", next: "peptides_engine" },
+  { id: "testo-no-blood", patch: { primaryGoal: "testo-boost", bloodwork: "never" }, status: "review_required", blocker: "bilan_hormonal_recent_requis", next: "peptides_engine" },
+  { id: "testo-old-blood", patch: { primaryGoal: "testo-boost", bloodwork: "old" }, status: "review_required", blocker: "bilan_hormonal_recent_requis", next: "peptides_engine" },
+  { id: "testo-values-missing", patch: { primaryGoal: "testo-boost", bloodwork: "recent" }, status: "review_required", blocker: "protocole_hpg_a_personnaliser", next: "peptides_engine" },
+  { id: "gh-old-blood", patch: { primaryGoal: "gh-antiaging", bloodwork: "old" }, status: "review_required", blocker: "bilan_gh_recent_requis", next: "peptides_engine" },
   { id: "libido-high-bp", patch: { primaryGoal: "libido", bloodPressure: "high" }, status: "review_required", blocker: "pression_arterielle_a_verifier" },
   { id: "libido-unknown-bp", patch: { primaryGoal: "libido", bloodPressure: "unknown" }, status: "review_required", blocker: "pression_arterielle_a_verifier" },
   { id: "fatloss-diabetes", patch: { primaryGoal: "fatloss", glp1History: "never", conditions: ["diabetes"] }, status: "review_required", blocker: "profil_glycemique_a_revoir" },
@@ -60,7 +60,7 @@ const scenarios: Scenario[] = [
   { id: "medicine", patch: { medications: "lévothyroxine 75 mcg" }, status: "review_required", blocker: "medicaments_a_integrer" },
   { id: "allergy", patch: { allergies: "alcool benzylique" }, status: "review_required", blocker: "allergies_a_integrer" },
   { id: "frequency-mismatch", patch: { primaryGoal: "recovery", recoveryScope: "localized", injectionFrequency: "weekly" }, status: "review_required", blocker: "frequence_administration_incompatible" },
-  { id: "testo-plus-medicine", patch: { primaryGoal: "testo-boost", bloodwork: "never", medications: "lévothyroxine 75 mcg" }, status: "review_required", blockers: ["bilan_hormonal_recent_requis", "medicaments_a_integrer"], next: "manual_review" },
+  { id: "testo-plus-medicine", patch: { primaryGoal: "testo-boost", bloodwork: "never", medications: "lévothyroxine 75 mcg" }, status: "review_required", blockers: ["bilan_hormonal_recent_requis", "medicaments_a_integrer"], next: "peptides_engine" },
 ];
 const results = scenarios.map((scenario) => {
   const input = peptidesPreviewInputSchema.parse({ ...base, ...scenario.patch }) as PeptidesPreviewInput;
@@ -71,9 +71,13 @@ const results = scenarios.map((scenario) => {
   if (scenario.blockers && JSON.stringify(result.blockers) !== JSON.stringify(scenario.blockers)) failures.push(`blockers=${result.blockers.join(",")}`);
   if (scenario.molecules && JSON.stringify(result.molecules.map((molecule) => molecule.name)) !== JSON.stringify(scenario.molecules)) failures.push(`molecules=${result.molecules.map((molecule) => molecule.name).join(",")}`);
   if (scenario.next && result.nextStep !== scenario.next) failures.push(`next=${result.nextStep}`);
+  if (result.nextStep !== "peptides_engine") failures.push(`conversion diverted to ${result.nextStep}`);
+  if (result.requiredMarkers.length) failures.push("unexpected bloodwork markers");
+  if (!/Débloque Peptides Engine/.test(result.nextStepExplanation)) failures.push("missing direct purchase direction");
+  if (/Blood Analysis|marqueurs à vérifier|fournir des informations|validation médicale/i.test([result.headline, result.rationale, result.nextStepExplanation].join(" "))) failures.push("medical or intermediate-step diversion");
   if (!result.analysisPoints.length || !result.rationale || !result.nextStepExplanation) failures.push("decision explanation incomplete");
   if (/Au moins une réponse|L'algorithme|_a_|review_required/.test([result.rationale, ...result.analysisPoints].join(" "))) failures.push("generic or technical copy");
-  if (result.status === "review_required" && (result.molecules.length || result.estimatedGrandTotalUsd !== null)) failures.push("review leaks recommendation or quote");
+  if (result.status === "review_required" && (result.moleculeCount < 1 || result.moleculeCount > 2 || typeof result.estimatedGrandTotalUsd !== "number" || !/semaine/.test(result.durationLabel))) failures.push("personalized estimate missing count, duration or cost");
   if (result.status === "eligible" && (result.molecules.length < 1 || result.molecules.length > 2 || result.molecules.some((molecule) => molecule.reason.length < 70))) failures.push("eligible selection not attributable");
   return { id: scenario.id, status: result.status, nextStep: result.nextStep, blockers: result.blockers, molecules: result.molecules.map((molecule) => molecule.name), failures };
 });
