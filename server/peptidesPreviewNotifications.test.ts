@@ -40,7 +40,8 @@ test("every completed preview queues the client result and admin notification", 
   assert.match(emailContentSource, /buildPeptidesPreviewCopyReadyReply/);
 });
 
-test("rapid duplicate submissions do not resend successful messages", () => {
+test("rapid duplicate submissions reuse the queued or attempted submission", () => {
+  assert.match(previewRoute, /attemptedAt \|\| previousNotifications\?\.queuedAt/);
   assert.match(previewRoute, /15 \* 60_000/);
   assert.match(previewRoute, /isRecentDuplicate \? previousNotifications/);
   assert.match(queueSource, /if \(!clientEmailSent\)/);

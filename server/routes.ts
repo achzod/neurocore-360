@@ -14331,10 +14331,12 @@ export async function registerRoutes(
         },
       })).digest("hex");
       const previousNotifications = previousResponses.previewNotifications as Record<string, any> | undefined;
-      const previousAt = Date.parse(String(previousNotifications?.attemptedAt || ""));
+      const previousActivityAt = Date.parse(String(
+        previousNotifications?.attemptedAt || previousNotifications?.queuedAt || "",
+      ));
       const isRecentDuplicate = previousNotifications?.fingerprint === notificationFingerprint
-        && Number.isFinite(previousAt)
-        && Date.now() - previousAt < 15 * 60_000;
+        && Number.isFinite(previousActivityAt)
+        && Date.now() - previousActivityAt < 15 * 60_000;
       const previousHistory = Array.isArray(previousResponses.previewHistory) ? previousResponses.previewHistory : [];
       const previousSubmission = previousHistory.at(-1) as Record<string, any> | undefined;
       const submissionId = isRecentDuplicate && previousSubmission?.submissionId
