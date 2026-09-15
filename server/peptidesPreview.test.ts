@@ -46,6 +46,25 @@ test("Karim receives two fully calculated molecules over twelve weeks for France
   assert.equal(result.estimatedGrandTotalUsd, 111.22);
 });
 
+test("eligible copy explains the actual axes, execution constraints and budget instead of generic filler", () => {
+  const input = peptidesPreviewInputSchema.parse({
+    ...base,
+    primaryGoal: "gh-antiaging",
+    bloodwork: "recent",
+    trainingFrequency: "3-4",
+    budgetTotalUsd: 400,
+  });
+  const result = buildPeptidesPreview(input, catalog, "2026-09-15T09:00:00Z", franceShipping);
+  const copy = [result.rationale, ...result.analysisPoints, result.nextStepExplanation].join(" ");
+  assert.match(copy, /signal pulsatile de l’axe gh/i);
+  assert.match(copy, /sécrétagogue complémentaire/i);
+  assert.match(copy, /deux administrations par jour/i);
+  assert.match(copy, /réfrigérateur privé/i);
+  assert.match(copy, /budget déclaré de \$400\.00/i);
+  assert.match(copy, /sans remplir un second questionnaire/i);
+  assert.doesNotMatch(copy, /Ton objectif .* pilote la sélection|La stratégie de référence est chiffrée/i);
+});
+
 test("all primary goals produce between two and four molecules and never less than twelve weeks", () => {
   for (const primaryGoal of ["recovery", "gh-antiaging", "fatloss", "sleep", "cognitive", "libido", "testo-boost", "skin-hair", "endurance"] as const) {
     const result = buildPeptidesPreview(peptidesPreviewInputSchema.parse({ ...base, primaryGoal }), catalog, new Date().toISOString(), franceShipping);
