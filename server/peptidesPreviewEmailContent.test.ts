@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   buildPeptidesPreviewAdminNotificationContent,
+  buildPeptidesPreviewDestinationPath,
   buildPeptidesPreviewResultEmailContent,
   type PeptidesPreviewEmailInput,
   type PeptidesPreviewEmailResult,
@@ -44,6 +45,9 @@ const eligible: PeptidesPreviewEmailResult = {
   status: "eligible",
   headline: "Une présélection cohérente avec ta récupération",
   rationale: "La récupération locale reste prioritaire et le sommeil soutient la progression.",
+  analysisPoints: ["Une zone prioritaire a été déclarée.", "Le scénario reste limité à un axe principal."],
+  requiredMarkers: [],
+  nextStepExplanation: "Peptides Engine finalise le calendrier et la liste d’achat.",
   budgetExplanation: "Le cycle complet reste dans ton budget avec la livraison incluse.",
   quoteExplanation: "Prix live vérifiés.",
   molecules: [{
@@ -88,6 +92,9 @@ function review(nextStep: "manual_review" | "blood_analysis", blocker: string): 
     status: "review_required",
     headline: nextStep === "blood_analysis" ? "Tes marqueurs doivent être vérifiés" : "Une validation individuelle est nécessaire",
     rationale: "Une donnée du profil change directement la compatibilité.",
+    analysisPoints: [blocker === "bilan_hormonal_recent_requis" ? "Fatigue et libido basse ne suffisent pas à localiser le problème hormonal." : "Le traitement déclaré doit être intégré avant sélection."],
+    requiredMarkers: nextStep === "blood_analysis" ? ["Testostérone totale", "SHBG", "LH", "FSH"] : [],
+    nextStepExplanation: nextStep === "blood_analysis" ? "Blood Analysis doit interpréter l’axe hormonal avant Peptides Engine." : "Une revue personnalisée doit intégrer le traitement déclaré.",
     budgetExplanation: "Le budget sera évalué après validation.",
     quoteExplanation: "Aucun devis partiel.",
     molecules: [],
@@ -122,20 +129,21 @@ test("eligible client receives the direct recommendation, arithmetic, landed quo
 test("manual review client receives the exact reason and next step without a fake quote", () => {
   const content = buildPeptidesPreviewResultEmailContent(input, review("manual_review", "medicaments_a_integrer"), "/offers/peptides-engine#offres", "https://apexlabs.test");
   assert.match(content.subject, /validation est nécessaire/);
-  assert.match(content.html, /traitement actuellement déclaré doit être intégré/);
-  assert.match(content.text, /traitement actuellement déclaré doit être intégré/);
+  assert.match(content.html, /traitement déclaré doit être intégré avant sélection/);
+  assert.match(content.text, /traitement déclaré doit être intégré avant sélection/);
   assert.match(content.html, /Obtenir ma validation personnalisée/);
   assert.doesNotMatch(content.html, /DEVIS COMPLET ESTIMÉ|À valider|medicaments_a_integrer/);
   assert.doesNotMatch(content.text, /Ton devis estimatif complet|À valider|medicaments_a_integrer/);
 });
 
 test("blood review explains marker verification and links to Blood Analysis", () => {
-  const content = buildPeptidesPreviewResultEmailContent(input, review("blood_analysis", "bilan_hormonal_recent_requis"), "/offers/blood-analysis", "https://apexlabs.test");
+  const content = buildPeptidesPreviewResultEmailContent(input, review("blood_analysis", "bilan_hormonal_recent_requis"), buildPeptidesPreviewDestinationPath("blood_analysis", "email"), "https://apexlabs.test");
   assert.match(content.subject, /marqueurs à vérifier/);
-  assert.match(content.html, /bilan hormonal récent est nécessaire/);
+  assert.match(content.html, /Fatigue et libido basse ne suffisent pas à localiser le problème hormonal/);
   assert.match(content.html, /Vérifier mes marqueurs/);
   assert.match(content.text, /Blood Analysis/);
-  assert.doesNotMatch(content.html, /DEVIS COMPLET ESTIMÉ|À valider/);
+  assert.match(content.text, /utm_source=peptides_preview_email&utm_medium=email/);
+  assert.doesNotMatch(content.html, /DEVIS COMPLET ESTIMÉ|À valider|peptides_preview_admin/);
 });
 
 test("admin notification is scannable and contains the exact copy-ready client email", () => {
@@ -152,7 +160,7 @@ test("admin review notification never labels a suspended result as a priced lead
   const content = buildPeptidesPreviewAdminNotificationContent(input, review("manual_review", "medicaments_a_integrer"), "lead-456", true, "https://apexlabs.test");
   assert.match(content.subject, /Revue requise/);
   assert.doesNotMatch(content.subject, /À valider|Lead prêt à convertir/);
-  assert.match(content.html, /Suspendu — aucune estimation partielle/);
-  assert.match(content.text, /traitement actuellement déclaré doit être intégré/);
+  assert.match(content.html, /Suspendu : aucune estimation partielle/);
+  assert.match(content.text, /traitement déclaré doit être intégré avant sélection/);
   assert.match(content.text, /offers\/peptides-engine\?.*#offres/);
 });

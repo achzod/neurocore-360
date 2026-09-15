@@ -13,16 +13,6 @@ const ADVISORY_LOCK_KEY = 781_157_119;
 let started = false;
 let running = false;
 
-function checkoutUrlFor(nextStep: string): string {
-  if (nextStep === "blood_analysis") {
-    return "/offers/blood-analysis?utm_source=peptides_preview&utm_medium=result&utm_campaign=pre_peptides_engine";
-  }
-  if (nextStep === "peptides_engine") {
-    return "/peptides-engine?tier=solo&utm_source=peptides_preview&utm_medium=result&utm_campaign=pre_peptides_engine";
-  }
-  return "/offers/peptides-engine?utm_source=peptides_preview&utm_medium=result&utm_campaign=pre_peptides_engine#offres";
-}
-
 function nextRetryAt(attempts: number): string {
   const delayMs = Math.min(15 * 60_000, 60_000 * 2 ** Math.max(0, attempts - 1));
   return new Date(Date.now() + delayMs).toISOString();
@@ -44,7 +34,6 @@ async function deliverOne(row: { id: string; responses: Record<string, any> }, c
     clientEmailSent = await sendPeptidesPreviewResultEmail(
       input,
       result,
-      checkoutUrlFor(String(result.nextStep || "manual_review")),
       row.id,
     ).catch((error) => {
       console.error("[PeptidesPreviewQueue] client delivery failed", error instanceof Error ? error.message : "unknown_error");
