@@ -127,7 +127,7 @@ function personalized(blocker: string): PeptidesPreviewEmailResult {
 test("eligible client receives the direct recommendation, arithmetic, landed quote and CTA", () => {
   const content = buildPeptidesPreviewResultEmailContent(input, eligible, "/peptides-engine?tier=solo", "https://apexlabs.test");
   assert.match(content.subject, /estimation Peptides Engine.*2 molécules.*12 semaines.*\$182\.47/);
-  for (const expected of [input.goalDetails, "Nombre de molécules", "Durée estimée", "$122.47", "$60.00", "$182.47", "marge de 20 %", "protocole plus poussé et plus précis"]) {
+  for (const expected of [input.goalDetails, "Nombre de molécules", "Durée de la stratégie", "$122.47", "$60.00", "$182.47", "marge de 20 %", "protocole plus poussé et plus précis"]) {
     assert.match(content.html, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
     assert.match(content.text, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }

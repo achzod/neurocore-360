@@ -12,7 +12,7 @@ test("Karim produces a two-molecule twelve-week estimate with complete internal 
   const result = buildPeptidesPreview(peptidesPreviewInputSchema.parse(base), core);
   assert.equal(result.nextStep, "peptides_engine");
   assert.equal(result.moleculeCount, 2);
-  assert.equal(result.durationLabel, "12 semaines");
+  assert.equal(result.durationLabel, "Stratégie 12 semaines · phases actives de 8 à 12 semaines");
   assert.equal(result.totalVialsRequired, 2);
   assert.ok(result.molecules.every((m) => m.totalRequiredMg > 0 && m.vialsPurchased === m.vialsRequired && m.vialsPurchased * m.vialStrengthMg >= m.totalRequiredMg * 1.2 && m.estimatedTotalPriceUsd > 0));
   assert.match(result.quoteExplanation, /2 molécules.*12 semaines/);
