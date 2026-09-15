@@ -43,7 +43,7 @@ const input: PeptidesPreviewEmailInput = {
 
 const eligible: PeptidesPreviewEmailResult = {
   status: "eligible",
-  moleculeCount: 1,
+  moleculeCount: 2,
   headline: "Une présélection cohérente avec ta récupération",
   rationale: "La récupération locale reste prioritaire et le sommeil soutient la progression.",
   analysisPoints: ["Une zone prioritaire a été déclarée.", "Le scénario reste limité à un axe principal."],
@@ -52,36 +52,41 @@ const eligible: PeptidesPreviewEmailResult = {
   budgetExplanation: "Le cycle complet reste dans ton budget avec la livraison incluse.",
   quoteExplanation: "Prix live vérifiés.",
   molecules: [{
-    name: "BPC-157",
+    name: "KissPeptin-10",
     supplier: "Supplier Secret",
     productUrl: "https://supplier.invalid/product",
-    role: "Récupération locale",
+    role: "Axe testostérone",
     reason: "Cible le besoin principal déclaré.",
-    doseSummary: "250 mcg, deux fois par jour",
-    administrationCount: 112,
-    startingFormat: "5 mg",
-    startingPackagePriceUsd: 12.97,
-    cycleDurationLabel: "8 semaines",
-    calculationBasis: "0,5 mg/jour × 56 jours = 28 mg",
-    totalRequiredMg: 28,
-    vialStrengthMg: 5,
-    mathematicalVials: 6,
-    operationalVials: 6,
-    vialsRequired: 6,
-    vialsPurchased: 6,
-    packageCount: 2,
-    estimatedTotalPriceUsd: 25.94,
+    doseSummary: "200 mcg, trois fois par semaine",
+    administrationCount: 36,
+    startingFormat: "10 mg",
+    startingPackagePriceUsd: 31.19,
+    cycleDurationLabel: "12 semaines",
+    calculationBasis: "200 mcg × 3 administrations par semaine × 12 semaines = 7.2 mg",
+    totalRequiredMg: 7.2,
+    vialStrengthMg: 10,
+    mathematicalVials: 1,
+    operationalVials: 1,
+    vialsRequired: 1,
+    vialsPurchased: 1,
+    packageCount: 1,
+    estimatedTotalPriceUsd: 31.19,
+  }, {
+    name: "PT-141", supplier: "Supplier Secret", productUrl: "https://supplier.invalid/product-2", role: "Support libido", reason: "Complète le premier axe.",
+    doseSummary: "1 mg, une fois par semaine", administrationCount: 12, startingFormat: "10 mg", startingPackagePriceUsd: 20.03,
+    cycleDurationLabel: "12 semaines", calculationBasis: "1 mg × 1 administration par semaine × 12 semaines = 12 mg", totalRequiredMg: 12,
+    vialStrengthMg: 10, mathematicalVials: 2, operationalVials: 2, vialsRequired: 2, vialsPurchased: 2, packageCount: 2, estimatedTotalPriceUsd: 40.06,
   }],
-  estimatedStarterCostUsd: 12.97,
-  estimatedProtocolCostUsd: 77.82,
+  estimatedStarterCostUsd: 51.22,
+  estimatedProtocolCostUsd: 71.25,
   estimatedShippingCostUsd: 60,
-  estimatedGrandTotalUsd: 137.82,
-  monthlyEquivalentUsd: 68.91,
-  shippingBreakdown: [{ supplier: "Supplier Secret", subtotalUsd: 77.82, shippingUsd: 60, speed: "7 à 14 jours" }],
-  totalVialsRequired: 6,
-  totalVialsPurchased: 6,
-  totalPackages: 2,
-  durationLabel: "8 semaines",
+  estimatedGrandTotalUsd: 131.25,
+  monthlyEquivalentUsd: 43.75,
+  shippingBreakdown: [{ supplier: "Supplier Secret", subtotalUsd: 71.25, shippingUsd: 60, speed: "7 à 14 jours" }],
+  totalVialsRequired: 3,
+  totalVialsPurchased: 3,
+  totalPackages: 3,
+  durationLabel: "12 semaines",
   budgetFit: "within",
   blockers: [],
   nextStep: "peptides_engine",
@@ -116,13 +121,13 @@ function personalized(blocker: string): PeptidesPreviewEmailResult {
 
 test("eligible client receives the direct recommendation, arithmetic, landed quote and CTA", () => {
   const content = buildPeptidesPreviewResultEmailContent(input, eligible, "/peptides-engine?tier=solo", "https://apexlabs.test");
-  assert.match(content.subject, /estimation Peptides Engine.*1 molécule.*8 semaines.*\$137\.82/);
-  for (const expected of [input.goalDetails, "Nombre de molécules", "Durée estimée", "$77.82", "$60.00", "$137.82", "protocole plus poussé et plus précis"]) {
+  assert.match(content.subject, /estimation Peptides Engine.*2 molécules.*12 semaines.*\$131\.25/);
+  for (const expected of [input.goalDetails, "Nombre de molécules", "Durée estimée", "$71.25", "$60.00", "$131.25", "protocole plus poussé et plus précis"]) {
     assert.match(content.html, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
     assert.match(content.text, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
-  assert.doesNotMatch(content.html, /BPC-157|250 mcg|28 mg|Dose de référence/);
-  assert.doesNotMatch(content.text, /BPC-157|250 mcg|28 mg|Dose de référence/);
+  assert.doesNotMatch(content.html, /KissPeptin-10|PT-141|200 mcg|1 mg|Dose de référence/);
+  assert.doesNotMatch(content.text, /KissPeptin-10|PT-141|200 mcg|1 mg|Dose de référence/);
   assert.match(content.html, /Débloquer mon analyse Peptides Engine/);
   assert.match(content.text, /https:\/\/apexlabs\.test\/peptides-engine\?tier=solo/);
   assert.doesNotMatch(content.html, /Supplier Secret|supplier\.invalid/);
@@ -131,7 +136,7 @@ test("eligible client receives the direct recommendation, arithmetic, landed quo
 
 test("personalized profile converts directly to Peptides Engine without another step", () => {
   const content = buildPeptidesPreviewResultEmailContent(input, personalized("medicaments_a_integrer"), buildPeptidesPreviewDestinationPath("peptides_engine", "email"), "https://apexlabs.test");
-  assert.match(content.subject, /estimation Peptides Engine.*1 molécule.*8 semaines/);
+  assert.match(content.subject, /estimation Peptides Engine.*2 molécules.*12 semaines/);
   assert.match(content.html, /traitement déclaré sera intégré directement/);
   assert.match(content.text, /Débloque Peptides Engine maintenant/);
   assert.match(content.html, /Débloquer mon analyse Peptides Engine/);
@@ -142,7 +147,7 @@ test("personalized profile converts directly to Peptides Engine without another 
 
 test("testosterone profile is not diverted to blood analysis", () => {
   const content = buildPeptidesPreviewResultEmailContent(input, personalized("bilan_hormonal_recent_requis"), buildPeptidesPreviewDestinationPath("blood_analysis", "email"), "https://apexlabs.test");
-  assert.match(content.subject, /estimation Peptides Engine.*1 molécule.*8 semaines/);
+  assert.match(content.subject, /estimation Peptides Engine.*2 molécules.*12 semaines/);
   assert.match(content.text, /Accéder à Peptides Engine/);
   assert.match(content.text, /utm_source=peptides_preview_email&utm_medium=email/);
   assert.doesNotMatch(content.html, /Blood Analysis|MARQUEURS À VÉRIFIER|Vérifier mes marqueurs|peptides_preview_admin|BPC-157|250 mcg/);
@@ -151,12 +156,12 @@ test("testosterone profile is not diverted to blood analysis", () => {
 
 test("admin notification is scannable and contains the exact copy-ready client email", () => {
   const content = buildPeptidesPreviewAdminNotificationContent(input, eligible, "lead-123", true, "https://apexlabs.test");
-  assert.match(content.subject, /Lead prêt à convertir.*\$137\.82/);
-  for (const expected of ["Verdict", "Prochaine étape", "Résultat du pré-calcul", "BPC-157", "Email automatique client", "Envoyé", "MAIL PRÊT À COPIER COLLER", "$137.82"]) {
+  assert.match(content.subject, /Lead prêt à convertir.*\$131\.25/);
+  for (const expected of ["Verdict", "Prochaine étape", "Résultat du pré-calcul", "KissPeptin-10", "Email automatique client", "Envoyé", "MAIL PRÊT À COPIER COLLER", "$131.25"]) {
     assert.ok(content.html.includes(expected), `missing ${expected}`);
   }
   assert.match(content.text, /Email automatique client : Envoyé/);
-  assert.match(content.text, /Marc, ton estimation Peptides Engine : 1 molécule, 8 semaines, \$137\.82/);
+  assert.match(content.text, /Marc, ton estimation Peptides Engine : 2 molécules, 12 semaines, \$131\.25/);
 });
 
 test("admin review notification never labels a suspended result as a priced lead", () => {
