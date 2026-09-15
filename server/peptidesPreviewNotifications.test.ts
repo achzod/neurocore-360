@@ -32,7 +32,9 @@ test("every completed preview queues the client result and admin notification", 
   assert.match(emailSource, /export async function sendPeptidesPreviewResultEmail/);
   assert.match(emailSource, /export async function sendPeptidesPreviewAdminNotification/);
   assert.equal((emailSource.match(/html: encodeBase64\(html\)/g) || []).length >= 2, true);
-  assert.match(emailSource, /Email résultat client/);
+  assert.match(emailSource, /Email automatique client/);
+  assert.match(emailSource, /MAIL PRÊT À COPIER COLLER/);
+  assert.match(emailSource, /buildPeptidesPreviewCopyReadyReply/);
 });
 
 test("rapid duplicate submissions do not resend successful messages", () => {
@@ -55,12 +57,23 @@ test("the free preview has no paid AI model call", () => {
   assert.match(previewSource, /www\.peptaura\.com/);
 });
 
-test("client and admin emails use full protocol quantities and totals", () => {
+test("client and admin emails expose arithmetic, landed quote and conversion copy", () => {
   assert.match(emailSource, /estimatedProtocolCostUsd/);
-  assert.match(emailSource, /vialsRequired/);
+  assert.match(emailSource, /estimatedShippingCostUsd/);
+  assert.match(emailSource, /estimatedGrandTotalUsd/);
+  assert.match(emailSource, /monthlyEquivalentUsd/);
+  assert.match(emailSource, /mathematicalVials/);
+  assert.match(emailSource, /operationalVials/);
   assert.match(emailSource, /packageCount/);
   assert.match(emailSource, /estimatedTotalPriceUsd/);
-  assert.match(emailSource, /COÛT TOTAL MOLÉCULES/);
+  assert.match(emailSource, /DEVIS COMPLET ESTIMÉ/);
+  assert.match(emailSource, /MAIL PRÊT À COPIER COLLER/);
+  assert.match(emailSource, /Tu peux débloquer ton analyse complète ici/);
   assert.doesNotMatch(emailSource, /BUDGET INITIAL ESTIMÉ/);
-  assert.match(previewRoute, /estimatedProtocolCostUsd/);
+  assert.match(previewRoute, /estimatedShippingCostUsd/);
+  assert.match(previewRoute, /estimatedGrandTotalUsd/);
+  assert.match(previewRoute, /publicResult/);
+  assert.match(previewRoute, /supplier: _supplier/);
+  assert.match(previewRoute, /productUrl: _productUrl/);
+  assert.doesNotMatch(emailSource, /\$\{molecule\.supplier\}/);
 });
