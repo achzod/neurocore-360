@@ -64,6 +64,9 @@ const eligible: PeptidesPreviewEmailResult = {
     cycleDurationLabel: "12 semaines",
     calculationBasis: "200 mcg × 3 administrations par semaine × 12 semaines = 7.2 mg",
     totalRequiredMg: 7.2,
+    bufferedRequiredMg: 8.64,
+    purchasedCapacityMg: 20,
+    reserveCapacityMg: 12.8,
     vialStrengthMg: 10,
     mathematicalVials: 1,
     operationalVials: 1,
@@ -76,6 +79,7 @@ const eligible: PeptidesPreviewEmailResult = {
     name: "PT-141", supplier: "Supplier Secret", productUrl: "https://supplier.invalid/product-2", role: "Support libido", reason: "Complète le premier axe.",
     doseSummary: "1 mg, une fois par semaine", administrationCount: 12, startingFormat: "10 mg", startingPackagePriceUsd: 20.03,
     cycleDurationLabel: "12 semaines", calculationBasis: "1 mg × 1 administration par semaine × 12 semaines = 12 mg", totalRequiredMg: 12,
+    bufferedRequiredMg: 14.4, purchasedCapacityMg: 30, reserveCapacityMg: 18,
     vialStrengthMg: 10, mathematicalVials: 2, operationalVials: 2, safetyReserveVials: 1, vialsRequired: 3, vialsPurchased: 3, packageCount: 3, estimatedTotalPriceUsd: 60.09,
   }],
   estimatedStarterCostUsd: 51.22,
@@ -123,7 +127,7 @@ function personalized(blocker: string): PeptidesPreviewEmailResult {
 test("eligible client receives the direct recommendation, arithmetic, landed quote and CTA", () => {
   const content = buildPeptidesPreviewResultEmailContent(input, eligible, "/peptides-engine?tier=solo", "https://apexlabs.test");
   assert.match(content.subject, /estimation Peptides Engine.*2 molécules.*12 semaines.*\$182\.47/);
-  for (const expected of [input.goalDetails, "Nombre de molécules", "Durée estimée", "$122.47", "$60.00", "$182.47", "réserve de fioles", "protocole plus poussé et plus précis"]) {
+  for (const expected of [input.goalDetails, "Nombre de molécules", "Durée estimée", "$122.47", "$60.00", "$182.47", "marge de 20 %", "protocole plus poussé et plus précis"]) {
     assert.match(content.html, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
     assert.match(content.text, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
@@ -158,7 +162,7 @@ test("testosterone profile is not diverted to blood analysis", () => {
 test("admin notification is scannable and contains the exact copy-ready client email", () => {
   const content = buildPeptidesPreviewAdminNotificationContent(input, eligible, "lead-123", true, "https://apexlabs.test");
   assert.match(content.subject, /Lead prêt à convertir.*\$182\.47/);
-  for (const expected of ["Verdict", "Prochaine étape", "Résultat du pré-calcul", "KissPeptin-10", "réserve 1 fiole", "5 à commander réserve incluse", "Email automatique client", "Envoyé", "MAIL PRÊT À COPIER COLLER", "$182.47"]) {
+  for (const expected of ["Verdict", "Prochaine étape", "Résultat du pré-calcul", "KissPeptin-10", "cible avec marge 20 % 8.64 mg", "réserve réelle 12.8 mg", "5 à commander réserve incluse", "Email automatique client", "Envoyé", "MAIL PRÊT À COPIER COLLER", "$182.47"]) {
     assert.ok(content.html.includes(expected), `missing ${expected}`);
   }
   assert.match(content.text, /Email automatique client : Envoyé/);

@@ -5,7 +5,7 @@ import {
   type PeptauraFeedListing,
   type PeptauraFeedProductSnapshot,
 } from "./peptauraProductFeed";
-import { buildPurchasePlan, parseListingMg, type PeptidePurchasePlan } from "./peptidesPurchasePlan";
+import { effectivePackagePrice, parseListingMg, type PeptidePurchasePlan } from "./peptidesPurchasePlan";
 import {
   parsePeptauraShippingPage,
   shippingForSubtotal,
@@ -111,6 +111,9 @@ export interface PeptidesPreviewMolecule {
   cycleDurationLabel: string;
   calculationBasis: string;
   totalRequiredMg: number;
+  bufferedRequiredMg: number;
+  purchasedCapacityMg: number;
+  reserveCapacityMg: number;
   vialStrengthMg: number;
   mathematicalVials: number;
   operationalVials: number;
@@ -118,6 +121,7 @@ export interface PeptidesPreviewMolecule {
   vialsRequired: number;
   vialsPurchased: number;
   packageCount: number;
+  purchaseLines?: Array<{ format: string; boxSize: number; packageCount: number; deliveredVials: number; packagePriceUsd: number; totalPriceUsd: number; productUrl: string }>;
   estimatedTotalPriceUsd: number;
 }
 
@@ -199,6 +203,8 @@ type Candidate = {
     doseMg?: number;
     administrationsPerWeek?: number;
     durationWeeks?: number;
+    activeWeeks?: number;
+    protocolWeeks?: number;
     phasedWeeklyDosesMg?: Array<{ doseMg: number; weeks: number }>;
     openingWindowDays?: number;
     maxOverstockRatio?: number;
@@ -207,40 +213,40 @@ type Candidate = {
 
 const candidatesByGoal: Record<Goal, Candidate[]> = {
   recovery: [
-    { name: "BPC-157", role: "Récupération tissulaire ciblée", reason: (input) => input.recoveryScope === "localized" ? "Tu as décrit une zone prioritaire : ce premier axe porte la récupération tissulaire locale sur douze semaines." : "La récupération fait partie de tes priorités : ce premier axe constitue la base tissulaire du cycle de douze semaines.", planning: { durationLabel: "12 semaines", doseMg: 0.25, administrationsPerWeek: 14, durationWeeks: 12 } },
-    { name: "TB-500", aliases: ["TB500"], role: "Récupération systémique complémentaire", reason: (input) => input.recoveryScope === "systemic" ? "Tu as décrit une récupération générale : ce second axe couvre la dimension systémique sur le cycle complet." : "Ce second axe complète la récupération locale par une couverture systémique sur douze semaines.", planning: { durationLabel: "12 semaines", doseMg: 2.5, administrationsPerWeek: 2, durationWeeks: 12 } },
+    { name: "BPC-157", role: "Récupération tissulaire ciblée", reason: (input) => input.recoveryScope === "localized" ? "Tu as décrit une zone prioritaire : ce premier axe porte la récupération tissulaire locale sur douze semaines." : "La récupération fait partie de tes priorités : ce premier axe constitue la base tissulaire du cycle de douze semaines.", planning: { durationLabel: "12 semaines", doseMg: 0.25, administrationsPerWeek: 14, activeWeeks: 8, durationWeeks: 12 } },
+    { name: "TB-500", aliases: ["TB500"], role: "Récupération systémique complémentaire", reason: (input) => input.recoveryScope === "systemic" ? "Tu as décrit une récupération générale : ce second axe couvre la dimension systémique sur le cycle complet." : "Ce second axe complète la récupération locale par une couverture systémique sur douze semaines.", planning: { durationLabel: "12 semaines", phasedWeeklyDosesMg: [{ doseMg: 5, weeks: 4 }, { doseMg: 2.5, weeks: 4 }], protocolWeeks: 12 } },
   ],
   "gh-antiaging": [
-    { name: "CJC-1295 (no DAC)", aliases: ["CJC-1295 sans DAC", "CJC1295 no DAC"], role: "Signal pulsatile de l’axe GH", reason: () => "Tu as choisi l’axe GH comme priorité : ce premier levier porte le signal pulsatile sur le cycle minimal de douze semaines.", planning: { durationLabel: "12 semaines", doseMg: 0.1, administrationsPerWeek: 5, durationWeeks: 12, openingWindowDays: 28 } },
-    { name: "Ipamorelin", role: "Sécrétagogue complémentaire", reason: () => "Ce second levier complète le signal GHRH sur le même cycle de douze semaines.", planning: { durationLabel: "12 semaines", doseMg: 0.1, administrationsPerWeek: 5, durationWeeks: 12, openingWindowDays: 28 } },
+    { name: "CJC-1295 (no DAC)", aliases: ["CJC-1295 sans DAC", "CJC1295 no DAC"], role: "Signal pulsatile de l’axe GH", reason: () => "Tu as choisi l’axe GH comme priorité : ce premier levier porte le signal pulsatile sur le cycle minimal de douze semaines.", planning: { durationLabel: "12 semaines", doseMg: 0.1, administrationsPerWeek: 7, activeWeeks: 8, durationWeeks: 12, openingWindowDays: 28 } },
+    { name: "Ipamorelin", role: "Sécrétagogue complémentaire", reason: () => "Ce second levier complète le signal GHRH sur le même cycle de douze semaines.", planning: { durationLabel: "12 semaines", doseMg: 0.1, administrationsPerWeek: 7, activeWeeks: 8, durationWeeks: 12, openingWindowDays: 28 } },
   ],
   fatloss: [
     { name: "Semaglutide", role: "Contrôle de l’appétit et axe métabolique", reason: (input) => `À ${input.weightKg} kg pour ${input.heightCm} cm (IMC ${Number((input.weightKg / ((input.heightCm / 100) ** 2)).toFixed(1))}), avec un historique GLP-1 « ${input.glp1History === "never" ? "jamais utilisé" : "déjà utilisé et bien toléré"} », ce premier axe suit une progression calculée sur douze semaines.`, planning: { durationLabel: "12 semaines", phasedWeeklyDosesMg: [{ doseMg: 0.25, weeks: 4 }, { doseMg: 0.5, weeks: 4 }, { doseMg: 1, weeks: 4 }], durationWeeks: 12, maxOverstockRatio: 1.5 } },
-    { name: "MOTS-c", aliases: ["MOTS c"], role: "Support métabolique complémentaire", reason: () => "Ce second axe complète la stratégie métabolique sur le cycle estimé.", planning: { durationLabel: "12 semaines", doseMg: 5, administrationsPerWeek: 1, durationWeeks: 12, openingWindowDays: 28 } },
+    { name: "MOTS-c", aliases: ["MOTS c"], role: "Support métabolique complémentaire", reason: () => "Ce second axe complète la stratégie métabolique sur le cycle estimé.", planning: { durationLabel: "12 semaines", doseMg: 5, administrationsPerWeek: 1, activeWeeks: 8, durationWeeks: 12, openingWindowDays: 28 } },
   ],
   sleep: [
-    { name: "DSIP", role: "Architecture et qualité du sommeil", reason: (input) => `Tu déclares en moyenne ${input.sleepHours} heures de sommeil et tu as placé le sommeil parmi les objectifs. Le pré-calcul isole cet axe au lieu de le confondre avec une stratégie GH ou récupération générale.`, planning: { durationLabel: "12 semaines", doseMg: 0.175, administrationsPerWeek: 7, durationWeeks: 12 } },
-    { name: "Selank", role: "Stabilité sous stress", reason: () => "Ce second levier complète l’axe sommeil par un soutien de la stabilité nerveuse.", planning: { durationLabel: "12 semaines", doseMg: 0.25, administrationsPerWeek: 14, durationWeeks: 12 } },
+    { name: "DSIP", role: "Architecture et qualité du sommeil", reason: (input) => `Tu déclares en moyenne ${input.sleepHours} heures de sommeil et tu as placé le sommeil parmi les objectifs. Le pré-calcul isole cet axe au lieu de le confondre avec une stratégie GH ou récupération générale.`, planning: { durationLabel: "12 semaines", doseMg: 0.175, administrationsPerWeek: 7, activeWeeks: 4, durationWeeks: 12 } },
+    { name: "Selank", role: "Stabilité sous stress", reason: () => "Ce second levier complète l’axe sommeil par un soutien de la stabilité nerveuse.", planning: { durationLabel: "12 semaines", doseMg: 0.25, administrationsPerWeek: 7, activeWeeks: 4, durationWeeks: 12 } },
   ],
   cognitive: [
-    { name: "Semax", role: "Focus et performance cognitive", reason: (input) => `Ton objectif porte sur la cognition avec un stress déclaré ${input.cognitiveStress === "high" ? "élevé" : input.cognitiveStress === "moderate" ? "modéré" : "faible"}. Ce premier axe porte le focus et la performance cognitive sur douze semaines.`, planning: { durationLabel: "12 semaines", doseMg: 0.5, administrationsPerWeek: 7, durationWeeks: 12 } },
-    { name: "Selank", role: "Stabilité cognitive sous stress", reason: () => "Ce second axe complète le focus par la stabilité cognitive sur le cycle de douze semaines.", planning: { durationLabel: "12 semaines", doseMg: 0.25, administrationsPerWeek: 14, durationWeeks: 12 } },
+    { name: "Semax", role: "Focus et performance cognitive", reason: (input) => `Ton objectif porte sur la cognition avec un stress déclaré ${input.cognitiveStress === "high" ? "élevé" : input.cognitiveStress === "moderate" ? "modéré" : "faible"}. Ce premier axe porte le focus et la performance cognitive sur douze semaines.`, planning: { durationLabel: "12 semaines", doseMg: 0.2, administrationsPerWeek: 7, activeWeeks: 4, durationWeeks: 12 } },
+    { name: "Selank", role: "Stabilité cognitive sous stress", reason: () => "Ce second axe complète le focus par la stabilité cognitive sur le cycle de douze semaines.", planning: { durationLabel: "12 semaines", doseMg: 0.25, administrationsPerWeek: 7, activeWeeks: 4, durationWeeks: 12 } },
   ],
   libido: [
-    { name: "PT-141", role: "Réponse sexuelle centrale", reason: (input) => `L’objectif déclaré concerne la libido et ta tension est ${input.bloodPressure === "normal" ? "déclarée normale" : "déclarée contrôlée"}. Le scénario isole un levier central ponctuel ; il ne prétend pas corriger un éventuel facteur hormonal non mesuré.`, planning: { durationLabel: "12 semaines", doseMg: 1, administrationsPerWeek: 1, durationWeeks: 12, maxOverstockRatio: 2.2 } },
-    { name: "KissPeptin-10", aliases: ["Kisspeptin-10", "Kisspeptin 10"], role: "Support de l’axe hormonal", reason: () => "Ce second levier complète l’axe libido dans l’estimation multi-molécules.", planning: { durationLabel: "12 semaines", doseMg: 0.2, administrationsPerWeek: 3, durationWeeks: 12, maxOverstockRatio: 2.2 } },
+    { name: "PT-141", role: "Réponse sexuelle centrale", reason: (input) => `L’objectif déclaré concerne la libido et ta tension est ${input.bloodPressure === "normal" ? "déclarée normale" : "déclarée contrôlée"}. Le scénario isole un levier central ponctuel ; il ne prétend pas corriger un éventuel facteur hormonal non mesuré.`, planning: { durationLabel: "12 semaines", phasedWeeklyDosesMg: [{ doseMg: 0.5, weeks: 12 }], protocolWeeks: 12, maxOverstockRatio: 2.2 } },
+    { name: "KissPeptin-10", aliases: ["Kisspeptin-10", "Kisspeptin 10"], role: "Support de l’axe hormonal", reason: () => "Ce second levier complète l’axe libido dans l’estimation multi-molécules.", planning: { durationLabel: "12 semaines", doseMg: 0.1, administrationsPerWeek: 3, activeWeeks: 8, durationWeeks: 12, maxOverstockRatio: 2.2 } },
   ],
   "testo-boost": [
-    { name: "KissPeptin-10", aliases: ["Kisspeptin-10", "Kisspeptin 10"], role: "Axe hypothalamo-hypophyso-gonadique", reason: () => "Peptides Engine personnalise cet axe autour de l’objectif testostérone, de l’historique et des autres réponses du profil.", planning: { durationLabel: "12 semaines", doseMg: 0.2, administrationsPerWeek: 3, durationWeeks: 12, maxOverstockRatio: 2.2 } },
-    { name: "PT-141", role: "Support libido complémentaire", reason: () => "La libido basse déclarée justifie ce second axe dans l’estimation commerciale.", planning: { durationLabel: "12 semaines", doseMg: 1, administrationsPerWeek: 1, durationWeeks: 12, maxOverstockRatio: 2.2 } },
+    { name: "KissPeptin-10", aliases: ["Kisspeptin-10", "Kisspeptin 10"], role: "Axe hypothalamo-hypophyso-gonadique", reason: () => "Peptides Engine personnalise cet axe autour de l’objectif testostérone, de l’historique et des autres réponses du profil.", planning: { durationLabel: "12 semaines", doseMg: 0.1, administrationsPerWeek: 3, activeWeeks: 8, durationWeeks: 12, maxOverstockRatio: 2.2 } },
+    { name: "PT-141", role: "Support libido complémentaire", reason: () => "La libido basse déclarée justifie ce second axe dans l’estimation commerciale.", planning: { durationLabel: "12 semaines", phasedWeeklyDosesMg: [{ doseMg: 0.5, weeks: 12 }], protocolWeeks: 12, maxOverstockRatio: 2.2 } },
   ],
   "skin-hair": [
-    { name: "GHK-Cu", aliases: ["GHK Cu"], role: "Peau, cheveux et matrice extracellulaire", reason: () => "L’objectif déclaré est cutané ou capillaire : ce premier axe porte la matrice et la qualité tissulaire sur douze semaines.", planning: { durationLabel: "12 semaines", doseMg: 2, administrationsPerWeek: 5, durationWeeks: 12 } },
-    { name: "BPC-157", role: "Support tissulaire complémentaire", reason: () => "Ce second levier complète l’axe peau et cheveux sur le cycle estimé.", planning: { durationLabel: "12 semaines", doseMg: 0.25, administrationsPerWeek: 14, durationWeeks: 12 } },
+    { name: "GHK-Cu", aliases: ["GHK Cu"], role: "Peau, cheveux et matrice extracellulaire", reason: () => "L’objectif déclaré est cutané ou capillaire : ce premier axe porte la matrice et la qualité tissulaire sur douze semaines.", planning: { durationLabel: "12 semaines", doseMg: 2, administrationsPerWeek: 5, activeWeeks: 8, durationWeeks: 12 } },
+    { name: "BPC-157", role: "Support tissulaire complémentaire", reason: () => "Ce second levier complète l’axe peau et cheveux sur le cycle estimé.", planning: { durationLabel: "12 semaines", doseMg: 0.25, administrationsPerWeek: 7, activeWeeks: 8, durationWeeks: 12 } },
   ],
   endurance: [
-    { name: "MOTS-c", aliases: ["MOTS c"], role: "Efficience métabolique et endurance", reason: (input) => `Tu déclares ${input.trainingFrequency === "5plus" ? "au moins cinq" : input.trainingFrequency === "3-4" ? "trois à quatre" : input.trainingFrequency === "1-2" ? "une à deux" : "aucune"} séances par semaine avec une priorité endurance. MOTS-c constitue le levier énergétique principal du scénario.`, planning: { durationLabel: "12 semaines", doseMg: 5, administrationsPerWeek: 1, durationWeeks: 12, openingWindowDays: 28 } },
-    { name: "SS-31", aliases: ["SS-31 (Elamipretide)", "Elamipretide"], role: "Fonction mitochondriale", reason: () => "Ce second axe complète l’efficience énergétique par le support mitochondrial sur douze semaines.", planning: { durationLabel: "12 semaines", doseMg: 1, administrationsPerWeek: 7, durationWeeks: 12 } },
+    { name: "MOTS-c", aliases: ["MOTS c"], role: "Efficience métabolique et endurance", reason: (input) => `Tu déclares ${input.trainingFrequency === "5plus" ? "au moins cinq" : input.trainingFrequency === "3-4" ? "trois à quatre" : input.trainingFrequency === "1-2" ? "une à deux" : "aucune"} séances par semaine avec une priorité endurance. MOTS-c constitue le levier énergétique principal du scénario.`, planning: { durationLabel: "12 semaines", doseMg: 5, administrationsPerWeek: 1, activeWeeks: 8, durationWeeks: 12, openingWindowDays: 28 } },
+    { name: "SS-31", aliases: ["SS-31 (Elamipretide)", "Elamipretide"], role: "Fonction mitochondriale", reason: () => "Ce second axe complète l’efficience énergétique par le support mitochondrial sur douze semaines.", planning: { durationLabel: "12 semaines", doseMg: 1, administrationsPerWeek: 7, activeWeeks: 4, durationWeeks: 12 } },
   ],
 };
 
@@ -285,6 +291,7 @@ type ProtocolMath = {
   totalNeedMg: number;
   administrationCount: number;
   durationWeeks: number;
+  activeDurationWeeks: number;
   doseSummary: string;
   calculationBasis: string;
 };
@@ -294,26 +301,31 @@ function calculateProtocolMath(candidate: Candidate): ProtocolMath | null {
   if (planning.phasedWeeklyDosesMg?.length) {
     const totalNeedMg = planning.phasedWeeklyDosesMg.reduce((sum, phase) => sum + phase.doseMg * phase.weeks, 0);
     const administrationCount = planning.phasedWeeklyDosesMg.reduce((sum, phase) => sum + phase.weeks, 0);
-    const durationWeeks = planning.phasedWeeklyDosesMg.reduce((sum, phase) => sum + phase.weeks, 0);
+    const activeWeeks = planning.phasedWeeklyDosesMg.reduce((sum, phase) => sum + phase.weeks, 0);
+    const durationWeeks = planning.protocolWeeks || activeWeeks;
     const phases = planning.phasedWeeklyDosesMg.map((phase) => `${formatDose(phase.doseMg)} par semaine pendant ${phase.weeks} semaines`);
     return {
       totalNeedMg,
       administrationCount,
       durationWeeks,
-      doseSummary: phases.join(" puis "),
-      calculationBasis: `${phases.join(" + ")} = ${Number(totalNeedMg.toFixed(3))} mg au total`,
+      activeDurationWeeks: activeWeeks,
+      doseSummary: `${phases.join(" puis ")}${activeWeeks < durationWeeks ? ` dans une stratégie de ${durationWeeks} semaines` : ""}`,
+      calculationBasis: `${phases.join(" + ")} = ${Number(totalNeedMg.toFixed(3))} mg au total${activeWeeks < durationWeeks ? ` sur la stratégie de ${durationWeeks} semaines` : ""}`,
     };
   }
   const { doseMg, administrationsPerWeek, durationWeeks } = planning;
   if (![doseMg, administrationsPerWeek, durationWeeks].every((value) => Number.isFinite(value) && Number(value) > 0)) return null;
-  const administrationCount = Number(administrationsPerWeek) * Number(durationWeeks);
+  const activeWeeks = Number(planning.activeWeeks || durationWeeks);
+  const administrationCount = Number(administrationsPerWeek) * activeWeeks;
   const totalNeedMg = Number(doseMg) * administrationCount;
+  const activeWindow = activeWeeks < Number(durationWeeks) ? ` pendant ${activeWeeks} semaines actives dans une stratégie de ${durationWeeks} semaines` : "";
   return {
     totalNeedMg,
     administrationCount,
     durationWeeks: Number(durationWeeks),
-    doseSummary: `${formatDose(Number(doseMg))} par administration, ${administrationsPerWeek} fois par semaine`,
-    calculationBasis: `${formatDose(Number(doseMg))} × ${administrationsPerWeek} administrations par semaine × ${durationWeeks} semaines = ${Number(totalNeedMg.toFixed(3))} mg au total`,
+    activeDurationWeeks: activeWeeks,
+    doseSummary: `${formatDose(Number(doseMg))} par administration, ${administrationsPerWeek} fois par semaine${activeWindow}`,
+    calculationBasis: `${formatDose(Number(doseMg))} × ${administrationsPerWeek} administrations par semaine × ${activeWeeks} semaines actives = ${Number(totalNeedMg.toFixed(3))} mg au total sur la stratégie de ${durationWeeks} semaines`,
   };
 }
 
@@ -344,7 +356,7 @@ function operationalVials(candidate: Candidate, math: ProtocolMath, vialMg: numb
   const minimum = Math.ceil((math.totalNeedMg - Number.EPSILON) / vialMg);
   const windowDays = candidate.planning.openingWindowDays;
   if (!windowDays) return minimum;
-  const cycleDays = math.durationWeeks * 7;
+  const cycleDays = math.activeDurationWeeks * 7;
   const doseMg = math.totalNeedMg / math.administrationCount;
   const buckets = new Map<number, number>();
   for (let index = 0; index < math.administrationCount; index += 1) {
@@ -356,14 +368,99 @@ function operationalVials(candidate: Candidate, math: ProtocolMath, vialMg: numb
   return Math.max(minimum, operational);
 }
 
+type PreviewPurchaseLine = {
+  listing: PeptauraFeedListing;
+  packageCount: number;
+  deliveredVials: number;
+  packagePriceUsd: number;
+  totalPriceUsd: number;
+};
+
+type PreviewPurchasePlan = PeptidePurchasePlan<PeptauraFeedListing> & {
+  purchaseLines: PreviewPurchaseLine[];
+};
+
 type PlannedOption = {
   selection: CandidateSelection;
   math: ProtocolMath;
-  plan: PeptidePurchasePlan<PeptauraFeedListing>;
+  plan: PreviewPurchasePlan;
   mathematicalVials: number;
   operationalVials: number;
   safetyReserveVials: number;
 };
+
+function cheapestMixedPackagePlan(
+  listings: PeptauraFeedListing[],
+  requestedVials: number,
+  vialMg: number,
+): PreviewPurchasePlan | null {
+  if (listings.length === 0 || requestedVials < 1) return null;
+  const cheapestByBoxSize = new Map<number, PeptauraFeedListing>();
+  for (const listing of listings) {
+    const current = cheapestByBoxSize.get(listing.boxSize);
+    const price = effectivePackagePrice(listing, listing.boxSize);
+    const currentPrice = current ? effectivePackagePrice(current, current.boxSize) : Number.POSITIVE_INFINITY;
+    if (Number.isFinite(price) && price > 0 && price < currentPrice) cheapestByBoxSize.set(listing.boxSize, listing);
+  }
+  const packageOptions = [...cheapestByBoxSize.values()];
+  if (packageOptions.length === 0) return null;
+  // The 20% milligram buffer is already included in requestedVials. Do not add
+  // a second hidden reserve through packaging overfill or bulk-price chasing.
+  const maximumDeliveredVials = requestedVials;
+  let best: { lines: PreviewPurchaseLine[]; deliveredVials: number; totalPriceUsd: number; packageCount: number } | null = null;
+
+  const visit = (index: number, deliveredVials: number, lines: PreviewPurchaseLine[]) => {
+    if (deliveredVials > maximumDeliveredVials) return;
+    if (index === packageOptions.length) {
+      if (deliveredVials < requestedVials) return;
+      const totalPriceUsd = lines.reduce((sum, line) => sum + line.totalPriceUsd, 0);
+      const packageCount = lines.reduce((sum, line) => sum + line.packageCount, 0);
+      if (!best || cents(totalPriceUsd) < cents(best.totalPriceUsd)
+        || (cents(totalPriceUsd) === cents(best.totalPriceUsd) && deliveredVials < best.deliveredVials)
+        || (cents(totalPriceUsd) === cents(best.totalPriceUsd) && deliveredVials === best.deliveredVials && packageCount < best.packageCount)) {
+        best = { lines: [...lines], deliveredVials, totalPriceUsd, packageCount };
+      }
+      return;
+    }
+    const listing = packageOptions[index];
+    const maxPackages = Math.floor((maximumDeliveredVials - deliveredVials) / listing.boxSize);
+    for (let packageCount = 0; packageCount <= maxPackages; packageCount += 1) {
+      if (packageCount === 0) {
+        visit(index + 1, deliveredVials, lines);
+        continue;
+      }
+      const packagePriceUsd = effectivePackagePrice(listing, packageCount * listing.boxSize);
+      if (!Number.isFinite(packagePriceUsd) || packagePriceUsd <= 0) continue;
+      const line: PreviewPurchaseLine = {
+        listing,
+        packageCount,
+        deliveredVials: packageCount * listing.boxSize,
+        packagePriceUsd,
+        totalPriceUsd: Math.round(packagePriceUsd * packageCount * 100) / 100,
+      };
+      lines.push(line);
+      visit(index + 1, deliveredVials + line.deliveredVials, lines);
+      lines.pop();
+    }
+  };
+  visit(0, 0, []);
+  if (!best) return null;
+  const selected = best as { lines: PreviewPurchaseLine[]; deliveredVials: number; totalPriceUsd: number; packageCount: number };
+  const representative = selected.lines[0].listing;
+  return {
+    listing: representative,
+    needMg: requestedVials * vialMg,
+    vialMg,
+    requestedVials,
+    packageCount: selected.packageCount,
+    deliveredVials: selected.deliveredVials,
+    deliveredMg: selected.deliveredVials * vialMg,
+    packagePriceUsd: Math.min(...selected.lines.map((line) => line.packagePriceUsd)),
+    totalPriceUsd: selected.totalPriceUsd,
+    overstockRatio: selected.deliveredVials / requestedVials,
+    purchaseLines: selected.lines,
+  };
+}
 
 function candidatePlanOptions(
   selection: CandidateSelection,
@@ -373,20 +470,31 @@ function candidatePlanOptions(
   const math = calculateProtocolMath(selection.candidate);
   const snapshot = findSnapshot(selection.candidate, snapshots, allowedSuppliers);
   if (!math || !snapshot) return [];
-  const maxOverstockRatio = selection.candidate.planning.maxOverstockRatio || 1.3;
-  const options = availableListings(snapshot, allowedSuppliers).flatMap((listing) => {
+  const groupedListings = new Map<string, PeptauraFeedListing[]>();
+  for (const listing of availableListings(snapshot, allowedSuppliers)) {
     const vialMg = parseListingMg(listing.dosage);
+    if (!vialMg) continue;
+    const key = `${normalize(listing.supplier)}:${vialMg}`;
+    const group = groupedListings.get(key) || [];
+    group.push(listing);
+    groupedListings.set(key, group);
+  }
+  const options = [...groupedListings.values()].flatMap((listings) => {
+    const vialMg = parseListingMg(listings[0].dosage);
     if (!vialMg) return [];
     const mathematicalVials = Math.ceil((math.totalNeedMg - Number.EPSILON) / vialMg);
     const requiredOperationalVials = operationalVials(selection.candidate, math, vialMg);
-    if (!selection.candidate.planning.openingWindowDays && (mathematicalVials * vialMg) / math.totalNeedMg > maxOverstockRatio + 1e-9) return [];
     // Keep the prescribed dose unchanged, then provision enough stock to avoid
-    // a mid-cycle reorder: at least 20% and never less than one extra vial.
-    const safetyReserveVials = Math.max(1, Math.ceil(requiredOperationalVials * 0.2));
-    const vialsRequiredWithReserve = requiredOperationalVials + safetyReserveVials;
-    const effectiveNeedMg = vialsRequiredWithReserve * vialMg;
-    const plan = buildPurchasePlan(listing, effectiveNeedMg, maxOverstockRatio);
+    // a mid-cycle reorder with a 20% buffer in total milligram capacity.
+    // Reserve is calculated in milligrams, not as a blind extra vial per
+    // molecule. Existing unused capacity counts toward the 20% buffer.
+    const reserveTargetVials = Math.ceil((math.totalNeedMg * 1.2 - Number.EPSILON) / vialMg);
+    const vialsRequiredWithReserve = Math.max(requiredOperationalVials, reserveTargetVials);
+    // Optimize the real cart across single-vial and bulk-box SKUs from the same
+    // supplier, without adding packaging overfill beyond the 20% mg buffer.
+    const plan = cheapestMixedPackagePlan(listings, vialsRequiredWithReserve, vialMg);
     if (!plan || plan.requestedVials !== vialsRequiredWithReserve) return [];
+    const safetyReserveVials = Math.max(0, plan.deliveredVials - requiredOperationalVials);
     return [{ selection, math, plan, mathematicalVials, operationalVials: requiredOperationalVials, safetyReserveVials }];
   }).sort((a, b) => cents(a.plan.totalPriceUsd) - cents(b.plan.totalPriceUsd));
   const bySupplier = new Map<string, PlannedOption[]>();
@@ -426,6 +534,10 @@ function selectQuotedCombination(
   visit(0, []);
 
   const quoted = combinations.flatMap((options): QuotedCombination[] => {
+    // One client order must use one supplier, so shipping is charged exactly
+    // once for the complete multi-molecule cart — never once per molecule.
+    const suppliers = new Set(options.map((option) => normalize(option.plan.listing.supplier)));
+    if (suppliers.size !== 1) return [];
     const productSubtotalCents = options.reduce((sum, option) => sum + cents(option.plan.totalPriceUsd), 0);
     const bySupplier = new Map<string, { supplier: string; subtotalCents: number }>();
     for (const option of options) {
@@ -635,18 +747,30 @@ export function buildPeptidesPreview(
     reason: selection.candidate.reason(input),
     doseSummary: math.doseSummary,
     administrationCount: math.administrationCount,
-    startingFormat: `${plan.listing.dosage} · boîte de ${plan.listing.boxSize}`,
+    startingFormat: plan.purchaseLines.map((line) => `${line.listing.dosage} · boîte de ${line.listing.boxSize}`).join(" + "),
     startingPackagePriceUsd: plan.packagePriceUsd,
     cycleDurationLabel: selection.candidate.planning.durationLabel,
     calculationBasis: math.calculationBasis,
     totalRequiredMg: Number(math.totalNeedMg.toFixed(3)),
+    bufferedRequiredMg: Number((math.totalNeedMg * 1.2).toFixed(3)),
+    purchasedCapacityMg: Number((plan.deliveredVials * plan.vialMg).toFixed(3)),
+    reserveCapacityMg: Number((plan.deliveredVials * plan.vialMg - math.totalNeedMg).toFixed(3)),
     vialStrengthMg: plan.vialMg,
     mathematicalVials,
     operationalVials,
     safetyReserveVials,
-    vialsRequired: operationalVials + safetyReserveVials,
+    vialsRequired: plan.requestedVials,
     vialsPurchased: plan.deliveredVials,
     packageCount: plan.packageCount,
+    purchaseLines: plan.purchaseLines.map((line) => ({
+      format: line.listing.dosage,
+      boxSize: line.listing.boxSize,
+      packageCount: line.packageCount,
+      deliveredVials: line.deliveredVials,
+      packagePriceUsd: line.packagePriceUsd,
+      totalPriceUsd: line.totalPriceUsd,
+      productUrl: line.listing.productUrl,
+    })),
     estimatedTotalPriceUsd: plan.totalPriceUsd,
   } satisfies PeptidesPreviewMolecule));
 
