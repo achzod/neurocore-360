@@ -645,22 +645,53 @@ function reviewNarrative(input: PeptidesPreviewInput, blockers: string[]): Pick<
   };
 }
 
-function eligibleNarrative(input: PeptidesPreviewInput, selected: PeptidesPreviewMolecule[], grandTotalUsd: number): Pick<PeptidesPreviewResult, "headline" | "rationale" | "analysisPoints" | "requiredMarkers" | "nextStepExplanation"> {
+function frenchList(values: string[]): string {
+  if (values.length <= 1) return values[0] || "";
+  return `${values.slice(0, -1).join(", ")} et ${values.at(-1)}`;
+}
+
+const trainingFrequencyLabels: Record<PeptidesPreviewInput["trainingFrequency"], string> = {
+  none: "aucune séance structurée",
+  "1-2": "une à deux séances par semaine",
+  "3-4": "trois à quatre séances par semaine",
+  "5plus": "au moins cinq séances par semaine",
+};
+
+function eligibleNarrative(
+  input: PeptidesPreviewInput,
+  selected: PeptidesPreviewMolecule[],
+  grandTotalUsd: number,
+  durationLabel: string,
+): Pick<PeptidesPreviewResult, "headline" | "rationale" | "analysisPoints" | "requiredMarkers" | "nextStepExplanation"> {
   const primary = goalLabels[input.primaryGoal];
-  const points = [`Ton objectif ${primary} pilote la sélection et le devis complet des phases actives.`];
-  if (input.primaryGoal === "recovery") points.push("L’estimation associe un axe tissulaire et un axe systémique pendant les phases actives.");
-  if (input.primaryGoal === "cognitive") points.push("L’estimation associe focus et stabilité cognitive pendant la phase active.");
-  if (input.primaryGoal === "fatloss") points.push(`Ton historique GLP-1 « ${input.glp1History === "never" ? "jamais utilisé" : "déjà utilisé et bien toléré"} » oriente la progression retenue et son support métabolique.`);
-  if (input.primaryGoal === "endurance") points.push("L’estimation associe l’axe énergétique et le support mitochondrial.");
-  if (input.secondaryGoals.length) points.push(`L’objectif secondaire ${input.secondaryGoals.map((goal) => goalLabels[goal]).join(" et ")} est conservé s’il renforce la priorité sans dépasser quatre molécules.`);
-  points.push(`La stratégie de référence est chiffrée à $${grandTotalUsd.toFixed(2)} livraison comprise, sur des formats réellement achetables.`);
-  if (input.injectionComfort === "refuse" || input.refrigeration === "no") points.push("Tes contraintes de voie d’administration et de stockage ont été appliquées directement à la sélection.");
+  const roles = selected.map((item) => item.role.toLocaleLowerCase("fr-FR"));
+  const points = [
+    `Ta priorité ${primary} est traduite en ${selected.length} axes distincts : ${frenchList(roles)}.`,
+  ];
+  if (input.primaryGoal === "recovery") {
+    const scope = input.recoveryScope === "localized" ? "une zone précise" : input.recoveryScope === "systemic" ? "une récupération générale" : "plusieurs zones";
+    points.push(`Tu as décrit ${scope} : le calcul combine une action ciblée et un soutien systémique au lieu de dupliquer deux leviers identiques.`);
+  }
+  if (input.primaryGoal === "gh-antiaging") points.push(`Ton bilan est déclaré récent et les deux axes retenus restent actifs pendant douze semaines, au lieu d’afficher douze semaines tout en n’en chiffrant que huit.`);
+  if (input.primaryGoal === "cognitive") points.push(`Ton stress cognitif déclaré ${input.cognitiveStress === "high" ? "élevé" : input.cognitiveStress === "moderate" ? "modéré" : "faible"} conduit à associer performance mentale et stabilité, plutôt qu’un seul axe de stimulation.`);
+  if (input.primaryGoal === "fatloss") {
+    const bmi = input.weightKg / ((input.heightCm / 100) ** 2);
+    points.push(`À ${input.weightKg} kg pour ${input.heightCm} cm, avec un IMC d’environ ${bmi.toFixed(1)} et un historique GLP-1 « ${input.glp1History === "never" ? "jamais utilisé" : "déjà utilisé et bien toléré"} », la progression métabolique est chiffrée sur les phases actives complètes.`);
+  }
+  if (input.primaryGoal === "sleep") points.push(`Avec ${input.sleepHours} heures de sommeil déclarées, le scénario sépare architecture du sommeil et stabilité nerveuse au lieu de basculer automatiquement vers un axe GH.`);
+  if (input.primaryGoal === "endurance") points.push(`Avec ${trainingFrequencyLabels[input.trainingFrequency]}, le calcul associe efficience énergétique et fonction mitochondriale sur deux fenêtres actives différentes.`);
+  if (input.secondaryGoals.length) points.push(`Tes objectifs secondaires, ${frenchList(input.secondaryGoals.map((goal) => goalLabels[goal]))}, ne sont conservés que s’ils renforcent la priorité sans dépasser quatre molécules.`);
+  points.push(`L’exécution tient compte de ta limite de ${frequencyLabels[input.injectionFrequency]} et de ton accès à ${refrigerationLabels[input.refrigeration]}.`);
+  const budgetDelta = input.budgetTotalUsd - grandTotalUsd;
+  points.push(budgetDelta >= 0
+    ? `Le total rendu de $${grandTotalUsd.toFixed(2)} reste $${budgetDelta.toFixed(2)} sous ton budget déclaré de $${input.budgetTotalUsd.toFixed(2)}.`
+    : `Le total rendu de $${grandTotalUsd.toFixed(2)} dépasse ton budget déclaré de $${input.budgetTotalUsd.toFixed(2)} de $${Math.abs(budgetDelta).toFixed(2)} ; Peptides Engine devra donc hiérarchiser les axes.`);
   return {
     headline: `Ton estimation retient ${selected.length} molécule${selected.length > 1 ? "s" : ""} pour ta priorité ${primary}.`,
-    rationale: `Le pré-calcul retient ${selected.length} levier${selected.length > 1 ? "s" : ""} directement relié${selected.length > 1 ? "s" : ""} à ton objectif et chiffre toutes les phases actives à $${grandTotalUsd.toFixed(2)} livraison comprise. Peptides Engine transforme ensuite cette base en stratégie entièrement personnalisée.`,
+    rationale: `Ton aperçu ne se contente plus de nommer un objectif : il construit ${frenchList(roles)}, distingue les phases actives dans « ${durationLabel} » et chiffre la commande complète à $${grandTotalUsd.toFixed(2)} livraison comprise. Peptides Engine transforme ensuite cette architecture en calendrier individualisé, unités et liste d’achat finale.`,
     analysisPoints: points,
     requiredMarkers: [],
-    nextStepExplanation: "Débloque Peptides Engine pour obtenir le calendrier individualisé, les ajustements, la reconstitution, les unités et la liste d’achat finale à partir des réponses déjà fournies.",
+    nextStepExplanation: "Débloque Peptides Engine pour recevoir la sélection nominative, la progression semaine par semaine, les ajustements selon ton profil, la reconstitution, les unités et la liste d’achat finale sans remplir un second questionnaire.",
   };
 }
 
@@ -817,7 +848,7 @@ export function buildPeptidesPreview(
       nextStep: "peptides_engine",
     };
   }
-  const narrative = eligibleNarrative(input, selected, quote.grandTotalUsd);
+  const narrative = eligibleNarrative(input, selected, quote.grandTotalUsd, durationLabel);
   return {
     status: "eligible",
     moleculeCount: selected.length,
