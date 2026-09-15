@@ -14296,8 +14296,8 @@ export async function registerRoutes(
   const peptidesLimiter = createRateLimiter({ windowMs: 60_000, max: 10 });
 
   // Free pre-conversion preview. This deliberately stays deterministic: it
-  // reveals the likely molecule count, rationale and a live Peptaura starter
-  // estimate, while dosages, schedules and reconstitution remain paid output.
+  // exposes the reference-dose arithmetic, operational quantities and landed
+  // estimate. Reconstitution and the individualized weekly schedule remain paid output.
   app.post("/api/peptides-preview/analyze", createRateLimiter({ windowMs: 60_000, max: 5 }), async (req, res) => {
     try {
       const {
@@ -14307,7 +14307,7 @@ export async function registerRoutes(
       } = await import("./peptidesPreview");
       const input = peptidesPreviewInputSchema.parse(req.body);
       const liveCatalog = await getLivePeptauraPreviewCatalog(input.country);
-      const result = buildPeptidesPreview(input, liveCatalog.snapshots, liveCatalog.checkedAt, liveCatalog.shippingVendors);
+      const result = buildPeptidesPreview(input, liveCatalog.snapshots, liveCatalog.checkedAt, liveCatalog.shippingQuotes);
       const capturedAt = new Date().toISOString();
       const storageEmail = `peptides-preview::${input.email}`;
       const previous = await storage.getBurnoutProgress(storageEmail);
@@ -14322,8 +14322,11 @@ export async function registerRoutes(
             vials: item.vialsRequired,
             packages: item.packageCount,
             totalPriceUsd: item.estimatedTotalPriceUsd,
+            supplier: item.supplier,
           })),
           estimatedProtocolCostUsd: result.estimatedProtocolCostUsd,
+          estimatedShippingCostUsd: result.estimatedShippingCostUsd,
+          estimatedGrandTotalUsd: result.estimatedGrandTotalUsd,
           nextStep: result.nextStep,
         },
       })).digest("hex");
@@ -14381,11 +14384,16 @@ export async function registerRoutes(
           : "/offers/peptides-engine?utm_source=peptides_preview&utm_medium=result&utm_campaign=pre_peptides_engine#offres";
       kickPeptidesPreviewDeliveryQueue();
       const resultEmailSent = queuedNotifications?.clientEmailSent === true;
+      const publicResult = {
+        ...result,
+        molecules: result.molecules.map(({ supplier: _supplier, productUrl: _productUrl, ...molecule }) => molecule),
+        shippingBreakdown: result.shippingBreakdown.map(({ supplier: _supplier, ...line }, index) => ({ ...line, supplier: `Expédition ${index + 1}` })),
+      };
       res.json({
         success: true,
         leadId: progress.id,
         submissionId,
-        result,
+        result: publicResult,
         checkoutUrl,
         resultEmailSent,
         resultEmailQueued: !resultEmailSent,

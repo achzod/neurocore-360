@@ -2,21 +2,39 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { buildPeptidesPreview, peptidesPreviewInputSchema } from "./peptidesPreview";
 import type { PeptauraFeedProductSnapshot } from "./peptauraProductFeed";
+import type { PeptauraShippingQuote } from "./peptauraShipping";
 
 const base = {
   firstName: "Alex",
   email: "alex@example.com",
   age: 32,
   weightKg: 82,
+  heightCm: 182,
+  sex: "male",
+  bodyFatRange: "15-20",
   primaryGoal: "fatloss",
   secondaryGoals: [],
+  goalDetails: "Perdre huit kilos tout en gardant ma masse musculaire.",
+  timeline: "8-12",
+  recoveryScope: "multi-site",
+  glp1History: "never",
+  cognitiveStress: "high",
   conditions: ["none"],
   bloodwork: "recent",
+  bloodPressure: "normal",
+  sleepHours: 7,
   injectionComfort: "possible",
+  injectionFrequency: "twice-daily",
+  refrigeration: "yes-private",
   experience: "read",
-  budget: "100-200",
+  trainingFrequency: "5plus",
+  budgetTotalUsd: 200,
   country: "FR",
-  medications: "",
+  medications: "aucun",
+  allergies: "aucune",
+  currentPeptides: "aucun",
+  pastPeptides: "aucun",
+  startWhen: "1-2weeks",
   consent: true,
   attribution: {},
 } as const;
@@ -95,7 +113,7 @@ test("preview explains the review path instead of exposing a partial price when 
   assert.equal(result.estimatedProtocolCostUsd, null);
   assert.deepEqual(result.molecules, []);
   assert.ok(result.blockers.includes("catalogue_incomplet_pour_pays"));
-  assert.match(result.headline, /prix incomplet/);
+  assert.match(result.headline, /devis incomplet/);
 });
 
 test("none cannot be combined with a medical condition", () => {
@@ -127,7 +145,7 @@ test("shipping filtering cannot use a non-deliverable listing", () => {
 });
 
 test("budget fit uses the full protocol total", () => {
-  const input = peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "recovery", budget: "under100" });
+  const input = peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "recovery", budgetTotalUsd: 99.99 });
   const result = buildPeptidesPreview(input, [snapshot("BPC-157", 70), snapshot("TB500", 60)]);
   assert.equal(result.estimatedProtocolCostUsd, 330);
   assert.equal(result.budgetFit, "above");
@@ -159,8 +177,8 @@ test("GH-axis assumptions use the conservative eight-week canonical basis", () =
     vials: item.vialsRequired,
     basis: item.calculationBasis,
   })), [
-    { name: "CJC-1295 (no DAC)", needMg: 4, vials: 1, basis: "100 mcg, 5 fois/semaine × 8 semaines = 4 mg" },
-    { name: "Ipamorelin", needMg: 4, vials: 1, basis: "100 mcg, 5 fois/semaine × 8 semaines = 4 mg" },
+    { name: "CJC-1295 (no DAC)", needMg: 4, vials: 2, basis: "100 mcg × 5 administrations par semaine × 8 semaines = 4 mg au total" },
+    { name: "Ipamorelin", needMg: 4, vials: 2, basis: "100 mcg × 5 administrations par semaine × 8 semaines = 4 mg au total" },
   ]);
 });
 
@@ -196,21 +214,48 @@ test("secondary goals are explained as secondary and never mislabeled as the pri
 });
 
 test("budget explanation states whether the complete protocol fits the declared ceiling", () => {
-  const input = peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "recovery", budget: "under100" });
+  const input = peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "recovery", budgetTotalUsd: 99.99 });
   const result = buildPeptidesPreview(input, [snapshot("BPC-157", 70), snapshot("TB500", 60)]);
   assert.equal(result.budgetFit, "above");
-  assert.match(result.budgetExplanation, /\$330\.00 ne tient pas dans ton budget déclaré de moins de 100 USD/);
+  assert.match(result.budgetExplanation, /\$330\.00 dépasse ton budget total déclaré de \$99\.99/);
 });
 
 test("the under-100 budget boundary treats exactly $100.00 as above", () => {
-  const input = peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "sleep", budget: "under100" });
+  const input = peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "sleep", budgetTotalUsd: 99.99 });
   const result = buildPeptidesPreview(input, [snapshot("DSIP", 100, "5mg")]);
   assert.equal(result.estimatedProtocolCostUsd, 100);
   assert.equal(result.budgetFit, "above");
+});
+
+test("landed-cost optimization includes shipping once per supplier and can reject a cheaper sticker price", () => {
+  const input = peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "recovery", secondaryGoals: [], budgetTotalUsd: 500 });
+  const bpc = snapshot("BPC-157", 30, "10mg", "One Lab");
+  bpc.listings.push(snapshot("BPC-157", 20, "10mg", "Cheap Lab").listings[0]);
+  const tb = snapshot("TB500", 30, "20mg", "One Lab");
+  tb.listings.push(snapshot("TB500", 20, "20mg", "Cheap Lab").listings[0]);
+  const shipping: PeptauraShippingQuote[] = [
+    { supplier: "One Lab", displayName: "One Lab", available: true, minimumOrderUsd: null, tiers: [{ minOrderUsd: 0, maxOrderUsd: null, costUsd: 10, speed: "fast" }] },
+    { supplier: "Cheap Lab", displayName: "Cheap Lab", available: true, minimumOrderUsd: null, tiers: [{ minOrderUsd: 0, maxOrderUsd: null, costUsd: 70, speed: "slow" }] },
+  ];
+  const result = buildPeptidesPreview(input, [bpc, tb], "2026-09-15T02:30:00.000Z", shipping);
+  assert.equal(result.status, "eligible");
+  assert.deepEqual(result.molecules.map((item) => item.supplier), ["One Lab", "One Lab"]);
+  assert.equal(result.estimatedProtocolCostUsd, 120);
+  assert.equal(result.estimatedShippingCostUsd, 10);
+  assert.equal(result.estimatedGrandTotalUsd, 130);
+  assert.equal(result.shippingBreakdown.length, 1);
+});
+
+test("declared medicines and incompatible administration frequency fail closed", () => {
+  const medicine = peptidesPreviewInputSchema.parse({ ...base, medications: "metformine 500 mg" });
+  assert.ok(buildPeptidesPreview(medicine, [snapshot("Semaglutide", 35)]).blockers.includes("medicaments_a_integrer"));
+  const frequency = peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "recovery", injectionFrequency: "weekly" });
+  assert.ok(buildPeptidesPreview(frequency, [snapshot("BPC-157", 35), snapshot("TB500", 35)]).blockers.includes("frequence_administration_incompatible"));
 });
 
 test("identity and consent validation rejects incomplete leads", () => {
   assert.equal(peptidesPreviewInputSchema.safeParse({ ...base, email: "invalid" }).success, false);
   assert.equal(peptidesPreviewInputSchema.safeParse({ ...base, age: 17 }).success, false);
   assert.equal(peptidesPreviewInputSchema.safeParse({ ...base, consent: false }).success, false);
+  assert.equal(peptidesPreviewInputSchema.safeParse({ ...base, goalDetails: "trop court" }).success, false);
 });
