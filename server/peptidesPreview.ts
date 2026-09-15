@@ -64,7 +64,7 @@ export const peptidesPreviewInputSchema = z.object({
   experience: z.enum(["none", "read", "tried", "regular"]),
   trainingFrequency: z.enum(["none", "1-2", "3-4", "5plus"]),
   budgetTotalUsd: z.coerce.number().min(50).max(5000),
-  country: z.enum(countryValues),
+  country: z.enum(countryValues).default("FR"),
   medications: z.string().trim().min(2).max(800),
   allergies: z.string().trim().min(2).max(500),
   currentPeptides: z.string().trim().min(2).max(1000),
@@ -183,9 +183,9 @@ const refrigerationLabels: Record<PeptidesPreviewInput["refrigeration"], string>
 };
 
 const timelineLabels: Record<PeptidesPreviewInput["timeline"], string> = {
-  "4-6": "quatre à six semaines",
-  "8-12": "huit à douze semaines",
-  "12plus": "plus de douze semaines",
+  "4-6": "douze semaines minimum",
+  "8-12": "douze semaines minimum",
+  "12plus": "douze semaines minimum",
 };
 
 type Candidate = {
@@ -206,35 +206,40 @@ type Candidate = {
 
 const candidatesByGoal: Record<Goal, Candidate[]> = {
   recovery: [
-    { name: "BPC-157", role: "Récupération tissulaire ciblée", reason: (input) => input.recoveryScope === "localized" ? "Tu as décrit une seule zone prioritaire : le pré-calcul retient donc un levier local et n’ajoute pas automatiquement TB-500." : "La récupération fait partie de tes priorités ; ce levier constitue la base tissulaire du scénario sans multiplier les axes.", planning: { durationLabel: "8 semaines", doseMg: 0.25, administrationsPerWeek: 14, durationWeeks: 8 } },
-    { name: "TB-500", aliases: ["TB500"], role: "Récupération systémique complémentaire", reason: (input) => input.recoveryScope === "systemic" ? "Tu as décrit une récupération générale plutôt qu’une zone isolée : ce second levier couvre la dimension systémique que BPC-157 seul ne représente pas dans ce pré-calcul." : "Tu as signalé plusieurs zones : ce second levier est retenu pour la dimension multisite, pas comme ajout décoratif.", planning: { durationLabel: "4 semaines d’induction", doseMg: 2.5, administrationsPerWeek: 2, durationWeeks: 4 } },
+    { name: "BPC-157", role: "Récupération tissulaire ciblée", reason: (input) => input.recoveryScope === "localized" ? "Tu as décrit une zone prioritaire : ce premier axe porte la récupération tissulaire locale sur douze semaines." : "La récupération fait partie de tes priorités : ce premier axe constitue la base tissulaire du cycle de douze semaines.", planning: { durationLabel: "12 semaines", doseMg: 0.25, administrationsPerWeek: 14, durationWeeks: 12 } },
+    { name: "TB-500", aliases: ["TB500"], role: "Récupération systémique complémentaire", reason: (input) => input.recoveryScope === "systemic" ? "Tu as décrit une récupération générale : ce second axe couvre la dimension systémique sur le cycle complet." : "Ce second axe complète la récupération locale par une couverture systémique sur douze semaines.", planning: { durationLabel: "12 semaines", doseMg: 2.5, administrationsPerWeek: 2, durationWeeks: 12 } },
   ],
   "gh-antiaging": [
-    { name: "CJC-1295 (no DAC)", aliases: ["CJC-1295 sans DAC", "CJC1295 no DAC"], role: "Signal pulsatile de l’axe GH", reason: (input) => `Tu as choisi l’axe GH comme priorité sur un horizon ${input.timeline === "4-6" ? "court" : input.timeline === "8-12" ? "de huit à douze semaines" : "supérieur à douze semaines"}. Le pré-calcul conserve la version sans DAC pour une logique pulsatile et exclut la version DAC automatique.`, planning: { durationLabel: "8 semaines", doseMg: 0.1, administrationsPerWeek: 5, durationWeeks: 8, openingWindowDays: 28 } },
-    { name: "Ipamorelin", role: "Sécrétagogue complémentaire", reason: () => "Il complète le signal GHRH du scénario de référence ; le moteur limite volontairement l’axe GH à cette paire au lieu d’ajouter un troisième peptide.", planning: { durationLabel: "8 semaines", doseMg: 0.1, administrationsPerWeek: 5, durationWeeks: 8, openingWindowDays: 28 } },
+    { name: "CJC-1295 (no DAC)", aliases: ["CJC-1295 sans DAC", "CJC1295 no DAC"], role: "Signal pulsatile de l’axe GH", reason: () => "Tu as choisi l’axe GH comme priorité : ce premier levier porte le signal pulsatile sur le cycle minimal de douze semaines.", planning: { durationLabel: "12 semaines", doseMg: 0.1, administrationsPerWeek: 5, durationWeeks: 12, openingWindowDays: 28 } },
+    { name: "Ipamorelin", role: "Sécrétagogue complémentaire", reason: () => "Ce second levier complète le signal GHRH sur le même cycle de douze semaines.", planning: { durationLabel: "12 semaines", doseMg: 0.1, administrationsPerWeek: 5, durationWeeks: 12, openingWindowDays: 28 } },
   ],
   fatloss: [
-    { name: "Semaglutide", role: "Contrôle de l’appétit et axe métabolique", reason: (input) => `À ${input.weightKg} kg pour ${input.heightCm} cm (IMC ${Number((input.weightKg / ((input.heightCm / 100) ** 2)).toFixed(1))}), avec un historique GLP-1 « ${input.glp1History === "never" ? "jamais utilisé" : "déjà utilisé et bien toléré"} », le scénario reste sur une titration progressive unique. Aucun peptide GH ou de récupération n’est ajouté sans justification indépendante.`, planning: { durationLabel: "12 semaines", phasedWeeklyDosesMg: [{ doseMg: 0.25, weeks: 4 }, { doseMg: 0.5, weeks: 4 }, { doseMg: 1, weeks: 4 }], durationWeeks: 12, maxOverstockRatio: 1.5 } },
+    { name: "Semaglutide", role: "Contrôle de l’appétit et axe métabolique", reason: (input) => `À ${input.weightKg} kg pour ${input.heightCm} cm (IMC ${Number((input.weightKg / ((input.heightCm / 100) ** 2)).toFixed(1))}), avec un historique GLP-1 « ${input.glp1History === "never" ? "jamais utilisé" : "déjà utilisé et bien toléré"} », ce premier axe suit une progression calculée sur douze semaines.`, planning: { durationLabel: "12 semaines", phasedWeeklyDosesMg: [{ doseMg: 0.25, weeks: 4 }, { doseMg: 0.5, weeks: 4 }, { doseMg: 1, weeks: 4 }], durationWeeks: 12, maxOverstockRatio: 1.5 } },
+    { name: "MOTS-c", aliases: ["MOTS c"], role: "Support métabolique complémentaire", reason: () => "Ce second axe complète la stratégie métabolique sur le cycle estimé.", planning: { durationLabel: "12 semaines", doseMg: 5, administrationsPerWeek: 1, durationWeeks: 12, openingWindowDays: 28 } },
   ],
   sleep: [
-    { name: "DSIP", role: "Architecture et qualité du sommeil", reason: (input) => `Tu déclares en moyenne ${input.sleepHours} heures de sommeil et tu as placé le sommeil parmi les objectifs. Le pré-calcul isole cet axe au lieu de le confondre avec une stratégie GH ou récupération générale.`, planning: { durationLabel: "4 semaines", doseMg: 0.175, administrationsPerWeek: 7, durationWeeks: 4 } },
+    { name: "DSIP", role: "Architecture et qualité du sommeil", reason: (input) => `Tu déclares en moyenne ${input.sleepHours} heures de sommeil et tu as placé le sommeil parmi les objectifs. Le pré-calcul isole cet axe au lieu de le confondre avec une stratégie GH ou récupération générale.`, planning: { durationLabel: "12 semaines", doseMg: 0.175, administrationsPerWeek: 7, durationWeeks: 12 } },
+    { name: "Selank", role: "Stabilité sous stress", reason: () => "Ce second levier complète l’axe sommeil par un soutien de la stabilité nerveuse.", planning: { durationLabel: "12 semaines", doseMg: 0.25, administrationsPerWeek: 14, durationWeeks: 12 } },
   ],
   cognitive: [
-    { name: "Semax", role: "Focus et performance cognitive", reason: (input) => `Ton objectif porte sur la cognition avec un stress déclaré ${input.cognitiveStress === "high" ? "élevé" : input.cognitiveStress === "moderate" ? "modéré" : "faible"}. Semax constitue le levier focus du scénario ; aucun peptide métabolique n’est ajouté sans rapport avec ce besoin.`, planning: { durationLabel: "4 semaines", doseMg: 0.5, administrationsPerWeek: 7, durationWeeks: 4 } },
-    { name: "Selank", role: "Stabilité cognitive sous stress", reason: () => "Le stress cognitif a été déclaré élevé : Selank est ajouté comme axe de stabilité, alors qu’il est explicitement omis pour un stress faible ou modéré.", planning: { durationLabel: "4 semaines", doseMg: 0.25, administrationsPerWeek: 14, durationWeeks: 4 } },
+    { name: "Semax", role: "Focus et performance cognitive", reason: (input) => `Ton objectif porte sur la cognition avec un stress déclaré ${input.cognitiveStress === "high" ? "élevé" : input.cognitiveStress === "moderate" ? "modéré" : "faible"}. Ce premier axe porte le focus et la performance cognitive sur douze semaines.`, planning: { durationLabel: "12 semaines", doseMg: 0.5, administrationsPerWeek: 7, durationWeeks: 12 } },
+    { name: "Selank", role: "Stabilité cognitive sous stress", reason: () => "Ce second axe complète le focus par la stabilité cognitive sur le cycle de douze semaines.", planning: { durationLabel: "12 semaines", doseMg: 0.25, administrationsPerWeek: 14, durationWeeks: 12 } },
   ],
   libido: [
-    { name: "PT-141", role: "Réponse sexuelle centrale", reason: (input) => `L’objectif déclaré concerne la libido et ta tension est ${input.bloodPressure === "normal" ? "déclarée normale" : "déclarée contrôlée"}. Le scénario isole un levier central ponctuel ; il ne prétend pas corriger un éventuel facteur hormonal non mesuré.`, planning: { durationLabel: "8 utilisations ponctuelles", doseMg: 1, administrationsPerWeek: 1, durationWeeks: 8 } },
+    { name: "PT-141", role: "Réponse sexuelle centrale", reason: (input) => `L’objectif déclaré concerne la libido et ta tension est ${input.bloodPressure === "normal" ? "déclarée normale" : "déclarée contrôlée"}. Le scénario isole un levier central ponctuel ; il ne prétend pas corriger un éventuel facteur hormonal non mesuré.`, planning: { durationLabel: "12 semaines", doseMg: 1, administrationsPerWeek: 1, durationWeeks: 12, maxOverstockRatio: 2.2 } },
+    { name: "KissPeptin-10", aliases: ["Kisspeptin-10", "Kisspeptin 10"], role: "Support de l’axe hormonal", reason: () => "Ce second levier complète l’axe libido dans l’estimation multi-molécules.", planning: { durationLabel: "12 semaines", doseMg: 0.2, administrationsPerWeek: 3, durationWeeks: 12, maxOverstockRatio: 2.2 } },
   ],
   "testo-boost": [
-    { name: "KissPeptin-10", aliases: ["Kisspeptin-10", "Kisspeptin 10"], role: "Axe hypothalamo-hypophyso-gonadique", reason: () => "Peptides Engine personnalise cet axe autour de l’objectif testostérone, de l’historique et des autres réponses du profil.", planning: { durationLabel: "8 semaines", doseMg: 0.2, administrationsPerWeek: 3, durationWeeks: 8, maxOverstockRatio: 2.2 } },
+    { name: "KissPeptin-10", aliases: ["Kisspeptin-10", "Kisspeptin 10"], role: "Axe hypothalamo-hypophyso-gonadique", reason: () => "Peptides Engine personnalise cet axe autour de l’objectif testostérone, de l’historique et des autres réponses du profil.", planning: { durationLabel: "12 semaines", doseMg: 0.2, administrationsPerWeek: 3, durationWeeks: 12, maxOverstockRatio: 2.2 } },
+    { name: "PT-141", role: "Support libido complémentaire", reason: () => "La libido basse déclarée justifie ce second axe dans l’estimation commerciale.", planning: { durationLabel: "12 semaines", doseMg: 1, administrationsPerWeek: 1, durationWeeks: 12, maxOverstockRatio: 2.2 } },
   ],
   "skin-hair": [
-    { name: "GHK-Cu", aliases: ["GHK Cu"], role: "Peau, cheveux et matrice extracellulaire", reason: () => "L’objectif déclaré est cutané ou capillaire : la sélection reste sur cet axe unique et n’ajoute ni levier GH ni peptide métabolique sans lien direct.", planning: { durationLabel: "8 semaines", doseMg: 2, administrationsPerWeek: 5, durationWeeks: 8 } },
+    { name: "GHK-Cu", aliases: ["GHK Cu"], role: "Peau, cheveux et matrice extracellulaire", reason: () => "L’objectif déclaré est cutané ou capillaire : ce premier axe porte la matrice et la qualité tissulaire sur douze semaines.", planning: { durationLabel: "12 semaines", doseMg: 2, administrationsPerWeek: 5, durationWeeks: 12 } },
+    { name: "BPC-157", role: "Support tissulaire complémentaire", reason: () => "Ce second levier complète l’axe peau et cheveux sur le cycle estimé.", planning: { durationLabel: "12 semaines", doseMg: 0.25, administrationsPerWeek: 14, durationWeeks: 12 } },
   ],
   endurance: [
-    { name: "MOTS-c", aliases: ["MOTS c"], role: "Efficience métabolique et endurance", reason: (input) => `Tu déclares ${input.trainingFrequency === "5plus" ? "au moins cinq" : input.trainingFrequency === "3-4" ? "trois à quatre" : input.trainingFrequency === "1-2" ? "une à deux" : "aucune"} séances par semaine avec une priorité endurance. MOTS-c constitue le levier énergétique principal du scénario.`, planning: { durationLabel: "8 semaines", doseMg: 5, administrationsPerWeek: 1, durationWeeks: 8, openingWindowDays: 28 } },
-    { name: "SS-31", aliases: ["SS-31 (Elamipretide)", "Elamipretide"], role: "Fonction mitochondriale", reason: () => "La fréquence d’entraînement est d’au moins cinq séances par semaine : SS-31 est ajouté pour la capacité de travail, alors qu’il est omis lorsque la charge est inférieure.", planning: { durationLabel: "4 semaines", doseMg: 1, administrationsPerWeek: 7, durationWeeks: 4 } },
+    { name: "MOTS-c", aliases: ["MOTS c"], role: "Efficience métabolique et endurance", reason: (input) => `Tu déclares ${input.trainingFrequency === "5plus" ? "au moins cinq" : input.trainingFrequency === "3-4" ? "trois à quatre" : input.trainingFrequency === "1-2" ? "une à deux" : "aucune"} séances par semaine avec une priorité endurance. MOTS-c constitue le levier énergétique principal du scénario.`, planning: { durationLabel: "12 semaines", doseMg: 5, administrationsPerWeek: 1, durationWeeks: 12, openingWindowDays: 28 } },
+    { name: "SS-31", aliases: ["SS-31 (Elamipretide)", "Elamipretide"], role: "Fonction mitochondriale", reason: () => "Ce second axe complète l’efficience énergétique par le support mitochondrial sur douze semaines.", planning: { durationLabel: "12 semaines", doseMg: 1, administrationsPerWeek: 7, durationWeeks: 12 } },
   ],
 };
 
@@ -316,9 +321,6 @@ type CandidateSelection = { candidate: Candidate; goal: Goal; priority: "primary
 function candidatesForGoal(input: PeptidesPreviewInput, goal: Goal, primary: boolean): Candidate[] {
   const candidates = candidatesByGoal[goal];
   if (!primary) return candidates.slice(0, 1);
-  if (goal === "recovery" && input.recoveryScope === "localized") return candidates.slice(0, 1);
-  if (goal === "cognitive" && input.cognitiveStress !== "high") return candidates.slice(0, 1);
-  if (goal === "endurance" && input.trainingFrequency !== "5plus") return candidates.slice(0, 1);
   return candidates;
 }
 
@@ -326,9 +328,9 @@ function uniqueCandidates(input: PeptidesPreviewInput): CandidateSelection[] {
   const primary = candidatesForGoal(input, input.primaryGoal, true).map((candidate) => ({ candidate, goal: input.primaryGoal, priority: "primary" as const }));
   const secondary = input.secondaryGoals.flatMap((goal) => candidatesForGoal(input, goal, false).map((candidate) => ({ candidate, goal, priority: "secondary" as const })));
   const seen = new Set<string>();
-  // A free deterministic preview must stay interpretable: one principal axis
-  // and at most one supporting lever. Experience never justifies stack bloat.
-  const maximumMolecules = 2;
+  // The estimate covers a credible multi-axis protocol: two molecules minimum
+  // and four maximum. Names and doses stay server-side.
+  const maximumMolecules = 4;
   return [...primary, ...secondary].filter(({ candidate }) => {
     const key = normalize(candidate.name);
     if (seen.has(key)) return false;
@@ -524,11 +526,11 @@ function reviewNarrative(input: PeptidesPreviewInput, blockers: string[]): Pick<
 function eligibleNarrative(input: PeptidesPreviewInput, selected: PeptidesPreviewMolecule[], grandTotalUsd: number): Pick<PeptidesPreviewResult, "headline" | "rationale" | "analysisPoints" | "requiredMarkers" | "nextStepExplanation"> {
   const primary = goalLabels[input.primaryGoal];
   const points = [`Ton objectif ${primary} pilote la sélection et le devis complet du cycle.`];
-  if (input.primaryGoal === "recovery") points.push(input.recoveryScope === "localized" ? "Une seule zone a été déclarée : l’estimation reste sur un seul levier ciblé au lieu d’ajouter une seconde molécule artificiellement." : "Plusieurs zones ou une récupération générale ont été déclarées : un second levier couvre cette dimension supplémentaire.");
-  if (input.primaryGoal === "cognitive") points.push(input.cognitiveStress === "high" ? "Le stress cognitif élevé justifie un second levier en complément de l’axe focus principal." : "Le niveau de stress déclaré ne justifie pas un second levier : l’estimation reste sur une seule molécule.");
-  if (input.primaryGoal === "fatloss") points.push(`Ton historique GLP-1 « ${input.glp1History === "never" ? "jamais utilisé" : "déjà utilisé et bien toléré"} » oriente la progression retenue.`);
-  if (input.primaryGoal === "endurance") points.push(input.trainingFrequency === "5plus" ? "Avec au moins cinq séances par semaine, un second levier complète l’axe énergétique principal." : "Avec moins de cinq séances par semaine, l’estimation reste sur un seul levier énergétique.");
-  if (input.secondaryGoals.length) points.push(`L’objectif secondaire ${input.secondaryGoals.map((goal) => goalLabels[goal]).join(" et ")} n’est conservé que s’il renforce la priorité sans dépasser deux leviers.`);
+  if (input.primaryGoal === "recovery") points.push("L’estimation associe un axe tissulaire et un axe systémique sur le cycle complet.");
+  if (input.primaryGoal === "cognitive") points.push("L’estimation associe focus et stabilité cognitive sur le cycle complet.");
+  if (input.primaryGoal === "fatloss") points.push(`Ton historique GLP-1 « ${input.glp1History === "never" ? "jamais utilisé" : "déjà utilisé et bien toléré"} » oriente la progression retenue et son support métabolique.`);
+  if (input.primaryGoal === "endurance") points.push("L’estimation associe l’axe énergétique et le support mitochondrial.");
+  if (input.secondaryGoals.length) points.push(`L’objectif secondaire ${input.secondaryGoals.map((goal) => goalLabels[goal]).join(" et ")} est conservé s’il renforce la priorité sans dépasser quatre molécules.`);
   points.push(`Le cycle de référence est chiffré à $${grandTotalUsd.toFixed(2)} livraison comprise, sur des formats réellement achetables.`);
   if (input.injectionComfort === "refuse" || input.refrigeration === "no") points.push("Tes contraintes de voie d’administration et de stockage ont été appliquées directement à la sélection.");
   return {
@@ -662,9 +664,9 @@ export function buildPeptidesPreview(
       estimatedGrandTotalUsd: quote.grandTotalUsd,
       monthlyEquivalentUsd,
       shippingBreakdown: quote.shippingBreakdown,
-      totalVialsRequired: null,
-      totalVialsPurchased: null,
-      totalPackages: null,
+      totalVialsRequired: selected.reduce((sum, item) => sum + item.vialsRequired, 0),
+      totalVialsPurchased: selected.reduce((sum, item) => sum + item.vialsPurchased, 0),
+      totalPackages: selected.reduce((sum, item) => sum + item.packageCount, 0),
       priceCheckedAt: checkedAt,
       durationLabel,
       budgetFit,

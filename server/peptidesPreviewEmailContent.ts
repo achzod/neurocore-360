@@ -99,7 +99,7 @@ const profileLabels: Record<string, string> = {
   comfortable: "À l’aise avec les injections", possible: "Injection possible si nécessaire", anxious: "Anxieux mais ouvert aux injections", refuse: "Refuse les injections",
   "twice-daily": "Jusqu’à deux fois par jour", daily: "Une fois par jour", "few-week": "Deux à cinq fois par semaine", weekly: "Une fois par semaine", minimal: "Fréquence minimale",
   "yes-private": "Réfrigérateur privé", "yes-shared": "Réfrigérateur partagé", no: "Pas de stockage au froid",
-  "4-6": "Quatre à six semaines", "8-12": "Huit à douze semaines", "12plus": "Plus de douze semaines",
+  "4-6": "Douze semaines minimum", "8-12": "Douze semaines minimum", "12plus": "Douze semaines minimum",
   asap: "Dès que possible", "1-2weeks": "Dans une à deux semaines", "1month": "Dans un mois", planning: "Préparation pour plus tard",
   FR: "France", BE: "Belgique", CH: "Suisse", LU: "Luxembourg", AE: "Émirats arabes unis", CA: "Canada", US: "États-Unis", GB: "Royaume-Uni", DE: "Allemagne", ES: "Espagne", IT: "Italie", NL: "Pays-Bas", PT: "Portugal", MA: "Maroc", DZ: "Algérie", TN: "Tunisie",
 };
@@ -198,6 +198,16 @@ export function buildPeptidesPreviewAdminNotificationContent(
   const clientContent = buildPeptidesPreviewResultEmailContent(input, result, path, appUrl);
   const readyReply = clientContent.text;
   const copySubject = clientContent.subject;
+  const internalProtocol = result.molecules.length
+    ? result.molecules.map((molecule, index) => [
+        `${index + 1}. ${molecule.name} — ${molecule.doseSummary}`,
+        molecule.calculationBasis,
+        `Besoin ${molecule.totalRequiredMg} mg · fiole ${molecule.vialStrengthMg} mg · ${molecule.mathematicalVials} fiole(s) mathématiques · ${molecule.operationalVials} requise(s) · ${molecule.vialsPurchased} achetée(s) · ${molecule.packageCount} boîte(s) · ${money(molecule.estimatedTotalPriceUsd)}`,
+      ].join(" | ")).join("\n")
+    : "Calcul indisponible";
+  const shippingDetail = result.shippingBreakdown.length
+    ? result.shippingBreakdown.map((line, index) => `Expédition ${index + 1} : ${money(line.subtotalUsd)} de produits + ${money(line.shippingUsd)} de livraison · ${line.speed}`).join("\n")
+    : "Livraison non chiffrée";
   const profileRows: Array<[string, string]> = [
     ["Lead", `${input.firstName} · ${input.email}`], ["Profil", `${input.age} ans · ${input.weightKg} kg · ${input.heightCm} cm · ${profileLabel(input.sex)}`],
     ["Verdict", previewStatusLabel(result)], ["Prochaine étape", previewNextStepLabel()],
@@ -208,7 +218,10 @@ export function buildPeptidesPreviewAdminNotificationContent(
     ["Médicaments", input.medications], ["Allergies", input.allergies], ["Peptides actuels", input.currentPeptides], ["Peptides passés", input.pastPeptides],
     ["Injections / fréquence / froid", `${profileLabel(input.injectionComfort)} · ${profileLabel(input.injectionFrequency)} · ${profileLabel(input.refrigeration)}`], ["Budget total", `$${input.budgetTotalUsd.toFixed(2)}`],
     ["Pays / début", `${profileLabel(input.country)} · ${profileLabel(input.startWhen)}`],
-    ["Devis rendu", result.estimatedGrandTotalUsd == null ? "Finalisé dans l’analyse Peptides Engine" : money(result.estimatedGrandTotalUsd)], ["Email automatique client", clientEmailSent ? "Envoyé" : "Non envoyé"],
+    ["Calcul interne dosage → fioles → prix", internalProtocol],
+    ["Total fioles / boîtes", `${result.totalVialsRequired ?? "—"} requises · ${result.totalVialsPurchased ?? "—"} achetées · ${result.totalPackages ?? "—"} boîtes`],
+    ["Produits", money(result.estimatedProtocolCostUsd)], ["Livraison selon pays", `${money(result.estimatedShippingCostUsd)}\n${shippingDetail}`],
+    ["Total rendu", result.estimatedGrandTotalUsd == null ? "Finalisé dans l’analyse Peptides Engine" : money(result.estimatedGrandTotalUsd)], ["Email automatique client", clientEmailSent ? "Envoyé" : "Non envoyé"],
   ];
   const htmlRows = profileRows.map(([label, value]) => `<tr><td style="padding:9px 12px;border-bottom:1px solid #ececec;color:#666;font-size:12px;vertical-align:top;">${escapeHtml(label)}</td><td style="padding:9px 12px;border-bottom:1px solid #ececec;color:#111;font-size:13px;font-weight:700;">${escapeHtml(value)}</td></tr>`).join("");
   const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#f3f4f2;font-family:Arial,sans-serif;color:#111;"><div style="max-width:760px;margin:0 auto;padding:24px 12px;"><div style="padding:25px;background:#111;color:#fff;border-radius:18px 18px 0 0;"><div style="font-size:12px;font-weight:900;letter-spacing:.14em;color:#f5b942;">APEXLABS · LEAD PRÉ PEPTIDES</div><h1 style="margin:10px 0 0;font-size:25px;">${escapeHtml(input.firstName)} · ${escapeHtml(previewStatusLabel(result))}</h1><p style="margin:10px 0 0;color:#bbb;">Verdict, état de l’email client et réponse prête à copier sont réunis ci-dessous.</p></div><div style="padding:22px;background:#fff;border:1px solid #ddd;overflow-x:auto;"><table style="width:100%;border-collapse:collapse;">${htmlRows}</table></div><div style="padding:22px;background:#fff;border:1px solid #ddd;border-top:0;"><div style="font-size:12px;font-weight:900;letter-spacing:.12em;color:#a46b00;">OBJET À COPIER</div><div style="margin-top:8px;padding:13px;border-radius:10px;background:#fff7df;border:1px solid #ead59a;font-weight:800;">${escapeHtml(copySubject)}</div><div style="margin-top:20px;font-size:12px;font-weight:900;letter-spacing:.12em;color:#a46b00;">MAIL PRÊT À COPIER COLLER</div><div style="margin-top:8px;padding:18px;border-radius:12px;background:#f6f7f5;border:1px solid #dfe2dc;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.65;color:#171717;">${escapeHtml(readyReply)}</div><p style="margin:16px 0 0;color:#777;font-size:11px;">Lead ID : ${escapeHtml(leadId)}. ${result.status === "eligible" ? "Le profil, la logique de sélection, les calculs, le devis et le CTA sont inclus." : "Le profil, les axes de personnalisation et le CTA d’achat Peptides Engine sont inclus."}</p></div></div></body></html>`;

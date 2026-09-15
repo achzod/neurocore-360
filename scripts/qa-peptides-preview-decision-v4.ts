@@ -23,16 +23,16 @@ const catalog = [
 ];
 type Scenario = { id: string; patch: Record<string, unknown>; status: "eligible" | "review_required"; blocker?: string; blockers?: string[]; molecules?: string[]; next?: string };
 const scenarios: Scenario[] = [
-  { id: "sleep-baseline", patch: {}, status: "eligible", molecules: ["DSIP"] },
-  { id: "recovery-local", patch: { primaryGoal: "recovery", recoveryScope: "localized" }, status: "eligible", molecules: ["BPC-157"] },
+  { id: "sleep-baseline", patch: {}, status: "eligible", molecules: ["DSIP", "Selank"] },
+  { id: "recovery-local", patch: { primaryGoal: "recovery", recoveryScope: "localized" }, status: "eligible", molecules: ["BPC-157", "TB500"] },
   { id: "recovery-multisite", patch: { primaryGoal: "recovery", recoveryScope: "multi-site" }, status: "eligible", molecules: ["BPC-157", "TB500"] },
-  { id: "fatloss-never", patch: { primaryGoal: "fatloss", glp1History: "never" }, status: "eligible", molecules: ["Semaglutide"] },
-  { id: "fatloss-tolerated", patch: { primaryGoal: "fatloss", glp1History: "tolerated" }, status: "eligible", molecules: ["Semaglutide"] },
-  { id: "cognitive-moderate", patch: { primaryGoal: "cognitive", cognitiveStress: "moderate", injectionComfort: "refuse", injectionFrequency: "minimal", refrigeration: "no" }, status: "eligible", molecules: ["Semax"] },
+  { id: "fatloss-never", patch: { primaryGoal: "fatloss", glp1History: "never" }, status: "eligible", molecules: ["Semaglutide", "MOTS-c"] },
+  { id: "fatloss-tolerated", patch: { primaryGoal: "fatloss", glp1History: "tolerated" }, status: "eligible", molecules: ["Semaglutide", "MOTS-c"] },
+  { id: "cognitive-moderate", patch: { primaryGoal: "cognitive", cognitiveStress: "moderate", injectionComfort: "refuse", injectionFrequency: "minimal", refrigeration: "no" }, status: "eligible", molecules: ["Semax", "Selank"] },
   { id: "cognitive-high", patch: { primaryGoal: "cognitive", cognitiveStress: "high" }, status: "eligible", molecules: ["Semax", "Selank"] },
-  { id: "libido-normal-bp", patch: { primaryGoal: "libido" }, status: "eligible", molecules: ["PT-141"] },
-  { id: "skin-hair", patch: { primaryGoal: "skin-hair" }, status: "eligible", molecules: ["GHK-Cu"] },
-  { id: "endurance-four", patch: { primaryGoal: "endurance", trainingFrequency: "3-4" }, status: "eligible", molecules: ["MOTS-c"] },
+  { id: "libido-normal-bp", patch: { primaryGoal: "libido" }, status: "eligible", molecules: ["PT-141", "KissPeptin-10"] },
+  { id: "skin-hair", patch: { primaryGoal: "skin-hair" }, status: "eligible", molecules: ["GHK-Cu", "BPC-157"] },
+  { id: "endurance-four", patch: { primaryGoal: "endurance", trainingFrequency: "3-4" }, status: "eligible", molecules: ["MOTS-c", "SS-31"] },
   { id: "endurance-five", patch: { primaryGoal: "endurance", trainingFrequency: "5plus" }, status: "eligible", molecules: ["MOTS-c", "SS-31"] },
   { id: "gh-recent", patch: { primaryGoal: "gh-antiaging" }, status: "eligible", molecules: ["CJC-1295 (no DAC)", "Ipamorelin"] },
   { id: "cancer", patch: { conditions: ["cancer"] }, status: "review_required", blocker: "cancer", next: "peptides_engine" },
@@ -77,8 +77,8 @@ const results = scenarios.map((scenario) => {
   if (/Blood Analysis|marqueurs à vérifier|fournir des informations|validation médicale/i.test([result.headline, result.rationale, result.nextStepExplanation].join(" "))) failures.push("medical or intermediate-step diversion");
   if (!result.analysisPoints.length || !result.rationale || !result.nextStepExplanation) failures.push("decision explanation incomplete");
   if (/Au moins une réponse|L'algorithme|_a_|review_required/.test([result.rationale, ...result.analysisPoints].join(" "))) failures.push("generic or technical copy");
-  if (result.status === "review_required" && (result.moleculeCount < 1 || result.moleculeCount > 2 || typeof result.estimatedGrandTotalUsd !== "number" || !/semaine/.test(result.durationLabel))) failures.push("personalized estimate missing count, duration or cost");
-  if (result.status === "eligible" && (result.molecules.length < 1 || result.molecules.length > 2 || result.molecules.some((molecule) => molecule.reason.length < 70))) failures.push("eligible selection not attributable");
+  if (result.status === "review_required" && (result.moleculeCount < 2 || result.moleculeCount > 4 || typeof result.estimatedGrandTotalUsd !== "number" || result.durationLabel !== "12 semaines" || result.totalVialsRequired == null)) failures.push("personalized estimate missing 2-4 molecules, twelve-week duration, vials or cost");
+  if (result.status === "eligible" && (result.molecules.length < 2 || result.molecules.length > 4 || result.durationLabel !== "12 semaines" || result.totalVialsRequired == null || result.molecules.some((molecule) => molecule.calculationBasis.length < 20))) failures.push("eligible estimate missing 2-4 molecules, twelve-week math or vials");
   return { id: scenario.id, status: result.status, nextStep: result.nextStep, blockers: result.blockers, molecules: result.molecules.map((molecule) => molecule.name), failures };
 });
 const report = { status: results.every((result) => result.failures.length === 0) ? "PASS" : "FAIL", scenarioCount: results.length, eligible: results.filter((result) => result.status === "eligible").length, review: results.filter((result) => result.status === "review_required").length, results };
