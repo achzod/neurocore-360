@@ -114,6 +114,7 @@ export interface PeptidesPreviewMolecule {
   vialStrengthMg: number;
   mathematicalVials: number;
   operationalVials: number;
+  safetyReserveVials: number;
   vialsRequired: number;
   vialsPurchased: number;
   packageCount: number;
@@ -361,6 +362,7 @@ type PlannedOption = {
   plan: PeptidePurchasePlan<PeptauraFeedListing>;
   mathematicalVials: number;
   operationalVials: number;
+  safetyReserveVials: number;
 };
 
 function candidatePlanOptions(
@@ -378,10 +380,14 @@ function candidatePlanOptions(
     const mathematicalVials = Math.ceil((math.totalNeedMg - Number.EPSILON) / vialMg);
     const requiredOperationalVials = operationalVials(selection.candidate, math, vialMg);
     if (!selection.candidate.planning.openingWindowDays && (mathematicalVials * vialMg) / math.totalNeedMg > maxOverstockRatio + 1e-9) return [];
-    const effectiveNeedMg = requiredOperationalVials * vialMg;
+    // Keep the prescribed dose unchanged, then provision enough stock to avoid
+    // a mid-cycle reorder: at least 20% and never less than one extra vial.
+    const safetyReserveVials = Math.max(1, Math.ceil(requiredOperationalVials * 0.2));
+    const vialsRequiredWithReserve = requiredOperationalVials + safetyReserveVials;
+    const effectiveNeedMg = vialsRequiredWithReserve * vialMg;
     const plan = buildPurchasePlan(listing, effectiveNeedMg, maxOverstockRatio);
-    if (!plan || plan.requestedVials !== requiredOperationalVials) return [];
-    return [{ selection, math, plan, mathematicalVials, operationalVials: requiredOperationalVials }];
+    if (!plan || plan.requestedVials !== vialsRequiredWithReserve) return [];
+    return [{ selection, math, plan, mathematicalVials, operationalVials: requiredOperationalVials, safetyReserveVials }];
   }).sort((a, b) => cents(a.plan.totalPriceUsd) - cents(b.plan.totalPriceUsd));
   const bySupplier = new Map<string, PlannedOption[]>();
   for (const option of options) {
@@ -621,7 +627,7 @@ export function buildPeptidesPreview(
     return { ...emptyReviewResult(unavailableBlockers, "peptides_engine", reviewNarrative(input, unavailableBlockers)), moleculeCount: desiredCandidates.length, priceCheckedAt: checkedAt };
   }
 
-  const selected = quote.options.map(({ selection, math, plan, mathematicalVials, operationalVials }) => ({
+  const selected = quote.options.map(({ selection, math, plan, mathematicalVials, operationalVials, safetyReserveVials }) => ({
     name: plan.listing.name || selection.candidate.name,
     supplier: plan.listing.supplierDisplayName || plan.listing.supplier,
     productUrl: plan.listing.productUrl,
@@ -637,7 +643,8 @@ export function buildPeptidesPreview(
     vialStrengthMg: plan.vialMg,
     mathematicalVials,
     operationalVials,
-    vialsRequired: operationalVials,
+    safetyReserveVials,
+    vialsRequired: operationalVials + safetyReserveVials,
     vialsPurchased: plan.deliveredVials,
     packageCount: plan.packageCount,
     estimatedTotalPriceUsd: plan.totalPriceUsd,
@@ -716,23 +723,27 @@ export async function getLivePeptauraPreviewCatalog(countryCode = "FR", nowMs = 
   const cacheKey = countryCode.toUpperCase();
   const cached = cachedCatalog.get(cacheKey);
   if (cached && cached.expiresAt > nowMs) return { snapshots: cached.snapshots, checkedAt: cached.checkedAt, shippingQuotes: cached.shippingQuotes };
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 8_000);
-  try {
-    const response = await fetch(PEPTAURA_PRODUCT_FEED_URL, {
-      headers: { accept: "application/json", "user-agent": "APEXLABS-PeptidesPreview/1.0" },
-      signal: controller.signal,
-    });
+  const fetchWithTimeout = async (url: string, accept: string): Promise<Response> => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12_000);
+    try {
+      return await fetch(url, {
+        headers: { accept, "user-agent": "APEXLABS-PeptidesPreview/1.0" },
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+  {
+    const response = await fetchWithTimeout(PEPTAURA_PRODUCT_FEED_URL, "application/json");
     if (!response.ok) throw new Error(`PEPTAURA_PREVIEW_HTTP_${response.status}`);
     const raw = await response.text();
     const checkedAt = new Date(nowMs).toISOString();
     const parsed = parsePeptauraProductFeed(raw, { nowMs, maxAgeMs: 6 * 60 * 60_000, fetchedAt: checkedAt });
     if (!parsed?.snapshots.length) throw new Error("PEPTAURA_PREVIEW_INVALID_FEED");
     const country = countryLabels[cacheKey] || countryCode;
-    const shippingResponse = await fetch(`https://www.peptaura.com/shipping?country=${encodeURIComponent(country)}`, {
-      headers: { accept: "text/html", "user-agent": "APEXLABS-PeptidesPreview/1.0" },
-      signal: controller.signal,
-    });
+    const shippingResponse = await fetchWithTimeout(`https://www.peptaura.com/shipping?country=${encodeURIComponent(country)}`, "text/html");
     if (!shippingResponse.ok) throw new Error(`PEPTAURA_PREVIEW_SHIPPING_HTTP_${shippingResponse.status}`);
     const shippingHtml = await shippingResponse.text();
     const shippingQuotes = parsePeptauraShippingPage(shippingHtml).filter((quote) => quote.available && quote.tiers.length > 0);
@@ -740,7 +751,5 @@ export async function getLivePeptauraPreviewCatalog(countryCode = "FR", nowMs = 
     const value = { snapshots: parsed.snapshots, checkedAt, shippingQuotes };
     cachedCatalog.set(cacheKey, { ...value, expiresAt: nowMs + 15 * 60_000 });
     return value;
-  } finally {
-    clearTimeout(timer);
   }
 }

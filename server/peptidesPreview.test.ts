@@ -31,14 +31,18 @@ test("Karim receives two fully calculated molecules over twelve weeks for France
   assert.equal(result.moleculeCount, 2);
   assert.equal(result.durationLabel, "12 semaines");
   assert.deepEqual(result.molecules.map((m) => ({ name: m.name, dose: m.doseSummary, need: m.totalRequiredMg, vials: m.vialsRequired, bought: m.vialsPurchased, cost: m.estimatedTotalPriceUsd })), [
-    { name: "KissPeptin-10", dose: "200 mcg par administration, 3 fois par semaine", need: 7.2, vials: 1, bought: 1, cost: 31.19 },
-    { name: "PT-141", dose: "1 mg par administration, 1 fois par semaine", need: 12, vials: 2, bought: 2, cost: 40.06 },
+    { name: "KissPeptin-10", dose: "200 mcg par administration, 3 fois par semaine", need: 7.2, vials: 2, bought: 2, cost: 62.38 },
+    { name: "PT-141", dose: "1 mg par administration, 1 fois par semaine", need: 12, vials: 3, bought: 3, cost: 60.09 },
   ]);
-  assert.equal(result.totalVialsRequired, 3);
-  assert.equal(result.totalVialsPurchased, 3);
-  assert.equal(result.estimatedProtocolCostUsd, 71.25);
+  assert.deepEqual(result.molecules.map((m) => ({ operational: m.operationalVials, reserve: m.safetyReserveVials, ordered: m.vialsRequired })), [
+    { operational: 1, reserve: 1, ordered: 2 },
+    { operational: 2, reserve: 1, ordered: 3 },
+  ]);
+  assert.equal(result.totalVialsRequired, 5);
+  assert.equal(result.totalVialsPurchased, 5);
+  assert.equal(result.estimatedProtocolCostUsd, 122.47);
   assert.equal(result.estimatedShippingCostUsd, 60);
-  assert.equal(result.estimatedGrandTotalUsd, 131.25);
+  assert.equal(result.estimatedGrandTotalUsd, 182.47);
 });
 
 test("all primary goals produce between two and four molecules and never less than twelve weeks", () => {
@@ -48,7 +52,7 @@ test("all primary goals produce between two and four molecules and never less th
     assert.equal(result.molecules.length, result.moleculeCount, primaryGoal);
     assert.ok(result.molecules.every((m) => m.cycleDurationLabel === "12 semaines"), primaryGoal);
     assert.equal(result.durationLabel, "12 semaines", primaryGoal);
-    assert.ok(result.molecules.every((m) => m.calculationBasis.length > 20 && m.totalRequiredMg > 0 && m.vialsRequired > 0), primaryGoal);
+    assert.ok(result.molecules.every((m) => m.calculationBasis.length > 20 && m.totalRequiredMg > 0 && m.safetyReserveVials >= Math.ceil(m.operationalVials * 0.2) && m.vialsRequired === m.operationalVials + m.safetyReserveVials && m.vialsPurchased >= m.vialsRequired), primaryGoal);
   }
 });
 
@@ -72,9 +76,9 @@ test("review-class profiles retain exact vial and price totals instead of a one-
   const result = buildPeptidesPreview(peptidesPreviewInputSchema.parse({ ...base, medications: "traitement déclaré" }), catalog, new Date().toISOString(), franceShipping);
   assert.equal(result.status, "review_required");
   assert.equal(result.moleculeCount, 2);
-  assert.equal(result.totalVialsRequired, 3);
-  assert.equal(result.estimatedProtocolCostUsd, 71.25);
-  assert.equal(result.estimatedGrandTotalUsd, 131.25);
+  assert.equal(result.totalVialsRequired, 5);
+  assert.equal(result.estimatedProtocolCostUsd, 122.47);
+  assert.equal(result.estimatedGrandTotalUsd, 182.47);
 });
 
 test("missing one molecule closes the whole quote rather than pricing a partial stack", () => {
@@ -99,7 +103,7 @@ test("landed-cost optimization includes shipping once per supplier", () => {
   assert.equal(result.estimatedShippingCostUsd, 10);
 });
 
-test("the client UI defaults to France and advertises the exact V6 boundaries", () => {
+test("the client UI defaults to France and advertises the exact V7 boundaries", () => {
   const source = fs.readFileSync(new URL("../client/src/pages/PeptidesPreviewPage.tsx", import.meta.url), "utf8");
   assert.match(source, /country: "FR"/);
   assert.match(source, /2 à 4 molécules/);

@@ -67,25 +67,26 @@ const eligible: PeptidesPreviewEmailResult = {
     vialStrengthMg: 10,
     mathematicalVials: 1,
     operationalVials: 1,
-    vialsRequired: 1,
-    vialsPurchased: 1,
-    packageCount: 1,
-    estimatedTotalPriceUsd: 31.19,
+    safetyReserveVials: 1,
+    vialsRequired: 2,
+    vialsPurchased: 2,
+    packageCount: 2,
+    estimatedTotalPriceUsd: 62.38,
   }, {
     name: "PT-141", supplier: "Supplier Secret", productUrl: "https://supplier.invalid/product-2", role: "Support libido", reason: "Complète le premier axe.",
     doseSummary: "1 mg, une fois par semaine", administrationCount: 12, startingFormat: "10 mg", startingPackagePriceUsd: 20.03,
     cycleDurationLabel: "12 semaines", calculationBasis: "1 mg × 1 administration par semaine × 12 semaines = 12 mg", totalRequiredMg: 12,
-    vialStrengthMg: 10, mathematicalVials: 2, operationalVials: 2, vialsRequired: 2, vialsPurchased: 2, packageCount: 2, estimatedTotalPriceUsd: 40.06,
+    vialStrengthMg: 10, mathematicalVials: 2, operationalVials: 2, safetyReserveVials: 1, vialsRequired: 3, vialsPurchased: 3, packageCount: 3, estimatedTotalPriceUsd: 60.09,
   }],
   estimatedStarterCostUsd: 51.22,
-  estimatedProtocolCostUsd: 71.25,
+  estimatedProtocolCostUsd: 122.47,
   estimatedShippingCostUsd: 60,
-  estimatedGrandTotalUsd: 131.25,
-  monthlyEquivalentUsd: 43.75,
-  shippingBreakdown: [{ supplier: "Supplier Secret", subtotalUsd: 71.25, shippingUsd: 60, speed: "7 à 14 jours" }],
-  totalVialsRequired: 3,
-  totalVialsPurchased: 3,
-  totalPackages: 3,
+  estimatedGrandTotalUsd: 182.47,
+  monthlyEquivalentUsd: 60.82,
+  shippingBreakdown: [{ supplier: "Supplier Secret", subtotalUsd: 122.47, shippingUsd: 60, speed: "7 à 14 jours" }],
+  totalVialsRequired: 5,
+  totalVialsPurchased: 5,
+  totalPackages: 5,
   durationLabel: "12 semaines",
   budgetFit: "within",
   blockers: [],
@@ -121,8 +122,8 @@ function personalized(blocker: string): PeptidesPreviewEmailResult {
 
 test("eligible client receives the direct recommendation, arithmetic, landed quote and CTA", () => {
   const content = buildPeptidesPreviewResultEmailContent(input, eligible, "/peptides-engine?tier=solo", "https://apexlabs.test");
-  assert.match(content.subject, /estimation Peptides Engine.*2 molécules.*12 semaines.*\$131\.25/);
-  for (const expected of [input.goalDetails, "Nombre de molécules", "Durée estimée", "$71.25", "$60.00", "$131.25", "protocole plus poussé et plus précis"]) {
+  assert.match(content.subject, /estimation Peptides Engine.*2 molécules.*12 semaines.*\$182\.47/);
+  for (const expected of [input.goalDetails, "Nombre de molécules", "Durée estimée", "$122.47", "$60.00", "$182.47", "réserve de fioles", "protocole plus poussé et plus précis"]) {
     assert.match(content.html, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
     assert.match(content.text, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
@@ -156,12 +157,12 @@ test("testosterone profile is not diverted to blood analysis", () => {
 
 test("admin notification is scannable and contains the exact copy-ready client email", () => {
   const content = buildPeptidesPreviewAdminNotificationContent(input, eligible, "lead-123", true, "https://apexlabs.test");
-  assert.match(content.subject, /Lead prêt à convertir.*\$131\.25/);
-  for (const expected of ["Verdict", "Prochaine étape", "Résultat du pré-calcul", "KissPeptin-10", "Email automatique client", "Envoyé", "MAIL PRÊT À COPIER COLLER", "$131.25"]) {
+  assert.match(content.subject, /Lead prêt à convertir.*\$182\.47/);
+  for (const expected of ["Verdict", "Prochaine étape", "Résultat du pré-calcul", "KissPeptin-10", "réserve 1 fiole", "5 à commander réserve incluse", "Email automatique client", "Envoyé", "MAIL PRÊT À COPIER COLLER", "$182.47"]) {
     assert.ok(content.html.includes(expected), `missing ${expected}`);
   }
   assert.match(content.text, /Email automatique client : Envoyé/);
-  assert.match(content.text, /Marc, ton estimation Peptides Engine : 2 molécules, 12 semaines, \$131\.25/);
+  assert.match(content.text, /Marc, ton estimation Peptides Engine : 2 molécules, 12 semaines, \$182\.47/);
 });
 
 test("admin review notification never labels a suspended result as a priced lead", () => {
