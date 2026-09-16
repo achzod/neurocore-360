@@ -136,7 +136,7 @@ function personalized(blocker: string): PeptidesPreviewEmailResult {
 test("eligible client receives the direct recommendation, arithmetic, landed quote and CTA", () => {
   const content = buildPeptidesPreviewResultEmailContent(input, eligible, "/peptides-engine?tier=solo", "https://apexlabs.test");
   assert.match(content.subject, /estimation Peptides Engine.*2 molécules.*12 semaines.*\$182\.47/);
-  for (const expected of [input.goalDetails, "Nombre de molécules", "Durée de la stratégie", "$122.47", "$60.00", "$182.47", "marge de 20 %", "protocole plus poussé et plus précis"]) {
+  for (const expected of [input.goalDetails, "Nombre de molécules", "Durée de la stratégie", "$122.47", "$60.00", "$182.47", "réserve adaptée", "protocole plus poussé et plus précis"]) {
     assert.match(content.html, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
     assert.match(content.text, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
@@ -176,7 +176,7 @@ test("testosterone profile is not diverted to blood analysis", () => {
 test("admin notification is scannable and contains the exact copy-ready client email", () => {
   const content = buildPeptidesPreviewAdminNotificationContent(input, eligible, "lead-123", true, "https://apexlabs.test");
   assert.match(content.subject, /Lead prêt à convertir.*\$182\.47/);
-  for (const expected of ["Verdict", "Prochaine étape", "Résultat du pré-calcul", "KissPeptin-10", "cible avec marge 20 % 8.64 mg", "réserve réelle 12.8 mg", "5 à commander réserve incluse", "Email automatique client", "Envoyé", "MAIL PRÊT À COPIER COLLER", "$182.47"]) {
+  for (const expected of ["Verdict", "Prochaine étape", "Résultat du pré-calcul", "KissPeptin-10", "cible de réserve 8.64 mg", "réserve réelle 12.8 mg", "5 à commander réserve incluse", "Email automatique client", "Envoyé", "MAIL PRÊT À COPIER COLLER", "$182.47"]) {
     assert.ok(content.html.includes(expected), `missing ${expected}`);
   }
   assert.match(content.text, /Email automatique client : Envoyé/);

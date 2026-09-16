@@ -107,7 +107,7 @@ test("GHK-Cu uses a full daily protocol and plans every 28-day window by vial st
   assert.equal(ghk.mathematicalVials, 3);
   assert.equal(ghk.operationalVials, 4);
   assert.equal(ghk.vialsPurchased, 4);
-  assert.equal(ghk.bufferedRequiredMg, 134.4);
+  assert.equal(ghk.bufferedRequiredMg, 140);
   assert.equal(ghk.purchasedCapacityMg, 200);
   assert.equal(ghk.estimatedTotalPriceUsd, 42.6);
 
@@ -217,7 +217,7 @@ test("landed-cost optimization includes shipping once per supplier", () => {
   assert.equal(result.estimatedShippingCostUsd, 10);
 });
 
-test("a cheaper bulk box never creates a second blind reserve", () => {
+test("a box of 10 is preferred when it adds stock for no more than fifteen percent extra", () => {
   const bpc = snapshot("BPC-157", 30, "10mg", "One Lab", 1);
   bpc.listings.push(snapshot("BPC-157", 100, "10mg", "One Lab", 10).listings[0]);
   const tb = snapshot("TB500", 20, "10mg", "One Lab", 1);
@@ -225,9 +225,9 @@ test("a cheaper bulk box never creates a second blind reserve", () => {
   const result = buildPeptidesPreview(peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "recovery" }), [bpc, tb], new Date().toISOString(), shipping);
   const selected = result.molecules.find((molecule) => molecule.name === "BPC-157")!;
   assert.equal(selected.vialsRequired, 3);
-  assert.equal(selected.vialsPurchased, 3);
-  assert.equal(selected.estimatedTotalPriceUsd, 90);
-  assert.deepEqual(selected.purchaseLines?.map((line) => ({ boxSize: line.boxSize, packages: line.packageCount })), [{ boxSize: 1, packages: 3 }]);
+  assert.equal(selected.vialsPurchased, 10);
+  assert.equal(selected.estimatedTotalPriceUsd, 100);
+  assert.deepEqual(selected.purchaseLines?.map((line) => ({ boxSize: line.boxSize, packages: line.packageCount })), [{ boxSize: 10, packages: 1 }]);
   assert.equal(result.estimatedShippingCostUsd, 60);
   assert.equal(result.shippingBreakdown.length, 1);
 });
@@ -247,15 +247,17 @@ test("a same-format listing with the better quantity tier is not discarded", () 
   assert.equal(selected.purchaseLines?.[0].packagePriceUsd, 10);
 });
 
-test("an oversized mandatory box is rejected instead of funding unused stock", () => {
+test("a mandatory box remains quotable and exposes the real purchased quantity", () => {
   const bpc = snapshot("BPC-157", 100, "10mg", "One Lab", 10);
   const tb = snapshot("TB500", 20, "10mg", "One Lab", 1);
   const shipping: PeptauraShippingQuote[] = [{ supplier: "One Lab", displayName: "One Lab", available: true, minimumOrderUsd: null, tiers: [{ minOrderUsd: 0, maxOrderUsd: null, costUsd: 60, speed: "standard" }] }];
   const result = buildPeptidesPreview(peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "recovery" }), [bpc, tb], new Date().toISOString(), shipping);
-  assert.equal(result.status, "review_required");
-  assert.equal(result.estimatedGrandTotalUsd, null);
-  assert.deepEqual(result.molecules, []);
-  assert.ok(result.blockers.includes("catalogue_incomplet_pour_pays"));
+  assert.equal(result.status, "eligible");
+  const selected = result.molecules.find((molecule) => molecule.name === "BPC-157")!;
+  assert.equal(selected.vialsRequired, 3);
+  assert.equal(selected.vialsPurchased, 10);
+  assert.equal(selected.packageCount, 1);
+  assert.equal(selected.estimatedTotalPriceUsd, 100);
 });
 
 test("bulk and single SKUs can be combined instead of buying every vial singly", () => {
@@ -265,10 +267,10 @@ test("bulk and single SKUs can be combined instead of buying every vial singly",
   const shipping: PeptauraShippingQuote[] = [{ supplier: "One Lab", displayName: "One Lab", available: true, minimumOrderUsd: null, tiers: [{ minOrderUsd: 0, maxOrderUsd: null, costUsd: 60, speed: "standard" }] }];
   const result = buildPeptidesPreview(peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "endurance" }), [mots, ss], new Date().toISOString(), shipping);
   const selected = result.molecules.find((molecule) => molecule.name === "SS-31")!;
-  assert.equal(selected.vialsRequired, 23);
-  assert.equal(selected.vialsPurchased, 23);
-  assert.equal(selected.estimatedTotalPriceUsd, 449.73);
-  assert.deepEqual(selected.purchaseLines?.map((line) => ({ boxSize: line.boxSize, packages: line.packageCount })), [{ boxSize: 1, packages: 3 }, { boxSize: 10, packages: 2 }]);
+  assert.equal(selected.vialsRequired, 24);
+  assert.equal(selected.vialsPurchased, 30);
+  assert.equal(selected.estimatedTotalPriceUsd, 540);
+  assert.deepEqual(selected.purchaseLines?.map((line) => ({ boxSize: line.boxSize, packages: line.packageCount })), [{ boxSize: 10, packages: 3 }]);
   assert.equal(result.estimatedShippingCostUsd, 60);
   assert.equal(result.shippingBreakdown.length, 1);
 });
