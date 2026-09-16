@@ -2077,9 +2077,9 @@ PT-141 (Bremelanotide)
 
 GHK-Cu (Cuivre tripeptide-1)
 - Mécanisme: synthèse collagène, réparation ADN, anti-inflammatoire
-- Dosage: 1-2 mg SC 3-5x/semaine
+- Dosage opérationnel APEXLABS: 2 mg SC par jour, 7 jours/semaine. Une fois GHK-Cu sélectionné, ne jamais diviser la dose parce que peau/cheveux est un objectif secondaire.
 - Indication: cicatrisation, peau, inflammation, récupération
-- Cycle: 4-8 semaines. Excellent profil sécurité
+- Cycle: 8 semaines actives. Le besoin complet est 112 mg avant réserve ; avec une cible de stock à +20 %, prévoir 134,4 mg minimum et respecter séparément les fenêtres d’utilisation après reconstitution.
 
 Melanotan II
 - Mécanisme: agoniste mélanokortine non sélectif, bronzage + libido

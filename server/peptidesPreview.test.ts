@@ -85,7 +85,7 @@ test("reference phases never stretch every molecule across twelve active weeks",
     cognitive: { Semax: 11.2, Selank: 14 },
     libido: { "PT-141": 6 },
     "testo-boost": { "KissPeptin-10": 2.4 },
-    "skin-hair": { "GHK-Cu": 80 },
+    "skin-hair": { "GHK-Cu": 112 },
     endurance: { "MOTS-c": 80, "SS-31": 56 },
   };
   for (const [primaryGoal, needs] of Object.entries(expectedNeeds)) {
@@ -96,16 +96,29 @@ test("reference phases never stretch every molecule across twelve active weeks",
   }
 });
 
-test("reconstituted products are planned per opening window instead of stretching one large vial across months", () => {
-  const ghkCatalog = [snapshot("GHK-Cu", 10.65, "50mg"), snapshot("GHK-Cu", 15.21, "100mg")];
-  const ghk = buildPeptidesPreview(peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "skin-hair", trainingFrequency: "3-4" }), ghkCatalog, new Date().toISOString(), franceShipping).molecules[0];
-  assert.equal(ghk.totalRequiredMg, 80);
+test("GHK-Cu uses a full daily protocol and plans every 28-day window by vial strength", () => {
+  const fiftyMgOnly = [snapshot("GHK-Cu", 10.65, "50mg")];
+  const ghk = buildPeptidesPreview(peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "skin-hair", trainingFrequency: "3-4" }), fiftyMgOnly, new Date().toISOString(), franceShipping).molecules[0];
+  assert.equal(ghk.totalRequiredMg, 112);
+  assert.equal(ghk.administrationCount, 56);
+  assert.match(ghk.doseSummary, /2 mg par administration, 7 fois par semaine pendant 8 semaines/);
   assert.equal(ghk.openingWindowDays, 28);
   assert.equal(ghk.vialStrengthMg, 50);
-  assert.equal(ghk.mathematicalVials, 2);
-  assert.equal(ghk.operationalVials, 2);
-  assert.equal(ghk.vialsPurchased, 2);
-  assert.equal(ghk.estimatedTotalPriceUsd, 21.3);
+  assert.equal(ghk.mathematicalVials, 3);
+  assert.equal(ghk.operationalVials, 4);
+  assert.equal(ghk.vialsPurchased, 4);
+  assert.equal(ghk.bufferedRequiredMg, 134.4);
+  assert.equal(ghk.purchasedCapacityMg, 200);
+  assert.equal(ghk.estimatedTotalPriceUsd, 42.6);
+
+  const hundredMgOnly = [snapshot("GHK-Cu", 15.21, "100mg")];
+  const ghk100 = buildPeptidesPreview(peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "skin-hair", trainingFrequency: "3-4" }), hundredMgOnly, new Date().toISOString(), franceShipping).molecules[0];
+  assert.equal(ghk100.totalRequiredMg, 112);
+  assert.equal(ghk100.vialStrengthMg, 100);
+  assert.equal(ghk100.mathematicalVials, 2);
+  assert.equal(ghk100.operationalVials, 2);
+  assert.equal(ghk100.vialsPurchased, 2);
+  assert.equal(ghk100.purchasedCapacityMg, 200);
 
   const semaglutideCatalog = [snapshot("Semaglutide", 11.92, "5mg"), snapshot("Semaglutide", 16.47, "10mg")];
   const semaglutide = buildPeptidesPreview(peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "fatloss", trainingFrequency: "3-4" }), semaglutideCatalog, new Date().toISOString(), franceShipping).molecules[0];
@@ -143,6 +156,14 @@ test("secondary goals can add several molecules while duplicate candidates are m
   const result = buildPeptidesPreview(peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "cognitive", secondaryGoals: ["sleep", "skin-hair"] }), catalog, new Date().toISOString(), franceShipping);
   assert.equal(result.moleculeCount, 4);
   assert.deepEqual(result.molecules.map((m) => m.name), ["Semax", "Selank", "DSIP", "GHK-Cu"]);
+  const ghk = result.molecules.find((molecule) => molecule.name === "GHK-Cu");
+  assert.ok(ghk);
+  assert.equal(ghk.totalRequiredMg, 112);
+  assert.equal(ghk.administrationCount, 56);
+  assert.equal(ghk.vialStrengthMg, 50);
+  assert.equal(ghk.mathematicalVials, 3);
+  assert.equal(ghk.operationalVials, 4);
+  assert.equal(ghk.vialsPurchased, 4);
 });
 
 test("country-specific shipping changes landed total without changing product math", () => {
