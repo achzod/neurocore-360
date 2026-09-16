@@ -519,10 +519,26 @@ type PlannedOption = {
   selection: CandidateSelection;
   math: ProtocolMath;
   plan: PreviewPurchasePlan;
+  reserveTargetMg: number;
   mathematicalVials: number;
   operationalVials: number;
   safetyReserveVials: number;
 };
+
+const STOCK_RESERVE_RATIO = 0.25;
+const RICHER_CART_PRICE_TOLERANCE = 0.15;
+const MAX_STANDARD_CYCLE_COVERAGE = 6;
+
+function reserveTargetMg(math: ProtocolMath): number {
+  const weeklyUse = new Map<number, number>();
+  for (const administration of math.administrations) {
+    const week = Math.floor(administration.day / 7);
+    weeklyUse.set(week, (weeklyUse.get(week) || 0) + administration.doseMg);
+  }
+  const highestUseWeekMg = Math.max(0, ...weeklyUse.values());
+  const reserveMg = Math.max(math.totalNeedMg * STOCK_RESERVE_RATIO, highestUseWeekMg);
+  return math.totalNeedMg + reserveMg;
+}
 
 function publicPeptideFamily(candidateName: string): string {
   const normalized = normalize(candidateName);
@@ -590,10 +606,13 @@ function buildEffectTimeline(options: PlannedOption[], durationWeeks: number): P
   });
 }
 
-function cheapestMixedPackagePlan(
+function preferredMixedPackagePlan(
   listings: PeptauraFeedListing[],
   requestedVials: number,
   vialMg: number,
+  activeNeedMg: number,
+  targetNeedMg: number,
+  operationalVialCount: number,
 ): PreviewPurchasePlan | null {
   if (listings.length === 0 || requestedVials < 1) return null;
   const listingsByBoxSize = new Map<number, PeptauraFeedListing[]>();
@@ -604,28 +623,29 @@ function cheapestMixedPackagePlan(
   }
   const packageOptions = [...listingsByBoxSize.entries()].map(([boxSize, group]) => ({ boxSize, listings: group }));
   if (packageOptions.length === 0) return null;
-  // The 20% milligram buffer is already included in requestedVials. Require an
-  // exact vial count so packaging can never create a second hidden reserve.
-  // If a supplier only exposes oversized boxes, reject that option rather than
-  // making the customer fund unused stock.
-  const maximumDeliveredVials = requestedVials;
-  let best: { lines: PreviewPurchaseLine[]; deliveredVials: number; totalPriceUsd: number; packageCount: number } | null = null;
+  // Explore both unit listings and real bulk boxes. Standard plans may cover up
+  // to four active cycles; this keeps a discounted box of 10 available when it
+  // is economically superior without turning tiny protocols into huge blind
+  // stock. If only a larger mandatory box exists, retain it as a visible
+  // fallback rather than pretending the product can be bought by the unit.
+  const operationalCoverage = operationalVialCount * vialMg / activeNeedMg;
+  const standardCoverage = Math.max(MAX_STANDARD_CYCLE_COVERAGE, operationalCoverage);
+  const maximumStandardVials = Math.max(requestedVials, Math.floor(activeNeedMg * standardCoverage / vialMg + Number.EPSILON));
+  const largestBoxSize = Math.max(...packageOptions.map((option) => option.boxSize));
+  const maximumExploredVials = Math.max(maximumStandardVials, largestBoxSize, requestedVials + largestBoxSize);
+  const plans: Array<{ lines: PreviewPurchaseLine[]; deliveredVials: number; totalPriceUsd: number; packageCount: number }> = [];
 
   const visit = (index: number, deliveredVials: number, lines: PreviewPurchaseLine[]) => {
-    if (deliveredVials > maximumDeliveredVials) return;
+    if (deliveredVials > maximumExploredVials) return;
     if (index === packageOptions.length) {
       if (deliveredVials < requestedVials) return;
       const totalPriceUsd = lines.reduce((sum, line) => sum + line.totalPriceUsd, 0);
       const packageCount = lines.reduce((sum, line) => sum + line.packageCount, 0);
-      if (!best || deliveredVials < best.deliveredVials
-        || (deliveredVials === best.deliveredVials && cents(totalPriceUsd) < cents(best.totalPriceUsd))
-        || (deliveredVials === best.deliveredVials && cents(totalPriceUsd) === cents(best.totalPriceUsd) && packageCount < best.packageCount)) {
-        best = { lines: [...lines], deliveredVials, totalPriceUsd, packageCount };
-      }
+      plans.push({ lines: [...lines], deliveredVials, totalPriceUsd, packageCount });
       return;
     }
     const option = packageOptions[index];
-    const maxPackages = Math.floor((maximumDeliveredVials - deliveredVials) / option.boxSize);
+    const maxPackages = Math.floor((maximumExploredVials - deliveredVials) / option.boxSize);
     for (let packageCount = 0; packageCount <= maxPackages; packageCount += 1) {
       if (packageCount === 0) {
         visit(index + 1, deliveredVials, lines);
@@ -651,12 +671,21 @@ function cheapestMixedPackagePlan(
     }
   };
   visit(0, 0, []);
-  if (!best) return null;
-  const selected = best as { lines: PreviewPurchaseLine[]; deliveredVials: number; totalPriceUsd: number; packageCount: number };
+  if (plans.length === 0) return null;
+  const standardPlans = plans.filter((plan) => plan.deliveredVials <= maximumStandardVials);
+  const pool = standardPlans.length > 0 ? standardPlans : plans;
+  const cheapestTotalCents = Math.min(...pool.map((plan) => cents(plan.totalPriceUsd)));
+  const toleratedTotalCents = Math.floor(cheapestTotalCents * (1 + RICHER_CART_PRICE_TOLERANCE));
+  const selected = pool.filter((plan) => cents(plan.totalPriceUsd) <= toleratedTotalCents)
+    .sort((a, b) =>
+      b.deliveredVials - a.deliveredVials
+      || cents(a.totalPriceUsd) - cents(b.totalPriceUsd)
+      || a.packageCount - b.packageCount
+    )[0];
   const representative = selected.lines[0].listing;
   return {
     listing: representative,
-    needMg: requestedVials * vialMg,
+    needMg: targetNeedMg,
     vialMg,
     requestedVials,
     packageCount: selected.packageCount,
@@ -664,7 +693,7 @@ function cheapestMixedPackagePlan(
     deliveredMg: selected.deliveredVials * vialMg,
     packagePriceUsd: Math.min(...selected.lines.map((line) => line.packagePriceUsd)),
     totalPriceUsd: selected.totalPriceUsd,
-    overstockRatio: selected.deliveredVials / requestedVials,
+    overstockRatio: selected.deliveredVials * vialMg / activeNeedMg,
     purchaseLines: selected.lines,
   };
 }
@@ -692,18 +721,26 @@ function candidatePlanOptions(
     if (!vialMg) return [];
     const mathematicalVials = Math.ceil((math.totalNeedMg - Number.EPSILON) / vialMg);
     const requiredOperationalVials = operationalVials(math, vialMg);
-    // Keep the prescribed dose unchanged, then provision enough stock to avoid
-    // a mid-cycle reorder with a 20% buffer in total milligram capacity.
-    // Reserve is calculated in milligrams, not as a blind extra vial per
-    // molecule. Existing unused capacity counts toward the 20% buffer.
-    const reserveTargetVials = Math.ceil((math.totalNeedMg * 1.2 - Number.EPSILON) / vialMg);
+    // Keep the prescribed dose unchanged. Reserve the larger of 25% of the
+    // active need or the highest-use protocol week, then apply opening-window
+    // constraints. This favors finishing the cycle over minimizing the cart.
+    const targetMg = reserveTargetMg(math);
+    const reserveTargetVials = Math.ceil((targetMg - Number.EPSILON) / vialMg);
     const vialsRequiredWithReserve = Math.max(requiredOperationalVials, reserveTargetVials);
-    // Optimize the real cart across single-vial and bulk-box SKUs from the same
-    // supplier, without adding packaging overfill beyond the 20% mg buffer.
-    const plan = cheapestMixedPackagePlan(listings, vialsRequiredWithReserve, vialMg);
+    // Compare units, boxes of 10, quantity tiers and mixed carts from the same
+    // supplier. Prefer more covered stock when it stays within 15% of the
+    // cheapest compliant cart; the final supplier choice still includes freight.
+    const plan = preferredMixedPackagePlan(
+      listings,
+      vialsRequiredWithReserve,
+      vialMg,
+      math.totalNeedMg,
+      targetMg,
+      requiredOperationalVials,
+    );
     if (!plan || plan.requestedVials !== vialsRequiredWithReserve) return [];
     const safetyReserveVials = Math.max(0, plan.deliveredVials - requiredOperationalVials);
-    return [{ selection, math, plan, mathematicalVials, operationalVials: requiredOperationalVials, safetyReserveVials }];
+    return [{ selection, math, plan, reserveTargetMg: targetMg, mathematicalVials, operationalVials: requiredOperationalVials, safetyReserveVials }];
   }).sort((a, b) => cents(a.plan.totalPriceUsd) - cents(b.plan.totalPriceUsd));
   const bySupplier = new Map<string, PlannedOption[]>();
   for (const option of options) {
@@ -776,12 +813,19 @@ function selectQuotedCombination(
       grandTotalUsd: (productSubtotalCents + shippingCents) / 100,
       shippingBreakdown,
     }];
-  }).sort((a, b) =>
-    cents(a.grandTotalUsd) - cents(b.grandTotalUsd)
-    || a.shippingBreakdown.length - b.shippingBreakdown.length
-    || cents(a.productSubtotalUsd) - cents(b.productSubtotalUsd)
-  );
-  return quoted[0] || null;
+  });
+  if (quoted.length === 0) return null;
+  const cheapestLandedCents = Math.min(...quoted.map((quote) => cents(quote.grandTotalUsd)));
+  const toleratedLandedCents = Math.floor(cheapestLandedCents * (1 + RICHER_CART_PRICE_TOLERANCE));
+  return quoted.filter((quote) => cents(quote.grandTotalUsd) <= toleratedLandedCents)
+    .sort((a, b) => {
+      const reserveScoreA = a.options.reduce((sum, option) => sum + option.plan.deliveredMg / option.reserveTargetMg, 0);
+      const reserveScoreB = b.options.reduce((sum, option) => sum + option.plan.deliveredMg / option.reserveTargetMg, 0);
+      return reserveScoreB - reserveScoreA
+        || cents(a.grandTotalUsd) - cents(b.grandTotalUsd)
+        || a.shippingBreakdown.length - b.shippingBreakdown.length
+        || cents(a.productSubtotalUsd) - cents(b.productSubtotalUsd);
+    })[0] || null;
 }
 
 function isNoneDeclared(value: string): boolean {
@@ -992,7 +1036,7 @@ export function buildPeptidesPreview(
     return { ...emptyReviewResult(unavailableBlockers, "peptides_engine", reviewNarrative(input, unavailableBlockers)), moleculeCount: desiredCandidates.length, priceCheckedAt: checkedAt };
   }
 
-  const selected = quote.options.map(({ selection, math, plan, mathematicalVials, operationalVials, safetyReserveVials }) => ({
+  const selected = quote.options.map(({ selection, math, plan, reserveTargetMg: targetMg, mathematicalVials, operationalVials, safetyReserveVials }) => ({
     name: plan.listing.name || selection.candidate.name,
     supplier: plan.listing.supplierDisplayName || plan.listing.supplier,
     productUrl: plan.listing.productUrl,
@@ -1008,7 +1052,7 @@ export function buildPeptidesPreview(
     openingWindowDays: math.protocol.openingWindowDays,
     calculationBasis: math.calculationBasis,
     totalRequiredMg: Number(math.totalNeedMg.toFixed(3)),
-    bufferedRequiredMg: Number((math.totalNeedMg * 1.2).toFixed(3)),
+    bufferedRequiredMg: Number(targetMg.toFixed(3)),
     purchasedCapacityMg: Number((plan.deliveredVials * plan.vialMg).toFixed(3)),
     reserveCapacityMg: Number((plan.deliveredVials * plan.vialMg - math.totalNeedMg).toFixed(3)),
     vialStrengthMg: plan.vialMg,

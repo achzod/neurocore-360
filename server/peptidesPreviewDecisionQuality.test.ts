@@ -37,7 +37,7 @@ test("two secondary goals add only their attributable molecules", () => {
   const ghk = result.molecules.find((molecule) => molecule.name === "GHK-Cu");
   assert.ok(ghk);
   assert.equal(ghk.totalRequiredMg, 112);
-  assert.equal(ghk.bufferedRequiredMg, 134.4);
+  assert.equal(ghk.bufferedRequiredMg, 140);
   assert.equal(ghk.vialStrengthMg, 50);
   assert.equal(ghk.operationalVials, 4);
   assert.equal(ghk.vialsPurchased, 4);
@@ -79,7 +79,7 @@ test("public quote exposes anonymous families, exact line prices and a twelve-we
   assert.equal(Number(((result.estimatedProtocolCostUsd || 0) + (result.estimatedShippingCostUsd || 0)).toFixed(2)), result.estimatedGrandTotalUsd);
   assert.equal(result.estimatedShippingCostUsd, 60);
   result.molecules.forEach((molecule, index) => {
-    assert.equal(molecule.bufferedRequiredMg, Number((molecule.totalRequiredMg * 1.2).toFixed(3)));
+    assert.equal(molecule.bufferedRequiredMg, Number((molecule.totalRequiredMg * 1.25).toFixed(3)));
     assert.ok(molecule.purchasedCapacityMg >= molecule.bufferedRequiredMg);
     assert.equal(molecule.purchasedCapacityMg, Number((molecule.vialsPurchased * molecule.vialStrengthMg).toFixed(3)));
     assert.equal(molecule.reserveCapacityMg, Number((molecule.purchasedCapacityMg - molecule.totalRequiredMg).toFixed(3)));
