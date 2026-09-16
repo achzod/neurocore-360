@@ -7,7 +7,7 @@ import type { PeptauraShippingQuote } from "./peptauraShipping";
 
 const base = {
   firstName: "Karim", email: "karim@example.com", age: 36, weightKg: 84, heightCm: 181, sex: "male", bodyFatRange: "20-25",
-  primaryGoal: "testo-boost", secondaryGoals: [], goalDetails: "Fatigue, libido basse et récupération réduite depuis plusieurs mois.",
+  primaryGoal: "testo-boost", secondaryGoals: [], goalDetails: "Production endogène et fertilité à soutenir depuis plusieurs mois.",
   timeline: "12plus", recoveryScope: "multi-site", glp1History: "never", cognitiveStress: "high", conditions: ["none"],
   bloodwork: "never", bloodPressure: "normal", sleepHours: 6, injectionComfort: "possible", injectionFrequency: "twice-daily",
   refrigeration: "yes-private", experience: "read", trainingFrequency: "5plus", budgetTotalUsd: 400, country: "FR",
@@ -26,24 +26,22 @@ const catalog = [
 const franceShipping: PeptauraShippingQuote[] = [{ supplier: "Verified", displayName: "Verified", available: true, minimumOrderUsd: null, tiers: [{ minOrderUsd: 0, maxOrderUsd: null, costUsd: 60, speed: "7 à 14 jours" }] }];
 const emiratesShipping: PeptauraShippingQuote[] = [{ supplier: "Verified", displayName: "Verified", available: true, minimumOrderUsd: null, tiers: [{ minOrderUsd: 0, maxOrderUsd: null, costUsd: 90, speed: "10 à 15 jours" }] }];
 
-test("Karim receives two fully calculated molecules over twelve weeks for France", () => {
+test("a single-axis profile can receive one fully calculated molecule", () => {
   const result = buildPeptidesPreview(peptidesPreviewInputSchema.parse(base), catalog, "2026-09-15T09:00:00Z", franceShipping);
-  assert.equal(result.moleculeCount, 2);
-  assert.equal(result.durationLabel, "Stratégie 12 semaines · phases actives de 8 à 12 semaines");
+  assert.equal(result.moleculeCount, 1);
+  assert.equal(result.durationLabel, "Stratégie 12 semaines · 8 semaines actives");
   assert.deepEqual(result.molecules.map((m) => ({ name: m.name, dose: m.doseSummary, need: m.totalRequiredMg, vials: m.vialsRequired, bought: m.vialsPurchased, cost: m.estimatedTotalPriceUsd })), [
     { name: "KissPeptin-10", dose: "100 mcg par administration, 3 fois par semaine pendant 8 semaines actives dans une stratégie de 12 semaines", need: 2.4, vials: 1, bought: 1, cost: 31.19 },
-    { name: "PT-141", dose: "500 mcg par semaine pendant 12 semaines", need: 6, vials: 1, bought: 1, cost: 20.03 },
   ]);
   assert.deepEqual(result.molecules.map((m) => ({ operational: m.operationalVials, reserve: m.safetyReserveVials, ordered: m.vialsRequired })), [
     { operational: 1, reserve: 0, ordered: 1 },
-    { operational: 1, reserve: 0, ordered: 1 },
   ]);
   assert.ok(result.molecules.every((m) => m.vialsPurchased * m.vialStrengthMg >= m.totalRequiredMg * 1.2));
-  assert.equal(result.totalVialsRequired, 2);
-  assert.equal(result.totalVialsPurchased, 2);
-  assert.equal(result.estimatedProtocolCostUsd, 51.22);
+  assert.equal(result.totalVialsRequired, 1);
+  assert.equal(result.totalVialsPurchased, 1);
+  assert.equal(result.estimatedProtocolCostUsd, 31.19);
   assert.equal(result.estimatedShippingCostUsd, 60);
-  assert.equal(result.estimatedGrandTotalUsd, 111.22);
+  assert.equal(result.estimatedGrandTotalUsd, 91.19);
 });
 
 test("eligible copy explains the actual axes, execution constraints and budget instead of generic filler", () => {
@@ -65,10 +63,11 @@ test("eligible copy explains the actual axes, execution constraints and budget i
   assert.doesNotMatch(copy, /Ton objectif .* pilote la sélection|La stratégie de référence est chiffrée/i);
 });
 
-test("all primary goals produce between two and four molecules and never less than twelve weeks", () => {
+test("primary goals produce the profile-driven count and never less than twelve strategic weeks", () => {
+  const expectedCounts = { recovery: 2, "gh-antiaging": 2, fatloss: 2, sleep: 1, cognitive: 2, libido: 1, "testo-boost": 1, "skin-hair": 1, endurance: 2 } as const;
   for (const primaryGoal of ["recovery", "gh-antiaging", "fatloss", "sleep", "cognitive", "libido", "testo-boost", "skin-hair", "endurance"] as const) {
     const result = buildPeptidesPreview(peptidesPreviewInputSchema.parse({ ...base, primaryGoal }), catalog, new Date().toISOString(), franceShipping);
-    assert.ok(result.moleculeCount >= 2 && result.moleculeCount <= 4, primaryGoal);
+    assert.equal(result.moleculeCount, expectedCounts[primaryGoal], primaryGoal);
     assert.equal(result.molecules.length, result.moleculeCount, primaryGoal);
     assert.ok(result.molecules.every((m) => m.cycleDurationLabel === "12 semaines"), primaryGoal);
     assert.match(result.durationLabel, /12 semaines/, primaryGoal);
@@ -82,11 +81,11 @@ test("reference phases never stretch every molecule across twelve active weeks",
     recovery: { "BPC-157": 28, TB500: 30 },
     "gh-antiaging": { "CJC-1295 (no DAC)": 8.4, Ipamorelin: 8.4 },
     fatloss: { Semaglutide: 7, "MOTS-c": 40 },
-    sleep: { DSIP: 4.9, Selank: 7 },
+    sleep: { DSIP: 4.9 },
     cognitive: { Semax: 5.6, Selank: 7 },
-    libido: { "PT-141": 6, "KissPeptin-10": 2.4 },
-    "testo-boost": { "KissPeptin-10": 2.4, "PT-141": 6 },
-    "skin-hair": { "GHK-Cu": 80, "BPC-157": 14 },
+    libido: { "PT-141": 6 },
+    "testo-boost": { "KissPeptin-10": 2.4 },
+    "skin-hair": { "GHK-Cu": 80 },
     endurance: { "MOTS-c": 40, "SS-31": 28 },
   };
   for (const [primaryGoal, needs] of Object.entries(expectedNeeds)) {
@@ -97,7 +96,7 @@ test("reference phases never stretch every molecule across twelve active weeks",
   }
 });
 
-test("secondary goals expand the estimate up to four unique molecules", () => {
+test("secondary goals can add several molecules while duplicate candidates are merged", () => {
   const result = buildPeptidesPreview(peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "cognitive", secondaryGoals: ["sleep", "skin-hair"] }), catalog, new Date().toISOString(), franceShipping);
   assert.equal(result.moleculeCount, 4);
   assert.deepEqual(result.molecules.map((m) => m.name), ["Semax", "Selank", "DSIP", "GHK-Cu"]);
@@ -116,10 +115,10 @@ test("country-specific shipping changes landed total without changing product ma
 test("review-class profiles retain exact vial and price totals instead of a one-vial pseudo-quote", () => {
   const result = buildPeptidesPreview(peptidesPreviewInputSchema.parse({ ...base, medications: "traitement déclaré" }), catalog, new Date().toISOString(), franceShipping);
   assert.equal(result.status, "review_required");
-  assert.equal(result.moleculeCount, 2);
-  assert.equal(result.totalVialsRequired, 2);
-  assert.equal(result.estimatedProtocolCostUsd, 51.22);
-  assert.equal(result.estimatedGrandTotalUsd, 111.22);
+  assert.equal(result.moleculeCount, 1);
+  assert.equal(result.totalVialsRequired, 1);
+  assert.equal(result.estimatedProtocolCostUsd, 31.19);
+  assert.equal(result.estimatedGrandTotalUsd, 91.19);
 });
 
 test("a blend cannot impersonate and double-price two standalone molecules", () => {
@@ -133,7 +132,7 @@ test("a blend cannot impersonate and double-price two standalone molecules", () 
 });
 
 test("missing one molecule closes the whole quote rather than pricing a partial stack", () => {
-  const result = buildPeptidesPreview(peptidesPreviewInputSchema.parse(base), [snapshot("KissPeptin-10", 31.19)], new Date().toISOString(), franceShipping);
+  const result = buildPeptidesPreview(peptidesPreviewInputSchema.parse({ ...base, secondaryGoals: ["libido"] }), [snapshot("KissPeptin-10", 31.19)], new Date().toISOString(), franceShipping);
   assert.equal(result.moleculeCount, 2);
   assert.equal(result.estimatedProtocolCostUsd, null);
   assert.equal(result.estimatedShippingCostUsd, null);
@@ -210,10 +209,10 @@ test("bulk and single SKUs can be combined instead of buying every vial singly",
   assert.equal(result.shippingBreakdown.length, 1);
 });
 
-test("the client UI defaults to France and advertises the exact V7 boundaries", () => {
+test("the client UI defaults to France and advertises profile-driven counts", () => {
   const source = fs.readFileSync(new URL("../client/src/pages/PeptidesPreviewPage.tsx", import.meta.url), "utf8");
   assert.match(source, /country: "FR"/);
-  assert.match(source, /2 à 4 molécules/);
+  assert.match(source, /une seule molécule ou plusieurs par axe/);
   assert.match(source, /12 semaines minimum/);
   assert.match(source, /Livraison · une seule fois/);
   assert.match(source, /livraison est comptée une seule fois pour la commande complète/i);
