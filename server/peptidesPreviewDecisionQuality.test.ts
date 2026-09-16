@@ -13,7 +13,7 @@ test("Karim can produce a one-molecule estimate with complete internal math", ()
   assert.equal(result.nextStep, "peptides_engine");
   assert.equal(result.moleculeCount, 1);
   assert.equal(result.durationLabel, "Stratégie 12 semaines · 8 semaines actives");
-  assert.equal(result.totalVialsRequired, 1);
+  assert.equal(result.totalVialsRequired, 2);
   assert.ok(result.molecules.every((m) => m.totalRequiredMg > 0 && m.vialsPurchased === m.vialsRequired && m.vialsPurchased * m.vialStrengthMg >= m.totalRequiredMg * 1.2 && m.estimatedTotalPriceUsd > 0));
   assert.match(result.quoteExplanation, /1 molécule.*12 semaines/);
   assert.doesNotMatch(result.nextStepExplanation, /Blood Analysis|bilan|marqueur|informations supplémentaires/);
@@ -26,7 +26,7 @@ test("medicines and history change internal personalization without diverting pu
   assert.ok(result.blockers.includes("medicaments_a_integrer"));
   assert.ok(result.blockers.includes("historique_peptides_a_interpreter"));
   assert.equal(result.molecules.length, 1);
-  assert.equal(result.totalVialsRequired, 1);
+  assert.equal(result.totalVialsRequired, 2);
 });
 
 test("two secondary goals add only their attributable molecules", () => {
@@ -55,6 +55,8 @@ test("public surfaces hide molecule names and doses while admin content preserve
   assert.match(emails, /operationalVials/);
   assert.match(emails, /safetyReserveVials/);
   assert.match(emails, /vialsPurchased/);
+  assert.match(emails, /protocolBasis/);
+  assert.match(emails, /openingWindowDays/);
 });
 
 test("public quote exposes anonymous families, exact line prices and a twelve-week effect timeline", () => {
