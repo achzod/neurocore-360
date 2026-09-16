@@ -145,8 +145,8 @@ test("eligible client receives the direct recommendation, arithmetic, landed quo
     assert.match(content.html, pattern);
     assert.match(content.text, pattern);
   }
-  assert.doesNotMatch(content.html, /KissPeptin-10|PT-141|200 mcg|1 mg|Dose de référence/);
-  assert.doesNotMatch(content.text, /KissPeptin-10|PT-141|200 mcg|1 mg|Dose de référence/);
+  assert.doesNotMatch(content.html, /KissPeptin-10|PT-141|200 mcg|1 mg|Dose de référence|fiole|vial/i);
+  assert.doesNotMatch(content.text, /KissPeptin-10|PT-141|200 mcg|1 mg|Dose de référence|fiole|vial/i);
   assert.match(content.html, /Débloquer mon analyse Peptides Engine/);
   assert.match(content.text, /https:\/\/apexlabs\.test\/peptides-engine\?tier=solo/);
   assert.doesNotMatch(content.html, /Supplier Secret|supplier\.invalid/);
