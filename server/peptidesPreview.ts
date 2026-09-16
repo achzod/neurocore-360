@@ -125,10 +125,26 @@ export interface PeptidesPreviewMolecule {
   estimatedTotalPriceUsd: number;
 }
 
+export interface PeptidesPreviewPublicQuoteLine {
+  label: string;
+  family: string;
+  role: string;
+  activeDurationWeeks: number;
+  estimatedTotalPriceUsd: number;
+}
+
+export interface PeptidesPreviewEffectWeek {
+  week: number;
+  title: string;
+  effects: string[];
+}
+
 export interface PeptidesPreviewResult {
   status: "eligible" | "review_required";
   moleculeCount: number;
   molecules: PeptidesPreviewMolecule[];
+  moleculeQuotes: PeptidesPreviewPublicQuoteLine[];
+  effectTimeline: PeptidesPreviewEffectWeek[];
   estimatedStarterCostUsd: number | null;
   estimatedProtocolCostUsd: number | null;
   estimatedShippingCostUsd: number | null;
@@ -386,6 +402,72 @@ type PlannedOption = {
   operationalVials: number;
   safetyReserveVials: number;
 };
+
+function publicPeptideFamily(candidateName: string): string {
+  const normalized = normalize(candidateName);
+  if (["bpc157", "tb500"].includes(normalized)) return "Peptides de réparation tissulaire";
+  if (normalized.startsWith("cjc1295")) return "Analogues GHRH";
+  if (normalized === "ipamorelin") return "Sécrétagogues de l’axe GH";
+  if (normalized === "semaglutide") return "Agonistes GLP-1";
+  if (["motsc", "ss31", "elamipretide"].includes(normalized)) return "Peptides mitochondriaux";
+  if (normalized === "dsip") return "Peptides régulateurs du sommeil";
+  if (normalized === "selank") return "Peptides régulateurs du stress";
+  if (normalized === "semax") return "Peptides nootropiques";
+  if (normalized === "pt141") return "Peptides mélanocortinergiques";
+  if (normalized.startsWith("kisspeptin")) return "Peptides neuroendocriniens de l’axe HPG";
+  if (normalized === "ghkcu") return "Peptides de cuivre réparateurs";
+  return "Peptides de signalisation ciblée";
+}
+
+function expectedEffectForWeek(option: PlannedOption, week: number): string {
+  const family = publicPeptideFamily(option.selection.candidate.name);
+  const candidate = normalize(option.selection.candidate.name);
+  const activeWeeks = option.math.activeDurationWeeks;
+  const targets: Record<string, [string, string, string, string]> = {
+    bpc157: ["confort de la zone prioritaire", "mobilité et récupération locale", "tolérance aux mouvements et à l’entraînement", "stabilité du confort tissulaire"],
+    tb500: ["souplesse et récupération générale", "raideurs et mobilité", "récupération entre les séances", "stabilité de la récupération systémique"],
+    cjc1295nodac: ["qualité du sommeil et récupération nocturne", "réveil et récupération entre les séances", "capacité de récupération et composition corporelle", "stabilité du sommeil, de la récupération et de la composition"],
+    ipamorelin: ["endormissement et récupération nocturne", "qualité du sommeil et sensation au réveil", "récupération et tolérance à la charge", "stabilité du bénéfice sur récupération et composition"],
+    semaglutide: ["satiété et contrôle de l’appétit", "régularité alimentaire et réduction des envies", "adhérence au déficit et évolution du poids", "stabilité de la satiété et de la trajectoire pondérale"],
+    motsc: ["énergie quotidienne et tolérance à l’effort", "capacité de travail et récupération énergétique", "endurance et efficience métabolique", "stabilité de l’énergie et de la capacité de travail"],
+    dsip: ["endormissement et profondeur du sommeil", "réveils nocturnes et qualité perçue", "régularité du sommeil et récupération", "maintien des acquis sur le sommeil"],
+    selank: ["apaisement et stabilité sous stress", "réactivité émotionnelle et concentration", "stabilité nerveuse dans les journées chargées", "maintien du calme et de la constance cognitive"],
+    semax: ["clarté mentale et mise en action", "focus et endurance cognitive", "productivité et stabilité de l’attention", "maintien des acquis cognitifs"],
+    pt141: ["réponse et intérêt sexuels", "qualité et régularité de la réponse", "confiance et constance de la réponse sexuelle", "stabilité du bénéfice sur la libido"],
+    kisspeptin10: ["signal neuroendocrinien et vitalité", "libido, énergie et ressenti hormonal", "régularité des signaux de l’axe HPG", "stabilité de la vitalité et du ressenti hormonal"],
+    ghkcu: ["qualité et hydratation perçues de la peau", "texture cutanée et vitalité capillaire", "qualité de la matrice et aspect global", "stabilité des progrès cutanés et capillaires"],
+    ss31: ["énergie cellulaire et tolérance à l’effort", "fatigue perçue et récupération énergétique", "endurance et capacité de travail", "maintien des gains de capacité énergétique"],
+  };
+  const stages = targets[candidate] || [option.selection.candidate.role.toLocaleLowerCase("fr-FR"), option.selection.candidate.role.toLocaleLowerCase("fr-FR"), option.selection.candidate.role.toLocaleLowerCase("fr-FR"), option.selection.candidate.role.toLocaleLowerCase("fr-FR")];
+  const target = week <= 2 ? stages[0] : week <= 4 ? stages[1] : week <= 8 ? stages[2] : stages[3];
+  if (week > activeWeeks) return `${family} · phase d’observation : maintien et lecture de ${target}.`;
+  const progress = [
+    "mise en route et premiers signaux attendus sur",
+    "adaptation progressive avec une première tendance sur",
+    "effets positifs plus perceptibles attendus sur",
+    "premier palier à comparer au point de départ sur",
+    "consolidation progressive attendue sur",
+    "régularité plus lisible attendue sur",
+    "effets plus nets et plus constants attendus sur",
+    "palier de progression à confirmer sur",
+    "maintien du bénéfice attendu sur",
+    "stabilité du bénéfice à observer sur",
+    "consolidation de fin de cycle sur",
+    "bilan global de la progression sur",
+  ][Math.min(week, 12) - 1];
+  return `${family} · ${progress} ${target}.`;
+}
+
+function buildEffectTimeline(options: PlannedOption[], durationWeeks: number): PeptidesPreviewEffectWeek[] {
+  return Array.from({ length: durationWeeks }, (_, index) => {
+    const week = index + 1;
+    return {
+      week,
+      title: week === 1 ? "Mise en route" : week <= 4 ? "Installation progressive" : week <= 8 ? "Consolidation" : "Stabilisation",
+      effects: options.map((option) => expectedEffectForWeek(option, week)),
+    };
+  });
+}
 
 function cheapestMixedPackagePlan(
   listings: PeptauraFeedListing[],
@@ -700,6 +782,8 @@ function emptyReviewResult(blockers: string[], nextStep: PeptidesPreviewResult["
     status: "review_required",
     moleculeCount: 0,
     molecules: [],
+    moleculeQuotes: [],
+    effectTimeline: [],
     estimatedStarterCostUsd: null,
     estimatedProtocolCostUsd: null,
     estimatedShippingCostUsd: null,
@@ -810,6 +894,14 @@ export function buildPeptidesPreview(
   } satisfies PeptidesPreviewMolecule));
 
   const maxDurationWeeks = Math.max(...quote.options.map((option) => option.math.durationWeeks));
+  const moleculeQuotes = quote.options.map((option, index) => ({
+    label: `Molécule ${index + 1}`,
+    family: publicPeptideFamily(option.selection.candidate.name),
+    role: option.selection.candidate.role,
+    activeDurationWeeks: option.math.activeDurationWeeks,
+    estimatedTotalPriceUsd: option.plan.totalPriceUsd,
+  } satisfies PeptidesPreviewPublicQuoteLine));
+  const effectTimeline = buildEffectTimeline(quote.options, maxDurationWeeks);
   const monthlyEquivalentUsd = Math.round((quote.grandTotalUsd / (maxDurationWeeks / 4)) * 100) / 100;
   const budgetFit = cents(quote.grandTotalUsd) <= cents(input.budgetTotalUsd) ? "within" : "above";
   const budgetExplanation = budgetFit === "within"
@@ -829,6 +921,8 @@ export function buildPeptidesPreview(
       status: "review_required",
       moleculeCount: selected.length,
       molecules: selected,
+      moleculeQuotes,
+      effectTimeline,
       estimatedStarterCostUsd: selected.reduce((sum, item) => sum + item.startingPackagePriceUsd, 0),
       estimatedProtocolCostUsd: quote.productSubtotalUsd,
       estimatedShippingCostUsd: shippingQuotes ? quote.shippingUsd : null,
@@ -853,6 +947,8 @@ export function buildPeptidesPreview(
     status: "eligible",
     moleculeCount: selected.length,
     molecules: selected,
+    moleculeQuotes,
+    effectTimeline,
     estimatedStarterCostUsd: selected.reduce((sum, item) => sum + item.startingPackagePriceUsd, 0),
     estimatedProtocolCostUsd: quote.productSubtotalUsd,
     estimatedShippingCostUsd: shippingQuotes ? quote.shippingUsd : null,

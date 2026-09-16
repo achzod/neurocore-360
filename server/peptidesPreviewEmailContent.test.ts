@@ -82,6 +82,15 @@ const eligible: PeptidesPreviewEmailResult = {
     bufferedRequiredMg: 14.4, purchasedCapacityMg: 30, reserveCapacityMg: 18,
     vialStrengthMg: 10, mathematicalVials: 2, operationalVials: 2, safetyReserveVials: 1, vialsRequired: 3, vialsPurchased: 3, packageCount: 3, estimatedTotalPriceUsd: 60.09,
   }],
+  moleculeQuotes: [
+    { label: "Molécule 1", family: "Peptides neuroendocriniens de l’axe HPG", role: "Axe hormonal", activeDurationWeeks: 12, estimatedTotalPriceUsd: 62.38 },
+    { label: "Molécule 2", family: "Peptides mélanocortinergiques", role: "Support libido", activeDurationWeeks: 12, estimatedTotalPriceUsd: 60.09 },
+  ],
+  effectTimeline: Array.from({ length: 12 }, (_, index) => ({
+    week: index + 1,
+    title: index < 4 ? "Installation progressive" : "Consolidation",
+    effects: ["Peptides neuroendocriniens · progression attendue de l’axe hormonal.", "Peptides mélanocortinergiques · soutien positif attendu de la réponse sexuelle."],
+  })),
   estimatedStarterCostUsd: 51.22,
   estimatedProtocolCostUsd: 122.47,
   estimatedShippingCostUsd: 60,
@@ -130,6 +139,11 @@ test("eligible client receives the direct recommendation, arithmetic, landed quo
   for (const expected of [input.goalDetails, "Nombre de molécules", "Durée de la stratégie", "$122.47", "$60.00", "$182.47", "marge de 20 %", "protocole plus poussé et plus précis"]) {
     assert.match(content.html, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
     assert.match(content.text, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+  for (const expected of ["Molécule 1", "Peptides neuroendocriniens", "$62.38", "Molécule 2", "Peptides mélanocortinergiques", "$60.09", "SEMAINE 12"]) {
+    const pattern = new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+    assert.match(content.html, pattern);
+    assert.match(content.text, pattern);
   }
   assert.doesNotMatch(content.html, /KissPeptin-10|PT-141|200 mcg|1 mg|Dose de référence/);
   assert.doesNotMatch(content.text, /KissPeptin-10|PT-141|200 mcg|1 mg|Dose de référence/);
