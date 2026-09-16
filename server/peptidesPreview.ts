@@ -345,25 +345,49 @@ function calculateProtocolMath(candidate: Candidate): ProtocolMath | null {
 
 type CandidateSelection = { candidate: Candidate; goal: Goal; priority: "primary" | "secondary" };
 
-function candidatesForGoal(input: PeptidesPreviewInput, goal: Goal, primary: boolean): Candidate[] {
+function needsSecondCandidateForGoal(input: PeptidesPreviewInput, goal: Goal): boolean {
+  const selectedGoals = new Set<Goal>([input.primaryGoal, ...input.secondaryGoals]);
+  switch (goal) {
+    case "recovery":
+      return input.recoveryScope === "multi-site" || input.recoveryScope === "systemic";
+    case "gh-antiaging":
+      return input.sleepHours < 7 || input.trainingFrequency === "5plus" || selectedGoals.has("recovery") || selectedGoals.has("sleep");
+    case "fatloss":
+      return input.trainingFrequency === "5plus" || selectedGoals.has("endurance");
+    case "sleep":
+      return selectedGoals.has("cognitive") && ["moderate", "high"].includes(input.cognitiveStress);
+    case "cognitive":
+      return ["moderate", "high"].includes(input.cognitiveStress);
+    case "libido":
+      return selectedGoals.has("testo-boost");
+    case "testo-boost":
+      return selectedGoals.has("libido");
+    case "skin-hair":
+      return selectedGoals.has("recovery") && input.recoveryScope !== "localized";
+    case "endurance":
+      return input.trainingFrequency === "5plus" || selectedGoals.has("recovery");
+  }
+  return false;
+}
+
+function candidatesForGoal(input: PeptidesPreviewInput, goal: Goal): Candidate[] {
   const candidates = candidatesByGoal[goal];
-  if (!primary) return candidates.slice(0, 1);
-  return candidates;
+  return candidates.slice(0, needsSecondCandidateForGoal(input, goal) ? 2 : 1);
 }
 
 function uniqueCandidates(input: PeptidesPreviewInput): CandidateSelection[] {
-  const primary = candidatesForGoal(input, input.primaryGoal, true).map((candidate) => ({ candidate, goal: input.primaryGoal, priority: "primary" as const }));
-  const secondary = input.secondaryGoals.flatMap((goal) => candidatesForGoal(input, goal, false).map((candidate) => ({ candidate, goal, priority: "secondary" as const })));
+  const primary = candidatesForGoal(input, input.primaryGoal).map((candidate) => ({ candidate, goal: input.primaryGoal, priority: "primary" as const }));
+  const secondary = input.secondaryGoals.flatMap((goal) => candidatesForGoal(input, goal).map((candidate) => ({ candidate, goal, priority: "secondary" as const })));
   const seen = new Set<string>();
-  // The estimate covers a credible multi-axis protocol: two molecules minimum
-  // and four maximum. Names and doses stay server-side.
-  const maximumMolecules = 4;
+  // Every included molecule must be attributable to a profile condition. A
+  // client can need one molecule or several per selected axis; never pad the
+  // estimate to reach a minimum count.
   return [...primary, ...secondary].filter(({ candidate }) => {
     const key = normalize(candidate.name);
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
-  }).slice(0, maximumMolecules);
+  });
 }
 
 function operationalVials(candidate: Candidate, math: ProtocolMath, vialMg: number): number {
@@ -747,22 +771,33 @@ function eligibleNarrative(
 ): Pick<PeptidesPreviewResult, "headline" | "rationale" | "analysisPoints" | "requiredMarkers" | "nextStepExplanation"> {
   const primary = goalLabels[input.primaryGoal];
   const roles = selected.map((item) => item.role.toLocaleLowerCase("fr-FR"));
+  const primaryMoleculeCount = candidatesForGoal(input, input.primaryGoal).length;
   const points = [
-    `Ta priorité ${primary} est traduite en ${selected.length} axes distincts : ${frenchList(roles)}.`,
+    `Ta priorité ${primary} est traduite en ${selected.length} axe${selected.length > 1 ? "s" : ""} justifié${selected.length > 1 ? "s" : ""} : ${frenchList(roles)}.`,
   ];
   if (input.primaryGoal === "recovery") {
     const scope = input.recoveryScope === "localized" ? "une zone précise" : input.recoveryScope === "systemic" ? "une récupération générale" : "plusieurs zones";
-    points.push(`Tu as décrit ${scope} : le calcul combine une action ciblée et un soutien systémique au lieu de dupliquer deux leviers identiques.`);
+    points.push(primaryMoleculeCount > 1
+      ? `Tu as décrit ${scope} : ce besoin justifie une action ciblée et un soutien systémique distincts.`
+      : `Tu as décrit ${scope} : un seul axe ciblé suffit dans cette estimation, sans ajouter une seconde molécule artificiellement.`);
   }
-  if (input.primaryGoal === "gh-antiaging") points.push(`Ton bilan est déclaré récent et les deux axes retenus restent actifs pendant douze semaines, au lieu d’afficher douze semaines tout en n’en chiffrant que huit.`);
-  if (input.primaryGoal === "cognitive") points.push(`Ton stress cognitif déclaré ${input.cognitiveStress === "high" ? "élevé" : input.cognitiveStress === "moderate" ? "modéré" : "faible"} conduit à associer performance mentale et stabilité, plutôt qu’un seul axe de stimulation.`);
+  if (input.primaryGoal === "gh-antiaging") points.push(primaryMoleculeCount > 1
+    ? `Ton sommeil, ta charge d’entraînement ou tes objectifs associés justifient deux leviers complémentaires, tous deux chiffrés sur leurs semaines réellement actives.`
+    : `Ton profil ne justifie qu’un seul levier GH dans cette estimation ; aucun sécrétagogue complémentaire n’est ajouté par défaut.`);
+  if (input.primaryGoal === "cognitive") points.push(primaryMoleculeCount > 1
+    ? `Ton stress cognitif déclaré ${input.cognitiveStress === "high" ? "élevé" : "modéré"} justifie d’associer performance mentale et stabilité.`
+    : "Ton stress cognitif déclaré faible permet de conserver un seul axe de performance mentale dans cette estimation.");
   if (input.primaryGoal === "fatloss") {
     const bmi = input.weightKg / ((input.heightCm / 100) ** 2);
     points.push(`À ${input.weightKg} kg pour ${input.heightCm} cm, avec un IMC d’environ ${bmi.toFixed(1)} et un historique GLP-1 « ${input.glp1History === "never" ? "jamais utilisé" : "déjà utilisé et bien toléré"} », la progression métabolique est chiffrée sur les phases actives complètes.`);
   }
-  if (input.primaryGoal === "sleep") points.push(`Avec ${input.sleepHours} heures de sommeil déclarées, le scénario sépare architecture du sommeil et stabilité nerveuse au lieu de basculer automatiquement vers un axe GH.`);
-  if (input.primaryGoal === "endurance") points.push(`Avec ${trainingFrequencyLabels[input.trainingFrequency]}, le calcul associe efficience énergétique et fonction mitochondriale sur deux fenêtres actives différentes.`);
-  if (input.secondaryGoals.length) points.push(`Tes objectifs secondaires, ${frenchList(input.secondaryGoals.map((goal) => goalLabels[goal]))}, ne sont conservés que s’ils renforcent la priorité sans dépasser quatre molécules.`);
+  if (input.primaryGoal === "sleep") points.push(primaryMoleculeCount > 1
+    ? `Avec ${input.sleepHours} heures de sommeil et le stress cognitif déclaré, le scénario sépare architecture du sommeil et stabilité nerveuse.`
+    : `Avec ${input.sleepHours} heures de sommeil déclarées, le scénario conserve un seul axe centré sur l’architecture du sommeil.`);
+  if (input.primaryGoal === "endurance") points.push(primaryMoleculeCount > 1
+    ? `Avec ${trainingFrequencyLabels[input.trainingFrequency]}, la charge justifie d’associer efficience énergétique et fonction mitochondriale.`
+    : `Avec ${trainingFrequencyLabels[input.trainingFrequency]}, un seul axe d’efficience énergétique suffit dans cette estimation.`);
+  if (input.secondaryGoals.length) points.push(`Tes objectifs secondaires, ${frenchList(input.secondaryGoals.map((goal) => goalLabels[goal]))}, n’ajoutent une molécule que lorsqu’un besoin distinct de ton profil le justifie.`);
   points.push(`L’exécution tient compte de ta limite de ${frequencyLabels[input.injectionFrequency]} et de ton accès à ${refrigerationLabels[input.refrigeration]}.`);
   const budgetDelta = input.budgetTotalUsd - grandTotalUsd;
   points.push(budgetDelta >= 0
