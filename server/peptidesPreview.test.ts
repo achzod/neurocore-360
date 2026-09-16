@@ -232,6 +232,22 @@ test("a box of 10 is preferred when it adds stock for no more than fifteen perce
   assert.equal(result.shippingBreakdown.length, 1);
 });
 
+test("a standard box of 10 is still compared when it covers between six and ten cycles", () => {
+  const semaglutide = snapshot("Semaglutide", 16.47, "10mg", "One Lab", 1);
+  semaglutide.listings.push(snapshot("Semaglutide", 56, "5mg", "One Lab", 10).listings[0]);
+  const shipping: PeptauraShippingQuote[] = [{ supplier: "One Lab", displayName: "One Lab", available: true, minimumOrderUsd: null, tiers: [{ minOrderUsd: 0, maxOrderUsd: null, costUsd: 60, speed: "standard" }] }];
+  const input = peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "fatloss", glp1History: "never", injectionFrequency: "weekly", weightKg: 105, heightCm: 180, bodyFatRange: "over30", trainingFrequency: "3-4", goalDetails: "Réduire la masse grasse et mieux contrôler l’appétit avec une stratégie simple." });
+  const result = buildPeptidesPreview(input, [semaglutide], new Date().toISOString(), shipping);
+  const selected = result.molecules[0];
+  assert.equal(selected.totalRequiredMg, 7);
+  assert.equal(selected.vialsRequired, 3);
+  assert.equal(selected.vialStrengthMg, 5);
+  assert.equal(selected.vialsPurchased, 10);
+  assert.equal(selected.purchasedCapacityMg, 50);
+  assert.equal(selected.estimatedTotalPriceUsd, 56);
+  assert.deepEqual(selected.purchaseLines?.map((line) => ({ boxSize: line.boxSize, packages: line.packageCount })), [{ boxSize: 10, packages: 1 }]);
+});
+
 test("a same-format listing with the better quantity tier is not discarded", () => {
   const bpc = snapshot("BPC-157", 20, "10mg", "One Lab", 1);
   const tiered = snapshot("BPC-157", 30, "10mg", "One Lab", 1).listings[0];

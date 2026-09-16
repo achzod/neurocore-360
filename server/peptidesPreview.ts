@@ -527,7 +527,7 @@ type PlannedOption = {
 
 const STOCK_RESERVE_RATIO = 0.25;
 const RICHER_CART_PRICE_TOLERANCE = 0.15;
-const MAX_STANDARD_CYCLE_COVERAGE = 6;
+const MAX_STANDARD_CYCLE_COVERAGE = 10;
 
 function reserveTargetMg(math: ProtocolMath): number {
   const weeklyUse = new Map<number, number>();
@@ -624,10 +624,11 @@ function preferredMixedPackagePlan(
   const packageOptions = [...listingsByBoxSize.entries()].map(([boxSize, group]) => ({ boxSize, listings: group }));
   if (packageOptions.length === 0) return null;
   // Explore both unit listings and real bulk boxes. Standard plans may cover up
-  // to four active cycles; this keeps a discounted box of 10 available when it
-  // is economically superior without turning tiny protocols into huge blind
-  // stock. If only a larger mandatory box exists, retain it as a visible
-  // fallback rather than pretending the product can be bought by the unit.
+  // to ten active cycles so a genuine box of 10 is not discarded merely because
+  // a unit SKU exists. Price tolerance still prevents expensive blind stock,
+  // while the coverage ceiling rejects disproportionate boxes for tiny cycles.
+  // If only a larger mandatory box exists, retain it as a visible fallback
+  // rather than pretending the product can be bought by the unit.
   const operationalCoverage = operationalVialCount * vialMg / activeNeedMg;
   const standardCoverage = Math.max(MAX_STANDARD_CYCLE_COVERAGE, operationalCoverage);
   const maximumStandardVials = Math.max(requestedVials, Math.floor(activeNeedMg * standardCoverage / vialMg + Number.EPSILON));
