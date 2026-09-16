@@ -14384,9 +14384,16 @@ export async function registerRoutes(
       const resultEmailSent = queuedNotifications?.clientEmailSent === true;
       const adminNotificationSent = queuedNotifications?.adminEmailSent === true;
       const notificationDeliveryState = String(queuedNotifications?.deliveryState || "queued");
+      const {
+        molecules: _privateMolecules,
+        estimatedStarterCostUsd: _privateStarterCost,
+        totalVialsRequired: _privateRequiredVials,
+        totalVialsPurchased: _privatePurchasedVials,
+        totalPackages: _privatePackages,
+        ...publicResultCore
+      } = result;
       const publicResult = {
-        ...result,
-        molecules: [],
+        ...publicResultCore,
         shippingBreakdown: result.shippingBreakdown.map(({ supplier: _supplier, ...line }, index) => ({ ...line, supplier: `Expédition ${index + 1}` })),
       };
       res.json({

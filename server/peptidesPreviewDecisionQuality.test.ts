@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import fs from "node:fs";
 import { buildPeptidesPreview, peptidesPreviewInputSchema } from "./peptidesPreview";
-import type { PeptauraFeedProductSnapshot } from "./peptauraProductFeed";
+import type { PeptauraFeedProductSnapshot, PeptauraShippingQuote } from "./peptauraProductFeed";
 
 const base = { firstName: "Karim", email: "karim@example.com", age: 38, weightKg: 88, heightCm: 180, sex: "male", bodyFatRange: "20-25", primaryGoal: "testo-boost", secondaryGoals: [], goalDetails: "Fatigue, libido basse et récupération réduite depuis plusieurs mois.", timeline: "12plus", recoveryScope: "not-applicable", glp1History: "not-applicable", cognitiveStress: "not-applicable", conditions: ["none"], bloodwork: "never", bloodPressure: "normal", sleepHours: 6, injectionComfort: "possible", injectionFrequency: "twice-daily", refrigeration: "yes-private", experience: "none", trainingFrequency: "3-4", budgetTotalUsd: 400, country: "FR", medications: "aucun", allergies: "aucune", currentPeptides: "aucun", pastPeptides: "aucun", startWhen: "1-2weeks", consent: true, attribution: {} } as const;
 function snapshot(name: string, price = 20, dosage = "10mg"): PeptauraFeedProductSnapshot { return { slug: name, url: `https://supplier.invalid/${name}`, fetchedAt: new Date().toISOString(), live: true, source: "product_feed", sourceGeneratedAt: new Date().toISOString(), listings: [{ id: Math.round(price * 100), name, dosage, supplier: "Verified", supplierDisplayName: "Verified", outOfStock: false, form: "vial", priceTiers: [{ price, minQty: 1 }], warehouse: "EU", shippingOptionCount: 1, orderingMode: "available", enabled: true, suspended: false, boxSize: 1, marginRate: 0, productUrl: `https://supplier.invalid/product/${name}` }] }; }
@@ -41,12 +41,40 @@ test("public surfaces hide molecule names and doses while admin content preserve
   const routes = fs.readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
   const emails = fs.readFileSync(new URL("./peptidesPreviewEmailContent.ts", import.meta.url), "utf8");
   assert.doesNotMatch(ui, /m\.name|m\.doseSummary|m\.calculationBasis/);
-  assert.match(routes, /const publicResult = \{[\s\S]*molecules:\s*\[\]/);
+  assert.match(routes, /molecules:\s*_privateMolecules/);
+  assert.match(routes, /totalVialsPurchased:\s*_privatePurchasedVials/);
   assert.match(emails, /Calcul interne dosage → fioles → prix/);
   assert.match(emails, /mathematicalVials/);
   assert.match(emails, /operationalVials/);
   assert.match(emails, /safetyReserveVials/);
   assert.match(emails, /vialsPurchased/);
+});
+
+test("public quote exposes anonymous families, exact line prices and a twelve-week effect timeline", () => {
+  const shipping: PeptauraShippingQuote[] = [{ supplier: "Verified", displayName: "Verified", available: true, minimumOrderUsd: null, tiers: [{ minOrderUsd: 0, maxOrderUsd: null, costUsd: 60, speed: "7 à 14 jours" }] }];
+  const result = buildPeptidesPreview(peptidesPreviewInputSchema.parse(base), core, "2026-09-16T00:00:00.000Z", shipping);
+  assert.equal(result.moleculeQuotes.length, result.moleculeCount);
+  assert.equal(result.effectTimeline.length, 12);
+  assert.ok(result.effectTimeline.every((entry) => entry.effects.length === result.moleculeCount));
+  assert.equal(
+    Number(result.moleculeQuotes.reduce((sum, line) => sum + line.estimatedTotalPriceUsd, 0).toFixed(2)),
+    result.estimatedProtocolCostUsd,
+  );
+  assert.equal(Number(((result.estimatedProtocolCostUsd || 0) + (result.estimatedShippingCostUsd || 0)).toFixed(2)), result.estimatedGrandTotalUsd);
+  assert.equal(result.estimatedShippingCostUsd, 60);
+  result.molecules.forEach((molecule, index) => {
+    assert.equal(molecule.bufferedRequiredMg, Number((molecule.totalRequiredMg * 1.2).toFixed(3)));
+    assert.ok(molecule.purchasedCapacityMg >= molecule.bufferedRequiredMg);
+    assert.equal(molecule.purchasedCapacityMg, Number((molecule.vialsPurchased * molecule.vialStrengthMg).toFixed(3)));
+    assert.equal(molecule.reserveCapacityMg, Number((molecule.purchasedCapacityMg - molecule.totalRequiredMg).toFixed(3)));
+    assert.equal(result.moleculeQuotes[index].estimatedTotalPriceUsd, molecule.estimatedTotalPriceUsd);
+  });
+  assert.deepEqual(result.moleculeQuotes.map((line) => line.label), ["Molécule 1", "Molécule 2"]);
+  assert.ok(result.moleculeQuotes.every((line) => line.family.startsWith("Peptides ") && line.activeDurationWeeks > 0));
+  const { molecules: _molecules, estimatedStarterCostUsd: _starter, totalVialsRequired: _required, totalVialsPurchased: _purchased, totalPackages: _packages, ...publicResult } = result;
+  const publicPayload = JSON.stringify(publicResult);
+  assert.doesNotMatch(publicPayload, /KissPeptin|Kisspeptin|PT-141|\b\d+(?:\.\d+)?\s*(?:mcg|mg)\b|doseSummary|vialsPurchased|supplier\.invalid/i);
+  assert.match(publicPayload, /Peptides neuroendocriniens|Peptides mélanocortinergiques/);
 });
 
 test("secondary goals still require their decision inputs", () => {
