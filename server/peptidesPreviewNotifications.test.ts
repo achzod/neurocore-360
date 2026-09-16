@@ -72,7 +72,7 @@ test("client and admin emails expose arithmetic, landed quote and conversion cop
   assert.match(emailContentSource, /estimatedTotalPriceUsd/);
   assert.match(emailContentSource, /TON ESTIMATION RAPIDE/);
   assert.match(emailContentSource, /Nombre de molécules/);
-  assert.match(emailContentSource, /Durée estimée/);
+  assert.match(emailContentSource, /Durée de la stratégie/);
   assert.match(emailContentSource, /protocole plus poussé et plus précis/);
   assert.match(emailContentSource, /MAIL PRÊT À COPIER COLLER/);
   assert.match(emailContentSource, /Accéder à Peptides Engine/);
@@ -86,7 +86,7 @@ test("client and admin emails expose arithmetic, landed quote and conversion cop
   assert.match(previewRoute, /adminNotificationSent/);
   assert.match(previewRoute, /notificationDeliveryState/);
   assert.match(previewRoute, /publicResult/);
-  assert.match(previewRoute, /molecules:\s*\[\]/);
-  assert.match(previewRoute, /const publicResult = \{[\s\S]*molecules:\s*\[\]/);
+  assert.match(previewRoute, /molecules:\s*_privateMolecules/);
+  assert.match(previewRoute, /result:\s*publicResult/);
   assert.doesNotMatch(allEmailSource, /\$\{molecule\.supplier\}/);
 });

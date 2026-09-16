@@ -34,6 +34,13 @@ test("two secondary goals add only their attributable molecules", () => {
   const result = buildPeptidesPreview(input, [...core, snapshot("DSIP", 13.95, "5mg"), snapshot("GHK-Cu", 10.65, "50mg")]);
   assert.equal(result.moleculeCount, 3);
   assert.deepEqual(result.molecules.map((m) => m.name), ["KissPeptin-10", "DSIP", "GHK-Cu"]);
+  const ghk = result.molecules.find((molecule) => molecule.name === "GHK-Cu");
+  assert.ok(ghk);
+  assert.equal(ghk.totalRequiredMg, 112);
+  assert.equal(ghk.bufferedRequiredMg, 134.4);
+  assert.equal(ghk.vialStrengthMg, 50);
+  assert.equal(ghk.operationalVials, 4);
+  assert.equal(ghk.vialsPurchased, 4);
 });
 
 test("one axis can legitimately expand from one to two molecules", () => {

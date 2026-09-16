@@ -305,9 +305,16 @@ function selankProtocol(input: PeptidesPreviewInput): ResolvedProtocol {
   return fixedProtocol([{ doseMg: 0.25, administrationsPerWeek, weeks: 4 }], 12, "intranasal", `250 mcg par administration, ${administrationsPerWeek / 7} fois/jour selon le stress cognitif`);
 }
 
-function ghkProtocol(input: PeptidesPreviewInput, _goal: Goal): ResolvedProtocol {
-  const doseMg = input.primaryGoal === "skin-hair" ? 2 : 1;
-  return fixedProtocol([{ doseMg, administrationsPerWeek: 5, weeks: 8 }], 12, "subcutaneous", `${doseMg} mg, 5 fois/semaine pendant 8 semaines selon la priorité de l’axe cutané`);
+function ghkProtocol(_input: PeptidesPreviewInput, _goal: Goal): ResolvedProtocol {
+  // Once GHK-Cu is justified by the profile, it receives the complete active
+  // protocol. A secondary goal decides whether the molecule is included; it
+  // must never silently halve the dose of an included molecule.
+  return fixedProtocol(
+    [{ doseMg: 2, administrationsPerWeek: 7, weeks: 8 }],
+    12,
+    "subcutaneous",
+    "2 mg par jour pendant 8 semaines ; protocole complet identique que l’axe cutané soit primaire ou secondaire",
+  );
 }
 
 function ss31Protocol(input: PeptidesPreviewInput): ResolvedProtocol {
