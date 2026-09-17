@@ -989,7 +989,6 @@ export function buildPeptidesPreview(
   for (const condition of conditions) if (hardReviewConditions.has(condition)) addBlocker(condition);
   if (conditions.includes("autoimmune")) addBlocker("maladie_autoimmune_a_integrer");
   if (goals.includes("testo-boost") && input.bloodwork !== "recent") addBlocker("bilan_hormonal_recent_requis");
-  if (goals.includes("testo-boost") && input.bloodwork === "recent") addBlocker("protocole_hpg_a_personnaliser");
   if (goals.includes("gh-antiaging") && input.bloodwork !== "recent") addBlocker("bilan_gh_recent_requis");
   if (goals.includes("libido") && (input.conditions.includes("hypertension") || ["high", "unknown"].includes(input.bloodPressure))) addBlocker("pression_arterielle_a_verifier");
   if (goals.includes("fatloss") && input.conditions.includes("diabetes")) addBlocker("profil_glycemique_a_revoir");
