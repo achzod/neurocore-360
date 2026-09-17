@@ -526,7 +526,6 @@ type PlannedOption = {
 };
 
 const STOCK_RESERVE_RATIO = 0.25;
-const RICHER_CART_PRICE_TOLERANCE = 0.15;
 const MAX_STANDARD_CYCLE_COVERAGE = 10;
 
 function reserveTargetMg(math: ProtocolMath): number {
@@ -624,9 +623,9 @@ function preferredMixedPackagePlan(
   const packageOptions = [...listingsByBoxSize.entries()].map(([boxSize, group]) => ({ boxSize, listings: group }));
   if (packageOptions.length === 0) return null;
   // Explore both unit listings and real bulk boxes. Standard plans may cover up
-  // to ten active cycles so a genuine box of 10 is not discarded merely because
-  // a unit SKU exists. Price tolerance still prevents expensive blind stock,
-  // while the coverage ceiling rejects disproportionate boxes for tiny cycles.
+  // to ten active cycles so a genuine box of 10 is compared rather than hidden.
+  // Among sufficient carts, select the cheapest purchasable cart; extra stock
+  // never justifies charging more in a public estimate.
   // If only a larger mandatory box exists, retain it as a visible fallback
   // rather than pretending the product can be bought by the unit.
   const operationalCoverage = operationalVialCount * vialMg / activeNeedMg;
@@ -675,14 +674,11 @@ function preferredMixedPackagePlan(
   if (plans.length === 0) return null;
   const standardPlans = plans.filter((plan) => plan.deliveredVials <= maximumStandardVials);
   const pool = standardPlans.length > 0 ? standardPlans : plans;
-  const cheapestTotalCents = Math.min(...pool.map((plan) => cents(plan.totalPriceUsd)));
-  const toleratedTotalCents = Math.floor(cheapestTotalCents * (1 + RICHER_CART_PRICE_TOLERANCE));
-  const selected = pool.filter((plan) => cents(plan.totalPriceUsd) <= toleratedTotalCents)
-    .sort((a, b) =>
-      b.deliveredVials - a.deliveredVials
-      || cents(a.totalPriceUsd) - cents(b.totalPriceUsd)
-      || a.packageCount - b.packageCount
-    )[0];
+  const selected = pool.sort((a, b) =>
+    cents(a.totalPriceUsd) - cents(b.totalPriceUsd)
+    || a.deliveredVials - b.deliveredVials
+    || a.packageCount - b.packageCount
+  )[0];
   const representative = selected.lines[0].listing;
   return {
     listing: representative,
@@ -816,14 +812,12 @@ function selectQuotedCombination(
     }];
   });
   if (quoted.length === 0) return null;
-  const cheapestLandedCents = Math.min(...quoted.map((quote) => cents(quote.grandTotalUsd)));
-  const toleratedLandedCents = Math.floor(cheapestLandedCents * (1 + RICHER_CART_PRICE_TOLERANCE));
-  return quoted.filter((quote) => cents(quote.grandTotalUsd) <= toleratedLandedCents)
-    .sort((a, b) => {
+  return quoted.sort((a, b) => {
+      const landedDelta = cents(a.grandTotalUsd) - cents(b.grandTotalUsd);
+      if (landedDelta !== 0) return landedDelta;
       const reserveScoreA = a.options.reduce((sum, option) => sum + option.plan.deliveredMg / option.reserveTargetMg, 0);
       const reserveScoreB = b.options.reduce((sum, option) => sum + option.plan.deliveredMg / option.reserveTargetMg, 0);
       return reserveScoreB - reserveScoreA
-        || cents(a.grandTotalUsd) - cents(b.grandTotalUsd)
         || a.shippingBreakdown.length - b.shippingBreakdown.length
         || cents(a.productSubtotalUsd) - cents(b.productSubtotalUsd);
     })[0] || null;

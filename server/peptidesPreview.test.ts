@@ -217,7 +217,7 @@ test("landed-cost optimization includes shipping once per supplier", () => {
   assert.equal(result.estimatedShippingCostUsd, 10);
 });
 
-test("a box of 10 is preferred when it adds stock for no more than fifteen percent extra", () => {
+test("the cheapest sufficient cart wins even when a larger box adds stock", () => {
   const bpc = snapshot("BPC-157", 30, "10mg", "One Lab", 1);
   bpc.listings.push(snapshot("BPC-157", 100, "10mg", "One Lab", 10).listings[0]);
   const tb = snapshot("TB500", 20, "10mg", "One Lab", 1);
@@ -225,14 +225,14 @@ test("a box of 10 is preferred when it adds stock for no more than fifteen perce
   const result = buildPeptidesPreview(peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "recovery" }), [bpc, tb], new Date().toISOString(), shipping);
   const selected = result.molecules.find((molecule) => molecule.name === "BPC-157")!;
   assert.equal(selected.vialsRequired, 3);
-  assert.equal(selected.vialsPurchased, 10);
-  assert.equal(selected.estimatedTotalPriceUsd, 100);
-  assert.deepEqual(selected.purchaseLines?.map((line) => ({ boxSize: line.boxSize, packages: line.packageCount })), [{ boxSize: 10, packages: 1 }]);
+  assert.equal(selected.vialsPurchased, 3);
+  assert.equal(selected.estimatedTotalPriceUsd, 90);
+  assert.deepEqual(selected.purchaseLines?.map((line) => ({ boxSize: line.boxSize, packages: line.packageCount })), [{ boxSize: 1, packages: 3 }]);
   assert.equal(result.estimatedShippingCostUsd, 60);
   assert.equal(result.shippingBreakdown.length, 1);
 });
 
-test("a standard box of 10 is still compared when it covers between six and ten cycles", () => {
+test("a standard box of 10 is compared but cannot beat a cheaper sufficient unit cart", () => {
   const semaglutide = snapshot("Semaglutide", 16.47, "10mg", "One Lab", 1);
   semaglutide.listings.push(snapshot("Semaglutide", 56, "5mg", "One Lab", 10).listings[0]);
   const shipping: PeptauraShippingQuote[] = [{ supplier: "One Lab", displayName: "One Lab", available: true, minimumOrderUsd: null, tiers: [{ minOrderUsd: 0, maxOrderUsd: null, costUsd: 60, speed: "standard" }] }];
@@ -241,11 +241,30 @@ test("a standard box of 10 is still compared when it covers between six and ten 
   const selected = result.molecules[0];
   assert.equal(selected.totalRequiredMg, 7);
   assert.equal(selected.vialsRequired, 3);
+  assert.equal(selected.vialStrengthMg, 10);
+  assert.equal(selected.vialsPurchased, 3);
+  assert.equal(selected.purchasedCapacityMg, 30);
+  assert.equal(selected.estimatedTotalPriceUsd, 49.41);
+  assert.deepEqual(selected.purchaseLines?.map((line) => ({ boxSize: line.boxSize, packages: line.packageCount })), [{ boxSize: 1, packages: 3 }]);
+});
+
+test("the live semaglutide formats quote three 5 mg vials instead of a richer 30 mg cart", () => {
+  const semaglutide = snapshot("Semaglutide", 11.92, "5mg", "Lumira", 1);
+  semaglutide.listings.push(snapshot("Semaglutide", 16.47, "10mg", "Lumira", 1).listings[0]);
+  semaglutide.listings.push(snapshot("Semaglutide", 61.10, "5mg", "Lumira", 10).listings[0]);
+  semaglutide.listings.push(snapshot("Semaglutide", 84.50, "10mg", "Lumira", 10).listings[0]);
+  const shipping: PeptauraShippingQuote[] = [{ supplier: "Lumira", displayName: "Lumira", available: true, minimumOrderUsd: null, tiers: [{ minOrderUsd: 0, maxOrderUsd: 1300, costUsd: 60, speed: "standard" }] }];
+  const input = peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "fatloss", secondaryGoals: [], glp1History: "never", injectionFrequency: "weekly", weightKg: 105, heightCm: 180, bodyFatRange: "over30", trainingFrequency: "3-4", goalDetails: "Réduire la masse grasse et mieux contrôler l’appétit avec une stratégie simple." });
+  const result = buildPeptidesPreview(input, [semaglutide], new Date().toISOString(), shipping);
+  const selected = result.molecules[0];
+  assert.equal(selected.totalRequiredMg, 7);
   assert.equal(selected.vialStrengthMg, 5);
-  assert.equal(selected.vialsPurchased, 10);
-  assert.equal(selected.purchasedCapacityMg, 50);
-  assert.equal(selected.estimatedTotalPriceUsd, 56);
-  assert.deepEqual(selected.purchaseLines?.map((line) => ({ boxSize: line.boxSize, packages: line.packageCount })), [{ boxSize: 10, packages: 1 }]);
+  assert.equal(selected.vialsRequired, 3);
+  assert.equal(selected.vialsPurchased, 3);
+  assert.equal(selected.purchasedCapacityMg, 15);
+  assert.equal(selected.estimatedTotalPriceUsd, 35.76);
+  assert.equal(result.estimatedShippingCostUsd, 60);
+  assert.equal(result.estimatedGrandTotalUsd, 95.76);
 });
 
 test("a same-format listing with the better quantity tier is not discarded", () => {
@@ -276,7 +295,7 @@ test("a mandatory box remains quotable and exposes the real purchased quantity",
   assert.equal(selected.estimatedTotalPriceUsd, 100);
 });
 
-test("bulk and single SKUs can be combined instead of buying every vial singly", () => {
+test("bulk and single SKUs combine into the cheapest exact sufficient quantity", () => {
   const mots = snapshot("MOTS-c", 15, "20mg", "One Lab", 1);
   const ss = snapshot("SS-31", 29.91, "3mg", "One Lab", 1);
   ss.listings.push(snapshot("SS-31", 180, "3mg", "One Lab", 10).listings[0]);
@@ -284,9 +303,9 @@ test("bulk and single SKUs can be combined instead of buying every vial singly",
   const result = buildPeptidesPreview(peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "endurance" }), [mots, ss], new Date().toISOString(), shipping);
   const selected = result.molecules.find((molecule) => molecule.name === "SS-31")!;
   assert.equal(selected.vialsRequired, 24);
-  assert.equal(selected.vialsPurchased, 30);
-  assert.equal(selected.estimatedTotalPriceUsd, 540);
-  assert.deepEqual(selected.purchaseLines?.map((line) => ({ boxSize: line.boxSize, packages: line.packageCount })), [{ boxSize: 10, packages: 3 }]);
+  assert.equal(selected.vialsPurchased, 24);
+  assert.equal(selected.estimatedTotalPriceUsd, 479.64);
+  assert.deepEqual(selected.purchaseLines?.map((line) => ({ boxSize: line.boxSize, packages: line.packageCount })), [{ boxSize: 1, packages: 4 }, { boxSize: 10, packages: 2 }]);
   assert.equal(result.estimatedShippingCostUsd, 60);
   assert.equal(result.shippingBreakdown.length, 1);
 });
