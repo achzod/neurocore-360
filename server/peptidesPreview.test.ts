@@ -63,6 +63,36 @@ test("eligible copy explains the actual axes, execution constraints and budget i
   assert.doesNotMatch(copy, /Ton objectif .* pilote la sélection|La stratégie de référence est chiffrée/i);
 });
 
+test("recent bloodwork can produce an eligible three-axis estimate for fat loss, body composition and testosterone", () => {
+  const input = peptidesPreviewInputSchema.parse({
+    ...base,
+    age: 39,
+    weightKg: 92,
+    heightCm: 180,
+    bodyFatRange: "25-30",
+    primaryGoal: "fatloss",
+    secondaryGoals: ["gh-antiaging", "testo-boost"],
+    goalDetails: "Réduire la masse grasse, améliorer la composition corporelle et soutenir un axe testostérone déjà documenté par un bilan récent.",
+    bloodwork: "recent",
+    glp1History: "never",
+    trainingFrequency: "3-4",
+    sleepHours: 7,
+    injectionFrequency: "daily",
+    budgetTotalUsd: 500,
+  });
+  const result = buildPeptidesPreview(input, catalog, "2026-09-17T08:00:00Z", franceShipping);
+  assert.equal(result.status, "eligible");
+  assert.equal(result.moleculeCount, 3);
+  assert.deepEqual(result.molecules.map((molecule) => molecule.name), ["Semaglutide", "CJC-1295 (no DAC)", "KissPeptin-10"]);
+  assert.deepEqual(result.molecules.map((molecule) => molecule.totalRequiredMg), [7, 11.592, 2.4]);
+  assert.deepEqual(result.molecules.map((molecule) => molecule.cycleDurationLabel), ["12 semaines actives", "12 semaines actives", "Stratégie 12 semaines · 8 semaines actives"]);
+  assert.deepEqual(result.moleculeQuotes.map((line) => line.family), ["Agonistes GLP-1", "Analogues GHRH", "Peptides neuroendocriniens de l’axe HPG"]);
+  assert.deepEqual(result.moleculeQuotes.map((line) => line.activeDurationWeeks), [12, 12, 8]);
+  assert.deepEqual(result.blockers, []);
+  assert.equal(result.estimatedShippingCostUsd, 60);
+  assert.equal(result.estimatedGrandTotalUsd, Number(((result.estimatedProtocolCostUsd || 0) + 60).toFixed(2)));
+});
+
 test("primary goals produce the profile-driven count and never less than twelve strategic weeks", () => {
   const expectedCounts = { recovery: 2, "gh-antiaging": 2, fatloss: 2, sleep: 1, cognitive: 2, libido: 1, "testo-boost": 1, "skin-hair": 1, endurance: 2 } as const;
   for (const primaryGoal of ["recovery", "gh-antiaging", "fatloss", "sleep", "cognitive", "libido", "testo-boost", "skin-hair", "endurance"] as const) {
