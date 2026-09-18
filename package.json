@@ -32,6 +32,7 @@
     "discovery:remediate-sent": "tsx scripts/remediate-sent-discovery.ts --dry-run",
     "discovery:backfill-artifacts": "tsx scripts/backfill-discovery-missing-artifacts.ts --dry-run",
     "test:recovery-cta-click": "tsx scripts/test-recovery-cta-click-followup.ts",
+    "test:peptides-preview-followup": "tsx --test server/peptidesPreviewFollowup.test.ts",
     "check:secret-source": "tsx scripts/check-secret-source-leaks.ts",
     "test:blood:regression": "tsx scripts/validate-blood-score-regression.ts",
     "qa:blood:dashboard": "tsx scripts/qa-blood-dashboard.ts",

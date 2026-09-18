@@ -42,6 +42,7 @@ import {
   type CoachingFormulaLeadInput,
 } from "./emailService";
 import { kickPeptidesPreviewDeliveryQueue, startPeptidesPreviewDeliveryWorker } from "./peptidesPreviewDeliveryQueue";
+import { processPeptidesPreviewFollowups, startPeptidesPreviewFollowupWorker } from "./peptidesPreviewFollowup";
 import { generateExportHTML, generateExportPDF } from "./exportService";
 import { generateAndConvertAuditWithOpenAI } from "./openaiPremiumEngine";
 import { formatTxtToDashboard, formatSectionToHTML, getSectionsByCategory } from "./formatDashboard";
@@ -14293,7 +14294,24 @@ export async function registerRoutes(
   // ==================== PEPTIDES ENGINE ROUTES ====================
 
   startPeptidesPreviewDeliveryWorker();
+  startPeptidesPreviewFollowupWorker();
   const peptidesLimiter = createRateLimiter({ windowMs: 60_000, max: 10 });
+
+  app.post("/api/admin/peptides-preview-followups", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const dryRun = req.body?.dryRun !== false;
+      const requestedMax = Math.min(Math.max(Number(req.body?.maxToSend) || 25, 1), 25);
+      const maxToSend = dryRun ? requestedMax : Math.min(requestedMax, 3);
+      const result = await processPeptidesPreviewFollowups({ dryRun, maxToSend });
+      res.json(result);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const expectedBlock = message === "PEPTIDES_PREVIEW_FOLLOWUP_DISABLED"
+        || message === "PEPTIDES_PREVIEW_FOLLOWUP_OUTSIDE_PARIS_WINDOW";
+      res.status(expectedBlock ? 409 : 500).json({ success: false, error: message });
+    }
+  });
 
   // Free pre-conversion preview. This deliberately stays deterministic: it
   // reveals the likely molecule count, rationale and a live Peptaura starter
