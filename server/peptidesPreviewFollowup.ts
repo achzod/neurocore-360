@@ -183,6 +183,21 @@ async function loadCandidates(now: Date): Promise<PeptidesPreviewFollowupCandida
                   AND ct.event_type IN ('unsubscribe', 'spam', 'bounce')
              )
         )
+        AND NOT EXISTS (
+          SELECT 1 FROM email_tracking completed
+           WHERE LOWER(completed.recipient_email) = LOWER(REPLACE(bp.email, 'peptides-preview::', ''))
+             AND completed.email_type = 'peptidesPreviewFollowupJ7'
+             AND (
+               completed.sendpulse_task_id IS NOT NULL
+               OR LOWER(COALESCE(completed.sendpulse_status, '')) IN ('success', 'sent', 'delivered')
+             )
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM email_tracking unresolved
+           WHERE LOWER(unresolved.recipient_email) = LOWER(REPLACE(bp.email, 'peptides-preview::', ''))
+             AND unresolved.email_type LIKE 'peptidesPreviewFollowup%'
+             AND LOWER(COALESCE(unresolved.sendpulse_status, '')) = 'pending'
+        )
       ORDER BY captured_at ASC
       LIMIT 500`,
     [PEPTIDES_PREVIEW_FOLLOWUP_START_AT, now.toISOString()],
