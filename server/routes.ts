@@ -14314,8 +14314,8 @@ export async function registerRoutes(
   });
 
   // Free pre-conversion preview. This deliberately stays deterministic: it
-  // reveals the likely molecule count, rationale and a live Peptaura starter
-  // estimate, while dosages, schedules and reconstitution remain paid output.
+  // exposes the reference-dose arithmetic, operational quantities and landed
+  // estimate. Reconstitution and the individualized weekly schedule remain paid output.
   app.post("/api/peptides-preview/analyze", createRateLimiter({ windowMs: 60_000, max: 5 }), async (req, res) => {
     try {
       const {
@@ -14325,7 +14325,7 @@ export async function registerRoutes(
       } = await import("./peptidesPreview");
       const input = peptidesPreviewInputSchema.parse(req.body);
       const liveCatalog = await getLivePeptauraPreviewCatalog(input.country);
-      const result = buildPeptidesPreview(input, liveCatalog.snapshots, liveCatalog.checkedAt, liveCatalog.shippingVendors);
+      const result = buildPeptidesPreview(input, liveCatalog.snapshots, liveCatalog.checkedAt, liveCatalog.shippingQuotes);
       const capturedAt = new Date().toISOString();
       const storageEmail = `peptides-preview::${input.email}`;
       const previous = await storage.getBurnoutProgress(storageEmail);
@@ -14340,16 +14340,21 @@ export async function registerRoutes(
             vials: item.vialsRequired,
             packages: item.packageCount,
             totalPriceUsd: item.estimatedTotalPriceUsd,
+            supplier: item.supplier,
           })),
           estimatedProtocolCostUsd: result.estimatedProtocolCostUsd,
+          estimatedShippingCostUsd: result.estimatedShippingCostUsd,
+          estimatedGrandTotalUsd: result.estimatedGrandTotalUsd,
           nextStep: result.nextStep,
         },
       })).digest("hex");
       const previousNotifications = previousResponses.previewNotifications as Record<string, any> | undefined;
-      const previousAt = Date.parse(String(previousNotifications?.attemptedAt || ""));
+      const previousActivityAt = Date.parse(String(
+        previousNotifications?.attemptedAt || previousNotifications?.queuedAt || "",
+      ));
       const isRecentDuplicate = previousNotifications?.fingerprint === notificationFingerprint
-        && Number.isFinite(previousAt)
-        && Date.now() - previousAt < 15 * 60_000;
+        && Number.isFinite(previousActivityAt)
+        && Date.now() - previousActivityAt < 15 * 60_000;
       const previousHistory = Array.isArray(previousResponses.previewHistory) ? previousResponses.previewHistory : [];
       const previousSubmission = previousHistory.at(-1) as Record<string, any> | undefined;
       const submissionId = isRecentDuplicate && previousSubmission?.submissionId
@@ -14392,21 +14397,33 @@ export async function registerRoutes(
           previewHistory: pendingHistory,
         },
       });
-      const checkoutUrl = result.nextStep === "blood_analysis"
-        ? "/offers/blood-analysis?utm_source=peptides_preview&utm_medium=result&utm_campaign=pre_peptides_engine"
-        : result.nextStep === "peptides_engine"
-          ? "/peptides-engine?tier=solo&utm_source=peptides_preview&utm_medium=result&utm_campaign=pre_peptides_engine"
-          : "/offers/peptides-engine?utm_source=peptides_preview&utm_medium=result&utm_campaign=pre_peptides_engine#offres";
+      const checkoutUrl = "/peptides-engine?tier=solo&utm_source=peptides_preview&utm_medium=result&utm_campaign=pre_peptides_engine";
       kickPeptidesPreviewDeliveryQueue();
       const resultEmailSent = queuedNotifications?.clientEmailSent === true;
+      const adminNotificationSent = queuedNotifications?.adminEmailSent === true;
+      const notificationDeliveryState = String(queuedNotifications?.deliveryState || "queued");
+      const {
+        molecules: _privateMolecules,
+        estimatedStarterCostUsd: _privateStarterCost,
+        totalVialsRequired: _privateRequiredVials,
+        totalVialsPurchased: _privatePurchasedVials,
+        totalPackages: _privatePackages,
+        ...publicResultCore
+      } = result;
+      const publicResult = {
+        ...publicResultCore,
+        shippingBreakdown: result.shippingBreakdown.map(({ supplier: _supplier, ...line }, index) => ({ ...line, supplier: `Expédition ${index + 1}` })),
+      };
       res.json({
         success: true,
         leadId: progress.id,
         submissionId,
-        result,
+        result: publicResult,
         checkoutUrl,
         resultEmailSent,
         resultEmailQueued: !resultEmailSent,
+        adminNotificationSent,
+        notificationDeliveryState,
       });
     } catch (error) {
       if (error instanceof z.ZodError) {

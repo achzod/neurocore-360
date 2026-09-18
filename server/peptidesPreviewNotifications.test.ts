@@ -4,6 +4,8 @@ import fs from "node:fs";
 
 const routesSource = fs.readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
 const emailSource = fs.readFileSync(new URL("./emailService.ts", import.meta.url), "utf8");
+const emailContentSource = fs.readFileSync(new URL("./peptidesPreviewEmailContent.ts", import.meta.url), "utf8");
+const allEmailSource = `${emailSource}\n${emailContentSource}`;
 const previewSource = fs.readFileSync(new URL("./peptidesPreview.ts", import.meta.url), "utf8");
 const queueSource = fs.readFileSync(new URL("./peptidesPreviewDeliveryQueue.ts", import.meta.url), "utf8");
 
@@ -31,11 +33,15 @@ test("every completed preview queues the client result and admin notification", 
   assert.match(queueSource, /sendPeptidesPreviewAdminNotification/);
   assert.match(emailSource, /export async function sendPeptidesPreviewResultEmail/);
   assert.match(emailSource, /export async function sendPeptidesPreviewAdminNotification/);
-  assert.equal((emailSource.match(/html: encodeBase64\(html\)/g) || []).length >= 2, true);
-  assert.match(emailSource, /Email résultat client/);
+  assert.match(allEmailSource, /buildPeptidesPreviewResultEmailContent/);
+  assert.match(emailSource, /html: encodeBase64\(content\.html\)/);
+  assert.match(emailContentSource, /Email automatique client/);
+  assert.match(emailContentSource, /MAIL PRÊT À COPIER COLLER/);
+  assert.match(emailContentSource, /buildPeptidesPreviewCopyReadyReply/);
 });
 
-test("rapid duplicate submissions do not resend successful messages", () => {
+test("rapid duplicate submissions reuse the queued or attempted submission", () => {
+  assert.match(previewRoute, /attemptedAt \|\| previousNotifications\?\.queuedAt/);
   assert.match(previewRoute, /15 \* 60_000/);
   assert.match(previewRoute, /isRecentDuplicate \? previousNotifications/);
   assert.match(queueSource, /if \(!clientEmailSent\)/);
@@ -55,12 +61,32 @@ test("the free preview has no paid AI model call", () => {
   assert.match(previewSource, /www\.peptaura\.com/);
 });
 
-test("client and admin emails use full protocol quantities and totals", () => {
-  assert.match(emailSource, /estimatedProtocolCostUsd/);
-  assert.match(emailSource, /vialsRequired/);
-  assert.match(emailSource, /packageCount/);
-  assert.match(emailSource, /estimatedTotalPriceUsd/);
-  assert.match(emailSource, /COÛT TOTAL MOLÉCULES/);
-  assert.doesNotMatch(emailSource, /BUDGET INITIAL ESTIMÉ/);
-  assert.match(previewRoute, /estimatedProtocolCostUsd/);
+test("client and admin emails expose arithmetic, landed quote and conversion copy", () => {
+  assert.match(emailContentSource, /estimatedProtocolCostUsd/);
+  assert.match(emailContentSource, /estimatedShippingCostUsd/);
+  assert.match(emailContentSource, /estimatedGrandTotalUsd/);
+  assert.match(emailContentSource, /monthlyEquivalentUsd/);
+  assert.match(emailContentSource, /mathematicalVials/);
+  assert.match(emailContentSource, /operationalVials/);
+  assert.match(emailContentSource, /packageCount/);
+  assert.match(emailContentSource, /estimatedTotalPriceUsd/);
+  assert.match(emailContentSource, /TON ESTIMATION RAPIDE/);
+  assert.match(emailContentSource, /Nombre de molécules/);
+  assert.match(emailContentSource, /Durée de la stratégie/);
+  assert.match(emailContentSource, /protocole plus poussé et plus précis/);
+  assert.match(emailContentSource, /MAIL PRÊT À COPIER COLLER/);
+  assert.match(emailContentSource, /Accéder à Peptides Engine/);
+  assert.match(emailContentSource, /CE QUE TON PROFIL CHANGE DANS L’ANALYSE/);
+  assert.match(emailContentSource, /Débloquer mon analyse Peptides Engine/);
+  assert.match(emailContentSource, /Acheter Peptides Engine/);
+  assert.doesNotMatch(emailContentSource, /Blood Analysis|Vérifier mes marqueurs|Revue requise|Obtenir ma validation/);
+  assert.doesNotMatch(emailContentSource, /BUDGET INITIAL ESTIMÉ/);
+  assert.match(previewRoute, /estimatedShippingCostUsd/);
+  assert.match(previewRoute, /estimatedGrandTotalUsd/);
+  assert.match(previewRoute, /adminNotificationSent/);
+  assert.match(previewRoute, /notificationDeliveryState/);
+  assert.match(previewRoute, /publicResult/);
+  assert.match(previewRoute, /molecules:\s*_privateMolecules/);
+  assert.match(previewRoute, /result:\s*publicResult/);
+  assert.doesNotMatch(allEmailSource, /\$\{molecule\.supplier\}/);
 });

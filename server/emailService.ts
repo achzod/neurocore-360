@@ -2,6 +2,13 @@ import type { ComprehensiveRiskProfile, RiskScore } from "./blood-analysis/risk-
 import { logBloodEmailDelivery } from "./blood-analysis/delivery-log";
 import { logEmail, ADMIN_EMAIL_CC, type EmailTrackingData } from "./emailTracking";
 import nodemailer from "nodemailer";
+import {
+  buildPeptidesPreviewAdminNotificationContent,
+  buildPeptidesPreviewDestinationPath,
+  buildPeptidesPreviewResultEmailContent,
+  type PeptidesPreviewEmailInput,
+  type PeptidesPreviewEmailResult,
+} from "./peptidesPreviewEmailContent";
 
 const SENDPULSE_USER_ID =
   process.env.SENDPULSE_USER_ID || process.env.SENDPULSE_API_USER_ID || "";
@@ -6218,92 +6225,14 @@ Réf. commande : ${opts.orderId.slice(0,8)}`;
   }
 }
 
-export type PeptidesPreviewEmailInput = {
-  firstName: string;
-  email: string;
-  age: number;
-  primaryGoal: string;
-  secondaryGoals: string[];
-  conditions: string[];
-  bloodwork: string;
-  injectionComfort: string;
-  experience: string;
-  budget: string;
-  country: string;
-  attribution?: Record<string, unknown>;
-};
-
-export type PeptidesPreviewEmailResult = {
-  status: "eligible" | "review_required";
-  headline: string;
-  rationale: string;
-  budgetExplanation: string;
-  molecules: Array<{
-    name: string;
-    role: string;
-    reason: string;
-    startingFormat: string;
-    startingPackagePriceUsd: number;
-    cycleDurationLabel: string;
-    calculationBasis: string;
-    totalRequiredMg: number;
-    vialStrengthMg: number;
-    vialsRequired: number;
-    vialsPurchased: number;
-    packageCount: number;
-    estimatedTotalPriceUsd: number;
-  }>;
-  estimatedStarterCostUsd: number | null;
-  estimatedProtocolCostUsd: number | null;
-  totalVialsRequired: number | null;
-  totalVialsPurchased: number | null;
-  totalPackages: number | null;
-  durationLabel: string;
-  budgetFit: string;
-  blockers: string[];
-  nextStep: string;
-};
-
-function buildPeptidesPreviewSummaryRows(result: PeptidesPreviewEmailResult): string {
-  if (result.molecules.length === 0) {
-    return `<div style="padding:18px;border:1px solid #2f352f;border-radius:14px;background:#111512;color:#d7e7d8;">Ta sélection demande une étape de personnalisation supplémentaire. Le bouton ci-dessous t’oriente directement vers la bonne suite.</div>`;
-  }
-  return result.molecules.map((molecule, index) => `
-    <div style="margin:0 0 12px;padding:18px;border:1px solid #2b2b2b;border-radius:14px;background:#111;">
-      <div style="font-size:11px;letter-spacing:.16em;color:#f5b942;">0${index + 1}</div>
-      <div style="margin-top:4px;font-size:20px;font-weight:800;color:#fff;">${escapeHtml(molecule.name)}</div>
-      <div style="margin-top:4px;color:#ddd;">${escapeHtml(molecule.role)}</div>
-      <div style="margin-top:12px;padding:12px;border-radius:10px;background:#17150d;border:1px solid #3c3218;font-size:13px;line-height:1.6;color:#ddd;"><strong style="color:#f5b942;">Pourquoi ce choix</strong><br>${escapeHtml(molecule.reason)}</div>
-      <div style="margin-top:12px;padding:12px;border-radius:10px;background:#0a0b0d;border:1px solid #24262a;font-size:12px;line-height:1.65;color:#aaa;"><strong style="color:#fff;">${escapeHtml(molecule.cycleDurationLabel)}</strong> · besoin calculé : ${molecule.totalRequiredMg} mg, soit ${molecule.vialsRequired} fiole${molecule.vialsRequired > 1 ? "s" : ""}<br>Base de calcul : ${escapeHtml(molecule.calculationBasis)}<br>Commande réelle : ${molecule.packageCount} boîte${molecule.packageCount > 1 ? "s" : ""} × $${Number(molecule.startingPackagePriceUsd).toFixed(2)} = <strong style="color:#f5b942;">$${Number(molecule.estimatedTotalPriceUsd).toFixed(2)}</strong><br>Format catalogue live : ${escapeHtml(molecule.startingFormat)} · ${molecule.vialsPurchased} fiole${molecule.vialsPurchased > 1 ? "s" : ""} reçue${molecule.vialsPurchased > 1 ? "s" : ""}.${molecule.vialsPurchased !== molecule.vialsRequired ? `<br>Le conditionnement impose ${molecule.vialsPurchased - molecule.vialsRequired} fiole${molecule.vialsPurchased - molecule.vialsRequired > 1 ? "s" : ""} de marge, déjà incluse${molecule.vialsPurchased - molecule.vialsRequired > 1 ? "s" : ""} dans le prix.` : ""}</div>
-    </div>`).join("");
-}
-
 export async function sendPeptidesPreviewResultEmail(
   input: PeptidesPreviewEmailInput,
   result: PeptidesPreviewEmailResult,
-  checkoutUrl: string,
   leadId: string,
 ): Promise<boolean> {
-  const firstName = escapeHtml(input.firstName);
-  const appUrl = String(process.env.APP_URL || "https://apexlabs.onrender.com").replace(/\/$/, "");
-  const destination = checkoutUrl.startsWith("/") ? `${appUrl}${checkoutUrl}` : checkoutUrl;
-  const budget = result.estimatedProtocolCostUsd == null ? "À valider" : `$${result.estimatedProtocolCostUsd.toFixed(2)}`;
-  const html = `<!doctype html><html lang="fr"><body style="margin:0;background:#08090b;color:#fff;font-family:Arial,sans-serif;"><div style="display:none;max-height:0;overflow:hidden;">Molécules, durée, fioles et coût total vérifiés pour ton profil.</div><div style="max-width:680px;margin:0 auto;padding:28px 16px;"><div style="font-size:17px;font-weight:900;letter-spacing:.16em;">APEX<span style="color:#f5b942;">LABS</span></div><div style="margin-top:24px;padding:28px;border:1px solid #292929;border-radius:20px;background:#101114;"><div style="font-size:11px;font-weight:800;letter-spacing:.16em;color:#f5b942;">TON APERÇU PEPTIDES ENGINE</div><h1 style="margin:10px 0 0;font-size:30px;line-height:1.15;color:#fff;">${escapeHtml(result.headline)}</h1><p style="margin:16px 0 0;font-size:15px;line-height:1.7;color:#bbb;">${escapeHtml(result.rationale)}</p><div style="margin-top:24px;">${buildPeptidesPreviewSummaryRows(result)}</div><div style="display:flex;gap:12px;margin-top:20px;"><div style="flex:1;padding:16px;border:1px solid #292929;border-radius:12px;"><div style="font-size:11px;color:#888;">COÛT TOTAL MOLÉCULES</div><div style="margin-top:6px;font-size:25px;font-weight:900;">${budget}</div></div><div style="flex:1;padding:16px;border:1px solid #292929;border-radius:12px;"><div style="font-size:11px;color:#888;">DURÉE ENVISAGÉE</div><div style="margin-top:6px;font-size:14px;font-weight:700;line-height:1.4;">${escapeHtml(result.durationLabel)}</div></div></div><div style="margin-top:14px;padding:13px 15px;border:1px solid ${result.budgetFit === "above" ? "#5a461d" : "#244b38"};border-radius:12px;background:${result.budgetFit === "above" ? "#1c170c" : "#0d1812"};font-size:13px;line-height:1.6;color:${result.budgetFit === "above" ? "#f5cf7a" : "#9ee0b8"};">${escapeHtml(result.budgetExplanation)}</div><a href="${escapeHtml(destination)}" style="display:block;margin-top:24px;padding:16px 20px;border-radius:999px;background:#f5b942;color:#08090b;text-align:center;text-decoration:none;font-weight:900;">${result.nextStep === "blood_analysis" ? "Vérifier mes marqueurs" : result.nextStep === "manual_review" ? "Voir mes options Peptides Engine" : "Débloquer mon protocole complet"}</a><p style="margin:16px 0 0;text-align:center;font-size:12px;line-height:1.5;color:#777;">Les quantités sont calculées sur les durées affichées et les boîtes du catalogue partenaire réellement achetables. Hors livraison. Le calendrier opérationnel, la reconstitution et les ajustements restent détaillés dans le rapport complet.</p></div><p style="margin:18px 0 0;text-align:center;font-size:11px;color:#555;">Tu reçois cet email après avoir demandé ton aperçu gratuit sur APEXLABS.</p></div></body></html>`;
-  const text = `${input.firstName}, ton aperçu Peptides Engine est prêt.\n\n${result.headline}\n${result.rationale}\n\n${result.molecules.map((molecule) => `${molecule.name} — ${molecule.cycleDurationLabel} — ${molecule.vialsRequired} fiole(s), ${molecule.packageCount} boîte(s) — $${molecule.estimatedTotalPriceUsd.toFixed(2)} total — ${molecule.calculationBasis}`).join("\n") || "Une étape de personnalisation supplémentaire est nécessaire."}\n\nCoût total molécules estimé : ${budget}\nFioles nécessaires : ${result.totalVialsRequired ?? "À valider"}\nFioles reçues selon le conditionnement : ${result.totalVialsPurchased ?? "À valider"}\nBoîtes à commander : ${result.totalPackages ?? "À valider"}\n${result.budgetExplanation}\nDurée envisagée : ${result.durationLabel}\n\nContinuer : ${destination}`;
-  const delivery = await sendEmailWithTracking({
-    html: encodeBase64(html),
-    text,
-    subject: `${input.firstName}, ton aperçu Peptides Engine est prêt`,
-    from: { name: SENDER_NAME, email: SENDER_EMAIL },
-    to: [{ email: input.email, name: input.firstName }],
-  }, {
-    emailType: "peptidesPreviewResult",
-    recipientEmail: input.email,
-    recipientName: input.firstName,
-    auditId: leadId,
-    auditType: "PEPTIDES_PREVIEW",
-    metadata: { leadId, status: result.status, nextStep: result.nextStep },
-  });
+  const emailCheckoutUrl = buildPeptidesPreviewDestinationPath(result.nextStep, "email");
+  const content = buildPeptidesPreviewResultEmailContent(input, result, emailCheckoutUrl, String(process.env.APP_URL || "https://apexlabs.onrender.com"));
+  const delivery = await sendEmailWithTracking({ html: encodeBase64(content.html), text: content.text, subject: content.subject, from: { name: SENDER_NAME, email: SENDER_EMAIL }, to: [{ email: input.email, name: input.firstName }] }, { emailType: "peptidesPreviewResult", recipientEmail: input.email, recipientName: input.firstName, auditId: leadId, auditType: "PEPTIDES_PREVIEW", metadata: { leadId, status: result.status, nextStep: result.nextStep, grandTotalUsd: result.estimatedGrandTotalUsd } });
   return delivery.result === true;
 }
 
@@ -6394,44 +6323,7 @@ export async function sendPeptidesPreviewAdminNotification(
   clientEmailSent: boolean,
 ): Promise<boolean> {
   const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
-  const attribution = input.attribution || {};
-  const molecules = result.molecules.map((item) => item.name).join(", ") || "Aucune — orientation personnalisée";
-  const budget = result.estimatedProtocolCostUsd == null ? "À valider" : `$${result.estimatedProtocolCostUsd.toFixed(2)}`;
-  const rows = [
-    ["Lead", `${input.firstName} · ${input.email}`],
-    ["Âge / pays", `${input.age} ans · ${input.country}`],
-    ["Objectif principal", input.primaryGoal],
-    ["Objectifs secondaires", input.secondaryGoals.join(", ") || "Aucun"],
-    ["Budget déclaré", input.budget],
-    ["Bilan sanguin", input.bloodwork],
-    ["Confort injections", input.injectionComfort],
-    ["Résultat", result.status],
-    ["Molécules", molecules],
-    ["Coût total calculé", budget],
-    ["Durée", result.durationLabel],
-    ["Fioles nécessaires", result.totalVialsRequired == null ? "À valider" : String(result.totalVialsRequired)],
-    ["Fioles reçues", result.totalVialsPurchased == null ? "À valider" : String(result.totalVialsPurchased)],
-    ["Boîtes à commander", result.totalPackages == null ? "À valider" : String(result.totalPackages)],
-    ["Prochaine étape", result.nextStep],
-    ["Email résultat client", clientEmailSent ? "Envoyé" : "Échec — résultat affiché à l’écran"],
-    ["Attribution", Object.entries(attribution).filter(([, value]) => value).map(([key, value]) => `${key}=${String(value)}`).join(" · ") || "Direct"],
-  ];
-  const htmlRows = rows.map(([label, value]) => `<tr><td style="padding:9px 12px;border-bottom:1px solid #ececec;color:#666;font-size:12px;">${escapeHtml(label)}</td><td style="padding:9px 12px;border-bottom:1px solid #ececec;color:#111;font-size:13px;font-weight:700;">${escapeHtml(value)}</td></tr>`).join("");
-  const html = `<!doctype html><html lang="fr"><body style="margin:0;background:#f5f5f5;font-family:Arial,sans-serif;color:#111;"><div style="max-width:680px;margin:0 auto;padding:24px 14px;"><div style="padding:24px;background:#fff;border:1px solid #ddd;border-radius:16px;"><div style="font-size:12px;font-weight:900;letter-spacing:.14em;color:#b77900;">APEXLABS · NOUVEL APERÇU PEPTIDES</div><h1 style="margin:10px 0 18px;font-size:24px;">${escapeHtml(input.firstName)} a terminé la preview</h1><table style="width:100%;border-collapse:collapse;">${htmlRows}</table><p style="margin:18px 0 0;font-size:12px;color:#777;">Lead ID : ${escapeHtml(leadId)}. Les réponses complètes restent stockées dans la base APEXLABS ; les médicaments et détails sensibles ne sont volontairement pas recopiés dans l’email.</p></div></div></body></html>`;
-  const text = `Nouvel aperçu Peptides Engine\n\n${rows.map(([label, value]) => `${label}: ${value}`).join("\n")}\nLead ID: ${leadId}`;
-  const delivery = await sendEmailWithTracking({
-    html: encodeBase64(html),
-    text,
-    subject: `[APEXLABS] Nouvel aperçu Peptides — ${input.firstName}`,
-    from: { name: SENDER_NAME, email: SENDER_EMAIL },
-    to: [{ email: adminEmail }],
-  }, {
-    emailType: "peptidesPreviewAdmin",
-    recipientEmail: adminEmail,
-    recipientName: "Achzod",
-    auditId: leadId,
-    auditType: "PEPTIDES_PREVIEW",
-    metadata: { leadId, clientEmail: input.email, status: result.status, nextStep: result.nextStep },
-  });
+  const content = buildPeptidesPreviewAdminNotificationContent(input, result, leadId, clientEmailSent, String(process.env.APP_URL || "https://apexlabs.onrender.com"));
+  const delivery = await sendEmailWithTracking({ html: encodeBase64(content.html), text: content.text, subject: content.subject, from: { name: SENDER_NAME, email: SENDER_EMAIL }, to: [{ email: adminEmail }] }, { emailType: "peptidesPreviewAdmin", recipientEmail: adminEmail, recipientName: "Achzod", auditId: leadId, auditType: "PEPTIDES_PREVIEW", metadata: { leadId, clientEmail: input.email, status: result.status, nextStep: result.nextStep, grandTotalUsd: result.estimatedGrandTotalUsd } });
   return delivery.result === true;
 }
