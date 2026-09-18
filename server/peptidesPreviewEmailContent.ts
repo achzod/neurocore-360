@@ -134,22 +134,9 @@ function previewNextStepLabel(): string {
   return "Acheter Peptides Engine";
 }
 
-export function buildPeptidesPreviewDestinationPath(
-  _nextStep: string,
-  medium: "result" | "email",
-  checkoutToken?: string,
-): string {
+export function buildPeptidesPreviewDestinationPath(_nextStep: string, medium: "result" | "email"): string {
   const source = medium === "email" ? "peptides_preview_email" : "peptides_preview";
-  const params = new URLSearchParams({
-    tier: "solo",
-    utm_source: source,
-    utm_medium: medium,
-    utm_campaign: "pre_peptides_engine",
-  });
-  const fragment = checkoutToken
-    ? `#preview_token=${encodeURIComponent(checkoutToken)}`
-    : "";
-  return `/peptides-engine?${params.toString()}${fragment}`;
+  return `/peptides-engine?tier=solo&utm_source=${source}&utm_medium=${medium}&utm_campaign=pre_peptides_engine`;
 }
 
 export function buildPeptidesPreviewCopyReadyReply(
@@ -190,7 +177,7 @@ ${result.nextStepExplanation}
 
 Ce qui est déjà sécurisé
 
-• Toutes tes réponses sont enregistrées avec cette estimation et réutilisées dans Peptides Engine.
+• Ton estimation Pré-Peptides reste enregistrée et accessible depuis cet email.
 • Le devis couvre les phases actives affichées, les quantités achetables et une seule livraison pour la commande complète.
 • Les noms, les dosages et les liens fournisseur restent confidentiels dans cet aperçu gratuit.
 
@@ -202,7 +189,7 @@ Ce que Peptides Engine débloque pour 199 €
 • La liste d’achat finale avec les quantités et les liens exacts.
 • Le filtrage des options incompatibles avec tes réponses, au lieu d’un stack générique.
 
-Tu ne rempliras pas un second questionnaire : les réponses déjà fournies constituent le point de départ de l’analyse complète. Le protocole plus poussé et plus précis pourra faire évoluer la sélection uniquement si Peptides Engine filtre ou remplace un axe selon ton profil, jamais pour ajouter après coup une livraison ou une partie oubliée au devis.
+Peptides Engine commence par son propre questionnaire complet. Il recueille les informations distinctes nécessaires pour construire un protocole plus poussé et plus précis, puis peut filtrer ou remplacer un axe selon ton profil sans ajouter après coup une livraison ou une partie oubliée au devis.
 
 Accéder à Peptides Engine :
 ${destination}
@@ -215,7 +202,7 @@ export function buildPeptidesPreviewResultEmailContent(
   input: PeptidesPreviewEmailInput,
   result: PeptidesPreviewEmailResult,
   checkoutUrl: string,
-  appUrlInput = "https://apexlabs.achzodcoaching.com",
+  appUrlInput = "https://apexlabs.onrender.com",
 ): { subject: string; html: string; text: string } {
   const appUrl = appUrlInput.replace(/\/$/, "");
   const destination = checkoutUrl.startsWith("/") ? `${appUrl}${checkoutUrl}` : checkoutUrl;
@@ -230,7 +217,7 @@ export function buildPeptidesPreviewResultEmailContent(
   const timelineHtml = (result.effectTimeline || []).map((entry) => `<div style="margin-top:10px;padding:13px;border-radius:11px;background:#0b0c0e;border:1px solid #18392e;"><div style="color:#6ee7b7;font-size:11px;font-weight:900;letter-spacing:.08em;">SEMAINE ${entry.week} · ${escapeHtml(entry.title.toUpperCase())}</div><ul style="margin:8px 0 0;padding-left:18px;color:#ccc;font-size:12px;line-height:1.6;">${entry.effects.map((effect) => `<li style="margin-bottom:5px;">${escapeHtml(effect)}</li>`).join("")}</ul></div>`).join("");
   const estimateBody = `<div style="margin-top:22px;padding:18px;border:1px solid #3d341c;border-radius:14px;background:#17140c;"><div style="font-size:11px;letter-spacing:.12em;color:#f5b942;font-weight:800;">TON ESTIMATION RAPIDE</div><table style="width:100%;margin-top:9px;border-collapse:collapse;font-size:13px;"><tr><td style="padding:7px 0;color:#999;">Nombre de molécules</td><td style="padding:7px 0;text-align:right;font-weight:800;">${result.moleculeCount}</td></tr><tr><td style="padding:7px 0;color:#999;">Durée de la stratégie</td><td style="padding:7px 0;text-align:right;font-weight:800;">${escapeHtml(result.durationLabel)}</td></tr><tr><td style="padding:7px 0;color:#999;">Produits</td><td style="padding:7px 0;text-align:right;font-weight:800;">${value(result.estimatedProtocolCostUsd, "Finalisé dans Peptides Engine")}</td></tr><tr><td style="padding:7px 0;color:#999;">Livraison · une seule fois</td><td style="padding:7px 0;text-align:right;font-weight:800;">${value(result.estimatedShippingCostUsd, "Finalisée dans Peptides Engine")}</td></tr><tr><td style="padding:11px 0 7px;border-top:1px solid #42391f;color:#fff;font-weight:800;">Total rendu estimé</td><td style="padding:11px 0 7px;border-top:1px solid #42391f;text-align:right;color:#f5b942;font-size:22px;font-weight:900;">${value(result.estimatedGrandTotalUsd, "Dans Peptides Engine")}</td></tr></table><p style="margin:12px 0 0;color:#aaa;font-size:12px;line-height:1.6;">Les noms des molécules et les dosages sont réservés à l’analyse complète. La durée distingue la fenêtre stratégique des semaines réellement actives. Le prix couvre toutes les phases actives affichées, ajoute une réserve adaptée au rythme réel, puis compare les unités, les boîtes de 10 et les paliers disponibles. Un contenant ouvert n’est jamais étiré artificiellement sur plusieurs mois et la livraison est comptée une seule fois pour la commande complète.</p></div>`;
   const publicDetailBody = `<div style="margin-top:18px;padding:18px;border-radius:14px;background:#101114;border:1px solid #292929;"><div style="font-size:11px;letter-spacing:.12em;color:#f5b942;font-weight:800;">DEVIS PAR MOLÉCULE · NOMS MASQUÉS</div>${publicQuotesHtml}<p style="margin:13px 0 0;color:#999;font-size:11px;line-height:1.6;">Chaque ligne correspond à une molécule réellement calculée. La famille, la fonction, la durée active et le coût sont visibles ; le nom et le dosage restent réservés à Peptides Engine.</p></div><div style="margin-top:18px;padding:18px;border-radius:14px;background:#0d1713;border:1px solid #18392e;"><div style="font-size:11px;letter-spacing:.12em;color:#6ee7b7;font-weight:800;">EFFETS POSITIFS ATTENDUS · SEMAINE APRÈS SEMAINE</div>${timelineHtml}<p style="margin:13px 0 0;color:#82958d;font-size:11px;line-height:1.6;">Projection construite à partir des familles réellement retenues, sans révéler les molécules ni le protocole d’exécution.</p></div>`;
-  const reassuranceBody = `<div style="margin-top:20px;padding:18px;border-radius:14px;background:#f7f8f5;border:1px solid #dfe3dc;"><div style="font-size:11px;letter-spacing:.12em;color:#796018;font-weight:900;">TOUTES TES RÉPONSES SONT ENREGISTRÉES</div><p style="margin:10px 0 0;color:#333;font-size:13px;line-height:1.65;">Tu ne rempliras pas un second questionnaire. Ton profil, tes objectifs, tes contraintes, ton historique, ton budget et cette estimation sont réutilisés dans Peptides Engine.</p><div style="margin-top:16px;"><a href="${escapeHtml(destination)}" style="display:inline-block;background:#f5b942;color:#111;text-decoration:none;font-size:14px;font-weight:900;padding:13px 18px;border-radius:10px;">Voir mon analyse complète · 199 €</a></div><div style="margin-top:16px;font-size:11px;letter-spacing:.12em;color:#796018;font-weight:900;">CE QUE PEPTIDES ENGINE DÉBLOQUE POUR 199 €</div><p style="margin:10px 0 0;color:#333;font-size:13px;line-height:1.7;">1. La sélection nominative et la raison de chaque molécule.<br>2. Le calendrier semaine par semaine et les ajustements liés à ton profil.<br>3. La reconstitution et les unités par administration.<br>4. La liste d’achat finale avec quantités et liens exacts.<br>5. Le filtrage des options incompatibles, au lieu d’un stack générique.</p><p style="margin:14px 0 0;padding-top:13px;border-top:1px solid #dde1da;color:#555;font-size:12px;line-height:1.6;">Le devis gratuit couvre déjà les phases actives, les quantités achetables et une seule livraison. Le protocole plus poussé et plus précis pourra faire évoluer la sélection uniquement si l’analyse complète filtre ou remplace un axe selon ton profil, jamais pour ajouter une partie oubliée après l’achat.</p></div>`;
+  const reassuranceBody = `<div style="margin-top:20px;padding:18px;border-radius:14px;background:#f7f8f5;border:1px solid #dfe3dc;"><div style="font-size:11px;letter-spacing:.12em;color:#796018;font-weight:900;">DE L’ESTIMATION AU PROTOCOLE COMPLET</div><p style="margin:10px 0 0;color:#333;font-size:13px;line-height:1.65;">Ton estimation Pré-Peptides reste enregistrée. Peptides Engine commence par son propre questionnaire complet afin de recueillir les informations distinctes nécessaires au protocole final.</p><div style="margin-top:16px;"><a href="${escapeHtml(destination)}" style="display:inline-block;background:#f5b942;color:#111;text-decoration:none;font-size:14px;font-weight:900;padding:13px 18px;border-radius:10px;">Commencer Peptides Engine · 199 €</a></div><div style="margin-top:16px;font-size:11px;letter-spacing:.12em;color:#796018;font-weight:900;">CE QUE PEPTIDES ENGINE DÉBLOQUE POUR 199 €</div><p style="margin:10px 0 0;color:#333;font-size:13px;line-height:1.7;">1. La sélection nominative et la raison de chaque molécule.<br>2. Le calendrier semaine par semaine et les ajustements liés à ton profil.<br>3. La reconstitution et les unités par administration.<br>4. La liste d’achat finale avec quantités et liens exacts.<br>5. Le filtrage des options incompatibles, au lieu d’un stack générique.</p><p style="margin:14px 0 0;padding-top:13px;border-top:1px solid #dde1da;color:#555;font-size:12px;line-height:1.6;">Le devis gratuit couvre déjà les phases actives, les quantités achetables et une seule livraison. Le protocole plus poussé et plus précis pourra faire évoluer la sélection uniquement si l’analyse complète filtre ou remplace un axe selon ton profil, jamais pour ajouter une partie oubliée après l’achat.</p></div>`;
   const analysisCard = `<div style="margin-top:18px;padding:18px;border-radius:14px;background:#0b0c0e;border:1px solid #27292e;"><div style="font-size:11px;letter-spacing:.12em;color:#f5b942;font-weight:800;">CE QUE TON PROFIL CHANGE DANS L’ANALYSE</div><ul style="margin:12px 0 0;padding-left:20px;color:#ddd;font-size:13px;line-height:1.65;">${analysisHtml}</ul></div>`;
   const precisionCard = `<div style="margin-top:18px;padding:18px;border-radius:14px;background:#0b0c0e;border:1px solid #27292e;"><strong style="color:#fff;">Un protocole plus poussé et plus précis après l’achat</strong><p style="margin:9px 0 0;color:#aaa;font-size:13px;line-height:1.7;">${escapeHtml(result.nextStepExplanation)}</p><p style="margin:9px 0 0;color:#ddd;font-size:13px;line-height:1.7;">Cette estimation peut évoluer après l’achat de Peptides Engine, lorsque l’analyse complète affine la sélection, le calendrier, les quantités et la liste d’achat selon ton profil.</p></div>`;
   const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#08090b;color:#fff;font-family:Arial,sans-serif;"><div style="display:none;max-height:0;overflow:hidden;">${escapeHtml(preheader)}</div><div style="max-width:720px;margin:0 auto;padding:28px 14px;"><div style="font-size:17px;font-weight:900;letter-spacing:.16em;">APEX<span style="color:#f5b942;">LABS</span></div><div style="margin-top:24px;padding:28px;border:1px solid #292929;border-radius:20px;background:#101114;"><div style="font-size:11px;font-weight:800;letter-spacing:.16em;color:#f5b942;">TON RÉSULTAT PEPTIDES ENGINE</div><h1 style="margin:10px 0 0;font-size:30px;line-height:1.15;color:#fff;">${escapeHtml(result.headline)}</h1>${objectiveCard}<p style="margin:16px 0 0;font-size:15px;line-height:1.7;color:#bbb;">${escapeHtml(result.rationale)}</p>${estimateBody}${publicDetailBody}${reassuranceBody}${analysisCard}${precisionCard}${cta}</div></div></body></html>`;
@@ -242,11 +229,10 @@ export function buildPeptidesPreviewAdminNotificationContent(
   result: PeptidesPreviewEmailResult,
   leadId: string,
   clientEmailSent: boolean,
-  appUrlInput = "https://apexlabs.achzodcoaching.com",
-  checkoutToken?: string,
+  appUrlInput = "https://apexlabs.onrender.com",
 ): { subject: string; html: string; text: string } {
   const appUrl = appUrlInput.replace(/\/$/, "");
-  const path = buildPeptidesPreviewDestinationPath(result.nextStep, "email", checkoutToken);
+  const path = buildPeptidesPreviewDestinationPath(result.nextStep, "email");
   const clientContent = buildPeptidesPreviewResultEmailContent(input, result, path, appUrl);
   const readyReply = clientContent.text;
   const copySubject = clientContent.subject;

@@ -6241,8 +6241,8 @@ export async function sendPeptidesPreviewResultEmail(
   leadId: string,
 ): Promise<boolean> {
   const checkoutToken = createPeptidesPreviewCheckoutToken(leadId);
-  const emailCheckoutUrl = buildPeptidesPreviewDestinationPath(result.nextStep, "email", checkoutToken);
-  const content = buildPeptidesPreviewResultEmailContent(input, result, emailCheckoutUrl, "https://apexlabs.achzodcoaching.com");
+  const emailCheckoutUrl = `${buildPeptidesPreviewDestinationPath(result.nextStep, "email")}#preview_token=${encodeURIComponent(checkoutToken)}`;
+  const content = buildPeptidesPreviewResultEmailContent(input, result, emailCheckoutUrl, String(process.env.APP_URL || "https://apexlabs.onrender.com"));
   const delivery = await sendEmailWithTracking({ html: encodeBase64(content.html), text: content.text, subject: content.subject, from: { name: SENDER_NAME, email: SENDER_EMAIL }, to: [{ email: input.email, name: input.firstName }] }, { emailType: "peptidesPreviewResult", recipientEmail: input.email, recipientName: input.firstName, auditId: leadId, auditType: "PEPTIDES_PREVIEW", metadata: { leadId, status: result.status, nextStep: result.nextStep, grandTotalUsd: result.estimatedGrandTotalUsd } });
   return delivery.result === true;
 }
@@ -6258,13 +6258,7 @@ export async function sendPeptidesPreviewFollowupEmail(input: {
   const appUrl = "https://apexlabs.achzodcoaching.com";
   const campaign = `pre_peptides_followup_${input.stage.toLowerCase()}`;
   const checkoutToken = createPeptidesPreviewCheckoutToken(input.leadId);
-  const destinationPath = buildPeptidesPreviewDestinationPath("peptides_engine", "email", checkoutToken);
-  const destinationUrl = new URL(destinationPath, appUrl);
-  destinationUrl.searchParams.set("utm_source", "apexlabs");
-  destinationUrl.searchParams.set("utm_medium", "email");
-  destinationUrl.searchParams.set("utm_campaign", campaign);
-  destinationUrl.searchParams.set("utm_content", "unlock_protocol");
-  const destination = destinationUrl.toString();
+  const destination = `${appUrl}/peptides-engine?tier=solo&utm_source=apexlabs&utm_medium=email&utm_campaign=${campaign}&utm_content=unlock_protocol#preview_token=${encodeURIComponent(checkoutToken)}`;
   const whatsapp = "https://wa.me/971585210514?text=" + encodeURIComponent(
     `Salut Achzod, j'ai reçu mon estimation Pré-Peptides et j'ai une question avant de débloquer mon protocole complet. Mon email : ${input.email}`,
   );
@@ -6280,11 +6274,11 @@ export async function sendPeptidesPreviewFollowupEmail(input: {
   const copy = {
     J1: {
       subject: `${firstName}, ton estimation est prête. Voici la suite.`,
-      preheader: "Tes réponses sont enregistrées. Aucun second questionnaire à remplir.",
+      preheader: "Ton estimation est conservée. Peptides Engine recueille ensuite les informations propres au protocole complet.",
       eyebrow: "TON ESTIMATION EST CONSERVÉE",
-      title: "Tu as déjà fait le plus long.",
-      intro: `J’ai gardé ton estimation Pré-Peptides. Tu n’as pas besoin de recommencer le questionnaire : ton profil, tes contraintes et ton budget sont déjà enregistrés.`,
-      body: `Peptides Engine transforme maintenant cette estimation en protocole réellement exécutable : sélection finale, quantités, calendrier, reconstitution et organisation complète.`,
+      title: "Passe maintenant au protocole complet.",
+      intro: `J’ai gardé ton estimation Pré-Peptides. Peptides Engine commence par un questionnaire distinct, conçu pour recueillir toutes les informations nécessaires au protocole final.`,
+      body: `Tu obtiens ensuite une stratégie réellement exécutable : sélection finale, quantités, calendrier, reconstitution et organisation complète. Commence le questionnaire Peptides Engine depuis le bouton ci-dessous.`,
       cta: "Débloquer mon protocole complet",
     },
     J3: {
@@ -6302,12 +6296,12 @@ export async function sendPeptidesPreviewFollowupEmail(input: {
       eyebrow: "DERNIER RAPPEL AUTOMATIQUE",
       title: "Ton estimation reste utile seulement si elle guide une décision précise.",
       intro: `Acheter trop, pas assez ou dans le mauvais ordre coûte vite plus cher que le protocole lui-même. Ton estimation est prête : la prochaine étape consiste simplement à la transformer en plan complet.`,
-      body: `Si tu veux avancer, tout est déjà préparé. Si une objection te bloque encore, écris-moi directement sur WhatsApp et je te répondrai sans te refaire passer par un questionnaire.`,
+      body: `Si tu veux avancer, ton estimation est déjà préparée. Si une objection te bloque encore, écris-moi directement sur WhatsApp et je te répondrai sans te demander de refaire l’estimation gratuite.`,
       cta: "Finaliser mon Peptides Engine",
     },
   }[input.stage];
 
-  const html = `<!doctype html><html lang="fr"><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#07080a;color:#fff;font-family:Arial,Helvetica,sans-serif;"><div style="display:none;max-height:0;overflow:hidden;opacity:0;">${escapeHtml(copy.preheader)}</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#07080a;"><tr><td align="center" style="padding:28px 14px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:660px;"><tr><td style="padding:0 4px 22px;font-size:17px;font-weight:900;letter-spacing:.16em;color:#fff;">APEX<span style="color:#f5b942;">LABS</span></td></tr><tr><td style="padding:30px 26px;border:1px solid #292b2f;border-radius:22px;background:#101114;"><div style="font-size:11px;font-weight:800;letter-spacing:.16em;color:#f5b942;">${escapeHtml(copy.eyebrow)}</div><h1 style="margin:12px 0 0;font-size:30px;line-height:1.15;color:#fff;">${escapeHtml(copy.title)}</h1><p style="margin:18px 0 0;font-size:15px;line-height:1.75;color:#c7c7c9;">${escapeHtml(copy.intro)}</p><div style="margin:22px 0;padding:16px 18px;border:1px solid #34363b;border-radius:14px;background:#090a0c;font-size:14px;line-height:1.6;color:#f5f5f5;"><strong style="color:#f5b942;">Ton estimation</strong><br>${escapeHtml(summary)}</div><p style="margin:0;font-size:15px;line-height:1.75;color:#c7c7c9;">${escapeHtml(copy.body)}</p><a href="${escapeHtml(destination)}" style="display:block;margin-top:26px;padding:16px 20px;border-radius:999px;background:#f5b942;color:#08090b;text-align:center;text-decoration:none;font-size:15px;font-weight:900;">${escapeHtml(copy.cta)}</a>${input.stage === "J7" ? `<a href="${escapeHtml(whatsapp)}" style="display:block;margin-top:12px;padding:14px 18px;border:1px solid #3a3c42;border-radius:999px;color:#fff;text-align:center;text-decoration:none;font-size:14px;font-weight:700;">Poser ma question sur WhatsApp</a>` : ""}<p style="margin:20px 0 0;font-size:12px;line-height:1.6;color:#74767c;">Tes réponses sont conservées. Le bouton ouvre directement Peptides Engine, sans nouveau formulaire d’estimation.</p></td></tr><tr><td style="padding:18px 10px 0;text-align:center;font-size:11px;line-height:1.6;color:#55585e;">Tu reçois cet email après avoir demandé ton aperçu Pré-Peptides sur APEXLABS.<br><a href="{{UNSUB_LINK}}" style="color:#777a80;">Se désabonner</a></td></tr></table></td></tr></table></body></html>`;
+  const html = `<!doctype html><html lang="fr"><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#07080a;color:#fff;font-family:Arial,Helvetica,sans-serif;"><div style="display:none;max-height:0;overflow:hidden;opacity:0;">${escapeHtml(copy.preheader)}</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#07080a;"><tr><td align="center" style="padding:28px 14px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:660px;"><tr><td style="padding:0 4px 22px;font-size:17px;font-weight:900;letter-spacing:.16em;color:#fff;">APEX<span style="color:#f5b942;">LABS</span></td></tr><tr><td style="padding:30px 26px;border:1px solid #292b2f;border-radius:22px;background:#101114;"><div style="font-size:11px;font-weight:800;letter-spacing:.16em;color:#f5b942;">${escapeHtml(copy.eyebrow)}</div><h1 style="margin:12px 0 0;font-size:30px;line-height:1.15;color:#fff;">${escapeHtml(copy.title)}</h1><p style="margin:18px 0 0;font-size:15px;line-height:1.75;color:#c7c7c9;">${escapeHtml(copy.intro)}</p><div style="margin:22px 0;padding:16px 18px;border:1px solid #34363b;border-radius:14px;background:#090a0c;font-size:14px;line-height:1.6;color:#f5f5f5;"><strong style="color:#f5b942;">Ton estimation</strong><br>${escapeHtml(summary)}</div><p style="margin:0;font-size:15px;line-height:1.75;color:#c7c7c9;">${escapeHtml(copy.body)}</p><a href="${escapeHtml(destination)}" style="display:block;margin-top:26px;padding:16px 20px;border-radius:999px;background:#f5b942;color:#08090b;text-align:center;text-decoration:none;font-size:15px;font-weight:900;">${escapeHtml(copy.cta)}</a>${input.stage === "J7" ? `<a href="${escapeHtml(whatsapp)}" style="display:block;margin-top:12px;padding:14px 18px;border:1px solid #3a3c42;border-radius:999px;color:#fff;text-align:center;text-decoration:none;font-size:14px;font-weight:700;">Poser ma question sur WhatsApp</a>` : ""}<p style="margin:20px 0 0;font-size:12px;line-height:1.6;color:#74767c;">Ton estimation Pré-Peptides est conservée. Le bouton ouvre le questionnaire distinct de Peptides Engine, sans te demander de refaire l’estimation gratuite.</p></td></tr><tr><td style="padding:18px 10px 0;text-align:center;font-size:11px;line-height:1.6;color:#55585e;">Tu reçois cet email après avoir demandé ton aperçu Pré-Peptides sur APEXLABS.<br><a href="{{UNSUB_LINK}}" style="color:#777a80;">Se désabonner</a></td></tr></table></td></tr></table></body></html>`;
   const text = `${firstName},\n\n${copy.title}\n\n${copy.intro}\n\nTon estimation : ${summary}\n\n${copy.body}\n\n${copy.cta} : ${destination}${input.stage === "J7" ? `\n\nUne question : ${whatsapp}` : ""}\n\nSe désabonner : {{UNSUB_LINK}}`;
   const delivery = await sendEmailWithTracking({
     html: encodeBase64(html),
@@ -6343,8 +6337,7 @@ export async function sendPeptidesPreviewAdminNotification(
   clientEmailSent: boolean,
 ): Promise<boolean> {
   const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
-  const checkoutToken = createPeptidesPreviewCheckoutToken(leadId);
-  const content = buildPeptidesPreviewAdminNotificationContent(input, result, leadId, clientEmailSent, "https://apexlabs.achzodcoaching.com", checkoutToken);
+  const content = buildPeptidesPreviewAdminNotificationContent(input, result, leadId, clientEmailSent, String(process.env.APP_URL || "https://apexlabs.onrender.com"));
   const delivery = await sendEmailWithTracking({ html: encodeBase64(content.html), text: content.text, subject: content.subject, from: { name: SENDER_NAME, email: SENDER_EMAIL }, to: [{ email: adminEmail }] }, { emailType: "peptidesPreviewAdmin", recipientEmail: adminEmail, recipientName: "Achzod", auditId: leadId, auditType: "PEPTIDES_PREVIEW", metadata: { leadId, clientEmail: input.email, status: result.status, nextStep: result.nextStep, grandTotalUsd: result.estimatedGrandTotalUsd } });
   return delivery.result === true;
 }

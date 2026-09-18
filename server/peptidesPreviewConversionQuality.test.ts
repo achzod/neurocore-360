@@ -18,26 +18,28 @@ const result = {
   headline: "Ton estimation retient 2 molécules pour ta priorité axe GH.",
   rationale: "Ton aperçu construit un signal pulsatile et un axe complémentaire.",
   analysisPoints: ["Le calendrier et le budget sont adaptés à ton profil."], requiredMarkers: [],
-  nextStepExplanation: "Débloque Peptides Engine sans remplir un second questionnaire.",
+  nextStepExplanation: "Commence Peptides Engine et complète son questionnaire dédié.",
   budgetExplanation: "Le devis respecte ton budget.", quoteExplanation: "Molécules : $112.56. Livraison : $60.00. Total : $172.56.", blockers: [], nextStep: "peptides_engine",
 } satisfies PeptidesPreviewResult;
 
 test("client email answers conversion objections and keeps two visible purchase paths", () => {
   const content = buildPeptidesPreviewResultEmailContent(input, result, "/peptides-engine?tier=solo", "https://apexlabs.onrender.com");
   for (const expected of [
-    "Toutes tes réponses sont enregistrées",
+    "Ton estimation Pré-Peptides reste enregistrée",
     "Ce que Peptides Engine débloque pour 199 €",
     "La sélection nominative",
     "Le calendrier semaine par semaine",
     "La reconstitution",
     "La liste d’achat finale",
     "au lieu d’un stack générique",
-    "Tu ne rempliras pas un second questionnaire",
+    "Peptides Engine commence par son propre questionnaire complet",
     "une seule livraison",
   ]) {
     assert.match(content.text, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"), `text missing: ${expected}`);
     assert.match(content.html, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"), `html missing: ${expected}`);
   }
+  assert.doesNotMatch(content.text, /sans remplir un second questionnaire/i);
+  assert.doesNotMatch(content.html, /sans remplir un second questionnaire/i);
   const hrefs = content.html.match(/href="https:\/\/apexlabs\.onrender\.com\/peptides-engine[^"]*"/g) || [];
   assert.ok(hrefs.length >= 2, `client email must expose the purchase CTA after the estimate and again at the close; found ${hrefs.length}`);
 });

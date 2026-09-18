@@ -76,10 +76,9 @@ function recordPreviewConversion(checkoutUrl: string, eventType: "result_view" |
       credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token, eventType }),
-      keepalive: eventType === "unlock_click",
-    }).catch(() => {});
+    });
   } catch {
-    // Conversion telemetry must never interrupt the result or checkout link.
+    // Conversion telemetry never blocks the result or CTA.
   }
 }
 
