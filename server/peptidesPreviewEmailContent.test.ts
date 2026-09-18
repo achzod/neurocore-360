@@ -173,6 +173,13 @@ test("testosterone profile is not diverted to blood analysis", () => {
   assert.doesNotMatch(content.text, /Blood Analysis|bilan.*avant|marqueurs à vérifier/);
 });
 
+test("signed handoff token stays in the URL fragment instead of query logs", () => {
+  const destination = buildPeptidesPreviewDestinationPath("peptides_engine", "email", "signed.token");
+  assert.match(destination, /\/peptides-engine\?tier=solo/);
+  assert.match(destination, /#preview_token=signed\.token$/);
+  assert.doesNotMatch(destination.split("#")[0], /preview_token/);
+});
+
 test("admin notification is scannable and contains the exact copy-ready client email", () => {
   const content = buildPeptidesPreviewAdminNotificationContent(input, eligible, "lead-123", true, "https://apexlabs.test");
   assert.match(content.subject, /Lead prêt à convertir.*\$182\.47/);

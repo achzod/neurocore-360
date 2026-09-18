@@ -134,9 +134,22 @@ function previewNextStepLabel(): string {
   return "Acheter Peptides Engine";
 }
 
-export function buildPeptidesPreviewDestinationPath(_nextStep: string, medium: "result" | "email"): string {
+export function buildPeptidesPreviewDestinationPath(
+  _nextStep: string,
+  medium: "result" | "email",
+  checkoutToken?: string,
+): string {
   const source = medium === "email" ? "peptides_preview_email" : "peptides_preview";
-  return `/peptides-engine?tier=solo&utm_source=${source}&utm_medium=${medium}&utm_campaign=pre_peptides_engine`;
+  const params = new URLSearchParams({
+    tier: "solo",
+    utm_source: source,
+    utm_medium: medium,
+    utm_campaign: "pre_peptides_engine",
+  });
+  const fragment = checkoutToken
+    ? `#preview_token=${encodeURIComponent(checkoutToken)}`
+    : "";
+  return `/peptides-engine?${params.toString()}${fragment}`;
 }
 
 export function buildPeptidesPreviewCopyReadyReply(
@@ -202,7 +215,7 @@ export function buildPeptidesPreviewResultEmailContent(
   input: PeptidesPreviewEmailInput,
   result: PeptidesPreviewEmailResult,
   checkoutUrl: string,
-  appUrlInput = "https://apexlabs.onrender.com",
+  appUrlInput = "https://apexlabs.achzodcoaching.com",
 ): { subject: string; html: string; text: string } {
   const appUrl = appUrlInput.replace(/\/$/, "");
   const destination = checkoutUrl.startsWith("/") ? `${appUrl}${checkoutUrl}` : checkoutUrl;
@@ -229,10 +242,11 @@ export function buildPeptidesPreviewAdminNotificationContent(
   result: PeptidesPreviewEmailResult,
   leadId: string,
   clientEmailSent: boolean,
-  appUrlInput = "https://apexlabs.onrender.com",
+  appUrlInput = "https://apexlabs.achzodcoaching.com",
+  checkoutToken?: string,
 ): { subject: string; html: string; text: string } {
   const appUrl = appUrlInput.replace(/\/$/, "");
-  const path = buildPeptidesPreviewDestinationPath(result.nextStep, "email");
+  const path = buildPeptidesPreviewDestinationPath(result.nextStep, "email", checkoutToken);
   const clientContent = buildPeptidesPreviewResultEmailContent(input, result, path, appUrl);
   const readyReply = clientContent.text;
   const copySubject = clientContent.subject;
