@@ -135,7 +135,7 @@ const getDeductionAmount = (auditType?: string): number => {
 let accessToken: string | null = null;
 let tokenExpiry: number = 0;
 
-export async function getAccessToken(): Promise<string> {
+export async function getAccessToken(requestTimeoutMs?: number): Promise<string> {
   if (SENDPULSE_API_KEY) {
     return SENDPULSE_API_KEY;
   }
@@ -160,6 +160,7 @@ export async function getAccessToken(): Promise<string> {
       client_id: SENDPULSE_USER_ID,
       client_secret: SENDPULSE_SECRET,
     }),
+    signal: requestTimeoutMs ? AbortSignal.timeout(requestTimeoutMs) : undefined,
   });
 
   if (!response.ok) {
@@ -185,7 +186,7 @@ function encodeBase64(str: string): string {
  * @param trackingData - Tracking metadata
  * @returns SendPulse response
  */
-type SendPulseSendResult = {
+export type SendPulseSendResult = {
   result: boolean;
   id?: string;
   error?: any;
@@ -287,6 +288,7 @@ const sendPulseLiveDeliveryFailure = (record: SendPulseLiveRecord): Record<strin
 async function fetchSendPulseLiveRecordDetails(
   token: string,
   records: SendPulseLiveRecord[],
+  requestTimeoutMs?: number,
 ): Promise<SendPulseLiveRecord[]> {
   const ids = Array.from(new Set(records.map(sendPulseRecordId).filter(Boolean)));
   if (ids.length === 0) return records;
@@ -298,6 +300,7 @@ async function fetchSendPulseLiveRecordDetails(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ emails: ids.slice(0, 100) }),
+    signal: requestTimeoutMs ? AbortSignal.timeout(requestTimeoutMs) : undefined,
   });
   if (!response.ok) return records;
 
@@ -334,6 +337,7 @@ async function findRecentSendPulseLiveRecord(
   recipientEmail: string,
   subject: string,
   sentStartedAt: Date,
+  requestTimeoutMs?: number,
 ): Promise<SendPulseLiveRecord | null> {
   const normalizedRecipient = recipientEmail.trim().toLowerCase();
   const normalizedSubject = normalizeSendPulseText(subject);
@@ -351,6 +355,7 @@ async function findRecentSendPulseLiveRecord(
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
+        signal: requestTimeoutMs ? AbortSignal.timeout(requestTimeoutMs) : undefined,
       },
     );
     if (!response.ok) continue;
@@ -360,7 +365,7 @@ async function findRecentSendPulseLiveRecord(
     const listMatch = chooseRecentSendPulseRecord(records, normalizedRecipient, normalizedSubject, sentStartedAt);
     if (listMatch) return listMatch;
 
-    const detailedRecords = await fetchSendPulseLiveRecordDetails(token, records).catch(() => records);
+    const detailedRecords = await fetchSendPulseLiveRecordDetails(token, records, requestTimeoutMs).catch(() => records);
     const detailMatch = chooseRecentSendPulseRecord(detailedRecords, normalizedRecipient, normalizedSubject, sentStartedAt);
     if (detailMatch) return detailMatch;
   }
@@ -384,6 +389,8 @@ async function sendEmailWithTracking(
     auditId?: string;
     auditType?: string;
     metadata?: Record<string, any>;
+    bccAdmin?: boolean;
+    requestTimeoutMs?: number;
   }
 ): Promise<SendPulseSendResult> {
   try {
@@ -453,14 +460,14 @@ async function sendEmailWithTracking(
     emailPayload.text = stripDashes(emailPayload.text).replace(/\{\{UNSUB_LINK\}\}/g, unsubLink);
     emailPayload.subject = stripDashes(emailPayload.subject);
 
-    const token = await getAccessToken();
+    const token = await getAccessToken(trackingData.requestTimeoutMs);
 
     // Add BCC to admin email unless the admin is already a direct recipient.
     // Duplicating the same Gmail address in To + BCC makes some SendPulse
     // payloads fail RFC 5322 validation and would hide critical cost alerts.
     const shouldBccAdmin = !emailPayload.to.some(
       (recipient) => recipient.email.trim().toLowerCase() === ADMIN_EMAIL_CC.toLowerCase(),
-    );
+    ) && trackingData.bccAdmin !== false;
     const payloadWithBcc = {
       ...emailPayload,
       ...(shouldBccAdmin
@@ -480,6 +487,7 @@ async function sendEmailWithTracking(
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ email: payloadWithBcc, track_opens: 1, track_clicks: 1 }),
+      signal: trackingData.requestTimeoutMs ? AbortSignal.timeout(trackingData.requestTimeoutMs) : undefined,
     });
 
     const responseText = await response.text();
@@ -503,7 +511,7 @@ async function sendEmailWithTracking(
     let liveDeliveryFailure: Record<string, unknown> | null = null;
 
     if (result.result && sendpulseTaskId) {
-      const providerRecord = await fetchSendPulseLiveRecordDetails(token, [{ id: sendpulseTaskId }]).catch((error) => {
+      const providerRecord = await fetchSendPulseLiveRecordDetails(token, [{ id: sendpulseTaskId }], trackingData.requestTimeoutMs).catch((error) => {
         liveLookupMetadata.sendpulseProviderIdVerifyError = error instanceof Error ? error.message : String(error);
         return [];
       });
@@ -540,6 +548,7 @@ async function sendEmailWithTracking(
         trackingData.recipientEmail,
         emailPayload.subject,
         sentStartedAt,
+        trackingData.requestTimeoutMs,
       ).catch((error) => {
         liveLookupMetadata.sendpulseLiveLookupError = error instanceof Error ? error.message : String(error);
         return null;
@@ -6243,7 +6252,7 @@ export async function sendPeptidesPreviewFollowupEmail(input: {
   firstName: string;
   result: Record<string, any>;
   attribution?: Record<string, unknown>;
-}): Promise<boolean> {
+}): Promise<SendPulseSendResult> {
   const appUrl = "https://apexlabs.achzodcoaching.com";
   const campaign = `pre_peptides_followup_${input.stage.toLowerCase()}`;
   const destination = `${appUrl}/peptides-engine?tier=solo&utm_source=apexlabs&utm_medium=email&utm_campaign=${campaign}&utm_content=unlock_protocol`;
@@ -6303,6 +6312,8 @@ export async function sendPeptidesPreviewFollowupEmail(input: {
     recipientName: firstName,
     auditId: input.leadId,
     auditType: "PEPTIDES_PREVIEW",
+    bccAdmin: false,
+    requestTimeoutMs: 15_000,
     metadata: {
       leadId: input.leadId,
       stage: input.stage,
@@ -6313,7 +6324,7 @@ export async function sendPeptidesPreviewFollowupEmail(input: {
       attribution: input.attribution || {},
     },
   });
-  return delivery.result === true;
+  return delivery;
 }
 
 export async function sendPeptidesPreviewAdminNotification(

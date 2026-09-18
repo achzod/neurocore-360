@@ -4,6 +4,7 @@ import { pool } from "./db";
 import { sendPeptidesPreviewFollowupEmail } from "./emailService";
 import {
   PEPTIDES_PREVIEW_FOLLOWUP_START_AT,
+  classifyPeptidesPreviewProviderOutcome,
   choosePeptidesPreviewFollowupStage,
   isEligiblePreviewFollowupEmail,
   normalizePreviewFollowupEmail,
@@ -91,6 +92,7 @@ export type PeptidesPreviewFollowupRun = {
   sent: number;
   failed: number;
   skipped: number;
+  reconcileRequired: number;
   byStage: Record<PeptidesPreviewFollowupStage, number>;
   candidates: Array<Pick<PeptidesPreviewFollowupCandidate, "leadId" | "email" | "stage" | "capturedAt">>;
 };
@@ -165,14 +167,20 @@ async function loadCandidates(now: Date): Promise<PeptidesPreviewFollowupCandida
              )
         )
         AND NOT EXISTS (
-          SELECT 1
-            FROM email_tracking blocked
-            LEFT JOIN cta_tracking ct ON ct.email_tracking_id = blocked.id
+          SELECT 1 FROM email_tracking blocked
            WHERE LOWER(blocked.recipient_email) = LOWER(REPLACE(bp.email, 'peptides-preview::', ''))
              AND (
                LOWER(COALESCE(blocked.sendpulse_status, '')) IN ('unsubscribed', 'auth_failed')
                OR LOWER(COALESCE(blocked.sendpulse_error, '')) LIKE ANY(ARRAY['%unsubscribe%', '%spam%', '%bounce%'])
-               OR ct.event_type IN ('unsubscribe', 'spam', 'bounce')
+             )
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM email_tracking tracked
+           WHERE LOWER(tracked.recipient_email) = LOWER(REPLACE(bp.email, 'peptides-preview::', ''))
+             AND EXISTS (
+               SELECT 1 FROM cta_tracking ct
+                WHERE ct.email_tracking_id = tracked.id
+                  AND ct.event_type IN ('unsubscribe', 'spam', 'bounce')
              )
         )
       ORDER BY captured_at ASC
@@ -210,14 +218,20 @@ async function candidateStillEligible(candidate: PeptidesPreviewFollowupCandidat
            )
       )
       AND NOT EXISTS (
-        SELECT 1
-          FROM email_tracking blocked
-          LEFT JOIN cta_tracking ct ON ct.email_tracking_id = blocked.id
+        SELECT 1 FROM email_tracking blocked
          WHERE LOWER(blocked.recipient_email) = LOWER($1)
            AND (
              LOWER(COALESCE(blocked.sendpulse_status, '')) IN ('unsubscribed', 'auth_failed')
              OR LOWER(COALESCE(blocked.sendpulse_error, '')) LIKE ANY(ARRAY['%unsubscribe%', '%spam%', '%bounce%'])
-             OR ct.event_type IN ('unsubscribe', 'spam', 'bounce')
+           )
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM email_tracking tracked
+         WHERE LOWER(tracked.recipient_email) = LOWER($1)
+           AND EXISTS (
+             SELECT 1 FROM cta_tracking ct
+              WHERE ct.email_tracking_id = tracked.id
+                AND ct.event_type IN ('unsubscribe', 'spam', 'bounce')
            )
       ) AS eligible`,
     [candidate.email, `peptidesPreviewFollowup${candidate.stage}`, candidate.capturedAt],
@@ -225,7 +239,7 @@ async function candidateStillEligible(candidate: PeptidesPreviewFollowupCandidat
   return result.rows[0]?.eligible === true;
 }
 
-async function sendCandidate(candidate: PeptidesPreviewFollowupCandidate): Promise<"sent" | "failed" | "skipped"> {
+async function sendCandidate(candidate: PeptidesPreviewFollowupCandidate): Promise<"sent" | "failed" | "skipped" | "reconcileRequired"> {
   const key = `${ADVISORY_LOCK_PREFIX}:${candidate.email}:${candidate.stage}`;
   const client = await pool.connect();
   let locked = false;
@@ -250,7 +264,7 @@ async function sendCandidate(candidate: PeptidesPreviewFollowupCandidate): Promi
 
     let sent = false;
     try {
-      sent = await sendPeptidesPreviewFollowupEmail({
+      const delivery = await sendPeptidesPreviewFollowupEmail({
         stage: candidate.stage,
         leadId: candidate.leadId,
         email: candidate.email,
@@ -258,30 +272,37 @@ async function sendCandidate(candidate: PeptidesPreviewFollowupCandidate): Promi
         result: candidate.result,
         attribution: candidate.attribution,
       });
+      const providerOutcome = classifyPeptidesPreviewProviderOutcome(delivery);
+      sent = providerOutcome === "success";
+      const reconcileRequired = providerOutcome === "reconcile_required";
       await client.query(
         `UPDATE email_tracking
             SET sendpulse_status = $2,
                 sendpulse_error = $3,
                 metadata = COALESCE(metadata, '{}'::jsonb) || $4::jsonb
           WHERE id = $1`,
-        [claimId, sent ? "success" : "failed", sent ? null : "provider_send_failed", JSON.stringify({
-          deliveryState: sent ? "accepted" : "confirmed_failed",
+        [claimId, sent ? "success" : reconcileRequired ? "pending" : "failed", sent ? null : reconcileRequired ? "provider_outcome_unknown" : "provider_send_failed", JSON.stringify({
+          deliveryState: sent ? "accepted" : reconcileRequired ? "reconcile_required" : "confirmed_failed",
+          providerHttpStatus: delivery.httpStatus ?? null,
+          providerError: delivery.error == null ? null : String(delivery.error),
           completedAt: new Date().toISOString(),
         })],
       );
+      if (reconcileRequired) return "reconcileRequired";
     } catch (error) {
       await client.query(
         `UPDATE email_tracking
-            SET sendpulse_status = 'failed',
+            SET sendpulse_status = 'pending',
                 sendpulse_error = $2,
                 metadata = COALESCE(metadata, '{}'::jsonb) || $3::jsonb
           WHERE id = $1`,
         [claimId, error instanceof Error ? error.message : String(error), JSON.stringify({
-          deliveryState: "confirmed_failed",
+          deliveryState: "reconcile_required",
+          providerOutcomeUnknown: true,
           completedAt: new Date().toISOString(),
         })],
       ).catch(() => undefined);
-      throw error;
+      return "reconcileRequired";
     }
     if (!sent) return "failed";
 
@@ -311,10 +332,11 @@ export async function processPeptidesPreviewFollowups(options: {
   dryRun?: boolean;
   maxToSend?: number;
   now?: Date;
+  knownEnabled?: boolean;
 } = {}): Promise<PeptidesPreviewFollowupRun> {
   const now = options.now || new Date();
   const dryRun = options.dryRun !== false;
-  const enabled = await isPeptidesPreviewFollowupEnabled();
+  const enabled = options.knownEnabled ?? await isPeptidesPreviewFollowupEnabled();
   const maxToSend = Math.min(Math.max(Number(options.maxToSend) || 3, 1), 25);
   const candidates = await loadCandidates(now);
   const selected = candidates.slice(0, maxToSend);
@@ -329,6 +351,7 @@ export async function processPeptidesPreviewFollowups(options: {
     sent: 0,
     failed: 0,
     skipped: 0,
+    reconcileRequired: 0,
     byStage,
     candidates: selected.map(({ leadId, email, stage, capturedAt }) => ({ leadId, email, stage, capturedAt })),
   };
@@ -351,13 +374,13 @@ export function startPeptidesPreviewFollowupWorker(): void {
   if (workerStarted) return;
   workerStarted = true;
   const run = async () => {
-    if (workerRunning || !(await isPeptidesPreviewFollowupEnabled())) return;
-    if (!isWithinParisWindow()) return;
+    if (workerRunning || !isWithinParisWindow()) return;
+    if (!(await isPeptidesPreviewFollowupEnabled())) return;
     workerRunning = true;
     try {
       const maxToSend = Number(process.env.PEPTIDES_PREVIEW_FOLLOWUP_MAX_PER_TICK || 3);
-      const result = await processPeptidesPreviewFollowups({ dryRun: false, maxToSend });
-      if (result.sent || result.failed) console.log("[PeptidesPreviewFollowup]", result);
+      const result = await processPeptidesPreviewFollowups({ dryRun: false, maxToSend, knownEnabled: true });
+      if (result.sent || result.failed || result.reconcileRequired) console.log("[PeptidesPreviewFollowup]", result);
     } catch (error) {
       console.error("[PeptidesPreviewFollowup] worker failed", error instanceof Error ? error.message : error);
     } finally {
