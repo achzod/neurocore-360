@@ -1415,18 +1415,6 @@ const customStyles = `
 export default function ApexLabs() {
   return (
     <div className="min-h-screen bg-black">
-      <div className="relative z-50 border-b border-amber-300/20 bg-gradient-to-r from-amber-500/10 via-black to-emerald-500/10 px-4 py-2.5">
-        <a
-          href="/peptides-preview?utm_source=apexlabs_homepage&utm_medium=top_banner&utm_campaign=pre_peptides_engine"
-          data-testid="homepage-peptides-preview-cta"
-          onClick={() => trackClick("peptides_preview_entry_apexlabs_banner", "/peptides-preview")}
-          className="mx-auto flex max-w-6xl items-center justify-center gap-2 text-center text-xs font-bold tracking-wide text-zinc-100 transition hover:text-amber-200 sm:text-sm"
-        >
-          <span className="rounded-full bg-amber-300 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-black">Nouveau</span>
-          <span>Preview Peptides gratuite</span>
-          <span className="text-amber-300">Estimer mon stack →</span>
-        </a>
-      </div>
       <style>{customStyles}</style>
       <Header />
       <Hero />
