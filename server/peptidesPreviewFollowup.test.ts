@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  classifyPeptidesPreviewProviderOutcome,
   choosePeptidesPreviewFollowupStage,
   isEligiblePreviewFollowupEmail,
 } from "./peptidesPreviewFollowupRules";
@@ -43,7 +44,13 @@ test("successful stage tracking is idempotent and stops the sequence", () => {
 
 test("failed attempts do not count as a delivered stage", () => {
   const capturedAt = new Date("2026-09-21T00:00:00Z");
-  assert.equal(choosePeptidesPreviewFollowupStage(capturedAt, [tracking("J1", "2026-09-24T00:00:00Z", "failed")], now), "J1");
+  assert.equal(choosePeptidesPreviewFollowupStage(capturedAt, [tracking("J1", "2026-09-25T11:00:00Z", "failed")], now), null);
+  assert.equal(choosePeptidesPreviewFollowupStage(capturedAt, [tracking("J1", "2026-09-25T09:59:00Z", "failed")], now), "J1");
+});
+
+test("pending reconciliation blocks only its recipient without consuming another send slot", () => {
+  const capturedAt = new Date("2026-09-21T00:00:00Z");
+  assert.equal(choosePeptidesPreviewFollowupStage(capturedAt, [tracking("J1", "2026-09-24T00:00:00Z", "pending")], now), null);
 });
 
 test("stale leads and unsafe addresses are excluded", () => {
@@ -52,4 +59,12 @@ test("stale leads and unsafe addresses are excluded", () => {
   assert.equal(isEligiblePreviewFollowupEmail("johndoe@yahoo.fr"), false);
   assert.equal(isEligiblePreviewFollowupEmail("qa@test.com"), false);
   assert.equal(isEligiblePreviewFollowupEmail("coaching@achzodcoaching.com"), false);
+});
+
+test("provider ambiguity fails closed instead of retrying a possible send", () => {
+  assert.equal(classifyPeptidesPreviewProviderOutcome({ result: true, httpStatus: 200 }), "success");
+  assert.equal(classifyPeptidesPreviewProviderOutcome({ result: false, httpStatus: 422, error: "quota" }), "confirmed_failed");
+  assert.equal(classifyPeptidesPreviewProviderOutcome({ result: false, error: "unsubscribed" }), "confirmed_failed");
+  assert.equal(classifyPeptidesPreviewProviderOutcome({ result: false, error: "TypeError: fetch failed" }), "reconcile_required");
+  assert.equal(classifyPeptidesPreviewProviderOutcome({ result: false, error: "database connection reset after provider call" }), "reconcile_required");
 });

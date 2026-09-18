@@ -13,6 +13,26 @@ export type PeptidesPreviewFollowupTracking = {
   sendpulseTaskId: string | null;
 };
 
+export type PeptidesPreviewProviderOutcome = "success" | "confirmed_failed" | "reconcile_required";
+
+export function classifyPeptidesPreviewProviderOutcome(result: {
+  result: boolean;
+  httpStatus?: number;
+  error?: unknown;
+}): PeptidesPreviewProviderOutcome {
+  if (result.result === true) return "success";
+  const error = (() => {
+    try {
+      return typeof result.error === "string" ? result.error : JSON.stringify(result.error || "");
+    } catch {
+      return String(result.error || "");
+    }
+  })().toLowerCase();
+  if (Number.isFinite(result.httpStatus)) return "confirmed_failed";
+  if (/unsubscribed|credentials not configured|auth failed|recipient invalid/.test(error)) return "confirmed_failed";
+  return "reconcile_required";
+}
+
 export function normalizePreviewFollowupEmail(value: unknown): string {
   return String(value || "").trim().toLowerCase();
 }
@@ -42,6 +62,22 @@ function successfulStageAt(
   return matches[0] || null;
 }
 
+function stageTemporarilyBlocked(
+  tracking: PeptidesPreviewFollowupTracking[],
+  stage: PeptidesPreviewFollowupStage,
+  now: Date,
+): boolean {
+  const emailType = `peptidesPreviewFollowup${stage}`;
+  return tracking.some((item) => {
+    if (item.emailType !== emailType || successfulTracking(item)) return false;
+    const status = String(item.sendpulseStatus || "").toLowerCase();
+    if (status === "pending") return true;
+    if (status !== "failed") return false;
+    const sentAt = new Date(item.sentAt).getTime();
+    return Number.isFinite(sentAt) && now.getTime() - sentAt < 2 * 3_600_000;
+  });
+}
+
 export function choosePeptidesPreviewFollowupStage(
   capturedAt: Date,
   tracking: PeptidesPreviewFollowupTracking[],
@@ -53,8 +89,12 @@ export function choosePeptidesPreviewFollowupStage(
   const j1 = successfulStageAt(tracking, "J1");
   const j3 = successfulStageAt(tracking, "J3");
   const j7 = successfulStageAt(tracking, "J7");
-  if (!j1) return "J1";
-  if (!j3 && ageHours >= 72 && now.getTime() - j1.getTime() >= 36 * 3_600_000) return "J3";
-  if (!j7 && j3 && ageHours >= 168 && now.getTime() - j3.getTime() >= 72 * 3_600_000) return "J7";
+  if (!j1) return stageTemporarilyBlocked(tracking, "J1", now) ? null : "J1";
+  if (!j3 && ageHours >= 72 && now.getTime() - j1.getTime() >= 36 * 3_600_000) {
+    return stageTemporarilyBlocked(tracking, "J3", now) ? null : "J3";
+  }
+  if (!j7 && j3 && ageHours >= 168 && now.getTime() - j3.getTime() >= 72 * 3_600_000) {
+    return stageTemporarilyBlocked(tracking, "J7", now) ? null : "J7";
+  }
   return null;
 }
