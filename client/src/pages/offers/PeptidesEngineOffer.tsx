@@ -279,10 +279,10 @@ function FlashCountdown({ compact = false }: { compact?: boolean }) {
 function FlashBanner() {
   const { expired } = useCountdown(FLASH_DEADLINE_MS);
   if (expired) return null;
-  // Sticky just below the Header (Header is sticky top-0 z-50, ~64px tall).
+  // Sticky just below the Header and its sitewide Pre-Peptides announcement bar.
   return (
     <div
-      className="sticky top-[64px] z-[45] w-full border-b border-[#D2D2D7] bg-white/85 backdrop-blur-md"
+      className="sticky top-[101px] z-[45] w-full border-b border-[#D2D2D7] bg-white/85 backdrop-blur-md"
     >
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-3 px-4 py-3 text-center md:gap-6">
         <span
@@ -2247,6 +2247,20 @@ function Hero() {
           <span style={{ color: PRIMARY }}>Ta source secrete.</span>
         </motion.h1>
 
+        <motion.a
+          href="/peptides-preview?utm_source=peptides_offer&utm_medium=hero_badge&utm_campaign=pre_peptides_engine"
+          data-testid="peptides-offer-preview-badge"
+          onClick={() => trackClick("peptides_preview_entry_offer_badge", "/peptides-preview")}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.15 }}
+          className="mx-auto mt-5 inline-flex items-center gap-2 rounded-full border border-[#0071E3]/25 bg-[#0071E3]/[0.07] px-4 py-2 text-xs font-bold text-[#0071E3] transition hover:border-[#0071E3]/50 hover:bg-[#0071E3]/10 md:text-sm"
+        >
+          <FlaskConical className="h-4 w-4" />
+          Pré-Peptides Engine gratuit · Résultat personnalisé en 2 min
+          <ArrowRight className="h-4 w-4" />
+        </motion.a>
+
         {/* Subtitle */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}
@@ -2298,7 +2312,7 @@ function Hero() {
               className="inline-flex items-center justify-center gap-2 rounded-full px-8 py-5 text-base font-semibold text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl"
               style={{ backgroundColor: PRIMARY }}
             >
-              Estimer mon stack gratuitement
+              Lancer mon Pré-Peptides gratuit
               <ArrowRight className="h-5 w-5" />
             </a>
             <a

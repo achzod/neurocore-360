@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { Menu, X, LogOut, User, ChevronDown, MessageCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
-import { trackWhatsAppClick } from "@/lib/analytics";
+import { trackClick, trackWhatsAppClick } from "@/lib/analytics";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,6 +43,21 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[#333333] bg-[#000000]" role="banner">
+      <a
+        href="/peptides-preview?utm_source=sitewide_header&utm_medium=announcement_bar&utm_campaign=pre_peptides_engine"
+        data-testid="sitewide-pre-peptides-cta"
+        onClick={() => trackClick("peptides_preview_entry_sitewide_header", "/peptides-preview")}
+        className="group flex min-h-9 items-center justify-center gap-2 border-b border-[#FCDD00]/35 bg-[#FCDD00] px-3 py-2 text-center text-[10px] font-black uppercase tracking-[0.12em] text-black transition-colors hover:bg-white sm:text-xs"
+      >
+        <span className="rounded-full bg-black px-2 py-0.5 text-[9px] tracking-[0.16em] text-[#FCDD00] sm:text-[10px]">
+          Gratuit
+        </span>
+        <span>Pré-Peptides Engine</span>
+        <span className="hidden font-bold normal-case tracking-normal sm:inline">
+          Découvre tes molécules et ton budget en 2 min
+        </span>
+        <span aria-hidden="true" className="transition-transform group-hover:translate-x-0.5">→</span>
+      </a>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center gap-4">
           {/* Logo - APEXLABS Design System */}
