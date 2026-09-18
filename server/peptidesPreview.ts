@@ -945,7 +945,7 @@ function eligibleNarrative(
     rationale: `Ton aperçu ne se contente plus de nommer un objectif : il construit ${frenchList(roles)}, distingue les phases actives dans « ${durationLabel} » et chiffre la commande complète à $${grandTotalUsd.toFixed(2)} livraison comprise. Peptides Engine transforme ensuite cette architecture en calendrier individualisé, unités et liste d’achat finale.`,
     analysisPoints: points,
     requiredMarkers: [],
-    nextStepExplanation: "Débloque Peptides Engine pour recevoir la sélection nominative, la progression semaine par semaine, les ajustements selon ton profil, la reconstitution, les unités et la liste d’achat finale sans remplir un second questionnaire.",
+    nextStepExplanation: "Commence Peptides Engine et complète son questionnaire dédié pour recevoir la sélection nominative, la progression semaine par semaine, les ajustements selon ton profil, la reconstitution, les unités et la liste d’achat finale.",
   };
 }
 

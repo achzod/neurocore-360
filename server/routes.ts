@@ -8,6 +8,7 @@ import { saveProgressSchema, insertAuditSchema, insertReviewSchema, ProductPrice
 import { z } from "zod";
 import { getStripeKlarnaClient, getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
 import { createCheckoutSessionWithPaymentMethodFallback } from "./stripeCheckoutPaymentMethods";
+import { validatePeptidesEngineResponses } from "./peptidesEngineQuestionnaire";
 import { calculateScoresFromResponses, generateFullAnalysis } from "./analysisEngine";
 import { startReportGeneration, getJobStatus, forceRegenerate } from "./reportJobManager";
 import {
@@ -46,7 +47,6 @@ import { kickPeptidesPreviewDeliveryQueue, startPeptidesPreviewDeliveryWorker } 
 import { processPeptidesPreviewFollowups, setPeptidesPreviewFollowupEnabled, startPeptidesPreviewFollowupWorker } from "./peptidesPreviewFollowup";
 import {
   createPeptidesPreviewCheckoutToken,
-  mapPreviewToPeptidesResponses,
   recordPeptidesPreviewConversionEvent,
   verifyPeptidesPreviewCheckoutToken,
 } from "./peptidesPreviewConversion";
@@ -4719,6 +4719,7 @@ export async function registerRoutes(
     return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmed);
   };
 
+
   // Tier pricing for PEPTIDES_ENGINE (3 offres distinctes : Solo / Coached / Tracked).
   // Le rapport reste IDENTIQUE entre les tiers ; seul l'ecosysteme autour change.
   const PEPTIDES_TIER_PRICE_CENTS: Record<"solo" | "coached" | "tracked", number> = {
@@ -4734,18 +4735,20 @@ export async function registerRoutes(
 
   app.post("/api/stripe/create-checkout-session", checkoutLimiter, async (req, res) => {
     try {
-      const { priceId: clientPriceId, planType, promoCode, referrer, fbp, fbc, userAgent, sourceUrl, peptidesEngineConsent, peptidesTier: rawTier } = req.body;
-      let email = req.body?.email;
-      let responses = req.body?.responses;
-      let previewLeadId: string | null = null;
+      const { priceId: clientPriceId, email, planType, responses, promoCode, referrer, fbp, fbc, userAgent, sourceUrl, peptidesEngineConsent, peptidesTier: rawTier } = req.body;
       const previewToken = typeof req.body?.previewToken === "string" ? req.body.previewToken : "";
+      let previewLeadId: string | null = null;
       const paymentRail = planType === "PEPTIDES_ENGINE" && req.body?.paymentRail === "klarna"
         ? "klarna"
         : "standard";
+      if (!isValidEmailFormat(email)) {
+        res.status(400).json({ error: "EMAIL_INVALID", message: "Adresse email invalide. Verifie qu'il y a bien un point dans le domaine (par exemple @gmail.com et non @gmailcom)." });
+        return;
+      }
 
-      // A signed Pre-Peptides handoff is authoritative. Reload the profile from
-      // the server so a browser cannot alter the lead email or questionnaire
-      // payload before checkout.
+      // A signed Pré-Peptides token is attribution only. It may identify the
+      // originating lead, but it never supplies or completes Peptides Engine
+      // questionnaire answers.
       if (planType === "PEPTIDES_ENGINE" && previewToken) {
         let claims: ReturnType<typeof verifyPeptidesPreviewCheckoutToken>;
         try {
@@ -4767,26 +4770,27 @@ export async function registerRoutes(
           return;
         }
         const saved = row.responses && typeof row.responses === "object" ? row.responses : {};
-        const { peptidesPreviewInputSchema } = await import("./peptidesPreview");
-        const input = peptidesPreviewInputSchema.parse(saved.previewInput);
-        const result = saved.previewResult;
-        if (!result || typeof result !== "object") {
-          res.status(409).json({ error: "PREVIEW_RESULT_UNAVAILABLE", message: "Ton estimation doit être recalculée." });
+        const previewEmail = String(saved?.previewInput?.email || "").trim().toLowerCase();
+        if (!previewEmail || previewEmail !== String(email).trim().toLowerCase()) {
+          res.status(409).json({ error: "PREVIEW_EMAIL_MISMATCH", message: "Utilise la même adresse email que pour ton estimation Pré-Peptides." });
           return;
         }
         previewLeadId = row.id;
-        email = input.email;
-        responses = mapPreviewToPeptidesResponses(input, result, row.id);
-      }
-      if (!isValidEmailFormat(email)) {
-        res.status(400).json({ error: "EMAIL_INVALID", message: "Adresse email invalide. Verifie qu'il y a bien un point dans le domaine (par exemple @gmail.com et non @gmailcom)." });
-        return;
       }
 
       // Mandatory consent gate for PEPTIDES_ENGINE. Refus de checkout sans
       // acceptation explicite, horodatée et versionnée. Stocké dans
       // order.metadata pour preuve en cas de litige Stripe/PayPal.
       if (planType === "PEPTIDES_ENGINE") {
+        const questionnaire = validatePeptidesEngineResponses(responses, email);
+        if (!questionnaire.valid) {
+          res.status(400).json({
+            error: "PEPTIDES_QUESTIONNAIRE_INCOMPLETE",
+            message: "Complète le questionnaire Peptides Engine avant de passer au paiement.",
+            missing: questionnaire.missing,
+          });
+          return;
+        }
         if (!peptidesEngineConsent || peptidesEngineConsent.accepted !== true || typeof peptidesEngineConsent.version !== "string") {
           res.status(400).json({
             error: "CONSENT_REQUIRED",
@@ -4861,8 +4865,7 @@ export async function registerRoutes(
         return;
       }
 
-      // APEX stays on Stripe AE. Klarna alone uses the Stripe FR rail; both
-      // webhook secrets are verified by the shared webhook below.
+      // APEX stays on Stripe AE. Klarna alone uses the Stripe FR rail.
       const stripe = paymentRail === "klarna"
         ? getStripeKlarnaClient()
         : await getUncachableStripeClient();
@@ -5149,9 +5152,9 @@ export async function registerRoutes(
       if (previewLeadId) {
         await recordPeptidesPreviewConversionEvent(previewLeadId, "checkout_created", {
           tier: peptidesTier || "coached",
-        }).catch((eventError) => {
-          console.error("[PeptidesPreview] checkout_created tracking failed:", eventError);
-        });
+          paymentRail,
+          checkoutSessionId: session.id,
+        }).catch((error) => console.error("[PeptidesPreview] checkout_created tracking failed", error));
       }
 
       res.json({ sessionId: session.id, url: session.url });
@@ -5183,6 +5186,7 @@ export async function registerRoutes(
         throw new Error(`Order ${orderId} not found while granting blood credits`);
       }
       const meta = (check.rows[0]?.metadata ?? {}) as Record<string, unknown>;
+      const previewLeadId = typeof meta.previewLeadId === "string" ? meta.previewLeadId : "";
       if (meta[metadataFlag] === true) {
         await client.query("COMMIT");
         return;
@@ -5202,6 +5206,10 @@ export async function registerRoutes(
       );
       await client.query("COMMIT");
       console.log(`[Credit] Granted +${creditCount} blood credit(s) to ${email} for order ${orderId} (${metadataFlag})`);
+      if (metadataFlag === "peptidesCreditsGranted" && previewLeadId) {
+        await recordPeptidesPreviewConversionEvent(previewLeadId, "paid", { orderId })
+          .catch((error) => console.error("[PeptidesPreview] paid tracking failed", error));
+      }
     } catch (err) {
       await client.query("ROLLBACK").catch(() => {});
       console.error(`[Credit] Failed to grant credits for order ${orderId}:`, err);
@@ -5647,6 +5655,8 @@ export async function registerRoutes(
       }
 
       const { email, planType, responses, promoCode, fbp, fbc, userAgent, sourceUrl, peptidesEngineConsent, peptidesTier: rawTier } = req.body;
+      const previewToken = typeof req.body?.previewToken === "string" ? req.body.previewToken : "";
+      let previewLeadId: string | null = null;
       if (!email || !planType) {
         res.status(400).json({ error: "email et planType requis" });
         return;
@@ -5656,8 +5666,46 @@ export async function registerRoutes(
         return;
       }
 
+      if (planType === "PEPTIDES_ENGINE" && previewToken) {
+        let claims: ReturnType<typeof verifyPeptidesPreviewCheckoutToken>;
+        try {
+          claims = verifyPeptidesPreviewCheckoutToken(previewToken);
+        } catch {
+          res.status(401).json({ error: "PREVIEW_TOKEN_INVALID", message: "Ton lien Pré-Peptides a expiré ou n’est plus valide." });
+          return;
+        }
+        const row = (await pool.query(
+          `SELECT id, responses
+             FROM burnout_progress
+            WHERE id = $1
+              AND email LIKE 'peptides-preview::%'
+            LIMIT 1`,
+          [claims.leadId],
+        )).rows[0];
+        const saved = row?.responses && typeof row.responses === "object" ? row.responses : {};
+        const previewEmail = String(saved?.previewInput?.email || "").trim().toLowerCase();
+        if (!row) {
+          res.status(404).json({ error: "PREVIEW_NOT_FOUND", message: "Ton estimation Pré-Peptides est introuvable." });
+          return;
+        }
+        if (!previewEmail || previewEmail !== String(email).trim().toLowerCase()) {
+          res.status(409).json({ error: "PREVIEW_EMAIL_MISMATCH", message: "Utilise la même adresse email que pour ton estimation Pré-Peptides." });
+          return;
+        }
+        previewLeadId = row.id;
+      }
+
       // Mandatory consent gate for PEPTIDES_ENGINE (idem Stripe).
       if (planType === "PEPTIDES_ENGINE") {
+        const questionnaire = validatePeptidesEngineResponses(responses, email);
+        if (!questionnaire.valid) {
+          res.status(400).json({
+            error: "PEPTIDES_QUESTIONNAIRE_INCOMPLETE",
+            message: "Complète le questionnaire Peptides Engine avant de passer au paiement.",
+            missing: questionnaire.missing,
+          });
+          return;
+        }
         if (!peptidesEngineConsent || peptidesEngineConsent.accepted !== true || typeof peptidesEngineConsent.version !== "string") {
           res.status(400).json({
             error: "CONSENT_REQUIRED",
@@ -11294,17 +11342,6 @@ export async function registerRoutes(
             });
             console.log(`[Webhook] Order ${order.id} marked as paid via webhook`);
 
-            const previewLeadId = typeof (order.metadata as any)?.previewLeadId === "string"
-              ? String((order.metadata as any).previewLeadId)
-              : "";
-            if (previewLeadId) {
-              await recordPeptidesPreviewConversionEvent(previewLeadId, "paid", {
-                tier: String((order.metadata as any)?.peptidesTier || "coached"),
-              }).catch((eventError) => {
-                console.error("[PeptidesPreview] paid tracking failed:", eventError);
-              });
-            }
-
             // Meta CAPI , server-side Purchase event (recovers 30-50% lost to ITP/adblockers)
             // event_id must match the client-side Pixel eventID for Meta to dedup correctly.
             // Any failure is swallowed , CAPI must never block the webhook response.
@@ -14492,13 +14529,7 @@ export async function registerRoutes(
         },
       });
       const checkoutToken = createPeptidesPreviewCheckoutToken(progress.id);
-      const checkoutParams = new URLSearchParams({
-        tier: "solo",
-        utm_source: "peptides_preview",
-        utm_medium: "result",
-        utm_campaign: "pre_peptides_engine",
-      });
-      const checkoutUrl = `/peptides-engine?${checkoutParams.toString()}#preview_token=${encodeURIComponent(checkoutToken)}`;
+      const checkoutUrl = `/peptides-engine?tier=solo&utm_source=peptides_preview&utm_medium=result&utm_campaign=pre_peptides_engine#preview_token=${encodeURIComponent(checkoutToken)}`;
       kickPeptidesPreviewDeliveryQueue();
       const resultEmailSent = queuedNotifications?.clientEmailSent === true;
       const adminNotificationSent = queuedNotifications?.adminEmailSent === true;
@@ -14539,16 +14570,17 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/peptides-preview/checkout-context", peptidesLimiter, async (req, res) => {
+  app.post("/api/peptides-preview/handoff-context", peptidesLimiter, async (req, res) => {
     res.setHeader("Cache-Control", "no-store, private");
     try {
       const token = typeof req.body?.token === "string" ? req.body.token : "";
       const claims = verifyPeptidesPreviewCheckoutToken(token);
       const row = (await pool.query(
-        `SELECT id, responses
+        `SELECT id
            FROM burnout_progress
           WHERE id = $1
             AND email LIKE 'peptides-preview::%'
+            AND responses->>'previewStatus' = 'completed'
           LIMIT 1`,
         [claims.leadId],
       )).rows[0];
@@ -14556,40 +14588,17 @@ export async function registerRoutes(
         res.status(404).json({ success: false, error: "preview_not_found" });
         return;
       }
-      const saved = row.responses && typeof row.responses === "object" ? row.responses : {};
-      const { peptidesPreviewInputSchema } = await import("./peptidesPreview");
-      const input = peptidesPreviewInputSchema.parse(saved.previewInput);
-      const result = saved.previewResult;
-      if (!result || typeof result !== "object") {
-        res.status(409).json({ success: false, error: "preview_result_unavailable" });
-        return;
-      }
-      const responses = mapPreviewToPeptidesResponses(input, result, row.id);
-      await recordPeptidesPreviewConversionEvent(row.id, "engine_prefilled", {
+      await recordPeptidesPreviewConversionEvent(row.id, "engine_started", {
         source: typeof req.body?.source === "string" ? req.body.source.slice(0, 80) : null,
         campaign: typeof req.body?.campaign === "string" ? req.body.campaign.slice(0, 120) : null,
-        tier: ["solo", "coached", "tracked"].includes(req.body?.tier) ? req.body.tier : "solo",
       });
-      res.json({
-        success: true,
-        leadId: row.id,
-        firstName: input.firstName,
-        email: input.email,
-        responses,
-        estimate: {
-          moleculeCount: Number(result.moleculeCount || 0),
-          durationLabel: String(result.durationLabel || ""),
-          estimatedGrandTotalUsd: result.estimatedGrandTotalUsd == null
-            ? null
-            : Number(result.estimatedGrandTotalUsd),
-        },
-      });
+      res.json({ success: true, leadId: row.id });
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      const isTokenError = message.startsWith("PEPTIDES_PREVIEW_");
+      const message = error instanceof Error ? error.message : "handoff_context_unavailable";
+      const isTokenError = message === "PEPTIDES_PREVIEW_INVALID_TOKEN" || message === "PEPTIDES_PREVIEW_TOKEN_EXPIRED";
       res.status(isTokenError ? 401 : 500).json({
         success: false,
-        error: isTokenError ? message.toLowerCase() : "checkout_context_unavailable",
+        error: isTokenError ? message.toLowerCase() : "handoff_context_unavailable",
       });
     }
   });
@@ -14599,22 +14608,36 @@ export async function registerRoutes(
       const token = typeof req.body?.token === "string" ? req.body.token : "";
       const eventType = typeof req.body?.eventType === "string" ? req.body.eventType : "";
       const claims = verifyPeptidesPreviewCheckoutToken(token);
+      const exists = (await pool.query(
+        `SELECT 1 FROM burnout_progress
+          WHERE id = $1
+            AND email LIKE 'peptides-preview::%'
+          LIMIT 1`,
+        [claims.leadId],
+      )).rowCount;
+      if (!exists) {
+        res.status(404).json({ success: false, error: "preview_not_found" });
+        return;
+      }
       const rawMetadata = req.body?.metadata && typeof req.body.metadata === "object"
         ? req.body.metadata as Record<string, unknown>
         : {};
       const metadata = Object.fromEntries(
-        Object.entries(rawMetadata)
-          .filter(([key, value]) => ["tier", "source", "campaign", "errorCode"].includes(key)
-            && ["string", "number", "boolean"].includes(typeof value))
-          .slice(0, 8)
-          .map(([key, value]) => [key, typeof value === "string" ? value.slice(0, 160) : value]),
+        Object.entries(rawMetadata).slice(0, 12).map(([key, value]) => [
+          key.slice(0, 60),
+          typeof value === "string" ? value.slice(0, 200) : value,
+        ]),
       );
       await recordPeptidesPreviewConversionEvent(claims.leadId, eventType, metadata);
       res.json({ success: true });
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      const invalid = message.startsWith("PEPTIDES_PREVIEW_");
-      res.status(invalid ? 400 : 500).json({ success: false, error: invalid ? message.toLowerCase() : "event_unavailable" });
+      const message = error instanceof Error ? error.message : "conversion_event_unavailable";
+      const status = message === "PEPTIDES_PREVIEW_INVALID_TOKEN" || message === "PEPTIDES_PREVIEW_TOKEN_EXPIRED"
+        ? 401
+        : message === "PEPTIDES_PREVIEW_INVALID_EVENT"
+        ? 400
+        : 500;
+      res.status(status).json({ success: false, error: message.toLowerCase() });
     }
   });
 

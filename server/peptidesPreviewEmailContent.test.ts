@@ -153,12 +153,13 @@ test("eligible client receives the direct recommendation, arithmetic, landed quo
   assert.doesNotMatch(content.text, /Supplier Secret|supplier\.invalid/);
 });
 
-test("personalized profile converts directly to Peptides Engine without another step", () => {
+test("personalized profile routes to the distinct Peptides Engine questionnaire", () => {
   const content = buildPeptidesPreviewResultEmailContent(input, personalized("medicaments_a_integrer"), buildPeptidesPreviewDestinationPath("peptides_engine", "email"), "https://apexlabs.test");
   assert.match(content.subject, /estimation Peptides Engine.*2 molécules.*12 semaines/);
   assert.match(content.html, /traitement déclaré sera intégré directement/);
   assert.match(content.text, /Débloque Peptides Engine maintenant/);
   assert.match(content.html, /Débloquer mon analyse Peptides Engine/);
+  assert.match(content.text, /Peptides Engine commence par son propre questionnaire complet/);
   assert.match(content.text, /\/peptides-engine\?tier=solo.*utm_source=peptides_preview_email/);
   assert.doesNotMatch(content.html, /À valider|Blood Analysis|marqueurs à vérifier|validation|BPC-157|250 mcg/);
   assert.doesNotMatch(content.text, /À valider|Blood Analysis|informations supplémentaires|BPC-157|250 mcg/);
@@ -171,13 +172,6 @@ test("testosterone profile is not diverted to blood analysis", () => {
   assert.match(content.text, /utm_source=peptides_preview_email&utm_medium=email/);
   assert.doesNotMatch(content.html, /Blood Analysis|MARQUEURS À VÉRIFIER|Vérifier mes marqueurs|peptides_preview_admin|BPC-157|250 mcg/);
   assert.doesNotMatch(content.text, /Blood Analysis|bilan.*avant|marqueurs à vérifier/);
-});
-
-test("signed handoff token stays in the URL fragment instead of query logs", () => {
-  const destination = buildPeptidesPreviewDestinationPath("peptides_engine", "email", "signed.token");
-  assert.match(destination, /\/peptides-engine\?tier=solo/);
-  assert.match(destination, /#preview_token=signed\.token$/);
-  assert.doesNotMatch(destination.split("#")[0], /preview_token/);
 });
 
 test("admin notification is scannable and contains the exact copy-ready client email", () => {

@@ -51,13 +51,7 @@ const STORAGE_KEY = "peptides_engine_responses";
 // Le rapport généré est IDENTIQUE dans les 3 tiers ; seul l'écosystème autour change.
 export type PeptidesTier = "solo" | "coached" | "tracked";
 type PaymentRail = "card" | "klarna";
-type PreviewCheckoutState = "absent" | "loading" | "ready" | "error";
-
-interface PreviewCheckoutEstimate {
-  moleculeCount: number;
-  durationLabel: string;
-  estimatedGrandTotalUsd: number | null;
-}
+type PreviewHandoffState = "absent" | "loading" | "ready" | "error";
 
 const TIER_CONFIG: Record<PeptidesTier, {
   label: string;
@@ -351,9 +345,9 @@ function CheckoutCard({
   return (
     <div className="space-y-6">
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-white">Choisis ton niveau d'accompagnement</h2>
+        <h2 className="text-2xl font-bold text-white">Ton protocole est pret</h2>
         <p className="text-white/50 text-sm">
-          Le protocole personnalisé est inclus dans chaque formule
+          Choisis ton niveau d'accompagnement et confirme le paiement
         </p>
       </div>
 
@@ -563,14 +557,13 @@ export default function PeptidesEnginePage() {
   const [paymentRail, setPaymentRail] = useState<PaymentRail>("card");
   const [previewToken] = useState(() => {
     if (typeof window === "undefined") return "";
-    const fragmentToken = new URLSearchParams(window.location.hash.replace(/^#/, ""))
-      .get("preview_token");
+    const fragmentToken = new URLSearchParams(window.location.hash.replace(/^#/, "")).get("preview_token");
     return fragmentToken || new URLSearchParams(window.location.search).get("preview_token") || "";
   });
-  const [previewCheckoutState, setPreviewCheckoutState] = useState<PreviewCheckoutState>(
+  const [previewLeadId, setPreviewLeadId] = useState("");
+  const [previewHandoffState, setPreviewHandoffState] = useState<PreviewHandoffState>(
     previewToken ? "loading" : "absent",
   );
-  const [previewEstimate, setPreviewEstimate] = useState<PreviewCheckoutEstimate | null>(null);
   // Tier preselected from ?tier= URL param (set by landing page CTAs).
   // Default to "coached" (sweet spot) so direct visits land on the recommended.
   const [tier, setTier] = useState<PeptidesTier>(() => readTierFromUrl());
@@ -579,8 +572,9 @@ export default function PeptidesEnginePage() {
   const isLastSection = sectionIndex === totalSections - 1;
   const progress = showCheckout ? 100 : Math.round(((sectionIndex + 1) / totalSections) * 100);
 
-  // Load from localStorage on mount + recovery save to server. A signed
-  // Pre-Peptides link always wins over stale questionnaire data on the device.
+  // Generic visits can recover the generic questionnaire. A signed Preview
+  // handoff uses a lead-scoped key so another person's browser data can never
+  // be mistaken for answers to this distinct questionnaire.
   useEffect(() => {
     if (previewToken) return;
     try {
@@ -619,17 +613,17 @@ export default function PeptidesEnginePage() {
         metadata,
       });
     } catch {
-      // Conversion telemetry must never block checkout.
+      // Conversion telemetry never blocks the questionnaire or checkout.
     }
   }, [previewToken]);
 
   useEffect(() => {
     if (!previewToken) return;
     let cancelled = false;
-    const loadPreviewContext = async () => {
+    const loadHandoff = async () => {
       try {
         const sourceParams = new URLSearchParams(window.location.search);
-        const response = await fetch("/api/peptides-preview/checkout-context", {
+        const response = await fetch("/api/peptides-preview/handoff-context", {
           method: "POST",
           credentials: "same-origin",
           headers: { Accept: "application/json", "Content-Type": "application/json" },
@@ -637,43 +631,53 @@ export default function PeptidesEnginePage() {
             token: previewToken,
             source: sourceParams.get("utm_source") || undefined,
             campaign: sourceParams.get("utm_campaign") || undefined,
-            tier: readTierFromUrl(),
           }),
         });
         const data = await response.json();
-        if (!response.ok || !data?.success || !data?.responses) {
-          throw new Error(data?.error || "preview_context_unavailable");
+        if (!response.ok || !data?.success || !data?.leadId) {
+          throw new Error(data?.error || "preview_handoff_unavailable");
         }
         if (cancelled) return;
-        setResponses(data.responses);
-        setPreviewEstimate(data.estimate || null);
-        setSectionIndex(PEPTIDES_SECTIONS.length - 1);
-        setShowCheckout(true);
-        setPreviewCheckoutState("ready");
-        const cleanParams = new URLSearchParams(window.location.search);
-        cleanParams.delete("preview_token");
-        const cleanQuery = cleanParams.toString();
-        window.history.replaceState({}, "", `${window.location.pathname}${cleanQuery ? `?${cleanQuery}` : ""}`);
+        const leadId = String(data.leadId);
+        setPreviewLeadId(leadId);
+        try {
+          const saved = localStorage.getItem(`${STORAGE_KEY}:${leadId}`);
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed.responses) setResponses(parsed.responses);
+            if (typeof parsed.sectionIndex === "number") setSectionIndex(parsed.sectionIndex);
+            if (parsed.showCheckout) setShowCheckout(true);
+          } else {
+            setResponses({});
+            setSectionIndex(0);
+            setShowCheckout(false);
+          }
+        } catch {
+          setResponses({});
+          setSectionIndex(0);
+          setShowCheckout(false);
+        }
+        setPreviewHandoffState("ready");
       } catch {
-        if (!cancelled) setPreviewCheckoutState("error");
+        if (!cancelled) setPreviewHandoffState("error");
       }
     };
-    void loadPreviewContext();
+    void loadHandoff();
     return () => { cancelled = true; };
   }, [previewToken]);
 
   // Save to localStorage on every change
   useEffect(() => {
-    if (previewToken) return;
+    if (previewToken && (previewHandoffState !== "ready" || !previewLeadId)) return;
     try {
       localStorage.setItem(
-        STORAGE_KEY,
+        previewLeadId ? `${STORAGE_KEY}:${previewLeadId}` : STORAGE_KEY,
         JSON.stringify({ responses, sectionIndex, showCheckout })
       );
     } catch {
       // Storage full ,  ignore
     }
-  }, [previewToken, responses, sectionIndex, showCheckout]);
+  }, [previewToken, previewLeadId, previewHandoffState, responses, sectionIndex, showCheckout]);
 
   // Handle ?cancelled=true return from Stripe cancel flow.
   useEffect(() => {
@@ -683,7 +687,9 @@ export default function PeptidesEnginePage() {
         title: "Paiement annulé",
         description: "Tu peux relancer le paiement quand tu veux, tes réponses sont gardées.",
       });
-      window.history.replaceState({}, "", "/peptides-engine");
+      urlParams.delete("cancelled");
+      const cleanQuery = urlParams.toString();
+      window.history.replaceState({}, "", `/peptides-engine${cleanQuery ? `?${cleanQuery}` : ""}${window.location.hash}`);
       setShowCheckout(true);
     }
   }, [toast]);
@@ -711,6 +717,7 @@ export default function PeptidesEnginePage() {
   const handleNext = () => {
     if (isLastSection) {
       setShowCheckout(true);
+      void recordPreviewEvent("questionnaire_completed", { responseCount: Object.keys(responses).length });
       saveToServer(sectionIndex + 1, responses);
     } else {
       setSectionIndex((i) => Math.min(i + 1, totalSections - 1));
@@ -822,7 +829,7 @@ export default function PeptidesEnginePage() {
 
       if (data?.alreadyPaid && data?.redirect) {
         // Already paid ,  redirect to report or dashboard
-        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(previewLeadId ? `${STORAGE_KEY}:${previewLeadId}` : STORAGE_KEY);
         window.location.href = data.redirect;
       } else if (data?.url) {
         // Stripe checkout redirect
@@ -851,22 +858,22 @@ export default function PeptidesEnginePage() {
   const currentSection = PEPTIDES_SECTIONS[sectionIndex];
   const SectionIcon = SECTION_ICONS[currentSection.id] ?? User;
 
-  if (previewToken && previewCheckoutState !== "ready") {
+  if (previewToken && previewHandoffState !== "ready") {
     return (
       <div className="min-h-screen bg-[#0a0a0a] text-white">
         <Header />
         <main className="mx-auto max-w-2xl px-4 py-20">
-          {previewCheckoutState === "loading" ? (
+          {previewHandoffState === "loading" ? (
             <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center">
               <Loader2 className="mx-auto h-7 w-7 animate-spin text-amber-400" aria-hidden="true" />
-              <h1 className="mt-5 text-xl font-bold">Je récupère ton estimation</h1>
-              <p className="mt-2 text-sm text-white/55">Tes réponses sont reprises automatiquement. Aucun questionnaire à recommencer.</p>
+              <h1 className="mt-5 text-xl font-bold">Je sécurise ton accès</h1>
+              <p className="mt-2 text-sm leading-6 text-white/55">Ton estimation Pré-Peptides est reliée à ce parcours. Le questionnaire Peptides Engine reste distinct et commence juste après.</p>
             </div>
           ) : (
             <div className="rounded-2xl border border-red-400/25 bg-red-400/5 p-8 text-center">
               <AlertTriangle className="mx-auto h-7 w-7 text-red-300" aria-hidden="true" />
-              <h1 className="mt-5 text-xl font-bold">Le lien n’a pas pu être récupéré</h1>
-              <p className="mt-2 text-sm leading-6 text-white/55">Je ne te renvoie pas vers un formulaire vide. Recharge cette page ou écris directement à Achzod pour récupérer ton accès.</p>
+              <h1 className="mt-5 text-xl font-bold">Le lien n’a pas pu être vérifié</h1>
+              <p className="mt-2 text-sm leading-6 text-white/55">Je ne peux pas associer ce parcours à ton estimation. Recharge la page ou écris directement à Achzod pour récupérer un accès valide.</p>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
                 <Button onClick={() => window.location.reload()} className="bg-amber-500 font-bold text-black hover:bg-amber-400">Réessayer</Button>
                 <a href="https://wa.me/971585210514" className="rounded-md border border-white/15 px-4 py-2 text-sm font-semibold text-white hover:bg-white/5">Écrire sur WhatsApp</a>
@@ -993,7 +1000,7 @@ export default function PeptidesEnginePage() {
               transition={{ duration: 0.25, ease: "easeInOut" }}
             >
               {/* Back button */}
-              {!previewToken && <div className="mb-6">
+              <div className="mb-6">
                 <Button
                   variant="ghost"
                   onClick={handleBack}
@@ -1003,26 +1010,7 @@ export default function PeptidesEnginePage() {
                   <ChevronLeft className="h-4 w-4 mr-1" aria-hidden="true" />
                   Modifier mes reponses
                 </Button>
-              </div>}
-
-              {previewToken && (
-                <div className="mb-6 rounded-2xl border border-emerald-400/25 bg-emerald-400/10 p-5">
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-emerald-300" aria-hidden="true" />
-                    <div>
-                      <p className="font-bold text-white">Tes réponses sont bien récupérées</p>
-                      <p className="mt-1 text-sm leading-6 text-white/60">
-                        {previewEstimate?.moleculeCount
-                          ? `${previewEstimate.moleculeCount} molécule${previewEstimate.moleculeCount > 1 ? "s" : ""} estimée${previewEstimate.moleculeCount > 1 ? "s" : ""} · ${previewEstimate.durationLabel || "durée conservée"}`
-                          : "Ton profil et ton estimation sont déjà reliés à cette commande."}
-                        {previewEstimate?.estimatedGrandTotalUsd != null
-                          ? ` · budget produits et livraison $${previewEstimate.estimatedGrandTotalUsd.toFixed(2)}`
-                          : ""}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+              </div>
 
               <CheckoutCard
                 responses={responses}
