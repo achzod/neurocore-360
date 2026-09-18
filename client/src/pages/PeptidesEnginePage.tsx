@@ -51,6 +51,13 @@ const STORAGE_KEY = "peptides_engine_responses";
 // Le rapport généré est IDENTIQUE dans les 3 tiers ; seul l'écosystème autour change.
 export type PeptidesTier = "solo" | "coached" | "tracked";
 type PaymentRail = "card" | "klarna";
+type PreviewCheckoutState = "absent" | "loading" | "ready" | "error";
+
+interface PreviewCheckoutEstimate {
+  moleculeCount: number;
+  durationLabel: string;
+  estimatedGrandTotalUsd: number | null;
+}
 
 const TIER_CONFIG: Record<PeptidesTier, {
   label: string;
@@ -344,9 +351,9 @@ function CheckoutCard({
   return (
     <div className="space-y-6">
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-white">Ton protocole est pret</h2>
+        <h2 className="text-2xl font-bold text-white">Choisis ton niveau d'accompagnement</h2>
         <p className="text-white/50 text-sm">
-          Choisis ton niveau d'accompagnement et confirme le paiement
+          Le protocole personnalisé est inclus dans chaque formule
         </p>
       </div>
 
@@ -554,6 +561,16 @@ export default function PeptidesEnginePage() {
   const [promoCode, setPromoCode] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [paymentRail, setPaymentRail] = useState<PaymentRail>("card");
+  const [previewToken] = useState(() => {
+    if (typeof window === "undefined") return "";
+    const fragmentToken = new URLSearchParams(window.location.hash.replace(/^#/, ""))
+      .get("preview_token");
+    return fragmentToken || new URLSearchParams(window.location.search).get("preview_token") || "";
+  });
+  const [previewCheckoutState, setPreviewCheckoutState] = useState<PreviewCheckoutState>(
+    previewToken ? "loading" : "absent",
+  );
+  const [previewEstimate, setPreviewEstimate] = useState<PreviewCheckoutEstimate | null>(null);
   // Tier preselected from ?tier= URL param (set by landing page CTAs).
   // Default to "coached" (sweet spot) so direct visits land on the recommended.
   const [tier, setTier] = useState<PeptidesTier>(() => readTierFromUrl());
@@ -562,8 +579,10 @@ export default function PeptidesEnginePage() {
   const isLastSection = sectionIndex === totalSections - 1;
   const progress = showCheckout ? 100 : Math.round(((sectionIndex + 1) / totalSections) * 100);
 
-  // Load from localStorage on mount + recovery save to server
+  // Load from localStorage on mount + recovery save to server. A signed
+  // Pre-Peptides link always wins over stale questionnaire data on the device.
   useEffect(() => {
+    if (previewToken) return;
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
@@ -586,10 +605,66 @@ export default function PeptidesEnginePage() {
     } catch {
       // Corrupted storage ,  start fresh
     }
-  }, []);
+  }, [previewToken]);
+
+  const recordPreviewEvent = useCallback(async (
+    eventType: string,
+    metadata: Record<string, string | number | boolean> = {},
+  ) => {
+    if (!previewToken) return;
+    try {
+      await apiRequest("POST", "/api/peptides-preview/conversion-event", {
+        token: previewToken,
+        eventType,
+        metadata,
+      });
+    } catch {
+      // Conversion telemetry must never block checkout.
+    }
+  }, [previewToken]);
+
+  useEffect(() => {
+    if (!previewToken) return;
+    let cancelled = false;
+    const loadPreviewContext = async () => {
+      try {
+        const sourceParams = new URLSearchParams(window.location.search);
+        const response = await fetch("/api/peptides-preview/checkout-context", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { Accept: "application/json", "Content-Type": "application/json" },
+          body: JSON.stringify({
+            token: previewToken,
+            source: sourceParams.get("utm_source") || undefined,
+            campaign: sourceParams.get("utm_campaign") || undefined,
+            tier: readTierFromUrl(),
+          }),
+        });
+        const data = await response.json();
+        if (!response.ok || !data?.success || !data?.responses) {
+          throw new Error(data?.error || "preview_context_unavailable");
+        }
+        if (cancelled) return;
+        setResponses(data.responses);
+        setPreviewEstimate(data.estimate || null);
+        setSectionIndex(PEPTIDES_SECTIONS.length - 1);
+        setShowCheckout(true);
+        setPreviewCheckoutState("ready");
+        const cleanParams = new URLSearchParams(window.location.search);
+        cleanParams.delete("preview_token");
+        const cleanQuery = cleanParams.toString();
+        window.history.replaceState({}, "", `${window.location.pathname}${cleanQuery ? `?${cleanQuery}` : ""}`);
+      } catch {
+        if (!cancelled) setPreviewCheckoutState("error");
+      }
+    };
+    void loadPreviewContext();
+    return () => { cancelled = true; };
+  }, [previewToken]);
 
   // Save to localStorage on every change
   useEffect(() => {
+    if (previewToken) return;
     try {
       localStorage.setItem(
         STORAGE_KEY,
@@ -598,7 +673,7 @@ export default function PeptidesEnginePage() {
     } catch {
       // Storage full ,  ignore
     }
-  }, [responses, sectionIndex, showCheckout]);
+  }, [previewToken, responses, sectionIndex, showCheckout]);
 
   // Handle ?cancelled=true return from Stripe cancel flow.
   useEffect(() => {
@@ -729,6 +804,7 @@ export default function PeptidesEnginePage() {
         planType: "PEPTIDES_ENGINE",
         peptidesTier: tier,
         responses,
+        previewToken: previewToken || undefined,
         referrer: urlRef || undefined,
         promoCode: promoCode.trim() || undefined,
         paymentRail,
@@ -760,6 +836,10 @@ export default function PeptidesEnginePage() {
       }
     },
     onError: (error: any) => {
+      void recordPreviewEvent("checkout_error", {
+        tier,
+        errorCode: String(error?.message || "checkout_error").slice(0, 160),
+      });
       toast({
         title: "Erreur",
         description: error?.message || "Une erreur est survenue. Reessaie.",
@@ -771,12 +851,39 @@ export default function PeptidesEnginePage() {
   const currentSection = PEPTIDES_SECTIONS[sectionIndex];
   const SectionIcon = SECTION_ICONS[currentSection.id] ?? User;
 
+  if (previewToken && previewCheckoutState !== "ready") {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] text-white">
+        <Header />
+        <main className="mx-auto max-w-2xl px-4 py-20">
+          {previewCheckoutState === "loading" ? (
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center">
+              <Loader2 className="mx-auto h-7 w-7 animate-spin text-amber-400" aria-hidden="true" />
+              <h1 className="mt-5 text-xl font-bold">Je récupère ton estimation</h1>
+              <p className="mt-2 text-sm text-white/55">Tes réponses sont reprises automatiquement. Aucun questionnaire à recommencer.</p>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-red-400/25 bg-red-400/5 p-8 text-center">
+              <AlertTriangle className="mx-auto h-7 w-7 text-red-300" aria-hidden="true" />
+              <h1 className="mt-5 text-xl font-bold">Le lien n’a pas pu être récupéré</h1>
+              <p className="mt-2 text-sm leading-6 text-white/55">Je ne te renvoie pas vers un formulaire vide. Recharge cette page ou écris directement à Achzod pour récupérer ton accès.</p>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+                <Button onClick={() => window.location.reload()} className="bg-amber-500 font-bold text-black hover:bg-amber-400">Réessayer</Button>
+                <a href="https://wa.me/971585210514" className="rounded-md border border-white/15 px-4 py-2 text-sm font-semibold text-white hover:bg-white/5">Écrire sur WhatsApp</a>
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       <Header />
 
       <main className="max-w-2xl mx-auto px-4 py-10 pb-24">
-        <a
+        {!previewToken && <a
           href="/peptides-preview?utm_source=peptides_questionnaire&utm_medium=top_banner&utm_campaign=pre_peptides_engine"
           data-testid="peptides-questionnaire-preview-cta"
           onClick={() => trackClick("peptides_preview_entry_questionnaire", "/peptides-preview")}
@@ -787,7 +894,7 @@ export default function PeptidesEnginePage() {
             <span className="mt-1 block text-sm font-semibold text-white">Estime d'abord les molécules et le budget adaptés à ton profil</span>
           </span>
           <ChevronRight className="h-5 w-5 shrink-0 text-amber-400" aria-hidden="true" />
-        </a>
+        </a>}
 
         {/* Progress bar */}
         <div className="mb-8 space-y-2" aria-label={`Progression: ${progress}%`}>
@@ -886,7 +993,7 @@ export default function PeptidesEnginePage() {
               transition={{ duration: 0.25, ease: "easeInOut" }}
             >
               {/* Back button */}
-              <div className="mb-6">
+              {!previewToken && <div className="mb-6">
                 <Button
                   variant="ghost"
                   onClick={handleBack}
@@ -896,7 +1003,26 @@ export default function PeptidesEnginePage() {
                   <ChevronLeft className="h-4 w-4 mr-1" aria-hidden="true" />
                   Modifier mes reponses
                 </Button>
-              </div>
+              </div>}
+
+              {previewToken && (
+                <div className="mb-6 rounded-2xl border border-emerald-400/25 bg-emerald-400/10 p-5">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-emerald-300" aria-hidden="true" />
+                    <div>
+                      <p className="font-bold text-white">Tes réponses sont bien récupérées</p>
+                      <p className="mt-1 text-sm leading-6 text-white/60">
+                        {previewEstimate?.moleculeCount
+                          ? `${previewEstimate.moleculeCount} molécule${previewEstimate.moleculeCount > 1 ? "s" : ""} estimée${previewEstimate.moleculeCount > 1 ? "s" : ""} · ${previewEstimate.durationLabel || "durée conservée"}`
+                          : "Ton profil et ton estimation sont déjà reliés à cette commande."}
+                        {previewEstimate?.estimatedGrandTotalUsd != null
+                          ? ` · budget produits et livraison $${previewEstimate.estimatedGrandTotalUsd.toFixed(2)}`
+                          : ""}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <CheckoutCard
                 responses={responses}
@@ -909,7 +1035,10 @@ export default function PeptidesEnginePage() {
                 paymentRail={paymentRail}
                 onPaymentRailChange={setPaymentRail}
                 tier={tier}
-                onTierChange={setTier}
+                onTierChange={(nextTier) => {
+                  setTier(nextTier);
+                  void recordPreviewEvent("tier_selected", { tier: nextTier });
+                }}
               />
             </motion.div>
           )}

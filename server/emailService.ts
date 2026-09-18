@@ -9,6 +9,7 @@ import {
   type PeptidesPreviewEmailInput,
   type PeptidesPreviewEmailResult,
 } from "./peptidesPreviewEmailContent";
+import { createPeptidesPreviewCheckoutToken } from "./peptidesPreviewConversion";
 
 const SENDPULSE_USER_ID =
   process.env.SENDPULSE_USER_ID || process.env.SENDPULSE_API_USER_ID || "";
@@ -6239,8 +6240,9 @@ export async function sendPeptidesPreviewResultEmail(
   result: PeptidesPreviewEmailResult,
   leadId: string,
 ): Promise<boolean> {
-  const emailCheckoutUrl = buildPeptidesPreviewDestinationPath(result.nextStep, "email");
-  const content = buildPeptidesPreviewResultEmailContent(input, result, emailCheckoutUrl, String(process.env.APP_URL || "https://apexlabs.onrender.com"));
+  const checkoutToken = createPeptidesPreviewCheckoutToken(leadId);
+  const emailCheckoutUrl = buildPeptidesPreviewDestinationPath(result.nextStep, "email", checkoutToken);
+  const content = buildPeptidesPreviewResultEmailContent(input, result, emailCheckoutUrl, "https://apexlabs.achzodcoaching.com");
   const delivery = await sendEmailWithTracking({ html: encodeBase64(content.html), text: content.text, subject: content.subject, from: { name: SENDER_NAME, email: SENDER_EMAIL }, to: [{ email: input.email, name: input.firstName }] }, { emailType: "peptidesPreviewResult", recipientEmail: input.email, recipientName: input.firstName, auditId: leadId, auditType: "PEPTIDES_PREVIEW", metadata: { leadId, status: result.status, nextStep: result.nextStep, grandTotalUsd: result.estimatedGrandTotalUsd } });
   return delivery.result === true;
 }
@@ -6255,7 +6257,14 @@ export async function sendPeptidesPreviewFollowupEmail(input: {
 }): Promise<SendPulseSendResult> {
   const appUrl = "https://apexlabs.achzodcoaching.com";
   const campaign = `pre_peptides_followup_${input.stage.toLowerCase()}`;
-  const destination = `${appUrl}/peptides-engine?tier=solo&utm_source=apexlabs&utm_medium=email&utm_campaign=${campaign}&utm_content=unlock_protocol`;
+  const checkoutToken = createPeptidesPreviewCheckoutToken(input.leadId);
+  const destinationPath = buildPeptidesPreviewDestinationPath("peptides_engine", "email", checkoutToken);
+  const destinationUrl = new URL(destinationPath, appUrl);
+  destinationUrl.searchParams.set("utm_source", "apexlabs");
+  destinationUrl.searchParams.set("utm_medium", "email");
+  destinationUrl.searchParams.set("utm_campaign", campaign);
+  destinationUrl.searchParams.set("utm_content", "unlock_protocol");
+  const destination = destinationUrl.toString();
   const whatsapp = "https://wa.me/971585210514?text=" + encodeURIComponent(
     `Salut Achzod, j'ai reçu mon estimation Pré-Peptides et j'ai une question avant de débloquer mon protocole complet. Mon email : ${input.email}`,
   );
@@ -6334,7 +6343,8 @@ export async function sendPeptidesPreviewAdminNotification(
   clientEmailSent: boolean,
 ): Promise<boolean> {
   const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
-  const content = buildPeptidesPreviewAdminNotificationContent(input, result, leadId, clientEmailSent, String(process.env.APP_URL || "https://apexlabs.onrender.com"));
+  const checkoutToken = createPeptidesPreviewCheckoutToken(leadId);
+  const content = buildPeptidesPreviewAdminNotificationContent(input, result, leadId, clientEmailSent, "https://apexlabs.achzodcoaching.com", checkoutToken);
   const delivery = await sendEmailWithTracking({ html: encodeBase64(content.html), text: content.text, subject: content.subject, from: { name: SENDER_NAME, email: SENDER_EMAIL }, to: [{ email: adminEmail }] }, { emailType: "peptidesPreviewAdmin", recipientEmail: adminEmail, recipientName: "Achzod", auditId: leadId, auditType: "PEPTIDES_PREVIEW", metadata: { leadId, clientEmail: input.email, status: result.status, nextStep: result.nextStep, grandTotalUsd: result.estimatedGrandTotalUsd } });
   return delivery.result === true;
 }
