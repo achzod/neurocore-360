@@ -22,6 +22,23 @@ test("signed preview attribution tokens are scoped, tamper-evident and expire", 
     () => verifyPeptidesPreviewCheckoutToken(`${token.slice(0, -1)}x`, now + 1_000),
     /PEPTIDES_PREVIEW_INVALID_TOKEN/,
   );
+
+  // Node accepts non-canonical base64url spellings whose discarded padding
+  // bits decode to the same bytes. Reject those textual mutations too.
+  const [payload, encodedSignature] = token.split(".");
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+  const finalIndex = alphabet.indexOf(encodedSignature.at(-1)!);
+  assert.equal(finalIndex % 4, 0);
+  const nonCanonicalSignature = `${encodedSignature.slice(0, -1)}${alphabet[finalIndex + 1]}`;
+  assert.deepEqual(
+    Buffer.from(nonCanonicalSignature, "base64url"),
+    Buffer.from(encodedSignature, "base64url"),
+  );
+  assert.throws(
+    () => verifyPeptidesPreviewCheckoutToken(`${payload}.${nonCanonicalSignature}`, now + 1_000),
+    /PEPTIDES_PREVIEW_INVALID_TOKEN/,
+  );
+
   assert.throws(
     () => verifyPeptidesPreviewCheckoutToken(token, now + 15 * 24 * 60 * 60 * 1_000),
     /PEPTIDES_PREVIEW_TOKEN_EXPIRED/,
