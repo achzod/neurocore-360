@@ -57,7 +57,12 @@ export function verifyPeptidesPreviewCheckoutToken(
   }
   const expected = signature(encoded);
   const received = Buffer.from(encodedSignature, "base64url");
-  if (received.length !== expected.length || !crypto.timingSafeEqual(received, expected)) {
+  const canonicalSignature = received.toString("base64url");
+  if (
+    canonicalSignature !== encodedSignature
+    || received.length !== expected.length
+    || !crypto.timingSafeEqual(received, expected)
+  ) {
     throw new Error("PEPTIDES_PREVIEW_INVALID_TOKEN");
   }
   let payload: CheckoutTokenPayload;
