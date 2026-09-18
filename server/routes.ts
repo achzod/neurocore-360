@@ -42,7 +42,7 @@ import {
   type CoachingFormulaLeadInput,
 } from "./emailService";
 import { kickPeptidesPreviewDeliveryQueue, startPeptidesPreviewDeliveryWorker } from "./peptidesPreviewDeliveryQueue";
-import { processPeptidesPreviewFollowups, startPeptidesPreviewFollowupWorker } from "./peptidesPreviewFollowup";
+import { processPeptidesPreviewFollowups, setPeptidesPreviewFollowupEnabled, startPeptidesPreviewFollowupWorker } from "./peptidesPreviewFollowup";
 import { generateExportHTML, generateExportPDF } from "./exportService";
 import { generateAndConvertAuditWithOpenAI } from "./openaiPremiumEngine";
 import { formatTxtToDashboard, formatSectionToHTML, getSectionsByCategory } from "./formatDashboard";
@@ -14310,6 +14310,20 @@ export async function registerRoutes(
       const expectedBlock = message === "PEPTIDES_PREVIEW_FOLLOWUP_DISABLED"
         || message === "PEPTIDES_PREVIEW_FOLLOWUP_OUTSIDE_PARIS_WINDOW";
       res.status(expectedBlock ? 409 : 500).json({ success: false, error: message });
+    }
+  });
+
+  app.post("/api/admin/peptides-preview-followups/config", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    if (typeof req.body?.enabled !== "boolean") {
+      res.status(400).json({ success: false, error: "enabled_boolean_required" });
+      return;
+    }
+    try {
+      const enabled = await setPeptidesPreviewFollowupEnabled(req.body.enabled, "admin_api");
+      res.json({ success: true, enabled });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error instanceof Error ? error.message : String(error) });
     }
   });
 
