@@ -13,9 +13,56 @@ import {
 
 const WORKER_INTERVAL_MS = 15 * 60_000;
 const ADVISORY_LOCK_PREFIX = "peptides_preview_followup";
+const FEATURE_FLAG_KEY = "peptides_preview_followup";
 
 let workerStarted = false;
 let workerRunning = false;
+let featureFlagTableReady = false;
+
+async function ensureFeatureFlagTable(): Promise<void> {
+  if (featureFlagTableReady) return;
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS automation_feature_flags (
+      key TEXT PRIMARY KEY,
+      enabled BOOLEAN NOT NULL DEFAULT FALSE,
+      metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  await pool.query(
+    `INSERT INTO automation_feature_flags (key, enabled, metadata)
+     VALUES ($1, FALSE, $2::jsonb)
+     ON CONFLICT (key) DO NOTHING`,
+    [FEATURE_FLAG_KEY, JSON.stringify({ owner: "peptidesPreviewFollowupWorker" })],
+  );
+  featureFlagTableReady = true;
+}
+
+export async function isPeptidesPreviewFollowupEnabled(): Promise<boolean> {
+  if (process.env.PEPTIDES_PREVIEW_FOLLOWUP_ENABLED === "0") return false;
+  if (process.env.PEPTIDES_PREVIEW_FOLLOWUP_ENABLED === "1") return true;
+  await ensureFeatureFlagTable();
+  const result = await pool.query<{ enabled: boolean }>(
+    `SELECT enabled FROM automation_feature_flags WHERE key = $1`,
+    [FEATURE_FLAG_KEY],
+  );
+  return result.rows[0]?.enabled === true;
+}
+
+export async function setPeptidesPreviewFollowupEnabled(enabled: boolean, source = "admin"): Promise<boolean> {
+  await ensureFeatureFlagTable();
+  await pool.query(
+    `INSERT INTO automation_feature_flags (key, enabled, metadata, updated_at)
+     VALUES ($1, $2, $3::jsonb, NOW())
+     ON CONFLICT (key) DO UPDATE
+       SET enabled = EXCLUDED.enabled,
+           metadata = COALESCE(automation_feature_flags.metadata, '{}'::jsonb) || EXCLUDED.metadata,
+           updated_at = NOW()`,
+    [FEATURE_FLAG_KEY, enabled, JSON.stringify({ source, changedAt: new Date().toISOString() })],
+  );
+  return isPeptidesPreviewFollowupEnabled();
+}
 
 export type PeptidesPreviewFollowupCandidate = {
   leadId: string;
@@ -267,7 +314,7 @@ export async function processPeptidesPreviewFollowups(options: {
 } = {}): Promise<PeptidesPreviewFollowupRun> {
   const now = options.now || new Date();
   const dryRun = options.dryRun !== false;
-  const enabled = process.env.PEPTIDES_PREVIEW_FOLLOWUP_ENABLED === "1";
+  const enabled = await isPeptidesPreviewFollowupEnabled();
   const maxToSend = Math.min(Math.max(Number(options.maxToSend) || 3, 1), 25);
   const candidates = await loadCandidates(now);
   const selected = candidates.slice(0, maxToSend);
@@ -304,7 +351,7 @@ export function startPeptidesPreviewFollowupWorker(): void {
   if (workerStarted) return;
   workerStarted = true;
   const run = async () => {
-    if (workerRunning || process.env.PEPTIDES_PREVIEW_FOLLOWUP_ENABLED !== "1") return;
+    if (workerRunning || !(await isPeptidesPreviewFollowupEnabled())) return;
     if (!isWithinParisWindow()) return;
     workerRunning = true;
     try {
@@ -319,5 +366,7 @@ export function startPeptidesPreviewFollowupWorker(): void {
   };
   const timer = setInterval(() => void run(), WORKER_INTERVAL_MS);
   timer.unref();
-  console.log(`[PeptidesPreviewFollowup] worker registered every ${WORKER_INTERVAL_MS / 60_000}min, enabled=${process.env.PEPTIDES_PREVIEW_FOLLOWUP_ENABLED === "1"}`);
+  void isPeptidesPreviewFollowupEnabled()
+    .then((enabled) => console.log(`[PeptidesPreviewFollowup] worker registered every ${WORKER_INTERVAL_MS / 60_000}min, enabled=${enabled}`))
+    .catch((error) => console.error("[PeptidesPreviewFollowup] feature flag check failed", error instanceof Error ? error.message : error));
 }
