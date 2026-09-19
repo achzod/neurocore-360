@@ -904,7 +904,7 @@ function synchronizeReconstitutionNarrative(
         (peptide) =>
           `${String(peptide.name || "").toUpperCase()}\n` +
           `Dose et frequence: ${asSentence(peptide.dosage)}\n` +
-          "Format commande: voir la liste de commande verifiee pour le detail exact des vials et des limites de commande.\n" +
+          `Format commande: ${asSentence(peptide.vialsNeeded)}\n` +
           `Reconstitution exacte: ${asSentence(peptide.reconstitution)}`
       ),
       ...(injectablePeptides.length > 0

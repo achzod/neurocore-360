@@ -62,6 +62,31 @@ function parseNumber(value: string): number {
   return Number(value.replace(",", "."));
 }
 
+const FRENCH_COUNT_WORDS: Record<string, number> = {
+  un: 1,
+  une: 1,
+  deux: 2,
+  trois: 3,
+  quatre: 4,
+  cinq: 5,
+  six: 6,
+  sept: 7,
+  huit: 8,
+  neuf: 9,
+  dix: 10,
+  onze: 11,
+  douze: 12,
+  treize: 13,
+  quatorze: 14,
+  quinze: 15,
+  seize: 16,
+  vingt: 20,
+};
+
+function parseCount(value: string): number {
+  return /^\d+$/.test(value) ? Number(value) : FRENCH_COUNT_WORDS[value] || 0;
+}
+
 function toMg(value: number, unit: string): number {
   return /^(?:mcg|ug|µg)$/i.test(unit) ? value / 1000 : value;
 }
@@ -78,20 +103,22 @@ export function parsePeptideCadence(input: PeptideVialPlanningInput): { cycleDay
   const dosage = String(input.dosage || "").toLowerCase();
   const cycle = String(input.cycleDuration || "").toLowerCase();
   const consecutive = `${dosage} ${cycle}`.match(/(?:pendant\s+|cure\s+de\s+)?(\d+)\s*jours?\s*cons[eé]cutifs?/i);
-  const daysMatch = cycle.match(/(\d+)\s*jours?\b/i);
-  const weeksMatch = cycle.match(/(\d+)\s*semaines?\b/i);
+  const countToken = "\\d+|un|une|deux|trois|quatre|cinq|six|sept|huit|neuf|dix|onze|douze|treize|quatorze|quinze|seize|vingt";
+  const daysMatch = cycle.match(new RegExp(`(${countToken})\\s*jours?\\b`, "i"));
+  const weeksMatch = cycle.match(new RegExp(`(${countToken})\\s*semaines?\\b`, "i"));
   const cycleDays = consecutive
     ? Number(consecutive[1])
     : daysMatch
-      ? Number(daysMatch[1])
+      ? parseCount(daysMatch[1])
       : weeksMatch
-        ? Number(weeksMatch[1]) * 7
+        ? parseCount(weeksMatch[1]) * 7
         : 0;
   if (!Number.isFinite(cycleDays) || cycleDays <= 0) return null;
 
   let administrationsPerWeek = 0;
-  const explicit = dosage.match(/(\d+)\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine/i);
-  if (explicit) administrationsPerWeek = Number(explicit[1]);
+  const frequencyToken = "\\d+|un|une|deux|trois|quatre|cinq|six|sept|huit|neuf|dix|onze|douze|treize|quatorze";
+  const explicit = dosage.match(new RegExp(`(${frequencyToken})\\s*(?:fois|injections?|jours?|soirs?)\\s*(?:par|\\/)\\s*semaine`, "i"));
+  if (explicit) administrationsPerWeek = parseCount(explicit[1]);
   else if (/(?:\bpar\s+|\/)semaine\b/i.test(dosage)) administrationsPerWeek = 1;
   else if (/une fois par semaine|hebdomadaire|1x\s*\/\s*sem/i.test(dosage)) administrationsPerWeek = 1;
   else if (/deux fois par semaine/i.test(dosage)) administrationsPerWeek = 2;

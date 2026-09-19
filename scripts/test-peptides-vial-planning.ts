@@ -6,11 +6,21 @@ import {
   formatOperationalVials,
   formatOperationalVialPolicySummary,
   parseDocumentedStabilityConfig,
+  parsePeptideCadence,
   planOperationalVials,
   withoutOperationalVialPolicySummary,
 } from "../server/peptidesVialPlanning";
 
 const documented28Days = parseDocumentedStabilityConfig("");
+
+assert.deepEqual(
+  parsePeptideCadence({ dosage: "400 mcg de blend chaque soir", cycleDuration: "Douze semaines, puis arrêt" }),
+  { cycleDays: 84, administrationsPerWeek: 7 }
+);
+assert.deepEqual(
+  parsePeptideCadence({ dosage: "300 mcg trois fois par semaine", cycleDuration: "Quatre semaines si activé" }),
+  { cycleDays: 28, administrationsPerWeek: 3 }
+);
 
 const clementCjc = planOperationalVials({
   name: "CJC-1295 (no DAC)", dosage: "100 mcg par injection, 5 fois par semaine",
