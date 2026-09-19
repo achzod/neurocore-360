@@ -44,6 +44,17 @@ test("requires testosterone-specific answers when that goal is selected", () => 
   });
 });
 
+test("requires testosterone-specific answers when testosterone is a secondary goal", () => {
+  const result = validatePeptidesEngineResponses({
+    ...complete,
+    pep_secondary_goals: ["fatloss", "testo-boost"],
+  }, "karim@example.com");
+  assert.deepEqual(result, {
+    valid: false,
+    missing: ["pep_testo_bloodwork", "pep_testo_fertility"],
+  });
+});
+
 test("rejects an email mismatch between checkout and questionnaire", () => {
   const result = validatePeptidesEngineResponses(complete, "other@example.com");
   assert.deepEqual(result, { valid: false, missing: ["pep_email"] });

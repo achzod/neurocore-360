@@ -1602,12 +1602,15 @@ function buildCatalogForPrompt(context: PeptauraPromptContext): string {
   return lines.join("\n");
 }
 
-async function buildPeptauraPromptContext(responses: Record<string, unknown>): Promise<PeptauraPromptContext> {
+async function buildPeptauraPromptContext(
+  responses: Record<string, unknown>,
+  options: { forceEnclomipheneSource?: boolean } = {},
+): Promise<PeptauraPromptContext> {
   const country = normalizeDeliveryCountry(responses);
   const [shippingAvailability, catalogRefresh, enclomipheneSource] = await Promise.all([
     fetchPeptauraShippingAvailability(country, true),
     ensurePeptauraCatalogFresh(),
-    hasConfirmedLowTestosterone(responses)
+    hasConfirmedLowTestosterone(responses) || options.forceEnclomipheneSource === true
       ? fetchEnclomipheneSourceSnapshot(true)
       : Promise.resolve(null),
   ]);
@@ -3024,6 +3027,7 @@ export async function generatePeptidesProtocol(
     costBudgetEstimatedUsd?: number;
     initialPreviousError?: string;
     consentAccepted?: boolean;
+    manualExpertDirective?: string;
     peptauraContext?: PeptauraPromptContext;
     providerGenerate?: (params: {
       systemPrompt: string;
@@ -3039,8 +3043,11 @@ export async function generatePeptidesProtocol(
   console.log(`[PeptidesEngine] Starting generation for ${email} (tier=${tier})`);
 
   const firstName = extractFirstName(responses, email);
+  const manualExpertDirective = String(options.manualExpertDirective || "").trim();
   const peptauraContext = options.peptauraContext
-    || await buildPeptauraPromptContext(responses);
+    || await buildPeptauraPromptContext(responses, {
+      forceEnclomipheneSource: /enclomiph[eè]ne/i.test(manualExpertDirective),
+    });
   try {
     assertPeptauraGenerationPreflight(responses, peptauraContext);
   } catch (error) {
@@ -3052,13 +3059,16 @@ export async function generatePeptidesProtocol(
     );
     throw error;
   }
-  const userPrompt = buildUserPrompt(
+  const baseUserPrompt = buildUserPrompt(
     responses,
     firstName,
     peptauraContext,
     tier,
     options.consentAccepted === true
   );
+  const userPrompt = manualExpertDirective
+    ? `${baseUserPrompt}\n\nDIRECTIVE EXPERTE MANUELLE AUTHENTIFIEE:\n${manualExpertDirective}\n\nCette directive ne t'autorise jamais a inventer un bilan, un traitement, une condition medicale ou une disponibilite fournisseur. Si une molecule hormonale est demandee sans bilan recent, conserve-la comme phase conditionnelle et indique explicitement les marqueurs qui doivent confirmer son activation avant la premiere prise. Toutes les autres contraintes de securite, de prix live, de quantites et de coherence restent obligatoires.`
+    : baseUserPrompt;
   // Cost-safe defaults apply to every caller, including legacy/inline paths.
   // A human-only recovery may explicitly request more, but no automatic caller
   // can accidentally inherit the old 2 candidates x 3 transport attempts.
