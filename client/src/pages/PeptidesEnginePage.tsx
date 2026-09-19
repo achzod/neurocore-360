@@ -34,6 +34,7 @@ import { Header } from "@/components/Header";
 import { LiveStatsBar } from "@/components/LiveStatsBar";
 import { apiRequest } from "@/lib/queryClient";
 import { trackBeginCheckout, trackClick, getMetaAttribution } from "@/lib/analytics";
+import { PEPTIDES_PREVIEW_RESUME_KEY, resolveCampaignEngineChoiceDestination } from "@/lib/peptidesPreviewResume";
 import { useToast } from "@/hooks/use-toast";
 import {
   PEPTIDES_SECTIONS,
@@ -599,6 +600,16 @@ export default function PeptidesEnginePage() {
     const fragmentToken = new URLSearchParams(window.location.hash.replace(/^#/, "")).get("preview_token");
     return fragmentToken || new URLSearchParams(window.location.search).get("preview_token") || "";
   });
+  const [campaignEngineChoiceDestination] = useState(() => {
+    if (typeof window === "undefined" || previewToken) return "";
+    let storedResume: string | null = null;
+    try {
+      storedResume = localStorage.getItem(PEPTIDES_PREVIEW_RESUME_KEY);
+    } catch {
+      storedResume = null;
+    }
+    return resolveCampaignEngineChoiceDestination(window.location.search, storedResume) || "";
+  });
   const [previewLeadId, setPreviewLeadId] = useState("");
   const [previewHandoffState, setPreviewHandoffState] = useState<PreviewHandoffState>(
     previewToken ? "loading" : "absent",
@@ -614,11 +625,19 @@ export default function PeptidesEnginePage() {
   const needsPreviewConfirmation = Boolean(previewToken && previewConfirmationFields.length && !showCheckout);
   const progress = showCheckout ? 100 : needsPreviewConfirmation ? 95 : Math.round(((sectionIndex + 1) / totalSections) * 100);
 
+  // A direct Peptides Engine CTA from the campaign must never drop a cold
+  // reader into the legacy full questionnaire. Resume a recent signed Preview
+  // on the same browser; otherwise route to the short free Preview first.
+  useEffect(() => {
+    if (!campaignEngineChoiceDestination) return;
+    window.location.replace(campaignEngineChoiceDestination);
+  }, [campaignEngineChoiceDestination]);
+
   // Generic visits can recover the generic questionnaire. A signed Preview
   // handoff always reloads its server-mapped answers and only restores the
   // small confirmation fields saved for that exact lead.
   useEffect(() => {
-    if (previewToken) return;
+    if (previewToken || campaignEngineChoiceDestination) return;
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
@@ -641,7 +660,7 @@ export default function PeptidesEnginePage() {
     } catch {
       // Corrupted storage ,  start fresh
     }
-  }, [previewToken]);
+  }, [previewToken, campaignEngineChoiceDestination]);
 
   const recordPreviewEvent = useCallback(async (
     eventType: string,
@@ -912,6 +931,21 @@ export default function PeptidesEnginePage() {
   const currentSection = PEPTIDES_SECTIONS[sectionIndex];
   const SectionIcon = SECTION_ICONS[currentSection.id] ?? User;
 
+  if (campaignEngineChoiceDestination) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] text-white">
+        <Header />
+        <main className="mx-auto max-w-2xl px-4 py-20">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center">
+            <Loader2 className="mx-auto h-7 w-7 animate-spin text-amber-400" aria-hidden="true" />
+            <h1 className="mt-5 text-xl font-bold">Je prépare le parcours le plus court</h1>
+            <p className="mt-2 text-sm leading-6 text-white/55">Ton profil déjà calculé sera repris automatiquement. Sinon, tu commences par l’estimation gratuite.</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   if (previewToken && previewHandoffState !== "ready") {
     return (
       <div className="min-h-screen bg-[#0a0a0a] text-white">
@@ -1119,7 +1153,7 @@ export default function PeptidesEnginePage() {
                       <p className="font-bold text-white">Ton profil Pré-Peptides est déjà repris</p>
                       <p className="mt-1 text-sm leading-6 text-white/60">
                         {previewEstimate?.moleculeCount
-                          ? `${previewEstimate.moleculeCount} axe${previewEstimate.moleculeCount > 1 ? "s" : ""} estimé${previewEstimate.moleculeCount > 1 ? "s" : ""} · ${previewEstimate.durationLabel || "durée conservée"}`
+                          ? `${previewEstimate.moleculeCount} molécule${previewEstimate.moleculeCount > 1 ? "s" : ""} estimée${previewEstimate.moleculeCount > 1 ? "s" : ""} · ${previewEstimate.durationLabel || "durée conservée"}`
                           : "Tes réponses sont reliées à cette commande."}
                         {previewEstimate?.estimatedGrandTotalUsd != null ? ` · produits et livraison estimés à $${previewEstimate.estimatedGrandTotalUsd.toFixed(2)}` : ""}
                       </p>
