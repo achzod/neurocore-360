@@ -6125,7 +6125,7 @@ export async function registerRoutes(
   app.post("/api/admin/peptides-generate", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
-      const { email, skipEmail, replaceReportId, manualExpertDirective } = req.body;
+      const { email, skipEmail, replaceReportId, manualExpertDirective, recoveryPreviousError } = req.body;
       if (!email) { res.status(400).json({ error: "email requis" }); return; }
 
       // Get saved responses
@@ -6142,6 +6142,19 @@ export async function registerRoutes(
       const orders = await storage.getOrdersByEmail(email);
       const pepOrder = orders.find((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid");
       const normalizedManualDirective = String(manualExpertDirective || "").trim();
+      const normalizedRecoveryPreviousError = String(recoveryPreviousError || "").trim();
+      if (normalizedRecoveryPreviousError) {
+        const holdActive = (pepOrder?.metadata as any)?.peptidesEmailHold === true
+          || String((pepOrder?.metadata as any)?.peptidesEmailHold).toLowerCase() === "true";
+        if (!skipEmail || replaceReportId || !pepOrder || !holdActive) {
+          res.status(409).json({ error: "recoveryPreviousError exige skipEmail=true, aucun rapport existant et un HOLD actif" });
+          return;
+        }
+        if (normalizedRecoveryPreviousError.length > 2200) {
+          res.status(400).json({ error: "recoveryPreviousError trop longue" });
+          return;
+        }
+      }
       if (normalizedManualDirective) {
         if (!replaceReportId || !skipEmail) {
           res.status(400).json({
@@ -6197,6 +6210,7 @@ export async function registerRoutes(
         orderId: pepOrder?.id,
         maxCandidates: normalizedManualDirective ? 2 : undefined,
         manualExpertDirective: normalizedManualDirective || undefined,
+        initialPreviousError: normalizedRecoveryPreviousError || undefined,
       });
 
       let saved;
@@ -15387,7 +15401,14 @@ export async function registerRoutes(
 
         const { generatePeptidesProtocol } = await import("./peptidesEngine");
         const autoGenTier = ((order.metadata as any)?.peptidesTier as "solo" | "coached" | "tracked" | undefined) ?? "coached";
-        const report = await generatePeptidesProtocol(responses, email, autoGenTier);
+        const report = await generatePeptidesProtocol(responses, email, autoGenTier, {
+          orderId: order.id,
+          initialPreviousError: String(
+            freshMeta?.peptidesGenerationLastError
+            || meta?.peptidesGenerationLastError
+            || "",
+          ).trim() || undefined,
+        });
         const saved = await storage.createBurnoutReport({ email: `peptides::${email}`, responses, report });
 
         // SAFETY #3: Atomic CAS , "first writer wins". If another process already set peptidesReportId

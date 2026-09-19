@@ -3331,7 +3331,12 @@ export class PgStorage implements IStorage {
     await this.ensureOrdersTableCreated();
     const result = await pool.query(
       `UPDATE orders
-         SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('peptidesReportId', $1::text),
+         SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
+               'peptidesReportId', $1::text,
+               'peptidesGenerationState', 'SUCCEEDED',
+               'peptidesGenerationCompletedAt', NOW()::text,
+               'peptidesEmailScheduledAt', (NOW() + INTERVAL '24 hours')::text
+             ),
              updated_at = NOW()
        WHERE id = $2
          AND (metadata IS NULL OR metadata->>'peptidesReportId' IS NULL OR metadata->>'peptidesReportId' = '')
