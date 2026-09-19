@@ -23,6 +23,14 @@ test("shipping parser reads the structured Peptaura country payload", () => {
   assert.deepEqual(shippingForSubtotal(quotes[0], 1300), { costUsd: 0, speed: "Standard" });
 });
 
+test("shipping parser reads availability when Next.js batches several Flight records", () => {
+  const batched = `1:${JSON.stringify("$Sreact.fragment")}\n3:${JSON.stringify(["$", "component"])}\n6:${flight}\n7:${JSON.stringify(["$", "footer"])}`;
+  const batchedHtml = `<script>self.__next_f.push([1,${JSON.stringify(batched)}])</script>`;
+  const quotes = parsePeptauraShippingPage(batchedHtml);
+  assert.equal(quotes.length, 2);
+  assert.deepEqual(shippingForSubtotal(quotes[0], 125), { costUsd: 60, speed: "Standard" });
+});
+
 test("minimum supplier order is enforced before quoting shipping", () => {
   const quote = parsePeptauraShippingPage(html)[1];
   assert.equal(shippingForSubtotal(quote, 47.99), null);

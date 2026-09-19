@@ -37,11 +37,16 @@ export function parsePeptauraShippingPage(html: string): PeptauraShippingQuote[]
   for (const chunk of flightChunks) {
     try {
       const decoded = JSON.parse(`"${chunk[1]}"`);
-      const separator = decoded.indexOf(":");
-      if (separator < 0 || !decoded.includes('"availability"')) continue;
-      const flight = JSON.parse(decoded.slice(separator + 1));
-      const rawVendors = Array.isArray(flight?.[3]?.availability) ? flight[3].availability as RawShippingVendor[] : [];
-      const parsed = rawVendors.map((vendor) => {
+      // Next.js can batch many newline-delimited Flight records in one push.
+      // Parse only the record carrying the shipping availability payload;
+      // parsing everything after the first record id would reject a valid page.
+      const records = decoded.split("\n").filter((record: string) => record.includes('"availability"'));
+      for (const record of records) {
+        const separator = record.indexOf(":");
+        if (separator < 0) continue;
+        const flight = JSON.parse(record.slice(separator + 1));
+        const rawVendors = Array.isArray(flight?.[3]?.availability) ? flight[3].availability as RawShippingVendor[] : [];
+        const parsed = rawVendors.map((vendor) => {
       const supplier = String(vendor.supplierName || '').trim();
       const minimumOrderUsd = vendor.minimumOrder == null ? null : finiteMoney(vendor.minimumOrder);
       const tiers = (Array.isArray(vendor.tiers) ? vendor.tiers as RawShippingTier[] : []).flatMap((tier) => {
@@ -60,8 +65,9 @@ export function parsePeptauraShippingPage(html: string): PeptauraShippingQuote[]
         minimumOrderUsd,
         tiers,
       };
-      }).filter((quote) => quote.supplier.length > 0);
-      if (parsed.length > 0) return parsed;
+        }).filter((quote) => quote.supplier.length > 0);
+        if (parsed.length > 0) return parsed;
+      }
     } catch {
       continue;
     }
