@@ -36,7 +36,13 @@ export function validatePeptidesEngineResponses(
 
   const responses = raw as Record<string, unknown>;
   const required: string[] = [...REQUIRED_RESPONSE_KEYS];
-  if (responses.pep_primary_goal === "testo-boost") {
+  const secondaryGoals = Array.isArray(responses.pep_secondary_goals)
+    ? responses.pep_secondary_goals
+    : [];
+  if (
+    responses.pep_primary_goal === "testo-boost"
+    || secondaryGoals.includes("testo-boost")
+  ) {
     required.push(...TESTOSTERONE_REQUIRED_RESPONSE_KEYS);
   }
 

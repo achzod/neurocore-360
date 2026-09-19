@@ -6123,7 +6123,7 @@ export async function registerRoutes(
   app.post("/api/admin/peptides-generate", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
-      const { email, skipEmail, replaceReportId } = req.body;
+      const { email, skipEmail, replaceReportId, manualExpertDirective } = req.body;
       if (!email) { res.status(400).json({ error: "email requis" }); return; }
 
       // Get saved responses
@@ -6139,6 +6139,25 @@ export async function registerRoutes(
       // Find the paid order for this email up-front (needed for CAS)
       const orders = await storage.getOrdersByEmail(email);
       const pepOrder = orders.find((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid");
+      const normalizedManualDirective = String(manualExpertDirective || "").trim();
+      if (normalizedManualDirective) {
+        if (!replaceReportId || !skipEmail) {
+          res.status(400).json({
+            error: "manualExpertDirective exige replaceReportId et skipEmail=true",
+          });
+          return;
+        }
+        const holdActive = (pepOrder?.metadata as any)?.peptidesEmailHold === true
+          || String((pepOrder?.metadata as any)?.peptidesEmailHold).toLowerCase() === "true";
+        if (!pepOrder || !holdActive) {
+          res.status(409).json({ error: "HOLD actif requis avant regeneration experte" });
+          return;
+        }
+        if (normalizedManualDirective.length > 4000) {
+          res.status(400).json({ error: "manualExpertDirective trop longue" });
+          return;
+        }
+      }
 
       // CROSS-ORDER PROTECTION: if the client paid twice (2 distinct orders), scan
       // ALL paid orders of the same email , not just the first. Without this, the
@@ -6172,7 +6191,11 @@ export async function registerRoutes(
       // Generate synchronously (admin endpoint = manual trigger, can wait)
       const { generatePeptidesProtocol } = await import("./peptidesEngine");
       const manualTier = ((pepOrder?.metadata as any)?.peptidesTier as "solo" | "coached" | "tracked" | undefined) ?? "coached";
-      const report = await generatePeptidesProtocol(responses, email, manualTier);
+      const report = await generatePeptidesProtocol(responses, email, manualTier, {
+        orderId: pepOrder?.id,
+        maxCandidates: normalizedManualDirective ? 2 : undefined,
+        manualExpertDirective: normalizedManualDirective || undefined,
+      });
 
       let saved;
       let claimed = true;
@@ -6185,6 +6208,10 @@ export async function registerRoutes(
         }
         saved = updated;
         console.log(`[Admin] Peptides protocol UPDATED in-place for ${email}: ${saved.id}`);
+        if (normalizedManualDirective && pepOrder) {
+          await storage.setOrderMetadataKey(pepOrder.id, "peptidesManualExpertDirective", normalizedManualDirective);
+          await storage.setOrderMetadataKey(pepOrder.id, "peptidesManualExpertAppliedAt", new Date().toISOString());
+        }
       } else {
         saved = await storage.createBurnoutReport({ email: `peptides::${email}`, responses: responses || {}, report });
         console.log(`[Admin] Peptides protocol generated for ${email}: ${saved.id}`);

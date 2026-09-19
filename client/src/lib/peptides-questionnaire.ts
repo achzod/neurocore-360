@@ -11,7 +11,7 @@ export interface PeptidesQuestion {
   placeholder?: string;
   required?: boolean;
   options?: { value: string; label: string }[];
-  conditionalOn?: string; // Show only if this question has a certain answer
+  conditionalOn?: string | string[]; // Show when one of these field:value conditions matches
   min?: number;
   max?: number;
 }
@@ -101,10 +101,11 @@ export const PEPTIDES_QUESTIONS: PeptidesQuestion[] = [
     { value: "circadian", label: "Decalage circadien" },
   ]},
 
-  // Testosterone-boost sub-questions ,  only shown if user picked testo-boost as primary goal.
+  // Testosterone-boost sub-questions , shown when the user picked testo-boost
+  // as either a primary or secondary goal.
   // These drive the protocol choice (enclomifene vs HCG+kisspeptin vs gonadorelin pulsatile).
   // Without them we'd be prescribing blind; with them the engine can tailor safely.
-  { id: "pep_testo_symptoms", sectionId: "objectifs", type: "checkbox", label: "Symptômes ressentis (coche tout ce qui s'applique)", conditionalOn: "pep_primary_goal:testo-boost", options: [
+  { id: "pep_testo_symptoms", sectionId: "objectifs", type: "checkbox", label: "Symptômes ressentis (coche tout ce qui s'applique)", conditionalOn: ["pep_primary_goal:testo-boost", "pep_secondary_goals:testo-boost"], options: [
     { value: "low-libido", label: "Baisse de libido" },
     { value: "erectile", label: "Difficultés érectiles" },
     { value: "fatigue", label: "Fatigue chronique, manque d'énergie" },
@@ -115,19 +116,19 @@ export const PEPTIDES_QUESTIONS: PeptidesQuestion[] = [
     { value: "morning-wood", label: "Plus d'érections matinales" },
     { value: "none-symptoms", label: "Aucun symptôme (optimisation proactive)" },
   ]},
-  { id: "pep_testo_bloodwork", sectionId: "objectifs", type: "select", label: "Bilan hormonal récent (Testo totale, LH, FSH, E2) ?", conditionalOn: "pep_primary_goal:testo-boost", required: true, options: [
+  { id: "pep_testo_bloodwork", sectionId: "objectifs", type: "select", label: "Bilan hormonal récent (Testo totale, LH, FSH, E2) ?", conditionalOn: ["pep_primary_goal:testo-boost", "pep_secondary_goals:testo-boost"], required: true, options: [
     { value: "recent-low", label: "Oui, < 3 mois, testo basse confirmée" },
     { value: "recent-normal", label: "Oui, < 3 mois, testo dans la norme mais je veux optimiser" },
     { value: "old", label: "Oui, > 3 mois (je vais en refaire un)" },
     { value: "never", label: "Jamais fait ,  je vais en faire un avant" },
   ]},
-  { id: "pep_testo_fertility", sectionId: "objectifs", type: "select", label: "Préserver la fertilité (projet bébé actuel ou futur) ?", conditionalOn: "pep_primary_goal:testo-boost", required: true, options: [
+  { id: "pep_testo_fertility", sectionId: "objectifs", type: "select", label: "Préserver la fertilité (projet bébé actuel ou futur) ?", conditionalOn: ["pep_primary_goal:testo-boost", "pep_secondary_goals:testo-boost"], required: true, options: [
     { value: "critical", label: "Oui, critique ,  je veux concevoir bientôt" },
     { value: "important", label: "Oui, important ,  à moyen terme (1-3 ans)" },
     { value: "nice", label: "Préférable, mais pas urgent" },
     { value: "no", label: "Non, fertilité pas un enjeu" },
   ]},
-  { id: "pep_testo_pct_context", sectionId: "objectifs", type: "select", label: "Contexte", conditionalOn: "pep_primary_goal:testo-boost", options: [
+  { id: "pep_testo_pct_context", sectionId: "objectifs", type: "select", label: "Contexte", conditionalOn: ["pep_primary_goal:testo-boost", "pep_secondary_goals:testo-boost"], options: [
     { value: "natural-low", label: "Production naturelle basse (jamais de cycle)" },
     { value: "post-cycle", label: "Post-cycle (relance après SARM ou stéroïdes)" },
     { value: "age-related", label: "Baisse liée à l'âge (andropause)" },
@@ -300,10 +301,15 @@ export function getQuestionsForSection(sectionId: string): PeptidesQuestion[] {
 
 export function shouldShowQuestion(question: PeptidesQuestion, responses: Record<string, unknown>): boolean {
   if (!question.conditionalOn) return true;
-  const [questionId, expectedValue] = question.conditionalOn.split(":");
-  const actualValue = responses[questionId];
-  if (Array.isArray(actualValue)) {
-    return actualValue.includes(expectedValue);
-  }
-  return actualValue === expectedValue;
+  const conditions = Array.isArray(question.conditionalOn)
+    ? question.conditionalOn
+    : [question.conditionalOn];
+  return conditions.some((condition) => {
+    const [questionId, expectedValue] = condition.split(":");
+    const actualValue = responses[questionId];
+    if (Array.isArray(actualValue)) {
+      return actualValue.includes(expectedValue);
+    }
+    return actualValue === expectedValue;
+  });
 }
