@@ -47,6 +47,8 @@ import { kickPeptidesPreviewDeliveryQueue, startPeptidesPreviewDeliveryWorker } 
 import { processPeptidesPreviewFollowups, setPeptidesPreviewFollowupEnabled, startPeptidesPreviewFollowupWorker } from "./peptidesPreviewFollowup";
 import {
   createPeptidesPreviewCheckoutToken,
+  mapPreviewToPeptidesResponses,
+  previewCheckoutConfirmationFields,
   recordPeptidesPreviewConversionEvent,
   verifyPeptidesPreviewCheckoutToken,
 } from "./peptidesPreviewConversion";
@@ -14557,6 +14559,12 @@ export async function registerRoutes(
       });
       const checkoutToken = createPeptidesPreviewCheckoutToken(progress.id);
       const checkoutUrl = `/peptides-engine?tier=solo&utm_source=peptides_preview&utm_medium=result&utm_campaign=pre_peptides_engine#preview_token=${encodeURIComponent(checkoutToken)}`;
+      await recordPeptidesPreviewConversionEvent(progress.id, "preview_completed", {
+        source: input.attribution?.source || null,
+        medium: input.attribution?.medium || null,
+        campaign: input.attribution?.campaign || null,
+        status: result.status,
+      }).catch((eventError) => console.error("[PeptidesPreview] preview_completed tracking failed", eventError));
       kickPeptidesPreviewDeliveryQueue();
       const resultEmailSent = queuedNotifications?.clientEmailSent === true;
       const adminNotificationSent = queuedNotifications?.adminEmailSent === true;
@@ -14597,13 +14605,13 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/peptides-preview/handoff-context", peptidesLimiter, async (req, res) => {
+  app.post("/api/peptides-preview/checkout-context", peptidesLimiter, async (req, res) => {
     res.setHeader("Cache-Control", "no-store, private");
     try {
       const token = typeof req.body?.token === "string" ? req.body.token : "";
       const claims = verifyPeptidesPreviewCheckoutToken(token);
       const row = (await pool.query(
-        `SELECT id
+        `SELECT id, responses
            FROM burnout_progress
           WHERE id = $1
             AND email LIKE 'peptides-preview::%'
@@ -14615,17 +14623,39 @@ export async function registerRoutes(
         res.status(404).json({ success: false, error: "preview_not_found" });
         return;
       }
+      const stored = row.responses && typeof row.responses === "object" ? row.responses as Record<string, any> : {};
+      const previewInput = stored.previewInput;
+      const previewResult = stored.previewResult;
+      if (!previewInput || !previewResult) {
+        res.status(409).json({ success: false, error: "preview_context_incomplete" });
+        return;
+      }
+      const responses = mapPreviewToPeptidesResponses(previewInput, previewResult, row.id);
+      const confirmationFields = previewCheckoutConfirmationFields(responses);
       await recordPeptidesPreviewConversionEvent(row.id, "engine_started", {
         source: typeof req.body?.source === "string" ? req.body.source.slice(0, 80) : null,
         campaign: typeof req.body?.campaign === "string" ? req.body.campaign.slice(0, 120) : null,
+        confirmationFieldCount: confirmationFields.length,
       });
-      res.json({ success: true, leadId: row.id });
+      res.json({
+        success: true,
+        leadId: row.id,
+        responses,
+        confirmationFields,
+        estimate: {
+          moleculeCount: Number(previewResult.moleculeCount || 0),
+          durationLabel: String(previewResult.durationLabel || ""),
+          estimatedGrandTotalUsd: previewResult.estimatedGrandTotalUsd == null
+            ? null
+            : Number(previewResult.estimatedGrandTotalUsd),
+        },
+      });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "handoff_context_unavailable";
+      const message = error instanceof Error ? error.message : "preview_context_unavailable";
       const isTokenError = message === "PEPTIDES_PREVIEW_INVALID_TOKEN" || message === "PEPTIDES_PREVIEW_TOKEN_EXPIRED";
       res.status(isTokenError ? 401 : 500).json({
         success: false,
-        error: isTokenError ? message.toLowerCase() : "handoff_context_unavailable",
+        error: isTokenError ? message.toLowerCase() : "preview_context_unavailable",
       });
     }
   });

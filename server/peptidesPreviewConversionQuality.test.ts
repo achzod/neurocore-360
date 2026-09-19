@@ -25,21 +25,21 @@ const result = {
 test("client email answers conversion objections and keeps two visible purchase paths", () => {
   const content = buildPeptidesPreviewResultEmailContent(input, result, "/peptides-engine?tier=solo", "https://apexlabs.onrender.com");
   for (const expected of [
-    "Ton estimation Pré-Peptides reste enregistrée",
+    "Tu ne recommences pas le questionnaire",
     "Ce que Peptides Engine débloque pour 199 €",
     "La sélection nominative",
     "Le calendrier semaine par semaine",
     "La reconstitution",
     "La liste d’achat finale",
     "au lieu d’un stack générique",
-    "Peptides Engine commence par son propre questionnaire complet",
+    "Tu confirmes seulement",
     "une seule livraison",
   ]) {
     assert.match(content.text, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"), `text missing: ${expected}`);
     assert.match(content.html, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"), `html missing: ${expected}`);
   }
-  assert.doesNotMatch(content.text, /sans remplir un second questionnaire/i);
-  assert.doesNotMatch(content.html, /sans remplir un second questionnaire/i);
+  assert.doesNotMatch(content.text, /questionnaire complet/i);
+  assert.doesNotMatch(content.html, /questionnaire complet/i);
   const hrefs = content.html.match(/href="https:\/\/apexlabs\.onrender\.com\/peptides-engine[^"]*"/g) || [];
   assert.ok(hrefs.length >= 2, `client email must expose the purchase CTA after the estimate and again at the close; found ${hrefs.length}`);
 });

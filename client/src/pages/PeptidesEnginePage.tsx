@@ -52,6 +52,12 @@ const STORAGE_KEY = "peptides_engine_responses";
 export type PeptidesTier = "solo" | "coached" | "tracked";
 type PaymentRail = "card" | "klarna";
 type PreviewHandoffState = "absent" | "loading" | "ready" | "error";
+type PreviewConfirmationField = "pep_blood_commit" | "pep_testo_bloodwork" | "pep_testo_fertility";
+type PreviewCheckoutEstimate = {
+  moleculeCount: number;
+  durationLabel: string;
+  estimatedGrandTotalUsd: number | null;
+};
 
 const TIER_CONFIG: Record<PeptidesTier, {
   label: string;
@@ -70,6 +76,39 @@ function readTierFromUrl(): PeptidesTier {
   if (raw === "solo" || raw === "coached" || raw === "tracked") return raw;
   return "coached"; // default sweet spot
 }
+
+const PREVIEW_CONFIRMATION_COPY: Record<PreviewConfirmationField, {
+  label: string;
+  options: Array<{ value: string; label: string }>;
+}> = {
+  pep_blood_commit: {
+    label: "Pour le suivi biologique, qu’est-ce qui te convient ?",
+    options: [
+      { value: "yes-both", label: "Bilan avant puis à mi-cycle" },
+      { value: "yes-before", label: "Bilan avant uniquement" },
+      { value: "maybe", label: "Je veux d’abord voir les recommandations" },
+      { value: "no", label: "Je ne souhaite pas faire de bilan" },
+    ],
+  },
+  pep_testo_bloodwork: {
+    label: "Ton dernier bilan hormonal montre quoi ?",
+    options: [
+      { value: "recent-low", label: "Moins de 3 mois, testostérone basse" },
+      { value: "recent-normal", label: "Moins de 3 mois, dans la norme" },
+      { value: "old", label: "Plus de 3 mois" },
+      { value: "never", label: "Jamais réalisé" },
+    ],
+  },
+  pep_testo_fertility: {
+    label: "La préservation de la fertilité est-elle une priorité ?",
+    options: [
+      { value: "critical", label: "Oui, projet proche" },
+      { value: "important", label: "Oui, à moyen terme" },
+      { value: "nice", label: "Préférable mais pas urgente" },
+      { value: "no", label: "Non" },
+    ],
+  },
+};
 
 // Peptides Engine consent ─ versioned wording for legal traceability.
 // IMPORTANT : ne JAMAIS modifier silencieusement le texte ci-dessous, toujours
@@ -564,17 +603,20 @@ export default function PeptidesEnginePage() {
   const [previewHandoffState, setPreviewHandoffState] = useState<PreviewHandoffState>(
     previewToken ? "loading" : "absent",
   );
+  const [previewConfirmationFields, setPreviewConfirmationFields] = useState<PreviewConfirmationField[]>([]);
+  const [previewEstimate, setPreviewEstimate] = useState<PreviewCheckoutEstimate | null>(null);
   // Tier preselected from ?tier= URL param (set by landing page CTAs).
   // Default to "coached" (sweet spot) so direct visits land on the recommended.
   const [tier, setTier] = useState<PeptidesTier>(() => readTierFromUrl());
 
   const totalSections = PEPTIDES_SECTIONS.length;
   const isLastSection = sectionIndex === totalSections - 1;
-  const progress = showCheckout ? 100 : Math.round(((sectionIndex + 1) / totalSections) * 100);
+  const needsPreviewConfirmation = Boolean(previewToken && previewConfirmationFields.length && !showCheckout);
+  const progress = showCheckout ? 100 : needsPreviewConfirmation ? 95 : Math.round(((sectionIndex + 1) / totalSections) * 100);
 
   // Generic visits can recover the generic questionnaire. A signed Preview
-  // handoff uses a lead-scoped key so another person's browser data can never
-  // be mistaken for answers to this distinct questionnaire.
+  // handoff always reloads its server-mapped answers and only restores the
+  // small confirmation fields saved for that exact lead.
   useEffect(() => {
     if (previewToken) return;
     try {
@@ -623,7 +665,7 @@ export default function PeptidesEnginePage() {
     const loadHandoff = async () => {
       try {
         const sourceParams = new URLSearchParams(window.location.search);
-        const response = await fetch("/api/peptides-preview/handoff-context", {
+        const response = await fetch("/api/peptides-preview/checkout-context", {
           method: "POST",
           credentials: "same-origin",
           headers: { Accept: "application/json", "Content-Type": "application/json" },
@@ -634,29 +676,41 @@ export default function PeptidesEnginePage() {
           }),
         });
         const data = await response.json();
-        if (!response.ok || !data?.success || !data?.leadId) {
-          throw new Error(data?.error || "preview_handoff_unavailable");
+        if (!response.ok || !data?.success || !data?.leadId || !data?.responses) {
+          throw new Error(data?.error || "preview_context_unavailable");
         }
         if (cancelled) return;
         const leadId = String(data.leadId);
         setPreviewLeadId(leadId);
+        setPreviewEstimate(data.estimate || null);
+        const serverResponses = data.responses as Record<string, unknown>;
+        const rawConfirmationFields: unknown[] = Array.isArray(data.confirmationFields) ? data.confirmationFields : [];
+        const requestedFields = rawConfirmationFields.filter((field): field is PreviewConfirmationField =>
+          field === "pep_blood_commit" || field === "pep_testo_bloodwork" || field === "pep_testo_fertility"
+        );
+        let mergedResponses = serverResponses;
         try {
           const saved = localStorage.getItem(`${STORAGE_KEY}:${leadId}`);
           if (saved) {
             const parsed = JSON.parse(saved);
-            if (parsed.responses) setResponses(parsed.responses);
-            if (typeof parsed.sectionIndex === "number") setSectionIndex(parsed.sectionIndex);
-            if (parsed.showCheckout) setShowCheckout(true);
-          } else {
-            setResponses({});
-            setSectionIndex(0);
-            setShowCheckout(false);
+            const savedResponses = parsed.responses && typeof parsed.responses === "object"
+              ? parsed.responses as Record<string, unknown>
+              : {};
+            const restoredConfirmations = Object.fromEntries(
+              requestedFields
+                .filter((field) => savedResponses[field] !== undefined && savedResponses[field] !== "")
+                .map((field) => [field, savedResponses[field]]),
+            );
+            mergedResponses = { ...serverResponses, ...restoredConfirmations };
           }
         } catch {
-          setResponses({});
-          setSectionIndex(0);
-          setShowCheckout(false);
+          mergedResponses = serverResponses;
         }
+        const stillMissing = requestedFields.filter((field) => !mergedResponses[field]);
+        setResponses(mergedResponses);
+        setPreviewConfirmationFields(stillMissing);
+        setSectionIndex(PEPTIDES_SECTIONS.length - 1);
+        setShowCheckout(stillMissing.length === 0);
         setPreviewHandoffState("ready");
       } catch {
         if (!cancelled) setPreviewHandoffState("error");
@@ -866,8 +920,8 @@ export default function PeptidesEnginePage() {
           {previewHandoffState === "loading" ? (
             <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center">
               <Loader2 className="mx-auto h-7 w-7 animate-spin text-amber-400" aria-hidden="true" />
-              <h1 className="mt-5 text-xl font-bold">Je sécurise ton accès</h1>
-              <p className="mt-2 text-sm leading-6 text-white/55">Ton estimation Pré-Peptides est reliée à ce parcours. Le questionnaire Peptides Engine reste distinct et commence juste après.</p>
+              <h1 className="mt-5 text-xl font-bold">Je récupère ton estimation</h1>
+              <p className="mt-2 text-sm leading-6 text-white/55">Tes réponses sont reprises automatiquement. Tu ne recommences pas le questionnaire.</p>
             </div>
           ) : (
             <div className="rounded-2xl border border-red-400/25 bg-red-400/5 p-8 text-center">
@@ -909,7 +963,9 @@ export default function PeptidesEnginePage() {
             <span>
               {showCheckout
                 ? "Paiement"
-                : `Section ${sectionIndex + 1} / ${totalSections}`}
+                : needsPreviewConfirmation
+                  ? "Confirmation rapide"
+                  : `Section ${sectionIndex + 1} / ${totalSections}`}
             </span>
             <span>{progress}%</span>
           </div>
@@ -932,29 +988,58 @@ export default function PeptidesEnginePage() {
         <AnimatePresence mode="wait">
           {!showCheckout ? (
             <motion.div
-              key={`section-${sectionIndex}`}
+              key={needsPreviewConfirmation ? "preview-confirmation" : `section-${sectionIndex}`}
               initial={{ opacity: 0, x: 24 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -24 }}
               transition={{ duration: 0.25, ease: "easeInOut" }}
             >
-              {/* Section header */}
-              <div className="mb-8 flex items-start gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 border border-amber-500/20">
-                  <SectionIcon className="h-5 w-5 text-amber-400" aria-hidden="true" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-white">{currentSection.title}</h1>
-                  <p className="text-sm text-white/50 mt-0.5">{currentSection.subtitle}</p>
-                </div>
-              </div>
-
-              {/* Questions */}
-              <SectionView
-                sectionIndex={sectionIndex}
-                responses={responses}
-                onAnswer={handleAnswer}
-              />
+              {needsPreviewConfirmation ? (
+                <>
+                  <div className="mb-8 rounded-2xl border border-emerald-400/25 bg-emerald-400/10 p-5">
+                    <div className="flex items-start gap-3">
+                      <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-emerald-300" aria-hidden="true" />
+                      <div>
+                        <h1 className="text-xl font-bold text-white">Tes réponses sont récupérées</h1>
+                        <p className="mt-1 text-sm leading-6 text-white/60">
+                          Il reste {previewConfirmationFields.length} confirmation{previewConfirmationFields.length > 1 ? "s" : ""} avant de choisir ton offre et payer.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-5">
+                    {previewConfirmationFields.map((field) => {
+                      const copy = PREVIEW_CONFIRMATION_COPY[field];
+                      return (
+                        <label key={field} className="block rounded-2xl border border-white/10 bg-white/[.035] p-5">
+                          <span className="mb-3 block text-sm font-semibold text-white">{copy.label}</span>
+                          <select
+                            value={String(responses[field] || "")}
+                            onChange={(event) => handleAnswer(field, event.target.value)}
+                            className="w-full rounded-xl border border-white/10 bg-[#111318] px-4 py-3 text-sm text-white outline-none focus:border-amber-400"
+                          >
+                            <option value="">Choisir</option>
+                            {copy.options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                          </select>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="mb-8 flex items-start gap-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 border border-amber-500/20">
+                      <SectionIcon className="h-5 w-5 text-amber-400" aria-hidden="true" />
+                    </div>
+                    <div>
+                      <h1 className="text-xl font-bold text-white">{currentSection.title}</h1>
+                      <p className="text-sm text-white/50 mt-0.5">{currentSection.subtitle}</p>
+                    </div>
+                  </div>
+                  <SectionView sectionIndex={sectionIndex} responses={responses} onAnswer={handleAnswer} />
+                </>
+              )}
 
               {/* Safety banner for current section */}
               {(() => {
@@ -968,25 +1053,39 @@ export default function PeptidesEnginePage() {
               })()}
 
               {/* Navigation */}
-              <div className="mt-10 flex items-center justify-between">
-                <Button
-                  variant="ghost"
-                  onClick={handleBack}
-                  disabled={sectionIndex === 0}
-                  className="text-white/50 hover:text-white hover:bg-white/5 disabled:opacity-0 disabled:pointer-events-none"
-                  aria-label="Section precedente"
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" aria-hidden="true" />
-                  Retour
-                </Button>
+              <div className={`mt-10 flex items-center ${needsPreviewConfirmation ? "justify-end" : "justify-between"}`}>
+                {!needsPreviewConfirmation && (
+                  <Button
+                    variant="ghost"
+                    onClick={handleBack}
+                    disabled={sectionIndex === 0}
+                    className="text-white/50 hover:text-white hover:bg-white/5 disabled:opacity-0 disabled:pointer-events-none"
+                    aria-label="Section precedente"
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" aria-hidden="true" />
+                    Retour
+                  </Button>
+                )}
 
                 <Button
-                  onClick={handleNext}
-                  disabled={!canContinue() || shouldBlockPurchase(responses).blocked}
+                  onClick={() => {
+                    if (!needsPreviewConfirmation) {
+                      handleNext();
+                      return;
+                    }
+                    setPreviewConfirmationFields([]);
+                    setShowCheckout(true);
+                    void recordPreviewEvent("questionnaire_completed", { mode: "preview_confirmation", responseCount: Object.keys(responses).length });
+                    void saveToServer(PEPTIDES_SECTIONS.length, responses);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  disabled={(needsPreviewConfirmation
+                    ? previewConfirmationFields.some((field) => !responses[field])
+                    : !canContinue()) || shouldBlockPurchase(responses).blocked}
                   className="bg-amber-500 hover:bg-amber-400 text-black font-bold px-6 disabled:opacity-40 disabled:cursor-not-allowed"
-                  aria-label={isLastSection ? "Aller au paiement" : "Section suivante"}
+                  aria-label={needsPreviewConfirmation ? "Choisir mon offre" : isLastSection ? "Aller au paiement" : "Section suivante"}
                 >
-                  {isLastSection ? "Voir mon protocole" : "Continuer"}
+                  {needsPreviewConfirmation ? "Choisir mon offre" : isLastSection ? "Voir mon protocole" : "Continuer"}
                   <ChevronRight className="h-4 w-4 ml-1" aria-hidden="true" />
                 </Button>
               </div>
@@ -1000,7 +1099,7 @@ export default function PeptidesEnginePage() {
               transition={{ duration: 0.25, ease: "easeInOut" }}
             >
               {/* Back button */}
-              <div className="mb-6">
+              {!previewToken && <div className="mb-6">
                 <Button
                   variant="ghost"
                   onClick={handleBack}
@@ -1010,7 +1109,24 @@ export default function PeptidesEnginePage() {
                   <ChevronLeft className="h-4 w-4 mr-1" aria-hidden="true" />
                   Modifier mes reponses
                 </Button>
-              </div>
+              </div>}
+
+              {previewToken && (
+                <div className="mb-6 rounded-2xl border border-emerald-400/25 bg-emerald-400/10 p-5">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-emerald-300" aria-hidden="true" />
+                    <div>
+                      <p className="font-bold text-white">Ton profil Pré-Peptides est déjà repris</p>
+                      <p className="mt-1 text-sm leading-6 text-white/60">
+                        {previewEstimate?.moleculeCount
+                          ? `${previewEstimate.moleculeCount} axe${previewEstimate.moleculeCount > 1 ? "s" : ""} estimé${previewEstimate.moleculeCount > 1 ? "s" : ""} · ${previewEstimate.durationLabel || "durée conservée"}`
+                          : "Tes réponses sont reliées à cette commande."}
+                        {previewEstimate?.estimatedGrandTotalUsd != null ? ` · produits et livraison estimés à $${previewEstimate.estimatedGrandTotalUsd.toFixed(2)}` : ""}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <CheckoutCard
                 responses={responses}

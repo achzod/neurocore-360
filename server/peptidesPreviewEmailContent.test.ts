@@ -153,13 +153,13 @@ test("eligible client receives the direct recommendation, arithmetic, landed quo
   assert.doesNotMatch(content.text, /Supplier Secret|supplier\.invalid/);
 });
 
-test("personalized profile routes to the distinct Peptides Engine questionnaire", () => {
+test("personalized profile routes to the signed Peptides Engine checkout handoff", () => {
   const content = buildPeptidesPreviewResultEmailContent(input, personalized("medicaments_a_integrer"), buildPeptidesPreviewDestinationPath("peptides_engine", "email"), "https://apexlabs.test");
   assert.match(content.subject, /estimation Peptides Engine.*2 molécules.*12 semaines/);
   assert.match(content.html, /traitement déclaré sera intégré directement/);
   assert.match(content.text, /Débloque Peptides Engine maintenant/);
   assert.match(content.html, /Débloquer mon analyse Peptides Engine/);
-  assert.match(content.text, /Peptides Engine commence par son propre questionnaire complet/);
+  assert.match(content.text, /Tu ne recommences pas le questionnaire/);
   assert.match(content.text, /\/peptides-engine\?tier=solo.*utm_source=peptides_preview_email/);
   assert.doesNotMatch(content.html, /À valider|Blood Analysis|marqueurs à vérifier|validation|BPC-157|250 mcg/);
   assert.doesNotMatch(content.text, /À valider|Blood Analysis|informations supplémentaires|BPC-157|250 mcg/);

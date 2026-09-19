@@ -59,8 +59,8 @@ test("eligible copy explains the actual axes, execution constraints and budget i
   assert.match(copy, /deux administrations par jour/i);
   assert.match(copy, /réfrigérateur privé/i);
   assert.match(copy, /budget déclaré de \$400\.00/i);
-  assert.match(copy, /questionnaire dédié/i);
-  assert.doesNotMatch(copy, /sans remplir un second questionnaire/i);
+  assert.match(copy, /sans recommencer le questionnaire/i);
+  assert.doesNotMatch(copy, /questionnaire dédié/i);
   assert.doesNotMatch(copy, /Ton objectif .* pilote la sélection|La stratégie de référence est chiffrée/i);
 });
 
