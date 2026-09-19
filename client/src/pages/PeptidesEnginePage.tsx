@@ -1075,7 +1075,7 @@ export default function PeptidesEnginePage() {
                     }
                     setPreviewConfirmationFields([]);
                     setShowCheckout(true);
-                    void recordPreviewEvent("questionnaire_completed", { mode: "preview_confirmation", responseCount: Object.keys(responses).length });
+                    void recordPreviewEvent("delta_completed", { mode: "preview_confirmation", responseCount: Object.keys(responses).length });
                     void saveToServer(PEPTIDES_SECTIONS.length, responses);
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }}

@@ -16,6 +16,7 @@ test("signed Preview handoff reuses exact answers and skips the full Engine ques
   assert.match(enginePage, /setSectionIndex\(PEPTIDES_SECTIONS\.length - 1\)/);
   assert.match(enginePage, /setShowCheckout\(stillMissing\.length === 0\)/);
   assert.match(enginePage, /previewToken: previewToken \|\| undefined/);
+  assert.match(enginePage, /recordPreviewEvent\("delta_completed"/);
   assert.doesNotMatch(enginePage, /Le questionnaire Peptides Engine reste distinct/);
 });
 

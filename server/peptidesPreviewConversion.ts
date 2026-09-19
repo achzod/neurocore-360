@@ -8,6 +8,7 @@ const EVENT_TYPES = new Set([
   "result_view",
   "unlock_click",
   "engine_started",
+  "delta_completed",
   "questionnaire_completed",
   "tier_selected",
   "checkout_created",
