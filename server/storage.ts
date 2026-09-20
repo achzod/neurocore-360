@@ -916,7 +916,13 @@ export class MemStorage implements IStorage {
   async hasPeptidesOrderConfirmationBeenSent(email: string): Promise<boolean> {
     return Array.from(this.emailTrackings.values()).some(
       (t: any) => String(t.recipientEmail || "").toLowerCase() === email.toLowerCase()
-        && t.emailType === "sendPeptidesOrderConfirmation"
+        && (
+          t.emailType === "sendPeptidesOrderConfirmation"
+          || (
+            t.emailType === "sendCTAEmail"
+            && /peptides engine\s*:\s*commande re[cç]ue/i.test(String(t.subject || ""))
+          )
+        )
         && !["failed", "auth_failed", "unsubscribed"].includes(String(t.sendpulseStatus || "").toLowerCase())
     );
   }
@@ -2638,7 +2644,16 @@ export class PgStorage implements IStorage {
       const result = await pool.query(
         `SELECT 1 FROM email_tracking
           WHERE LOWER(recipient_email) = LOWER($1)
-            AND email_type = 'sendPeptidesOrderConfirmation'
+            AND (
+              email_type = 'sendPeptidesOrderConfirmation'
+              OR (
+                email_type = 'sendCTAEmail'
+                AND LOWER(COALESCE(subject, '')) IN (
+                  'peptides engine : commande recue',
+                  'peptides engine : commande reçue'
+                )
+              )
+            )
             AND (sendpulse_status IS NULL OR sendpulse_status NOT IN ('failed','auth_failed','unsubscribed'))
           LIMIT 1`,
         [email]
