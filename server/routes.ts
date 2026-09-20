@@ -8,6 +8,7 @@ import { saveProgressSchema, insertAuditSchema, insertReviewSchema, ProductPrice
 import { z } from "zod";
 import { getStripeKlarnaClient, getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
 import { createCheckoutSessionWithPaymentMethodFallback } from "./stripeCheckoutPaymentMethods";
+import { createProductCheckoutLineItem } from "./stripeCheckoutProducts";
 import { validatePeptidesEngineResponses } from "./peptidesEngineQuestionnaire";
 import { calculateScoresFromResponses, generateFullAnalysis } from "./analysisEngine";
 import { startReportGeneration, getJobStatus, forceRegenerate } from "./reportJobManager";
@@ -5034,7 +5035,7 @@ export async function registerRoutes(
               },
             },
           }]
-        : [{ price: priceId, quantity: 1 }];
+        : [createProductCheckoutLineItem(planType)];
 
       const sessionParams: any = {
         line_items: lineItems,
