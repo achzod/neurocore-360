@@ -51,8 +51,8 @@ assert.doesNotMatch(engineSource, /confirmation ecrite du volume par le fabrican
 assert.match(peptidesPageSource, /peptides-engine-consent-v2-2026-08-13/);
 assert.match(peptidesPageSource, /assumer mes décisions d'achat et d'utilisation/);
 assert.match(engineSource, /consentAccepted:\s*boolean/);
-assert.match(routesSource, /generatePeptidesProtocol\(responses, email, autoGenTier,[\s\S]{0,180}consentAccepted/);
-assert.match(routesSource, /generatePeptidesProtocol\(responses, order\.email, forcePaidTier,[\s\S]{0,180}consentAccepted/);
+assert.match(routesSource, /generatePeptidesProtocol\(responses, email, autoGenTier,[\s\S]{0,600}consentAccepted/);
+assert.match(routesSource, /generatePeptidesProtocol\(responses, order\.email, forcePaidTier,[\s\S]{0,600}consentAccepted/);
 const publicCreateStart = routesSource.indexOf('app.post("/api/peptides-engine/create"');
 const publicCreateEnd = routesSource.indexOf("// 3. Get generated report by ID", publicCreateStart);
 assert.ok(publicCreateStart >= 0 && publicCreateEnd > publicCreateStart);
@@ -60,7 +60,7 @@ const publicCreateSource = routesSource.slice(publicCreateStart, publicCreateEnd
 assert.match(publicCreateSource, /generation:\s*"durable_cron"/);
 assert.doesNotMatch(publicCreateSource, /generatePeptidesProtocol\(/);
 assert.doesNotMatch(publicCreateSource, /createOrder\(/);
-assert.match(routesSource, /generatePeptidesProtocol\(responses, email, manualTier,[\s\S]{0,180}consentAccepted/);
+assert.match(routesSource, /generatePeptidesProtocol\(responses, email, manualTier,[\s\S]{0,600}consentAccepted/);
 assert.match(
   routesSource,
   /const repaired = await refreshPeptauraPricingForDelivery\([\s\S]{0,900}const validation = validatePeptidesReport\(repaired\)/,
@@ -127,6 +127,17 @@ assert.equal(
 assert.equal(
   derivePeptidesStackPolicy({ pep_primary_goal: "recovery" }).minimumMolecules,
   2,
+);
+assert.deepEqual(
+  (() => {
+    const policy = derivePeptidesStackPolicy({
+      pep_primary_goal: "fatloss",
+      pep_secondary_goals: ["recovery", "gh-antiaging", "testo-boost"],
+      pep_testo_bloodwork: "recent-low",
+    });
+    return [policy.minimumMolecules, policy.maximumMolecules];
+  })(),
+  [6, 6],
 );
 assert.match(engineSource, /const orderedNeedMg = extractTotalMgFromVials\(pep\.vialsNeeded\);/);
 assert.match(engineSource, /const needMg = estimatedNeedMg \?\? orderedNeedMg;/);

@@ -41,7 +41,9 @@ export function derivePeptidesStackPolicy(
 
   let minimumMolecules = 2;
   if (goals.length === 2) minimumMolecules = 3;
-  if (goals.length >= 3) minimumMolecules = 5;
+  if (goals.length === 3) minimumMolecules = 5;
+  if (goals.length >= 4) minimumMolecules = 6;
+  const maximumMolecules = goals.length >= 4 ? 6 : 5;
 
   // A confirmed HPG axis needs its two distinct levers. When another objective
   // is also present, a two-peptide fallback cannot cover the dossier.
@@ -49,13 +51,13 @@ export function derivePeptidesStackPolicy(
     minimumMolecules = Math.max(minimumMolecules, 4);
   }
   if (confirmedLowTestosterone && goals.length >= 3) {
-    minimumMolecules = 5;
+    minimumMolecules = Math.max(minimumMolecules, 5);
   }
 
   return {
     goals,
     minimumMolecules,
-    maximumMolecules: 5,
+    maximumMolecules,
     multiAxis: goals.length >= 2,
     confirmedLowTestosterone,
     testosteroneGoal,

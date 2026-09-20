@@ -3187,6 +3187,11 @@ export async function generatePeptidesProtocol(
           `AXIS_COVERAGE_GATE: ${report.peptides.length} molecule(s) pour ${stackPolicy.goals.length} axe(s), minimum ${stackPolicy.minimumMolecules}. Remplace les molecules non achetables sans supprimer les axes valides.`,
         );
       }
+      if (report.peptides.length > stackPolicy.maximumMolecules) {
+        throw new Error(
+          `STACK_REDUNDANCY_GATE: ${report.peptides.length} molecule(s), maximum ${stackPolicy.maximumMolecules}. Retire uniquement les doublons ou ajouts sans objectif attribuable.`,
+        );
+      }
       const generatedNames = report.peptides.map((peptide) => String(peptide.name || "")).join(" | ");
       const generatedText = JSON.stringify(report);
       if (

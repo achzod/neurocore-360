@@ -35,6 +35,18 @@ test("old testosterone bloodwork keeps KissPeptin and Enclomiphene as a conditio
   assert.equal(policy.secretagogueAxisRequired, true);
 });
 
+test("four distinct axes expand the stack to six attributable molecules", () => {
+  const policy = derivePeptidesStackPolicy({
+    pep_primary_goal: "fatloss",
+    pep_secondary_goals: ["recovery", "gh-antiaging", "testo-boost"],
+    pep_testo_bloodwork: "recent-low",
+  });
+  assert.equal(policy.minimumMolecules, 6);
+  assert.equal(policy.maximumMolecules, 6);
+  assert.equal(policy.confirmedLowTestosterone, true);
+  assert.equal(policy.secretagogueAxisRequired, true);
+});
+
 test("confirmed HPG plus two other axes requires five molecules", () => {
   assert.equal(
     derivePeptidesStackPolicy({
@@ -50,6 +62,7 @@ test("final retry cannot collapse to two molecules", () => {
   const source = readFileSync(new URL("./peptidesEngine.ts", import.meta.url), "utf8");
   assert.doesNotMatch(source, /2 peptides maximum si necessaire/);
   assert.match(source, /AXIS_COVERAGE_GATE/);
+  assert.match(source, /STACK_REDUNDANCY_GATE/);
   assert.match(source, /Ne supprime jamais silencieusement un objectif valide/);
   assert.match(source, /CONDITIONAL_HPG_GATE/);
   assert.match(source, /SECRETAGOGUE_AXIS_GATE/);
