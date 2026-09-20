@@ -52,6 +52,7 @@ import {
   parseDocumentedStabilityConfig,
   planOperationalVials,
 } from "./peptidesVialPlanning";
+import { derivePeptidesStackPolicy } from "./peptidesStackPolicy";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -2194,8 +2195,8 @@ RÈGLES DE SÉCURITÉ (non négociables)
 5. GROSSESSE / ALLAITEMENT → aucun peptide
 6. MÉLANOME ou NEVI ATYPIQUES → contre-indication Melanotan II absolue
 7. MALADIE HÉPATIQUE SÉVÈRE → prudence générale
-8. Budget < 200 EUR/mois → prioriser 1-2 peptides max
-9. Débutant (jamais injecté) → commencer par 1-2 peptides simples, dosages bas
+8. Le budget ne doit jamais supprimer silencieusement un axe demandé. Calcule le stack complet attribuable, affiche son vrai coût, puis hiérarchise les phases si le budget mensuel déclaré est inférieur au coût total.
+9. Un débutant reçoit une progression d'apprentissage, un calendrier lisible et des dosages de départ prudents. Le niveau d'expérience ne réduit pas mécaniquement un dossier multi-axe à une ou deux molécules.
 
 PEPTIDES DEMANDÉS PAR LE CLIENT (PRIORITÉ ABSOLUE)
 Si le client a rempli le champ "Peptides specifiquement demandes par le client", tu DOIS les inclure dans le stack. C'est non négociable , le client paie 299 euros, s'il veut un peptide en particulier, tu l'incorpores. Tu peux ajouter d'autres peptides en complement, mais ceux demandés doivent TOUJOURS etre presents. Si un peptide demandé est contre-indiqué pour son profil (cancer, grossesse), explique pourquoi tu ne peux pas l'inclure et propose une alternative.
@@ -2268,6 +2269,7 @@ function buildUserPrompt(
   consentAccepted = false
 ): string {
   const summary = buildResponsesSummary(responses);
+  const stackPolicy = derivePeptidesStackPolicy(responses);
 
   // Extract weight for dosage adjustment
   const weight = Number(responses.pep_weight || responses.poids || 80);
@@ -2305,7 +2307,7 @@ RÈGLES ABSOLUES:
 1. Adresse-toi à ${firstName} par son prénom à chaque section. Parle-lui comme un coach.
 2. Fais des PHRASES COMPLÈTES, jamais de listes sèches sans contexte.
 3. Ajuste les dosages au poids (${weight} kg) en mcg/kg.
-4. Sélectionne 2 à 4 peptides AU TOTAL. Un bonus n'est autorise que s'il respecte le budget et s'il apparait partout: justification, reconstitution, calendrier, shopping list et tableau peptides. Pour un debutant a l'injection ou un budget contraint, reste plutot a 2 ou 3 peptides et n'ajoute aucun bonus gadget.
+4. Construis un stack de ${stackPolicy.minimumMolecules} a ${stackPolicy.maximumMolecules} molecules pour ce profil. Les objectifs distincts detectes sont: ${stackPolicy.goals.join(", ") || "objectif unique non code"}. Un dossier multi-axe ne doit jamais retomber silencieusement a deux molecules pour faciliter le stock ou la validation. Chaque molecule doit couvrir un besoin attribuable et complementaire; aucun ajout gadget, doublon mecanistique ou molecule contre-indiquee n'est autorise. Si une molecule echoue au stock live, remplace-la par une alternative compatible couvrant le meme axe au lieu de supprimer l'axe. Si aucune alternative sure et achetable n'existe, explique explicitement l'exclusion dans le rapport au lieu de promettre un resultat. Un bonus n'est autorise que s'il respecte le budget et s'il apparait partout: justification, reconstitution, calendrier, shopping list et tableau peptides.
 5. Utilise UNIQUEMENT le catalogue Peptaura. URLs réelles.
 6. Pour le choix du fournisseur (pays de livraison ${peptauraContext.country}, ${budgetNote}) : suis STRICTEMENT CONTEXTE PEPTAURA LIVE. Recommande un fournisseur qui livre vers ${peptauraContext.country}, evite tout fournisseur liste comme bloque, et rappelle que le client doit verifier ${peptauraContext.shippingUrl} avant de payer.
 6b. Stock live et quantite achetable: ne choisis une molecule que si le besoin total calcule peut etre couvert par les formats live avec au maximum 30% de marge quand le packaging live l'impose. Exemple: si le plus petit format live est 5 mg, le besoin total doit etre au moins 3.85 mg pour commander 1 vial; si le besoin coherent du protocole est plus bas, retire cette molecule et choisis une alternative dont le format Peptaura passe. Ne rallonge jamais une cure uniquement pour consommer un vial.
@@ -3043,6 +3045,7 @@ export async function generatePeptidesProtocol(
   console.log(`[PeptidesEngine] Starting generation for ${email} (tier=${tier})`);
 
   const firstName = extractFirstName(responses, email);
+  const stackPolicy = derivePeptidesStackPolicy(responses);
   const manualExpertDirective = String(options.manualExpertDirective || "").trim();
   const peptauraContext = options.peptauraContext
     || await buildPeptauraPromptContext(responses, {
@@ -3139,7 +3142,7 @@ export async function generatePeptidesProtocol(
       generate: (previousError) =>
         generateProviderText({
           systemPrompt: SYSTEM_PROMPT,
-          userPrompt: `${userPrompt}\n\nREGENERATION FINALE STOCK-AWARE: la version precedente a encore echoue. Repars de zero avec un stack plus simple, 2 peptides maximum si necessaire, aucun bonus si le bonus complique le stock live. Priorite absolue: validation Peptaura live, quantites achetables avec maximum 30% de marge, prix live pour chaque peptide, whyThisPeptide direct et personnalise.\n\nDERNIER ECHEC SERVEUR:\n${previousError.slice(0, 2600)}\n\nINTERDICTION: ne choisis aucun peptide mentionne dans cet echec si le message parle d'offre, stock, prix live incomplet, surstock ou whyThisPeptide.`,
+          userPrompt: `${userPrompt}\n\nREGENERATION FINALE STOCK-AWARE: la version precedente a encore echoue. Repars de zero sans reduire le dossier a un stack minimal. Conserve la couverture des axes ${stackPolicy.goals.join(", ")} avec ${stackPolicy.minimumMolecules} a ${stackPolicy.maximumMolecules} molecules complementaires. Si une molecule casse le stock, le prix ou le surstock, remplace uniquement cette molecule par une alternative live qui couvre le meme axe. Ne supprime jamais silencieusement un objectif valide pour passer le gate. Priorite absolue: validation Peptaura live, quantites achetables avec maximum 30% de marge, prix live pour chaque peptide, whyThisPeptide direct et personnalise.\n\nDERNIER ECHEC SERVEUR:\n${previousError.slice(0, 2600)}\n\nINTERDICTION: ne repropose pas une molecule citee dans cet echec pour offre, stock, prix live incomplet, surstock ou whyThisPeptide sans avoir resolu exactement cette cause.`, 
           email,
           label: "peptides-final-stock-regeneration",
           retries: providerRetries,
@@ -3172,9 +3175,17 @@ export async function generatePeptidesProtocol(
         throw new Error(`VALIDATION: ${emptySections.length} sections vides ou trop courtes`);
       }
 
-      // CHECK 2: peptides exist (min 2 , a stack should always have at least 2)
+      // CHECK 2: peptides exist and a multi-axis dossier keeps its coverage.
       if (!report.peptides || report.peptides.length < 2) {
         throw new Error(`VALIDATION: seulement ${report.peptides?.length ?? 0} peptide(s) (min 2) , probable truncation`);
+      }
+      if (
+        !hasPeptidesHardRedFlag(responses)
+        && report.peptides.length < stackPolicy.minimumMolecules
+      ) {
+        throw new Error(
+          `AXIS_COVERAGE_GATE: ${report.peptides.length} molecule(s) pour ${stackPolicy.goals.length} axe(s), minimum ${stackPolicy.minimumMolecules}. Remplace les molecules non achetables sans supprimer les axes valides.`,
+        );
       }
 
       // CHECK 3: each peptide has required fields

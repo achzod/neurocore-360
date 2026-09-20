@@ -19,6 +19,7 @@ import {
   buildPeptidesCoachingDeductionBlock,
 } from "../server/cta";
 import { hasValidPeptidesConsent } from "../server/peptidesConsent";
+import { derivePeptidesStackPolicy } from "../server/peptidesStackPolicy";
 
 const engineSource = readFileSync(new URL("../server/peptidesEngine.ts", import.meta.url), "utf8");
 const purchasePlanSource = readFileSync(new URL("../server/peptidesPurchasePlan.ts", import.meta.url), "utf8");
@@ -40,6 +41,9 @@ assert.match(engineSource, /Candidate rejected[\s\S]{0,600}strict full regenerat
 assert.match(engineSource, /Provider failure is terminal, duplicate paid generation blocked/);
 assert.doesNotMatch(engineSource, /TOUJOURS penser à inclure un peptide orienté prise de masse musculaire/);
 assert.doesNotMatch(engineSource, /Tu dois TOUJOURS inclure un peptide BONUS/);
+assert.doesNotMatch(engineSource, /2 peptides maximum si necessaire/);
+assert.match(engineSource, /AXIS_COVERAGE_GATE/);
+assert.match(engineSource, /Ne supprime jamais silencieusement un objectif valide/);
 assert.match(engineSource, /Interdiction d'ajouter CJC-1295 avec DAC/);
 assert.doesNotMatch(engineSource, /@anthropic-ai\/sdk|ANTHROPIC_API_KEY|callClaudeForPeptides/);
 assert.match(purchasePlanSource, /Calcul conditionnel pour les deux volumes usuels de 1 ml et 2 ml/);
@@ -88,6 +92,38 @@ assert.match(engineSource, /PROTOCOLE OBLIGATOIRE SI TESTOSTERONE BASSE CONFIRME
 assert.match(engineSource, /1\. Enclomiphene Citrate/);
 assert.match(engineSource, /2\. KissPeptin-10/);
 assert.match(engineSource, /https:\/\/receptorchem\.co\.uk\/enclomiphene-citrate\//);
+assert.deepEqual(
+  derivePeptidesStackPolicy({
+    pep_primary_goal: "fatloss",
+    pep_secondary_goals: ["testo-boost", "gh-antiaging"],
+    pep_testo_bloodwork: "recent-low",
+  }),
+  {
+    goals: ["fatloss", "testo-boost", "gh-antiaging"],
+    minimumMolecules: 5,
+    maximumMolecules: 5,
+    multiAxis: true,
+    confirmedLowTestosterone: true,
+  },
+);
+assert.equal(
+  derivePeptidesStackPolicy({
+    pep_primary_goal: "fatloss",
+    pep_secondary_goals: ["recovery"],
+  }).minimumMolecules,
+  3,
+);
+assert.equal(
+  derivePeptidesStackPolicy({
+    pep_primary_goal: "fatloss",
+    pep_secondary_goals: ["recovery", "skin-hair"],
+  }).minimumMolecules,
+  5,
+);
+assert.equal(
+  derivePeptidesStackPolicy({ pep_primary_goal: "recovery" }).minimumMolecules,
+  2,
+);
 assert.match(engineSource, /const orderedNeedMg = extractTotalMgFromVials\(pep\.vialsNeeded\);/);
 assert.match(engineSource, /const needMg = estimatedNeedMg \?\? orderedNeedMg;/);
 assert.match(
