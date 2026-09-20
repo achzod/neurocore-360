@@ -8,7 +8,7 @@ import { saveProgressSchema, insertAuditSchema, insertReviewSchema, ProductPrice
 import { z } from "zod";
 import { getStripeKlarnaClient, getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
 import { createCheckoutSessionWithPaymentMethodFallback } from "./stripeCheckoutPaymentMethods";
-import { createProductCheckoutLineItem } from "./stripeCheckoutProducts";
+import { createProductCheckoutLineItem, usesInlineCheckoutLineItem } from "./stripeCheckoutProducts";
 import { validatePeptidesEngineResponses } from "./peptidesEngineQuestionnaire";
 import { calculateScoresFromResponses, generateFullAnalysis } from "./analysisEngine";
 import { startReportGeneration, getJobStatus, forceRegenerate } from "./reportJobManager";
@@ -4862,8 +4862,9 @@ export async function registerRoutes(
           process.env.STRIPE_PEPTIDES_PRICE_ID ||
           "price_1TFzR9BTm0rdlVFq7HZDJQHs",
       };
+      const usesInlinePrice = planType === "PEPTIDES_ENGINE" || usesInlineCheckoutLineItem(planType);
       const priceId = clientPriceId || PRICE_ID_MAP[planType];
-      if (!priceId) {
+      if (!usesInlinePrice && !priceId) {
         res.status(400).json({ error: "INVALID_PLAN", message: `No Stripe price configured for plan: ${planType}` });
         return;
       }
