@@ -187,10 +187,7 @@ async function loadCandidates(now: Date): Promise<PeptidesPreviewFollowupCandida
           SELECT 1 FROM email_tracking completed
            WHERE LOWER(completed.recipient_email) = LOWER(REPLACE(bp.email, 'peptides-preview::', ''))
              AND completed.email_type = 'peptidesPreviewFollowupJ7'
-             AND (
-               completed.sendpulse_task_id IS NOT NULL
-               OR LOWER(COALESCE(completed.sendpulse_status, '')) IN ('success', 'sent', 'delivered')
-             )
+             AND LOWER(COALESCE(completed.sendpulse_status, '')) IN ('success', 'sent', 'delivered')
         )
         AND NOT EXISTS (
           SELECT 1 FROM email_tracking unresolved
@@ -224,8 +221,7 @@ async function candidateStillEligible(candidate: PeptidesPreviewFollowupCandidat
          WHERE LOWER(et.recipient_email) = LOWER($1)
            AND et.email_type = $2
            AND (
-             et.sendpulse_task_id IS NOT NULL
-             OR LOWER(COALESCE(et.sendpulse_status, '')) IN ('success', 'sent', 'delivered', 'pending')
+             LOWER(COALESCE(et.sendpulse_status, '')) IN ('success', 'sent', 'delivered', 'pending')
              OR (
                LOWER(COALESCE(et.sendpulse_status, '')) = 'failed'
                AND et.sent_at >= NOW() - INTERVAL '2 hours'

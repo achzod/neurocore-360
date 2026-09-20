@@ -46,7 +46,7 @@ export function isEligiblePreviewFollowupEmail(value: unknown): boolean {
 
 function successfulTracking(tracking: PeptidesPreviewFollowupTracking | undefined): boolean {
   if (!tracking) return false;
-  return Boolean(tracking.sendpulseTaskId) || SUCCESS_STATUSES.has(String(tracking.sendpulseStatus || "").toLowerCase());
+  return SUCCESS_STATUSES.has(String(tracking.sendpulseStatus || "").toLowerCase());
 }
 
 function successfulStageAt(

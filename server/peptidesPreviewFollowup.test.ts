@@ -48,6 +48,16 @@ test("failed attempts do not count as a delivered stage", () => {
   assert.equal(choosePeptidesPreviewFollowupStage(capturedAt, [tracking("J1", "2026-09-25T09:59:00Z", "failed")], now), "J1");
 });
 
+test("a provider task id never turns an explicit failure into a delivered stage", () => {
+  const capturedAt = new Date("2026-09-21T00:00:00Z");
+  assert.equal(choosePeptidesPreviewFollowupStage(capturedAt, [{
+    emailType: "peptidesPreviewFollowupJ1",
+    sentAt: "2026-09-25T09:00:00Z",
+    sendpulseStatus: "failed",
+    sendpulseTaskId: "provider-rejected-task",
+  }], now), "J1");
+});
+
 test("pending reconciliation blocks only its recipient without consuming another send slot", () => {
   const capturedAt = new Date("2026-09-21T00:00:00Z");
   assert.equal(choosePeptidesPreviewFollowupStage(capturedAt, [tracking("J1", "2026-09-24T00:00:00Z", "pending")], now), null);
