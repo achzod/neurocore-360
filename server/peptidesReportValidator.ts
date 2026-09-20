@@ -859,7 +859,8 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
   if (doseMg <= 0) return null;
 
   let perWeek = 0;
-  const everyDay = /chaque jour|chaque soir|tous les jours|\b7\s*(?:soirs?|jours?)\s*\/?\s*7|\b1x\/jour\b|par jour\b|au coucher\b/i.test(dose);
+  const twiceDaily = /(?:\b2\s*|\bdeux\s+)(?:fois|injections?)\s*(?:par|\/)\s*jour/i.test(dose);
+  const everyDay = /chaque jour|chaque soir|tous les jours|\b7\s*(?:soirs?|jours?)\s*\/?\s*7|\b1x\/jour\b|(?:\b1\s*|\bune\s+)(?:fois|injection)\s*(?:par|\/)\s*jour|par jour\b|au coucher\b/i.test(dose);
   const fivePerWeek = /\b5\s*(?:soirs?|jours?|fois)\s*(?:par|\/)\s*semaine/i.test(dose);
   const fourPerWeek = /\b4\s*(?:soirs?|jours?|fois)\s*(?:par|\/)\s*semaine/i.test(dose);
   const threePerWeek = /\b3\s*(?:fois|soirs?|jours?|injections?)\s*(?:par|\/)\s*semaine/i.test(dose);
@@ -867,7 +868,8 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
   const oncePerWeek = /(?:\b1\s*|\bune\s+)(?:fois|injection)\s*(?:par|\/)\s*semaine|hebdomadaire|chaque\s+semaine|1x\/sem/i.test(dose);
   const barePerWeek = /\bpar\s+semaine\b/i.test(dose);
 
-  if (fivePerWeek) perWeek = 5;
+  if (twiceDaily) perWeek = 14;
+  else if (fivePerWeek) perWeek = 5;
   else if (fourPerWeek) perWeek = 4;
   else if (threePerWeek) perWeek = 3;
   else if (twoPerWeek) perWeek = 2;

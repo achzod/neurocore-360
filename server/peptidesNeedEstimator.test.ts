@@ -12,6 +12,24 @@ test("French une fois par semaine is multiplied across the full cycle", () => {
   }
 });
 
+test("French daily frequencies are multiplied across the full cycle", () => {
+  assert.ok(Math.abs((estimateNeedMg({
+    dosage: "300 mcg une fois par jour",
+    cycleDuration: "12 semaines",
+  }) || 0) - 25.2) < 1e-9);
+  assert.equal(estimateNeedMg({
+    dosage: "250 mcg deux fois par jour",
+    cycleDuration: "9 semaines",
+  }), 31.5);
+});
+
+test("multi-phase weekly titration sums every declared range", () => {
+  assert.equal(estimateNeedMg({
+    dosage: "0,5 mg par semaine (semaines 1 à 4), puis 1 mg par semaine (semaines 5 à 8), puis 1,625 mg par semaine (semaines 9 à 12)",
+    cycleDuration: "12 semaines",
+  }), 12.5);
+});
+
 test("per administration wins over a later per-kg explanatory value", () => {
   assert.equal(estimateNeedMg({
     dosage: "100 mcg par administration, 5 soirs par semaine, soit 1,34 mcg/kg par injection et 500 mcg par semaine",
