@@ -17,6 +17,9 @@ test("signed Preview handoff reuses exact answers and skips the full Engine ques
   assert.match(enginePage, /setShowCheckout\(stillMissing\.length === 0\)/);
   assert.match(enginePage, /previewToken: previewToken \|\| undefined/);
   assert.match(enginePage, /recordPreviewEvent\("delta_completed"/);
+  assert.match(enginePage, /field === "pep_email"/);
+  assert.match(routes, /reconcilePreviewEmailForCheckout/);
+  assert.match(routes, /signed_checkout_confirmation/);
   assert.doesNotMatch(enginePage, /Le questionnaire Peptides Engine reste distinct/);
 });
 
@@ -26,6 +29,8 @@ test("result and follow-up emails carry signed handoff and promise no questionna
   assert.match(emailService, /#preview_token=/);
   assert.match(emailContent, /Tu ne recommences pas le questionnaire/);
   assert.match(emailContent, /Choisir mon offre Peptides Engine/);
+  assert.match(emailService, /tu ne recommences pas le questionnaire/);
+  assert.doesNotMatch(emailService, /questionnaire distinct de Peptides Engine/);
 });
 
 test("Stripe and PayPal keep server-side questionnaire and email gates", () => {

@@ -82,8 +82,16 @@ test("preview answers map to Engine fields without inventing the final confirmat
   assert.deepEqual(validatePeptidesEngineResponses(responses, "karim@example.com"), { valid: true });
 });
 
+test("a known email-domain typo requires correction before checkout", () => {
+  assert.deepEqual(previewCheckoutConfirmationFields({
+    pep_email: "thomas.grzesiak58@glail.com",
+    pep_blood_commit: "yes-before",
+  }), ["pep_email"]);
+});
+
 test("testosterone preview asks only the exact missing hormone confirmations", () => {
   assert.deepEqual(previewCheckoutConfirmationFields({
+    pep_email: "karim@example.com",
     pep_primary_goal: "testo-boost",
     pep_blood_commit: "yes-before",
     pep_testo_bloodwork: "old",

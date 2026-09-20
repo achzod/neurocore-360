@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { emailCorrectionMessage, isLikelyDeliverableEmail } from "@shared/emailAddressPolicy";
 import {
   PEPTAURA_PRODUCT_FEED_URL,
   parsePeptauraProductFeed,
@@ -41,7 +42,9 @@ const countryValues = ["FR", "BE", "CH", "LU", "CA", "US", "AE", "GB", "DE", "ES
 
 export const peptidesPreviewInputSchema = z.object({
   firstName: z.string().trim().min(2).max(60),
-  email: z.string().trim().toLowerCase().email(),
+  email: z.string().trim().toLowerCase().email().refine(isLikelyDeliverableEmail, (email) => ({
+    message: emailCorrectionMessage(email) || "Adresse email invalide.",
+  })),
   age: z.coerce.number().int().min(18).max(75),
   weightKg: z.coerce.number().min(40).max(220),
   heightCm: z.coerce.number().min(140).max(220),

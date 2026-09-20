@@ -59,6 +59,7 @@ test("stale leads and unsafe addresses are excluded", () => {
   assert.equal(isEligiblePreviewFollowupEmail("johndoe@yahoo.fr"), false);
   assert.equal(isEligiblePreviewFollowupEmail("qa@test.com"), false);
   assert.equal(isEligiblePreviewFollowupEmail("coaching@achzodcoaching.com"), false);
+  assert.equal(isEligiblePreviewFollowupEmail("achzodyt@gmail.com"), false);
 });
 
 test("provider ambiguity fails closed instead of retrying a possible send", () => {

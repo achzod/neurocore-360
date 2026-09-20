@@ -10,6 +10,7 @@ import { getStripeKlarnaClient, getUncachableStripeClient, getStripePublishableK
 import { createCheckoutSessionWithPaymentMethodFallback } from "./stripeCheckoutPaymentMethods";
 import { createProductCheckoutLineItem, usesInlineCheckoutLineItem } from "./stripeCheckoutProducts";
 import { validatePeptidesEngineResponses } from "./peptidesEngineQuestionnaire";
+import { isLikelyDeliverableEmail, suggestedEmailCorrection } from "@shared/emailAddressPolicy";
 import { hasValidPeptidesConsent } from "./peptidesConsent";
 import { calculateScoresFromResponses, generateFullAnalysis } from "./analysisEngine";
 import { startReportGeneration, getJobStatus, forceRegenerate } from "./reportJobManager";
@@ -109,6 +110,46 @@ import {
   buildExcerpt,
   slugify,
 } from "./blogImport";
+
+async function reconcilePreviewEmailForCheckout(
+  row: { id: string; responses?: Record<string, any> },
+  requestedEmailRaw: unknown,
+): Promise<boolean> {
+  const saved = row.responses && typeof row.responses === "object" ? row.responses : {};
+  const previewEmail = String(saved?.previewInput?.email || "").trim().toLowerCase();
+  const requestedEmail = String(requestedEmailRaw || "").trim().toLowerCase();
+  if (previewEmail && previewEmail === requestedEmail) return true;
+
+  const correction = suggestedEmailCorrection(previewEmail);
+  if (!correction || correction !== requestedEmail || !isLikelyDeliverableEmail(requestedEmail)) return false;
+
+  const corrections = Array.isArray(saved.previewEmailCorrections) ? saved.previewEmailCorrections : [];
+  const updatedResponses = {
+    ...saved,
+    email: requestedEmail,
+    previewInput: { ...(saved.previewInput || {}), email: requestedEmail },
+    previewEmailCorrections: [...corrections, {
+      from: previewEmail,
+      to: requestedEmail,
+      correctedAt: new Date().toISOString(),
+      source: "signed_checkout_confirmation",
+    }],
+  };
+  try {
+    await pool.query(
+      `UPDATE burnout_progress
+          SET email = $2,
+              responses = $3,
+              last_activity_at = NOW()
+        WHERE id = $1`,
+      [row.id, `peptides-preview::${requestedEmail}`, updatedResponses],
+    );
+    return true;
+  } catch (error) {
+    console.error("[PeptidesPreview] email correction failed", row.id, error instanceof Error ? error.message : error);
+    return false;
+  }
+}
 
 function sendCTAEmail(
   email: string,
@@ -4773,10 +4814,8 @@ export async function registerRoutes(
           res.status(404).json({ error: "PREVIEW_NOT_FOUND", message: "Ton estimation Pré-Peptides est introuvable." });
           return;
         }
-        const saved = row.responses && typeof row.responses === "object" ? row.responses : {};
-        const previewEmail = String(saved?.previewInput?.email || "").trim().toLowerCase();
-        if (!previewEmail || previewEmail !== String(email).trim().toLowerCase()) {
-          res.status(409).json({ error: "PREVIEW_EMAIL_MISMATCH", message: "Utilise la même adresse email que pour ton estimation Pré-Peptides." });
+        if (!(await reconcilePreviewEmailForCheckout(row, email))) {
+          res.status(409).json({ error: "PREVIEW_EMAIL_MISMATCH", message: "Confirme l’adresse email corrigée avant de continuer." });
           return;
         }
         previewLeadId = row.id;
@@ -5687,14 +5726,12 @@ export async function registerRoutes(
             LIMIT 1`,
           [claims.leadId],
         )).rows[0];
-        const saved = row?.responses && typeof row.responses === "object" ? row.responses : {};
-        const previewEmail = String(saved?.previewInput?.email || "").trim().toLowerCase();
         if (!row) {
           res.status(404).json({ error: "PREVIEW_NOT_FOUND", message: "Ton estimation Pré-Peptides est introuvable." });
           return;
         }
-        if (!previewEmail || previewEmail !== String(email).trim().toLowerCase()) {
-          res.status(409).json({ error: "PREVIEW_EMAIL_MISMATCH", message: "Utilise la même adresse email que pour ton estimation Pré-Peptides." });
+        if (!(await reconcilePreviewEmailForCheckout(row, email))) {
+          res.status(409).json({ error: "PREVIEW_EMAIL_MISMATCH", message: "Confirme l’adresse email corrigée avant de continuer." });
           return;
         }
         previewLeadId = row.id;

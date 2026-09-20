@@ -1,10 +1,10 @@
-export const PEPTIDES_PREVIEW_FOLLOWUP_START_AT = "2026-09-17T13:06:30.000Z";
+export const PEPTIDES_PREVIEW_FOLLOWUP_START_AT = "2026-09-14T00:00:00.000Z";
 export const PEPTIDES_PREVIEW_FOLLOWUP_STAGES = ["J1", "J3", "J7"] as const;
 export type PeptidesPreviewFollowupStage = typeof PEPTIDES_PREVIEW_FOLLOWUP_STAGES[number];
 
 const SUCCESS_STATUSES = new Set(["success", "sent", "delivered"]);
 const INVALID_DOMAINS = new Set(["yopmail.com", "test.com", "test.fr", "example.com"]);
-const INVALID_FRAGMENTS = ["achkou", "achzodcoaching", "johndoe", "noemail", "debug"];
+const INVALID_FRAGMENTS = ["achkou", "achzod", "johndoe", "noemail", "debug"];
 
 export type PeptidesPreviewFollowupTracking = {
   emailType: string;

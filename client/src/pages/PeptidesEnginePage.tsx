@@ -35,6 +35,7 @@ import { LiveStatsBar } from "@/components/LiveStatsBar";
 import { apiRequest } from "@/lib/queryClient";
 import { trackBeginCheckout, trackClick, getMetaAttribution } from "@/lib/analytics";
 import { PEPTIDES_PREVIEW_RESUME_KEY, resolveCampaignEngineChoiceDestination } from "@/lib/peptidesPreviewResume";
+import { emailCorrectionMessage, isLikelyDeliverableEmail } from "@shared/emailAddressPolicy";
 import { useToast } from "@/hooks/use-toast";
 import {
   PEPTIDES_SECTIONS,
@@ -53,7 +54,7 @@ const STORAGE_KEY = "peptides_engine_responses";
 export type PeptidesTier = "solo" | "coached" | "tracked";
 type PaymentRail = "card" | "klarna";
 type PreviewHandoffState = "absent" | "loading" | "ready" | "error";
-type PreviewConfirmationField = "pep_blood_commit" | "pep_testo_bloodwork" | "pep_testo_fertility";
+type PreviewConfirmationField = "pep_email" | "pep_blood_commit" | "pep_testo_bloodwork" | "pep_testo_fertility";
 type PreviewCheckoutEstimate = {
   moleculeCount: number;
   durationLabel: string;
@@ -82,6 +83,10 @@ const PREVIEW_CONFIRMATION_COPY: Record<PreviewConfirmationField, {
   label: string;
   options: Array<{ value: string; label: string }>;
 }> = {
+  pep_email: {
+    label: "Confirme l’adresse email qui recevra ton protocole",
+    options: [],
+  },
   pep_blood_commit: {
     label: "Pour le suivi biologique, qu’est-ce qui te convient ?",
     options: [
@@ -705,7 +710,7 @@ export default function PeptidesEnginePage() {
         const serverResponses = data.responses as Record<string, unknown>;
         const rawConfirmationFields: unknown[] = Array.isArray(data.confirmationFields) ? data.confirmationFields : [];
         const requestedFields = rawConfirmationFields.filter((field): field is PreviewConfirmationField =>
-          field === "pep_blood_commit" || field === "pep_testo_bloodwork" || field === "pep_testo_fertility"
+          field === "pep_email" || field === "pep_blood_commit" || field === "pep_testo_bloodwork" || field === "pep_testo_fertility"
         );
         let mergedResponses = serverResponses;
         try {
@@ -725,7 +730,9 @@ export default function PeptidesEnginePage() {
         } catch {
           mergedResponses = serverResponses;
         }
-        const stillMissing = requestedFields.filter((field) => !mergedResponses[field]);
+        const stillMissing = requestedFields.filter((field) => field === "pep_email"
+          ? !isLikelyDeliverableEmail(mergedResponses[field])
+          : !mergedResponses[field]);
         setResponses(mergedResponses);
         setPreviewConfirmationFields(stillMissing);
         setSectionIndex(PEPTIDES_SECTIONS.length - 1);
@@ -1047,14 +1054,27 @@ export default function PeptidesEnginePage() {
                       return (
                         <label key={field} className="block rounded-2xl border border-white/10 bg-white/[.035] p-5">
                           <span className="mb-3 block text-sm font-semibold text-white">{copy.label}</span>
-                          <select
-                            value={String(responses[field] || "")}
-                            onChange={(event) => handleAnswer(field, event.target.value)}
-                            className="w-full rounded-xl border border-white/10 bg-[#111318] px-4 py-3 text-sm text-white outline-none focus:border-amber-400"
-                          >
-                            <option value="">Choisir</option>
-                            {copy.options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                          </select>
+                          {field === "pep_email" ? (
+                            <>
+                              <input
+                                type="email"
+                                value={String(responses[field] || "")}
+                                onChange={(event) => handleAnswer(field, event.target.value.trim().toLowerCase())}
+                                className="w-full rounded-xl border border-white/10 bg-[#111318] px-4 py-3 text-sm text-white outline-none focus:border-amber-400"
+                                placeholder="ton@email.com"
+                              />
+                              {emailCorrectionMessage(responses[field]) && <span className="mt-2 block text-xs font-semibold text-amber-300">{emailCorrectionMessage(responses[field])}</span>}
+                            </>
+                          ) : (
+                            <select
+                              value={String(responses[field] || "")}
+                              onChange={(event) => handleAnswer(field, event.target.value)}
+                              className="w-full rounded-xl border border-white/10 bg-[#111318] px-4 py-3 text-sm text-white outline-none focus:border-amber-400"
+                            >
+                              <option value="">Choisir</option>
+                              {copy.options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                            </select>
+                          )}
                         </label>
                       );
                     })}
@@ -1114,7 +1134,9 @@ export default function PeptidesEnginePage() {
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
                   disabled={(needsPreviewConfirmation
-                    ? previewConfirmationFields.some((field) => !responses[field])
+                    ? previewConfirmationFields.some((field) => field === "pep_email"
+                      ? !isLikelyDeliverableEmail(responses[field])
+                      : !responses[field])
                     : !canContinue()) || shouldBlockPurchase(responses).blocked}
                   className="bg-amber-500 hover:bg-amber-400 text-black font-bold px-6 disabled:opacity-40 disabled:cursor-not-allowed"
                   aria-label={needsPreviewConfirmation ? "Choisir mon offre" : isLastSection ? "Aller au paiement" : "Section suivante"}

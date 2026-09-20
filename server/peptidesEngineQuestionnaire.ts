@@ -1,3 +1,5 @@
+import { isLikelyDeliverableEmail } from "@shared/emailAddressPolicy";
+
 const REQUIRED_RESPONSE_KEYS = [
   "pep_name",
   "pep_email",
@@ -19,11 +21,7 @@ const TESTOSTERONE_REQUIRED_RESPONSE_KEYS = [
 ] as const;
 
 function validEmail(raw: unknown): raw is string {
-  if (typeof raw !== "string") return false;
-  const trimmed = raw.trim();
-  return trimmed.length >= 6
-    && trimmed.length <= 254
-    && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmed);
+  return isLikelyDeliverableEmail(raw);
 }
 
 export function validatePeptidesEngineResponses(

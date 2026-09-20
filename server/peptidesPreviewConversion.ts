@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import type { PeptidesPreviewInput, PeptidesPreviewResult } from "./peptidesPreview";
+import { isLikelyDeliverableEmail } from "@shared/emailAddressPolicy";
 
 const TOKEN_VERSION = 1;
 const TOKEN_TTL_MS = 14 * 24 * 60 * 60 * 1000;
@@ -17,6 +18,7 @@ const EVENT_TYPES = new Set([
 ]);
 
 export type PreviewCheckoutConfirmationField =
+  | "pep_email"
   | "pep_blood_commit"
   | "pep_testo_bloodwork"
   | "pep_testo_fertility";
@@ -140,6 +142,7 @@ export function previewCheckoutConfirmationFields(
   responses: Record<string, unknown>,
 ): PreviewCheckoutConfirmationField[] {
   const fields: PreviewCheckoutConfirmationField[] = [];
+  if (!isLikelyDeliverableEmail(responses.pep_email)) fields.push("pep_email");
   if (!responses.pep_blood_commit) fields.push("pep_blood_commit");
   const secondaryGoals = Array.isArray(responses.pep_secondary_goals) ? responses.pep_secondary_goals : [];
   const testosteroneGoal = responses.pep_primary_goal === "testo-boost" || secondaryGoals.includes("testo-boost");
