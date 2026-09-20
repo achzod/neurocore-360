@@ -2126,7 +2126,7 @@ Tirzepatide (GLP-1/GIP dual)
 AXE HPG / TESTOSTERONE BASSE, PROTOCOLE DIRECT ET SOURCES LIVE
 La disponibilite de KissPeptin-10, HCG, Testagen et des autres outils HPG suit le bloc CONTEXTE PEPTAURA LIVE. Ne dis jamais qu'une molecule est disponible ou indisponible si le catalogue live dit l'inverse. Enclomiphene fait exception: sa seule source autorisee dans ce moteur est https://receptorchem.co.uk/enclomiphene-citrate/ et le serveur controle cette page en direct avant sauvegarde puis avant livraison.
 
-Quand pep_primary_goal = "testo-boost" OU pep_secondary_goals contient "testo-boost", tu construis un protocole base sur les regles suivantes. IMPORTANT : tu NE prescris JAMAIS sans bilan hormonal recent (Testo totale, Testo libre, LH, FSH, E2, SHBG, Prolactine, DHT, Albumine). Si pep_testo_bloodwork = "never" ou "old", ta PREMIERE recommandation doit etre de faire le bilan via Apexlabs Blood Analysis avant d'entamer le moindre peptide. Le nombre de credits inclus depend exclusivement du bloc CONTEXTE OFFRE du prompt utilisateur. N'invente jamais un credit offert. Pas de bilan = pas de protocole hormonal, point.
+Quand pep_primary_goal = "testo-boost" OU pep_secondary_goals contient "testo-boost", tu construis un protocole base sur les regles suivantes. IMPORTANT : tu n'actives JAMAIS un axe HPG sans bilan hormonal recent (Testo totale, Testo libre, LH, FSH, E2, SHBG, Prolactine, DHT, Albumine). Si pep_testo_bloodwork = "never" ou "old", le rapport doit quand meme preparer exactement deux fiches HPG, Enclomiphene Citrate et KissPeptin-10, sous le libelle explicite « phase HPG conditionnelle ». Elles comptent dans le stack complet mais restent non actives, non commandables et non utilisables tant que le bilan matinal n'a pas confirme l'indication. Le rapport explique comment LH, FSH, estradiol, SHBG et prolactine activent, modifient ou retirent cette phase. La premiere action reste de faire le bilan via APEXLABS Blood Analysis. Le nombre de credits inclus depend exclusivement du bloc CONTEXTE OFFRE du prompt utilisateur. N'invente jamais un credit offert.
 
 HCG (analogue LH, outil HPG-axis Peptaura si listing live disponible)
 - Mecanisme : mime la LH, active directement les cellules de Leydig testiculaires, production testo + maintien taille testiculaire.
@@ -2143,7 +2143,7 @@ Si pep_testo_bloodwork = "recent-low", le stack principal contient OBLIGATOIREME
 Les deux molecules doivent apparaitre dans la synthese, le rationnel, les fiches, la semaine type et la liste de commande. Explique leur logique ensemble avec des mots simples, sans transformer le rapport en consultation medicale. HCG ne remplace jamais ce duo. Tu peux l'ajouter uniquement si le contexte TRT, fertilite ou post-cycle le justifie explicitement et si sa source Peptaura passe les controles live.
 
 AUTRES CAS TESTO-BOOST
-Si testo dans la norme mais client veut optimiser : refuse tout protocole pharmacologique. Propose optimisation lifestyle (sommeil, stress, alimentation, training, supplementation zinc/D3/magnesium). Pas de protocole HPG-axis sans indication medicale documentee.
+Si la testosterone est recente et dans la norme, n'ajoute pas de phase HPG pharmacologique pour gonfler artificiellement le stack. Propose optimisation lifestyle (sommeil, stress, alimentation, training, supplementation zinc/D3/magnesium). Si le bilan est ancien ou absent, conserve uniquement le duo Enclomiphene plus KissPeptin comme phase HPG conditionnelle non active, jamais comme achat immediat.
 Post-cycle (pep_testo_pct_context = "post-cycle") : conserve le duo Enclomiphene plus KissPeptin-10 si la testo est basse confirmee, puis ajoute HCG uniquement si le profil le justifie et si sa fiche Peptaura est validee en direct. Insiste sur le bilan pre/post dans le bloc de suivi.
 Andropause ou autre contexte avec testo basse confirmee : conserve le duo obligatoire et explique clairement ce que LH et FSH changent dans la lecture du profil et dans les attentes realistes.
 Baisse stress/lifestyle : PREMIER REFLEXE = optimisation sommeil, stress management, alimentation, training. Peptides en second temps si les basics sont deja en place. Pas de raccourci pharmaco.
@@ -3185,6 +3185,29 @@ export async function generatePeptidesProtocol(
       ) {
         throw new Error(
           `AXIS_COVERAGE_GATE: ${report.peptides.length} molecule(s) pour ${stackPolicy.goals.length} axe(s), minimum ${stackPolicy.minimumMolecules}. Remplace les molecules non achetables sans supprimer les axes valides.`,
+        );
+      }
+      const generatedNames = report.peptides.map((peptide) => String(peptide.name || "")).join(" | ");
+      const generatedText = JSON.stringify(report);
+      if (
+        stackPolicy.conditionalHpgPhase
+        && (
+          !/enclomiph[eè]ne/i.test(generatedNames)
+          || !/kisspeptin[\s-]*10/i.test(generatedNames)
+          || !/phase HPG conditionnelle/i.test(generatedText)
+          || !/(?:non activ[ée]e?|inactive)/i.test(generatedText)
+        )
+      ) {
+        throw new Error(
+          "CONDITIONAL_HPG_GATE: bilan ancien ou absent, Enclomiphene et KissPeptin-10 doivent rester dans le stack comme phase HPG conditionnelle non active.",
+        );
+      }
+      if (
+        stackPolicy.secretagogueAxisRequired
+        && (!/cjc[\s-]*1295[^|]*(?:sans|no)\s*dac/i.test(generatedNames) || !/ipamorelin/i.test(generatedNames))
+      ) {
+        throw new Error(
+          "SECRETAGOGUE_AXIS_GATE: objectif GH actif sans CJC-1295 sans DAC + Ipamorelin.",
         );
       }
 

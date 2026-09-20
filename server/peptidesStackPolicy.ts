@@ -4,6 +4,10 @@ export interface PeptidesStackPolicy {
   maximumMolecules: number;
   multiAxis: boolean;
   confirmedLowTestosterone: boolean;
+  testosteroneGoal: boolean;
+  testosteroneBloodworkStatus: string;
+  conditionalHpgPhase: boolean;
+  secretagogueAxisRequired: boolean;
 }
 
 function normalizeGoalList(value: unknown): string[] {
@@ -25,9 +29,15 @@ export function derivePeptidesStackPolicy(
     responses.pep_secondary_goals || responses.objectifSecondaire,
   );
   const goals = [...new Set([primary, ...secondary].filter(Boolean))];
+  const testosteroneGoal = goals.includes("testo-boost");
+  const testosteroneBloodworkStatus = String(
+    responses.pep_testo_bloodwork || "",
+  ).trim().toLowerCase();
   const confirmedLowTestosterone =
-    goals.includes("testo-boost")
-    && String(responses.pep_testo_bloodwork || "").trim().toLowerCase() === "recent-low";
+    testosteroneGoal && testosteroneBloodworkStatus === "recent-low";
+  const conditionalHpgPhase =
+    testosteroneGoal && ["old", "never"].includes(testosteroneBloodworkStatus);
+  const secretagogueAxisRequired = goals.includes("gh-antiaging");
 
   let minimumMolecules = 2;
   if (goals.length === 2) minimumMolecules = 3;
@@ -48,5 +58,9 @@ export function derivePeptidesStackPolicy(
     maximumMolecules: 5,
     multiAxis: goals.length >= 2,
     confirmedLowTestosterone,
+    testosteroneGoal,
+    testosteroneBloodworkStatus,
+    conditionalHpgPhase,
+    secretagogueAxisRequired,
   };
 }

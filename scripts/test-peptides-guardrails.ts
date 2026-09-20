@@ -104,6 +104,10 @@ assert.deepEqual(
     maximumMolecules: 5,
     multiAxis: true,
     confirmedLowTestosterone: true,
+    testosteroneGoal: true,
+    testosteroneBloodworkStatus: "recent-low",
+    conditionalHpgPhase: false,
+    secretagogueAxisRequired: true,
   },
 );
 assert.equal(

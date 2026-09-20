@@ -16,8 +16,23 @@ test("three distinct goals require a five-molecule stack", () => {
       maximumMolecules: 5,
       multiAxis: true,
       confirmedLowTestosterone: false,
+      testosteroneGoal: false,
+      testosteroneBloodworkStatus: "",
+      conditionalHpgPhase: false,
+      secretagogueAxisRequired: false,
     },
   );
+});
+
+test("old testosterone bloodwork keeps KissPeptin and Enclomiphene as a conditional HPG phase", () => {
+  const policy = derivePeptidesStackPolicy({
+    pep_primary_goal: "fatloss",
+    pep_secondary_goals: ["testo-boost", "gh-antiaging"],
+    pep_testo_bloodwork: "old",
+  });
+  assert.equal(policy.minimumMolecules, 5);
+  assert.equal(policy.conditionalHpgPhase, true);
+  assert.equal(policy.secretagogueAxisRequired, true);
 });
 
 test("confirmed HPG plus two other axes requires five molecules", () => {
@@ -36,4 +51,7 @@ test("final retry cannot collapse to two molecules", () => {
   assert.doesNotMatch(source, /2 peptides maximum si necessaire/);
   assert.match(source, /AXIS_COVERAGE_GATE/);
   assert.match(source, /Ne supprime jamais silencieusement un objectif valide/);
+  assert.match(source, /CONDITIONAL_HPG_GATE/);
+  assert.match(source, /SECRETAGOGUE_AXIS_GATE/);
+  assert.match(source, /Enclomiphene et KissPeptin-10 doivent rester dans le stack/);
 });
