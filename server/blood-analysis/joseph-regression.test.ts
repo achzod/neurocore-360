@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import test from "node:test";
 import { extractMarkersFromLines, normalizeMarkerValue } from "./index";
 
@@ -59,5 +60,21 @@ test("l'extraction déterministe privilégie la Lp(a) massique et conserve insul
   ];
   for (const markerId of expectedNfs) {
     assert.ok(byId.has(markerId), `marqueur NFS absent: ${markerId}`);
+  }
+});
+
+test("les marqueurs NFS alimentent durablement la catégorie hématologique", () => {
+  const bloodTestsRoutes = fs.readFileSync(
+    new URL("../blood-tests/routes.ts", import.meta.url),
+    "utf8",
+  );
+  const bloodAnalysisRoutes = fs.readFileSync(
+    new URL("./routes.ts", import.meta.url),
+    "utf8",
+  );
+  for (const markerId of ["hemoglobine", "hematocrite", "globules_rouges", "globules_blancs", "plaquettes"]) {
+    const mapping = new RegExp(`${markerId}:\\s*["']hemato["']`);
+    assert.match(bloodTestsRoutes, mapping, `catégorie NFS absente dans blood-tests: ${markerId}`);
+    assert.match(bloodAnalysisRoutes, mapping, `catégorie NFS absente dans blood-analysis: ${markerId}`);
   }
 });

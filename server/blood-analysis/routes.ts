@@ -433,6 +433,19 @@ const CATEGORY_BY_MARKER: Record<string, string> = {
   ggt: "liver_kidney",
   creatinine: "liver_kidney",
   egfr: "liver_kidney",
+  hemoglobine: "hemato",
+  hematocrite: "hemato",
+  globules_rouges: "hemato",
+  vgm: "hemato",
+  tcmh: "hemato",
+  ccmh: "hemato",
+  globules_blancs: "hemato",
+  neutrophiles: "hemato",
+  lymphocytes: "hemato",
+  monocytes: "hemato",
+  eosinophiles: "hemato",
+  basophiles: "hemato",
+  plaquettes: "hemato",
 };
 
 const normalizeMarkerStatus = (status: unknown): MarkerStatus => {
@@ -454,6 +467,7 @@ const CATEGORY_WEIGHTS: Record<string, number> = {
   inflammation: 15,
   liver_kidney: 15,
   vitamins: 10,
+  hemato: 10,
 };
 const DEFAULT_CATEGORY_WEIGHT = 8;
 

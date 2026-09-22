@@ -1142,6 +1142,19 @@ const PLAUSIBLE_BOUNDS: Record<string, { min?: number; max?: number }> = {
   fructosamine: { min: 150, max: 400 },
   cholesterol_total: { min: 50, max: 400 },
   apo_a1: { min: 50, max: 250 },
+  hemoglobine: { min: 5, max: 25 },
+  hematocrite: { min: 15, max: 75 },
+  globules_rouges: { min: 1, max: 9 },
+  vgm: { min: 40, max: 150 },
+  tcmh: { min: 10, max: 60 },
+  ccmh: { min: 20, max: 50 },
+  globules_blancs: { min: 0.5, max: 100 },
+  neutrophiles: { min: 0.1, max: 50 },
+  lymphocytes: { min: 0.1, max: 30 },
+  monocytes: { min: 0, max: 10 },
+  eosinophiles: { min: 0, max: 10 },
+  basophiles: { min: 0, max: 5 },
+  plaquettes: { min: 10, max: 1500 },
 };
 
 const MARKER_VALIDATION_RANGES: Record<string, { min: number; max: number }> = {

@@ -86,6 +86,21 @@ const CATEGORY_BY_MARKER: Record<string, string> = {
   ggt: "liver_kidney",
   creatinine: "liver_kidney",
   egfr: "liver_kidney",
+
+  // Complete blood count
+  hemoglobine: "hemato",
+  hematocrite: "hemato",
+  globules_rouges: "hemato",
+  vgm: "hemato",
+  tcmh: "hemato",
+  ccmh: "hemato",
+  globules_blancs: "hemato",
+  neutrophiles: "hemato",
+  lymphocytes: "hemato",
+  monocytes: "hemato",
+  eosinophiles: "hemato",
+  basophiles: "hemato",
+  plaquettes: "hemato",
 };
 
 const SYSTEM_BY_MARKER: Record<string, string> = {
@@ -128,6 +143,19 @@ const SYSTEM_BY_MARKER: Record<string, string> = {
   t3_libre: "thyroid",
   t3_reverse: "thyroid",
   anti_tpo: "thyroid",
+  hemoglobine: "hemato",
+  hematocrite: "hemato",
+  globules_rouges: "hemato",
+  vgm: "hemato",
+  tcmh: "hemato",
+  ccmh: "hemato",
+  globules_blancs: "hemato",
+  neutrophiles: "hemato",
+  lymphocytes: "hemato",
+  monocytes: "hemato",
+  eosinophiles: "hemato",
+  basophiles: "hemato",
+  plaquettes: "hemato",
 };
 
 // Recalibrated 2026-05-07 (Younes Y. case): flat-average gave a "bon"
