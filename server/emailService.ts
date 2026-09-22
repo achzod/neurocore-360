@@ -2247,7 +2247,7 @@ const renderBiomarkerRadarPanel = (rows: BiomarkerScoreRow[]): string => {
   `;
 };
 
-const renderBloodTabbedReportHtml = (
+export const renderBloodTabbedReportHtml = (
   reportId: string,
   reportMarkdown: string,
   markerSnapshots?: BloodReportMarkerSnapshot[],
@@ -2919,7 +2919,7 @@ const normalizeQualityText = (value: string): string =>
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
 
-const evaluateBloodDeliveryQuality = (
+export const evaluateBloodDeliveryQuality = (
   reportMarkdown: string,
   attachmentHtml: string,
   emailBodyHtml: string,
