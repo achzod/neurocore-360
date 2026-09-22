@@ -349,7 +349,23 @@ export const BIOMARKER_RANGES: Record<string, BiomarkerRange> = {
     normalMin: 90, normalMax: 999,
     optimalMin: 100, optimalMax: 999,
     context: "Filtration rénale"
-  }
+  },
+
+  // NFS / hémogramme. Ces marqueurs doivent rester dans le jeu analysé :
+  // les ignorer faisait annoncer à tort une NFS « non renseignée ».
+  hemoglobine: { name: "Hémoglobine", unit: "g/dL", normalMin: 13, normalMax: 17.5, optimalMin: 14, optimalMax: 16.5, context: "Transport de l'oxygène" },
+  hematocrite: { name: "Hématocrite", unit: "%", normalMin: 40, normalMax: 52, optimalMin: 42, optimalMax: 48, context: "Volume occupé par les globules rouges" },
+  globules_rouges: { name: "Globules rouges", unit: "T/L", normalMin: 4.2, normalMax: 5.8, optimalMin: 4.5, optimalMax: 5.5, context: "Numération érythrocytaire" },
+  vgm: { name: "VGM", unit: "fL", normalMin: 80, normalMax: 100, optimalMin: 85, optimalMax: 95, context: "Volume globulaire moyen" },
+  tcmh: { name: "TCMH", unit: "pg", normalMin: 27, normalMax: 33, optimalMin: 28, optimalMax: 32, context: "Teneur corpusculaire moyenne en hémoglobine" },
+  ccmh: { name: "CCMH", unit: "g/dL", normalMin: 32, normalMax: 36, optimalMin: 33, optimalMax: 35, context: "Concentration corpusculaire moyenne en hémoglobine" },
+  globules_blancs: { name: "Globules blancs", unit: "G/L", normalMin: 4, normalMax: 10, optimalMin: 4.5, optimalMax: 8, context: "Numération leucocytaire" },
+  neutrophiles: { name: "Neutrophiles", unit: "G/L", normalMin: 1.5, normalMax: 7.5, optimalMin: 2, optimalMax: 5.5, context: "Immunité innée" },
+  lymphocytes: { name: "Lymphocytes", unit: "G/L", normalMin: 1, normalMax: 4, optimalMin: 1.5, optimalMax: 3, context: "Immunité adaptative" },
+  monocytes: { name: "Monocytes", unit: "G/L", normalMin: 0.2, normalMax: 1, optimalMin: 0.3, optimalMax: 0.8, context: "Réponse immunitaire" },
+  eosinophiles: { name: "Éosinophiles", unit: "G/L", normalMin: 0, normalMax: 0.5, optimalMin: 0, optimalMax: 0.3, context: "Terrain allergique et parasitaire" },
+  basophiles: { name: "Basophiles", unit: "G/L", normalMin: 0, normalMax: 0.1, optimalMin: 0, optimalMax: 0.08, context: "Réponse inflammatoire" },
+  plaquettes: { name: "Plaquettes", unit: "G/L", normalMin: 150, normalMax: 400, optimalMin: 180, optimalMax: 350, context: "Hémostase" }
 };
 
 // ============================================
@@ -424,6 +440,15 @@ const MARKER_ALIASES: Record<string, string> = {
   "lp(a)": "lpa",
   "lpa": "lpa",
   "lipoprotein(a)": "lpa",
+
+  // NFS / hémogramme
+  "hemoglobine": "hemoglobine", "hematocrite": "hematocrite",
+  "globules rouges": "globules_rouges", "erythrocytes": "globules_rouges",
+  "vgm": "vgm", "tcmh": "tcmh", "ccmh": "ccmh",
+  "globules blancs": "globules_blancs", "leucocytes": "globules_blancs",
+  "neutrophiles": "neutrophiles", "lymphocytes": "lymphocytes",
+  "monocytes": "monocytes", "eosinophiles": "eosinophiles",
+  "basophiles": "basophiles", "plaquettes": "plaquettes",
 
   // Inflammatory
   "crp": "crp_us",
@@ -724,6 +749,8 @@ const normalizeUnit = (unit?: string): string | undefined => {
     "ng/dl": "ng/dL",
     "ug/dl": "µg/dL",
     "mui/l": "mIU/L",
+    "mui/ml": "µIU/mL",
+    "uui/ml": "µIU/mL",
     "ui/l": "IU/L",
     "u/l": "U/L",
     "ml/min": "mL/min",
@@ -838,7 +865,7 @@ export const normalizeMarkerValue = (markerId: string, value: number, unit?: str
   const lipidMmolToMg = 38.67;
   const trigMmolToMg = 88.57;
 
-  if (["ldl", "hdl", "apob", "lpa", "cholesterol", "cholesterol_total", "apo_a1"].includes(markerId)) {
+  if (["ldl", "hdl", "apob", "cholesterol", "cholesterol_total", "apo_a1"].includes(markerId)) {
     if (sourceUnit === "mmol/L") return Math.round(value * lipidMmolToMg);
     if (sourceUnit === "g/L") return Math.round(value * 100);
     if (sourceUnit === "mg/L") return Math.round(value / 10);
@@ -846,6 +873,15 @@ export const normalizeMarkerValue = (markerId: string, value: number, unit?: str
     // Only apply if no sourceUnit, to avoid misinterpreting actual low mg/dL values
     if (!sourceUnit && value <= 1.9) return Math.round(value * 100);
     if (!sourceUnit && value < 10) return Math.round(value * lipidMmolToMg);
+  }
+
+  // Lp(a): mg/dL et nmol/L ne sont pas reliés par un facteur universel.
+  // Convertir seulement les unités massiques explicites empêche la valeur
+  // 9,1 nmol/L de devenir artificiellement 352 mg/dL.
+  if (markerId === "lpa") {
+    if (sourceUnit === "g/L") return roundValue(value * 100, 2);
+    if (sourceUnit === "mg/L") return roundValue(value / 10, 2);
+    return value;
   }
 
   if (markerId === "triglycerides") {
@@ -877,7 +913,7 @@ const MARKER_SYNONYMS: Record<string, RegExp[]> = {
   anti_tpo: [/anti[-\s]?tpo/i, /anti[-\s]?thyro/i],
   glycemie_jeun: [/glyc[ée]mie[^\\n]{0,30}je[uû]n/i, /glucose[^\\n]{0,30}je[uû]n/i, /glyc[ée]mie\s*à\s*jeun/i],
   hba1c: [/hba1c/i, /hba\s*1c/i, /h[ée]moglobine\s*gly/i, /h[ée]moglobine\s*a1c/i],
-  insuline_jeun: [/insuline[^\\n]{0,30}je[uû]n/i],
+  insuline_jeun: [/insuline[^\\n]{0,30}je[uû]n/i, /^\s*insuline\s*$/i, /insulin[ée]mie/i],
   homa_ir: [/homa[-\s]?ir/i, /indice\s*de\s*homa/i],
   fructosamine: [/fructosamine/i],
   triglycerides: [/triglyc[ée]rides/i],
@@ -902,6 +938,17 @@ const MARKER_SYNONYMS: Record<string, RegExp[]> = {
   ggt: [/\bggt\b/i, /gamma[-\s]*gt/i],
   creatinine: [/cr[ée]atinine/i],
   egfr: [/\begfr\b/i, /d[ée]bit[^\\n]{0,40}filtration/i, /dfg\s*calcul[ée]/i, /d\.?\s*f\.?\s*g\.?\s*calcul/i, /ckd[-\s]?epi/i],
+  hemoglobine: [/^h[ée]moglobine$/i, /h[ée]moglobine\s*\(hb\)/i],
+  hematocrite: [/h[ée]matocrite/i],
+  globules_rouges: [/globules?\s*rouges?/i, /h[ée]maties/i, /[ée]rythrocytes/i],
+  vgm: [/\bvgm\b/i, /volume\s*globulaire\s*moyen/i],
+  tcmh: [/\btcmh\b/i, /teneur\s*corpusculaire\s*moyenne/i],
+  ccmh: [/\bccmh\b/i, /concentration\s*corpusculaire\s*moyenne/i],
+  globules_blancs: [/globules?\s*blancs?/i, /leucocytes/i],
+  neutrophiles: [/polynucl[ée]aires?\s*neutrophiles?/i, /neutrophiles/i],
+  lymphocytes: [/lymphocytes/i], monocytes: [/monocytes/i],
+  eosinophiles: [/[ée]osinophiles/i], basophiles: [/basophiles/i],
+  plaquettes: [/plaquettes/i, /thrombocytes/i],
 };
 
 const extractFirstNumber = (line: string): number | null => {
@@ -916,7 +963,7 @@ const extractValueAfterLabel = (line: string, match: RegExpMatchArray): number |
 };
 
 const UNIT_REGEX =
-  /(mmol\/l|nmol\/l|mg\/dl|mg\/l|g\/l|ng\/ml|ng\/l|pg\/ml|ng\/dl|pmol\/l|umol\/l|µmol\/l|mui\/l|ui\/l|u\/l|ml\/min|%)/i;
+  /(mmol\/l|nmol\/l|mg\/dl|mg\/l|g\/dl|g\/l|t\/l|ng\/ml|ng\/l|pg\/ml|ng\/dl|pmol\/l|umol\/l|µmol\/l|mui\/ml|µui\/ml|μui\/ml|mui\/l|ui\/l|u\/l|ml\/min|fl|pg|%)/i;
 
 const SKIP_LINE_REGEX =
   /(objectif|recommand|valeur|référence|reference|score|esc|risque|guide|interpret|evaluation|page|\bhas\b|consid[ée]r[ée]|est\s+normal|en\s*faveur|17\s*alpha|hydroxy[-\s]?prog[ée]st[ée]rone|transmis\s+au|envoy[ée]s?\s+au|examen[s]?\s+transmis|pr[ée]l[èe]vement\s*:|valid[ée]\s*(le|par)|seuil\s*de\s*d[ée]tection)/i;
@@ -931,7 +978,7 @@ const findUnit = (line?: string): string | undefined => {
   return normalizeUnit(match[0]);
 };
 
-const extractMarkersFromLines = (pdfText: string): BloodMarkerInput[] => {
+export const extractMarkersFromLines = (pdfText: string): BloodMarkerInput[] => {
   const lines = pdfText
     .split(/\r?\n/)
     .map((line) => line.trim())
@@ -956,6 +1003,18 @@ const extractMarkersFromLines = (pdfText: string): BloodMarkerInput[] => {
       const valueFromLabel = extractValueAfterLabel(line, match);
       let unit = findUnit(line);
       let value = valueFromLabel;
+
+      // Lp(a) is commonly printed twice: first in nmol/L, then in mg/L.
+      // Prefer the explicit mass result, the only one compatible with the
+      // mg/dL reference ranges, without inventing a molar conversion factor.
+      if (markerId === "lpa") {
+        const lpaWindow = lines.slice(i, i + 7).join(" ");
+        const massMatch = lpaWindow.match(/([<>]?\s*\d+(?:[.,]\d+)?)\s*(mg\/dL|mg\/L|g\/L)/i);
+        if (massMatch) {
+          value = Number(massMatch[1].replace(/[<>\s]/g, "").replace(",", "."));
+          unit = normalizeUnit(massMatch[2]);
+        }
+      }
 
       if (value === null) {
         for (let offset = 1; offset <= 4; offset += 1) {
@@ -985,6 +1044,10 @@ const extractMarkersFromLines = (pdfText: string): BloodMarkerInput[] => {
       }
 
       if (value === null || Number.isNaN(value)) continue;
+      // A mass result is required for Lp(a) because nmol/L cannot be converted
+      // to mg/dL with a universal factor. Labs that expose both units are
+      // scanned until the explicit mg/L or mg/dL result is found.
+      if (markerId === "lpa" && unit === "nmol/L") continue;
       const normalized = normalizeMarkerValue(markerId, value, unit);
       if (!isPlausibleMarkerValue(markerId, normalized)) continue;
       results.set(markerId, { value: normalized, unit });
@@ -994,6 +1057,7 @@ const extractMarkersFromLines = (pdfText: string): BloodMarkerInput[] => {
   return Array.from(results.entries()).map(([markerId, data]) => ({
     markerId,
     value: data.value,
+    unit: BIOMARKER_RANGES[markerId]?.unit,
   }));
 };
 
@@ -1170,6 +1234,7 @@ const extractMarkersFromText = (pdfText: string): BloodMarkerInput[] => {
         const unit = findUnit(after) || findUnit(before);
         // Require a unit in the after text for the value to be valid (lab results always have units)
         if (!unit && !findUnit(cleaned.slice(end, end + 120))) continue;
+        if (markerId === "lpa" && unit === "nmol/L") continue;
         const normalized = normalizeMarkerValue(markerId, value, unit);
         if (!isPlausibleMarkerValue(markerId, normalized)) continue;
         results.set(markerId, { value: normalized, unit });
@@ -1182,6 +1247,7 @@ const extractMarkersFromText = (pdfText: string): BloodMarkerInput[] => {
   return Array.from(results.entries()).map(([markerId, data]) => ({
     markerId,
     value: data.value,
+    unit: BIOMARKER_RANGES[markerId]?.unit,
   }));
 };
 
@@ -1498,13 +1564,16 @@ ${cleaned.slice(0, 20000)}`;
     const rawItems: Array<Record<string, unknown>> = JSON.parse(response.text)?.markers || [];
     console.log(`[BloodAnalysis] OpenAI raw extraction: ${JSON.stringify(rawItems.filter((i: any) => /testost/i.test(i.markerId)).slice(0, 5))}`);
     const extracted = rawItems
-      .map((item: Record<string, unknown>) => {
+      .flatMap((item: Record<string, unknown>): Array<{ markerId: string; value: number; unit?: string }> => {
         const markerId = String((item as any).markerId || "").trim();
         const unitSource = String((item as any).unit_source || (item as any).unit || "").trim();
-        return {
+        const normalizedSourceUnit = normalizeUnit(unitSource || undefined);
+        if (markerId === "lpa" && normalizedSourceUnit === "nmol/L") return [];
+        return [{
           markerId,
           value: normalizeMarkerValue(markerId, Number((item as any).value), unitSource || undefined),
-        };
+          unit: BIOMARKER_RANGES[markerId]?.unit,
+        }];
       })
       .filter((item) => item.markerId && !Number.isNaN(item.value))
       .filter((item) => Boolean(BIOMARKER_RANGES[item.markerId]))
