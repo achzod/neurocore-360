@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
-import { extractMarkersFromLines, normalizeMarkerValue } from "./index";
+import { analyzeBloodwork, extractMarkersFromLines, normalizeMarkerValue } from "./index";
 
 const josephExcerpt = `
 Laboratoire de biologie médicale
@@ -77,4 +77,17 @@ test("les marqueurs NFS alimentent durablement la catégorie hématologique", ()
     assert.match(bloodTestsRoutes, mapping, `catégorie NFS absente dans blood-tests: ${markerId}`);
     assert.match(bloodAnalysisRoutes, mapping, `catégorie NFS absente dans blood-analysis: ${markerId}`);
   }
+});
+
+test("une régénération calcule HOMA-IR à partir de la glycémie et de l'insuline persistées", async () => {
+  const analysis = await analyzeBloodwork(
+    [
+      { markerId: "glycemie_jeun", value: 83, unit: "mg/dL" },
+      { markerId: "insuline_jeun", value: 3.9, unit: "µIU/mL" },
+    ],
+    { gender: "homme" },
+  );
+  const homa = analysis.markers.find((marker) => marker.markerId === "homa_ir");
+  assert.equal(homa?.value, 0.8);
+  assert.equal(homa?.status, "optimal");
 });

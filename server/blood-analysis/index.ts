@@ -2450,6 +2450,11 @@ export async function analyzeBloodwork(
     medications?: string;
   }
 ): Promise<BloodAnalysisResult> {
+  // Regeneration paths receive persisted marker arrays rather than fresh PDF
+  // extraction output. Recompute deterministic derived markers here as well,
+  // otherwise a corrected fasting insulin still leaves HOMA-IR falsely absent.
+  markers = addComputedMarkers(markers);
+
   // Analyze each marker
   const analyzedMarkers: MarkerAnalysis[] = [];
   const optimal: string[] = [];
