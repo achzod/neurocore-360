@@ -320,6 +320,24 @@ export const BIOMARKER_RANGES: Record<string, BiomarkerRange> = {
     optimalMin: 90, optimalMax: 110,
     context: "Testostérone, immunité"
   },
+  vitamine_b6: { name: "Vitamine B6", unit: "µg/L", normalMin: 8.7, normalMax: 27.2, optimalMin: 8.7, optimalMax: 27.2, context: "Métabolisme énergétique et fonction neurologique" },
+
+  // Chimie générale et marqueurs complémentaires
+  phosphatases_alcalines: { name: "Phosphatases alcalines", unit: "U/L", normalMin: 40, normalMax: 130, optimalMin: 40, optimalMax: 100, context: "Foie, voies biliaires et remodelage osseux" },
+  acide_urique: { name: "Acide urique", unit: "mg/dL", normalMin: 3.4, normalMax: 7, optimalMin: 4, optimalMax: 6, context: "Métabolisme des purines" },
+  sodium: { name: "Sodium", unit: "mmol/L", normalMin: 136, normalMax: 145, optimalMin: 138, optimalMax: 143, context: "Équilibre hydrique" },
+  potassium: { name: "Potassium", unit: "mmol/L", normalMin: 3.5, normalMax: 5.1, optimalMin: 4, optimalMax: 4.8, context: "Fonction neuromusculaire et cardiaque" },
+  chlore: { name: "Chlore", unit: "mmol/L", normalMin: 98, normalMax: 107, optimalMin: 100, optimalMax: 105, context: "Équilibre acido-basique" },
+  calcium: { name: "Calcium", unit: "mg/dL", normalMin: 8.6, normalMax: 10, optimalMin: 9, optimalMax: 9.8, context: "Fonction neuromusculaire et osseuse" },
+  phosphore: { name: "Phosphore", unit: "mg/dL", normalMin: 2.5, normalMax: 4.5, optimalMin: 3, optimalMax: 4.2, context: "Énergie cellulaire et santé osseuse" },
+  transferrine: { name: "Transferrine", unit: "g/L", normalMin: 2, normalMax: 3.6, optimalMin: 2.2, optimalMax: 3.2, context: "Transport du fer" },
+  tibc: { name: "Capacité totale de fixation du fer", unit: "µg/dL", normalMin: 260, normalMax: 400, optimalMin: 280, optimalMax: 360, context: "Capacité de transport du fer" },
+  proteines_totales: { name: "Protéines totales", unit: "g/L", normalMin: 65, normalMax: 80, optimalMin: 68, optimalMax: 78, context: "État protéique global" },
+  albumine: { name: "Albumine", unit: "g/L", normalMin: 40.2, normalMax: 47.6, optimalMin: 42, optimalMax: 47, context: "Synthèse hépatique et état protéique" },
+  non_hdl: { name: "Cholestérol non-HDL", unit: "mg/dL", normalMin: 0, normalMax: 130, optimalMin: 0, optimalMax: 110, context: "Charge athérogène totale" },
+  psa: { name: "PSA total", unit: "ng/mL", normalMin: 0, normalMax: 2, optimalMin: 0, optimalMax: 2, context: "Marqueur prostatique à contextualiser" },
+  dhea: { name: "DHEA", unit: "ng/mL", normalMin: 1.8, normalMax: 12.5, optimalMin: 2.5, optimalMax: 8, context: "Précurseur hormonal surrénalien" },
+  vs: { name: "Vitesse de sédimentation", unit: "mm/h", normalMin: 0, normalMax: 15, optimalMin: 0, optimalMax: 10, context: "Marqueur inflammatoire non spécifique" },
 
   // Panel Hépatique/Rénal
   alt: {
@@ -489,6 +507,14 @@ const MARKER_ALIASES: Record<string, string> = {
   "magnesium rbc": "magnesium_rbc",
   "magnésium": "magnesium_rbc",
   "zinc": "zinc",
+  "vitamine b6": "vitamine_b6", "vitamin b6": "vitamine_b6",
+  "phosphatases alcalines": "phosphatases_alcalines", "alp": "phosphatases_alcalines",
+  "acide urique": "acide_urique", "sodium": "sodium", "potassium": "potassium", "chlore": "chlore",
+  "calcium": "calcium", "phosphore": "phosphore", "transferrine": "transferrine",
+  "capacite totale de fixation du fer": "tibc", "tibc": "tibc",
+  "proteines totales": "proteines_totales", "albumine": "albumine",
+  "cholesterol non-hdl": "non_hdl", "non-hdl": "non_hdl", "psa": "psa",
+  "dhea": "dhea", "vitesse de sedimentation": "vs", "vs": "vs",
 
   // Liver/Kidney
   "alt": "alt",
@@ -942,6 +968,16 @@ const MARKER_SYNONYMS: Record<string, RegExp[]> = {
   folate: [/folate/i, /vitamine\s*b9/i],
   magnesium_rbc: [/magn[eé]sium[^\\n]{0,30}rbc/i, /magn[eé]sium[^\\n]{0,30}intra/i],
   zinc: [/\bzinc\b/i],
+  vitamine_b6: [/vitamine\s*b6/i],
+  phosphatases_alcalines: [/phosphatases?\s+alcalines?/i],
+  acide_urique: [/acide\s+urique/i],
+  sodium: [/^sodium\b/i], potassium: [/^potassium\b/i], chlore: [/^chlore\b/i],
+  calcium: [/^calcium\b/i], phosphore: [/^phosphore\b/i],
+  transferrine: [/^transferrine\b/i], tibc: [/capacit[ée]\s+totale\s+de\s+fixation/i, /\btibc\b/i],
+  proteines_totales: [/prot[ée]ines?\s+totales?/i, /protide\s+sang/i], albumine: [/^albumine\b/i],
+  non_hdl: [/cholest[ée]rol\s+non[-\s]?hdl/i], psa: [/psa\s+total/i],
+  dhea: [/d[ée]hydro[ée]piandrosterone\s*\(dhea\)/i, /^dhea\b/i],
+  vs: [/vitesse\s+de\s+s[ée]dimentation/i],
   alt: [/\balt\b/i, /\balat\b/i, /\bsgpt\b/i],
   ast: [/\bast\b/i, /\basat\b/i, /\bsgot\b/i],
   ggt: [/\bggt\b/i, /gamma[-\s]*gt/i],
@@ -976,7 +1012,7 @@ const UNIT_REGEX =
   /(mmol\/l|nmol\/l|mg\/dl|mg\/l|g\/dl|g\/l|t\/l|ng\/ml|ng\/l|pg\/ml|ng\/dl|pmol\/l|umol\/l|µmol\/l|mui\/ml|µui\/ml|μui\/ml|mui\/l|ui\/l|u\/l|ml\/min|fl|pg|%)/i;
 
 const SKIP_LINE_REGEX =
-  /(objectif|recommand|valeur|référence|reference|score|esc|risque|guide|interpret|evaluation|page|\bhas\b|consid[ée]r[ée]|est\s+normal|en\s*faveur|17\s*alpha|hydroxy[-\s]?prog[ée]st[ée]rone|transmis\s+au|envoy[ée]s?\s+au|examen[s]?\s+transmis|pr[ée]l[èe]vement\s*:|valid[ée]\s*(le|par)|seuil\s*de\s*d[ée]tection)/i;
+  /(objectif|recommand|valeur|référence|reference|cible|score|esc|risque|guide|interpret|evaluation|page|\bhas\b|consid[ée]r[ée]|est\s+normal|en\s*faveur|17\s*alpha|hydroxy[-\s]?prog[ée]st[ée]rone|transmis\s+au|envoy[ée]s?\s+au|examen[s]?\s+transmis|pr[ée]l[èe]vement\s*:|valid[ée]\s*(le|par)|seuil\s*de\s*d[ée]tection)/i;
 
 const DATE_LINE_REGEX = /^\d{2}[\/-]\d{2}[\/-]\d{2,4}$/;
 const RANGE_LINE_REGEX = /\d+(?:[.,]\d+)?\s*(?:à|a|-)\s*\d+(?:[.,]\d+)?/i;
@@ -1013,6 +1049,26 @@ export const extractMarkersFromLines = (pdfText: string): BloodMarkerInput[] => 
       const valueFromLabel = extractValueAfterLabel(line, match);
       let unit = findUnit(line);
       let value = valueFromLabel;
+
+      // French CBC rows often print a percentage first, then the absolute
+      // count. The report model expects G/L, never the percentage.
+      if (["neutrophiles", "lymphocytes", "monocytes", "eosinophiles", "basophiles"].includes(markerId)) {
+        const absolute = line.match(/\d+(?:[.,]\d+)?\s*%\s*(\d+(?:[.,]\d+)?)\s*giga\/L/i);
+        if (absolute) {
+          value = Number(absolute[1].replace(",", "."));
+          unit = "G/L";
+        }
+      }
+
+      // ApoB is sometimes a scanned annex. Never infer its result from the
+      // surrounding ESC target text or from the list of transmitted exams.
+      if (markerId === "apob") {
+        const local = lines.slice(i, i + 3).join(" ");
+        const explicit = local.match(/(?:apolipoprot[ée]ine\s*b|apo\s*b)[^\d]{0,40}(\d+(?:[.,]\d+)?)\s*(g\/L|mg\/dL)/i);
+        if (!explicit) continue;
+        value = Number(explicit[1].replace(",", "."));
+        unit = normalizeUnit(explicit[2]);
+      }
 
       // Lp(a) is commonly printed twice: first in nmol/L, then in mg/L.
       // Prefer the explicit mass result, the only one compatible with the
@@ -1518,6 +1574,13 @@ export async function extractMarkersFromPdfText(
     unique.set(item.markerId, item);
   }
 
+  const hasExplicitApoBResult = pdfText.split(/\r?\n/).some((rawLine) => {
+    const line = rawLine.trim();
+    return !SKIP_LINE_REGEX.test(line) &&
+      /apolipoprot[ée]ine\s*b[^\d]{0,50}\d+(?:[.,]\d+)?\s*(?:g\/L|mg\/dL)/i.test(line);
+  });
+  if (!hasExplicitApoBResult) unique.delete("apob");
+
   if (!isOpenAIConfigured()) {
     return addComputedMarkers(Array.from(unique.values()));
   }
@@ -1607,6 +1670,7 @@ ${cleaned.slice(0, 20000)}`;
     for (const item of extracted) {
       unique.set(item.markerId, item);
     }
+    if (!hasExplicitApoBResult) unique.delete("apob");
     console.log(`[BloodAnalysis] OpenAI extracted ${extracted.length} markers (overriding regex)`);
 
   } catch (error) {

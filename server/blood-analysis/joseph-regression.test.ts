@@ -64,6 +64,24 @@ test("l'extraction déterministe privilégie la Lp(a) massique et conserve insul
   }
 });
 
+test("la formule leucocytaire retient les valeurs absolues et ignore les cibles ApoB", () => {
+  const markers = extractMarkersFromLines(`
+Polynucléaires neutrophiles 50.2 % 2.43 giga/L ( 1.40 - 7.70 )
+Polynucléaires éosinophiles 2.3 % 0.11 giga/L ( 0.02 - 0.63 )
+Polynucléaires basophiles 0.6 % 0.03 giga/L ( 0.00 - 0.11 )
+Lymphocytes 37.2 % 1.80 giga/L ( 1.00 - 4.80 )
+Monocytes 9.7 % 0.47 giga/L ( 0.18 - 1.00 )
+Les objectifs finaux sont ApoB < 1.00 g/L selon le risque cardiovasculaire.
+`);
+  const byId = new Map(markers.map((marker) => [marker.markerId, marker.value]));
+  assert.equal(byId.get("neutrophiles"), 2.43);
+  assert.equal(byId.get("eosinophiles"), 0.11);
+  assert.equal(byId.get("basophiles"), 0.03);
+  assert.equal(byId.get("lymphocytes"), 1.8);
+  assert.equal(byId.get("monocytes"), 0.47);
+  assert.equal(byId.has("apob"), false);
+});
+
 test("les marqueurs NFS alimentent durablement la catégorie hématologique", () => {
   const bloodTestsRoutes = fs.readFileSync(
     new URL("../blood-tests/routes.ts", import.meta.url),
