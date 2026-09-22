@@ -218,6 +218,13 @@ export const BIOMARKER_RANGES: Record<string, BiomarkerRange> = {
     optimalMin: 0, optimalMax: 14,
     context: "Génétique, risque CV"
   },
+  rdw: {
+    name: "RDW",
+    unit: "%",
+    normalMin: 11.5, normalMax: 15,
+    optimalMin: 11.8, optimalMax: 13.8,
+    context: "Variabilité de taille des globules rouges"
+  },
   cholesterol_total: {
     name: "Cholestérol total",
     unit: "mg/dL",
@@ -445,6 +452,7 @@ const MARKER_ALIASES: Record<string, string> = {
   "hemoglobine": "hemoglobine", "hematocrite": "hematocrite",
   "globules rouges": "globules_rouges", "erythrocytes": "globules_rouges",
   "vgm": "vgm", "tcmh": "tcmh", "ccmh": "ccmh",
+  "rdw": "rdw",
   "globules blancs": "globules_blancs", "leucocytes": "globules_blancs",
   "neutrophiles": "neutrophiles", "lymphocytes": "lymphocytes",
   "monocytes": "monocytes", "eosinophiles": "eosinophiles",
@@ -876,12 +884,13 @@ export const normalizeMarkerValue = (markerId: string, value: number, unit?: str
   }
 
   // Lp(a): mg/dL et nmol/L ne sont pas reliés par un facteur universel.
-  // Convertir seulement les unités massiques explicites empêche la valeur
-  // 9,1 nmol/L de devenir artificiellement 352 mg/dL.
+  // Accepter uniquement une unité massique explicite. Une valeur en nmol/L
+  // seule, ou sans unité, est bloquée au lieu d'être étiquetée en mg/dL.
   if (markerId === "lpa") {
     if (sourceUnit === "g/L") return roundValue(value * 100, 2);
     if (sourceUnit === "mg/L") return roundValue(value / 10, 2);
-    return value;
+    if (sourceUnit === "mg/dL") return roundValue(value, 2);
+    return Number.NaN;
   }
 
   if (markerId === "triglycerides") {
@@ -938,12 +947,13 @@ const MARKER_SYNONYMS: Record<string, RegExp[]> = {
   ggt: [/\bggt\b/i, /gamma[-\s]*gt/i],
   creatinine: [/cr[ée]atinine/i],
   egfr: [/\begfr\b/i, /d[ée]bit[^\\n]{0,40}filtration/i, /dfg\s*calcul[ée]/i, /d\.?\s*f\.?\s*g\.?\s*calcul/i, /ckd[-\s]?epi/i],
-  hemoglobine: [/^h[ée]moglobine$/i, /h[ée]moglobine\s*\(hb\)/i],
+  hemoglobine: [/^h[ée]moglobine\b(?!\s*(?:glyqu[ée]e|a1c))/i, /\bhgb\b/i],
   hematocrite: [/h[ée]matocrite/i],
   globules_rouges: [/globules?\s*rouges?/i, /h[ée]maties/i, /[ée]rythrocytes/i],
   vgm: [/\bvgm\b/i, /volume\s*globulaire\s*moyen/i],
   tcmh: [/\btcmh\b/i, /teneur\s*corpusculaire\s*moyenne/i],
   ccmh: [/\bccmh\b/i, /concentration\s*corpusculaire\s*moyenne/i],
+  rdw: [/\brdw\b/i, /indice\s+de\s+distribution\s+des\s+h[ée]maties/i],
   globules_blancs: [/globules?\s*blancs?/i, /leucocytes/i],
   neutrophiles: [/polynucl[ée]aires?\s*neutrophiles?/i, /neutrophiles/i],
   lymphocytes: [/lymphocytes/i], monocytes: [/monocytes/i],
@@ -1528,6 +1538,7 @@ REGLES CRITIQUES:
   * TESTOSTERONE (ECLIA) = testosterone_total
   * TESTOSTERONE LIBRE (R.I.A.) = testosterone_libre → prends la valeur en pg/ml (PAS pmol/l)
 - Si un marqueur apparait en DEUX unites (ex: nmol/l ET pg/ml), prends l'unite listee ci-dessous comme unite attendue
+- EXCEPTION Lp(a): prefere obligatoirement la valeur en mg/dL; si elle est fournie en mg/L, retourne la valeur brute avec unit_source=mg/L. Si seule une valeur en nmol/L est disponible, ne retourne pas Lp(a), car aucune conversion universelle fiable vers mg/dL n'existe.
 - Pour les valeurs avec virgule francaise (ex: 6,7) interprete comme 6.7 (point decimal)
 - ATTENTION aux en-tetes de page (ex: "TESTOSTERONE LIBRE" suivi de "TESTOSTERONE HOMME") : ce ne sont PAS des resultats, ignore-les
 

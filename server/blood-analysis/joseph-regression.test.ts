@@ -41,10 +41,11 @@ Plaquettes
 247 G/L
 `;
 
-test("Lp(a) ne subit jamais la fausse conversion 9,1 -> 352", () => {
-  assert.equal(normalizeMarkerValue("lpa", 9.1), 9.1);
-  assert.equal(normalizeMarkerValue("lpa", 9.1, "nmol/L"), 9.1);
+test("Lp(a) sans unite massique echoue ferme au lieu de produire 352 mg/dL", () => {
+  assert.equal(Number.isNaN(normalizeMarkerValue("lpa", 9.1)), true);
+  assert.equal(Number.isNaN(normalizeMarkerValue("lpa", 9.1, "nmol/L")), true);
   assert.equal(normalizeMarkerValue("lpa", 59.3, "mg/L"), 5.93);
+  assert.equal(normalizeMarkerValue("lpa", 5.93, "mg/dL"), 5.93);
 });
 
 test("l'extraction déterministe privilégie la Lp(a) massique et conserve insuline + NFS", () => {
