@@ -110,3 +110,22 @@ test("une régénération calcule HOMA-IR à partir de la glycémie et de l'insu
   assert.equal(homa?.value, 0.8);
   assert.equal(homa?.status, "optimal");
 });
+
+test("une régénération conserve les unités source eGFR, FSH et LH", async () => {
+  const analysis = await analyzeBloodwork(
+    [
+      { markerId: "egfr", value: 75, unit: "mL/min/1.73m2" },
+      { markerId: "fsh", value: 5.1, unit: "IU/L" },
+      { markerId: "lh", value: 8.8, unit: "IU/L" },
+    ],
+    { gender: "homme" },
+  );
+  const units = Object.fromEntries(
+    analysis.markers.map((marker) => [marker.markerId, marker.unit]),
+  );
+  assert.deepEqual(units, {
+    egfr: "mL/min/1.73m2",
+    fsh: "IU/L",
+    lh: "IU/L",
+  });
+});

@@ -69,14 +69,14 @@ export const BIOMARKER_RANGES: Record<string, BiomarkerRange> = {
   },
   lh: {
     name: "LH",
-    unit: "mIU/mL",
+    unit: "IU/L",
     normalMin: 1.5, normalMax: 9.3,
     optimalMin: 4, optimalMax: 7,
     context: "Signal hypophysaire"
   },
   fsh: {
     name: "FSH",
-    unit: "mIU/mL",
+    unit: "IU/L",
     normalMin: 1.5, normalMax: 12.4,
     optimalMin: 3, optimalMax: 8,
     context: "Spermatogenèse"
@@ -370,7 +370,7 @@ export const BIOMARKER_RANGES: Record<string, BiomarkerRange> = {
   },
   egfr: {
     name: "eGFR",
-    unit: "mL/min",
+    unit: "mL/min/1.73m2",
     normalMin: 90, normalMax: 999,
     optimalMin: 100, optimalMax: 999,
     context: "Filtration rénale"
