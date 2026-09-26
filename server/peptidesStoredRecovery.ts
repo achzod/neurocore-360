@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { jsonrepair } from "jsonrepair";
-import { pruneUnintegratedBonusPeptides } from "./peptidesReportRepair";
+import { hasPeptidesHardRedFlag, pruneUnintegratedBonusPeptides } from "./peptidesReportRepair";
 import { validatePeptidesReport, type PeptidesValidation } from "./peptidesReportValidator";
 import type { PeptidesReport } from "./peptidesEngine";
 
@@ -57,7 +57,13 @@ function responseIdOrThrow(value: string): string {
 }
 
 export function parseStoredPeptidesResponse(raw: string): PeptidesReport {
-  let cleaned = String(raw || "").trim();
+  let cleaned = String(raw || "")
+    .replace(/dans le cadre de la/gi, "pour la")
+    .replace(/dans le cadre du/gi, "pour le")
+    .replace(/dans le cadre des/gi, "pour les")
+    .replace(/dans le cadre d[’']/gi, "pour ")
+    .replace(/dans le cadre de/gi, "pour")
+    .trim();
   const fence = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/i);
   if (fence) cleaned = fence[1].trim();
   const firstBrace = cleaned.indexOf("{");
@@ -71,6 +77,25 @@ export function parseStoredPeptidesResponse(raw: string): PeptidesReport {
   } catch {
     return JSON.parse(jsonrepair(cleaned)) as PeptidesReport;
   }
+}
+
+export function dedupeStoredRecoverySectionSentences(report: PeptidesReport): PeptidesReport {
+  const seen = new Set<string>();
+  for (const section of report.sections || []) {
+    const sentences = String(section.content || "")
+      .split(/(?<=[.!?])(?:\s+|\n+)/)
+      .map((sentence) => sentence.trim())
+      .filter(Boolean);
+    const retained: string[] = [];
+    for (const sentence of sentences) {
+      const key = sentence.toLowerCase().replace(/\s+/g, " ").trim();
+      if (key.length >= 35 && seen.has(key)) continue;
+      if (key.length >= 35) seen.add(key);
+      retained.push(sentence);
+    }
+    section.content = retained.join(" ");
+  }
+  return report;
 }
 
 function reportText(report: PeptidesReport): string {
@@ -197,6 +222,12 @@ export async function buildStoredPeptidesRecoveryCandidate(input: {
   const responseId = responseIdOrThrow(input.responseId);
   let report = pruneUnintegratedBonusPeptides(structuredClone(parseStoredPeptidesResponse(input.raw)));
   report.tier = input.tier;
+  if (hasPeptidesHardRedFlag(input.responses)) {
+    report.qualityVersion = "medical-review-v1";
+    report.peptides = [];
+    report.weeklySchedule = "Aucune administration et aucune injection ne sont actives. Le dossier reste suspendu tant que la reponse medicale contradictoire n'est pas clarifiee et que les traitements, supplements, analyses, tension et frequence cardiaque ne sont pas relus.";
+    report.shoppingList = "Aucun achat de peptide, aucun vial et aucun materiel d'injection ne sont autorises dans cette version. Les pages catalogue et la livraison pays sont verifiees uniquement pour documenter la disponibilite, sans constituer une recommandation d'achat.";
+  }
   report.promoCodesGenerated = [];
   const firstName = String(input.responses.pep_name || report.clientName || "Profil").trim().split(/\s+/)[0];
   report.clientName = firstName || "Profil";
@@ -208,6 +239,13 @@ export async function buildStoredPeptidesRecoveryCandidate(input: {
     input.consentAccepted,
   );
   report = removeObsoleteMissingLiveFormatSentence(report);
+  if (hasPeptidesHardRedFlag(input.responses)) {
+    report.qualityVersion = "medical-review-v1";
+    report.peptides = [];
+    report.weeklySchedule = "Aucune administration et aucune injection ne sont actives. Le dossier reste suspendu tant que la reponse medicale contradictoire n'est pas clarifiee et que les traitements, supplements, analyses, tension et frequence cardiaque ne sont pas relus.";
+    report.shoppingList = "Aucun achat de peptide, aucun vial et aucun materiel d'injection ne sont autorises dans cette version. Les pages catalogue et la livraison pays sont verifiees uniquement pour documenter la disponibilite, sans constituer une recommandation d'achat.";
+  }
+  report = dedupeStoredRecoverySectionSentences(report);
   report.tier = input.tier;
   report.promoCodesGenerated = [];
   report.clientName = firstName || report.clientName || "Profil";

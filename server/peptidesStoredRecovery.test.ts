@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   STORED_PEPTIDES_RECOVERY_CONFIRMATION,
+  dedupeStoredRecoverySectionSentences,
   parseStoredPeptidesResponse,
   persistStoredPeptidesRecoveryUnderHold,
   removeObsoleteMissingLiveFormatSentence,
@@ -12,6 +13,25 @@ import {
 test("parseStoredPeptidesResponse repairs fenced JSON without provider generation", () => {
   const parsed = parseStoredPeptidesResponse('```json\n{"clientName":"Clement",}\n```');
   assert.equal(parsed.clientName, "Clement");
+});
+
+test("stored recovery normalizes robotic framing before parsing", () => {
+  const parsed = parseStoredPeptidesResponse('{"clientName":"Clement","weeklySchedule":"dans le cadre de la reprise"}');
+  assert.equal(parsed.weeklySchedule, "pour la reprise");
+});
+
+test("stored recovery removes repeated long section sentences but keeps the first", () => {
+  const repeated = "Cette phrase de securite suffisamment longue ne doit apparaitre qu une seule fois dans le rapport final client.";
+  const report = dedupeStoredRecoverySectionSentences({
+    clientName: "Clement",
+    sections: [
+      { id: "a", title: "A", content: `${repeated} Premier detail.` },
+      { id: "b", title: "B", content: `${repeated} Deuxieme detail.` },
+    ],
+  } as any);
+  assert.match(report.sections[0].content, /Cette phrase/);
+  assert.doesNotMatch(report.sections[1].content, /Cette phrase/);
+  assert.match(report.sections[1].content, /Deuxieme detail/);
 });
 
 test("obsolete source-unavailable sentence is removed only after official pricing is verified", () => {

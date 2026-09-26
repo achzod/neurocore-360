@@ -250,6 +250,14 @@ function hasAnyPattern(value: unknown, pattern: RegExp): boolean {
 }
 
 export function hasPeptidesHardRedFlag(responses: Record<string, unknown>): boolean {
+  const conditions = Array.isArray(responses.pep_conditions)
+    ? responses.pep_conditions.map((value) => sanitizeClientFacingText(String(value || "")).toLowerCase()).filter(Boolean)
+    : String(responses.pep_conditions || "").split(/[,;|]/).map((value) => sanitizeClientFacingText(value).toLowerCase().trim()).filter(Boolean);
+  const hasNoneConflict = conditions.includes("none") && conditions.some((value) => value !== "none");
+  const hasUndocumentedOther = conditions.includes("other")
+    && !String(responses.pep_conditions_other || "").trim();
+  if (hasNoneConflict || hasUndocumentedOther) return true;
+
   const hardRedFlag = /(cancer|tumeur|oncolog|chemio|radioth|grossesse|enceinte|allait|pancreat|insuffisance\s+(?:renale|hepatique)|cirrhose|hepatite\s+active|insuffisance\s+cardiaque|arythmi|bipolaire|schizoph|psychose)/i;
   const importantFields = [
     responses.pep_conditions,

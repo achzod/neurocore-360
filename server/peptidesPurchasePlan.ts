@@ -21,6 +21,7 @@ export interface PeptidePurchasePlan<Listing extends PurchasePlanListing = Purch
   packagePriceUsd: number;
   totalPriceUsd: number;
   overstockRatio: number;
+  forcedPackaging?: boolean;
 }
 
 export interface ConditionalReconstitutionExample {
@@ -185,4 +186,43 @@ export function selectBestPurchasePlan<Listing extends PurchasePlanListing>(
     || a.vialMg - b.vialMg
   );
   return plans[0] || null;
+}
+
+/**
+ * Selects an actually purchasable plan when official packaging forces more
+ * stock than the preferred overstock ratio. Every candidate must still cover
+ * the complete need and remain within the hard coverage ceiling. Starting
+ * from the cheapest compliant basket, prefer additional sealed capacity only
+ * when its total is at most 15% higher. This keeps mandatory boxes visible
+ * instead of incorrectly declaring the product unavailable.
+ */
+export function selectBestPurchasePlanWithMandatoryFallback<Listing extends PurchasePlanListing>(
+  listings: Listing[],
+  needMg: number,
+  preferredOverstockRatio = 1.2,
+  hardCoverageRatio = 6,
+  maxPricePremiumRatio = 1.15,
+): PeptidePurchasePlan<Listing> | null {
+  const plans = listings
+    .map((listing) => buildPurchasePlan(listing, needMg, hardCoverageRatio))
+    .filter((plan): plan is PeptidePurchasePlan<Listing> => plan != null)
+    .map((plan) => ({
+      ...plan,
+      forcedPackaging: plan.overstockRatio > preferredOverstockRatio + 1e-9,
+    }));
+  if (plans.length === 0) return null;
+
+  const cheapest = [...plans].sort((a, b) =>
+    a.totalPriceUsd - b.totalPriceUsd
+    || a.deliveredMg - b.deliveredMg
+    || a.vialMg - b.vialMg
+  )[0];
+  const ceiling = cheapest.totalPriceUsd * maxPricePremiumRatio + 1e-9;
+  const valueCandidates = plans.filter((plan) => plan.totalPriceUsd <= ceiling);
+  valueCandidates.sort((a, b) =>
+    b.deliveredMg - a.deliveredMg
+    || a.totalPriceUsd - b.totalPriceUsd
+    || a.vialMg - b.vialMg
+  );
+  return valueCandidates[0] || cheapest;
 }

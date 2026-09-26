@@ -5,6 +5,7 @@ import {
   buildPurchasePlan,
   effectivePackagePrice,
   selectBestPurchasePlan,
+  selectBestPurchasePlanWithMandatoryFallback,
 } from "./peptidesPurchasePlan";
 
 const listing = (dosage: string, price: number, boxSize = 1) => ({
@@ -29,8 +30,56 @@ test("exact five milligram needs retain a single official five milligram vial", 
   assert.equal(plan.totalPriceUsd, 23.16);
 });
 
-test("forced package overstock above twenty percent blocks the plan", () => {
+test("forced package overstock above twenty percent blocks the strict plan", () => {
   assert.equal(buildPurchasePlan(listing("10mg", 40, 10), 40), null);
+});
+
+test("mandatory fallback keeps the smallest official box that covers the need", () => {
+  const plan = selectBestPurchasePlanWithMandatoryFallback([
+    listing("10mg", 40, 10),
+  ], 40, 1.3);
+  assert.ok(plan);
+  assert.equal(plan.requestedVials, 4);
+  assert.equal(plan.deliveredVials, 10);
+  assert.equal(plan.deliveredMg, 100);
+  assert.equal(plan.forcedPackaging, true);
+});
+
+test("mandatory fallback composes enough boxes when one box undercovers", () => {
+  const plan = selectBestPurchasePlanWithMandatoryFallback([
+    listing("5mg", 30, 10),
+  ], 70, 1.3);
+  assert.ok(plan);
+  assert.equal(plan.requestedVials, 14);
+  assert.equal(plan.packageCount, 2);
+  assert.equal(plan.deliveredVials, 20);
+  assert.equal(plan.deliveredMg, 100);
+});
+
+test("mandatory fallback keeps a hard six-cycle coverage ceiling", () => {
+  assert.equal(selectBestPurchasePlanWithMandatoryFallback([
+    listing("1mg", 40, 100),
+  ], 10, 1.3), null);
+});
+
+test("up to fifteen percent more selects the better-covered basket", () => {
+  const plan = selectBestPurchasePlanWithMandatoryFallback([
+    listing("10mg", 10),
+    listing("50mg", 44),
+  ], 40, 1.3);
+  assert.ok(plan);
+  assert.equal(plan.vialMg, 50);
+  assert.equal(plan.totalPriceUsd, 44);
+});
+
+test("more than fifteen percent premium keeps the cheapest compliant basket", () => {
+  const plan = selectBestPurchasePlanWithMandatoryFallback([
+    listing("10mg", 10),
+    listing("50mg", 47),
+  ], 40, 1.3);
+  assert.ok(plan);
+  assert.equal(plan.vialMg, 10);
+  assert.equal(plan.totalPriceUsd, 40);
 });
 
 test("selection compares the full cycle price instead of one-vial price", () => {

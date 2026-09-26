@@ -1213,10 +1213,14 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
 
   errors.push(...validateReportPersonalization(report));
 
-  if (peptides.length === 0) {
+  const medicalNoBuySuspension = report.qualityVersion === "medical-review-v1"
+    && peptides.length === 0
+    && /aucune (?:administration|injection)[\s\S]{0,240}suspendu/i.test(String(report.weeklySchedule || ""))
+    && /aucun achat de peptide/i.test(String(report.shoppingList || ""));
+  if (peptides.length === 0 && !medicalNoBuySuspension) {
     errors.push("aucun peptide recommande");
   }
-  if (peptides.length < 2) {
+  if (peptides.length < 2 && !medicalNoBuySuspension) {
     warnings.push(`tres peu de peptides (${peptides.length})`);
   }
 
