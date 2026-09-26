@@ -912,7 +912,7 @@ function synchronizeReconstitutionNarrative(
         (peptide) =>
           `${String(peptide.name || "").toUpperCase()}\n` +
           `Dose et frequence: ${asSentence(peptide.dosage)}\n` +
-          `Format commande: ${asSentence(peptide.vialsNeeded)}\n` +
+          "Format commande: voir la liste de commande verifiee pour le detail exact des vials et des limites de commande.\n" +
           `Reconstitution exacte: ${asSentence(peptide.reconstitution)}`
       ),
       ...(injectablePeptides.length > 0
@@ -1581,7 +1581,15 @@ export function repairPeptidesReportContent(
     (report as any).qualityVersion = "medical-review-v1";
     cleanUnsafePeptideFields(report);
     anchorExpertPeptideRationales(report, responses);
-    report.sections = buildSections(report, firstName);
+    const existingSections = Array.isArray(report.sections) ? report.sections : [];
+    const existingChars = existingSections.reduce((sum, section) => sum + String(section?.content || "").length, 0);
+    report.sections = existingSections.length >= 15 && existingChars >= 30_000
+      ? existingSections.map((section) => ({
+          ...section,
+          title: sanitizeClientFacingText(String(section.title || "")),
+          content: sanitizeClientFacingText(String(section.content || "")),
+        }))
+      : buildSections(report, firstName);
     report.shoppingList = sanitizeClientFacingText(liveShoppingLines(report));
     normalizeTierCreditClaims(report, String(tier || report.tier || ""));
     normalizeSingleVialGrammar(report);
