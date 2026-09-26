@@ -1,9 +1,11 @@
 import { createHash } from "crypto";
 import OpenAI from "openai";
 import {
+  bindAICostBudgetReservationResponse,
   completeAICostBudgetReservation,
   markAICostBudgetReservationUncertain,
   reserveAICostBudget,
+  resumeAICostBudgetReservation,
   type AICostBudgetContext,
   type AICostBudgetReservation,
 } from "./aiCostBudgetController";
@@ -648,6 +650,8 @@ export interface OpenAITextRequest {
   background?: boolean;
   retries?: number;
   label?: string;
+  resumeResponseId?: string;
+  onResponseCreated?: (responseId: string) => Promise<void>;
   costBudget?: Pick<
     AICostBudgetContext,
     | "product"
@@ -732,28 +736,48 @@ export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAIT
         // The controller reads historical ai_usage_events before authorizing
         // a new provider call, so the collector table must exist pre-call.
         await ensureAIUsageTable();
-        budgetReservation = await reserveAICostBudget(budgetContext);
+        budgetReservation = request.resumeResponseId
+          ? await resumeAICostBudgetReservation(budgetContext, request.resumeResponseId)
+          : await reserveAICostBudget(budgetContext);
+        if (request.resumeResponseId && !budgetReservation) {
+          throw new Error(`OpenAI durable response reservation missing (${request.resumeResponseId})`);
+        }
       }
       const reasoningConfig: Record<string, unknown> = { effort: profile.effort };
       if (profile.mode) reasoningConfig.mode = profile.mode;
 
-      let response: any = await client.responses.create(
-        {
-          model,
-          background,
-          store: background,
-          instructions: request.instructions,
-          input: request.input,
-          max_output_tokens: request.maxOutputTokens || profile.maxOutputTokens,
-          reasoning: reasoningConfig,
-          text: textConfig,
-          safety_identifier: safeIdentifier(request.safetyId || request.label || "anonymous", request.profile),
-        } as any,
-        {
-          maxRetries: 0,
-          timeout: profile.timeoutMs,
-        } as any,
-      );
+      let response: any;
+      if (request.resumeResponseId) {
+        response = await client.responses.retrieve(request.resumeResponseId);
+        console.log(`[OpenAIResponses] Resuming durable response ${request.resumeResponseId}`);
+      } else {
+        response = await client.responses.create(
+          {
+            model,
+            background,
+            store: background,
+            instructions: request.instructions,
+            input: request.input,
+            max_output_tokens: request.maxOutputTokens || profile.maxOutputTokens,
+            reasoning: reasoningConfig,
+            text: textConfig,
+            safety_identifier: safeIdentifier(request.safetyId || request.label || "anonymous", request.profile),
+          } as any,
+          {
+            maxRetries: 0,
+            timeout: profile.timeoutMs,
+          } as any,
+        );
+        await bindAICostBudgetReservationResponse(budgetReservation, String(response?.id || ""));
+        if (request.onResponseCreated && response?.id) {
+          try {
+            await request.onResponseCreated(String(response.id));
+          } catch (callbackError) {
+            await client.responses.cancel(response.id).catch(() => {});
+            throw callbackError;
+          }
+        }
+      }
 
       while (response?.status === "queued" || response?.status === "in_progress") {
         if (Date.now() >= deadline) {

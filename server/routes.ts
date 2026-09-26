@@ -102,6 +102,16 @@ import {
   refreshPeptauraCatalog,
   refreshPeptauraPricingForDelivery,
 } from "./peptidesEngine";
+import {
+  evaluatePeptidesGenerationEligibility,
+  getPeptidesGenerationCircuitConfig,
+  getPeptidesGenerationRetryAt,
+  sanitizePeptidesGenerationError,
+} from "./peptidesGenerationCircuitBreaker";
+import {
+  getAICostBudgetSummary,
+  resetAICostBudgetReservations,
+} from "./aiCostBudgetController";
 import { createRateLimiter } from "./middleware/rateLimit";
 import {
   scrapeArticleFromUrl,
@@ -1396,6 +1406,21 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("[Admin AI Usage Costs] Error:", error?.message || error);
       res.status(500).json({ success: false, error: "Impossible de charger les couts API" });
+    }
+  });
+
+  app.get("/api/admin/ai-cost-budget-summary", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    const product = String(req.query.product || "peptides").trim().toLowerCase();
+    const allowedProducts = new Set(["peptides", "discovery"]);
+    if (!allowedProducts.has(product)) {
+      res.status(400).json({ success: false, error: "Produit non supporte" });
+      return;
+    }
+    try {
+      res.json({ success: true, ...(await getAICostBudgetSummary(product)) });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error?.message || "Budget indisponible" });
     }
   });
 
@@ -6158,6 +6183,34 @@ export async function registerRoutes(
   });
 
   // ==================== ADMIN ENDPOINTS ====================
+
+  app.post("/api/admin/orders/:id/peptides-reset-generation-lock", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const order = await storage.getOrder(String(req.params.id || ""));
+      if (!order || order.productType !== "PEPTIDES_ENGINE" || order.status !== "paid") {
+        res.status(404).json({ success: false, error: "Commande Peptides payee introuvable" });
+        return;
+      }
+      if ((order.metadata as any)?.peptidesReportId) {
+        res.status(409).json({ success: false, error: "Un rapport est deja rattache" });
+        return;
+      }
+      const circuitReset = await storage.resetPeptidesGenerationCircuit(order.id);
+      if (!circuitReset) {
+        res.status(409).json({ success: false, error: "Circuit non reinitialisable" });
+        return;
+      }
+      const budgetReservationsReset = await resetAICostBudgetReservations({
+        product: "peptides",
+        orderId: order.id,
+        profile: "peptides",
+      }, "authenticated_admin_generation_reset");
+      res.json({ success: true, orderId: order.id, budgetReservationsReset });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error?.message || "Reset impossible" });
+    }
+  });
 
   // Admin: force generate peptides report for a paid client
   // Accepts optional skipEmail=true to generate without sending (for validation before delivery)
@@ -15037,14 +15090,9 @@ export async function registerRoutes(
   // -----------------------------------------------------------------------
   // Peptides delivery scheduling
   // -----------------------------------------------------------------------
-  // Generation is instant (the engine assembles the protocol in seconds), but
-  // delivering the email 5-15 minutes after payment makes the protocol feel
-  // mass-produced. Clients have complained that the speed reveals automation.
-  //
-  // Strategy: generate immediately (so the protocol is ready and no risk of
-  // loss), but gate the email send to a randomised "scheduled delivery" time
-  // = paidAt + random(4-8h), clamped to Paris business hours (09:00-22:00).
-  // The autogen recovery loop will pick up scheduled-but-unsent orders.
+  // Generate immediately, then deliver exactly 24 hours after the successful
+  // artifact claim. claimPeptidesReportSlot persists that timestamp atomically;
+  // this fallback only repairs legacy reports where the schedule is absent.
   async function resolvePeptidesEmailScheduledAt(order: any): Promise<Date> {
     const meta = (order?.metadata as any) || {};
     const existing = meta.peptidesEmailScheduledAt;
@@ -15052,25 +15100,10 @@ export async function registerRoutes(
       const parsed = new Date(existing);
       if (!Number.isNaN(parsed.getTime())) return parsed;
     }
-    const paidAt = order?.paidAt ? new Date(order.paidAt) : new Date();
-    if (Number.isNaN(paidAt.getTime())) return new Date();
-
-    // Random delay 4-8h
-    const delayMs = (4 + Math.random() * 4) * 3600 * 1000;
-    let target = new Date(paidAt.getTime() + delayMs);
-
-    // Clamp to Paris business hours 09:00-22:00
-    const getParisHour = (d: Date) =>
-      Number(d.toLocaleString("en-GB", { hour: "2-digit", hour12: false, timeZone: "Europe/Paris" }));
-    const parisHour = getParisHour(target);
-    if (parisHour < 9) {
-      // Push forward to 09h + 0-2h Paris
-      target = new Date(target.getTime() + (9 - parisHour) * 3600 * 1000 + Math.floor(Math.random() * 2 * 3600 * 1000));
-    } else if (parisHour >= 22) {
-      // Push to next day 09h + 0-3h Paris
-      const hoursToNext9 = (24 - parisHour) + 9;
-      target = new Date(target.getTime() + hoursToNext9 * 3600 * 1000 + Math.floor(Math.random() * 3 * 3600 * 1000));
-    }
+    const generatedAtRaw = meta.peptidesGenerationCompletedAt;
+    const generatedAt = generatedAtRaw ? new Date(generatedAtRaw) : new Date();
+    const safeGeneratedAt = Number.isNaN(generatedAt.getTime()) ? new Date() : generatedAt;
+    const target = new Date(safeGeneratedAt.getTime() + 24 * 60 * 60 * 1000);
 
     // Persist on the order so the schedule is stable across cycles. Atomic
     // JSONB merge ,  does not stomp other metadata keys (e.g. peptidesReportId
@@ -15101,7 +15134,13 @@ export async function registerRoutes(
   // Diagnostic endpoint
   app.get("/api/admin/autogen-status", (req, res) => {
     if (!requireAdminAuth(req, res)) return;
-    res.json({ cycles: autoGenCycleCount, lastRun: autoGenLastRun, lastResult: autoGenLastResult, running: autoGenRunning });
+    res.json({
+      cycles: autoGenCycleCount,
+      lastRun: autoGenLastRun,
+      lastResult: autoGenLastResult,
+      running: autoGenRunning,
+      circuit: getPeptidesGenerationCircuitConfig(),
+    });
   });
 
   console.log("[AutoGen] ✅ setInterval registered (5min cycle)");
@@ -15134,6 +15173,7 @@ export async function registerRoutes(
       autoGenLastRun = new Date().toISOString();
       console.log(`[AutoGen] Cycle #${autoGenCycleCount}: ${orders.length} total orders, ${peptidesOrders.length} peptides paid, ${missing.length} missing reports`);
       const now = new Date();
+      const peptidesCircuitConfig = getPeptidesGenerationCircuitConfig();
 
       for (const order of peptidesOrders) {
         const meta = order.metadata as any;
@@ -15272,6 +15312,19 @@ export async function registerRoutes(
           continue;
         }
 
+        const circuitEligibility = evaluatePeptidesGenerationEligibility(meta, peptidesCircuitConfig);
+        if (!circuitEligibility.eligible) {
+          if (circuitEligibility.reason === "ATTEMPT_CAP" || circuitEligibility.reason === "COST_CAP") {
+            await storage.markPeptidesGenerationNeedsReview(
+              order.id,
+              circuitEligibility.reason.toLowerCase(),
+              `Persistent Peptides generation circuit opened: ${circuitEligibility.reason}`,
+            ).catch(() => false);
+          }
+          console.warn(`[AutoGen] Peptides generation blocked for ${email}: ${circuitEligibility.reason}`);
+          continue;
+        }
+
         const hoursSincePaid = (now.getTime() - new Date(order.paidAt!).getTime()) / (1000 * 60 * 60);
         // Wait at least 10 min before autogen kicks in , gives the inline generation pipeline
         // time to finish first. Prevents double report generation (race condition).
@@ -15316,17 +15369,71 @@ export async function registerRoutes(
           continue;
         }
 
+        const resumeResponseId = String(freshMeta?.peptidesGenerationResponseId || "").trim();
+        const generationClaim = resumeResponseId
+          ? await storage.claimPeptidesGenerationResume(
+              order.id,
+              resumeResponseId,
+              peptidesCircuitConfig.leaseMs,
+            )
+          : await storage.claimPeptidesGenerationAttempt(
+              order.id,
+              peptidesCircuitConfig,
+            );
+        if (!generationClaim) {
+          console.warn(`[AutoGen] Peptides generation claim lost for ${email}; no provider call made`);
+          continue;
+        }
+
         const { generatePeptidesProtocol } = await import("./peptidesEngine");
         const autoGenTier = ((order.metadata as any)?.peptidesTier as "solo" | "coached" | "tracked" | undefined) ?? "coached";
-        const report = await generatePeptidesProtocol(responses, email, autoGenTier, {
-          orderId: order.id,
-          consentAccepted: hasValidPeptidesConsent((freshMeta || meta)?.peptidesEngineConsent),
-          initialPreviousError: String(
-            freshMeta?.peptidesGenerationLastError
-            || meta?.peptidesGenerationLastError
-            || "",
-          ).trim() || undefined,
-        });
+        let report;
+        try {
+          report = await generatePeptidesProtocol(responses, email, autoGenTier, {
+            maxCandidates: 1,
+            providerRetries: 1,
+            orderId: order.id,
+            costBudgetEstimatedUsd: 0.5,
+            resumeResponseId: resumeResponseId || undefined,
+            onResponseCreated: async (responseId: string) => {
+              const persisted = await storage.setOrderMetadataKey(
+                order.id,
+                "peptidesGenerationResponseId",
+                responseId,
+              );
+              if (!persisted) throw new Error("PEPTIDES_RESPONSE_ID_PERSIST_FAILED");
+            },
+            consentAccepted: hasValidPeptidesConsent((freshMeta || meta)?.peptidesEngineConsent),
+            initialPreviousError: String(
+              freshMeta?.peptidesGenerationLastError
+              || meta?.peptidesGenerationLastError
+              || "",
+            ).trim() || undefined,
+          });
+        } catch (generationError: any) {
+          const safeError = sanitizePeptidesGenerationError(generationError);
+          const sourceUnavailable = generationError?.code === "PEPTAURA_SOURCE_UNAVAILABLE";
+          const nextRetryAt = sourceUnavailable
+            ? null
+            : getPeptidesGenerationRetryAt(generationClaim.attemptCount);
+          if (nextRetryAt) {
+            await storage.markPeptidesGenerationRetry(
+              order.id,
+              generationClaim.attemptCount,
+              "generation_failed",
+              safeError,
+              nextRetryAt,
+            ).catch(() => false);
+            autoGenLastResult = `RETRY_SCHEDULED: ${email} attempt ${generationClaim.attemptCount + 1} at ${nextRetryAt}`;
+            console.warn(`[AutoGen] Peptides retry scheduled for ${email} at ${nextRetryAt}`);
+          } else {
+            const reason = sourceUnavailable ? "source_unavailable" : "attempt_cap";
+            await storage.markPeptidesGenerationNeedsReview(order.id, reason, safeError).catch(() => false);
+            autoGenLastResult = `NEEDS_REVIEW: ${email} (${reason})`;
+            console.error(`[AutoGen] Peptides generation exhausted for ${email}; manual review required`);
+          }
+          break;
+        }
         const saved = await storage.createBurnoutReport({ email: `peptides::${email}`, responses, report });
 
         // SAFETY #3: Atomic CAS , "first writer wins". If another process already set peptidesReportId
@@ -15354,8 +15461,12 @@ export async function registerRoutes(
         let clientEmailSent = false;
         let deliveryDeferred = false;
         let deliveryScheduledAtIso = "";
-        // Anti-automation delivery gate: gen now, deliver later
-        const { due: newReportDue, scheduledAt: newReportScheduledAt } = await isPeptidesEmailDeliveryDue(order);
+        // Re-read after the atomic report claim so the exact +24h schedule
+        // persisted by claimPeptidesReportSlot cannot be overwritten from the
+        // stale pre-generation order snapshot.
+        const scheduledOrder = await storage.getOrder(order.id);
+        if (!scheduledOrder) throw new Error(`Peptides order disappeared after report claim: ${order.id}`);
+        const { due: newReportDue, scheduledAt: newReportScheduledAt } = await isPeptidesEmailDeliveryDue(scheduledOrder);
         if (stillNotEmailed && !newReportDue) {
           deliveryDeferred = true;
           deliveryScheduledAtIso = newReportScheduledAt.toISOString();

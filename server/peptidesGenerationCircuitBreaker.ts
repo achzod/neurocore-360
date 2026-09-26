@@ -1,6 +1,7 @@
 export const PeptidesGenerationState = {
   PENDING: "PENDING",
   GENERATING: "GENERATING",
+  RETRY_SCHEDULED: "RETRY_SCHEDULED",
   NEEDS_REVIEW: "NEEDS_REVIEW",
   SUCCEEDED: "SUCCEEDED",
 } as const;
@@ -22,6 +23,7 @@ export interface PeptidesGenerationCircuitSnapshot {
   attempts: number;
   reservedCostMicroUsd: number;
   leaseUntil: string | null;
+  nextRetryAt: string | null;
   reportId: string | null;
 }
 
@@ -30,6 +32,7 @@ export type PeptidesGenerationEligibilityReason =
   | "REPORT_EXISTS"
   | "NEEDS_REVIEW"
   | "IN_FLIGHT"
+  | "BACKOFF"
   | "ATTEMPT_CAP"
   | "COST_CAP";
 
@@ -53,7 +56,8 @@ export function isPeptidesAutogenEnabled(
   return String(env.PEPTIDES_AUTOGEN_ENABLED || "").trim().toLowerCase() === "true";
 }
 
-const DEFAULT_ATTEMPT_BUDGET_MICRO_USD = 1_000_000;
+const DEFAULT_ATTEMPT_BUDGET_MICRO_USD = 500_000;
+const DEFAULT_ORDER_BUDGET_MICRO_USD = 1_000_000;
 const DEFAULT_HOURLY_BUDGET_MICRO_USD = 5_000_000;
 const DEFAULT_DAILY_BUDGET_MICRO_USD = 15_000_000;
 const DEFAULT_LEASE_MS = 40 * 60 * 1000;
@@ -72,13 +76,14 @@ function boundedInteger(
 export function getPeptidesGenerationCircuitConfig(
   env: Record<string, string | undefined> = process.env,
 ): PeptidesGenerationCircuitConfig {
-  // One paid provider request is the safe default. Any second generation must
-  // be an explicit, human-reviewed action rather than a five-minute cron retry.
+  // Two bounded attempts let one deterministic quality failure self-recover.
+  // Transport retries remain disabled in the caller, so each attempt maps to
+  // exactly one paid provider request.
   const maxAttempts = boundedInteger(
     env.PEPTIDES_AUTOGEN_MAX_ATTEMPTS,
+    2,
     1,
-    1,
-    3,
+    2,
   );
   const attemptBudgetMicroUsd = boundedInteger(
     env.PEPTIDES_AUTOGEN_ATTEMPT_BUDGET_MICRO_USD,
@@ -88,7 +93,7 @@ export function getPeptidesGenerationCircuitConfig(
   );
   const requestedMaxBudget = boundedInteger(
     env.PEPTIDES_AUTOGEN_MAX_BUDGET_MICRO_USD,
-    DEFAULT_ATTEMPT_BUDGET_MICRO_USD,
+    DEFAULT_ORDER_BUDGET_MICRO_USD,
     1,
     60_000_000,
   );
@@ -138,6 +143,9 @@ function parseState(value: unknown): PeptidesGenerationStateValue {
   if (normalized === PeptidesGenerationState.GENERATING) {
     return PeptidesGenerationState.GENERATING;
   }
+  if (normalized === PeptidesGenerationState.RETRY_SCHEDULED) {
+    return PeptidesGenerationState.RETRY_SCHEDULED;
+  }
   if (normalized === PeptidesGenerationState.NEEDS_REVIEW) {
     return PeptidesGenerationState.NEEDS_REVIEW;
   }
@@ -158,6 +166,10 @@ export function readPeptidesGenerationCircuitSnapshot(
   const leaseUntil = leaseRaw && Number.isFinite(new Date(leaseRaw).getTime())
     ? leaseRaw
     : null;
+  const nextRetryRaw = String(candidate.peptidesGenerationNextRetryAt || "").trim();
+  const nextRetryAt = nextRetryRaw && Number.isFinite(new Date(nextRetryRaw).getTime())
+    ? nextRetryRaw
+    : null;
 
   return {
     state: parseState(candidate.peptidesGenerationState),
@@ -166,6 +178,7 @@ export function readPeptidesGenerationCircuitSnapshot(
       candidate.peptidesGenerationReservedCostMicroUsd,
     ),
     leaseUntil,
+    nextRetryAt,
     reportId,
   };
 }
@@ -189,6 +202,9 @@ export function evaluatePeptidesGenerationEligibility(
   ) {
     return { eligible: false, reason: "IN_FLIGHT", snapshot };
   }
+  if (snapshot.nextRetryAt && new Date(snapshot.nextRetryAt).getTime() > nowMs) {
+    return { eligible: false, reason: "BACKOFF", snapshot };
+  }
   if (snapshot.attempts >= config.maxAttempts) {
     return { eligible: false, reason: "ATTEMPT_CAP", snapshot };
   }
@@ -199,6 +215,15 @@ export function evaluatePeptidesGenerationEligibility(
     return { eligible: false, reason: "COST_CAP", snapshot };
   }
   return { eligible: true, reason: "ELIGIBLE", snapshot };
+}
+
+export function getPeptidesGenerationRetryAt(
+  attemptCount: number,
+  nowMs = Date.now(),
+): string | null {
+  const delaysMs = [5 * 60 * 1000];
+  const delayMs = delaysMs[Math.max(0, Math.floor(attemptCount) - 1)];
+  return delayMs ? new Date(nowMs + delayMs).toISOString() : null;
 }
 
 export function sanitizePeptidesGenerationError(error: unknown): string {

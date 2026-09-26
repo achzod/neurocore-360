@@ -5,6 +5,7 @@ import test from "node:test";
 import {
   evaluatePeptidesGenerationEligibility,
   getPeptidesGenerationCircuitConfig,
+  getPeptidesGenerationRetryAt,
   isPeptidesAutogenEnabled,
   readPeptidesGenerationCircuitSnapshot,
 } from "./peptidesGenerationCircuitBreaker";
@@ -73,6 +74,26 @@ test("Peptides autogen is fail-closed unless explicitly enabled", () => {
   assert.equal(isPeptidesAutogenEnabled({}), false);
   assert.equal(isPeptidesAutogenEnabled({ PEPTIDES_AUTOGEN_ENABLED: "false" }), false);
   assert.equal(isPeptidesAutogenEnabled({ PEPTIDES_AUTOGEN_ENABLED: "true" }), true);
+});
+
+test("autogen defaults to two bounded attempts at fifty cents each", () => {
+  const defaults = getPeptidesGenerationCircuitConfig({});
+  assert.equal(defaults.maxAttempts, 2);
+  assert.equal(defaults.attemptBudgetMicroUsd, 500_000);
+  assert.equal(defaults.maxBudgetMicroUsd, 1_000_000);
+});
+
+test("retry backoff is five minutes and the second failure is terminal", () => {
+  const base = Date.parse("2026-09-26T10:00:00.000Z");
+  assert.equal(getPeptidesGenerationRetryAt(1, base), "2026-09-26T10:05:00.000Z");
+  assert.equal(getPeptidesGenerationRetryAt(2, base), null);
+  const retryMetadata = {
+    peptidesGenerationState: "RETRY_SCHEDULED",
+    peptidesGenerationAttempts: 1,
+    peptidesGenerationNextRetryAt: "2026-09-26T10:05:00.000Z",
+  };
+  assert.equal(evaluatePeptidesGenerationEligibility(retryMetadata, config, base).reason, "BACKOFF");
+  assert.equal(evaluatePeptidesGenerationEligibility(retryMetadata, config, base + 5 * 60_000).reason, "ATTEMPT_CAP");
 });
 
 test("window budgets cannot be configured below one reserved attempt", () => {
@@ -226,6 +247,52 @@ test("persistent claims are idempotent and the hourly reservation cap blocks the
 
   await storage.markPeptidesGenerationNeedsReview(orders[1].id, "quality", "invalid");
   assert.equal(await storage.claimPeptidesGenerationAttempt(orders[1].id, config), null);
+});
+
+test("failed generation persists a future retry and the next claim resumes after backoff", async () => {
+  process.env.DATABASE_URL ||= "postgresql://test:***@127.0.0.1:1/test";
+  const { MemStorage } = await import("./storage");
+  const storage = new MemStorage();
+  const order = await storage.createOrder({
+    email: "retry@example.test",
+    productType: "PEPTIDES_ENGINE",
+    amountCents: 19900,
+  });
+  await storage.updateOrder(order.id, { status: "paid", paidAt: new Date() });
+  const retryConfig = getPeptidesGenerationCircuitConfig({
+    PEPTIDES_AUTOGEN_MAX_ATTEMPTS: "2",
+    PEPTIDES_AUTOGEN_ATTEMPT_BUDGET_MICRO_USD: "500000",
+    PEPTIDES_AUTOGEN_MAX_BUDGET_MICRO_USD: "1000000",
+  });
+  const first = await storage.claimPeptidesGenerationAttempt(order.id, retryConfig);
+  assert.equal(first?.attemptCount, 1);
+  const retryAt = new Date(Date.now() + 5 * 60_000).toISOString();
+  assert.equal(await storage.markPeptidesGenerationRetry(order.id, 1, "quality", "invalid", retryAt), true);
+  assert.equal(await storage.claimPeptidesGenerationAttempt(order.id, retryConfig), null);
+  await storage.setOrderMetadataKey(order.id, "peptidesGenerationNextRetryAt", new Date(Date.now() - 1_000).toISOString());
+  const second = await storage.claimPeptidesGenerationAttempt(order.id, retryConfig);
+  assert.equal(second?.attemptCount, 2);
+});
+
+test("a durable provider response is resumed without consuming another attempt", async () => {
+  process.env.DATABASE_URL ||= "postgresql://test:***@127.0.0.1:1/test";
+  const { MemStorage } = await import("./storage");
+  const storage = new MemStorage();
+  const order = await storage.createOrder({
+    email: "resume@example.test",
+    productType: "PEPTIDES_ENGINE",
+    amountCents: 19900,
+  });
+  await storage.updateOrder(order.id, { status: "paid", paidAt: new Date() });
+  const resumeConfig = getPeptidesGenerationCircuitConfig({});
+  const first = await storage.claimPeptidesGenerationAttempt(order.id, resumeConfig);
+  assert.equal(first?.attemptCount, 1);
+  await storage.setOrderMetadataKey(order.id, "peptidesGenerationResponseId", "resp_durable_1");
+  await storage.setOrderMetadataKey(order.id, "peptidesGenerationLeaseUntil", new Date(Date.now() - 1_000).toISOString());
+  const resumed = await storage.claimPeptidesGenerationResume(order.id, "resp_durable_1", resumeConfig.leaseMs);
+  assert.equal(resumed?.attemptCount, 1);
+  const resumedOrder = await storage.getOrder(order.id);
+  assert.equal(Number((resumedOrder?.metadata as any)?.peptidesGenerationAttempts), 1);
 });
 
 test("manual reset clears the persisted circuit on an undelivered order", async () => {

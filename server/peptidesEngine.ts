@@ -2521,6 +2521,8 @@ async function callOpenAIForPeptides(
   retries = 3,
   orderId?: string,
   estimatedCostUsd = 1,
+  resumeResponseId?: string,
+  onResponseCreated?: (responseId: string) => Promise<void>,
 ): Promise<string> {
   console.log(
     `[PeptidesEngine] GPT generation starting: ${PEPTIDES_PRIMARY_MODEL}, effort=medium, mode=pro`
@@ -2540,6 +2542,8 @@ async function callOpenAIForPeptides(
     maxOutputTokens: PEPTIDES_MAX_OUTPUT_TOKENS,
     label,
     retries,
+    resumeResponseId,
+    onResponseCreated,
     ...(orderId
       ? { costBudget: { product: "peptides", orderId, estimatedCostUsd } }
       : {}),
@@ -3039,6 +3043,8 @@ export async function generatePeptidesProtocol(
     initialPreviousError?: string;
     consentAccepted?: boolean;
     manualExpertDirective?: string;
+    resumeResponseId?: string;
+    onResponseCreated?: (responseId: string) => Promise<void>;
     peptauraContext?: PeptauraPromptContext;
     providerGenerate?: (params: {
       systemPrompt: string;
@@ -3048,6 +3054,8 @@ export async function generatePeptidesProtocol(
       retries: number;
       orderId?: string;
       estimatedCostUsd?: number;
+      resumeResponseId?: string;
+      onResponseCreated?: (responseId: string) => Promise<void>;
     }) => Promise<string>;
   } = {},
 ): Promise<PeptidesReport> {
@@ -3094,6 +3102,9 @@ export async function generatePeptidesProtocol(
       label: string;
       retries: number;
       orderId?: string;
+      estimatedCostUsd?: number;
+      resumeResponseId?: string;
+      onResponseCreated?: (responseId: string) => Promise<void>;
     }) => callOpenAIForPeptides(
       params.systemPrompt,
       params.userPrompt,
@@ -3102,6 +3113,8 @@ export async function generatePeptidesProtocol(
       params.retries,
       params.orderId,
       params.estimatedCostUsd,
+      params.resumeResponseId,
+      params.onResponseCreated,
     ));
   // Each candidate uses GPT-5.6 Sol. A second independent generation is used
   // only when the first candidate fails a deterministic or client-facing gate.
@@ -3129,6 +3142,8 @@ export async function generatePeptidesProtocol(
         retries: providerRetries,
         orderId: options.orderId,
         estimatedCostUsd: costBudgetEstimatedUsd,
+        resumeResponseId: options.resumeResponseId,
+        onResponseCreated: options.onResponseCreated,
       }),
     },
     {

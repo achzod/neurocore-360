@@ -508,6 +508,57 @@ export async function reserveAICostBudget(
   }
 }
 
+export async function bindAICostBudgetReservationResponse(
+  reservation: AICostBudgetReservation | null,
+  responseId: string,
+): Promise<void> {
+  if (!reservation || !responseId) return;
+  await ensureBudgetTables();
+  const { pool } = await import("./db");
+  await pool.query(
+    `UPDATE ai_cost_budget_reservations
+        SET response_id = $2, updated_at = NOW()
+      WHERE id = $1 AND status = 'RESERVED'`,
+    [reservation.id, responseId],
+  );
+}
+
+export async function resumeAICostBudgetReservation(
+  rawContext: Pick<AICostBudgetContext, "product" | "orderId" | "profile">,
+  responseId: string,
+): Promise<AICostBudgetReservation | null> {
+  if (!responseId) return null;
+  await ensureBudgetTables();
+  const { pool } = await import("./db");
+  const result = await pool.query(
+    `SELECT id, product, order_id, profile, label, reserved_cost_usd, created_at
+       FROM ai_cost_budget_reservations
+      WHERE product = $1 AND order_id = $2 AND profile = $3 AND response_id = $4
+        AND status IN ('RESERVED', 'UNCERTAIN', 'COMPLETED')
+      ORDER BY created_at DESC
+      LIMIT 1`,
+    [
+      normalizeProduct(rawContext.product),
+      normalizeOrderId(rawContext.orderId),
+      String(rawContext.profile || "unknown").trim().slice(0, 80),
+      responseId,
+    ],
+  );
+  const row = result.rows[0];
+  if (!row) return null;
+  return {
+    id: String(row.id),
+    context: {
+      product: String(row.product),
+      orderId: String(row.order_id),
+      profile: String(row.profile),
+      label: row.label ? String(row.label) : undefined,
+    },
+    reservedUsd: Number(row.reserved_cost_usd),
+    createdAt: new Date(row.created_at).toISOString(),
+  };
+}
+
 export async function completeAICostBudgetReservation(
   reservation: AICostBudgetReservation | null,
   actualCostUsd: number | null | undefined,
@@ -524,7 +575,7 @@ export async function completeAICostBudgetReservation(
     `UPDATE ai_cost_budget_reservations
      SET status = 'COMPLETED', actual_cost_usd = $2, response_id = $3,
          updated_at = NOW(), detail = NULL
-     WHERE id = $1 AND status = 'RESERVED'`,
+     WHERE id = $1 AND status IN ('RESERVED', 'UNCERTAIN')`,
     [reservation.id, actual, responseId || null],
   );
 }
