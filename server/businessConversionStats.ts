@@ -21,7 +21,8 @@ export type BusinessConversionStats = {
 const isQaOrder = (order: BusinessOrder): boolean =>
   order.metadata?.qaSmoke === true ||
   order.metadata?.qaSmokeCleanup === true ||
-  order.metadata?.qaExpiredSession === true;
+  order.metadata?.qaExpiredSession === true ||
+  typeof order.metadata?.qaCleanup === "string";
 
 // First-party sales only. Never infer an ad platform or a list price from orders.
 export function summarizeBusinessOrders(orders: BusinessOrder[]): BusinessConversionStats {
