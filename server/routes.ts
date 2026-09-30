@@ -11042,35 +11042,16 @@ export async function registerRoutes(
   app.get("/api/admin/sendpulse/books", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
-      const { userId: SENDPULSE_USER_ID, secret: SENDPULSE_SECRET } = getSendPulseCredentials();
-
-      if (!SENDPULSE_USER_ID || !SENDPULSE_SECRET) {
-        res.json({ success: false, error: "SendPulse credentials not configured" });
-        return;
-      }
-
-      // Get access token
-      const authResponse = await fetch("https://api.sendpulse.com/oauth/access_token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          grant_type: "client_credentials",
-          client_id: SENDPULSE_USER_ID,
-          client_secret: SENDPULSE_SECRET,
-        }),
-      });
-
-      if (!authResponse.ok) {
-        res.json({ success: false, error: "SendPulse auth failed" });
-        return;
-      }
-
-      const authData = await authResponse.json() as { access_token: string };
+      const accessToken = await getSendPulseAdminToken();
 
       // Get all address books
       const booksResponse = await fetch("https://api.sendpulse.com/addressbooks", {
-        headers: { Authorization: `Bearer ${authData.access_token}` },
+        headers: { Authorization: `Bearer ${accessToken}` },
       });
+      if (!booksResponse.ok) {
+        res.status(502).json({ success: false, error: "SendPulse address books unavailable" });
+        return;
+      }
 
       const books = await booksResponse.json() as Array<{ id: number; name: string; all_email_qty: number }>;
 
@@ -11098,26 +11079,16 @@ export async function registerRoutes(
   app.get("/api/admin/sendpulse/campaigns", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
-      const { userId: SENDPULSE_USER_ID, secret: SENDPULSE_SECRET } = getSendPulseCredentials();
-      if (!SENDPULSE_USER_ID || !SENDPULSE_SECRET) {
-        res.status(400).json({ success: false, error: "SendPulse credentials not configured" });
-        return;
-      }
+      const accessToken = await getSendPulseAdminToken();
       const limit = Math.min(Number(req.query.limit) || 50, 100);
       const offset = Number(req.query.offset) || 0;
-      const authResp = await fetch("https://api.sendpulse.com/oauth/access_token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ grant_type: "client_credentials", client_id: SENDPULSE_USER_ID, client_secret: SENDPULSE_SECRET }),
+      const campaignsResp = await fetch(`https://api.sendpulse.com/campaigns?limit=${limit}&offset=${offset}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
       });
-      if (!authResp.ok) {
-        res.status(500).json({ success: false, error: "SendPulse auth failed" });
+      if (!campaignsResp.ok) {
+        res.status(502).json({ success: false, error: "SendPulse campaigns unavailable" });
         return;
       }
-      const authData = await authResp.json() as { access_token: string };
-      const campaignsResp = await fetch(`https://api.sendpulse.com/campaigns?limit=${limit}&offset=${offset}`, {
-        headers: { Authorization: `Bearer ${authData.access_token}` },
-      });
       const campaigns = await campaignsResp.json();
       res.json({ success: true, campaigns });
     } catch (error: any) {
