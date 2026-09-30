@@ -302,7 +302,13 @@ export async function registerRoutes(
 
   const isEmailSequenceAttempted = (tracking: any): boolean => {
     const status = String(tracking?.sendpulseStatus || "").toLowerCase();
-    return !["failed", "auth_failed", "unsubscribed"].includes(status);
+    // Permanent opt-outs and SMTP hard failures cannot be fixed by a cron retry.
+    // Keep transient failures eligible so the sequence can recover.
+    if (status === "unsubscribed") return true;
+    if (status === "failed" && /"eventType"\s*:\s*"hard_fail"/i.test(String(tracking?.sendpulseError || ""))) {
+      return true;
+    }
+    return !["failed", "auth_failed"].includes(status);
   };
 
   const normalizeSearchText = (value: unknown): string =>
