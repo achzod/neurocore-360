@@ -577,7 +577,9 @@ export class MemStorage implements IStorage {
       totalSections,
       percentComplete,
       responses: input.responses,
-      status: input.currentSection >= totalSections - 1 ? "COMPLETED" : "IN_PROGRESS",
+      // Reaching the last section is not a submission: checkout may still be abandoned.
+      // The progress row is deleted only after an audit is actually created.
+      status: "IN_PROGRESS",
       startedAt: existing?.startedAt || new Date(),
       lastActivityAt: new Date(),
     };
@@ -1893,7 +1895,9 @@ export class PgStorage implements IStorage {
     const existing = await this.getProgress(input.email);
     const totalSections = input.totalSections ?? 13;
     const percentComplete = Math.round(((input.currentSection + 1) / totalSections) * 100);
-    const status = input.currentSection >= totalSections - 1 ? "COMPLETED" : "IN_PROGRESS";
+    // The last section can be reached without creating an audit or paying.
+    // Keep the row eligible for abandonment recovery until audit creation deletes it.
+    const status = "IN_PROGRESS";
 
     if (existing) {
       const result = await pool.query(
