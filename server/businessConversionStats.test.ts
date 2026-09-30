@@ -24,9 +24,10 @@ test("excludes QA checkout attempts from sales and abandonment metrics", () => {
     order({ status: "cancelled", metadata: { qaSmoke: true } }),
     order({ status: "cancelled", metadata: { qaSmokeCleanup: true } }),
     order({ status: "cancelled", metadata: { qaExpiredSession: true } }),
+    order({ status: "cancelled", email: "qa-cleanup@example.com", metadata: { qaCleanup: "stripe_full_audit_20260920" } }),
     order({ status: "cancelled" }),
   ]);
-  assert.equal(stats.qaOrdersExcluded, 3);
+  assert.equal(stats.qaOrdersExcluded, 4);
   assert.equal(stats.cancelledCheckouts, 1);
   assert.equal(stats.checkoutContacts, 1);
 });
