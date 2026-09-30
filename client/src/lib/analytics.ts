@@ -355,6 +355,36 @@ export function trackPurchase(
   }, { eventID: eventId });
 }
 
+export type VerifiedStripePurchase = {
+  transactionId: string;
+  itemId: string;
+  itemName: string;
+  value: number;
+  currency: string;
+};
+
+// A Stripe return can be revisited or retried. Count each verified session once
+// per browser session, and never emit marketing events without analytics consent.
+export function trackVerifiedStripePurchase(purchase: VerifiedStripePurchase | null | undefined): boolean {
+  if (typeof window === 'undefined' || !purchase) return false;
+  try {
+    if (window.localStorage.getItem('apexlabs_cookie_consent') !== 'all' ||
+        !purchase.transactionId.startsWith('cs_') ||
+        !purchase.itemId || !purchase.itemName ||
+        !Number.isFinite(purchase.value) || purchase.value <= 0 ||
+        !/^[A-Z]{3}$/.test(purchase.currency)) return false;
+    const key = `stripe_purchase_tracked_${purchase.transactionId}`;
+    if (window.sessionStorage.getItem(key)) return false;
+    trackPurchase(purchase.transactionId, purchase.itemId, purchase.itemName,
+      purchase.value, purchase.currency, { provider: 'stripe' });
+    window.sessionStorage.setItem(key, '1');
+    return true;
+  } catch {
+    // Storage or analytics failures cannot interrupt paid customer delivery.
+    return false;
+  }
+}
+
 // Track Discovery Scan (free) submission as a lead
 export function trackDiscoveryScanLead(auditId: string) {
   gtag('event', 'generate_lead', {

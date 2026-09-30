@@ -5,6 +5,7 @@ import { autoSendAbandonmentReminders, sendDailyReport } from "./abandonmentRemi
 import { startMonitoring, generateMonitoringReport, checkNewConversions } from "./abandonmentMonitor";
 import { pool } from "./db";
 import { saveProgressSchema, insertAuditSchema, insertReviewSchema, ProductPriceCents, ProductDisplayNames, type ProductTypeEnum } from "@shared/schema";
+import { buildVerifiedStripePurchase, isStripeCheckoutPaid } from "./stripePurchaseTracking";
 import { z } from "zod";
 import { getStripeKlarnaClient, getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
 import { createCheckoutSessionWithPaymentMethodFallback } from "./stripeCheckoutPaymentMethods";
@@ -5609,8 +5610,7 @@ export async function registerRoutes(
         expand: ["customer"],
       });
 
-      const isPaid = session.payment_status === "paid" || session.status === "complete";
-      if (!isPaid) {
+      if (!isStripeCheckoutPaid(session)) {
         res.status(202).json({ success: false, status: session.payment_status || session.status });
         return;
       }
@@ -5626,6 +5626,12 @@ export async function registerRoutes(
         res.status(400).json({ error: "Metadata Stripe manquante" });
         return;
       }
+
+      const purchaseTracking = buildVerifiedStripePurchase(
+        session,
+        planType,
+        ProductDisplayNames[planType as ProductTypeEnum] || planType,
+      );
 
       // PEPTIDES_ENGINE is a valid plan; the webhook + autogen handle its
       // generation separately from the audit pipeline. Confirm-session should
@@ -5643,7 +5649,7 @@ export async function registerRoutes(
         if (existingOrder && email) {
           await grantBloodCreditsForOrder(existingOrder.id, email, 2, "peptidesCreditsGranted");
         }
-        res.json({ success: true, auditId: "", auditType: "PEPTIDES_ENGINE", email, generating: true });
+        res.json({ success: true, auditId: "", auditType: "PEPTIDES_ENGINE", email, generating: true, purchaseTracking });
         return;
       }
 
@@ -5656,7 +5662,7 @@ export async function registerRoutes(
       // Update order to paid if exists
       const existingOrder = await storage.getOrderByStripeSession(sessionId);
       if (existingOrder && existingOrder.status === "paid" && existingOrder.auditId) {
-        res.json({ success: true, auditId: existingOrder.auditId, auditType: planType, existing: true });
+        res.json({ success: true, auditId: existingOrder.auditId, auditType: planType, existing: true, purchaseTracking });
         return;
       }
       if (existingOrder && existingOrder.status !== "paid") {
@@ -5702,7 +5708,7 @@ export async function registerRoutes(
             );
           });
         }
-        res.json({ success: true, auditId: "", auditType: "BLOOD_ANALYSIS", email });
+        res.json({ success: true, auditId: "", auditType: "BLOOD_ANALYSIS", email, purchaseTracking });
         return;
       }
 
@@ -5713,7 +5719,7 @@ export async function registerRoutes(
         res.status(400).json(result);
         return;
       }
-      res.json(result);
+      res.json({ ...result, purchaseTracking });
     } catch (error: any) {
       console.error("Stripe confirmation error:", error);
       res.status(500).json({ error: "Erreur confirmation paiement" });
@@ -11447,8 +11453,12 @@ export async function registerRoutes(
 
     try {
       switch (event.type) {
-        case "checkout.session.completed": {
+        case "checkout.session.completed":
+        case "checkout.session.async_payment_succeeded": {
           const session = event.data.object;
+          // Checkout completion is not proof of payment for delayed methods.
+          // The later async success event fulfills those orders instead.
+          if (!isStripeCheckoutPaid(session)) break;
           const order = await storage.getOrderByStripeSession(session.id);
           if (order && order.status === "pending") {
             await storage.updateOrder(order.id, {

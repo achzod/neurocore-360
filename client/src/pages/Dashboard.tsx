@@ -39,6 +39,7 @@ import {
 import { motion } from "framer-motion";
 import { ULTRAHUMAN_THEMES } from "@/components/ultrahuman/themes";
 import type { Theme } from "@/components/ultrahuman/types";
+import { trackVerifiedStripePurchase } from "@/lib/analytics";
 
 const sectionConfig: Record<string, { label: string; shortLabel: string; icon: typeof Activity; color: string }> = {
   profilbase: { label: "Profil de Base", shortLabel: "Profil", icon: Target, color: "hsl(160, 84%, 39%)" },
@@ -634,6 +635,7 @@ export default function Dashboard() {
           const data = await response.json();
 
           if (response.ok && data.success) {
+            trackVerifiedStripePurchase(data.purchaseTracking);
             if (data.auditId) {
               const target = getReportPath(data.auditType || "", data.auditId);
               navigate(target);
@@ -658,6 +660,15 @@ export default function Dashboard() {
             setCheckoutSuccess({
               title: "Paiement reçu",
               message: "Ta commande est confirmée. Tu recevras les détails par email.",
+            });
+            return;
+          }
+
+          if (response.status === 202) {
+            setCheckoutSuccess({
+              title: "Paiement en attente",
+              message: "Ton moyen de paiement n'a pas encore confirmé le règlement. Dès confirmation par Stripe, ta commande sera activée et tu recevras un email. Aucun nouvel achat n'est nécessaire.",
+              cta: { label: "Retour au tableau de bord", href: "/dashboard" },
             });
             return;
           }
