@@ -9,6 +9,7 @@ import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
 import { CookieConsent } from "@/components/CookieConsent";
 import { WhatsAppConversionHub } from "@/components/WhatsAppConversionHub";
+import { isDiscoveryQuestionnaireHref, trackDiscoveryFunnelStep } from "@/lib/analytics";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   constructor(props: { children: ReactNode }) {
@@ -122,6 +123,21 @@ function ScrollToTop() {
   const [location] = useLocation();
 
   useEffect(() => {
+    const trackQuestionnaireLink = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const link = target.closest('a[href]');
+      const href = link?.getAttribute('href');
+      if (href && isDiscoveryQuestionnaireHref(href, window.location.origin)) {
+        trackDiscoveryFunnelStep('discovery_cta_click');
+      }
+    };
+    // Capture before Wouter changes the URL so page_path remains the CTA source.
+    document.addEventListener('click', trackQuestionnaireLink, true);
+    return () => document.removeEventListener('click', trackQuestionnaireLink, true);
+  }, []);
+
+  useEffect(() => {
     window.scrollTo(0, 0);
 
     // Update page title
@@ -135,6 +151,9 @@ function ScrollToTop() {
         page_title: title,
         page_location: window.location.href,
       });
+    }
+    if (location === '/offers/discovery-scan' || location === '/ads/discovery-scan') {
+      trackDiscoveryFunnelStep('discovery_landing_viewed');
     }
 
     // Update canonical URL dynamically

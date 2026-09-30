@@ -114,7 +114,7 @@ export default function DiscoveryScanAds() {
             </div>
 
             {/* CTA Button */}
-            <Link href="/questionnaire">
+            <Link href="/questionnaire?plan=gratuit">
               <a className="px-5 py-2.5 text-xs font-black uppercase tracking-wide bg-[#FCDD00] text-black rounded-sm transition-all duration-300 hover:bg-[#FCDD00]/90">
                 Commencer
               </a>
@@ -148,7 +148,7 @@ export default function DiscoveryScanAds() {
             </p>
 
             {/* CTA */}
-            <Link href="/questionnaire">
+            <Link href="/questionnaire?plan=gratuit">
               <a className="inline-flex items-center gap-2 bg-[#FCDD00] text-black font-semibold px-8 py-4 rounded-lg text-lg hover:bg-[#FCDD00]/90 transition-all">
                 Commencer le questionnaire
                 <ArrowRight size={20} />
@@ -324,7 +324,7 @@ export default function DiscoveryScanAds() {
                 ))}
               </ul>
 
-              <Link href="/questionnaire">
+              <Link href="/questionnaire?plan=gratuit">
                 <a className="block w-full text-center bg-[#FCDD00] text-black font-semibold px-6 py-3 rounded-lg hover:bg-[#FCDD00]/90 transition-all">
                   Commencer →
                 </a>
@@ -570,7 +570,7 @@ export default function DiscoveryScanAds() {
           <p className="text-xl text-white/60 mb-10">
             5 minutes. 66 questions. Un rapport complet.
           </p>
-          <Link href="/questionnaire">
+          <Link href="/questionnaire?plan=gratuit">
             <a className="inline-flex items-center gap-2 bg-[#FCDD00] text-black font-semibold px-8 py-4 rounded-lg text-lg hover:bg-[#FCDD00]/90 transition-all">
               Commencer maintenant
               <ArrowRight size={20} />
@@ -590,7 +590,7 @@ export default function DiscoveryScanAds() {
             <div>
               <h4 className="text-white font-semibold mb-4">Offres</h4>
               <ul className="space-y-2 text-sm text-white/60">
-                <li><Link href="/questionnaire"><a className="hover:text-white transition-colors">Discovery Scan</a></Link></li>
+                <li><Link href="/questionnaire?plan=gratuit"><a className="hover:text-white transition-colors">Discovery Scan</a></Link></li>
                 <li><Link href="/offers/anabolic-bioscan"><a className="hover:text-white transition-colors">Rapport Avancé</a></Link></li>
                 <li><Link href="/offers/ultimate-scan"><a className="hover:text-white transition-colors">Rapport Complet</a></Link></li>
                 <li><Link href="/offers/blood-analysis"><a className="hover:text-white transition-colors">Analyse Données</a></Link></li>

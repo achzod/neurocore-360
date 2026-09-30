@@ -65,6 +65,39 @@ export function trackClick(buttonName: string, destination?: string) {
   });
 }
 
+// Keep funnel events separate from Lead/Purchase conversions. No email or
+// questionnaire answers are sent to analytics.
+export type DiscoveryFunnelStep =
+  | 'discovery_landing_viewed'
+  | 'discovery_cta_click'
+  | 'discovery_email_submitted'
+  | 'discovery_checkout_reached';
+
+export function isDiscoveryQuestionnaireHref(href: string, origin: string): boolean {
+  try {
+    const url = new URL(href, origin);
+    return url.origin === origin
+      && (url.pathname === '/questionnaire' || url.pathname === '/audit-complet/questionnaire')
+      && ['gratuit', 'discovery', 'free'].includes((url.searchParams.get('plan') || '').toLowerCase());
+  } catch {
+    return false;
+  }
+}
+
+export function trackDiscoveryFunnelStep(step: DiscoveryFunnelStep) {
+  // Compare only visitors who accepted analytics; never send questionnaire PII.
+  if (typeof window === 'undefined') return;
+  try {
+    if (window.localStorage.getItem('apexlabs_cookie_consent') !== 'all') return;
+    gtag('event', step, {
+      funnel_name: 'discovery_scan',
+      page_path: window.location.pathname,
+    });
+  } catch {
+    // Analytics/storage errors must never interrupt questionnaire navigation.
+  }
+}
+
 // Track high-intent WhatsApp contact clicks without counting them as purchases.
 export function trackWhatsAppClick({
   offer,
