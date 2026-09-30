@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { trackDiscoveryFunnelStep } from "@/lib/analytics";
 
 const CONSENT_KEY = "apexlabs_cookie_consent";
 
@@ -24,6 +25,9 @@ export function CookieConsent() {
     setVisible(false);
     if (level === "all") {
       loadGA();
+      if (window.location.pathname === "/offers/discovery-scan" || window.location.pathname === "/ads/discovery-scan") {
+        trackDiscoveryFunnelStep('discovery_landing_viewed');
+      }
     }
   }
 

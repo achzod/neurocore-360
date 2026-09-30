@@ -118,6 +118,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { trackDiscoveryFunnelStep } from "@/lib/analytics";
 import { useToast } from "@/hooks/use-toast";
 
 const iconMap: Record<string, React.ElementType> = {
@@ -730,6 +731,9 @@ function QuestionnaireContent() {
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (email && email.includes("@")) {
+      if (selectedPlan === "gratuit") {
+        trackDiscoveryFunnelStep('discovery_email_submitted');
+      }
       setEmailSubmitted(true);
       localStorage.setItem("neurocore_email", email);
       setResponses((prev) => ({ ...prev, email }));
@@ -819,6 +823,9 @@ function QuestionnaireContent() {
         localStorage.setItem("neurocore_photos", JSON.stringify(photoData));
       } catch {
         console.warn("[Photos] localStorage full, photos will be in memory for checkout");
+      }
+      if (selectedPlan === "gratuit") {
+        trackDiscoveryFunnelStep('discovery_checkout_reached');
       }
       navigate(`/audit-complet/checkout?plan=${selectedPlan}`);
     }
