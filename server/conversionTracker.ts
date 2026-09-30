@@ -11,6 +11,7 @@
  */
 
 import { sendCTAEmail, SENDER_EMAIL } from './emailService';
+import { summarizeBusinessOrders, type BusinessConversionStats } from './businessConversionStats';
 
 // ============================================================================
 // TYPES
@@ -19,6 +20,8 @@ import { sendCTAEmail, SENDER_EMAIL } from './emailService';
 export interface ConversionStats {
   timestamp: Date;
   period: '24h' | '7d' | '30d';
+  business: BusinessConversionStats | null;
+  sources: { metaAvailable: boolean; googleAdsAvailable: false };
 
   // Meta Ads
   meta: {
@@ -96,12 +99,17 @@ interface MetaPixelEvent {
  * - Stocker dans: process.env.META_ACCESS_TOKEN
  */
 export async function fetchMetaConversions(days: number = 1): Promise<ConversionStats['meta']> {
+  return (await fetchMetaConversionsWithStatus(days)).stats;
+}
+
+async function fetchMetaConversionsWithStatus(days: number): Promise<{
+  stats: ConversionStats['meta']; available: boolean;
+}> {
   const accessToken = process.env.META_ACCESS_TOKEN;
-  const pixelId = '1120781400174189';
 
   if (!accessToken) {
     console.warn('[ConversionTracker] META_ACCESS_TOKEN non configuré - retour données vides');
-    return getEmptyMetaStats();
+    return { stats: getEmptyMetaStats(), available: false };
   }
 
   try {
@@ -111,7 +119,7 @@ export async function fetchMetaConversions(days: number = 1): Promise<Conversion
 
     if (!adAccountId) {
       console.warn('[ConversionTracker] META_AD_ACCOUNT_ID non configuré');
-      return getEmptyMetaStats();
+      return { stats: getEmptyMetaStats(), available: false };
     }
 
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -127,13 +135,13 @@ export async function fetchMetaConversions(days: number = 1): Promise<Conversion
 
     if (!response.ok) {
       console.error('[ConversionTracker] Meta API error:', response.status);
-      return getEmptyMetaStats();
+      return { stats: getEmptyMetaStats(), available: false };
     }
 
     const data = await response.json();
 
     if (!data.data || data.data.length === 0) {
-      return getEmptyMetaStats();
+      return { stats: getEmptyMetaStats(), available: true };
     }
 
     const insights = data.data[0];
@@ -156,7 +164,7 @@ export async function fetchMetaConversions(days: number = 1): Promise<Conversion
     const costPerLead = leads > 0 ? spend / leads : 0;
     const costPerPurchase = purchases > 0 ? spend / purchases : 0;
 
-    return {
+    return { stats: {
       spend,
       impressions,
       clicks,
@@ -168,10 +176,10 @@ export async function fetchMetaConversions(days: number = 1): Promise<Conversion
       roas,
       costPerLead,
       costPerPurchase,
-    };
+    }, available: true };
   } catch (error: any) {
     console.error('[ConversionTracker] Erreur Meta API:', error.message);
-    return getEmptyMetaStats();
+    return { stats: getEmptyMetaStats(), available: false };
   }
 }
 
@@ -204,83 +212,10 @@ function getEmptyMetaStats(): ConversionStats['meta'] {
  * - Stocker dans: process.env.GOOGLE_ADS_*
  */
 export async function fetchGoogleAdsConversions(days: number = 1): Promise<ConversionStats['google']> {
-  // Utilise la base de données PostgreSQL locale au lieu de Google Ads API
-  // On récupère les vraies conversions APEX depuis les tables audits et blood_reports
-
-  try {
-    const { pool } = await import('./db.js');
-
-    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-    const launchDate = new Date('2026-03-17T00:00:00Z'); // Lancement officiel APEX
-
-    // 1. Récupérer les audits (Discovery Scan = leads, Anabolic/Ultimate = purchases)
-    // IMPORTANT: Seulement depuis le 17 mars 2026 (lancement)
-    const auditsResult = await pool.query(`
-      SELECT
-        type,
-        "createdAt",
-        CASE
-          WHEN type = 'GRATUIT' THEN 0
-          WHEN type = 'PREMIUM' THEN 37
-          WHEN type = 'ELITE' THEN 67
-          ELSE 0
-        END as price
-      FROM audits
-      WHERE "createdAt" >= $1
-        AND "createdAt" >= $2
-    `, [since, launchDate]);
-
-    // 2. Récupérer les blood reports (depuis le 17 mars)
-    const bloodResult = await pool.query(`
-      SELECT
-        "createdAt",
-        47 as price
-      FROM blood_reports
-      WHERE "createdAt" >= $1
-        AND "createdAt" >= $2
-        AND delivery_status IN ('SENT', 'SCHEDULED', 'READY')
-    `, [since, launchDate]);
-
-    // Calculer les stats
-    let leads = 0;
-    let purchases = 0;
-    let revenue = 0;
-
-    // Compter les audits
-    for (const audit of auditsResult.rows) {
-      if (audit.type === 'GRATUIT') {
-        leads++;
-      } else {
-        purchases++;
-        revenue += audit.price;
-      }
-    }
-
-    // Compter les blood reports
-    purchases += bloodResult.rows.length;
-    revenue += bloodResult.rows.length * 47;
-
-    // Dépenses estimées (à ajuster manuellement si besoin)
-    // Par défaut: 0€ (à configurer manuellement dans l'env ou la DB)
-    const estimatedSpend = parseFloat(process.env.ESTIMATED_AD_SPEND_PER_DAY || '0') * days;
-
-    return {
-      spend: estimatedSpend,
-      impressions: 0,
-      clicks: 0,
-      ctr: 0,
-      cpc: 0,
-      leads,
-      purchases,
-      revenue,
-      roas: estimatedSpend > 0 ? revenue / estimatedSpend : 0,
-      costPerLead: leads > 0 && estimatedSpend > 0 ? estimatedSpend / leads : 0,
-      costPerPurchase: purchases > 0 && estimatedSpend > 0 ? estimatedSpend / purchases : 0,
-    };
-  } catch (error: any) {
-    console.error('[ConversionTracker] Erreur récupération DB:', error.message);
-    return getEmptyGoogleStats();
-  }
+  // No Google Ads API connection here. Local audits are not ad-attributed
+  // conversions, and old hard-coded prices were not actual paid order totals.
+  void days;
+  return getEmptyGoogleStats();
 }
 
 function getEmptyGoogleStats(): ConversionStats['google'] {
@@ -306,10 +241,12 @@ function getEmptyGoogleStats(): ConversionStats['google'] {
 export async function getConversionStats(period: '24h' | '7d' | '30d' = '24h'): Promise<ConversionStats> {
   const days = period === '24h' ? 1 : period === '7d' ? 7 : 30;
 
-  const [meta, google] = await Promise.all([
-    fetchMetaConversions(days),
+  const [metaResult, google, business] = await Promise.all([
+    fetchMetaConversionsWithStatus(days),
     fetchGoogleAdsConversions(days),
+    getBusinessConversionStats(days),
   ]);
+  const meta = metaResult.stats;
 
   const total = {
     spend: meta.spend + google.spend,
@@ -323,28 +260,42 @@ export async function getConversionStats(period: '24h' | '7d' | '30d' = '24h'): 
   total.roas = total.spend > 0 ? total.revenue / total.spend : 0;
   total.profit = total.revenue - total.spend;
 
-  // TODO: Distinguer APEX vs Coaching via event_source_url du pixel
+  // No source URL-level attribution is available in this endpoint.
   const bySite = {
-    apex: {
-      leads: Math.round(total.leads * 0.6), // Estimation 60% APEX
-      purchases: Math.round(total.purchases * 0.4), // Estimation 40% APEX
-      revenue: Math.round(total.revenue * 0.4),
-    },
-    coaching: {
-      leads: Math.round(total.leads * 0.4), // Estimation 40% Coaching
-      purchases: Math.round(total.purchases * 0.6), // Estimation 60% Coaching
-      revenue: Math.round(total.revenue * 0.6),
-    },
+    apex: { leads: 0, purchases: 0, revenue: 0 },
+    coaching: { leads: 0, purchases: 0, revenue: 0 },
   };
 
   return {
     timestamp: new Date(),
     period,
+    business,
+    sources: {
+      metaAvailable: metaResult.available,
+      googleAdsAvailable: false,
+    },
     meta,
     google,
     total,
     bySite,
   };
+}
+
+async function getBusinessConversionStats(days: number): Promise<BusinessConversionStats | null> {
+  try {
+    const { pool } = await import('./db.js');
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const result = await pool.query(`
+      SELECT email, product_type AS "productType", status,
+             final_amount_cents AS "finalAmountCents",
+             refund_amount_cents AS "refundAmountCents", metadata
+        FROM orders WHERE created_at >= $1
+    `, [since]);
+    return summarizeBusinessOrders(result.rows);
+  } catch (error: any) {
+    console.error('[ConversionTracker] Real paid-order metrics unavailable:', error.message);
+    return null;
+  }
 }
 
 // ============================================================================
@@ -359,93 +310,32 @@ export async function sendDailyConversionReport(): Promise<void> {
     getConversionStats('7d'),
   ]);
 
-  const subject = `📊 Rapport Conversions APEX + Coaching - ${new Date().toLocaleDateString('fr-FR')}`;
-
-  const message = `
-═══════════════════════════════════════════════════════════
-📊 RAPPORT CONVERSIONS QUOTIDIEN
-═══════════════════════════════════════════════════════════
-
-🗓️ Date: ${new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-💰 RÉSUMÉ 24H
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-💸 Dépenses totales:     ${stats24h.total.spend.toFixed(2)}€
-📈 Leads générés:        ${stats24h.total.leads}
-🎯 Achats:               ${stats24h.total.purchases}
-💵 Revenue:              ${stats24h.total.revenue.toFixed(2)}€
-📊 ROAS:                 ${stats24h.total.roas.toFixed(2)}x
-💰 Profit:               ${stats24h.total.profit.toFixed(2)}€
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📱 META ADS - 24H
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-💸 Dépenses:             ${stats24h.meta.spend.toFixed(2)}€
-👁️  Impressions:          ${stats24h.meta.impressions.toLocaleString()}
-🖱️  Clics:                ${stats24h.meta.clicks}
-📊 CTR:                  ${stats24h.meta.ctr.toFixed(2)}%
-💰 CPC:                  ${stats24h.meta.cpc.toFixed(2)}€
-
-📈 Leads:                ${stats24h.meta.leads} (${stats24h.meta.costPerLead > 0 ? stats24h.meta.costPerLead.toFixed(2) + '€/lead' : 'N/A'})
-🎯 Achats:               ${stats24h.meta.purchases} (${stats24h.meta.costPerPurchase > 0 ? stats24h.meta.costPerPurchase.toFixed(2) + '€/achat' : 'N/A'})
-💵 Revenue:              ${stats24h.meta.revenue.toFixed(2)}€
-📊 ROAS:                 ${stats24h.meta.roas.toFixed(2)}x
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🔍 GOOGLE ADS - 24H
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-💸 Dépenses:             ${stats24h.google.spend.toFixed(2)}€
-👁️  Impressions:          ${stats24h.google.impressions.toLocaleString()}
-🖱️  Clics:                ${stats24h.google.clicks}
-📊 CTR:                  ${stats24h.google.ctr.toFixed(2)}%
-💰 CPC:                  ${stats24h.google.cpc.toFixed(2)}€
-
-📈 Leads:                ${stats24h.google.leads} (${stats24h.google.costPerLead > 0 ? stats24h.google.costPerLead.toFixed(2) + '€/lead' : 'N/A'})
-🎯 Achats:               ${stats24h.google.purchases} (${stats24h.google.costPerPurchase > 0 ? stats24h.google.costPerPurchase.toFixed(2) + '€/achat' : 'N/A'})
-💵 Revenue:              ${stats24h.google.revenue.toFixed(2)}€
-📊 ROAS:                 ${stats24h.google.roas.toFixed(2)}x
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🌐 PAR SITE - 24H
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🔬 APEXLABS:
-  📈 Leads:              ${stats24h.bySite.apex.leads}
-  🎯 Achats:             ${stats24h.bySite.apex.purchases}
-  💵 Revenue:            ${stats24h.bySite.apex.revenue}€
-
-💪 ACHZOD COACHING:
-  📈 Leads:              ${stats24h.bySite.coaching.leads}
-  🎯 Achats:             ${stats24h.bySite.coaching.purchases}
-  💵 Revenue:            ${stats24h.bySite.coaching.revenue}€
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📈 TENDANCE 7 JOURS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-💸 Dépenses totales:     ${stats7d.total.spend.toFixed(2)}€
-📈 Leads générés:        ${stats7d.total.leads}
-🎯 Achats:               ${stats7d.total.purchases}
-💵 Revenue:              ${stats7d.total.revenue.toFixed(2)}€
-📊 ROAS moyen:           ${stats7d.total.roas.toFixed(2)}x
-💰 Profit:               ${stats7d.total.profit.toFixed(2)}€
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🎯 RECOMMANDATIONS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-${getRecommendations(stats24h, stats7d)}
-
-═══════════════════════════════════════════════════════════
-
-🔗 Dashboard: https://apexlabs.achzodcoaching.com/admin/conversions-tracker
-
-📊 Ce rapport est envoyé automatiquement tous les jours à 9h00.
-`;
+  const subject = `Rapport ventes APEX - ${new Date().toLocaleDateString('fr-FR')}`;
+  const line = (label: string, value: number | null) =>
+    `${label}: ${value === null ? 'indisponible' : value}`;
+  const euro = (cents: number | null) =>
+    cents === null ? 'indisponible' : `${(cents / 100).toFixed(2)} EUR`;
+  const message = [
+    `Ventes APEX du ${new Date().toLocaleDateString('fr-FR')}`,
+    '',
+    'Dernières 24 heures, commandes réelles hors QA :',
+    line('Commandes payées', stats24h.business?.paidOrders ?? null),
+    line('Checkouts annulés', stats24h.business?.cancelledCheckouts ?? null),
+    line('Contacts checkout distincts', stats24h.business?.checkoutContacts ?? null),
+    `Chiffre d'affaires net: ${euro(stats24h.business?.netRevenueCents ?? null)}`,
+    '',
+    'Derniers 7 jours, commandes réelles hors QA :',
+    line('Commandes payées', stats7d.business?.paidOrders ?? null),
+    line('Checkouts annulés', stats7d.business?.cancelledCheckouts ?? null),
+    `Chiffre d'affaires net: ${euro(stats7d.business?.netRevenueCents ?? null)}`,
+    '',
+    stats24h.sources.metaAvailable
+      ? `Meta Ads: ${stats24h.meta.spend.toFixed(2)} EUR dépenses, ${stats24h.meta.purchases} achats attribués (données du compte Meta).`
+      : 'Meta Ads: données indisponibles dans ce tableau.',
+    'Google Ads, GA4 et Search Console: données non connectées ici. Aucun ROAS ou profit ne peut être déduit de ces seules commandes.',
+    '',
+    'Tableau: https://apexlabs.achzodcoaching.com/admin/conversions-tracker',
+  ].join('\n');
 
   try {
     await sendCTAEmail(SENDER_EMAIL, subject, message);
@@ -453,40 +343,4 @@ ${getRecommendations(stats24h, stats7d)}
   } catch (error: any) {
     console.error('[ConversionTracker] ❌ Erreur envoi rapport:', error.message);
   }
-}
-
-function getRecommendations(stats24h: ConversionStats, stats7d: ConversionStats): string {
-  const recommendations: string[] = [];
-
-  // ROAS faible
-  if (stats24h.total.roas < 1) {
-    recommendations.push('⚠️  ROAS < 1x : Tu perds de l\'argent. Pause les campagnes peu performantes.');
-  } else if (stats24h.total.roas < 2) {
-    recommendations.push('⚡ ROAS entre 1-2x : Rentable mais optimisable. Teste de nouvelles créatives.');
-  } else if (stats24h.total.roas >= 3) {
-    recommendations.push('🚀 ROAS > 3x : Excellentes performances ! Scale les campagnes gagnantes.');
-  }
-
-  // Leads sans achats
-  if (stats24h.total.leads > 10 && stats24h.total.purchases === 0) {
-    recommendations.push('📧 Beaucoup de leads mais 0 achat : Optimise les emails de relance et le code RETOUR30.');
-  }
-
-  // Cost per lead élevé
-  const avgCostPerLead = (stats24h.meta.costPerLead + stats24h.google.costPerLead) / 2;
-  if (avgCostPerLead > 10) {
-    recommendations.push('💰 Coût par lead > 10€ : Améliore le ciblage et teste de nouveaux angles.');
-  }
-
-  // Tendance 7j vs 24h
-  const roas7dAvg = stats7d.total.roas;
-  if (stats24h.total.roas < roas7dAvg * 0.7) {
-    recommendations.push('📉 ROAS en baisse vs moyenne 7j : Vérifie les campagnes actives.');
-  }
-
-  if (recommendations.length === 0) {
-    recommendations.push('✅ Tout est bon ! Continue sur cette lancée.');
-  }
-
-  return recommendations.map(r => `  ${r}`).join('\n');
 }

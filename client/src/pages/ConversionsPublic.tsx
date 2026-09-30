@@ -7,12 +7,15 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, TrendingUp, TrendingDown, DollarSign, Target, Users, ShoppingCart, AlertCircle } from 'lucide-react';
+import { RefreshCw, DollarSign, Target, Users, ShoppingCart, AlertCircle } from 'lucide-react';
 import { useLocation } from 'wouter';
+import type { BusinessConversionStats } from '../../../server/businessConversionStats';
 
 interface ConversionStats {
   timestamp: string;
   period: '24h' | '7d' | '30d';
+  business: BusinessConversionStats | null;
+  sources: { metaAvailable: boolean; googleAdsAvailable: false };
   meta: {
     spend: number;
     impressions: number;
@@ -207,7 +210,7 @@ export default function ConversionsPublic() {
               Conversions Tracker
             </h1>
             <p className="text-zinc-400 text-sm mt-1">
-              Meta Ads + Google Ads • APEX + Coaching
+              Commandes confirmées APEX • attribution publicitaire séparée
             </p>
           </div>
 
@@ -258,13 +261,13 @@ export default function ConversionsPublic() {
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-zinc-400 flex items-center gap-2">
                 <DollarSign className="w-4 h-4" />
-                Dépenses totales
+                CA net APEX
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(stats.total.spend)}</div>
+              <div className="text-2xl font-bold">{stats.business ? formatCurrency(stats.business.netRevenueCents / 100) : 'N/D'}</div>
               <p className="text-xs text-zinc-500 mt-1">
-                Meta: {formatCurrency(stats.meta.spend)} • Google: {formatCurrency(stats.google.spend)}
+                Montants réellement payés, remboursements déduits
               </p>
             </CardContent>
           </Card>
@@ -273,13 +276,13 @@ export default function ConversionsPublic() {
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-zinc-400 flex items-center gap-2">
                 <Users className="w-4 h-4" />
-                Leads
+                Contacts checkout
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-cyan-400">{formatNumber(stats.total.leads)}</div>
+              <div className="text-2xl font-bold text-cyan-400">{stats.business ? formatNumber(stats.business.checkoutContacts) : 'N/D'}</div>
               <p className="text-xs text-zinc-500 mt-1">
-                APEX: {stats.bySite.apex.leads} • Coaching: {stats.bySite.coaching.leads}
+                Contacts distincts, tests QA exclus
               </p>
             </CardContent>
           </Card>
@@ -288,13 +291,13 @@ export default function ConversionsPublic() {
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-zinc-400 flex items-center gap-2">
                 <ShoppingCart className="w-4 h-4" />
-                Ventes
+                Commandes payées
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-400">{formatNumber(stats.total.purchases)}</div>
+              <div className="text-2xl font-bold text-green-400">{stats.business ? formatNumber(stats.business.paidOrders) : 'N/D'}</div>
               <p className="text-xs text-zinc-500 mt-1">
-                APEX: {stats.bySite.apex.purchases} • Coaching: {stats.bySite.coaching.purchases}
+                Annulations réelles: {stats.business?.cancelledCheckouts ?? 'N/D'}{stats.business?.refundedOrders ? ` • dont ${stats.business.refundedOrders} remboursée(s)` : ''}
               </p>
             </CardContent>
           </Card>
@@ -303,15 +306,15 @@ export default function ConversionsPublic() {
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-zinc-400 flex items-center gap-2">
                 <Target className="w-4 h-4" />
-                ROAS
+                Qualité des données
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${stats.total.roas >= 2 ? 'text-green-400' : stats.total.roas >= 1 ? 'text-yellow-400' : 'text-red-400'}`}>
-                {stats.total.roas.toFixed(2)}x
+              <div className="text-2xl font-bold text-white">
+                {stats.business ? stats.business.qaOrdersExcluded : 'N/D'}
               </div>
               <p className="text-xs text-zinc-500 mt-1">
-                Revenus: {formatCurrency(stats.total.revenue)}
+                Commandes de test QA exclues
               </p>
             </CardContent>
           </Card>
@@ -325,7 +328,7 @@ export default function ConversionsPublic() {
           </TabsList>
 
           <TabsContent value="meta" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {!stats.sources.metaAvailable ? <p className="text-zinc-400">Données Meta indisponibles : compte non connecté ou réponse API en échec.</p> : <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Card className="bg-zinc-900 border-zinc-800">
                 <CardHeader>
                   <CardTitle className="text-sm">Impressions</CardTitle>
@@ -355,41 +358,11 @@ export default function ConversionsPublic() {
                   <p className="text-xs text-zinc-500">Leads: {stats.meta.leads}</p>
                 </CardContent>
               </Card>
-            </div>
+            </div>}
           </TabsContent>
 
           <TabsContent value="google" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="bg-zinc-900 border-zinc-800">
-                <CardHeader>
-                  <CardTitle className="text-sm">Impressions</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-xl font-bold">{formatNumber(stats.google.impressions)}</p>
-                  <p className="text-xs text-zinc-500">CTR: {formatPercent(stats.google.ctr)}</p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-zinc-900 border-zinc-800">
-                <CardHeader>
-                  <CardTitle className="text-sm">Clics</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-xl font-bold">{formatNumber(stats.google.clicks)}</p>
-                  <p className="text-xs text-zinc-500">CPC: {formatCurrency(stats.google.cpc)}</p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-zinc-900 border-zinc-800">
-                <CardHeader>
-                  <CardTitle className="text-sm">Coût/Lead</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-xl font-bold">{formatCurrency(stats.google.costPerLead)}</p>
-                  <p className="text-xs text-zinc-500">Leads: {stats.google.leads}</p>
-                </CardContent>
-              </Card>
-            </div>
+            <p className="text-zinc-400">Google Ads n'est pas connecté. Aucun achat APEX n'est attribué à Google sans données vérifiées.</p>
           </TabsContent>
         </Tabs>
       </div>
