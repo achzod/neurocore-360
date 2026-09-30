@@ -319,6 +319,7 @@ export interface IStorage {
   // Abandonment reminders
   getIncompleteQuestionnaires(): Promise<QuestionnaireProgress[]>;
   hasRecentReminder(email: string, hours: number): Promise<boolean>;
+  hasAbandonmentReminderAttemptSince(email: string, since: Date): Promise<boolean>;
   logAbandonmentReminder(data: {
     email: string;
     percentComplete: number;
@@ -1320,6 +1321,12 @@ export class MemStorage implements IStorage {
     const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
     return this.memAbandonmentReminders.some(
       r => r.email.toLowerCase() === email.toLowerCase() && r.sentAt >= cutoff
+    );
+  }
+
+  async hasAbandonmentReminderAttemptSince(email: string, since: Date): Promise<boolean> {
+    return this.memAbandonmentReminders.some(
+      r => r.email.toLowerCase() === email.toLowerCase() && r.sentAt >= since
     );
   }
 
@@ -3979,6 +3986,24 @@ export class PgStorage implements IStorage {
       [email.toLowerCase()]
     );
     return parseInt(result.rows[0]?.count || '0') > 0;
+  }
+
+  async hasAbandonmentReminderAttemptSince(email: string, since: Date): Promise<boolean> {
+    await this.ensureAbandonmentRemindersTableCreated();
+    const result = await pool.query(
+      `SELECT EXISTS (
+         SELECT 1 FROM abandonment_reminders
+          WHERE LOWER(email) = $1 AND sent_at >= $2
+         UNION ALL
+         SELECT 1 FROM email_tracking
+          WHERE LOWER(recipient_email) = $1
+            AND email_type = 'sendCTAEmail'
+            AND subject LIKE '%reprends en un clic%'
+            AND sent_at >= $2
+       ) AS attempted`,
+      [email.trim().toLowerCase(), since]
+    );
+    return result.rows[0]?.attempted === true;
   }
 
   async logAbandonmentReminder(data: {

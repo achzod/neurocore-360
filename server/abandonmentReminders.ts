@@ -218,10 +218,14 @@ export async function sendReminderSegment(
         continue;
       }
 
-      // Vérifier si déjà relancé dans les dernières 24h
-      const alreadyReminded = await storage.hasRecentReminder(abandon.email, 24);
+      // One attempt per inactivity period. A new questionnaire activity allows
+      // a new reminder; an old failure or opt-out must not restart a daily loop.
+      const alreadyReminded = await storage.hasAbandonmentReminderAttemptSince(
+        abandon.email,
+        abandon.lastActivityAt,
+      );
       if (alreadyReminded) {
-        console.log(`[AbandonmentReminder] ⏭️  ${abandon.email} - déjà relancé récemment`);
+        console.log(`[AbandonmentReminder] ⏭️  ${abandon.email} - déjà relancé depuis la dernière activité`);
         continue;
       }
 
@@ -243,12 +247,17 @@ export async function sendReminderSegment(
       );
 
       // Send the HTML email (sendCTAEmail signature: to, subject, body, html?)
-      await sendCTAEmail(
+      const emailSent = await sendCTAEmail(
         abandon.email,
         emailTemplate.subject,
         emailTemplate.text,
         emailTemplate.html,
       );
+      if (!emailSent) {
+        failed++;
+        errors.push(`${abandon.email}: email non accepté par le fournisseur`);
+        continue;
+      }
 
       const priorityScore =
         segment.name === 'HIGH_PRIORITY' ? 100 :
