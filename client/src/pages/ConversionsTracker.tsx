@@ -8,11 +8,14 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, TrendingUp, TrendingDown, DollarSign, Target, Users, ShoppingCart } from 'lucide-react';
+import { RefreshCw, DollarSign, Target, Users, ShoppingCart } from 'lucide-react';
+import type { BusinessConversionStats } from '../../../server/businessConversionStats';
 
 interface ConversionStats {
   timestamp: string;
   period: '24h' | '7d' | '30d';
+  business: BusinessConversionStats | null;
+  sources: { metaAvailable: boolean; googleAdsAvailable: false };
   meta: {
     spend: number;
     impressions: number;
@@ -134,7 +137,7 @@ export default function ConversionsTracker() {
           <div>
             <h1 className="text-4xl font-bold mb-2">Conversions Tracker</h1>
             <p className="text-gray-400">
-              Meta Ads + Google Ads • APEX + Coaching
+              Commandes confirmées APEX • attribution publicitaire séparée
             </p>
             <p className="text-sm text-gray-500 mt-1">
               Dernière mise à jour: {lastUpdate.toLocaleTimeString('fr-FR')}
@@ -165,15 +168,15 @@ export default function ConversionsTracker() {
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
                 <DollarSign className="w-5 h-5 text-red-500" />
-                Dépenses
+                Dépenses Meta
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-white">
-                {formatCurrency(stats.total.spend)}
+                {stats.sources.metaAvailable ? formatCurrency(stats.meta.spend) : 'N/D'}
               </div>
               <div className="text-sm text-gray-400 mt-1">
-                Meta: {formatCurrency(stats.meta.spend)} • Google: {formatCurrency(stats.google.spend)}
+                {stats.sources.metaAvailable ? 'Dépenses du compte Meta' : 'Données Meta indisponibles'}
               </div>
             </CardContent>
           </Card>
@@ -182,15 +185,15 @@ export default function ConversionsTracker() {
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
                 <Users className="w-5 h-5 text-blue-500" />
-                Leads
+                Contacts checkout
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-white">
-                {formatNumber(stats.total.leads)}
+                {stats.business ? formatNumber(stats.business.checkoutContacts) : 'N/D'}
               </div>
               <div className="text-sm text-gray-400 mt-1">
-                Meta: {stats.meta.leads} • Google: {stats.google.leads}
+                Contacts distincts, hors commandes QA
               </div>
             </CardContent>
           </Card>
@@ -199,15 +202,15 @@ export default function ConversionsTracker() {
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
                 <ShoppingCart className="w-5 h-5 text-green-500" />
-                Achats
+                Commandes payées
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-white">
-                {formatNumber(stats.total.purchases)}
+                {stats.business ? formatNumber(stats.business.paidOrders) : 'N/D'}
               </div>
               <div className="text-sm text-gray-400 mt-1">
-                Meta: {stats.meta.purchases} • Google: {stats.google.purchases}
+                Annulations réelles: {stats.business?.cancelledCheckouts ?? 'N/D'}{stats.business?.refundedOrders ? ` • dont ${stats.business.refundedOrders} remboursée(s)` : ''}
               </div>
             </CardContent>
           </Card>
@@ -216,38 +219,38 @@ export default function ConversionsTracker() {
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
                 <Target className="w-5 h-5 text-[#FCDD00]" />
-                ROAS
+                ROAS Meta
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={`text-3xl font-bold ${getROASColor(stats.total.roas)}`}>
-                {stats.total.roas.toFixed(2)}x
+              <div className={`text-3xl font-bold ${stats.sources.metaAvailable && stats.meta.spend > 0 ? getROASColor(stats.meta.roas) : 'text-gray-400'}`}>
+                {stats.sources.metaAvailable && stats.meta.spend > 0 ? `${stats.meta.roas.toFixed(2)}x` : 'N/D'}
               </div>
               <div className="text-sm text-gray-400 mt-1">
-                Meta: {stats.meta.roas.toFixed(2)}x • Google: {stats.google.roas.toFixed(2)}x
+                Pas de ROAS fiable sans dépenses et attribution vérifiées
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Revenue & Profit */}
+        {/* Verified first-party revenue and QA exclusions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <Card className="bg-gray-800 border-gray-700">
             <CardHeader>
-              <CardTitle className="text-white">Revenue Total</CardTitle>
+            <CardTitle className="text-white">Chiffre d'affaires APEX net</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-4xl font-bold text-green-500">
-                {formatCurrency(stats.total.revenue)}
+                {stats.business ? formatCurrency(stats.business.netRevenueCents / 100) : 'N/D'}
               </div>
               <div className="mt-4 space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Meta</span>
-                  <span className="text-white font-semibold">{formatCurrency(stats.meta.revenue)}</span>
+                  <span className="text-gray-400">Commandes payées</span>
+                  <span className="text-white font-semibold">{stats.business ? formatCurrency(stats.business.grossRevenueCents / 100) : 'N/D'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Google</span>
-                  <span className="text-white font-semibold">{formatCurrency(stats.google.revenue)}</span>
+                  <span className="text-gray-400">Remboursements</span>
+                  <span className="text-white font-semibold">{stats.business ? formatCurrency(stats.business.refundedCents / 100) : 'N/D'}</span>
                 </div>
               </div>
             </CardContent>
@@ -255,21 +258,14 @@ export default function ConversionsTracker() {
 
           <Card className="bg-gray-800 border-gray-700">
             <CardHeader>
-              <CardTitle className="text-white">Profit Net</CardTitle>
+            <CardTitle className="text-white">Qualité des données</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={`text-4xl font-bold ${stats.total.profit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                {formatCurrency(stats.total.profit)}
+              <div className="text-4xl font-bold text-white">
+                {stats.business ? stats.business.qaOrdersExcluded : 'N/D'}
               </div>
               <div className="mt-4">
-                <div className="flex items-center gap-2 text-sm text-gray-400">
-                  {stats.total.profit >= 0 ? (
-                    <TrendingUp className="w-4 h-4 text-green-500" />
-                  ) : (
-                    <TrendingDown className="w-4 h-4 text-red-500" />
-                  )}
-                  <span>Revenue - Dépenses</span>
-                </div>
+                <p className="text-sm text-gray-400">Commandes de test QA exclues du total</p>
               </div>
             </CardContent>
           </Card>
@@ -278,49 +274,13 @@ export default function ConversionsTracker() {
         {/* By Site */}
         <Card className="bg-gray-800 border-gray-700 mb-8">
           <CardHeader>
-            <CardTitle className="text-white">Performance par Site</CardTitle>
+            <CardTitle className="text-white">Attribution par site indisponible</CardTitle>
             <CardDescription className="text-gray-400">
-              Répartition estimée des conversions
+              Aucune répartition APEX/Coaching n'est inventée à partir des commandes.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div>
-                <h3 className="text-xl font-semibold text-[#FCDD00] mb-4">🔬 APEXLABS</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Leads</span>
-                    <span className="text-white font-semibold">{stats.bySite.apex.leads}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Achats</span>
-                    <span className="text-white font-semibold">{stats.bySite.apex.purchases}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Revenue</span>
-                    <span className="text-white font-semibold">{formatCurrency(stats.bySite.apex.revenue)}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-xl font-semibold text-[#FCDD00] mb-4">💪 ACHZOD COACHING</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Leads</span>
-                    <span className="text-white font-semibold">{stats.bySite.coaching.leads}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Achats</span>
-                    <span className="text-white font-semibold">{stats.bySite.coaching.purchases}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Revenue</span>
-                    <span className="text-white font-semibold">{formatCurrency(stats.bySite.coaching.revenue)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <p className="text-gray-300">Relie GA4 et Search Console pour comparer SEO, campagnes et achats avec une source vérifiable.</p>
           </CardContent>
         </Card>
 
@@ -337,7 +297,7 @@ export default function ConversionsTracker() {
                 <CardTitle className="text-white">Détails Meta Ads</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                {!stats.sources.metaAvailable ? <p className="text-gray-400">Données Meta indisponibles : compte non connecté ou réponse API en échec.</p> : <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                   <div>
                     <p className="text-gray-400 text-sm">Impressions</p>
                     <p className="text-2xl font-bold text-white">{formatNumber(stats.meta.impressions)}</p>
@@ -362,7 +322,7 @@ export default function ConversionsTracker() {
                     <p className="text-gray-400 text-sm">Coût/Achat</p>
                     <p className="text-2xl font-bold text-white">{formatCurrency(stats.meta.costPerPurchase)}</p>
                   </div>
-                </div>
+                </div>}
               </CardContent>
             </Card>
           </TabsContent>
@@ -373,32 +333,7 @@ export default function ConversionsTracker() {
                 <CardTitle className="text-white">Détails Google Ads</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  <div>
-                    <p className="text-gray-400 text-sm">Impressions</p>
-                    <p className="text-2xl font-bold text-white">{formatNumber(stats.google.impressions)}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400 text-sm">Clics</p>
-                    <p className="text-2xl font-bold text-white">{formatNumber(stats.google.clicks)}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400 text-sm">CTR</p>
-                    <p className="text-2xl font-bold text-white">{stats.google.ctr.toFixed(2)}%</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400 text-sm">CPC</p>
-                    <p className="text-2xl font-bold text-white">{formatCurrency(stats.google.cpc)}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400 text-sm">Coût/Lead</p>
-                    <p className="text-2xl font-bold text-white">{formatCurrency(stats.google.costPerLead)}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400 text-sm">Coût/Achat</p>
-                    <p className="text-2xl font-bold text-white">{formatCurrency(stats.google.costPerPurchase)}</p>
-                  </div>
-                </div>
+                <p className="text-gray-400">Google Ads n'est pas connecté à ce tableau. Les commandes APEX ci-dessus ne sont pas attribuées à Google Ads.</p>
               </CardContent>
             </Card>
           </TabsContent>
@@ -410,14 +345,10 @@ export default function ConversionsTracker() {
             <CardTitle className="text-yellow-500">⚙️ Configuration requise</CardTitle>
           </CardHeader>
           <CardContent className="text-gray-300 space-y-2">
-            <p>Pour activer le tracking temps réel, configure les variables d'environnement:</p>
+            <p>Les commandes payées proviennent de la base APEX. Les chiffres Meta nécessitent l'accès au compte publicitaire ; Google Ads, GA4 et Search Console ne sont pas reliés ici.</p>
             <ul className="list-disc list-inside space-y-1 text-sm">
               <li><code>META_ACCESS_TOKEN</code> - Token d'accès Meta Marketing API</li>
               <li><code>META_AD_ACCOUNT_ID</code> - ID du compte pub Meta (sans "act_")</li>
-              <li><code>GOOGLE_ADS_CLIENT_ID</code> - OAuth2 Client ID Google</li>
-              <li><code>GOOGLE_ADS_CLIENT_SECRET</code> - OAuth2 Client Secret</li>
-              <li><code>GOOGLE_ADS_REFRESH_TOKEN</code> - Refresh Token</li>
-              <li><code>GOOGLE_ADS_CUSTOMER_ID</code> - Customer ID Google Ads</li>
             </ul>
           </CardContent>
         </Card>
