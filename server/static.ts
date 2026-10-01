@@ -1079,7 +1079,6 @@ ${renderPillarLinksHtml()}
 <h2>Articles a lire</h2>
 <ul>
 ${sorted
-  .slice(0, 50)
   .map(
     (a) =>
       `<li><a href="${BASE_URL}/blog/${esc(encodePathSegment(a.slug))}">${esc(a.title)}</a> , ${esc(
