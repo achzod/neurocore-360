@@ -93,6 +93,7 @@ assert.match(routesSource, /evaluatePeptidesFulfillmentInvariant\(/);
 assert.match(routesSource, /peptidesFulfillmentState", "ACTION_REQUIRED"/);
 assert.match(routesSource, /\/api\/admin\/peptides-fulfillment-incidents/);
 assert.match(routesSource, /peptidesPreviousInvalidReportId/);
+assert.match(routesSource, /hasLatestTerminalUnsubscribeSignal/);
 assert.match(engineSource, /PROTOCOLE OBLIGATOIRE SI TESTOSTERONE BASSE CONFIRMEE/i);
 assert.match(engineSource, /1\. Enclomiphene Citrate/);
 assert.match(engineSource, /2\. KissPeptin-10/);

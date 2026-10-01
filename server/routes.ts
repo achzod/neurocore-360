@@ -15218,7 +15218,11 @@ export async function registerRoutes(
           : null;
         if (reportLookupFailed) continue;
         const deliveryAccepted = await storage.hasPeptidesDeliveryEmailBeenSent(email).catch(() => false);
-        const recipientUnsubscribed = await storage.isEmailUnsubscribed(email).catch(() => false);
+        const [locallyUnsubscribed, providerUnsubscribeSignal] = await Promise.all([
+          storage.isEmailUnsubscribed(email).catch(() => false),
+          storage.hasLatestTerminalUnsubscribeSignal(email).catch(() => false),
+        ]);
+        const recipientUnsubscribed = locallyUnsubscribed || providerUnsubscribeSignal;
         const fulfillmentIncident = evaluatePeptidesFulfillmentInvariant({
           paidAt: order.paidAt,
           reportId: meta?.peptidesReportId,
