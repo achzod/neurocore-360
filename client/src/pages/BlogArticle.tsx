@@ -298,7 +298,6 @@ export default function BlogArticlePage() {
         description: article.excerpt,
         image,
         datePublished: article.date,
-        dateModified: article.date,
         author: {
           "@type": "Person",
           name: article.author || "ACHZOD",
@@ -372,6 +371,10 @@ export default function BlogArticlePage() {
       </div>
     );
   }
+
+  // The page already renders the article title as its H1. Article Markdown
+  // starts with another H1, which the server-rendered version also removes.
+  const articleBody = article.content.replace(/^\s*#\s+[^\r\n]+(?:\r?\n)+/, "");
 
   // Get related articles (same category, excluding current)
   const relatedArticles = articles.filter(
@@ -569,7 +572,7 @@ export default function BlogArticlePage() {
                     ),
                   }}
                 >
-                  {article.content}
+                  {articleBody}
                 </ReactMarkdown>
               </div>
 
