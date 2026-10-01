@@ -28,6 +28,8 @@ type BlogConversion = {
   body: string;
   href: string;
   cta: string;
+  offerHref?: string;
+  offerCta?: string;
   offer: string;
   sideStat: string;
   sideLabel: string;
@@ -49,7 +51,9 @@ const CATEGORY_CONVERSION: Record<string, Omit<BlogConversion, "intent">> = {
     title: "Avant de toucher aux PEDs, lis ton contexte complet.",
     body: "Le Peptides Engine et les analyses APEXLABS aident a cadrer les decisions avancees avec donnees, prudence et orientation claire.",
     href: "/peptides-preview?utm_source=blog&utm_medium=article_cta&utm_campaign=pre_peptides_engine",
-    cta: "Voir Peptides Engine",
+    cta: "Tester l'aperçu gratuit",
+    offerHref: "/offers/peptides-engine?utm_source=blog&utm_medium=article_cta&utm_campaign=peptides_offer_intent",
+    offerCta: "Voir l'offre Peptides Engine",
     offer: "Peptides Engine",
     sideStat: "74",
     sideLabel: "molecules",
@@ -487,6 +491,16 @@ export default function BlogArticlePage() {
                     {conversion.cta}
                     <ArrowRight className="h-4 w-4" />
                   </a>
+                  {conversion.offerHref && conversion.offerCta && (
+                    <a
+                      href={conversion.offerHref}
+                      className="inline-flex items-center justify-center gap-2 rounded-sm border border-[#FCDD00]/40 px-5 py-3 text-sm font-semibold text-[#FCDD00] transition-colors hover:bg-[#FCDD00]/10"
+                      onClick={() => trackClick(`blog_cta_intro_${conversion.intent}_offer`, conversion.offerHref)}
+                    >
+                      {conversion.offerCta}
+                      <ArrowRight className="h-4 w-4" />
+                    </a>
+                  )}
                   <a
                     href={whatsappUrl}
                     target="_blank"
@@ -599,6 +613,15 @@ export default function BlogArticlePage() {
                   >
                     {conversion.cta}
                   </a>
+                  {conversion.offerHref && conversion.offerCta && (
+                    <a
+                      href={conversion.offerHref}
+                      className="inline-flex items-center justify-center gap-2 border border-[#FCDD00]/40 px-5 py-3 rounded-sm text-sm font-semibold text-[#FCDD00] hover:bg-[#FCDD00]/10 transition-colors"
+                      onClick={() => trackClick(`blog_cta_end_${conversion.intent}_offer`, conversion.offerHref)}
+                    >
+                      {conversion.offerCta}
+                    </a>
+                  )}
                 </div>
               </div>
 
