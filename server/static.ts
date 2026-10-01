@@ -711,7 +711,6 @@ ${links ? `<nav aria-label="Pages principales"><ul>${links}</ul></nav>` : ""}
         },
       },
       datePublished: date,
-      dateModified: date,
       url,
       mainEntityOfPage: { "@type": "WebPage", "@id": url },
       articleSection: categoryLabel,

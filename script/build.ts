@@ -55,32 +55,32 @@ async function buildAll() {
       .map((segment, index) => (index === 0 ? "" : encodeURIComponent(segment)))
       .join("/")}`;
   const staticPages = [
-    { loc: "/", priority: "1.0", changefreq: "weekly" },
-    { loc: "/offers/discovery-scan", priority: "0.9", changefreq: "monthly" },
-    { loc: "/offers/anabolic-bioscan", priority: "0.9", changefreq: "monthly" },
-    { loc: "/offers/ultimate-scan", priority: "0.9", changefreq: "monthly" },
-    { loc: "/offers/blood-analysis", priority: "0.9", changefreq: "monthly" },
-    { loc: "/offers/formcheck", priority: "0.8", changefreq: "monthly" },
-    { loc: "/offers/peptides-engine", priority: "0.9", changefreq: "monthly" },
-    { loc: "/blog", priority: "0.8", changefreq: "daily" },
-    { loc: "/faq", priority: "0.7", changefreq: "monthly" },
-    { loc: "/press", priority: "0.6", changefreq: "monthly" },
-    { loc: "/deduction-coaching", priority: "0.6", changefreq: "monthly" },
+    "/",
+    "/offers/discovery-scan",
+    "/offers/anabolic-bioscan",
+    "/offers/ultimate-scan",
+    "/offers/blood-analysis",
+    "/offers/formcheck",
+    "/offers/peptides-engine",
+    "/blog",
+    "/faq",
+    "/press",
+    "/deduction-coaching",
   ];
   const pillarPages = [
-    { loc: "/blog/pilier/perte-de-gras", priority: "0.85", changefreq: "weekly" },
-    { loc: "/blog/pilier/testosterone-hormones", priority: "0.85", changefreq: "weekly" },
-    { loc: "/blog/pilier/bilan-sanguin", priority: "0.85", changefreq: "weekly" },
-    { loc: "/blog/pilier/peptides-peds", priority: "0.85", changefreq: "weekly" },
+    "/blog/pilier/perte-de-gras",
+    "/blog/pilier/testosterone-hormones",
+    "/blog/pilier/bilan-sanguin",
+    "/blog/pilier/peptides-peds",
   ];
-  const today = new Date().toISOString().split("T")[0];
+  // No trustworthy modification timestamps are stored for these pages.
+  // Omit lastmod instead of claiming each build or publication date was an edit.
   const sitemapEntries = [...staticPages, ...pillarPages].map(
-    (p) => `  <url><loc>${sitemapLoc(p.loc)}</loc><lastmod>${today}</lastmod><changefreq>${p.changefreq}</changefreq><priority>${p.priority}</priority></url>`
+    (pathname) => `  <url><loc>${sitemapLoc(pathname)}</loc></url>`
   );
   for (const article of articles) {
-    const lastmod = article.date ? new Date(article.date).toISOString().split("T")[0] : today;
     sitemapEntries.push(
-      `  <url><loc>${sitemapLoc(`/blog/${article.slug}`)}</loc><lastmod>${lastmod}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>`
+      `  <url><loc>${sitemapLoc(`/blog/${article.slug}`)}</loc></url>`
     );
   }
 
@@ -105,7 +105,7 @@ async function buildAll() {
     const count = articles.filter((a: any) => a.category === slug).length;
     if (count === 0) continue;
     sitemapEntries.push(
-      `  <url><loc>${sitemapLoc(`/blog/categorie/${slug}`)}</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>`
+      `  <url><loc>${sitemapLoc(`/blog/categorie/${slug}`)}</loc></url>`
     );
   }
   const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemapEntries.join("\n")}\n</urlset>\n`;
