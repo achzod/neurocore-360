@@ -97,12 +97,12 @@ import { isDiscoveryTransactionalAutomationEligible } from "./discoveryAutomatio
 import { isDiscoverySupersededTerminal } from "./discoverySupersededPolicy";
 import {
   generatePeptidesProtocol,
-  checkPeptidesSafetyGate,
   fetchEnclomipheneSourceSnapshot,
   getPeptauraCatalogHealth,
   refreshPeptauraCatalog,
   refreshPeptauraPricingForDelivery,
 } from "./peptidesEngine";
+import { evaluatePeptidesFulfillmentInvariant } from "./peptidesFulfillmentInvariant";
 import {
   evaluatePeptidesGenerationEligibility,
   getPeptidesGenerationCircuitConfig,
@@ -14870,13 +14870,6 @@ export async function registerRoutes(
         return;
       }
 
-      const safetyCheck = checkPeptidesSafetyGate(responses);
-      if (!safetyCheck.safe) {
-        console.warn(`[PeptidesEngine] Safety gate triggered for ${email}: ${safetyCheck.reason}`);
-        res.status(422).json({ error: "safety_gate", message: safetyCheck.reason });
-        return;
-      }
-
       const order = await storage.getOrderByStripeSession(stripeSessionId);
       if (!order || order.productType !== "PEPTIDES_ENGINE" || order.email.trim().toLowerCase() !== email) {
         res.status(404).json({ error: "Commande Peptides Engine introuvable" });
@@ -15111,6 +15104,35 @@ export async function registerRoutes(
     return { due: Date.now() >= scheduledAt.getTime(), scheduledAt };
   }
 
+  async function persistPeptidesFulfillmentIncident(
+    order: any,
+    incident: { code: string; blocksDelivery: boolean; detail: string },
+  ): Promise<void> {
+    const metadata = (order?.metadata as any) || {};
+    const sameIncident = metadata.peptidesFulfillmentIncidentCode === incident.code;
+    const lastAlertMs = new Date(metadata.peptidesFulfillmentIncidentAlertedAt || 0).getTime();
+    const shouldAlert = !sameIncident || !Number.isFinite(lastAlertMs) || Date.now() - lastAlertMs >= 6 * 3600 * 1000;
+
+    await storage.setOrderMetadataKey(order.id, "peptidesFulfillmentIncidentCode", incident.code);
+    await storage.setOrderMetadataKey(order.id, "peptidesFulfillmentIncidentDetail", incident.detail);
+    await storage.setOrderMetadataKey(order.id, "peptidesFulfillmentIncidentAt", new Date().toISOString());
+    await storage.setOrderMetadataKey(order.id, "peptidesFulfillmentState", "ACTION_REQUIRED");
+    if (incident.blocksDelivery) {
+      await storage.setOrderMetadataKey(order.id, "peptidesEmailHold", true);
+      await storage.setOrderMetadataKey(order.id, "peptidesEmailHoldReason", incident.code);
+    }
+
+    if (shouldAlert) {
+      await storage.setOrderMetadataKey(order.id, "peptidesFulfillmentIncidentAlertedAt", new Date().toISOString());
+      const adminEmail = process.env.ADMIN_NOTIF_EMAIL || process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
+      await sendCTAEmail(
+        adminEmail,
+        `[ACTION REQUISE] Peptides Engine ${order.email}`,
+        `Une commande Peptides payee exige une action.\n\nCode: ${incident.code}\nDetail: ${incident.detail}\nOrderId: ${order.id}\nReportId: ${metadata.peptidesReportId || "absent"}\nClient: ${order.email}\n\nL'incident est persiste sur la commande et ne peut plus rester silencieux.`,
+      ).catch((error) => console.error("[Peptides Fulfillment] Admin alert failed:", error));
+    }
+  }
+
   // Auto-recovery: generate missing peptides reports every 5 minutes
   let autoGenRunning = false;
   let autoGenCycleCount = 0;
@@ -15128,6 +15150,22 @@ export async function registerRoutes(
       running: autoGenRunning,
       circuit: getPeptidesGenerationCircuitConfig(),
     });
+  });
+
+  app.get("/api/admin/peptides-fulfillment-incidents", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    const { orders } = await storage.getAllOrders({ limit: 1000, productType: "PEPTIDES_ENGINE" });
+    const incidents = orders
+      .filter((order: any) => (order.metadata as any)?.peptidesFulfillmentState === "ACTION_REQUIRED")
+      .map((order: any) => ({
+        orderId: order.id,
+        email: order.email,
+        reportId: (order.metadata as any)?.peptidesReportId || null,
+        code: (order.metadata as any)?.peptidesFulfillmentIncidentCode || "UNKNOWN",
+        detail: (order.metadata as any)?.peptidesFulfillmentIncidentDetail || "",
+        incidentAt: (order.metadata as any)?.peptidesFulfillmentIncidentAt || null,
+      }));
+    res.json({ total: incidents.length, incidents });
   });
 
   console.log("[AutoGen] ✅ setInterval registered (5min cycle)");
@@ -15166,6 +15204,51 @@ export async function registerRoutes(
         const meta = order.metadata as any;
         const email = order.email;
         if (!email || email.includes("test") || email.includes("debug")) continue;
+
+        // Evaluate paid fulfillment before honoring a pre-existing hold: legacy
+        // empty reports and unsubscribed recipients must become durable,
+        // operator-visible incidents rather than disappear forever.
+        let reportLookupFailed = false;
+        const invariantReport = meta?.peptidesReportId
+          ? await storage.getBurnoutReport(meta.peptidesReportId).catch((error) => {
+              reportLookupFailed = true;
+              console.error(`[AutoGen] Peptides report lookup failed for ${email}:`, error);
+              return null;
+            })
+          : null;
+        if (reportLookupFailed) continue;
+        const deliveryAccepted = await storage.hasPeptidesDeliveryEmailBeenSent(email).catch(() => false);
+        const recipientUnsubscribed = await storage.isEmailUnsubscribed(email).catch(() => false);
+        const fulfillmentIncident = evaluatePeptidesFulfillmentInvariant({
+          paidAt: order.paidAt,
+          reportId: meta?.peptidesReportId,
+          report: (invariantReport?.report as any) || null,
+          deliveryAccepted,
+          recipientUnsubscribed,
+          scheduledAt: meta?.peptidesEmailScheduledAt,
+          now,
+        });
+        if (fulfillmentIncident) {
+          await persistPeptidesFulfillmentIncident(order, fulfillmentIncident);
+          console.error(`[AutoGen] Peptides fulfillment incident ${fulfillmentIncident.code} for ${email}`);
+          if (fulfillmentIncident.code === "INVALID_EMPTY_OR_MEDICAL_REVIEW_REPORT") {
+            await storage.setOrderMetadataKey(order.id, "peptidesPreviousInvalidReportId", String(meta?.peptidesReportId || ""));
+            await storage.setOrderMetadataKey(order.id, "peptidesReportId", "");
+            await storage.setOrderMetadataKey(order.id, "peptidesEmailHold", false);
+            await storage.setOrderMetadataKey(order.id, "peptidesEmailHoldReason", "");
+            await storage.setOrderMetadataKey(order.id, "peptidesFulfillmentState", "REGENERATING");
+            continue;
+          }
+          if (fulfillmentIncident.blocksDelivery) continue;
+        } else if (meta?.peptidesFulfillmentState === "ACTION_REQUIRED") {
+          await storage.setOrderMetadataKey(order.id, "peptidesFulfillmentState", "RESOLVED");
+          await storage.setOrderMetadataKey(order.id, "peptidesFulfillmentResolvedAt", new Date().toISOString());
+          if (["INVALID_EMPTY_OR_MEDICAL_REVIEW_REPORT", "RECIPIENT_UNSUBSCRIBED"].includes(String(meta?.peptidesEmailHoldReason || ""))) {
+            await storage.setOrderMetadataKey(order.id, "peptidesEmailHold", false);
+            await storage.setOrderMetadataKey(order.id, "peptidesEmailHoldReason", "");
+          }
+        }
+
         if (meta?.peptidesEmailHold === true || meta?.peptidesEmailHold === "true") {
           console.log(`[AutoGen] Peptides delivery HOLD for ${email} (order ${order.id})`);
           continue;

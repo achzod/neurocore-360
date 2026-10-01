@@ -1648,13 +1648,9 @@ export async function refreshPeptauraPricingForDelivery(
   consentAccepted: boolean
 ): Promise<PeptidesReport> {
   const report = validateVialsMath(JSON.parse(JSON.stringify(sourceReport)));
-  report.qualityVersion = hasPeptidesHardRedFlag(responses)
-    ? "medical-review-v1"
-    : consentAccepted
-    ? "expert-standard-v1"
-    : String(report.qualityVersion || "").toLowerCase() === "medical-review-v1"
-    ? "medical-review-v1"
-    : "expert-standard-v1";
+  // Delivery refresh never promotes a paid report into a global medical hold.
+  // Concrete incompatibilities remain molecule-scoped in the report content.
+  report.qualityVersion = "expert-standard-v1";
   const context = await buildPeptauraPromptContext(responses);
   report._validationContext = buildPeptidesValidationContext(
     responses,
@@ -1740,26 +1736,6 @@ function cleanReportContent(report: PeptidesReport, firstName: string): Peptides
   report.weeklySchedule = cleanText(report.weeklySchedule);
   report.shoppingList = cleanText(report.shoppingList);
   report.bloodMarkers = (report.bloodMarkers || []).map(cleanText);
-
-  const safetyText = collectClientFacingStrings(report).join("\n");
-  const reportMode = String((report as any).qualityVersion || "");
-  const verificationAction = "(?:valid(?:e|er|ation)|v[ée]rifi(?:e|er|cation)|avis|accord|confirm(?:e|er|ation))";
-  const hasMedicalVerification = new RegExp(
-    `\\b(?:m[ée]decin|pharmacien)\\b[\\s\\S]{0,180}\\b${verificationAction}\\b|\\b${verificationAction}\\b[\\s\\S]{0,180}\\b(?:m[ée]decin|pharmacien)\\b`,
-    "i"
-  ).test(safetyText);
-  if (reportMode === "medical-review-v1"
-    && (!/\b(?:experimental|non approuv[ée]|produit de recherche)\b/i.test(safetyText)
-    || !hasMedicalVerification)) {
-    const safetySection = report.sections.find((section) =>
-      /securite|s[ée]curit[ée]|disclaimer|support|avant de commencer/i.test(`${section.id} ${section.title}`)
-    ) || report.sections.at(-1);
-    if (safetySection) {
-      safetySection.content = cleanText(
-        `${safetySection.content}\n\n${firstName}, je veux etre net sur ce point. Plusieurs molecules citees ici sont experimentales ou non approuvees, avec des donnees humaines encore limitees. Ce rapport ne transforme pas un produit de recherche en traitement valide. Avant tout achat ou toute utilisation, demande a ton medecin ou a ton pharmacien de verifier la molecule, la dose, tes allergies, tes traitements et tes analyses. Sans cet accord, tu suspends la demarche.`
-      );
-    }
-  }
 
   const unresolved = collectClientFacingStrings(report)
     .filter((value) => /[\u2013\u2014]|&(?:mdash|ndash);/i.test(value));
@@ -1896,11 +1872,8 @@ Evite les rafales de titres en majuscules. Utilise des sous-titres seulement qua
 Ne pretends jamais qu'un geste est simple, indolore ou sans risque. Ne rassure jamais avec un nombre invente de personnes qui feraient la meme chose.
 N'invente aucune experience personnelle, aucun diplome et aucune validation medicale.
 
-MODES DE SORTIE
-Mode par defaut: expert-standard-v1.
-Mode exceptionnel: medical-review-v1.
-Tu n'utilises medical-review-v1 QUE si le questionnaire montre au moins un hard red flag clair: cancer actif ou remission recente, grossesse ou allaitement, insuffisance hepatique ou renale severe, pancreatite ou pathologie biliaire majeure selon molecule, maladie cardio serieuse, polytraitement lourd, symptomes alarmants actuels, allergie injectable douteuse ou contexte psychiatrique severe.
-Si aucun hard red flag n'est explicitement present, tu restes en expert-standard-v1.
+MODE DE SORTIE
+Tu utilises toujours expert-standard-v1. Une reponse contradictoire, "other" non documente ou une information manquante devient une clarification courte dans le rapport, jamais un rapport vide, un mode de revue globale ou un blocage de toute la commande.
 
 COHERENCE ET VERIFICATION
 Chaque dose, frequence, duree, quantite totale, format de vial et prix doit etre mathematiquement coherent.
@@ -1913,8 +1886,7 @@ Ce rapport ne remplace ni une ordonnance ni un suivi medical.
 Les produits de recherche et les molecules non approuvees ne doivent jamais etre presentes comme des traitements valides ou comme une automedication sure.
 Retatrutide reste une molecule experimentale. BPC-157, ipamorelin injectable et plusieurs autres peptides ont des donnees humaines de securite limitees ou des risques identifies. Dis le clairement quand ils sont cites.
 En expert-standard-v1, la securite reste discrete: un seul disclaimer final propre suffit. Tu n'inondes pas chaque section de warnings generiques.
-En medical-review-v1, tu peux suspendre les guides pratiques, neutraliser le protocole et renvoyer vers verification medicale explicite.
-En cas de contre-indication, de traitement concomitant, d'allergie, de symptome inhabituel ou de donnee manquante critique, suspends la recommandation et oriente vers le professionnel adapte.
+En cas de danger concret ou de contre-indication etablie, ecarte uniquement la molecule concernee, explique la raison en une alerte breve et poursuis l'analyse des axes compatibles. Ne neutralise jamais tout le rapport a cause d'une case ambigue ou d'une information manquante.
 Ne promets jamais la purete, la sterilite, l'efficacite ou la securite d'un vendeur. Un COA ne prouve pas a lui seul la sterilite du produit recu.
 
 CADRE DE TRAVAIL
@@ -2978,57 +2950,6 @@ async function addBloodAnalysisCredits(
     : [`${credits} credits Blood Analysis ajoutes a ton compte`];
 }
 
-// ─── Safety gate ──────────────────────────────────────────────────────────────
-
-export interface SafetyCheckResult {
-  safe: boolean;
-  reason?: string;
-}
-
-export function checkPeptidesSafetyGate(
-  responses: Record<string, unknown>
-): SafetyCheckResult {
-  const boolish = (v: unknown): boolean => {
-    if (typeof v === "boolean") return v;
-    if (typeof v === "string") {
-      const lower = v.toLowerCase();
-      return lower === "oui" || lower === "yes" || lower === "true";
-    }
-    return false;
-  };
-
-  const stringish = (v: unknown): string => {
-    if (!v) return "";
-    return String(v).toLowerCase();
-  };
-
-  // Cancer check
-  const cancerFields = ["cancer", "antecedentsCancer", "antecedentsMedicaux", "pathologiesChroniques", "pep_conditions"];
-  for (const field of cancerFields) {
-    const val = responses[field];
-    if (boolish(val)) {
-      return {
-        safe: false,
-        reason: "Antécédents de cancer détectés. Les peptides pro-angiogéniques (BPC-157, TB-500) et les sécrétagogues GH sont contre-indiqués. Consulte un oncologue avant toute supplémentation.",
-      };
-    }
-    if (typeof val === "string" && stringish(val).includes("cancer")) {
-      return { safe: false, reason: "Antécédents de cancer détectés. Consulte un oncologue." };
-    }
-    if (Array.isArray(val) && val.some((v: any) => stringish(v).includes("cancer"))) {
-      return { safe: false, reason: "Antécédents de cancer détectés. Consulte un oncologue." };
-    }
-  }
-
-  // Free-text check
-  const antecedents = stringish(responses["antecedentsMedicaux"] || responses["pep_conditions_other"]);
-  if (antecedents.includes("cancer") || antecedents.includes("tumeur") || antecedents.includes("onco")) {
-    return { safe: false, reason: "Antécédents oncologiques détectés. Protocole peptides suspendu par précaution." };
-  }
-
-  return { safe: true };
-}
-
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 export async function generatePeptidesProtocol(
@@ -3331,9 +3252,7 @@ export async function generatePeptidesProtocol(
           ].slice(0, 8).join(" | ")}`
         );
       }
-      report.qualityVersion = hasPeptidesHardRedFlag(responses)
-        ? "medical-review-v1"
-        : "expert-standard-v1";
+      report.qualityVersion = "expert-standard-v1";
       report = repairPeptidesReportContent(report, responses, tier);
       report = cleanReportContent(report, firstName);
       report._validationContext = buildPeptidesValidationContext(

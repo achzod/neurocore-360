@@ -1182,13 +1182,8 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
     errors.push("ajustement de dose contradictoire hors fiche");
   }
 
-  const verificationAction = "(?:valid(?:e|er|ation)|v[ée]rifi(?:e|er|cation)|avis|accord|confirm(?:e|er|ation))";
-  const hasMedicalVerification = new RegExp(
-    `\\b(?:m[ée]decin|pharmacien)\\b[\\s\\S]{0,180}\\b${verificationAction}\\b|\\b${verificationAction}\\b[\\s\\S]{0,180}\\b(?:m[ée]decin|pharmacien)\\b`,
-    "i"
-  ).test(clientFacingText);
-  if (report.qualityVersion === "medical-review-v1" && !hasMedicalVerification) {
-    errors.push("warning de verification medecin ou pharmacien manquant");
+  if (report.qualityVersion === "medical-review-v1") {
+    errors.push("mode medical-review-v1 interdit: regenerer un rapport expert complet");
   }
   if (
     report.qualityVersion === "expert-standard-v1" &&
@@ -1213,14 +1208,10 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
 
   errors.push(...validateReportPersonalization(report));
 
-  const medicalNoBuySuspension = report.qualityVersion === "medical-review-v1"
-    && peptides.length === 0
-    && /aucune (?:administration|injection)[\s\S]{0,240}suspendu/i.test(String(report.weeklySchedule || ""))
-    && /aucun achat de peptide/i.test(String(report.shoppingList || ""));
-  if (peptides.length === 0 && !medicalNoBuySuspension) {
+  if (peptides.length === 0) {
     errors.push("aucun peptide recommande");
   }
-  if (peptides.length < 2 && !medicalNoBuySuspension) {
+  if (peptides.length < 2) {
     warnings.push(`tres peu de peptides (${peptides.length})`);
   }
 

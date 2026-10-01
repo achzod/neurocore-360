@@ -2,12 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { hasPeptidesHardRedFlag, repairPeptidesReportContent } from "./peptidesReportRepair";
 
-test("contradictory none plus another condition forces medical review", () => {
-  assert.equal(hasPeptidesHardRedFlag({ pep_conditions: ["other", "none"] }), true);
+test("contradictory none plus undocumented other never fabricates a medical red flag", () => {
+  assert.equal(hasPeptidesHardRedFlag({ pep_conditions: ["other", "none"] }), false);
 });
 
-test("undocumented other condition forces medical review", () => {
-  assert.equal(hasPeptidesHardRedFlag({ pep_conditions: ["other"], pep_conditions_other: "" }), true);
+test("undocumented other condition remains a clarification instead of a global block", () => {
+  assert.equal(hasPeptidesHardRedFlag({ pep_conditions: ["other"], pep_conditions_other: "" }), false);
 });
 
 test("documented other condition alone does not fabricate a hard red flag", () => {
@@ -39,6 +39,7 @@ test("medical recovery preserves a complete source report instead of injecting a
     pep_conditions: ["other", "none"],
   }, "solo");
   const text = repaired.sections.map((section) => section.content).join("\n");
+  assert.equal(repaired.qualityVersion, "expert-standard-v1");
   assert.match(text, /SENTINEL_BASTIEN_0/);
   assert.doesNotMatch(text, /penicilline|MK-677|SARMs/i);
 });
