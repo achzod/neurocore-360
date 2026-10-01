@@ -85,9 +85,14 @@ assert.match(
 );
 assert.match(
   engineSource,
-  /export async function refreshPeptauraPricingForDelivery[\s\S]{0,500}report\.qualityVersion = hasPeptidesHardRedFlag\(responses\)[\s\S]{0,160}\? "medical-review-v1"[\s\S]{0,160}: consentAccepted[\s\S]{0,120}\? "expert-standard-v1"/,
-  "Le refresh pre-livraison doit recalculer la qualityVersion depuis les hard red flags avant toute promotion standard"
+  /export async function refreshPeptauraPricingForDelivery[\s\S]{0,700}report\.qualityVersion = "expert-standard-v1"/,
+  "Le refresh pre-livraison ne doit jamais recreer un rapport vide medical-review"
 );
+assert.doesNotMatch(publicCreateSource, /checkPeptidesSafetyGate\(/);
+assert.match(routesSource, /evaluatePeptidesFulfillmentInvariant\(/);
+assert.match(routesSource, /peptidesFulfillmentState", "ACTION_REQUIRED"/);
+assert.match(routesSource, /\/api\/admin\/peptides-fulfillment-incidents/);
+assert.match(routesSource, /peptidesPreviousInvalidReportId/);
 assert.match(engineSource, /PROTOCOLE OBLIGATOIRE SI TESTOSTERONE BASSE CONFIRMEE/i);
 assert.match(engineSource, /1\. Enclomiphene Citrate/);
 assert.match(engineSource, /2\. KissPeptin-10/);
@@ -812,8 +817,12 @@ const hardFlagReport = repairPeptidesReportContent(
   { pep_name: "Luca", pep_country: "France", pep_conditions: "Cancer en remission recente" },
   "solo"
 ) as any;
-assert.equal(hardFlagReport.qualityVersion, "medical-review-v1");
-assert.equal(hardFlagReport.sections.length, 15);
+assert.equal(
+  hardFlagReport.qualityVersion,
+  "expert-standard-v1",
+  "Tout ancien rapport medical-review doit etre restaure en rapport expert complet"
+);
+assert.ok(hardFlagReport.sections.length >= 12);
 assert.doesNotMatch(
   hardFlagReport.sections.map((section: any) => `${section.title}\n${section.content}`).join("\n"),
   /\b2 credits Blood Analysis\b/i,

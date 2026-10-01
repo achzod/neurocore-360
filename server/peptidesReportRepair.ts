@@ -250,14 +250,6 @@ function hasAnyPattern(value: unknown, pattern: RegExp): boolean {
 }
 
 export function hasPeptidesHardRedFlag(responses: Record<string, unknown>): boolean {
-  const conditions = Array.isArray(responses.pep_conditions)
-    ? responses.pep_conditions.map((value) => sanitizeClientFacingText(String(value || "")).toLowerCase()).filter(Boolean)
-    : String(responses.pep_conditions || "").split(/[,;|]/).map((value) => sanitizeClientFacingText(value).toLowerCase().trim()).filter(Boolean);
-  const hasNoneConflict = conditions.includes("none") && conditions.some((value) => value !== "none");
-  const hasUndocumentedOther = conditions.includes("other")
-    && !String(responses.pep_conditions_other || "").trim();
-  if (hasNoneConflict || hasUndocumentedOther) return true;
-
   const hardRedFlag = /(cancer|tumeur|oncolog|chemio|radioth|grossesse|enceinte|allait|pancreat|insuffisance\s+(?:renale|hepatique)|cirrhose|hepatite\s+active|insuffisance\s+cardiaque|arythmi|bipolaire|schizoph|psychose)/i;
   const importantFields = [
     responses.pep_conditions,
@@ -1577,31 +1569,15 @@ export function repairPeptidesReportContent(
 
   report.clientName = sanitizeClientFacingText(firstName);
   if (tier) report.tier = sanitizeClientFacingText(tier);
-  if (report.qualityVersion === "medical-review-v1" && hasPeptidesHardRedFlag(responses)) {
-    (report as any).qualityVersion = "medical-review-v1";
-    cleanUnsafePeptideFields(report);
-    anchorExpertPeptideRationales(report, responses);
-    const existingSections = Array.isArray(report.sections) ? report.sections : [];
-    const existingChars = existingSections.reduce((sum, section) => sum + String(section?.content || "").length, 0);
-    report.sections = existingSections.length >= 15 && existingChars >= 30_000
-      ? existingSections.map((section) => ({
-          ...section,
-          title: sanitizeClientFacingText(String(section.title || "")),
-          content: sanitizeClientFacingText(String(section.content || "")),
-        }))
-      : buildSections(report, firstName);
-    report.shoppingList = sanitizeClientFacingText(liveShoppingLines(report));
-    normalizeTierCreditClaims(report, String(tier || report.tier || ""));
-    normalizeSingleVialGrammar(report);
-  } else {
-    (report as any).qualityVersion = "expert-standard-v1";
-    repairStandardReportContent(
-      report,
-      firstName,
-      String(tier || report.tier || ""),
-      responses
-    );
-  }
+  // Legacy medical-review artifacts are upgraded in place. Report repair must
+  // never preserve or recreate the empty/global-hold mode.
+  (report as any).qualityVersion = "expert-standard-v1";
+  repairStandardReportContent(
+    report,
+    firstName,
+    String(tier || report.tier || ""),
+    responses
+  );
 
   const totalChars = (report.sections || []).reduce((sum, section) => sum + section.content.length, 0);
   if (totalChars < 30_000) {

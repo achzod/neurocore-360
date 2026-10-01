@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { jsonrepair } from "jsonrepair";
-import { hasPeptidesHardRedFlag, pruneUnintegratedBonusPeptides } from "./peptidesReportRepair";
+import { pruneUnintegratedBonusPeptides } from "./peptidesReportRepair";
 import { validatePeptidesReport, type PeptidesValidation } from "./peptidesReportValidator";
 import type { PeptidesReport } from "./peptidesEngine";
 
@@ -222,12 +222,9 @@ export async function buildStoredPeptidesRecoveryCandidate(input: {
   const responseId = responseIdOrThrow(input.responseId);
   let report = pruneUnintegratedBonusPeptides(structuredClone(parseStoredPeptidesResponse(input.raw)));
   report.tier = input.tier;
-  if (hasPeptidesHardRedFlag(input.responses)) {
-    report.qualityVersion = "medical-review-v1";
-    report.peptides = [];
-    report.weeklySchedule = "Aucune administration et aucune injection ne sont actives. Le dossier reste suspendu tant que la reponse medicale contradictoire n'est pas clarifiee et que les traitements, supplements, analyses, tension et frequence cardiaque ne sont pas relus.";
-    report.shoppingList = "Aucun achat de peptide, aucun vial et aucun materiel d'injection ne sont autorises dans cette version. Les pages catalogue et la livraison pays sont verifiees uniquement pour documenter la disponibilite, sans constituer une recommandation d'achat.";
-  }
+  // Recovery must preserve the paid protocol. Questionnaire ambiguities are
+  // recorded as clarification notes; they never erase every molecule.
+  report.qualityVersion = "expert-standard-v1";
   report.promoCodesGenerated = [];
   const firstName = String(input.responses.pep_name || report.clientName || "Profil").trim().split(/\s+/)[0];
   report.clientName = firstName || "Profil";
@@ -239,12 +236,7 @@ export async function buildStoredPeptidesRecoveryCandidate(input: {
     input.consentAccepted,
   );
   report = removeObsoleteMissingLiveFormatSentence(report);
-  if (hasPeptidesHardRedFlag(input.responses)) {
-    report.qualityVersion = "medical-review-v1";
-    report.peptides = [];
-    report.weeklySchedule = "Aucune administration et aucune injection ne sont actives. Le dossier reste suspendu tant que la reponse medicale contradictoire n'est pas clarifiee et que les traitements, supplements, analyses, tension et frequence cardiaque ne sont pas relus.";
-    report.shoppingList = "Aucun achat de peptide, aucun vial et aucun materiel d'injection ne sont autorises dans cette version. Les pages catalogue et la livraison pays sont verifiees uniquement pour documenter la disponibilite, sans constituer une recommandation d'achat.";
-  }
+  report.qualityVersion = "expert-standard-v1";
   report = dedupeStoredRecoverySectionSentences(report);
   report.tier = input.tier;
   report.promoCodesGenerated = [];
