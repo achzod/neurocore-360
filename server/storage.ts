@@ -20,6 +20,7 @@ import type {
 } from "@shared/schema";
 import { ProductDisplayNames, ProductPriceCents } from "@shared/schema";
 import { calculateScoresFromResponses, generateFullAnalysis } from "./analysisEngine";
+import { isTerminalUnsubscribeSignal } from "./emailDeliveryFailure";
 import type {
   PeptidesGenerationAttemptClaim,
   PeptidesGenerationCircuitConfig,
@@ -249,6 +250,8 @@ export interface IStorage {
   getEmailTrackingForAudit(auditId: string): Promise<EmailTracking[]>;
   /** Returns true if a peptides delivery email (subject contains "protocole peptides") has been sent to this recipient */
   hasPeptidesDeliveryEmailBeenSent(email: string): Promise<boolean>;
+  /** Returns true when the recipient's latest provider event is a terminal unsubscribe signal. */
+  hasLatestTerminalUnsubscribeSignal(email: string): Promise<boolean>;
   hasPeptidesOrderConfirmationBeenSent(email: string): Promise<boolean>;
   /** Returns true if a blood analysis HTML email has already been tracked for this report (audit_id) */
   hasBloodAnalysisEmailBeenSentForReport(reportId: string): Promise<boolean>;
@@ -940,6 +943,17 @@ export class MemStorage implements IStorage {
         && /protocole peptides|peptides personnalis/i.test(String(t.subject || ""))
         && !["failed", "auth_failed", "unsubscribed"].includes(String(t.sendpulseStatus || "").toLowerCase())
     );
+  }
+
+  async hasLatestTerminalUnsubscribeSignal(email: string): Promise<boolean> {
+    const latest = Array.from(this.emailTrackings.values())
+      .filter((tracking: any) => String(tracking.recipientEmail || "").toLowerCase() === email.toLowerCase())
+      .sort((a: any, b: any) => new Date(b.sentAt || 0).getTime() - new Date(a.sentAt || 0).getTime())[0] as any;
+    if (!latest) return false;
+    return isTerminalUnsubscribeSignal({
+      sendpulseStatus: latest.sendpulseStatus,
+      sendpulseError: latest.sendpulseError,
+    });
   }
 
   async hasPeptidesOrderConfirmationBeenSent(email: string): Promise<boolean> {
@@ -2816,6 +2830,28 @@ export class PgStorage implements IStorage {
     } catch (err) {
       // If subject column doesn't exist in an older DB, fall back to type-only check (less strict)
       console.warn("[EmailTracking] hasPeptidesDeliveryEmailBeenSent fallback (subject column missing?):", err);
+      return false;
+    }
+  }
+
+  async hasLatestTerminalUnsubscribeSignal(email: string): Promise<boolean> {
+    try {
+      const result = await pool.query(
+        `SELECT sendpulse_status, sendpulse_error
+           FROM email_tracking
+          WHERE LOWER(recipient_email) = LOWER($1)
+          ORDER BY sent_at DESC
+          LIMIT 1`,
+        [email]
+      );
+      const latest = result.rows[0];
+      if (!latest) return false;
+      return isTerminalUnsubscribeSignal({
+        sendpulseStatus: latest.sendpulse_status,
+        sendpulseError: latest.sendpulse_error,
+      });
+    } catch (err) {
+      console.warn("[EmailTracking] terminal unsubscribe lookup failed:", err);
       return false;
     }
   }
