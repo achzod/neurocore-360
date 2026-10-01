@@ -65,6 +65,24 @@ export function trackClick(buttonName: string, destination?: string) {
   });
 }
 
+// Keep the existing click event for historical reports while making blog CTA
+// traffic identifiable by event name in GA4's standard Events report.
+export function trackBlogCtaClick(
+  intent: string,
+  placement: 'intro' | 'end' | 'category',
+  variant: 'primary' | 'offer',
+  destination: string,
+) {
+  const label = `blog_cta_${placement}_${intent}${variant === 'offer' ? '_offer' : ''}`;
+  trackClick(label, destination);
+  gtag('event', 'blog_cta_click', {
+    cta_placement: placement,
+    cta_variant: variant,
+    offer_intent: intent,
+    link_url: destination,
+  });
+}
+
 // Keep funnel events separate from Lead/Purchase conversions. No email or
 // questionnaire answers are sent to analytics.
 export type DiscoveryFunnelStep =
