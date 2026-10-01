@@ -17,7 +17,7 @@ import { BLOG_CATEGORIES, type BlogArticle } from "@/data/blogTypes";
 import ReactMarkdown from "react-markdown";
 import { useEffect, useMemo, useState } from "react";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
-import { trackClick, trackWhatsAppClick } from "@/lib/analytics";
+import { trackBlogCtaClick, trackWhatsAppClick } from "@/lib/analytics";
 
 const SITE_ORIGIN = "https://apexlabs.achzodcoaching.com";
 
@@ -489,7 +489,7 @@ export default function BlogArticlePage() {
                   <a
                     href={conversion.href}
                     className="inline-flex items-center justify-center gap-2 rounded-sm bg-[#FCDD00] px-5 py-3 text-sm font-bold text-black transition-colors hover:bg-[#fce844]"
-                    onClick={() => trackClick(`blog_cta_intro_${conversion.intent}`, conversion.href)}
+                    onClick={() => trackBlogCtaClick(conversion.intent, "intro", "primary", conversion.href)}
                   >
                     {conversion.cta}
                     <ArrowRight className="h-4 w-4" />
@@ -498,7 +498,7 @@ export default function BlogArticlePage() {
                     <a
                       href={conversion.offerHref}
                       className="inline-flex items-center justify-center gap-2 rounded-sm border border-[#FCDD00]/40 px-5 py-3 text-sm font-semibold text-[#FCDD00] transition-colors hover:bg-[#FCDD00]/10"
-                      onClick={() => trackClick(`blog_cta_intro_${conversion.intent}_offer`, conversion.offerHref)}
+                      onClick={() => trackBlogCtaClick(conversion.intent, "intro", "offer", conversion.offerHref)}
                     >
                       {conversion.offerCta}
                       <ArrowRight className="h-4 w-4" />
@@ -612,7 +612,7 @@ export default function BlogArticlePage() {
                   <a
                     href={conversion.href}
                     className="inline-flex items-center justify-center gap-2 bg-[#FCDD00] text-black px-5 py-3 rounded-sm font-bold text-sm hover:bg-[#fce844] transition-colors"
-                    onClick={() => trackClick(`blog_cta_end_${conversion.intent}`, conversion.href)}
+                    onClick={() => trackBlogCtaClick(conversion.intent, "end", "primary", conversion.href)}
                   >
                     {conversion.cta}
                   </a>
@@ -620,7 +620,7 @@ export default function BlogArticlePage() {
                     <a
                       href={conversion.offerHref}
                       className="inline-flex items-center justify-center gap-2 border border-[#FCDD00]/40 px-5 py-3 rounded-sm text-sm font-semibold text-[#FCDD00] hover:bg-[#FCDD00]/10 transition-colors"
-                      onClick={() => trackClick(`blog_cta_end_${conversion.intent}_offer`, conversion.offerHref)}
+                      onClick={() => trackBlogCtaClick(conversion.intent, "end", "offer", conversion.offerHref)}
                     >
                       {conversion.offerCta}
                     </a>
@@ -730,7 +730,7 @@ export default function BlogArticlePage() {
                     <a
                       href={conversion.href}
                       className="inline-flex items-center gap-3 px-8 py-4 bg-amber-500 text-black text-xs font-black uppercase tracking-[0.2em] hover:bg-amber-400 transition-all rounded-sm shadow-[0_0_20px_rgba(245,158,11,0.2)]"
-                      onClick={() => trackClick(`blog_cta_category_${conversion.intent}`, conversion.href)}
+                      onClick={() => trackBlogCtaClick(conversion.intent, "category", "primary", conversion.href)}
                     >
                       {conversion.cta}
                       <ArrowRight className="h-4 w-4" />
