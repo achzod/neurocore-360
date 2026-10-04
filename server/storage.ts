@@ -25,6 +25,7 @@ import type {
   PeptidesGenerationAttemptClaim,
   PeptidesGenerationCircuitConfig,
 } from "./peptidesGenerationCircuitBreaker";
+import { claimPendingGenericReportJob } from "./reportJobStorageSafety";
 
 // Configuration de la connexion PostgreSQL
 const getDatabaseUrl = (): string => {
@@ -227,6 +228,7 @@ export interface IStorage {
   getReportJob(auditId: string): Promise<ReportJob | undefined>;
   getActiveReportJobs(): Promise<ReportJob[]>;
   createOrUpdateReportJob(job: Partial<ReportJob> & { auditId: string }): Promise<ReportJob>;
+  claimPendingReportJob(auditId: string): Promise<ReportJob | undefined>;
   updateReportJobProgress(auditId: string, progress: number, currentSection: string): Promise<void>;
   completeReportJob(auditId: string): Promise<void>;
   failReportJob(auditId: string, error: string): Promise<void>;
@@ -808,6 +810,7 @@ export class MemStorage implements IStorage {
   async createOrUpdateReportJob(job: Partial<ReportJob> & { auditId: string }): Promise<ReportJob> {
     return { auditId: job.auditId, status: 'pending', progress: 0, currentSection: '', error: null, attemptCount: 0, startedAt: new Date(), updatedAt: new Date(), lastProgressAt: new Date(), completedAt: null };
   }
+  async claimPendingReportJob(_auditId: string): Promise<ReportJob | undefined> { return undefined; }
   async updateReportJobProgress(_auditId: string, _progress: number, _currentSection: string): Promise<void> {}
   async completeReportJob(_auditId: string): Promise<void> {}
   async failReportJob(_auditId: string, _error: string): Promise<void> {}
@@ -2610,6 +2613,11 @@ export class PgStorage implements IStorage {
       );
       return this.rowToReportJob(result.rows[0]);
     }
+  }
+
+  async claimPendingReportJob(auditId: string): Promise<ReportJob | undefined> {
+    const claimed = await claimPendingGenericReportJob(pool, auditId);
+    return claimed ? this.rowToReportJob(claimed) : undefined;
   }
 
   async updateReportJobProgress(auditId: string, progress: number, currentSection: string): Promise<void> {
