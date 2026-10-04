@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { evaluatePeptidesFulfillmentInvariant } from "./peptidesFulfillmentInvariant";
+import {
+  evaluatePeptidesFulfillmentInvariant,
+  shouldAlertPeptidesFulfillmentIncident,
+} from "./peptidesFulfillmentInvariant";
 
 const now = new Date("2026-10-01T20:00:00.000Z");
 const validReport = {
@@ -73,4 +76,26 @@ test("passes a valid accepted delivery", () => {
     scheduledAt: "2026-10-01T19:00:00.000Z",
     now,
   }), null);
+});
+
+test("alerts once while the same fulfillment incident remains unresolved", () => {
+  assert.equal(shouldAlertPeptidesFulfillmentIncident({}, "RECIPIENT_UNSUBSCRIBED"), true);
+  assert.equal(shouldAlertPeptidesFulfillmentIncident({
+    peptidesFulfillmentState: "ACTION_REQUIRED",
+    peptidesFulfillmentIncidentCode: "RECIPIENT_UNSUBSCRIBED",
+    peptidesFulfillmentIncidentAlertedAt: "2026-10-04T15:37:00.674Z",
+  }, "RECIPIENT_UNSUBSCRIBED"), false);
+});
+
+test("alerts again only after resolution or when the incident code changes", () => {
+  const prior = {
+    peptidesFulfillmentState: "RESOLVED",
+    peptidesFulfillmentIncidentCode: "RECIPIENT_UNSUBSCRIBED",
+    peptidesFulfillmentIncidentAlertedAt: "2026-10-04T15:37:00.674Z",
+  };
+  assert.equal(shouldAlertPeptidesFulfillmentIncident(prior, "RECIPIENT_UNSUBSCRIBED"), true);
+  assert.equal(shouldAlertPeptidesFulfillmentIncident({
+    ...prior,
+    peptidesFulfillmentState: "ACTION_REQUIRED",
+  }, "DELIVERY_OVERDUE"), true);
 });

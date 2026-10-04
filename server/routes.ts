@@ -103,7 +103,10 @@ import {
   refreshPeptauraCatalog,
   refreshPeptauraPricingForDelivery,
 } from "./peptidesEngine";
-import { evaluatePeptidesFulfillmentInvariant } from "./peptidesFulfillmentInvariant";
+import {
+  evaluatePeptidesFulfillmentInvariant,
+  shouldAlertPeptidesFulfillmentIncident,
+} from "./peptidesFulfillmentInvariant";
 import {
   evaluatePeptidesGenerationEligibility,
   getPeptidesGenerationCircuitConfig,
@@ -15252,9 +15255,7 @@ export async function registerRoutes(
     incident: { code: string; blocksDelivery: boolean; detail: string },
   ): Promise<void> {
     const metadata = (order?.metadata as any) || {};
-    const sameIncident = metadata.peptidesFulfillmentIncidentCode === incident.code;
-    const lastAlertMs = new Date(metadata.peptidesFulfillmentIncidentAlertedAt || 0).getTime();
-    const shouldAlert = !sameIncident || !Number.isFinite(lastAlertMs) || Date.now() - lastAlertMs >= 6 * 3600 * 1000;
+    const shouldAlert = shouldAlertPeptidesFulfillmentIncident(metadata, incident.code);
 
     await storage.setOrderMetadataKey(order.id, "peptidesFulfillmentIncidentCode", incident.code);
     await storage.setOrderMetadataKey(order.id, "peptidesFulfillmentIncidentDetail", incident.detail);
