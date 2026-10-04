@@ -77,6 +77,7 @@ import {
   buildPeptidesCoachingDeductionBlock,
 } from "./cta";
 import { BLOOD_ANALYSIS_PURCHASE_CREDITS, clarifyBloodPurchaseEmail } from "./bloodOffer";
+import { buildPaidOrderNotificationPlan } from "./paidOrderNotifications";
 
 import { registerKnowledgeRoutes } from "./knowledge";
 import { registerBloodAnalysisRoutes } from "./blood-analysis/routes";
@@ -608,6 +609,25 @@ export async function registerRoutes(
     opts?: { logPrefix?: string; bypassClaim?: boolean }
   ): Promise<{ sent: boolean; skipped?: string }> {
     const prefix = opts?.logPrefix || "[SafeSend]";
+
+    // A paid report under manual review must remain impossible to deliver from
+    // every path (inline generation, scheduled cron, admin resend, recovery).
+    // The hold lives on the linked order so it survives report regeneration.
+    const holdResult = await pool.query(
+      `SELECT metadata->>'auditEmailHold' AS hold,
+              metadata->>'auditEmailHoldReason' AS reason
+         FROM orders
+        WHERE audit_id = $1
+        ORDER BY created_at DESC
+        LIMIT 1`,
+      [auditId],
+    ).catch(() => ({ rows: [] as any[] }));
+    if (String(holdResult.rows[0]?.hold || "").toLowerCase() === "true") {
+      const reason = String(holdResult.rows[0]?.reason || "manual_review");
+      console.warn(`${prefix} 🚫 Delivery hold active for audit ${auditId}: ${reason}`);
+      await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" }).catch(() => {});
+      return { sent: false, skipped: `delivery_hold:${reason}` };
+    }
 
     if (!opts?.bypassClaim) {
       // A READY write from a generator must never bypass a future delivery
@@ -4783,6 +4803,65 @@ export async function registerRoutes(
     }
   };
 
+  type PaidOrderForNotification = NonNullable<Awaited<ReturnType<typeof storage.getOrder>>>;
+
+  const ensurePaidOrderNotifications = async (
+    order: PaidOrderForNotification,
+  ): Promise<void> => {
+    if (order.status !== "paid" || !["PREMIUM", "ELITE"].includes(order.productType)) return;
+    const plan = buildPaidOrderNotificationPlan(order);
+    if (!plan) return;
+
+    await runOnceOnOrder(order.id, "adminPaymentNotifSentAt", async () => {
+      const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
+      return sendCTAEmail(adminEmail, plan.adminSubject, plan.adminMessage);
+    });
+
+    await runOnceOnOrder(order.id, "customerConfirmEmailSentAt", async () => {
+      return sendCTAEmail(plan.clientEmail, plan.customerSubject, plan.customerMessage);
+    });
+  };
+
+  let paidOrderNotificationRecoveryRunning = false;
+  setInterval(async () => {
+    if (paidOrderNotificationRecoveryRunning) return;
+    paidOrderNotificationRecoveryRunning = true;
+    try {
+      const candidates = await pool.query(
+        `SELECT id
+           FROM orders
+          WHERE status = 'paid'
+            AND product_type IN ('PREMIUM', 'ELITE')
+            AND created_at >= NOW() - INTERVAL '72 hours'
+            AND (
+              COALESCE(metadata->>'adminPaymentNotifSentAt', '') = ''
+              OR COALESCE(metadata->>'customerConfirmEmailSentAt', '') = ''
+            )
+            AND (
+              COALESCE(metadata->>'paidNotificationLastAttemptAt', '') = ''
+              OR (metadata->>'paidNotificationLastAttemptAt')::timestamptz <= NOW() - INTERVAL '30 minutes'
+            )
+          ORDER BY created_at ASC
+          LIMIT 20`,
+      );
+      for (const row of candidates.rows) {
+        await pool.query(
+          `UPDATE orders
+              SET metadata = COALESCE(metadata, '{}'::jsonb)
+                || jsonb_build_object('paidNotificationLastAttemptAt', NOW()::text)
+            WHERE id = $1`,
+          [row.id],
+        );
+        const order = await storage.getOrder(String(row.id));
+        if (order) await ensurePaidOrderNotifications(order);
+      }
+    } catch (error) {
+      console.error("[PaidOrderNotificationRecovery] Cycle failed:", error);
+    } finally {
+      paidOrderNotificationRecoveryRunning = false;
+    }
+  }, 15 * 60 * 1000).unref();
+
   // Damien G. 2026-04-20 paid 59 EUR for Anabolic Bioscan with email
   // "damiengil09700@gmailcom" (missing dot before com). Our previous check
   // was email.includes("@") which passes a malformed address. We now require
@@ -5543,7 +5622,9 @@ export async function registerRoutes(
     // Clean up questionnaire progress now that audit is created
     await storage.deleteProgress(email).catch(() => {});
 
-    // Envoyer notification admin immédiatement à la création (pas à la livraison)
+    // Notify admin that the audit exists. Payment + customer confirmations are
+    // reconciled separately and persisted on the order, so a provider outage
+    // cannot make either notification disappear permanently.
     const clientName = (responses as any)?.prenom || (responses as any)?.name || email.split('@')[0];
     console.log(`[Admin Email] 📧 Triggering admin notification for audit ${audit.id}...`);
     sendAdminEmailNewAudit(email, clientName, planType, audit.id)
@@ -5557,16 +5638,10 @@ export async function registerRoutes(
       .catch((err) => {
         console.error(`[Admin Email] ❌ Error in admin notification for ${audit.id}:`, err);
       });
-
-    // Send order confirmation email to client (don't leave them in the dark)
-    const promoByType: Record<string, { code: string; label: string }> = {
-      ELITE: { code: "ULTIMATE79", label: "79€ déduits de ta formule coaching (Essential/Elite/Private Lab)" },
-      PREMIUM: { code: "BIOSCAN59", label: "59€ déduits de ta formule coaching (Essential/Elite/Private Lab)" },
-    };
-    const promo = promoByType[planType];
-    const productLabel = planType === "ELITE" ? "Ultimate Scan" : planType === "PREMIUM" ? "Anabolic Bioscan" : "Analyse";
-    const confirmMsg = `Salut ${clientName},\n\nMerci pour ta commande ${productLabel}. Ton paiement est bien recu et toutes tes reponses sont enregistrees.\n\nTon rapport est en cours de generation. Tu le recevras par email d'ici 24h.\n\n${promo ? `En attendant, voici ton code promo : ${promo.code}\n${promo.label}\nUtilise-le sur achzodcoaching.com/formules-coaching\n\n` : ""}Si tu as des questions, reponds directement a cet email.\n\nAchzod`;
-    sendCTAEmail(email, `${productLabel} : commande recue, rapport sous 24h`, confirmMsg).catch(() => {});
+    if (order) {
+      const paidOrder = await storage.getOrder(order.id);
+      if (paidOrder) await ensurePaidOrderNotifications(paidOrder);
+    }
 
     // Mettre à jour Google Sheet automatiquement via webhook
     const { notifyGoogleSheetUpdate } = await import("./googleSheetsTracking.js");
@@ -5662,6 +5737,7 @@ export async function registerRoutes(
       // Update order to paid if exists
       const existingOrder = await storage.getOrderByStripeSession(sessionId);
       if (existingOrder && existingOrder.status === "paid" && existingOrder.auditId) {
+        await ensurePaidOrderNotifications(existingOrder);
         res.json({ success: true, auditId: existingOrder.auditId, auditType: planType, existing: true, purchaseTracking });
         return;
       }
@@ -6716,6 +6792,42 @@ export async function registerRoutes(
       res.json({ success: true, audit });
     } catch (error) {
       console.error("[Admin Audit Detail] Error:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  app.post("/api/admin/audits/:id/delivery-hold", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const auditId = req.params.id;
+      const hold = req.body?.hold;
+      const reason = String(req.body?.reason || "manual_review").slice(0, 240);
+      if (typeof hold !== "boolean") {
+        res.status(400).json({ success: false, error: "hold boolean requis" });
+        return;
+      }
+      const updated = await pool.query(
+        `UPDATE orders
+            SET metadata = COALESCE(metadata, '{}'::jsonb)
+              || jsonb_build_object(
+                   'auditEmailHold', $2::boolean,
+                   'auditEmailHoldReason', $3::text,
+                   'auditEmailHoldUpdatedAt', NOW()::text
+                 )
+          WHERE audit_id = $1
+          RETURNING id`,
+        [auditId, hold, hold ? reason : ""],
+      );
+      if ((updated.rowCount ?? 0) === 0) {
+        res.status(404).json({ success: false, error: "Commande liée introuvable" });
+        return;
+      }
+      if (hold) {
+        await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" });
+      }
+      res.json({ success: true, auditId, hold, reason: hold ? reason : null, linkedOrders: updated.rowCount });
+    } catch (error) {
+      console.error("[Admin Audit Hold] Error:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
     }
   });
@@ -8822,6 +8934,29 @@ export async function registerRoutes(
       res.json({ success: true, order });
     } catch (error) {
       console.error("[Admin Orders] Error getting order:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  app.post("/api/admin/orders/:id/reconcile-notifications", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const order = await storage.getOrder(req.params.id);
+      if (!order) {
+        res.status(404).json({ success: false, error: "Commande introuvable" });
+        return;
+      }
+      await ensurePaidOrderNotifications(order);
+      const fresh = await storage.getOrder(order.id);
+      const metadata = (fresh?.metadata as Record<string, unknown> | null) ?? {};
+      res.json({
+        success: true,
+        orderId: order.id,
+        adminPaymentNotifSent: Boolean(metadata.adminPaymentNotifSentAt),
+        customerConfirmEmailSent: Boolean(metadata.customerConfirmEmailSentAt),
+      });
+    } catch (error) {
+      console.error("[Admin Order Notification Reconcile] Error:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
     }
   });
@@ -11686,6 +11821,14 @@ export async function registerRoutes(
                 // Don't fail the webhook, just log the error
               }
             }
+          }
+          // Reconcile notifications even when confirm-session marked the order
+          // paid before this webhook arrived. Previously the entire block above
+          // was skipped in that race, so a transient provider failure became a
+          // permanently lost customer and admin confirmation.
+          if (order) {
+            const paidOrder = await storage.getOrder(order.id).catch(() => undefined);
+            if (paidOrder) await ensurePaidOrderNotifications(paidOrder);
           }
           break;
         }
