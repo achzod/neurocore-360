@@ -434,7 +434,10 @@ if (process.env.NODE_ENV === "production") {
         Math.max(Number(process.env.RECOVERY_CTA_REQUEST_TIMEOUT_MS || 90_000), 30_000),
         180_000
       );
-      const RECOVERY_CTA_ENABLED = process.env.RECOVERY_CTA_DRIP_ENABLED !== "0";
+      // Fail closed: marketing recovery must be explicitly enabled. This prevents
+      // an expired/reactivated provider account from immediately draining an old
+      // queue while transactional order notifications are being reconciled.
+      const RECOVERY_CTA_ENABLED = process.env.RECOVERY_CTA_DRIP_ENABLED === "1";
       const RECOVERY_CTA_PARIS_START_HOUR = Math.min(
         Math.max(Number(process.env.RECOVERY_CTA_PARIS_START_HOUR || 8), 0),
         23
