@@ -23,6 +23,15 @@ export interface PeptidesFulfillmentIncident {
   detail: string;
 }
 
+export function shouldAlertPeptidesFulfillmentIncident(
+  metadata: Record<string, unknown>,
+  incidentCode: string,
+): boolean {
+  return metadata.peptidesFulfillmentState !== "ACTION_REQUIRED"
+    || metadata.peptidesFulfillmentIncidentCode !== incidentCode
+    || !metadata.peptidesFulfillmentIncidentAlertedAt;
+}
+
 function dateMs(value: Date | string | null | undefined): number | null {
   if (!value) return null;
   const timestamp = value instanceof Date ? value.getTime() : new Date(value).getTime();
