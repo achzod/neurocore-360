@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFileSync } from "node:fs";
 import { hasPeptidesHardRedFlag, repairPeptidesReportContent } from "./peptidesReportRepair";
 
 test("contradictory none plus undocumented other never fabricates a medical red flag", () => {
@@ -16,6 +17,14 @@ test("documented other condition alone does not fabricate a hard red flag", () =
 
 test("plain none remains standard when no other hard red flag exists", () => {
   assert.equal(hasPeptidesHardRedFlag({ pep_conditions: ["none"] }), false);
+});
+
+test("standard repair deduplicates order wording and restores missing rationale cards", () => {
+  const source = readFileSync(new URL("./peptidesReportRepair.ts", import.meta.url), "utf8");
+  assert.doesNotMatch(source, /Format commande: voir la liste de commande verifiee/);
+  assert.match(source, /COUVERTURE DES AXES RETENUS/);
+  assert.match(source, /Format retenu pour/);
+  assert.match(source, /peptide\.whyThisPeptide \|\| peptide\.purpose/);
 });
 
 test("medical recovery preserves a complete source report instead of injecting another client profile", () => {

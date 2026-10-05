@@ -444,19 +444,42 @@ function anchorExpertPeptideRationales(
   for (const [index, peptide] of (report.peptides || []).entries()) {
     const rationale = sanitizeClientFacingText(peptide.whyThisPeptide || "").trim();
     const matchedFacts = facts.filter((fact) => fact.pattern.test(rationale));
-    if (matchedFacts.length >= 2) continue;
+    if (matchedFacts.length < 2) {
+      const missingFacts = facts.filter((fact) => !fact.pattern.test(rationale));
+      const selectedFacts = [...matchedFacts, ...missingFacts].slice(0, 2);
+      if (selectedFacts.length >= 2) {
+        const name = sanitizeClientFacingText(peptide.name || `ce peptide ${index + 1}`);
+        const anchor = templates[index % templates.length](
+          name,
+          selectedFacts[0].text,
+          selectedFacts[1].text
+        );
+        peptide.whyThisPeptide = sanitizeClientFacingText(`${rationale} ${anchor}`);
+      }
+    }
+  }
 
-    const missingFacts = facts.filter((fact) => !fact.pattern.test(rationale));
-    const selectedFacts = [...matchedFacts, ...missingFacts].slice(0, 2);
-    if (selectedFacts.length < 2) continue;
-
-    const name = sanitizeClientFacingText(peptide.name || `ce peptide ${index + 1}`);
-    const anchor = templates[index % templates.length](
-      name,
-      selectedFacts[0].text,
-      selectedFacts[1].text
-    );
-    peptide.whyThisPeptide = sanitizeClientFacingText(`${rationale} ${anchor}`);
+  // The structured coverage gate requires every retained card to be named in
+  // the client-facing justification. Model output can contain a complete card
+  // but omit its name from that section; repair the omission deterministically
+  // from the already-audited card rather than regenerating or dropping an axis.
+  const rationaleSection = (report.sections || []).find((section) =>
+    /rationale|justification|pourquoi/i.test(`${section.id} ${section.title}`)
+  );
+  if (rationaleSection) {
+    const missing = (report.peptides || []).filter((peptide) => {
+      const normalizedName = normalizePeptideMention(String(peptide.name || ""));
+      const normalizedContent = normalizePeptideMention(String(rationaleSection.content || ""));
+      return normalizedName.length > 0 && !normalizedContent.includes(normalizedName);
+    });
+    if (missing.length > 0) {
+      const additions = missing.map((peptide) =>
+        `${sanitizeClientFacingText(peptide.name || "Molecule retenue")}\n${sanitizeClientFacingText(peptide.whyThisPeptide || peptide.purpose || "Axe retenu depuis les faits du dossier.")}`
+      );
+      rationaleSection.content = sanitizeClientFacingText(
+        `${String(rationaleSection.content || "").trim()}\n\nCOUVERTURE DES AXES RETENUS\n\n${additions.join("\n\n")}`
+      );
+    }
   }
 }
 
@@ -904,7 +927,7 @@ function synchronizeReconstitutionNarrative(
         (peptide) =>
           `${String(peptide.name || "").toUpperCase()}\n` +
           `Dose et frequence: ${asSentence(peptide.dosage)}\n` +
-          "Format commande: voir la liste de commande verifiee pour le detail exact des vials et des limites de commande.\n" +
+          `Format retenu pour ${sanitizeClientFacingText(peptide.name || "cette molecule")}: ${asSentence(peptide.vialsNeeded)} Prix live: ${asSentence(peptide.priceEstimate)}\n` +
           `Reconstitution exacte: ${asSentence(peptide.reconstitution)}`
       ),
       ...(injectablePeptides.length > 0
