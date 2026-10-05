@@ -3,7 +3,7 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 import { derivePeptidesStackPolicy } from "./peptidesStackPolicy";
 
-test("three distinct goals require a five-molecule stack", () => {
+test("three distinct goals require attributable coverage without gadget molecules", () => {
   assert.deepEqual(
     derivePeptidesStackPolicy({
       pep_primary_goal: "fatloss",
@@ -12,7 +12,7 @@ test("three distinct goals require a five-molecule stack", () => {
     }),
     {
       goals: ["fatloss", "recovery", "skin-hair"],
-      minimumMolecules: 5,
+      minimumMolecules: 3,
       maximumMolecules: 5,
       multiAxis: true,
       confirmedLowTestosterone: false,
@@ -30,32 +30,42 @@ test("old testosterone bloodwork keeps KissPeptin and Enclomiphene as a conditio
     pep_secondary_goals: ["testo-boost", "gh-antiaging"],
     pep_testo_bloodwork: "old",
   });
-  assert.equal(policy.minimumMolecules, 5);
+  assert.equal(policy.minimumMolecules, 4);
   assert.equal(policy.conditionalHpgPhase, true);
   assert.equal(policy.secretagogueAxisRequired, true);
 });
 
-test("four distinct axes expand the stack to six attributable molecules", () => {
+test("four distinct axes do not force six molecules", () => {
   const policy = derivePeptidesStackPolicy({
     pep_primary_goal: "fatloss",
     pep_secondary_goals: ["recovery", "gh-antiaging", "testo-boost"],
     pep_testo_bloodwork: "recent-low",
   });
-  assert.equal(policy.minimumMolecules, 6);
+  assert.equal(policy.minimumMolecules, 4);
   assert.equal(policy.maximumMolecules, 6);
   assert.equal(policy.confirmedLowTestosterone, true);
   assert.equal(policy.secretagogueAxisRequired, true);
 });
 
-test("confirmed HPG plus two other axes requires five molecules", () => {
+test("confirmed HPG plus two other axes keeps both HPG levers without filler", () => {
   assert.equal(
     derivePeptidesStackPolicy({
       pep_primary_goal: "fatloss",
       pep_secondary_goals: ["testo-boost", "gh-antiaging"],
       pep_testo_bloodwork: "recent-low",
     }).minimumMolecules,
-    5,
+    4,
   );
+});
+
+test("four non-HPG axes accept one attributable molecule per axis", () => {
+  const policy = derivePeptidesStackPolicy({
+    pep_primary_goal: "fatloss",
+    pep_secondary_goals: ["recovery", "skin-hair", "endurance"],
+  });
+  assert.deepEqual(policy.goals, ["fatloss", "recovery", "skin-hair", "endurance"]);
+  assert.equal(policy.minimumMolecules, 4);
+  assert.equal(policy.maximumMolecules, 6);
 });
 
 test("final retry cannot collapse to two molecules", () => {

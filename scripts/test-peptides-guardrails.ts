@@ -106,7 +106,7 @@ assert.deepEqual(
   }),
   {
     goals: ["fatloss", "testo-boost", "gh-antiaging"],
-    minimumMolecules: 5,
+    minimumMolecules: 4,
     maximumMolecules: 5,
     multiAxis: true,
     confirmedLowTestosterone: true,
@@ -121,14 +121,14 @@ assert.equal(
     pep_primary_goal: "fatloss",
     pep_secondary_goals: ["recovery"],
   }).minimumMolecules,
-  3,
+  2,
 );
 assert.equal(
   derivePeptidesStackPolicy({
     pep_primary_goal: "fatloss",
     pep_secondary_goals: ["recovery", "skin-hair"],
   }).minimumMolecules,
-  5,
+  3,
 );
 assert.equal(
   derivePeptidesStackPolicy({ pep_primary_goal: "recovery" }).minimumMolecules,
@@ -143,7 +143,7 @@ assert.deepEqual(
     });
     return [policy.minimumMolecules, policy.maximumMolecules];
   })(),
-  [6, 6],
+  [4, 6],
 );
 assert.match(engineSource, /const orderedNeedMg = extractTotalMgFromVials\(pep\.vialsNeeded\);/);
 assert.match(engineSource, /const needMg = estimatedNeedMg \?\? orderedNeedMg;/);

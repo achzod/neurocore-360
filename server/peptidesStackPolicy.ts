@@ -39,19 +39,21 @@ export function derivePeptidesStackPolicy(
     testosteroneGoal && ["old", "never"].includes(testosteroneBloodworkStatus);
   const secretagogueAxisRequired = goals.includes("gh-antiaging");
 
-  let minimumMolecules = 2;
-  if (goals.length === 2) minimumMolecules = 3;
-  if (goals.length === 3) minimumMolecules = 5;
-  if (goals.length >= 4) minimumMolecules = 6;
+  // Count attributable coverage axes instead of imposing filler products.
+  // One molecule can legitimately support more than one goal; forcing five
+  // or six molecules for three or four axes creates gadget additions and
+  // makes valid live-packaging fallbacks impossible.
+  let minimumMolecules = Math.max(2, Math.min(4, goals.length));
   const maximumMolecules = goals.length >= 4 ? 6 : 5;
 
   // A confirmed HPG axis needs its two distinct levers. When another objective
-  // is also present, a two-peptide fallback cannot cover the dossier.
-  if (confirmedLowTestosterone && goals.length >= 2) {
-    minimumMolecules = Math.max(minimumMolecules, 4);
+  // is also present, reserve room for both HPG levers plus the other axes.
+  // A conditional HPG phase needs the same two explicit cards.
+  if ((confirmedLowTestosterone || conditionalHpgPhase) && goals.length >= 2) {
+    minimumMolecules = Math.max(minimumMolecules, 3);
   }
-  if (confirmedLowTestosterone && goals.length >= 3) {
-    minimumMolecules = Math.max(minimumMolecules, 5);
+  if ((confirmedLowTestosterone || conditionalHpgPhase) && goals.length >= 3) {
+    minimumMolecules = Math.max(minimumMolecules, 4);
   }
 
   return {
