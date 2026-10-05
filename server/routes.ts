@@ -14838,7 +14838,14 @@ export async function registerRoutes(
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
-        res.status(400).json({ error: "Données invalides", details: error.errors });
+        const goalDetailsTooLong = error.errors.some((issue) => issue.path.join(".") === "goalDetails" && issue.code === "too_big");
+        res.status(400).json({
+          error: "Données invalides",
+          message: goalDetailsTooLong
+            ? "Le détail de ton objectif est limité à 1 200 caractères. Raccourcis légèrement ce texte puis relance le calcul."
+            : error.errors[0]?.message || "Vérifie les champs signalés puis relance le calcul.",
+          details: error.errors,
+        });
         return;
       }
       console.error("[PeptidesPreview] analysis unavailable", error instanceof Error ? error.message : "unknown_error");
