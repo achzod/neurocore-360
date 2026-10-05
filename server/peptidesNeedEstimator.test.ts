@@ -23,6 +23,24 @@ test("French daily frequencies are multiplied across the full cycle", () => {
   }), 31.5);
 });
 
+test("daily wording wins over a later explanatory weekly phrase", () => {
+  assert.equal(estimateNeedMg({
+    dosage: "2 mg chaque jour, soit 21,3 mcg/kg, sept administrations par semaine.",
+    cycleDuration: "8 semaines actives, soit 56 jours.",
+  }), 112);
+  assert.equal(estimateNeedMg({
+    dosage: "2 mg chaque jour, sept administrations par semaine.",
+    cycleDuration: "5 semaines actives, soit 35 jours.",
+  }), 70);
+});
+
+test("French worded twice-weekly frequency is not collapsed to once weekly", () => {
+  assert.equal(estimateNeedMg({
+    dosage: "2,5 mg par administration, deux fois par semaine. Total hebdomadaire 5 mg.",
+    cycleDuration: "4 semaines actives.",
+  }), 20);
+});
+
 test("multi-phase weekly titration sums every declared range", () => {
   assert.equal(estimateNeedMg({
     dosage: "0,5 mg par semaine (semaines 1 à 4), puis 1 mg par semaine (semaines 5 à 8), puis 1,625 mg par semaine (semaines 9 à 12)",

@@ -2723,11 +2723,11 @@ function deriveVialsForPeptide(pep: PeptideItem): VialsDerivation | null {
   // came out at 1/7th of the real need (Simon Leveque, 2026-05-17).
   function detectInjectionsPerWeek(dosageText: string): number {
     if (/\b1\s*(?:fois|injection)\s*(?:par|\/)\s*semaine|hebdomadaire|1x\/sem\b/i.test(dosageText)) return 1;
-    if (/\b2\s*(?:fois|injections?|jours?)\s*(?:par|\/)\s*semaine/i.test(dosageText)) return 2;
-    if (/\b3\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine/i.test(dosageText)) return 3;
-    if (/\b4\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine/i.test(dosageText)) return 4;
-    if (/\b5\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine/i.test(dosageText)) return 5;
-    if (/\b6\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine/i.test(dosageText)) return 6;
+    if (/\b(?:2|deux)\s*(?:fois|injections?|jours?)\s*(?:par|\/)\s*semaine/i.test(dosageText)) return 2;
+    if (/\b(?:3|trois)\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine/i.test(dosageText)) return 3;
+    if (/\b(?:4|quatre)\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine/i.test(dosageText)) return 4;
+    if (/\b(?:5|cinq)\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine/i.test(dosageText)) return 5;
+    if (/\b(?:6|six)\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine/i.test(dosageText)) return 6;
     if (/chaque\s+(?:soir|matin|jour)|tous\s+les\s+(?:soirs?|jours?)|\bpar\s+(?:injection|jour|soir)\b|\ble\s+soir\b|\bavant\s+le\s+coucher\b|7\s*(?:jours?|soirs?)\s*\/?\s*7|\b1x\/jour\b/i.test(dosageText)) return 7;
     return 1; // safe default
   }
