@@ -1,4 +1,8 @@
 import assert from "node:assert/strict";
+import {
+  parsePeptauraShippingAvailabilityPage,
+  shippingForSubtotal,
+} from "../server/peptauraShipping";
 
 process.env.DATABASE_URL ||= "postgresql://test:test@127.0.0.1:5432/test";
 
@@ -17,6 +21,16 @@ void (async () => {
   assert.equal(enclomipheneSource?.available, true);
   assert.match(enclomipheneSource?.format || "", /30 ml a 12,5 mg\/ml/i);
   assert.equal(Number(enclomipheneSource?.priceGbp) > 0, true);
+
+  const shippingHtml = await fetch("https://www.peptaura.com/shipping?country=France", {
+    headers: { "cache-control": "no-cache" },
+  }).then((response) => response.text());
+  const shipping = parsePeptauraShippingAvailabilityPage(shippingHtml);
+  assert.equal(shipping.source, "flight");
+  assert.equal(shipping.live, true);
+  assert.ok(shipping.availableVendors.length > 0);
+  assert.ok(shipping.quotes.some((quote) => quote.available && shippingForSubtotal(quote, 125)));
+  assert.ok(shipping.blockedVendors.every((vendor) => !shipping.availableVendors.includes(vendor)));
 
   const html = await fetch("https://www.peptaura.com/catalog/Retatrutide", {
     headers: { "cache-control": "no-cache" },
@@ -49,7 +63,7 @@ void (async () => {
     shoppingList: "",
     promoCodesGenerated: [],
   });
-  assert.match(fixed.peptides[0].vialsNeeded || "", /^8 vials de 10mg/);
+  assert.match(fixed.peptides[0].vialsNeeded || "", /8 vials de 10mg/);
 
   const refresh = await refreshPeptauraCatalog({ forceFresh: true });
   assert.equal(refresh.ok, true, refresh.failedProducts.join(", "));
