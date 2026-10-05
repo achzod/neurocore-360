@@ -348,6 +348,9 @@ test("the client UI defaults to France and advertises profile-driven counts", ()
   assert.match(source, /12 semaines minimum/);
   assert.match(source, /Livraison · une seule fois/);
   assert.match(source, /livraison est comptée une seule fois pour la commande complète/i);
+  assert.match(source, /maxLength=\{1200\}/);
+  assert.match(source, /1 200 caractères/);
+  assert.match(source, /goalDetails\.trim\(\)\.length <= 1200/);
   assert.doesNotMatch(source, /m\.name|m\.doseSummary|m\.calculationBasis/);
 });
 
@@ -355,4 +358,6 @@ test("identity, consent and incompatible conditions remain structurally validate
   assert.equal(peptidesPreviewInputSchema.safeParse({ ...base, email: "invalid" }).success, false);
   assert.equal(peptidesPreviewInputSchema.safeParse({ ...base, consent: false }).success, false);
   assert.equal(peptidesPreviewInputSchema.safeParse({ ...base, conditions: ["none", "hypertension"] }).success, false);
+  assert.equal(peptidesPreviewInputSchema.safeParse({ ...base, goalDetails: "x".repeat(1200) }).success, true);
+  assert.equal(peptidesPreviewInputSchema.safeParse({ ...base, goalDetails: "x".repeat(1201) }).success, false);
 });

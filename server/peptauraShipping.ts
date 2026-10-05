@@ -15,12 +15,18 @@ export interface PeptauraShippingQuote {
 
 type RawShippingOption = { speed?: unknown; cost?: unknown };
 type RawShippingTier = { minOrder?: unknown; maxOrder?: unknown; options?: unknown };
+type RawShippingSection = {
+  available?: unknown;
+  flatOptions?: unknown;
+  tiers?: unknown;
+};
 type RawShippingVendor = {
   supplierName?: unknown;
   displayName?: unknown;
   available?: unknown;
   minimumOrder?: unknown;
   tiers?: unknown;
+  sections?: unknown;
 };
 
 function finiteMoney(value: unknown): number | null {
@@ -47,24 +53,40 @@ export function parsePeptauraShippingPage(html: string): PeptauraShippingQuote[]
         const flight = JSON.parse(record.slice(separator + 1));
         const rawVendors = Array.isArray(flight?.[3]?.availability) ? flight[3].availability as RawShippingVendor[] : [];
         const parsed = rawVendors.map((vendor) => {
-      const supplier = String(vendor.supplierName || '').trim();
-      const minimumOrderUsd = vendor.minimumOrder == null ? null : finiteMoney(vendor.minimumOrder);
-      const tiers = (Array.isArray(vendor.tiers) ? vendor.tiers as RawShippingTier[] : []).flatMap((tier) => {
-        const minOrderUsd = finiteMoney(tier.minOrder) ?? 0;
-        const maxOrderUsd = tier.maxOrder == null ? null : finiteMoney(tier.maxOrder);
-        return (Array.isArray(tier.options) ? tier.options as RawShippingOption[] : []).flatMap((option) => {
-          const costUsd = finiteMoney(option.cost);
-          if (costUsd == null) return [];
-          return [{ minOrderUsd, maxOrderUsd, costUsd, speed: String(option.speed || '').trim() }];
-        });
-      });
-      return {
-        supplier,
-        displayName: String(vendor.displayName || supplier).trim(),
-        available: vendor.available === true,
-        minimumOrderUsd,
-        tiers,
-      };
+          const supplier = String(vendor.supplierName || '').trim();
+          const minimumOrderUsd = vendor.minimumOrder == null ? null : finiteMoney(vendor.minimumOrder);
+          const sections = (Array.isArray(vendor.sections) ? vendor.sections as RawShippingSection[] : [])
+            .filter((section) => section.available !== false);
+          const rawTiers = [
+            ...(Array.isArray(vendor.tiers) ? vendor.tiers as RawShippingTier[] : []),
+            ...sections.flatMap((section) => Array.isArray(section.tiers) ? section.tiers as RawShippingTier[] : []),
+          ];
+          const flatOptions = sections.flatMap((section) =>
+            Array.isArray(section.flatOptions) ? section.flatOptions as RawShippingOption[] : []
+          );
+          const tiers = [
+            ...rawTiers.flatMap((tier) => {
+              const minOrderUsd = finiteMoney(tier.minOrder) ?? 0;
+              const maxOrderUsd = tier.maxOrder == null ? null : finiteMoney(tier.maxOrder);
+              return (Array.isArray(tier.options) ? tier.options as RawShippingOption[] : []).flatMap((option) => {
+                const costUsd = finiteMoney(option.cost);
+                if (costUsd == null) return [];
+                return [{ minOrderUsd, maxOrderUsd, costUsd, speed: String(option.speed || '').trim() }];
+              });
+            }),
+            ...flatOptions.flatMap((option) => {
+              const costUsd = finiteMoney(option.cost);
+              if (costUsd == null) return [];
+              return [{ minOrderUsd: 0, maxOrderUsd: null, costUsd, speed: String(option.speed || '').trim() }];
+            }),
+          ];
+          return {
+            supplier,
+            displayName: String(vendor.displayName || supplier).trim(),
+            available: vendor.available === true,
+            minimumOrderUsd,
+            tiers,
+          };
         }).filter((quote) => quote.supplier.length > 0);
         if (parsed.length > 0) return parsed;
       }

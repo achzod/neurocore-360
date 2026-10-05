@@ -31,6 +31,29 @@ test("shipping parser reads availability when Next.js batches several Flight rec
   assert.deepEqual(shippingForSubtotal(quotes[0], 125), { costUsd: 60, speed: "Standard" });
 });
 
+test("shipping parser reads the current section-based Peptaura payload", () => {
+  const sectionAvailability = [{
+    supplierName: "Lumira",
+    displayName: "Lumira",
+    available: true,
+    minimumOrder: null,
+    sections: [{
+      available: true,
+      flatOptions: [],
+      tiers: [
+        { minOrder: 0, maxOrder: 1300, options: [{ speed: "Standard (10-15 days)", cost: 60 }] },
+        { minOrder: 1300, maxOrder: null, options: [{ speed: "Standard (10-15 days)", cost: 0 }] },
+      ],
+    }],
+  }];
+  const sectionFlight = JSON.stringify(["$", "$L2e", null, { country: "France", availability: sectionAvailability }]);
+  const sectionHtml = `<script>self.__next_f.push([1,${JSON.stringify(`6:${sectionFlight}`)}])</script>`;
+  const quotes = parsePeptauraShippingPage(sectionHtml);
+  assert.equal(quotes.length, 1);
+  assert.deepEqual(shippingForSubtotal(quotes[0], 290), { costUsd: 60, speed: "Standard (10-15 days)" });
+  assert.deepEqual(shippingForSubtotal(quotes[0], 1300), { costUsd: 0, speed: "Standard (10-15 days)" });
+});
+
 test("minimum supplier order is enforced before quoting shipping", () => {
   const quote = parsePeptauraShippingPage(html)[1];
   assert.equal(shippingForSubtotal(quote, 47.99), null);
