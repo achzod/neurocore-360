@@ -13,6 +13,14 @@ export interface PeptauraShippingQuote {
   tiers: PeptauraShippingTier[];
 }
 
+export interface PeptauraShippingAvailabilitySummary {
+  quotes: PeptauraShippingQuote[];
+  availableVendors: string[];
+  blockedVendors: string[];
+  live: boolean;
+  source: "flight" | "legacy_dom" | "unavailable";
+}
+
 type RawShippingOption = { speed?: unknown; cost?: unknown };
 type RawShippingTier = { minOrder?: unknown; maxOrder?: unknown; options?: unknown };
 type RawShippingSection = {
@@ -97,6 +105,73 @@ export function parsePeptauraShippingPage(html: string): PeptauraShippingQuote[]
   return [];
 }
 
+function uniqueVendorNames(values: string[]): string[] {
+  const seen = new Set<string>();
+  return values.filter((value) => {
+    const key = value.toLowerCase().replace(/[^a-z0-9]+/g, "");
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/**
+ * Canonical availability adapter shared by the paid engine and the preview.
+ * Flight data is authoritative and carries the shipping fees/minimums. The
+ * DOM branch only preserves compatibility with old server-rendered pages.
+ */
+export function parsePeptauraShippingAvailabilityPage(
+  html: string,
+): PeptauraShippingAvailabilitySummary {
+  const quotes = parsePeptauraShippingPage(html);
+  if (quotes.length > 0) {
+    const availableVendors = uniqueVendorNames(quotes
+      .filter((quote) => quote.available && quote.tiers.length > 0)
+      .map((quote) => quote.displayName || quote.supplier));
+    const blockedVendors = uniqueVendorNames(quotes
+      .filter((quote) => !quote.available || quote.tiers.length === 0)
+      .map((quote) => quote.displayName || quote.supplier));
+    return {
+      quotes,
+      availableVendors,
+      blockedVendors,
+      live: availableVendors.length > 0,
+      source: "flight",
+    };
+  }
+
+  const decoded = html
+    .replace(/\\"/g, '"')
+    .replace(/\\u0026/g, "&")
+    .replace(/\\u002F/g, "/")
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, "&");
+  const stripHtml = (value: string): string =>
+    value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  const availableVendors: string[] = [];
+  const blockedVendors: string[] = [];
+
+  for (const row of decoded.matchAll(/<a class="flex items-center gap-3 px-3 py-3[^"]*" href="\/vendors\/([^"]+)">([\s\S]*?)<\/a>/g)) {
+    const vendor = stripHtml(row[2]) || decodeURIComponent(row[1]);
+    if (vendor) availableVendors.push(vendor);
+  }
+  for (const row of decoded.matchAll(/<div class="flex items-center gap-3 rounded-lg px-3 py-3 opacity-60">([\s\S]*?)<\/div>/g)) {
+    const vendor = stripHtml(row[1]).split(/\u2014|\u2013/)[0]?.trim();
+    if (vendor) blockedVendors.push(vendor);
+  }
+
+  const legacyAvailable = uniqueVendorNames(availableVendors);
+  const legacyBlocked = uniqueVendorNames(blockedVendors);
+  const hasLegacyRows = legacyAvailable.length > 0 || legacyBlocked.length > 0;
+  return {
+    quotes: [],
+    availableVendors: legacyAvailable,
+    blockedVendors: legacyBlocked,
+    live: legacyAvailable.length > 0,
+    source: hasLegacyRows ? "legacy_dom" : "unavailable",
+  };
+}
+
 export function shippingForSubtotal(
   quote: PeptauraShippingQuote,
   subtotalUsd: number,
@@ -109,4 +184,64 @@ export function shippingForSubtotal(
   ).sort((a, b) => a.costUsd - b.costUsd);
   const selected = eligible[0];
   return selected ? { costUsd: selected.costUsd, speed: selected.speed } : null;
+}
+
+export interface PeptauraShippingBasketLine {
+  supplier: string;
+  totalPriceUsd: number;
+}
+
+export interface PeptauraShippingBasketBreakdown {
+  supplier: string;
+  subtotalUsd: number;
+  minimumOrderUsd: number | null;
+  shippingUsd: number;
+  speed: string;
+}
+
+function normalizedSupplier(value: string): string {
+  return value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "");
+}
+
+/** Validate shipping only after grouping the complete multi-axis basket. */
+export function quotePeptauraShippingBasket(
+  lines: PeptauraShippingBasketLine[],
+  availability: Pick<PeptauraShippingAvailabilitySummary, "quotes" | "source">,
+): { breakdown: PeptauraShippingBasketBreakdown[]; failures: string[] } {
+  const subtotals = new Map<string, { supplier: string; subtotalUsd: number }>();
+  for (const line of lines) {
+    const supplier = String(line.supplier || "").trim();
+    const totalPriceUsd = Number(line.totalPriceUsd);
+    if (!supplier || !Number.isFinite(totalPriceUsd) || totalPriceUsd < 0) continue;
+    const key = normalizedSupplier(supplier);
+    const current = subtotals.get(key) || { supplier, subtotalUsd: 0 };
+    current.subtotalUsd = Math.round((current.subtotalUsd + totalPriceUsd) * 100) / 100;
+    subtotals.set(key, current);
+  }
+
+  const breakdown: PeptauraShippingBasketBreakdown[] = [];
+  const failures: string[] = [];
+  for (const [supplierKey, group] of subtotals) {
+    const quote = availability.quotes.find((candidate) =>
+      [candidate.supplier, candidate.displayName].some((name) => normalizedSupplier(name) === supplierKey)
+    );
+    if (!quote) {
+      if (availability.source === "flight") failures.push(`${group.supplier}: devis livraison live introuvable`);
+      continue;
+    }
+    const shipping = shippingForSubtotal(quote, group.subtotalUsd);
+    if (!shipping) {
+      const minimum = quote.minimumOrderUsd == null ? "inconnu" : `$${quote.minimumOrderUsd.toFixed(2)}`;
+      failures.push(`${group.supplier}: sous-total $${group.subtotalUsd.toFixed(2)} non livrable, minimum fournisseur ${minimum}`);
+      continue;
+    }
+    breakdown.push({
+      supplier: quote.displayName || quote.supplier,
+      subtotalUsd: group.subtotalUsd,
+      minimumOrderUsd: quote.minimumOrderUsd,
+      shippingUsd: shipping.costUsd,
+      speed: shipping.speed,
+    });
+  }
+  return { breakdown, failures };
 }

@@ -41,6 +41,11 @@ import {
   PEPTAURA_PRODUCT_FEED_URL,
   parsePeptauraProductFeed,
 } from "./peptauraProductFeed";
+import {
+  parsePeptauraShippingAvailabilityPage,
+  quotePeptauraShippingBasket,
+  type PeptauraShippingQuote,
+} from "./peptauraShipping";
 export {
   evaluatePeptauraGenerationPreflight,
   PeptauraSourceUnavailableError,
@@ -290,6 +295,8 @@ interface PeptauraShippingAvailability {
   blockedVendors: string[];
   fetchedAt: string;
   live: boolean;
+  quotes: PeptauraShippingQuote[];
+  source: "flight" | "legacy_dom" | "unavailable";
 }
 
 interface PeptauraPromptContext {
@@ -606,31 +613,16 @@ async function fetchPeptauraCatalogSlugs(forceFresh = false): Promise<string[] |
 }
 
 function parsePeptauraShipping(html: string, country: string): PeptauraShippingAvailability {
-  const decoded = decodePeptauraHtml(html);
-  const availableVendors: string[] = [];
-  const blockedVendors: string[] = [];
-
-  const availableRows = decoded.matchAll(/<a class="flex items-center gap-3 px-3 py-3[^"]*" href="\/vendors\/([^"]+)">([\s\S]*?)<\/a>/g);
-  for (const row of availableRows) {
-    const text = stripHtml(row[2]);
-    const vendor = text || decodeURIComponent(row[1]);
-    if (vendor && !availableVendors.includes(vendor)) availableVendors.push(vendor);
-  }
-
-  const blockedRows = decoded.matchAll(/<div class="flex items-center gap-3 rounded-lg px-3 py-3 opacity-60">([\s\S]*?)<\/div>/g);
-  for (const row of blockedRows) {
-    const text = stripHtml(row[1]);
-    const vendor = text.split(/\u2014|\u2013/)[0]?.trim();
-    if (vendor && !blockedVendors.includes(vendor)) blockedVendors.push(vendor);
-  }
-
+  const parsed = parsePeptauraShippingAvailabilityPage(html);
   return {
     country,
     shippingUrl: peptauraShippingUrl(country),
-    availableVendors,
-    blockedVendors,
+    availableVendors: parsed.availableVendors,
+    blockedVendors: parsed.blockedVendors,
     fetchedAt: new Date().toISOString(),
-    live: availableVendors.length > 0 || blockedVendors.length > 0,
+    live: parsed.live,
+    quotes: parsed.quotes,
+    source: parsed.source,
   };
 }
 
@@ -656,7 +648,16 @@ async function fetchPeptauraShippingAvailability(
   }
   const parsed = html
     ? parsePeptauraShipping(html, country)
-    : { country, shippingUrl, availableVendors: [], blockedVendors: [], fetchedAt: new Date().toISOString(), live: false };
+    : {
+      country,
+      shippingUrl,
+      availableVendors: [],
+      blockedVendors: [],
+      fetchedAt: new Date().toISOString(),
+      live: false,
+      quotes: [],
+      source: "unavailable" as const,
+    };
 
   peptauraShippingCache.set(cacheKey, { value: parsed, expiresAt: now + PEPTAURA_CACHE_TTL_MS });
   return parsed;
@@ -1492,12 +1493,27 @@ async function applyLivePeptauraPricing(
     warnings.push("BAC Water: page produit Peptaura introuvable; sourcing local reglemente requis");
   }
 
+  // Shipping minimums apply to the complete basket per supplier, not to each
+  // peptide line. Aggregate the selected live offers before validating the
+  // canonical Flight quote so multi-axis stacks are not silently reduced.
+  const basketShipping = quotePeptauraShippingBasket(
+    listingSnapshots.map((snapshot) => ({
+      supplier: String(snapshot.supplier || ""),
+      totalPriceUsd: Number(snapshot.totalPriceUsd),
+    })),
+    context.shippingAvailability,
+  );
+  const shippingBreakdown: Array<Record<string, unknown>> = basketShipping.breakdown;
+  failures.push(...basketShipping.failures);
+
   (report as any)._peptauraLiveSync = {
     country: context.country,
     shippingUrl: context.shippingUrl,
     shippingLive: context.shippingAvailability.live,
     availableVendors: context.shippingAvailability.availableVendors,
     blockedVendors: context.shippingAvailability.blockedVendors,
+    shippingSource: context.shippingAvailability.source,
+    shippingBreakdown,
     liveCatalogCount: context.liveCatalogSlugs?.length ?? null,
     catalogRefreshedAt: context.catalogRefreshedAt,
     syncedAt: new Date().toISOString(),
@@ -1538,6 +1554,12 @@ async function applyLivePeptauraPricing(
     ...(report.peptides.some((pep) => isEnclomipheneName(pep.name))
       ? [`Avant de payer Enclomiphene, verifie une derniere fois le stock sur ${ENCLOMIPHENE_SOURCE_URL}.`]
       : []),
+    ...shippingBreakdown.map((line) => {
+      const minimum = line.minimumOrderUsd == null
+        ? "aucun minimum affiche"
+        : `minimum $${Number(line.minimumOrderUsd).toFixed(2)}`;
+      return `Livraison ${line.supplier}: sous-total $${Number(line.subtotalUsd).toFixed(2)}, ${minimum}, frais $${Number(line.shippingUsd).toFixed(2)}, ${line.speed}.`;
+    }),
     `Avant de payer, verifie une derniere fois le stock et la livraison vers ${context.country} sur ${context.shippingUrl}.`,
   ].filter(Boolean).join("\n");
 
@@ -1564,6 +1586,18 @@ function buildCatalogForPrompt(context: PeptauraPromptContext): string {
   if (shipping.live) {
     lines.push(`Fournisseurs qui livrent vers ${context.country}: ${shipping.availableVendors.join(", ") || "aucun detecte"}.`);
     lines.push(`Fournisseurs a ne PAS utiliser pour ${context.country}: ${shipping.blockedVendors.join(", ") || "aucun detecte"}.`);
+    for (const quote of shipping.quotes.filter((candidate) => candidate.available && candidate.tiers.length > 0)) {
+      const minimum = quote.minimumOrderUsd == null
+        ? "aucun minimum affiche"
+        : `minimum $${quote.minimumOrderUsd.toFixed(2)}`;
+      const tiers = quote.tiers.map((tier) => {
+        const range = tier.maxOrderUsd == null
+          ? `des $${tier.minOrderUsd.toFixed(2)}`
+          : `de $${tier.minOrderUsd.toFixed(2)} a moins de $${tier.maxOrderUsd.toFixed(2)}`;
+        return `${range}: $${tier.costUsd.toFixed(2)} (${tier.speed || "delai non precise"})`;
+      }).join(" ; ");
+      lines.push(`Devis ${quote.displayName || quote.supplier}: ${minimum}; ${tiers}.`);
+    }
   } else {
     lines.push("Shipping live indisponible au moment de la generation: ne promets pas un fournisseur, demande de verifier la page shipping avant commande.");
   }

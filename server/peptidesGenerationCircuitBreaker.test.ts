@@ -55,6 +55,8 @@ function contextWithSnapshots(names: string[]) {
       blockedVendors: [],
       fetchedAt: "2026-08-13T00:00:00.000Z",
       live: true,
+      quotes: [],
+      source: "legacy_dom",
     },
     liveCatalogSlugs: names,
     catalogRefreshedAt: "2026-08-13T00:00:00.000Z",
