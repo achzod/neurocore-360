@@ -146,6 +146,7 @@ assert.deepEqual(
   [4, 6],
 );
 assert.match(engineSource, /const orderedNeedMg = extractTotalMgFromVials\(pep\.vialsNeeded\);/);
+assert.match(engineSource, /Pour \$\{pep\.name\}, minimum mathematique/);
 assert.match(engineSource, /const needMg = estimatedNeedMg \?\? orderedNeedMg;/);
 assert.match(
   engineSource,
