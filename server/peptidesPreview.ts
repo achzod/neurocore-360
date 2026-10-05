@@ -294,8 +294,10 @@ function motsProtocol(input: PeptidesPreviewInput, goal: Goal): ResolvedProtocol
 }
 
 function dsipProtocol(input: PeptidesPreviewInput): ResolvedProtocol {
-  const doseMg = input.sleepHours <= 5 ? 0.2 : input.sleepHours < 6.5 ? 0.15 : 0.1;
-  return fixedProtocol([{ doseMg, administrationsPerWeek: 7, weeks: 4 }], 12, "subcutaneous", `${doseMg * 1000} mcg au coucher selon le sommeil déclaré`);
+  const severeSleepRestriction = input.sleepHours <= 5;
+  const doseMg = severeSleepRestriction ? 0.2 : input.sleepHours < 6.5 ? 0.15 : 0.1;
+  const activeWeeks = severeSleepRestriction ? 8 : 4;
+  return fixedProtocol([{ doseMg, administrationsPerWeek: 7, weeks: activeWeeks }], 12, "subcutaneous", `${doseMg * 1000} mcg au coucher pendant ${activeWeeks} semaines selon le sommeil déclaré`);
 }
 
 function semaxProtocol(input: PeptidesPreviewInput): ResolvedProtocol {
@@ -303,9 +305,10 @@ function semaxProtocol(input: PeptidesPreviewInput): ResolvedProtocol {
   return fixedProtocol([{ doseMg: 0.2, administrationsPerWeek, weeks: 4 }], 12, "intranasal", `200 mcg par administration, ${administrationsPerWeek / 7} fois/jour selon la charge cognitive`);
 }
 
-function selankProtocol(input: PeptidesPreviewInput): ResolvedProtocol {
-  const administrationsPerWeek = input.cognitiveStress === "low" ? 7 : 14;
-  return fixedProtocol([{ doseMg: 0.25, administrationsPerWeek, weeks: 4 }], 12, "intranasal", `250 mcg par administration, ${administrationsPerWeek / 7} fois/jour selon le stress cognitif`);
+function selankProtocol(input: PeptidesPreviewInput, goal: Goal): ResolvedProtocol {
+  const administrationsPerWeek = ["moderate", "high"].includes(input.cognitiveStress) ? 14 : 7;
+  const activeWeeks = goal === "sleep" && input.sleepHours <= 5 ? 8 : 4;
+  return fixedProtocol([{ doseMg: 0.25, administrationsPerWeek, weeks: activeWeeks }], 12, "intranasal", `250 mcg par administration, ${administrationsPerWeek / 7} fois/jour pendant ${activeWeeks} semaines selon le profil déclaré`);
 }
 
 function ghkProtocol(_input: PeptidesPreviewInput, _goal: Goal): ResolvedProtocol {
@@ -459,7 +462,8 @@ function needsSecondCandidateForGoal(input: PeptidesPreviewInput, goal: Goal): b
     case "fatloss":
       return input.trainingFrequency === "5plus" || selectedGoals.has("endurance");
     case "sleep":
-      return selectedGoals.has("cognitive") && ["moderate", "high"].includes(input.cognitiveStress);
+      return input.sleepHours <= 5
+        || (selectedGoals.has("cognitive") && ["moderate", "high"].includes(input.cognitiveStress));
     case "cognitive":
       return ["moderate", "high"].includes(input.cognitiveStress);
     case "libido":
