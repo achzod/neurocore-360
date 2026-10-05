@@ -170,7 +170,7 @@ test("dose, frequency and total need change from the measurable profile instead 
   const moderateSleep = buildPeptidesPreview(peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "sleep", sleepHours: 6 }), catalog, new Date().toISOString(), franceShipping).molecules[0];
   const severeSleep = buildPeptidesPreview(peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "sleep", sleepHours: 5 }), catalog, new Date().toISOString(), franceShipping).molecules[0];
   assert.equal(moderateSleep.totalRequiredMg, 4.2);
-  assert.equal(severeSleep.totalRequiredMg, 5.6);
+  assert.equal(severeSleep.totalRequiredMg, 11.2);
 
   const firstGlp1 = buildPeptidesPreview(peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "fatloss", trainingFrequency: "3-4", glp1History: "never" }), catalog, new Date().toISOString(), franceShipping).molecules[0];
   const toleratedGlp1 = buildPeptidesPreview(peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "fatloss", trainingFrequency: "3-4", glp1History: "tolerated" }), catalog, new Date().toISOString(), franceShipping).molecules[0];
@@ -181,6 +181,29 @@ test("dose, frequency and total need change from the measurable profile instead 
   const highStress = buildPeptidesPreview(peptidesPreviewInputSchema.parse({ ...base, primaryGoal: "cognitive", cognitiveStress: "high", trainingFrequency: "3-4" }), catalog, new Date().toISOString(), franceShipping).molecules[0];
   assert.equal(lowStress.totalRequiredMg, 5.6);
   assert.equal(highStress.totalRequiredMg, 11.2);
+});
+
+test("severe sleep restriction receives two complementary eight-week active axes", () => {
+  const input = peptidesPreviewInputSchema.parse({
+    ...base,
+    firstName: "Riad",
+    email: "riad@example.com",
+    primaryGoal: "sleep",
+    secondaryGoals: [],
+    sleepHours: 4,
+    cognitiveStress: "not-applicable",
+    injectionFrequency: "few-week",
+    timeline: "12plus",
+    bloodwork: "recent",
+    conditions: ["thyroid"],
+    trainingFrequency: "3-4",
+  });
+  const result = buildPeptidesPreview(input, catalog, new Date().toISOString(), franceShipping);
+  assert.deepEqual(result.molecules.map((molecule) => molecule.name), ["DSIP", "Selank"]);
+  assert.deepEqual(result.molecules.map((molecule) => molecule.cycleDurationLabel), ["Stratégie 12 semaines · 8 semaines actives", "Stratégie 12 semaines · 8 semaines actives"]);
+  assert.deepEqual(result.molecules.map((molecule) => molecule.totalRequiredMg), [11.2, 14]);
+  assert.equal(result.status, "review_required");
+  assert.ok(result.blockers.includes("frequence_administration_incompatible"));
 });
 
 test("secondary goals can add several molecules while duplicate candidates are merged", () => {
