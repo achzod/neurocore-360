@@ -1350,8 +1350,8 @@ async function applyLivePeptauraPricing(
     qty = purchasedPackageCount * Math.max(1, best.boxSize);
     const needRounded = Number((livePlan.pharmacologicalNeedMg ?? needMg).toFixed(3));
     const operationalNote = livePlan.status === "documented" && livePlan.operationalVials != null
-      ? `Besoin operationnel ${livePlan.operationalVials} vials sur les fenetres documentees, minimum mathematique ${livePlan.mathematicalMinimumVials}.`
-      : `Minimum mathematique ${livePlan.mathematicalMinimumVials ?? operationalQty} vials; aucune reserve supplementaire n'est ajoutee sans fenetre documentee.`;
+      ? `Pour ${pep.name}, besoin operationnel ${livePlan.operationalVials} vials sur les fenetres documentees, minimum mathematique ${livePlan.mathematicalMinimumVials}.`
+      : `Pour ${pep.name}, minimum mathematique ${livePlan.mathematicalMinimumVials ?? operationalQty} vials; aucune reserve supplementaire n'est ajoutee sans fenetre documentee.`;
     const forcedPackagingNote = qty > operationalQty
       ? ` Conditionnement fournisseur impose: ${purchasedPackageCount} boite${purchasedPackageCount > 1 ? "s" : ""} de ${best.boxSize} vials.`
       : "";
