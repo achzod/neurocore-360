@@ -2,7 +2,9 @@ export interface BlogArticle {
   id: string;
   slug: string;
   title: string;
+  seoTitle?: string;
   excerpt: string;
+  metaDescription?: string;
   content: string;
   category: string;
   author: string;

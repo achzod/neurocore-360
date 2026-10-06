@@ -8,8 +8,10 @@ export const SARMS_ARTICLES: BlogArticle[] = [
     priority: 1,
     slug: "meilleurs-peptides-performance-sportive",
     title: "Les 9 Meilleurs Peptides pour la Performance Sportive",
+    seoTitle: "Peptides musculation : 9 options, effets et risques",
     excerpt: "BPC-157, TB-500, CJC-1295, Retatrutide... Tour d'horizon des peptides qui changent la donne pour les athletes serieux.",
-    category: "sarms",
+    metaDescription: "Peptides en musculation : compare 9 options populaires, leurs objectifs, limites et risques avant d'envisager un protocole personnalisé.",
+    category: "hormones",
     author: "ACHZOD",
     date: "2026-04-02",
     readTime: "15 min",
@@ -19,6 +21,8 @@ export const SARMS_ARTICLES: BlogArticle[] = [
 Si tu t'entraînes sérieusement depuis un moment, tu as forcément entendu parler des peptides. Le problème, c'est que 90% de ce que tu trouves en ligne, c'est soit du marketing déguisé, soit des articles écrits par des gens qui n'ont jamais touché un flacon de leur vie. Moi, je bosse avec des peptides depuis des années, je les utilise personnellement et je les prescris dans mes protocoles de coaching. Ce que je vais te donner ici, c'est mon retour terrain, concret, sans bullshit.
 
 Les peptides ne sont pas des stéroïdes. Ce ne sont pas des SARMs non plus. Ce sont des chaînes d'acides aminés qui envoient des signaux spécifiques à ton corps pour déclencher des processus naturels. Réparation tissulaire, libération d'hormone de croissance, perte de gras, régénération. Chaque peptide a son rôle, et quand tu sais les combiner intelligemment, tu obtiens des résultats qu'aucun supplément classique ne pourra jamais t'apporter.
+
+Pour ne pas mélanger les familles, commence par le [guide complet des SARMs](/blog/sarms-guide-complet-debutant), puis vois le cas spécifique du [RAD-140](/blog/rad-140-testolone-guide-complet) et les enjeux de [PCT après SARMs](/blog/pct-sarms-protocole-complet). Ces lectures permettent de comparer mécanismes et risques sans présenter les peptides comme des SARMs.
 
 Voici les 9 peptides que je considère comme les plus impactants pour un athlète qui veut performer, récupérer et durer dans le temps.
 
@@ -122,7 +126,9 @@ Le combo CJC-1295 plus Ipamorelin reste la base pour l'optimisation de la GH. Le
 
 Mais un peptide sans protocole, c'est comme un moteur sans châssis. Ça ne sert à rien. Il te faut les bons dosages, le bon timing, la bonne combinaison, et surtout une source fiable.
 
-Tu veux un protocole peptides personnalisé avec dosages exacts ajustés à ton poids, guide de reconstitution, et accès à ma source secrète où les peptides coûtent 60-90% moins cher ? C'est exactement ce que fait Peptides Engine. 35 questions, un protocole sur mesure, 2 bilans sanguins inclus. [Découvrir Peptides Engine](https://apexlabs.achzodcoaching.com/offers/peptides-engine)`,
+Tu veux d'abord vérifier si Peptides Engine correspond à ton objectif, ton contexte et ton budget ? [Lance le Pré-Peptides Engine gratuit](/peptides-preview?utm_source=blog&utm_medium=content_cta&utm_campaign=peptides_performance_preview) pour obtenir un premier cadrage personnalisé.
+
+Si tu connais déjà l'offre et veux voir les formules disponibles, [découvre Peptides Engine](/offers/peptides-engine?utm_source=blog&utm_medium=content_cta&utm_campaign=peptides_performance_offer).`,
   },
   {  id: "121",
     priority: 57,
@@ -612,7 +618,9 @@ L'Ostarine est considérée comme l'un des SARMs les plus sûrs pour les femmes,
     priority: 52,
     slug: "rad-140-testolone-guide-complet",
     title: "RAD-140 (Testolone) : Guide Complet - Effets, Dosages et Risques",
+    seoTitle: "RAD-140 (Testolone) : effets, risques et PCT",
     excerpt: "Le RAD-140 a montre des resultats prometteurs dans les etudes precliniques, suggerant son potentiel en tant qu'agent therapeutique pour diverses conditions.",
+    metaDescription: "RAD-140 (Testolone) : mécanisme, effets recherchés, suppression hormonale, risques, analyses et lien avec la PCT après un cycle de SARMs.",
     category: "sarms",
     author: "ACHZOD",
     date: "2026-01-07",
@@ -625,6 +633,8 @@ Le RAD-140, également connu sous le nom de Testolone, représente l'un des modu
 Les SARMs ont attiré une attention considérable ces dernières années en raison de leur potentiel à fournir les bénéfices des stéroïdes anabolisants, tels que l'augmentation de la masse musculaire et de la force, tout en minimisant les effets secondaires androgéniques typiques. Le RAD-140 a montré des résultats particulièrement prometteurs dans les études précliniques, suggérant son potentiel en tant qu'agent thérapeutique pour diverses conditions, y compris les troubles de fonte musculaire, la perte musculaire liée à l'âge et même certaines formes de cancer du sein.
 
 L'objectif de cet article exhaustif est de vous fournir un aperçu complet du RAD-140, en examinant en profondeur ses mécanismes d'action, ses avantages documentés, les protocoles de dosage optimaux, les effets secondaires potentiels, les stratégies de PCT, et toutes les informations pertinentes pour une utilisation éclairée et responsable.
+
+Replace ce composé dans le [guide complet des SARMs](/blog/sarms-guide-complet-debutant), puis utilise le [guide PCT après SARMs](/blog/pct-sarms-protocole-complet) pour approfondir la phase post-cycle. Si tu compares avec une autre famille de molécules, le [guide des peptides pour sportifs](/blog/meilleurs-peptides-performance-sportive) clarifie la différence.
 
 ---
 
@@ -896,16 +906,9 @@ Une suppression temporaire de la spermatogenèse est possible pendant le cycle. 
 
 ---
 
-[![Anabolic Code](https://cdn.prod.website-files.com/5fd0a9c447b7bb9814a00d71/6851ebc888d485c358317cfe_Ebook%20Anabolic%20Code%20Cover-min.jpg)](https://www.achzodcoaching.com)
+## Lire tes marqueurs autour d'un cycle
 
-**Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique sur [achzodcoaching.com](https://www.achzodcoaching.com)
-
----
-
-[![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
-
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
-👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
+Si tu disposes déjà d'un bilan sanguin, [Blood Analysis t'aide à structurer la lecture de tes marqueurs](/offers/blood-analysis?utm_source=blog&utm_medium=content_cta&utm_campaign=rad140_blood_analysis) et à repérer les points qui demandent un suivi adapté.
 
 ---`,
   },
@@ -1680,38 +1683,40 @@ Mais, si vous etes un athlete amateur ou si vous cherchez simplement a améliore
   {  id: "127",
     priority: 56,
     slug: "pct-sarms-protocole-complet",
-    title: "PCT (Post Cycle Therapy) : Protocole Complet de Relance",
-    excerpt: "La proliferation de l'utilisation des prohormones dans le monde du bodybuilding a permis aux pratiquants d'acquerir des niveaux de muscularite et de force auparavant hors de portee de beaucoup.",
+    title: "PCT après SARMs : Protocole, Analyses et Récupération",
+    seoTitle: "PCT après SARMs : relance, analyses et risques",
+    excerpt: "Comprendre ce qui se passe après un cycle de SARMs, quelles analyses sont utiles et pourquoi une PCT ne doit pas être improvisée.",
+    metaDescription: "Comprendre la PCT après SARMs : suppression hormonale, analyses utiles, délais de récupération, erreurs fréquentes et risques à surveiller.",
     category: "sarms",
     author: "ACHZOD",
     date: "2026-01-07",
     readTime: "27 min",
     image: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800&auto=format&fit=crop",
-    content: `# PCT (POST CYCLE THERAPY) APRES UN CYCLE DE PROHORMONES
+    content: `# PCT après SARMs : relance, analyses et risques
 
 ## Introduction
 
-La proliferation de l'utilisation des prohormones dans le monde du bodybuilding a permis aux pratiquants d'acquerir des niveaux de muscularite et de force auparavant hors de portee de beaucoup. Les prohormones ont permis même a ceux qui ont des programmes d'entraînement et de nutrition relativement deficients de faire des progres rapides. Cependant, il n'y a pas eu une prise de conscience concomitante de la necessite de restaurer un environnement homeostatique dans le corps, de sorte que si beaucoup font des progres rapides en utilisant des prohormones, de nombreux utilisateurs connaissent un crash familier aux utilisateurs de steroides qui utilisent des ergogeniques puissants sans les produits auxiliaires nécessaires pour proteger leurs gains. Cet article couvrira les strategies visant a restaurer une fonction hormonale normale via l'utilisation de supplements de therapie post-cycle, ou PCT, dans le but de permettre aux pratiquants de maintenir une plus grande proportion des gains obtenus par l'utilisation de prohormones.
+Après un cycle de SARMs, la récupération hormonale ne suit pas un calendrier identique pour tout le monde. Le niveau de suppression dépend notamment de la molécule, de la dose, de la durée, des associations utilisées et du profil initial. Le ressenti seul ne suffit donc pas pour conclure qu'une récupération est complète.
 
-## Comment fonctionnent les prohormones
+Ce guide explique le rôle d'une thérapie post-cycle, les analyses couramment suivies, les délais possibles et les erreurs à éviter. Il ne remplace pas une évaluation clinique : les SARMs ne sont pas approuvés pour améliorer les performances et une automédication peut ajouter des risques au lieu de les corriger.
 
-Sans entrer dans trop de details, l'utilisation de prohormones amenera le corps a reconnaitre qu'une substance exogene a ete introduite dans le corps. Cette substance etant une hormone androgenique, un processus appele retroaction negative se produit, par lequel le corps reduira sa propre production de testostérone, l'androgene naturellement produit par le corps. C'est pour contrecarrer l'influence de l'hormone exogene qui a ete introduite. Pendant que l'utilisateur est sous son cycle de prohormones, il ne sera pas trop alarme dans la plupart des cas par la baisse de ses propres niveaux naturels de testostérone car il prend une substance qui fonctionne via des mecanismes similaires, pour fournir de nombreuses fonctions anaboliques de la testostérone telles que l'augmentation de la masse musculaire et de la force.
+## Comment les SARMs peuvent perturber l'axe hormonal
 
-Les fonctions androgeniques de la testostérone, liees aux caracteristiques que nous considerons comme associees aux males comme l'agressivite et la libido, peuvent soit être amplifiees par l'utilisation de supplements de prohormones, si la substance prise possede ces caracteristiques, soit rester stables ou même diminuer. Il est assez courant que les substances qui sont très "sèches", c'est-a-dire qui abaissent les œstrogènes dans le corps, provoquent une reduction de la libido, tandis que les composes qui permettent une certaine formation d'œstrogènes tendent a augmenter la prevalence des traits androgeniques comme la libido et l'agressivite.
+Les SARMs se lient aux récepteurs androgéniques. Malgré leur présentation fréquente comme « sélectifs », certains peuvent réduire les signaux qui soutiennent la production naturelle de testostérone. L'ampleur de cette suppression est variable et ne peut pas être déduite uniquement des performances, de la libido ou de l'apparence physique.
 
-Que l'utilisateur prenne quelque chose qui augmente les caracteristiques androgeniques ou non, TOUS les utilisateurs de prohormones s'attendront a augmenter leur masse musculaire via les caracteristiques anaboliques de ces composes. Ainsi, vers la fin d'un cycle typique de 4 a 6 semaines, un utilisateur aura gagne une masse musculaire et une force considerables via les actions anaboliques de ces produits, tandis que ses traits masculins comme la libido et l'agressivite auront varie selon la nature du supplement pris. Dans la plupart des cas, l'utilisateur se sera felicite d'avoir très bien reussi son cycle, en supposant une nutrition et un entraînement adequats. Alors, que se passe-t-il ensuite ?
+Les marqueurs hépatiques, le profil lipidique, la tension artérielle et certains paramètres hormonaux peuvent également évoluer. C'est pourquoi une logique de suivi repose d'abord sur le contexte réel et des résultats comparables, pas sur un protocole standard copié en ligne.
 
-## Fin d'un cycle de prohormones
+## À la fin d'un cycle de SARMs
 
-C'est la que certains utilisateurs se retrouvent en difficulte. Les pratiquants inexperimentes ont tendance a faire un cycle d'un supplement puissant comme Nanodrol ou Havoc, qui causera une grande augmentation de la masse musculaire et de la force, mais ne prennent pas en compte ce qui se passe ensuite... Une fois le cycle termine, vous pouvez penser que votre corps continuera comme avant que vous ayez pris le produit hormonal. Vous pouvez même être assez illusoire pour penser que les gains realises pendant le cycle etaient tous grace a vous, mais vous auriez très tort. Après l'arret d'un cycle, la substance exogene (les prohormones utilisees) quitte rapidement le corps, généralement en 24 a 48 heures maximum. A ce stade, vous ne pouvez plus compter sur eux pour les effets anaboliques ou androgeniques.
+L'arrêt du produit ne signifie pas que tous les marqueurs reviennent immédiatement à leur niveau initial. Une baisse d'énergie, de libido, d'humeur ou de performance peut apparaître, mais l'absence de symptôme ne prouve pas non plus une récupération complète. La demi-vie du produit et la durée de suppression attendue doivent être distinguées.
 
-Alors c'est la que la production de testostérone de votre propre corps prend le relais, n'est-ce pas ? Faux. Rappelez-vous, pendant un cycle, votre corps arretera progressivement la production de sa testostérone pour essayer de maintenir ce qu'il considere comme un milieu hormonal normal. Plus la prohormone prise est forte et plus vous etes reste longtemps sous cycle, plus le degre auquel les niveaux normaux de testostérone auront ete supprimes sera important. Donc quand vous arretez le cycle, vos niveaux de testostérone sont très bas. En même temps, les niveaux d'œstrogènes ont tendance a augmenter en reponse a la faible testostérone, donc après le cycle vous n'etes pas dans un endroit très favorable pour la construction musculaire et la force. Au lieu de cela, vous etes bien place pour perdre de la taille, de la force, prendre de la graisse, et, horreur des horreurs, si vous ne prenez pas de mesures pour le contrecarrer, les œstrogènes pourraient même vous faire developper de vraies poitrines ! C'est ce qu'on appelle la gynecomastie, ou gyno en abrege. Ce n'est pas tout non plus. Pendant un cycle, les niveaux de l'hormone catabolique cortisol sont reduits, mais une fois le cycle termine, les niveaux de cortisol augmentent lentement, généralement après environ une semaine. Cette augmentation du cortisol vous fera perdre du muscle et de la force très rapidement, ainsi que vous faire prendre de la graisse corporelle.
+Une baseline réalisée avant le cycle apporte beaucoup plus de valeur qu'une mesure isolée prise après. Sans point de comparaison, l'objectif est d'interpréter prudemment les résultats, leur évolution et les symptômes éventuels avec un professionnel compétent.
 
-Clairement donc, notre utilisateur novice qui n'a pas considere ce qui se passerait une fois son cycle termine est dans une très mauvaise position d'avoir une testostérone basse, des œstrogènes élevés et des niveaux de cortisol élevés. C'est un endroit ou vous ne voulez definitivement pas rester longtemps, mais sans l'utilisation de supplements auxiliaires (PCT), c'est quelque chose dont le corps ne se remettra que très lentement, moment auquel vous pourriez avoir perdu tous vos gains de votre cycle de prohormones. Que pouvons-nous faire pour accelerer la récupération alors ?
+## Qu'appelle-t-on PCT après SARMs ?
 
-## Que sont les supplements PCT pour prohormones ?
+La PCT regroupe les décisions prises après un cycle pour surveiller la récupération et, lorsque cela est réellement indiqué, la prendre en charge. Elle ne se résume pas à acheter automatiquement un SERM ou un « booster de testostérone ». Le choix dépend des produits utilisés, des analyses, des symptômes, des antécédents et des contre-indications.
 
-Les supplements PCT pour prohormones sont des supplements en vente libre concus pour restaurer des niveaux normaux et sains de testostérone et d'œstrogènes après un cycle. Ils aident a "relancer" la production endogene de testostérone et a controler la conversion de la testostérone en œstrogènes pour eviter tout rebond et les effets secondaires oestrogeniques associes.
+La première étape utile consiste donc à documenter le cycle, attendre une fenêtre d'analyse cohérente avec les molécules utilisées, comparer les marqueurs disponibles et éviter d'empiler plusieurs interventions à l'aveugle.
 
 ## Supplements de therapie post-cycle
 
@@ -1867,6 +1872,8 @@ Exemple : Cycle de 8 semaines + PCT de 4 semaines = 12 semaines minimum avant un
 
 ### Avant le cycle (baseline)
 
+Avant d'interpréter ces marqueurs, relis le [guide complet des SARMs](/blog/sarms-guide-complet-debutant). Si le cycle concernait ce composé, le [guide RAD-140](/blog/rad-140-testolone-guide-complet) détaille son profil et renvoie ici pour la phase post-cycle. Pour distinguer cette logique de celle des molécules peptidiques, consulte aussi le [guide des peptides pour sportifs](/blog/meilleurs-peptides-performance-sportive).
+
 - Testostérone totale et libre
 - LH et FSH
 - Estradiol (E2)
@@ -1901,16 +1908,9 @@ Généralement non. Le HCG est plus pertinent pour les cycles de stéroïdes ana
 
 ---
 
-[![Anabolic Code](https://cdn.prod.website-files.com/5fd0a9c447b7bb9814a00d71/6851ebc888d485c358317cfe_Ebook%20Anabolic%20Code%20Cover-min.jpg)](https://www.achzodcoaching.com)
+## Donner du sens à ton bilan post-cycle
 
-**Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique sur [achzodcoaching.com](https://www.achzodcoaching.com)
-
----
-
-[![Anabolic Code](https://images.unsplash.com/photo-1594882645126-14020914d58d?w=800&auto=format&fit=crop)](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
-
-**REJOINDRE L'ÉLITE** - Découvre la science interdite de l'HGH, de l'IGF-1 et des peptides au service de ta mutation corporelle. 
-👉 [Accéder à l'Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)
+Tu as déjà tes résultats sanguins ? [Blood Analysis transforme tes marqueurs en priorités lisibles](/offers/blood-analysis?utm_source=blog&utm_medium=content_cta&utm_campaign=pct_sarms_blood_analysis), sans remplacer l'interprétation clinique lorsqu'elle est nécessaire.
 
 ---`,
   },

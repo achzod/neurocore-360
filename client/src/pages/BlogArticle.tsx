@@ -172,7 +172,48 @@ const DEFAULT_CONVERSION: BlogConversion = {
   sideLabel: "depart",
 };
 
-function getBlogIntentConversion(article: BlogArticle): BlogConversion {
+export function getBlogDocumentTitle(article: BlogArticle): string {
+  return article.seoTitle || `${article.title} | APEXLABS Blog`;
+}
+
+export function getBlogIntentConversion(article: BlogArticle): BlogConversion {
+  if (article.slug === "meilleurs-peptides-performance-sportive") {
+    return {
+      ...CATEGORY_CONVERSION.sarms,
+      intent: "peptides-performance",
+      title: "Quel protocole peptides correspond vraiment à ton profil ?",
+      body: "Le Pré-Peptides Engine gratuit cadre d'abord ton objectif, ton contexte et ton budget. Peptides Engine construit ensuite l'analyse complète si tu veux aller plus loin.",
+      href: "/peptides-preview?utm_source=blog&utm_medium=article_cta&utm_campaign=peptides_performance_preview",
+      cta: "Lancer mon Pré-Peptides gratuit",
+      offerHref: "/offers/peptides-engine?utm_source=blog&utm_medium=article_cta&utm_campaign=peptides_performance_offer",
+      offerCta: "Découvrir Peptides Engine",
+    };
+  }
+
+  if (article.slug === "pct-sarms-protocole-complet") {
+    return {
+      ...CATEGORY_CONVERSION.longevite,
+      intent: "pct-blood",
+      eyebrow: "Bilan post-cycle",
+      title: "Tu as les résultats : transforme-les en priorités lisibles.",
+      body: "Blood Analysis structure la lecture de tes marqueurs autour de la récupération, du profil hormonal, des lipides et du foie.",
+      href: "/offers/blood-analysis?utm_source=blog&utm_medium=article_cta&utm_campaign=pct_sarms_blood_analysis",
+      cta: "Analyser mon bilan post-cycle",
+    };
+  }
+
+  if (article.slug === "rad-140-testolone-guide-complet") {
+    return {
+      ...CATEGORY_CONVERSION.longevite,
+      intent: "rad140-blood",
+      eyebrow: "Monitoring RAD-140",
+      title: "Un cycle ne se pilote pas uniquement au ressenti.",
+      body: "Blood Analysis organise les marqueurs disponibles pour repérer les priorités de suivi avant de tirer des conclusions sur ta récupération.",
+      href: "/offers/blood-analysis?utm_source=blog&utm_medium=article_cta&utm_campaign=rad140_blood_analysis",
+      cta: "Faire lire mes marqueurs",
+    };
+  }
+
   const category = article.category || "fitness";
   const text = `${category} ${article.title} ${article.excerpt}`.toLowerCase();
 
@@ -252,19 +293,27 @@ export default function BlogArticlePage() {
 
   useEffect(() => {
     if (article) {
-      document.title = `${article.title} | Blog ACHZOD`;
+      const seoTitle = article.seoTitle || article.title;
+      const seoDescription = article.metaDescription || article.excerpt;
+      document.title = getBlogDocumentTitle(article);
       const canonicalUrl = `${SITE_ORIGIN}/blog/${article.slug}`;
 
       const metaDescription = document.querySelector('meta[name="description"]');
       if (metaDescription) {
-        metaDescription.setAttribute('content', article.excerpt);
+        metaDescription.setAttribute('content', seoDescription);
       }
 
       const ogTitle = document.querySelector('meta[property="og:title"]');
-      if (ogTitle) ogTitle.setAttribute('content', article.title);
+      if (ogTitle) ogTitle.setAttribute('content', seoTitle);
 
       const ogDescription = document.querySelector('meta[property="og:description"]');
-      if (ogDescription) ogDescription.setAttribute('content', article.excerpt);
+      if (ogDescription) ogDescription.setAttribute('content', seoDescription);
+
+      const twitterTitle = document.querySelector('meta[name="twitter:title"]');
+      if (twitterTitle) twitterTitle.setAttribute('content', seoTitle);
+
+      const twitterDescription = document.querySelector('meta[name="twitter:description"]');
+      if (twitterDescription) twitterDescription.setAttribute('content', seoDescription);
 
       const ogUrl = document.querySelector('meta[property="og:url"]');
       if (ogUrl) ogUrl.setAttribute("content", canonicalUrl);
@@ -295,9 +344,15 @@ export default function BlogArticlePage() {
         "@context": "https://schema.org",
         "@type": "Article",
         headline: article.title,
-        description: article.excerpt,
+        alternativeHeadline: seoTitle,
+        description: seoDescription,
         image,
         datePublished: article.date,
+        articleSection:
+          BLOG_CATEGORIES.find((category) => category.id === article.category)?.label ||
+          article.category,
+        inLanguage: "fr-FR",
+        url: canonicalUrl,
         author: {
           "@type": "Person",
           name: article.author || "ACHZOD",
@@ -307,6 +362,10 @@ export default function BlogArticlePage() {
           "@type": "Organization",
           name: "APEXLABS by Achzod",
           url: SITE_ORIGIN,
+          logo: {
+            "@type": "ImageObject",
+            url: `${SITE_ORIGIN}/favicon.png`,
+          },
         },
         mainEntityOfPage: {
           "@type": "WebPage",
@@ -498,7 +557,7 @@ export default function BlogArticlePage() {
                     <a
                       href={conversion.offerHref}
                       className="inline-flex items-center justify-center gap-2 rounded-sm border border-[#FCDD00]/40 px-5 py-3 text-sm font-semibold text-[#FCDD00] transition-colors hover:bg-[#FCDD00]/10"
-                      onClick={() => trackBlogCtaClick(conversion.intent, "intro", "offer", conversion.offerHref)}
+                      onClick={() => trackBlogCtaClick(conversion.intent, "intro", "offer", conversion.offerHref!)}
                     >
                       {conversion.offerCta}
                       <ArrowRight className="h-4 w-4" />
@@ -620,7 +679,7 @@ export default function BlogArticlePage() {
                     <a
                       href={conversion.offerHref}
                       className="inline-flex items-center justify-center gap-2 border border-[#FCDD00]/40 px-5 py-3 rounded-sm text-sm font-semibold text-[#FCDD00] hover:bg-[#FCDD00]/10 transition-colors"
-                      onClick={() => trackBlogCtaClick(conversion.intent, "end", "offer", conversion.offerHref)}
+                      onClick={() => trackBlogCtaClick(conversion.intent, "end", "offer", conversion.offerHref!)}
                     >
                       {conversion.offerCta}
                     </a>

@@ -13,7 +13,9 @@ marked.setOptions({ gfm: true, breaks: true });
 interface BlogArticle {
   slug: string;
   title: string;
+  seoTitle?: string;
   excerpt: string;
+  metaDescription?: string;
   content?: string;
   image?: string;
   imageUrl?: string;
@@ -98,6 +100,9 @@ function buildMetaDescription(article: BlogArticle): string {
   const target = 155;
   const floor = 80;
 
+  const explicit = stripMarkdown(article.metaDescription || "");
+  if (explicit) return explicit;
+
   const content = article.content ? stripMarkdown(article.content) : "";
   const excerpt = stripMarkdown(article.excerpt || "");
 
@@ -143,6 +148,39 @@ function normalizeBlogCategory(category: string | undefined): string {
 }
 
 function getBlogIntentCta(article: BlogArticle): BlogIntentCta {
+  if (article.slug === "meilleurs-peptides-performance-sportive") {
+    return {
+      intent: "peptides",
+      title: "Quel protocole peptides correspond vraiment a ton profil ?",
+      body:
+        "Le Pre-Peptides Engine gratuit cadre d'abord ton objectif, ton contexte et ton budget avant l'analyse complete.",
+      href: `${BASE_URL}/peptides-preview?utm_source=blog&utm_medium=article_cta&utm_campaign=peptides_performance_preview`,
+      label: "Lancer mon Pre-Peptides gratuit",
+    };
+  }
+
+  if (article.slug === "pct-sarms-protocole-complet") {
+    return {
+      intent: "blood",
+      title: "Tu as les resultats : transforme-les en priorites lisibles.",
+      body:
+        "Blood Analysis structure la lecture des marqueurs autour de la recuperation, du profil hormonal, des lipides et du foie.",
+      href: `${BASE_URL}/offers/blood-analysis?utm_source=blog&utm_medium=article_cta&utm_campaign=pct_sarms_blood_analysis`,
+      label: "Analyser mon bilan post-cycle",
+    };
+  }
+
+  if (article.slug === "rad-140-testolone-guide-complet") {
+    return {
+      intent: "blood",
+      title: "Un cycle ne se pilote pas uniquement au ressenti.",
+      body:
+        "Blood Analysis organise les marqueurs disponibles pour reperer les priorites de suivi avant de conclure sur la recuperation.",
+      href: `${BASE_URL}/offers/blood-analysis?utm_source=blog&utm_medium=article_cta&utm_campaign=rad140_blood_analysis`,
+      label: "Faire lire mes marqueurs",
+    };
+  }
+
   const category = normalizeBlogCategory(article.category);
   const text = `${category} ${article.title} ${article.excerpt}`.toLowerCase();
 
@@ -681,7 +719,7 @@ ${links ? `<nav aria-label="Pages principales"><ul>${links}</ul></nav>` : ""}
       return res.send(indexHtml);
     }
 
-    const title = esc(`${article.title} | APEXLABS Blog`);
+    const title = article.seoTitle || `${article.title} | APEXLABS Blog`;
     const description = esc(buildMetaDescription(article));
     const url = `${BASE_URL}/blog/${encodePathSegment(article.slug)}`;
     const image = article.image || article.imageUrl || DEFAULT_OG_IMAGE;
@@ -696,6 +734,7 @@ ${links ? `<nav aria-label="Pages principales"><ul>${links}</ul></nav>` : ""}
       "@context": "https://schema.org",
       "@type": "BlogPosting",
       headline: article.title,
+      alternativeHeadline: article.seoTitle || article.title,
       description: buildMetaDescription(article),
       image,
       author: {
