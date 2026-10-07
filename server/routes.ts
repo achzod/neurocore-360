@@ -113,7 +113,10 @@ import {
   getPeptidesGenerationRetryAt,
   sanitizePeptidesGenerationError,
 } from "./peptidesGenerationCircuitBreaker";
-import { evaluatePeptidesReleaseHashGate } from "./peptidesReleaseHashGate";
+import {
+  evaluatePeptidesReleaseHashGate,
+  isPeptidesApprovalExpected,
+} from "./peptidesReleaseHashGate";
 import {
   getAICostBudgetSummary,
   resetAICostBudgetReservations,
@@ -15480,15 +15483,13 @@ export async function registerRoutes(
               hasValidPeptidesConsent((order.metadata as any)?.peptidesEngineConsent),
             );
             const validation = validatePeptidesReport(repaired);
-            const releaseVerdict = String((order.metadata as any)?.peptidesReleaseAuditVerdict || "");
-            const approvalExpected = Boolean(
-              (order.metadata as any)?.peptidesApprovedAt
-              || (order.metadata as any)?.peptidesApprovedBy
-              || (order.metadata as any)?.peptidesReleaseAuthorizedAt
-              || (order.metadata as any)?.peptidesHashGateApprovalRequired === true
-              || String((order.metadata as any)?.peptidesHashGateApprovalRequired).toLowerCase() === "true"
-              || /^PASS\b/i.test(releaseVerdict),
-            );
+            const approvalExpected = isPeptidesApprovalExpected({
+              approvedAt: (order.metadata as any)?.peptidesApprovedAt,
+              approvedBy: (order.metadata as any)?.peptidesApprovedBy,
+              releaseAuthorizedAt: (order.metadata as any)?.peptidesReleaseAuthorizedAt,
+              hashGateApprovalRequired: (order.metadata as any)?.peptidesHashGateApprovalRequired,
+              releaseVerdict: (order.metadata as any)?.peptidesReleaseAuditVerdict,
+            });
             const hashGate = evaluatePeptidesReleaseHashGate({
               approvalExpected,
               approvedHash: (order.metadata as any)?.peptidesApprovedReportSha256,
