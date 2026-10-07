@@ -37,12 +37,23 @@ export function Header() {
   };
 
   const isDashboard = location.startsWith("/dashboard");
+  const isInteractiveForm = [
+    "/questionnaire",
+    "/audit-complet/questionnaire",
+    "/audit-complet/checkout",
+    "/peptides-preview",
+    "/peptides-engine",
+    "/checkout",
+  ].some((prefix) => location.startsWith(prefix));
   const whatsappDestination = buildWhatsAppUrl(
     "Salut Achzod, je suis sur APEXLABS. Je veux ton avis pour choisir entre un scan, une analyse avancee ou un coaching."
   );
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-[#333333] bg-[#000000]" role="banner">
+    <header
+      className={`${isInteractiveForm ? "relative" : "sticky top-0"} z-50 w-full border-b border-[#333333] bg-[#000000]`}
+      role="banner"
+    >
       <a
         href="/peptides-preview?utm_source=sitewide_header&utm_medium=announcement_bar&utm_campaign=pre_peptides_engine"
         data-testid="sitewide-pre-peptides-cta"
