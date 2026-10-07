@@ -257,46 +257,47 @@ function FormCheckVisual() {
         {/* Barbell */}
         <motion.line
           x1="30" y1="15" x2="70" y2="15"
+          initial={{ x1: 30, y1: 15, x2: 70, y2: 15 }}
           stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round"
           animate={{ x1: [30, 35, 30], y1: [15, 50, 15], x2: [70, 75, 70], y2: [15, 50, 15] }}
           transition={FC_TRANSITION}
         />
 
         {/* Spine */}
-        <motion.line x1="50" y1="15" x2="50" y2="40" stroke="#10b981" strokeWidth="2" strokeLinecap="round"
+        <motion.line x1="50" y1="15" x2="50" y2="40" initial={{ x1: 50, y1: 15, x2: 50, y2: 40 }} stroke="#10b981" strokeWidth="2" strokeLinecap="round"
           animate={{ x1: [50, 55, 50], y1: [15, 50, 15], x2: [50, 40, 50], y2: [40, 70, 40] }} transition={FC_TRANSITION} />
         {/* Thigh */}
-        <motion.line x1="50" y1="40" x2="50" y2="65" stroke="#10b981" strokeWidth="2" strokeLinecap="round"
+        <motion.line x1="50" y1="40" x2="50" y2="65" initial={{ x1: 50, y1: 40, x2: 50, y2: 65 }} stroke="#10b981" strokeWidth="2" strokeLinecap="round"
           animate={{ x1: [50, 40, 50], y1: [40, 70, 40], x2: [50, 65, 50], y2: [65, 70, 65] }} transition={FC_TRANSITION} />
         {/* Calf */}
-        <motion.line x1="50" y1="65" x2="50" y2="90" stroke="#10b981" strokeWidth="2" strokeLinecap="round"
+        <motion.line x1="50" y1="65" x2="50" y2="90" initial={{ x1: 50, y1: 65, x2: 50, y2: 90 }} stroke="#10b981" strokeWidth="2" strokeLinecap="round"
           animate={{ x1: [50, 65, 50], y1: [65, 70, 65], x2: [50, 50, 50], y2: [90, 90, 90] }} transition={FC_TRANSITION} />
         {/* Foot */}
-        <motion.line x1="50" y1="90" x2="58" y2="90" stroke="#10b981" strokeWidth="2" strokeLinecap="round"
+        <motion.line x1="50" y1="90" x2="58" y2="90" initial={{ x1: 50, y1: 90, x2: 58, y2: 90 }} stroke="#10b981" strokeWidth="2" strokeLinecap="round"
           animate={{ x1: [50, 50, 50], y1: [90, 90, 90], x2: [58, 58, 58], y2: [90, 90, 90] }} transition={FC_TRANSITION} />
 
         {/* Arm (Upper) */}
-        <motion.line x1="50" y1="15" x2="55" y2="25" stroke="#059669" strokeWidth="1.5" strokeLinecap="round"
+        <motion.line x1="50" y1="15" x2="55" y2="25" initial={{ x1: 50, y1: 15, x2: 55, y2: 25 }} stroke="#059669" strokeWidth="1.5" strokeLinecap="round"
           animate={{ x1: [50, 55, 50], y1: [15, 50, 15], x2: [55, 60, 55], y2: [25, 60, 25] }} transition={FC_TRANSITION} />
         {/* Arm (Lower) */}
-        <motion.line x1="55" y1="25" x2="60" y2="15" stroke="#059669" strokeWidth="1.5" strokeLinecap="round"
+        <motion.line x1="55" y1="25" x2="60" y2="15" initial={{ x1: 55, y1: 25, x2: 60, y2: 15 }} stroke="#059669" strokeWidth="1.5" strokeLinecap="round"
           animate={{ x1: [55, 60, 55], y1: [25, 60, 25], x2: [60, 65, 60], y2: [15, 50, 15] }} transition={FC_TRANSITION} />
 
         {/* Head */}
-        <motion.circle cx="50" cy="5" r="4" fill="#050505" stroke="#10b981" strokeWidth="1.5"
+        <motion.circle cx="50" cy="5" initial={{ cx: 50, cy: 5 }} r="4" fill="#050505" stroke="#10b981" strokeWidth="1.5"
           animate={{ cx: [50, 60, 50], cy: [5, 40, 5] }} transition={FC_TRANSITION} />
         {/* Shoulder */}
-        <motion.circle cx="50" cy="15" r="1.5" fill="#fff" animate={{ cx: [50, 55, 50], cy: [15, 50, 15] }} transition={FC_TRANSITION} />
+        <motion.circle cx="50" cy="15" initial={{ cx: 50, cy: 15 }} r="1.5" fill="#fff" animate={{ cx: [50, 55, 50], cy: [15, 50, 15] }} transition={FC_TRANSITION} />
         {/* Hip */}
-        <motion.circle cx="50" cy="40" r="1.5" fill="#fff" animate={{ cx: [50, 40, 50], cy: [40, 70, 40] }} transition={FC_TRANSITION} />
+        <motion.circle cx="50" cy="40" initial={{ cx: 50, cy: 40 }} r="1.5" fill="#fff" animate={{ cx: [50, 40, 50], cy: [40, 70, 40] }} transition={FC_TRANSITION} />
         {/* Knee */}
-        <motion.circle cx="50" cy="65" r="1.5" fill="#fff" animate={{ cx: [50, 65, 50], cy: [65, 70, 65] }} transition={FC_TRANSITION} />
+        <motion.circle cx="50" cy="65" initial={{ cx: 50, cy: 65 }} r="1.5" fill="#fff" animate={{ cx: [50, 65, 50], cy: [65, 70, 65] }} transition={FC_TRANSITION} />
         {/* Ankle */}
-        <motion.circle cx="50" cy="90" r="1.5" fill="#fff" animate={{ cx: [50, 50, 50], cy: [90, 90, 90] }} transition={FC_TRANSITION} />
+        <motion.circle cx="50" cy="90" initial={{ cx: 50, cy: 90 }} r="1.5" fill="#fff" animate={{ cx: [50, 50, 50], cy: [90, 90, 90] }} transition={FC_TRANSITION} />
 
         {/* Dynamic Angle Arc (Knee) */}
         <motion.circle
-          cx="50" cy="65" r="6" fill="none" stroke="rgba(16,185,129,0.4)" strokeWidth="1" strokeDasharray="2 4"
+          cx="50" cy="65" initial={{ cx: 50, cy: 65, scale: 1, opacity: 0 }} r="6" fill="none" stroke="rgba(16,185,129,0.4)" strokeWidth="1" strokeDasharray="2 4"
           animate={{ cx: [50, 65, 50], cy: [65, 70, 65], scale: [1, 1.5, 1], opacity: [0, 1, 0] }}
           transition={FC_TRANSITION}
         />

@@ -157,14 +157,20 @@ const ParticleSystem = ({ color }: { color: string }) => {
   );
 };
 
+const firstMotionValue = (value: number | number[]) => Array.isArray(value) ? value[0] : value;
+
 const Bone = ({ x1, y1, x2, y2, color }: any) => (
-  <motion.line animate={{ x1, y1, x2, y2, opacity: [0.6, 1, 0.6] }}
+  <motion.line
+    initial={{ x1: firstMotionValue(x1), y1: firstMotionValue(y1), x2: firstMotionValue(x2), y2: firstMotionValue(y2), opacity: 0.6 }}
+    animate={{ x1, y1, x2, y2, opacity: [0.6, 1, 0.6] }}
     transition={{ duration: 1.5, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
     stroke={color} strokeWidth="6" strokeLinecap="round" className="drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]" />
 );
 
 const FcJoint = ({ cx, cy, color }: any) => (
-  <motion.circle animate={{ cx, cy, opacity: [0.7, 1, 0.7] }}
+  <motion.circle
+    initial={{ cx: firstMotionValue(cx), cy: firstMotionValue(cy), opacity: 0.7 }}
+    animate={{ cx, cy, opacity: [0.7, 1, 0.7] }}
     transition={{ duration: 1.5, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
     r="5" fill="#fff" stroke={color} strokeWidth="3" className="drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]" />
 );
@@ -173,7 +179,7 @@ const SquatAnim = ({ color }: { color: string }) => {
   const t = { duration: 1.5, repeat: Infinity, repeatType: "reverse" as const, ease: "easeInOut" };
   return (
     <svg viewBox="0 0 200 200" className="w-full h-full overflow-visible">
-      <motion.line animate={{ x1: [70, 70], y1: [60, 100], x2: [130, 130], y2: [60, 100] }} transition={t} stroke="#94a3b8" strokeWidth="4" />
+      <motion.line initial={{ x1: 70, y1: 60, x2: 130, y2: 60 }} animate={{ x1: [70, 70], y1: [60, 100], x2: [130, 130], y2: [60, 100] }} transition={t} stroke="#94a3b8" strokeWidth="4" />
       <Bone x1={[100, 100]} y1={[60, 100]} x2={[100, 80]} y2={[120, 150]} color={color} />
       <Bone x1={[100, 80]} y1={[120, 150]} x2={[100, 120]} y2={[160, 150]} color={color} />
       <Bone x1={[100, 120]} y1={[160, 150]} x2={[100, 100]} y2={[190, 190]} color={color} />
@@ -184,7 +190,7 @@ const SquatAnim = ({ color }: { color: string }) => {
       <FcJoint cx={[100, 120]} cy={[160, 150]} color={color} />
       <FcJoint cx={[100, 100]} cy={[190, 190]} color={color} />
       <FcJoint cx={[110, 110]} cy={[80, 120]} color={color} />
-      <motion.circle animate={{ cx: [100, 100], cy: [40, 80] }} transition={t} r="12" fill="transparent" stroke={color} strokeWidth="4" />
+      <motion.circle initial={{ cx: 100, cy: 40 }} animate={{ cx: [100, 100], cy: [40, 80] }} transition={t} r="12" fill="transparent" stroke={color} strokeWidth="4" />
     </svg>
   );
 };
@@ -193,9 +199,9 @@ const DeadliftAnim = ({ color }: { color: string }) => {
   const t = { duration: 1.5, repeat: Infinity, repeatType: "reverse" as const, ease: "easeInOut" };
   return (
     <svg viewBox="0 0 200 200" className="w-full h-full overflow-visible">
-      <motion.line animate={{ x1: [70, 70], y1: [160, 120], x2: [130, 130], y2: [160, 120] }} transition={t} stroke="#94a3b8" strokeWidth="4" />
-      <motion.circle animate={{ cx: [70, 70], cy: [160, 120] }} transition={t} r="8" fill="#64748b" />
-      <motion.circle animate={{ cx: [130, 130], cy: [160, 120] }} transition={t} r="8" fill="#64748b" />
+      <motion.line initial={{ x1: 70, y1: 160, x2: 130, y2: 160 }} animate={{ x1: [70, 70], y1: [160, 120], x2: [130, 130], y2: [160, 120] }} transition={t} stroke="#94a3b8" strokeWidth="4" />
+      <motion.circle initial={{ cx: 70, cy: 160 }} animate={{ cx: [70, 70], cy: [160, 120] }} transition={t} r="8" fill="#64748b" />
+      <motion.circle initial={{ cx: 130, cy: 160 }} animate={{ cx: [130, 130], cy: [160, 120] }} transition={t} r="8" fill="#64748b" />
       <Bone x1={[130, 100]} y1={[100, 60]} x2={[70, 100]} y2={[140, 120]} color={color} />
       <Bone x1={[70, 100]} y1={[140, 120]} x2={[100, 100]} y2={[160, 160]} color={color} />
       <Bone x1={[100, 100]} y1={[160, 160]} x2={[100, 100]} y2={[190, 190]} color={color} />
@@ -204,7 +210,7 @@ const DeadliftAnim = ({ color }: { color: string }) => {
       <FcJoint cx={[70, 100]} cy={[140, 120]} color={color} />
       <FcJoint cx={[100, 100]} cy={[160, 160]} color={color} />
       <FcJoint cx={[100, 100]} cy={[190, 190]} color={color} />
-      <motion.circle animate={{ cx: [145, 100], cy: [80, 40] }} transition={t} r="12" fill="transparent" stroke={color} strokeWidth="4" />
+      <motion.circle initial={{ cx: 145, cy: 80 }} animate={{ cx: [145, 100], cy: [80, 40] }} transition={t} r="12" fill="transparent" stroke={color} strokeWidth="4" />
     </svg>
   );
 };
@@ -216,7 +222,7 @@ const BenchAnim = ({ color }: { color: string }) => {
       <line x1="30" y1="160" x2="150" y2="160" stroke="#334155" strokeWidth="8" strokeLinecap="round" />
       <line x1="50" y1="160" x2="50" y2="190" stroke="#334155" strokeWidth="6" />
       <line x1="130" y1="160" x2="130" y2="190" stroke="#334155" strokeWidth="6" />
-      <motion.line animate={{ x1: [50, 50], y1: [140, 70], x2: [110, 110], y2: [140, 70] }} transition={t} stroke="#94a3b8" strokeWidth="6" />
+      <motion.line initial={{ x1: 50, y1: 140, x2: 110, y2: 140 }} animate={{ x1: [50, 50], y1: [140, 70], x2: [110, 110], y2: [140, 70] }} transition={t} stroke="#94a3b8" strokeWidth="6" />
       <Bone x1={[80, 80]} y1={[150, 150]} x2={[130, 130]} y2={[150, 150]} color={color} />
       <Bone x1={[130, 130]} y1={[150, 150]} x2={[160, 160]} y2={[130, 130]} color={color} />
       <Bone x1={[160, 160]} y1={[130, 130]} x2={[160, 160]} y2={[190, 190]} color={color} />
@@ -227,7 +233,7 @@ const BenchAnim = ({ color }: { color: string }) => {
       <FcJoint cx={[160, 160]} cy={[130, 130]} color={color} />
       <FcJoint cx={[80, 80]} cy={[180, 110]} color={color} />
       <FcJoint cx={[80, 80]} cy={[140, 70]} color={color} />
-      <motion.circle animate={{ cx: [50, 50], cy: [150, 150] }} transition={t} r="12" fill="transparent" stroke={color} strokeWidth="4" />
+      <motion.circle initial={{ cx: 50, cy: 150 }} animate={{ cx: [50, 50], cy: [150, 150] }} transition={t} r="12" fill="transparent" stroke={color} strokeWidth="4" />
     </svg>
   );
 };

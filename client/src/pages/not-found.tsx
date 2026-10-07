@@ -11,7 +11,7 @@ export default function NotFound() {
       <main className="flex items-center justify-center py-24">
         <div className="relative w-full max-w-2xl mx-4 text-center">
           {/* Background glow */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-[#FCDD00]/5 rounded-full blur-[150px]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-8px)] max-w-[400px] aspect-square bg-[#FCDD00]/5 rounded-full blur-[150px]" />
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
