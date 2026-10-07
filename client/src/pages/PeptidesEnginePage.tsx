@@ -341,6 +341,8 @@ function CheckoutCard({
   onPromoCodeChange,
   acceptedTerms,
   onAcceptedTermsChange,
+  profileConfirmed,
+  onProfileConfirmedChange,
   paymentRail,
   onPaymentRailChange,
   tier,
@@ -353,6 +355,8 @@ function CheckoutCard({
   onPromoCodeChange: (v: string) => void;
   acceptedTerms: boolean;
   onAcceptedTermsChange: (v: boolean) => void;
+  profileConfirmed: boolean;
+  onProfileConfirmedChange: (v: boolean) => void;
   paymentRail: PaymentRail;
   onPaymentRailChange: (v: PaymentRail) => void;
   tier: PeptidesTier;
@@ -511,6 +515,29 @@ function CheckoutCard({
         </div>
       )}
 
+      {!safetyCheck.blocked && (
+        <div className="rounded-xl border border-amber-400/35 bg-amber-400/10 p-5">
+          <p className="text-sm font-bold text-white">Vérifie ton profil avant de payer</p>
+          <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
+            <div><dt className="text-white/45">Nom</dt><dd className="font-semibold text-white">{String(responses.pep_name || "—")}</dd></div>
+            <div><dt className="text-white/45">Âge</dt><dd className="font-semibold text-white">{String(responses.pep_age || "—")} ans</dd></div>
+            <div><dt className="text-white/45">Poids</dt><dd className="font-semibold text-white">{String(responses.pep_weight || "—")} kg</dd></div>
+            <div><dt className="text-white/45">Taille</dt><dd className="font-semibold text-white">{String(responses.pep_height || "—")} cm</dd></div>
+          </dl>
+          <label className="mt-5 flex cursor-pointer items-start gap-3 border-t border-amber-300/20 pt-4">
+            <Checkbox
+              checked={profileConfirmed}
+              onCheckedChange={(value) => onProfileConfirmedChange(value === true)}
+              className="mt-0.5 border-amber-500/60 data-[state=checked]:bg-amber-500 data-[state=checked]:text-black"
+              aria-label="Je confirme mon nom, mon âge, mon poids et ma taille"
+            />
+            <span className="text-xs leading-relaxed text-white/75">
+              Je confirme que mon nom, mon âge, mon poids et ma taille affichés ci-dessus sont exacts. Ces données servent directement à personnaliser mon rapport.
+            </span>
+          </label>
+        </div>
+      )}
+
       {/* Consent ,  required before any payment can be initiated.
           Acceptance is captured server-side with timestamp + IP + UA + text
           version for legal traceability against Stripe disputes. */}
@@ -551,9 +578,9 @@ function CheckoutCard({
       {/* CTA */}
       <Button
         onClick={onConfirmStripe}
-        disabled={safetyCheck.blocked || isLoading || !acceptedTerms}
+        disabled={safetyCheck.blocked || isLoading || !profileConfirmed || !acceptedTerms}
         className="w-full bg-amber-500 hover:bg-amber-400 text-black font-bold text-base h-12 disabled:opacity-40 disabled:cursor-not-allowed"
-        aria-disabled={safetyCheck.blocked || !acceptedTerms}
+        aria-disabled={safetyCheck.blocked || !profileConfirmed || !acceptedTerms}
       >
         {isLoading ? (
           <span className="flex items-center gap-2">
@@ -564,6 +591,11 @@ function CheckoutCard({
           <span className="flex items-center gap-2">
             <Lock className="h-4 w-4" aria-hidden="true" />
             Achat desactive
+          </span>
+        ) : !profileConfirmed ? (
+          <span className="flex items-center gap-2">
+            <Lock className="h-4 w-4" aria-hidden="true" />
+            Confirme ton profil pour continuer
           </span>
         ) : !acceptedTerms ? (
           <span className="flex items-center gap-2">
@@ -599,6 +631,7 @@ export default function PeptidesEnginePage() {
   const [showCheckout, setShowCheckout] = useState(false);
   const [promoCode, setPromoCode] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [profileConfirmed, setProfileConfirmed] = useState(false);
   const [paymentRail, setPaymentRail] = useState<PaymentRail>("card");
   const [previewToken] = useState(() => {
     if (typeof window === "undefined") return "";
@@ -775,6 +808,9 @@ export default function PeptidesEnginePage() {
   }, [toast]);
 
   const handleAnswer = (id: string, value: unknown) => {
+    if (["pep_name", "pep_age", "pep_weight", "pep_height"].includes(id)) {
+      setProfileConfirmed(false);
+    }
     setResponses((prev) => ({ ...prev, [id]: value }));
   };
 
@@ -846,6 +882,9 @@ export default function PeptidesEnginePage() {
       // Guard: server also rejects PEPTIDES_ENGINE without consent, but we
       // surface a friendly client error first so the user sees a normal
       // message instead of a 400 toast from the API layer.
+      if (!profileConfirmed) {
+        throw new Error("Vérifie et confirme ton nom, ton âge, ton poids et ta taille avant de payer.");
+      }
       if (!acceptedTerms) {
         throw new Error("Accepte les conditions de la commande pour continuer.");
       }
@@ -885,6 +924,14 @@ export default function PeptidesEnginePage() {
         text: PEPTIDES_TERMS_TEXT,
         clientAcceptedAt: new Date().toISOString(),
       };
+      const peptidesProfileConfirmation = {
+        accepted: true,
+        pep_name: String(responses.pep_name || "").trim(),
+        pep_age: Number(responses.pep_age),
+        pep_weight: Number(responses.pep_weight),
+        pep_height: Number(responses.pep_height),
+        clientAcceptedAt: new Date().toISOString(),
+      };
 
       const res = await apiRequest("POST", "/api/stripe/create-checkout-session", {
         email,
@@ -896,6 +943,7 @@ export default function PeptidesEnginePage() {
         promoCode: promoCode.trim() || undefined,
         paymentRail,
         peptidesEngineConsent,
+        peptidesProfileConfirmation,
         ...metaAttr,
       });
       return res.json();
@@ -1192,6 +1240,8 @@ export default function PeptidesEnginePage() {
                 onPromoCodeChange={setPromoCode}
                 acceptedTerms={acceptedTerms}
                 onAcceptedTermsChange={setAcceptedTerms}
+                profileConfirmed={profileConfirmed}
+                onProfileConfirmedChange={setProfileConfirmed}
                 paymentRail={paymentRail}
                 onPaymentRailChange={setPaymentRail}
                 tier={tier}
