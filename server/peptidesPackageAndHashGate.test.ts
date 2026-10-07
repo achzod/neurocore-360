@@ -9,6 +9,7 @@ import {
 import {
   evaluatePeptidesReleaseHashGate,
   hashPeptidesReport,
+  isPeptidesApprovalExpected,
 } from "./peptidesReleaseHashGate";
 
 type Listing = PurchasePlanListing & { supplier: string };
@@ -141,6 +142,13 @@ test("approval metadata without its hash fails closed", () => {
   assert.equal(result.persistRefreshed, false);
 });
 
+test("invalidated approval remains hash-required after a hold is cleared", () => {
+  assert.equal(isPeptidesApprovalExpected({
+    hashGateApprovalRequired: false,
+    releaseVerdict: "INVALIDATED_BY_LIVE_REFRESH",
+  }), true);
+});
+
 test("already-mutated approved report is blocked before release", () => {
   const approved = { version: 1 };
   const current = { version: 2 };
@@ -173,6 +181,7 @@ test("recovery validates and hash-gates a refresh before persistence", () => {
   assert.match(block, /const validation = validatePeptidesReport\(repaired\)/);
   assert.match(block, /evaluatePeptidesReleaseHashGate/);
   assert.match(block, /peptidesHashGateApprovalRequired/);
+  assert.match(block, /isPeptidesApprovalExpected/);
   assert.match(block, /setOrderMetadataKey\(order\.id, "peptidesHashGateApprovalRequired", true\)/);
   assert.match(block, /if \(hashGate\.persistRefreshed && validation\.ok\)/);
   assert.ok(block.indexOf("const validation") < block.indexOf("storage.updateBurnoutReport"));

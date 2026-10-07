@@ -60,6 +60,24 @@ export function hashPeptidesReportContent(report: unknown): string {
   return hashPeptidesReport(stableReportContent(report));
 }
 
+export function isPeptidesApprovalExpected(input: {
+  approvedAt?: unknown;
+  approvedBy?: unknown;
+  releaseAuthorizedAt?: unknown;
+  hashGateApprovalRequired?: unknown;
+  releaseVerdict?: unknown;
+}): boolean {
+  const releaseVerdict = String(input.releaseVerdict || "");
+  return Boolean(
+    input.approvedAt
+    || input.approvedBy
+    || input.releaseAuthorizedAt
+    || input.hashGateApprovalRequired === true
+    || String(input.hashGateApprovalRequired).toLowerCase() === "true"
+    || /^(?:PASS\b|INVALIDATED_BY_LIVE_REFRESH$)/i.test(releaseVerdict)
+  );
+}
+
 /**
  * An approved report is immutable. A live refresh may update source timestamps
  * in memory, but any substantive change blocks delivery and cannot overwrite
