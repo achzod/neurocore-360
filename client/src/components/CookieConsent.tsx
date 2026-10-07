@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { trackDiscoveryFunnelStep } from "@/lib/analytics";
 
@@ -6,6 +6,7 @@ const CONSENT_KEY = "apexlabs_cookie_consent";
 
 export function CookieConsent() {
   const [visible, setVisible] = useState(false);
+  const bannerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const consent = localStorage.getItem(CONSENT_KEY);
@@ -19,6 +20,33 @@ export function CookieConsent() {
       loadGA();
     }
   }, []);
+
+  useEffect(() => {
+    if (!visible) return;
+
+    const previousBodyPaddingBottom = document.body.style.paddingBottom;
+    const previousScrollPaddingBottom = document.documentElement.style.scrollPaddingBottom;
+    const updateSafeArea = () => {
+      const bannerHeight = bannerRef.current?.getBoundingClientRect().height ?? 0;
+      const safeOffset = Math.ceil(bannerHeight + 16);
+      document.body.style.paddingBottom = `${safeOffset}px`;
+      document.documentElement.style.scrollPaddingBottom = `${safeOffset}px`;
+    };
+
+    updateSafeArea();
+    const observer = typeof ResizeObserver === "undefined"
+      ? null
+      : new ResizeObserver(updateSafeArea);
+    if (bannerRef.current) observer?.observe(bannerRef.current);
+    window.addEventListener("resize", updateSafeArea);
+
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", updateSafeArea);
+      document.body.style.paddingBottom = previousBodyPaddingBottom;
+      document.documentElement.style.scrollPaddingBottom = previousScrollPaddingBottom;
+    };
+  }, [visible]);
 
   function accept(level: "all" | "essential") {
     localStorage.setItem(CONSENT_KEY, level);
@@ -35,6 +63,9 @@ export function CookieConsent() {
     <AnimatePresence>
       {visible && (
         <motion.div
+          ref={bannerRef}
+          role="region"
+          aria-label="Préférences de cookies"
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 100, opacity: 0 }}

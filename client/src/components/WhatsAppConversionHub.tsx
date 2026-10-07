@@ -10,6 +10,10 @@ const HIDDEN_PREFIXES = [
   "/login",
   "/dashboard",
   "/conversions",
+  "/questionnaire",
+  "/peptides-preview",
+  "/peptides-engine",
+  "/checkout",
 ];
 
 function inferOffer(pathname: string): { offer: string; context: string } {
