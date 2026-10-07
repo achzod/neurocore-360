@@ -73,14 +73,14 @@ function HowItWorksVisual() {
   ];
 
   return (
-    <div className="relative w-full h-full bg-gradient-to-br from-[#25D366]/10 via-black to-[#25D366]/5 flex items-center justify-center overflow-hidden rounded-sm border border-white/5">
+    <div className="relative w-full min-w-0 h-full bg-gradient-to-br from-[#25D366]/10 via-black to-[#25D366]/5 flex items-center justify-center overflow-hidden rounded-sm border border-white/5">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(37,211,102,0.1)_0%,_transparent_70%)]" />
 
-      <div className="flex items-center gap-4 px-6">
+      <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 px-3 sm:px-6">
         {steps.map((step, i) => (
-          <div key={i} className="flex items-center gap-4">
+          <div key={i} className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
             <motion.div
-              className="flex flex-col items-center justify-center p-5 bg-black/40 border border-white/10 rounded-sm"
+              className="flex flex-col items-center justify-center p-3 sm:p-5 bg-black/40 border border-white/10 rounded-sm"
               animate={{
                 scale: [1, 1.08, 1],
                 borderColor: [`rgba(255,255,255,0.1)`, `${ACCENT}60`, `rgba(255,255,255,0.1)`],
@@ -96,7 +96,7 @@ function HowItWorksVisual() {
                 animate={{ opacity: [0.3, 1, 0.3] }}
                 transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.6 }}
               >
-                <ArrowRight className="w-5 h-5" style={{ color: `${ACCENT}80` }} />
+                <ArrowRight className="w-5 h-5 rotate-90 sm:rotate-0" style={{ color: `${ACCENT}80` }} />
               </motion.div>
             )}
           </div>
@@ -599,7 +599,7 @@ export default function FormCheck() {
   const heroScale = useTransform(scrollYProgress, [0, 0.3], [1, 0.95]);
 
   return (
-    <div ref={containerRef} className="bg-[#050505] min-h-screen">
+    <div ref={containerRef} className="bg-[#050505] min-h-screen overflow-x-hidden">
       <Header />
 
       {/* HERO */}
@@ -940,9 +940,9 @@ export default function FormCheck() {
               initial={{ opacity: 0, x: 30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="relative"
+              className="relative min-w-0 w-full"
             >
-              <div className="aspect-square">
+              <div className="aspect-square w-full max-w-full overflow-hidden">
                 <HowItWorksVisual />
               </div>
             </motion.div>
