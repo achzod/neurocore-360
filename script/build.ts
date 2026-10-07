@@ -1,6 +1,10 @@
 import { build as esbuild } from "esbuild";
 import { build as viteBuild } from "vite";
 import { rm, readFile } from "fs/promises";
+import {
+  BLOG_CATEGORY_SLUGS,
+  isCanonicalBlogArticleSlug,
+} from "../client/src/data/blogSeo";
 
 // server deps to bundle to reduce openat(2) syscalls
 // which helps cold start times
@@ -42,9 +46,14 @@ async function buildAll() {
   const { getAllArticles } = await import("../client/src/data/blogArticles");
   const { writeFile } = await import("fs/promises");
   const { resolve } = await import("path");
-  const articles = getAllArticles();
+  const allArticles = getAllArticles();
+  const articles = allArticles.filter((article) =>
+    isCanonicalBlogArticleSlug(article.slug),
+  );
   await writeFile(resolve("client", "public", "blog-articles.json"), JSON.stringify(articles));
-  console.log(`blog-articles.json: ${articles.length} articles`);
+  console.log(
+    `blog-articles.json: ${articles.length} canonical articles (${allArticles.length - articles.length} redirected aliases excluded)`,
+  );
 
   // Generate sitemap.xml with all blog articles
   console.log("generating sitemap.xml...");
@@ -84,24 +93,8 @@ async function buildAll() {
     );
   }
 
-  // Category pillar pages — one URL per non-empty category. Mirrors the
-  // CATEGORY_LABELS map in server/static.ts and the BLOG_CATEGORIES list in
-  // client/src/data/blogTypes.ts; keep these three in sync.
-  const categorySlugs = [
-    "musculation",
-    "sarms",
-    "supplements",
-    "hormones",
-    "sommeil",
-    "stress",
-    "nutrition",
-    "performance",
-    "metabolisme",
-    "longevite",
-    "biohacking",
-    "femmes",
-  ];
-  for (const slug of categorySlugs) {
+  // Category pillar pages — one URL per non-empty canonical category.
+  for (const slug of BLOG_CATEGORY_SLUGS) {
     const count = articles.filter((a: any) => a.category === slug).length;
     if (count === 0) continue;
     sitemapEntries.push(

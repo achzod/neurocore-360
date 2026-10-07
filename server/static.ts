@@ -2,6 +2,10 @@ import express, { type Express } from "express";
 import fs from "fs";
 import path from "path";
 import { marked } from "marked";
+import {
+  BLOG_ARTICLE_REDIRECTS,
+  BLOG_INDEXATION_PRIORITY_SLUGS,
+} from "../client/src/data/blogSeo";
 
 const BASE_URL = "https://apexlabs.achzodcoaching.com";
 const DEFAULT_OG_IMAGE = `${BASE_URL}/og-default.png`;
@@ -709,7 +713,20 @@ ${links ? `<nav aria-label="Pages principales"><ul>${links}</ul></nav>` : ""}
     }),
   );
 
-  // SSR meta injection for blog articles
+  // Consolidate legacy/topic-duplicate article URLs before rendering. Redirected
+  // aliases stay in source control for editorial history, but are absent from
+  // blog-articles.json and sitemap.xml.
+  app.get("/blog/:slug", (req, res, next) => {
+    const target = BLOG_ARTICLE_REDIRECTS[
+      req.params.slug as keyof typeof BLOG_ARTICLE_REDIRECTS
+    ];
+    if (!target) return next();
+    const queryIndex = req.originalUrl.indexOf("?");
+    const query = queryIndex >= 0 ? req.originalUrl.slice(queryIndex) : "";
+    return res.redirect(301, `/blog/${encodePathSegment(target)}${query}`);
+  });
+
+  // SSR meta injection for canonical blog articles
   app.get("/blog/:slug", (req, res) => {
     const article = articleMap.get(req.params.slug);
 
@@ -936,6 +953,14 @@ ${relatedHtml}
           `<li><a href="${BASE_URL}/blog/${esc(encodePathSegment(a.slug))}">${esc(a.title)}</a> , ${esc(buildMetaDescription(a).slice(0, 130))}</li>`,
       )
       .join("\n");
+    const priorityLinks = BLOG_INDEXATION_PRIORITY_SLUGS
+      .map((slug) => articleMap.get(slug))
+      .filter((article): article is BlogArticle => Boolean(article))
+      .map(
+        (a) =>
+          `<li><a href="${BASE_URL}/blog/${esc(encodePathSegment(a.slug))}">${esc(a.title)}</a></li>`,
+      )
+      .join("\n");
     const blogBody = `<noscript><main>
 <h1>Blog APEXLABS</h1>
 <p>${esc(description)}</p>
@@ -944,6 +969,10 @@ ${relatedHtml}
 <ul>${categoryLinks}</ul>
 </section>
 ${pillarLinks}
+<section>
+<h2>Guides a decouvrir</h2>
+<ul>${priorityLinks}</ul>
+</section>
 <section>
 <h2>Derniers articles</h2>
 <ul>${latestLinks}</ul>

@@ -309,7 +309,7 @@ Pour acheter le bon complément probiotique, nul besoin d'un diplôme en pharmac
   },
   {
     id: `yam-7`,
-    slug: `yam-the-new-era-of-supplements-mcu-20-ACHZOD-748`,
+    slug: `yam-the-new-era-of-supplements-mcu-20-achzod-748`,
     title: `La nouvelle ère des suppléments : MCU-20® ACHZOD®`,
     excerpt: `MCU-20® ACHZOD® est la formulation innovante de supplément qui garantit l'assimilation de 100% des principes actifs MCU-20® a été développé par les Laboratoires ACHZOD® pour maximiser le transport et l'absorption des principes actifs des...`,
     content: `# La nouvelle ère des suppléments : MCU-20® ACHZOD®

@@ -5,6 +5,7 @@ import { Footer } from "@/components/Footer";
 import { ArrowRight, Clock, Calendar, Search, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { BLOG_CATEGORIES, type BlogArticle } from "@/data/blogTypes";
+import { BLOG_INDEXATION_PRIORITY_SLUGS } from "@/data/blogSeo";
 
 const BLOG_PILLARS = [
   {
@@ -81,6 +82,13 @@ export default function Blog() {
     () => articles.filter((article) => article.featured).slice(0, 6),
     [articles]
   );
+
+  const priorityArticles = useMemo(() => {
+    const bySlug = new Map(articles.map((article) => [article.slug, article]));
+    return BLOG_INDEXATION_PRIORITY_SLUGS
+      .map((slug) => bySlug.get(slug))
+      .filter((article): article is BlogArticle => Boolean(article));
+  }, [articles]);
 
   const categoryArticles = useMemo(() => {
     if (activeCategory === "all") return articles;
@@ -176,6 +184,38 @@ export default function Blog() {
                 </Link>
               ))}
             </div>
+          </div>
+        </section>
+
+        <section className="py-10 border-b border-white/5">
+          <div className="mx-auto max-w-7xl px-4">
+            <p className="text-[#FCDD00] text-xs font-mono tracking-[0.3em] uppercase mb-4">
+              [ À DÉCOUVRIR ]
+            </p>
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+              {priorityArticles.map((article) => (
+                <Link
+                  key={article.slug}
+                  href={`/blog/${article.slug}`}
+                  className="rounded-sm border border-white/10 bg-white/[0.02] p-4 text-sm font-semibold text-white/75 transition hover:border-[#FCDD00]/40 hover:text-[#FCDD00]"
+                >
+                  {article.title}
+                </Link>
+              ))}
+            </div>
+            <nav aria-label="Toutes les catégories du blog" className="mt-8 flex flex-wrap gap-2">
+              {BLOG_CATEGORIES.filter(
+                (category) => category.id !== "all" && getArticleCountByCategory(category.id) > 0,
+              ).map((category) => (
+                <Link
+                  key={category.id}
+                  href={`/blog/categorie/${category.id}`}
+                  className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-white/55 transition hover:border-[#FCDD00]/40 hover:text-[#FCDD00]"
+                >
+                  {category.label}
+                </Link>
+              ))}
+            </nav>
           </div>
         </section>
 
