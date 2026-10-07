@@ -113,6 +113,7 @@ import {
   getPeptidesGenerationRetryAt,
   sanitizePeptidesGenerationError,
 } from "./peptidesGenerationCircuitBreaker";
+import { evaluatePeptidesReleaseHashGate } from "./peptidesReleaseHashGate";
 import {
   getAICostBudgetSummary,
   resetAICostBudgetReservations,
@@ -7188,8 +7189,9 @@ export async function registerRoutes(
       }
 
       const paidTier = String((order.metadata as any)?.peptidesTier || (existing.report as any)?.tier || "solo");
+      const consentAccepted = hasValidPeptidesConsent((order.metadata as any)?.peptidesEngineConsent);
       const before = JSON.parse(JSON.stringify(existing.report));
-      const repaired = await refreshPeptauraPricingForDelivery(before, responses, paidTier);
+      const repaired = await refreshPeptauraPricingForDelivery(before, responses, paidTier, consentAccepted);
       const { validatePeptidesReport } = await import("./peptidesReportValidator");
       const validation = validatePeptidesReport(repaired);
 
@@ -15474,15 +15476,49 @@ export async function registerRoutes(
             const repaired = await refreshPeptauraPricingForDelivery(
               JSON.parse(JSON.stringify(existingReport)),
               pricingResponses,
-              String((order.metadata as any)?.peptidesTier || existingReport?.tier || "solo")
+              String((order.metadata as any)?.peptidesTier || existingReport?.tier || "solo"),
+              hasValidPeptidesConsent((order.metadata as any)?.peptidesEngineConsent),
             );
-            const repairedFingerprint = JSON.stringify(repaired);
-            const originalFingerprint = JSON.stringify(existingReport);
-            if (repairedFingerprint !== originalFingerprint) {
+            const validation = validatePeptidesReport(repaired);
+            const releaseVerdict = String((order.metadata as any)?.peptidesReleaseAuditVerdict || "");
+            const approvalExpected = Boolean(
+              (order.metadata as any)?.peptidesApprovedAt
+              || (order.metadata as any)?.peptidesApprovedBy
+              || (order.metadata as any)?.peptidesReleaseAuthorizedAt
+              || (order.metadata as any)?.peptidesHashGateApprovalRequired === true
+              || String((order.metadata as any)?.peptidesHashGateApprovalRequired).toLowerCase() === "true"
+              || /^PASS\b/i.test(releaseVerdict),
+            );
+            const hashGate = evaluatePeptidesReleaseHashGate({
+              approvalExpected,
+              approvedHash: (order.metadata as any)?.peptidesApprovedReportSha256,
+              currentReport: existingReport,
+              refreshedReport: repaired,
+            });
+            if (!hashGate.ok) {
+              await storage.setOrderMetadataKey(order.id, "peptidesEmailHold", true);
+              await storage.setOrderMetadataKey(order.id, "peptidesHashGateApprovalRequired", true);
+              await storage.setOrderMetadataKey(
+                order.id,
+                "peptidesEmailHoldReason",
+                `APPROVED_REPORT_HASH_GATE:${hashGate.reason}`,
+              );
+              await storage.setOrderMetadataKey(order.id, "peptidesReleaseAuditVerdict", "INVALIDATED_BY_LIVE_REFRESH");
+              await storage.setOrderMetadataKey(order.id, "peptidesHashGateCheckedAt", new Date().toISOString());
+              await storage.setOrderMetadataKey(order.id, "peptidesHashGateApprovedSha256", hashGate.approvedHash || "");
+              await storage.setOrderMetadataKey(order.id, "peptidesHashGateCurrentSha256", hashGate.currentHash);
+              await storage.setOrderMetadataKey(order.id, "peptidesHashGateCandidateSha256", hashGate.refreshedHash);
+              await storage.setOrderMetadataKey(order.id, "peptidesHashGateCurrentContentSha256", hashGate.currentContentHash);
+              await storage.setOrderMetadataKey(order.id, "peptidesHashGateCandidateContentSha256", hashGate.refreshedContentHash);
+              console.error(
+                `[AutoGen] APPROVED REPORT HASH GATE blocked ${email} (${hashGate.reason}); current report was not mutated`,
+              );
+              continue;
+            }
+            if (hashGate.persistRefreshed && validation.ok) {
               await storage.updateBurnoutReport(meta.peptidesReportId, repaired).catch(() => {});
               Object.assign(existingReport, repaired);
             }
-            const validation = validatePeptidesReport(repaired);
             if (!validation.ok) {
               const lastNotifIso = (order.metadata as any)?.peptidesBloqueNotifiedAt as string | undefined;
               const sinceLastSec = lastNotifIso
