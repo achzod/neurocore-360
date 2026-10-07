@@ -13,6 +13,7 @@ import {
   auditClientFacingText,
   collectClientFacingStrings,
 } from "./clientFacingQuality";
+import { calculateReserveTargetMg } from "./peptidesReservePlanning";
 
 export interface PeptidesPeptide {
   name?: string;
@@ -31,6 +32,7 @@ export interface PeptidesPeptide {
     pharmacologicalNeedMg?: number | null;
     mathematicalMinimumVials?: number | null;
     operationalVials?: number | null;
+    optionalSealedReserveVials?: number | null;
     stabilityDays?: number | null;
     stabilitySource?: string | null;
   };
@@ -888,7 +890,7 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
   return total >= 0.5 ? total : null;
 }
 
-function checkPeptide(p: PeptidesPeptide): string[] {
+export function checkPeptide(p: PeptidesPeptide): string[] {
   const issues: string[] = [];
 
   for (const fld of REQUIRED_PEPTIDE_FIELDS) {
@@ -921,7 +923,21 @@ function checkPeptide(p: PeptidesPeptide): string[] {
   const totalMgOrdered = extractTotalMgFromVials(p.vialsNeeded);
   const needMg = estimateNeedMg(p);
   if (totalMgOrdered != null && needMg != null && needMg > 0) {
+    const reserveTargetMg = calculateReserveTargetMg(p, needMg);
     const overshoot = totalMgOrdered / needMg;
+    if (totalMgOrdered + 1e-6 < reserveTargetMg) {
+      issues.push(
+        `sous-commande reserve detectee: ${totalMgOrdered}mg commandes vs ${reserveTargetMg.toFixed(1)}mg cible avec reserve`
+      );
+    }
+    const declaredReserveTarget = String(p.vialsNeeded || "")
+      .replace(/(\d),(\d)/g, "$1.$2")
+      .match(/cible avec reserve\s+(\d+(?:\.\d+)?)\s*mg/i);
+    if (declaredReserveTarget && Math.abs(Number(declaredReserveTarget[1]) - reserveTargetMg) > 0.05) {
+      issues.push(
+        `cible avec reserve incoherente: ${declaredReserveTarget[1]}mg affichee vs ${reserveTargetMg.toFixed(1)}mg calculee`
+      );
+    }
     // Incompressible-minimum exception: when one vial of the smallest
     // available format already exceeds the cycle need (e.g. GHK-Cu sold only
     // as 50mg vials but the protocol calls for 8mg), there is nothing the

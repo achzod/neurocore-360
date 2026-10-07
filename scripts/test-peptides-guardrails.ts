@@ -146,8 +146,9 @@ assert.deepEqual(
   [4, 6],
 );
 assert.match(engineSource, /const orderedNeedMg = extractTotalMgFromVials\(pep\.vialsNeeded\);/);
-assert.match(engineSource, /Pour \$\{pep\.name\}, minimum mathematique/);
-assert.match(engineSource, /const needMg = estimatedNeedMg \?\? orderedNeedMg;/);
+assert.match(engineSource, /Pour \$\{pep\.name\}, \$\{operationalQty\} vials couvrent la cible avec reserve/);
+assert.match(engineSource, /const activeNeedMg = estimatedNeedMg \?\? orderedNeedMg;/);
+assert.match(engineSource, /const targetNeedMg = calculateReserveTargetMg\(pep, activeNeedMg\);/);
 assert.match(
   engineSource,
   /BAC Water:[\s\S]{0,220}~\$\$\{effectiveBottlePrice\.toFixed\(2\)\}\/vial[\s\S]{0,120}=\s*\$\$\{totalPrice\.toFixed\(2\)\}\s*total/,
@@ -190,8 +191,8 @@ const peptide = {
   timing: "Jour fixe",
   purpose: "Exemple de verification mathematique, pas une automedication",
   purchaseUrl: "https://www.peptaura.com/catalog/Retatrutide",
-  vialsNeeded: "8 vials de 10mg pour 12 semaines, total 79mg",
-  priceEstimate: "Environ 8 vials, total $100, prix live controle avant livraison",
+  vialsNeeded: "10 vials de 10mg pour 12 semaines, besoin actif 79mg et cible avec reserve 98.75mg",
+  priceEstimate: "Environ 10 vials, total $125, prix live controle avant livraison",
   cycleDuration: "12 semaines",
   reconstitution: "Vial de 10mg, manipulation uniquement apres formation par un professionnel",
   whyThisPeptide: "Molecule experimentale non approuvee, donnees humaines encore limitees",
@@ -260,7 +261,7 @@ const report: PeptidesReport = {
     ].filter(Boolean).join("\n\n"),
   })),
   weeklySchedule: "JEUDI: Retatrutide 1 mg, injection hebdomadaire selon la titration.",
-  shoppingList: "Retatrutide: 8 vials de 10mg, stock et pays a verifier avant achat.",
+  shoppingList: "Retatrutide: 10 vials de 10mg, stock et pays a verifier avant achat.",
   promoCodesGenerated: [],
   _peptauraLiveSync: {
     syncedAt: now,
@@ -273,11 +274,11 @@ const report: PeptidesReport = {
       fetchedAt: now,
       supplier: "Fournisseur test",
       dosage: "10mg",
-      requestedVials: 8,
-      deliveredVials: 8,
-      packageCount: 8,
+      requestedVials: 10,
+      deliveredVials: 10,
+      packageCount: 10,
       boxSize: 1,
-      totalPriceUsd: 100,
+      totalPriceUsd: 125,
     }],
   },
 };
@@ -984,7 +985,7 @@ assert.equal(validLowTestosteroneAudit.ok, true, validLowTestosteroneAudit.error
 
 const oneCentLivePriceRounding = structuredClone(report) as any;
 oneCentLivePriceRounding.peptides[0].priceEstimate =
-  "Environ 8 vials, total $99.99, prix live controle avant livraison";
+  "Environ 10 vials, total $124.99, prix live controle avant livraison";
 const oneCentLivePriceRoundingAudit = validatePeptidesReport(oneCentLivePriceRounding);
 assert.equal(
   oneCentLivePriceRoundingAudit.ok,
