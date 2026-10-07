@@ -212,17 +212,59 @@ export function selectBestPurchasePlanWithMandatoryFallback<Listing extends Purc
     }));
   if (plans.length === 0) return null;
 
-  const cheapest = [...plans].sort((a, b) =>
+  // Forced packaging is a fallback, not a value upgrade. A proportionate
+  // basket must not lose to a large mandatory box merely because that box is
+  // slightly cheaper or falls inside the usual 15% price comparison window.
+  const proportionatePlans = plans.filter(
+    (plan) => plan.overstockRatio <= preferredOverstockRatio + 1e-9,
+  );
+  const eligiblePlans = proportionatePlans.length > 0 ? proportionatePlans : plans;
+
+  const cheapest = [...eligiblePlans].sort((a, b) =>
     a.totalPriceUsd - b.totalPriceUsd
     || a.deliveredMg - b.deliveredMg
     || a.vialMg - b.vialMg
   )[0];
   const ceiling = cheapest.totalPriceUsd * maxPricePremiumRatio + 1e-9;
-  const valueCandidates = plans.filter((plan) => plan.totalPriceUsd <= ceiling);
+  const valueCandidates = eligiblePlans.filter((plan) => plan.totalPriceUsd <= ceiling);
   valueCandidates.sort((a, b) =>
     b.deliveredMg - a.deliveredMg
     || a.totalPriceUsd - b.totalPriceUsd
     || a.vialMg - b.vialMg
   );
   return valueCandidates[0] || cheapest;
+}
+
+/**
+ * Honors a preferred vial strength only when it produces a proportionate
+ * basket. If that strength exists solely as an oversized package, compare all
+ * eligible strengths before accepting a mandatory fallback.
+ */
+export function selectBestPurchasePlanWithPreferredStrength<Listing extends PurchasePlanListing>(
+  listings: Listing[],
+  needMg: number,
+  preferredVialMg: number | null,
+  preferredOverstockRatio = 1.2,
+  hardCoverageRatio = 6,
+  maxPricePremiumRatio = 1.15,
+): PeptidePurchasePlan<Listing> | null {
+  if (preferredVialMg != null) {
+    const preferred = listings.filter((listing) => {
+      const vialMg = parseListingMg(listing.dosage);
+      return vialMg != null && Math.abs(vialMg - preferredVialMg) < 0.05;
+    });
+    const preferredPlan = selectBestPurchasePlan(
+      preferred,
+      needMg,
+      preferredOverstockRatio,
+    );
+    if (preferredPlan) return preferredPlan;
+  }
+  return selectBestPurchasePlanWithMandatoryFallback(
+    listings,
+    needMg,
+    preferredOverstockRatio,
+    hardCoverageRatio,
+    maxPricePremiumRatio,
+  );
 }

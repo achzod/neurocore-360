@@ -34,7 +34,7 @@ import {
   offerTotalPrice,
   packageCountForVials,
   parseListingMg,
-  selectBestPurchasePlanWithMandatoryFallback,
+  selectBestPurchasePlanWithPreferredStrength,
   type PeptidePurchasePlan,
 } from "./peptidesPurchasePlan";
 import {
@@ -1068,21 +1068,10 @@ function selectBestLivePurchasePlan(
   preferredVialMg: number | null = null,
 ): PeptidePurchasePlan<PeptauraLiveListing> | null {
   const eligible = eligibleLiveListings(snapshot, shipping);
-  if (preferredVialMg != null) {
-    const preferred = eligible.filter((listing) => {
-      const vialMg = parseListingMg(listing.dosage);
-      return vialMg != null && Math.abs(vialMg - preferredVialMg) < 0.05;
-    });
-    const preferredPlan = selectBestPurchasePlanWithMandatoryFallback(
-      preferred,
-      needMg,
-      PEPTAURA_MAX_PACKAGING_OVERSTOCK_RATIO,
-    );
-    if (preferredPlan) return preferredPlan;
-  }
-  return selectBestPurchasePlanWithMandatoryFallback(
+  return selectBestPurchasePlanWithPreferredStrength(
     eligible,
     needMg,
+    preferredVialMg,
     PEPTAURA_MAX_PACKAGING_OVERSTOCK_RATIO,
   );
 }
