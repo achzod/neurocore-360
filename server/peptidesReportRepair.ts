@@ -22,6 +22,10 @@ type RepairableReport = PeptidesReport & {
     applied?: string[];
     failures?: string[];
     listingSnapshots?: Array<Record<string, unknown>>;
+    shippingBreakdown?: Array<{
+      subtotalUsd?: number;
+      shippingUsd?: number;
+    }>;
   };
 };
 
@@ -843,8 +847,24 @@ function removeUnsupportedDescentNarrative(report: RepairableReport): void {
   }
 }
 
-function extractLiveReportTotalUsd(report: RepairableReport): number {
-  return String(report.shoppingList || "")
+export function extractLiveReportCosts(report: RepairableReport): {
+  productsUsd: number;
+  shippingUsd: number;
+  totalUsd: number;
+} {
+  const shipping = report._peptauraLiveSync?.shippingBreakdown || [];
+  const productsUsd = shipping.reduce(
+    (sum, line) => sum + Number(line.subtotalUsd || 0),
+    0
+  );
+  const shippingUsd = shipping.reduce(
+    (sum, line) => sum + Number(line.shippingUsd || 0),
+    0
+  );
+  if (productsUsd > 0) {
+    return { productsUsd, shippingUsd, totalUsd: productsUsd + shippingUsd };
+  }
+  const fallbackProductsUsd = String(report.shoppingList || "")
     .split(/\n+/)
     .reduce((sum, line) => {
       const usdMatch = line.match(/\btotal\s*\$(\d+(?:[.,]\d+)?)/i);
@@ -852,7 +872,24 @@ function extractLiveReportTotalUsd(report: RepairableReport): number {
       const usd = usdMatch ? Number(usdMatch[1].replace(",", ".")) : 0;
       const gbpAsUsd = gbpMatch ? Number(gbpMatch[1].replace(",", ".")) * 1.28 : 0;
       return sum + usd + gbpAsUsd;
-  }, 0);
+    }, 0);
+  return { productsUsd: fallbackProductsUsd, shippingUsd: 0, totalUsd: fallbackProductsUsd };
+}
+
+export function deriveReportCycleWeeks(report: RepairableReport): number {
+  const texts = [
+    report.weeklySchedule || "",
+    ...(report.peptides || []).map((peptide) => peptide.cycleDuration || ""),
+  ];
+  const rangeEnds = texts.flatMap((text) =>
+    Array.from(String(text).matchAll(/semaines?\s*\d+\s*(?:à|a|-)\s*(\d+)/gi))
+      .map((match) => Number(match[1]))
+  ).filter((value) => Number.isFinite(value) && value > 0);
+  const durations = texts.flatMap((text) =>
+    Array.from(String(text).matchAll(/(\d+)\s*semaines?\b/gi))
+      .map((match) => Number(match[1]))
+  ).filter((value) => Number.isFinite(value) && value > 0);
+  return Math.max(1, ...rangeEnds, ...durations);
 }
 
 function normalizeOperationalPlaceholders(report: RepairableReport): void {
@@ -1010,18 +1047,10 @@ function synchronizeStandardShoppingNarrative(
   // This report-wide policy is already rendered by the standalone interactive
   // shopping list. Do not clone it into the synchronized narrative section.
   const narrativeShoppingLines = withoutOperationalVialPolicySummary(shoppingLines);
-  const totalUsd = extractLiveReportTotalUsd(report);
-  const totalEur = Math.round(totalUsd * 0.92);
-  const maxWeeks = Math.max(
-    1,
-    ...(report.peptides || []).map((peptide) => {
-      const match = String(peptide.cycleDuration || "").match(
-        /(\d+)\s*semaines?\b/i
-      );
-      return match ? Number(match[1]) : 0;
-    })
-  );
-  const monthlyEur = totalUsd > 0
+  const costs = extractLiveReportCosts(report);
+  const totalEur = Math.round(costs.totalUsd * 0.92);
+  const maxWeeks = deriveReportCycleWeeks(report);
+  const monthlyEur = costs.totalUsd > 0
     ? Math.round(totalEur / Math.max(1, maxWeeks / 4.345))
     : 0;
 
@@ -1030,8 +1059,8 @@ function synchronizeStandardShoppingNarrative(
       [
         `${firstName}, voici la liste de commande recalculee apres verification des pages Peptaura. Cette version remplace tous les chiffres generes avant le controle live.`,
         ...narrativeShoppingLines,
-        totalUsd > 0
-          ? `TOTAL LIVE DU CYCLE\nEnviron $${totalUsd.toFixed(2)}, soit environ ${totalEur} euros hors frais de port. Sur ${maxWeeks} semaines, cela represente environ ${monthlyEur} euros par mois.`
+        costs.totalUsd > 0
+          ? `TOTAL LIVE DU CYCLE\nProduits $${costs.productsUsd.toFixed(2)} plus livraison $${costs.shippingUsd.toFixed(2)}, soit $${costs.totalUsd.toFixed(2)} au total et environ ${totalEur} euros. Sur ${maxWeeks} semaines, cela represente environ ${monthlyEur} euros par mois.`
           : "",
       ]
         .filter(Boolean)
@@ -1042,10 +1071,10 @@ function synchronizeStandardShoppingNarrative(
   const supportSection = (report.sections || []).find((section) =>
     /disclaimer|support/i.test(`${section.id} ${section.title}`)
   );
-  if (supportSection && totalUsd > 0) {
+  if (supportSection && costs.totalUsd > 0) {
     const canonicalCost =
-      `COUT RECALCULE APRES CONTROLE LIVE\nLe total du cycle est d'environ $${totalUsd.toFixed(2)}, ` +
-      `soit environ ${totalEur} euros hors frais de port. Sur ${maxWeeks} semaines, compte environ ${monthlyEur} euros par mois.`;
+      `COUT RECALCULE APRES CONTROLE LIVE\nProduits $${costs.productsUsd.toFixed(2)} plus livraison $${costs.shippingUsd.toFixed(2)}, ` +
+      `soit $${costs.totalUsd.toFixed(2)} au total et environ ${totalEur} euros. Sur ${maxWeeks} semaines, compte environ ${monthlyEur} euros par mois.`;
     const content = String(supportSection.content || "");
     supportSection.content = sanitizeClientFacingText(
       /CO[UÛ]T (?:MENSUEL|RECALCULE)[\s\S]*?(?=CE PROTOCOLE|$)/i.test(content)

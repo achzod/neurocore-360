@@ -57,6 +57,7 @@ import {
   planOperationalVials,
 } from "./peptidesVialPlanning";
 import { derivePeptidesStackPolicy } from "./peptidesStackPolicy";
+import { calculateReserveTargetMg } from "./peptidesReservePlanning";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1269,11 +1270,12 @@ async function applyLivePeptauraPricing(
     pep.purchaseUrl = peptauraProductUrl(slug);
     const estimatedNeedMg = estimateNeedMg(pep);
     const orderedNeedMg = extractTotalMgFromVials(pep.vialsNeeded);
-    const needMg = estimatedNeedMg ?? orderedNeedMg;
-    if (needMg == null || needMg <= 0) {
+    const activeNeedMg = estimatedNeedMg ?? orderedNeedMg;
+    if (activeNeedMg == null || activeNeedMg <= 0) {
       failures.push(`${pep.name}: quantite totale incalculable depuis le dosage et la duree`);
       continue;
     }
+    const targetNeedMg = calculateReserveTargetMg(pep, activeNeedMg);
     const fetchedSnapshot = await fetchPeptauraProductSnapshot(slug, forceFresh);
     const cachedSnapshotAgeMs = cachedSnapshot
       ? Date.now() - new Date(cachedSnapshot.fetchedAt).getTime()
@@ -1301,9 +1303,9 @@ async function applyLivePeptauraPricing(
     const preferredVialMg = preferredStagedVialMgForCycle(pep)
       || extractVialMg(pep.vialsNeeded)
       || extractVialMg(pep.reconstitution);
-    const purchasePlan = selectBestLivePurchasePlan(snapshot, context.shippingAvailability, needMg, preferredVialMg);
+    const purchasePlan = selectBestLivePurchasePlan(snapshot, context.shippingAvailability, targetNeedMg, preferredVialMg);
     if (!purchasePlan) {
-      failures.push(formatLiveStockCoverageFailure(pep.name, snapshot, context.shippingAvailability, needMg));
+      failures.push(formatLiveStockCoverageFailure(pep.name, snapshot, context.shippingAvailability, targetNeedMg));
       continue;
     }
     const best = purchasePlan.listing;
@@ -1311,8 +1313,8 @@ async function applyLivePeptauraPricing(
     const bestMg = purchasePlan.vialMg;
     const durationLabel = String(pep.cycleDuration || "le cycle").split(/[,.]/)[0].trim();
     const naturalDurationLabel = durationLabel.charAt(0).toLowerCase() + durationLabel.slice(1);
-    const needSourceLabel = estimatedNeedMg != null ? "besoin calcule" : "besoin reconstruit depuis la quantite initiale";
-    pep.vialsNeeded = `${purchasePlan.deliveredVials} vial${purchasePlan.deliveredVials > 1 ? "s" : ""} de ${bestMg} mg pour ${naturalDurationLabel} (${needSourceLabel} ~${needMg.toFixed(2)} mg, capacite livree ${purchasePlan.deliveredMg.toFixed(2)} mg${purchasePlan.forcedPackaging ? ", conditionnement fournisseur impose" : ""})`;
+    const needSourceLabel = estimatedNeedMg != null ? "cible avec reserve calculee" : "cible avec reserve reconstruite depuis la quantite initiale";
+    pep.vialsNeeded = `${purchasePlan.deliveredVials} vial${purchasePlan.deliveredVials > 1 ? "s" : ""} de ${bestMg} mg pour ${naturalDurationLabel} (${needSourceLabel} ~${targetNeedMg.toFixed(2)} mg, dont ${activeNeedMg.toFixed(2)} mg actifs; capacite livree ${purchasePlan.deliveredMg.toFixed(2)} mg${purchasePlan.forcedPackaging ? ", conditionnement fournisseur impose" : ""})`;
     if (/aucune offre live exploitable|format de vial.*(?:manque|indisponible)|(?:reconstitution.{0,80})?unit[ée]s?.{0,40}suspendues|feed officiel ne fournit pas le volume/i.test(pep.reconstitution || "")) {
       const conditional = buildConditionalReconstitutionText(pep.dosage, bestMg);
       if (!conditional) {
@@ -1325,26 +1327,37 @@ async function applyLivePeptauraPricing(
     const livePlan = planOperationalVials(
       {
         ...pep,
-        pharmacologicalNeedMg: needMg,
+        pharmacologicalNeedMg: activeNeedMg,
         reconstitution: `Vial ${bestMg}mg. ${pep.reconstitution || ""}`,
         vialsNeeded: `${qty} vials de ${bestMg}mg`,
       },
       parseDocumentedStabilityConfig()
     );
-    pep._vialPlanning = livePlan;
-    const operationalQty = livePlan.status === "documented" && livePlan.operationalVials != null
-      ? livePlan.operationalVials
-      : livePlan.mathematicalMinimumVials || qty;
+    const reserveMinimumVials = Math.ceil(targetNeedMg / bestMg);
+    const operationalQty = Math.max(
+      reserveMinimumVials,
+      livePlan.status === "documented" && livePlan.operationalVials != null
+        ? livePlan.operationalVials
+        : livePlan.mathematicalMinimumVials || qty,
+    );
+    pep._vialPlanning = {
+      ...livePlan,
+      optionalSealedReserveVials: Math.max(
+        Number(livePlan.optionalSealedReserveVials || 0),
+        operationalQty,
+      ),
+    };
     const purchasedPackageCount = packageCountForVials(best, operationalQty);
     qty = purchasedPackageCount * Math.max(1, best.boxSize);
-    const needRounded = Number((livePlan.pharmacologicalNeedMg ?? needMg).toFixed(3));
+    const activeNeedRounded = Number(activeNeedMg.toFixed(3));
+    const targetNeedRounded = Number(targetNeedMg.toFixed(3));
     const operationalNote = livePlan.status === "documented" && livePlan.operationalVials != null
-      ? `Pour ${pep.name}, besoin operationnel ${livePlan.operationalVials} vials sur les fenetres documentees, minimum mathematique ${livePlan.mathematicalMinimumVials}.`
-      : `Pour ${pep.name}, minimum mathematique ${livePlan.mathematicalMinimumVials ?? operationalQty} vials; aucune reserve supplementaire n'est ajoutee sans fenetre documentee.`;
+      ? `Pour ${pep.name}, ${operationalQty} vials couvrent la cible avec reserve et les fenetres documentees; minimum actif ${livePlan.mathematicalMinimumVials}.`
+      : `Pour ${pep.name}, ${operationalQty} vials couvrent la cible avec reserve; minimum actif ${livePlan.mathematicalMinimumVials ?? operationalQty}.`;
     const forcedPackagingNote = qty > operationalQty
       ? ` Conditionnement fournisseur impose: ${purchasedPackageCount} boite${purchasedPackageCount > 1 ? "s" : ""} de ${best.boxSize} vials.`
       : "";
-    pep.vialsNeeded = `Achat reel ${qty} vial${qty > 1 ? "s" : ""} de ${bestMg} mg pour ${naturalDurationLabel}. Besoin actif et reserve ${needRounded} mg. ${operationalNote}${forcedPackagingNote}`;
+    pep.vialsNeeded = `Achat reel ${qty} vial${qty > 1 ? "s" : ""} de ${bestMg} mg pour ${naturalDurationLabel}. Besoin actif ${activeNeedRounded} mg; cible avec reserve ${targetNeedRounded} mg. ${operationalNote}${forcedPackagingNote}`;
 
     // The official feed exposes the exact listing URL. Never synthesize a
     // vendor URL; use it only after the listing passed country/stock/price
@@ -1368,7 +1381,7 @@ async function applyLivePeptauraPricing(
         boxSize: best.boxSize,
         packageCount,
         deliveredVials: packageCount * best.boxSize,
-        needMg,
+        needMg: targetNeedMg,
         deliveredMg: packageCount * best.boxSize * bestMg,
         unitPackagePriceUsd: effectivePackagePrice(best, qty),
         totalPriceUsd: offerTotalPrice(best, qty),
@@ -1492,7 +1505,7 @@ async function applyLivePeptauraPricing(
     })),
     context.shippingAvailability,
   );
-  const shippingBreakdown: Array<Record<string, unknown>> = basketShipping.breakdown;
+  const shippingBreakdown = basketShipping.breakdown;
   failures.push(...basketShipping.failures);
 
   (report as any)._peptauraLiveSync = {
