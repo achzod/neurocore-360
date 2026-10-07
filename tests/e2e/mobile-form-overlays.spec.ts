@@ -74,3 +74,27 @@ test("le header ne recouvre pas Continuer en paysage iPhone", async ({ page }) =
   await expectClickableAboveConsent(page, next);
   await expect(page.getByRole("banner")).toHaveCSS("position", "relative");
 });
+
+test("les alias Discovery restent sans hub après le délai réel et le panneau public reste dans l'écran", async ({ context, page }) => {
+  test.setTimeout(30_000);
+  const checkoutPage = await context.newPage();
+  const publicPage = await context.newPage();
+  for (const candidate of [page, checkoutPage, publicPage]) {
+    await candidate.setViewportSize({ width: 320, height: 667 });
+  }
+
+  await Promise.all([
+    page.goto("/audit-complet/questionnaire?plan=gratuit"),
+    checkoutPage.goto("/audit-complet/checkout?plan=gratuit"),
+    publicPage.goto("/audit-complet"),
+  ]);
+
+  await expect(publicPage.getByLabel("Fermer le formulaire WhatsApp")).toBeVisible({ timeout: 16_000 });
+  await expect(page.getByTestId("global-whatsapp-form-toggle")).toHaveCount(0);
+  await expect(checkoutPage.getByTestId("global-whatsapp-form-toggle")).toHaveCount(0);
+
+  const closeButtonBounds = await publicPage.getByLabel("Fermer le formulaire WhatsApp").boundingBox();
+  expect(closeButtonBounds).not.toBeNull();
+  expect(closeButtonBounds!.y).toBeGreaterThanOrEqual(8);
+  expect(closeButtonBounds!.y + closeButtonBounds!.height).toBeLessThanOrEqual(659);
+});

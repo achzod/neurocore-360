@@ -11,6 +11,8 @@ const HIDDEN_PREFIXES = [
   "/dashboard",
   "/conversions",
   "/questionnaire",
+  "/audit-complet/questionnaire",
+  "/audit-complet/checkout",
   "/peptides-preview",
   "/peptides-engine",
   "/checkout",
@@ -140,10 +142,13 @@ export function WhatsAppConversionHub() {
         bottom: isCoachingHost
           ? "calc(env(safe-area-inset-bottom, 0px) + 96px)"
           : "calc(env(safe-area-inset-bottom, 0px) + 16px)",
+        maxHeight: isCoachingHost
+          ? "calc(100dvh - env(safe-area-inset-bottom, 0px) - 112px)"
+          : "calc(100dvh - env(safe-area-inset-bottom, 0px) - 32px)",
       }}
     >
       {open && (
-        <div className="w-[min(380px,calc(100vw-2rem))] border border-[#25D366]/40 bg-black/95 p-4 text-white shadow-[0_24px_80px_rgba(0,0,0,0.55)] backdrop-blur-md">
+        <div className="min-h-0 w-[min(380px,calc(100vw-2rem))] overflow-y-auto overscroll-contain border border-[#25D366]/40 bg-black/95 p-4 text-white shadow-[0_24px_80px_rgba(0,0,0,0.55)] backdrop-blur-md">
           <div className="mb-4 flex items-start justify-between gap-4">
             <div>
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-[#25D366]">
@@ -258,7 +263,7 @@ export function WhatsAppConversionHub() {
         </div>
       )}
 
-      <div className="flex flex-col items-end gap-2 sm:flex-row">
+      <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row">
         <a
           href={quickDestination}
           target="_blank"
