@@ -9,6 +9,7 @@
     "start": "NODE_ENV=production node --max-old-space-size=400 --heapsnapshot-near-heap-limit=1 dist/index.cjs",
     "check": "tsc",
     "test:blog:seo-winners": "tsx scripts/test-winning-blog-seo.ts",
+    "test:blog:indexation": "tsx scripts/test-blog-indexation.ts",
     "test:peptides:guardrails": "tsx scripts/test-peptides-guardrails.ts",
     "test:peptides:vial-planning": "tsx scripts/test-peptides-vial-planning.ts",
     "test:peptides:package-hash": "tsx --test server/peptidesPackageAndHashGate.test.ts",
