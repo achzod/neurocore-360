@@ -6,6 +6,7 @@ import {
   BLOG_ARTICLE_REDIRECTS,
   BLOG_INDEXATION_PRIORITY_SLUGS,
 } from "../client/src/data/blogSeo";
+import { INTERACTIVE_FLOW_CACHE_CONTROL, resolveSsrCacheControl } from "./cachePolicy";
 
 const BASE_URL = "https://apexlabs.achzodcoaching.com";
 const DEFAULT_OG_IMAGE = `${BASE_URL}/og-default.png`;
@@ -1575,6 +1576,7 @@ ${sorted
       canonical: string;
       ogType?: string;
       robots?: string;
+      cacheControl?: string;
       body?: {
         h1: string;
         lead: string;
@@ -1590,7 +1592,7 @@ ${sorted
         if (meta.robots?.toLowerCase().includes("noindex")) {
           res.setHeader("X-Robots-Tag", meta.robots);
         }
-        res.setHeader("Cache-Control", "public, max-age=3600");
+        res.setHeader("Cache-Control", resolveSsrCacheControl(meta.cacheControl));
         res.send(html);
       });
     }
@@ -1602,6 +1604,7 @@ ${sorted
     canonical: `${BASE_URL}/offers/peptides-engine`,
     ogType: "product",
     robots: "noindex, follow",
+    cacheControl: INTERACTIVE_FLOW_CACHE_CONTROL,
     body: {
       h1: "Questionnaire Peptides Engine",
       lead:
@@ -1618,6 +1621,7 @@ ${sorted
     desc: "Lance le Pré-Peptides Engine gratuit pour cadrer ton objectif, ton profil et ton budget avant de découvrir l'analyse complète.",
     canonical: `${BASE_URL}/peptides-preview`,
     robots: "noindex, follow",
+    cacheControl: INTERACTIVE_FLOW_CACHE_CONTROL,
   });
 
   ssrSimplePage(["/audit-complet"], {
@@ -1645,6 +1649,7 @@ ${sorted
     desc: "Réponds au questionnaire APEXLABS pour générer ton audit santé personnalisé. Hormones, métabolisme, sommeil, performance.",
     canonical: `${BASE_URL}/questionnaire`,
     robots: "noindex, follow",
+    cacheControl: INTERACTIVE_FLOW_CACHE_CONTROL,
     body: {
       h1: "Questionnaire d'audit sante",
       lead:

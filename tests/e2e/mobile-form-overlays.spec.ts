@@ -53,3 +53,24 @@ test("Discovery garde ses transitions cliquables avec le consentement visible", 
   await confirmName.click();
   await expect(page.getByTestId("button-next")).toBeVisible();
 });
+
+test("le header ne recouvre pas Continuer en paysage iPhone", async ({ page }) => {
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.goto("/peptides-engine?tier=solo");
+
+  await page.locator('input[type="text"]').first().fill("Jean");
+  await page.locator('input[type="email"]').fill("jean.test@example.com");
+  const numbers = page.locator('input[type="number"]');
+  await numbers.nth(0).fill("35");
+  await numbers.nth(1).fill("80");
+  await numbers.nth(2).fill("180");
+  for (const combo of await page.locator('[role="combobox"]:visible').all()) {
+    await combo.click();
+    await page.locator('[role="option"]:visible').first().click();
+  }
+
+  const next = page.getByRole("button", { name: "Section suivante" });
+  await expect(next).toBeEnabled();
+  await expectClickableAboveConsent(page, next);
+  await expect(page.getByRole("banner")).toHaveCSS("position", "relative");
+});
