@@ -1610,6 +1610,16 @@ ${sorted
     },
   });
 
+  // The preview is an interactive conversion flow, not a search landing page.
+  // Give crawlers and link previews its real identity instead of the generic
+  // homepage metadata while keeping the public offer as the indexable page.
+  ssrSimplePage(["/peptides-preview"], {
+    title: "Aperçu Peptides Personnalisé | APEXLABS",
+    desc: "Lance le Pré-Peptides Engine gratuit pour cadrer ton objectif, ton profil et ton budget avant de découvrir l'analyse complète.",
+    canonical: `${BASE_URL}/peptides-preview`,
+    robots: "noindex, follow",
+  });
+
   ssrSimplePage(["/audit-complet"], {
     title: "Audit Complet - Diagnostic Santé Premium | APEXLABS",
     desc: "Audit santé complet basé sur ton questionnaire détaillé: hormones, métabolisme, sommeil, stress, performance. Rapport personnalisé par ACHZOD.",
