@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { validatePeptidesEngineResponses } from "./peptidesEngineQuestionnaire";
+import { validatePeptidesEngineResponses, validatePeptidesProfileConfirmation } from "./peptidesEngineQuestionnaire";
 
 const complete = {
   pep_name: "Karim",
@@ -58,4 +58,36 @@ test("requires testosterone-specific answers when testosterone is a secondary go
 test("rejects an email mismatch between checkout and questionnaire", () => {
   const result = validatePeptidesEngineResponses(complete, "other@example.com");
   assert.deepEqual(result, { valid: false, missing: ["pep_email"] });
+});
+
+test("accepts an explicit profile confirmation that exactly matches the questionnaire", () => {
+  const confirmation = {
+    accepted: true,
+    pep_name: "Karim",
+    pep_age: 36,
+    pep_weight: 84,
+    pep_height: 181,
+  };
+  assert.deepEqual(validatePeptidesProfileConfirmation(confirmation, complete), { valid: true });
+});
+
+test("rejects a profile confirmation when the displayed height differs", () => {
+  const confirmation = {
+    accepted: true,
+    pep_name: "Karim",
+    pep_age: 36,
+    pep_weight: 84,
+    pep_height: 170,
+  };
+  const result = validatePeptidesProfileConfirmation(confirmation, complete);
+  assert.equal(result.valid, false);
+  if (!result.valid) assert.deepEqual(result.mismatched, ["pep_height"]);
+});
+
+test("rejects checkout when profile confirmation is absent", () => {
+  const result = validatePeptidesProfileConfirmation(undefined, complete);
+  assert.equal(result.valid, false);
+  if (!result.valid) {
+    assert.deepEqual(result.mismatched, ["pep_name", "pep_age", "pep_weight", "pep_height"]);
+  }
 });

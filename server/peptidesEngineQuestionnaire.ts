@@ -61,3 +61,46 @@ export function validatePeptidesEngineResponses(
     ? { valid: false, missing: [...new Set(missing)] }
     : { valid: true };
 }
+
+const PROFILE_FIELDS = ["pep_name", "pep_age", "pep_weight", "pep_height"] as const;
+
+export function validatePeptidesProfileConfirmation(
+  raw: unknown,
+  responsesRaw: unknown,
+): { valid: true } | { valid: false; mismatched: string[] } {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return { valid: false, mismatched: [...PROFILE_FIELDS] };
+  }
+  if (!responsesRaw || typeof responsesRaw !== "object" || Array.isArray(responsesRaw)) {
+    return { valid: false, mismatched: [...PROFILE_FIELDS] };
+  }
+
+  const confirmation = raw as Record<string, unknown>;
+  const responses = responsesRaw as Record<string, unknown>;
+  if (confirmation.accepted !== true) {
+    return { valid: false, mismatched: [...PROFILE_FIELDS] };
+  }
+
+  const normalizedName = (value: unknown) => String(value || "").trim();
+  const normalizedNumber = (value: unknown) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+  const mismatched = PROFILE_FIELDS.filter((field) => {
+    if (field === "pep_name") {
+      return normalizedName(confirmation[field]) !== normalizedName(responses[field]);
+    }
+    return normalizedNumber(confirmation[field]) !== normalizedNumber(responses[field]);
+  });
+
+  const age = normalizedNumber(responses.pep_age);
+  const weight = normalizedNumber(responses.pep_weight);
+  const height = normalizedNumber(responses.pep_height);
+  if (age === null || age < 18 || age > 80) mismatched.push("pep_age");
+  if (weight === null || weight < 40 || weight > 250) mismatched.push("pep_weight");
+  if (height === null || height < 140 || height > 220) mismatched.push("pep_height");
+
+  return mismatched.length > 0
+    ? { valid: false, mismatched: [...new Set(mismatched)] }
+    : { valid: true };
+}

@@ -10,7 +10,7 @@ import { z } from "zod";
 import { getStripeKlarnaClient, getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
 import { createCheckoutSessionWithPaymentMethodFallback } from "./stripeCheckoutPaymentMethods";
 import { createProductCheckoutLineItem, usesInlineCheckoutLineItem } from "./stripeCheckoutProducts";
-import { validatePeptidesEngineResponses } from "./peptidesEngineQuestionnaire";
+import { validatePeptidesEngineResponses, validatePeptidesProfileConfirmation } from "./peptidesEngineQuestionnaire";
 import { isLikelyDeliverableEmail, suggestedEmailCorrection } from "@shared/emailAddressPolicy";
 import { hasValidPeptidesConsent } from "./peptidesConsent";
 import { calculateScoresFromResponses, generateFullAnalysis } from "./analysisEngine";
@@ -4898,7 +4898,7 @@ export async function registerRoutes(
 
   app.post("/api/stripe/create-checkout-session", checkoutLimiter, async (req, res) => {
     try {
-      const { priceId: clientPriceId, email, planType, responses, promoCode, referrer, fbp, fbc, userAgent, sourceUrl, peptidesEngineConsent, peptidesTier: rawTier } = req.body;
+      const { priceId: clientPriceId, email, planType, responses, promoCode, referrer, fbp, fbc, userAgent, sourceUrl, peptidesEngineConsent, peptidesProfileConfirmation, peptidesTier: rawTier } = req.body;
       const previewToken = typeof req.body?.previewToken === "string" ? req.body.previewToken : "";
       let previewLeadId: string | null = null;
       const paymentRail = planType === "PEPTIDES_ENGINE" && req.body?.paymentRail === "klarna"
@@ -4949,6 +4949,15 @@ export async function registerRoutes(
             error: "PEPTIDES_QUESTIONNAIRE_INCOMPLETE",
             message: "Complète le questionnaire Peptides Engine avant de passer au paiement.",
             missing: questionnaire.missing,
+          });
+          return;
+        }
+        const profileConfirmation = validatePeptidesProfileConfirmation(peptidesProfileConfirmation, responses);
+        if (!profileConfirmation.valid) {
+          res.status(400).json({
+            error: "PEPTIDES_PROFILE_CONFIRMATION_REQUIRED",
+            message: "Vérifie et confirme ton nom, ton âge, ton poids et ta taille avant de payer.",
+            mismatched: profileConfirmation.mismatched,
           });
           return;
         }
@@ -5288,6 +5297,17 @@ export async function registerRoutes(
             peptidesTier: peptidesTier || undefined,
             peptidesResponses: planType === "PEPTIDES_ENGINE" ? responses : undefined,
             peptidesEngineConsent: peptidesConsentRecord,
+            peptidesProfileConfirmation: planType === "PEPTIDES_ENGINE" ? {
+              accepted: true,
+              pep_name: String(responses.pep_name).trim(),
+              pep_age: Number(responses.pep_age),
+              pep_weight: Number(responses.pep_weight),
+              pep_height: Number(responses.pep_height),
+              clientAcceptedAt: typeof peptidesProfileConfirmation?.clientAcceptedAt === "string"
+                ? peptidesProfileConfirmation.clientAcceptedAt
+                : undefined,
+              serverAcceptedAt: new Date().toISOString(),
+            } : undefined,
             previewLeadId: previewLeadId || undefined,
             paymentRail,
           },
@@ -5818,7 +5838,7 @@ export async function registerRoutes(
         return;
       }
 
-      const { email, planType, responses, promoCode, fbp, fbc, userAgent, sourceUrl, peptidesEngineConsent, peptidesTier: rawTier } = req.body;
+      const { email, planType, responses, promoCode, fbp, fbc, userAgent, sourceUrl, peptidesEngineConsent, peptidesProfileConfirmation, peptidesTier: rawTier } = req.body;
       const previewToken = typeof req.body?.previewToken === "string" ? req.body.previewToken : "";
       let previewLeadId: string | null = null;
       if (!email || !planType) {
@@ -5865,6 +5885,15 @@ export async function registerRoutes(
             error: "PEPTIDES_QUESTIONNAIRE_INCOMPLETE",
             message: "Complète le questionnaire Peptides Engine avant de passer au paiement.",
             missing: questionnaire.missing,
+          });
+          return;
+        }
+        const profileConfirmation = validatePeptidesProfileConfirmation(peptidesProfileConfirmation, responses);
+        if (!profileConfirmation.valid) {
+          res.status(400).json({
+            error: "PEPTIDES_PROFILE_CONFIRMATION_REQUIRED",
+            message: "Vérifie et confirme ton nom, ton âge, ton poids et ta taille avant de payer.",
+            mismatched: profileConfirmation.mismatched,
           });
           return;
         }
@@ -6082,6 +6111,17 @@ export async function registerRoutes(
             paymentMethod: "paypal",
             peptidesResponses: planType === "PEPTIDES_ENGINE" ? responses : undefined,
             peptidesEngineConsent: peptidesConsentRecord,
+            peptidesProfileConfirmation: planType === "PEPTIDES_ENGINE" ? {
+              accepted: true,
+              pep_name: String(responses.pep_name).trim(),
+              pep_age: Number(responses.pep_age),
+              pep_weight: Number(responses.pep_weight),
+              pep_height: Number(responses.pep_height),
+              clientAcceptedAt: typeof peptidesProfileConfirmation?.clientAcceptedAt === "string"
+                ? peptidesProfileConfirmation.clientAcceptedAt
+                : undefined,
+              serverAcceptedAt: new Date().toISOString(),
+            } : undefined,
             // Meta CAPI attribution , read by the capture handler to send Purchase CAPI event
             fbp: fbp || undefined,
             fbc: fbc || undefined,
