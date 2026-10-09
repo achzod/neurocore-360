@@ -49,6 +49,7 @@ function stableReportContent(value: unknown): unknown {
   return Object.fromEntries(
     Object.entries(record)
       .filter(([key]) => !VOLATILE_LIVE_SOURCE_KEYS.has(key))
+      .sort(([left], [right]) => left.localeCompare(right))
       .map(([key, nested]) => {
         const normalized = key === "content"
           ? normalizeLiveTimestampProse(record.id, nested)

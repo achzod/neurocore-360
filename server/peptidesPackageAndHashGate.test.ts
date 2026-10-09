@@ -136,7 +136,7 @@ test("approved report ignores whole-catalog count and blocked-vendor ordering ch
     _peptauraLiveSync: {
       liveCatalogCount: 71,
       blockedVendors: ["Pepturion", "YPC"],
-      listingSnapshots: [{ product: "BPC-157", totalPriceUsd: 99.6 }],
+      listingSnapshots: [{ product: "BPC-157", totalPriceUsd: 99.6, available: true }],
     },
   };
   const refreshed = {
@@ -144,7 +144,7 @@ test("approved report ignores whole-catalog count and blocked-vendor ordering ch
     _peptauraLiveSync: {
       liveCatalogCount: 68,
       blockedVendors: ["YPC", "Pepturion"],
-      listingSnapshots: [{ product: "BPC-157", totalPriceUsd: 99.6 }],
+      listingSnapshots: [{ available: true, totalPriceUsd: 99.6, product: "BPC-157" }],
     },
   };
   const result = evaluatePeptidesReleaseHashGate({
