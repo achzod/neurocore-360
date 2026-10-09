@@ -21,6 +21,10 @@ const VOLATILE_LIVE_SOURCE_KEYS = new Set([
   "fetchedAt",
   "sourceGeneratedAt",
   "syncedAt",
+  // This is the size of the supplier's whole catalog, not evidence about the
+  // products selected for this client. It can change between equivalent
+  // refreshes without changing availability, quantities or prices.
+  "liveCatalogCount",
 ]);
 
 function normalizeLiveTimestampProse(sectionId: unknown, content: unknown): unknown {
@@ -45,10 +49,14 @@ function stableReportContent(value: unknown): unknown {
   return Object.fromEntries(
     Object.entries(record)
       .filter(([key]) => !VOLATILE_LIVE_SOURCE_KEYS.has(key))
-      .map(([key, nested]) => [
-        key,
-        stableReportContent(key === "content" ? normalizeLiveTimestampProse(record.id, nested) : nested),
-      ]),
+      .map(([key, nested]) => {
+        const normalized = key === "content"
+          ? normalizeLiveTimestampProse(record.id, nested)
+          : key === "blockedVendors" && Array.isArray(nested)
+            ? [...nested].sort((a, b) => String(a).localeCompare(String(b)))
+            : nested;
+        return [key, stableReportContent(normalized)];
+      }),
   );
 }
 

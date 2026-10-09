@@ -130,6 +130,35 @@ test("approved report ignores live-source timestamp churn without mutating stora
   assert.equal(result.persistRefreshed, false);
 });
 
+test("approved report ignores whole-catalog count and blocked-vendor ordering churn", () => {
+  const current = {
+    peptides: [{ name: "BPC-157", priceEstimate: "$99.60" }],
+    _peptauraLiveSync: {
+      liveCatalogCount: 71,
+      blockedVendors: ["Pepturion", "YPC"],
+      listingSnapshots: [{ product: "BPC-157", totalPriceUsd: 99.6 }],
+    },
+  };
+  const refreshed = {
+    peptides: [{ name: "BPC-157", priceEstimate: "$99.60" }],
+    _peptauraLiveSync: {
+      liveCatalogCount: 68,
+      blockedVendors: ["YPC", "Pepturion"],
+      listingSnapshots: [{ product: "BPC-157", totalPriceUsd: 99.6 }],
+    },
+  };
+  const result = evaluatePeptidesReleaseHashGate({
+    approvedHash: hashPeptidesReport(current),
+    currentReport: current,
+    refreshedReport: refreshed,
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.reason, null);
+  assert.equal(result.currentContentHash, result.refreshedContentHash);
+  assert.notEqual(result.currentHash, result.refreshedHash);
+  assert.equal(result.persistRefreshed, false);
+});
+
 test("approval metadata without its hash fails closed", () => {
   const result = evaluatePeptidesReleaseHashGate({
     approvalExpected: true,
