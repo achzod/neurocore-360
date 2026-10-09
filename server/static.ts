@@ -1408,6 +1408,18 @@ ${sorted
             "Cote conversion, la valeur repose sur la personnalisation et la prudence: comprendre le contexte du client avant toute recommandation, puis relier le rapport a un accompagnement plus global si le profil le justifie.",
           ],
         },
+        {
+          title: "FAQ Peptides Engine",
+          body: [
+            "Pourquoi 199, 299 ou 399 EUR ? Solo inclut le protocole personnalise et l'acces source. Coached ajoute un bilan sanguin au choix et 30 jours de support ecrit. Tracked ajoute un second bilan, 90 jours de support et une reecriture si l'objectif evolue.",
+            "Combien de bilans sanguins sont inclus ? Solo n'en inclut aucun. Coached inclut un bilan au choix, baseline ou mi-cycle. Tracked inclut deux bilans: une baseline avant le cycle puis un controle mi-cycle.",
+            "Faut-il deja connaitre les peptides ? Non. Le questionnaire adapte la selection au niveau d'experience, aux objectifs, aux contraintes et au profil de tolerance au risque.",
+            "Combien de molecules sont retenues ? Entre deux et cinq selon le profil et les objectifs, avec une logique de dose minimale efficace et sans empiler des molecules sans justification.",
+            "Que contient la livraison ? Le rapport protocole, le guide de reconstitution calcule, le calendrier, la liste de courses et les guides de securite. Les credits Blood Analysis dependent de la formule choisie.",
+            "Quel est le delai ? Le rapport personnalise est livre par email sous 48 heures apres le paiement, sous reserve que les informations necessaires soient completes.",
+            "Est-ce un avis medical ? Non. Le contenu est educatif et ne remplace ni diagnostic, ni ordonnance, ni suivi par un professionnel de sante.",
+          ],
+        },
       ],
     },
   };

@@ -14774,7 +14774,12 @@ export async function registerRoutes(
       } = await import("./peptidesPreview");
       const input = peptidesPreviewInputSchema.parse(req.body);
       const liveCatalog = await getLivePeptauraPreviewCatalog(input.country);
-      const result = buildPeptidesPreview(input, liveCatalog.snapshots, liveCatalog.checkedAt, liveCatalog.shippingQuotes);
+      const result = buildPeptidesPreview(
+        input,
+        liveCatalog.snapshots,
+        liveCatalog.checkedAt,
+        liveCatalog.shippingQuotes.length ? liveCatalog.shippingQuotes : undefined,
+      );
       const capturedAt = new Date().toISOString();
       const storageEmail = `peptides-preview::${input.email}`;
       const previous = await storage.getBurnoutProgress(storageEmail);

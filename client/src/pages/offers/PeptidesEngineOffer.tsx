@@ -318,8 +318,8 @@ const FAQ: FAQEntry[] = [
     a: "Les peptides de recherche ne sont pas approuves pour usage humain et sont vendus a des fins de recherche uniquement. Ce protocole est informatif et educatif. Tu es responsable de te renseigner sur la legislation de ton pays avant tout achat ou usage.",
   },
   {
-    q: "Pourquoi 2 bilans sanguins ?",
-    a: "Pre-cycle (baseline): IGF-1, glycemie, marqueurs hepatiques, hormones. Mi-cycle (mesurer l'impact reel): on compare avec ta baseline pour valider que ton protocole fonctionne sur tes marqueurs cibles. Sans bilan, tu navigues a l'aveugle.",
+    q: "Combien de bilans sanguins sont inclus ?",
+    a: "Solo n'inclut aucun bilan. Coached inclut 1 bilan au choix, baseline ou mi-cycle. Tracked inclut 2 bilans : une baseline avant le cycle puis un controle mi-cycle pour comparer les marqueurs cibles.",
   },
   {
     q: "Comment je reconstitue mes peptides ?",
@@ -335,7 +335,7 @@ const FAQ: FAQEntry[] = [
   },
   {
     q: "Quel est le delai de livraison ?",
-    a: "48h apres paiement, par email. Tu recois: le rapport protocole complet, le guide de reconstitution calcule, le calendrier hebdomadaire, les 2 codes Blood Analysis, la liste de courses avec liens directs, et les guides injection et securite.",
+    a: "48h apres paiement, par email. Tu recois le rapport protocole complet, le guide de reconstitution calcule, le calendrier hebdomadaire, la liste de courses avec liens directs et les guides injection et securite. Selon la formule choisie, tu recois zero, un ou deux credits Blood Analysis.",
   },
   {
     q: "Je peux combiner avec un coaching ?",
@@ -402,7 +402,7 @@ const DELIVERABLES = [
   },
   {
     icon: Activity,
-    title: "2 Blood Analyses incluses",
+    title: "Jusqu'à 2 Blood Analyses incluses",
     desc: "Valeur 198€. Pre-cycle (baseline) + mi-cycle (mesurer l'impact reel sur tes marqueurs cibles).",
   },
   {
@@ -494,6 +494,7 @@ function FAQItem({ q, a, index }: { q: string; a: string; index: number }) {
     >
       <button
         onClick={() => setOpen(!open)}
+        aria-expanded={open}
         className="flex w-full items-start justify-between gap-8 py-6 text-left transition-colors hover:text-[#0071E3]"
       >
         <h3 className="text-base font-semibold text-[#1D1D1F]">{q}</h3>
@@ -505,19 +506,15 @@ function FAQItem({ q, a, index }: { q: string; a: string; index: number }) {
           <ChevronDown className="h-5 w-5" style={{ color: PRIMARY }} />
         </motion.div>
       </button>
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25 }}
-            className="overflow-hidden"
-          >
-            <p className="pb-6 text-sm leading-relaxed text-[#6E6E73]">{a}</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <motion.div
+        initial={false}
+        animate={{ height: open ? "auto" : 0, opacity: open ? 1 : 0 }}
+        transition={{ duration: 0.25 }}
+        aria-hidden={!open}
+        className="overflow-hidden"
+      >
+        <p className="pb-6 text-sm leading-relaxed text-[#6E6E73]">{a}</p>
+      </motion.div>
     </motion.div>
   );
 }
@@ -1418,7 +1415,7 @@ function ScarcityGuarantee() {
               Je construis ton protocole personnellement
             </p>
             <p className="text-sm leading-relaxed text-[#6E6E73]">
-              C'est moi, Achzod, qui analyse ton profil et qui valide chaque protocole avant de te l'envoyer. Les 2 bilans sanguins inclus te permettent de suivre tes marqueurs objectivement et de me contacter pour ajuster si besoin.
+              C'est moi, Achzod, qui analyse ton profil et qui valide chaque protocole avant de te l'envoyer. Selon la formule choisie, aucun, un ou deux bilans sanguins sont inclus pour suivre tes marqueurs objectivement et ajuster si besoin.
             </p>
             <div className="mt-6 flex items-center gap-2">
               <Check className="h-4 w-4" style={{ color: PRIMARY }} />

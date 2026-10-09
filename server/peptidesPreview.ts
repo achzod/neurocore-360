@@ -1185,11 +1185,20 @@ export async function getLivePeptauraPreviewCatalog(countryCode = "FR", nowMs = 
     const parsed = parsePeptauraProductFeed(raw, { nowMs, maxAgeMs: 6 * 60 * 60_000, fetchedAt: checkedAt });
     if (!parsed?.snapshots.length) throw new Error("PEPTAURA_PREVIEW_INVALID_FEED");
     const country = countryLabels[cacheKey] || countryCode;
-    const shippingResponse = await fetchWithTimeout(`https://www.peptaura.com/shipping?country=${encodeURIComponent(country)}`, "text/html");
-    if (!shippingResponse.ok) throw new Error(`PEPTAURA_PREVIEW_SHIPPING_HTTP_${shippingResponse.status}`);
-    const shippingHtml = await shippingResponse.text();
-    const shippingQuotes = parsePeptauraShippingPage(shippingHtml).filter((quote) => quote.available && quote.tiers.length > 0);
-    if (shippingQuotes.length === 0) throw new Error("PEPTAURA_PREVIEW_SHIPPING_UNAVAILABLE");
+    let shippingQuotes: PeptauraShippingQuote[] = [];
+    try {
+      const shippingResponse = await fetchWithTimeout(`https://www.peptaura.com/shipping?country=${encodeURIComponent(country)}`, "text/html");
+      if (!shippingResponse.ok) throw new Error(`PEPTAURA_PREVIEW_SHIPPING_HTTP_${shippingResponse.status}`);
+      const shippingHtml = await shippingResponse.text();
+      shippingQuotes = parsePeptauraShippingPage(shippingHtml).filter((quote) => quote.available && quote.tiers.length > 0);
+      if (shippingQuotes.length === 0) throw new Error("PEPTAURA_PREVIEW_SHIPPING_UNAVAILABLE");
+    } catch (error) {
+      // A temporary shipping-page or parser outage must not erase a valid live
+      // product quote. The preview still returns product prices and the paid
+      // CTA, while clearly deferring the delivery amount to Peptides Engine.
+      console.warn("[PeptidesPreview] shipping quote unavailable; returning product-only estimate", error instanceof Error ? error.message : error);
+      shippingQuotes = [];
+    }
     const value = { snapshots: parsed.snapshots, checkedAt, shippingQuotes };
     cachedCatalog.set(cacheKey, { ...value, expiresAt: nowMs + 15 * 60_000 });
     return value;
