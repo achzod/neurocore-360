@@ -642,11 +642,7 @@ function Hero() {
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.reviews?.length) {
-          const EXCLUDED_EMAILS = ["achkou@gmail.com", "coaching@achzodcoaching.com"];
-          const filtered = data.reviews.filter(
-            (r: { email: string }) => !EXCLUDED_EMAILS.includes(r.email.toLowerCase())
-          );
-          setTotalReviews(BETA_REVIEWS.length + filtered.length);
+          setTotalReviews(BETA_REVIEWS.length + data.reviews.length);
         }
       })
       .catch(() => {});
@@ -1156,19 +1152,13 @@ const AUDIT_TYPE_LABELS: Record<string, string> = {
 };
 
 function mapDbReview(r: {
-  email: string;
   auditType: string;
   rating: number;
   comment: string;
   createdAt: string | Date;
 }): DisplayReview {
-  // Anonymise: "jean.dupont@…" → "Jean D."
-  const local = r.email.split("@")[0] || "Client";
-  const parts = local.replace(/[._-]/g, " ").split(" ").filter(Boolean);
-  const first = parts[0] ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase() : "Client";
-  const lastInitial = parts.length > 1 ? ` ${parts[parts.length - 1].charAt(0).toUpperCase()}.` : "";
   return {
-    name: `${first}${lastInitial}`,
+    name: "Client APEXLABS vérifié",
     role: AUDIT_TYPE_LABELS[r.auditType] || r.auditType,
     rating: r.rating,
     text: r.comment,
@@ -1187,12 +1177,7 @@ function ReviewsSection() {
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.reviews?.length) {
-          // Filter out internal/test reviews (owner emails)
-          const EXCLUDED_EMAILS = ["achkou@gmail.com", "coaching@achzodcoaching.com"];
-          const filtered = data.reviews.filter(
-            (r: { email: string }) => !EXCLUDED_EMAILS.includes(r.email.toLowerCase())
-          );
-          setRealReviews(filtered.map(mapDbReview));
+          setRealReviews(data.reviews.map(mapDbReview));
         }
       })
       .catch(() => {});

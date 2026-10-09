@@ -76,22 +76,20 @@ test("the dedicated serializer leaves non-Discovery products unchanged", () => {
   assert.strictEqual(sanitizePublicDiscoveryAuditPayload(premiumAudit), premiumAudit);
 });
 
-test("the public audit route sanitizes Discovery before light/full/scheduled branching", () => {
+test("the audit route authorizes the owner before light/full/scheduled branching", () => {
   const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
   const start = routes.indexOf('app.get("/api/audits/:id"');
   const end = routes.indexOf('app.get("/api/audits/:id/analysis"', start);
   assert.ok(start >= 0 && end > start, "public audit route not found");
   const route = routes.slice(start, end);
 
-  const discoveryGuard = route.indexOf('audit.type === "GRATUIT"');
-  const strictSerializer = route.indexOf("sanitizePublicDiscoveryAuditPayload", discoveryGuard);
-  const scheduledBranch = route.indexOf("audit.reportScheduledFor", discoveryGuard);
-  const lightBranch = route.indexOf('req.query.light === "1"', discoveryGuard);
+  const ownershipGuard = route.indexOf("checkAuditOwnership");
+  const scheduledBranch = route.indexOf("audit.reportScheduledFor", ownershipGuard);
+  const lightBranch = route.indexOf('req.query.light === "1"', ownershipGuard);
 
-  assert.ok(discoveryGuard >= 0, "Discovery guard missing");
-  assert.ok(strictSerializer > discoveryGuard, "strict Discovery serializer missing");
-  assert.ok(scheduledBranch > strictSerializer, "scheduled branch must run after strict Discovery return");
-  assert.ok(lightBranch > strictSerializer, "light/full branch must run after strict Discovery return");
+  assert.ok(ownershipGuard >= 0, "owner/session/signed-token guard missing");
+  assert.ok(scheduledBranch > ownershipGuard, "scheduled branch must run after authorization");
+  assert.ok(lightBranch > ownershipGuard, "light/full branch must run after authorization");
   assert.match(route, /Cache-Control", "private, no-store"/);
 });
 

@@ -1008,7 +1008,6 @@ export default function AuditDetail() {
 }
 
 interface ApprovedReview {
-  id: string;
   rating: number;
   comment: string;
   createdAt: string;
@@ -1067,11 +1066,11 @@ function ApprovedReviewsSection() {
       </CardHeader>
       <CardContent>
         <div className="grid gap-4 sm:grid-cols-2">
-          {reviews.map((review) => (
+          {reviews.map((review, index) => (
             <div 
-              key={review.id} 
+              key={`${review.createdAt}-${index}`}
               className="rounded-lg border border-border/50 p-4"
-              data-testid={`review-item-${review.id}`}
+              data-testid={`review-item-${index}`}
             >
               <div className="mb-2 flex items-center justify-between">
                 {renderStars(review.rating)}

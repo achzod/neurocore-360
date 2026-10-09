@@ -450,11 +450,7 @@ function Hero() {
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.success && data.reviews?.length) {
-          const EXCLUDED_EMAILS = ["achkou@gmail.com", "coaching@achzodcoaching.com"];
-          const filtered = data.reviews.filter(
-            (r: { email: string }) => !EXCLUDED_EMAILS.includes(r.email?.toLowerCase() || '')
-          );
-          setTotalReviews(BETA_REVIEWS.length + filtered.length);
+          setTotalReviews(BETA_REVIEWS.length + data.reviews.length);
         }
       })
       .catch(() => {});
@@ -1068,7 +1064,7 @@ function ReviewsSection() {
         if (data.success && data.reviews) {
           // Transform real reviews to match beta reviews format
           const transformed = data.reviews.map((r: any) => ({
-            name: r.name || r.email.split('@')[0],
+            name: "Client APEXLABS vérifié",
             role: mapAuditTypeToOffer(r.auditType || 'GRATUIT'),
             rating: r.rating,
             text: r.comment,

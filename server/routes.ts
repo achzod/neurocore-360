@@ -63,7 +63,7 @@ import { ClientData, PhotoAnalysis } from "./types";
 import { generateEnhancedSupplementsHTML, generateSupplementStack } from "./supplementEngine";
 import { streamAuditZip } from "./exportZipService";
 import { createPayPalOrder, capturePayPalOrder, isPayPalConfigured } from "./paypalClient";
-import { getAuthPayload, type AuthPayload } from "./auth";
+import { buildReportAccessUrl, getAuthPayload, getReportAccessDecision, type AuthPayload } from "./auth";
 import crypto from "crypto";
 import {
   OPENAI_REPORT_MODEL,
@@ -78,6 +78,7 @@ import {
 } from "./cta";
 import { BLOOD_ANALYSIS_PURCHASE_CREDITS, clarifyBloodPurchaseEmail } from "./bloodOffer";
 import { buildPaidOrderNotificationPlan } from "./paidOrderNotifications";
+import { buildPublicReviewCheckResponse, toPublicReview } from "./reviewPublicResponse";
 
 import { registerKnowledgeRoutes } from "./knowledge";
 import { registerBloodAnalysisRoutes } from "./blood-analysis/routes";
@@ -1031,21 +1032,9 @@ export async function registerRoutes(
   app.get("/api/health", async (_req, res) => {
     try {
       await pool.query("SELECT 1");
-      const mem = process.memoryUsage();
-      const rssMb = Math.round(mem.rss / 1024 / 1024);
-      const heapUsedMb = Math.round(mem.heapUsed / 1024 / 1024);
-      const heapTotalMb = Math.round(mem.heapTotal / 1024 / 1024);
-      // Render starter tier has 512MB RAM. Flag if we're approaching the wall.
-      const memStatus = rssMb > 440 ? "critical" : rssMb > 380 ? "warning" : "ok";
-      res.json({
-        status: "ok",
-        db: "connected",
-        memory: { rssMb, heapUsedMb, heapTotalMb, status: memStatus },
-        uptimeSec: Math.round(process.uptime()),
-        timestamp: new Date().toISOString(),
-      });
+      res.json({ status: "ok" });
     } catch (err) {
-      res.status(503).json({ status: "unhealthy", db: "disconnected", timestamp: new Date().toISOString() });
+      res.status(503).json({ status: "unhealthy" });
     }
   });
 
@@ -1901,15 +1890,18 @@ export async function registerRoutes(
 
     // Allow admin access
     const isAdmin = requireAdminAuth(req, res, true);
-    if (isAdmin) return true;
+    if (isAdmin) {
+      res.setHeader("Cache-Control", "private, no-store");
+      return true;
+    }
 
-    // Check user ownership via JWT
-    const payload = getAuthPayload(req);
-    if (!payload || payload.email.toLowerCase() !== audit.email.toLowerCase()) {
-      if (!silent) res.status(403).json({ error: "Accès non autorisé à ce rapport" });
+    const decision = getReportAccessDecision(req, "audit", auditId, audit.email);
+    if (decision !== 200) {
+      if (!silent) res.status(decision).json({ error: "Accès non autorisé à ce rapport" });
       return false;
     }
 
+    res.setHeader("Cache-Control", "private, no-store");
     return true;
   }
 
@@ -2946,7 +2938,8 @@ export async function registerRoutes(
 
   app.get("/api/audits/:id", async (req, res) => {
     try {
-      // UUID audit IDs are unguessable , allow direct access for report viewing
+      if (!(await checkAuditOwnership(req, res, req.params.id))) return;
+      res.setHeader("Cache-Control", "private, no-store");
       const audit = await storage.getAudit(req.params.id);
       if (!audit) {
         res.status(404).json({ error: "Audit non trouvé" });
@@ -2969,6 +2962,8 @@ export async function registerRoutes(
   app.get("/api/audits/:id/analysis", async (req, res) => {
     try {
 
+      if (!(await checkAuditOwnership(req, res, req.params.id))) return;
+
       const audit = await storage.getAudit(req.params.id);
       if (!audit) {
         res.status(404).json({ error: "Audit non trouvé" });
@@ -2983,6 +2978,7 @@ export async function registerRoutes(
 
   app.post("/api/audits/:id/generate-narrative", async (req, res) => {
     try {
+      if (!(await checkAuditOwnership(req, res, req.params.id))) return;
       const audit = await storage.getAudit(req.params.id);
       if (!audit) {
         res.status(404).json({ error: "Audit non trouvé" });
@@ -3007,7 +3003,7 @@ export async function registerRoutes(
 
   app.get("/api/audits/:id/narrative-status", async (req, res) => {
     try {
-      // UUID audit IDs are unguessable , allow direct access
+      if (!(await checkAuditOwnership(req, res, req.params.id))) return;
       const job = await getJobStatus(req.params.id);
       const jobReferenceTime = job?.lastProgressAt
         ? new Date(job.lastProgressAt).getTime()
@@ -3241,8 +3237,7 @@ export async function registerRoutes(
 
   app.get("/api/audits/:id/narrative", async (req, res) => {
     try {
-      // UUID audit IDs are unguessable , allow direct access for report viewing
-      // This matches the Blood Analysis pattern where reports are accessed via unique links
+      if (!(await checkAuditOwnership(req, res, req.params.id))) return;
       const audit = await storage.getAudit(req.params.id);
       if (!audit) {
         res.status(404).json({ error: "Audit non trouve" });
@@ -6531,7 +6526,7 @@ export async function registerRoutes(
               (pepOrder?.metadata as any)?.peptidesTier ?? null
             );
             await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
-              `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`
+              `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${buildReportAccessUrl(baseUrl, `/peptides/${saved.id}`, "peptides", saved.id, email)}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`
             ).catch(() => {});
             emailSent = true;
             await sendCTAEmail(adminNotifEmail, `PEPTIDES GENERE , ${email}`, `Rapport genere et livre pour ${email}\nReport ID: ${saved.id}\nPeptides: ${peptidesNames}\nLien: ${baseUrl}/peptides/${saved.id}`).catch(() => {});
@@ -8447,7 +8442,10 @@ export async function registerRoutes(
   app.get("/api/reviews", async (req, res) => {
     try {
       const reviews = await reviewStorage.getApprovedReviews();
-      res.json({ success: true, reviews });
+      res.json({
+        success: true,
+        reviews: reviews.map(toPublicReview),
+      });
     } catch (error) {
       console.error("[Reviews] Error:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
@@ -8555,12 +8553,9 @@ export async function registerRoutes(
   app.get("/api/review/check/:auditId", async (req, res) => {
     try {
       const { auditId } = req.params;
+      if (!(await checkAuditOwnership(req, res, auditId))) return;
       const review = await reviewStorage.getReviewByAuditId(auditId);
-      res.json({
-        success: true,
-        hasReview: !!review,
-        review: review || null
-      });
+      res.json(buildPublicReviewCheckResponse(review));
     } catch (error) {
       console.error("[Review Check] Error:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
@@ -10417,10 +10412,13 @@ export async function registerRoutes(
 
             // S8 (56 jours) , Fin de cycle + demande avis + incentive Blood Analysis
             if (daysSincePaid >= 56 && daysSincePaid < 70 && !types.includes("peptidesS8")) {
+              const reportId = String((order.metadata as any)?.peptidesReportId || "").trim();
+              if (!reportId) continue;
+              const reviewLink = `${buildReportAccessUrl(baseUrl, `/peptides/${reportId}`, "peptides", reportId, email)}#review`;
               const sent = await sendCTAEmail(
                 email,
                 "Fin de ton cycle - J'ai besoin de ton retour",
-                `Salut,\n\nTon cycle de 8 semaines touche a sa fin. C'est le moment de faire le point.\n\nJ'ai 2 choses a te demander :\n\n1. TON BILAN SANGUIN\nAs-tu fait ton bilan mi-cycle avec ton code Blood Analysis? Si non, fais-le maintenant , c'est le seul moyen de mesurer l'impact reel de ton protocole sur tes marqueurs.\nAccede a Blood Analysis : https://apexlabs.achzodcoaching.com/offers/blood-analysis\n\n2. TON AVIS (30 secondes)\nTon retour m'aide enormement a ameliorer le service. En echange de ton avis, je t'offre 1 Blood Analysis supplementaire gratuite.\nLaisse ton avis ici : https://apexlabs.achzodcoaching.com/peptides/${order.id}#review\n\nSi tu veux un deuxieme cycle adapte a tes resultats, reponds directement a cet email.\n\n3. PARRAINAGE\nTu connais quelqu'un qui pourrait beneficier d'un protocole peptides? Envoie-lui ce lien et s'il achete, tu recois 1 Blood Analysis gratuite :\nhttps://apexlabs.achzodcoaching.com/offers/peptides-engine?ref=${encodeURIComponent(email)}\n\nAchzod`
+                `Salut,\n\nTon cycle de 8 semaines touche a sa fin. C'est le moment de faire le point.\n\nJ'ai 2 choses a te demander :\n\n1. TON BILAN SANGUIN\nAs-tu fait ton bilan mi-cycle avec ton code Blood Analysis? Si non, fais-le maintenant , c'est le seul moyen de mesurer l'impact reel de ton protocole sur tes marqueurs.\nAccede a Blood Analysis : https://apexlabs.achzodcoaching.com/offers/blood-analysis\n\n2. TON AVIS (30 secondes)\nTon retour m'aide enormement a ameliorer le service. En echange de ton avis, je t'offre 1 Blood Analysis supplementaire gratuite.\nLaisse ton avis ici : ${reviewLink}\n\nSi tu veux un deuxieme cycle adapte a tes resultats, reponds directement a cet email.\n\n3. PARRAINAGE\nTu connais quelqu'un qui pourrait beneficier d'un protocole peptides? Envoie-lui ce lien et s'il achete, tu recois 1 Blood Analysis gratuite :\nhttps://apexlabs.achzodcoaching.com/offers/peptides-engine?ref=${encodeURIComponent(email)}\n\nAchzod`
               );
               if (sent) {
                 peptidesS8++;
@@ -10809,6 +10807,7 @@ export async function registerRoutes(
   app.get("/api/discovery-scan/:auditId", async (req, res) => {
     try {
       const { auditId } = req.params;
+      if (!(await checkAuditOwnership(req, res, auditId))) return;
       const audit = await storage.getAudit(auditId);
 
       if (!audit) {
@@ -10818,6 +10817,15 @@ export async function registerRoutes(
 
       if (audit.type !== "GRATUIT") {
         res.status(400).json({ success: false, error: "Ce n'est pas un Discovery Scan" });
+        return;
+      }
+
+      if (isDiscoverySupersededTerminal(audit)) {
+        res.status(410).json({
+          success: false,
+          status: "superseded",
+          error: "Ce rapport a été remplacé par une version plus récente",
+        });
         return;
       }
 
@@ -10903,13 +10911,13 @@ export async function registerRoutes(
       if (existingReport && !invalidReport) {
         if (storedTxt.length < 500 || storedHtml.length < 1000 || !audit.reportGeneratedAt) {
           const hydratedAssets = buildDiscoveryReportAssets(existingReport);
-          await storage.updateAudit(audit.id, {
-            reportTxt: hydratedAssets.txt,
-            reportHtml: hydratedAssets.html,
-            reportGeneratedAt: audit.reportGeneratedAt || new Date(existingReport.generatedAt || Date.now()),
-          }).catch((error) => {
-            console.error("[Discovery Fetch] Unable to hydrate persisted assets:", error);
+          res.json({
+            ...existingReport,
+            txt: hydratedAssets.txt,
+            html: hydratedAssets.html,
+            generatedAt: existingReport.generatedAt || audit.reportGeneratedAt || new Date().toISOString(),
           });
+          return;
         }
         res.json(existingReport);
         return;
@@ -10957,10 +10965,8 @@ export async function registerRoutes(
         return;
       }
 
-      // A public GET is read-only. Missing or invalid content is handed to the
-      // persisted recovery worker instead of starting untracked GPT calls that
-      // can overlap, overwrite a scheduled status, and create duplicate cost.
-      await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" });
+      // This GET remains read-only. The durable recovery worker owns state
+      // transitions for missing or invalid report content.
       res.status(202).json({
         success: true,
         status: "needs_review",
@@ -10980,6 +10986,7 @@ export async function registerRoutes(
   app.post("/api/discovery-scan/:auditId/regenerate", async (req, res) => {
     try {
       const { auditId } = req.params;
+      if (!(await checkAuditOwnership(req, res, auditId))) return;
       const audit = await storage.getAudit(auditId);
 
       if (!audit) {
@@ -15168,6 +15175,13 @@ export async function registerRoutes(
       }
 
       const reportEmail = String(record.email ?? "").replace(/^peptides::/i, "").trim().toLowerCase();
+      const isAdmin = requireAdminAuth(req, res, true);
+      const accessDecision = getReportAccessDecision(req, "peptides", id, reportEmail);
+      if (!isAdmin && accessDecision !== 200) {
+        res.status(accessDecision).json({ error: "Accès non autorisé à ce rapport" });
+        return;
+      }
+      res.setHeader("Cache-Control", "private, no-store");
       const orders = reportEmail.includes("@") ? await storage.getOrdersByEmail(reportEmail) : [];
       if (!isPeptidesReportAccessibleForOrders(id, orders)) {
         res.status(404).json({ error: "Rapport introuvable" });
@@ -15639,7 +15653,7 @@ export async function registerRoutes(
 
           try {
             const recovered = await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
-              `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${meta.peptidesReportId}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`,
+              `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${buildReportAccessUrl(baseUrl, `/peptides/${meta.peptidesReportId}`, "peptides", meta.peptidesReportId, email)}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`,
             );
             if (recovered) {
               console.log(`[AutoGen] ✅ Recovered delivery email for ${email} (report ${meta.peptidesReportId})`);
@@ -15834,7 +15848,7 @@ export async function registerRoutes(
         } else if (stillNotEmailed) {
           try {
             clientEmailSent = await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
-              `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`
+              `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${buildReportAccessUrl(baseUrl, `/peptides/${saved.id}`, "peptides", saved.id, email)}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`
             );
             if (clientEmailSent) {
               console.log(`[AutoGen] ✅ Delivery email sent to ${email}`);

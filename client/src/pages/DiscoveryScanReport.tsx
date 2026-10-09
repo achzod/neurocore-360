@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'wouter';
+import { redirectLegacyReportLinkToLogin, reportAccessHeaders } from '@/lib/reportAccess';
 import { Sidebar } from '@/components/ultrahuman/Sidebar';
 import { RadialProgress } from '@/components/ultrahuman/RadialProgress';
 import { MetricsRadar, ProjectionChart } from '@/components/ultrahuman/Charts';
@@ -157,7 +158,8 @@ const DiscoveryScanReport: React.FC = () => {
       }
 
       try {
-        const response = await fetch(`/api/discovery-scan/${auditId}`);
+        const response = await fetch(`/api/discovery-scan/${auditId}`, { headers: reportAccessHeaders(auditId) });
+        if (redirectLegacyReportLinkToLogin(response)) return;
         const data = await response.json();
 
         const isPending = response.status === 202 || data?.status === 'regenerating';
@@ -286,7 +288,7 @@ const DiscoveryScanReport: React.FC = () => {
     const checkExistingReview = async () => {
       if (!auditId) return;
       try {
-        const response = await fetch(`/api/review/check/${auditId}`, { signal: controller.signal });
+        const response = await fetch(`/api/review/check/${auditId}`, { signal: controller.signal, headers: reportAccessHeaders(auditId) });
         const data = await response.json();
         if (controller.signal.aborted || requestId !== reviewRequestSequence.current) return;
         if (!response.ok || data.success !== true) {
@@ -429,7 +431,7 @@ const DiscoveryScanReport: React.FC = () => {
                   setIsRegenerating(true);
                   setRegenAttempts(0);
                   try {
-                    const response = await fetch(`/api/discovery-scan/${auditId}/regenerate`, { method: "POST" });
+                    const response = await fetch(`/api/discovery-scan/${auditId}/regenerate`, { method: "POST", headers: reportAccessHeaders(auditId) });
                     const data = await response.json().catch(() => ({}));
                     if (!response.ok || data?.success === false) {
                       throw new Error(data?.error || 'Impossible de relancer le rapport');

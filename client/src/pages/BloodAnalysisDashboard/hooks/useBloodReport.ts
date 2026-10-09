@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { redirectLegacyReportLinkToLogin, reportAccessHeaders } from '@/lib/reportAccess';
 
 export interface BloodAnalysisReport {
   id: string;
@@ -45,16 +46,18 @@ export const useBloodReport = (reportId: string | undefined) => {
       // session token exists. Calling the protected endpoint first produced a
       // noisy 403 in the browser before the public fallback succeeded.
       const token = localStorage.getItem("apexlabs_token");
+      const headers = reportAccessHeaders(reportId);
       let response = token
         ? await fetch(`/api/blood-analysis/report/${reportId}`, {
-            headers: { Authorization: `Bearer ${token}` },
+            headers,
           })
-        : await fetch(`/api/blood-analysis/report/${reportId}/public`);
+        : await fetch(`/api/blood-analysis/report/${reportId}/public`, { headers });
       let data = await response.json();
+      if (redirectLegacyReportLinkToLogin(response)) throw new Error('AUTH_REDIRECT');
 
       // A stale session token must not break a valid direct UUID link.
       if (token && (!response.ok || !data?.success)) {
-        response = await fetch(`/api/blood-analysis/report/${reportId}/public`);
+        response = await fetch(`/api/blood-analysis/report/${reportId}/public`, { headers });
         data = await response.json();
       }
 

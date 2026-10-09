@@ -3,6 +3,22 @@ export interface PublicReviewCheckSource {
   promoCode?: unknown;
 }
 
+export interface PublicReviewSource {
+  rating?: unknown;
+  comment?: unknown;
+  auditType?: unknown;
+  createdAt?: unknown;
+}
+
+export function toPublicReview(review: PublicReviewSource) {
+  return {
+    rating: typeof review.rating === "number" ? review.rating : 0,
+    comment: typeof review.comment === "string" ? review.comment : "",
+    auditType: typeof review.auditType === "string" ? review.auditType : "",
+    createdAt: review.createdAt ?? null,
+  };
+}
+
 export function buildPublicReviewCheckResponse(
   review: PublicReviewCheckSource | null | undefined,
   approvedPromoCode?: string | null,
