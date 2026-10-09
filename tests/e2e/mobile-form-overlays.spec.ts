@@ -75,6 +75,32 @@ test("le header ne recouvre pas Continuer en paysage iPhone", async ({ page }) =
   await expect(page.getByRole("banner")).toHaveCSS("position", "relative");
 });
 
+for (const width of [375, 393]) {
+  test(`Peptides Engine affiche sa progression au premier écran sans débordement à ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 852 });
+    await page.goto("/peptides-engine?tier=solo");
+
+    const progress = page.getByTestId("peptides-engine-progress");
+    await expect(progress).toBeVisible();
+    await expect(progress.getByRole("progressbar")).toHaveAttribute("aria-valuenow", /^(?!0$)\d+$/);
+    await expect(page.getByLabel("Préférences de cookies")).toBeVisible();
+    await expect(page.getByTestId("global-whatsapp-form-toggle")).toHaveCount(0);
+
+    const layout = await page.evaluate(() => {
+      const banner = document.querySelector('[aria-label="Préférences de cookies"]');
+      const rect = banner?.getBoundingClientRect();
+      return {
+        horizontalOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        bannerLeft: rect?.left ?? -1,
+        bannerRight: rect?.right ?? Number.POSITIVE_INFINITY,
+      };
+    });
+    expect(layout.horizontalOverflow).toBeLessThanOrEqual(1);
+    expect(layout.bannerLeft).toBeGreaterThanOrEqual(0);
+    expect(layout.bannerRight).toBeLessThanOrEqual(width);
+  });
+}
+
 test("les alias Discovery restent sans hub après le délai réel et le panneau public reste dans l'écran", async ({ context, page }) => {
   test.setTimeout(30_000);
   const checkoutPage = await context.newPage();

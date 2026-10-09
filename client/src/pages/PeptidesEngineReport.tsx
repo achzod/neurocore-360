@@ -522,7 +522,7 @@ export default function PeptidesEngineReport() {
               placement="report_primary"
               clientName={report.clientName}
               tier={reportTier}
-              label="Parler a Achzod sur WhatsApp"
+              label="Parler à Achzod sur WhatsApp"
               className="w-full shrink-0 md:w-auto"
             />
           </div>

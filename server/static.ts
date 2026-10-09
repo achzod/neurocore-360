@@ -6,6 +6,7 @@ import {
   BLOG_ARTICLE_REDIRECTS,
   BLOG_INDEXATION_PRIORITY_SLUGS,
 } from "../client/src/data/blogSeo";
+import { PEPTIDES_OFFER_FAQ } from "../shared/peptidesOfferFaq";
 import { INTERACTIVE_FLOW_CACHE_CONTROL, resolveSsrCacheControl } from "./cachePolicy";
 
 const BASE_URL = "https://apexlabs.achzodcoaching.com";
@@ -1223,43 +1224,7 @@ ${sorted
     },
   };
 
-  const peptidesOfferFaqs = [
-    {
-      question: "Pourquoi 199, 299 ou 399 EUR ?",
-      answer:
-        "Solo inclut le protocole personnalise et l'acces source. Coached ajoute un bilan sanguin au choix et 30 jours de support ecrit. Tracked ajoute un second bilan, 90 jours de support et une reecriture si l'objectif evolue.",
-    },
-    {
-      question: "Combien de bilans sanguins sont inclus ?",
-      answer:
-        "Solo n'en inclut aucun. Coached inclut un bilan au choix, baseline ou mi-cycle. Tracked inclut deux bilans: une baseline avant le cycle puis un controle mi-cycle.",
-    },
-    {
-      question: "Faut-il deja connaitre les peptides ?",
-      answer:
-        "Non. Le questionnaire adapte la selection au niveau d'experience, aux objectifs, aux contraintes et au profil de tolerance au risque.",
-    },
-    {
-      question: "Combien de molecules sont retenues ?",
-      answer:
-        "Entre deux et cinq selon le profil et les objectifs, avec une logique de dose minimale efficace et sans empiler des molecules sans justification.",
-    },
-    {
-      question: "Que contient la livraison ?",
-      answer:
-        "Le rapport protocole, le guide de reconstitution calcule, le calendrier, la liste de courses et les guides de securite. Les credits Blood Analysis dependent de la formule choisie.",
-    },
-    {
-      question: "Quel est le delai ?",
-      answer:
-        "Le rapport personnalise est livre par email sous 48 heures apres le paiement, sous reserve que les informations necessaires soient completes.",
-    },
-    {
-      question: "Est-ce un avis medical ?",
-      answer:
-        "Non. Le contenu est educatif et ne remplace ni diagnostic, ni ordonnance, ni suivi par un professionnel de sante.",
-    },
-  ];
+  const peptidesOfferFaqs = PEPTIDES_OFFER_FAQ;
 
   const offerContent: Record<
     string,

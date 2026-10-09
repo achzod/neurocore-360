@@ -58,10 +58,28 @@ test("eligible copy explains the actual axes, execution constraints and budget i
   assert.match(copy, /sécrétagogue complémentaire/i);
   assert.match(copy, /deux administrations par jour/i);
   assert.match(copy, /réfrigérateur privé/i);
-  assert.match(copy, /budget déclaré de \$400\.00/i);
+  assert.match(copy, /budget déclaré de 368,00\s*€/i);
+  assert.doesNotMatch(copy, /budget déclaré de \$/i);
   assert.match(copy, /sans recommencer le questionnaire/i);
   assert.doesNotMatch(copy, /questionnaire dédié/i);
   assert.doesNotMatch(copy, /Ton objectif .* pilote la sélection|La stratégie de référence est chiffrée/i);
+});
+
+test("public preview accepts and describes the budget in EUR like the paid offer", () => {
+  const input = peptidesPreviewInputSchema.parse({
+    ...base,
+    budgetTotalUsd: undefined,
+    budgetTotalEur: 200,
+    trainingFrequency: "3-4",
+    primaryGoal: "recovery",
+    recoveryScope: "localized",
+  });
+  assert.equal(input.budgetTotalEur, 200);
+  assert.equal(input.budgetTotalUsd, 217.39);
+  const result = buildPeptidesPreview(input, catalog, "2026-09-15T09:00:00Z", franceShipping);
+  const publicCopy = [result.rationale, result.budgetExplanation, ...result.analysisPoints].join(" ");
+  assert.match(publicCopy, /200,00\s*€/);
+  assert.doesNotMatch(publicCopy, /budget (?:total )?déclaré de \$/i);
 });
 
 test("recent bloodwork can produce an eligible three-axis estimate for fat loss, body composition and testosterone", () => {

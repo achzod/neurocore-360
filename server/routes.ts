@@ -14766,6 +14766,8 @@ export async function registerRoutes(
   // exposes the reference-dose arithmetic, operational quantities and landed
   // estimate. Reconstitution and the individualized weekly schedule remain paid output.
   app.post("/api/peptides-preview/analyze", createRateLimiter({ windowMs: 60_000, max: 5 }), async (req, res) => {
+    const requestId = crypto.randomUUID();
+    let phase: "analysis" | "catalog" | "persistence" | "notification" | "response" = "analysis";
     try {
       const {
         peptidesPreviewInputSchema,
@@ -14773,7 +14775,9 @@ export async function registerRoutes(
         getLivePeptauraPreviewCatalog,
       } = await import("./peptidesPreview");
       const input = peptidesPreviewInputSchema.parse(req.body);
+      phase = "catalog";
       const liveCatalog = await getLivePeptauraPreviewCatalog(input.country);
+      phase = "analysis";
       const result = buildPeptidesPreview(
         input,
         liveCatalog.snapshots,
@@ -14782,6 +14786,7 @@ export async function registerRoutes(
       );
       const capturedAt = new Date().toISOString();
       const storageEmail = `peptides-preview::${input.email}`;
+      phase = "persistence";
       const previous = await storage.getBurnoutProgress(storageEmail);
       const previousResponses = previous?.responses && typeof previous.responses === "object" ? previous.responses as Record<string, any> : {};
       const notificationFingerprint = crypto.createHash("sha256").update(JSON.stringify({
@@ -14851,15 +14856,24 @@ export async function registerRoutes(
           previewHistory: pendingHistory,
         },
       });
+      phase = "response";
       const checkoutToken = createPeptidesPreviewCheckoutToken(progress.id);
       const checkoutUrl = `/peptides-engine?tier=solo&utm_source=peptides_preview&utm_medium=result&utm_campaign=pre_peptides_engine#preview_token=${encodeURIComponent(checkoutToken)}`;
+      phase = "notification";
       await recordPeptidesPreviewConversionEvent(progress.id, "preview_completed", {
         source: input.attribution?.source || null,
         medium: input.attribution?.medium || null,
         campaign: input.attribution?.campaign || null,
         status: result.status,
       }).catch((eventError) => console.error("[PeptidesPreview] preview_completed tracking failed", eventError));
-      kickPeptidesPreviewDeliveryQueue();
+      try {
+        kickPeptidesPreviewDeliveryQueue();
+      } catch (notificationError) {
+        // Notification startup is best-effort. A persisted estimate remains
+        // usable and must never be relabelled as a catalog outage.
+        console.error("[PeptidesPreview] delivery queue kick failed", notificationError);
+      }
+      phase = "response";
       const resultEmailSent = queuedNotifications?.clientEmailSent === true;
       const adminNotificationSent = queuedNotifications?.adminEmailSent === true;
       const notificationDeliveryState = String(queuedNotifications?.deliveryState || "queued");
@@ -14885,6 +14899,8 @@ export async function registerRoutes(
         resultEmailQueued: !resultEmailSent,
         adminNotificationSent,
         notificationDeliveryState,
+        catalogStatus: liveCatalog.degraded || "live",
+        requestId,
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -14898,10 +14914,28 @@ export async function registerRoutes(
         });
         return;
       }
-      console.error("[PeptidesPreview] analysis unavailable", error instanceof Error ? error.message : "unknown_error");
-      res.status(503).json({
-        error: "catalog_unavailable",
-        message: "Le catalogue partenaire ne peut pas être vérifié maintenant. Réessaie dans quelques minutes.",
+      const message = error instanceof Error ? error.message : "unknown_error";
+      console.error(`[PeptidesPreview] ${phase} failed`, { requestId, message });
+      if (phase === "catalog") {
+        res.status(503).json({
+          error: "catalog_unavailable",
+          message: "Le catalogue partenaire ne peut pas être vérifié maintenant. Réessaie dans quelques minutes.",
+          requestId,
+        });
+        return;
+      }
+      if (phase === "persistence") {
+        res.status(503).json({
+          error: "preview_save_unavailable",
+          message: "Ton estimation a été calculée, mais sa sauvegarde sécurisée est momentanément indisponible. Réessaie dans quelques minutes.",
+          requestId,
+        });
+        return;
+      }
+      res.status(500).json({
+        error: "preview_analysis_unavailable",
+        message: "L’estimation n’a pas pu être finalisée. Réessaie dans quelques minutes.",
+        requestId,
       });
     }
   });

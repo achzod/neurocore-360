@@ -71,6 +71,7 @@ export function CookieConsent() {
           exit={{ y: 100, opacity: 0 }}
           transition={{ type: "spring", damping: 25 }}
           className="fixed bottom-0 inset-x-0 z-[9999] p-4 md:p-6"
+          style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)" }}
         >
           <div className="max-w-4xl mx-auto bg-[#0A0A0A] border border-white/10 rounded-sm p-6 shadow-2xl">
             <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
@@ -83,16 +84,16 @@ export function CookieConsent() {
                   </a>
                 </p>
               </div>
-              <div className="flex gap-3 shrink-0">
+              <div className="flex w-full flex-wrap gap-3 shrink-0 md:w-auto md:flex-nowrap">
                 <button
                   onClick={() => accept("essential")}
-                  className="px-4 py-2 text-xs font-medium text-white/60 border border-white/10 rounded-sm hover:bg-white/5 transition-colors"
+                  className="min-w-0 flex-1 px-3 py-2 text-xs font-medium text-white/60 border border-white/10 rounded-sm hover:bg-white/5 transition-colors md:flex-none md:px-4"
                 >
                   Essentiels uniquement
                 </button>
                 <button
                   onClick={() => accept("all")}
-                  className="px-4 py-2 text-xs font-bold text-black bg-[#FCDD00] rounded-sm hover:bg-[#FCDD00]/90 transition-colors"
+                  className="min-w-0 flex-1 px-3 py-2 text-xs font-bold text-black bg-[#FCDD00] rounded-sm hover:bg-[#FCDD00]/90 transition-colors md:flex-none md:px-4"
                 >
                   Tout accepter
                 </button>
