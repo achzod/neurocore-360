@@ -6,6 +6,15 @@ export type AuthPayload = {
   email: string;
 };
 
+export type ReportResource = "audit" | "blood" | "peptides";
+
+type ReportAccessPayload = {
+  tokenType: "report_access";
+  resource: ReportResource;
+  resourceId: string;
+  email?: string;
+};
+
 const getAuthSecret = (): string => {
   const secret =
     process.env.SESSION_SECRET ||
@@ -38,4 +47,80 @@ export const getAuthPayload = (req: Request): AuthPayload | null => {
   const match = header.match(/^Bearer\s+(.+)$/i);
   if (!match) return null;
   return verifyAuthToken(match[1]);
+};
+
+export const signReportAccessToken = (
+  resource: ReportResource,
+  resourceId: string,
+  email?: string,
+): string => jwt.sign(
+  {
+    tokenType: "report_access",
+    resource,
+    resourceId,
+    ...(email ? { email: email.trim().toLowerCase() } : {}),
+  } satisfies ReportAccessPayload,
+  getAuthSecret(),
+  { expiresIn: "30d", issuer: "apexlabs", audience: "report-access" },
+);
+
+export const verifyReportAccessToken = (
+  token: string,
+  resource: ReportResource,
+  resourceId: string,
+): ReportAccessPayload | null => {
+  try {
+    const payload = jwt.verify(token, getAuthSecret(), {
+      issuer: "apexlabs",
+      audience: "report-access",
+    }) as ReportAccessPayload;
+    if (
+      payload.tokenType !== "report_access" ||
+      payload.resource !== resource ||
+      payload.resourceId !== resourceId
+    ) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+};
+
+export const getReportAccessToken = (req: Request): string | null => {
+  const header = req.headers["x-report-access"];
+  if (typeof header === "string" && header.trim()) return header.trim();
+  const query = req.query.access;
+  return typeof query === "string" && query.trim() ? query.trim() : null;
+};
+
+export const hasValidReportAccess = (
+  req: Request,
+  resource: ReportResource,
+  resourceId: string,
+): boolean => {
+  const token = getReportAccessToken(req);
+  return Boolean(token && verifyReportAccessToken(token, resource, resourceId));
+};
+
+export const getReportAccessDecision = (
+  req: Request,
+  resource: ReportResource,
+  resourceId: string,
+  ownerEmail: string,
+): 200 | 401 | 403 => {
+  if (hasValidReportAccess(req, resource, resourceId)) return 200;
+  const payload = getAuthPayload(req);
+  if (!payload) return 401;
+  return payload.email.trim().toLowerCase() === ownerEmail.trim().toLowerCase() ? 200 : 403;
+};
+
+export const buildReportAccessUrl = (
+  baseUrl: string,
+  path: string,
+  resource: ReportResource,
+  resourceId: string,
+  email?: string,
+): string => {
+  const url = new URL(path, baseUrl);
+  url.searchParams.set("access", signReportAccessToken(resource, resourceId, email));
+  return url.toString();
 };

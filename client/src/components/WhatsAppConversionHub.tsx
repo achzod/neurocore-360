@@ -284,7 +284,7 @@ export function WhatsAppConversionHub() {
           className="flex h-12 items-center justify-center border border-[#25D366]/50 bg-black/90 px-4 text-xs font-black uppercase tracking-wide text-[#25D366] shadow-[0_14px_35px_rgba(0,0,0,0.35)] backdrop-blur transition-colors hover:border-[#25D366] hover:bg-[#25D366]/10"
           data-testid="global-whatsapp-form-toggle"
         >
-          Etre oriente
+          Être orienté
         </button>
       </div>
     </div>

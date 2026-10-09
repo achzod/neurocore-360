@@ -1,6 +1,11 @@
 import { z } from "zod";
 import { emailCorrectionMessage, isLikelyDeliverableEmail } from "@shared/emailAddressPolicy";
 import {
+  formatPeptidesPreviewEurFromUsd,
+  peptidesPreviewEurToUsd,
+  peptidesPreviewUsdToEur,
+} from "@shared/peptidesCurrency";
+import {
   PEPTAURA_PRODUCT_FEED_URL,
   parsePeptauraProductFeed,
   type PeptauraFeedListing,
@@ -66,7 +71,10 @@ export const peptidesPreviewInputSchema = z.object({
   refrigeration: z.enum(["yes-private", "yes-shared", "no"]),
   experience: z.enum(["none", "read", "tried", "regular"]),
   trainingFrequency: z.enum(["none", "1-2", "3-4", "5plus"]),
-  budgetTotalUsd: z.coerce.number().min(50).max(5000),
+  budgetTotalEur: z.coerce.number().min(50).max(5000).optional(),
+  // Kept temporarily for stored submissions and internal callers created
+  // before the public Preview contract moved to EUR.
+  budgetTotalUsd: z.coerce.number().min(50).max(5500).optional(),
   country: z.enum(countryValues).default("FR"),
   medications: z.string().trim().min(2).max(800),
   allergies: z.string().trim().min(2).max(500),
@@ -81,6 +89,9 @@ export const peptidesPreviewInputSchema = z.object({
     content: z.string().trim().max(120).optional(),
   }).strict().optional().default({}),
 }).superRefine((value, ctx) => {
+  if (value.budgetTotalEur === undefined && value.budgetTotalUsd === undefined) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["budgetTotalEur"], message: "Indique ton budget total en euros." });
+  }
   if (value.conditions.includes("none") && value.conditions.length > 1) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["conditions"], message: "Choisis soit aucune condition, soit les conditions concernées." });
   }
@@ -97,7 +108,11 @@ export const peptidesPreviewInputSchema = z.object({
   if (selectedGoals.includes("cognitive") && value.cognitiveStress === "not-applicable") {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["cognitiveStress"], message: "Précise le niveau de stress cognitif." });
   }
-});
+}).transform((value) => ({
+  ...value,
+  budgetTotalEur: value.budgetTotalEur ?? peptidesPreviewUsdToEur(value.budgetTotalUsd!),
+  budgetTotalUsd: value.budgetTotalUsd ?? peptidesPreviewEurToUsd(value.budgetTotalEur!),
+}));
 
 export type PeptidesPreviewInput = z.infer<typeof peptidesPreviewInputSchema>;
 
@@ -945,11 +960,11 @@ function eligibleNarrative(
   points.push(`L’exécution tient compte de ta limite de ${frequencyLabels[input.injectionFrequency]} et de ton accès à ${refrigerationLabels[input.refrigeration]}.`);
   const budgetDelta = input.budgetTotalUsd - grandTotalUsd;
   points.push(budgetDelta >= 0
-    ? `Le total rendu de $${grandTotalUsd.toFixed(2)} reste $${budgetDelta.toFixed(2)} sous ton budget déclaré de $${input.budgetTotalUsd.toFixed(2)}.`
-    : `Le total rendu de $${grandTotalUsd.toFixed(2)} dépasse ton budget déclaré de $${input.budgetTotalUsd.toFixed(2)} de $${Math.abs(budgetDelta).toFixed(2)} ; Peptides Engine devra donc hiérarchiser les axes.`);
+    ? `Le total rendu de ${formatPeptidesPreviewEurFromUsd(grandTotalUsd)} reste ${formatPeptidesPreviewEurFromUsd(budgetDelta)} sous ton budget déclaré de ${formatPeptidesPreviewEurFromUsd(input.budgetTotalUsd)}.`
+    : `Le total rendu de ${formatPeptidesPreviewEurFromUsd(grandTotalUsd)} dépasse ton budget déclaré de ${formatPeptidesPreviewEurFromUsd(input.budgetTotalUsd)} de ${formatPeptidesPreviewEurFromUsd(Math.abs(budgetDelta))} ; Peptides Engine devra donc hiérarchiser les axes.`);
   return {
     headline: `Ton estimation retient ${selected.length} molécule${selected.length > 1 ? "s" : ""} pour ta priorité ${primary}.`,
-    rationale: `Ton aperçu ne se contente plus de nommer un objectif : il construit ${frenchList(roles)}, distingue les phases actives dans « ${durationLabel} » et chiffre la commande complète à $${grandTotalUsd.toFixed(2)} livraison comprise. Peptides Engine transforme ensuite cette architecture en calendrier individualisé, unités et liste d’achat finale.`,
+    rationale: `Ton aperçu ne se contente plus de nommer un objectif : il construit ${frenchList(roles)}, distingue les phases actives dans « ${durationLabel} » et chiffre la commande complète à ${formatPeptidesPreviewEurFromUsd(grandTotalUsd)} livraison comprise. Peptides Engine transforme ensuite cette architecture en calendrier individualisé, unités et liste d’achat finale.`,
     analysisPoints: points,
     requiredMarkers: [],
     nextStepExplanation: "Débloque Peptides Engine sans recommencer le questionnaire. Tes réponses sont reprises automatiquement ; tu confirmes seulement les informations indispensables encore manquantes avant de choisir ton offre et payer.",
@@ -1087,8 +1102,8 @@ export function buildPeptidesPreview(
   const monthlyEquivalentUsd = Math.round((quote.grandTotalUsd / (maxDurationWeeks / 4)) * 100) / 100;
   const budgetFit = cents(quote.grandTotalUsd) <= cents(input.budgetTotalUsd) ? "within" : "above";
   const budgetExplanation = budgetFit === "within"
-    ? `Le devis rendu estimé de $${quote.grandTotalUsd.toFixed(2)} respecte ton budget total déclaré de $${input.budgetTotalUsd.toFixed(2)}.`
-    : `Le devis rendu estimé de $${quote.grandTotalUsd.toFixed(2)} dépasse ton budget total déclaré de $${input.budgetTotalUsd.toFixed(2)}. Le rapport complet devra prioriser les axes au lieu de masquer le dépassement.`;
+    ? `Le devis rendu estimé de ${formatPeptidesPreviewEurFromUsd(quote.grandTotalUsd)} respecte ton budget total déclaré de ${formatPeptidesPreviewEurFromUsd(input.budgetTotalUsd)}.`
+    : `Le devis rendu estimé de ${formatPeptidesPreviewEurFromUsd(quote.grandTotalUsd)} dépasse ton budget total déclaré de ${formatPeptidesPreviewEurFromUsd(input.budgetTotalUsd)}. Le rapport complet devra prioriser les axes au lieu de masquer le dépassement.`;
   const activeWeeks = quote.options.map((option) => option.math.activeDurationWeeks);
   const minimumActiveWeeks = Math.min(...activeWeeks);
   const maximumActiveWeeks = Math.max(...activeWeeks);
@@ -1118,7 +1133,7 @@ export function buildPeptidesPreview(
       durationLabel,
       budgetFit,
       ...narrative,
-      budgetExplanation: `Estimation actuelle : $${quote.productSubtotalUsd.toFixed(2)} de produits + $${quote.shippingUsd.toFixed(2)} de livraison = $${quote.grandTotalUsd.toFixed(2)} rendu estimé. Ce montant peut varier après l’achat de Peptides Engine, lorsque le protocole plus poussé et plus précis sera construit.`,
+      budgetExplanation: `Estimation actuelle : ${formatPeptidesPreviewEurFromUsd(quote.productSubtotalUsd)} de produits + ${formatPeptidesPreviewEurFromUsd(quote.shippingUsd)} de livraison = ${formatPeptidesPreviewEurFromUsd(quote.grandTotalUsd)} rendu estimé. Ce montant peut varier après l’achat de Peptides Engine, lorsque le protocole plus poussé et plus précis sera construit.`,
       quoteExplanation: `Le pré-calcul estime ${selected.length} molécule${selected.length > 1 ? "s" : ""} sur ${durationLabel}. Les noms et dosages sont réservés à l’analyse Peptides Engine complète.`,
       blockers,
       nextStep: "peptides_engine",
@@ -1146,8 +1161,8 @@ export function buildPeptidesPreview(
     ...narrative,
     budgetExplanation,
     quoteExplanation: shippingQuotes
-      ? `Molécules : $${quote.productSubtotalUsd.toFixed(2)}. Livraison : $${quote.shippingUsd.toFixed(2)}. Total rendu estimé : $${quote.grandTotalUsd.toFixed(2)}. Équivalent sur ${maxDurationWeeks} semaines : environ $${monthlyEquivalentUsd.toFixed(2)} par période de quatre semaines.`
-      : `Molécules : $${quote.productSubtotalUsd.toFixed(2)}. Livraison non calculée dans ce contexte de test.`,
+      ? `Molécules : ${formatPeptidesPreviewEurFromUsd(quote.productSubtotalUsd)}. Livraison : ${formatPeptidesPreviewEurFromUsd(quote.shippingUsd)}. Total rendu estimé : ${formatPeptidesPreviewEurFromUsd(quote.grandTotalUsd)}. Équivalent sur ${maxDurationWeeks} semaines : environ ${formatPeptidesPreviewEurFromUsd(monthlyEquivalentUsd)} par période de quatre semaines.`
+      : `Molécules : ${formatPeptidesPreviewEurFromUsd(quote.productSubtotalUsd)}. Livraison non calculée dans ce contexte de test.`,
     blockers: [],
     nextStep: "peptides_engine",
   };
@@ -1159,9 +1174,18 @@ const countryLabels: Record<string, string> = {
   PT: "Portugal", MA: "Morocco", DZ: "Algeria", TN: "Tunisia",
 };
 
-const cachedCatalog = new Map<string, { expiresAt: number; snapshots: PeptauraFeedProductSnapshot[]; checkedAt: string; shippingQuotes: PeptauraShippingQuote[] }>();
+type PeptidesPreviewCatalog = {
+  snapshots: PeptauraFeedProductSnapshot[];
+  checkedAt: string;
+  shippingQuotes: PeptauraShippingQuote[];
+  degraded?: "stale_catalog";
+};
 
-export async function getLivePeptauraPreviewCatalog(countryCode = "FR", nowMs = Date.now()): Promise<{ snapshots: PeptauraFeedProductSnapshot[]; checkedAt: string; shippingQuotes: PeptauraShippingQuote[] }> {
+const PREVIEW_CATALOG_FRESH_MS = 15 * 60_000;
+const PREVIEW_CATALOG_STALE_FALLBACK_MS = 6 * 60 * 60_000;
+const cachedCatalog = new Map<string, PeptidesPreviewCatalog & { expiresAt: number }>();
+
+export async function getLivePeptauraPreviewCatalog(countryCode = "FR", nowMs = Date.now()): Promise<PeptidesPreviewCatalog> {
   const cacheKey = countryCode.toUpperCase();
   const cached = cachedCatalog.get(cacheKey);
   if (cached && cached.expiresAt > nowMs) return { snapshots: cached.snapshots, checkedAt: cached.checkedAt, shippingQuotes: cached.shippingQuotes };
@@ -1177,7 +1201,7 @@ export async function getLivePeptauraPreviewCatalog(countryCode = "FR", nowMs = 
       clearTimeout(timer);
     }
   };
-  {
+  try {
     const response = await fetchWithTimeout(PEPTAURA_PRODUCT_FEED_URL, "application/json");
     if (!response.ok) throw new Error(`PEPTAURA_PREVIEW_HTTP_${response.status}`);
     const raw = await response.text();
@@ -1200,7 +1224,20 @@ export async function getLivePeptauraPreviewCatalog(countryCode = "FR", nowMs = 
       shippingQuotes = [];
     }
     const value = { snapshots: parsed.snapshots, checkedAt, shippingQuotes };
-    cachedCatalog.set(cacheKey, { ...value, expiresAt: nowMs + 15 * 60_000 });
+    cachedCatalog.set(cacheKey, { ...value, expiresAt: nowMs + PREVIEW_CATALOG_FRESH_MS });
     return value;
+  } catch (error) {
+    const cachedAtMs = cached ? Date.parse(cached.checkedAt) : Number.NaN;
+    const staleAgeMs = nowMs - cachedAtMs;
+    if (cached && cached.snapshots.length > 0 && Number.isFinite(staleAgeMs) && staleAgeMs <= PREVIEW_CATALOG_STALE_FALLBACK_MS) {
+      console.warn("[PeptidesPreview] live catalog unavailable; using bounded last-known-good catalog", error instanceof Error ? error.message : error);
+      return {
+        snapshots: cached.snapshots,
+        checkedAt: cached.checkedAt,
+        shippingQuotes: cached.shippingQuotes,
+        degraded: "stale_catalog",
+      };
+    }
+    throw error;
   }
 }

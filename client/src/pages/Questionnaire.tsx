@@ -897,7 +897,7 @@ function QuestionnaireContent() {
                 </div>
                 <CardTitle className="text-2xl">Commençons ton audit</CardTitle>
                 <p className="mt-2 text-muted-foreground">
-                  Entre ton email pour sauvegarder ta progression et recevoir tes résultats.
+                  Saisis ton adresse email pour sauvegarder ta progression et recevoir tes résultats.
                 </p>
               </CardHeader>
               <CardContent>
@@ -922,8 +922,8 @@ function QuestionnaireContent() {
                       data-testid="checkbox-rgpd-consent"
                     />
                     <Label htmlFor="rgpd-consent" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
-                      J'accepte que mes donnees de sante soient collectees et traitees par APEXLABS dans le cadre de mon audit personnalise, conformement a la{" "}
-                      <a href="/politique-confidentialite" target="_blank" className="text-primary underline">politique de confidentialite</a>.
+                      J’accepte que mes données de santé soient collectées et traitées par APEXLABS dans le cadre de mon audit personnalisé, conformément à la{" "}
+                      <a href="/politique-confidentialite" target="_blank" rel="noreferrer" className="text-primary underline">politique de confidentialité</a>.
                       <span className="ml-1 text-destructive">*</span>
                     </Label>
                   </div>

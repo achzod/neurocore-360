@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, Link } from 'wouter';
+import { redirectLegacyReportLinkToLogin, reportAccessHeaders } from '@/lib/reportAccess';
 import { Sidebar } from '@/components/ultrahuman/Sidebar';
 import { RadialProgress } from '@/components/ultrahuman/RadialProgress';
 import { MetricsRadar, ProjectionChart } from '@/components/ultrahuman/Charts';
@@ -269,7 +270,8 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
     let cancelled = false;
 
     const loadNarrativeReport = async () => {
-      const reportRes = await fetch(`/api/audits/${auditId}/narrative`);
+      const reportRes = await fetch(`/api/audits/${auditId}/narrative`, { headers: reportAccessHeaders(auditId) });
+      if (redirectLegacyReportLinkToLogin(reportRes)) return;
       if (reportRes.status === 202) {
         const scheduled = await reportRes.json();
         setScheduledFor(scheduled.scheduledFor || new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString());
@@ -292,7 +294,8 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
     const pollNarrativeStatus = async (attempt: number = 0) => {
       if (cancelled) return;
       try {
-        const statusRes = await fetch(`/api/audits/${auditId}/narrative-status`);
+        const statusRes = await fetch(`/api/audits/${auditId}/narrative-status`, { headers: reportAccessHeaders(auditId) });
+        if (redirectLegacyReportLinkToLogin(statusRes)) return;
         const statusData = await statusRes.json();
         setGenerationStatus(statusData.status || "");
         setGenerationProgress(statusData.progress ?? 0);
@@ -330,7 +333,8 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
       }
 
       try {
-        const auditRes = await fetch(`/api/audits/${auditId}?light=1`);
+        const auditRes = await fetch(`/api/audits/${auditId}?light=1`, { headers: reportAccessHeaders(auditId) });
+        if (redirectLegacyReportLinkToLogin(auditRes)) return;
         if (!auditRes.ok) {
           setError('Audit non trouve');
           setLoading(false);
@@ -351,7 +355,7 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
           setGenerationStatus("generating");
           setGenerationProgress(0);
           setGenerationSection("Initialisation...");
-          await fetch(`/api/audits/${auditId}/generate-narrative`, { method: 'POST' });
+          await fetch(`/api/audits/${auditId}/generate-narrative`, { method: 'POST', headers: reportAccessHeaders(auditId) });
           await pollNarrativeStatus(0);
           return;
         }

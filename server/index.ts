@@ -64,7 +64,8 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (same-origin, mobile apps, Postman)
+    // Non-browser and same-origin requests do not carry Origin. Cross-origin
+    // browser requests remain restricted to this explicit allowlist.
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
@@ -72,6 +73,8 @@ app.use(cors({
     callback(null, false);
   },
   credentials: true,
+  methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Authorization", "Content-Type", "X-Admin-Key", "X-Report-Access"],
 }));
 
 declare module "http" {

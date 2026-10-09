@@ -48,14 +48,91 @@ test("preview keeps live product prices when the shipping page is temporarily un
   }
 });
 
+test("preview reuses a bounded last-known-good catalog when the product feed has a short outage", async () => {
+  const now = Date.now();
+  const originalFetch = globalThis.fetch;
+  let feedAvailable = true;
+  globalThis.fetch = (async (input: string | URL | Request) => {
+    const url = String(input);
+    if (url.includes("product-feed")) {
+      if (!feedAvailable) throw new Error("temporary feed outage");
+      return new Response(productFeed(now), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    return new Response("shipping outage", { status: 503 });
+  }) as typeof fetch;
+  try {
+    const live = await getLivePeptauraPreviewCatalog("XY", now);
+    assert.equal(live.degraded, undefined);
+    feedAvailable = false;
+    const fallback = await getLivePeptauraPreviewCatalog("XY", now + 16 * 60_000);
+    assert.equal(fallback.degraded, "stale_catalog");
+    assert.equal(fallback.checkedAt, live.checkedAt);
+    assert.deepEqual(fallback.snapshots, live.snapshots);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("preview fails closed when the last valid catalog is older than the fallback window", async () => {
+  const now = Date.now();
+  const originalFetch = globalThis.fetch;
+  let feedAvailable = true;
+  globalThis.fetch = (async (input: string | URL | Request) => {
+    const url = String(input);
+    if (url.includes("product-feed")) {
+      if (!feedAvailable) throw new Error("long feed outage");
+      return new Response(productFeed(now), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    return new Response("shipping outage", { status: 503 });
+  }) as typeof fetch;
+  try {
+    await getLivePeptauraPreviewCatalog("XZ", now);
+    feedAvailable = false;
+    await assert.rejects(
+      getLivePeptauraPreviewCatalog("XZ", now + 6 * 60 * 60_000 + 1),
+      /long feed outage/,
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("preview route only passes shipping quotes when live quotes exist", () => {
   const source = fs.readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
   assert.match(source, /liveCatalog\.shippingQuotes\.length \? liveCatalog\.shippingQuotes : undefined/);
 });
 
+test("preview route distinguishes catalog, persistence and analysis failures", () => {
+  const source = fs.readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
+  assert.match(source, /phase === "catalog"/);
+  assert.match(source, /error: "catalog_unavailable"/);
+  assert.match(source, /phase === "persistence"/);
+  assert.match(source, /error: "preview_save_unavailable"/);
+  assert.match(source, /error: "preview_analysis_unavailable"/);
+  assert.match(source, /delivery queue kick failed/);
+});
+
 test("Peptides Engine FAQ answers are present in server-rendered page content", () => {
   const source = fs.readFileSync(new URL("./static.ts", import.meta.url), "utf8");
+  const faqSource = fs.readFileSync(new URL("../shared/peptidesOfferFaq.ts", import.meta.url), "utf8");
+  const clientSource = fs.readFileSync(new URL("../client/src/pages/offers/PeptidesEngineOffer.tsx", import.meta.url), "utf8");
   assert.match(source, /FAQ Peptides Engine/);
-  assert.match(source, /Coached inclut un bilan au choix/);
-  assert.match(source, /Est-ce un avis medical/);
+  assert.match(source, /PEPTIDES_OFFER_FAQ/);
+  assert.match(source, /peptidesOfferFaqs\.map/);
+  assert.match(clientSource, /PEPTIDES_OFFER_FAQ/);
+  assert.match(faqSource, /Coached inclut 1 bilan au choix/);
+  assert.match(faqSource, /Quel est le delai de livraison/);
+});
+
+test("Peptides mobile UI exposes first-screen progress and responsive floating-widget safeguards", () => {
+  const engineSource = fs.readFileSync(new URL("../client/src/pages/PeptidesEnginePage.tsx", import.meta.url), "utf8");
+  const cookieSource = fs.readFileSync(new URL("../client/src/components/CookieConsent.tsx", import.meta.url), "utf8");
+  const whatsappSource = fs.readFileSync(new URL("../client/src/components/WhatsAppConversionHub.tsx", import.meta.url), "utf8");
+  assert.match(engineSource, /data-testid="peptides-engine-progress"/);
+  assert.match(engineSource, /Math\.round\(\(\(sectionIndex \+ 1\) \/ totalSections\) \* 100\)/);
+  assert.match(cookieSource, /safe-area-inset-bottom/);
+  assert.match(cookieSource, /w-full flex-wrap/);
+  assert.match(whatsappSource, /100dvh/);
+  assert.match(whatsappSource, /"\/peptides-preview"/);
+  assert.match(whatsappSource, /"\/peptides-engine"/);
 });

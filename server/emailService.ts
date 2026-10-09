@@ -10,6 +10,7 @@ import {
   type PeptidesPreviewEmailResult,
 } from "./peptidesPreviewEmailContent";
 import { createPeptidesPreviewCheckoutToken } from "./peptidesPreviewConversion";
+import { buildReportAccessUrl } from "./auth";
 
 const SENDPULSE_USER_ID =
   process.env.SENDPULSE_USER_ID || process.env.SENDPULSE_API_USER_ID || "";
@@ -1144,7 +1145,8 @@ export async function sendReportReadyEmail(
         : auditType === "BLOOD_ANALYSIS"
         ? `/analysis/${auditId}`
         : `/ultimate/${auditId}`;
-    const reportLink = `${baseUrl}${reportPath}`;
+    const reportResource = auditType === "BLOOD_ANALYSIS" ? "blood" : "audit";
+    const reportLink = buildReportAccessUrl(baseUrl, reportPath, reportResource, auditId, email);
     const reviewLink = `${reportLink}#review`;
     const planLabel =
       auditType === "GRATUIT"
@@ -4522,7 +4524,7 @@ export async function sendGratuitUpsellEmail(
   trackingId: string
 ): Promise<boolean> {
   try {
-    const reportLink = `${baseUrl}/analysis/${auditId}`;
+    const reportLink = buildReportAccessUrl(baseUrl, `/scan/${auditId}`, "audit", auditId, email);
     const coachingLink = discoveryCoachingBridgeUrl(baseUrl, "discovery_j3_coaching", "essential", "ESSENTIAL");
     const allFormulesLink = discoveryCoachingBridgeUrl(baseUrl, "discovery_j3_coaching", "compare");
     const trackedCoachingLink = withEmailClickTracking(baseUrl, trackingId, coachingLink);
@@ -4783,7 +4785,7 @@ export async function sendPeptidesReviewEmail(
   trackingId: string
 ): Promise<boolean> {
   try {
-    const reportLink = `${baseUrl}/peptides/${reportId}`;
+    const reportLink = buildReportAccessUrl(baseUrl, `/peptides/${reportId}`, "peptides", reportId, email);
     const reviewLink = `${reportLink}#review`;
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
 
@@ -4833,7 +4835,7 @@ export async function sendPeptidesReviewS5Email(
   trackingId: string
 ): Promise<boolean> {
   try {
-    const reportLink = `${baseUrl}/peptides/${reportId}`;
+    const reportLink = buildReportAccessUrl(baseUrl, `/peptides/${reportId}`, "peptides", reportId, email);
     const reviewLink = `${reportLink}#review`;
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
 
@@ -4883,7 +4885,7 @@ export async function sendPeptidesReviewS12Email(
   trackingId: string
 ): Promise<boolean> {
   try {
-    const reportLink = `${baseUrl}/peptides/${reportId}`;
+    const reportLink = buildReportAccessUrl(baseUrl, `/peptides/${reportId}`, "peptides", reportId, email);
     const reviewLink = `${reportLink}#review`;
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
 
@@ -5188,7 +5190,7 @@ export async function sendGratuitJ5Email(
     const secondaryCtaLink = discoveryCoachingBridgeUrl(baseUrl, "discovery_j5", "compare");
     const trackedPrimaryCtaLink = withEmailClickTracking(baseUrl, trackingId, primaryCtaLink);
     const trackedSecondaryCtaLink = withEmailClickTracking(baseUrl, trackingId, secondaryCtaLink);
-    const reportLink = `${baseUrl}/analysis/${auditId}`;
+    const reportLink = buildReportAccessUrl(baseUrl, `/scan/${auditId}`, "audit", auditId, email);
     const DAYS_LEFT = 5;
     const deadlineDate = formatDeadlineFR(DAYS_LEFT);
     const whatsappHref = buildWhatsAppUrl(
@@ -5857,7 +5859,7 @@ export async function sendDiscoveryJ30NurtureEmail(
   recommendation?: { tier: "ESSENTIAL" | "ELITE" | "PRIVATELAB"; reason: string; href: string }
 ): Promise<boolean> {
   try {
-    const reportLink = `${baseUrl}/analysis/${auditId}`;
+    const reportLink = buildReportAccessUrl(baseUrl, `/scan/${auditId}`, "audit", auditId, email);
     const coachingLink = discoveryCoachingBridgeUrl(
       baseUrl,
       "discovery_j30_nurture",
@@ -5975,7 +5977,7 @@ export async function sendPeptidesCycle2ReorderEmail(
   trackingId: string
 ): Promise<boolean> {
   try {
-    const reportLink = `${baseUrl}/peptides/${reportId}`;
+    const reportLink = buildReportAccessUrl(baseUrl, `/peptides/${reportId}`, "peptides", reportId, email);
     const orderLink = `${baseUrl}/offers/peptides-engine?code=CYCLE2&utm_source=apexlabs&utm_medium=email&utm_campaign=peptides_j60_reorder`;
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
 

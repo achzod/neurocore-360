@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type Express, type Response } from "express";
 import fs from "fs";
 import path from "path";
 import { marked } from "marked";
@@ -6,6 +6,7 @@ import {
   BLOG_ARTICLE_REDIRECTS,
   BLOG_INDEXATION_PRIORITY_SLUGS,
 } from "../client/src/data/blogSeo";
+import { PEPTIDES_OFFER_FAQ } from "../shared/peptidesOfferFaq";
 import { INTERACTIVE_FLOW_CACHE_CONTROL, resolveSsrCacheControl } from "./cachePolicy";
 
 const BASE_URL = "https://apexlabs.achzodcoaching.com";
@@ -547,6 +548,29 @@ export function serveStatic(app: Express) {
       );
   }
 
+  function renderNotFound(pathname: string): string {
+    const canonical = `${BASE_URL}${normalizeRequestPath(pathname)}`;
+    const body = `<noscript><main><h1>Page introuvable</h1><p>La page demandée n'existe pas ou a été déplacée.</p><p><a href="${BASE_URL}">Retour à l'accueil APEXLABS</a></p></main></noscript>`;
+    return injectMeta(indexHtml, {
+      title: "Page introuvable | APEXLABS",
+      desc: "La page demandée n'existe pas ou a été déplacée.",
+      canonical,
+      robots: "noindex, follow",
+    }).replace("</body>", `${body}\n</body>`);
+  }
+
+  function sendNotFound(res: Response, pathname: string) {
+    res.setHeader("X-Robots-Tag", "noindex, follow");
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    return res.status(404).type("html").send(renderNotFound(pathname));
+  }
+
+  function sendMissingAsset(res: Response) {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    return res.status(404).type("text/plain").send("Not Found");
+  }
+
   type NoscriptSection = {
     title: string;
     body: string | string[];
@@ -589,6 +613,7 @@ ${links ? `<nav aria-label="Pages principales"><ul>${links}</ul></nav>` : ""}
     const p = normalizeRequestPath(pathname);
     return [
       /^\/ads\/discovery-scan$/,
+      /^\/apexlabs$/,
       /^\/peptides-engine$/,
       /^\/questionnaire$/,
       /^\/audit-complet\/questionnaire$/,
@@ -633,7 +658,7 @@ ${links ? `<nav aria-label="Pages principales"><ul>${links}</ul></nav>` : ""}
   app.get(["/", "/index.html"], (_req, res) => {
     const title = "APEXLABS by Achzod | Optimisation Humaine & Bio-Data";
     const description =
-      "Audits metaboliques, scans hormonaux, Blood Analysis et protocoles bio-data pour identifier tes blocages et transformer tes donnees en plan d'action.";
+      "Audits métaboliques, scans hormonaux, Blood Analysis et protocoles bio-data pour identifier tes blocages et transformer tes données en plan d'action.";
     const landingSchema = {
       "@context": "https://schema.org",
       "@type": "WebSite",
@@ -732,9 +757,7 @@ ${links ? `<nav aria-label="Pages principales"><ul>${links}</ul></nav>` : ""}
     const article = articleMap.get(req.params.slug);
 
     if (!article) {
-      // Article not found - serve default index.html
-      res.setHeader("Cache-Control", "no-cache");
-      return res.send(indexHtml);
+      return sendNotFound(res, req.path);
     }
 
     const title = article.seoTitle || `${article.title} | APEXLABS Blog`;
@@ -870,11 +893,18 @@ ${relatedHtml}
       .join("\n");
 
     const escTitle = esc(title);
+    // Conservative, reversible compliance measure: SARMs/PED articles remain
+    // available for editorial review, but are removed from search indexing.
+    const shouldNoindex = category === "sarms";
     // Inject meta tags into the HTML <head>, then push the noscript body
     // block right before </body> so crawlers see full content even with an
     // empty React root.
     const injectedHtml = indexHtml
       .replace(/<title>[^<]*<\/title>/, `<title>${escTitle}</title>`)
+      .replace(
+        /<meta name="robots" content="[^"]*"/,
+        `<meta name="robots" content="${shouldNoindex ? "noindex, follow" : "index, follow"}"`,
+      )
       .replace(
         /<meta name="description" content="[^"]*"/,
         `<meta name="description" content="${description}"`,
@@ -918,6 +948,7 @@ ${relatedHtml}
       .replace("</head>", `${schemaBlobs}\n</head>`)
       .replace("</body>", `${noscriptBlock}\n</body>`);
 
+    if (shouldNoindex) res.setHeader("X-Robots-Tag", "noindex, follow");
     res.setHeader("Cache-Control", "public, max-age=3600");
     res.send(injectedHtml);
   });
@@ -1001,8 +1032,7 @@ ${pillarLinks}
   app.get("/blog/pilier/:slug", (req, res) => {
     const pillar = BLOG_PILLARS.find((p) => p.slug === req.params.slug);
     if (!pillar) {
-      res.setHeader("Cache-Control", "no-cache");
-      return res.send(indexHtml);
+      return sendNotFound(res, req.path);
     }
 
     const pillarArticles = getPillarArticles(pillar, articles, 60);
@@ -1086,8 +1116,7 @@ ${renderPillarLinksHtml(BLOG_PILLARS.filter((p) => p.slug !== pillar.slug))}
     const bucket = byCategory.get(slug) || [];
 
     if (!label || bucket.length === 0) {
-      res.setHeader("Cache-Control", "no-cache");
-      return res.send(indexHtml);
+      return sendNotFound(res, req.path);
     }
 
     const sorted = [...bucket].sort((a, b) => {
@@ -1166,8 +1195,13 @@ ${sorted
       )
       .join("\n");
 
+    const shouldNoindex = slug === "sarms";
     const injectedHtml = indexHtml
       .replace(/<title>[^<]*<\/title>/, `<title>${esc(title)}</title>`)
+      .replace(
+        /<meta name="robots" content="[^"]*"/,
+        `<meta name="robots" content="${shouldNoindex ? "noindex, follow" : "index, follow"}"`,
+      )
       .replace(
         /<meta name="description" content="[^"]*"/,
         `<meta name="description" content="${esc(description)}"`,
@@ -1191,6 +1225,7 @@ ${sorted
       .replace("</head>", `${schemaBlobs}\n</head>`)
       .replace("</body>", `${articlesHtml}\n</body>`);
 
+    if (shouldNoindex) res.setHeader("X-Robots-Tag", "noindex, follow");
     res.setHeader("Cache-Control", "public, max-age=3600");
     res.send(injectedHtml);
   });
@@ -1223,43 +1258,7 @@ ${sorted
     },
   };
 
-  const peptidesOfferFaqs = [
-    {
-      question: "Pourquoi 199, 299 ou 399 EUR ?",
-      answer:
-        "Solo inclut le protocole personnalise et l'acces source. Coached ajoute un bilan sanguin au choix et 30 jours de support ecrit. Tracked ajoute un second bilan, 90 jours de support et une reecriture si l'objectif evolue.",
-    },
-    {
-      question: "Combien de bilans sanguins sont inclus ?",
-      answer:
-        "Solo n'en inclut aucun. Coached inclut un bilan au choix, baseline ou mi-cycle. Tracked inclut deux bilans: une baseline avant le cycle puis un controle mi-cycle.",
-    },
-    {
-      question: "Faut-il deja connaitre les peptides ?",
-      answer:
-        "Non. Le questionnaire adapte la selection au niveau d'experience, aux objectifs, aux contraintes et au profil de tolerance au risque.",
-    },
-    {
-      question: "Combien de molecules sont retenues ?",
-      answer:
-        "Entre deux et cinq selon le profil et les objectifs, avec une logique de dose minimale efficace et sans empiler des molecules sans justification.",
-    },
-    {
-      question: "Que contient la livraison ?",
-      answer:
-        "Le rapport protocole, le guide de reconstitution calcule, le calendrier, la liste de courses et les guides de securite. Les credits Blood Analysis dependent de la formule choisie.",
-    },
-    {
-      question: "Quel est le delai ?",
-      answer:
-        "Le rapport personnalise est livre par email sous 48 heures apres le paiement, sous reserve que les informations necessaires soient completes.",
-    },
-    {
-      question: "Est-ce un avis medical ?",
-      answer:
-        "Non. Le contenu est educatif et ne remplace ni diagnostic, ni ordonnance, ni suivi par un professionnel de sante.",
-    },
-  ];
+  const peptidesOfferFaqs = PEPTIDES_OFFER_FAQ;
 
   const offerContent: Record<
     string,
@@ -1577,6 +1576,11 @@ ${sorted
           "La livraison depend de l'offre, des donnees fournies et du niveau d'analyse. Les parcours automatiques generent puis planifient la livraison, tandis que les analyses plus sensibles peuvent demander une verification avant envoi.",
       },
       {
+        question: "C'est un paiement unique ou un abonnement ?",
+        answer:
+          "Discovery Scan est gratuit. Anabolic Bioscan, Ultimate Scan, Blood Analysis et Peptides Engine sont des paiements uniques. FormCheck est un abonnement mensuel résiliable à tout moment : Solo coûte 9,90 € le premier mois puis 14,90 €/mois, Pro 29,90 € le premier mois puis 39,90 €/mois, et Coach 99 €/mois.",
+      },
+      {
         question: "Pourquoi APEXLABS demande autant de contexte ?",
         answer:
           "Un conseil utile depend du profil: objectif, historique, sommeil, nutrition, entrainement, stress, bilan sanguin, douleurs, contraintes et niveau de risque acceptable. Sans contexte, la recommandation devient trop generique.",
@@ -1600,14 +1604,14 @@ ${sorted
       })),
     };
     const body = renderNoscriptPage({
-      h1: "Questions frequentes APEXLABS",
+      h1: "Questions fréquentes APEXLABS",
       lead:
         "Cette FAQ explique les offres, les delais, les limites medicales, la logique de diagnostic et le passage possible vers le coaching AchzodCoaching.",
       sections: faqs.map((faq) => ({ title: faq.question, body: faq.answer })),
       links: [
         { href: `${BASE_URL}/offers/discovery-scan`, label: "Discovery Scan gratuit" },
         { href: `${BASE_URL}/offers/ultimate-scan`, label: "Ultimate Scan" },
-        { href: `${BASE_URL}/deduction-coaching`, label: "Deduction coaching" },
+        { href: `${BASE_URL}/deduction-coaching`, label: "Déduction coaching" },
       ],
     });
 
@@ -1725,7 +1729,7 @@ ${sorted
     desc: "ACHZOD dans les médias: interviews, publications, références presse autour de l'optimisation humaine et de la bio-data.",
     canonical: `${BASE_URL}/press`,
     body: {
-      h1: "Presse et medias",
+      h1: "Presse et médias",
       lead:
         "References, prises de parole et ressources media autour d'APEXLABS, d'Achzod et de l'optimisation humaine par la bio-data.",
       sections: [
@@ -1764,7 +1768,7 @@ ${sorted
     desc: "Le montant de ton scan APEXLABS est intégralement déductible si tu poursuis avec un coaching ACHZOD. Détails, conditions et offres applicables.",
     canonical: `${BASE_URL}/deduction-coaching`,
     body: {
-      h1: "Deduction coaching",
+      h1: "Déduction coaching",
       lead:
         "Certains scans APEXLABS peuvent etre deduits d'un accompagnement coaching Achzod lorsque les conditions d'eligibilite sont respectees.",
       sections: [
@@ -1825,7 +1829,7 @@ ${sorted
     canonical: `${BASE_URL}/mentions-legales`,
     robots: "noindex, follow",
     body: {
-      h1: "Mentions legales",
+      h1: "Mentions légales",
       lead:
         "Informations legales relatives a l'editeur, l'hebergeur, la responsabilite de publication et l'utilisation du site APEXLABS.",
     },
@@ -1849,7 +1853,7 @@ ${sorted
     canonical: `${BASE_URL}/politique-confidentialite`,
     robots: "noindex, follow",
     body: {
-      h1: "Politique de confidentialite",
+      h1: "Politique de confidentialité",
       lead:
         "Informations sur les donnees collectees, les finalites, la securite, les cookies, les droits RGPD et les moyens de contact.",
     },
@@ -1860,6 +1864,9 @@ ${sorted
   // fresh.
   app.use("*", (req, res) => {
     const pathname = normalizeRequestPath(req.originalUrl || req.path || "/");
+    if (/\.[a-z0-9]{2,8}$/i.test(pathname)) {
+      return sendMissingAsset(res);
+    }
     if (isPrivateOrUtilityPath(pathname)) {
       const canonical = `${BASE_URL}${pathname}`;
       const html = injectMeta(indexHtml, {
@@ -1873,7 +1880,6 @@ ${sorted
       return res.status(200).send(html);
     }
 
-    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-    res.sendFile(path.resolve(distPath, "index.html"));
+    return sendNotFound(res, pathname);
   });
 }

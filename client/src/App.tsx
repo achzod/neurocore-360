@@ -7,7 +7,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
-import { CookieConsent } from "@/components/CookieConsent";
+import { CookieConsent, hasAnalyticsConsent } from "@/components/CookieConsent";
+import { MedicalDisclaimer } from "@/components/MedicalDisclaimer";
 import { WhatsAppConversionHub } from "@/components/WhatsAppConversionHub";
 import { isDiscoveryQuestionnaireHref, trackDiscoveryFunnelStep } from "@/lib/analytics";
 
@@ -89,11 +90,11 @@ const PAGE_TITLES: Record<string, string> = {
   "/": "APEXLABS by Achzod | Optimisation Humaine & Bio-Data",
   "/offers/discovery-scan": "Discovery Scan Gratuit | APEXLABS",
   "/ads/discovery-scan": "Discovery Scan - Questionnaire Gratuit | APEXLABS",
-  "/offers/anabolic-bioscan": "Anabolic Bioscan ,  Audit Complet | APEXLABS",
-  "/offers/blood-analysis": "Blood Analysis ,  Analyse Sanguine | APEXLABS",
-  "/offers/ultimate-scan": "Ultimate Scan ,  Le Plus Complet | APEXLABS",
-  "/offers/formcheck": "FormCheck ,  Analyse Video | APEXLABS",
-  "/offers/peptides-engine": "Peptides Engine ,  Protocole Personnalise | APEXLABS",
+  "/offers/anabolic-bioscan": "Anabolic Bioscan — Audit complet | APEXLABS",
+  "/offers/blood-analysis": "Blood Analysis — Analyse sanguine | APEXLABS",
+  "/offers/ultimate-scan": "Ultimate Scan — Le plus complet | APEXLABS",
+  "/offers/formcheck": "FormCheck — Analyse vidéo | APEXLABS",
+  "/offers/peptides-engine": "Peptides Engine — Protocole personnalisé | APEXLABS",
   "/peptides-engine": "Questionnaire Peptides | APEXLABS",
   "/peptides-preview": "Aperçu Peptides Personnalisé | APEXLABS",
   "/questionnaire": "Questionnaire | APEXLABS",
@@ -107,11 +108,11 @@ const PAGE_TITLES: Record<string, string> = {
   "/faq": "FAQ | APEXLABS",
   "/login": "Connexion | APEXLABS",
   "/auth/login": "Connexion | APEXLABS",
-  "/auth/check-email": "Verifie ton email | APEXLABS",
-  "/mentions-legales": "Mentions Legales | APEXLABS",
-  "/cgv": "Conditions Generales de Vente | APEXLABS",
-  "/politique-confidentialite": "Politique de Confidentialite | APEXLABS",
-  "/deduction-coaching": "Deduction Coaching | APEXLABS",
+  "/auth/check-email": "Vérifie ton email | APEXLABS",
+  "/mentions-legales": "Mentions légales | APEXLABS",
+  "/cgv": "Conditions générales de vente | APEXLABS",
+  "/politique-confidentialite": "Politique de confidentialité | APEXLABS",
+  "/deduction-coaching": "Déduction coaching | APEXLABS",
   "/blog/pilier/perte-de-gras": "Perte de Gras | Guides APEXLABS",
   "/blog/pilier/testosterone-hormones": "Testostérone & Hormones | Guides APEXLABS",
   "/blog/pilier/bilan-sanguin": "Bilan Sanguin | Guides APEXLABS",
@@ -145,7 +146,7 @@ function ScrollToTop() {
     document.title = title;
 
     // Track page view in GA4
-    if (typeof window !== 'undefined' && window.gtag) {
+    if (typeof window !== 'undefined' && hasAnalyticsConsent() && window.gtag) {
       window.gtag('event', 'page_view', {
         page_path: location,
         page_title: title,
@@ -176,6 +177,18 @@ function ConditionalWhatsAppConversionHub() {
   const [location] = useLocation();
   if (location === "/peptides-preview" || location === "/offers/peptides-engine") return null;
   return <WhatsAppConversionHub />;
+}
+
+function InteractiveMedicalDisclaimer() {
+  const [location] = useLocation();
+  const needsStandaloneDisclaimer = [
+    "/questionnaire",
+    "/audit-complet/questionnaire",
+    "/audit-complet/checkout",
+    "/peptides-preview",
+    "/peptides-engine",
+  ].includes(location);
+  return needsStandaloneDisclaimer ? <MedicalDisclaimer compact /> : null;
 }
 
 function Router() {
@@ -257,6 +270,7 @@ function App() {
             <ScrollToTop />
             <Toaster />
             <Router />
+            <InteractiveMedicalDisclaimer />
             <ConditionalWhatsAppConversionHub />
             <CookieConsent />
           </TooltipProvider>

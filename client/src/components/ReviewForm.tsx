@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { reportAccessHeaders } from "@/lib/reportAccess";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,7 +27,7 @@ export function ReviewForm({ auditId, onSubmit }: ReviewFormProps) {
 
     const loadAudit = async () => {
       try {
-        const response = await fetch(`/api/audits/${auditId}?light=1`);
+        const response = await fetch(`/api/audits/${auditId}?light=1`, { headers: reportAccessHeaders(auditId) });
         if (!response.ok) {
           throw new Error("Audit non trouvé");
         }

@@ -46,7 +46,7 @@ import {
 } from "./recommendations-engine";
 import { storage } from "../storage";
 import { createRateLimiter } from "../middleware/rateLimit";
-import { getAuthPayload, type AuthPayload } from "../auth";
+import { getAuthPayload, hasValidReportAccess, type AuthPayload } from "../auth";
 import crypto from "crypto";
 import {
   sendAdminEmailNewAudit,
@@ -131,9 +131,11 @@ async function checkBloodReportOwnership(req: any, res: any, reportId: string, s
   const isAdmin = requireAdminAuth(req, res, true);
   if (isAdmin) return true;
 
+  if (hasValidReportAccess(req, "blood", reportId)) return true;
+
   const payload = getAuthPayload(req);
   if (!payload) {
-    if (!silent) res.status(403).json({ error: "Accès non autorisé à ce rapport" });
+    if (!silent) res.status(401).json({ error: "Accès non autorisé à ce rapport" });
     return false;
   }
 
@@ -1422,10 +1424,12 @@ export function registerBloodAnalysisRoutes(app: Express): void {
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
-  // Public direct link (UUID = unguessable, same as Peptides Engine reports)
+  // Direct link protected by a short-lived signed report token or owner session.
   app.get("/api/blood-analysis/report/:id/public", async (req, res) => {
     try {
       const reportId = req.params.id;
+      if (!(await checkBloodReportOwnership(req, res, reportId))) return;
+      res.setHeader("Cache-Control", "private, no-store");
       let report = await storage.getBloodReport(reportId);
       let bloodTestRow: any = null;
 
@@ -1486,6 +1490,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       if (!(await checkBloodReportOwnership(req, res, req.params.id))) {
         return;
       }
+      res.setHeader("Cache-Control", "private, no-store");
 
       // First try blood_reports table (legacy storage)
       let report = await storage.getBloodReport(req.params.id);

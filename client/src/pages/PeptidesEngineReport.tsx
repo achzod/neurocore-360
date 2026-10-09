@@ -4,6 +4,7 @@
  */
 import { useEffect, useState } from "react";
 import { useParams } from "wouter";
+import { redirectLegacyReportLinkToLogin, reportAccessHeaders } from "@/lib/reportAccess";
 import { splitWeeklyScheduleEntries } from "@/lib/peptidesSchedule";
 import { motion } from "framer-motion";
 import {
@@ -373,8 +374,11 @@ export default function PeptidesEngineReport() {
     const stored = localStorage.getItem(`nda_accepted_${id}`);
     if (stored === "true") setNdaAccepted(true);
 
-    fetch(`/api/peptides-engine/report/${id}`)
-      .then(res => res.json())
+    fetch(`/api/peptides-engine/report/${id}`, { headers: reportAccessHeaders(id) })
+      .then(res => {
+        if (redirectLegacyReportLinkToLogin(res)) throw new Error("AUTH_REDIRECT");
+        return res.json();
+      })
       .then(data => {
         if (data.report) {
           const r = data.report;
@@ -385,7 +389,10 @@ export default function PeptidesEngineReport() {
           setError(data.error || "Rapport non trouve");
         }
       })
-      .catch(() => setError("Erreur de chargement"))
+      .catch((error) => {
+        if (error instanceof Error && error.message === "AUTH_REDIRECT") return;
+        setError("Erreur de chargement");
+      })
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -522,7 +529,7 @@ export default function PeptidesEngineReport() {
               placement="report_primary"
               clientName={report.clientName}
               tier={reportTier}
-              label="Parler a Achzod sur WhatsApp"
+              label="Parler à Achzod sur WhatsApp"
               className="w-full shrink-0 md:w-auto"
             />
           </div>

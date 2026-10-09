@@ -63,7 +63,7 @@ import { ClientData, PhotoAnalysis } from "./types";
 import { generateEnhancedSupplementsHTML, generateSupplementStack } from "./supplementEngine";
 import { streamAuditZip } from "./exportZipService";
 import { createPayPalOrder, capturePayPalOrder, isPayPalConfigured } from "./paypalClient";
-import { getAuthPayload, type AuthPayload } from "./auth";
+import { buildReportAccessUrl, getAuthPayload, getReportAccessDecision, type AuthPayload } from "./auth";
 import crypto from "crypto";
 import {
   OPENAI_REPORT_MODEL,
@@ -78,6 +78,7 @@ import {
 } from "./cta";
 import { BLOOD_ANALYSIS_PURCHASE_CREDITS, clarifyBloodPurchaseEmail } from "./bloodOffer";
 import { buildPaidOrderNotificationPlan } from "./paidOrderNotifications";
+import { buildPublicReviewCheckResponse, toPublicReview } from "./reviewPublicResponse";
 
 import { registerKnowledgeRoutes } from "./knowledge";
 import { registerBloodAnalysisRoutes } from "./blood-analysis/routes";
@@ -1031,21 +1032,9 @@ export async function registerRoutes(
   app.get("/api/health", async (_req, res) => {
     try {
       await pool.query("SELECT 1");
-      const mem = process.memoryUsage();
-      const rssMb = Math.round(mem.rss / 1024 / 1024);
-      const heapUsedMb = Math.round(mem.heapUsed / 1024 / 1024);
-      const heapTotalMb = Math.round(mem.heapTotal / 1024 / 1024);
-      // Render starter tier has 512MB RAM. Flag if we're approaching the wall.
-      const memStatus = rssMb > 440 ? "critical" : rssMb > 380 ? "warning" : "ok";
-      res.json({
-        status: "ok",
-        db: "connected",
-        memory: { rssMb, heapUsedMb, heapTotalMb, status: memStatus },
-        uptimeSec: Math.round(process.uptime()),
-        timestamp: new Date().toISOString(),
-      });
+      res.json({ status: "ok" });
     } catch (err) {
-      res.status(503).json({ status: "unhealthy", db: "disconnected", timestamp: new Date().toISOString() });
+      res.status(503).json({ status: "unhealthy" });
     }
   });
 
@@ -1901,15 +1890,18 @@ export async function registerRoutes(
 
     // Allow admin access
     const isAdmin = requireAdminAuth(req, res, true);
-    if (isAdmin) return true;
+    if (isAdmin) {
+      res.setHeader("Cache-Control", "private, no-store");
+      return true;
+    }
 
-    // Check user ownership via JWT
-    const payload = getAuthPayload(req);
-    if (!payload || payload.email.toLowerCase() !== audit.email.toLowerCase()) {
-      if (!silent) res.status(403).json({ error: "Accès non autorisé à ce rapport" });
+    const decision = getReportAccessDecision(req, "audit", auditId, audit.email);
+    if (decision !== 200) {
+      if (!silent) res.status(decision).json({ error: "Accès non autorisé à ce rapport" });
       return false;
     }
 
+    res.setHeader("Cache-Control", "private, no-store");
     return true;
   }
 
@@ -2946,7 +2938,8 @@ export async function registerRoutes(
 
   app.get("/api/audits/:id", async (req, res) => {
     try {
-      // UUID audit IDs are unguessable , allow direct access for report viewing
+      if (!(await checkAuditOwnership(req, res, req.params.id))) return;
+      res.setHeader("Cache-Control", "private, no-store");
       const audit = await storage.getAudit(req.params.id);
       if (!audit) {
         res.status(404).json({ error: "Audit non trouvé" });
@@ -2969,6 +2962,8 @@ export async function registerRoutes(
   app.get("/api/audits/:id/analysis", async (req, res) => {
     try {
 
+      if (!(await checkAuditOwnership(req, res, req.params.id))) return;
+
       const audit = await storage.getAudit(req.params.id);
       if (!audit) {
         res.status(404).json({ error: "Audit non trouvé" });
@@ -2983,6 +2978,7 @@ export async function registerRoutes(
 
   app.post("/api/audits/:id/generate-narrative", async (req, res) => {
     try {
+      if (!(await checkAuditOwnership(req, res, req.params.id))) return;
       const audit = await storage.getAudit(req.params.id);
       if (!audit) {
         res.status(404).json({ error: "Audit non trouvé" });
@@ -3007,7 +3003,7 @@ export async function registerRoutes(
 
   app.get("/api/audits/:id/narrative-status", async (req, res) => {
     try {
-      // UUID audit IDs are unguessable , allow direct access
+      if (!(await checkAuditOwnership(req, res, req.params.id))) return;
       const job = await getJobStatus(req.params.id);
       const jobReferenceTime = job?.lastProgressAt
         ? new Date(job.lastProgressAt).getTime()
@@ -3241,8 +3237,7 @@ export async function registerRoutes(
 
   app.get("/api/audits/:id/narrative", async (req, res) => {
     try {
-      // UUID audit IDs are unguessable , allow direct access for report viewing
-      // This matches the Blood Analysis pattern where reports are accessed via unique links
+      if (!(await checkAuditOwnership(req, res, req.params.id))) return;
       const audit = await storage.getAudit(req.params.id);
       if (!audit) {
         res.status(404).json({ error: "Audit non trouve" });
@@ -4898,7 +4893,7 @@ export async function registerRoutes(
 
   app.post("/api/stripe/create-checkout-session", checkoutLimiter, async (req, res) => {
     try {
-      const { priceId: clientPriceId, email, planType, responses, promoCode, referrer, fbp, fbc, userAgent, sourceUrl, peptidesEngineConsent, peptidesProfileConfirmation, peptidesTier: rawTier } = req.body;
+      const { priceId: clientPriceId, email, planType, responses, promoCode, referrer, fbp, fbc, userAgent, sourceUrl, peptidesEngineConsent, peptidesProfileConfirmation, peptidesTier: rawTier, healthDataConsent } = req.body;
       const previewToken = typeof req.body?.previewToken === "string" ? req.body.previewToken : "";
       let previewLeadId: string | null = null;
       const paymentRail = planType === "PEPTIDES_ENGINE" && req.body?.paymentRail === "klarna"
@@ -4937,6 +4932,16 @@ export async function registerRoutes(
           return;
         }
         previewLeadId = row.id;
+      }
+
+      if (planType === "BLOOD_ANALYSIS") {
+        if (!healthDataConsent || healthDataConsent.accepted !== true || healthDataConsent.version !== "blood-health-consent-v1") {
+          res.status(400).json({
+            error: "HEALTH_DATA_CONSENT_REQUIRED",
+            message: "Tu dois accepter explicitement le traitement de tes données de santé avant de payer.",
+          });
+          return;
+        }
       }
 
       // Mandatory consent gate for PEPTIDES_ENGINE. Refus de checkout sans
@@ -5101,6 +5106,12 @@ export async function registerRoutes(
               paymentMethod: "promo_100",
               freeViaPromo: true,
               questionnaireResponses: ["GRATUIT", "PREMIUM", "ELITE"].includes(planType) ? responses : undefined,
+              healthDataConsent: planType === "BLOOD_ANALYSIS" ? {
+                accepted: true,
+                version: "blood-health-consent-v1",
+                clientAcceptedAt: typeof healthDataConsent.acceptedAt === "string" ? healthDataConsent.acceptedAt : undefined,
+                serverAcceptedAt: new Date().toISOString(),
+              } : undefined,
             },
           });
           await storage.updateOrder(order.id, { status: "paid", paidAt: new Date() });
@@ -5227,6 +5238,7 @@ export async function registerRoutes(
           client_ip: (req.ip || '').toString().slice(0, 45),
           source_url: (sourceUrl || referrer || '').toString().slice(0, 500),
           payment_rail: paymentRail,
+          health_consent_version: planType === "BLOOD_ANALYSIS" ? "blood-health-consent-v1" : "",
         },
       };
 
@@ -5297,6 +5309,15 @@ export async function registerRoutes(
             peptidesTier: peptidesTier || undefined,
             peptidesResponses: planType === "PEPTIDES_ENGINE" ? responses : undefined,
             peptidesEngineConsent: peptidesConsentRecord,
+            healthDataConsent: planType === "BLOOD_ANALYSIS" ? {
+              accepted: true,
+              version: "blood-health-consent-v1",
+              clientAcceptedAt: typeof healthDataConsent.acceptedAt === "string" ? healthDataConsent.acceptedAt : undefined,
+              serverAcceptedAt: new Date().toISOString(),
+              ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null,
+              userAgent: req.headers["user-agent"] || null,
+              paymentMethod: "stripe",
+            } : undefined,
             peptidesProfileConfirmation: planType === "PEPTIDES_ENGINE" ? {
               accepted: true,
               pep_name: String(responses.pep_name).trim(),
@@ -6531,7 +6552,7 @@ export async function registerRoutes(
               (pepOrder?.metadata as any)?.peptidesTier ?? null
             );
             await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
-              `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`
+              `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${buildReportAccessUrl(baseUrl, `/peptides/${saved.id}`, "peptides", saved.id, email)}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`
             ).catch(() => {});
             emailSent = true;
             await sendCTAEmail(adminNotifEmail, `PEPTIDES GENERE , ${email}`, `Rapport genere et livre pour ${email}\nReport ID: ${saved.id}\nPeptides: ${peptidesNames}\nLien: ${baseUrl}/peptides/${saved.id}`).catch(() => {});
@@ -8447,7 +8468,10 @@ export async function registerRoutes(
   app.get("/api/reviews", async (req, res) => {
     try {
       const reviews = await reviewStorage.getApprovedReviews();
-      res.json({ success: true, reviews });
+      res.json({
+        success: true,
+        reviews: reviews.map(toPublicReview),
+      });
     } catch (error) {
       console.error("[Reviews] Error:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
@@ -8555,12 +8579,9 @@ export async function registerRoutes(
   app.get("/api/review/check/:auditId", async (req, res) => {
     try {
       const { auditId } = req.params;
+      if (!(await checkAuditOwnership(req, res, auditId))) return;
       const review = await reviewStorage.getReviewByAuditId(auditId);
-      res.json({
-        success: true,
-        hasReview: !!review,
-        review: review || null
-      });
+      res.json(buildPublicReviewCheckResponse(review));
     } catch (error) {
       console.error("[Review Check] Error:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
@@ -10417,10 +10438,13 @@ export async function registerRoutes(
 
             // S8 (56 jours) , Fin de cycle + demande avis + incentive Blood Analysis
             if (daysSincePaid >= 56 && daysSincePaid < 70 && !types.includes("peptidesS8")) {
+              const reportId = String((order.metadata as any)?.peptidesReportId || "").trim();
+              if (!reportId) continue;
+              const reviewLink = `${buildReportAccessUrl(baseUrl, `/peptides/${reportId}`, "peptides", reportId, email)}#review`;
               const sent = await sendCTAEmail(
                 email,
                 "Fin de ton cycle - J'ai besoin de ton retour",
-                `Salut,\n\nTon cycle de 8 semaines touche a sa fin. C'est le moment de faire le point.\n\nJ'ai 2 choses a te demander :\n\n1. TON BILAN SANGUIN\nAs-tu fait ton bilan mi-cycle avec ton code Blood Analysis? Si non, fais-le maintenant , c'est le seul moyen de mesurer l'impact reel de ton protocole sur tes marqueurs.\nAccede a Blood Analysis : https://apexlabs.achzodcoaching.com/offers/blood-analysis\n\n2. TON AVIS (30 secondes)\nTon retour m'aide enormement a ameliorer le service. En echange de ton avis, je t'offre 1 Blood Analysis supplementaire gratuite.\nLaisse ton avis ici : https://apexlabs.achzodcoaching.com/peptides/${order.id}#review\n\nSi tu veux un deuxieme cycle adapte a tes resultats, reponds directement a cet email.\n\n3. PARRAINAGE\nTu connais quelqu'un qui pourrait beneficier d'un protocole peptides? Envoie-lui ce lien et s'il achete, tu recois 1 Blood Analysis gratuite :\nhttps://apexlabs.achzodcoaching.com/offers/peptides-engine?ref=${encodeURIComponent(email)}\n\nAchzod`
+                `Salut,\n\nTon cycle de 8 semaines touche a sa fin. C'est le moment de faire le point.\n\nJ'ai 2 choses a te demander :\n\n1. TON BILAN SANGUIN\nAs-tu fait ton bilan mi-cycle avec ton code Blood Analysis? Si non, fais-le maintenant , c'est le seul moyen de mesurer l'impact reel de ton protocole sur tes marqueurs.\nAccede a Blood Analysis : https://apexlabs.achzodcoaching.com/offers/blood-analysis\n\n2. TON AVIS (30 secondes)\nTon retour m'aide enormement a ameliorer le service. En echange de ton avis, je t'offre 1 Blood Analysis supplementaire gratuite.\nLaisse ton avis ici : ${reviewLink}\n\nSi tu veux un deuxieme cycle adapte a tes resultats, reponds directement a cet email.\n\n3. PARRAINAGE\nTu connais quelqu'un qui pourrait beneficier d'un protocole peptides? Envoie-lui ce lien et s'il achete, tu recois 1 Blood Analysis gratuite :\nhttps://apexlabs.achzodcoaching.com/offers/peptides-engine?ref=${encodeURIComponent(email)}\n\nAchzod`
               );
               if (sent) {
                 peptidesS8++;
@@ -10809,6 +10833,7 @@ export async function registerRoutes(
   app.get("/api/discovery-scan/:auditId", async (req, res) => {
     try {
       const { auditId } = req.params;
+      if (!(await checkAuditOwnership(req, res, auditId))) return;
       const audit = await storage.getAudit(auditId);
 
       if (!audit) {
@@ -10818,6 +10843,15 @@ export async function registerRoutes(
 
       if (audit.type !== "GRATUIT") {
         res.status(400).json({ success: false, error: "Ce n'est pas un Discovery Scan" });
+        return;
+      }
+
+      if (isDiscoverySupersededTerminal(audit)) {
+        res.status(410).json({
+          success: false,
+          status: "superseded",
+          error: "Ce rapport a été remplacé par une version plus récente",
+        });
         return;
       }
 
@@ -10903,13 +10937,13 @@ export async function registerRoutes(
       if (existingReport && !invalidReport) {
         if (storedTxt.length < 500 || storedHtml.length < 1000 || !audit.reportGeneratedAt) {
           const hydratedAssets = buildDiscoveryReportAssets(existingReport);
-          await storage.updateAudit(audit.id, {
-            reportTxt: hydratedAssets.txt,
-            reportHtml: hydratedAssets.html,
-            reportGeneratedAt: audit.reportGeneratedAt || new Date(existingReport.generatedAt || Date.now()),
-          }).catch((error) => {
-            console.error("[Discovery Fetch] Unable to hydrate persisted assets:", error);
+          res.json({
+            ...existingReport,
+            txt: hydratedAssets.txt,
+            html: hydratedAssets.html,
+            generatedAt: existingReport.generatedAt || audit.reportGeneratedAt || new Date().toISOString(),
           });
+          return;
         }
         res.json(existingReport);
         return;
@@ -10957,10 +10991,8 @@ export async function registerRoutes(
         return;
       }
 
-      // A public GET is read-only. Missing or invalid content is handed to the
-      // persisted recovery worker instead of starting untracked GPT calls that
-      // can overlap, overwrite a scheduled status, and create duplicate cost.
-      await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" });
+      // This GET remains read-only. The durable recovery worker owns state
+      // transitions for missing or invalid report content.
       res.status(202).json({
         success: true,
         status: "needs_review",
@@ -10980,6 +11012,7 @@ export async function registerRoutes(
   app.post("/api/discovery-scan/:auditId/regenerate", async (req, res) => {
     try {
       const { auditId } = req.params;
+      if (!(await checkAuditOwnership(req, res, auditId))) return;
       const audit = await storage.getAudit(auditId);
 
       if (!audit) {
@@ -14766,6 +14799,8 @@ export async function registerRoutes(
   // exposes the reference-dose arithmetic, operational quantities and landed
   // estimate. Reconstitution and the individualized weekly schedule remain paid output.
   app.post("/api/peptides-preview/analyze", createRateLimiter({ windowMs: 60_000, max: 5 }), async (req, res) => {
+    const requestId = crypto.randomUUID();
+    let phase: "analysis" | "catalog" | "persistence" | "notification" | "response" = "analysis";
     try {
       const {
         peptidesPreviewInputSchema,
@@ -14773,7 +14808,9 @@ export async function registerRoutes(
         getLivePeptauraPreviewCatalog,
       } = await import("./peptidesPreview");
       const input = peptidesPreviewInputSchema.parse(req.body);
+      phase = "catalog";
       const liveCatalog = await getLivePeptauraPreviewCatalog(input.country);
+      phase = "analysis";
       const result = buildPeptidesPreview(
         input,
         liveCatalog.snapshots,
@@ -14782,6 +14819,7 @@ export async function registerRoutes(
       );
       const capturedAt = new Date().toISOString();
       const storageEmail = `peptides-preview::${input.email}`;
+      phase = "persistence";
       const previous = await storage.getBurnoutProgress(storageEmail);
       const previousResponses = previous?.responses && typeof previous.responses === "object" ? previous.responses as Record<string, any> : {};
       const notificationFingerprint = crypto.createHash("sha256").update(JSON.stringify({
@@ -14851,15 +14889,24 @@ export async function registerRoutes(
           previewHistory: pendingHistory,
         },
       });
+      phase = "response";
       const checkoutToken = createPeptidesPreviewCheckoutToken(progress.id);
       const checkoutUrl = `/peptides-engine?tier=solo&utm_source=peptides_preview&utm_medium=result&utm_campaign=pre_peptides_engine#preview_token=${encodeURIComponent(checkoutToken)}`;
+      phase = "notification";
       await recordPeptidesPreviewConversionEvent(progress.id, "preview_completed", {
         source: input.attribution?.source || null,
         medium: input.attribution?.medium || null,
         campaign: input.attribution?.campaign || null,
         status: result.status,
       }).catch((eventError) => console.error("[PeptidesPreview] preview_completed tracking failed", eventError));
-      kickPeptidesPreviewDeliveryQueue();
+      try {
+        kickPeptidesPreviewDeliveryQueue();
+      } catch (notificationError) {
+        // Notification startup is best-effort. A persisted estimate remains
+        // usable and must never be relabelled as a catalog outage.
+        console.error("[PeptidesPreview] delivery queue kick failed", notificationError);
+      }
+      phase = "response";
       const resultEmailSent = queuedNotifications?.clientEmailSent === true;
       const adminNotificationSent = queuedNotifications?.adminEmailSent === true;
       const notificationDeliveryState = String(queuedNotifications?.deliveryState || "queued");
@@ -14885,6 +14932,8 @@ export async function registerRoutes(
         resultEmailQueued: !resultEmailSent,
         adminNotificationSent,
         notificationDeliveryState,
+        catalogStatus: liveCatalog.degraded || "live",
+        requestId,
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -14898,10 +14947,28 @@ export async function registerRoutes(
         });
         return;
       }
-      console.error("[PeptidesPreview] analysis unavailable", error instanceof Error ? error.message : "unknown_error");
-      res.status(503).json({
-        error: "catalog_unavailable",
-        message: "Le catalogue partenaire ne peut pas être vérifié maintenant. Réessaie dans quelques minutes.",
+      const message = error instanceof Error ? error.message : "unknown_error";
+      console.error(`[PeptidesPreview] ${phase} failed`, { requestId, message });
+      if (phase === "catalog") {
+        res.status(503).json({
+          error: "catalog_unavailable",
+          message: "Le catalogue partenaire ne peut pas être vérifié maintenant. Réessaie dans quelques minutes.",
+          requestId,
+        });
+        return;
+      }
+      if (phase === "persistence") {
+        res.status(503).json({
+          error: "preview_save_unavailable",
+          message: "Ton estimation a été calculée, mais sa sauvegarde sécurisée est momentanément indisponible. Réessaie dans quelques minutes.",
+          requestId,
+        });
+        return;
+      }
+      res.status(500).json({
+        error: "preview_analysis_unavailable",
+        message: "L’estimation n’a pas pu être finalisée. Réessaie dans quelques minutes.",
+        requestId,
       });
     }
   });
@@ -15134,6 +15201,13 @@ export async function registerRoutes(
       }
 
       const reportEmail = String(record.email ?? "").replace(/^peptides::/i, "").trim().toLowerCase();
+      const isAdmin = requireAdminAuth(req, res, true);
+      const accessDecision = getReportAccessDecision(req, "peptides", id, reportEmail);
+      if (!isAdmin && accessDecision !== 200) {
+        res.status(accessDecision).json({ error: "Accès non autorisé à ce rapport" });
+        return;
+      }
+      res.setHeader("Cache-Control", "private, no-store");
       const orders = reportEmail.includes("@") ? await storage.getOrdersByEmail(reportEmail) : [];
       if (!isPeptidesReportAccessibleForOrders(id, orders)) {
         res.status(404).json({ error: "Rapport introuvable" });
@@ -15605,7 +15679,7 @@ export async function registerRoutes(
 
           try {
             const recovered = await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
-              `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${meta.peptidesReportId}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`,
+              `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${buildReportAccessUrl(baseUrl, `/peptides/${meta.peptidesReportId}`, "peptides", meta.peptidesReportId, email)}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`,
             );
             if (recovered) {
               console.log(`[AutoGen] ✅ Recovered delivery email for ${email} (report ${meta.peptidesReportId})`);
@@ -15800,7 +15874,7 @@ export async function registerRoutes(
         } else if (stillNotEmailed) {
           try {
             clientEmailSent = await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
-              `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${baseUrl}/peptides/${saved.id}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`
+              `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${buildReportAccessUrl(baseUrl, `/peptides/${saved.id}`, "peptides", saved.id, email)}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`
             );
             if (clientEmailSent) {
               console.log(`[AutoGen] ✅ Delivery email sent to ${email}`);
