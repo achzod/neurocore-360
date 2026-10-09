@@ -501,7 +501,7 @@ export default function AuditPremium() {
         <div className="max-w-3xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
             <p className="text-[#FCDD00] text-sm font-medium tracking-[0.2em] uppercase mb-6">FAQ</p>
-            <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em]">Questions frequentes</h2>
+            <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em]">Questions fréquentes</h2>
           </motion.div>
           <div className="divide-y divide-white/10">
             {[

@@ -3,8 +3,21 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
+import { useEffect } from "react";
 
 export default function NotFound() {
+  useEffect(() => {
+    const previousTitle = document.title;
+    const robots = document.querySelector('meta[name="robots"]');
+    const previousRobots = robots?.getAttribute("content");
+    document.title = "Page introuvable | APEXLABS";
+    robots?.setAttribute("content", "noindex, follow");
+    return () => {
+      document.title = previousTitle;
+      if (robots && previousRobots) robots.setAttribute("content", previousRobots);
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#050505]">
       <Header />

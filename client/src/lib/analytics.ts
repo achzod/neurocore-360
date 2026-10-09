@@ -5,20 +5,29 @@
 
 declare global {
   interface Window {
-    gtag: (...args: any[]) => void;
+    gtag?: (...args: any[]) => void;
     dataLayer: any[];
-    fbq: (...args: any[]) => void;
+    fbq?: (...args: any[]) => void;
+  }
+}
+
+function hasTrackingConsent(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.localStorage.getItem('apexlabs_cookie_consent') === 'all';
+  } catch {
+    return false;
   }
 }
 
 function gtag(...args: any[]) {
-  if (typeof window !== 'undefined' && window.gtag) {
+  if (hasTrackingConsent() && window.gtag) {
     window.gtag(...args);
   }
 }
 
 function fbq(...args: any[]) {
-  if (typeof window !== 'undefined' && window.fbq) {
+  if (hasTrackingConsent() && window.fbq) {
     window.fbq(...args);
   }
 }

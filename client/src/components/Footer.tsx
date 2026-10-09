@@ -3,6 +3,7 @@ import { SiInstagram, SiYoutube, SiFacebook } from "react-icons/si";
 import { resetCookieConsent } from "@/components/CookieConsent";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { trackWhatsAppClick } from "@/lib/analytics";
+import { MedicalDisclaimer } from "@/components/MedicalDisclaimer";
 
 export function Footer() {
   const whatsappDestination = buildWhatsAppUrl(
@@ -11,6 +12,7 @@ export function Footer() {
 
   return (
     <footer className="border-t border-[#333333] bg-[#000000]" role="contentinfo">
+      <MedicalDisclaimer compact />
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid gap-8 md:grid-cols-4">
           <div className="md:col-span-2">
@@ -159,16 +161,16 @@ export function Footer() {
             </p>
             <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-[#9CA3AF]">
               <Link href="/mentions-legales" className="hover:text-white transition-colors">
-                Mentions legales
+                Mentions légales
               </Link>
               <Link href="/cgv" className="hover:text-white transition-colors">
                 CGV
               </Link>
               <Link href="/politique-confidentialite" className="hover:text-white transition-colors">
-                Confidentialite
+                Confidentialité
               </Link>
               <button onClick={resetCookieConsent} className="hover:text-white transition-colors">
-                Gerer mes cookies
+                Gérer mes cookies
               </button>
             </div>
           </div>

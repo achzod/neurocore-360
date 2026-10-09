@@ -90,7 +90,7 @@ const OFFERS: Offer[] = [
     title: "PEPTIDES ENGINE",
     subtitle: "La source secrete que personne ne partage",
     description: "35 questions. Un protocole peptides sur mesure avec dosages exacts ajustes a ton poids, guide de reconstitution calcule par molecule (BAC water, ml, unites seringue), calendrier hebdomadaire AM/PM, et acces direct a ma source labo ou BPC-157 coute $9.65 au lieu de 80€, Retatrutide $13.65 au lieu de 300€, Semaglutide $5.64 au lieu de 200€. Tu economises 920€ des le 1er cycle. Jusqu'a 2 Blood Analyses incluses. 74 molecules disponibles. 15 protocoles/mois max.",
-    features: ["74 molecules au catalogue", "Economie 60-90% vs revendeurs", "Jusqu'a 2 Blood Analyses incluses", "Guide reconstitution calcule"],
+    features: ["74 molécules au catalogue", "Économie 60-90% vs revendeurs", "Jusqu’à 2 Blood Analyses incluses", "Guide de reconstitution calculé"],
     price: "299€",
     imageUrl: "",
     reverse: true,
@@ -1029,7 +1029,7 @@ function CoachingDeductionBanner() {
             transition={{ delay: 0.5 }}
             className="text-lg md:text-xl text-white/60 mb-8 max-w-xl mx-auto"
           >
-            Le montant de ton audit est <span className="text-[#FCDD00] font-bold">integralement deduit</span> si tu prends un coaching avec moi. Tu ne paies qu'une seule fois.
+            Le montant de ton audit est <span className="text-[#FCDD00] font-bold">intégralement déduit</span> si tu prends un coaching avec moi. Tu ne paies qu’une seule fois.
           </motion.p>
 
           {/* Visual proof: price flow */}

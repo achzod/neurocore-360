@@ -309,7 +309,7 @@ const CREDIBILITY = [
   { stat: "500+", label: "bilans sanguins analyses" },
   { stat: "86K", label: "abonnes YouTube" },
   { stat: "12", label: "masterclasses peptides" },
-  { stat: "74", label: "molecules dans le catalogue" },
+  { stat: "74", label: "molécules dans le catalogue" },
   { stat: "COA", label: "verifie par labo independant" },
 ];
 
@@ -317,7 +317,7 @@ const STEPS = [
   {
     step: "01",
     icon: Brain,
-    title: "Reponds au questionnaire",
+    title: "Réponds au questionnaire",
     desc: "35 questions sur tes objectifs, ton historique, ta biologie et ta tolerance. Sauvegarde auto.",
     time: "10-15 min",
   },
@@ -325,7 +325,7 @@ const STEPS = [
     step: "02",
     icon: TestTube,
     title: "Je genere ton protocole",
-    desc: "Analyse de ton profil, selection des molecules, dosages en mcg/kg, timing, reconstitution. Verifie et valide avant envoi.",
+    desc: "Analyse de ton profil, sélection des molécules, dosages en mcg/kg, timing, reconstitution. Vérifie et valide avant envoi.",
     time: "48h",
   },
   {
@@ -356,7 +356,7 @@ const DELIVERABLES = [
   {
     icon: ShoppingCart,
     title: "Liste de courses complete",
-    desc: "Liens directs fournisseur + cout total estime. Tu sais exactement ce que le cycle va couter.",
+    desc: "Liens directs fournisseur + coût total estimé. Tu sais exactement ce que le cycle va coûter.",
   },
   {
     icon: Activity,
@@ -1265,7 +1265,7 @@ function ObjectivesSection() {
         >
           <SectionLabel>Objectifs couverts</SectionLabel>
           <h2 className="mt-4 text-3xl font-bold text-[#1D1D1F] md:text-4xl">
-            8 categories. 74 molecules disponibles.
+            8 catégories. 74 molécules disponibles.
           </h2>
           <p className="mt-4 text-[#6E6E73]">
             Le questionnaire identifie ton objectif principal et adapte le stack en consequence.
@@ -1443,7 +1443,7 @@ function FAQSection() {
           viewport={{ once: true }}
           className="mb-14 text-center"
         >
-          <SectionLabel>Questions frequentes</SectionLabel>
+          <SectionLabel>Questions fréquentes</SectionLabel>
           <h2 className="mt-4 text-3xl font-bold text-[#1D1D1F] md:text-4xl">
             Tout ce que tu veux savoir
           </h2>
@@ -1604,7 +1604,7 @@ function TrustSection() {
         >
           <div className="flex items-center gap-2">
             <Lock className="w-4 h-4" />
-            <span>Paiement securise Stripe</span>
+            <span>Paiement sécurisé par Stripe</span>
           </div>
           <div className="flex items-center gap-2">
             <Shield className="w-4 h-4" />
@@ -2187,7 +2187,7 @@ function Hero() {
         >
           <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: PRIMARY }} />
           <span className="font-mono text-[10px] uppercase tracking-widest text-[#6E6E73] md:text-xs">
-            Protocole exclusif · 74 molecules disponibles
+            Protocole exclusif · 74 molécules disponibles
           </span>
         </motion.div>
 
@@ -2228,7 +2228,7 @@ function Hero() {
             <span className="font-semibold text-[#1D1D1F]">60-90% moins chère.</span>
           </span>
           <span className="hidden md:inline">
-            Reponds a 35 questions. Recois un protocole personnalise avec dosages exacts, guide de reconstitution calcule, calendrier hebdo, et acces direct a la source ou les peptides coutent{" "}
+            Réponds à 35 questions. Reçois un protocole personnalisé avec dosages exacts, guide de reconstitution calculé, calendrier hebdo, et accès direct à la source où les peptides coûtent{" "}
             <span className="font-semibold text-[#1D1D1F]">60-90% moins cher</span> que partout ailleurs.
           </span>
         </motion.p>

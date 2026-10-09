@@ -4893,7 +4893,7 @@ export async function registerRoutes(
 
   app.post("/api/stripe/create-checkout-session", checkoutLimiter, async (req, res) => {
     try {
-      const { priceId: clientPriceId, email, planType, responses, promoCode, referrer, fbp, fbc, userAgent, sourceUrl, peptidesEngineConsent, peptidesProfileConfirmation, peptidesTier: rawTier } = req.body;
+      const { priceId: clientPriceId, email, planType, responses, promoCode, referrer, fbp, fbc, userAgent, sourceUrl, peptidesEngineConsent, peptidesProfileConfirmation, peptidesTier: rawTier, healthDataConsent } = req.body;
       const previewToken = typeof req.body?.previewToken === "string" ? req.body.previewToken : "";
       let previewLeadId: string | null = null;
       const paymentRail = planType === "PEPTIDES_ENGINE" && req.body?.paymentRail === "klarna"
@@ -4932,6 +4932,16 @@ export async function registerRoutes(
           return;
         }
         previewLeadId = row.id;
+      }
+
+      if (planType === "BLOOD_ANALYSIS") {
+        if (!healthDataConsent || healthDataConsent.accepted !== true || healthDataConsent.version !== "blood-health-consent-v1") {
+          res.status(400).json({
+            error: "HEALTH_DATA_CONSENT_REQUIRED",
+            message: "Tu dois accepter explicitement le traitement de tes données de santé avant de payer.",
+          });
+          return;
+        }
       }
 
       // Mandatory consent gate for PEPTIDES_ENGINE. Refus de checkout sans
@@ -5096,6 +5106,12 @@ export async function registerRoutes(
               paymentMethod: "promo_100",
               freeViaPromo: true,
               questionnaireResponses: ["GRATUIT", "PREMIUM", "ELITE"].includes(planType) ? responses : undefined,
+              healthDataConsent: planType === "BLOOD_ANALYSIS" ? {
+                accepted: true,
+                version: "blood-health-consent-v1",
+                clientAcceptedAt: typeof healthDataConsent.acceptedAt === "string" ? healthDataConsent.acceptedAt : undefined,
+                serverAcceptedAt: new Date().toISOString(),
+              } : undefined,
             },
           });
           await storage.updateOrder(order.id, { status: "paid", paidAt: new Date() });
@@ -5222,6 +5238,7 @@ export async function registerRoutes(
           client_ip: (req.ip || '').toString().slice(0, 45),
           source_url: (sourceUrl || referrer || '').toString().slice(0, 500),
           payment_rail: paymentRail,
+          health_consent_version: planType === "BLOOD_ANALYSIS" ? "blood-health-consent-v1" : "",
         },
       };
 
@@ -5292,6 +5309,15 @@ export async function registerRoutes(
             peptidesTier: peptidesTier || undefined,
             peptidesResponses: planType === "PEPTIDES_ENGINE" ? responses : undefined,
             peptidesEngineConsent: peptidesConsentRecord,
+            healthDataConsent: planType === "BLOOD_ANALYSIS" ? {
+              accepted: true,
+              version: "blood-health-consent-v1",
+              clientAcceptedAt: typeof healthDataConsent.acceptedAt === "string" ? healthDataConsent.acceptedAt : undefined,
+              serverAcceptedAt: new Date().toISOString(),
+              ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null,
+              userAgent: req.headers["user-agent"] || null,
+              paymentMethod: "stripe",
+            } : undefined,
             peptidesProfileConfirmation: planType === "PEPTIDES_ENGINE" ? {
               accepted: true,
               pep_name: String(responses.pep_name).trim(),

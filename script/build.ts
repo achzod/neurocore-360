@@ -87,7 +87,8 @@ async function buildAll() {
   const sitemapEntries = [...staticPages, ...pillarPages].map(
     (pathname) => `  <url><loc>${sitemapLoc(pathname)}</loc></url>`
   );
-  for (const article of articles) {
+  const indexableArticles = articles.filter((article: any) => article.category !== "sarms");
+  for (const article of indexableArticles) {
     sitemapEntries.push(
       `  <url><loc>${sitemapLoc(`/blog/${article.slug}`)}</loc></url>`
     );
@@ -95,6 +96,9 @@ async function buildAll() {
 
   // Category pillar pages — one URL per non-empty canonical category.
   for (const slug of BLOG_CATEGORY_SLUGS) {
+    // SARMs/PED content stays online pending legal/business review, but is
+    // intentionally noindex and therefore must not be advertised in sitemap.
+    if (slug === "sarms") continue;
     const count = articles.filter((a: any) => a.category === slug).length;
     if (count === 0) continue;
     sitemapEntries.push(

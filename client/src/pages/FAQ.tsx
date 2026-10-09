@@ -53,7 +53,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: "C'est un paiement unique ou un abonnement ?",
-    answer: "Paiement unique. Pas d'abonnement, pas de frais cachés. Discovery Scan = Gratuit pour toujours. Anabolic Bioscan = 59€ une fois. Ultimate Scan = 79€ une fois. Blood Analysis = 99€ une fois pour 2 crédits, soit 2 analyses complètes utilisables sans expiration. Tu gardes accès à tes rapports et à ton dashboard."
+    answer: "Discovery Scan est gratuit. Anabolic Bioscan (59€), Ultimate Scan (79€), Blood Analysis (99€ pour 2 crédits) et Peptides Engine (Solo 199€, Coached 299€, Tracked 399€) sont des paiements uniques. FormCheck est différent : c'est un abonnement mensuel résiliable à tout moment. Solo coûte 9,90€ le premier mois puis 14,90€/mois, Pro 29,90€ le premier mois puis 39,90€/mois, et Coach 99€/mois. Le tarif de renouvellement est donc indiqué dès le départ, sans frais cachés."
   },
   {
     question: "Le rapport remplace-t-il un médecin ?",
@@ -61,7 +61,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: "Mes données sont-elles sécurisées ?",
-    answer: "Oui. Tes données sont chiffrées (SSL/TLS) et stockées sur des serveurs sécurisés. Je ne vends jamais tes données à des tiers. Les photos (Ultimate Scan) sont traitées de manière sécurisée. Tu peux demander la suppression complète de tes données à tout moment."
+    answer: "Oui. Tes données sont chiffrées (SSL/TLS) et stockées sur des serveurs sécurisés. Je ne vends jamais tes données à des tiers. Les photos (Ultimate Scan) sont traitées de manière sécurisée. Tu peux demander l'accès, la rectification ou la suppression complète de tes données à coaching@achzodcoaching.com."
   }
 ];
 

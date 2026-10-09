@@ -635,7 +635,7 @@ export default function BloodAnalysisOffer() {
               </div>
 
               <div className="pt-3 text-xs text-white/40">
-                Paiement securise (Stripe) · RGPD · Analyse basee sur ton PDF (pas un service labo proprietaire).
+                Paiement sécurisé (Stripe) · RGPD · Analyse basée sur ton PDF (pas un service de laboratoire propriétaire).
               </div>
               <div className="pt-2 flex items-center gap-2 text-xs font-medium" style={{ color: PRIMARY_BLUE }}>
                 <FlaskConical className="h-3.5 w-3.5" />
@@ -738,7 +738,7 @@ export default function BloodAnalysisOffer() {
               Obtenir mes 2 analyses ,  99€
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
-            <p className="mt-4 text-center text-xs text-white/30">Paiement securise par Stripe · Carte bancaire</p>
+            <p className="mt-4 text-center text-xs text-white/30">Paiement sécurisé par Stripe · Carte bancaire</p>
           </motion.div>
         </div>
       </section>
@@ -1028,7 +1028,7 @@ export default function BloodAnalysisOffer() {
       <section className="relative z-10 py-24 px-6 bg-[#0a0a0a]">
         <div className="mx-auto max-w-4xl">
           <div className="text-center">
-            <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">Questions frequentes</h2>
+            <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">Questions fréquentes</h2>
           </div>
 
           <div className="mt-10 rounded-xl border border-white/15 bg-[#0a0a0a] p-6">
@@ -1064,7 +1064,7 @@ export default function BloodAnalysisOffer() {
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>
-          <p className="mt-4 text-xs text-white/40">Credits sans expiration · Paiement securise · Historique conserve · Export PDF</p>
+          <p className="mt-4 text-xs text-white/40">Crédits sans expiration · Paiement sécurisé · Historique conservé · Export PDF</p>
         </div>
       </section>
 

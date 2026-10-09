@@ -14,12 +14,15 @@
     <meta property="og:locale" content="fr_FR" />
     <meta property="og:site_name" content="APEXLABS by Achzod" />
     <meta property="og:url" content="https://apexlabs.achzodcoaching.com" />
-    <meta property="og:image" content="https://apexlabs.achzodcoaching.com/favicon.png" />
+    <meta property="og:image" content="https://apexlabs.achzodcoaching.com/og-default.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/png" />
     <link rel="canonical" href="https://apexlabs.achzodcoaching.com" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="APEXLABS by Achzod | Optimisation Humaine" />
     <meta name="twitter:description" content="Audits métaboliques et analyses bio-data de précision. Par Achzod." />
-    <meta name="twitter:image" content="https://apexlabs.achzodcoaching.com/favicon.png" />
+    <meta name="twitter:image" content="https://apexlabs.achzodcoaching.com/og-default.png" />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <script type="application/ld+json">
     {
@@ -28,7 +31,7 @@
       "name": "APEXLABS by Achzod",
       "url": "https://apexlabs.achzodcoaching.com",
       "logo": "https://apexlabs.achzodcoaching.com/favicon.png",
-      "description": "Audits metaboliques et analyses bio-data de precision. Discovery Scan, Anabolic Bioscan, Blood Analysis, Ultimate Scan.",
+      "description": "Audits métaboliques et analyses bio-data de précision. Discovery Scan, Anabolic Bioscan, Blood Analysis, Ultimate Scan.",
       "contactPoint": {
         "@type": "ContactPoint",
         "email": "coaching@achzodcoaching.com",
@@ -55,39 +58,18 @@
       }
     }
     </script>
-    <!-- Google Tag Manager -->
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-    })(window,document,'script','dataLayer','GTM-TTHKM83');</script>
-    <!-- End Google Tag Manager -->
-
-    <!-- Google Analytics 4 + Google Ads -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-48PCF7PPT8"></script>
+    <!-- Consent Mode v2 defaults are set before any Google tag can load. -->
     <script>
       window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-48PCF7PPT8');
-      gtag('config', 'AW-706806863');
+      window.gtag = window.gtag || function(){window.dataLayer.push(arguments);};
+      window.gtag('consent', 'default', {
+        ad_storage: 'denied',
+        analytics_storage: 'denied',
+        ad_user_data: 'denied',
+        ad_personalization: 'denied',
+        wait_for_update: 500
+      });
     </script>
-    <!-- End GA4 + Google Ads -->
-
-    <!-- Meta Pixel Code -->
-    <script>
-      !function(f,b,e,v,n,t,s)
-      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-      n.queue=[];t=b.createElement(e);t.async=!0;
-      t.src=v;s=b.getElementsByTagName(e)[0];
-      s.parentNode.insertBefore(t,s)}(window, document,'script',
-      'https://connect.facebook.net/en_US/fbevents.js');
-      fbq('init', '1120781400174189');
-      fbq('track', 'PageView');
-    </script>
-    <!-- End Meta Pixel Code -->
 
     <!-- Google Fonts: Inter (Primary) + JetBrains Mono (Data/Tech) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -95,15 +77,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   </head>
   <body>
-    <!-- Google Tag Manager (noscript) -->
-    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TTHKM83"
-    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-    <!-- End Google Tag Manager (noscript) -->
-    <!-- Meta Pixel (noscript) -->
-    <noscript><img height="1" width="1" style="display:none"
-      src="https://www.facebook.com/tr?id=1120781400174189&ev=PageView&noscript=1"
-    /></noscript>
-    <!-- End Meta Pixel (noscript) -->
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

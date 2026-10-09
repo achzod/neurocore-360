@@ -19,6 +19,7 @@ export default function BloodAnalysisStart() {
   const [promoCode, setPromoCode] = useState("");
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [paymentRail, setPaymentRail] = useState<PaymentRail>("card");
+  const [healthConsent, setHealthConsent] = useState(false);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -63,13 +64,27 @@ export default function BloodAnalysisStart() {
   }, [navigate]);
 
   const handleCheckout = async () => {
-    if (!email || !email.includes("@")) return;
+    if (!email || !email.includes("@") || !healthConsent) {
+      setConfirmError("Renseigne un email valide et confirme ton consentement au traitement de tes données de santé.");
+      return;
+    }
     setCheckoutLoading(true);
     try {
       const res = await fetch("/api/stripe/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, planType: "BLOOD_ANALYSIS", promoCode: promoCode.trim() || undefined, paymentRail, ...getMetaAttribution() }),
+        body: JSON.stringify({
+          email,
+          planType: "BLOOD_ANALYSIS",
+          promoCode: promoCode.trim() || undefined,
+          paymentRail,
+          healthDataConsent: {
+            accepted: true,
+            version: "blood-health-consent-v1",
+            acceptedAt: new Date().toISOString(),
+          },
+          ...getMetaAttribution(),
+        }),
       });
       const data = await res.json();
       if (data.url) {
@@ -168,6 +183,25 @@ export default function BloodAnalysisStart() {
             />
           </div>
 
+          <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-4 text-xs leading-5 text-white/65">
+            <input
+              type="checkbox"
+              checked={healthConsent}
+              onChange={(event) => {
+                setHealthConsent(event.target.checked);
+                if (event.target.checked) setConfirmError(null);
+              }}
+              className="mt-1 h-4 w-4 shrink-0 accent-blue-500"
+              required
+            />
+            <span>
+              J’accepte explicitement que mes <strong className="text-white/85">données de santé</strong>, notamment mes résultats biologiques, soient collectées et traitées par APEXLABS pour produire mes analyses personnalisées, conformément à la{" "}
+              <a href="/politique-confidentialite" target="_blank" rel="noreferrer" className="text-blue-400 underline">
+                politique de confidentialité
+              </a>.
+            </span>
+          </label>
+
           {confirmError && (
             <p className="text-sm text-red-400 text-center">{confirmError}</p>
           )}
@@ -204,7 +238,7 @@ export default function BloodAnalysisStart() {
             className="w-full py-6 text-sm font-semibold rounded-lg flex items-center justify-center gap-2"
             style={{ backgroundColor: PRIMARY_BLUE, color: "#fff" }}
             onClick={handleCheckout}
-            disabled={checkoutLoading || !email.includes("@")}
+            disabled={checkoutLoading || !email.includes("@") || !healthConsent}
           >
             {checkoutLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -222,7 +256,7 @@ export default function BloodAnalysisStart() {
 
           <div className="flex items-center justify-center gap-3 text-[10px] text-white/30">
             <Shield className="w-3 h-3" />
-            <span>Paiement securise Stripe · RGPD</span>
+            <span>Paiement sécurisé par Stripe · RGPD</span>
           </div>
         </Card>
       </div>

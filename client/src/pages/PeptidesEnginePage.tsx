@@ -614,7 +614,7 @@ function CheckoutCard({
       {/* Trust line */}
       <p className="text-center text-xs text-white/30 flex items-center justify-center gap-1">
         <Lock className="h-3 w-3" aria-hidden="true" />
-        Paiement 100% securise ,  Stripe
+        Paiement 100% sécurisé par Stripe
       </p>
     </div>
   );
