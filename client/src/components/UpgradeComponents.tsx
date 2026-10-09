@@ -572,7 +572,7 @@ export const StickyCTA: React.FC<StickyCTAProps> = ({ theme, show, clientName })
             Ton protocole peptides personnalisé
           </p>
           <p className="text-xs" style={{ color: theme.colors.textMuted }}>
-            Dosages exacts, source -90%, 2 bilans sanguins inclus
+            Dosages exacts, source -90%, jusqu'à 2 bilans sanguins inclus
           </p>
         </div>
 
@@ -734,7 +734,7 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({ theme, auditId }) => {
               <h4 className="font-bold" style={{ color: theme.colors.text }}>Peptides Engine</h4>
             </div>
             <p className="text-sm mb-4" style={{ color: theme.colors.text }}>
-              Protocole peptides personnalisé avec dosages exacts, accès à la source, guide complet et 2 bilans sanguins inclus
+              Protocole peptides personnalisé avec dosages exacts, accès à la source, guide complet et jusqu'à 2 bilans sanguins inclus
             </p>
             <div className="text-xs" style={{ color: '#F59E0B' }}>
               399€ · Livraison 48h par email

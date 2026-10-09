@@ -451,7 +451,7 @@ export default function Blog() {
                   <a href="/offers/peptides-engine" className="inline-flex items-center gap-3 px-8 py-4 bg-amber-500 text-black text-xs font-black uppercase tracking-[0.2em] hover:bg-amber-400 transition-all rounded-sm shadow-[0_0_20px_rgba(245,158,11,0.2)]">
                     Decouvrir · 299€ <ArrowRight className="h-4 w-4" />
                   </a>
-                  <span className="text-white/30 text-xs font-mono">2 bilans sanguins inclus</span>
+                  <span className="text-white/30 text-xs font-mono">Jusqu'à 2 bilans sanguins inclus</span>
                 </div>
               </div>
               <div className="hidden md:flex flex-col items-center gap-3 w-1/4">
