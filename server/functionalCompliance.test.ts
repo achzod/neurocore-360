@@ -28,6 +28,33 @@ test("analytics and Meta loaders are gated by explicit acceptance", () => {
   assert.match(analytics, /localStorage\.getItem\('apexlabs_cookie_consent'\) === 'all'/);
 });
 
+test("cookie refusal and acceptance have equal visual weight", () => {
+  const consent = read("client/src/components/CookieConsent.tsx");
+  const equalClass = "text-white border border-white/30 rounded-sm hover:bg-white/5";
+  assert.equal(consent.split(equalClass).length - 1, 2);
+});
+
+test("public stats expose rounded display aggregates only", () => {
+  const routes = read("server/routes.ts");
+  const statsBlock = routes.slice(routes.indexOf('app.get("/api/stats/live"'), routes.indexOf("// Pre-launch diagnostic"));
+  assert.match(statsBlock, /publicAggregate: true/);
+  assert.match(statsBlock, /clientsServed: publicBucket/);
+  assert.doesNotMatch(statsBlock, /\n\s*totalClients,/);
+  assert.doesNotMatch(statsBlock, /\n\s*discoveryScans:/);
+  assert.doesNotMatch(statsBlock, /\n\s*peptidesProtocols:/);
+  assert.doesNotMatch(statsBlock, /\n\s*bloodAnalyses:/);
+});
+
+test("FormCheck public copy is fully accented and localized", () => {
+  const formCheck = read("client/src/pages/offers/FormCheck.tsx");
+  for (const forbidden of ["Packs & Tarifs", "Ideal athletes serieux", "Analyses illimitees", "Commencer a 9,90€", "10 analyses/mois"]) {
+    assert.doesNotMatch(formCheck, new RegExp(forbidden.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"));
+  }
+  assert.match(formCheck, /Formules et tarifs/);
+  assert.match(formCheck, /Idéal pour les athlètes sérieux/);
+  assert.match(formCheck, /Analyses illimitées/);
+});
+
 test("Blood Analysis requires and records explicit health-data consent", () => {
   const client = read("client/src/pages/BloodAnalysisStart.tsx");
   const routes = read("server/routes.ts");
