@@ -75,7 +75,7 @@ export default function CoachingOffer() {
         <header className="flex items-center justify-between border-b border-white/10 pb-5">
           <span className="text-lg font-black tracking-[0.16em] text-white" aria-label="APEXLABS">APEX<span className="text-amber-300">LABS</span></span>
           <div className="flex items-center gap-2 rounded-full border border-amber-300/30 bg-amber-300/10 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-amber-200">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-amber-300" /> Offre en cours
+            <span className="h-2 w-2 animate-pulse rounded-full bg-amber-300" /> Code BLOOD99
           </div>
         </header>
 
