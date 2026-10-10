@@ -129,9 +129,11 @@ function buildMetaDescription(article: BlogArticle): string {
   const explicit = cleanLead(article.metaDescription || "");
   if (explicit) return shorten(explicit);
 
-  const content = cleanLead(article.content || "");
   const excerpt = cleanLead(article.excerpt || "");
-  const source = content.length > floor ? content : excerpt;
+  const content = cleanLead(article.content || "");
+  // Prefer the authored excerpt. Imported markdown occasionally contains a
+  // truncated duplicate H1, which otherwise becomes a low-quality SERP meta.
+  const source = excerpt || content;
   return source ? shorten(source) : "";
 }
 

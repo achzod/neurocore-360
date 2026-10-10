@@ -33,7 +33,10 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (!id.includes("node_modules")) return undefined;
-          if (/node_modules\/(react|react-dom|scheduler|wouter)\//.test(id)) return "react-core";
+          // Keep Wouter's tiny runtime dependencies with Wouter. Splitting
+          // regexparam/mitt/use-sync-external-store into `vendor` creates a
+          // react-core <-> vendor cycle and crashes before React can mount.
+          if (/node_modules\/(react|react-dom|scheduler|wouter|regexparam|mitt|use-sync-external-store)\//.test(id)) return "react-core";
           if (id.includes("node_modules/framer-motion/")) return "motion";
           if (id.includes("node_modules/recharts/")) return "charts";
           if (id.includes("node_modules/@radix-ui/")) return "radix-ui";

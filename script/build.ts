@@ -1,6 +1,6 @@
 import { build as esbuild } from "esbuild";
 import { build as viteBuild } from "vite";
-import { rm, readFile } from "fs/promises";
+import { rm, readFile, readdir } from "fs/promises";
 import {
   BLOG_CATEGORY_SLUGS,
   isCanonicalBlogArticleSlug,
@@ -37,6 +37,35 @@ const allowlist = [
   "zod",
   "zod-validation-error",
 ];
+
+async function assertAcyclicStaticChunkGraph() {
+  const assetsDir = "dist/public/assets";
+  const files = (await readdir(assetsDir)).filter((file) => file.endsWith(".js"));
+  const graph = new Map<string, string[]>();
+  const staticImport = /(?:from\s*|import\s*)["']\.\/([^"']+\.js)["']/g;
+
+  for (const file of files) {
+    const source = await readFile(`${assetsDir}/${file}`, "utf8");
+    graph.set(file, [...source.matchAll(staticImport)].map((match) => match[1]));
+  }
+
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+  const visit = (file: string, path: string[]) => {
+    if (visiting.has(file)) {
+      const cycleStart = path.indexOf(file);
+      throw new Error(`Static chunk cycle: ${[...path.slice(cycleStart), file].join(" -> ")}`);
+    }
+    if (visited.has(file)) return;
+    visiting.add(file);
+    for (const dependency of graph.get(file) || []) visit(dependency, [...path, file]);
+    visiting.delete(file);
+    visited.add(file);
+  };
+
+  for (const file of files) visit(file, []);
+  console.log(`client chunk graph: ${files.length} JS chunks, no static cycle`);
+}
 
 async function buildAll() {
   await rm("dist", { recursive: true, force: true });
@@ -111,6 +140,7 @@ async function buildAll() {
 
   console.log("building client...");
   await viteBuild();
+  await assertAcyclicStaticChunkGraph();
 
   console.log("building server...");
   const pkg = JSON.parse(await readFile("package.json", "utf-8"));
