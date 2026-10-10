@@ -93,7 +93,7 @@ export default function CoachingOffer() {
 
           {!remaining.expired ? (
             <div className="mx-auto mt-9 max-w-xl rounded-2xl border border-amber-300/20 bg-gradient-to-b from-amber-300/[0.08] to-transparent p-4 shadow-2xl shadow-amber-950/20">
-              <div className="mb-3 flex items-center justify-center gap-2 text-sm font-medium text-amber-100"><Clock3 className="h-4 w-4" /> Fin de l'offre ce dimanche à 23 h 59, heure de Paris</div>
+              <div className="mb-3 flex items-center justify-center gap-2 text-sm font-medium text-amber-100"><Clock3 className="h-4 w-4" /> Fin de l'offre demain, dimanche 11 octobre à 23 h 59, heure de France</div>
               <div className="grid grid-cols-4 gap-2">
                 {timeUnits.map(([value, label]) => (
                   <div key={label} className="rounded-xl border border-white/10 bg-black/40 px-2 py-3">
