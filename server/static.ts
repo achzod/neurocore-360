@@ -1859,6 +1859,18 @@ ${sorted
     },
   });
 
+  ssrSimplePage(["/offre-coaching"], {
+    title: "Offre coaching exceptionnelle | AchZod Coaching",
+    desc: "2, 4 ou 6 semaines de coaching supplémentaires offertes, avec 99 € de réduction sur les suivis 8 et 12 semaines.",
+    canonical: `${BASE_URL}/offre-coaching`,
+    robots: "noindex, follow",
+    body: {
+      h1: "L'offre coaching que je n'ai encore jamais proposée",
+      lead:
+        "Une offre accessible a tous sur les suivis Essential, Elite et Private Lab, valable jusqu'au 20 octobre 2026 a 23 h 59, heure de Paris.",
+    },
+  });
+
   // Default catch-all: serve index.html for all other SPA routes. Same
   // strict no-cache as the explicit "/" handler so any SPA route is always
   // fresh.
