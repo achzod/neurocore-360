@@ -28,5 +28,8 @@ jobs:
       - name: Typecheck
         run: npm run check || true
 
+      - name: Blog SEO regression
+        run: npm run test:blog:seo-winners
+
       - name: Build
         run: npm run build

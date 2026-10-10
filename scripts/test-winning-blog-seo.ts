@@ -1,7 +1,21 @@
 import assert from "node:assert/strict";
+import { createServer } from "vite";
 import { getAllArticles } from "../client/src/data/blogArticles";
 import { BLOG_CATEGORIES } from "../client/src/data/blogTypes";
-import { getBlogDocumentTitle, getBlogIntentConversion, getBlogMetaDescription } from "../client/src/pages/BlogArticle";
+
+const vite = await createServer({
+  appType: "custom",
+  logLevel: "error",
+  optimizeDeps: { noDiscovery: true },
+  server: { middlewareMode: true },
+});
+const blogArticleModule = await vite.ssrLoadModule("/src/pages/BlogArticle.tsx");
+await vite.close();
+const {
+  getBlogDocumentTitle,
+  getBlogIntentConversion,
+  getBlogMetaDescription,
+} = blogArticleModule as typeof import("../client/src/pages/BlogArticle");
 
 const TARGET_SLUGS = [
   "meilleurs-peptides-performance-sportive",
@@ -43,6 +57,12 @@ assert.equal(
   getBlogDocumentTitle(nonTargetArticle),
   nonTargetArticle.title,
   "Le titre hydraté des articles hors cible doit éviter le suffixe qui rallonge les SERP",
+);
+const nonTargetMeta = getBlogMetaDescription(nonTargetArticle);
+assert.ok(nonTargetMeta.length <= 155, "La meta fallback doit rester sous 155 caractères");
+assert.ok(
+  !nonTargetMeta.toLowerCase().startsWith(nonTargetArticle.title.toLowerCase()),
+  "La meta fallback ne doit pas dupliquer le titre",
 );
 
 for (const article of targetArticles) {
