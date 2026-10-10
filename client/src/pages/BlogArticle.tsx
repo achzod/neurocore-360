@@ -20,6 +20,7 @@ import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { trackBlogCtaClick, trackWhatsAppClick } from "@/lib/analytics";
 
 const SITE_ORIGIN = "https://apexlabs.achzodcoaching.com";
+const COACHING_URL = "https://www.achzodcoaching.com/formules-coaching";
 
 type BlogConversion = {
   intent: string;
@@ -37,22 +38,22 @@ type BlogConversion = {
 
 const CATEGORY_CONVERSION: Record<string, Omit<BlogConversion, "intent">> = {
   musculation: {
-    eyebrow: "Lecture complete",
-    title: "Tu veux savoir si ton plan construit vraiment du muscle ?",
-    body: "Le Discovery Scan identifie les blocages nutrition, recuperation, progression et adherence avant de changer encore de programme.",
-    href: "/offers/discovery-scan?utm_source=blog&utm_medium=article_cta&utm_campaign=musculation_intent",
-    cta: "Identifier mon frein",
-    offer: "Discovery Scan",
-    sideStat: "7 min",
-    sideLabel: "diagnostic",
+    eyebrow: "Plan personnalise",
+    title: "Tu veux ce plan adapte a ton niveau, ton rythme et ton objectif ?",
+    body: "Le coaching AchZod transforme la theorie en plan d'entrainement et nutrition ajuste chaque semaine selon ta progression.",
+    href: COACHING_URL,
+    cta: "Voir les suivis coaching",
+    offer: "Coaching AchZod",
+    sideStat: "1:1",
+    sideLabel: "suivi",
   },
   sarms: {
     eyebrow: "Cadre avance",
     title: "Avant de toucher aux PEDs, lis ton contexte complet.",
     body: "Le Peptides Engine et les analyses APEXLABS aident a cadrer les decisions avancees avec donnees, prudence et orientation claire.",
-    href: "/peptides-preview?utm_source=blog&utm_medium=article_cta&utm_campaign=pre_peptides_engine",
+    href: "/peptides-preview",
     cta: "Tester l'aperçu gratuit",
-    offerHref: "/offers/peptides-engine?utm_source=blog&utm_medium=article_cta&utm_campaign=peptides_offer_intent",
+    offerHref: "/offers/peptides-engine",
     offerCta: "Voir l'offre Peptides Engine",
     offer: "Peptides Engine",
     sideStat: "74",
@@ -62,7 +63,7 @@ const CATEGORY_CONVERSION: Record<string, Omit<BlogConversion, "intent">> = {
     eyebrow: "Priorites d'abord",
     title: "Ne rajoute pas un supplement si le vrai frein est ailleurs.",
     body: "Commence par verifier sommeil, stress, digestion, nutrition et entrainement pour savoir ce qui merite vraiment d'etre corrige.",
-    href: "/offers/discovery-scan?utm_source=blog&utm_medium=article_cta&utm_campaign=supplements_intent",
+    href: "/offers/discovery-scan",
     cta: "Faire le scan gratuit",
     offer: "Discovery Scan",
     sideStat: "8",
@@ -72,7 +73,7 @@ const CATEGORY_CONVERSION: Record<string, Omit<BlogConversion, "intent">> = {
     eyebrow: "Signal hormonal",
     title: "Energie, libido, recuperation : arrete de deviner.",
     body: "L'Anabolic Bioscan route les signaux hormonaux, le contexte lifestyle et les blocages de performance vers une lecture claire.",
-    href: "/offers/anabolic-bioscan?utm_source=blog&utm_medium=article_cta&utm_campaign=hormone_intent",
+    href: "/offers/anabolic-bioscan",
     cta: "Analyser mon signal",
     offer: "Anabolic Bioscan",
     sideStat: "59€",
@@ -82,7 +83,7 @@ const CATEGORY_CONVERSION: Record<string, Omit<BlogConversion, "intent">> = {
     eyebrow: "Sommeil & recovery",
     title: "Si ton sommeil bloque, ton physique bloque aussi.",
     body: "Le Discovery Scan met en relation sommeil, stress, energie, faim, digestion et performance pour isoler le levier prioritaire.",
-    href: "/offers/ultimate-scan?utm_source=blog&utm_medium=article_cta&utm_campaign=recovery_intent",
+    href: "/offers/ultimate-scan",
     cta: "Tester mes signaux",
     offer: "Discovery Scan",
     sideStat: "5 min",
@@ -92,7 +93,7 @@ const CATEGORY_CONVERSION: Record<string, Omit<BlogConversion, "intent">> = {
     eyebrow: "Stress & HRV",
     title: "Ton systeme nerveux peut etre le frein invisible.",
     body: "APEXLABS relie HRV, sommeil, charge mentale, entrainement et recuperation pour eviter de pousser le mauvais levier.",
-    href: "/offers/ultimate-scan?utm_source=blog&utm_medium=article_cta&utm_campaign=stress_intent",
+    href: "/offers/ultimate-scan",
     cta: "Voir ce qui bloque",
     offer: "Discovery Scan",
     sideStat: "HRV",
@@ -102,7 +103,7 @@ const CATEGORY_CONVERSION: Record<string, Omit<BlogConversion, "intent">> = {
     eyebrow: "Nutrition utile",
     title: "Avant de baisser les calories, identifie le vrai levier.",
     body: "Le scan APEXLABS te montre si le probleme vient de la faim, du timing, de l'adherence, de la recuperation ou du metabolisme.",
-    href: "/offers/ultimate-scan?utm_source=blog&utm_medium=article_cta&utm_campaign=nutrition_intent",
+    href: "/offers/ultimate-scan",
     cta: "Faire une lecture complete",
     offer: "Ultimate Scan",
     sideStat: "79€",
@@ -112,7 +113,7 @@ const CATEGORY_CONVERSION: Record<string, Omit<BlogConversion, "intent">> = {
     eyebrow: "Performance",
     title: "Plus d'effort ne suffit pas si la recuperation ne suit pas.",
     body: "Ultimate Scan croise entrainement, sommeil, HRV, nutrition et fatigue pour choisir le bon ajustement.",
-    href: "/offers/ultimate-scan?utm_source=blog&utm_medium=article_cta&utm_campaign=performance_intent",
+    href: "/offers/ultimate-scan",
     cta: "Analyser ma performance",
     offer: "Ultimate Scan",
     sideStat: "16",
@@ -122,7 +123,7 @@ const CATEGORY_CONVERSION: Record<string, Omit<BlogConversion, "intent">> = {
     eyebrow: "Metabolisme",
     title: "Si ton moteur ralentit, il faut le lire avant de couper plus.",
     body: "Ultimate Scan analyse energie, NEAT, faim, glycemie percue, digestion, sommeil et contexte pour prioriser la correction.",
-    href: "/offers/ultimate-scan?utm_source=blog&utm_medium=article_cta&utm_campaign=metabolism_intent",
+    href: "/offers/ultimate-scan",
     cta: "Lire mon metabolisme",
     offer: "Ultimate Scan",
     sideStat: "16",
@@ -132,7 +133,7 @@ const CATEGORY_CONVERSION: Record<string, Omit<BlogConversion, "intent">> = {
     eyebrow: "Biomarqueurs",
     title: "On ne pilote pas la longevite avec des impressions.",
     body: "Blood Analysis transforme tes marqueurs en priorites actionnables pour performance, sante metabolique et prevention.",
-    href: "/offers/blood-analysis?utm_source=blog&utm_medium=article_cta&utm_campaign=blood_intent",
+    href: "/offers/blood-analysis",
     cta: "Analyser mes marqueurs",
     offer: "Blood Analysis",
     sideStat: "99€",
@@ -142,7 +143,7 @@ const CATEGORY_CONVERSION: Record<string, Omit<BlogConversion, "intent">> = {
     eyebrow: "Data utile",
     title: "Le tracking ne sert a rien sans decision derriere.",
     body: "APEXLABS transforme les signaux wearable, lifestyle et performance en prochaines actions au lieu d'accumuler des chiffres.",
-    href: "/offers/ultimate-scan?utm_source=blog&utm_medium=article_cta&utm_campaign=recovery_intent",
+    href: "/offers/ultimate-scan",
     cta: "Transformer mes donnees",
     offer: "Ultimate Scan",
     sideStat: "data",
@@ -152,7 +153,7 @@ const CATEGORY_CONVERSION: Record<string, Omit<BlogConversion, "intent">> = {
     eyebrow: "Physiologie feminine",
     title: "Cycle, energie, sommeil : ton plan doit respecter ton contexte.",
     body: "Le Discovery Scan aide a poser les priorites avant de choisir nutrition, entrainement ou accompagnement.",
-    href: "/offers/discovery-scan?utm_source=blog&utm_medium=article_cta&utm_campaign=femmes_intent",
+    href: "/offers/discovery-scan",
     cta: "Faire le point",
     offer: "Discovery Scan",
     sideStat: "8",
@@ -165,7 +166,7 @@ const DEFAULT_CONVERSION: BlogConversion = {
   eyebrow: "Diagnostic APEXLABS",
   title: "Tu veux savoir quel levier bloque vraiment ton corps ?",
   body: "Commence par un diagnostic clair avant de changer encore de plan, de calories ou de supplements.",
-  href: "/offers/discovery-scan?utm_source=blog&utm_medium=article_cta&utm_campaign=general_intent",
+  href: "/offers/discovery-scan",
   cta: "Faire mon Discovery Scan",
   offer: "Discovery Scan",
   sideStat: "0€",
@@ -173,7 +174,21 @@ const DEFAULT_CONVERSION: BlogConversion = {
 };
 
 export function getBlogDocumentTitle(article: BlogArticle): string {
-  return article.seoTitle || `${article.title} | APEXLABS Blog`;
+  return article.seoTitle || article.title;
+}
+
+export function getBlogMetaDescription(article: BlogArticle): string {
+  const escapedTitle = article.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const source = (article.metaDescription || article.excerpt || "")
+    .replace(/[#*_`>|]/g, " ")
+    .replace(new RegExp(`^${escapedTitle}\\s*(?:[-:–—]\\s*)?`, "i"), "")
+    .replace(/^introduction\s*:\s*/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (source.length <= 155) return source;
+  const cut = source.slice(0, 154);
+  const lastSpace = cut.lastIndexOf(" ");
+  return `${cut.slice(0, lastSpace >= 80 ? lastSpace : 154)}…`;
 }
 
 export function getBlogIntentConversion(article: BlogArticle): BlogConversion {
@@ -183,9 +198,9 @@ export function getBlogIntentConversion(article: BlogArticle): BlogConversion {
       intent: "peptides-performance",
       title: "Quel protocole peptides correspond vraiment à ton profil ?",
       body: "Le Pré-Peptides Engine gratuit cadre d'abord ton objectif, ton contexte et ton budget. Peptides Engine construit ensuite l'analyse complète si tu veux aller plus loin.",
-      href: "/peptides-preview?utm_source=blog&utm_medium=article_cta&utm_campaign=peptides_performance_preview",
+      href: "/peptides-preview",
       cta: "Lancer mon Pré-Peptides gratuit",
-      offerHref: "/offers/peptides-engine?utm_source=blog&utm_medium=article_cta&utm_campaign=peptides_performance_offer",
+      offerHref: "/offers/peptides-engine",
       offerCta: "Découvrir Peptides Engine",
     };
   }
@@ -197,7 +212,7 @@ export function getBlogIntentConversion(article: BlogArticle): BlogConversion {
       eyebrow: "Bilan post-cycle",
       title: "Tu as les résultats : transforme-les en priorités lisibles.",
       body: "Blood Analysis structure la lecture de tes marqueurs autour de la récupération, du profil hormonal, des lipides et du foie.",
-      href: "/offers/blood-analysis?utm_source=blog&utm_medium=article_cta&utm_campaign=pct_sarms_blood_analysis",
+      href: "/offers/blood-analysis",
       cta: "Analyser mon bilan post-cycle",
     };
   }
@@ -209,7 +224,7 @@ export function getBlogIntentConversion(article: BlogArticle): BlogConversion {
       eyebrow: "Monitoring RAD-140",
       title: "Un cycle ne se pilote pas uniquement au ressenti.",
       body: "Blood Analysis organise les marqueurs disponibles pour repérer les priorités de suivi avant de tirer des conclusions sur ta récupération.",
-      href: "/offers/blood-analysis?utm_source=blog&utm_medium=article_cta&utm_campaign=rad140_blood_analysis",
+      href: "/offers/blood-analysis",
       cta: "Faire lire mes marqueurs",
     };
   }
@@ -229,13 +244,17 @@ export function getBlogIntentConversion(article: BlogArticle): BlogConversion {
     return { ...CATEGORY_CONVERSION.longevite, intent: "blood" };
   }
 
+  if (category === "musculation" || /prise de masse|seche|sèche|perte de gras|recomposition|deficit calorique|déficit calorique/.test(text)) {
+    return { ...CATEGORY_CONVERSION.musculation, intent: "coaching" };
+  }
+
   if (category === "performance" || /squat|bench|developpe|souleve|mouvement|technique|biomecanique|douleur/.test(text)) {
     return {
       intent: "formcheck",
       eyebrow: "Execution",
       title: "Si le blocage vient du mouvement, il faut voir l'execution.",
       body: "FormCheck donne une lecture biomecanique sur video avec les corrections prioritaires a appliquer des la prochaine seance.",
-      href: "/offers/formcheck?utm_source=blog&utm_medium=article_cta&utm_campaign=formcheck_intent",
+      href: "/offers/formcheck",
       cta: "Faire analyser ma technique",
       offer: "FormCheck",
       sideStat: "video",
@@ -294,7 +313,7 @@ export default function BlogArticlePage() {
   useEffect(() => {
     if (article) {
       const seoTitle = article.seoTitle || article.title;
-      const seoDescription = article.metaDescription || article.excerpt;
+      const seoDescription = getBlogMetaDescription(article);
       document.title = getBlogDocumentTitle(article);
       const canonicalUrl = `${SITE_ORIGIN}/blog/${article.slug}`;
 
@@ -628,6 +647,15 @@ export default function BlogArticlePage() {
                       <blockquote className="border-l-4 border-[#FCDD00] pl-4 italic text-white/50 my-6">
                         {children}
                       </blockquote>
+                    ),
+                    a: ({ href = "", children }) => (
+                      <a
+                        href={href}
+                        className="font-medium text-yellow-400 underline decoration-yellow-400/35 underline-offset-4 hover:text-yellow-300"
+                        onClick={() => trackBlogCtaClick(conversion.intent, "content", "primary", href)}
+                      >
+                        {children}
+                      </a>
                     ),
                   }}
                 >

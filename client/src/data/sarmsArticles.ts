@@ -126,9 +126,9 @@ Le combo CJC-1295 plus Ipamorelin reste la base pour l'optimisation de la GH. Le
 
 Mais un peptide sans protocole, c'est comme un moteur sans châssis. Ça ne sert à rien. Il te faut les bons dosages, le bon timing, la bonne combinaison, et surtout une source fiable.
 
-Tu veux d'abord vérifier si Peptides Engine correspond à ton objectif, ton contexte et ton budget ? [Lance le Pré-Peptides Engine gratuit](/peptides-preview?utm_source=blog&utm_medium=content_cta&utm_campaign=peptides_performance_preview) pour obtenir un premier cadrage personnalisé.
+Tu veux d'abord vérifier si Peptides Engine correspond à ton objectif, ton contexte et ton budget ? [Lance le Pré-Peptides Engine gratuit](/peptides-preview) pour obtenir un premier cadrage personnalisé.
 
-Si tu connais déjà l'offre et veux voir les formules disponibles, [découvre Peptides Engine](/offers/peptides-engine?utm_source=blog&utm_medium=content_cta&utm_campaign=peptides_performance_offer).`,
+Si tu connais déjà l'offre et veux voir les formules disponibles, [découvre Peptides Engine](/offers/peptides-engine).`,
   },
   {  id: "121",
     priority: 57,
@@ -908,7 +908,7 @@ Une suppression temporaire de la spermatogenèse est possible pendant le cycle. 
 
 ## Lire tes marqueurs autour d'un cycle
 
-Si tu disposes déjà d'un bilan sanguin, [Blood Analysis t'aide à structurer la lecture de tes marqueurs](/offers/blood-analysis?utm_source=blog&utm_medium=content_cta&utm_campaign=rad140_blood_analysis) et à repérer les points qui demandent un suivi adapté.
+Si tu disposes déjà d'un bilan sanguin, [Blood Analysis t'aide à structurer la lecture de tes marqueurs](/offers/blood-analysis) et à repérer les points qui demandent un suivi adapté.
 
 ---`,
   },
@@ -1910,7 +1910,7 @@ Généralement non. Le HCG est plus pertinent pour les cycles de stéroïdes ana
 
 ## Donner du sens à ton bilan post-cycle
 
-Tu as déjà tes résultats sanguins ? [Blood Analysis transforme tes marqueurs en priorités lisibles](/offers/blood-analysis?utm_source=blog&utm_medium=content_cta&utm_campaign=pct_sarms_blood_analysis), sans remplacer l'interprétation clinique lorsqu'elle est nécessaire.
+Tu as déjà tes résultats sanguins ? [Blood Analysis transforme tes marqueurs en priorités lisibles](/offers/blood-analysis), sans remplacer l'interprétation clinique lorsqu'elle est nécessaire.
 
 ---`,
   },

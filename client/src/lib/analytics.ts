@@ -78,7 +78,7 @@ export function trackClick(buttonName: string, destination?: string) {
 // traffic identifiable by event name in GA4's standard Events report.
 export function trackBlogCtaClick(
   intent: string,
-  placement: 'intro' | 'end' | 'category',
+  placement: 'intro' | 'content' | 'end' | 'category',
   variant: 'primary' | 'offer',
   destination: string,
 ) {
