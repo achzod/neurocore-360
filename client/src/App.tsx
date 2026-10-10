@@ -77,6 +77,7 @@ const AnabolicScanReport = lazy(() => import("@/pages/AnabolicScanReport"));
 const UltimateScanReport = lazy(() => import("@/pages/UltimateScanReport"));
 const BloodClientDashboard = lazy(() => import("@/pages/BloodClientDashboard"));
 const ConversionsPublic = lazy(() => import("@/pages/ConversionsPublic"));
+const CoachingOffer = lazy(() => import("@/pages/CoachingOffer"));
 
 // Offer Pages
 const AuditGratuit = lazy(() => import("@/pages/offers/AuditGratuit"));
@@ -113,6 +114,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/cgv": "Conditions générales de vente | APEXLABS",
   "/politique-confidentialite": "Politique de confidentialité | APEXLABS",
   "/deduction-coaching": "Déduction coaching | APEXLABS",
+  "/offre-coaching": "Offre coaching exceptionnelle | AchZod Coaching",
   "/blog/pilier/perte-de-gras": "Perte de Gras | Guides APEXLABS",
   "/blog/pilier/testosterone-hormones": "Testostérone & Hormones | Guides APEXLABS",
   "/blog/pilier/bilan-sanguin": "Bilan Sanguin | Guides APEXLABS",
@@ -175,7 +177,7 @@ function ScrollToTop() {
 
 function ConditionalWhatsAppConversionHub() {
   const [location] = useLocation();
-  if (location === "/peptides-preview" || location === "/offers/peptides-engine") return null;
+  if (location === "/peptides-preview" || location === "/offers/peptides-engine" || location === "/offre-coaching") return null;
   return <WhatsAppConversionHub />;
 }
 
@@ -248,6 +250,7 @@ function Router() {
         <Route path="/blog/:slug" component={BlogArticle} />
         <Route path="/press" component={Press} />
         <Route path="/deduction-coaching" component={DeductionCoaching} />
+        <Route path="/offre-coaching" component={CoachingOffer} />
         <Route path="/test" component={TestAudit} />
         <Route path="/report" component={Report} />
         <Route path="/report/:auditId" component={Report} />
