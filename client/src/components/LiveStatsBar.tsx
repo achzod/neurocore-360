@@ -1,16 +1,12 @@
 import { useEffect, useState } from "react";
 
-interface LiveStats {
-  totalClients: number;
-  discoveryScans: number;
-  anabolicBioscans: number;
-  ultimateScans: number;
-  peptidesProtocols: number;
+interface PublicLiveStats {
+  clientsServed: string;
+  discoveryScansDelivered: string;
+  reportsDelivered: string;
   peptidesAvgPerProtocol: number;
-  bloodAnalyses: number;
-  totalReportsDelivered: number;
-  since: string;
-  computedAt: string;
+  sinceYear: number;
+  publicAggregate: true;
   error?: boolean;
 }
 
@@ -21,27 +17,24 @@ interface LiveStatsBarProps {
   className?: string;
 }
 
-// Social-proof bar showing live, factual numbers pulled from the DB.
-// Never fabricates ,  if the API returns `error` or totalReportsDelivered === 0
-// (brand new install, pre-launch), the component renders nothing.
+// Social proof deliberately exposes rounded display buckets only. Exact product,
+// client and report counts remain server-side commercial data.
 export function LiveStatsBar({ variant = "peptides", className = "" }: LiveStatsBarProps) {
-  const [stats, setStats] = useState<LiveStats | null>(null);
+  const [stats, setStats] = useState<PublicLiveStats | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     fetch("/api/stats/live")
       .then(r => r.ok ? r.json() : null)
-      .then((data: LiveStats | null) => {
-        if (cancelled || !data || data.error) return;
-        if (!data.totalReportsDelivered || data.totalReportsDelivered < 3) return;
+      .then((data: PublicLiveStats | null) => {
+        if (cancelled || !data || data.error || data.publicAggregate !== true) return;
         setStats(data);
       })
-      .catch(() => { /* silent ,  social proof is nice-to-have, not critical */ });
+      .catch(() => { /* La preuve sociale ne doit jamais bloquer la page. */ });
     return () => { cancelled = true; };
   }, []);
 
   if (!stats) return null;
-
   const items = getItems(variant, stats);
   if (items.length === 0) return null;
 
@@ -59,12 +52,11 @@ export function LiveStatsBar({ variant = "peptides", className = "" }: LiveStats
   );
 }
 
-function getItems(variant: Variant, s: LiveStats): Array<{ value: string; label: string }> {
+function getItems(variant: Variant, s: PublicLiveStats): Array<{ value: string; label: string }> {
   const all: Array<{ value: string; label: string }> = [];
 
   switch (variant) {
     case "peptides":
-      // "protocoles livrés" volontairement masqué (info commerciale confidentielle).
       if (s.peptidesAvgPerProtocol > 0) {
         all.push({ value: `${s.peptidesAvgPerProtocol}`, label: "peptides en moyenne" });
       }
@@ -72,34 +64,23 @@ function getItems(variant: Variant, s: LiveStats): Array<{ value: string; label:
       break;
 
     case "checkout":
-      if (s.totalClients > 0) {
-        all.push({ value: `${s.totalClients}`, label: "clients servis" });
-      }
-      if (s.totalReportsDelivered > 0) {
-        all.push({ value: `${s.totalReportsDelivered}`, label: "rapports livrés" });
-      }
-      all.push({ value: `${new Date(s.since).getFullYear()}`, label: "lancé en" });
+      if (s.clientsServed) all.push({ value: s.clientsServed, label: "clients servis" });
+      if (s.reportsDelivered) all.push({ value: s.reportsDelivered, label: "rapports livrés" });
+      all.push({ value: `${s.sinceYear}`, label: "lancé en" });
       all.push({ value: "24h", label: "délai moyen" });
       break;
 
     case "discovery":
-      if (s.discoveryScans > 0) {
-        all.push({ value: `${s.discoveryScans}`, label: "Discovery Scans livrés" });
+      if (s.discoveryScansDelivered) {
+        all.push({ value: s.discoveryScansDelivered, label: "Discovery Scans livrés" });
       }
-      if (s.totalClients > 0) {
-        all.push({ value: `${s.totalClients}`, label: "clients APEXLABS" });
-      }
+      if (s.clientsServed) all.push({ value: s.clientsServed, label: "clients APEXLABS" });
       all.push({ value: "15", label: "axes analysés" });
       all.push({ value: "gratuit", label: "et personnalisé" });
       break;
 
     case "blood":
-      if (s.bloodAnalyses > 0) {
-        all.push({ value: `${s.bloodAnalyses}`, label: "bilans analysés" });
-      }
-      if (s.totalClients > 0) {
-        all.push({ value: `${s.totalClients}`, label: "clients APEXLABS" });
-      }
+      if (s.clientsServed) all.push({ value: s.clientsServed, label: "clients APEXLABS" });
       all.push({ value: "30+", label: "marqueurs" });
       all.push({ value: "24h", label: "délai rapport" });
       break;

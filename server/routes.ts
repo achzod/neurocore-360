@@ -1314,29 +1314,27 @@ export async function registerRoutes(
       const bloodDone = bloodResult.rows[0]?.c ?? 0;
       const totalClients = uniqueResult.rows[0]?.c ?? 0;
 
+      const publicBucket = (value: number): string => {
+        if (value < 10) return value > 0 ? `${value}` : "";
+        const step = value >= 1000 ? 100 : value >= 100 ? 50 : 10;
+        return `${Math.floor(value / step) * step}+`;
+      };
+      const totalReportsDelivered = discoveryDone + premiumDone + eliteDone + peptidesCount + bloodDone;
       const data = {
-        totalClients,
-        discoveryScans: discoveryDone,
-        anabolicBioscans: premiumDone,
-        ultimateScans: eliteDone,
-        peptidesProtocols: peptidesCount,
+        clientsServed: publicBucket(totalClients),
+        discoveryScansDelivered: publicBucket(discoveryDone),
+        reportsDelivered: publicBucket(totalReportsDelivered),
         peptidesAvgPerProtocol: Math.round(peptidesPerProtocol * 10) / 10,
-        bloodAnalyses: bloodDone,
-        totalReportsDelivered: discoveryDone + premiumDone + eliteDone + peptidesCount + bloodDone,
-        since: LAUNCH_DATE.toISOString().slice(0, 10),
-        computedAt: new Date().toISOString(),
+        sinceYear: LAUNCH_DATE.getUTCFullYear(),
+        publicAggregate: true as const,
       };
 
       statsCache = { data, computedAt: Date.now() };
       res.json(data);
     } catch (err: any) {
       console.error("[Stats] Error computing live stats:", err?.message || err);
-      // Never fail the page load , return a safe minimal payload if the DB hiccups.
-      res.json({
-        totalClients: 0,
-        totalReportsDelivered: 0,
-        error: true,
-      });
+      // Never fail the page load , return no commercial figures if the DB hiccups.
+      res.json({ error: true, publicAggregate: true });
     }
   });
 

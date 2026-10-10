@@ -1090,13 +1090,13 @@ export default function FormCheck() {
             className="text-center mb-16"
           >
             <p className="text-sm font-medium tracking-[0.2em] uppercase mb-6" style={{ color: ACCENT }}>
-              Packs & Tarifs
+              Formules et tarifs
             </p>
             <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em]">
               Abonnements mensuels.
             </h2>
             <p className="text-white/50 mt-4 max-w-lg mx-auto">
-              1ere analyse gratuite. Choisis ton plan et commence sur WhatsApp.
+              Première analyse gratuite. Choisis ton plan et commence sur WhatsApp.
             </p>
           </motion.div>
 
@@ -1107,8 +1107,8 @@ export default function FormCheck() {
                 price: "0€",
                 period: "",
                 analyses: "1 analyse offerte",
-                subtitle: "Decouvre le niveau de tes mouvements",
-                features: ["Score de forme 0-100", "Detection d'exercice auto", "Corrections prioritaires", "Rapport HTML complet"],
+                subtitle: "Découvre le niveau de tes mouvements",
+                features: ["Score de forme 0-100", "Détection automatique de l’exercice", "Corrections prioritaires", "Rapport HTML complet"],
                 badge: "GRATUIT",
                 highlight: false,
                 cta: "Tester gratuitement",
@@ -1119,12 +1119,12 @@ export default function FormCheck() {
                 price: "9,90€",
                 period: "/1er mois",
                 priceAfter: "puis 14,90€/mois",
-                analyses: "10 analyses/mois",
+                analyses: "10 analyses par mois",
                 subtitle: "Corrige ta technique chaque semaine",
-                features: ["Tout l'Essai inclus", "10 analyses par mois", "Historique et progression", "Sans engagement"],
+                features: ["Tout l’Essai inclus", "10 analyses par mois", "Historique et progression", "Sans engagement"],
                 badge: null,
                 highlight: false,
-                cta: "Commencer a 9,90€",
+                cta: "Commencer à 9,90 €",
                 ctaHref: buildFormCheckWhatsAppUrl("packs", "Solo"),
               },
               {
@@ -1134,7 +1134,7 @@ export default function FormCheck() {
                 priceAfter: "puis 39,90€/mois",
                 analyses: "30 analyses/mois",
                 subtitle: "Pour ceux qui ne veulent plus deviner",
-                features: ["Tout le Solo inclus", "30 analyses par mois", "Rapports partageables", "Ideal athletes serieux"],
+                features: ["Tout le Solo inclus", "30 analyses par mois", "Rapports partageables", "Idéal pour les athlètes sérieux"],
                 badge: "LE + POPULAIRE",
                 highlight: true,
                 cta: "Passer Pro maintenant",
@@ -1145,10 +1145,10 @@ export default function FormCheck() {
                 price: "99€",
                 period: "/mois",
                 priceAfter: "",
-                analyses: "Analyses illimitees",
-                subtitle: "L'outil de tes seances et de tes clients",
-                features: ["Tout le Pro inclus", "Volume illimite", "Multi-athletes", "Support prioritaire"],
-                badge: "ILLIMITE",
+                analyses: "Analyses illimitées",
+                subtitle: "L’outil de tes séances et de tes clients",
+                features: ["Tout le Pro inclus", "Volume illimité", "Multi-athlètes", "Support prioritaire"],
+                badge: "ILLIMITÉ",
                 highlight: false,
                 cta: "Devenir Coach",
                 ctaHref: buildFormCheckWhatsAppUrl("packs", "Coach"),
