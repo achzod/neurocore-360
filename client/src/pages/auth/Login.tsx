@@ -109,7 +109,7 @@ export default function Login() {
 
               <div className="mt-6 text-center">
                 <p className="text-sm text-muted-foreground">
-                  Lien valable 60 minutes. Tu accedes a tous tes dashboards depuis un seul lien.
+                  Lien sécurisé valable 24 heures. Ton compte et tes achats restent disponibles sans limite.
                 </p>
                 <a
                   href="/audit-complet/questionnaire"

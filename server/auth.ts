@@ -31,7 +31,9 @@ const getAuthSecret = (): string => {
 };
 
 export const signAuthToken = (payload: AuthPayload): string => {
-  return jwt.sign(payload, getAuthSecret(), { expiresIn: "7d" });
+  // Keep a trusted device signed in for a year. The emailed magic link remains
+  // short-lived and one-time, so a leaked email cannot become a permanent key.
+  return jwt.sign(payload, getAuthSecret(), { expiresIn: "365d" });
 };
 
 export const verifyAuthToken = (token: string): AuthPayload | null => {

@@ -3659,9 +3659,11 @@ export async function registerRoutes(
       }
 
       if (!emailSent) {
-        console.log(
-          `[Auth] Magic link for ${normalizedEmail}: ${baseUrl}/auth/verify?token=${token}&email=${encodeURIComponent(normalizedEmail)}`
-        );
+        console.error(`[Auth] Magic link delivery failed for ${normalizedEmail}`);
+        res.status(503).json({
+          error: "Impossible d'envoyer le lien d'accès pour le moment. Réessaie dans quelques minutes.",
+        });
+        return;
       }
       res.json({ success: true, message: "Lien magique envoyé" });
     } catch (error) {
