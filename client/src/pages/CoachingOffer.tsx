@@ -1,13 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, Check, Clock3, MessageCircle, ShieldCheck, Sparkles, Zap } from "lucide-react";
+import { ArrowRight, Check, Clock3, ShieldCheck, Sparkles, Zap } from "lucide-react";
 
-const DEADLINE = new Date("2026-10-20T23:59:00+02:00");
-const WHATSAPP_URL = "https://wa.me/971585210514?text=GO%20%E2%80%94%20Je%20veux%20profiter%20de%20l%27offre%20coaching%20exceptionnelle.%20Mon%20objectif%20est%20%3A%20";
+const DEADLINE = new Date("2026-10-11T23:59:00+02:00");
+const FORMULES_URL = "https://www.achzodcoaching.com/formules-coaching";
 
 const offers = [
   { duration: "4 semaines", bonus: "+2 semaines", detail: "6 semaines de suivi au total" },
   { duration: "8 semaines", bonus: "+4 semaines", detail: "12 semaines de suivi au total", discount: "99 € de réduction", featured: true },
   { duration: "12 semaines", bonus: "+6 semaines", detail: "18 semaines de suivi au total", discount: "99 € de réduction" },
+];
+
+const formulas = [
+  { name: "Essential", href: "https://www.achzodcoaching.com/coaching-essential", description: "Le cadre essentiel pour avancer avec une stratégie claire et un suivi régulier." },
+  { name: "Elite", href: "https://www.achzodcoaching.com/coaching-elite", description: "Un accompagnement plus poussé pour accélérer ta progression et ajuster chaque détail." },
+  { name: "Private Lab", href: "https://www.achzodcoaching.com/coaching-achzod-private-lab", description: "Mon niveau d'accompagnement le plus complet pour une optimisation approfondie." },
 ];
 
 function getRemaining(now: number) {
@@ -67,7 +73,7 @@ export default function CoachingOffer() {
 
       <div className="relative mx-auto max-w-6xl px-5 pb-32 pt-6 sm:px-8 lg:px-12">
         <header className="flex items-center justify-between border-b border-white/10 pb-5">
-          <a href="/" className="text-lg font-black tracking-[0.16em] text-white" aria-label="APEXLABS — accueil">APEX<span className="text-amber-300">LABS</span></a>
+          <span className="text-lg font-black tracking-[0.16em] text-white" aria-label="APEXLABS">APEX<span className="text-amber-300">LABS</span></span>
           <div className="flex items-center gap-2 rounded-full border border-amber-300/30 bg-amber-300/10 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-amber-200">
             <span className="h-2 w-2 animate-pulse rounded-full bg-amber-300" /> Offre en cours
           </div>
@@ -87,7 +93,7 @@ export default function CoachingOffer() {
 
           {!remaining.expired ? (
             <div className="mx-auto mt-9 max-w-xl rounded-2xl border border-amber-300/20 bg-gradient-to-b from-amber-300/[0.08] to-transparent p-4 shadow-2xl shadow-amber-950/20">
-              <div className="mb-3 flex items-center justify-center gap-2 text-sm font-medium text-amber-100"><Clock3 className="h-4 w-4" /> Fin de l'offre le 20 octobre à 23 h 59, heure de Paris</div>
+              <div className="mb-3 flex items-center justify-center gap-2 text-sm font-medium text-amber-100"><Clock3 className="h-4 w-4" /> Fin de l'offre ce dimanche à 23 h 59, heure de Paris</div>
               <div className="grid grid-cols-4 gap-2">
                 {timeUnits.map(([value, label]) => (
                   <div key={label} className="rounded-xl border border-white/10 bg-black/40 px-2 py-3">
@@ -117,23 +123,33 @@ export default function CoachingOffer() {
           ))}
         </section>
 
-        <section className="mx-auto mt-16 max-w-4xl rounded-[2rem] border border-white/10 bg-white/[0.035] p-6 sm:p-10">
-          <div className="grid gap-8 md:grid-cols-[1fr_auto] md:items-center">
-            <div>
-              <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.14em] text-amber-300"><ShieldCheck className="h-5 w-5" /> Choisis ton niveau d'accompagnement</div>
-              <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">Essential, Elite ou Private Lab.</h2>
-              <p className="mt-4 max-w-2xl leading-relaxed text-zinc-300">Envoie simplement <strong className="text-white">« GO »</strong> avec ton objectif actuel. Ach te répond personnellement et t'oriente vers le suivi le plus adapté — sans engagement.</p>
-            </div>
-            <a href={WHATSAPP_URL} target="_blank" rel="noreferrer" className={`group inline-flex min-h-14 items-center justify-center gap-3 rounded-2xl px-7 py-4 text-center font-black transition ${remaining.expired ? "pointer-events-none bg-zinc-800 text-zinc-500" : "bg-amber-300 text-black shadow-lg shadow-amber-400/20 hover:-translate-y-0.5 hover:bg-amber-200"}`}>
-              <MessageCircle className="h-5 w-5" /> J'envoie « GO » <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-            </a>
+        <section className="mx-auto mt-16 max-w-5xl rounded-[2rem] border border-white/10 bg-white/[0.035] p-6 sm:p-10">
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-2 text-sm font-bold uppercase tracking-[0.14em] text-amber-300"><ShieldCheck className="h-5 w-5" /> Choisis ton niveau d'accompagnement</div>
+            <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">Je t'accompagne avec trois formules.</h2>
+            <p className="mx-auto mt-4 max-w-2xl leading-relaxed text-zinc-300">Choisis la formule qui correspond à ton objectif. Tu retrouveras tous les détails directement sur le site coaching.</p>
+          </div>
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            {formulas.map((formula) => (
+              <a
+                key={formula.name}
+                href={formula.href}
+                target="_blank"
+                rel="noreferrer"
+                className={`group flex min-h-52 flex-col rounded-2xl border p-6 transition ${remaining.expired ? "pointer-events-none border-white/10 bg-black/20 opacity-50" : "border-white/10 bg-black/30 hover:-translate-y-1 hover:border-amber-300/50 hover:bg-amber-300/[0.06]"}`}
+              >
+                <h3 className="text-2xl font-black text-white">{formula.name}</h3>
+                <p className="mt-3 flex-1 text-sm leading-relaxed text-zinc-400">{formula.description}</p>
+                <span className="mt-6 inline-flex items-center gap-2 font-black text-amber-300">Voir la formule <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" /></span>
+              </a>
+            ))}
           </div>
         </section>
 
         <p className="mx-auto mt-10 max-w-2xl text-center text-xs leading-relaxed text-zinc-600">Offre valable pour toute nouvelle souscription à un suivi coaching Essential, Elite ou Private Lab avant la date limite affichée. Les semaines offertes prolongent la durée du suivi choisi. La réduction de 99 € s'applique aux formules 8 et 12 semaines.</p>
       </div>
 
-      {!remaining.expired && <div className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-black/85 p-3 backdrop-blur-xl md:hidden"><a href={WHATSAPP_URL} target="_blank" rel="noreferrer" className="flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-amber-300 px-5 font-black text-black shadow-lg shadow-amber-400/20"><MessageCircle className="h-5 w-5" /> Profiter de l'offre <ArrowRight className="h-5 w-5" /></a></div>}
+      {!remaining.expired && <div className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-black/85 p-3 backdrop-blur-xl md:hidden"><a href={FORMULES_URL} target="_blank" rel="noreferrer" className="flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-amber-300 px-5 font-black text-black shadow-lg shadow-amber-400/20">Voir les formules coaching <ArrowRight className="h-5 w-5" /></a></div>}
     </main>
   );
 }
