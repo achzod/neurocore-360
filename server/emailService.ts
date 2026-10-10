@@ -11,6 +11,10 @@ import {
 } from "./peptidesPreviewEmailContent";
 import { createPeptidesPreviewCheckoutToken } from "./peptidesPreviewConversion";
 import { buildReportAccessUrl } from "./auth";
+import {
+  isCriticalTransactionalEmail,
+  shouldBlockForMarketingUnsubscribe,
+} from "./emailDeliveryPolicy";
 
 const SENDPULSE_USER_ID =
   process.env.SENDPULSE_USER_ID || process.env.SENDPULSE_API_USER_ID || "";
@@ -321,19 +325,6 @@ async function fetchSendPulseLiveRecordDetails(
   });
 }
 
-const isCriticalSendPulseEmail = (emailType: string, subject: string): boolean => {
-  const normalized = normalizeSendPulseText(subject);
-  return emailType === "sendReportReadyEmail"
-    || emailType === "sendBloodAnalysisHtmlEmail"
-    || emailType === "sendPeptidesOrderConfirmation"
-    || (emailType === "sendCTAEmail" && (
-      normalized.includes("protocole peptides")
-      || normalized.includes("commande recue")
-      || normalized.includes("paiement recu")
-      || normalized.includes("rapport")
-    ));
-};
-
 async function findRecentSendPulseLiveRecord(
   token: string,
   recipientEmail: string,
@@ -396,9 +387,18 @@ async function sendEmailWithTracking(
   }
 ): Promise<SendPulseSendResult> {
   try {
-    // Check unsubscribe before sending
+    const criticalEmail = isCriticalTransactionalEmail(trackingData.emailType, emailPayload.subject);
+
+    // Marketing consent must never gate authentication, paid-order confirmations,
+    // or paid-report delivery. Transactional messages continue through the SMTP
+    // rail (and its provider fallbacks); marketing messages remain blocked.
     const { storage } = await import("./storage");
-    if (await storage.isEmailUnsubscribed(trackingData.recipientEmail)) {
+    const unsubscribed = await storage.isEmailUnsubscribed(trackingData.recipientEmail);
+    if (shouldBlockForMarketingUnsubscribe(
+      unsubscribed,
+      trackingData.emailType,
+      emailPayload.subject,
+    )) {
       console.log(`[SendPulse] BLOCKED , ${trackingData.recipientEmail} is unsubscribed`);
       await logEmail({
         emailType: trackingData.emailType,
@@ -508,7 +508,6 @@ async function sendEmailWithTracking(
     let sendpulseTaskId = extractSendPulseDeliveryId(result);
     if (sendpulseTaskId) result.id = sendpulseTaskId;
     const liveLookupMetadata: Record<string, any> = {};
-    const criticalEmail = isCriticalSendPulseEmail(trackingData.emailType, emailPayload.subject);
     const allowAcceptedWithoutLiveVerification = trackingData.emailType === "sendReportReadyEmail";
     let liveDeliveryFailure: Record<string, unknown> | null = null;
 
@@ -3232,6 +3231,7 @@ export async function sendMagicLinkEmail(
 ): Promise<boolean> {
   try {
     const magicLink = `${baseUrl}/auth/verify?token=${token}&email=${encodeURIComponent(email)}`;
+    const permanentAccessUrl = `${baseUrl}/auth/login?email=${encodeURIComponent(email)}`;
 
     const content = `
       <h2 style="color: ${COLORS.text}; margin: 0 0 12px; font-size: 26px; text-align: center; font-weight: 700; letter-spacing: -0.5px;">
@@ -3254,7 +3254,7 @@ export async function sendMagicLinkEmail(
       </div>
 
       <p style="color: ${COLORS.textMuted}; font-size: 13px; line-height: 1.6; margin: 20px 0 0; text-align: center;">
-        Ce lien expire dans <strong style="color: ${COLORS.text};">60 minutes</strong>. Si tu n'as pas demande cet acces, ignore cet email.
+        Ce lien sécurisé expire dans <strong style="color: ${COLORS.text};">24 heures</strong>. Ton compte et tes achats restent disponibles sans limite de durée.
       </p>
 
       <div style="margin-top: 18px; padding: 16px; background-color: ${COLORS.surface}; border-radius: 8px; border: 1px solid ${COLORS.border};">
@@ -3265,6 +3265,11 @@ export async function sendMagicLinkEmail(
           <a href="${magicLink}" style="color: ${COLORS.primary}; font-size: 11px; word-break: break-all;">${magicLink}</a>
         </p>
       </div>
+
+      <p style="color: ${COLORS.textMuted}; font-size: 12px; line-height: 1.6; margin: 16px 0 0; text-align: center;">
+        Garde cette adresse permanente pour revenir à ton espace :
+        <a href="${permanentAccessUrl}" style="color: ${COLORS.primary}; word-break: break-all;">${permanentAccessUrl}</a>
+      </p>
     `;
 
     const emailContent = getEmailWrapper(
@@ -3283,7 +3288,7 @@ export async function sendMagicLinkEmail(
         },
         to: [{ email }],
         html: encodeBase64(emailContent),
-        text: `Acces ApexLabs - Clique sur ce lien pour acceder a ton espace client : ${magicLink}`,
+        text: `Acces ApexLabs - Lien sécurisé valable 24 heures : ${magicLink}\n\nAdresse permanente de ton espace : ${permanentAccessUrl}`,
       },
       {
         emailType: "sendMagicLinkEmail",

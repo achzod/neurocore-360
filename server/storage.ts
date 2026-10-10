@@ -788,7 +788,7 @@ export class MemStorage implements IStorage {
 
   async createMagicToken(email: string): Promise<string> {
     const token = randomUUID();
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
     const normalizedEmail = email.trim().toLowerCase();
     this.magicTokens.set(token, { token, email: normalizedEmail, expiresAt });
     return token;
@@ -2429,7 +2429,7 @@ export class PgStorage implements IStorage {
     const token = randomUUID();
     const id = randomUUID();
     const normalizedEmail = email.trim().toLowerCase();
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
     const columns = await this.getMagicTokensColumns();
     const values: Array<string | Date> = [];
     const fields: string[] = [];
