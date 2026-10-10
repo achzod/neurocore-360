@@ -104,6 +104,16 @@ export default function CoachingOffer() {
               </div>
             </div>
           ) : <div className="mx-auto mt-9 max-w-xl rounded-2xl border border-red-400/30 bg-red-500/10 p-5 font-semibold text-red-100">Cette offre est terminée.</div>}
+
+          {!remaining.expired && (
+            <div className="mx-auto mt-5 flex max-w-xl flex-col items-center gap-3 rounded-2xl border border-amber-300/50 bg-amber-300/[0.12] px-5 py-5 shadow-[0_16px_50px_-24px_rgba(251,191,36,.85)] sm:flex-row sm:justify-between sm:text-left">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-200">Code de réduction</p>
+                <p className="mt-1 text-sm text-zinc-200">À utiliser pour les suivis de 8 et 12 semaines</p>
+              </div>
+              <code className="rounded-xl border border-amber-200/50 bg-black/50 px-5 py-3 text-2xl font-black tracking-[0.14em] text-amber-300">BLOOD99</code>
+            </div>
+          )}
         </section>
 
         <section className="mt-14 grid gap-4 lg:grid-cols-3" aria-label="Options de suivi">
