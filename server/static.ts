@@ -31,7 +31,7 @@ interface BlogArticle {
   readTime?: string;
 }
 
-type BlogIntent = "discovery" | "anabolic" | "blood" | "ultimate" | "formcheck" | "peptides";
+type BlogIntent = "discovery" | "anabolic" | "blood" | "ultimate" | "formcheck" | "peptides" | "coaching";
 
 type BlogIntentCta = {
   intent: BlogIntent;
@@ -105,34 +105,34 @@ function stripMarkdown(input: string): string {
 function buildMetaDescription(article: BlogArticle): string {
   const target = 155;
   const floor = 80;
+  const escapedTitle = article.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-  const explicit = stripMarkdown(article.metaDescription || "");
-  if (explicit) return explicit;
+  const cleanLead = (value: string): string => stripMarkdown(value)
+    .replace(new RegExp(`^${escapedTitle}\\s*(?:[-:–—]\\s*)?`, "i"), "")
+    .replace(/^introduction\s*:\s*/i, "")
+    .trim();
 
-  const content = article.content ? stripMarkdown(article.content) : "";
-  const excerpt = stripMarkdown(article.excerpt || "");
+  const shorten = (source: string): string => {
+    if (source.length <= target) return source;
+    const slice = source.slice(0, target);
+    const lastSentence = Math.max(
+      slice.lastIndexOf(". "),
+      slice.lastIndexOf("? "),
+      slice.lastIndexOf("! "),
+    );
+    if (lastSentence >= floor) return slice.slice(0, lastSentence + 1);
+    const lastSpace = slice.lastIndexOf(" ", target - 1);
+    if (lastSpace >= floor) return `${slice.slice(0, lastSpace)}…`;
+    return `${slice.slice(0, target - 1)}…`;
+  };
 
-  // Prefer content first-meaningful-sentence; fall back to excerpt.
+  const explicit = cleanLead(article.metaDescription || "");
+  if (explicit) return shorten(explicit);
+
+  const content = cleanLead(article.content || "");
+  const excerpt = cleanLead(article.excerpt || "");
   const source = content.length > floor ? content : excerpt;
-  if (!source) return excerpt.slice(0, target);
-
-  if (source.length <= target) return source;
-
-  // Cut at sentence boundary closest to target without passing 170.
-  const hard = Math.min(source.length, target + 20);
-  const slice = source.slice(0, hard);
-  const lastSentence = Math.max(
-    slice.lastIndexOf(". "),
-    slice.lastIndexOf("? "),
-    slice.lastIndexOf("! "),
-  );
-  if (lastSentence >= floor) {
-    return slice.slice(0, lastSentence + 1);
-  }
-  // Otherwise cut at last space before target to avoid mid-word.
-  const lastSpace = slice.lastIndexOf(" ", target);
-  if (lastSpace >= floor) return slice.slice(0, lastSpace) + "...";
-  return slice.slice(0, target) + "...";
+  return source ? shorten(source) : "";
 }
 
 function encodePathSegment(value: string): string {
@@ -160,7 +160,7 @@ function getBlogIntentCta(article: BlogArticle): BlogIntentCta {
       title: "Quel protocole peptides correspond vraiment a ton profil ?",
       body:
         "Le Pre-Peptides Engine gratuit cadre d'abord ton objectif, ton contexte et ton budget avant l'analyse complete.",
-      href: `${BASE_URL}/peptides-preview?utm_source=blog&utm_medium=article_cta&utm_campaign=peptides_performance_preview`,
+      href: `${BASE_URL}/peptides-preview`,
       label: "Lancer mon Pre-Peptides gratuit",
     };
   }
@@ -171,7 +171,7 @@ function getBlogIntentCta(article: BlogArticle): BlogIntentCta {
       title: "Tu as les resultats : transforme-les en priorites lisibles.",
       body:
         "Blood Analysis structure la lecture des marqueurs autour de la recuperation, du profil hormonal, des lipides et du foie.",
-      href: `${BASE_URL}/offers/blood-analysis?utm_source=blog&utm_medium=article_cta&utm_campaign=pct_sarms_blood_analysis`,
+      href: `${BASE_URL}/offers/blood-analysis`,
       label: "Analyser mon bilan post-cycle",
     };
   }
@@ -182,7 +182,7 @@ function getBlogIntentCta(article: BlogArticle): BlogIntentCta {
       title: "Un cycle ne se pilote pas uniquement au ressenti.",
       body:
         "Blood Analysis organise les marqueurs disponibles pour reperer les priorites de suivi avant de conclure sur la recuperation.",
-      href: `${BASE_URL}/offers/blood-analysis?utm_source=blog&utm_medium=article_cta&utm_campaign=rad140_blood_analysis`,
+      href: `${BASE_URL}/offers/blood-analysis`,
       label: "Faire lire mes marqueurs",
     };
   }
@@ -196,7 +196,7 @@ function getBlogIntentCta(article: BlogArticle): BlogIntentCta {
       title: "Avant de toucher aux peptides, cadre le protocole et le monitoring.",
       body:
         "Peptides Engine aide a relier objectif, contexte, risques, bilan sanguin, timing et coherence du protocole avant toute decision.",
-      href: `${BASE_URL}/offers/peptides-engine?utm_source=blog&utm_medium=article_cta&utm_campaign=peptides_intent`,
+      href: `${BASE_URL}/offers/peptides-engine`,
       label: "Voir Peptides Engine",
     };
   }
@@ -207,7 +207,7 @@ function getBlogIntentCta(article: BlogArticle): BlogIntentCta {
       title: "Si tu stagnes malgre l'entrainement, lis ton profil complet.",
       body:
         "Anabolic Bioscan relie sommeil, stress, recuperation, nutrition et signaux hormonaux pour sortir du conseil generique.",
-      href: `${BASE_URL}/offers/anabolic-bioscan?utm_source=blog&utm_medium=article_cta&utm_campaign=hormone_intent`,
+      href: `${BASE_URL}/offers/anabolic-bioscan`,
       label: "Faire l'Anabolic Bioscan",
     };
   }
@@ -218,8 +218,19 @@ function getBlogIntentCta(article: BlogArticle): BlogIntentCta {
       title: "Ton bilan sanguin peut expliquer ce que les photos ne montrent pas.",
       body:
         "Blood Analysis transforme les marqueurs en priorites concretes pour energie, recuperation, metabolisme et suivi.",
-      href: `${BASE_URL}/offers/blood-analysis?utm_source=blog&utm_medium=article_cta&utm_campaign=blood_intent`,
+      href: `${BASE_URL}/offers/blood-analysis`,
       label: "Analyser mon bilan",
+    };
+  }
+
+  if (category === "musculation" || /prise de masse|seche|sèche|perte de gras|recomposition|deficit calorique|déficit calorique/.test(text)) {
+    return {
+      intent: "coaching",
+      title: "Tu veux ce plan adapte a ton niveau, ton rythme et ton objectif ?",
+      body:
+        "Le coaching AchZod transforme la theorie en plan d'entrainement et nutrition ajuste chaque semaine selon ta progression.",
+      href: "https://www.achzodcoaching.com/formules-coaching",
+      label: "Voir les suivis coaching",
     };
   }
 
@@ -229,7 +240,7 @@ function getBlogIntentCta(article: BlogArticle): BlogIntentCta {
       title: "Si le blocage vient du mouvement, il faut voir l'execution.",
       body:
         "FormCheck donne une lecture biomecanique sur video avec les corrections prioritaires a appliquer des la prochaine seance.",
-      href: `${BASE_URL}/offers/formcheck?utm_source=blog&utm_medium=article_cta&utm_campaign=formcheck_intent`,
+      href: `${BASE_URL}/offers/formcheck`,
       label: "Faire analyser ma technique",
     };
   }
@@ -240,7 +251,7 @@ function getBlogIntentCta(article: BlogArticle): BlogIntentCta {
       title: "Quand plusieurs signaux se croisent, priorise le vrai limiteur.",
       body:
         "Ultimate Scan relie sommeil, stress, recuperation, nutrition, posture et habitudes pour savoir quoi corriger en premier.",
-      href: `${BASE_URL}/offers/ultimate-scan?utm_source=blog&utm_medium=article_cta&utm_campaign=recovery_intent`,
+      href: `${BASE_URL}/offers/ultimate-scan`,
       label: "Voir Ultimate Scan",
     };
   }
@@ -250,7 +261,7 @@ function getBlogIntentCta(article: BlogArticle): BlogIntentCta {
     title: "Tu veux savoir ce qui bloque vraiment ta progression ?",
     body:
       "Le Discovery Scan gratuit analyse les grands leviers en quelques minutes et sort une prochaine action claire.",
-    href: `${BASE_URL}/offers/discovery-scan?utm_source=blog&utm_medium=article_cta&utm_campaign=general_intent`,
+    href: `${BASE_URL}/offers/discovery-scan`,
     label: "Faire mon Discovery Scan",
   };
 }
@@ -399,7 +410,7 @@ const BLOG_PILLARS: BlogPillar[] = [
     title: "Perte de gras : métabolisme, nutrition et progression",
     description:
       "Articles APEXLABS pour comprendre pourquoi la perte de gras bloque : calories, glycémie, sommeil, stress, NEAT, digestion et signaux hormonaux.",
-    offerHref: `${BASE_URL}/offers/discovery-scan?utm_source=blog&utm_medium=pillar_cta&utm_campaign=fat_loss_pillar`,
+    offerHref: `${BASE_URL}/offers/discovery-scan`,
     offerLabel: "Faire le Discovery Scan",
     keywords: /perte de gras|maigr|seche|sèche|cut|coupe|calorie|recomposition|glyc|insuline|metabol|métabol|ventre|graisse|poids/i,
   },
@@ -409,7 +420,7 @@ const BLOG_PILLARS: BlogPillar[] = [
     title: "Testostérone et hormones : lire les vrais signaux",
     description:
       "Guides sur testostérone, cortisol, thyroïde, libido, récupération et hormones pour relier les symptômes, l'entraînement et les données.",
-    offerHref: `${BASE_URL}/offers/anabolic-bioscan?utm_source=blog&utm_medium=pillar_cta&utm_campaign=hormone_pillar`,
+    offerHref: `${BASE_URL}/offers/anabolic-bioscan`,
     offerLabel: "Faire l'Anabolic Bioscan",
     keywords: /testost|hormone|cortisol|thyro|libido|estradiol|igf|anabol|récup|recup|stress/i,
   },
@@ -419,7 +430,7 @@ const BLOG_PILLARS: BlogPillar[] = [
     title: "Bilan sanguin : biomarqueurs pour performance et santé",
     description:
       "Articles pour savoir quels marqueurs regarder : glycémie, lipides, CRP, ferritine, vitamine D, foie, reins, thyroïde et inflammation.",
-    offerHref: `${BASE_URL}/offers/blood-analysis?utm_source=blog&utm_medium=pillar_cta&utm_campaign=blood_pillar`,
+    offerHref: `${BASE_URL}/offers/blood-analysis`,
     offerLabel: "Analyser mon bilan",
     keywords: /bilan sanguin|biomarqueur|prise de sang|glyc|cholest|ldl|hdl|foie|rein|crp|ferritine|vitamine d|insuline|inflammation/i,
   },
@@ -429,7 +440,7 @@ const BLOG_PILLARS: BlogPillar[] = [
     title: "Peptides, SARMs et PEDs : risques, logique et monitoring",
     description:
       "Analyses éducatives sur peptides, SARMs, HGH, IGF-1, bénéfices supposés, limites, risques et suivi nécessaire avant toute décision.",
-    offerHref: `${BASE_URL}/offers/peptides-engine?utm_source=blog&utm_medium=pillar_cta&utm_campaign=peptides_pillar`,
+    offerHref: `${BASE_URL}/offers/peptides-engine`,
     offerLabel: "Voir Peptides Engine",
     keywords: /peptide|sarm|peds|hgh|igf|mk-677|rad-140|lgd|ostarine|pct|steroid|stéro/i,
   },
@@ -760,7 +771,7 @@ ${links ? `<nav aria-label="Pages principales"><ul>${links}</ul></nav>` : ""}
       return sendNotFound(res, req.path);
     }
 
-    const title = article.seoTitle || `${article.title} | APEXLABS Blog`;
+    const title = article.seoTitle || article.title;
     const description = esc(buildMetaDescription(article));
     const url = `${BASE_URL}/blog/${encodePathSegment(article.slug)}`;
     const image = article.image || article.imageUrl || DEFAULT_OG_IMAGE;

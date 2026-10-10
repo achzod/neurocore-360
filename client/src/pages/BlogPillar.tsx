@@ -22,7 +22,7 @@ const PILLARS: Pillar[] = [
     title: "Perte de gras : métabolisme, nutrition et progression",
     description:
       "Articles APEXLABS pour comprendre pourquoi la perte de gras bloque : calories, glycémie, sommeil, stress, NEAT, digestion et signaux hormonaux.",
-    offerHref: "/offers/discovery-scan?utm_source=blog&utm_medium=pillar_cta&utm_campaign=fat_loss_pillar",
+    offerHref: "/offers/discovery-scan",
     offerLabel: "Faire le Discovery Scan",
     keywords: /perte de gras|maigr|seche|sèche|cut|coupe|calorie|recomposition|glyc|insuline|metabol|métabol|ventre|graisse|poids/i,
   },
@@ -32,7 +32,7 @@ const PILLARS: Pillar[] = [
     title: "Testostérone et hormones : lire les vrais signaux",
     description:
       "Guides sur testostérone, cortisol, thyroïde, libido, récupération et hormones pour relier les symptômes, l'entraînement et les données.",
-    offerHref: "/offers/anabolic-bioscan?utm_source=blog&utm_medium=pillar_cta&utm_campaign=hormone_pillar",
+    offerHref: "/offers/anabolic-bioscan",
     offerLabel: "Faire l'Anabolic Bioscan",
     keywords: /testost|hormone|cortisol|thyro|libido|estradiol|igf|anabol|récup|recup|stress/i,
   },
@@ -42,7 +42,7 @@ const PILLARS: Pillar[] = [
     title: "Bilan sanguin : biomarqueurs pour performance et santé",
     description:
       "Articles pour savoir quels marqueurs regarder : glycémie, lipides, CRP, ferritine, vitamine D, foie, reins, thyroïde et inflammation.",
-    offerHref: "/offers/blood-analysis?utm_source=blog&utm_medium=pillar_cta&utm_campaign=blood_pillar",
+    offerHref: "/offers/blood-analysis",
     offerLabel: "Analyser mon bilan",
     keywords: /bilan sanguin|biomarqueur|prise de sang|glyc|cholest|ldl|hdl|foie|rein|crp|ferritine|vitamine d|insuline|inflammation/i,
   },
@@ -52,7 +52,7 @@ const PILLARS: Pillar[] = [
     title: "Peptides, SARMs et PEDs : risques, logique et monitoring",
     description:
       "Analyses éducatives sur peptides, SARMs, HGH, IGF-1, bénéfices supposés, limites, risques et suivi nécessaire avant toute décision.",
-    offerHref: "/peptides-preview?utm_source=blog&utm_medium=pillar_cta&utm_campaign=pre_peptides_engine",
+    offerHref: "/peptides-preview",
     offerLabel: "Voir Peptides Engine",
     keywords: /peptide|sarm|peds|hgh|igf|mk-677|rad-140|lgd|ostarine|pct|steroid|stéro/i,
   },
