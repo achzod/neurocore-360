@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { jsonrepair } from "jsonrepair";
 import { pruneUnintegratedBonusPeptides } from "./peptidesReportRepair";
 import { validatePeptidesReport, type PeptidesValidation } from "./peptidesReportValidator";
+import { hashPeptidesReport } from "./peptidesReleaseHashGate";
 import type { PeptidesReport } from "./peptidesEngine";
 
 export const STORED_PEPTIDES_RECOVERY_CONFIRMATION = "APPLY_STORED_PEPTIDES_RECOVERY";
@@ -82,6 +83,9 @@ export function parseStoredPeptidesResponse(raw: string): PeptidesReport {
 export function dedupeStoredRecoverySectionSentences(report: PeptidesReport): PeptidesReport {
   const seen = new Set<string>();
   for (const section of report.sections || []) {
+    const preserveOperationalTruth = /reconstitution|protocole|semaine type|calendrier|shopping|liste de courses/i.test(
+      `${section.id || ""} ${section.title || ""}`,
+    );
     const sentences = String(section.content || "")
       .split(/(?<=[.!?])(?:\s+|\n+)/)
       .map((sentence) => sentence.trim())
@@ -89,8 +93,8 @@ export function dedupeStoredRecoverySectionSentences(report: PeptidesReport): Pe
     const retained: string[] = [];
     for (const sentence of sentences) {
       const key = sentence.toLowerCase().replace(/\s+/g, " ").trim();
-      if (key.length >= 35 && seen.has(key)) continue;
-      if (key.length >= 35) seen.add(key);
+      if (!preserveOperationalTruth && key.length >= 35 && seen.has(key)) continue;
+      if (!preserveOperationalTruth && key.length >= 35) seen.add(key);
       retained.push(sentence);
     }
     section.content = retained.join(" ");
@@ -259,7 +263,7 @@ export async function buildStoredPeptidesRecoveryCandidate(input: {
     safetyErrors,
     fingerprint,
     responseId,
-    ready: validation.ok && safetyErrors.length === 0,
+    ready: validation.ok && validation.warnings.length === 0 && safetyErrors.length === 0,
   };
 }
 
@@ -304,16 +308,28 @@ export async function persistStoredPeptidesRecoveryUnderHold(input: {
   confirmation: string;
   candidate: StoredPeptidesRecoveryCandidate;
   responses: Record<string, unknown>;
-}): Promise<{ reportId: string; fingerprint: string }> {
+}): Promise<{
+  reportId: string;
+  fingerprint: string;
+  approvedReportSha256: string;
+  generationCompletedAt: string;
+  emailScheduledAt: string;
+}> {
   if (input.confirmation !== STORED_PEPTIDES_RECOVERY_CONFIRMATION) {
     throw new Error("RECOVERY_EXPLICIT_CONFIRMATION_REQUIRED");
   }
   const responseId = responseIdOrThrow(input.responseId);
   if (responseId !== input.candidate.responseId) throw new Error("RECOVERY_RESPONSE_ID_MISMATCH");
-  if (!input.candidate.ready || !input.candidate.validation.ok || input.candidate.safetyErrors.length > 0) {
+  if (
+    !input.candidate.ready
+    || !input.candidate.validation.ok
+    || input.candidate.validation.warnings.length > 0
+    || input.candidate.safetyErrors.length > 0
+  ) {
     throw new Error("RECOVERY_CANDIDATE_NOT_DELIVERABLE");
   }
   const reportId = randomUUID();
+  const approvedReportSha256 = hashPeptidesReport(input.candidate.report);
   await input.client.query("BEGIN");
   try {
     const locked = await input.client.query<RecoveryOrderRow>(
@@ -344,16 +360,26 @@ export async function persistStoredPeptidesRecoveryUnderHold(input: {
         JSON.stringify(input.candidate.report),
       ],
     );
-    const linked = await input.client.query(
+    const linked = await input.client.query<{
+      generation_completed_at: string;
+      email_scheduled_at: string;
+    }>(
       `UPDATE orders
           SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
                 'peptidesReportId', $1::text,
                 'peptidesGenerationState', 'SUCCEEDED',
                 'peptidesGenerationLeaseUntil', '',
                 'peptidesGenerationCompletedAt', NOW()::text,
+                'peptidesEmailScheduledAt', (NOW() + INTERVAL '24 hours')::text,
+                'peptidesEmailScheduleAnchor', 'generation_plus_24h_v1',
                 'peptidesRecoveredFromResponseId', $2::text,
                 'peptidesRecoveryFingerprint', $3::text,
                 'peptidesRecoveryAppliedAt', NOW()::text,
+                'peptidesApprovedReportSha256', $6::text,
+                'peptidesApprovedAt', NOW()::text,
+                'peptidesApprovedBy', 'stored_response_recovery',
+                'peptidesHashGateApprovalRequired', true,
+                'peptidesReleaseAuditVerdict', 'PENDING_INDEPENDENT_AUDIT',
                 'peptidesEmailHold', true
               ),
               updated_at = NOW()
@@ -363,12 +389,26 @@ export async function persistStoredPeptidesRecoveryUnderHold(input: {
           AND status = 'paid'
           AND COALESCE(metadata->>'peptidesEmailHold', 'false') = 'true'
           AND COALESCE(metadata->>'peptidesReportId', '') = ''
-        RETURNING id`,
-      [reportId, responseId, input.candidate.fingerprint, input.orderId, normalizeEmail(input.email)],
+        RETURNING metadata->>'peptidesGenerationCompletedAt' AS generation_completed_at,
+                  metadata->>'peptidesEmailScheduledAt' AS email_scheduled_at`,
+      [
+        reportId,
+        responseId,
+        input.candidate.fingerprint,
+        input.orderId,
+        normalizeEmail(input.email),
+        approvedReportSha256,
+      ],
     );
     if ((linked.rowCount ?? linked.rows.length) !== 1) throw new Error("RECOVERY_LINK_CAS_FAILED");
     await input.client.query("COMMIT");
-    return { reportId, fingerprint: input.candidate.fingerprint };
+    return {
+      reportId,
+      fingerprint: input.candidate.fingerprint,
+      approvedReportSha256,
+      generationCompletedAt: linked.rows[0].generation_completed_at,
+      emailScheduledAt: linked.rows[0].email_scheduled_at,
+    };
   } catch (error) {
     await input.client.query("ROLLBACK").catch(() => undefined);
     throw error;

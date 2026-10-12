@@ -448,7 +448,8 @@ function anchorExpertPeptideRationales(
   for (const [index, peptide] of (report.peptides || []).entries()) {
     const rationale = sanitizeClientFacingText(peptide.whyThisPeptide || "").trim();
     const matchedFacts = facts.filter((fact) => fact.pattern.test(rationale));
-    if (matchedFacts.length < 2) {
+    const speaksDirectlyToClient = /\b(?:tu|ton|ta|tes|toi|chez toi|dans ton)\b/i.test(rationale);
+    if (matchedFacts.length < 2 || !speaksDirectlyToClient) {
       const missingFacts = facts.filter((fact) => !fact.pattern.test(rationale));
       const selectedFacts = [...matchedFacts, ...missingFacts].slice(0, 2);
       if (selectedFacts.length >= 2) {
@@ -614,6 +615,14 @@ function removeUnsupportedDescent(
 
   const cleaned = original
     .replace(
+      /\bAucune\s+(?:phase\s+de\s+)?(?:descente|diminution|r[ée]duction|baisse)(?:\s+progressive)?[^.]*\.?/gi,
+      ""
+    )
+    .replace(
+      /\s+(?:et\s+)?sans\s+(?:phase\s+de\s+)?(?:descente|diminution|r[ée]duction|baisse)(?:\s+progressive)?[^,.;)]*/gi,
+      ""
+    )
+    .replace(
       /\([^)]*(?:descente|diminution|r[ée]duction|baisse)(?:\s+progressive)?[^)]*\)/gi,
       ""
     )
@@ -623,6 +632,7 @@ function removeUnsupportedDescent(
     )
     .replace(/\s*,\s*,/g, ",")
     .replace(/\(\s*\)/g, "")
+    .replace(/\b(?:sans|et sans|auc)\s*[.;](?=\s|$)/gi, "")
     .replace(/\b(?:puis|et)\s+arr[êe]t\s+sans\b\.?/gi, "puis arrêt")
     .replace(/\barr[êe]t\s+sans\b\.?/gi, "arrêt")
     .replace(/\s{2,}/g, " ")

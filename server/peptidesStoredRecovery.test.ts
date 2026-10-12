@@ -34,6 +34,19 @@ test("stored recovery removes repeated long section sentences but keeps the firs
   assert.match(report.sections[1].content, /Deuxieme detail/);
 });
 
+test("stored recovery preserves repeated operational facts required by the delivery gate", () => {
+  const dosage = "Dose exacte: 300 mcg une fois par jour, besoin actif 25,2 mg et cible avec reserve 31,5 mg.";
+  const report = dedupeStoredRecoverySectionSentences({
+    clientName: "Amayas",
+    sections: [
+      { id: "reconstitution-guide", title: "Guide de reconstitution", content: dosage },
+      { id: "protocole-pratique", title: "Protocole pratique", content: dosage },
+    ],
+  } as any);
+  assert.match(report.sections[0].content, /besoin actif 25,2 mg/);
+  assert.match(report.sections[1].content, /besoin actif 25,2 mg/);
+});
+
 test("obsolete source-unavailable sentence is removed only after official pricing is verified", () => {
   const stale = "Nombre de vials non calculable tant que le format live manque, aucune commande autorisée.";
   const priced = {
@@ -155,6 +168,21 @@ test("apply requires a fully valid candidate before opening a transaction", asyn
   assert.equal(client.calls.length, 0);
 });
 
+test("apply refuses validator warnings even when the validator reports ok", async () => {
+  const client = new FakeClient({ peptidesEmailHold: true });
+  const candidate = validCandidate();
+  candidate.validation.warnings = ["live price warning"];
+  await assert.rejects(
+    persistStoredPeptidesRecoveryUnderHold({
+      ...baseInput,
+      client,
+      candidate,
+    }),
+    /RECOVERY_CANDIDATE_NOT_DELIVERABLE/,
+  );
+  assert.equal(client.calls.length, 0);
+});
+
 test("apply inserts and CAS-links atomically while retaining HOLD", async () => {
   const client = new FakeClient({ peptidesEmailHold: true });
   const result = await persistStoredPeptidesRecoveryUnderHold({ ...baseInput, client });
@@ -164,6 +192,10 @@ test("apply inserts and CAS-links atomically while retaining HOLD", async () => 
   const update = client.calls.find((call) => /UPDATE orders/.test(call.text));
   assert.ok(update);
   assert.match(update.text, /peptidesEmailHold', true/);
+  assert.match(update.text, /peptidesEmailScheduledAt/);
+  assert.match(update.text, /generation_plus_24h_v1/);
+  assert.match(update.text, /peptidesApprovedReportSha256/);
+  assert.match(update.text, /PENDING_INDEPENDENT_AUDIT/);
   assert.match(update.text, /COALESCE\(metadata->>'peptidesReportId', ''\) = ''/);
   assert.equal(client.calls.at(-1)?.text, "COMMIT");
 });

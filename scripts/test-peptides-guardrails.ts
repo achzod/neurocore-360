@@ -383,6 +383,49 @@ assert.equal(
 assert.match(repairedGenericRationale.peptides[0].whyThisPeptide, /80\s*kg/i);
 assert.match(repairedGenericRationale.peptides[0].whyThisPeptide, /perte de (?:gras|graisse)/i);
 
+const thirdPersonRationale = structuredClone(personalizedReport) as any;
+thirdPersonRationale.peptides[0].whyThisPeptide =
+  "Luca vise la perte de graisse a 80 kg et garde un budget de 100 a 200 EUR. Cette molecule structure cet axe sans ajouter de complexite inutile pour un debutant.";
+const repairedThirdPersonRationale = repairPeptidesReportContent(
+  thirdPersonRationale,
+  {
+    pep_name: "Luca",
+    pep_weight: 80,
+    pep_primary_goal: "fatloss",
+    pep_country: "France",
+    pep_budget: "100-200",
+    pep_timeline: "solid",
+    pep_experience: "none",
+    pep_injection_comfort: "anxious",
+  },
+  "solo"
+) as any;
+assert.match(
+  repairedThirdPersonRationale.peptides[0].whyThisPeptide,
+  /\b(?:tu|ton|ta|tes|toi)\b/i,
+  "Une justification riche en faits doit quand meme parler directement au client"
+);
+
+for (const [input, forbidden] of [
+  ["12 semaines actives, sans montée de dose et sans descente. Arrêt après la semaine 12.", /sans\s*[.]/i],
+  ["8 semaines actives, sans descente.", /sans\s*[.]/i],
+  ["4 semaines actives. Aucune descente.", /\bAuc\s*[.]|descente/i],
+] as const) {
+  const durationReport = structuredClone(personalizedReport) as any;
+  durationReport.peptides[0].cycleDuration = input;
+  const repairedDuration = repairPeptidesReportContent(durationReport, {
+    pep_name: "Luca",
+    pep_weight: 80,
+    pep_primary_goal: "fatloss",
+    pep_country: "France",
+    pep_budget: "100-200",
+    pep_timeline: "solid",
+    pep_experience: "none",
+    pep_injection_comfort: "anxious",
+  }, "solo") as any;
+  assert.doesNotMatch(repairedDuration.peptides[0].cycleDuration, forbidden);
+}
+
 const onceAnchoredRationale = repairedGenericRationale.peptides[0].whyThisPeptide;
 const twiceRepairedGenericRationale = repairPeptidesReportContent(
   repairedGenericRationale,
