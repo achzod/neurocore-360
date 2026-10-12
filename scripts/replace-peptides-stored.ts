@@ -4,6 +4,7 @@ import { retrieveStoredOpenAIResponseText } from "../server/openaiResponses";
 import { hasValidPeptidesConsent } from "../server/peptidesConsent";
 import { refreshPeptauraPricingForDelivery, type PeptidesReport } from "../server/peptidesEngine";
 import { buildStoredPeptidesRecoveryCandidate, loadStoredPeptidesRecoveryOrder } from "../server/peptidesStoredRecovery";
+import { hashPeptidesReport } from "../server/peptidesReleaseHashGate";
 
 function arg(name: string): string {
   const i = process.argv.indexOf(name);
@@ -50,11 +51,12 @@ async function main(): Promise<void> {
       const locked = await client.query(`SELECT metadata FROM orders WHERE id=$1 AND lower(email)=lower($2) AND product_type='PEPTIDES_ENGINE' AND status='paid' FOR UPDATE`, [orderId, email]);
       const live = locked.rows[0]?.metadata || {};
       if (String(live.peptidesReportId || "") !== reportId || String(live.peptidesEmailHold).toLowerCase() !== "true") throw new Error("LIVE_GUARD_FAILED");
-      const updated = await client.query(`UPDATE burnout_reports SET report=$1::jsonb, responses=$2::jsonb WHERE id=$3 AND email=$4 RETURNING id`, [JSON.stringify(candidate.report), JSON.stringify(responses), reportId, `peptides::${email}`]);
+      const updated = await client.query<{ id: string; report: PeptidesReport }>(`UPDATE burnout_reports SET report=$1::jsonb, responses=$2::jsonb WHERE id=$3 AND email=$4 RETURNING id,report`, [JSON.stringify(candidate.report), JSON.stringify(responses), reportId, `peptides::${email}`]);
       if ((updated.rowCount || 0) !== 1) throw new Error("REPORT_UPDATE_CAS_FAILED");
-      await client.query(`UPDATE orders SET metadata=metadata || jsonb_build_object('peptidesGenerationState','SUCCEEDED','peptidesRecoveredFromResponseId',$1::text,'peptidesRecoveryFingerprint',$2::text,'peptidesRecoveryAppliedAt',NOW()::text,'peptidesEmailHold',true), updated_at=NOW() WHERE id=$3`, [responseId, candidate.fingerprint, orderId]);
+      const approvedReportSha256 = hashPeptidesReport(updated.rows[0].report);
+      await client.query(`UPDATE orders SET metadata=metadata || jsonb_build_object('peptidesGenerationState','SUCCEEDED','peptidesRecoveredFromResponseId',$1::text,'peptidesRecoveryFingerprint',$2::text,'peptidesRecoveryAppliedAt',NOW()::text,'peptidesApprovedReportSha256',$4::text,'peptidesApprovedAt',NOW()::text,'peptidesApprovedBy','stored_response_replacement','peptidesHashGateApprovalRequired',true,'peptidesReleaseAuditVerdict','PENDING_INDEPENDENT_AUDIT','peptidesEmailHold',true), updated_at=NOW() WHERE id=$3`, [responseId, candidate.fingerprint, orderId, approvedReportSha256]);
       await client.query("COMMIT");
-      console.log(JSON.stringify({ applied: true, reportId, holdRetained: true, providerInferenceUsed: false, emailSent: false }));
+      console.log(JSON.stringify({ applied: true, reportId, approvedReportSha256, holdRetained: true, providerInferenceUsed: false, emailSent: false }));
     } catch (error) {
       await client.query("ROLLBACK").catch(() => undefined);
       throw error;

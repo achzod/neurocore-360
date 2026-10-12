@@ -130,6 +130,23 @@ test("approved report ignores live-source timestamp churn without mutating stora
   assert.equal(result.persistRefreshed, false);
 });
 
+test("approved report ignores formatting-only whitespace changes during live refresh", () => {
+  const current = {
+    sections: [{ id: "protocole-pratique", content: "Dose exacte.\n\nTiming exact." }],
+  };
+  const refreshed = {
+    sections: [{ id: "protocole-pratique", content: "Dose exacte. Timing exact." }],
+  };
+  const result = evaluatePeptidesReleaseHashGate({
+    approvedHash: hashPeptidesReport(current),
+    currentReport: current,
+    refreshedReport: refreshed,
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.persistRefreshed, false);
+  assert.equal(result.currentContentHash, result.refreshedContentHash);
+});
+
 test("approved report ignores whole-catalog count and blocked-vendor ordering churn", () => {
   const current = {
     peptides: [{ name: "BPC-157", priceEstimate: "$99.60" }],

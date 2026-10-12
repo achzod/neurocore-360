@@ -433,6 +433,9 @@ function anchorExpertPeptideRationales(
 ): void {
   const facts = buildRationaleProfileFacts(responses);
   if (facts.length < 2) return;
+  const firstName = sanitizeClientFacingText(
+    String(responses.pep_name || responses.prenom || responses.firstName || report.clientName || "").trim().split(/\s+/)[0]
+  );
 
   const templates = [
     (name: string, first: string, second: string) =>
@@ -440,13 +443,19 @@ function anchorExpertPeptideRationales(
     (name: string, first: string, second: string) =>
       `Pour ${name}, je garde le lien avec ton dossier bien visible: ${first}, et ${second}.`,
     (name: string, first: string, second: string) =>
-      `Le choix de ${name} part directement de ton profil: ${first}, avec ${second}.`,
+      `Le choix de ${name} part directement de ton profil: ${first}, et ${second}.`,
     (name: string, first: string, second: string) =>
       `${name} n'est pas ajoute au hasard dans ton stack: ${first} et ${second} structurent ce choix.`,
   ];
 
   for (const [index, peptide] of (report.peptides || []).entries()) {
-    const rationale = sanitizeClientFacingText(peptide.whyThisPeptide || "").trim();
+    let rationale = sanitizeClientFacingText(peptide.whyThisPeptide || "").trim();
+    if (firstName) {
+      rationale = rationale
+        .replace(new RegExp(`${firstName}\\s+veut\\s+maintenir\\s+son`, "gi"), "Tu veux maintenir ton")
+        .replace(/\bson anxi[ée]t[ée] d['’]injection\b/gi, "ton apprehension face aux injections");
+      peptide.whyThisPeptide = rationale;
+    }
     const matchedFacts = facts.filter((fact) => fact.pattern.test(rationale));
     const speaksDirectlyToClient = /\b(?:tu|ton|ta|tes|toi|chez toi|dans ton)\b/i.test(rationale);
     if (matchedFacts.length < 2 || !speaksDirectlyToClient) {
@@ -631,6 +640,7 @@ function removeUnsupportedDescent(
       ""
     )
     .replace(/\s*,\s*,/g, ",")
+    .replace(/\s*,\s*\./g, ".")
     .replace(/\(\s*\)/g, "")
     .replace(/\b(?:sans|et sans|auc)\s*[.;](?=\s|$)/gi, "")
     .replace(/\b(?:puis|et)\s+arr[êe]t\s+sans\b\.?/gi, "puis arrêt")
@@ -1099,7 +1109,11 @@ function synchronizeStandardShoppingNarrative(
 
 function normalizeSingleVialGrammar(report: RepairableReport): void {
   const normalize = (value: string): string =>
-    sanitizeClientFacingText(value.replace(/\b1\s+vials\b/gi, "1 vial"));
+    sanitizeClientFacingText(
+      value
+        .replace(/\b1\s+vials\b/gi, "1 vial")
+        .replace(/\b1\s+vial\s+couvrent\b/gi, "1 vial couvre")
+    );
   for (const peptide of report.peptides || []) {
     peptide.vialsNeeded = normalize(peptide.vialsNeeded || "");
     peptide.priceEstimate = normalize(peptide.priceEstimate || "");

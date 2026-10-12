@@ -1738,6 +1738,9 @@ function cleanReportContent(report: PeptidesReport, firstName: string): Peptides
     // Fix "Prénom a " → "Tu as "
     cleaned = cleaned.replace(new RegExp(`${firstName} a (un|une|des|le|la|les|besoin|deja|déjà)`, "gi"), "Tu as $1");
     cleaned = cleaned
+      .replace(/\bTu veux maintenir son\b/gi, "Tu veux maintenir ton")
+      .replace(/\bson anxi[ée]t[ée] d['’]injection\b/gi, "ton apprehension face aux injections");
+    cleaned = cleaned
       .replace(/\bil est important de noter que\b/gi, "concretement,")
       .replace(/\bil convient de souligner que\b/gi, "le point a retenir,")
       .replace(/\bn['’]h[ée]site pas [àa]\b/gi, "tu peux")

@@ -43,6 +43,7 @@ function normalizeLiveTimestampProse(sectionId: unknown, content: unknown): unkn
 }
 
 function stableReportContent(value: unknown): unknown {
+  if (typeof value === "string") return value.replace(/\s+/g, " ").trim();
   if (Array.isArray(value)) return value.map(stableReportContent);
   if (!value || typeof value !== "object") return value;
   const record = value as Record<string, unknown>;

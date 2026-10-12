@@ -406,6 +406,31 @@ assert.match(
   "Une justification riche en faits doit quand meme parler directement au client"
 );
 
+const awkwardDirectAddress = structuredClone(personalizedReport) as any;
+awkwardDirectAddress.clientName = "Luca";
+awkwardDirectAddress.peptides[0].name = "MOTS-c";
+awkwardDirectAddress.peptides[0].whyThisPeptide =
+  "Luca veut maintenir son endurance et ce choix reste coherent avec son anxiete d'injection. Le dossier relie aussi ce levier a 80 kg et a une perte de graisse prioritaire.";
+awkwardDirectAddress.peptides[0].vialsNeeded =
+  "Achat reel 1 vial de 5 mg. Pour Retatrutide, 1 vial couvrent la cible avec reserve.";
+const repairedAwkwardDirectAddress = repairPeptidesReportContent(
+  awkwardDirectAddress,
+  {
+    pep_name: "Luca",
+    pep_weight: 80,
+    pep_primary_goal: "fatloss",
+    pep_country: "France",
+    pep_budget: "100-200",
+    pep_timeline: "solid",
+    pep_experience: "none",
+    pep_injection_comfort: "anxious",
+  },
+  "solo"
+) as any;
+assert.doesNotMatch(repairedAwkwardDirectAddress.peptides[0].whyThisPeptide, /maintenir son|son anxi[ée]t[ée]/i);
+assert.match(repairedAwkwardDirectAddress.peptides[0].whyThisPeptide, /maintenir ton|ton apprehension/i);
+assert.doesNotMatch(repairedAwkwardDirectAddress.peptides[0].vialsNeeded, /1 vial couvrent/i);
+
 for (const [input, forbidden] of [
   ["12 semaines actives, sans montée de dose et sans descente. Arrêt après la semaine 12.", /sans\s*[.]/i],
   ["8 semaines actives, sans descente.", /sans\s*[.]/i],

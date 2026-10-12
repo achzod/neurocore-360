@@ -45,6 +45,7 @@ test("stored recovery preserves repeated operational facts required by the deliv
   } as any);
   assert.match(report.sections[0].content, /besoin actif 25,2 mg/);
   assert.match(report.sections[1].content, /besoin actif 25,2 mg/);
+  assert.match(report.sections[0].content, /jour, besoin actif/);
 });
 
 test("obsolete source-unavailable sentence is removed only after official pricing is verified", () => {
@@ -122,8 +123,19 @@ class FakeClient implements RecoverySqlClient {
         metadata: this.metadata,
       }] as Row[], rowCount: 1 };
     }
-    if (/UPDATE orders/.test(text)) return { rows: [{ id: values?.[3] }] as Row[], rowCount: 1 };
-    return { rows: [] as Row[], rowCount: /INSERT INTO/.test(text) ? 1 : 0 };
+    if (/INSERT INTO burnout_reports/.test(text)) {
+      return { rows: [{ report: JSON.parse(String(values?.[3] || "{}")) }] as Row[], rowCount: 1 };
+    }
+    if (/UPDATE orders/.test(text)) {
+      return {
+        rows: [{
+          generation_completed_at: "2026-10-12 16:20:41+00",
+          email_scheduled_at: "2026-10-13 16:20:41+00",
+        }] as Row[],
+        rowCount: 1,
+      };
+    }
+    return { rows: [] as Row[], rowCount: 0 };
   }
 }
 

@@ -86,6 +86,7 @@ export function dedupeStoredRecoverySectionSentences(report: PeptidesReport): Pe
     const preserveOperationalTruth = /reconstitution|protocole|semaine type|calendrier|shopping|liste de courses/i.test(
       `${section.id || ""} ${section.title || ""}`,
     );
+    if (preserveOperationalTruth) continue;
     const sentences = String(section.content || "")
       .split(/(?<=[.!?])(?:\s+|\n+)/)
       .map((sentence) => sentence.trim())
@@ -93,8 +94,8 @@ export function dedupeStoredRecoverySectionSentences(report: PeptidesReport): Pe
     const retained: string[] = [];
     for (const sentence of sentences) {
       const key = sentence.toLowerCase().replace(/\s+/g, " ").trim();
-      if (!preserveOperationalTruth && key.length >= 35 && seen.has(key)) continue;
-      if (!preserveOperationalTruth && key.length >= 35) seen.add(key);
+      if (key.length >= 35 && seen.has(key)) continue;
+      if (key.length >= 35) seen.add(key);
       retained.push(sentence);
     }
     section.content = retained.join(" ");
@@ -329,7 +330,6 @@ export async function persistStoredPeptidesRecoveryUnderHold(input: {
     throw new Error("RECOVERY_CANDIDATE_NOT_DELIVERABLE");
   }
   const reportId = randomUUID();
-  const approvedReportSha256 = hashPeptidesReport(input.candidate.report);
   await input.client.query("BEGIN");
   try {
     const locked = await input.client.query<RecoveryOrderRow>(
@@ -350,9 +350,10 @@ export async function persistStoredPeptidesRecoveryUnderHold(input: {
     };
     assertRecoveryOrder(order, { orderId: input.orderId, email: input.email });
 
-    await input.client.query(
+    const inserted = await input.client.query<{ report: PeptidesReport }>(
       `INSERT INTO burnout_reports (id, email, responses, report)
-       VALUES ($1, $2, $3::jsonb, $4::jsonb)`,
+       VALUES ($1, $2, $3::jsonb, $4::jsonb)
+       RETURNING report`,
       [
         reportId,
         `peptides::${normalizeEmail(input.email)}`,
@@ -360,6 +361,7 @@ export async function persistStoredPeptidesRecoveryUnderHold(input: {
         JSON.stringify(input.candidate.report),
       ],
     );
+    const approvedReportSha256 = hashPeptidesReport(inserted.rows[0].report);
     const linked = await input.client.query<{
       generation_completed_at: string;
       email_scheduled_at: string;
