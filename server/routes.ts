@@ -1833,6 +1833,46 @@ export async function registerRoutes(
     }
   }
 
+  // Mint a fresh report-access URL from the running web process. This matters
+  // when an older customer email contains a legacy unsigned URL: one-off jobs
+  // must not sign independently because their runtime secret can drift from
+  // the live web instance during an environment rollout.
+  app.post("/api/admin/peptides-report-access-link", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const input = z.object({
+        reportId: z.string().uuid(),
+        email: z.string().trim().toLowerCase().email(),
+      }).parse(req.body);
+      const record = await storage.getBurnoutReport(input.reportId);
+      if (!record || !String(record.email ?? "").startsWith("peptides::")) {
+        res.status(404).json({ error: "Rapport introuvable" });
+        return;
+      }
+      const ownerEmail = String(record.email).replace(/^peptides::/i, "").trim().toLowerCase();
+      if (ownerEmail !== input.email) {
+        res.status(409).json({ error: "Email incompatible avec le rapport" });
+        return;
+      }
+      const url = buildReportAccessUrl(
+        getBaseUrl(),
+        `/peptides/${input.reportId}`,
+        "peptides",
+        input.reportId,
+        input.email,
+      );
+      res.setHeader("Cache-Control", "private, no-store");
+      res.json({ success: true, reportId: input.reportId, url });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Données invalides", details: error.errors });
+        return;
+      }
+      console.error("[Admin Peptides Access Link] error:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
   const isActivePeptidesOrder = (order: any): boolean =>
     order?.productType === "PEPTIDES_ENGINE" &&
     (order?.status === "paid" || order?.status === "partial_refund");
