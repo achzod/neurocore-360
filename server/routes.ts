@@ -47,6 +47,7 @@ import {
   type RecoveryCtaCohort,
   type CoachingFormulaLeadInput,
 } from "./emailService";
+import { isEmailSequenceAttempted } from "./emailSequencePolicy";
 import { kickPeptidesPreviewDeliveryQueue, startPeptidesPreviewDeliveryWorker } from "./peptidesPreviewDeliveryQueue";
 import { processPeptidesPreviewFollowups, setPeptidesPreviewFollowupEnabled, startPeptidesPreviewFollowupWorker } from "./peptidesPreviewFollowup";
 import {
@@ -309,17 +310,6 @@ export async function registerRoutes(
     "%discovery scan%",
     "%blood analysis%",
   ];
-
-  const isEmailSequenceAttempted = (tracking: any): boolean => {
-    const status = String(tracking?.sendpulseStatus || "").toLowerCase();
-    // Permanent opt-outs and SMTP hard failures cannot be fixed by a cron retry.
-    // Keep transient failures eligible so the sequence can recover.
-    if (status === "unsubscribed") return true;
-    if (status === "failed" && /"eventType"\s*:\s*"hard_fail"/i.test(String(tracking?.sendpulseError || ""))) {
-      return true;
-    }
-    return !["failed", "auth_failed"].includes(status);
-  };
 
   const normalizeSearchText = (value: unknown): string =>
     String(value || "")
