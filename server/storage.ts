@@ -98,6 +98,7 @@ export interface EmailTracking {
   opened?: Date | null;
   clicked?: Date | null;
   sendpulseStatus?: string | null;
+  sendpulseError?: string | null;
   converted?: Date | null;
   conversionType?: string | null;
 }
@@ -2766,6 +2767,7 @@ export class PgStorage implements IStorage {
       opened,
       clicked,
       sendpulseStatus: row.sendpulse_status ?? null,
+      sendpulseError: row.sendpulse_error ?? null,
       converted: row.converted ?? null,
       conversionType: row.conversion_type ?? null,
     };
