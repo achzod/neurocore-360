@@ -15,6 +15,7 @@ import {
   isCriticalTransactionalEmail,
   shouldBlockForMarketingUnsubscribe,
 } from "./emailDeliveryPolicy";
+import { isDiscovery30RelaunchStopped } from "./discoveryPromoRelaunchPolicy";
 
 const SENDPULSE_USER_ID =
   process.env.SENDPULSE_USER_ID || process.env.SENDPULSE_API_USER_ID || "";
@@ -943,8 +944,14 @@ function formatDeadlineFR(daysFromNow: number): string {
   return date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
 }
 
-// Reusable Apple-clean DISCOVERY30 banner at the top of each coaching email.
-// Visual: full-width Apple blue box, code in bold, deadline date personalisée.
+function blockStoppedDiscovery30Relaunch(emailType: string, email: string): boolean {
+  if (!isDiscovery30RelaunchStopped(emailType)) return false;
+  console.warn(`[SendPulse] ${emailType} disabled: DISCOVERY30 relaunches stopped for ${email}`);
+  return true;
+}
+
+// Legacy renderer retained for historical previews only. Every automated
+// relaunch that used this banner is blocked before any provider call.
 function getDiscoveryPromoBanner(daysLeft: number): string {
   const deadline = formatDeadlineFR(daysLeft);
   return `
@@ -3544,6 +3551,7 @@ export async function sendRecoveryCtaEmail(
     expiresText?: string;
   }
 ): Promise<boolean> {
+  if (blockStoppedDiscovery30Relaunch("sendRecoveryCtaEmail", email)) return false;
   try {
     const expiresText = opts.expiresText || "7 jours";
     const cohort = opts.cohort;
@@ -4528,6 +4536,7 @@ export async function sendGratuitUpsellEmail(
   baseUrl: string,
   trackingId: string
 ): Promise<boolean> {
+  if (blockStoppedDiscovery30Relaunch("sendGratuitUpsellEmail", email)) return false;
   try {
     const reportLink = buildReportAccessUrl(baseUrl, `/scan/${auditId}`, "audit", auditId, email);
     const coachingLink = discoveryCoachingBridgeUrl(baseUrl, "discovery_j3_coaching", "essential", "ESSENTIAL");
@@ -5068,6 +5077,7 @@ export async function sendDiscoveryJ14CoachingEmail(
   trackingId: string,
   recommendation?: { tier: "ESSENTIAL" | "ELITE" | "PRIVATELAB"; reason: string; href: string }
 ): Promise<boolean> {
+  if (blockStoppedDiscovery30Relaunch("sendDiscoveryJ14CoachingEmail", email)) return false;
   try {
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
     const coachingLink = discoveryCoachingBridgeUrl(
@@ -5189,6 +5199,7 @@ export async function sendGratuitJ5Email(
   baseUrl: string,
   trackingId: string
 ): Promise<boolean> {
+  if (blockStoppedDiscovery30Relaunch("sendGratuitJ5Email", email)) return false;
   try {
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
     const primaryCtaLink = discoveryCoachingBridgeUrl(baseUrl, "discovery_j5", "essential", "ESSENTIAL");
@@ -5317,6 +5328,7 @@ export async function sendGratuitJ7Email(
   baseUrl: string,
   trackingId: string
 ): Promise<boolean> {
+  if (blockStoppedDiscovery30Relaunch("sendGratuitJ7Email", email)) return false;
   try {
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
     const essentialLink = discoveryCoachingBridgeUrl(baseUrl, "discovery_j7_lastcall", "essential", "ESSENTIAL");
@@ -5863,6 +5875,7 @@ export async function sendDiscoveryJ30NurtureEmail(
   trackingId: string,
   recommendation?: { tier: "ESSENTIAL" | "ELITE" | "PRIVATELAB"; reason: string; href: string }
 ): Promise<boolean> {
+  if (blockStoppedDiscovery30Relaunch("sendDiscoveryJ30NurtureEmail", email)) return false;
   try {
     const reportLink = buildReportAccessUrl(baseUrl, `/scan/${auditId}`, "audit", auditId, email);
     const coachingLink = discoveryCoachingBridgeUrl(
