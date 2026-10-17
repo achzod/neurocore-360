@@ -18,7 +18,8 @@
 - `{discoveryLink}` - Lien vers le rapport Discovery
 - `{ultimateLink}` - https://apexlabs.achzodcoaching.com/offers/ultimate-scan
 - `{anabolicLink}` - https://apexlabs.achzodcoaching.com/offers/anabolic-bioscan
-- `{promoCode}` - DISCOVERY20 (pour J+7)
+- `{promoCode}` - DISCOVERY20 : -20% uniquement sur les formules coaching 8 et 12 semaines (jamais sur les 4 semaines ni sur un scan)
+- `{coachingLink}` - https://www.achzodcoaching.com/formules-coaching
 
 ---
 
@@ -397,7 +398,7 @@
 
 **Timing:** 7 jours après completion du Discovery
 
-**Sujet:** 🚨 Dernière chance: -20€ sur Ultimate Scan
+**Sujet:** 🚨 Dernière chance : -20% sur ton coaching 8 ou 12 semaines
 
 **Preview:** Code promo DISCOVERY20 expire dans 48h
 
@@ -459,10 +460,10 @@
                   ⚡ Offre Spéciale
                 </p>
                 <p style="margin: 0 0 8px 0; font-size: 24px; color: #ffffff; font-weight: 700;">
-                  Ultimate Scan: 59€ au lieu de 79€
+                  -20% sur ton coaching 8 ou 12 semaines
                 </p>
                 <p style="margin: 0 0 16px 0; font-size: 16px; color: #FCDD00;">
-                  -20€ de réduction
+                  Essential, Elite ou Private Lab
                 </p>
                 <div style="padding: 12px 20px; background-color: #0a0a0a; border: 1px dashed #FCDD00; display: inline-block;">
                   <p style="margin: 0; font-size: 18px; font-family: 'Courier New', monospace; color: #FCDD00; font-weight: 700;">
@@ -476,19 +477,17 @@
               </p>
 
               <ul style="margin: 0 0 30px 0; padding-left: 20px; color: #cccccc;">
-                <li style="margin: 0 0 8px 0;">✅ Protocoles exacts (Cortisol, Sommeil, Digestion)</li>
-                <li style="margin: 0 0 8px 0;">✅ Stack Suppléments personnalisé</li>
-                <li style="margin: 0 0 8px 0;">✅ Intégration Apple Watch / Garmin</li>
-                <li style="margin: 0 0 8px 0;">✅ Analyse Posturale 3D</li>
-                <li style="margin: 0 0 8px 0;">✅ Plan 30-60-90 jours</li>
-                <li>✅ Dashboard temps réel à vie</li>
+                <li style="margin: 0 0 8px 0;">✅ Plan nutrition et entraînement personnalisé</li>
+                <li style="margin: 0 0 8px 0;">✅ Ajustements selon ta progression</li>
+                <li style="margin: 0 0 8px 0;">✅ Suivi direct avec Achzod</li>
+                <li>✅ Formules 8 et 12 semaines éligibles</li>
               </ul>
 
               <table width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 20px 0;">
                 <tr>
                   <td align="center">
-                    <a href="{ultimateLink}" style="display: inline-block; padding: 18px 36px; background-color: #FCDD00; color: #000000; text-decoration: none; font-weight: 700; font-size: 15px; border-radius: 4px;">
-                      Je prends Ultimate (59€ avec DISCOVERY20)
+                    <a href="{coachingLink}" style="display: inline-block; padding: 18px 36px; background-color: #FCDD00; color: #000000; text-decoration: none; font-weight: 700; font-size: 15px; border-radius: 4px;">
+                      Je choisis ma formule 8 ou 12 semaines
                     </a>
                   </td>
                 </tr>
@@ -500,7 +499,7 @@
                   ⏱️ Cette offre expire le [DATE] à minuit.
                 </p>
                 <p style="margin: 8px 0 0 0; font-size: 12px; color: #cccccc;">
-                  Après, retour au prix normal de 79€.
+                  Les formules 4 semaines ne sont pas éligibles.
                 </p>
               </div>
 
@@ -510,7 +509,7 @@
 
               <p style="margin: 0; font-size: 12px; line-height: 1.6; color: #888888;">
                 PS: 6 avis, tous 5 étoiles. 100% de satisfaction.<br>
-                Essaie Ultimate, ou continue à essayer au hasard.
+                Utilise DISCOVERY20 sur une formule coaching 8 ou 12 semaines.
               </p>
 
               <p style="margin: 30px 0 0 0; font-size: 14px; color: #cccccc;">

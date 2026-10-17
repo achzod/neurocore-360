@@ -69,7 +69,7 @@ function getPromoInfo(kind: AuditKind, peptidesTier?: PeptidesTier): PromoInfo {
     default:
       return {
         code: "DISCOVERY20",
-        description: "-20% sur toutes les formules coaching",
+        description: "-20% sur les formules coaching 8 et 12 semaines",
         recommendedFormules: [FORMULE_ESSENTIAL, FORMULE_ELITE, FORMULE_PRIVATELAB],
       };
   }

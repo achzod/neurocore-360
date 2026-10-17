@@ -1150,12 +1150,12 @@ export async function registerRoutes(
     };
     const formulasUrl = productUrl("/formules-coaching", "compare");
     const offers = [
-      { tier: "ESSENTIAL", label: "Essential 8 semaines", before: "399 EUR", after: "279,30 EUR", href: productUrl("/product/coaching-essential-8", "essential8"), note: "Le meilleur point d'entree si tu veux un vrai suivi sans WhatsApp." },
-      { tier: "ELITE", label: "Elite 8 semaines", before: "649 EUR", after: "454,30 EUR", href: productUrl("/product/coaching-elite-8", "elite8"), note: "Le meilleur choix si tu veux WhatsApp + ajustements plus proches." },
-      { tier: "PRIVATELAB", label: "Private Lab 8 semaines", before: "799 EUR", after: "559,30 EUR", href: productUrl("/product/8-semaines-private-lab", "privatelab8"), note: "Le format le plus avance si tu veux un suivi tres serre." },
-      { tier: "ESSENTIAL", label: "Essential 12 semaines", before: "549 EUR", after: "384,30 EUR", href: productUrl("/product/coaching-essential-12", "essential12"), note: "Plus rentable si tu veux une transformation plus stable." },
-      { tier: "ELITE", label: "Elite 12 semaines", before: "899 EUR", after: "629,30 EUR", href: productUrl("/product/coaching-elite-12", "elite12"), note: "Le meilleur ratio suivi/resultat sur 12 semaines." },
-      { tier: "PRIVATELAB", label: "Private Lab 12 semaines", before: "1199 EUR", after: "839,30 EUR", href: productUrl("/product/12-semaines-private-lab", "privatelab12"), note: "Accompagnement premium long pour gros objectif." },
+      { tier: "ESSENTIAL", label: "Essential 8 semaines", before: "399 EUR", after: "319,20 EUR", href: productUrl("/product/coaching-essential-8", "essential8"), note: "Le meilleur point d'entree si tu veux un vrai suivi sans WhatsApp." },
+      { tier: "ELITE", label: "Elite 8 semaines", before: "649 EUR", after: "519,20 EUR", href: productUrl("/product/coaching-elite-8", "elite8"), note: "Le meilleur choix si tu veux WhatsApp + ajustements plus proches." },
+      { tier: "PRIVATELAB", label: "Private Lab 8 semaines", before: "799 EUR", after: "639,20 EUR", href: productUrl("/product/8-semaines-private-lab", "privatelab8"), note: "Le format le plus avance si tu veux un suivi tres serre." },
+      { tier: "ESSENTIAL", label: "Essential 12 semaines", before: "549 EUR", after: "439,20 EUR", href: productUrl("/product/coaching-essential-12", "essential12"), note: "Plus rentable si tu veux une transformation plus stable." },
+      { tier: "ELITE", label: "Elite 12 semaines", before: "899 EUR", after: "719,20 EUR", href: productUrl("/product/coaching-elite-12", "elite12"), note: "Le meilleur ratio suivi/resultat sur 12 semaines." },
+      { tier: "PRIVATELAB", label: "Private Lab 12 semaines", before: "1199 EUR", after: "959,20 EUR", href: productUrl("/product/12-semaines-private-lab", "privatelab12"), note: "Accompagnement premium long pour gros objectif." },
     ];
     const sortedOffers = selectedTier
       ? [...offers].sort((a, b) => Number(b.tier === selectedTier) - Number(a.tier === selectedTier))

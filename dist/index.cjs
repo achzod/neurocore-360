@@ -777,7 +777,7 @@ Lead ID: ${r}`;return{subject:e.status==="eligible"?`[APEXLABS] Lead pr\xEAt \xE
       <div style="margin: 20px 0; padding: 16px; border: 2px dashed ${e}; border-radius: 12px; text-align: center; background: ${e}10;">
         <p style="color: ${V.textMuted}; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 6px;">Ton code Discovery</p>
         <p style="color: ${e}; font-size: 28px; font-weight: 700; letter-spacing: 3px; margin: 0;">${o.code}</p>
-        <p style="color: ${V.text}; font-size: 13px; margin: 8px 0 0;">-${o.percent}% sur toutes les formules (formules 8 et 12 sem uniquement)</p>
+        <p style="color: ${V.text}; font-size: 13px; margin: 8px 0 0;">-${o.percent}% sur les formules coaching 8 et 12 semaines</p>
       </div>
       <p style="color: ${V.textMuted}; font-size: 12px; text-align: center; margin: 0 0 16px;">
         Colle ce code au checkout sur achzodcoaching.com pour appliquer la reduction.
@@ -1376,7 +1376,7 @@ Achzod`;return(await Kt({subject:"Tu as fait le scan. L'etape d'apres.",from:{na
       </p>
 
       <img src="${l}" width="1" height="1" style="display:none;" alt="" />
-    `,h=Bo(f,"DISCOVERY20 actif , -20% sur ton coaching",`Valable jusqu'au ${d}`);return(await Kt({html:Yt(h),text:`Ton code DISCOVERY20 est actif : -20% sur formules coaching 8 et 12 semaines, valable jusqu'au ${d}.
+    `,h=Bo(f,"DISCOVERY20 actif , -20% sur les formules coaching 8 et 12 semaines",`Valable jusqu'au ${d}`);return(await Kt({html:Yt(h),text:`Ton code DISCOVERY20 est actif : -20% sur formules coaching 8 et 12 semaines, valable jusqu'au ${d}.
 
 Choisir ma formule : ${o}
 Demander mon avis sur WhatsApp : ${m}
@@ -1563,10 +1563,10 @@ Demander mon avis sur WhatsApp : ${l}`,subject:`Coaching Achzod - code ${c}`,fro
       </p>
 
       <img src="${s}" width="1" height="1" style="display:none;" alt="" />
-    `,f=Bo(m,c?`${c} avec DISCOVERY20 (-20%)`:"7 jours pour activer DISCOVERY20",`-20% sur ton coaching jusqu'au ${u}`),h=await Kt({html:Yt(f),text:c?`Je te recommande ${c} d'apr\xE8s ton Discovery.
+    `,f=Bo(m,c?`${c} avec DISCOVERY20 (-20%)`:"7 jours pour activer DISCOVERY20",`-20% sur les formules 8 et 12 semaines jusqu'au ${u}`),h=await Kt({html:Yt(f),text:c?`Je te recommande ${c} d'apr\xE8s ton Discovery.
 ${i.reason}
 
-Code DISCOVERY20 : -20% jusqu'au ${u} (7 jours).
+Code DISCOVERY20 : -20% sur les formules coaching 8 et 12 semaines jusqu'au ${u} (7 jours).
 Choisir ma formule : ${o}
 Demander mon avis sur WhatsApp : ${d}
 
@@ -1655,7 +1655,7 @@ Achzod`,subject:c?`${c} avec DISCOVERY20 , 7 jours pour activer`:"7 jours pour a
       </p>
 
       <img src="${i}" width="1" height="1" style="display:none;" alt="" />
-    `,h=Bo(f,"5 jours pour activer DISCOVERY20",`-20% sur ton coaching jusqu'au ${d}`),v=await Kt({html:Yt(h),text:`Ton code DISCOVERY20 est actif : -20% sur formules coaching 8 et 12 semaines, valable jusqu'au ${d} (5 jours).
+    `,h=Bo(f,"5 jours pour activer DISCOVERY20",`-20% sur les formules 8 et 12 semaines jusqu'au ${d}`),v=await Kt({html:Yt(h),text:`Ton code DISCOVERY20 est actif : -20% sur formules coaching 8 et 12 semaines, valable jusqu'au ${d} (5 jours).
 
 Le Discovery te donne le diagnostic. Le coaching te donne le plan jour-par-jour, l'ajustement hebdo, et le contrat moral.
 
@@ -1695,7 +1695,7 @@ Achzod`,subject:"5 jours pour activer DISCOVERY20 , -20% coaching",from:{name:"A
             <p style="color:${le.inkSoft};font-size:13px;margin:0 0 8px;line-height:1.55;">Mail prioritaire 7j/7. Plan personnalis\xE9 sur ton Discovery. Bilan \xE9crit hebdo.</p>
             <p style="color:${le.ink};font-size:14px;margin:0 0 10px;">
               <span style="text-decoration:line-through;color:${le.muted};">399\u20AC</span>
-              <span style="color:${le.accent};font-weight:700;margin-left:8px;font-size:18px;">319\u20AC</span> 8 sem
+              <span style="color:${le.accent};font-weight:700;margin-left:8px;font-size:18px;">319,20\u20AC</span> 8 sem
             </p>
             <a href="${l}" style="color:${le.accent};font-size:14px;text-decoration:none;font-weight:600;">Voir Essential \u2192</a>
           </td>
@@ -1706,7 +1706,7 @@ Achzod`,subject:"5 jours pour activer DISCOVERY20 , -20% coaching",from:{name:"A
             <p style="color:${le.inkSoft};font-size:13px;margin:0 0 8px;line-height:1.55;">Tout Essential, plus gestion blessures et ajustements deux fois par semaine.</p>
             <p style="color:${le.ink};font-size:14px;margin:0 0 10px;">
               <span style="text-decoration:line-through;color:${le.muted};">649\u20AC</span>
-              <span style="color:${le.accent};font-weight:700;margin-left:8px;font-size:18px;">519\u20AC</span> 8 sem
+              <span style="color:${le.accent};font-weight:700;margin-left:8px;font-size:18px;">519,20\u20AC</span> 8 sem
             </p>
             <a href="${u}" style="color:${le.accent};font-size:14px;text-decoration:none;font-weight:600;">Voir Elite \u2192</a>
           </td>
@@ -1717,7 +1717,7 @@ Achzod`,subject:"5 jours pour activer DISCOVERY20 , -20% coaching",from:{name:"A
             <p style="color:${le.inkSoft};font-size:13px;margin:0 0 8px;line-height:1.55;">Tout Elite, plus reconstruction pluridisciplinaire et acc\xE8s mail prioritaire 6h-minuit.</p>
             <p style="color:${le.ink};font-size:14px;margin:0 0 10px;">
               <span style="text-decoration:line-through;color:${le.muted};">799\u20AC</span>
-              <span style="color:${le.accent};font-weight:700;margin-left:8px;font-size:18px;">639\u20AC</span> 8 sem
+              <span style="color:${le.accent};font-weight:700;margin-left:8px;font-size:18px;">639,20\u20AC</span> 8 sem
             </p>
             <a href="${d}" style="color:${le.accent};font-size:14px;text-decoration:none;font-weight:600;">Voir Private Lab \u2192</a>
           </td>
@@ -1736,13 +1736,13 @@ Achzod`,subject:"5 jours pour activer DISCOVERY20 , -20% coaching",from:{name:"A
       </p>
 
       <img src="${i}" width="1" height="1" style="display:none;" alt="" />
-    `,E=Bo(y,"Plus que 3 jours pour DISCOVERY20",`-20% sur ton coaching jusqu'au ${h}`),_=await Kt({html:Yt(E),text:`Plus que 3 jours pour activer DISCOVERY20 (jusqu'au ${h}).
+    `,E=Bo(y,"Plus que 3 jours pour DISCOVERY20",`-20% sur les formules 8 et 12 semaines jusqu'au ${h}`),_=await Kt({html:Yt(E),text:`Plus que 3 jours pour activer DISCOVERY20 (jusqu'au ${h}).
 
 Comparaison des 3 formules coaching avec DISCOVERY20 :
 
-Essential 8 sem : 319\u20AC (au lieu de 399\u20AC) , ${l}
-Elite 8 sem : 519\u20AC (au lieu de 649\u20AC) , ${u}
-Private Lab 8 sem : 639\u20AC (au lieu de 799\u20AC) , ${d}
+Essential 8 sem : 319,20\u20AC (au lieu de 399\u20AC) , ${l}
+Elite 8 sem : 519,20\u20AC (au lieu de 649\u20AC) , ${u}
+Private Lab 8 sem : 639,20\u20AC (au lieu de 799\u20AC) , ${d}
 
 Demander mon avis sur WhatsApp : ${v}
 
@@ -1939,7 +1939,7 @@ Achzod`,subject:"3 jours avant que DISCOVERY20 expire , -20% coaching",from:{nam
           ${u?"Budget plus serr\xE9 ?":"Pas s\xFBr du niveau adapt\xE9 ?"}
         </p>
         <a href="${l}" style="color:${le.accent};font-size:13px;text-decoration:none;font-weight:600;">
-          Commencer par Essential (\xE0 partir de 249\u20AC) \u2192
+          Essential 8 semaines : 319,20\u20AC avec DISCOVERY20 \u2192
         </a>
       </div>
       `:""}
@@ -1955,10 +1955,10 @@ Achzod`,subject:"3 jours avant que DISCOVERY20 expire , -20% coaching",from:{nam
       </p>
 
       <img src="${d}" width="1" height="1" style="display:none;" alt="" />
-    `,v=Bo(h,u?`${u} avec DISCOVERY20 (-20%)`:"5 jours pour activer DISCOVERY20",`-20% sur ton coaching jusqu'au ${f}`);return(await Kt({html:Yt(v),text:u?`Je te recommande ${u} d'apr\xE8s ton Discovery.
+    `,v=Bo(h,u?`${u} avec DISCOVERY20 (-20%)`:"5 jours pour activer DISCOVERY20",`-20% sur les formules 8 et 12 semaines jusqu'au ${f}`);return(await Kt({html:Yt(v),text:u?`Je te recommande ${u} d'apr\xE8s ton Discovery.
 ${i.reason}
 
-Code DISCOVERY20 : -20% jusqu'au ${f} (5 jours).
+Code DISCOVERY20 : -20% sur les formules coaching 8 et 12 semaines jusqu'au ${f} (5 jours).
 Choisir ma formule : ${c}
 
 Au checkout, copie DISCOVERY20 dans le champ "Code promotionnel ?".
@@ -3665,7 +3665,7 @@ SECTIONS
         COALESCE(SUM(converted_amount_cents), 0) as converted_cents
       FROM abandonment_reminders
       WHERE sent_at >= NOW() - INTERVAL '7 days'
-    `)).rows[0],u=parseInt(l.sent||"0"),d=u>0?Math.round(parseInt(l.opened||"0")/u*100):0,m=parseInt(l.conversions||"0"),f=Math.round(parseInt(l.converted_cents||"0")/100),h=await this.getIncompleteQuestionnaires(),v=new Date("2026-03-17T00:00:00Z"),y=h.filter(A=>new Date(A.startedAt)>=v),E=y.filter(A=>parseInt(A.percentComplete)>=75).length,_=y.filter(A=>{let N=parseInt(A.percentComplete);return N>=25&&N<75}).length,w=[];return E>0&&w.push(`${E} abandons haute priorit\xE9 (>75%) \xE0 relancer en urgence`),s<20&&i>10&&w.push("Taux d'ouverture faible (<20%) - tester un nouveau sujet"),m===0&&u>20&&w.push("Aucune conversion sur 7j - revoir le message et l'offre"),{last24h:{sent:i,openRate:s,clickRate:a,conversions:parseInt(n.conversions||"0")},last7days:{sent:u,openRate:d,conversions:m,revenue:f},pending:{count:y.length,highPriority:E,mediumPriority:_,lastChance:y.length-E-_},recommendations:w}}},I=new F_,tM={DISCOVERY:{code:"DISCOVERY20",description:"-20% sur le coaching Achzod"},ANABOLIC_BIOSCAN:{code:"BIOSCAN59",description:"59\u20AC d\xE9duits du coaching"},ULTIMATE_SCAN:{code:"ULTIMATE79",description:"79\u20AC d\xE9duits du coaching"},BLOOD_ANALYSIS:{code:"BLOOD99",description:"99\u20AC d\xE9duits du coaching"},PEPTIDES_ENGINE:{code:"PEPTIDES20",description:"-20% sur le coaching Achzod"}},eM=class{constructor(){this.ensuredReviewsTable=!1}async ensureReviewsTable(){if(this.ensuredReviewsTable)return;try{await ne.query('CREATE EXTENSION IF NOT EXISTS "pgcrypto"')}catch(r){console.warn("[Reviews] Unable to ensure pgcrypto extension:",r)}await ne.query(`CREATE TABLE IF NOT EXISTS reviews (
+    `)).rows[0],u=parseInt(l.sent||"0"),d=u>0?Math.round(parseInt(l.opened||"0")/u*100):0,m=parseInt(l.conversions||"0"),f=Math.round(parseInt(l.converted_cents||"0")/100),h=await this.getIncompleteQuestionnaires(),v=new Date("2026-03-17T00:00:00Z"),y=h.filter(A=>new Date(A.startedAt)>=v),E=y.filter(A=>parseInt(A.percentComplete)>=75).length,_=y.filter(A=>{let N=parseInt(A.percentComplete);return N>=25&&N<75}).length,w=[];return E>0&&w.push(`${E} abandons haute priorit\xE9 (>75%) \xE0 relancer en urgence`),s<20&&i>10&&w.push("Taux d'ouverture faible (<20%) - tester un nouveau sujet"),m===0&&u>20&&w.push("Aucune conversion sur 7j - revoir le message et l'offre"),{last24h:{sent:i,openRate:s,clickRate:a,conversions:parseInt(n.conversions||"0")},last7days:{sent:u,openRate:d,conversions:m,revenue:f},pending:{count:y.length,highPriority:E,mediumPriority:_,lastChance:y.length-E-_},recommendations:w}}},I=new F_,tM={DISCOVERY:{code:"DISCOVERY20",description:"-20% sur les formules coaching Achzod 8 et 12 semaines"},ANABOLIC_BIOSCAN:{code:"BIOSCAN59",description:"59\u20AC d\xE9duits du coaching"},ULTIMATE_SCAN:{code:"ULTIMATE79",description:"79\u20AC d\xE9duits du coaching"},BLOOD_ANALYSIS:{code:"BLOOD99",description:"99\u20AC d\xE9duits du coaching"},PEPTIDES_ENGINE:{code:"PEPTIDES20",description:"-20% sur le coaching Achzod"}},eM=class{constructor(){this.ensuredReviewsTable=!1}async ensureReviewsTable(){if(this.ensuredReviewsTable)return;try{await ne.query('CREATE EXTENSION IF NOT EXISTS "pgcrypto"')}catch(r){console.warn("[Reviews] Unable to ensure pgcrypto extension:",r)}await ne.query(`CREATE TABLE IF NOT EXISTS reviews (
         id VARCHAR(36) PRIMARY KEY,
         audit_id VARCHAR(36) NOT NULL,
         user_id VARCHAR(36),
@@ -9234,7 +9234,7 @@ Dashboard admin: https://apexlabs.achzodcoaching.com/admin
           destination, message, user_agent, ip_hash,
           has_coaching, last_activity_at
         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,NOW())
-        RETURNING id`,[x,S,T,C,R,L,k,q,G,z,W,re,ie,Z?JSON.stringify(Z):null,se,Se,Ct(b.get("user-agent"),1e3),xe,Ae]);g.json({success:!0,captured:!0,hasContact:!!(x||S),excludedFromFollowup:Ae});let pe=Me.rows[0]?.id;pe&&Nr({id:pe,email:x,phone:S,offer:T,placement:C,tier:R,eventType:L,pagePath:k,goal:q,blocker:G,urgency:z,details:W,sourceUrl:re,hasCoaching:Ae}).catch(Ie=>{console.error("[WhatsAppLead] admin alert error:",Ie)})}catch(p){console.error("[WhatsAppLead] capture error:",p),g.status(202).json({success:!1,captured:!1})}}),e.get("/api/version",(b,g)=>{g.json({commit:process.env.RENDER_GIT_COMMIT||process.env.GIT_COMMIT||null,service:process.env.RENDER_SERVICE_NAME||null,deployedAt:new Date().toISOString()})}),e.get("/go/coaching",(b,g)=>{let p=W=>String(W??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"),x=(W,re)=>String(W||re).replace(/[^a-zA-Z0-9_-]/g,"").slice(0,64)||re,S=x(b.query.code,"DISCOVERY20").toUpperCase(),T=x(b.query.utm_campaign,"discovery20"),C=x(b.query.utm_content,"coaching_bridge"),R=x(b.query.tier,""),L=(W,re)=>{let ie=new URL(W,"https://www.achzodcoaching.com");return ie.searchParams.set("utm_source","apexlabs"),ie.searchParams.set("utm_medium","bridge"),ie.searchParams.set("utm_campaign",T),ie.searchParams.set("utm_content",`${C}_${re}`),ie.searchParams.set("promo",S),ie.toString()},k=L("/formules-coaching","compare"),q=[{tier:"ESSENTIAL",label:"Essential 8 semaines",before:"399 EUR",after:"279,30 EUR",href:L("/product/coaching-essential-8","essential8"),note:"Le meilleur point d'entree si tu veux un vrai suivi sans WhatsApp."},{tier:"ELITE",label:"Elite 8 semaines",before:"649 EUR",after:"454,30 EUR",href:L("/product/coaching-elite-8","elite8"),note:"Le meilleur choix si tu veux WhatsApp + ajustements plus proches."},{tier:"PRIVATELAB",label:"Private Lab 8 semaines",before:"799 EUR",after:"559,30 EUR",href:L("/product/8-semaines-private-lab","privatelab8"),note:"Le format le plus avance si tu veux un suivi tres serre."},{tier:"ESSENTIAL",label:"Essential 12 semaines",before:"549 EUR",after:"384,30 EUR",href:L("/product/coaching-essential-12","essential12"),note:"Plus rentable si tu veux une transformation plus stable."},{tier:"ELITE",label:"Elite 12 semaines",before:"899 EUR",after:"629,30 EUR",href:L("/product/coaching-elite-12","elite12"),note:"Le meilleur ratio suivi/resultat sur 12 semaines."},{tier:"PRIVATELAB",label:"Private Lab 12 semaines",before:"1199 EUR",after:"839,30 EUR",href:L("/product/12-semaines-private-lab","privatelab12"),note:"Accompagnement premium long pour gros objectif."}],z=(R?[...q].sort((W,re)=>+(re.tier===R)-+(W.tier===R)):q).map(W=>`
+        RETURNING id`,[x,S,T,C,R,L,k,q,G,z,W,re,ie,Z?JSON.stringify(Z):null,se,Se,Ct(b.get("user-agent"),1e3),xe,Ae]);g.json({success:!0,captured:!0,hasContact:!!(x||S),excludedFromFollowup:Ae});let pe=Me.rows[0]?.id;pe&&Nr({id:pe,email:x,phone:S,offer:T,placement:C,tier:R,eventType:L,pagePath:k,goal:q,blocker:G,urgency:z,details:W,sourceUrl:re,hasCoaching:Ae}).catch(Ie=>{console.error("[WhatsAppLead] admin alert error:",Ie)})}catch(p){console.error("[WhatsAppLead] capture error:",p),g.status(202).json({success:!1,captured:!1})}}),e.get("/api/version",(b,g)=>{g.json({commit:process.env.RENDER_GIT_COMMIT||process.env.GIT_COMMIT||null,service:process.env.RENDER_SERVICE_NAME||null,deployedAt:new Date().toISOString()})}),e.get("/go/coaching",(b,g)=>{let p=W=>String(W??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"),x=(W,re)=>String(W||re).replace(/[^a-zA-Z0-9_-]/g,"").slice(0,64)||re,S=x(b.query.code,"DISCOVERY20").toUpperCase(),T=x(b.query.utm_campaign,"discovery20"),C=x(b.query.utm_content,"coaching_bridge"),R=x(b.query.tier,""),L=(W,re)=>{let ie=new URL(W,"https://www.achzodcoaching.com");return ie.searchParams.set("utm_source","apexlabs"),ie.searchParams.set("utm_medium","bridge"),ie.searchParams.set("utm_campaign",T),ie.searchParams.set("utm_content",`${C}_${re}`),ie.searchParams.set("promo",S),ie.toString()},k=L("/formules-coaching","compare"),q=[{tier:"ESSENTIAL",label:"Essential 8 semaines",before:"399 EUR",after:"319,20 EUR",href:L("/product/coaching-essential-8","essential8"),note:"Le meilleur point d'entree si tu veux un vrai suivi sans WhatsApp."},{tier:"ELITE",label:"Elite 8 semaines",before:"649 EUR",after:"519,20 EUR",href:L("/product/coaching-elite-8","elite8"),note:"Le meilleur choix si tu veux WhatsApp + ajustements plus proches."},{tier:"PRIVATELAB",label:"Private Lab 8 semaines",before:"799 EUR",after:"639,20 EUR",href:L("/product/8-semaines-private-lab","privatelab8"),note:"Le format le plus avance si tu veux un suivi tres serre."},{tier:"ESSENTIAL",label:"Essential 12 semaines",before:"549 EUR",after:"439,20 EUR",href:L("/product/coaching-essential-12","essential12"),note:"Plus rentable si tu veux une transformation plus stable."},{tier:"ELITE",label:"Elite 12 semaines",before:"899 EUR",after:"719,20 EUR",href:L("/product/coaching-elite-12","elite12"),note:"Le meilleur ratio suivi/resultat sur 12 semaines."},{tier:"PRIVATELAB",label:"Private Lab 12 semaines",before:"1199 EUR",after:"959,20 EUR",href:L("/product/12-semaines-private-lab","privatelab12"),note:"Accompagnement premium long pour gros objectif."}],z=(R?[...q].sort((W,re)=>+(re.tier===R)-+(W.tier===R)):q).map(W=>`
       <a class="offer${W.tier===R?" selected":""}" href="${p(W.href)}">
         <span class="offer-title">${p(W.label)}</span>
         <span class="prices"><span>${p(W.before)}</span><strong>${p(W.after)}</strong></span>
