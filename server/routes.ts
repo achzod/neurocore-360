@@ -1135,8 +1135,8 @@ export async function registerRoutes(
       const cleaned = String(value || fallback).replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 64);
       return cleaned || fallback;
     };
-    const code = cleanParam(req.query.code, "DISCOVERY30").toUpperCase();
-    const campaign = cleanParam(req.query.utm_campaign, "discovery30");
+    const code = cleanParam(req.query.code, "DISCOVERY20").toUpperCase();
+    const campaign = cleanParam(req.query.utm_campaign, "discovery20");
     const content = cleanParam(req.query.utm_content, "coaching_bridge");
     const selectedTier = cleanParam(req.query.tier, "");
     const productUrl = (path: string, tier: string) => {
@@ -1210,7 +1210,7 @@ export async function registerRoutes(
   <main>
     <div class="top"><strong>APEXLABS -> ACHZOD COACHING</strong><span>Code reserve aux dossiers Discovery/ApexLabs</span></div>
     <section class="hero">
-      <h1>Active ton -30% coaching</h1>
+      <h1>Active ton -20% coaching</h1>
       <p class="sub">Webflow ne peut pas appliquer le code automatiquement depuis l'email. La procedure correcte est simple : copie le code, choisis une formule 8 ou 12 semaines, puis colle-le dans <strong>Code promotionnel ?</strong> au checkout.</p>
       <div class="code-box">
         <div class="code" id="code">${escapeHtml(code)}</div>
@@ -16079,7 +16079,7 @@ export async function registerRoutes(
               if (emailSent) { sent++; if (sent >= 5) break; }
             }
           }
-          // J+30 nurture , pushes the profile-matched coaching formule with DISCOVERY30
+          // J+30 nurture , pushes the profile-matched coaching formule with DISCOVERY20
           if (daysSinceSent >= 30 && daysSinceSent < 60 && !trackingTypes.includes("sendDiscoveryJ30NurtureEmail")) {
             const hasConverted = await storage.hasUserPurchased?.(audit.email);
             if (!hasConverted) {

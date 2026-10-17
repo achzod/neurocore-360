@@ -15,7 +15,6 @@ import {
   isCriticalTransactionalEmail,
   shouldBlockForMarketingUnsubscribe,
 } from "./emailDeliveryPolicy";
-import { isDiscovery30RelaunchStopped } from "./discoveryPromoRelaunchPolicy";
 
 const SENDPULSE_USER_ID =
   process.env.SENDPULSE_USER_ID || process.env.SENDPULSE_API_USER_ID || "";
@@ -944,22 +943,15 @@ function formatDeadlineFR(daysFromNow: number): string {
   return date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
 }
 
-function blockStoppedDiscovery30Relaunch(emailType: string, email: string): boolean {
-  if (!isDiscovery30RelaunchStopped(emailType)) return false;
-  console.warn(`[SendPulse] ${emailType} disabled: DISCOVERY30 relaunches stopped for ${email}`);
-  return true;
-}
-
-// Legacy renderer retained for historical previews only. Every automated
-// relaunch that used this banner is blocked before any provider call.
+// Reusable Discovery coaching promotion banner.
 function getDiscoveryPromoBanner(daysLeft: number): string {
   const deadline = formatDeadlineFR(daysLeft);
   return `
     <div style="margin:0 0 28px;padding:18px 22px;background:${APPLE_COLORS.accent};border-radius:14px;text-align:center;">
       <p style="margin:0 0 4px;color:rgba(255,255,255,0.85);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Ton code clients Discovery</p>
-      <p style="margin:0 0 6px;color:#ffffff;font-size:28px;font-weight:800;letter-spacing:3px;">DISCOVERY30</p>
+      <p style="margin:0 0 6px;color:#ffffff;font-size:28px;font-weight:800;letter-spacing:3px;">DISCOVERY20</p>
       <p style="margin:0;color:rgba(255,255,255,0.95);font-size:14px;font-weight:500;line-height:1.5;">
-        -30% sur formules coaching 8 et 12 sem<br/>
+        -20% sur formules coaching 8 et 12 sem<br/>
         <span style="font-size:12px;color:rgba(255,255,255,0.8);">A copier dans le champ <strong style="color:#ffffff;">Code promotionnel</strong> au checkout</span><br/>
         <span style="font-size:12px;color:rgba(255,255,255,0.8);">Valide jusqu'au <strong style="color:#ffffff;">${deadline}</strong></span>
       </p>
@@ -974,7 +966,7 @@ function discoveryCoachingBridgeUrl(
   tier?: "ESSENTIAL" | "ELITE" | "PRIVATELAB"
 ): string {
   const url = new URL("/go/coaching", baseUrl);
-  url.searchParams.set("code", "DISCOVERY30");
+  url.searchParams.set("code", "DISCOVERY20");
   url.searchParams.set("utm_source", "apexlabs");
   url.searchParams.set("utm_medium", "email");
   url.searchParams.set("utm_campaign", campaign);
@@ -1079,10 +1071,10 @@ function getCoachingSection(auditType: string, color: string = COLORS.purple): s
   const promo = getPromoCodeForAuditType(auditType);
   const whatsappMessage = `Salut Achzod, je viens de recevoir mon rapport APEXLABS (${auditType}). Je veux ton avis pour savoir si je dois appliquer seul, faire une analyse plus avancee ou partir sur coaching.`;
 
-  // GRATUIT / DISCOVERY uses DISCOVERY30 (-30% on all coaching formulas)
+  // GRATUIT / DISCOVERY uses DISCOVERY20 (-20% on all coaching formulas)
   const isDiscovery = auditType === "GRATUIT" || auditType === "DISCOVERY";
   const discoveryPromo = isDiscovery
-    ? { code: "DISCOVERY30", percent: 30 }
+    ? { code: "DISCOVERY20", percent: 20 }
     : null;
 
   const promoSection = promo ? `
@@ -3537,7 +3529,7 @@ const escapeEmailHtml = (value: unknown): string =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 
-// Recovery CTA campaign after fixing the DISCOVERY30 checkout expectation.
+// Recovery CTA campaign after fixing the DISCOVERY20 checkout expectation.
 // Every coaching link goes through the first-party click redirect so APEXLABS
 // owns click attribution even if SendPulse click tracking is unavailable.
 export async function sendRecoveryCtaEmail(
@@ -3551,7 +3543,6 @@ export async function sendRecoveryCtaEmail(
     expiresText?: string;
   }
 ): Promise<boolean> {
-  if (blockStoppedDiscovery30Relaunch("sendRecoveryCtaEmail", email)) return false;
   try {
     const expiresText = opts.expiresText || "7 jours";
     const cohort = opts.cohort;
@@ -3566,7 +3557,7 @@ export async function sendRecoveryCtaEmail(
     const trackedPrimaryUrl = cohort.startsWith("abandon_") && resumeUrl ? resumeUrl : trackedCoachingUrl;
 
     const subjectByCohort: Record<RecoveryCtaCohort, string> = {
-      clicked_no_conversion: "DISCOVERY30 : le checkout est clair maintenant",
+      clicked_no_conversion: "DISCOVERY20 : le checkout est clair maintenant",
       clicked_help: "Tu hesites sur la formule ?",
       abandon_high: "Ton Discovery est presque fini",
       abandon_medium: "Reprends ton Discovery cette semaine",
@@ -3583,9 +3574,9 @@ export async function sendRecoveryCtaEmail(
       clicked_help:
         "Tu as cliqué sur le coaching mais tu n'es pas allé au bout. Si c'est le choix de la formule, le budget ou le code promo qui bloque, réponds à ce mail avec ton objectif et je te dis exactement quoi prendre. Sinon je te remets le lien direct.",
       abandon_high:
-        `Tu étais à ${safePercent ?? "plus de 75"}% du questionnaire. Ton scan est sauvegardé, reprends-le d'abord : derrière, je te garde DISCOVERY30 pour passer au coaching si tu veux appliquer le plan.`,
+        `Tu étais à ${safePercent ?? "plus de 75"}% du questionnaire. Ton scan est sauvegardé, reprends-le d'abord : derrière, je te garde DISCOVERY20 pour passer au coaching si tu veux appliquer le plan.`,
       abandon_medium:
-        `Tu avais commencé ton Discovery${safePercent !== null ? ` et tu étais à ${safePercent}%` : ""}. Finis-le, récupère ton rapport, puis utilise DISCOVERY30 si tu veux que je transforme le diagnostic en plan concret.`,
+        `Tu avais commencé ton Discovery${safePercent !== null ? ` et tu étais à ${safePercent}%` : ""}. Finis-le, récupère ton rapport, puis utilise DISCOVERY20 si tu veux que je transforme le diagnostic en plan concret.`,
       opened_no_click:
         "Tu as ouvert une relance mais tu n'as pas cliqué. Je te remets la suite simplement : si tu veux que le Discovery devienne un vrai plan semaine après semaine, c'est le coaching.",
       apex_buyer:
@@ -3593,9 +3584,9 @@ export async function sendRecoveryCtaEmail(
       warm_report:
         "Tu as ton Discovery. Maintenant la vraie question, c'est l'application : nutrition, entraînement, suivi hebdo, ajustements quand ça bloque.",
       abandon_last_chance:
-        "Ton questionnaire est encore sauvegardé. Si tu veux reprendre proprement, fais-le maintenant puis garde DISCOVERY30 pour le coaching.",
+        "Ton questionnaire est encore sauvegardé. Si tu veux reprendre proprement, fais-le maintenant puis garde DISCOVERY20 pour le coaching.",
       cold_base:
-        "Je reprends les dossiers Discovery cette semaine. Si tu veux passer du rapport à un plan suivi, je te remets l'accès coaching avec DISCOVERY30.",
+        "Je reprends les dossiers Discovery cette semaine. Si tu veux passer du rapport à un plan suivi, je te remets l'accès coaching avec DISCOVERY20.",
     };
 
     const primaryLabel = cohort.startsWith("abandon_") && resumeUrl
@@ -3612,7 +3603,7 @@ export async function sendRecoveryCtaEmail(
       <div style="padding:18px 20px;background:#f5f5f7;border-radius:12px;margin:0 0 22px;">
         <p style="color:${APPLE_COLORS.ink};font-size:15px;line-height:1.65;margin:0;">
           <strong>Important :</strong> au paiement sur AchzodCoaching, colle
-          <strong>DISCOVERY30</strong> dans le champ <strong>Code promotionnel ?</strong>.
+          <strong>DISCOVERY20</strong> dans le champ <strong>Code promotionnel ?</strong>.
           Le code est valable ${escapeEmailHtml(expiresText)} sur les formules coaching 8 et 12 semaines.
         </p>
       </div>
@@ -3638,14 +3629,14 @@ export async function sendRecoveryCtaEmail(
 
     const emailContent = getCoachingAppleWrapper(
       content,
-      cohort.startsWith("abandon_") ? "Ton Discovery est sauvegardé" : "DISCOVERY30 est actif",
+      cohort.startsWith("abandon_") ? "Ton Discovery est sauvegardé" : "DISCOVERY20 est actif",
       "Code à coller au checkout"
     );
 
     const plainText = `${introByCohort[cohort]}
 
-Code DISCOVERY30 : -30% sur formules coaching 8 et 12 semaines, valable ${expiresText}.
-Au paiement, copie DISCOVERY30 dans le champ "Code promotionnel ?".
+Code DISCOVERY20 : -20% sur formules coaching 8 et 12 semaines, valable ${expiresText}.
+Au paiement, copie DISCOVERY20 dans le champ "Code promotionnel ?".
 
 ${cohort.startsWith("abandon_") && resumeUrl ? `Reprendre mon Discovery : ${resumeUrl}\nVoir les formules coaching : ${trackedCoachingUrl}` : `Voir les formules coaching : ${trackedCoachingUrl}`}
 
@@ -3667,7 +3658,7 @@ Achzod`;
         metadata: {
           trackingId: opts.trackingId,
           cohort,
-          promoCode: "DISCOVERY30",
+          promoCode: "DISCOVERY20",
           coachingUrl,
           trackedCoachingUrl,
           resumeUrl,
@@ -4081,13 +4072,13 @@ export async function sendCoachingFormulaChoiceLeadEmail(
         Si tu veux que je transforme ça en plan concret semaine après semaine, prends ta place maintenant.
       </p>
       <p style="color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.65;margin:0 0 20px;">
-        Le code <strong style="color:${APPLE_COLORS.ink};">DISCOVERY30</strong> retire 30% sur les formules coaching 8 et 12 semaines. Il reste ${escapeEmailHtml(expiresText)}.
+        Le code <strong style="color:${APPLE_COLORS.ink};">DISCOVERY20</strong> retire 20% sur les formules coaching 8 et 12 semaines. Il reste ${escapeEmailHtml(expiresText)}.
       </p>
 
       ${getCoachingAppleButton(tier.ctaLabel, trackedCoachingUrl)}
 
       <p style="color:${APPLE_COLORS.muted};font-size:12px;line-height:1.55;margin:18px 0 0;text-align:center;">
-        Code valable jusqu'au <strong style="color:${APPLE_COLORS.ink};">${deadlineDate}</strong>. Au checkout, copie <strong style="color:${APPLE_COLORS.ink};">DISCOVERY30</strong> dans le champ "Code promotionnel ?".
+        Code valable jusqu'au <strong style="color:${APPLE_COLORS.ink};">${deadlineDate}</strong>. Au checkout, copie <strong style="color:${APPLE_COLORS.ink};">DISCOVERY20</strong> dans le champ "Code promotionnel ?".
       </p>
 
       <div style="padding:14px 18px;background:#f5f5f7;border-radius:10px;text-align:center;margin:24px 0 14px;">
@@ -4105,7 +4096,7 @@ export async function sendCoachingFormulaChoiceLeadEmail(
 
     const emailContent = getCoachingAppleWrapper(
       content,
-      `${tier.label} avec DISCOVERY30`,
+      `${tier.label} avec DISCOVERY20`,
       `Tu as rempli le choix de formule, il reste ${expiresText}`
     );
 
@@ -4115,10 +4106,10 @@ export async function sendCoachingFormulaChoiceLeadEmail(
       objective ? `Objectif : ${objective}` : "",
       reason ? `Pourquoi : ${reason}` : "",
       "",
-      `Code DISCOVERY30 : -30% sur les formules coaching 8 et 12 semaines, valable ${expiresText}.`,
+      `Code DISCOVERY20 : -20% sur les formules coaching 8 et 12 semaines, valable ${expiresText}.`,
       `Choisir ma formule : ${trackedCoachingUrl}`,
       "",
-      `Au checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".`,
+      `Au checkout, copie DISCOVERY20 dans le champ "Code promotionnel ?".`,
       `Si tu hésites encore, réponds à ce mail avec ton blocage : budget, timing, formule, blessure, ou autre.`,
       "",
       "Achzod",
@@ -4137,7 +4128,7 @@ export async function sendCoachingFormulaChoiceLeadEmail(
         recipientEmail: email,
         metadata: {
           trackingId: opts.trackingId,
-          promoCode: "DISCOVERY30",
+          promoCode: "DISCOVERY20",
           campaign,
           recommendedTier: tier.label,
           rawTier: lead.tier || null,
@@ -4528,7 +4519,7 @@ Achzod`;
 }
 
 // Email Discovery J+3: pivot vers le coaching directement (plus d'upsell audit intermédiaire).
-// Push Essential (entry tier) avec DISCOVERY30. L'objectif est d'établir le coaching
+// Push Essential (entry tier) avec DISCOVERY20. L'objectif est d'établir le coaching
 // comme la "vraie solution" dès J+3 plutôt que de vendre un 2e audit à 59€.
 export async function sendGratuitUpsellEmail(
   email: string,
@@ -4536,7 +4527,6 @@ export async function sendGratuitUpsellEmail(
   baseUrl: string,
   trackingId: string
 ): Promise<boolean> {
-  if (blockStoppedDiscovery30Relaunch("sendGratuitUpsellEmail", email)) return false;
   try {
     const reportLink = buildReportAccessUrl(baseUrl, `/scan/${auditId}`, "audit", auditId, email);
     const coachingLink = discoveryCoachingBridgeUrl(baseUrl, "discovery_j3_coaching", "essential", "ESSENTIAL");
@@ -4583,17 +4573,17 @@ export async function sendGratuitUpsellEmail(
         Je construis ton plan directement à partir des données de ton Discovery, pas de questionnaire à refaire. Plan personnalisé, nutrition précision, bilan écrit chaque semaine où tu m'envoies tes retours et j'ajuste avant que tu décroches.
       </p>
 
-      ${getCoachingAppleButton('Activer mon code -30% maintenant', trackedCoachingLink)}
+      ${getCoachingAppleButton('Activer mon code -20% maintenant', trackedCoachingLink)}
       ${getWhatsAppContactButton("Demander l'avis d'Achzod", "Salut Achzod, j'ai recu mon Discovery Scan APEXLABS. Je veux ton avis pour choisir entre appliquer seul, prendre une formule coaching ou approfondir avec une analyse payante.")}
 
       <div style="text-align:center;margin:18px 0 14px;">
         <a href="${trackedAllFormulesLink}" style="color:${APPLE_COLORS.accent};font-size:14px;text-decoration:none;font-weight:500;">
-          Comparer les 3 formules avec DISCOVERY30 →
+          Comparer les 3 formules avec DISCOVERY20 →
         </a>
       </div>
 
       <p style="color:${APPLE_COLORS.muted};font-size:12px;line-height:1.55;margin:20px 0 0;text-align:center;">
-        Code valable jusqu'au <strong style="color:${APPLE_COLORS.ink};">${deadlineDate}</strong>. Au paiement, copie <strong style="color:${APPLE_COLORS.ink};">DISCOVERY30</strong> dans le champ "Code promotionnel ?".
+        Code valable jusqu'au <strong style="color:${APPLE_COLORS.ink};">${deadlineDate}</strong>. Au paiement, copie <strong style="color:${APPLE_COLORS.ink};">DISCOVERY20</strong> dans le champ "Code promotionnel ?".
       </p>
 
       <div style="padding:14px 18px;background:#f5f5f7;border-radius:10px;text-align:center;margin-top:20px;">
@@ -4611,15 +4601,15 @@ export async function sendGratuitUpsellEmail(
 
     const emailContent = getCoachingAppleWrapper(
       content,
-      `DISCOVERY30 actif , -30% sur ton coaching`,
+      `DISCOVERY20 actif , -20% sur ton coaching`,
       `Valable jusqu'au ${deadlineDate}`
     );
 
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
-        text: `Ton code DISCOVERY30 est actif : -30% sur formules coaching 8 et 12 semaines, valable jusqu'au ${deadlineDate}.\n\nChoisir ma formule : ${trackedCoachingLink}\nDemander mon avis sur WhatsApp : ${whatsappHref}\nComparer les 3 formules : ${trackedAllFormulesLink}\n\nAu paiement, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`,
-        subject: `DISCOVERY30 actif , 7 jours pour activer ton coaching -30%`,
+        text: `Ton code DISCOVERY20 est actif : -20% sur formules coaching 8 et 12 semaines, valable jusqu'au ${deadlineDate}.\n\nChoisir ma formule : ${trackedCoachingLink}\nDemander mon avis sur WhatsApp : ${whatsappHref}\nComparer les 3 formules : ${trackedAllFormulesLink}\n\nAu paiement, copie DISCOVERY20 dans le champ "Code promotionnel ?".\n\nAchzod`,
+        subject: `DISCOVERY20 actif , 7 jours pour activer ton coaching -20%`,
         from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
       },
@@ -4628,7 +4618,7 @@ export async function sendGratuitUpsellEmail(
         recipientEmail: email,
         auditId,
         auditType: "GRATUIT",
-        metadata: { promoCode: "DISCOVERY30", reportLink, coachingLink, allFormulesLink, trackedCoachingLink, trackedAllFormulesLink, whatsappHref, trackingId },
+        metadata: { promoCode: "DISCOVERY20", reportLink, coachingLink, allFormulesLink, trackedCoachingLink, trackedAllFormulesLink, whatsappHref, trackingId },
       }
     );
 
@@ -5066,7 +5056,7 @@ export async function sendPremiumJ14Email(
   }
 }
 
-// Email Discovery J+14: coaching personnalisé avec code DISCOVERY30.
+// Email Discovery J+14: coaching personnalisé avec code DISCOVERY20.
 // Accepts an optional `recommendation` produced by recommendCoachingTier() ,
 // when provided, routes the CTA to the specific formule page (Essential/Elite/
 // PrivateLab) and surfaces a one-sentence personalized rationale in the hero.
@@ -5077,7 +5067,6 @@ export async function sendDiscoveryJ14CoachingEmail(
   trackingId: string,
   recommendation?: { tier: "ESSENTIAL" | "ELITE" | "PRIVATELAB"; reason: string; href: string }
 ): Promise<boolean> {
-  if (blockStoppedDiscovery30Relaunch("sendDiscoveryJ14CoachingEmail", email)) return false;
   try {
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
     const coachingLink = discoveryCoachingBridgeUrl(
@@ -5131,14 +5120,14 @@ export async function sendDiscoveryJ14CoachingEmail(
         <tr><td style="padding:10px 16px;background:#f5f5f7;border-radius:8px;color:${APPLE_COLORS.ink};font-size:14px;font-weight:500;line-height:1.55;">Accès mail prioritaire à moi, réponse personnelle en moins de 24h</td></tr>
       </table>
 
-      ${getCoachingAppleButton(tierLabel ? `Activer mon code -30% sur ${tierLabel}` : 'Activer mon code -30% maintenant', trackedCoachingLink)}
+      ${getCoachingAppleButton(tierLabel ? `Activer mon code -20% sur ${tierLabel}` : 'Activer mon code -20% maintenant', trackedCoachingLink)}
       ${getWhatsAppContactButton("Demander l'avis d'Achzod", tierLabel
         ? `Salut Achzod, j'ai recu mon Discovery Scan APEXLABS et la recommandation ${tierLabel}. Je veux ton avis avant de choisir ma formule coaching.`
         : "Salut Achzod, j'ai recu mon Discovery Scan APEXLABS. Je veux ton avis pour choisir la bonne formule coaching ou savoir si je dois approfondir avant."
       )}
 
       <p style="color:${APPLE_COLORS.muted};font-size:12px;line-height:1.55;margin:20px 0 0;text-align:center;">
-        Code valable jusqu'au <strong style="color:${APPLE_COLORS.ink};">${deadlineDate}</strong>. Au checkout, copie <strong style="color:${APPLE_COLORS.ink};">DISCOVERY30</strong> dans le champ "Code promotionnel ?".
+        Code valable jusqu'au <strong style="color:${APPLE_COLORS.ink};">${deadlineDate}</strong>. Au checkout, copie <strong style="color:${APPLE_COLORS.ink};">DISCOVERY20</strong> dans le champ "Code promotionnel ?".
       </p>
 
       <!-- Social proof -->
@@ -5158,19 +5147,19 @@ export async function sendDiscoveryJ14CoachingEmail(
 
     const emailContent = getCoachingAppleWrapper(
       content,
-      tierLabel ? `${tierLabel} avec DISCOVERY30 (-30%)` : `7 jours pour activer DISCOVERY30`,
-      `-30% sur ton coaching jusqu'au ${deadlineDate}`
+      tierLabel ? `${tierLabel} avec DISCOVERY20 (-20%)` : `7 jours pour activer DISCOVERY20`,
+      `-20% sur ton coaching jusqu'au ${deadlineDate}`
     );
 
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
         text: tierLabel
-          ? `Je te recommande ${tierLabel} d'après ton Discovery.\n${recommendation!.reason}\n\nCode DISCOVERY30 : -30% jusqu'au ${deadlineDate} (7 jours).\nChoisir ma formule : ${trackedCoachingLink}\nDemander mon avis sur WhatsApp : ${whatsappHref}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`
-          : `Tu as les données. Le coaching, c'est l'application pratique sur la durée.\n\nCode DISCOVERY30 : -30% sur formules 8 et 12 sem, jusqu'au ${deadlineDate} (7 jours).\nChoisir ma formule : ${trackedCoachingLink}\nDemander mon avis sur WhatsApp : ${whatsappHref}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`,
+          ? `Je te recommande ${tierLabel} d'après ton Discovery.\n${recommendation!.reason}\n\nCode DISCOVERY20 : -20% jusqu'au ${deadlineDate} (7 jours).\nChoisir ma formule : ${trackedCoachingLink}\nDemander mon avis sur WhatsApp : ${whatsappHref}\n\nAu checkout, copie DISCOVERY20 dans le champ "Code promotionnel ?".\n\nAchzod`
+          : `Tu as les données. Le coaching, c'est l'application pratique sur la durée.\n\nCode DISCOVERY20 : -20% sur formules 8 et 12 sem, jusqu'au ${deadlineDate} (7 jours).\nChoisir ma formule : ${trackedCoachingLink}\nDemander mon avis sur WhatsApp : ${whatsappHref}\n\nAu checkout, copie DISCOVERY20 dans le champ "Code promotionnel ?".\n\nAchzod`,
         subject: tierLabel
-          ? `${tierLabel} avec DISCOVERY30 , 7 jours pour activer`
-          : `7 jours pour activer DISCOVERY30 , -30% coaching`,
+          ? `${tierLabel} avec DISCOVERY20 , 7 jours pour activer`
+          : `7 jours pour activer DISCOVERY20 , -20% coaching`,
         from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
       },
@@ -5179,7 +5168,7 @@ export async function sendDiscoveryJ14CoachingEmail(
         recipientEmail: email,
         auditId,
         auditType: "GRATUIT",
-        metadata: { promoCode: "DISCOVERY30", coachingLink, trackedCoachingLink, whatsappHref, trackingId, recommendedTier: recommendation?.tier },
+        metadata: { promoCode: "DISCOVERY20", coachingLink, trackedCoachingLink, whatsappHref, trackingId, recommendedTier: recommendation?.tier },
       }
     );
 
@@ -5199,7 +5188,6 @@ export async function sendGratuitJ5Email(
   baseUrl: string,
   trackingId: string
 ): Promise<boolean> {
-  if (blockStoppedDiscovery30Relaunch("sendGratuitJ5Email", email)) return false;
   try {
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
     const primaryCtaLink = discoveryCoachingBridgeUrl(baseUrl, "discovery_j5", "essential", "ESSENTIAL");
@@ -5263,18 +5251,18 @@ export async function sendGratuitJ5Email(
           Plan sur-mesure calibré sur ton Discovery, nutrition précision, bilan écrit chaque semaine, ajustements en continu, contrat moral avec moi.
         </p>
 
-        ${getCoachingAppleButton('Activer mon code -30% maintenant', trackedPrimaryCtaLink)}
+        ${getCoachingAppleButton('Activer mon code -20% maintenant', trackedPrimaryCtaLink)}
         ${getWhatsAppContactButton("Demander l'avis d'Achzod", "Salut Achzod, j'ai mon Discovery Scan APEXLABS depuis quelques jours. Je veux ton avis pour transformer le diagnostic en plan concret.")}
       </div>
 
       <div style="text-align:center;margin-bottom:14px;">
         <a href="${trackedSecondaryCtaLink}" style="color:${APPLE_COLORS.accent};font-size:14px;text-decoration:none;font-weight:500;">
-          Comparer les 3 formules avec DISCOVERY30 →
+          Comparer les 3 formules avec DISCOVERY20 →
         </a>
       </div>
 
       <p style="color:${APPLE_COLORS.muted};font-size:12px;line-height:1.55;margin:18px 0 0;text-align:center;">
-        Code valable jusqu'au <strong style="color:${APPLE_COLORS.ink};">${deadlineDate}</strong>. Au checkout, copie <strong style="color:${APPLE_COLORS.ink};">DISCOVERY30</strong> dans le champ "Code promotionnel ?".
+        Code valable jusqu'au <strong style="color:${APPLE_COLORS.ink};">${deadlineDate}</strong>. Au checkout, copie <strong style="color:${APPLE_COLORS.ink};">DISCOVERY20</strong> dans le champ "Code promotionnel ?".
       </p>
 
       <div style="padding:14px 18px;background:#f5f5f7;border-radius:10px;text-align:center;">
@@ -5292,15 +5280,15 @@ export async function sendGratuitJ5Email(
 
     const emailContent = getCoachingAppleWrapper(
       content,
-      `5 jours pour activer DISCOVERY30`,
-      `-30% sur ton coaching jusqu'au ${deadlineDate}`
+      `5 jours pour activer DISCOVERY20`,
+      `-20% sur ton coaching jusqu'au ${deadlineDate}`
     );
 
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
-        text: `Ton code DISCOVERY30 est actif : -30% sur formules coaching 8 et 12 semaines, valable jusqu'au ${deadlineDate} (5 jours).\n\nLe Discovery te donne le diagnostic. Le coaching te donne le plan jour-par-jour, l'ajustement hebdo, et le contrat moral.\n\nChoisir ma formule : ${trackedPrimaryCtaLink}\nDemander mon avis sur WhatsApp : ${whatsappHref}\nComparer les 3 formules : ${trackedSecondaryCtaLink}\nRelire le Discovery : ${reportLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`,
-        subject: `5 jours pour activer DISCOVERY30 , -30% coaching`,
+        text: `Ton code DISCOVERY20 est actif : -20% sur formules coaching 8 et 12 semaines, valable jusqu'au ${deadlineDate} (5 jours).\n\nLe Discovery te donne le diagnostic. Le coaching te donne le plan jour-par-jour, l'ajustement hebdo, et le contrat moral.\n\nChoisir ma formule : ${trackedPrimaryCtaLink}\nDemander mon avis sur WhatsApp : ${whatsappHref}\nComparer les 3 formules : ${trackedSecondaryCtaLink}\nRelire le Discovery : ${reportLink}\n\nAu checkout, copie DISCOVERY20 dans le champ "Code promotionnel ?".\n\nAchzod`,
+        subject: `5 jours pour activer DISCOVERY20 , -20% coaching`,
         from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
       },
@@ -5309,7 +5297,7 @@ export async function sendGratuitJ5Email(
         recipientEmail: email,
         auditId,
         auditType: "GRATUIT",
-        metadata: { promoCode: "DISCOVERY30", primaryCtaLink, secondaryCtaLink, trackedPrimaryCtaLink, trackedSecondaryCtaLink, whatsappHref, trackingId },
+        metadata: { promoCode: "DISCOVERY20", primaryCtaLink, secondaryCtaLink, trackedPrimaryCtaLink, trackedSecondaryCtaLink, whatsappHref, trackingId },
       }
     );
 
@@ -5321,14 +5309,13 @@ export async function sendGratuitJ5Email(
   }
 }
 
-// Email Discovery J+7: "Offre limitée -30% cette semaine"
+// Email Discovery J+7: "Offre limitée -20% cette semaine"
 export async function sendGratuitJ7Email(
   email: string,
   auditId: string,
   baseUrl: string,
   trackingId: string
 ): Promise<boolean> {
-  if (blockStoppedDiscovery30Relaunch("sendGratuitJ7Email", email)) return false;
   try {
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
     const essentialLink = discoveryCoachingBridgeUrl(baseUrl, "discovery_j7_lastcall", "essential", "ESSENTIAL");
@@ -5342,14 +5329,14 @@ export async function sendGratuitJ7Email(
     const DAYS_LEFT = 3;
     const deadlineDate = formatDeadlineFR(DAYS_LEFT);
     const whatsappHref = buildWhatsAppUrl(
-      "Salut Achzod, j'ai DISCOVERY30 mais j'hesite entre Essential, Elite et Private Lab. Je veux ton avis pour choisir la bonne formule."
+      "Salut Achzod, j'ai DISCOVERY20 mais j'hesite entre Essential, Elite et Private Lab. Je veux ton avis pour choisir la bonne formule."
     );
 
     const content = `
       ${getDiscoveryPromoBanner(DAYS_LEFT)}
 
       <p style="color:${APPLE_COLORS.inkSoft};font-size:16px;line-height:1.65;margin:0 0 24px;">
-        Plus que <strong style="color:${APPLE_COLORS.ink};">3 jours</strong> pour activer ton code DISCOVERY30. Voici une comparaison claire des 3 formules coaching avec le tarif après réduction.
+        Plus que <strong style="color:${APPLE_COLORS.ink};">3 jours</strong> pour activer ton code DISCOVERY20. Voici une comparaison claire des 3 formules coaching avec le tarif après réduction.
       </p>
 
       <!-- Code box -->
@@ -5357,14 +5344,14 @@ export async function sendGratuitJ7Email(
         <p style="color:${APPLE_COLORS.muted};font-size:11px;text-transform:uppercase;letter-spacing:2px;margin:0 0 8px;font-weight:700;">
           Code à appliquer au checkout
         </p>
-        <p style="color:${APPLE_COLORS.accent};font-size:30px;font-weight:800;letter-spacing:3px;margin:0 0 6px;">DISCOVERY30</p>
+        <p style="color:${APPLE_COLORS.accent};font-size:30px;font-weight:800;letter-spacing:3px;margin:0 0 6px;">DISCOVERY20</p>
         <p style="color:${APPLE_COLORS.ink};font-size:14px;margin:0;font-weight:500;">
-          -30% sur formules coaching <strong>8 et 12 semaines</strong>
+          -20% sur formules coaching <strong>8 et 12 semaines</strong>
         </p>
       </div>
 
       <h2 style="color:${APPLE_COLORS.ink};margin:0 0 14px;font-size:20px;font-weight:700;letter-spacing:-0.3px;">
-        Les 3 formules après DISCOVERY30
+        Les 3 formules après DISCOVERY20
       </h2>
 
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:24px;border-collapse:separate;border-spacing:0 10px;">
@@ -5374,7 +5361,7 @@ export async function sendGratuitJ7Email(
             <p style="color:${APPLE_COLORS.inkSoft};font-size:13px;margin:0 0 8px;line-height:1.55;">Mail prioritaire 7j/7. Plan personnalisé sur ton Discovery. Bilan écrit hebdo.</p>
             <p style="color:${APPLE_COLORS.ink};font-size:14px;margin:0 0 10px;">
               <span style="text-decoration:line-through;color:${APPLE_COLORS.muted};">399€</span>
-              <span style="color:${APPLE_COLORS.accent};font-weight:700;margin-left:8px;font-size:18px;">279€</span> 8 sem
+              <span style="color:${APPLE_COLORS.accent};font-weight:700;margin-left:8px;font-size:18px;">319€</span> 8 sem
             </p>
             <a href="${trackedEssentialLink}" style="color:${APPLE_COLORS.accent};font-size:14px;text-decoration:none;font-weight:600;">Voir Essential →</a>
           </td>
@@ -5385,7 +5372,7 @@ export async function sendGratuitJ7Email(
             <p style="color:${APPLE_COLORS.inkSoft};font-size:13px;margin:0 0 8px;line-height:1.55;">Tout Essential, plus gestion blessures et ajustements deux fois par semaine.</p>
             <p style="color:${APPLE_COLORS.ink};font-size:14px;margin:0 0 10px;">
               <span style="text-decoration:line-through;color:${APPLE_COLORS.muted};">649€</span>
-              <span style="color:${APPLE_COLORS.accent};font-weight:700;margin-left:8px;font-size:18px;">454€</span> 8 sem
+              <span style="color:${APPLE_COLORS.accent};font-weight:700;margin-left:8px;font-size:18px;">519€</span> 8 sem
             </p>
             <a href="${trackedEliteLink}" style="color:${APPLE_COLORS.accent};font-size:14px;text-decoration:none;font-weight:600;">Voir Elite →</a>
           </td>
@@ -5396,7 +5383,7 @@ export async function sendGratuitJ7Email(
             <p style="color:${APPLE_COLORS.inkSoft};font-size:13px;margin:0 0 8px;line-height:1.55;">Tout Elite, plus reconstruction pluridisciplinaire et accès mail prioritaire 6h-minuit.</p>
             <p style="color:${APPLE_COLORS.ink};font-size:14px;margin:0 0 10px;">
               <span style="text-decoration:line-through;color:${APPLE_COLORS.muted};">799€</span>
-              <span style="color:${APPLE_COLORS.accent};font-weight:700;margin-left:8px;font-size:18px;">559€</span> 8 sem
+              <span style="color:${APPLE_COLORS.accent};font-weight:700;margin-left:8px;font-size:18px;">639€</span> 8 sem
             </p>
             <a href="${trackedPrivateLabLink}" style="color:${APPLE_COLORS.accent};font-size:14px;text-decoration:none;font-weight:600;">Voir Private Lab →</a>
           </td>
@@ -5404,10 +5391,10 @@ export async function sendGratuitJ7Email(
       </table>
 
       ${getCoachingAppleButton('Comparer les 3 formules', trackedAllFormulesLink)}
-      ${getWhatsAppContactButton("Demander l'avis d'Achzod", "Salut Achzod, j'ai DISCOVERY30 mais j'hesite entre Essential, Elite et Private Lab. Je veux ton avis pour choisir la bonne formule.")}
+      ${getWhatsAppContactButton("Demander l'avis d'Achzod", "Salut Achzod, j'ai DISCOVERY20 mais j'hesite entre Essential, Elite et Private Lab. Je veux ton avis pour choisir la bonne formule.")}
 
       <p style="color:${APPLE_COLORS.muted};font-size:13px;margin:20px 0 0;text-align:center;line-height:1.55;">
-        Les 4 semaines ne sont pas éligibles au code DISCOVERY30, seules les 8 et 12 sem le sont.
+        Les 4 semaines ne sont pas éligibles au code DISCOVERY20, seules les 8 et 12 sem le sont.
       </p>
 
       <p style="color:${APPLE_COLORS.muted};font-size:12px;margin:24px 0 0;">
@@ -5419,15 +5406,15 @@ export async function sendGratuitJ7Email(
 
     const emailContent = getCoachingAppleWrapper(
       content,
-      `Plus que 3 jours pour DISCOVERY30`,
-      `-30% sur ton coaching jusqu'au ${deadlineDate}`
+      `Plus que 3 jours pour DISCOVERY20`,
+      `-20% sur ton coaching jusqu'au ${deadlineDate}`
     );
 
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
-        text: `Plus que 3 jours pour activer DISCOVERY30 (jusqu'au ${deadlineDate}).\n\nComparaison des 3 formules coaching avec DISCOVERY30 :\n\nEssential 8 sem : 279€ (au lieu de 399€) , ${trackedEssentialLink}\nElite 8 sem : 454€ (au lieu de 649€) , ${trackedEliteLink}\nPrivate Lab 8 sem : 559€ (au lieu de 799€) , ${trackedPrivateLabLink}\n\nDemander mon avis sur WhatsApp : ${whatsappHref}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?". Les 4 semaines ne sont pas éligibles au code, seules les 8 et 12 sem le sont.\n\nAchzod`,
-        subject: `3 jours avant que DISCOVERY30 expire , -30% coaching`,
+        text: `Plus que 3 jours pour activer DISCOVERY20 (jusqu'au ${deadlineDate}).\n\nComparaison des 3 formules coaching avec DISCOVERY20 :\n\nEssential 8 sem : 319€ (au lieu de 399€) , ${trackedEssentialLink}\nElite 8 sem : 519€ (au lieu de 649€) , ${trackedEliteLink}\nPrivate Lab 8 sem : 639€ (au lieu de 799€) , ${trackedPrivateLabLink}\n\nDemander mon avis sur WhatsApp : ${whatsappHref}\n\nAu checkout, copie DISCOVERY20 dans le champ "Code promotionnel ?". Les 4 semaines ne sont pas éligibles au code, seules les 8 et 12 sem le sont.\n\nAchzod`,
+        subject: `3 jours avant que DISCOVERY20 expire , -20% coaching`,
         from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
       },
@@ -5436,7 +5423,7 @@ export async function sendGratuitJ7Email(
         recipientEmail: email,
         auditId,
         auditType: "GRATUIT",
-        metadata: { promoCode: "DISCOVERY30", essentialLink, eliteLink, privateLabLink, allFormulesLink, trackedEssentialLink, trackedEliteLink, trackedPrivateLabLink, trackedAllFormulesLink, whatsappHref, trackingId },
+        metadata: { promoCode: "DISCOVERY20", essentialLink, eliteLink, privateLabLink, allFormulesLink, trackedEssentialLink, trackedEliteLink, trackedPrivateLabLink, trackedAllFormulesLink, whatsappHref, trackingId },
       }
     );
 
@@ -5457,10 +5444,10 @@ const PROMO_EMAIL_CONFIG: Record<string, {
   gradient: string;
 }> = {
   GRATUIT: {
-    title: "Ton code promo -30%",
+    title: "Ton code promo -20%",
     subtitle: "Merci pour ton avis sur le Discovery Scan",
-    description: "Utilise ce code pour bénéficier de 30% de réduction sur les formules coaching 8 et 12 semaines (Essential, Elite, Private Lab).",
-    discount: "-30% sur formules coaching 8 et 12 sem",
+    description: "Utilise ce code pour bénéficier de 20% de réduction sur les formules coaching 8 et 12 semaines (Essential, Elite, Private Lab).",
+    discount: "-20% sur formules coaching 8 et 12 sem",
     gradient: "linear-gradient(135deg, #FCDD00 0%, #d4af37 100%)",
   },
   PREMIUM: {
@@ -5864,7 +5851,7 @@ export async function addSubscriberToList(
 
 // Discovery J+30 , long-tail nurture for Discovery Scan recipients who haven't
 // upgraded. Pushes COACHING directly (not more audits) since coaching is the
-// real revenue. Uses DISCOVERY30 code (20% off all coaching formulas).
+// real revenue. Uses DISCOVERY20 code (20% off all coaching formulas).
 // When a `recommendation` is passed, the CTA points to the matched formule
 // page (Essential/Elite/PrivateLab) and the intro surfaces the rationale.
 // One-shot per client, dedup via email_tracking.
@@ -5875,7 +5862,6 @@ export async function sendDiscoveryJ30NurtureEmail(
   trackingId: string,
   recommendation?: { tier: "ESSENTIAL" | "ELITE" | "PRIVATELAB"; reason: string; href: string }
 ): Promise<boolean> {
-  if (blockStoppedDiscovery30Relaunch("sendDiscoveryJ30NurtureEmail", email)) return false;
   try {
     const reportLink = buildReportAccessUrl(baseUrl, `/scan/${auditId}`, "audit", auditId, email);
     const coachingLink = discoveryCoachingBridgeUrl(
@@ -5921,10 +5907,10 @@ export async function sendDiscoveryJ30NurtureEmail(
       </div>
       `}
 
-      ${getCoachingAppleButton(tierLabel ? `Activer mon code -30% sur ${tierLabel}` : 'Activer mon code -30% maintenant', trackedCoachingLink)}
+      ${getCoachingAppleButton(tierLabel ? `Activer mon code -20% sur ${tierLabel}` : 'Activer mon code -20% maintenant', trackedCoachingLink)}
 
       <p style="color:${APPLE_COLORS.muted};font-size:12px;line-height:1.55;margin:18px 0 0;text-align:center;">
-        Code valable jusqu'au <strong style="color:${APPLE_COLORS.ink};">${deadlineDate}</strong>. Au checkout, copie <strong style="color:${APPLE_COLORS.ink};">DISCOVERY30</strong> dans le champ "Code promotionnel ?".
+        Code valable jusqu'au <strong style="color:${APPLE_COLORS.ink};">${deadlineDate}</strong>. Au checkout, copie <strong style="color:${APPLE_COLORS.ink};">DISCOVERY20</strong> dans le champ "Code promotionnel ?".
       </p>
 
       ${!tierLabel || tierLabel !== "Essential" ? `
@@ -5953,19 +5939,19 @@ export async function sendDiscoveryJ30NurtureEmail(
 
     const emailContent = getCoachingAppleWrapper(
       content,
-      tierLabel ? `${tierLabel} avec DISCOVERY30 (-30%)` : `5 jours pour activer DISCOVERY30`,
-      `-30% sur ton coaching jusqu'au ${deadlineDate}`
+      tierLabel ? `${tierLabel} avec DISCOVERY20 (-20%)` : `5 jours pour activer DISCOVERY20`,
+      `-20% sur ton coaching jusqu'au ${deadlineDate}`
     );
 
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(emailContent),
         text: tierLabel
-          ? `Je te recommande ${tierLabel} d'après ton Discovery.\n${recommendation!.reason}\n\nCode DISCOVERY30 : -30% jusqu'au ${deadlineDate} (5 jours).\nChoisir ma formule : ${trackedCoachingLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`
-          : `Un mois depuis ton Discovery. Pour corriger durablement, faut un protocole ajusté chaque semaine. C'est exactement ce que je fais en coaching.\n\nCode DISCOVERY30 : -30% sur formules 8 et 12 sem, jusqu'au ${deadlineDate} (5 jours).\nChoisir ma formule : ${trackedCoachingLink}\nCommencer par Essential : ${trackedEssentialLink}\n\nAu checkout, copie DISCOVERY30 dans le champ "Code promotionnel ?".\n\nAchzod`,
+          ? `Je te recommande ${tierLabel} d'après ton Discovery.\n${recommendation!.reason}\n\nCode DISCOVERY20 : -20% jusqu'au ${deadlineDate} (5 jours).\nChoisir ma formule : ${trackedCoachingLink}\n\nAu checkout, copie DISCOVERY20 dans le champ "Code promotionnel ?".\n\nAchzod`
+          : `Un mois depuis ton Discovery. Pour corriger durablement, faut un protocole ajusté chaque semaine. C'est exactement ce que je fais en coaching.\n\nCode DISCOVERY20 : -20% sur formules 8 et 12 sem, jusqu'au ${deadlineDate} (5 jours).\nChoisir ma formule : ${trackedCoachingLink}\nCommencer par Essential : ${trackedEssentialLink}\n\nAu checkout, copie DISCOVERY20 dans le champ "Code promotionnel ?".\n\nAchzod`,
         subject: tierLabel
-          ? `${tierLabel} avec DISCOVERY30 , 5 jours pour activer`
-          : `5 jours pour activer DISCOVERY30 , -30% coaching`,
+          ? `${tierLabel} avec DISCOVERY20 , 5 jours pour activer`
+          : `5 jours pour activer DISCOVERY20 , -20% coaching`,
         from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
       },
@@ -5973,7 +5959,7 @@ export async function sendDiscoveryJ30NurtureEmail(
         emailType: "sendDiscoveryJ30NurtureEmail",
         recipientEmail: email,
         auditId,
-        metadata: { promoCode: "DISCOVERY30", coachingLink, essentialLink, trackedCoachingLink, trackedEssentialLink, trackingId, recommendedTier: recommendation?.tier },
+        metadata: { promoCode: "DISCOVERY20", coachingLink, essentialLink, trackedCoachingLink, trackedEssentialLink, trackingId, recommendedTier: recommendation?.tier },
       }
     );
 

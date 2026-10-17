@@ -7,6 +7,9 @@ import test from "node:test";
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const productionRoots = [resolve(repositoryRoot, "server"), resolve(repositoryRoot, "client/src")];
 const allowedLiteralSources = new Set([
+  "client/src/components/CoachingPromoBanner.tsx",
+  "server/emailService.ts",
+  "server/routes.ts",
   "server/storage.ts",
 ]);
 
@@ -20,7 +23,7 @@ function productionSourceFiles(directory: string): string[] {
   });
 }
 
-test("DISCOVERY20 is absent from the client bundle sources and exists only in server-owned configuration", () => {
+test("DISCOVERY20 exists only on the audited promo surfaces", () => {
   const occurrences = productionRoots
     .flatMap(productionSourceFiles)
     .filter((path) => readFileSync(path, "utf8").includes("DISCOVERY20"))
@@ -28,6 +31,16 @@ test("DISCOVERY20 is absent from the client bundle sources and exists only in se
     .sort();
 
   assert.deepEqual(occurrences, [...allowedLiteralSources].sort());
+});
+
+test("the retired Discovery promotion is absent from production sources", () => {
+  const retiredCode = ["DISCOVERY", "30"].join("");
+  const occurrences = productionRoots
+    .flatMap(productionSourceFiles)
+    .filter((path) => readFileSync(path, "utf8").toUpperCase().includes(retiredCode))
+    .map((path) => relative(repositoryRoot, path));
+
+  assert.deepEqual(occurrences, []);
 });
 
 test("stored Discovery report templates never contain the promo code before approval", () => {
