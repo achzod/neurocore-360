@@ -1285,16 +1285,17 @@ async function applyLivePeptauraPricing(
       && Number.isFinite(cachedSnapshotAgeMs)
       && cachedSnapshotAgeMs <= PEPTAURA_CATALOG_MAX_AGE_MS
     ) ? cachedSnapshot : null;
-    let targetedFeedSnapshot: PeptauraLiveProductSnapshot | null = null;
-    if (!fetchedSnapshot && !freshCachedSnapshot) {
-      targetedProductFeedSnapshotsPromise ||= fetchPeptauraProductFeedSnapshots(true);
-      targetedFeedSnapshot = findTargetedProductFeedSnapshot(
-        pep.name,
-        slug,
-        await targetedProductFeedSnapshotsPromise,
-      );
-    }
-    const snapshot = fetchedSnapshot || freshCachedSnapshot || targetedFeedSnapshot;
+    // Prefer Peptaura's signed official feed when it is available. Product
+    // pages can expose only the marketplace default package and hide a live
+    // single-vial offer, which previously created false packaging-overstock
+    // failures for France (GHK-Cu, Jihed 2026-10-20).
+    targetedProductFeedSnapshotsPromise ||= fetchPeptauraProductFeedSnapshots(true);
+    const targetedFeedSnapshot = findTargetedProductFeedSnapshot(
+      pep.name,
+      slug,
+      await targetedProductFeedSnapshotsPromise,
+    );
+    const snapshot = targetedFeedSnapshot || fetchedSnapshot || freshCachedSnapshot;
     if (!snapshot || snapshot.listings.length === 0) {
       failures.push(`${pep.name}: page produit live indisponible`);
       continue;
@@ -1683,6 +1684,13 @@ export async function refreshPeptauraPricingForDelivery(
   tier: string | null | undefined,
   consentAccepted: boolean
 ): Promise<PeptidesReport> {
+  // Once a report already carries a live-pricing snapshot, its narrative has
+  // passed the delivery validator. A later catalogue refresh may update
+  // deterministic purchase fields, but must not destructively re-run prose
+  // repair (which is intentionally not idempotent for rationale/safety text).
+  const preserveValidatedSections = Boolean((sourceReport as any)._peptauraLiveSync)
+    ? JSON.parse(JSON.stringify(sourceReport.sections || []))
+    : null;
   const report = validateVialsMath(JSON.parse(JSON.stringify(sourceReport)));
   // Delivery refresh never promotes a paid report into a global medical hold.
   // Concrete incompatibilities remain molecule-scoped in the report content.
@@ -1695,6 +1703,7 @@ export async function refreshPeptauraPricingForDelivery(
   );
   await applyLivePeptauraPricing(report, context, true);
   const repaired = repairPeptidesReportContent(report, responses, tier);
+  if (preserveValidatedSections) repaired.sections = preserveValidatedSections;
   return cleanReportContent(repaired, repaired.clientName || extractFirstName(responses, ""));
 }
 

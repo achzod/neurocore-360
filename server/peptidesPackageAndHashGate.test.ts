@@ -68,6 +68,16 @@ test("mandatory box remains available when no proportionate basket exists", () =
   assert.equal(plan?.forcedPackaging, true);
 });
 
+test("delivery refresh prefers the official feed and preserves approved narrative sections", () => {
+  const engineSource = readFileSync(new URL("./peptidesEngine.ts", import.meta.url), "utf8");
+  const refreshStart = engineSource.indexOf("export async function refreshPeptauraPricingForDelivery");
+  const refreshEnd = engineSource.indexOf("// ─── Helpers", refreshStart);
+  const refreshBlock = engineSource.slice(refreshStart, refreshEnd);
+  assert.match(engineSource, /const snapshot = targetedFeedSnapshot \|\| fetchedSnapshot \|\| freshCachedSnapshot/);
+  assert.match(refreshBlock, /Boolean\(\(sourceReport as any\)\._peptauraLiveSync\)/);
+  assert.match(refreshBlock, /if \(preserveValidatedSections\) repaired\.sections = preserveValidatedSections/);
+});
+
 test("approved report substantive refresh is fail-closed and never persistable", () => {
   const current = { peptides: [{ name: "AOD-9604", priceEstimate: "$99.60" }] };
   const refreshed = { peptides: [{ name: "AOD-9604", priceEstimate: "$109.20" }] };
