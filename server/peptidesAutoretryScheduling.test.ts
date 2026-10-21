@@ -20,6 +20,19 @@ test("automatic Peptides generation claims each attempt and persists bounded ret
   assert.match(routes, /claimPeptidesGenerationResume\(/);
   assert.match(routes, /peptidesGenerationResponseId/);
   assert.match(routes, /resumeResponseId:\s*resumeResponseId \|\| undefined/);
+  assert.match(routes, /getPeptidesStoredResumeRetryAt\(storedResumeAttemptCount\)/);
+  assert.match(routes, /Peptides delivery HOLD retained while missing report recovery continues/);
+  assert.match(routes, /deliveryHeld = scheduledMeta\.peptidesEmailHold[\s\S]{0,260}const stillNotEmailed = !deliveryHeld/);
+  const retryMethod = storage.slice(
+    storage.lastIndexOf("async markPeptidesGenerationRetry"),
+    storage.lastIndexOf("async markPeptidesGenerationNeedsReview"),
+  );
+  const reviewMethod = storage.slice(
+    storage.lastIndexOf("async markPeptidesGenerationNeedsReview"),
+    storage.lastIndexOf("async resetPeptidesGenerationCircuit"),
+  );
+  assert.doesNotMatch(retryMethod, /peptidesGenerationResponseId/);
+  assert.doesNotMatch(reviewMethod, /peptidesGenerationResponseId/);
 });
 
 test("a process restart resumes the same durable OpenAI response", () => {
