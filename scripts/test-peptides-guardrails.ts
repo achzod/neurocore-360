@@ -85,7 +85,7 @@ assert.match(
 );
 assert.match(
   engineSource,
-  /export async function refreshPeptauraPricingForDelivery[\s\S]{0,700}report\.qualityVersion = "expert-standard-v1"/,
+  /export async function refreshPeptauraPricingForDelivery[\s\S]{0,1200}report\.qualityVersion = "expert-standard-v1"/,
   "Le refresh pre-livraison ne doit jamais recreer un rapport vide medical-review"
 );
 assert.doesNotMatch(publicCreateSource, /checkPeptidesSafetyGate\(/);
@@ -1201,5 +1201,37 @@ assert.match(
   staleEnclomipheneSourceAudit.errors.join("\n"),
   /verification ReceptorChem trop ancienne/
 );
+
+const mismatchedReconstitutionFormat = structuredClone(report);
+mismatchedReconstitutionFormat.peptides[0].vialsNeeded = "5 vials de 20mg pour 8 semaines";
+mismatchedReconstitutionFormat.peptides[0].reconstitution = "Vial 10 mg avec 1 ml de BAC water = 10 mg/ml";
+const mismatchedReconstitutionAudit = validatePeptidesReport(mismatchedReconstitutionFormat);
+assert.equal(mismatchedReconstitutionAudit.ok, false);
+assert.match(
+  mismatchedReconstitutionAudit.errors.join("\n"),
+  /format de reconstitution 10mg different du vial commande 20mg/
+);
+
+const orphanInjectionVolume = structuredClone(report);
+orphanInjectionVolume.weeklySchedule =
+  "LUNDI: Retatrutide 1 mg SC, ventre droit 20 unités soit 0,20 ml, cuisse gauche.";
+const orphanInjectionVolumeAudit = validatePeptidesReport(orphanInjectionVolume);
+assert.equal(orphanInjectionVolumeAudit.ok, false);
+assert.match(orphanInjectionVolumeAudit.errors.join("\n"), /volume injectable orphelin/);
+
+const staleSyringeCount = structuredClone(report);
+staleSyringeCount.sections[0].content +=
+  " Le lundi, utilise trois seringues séparées et trois sites distincts.";
+const staleSyringeCountAudit = validatePeptidesReport(staleSyringeCount);
+assert.equal(staleSyringeCountAudit.ok, false);
+assert.match(staleSyringeCountAudit.errors.join("\n"), /nombre de seringues incoherent/);
+
+const inconsistentRenderedTotal = structuredClone(report);
+inconsistentRenderedTotal.shoppingList += " Produits et livraison, soit $125.00 au total.";
+inconsistentRenderedTotal.sections[0].content +=
+  " Le panier Peptaura contrôlé coûte 130,00 dollars rendu.";
+const inconsistentRenderedTotalAudit = validatePeptidesReport(inconsistentRenderedTotal);
+assert.equal(inconsistentRenderedTotalAudit.ok, false);
+assert.match(inconsistentRenderedTotalAudit.errors.join("\n"), /total panier rendu incoherent/);
 
 console.log("Peptides guardrails: OK");
