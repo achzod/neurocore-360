@@ -920,6 +920,23 @@ export function checkPeptide(p: PeptidesPeptide): string[] {
     }
   }
 
+  const orderedVialMg = extractVialMg(p.vialsNeeded);
+  const reconstitutionVialMatch = String(p.reconstitution || "")
+    .replace(/(\d),(\d)/g, "$1.$2")
+    .match(/\bvial(?:\s+de)?\s+(\d+(?:\.\d+)?)\s*mg\b/i);
+  const reconstitutionVialMg = reconstitutionVialMatch
+    ? Number(reconstitutionVialMatch[1])
+    : null;
+  if (
+    orderedVialMg != null
+    && reconstitutionVialMg != null
+    && Math.abs(orderedVialMg - reconstitutionVialMg) > 0.01
+  ) {
+    issues.push(
+      `format de reconstitution ${reconstitutionVialMg}mg different du vial commande ${orderedVialMg}mg`
+    );
+  }
+
   const totalMgOrdered = extractTotalMgFromVials(p.vialsNeeded);
   const needMg = estimateNeedMg(p);
   if (totalMgOrdered != null && needMg != null && needMg > 0) {
@@ -1125,6 +1142,56 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
   const sections = report.sections || [];
   const totalChars = sections.reduce((s, sec) => s + (sec.content?.length || 0), 0);
   const clientFacingText = collectClientFacingStrings(report).join("\n");
+  const operationalText = [
+    report.weeklySchedule || "",
+    report.shoppingList || "",
+    ...sections.map((section) => section.content || ""),
+  ].join("\n");
+
+  if (/(?:ventre|cuisse|flanc)\s+(?:droit|droite|gauche)?\s*\d+(?:[,.]\d+)?\s*unit[ée]s?\b/i.test(operationalText)) {
+    errors.push("volume injectable orphelin apres un site anatomique");
+  }
+
+  const injectablePeptides = peptides.filter((peptide) =>
+    /sous[- ]?cutan|intramuscul|\bSC\b|\bIM\b/i.test(peptide.route || "")
+  );
+  const dayBlocks = String(report.weeklySchedule || "").match(
+    /(?:LUNDI|MARDI|MERCREDI|JEUDI|VENDREDI|SAMEDI|DIMANCHE)[\s\S]*?(?=(?:LUNDI|MARDI|MERCREDI|JEUDI|VENDREDI|SAMEDI|DIMANCHE)|$)/gi
+  ) || [];
+  const normalizeMention = (value: string) => value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  const maxInjectablesInDay = dayBlocks.reduce((max, block) => {
+    const normalizedBlock = normalizeMention(block);
+    const count = injectablePeptides.filter((peptide) => {
+      const normalizedName = normalizeMention(peptide.name || "");
+      return normalizedName.length > 0 && normalizedBlock.includes(normalizedName);
+    }).length;
+    return Math.max(max, count);
+  }, 0);
+  const explicitThreeSyringes = /trois\s+seringues\s+s[ée]par[ée]es|trois\s+sites\s+distincts/i.test(operationalText);
+  if (explicitThreeSyringes && maxInjectablesInDay < 3) {
+    errors.push(`nombre de seringues incoherent: trois annoncees, ${maxInjectablesInDay} injectable(s) maximum dans la semaine type`);
+  }
+
+  const shoppingRenderedMatch = String(report.shoppingList || "")
+    .replace(/(\d),(\d)/g, "$1.$2")
+    .match(/soit\s+\$(\d+(?:\.\d+)?)\s+au total/i);
+  const shoppingRenderedTotal = shoppingRenderedMatch ? Number(shoppingRenderedMatch[1]) : null;
+  if (shoppingRenderedTotal != null) {
+    const narrativeRenderedTotals = [...clientFacingText.replace(/(\d),(\d)/g, "$1.$2").matchAll(
+      /panier\s+Peptaura[^.]{0,180}?co[uû]te\s+(\d+(?:\.\d+)?)\s+dollars?\s+rendu/gi
+    )].map((match) => Number(match[1]));
+    for (const narrativeTotal of narrativeRenderedTotals) {
+      if (Number.isFinite(narrativeTotal) && Math.abs(narrativeTotal - shoppingRenderedTotal) > 0.01) {
+        errors.push(`total panier rendu incoherent: ${narrativeTotal.toFixed(2)} USD dans les sections vs ${shoppingRenderedTotal.toFixed(2)} USD dans la liste`);
+        break;
+      }
+    }
+  }
+
   const styleAudit = auditClientFacingText(clientFacingText);
 
   if (styleAudit.forbiddenDashes > 0) {
