@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   calculateBacWaterNeedMl,
+  checkPeptide,
   estimateNeedMg,
   extractTotalMgFromVials,
   findOperationalPeptidesMissingFromArray,
@@ -1233,5 +1234,36 @@ inconsistentRenderedTotal.sections[0].content +=
 const inconsistentRenderedTotalAudit = validatePeptidesReport(inconsistentRenderedTotal);
 assert.equal(inconsistentRenderedTotalAudit.ok, false);
 assert.match(inconsistentRenderedTotalAudit.errors.join("\n"), /total panier rendu incoherent/);
+
+const conditionalCandidate = {
+  name: "CJC-1295 sans DAC + Ipamorelin",
+  activationStatus: "conditional-inactive" as const,
+  activationRequirements: [
+    "Lire le bilan IGF-1 recent",
+    "Verifier le controle glycemique recent",
+  ],
+  purpose: "Evaluer un axe GH pour la recuperation et le maintien de masse maigre",
+  whyThisPeptide: "Objectif GH explicite, avec activation suspendue tant que les valeurs ne sont pas disponibles",
+  route: "Phase conditionnelle non active",
+  dosage: "Non active avant lecture du bilan",
+  timing: "Activation suspendue",
+  cycleDuration: "Phase conditionnelle non active",
+  reconstitution: "Aucune reconstitution tant que la phase reste inactive",
+  vialsNeeded: "Aucun achat tant que la phase reste inactive",
+  priceEstimate: "Aucun prix applique a une phase inactive",
+};
+assert.deepEqual(
+  checkPeptide(conditionalCandidate),
+  [],
+  "an inactive conditional candidate must be allowed without dose, vial planning or purchasing",
+);
+assert.match(
+  checkPeptide({
+    ...conditionalCandidate,
+    dosage: "100 mcg par injection",
+  }).join("\n"),
+  /instructions operationnelles/i,
+  "an inactive conditional candidate must reject actionable dosing",
+);
 
 console.log("Peptides guardrails: OK");

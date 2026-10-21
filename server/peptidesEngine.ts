@@ -13,6 +13,7 @@ import {
   extractVialMg,
   findOperationalPeptidesMissingFromArray,
   calculateBacWaterNeedMl,
+  isConditionalInactivePeptide,
 } from "./peptidesReportValidator";
 import { storage } from "./storage";
 import {
@@ -63,6 +64,9 @@ import { calculateReserveTargetMg } from "./peptidesReservePlanning";
 
 export interface PeptideItem {
   name: string;
+  activationStatus?: "active" | "conditional-inactive";
+  activationRequirements?: string[];
+  evidenceSummary?: string;
   purpose: string;
   dosage: string;
   timing: string;
@@ -1213,6 +1217,10 @@ async function applyLivePeptauraPricing(
   let targetedProductFeedSnapshotsPromise: Promise<PeptauraLiveProductSnapshot[] | null> | null = null;
 
   for (const pep of report.peptides) {
+    if (isConditionalInactivePeptide(pep)) {
+      liveNotes.push(`${pep.name}: phase conditionnelle inactive, aucun achat ni pricing applique`);
+      continue;
+    }
     if (isEnclomipheneName(pep.name)) {
       const source = context.enclomipheneSource
         || await fetchEnclomipheneSourceSnapshot(forceFresh);
@@ -1529,8 +1537,11 @@ async function applyLivePeptauraPricing(
   const shoppingSentenceFragment = (value: string | undefined): string =>
     sanitizeClientFacingText(String(value || "")).replace(/[.!?:]+\s*$/g, "");
 
+  const activePeptides = report.peptides.filter(
+    (peptide) => !isConditionalInactivePeptide(peptide)
+  );
   report.shoppingList = [
-    ...report.peptides.map((pep) =>
+    ...activePeptides.map((pep) =>
       [
         `${pep.name}: ${shoppingSentenceFragment(pep.vialsNeeded)}`,
         shoppingSentenceFragment(pep.priceEstimate),
@@ -1538,7 +1549,7 @@ async function applyLivePeptauraPricing(
       ].filter(Boolean).join(". ")
     ),
     formatOperationalVialPolicySummary(
-      report.peptides.map((peptide) => ({
+      activePeptides.map((peptide) => ({
         name: peptide.name,
         plan: peptide._vialPlanning || {
           pharmacologicalNeedMg: null,
