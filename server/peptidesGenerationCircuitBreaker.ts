@@ -11,6 +11,7 @@ export type PeptidesGenerationStateValue =
 
 export interface PeptidesGenerationCircuitConfig {
   maxAttempts: number;
+  maxStoredResumeAttempts: number;
   attemptBudgetMicroUsd: number;
   maxBudgetMicroUsd: number;
   maxHourlyBudgetMicroUsd: number;
@@ -25,10 +26,13 @@ export interface PeptidesGenerationCircuitSnapshot {
   leaseUntil: string | null;
   nextRetryAt: string | null;
   reportId: string | null;
+  responseId: string | null;
+  storedResumeAttempts: number;
 }
 
 export type PeptidesGenerationEligibilityReason =
   | "ELIGIBLE"
+  | "DURABLE_RESPONSE"
   | "REPORT_EXISTS"
   | "NEEDS_REVIEW"
   | "IN_FLIGHT"
@@ -46,6 +50,7 @@ export interface PeptidesGenerationAttemptClaim {
   attemptCount: number;
   reservedCostMicroUsd: number;
   leaseUntil: string;
+  storedResumeAttemptCount?: number;
 }
 
 export function isPeptidesAutogenEnabled(
@@ -85,6 +90,12 @@ export function getPeptidesGenerationCircuitConfig(
     1,
     2,
   );
+  const maxStoredResumeAttempts = boundedInteger(
+    env.PEPTIDES_AUTOGEN_MAX_STORED_RESUME_ATTEMPTS,
+    3,
+    1,
+    6,
+  );
   const attemptBudgetMicroUsd = boundedInteger(
     env.PEPTIDES_AUTOGEN_ATTEMPT_BUDGET_MICRO_USD,
     DEFAULT_ATTEMPT_BUDGET_MICRO_USD,
@@ -118,6 +129,7 @@ export function getPeptidesGenerationCircuitConfig(
 
   return {
     maxAttempts,
+    maxStoredResumeAttempts,
     attemptBudgetMicroUsd,
     // Never let an invalid configuration reserve more than the order cap.
     maxBudgetMicroUsd: Math.max(attemptBudgetMicroUsd, requestedMaxBudget),
@@ -170,6 +182,7 @@ export function readPeptidesGenerationCircuitSnapshot(
   const nextRetryAt = nextRetryRaw && Number.isFinite(new Date(nextRetryRaw).getTime())
     ? nextRetryRaw
     : null;
+  const responseId = String(candidate.peptidesGenerationResponseId || "").trim() || null;
 
   return {
     state: parseState(candidate.peptidesGenerationState),
@@ -180,6 +193,8 @@ export function readPeptidesGenerationCircuitSnapshot(
     leaseUntil,
     nextRetryAt,
     reportId,
+    responseId,
+    storedResumeAttempts: nonNegativeInteger(candidate.peptidesGenerationStoredResumeAttempts),
   };
 }
 
@@ -192,9 +207,6 @@ export function evaluatePeptidesGenerationEligibility(
   if (snapshot.reportId) {
     return { eligible: false, reason: "REPORT_EXISTS", snapshot };
   }
-  if (snapshot.state === PeptidesGenerationState.NEEDS_REVIEW) {
-    return { eligible: false, reason: "NEEDS_REVIEW", snapshot };
-  }
   if (
     snapshot.state === PeptidesGenerationState.GENERATING
     && snapshot.leaseUntil
@@ -204,6 +216,14 @@ export function evaluatePeptidesGenerationEligibility(
   }
   if (snapshot.nextRetryAt && new Date(snapshot.nextRetryAt).getTime() > nowMs) {
     return { eligible: false, reason: "BACKOFF", snapshot };
+  }
+  // A durable provider response is already paid for. Resume its canonical
+  // parsing and validation before applying provider-call attempt or cost caps.
+  if (snapshot.responseId && snapshot.storedResumeAttempts < config.maxStoredResumeAttempts) {
+    return { eligible: true, reason: "DURABLE_RESPONSE", snapshot };
+  }
+  if (snapshot.state === PeptidesGenerationState.NEEDS_REVIEW) {
+    return { eligible: false, reason: "NEEDS_REVIEW", snapshot };
   }
   if (snapshot.attempts >= config.maxAttempts) {
     return { eligible: false, reason: "ATTEMPT_CAP", snapshot };
@@ -223,6 +243,15 @@ export function getPeptidesGenerationRetryAt(
 ): string | null {
   const delaysMs = [5 * 60 * 1000];
   const delayMs = delaysMs[Math.max(0, Math.floor(attemptCount) - 1)];
+  return delayMs ? new Date(nowMs + delayMs).toISOString() : null;
+}
+
+export function getPeptidesStoredResumeRetryAt(
+  storedResumeAttemptCount: number,
+  nowMs = Date.now(),
+): string | null {
+  const delaysMs = [5 * 60 * 1000, 15 * 60 * 1000];
+  const delayMs = delaysMs[Math.max(0, Math.floor(storedResumeAttemptCount) - 1)];
   return delayMs ? new Date(nowMs + delayMs).toISOString() : null;
 }
 

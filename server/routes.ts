@@ -113,6 +113,7 @@ import {
   evaluatePeptidesGenerationEligibility,
   getPeptidesGenerationCircuitConfig,
   getPeptidesGenerationRetryAt,
+  getPeptidesStoredResumeRetryAt,
   sanitizePeptidesGenerationError,
 } from "./peptidesGenerationCircuitBreaker";
 import {
@@ -15558,9 +15559,13 @@ export async function registerRoutes(
           }
         }
 
-        if (meta?.peptidesEmailHold === true || meta?.peptidesEmailHold === "true") {
+        const peptidesEmailHeld = meta?.peptidesEmailHold === true || meta?.peptidesEmailHold === "true";
+        if (peptidesEmailHeld && meta?.peptidesReportId) {
           console.log(`[AutoGen] Peptides delivery HOLD for ${email} (order ${order.id})`);
           continue;
+        }
+        if (peptidesEmailHeld) {
+          console.log(`[AutoGen] Peptides delivery HOLD retained while missing report recovery continues for ${email} (order ${order.id})`);
         }
 
         // Recovery path: report exists but email never went out (e.g. SendPulse
@@ -15824,9 +15829,12 @@ export async function registerRoutes(
         } catch (generationError: any) {
           const safeError = sanitizePeptidesGenerationError(generationError);
           const sourceUnavailable = generationError?.code === "PEPTAURA_SOURCE_UNAVAILABLE";
-          const nextRetryAt = sourceUnavailable
-            ? null
-            : getPeptidesGenerationRetryAt(generationClaim.attemptCount);
+          const storedResumeAttemptCount = generationClaim.storedResumeAttemptCount || 0;
+          const nextRetryAt = resumeResponseId
+            ? getPeptidesStoredResumeRetryAt(storedResumeAttemptCount)
+            : sourceUnavailable
+              ? null
+              : getPeptidesGenerationRetryAt(generationClaim.attemptCount);
           if (nextRetryAt) {
             await storage.markPeptidesGenerationRetry(
               order.id,
@@ -15838,7 +15846,11 @@ export async function registerRoutes(
             autoGenLastResult = `RETRY_SCHEDULED: ${email} attempt ${generationClaim.attemptCount + 1} at ${nextRetryAt}`;
             console.warn(`[AutoGen] Peptides retry scheduled for ${email} at ${nextRetryAt}`);
           } else {
-            const reason = sourceUnavailable ? "source_unavailable" : "attempt_cap";
+            const reason = resumeResponseId
+              ? "stored_resume_exhausted"
+              : sourceUnavailable
+                ? "source_unavailable"
+                : "attempt_cap";
             await storage.markPeptidesGenerationNeedsReview(order.id, reason, safeError).catch(() => false);
             autoGenLastResult = `NEEDS_REVIEW: ${email} (${reason})`;
             console.error(`[AutoGen] Peptides generation exhausted for ${email}; manual review required`);
@@ -15856,9 +15868,6 @@ export async function registerRoutes(
           continue;
         }
 
-        // SAFETY #4: Final email dedup check right before send (in case tracking was recorded after our earlier check)
-        const stillNotEmailed = !(await storage.hasPeptidesDeliveryEmailBeenSent(email).catch(() => false));
-
         const baseUrl = getBaseUrl();
         const peptidesNames = report.peptides?.map((p: any) => p.name).join(", ") ?? "voir rapport";
         const promoBlock = buildPeptidesBloodCreditsBlock(
@@ -15871,14 +15880,23 @@ export async function registerRoutes(
 
         let clientEmailSent = false;
         let deliveryDeferred = false;
+        let deliveryHeld = peptidesEmailHeld;
         let deliveryScheduledAtIso = "";
         // Re-read after the atomic report claim so the exact +24h schedule
         // persisted by claimPeptidesReportSlot cannot be overwritten from the
         // stale pre-generation order snapshot.
         const scheduledOrder = await storage.getOrder(order.id);
         if (!scheduledOrder) throw new Error(`Peptides order disappeared after report claim: ${order.id}`);
+        const scheduledMeta = (scheduledOrder.metadata as any) || {};
+        deliveryHeld = scheduledMeta.peptidesEmailHold === true || scheduledMeta.peptidesEmailHold === "true";
+        // SAFETY #4: use the fresh post-generation order state for both hold
+        // and delivery dedup so an operator hold set during generation wins.
+        const stillNotEmailed = !deliveryHeld
+          && !(await storage.hasPeptidesDeliveryEmailBeenSent(email).catch(() => false));
         const { due: newReportDue, scheduledAt: newReportScheduledAt } = await isPeptidesEmailDeliveryDue(scheduledOrder);
-        if (stillNotEmailed && !newReportDue) {
+        if (deliveryHeld) {
+          console.log(`[AutoGen] Report ${saved.id} recovered under delivery HOLD for ${email}; no client email sent`);
+        } else if (stillNotEmailed && !newReportDue) {
           deliveryDeferred = true;
           deliveryScheduledAtIso = newReportScheduledAt.toISOString();
           console.log(
@@ -15925,6 +15943,9 @@ export async function registerRoutes(
           if (clientEmailSent) {
             adminSubject = `RAPPORT GENERE , Peptides Engine , ${email}`;
             adminBody = `Rapport Peptides Engine genere et livre.\n\nClient: ${email}\nPeptides: ${peptidesNames}\nSections: ${report.sections?.length ?? 0}\nLien: ${baseUrl}/peptides/${saved.id}`;
+          } else if (deliveryHeld) {
+            adminSubject = `RAPPORT RECUPERE SOUS HOLD , Peptides Engine , ${email}`;
+            adminBody = `Rapport Peptides Engine recupere et stocke sous hold. Aucun email client n'a ete envoye.\n\nClient: ${email}\nPeptides: ${peptidesNames}\nSections: ${report.sections?.length ?? 0}\nLien: ${baseUrl}/peptides/${saved.id}`;
           } else if (deliveryDeferred) {
             const parisLocal = new Date(deliveryScheduledAtIso).toLocaleString("fr-FR", { timeZone: "Europe/Paris" });
             adminSubject = `RAPPORT GENERE - LIVRAISON PROGRAMMEE , ${email}`;
@@ -15941,10 +15962,12 @@ export async function registerRoutes(
 
         autoGenLastResult = clientEmailSent
           ? `OK: ${email} → ${saved.id}`
+          : deliveryHeld
+          ? `RECOVERED_UNDER_HOLD: ${email} → ${saved.id}`
           : deliveryDeferred
           ? `DEFERRED: ${email} → ${saved.id} (scheduled ${deliveryScheduledAtIso})`
           : `SAVED_BUT_EMAIL_FAILED: ${email} → ${saved.id}`;
-        console.log(`[AutoGen] ${clientEmailSent ? "✅" : deliveryDeferred ? "⏳" : "⚠️"} Report ${saved.id} for ${email} , client email ${clientEmailSent ? "sent" : deliveryDeferred ? "deferred" : "FAILED"}`);
+        console.log(`[AutoGen] ${clientEmailSent ? "✅" : deliveryHeld || deliveryDeferred ? "⏳" : "⚠️"} Report ${saved.id} for ${email} , client email ${clientEmailSent ? "sent" : deliveryHeld ? "held" : deliveryDeferred ? "deferred" : "FAILED"}`);
         break; // 1 per cycle
       }
     } catch (err) {

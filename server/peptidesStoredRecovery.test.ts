@@ -206,6 +206,8 @@ test("apply inserts and CAS-links atomically while retaining HOLD", async () => 
   assert.match(update.text, /peptidesEmailHold', true/);
   assert.match(update.text, /peptidesEmailScheduledAt/);
   assert.match(update.text, /generation_plus_24h_v1/);
+  assert.match(update.text, /peptidesGenerationResponseId', ''/);
+  assert.match(update.text, /peptidesGenerationStoredResumeAttempts', 0/);
   assert.match(update.text, /peptidesApprovedReportSha256/);
   assert.match(update.text, /PENDING_INDEPENDENT_AUDIT/);
   assert.match(update.text, /COALESCE\(metadata->>'peptidesReportId', ''\) = ''/);

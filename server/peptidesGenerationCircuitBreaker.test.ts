@@ -6,6 +6,7 @@ import {
   evaluatePeptidesGenerationEligibility,
   getPeptidesGenerationCircuitConfig,
   getPeptidesGenerationRetryAt,
+  getPeptidesStoredResumeRetryAt,
   isPeptidesAutogenEnabled,
   readPeptidesGenerationCircuitSnapshot,
 } from "./peptidesGenerationCircuitBreaker";
@@ -81,6 +82,7 @@ test("Peptides autogen is fail-closed unless explicitly enabled", () => {
 test("autogen defaults to two bounded attempts at fifty cents each", () => {
   const defaults = getPeptidesGenerationCircuitConfig({});
   assert.equal(defaults.maxAttempts, 2);
+  assert.equal(defaults.maxStoredResumeAttempts, 3);
   assert.equal(defaults.attemptBudgetMicroUsd, 500_000);
   assert.equal(defaults.maxBudgetMicroUsd, 1_000_000);
 });
@@ -96,6 +98,36 @@ test("retry backoff is five minutes and the second failure is terminal", () => {
   };
   assert.equal(evaluatePeptidesGenerationEligibility(retryMetadata, config, base).reason, "BACKOFF");
   assert.equal(evaluatePeptidesGenerationEligibility(retryMetadata, config, base + 5 * 60_000).reason, "ATTEMPT_CAP");
+});
+
+test("stored responses retry post-processing without another provider budget", () => {
+  const base = Date.parse("2026-10-21T10:00:00.000Z");
+  assert.equal(getPeptidesStoredResumeRetryAt(1, base), "2026-10-21T10:05:00.000Z");
+  assert.equal(getPeptidesStoredResumeRetryAt(2, base), "2026-10-21T10:15:00.000Z");
+  assert.equal(getPeptidesStoredResumeRetryAt(3, base), null);
+
+  const durable = {
+    peptidesGenerationState: "NEEDS_REVIEW",
+    peptidesGenerationAttempts: 2,
+    peptidesGenerationReservedCostMicroUsd: 9_000_000,
+    peptidesGenerationResponseId: "resp_paid_once",
+    peptidesGenerationStoredResumeAttempts: 0,
+  };
+  assert.equal(evaluatePeptidesGenerationEligibility(durable, config, base).reason, "DURABLE_RESPONSE");
+  assert.equal(
+    evaluatePeptidesGenerationEligibility({
+      ...durable,
+      peptidesGenerationNextRetryAt: "2026-10-21T10:05:00.000Z",
+    }, config, base).reason,
+    "BACKOFF",
+  );
+  assert.equal(
+    evaluatePeptidesGenerationEligibility({
+      ...durable,
+      peptidesGenerationStoredResumeAttempts: config.maxStoredResumeAttempts,
+    }, config, base).reason,
+    "NEEDS_REVIEW",
+  );
 });
 
 test("window budgets cannot be configured below one reserved attempt", () => {
@@ -293,8 +325,17 @@ test("a durable provider response is resumed without consuming another attempt",
   await storage.setOrderMetadataKey(order.id, "peptidesGenerationLeaseUntil", new Date(Date.now() - 1_000).toISOString());
   const resumed = await storage.claimPeptidesGenerationResume(order.id, "resp_durable_1", resumeConfig.leaseMs);
   assert.equal(resumed?.attemptCount, 1);
+  assert.equal(resumed?.storedResumeAttemptCount, 1);
   const resumedOrder = await storage.getOrder(order.id);
   assert.equal(Number((resumedOrder?.metadata as any)?.peptidesGenerationAttempts), 1);
+  assert.equal(Number((resumedOrder?.metadata as any)?.peptidesGenerationStoredResumeAttempts), 1);
+
+  const retryAt = new Date(Date.now() - 1_000).toISOString();
+  assert.equal(await storage.markPeptidesGenerationRetry(order.id, 1, "post_processing", "transient", retryAt), true);
+  const retryOrder = await storage.getOrder(order.id);
+  assert.equal((retryOrder?.metadata as any)?.peptidesGenerationResponseId, "resp_durable_1");
+  const resumedAgain = await storage.claimPeptidesGenerationResume(order.id, "resp_durable_1", resumeConfig.leaseMs);
+  assert.equal(resumedAgain?.storedResumeAttemptCount, 2);
 });
 
 test("manual reset clears the persisted circuit on an undelivered order", async () => {

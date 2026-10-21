@@ -1184,8 +1184,13 @@ export class MemStorage implements IStorage {
       attemptCount: Math.max(1, Number(meta.peptidesGenerationAttempts || 1)),
       reservedCostMicroUsd: Math.max(0, Number(meta.peptidesGenerationReservedCostMicroUsd || 0)),
       leaseUntil: new Date(Date.now() + leaseMs).toISOString(),
+      storedResumeAttemptCount: Math.max(0, Number(meta.peptidesGenerationStoredResumeAttempts || 0)) + 1,
     };
-    order.metadata = { ...meta, peptidesGenerationLeaseUntil: claim.leaseUntil } as any;
+    order.metadata = {
+      ...meta,
+      peptidesGenerationLeaseUntil: claim.leaseUntil,
+      peptidesGenerationStoredResumeAttempts: claim.storedResumeAttemptCount,
+    } as any;
     order.updatedAt = new Date();
     return claim;
   }
@@ -1207,7 +1212,6 @@ export class MemStorage implements IStorage {
       peptidesGenerationReviewReason: reason,
       peptidesGenerationLastError: error,
       peptidesGenerationNextRetryAt: nextRetryAt,
-      peptidesGenerationResponseId: "",
       peptidesGenerationLeaseUntil: "",
     } as any;
     order.updatedAt = new Date();
@@ -1225,7 +1229,6 @@ export class MemStorage implements IStorage {
       peptidesGenerationReviewReason: reason,
       peptidesGenerationLastError: error,
       peptidesGenerationNextRetryAt: "",
-      peptidesGenerationResponseId: "",
       peptidesGenerationLeaseUntil: "",
       peptidesGenerationFailedAt: new Date().toISOString(),
     } as any;
@@ -1246,6 +1249,7 @@ export class MemStorage implements IStorage {
       peptidesGenerationLeaseUntil: "",
       peptidesGenerationNextRetryAt: "",
       peptidesGenerationResponseId: "",
+      peptidesGenerationStoredResumeAttempts: 0,
       peptidesGenerationLastError: "",
       peptidesGenerationReviewReason: "",
     } as any;
@@ -3695,7 +3699,8 @@ export class PgStorage implements IStorage {
     const result = await pool.query(
       `UPDATE orders
           SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
-                'peptidesGenerationLeaseUntil', (NOW() + ($1::bigint * INTERVAL '1 millisecond'))::text
+                'peptidesGenerationLeaseUntil', (NOW() + ($1::bigint * INTERVAL '1 millisecond'))::text,
+                'peptidesGenerationStoredResumeAttempts', COALESCE((metadata->>'peptidesGenerationStoredResumeAttempts')::int, 0) + 1
               ),
               updated_at = NOW()
         WHERE id = $2
@@ -3707,6 +3712,7 @@ export class PgStorage implements IStorage {
       RETURNING
         COALESCE((metadata->>'peptidesGenerationAttempts')::int, 1) AS attempt_count,
         COALESCE((metadata->>'peptidesGenerationReservedCostMicroUsd')::bigint, 0) AS reserved_cost_micro_usd,
+        COALESCE((metadata->>'peptidesGenerationStoredResumeAttempts')::int, 0) AS stored_resume_attempt_count,
         metadata->>'peptidesGenerationLeaseUntil' AS lease_until`,
       [leaseMs, orderId, responseId],
     );
@@ -3715,6 +3721,7 @@ export class PgStorage implements IStorage {
       attemptCount: Number(result.rows[0].attempt_count),
       reservedCostMicroUsd: Number(result.rows[0].reserved_cost_micro_usd),
       leaseUntil: String(result.rows[0].lease_until),
+      storedResumeAttemptCount: Number(result.rows[0].stored_resume_attempt_count),
     };
   }
 
@@ -3733,7 +3740,6 @@ export class PgStorage implements IStorage {
                 'peptidesGenerationReviewReason', $1::text,
                 'peptidesGenerationLastError', $2::text,
                 'peptidesGenerationNextRetryAt', $3::text,
-                'peptidesGenerationResponseId', '',
                 'peptidesGenerationLeaseUntil', ''
               ),
               updated_at = NOW()
@@ -3755,7 +3761,6 @@ export class PgStorage implements IStorage {
                 'peptidesGenerationReviewReason', $1::text,
                 'peptidesGenerationLastError', $2::text,
                 'peptidesGenerationNextRetryAt', '',
-                'peptidesGenerationResponseId', '',
                 'peptidesGenerationLeaseUntil', '',
                 'peptidesGenerationFailedAt', NOW()::text
               ),
@@ -3779,6 +3784,7 @@ export class PgStorage implements IStorage {
                 'peptidesGenerationLeaseUntil', '',
                 'peptidesGenerationNextRetryAt', '',
                 'peptidesGenerationResponseId', '',
+                'peptidesGenerationStoredResumeAttempts', 0,
                 'peptidesGenerationLastError', '',
                 'peptidesGenerationReviewReason', ''
               ),
