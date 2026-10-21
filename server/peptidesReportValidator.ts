@@ -17,6 +17,9 @@ import { calculateReserveTargetMg } from "./peptidesReservePlanning";
 
 export interface PeptidesPeptide {
   name?: string;
+  activationStatus?: "active" | "conditional-inactive";
+  activationRequirements?: string[];
+  evidenceSummary?: string;
   route?: string;
   dosage?: string;
   timing?: string;
@@ -117,6 +120,12 @@ const REQUIRED_PEPTIDE_FIELDS = [
   "reconstitution",
   "whyThisPeptide",
 ] as const;
+
+export function isConditionalInactivePeptide(
+  peptide: Pick<PeptidesPeptide, "activationStatus">
+): boolean {
+  return peptide.activationStatus === "conditional-inactive";
+}
 
 const MIN_SECTIONS = 12;
 const MIN_SECTION_CHARS = 350;
@@ -441,6 +450,7 @@ export function findStructuredPeptideCoverageIssues(
     if (rationaleText && !containsOperationalAlias(rationaleText, aliases)) {
       issues.push(`${name}: absent de la justification`);
     }
+    if (isConditionalInactivePeptide(peptide)) continue;
     if (
       /^sc\b|sous[- ]?cutan/i.test(String(peptide.route || "")) &&
       reconstitutionText &&
@@ -700,6 +710,7 @@ export function calculateBacWaterNeedMl(
   report: Pick<PeptidesReport, "peptides">
 ): number {
   return (report.peptides || []).reduce((totalMl, peptide) => {
+    if (isConditionalInactivePeptide(peptide)) return totalMl;
     const solventMatch = String(peptide.reconstitution || "")
       .replace(/(\d),(\d)/g, "$1.$2")
       .match(/\+\s*(\d+(?:\.\d+)?)\s*ml\b/i);
@@ -892,6 +903,34 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
 
 export function checkPeptide(p: PeptidesPeptide): string[] {
   const issues: string[] = [];
+
+  if (isConditionalInactivePeptide(p)) {
+    for (const field of ["name", "purpose", "whyThisPeptide"] as const) {
+      if (!String(p[field] || "").trim()) issues.push(`field manquant: ${field}`);
+    }
+    if (!Array.isArray(p.activationRequirements) || p.activationRequirements.length < 2) {
+      issues.push("phase conditionnelle sans exigences d'activation suffisantes");
+    }
+    const operationalText = [
+      p.dosage,
+      p.timing,
+      p.route,
+      p.cycleDuration,
+      p.reconstitution,
+      p.vialsNeeded,
+      p.priceEstimate,
+      p.purchaseUrl,
+    ].filter(Boolean).join(" ");
+    if (
+      /\b\d+(?:[.,]\d+)?\s*(?:mcg|ug|µg|mg|ml|iu|ui)\b|\b(?:inject|injection|vial|flacon|acheter|commander)\b/i.test(operationalText)
+    ) {
+      issues.push("phase conditionnelle contient des instructions operationnelles");
+    }
+    if (!/non activ|suspend|conditionnel|aucun achat/i.test(operationalText)) {
+      issues.push("phase conditionnelle non identifiee comme inactive");
+    }
+    return issues;
+  }
 
   for (const fld of REQUIRED_PEPTIDE_FIELDS) {
     const v = (p as any)[fld];
@@ -1373,6 +1412,7 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
       .filter((name) => Boolean(name) && name !== "bac water")
   );
   const missingLivePricePeptides = peptides
+    .filter((peptide) => !isConditionalInactivePeptide(peptide))
     .map((p) => String(p.name || ""))
     .filter((name) => {
       const normalized = name.toLowerCase();
@@ -1435,13 +1475,15 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
     // TB-500 2x/sem) naturally list only 2-4 weekdays in the practical-week
     // section; flagging that as "incomplete" was a false positive on Farhan
     // 2026-06-10 (3 named days, all peptides ≤2x/sem).
-    const maxFreqPerWeek = peptides.reduce((max, p) => {
+    const maxFreqPerWeek = peptides
+      .filter((peptide) => !isConditionalInactivePeptide(peptide))
+      .reduce((max, p) => {
       const txt = `${p.dosage || ""} ${p.timing || ""}`;
       if (/chaque jour|tous les jours|7\s*(?:jours?|soirs?)\s*\/?\s*7|\b1x\/jour\b|par jour\b/i.test(txt)) return Math.max(max, 7);
       const m = txt.match(/(\d)\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine/i);
       if (m) return Math.max(max, parseInt(m[1], 10));
       return max;
-    }, 0);
+      }, 0);
     const hasRestDayMention = /repos|off|pause|aucune\s+injection|hors\s+protocole/i.test(c);
     const sparseWeekIsLegit = maxFreqPerWeek > 0 && maxFreqPerWeek <= 4 && daysFound >= maxFreqPerWeek;
 

@@ -23,6 +23,9 @@ const AMBER = "#F59E0B";
 
 interface PeptideRec {
   name: string;
+  activationStatus?: "active" | "conditional-inactive";
+  activationRequirements?: string[];
+  evidenceSummary?: string;
   purpose: string;
   dosage: string;
   timing: string;
@@ -603,6 +606,11 @@ export default function PeptidesEngineReport() {
                 <div className="mb-3 pr-12">
                   <h3 className="text-lg font-bold" style={{ color: AMBER }}>{pep.name}</h3>
                   <p className="text-white/50 text-sm">{pep.purpose}</p>
+                  {pep.activationStatus === "conditional-inactive" && (
+                    <span className="inline-flex mt-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-[10px] font-mono uppercase tracking-widest text-amber-400">
+                      Phase conditionnelle inactive
+                    </span>
+                  )}
                 </div>
 
                 {/* Why this peptide */}
@@ -613,27 +621,48 @@ export default function PeptidesEngineReport() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-                  <div className="bg-white/5 rounded-xl p-3">
-                    <p className="text-white/40 text-[10px] font-mono uppercase tracking-widest mb-1">Dosage</p>
-                    <p className="text-sm font-medium">{pep.dosage}</p>
+                {pep.activationStatus === "conditional-inactive" ? (
+                  <div className="grid gap-3 mb-3">
+                    {pep.evidenceSummary && (
+                      <div className="bg-white/5 rounded-xl p-3">
+                        <p className="text-white/40 text-[10px] font-mono uppercase tracking-widest mb-1">Niveau de preuve</p>
+                        <p className="text-sm font-medium text-white/80">{pep.evidenceSummary}</p>
+                      </div>
+                    )}
+                    {pep.activationRequirements && pep.activationRequirements.length > 0 && (
+                      <div className="bg-white/5 rounded-xl p-3">
+                        <p className="text-white/40 text-[10px] font-mono uppercase tracking-widest mb-2">Avant toute activation</p>
+                        <ul className="space-y-1 text-sm text-white/80">
+                          {pep.activationRequirements.map((requirement, requirementIndex) => (
+                            <li key={requirementIndex}>• {requirement}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
-                  <div className="bg-white/5 rounded-xl p-3">
-                    <p className="text-white/40 text-[10px] font-mono uppercase tracking-widest mb-1">Timing</p>
-                    <p className="text-sm font-medium">{pep.timing}</p>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+                    <div className="bg-white/5 rounded-xl p-3">
+                      <p className="text-white/40 text-[10px] font-mono uppercase tracking-widest mb-1">Dosage</p>
+                      <p className="text-sm font-medium">{pep.dosage}</p>
+                    </div>
+                    <div className="bg-white/5 rounded-xl p-3">
+                      <p className="text-white/40 text-[10px] font-mono uppercase tracking-widest mb-1">Timing</p>
+                      <p className="text-sm font-medium">{pep.timing}</p>
+                    </div>
+                    <div className="bg-white/5 rounded-xl p-3">
+                      <p className="text-white/40 text-[10px] font-mono uppercase tracking-widest mb-1">Voie</p>
+                      <p className="text-sm font-medium">{pep.route}</p>
+                    </div>
+                    <div className="bg-white/5 rounded-xl p-3">
+                      <p className="text-white/40 text-[10px] font-mono uppercase tracking-widest mb-1">Cycle</p>
+                      <p className="text-sm font-medium">{pep.cycleDuration}</p>
+                    </div>
                   </div>
-                  <div className="bg-white/5 rounded-xl p-3">
-                    <p className="text-white/40 text-[10px] font-mono uppercase tracking-widest mb-1">Voie</p>
-                    <p className="text-sm font-medium">{pep.route}</p>
-                  </div>
-                  <div className="bg-white/5 rounded-xl p-3">
-                    <p className="text-white/40 text-[10px] font-mono uppercase tracking-widest mb-1">Cycle</p>
-                    <p className="text-sm font-medium">{pep.cycleDuration}</p>
-                  </div>
-                </div>
+                )}
 
                 {/* Reconstitution + Vials + Price */}
-                <div className="grid md:grid-cols-3 gap-3 mb-3">
+                {pep.activationStatus !== "conditional-inactive" && <div className="grid md:grid-cols-3 gap-3 mb-3">
                   {pep.reconstitution && (
                     <div className="bg-white/5 rounded-xl p-3">
                       <p className="text-white/40 text-[10px] font-mono uppercase tracking-widest mb-1">Reconstitution</p>
@@ -652,10 +681,10 @@ export default function PeptidesEngineReport() {
                       <p className="text-sm font-medium" style={{ color: AMBER }}>{pep.priceEstimate}</p>
                     </div>
                   )}
-                </div>
+                </div>}
 
                 {/* Purchase link */}
-                {pep.purchaseUrl && (
+                {pep.activationStatus !== "conditional-inactive" && pep.purchaseUrl && (
                   <a href={pep.purchaseUrl} target="_blank" rel="noopener noreferrer"
                      className="inline-flex items-center gap-1.5 text-xs font-mono px-4 py-2 rounded-lg border border-amber-500/30 hover:bg-amber-500/10 transition-colors" style={{ color: AMBER }}>
                     Acceder au fournisseur <ExternalLink className="w-3 h-3" />
