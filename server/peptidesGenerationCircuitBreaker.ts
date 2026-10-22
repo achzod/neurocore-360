@@ -246,6 +246,10 @@ export function getPeptidesGenerationRetryAt(
   return delayMs ? new Date(nowMs + delayMs).toISOString() : null;
 }
 
+export function getPeptidesSourceRetryAt(nowMs = Date.now()): string {
+  return new Date(nowMs + 5 * 60 * 1000).toISOString();
+}
+
 export function getPeptidesStoredResumeRetryAt(
   storedResumeAttemptCount: number,
   nowMs = Date.now(),
