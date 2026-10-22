@@ -6,6 +6,7 @@ import {
   evaluatePeptidesGenerationEligibility,
   getPeptidesGenerationCircuitConfig,
   getPeptidesGenerationRetryAt,
+  getPeptidesSourceRetryAt,
   getPeptidesStoredResumeRetryAt,
   isPeptidesAutogenEnabled,
   readPeptidesGenerationCircuitSnapshot,
@@ -13,6 +14,7 @@ import {
 import {
   assertPeptauraGenerationPreflight,
   evaluatePeptauraGenerationPreflight,
+  isRetryablePeptauraSourceOutage,
   PeptauraSourceUnavailableError,
 } from "./peptidesSourcePreflight";
 
@@ -193,6 +195,24 @@ test("source preflight detects unavailable likely product pages", () => {
   assert.match(result.errors.join("\n"), /pages_produit_live_manquantes:TB-500/);
 });
 
+test("only a global catalog and shipping outage is an infrastructure retry", () => {
+  const globalContext = contextWithSnapshots([]);
+  globalContext.liveCatalogSlugs = null;
+  globalContext.shippingAvailability.live = false;
+  const globalResult = evaluatePeptauraGenerationPreflight(
+    { pep_primary_goal: "recovery" },
+    globalContext,
+  );
+  assert.equal(isRetryablePeptauraSourceOutage(new PeptauraSourceUnavailableError(globalResult)), true);
+
+  const productGap = evaluatePeptauraGenerationPreflight(
+    { pep_primary_goal: "recovery" },
+    contextWithSnapshots(["BPC-157"]),
+  );
+  assert.equal(isRetryablePeptauraSourceOutage(new PeptauraSourceUnavailableError(productGap)), false);
+  assert.equal(getPeptidesSourceRetryAt(Date.parse("2026-10-22T10:00:00.000Z")), "2026-10-22T10:05:00.000Z");
+});
+
 test("source-unavailable preflight makes zero provider calls", async () => {
   let providerCalls = 0;
   const invokeProviderAfterPreflight = async () => {
@@ -281,6 +301,73 @@ test("persistent claims are idempotent and the hourly reservation cap blocks the
 
   await storage.markPeptidesGenerationNeedsReview(orders[1].id, "quality", "invalid");
   assert.equal(await storage.claimPeptidesGenerationAttempt(orders[1].id, config), null);
+});
+
+test("a global source outage atomically refunds the claim and resumes with the same attempt number", async () => {
+  process.env.DATABASE_URL ||= "postgresql://test:***@127.0.0.1:1/test";
+  const { MemStorage } = await import("./storage");
+  const storage = new MemStorage();
+  const order = await storage.createOrder({
+    email: "source-retry@example.test",
+    productType: "PEPTIDES_ENGINE",
+    amountCents: 19900,
+  });
+  await storage.updateOrder(order.id, { status: "paid", paidAt: new Date() });
+  const retryConfig = getPeptidesGenerationCircuitConfig({});
+  const claim = await storage.claimPeptidesGenerationAttempt(order.id, retryConfig);
+  assert.equal(claim?.attemptCount, 1);
+  const retryAt = getPeptidesSourceRetryAt();
+  assert.equal(await storage.markPeptidesGenerationSourceRetry(
+    order.id,
+    claim!,
+    retryConfig.attemptBudgetMicroUsd,
+    "catalog and shipping unavailable",
+    retryAt,
+  ), true);
+
+  const unavailable = await storage.getOrder(order.id);
+  const unavailableMeta = unavailable?.metadata as any;
+  assert.equal(unavailableMeta.peptidesGenerationState, "RETRY_SCHEDULED");
+  assert.equal(unavailableMeta.peptidesGenerationAttempts, 0);
+  assert.equal(unavailableMeta.peptidesGenerationReservedCostMicroUsd, 0);
+  assert.equal(unavailableMeta.peptidesGenerationReviewReason, "source_unavailable");
+  assert.equal(await storage.claimPeptidesGenerationAttempt(order.id, retryConfig), null);
+
+  await storage.setOrderMetadataKey(order.id, "peptidesGenerationNextRetryAt", new Date(Date.now() - 1_000).toISOString());
+  const resumed = await storage.claimPeptidesGenerationAttempt(order.id, retryConfig);
+  assert.equal(resumed?.attemptCount, 1);
+});
+
+test("a source outage during durable-response resume does not consume the resume cap", async () => {
+  process.env.DATABASE_URL ||= "postgresql://test:***@127.0.0.1:1/test";
+  const { MemStorage } = await import("./storage");
+  const storage = new MemStorage();
+  const order = await storage.createOrder({
+    email: "source-resume@example.test",
+    productType: "PEPTIDES_ENGINE",
+    amountCents: 19900,
+  });
+  await storage.updateOrder(order.id, { status: "paid", paidAt: new Date() });
+  const retryConfig = getPeptidesGenerationCircuitConfig({});
+  const first = await storage.claimPeptidesGenerationAttempt(order.id, retryConfig);
+  await storage.setOrderMetadataKey(order.id, "peptidesGenerationResponseId", "resp_source_resume");
+  await storage.setOrderMetadataKey(order.id, "peptidesGenerationLeaseUntil", new Date(Date.now() - 1_000).toISOString());
+  const resumeClaim = await storage.claimPeptidesGenerationResume(order.id, "resp_source_resume", retryConfig.leaseMs);
+  assert.equal(resumeClaim?.storedResumeAttemptCount, 1);
+  assert.equal(await storage.markPeptidesGenerationSourceRetry(
+    order.id,
+    resumeClaim!,
+    retryConfig.attemptBudgetMicroUsd,
+    "catalog and shipping unavailable",
+    getPeptidesSourceRetryAt(),
+  ), true);
+
+  const unavailable = await storage.getOrder(order.id);
+  const metadata = unavailable?.metadata as any;
+  assert.equal(metadata.peptidesGenerationAttempts, first?.attemptCount);
+  assert.equal(metadata.peptidesGenerationReservedCostMicroUsd, first?.reservedCostMicroUsd);
+  assert.equal(metadata.peptidesGenerationStoredResumeAttempts, 0);
+  assert.equal(metadata.peptidesGenerationResponseId, "resp_source_resume");
 });
 
 test("failed generation persists a future retry and the next claim resumes after backoff", async () => {

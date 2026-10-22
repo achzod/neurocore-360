@@ -40,6 +40,13 @@ export class PeptauraSourceUnavailableError extends Error {
   }
 }
 
+export function isRetryablePeptauraSourceOutage(error: unknown): boolean {
+  if (!(error instanceof PeptauraSourceUnavailableError)) return false;
+  const errors = error.preflight.errors;
+  return errors.includes("catalogue_live_indisponible")
+    && errors.some((entry) => entry.startsWith("shipping_live_indisponible:"));
+}
+
 const LIKELY_PRODUCTS_BY_GOAL: Record<string, string[]> = {
   recovery: ["BPC-157", "TB-500"],
   "gh-antiaging": ["CJC-1295 (no DAC)", "Ipamorelin"],

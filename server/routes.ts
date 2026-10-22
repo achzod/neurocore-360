@@ -113,9 +113,11 @@ import {
   evaluatePeptidesGenerationEligibility,
   getPeptidesGenerationCircuitConfig,
   getPeptidesGenerationRetryAt,
+  getPeptidesSourceRetryAt,
   getPeptidesStoredResumeRetryAt,
   sanitizePeptidesGenerationError,
 } from "./peptidesGenerationCircuitBreaker";
+import { isRetryablePeptauraSourceOutage } from "./peptidesSourcePreflight";
 import {
   evaluatePeptidesReleaseHashGate,
   isPeptidesApprovalExpected,
@@ -15829,32 +15831,39 @@ export async function registerRoutes(
           });
         } catch (generationError: any) {
           const safeError = sanitizePeptidesGenerationError(generationError);
-          const sourceUnavailable = generationError?.code === "PEPTAURA_SOURCE_UNAVAILABLE";
+          const retryableSourceOutage = isRetryablePeptauraSourceOutage(generationError);
           const storedResumeAttemptCount = generationClaim.storedResumeAttemptCount || 0;
-          const nextRetryAt = resumeResponseId
-            ? getPeptidesStoredResumeRetryAt(storedResumeAttemptCount)
-            : sourceUnavailable
-              ? null
-              : getPeptidesGenerationRetryAt(generationClaim.attemptCount);
-          if (nextRetryAt) {
-            await storage.markPeptidesGenerationRetry(
+          if (retryableSourceOutage) {
+            const nextRetryAt = getPeptidesSourceRetryAt();
+            await storage.markPeptidesGenerationSourceRetry(
               order.id,
-              generationClaim.attemptCount,
-              "generation_failed",
+              generationClaim,
+              peptidesCircuitConfig.attemptBudgetMicroUsd,
               safeError,
               nextRetryAt,
             ).catch(() => false);
-            autoGenLastResult = `RETRY_SCHEDULED: ${email} attempt ${generationClaim.attemptCount + 1} at ${nextRetryAt}`;
-            console.warn(`[AutoGen] Peptides retry scheduled for ${email} at ${nextRetryAt}`);
+            autoGenLastResult = `SOURCE_RETRY_SCHEDULED: ${email} at ${nextRetryAt}`;
+            console.warn(`[AutoGen] Peptaura source unavailable for ${email}; retry scheduled at ${nextRetryAt}`);
           } else {
-            const reason = resumeResponseId
-              ? "stored_resume_exhausted"
-              : sourceUnavailable
-                ? "source_unavailable"
-                : "attempt_cap";
-            await storage.markPeptidesGenerationNeedsReview(order.id, reason, safeError).catch(() => false);
-            autoGenLastResult = `NEEDS_REVIEW: ${email} (${reason})`;
-            console.error(`[AutoGen] Peptides generation exhausted for ${email}; manual review required`);
+            const nextRetryAt = resumeResponseId
+              ? getPeptidesStoredResumeRetryAt(storedResumeAttemptCount)
+              : getPeptidesGenerationRetryAt(generationClaim.attemptCount);
+            if (nextRetryAt) {
+              await storage.markPeptidesGenerationRetry(
+                order.id,
+                generationClaim.attemptCount,
+                "generation_failed",
+                safeError,
+                nextRetryAt,
+              ).catch(() => false);
+              autoGenLastResult = `RETRY_SCHEDULED: ${email} attempt ${generationClaim.attemptCount + 1} at ${nextRetryAt}`;
+              console.warn(`[AutoGen] Peptides retry scheduled for ${email} at ${nextRetryAt}`);
+            } else {
+              const reason = resumeResponseId ? "stored_resume_exhausted" : "attempt_cap";
+              await storage.markPeptidesGenerationNeedsReview(order.id, reason, safeError).catch(() => false);
+              autoGenLastResult = `NEEDS_REVIEW: ${email} (${reason})`;
+              console.error(`[AutoGen] Peptides generation exhausted for ${email}; manual review required`);
+            }
           }
           break;
         }

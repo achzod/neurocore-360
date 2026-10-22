@@ -296,6 +296,13 @@ export interface IStorage {
     error: string,
     nextRetryAt: string,
   ): Promise<boolean>;
+  markPeptidesGenerationSourceRetry(
+    orderId: string,
+    claim: PeptidesGenerationAttemptClaim,
+    attemptBudgetMicroUsd: number,
+    error: string,
+    nextRetryAt: string,
+  ): Promise<boolean>;
   markPeptidesGenerationNeedsReview(
     orderId: string,
     reason: string,
@@ -1210,6 +1217,38 @@ export class MemStorage implements IStorage {
       ...meta,
       peptidesGenerationState: "RETRY_SCHEDULED",
       peptidesGenerationReviewReason: reason,
+      peptidesGenerationLastError: error,
+      peptidesGenerationNextRetryAt: nextRetryAt,
+      peptidesGenerationLeaseUntil: "",
+    } as any;
+    order.updatedAt = new Date();
+    return true;
+  }
+
+  async markPeptidesGenerationSourceRetry(
+    orderId: string,
+    claim: PeptidesGenerationAttemptClaim,
+    attemptBudgetMicroUsd: number,
+    error: string,
+    nextRetryAt: string,
+  ): Promise<boolean> {
+    const order = this.memOrders.get(orderId);
+    if (!order) return false;
+    const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
+    if (meta.peptidesReportId || Number(meta.peptidesGenerationAttempts || 0) !== claim.attemptCount) return false;
+    const isResume = claim.storedResumeAttemptCount !== undefined;
+    if (isResume && Number(meta.peptidesGenerationStoredResumeAttempts || 0) !== claim.storedResumeAttemptCount) return false;
+    order.metadata = {
+      ...meta,
+      peptidesGenerationState: "RETRY_SCHEDULED",
+      peptidesGenerationAttempts: isResume ? claim.attemptCount : Math.max(0, claim.attemptCount - 1),
+      peptidesGenerationReservedCostMicroUsd: isResume
+        ? Math.max(0, Number(meta.peptidesGenerationReservedCostMicroUsd || 0))
+        : Math.max(0, Number(meta.peptidesGenerationReservedCostMicroUsd || 0) - attemptBudgetMicroUsd),
+      peptidesGenerationStoredResumeAttempts: isResume
+        ? Math.max(0, Number(claim.storedResumeAttemptCount) - 1)
+        : Math.max(0, Number(meta.peptidesGenerationStoredResumeAttempts || 0)),
+      peptidesGenerationReviewReason: "source_unavailable",
       peptidesGenerationLastError: error,
       peptidesGenerationNextRetryAt: nextRetryAt,
       peptidesGenerationLeaseUntil: "",
@@ -3748,6 +3787,47 @@ export class PgStorage implements IStorage {
           AND COALESCE((metadata->>'peptidesGenerationAttempts')::int, 0) = $5::int
       RETURNING id`,
       [reason.slice(0, 120), error.slice(0, 800), nextRetryAt, orderId, attemptCount],
+    );
+    return (result.rowCount ?? 0) === 1;
+  }
+
+  async markPeptidesGenerationSourceRetry(
+    orderId: string,
+    claim: PeptidesGenerationAttemptClaim,
+    attemptBudgetMicroUsd: number,
+    error: string,
+    nextRetryAt: string,
+  ): Promise<boolean> {
+    await this.ensureOrdersTableCreated();
+    const isResume = claim.storedResumeAttemptCount !== undefined;
+    const result = await pool.query(
+      `UPDATE orders
+          SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
+                'peptidesGenerationState', 'RETRY_SCHEDULED',
+                'peptidesGenerationAttempts', GREATEST(0, COALESCE((metadata->>'peptidesGenerationAttempts')::int, 0) - $1::int),
+                'peptidesGenerationReservedCostMicroUsd', GREATEST(0, COALESCE((metadata->>'peptidesGenerationReservedCostMicroUsd')::bigint, 0) - $2::bigint),
+                'peptidesGenerationStoredResumeAttempts', GREATEST(0, COALESCE((metadata->>'peptidesGenerationStoredResumeAttempts')::int, 0) - $3::int),
+                'peptidesGenerationReviewReason', 'source_unavailable',
+                'peptidesGenerationLastError', $4::text,
+                'peptidesGenerationNextRetryAt', $5::text,
+                'peptidesGenerationLeaseUntil', ''
+              ),
+              updated_at = NOW()
+        WHERE id = $6
+          AND COALESCE(metadata->>'peptidesReportId', '') = ''
+          AND COALESCE((metadata->>'peptidesGenerationAttempts')::int, 0) = $7::int
+          AND ($8::int < 0 OR COALESCE((metadata->>'peptidesGenerationStoredResumeAttempts')::int, 0) = $8::int)
+      RETURNING id`,
+      [
+        isResume ? 0 : 1,
+        isResume ? 0 : attemptBudgetMicroUsd,
+        isResume ? 1 : 0,
+        error.slice(0, 800),
+        nextRetryAt,
+        orderId,
+        claim.attemptCount,
+        isResume ? claim.storedResumeAttemptCount : -1,
+      ],
     );
     return (result.rowCount ?? 0) === 1;
   }

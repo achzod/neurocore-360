@@ -21,10 +21,22 @@ test("automatic Peptides generation claims each attempt and persists bounded ret
   assert.match(routes, /peptidesGenerationResponseId/);
   assert.match(routes, /resumeResponseId:\s*resumeResponseId \|\| undefined/);
   assert.match(routes, /getPeptidesStoredResumeRetryAt\(storedResumeAttemptCount\)/);
+  assert.match(routes, /isRetryablePeptauraSourceOutage\(generationError\)/);
+  assert.match(routes, /markPeptidesGenerationSourceRetry\([\s\S]{0,240}peptidesCircuitConfig\.attemptBudgetMicroUsd/);
+  assert.match(routes, /SOURCE_RETRY_SCHEDULED/);
+  const sourceOutageBranch = routes.indexOf("if (retryableSourceOutage)");
+  const sourceOutageBreak = routes.indexOf("break;", sourceOutageBranch);
+  const reportPersistence = routes.indexOf("storage.createBurnoutReport", sourceOutageBranch);
+  assert.ok(sourceOutageBranch > 0 && sourceOutageBreak > sourceOutageBranch);
+  assert.ok(sourceOutageBreak < reportPersistence, "source outage must exit before report persistence or any delivery email");
   assert.match(routes, /Peptides delivery HOLD retained while missing report recovery continues/);
   assert.match(routes, /deliveryHeld = scheduledMeta\.peptidesEmailHold[\s\S]{0,260}const stillNotEmailed = !deliveryHeld/);
   const retryMethod = storage.slice(
     storage.lastIndexOf("async markPeptidesGenerationRetry"),
+    storage.lastIndexOf("async markPeptidesGenerationNeedsReview"),
+  );
+  const sourceRetryMethod = storage.slice(
+    storage.lastIndexOf("async markPeptidesGenerationSourceRetry"),
     storage.lastIndexOf("async markPeptidesGenerationNeedsReview"),
   );
   const reviewMethod = storage.slice(
@@ -32,6 +44,10 @@ test("automatic Peptides generation claims each attempt and persists bounded ret
     storage.lastIndexOf("async resetPeptidesGenerationCircuit"),
   );
   assert.doesNotMatch(retryMethod, /peptidesGenerationResponseId/);
+  assert.match(sourceRetryMethod, /'peptidesGenerationState', 'RETRY_SCHEDULED'/);
+  assert.match(sourceRetryMethod, /'peptidesGenerationAttempts', GREATEST/);
+  assert.match(sourceRetryMethod, /'peptidesGenerationReservedCostMicroUsd', GREATEST/);
+  assert.match(sourceRetryMethod, /'peptidesGenerationStoredResumeAttempts', GREATEST/);
   assert.doesNotMatch(reviewMethod, /peptidesGenerationResponseId/);
 });
 
