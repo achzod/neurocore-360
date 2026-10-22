@@ -12,6 +12,7 @@ export interface PeptidesFulfillmentInvariantInput {
     peptides?: unknown[] | null;
   } | null;
   deliveryAccepted: boolean;
+  deliveryHeld?: boolean;
   recipientUnsubscribed: boolean;
   scheduledAt?: Date | string | null;
   now?: Date;
@@ -77,6 +78,7 @@ export function evaluatePeptidesFulfillmentInvariant(
 
   if (
     !input.deliveryAccepted
+    && !input.deliveryHeld
     && scheduledAtMs !== null
     && nowMs - scheduledAtMs >= 30 * 60 * 1000
   ) {
