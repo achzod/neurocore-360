@@ -66,6 +66,19 @@ test("flags overdue valid delivery but leaves recovery enabled", () => {
   assert.equal(incident?.blocksDelivery, false);
 });
 
+test("does not flag an intentionally held delivery as overdue", () => {
+  assert.equal(evaluatePeptidesFulfillmentInvariant({
+    paidAt: "2026-10-01T18:00:00.000Z",
+    reportId: "report-1",
+    report: validReport,
+    deliveryAccepted: false,
+    deliveryHeld: true,
+    recipientUnsubscribed: false,
+    scheduledAt: "2026-10-01T19:00:00.000Z",
+    now,
+  }), null);
+});
+
 test("passes a valid accepted delivery", () => {
   assert.equal(evaluatePeptidesFulfillmentInvariant({
     paidAt: "2026-10-01T18:00:00.000Z",

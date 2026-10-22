@@ -15534,6 +15534,7 @@ export async function registerRoutes(
           reportId: meta?.peptidesReportId,
           report: (invariantReport?.report as any) || null,
           deliveryAccepted,
+          deliveryHeld: meta?.peptidesEmailHold === true || meta?.peptidesEmailHold === "true",
           recipientUnsubscribed,
           scheduledAt: meta?.peptidesEmailScheduledAt,
           now,
