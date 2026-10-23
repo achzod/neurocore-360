@@ -384,6 +384,7 @@ async function sendEmailWithTracking(
     metadata?: Record<string, any>;
     bccAdmin?: boolean;
     requestTimeoutMs?: number;
+    allowProviderFallback?: boolean;
   }
 ): Promise<SendPulseSendResult> {
   try {
@@ -586,7 +587,7 @@ async function sendEmailWithTracking(
     // monthly quota/bandwidth is exhausted (HTTP 422). Orders, payment
     // notifications and paid report deliveries must not disappear with the
     // marketing provider, so critical messages fail over to Brevo.
-    if (!result.result && criticalEmail && BREVO_API_KEY) {
+    if (!result.result && criticalEmail && trackingData.allowProviderFallback !== false && BREVO_API_KEY) {
       try {
         const htmlContent = looksLikeBase64(emailPayload.html)
           ? Buffer.from(emailPayload.html, "base64").toString("utf8")
@@ -643,7 +644,7 @@ async function sendEmailWithTracking(
       }
     }
 
-    if (!result.result && criticalEmail) {
+    if (!result.result && criticalEmail && trackingData.allowProviderFallback !== false) {
       const smtpTransport = getSmtpFallbackTransport();
       if (smtpTransport) {
         try {
@@ -3395,6 +3396,10 @@ export async function sendCTAEmail(
   subject: string,
   message: string,
   customHtml?: string,
+  options?: {
+    allowProviderFallback?: boolean;
+    metadata?: Record<string, any>;
+  },
 ): Promise<boolean> {
   try {
     let emailContent: string;
@@ -3445,7 +3450,11 @@ export async function sendCTAEmail(
       {
         emailType: "sendCTAEmail",
         recipientEmail: email,
-        metadata: { customMessage: message.substring(0, 100) },
+        allowProviderFallback: options?.allowProviderFallback,
+        metadata: {
+          customMessage: message.substring(0, 100),
+          ...(options?.metadata || {}),
+        },
       }
     );
 
@@ -6226,6 +6235,7 @@ Réf. commande : ${opts.orderId.slice(0,8)}`;
       {
         emailType: "sendPeptidesOrderConfirmation",
         recipientEmail: email,
+        allowProviderFallback: false,
         metadata: {
           orderId: opts.orderId,
           amountEur: opts.amountEur,

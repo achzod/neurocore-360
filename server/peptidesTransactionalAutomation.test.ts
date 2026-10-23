@@ -22,75 +22,109 @@ async function paidPeptidesOrder(metadata: Record<string, unknown> = {}) {
   return { storage, order: (await storage.getOrder(order.id))! };
 }
 
-test("confirmation claim is single-writer and terminal acceptance blocks retries", async () => {
+test("confirmation claim is single-writer and remains terminal after provider ambiguity", async () => {
   const { storage, order } = await paidPeptidesOrder();
-  assert.equal(await storage.claimPeptidesOrderConfirmation(order.id), true);
-  assert.equal(await storage.claimPeptidesOrderConfirmation(order.id), false);
-  await storage.finalizePeptidesOrderConfirmation(order.id, "ACCEPTED");
-  assert.equal(await storage.claimPeptidesOrderConfirmation(order.id), false);
+  assert.equal(await storage.claimPeptidesAutomation(order.id, "", "peptidesOrderConfirmationClaimId", "claim-1"), true);
+  assert.equal(await storage.claimPeptidesAutomation(order.id, "", "peptidesOrderConfirmationClaimId", "claim-2"), false);
 });
 
-test("email hold blocks confirmation and report delivery claims", async () => {
-  const reportId = "report-held";
-  const { storage, order } = await paidPeptidesOrder({
-    peptidesEmailHold: true,
-    peptidesReportId: reportId,
-  });
-  assert.equal(await storage.claimPeptidesOrderConfirmation(order.id), false);
-  assert.equal(await storage.claimPeptidesReportDelivery(order.id, reportId), false);
+test("email hold and manual fulfillment block confirmation and report delivery claims", async () => {
+  for (const metadata of [
+    { peptidesEmailHold: true },
+    { peptidesManualFulfillment: true },
+  ]) {
+    const reportId = "report-held";
+    const { storage, order } = await paidPeptidesOrder({ ...metadata, peptidesReportId: reportId });
+    assert.equal(await storage.claimPeptidesAutomation(order.id, reportId, "peptidesOrderConfirmationClaimId", "confirm"), false);
+    assert.equal(await storage.claimPeptidesDelivery(order.id, reportId, "delivery"), false);
+  }
 });
 
 test("report delivery claim is bound to the linked artifact and single-writer", async () => {
   const reportId = "report-current";
   const { storage, order } = await paidPeptidesOrder({ peptidesReportId: reportId });
-  assert.equal(await storage.claimPeptidesReportDelivery(order.id, "report-old"), false);
-  assert.equal(await storage.claimPeptidesReportDelivery(order.id, reportId), true);
-  assert.equal(await storage.claimPeptidesReportDelivery(order.id, reportId), false);
-  await storage.finalizePeptidesReportDelivery(order.id, reportId, "UNKNOWN");
-  assert.equal(await storage.claimPeptidesReportDelivery(order.id, reportId), false);
+  assert.equal(await storage.claimPeptidesDelivery(order.id, "report-old", "claim-old"), false);
+  assert.equal(await storage.claimPeptidesDelivery(order.id, reportId, "claim-current"), true);
+  assert.equal(await storage.claimPeptidesDelivery(order.id, reportId, "claim-racer"), false);
+  await storage.finalizePeptidesDeliveryClaim(order.id, reportId, "claim-current", "UNKNOWN");
+  assert.equal(await storage.claimPeptidesDelivery(order.id, reportId, "claim-retry"), false);
+  const updated = await storage.getOrder(order.id);
+  assert.equal((updated?.metadata as any)?.peptidesDeliveryReportId, reportId);
+  assert.equal((updated?.metadata as any)?.peptidesEmailHold, true);
+  assert.equal((updated?.metadata as any)?.peptidesEmailHoldReason, "DELIVERY_PROVIDER_RESULT_UNCERTAIN");
 });
 
-test("admin reset reopens exhausted peptides delivery circuit for the linked report only", async () => {
-  const reportId = "report-retry";
-  const { storage, order } = await paidPeptidesOrder({ peptidesReportId: reportId });
+test("stale report mutations lose CAS and a deliberate relink resets delivery under hold", async () => {
+  const { storage, order } = await paidPeptidesOrder({
+    peptidesReportId: "report-a",
+    peptidesDeliveryClaimId: "old-claim",
+    peptidesDeliveryReportId: "report-a",
+    peptidesDeliveryState: "ACCEPTED",
+    peptidesEmailScheduledAt: new Date().toISOString(),
+    peptidesCycle2ReorderClaimId: "old-reorder",
+    "peptidesAutomationClaim:peptidesReviewJ3": "old-review",
+  });
+  assert.equal(await storage.setOrderMetadataIfPeptidesReportMatches(order.id, "report-old", { peptidesReportId: "" }), false);
+  assert.equal(await storage.replacePeptidesReportSlotIfMatches(order.id, "report-old", "report-b"), false);
+  assert.equal(await storage.replacePeptidesReportSlotIfMatches(order.id, "report-a", "report-b"), true);
+  const relinked = (await storage.getOrder(order.id))?.metadata as any;
+  assert.equal(relinked.peptidesReportId, "report-b");
+  assert.equal(relinked.peptidesEmailHold, true);
+  assert.equal(relinked.peptidesManualFulfillment, true);
+  assert.equal(relinked.peptidesDeliveryClaimId, undefined);
+  assert.equal(relinked.peptidesDeliveryReportId, undefined);
+  assert.equal(relinked.peptidesDeliveryState, undefined);
+  assert.equal(relinked.peptidesEmailScheduledAt, undefined);
+  assert.equal(relinked.peptidesCycle2ReorderClaimId, undefined);
+  assert.equal(relinked["peptidesAutomationClaim:peptidesReviewJ3"], undefined);
+});
 
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    assert.equal(await storage.claimPeptidesReportDelivery(order.id, reportId), true);
-    await storage.finalizePeptidesReportDelivery(order.id, reportId, "FAILED");
+test("production flow centralizes confirmation and claims every report delivery before provider calls", () => {
+  const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
+  assert.match(routes, /async function sendPeptidesOrderConfirmationOnce/);
+  assert.match(routes, /peptidesOrderConfirmationClaimId/);
+  assert.match(routes, /claimPeptidesGenerationAttempt\(/);
+  const preGenerationConfirmation = routes.indexOf("[AutoGen PreGeneration] Confirmation email failed");
+  const generationProviderCall = routes.indexOf("report = await generatePeptidesProtocol", preGenerationConfirmation);
+  assert.ok(preGenerationConfirmation >= 0 && generationProviderCall > preGenerationConfirmation,
+    "payment confirmation must be attempted before Peptides generation provider calls");
+  assert.match(routes, /claimPeptidesDelivery\(order\.id, recoveryReportId, recoveryClaimId\)/);
+  assert.match(routes, /claimPeptidesDelivery\(order\.id, saved\.id, deliveryClaimId\)/);
+  assert.match(routes, /finalizePeptidesDeliveryClaim\([\s\S]*"UNKNOWN"/);
+  assert.match(routes, /deleteBurnoutReport\(saved\.id\)/);
+});
+
+test("every paid admin generation path confirms before the AI provider call", () => {
+  const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
+  const cases = [
+    {
+      name: "force-paid",
+      start: 'app.post("/api/admin/orders/:id/force-paid"',
+      end: 'app.post("/api/admin/orders/:id/cancel"',
+    },
+    {
+      name: "manual peptides generation",
+      start: 'app.post("/api/admin/peptides-generate"',
+      end: 'app.post("/api/admin/peptides-link-order-to-report"',
+    },
+  ];
+
+  for (const route of cases) {
+    const start = routes.indexOf(route.start);
+    const end = routes.indexOf(route.end, start);
+    assert.ok(start >= 0 && end > start, `${route.name} route bounds must exist`);
+    const source = routes.slice(start, end);
+    const confirmation = source.indexOf("sendPeptidesOrderConfirmationOnce");
+    const provider = source.indexOf("generatePeptidesProtocol");
+    const sourceRead = route.name === "force-paid"
+      ? source.indexOf("Object.keys(responses).length < 3")
+      : source.indexOf("getBurnoutProgress");
+    assert.ok(confirmation >= 0, `${route.name} must attempt confirmation`);
+    assert.ok(sourceRead > confirmation, `${route.name} must confirm before source validation`);
+    assert.ok(provider > confirmation, `${route.name} must confirm before generation`);
   }
 
-  assert.equal(await storage.claimPeptidesReportDelivery(order.id, reportId), false);
-  assert.equal(await storage.resetPeptidesReportDeliveryCircuit(order.id, "report-old"), false);
-  assert.equal(await storage.resetPeptidesReportDeliveryCircuit(order.id, reportId), true);
-  assert.equal(await storage.claimPeptidesReportDelivery(order.id, reportId), true);
-});
-
-test("production flow separates payment confirmation from provider generation", () => {
-  const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
-  const confirmation = routes.indexOf("await ensurePeptidesOrderConfirmation(order)");
-  const generationSwitch = routes.indexOf("if (!peptidesAutogenEnabled)");
-  assert.ok(confirmation >= 0, "paid-order confirmation recovery must exist");
-  assert.ok(generationSwitch >= 0, "provider generation kill switch must exist");
-  assert.ok(
-    confirmation < generationSwitch,
-    "confirmation must run before the paid-provider generation kill switch",
-  );
-  assert.match(routes, /claimPeptidesGenerationAttempt\(/);
-  assert.match(routes, /resetPeptidesGenerationCircuit\(/);
-  assert.match(routes, /\/api\/admin\/orders\/:id\/peptides-reset-generation-lock/);
-  assert.match(routes, /\/api\/admin\/orders\/:id\/peptides-deliver-report/);
-  assert.match(routes, /resetPeptidesReportDeliveryCircuit\(/);
-  assert.match(routes, /maxCandidates:\s*2/);
-  assert.match(routes, /providerRetries:\s*1/);
-  assert.match(routes, /costBudgetEstimatedUsd:\s*0\.05/);
-  assert.match(routes, /deliverPeptidesReportOnce\(/);
-  assert.match(routes, /PEPTIDES_TRANSACTIONAL_AUTOMATION_ENABLED/);
-  assert.match(routes, /PEPTIDES_AUTOMATION_START_AT/);
-  assert.match(
-    routes,
-    /if \(!isPeptidesTransactionalAutomationEligible\(order\)\) continue;/,
-    "historical paid orders must be excluded before confirmation, recovery or generation",
-  );
+  assert.doesNotMatch(routes, /sendConfirmation\s*!==\s*false/);
 });
 
 test("public compatibility endpoint cannot bypass payment or call the provider", () => {
@@ -105,21 +139,33 @@ test("public compatibility endpoint cannot bypass payment or call the provider",
   assert.doesNotMatch(endpoint, /createOrder\(/);
 });
 
-test("provider POST ambiguity is terminal for both transactional emails", () => {
+test("provider POST ambiguity is terminal for confirmation and report delivery", () => {
+  const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
+  const storage = readFileSync(new URL("./storage.ts", import.meta.url), "utf8");
   const emailService = readFileSync(new URL("./emailService.ts", import.meta.url), "utf8");
-  const confirmation = emailService.slice(
-    emailService.indexOf("export async function sendPeptidesOrderConfirmationEmailResult"),
-    emailService.indexOf("export async function sendPeptidesOrderConfirmationEmail(", emailService.indexOf("export async function sendPeptidesOrderConfirmationEmailResult")),
+  const confirmation = routes.slice(
+    routes.indexOf("async function sendPeptidesOrderConfirmationOnce"),
+    routes.indexOf("async function persistPeptidesFulfillmentIncident"),
   );
-  const delivery = emailService.slice(emailService.indexOf("export async function sendPeptidesReportReadyEmail"));
-  assert.match(confirmation, /beforeProviderPost:\s*async \(\) => \{\}/);
-  assert.match(confirmation, /allowProviderFallback:\s*false/);
-  assert.match(delivery, /beforeProviderPost:\s*async \(\) => \{\}/);
-  assert.match(delivery, /allowProviderFallback:\s*false/);
-  assert.match(
-    emailService,
-    /allowAcceptedWithoutLiveVerification[\s\S]{0,220}sendPeptidesOrderConfirmation/,
-  );
+  assert.match(confirmation, /claimPeptidesAutomation/);
+  assert.match(confirmation, /Provider result uncertain/);
+  assert.doesNotMatch(confirmation, /peptidesOrderConfirmationClaimId[\s\S]*setOrderMetadataKey[\s\S]*""/);
+  assert.match(routes, /finalizePeptidesDeliveryClaim\([\s\S]*"UNKNOWN"/);
+  assert.match(storage, /DELIVERY_PROVIDER_RESULT_UNCERTAIN/);
+  assert.match(emailService, /sendPeptidesOrderConfirmation[\s\S]*allowProviderFallback:\s*false/);
+  assert.match(emailService, /trackingData\.allowProviderFallback !== false && BREVO_API_KEY/);
+  assert.match(emailService, /trackingData\.allowProviderFallback !== false\) \{/);
+  const deliveries = routes.match(/allowProviderFallback:\s*false, metadata: \{ orderId:[^}]+reportId:[^}]+\}/g) || [];
+  assert.equal(deliveries.length, 3, "every Peptides report delivery must disable provider fallback");
+});
+
+test("raw Peptides reports cannot trigger the generic J+3 review cron", () => {
+  const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
+  const start = routes.indexOf("let reviewCronRunning = false;");
+  const end = routes.indexOf("// Auto-recovery: generate missing peptides reports every 5 minutes", start);
+  const reviewCron = routes.slice(start, end);
+  assert.match(reviewCron, /Peptides J\+3 is handled exclusively[\s\S]*transactional order[\s\S]*sequence/);
+  assert.doesNotMatch(reviewCron, /for \(const report of peptidesReports/);
 });
 
 test("every Peptides tier includes its exact coaching conversion code and deduction", () => {
@@ -150,11 +196,11 @@ test("every Peptides tier includes its exact coaching conversion code and deduct
   }
 
   const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
-  const delivery = routes.slice(
-    routes.indexOf("async function deliverPeptidesReportOnce"),
-    routes.indexOf("// Auto-recovery: generate missing peptides reports", routes.indexOf("async function deliverPeptidesReportOnce")),
-  );
-  assert.match(delivery, /coachingText:\s*input\.coachingText/);
+  const autoGenStart = routes.indexOf("// Auto-recovery: generate missing peptides reports every 5 minutes");
+  const autoSendStart = routes.indexOf("// Auto-send READY/SCHEDULED reports", autoGenStart);
+  const delivery = routes.slice(autoGenStart, autoSendStart);
+  assert.match(delivery, /buildPeptidesCoachingDeductionBlock/);
+  assert.match(delivery, /claimPeptidesDelivery/);
 
   const offerPage = readFileSync(new URL("../client/src/pages/PeptidesEnginePage.tsx", import.meta.url), "utf8");
   assert.match(offerPage, /solo:\s*\{\s*label:\s*"Solo",\s*price:\s*199,\s*bloodCredits:\s*0,\s*supportDays:\s*0\s*\}/);

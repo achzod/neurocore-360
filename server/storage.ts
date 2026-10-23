@@ -208,6 +208,7 @@ export interface IStorage {
   createBurnoutReport(input: { email: string; responses: Record<string, unknown>; report: unknown }): Promise<BurnoutReportRecord>;
   getBurnoutReport(id: string): Promise<BurnoutReportRecord | undefined>;
   updateBurnoutReport(id: string, report: unknown): Promise<BurnoutReportRecord | undefined>;
+  deleteBurnoutReport(id: string): Promise<boolean>;
   getAllBurnoutReports(): Promise<BurnoutReportRecord[]>;
   getPeptidesReportsByEmail(email: string): Promise<BurnoutReportRecord[]>;
 
@@ -280,6 +281,26 @@ export interface IStorage {
   claimPeptidesReportSlot(orderId: string, reportId: string): Promise<boolean>;
   /** Atomic JSONB merge: set a single metadata key without stomping concurrently-set keys. */
   setOrderMetadataKey(orderId: string, key: string, value: string | number | boolean): Promise<boolean>;
+  /** Atomic CAS merge: mutate metadata only while the linked Peptides report is still the expected one. */
+  setOrderMetadataIfPeptidesReportMatches(
+    orderId: string,
+    expectedReportId: string | null,
+    values: Record<string, string | number | boolean>,
+  ): Promise<boolean>;
+  /** Atomic link/relink helpers used by admin recovery; both fail closed under an explicit hold. */
+  claimPeptidesReportSlotForManualReview(orderId: string, reportId: string): Promise<boolean>;
+  replacePeptidesReportSlotIfMatches(orderId: string, expectedReportId: string, nextReportId: string): Promise<boolean>;
+  /** Single-writer delivery claim. A hold/manual state or any prior claim fails closed. */
+  claimPeptidesDelivery(orderId: string, reportId: string, claimId: string): Promise<boolean>;
+  /** Finalize the exact delivery claim without allowing a stale sender to overwrite a newer state. */
+  finalizePeptidesDeliveryClaim(
+    orderId: string,
+    reportId: string,
+    claimId: string,
+    state: "ACCEPTED" | "UNKNOWN",
+  ): Promise<boolean>;
+  /** Claim one automated Peptides follow-up exactly once while the link is active and unheld. */
+  claimPeptidesAutomation(orderId: string, reportId: string, automationKey: string, claimId: string): Promise<boolean>;
   claimPeptidesGenerationAttempt(
     orderId: string,
     config: PeptidesGenerationCircuitConfig,
@@ -662,6 +683,10 @@ export class MemStorage implements IStorage {
     };
     this.burnoutReports.set(id, updated);
     return updated;
+  }
+
+  async deleteBurnoutReport(id: string): Promise<boolean> {
+    return this.burnoutReports.delete(id);
   }
 
   async getAllBurnoutReports(): Promise<BurnoutReportRecord[]> {
@@ -1123,6 +1148,132 @@ export class MemStorage implements IStorage {
     if (!order) return false;
     const meta = (order.metadata as any) ?? {};
     order.metadata = { ...meta, [key]: value } as any;
+    order.updatedAt = new Date();
+    return true;
+  }
+
+  async setOrderMetadataIfPeptidesReportMatches(
+    orderId: string,
+    expectedReportId: string | null,
+    values: Record<string, string | number | boolean>,
+  ): Promise<boolean> {
+    const order = this.memOrders.get(orderId);
+    if (!order) return false;
+    const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
+    if (String(meta.peptidesReportId || "") !== String(expectedReportId || "")) return false;
+    order.metadata = { ...meta, ...values } as any;
+    order.updatedAt = new Date();
+    return true;
+  }
+
+  async claimPeptidesReportSlotForManualReview(orderId: string, reportId: string): Promise<boolean> {
+    const order = this.memOrders.get(orderId);
+    if (!order) return false;
+    const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
+    if (meta.peptidesReportId) return false;
+    order.metadata = {
+      ...meta,
+      peptidesReportId: reportId,
+      peptidesGenerationState: "SUCCEEDED",
+      peptidesGenerationCompletedAt: new Date().toISOString(),
+      peptidesEmailHold: true,
+      peptidesEmailHoldReason: "REPORT_LINK_REQUIRES_MANUAL_VERIFICATION",
+      peptidesManualFulfillment: true,
+      peptidesManualFulfillmentState: "LINKED_REQUIRES_MANUAL_VERIFICATION",
+      peptidesDeliveryClaimId: "",
+      peptidesDeliveryReportId: "",
+      peptidesDeliveryState: "",
+      peptidesDeliveryClaimedAt: "",
+      peptidesDeliveryFinalizedAt: "",
+      peptidesEmailScheduledAt: "",
+      peptidesEmailScheduleAnchor: "",
+    } as any;
+    order.updatedAt = new Date();
+    return true;
+  }
+
+  async replacePeptidesReportSlotIfMatches(orderId: string, expectedReportId: string, nextReportId: string): Promise<boolean> {
+    const order = this.memOrders.get(orderId);
+    if (!order) return false;
+    const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
+    if (String(meta.peptidesReportId || "") !== expectedReportId) return false;
+    const resetKeys = [
+      "peptidesDeliveryClaimId", "peptidesDeliveryReportId", "peptidesDeliveryState",
+      "peptidesDeliveryClaimedAt", "peptidesDeliveryFinalizedAt", "peptidesEmailScheduledAt",
+      "peptidesEmailScheduleAnchor", "peptidesCycle2ReorderClaimId",
+      "peptidesAutomationClaim:peptidesReviewJ3", "peptidesAutomationClaim:peptidesReviewS5",
+      "peptidesAutomationClaim:peptidesReviewS12", "peptidesAutomationClaim:peptidesS4",
+      "peptidesAutomationClaim:peptidesS8", "peptidesAutomationClaim:peptidesS12",
+      "peptidesAutomationClaim:peptidesS16",
+    ];
+    const nextMeta = { ...meta };
+    for (const key of resetKeys) delete nextMeta[key];
+    order.metadata = {
+      ...nextMeta,
+      peptidesReportId: nextReportId,
+      peptidesGenerationState: "SUCCEEDED",
+      peptidesGenerationCompletedAt: new Date().toISOString(),
+      peptidesEmailHold: true,
+      peptidesEmailHoldReason: "REPORT_RELINK_REQUIRES_MANUAL_VERIFICATION",
+      peptidesManualFulfillment: true,
+      peptidesManualFulfillmentState: "RELINKED_REQUIRES_MANUAL_VERIFICATION",
+    } as any;
+    order.updatedAt = new Date();
+    return true;
+  }
+
+  async claimPeptidesDelivery(orderId: string, reportId: string, claimId: string): Promise<boolean> {
+    const order = this.memOrders.get(orderId);
+    if (!order) return false;
+    const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
+    const held = meta.peptidesEmailHold === true || meta.peptidesEmailHold === "true";
+    const manual = meta.peptidesManualFulfillment === true || meta.peptidesManualFulfillment === "true";
+    if (String(meta.peptidesReportId || "") !== reportId || held || manual) return false;
+    if (meta.peptidesDeliveryClaimId || meta.peptidesDeliveryState === "ACCEPTED") return false;
+    order.metadata = {
+      ...meta,
+      peptidesDeliveryClaimId: claimId,
+      peptidesDeliveryReportId: reportId,
+      peptidesDeliveryState: "SENDING",
+      peptidesDeliveryClaimedAt: new Date().toISOString(),
+    } as any;
+    order.updatedAt = new Date();
+    return true;
+  }
+
+  async finalizePeptidesDeliveryClaim(
+    orderId: string,
+    reportId: string,
+    claimId: string,
+    state: "ACCEPTED" | "UNKNOWN",
+  ): Promise<boolean> {
+    const order = this.memOrders.get(orderId);
+    if (!order) return false;
+    const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
+    if (String(meta.peptidesReportId || "") !== reportId || meta.peptidesDeliveryClaimId !== claimId) return false;
+    order.metadata = {
+      ...meta,
+      peptidesDeliveryState: state,
+      peptidesDeliveryReportId: reportId,
+      peptidesDeliveryFinalizedAt: new Date().toISOString(),
+      ...(state === "UNKNOWN" ? {
+        peptidesEmailHold: true,
+        peptidesEmailHoldReason: "DELIVERY_PROVIDER_RESULT_UNCERTAIN",
+        peptidesFulfillmentState: "ACTION_REQUIRED",
+      } : {}),
+    } as any;
+    order.updatedAt = new Date();
+    return true;
+  }
+
+  async claimPeptidesAutomation(orderId: string, reportId: string, automationKey: string, claimId: string): Promise<boolean> {
+    const order = this.memOrders.get(orderId);
+    if (!order) return false;
+    const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
+    const held = meta.peptidesEmailHold === true || meta.peptidesEmailHold === "true";
+    const manual = meta.peptidesManualFulfillment === true || meta.peptidesManualFulfillment === "true";
+    if (String(meta.peptidesReportId || "") !== reportId || held || manual || meta[automationKey]) return false;
+    order.metadata = { ...meta, [automationKey]: claimId } as any;
     order.updatedAt = new Date();
     return true;
   }
@@ -2144,6 +2295,12 @@ export class PgStorage implements IStorage {
       report: row.report || {},
       createdAt: row.created_at,
     };
+  }
+
+  async deleteBurnoutReport(id: string): Promise<boolean> {
+    await this.ensureBurnoutReportsTable();
+    const result = await pool.query("DELETE FROM burnout_reports WHERE id = $1", [id]);
+    return (result.rowCount ?? 0) > 0;
   }
 
   async getAllBurnoutReports(): Promise<BurnoutReportRecord[]> {
@@ -3647,6 +3804,166 @@ export class PgStorage implements IStorage {
        WHERE id = $3
        RETURNING id`,
       [key, jsonValue, orderId]
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async setOrderMetadataIfPeptidesReportMatches(
+    orderId: string,
+    expectedReportId: string | null,
+    values: Record<string, string | number | boolean>,
+  ): Promise<boolean> {
+    await this.ensureOrdersTableCreated();
+    const result = await pool.query(
+      `UPDATE orders
+         SET metadata = COALESCE(metadata, '{}'::jsonb) || $1::jsonb,
+             updated_at = NOW()
+       WHERE id = $2
+         AND COALESCE(metadata->>'peptidesReportId', '') = $3
+       RETURNING id`,
+      [JSON.stringify(values), orderId, expectedReportId || ""],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async claimPeptidesReportSlotForManualReview(orderId: string, reportId: string): Promise<boolean> {
+    await this.ensureOrdersTableCreated();
+    const result = await pool.query(
+      `UPDATE orders
+         SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
+               'peptidesReportId', $1::text,
+               'peptidesGenerationState', 'SUCCEEDED',
+               'peptidesGenerationCompletedAt', NOW()::text,
+               'peptidesEmailHold', true,
+               'peptidesEmailHoldReason', 'REPORT_LINK_REQUIRES_MANUAL_VERIFICATION',
+               'peptidesManualFulfillment', true,
+               'peptidesManualFulfillmentState', 'LINKED_REQUIRES_MANUAL_VERIFICATION',
+               'peptidesDeliveryClaimId', '',
+               'peptidesDeliveryReportId', '',
+               'peptidesDeliveryState', '',
+               'peptidesDeliveryClaimedAt', '',
+               'peptidesDeliveryFinalizedAt', '',
+               'peptidesEmailScheduledAt', '',
+               'peptidesEmailScheduleAnchor', ''
+             ),
+             updated_at = NOW()
+       WHERE id = $2
+         AND COALESCE(metadata->>'peptidesReportId', '') = ''
+       RETURNING id`,
+      [reportId, orderId],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async replacePeptidesReportSlotIfMatches(orderId: string, expectedReportId: string, nextReportId: string): Promise<boolean> {
+    await this.ensureOrdersTableCreated();
+    const result = await pool.query(
+      `UPDATE orders
+         SET metadata = (
+               COALESCE(metadata, '{}'::jsonb)
+               - 'peptidesDeliveryClaimId'
+               - 'peptidesDeliveryReportId'
+               - 'peptidesDeliveryState'
+               - 'peptidesDeliveryClaimedAt'
+               - 'peptidesDeliveryFinalizedAt'
+               - 'peptidesEmailScheduledAt'
+               - 'peptidesEmailScheduleAnchor'
+               - 'peptidesCycle2ReorderClaimId'
+               - 'peptidesAutomationClaim:peptidesReviewJ3'
+               - 'peptidesAutomationClaim:peptidesReviewS5'
+               - 'peptidesAutomationClaim:peptidesReviewS12'
+               - 'peptidesAutomationClaim:peptidesS4'
+               - 'peptidesAutomationClaim:peptidesS8'
+               - 'peptidesAutomationClaim:peptidesS12'
+               - 'peptidesAutomationClaim:peptidesS16'
+             ) || jsonb_build_object(
+               'peptidesReportId', $1::text,
+               'peptidesGenerationState', 'SUCCEEDED',
+               'peptidesGenerationCompletedAt', NOW()::text,
+               'peptidesEmailHold', true,
+               'peptidesEmailHoldReason', 'REPORT_RELINK_REQUIRES_MANUAL_VERIFICATION',
+               'peptidesManualFulfillment', true,
+               'peptidesManualFulfillmentState', 'RELINKED_REQUIRES_MANUAL_VERIFICATION'
+             ),
+             updated_at = NOW()
+       WHERE id = $2
+         AND COALESCE(metadata->>'peptidesReportId', '') = $3
+       RETURNING id`,
+      [nextReportId, orderId, expectedReportId],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async claimPeptidesDelivery(orderId: string, reportId: string, claimId: string): Promise<boolean> {
+    await this.ensureOrdersTableCreated();
+    const result = await pool.query(
+      `UPDATE orders
+         SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
+               'peptidesDeliveryClaimId', $1::text,
+               'peptidesDeliveryReportId', $3::text,
+               'peptidesDeliveryState', 'SENDING',
+               'peptidesDeliveryClaimedAt', NOW()::text
+             ),
+             updated_at = NOW()
+       WHERE id = $2
+         AND COALESCE(metadata->>'peptidesReportId', '') = $3
+         AND COALESCE(metadata->>'peptidesEmailHold', 'false') <> 'true'
+         AND COALESCE(metadata->>'peptidesManualFulfillment', 'false') <> 'true'
+         AND COALESCE(metadata->>'peptidesDeliveryClaimId', '') = ''
+         AND COALESCE(metadata->>'peptidesDeliveryState', '') <> 'ACCEPTED'
+       RETURNING id`,
+      [claimId, orderId, reportId],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async finalizePeptidesDeliveryClaim(
+    orderId: string,
+    reportId: string,
+    claimId: string,
+    state: "ACCEPTED" | "UNKNOWN",
+  ): Promise<boolean> {
+    await this.ensureOrdersTableCreated();
+    const patch = state === "UNKNOWN"
+      ? {
+          peptidesDeliveryState: state,
+          peptidesDeliveryReportId: reportId,
+          peptidesDeliveryFinalizedAt: new Date().toISOString(),
+          peptidesEmailHold: true,
+          peptidesEmailHoldReason: "DELIVERY_PROVIDER_RESULT_UNCERTAIN",
+          peptidesFulfillmentState: "ACTION_REQUIRED",
+        }
+      : {
+          peptidesDeliveryState: state,
+          peptidesDeliveryReportId: reportId,
+          peptidesDeliveryFinalizedAt: new Date().toISOString(),
+        };
+    const result = await pool.query(
+      `UPDATE orders
+         SET metadata = COALESCE(metadata, '{}'::jsonb) || $1::jsonb,
+             updated_at = NOW()
+       WHERE id = $2
+         AND COALESCE(metadata->>'peptidesReportId', '') = $3
+         AND metadata->>'peptidesDeliveryClaimId' = $4
+       RETURNING id`,
+      [JSON.stringify(patch), orderId, reportId, claimId],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async claimPeptidesAutomation(orderId: string, reportId: string, automationKey: string, claimId: string): Promise<boolean> {
+    await this.ensureOrdersTableCreated();
+    const result = await pool.query(
+      `UPDATE orders
+         SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object($1::text, $2::text),
+             updated_at = NOW()
+       WHERE id = $3
+         AND COALESCE(metadata->>'peptidesReportId', '') = $4
+         AND COALESCE(metadata->>'peptidesEmailHold', 'false') <> 'true'
+         AND COALESCE(metadata->>'peptidesManualFulfillment', 'false') <> 'true'
+         AND COALESCE(metadata->>$1::text, '') = ''
+       RETURNING id`,
+      [automationKey, claimId, orderId, reportId],
     );
     return (result.rowCount ?? 0) > 0;
   }
