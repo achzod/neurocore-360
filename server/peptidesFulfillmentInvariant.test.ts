@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   evaluatePeptidesFulfillmentInvariant,
@@ -136,4 +137,28 @@ test("alerts again only after resolution or when the incident code changes", () 
     ...prior,
     peptidesFulfillmentState: "ACTION_REQUIRED",
   }, "DELIVERY_OVERDUE"), true);
+});
+
+test("the worker refreshes each paid order before evaluating fulfillment", () => {
+  const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
+  const loopStart = routes.indexOf("for (const snapshotOrder of peptidesOrders)");
+  const invariantStart = routes.indexOf("evaluatePeptidesFulfillmentInvariant({", loopStart);
+  assert.ok(loopStart >= 0 && invariantStart > loopStart, "AutoGen paid-order loop must exist");
+  const preInvariant = routes.slice(loopStart, invariantStart);
+  assert.match(preInvariant, /storage\.getOrder\(snapshotOrder\.id\)/);
+  assert.match(preInvariant, /if \(!order \|\| order\.productType !== "PEPTIDES_ENGINE" \|\| order\.status !== "paid" \|\| !order\.paidAt\) continue/);
+
+  const invariantCall = routes.slice(invariantStart, routes.indexOf("});", invariantStart) + 3);
+  assert.match(invariantCall, /manualFulfillment:\s*meta\?\.peptidesManualFulfillment/);
+  assert.match(invariantCall, /deliveryHeld:\s*meta\?\.peptidesEmailHold/);
+});
+
+test("automatic Peptides delivery remains signed-link-only", () => {
+  const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
+  const autoGenStart = routes.indexOf("// Auto-recovery: generate missing peptides reports every 5 minutes");
+  const autoSendStart = routes.indexOf("// Auto-send READY/SCHEDULED reports", autoGenStart);
+  assert.ok(autoGenStart >= 0 && autoSendStart > autoGenStart, "AutoGen delivery block must exist");
+  const autoGen = routes.slice(autoGenStart, autoSendStart);
+  assert.match(autoGen, /buildReportAccessUrl\(baseUrl, `\/peptides\/\$\{/);
+  assert.doesNotMatch(autoGen, /generateExportPDF|attachments?_binary|Content-Disposition|\.pdf\b/i);
 });
