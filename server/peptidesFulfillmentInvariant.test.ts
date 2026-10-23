@@ -162,3 +162,49 @@ test("automatic Peptides delivery remains signed-link-only", () => {
   assert.match(autoGen, /buildReportAccessUrl\(baseUrl, `\/peptides\/\$\{/);
   assert.doesNotMatch(autoGen, /generateExportPDF|attachments?_binary|Content-Disposition|\.pdf\b/i);
 });
+
+test("stale workers cannot detach a newly linked Peptides report", () => {
+  const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
+  const storage = readFileSync(new URL("./storage.ts", import.meta.url), "utf8");
+  assert.match(routes, /setOrderMetadataIfPeptidesReportMatches\([\s\S]*peptidesPreviousInvalidReportId:[\s\S]*peptidesReportId: ""/);
+  assert.doesNotMatch(routes, /setOrderMetadataKey\(order\.id, "peptidesReportId", ""\)/);
+  assert.match(storage, /COALESCE\(metadata->>'peptidesReportId', ''\) = \$3/);
+});
+
+test("every automatic report delivery uses a single-writer database claim", () => {
+  const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
+  const autoGenStart = routes.indexOf("// Auto-recovery: generate missing peptides reports every 5 minutes");
+  const autoSendStart = routes.indexOf("// Auto-send READY/SCHEDULED reports", autoGenStart);
+  const autoGen = routes.slice(autoGenStart, autoSendStart);
+  assert.match(autoGen, /claimPeptidesDelivery\(order\.id, recoveryReportId, recoveryClaimId\)/);
+  assert.match(autoGen, /claimPeptidesDelivery\(order\.id, saved\.id, deliveryClaimId\)/);
+  assert.match(autoGen, /finalizePeptidesDeliveryClaim\([\s\S]*"UNKNOWN"/);
+});
+
+test("orphan Peptides reports are neither retained nor accessible", () => {
+  const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
+  assert.match(routes, /deleteBurnoutReport\(saved\.id\)/);
+  assert.match(routes, /if \(activeReportIds\.size === 0\) return \[\]/);
+  assert.match(routes, /A paid Peptides order proves entitlement[\s\S]*return false/);
+});
+
+test("cycle-2 reorder requires the linked unheld order and an accepted initial delivery", () => {
+  const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
+  const start = routes.indexOf("// Peptides Engine , cycle 2 re-order email at J+60.");
+  const end = routes.indexOf("// WhatsApp lead follow-up automation", start);
+  const cron = routes.slice(start, end);
+  assert.match(cron, /peptidesReportId \|\| ""\) === String\(report\.id\)/);
+  assert.match(cron, /if \(linkedHeld \|\| linkedManual\) continue/);
+  assert.match(cron, /hasPeptidesDeliveryEmailBeenSent\(email\)/);
+  assert.match(cron, /claimPeptidesAutomation\([\s\S]*peptidesCycle2ReorderClaimId/);
+});
+
+test("admin report relinking is compare-and-swap protected", () => {
+  const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
+  const start = routes.indexOf('app.post("/api/admin/peptides-link-order-to-report"');
+  const end = routes.indexOf("// Admin: correct a Peptides Engine typo email", start);
+  const route = routes.slice(start, end);
+  assert.match(route, /expectedCurrentReportId/);
+  assert.match(route, /replacePeptidesReportSlotIfMatches/);
+  assert.doesNotMatch(route, /updateOrder\(orderId/);
+});

@@ -1892,7 +1892,7 @@ export async function registerRoutes(
     if (activeOrders.length === 0) return [];
 
     const activeReportIds = new Set(activeOrders.flatMap(getPeptidesReportIdsFromOrder));
-    if (activeReportIds.size === 0) return reports;
+    if (activeReportIds.size === 0) return [];
 
     return reports.filter((report) => activeReportIds.has(String(report?.id ?? "")));
   };
@@ -1908,7 +1908,9 @@ export async function registerRoutes(
       return matchingOrders.some(isActivePeptidesOrder);
     }
 
-    return peptidesOrders.some(isActivePeptidesOrder);
+    // A paid Peptides order proves entitlement to its explicitly linked report,
+    // not to every orphan or stale report belonging to the same email.
+    return false;
   };
 
   // SECURITY: Check if user owns the audit (prevents IDOR vulnerability)
@@ -6519,11 +6521,13 @@ export async function registerRoutes(
         if (pepOrder) {
           claimed = await storage.claimPeptidesReportSlot(pepOrder.id, saved.id);
           if (!claimed) {
-            console.warn(`[Admin] ⚠️ CAS lost , another process already delivered for ${email}. Report ${saved.id} is orphan, NO email sent.`);
+            const orphanDeleted = await storage.deleteBurnoutReport(saved.id).catch(() => false);
+            console.warn(`[Admin] ⚠️ CAS lost , another process already linked a report for ${email}. Orphan ${saved.id} deleted=${orphanDeleted}; NO email sent.`);
             res.status(409).json({
-              error: "Race condition: un autre processus a livré pendant la génération",
-              orphanReportId: saved.id,
-              hint: "Vérifie les orders , peptidesReportId est déjà set",
+              error: "Race condition: un autre processus a lié un rapport pendant la génération",
+              discardedReportId: saved.id,
+              discarded: orphanDeleted,
+              hint: "Vérifie l'order: peptidesReportId est déjà défini",
             });
             return;
           }
@@ -6577,18 +6581,40 @@ export async function registerRoutes(
           }
 
           if (deliveryDue) {
-            const promoBlock = buildPeptidesBloodCreditsBlock(
-              (pepOrder?.metadata as any)?.peptidesTier ?? report.tier,
-              `${baseUrl}/blood-dashboard`
-            );
-            const coachingBlock = buildPeptidesCoachingDeductionBlock(
-              (pepOrder?.metadata as any)?.peptidesTier ?? null
-            );
-            await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
-              `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${buildReportAccessUrl(baseUrl, `/peptides/${saved.id}`, "peptides", saved.id, email)}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`
-            ).catch(() => {});
-            emailSent = true;
-            await sendCTAEmail(adminNotifEmail, `PEPTIDES GENERE , ${email}`, `Rapport genere et livre pour ${email}\nReport ID: ${saved.id}\nPeptides: ${peptidesNames}\nLien: ${baseUrl}/peptides/${saved.id}`).catch(() => {});
+            if (!pepOrder) {
+              console.error(`[Admin] Delivery refused for ${email}: no paid Peptides order available for an atomic claim`);
+            } else {
+              const promoBlock = buildPeptidesBloodCreditsBlock(
+                (pepOrder.metadata as any)?.peptidesTier ?? report.tier,
+                `${baseUrl}/blood-dashboard`
+              );
+              const coachingBlock = buildPeptidesCoachingDeductionBlock(
+                (pepOrder.metadata as any)?.peptidesTier ?? null
+              );
+              const deliveryClaimId = crypto.randomUUID();
+              const deliveryClaimed = await storage.claimPeptidesDelivery(pepOrder.id, saved.id, deliveryClaimId);
+              if (!deliveryClaimed) {
+                console.warn(`[Admin] Delivery claim refused for ${email}; hold/link/claim changed, no provider call made`);
+              } else {
+                try {
+                  emailSent = await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
+                    `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${buildReportAccessUrl(baseUrl, `/peptides/${saved.id}`, "peptides", saved.id, email)}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`
+                  );
+                  await storage.finalizePeptidesDeliveryClaim(
+                    pepOrder.id,
+                    saved.id,
+                    deliveryClaimId,
+                    emailSent ? "ACCEPTED" : "UNKNOWN",
+                  );
+                } catch (deliveryError) {
+                  await storage.finalizePeptidesDeliveryClaim(pepOrder.id, saved.id, deliveryClaimId, "UNKNOWN").catch(() => false);
+                  console.error(`[Admin] Delivery provider result uncertain for ${email}; delivery held:`, deliveryError);
+                }
+                if (emailSent) {
+                  await sendCTAEmail(adminNotifEmail, `PEPTIDES GENERE , ${email}`, `Rapport genere et livre pour ${email}\nReport ID: ${saved.id}\nPeptides: ${peptidesNames}\nLien: ${baseUrl}/peptides/${saved.id}`).catch(() => {});
+                }
+              }
+            }
           } else if (scheduledAt) {
             deliveryDeferred = true;
             deliveryScheduledAtIso = scheduledAt.toISOString();
@@ -6598,7 +6624,7 @@ export async function registerRoutes(
               const firstName = (pepOrder.metadata as any)?.peptidesResponses?.prenom
                 || (responses as any)?.pep_name
                 || (email ? email.split("@")[0] : undefined);
-              sendPeptidesOrderConfirmationEmail(email, {
+              sendPeptidesOrderConfirmationOnce(pepOrder, {
                 firstName,
                 amountEur: ((pepOrder as any).finalAmountCents || 0) / 100,
                 promoCode: (pepOrder as any).promoCode || null,
@@ -6651,7 +6677,7 @@ export async function registerRoutes(
   app.post("/api/admin/peptides-link-order-to-report", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
-      const { orderId, reportId } = req.body || {};
+      const { orderId, reportId, expectedCurrentReportId } = req.body || {};
       if (!orderId || !reportId) {
         res.status(400).json({ error: "orderId et reportId requis" });
         return;
@@ -6674,11 +6700,30 @@ export async function registerRoutes(
         });
         return;
       }
-      const previous = (order.metadata as any)?.peptidesReportId;
-      await storage.updateOrder(orderId, {
-        metadata: { ...(order.metadata as object ?? {}), peptidesReportId: reportId },
-      });
-      res.json({ success: true, orderId, reportId, previous: previous ?? null });
+      const previous = String((order.metadata as any)?.peptidesReportId || "").trim();
+      let linked = false;
+      if (!previous) {
+        linked = await storage.claimPeptidesReportSlot(orderId, reportId);
+      } else {
+        const expected = String(expectedCurrentReportId || "").trim();
+        if (!expected) {
+          res.status(409).json({
+            error: "L'order possède déjà un rapport; expectedCurrentReportId est requis pour un remplacement explicite",
+            currentReportId: previous,
+          });
+          return;
+        }
+        if (expected !== previous) {
+          res.status(409).json({ error: "Le rapport courant a changé", expectedCurrentReportId: expected, currentReportId: previous });
+          return;
+        }
+        linked = await storage.replacePeptidesReportSlotIfMatches(orderId, expected, reportId);
+      }
+      if (!linked) {
+        res.status(409).json({ error: "Conflit concurrent: la liaison n'a pas été modifiée" });
+        return;
+      }
+      res.json({ success: true, orderId, reportId, previous: previous || null });
     } catch (error: any) {
       console.error("[Admin] Link order to report error:", error);
       res.status(500).json({ error: error.message });
@@ -7175,7 +7220,7 @@ export async function registerRoutes(
       const scheduledAt = await resolvePeptidesEmailScheduledAt(order);
       const firstName = meta?.peptidesResponses?.prenom || email.split("@")[0];
 
-      const sent = await sendPeptidesOrderConfirmationEmail(email, {
+      const sent = await sendPeptidesOrderConfirmationOnce(order, {
         firstName,
         amountEur: ((order as any).finalAmountCents || 0) / 100,
         promoCode: (order as any).promoCode || null,
@@ -9340,8 +9385,9 @@ export async function registerRoutes(
           });
           const claimed = await storage.claimPeptidesReportSlot(order.id, saved.id);
           if (!claimed) {
-            result.warning = `Race condition: another process already linked a report to this order. Generated report ${saved.id} is orphan.`;
-            result.orphanReportId = saved.id;
+            const discarded = await storage.deleteBurnoutReport(saved.id).catch(() => false);
+            result.warning = `Race condition: another process already linked a report to this order. Generated report ${saved.id} discarded=${discarded}.`;
+            result.discardedReportId = saved.id;
           } else {
             result.reportId = saved.id;
           }
@@ -9356,7 +9402,7 @@ export async function registerRoutes(
                 return fresh ? await resolvePeptidesEmailScheduledAt(fresh) : new Date();
               } catch { return new Date(); }
             })();
-            await sendPeptidesOrderConfirmationEmail(order.email, {
+            await sendPeptidesOrderConfirmationOnce(order, {
               firstName,
               amountEur: (order.finalAmountCents || 0) / 100,
               promoCode: (order as any).promoCode || null,
@@ -10390,8 +10436,8 @@ export async function registerRoutes(
       let peptidesAutoGenerated = 0;
 
       try {
-        const allOrders = await storage.getAllOrders?.() || [];
-        const peptidesOrders = allOrders.filter((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid" && o.paidAt);
+        const { orders: allOrders } = await storage.getAllOrders({ limit: 1000, productType: "PEPTIDES_ENGINE" });
+        const peptidesOrders = allOrders.filter((o: any) => o.status === "paid" && o.paidAt);
 
         // Peptides auto-recovery REMOVED from cron , handled exclusively by setInterval (5min)
         // This prevents double generation and double email sends
@@ -10404,18 +10450,36 @@ export async function registerRoutes(
             if (!email || email.includes("test") || email.includes("debug") || email.includes("audit.final")) continue;
             if (await storage.hasUserPurchasedCoaching(email)) continue;
 
+            // Fail closed for every post-purchase sequence: use a fresh order,
+            // require the exact linked report, no hold/manual workflow, and a
+            // provider-accepted initial delivery. A paid order alone is not
+            // proof that the client ever received this report.
+            const sequenceOrder = await storage.getOrder(order.id);
+            const sequenceMeta = ((sequenceOrder?.metadata as any) || {}) as Record<string, any>;
+            const sequenceReportId = String(sequenceMeta.peptidesReportId || "").trim();
+            const sequenceHeld = sequenceMeta.peptidesEmailHold === true || sequenceMeta.peptidesEmailHold === "true";
+            const sequenceManual = sequenceMeta.peptidesManualFulfillment === true || sequenceMeta.peptidesManualFulfillment === "true";
+            if (!sequenceOrder || !sequenceReportId || sequenceHeld || sequenceManual) continue;
+            if (!(await storage.hasPeptidesDeliveryEmailBeenSent(email).catch(() => false))) continue;
+
             // Get tracking for this order
             const { db } = await import("./db");
             const { emailTracking: emailTrackingTable } = await import("../shared/drizzle-schema");
             const { eq, and } = await import("drizzle-orm");
-            const tracking = await db.select().from(emailTrackingTable).where(eq(emailTrackingTable.email, email));
+            const tracking = await db.select().from(emailTrackingTable).where(eq(emailTrackingTable.recipientEmail, email));
             const types = tracking.map((t: any) => t.emailType);
+            const claimSequence = (emailType: string) => storage.claimPeptidesAutomation(
+              order.id,
+              sequenceReportId,
+              `peptidesAutomationClaim:${emailType}`,
+              crypto.randomUUID(),
+            );
 
             // Review J+3 , Demande d'avis 3 jours apres paiement
             if (daysSincePaid >= 3 && daysSincePaid < 14 && !types.includes("peptidesReviewJ3")) {
               // Find the report ID from order metadata
-              const reportId = (order.metadata as any)?.peptidesReportId;
-              if (reportId) {
+              const reportId = sequenceReportId;
+              if (await claimSequence("peptidesReviewJ3")) {
                 const trackingRecord = await storage.createEmailTracking(order.id, "peptidesReviewJ3", email);
                 const sent = await sendPeptidesReviewEmail(
                   email,
@@ -10425,39 +10489,39 @@ export async function registerRoutes(
                 );
                 if (sent) {
                   peptidesReviewJ3++;
-                  await db.insert(emailTrackingTable).values({ email, emailType: "peptidesReviewJ3", auditId: order.id, sentAt: new Date() }).catch(() => {});
+                  await db.insert(emailTrackingTable).values({ recipientEmail: email, emailType: "peptidesReviewJ3", auditId: order.id, sentAt: new Date() }).catch(() => {});
                 }
               }
             }
 
             // Review S5 (35 jours / 5 semaines) , 2eme demande d'avis mi-cycle (design email)
             if (daysSincePaid >= 35 && daysSincePaid < 49 && !types.includes("peptidesReviewS5")) {
-              const reportId = (order.metadata as any)?.peptidesReportId;
-              if (reportId) {
+              const reportId = sequenceReportId;
+              if (await claimSequence("peptidesReviewS5")) {
                 const trackingRecord = await storage.createEmailTracking(order.id, "peptidesReviewS5", email);
                 const sent = await sendPeptidesReviewS5Email(email, reportId, baseUrl, trackingRecord.id);
                 if (sent) {
                   peptidesReviewS5++;
-                  await db.insert(emailTrackingTable).values({ email, emailType: "peptidesReviewS5", auditId: order.id, sentAt: new Date() }).catch(() => {});
+                  await db.insert(emailTrackingTable).values({ recipientEmail: email, emailType: "peptidesReviewS5", auditId: order.id, sentAt: new Date() }).catch(() => {});
                 }
               }
             }
 
             // Review S12 (84 jours / 12 semaines) , 3eme demande d'avis fin de cycle (design email)
             if (daysSincePaid >= 84 && daysSincePaid < 98 && !types.includes("peptidesReviewS12")) {
-              const reportId = (order.metadata as any)?.peptidesReportId;
-              if (reportId) {
+              const reportId = sequenceReportId;
+              if (await claimSequence("peptidesReviewS12")) {
                 const trackingRecord = await storage.createEmailTracking(order.id, "peptidesReviewS12", email);
                 const sent = await sendPeptidesReviewS12Email(email, reportId, baseUrl, trackingRecord.id);
                 if (sent) {
                   peptidesReviewS12++;
-                  await db.insert(emailTrackingTable).values({ email, emailType: "peptidesReviewS12", auditId: order.id, sentAt: new Date() }).catch(() => {});
+                  await db.insert(emailTrackingTable).values({ recipientEmail: email, emailType: "peptidesReviewS12", auditId: order.id, sentAt: new Date() }).catch(() => {});
                 }
               }
             }
 
             // S4 (28 jours) , Check-in: comment se passe le cycle?
-            if (daysSincePaid >= 28 && daysSincePaid < 42 && !types.includes("peptidesS4")) {
+            if (daysSincePaid >= 28 && daysSincePaid < 42 && !types.includes("peptidesS4") && await claimSequence("peptidesS4")) {
               const sent = await sendCTAEmail(
                 email,
                 "Comment se passe ton cycle peptides?",
@@ -10465,13 +10529,13 @@ export async function registerRoutes(
               );
               if (sent) {
                 peptidesS4++;
-                await db.insert(emailTrackingTable).values({ email, emailType: "peptidesS4", auditId: order.id, sentAt: new Date() }).catch(() => {});
+                await db.insert(emailTrackingTable).values({ recipientEmail: email, emailType: "peptidesS4", auditId: order.id, sentAt: new Date() }).catch(() => {});
               }
             }
 
             // S8 (56 jours) , Fin de cycle + demande avis + incentive Blood Analysis
-            if (daysSincePaid >= 56 && daysSincePaid < 70 && !types.includes("peptidesS8")) {
-              const reportId = String((order.metadata as any)?.peptidesReportId || "").trim();
+            if (daysSincePaid >= 56 && daysSincePaid < 70 && !types.includes("peptidesS8") && await claimSequence("peptidesS8")) {
+              const reportId = sequenceReportId;
               if (!reportId) continue;
               const reviewLink = `${buildReportAccessUrl(baseUrl, `/peptides/${reportId}`, "peptides", reportId, email)}#review`;
               const sent = await sendCTAEmail(
@@ -10481,12 +10545,12 @@ export async function registerRoutes(
               );
               if (sent) {
                 peptidesS8++;
-                await db.insert(emailTrackingTable).values({ email, emailType: "peptidesS8", auditId: order.id, sentAt: new Date() }).catch(() => {});
+                await db.insert(emailTrackingTable).values({ recipientEmail: email, emailType: "peptidesS8", auditId: order.id, sentAt: new Date() }).catch(() => {});
               }
             }
 
             // S12 (84 jours) , Coaching upsell ciblé + nouveau protocole
-            if (daysSincePaid >= 84 && daysSincePaid < 100 && !types.includes("peptidesS12")) {
+            if (daysSincePaid >= 84 && daysSincePaid < 100 && !types.includes("peptidesS12") && await claimSequence("peptidesS12")) {
               const sent = await sendCTAEmail(
                 email,
                 "Tes resultats meritent un suivi",
@@ -10494,12 +10558,12 @@ export async function registerRoutes(
               );
               if (sent) {
                 peptidesS12++;
-                await db.insert(emailTrackingTable).values({ email, emailType: "peptidesS12", auditId: order.id, sentAt: new Date() }).catch(() => {});
+                await db.insert(emailTrackingTable).values({ recipientEmail: email, emailType: "peptidesS12", auditId: order.id, sentAt: new Date() }).catch(() => {});
               }
             }
 
             // S16 (112 jours) , Dernier rappel: Blood Analysis + coaching CTA
-            if (daysSincePaid >= 112 && daysSincePaid < 130 && !types.includes("peptidesS16")) {
+            if (daysSincePaid >= 112 && daysSincePaid < 130 && !types.includes("peptidesS16") && await claimSequence("peptidesS16")) {
               const sent = await sendCTAEmail(
                 email,
                 "Tes 2 Blood Analyses t'attendent",
@@ -10507,7 +10571,7 @@ export async function registerRoutes(
               );
               if (sent) {
                 peptidesS16++;
-                await db.insert(emailTrackingTable).values({ email, emailType: "peptidesS16", auditId: order.id, sentAt: new Date() }).catch(() => {});
+                await db.insert(emailTrackingTable).values({ recipientEmail: email, emailType: "peptidesS16", auditId: order.id, sentAt: new Date() }).catch(() => {});
               }
             }
           } catch (orderErr) {
@@ -10521,7 +10585,9 @@ export async function registerRoutes(
       // PEPTIDES ABANDON REMINDERS (J+1, J+3)
       let peptidesAbandonJ1 = 0, peptidesAbandonJ3 = 0;
       try {
-        const pendingPeptides = allOrders.filter((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "pending");
+        const { orders: allPeptidesOrders } = await storage.getAllOrders({ limit: 1000, productType: "PEPTIDES_ENGINE" });
+        const pendingPeptides = allPeptidesOrders.filter((o: any) => o.status === "pending");
+        const peptidesOrders = allPeptidesOrders.filter((o: any) => o.status === "paid" && o.paidAt);
         for (const order of pendingPeptides) {
           const email = order.email;
           if (!email || email.includes("test") || email.includes("debug") || email.includes("achzodcoaching")) continue;
@@ -10538,7 +10604,7 @@ export async function registerRoutes(
           const { db } = await import("./db");
           const { emailTracking: emailTrackingTable } = await import("../shared/drizzle-schema");
           const { eq } = await import("drizzle-orm");
-          const tracking = await db.select().from(emailTrackingTable).where(eq(emailTrackingTable.email, email));
+          const tracking = await db.select().from(emailTrackingTable).where(eq(emailTrackingTable.recipientEmail, email));
           const types = tracking.map((t: any) => t.emailType);
 
           // J+1 (12-48h)
@@ -10550,7 +10616,7 @@ export async function registerRoutes(
             );
             if (sent) {
               peptidesAbandonJ1++;
-              await db.insert(emailTrackingTable).values({ email, emailType: "peptidesAbandonJ1", auditId: order.id, sentAt: new Date() }).catch(() => {});
+              await db.insert(emailTrackingTable).values({ recipientEmail: email, emailType: "peptidesAbandonJ1", auditId: order.id, sentAt: new Date() }).catch(() => {});
             }
           }
 
@@ -10563,7 +10629,7 @@ export async function registerRoutes(
             );
             if (sent) {
               peptidesAbandonJ3++;
-              await db.insert(emailTrackingTable).values({ email, emailType: "peptidesAbandonJ3", auditId: order.id, sentAt: new Date() }).catch(() => {});
+              await db.insert(emailTrackingTable).values({ recipientEmail: email, emailType: "peptidesAbandonJ3", auditId: order.id, sentAt: new Date() }).catch(() => {});
             }
           }
         }
@@ -15414,24 +15480,60 @@ export async function registerRoutes(
     return { due: Date.now() >= scheduledAt.getTime(), scheduledAt };
   }
 
+  async function sendPeptidesOrderConfirmationOnce(
+    order: any,
+    input: Parameters<typeof sendPeptidesOrderConfirmationEmail>[1],
+  ): Promise<boolean> {
+    const freshOrder = await storage.getOrder(order.id);
+    if (!freshOrder || freshOrder.productType !== "PEPTIDES_ENGINE" || freshOrder.status !== "paid") return false;
+    const freshMeta = ((freshOrder.metadata as any) || {}) as Record<string, any>;
+    const reportId = String(freshMeta.peptidesReportId || "");
+    if (await storage.hasPeptidesOrderConfirmationBeenSent(freshOrder.email).catch(() => false)) return false;
+    const claimed = await storage.claimPeptidesAutomation(
+      freshOrder.id,
+      reportId,
+      "peptidesOrderConfirmationClaimId",
+      crypto.randomUUID(),
+    );
+    if (!claimed) return false;
+    return sendPeptidesOrderConfirmationEmail(freshOrder.email, input).catch((error) => {
+      console.error(`[Peptides Confirmation] Provider result uncertain for ${freshOrder.email}; claim retained to prevent duplicates:`, error);
+      return false;
+    });
+  }
+
   async function persistPeptidesFulfillmentIncident(
     order: any,
     incident: { code: string; blocksDelivery: boolean; detail: string },
-  ): Promise<void> {
+    additionalPatch: Record<string, string | number | boolean> = {},
+  ): Promise<boolean> {
     const metadata = (order?.metadata as any) || {};
     const shouldAlert = shouldAlertPeptidesFulfillmentIncident(metadata, incident.code);
-
-    await storage.setOrderMetadataKey(order.id, "peptidesFulfillmentIncidentCode", incident.code);
-    await storage.setOrderMetadataKey(order.id, "peptidesFulfillmentIncidentDetail", incident.detail);
-    await storage.setOrderMetadataKey(order.id, "peptidesFulfillmentIncidentAt", new Date().toISOString());
-    await storage.setOrderMetadataKey(order.id, "peptidesFulfillmentState", "ACTION_REQUIRED");
-    if (incident.blocksDelivery) {
-      await storage.setOrderMetadataKey(order.id, "peptidesEmailHold", true);
-      await storage.setOrderMetadataKey(order.id, "peptidesEmailHoldReason", incident.code);
+    const incidentAt = new Date().toISOString();
+    const patch: Record<string, string | number | boolean> = {
+      peptidesFulfillmentIncidentCode: incident.code,
+      peptidesFulfillmentIncidentDetail: incident.detail,
+      peptidesFulfillmentIncidentAt: incidentAt,
+      peptidesFulfillmentState: "ACTION_REQUIRED",
+      ...(incident.blocksDelivery ? {
+        peptidesEmailHold: true,
+        peptidesEmailHoldReason: incident.code,
+      } : {}),
+      ...(shouldAlert ? { peptidesFulfillmentIncidentAlertedAt: incidentAt } : {}),
+      ...additionalPatch,
+    };
+    const expectedReportId = String(metadata.peptidesReportId || "").trim() || null;
+    const persisted = await storage.setOrderMetadataIfPeptidesReportMatches(
+      order.id,
+      expectedReportId,
+      patch,
+    );
+    if (!persisted) {
+      console.warn(`[Peptides Fulfillment] Stale incident suppressed for ${order.id}: report link changed during evaluation`);
+      return false;
     }
 
     if (shouldAlert) {
-      await storage.setOrderMetadataKey(order.id, "peptidesFulfillmentIncidentAlertedAt", new Date().toISOString());
       const adminEmail = process.env.ADMIN_NOTIF_EMAIL || process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
       await sendCTAEmail(
         adminEmail,
@@ -15439,6 +15541,7 @@ export async function registerRoutes(
         `Une commande Peptides payee exige une action.\n\nCode: ${incident.code}\nDetail: ${incident.detail}\nOrderId: ${order.id}\nReportId: ${metadata.peptidesReportId || "absent"}\nClient: ${order.email}\n\nL'incident est persiste sur la commande et ne peut plus rester silencieux.`,
       ).catch((error) => console.error("[Peptides Fulfillment] Admin alert failed:", error));
     }
+    return true;
   }
 
   // Auto-recovery: generate missing peptides reports every 5 minutes
@@ -15551,14 +15654,23 @@ export async function registerRoutes(
           now,
         });
         if (fulfillmentIncident) {
-          await persistPeptidesFulfillmentIncident(order, fulfillmentIncident);
+          const invalidReportId = String(meta?.peptidesReportId || "");
+          const incidentPersisted = await persistPeptidesFulfillmentIncident(
+            order,
+            fulfillmentIncident,
+            fulfillmentIncident.code === "INVALID_EMPTY_OR_MEDICAL_REVIEW_REPORT"
+              ? {
+                  peptidesPreviousInvalidReportId: invalidReportId,
+                  peptidesReportId: "",
+                  peptidesEmailHold: false,
+                  peptidesEmailHoldReason: "",
+                  peptidesFulfillmentState: "REGENERATING",
+                }
+              : {},
+          );
+          if (!incidentPersisted) continue;
           console.error(`[AutoGen] Peptides fulfillment incident ${fulfillmentIncident.code} for ${email}`);
           if (fulfillmentIncident.code === "INVALID_EMPTY_OR_MEDICAL_REVIEW_REPORT") {
-            await storage.setOrderMetadataKey(order.id, "peptidesPreviousInvalidReportId", String(meta?.peptidesReportId || ""));
-            await storage.setOrderMetadataKey(order.id, "peptidesReportId", "");
-            await storage.setOrderMetadataKey(order.id, "peptidesEmailHold", false);
-            await storage.setOrderMetadataKey(order.id, "peptidesEmailHoldReason", "");
-            await storage.setOrderMetadataKey(order.id, "peptidesFulfillmentState", "REGENERATING");
             continue;
           }
           if (fulfillmentIncident.blocksDelivery) continue;
@@ -15614,7 +15726,7 @@ export async function registerRoutes(
             if (!alreadyConfirmed) {
               const firstName = (order.metadata as any)?.peptidesResponses?.prenom
                 || (order.email ? order.email.split("@")[0] : undefined);
-              sendPeptidesOrderConfirmationEmail(email, {
+              sendPeptidesOrderConfirmationOnce(order, {
                 firstName,
                 amountEur: ((order as any).finalAmountCents || 0) / 100,
                 promoCode: (order as any).promoCode || null,
@@ -15724,18 +15836,32 @@ export async function registerRoutes(
             continue;
           }
 
+          const recoveryReportId = String(meta.peptidesReportId);
+          const recoveryClaimId = crypto.randomUUID();
+          const recoveryClaimed = await storage.claimPeptidesDelivery(order.id, recoveryReportId, recoveryClaimId);
+          if (!recoveryClaimed) {
+            console.warn(`[AutoGen] Recovery delivery claim refused for ${email}; hold/link/claim changed, no provider call made`);
+            continue;
+          }
           try {
             const recovered = await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
-              `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${buildReportAccessUrl(baseUrl, `/peptides/${meta.peptidesReportId}`, "peptides", meta.peptidesReportId, email)}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`,
+              `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${buildReportAccessUrl(baseUrl, `/peptides/${recoveryReportId}`, "peptides", recoveryReportId, email)}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`,
+            );
+            await storage.finalizePeptidesDeliveryClaim(
+              order.id,
+              recoveryReportId,
+              recoveryClaimId,
+              recovered ? "ACCEPTED" : "UNKNOWN",
             );
             if (recovered) {
-              console.log(`[AutoGen] ✅ Recovered delivery email for ${email} (report ${meta.peptidesReportId})`);
+              console.log(`[AutoGen] ✅ Recovered delivery email for ${email} (report ${recoveryReportId})`);
               autoGenLastResult = `RECOVERED_EMAIL: ${email}`;
             } else {
-              console.warn(`[AutoGen] ⚠️ Recovery email send returned false for ${email}, will retry next cycle`);
+              console.error(`[AutoGen] Recovery provider result uncertain for ${email}; delivery held for manual reconciliation`);
             }
           } catch (recErr) {
-            console.error(`[AutoGen] Recovery email send threw for ${email}:`, recErr);
+            await storage.finalizePeptidesDeliveryClaim(order.id, recoveryReportId, recoveryClaimId, "UNKNOWN").catch(() => false);
+            console.error(`[AutoGen] Recovery email send threw for ${email}; delivery held for manual reconciliation:`, recErr);
           }
           continue;
         }
@@ -15882,8 +16008,9 @@ export async function registerRoutes(
         // during our 60s+ generation, our report becomes orphan and we DO NOT send any email.
         const claimed = await storage.claimPeptidesReportSlot(order.id, saved.id);
         if (!claimed) {
-          console.warn(`[AutoGen] ⚠️ Lost CAS race for ${email} , another process already claimed the slot. Report ${saved.id} is orphan, NO email sent.`);
-          autoGenLastResult = `RACE_LOST: ${email} → orphan report ${saved.id}`;
+          const orphanDeleted = await storage.deleteBurnoutReport(saved.id).catch(() => false);
+          console.warn(`[AutoGen] ⚠️ Lost CAS race for ${email}. Unclaimed report ${saved.id} deleted=${orphanDeleted}; NO email sent.`);
+          autoGenLastResult = `RACE_LOST: ${email} → discarded report ${saved.id}`;
           continue;
         }
 
@@ -15928,7 +16055,7 @@ export async function registerRoutes(
             const firstName = (order.metadata as any)?.peptidesResponses?.prenom
               || (responses as any)?.prenom
               || (order.email ? order.email.split("@")[0] : undefined);
-            sendPeptidesOrderConfirmationEmail(email, {
+            sendPeptidesOrderConfirmationOnce(scheduledOrder, {
               firstName,
               amountEur: ((order as any).finalAmountCents || 0) / 100,
               promoCode: (order as any).promoCode || null,
@@ -15939,17 +16066,31 @@ export async function registerRoutes(
             }).catch((err) => console.error("[AutoGen NewReport] Confirmation email failed:", err));
           }
         } else if (stillNotEmailed) {
-          try {
-            clientEmailSent = await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
-              `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${buildReportAccessUrl(baseUrl, `/peptides/${saved.id}`, "peptides", saved.id, email)}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`
-            );
-            if (clientEmailSent) {
-              console.log(`[AutoGen] ✅ Delivery email sent to ${email}`);
-            } else {
-              console.error(`[AutoGen] ⚠️ Delivery email returned false for ${email} , SendPulse probable issue`);
+          const deliveryClaimId = crypto.randomUUID();
+          const deliveryClaimed = await storage.claimPeptidesDelivery(order.id, saved.id, deliveryClaimId);
+          if (!deliveryClaimed) {
+            deliveryHeld = true;
+            console.warn(`[AutoGen] Delivery claim refused for ${email}; hold/link/claim changed, no provider call made`);
+          } else {
+            try {
+              clientEmailSent = await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
+                `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${buildReportAccessUrl(baseUrl, `/peptides/${saved.id}`, "peptides", saved.id, email)}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`
+              );
+              await storage.finalizePeptidesDeliveryClaim(
+                order.id,
+                saved.id,
+                deliveryClaimId,
+                clientEmailSent ? "ACCEPTED" : "UNKNOWN",
+              );
+              if (clientEmailSent) {
+                console.log(`[AutoGen] ✅ Delivery email sent to ${email}`);
+              } else {
+                console.error(`[AutoGen] Delivery provider result uncertain for ${email}; delivery held for manual reconciliation`);
+              }
+            } catch (emailErr) {
+              await storage.finalizePeptidesDeliveryClaim(order.id, saved.id, deliveryClaimId, "UNKNOWN").catch(() => false);
+              console.error(`[AutoGen] Delivery email THREW for ${email}; delivery held for manual reconciliation:`, emailErr);
             }
-          } catch (emailErr) {
-            console.error(`[AutoGen] ⚠️ Delivery email THREW for ${email}:`, emailErr);
           }
         } else {
           console.warn(`[AutoGen] ⚠️ Delivery email already sent to ${email} (last-moment check) , skipping`);
@@ -16169,6 +16310,17 @@ export async function registerRoutes(
         if (!email) continue;
         if (email.includes("test") || email.includes("debug") || email.includes("achzodcoaching") || email.includes("achkou")) continue;
         if (await storage.hasUserPurchasedCoaching(email)) continue;
+        const { orders: reportOrders } = await storage.getAllOrders({ email, productType: "PEPTIDES_ENGINE", limit: 50 });
+        const linkedOrder = reportOrders.find((candidate: any) =>
+          isActivePeptidesOrder(candidate)
+          && String((candidate.metadata as any)?.peptidesReportId || "") === String(report.id),
+        );
+        if (!linkedOrder) continue;
+        const linkedMeta = ((linkedOrder.metadata as any) || {}) as Record<string, any>;
+        const linkedHeld = linkedMeta.peptidesEmailHold === true || linkedMeta.peptidesEmailHold === "true";
+        const linkedManual = linkedMeta.peptidesManualFulfillment === true || linkedMeta.peptidesManualFulfillment === "true";
+        if (linkedHeld || linkedManual) continue;
+        if (!(await storage.hasPeptidesDeliveryEmailBeenSent(email).catch(() => false))) continue;
         const createdAt = new Date((report as any).createdAt);
         if (Number.isNaN(createdAt.getTime())) continue;
         if (createdAt < new Date("2026-03-17")) continue;
@@ -16181,6 +16333,14 @@ export async function registerRoutes(
         if (already) continue;
 
         try {
+          const reorderClaimId = crypto.randomUUID();
+          const reorderClaimed = await storage.claimPeptidesAutomation(
+            linkedOrder.id,
+            String(report.id),
+            "peptidesCycle2ReorderClaimId",
+            reorderClaimId,
+          );
+          if (!reorderClaimed) continue;
           const trackingRecord = await storage.createEmailTracking(
             report.id,
             "sendPeptidesCycle2ReorderEmail",
