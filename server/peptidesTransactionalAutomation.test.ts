@@ -94,6 +94,39 @@ test("production flow centralizes confirmation and claims every report delivery 
   assert.match(routes, /deleteBurnoutReport\(saved\.id\)/);
 });
 
+test("every paid admin generation path confirms before the AI provider call", () => {
+  const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
+  const cases = [
+    {
+      name: "force-paid",
+      start: 'app.post("/api/admin/orders/:id/force-paid"',
+      end: 'app.post("/api/admin/orders/:id/cancel"',
+    },
+    {
+      name: "manual peptides generation",
+      start: 'app.post("/api/admin/peptides-generate"',
+      end: 'app.post("/api/admin/peptides-link-order-to-report"',
+    },
+  ];
+
+  for (const route of cases) {
+    const start = routes.indexOf(route.start);
+    const end = routes.indexOf(route.end, start);
+    assert.ok(start >= 0 && end > start, `${route.name} route bounds must exist`);
+    const source = routes.slice(start, end);
+    const confirmation = source.indexOf("sendPeptidesOrderConfirmationOnce");
+    const provider = source.indexOf("generatePeptidesProtocol");
+    const sourceRead = route.name === "force-paid"
+      ? source.indexOf("Object.keys(responses).length < 3")
+      : source.indexOf("getBurnoutProgress");
+    assert.ok(confirmation >= 0, `${route.name} must attempt confirmation`);
+    assert.ok(sourceRead > confirmation, `${route.name} must confirm before source validation`);
+    assert.ok(provider > confirmation, `${route.name} must confirm before generation`);
+  }
+
+  assert.doesNotMatch(routes, /sendConfirmation\s*!==\s*false/);
+});
+
 test("public compatibility endpoint cannot bypass payment or call the provider", () => {
   const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
   const start = routes.indexOf('app.post("/api/peptides-engine/create"');

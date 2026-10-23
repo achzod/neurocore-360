@@ -6430,6 +6430,27 @@ export async function registerRoutes(
       const { email, skipEmail, replaceReportId, manualExpertDirective, recoveryPreviousError } = req.body;
       if (!email) { res.status(400).json({ error: "email requis" }); return; }
 
+      // Establish paid entitlement and acknowledge payment before touching the
+      // questionnaire source. Missing/corrupt source data must not suppress the
+      // customer's independent payment confirmation.
+      const orders = await storage.getOrdersByEmail(email);
+      const pepOrder = orders.find((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid");
+      if (!pepOrder) {
+        res.status(409).json({ error: "Aucune commande Peptides payee: generation refusee" });
+        return;
+      }
+      const confirmationOrder = await storage.getOrder(pepOrder.id);
+      if (confirmationOrder) {
+        const confirmationScheduledAt = await resolvePeptidesEmailScheduledAt(confirmationOrder).catch(() => new Date());
+        await sendPeptidesOrderConfirmationOnce(confirmationOrder, {
+          firstName: (confirmationOrder.metadata as any)?.peptidesResponses?.prenom || email.split("@")[0],
+          amountEur: ((confirmationOrder as any).finalAmountCents || 0) / 100,
+          promoCode: (confirmationOrder as any).promoCode || null,
+          scheduledDeliveryAt: confirmationScheduledAt,
+          orderId: confirmationOrder.id,
+        }).catch((err) => console.error("[Admin Manual Gen PreSource] Confirmation email failed:", err));
+      }
+
       // Get saved responses
       const progress = await storage.getBurnoutProgress(`peptides::${email}`);
       const responses = progress?.responses;
@@ -6440,9 +6461,6 @@ export async function registerRoutes(
 
       console.log(`[Admin] Force generating peptides for ${email} (${Object.keys(responses).length} responses)`);
 
-      // Find the paid order for this email up-front (needed for CAS)
-      const orders = await storage.getOrdersByEmail(email);
-      const pepOrder = orders.find((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid");
       const normalizedManualDirective = String(manualExpertDirective || "").trim();
       const normalizedRecoveryPreviousError = String(recoveryPreviousError || "").trim();
       if (normalizedRecoveryPreviousError) {
@@ -6640,22 +6658,6 @@ export async function registerRoutes(
           } else if (scheduledAt) {
             deliveryDeferred = true;
             deliveryScheduledAtIso = scheduledAt.toISOString();
-            // Send the order confirmation so the client knows the payment landed.
-            const alreadyConfirmed = pepOrder ? await storage.hasPeptidesOrderConfirmationBeenSent(email).catch(() => false) : false;
-            if (!alreadyConfirmed && pepOrder) {
-              const firstName = (pepOrder.metadata as any)?.peptidesResponses?.prenom
-                || (responses as any)?.pep_name
-                || (email ? email.split("@")[0] : undefined);
-              sendPeptidesOrderConfirmationOnce(pepOrder, {
-                firstName,
-                amountEur: ((pepOrder as any).finalAmountCents || 0) / 100,
-                promoCode: (pepOrder as any).promoCode || null,
-                peptidesNames,
-                scheduledDeliveryAt: scheduledAt,
-                bloodCreditsCount: Array.isArray(report.promoCodesGenerated) ? report.promoCodesGenerated.length : 0,
-                orderId: pepOrder.id,
-              }).catch((err) => console.error("[Admin Manual Gen] Confirmation email failed:", err));
-            }
             const parisLocal = scheduledAt.toLocaleString("fr-FR", { timeZone: "Europe/Paris" });
             await sendCTAEmail(
               adminNotifEmail,
@@ -9355,7 +9357,6 @@ export async function registerRoutes(
         paidAt?: string;
         paypalCaptureId?: string;
         cancelSiblings?: boolean;
-        sendConfirmation?: boolean;
       };
       const paidAt = body.paidAt ? new Date(body.paidAt) : new Date();
       if (Number.isNaN(paidAt.getTime())) {
@@ -9390,6 +9391,26 @@ export async function registerRoutes(
       if (order.productType === "PEPTIDES_ENGINE") {
         const meta = newMeta as any;
         const responses = meta.peptidesResponses || {};
+
+        // The payment acknowledgement is independent from report generation.
+        // Claim and attempt it before source validation and every AI/provider
+        // call so no generation/source failure can suppress confirmation.
+        const freshPaidOrder = await storage.getOrder(order.id);
+        const firstName = responses.pep_name || responses.prenom || order.email.split("@")[0];
+        if (freshPaidOrder) {
+          const scheduledAt = await resolvePeptidesEmailScheduledAt(freshPaidOrder).catch(() => new Date());
+          result.confirmationSent = await sendPeptidesOrderConfirmationOnce(freshPaidOrder, {
+            firstName,
+            amountEur: (freshPaidOrder.finalAmountCents || 0) / 100,
+            promoCode: (freshPaidOrder as any).promoCode || null,
+            scheduledDeliveryAt: scheduledAt,
+            orderId: freshPaidOrder.id,
+          }).catch((err) => {
+            console.error("[Force-Paid PreGeneration] Confirmation email failed:", err);
+            return false;
+          });
+        }
+
         if (!responses || Object.keys(responses).length < 3) {
           result.warning = "peptidesResponses empty or too short; generation skipped, run /api/admin/peptides-inject-responses + /api/admin/peptides-generate manually";
           res.json(result);
@@ -9423,26 +9444,6 @@ export async function registerRoutes(
           }
 
           const peptidesNames = (report.peptides || []).map((p: any) => p.name).join(", ");
-          const firstName = responses.pep_name || responses.prenom || (order.email.split("@")[0]);
-
-          if (body.sendConfirmation !== false && claimed) {
-            const scheduledAt = await (async () => {
-              try {
-                const fresh = await storage.getOrder(order.id);
-                return fresh ? await resolvePeptidesEmailScheduledAt(fresh) : new Date();
-              } catch { return new Date(); }
-            })();
-            await sendPeptidesOrderConfirmationOnce(order, {
-              firstName,
-              amountEur: (order.finalAmountCents || 0) / 100,
-              promoCode: (order as any).promoCode || null,
-              peptidesNames,
-              scheduledDeliveryAt: scheduledAt,
-              bloodCreditsCount: Array.isArray(report.promoCodesGenerated) ? report.promoCodesGenerated.length : 0,
-              orderId: order.id,
-            }).catch((err) => console.error("[Force-Paid] Confirmation email failed:", err));
-            result.confirmationSent = true;
-          }
           result.peptidesNames = peptidesNames;
           result.reportLink = `${getBaseUrl()}/peptides/${saved.id}`;
         } catch (genErr: any) {
