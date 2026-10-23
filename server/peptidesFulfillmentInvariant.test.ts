@@ -79,6 +79,31 @@ test("does not flag an intentionally held delivery as overdue", () => {
   }), null);
 });
 
+test("preserves an explicitly manual report under delivery hold", () => {
+  assert.equal(evaluatePeptidesFulfillmentInvariant({
+    paidAt: "2026-10-01T18:00:00.000Z",
+    reportId: "manual-report-1",
+    report: { qualityVersion: "medical-review-v1", peptides: [{ name: "A" }] },
+    deliveryAccepted: false,
+    deliveryHeld: true,
+    manualFulfillment: true,
+    recipientUnsubscribed: false,
+    scheduledAt: "2026-10-01T19:00:00.000Z",
+    now,
+  }), null);
+});
+
+test("does not let a manual flag hide a missing report", () => {
+  assert.equal(evaluatePeptidesFulfillmentInvariant({
+    paidAt: "2026-10-01T18:00:00.000Z",
+    deliveryAccepted: false,
+    deliveryHeld: true,
+    manualFulfillment: true,
+    recipientUnsubscribed: false,
+    now,
+  })?.code, "MISSING_REPORT");
+});
+
 test("passes a valid accepted delivery", () => {
   assert.equal(evaluatePeptidesFulfillmentInvariant({
     paidAt: "2026-10-01T18:00:00.000Z",

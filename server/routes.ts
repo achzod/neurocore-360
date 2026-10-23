@@ -15508,7 +15508,15 @@ export async function registerRoutes(
       const now = new Date();
       const peptidesCircuitConfig = getPeptidesGenerationCircuitConfig();
 
-      for (const order of peptidesOrders) {
+      for (const snapshotOrder of peptidesOrders) {
+        // The full scan can take several minutes. Re-read each order before
+        // evaluating invariants so a report linked during the cycle cannot
+        // trigger a stale MISSING_REPORT alert or a duplicate generation.
+        const order = await storage.getOrder(snapshotOrder.id).catch((error) => {
+          console.error(`[AutoGen] Fresh order lookup failed for ${snapshotOrder.id}:`, error);
+          return undefined;
+        });
+        if (!order || order.productType !== "PEPTIDES_ENGINE" || order.status !== "paid" || !order.paidAt) continue;
         const meta = order.metadata as any;
         const email = order.email;
         if (!email || email.includes("test") || email.includes("debug")) continue;
@@ -15537,6 +15545,7 @@ export async function registerRoutes(
           report: (invariantReport?.report as any) || null,
           deliveryAccepted,
           deliveryHeld: meta?.peptidesEmailHold === true || meta?.peptidesEmailHold === "true",
+          manualFulfillment: meta?.peptidesManualFulfillment === true || meta?.peptidesManualFulfillment === "true",
           recipientUnsubscribed,
           scheduledAt: meta?.peptidesEmailScheduledAt,
           now,
