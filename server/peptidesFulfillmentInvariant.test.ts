@@ -195,7 +195,7 @@ test("cycle-2 reorder requires the linked unheld order and an accepted initial d
   const cron = routes.slice(start, end);
   assert.match(cron, /peptidesReportId \|\| ""\) === String\(report\.id\)/);
   assert.match(cron, /if \(linkedHeld \|\| linkedManual\) continue/);
-  assert.match(cron, /hasPeptidesDeliveryEmailBeenSent\(email\)/);
+  assert.match(cron, /hasAcceptedPeptidesDeliveryForReport\(linkedOrder, String\(report\.id\)\)/);
   assert.match(cron, /claimPeptidesAutomation\([\s\S]*peptidesCycle2ReorderClaimId/);
 });
 
@@ -205,6 +205,9 @@ test("admin report relinking is compare-and-swap protected", () => {
   const end = routes.indexOf("// Admin: correct a Peptides Engine typo email", start);
   const route = routes.slice(start, end);
   assert.match(route, /expectedCurrentReportId/);
+  assert.match(route, /claimPeptidesReportSlotForManualReview/);
   assert.match(route, /replacePeptidesReportSlotIfMatches/);
+  assert.match(route, /deliveryHold:\s*true/);
+  assert.match(route, /manualFulfillment:\s*true/);
   assert.doesNotMatch(route, /updateOrder\(orderId/);
 });

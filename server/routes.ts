@@ -180,8 +180,18 @@ function sendCTAEmail(
   subject: string,
   message: string,
   customHtml?: string,
+  options?: {
+    allowProviderFallback?: boolean;
+    metadata?: Record<string, any>;
+  },
 ): Promise<boolean> {
-  return sendBaseCTAEmail(email, subject, clarifyBloodPurchaseEmail(subject, message), customHtml);
+  return sendBaseCTAEmail(
+    email,
+    subject,
+    clarifyBloodPurchaseEmail(subject, message),
+    customHtml,
+    options,
+  );
 }
 
 export async function registerRoutes(
@@ -1869,6 +1879,14 @@ export async function registerRoutes(
   const isActivePeptidesOrder = (order: any): boolean =>
     order?.productType === "PEPTIDES_ENGINE" &&
     (order?.status === "paid" || order?.status === "partial_refund");
+
+  const hasAcceptedPeptidesDeliveryForReport = (order: any, reportId: string): boolean => {
+    if (!isActivePeptidesOrder(order)) return false;
+    const metadata = ((order?.metadata as any) || {}) as Record<string, any>;
+    return String(metadata.peptidesReportId || "") === String(reportId)
+      && String(metadata.peptidesDeliveryReportId || "") === String(reportId)
+      && metadata.peptidesDeliveryState === "ACCEPTED";
+  };
 
   const getPeptidesReportIdsFromOrder = (order: any): string[] => {
     if (!order || order.productType !== "PEPTIDES_ENGINE") return [];
@@ -6597,8 +6615,12 @@ export async function registerRoutes(
                 console.warn(`[Admin] Delivery claim refused for ${email}; hold/link/claim changed, no provider call made`);
               } else {
                 try {
-                  emailSent = await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
-                    `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${buildReportAccessUrl(baseUrl, `/peptides/${saved.id}`, "peptides", saved.id, email)}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`
+                  emailSent = await sendCTAEmail(
+                    email,
+                    "Ton protocole peptides personnalisé est prêt",
+                    `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${buildReportAccessUrl(baseUrl, `/peptides/${saved.id}`, "peptides", saved.id, email)}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`,
+                    undefined,
+                    { allowProviderFallback: false, metadata: { orderId: pepOrder.id, reportId: saved.id } },
                   );
                   await storage.finalizePeptidesDeliveryClaim(
                     pepOrder.id,
@@ -6703,7 +6725,7 @@ export async function registerRoutes(
       const previous = String((order.metadata as any)?.peptidesReportId || "").trim();
       let linked = false;
       if (!previous) {
-        linked = await storage.claimPeptidesReportSlot(orderId, reportId);
+        linked = await storage.claimPeptidesReportSlotForManualReview(orderId, reportId);
       } else {
         const expected = String(expectedCurrentReportId || "").trim();
         if (!expected) {
@@ -6723,7 +6745,15 @@ export async function registerRoutes(
         res.status(409).json({ error: "Conflit concurrent: la liaison n'a pas été modifiée" });
         return;
       }
-      res.json({ success: true, orderId, reportId, previous: previous || null });
+      res.json({
+        success: true,
+        orderId,
+        reportId,
+        previous: previous || null,
+        deliveryHold: true,
+        manualFulfillment: true,
+        state: previous ? "RELINKED_REQUIRES_MANUAL_VERIFICATION" : "LINKED_REQUIRES_MANUAL_VERIFICATION",
+      });
     } catch (error: any) {
       console.error("[Admin] Link order to report error:", error);
       res.status(500).json({ error: error.message });
@@ -10444,7 +10474,7 @@ export async function registerRoutes(
 
         for (const order of peptidesOrders) {
           try {
-            const paidAt = new Date(order.paidAt);
+            const paidAt = new Date(order.paidAt!);
             const daysSincePaid = Math.floor((now.getTime() - paidAt.getTime()) / (1000 * 60 * 60 * 24));
             const email = order.email;
             if (!email || email.includes("test") || email.includes("debug") || email.includes("audit.final")) continue;
@@ -10460,7 +10490,7 @@ export async function registerRoutes(
             const sequenceHeld = sequenceMeta.peptidesEmailHold === true || sequenceMeta.peptidesEmailHold === "true";
             const sequenceManual = sequenceMeta.peptidesManualFulfillment === true || sequenceMeta.peptidesManualFulfillment === "true";
             if (!sequenceOrder || !sequenceReportId || sequenceHeld || sequenceManual) continue;
-            if (!(await storage.hasPeptidesDeliveryEmailBeenSent(email).catch(() => false))) continue;
+            if (!hasAcceptedPeptidesDeliveryForReport(sequenceOrder, sequenceReportId)) continue;
 
             // Get tracking for this order
             const { db } = await import("./db");
@@ -15375,34 +15405,9 @@ export async function registerRoutes(
           console.error(`[ReviewCron] Failed for ${audit.email}:`, e);
         }
       }
-      // Peptides Engine clients , burnout_reports table, not in allAudits
-      try {
-        const peptidesReports = await storage.getAllBurnoutReports();
-        for (const report of peptidesReports || []) {
-          if (!report || sent >= 30) break;
-          const email = String((report as any).email || "").replace(/^peptides::/, "");
-          if (!email || email.includes("test") || email.includes("debug") || email.includes("achzodcoaching") || email.includes("achkou")) continue;
-          if (new Date(report.createdAt) < new Date('2026-03-17')) continue;
-          const daysSinceSent = (now.getTime() - new Date(report.createdAt).getTime()) / (24 * 60 * 60 * 1000);
-          if (daysSinceSent < 3 || daysSinceSent > 14) continue;
-          // Check if a review for this peptides report already exists (auditId = report.id in our schema)
-          const existingReview = await storage.getReviewByAuditId?.(report.id);
-          if (existingReview) continue;
-          const emailHistory = await storage.getEmailTrackingForAudit(report.id).catch(() => []);
-          const alreadySent = emailHistory?.some((e: any) => e.emailType === 'sendReviewRequestJ3Email');
-          if (alreadySent) continue;
-          try {
-            const trackingRecord = await storage.createEmailTracking(report.id, "sendReviewRequestJ3Email", email);
-            await sendReviewRequestJ3Email(email, report.id, "PEPTIDES_ENGINE", baseUrl, trackingRecord.id);
-            sent++;
-            console.log(`[ReviewCron] Peptides review request to ${email} (report ${report.id})`);
-          } catch (e) {
-            console.error(`[ReviewCron] Peptides failed for ${email}:`, e);
-          }
-        }
-      } catch (e) {
-        console.error("[ReviewCron] Peptides iteration failed:", e);
-      }
+      // Peptides J+3 is handled exclusively by the dedicated transactional order
+      // sequence. Never iterate raw burnout_reports here: orphan/stale artifacts have
+      // no entitlement or exact accepted-delivery proof.
 
       // Blood Analysis clients , blood_reports table
       try {
@@ -15844,8 +15849,12 @@ export async function registerRoutes(
             continue;
           }
           try {
-            const recovered = await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
+            const recovered = await sendCTAEmail(
+              email,
+              "Ton protocole peptides personnalisé est prêt",
               `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${buildReportAccessUrl(baseUrl, `/peptides/${recoveryReportId}`, "peptides", recoveryReportId, email)}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`,
+              undefined,
+              { allowProviderFallback: false, metadata: { orderId: order.id, reportId: recoveryReportId } },
             );
             await storage.finalizePeptidesDeliveryClaim(
               order.id,
@@ -15883,6 +15892,20 @@ export async function registerRoutes(
         // Wait at least 10 min before autogen kicks in , gives the inline generation pipeline
         // time to finish first. Prevents double report generation (race condition).
         if (hoursSincePaid < 0.17 || hoursSincePaid > 168) continue;
+
+        // Confirm the captured payment before any AI/provider generation call.
+        // The atomic confirmation claim is terminal, so an ambiguous provider
+        // response cannot fan out to another provider or duplicate on retry.
+        const confirmationScheduledAt = await resolvePeptidesEmailScheduledAt(order);
+        await sendPeptidesOrderConfirmationOnce(order, {
+          firstName: (meta?.peptidesResponses as any)?.prenom
+            || (meta?.peptidesResponses as any)?.pep_name
+            || (order.email ? order.email.split("@")[0] : undefined),
+          amountEur: ((order as any).finalAmountCents || 0) / 100,
+          promoCode: (order as any).promoCode || null,
+          scheduledDeliveryAt: confirmationScheduledAt,
+          orderId: order.id,
+        }).catch((err) => console.error("[AutoGen PreGeneration] Confirmation email failed:", err));
 
         console.log(`[AutoGen] Generating peptides report for ${email} (paid ${Math.round(hoursSincePaid * 60)}min ago)`);
 
@@ -16048,23 +16071,6 @@ export async function registerRoutes(
           console.log(
             `[AutoGen] New report email DEFERRED for ${email} until ${deliveryScheduledAtIso} (recovery loop will retry)`
           );
-          // Immediate confirmation email so client knows order is registered
-          // (no zero-feedback window during the 4-8h anti-automation deferral).
-          const alreadyConfirmed = await storage.hasPeptidesOrderConfirmationBeenSent(email).catch(() => false);
-          if (!alreadyConfirmed) {
-            const firstName = (order.metadata as any)?.peptidesResponses?.prenom
-              || (responses as any)?.prenom
-              || (order.email ? order.email.split("@")[0] : undefined);
-            sendPeptidesOrderConfirmationOnce(scheduledOrder, {
-              firstName,
-              amountEur: ((order as any).finalAmountCents || 0) / 100,
-              promoCode: (order as any).promoCode || null,
-              peptidesNames,
-              scheduledDeliveryAt: newReportScheduledAt,
-              bloodCreditsCount: Array.isArray(report.promoCodesGenerated) ? report.promoCodesGenerated.length : 0,
-              orderId: order.id,
-            }).catch((err) => console.error("[AutoGen NewReport] Confirmation email failed:", err));
-          }
         } else if (stillNotEmailed) {
           const deliveryClaimId = crypto.randomUUID();
           const deliveryClaimed = await storage.claimPeptidesDelivery(order.id, saved.id, deliveryClaimId);
@@ -16073,8 +16079,12 @@ export async function registerRoutes(
             console.warn(`[AutoGen] Delivery claim refused for ${email}; hold/link/claim changed, no provider call made`);
           } else {
             try {
-              clientEmailSent = await sendCTAEmail(email, "Ton protocole peptides personnalisé est prêt",
-                `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${buildReportAccessUrl(baseUrl, `/peptides/${saved.id}`, "peptides", saved.id, email)}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`
+              clientEmailSent = await sendCTAEmail(
+                email,
+                "Ton protocole peptides personnalisé est prêt",
+                `Ton protocole peptides est prêt.\n\nPeptides recommandés : ${peptidesNames}\n\nAccède à ton rapport complet ici :\n${buildReportAccessUrl(baseUrl, `/peptides/${saved.id}`, "peptides", saved.id, email)}${promoBlock}${coachingBlock}\n\nConserve ce lien , il est personnel et unique.\n\nAchzod`,
+                undefined,
+                { allowProviderFallback: false, metadata: { orderId: order.id, reportId: saved.id } },
               );
               await storage.finalizePeptidesDeliveryClaim(
                 order.id,
@@ -16320,7 +16330,7 @@ export async function registerRoutes(
         const linkedHeld = linkedMeta.peptidesEmailHold === true || linkedMeta.peptidesEmailHold === "true";
         const linkedManual = linkedMeta.peptidesManualFulfillment === true || linkedMeta.peptidesManualFulfillment === "true";
         if (linkedHeld || linkedManual) continue;
-        if (!(await storage.hasPeptidesDeliveryEmailBeenSent(email).catch(() => false))) continue;
+        if (!hasAcceptedPeptidesDeliveryForReport(linkedOrder, String(report.id))) continue;
         const createdAt = new Date((report as any).createdAt);
         if (Number.isNaN(createdAt.getTime())) continue;
         if (createdAt < new Date("2026-03-17")) continue;

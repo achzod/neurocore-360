@@ -49,15 +49,34 @@ test("report delivery claim is bound to the linked artifact and single-writer", 
   await storage.finalizePeptidesDeliveryClaim(order.id, reportId, "claim-current", "UNKNOWN");
   assert.equal(await storage.claimPeptidesDelivery(order.id, reportId, "claim-retry"), false);
   const updated = await storage.getOrder(order.id);
+  assert.equal((updated?.metadata as any)?.peptidesDeliveryReportId, reportId);
   assert.equal((updated?.metadata as any)?.peptidesEmailHold, true);
   assert.equal((updated?.metadata as any)?.peptidesEmailHoldReason, "DELIVERY_PROVIDER_RESULT_UNCERTAIN");
 });
 
-test("stale report mutations and relinks lose compare-and-swap", async () => {
-  const { storage, order } = await paidPeptidesOrder({ peptidesReportId: "report-a" });
+test("stale report mutations lose CAS and a deliberate relink resets delivery under hold", async () => {
+  const { storage, order } = await paidPeptidesOrder({
+    peptidesReportId: "report-a",
+    peptidesDeliveryClaimId: "old-claim",
+    peptidesDeliveryReportId: "report-a",
+    peptidesDeliveryState: "ACCEPTED",
+    peptidesEmailScheduledAt: new Date().toISOString(),
+    peptidesCycle2ReorderClaimId: "old-reorder",
+    "peptidesAutomationClaim:peptidesReviewJ3": "old-review",
+  });
   assert.equal(await storage.setOrderMetadataIfPeptidesReportMatches(order.id, "report-old", { peptidesReportId: "" }), false);
   assert.equal(await storage.replacePeptidesReportSlotIfMatches(order.id, "report-old", "report-b"), false);
   assert.equal(await storage.replacePeptidesReportSlotIfMatches(order.id, "report-a", "report-b"), true);
+  const relinked = (await storage.getOrder(order.id))?.metadata as any;
+  assert.equal(relinked.peptidesReportId, "report-b");
+  assert.equal(relinked.peptidesEmailHold, true);
+  assert.equal(relinked.peptidesManualFulfillment, true);
+  assert.equal(relinked.peptidesDeliveryClaimId, undefined);
+  assert.equal(relinked.peptidesDeliveryReportId, undefined);
+  assert.equal(relinked.peptidesDeliveryState, undefined);
+  assert.equal(relinked.peptidesEmailScheduledAt, undefined);
+  assert.equal(relinked.peptidesCycle2ReorderClaimId, undefined);
+  assert.equal(relinked["peptidesAutomationClaim:peptidesReviewJ3"], undefined);
 });
 
 test("production flow centralizes confirmation and claims every report delivery before provider calls", () => {
@@ -65,6 +84,10 @@ test("production flow centralizes confirmation and claims every report delivery 
   assert.match(routes, /async function sendPeptidesOrderConfirmationOnce/);
   assert.match(routes, /peptidesOrderConfirmationClaimId/);
   assert.match(routes, /claimPeptidesGenerationAttempt\(/);
+  const preGenerationConfirmation = routes.indexOf("[AutoGen PreGeneration] Confirmation email failed");
+  const generationProviderCall = routes.indexOf("report = await generatePeptidesProtocol", preGenerationConfirmation);
+  assert.ok(preGenerationConfirmation >= 0 && generationProviderCall > preGenerationConfirmation,
+    "payment confirmation must be attempted before Peptides generation provider calls");
   assert.match(routes, /claimPeptidesDelivery\(order\.id, recoveryReportId, recoveryClaimId\)/);
   assert.match(routes, /claimPeptidesDelivery\(order\.id, saved\.id, deliveryClaimId\)/);
   assert.match(routes, /finalizePeptidesDeliveryClaim\([\s\S]*"UNKNOWN"/);
@@ -86,6 +109,7 @@ test("public compatibility endpoint cannot bypass payment or call the provider",
 test("provider POST ambiguity is terminal for confirmation and report delivery", () => {
   const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
   const storage = readFileSync(new URL("./storage.ts", import.meta.url), "utf8");
+  const emailService = readFileSync(new URL("./emailService.ts", import.meta.url), "utf8");
   const confirmation = routes.slice(
     routes.indexOf("async function sendPeptidesOrderConfirmationOnce"),
     routes.indexOf("async function persistPeptidesFulfillmentIncident"),
@@ -95,6 +119,20 @@ test("provider POST ambiguity is terminal for confirmation and report delivery",
   assert.doesNotMatch(confirmation, /peptidesOrderConfirmationClaimId[\s\S]*setOrderMetadataKey[\s\S]*""/);
   assert.match(routes, /finalizePeptidesDeliveryClaim\([\s\S]*"UNKNOWN"/);
   assert.match(storage, /DELIVERY_PROVIDER_RESULT_UNCERTAIN/);
+  assert.match(emailService, /sendPeptidesOrderConfirmation[\s\S]*allowProviderFallback:\s*false/);
+  assert.match(emailService, /trackingData\.allowProviderFallback !== false && BREVO_API_KEY/);
+  assert.match(emailService, /trackingData\.allowProviderFallback !== false\) \{/);
+  const deliveries = routes.match(/allowProviderFallback:\s*false, metadata: \{ orderId:[^}]+reportId:[^}]+\}/g) || [];
+  assert.equal(deliveries.length, 3, "every Peptides report delivery must disable provider fallback");
+});
+
+test("raw Peptides reports cannot trigger the generic J+3 review cron", () => {
+  const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
+  const start = routes.indexOf("let reviewCronRunning = false;");
+  const end = routes.indexOf("// Auto-recovery: generate missing peptides reports every 5 minutes", start);
+  const reviewCron = routes.slice(start, end);
+  assert.match(reviewCron, /Peptides J\+3 is handled exclusively[\s\S]*transactional order[\s\S]*sequence/);
+  assert.doesNotMatch(reviewCron, /for \(const report of peptidesReports/);
 });
 
 test("every Peptides tier includes its exact coaching conversion code and deduction", () => {

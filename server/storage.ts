@@ -287,7 +287,8 @@ export interface IStorage {
     expectedReportId: string | null,
     values: Record<string, string | number | boolean>,
   ): Promise<boolean>;
-  /** Atomic CAS replacement for deliberate admin relinks. */
+  /** Atomic link/relink helpers used by admin recovery; both fail closed under an explicit hold. */
+  claimPeptidesReportSlotForManualReview(orderId: string, reportId: string): Promise<boolean>;
   replacePeptidesReportSlotIfMatches(orderId: string, expectedReportId: string, nextReportId: string): Promise<boolean>;
   /** Single-writer delivery claim. A hold/manual state or any prior claim fails closed. */
   claimPeptidesDelivery(orderId: string, reportId: string, claimId: string): Promise<boolean>;
@@ -1165,12 +1166,60 @@ export class MemStorage implements IStorage {
     return true;
   }
 
+  async claimPeptidesReportSlotForManualReview(orderId: string, reportId: string): Promise<boolean> {
+    const order = this.memOrders.get(orderId);
+    if (!order) return false;
+    const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
+    if (meta.peptidesReportId) return false;
+    order.metadata = {
+      ...meta,
+      peptidesReportId: reportId,
+      peptidesGenerationState: "SUCCEEDED",
+      peptidesGenerationCompletedAt: new Date().toISOString(),
+      peptidesEmailHold: true,
+      peptidesEmailHoldReason: "REPORT_LINK_REQUIRES_MANUAL_VERIFICATION",
+      peptidesManualFulfillment: true,
+      peptidesManualFulfillmentState: "LINKED_REQUIRES_MANUAL_VERIFICATION",
+      peptidesDeliveryClaimId: "",
+      peptidesDeliveryReportId: "",
+      peptidesDeliveryState: "",
+      peptidesDeliveryClaimedAt: "",
+      peptidesDeliveryFinalizedAt: "",
+      peptidesEmailScheduledAt: "",
+      peptidesEmailScheduleAnchor: "",
+    } as any;
+    order.updatedAt = new Date();
+    return true;
+  }
+
   async replacePeptidesReportSlotIfMatches(orderId: string, expectedReportId: string, nextReportId: string): Promise<boolean> {
-    return this.setOrderMetadataIfPeptidesReportMatches(orderId, expectedReportId, {
+    const order = this.memOrders.get(orderId);
+    if (!order) return false;
+    const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
+    if (String(meta.peptidesReportId || "") !== expectedReportId) return false;
+    const resetKeys = [
+      "peptidesDeliveryClaimId", "peptidesDeliveryReportId", "peptidesDeliveryState",
+      "peptidesDeliveryClaimedAt", "peptidesDeliveryFinalizedAt", "peptidesEmailScheduledAt",
+      "peptidesEmailScheduleAnchor", "peptidesCycle2ReorderClaimId",
+      "peptidesAutomationClaim:peptidesReviewJ3", "peptidesAutomationClaim:peptidesReviewS5",
+      "peptidesAutomationClaim:peptidesReviewS12", "peptidesAutomationClaim:peptidesS4",
+      "peptidesAutomationClaim:peptidesS8", "peptidesAutomationClaim:peptidesS12",
+      "peptidesAutomationClaim:peptidesS16",
+    ];
+    const nextMeta = { ...meta };
+    for (const key of resetKeys) delete nextMeta[key];
+    order.metadata = {
+      ...nextMeta,
       peptidesReportId: nextReportId,
       peptidesGenerationState: "SUCCEEDED",
       peptidesGenerationCompletedAt: new Date().toISOString(),
-    });
+      peptidesEmailHold: true,
+      peptidesEmailHoldReason: "REPORT_RELINK_REQUIRES_MANUAL_VERIFICATION",
+      peptidesManualFulfillment: true,
+      peptidesManualFulfillmentState: "RELINKED_REQUIRES_MANUAL_VERIFICATION",
+    } as any;
+    order.updatedAt = new Date();
+    return true;
   }
 
   async claimPeptidesDelivery(orderId: string, reportId: string, claimId: string): Promise<boolean> {
@@ -1184,6 +1233,7 @@ export class MemStorage implements IStorage {
     order.metadata = {
       ...meta,
       peptidesDeliveryClaimId: claimId,
+      peptidesDeliveryReportId: reportId,
       peptidesDeliveryState: "SENDING",
       peptidesDeliveryClaimedAt: new Date().toISOString(),
     } as any;
@@ -1204,6 +1254,7 @@ export class MemStorage implements IStorage {
     order.metadata = {
       ...meta,
       peptidesDeliveryState: state,
+      peptidesDeliveryReportId: reportId,
       peptidesDeliveryFinalizedAt: new Date().toISOString(),
       ...(state === "UNKNOWN" ? {
         peptidesEmailHold: true,
@@ -3775,12 +3826,72 @@ export class PgStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
+  async claimPeptidesReportSlotForManualReview(orderId: string, reportId: string): Promise<boolean> {
+    await this.ensureOrdersTableCreated();
+    const result = await pool.query(
+      `UPDATE orders
+         SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
+               'peptidesReportId', $1::text,
+               'peptidesGenerationState', 'SUCCEEDED',
+               'peptidesGenerationCompletedAt', NOW()::text,
+               'peptidesEmailHold', true,
+               'peptidesEmailHoldReason', 'REPORT_LINK_REQUIRES_MANUAL_VERIFICATION',
+               'peptidesManualFulfillment', true,
+               'peptidesManualFulfillmentState', 'LINKED_REQUIRES_MANUAL_VERIFICATION',
+               'peptidesDeliveryClaimId', '',
+               'peptidesDeliveryReportId', '',
+               'peptidesDeliveryState', '',
+               'peptidesDeliveryClaimedAt', '',
+               'peptidesDeliveryFinalizedAt', '',
+               'peptidesEmailScheduledAt', '',
+               'peptidesEmailScheduleAnchor', ''
+             ),
+             updated_at = NOW()
+       WHERE id = $2
+         AND COALESCE(metadata->>'peptidesReportId', '') = ''
+       RETURNING id`,
+      [reportId, orderId],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
   async replacePeptidesReportSlotIfMatches(orderId: string, expectedReportId: string, nextReportId: string): Promise<boolean> {
-    return this.setOrderMetadataIfPeptidesReportMatches(orderId, expectedReportId, {
-      peptidesReportId: nextReportId,
-      peptidesGenerationState: "SUCCEEDED",
-      peptidesGenerationCompletedAt: new Date().toISOString(),
-    });
+    await this.ensureOrdersTableCreated();
+    const result = await pool.query(
+      `UPDATE orders
+         SET metadata = (
+               COALESCE(metadata, '{}'::jsonb)
+               - 'peptidesDeliveryClaimId'
+               - 'peptidesDeliveryReportId'
+               - 'peptidesDeliveryState'
+               - 'peptidesDeliveryClaimedAt'
+               - 'peptidesDeliveryFinalizedAt'
+               - 'peptidesEmailScheduledAt'
+               - 'peptidesEmailScheduleAnchor'
+               - 'peptidesCycle2ReorderClaimId'
+               - 'peptidesAutomationClaim:peptidesReviewJ3'
+               - 'peptidesAutomationClaim:peptidesReviewS5'
+               - 'peptidesAutomationClaim:peptidesReviewS12'
+               - 'peptidesAutomationClaim:peptidesS4'
+               - 'peptidesAutomationClaim:peptidesS8'
+               - 'peptidesAutomationClaim:peptidesS12'
+               - 'peptidesAutomationClaim:peptidesS16'
+             ) || jsonb_build_object(
+               'peptidesReportId', $1::text,
+               'peptidesGenerationState', 'SUCCEEDED',
+               'peptidesGenerationCompletedAt', NOW()::text,
+               'peptidesEmailHold', true,
+               'peptidesEmailHoldReason', 'REPORT_RELINK_REQUIRES_MANUAL_VERIFICATION',
+               'peptidesManualFulfillment', true,
+               'peptidesManualFulfillmentState', 'RELINKED_REQUIRES_MANUAL_VERIFICATION'
+             ),
+             updated_at = NOW()
+       WHERE id = $2
+         AND COALESCE(metadata->>'peptidesReportId', '') = $3
+       RETURNING id`,
+      [nextReportId, orderId, expectedReportId],
+    );
+    return (result.rowCount ?? 0) > 0;
   }
 
   async claimPeptidesDelivery(orderId: string, reportId: string, claimId: string): Promise<boolean> {
@@ -3789,6 +3900,7 @@ export class PgStorage implements IStorage {
       `UPDATE orders
          SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
                'peptidesDeliveryClaimId', $1::text,
+               'peptidesDeliveryReportId', $3::text,
                'peptidesDeliveryState', 'SENDING',
                'peptidesDeliveryClaimedAt', NOW()::text
              ),
@@ -3815,6 +3927,7 @@ export class PgStorage implements IStorage {
     const patch = state === "UNKNOWN"
       ? {
           peptidesDeliveryState: state,
+          peptidesDeliveryReportId: reportId,
           peptidesDeliveryFinalizedAt: new Date().toISOString(),
           peptidesEmailHold: true,
           peptidesEmailHoldReason: "DELIVERY_PROVIDER_RESULT_UNCERTAIN",
@@ -3822,6 +3935,7 @@ export class PgStorage implements IStorage {
         }
       : {
           peptidesDeliveryState: state,
+          peptidesDeliveryReportId: reportId,
           peptidesDeliveryFinalizedAt: new Date().toISOString(),
         };
     const result = await pool.query(
