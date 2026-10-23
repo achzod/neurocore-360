@@ -13,6 +13,7 @@ export interface PeptidesFulfillmentInvariantInput {
   } | null;
   deliveryAccepted: boolean;
   deliveryHeld?: boolean;
+  manualFulfillment?: boolean;
   recipientUnsubscribed: boolean;
   scheduledAt?: Date | string | null;
   now?: Date;
@@ -57,6 +58,14 @@ export function evaluatePeptidesFulfillmentInvariant(
     }
     return null;
   }
+
+  // A report may be intentionally fulfilled outside the automatic provider
+  // path (for example through a verified Gmail draft). Keep the report linked
+  // and the delivery hold intact: the automatic worker must neither reject the
+  // manually reviewed artifact nor regenerate it behind the operator's back.
+  // The explicit metadata flag is required; a generic hold alone must not hide
+  // genuinely invalid automatic reports.
+  if (input.manualFulfillment && input.deliveryHeld) return null;
 
   const qualityVersion = String(input.report?.qualityVersion || "").toLowerCase();
   const peptideCount = Array.isArray(input.report?.peptides) ? input.report!.peptides!.length : 0;
