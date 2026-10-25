@@ -13,10 +13,16 @@ export interface PeptidesFulfillmentInvariantInput {
     peptides?: Array<{
       name?: string | null;
       activationStatus?: string | null;
+      route?: string | null;
+      dosage?: string | null;
+      timing?: string | null;
+      purpose?: string | null;
       purchaseUrl?: string | null;
       reconstitution?: string | null;
       vialsNeeded?: string | null;
       priceEstimate?: string | null;
+      cycleDuration?: string | null;
+      whyThisPeptide?: string | null;
       [key: string]: unknown;
     }> | null;
     sections?: Array<{ id?: string | null; content?: string | null }> | null;
@@ -76,6 +82,18 @@ function isPeptauraProductUrl(value: unknown): boolean {
   );
 }
 
+function isApprovedProductUrl(peptide: {
+  name?: string | null;
+  purchaseUrl?: string | null;
+}): boolean {
+  const name = String(peptide.name || "").trim();
+  const purchaseUrl = String(peptide.purchaseUrl || "").trim();
+  if (/\benclomiph[eè]ne(?:\s+citrate)?\b/i.test(name)) {
+    return purchaseUrl === "https://receptorchem.co.uk/enclomiphene-citrate/";
+  }
+  return isPeptauraProductUrl(purchaseUrl);
+}
+
 function isCompletePaidReport(
   report: PeptidesFulfillmentInvariantInput["report"],
 ): boolean {
@@ -99,50 +117,39 @@ function isCompletePaidReport(
   if (!sharedStructureComplete) return false;
 
   if (qualityVersion === "expert-standard-v1") {
-    return String(report.shoppingList || "").trim().length >= 100;
+    const shoppingList = String(report.shoppingList || "").trim();
+    const activePeptides = peptides.filter((peptide) =>
+      String(peptide?.activationStatus || "").trim() !== "conditional-inactive"
+    );
+    const everyActivePeptideIsOperational = activePeptides.every((peptide) => {
+      const peptideName = String(peptide?.name || "").trim();
+      const purchaseUrl = String(peptide?.purchaseUrl || "").trim();
+      return peptideName.length > 0
+        && isApprovedProductUrl(peptide)
+        && String(peptide?.route || "").trim().length > 0
+        && String(peptide?.dosage || "").trim().length > 0
+        && String(peptide?.timing || "").trim().length > 0
+        && String(peptide?.purpose || "").trim().length > 0
+        && String(peptide?.reconstitution || "").trim().length > 0
+        && String(peptide?.vialsNeeded || "").trim().length > 0
+        && String(peptide?.priceEstimate || "").trim().length > 0
+        && String(peptide?.cycleDuration || "").trim().length > 0
+        && String(peptide?.whyThisPeptide || "").trim().length > 0
+        && shoppingList.toLowerCase().includes(peptideName.toLowerCase())
+        && shoppingList.includes(purchaseUrl);
+    });
+    return activePeptides.length >= 1
+      && shoppingList.length >= 100
+      && everyActivePeptideIsOperational;
   }
 
   if (qualityVersion === "expert-review-v2") {
-    const remediation = report._customerRemediation;
-    const sourceAccess = report._sourceAccess;
-    const reviewPeptidesAreNonOperational = peptides.every((peptide) =>
-      String(peptide?.activationStatus || "") === "conditional-inactive"
-      && isPeptauraProductUrl(peptide?.purchaseUrl)
-      && String(peptide?.reconstitution || "").trim() === ""
-      && String(peptide?.vialsNeeded || "").trim() === ""
-      && String(peptide?.priceEstimate || "").trim() === ""
-    );
-    const sourceAccessSection = sections.find((section) =>
-      ["source-access", "guide-fournisseur"].includes(
-        String(section?.id || "").trim().toLowerCase(),
-      )
-    );
-    const sourceAccessText = String(sourceAccessSection?.content || "");
-    const liveSourceNames = new Set(
-      (sourceAccess?.productLinks || [])
-        .filter((link) => isPeptauraProductUrl(link?.url))
-        .map((link) => String(link?.peptide || "").trim().toLowerCase())
-        .filter(Boolean),
-    );
-    const everyPeptideHasLiveSource = peptides.every((peptide) =>
-      liveSourceNames.has(String(peptide?.name || "").trim().toLowerCase())
-    );
-    return String(remediation?.version || "").trim().length >= 3
-      && remediation?.scientificSources === true
-      && remediation?.operationalProtocol === false
-      && remediation?.purchaseLinks === true
-      && Number(remediation?.questionnaireAnswersUsed || 0) >= 1
-      && remediation?.sameReportIdRequired === true
-      && reviewPeptidesAreNonOperational
-      && /\bPeptaura\b/i.test(sourceAccessText)
-      && /\bsource\b/i.test(sourceAccessText)
-      && String(sourceAccess?.provider || "").trim().toLowerCase() === "peptaura"
-      && Boolean(sourceAccess?.verifiedAt)
-      && /^https:\/\/(?:www\.)?peptaura\.com\/shipping\?country=/i.test(
-        String(sourceAccess?.shippingUrl || "").trim(),
-      )
-      && everyPeptideHasLiveSource
-      && String(report.shoppingList || "").trim() === "";
+    // A review report can remain linked and readable under a manual hold, but
+    // it deliberately has no operational protocol or shopping list. It must
+    // never be treated as complete fulfillment for a paid tier that promises
+    // those elements. The caller converts this into MANUAL_INCOMPLETE_REPORT
+    // without detaching or deleting the analytical artifact.
+    return false;
   }
 
   return false;
