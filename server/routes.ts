@@ -14910,11 +14910,14 @@ export async function registerRoutes(
 
   // ==================== PEPTIDES ENGINE ROUTES ====================
 
+  // Keep transactional delivery for previews already submitted. The sales
+  // pause stops new previews and all marketing follow-ups, but must not strand
+  // a result or admin notification that was already queued.
+  startPeptidesPreviewDeliveryWorker();
   if (!PEPTIDES_ENGINE_CHECKOUT_PAUSED) {
-    startPeptidesPreviewDeliveryWorker();
     startPeptidesPreviewFollowupWorker();
   } else {
-    console.warn("[PeptidesEngine] Sales pause active: preview delivery and follow-up workers are disabled");
+    console.warn("[PeptidesEngine] Sales pause active: preview follow-up worker is disabled");
   }
   const peptidesLimiter = createRateLimiter({ windowMs: 60_000, max: 10 });
 

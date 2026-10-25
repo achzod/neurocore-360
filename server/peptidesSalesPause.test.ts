@@ -16,8 +16,9 @@ test("new Peptides Engine purchases fail closed on every payment rail", () => {
   assert.match(routes, /error: "PEPTIDES_ENGINE_CHECKOUT_PAUSED"/);
 });
 
-test("preview acquisition and follow-up sending stop during the sales pause", () => {
-  assert.match(routes, /if \(!PEPTIDES_ENGINE_CHECKOUT_PAUSED\) \{\s*startPeptidesPreviewDeliveryWorker\(\);\s*startPeptidesPreviewFollowupWorker\(\);/);
+test("preview acquisition and marketing follow-ups stop without stranding queued transactional delivery", () => {
+  assert.match(routes, /startPeptidesPreviewDeliveryWorker\(\);\s*if \(!PEPTIDES_ENGINE_CHECKOUT_PAUSED\) \{\s*startPeptidesPreviewFollowupWorker\(\);/);
+  assert.doesNotMatch(routes, /if \(!PEPTIDES_ENGINE_CHECKOUT_PAUSED\) \{\s*startPeptidesPreviewDeliveryWorker\(\)/);
   const previewStart = routes.indexOf('app.post("/api/peptides-preview/analyze"');
   const preview = routes.slice(previewStart, routes.indexOf('app.post("/api/peptides-preview/checkout-context"', previewStart));
   assert.match(preview, /if \(PEPTIDES_ENGINE_CHECKOUT_PAUSED\)/);
