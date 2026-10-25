@@ -19,3 +19,9 @@ test("scientific source URLs render as safe external links", () => {
   assert.match(source, /rel="noopener noreferrer"/);
   assert.match(source, /target="_blank"/);
 });
+
+test("conditional reports still render the source access promised by every paid tier", () => {
+  assert.match(source, /\{pep\.purchaseUrl && \(/);
+  assert.doesNotMatch(source, /pep\.activationStatus !== "conditional-inactive" && pep\.purchaseUrl/);
+  assert.match(source, /Accéder à la source Peptaura/);
+});

@@ -43,7 +43,7 @@ export interface PeptidesPeptide {
 
 export interface PeptidesReport {
   tier?: string;
-  qualityVersion?: "expert-standard-v1" | "medical-review-v1";
+  qualityVersion?: "expert-standard-v1" | "expert-review-v2" | "medical-review-v1";
   peptides?: PeptidesPeptide[];
   sections?: Array<{ id?: string; title?: string; content?: string }>;
   clientName?: string;
@@ -919,7 +919,6 @@ export function checkPeptide(p: PeptidesPeptide): string[] {
       p.reconstitution,
       p.vialsNeeded,
       p.priceEstimate,
-      p.purchaseUrl,
     ].filter(Boolean).join(" ");
     if (
       /\b\d+(?:[.,]\d+)?\s*(?:mcg|ug|µg|mg|ml|iu|ui)\b|\b(?:inject|injection|vial|flacon|acheter|commander)\b/i.test(operationalText)
@@ -928,6 +927,12 @@ export function checkPeptide(p: PeptidesPeptide): string[] {
     }
     if (!/non activ|suspend|conditionnel|aucun achat/i.test(operationalText)) {
       issues.push("phase conditionnelle non identifiee comme inactive");
+    }
+    const sourceUrl = String(p.purchaseUrl || "").trim();
+    if (!sourceUrl) {
+      issues.push("phase conditionnelle sans acces source fournisseur");
+    } else if (!/^https:\/\/(?:www\.)?peptaura\.com\/(?:catalog|product)\//i.test(sourceUrl)) {
+      issues.push(`phase conditionnelle avec source fournisseur invalide: ${sourceUrl}`);
     }
     return issues;
   }
