@@ -173,6 +173,63 @@ test("PostgreSQL backfills exact legacy delivery and claims partial-refund gener
   });
   assert.equal(await storage.claimPeptidesDelivery(retryOrder.id, "report-retry", "claim-retry"), true);
 
+  const inflightEmail = `inflight-${randomUUID()}@example.com`;
+  const inflightResponses = { pep_email: inflightEmail, pep_name: "Inflight" };
+  const inflightHash = hashPeptidesManualMutationPayload(inflightResponses);
+  const inflightOrder = await createActiveOrder(storage, inflightEmail, {
+    peptidesResponses: inflightResponses,
+    peptidesResponsesSha256: inflightHash,
+  });
+  const inflightReport = await storage.createAndClaimPeptidesReport({
+    orderId: inflightOrder.id,
+    email: `peptides::${inflightEmail}`,
+    responses: inflightResponses,
+    report: { qualityVersion: "expert-standard-v1", marker: "before" },
+    expectedResponsesSha256: inflightHash,
+  });
+  assert.ok(inflightReport);
+  assert.equal(await storage.claimPeptidesDelivery(inflightOrder.id, inflightReport!.id, "claim-inflight"), true);
+  await storage.setOrderMetadataIfPeptidesReportMatches(inflightOrder.id, inflightReport!.id, {
+    peptidesEmailHold: true,
+    peptidesManualFulfillment: true,
+  });
+  assert.equal(await storage.mutatePeptidesReportUnderHold({
+    orderId: inflightOrder.id,
+    reportId: inflightReport!.id,
+    expectedSha256: hashPeptidesReport(inflightReport!.report),
+    nextReport: { ...inflightReport!.report as any, marker: "during-send" },
+    mutation: "inflight-test",
+  }), undefined);
+
+  const releasedEmail = `released-${randomUUID()}@example.com`;
+  const releasedResponses = { pep_email: releasedEmail, pep_name: "Released" };
+  const releasedSourceHash = hashPeptidesManualMutationPayload(releasedResponses);
+  const releasedOrder = await createActiveOrder(storage, releasedEmail, {
+    peptidesResponses: releasedResponses,
+    peptidesResponsesSha256: releasedSourceHash,
+  });
+  const releasedReport = await storage.createAndClaimPeptidesReport({
+    orderId: releasedOrder.id,
+    email: `peptides::${releasedEmail}`,
+    responses: releasedResponses,
+    report: { qualityVersion: "expert-standard-v1", marker: "approved" },
+    expectedResponsesSha256: releasedSourceHash,
+  });
+  assert.ok(releasedReport);
+  const releasedHash = hashPeptidesReport(releasedReport!.report);
+  await storage.setOrderMetadataIfPeptidesReportMatches(releasedOrder.id, releasedReport!.id, {
+    peptidesEmailHold: false,
+    peptidesManualFulfillment: false,
+    peptidesApprovedReportSha256: releasedHash,
+    peptidesReleaseAuditVerdict: "PASS_STRICT",
+  });
+  assert.equal(await storage.updateBurnoutReportIfHashMatches(
+    releasedOrder.id,
+    releasedReport!.id,
+    releasedHash,
+    { ...releasedReport!.report as any, marker: "stale-refresh" },
+  ), undefined);
+
   const budgetEmail = `budget-${randomUUID()}@example.com`;
   const budgetOrder = await createActiveOrder(storage, budgetEmail, {
     peptidesGenerationAttempts: 1,
@@ -197,4 +254,16 @@ test("PostgreSQL backfills exact legacy delivery and claims partial-refund gener
   const ledger = (refreshed?.metadata as any)?.peptidesGenerationReservationLedger;
   assert.equal(Array.isArray(ledger), true);
   assert.equal(ledger.at(-1).claimId, claim?.claimId);
+
+  const heldOrder = await createActiveOrder(storage, `held-${randomUUID()}@example.com`, {
+    peptidesEmailHold: true,
+    peptidesManualFulfillment: true,
+    peptidesGenerationResponseId: "resp-held",
+  });
+  assert.equal(await storage.claimPeptidesGenerationAttempt(heldOrder.id, config), null);
+  assert.equal(await storage.claimPeptidesGenerationResume(heldOrder.id, "resp-held", config.leaseMs), null);
+
+  await storage.updateOrder(budgetOrder.id, { status: "refunded" as any });
+  const budgetBlocked = await createActiveOrder(storage, `budget-blocked-${randomUUID()}@example.com`, {});
+  assert.equal(await storage.claimPeptidesGenerationAttempt(budgetBlocked.id, config), null);
 });

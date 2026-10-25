@@ -76,7 +76,7 @@ test("a negated objective mention never creates attributable axis coverage", () 
   });
   const issues = validateGeneratedPeptideStack([
     active("Retatrutide", "Perte de graisse et appetit"),
-    active("Semaglutide", "Ne couvre pas la recuperation; controle metabolique uniquement"),
+    active("Semaglutide", "N’est pas destiné à la récupération et ne couvre que le metabolisme"),
   ], policy);
   assert.ok(issues.some((issue) => issue.startsWith("AXIS_ATTRIBUTION_GATE:")));
 });

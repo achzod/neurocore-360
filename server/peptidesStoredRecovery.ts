@@ -296,7 +296,7 @@ function assertRecoveryOrder(
   if (order.id !== expected.orderId) throw new Error("RECOVERY_ORDER_ID_MISMATCH");
   if (normalizeEmail(order.email) !== normalizeEmail(expected.email)) throw new Error("RECOVERY_EMAIL_MISMATCH");
   if (order.productType !== "PEPTIDES_ENGINE") throw new Error("RECOVERY_PRODUCT_MISMATCH");
-  if (order.status !== "paid") throw new Error("RECOVERY_ORDER_NOT_PAID");
+  if (!['paid', 'partial_refund'].includes(order.status)) throw new Error("RECOVERY_ORDER_NOT_ACTIVE");
   if (!boolish(order.metadata.peptidesEmailHold)) throw new Error("RECOVERY_HOLD_REQUIRED");
   if (String(order.metadata.peptidesReportId || "").trim()) throw new Error("RECOVERY_REPORT_ALREADY_LINKED");
 }
@@ -391,7 +391,7 @@ export async function persistStoredPeptidesRecoveryUnderHold(input: {
         WHERE id = $4
           AND lower(email) = lower($5)
           AND product_type = 'PEPTIDES_ENGINE'
-          AND status = 'paid'
+          AND status IN ('paid', 'partial_refund')
           AND COALESCE(metadata->>'peptidesEmailHold', 'false') = 'true'
           AND COALESCE(metadata->>'peptidesReportId', '') = ''
         RETURNING metadata->>'peptidesGenerationCompletedAt' AS generation_completed_at,

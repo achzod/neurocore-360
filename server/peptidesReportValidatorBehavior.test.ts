@@ -34,6 +34,15 @@ test("U-100 validation catches a false conversion introduced as a palier", () =>
   assert.ok(issues.some((issue) => issue.includes("99 unites affichees vs 40.0")));
 });
 
+test("U-100 validation catches common graduation wording", () => {
+  const issues = validateU100Reconstitution(
+    "Vial 10mg + 2ml BAC water. Pour 1mg = 20 unites U-100 (0.20 ml). "
+      + "2 mg correspondent à 99 graduations sur la seringue U-100, soit 0.99 ml.",
+  );
+  assert.ok(issues.some((issue) => issue.includes("99 unites affichees vs 40.0")));
+  assert.ok(issues.some((issue) => issue.includes("0.99 ml affiche vs 0.40 ml")));
+});
+
 test("U-100 validation blocks an unpaired dose instead of silently skipping it", () => {
   const issues = validateU100Reconstitution(
     "Vial 10mg + 2ml BAC water. Pour 1mg = 20 unites U-100 (0.20 ml). Pour 2mg, voir tableau.",
@@ -101,6 +110,16 @@ test("a purely narrative conditional mention remains allowed", () => {
     sections: [{ id: "rationale", content: "Administre KissPeptin-10 chaque nuit selon tolerance." }],
   });
   assert.ok(operational.some((issue) => issue.includes("section rationale")));
+
+  const compoundAliases = findConditionalInactiveOperationalMentions({
+    peptides: [{ name: "CJC-1295 sans DAC + Ipamorelin", activationStatus: "conditional-inactive" }],
+    weeklySchedule: "CJC sans DAC 100 mcg + Ipamoréline 100 mcg chaque nuit.",
+    shoppingList: "Commander 2 vials CJC sans DAC.",
+    sections: [{ id: "protocole", content: "Injecte CJC sans DAC chaque nuit." }],
+  });
+  assert.ok(compoundAliases.some((issue) => issue.includes("weeklySchedule")));
+  assert.ok(compoundAliases.some((issue) => issue.includes("shoppingList")));
+  assert.ok(compoundAliases.some((issue) => issue.includes("section protocole")));
 });
 
 test("progressive titration accepts microgram aliases without falling through", () => {
@@ -108,6 +127,17 @@ test("progressive titration accepts microgram aliases without falling through", 
     dosage: "100 µg semaine 1, 200 ug semaine 2, 300 mcg semaine 3, 400 µg semaine 4, chaque jour",
     cycleDuration: "4 semaines",
   }), 7);
+  assert.equal(estimateNeedMg({
+    dosage: "S1: 100 mcg, S2: 200 mcg, S3: 300 mcg, S4: 400 mcg, chaque jour",
+    cycleDuration: "4 semaines",
+  }), 7);
+});
+
+test("weekly ranges use the chronologically last plateau even when written out of order", () => {
+  assert.equal(estimateNeedMg({
+    dosage: "2 mg par semaine (semaines 5 à 8), puis 1 mg par semaine (semaines 1 à 4)",
+    cycleDuration: "10 semaines",
+  }), 16);
 });
 
 test("reverse titration starts at its first declared week and forward-fills holes", () => {

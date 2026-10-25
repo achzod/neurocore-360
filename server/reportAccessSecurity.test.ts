@@ -36,6 +36,14 @@ test("signed report access is resource-bound and accepted only for its target", 
   assert.equal(verifyReportAccessToken(token, "peptides", "audit-1"), null);
 });
 
+test("an expired or invalid direct link never revokes lifetime owner access", () => {
+  const bearer = signAuthToken({ userId: "owner", email: "owner@example.com" });
+  assert.equal(getReportAccessDecision(request({
+    authorization: "Bearer " + bearer,
+    "x-report-access": "expired-direct-link",
+  }), "peptides", "report-1", "owner@example.com"), 200);
+});
+
 test("public reviews expose only testimonial fields", () => {
   const publicReview = toPublicReview({
     rating: 5,

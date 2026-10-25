@@ -81,6 +81,7 @@ import {
 import { BLOOD_ANALYSIS_PURCHASE_CREDITS, clarifyBloodPurchaseEmail } from "./bloodOffer";
 import {
   classifyPaidOrderConfirmationStatus,
+  isActivePaidOrderStatus,
   peptidesBloodCreditsForTier,
   resolvePeptidesTier,
 } from "./peptidesEntitlements";
@@ -5389,7 +5390,7 @@ export async function registerRoutes(
       // Already paid check for ALL product types (prevents double charge)
       if (email && planType && planType !== "GRATUIT") {
         const existingOrders = await storage.getOrdersByEmail(email);
-        const alreadyPaid = existingOrders.find((o: any) => o.productType === planType && o.status === "paid");
+        const alreadyPaid = existingOrders.find((o: any) => o.productType === planType && isActivePaidOrderStatus(o.status));
         if (alreadyPaid && planType !== "PEPTIDES_ENGINE" && planType !== "BLOOD_ANALYSIS") {
           console.log(`[Checkout] ${planType} already paid for ${email} , blocking re-payment`);
           // Create audit if missing
@@ -5411,7 +5412,7 @@ export async function registerRoutes(
       // PEPTIDES_ENGINE: if already paid, skip checkout and trigger generation in background
       if (planType === "PEPTIDES_ENGINE" && email) {
         const existingOrders = await storage.getOrdersByEmail(email);
-        const paidPeptides = existingOrders.find((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid");
+        const paidPeptides = existingOrders.find((o: any) => o.productType === "PEPTIDES_ENGINE" && isActivePaidOrderStatus(o.status));
         if (paidPeptides) {
           console.log(`[Checkout] Peptides Engine already paid for ${email} , saving responses and generating in background`);
           // Save responses to server
@@ -6290,7 +6291,7 @@ export async function registerRoutes(
 
       // Update order to paid if exists
       const existingOrder = await storage.getOrderByStripeSession(sessionId);
-      if (existingOrder && existingOrder.status === "paid" && existingOrder.auditId) {
+      if (existingOrder && isActivePaidOrderStatus(existingOrder.status) && existingOrder.auditId) {
         await ensurePaidOrderNotifications(existingOrder);
         res.json({ success: true, auditId: existingOrder.auditId, auditType: planType, existing: true, purchaseTracking });
         return;
@@ -6450,7 +6451,7 @@ export async function registerRoutes(
       // Already paid check for ALL product types (prevents double charge via PayPal)
       if (email && planType && planType !== "GRATUIT") {
         const existingOrders = await storage.getOrdersByEmail(email);
-        const alreadyPaid = existingOrders.find((o: any) => o.productType === planType && o.status === "paid");
+        const alreadyPaid = existingOrders.find((o: any) => o.productType === planType && isActivePaidOrderStatus(o.status));
         if (alreadyPaid && planType !== "PEPTIDES_ENGINE" && ["PREMIUM", "ELITE", "BLOOD_ANALYSIS"].includes(planType)) {
           console.log(`[PayPal] ${planType} already paid for ${email} , blocking re-payment`);
           if (!alreadyPaid.auditId && ["PREMIUM", "ELITE"].includes(planType)) {
@@ -6467,7 +6468,7 @@ export async function registerRoutes(
       // PEPTIDES_ENGINE: if already paid, DO NOT create another PayPal order
       if (planType === "PEPTIDES_ENGINE" && email) {
         const existingOrders = await storage.getOrdersByEmail(email);
-        const paidPeptides = existingOrders.find((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid");
+        const paidPeptides = existingOrders.find((o: any) => o.productType === "PEPTIDES_ENGINE" && isActivePaidOrderStatus(o.status));
         if (paidPeptides) {
           console.log(`[PayPal] Peptides Engine already paid for ${email} , blocking re-payment`);
           if (responses && Object.keys(responses).length >= 3) {
@@ -6728,7 +6729,7 @@ export async function registerRoutes(
       // Idempotency also repairs a crash that happened after status=paid but
       // before the transactional credit grant. grantBloodCreditsForOrder is
       // itself order-scoped and idempotent.
-      if (existingOrder.status === "paid") {
+      if (isActivePaidOrderStatus(existingOrder.status)) {
         if (existingOrder.productType === "PEPTIDES_ENGINE") {
           await grantBloodCreditsForOrder(
             existingOrder.id,
@@ -6904,7 +6905,7 @@ export async function registerRoutes(
     if (!requireAdminAuth(req, res)) return;
     try {
       const order = await storage.getOrder(String(req.params.id || ""));
-      if (!order || order.productType !== "PEPTIDES_ENGINE" || order.status !== "paid") {
+      if (!order || order.productType !== "PEPTIDES_ENGINE" || !isActivePaidOrderStatus(order.status)) {
         res.status(404).json({ success: false, error: "Commande Peptides payee introuvable" });
         return;
       }
@@ -6947,7 +6948,15 @@ export async function registerRoutes(
   app.post("/api/admin/peptides-generate", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
-      const { email, orderId, skipEmail, replaceReportId, manualExpertDirective, recoveryPreviousError } = req.body;
+      const {
+        email,
+        orderId,
+        skipEmail,
+        replaceReportId,
+        manualExpertDirective,
+        recoveryPreviousError,
+        confirmHeldGeneration,
+      } = req.body;
       if (!email || !orderId) { res.status(400).json({ error: "email et orderId requis" }); return; }
       if (req.body?.forceImmediate === true) {
         res.status(409).json({
@@ -7035,6 +7044,17 @@ export async function registerRoutes(
 
       const normalizedManualDirective = String(manualExpertDirective || "").trim();
       const normalizedRecoveryPreviousError = String(recoveryPreviousError || "").trim();
+      const generationHeld = (pepOrder.metadata as any)?.peptidesEmailHold === true
+        || String((pepOrder.metadata as any)?.peptidesEmailHold).toLowerCase() === "true"
+        || (pepOrder.metadata as any)?.peptidesManualFulfillment === true
+        || String((pepOrder.metadata as any)?.peptidesManualFulfillment).toLowerCase() === "true";
+      if (generationHeld && confirmHeldGeneration !== "GENERATE_UNDER_HOLD_NO_DELIVERY") {
+        res.status(409).json({
+          error: "PEPTIDES_GENERATION_HOLD_CONFIRMATION_REQUIRED",
+          message: "Le HOLD bloque tout provider. Confirme explicitement une regeneration locale sans livraison.",
+        });
+        return;
+      }
       if (normalizedRecoveryPreviousError) {
         const holdActive = (pepOrder?.metadata as any)?.peptidesEmailHold === true
           || String((pepOrder?.metadata as any)?.peptidesEmailHold).toLowerCase() === "true";
@@ -11368,7 +11388,7 @@ export async function registerRoutes(
 
       try {
         const { orders: allOrders } = await storage.getAllOrders({ limit: 1000, productType: "PEPTIDES_ENGINE" });
-        const peptidesOrders = allOrders.filter((o: any) => o.status === "paid" && o.paidAt);
+        const peptidesOrders = allOrders.filter((o: any) => isActivePaidOrderStatus(o.status) && o.paidAt);
 
         // Peptides auto-recovery REMOVED from cron , handled exclusively by setInterval (5min)
         // This prevents double generation and double email sends
@@ -11518,7 +11538,7 @@ export async function registerRoutes(
       try {
         const { orders: allPeptidesOrders } = await storage.getAllOrders({ limit: 1000, productType: "PEPTIDES_ENGINE" });
         const pendingPeptides = allPeptidesOrders.filter((o: any) => o.status === "pending");
-        const peptidesOrders = allPeptidesOrders.filter((o: any) => o.status === "paid" && o.paidAt);
+        const peptidesOrders = allPeptidesOrders.filter((o: any) => isActivePaidOrderStatus(o.status) && o.paidAt);
         for (const order of pendingPeptides) {
           const email = order.email;
           if (!email || email.includes("test") || email.includes("debug") || email.includes("achzodcoaching")) continue;
@@ -16354,7 +16374,7 @@ export async function registerRoutes(
     input: Parameters<typeof sendPeptidesOrderConfirmationEmail>[1],
   ): Promise<boolean> {
     const freshOrder = await storage.getOrder(order.id);
-    if (!freshOrder || freshOrder.productType !== "PEPTIDES_ENGINE" || freshOrder.status !== "paid") return false;
+    if (!freshOrder || freshOrder.productType !== "PEPTIDES_ENGINE" || !isActivePaidOrderStatus(freshOrder.status)) return false;
     const freshMeta = ((freshOrder.metadata as any) || {}) as Record<string, any>;
     const reportId = String(freshMeta.peptidesReportId || "");
     if (await storage.hasPeptidesOrderConfirmationBeenSent(freshOrder.email).catch(() => false)) return false;
@@ -16602,12 +16622,10 @@ export async function registerRoutes(
         }
 
         const peptidesEmailHeld = meta?.peptidesEmailHold === true || meta?.peptidesEmailHold === "true";
-        if (peptidesEmailHeld && meta?.peptidesReportId) {
-          console.log(`[AutoGen] Peptides delivery HOLD for ${email} (order ${order.id})`);
+        const peptidesManual = meta?.peptidesManualFulfillment === true || meta?.peptidesManualFulfillment === "true";
+        if (peptidesEmailHeld || peptidesManual) {
+          console.log(`[AutoGen] Peptides automation stopped by HOLD/manual workflow for ${email} (order ${order.id})`);
           continue;
-        }
-        if (peptidesEmailHeld) {
-          console.log(`[AutoGen] Peptides delivery HOLD retained while missing report recovery continues for ${email} (order ${order.id})`);
         }
 
         // A linked legacy report is not deliverable until the paid-order source
@@ -16736,6 +16754,7 @@ export async function registerRoutes(
             }
             if (hashGate.persistRefreshed && validation.ok) {
               const updated = await storage.updateBurnoutReportIfHashMatches(
+                order.id,
                 meta.peptidesReportId,
                 hashGate.currentHash,
                 repaired,

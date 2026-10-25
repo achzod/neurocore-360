@@ -7,9 +7,14 @@ export function resolvePeptidesTier(raw: unknown): PeptidesTier {
 
 export type PaidOrderConfirmationDecision = "ACTIVE" | "ACTIVATE_PENDING" | "BLOCK_REFUNDED" | "BLOCK_STATUS";
 
+export function isActivePaidOrderStatus(status: unknown): boolean {
+  const normalized = String(status || "").trim().toLowerCase();
+  return normalized === "paid" || normalized === "partial_refund";
+}
+
 export function classifyPaidOrderConfirmationStatus(status: unknown): PaidOrderConfirmationDecision {
   const normalized = String(status || "").trim().toLowerCase();
-  if (normalized === "paid" || normalized === "partial_refund") return "ACTIVE";
+  if (isActivePaidOrderStatus(normalized)) return "ACTIVE";
   if (normalized === "pending") return "ACTIVATE_PENDING";
   if (normalized === "refunded") return "BLOCK_REFUNDED";
   return "BLOCK_STATUS";

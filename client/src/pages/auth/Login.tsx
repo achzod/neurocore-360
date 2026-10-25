@@ -19,6 +19,7 @@ export default function Login() {
   const params = new URLSearchParams(search);
   const next = params.get("next") || "";
   const prefillEmail = params.get("email") || "";
+  const isAccessRenewal = params.get("reason") === "renew-access";
 
   useEffect(() => {
     if (prefillEmail && !email) setEmail(prefillEmail);
@@ -70,7 +71,9 @@ export default function Login() {
               </div>
               <CardTitle className="text-2xl">Acces a ton espace</CardTitle>
               <p className="mt-2 text-muted-foreground">
-                Entre ton email pour recevoir un lien d'acces unique. Aucun mot de passe requis.
+                {isAccessRenewal
+                  ? "Ton accès et tes achats sont toujours actifs. Reçois un nouveau lien sécurisé pour reprendre exactement où tu étais."
+                  : "Entre ton email pour recevoir un lien d'acces unique. Aucun mot de passe requis."}
               </p>
             </CardHeader>
             <CardContent>
@@ -109,7 +112,7 @@ export default function Login() {
 
               <div className="mt-6 text-center">
                 <p className="text-sm text-muted-foreground">
-                  Lien sécurisé valable 24 heures. Ton compte et tes achats restent disponibles sans limite.
+                  Le lien sécurisé est renouvelable à tout moment. Ton compte, tes achats et tes rapports restent accessibles à vie.
                 </p>
                 <a
                   href="/audit-complet/questionnaire"
