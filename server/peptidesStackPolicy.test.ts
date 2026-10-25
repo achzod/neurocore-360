@@ -80,13 +80,14 @@ test("four non-HPG axes accept one attributable molecule per axis", () => {
 });
 
 test("final retry cannot collapse to two molecules", () => {
-  const source = readFileSync(new URL("./peptidesEngine.ts", import.meta.url), "utf8");
-  assert.doesNotMatch(source, /2 peptides maximum si necessaire/);
-  assert.match(source, /AXIS_COVERAGE_GATE/);
-  assert.match(source, /STACK_REDUNDANCY_GATE/);
-  assert.match(source, /Ne supprime jamais silencieusement un objectif valide/);
-  assert.match(source, /CONDITIONAL_HPG_GATE/);
-  assert.match(source, /SECRETAGOGUE_AXIS_GATE/);
-  assert.match(source, /Enclomiphene et KissPeptin-10 doivent rester dans le stack/);
-  assert.match(source, /Sur un dossier mono-axe, vise une seule molecule par defaut/);
+  const engine = readFileSync(new URL("./peptidesEngine.ts", import.meta.url), "utf8");
+  const generationGate = readFileSync(new URL("./peptidesGenerationGate.ts", import.meta.url), "utf8");
+  assert.doesNotMatch(engine, /2 peptides maximum si necessaire/);
+  assert.match(generationGate, /AXIS_COVERAGE_GATE/);
+  assert.match(generationGate, /STACK_REDUNDANCY_GATE/);
+  assert.match(engine, /Ne supprime jamais silencieusement un objectif valide/);
+  assert.match(engine, /CONDITIONAL_HPG_GATE/);
+  assert.match(engine, /SECRETAGOGUE_AXIS_GATE/);
+  assert.match(engine, /Enclomiphene et KissPeptin-10 doivent rester dans le stack/);
+  assert.match(engine, /Sur un dossier mono-axe, vise une seule molecule par defaut/);
 });

@@ -59,6 +59,11 @@ import {
 } from "./peptidesVialPlanning";
 import { derivePeptidesStackPolicy } from "./peptidesStackPolicy";
 import { calculateReserveTargetMg } from "./peptidesReservePlanning";
+import {
+  findMissingActiveLivePricing,
+  shouldApplyOperationalPostProcessing,
+  validateGeneratedPeptideStack,
+} from "./peptidesGenerationGate";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -2861,6 +2866,7 @@ function syncPriceEstimate(pep: PeptideItem, newQty: number): void {
 
 export function validateVialsMath(report: PeptidesReport): PeptidesReport {
   for (const pep of report.peptides) {
+    if (!shouldApplyOperationalPostProcessing(pep)) continue;
     const derived = deriveVialsForPeptide(pep);
 
     // STRICT alignment: extract qty from BOTH vialsNeeded AND priceEstimate.
@@ -2950,6 +2956,7 @@ export function validateVialsMath(report: PeptidesReport): PeptidesReport {
   }
   const documentedStability = parseDocumentedStabilityConfig();
   for (const pep of report.peptides) {
+    if (!shouldApplyOperationalPostProcessing(pep)) continue;
     if (isEnclomipheneName(pep.name)) continue;
     const plan = planOperationalVials(
       { ...pep, pharmacologicalNeedMg: estimateNeedMg(pep) },
@@ -3179,22 +3186,16 @@ export async function generatePeptidesProtocol(
         throw new Error(`VALIDATION: ${emptySections.length} sections vides ou trop courtes`);
       }
 
-      // CHECK 2: peptides exist and a multi-axis dossier keeps its coverage.
-      if (!report.peptides || report.peptides.length < 2) {
-        throw new Error(`VALIDATION: seulement ${report.peptides?.length ?? 0} peptide(s) (min 2) , probable truncation`);
-      }
-      if (
-        !hasPeptidesHardRedFlag(responses)
-        && report.peptides.length < stackPolicy.minimumMolecules
-      ) {
-        throw new Error(
-          `AXIS_COVERAGE_GATE: ${report.peptides.length} molecule(s) pour ${stackPolicy.goals.length} axe(s), minimum ${stackPolicy.minimumMolecules}. Remplace les molecules non achetables sans supprimer les axes valides.`,
-        );
-      }
-      if (report.peptides.length > stackPolicy.maximumMolecules) {
-        throw new Error(
-          `STACK_REDUNDANCY_GATE: ${report.peptides.length} molecule(s), maximum ${stackPolicy.maximumMolecules}. Retire uniquement les doublons ou ajouts sans objectif attribuable.`,
-        );
+      // CHECK 2: one active molecule is valid for a mono-axis dossier. A
+      // conditional phase stays documented without pretending to activate an
+      // axis or forcing filler products.
+      const initialStackIssues = validateGeneratedPeptideStack(
+        report.peptides,
+        stackPolicy,
+        { skipMinimumCoverage: hasPeptidesHardRedFlag(responses) },
+      );
+      if (initialStackIssues.length > 0) {
+        throw new Error(initialStackIssues[0]);
       }
       const generatedNames = report.peptides.map((peptide) => String(peptide.name || "")).join(" | ");
       const generatedText = JSON.stringify(report);
@@ -3220,13 +3221,6 @@ export async function generatePeptidesProtocol(
         );
       }
 
-      // CHECK 3: each peptide has required fields
-      for (const pep of report.peptides) {
-        if (!pep.name || !pep.dosage || !pep.route) {
-          throw new Error(`VALIDATION: peptide incomplet , name=${pep.name} dosage=${pep.dosage}`);
-        }
-      }
-
       // CHECK 3b: peptides actively scheduled or ordered must exist in the
       // structured array. Narrative-only mentions can legitimately describe
       // past use, rejected options or comparisons and must not trigger a false
@@ -3250,26 +3244,6 @@ export async function generatePeptidesProtocol(
         report.clientName = firstName;
       }
 
-      // CHECK 6: dosages not placeholders/zeros/empty
-      // Reject strings that look like templates (e.g., "[X mcg]", "TBD", "?mcg", "X mg/kg"),
-      // or that have no digit at all, or dosages of 0.
-      const placeholderPattern = /^\s*$|\[|\]|TBD|\bX(?=\s*(?:mcg|µg|ug|mg|ml|kg|unit|unite|semaine|jour|$))\b|XXX|\?\?\?|^\?/i;
-      for (const pep of report.peptides) {
-        const dose = String(pep.dosage || "");
-        if (placeholderPattern.test(dose)) {
-          throw new Error(`VALIDATION: dosage template non rempli pour ${pep.name} , "${dose}"`);
-        }
-        // Must contain at least one digit
-        if (!/\d/.test(dose)) {
-          throw new Error(`VALIDATION: dosage sans valeur numérique pour ${pep.name} , "${dose}"`);
-        }
-        // Extract the first number and ensure it's non-zero
-        const firstNum = parseFloat(dose.replace(",", "."));
-        if (Number.isFinite(firstNum) && firstNum === 0) {
-          throw new Error(`VALIDATION: dosage à zéro pour ${pep.name} , "${dose}"`);
-        }
-      }
-
       // CHECK 7: personnalisation , le prénom du client doit apparaître dans au moins
       // une section. Détecte les sorties "template" où le prompt n'a pas été interpolé.
       const fnLower = firstName.toLowerCase();
@@ -3283,23 +3257,22 @@ export async function generatePeptidesProtocol(
       // Deterministic post-processing is part of the provider evaluation. A
       // model only wins when the exact report that will be persisted passes.
       report = pruneUnintegratedBonusPeptides(report);
-      if (report.peptides.length < 2) {
-        throw new Error(
-          `VALIDATION: seulement ${report.peptides.length} peptide(s) apres retrait des bonus non integres`
-        );
+      const prunedStackIssues = validateGeneratedPeptideStack(
+        report.peptides,
+        stackPolicy,
+        { skipMinimumCoverage: hasPeptidesHardRedFlag(responses) },
+      );
+      if (prunedStackIssues.length > 0) {
+        throw new Error(`POST_PRUNING_${prunedStackIssues[0]}`);
       }
       report = validateAndFixPeptauraUrls(report);
       report = validateVialsMath(report);
       report = await applyLivePeptauraPricing(report, peptauraContext);
       const liveSync = (report as any)._peptauraLiveSync;
-      const pricedPeptides = new Set(
-        (liveSync?.listingSnapshots || [])
-          .map((entry: any) => String(entry.peptide || "").toLowerCase())
-          .filter((name: string) => name && name !== "bac water")
+      const missingLivePricing = findMissingActiveLivePricing(
+        report.peptides,
+        liveSync?.listingSnapshots,
       );
-      const missingLivePricing = (report.peptides || [])
-        .map((pep: any) => String(pep.name || ""))
-        .filter((name: string) => name && !pricedPeptides.has(name.toLowerCase()));
       const liveFailures = liveSync?.failures || [];
       if (liveFailures.length > 0 || missingLivePricing.length > 0) {
         throw new Error(
