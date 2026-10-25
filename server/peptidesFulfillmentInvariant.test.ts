@@ -17,6 +17,47 @@ const validReport = {
   weeklySchedule: "LUNDI AM: protocole structure. ".repeat(4),
   shoppingList: "Liste de courses complete et verifiable. ".repeat(4),
 };
+const expertReviewWithSource = {
+  qualityVersion: "expert-review-v2",
+  peptides: [{
+    name: "Retatrutide",
+    activationStatus: "conditional-inactive",
+    purchaseUrl: "https://www.peptaura.com/product/retatrutide-10mg",
+    reconstitution: "",
+    vialsNeeded: "",
+    priceEstimate: "",
+  }],
+  sections: [
+    ...Array.from({ length: 16 }, (_, index) => ({
+      id: `section-${index + 1}`,
+      content: "analyse personnalisee ".repeat(40),
+    })),
+    {
+      id: "source-access",
+      content: "Acces source Peptaura inclus. Le lien fournisseur est affiche sur la fiche Retatrutide sans activer de protocole personnel.",
+    },
+  ],
+  weeklySchedule: "LUNDI AM: baseline. MARDI PM: faim. MERCREDI PM: entrainement. JEUDI PM: nutrition. VENDREDI PM: recuperation.",
+  shoppingList: "",
+  _customerRemediation: {
+    version: "dalil-full-report-v7",
+    scientificSources: true,
+    operationalProtocol: false,
+    purchaseLinks: true,
+    questionnaireAnswersUsed: 26,
+    sameReportIdRequired: true,
+  },
+  _sourceAccess: {
+    provider: "peptaura",
+    verifiedAt: "2026-10-01T19:55:00.000Z",
+    country: "FR",
+    shippingUrl: "https://www.peptaura.com/shipping?country=FR",
+    productLinks: [{
+      peptide: "Retatrutide",
+      url: "https://www.peptaura.com/product/retatrutide-10mg",
+    }],
+  },
+};
 
 test("flags a paid order that stays without a report", () => {
   assert.equal(evaluatePeptidesFulfillmentInvariant({
@@ -106,31 +147,7 @@ test("accepts a complete single-axis expert review without forcing a filler mole
   const incident = evaluatePeptidesFulfillmentInvariant({
     paidAt: "2026-10-01T18:00:00.000Z",
     reportId: "dalil-report",
-    report: {
-      qualityVersion: "expert-review-v2",
-      peptides: [{
-        name: "Retatrutide",
-        activationStatus: "conditional-inactive",
-        purchaseUrl: "",
-        reconstitution: "",
-        vialsNeeded: "",
-        priceEstimate: "",
-      }],
-      sections: Array.from({ length: 17 }, (_, index) => ({
-        id: `section-${index + 1}`,
-        content: "analyse personnalisee ".repeat(40),
-      })),
-      weeklySchedule: "LUNDI AM: baseline. MARDI PM: faim. MERCREDI PM: entrainement. JEUDI PM: nutrition. VENDREDI PM: recuperation.",
-      shoppingList: "",
-      _customerRemediation: {
-        version: "dalil-full-report-v2",
-        scientificSources: true,
-        operationalProtocol: false,
-        purchaseLinks: false,
-        questionnaireAnswersUsed: 26,
-        sameReportIdRequired: true,
-      },
-    },
+    report: expertReviewWithSource,
     deliveryAccepted: false,
     deliveryHeld: true,
     manualFulfillment: true,
@@ -139,6 +156,37 @@ test("accepts a complete single-axis expert review without forcing a filler mole
     now,
   });
   assert.equal(incident, null);
+});
+
+test("blocks a paid expert review when the promised Peptaura source is missing", () => {
+  for (const report of [
+    {
+      ...expertReviewWithSource,
+      peptides: expertReviewWithSource.peptides.map((peptide) => ({ ...peptide, purchaseUrl: "" })),
+    },
+    {
+      ...expertReviewWithSource,
+      _customerRemediation: { ...expertReviewWithSource._customerRemediation, purchaseLinks: false },
+    },
+    {
+      ...expertReviewWithSource,
+      _sourceAccess: { ...expertReviewWithSource._sourceAccess, productLinks: [] },
+    },
+  ]) {
+    const incident = evaluatePeptidesFulfillmentInvariant({
+      paidAt: "2026-10-01T18:00:00.000Z",
+      reportId: "dalil-report",
+      report,
+      deliveryAccepted: false,
+      deliveryHeld: true,
+      manualFulfillment: true,
+      recipientUnsubscribed: false,
+      scheduledAt: "2026-10-01T19:00:00.000Z",
+      now,
+    });
+    assert.equal(incident?.code, "MANUAL_INCOMPLETE_REPORT");
+    assert.equal(incident?.blocksDelivery, true);
+  }
 });
 
 test("does not let a manual flag hide a missing report", () => {

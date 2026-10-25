@@ -11,6 +11,7 @@ export interface PeptidesFulfillmentInvariantInput {
   report?: {
     qualityVersion?: string | null;
     peptides?: Array<{
+      name?: string | null;
       activationStatus?: string | null;
       purchaseUrl?: string | null;
       reconstitution?: string | null;
@@ -28,6 +29,16 @@ export interface PeptidesFulfillmentInvariantInput {
       purchaseLinks?: boolean | null;
       questionnaireAnswersUsed?: number | null;
       sameReportIdRequired?: boolean | null;
+    } | null;
+    _sourceAccess?: {
+      provider?: string | null;
+      verifiedAt?: string | null;
+      country?: string | null;
+      shippingUrl?: string | null;
+      productLinks?: Array<{
+        peptide?: string | null;
+        url?: string | null;
+      }> | null;
     } | null;
   } | null;
   deliveryAccepted: boolean;
@@ -59,6 +70,12 @@ function dateMs(value: Date | string | null | undefined): number | null {
   return Number.isFinite(timestamp) ? timestamp : null;
 }
 
+function isPeptauraProductUrl(value: unknown): boolean {
+  return /^https:\/\/(?:www\.)?peptaura\.com\/(?:catalog|product)\//i.test(
+    String(value || "").trim(),
+  );
+}
+
 function isCompletePaidReport(
   report: PeptidesFulfillmentInvariantInput["report"],
 ): boolean {
@@ -87,20 +104,44 @@ function isCompletePaidReport(
 
   if (qualityVersion === "expert-review-v2") {
     const remediation = report._customerRemediation;
+    const sourceAccess = report._sourceAccess;
     const reviewPeptidesAreNonOperational = peptides.every((peptide) =>
       String(peptide?.activationStatus || "") === "conditional-inactive"
-      && String(peptide?.purchaseUrl || "").trim() === ""
+      && isPeptauraProductUrl(peptide?.purchaseUrl)
       && String(peptide?.reconstitution || "").trim() === ""
       && String(peptide?.vialsNeeded || "").trim() === ""
       && String(peptide?.priceEstimate || "").trim() === ""
     );
+    const sourceAccessSection = sections.find((section) =>
+      ["source-access", "guide-fournisseur"].includes(
+        String(section?.id || "").trim().toLowerCase(),
+      )
+    );
+    const sourceAccessText = String(sourceAccessSection?.content || "");
+    const liveSourceNames = new Set(
+      (sourceAccess?.productLinks || [])
+        .filter((link) => isPeptauraProductUrl(link?.url))
+        .map((link) => String(link?.peptide || "").trim().toLowerCase())
+        .filter(Boolean),
+    );
+    const everyPeptideHasLiveSource = peptides.every((peptide) =>
+      liveSourceNames.has(String(peptide?.name || "").trim().toLowerCase())
+    );
     return String(remediation?.version || "").trim().length >= 3
       && remediation?.scientificSources === true
       && remediation?.operationalProtocol === false
-      && remediation?.purchaseLinks === false
+      && remediation?.purchaseLinks === true
       && Number(remediation?.questionnaireAnswersUsed || 0) >= 1
       && remediation?.sameReportIdRequired === true
       && reviewPeptidesAreNonOperational
+      && /\bPeptaura\b/i.test(sourceAccessText)
+      && /\bsource\b/i.test(sourceAccessText)
+      && String(sourceAccess?.provider || "").trim().toLowerCase() === "peptaura"
+      && Boolean(sourceAccess?.verifiedAt)
+      && /^https:\/\/(?:www\.)?peptaura\.com\/shipping\?country=/i.test(
+        String(sourceAccess?.shippingUrl || "").trim(),
+      )
+      && everyPeptideHasLiveSource
       && String(report.shoppingList || "").trim() === "";
   }
 
