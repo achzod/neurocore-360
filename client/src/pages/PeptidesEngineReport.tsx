@@ -707,7 +707,7 @@ export default function PeptidesEngineReport() {
                 {pep.purchaseUrl && (
                   <a href={pep.purchaseUrl} target="_blank" rel="noopener noreferrer"
                      className="inline-flex items-center gap-1.5 text-xs font-mono px-4 py-2 rounded-lg border border-amber-500/30 hover:bg-amber-500/10 transition-colors" style={{ color: AMBER }}>
-                    Accéder à la source Peptaura <ExternalLink className="w-3 h-3" />
+                    Accéder à ta source privée <ExternalLink className="w-3 h-3" />
                   </a>
                 )}
               </div>
