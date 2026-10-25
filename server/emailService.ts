@@ -213,7 +213,12 @@ const normalizeSendPulseText = (value: unknown): string =>
     .trim();
 
 const sendPulseRecordId = (record: SendPulseLiveRecord): string | undefined => {
-  const raw = record.id ?? record.email_id ?? record.message_id ?? record.task_id;
+  const raw = record.id
+    ?? record.email_id
+    ?? record.message_id
+    ?? record.task_id
+    ?? record.providerMessageId
+    ?? record.provider_message_id;
   return raw ? String(raw).trim() : undefined;
 };
 
@@ -331,13 +336,13 @@ async function findRecentSendPulseLiveRecord(
   subject: string,
   sentStartedAt: Date,
   requestTimeoutMs?: number,
+  attemptDelays: number[] = [800, 1800, 3200],
 ): Promise<SendPulseLiveRecord | null> {
   const normalizedRecipient = recipientEmail.trim().toLowerCase();
   const normalizedSubject = normalizeSendPulseText(subject);
   if (!normalizedRecipient || !normalizedSubject) return null;
 
   const fromDate = new Date(sentStartedAt.getTime() - 10 * 60 * 1000).toISOString();
-  const attemptDelays = [800, 1800, 3200];
 
   for (let attempt = 0; attempt < attemptDelays.length; attempt++) {
     await sleep(attemptDelays[attempt]);
@@ -356,7 +361,19 @@ async function findRecentSendPulseLiveRecord(
     const data = await response.json();
     const records: SendPulseLiveRecord[] = Array.isArray(data) ? data : (data.data || []);
     const listMatch = chooseRecentSendPulseRecord(records, normalizedRecipient, normalizedSubject, sentStartedAt);
-    if (listMatch) return listMatch;
+    if (listMatch) {
+      if (sendPulseLiveSmtpCode(listMatch) !== null) return listMatch;
+
+      // The list endpoint often omits smtp_answer_code. A matching list row is
+      // identity evidence only, never delivery evidence: enrich that exact row
+      // through /smtp/emails/info before classifying it.
+      const [enrichedMatch] = await fetchSendPulseLiveRecordDetails(
+        token,
+        [listMatch],
+        requestTimeoutMs,
+      ).catch(() => [listMatch]);
+      return enrichedMatch || listMatch;
+    }
 
     const detailedRecords = await fetchSendPulseLiveRecordDetails(token, records, requestTimeoutMs).catch(() => records);
     const detailMatch = chooseRecentSendPulseRecord(detailedRecords, normalizedRecipient, normalizedSubject, sentStartedAt);
@@ -374,8 +391,9 @@ export type SendPulseDeliveryEvidence = {
 };
 
 function smtpDeliveryCode(record: SendPulseLiveRecord | null | undefined): number | null {
-  const code = Number(record?.smtp_answer_code);
-  return Number.isFinite(code) && code > 0 ? code : null;
+  if (!record) return null;
+  const code = sendPulseLiveSmtpCode(record);
+  return code !== null && code > 0 ? code : null;
 }
 
 function hasPositiveSmtpDelivery(record: SendPulseLiveRecord | null | undefined): boolean {
@@ -405,6 +423,8 @@ export async function reconcileSendPulseDeliveryEvidence(input: {
   startedAt: Date;
   taskId?: string | null;
   requestTimeoutMs?: number;
+  /** Test/operations override; production reconciliation keeps the default backoff. */
+  attemptDelaysMs?: number[];
 }): Promise<SendPulseDeliveryEvidence> {
   const token = await getAccessToken(input.requestTimeoutMs);
   let record: SendPulseLiveRecord | null = null;
@@ -413,7 +433,7 @@ export async function reconcileSendPulseDeliveryEvidence(input: {
       token,
       [{ id: input.taskId }],
       input.requestTimeoutMs,
-    );
+    ).catch(() => []);
     record = details.find((candidate) =>
       sendPulseRecordId(candidate) === input.taskId
       && sendPulseLiveRecordMatches(candidate, input.recipientEmail, input.subject)
@@ -426,6 +446,7 @@ export async function reconcileSendPulseDeliveryEvidence(input: {
       input.subject,
       input.startedAt,
       input.requestTimeoutMs,
+      input.attemptDelaysMs,
     );
   }
   return classifySendPulseDeliveryRecord(record, input.taskId || null);
@@ -3074,7 +3095,12 @@ export const evaluateBloodDeliveryQuality = (
 
 function extractSendPulseDeliveryId(payload: unknown): string | undefined {
   if (!payload || typeof payload !== "object") return undefined;
-  const candidate = (payload as any).id || (payload as any).message?.id || (payload as any).data?.id;
+  const candidate = (payload as any).id
+    || (payload as any).providerMessageId
+    || (payload as any).provider_message_id
+    || (payload as any).message?.id
+    || (payload as any).data?.id
+    || (payload as any).data?.providerMessageId;
   if (candidate) return String(candidate);
   try {
     const raw = JSON.stringify(payload);

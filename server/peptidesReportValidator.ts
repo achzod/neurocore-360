@@ -560,6 +560,49 @@ export function findOperationalPeptidesMissingFromArray(
     .map(({ key }) => key);
 }
 
+export function findConditionalInactiveOperationalMentions(
+  report: Pick<
+    PeptidesReport,
+    "peptides" | "sections" | "weeklySchedule" | "shoppingList"
+  >
+): string[] {
+  const issues: string[] = [];
+  const operationalSignal =
+    /\b(?:dose|dosage|inject|injection|reconstit|seringue|vial|flacon|commande|commander|acheter|achat|matin|soir|coucher|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|semaine\s+\d+)\b|\b\d+(?:[.,]\d+)?\s*(?:mcg|ug|µg|mg|ml|iu|ui|unit[ée]s?)\b|(?:x|×)\s*\d+\b/i;
+
+  for (const peptide of report.peptides || []) {
+    if (!isConditionalInactivePeptide(peptide)) continue;
+    const name = String(peptide.name || "").trim();
+    if (!name) continue;
+    const aliases = aliasesForStructuredPeptide(name);
+    for (const [location, value] of [
+      ["weeklySchedule", report.weeklySchedule],
+      ["shoppingList", report.shoppingList],
+    ] as const) {
+      if (containsOperationalAlias(String(value || ""), aliases)) {
+        issues.push(`${name}: mention interdite dans ${location}`);
+      }
+    }
+
+    for (const section of report.sections || []) {
+      const identity = `${section.id || ""} ${section.title || ""}`;
+      const inherentlyOperational =
+        /protocole|calendrier|semaine type|shopping|commande|reconstitution|injection|checklist/i.test(identity);
+      const segments = String(section.content || "")
+        .split(/[\n|;]+|(?<=[.!?])\s+/)
+        .map((segment) => segment.trim())
+        .filter(Boolean);
+      if (segments.some((segment) =>
+        containsOperationalAlias(segment, aliases)
+        && (inherentlyOperational || operationalSignal.test(segment))
+      )) {
+        issues.push(`${name}: mention operationnelle interdite dans la section ${section.id || section.title || "?"}`);
+      }
+    }
+  }
+  return issues;
+}
+
 function extractFirstNumber(text: string | undefined): number | null {
   if (!text) return null;
   const m = text.match(/(\d+(?:[.,]\d+)?)/);
@@ -821,7 +864,11 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
   // accepted severe under-orders such as 20 mg for a real 79 mg cycle.
   const reverseProgressive = Array.from(
     dose.matchAll(/semaines?\s*(\d+)(?:\s*(?:à|a|-)\s*(\d+))?\s*(?:à|a|:)\s*(\d+(?:[.,]\d+)?)\s*(mg|mcg|µg|ug)\b/gi)
-  );
+  ).filter((match) => {
+    const start = parseInt(match[1], 10);
+    const end = match[2] ? parseInt(match[2], 10) : start;
+    return start >= 1 && end >= start;
+  });
   if (reverseProgressive.length >= 2 && weeks > 0) {
     const dosesByWeek = new Map<number, number>();
     for (const match of reverseProgressive) {
@@ -836,11 +883,13 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
     }
     const definedWeeks = [...dosesByWeek.keys()].sort((a, b) => a - b);
     if (definedWeeks.length > 0) {
-      let lastDose = dosesByWeek.get(definedWeeks[0]) || 0;
+      let lastDose: number | null = null;
       let totalMg = 0;
       for (let week = 1; week <= weeks; week++) {
-        if (dosesByWeek.has(week)) lastDose = dosesByWeek.get(week) || lastDose;
-        totalMg += lastDose;
+        if (dosesByWeek.has(week)) lastDose = dosesByWeek.get(week)!;
+        // Do not retro-propagate the first declared plateau into earlier weeks.
+        // Once treatment starts, undeclared holes retain the previous plateau.
+        if (lastDose != null) totalMg += lastDose;
       }
       totalMg *= injectionsPerWeekTit;
       if (totalMg > 0) return totalMg;
@@ -924,46 +973,68 @@ export function validateU100Reconstitution(value: string | undefined): string[] 
   const raw = String(value || "").replace(/(\d),(\d)/g, "$1.$2");
   if (!raw || /aucune reconstitution|sans reconstitution|solution liquide/i.test(raw)) return [];
 
-  const vial = raw.match(/\bvial(?:\s+de)?\s+(\d+(?:\.\d+)?)\s*mg\b/i);
-  const solvent = raw.match(/\+\s*(\d+(?:\.\d+)?)\s*ml\b/i);
-  const dose = raw.match(/\b(?:pour|dose(?:\s+de)?|administration(?:\s+de)?)\s+(\d+(?:\.\d+)?)\s*(mg|mcg|µg|ug)\b/i);
-  const units = raw.match(/(?:=|→|correspond(?:ent|ance)?\s+a|soit)?\s*(\d+(?:\.\d+)?)\s*unit[ée]s?(?:\s+U-?100)?\b/i);
-  const statedMl = raw.match(/\bsoit\s+(\d+(?:\.\d+)?)\s*ml\b/i);
-
-  // A complete injectable card must expose all terms. Other validator rules
-  // still handle explicitly conditional calculations and non-injectables.
-  if (!vial || !solvent || !dose || !units || !statedMl) return [];
-
-  const vialMg = Number(vial[1]);
-  const solventMl = Number(solvent[1]);
-  const doseMg = Number(dose[1]) / (/^mg$/i.test(dose[2]) ? 1 : 1000);
-  const statedUnits = Number(units[1]);
-  const statedVolumeMl = Number(statedMl[1]);
-  if (![vialMg, solventMl, doseMg, statedUnits, statedVolumeMl].every(Number.isFinite)
-    || vialMg <= 0 || solventMl <= 0 || doseMg <= 0) {
-    return ["calcul U-100 illisible ou non positif"];
-  }
-
-  const expectedMl = doseMg / (vialMg / solventMl);
-  const expectedUnits = expectedMl * 100;
   const issues: string[] = [];
-  if (solventMl > 3 + 1e-9) {
-    issues.push(`volume de solvant ${solventMl} ml superieur au maximum 3 ml`);
-  }
-  if (Math.abs(statedUnits - expectedUnits) > 1) {
-    issues.push(
-      `conversion U-100 incoherente: ${statedUnits} unites affichees vs ${expectedUnits.toFixed(1)} calculees`,
-    );
-  }
-  if (Math.abs(statedVolumeMl - expectedMl) > 0.011) {
-    issues.push(
-      `volume injecte incoherent: ${statedVolumeMl.toFixed(2)} ml affiche vs ${expectedMl.toFixed(2)} ml calcule`,
-    );
-  }
-  if (Math.abs(statedUnits / 100 - statedVolumeMl) > 0.011) {
-    issues.push(
-      `equivalence seringue incoherente: ${statedUnits} unites ne correspondent pas a ${statedVolumeMl.toFixed(2)} ml`,
-    );
+  const vialMatches = [...raw.matchAll(/\bvial(?:\s+de)?\s+(\d+(?:\.\d+)?)\s*mg\b/gi)];
+  for (let vialIndex = 0; vialIndex < vialMatches.length; vialIndex++) {
+    const vial = vialMatches[vialIndex];
+    const segmentEnd = vialMatches[vialIndex + 1]?.index ?? raw.length;
+    const segment = raw.slice(vial.index!, segmentEnd);
+    const solvent = segment.match(/\+\s*(\d+(?:\.\d+)?)\s*ml\b/i);
+    if (!solvent) continue;
+
+    const vialMg = Number(vial[1]);
+    const solventMl = Number(solvent[1]);
+    if (solventMl > 3 + 1e-9) {
+      issues.push(`volume de solvant ${solventMl} ml superieur au maximum 3 ml`);
+    }
+
+    // Validate every complete dose -> units -> ml conversion in this vial
+    // context, not merely the first polished example in the text.
+    const forwardConversions = [...segment.matchAll(
+      /\b(?:pour|dose(?:\s+de)?|administration(?:\s+de)?)\s+(\d+(?:\.\d+)?)\s*(mg|mcg|µg|ug)\b[\s\S]{0,180}?(?:=|→|correspond(?:ent|ance)?\s+a|soit)?\s*(\d+(?:\.\d+)?)\s*unit[ée]s?(?:\s+U-?100)?[\s\S]{0,80}?(?:\bsoit\s+|\(\s*)?(\d+(?:\.\d+)?)\s*ml\b/gi,
+    )].map((match) => ({
+      dose: Number(match[1]),
+      doseUnit: match[2],
+      units: Number(match[3]),
+      volumeMl: Number(match[4]),
+    }));
+    const reverseConversions = [...segment.matchAll(
+      /(\d+(?:\.\d+)?)\s*unit[ée]s?(?:\s+U-?100)?[\s\S]{0,80}?(?:\bsoit\s+|\(\s*)?(\d+(?:\.\d+)?)\s*ml\b\)?\s*pour\s+(\d+(?:\.\d+)?)\s*(mg|mcg|µg|ug)\b/gi,
+    )].map((match) => ({
+      dose: Number(match[3]),
+      doseUnit: match[4],
+      units: Number(match[1]),
+      volumeMl: Number(match[2]),
+    }));
+    const conversions = [...forwardConversions, ...reverseConversions];
+    const declaredDoseCount = [...segment.matchAll(
+      /\b(?:pour|dose(?:\s+de)?|administration(?:\s+de)?)\s+\d+(?:\.\d+)?\s*(?:mg|mcg|µg|ug)\b/gi,
+    )].length;
+    if (declaredDoseCount > conversions.length) {
+      issues.push(`conversion U-100 incomplete: ${declaredDoseCount - conversions.length} dose(s) sans triplet dose/unites/ml verifiable`);
+    }
+    for (const conversion of conversions) {
+      const doseMg = conversion.dose / (/^mg$/i.test(conversion.doseUnit) ? 1 : 1000);
+      const statedUnits = conversion.units;
+      const statedVolumeMl = conversion.volumeMl;
+      if (![vialMg, solventMl, doseMg, statedUnits, statedVolumeMl].every(Number.isFinite)
+        || vialMg <= 0 || solventMl <= 0 || doseMg <= 0) {
+        issues.push("calcul U-100 illisible ou non positif");
+        continue;
+      }
+
+      const expectedMl = doseMg / (vialMg / solventMl);
+      const expectedUnits = expectedMl * 100;
+      if (Math.abs(statedUnits - expectedUnits) > 1) {
+        issues.push(`conversion U-100 incoherente: ${statedUnits} unites affichees vs ${expectedUnits.toFixed(1)} calculees`);
+      }
+      if (Math.abs(statedVolumeMl - expectedMl) > 0.011) {
+        issues.push(`volume injecte incoherent: ${statedVolumeMl.toFixed(2)} ml affiche vs ${expectedMl.toFixed(2)} ml calcule`);
+      }
+      if (Math.abs(statedUnits / 100 - statedVolumeMl) > 0.011) {
+        issues.push(`equivalence seringue incoherente: ${statedUnits} unites ne correspondent pas a ${statedVolumeMl.toFixed(2)} ml`);
+      }
+    }
   }
   return issues;
 }
@@ -1269,6 +1340,10 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
     report.shoppingList || "",
     ...sections.map((section) => section.content || ""),
   ].join("\n");
+  const conditionalOperationalMentions = findConditionalInactiveOperationalMentions(report);
+  if (conditionalOperationalMentions.length > 0) {
+    errors.push(`phase conditionnelle exposee operationnellement: ${conditionalOperationalMentions.join(" | ")}`);
+  }
 
   if (/(?:ventre|cuisse|flanc)\s+(?:droit|droite|gauche)?\s*\d+(?:[,.]\d+)?\s*unit[ée]s?\b/i.test(operationalText)) {
     errors.push("volume injectable orphelin apres un site anatomique");

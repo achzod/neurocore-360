@@ -79,6 +79,7 @@ import {
   buildPeptidesCoachingDeductionBlock,
 } from "./cta";
 import { BLOOD_ANALYSIS_PURCHASE_CREDITS, clarifyBloodPurchaseEmail } from "./bloodOffer";
+import { peptidesBloodCreditsForTier, resolvePeptidesTier } from "./peptidesEntitlements";
 import { buildPaidOrderNotificationPlan } from "./paidOrderNotifications";
 import { buildPublicReviewCheckResponse, toPublicReview } from "./reviewPublicResponse";
 
@@ -5252,16 +5253,6 @@ export async function registerRoutes(
     tracked: 39900,  // 399€ , + 2 blood + 90j support + 1 reecriture
   };
 
-  function resolvePeptidesTier(raw: unknown): "solo" | "coached" | "tracked" {
-    if (raw === "solo" || raw === "coached" || raw === "tracked") return raw;
-    return "coached"; // default sweet spot if missing/invalid
-  }
-
-  function peptidesBloodCreditsForTier(raw: unknown): number {
-    const tier = resolvePeptidesTier(raw);
-    return tier === "tracked" ? 2 : tier === "coached" ? 1 : 0;
-  }
-
   function sealedPeptidesResponsesHash(responses: unknown): string {
     return hashPeptidesManualMutationPayload(
       responses && typeof responses === "object" && !Array.isArray(responses)
@@ -5871,7 +5862,24 @@ export async function registerRoutes(
   }> {
     const order = await storage.getOrder(orderId).catch(() => null);
     if (!order) return { status: "not_found", orderId };
-    if (order.status === "paid") return { status: "already_paid", orderId };
+    if (order.status === "paid") {
+      if (order.productType === "PEPTIDES_ENGINE") {
+        await grantBloodCreditsForOrder(
+          order.id,
+          order.email,
+          peptidesBloodCreditsForTier((order.metadata as any)?.peptidesTier),
+          "peptidesCreditsGranted",
+        );
+      } else if (order.productType === "BLOOD_ANALYSIS") {
+        await grantBloodCreditsForOrder(
+          order.id,
+          order.email,
+          BLOOD_ANALYSIS_PURCHASE_CREDITS,
+          "bloodCreditGranted",
+        );
+      }
+      return { status: "already_paid", orderId };
+    }
     const paypalOrderId = (order as any).paypalOrderId;
     if (!paypalOrderId) return { status: "no_paypal_id", orderId };
 
@@ -5981,6 +5989,40 @@ export async function registerRoutes(
     return { scanned: candidates.length, reconciled, stillPending, errors };
   }
 
+  async function repairMissingPaidOrderCredits(): Promise<{ repaired: string[]; errors: Array<{ orderId: string; error: string }> }> {
+    const repaired: string[] = [];
+    const errors: Array<{ orderId: string; error: string }> = [];
+    const pageSize = 250;
+    let offset = 0;
+    let total = 0;
+    do {
+      const page = await storage.getAllOrders({ status: "paid", limit: pageSize, offset });
+      total = page.total;
+      for (const order of page.orders) {
+        const metadata = ((order.metadata as any) || {}) as Record<string, any>;
+        let creditCount: number | null = null;
+        let flag: "bloodCreditGranted" | "peptidesCreditsGranted" | null = null;
+        if (order.productType === "PEPTIDES_ENGINE" && metadata.peptidesCreditsGranted !== true) {
+          creditCount = peptidesBloodCreditsForTier(metadata.peptidesTier);
+          flag = "peptidesCreditsGranted";
+        } else if (order.productType === "BLOOD_ANALYSIS" && metadata.bloodCreditGranted !== true) {
+          creditCount = BLOOD_ANALYSIS_PURCHASE_CREDITS;
+          flag = "bloodCreditGranted";
+        }
+        if (creditCount === null || !flag) continue;
+        try {
+          await grantBloodCreditsForOrder(order.id, order.email, creditCount, flag);
+          repaired.push(order.id);
+        } catch (error: any) {
+          errors.push({ orderId: order.id, error: error?.message || String(error) });
+        }
+      }
+      offset += page.orders.length;
+      if (page.orders.length === 0) break;
+    } while (offset < total);
+    return { repaired, errors };
+  }
+
   app.post("/api/admin/paypal/reconcile-pending", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
@@ -6018,6 +6060,10 @@ export async function registerRoutes(
         return;
       }
       await reconcileAllPendingPaypalOrders(168);
+      const creditRepair = await repairMissingPaidOrderCredits();
+      if (creditRepair.repaired.length || creditRepair.errors.length) {
+        console.log(`[Paid Credit Repair] ${creditRepair.repaired.length} repaired, ${creditRepair.errors.length} errors`);
+      }
     } catch (err) {
       console.error("[PayPal Reconcile Cron] Cycle error:", err);
     } finally {
@@ -6651,8 +6697,25 @@ export async function registerRoutes(
         return;
       }
 
-      // Idempotency: already processed (works for ALL product types including BLOOD_ANALYSIS)
+      // Idempotency also repairs a crash that happened after status=paid but
+      // before the transactional credit grant. grantBloodCreditsForOrder is
+      // itself order-scoped and idempotent.
       if (existingOrder.status === "paid") {
+        if (existingOrder.productType === "PEPTIDES_ENGINE") {
+          await grantBloodCreditsForOrder(
+            existingOrder.id,
+            existingOrder.email,
+            peptidesBloodCreditsForTier((existingOrder.metadata as any)?.peptidesTier),
+            "peptidesCreditsGranted",
+          );
+        } else if (existingOrder.productType === "BLOOD_ANALYSIS") {
+          await grantBloodCreditsForOrder(
+            existingOrder.id,
+            existingOrder.email,
+            BLOOD_ANALYSIS_PURCHASE_CREDITS,
+            "bloodCreditGranted",
+          );
+        }
         if (existingOrder.auditId) {
           res.json({ success: true, auditId: existingOrder.auditId, auditType: existingOrder.productType, existing: true });
         } else {
@@ -7828,6 +7891,9 @@ export async function registerRoutes(
         responses: (order.metadata as any)?.peptidesResponses || null,
       })) return;
       const linkedReportId = String((order.metadata as any)?.peptidesReportId || "");
+      let approvedHash = "";
+      let currentHash = "";
+      let releaseVerdict = "";
       if (!hold) {
         const linkedReport = linkedReportId
           ? await storage.getBurnoutReport(linkedReportId)
@@ -7838,9 +7904,9 @@ export async function registerRoutes(
         }
         const { validatePeptidesReport } = await import("./peptidesReportValidator");
         const validation = validatePeptidesReport(linkedReport.report as any);
-        const approvedHash = String((order.metadata as any)?.peptidesApprovedReportSha256 || "");
-        const currentHash = hashPeptidesReport(linkedReport.report);
-        const releaseVerdict = String((order.metadata as any)?.peptidesReleaseAuditVerdict || "");
+        approvedHash = String((order.metadata as any)?.peptidesApprovedReportSha256 || "");
+        currentHash = hashPeptidesReport(linkedReport.report);
+        releaseVerdict = String((order.metadata as any)?.peptidesReleaseAuditVerdict || "");
         if (!validation.ok
           || validation.warnings.length > 0
           || approvedHash !== currentHash
@@ -7856,17 +7922,25 @@ export async function registerRoutes(
           return;
         }
       }
-      const updated = await storage.setOrderMetadataIfPeptidesReportMatches(
-        orderId,
-        linkedReportId || null,
-        {
-          peptidesEmailHold: hold,
-          peptidesEmailHoldReason: hold ? String(reason || "verification_manuelle").slice(0, 240) : "",
-          peptidesManualFulfillment: hold,
-          peptidesManualFulfillmentState: hold ? "MANUAL_HOLD" : "RELEASED_AFTER_STRICT_GATE",
-          peptidesHoldUpdatedAt: new Date().toISOString(),
-        },
-      );
+      const updated = hold
+        ? await storage.setOrderMetadataIfPeptidesReportMatches(
+            orderId,
+            linkedReportId || null,
+            {
+              peptidesEmailHold: true,
+              peptidesEmailHoldReason: String(reason || "verification_manuelle").slice(0, 240),
+              peptidesManualFulfillment: true,
+              peptidesManualFulfillmentState: "MANUAL_HOLD",
+              peptidesHoldUpdatedAt: new Date().toISOString(),
+            },
+          )
+        : await storage.releasePeptidesDeliveryHoldIfApproved({
+            orderId,
+            reportId: linkedReportId,
+            expectedCurrentReportSha256: currentHash,
+            expectedApprovedReportSha256: approvedHash,
+            expectedReleaseVerdict: releaseVerdict,
+          });
       if (!updated) {
         res.status(409).json({ success: false, error: "ORDER_LINK_CHANGED_DURING_HOLD_MUTATION" });
         return;
@@ -16368,24 +16442,28 @@ export async function registerRoutes(
     try {
       const peptidesOrders: any[] = [];
       const pageSize = 250;
-      let offset = 0;
       let total = 0;
-      do {
-        const page = await storage.getAllOrders({
-          limit: pageSize,
-          offset,
-          productType: "PEPTIDES_ENGINE",
-          status: "paid",
-        });
-        total = page.total;
-        peptidesOrders.push(...(page.orders || []).filter((order: any) => Boolean(order.paidAt)));
-        offset += page.orders.length;
-        if (page.orders.length === 0) break;
-      } while (offset < total);
+      for (const activeStatus of ["paid", "partial_refund"] as const) {
+        let offset = 0;
+        let statusTotal = 0;
+        do {
+          const page = await storage.getAllOrders({
+            limit: pageSize,
+            offset,
+            productType: "PEPTIDES_ENGINE",
+            status: activeStatus,
+          });
+          statusTotal = page.total;
+          total += offset === 0 ? page.total : 0;
+          peptidesOrders.push(...(page.orders || []).filter((order: any) => Boolean(order.paidAt)));
+          offset += page.orders.length;
+          if (page.orders.length === 0) break;
+        } while (offset < statusTotal);
+      }
       const missing = peptidesOrders.filter((o: any) => !(o.metadata as any)?.peptidesReportId && !o.email?.includes("test") && !o.email?.includes("debug"));
       autoGenCycleCount++;
       autoGenLastRun = new Date().toISOString();
-      console.log(`[AutoGen] Cycle #${autoGenCycleCount}: ${peptidesOrders.length}/${total} paid Peptides orders scanned, ${missing.length} missing reports`);
+      console.log(`[AutoGen] Cycle #${autoGenCycleCount}: ${peptidesOrders.length}/${total} active Peptides orders scanned, ${missing.length} missing reports`);
       const now = new Date();
       const peptidesCircuitConfig = getPeptidesGenerationCircuitConfig();
 
@@ -16393,17 +16471,38 @@ export async function registerRoutes(
         // The full scan can take several minutes. Re-read each order before
         // evaluating invariants so a report linked during the cycle cannot
         // trigger a stale MISSING_REPORT alert or a duplicate generation.
-        const order = await storage.getOrder(snapshotOrder.id).catch((error) => {
+        let order = await storage.getOrder(snapshotOrder.id).catch((error) => {
           console.error(`[AutoGen] Fresh order lookup failed for ${snapshotOrder.id}:`, error);
           return undefined;
         });
-        if (!order || order.productType !== "PEPTIDES_ENGINE" || order.status !== "paid" || !order.paidAt) continue;
-        const meta = order.metadata as any;
+        if (!order || order.productType !== "PEPTIDES_ENGINE"
+          || !["paid", "partial_refund"].includes(String(order.status)) || !order.paidAt) continue;
+        let meta = order.metadata as any;
         const email = order.email;
         if (!email || email.includes("test") || email.includes("debug")) continue;
         if (meta?.amountMismatch === true || meta?.peptidesManualFulfillmentState === "PAYMENT_REVIEW_REQUIRED") {
           console.error(`[AutoGen] Payment review blocks generation and delivery for ${email} (${order.id})`);
           continue;
+        }
+
+        // Before any invariant or recovery send, convert historical
+        // email_tracking evidence into the new report-scoped terminal state.
+        // Ambiguous recipient-only evidence is held for review, never resent.
+        if (meta?.peptidesReportId && !hasAcceptedPeptidesDeliveryForReport(order, String(meta.peptidesReportId))) {
+          const legacyDelivery = await storage.backfillAcceptedPeptidesDeliveryFromTracking(
+            order.id,
+            String(meta.peptidesReportId),
+          );
+          if (legacyDelivery !== "NONE") {
+            const refreshedAfterBackfill = await storage.getOrder(order.id);
+            if (!refreshedAfterBackfill) continue;
+            order = refreshedAfterBackfill;
+            meta = order.metadata as any;
+          }
+          if (legacyDelivery === "AMBIGUOUS") {
+            console.error(`[AutoGen] Legacy delivery evidence ambiguous for ${email}; HOLD retained, no provider call`);
+            continue;
+          }
         }
 
         // Evaluate paid fulfillment before honoring a pre-existing hold: legacy
@@ -16725,10 +16824,19 @@ export async function registerRoutes(
         }
         const trustedSource = validateTrustedPeptidesOrderSource(freshOrder);
         if (!trustedSource.ok || !trustedSource.responses) {
+          const legacySealRequired = trustedSource.errors.some((error) =>
+            error === "SOURCE_HASH_MISSING" || error.startsWith("PROFILE_CONFIRMATION:"));
           await persistPeptidesFulfillmentIncident(order, {
             code: "UNVERIFIED_SOURCE_PROFILE",
             blocksDelivery: true,
-            detail: `Source questionnaire non scellee: ${trustedSource.errors.join(" | ")}`,
+            detail: `Source questionnaire non scellee: ${trustedSource.errors.join(" | ")}. Recovery: /api/admin/peptides-inject-responses via preview/confirmation verrouillee, avec confirmation de profil explicite.`,
+          }, {
+            peptidesEmailHold: true,
+            peptidesEmailHoldReason: legacySealRequired
+              ? "LEGACY_SOURCE_REQUIRES_MANUAL_SEAL"
+              : "UNVERIFIED_SOURCE_PROFILE",
+            peptidesManualFulfillment: true,
+            peptidesManualFulfillmentState: "SOURCE_RECONCILIATION_REQUIRED",
           }).catch(() => false);
           console.error(`[AutoGen] Untrusted questionnaire source for ${email}: ${trustedSource.errors.join(" | ")}`);
           continue;

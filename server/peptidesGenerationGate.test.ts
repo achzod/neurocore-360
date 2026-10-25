@@ -7,10 +7,11 @@ import {
 } from "./peptidesGenerationGate";
 import { derivePeptidesStackPolicy } from "./peptidesStackPolicy";
 
-const active = (name = "BPC-157") => ({
+const active = (name = "BPC-157", purpose = "Recuperation tendineuse") => ({
   name,
   dosage: "250 mcg par jour",
   route: "Sous-cutanee",
+  purpose,
   activationStatus: "active" as const,
 });
 
@@ -46,6 +47,40 @@ test("the gate still enforces attributable multi-axis coverage", () => {
       issue.startsWith("AXIS_COVERAGE_GATE:"),
     ),
   );
+});
+
+test("multi-axis coverage requires distinct active and attributable molecules", () => {
+  const policy = derivePeptidesStackPolicy({
+    pep_primary_goal: "fatloss",
+    pep_secondary_goals: ["recovery", "skin-hair"],
+  });
+  assert.deepEqual(validateGeneratedPeptideStack([
+    active("Retatrutide", "Perte de graisse et appetit"),
+    active("BPC-157", "Recuperation tendineuse"),
+    active("GHK-Cu", "Peau et cheveux"),
+  ], policy), []);
+
+  const duplicateCoverage = validateGeneratedPeptideStack([
+    active("Retatrutide", "Perte de graisse et appetit"),
+    active("Retatrutide", "Recuperation tendineuse"),
+    active("GHK-Cu", "Peau et cheveux"),
+  ], policy);
+  assert.ok(duplicateCoverage.some((issue) => issue.startsWith("AXIS_COVERAGE_GATE:")));
+  assert.ok(duplicateCoverage.some((issue) => issue.startsWith("AXIS_ATTRIBUTION_GATE:")));
+});
+
+test("conditional cards never satisfy the active minimum", () => {
+  const policy = derivePeptidesStackPolicy({
+    pep_primary_goal: "fatloss",
+    pep_secondary_goals: ["recovery", "skin-hair"],
+  });
+  const issues = validateGeneratedPeptideStack([
+    active("Retatrutide", "Perte de graisse et appetit"),
+    active("BPC-157", "Recuperation tendineuse"),
+    conditional("GHK-Cu"),
+  ], policy);
+  assert.ok(issues.some((issue) => issue.startsWith("AXIS_COVERAGE_GATE:")));
+  assert.ok(issues.some((issue) => issue.startsWith("AXIS_ATTRIBUTION_GATE:")));
 });
 
 test("live pricing is mandatory only for active molecules", () => {
