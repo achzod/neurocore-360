@@ -9,13 +9,26 @@ import {
 const now = new Date("2026-10-01T20:00:00.000Z");
 const validReport = {
   qualityVersion: "expert-standard-v1",
-  peptides: [{ name: "A" }, { name: "B" }],
+  peptides: [{
+    name: "BPC-157",
+    activationStatus: "active",
+    route: "Sous-cutanee",
+    dosage: "Dose documentee",
+    timing: "Calendrier documente",
+    purpose: "Axe documente",
+    purchaseUrl: "https://www.peptaura.com/catalog/BPC-157",
+    reconstitution: "Vial documente avec instructions completes.",
+    vialsNeeded: "2 vials documentes.",
+    priceEstimate: "2 vials, estimation documentee.",
+    cycleDuration: "8 semaines",
+    whyThisPeptide: "Rationale documentee",
+  }],
   sections: Array.from({ length: 12 }, (_, index) => ({
     id: `section-${index + 1}`,
     content: "x".repeat(1_000),
   })),
   weeklySchedule: "LUNDI AM: protocole structure. ".repeat(4),
-  shoppingList: "Liste de courses complete et verifiable. ".repeat(4),
+  shoppingList: "BPC-157 — source directe https://www.peptaura.com/catalog/BPC-157 — 2 vials documentes. ".repeat(2),
 };
 const expertReviewWithSource = {
   qualityVersion: "expert-review-v2",
@@ -143,7 +156,7 @@ test("keeps an incomplete manual report linked but raises an action-required inc
   assert.equal(incident?.blocksDelivery, true);
 });
 
-test("accepts a complete single-axis expert review without forcing a filler molecule", () => {
+test("keeps a source-complete expert review linked but never treats it as paid fulfillment", () => {
   const incident = evaluatePeptidesFulfillmentInvariant({
     paidAt: "2026-10-01T18:00:00.000Z",
     reportId: "dalil-report",
@@ -155,11 +168,13 @@ test("accepts a complete single-axis expert review without forcing a filler mole
     scheduledAt: "2026-10-01T19:00:00.000Z",
     now,
   });
-  assert.equal(incident, null);
+  assert.equal(incident?.code, "MANUAL_INCOMPLETE_REPORT");
+  assert.equal(incident?.blocksDelivery, true);
 });
 
-test("blocks a paid expert review when the promised Peptaura source is missing", () => {
+test("self-declared remediation never makes an expert review complete paid fulfillment", () => {
   for (const report of [
+    expertReviewWithSource,
     {
       ...expertReviewWithSource,
       peptides: expertReviewWithSource.peptides.map((peptide) => ({ ...peptide, purchaseUrl: "" })),
@@ -187,6 +202,119 @@ test("blocks a paid expert review when the promised Peptaura source is missing",
     assert.equal(incident?.code, "MANUAL_INCOMPLETE_REPORT");
     assert.equal(incident?.blocksDelivery, true);
   }
+});
+
+test("accepts a complete active single-axis report without forcing a filler molecule", () => {
+  assert.equal(evaluatePeptidesFulfillmentInvariant({
+    paidAt: "2026-10-01T18:00:00.000Z",
+    reportId: "single-axis-report",
+    report: validReport,
+    deliveryAccepted: false,
+    deliveryHeld: true,
+    manualFulfillment: false,
+    recipientUnsubscribed: false,
+    scheduledAt: "2026-10-01T19:00:00.000Z",
+    now,
+  }), null);
+});
+
+test("blocks an active report when its source, operational fields or shopping list are incomplete", () => {
+  const missingOperationalFields = [
+    "route",
+    "dosage",
+    "timing",
+    "purpose",
+    "reconstitution",
+    "vialsNeeded",
+    "priceEstimate",
+    "cycleDuration",
+    "whyThisPeptide",
+  ] as const;
+  for (const report of [
+    {
+      ...validReport,
+      peptides: validReport.peptides.map((peptide) => ({ ...peptide, purchaseUrl: "" })),
+    },
+    { ...validReport, shoppingList: "" },
+    {
+      ...validReport,
+      peptides: validReport.peptides.map((peptide) => ({
+        ...peptide,
+        purchaseUrl: "https://unapproved.example/product/bpc-157",
+      })),
+    },
+    ...missingOperationalFields.map((field) => ({
+      ...validReport,
+      peptides: validReport.peptides.map((peptide) => ({ ...peptide, [field]: "" })),
+    })),
+  ]) {
+    const incident = evaluatePeptidesFulfillmentInvariant({
+      paidAt: "2026-10-01T18:00:00.000Z",
+      reportId: "single-axis-report",
+      report,
+      deliveryAccepted: false,
+      deliveryHeld: true,
+      manualFulfillment: true,
+      recipientUnsubscribed: false,
+      scheduledAt: "2026-10-01T19:00:00.000Z",
+      now,
+    });
+    assert.equal(incident?.code, "MANUAL_INCOMPLETE_REPORT");
+    assert.equal(incident?.blocksDelivery, true);
+  }
+});
+
+test("accepts a complete active axis alongside empty conditional axes", () => {
+  const report = {
+    ...validReport,
+    peptides: [
+      ...validReport.peptides,
+      {
+        name: "Retatrutide",
+        activationStatus: "conditional-inactive",
+        purchaseUrl: "https://www.peptaura.com/catalog/Retatrutide",
+        reconstitution: "",
+        vialsNeeded: "",
+        priceEstimate: "",
+      },
+    ],
+  };
+  assert.equal(evaluatePeptidesFulfillmentInvariant({
+    paidAt: "2026-10-01T18:00:00.000Z",
+    reportId: "mixed-report",
+    report,
+    deliveryAccepted: false,
+    deliveryHeld: true,
+    recipientUnsubscribed: false,
+    scheduledAt: "2026-10-01T19:00:00.000Z",
+    now,
+  }), null);
+});
+
+test("never resolves a report whose every axis is conditional-inactive", () => {
+  const report = {
+    ...validReport,
+    peptides: validReport.peptides.map((peptide) => ({
+      ...peptide,
+      activationStatus: "conditional-inactive",
+      reconstitution: "",
+      vialsNeeded: "",
+      priceEstimate: "",
+    })),
+  };
+  const incident = evaluatePeptidesFulfillmentInvariant({
+    paidAt: "2026-10-01T18:00:00.000Z",
+    reportId: "all-conditional-report",
+    report,
+    deliveryAccepted: false,
+    deliveryHeld: true,
+    manualFulfillment: true,
+    recipientUnsubscribed: false,
+    scheduledAt: "2026-10-01T19:00:00.000Z",
+    now,
+  });
+  assert.equal(incident?.code, "MANUAL_INCOMPLETE_REPORT");
+  assert.equal(incident?.blocksDelivery, true);
 });
 
 test("does not let a manual flag hide a missing report", () => {
