@@ -123,6 +123,12 @@ import {
   isPeptidesApprovalExpected,
 } from "./peptidesReleaseHashGate";
 import {
+  validatePeptidesManualOrderTargetLock,
+  validatePeptidesManualTargetLock,
+  type PeptidesManualOrderTargetLock,
+  type PeptidesManualTargetLock,
+} from "./peptidesManualMutationGuard";
+import {
   getAICostBudgetSummary,
   resetAICostBudgetReservations,
 } from "./aiCostBudgetController";
@@ -1835,6 +1841,204 @@ export async function registerRoutes(
       return false;
     }
   }
+
+  const PEPTIDES_MANUAL_REPORT_MUTATIONS = new Set([
+    "replace-report",
+    "link-order-to-report",
+    "correct-email",
+    "recompute-vials",
+    "repair-live",
+    "edit-sections",
+  ]);
+  const PEPTIDES_MANUAL_ORDER_MUTATIONS = new Set([
+    "generate-report",
+    "inject-responses",
+    "delivery-hold",
+    "send-order-confirmation",
+    "reset-generation-lock",
+  ]);
+
+  function validateManualPeptidesOrderTargetOrRespond(input: {
+    req: any;
+    res: any;
+    expectedMutation: string;
+    order: any;
+    responses?: Record<string, unknown> | null;
+  }): boolean {
+    const result = validatePeptidesManualOrderTargetLock({
+      expectedMutation: input.expectedMutation,
+      targetLock: input.req.body?.orderTargetLock as PeptidesManualOrderTargetLock | undefined,
+      order: input.order,
+      responses: input.responses,
+    });
+    if (result.ok) return true;
+    input.res.status(409).json({
+      success: false,
+      error: "PEPTIDES_MANUAL_ORDER_TARGET_LOCK_FAILED",
+      details: result.errors,
+      mutation: input.expectedMutation,
+    });
+    return false;
+  }
+
+  function validateManualPeptidesTargetOrRespond(input: {
+    req: any;
+    res: any;
+    expectedMutation: string;
+    order: any;
+    reportRecord: any;
+    allowUnlinkedReport?: boolean;
+  }): boolean {
+    const result = validatePeptidesManualTargetLock({
+      expectedMutation: input.expectedMutation,
+      targetLock: input.req.body?.targetLock as PeptidesManualTargetLock | undefined,
+      order: input.order,
+      reportRecord: input.reportRecord,
+      allowUnlinkedReport: input.allowUnlinkedReport,
+    });
+    if (result.ok) return true;
+    input.res.status(409).json({
+      success: false,
+      error: "PEPTIDES_MANUAL_TARGET_LOCK_FAILED",
+      details: result.errors,
+      mutation: input.expectedMutation,
+    });
+    return false;
+  }
+
+  // Every paid-report mutation is a two-step operation. The preview binds the
+  // exact order, report, recipient, current client name and current report
+  // hash. Apply calls must echo the returned targetLock + confirmation. This
+  // makes a stale context or a wrong-client report fail before any write.
+  app.post("/api/admin/peptides/manual-target-preview", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const mutation = String(req.body?.mutation || "").trim();
+      const orderId = String(req.body?.orderId || "").trim();
+      const reportId = String(req.body?.reportId || "").trim();
+      const email = String(req.body?.email || "").trim().toLowerCase();
+      const expectedClientName = String(req.body?.expectedClientName || "").trim();
+      if (!PEPTIDES_MANUAL_REPORT_MUTATIONS.has(mutation)) {
+        res.status(400).json({ success: false, error: "Mutation Peptides non autorisee" });
+        return;
+      }
+      if (!orderId || !reportId || !email || !expectedClientName) {
+        res.status(400).json({ success: false, error: "mutation, orderId, reportId, email et expectedClientName requis" });
+        return;
+      }
+      const [order, reportRecord] = await Promise.all([
+        storage.getOrder(orderId),
+        storage.getBurnoutReport(reportId),
+      ]);
+      if (!order || !reportRecord) {
+        res.status(404).json({ success: false, error: "Commande ou rapport introuvable" });
+        return;
+      }
+      const previewTarget = {
+        mutation,
+        orderId,
+        reportId,
+        email,
+        expectedClientName,
+        expectedCurrentReportSha256: "pending",
+      };
+      const currentHash = validatePeptidesManualTargetLock({
+        expectedMutation: mutation,
+        targetLock: previewTarget,
+        order,
+        reportRecord: reportRecord as any,
+        allowUnlinkedReport: mutation === "link-order-to-report",
+        requireConfirmation: false,
+      }).currentReportSha256;
+      const result = validatePeptidesManualTargetLock({
+        expectedMutation: mutation,
+        targetLock: { ...previewTarget, expectedCurrentReportSha256: currentHash },
+        order,
+        reportRecord: reportRecord as any,
+        allowUnlinkedReport: mutation === "link-order-to-report",
+        requireConfirmation: false,
+      });
+      if (!result.ok) {
+        res.status(409).json({ success: false, error: "PEPTIDES_MANUAL_TARGET_PREVIEW_FAILED", details: result.errors });
+        return;
+      }
+      res.setHeader("Cache-Control", "private, no-store");
+      res.json({
+        success: true,
+        targetLock: {
+          ...result.target,
+          confirmation: result.requiredConfirmation,
+        },
+        current: {
+          orderId: String(order.id),
+          reportId: String(reportRecord.id),
+          email: String(order.email || "").toLowerCase(),
+          clientName: String((reportRecord.report as any)?.clientName || ""),
+          reportSha256: result.currentReportSha256,
+        },
+      });
+    } catch (error: any) {
+      console.error("[Admin Peptides Target Preview] Error:", error);
+      res.status(500).json({ success: false, error: error?.message || "Erreur serveur" });
+    }
+  });
+
+  app.post("/api/admin/peptides/manual-order-target-preview", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const mutation = String(req.body?.mutation || "").trim();
+      const orderId = String(req.body?.orderId || "").trim();
+      const email = String(req.body?.email || "").trim().toLowerCase();
+      const expectedClientName = String(req.body?.expectedClientName || "").trim();
+      if (!PEPTIDES_MANUAL_ORDER_MUTATIONS.has(mutation)) {
+        res.status(400).json({ success: false, error: "Mutation commande Peptides non autorisee" });
+        return;
+      }
+      if (!orderId || !email || !expectedClientName) {
+        res.status(400).json({ success: false, error: "mutation, orderId, email et expectedClientName requis" });
+        return;
+      }
+      const order = await storage.getOrder(orderId);
+      if (!order) {
+        res.status(404).json({ success: false, error: "Commande introuvable" });
+        return;
+      }
+      const progress = await storage.getBurnoutProgress(`peptides::${email}`).catch(() => null);
+      const responses = (req.body?.responses && typeof req.body.responses === "object")
+        ? req.body.responses as Record<string, unknown>
+        : (progress?.responses && typeof progress.responses === "object")
+          ? progress.responses as Record<string, unknown>
+          : null;
+      const previewTarget = { mutation, orderId, email, expectedClientName };
+      const result = validatePeptidesManualOrderTargetLock({
+        expectedMutation: mutation,
+        targetLock: previewTarget,
+        order,
+        responses,
+        requireConfirmation: false,
+      });
+      if (!result.ok) {
+        res.status(409).json({ success: false, error: "PEPTIDES_MANUAL_ORDER_TARGET_PREVIEW_FAILED", details: result.errors });
+        return;
+      }
+      res.setHeader("Cache-Control", "private, no-store");
+      res.json({
+        success: true,
+        orderTargetLock: {
+          ...result.target,
+          confirmation: result.requiredConfirmation,
+        },
+        current: {
+          orderId: String(order.id),
+          email: String(order.email || "").toLowerCase(),
+          linkedReportId: String((order.metadata as any)?.peptidesReportId || "") || null,
+        },
+      });
+    } catch (error: any) {
+      console.error("[Admin Peptides Order Target Preview] Error:", error);
+      res.status(500).json({ success: false, error: error?.message || "Erreur serveur" });
+    }
+  });
 
   // Mint a fresh report-access URL from the running web process. This matters
   // when an older customer email contains a legacy unsigned URL: one-off jobs
@@ -6424,6 +6628,13 @@ export async function registerRoutes(
         res.status(409).json({ success: false, error: "Un rapport est deja rattache" });
         return;
       }
+      if (!validateManualPeptidesOrderTargetOrRespond({
+        req,
+        res,
+        expectedMutation: "reset-generation-lock",
+        order,
+        responses: (order.metadata as any)?.peptidesResponses || null,
+      })) return;
       const circuitReset = await storage.resetPeptidesGenerationCircuit(order.id);
       if (!circuitReset) {
         res.status(409).json({ success: false, error: "Circuit non reinitialisable" });
@@ -6446,20 +6657,54 @@ export async function registerRoutes(
   app.post("/api/admin/peptides-generate", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
-      const { email, skipEmail, replaceReportId, manualExpertDirective, recoveryPreviousError } = req.body;
-      if (!email) { res.status(400).json({ error: "email requis" }); return; }
+      const { email, orderId, skipEmail, replaceReportId, manualExpertDirective, recoveryPreviousError } = req.body;
+      if (!email || !orderId) { res.status(400).json({ error: "email et orderId requis" }); return; }
 
       // Establish paid entitlement and acknowledge payment before touching the
       // questionnaire source. Missing/corrupt source data must not suppress the
       // customer's independent payment confirmation.
       const orders = await storage.getOrdersByEmail(email);
-      const pepOrder = orders.find((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid");
+      const pepOrder = orders.find((o: any) =>
+        String(o.id) === String(orderId)
+        && o.productType === "PEPTIDES_ENGINE"
+        && ["paid", "partial_refund"].includes(String(o.status))
+      );
       if (!pepOrder) {
-        res.status(409).json({ error: "Aucune commande Peptides payee: generation refusee" });
+        res.status(409).json({ error: "Commande Peptides payee exacte introuvable pour email + orderId" });
         return;
       }
+      if (replaceReportId) {
+        if (!skipEmail) {
+          res.status(409).json({ error: "Toute regeneration en place exige skipEmail=true" });
+          return;
+        }
+        const currentReportId = String((pepOrder.metadata as any)?.peptidesReportId || "");
+        if (currentReportId !== String(replaceReportId)) {
+          res.status(409).json({ error: "replaceReportId ne correspond pas au rapport lie a la commande", currentReportId });
+          return;
+        }
+        const existingTarget = await storage.getBurnoutReport(String(replaceReportId));
+        if (!existingTarget) {
+          res.status(404).json({ error: "Rapport a remplacer introuvable" });
+          return;
+        }
+        if (!validateManualPeptidesTargetOrRespond({
+          req,
+          res,
+          expectedMutation: "replace-report",
+          order: pepOrder,
+          reportRecord: existingTarget,
+        })) return;
+      }
+      if (!validateManualPeptidesOrderTargetOrRespond({
+        req,
+        res,
+        expectedMutation: "generate-report",
+        order: pepOrder,
+        responses: (pepOrder.metadata as any)?.peptidesResponses || null,
+      })) return;
       const confirmationOrder = await storage.getOrder(pepOrder.id);
-      if (confirmationOrder) {
+      if (confirmationOrder && !replaceReportId) {
         const confirmationScheduledAt = await resolvePeptidesEmailScheduledAt(confirmationOrder).catch(() => new Date());
         await sendPeptidesOrderConfirmationOnce(confirmationOrder, {
           firstName: (confirmationOrder.metadata as any)?.peptidesResponses?.prenom || email.split("@")[0],
@@ -6552,6 +6797,26 @@ export async function registerRoutes(
         manualExpertDirective: normalizedManualDirective || undefined,
         initialPreviousError: normalizedRecoveryPreviousError || undefined,
       });
+      const { validatePeptidesReport } = await import("./peptidesReportValidator");
+      const generatedValidation = validatePeptidesReport(report);
+      const generatedCommercialIncident = evaluatePeptidesFulfillmentInvariant({
+        paidAt: (pepOrder as any).paidAt,
+        reportId: replaceReportId || "pending-new-report",
+        report: report as any,
+        deliveryAccepted: false,
+        deliveryHeld: true,
+        manualFulfillment: true,
+        recipientUnsubscribed: false,
+      });
+      if (!generatedValidation.ok || generatedCommercialIncident) {
+        res.status(422).json({
+          success: false,
+          error: "Rapport genere bloque avant persistance: validation commerciale incomplete",
+          validation: generatedValidation,
+          commercialIncident: generatedCommercialIncident,
+        });
+        return;
+      }
 
       let saved;
       let claimed = true;
@@ -6733,6 +6998,14 @@ export async function registerRoutes(
       }
       const report = await storage.getBurnoutReport(reportId);
       if (!report) { res.status(404).json({ error: "Report introuvable" }); return; }
+      if (!validateManualPeptidesTargetOrRespond({
+        req,
+        res,
+        expectedMutation: "link-order-to-report",
+        order,
+        reportRecord: report,
+        allowUnlinkedReport: true,
+      })) return;
       // Sanity: report email matches order email (peptides::email convention)
       const reportEmail = String(report.email || "").replace(/^peptides::/i, "").toLowerCase();
       if (reportEmail !== String(order.email || "").toLowerCase()) {
@@ -6849,6 +7122,14 @@ export async function registerRoutes(
         return;
       }
 
+      if (!validateManualPeptidesTargetOrRespond({
+        req,
+        res,
+        expectedMutation: "correct-email",
+        order,
+        reportRecord: report,
+      })) return;
+
       const nowIso = new Date().toISOString();
       const nextMeta = {
         ...meta,
@@ -6917,11 +7198,28 @@ export async function registerRoutes(
   app.post("/api/admin/peptides-inject-responses", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
-      const { email, responses } = req.body;
-      if (!email || !responses || Object.keys(responses).length < 3) {
-        res.status(400).json({ error: "email et responses (min 3 champs) requis" });
+      const { orderId, email, responses } = req.body;
+      if (!orderId || !email || !responses || Object.keys(responses).length < 3) {
+        res.status(400).json({ error: "orderId, email et responses (min 3 champs) requis" });
         return;
       }
+      const orders = await storage.getOrdersByEmail(email);
+      const pepOrder = orders.find((o: any) =>
+        String(o.id) === String(orderId)
+        && o.productType === "PEPTIDES_ENGINE"
+        && ["paid", "partial_refund"].includes(String(o.status))
+      );
+      if (!pepOrder) {
+        res.status(409).json({ error: "Commande Peptides payee exacte introuvable pour email + orderId" });
+        return;
+      }
+      if (!validateManualPeptidesOrderTargetOrRespond({
+        req,
+        res,
+        expectedMutation: "inject-responses",
+        order: pepOrder,
+        responses,
+      })) return;
 
       await storage.saveBurnoutProgress({
         email: `peptides::${email}`,
@@ -6930,16 +7228,11 @@ export async function registerRoutes(
         responses,
       });
 
-      // Also save to order metadata as backup
-      const orders = await storage.getOrdersByEmail(email);
-      const pepOrder = orders.find((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid");
-      if (pepOrder) {
-        await storage.updateOrder(pepOrder.id, {
-          metadata: { ...(pepOrder.metadata as object ?? {}), peptidesResponses: responses, injectedByAdmin: true },
-        }).catch(() => {});
-      }
+      await storage.updateOrder(pepOrder.id, {
+        metadata: { ...(pepOrder.metadata as object ?? {}), peptidesResponses: responses, injectedByAdmin: true },
+      });
 
-      res.json({ success: true, responseCount: Object.keys(responses).length });
+      res.json({ success: true, orderId: pepOrder.id, responseCount: Object.keys(responses).length });
     } catch (error: any) {
       console.error("[Admin] Inject responses error:", error);
       res.status(500).json({ error: error.message || "Erreur" });
@@ -7145,6 +7438,13 @@ export async function registerRoutes(
         res.status(404).json({ success: false, error: "Commande Peptides Engine introuvable" });
         return;
       }
+      if (!validateManualPeptidesOrderTargetOrRespond({
+        req,
+        res,
+        expectedMutation: "delivery-hold",
+        order,
+        responses: (order.metadata as any)?.peptidesResponses || null,
+      })) return;
       await storage.setOrderMetadataKey(orderId, "peptidesEmailHold", hold);
       await storage.setOrderMetadataKey(
         orderId,
@@ -7248,6 +7548,13 @@ export async function registerRoutes(
         res.status(400).json({ success: false, error: "order has no email" });
         return;
       }
+      if (!validateManualPeptidesOrderTargetOrRespond({
+        req,
+        res,
+        expectedMutation: "send-order-confirmation",
+        order,
+        responses: (order.metadata as any)?.peptidesResponses || null,
+      })) return;
       if (!force) {
         const alreadyConfirmed = await storage.hasPeptidesOrderConfirmationBeenSent(email).catch(() => false);
         if (alreadyConfirmed) {
@@ -7325,6 +7632,28 @@ export async function registerRoutes(
         }
       }
       if (apply && diff.length > 0) {
+        const email = String(existing.email).slice("peptides::".length).toLowerCase();
+        const orders = await storage.getOrdersByEmail(email);
+        const order = orders.find((candidate: any) =>
+          candidate.productType === "PEPTIDES_ENGINE"
+          && ["paid", "partial_refund"].includes(String(candidate.status))
+          && String(candidate?.metadata?.peptidesReportId || "") === reportId
+        );
+        if (!order) {
+          res.status(409).json({ success: false, error: "Aucune commande payee liee exactement a ce rapport" });
+          return;
+        }
+        if (!validateManualPeptidesTargetOrRespond({
+          req,
+          res,
+          expectedMutation: "recompute-vials",
+          order,
+          reportRecord: existing,
+        })) return;
+        if (!validation.ok) {
+          res.status(422).json({ success: false, applied: false, validation, error: "Strict validation failed, report not persisted" });
+          return;
+        }
         await storage.updateBurnoutReport(reportId, fixed);
         console.log(`[Admin Peptides Patch] Persisted recompute for ${reportId}, ${diff.length} peptides changed`);
       }
@@ -7360,16 +7689,20 @@ export async function registerRoutes(
       const orders = await storage.getOrdersByEmail(email);
       const order = orders.find((candidate: any) =>
         candidate.productType === "PEPTIDES_ENGINE"
-        && candidate.status === "paid"
-        && (
-          String(candidate?.metadata?.peptidesReportId || "") === reportId
-          || orders.filter((entry: any) => entry.productType === "PEPTIDES_ENGINE" && entry.status === "paid").length === 1
-        )
+        && ["paid", "partial_refund"].includes(String(candidate.status))
+        && String(candidate?.metadata?.peptidesReportId || "") === reportId
       );
       if (!order) {
-        res.status(404).json({ success: false, error: "Paid Peptides Engine order not found for report" });
+        res.status(404).json({ success: false, error: "Paid Peptides Engine order linked exactly to this report not found" });
         return;
       }
+      if (apply && !validateManualPeptidesTargetOrRespond({
+        req,
+        res,
+        expectedMutation: "repair-live",
+        order,
+        reportRecord: existing,
+      })) return;
 
       const responses = (
         (existing as any).responses
@@ -7387,15 +7720,25 @@ export async function registerRoutes(
       const repaired = await refreshPeptauraPricingForDelivery(before, responses, paidTier, consentAccepted);
       const { validatePeptidesReport } = await import("./peptidesReportValidator");
       const validation = validatePeptidesReport(repaired);
+      const commercialIncident = evaluatePeptidesFulfillmentInvariant({
+        paidAt: (order as any).paidAt,
+        reportId,
+        report: repaired as any,
+        deliveryAccepted: false,
+        deliveryHeld: true,
+        manualFulfillment: true,
+        recipientUnsubscribed: false,
+      });
 
-      if (apply && !validation.ok) {
+      if (apply && (!validation.ok || commercialIncident)) {
         res.status(422).json({
           success: false,
           reportId,
           applied: false,
           orderId: order.id,
           validation,
-          error: "Strict validation failed, report not persisted",
+          commercialIncident,
+          error: "Strict commercial validation failed, report not persisted",
         });
         return;
       }
@@ -7453,6 +7796,25 @@ export async function registerRoutes(
         res.status(404).json({ success: false, error: "Peptides report not found" });
         return;
       }
+      const email = String(existing.email).slice("peptides::".length).toLowerCase();
+      const orders = await storage.getOrdersByEmail(email);
+      const order = orders.find((candidate: any) =>
+        candidate.productType === "PEPTIDES_ENGINE"
+        && ["paid", "partial_refund"].includes(String(candidate.status))
+        && String(candidate?.metadata?.peptidesReportId || "") === reportId
+      );
+      if (!order) {
+        res.status(409).json({ success: false, error: "Aucune commande payee liee exactement a ce rapport" });
+        return;
+      }
+      if (!validateManualPeptidesTargetOrRespond({
+        req,
+        res,
+        expectedMutation: "edit-sections",
+        order,
+        reportRecord: existing,
+      })) return;
+
       const report = JSON.parse(JSON.stringify(existing.report)) as any;
       const sections = Array.isArray(report.sections) ? report.sections : [];
       const updated: string[] = [];
@@ -7482,9 +7844,33 @@ export async function registerRoutes(
         });
         console.log(`[Admin Peptides Edit] Removed ${before - report.peptides.length} peptides from ${reportId}: ${peptidesRemoved.join(", ")}`);
       }
+      const { validatePeptidesReport } = await import("./peptidesReportValidator");
+      const validation = validatePeptidesReport(report);
+      const commercialIncident = evaluatePeptidesFulfillmentInvariant({
+        paidAt: (order as any).paidAt,
+        reportId,
+        report,
+        deliveryAccepted: false,
+        deliveryHeld: true,
+        manualFulfillment: true,
+        recipientUnsubscribed: false,
+      });
+      if (!validation.ok || commercialIncident) {
+        res.status(422).json({
+          success: false,
+          reportId,
+          updated,
+          notFound,
+          peptidesRemoved,
+          validation,
+          commercialIncident,
+          error: "Strict commercial validation failed, report not persisted",
+        });
+        return;
+      }
       await storage.updateBurnoutReport(reportId, report);
       console.log(`[Admin Peptides Edit] Patched ${updated.length} sections on ${reportId}: ${updated.join(", ")}`);
-      res.json({ success: true, reportId, updated, notFound, peptidesRemoved });
+      res.json({ success: true, reportId, updated, notFound, peptidesRemoved, validation });
     } catch (error: any) {
       console.error("[Admin Peptides Edit] Error:", error);
       res.status(500).json({ success: false, error: error?.message || "Erreur serveur" });
