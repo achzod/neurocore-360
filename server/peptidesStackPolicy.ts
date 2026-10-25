@@ -43,8 +43,11 @@ export function derivePeptidesStackPolicy(
   // One molecule can legitimately support more than one goal; forcing five
   // or six molecules for three or four axes creates gadget additions and
   // makes valid live-packaging fallbacks impossible.
-  let minimumMolecules = Math.max(2, Math.min(4, goals.length));
-  const maximumMolecules = goals.length >= 4 ? 6 : 5;
+  // A single documented axis can legitimately need a single molecule. The
+  // old floor of two forced filler products into mono-axis dossiers and also
+  // made complete one-molecule reports look invalid downstream.
+  let minimumMolecules = goals.length <= 1 ? 1 : Math.min(4, goals.length);
+  const maximumMolecules = goals.length <= 1 ? 2 : goals.length >= 4 ? 6 : 5;
 
   // A confirmed HPG axis needs its two distinct levers. When another objective
   // is also present, reserve room for both HPG levers plus the other axes.

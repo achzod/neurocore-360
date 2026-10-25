@@ -10,6 +10,12 @@ const now = new Date("2026-10-01T20:00:00.000Z");
 const validReport = {
   qualityVersion: "expert-standard-v1",
   peptides: [{ name: "A" }, { name: "B" }],
+  sections: Array.from({ length: 12 }, (_, index) => ({
+    id: `section-${index + 1}`,
+    content: "x".repeat(1_000),
+  })),
+  weeklySchedule: "LUNDI AM: protocole structure. ".repeat(4),
+  shoppingList: "Liste de courses complete et verifiable. ".repeat(4),
 };
 
 test("flags a paid order that stays without a report", () => {
@@ -94,6 +100,45 @@ test("keeps an incomplete manual report linked but raises an action-required inc
   });
   assert.equal(incident?.code, "MANUAL_INCOMPLETE_REPORT");
   assert.equal(incident?.blocksDelivery, true);
+});
+
+test("accepts a complete single-axis expert review without forcing a filler molecule", () => {
+  const incident = evaluatePeptidesFulfillmentInvariant({
+    paidAt: "2026-10-01T18:00:00.000Z",
+    reportId: "dalil-report",
+    report: {
+      qualityVersion: "expert-review-v2",
+      peptides: [{
+        name: "Retatrutide",
+        activationStatus: "conditional-inactive",
+        purchaseUrl: "",
+        reconstitution: "",
+        vialsNeeded: "",
+        priceEstimate: "",
+      }],
+      sections: Array.from({ length: 17 }, (_, index) => ({
+        id: `section-${index + 1}`,
+        content: "analyse personnalisee ".repeat(40),
+      })),
+      weeklySchedule: "LUNDI AM: baseline. MARDI PM: faim. MERCREDI PM: entrainement. JEUDI PM: nutrition. VENDREDI PM: recuperation.",
+      shoppingList: "",
+      _customerRemediation: {
+        version: "dalil-full-report-v2",
+        scientificSources: true,
+        operationalProtocol: false,
+        purchaseLinks: false,
+        questionnaireAnswersUsed: 26,
+        sameReportIdRequired: true,
+      },
+    },
+    deliveryAccepted: false,
+    deliveryHeld: true,
+    manualFulfillment: true,
+    recipientUnsubscribed: false,
+    scheduledAt: "2026-10-01T19:00:00.000Z",
+    now,
+  });
+  assert.equal(incident, null);
 });
 
 test("does not let a manual flag hide a missing report", () => {
