@@ -80,8 +80,8 @@ test("does not flag an intentionally held delivery as overdue", () => {
   }), null);
 });
 
-test("preserves an explicitly manual report under delivery hold", () => {
-  assert.equal(evaluatePeptidesFulfillmentInvariant({
+test("keeps an incomplete manual report linked but raises an action-required incident", () => {
+  const incident = evaluatePeptidesFulfillmentInvariant({
     paidAt: "2026-10-01T18:00:00.000Z",
     reportId: "manual-report-1",
     report: { qualityVersion: "medical-review-v1", peptides: [{ name: "A" }] },
@@ -91,7 +91,9 @@ test("preserves an explicitly manual report under delivery hold", () => {
     recipientUnsubscribed: false,
     scheduledAt: "2026-10-01T19:00:00.000Z",
     now,
-  }), null);
+  });
+  assert.equal(incident?.code, "MANUAL_INCOMPLETE_REPORT");
+  assert.equal(incident?.blocksDelivery, true);
 });
 
 test("does not let a manual flag hide a missing report", () => {
