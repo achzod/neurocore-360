@@ -1509,6 +1509,8 @@ export class MemStorage implements IStorage {
     if (held !== requireHeld) return false;
     const existingLease = new Date(String(meta.peptidesManualProviderLeaseUntil || "")).getTime();
     if (meta.peptidesManualProviderClaimId && Number.isFinite(existingLease) && existingLease > Date.now()) return false;
+    const autoGenerationLease = new Date(String(meta.peptidesGenerationLeaseUntil || "")).getTime();
+    if (meta.peptidesGenerationClaimId && Number.isFinite(autoGenerationLease) && autoGenerationLease > Date.now()) return false;
     order.metadata = {
       ...meta,
       peptidesManualProviderClaimId: claimId,
@@ -4753,6 +4755,10 @@ export class PgStorage implements IStorage {
          AND (
            COALESCE(metadata->>'peptidesManualProviderClaimId', '') = ''
            OR COALESCE(NULLIF(metadata->>'peptidesManualProviderLeaseUntil', '')::timestamptz, '-infinity'::timestamptz) <= NOW()
+         )
+         AND (
+           COALESCE(metadata->>'peptidesGenerationClaimId', '') = ''
+           OR COALESCE(NULLIF(metadata->>'peptidesGenerationLeaseUntil', '')::timestamptz, '-infinity'::timestamptz) <= NOW()
          )
        RETURNING id`,
       [claimId, orderId, requireHeld, leaseUntil],

@@ -93,6 +93,9 @@ test("French apostrophe and aucunement negations never create axis coverage", ()
     "Will not improve recovery and only targets metabolism",
     "N’aide pas la récupération et cible seulement le metabolisme",
     "Offers no recovery benefit and only targets metabolism",
+    "Does not provide recovery benefits and only targets metabolism",
+    "Doesn’t offer recovery support and only targets metabolism",
+    "Ne permet pas la récupération et cible seulement le metabolisme",
   ]) {
     const issues = validateGeneratedPeptideStack([
       active("Retatrutide", "Perte de graisse et appetit"),

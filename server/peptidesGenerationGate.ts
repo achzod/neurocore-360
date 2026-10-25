@@ -49,8 +49,10 @@ function isNegatedCoverageStatement(text: string): boolean {
   const frenchVerb = "(?:aide|ameliore|apporte|concerne|couvre|favorise|soutient|traite|vise)";
   const englishVerb = "(?:aid|benefit|cover|help|improve|support|target|treat)";
   return new RegExp(`\\b(?:ne|n)\\s+${frenchVerb}[^.!?;]{0,80}\\b(?:pas|aucun|aucune|aucunement)\\b`, "i").test(text)
+    || /\b(?:ne|n)\s+(?:[a-z]+\s+){0,5}(?:pas|aucun|aucune|aucunement)\b/i.test(text)
     || /\bn\s+est\s+pas\s+(?:destine|indique|adapte)\s+(?:a|pour)\b/i.test(text)
     || new RegExp(`\\b(?:does\\s+not|doesn\\s+t|will\\s+not|won\\s+t)\\s+${englishVerb}\\b`, "i").test(text)
+    || /\b(?:does\s+not|doesn\s+t|will\s+not|won\s+t)\b/i.test(text)
     || /\b(?:offers?|provides?)\s+no\b/i.test(text)
     || /\bno\s+(?:recovery|repair|fat\s*loss|sleep|cognitive|libido|endurance)[^.!?;]{0,40}\b(?:benefit|support|effect|improvement)\b/i.test(text)
     || /\b(?:is\s+not\s+intended\s+for|not\s+for|no\s+benefit\s+for|sans\s+(?:effet|benefice|action)\s+(?:sur|pour)|non\s+indique\s+(?:pour|sur))\b/i.test(text);

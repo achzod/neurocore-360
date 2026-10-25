@@ -263,6 +263,7 @@ test("PostgreSQL backfills exact legacy delivery and claims partial-refund gener
   });
   const claim = await storage.claimPeptidesGenerationAttempt(budgetOrder.id, config);
   assert.ok(claim);
+  assert.equal(await storage.claimPeptidesManualGenerationProvider(budgetOrder.id, "manual-during-auto-pg", false, 60_000), false);
   const refreshed = await storage.getOrder(budgetOrder.id);
   const ledger = (refreshed?.metadata as any)?.peptidesGenerationReservationLedger;
   assert.equal(Array.isArray(ledger), true);

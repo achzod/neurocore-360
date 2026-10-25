@@ -5913,25 +5913,28 @@ export async function registerRoutes(
       const capturedCurrency = String(capture?.amount?.currency_code || "").toUpperCase();
       const expectedAmount = (order.finalAmountCents / 100).toFixed(2);
       if (!captureId || capturedAmount !== expectedAmount || capturedCurrency !== "EUR") {
-        await storage.updateOrder(order.id, {
-          status: "payment_review",
-          metadata: {
-            ...((order.metadata as any) || {}),
-            paypalCaptureId: captureId,
-            capturedAmount,
-            capturedCurrency,
-            expectedAmount,
-            expectedCurrency: "EUR",
-            paymentReviewReason: "PAYPAL_RECONCILIATION_COMMERCIAL_PARITY_FAILED",
-            ...(order.productType === "PEPTIDES_ENGINE" ? {
-              peptidesEmailHold: true,
-              peptidesEmailHoldReason: "PAYMENT_AMOUNT_MISMATCH",
-              peptidesFulfillmentState: "ACTION_REQUIRED",
-              peptidesManualFulfillment: true,
-              peptidesManualFulfillmentState: "PAYMENT_REVIEW_REQUIRED",
-            } : {}),
-          },
-        });
+        const reviewMeta = {
+          ...((order.metadata as any) || {}),
+          paypalCaptureId: captureId,
+          capturedAmount,
+          capturedCurrency,
+          expectedAmount,
+          expectedCurrency: "EUR",
+          paymentReviewReason: "PAYPAL_RECONCILIATION_COMMERCIAL_PARITY_FAILED",
+          ...(order.productType === "PEPTIDES_ENGINE" ? {
+            peptidesEmailHold: true,
+            peptidesEmailHoldReason: "PAYMENT_AMOUNT_MISMATCH",
+            peptidesFulfillmentState: "ACTION_REQUIRED",
+            peptidesManualFulfillment: true,
+            peptidesManualFulfillmentState: "PAYMENT_REVIEW_REQUIRED",
+          } : {}),
+        };
+        await pool.query(
+          `UPDATE orders
+              SET status = 'payment_review', metadata = COALESCE(metadata, '{}'::jsonb) || $2::jsonb, updated_at = NOW()
+            WHERE id = $1 AND status = 'pending'`,
+          [order.id, JSON.stringify(reviewMeta)],
+        );
         return {
           status: "error",
           orderId,
@@ -5955,7 +5958,16 @@ export async function registerRoutes(
         reconciledByCron: new Date().toISOString(),
         reconciledReason: "browser-initiated capture missed, recovered via PayPal API poll",
       };
-      await storage.updateOrder(order.id, { status: "paid", paidAt, metadata: newMeta });
+      const activated = await pool.query(
+        `UPDATE orders
+            SET status = 'paid', paid_at = $2, metadata = COALESCE(metadata, '{}'::jsonb) || $3::jsonb, updated_at = NOW()
+          WHERE id = $1 AND status = 'pending'
+          RETURNING id`,
+        [order.id, paidAt, JSON.stringify(newMeta)],
+      );
+      if ((activated.rowCount ?? 0) !== 1) {
+        return { status: "blocked_status", orderId, paypalOrderId, paypalStatus: ppStatus, error: "ORDER_STATUS_CHANGED_DURING_RECONCILIATION" };
+      }
 
       const email = order.email;
       const productType = order.productType;
@@ -6346,6 +6358,15 @@ export async function registerRoutes(
         const existingOrder = await storage.getOrderByStripeSession(sessionId);
         if (!existingOrder) {
           const incidentOrderId = await persistOrphanStripePeptidesPaymentIncident(session, email);
+          if (!incidentOrderId) {
+            res.status(503).json({
+              success: false,
+              error: "STRIPE_ORPHAN_INCIDENT_PERSIST_FAILED",
+              retryable: true,
+              auditType: "PEPTIDES_ENGINE",
+            });
+            return;
+          }
           res.status(409).json({
             success: false,
             error: "STRIPE_PAID_WITHOUT_LOCAL_ORDER",
@@ -6355,22 +6376,25 @@ export async function registerRoutes(
           return;
         }
         if (!stripeSessionMatchesOrder(session, existingOrder)) {
-          await storage.updateOrder(existingOrder.id, {
-            status: "payment_review",
-            paidAt: new Date(),
-            metadata: {
-              ...((existingOrder.metadata as any) || {}),
-              peptidesEmailHold: true,
-              peptidesEmailHoldReason: "STRIPE_COMMERCIAL_PARITY_FAILED",
-              peptidesFulfillmentState: "ACTION_REQUIRED",
-              peptidesManualFulfillment: true,
-              peptidesManualFulfillmentState: "PAYMENT_REVIEW_REQUIRED",
-              paymentReviewReason: "STRIPE_COMMERCIAL_PARITY_FAILED",
-              stripeObservedAmountCents: Number(session.amount_total),
-              stripeExpectedAmountCents: existingOrder.finalAmountCents,
-              stripeObservedCurrency: String(session.currency || "").toUpperCase(),
-            },
-          });
+          const reviewMeta = {
+            ...((existingOrder.metadata as any) || {}),
+            peptidesEmailHold: true,
+            peptidesEmailHoldReason: "STRIPE_COMMERCIAL_PARITY_FAILED",
+            peptidesFulfillmentState: "ACTION_REQUIRED",
+            peptidesManualFulfillment: true,
+            peptidesManualFulfillmentState: "PAYMENT_REVIEW_REQUIRED",
+            paymentReviewReason: "STRIPE_COMMERCIAL_PARITY_FAILED",
+            stripeObservedAmountCents: Number(session.amount_total),
+            stripeExpectedAmountCents: existingOrder.finalAmountCents,
+            stripeObservedCurrency: String(session.currency || "").toUpperCase(),
+          };
+          await pool.query(
+            `UPDATE orders
+                SET status = 'payment_review', paid_at = NOW(),
+                    metadata = COALESCE(metadata, '{}'::jsonb) || $2::jsonb, updated_at = NOW()
+              WHERE id = $1 AND status = 'pending'`,
+            [existingOrder.id, JSON.stringify(reviewMeta)],
+          );
           res.status(409).json({ success: false, error: "STRIPE_COMMERCIAL_PARITY_FAILED", auditType: "PEPTIDES_ENGINE" });
           return;
         }
@@ -6384,12 +6408,18 @@ export async function registerRoutes(
           return;
         }
         if (confirmationDecision === "ACTIVATE_PENDING") {
-          await storage.updateOrder(existingOrder.id, {
-            status: "paid",
-            paidAt: new Date(),
-            stripePaymentIntentId: (session as any).payment_intent || null,
-            stripeCustomerId: (session as any).customer || null,
-          });
+          const activated = await pool.query(
+            `UPDATE orders
+                SET status = 'paid', paid_at = NOW(), stripe_payment_intent_id = $2,
+                    stripe_customer_id = $3, updated_at = NOW()
+              WHERE id = $1 AND status = 'pending'
+              RETURNING id`,
+            [existingOrder.id, (session as any).payment_intent || null, (session as any).customer || null],
+          );
+          if ((activated.rowCount ?? 0) !== 1) {
+            res.status(409).json({ success: false, error: "ORDER_STATUS_CHANGED_DURING_STRIPE_CONFIRM" });
+            return;
+          }
         }
         if (email) {
           await grantBloodCreditsForOrder(
@@ -6897,42 +6927,54 @@ export async function registerRoutes(
         && String(capture.amountCurrency || "").toUpperCase() === "EUR";
       if (!captureCommerciallyValid) {
         console.error(`[PayPal] Commercial mismatch: capture=${capture.captureId || "missing"} amount=${capture.amountValue} ${capture.amountCurrency}, expected ${expectedEur} EUR for order ${existingOrder.id}. Payment needs manual review.`);
-        await storage.updateOrder(existingOrder.id, {
-          status: "payment_review",
-          paidAt: new Date(),
-          metadata: {
-            ...(existingOrder.metadata as Record<string, unknown> || {}),
-            paypalCaptureId: capture.captureId,
-            payerEmail: capture.payerEmail,
-            amountMismatch: true,
-            capturedAmount: capture.amountValue,
-            capturedCurrency: capture.amountCurrency,
-            expectedAmount: expectedEur,
-            expectedCurrency: "EUR",
-            paymentReviewReason: "PAYPAL_COMMERCIAL_PARITY_FAILED",
-            ...(existingOrder.productType === "PEPTIDES_ENGINE" ? {
-              peptidesEmailHold: true,
-              peptidesEmailHoldReason: "PAYMENT_AMOUNT_MISMATCH",
-              peptidesFulfillmentState: "ACTION_REQUIRED",
-              peptidesManualFulfillment: true,
-              peptidesManualFulfillmentState: "PAYMENT_REVIEW_REQUIRED",
-            } : {}),
-          },
-        });
+        const reviewMeta = {
+          ...(existingOrder.metadata as Record<string, unknown> || {}),
+          paypalCaptureId: capture.captureId,
+          payerEmail: capture.payerEmail,
+          amountMismatch: true,
+          capturedAmount: capture.amountValue,
+          capturedCurrency: capture.amountCurrency,
+          expectedAmount: expectedEur,
+          expectedCurrency: "EUR",
+          paymentReviewReason: "PAYPAL_COMMERCIAL_PARITY_FAILED",
+          ...(existingOrder.productType === "PEPTIDES_ENGINE" ? {
+            peptidesEmailHold: true,
+            peptidesEmailHoldReason: "PAYMENT_AMOUNT_MISMATCH",
+            peptidesFulfillmentState: "ACTION_REQUIRED",
+            peptidesManualFulfillment: true,
+            peptidesManualFulfillmentState: "PAYMENT_REVIEW_REQUIRED",
+          } : {}),
+        };
+        await pool.query(
+          `UPDATE orders
+              SET status = 'payment_review', paid_at = NOW(),
+                  metadata = COALESCE(metadata, '{}'::jsonb) || $2::jsonb, updated_at = NOW()
+            WHERE id = $1 AND status = 'pending'`,
+          [existingOrder.id, JSON.stringify(reviewMeta)],
+        );
         res.status(400).json({ error: "AMOUNT_MISMATCH", message: "Le montant capturé ne correspond pas. Contacte le support." });
         return;
       }
 
-      // Mark order as paid
-      await storage.updateOrder(existingOrder.id, {
-        status: "paid",
-        paidAt: new Date(),
-        metadata: {
-          ...(existingOrder.metadata as Record<string, unknown> || {}),
+      // Atomically activate only the exact still-pending order. A concurrent
+      // refund/cancellation wins and can never be overwritten by this capture.
+      const captureActivation = await pool.query(
+        `UPDATE orders
+            SET status = 'paid',
+                paid_at = NOW(),
+                metadata = COALESCE(metadata, '{}'::jsonb) || $2::jsonb,
+                updated_at = NOW()
+          WHERE id = $1 AND status = 'pending'
+          RETURNING id`,
+        [existingOrder.id, JSON.stringify({
           paypalCaptureId: capture.captureId,
           payerEmail: capture.payerEmail,
-        },
-      });
+        })],
+      );
+      if ((captureActivation.rowCount ?? 0) !== 1) {
+        res.status(409).json({ error: "ORDER_STATUS_CHANGED_DURING_CAPTURE" });
+        return;
+      }
 
       const email = existingOrder.email;
       const planType = existingOrder.productType;
@@ -12885,39 +12927,50 @@ export async function registerRoutes(
             session?.customer_details?.email || session?.customer_email || session?.metadata?.email || "",
           ).trim().toLowerCase();
           if (!order && sessionPlanType === "PEPTIDES_ENGINE") {
-            await persistOrphanStripePeptidesPaymentIncident(session, sessionEmail);
+            const incidentOrderId = await persistOrphanStripePeptidesPaymentIncident(session, sessionEmail);
+            if (!incidentOrderId) {
+              throw new Error(`STRIPE_ORPHAN_INCIDENT_PERSIST_FAILED:${session.id}`);
+            }
             console.error(`[Webhook] Paid Peptides session ${session.id} had no durable local order; incident persisted`);
             break;
           }
           if (order && !stripeSessionMatchesOrder(session, order)) {
-            await storage.updateOrder(order.id, {
-              status: "payment_review",
-              paidAt: new Date(),
-              metadata: {
-                ...((order.metadata as any) || {}),
-                ...(order.productType === "PEPTIDES_ENGINE" ? {
-                  peptidesEmailHold: true,
-                  peptidesEmailHoldReason: "STRIPE_COMMERCIAL_PARITY_FAILED",
-                  peptidesFulfillmentState: "ACTION_REQUIRED",
-                  peptidesManualFulfillment: true,
-                  peptidesManualFulfillmentState: "PAYMENT_REVIEW_REQUIRED",
-                } : {}),
-                paymentReviewReason: "STRIPE_COMMERCIAL_PARITY_FAILED",
-                stripeObservedAmountCents: Number(session.amount_total),
-                stripeExpectedAmountCents: order.finalAmountCents,
-                stripeObservedCurrency: String(session.currency || "").toUpperCase(),
-              },
-            });
+            const reviewMeta = {
+              ...((order.metadata as any) || {}),
+              ...(order.productType === "PEPTIDES_ENGINE" ? {
+                peptidesEmailHold: true,
+                peptidesEmailHoldReason: "STRIPE_COMMERCIAL_PARITY_FAILED",
+                peptidesFulfillmentState: "ACTION_REQUIRED",
+                peptidesManualFulfillment: true,
+                peptidesManualFulfillmentState: "PAYMENT_REVIEW_REQUIRED",
+              } : {}),
+              paymentReviewReason: "STRIPE_COMMERCIAL_PARITY_FAILED",
+              stripeObservedAmountCents: Number(session.amount_total),
+              stripeExpectedAmountCents: order.finalAmountCents,
+              stripeObservedCurrency: String(session.currency || "").toUpperCase(),
+            };
+            await pool.query(
+              `UPDATE orders
+                  SET status = 'payment_review', paid_at = NOW(),
+                      metadata = COALESCE(metadata, '{}'::jsonb) || $2::jsonb, updated_at = NOW()
+                WHERE id = $1 AND status = 'pending'`,
+              [order.id, JSON.stringify(reviewMeta)],
+            );
             console.error(`[Webhook] Commercial parity failed for order ${order.id}; fulfillment blocked`);
             break;
           }
           if (order && order.status === "pending") {
-            await storage.updateOrder(order.id, {
-              status: "paid",
-              paidAt: new Date(),
-              stripePaymentIntentId: session.payment_intent || null,
-              stripeCustomerId: session.customer || null,
-            });
+            const activated = await pool.query(
+              `UPDATE orders
+                  SET status = 'paid', paid_at = NOW(), stripe_payment_intent_id = $2,
+                      stripe_customer_id = $3, updated_at = NOW()
+                WHERE id = $1 AND status = 'pending'
+                RETURNING id`,
+              [order.id, session.payment_intent || null, session.customer || null],
+            );
+            if ((activated.rowCount ?? 0) !== 1) {
+              throw new Error(`ORDER_STATUS_CHANGED_DURING_STRIPE_WEBHOOK:${order.id}`);
+            }
             console.log(`[Webhook] Order ${order.id} marked as paid via webhook`);
 
             // Meta CAPI , server-side Purchase event (recovers 30-50% lost to ITP/adblockers)

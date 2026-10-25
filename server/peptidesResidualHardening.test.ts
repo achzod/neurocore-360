@@ -349,6 +349,10 @@ test("manual provider claim atomically binds HOLD mode and excludes AutoGen", as
   assert.equal(await storage.finalizePeptidesManualGenerationProvider(order.id, "wrong"), false);
   assert.equal(await storage.finalizePeptidesManualGenerationProvider(order.id, "manual-1"), true);
 
+  const autoFirst = await activeOrder(storage, {}, "auto-first@example.com");
+  assert.ok(await storage.claimPeptidesGenerationAttempt(autoFirst.id, config));
+  assert.equal(await storage.claimPeptidesManualGenerationProvider(autoFirst.id, "manual-during-auto", false, 60_000), false);
+
   await storage.setOrderMetadataKey(order.id, "peptidesEmailHold", true);
   assert.equal(await storage.claimPeptidesManualGenerationProvider(order.id, "manual-unheld", false, 60_000), false);
   assert.equal(await storage.claimPeptidesManualGenerationProvider(order.id, "manual-held", true, 60_000), true);
@@ -362,6 +366,10 @@ test("payment, Blood access and manual provider paths stay fail-closed in source
   assert.match(routes, /PAYPAL_RECONCILIATION_COMMERCIAL_PARITY_FAILED/);
   assert.match(routes, /stripeSessionMatchesOrder[\s\S]*amount_total[\s\S]*finalAmountCents/);
   assert.match(routes, /STRIPE_PAID_WITHOUT_LOCAL_ORDER/);
+  assert.match(routes, /STRIPE_ORPHAN_INCIDENT_PERSIST_FAILED/);
+  assert.match(routes, /ORDER_STATUS_CHANGED_DURING_RECONCILIATION/);
+  assert.match(routes, /ORDER_STATUS_CHANGED_DURING_CAPTURE/);
+  assert.match(routes, /WHERE id = \$1 AND status = 'pending'/);
   assert.match(routes, /STRIPE_COMMERCIAL_PARITY_FAILED/);
   assert.match(routes, /claimPeptidesManualGenerationProvider/);
   assert.match(routes, /finalizePeptidesManualGenerationProvider/);
