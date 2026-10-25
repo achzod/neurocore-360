@@ -62,6 +62,7 @@ const SURFACE_3 = "#FBFBFD";       // Slightly off-white sections
 const BORDER = "#D2D2D7";          // Apple light border
 const WHATSAPP_GREEN = "#25D366";
 const WHATSAPP_TEXT = "#128C7E";
+const PEPTIDES_ENGINE_SALES_PAUSED = true;
 
 type PeptidesTierId = "solo" | "coached" | "tracked";
 type WhatsAppPlacement =
@@ -2347,6 +2348,30 @@ function Hero() {
 // ============================================================================
 
 export default function PeptidesEngineOffer() {
+  if (PEPTIDES_ENGINE_SALES_PAUSED) {
+    return (
+      <div className="min-h-screen bg-[#F5F5F7] text-[#1D1D1F]">
+        <Header />
+        <main className="px-6 py-24 md:py-32">
+          <section className="mx-auto max-w-3xl rounded-3xl border border-[#D2D2D7] bg-white p-8 text-center shadow-xl md:p-14">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#0071E3]/10 text-[#0071E3]">
+              <ShieldCheck className="h-7 w-7" aria-hidden="true" />
+            </div>
+            <p className="mt-6 font-mono text-xs font-bold uppercase tracking-[0.22em] text-[#0071E3]">Contrôle qualité en cours</p>
+            <h1 className="mt-4 text-3xl font-bold leading-tight md:text-5xl">Les nouvelles commandes Peptides Engine sont temporairement suspendues.</h1>
+            <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-[#6E6E73] md:text-lg">
+              Nous vérifions le périmètre exact du rapport, ses sources et le parcours de livraison avant de rouvrir les ventes. Aucun nouveau paiement n'est accepté pendant ce contrôle.
+            </p>
+            <div className="mt-8 rounded-2xl border border-[#0071E3]/20 bg-[#0071E3]/5 p-5 text-left text-sm leading-6 text-[#424245]">
+              <strong className="text-[#1D1D1F]">Commande déjà payée ?</strong> Ton dossier reste accessible. Réponds directement à ton email de livraison ou écris à <a className="font-semibold text-[#0071E3] underline" href="mailto:coaching@achzodcoaching.com">coaching@achzodcoaching.com</a> pour une correction prioritaire.
+            </div>
+          </section>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white text-[#1D1D1F]">
       <Header />

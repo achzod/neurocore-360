@@ -4931,6 +4931,17 @@ export async function registerRoutes(
   };
 
 
+  // New Peptides Engine purchases are paused while the paid scope and the
+  // fulfillment gate are reconciled. Existing paid orders and report access
+  // keep working; only new payment sessions are blocked.
+  const PEPTIDES_ENGINE_CHECKOUT_PAUSED = true;
+  const rejectPausedPeptidesCheckout = (res: any): void => {
+    res.status(503).json({
+      error: "PEPTIDES_ENGINE_CHECKOUT_PAUSED",
+      message: "Les nouvelles commandes Peptides Engine sont temporairement suspendues pendant un contrôle qualité.",
+    });
+  };
+
   // Tier pricing for PEPTIDES_ENGINE (3 offres distinctes : Solo / Coached / Tracked).
   // Le rapport reste IDENTIQUE entre les tiers ; seul l'ecosysteme autour change.
   const PEPTIDES_TIER_PRICE_CENTS: Record<"solo" | "coached" | "tracked", number> = {
@@ -4952,6 +4963,10 @@ export async function registerRoutes(
       const paymentRail = planType === "PEPTIDES_ENGINE" && req.body?.paymentRail === "klarna"
         ? "klarna"
         : "standard";
+      if (planType === "PEPTIDES_ENGINE" && PEPTIDES_ENGINE_CHECKOUT_PAUSED) {
+        rejectPausedPeptidesCheckout(res);
+        return;
+      }
       if (!isValidEmailFormat(email)) {
         res.status(400).json({ error: "EMAIL_INVALID", message: "Adresse email invalide. Verifie qu'il y a bien un point dans le domaine (par exemple @gmail.com et non @gmailcom)." });
         return;
@@ -5917,6 +5932,10 @@ export async function registerRoutes(
       let previewLeadId: string | null = null;
       if (!email || !planType) {
         res.status(400).json({ error: "email et planType requis" });
+        return;
+      }
+      if (planType === "PEPTIDES_ENGINE" && PEPTIDES_ENGINE_CHECKOUT_PAUSED) {
+        rejectPausedPeptidesCheckout(res);
         return;
       }
       if (!isValidEmailFormat(email)) {
@@ -14891,12 +14910,20 @@ export async function registerRoutes(
 
   // ==================== PEPTIDES ENGINE ROUTES ====================
 
-  startPeptidesPreviewDeliveryWorker();
-  startPeptidesPreviewFollowupWorker();
+  if (!PEPTIDES_ENGINE_CHECKOUT_PAUSED) {
+    startPeptidesPreviewDeliveryWorker();
+    startPeptidesPreviewFollowupWorker();
+  } else {
+    console.warn("[PeptidesEngine] Sales pause active: preview delivery and follow-up workers are disabled");
+  }
   const peptidesLimiter = createRateLimiter({ windowMs: 60_000, max: 10 });
 
   app.post("/api/admin/peptides-preview-followups", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
+    if (PEPTIDES_ENGINE_CHECKOUT_PAUSED && req.body?.dryRun === false) {
+      res.status(409).json({ success: false, error: "PEPTIDES_ENGINE_CHECKOUT_PAUSED" });
+      return;
+    }
     try {
       const dryRun = req.body?.dryRun !== false;
       const requestedMax = Math.min(Math.max(Number(req.body?.maxToSend) || 25, 1), 25);
@@ -14929,6 +14956,13 @@ export async function registerRoutes(
   // exposes the reference-dose arithmetic, operational quantities and landed
   // estimate. Reconstitution and the individualized weekly schedule remain paid output.
   app.post("/api/peptides-preview/analyze", createRateLimiter({ windowMs: 60_000, max: 5 }), async (req, res) => {
+    if (PEPTIDES_ENGINE_CHECKOUT_PAUSED) {
+      res.status(503).json({
+        error: "PEPTIDES_ENGINE_CHECKOUT_PAUSED",
+        message: "Les nouvelles analyses et commandes Peptides Engine sont temporairement suspendues pendant un contrôle qualité.",
+      });
+      return;
+    }
     const requestId = crypto.randomUUID();
     let phase: "analysis" | "catalog" | "persistence" | "notification" | "response" = "analysis";
     try {

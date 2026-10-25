@@ -1,6 +1,7 @@
 export type PeptidesFulfillmentIncidentCode =
   | "MISSING_REPORT"
   | "INVALID_EMPTY_OR_MEDICAL_REVIEW_REPORT"
+  | "MANUAL_INCOMPLETE_REPORT"
   | "RECIPIENT_UNSUBSCRIBED"
   | "DELIVERY_OVERDUE";
 
@@ -59,17 +60,20 @@ export function evaluatePeptidesFulfillmentInvariant(
     return null;
   }
 
-  // A report may be intentionally fulfilled outside the automatic provider
-  // path (for example through a verified Gmail draft). Keep the report linked
-  // and the delivery hold intact: the automatic worker must neither reject the
-  // manually reviewed artifact nor regenerate it behind the operator's back.
-  // The explicit metadata flag is required; a generic hold alone must not hide
-  // genuinely invalid automatic reports.
-  if (input.manualFulfillment && input.deliveryHeld) return null;
-
   const qualityVersion = String(input.report?.qualityVersion || "").toLowerCase();
   const peptideCount = Array.isArray(input.report?.peptides) ? input.report!.peptides!.length : 0;
   if (!input.report || qualityVersion === "medical-review-v1" || peptideCount < 2) {
+    // A manual link under hold is allowed to preserve an incident artifact,
+    // but it is never equivalent to a complete paid deliverable. Keep it
+    // linked, block every automatic delivery, and surface an action-required
+    // incident instead of silently treating the order as fulfilled.
+    if (input.report && input.manualFulfillment && input.deliveryHeld) {
+      return {
+        code: "MANUAL_INCOMPLETE_REPORT",
+        blocksDelivery: true,
+        detail: `Le rapport manuel reste incomplet: qualityVersion=${qualityVersion || "missing"}, peptideCount=${peptideCount}.`,
+      };
+    }
     return {
       code: "INVALID_EMPTY_OR_MEDICAL_REVIEW_REPORT",
       blocksDelivery: true,

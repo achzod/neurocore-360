@@ -121,6 +121,23 @@ function PeptidesWhatsAppLink({
 function FormatSectionContent({ content }: { content: string }) {
   if (!content) return null;
 
+  const withLinks = (text: string) => text.split(/(https?:\/\/[^\s]+)/g).map((part, index) => {
+    if (!/^https?:\/\//.test(part)) return part;
+    const href = part.replace(/[),.;]+$/, "");
+    return (
+      <a
+        key={`${href}-${index}`}
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline decoration-amber-500/50 underline-offset-2 hover:text-amber-300"
+        style={{ color: AMBER }}
+      >
+        {part}
+      </a>
+    );
+  });
+
   const lines = content.split("\n");
   const elements: JSX.Element[] = [];
   let listItems: string[] = [];
@@ -133,7 +150,7 @@ function FormatSectionContent({ content }: { content: string }) {
           {listItems.map((item, i) => (
             <li key={i} className="flex min-w-0 items-start gap-2 text-sm text-white/65">
               <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: AMBER }} />
-              <span className="min-w-0 break-words [overflow-wrap:anywhere]">{item}</span>
+              <span className="min-w-0 break-words [overflow-wrap:anywhere]">{withLinks(item)}</span>
             </li>
           ))}
         </ul>
@@ -177,7 +194,7 @@ function FormatSectionContent({ content }: { content: string }) {
       flushList();
       elements.push(
         <p key={key++} className="min-w-0 break-words [overflow-wrap:anywhere] text-sm text-white/65 my-1">
-          <span className="font-semibold text-white/90">{kvMatch[1]}:</span> {kvMatch[2]}
+          <span className="font-semibold text-white/90">{kvMatch[1]}:</span> {withLinks(kvMatch[2])}
         </p>
       );
       continue;
@@ -187,7 +204,7 @@ function FormatSectionContent({ content }: { content: string }) {
     flushList();
     elements.push(
       <p key={key++} className="min-w-0 break-words [overflow-wrap:anywhere] text-[15px] text-white/70 leading-[1.8] my-2">
-        {trimmed}
+        {withLinks(trimmed)}
       </p>
     );
   }
@@ -744,11 +761,12 @@ export default function PeptidesEngineReport() {
             <div className="flex items-start gap-3">
               <Shield className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: AMBER }} />
               <div>
-                <h2 className="text-lg font-bold mb-2">Calcul et manipulation a faire valider</h2>
+                <h2 className="text-lg font-bold mb-2">Analyse scientifique disponible · protocole injectable non fourni</h2>
                 <p className="text-sm text-white/65 leading-relaxed">
-                  Le calculateur automatique et les guides generiques de reconstitution sont desactives pour ce rapport.
-                  Fais confirmer la concentration, le volume, le materiel et le geste par un medecin ou un pharmacien
-                  avant toute manipulation.
+                  Ce rapport explique pourquoi la Retatrutide a été retenue comme piste d'analyse et donne les références
+                  scientifiques vérifiables utilisées. Il ne fournit pas de dose injectable personnalisée, de calcul de
+                  reconstitution, d'unités de seringue ni de lien d'achat d'une molécule expérimentale. Ces éléments ne
+                  peuvent pas être déduits de façon sûre d'un questionnaire en ligne.
                 </p>
               </div>
             </div>
