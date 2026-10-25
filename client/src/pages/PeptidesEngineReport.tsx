@@ -47,7 +47,7 @@ interface ReportSection {
 interface PeptidesReport {
   clientName: string;
   tier?: PeptidesTier;
-  qualityVersion?: string;
+  qualityVersion?: "expert-standard-v1" | "medical-review-v1" | "expert-review-v2";
   sections: ReportSection[];
   peptides: PeptideRec[];
   bloodMarkers: string[];
@@ -380,7 +380,7 @@ export default function PeptidesEngineReport() {
   const [error, setError] = useState<string | null>(null);
   const [ndaAccepted, setNdaAccepted] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    new Set(["profil-synthese", "rationale", "guide-fournisseur", "reconstitution-guide", "guide-injection", "protocole-pratique", "nutrition-protocole", "shopping-list", "checklist-demarrage"])
+    new Set(["profil-synthese", "rationale", "decision-molecule", "objectif-12-semaines", "plan-hebdomadaire", "nutrition", "faim-emotionnelle", "surveillance", "anti-rebond", "sources-scientifiques", "guide-fournisseur", "reconstitution-guide", "guide-injection", "protocole-pratique", "nutrition-protocole", "shopping-list", "checklist-demarrage"])
   );
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
@@ -435,7 +435,7 @@ export default function PeptidesEngineReport() {
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-white/60 font-mono text-sm">Generation du protocole...</p>
+          <p className="text-white/60 font-mono text-sm">Chargement de ton rapport...</p>
         </div>
       </div>
     );
@@ -453,6 +453,9 @@ export default function PeptidesEngineReport() {
     );
   }
 
+  const isDecisionSupportReport = report.qualityVersion === "expert-review-v2";
+  const isNonOperationalReport = isDecisionSupportReport || report.qualityVersion === "medical-review-v1";
+
   // NDA Gate
   if (!ndaAccepted) {
     return (
@@ -469,13 +472,13 @@ export default function PeptidesEngineReport() {
               <h1 className="text-2xl font-bold">Clause de Confidentialite</h1>
             </div>
             <div className="space-y-4 text-white/70 text-sm leading-relaxed mb-8">
-              <p>Avant d'acceder a ton protocole personnalise, tu dois accepter les conditions suivantes :</p>
+              <p>Avant d'acceder a ton rapport personnalise, tu dois accepter les conditions suivantes :</p>
               <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
-                <p><strong className="text-white">1. Usage strictement personnel</strong> : Ce protocole est genere exclusivement pour toi. Il ne peut etre partage, reproduit, publie ou distribue sous quelque forme que ce soit.</p>
+                <p><strong className="text-white">1. Usage strictement personnel</strong> : Ce rapport est genere exclusivement pour toi. Il ne peut etre partage, reproduit, publie ou distribue sous quelque forme que ce soit.</p>
                 <p><strong className="text-white">2. Interdiction de diffusion</strong> : Toute publication sur internet (reseaux sociaux, forums, YouTube, blogs, groupes Telegram/Discord) est strictement interdite.</p>
-                <p><strong className="text-white">3. Propriete intellectuelle</strong> : Le contenu du protocole, incluant les recommandations, dosages et guides, est la propriete intellectuelle d'APEXLABS by Achzod.</p>
-                <p><strong className="text-white">4. Usage educatif</strong> : Ce protocole est fourni a titre educatif et informatif. Il ne constitue pas un avis medical. Consulte un medecin avant toute supplementation.</p>
-                <p><strong className="text-white">5. Violation</strong> : Toute violation de ces conditions entrainera la resiliation immediate de l'acces au protocole et pourra donner lieu a des <span className="text-amber-400">poursuites judiciaires</span> (dommages et interets). Juridiction : Tribunaux de Paris.</p>
+                <p><strong className="text-white">3. Propriete intellectuelle</strong> : Le contenu du rapport et ses recommandations sont la propriete intellectuelle d'APEXLABS by Achzod.</p>
+                <p><strong className="text-white">4. Usage educatif</strong> : Ce rapport est fourni a titre educatif et informatif. Il ne constitue pas un diagnostic ni une ordonnance.</p>
+                <p><strong className="text-white">5. Violation</strong> : Toute violation de ces conditions entrainera la resiliation immediate de l'acces au rapport et pourra donner lieu a des <span className="text-amber-400">poursuites judiciaires</span> (dommages et interets). Juridiction : Tribunaux de Paris.</p>
               </div>
             </div>
             <button
@@ -484,7 +487,7 @@ export default function PeptidesEngineReport() {
               style={{ background: AMBER }}
             >
               <Shield className="w-4 h-4" />
-              J'accepte les conditions : Acceder a mon protocole
+              J'accepte les conditions : Acceder a mon rapport
             </button>
           </motion.div>
         </div>
@@ -519,11 +522,11 @@ export default function PeptidesEngineReport() {
             </div>
             <div>
               <p className="font-mono text-xs uppercase tracking-widest" style={{ color: AMBER }}>Peptides Engine</p>
-              <p className="text-white/40 text-sm">Protocole personnalise</p>
+              <p className="text-white/40 text-sm">{isDecisionSupportReport ? "Analyse personnalisee complete" : "Protocole personnalise"}</p>
             </div>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold mb-2">
-            Ton protocole, {report.clientName}
+            {isDecisionSupportReport ? "Ton rapport complet" : "Ton protocole"}, {report.clientName}
           </h1>
           <p className="text-white/50 text-sm font-mono">
             {report._generationMeta?.generatedAt ? "Mis a jour le" : "Genere le"}{" "}
@@ -610,7 +613,7 @@ export default function PeptidesEngineReport() {
         >
           <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
             <Syringe className="w-5 h-5" style={{ color: AMBER }} />
-            Ton Stack Peptides
+            {isDecisionSupportReport ? "Piste analysee" : "Ton Stack Peptides"}
           </h2>
           <div className="grid gap-4">
             {report.peptides.map((pep, i) => (
@@ -724,7 +727,7 @@ export default function PeptidesEngineReport() {
               <Calendar className="w-5 h-5" style={{ color: AMBER }} />
               Calendrier Hebdomadaire
             </h2>
-            <p className="text-white/40 text-xs font-mono mb-3">Semaine type, rotation des sites d'injection</p>
+            <p className="text-white/40 text-xs font-mono mb-3">{isDecisionSupportReport ? "Semaine type : mesures, nutrition, entrainement et maintien" : "Semaine type, rotation des sites d'injection"}</p>
             <WeeklyScheduleTable schedule={report.weeklySchedule} />
           </motion.div>
         )}
@@ -751,7 +754,7 @@ export default function PeptidesEngineReport() {
           </motion.div>
         )}
 
-        {report.qualityVersion === "medical-review-v1" ? (
+        {isNonOperationalReport ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -761,12 +764,11 @@ export default function PeptidesEngineReport() {
             <div className="flex items-start gap-3">
               <Shield className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: AMBER }} />
               <div>
-                <h2 className="text-lg font-bold mb-2">Analyse scientifique disponible · protocole injectable non fourni</h2>
+                <h2 className="text-lg font-bold mb-2">{isDecisionSupportReport ? "Analyse personnalisée complète" : "Analyse scientifique disponible"}</h2>
                 <p className="text-sm text-white/65 leading-relaxed">
-                  Ce rapport explique pourquoi la Retatrutide a été retenue comme piste d'analyse et donne les références
-                  scientifiques vérifiables utilisées. Il ne fournit pas de dose injectable personnalisée, de calcul de
-                  reconstitution, d'unités de seringue ni de lien d'achat d'une molécule expérimentale. Ces éléments ne
-                  peuvent pas être déduits de façon sûre d'un questionnaire en ligne.
+                  {isDecisionSupportReport
+                    ? "Ce rapport reprend ton profil, la décision sur la piste Retatrutide, les données scientifiques, la baseline, le plan de travail sur douze semaines, la nutrition, l'entraînement, la faim émotionnelle, la surveillance et la stratégie anti-rebond."
+                    : "Ce rapport explique pourquoi la Retatrutide a été retenue comme piste d'analyse et donne les références scientifiques vérifiables utilisées."}
                 </p>
               </div>
             </div>
