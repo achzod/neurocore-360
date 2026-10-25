@@ -123,6 +123,8 @@ import {
   isPeptidesApprovalExpected,
 } from "./peptidesReleaseHashGate";
 import {
+  hashPeptidesManualMutationPayload,
+  hashPeptidesManualSourceState,
   validatePeptidesManualOrderTargetLock,
   validatePeptidesManualTargetLock,
   type PeptidesManualOrderTargetLock,
@@ -1858,6 +1860,58 @@ export async function registerRoutes(
     "reset-generation-lock",
   ]);
 
+  function getPeptidesManualMutationPayload(mutation: string, body: any): Record<string, unknown> {
+    const source = body && typeof body === "object" ? body : {};
+    switch (mutation) {
+      case "replace-report":
+      case "generate-report":
+        return {
+          skipEmail: source.skipEmail === true,
+          replaceReportId: String(source.replaceReportId || "").trim() || null,
+          manualExpertDirective: String(source.manualExpertDirective || "").trim(),
+          recoveryPreviousError: String(source.recoveryPreviousError || "").trim(),
+          forceImmediate: source.forceImmediate === true,
+        };
+      case "link-order-to-report":
+        return { expectedCurrentReportId: String(source.expectedCurrentReportId || "").trim() || null };
+      case "correct-email":
+        return {
+          fromEmail: String(source.fromEmail || "").trim().toLowerCase(),
+          toEmail: String(source.toEmail || "").trim().toLowerCase(),
+          apply: source.apply === true,
+          holdDelivery: source.holdDelivery !== false,
+        };
+      case "inject-responses":
+        return { responses: source.responses && typeof source.responses === "object" ? source.responses : null };
+      case "delivery-hold": {
+        const hold = source.hold === true;
+        return {
+          hold,
+          reason: hold ? String(source.reason || "verification_manuelle").slice(0, 240) : "",
+        };
+      }
+      case "send-order-confirmation":
+        return { force: source.force === true };
+      case "recompute-vials":
+      case "repair-live":
+        return { apply: source.apply === true };
+      case "edit-sections":
+        return {
+          patches: Array.isArray(source.patches)
+            ? source.patches.map((patch: any) => ({
+                sectionId: String(patch?.sectionId || ""),
+                content: String(patch?.content || ""),
+              }))
+            : [],
+          removePeptides: Array.isArray(source.removePeptides) ? source.removePeptides.map(String) : [],
+        };
+      case "reset-generation-lock":
+        return {};
+      default:
+        throw new Error(`Mutation Peptides inconnue: ${mutation}`);
+    }
+  }
+
   function validateManualPeptidesOrderTargetOrRespond(input: {
     req: any;
     res: any;
@@ -1870,6 +1924,7 @@ export async function registerRoutes(
       targetLock: input.req.body?.orderTargetLock as PeptidesManualOrderTargetLock | undefined,
       order: input.order,
       responses: input.responses,
+      mutationPayload: getPeptidesManualMutationPayload(input.expectedMutation, input.req.body),
     });
     if (result.ok) return true;
     input.res.status(409).json({
@@ -1894,6 +1949,7 @@ export async function registerRoutes(
       targetLock: input.req.body?.targetLock as PeptidesManualTargetLock | undefined,
       order: input.order,
       reportRecord: input.reportRecord,
+      mutationPayload: getPeptidesManualMutationPayload(input.expectedMutation, input.req.body),
       allowUnlinkedReport: input.allowUnlinkedReport,
     });
     if (result.ok) return true;
@@ -1934,6 +1990,8 @@ export async function registerRoutes(
         res.status(404).json({ success: false, error: "Commande ou rapport introuvable" });
         return;
       }
+      const mutationPayload = getPeptidesManualMutationPayload(mutation, req.body);
+      const currentPayloadSha256 = hashPeptidesManualMutationPayload(mutationPayload);
       const previewTarget = {
         mutation,
         orderId,
@@ -1941,20 +1999,28 @@ export async function registerRoutes(
         email,
         expectedClientName,
         expectedCurrentReportSha256: "pending",
+        expectedSourceSha256: "pending",
+        expectedPayloadSha256: currentPayloadSha256,
       };
-      const currentHash = validatePeptidesManualTargetLock({
+      const currentState = validatePeptidesManualTargetLock({
         expectedMutation: mutation,
         targetLock: previewTarget,
         order,
         reportRecord: reportRecord as any,
+        mutationPayload,
         allowUnlinkedReport: mutation === "link-order-to-report",
         requireConfirmation: false,
-      }).currentReportSha256;
+      });
       const result = validatePeptidesManualTargetLock({
         expectedMutation: mutation,
-        targetLock: { ...previewTarget, expectedCurrentReportSha256: currentHash },
+        targetLock: {
+          ...previewTarget,
+          expectedCurrentReportSha256: currentState.currentReportSha256,
+          expectedSourceSha256: currentState.currentSourceSha256,
+        },
         order,
         reportRecord: reportRecord as any,
+        mutationPayload,
         allowUnlinkedReport: mutation === "link-order-to-report",
         requireConfirmation: false,
       });
@@ -1975,6 +2041,8 @@ export async function registerRoutes(
           email: String(order.email || "").toLowerCase(),
           clientName: String((reportRecord.report as any)?.clientName || ""),
           reportSha256: result.currentReportSha256,
+          sourceSha256: result.currentSourceSha256,
+          payloadSha256: result.currentPayloadSha256,
         },
       });
     } catch (error: any) {
@@ -2009,12 +2077,25 @@ export async function registerRoutes(
         : (progress?.responses && typeof progress.responses === "object")
           ? progress.responses as Record<string, unknown>
           : null;
-      const previewTarget = { mutation, orderId, email, expectedClientName };
+      const mutationPayload = getPeptidesManualMutationPayload(mutation, req.body);
+      const storedResponses = (order.metadata as any)?.peptidesResponses;
+      const previewTarget = {
+        mutation,
+        orderId,
+        email,
+        expectedClientName,
+        expectedSourceSha256: hashPeptidesManualSourceState(
+          storedResponses && typeof storedResponses === "object" ? storedResponses : null,
+          responses,
+        ),
+        expectedPayloadSha256: hashPeptidesManualMutationPayload(mutationPayload),
+      };
       const result = validatePeptidesManualOrderTargetLock({
         expectedMutation: mutation,
         targetLock: previewTarget,
         order,
         responses,
+        mutationPayload,
         requireConfirmation: false,
       });
       if (!result.ok) {
@@ -2032,6 +2113,8 @@ export async function registerRoutes(
           orderId: String(order.id),
           email: String(order.email || "").toLowerCase(),
           linkedReportId: String((order.metadata as any)?.peptidesReportId || "") || null,
+          sourceSha256: result.currentSourceSha256,
+          payloadSha256: result.currentPayloadSha256,
         },
       });
     } catch (error: any) {
