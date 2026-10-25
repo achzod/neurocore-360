@@ -46,7 +46,7 @@ import {
 } from "./recommendations-engine";
 import { storage } from "../storage";
 import { createRateLimiter } from "../middleware/rateLimit";
-import { getAuthPayload, hasValidReportAccess, type AuthPayload } from "../auth";
+import { getAuthPayload, getReportAccessDecision } from "../auth";
 import crypto from "crypto";
 import {
   sendAdminEmailNewAudit,
@@ -125,29 +125,26 @@ function requireAdminAuth(req: any, res: any, silent?: boolean): boolean {
   }
 }
 
-// SECURITY: Check if user owns the blood report (prevents IDOR vulnerability)
+// SECURITY: Check if user owns the blood report (prevents IDOR vulnerability).
+// A signed URL is accepted only after resolving the report's canonical owner
+// email; resource binding alone is insufficient if ownership data drifts.
 async function checkBloodReportOwnership(req: any, res: any, reportId: string, silent?: boolean): Promise<boolean> {
-  // Allow admin access first
-  const isAdmin = requireAdminAuth(req, res, true);
-  if (isAdmin) return true;
-
-  if (hasValidReportAccess(req, "blood", reportId)) return true;
+  if (requireAdminAuth(req, res, true)) return true;
 
   const payload = getAuthPayload(req);
-  if (!payload) {
-    if (!silent) res.status(401).json({ error: "Accès non autorisé à ce rapport" });
-    return false;
-  }
-
-  // First try blood_reports table (has email directly)
-  let report = await storage.getBloodReport(reportId);
+  const report = await storage.getBloodReport(reportId);
   if (report) {
-    if (report.email && report.email.toLowerCase() === payload.email.toLowerCase()) return true;
+    const ownerEmail = String(report.email || "").trim().toLowerCase();
+    if (ownerEmail && getReportAccessDecision(req, "blood", String(reportId), ownerEmail) === 200) return true;
+    if (!payload) {
+      if (!silent) res.status(401).json({ error: "Accès non autorisé à ce rapport" });
+      return false;
+    }
+    if (ownerEmail && ownerEmail === payload.email.toLowerCase()) return true;
     if (!silent) res.status(403).json({ error: "Accès non autorisé à ce rapport" });
     return false;
   }
 
-  // Try blood_tests table (has userId , compare with JWT userId directly)
   try {
     const { db } = await import("../db.js");
     const { bloodTests } = await import("../../shared/drizzle-schema.js");
@@ -155,12 +152,14 @@ async function checkBloodReportOwnership(req: any, res: any, reportId: string, s
     const results = await db.select().from(bloodTests).where(eq(bloodTests.id, reportId));
     if (results.length > 0) {
       const testUserId = results[0].userId;
-      // Match by userId (most reliable) OR by email via user lookup
-      if (testUserId === payload.userId) return true;
-      // Fallback: resolve userId to email
-      const user = await storage.getUser(testUserId);
-      if (user?.email?.toLowerCase() === payload.email.toLowerCase()) return true;
-      // Fallback 2: check if JWT email matches any user with this userId
+      const owner = await storage.getUser(testUserId);
+      const ownerEmail = String(owner?.email || "").trim().toLowerCase();
+      if (ownerEmail && getReportAccessDecision(req, "blood", String(reportId), ownerEmail) === 200) return true;
+      if (!payload) {
+        if (!silent) res.status(401).json({ error: "Accès non autorisé à ce rapport" });
+        return false;
+      }
+      if (testUserId === payload.userId || (ownerEmail && ownerEmail === payload.email.toLowerCase())) return true;
       const userByEmail = await storage.getUserByEmail(payload.email);
       if (userByEmail && userByEmail.id === testUserId) return true;
     }
@@ -168,6 +167,10 @@ async function checkBloodReportOwnership(req: any, res: any, reportId: string, s
     console.error("[Security] Error checking blood test ownership:", error);
   }
 
+  if (!payload) {
+    if (!silent) res.status(401).json({ error: "Accès non autorisé à ce rapport" });
+    return false;
+  }
   if (!silent) res.status(403).json({ error: "Accès non autorisé à ce rapport" });
   return false;
 }

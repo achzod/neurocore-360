@@ -231,7 +231,7 @@ test("unapproved report may persist a validated live refresh", () => {
 test("recovery validates and hash-gates a refresh before persistence", () => {
   const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
   const recoveryStart = routes.indexOf("const repaired = await refreshPeptauraPricingForDelivery(", routes.indexOf("Recovery path"));
-  const recoveryEnd = routes.indexOf("if (!validation.ok)", recoveryStart);
+  const recoveryEnd = routes.indexOf("if (!validation.ok || validation.warnings.length > 0)", recoveryStart);
   const block = routes.slice(recoveryStart, recoveryEnd);
   assert.ok(recoveryStart > 0 && recoveryEnd > recoveryStart);
   assert.match(block, /const validation = validatePeptidesReport\(repaired\)/);
@@ -240,6 +240,7 @@ test("recovery validates and hash-gates a refresh before persistence", () => {
   assert.match(block, /isPeptidesApprovalExpected/);
   assert.match(block, /setOrderMetadataKey\(order\.id, "peptidesHashGateApprovalRequired", true\)/);
   assert.match(block, /if \(hashGate\.persistRefreshed && validation\.ok\)/);
-  assert.ok(block.indexOf("const validation") < block.indexOf("storage.updateBurnoutReport"));
-  assert.ok(block.indexOf("evaluatePeptidesReleaseHashGate") < block.indexOf("storage.updateBurnoutReport"));
+  assert.ok(block.indexOf("const validation") < block.indexOf("storage.updateBurnoutReportIfHashMatches"));
+  assert.ok(block.indexOf("evaluatePeptidesReleaseHashGate") < block.indexOf("storage.updateBurnoutReportIfHashMatches"));
+  assert.match(block, /PEPTIDES_REFRESH_PERSIST_HASH_MISMATCH/);
 });

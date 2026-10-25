@@ -14,8 +14,14 @@ export function reportAccessHeaders(resourceId: string | undefined): Record<stri
 
 export function redirectLegacyReportLinkToLogin(response: Response): boolean {
   if (response.status !== 401) return false;
-  const returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  const params = new URLSearchParams(window.location.search);
+  params.delete("access");
+  const query = params.toString();
+  const returnTo = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`;
   localStorage.setItem("apexlabs_post_login_redirect", returnTo);
-  window.location.assign("/auth/login");
+  const knownEmail = localStorage.getItem("neurocore_email") || "";
+  const loginParams = new URLSearchParams({ next: returnTo, reason: "renew-access" });
+  if (knownEmail) loginParams.set("email", knownEmail);
+  window.location.assign(`/auth/login?${loginParams.toString()}`);
   return true;
 }

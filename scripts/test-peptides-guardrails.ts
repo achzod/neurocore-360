@@ -24,6 +24,7 @@ import { derivePeptidesStackPolicy } from "../server/peptidesStackPolicy";
 
 const engineSource = readFileSync(new URL("../server/peptidesEngine.ts", import.meta.url), "utf8");
 const purchasePlanSource = readFileSync(new URL("../server/peptidesPurchasePlan.ts", import.meta.url), "utf8");
+const generationGateSource = readFileSync(new URL("../server/peptidesGenerationGate.ts", import.meta.url), "utf8");
 const routesSource = readFileSync(new URL("../server/routes.ts", import.meta.url), "utf8");
 const reportPageSource = readFileSync(new URL("../client/src/pages/PeptidesEngineReport.tsx", import.meta.url), "utf8");
 const peptidesPageSource = readFileSync(new URL("../client/src/pages/PeptidesEnginePage.tsx", import.meta.url), "utf8");
@@ -43,7 +44,7 @@ assert.match(engineSource, /Provider failure is terminal, duplicate paid generat
 assert.doesNotMatch(engineSource, /TOUJOURS penser à inclure un peptide orienté prise de masse musculaire/);
 assert.doesNotMatch(engineSource, /Tu dois TOUJOURS inclure un peptide BONUS/);
 assert.doesNotMatch(engineSource, /2 peptides maximum si necessaire/);
-assert.match(engineSource, /AXIS_COVERAGE_GATE/);
+assert.match(generationGateSource, /AXIS_COVERAGE_GATE/);
 assert.match(engineSource, /Ne supprime jamais silencieusement un objectif valide/);
 assert.match(engineSource, /Interdiction d'ajouter CJC-1295 avec DAC/);
 assert.doesNotMatch(engineSource, /@anthropic-ai\/sdk|ANTHROPIC_API_KEY|callClaudeForPeptides/);
@@ -53,12 +54,17 @@ assert.match(peptidesPageSource, /peptides-engine-consent-v2-2026-08-13/);
 assert.match(peptidesPageSource, /assumer mes décisions d'achat et d'utilisation/);
 assert.match(engineSource, /consentAccepted:\s*boolean/);
 assert.match(routesSource, /generatePeptidesProtocol\(responses, email, autoGenTier,[\s\S]{0,600}consentAccepted/);
-assert.match(routesSource, /generatePeptidesProtocol\(responses, order\.email, forcePaidTier,[\s\S]{0,600}consentAccepted/);
+const forcePaidStart = routesSource.indexOf('app.post("/api/admin/orders/:id/force-paid"');
+const forcePaidEnd = routesSource.indexOf('app.post("/api/admin/orders/:id/cancel"', forcePaidStart);
+const forcePaidSource = routesSource.slice(forcePaidStart, forcePaidEnd);
+assert.match(forcePaidSource, /PEPTIDES_FORCE_PAID_DISABLED/);
+assert.doesNotMatch(forcePaidSource, /generatePeptidesProtocol\(/);
 const publicCreateStart = routesSource.indexOf('app.post("/api/peptides-engine/create"');
 const publicCreateEnd = routesSource.indexOf("// 3. Get generated report by ID", publicCreateStart);
 assert.ok(publicCreateStart >= 0 && publicCreateEnd > publicCreateStart);
 const publicCreateSource = routesSource.slice(publicCreateStart, publicCreateEnd);
-assert.match(publicCreateSource, /generation:\s*"durable_cron"/);
+assert.match(publicCreateSource, /PEPTIDES_CREATE_COMPATIBILITY_ENDPOINT_RETIRED/);
+assert.match(publicCreateSource, /status\(410\)/);
 assert.doesNotMatch(publicCreateSource, /generatePeptidesProtocol\(/);
 assert.doesNotMatch(publicCreateSource, /createOrder\(/);
 assert.match(routesSource, /generatePeptidesProtocol\(responses, email, manualTier,[\s\S]{0,600}consentAccepted/);
@@ -91,7 +97,7 @@ assert.match(
 );
 assert.doesNotMatch(publicCreateSource, /checkPeptidesSafetyGate\(/);
 assert.match(routesSource, /evaluatePeptidesFulfillmentInvariant\(/);
-assert.match(routesSource, /peptidesFulfillmentState", "ACTION_REQUIRED"/);
+assert.match(routesSource, /peptidesFulfillmentState:\s*"ACTION_REQUIRED"/);
 assert.match(routesSource, /\/api\/admin\/peptides-fulfillment-incidents/);
 assert.match(routesSource, /peptidesPreviousInvalidReportId/);
 assert.match(routesSource, /hasLatestTerminalUnsubscribeSignal/);
@@ -133,7 +139,7 @@ assert.equal(
 );
 assert.equal(
   derivePeptidesStackPolicy({ pep_primary_goal: "recovery" }).minimumMolecules,
-  2,
+  1,
 );
 assert.deepEqual(
   (() => {
@@ -187,6 +193,9 @@ assert.match(
 const now = new Date().toISOString();
 const peptide = {
   name: "Retatrutide",
+  activationStatus: "active" as const,
+  activationRequirements: [],
+  evidenceSummary: "Exemple de preuve structurelle et de limites documentees.",
   route: "Sous cutanee uniquement apres accord medical",
   dosage: "Semaine 1 a 1 mg, semaine 2 a 2 mg, semaine 3 a 4 mg, semaines 4 a 12 a 8 mg, une fois par semaine",
   timing: "Jour fixe",
@@ -195,7 +204,7 @@ const peptide = {
   vialsNeeded: "10 vials de 10mg pour 12 semaines, besoin actif 79mg et cible avec reserve 98.75mg",
   priceEstimate: "Environ 10 vials, total $125, prix live controle avant livraison",
   cycleDuration: "12 semaines",
-  reconstitution: "Vial de 10mg, manipulation uniquement apres formation par un professionnel",
+  reconstitution: "Vial de 10mg + 2ml BAC water = 5 mg/ml. Pour 1mg = 20 unites U-100 (soit 0.20 ml).",
   whyThisPeptide: "Molecule experimentale non approuvee, donnees humaines encore limitees",
 };
 
@@ -251,8 +260,24 @@ const report: PeptidesReport = {
   clientName: "Luca",
   tier: "solo",
   peptides: [peptide],
-  sections: Array.from({ length: 12 }, (_, index) => ({
-    id: `section-${index + 1}`,
+  sections: [
+    "rationale",
+    "reconstitution-guide",
+    "protocole-pratique",
+    "profil-synthese",
+    "nutrition-protocole",
+    "bilan-sanguin",
+    "guide-fournisseur",
+    "guide-injection",
+    "shopping-list",
+    "hygiene-conservation",
+    "securite-surveillance",
+    "checklist-demarrage",
+    "effets-secondaires",
+    "faq",
+    "disclaimer-support",
+  ].map((sectionId, index) => ({
+    id: sectionId,
     title: `Partie ${index + 1}`,
     content: [
       index === 0 ? safetyParagraph : "",
@@ -262,7 +287,7 @@ const report: PeptidesReport = {
     ].filter(Boolean).join("\n\n"),
   })),
   weeklySchedule: "JEUDI: Retatrutide 1 mg, injection hebdomadaire selon la titration.",
-  shoppingList: "Retatrutide: 10 vials de 10mg, stock et pays a verifier avant achat.",
+  shoppingList: "Retatrutide: 10 vials de 10mg, total $125, https://www.peptaura.com/catalog/Retatrutide.",
   promoCodesGenerated: [],
   _peptauraLiveSync: {
     syncedAt: now,
@@ -794,7 +819,7 @@ const repaired = repairPeptidesReportContent(
 const repairedAudit = validatePeptidesReport(repaired);
 assert.equal(repaired.tier, "solo");
 assert.equal(repaired.qualityVersion, "expert-standard-v1");
-assert.equal(repaired.sections.length, 12);
+assert.equal(repaired.sections.length, 15);
 assert.ok(repaired.sections.reduce((sum: number, section: any) => sum + section.content.length, 0) >= 30_000);
 assert.doesNotMatch(repaired.peptides[0].cycleDuration, /descente progressive/i);
 assert.doesNotMatch(repaired.peptides[0].timing, /peut etre melange/i);
@@ -981,6 +1006,9 @@ validLowTestosteroneStack._enclomipheneSourceSync = {
 validLowTestosteroneStack.peptides.push(
   {
     name: "Enclomiphene Citrate",
+    activationStatus: "active",
+    activationRequirements: [],
+    evidenceSummary: "Axe HPG confirme par le contexte hormonal recent et surveille.",
     route: "Voie orale",
     dosage: "12,5 mg par jour",
     timing: "Chaque matin a heure fixe",
@@ -994,6 +1022,9 @@ validLowTestosteroneStack.peptides.push(
   },
   {
     name: "KissPeptin-10",
+    activationStatus: "active",
+    activationRequirements: [],
+    evidenceSummary: "Axe HPG confirme avec suivi hormonal structure.",
     route: "Sous cutanee",
     dosage: "100 mcg trois fois par semaine",
     timing: "Lundi, mercredi et vendredi le soir",
@@ -1009,8 +1040,8 @@ validLowTestosteroneStack.peptides.push(
 validLowTestosteroneStack.weeklySchedule +=
   " | LUNDI MATIN: Enclomiphene Citrate 12,5 mg oral | LUNDI SOIR: KissPeptin-10 100 mcg sous cutanee";
 validLowTestosteroneStack.shoppingList +=
-  "\nEnclomiphene Citrate: 2 flacons, https://receptorchem.co.uk/enclomiphene-citrate/" +
-  "\nKissPeptin-10: 1 vial, https://www.peptaura.com/catalog/KissPeptin-10";
+  "\nEnclomiphene Citrate: 2 flacons, total £79,98, https://receptorchem.co.uk/enclomiphene-citrate/" +
+  "\nKissPeptin-10: 1 vial, total $16, https://www.peptaura.com/catalog/KissPeptin-10";
 validLowTestosteroneStack.bloodMarkers = [
   "Testosterone totale",
   "Testosterone libre",
@@ -1065,6 +1096,7 @@ assert.equal(
 const bacWaterTrailingTotal = structuredClone(validLowTestosteroneStack) as any;
 bacWaterTrailingTotal.peptides.push({
   name: "BAC Water",
+  evidenceSummary: "Solvant auxiliaire verifie dans le panier live.",
   route: "Support",
   dosage: "5 ml",
   timing: "Avoir 1 flacon en reserve",
@@ -1093,6 +1125,7 @@ assert.equal(bacWaterTrailingTotalAudit.ok, true, bacWaterTrailingTotalAudit.err
 const bacWaterSingleAmount = structuredClone(validLowTestosteroneStack) as any;
 bacWaterSingleAmount.peptides.push({
   name: "BAC Water",
+  evidenceSummary: "Solvant auxiliaire verifie dans le panier live.",
   route: "Support",
   dosage: "5 ml",
   timing: "Avoir 1 flacon en reserve",
@@ -1242,15 +1275,17 @@ const conditionalCandidate = {
     "Lire le bilan IGF-1 recent",
     "Verifier le controle glycemique recent",
   ],
+  evidenceSummary: "Axe documente mais suspendu tant que les marqueurs requis ne sont pas disponibles.",
   purpose: "Evaluer un axe GH pour la recuperation et le maintien de masse maigre",
   whyThisPeptide: "Objectif GH explicite, avec activation suspendue tant que les valeurs ne sont pas disponibles",
-  route: "Phase conditionnelle non active",
-  dosage: "Non active avant lecture du bilan",
-  timing: "Activation suspendue",
-  cycleDuration: "Phase conditionnelle non active",
-  reconstitution: "Aucune reconstitution tant que la phase reste inactive",
-  vialsNeeded: "Aucun achat tant que la phase reste inactive",
-  priceEstimate: "Aucun prix applique a une phase inactive",
+  route: "",
+  dosage: "",
+  timing: "",
+  cycleDuration: "",
+  reconstitution: "",
+  vialsNeeded: "",
+  priceEstimate: "",
+  purchaseUrl: "https://www.peptaura.com/catalog/CJC-1295-(no-DAC)-and-Ipamorelin",
 };
 assert.deepEqual(
   checkPeptide(conditionalCandidate),
@@ -1262,7 +1297,7 @@ assert.match(
     ...conditionalCandidate,
     dosage: "100 mcg par injection",
   }).join("\n"),
-  /instructions operationnelles/i,
+  /champs operationnels non vides/i,
   "an inactive conditional candidate must reject actionable dosing",
 );
 

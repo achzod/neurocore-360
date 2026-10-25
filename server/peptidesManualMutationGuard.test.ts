@@ -25,7 +25,7 @@ const order = {
     peptidesReportId: "428ef5e8-eb09-4cee-a6b9-58bc33b8c21f",
     peptidesResponses: {
       pep_email: "niangaviktor@gmail.com",
-      pep_name: "Remy viktor",
+      pep_name: "Viktor",
     },
   },
 };
@@ -34,7 +34,7 @@ const reportRecord = {
   email: "peptides::niangaviktor@gmail.com",
   responses: {
     pep_email: "niangaviktor@gmail.com",
-    pep_name: "Remy viktor",
+    pep_name: "Viktor",
   },
   report,
 };
@@ -137,6 +137,27 @@ test("blocks source email and source-name cross-contamination", () => {
     mutationPayload: basePayload,
   });
   assert.ok(missingSourceName.errors.includes("TARGET_LOCK_RESPONSE_NAME_MISSING"));
+});
+
+test("rejects ambiguous substring identities instead of guessing a canonical first name", () => {
+  const ambiguous = validatePeptidesManualTargetLock({
+    expectedMutation: "repair-live",
+    targetLock,
+    order: {
+      ...order,
+      metadata: {
+        ...order.metadata,
+        peptidesResponses: { ...order.metadata.peptidesResponses, pep_name: "Remy Viktor" },
+      },
+    },
+    reportRecord: {
+      ...reportRecord,
+      responses: { ...reportRecord.responses, pep_name: "Remy Viktor" },
+    },
+    mutationPayload: basePayload,
+  });
+  assert.equal(ambiguous.ok, false);
+  assert.ok(ambiguous.errors.includes("TARGET_LOCK_RESPONSE_NAME_MISMATCH"));
 });
 
 test("binds the complete source state and rejects health-answer drift", () => {

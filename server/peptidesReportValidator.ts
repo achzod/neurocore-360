@@ -119,6 +119,7 @@ const REQUIRED_PEPTIDE_FIELDS = [
   "cycleDuration",
   "reconstitution",
   "whyThisPeptide",
+  "evidenceSummary",
 ] as const;
 
 export function isConditionalInactivePeptide(
@@ -129,6 +130,23 @@ export function isConditionalInactivePeptide(
 
 const MIN_SECTIONS = 12;
 const MIN_SECTION_CHARS = 350;
+const REQUIRED_STANDARD_SECTION_IDS = [
+  "profil-synthese",
+  "rationale",
+  "bilan-sanguin",
+  "guide-fournisseur",
+  "reconstitution-guide",
+  "guide-injection",
+  "protocole-pratique",
+  "shopping-list",
+  "hygiene-conservation",
+  "securite-surveillance",
+  "nutrition-protocole",
+  "checklist-demarrage",
+  "effets-secondaires",
+  "faq",
+  "disclaimer-support",
+] as const;
 const ENCLOMIPHENE_SOURCE_URL = "https://receptorchem.co.uk/enclomiphene-citrate/";
 const MIN_TOTAL_CHARS = 30_000;
 const MAX_PEPTAURA_DELIVERY_AGE_MS = Number(
@@ -354,8 +372,11 @@ const OPERATIONAL_PEPTIDE_ALIASES: Array<{
 }> = [
   { key: "bpc157", aliases: ["bpc-157", "bpc157"] },
   { key: "tb500", aliases: ["tb-500", "tb500"] },
-  { key: "cjc1295", aliases: ["cjc-1295", "cjc1295"] },
-  { key: "ipamorelin", aliases: ["ipamorelin"] },
+  {
+    key: "cjc1295",
+    aliases: ["cjc-1295", "cjc1295", "cjc sans dac", "cjc-1295 sans dac", "cjc1295 sans dac"],
+  },
+  { key: "ipamorelin", aliases: ["ipamorelin", "ipamoreline", "ipamoréline"] },
   { key: "retatrutide", aliases: ["retatrutide"] },
   { key: "mk677", aliases: ["mk-677", "mk677", "ibutamoren"] },
   { key: "epitalon", aliases: ["epitalon"] },
@@ -540,6 +561,49 @@ export function findOperationalPeptidesMissingFromArray(
       });
     })
     .map(({ key }) => key);
+}
+
+export function findConditionalInactiveOperationalMentions(
+  report: Pick<
+    PeptidesReport,
+    "peptides" | "sections" | "weeklySchedule" | "shoppingList"
+  >
+): string[] {
+  const issues: string[] = [];
+  const operationalSignal =
+    /\b(?:dose|dosage|inject\w*|administr\w*|prendre|utilis\w*|appliqu\w*|reconstit\w*|seringue|vial|flacon|commande|commander|acheter|achat|matin|soir|nuit|jour|coucher|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|semaine\s+\d+)\b|\b\d+(?:[.,]\d+)?\s*(?:mcg|ug|µg|mg|ml|iu|ui|unit[ée]s?)\b|(?:x|×)\s*\d+\b/i;
+
+  for (const peptide of report.peptides || []) {
+    if (!isConditionalInactivePeptide(peptide)) continue;
+    const name = String(peptide.name || "").trim();
+    if (!name) continue;
+    const aliases = aliasesForStructuredPeptide(name);
+    for (const [location, value] of [
+      ["weeklySchedule", report.weeklySchedule],
+      ["shoppingList", report.shoppingList],
+    ] as const) {
+      if (containsOperationalAlias(String(value || ""), aliases)) {
+        issues.push(`${name}: mention interdite dans ${location}`);
+      }
+    }
+
+    for (const section of report.sections || []) {
+      const identity = `${section.id || ""} ${section.title || ""}`;
+      const inherentlyOperational =
+        /protocole|calendrier|semaine type|shopping|commande|reconstitution|injection|checklist/i.test(identity);
+      const segments = String(section.content || "")
+        .split(/[\n|;]+|(?<=[.!?])\s+/)
+        .map((segment) => segment.trim())
+        .filter(Boolean);
+      if (segments.some((segment) =>
+        containsOperationalAlias(segment, aliases)
+        && (inherentlyOperational || operationalSignal.test(segment))
+      )) {
+        issues.push(`${name}: mention operationnelle interdite dans la section ${section.id || section.title || "?"}`);
+      }
+    }
+  }
+  return issues;
 }
 
 function extractFirstNumber(text: string | undefined): number | null {
@@ -752,8 +816,10 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
       const end = parseInt(m[4], 10);
       const phaseWeeks = Math.max(0, end - start + 1);
       totalMg += mgVal * phaseWeeks;
-      lastDose = mgVal;
-      if (end > lastEnd) lastEnd = end;
+      if (end > lastEnd) {
+        lastEnd = end;
+        lastDose = mgVal;
+      }
     }
     if (weeksFromCycle > lastEnd && lastDose > 0) totalMg += lastDose * (weeksFromCycle - lastEnd);
     if (totalMg > 0) return totalMg;
@@ -786,12 +852,12 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
   // scale correctly. "150 mcg semaine 1, 200 mcg semaine 2" combined with
   // "300 mcg par injection le soir" = daily injections, scale ×7.
   const detectInjPerWeek = (txt: string): number => {
-    if (/\b1\s*(?:fois|injection)\s*(?:par|\/)\s*semaine|hebdomadaire|1x\/sem\b/i.test(txt)) return 1;
-    if (/\b(?:2|deux)\s*(?:fois|injections?|jours?)\s*(?:par|\/)\s*semaine/i.test(txt)) return 2;
-    if (/\b(?:3|trois)\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine/i.test(txt)) return 3;
-    if (/\b(?:4|quatre)\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine/i.test(txt)) return 4;
-    if (/\b(?:5|cinq)\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine/i.test(txt)) return 5;
-    if (/\b(?:6|six)\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine/i.test(txt)) return 6;
+    if (/\b1\s*(?:fois|injection)\s*(?:par|\/)\s*semaine|hebdomadaire|\b1\s*x\s*\/?\s*sem(?:aine)?\b/i.test(txt)) return 1;
+    if (/\b(?:2|deux)\s*(?:fois|injections?|jours?)\s*(?:par|\/)\s*semaine|\b2\s*x\s*\/?\s*sem(?:aine)?\b/i.test(txt)) return 2;
+    if (/\b(?:3|trois)\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine|\b3\s*x\s*\/?\s*sem(?:aine)?\b/i.test(txt)) return 3;
+    if (/\b(?:4|quatre)\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine|\b4\s*x\s*\/?\s*sem(?:aine)?\b/i.test(txt)) return 4;
+    if (/\b(?:5|cinq)\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine|\b5\s*x\s*\/?\s*sem(?:aine)?\b/i.test(txt)) return 5;
+    if (/\b(?:6|six)\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine|\b6\s*x\s*\/?\s*sem(?:aine)?\b/i.test(txt)) return 6;
     if (/chaque\s+(?:soir|matin|jour)|tous\s+les\s+(?:soirs?|jours?)|\bpar\s+(?:injection|jour|soir)\b|\ble\s+soir\b|\bavant\s+le\s+coucher\b|7\s*(?:jours?|soirs?)\s*\/?\s*7|\b1x\/jour\b/i.test(txt)) return 7;
     return 1;
   };
@@ -803,7 +869,11 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
   // accepted severe under-orders such as 20 mg for a real 79 mg cycle.
   const reverseProgressive = Array.from(
     dose.matchAll(/semaines?\s*(\d+)(?:\s*(?:à|a|-)\s*(\d+))?\s*(?:à|a|:)\s*(\d+(?:[.,]\d+)?)\s*(mg|mcg|µg|ug)\b/gi)
-  );
+  ).filter((match) => {
+    const start = parseInt(match[1], 10);
+    const end = match[2] ? parseInt(match[2], 10) : start;
+    return start >= 1 && end >= start;
+  });
   if (reverseProgressive.length >= 2 && weeks > 0) {
     const dosesByWeek = new Map<number, number>();
     for (const match of reverseProgressive) {
@@ -818,11 +888,13 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
     }
     const definedWeeks = [...dosesByWeek.keys()].sort((a, b) => a - b);
     if (definedWeeks.length > 0) {
-      let lastDose = dosesByWeek.get(definedWeeks[0]) || 0;
+      let lastDose: number | null = null;
       let totalMg = 0;
       for (let week = 1; week <= weeks; week++) {
-        if (dosesByWeek.has(week)) lastDose = dosesByWeek.get(week) || lastDose;
-        totalMg += lastDose;
+        if (dosesByWeek.has(week)) lastDose = dosesByWeek.get(week)!;
+        // Do not retro-propagate the first declared plateau into earlier weeks.
+        // Once treatment starts, undeclared holes retain the previous plateau.
+        if (lastDose != null) totalMg += lastDose;
       }
       totalMg *= injectionsPerWeekTit;
       if (totalMg > 0) return totalMg;
@@ -834,23 +906,60 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
   // through, causing Simon Leveque's Retatrutide 79mg need to be calculated
   // as 43mg (5 vials ordered, but 8 needed).
   const progressive = Array.from(
-    dose.matchAll(/(\d+(?:[.,]\d+)?)\s*(mg|mcg)\s*sem(?:aine)?s?\s*(\d+)/gi)
+    dose.matchAll(/(\d+(?:[.,]\d+)?)\s*(mg|mcg|µg|ug)\s*sem(?:aine)?s?\s*(\d+)/gi)
+  ).map((m) => ({
+    value: parseFloat(m[1].replace(",", ".")),
+    unit: m[2],
+    week: parseInt(m[3], 10),
+  }));
+  const shorthandRanges = Array.from(
+    dose.matchAll(/\bS(?:EM(?:AINE)?)?\s*(\d+)\s*(?:à|a|-)\s*S?(?:EM(?:AINE)?)?\s*(\d+)\s*:?\s*(\d+(?:[.,]\d+)?)\s*(mg|mcg|µg|ug)\b/gi)
   );
-  if (progressive.length >= 2 && weeks > 0) {
+  if (shorthandRanges.length > 0 && weeks > 0) {
     const dosesByWeek = new Map<number, number>();
-    for (const m of progressive) {
-      const v = parseFloat(m[1].replace(",", "."));
-      const u = m[2].toLowerCase();
-      const w = parseInt(m[3], 10);
-      dosesByWeek.set(w, u.startsWith("mcg") ? v / 1000 : v);
+    for (const match of shorthandRanges) {
+      const start = parseInt(match[1], 10);
+      const end = parseInt(match[2], 10);
+      const rawValue = parseFloat(match[3].replace(",", "."));
+      const valueMg = /^(?:mcg|µg|ug)/i.test(match[4]) ? rawValue / 1000 : rawValue;
+      if (start < 1 || end < start) continue;
+      for (let week = start; week <= Math.min(end, weeks); week++) {
+        dosesByWeek.set(week, valueMg);
+      }
+    }
+    let lastDose: number | null = null;
+    let totalMg = 0;
+    for (let week = 1; week <= weeks; week++) {
+      if (dosesByWeek.has(week)) lastDose = dosesByWeek.get(week)!;
+      if (lastDose != null) totalMg += lastDose;
+    }
+    totalMg *= injectionsPerWeekTit;
+    if (totalMg > 0) return totalMg;
+  }
+  const shorthandProgressive = Array.from(
+    dose.matchAll(/(?<!-)\bS(?:EM(?:AINE)?)?\s*(\d+)(?!\s*(?:à|a|-))\s*:?\s*(\d+(?:[.,]\d+)?)\s*(mg|mcg|µg|ug)\b/gi)
+  ).map((m) => ({
+    value: parseFloat(m[2].replace(",", ".")),
+    unit: m[3],
+    week: parseInt(m[1], 10),
+  }));
+  const progressivePoints = [...progressive, ...shorthandProgressive];
+  if (progressivePoints.length >= 2 && weeks > 0) {
+    const dosesByWeek = new Map<number, number>();
+    for (const point of progressivePoints) {
+      dosesByWeek.set(
+        point.week,
+        /^(?:mcg|µg|ug)/i.test(point.unit) ? point.value / 1000 : point.value,
+      );
     }
     const sortedWeeks = [...dosesByWeek.keys()].sort((a, b) => a - b);
-    const lastDefined = sortedWeeks[sortedWeeks.length - 1];
-    const lastDose = dosesByWeek.get(lastDefined)!;
+    let currentDose: number | null = null;
     let total = 0;
     for (let w = 1; w <= weeks; w++) {
-      if (dosesByWeek.has(w)) total += dosesByWeek.get(w)!;
-      else if (w > lastDefined) total += lastDose;
+      if (dosesByWeek.has(w)) currentDose = dosesByWeek.get(w)!;
+      // A point such as "0.5 mg semaine 5" starts a new plateau; it is not a
+      // dose applied only during week 5. Forward-fill until the next point.
+      if (currentDose != null) total += currentDose;
     }
     // Apply injection frequency multiplier: titration steps are per-injection,
     // so daily protocols multiply by 7.
@@ -901,33 +1010,108 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
   return total >= 0.5 ? total : null;
 }
 
+export function validateU100Reconstitution(value: string | undefined): string[] {
+  const raw = String(value || "").replace(/(\d),(\d)/g, "$1.$2");
+  if (!raw || /aucune reconstitution|sans reconstitution|solution liquide/i.test(raw)) return [];
+
+  const issues: string[] = [];
+  const vialMatches = [...raw.matchAll(/\bvial(?:\s+de)?\s+(\d+(?:\.\d+)?)\s*mg\b/gi)];
+  for (let vialIndex = 0; vialIndex < vialMatches.length; vialIndex++) {
+    const vial = vialMatches[vialIndex];
+    const segmentEnd = vialMatches[vialIndex + 1]?.index ?? raw.length;
+    const segment = raw.slice(vial.index!, segmentEnd);
+    const solvent = segment.match(/\+\s*(\d+(?:\.\d+)?)\s*ml\b/i);
+    if (!solvent) continue;
+
+    const vialMg = Number(vial[1]);
+    const solventMl = Number(solvent[1]);
+    if (solventMl > 3 + 1e-9) {
+      issues.push(`volume de solvant ${solventMl} ml superieur au maximum 3 ml`);
+    }
+
+    // Validate every complete dose -> units -> ml conversion in this vial
+    // context, not merely the first polished example in the text.
+    const forwardConversions = [...segment.matchAll(
+      /\b(?:(?:pour|dose(?:\s+de)?|administration(?:\s+de)?|palier(?:\s+\d+)?)\s*:?[ \t]*)?(\d+(?:\.\d+)?)\s*(mg|mcg|µg|ug)\b[ \t]{0,40}(?:=|→|:|correspond(?:ent|ance)?\s+(?:a|à)|soit)[ \t]*(\d+(?:\.\d+)?)\s*(?:unit[ée]s?|graduations?|U(?:-?100)?)(?:\s+(?:sur\s+la\s+seringue\s+)?U-?100)?[\s\S]{0,80}?(?:\bsoit\s+|\(\s*)?(\d+(?:\.\d+)?)\s*ml\b/gi,
+    )].map((match) => ({
+      dose: Number(match[1]),
+      doseUnit: match[2],
+      units: Number(match[3]),
+      volumeMl: Number(match[4]),
+    }));
+    const reverseConversions = [...segment.matchAll(
+      /(\d+(?:\.\d+)?)\s*(?:unit[ée]s?|graduations?|U(?:-?100)?)(?:\s+(?:sur\s+la\s+seringue\s+)?U-?100)?[\s\S]{0,80}?(?:\bsoit\s+|\(\s*)?(\d+(?:\.\d+)?)\s*ml\b\)?\s*pour\s+(\d+(?:\.\d+)?)\s*(mg|mcg|µg|ug)\b/gi,
+    )].map((match) => ({
+      dose: Number(match[3]),
+      doseUnit: match[4],
+      units: Number(match[1]),
+      volumeMl: Number(match[2]),
+    }));
+    const conversions = [...forwardConversions, ...reverseConversions];
+    const explicitDoseToUnitsCount = [...segment.matchAll(
+      /\b\d+(?:\.\d+)?\s*(?:mg|mcg|µg|ug)\b[ \t]{0,40}(?:=|→|:|correspond(?:ent|ance)?\s+(?:a|à)|soit)[ \t]*\d+(?:\.\d+)?\s*(?:unit[ée]s?|graduations?|U(?:-?100)?)\b/gi,
+    )].length;
+    const labeledDoseCount = [...segment.matchAll(
+      /\b(?:pour|dose(?:\s+de)?|administration(?:\s+de)?|palier(?:\s+\d+)?)\s*:?[ \t]*\d+(?:\.\d+)?\s*(?:mg|mcg|µg|ug)\b/gi,
+    )].length;
+    const declaredDoseCount = Math.max(explicitDoseToUnitsCount, labeledDoseCount);
+    if (declaredDoseCount > conversions.length) {
+      issues.push(`conversion U-100 incomplete: ${declaredDoseCount - conversions.length} dose(s) sans triplet dose/unites/ml verifiable`);
+    }
+    for (const conversion of conversions) {
+      const doseMg = conversion.dose / (/^mg$/i.test(conversion.doseUnit) ? 1 : 1000);
+      const statedUnits = conversion.units;
+      const statedVolumeMl = conversion.volumeMl;
+      if (![vialMg, solventMl, doseMg, statedUnits, statedVolumeMl].every(Number.isFinite)
+        || vialMg <= 0 || solventMl <= 0 || doseMg <= 0) {
+        issues.push("calcul U-100 illisible ou non positif");
+        continue;
+      }
+
+      const expectedMl = doseMg / (vialMg / solventMl);
+      const expectedUnits = expectedMl * 100;
+      if (Math.abs(statedUnits - expectedUnits) > 1) {
+        issues.push(`conversion U-100 incoherente: ${statedUnits} unites affichees vs ${expectedUnits.toFixed(1)} calculees`);
+      }
+      if (Math.abs(statedVolumeMl - expectedMl) > 0.011) {
+        issues.push(`volume injecte incoherent: ${statedVolumeMl.toFixed(2)} ml affiche vs ${expectedMl.toFixed(2)} ml calcule`);
+      }
+      if (Math.abs(statedUnits / 100 - statedVolumeMl) > 0.011) {
+        issues.push(`equivalence seringue incoherente: ${statedUnits} unites ne correspondent pas a ${statedVolumeMl.toFixed(2)} ml`);
+      }
+    }
+  }
+  return issues;
+}
+
 export function checkPeptide(p: PeptidesPeptide): string[] {
   const issues: string[] = [];
 
   if (isConditionalInactivePeptide(p)) {
-    for (const field of ["name", "purpose", "whyThisPeptide"] as const) {
+    for (const field of ["name", "purpose", "whyThisPeptide", "evidenceSummary"] as const) {
       if (!String(p[field] || "").trim()) issues.push(`field manquant: ${field}`);
     }
     if (!Array.isArray(p.activationRequirements) || p.activationRequirements.length < 2) {
       issues.push("phase conditionnelle sans exigences d'activation suffisantes");
     }
-    const operationalText = [
-      p.dosage,
-      p.timing,
-      p.route,
-      p.cycleDuration,
-      p.reconstitution,
-      p.vialsNeeded,
-      p.priceEstimate,
-    ].filter(Boolean).join(" ");
-    if (
-      /\b\d+(?:[.,]\d+)?\s*(?:mcg|ug|µg|mg|ml|iu|ui)\b|\b(?:inject|injection|vial|flacon|acheter|commander)\b/i.test(operationalText)
-    ) {
-      issues.push("phase conditionnelle contient des instructions operationnelles");
+    const conditionalOperationalFields = [
+      "dosage",
+      "timing",
+      "route",
+      "cycleDuration",
+      "reconstitution",
+      "vialsNeeded",
+      "priceEstimate",
+    ] as const;
+    const populatedOperationalFields = conditionalOperationalFields.filter((field) =>
+      String(p[field] || "").trim().length > 0
+    );
+    if (populatedOperationalFields.length > 0) {
+      issues.push(`phase conditionnelle contient des champs operationnels non vides: ${populatedOperationalFields.join(", ")}`);
     }
-    if (!/non activ|suspend|conditionnel|aucun achat/i.test(operationalText)) {
-      issues.push("phase conditionnelle non identifiee comme inactive");
-    }
+    // activationStatus is the canonical machine-readable inactive marker.
+    // Every operational field must be structurally empty, not euphemistically
+    // populated with prose such as "selon tolerance" or "chaque nuit".
     const sourceUrl = String(p.purchaseUrl || "").trim();
     if (!sourceUrl) {
       issues.push("phase conditionnelle sans acces source fournisseur");
@@ -956,12 +1140,9 @@ export function checkPeptide(p: PeptidesPeptide): string[] {
   const vialsQty = extractVialQty(p.vialsNeeded);
   const priceQty = extractPriceQty(p.priceEstimate);
   if (vialsQty != null && priceQty != null && vialsQty !== priceQty) {
-    const ratio = Math.max(vialsQty, priceQty) / Math.min(vialsQty, priceQty);
-    if (ratio > 1.35) {
-      issues.push(
-        `vialsNeeded qty (${vialsQty}) vs priceEstimate qty (${priceQty}) divergent (ratio ${ratio.toFixed(2)})`
-      );
-    }
+    issues.push(
+      `vialsNeeded qty (${vialsQty}) vs priceEstimate qty (${priceQty}) divergent`
+    );
   }
 
   const orderedVialMg = extractVialMg(p.vialsNeeded);
@@ -1034,6 +1215,17 @@ export function checkPeptide(p: PeptidesPeptide): string[] {
 
   if (p.purchaseUrl && !/^https?:\/\//.test(p.purchaseUrl)) {
     issues.push(`purchaseUrl mal formee: ${p.purchaseUrl}`);
+  }
+
+  issues.push(...validateU100Reconstitution(p.reconstitution));
+  if (/sous[- ]?cutan|intramuscul|\bSC\b|\bIM\b/i.test(String(p.route || ""))) {
+    const reconstitution = String(p.reconstitution || "").replace(/(\d),(\d)/g, "$1.$2");
+    const completeU100 = /\bvial(?:\s+de)?\s+\d+(?:\.\d+)?\s*mg\b/i.test(reconstitution)
+      && /\+\s*\d+(?:\.\d+)?\s*ml\b/i.test(reconstitution)
+      && /\b(?:pour|dose(?:\s+de)?|administration(?:\s+de)?)\s+\d+(?:\.\d+)?\s*(?:mg|mcg|µg|ug)\b/i.test(reconstitution)
+      && /\d+(?:\.\d+)?\s*unit[ée]s?(?:\s+U-?100)?\b/i.test(reconstitution)
+      && /\bsoit\s+\d+(?:\.\d+)?\s*ml\b/i.test(reconstitution);
+    if (!completeU100) issues.push("calcul complet de reconstitution U-100 absent");
   }
 
   if (/descente|diminution progressive|reduction progressive/i.test(p.cycleDuration || "")
@@ -1191,6 +1383,10 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
     report.shoppingList || "",
     ...sections.map((section) => section.content || ""),
   ].join("\n");
+  const conditionalOperationalMentions = findConditionalInactiveOperationalMentions(report);
+  if (conditionalOperationalMentions.length > 0) {
+    errors.push(`phase conditionnelle exposee operationnellement: ${conditionalOperationalMentions.join(" | ")}`);
+  }
 
   if (/(?:ventre|cuisse|flanc)\s+(?:droit|droite|gauche)?\s*\d+(?:[,.]\d+)?\s*unit[ée]s?\b/i.test(operationalText)) {
     errors.push("volume injectable orphelin apres un site anatomique");
@@ -1258,6 +1454,19 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
   }
 
   if (report.qualityVersion === "expert-standard-v1") {
+    const sectionIds = new Set(
+      sections.map((section) => String(section.id || "").trim().toLowerCase()),
+    );
+    const missingSections = REQUIRED_STANDARD_SECTION_IDS.filter((id) => !sectionIds.has(id));
+    if (missingSections.length > 0) {
+      errors.push(`sections obligatoires absentes: ${missingSections.join(", ")}`);
+    }
+    const invalidActivationStates = peptides
+      .filter((peptide) => !["active", "conditional-inactive"].includes(String(peptide.activationStatus || "")))
+      .map((peptide) => peptide.name || "?");
+    if (invalidActivationStates.length > 0) {
+      errors.push(`activationStatus explicite manquant: ${invalidActivationStates.join(", ")}`);
+    }
     const medicalMentions = (clientFacingText.match(/\b(?:m[ée]decin|pharmacien|professionnel de sant[ée])\b/gi) || []).length;
     const cautionMentions = (clientFacingText.match(/\b(?:exp[ée]rimental|non approuv[ée]|validation m[ée]dicale|avis m[ée]dical|accord m[ée]dical)\b/gi) || []).length;
     if (medicalMentions > 8 || cautionMentions > 10) {
@@ -1341,10 +1550,6 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
   if (peptides.length === 0) {
     errors.push("aucun peptide recommande");
   }
-  if (peptides.length < 2) {
-    warnings.push(`tres peu de peptides (${peptides.length})`);
-  }
-
   errors.push(...validateConfirmedLowTestosteroneProtocol(report, clientFacingText));
 
   if (sections.length < MIN_SECTIONS) {
@@ -1466,6 +1671,35 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
       && snapshot.requestedVials != null
       && snapshot.deliveredVials / snapshot.requestedVials > 1.3) {
       errors.push(`[${snapshot.peptide || "?"}] boite live impose trop de surstock: ${snapshot.deliveredVials} recus pour ${snapshot.requestedVials} demandes`);
+    }
+
+    const snapshotName = String(snapshot.peptide || "");
+    if (snapshotName && searchable(snapshotName) !== searchable("BAC Water")) {
+      const shoppingLine = findShoppingListLineForItem(report.shoppingList, snapshotName);
+      if (!shoppingLine) {
+        errors.push(`[${snapshotName}] ligne absente de la shopping list`);
+      } else {
+        const shoppingQty = extractDeclaredOrderQty(shoppingLine);
+        if (shoppingQty != null
+          && snapshot.requestedVials != null
+          && shoppingQty !== Number(snapshot.requestedVials)) {
+          errors.push(`[${snapshotName}] quantite shopping ${shoppingQty} differente du snapshot ${snapshot.requestedVials}`);
+        }
+        const shoppingPrice = extractDeclaredPriceTotal(shoppingLine, shoppingQty);
+        const expectedShoppingPrice = shoppingPrice?.currency === "£"
+          ? Number(snapshot.totalPriceGbp)
+          : Number(snapshot.totalPriceUsd);
+        if (!shoppingPrice || !Number.isFinite(expectedShoppingPrice)
+          || Math.abs(shoppingPrice.amount - expectedShoppingPrice) > 0.01) {
+          errors.push(`[${snapshotName}] prix shopping non aligne sur le snapshot live`);
+        }
+        const peptideCard = peptides.find((peptide) =>
+          searchable(String(peptide.name || "")) === searchable(snapshotName)
+        );
+        if (peptideCard?.purchaseUrl && !shoppingLine.includes(peptideCard.purchaseUrl)) {
+          errors.push(`[${snapshotName}] URL fournisseur absente de la ligne shopping`);
+        }
+      }
     }
   }
 

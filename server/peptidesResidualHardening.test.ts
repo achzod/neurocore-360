@@ -1,0 +1,417 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import test from "node:test";
+
+process.env.DATABASE_URL ||= "postgresql://test:***@127.0.0.1:5432/test";
+const { MemStorage } = await import("./storage");
+const { hashPeptidesReport } = await import("./peptidesReleaseHashGate");
+const { hashPeptidesManualMutationPayload } = await import("./peptidesManualMutationGuard");
+const { getPeptidesGenerationCircuitConfig } = await import("./peptidesGenerationCircuitBreaker");
+const {
+  classifyPaidOrderConfirmationStatus,
+  peptidesBloodCreditsForTier,
+} = await import("./peptidesEntitlements");
+
+async function activeOrder(storage: InstanceType<typeof MemStorage>, metadata: Record<string, unknown> = {}, email = "client@example.com") {
+  const order = await storage.createOrder({
+    email,
+    productType: "PEPTIDES_ENGINE",
+    amountCents: 29900,
+    metadata,
+  });
+  await storage.updateOrder(order.id, { status: "paid", paidAt: new Date() });
+  return (await storage.getOrder(order.id))!;
+}
+
+test("ACCEPTED delivery is terminal and cannot be downgraded", async () => {
+  const storage = new MemStorage();
+  const order = await activeOrder(storage, { peptidesReportId: "report-1" });
+  assert.equal(await storage.claimPeptidesDelivery(order.id, "report-1", "claim-1"), true);
+  assert.equal(await storage.finalizePeptidesDeliveryClaim(order.id, "report-1", "claim-1", "ACCEPTED"), true);
+  assert.equal(await storage.finalizePeptidesDeliveryClaim(order.id, "report-1", "claim-1", "FAILED"), false);
+  assert.equal(await storage.finalizePeptidesDeliveryClaim(order.id, "report-1", "claim-1", "UNKNOWN"), false);
+  const current = await storage.getOrder(order.id);
+  assert.equal((current?.metadata as any)?.peptidesDeliveryState, "ACCEPTED");
+  assert.equal((current?.metadata as any)?.peptidesEmailHold, false);
+});
+
+test("confirmed FAILED delivery clears its attempt claim and can be retried only after HOLD release", async () => {
+  const storage = new MemStorage();
+  const order = await activeOrder(storage, { peptidesReportId: "report-retry" });
+  assert.equal(await storage.claimPeptidesDelivery(order.id, "report-retry", "claim-failed"), true);
+  assert.equal(await storage.finalizePeptidesDeliveryClaim(order.id, "report-retry", "claim-failed", "FAILED"), true);
+  const failed = await storage.getOrder(order.id);
+  assert.equal((failed?.metadata as any)?.peptidesDeliveryClaimId, "");
+  assert.equal(await storage.claimPeptidesDelivery(order.id, "report-retry", "claim-too-soon"), false);
+  await storage.setOrderMetadataIfPeptidesReportMatches(order.id, "report-retry", {
+    peptidesEmailHold: false,
+    peptidesManualFulfillment: false,
+  });
+  assert.equal(await storage.claimPeptidesDelivery(order.id, "report-retry", "claim-retry"), true);
+});
+
+test("HOLD/manual workflow blocks every automatic generation claim", async () => {
+  const storage = new MemStorage();
+  const held = await activeOrder(storage, {
+    peptidesEmailHold: true,
+    peptidesManualFulfillment: true,
+    peptidesGenerationResponseId: "resp-held",
+  });
+  const config = getPeptidesGenerationCircuitConfig({
+    PEPTIDES_AUTOGEN_MAX_ATTEMPTS: "3",
+    PEPTIDES_AUTOGEN_ATTEMPT_BUDGET_MICRO_USD: "500",
+    PEPTIDES_AUTOGEN_MAX_BUDGET_MICRO_USD: "2000",
+    PEPTIDES_AUTOGEN_HOURLY_BUDGET_MICRO_USD: "2000",
+    PEPTIDES_AUTOGEN_DAILY_BUDGET_MICRO_USD: "2000",
+  });
+  assert.equal(await storage.claimPeptidesGenerationAttempt(held.id, config), null);
+  assert.equal(await storage.claimPeptidesGenerationResume(held.id, "resp-held", config.leaseMs), null);
+});
+
+test("a report cannot mutate while its delivery claim is SENDING or UNKNOWN", async () => {
+  const storage = new MemStorage();
+  const report = { qualityVersion: "expert-standard-v1", marker: "before" };
+  const saved = await storage.createBurnoutReport({ email: "peptides::client@example.com", responses: {}, report });
+  const order = await activeOrder(storage, { peptidesReportId: saved.id });
+  assert.equal(await storage.claimPeptidesDelivery(order.id, saved.id, "claim-inflight"), true);
+  await storage.setOrderMetadataIfPeptidesReportMatches(order.id, saved.id, {
+    peptidesEmailHold: true,
+    peptidesManualFulfillment: true,
+  });
+  assert.equal(await storage.mutatePeptidesReportUnderHold({
+    orderId: order.id,
+    reportId: saved.id,
+    expectedSha256: hashPeptidesReport(report),
+    nextReport: { ...report, marker: "during-send" },
+    mutation: "inflight-test",
+  }), undefined);
+});
+
+test("a released approved report cannot be changed by a stale delivery refresh", async () => {
+  const storage = new MemStorage();
+  const report = { qualityVersion: "expert-standard-v1", marker: "approved" };
+  const saved = await storage.createBurnoutReport({ email: "peptides::client@example.com", responses: {}, report });
+  const reportHash = hashPeptidesReport(report);
+  const order = await activeOrder(storage, {
+    peptidesReportId: saved.id,
+    peptidesEmailHold: false,
+    peptidesManualFulfillment: false,
+    peptidesApprovedReportSha256: reportHash,
+    peptidesReleaseAuditVerdict: "PASS_STRICT",
+  });
+  assert.equal(await storage.updateBurnoutReportIfHashMatches(
+    order.id,
+    saved.id,
+    reportHash,
+    { ...report, marker: "stale-refresh" },
+  ), undefined);
+});
+
+test("strict HOLD release rejects a report changed after validation", async () => {
+  const storage = new MemStorage();
+  const original = { qualityVersion: "expert-standard-v1", marker: "approved" };
+  const record = await storage.createBurnoutReport({
+    email: "peptides::client@example.com",
+    responses: {},
+    report: original,
+  });
+  const approvedHash = hashPeptidesReport(original);
+  const order = await activeOrder(storage, {
+    peptidesReportId: record.id,
+    peptidesEmailHold: true,
+    peptidesManualFulfillment: true,
+    peptidesApprovedReportSha256: approvedHash,
+    peptidesReleaseAuditVerdict: "PASS_STRICT",
+  });
+
+  await storage.updateBurnoutReport(record.id, { ...original, marker: "mutated" });
+  assert.equal(await storage.releasePeptidesDeliveryHoldIfApproved({
+    orderId: order.id,
+    reportId: record.id,
+    expectedCurrentReportSha256: approvedHash,
+    expectedApprovedReportSha256: approvedHash,
+    expectedReleaseVerdict: "PASS_STRICT",
+  }), false);
+  assert.equal(((await storage.getOrder(order.id))?.metadata as any)?.peptidesEmailHold, true);
+
+  await storage.updateBurnoutReport(record.id, original);
+  await storage.setOrderMetadataIfPeptidesReportMatches(order.id, record.id, {
+    peptidesApprovedReportSha256: approvedHash,
+    peptidesReleaseAuditVerdict: "PASS_NOT_APPROVED",
+  });
+  assert.equal(await storage.releasePeptidesDeliveryHoldIfApproved({
+    orderId: order.id,
+    reportId: record.id,
+    expectedCurrentReportSha256: approvedHash,
+    expectedApprovedReportSha256: approvedHash,
+    expectedReleaseVerdict: "PASS_NOT_APPROVED",
+  }), false);
+});
+
+test("strict HOLD release cannot clear an in-flight or UNKNOWN delivery fence", async () => {
+  const storage = new MemStorage();
+  const reportBody = { qualityVersion: "expert-standard-v1", marker: "approved" };
+  const record = await storage.createBurnoutReport({
+    email: "peptides::fenced@example.com",
+    responses: {},
+    report: reportBody,
+  });
+  const reportHash = hashPeptidesReport(reportBody);
+  const order = await activeOrder(storage, {
+    peptidesReportId: record.id,
+    peptidesEmailHold: true,
+    peptidesManualFulfillment: true,
+    peptidesApprovedReportSha256: reportHash,
+    peptidesReleaseAuditVerdict: "PASS_STRICT",
+    peptidesDeliveryClaimId: "claim-unknown",
+    peptidesDeliveryState: "UNKNOWN",
+  }, "fenced@example.com");
+  assert.equal(await storage.releasePeptidesDeliveryHoldIfApproved({
+    orderId: order.id,
+    reportId: record.id,
+    expectedCurrentReportSha256: reportHash,
+    expectedApprovedReportSha256: reportHash,
+    expectedReleaseVerdict: "PASS_STRICT",
+  }), false);
+  assert.equal(((await storage.getOrder(order.id))?.metadata as any)?.peptidesEmailHold, true);
+});
+
+test("legacy delivery tracking backfills exact report state and blocks ambiguous recipient-only evidence", async () => {
+  const storage = new MemStorage();
+  const first = await activeOrder(storage, { peptidesReportId: "report-a" });
+  (storage as any).emailTrackings.set("tracking-exact", {
+    id: "tracking-exact",
+    auditId: null,
+    emailType: "sendCTAEmail",
+    recipientEmail: "client@example.com",
+    subject: "Ton protocole peptides personnalisé est prêt",
+    sendpulseStatus: "success",
+    metadata: { orderId: first.id, reportId: "report-a" },
+    sentAt: new Date(),
+  });
+  assert.equal(await storage.backfillAcceptedPeptidesDeliveryFromTracking(first.id, "report-a"), "ACCEPTED");
+  assert.equal(((await storage.getOrder(first.id))?.metadata as any)?.peptidesDeliveryState, "ACCEPTED");
+
+  const unconfirmed = new MemStorage();
+  const pending = await activeOrder(unconfirmed, { peptidesReportId: "report-pending" }, "pending@example.com");
+  (unconfirmed as any).emailTrackings.set("tracking-pending", {
+    id: "tracking-pending",
+    auditId: null,
+    emailType: "sendCTAEmail",
+    recipientEmail: "pending@example.com",
+    subject: "Ton protocole peptides personnalisé est prêt",
+    sendpulseStatus: "pending",
+    metadata: { orderId: pending.id, reportId: "report-pending" },
+    sentAt: new Date(),
+  });
+  assert.equal(await unconfirmed.backfillAcceptedPeptidesDeliveryFromTracking(pending.id, "report-pending"), "AMBIGUOUS");
+  assert.equal(((await unconfirmed.getOrder(pending.id))?.metadata as any)?.peptidesEmailHoldReason, "LEGACY_DELIVERY_EVIDENCE_NOT_POSITIVE");
+
+  const unscoped = new MemStorage();
+  const single = await activeOrder(unscoped, { peptidesReportId: "report-single" }, "single@example.com");
+  (unscoped as any).emailTrackings.set("tracking-unscoped", {
+    id: "tracking-unscoped",
+    auditId: null,
+    emailType: "sendCTAEmail",
+    recipientEmail: "single@example.com",
+    subject: "Ton protocole peptides personnalisé est prêt",
+    sendpulseStatus: "success",
+    metadata: {},
+    sentAt: new Date(),
+  });
+  assert.equal(await unscoped.backfillAcceptedPeptidesDeliveryFromTracking(single.id, "report-single"), "AMBIGUOUS");
+  assert.equal(((await unscoped.getOrder(single.id))?.metadata as any)?.peptidesDeliveryState, undefined);
+  assert.equal(((await unscoped.getOrder(single.id))?.metadata as any)?.peptidesEmailHoldReason, "LEGACY_DELIVERY_EVIDENCE_UNSCOPED");
+
+  const ambiguous = new MemStorage();
+  const orderA = await activeOrder(ambiguous, { peptidesReportId: "report-a" }, "same@example.com");
+  await activeOrder(ambiguous, { peptidesReportId: "report-b" }, "same@example.com");
+  (ambiguous as any).emailTrackings.set("tracking-generic", {
+    id: "tracking-generic",
+    auditId: null,
+    emailType: "sendCTAEmail",
+    recipientEmail: "same@example.com",
+    subject: "Ton protocole peptides personnalisé est prêt",
+    sendpulseStatus: "success",
+    metadata: {},
+    sentAt: new Date(),
+  });
+  assert.equal(await ambiguous.backfillAcceptedPeptidesDeliveryFromTracking(orderA.id, "report-a"), "AMBIGUOUS");
+  const held = await ambiguous.getOrder(orderA.id);
+  assert.equal((held?.metadata as any)?.peptidesEmailHold, true);
+  assert.equal((held?.metadata as any)?.peptidesEmailHoldReason, "LEGACY_DELIVERY_EVIDENCE_UNSCOPED");
+});
+
+test("MemStorage report persistence is atomic and enforces PostgreSQL source parity", async () => {
+  const storage = new MemStorage();
+  const responses = { pep_email: "client@example.com", pep_name: "Client" };
+  const sourceHash = hashPeptidesManualMutationPayload(responses);
+  const order = await activeOrder(storage, {
+    peptidesResponses: responses,
+    peptidesResponsesSha256: sourceHash,
+  });
+  const [a, b] = await Promise.all([
+    storage.createAndClaimPeptidesReport({
+      orderId: order.id,
+      email: "peptides::client@example.com",
+      responses,
+      report: { winner: "a" },
+      expectedResponsesSha256: sourceHash,
+    }),
+    storage.createAndClaimPeptidesReport({
+      orderId: order.id,
+      email: "peptides::client@example.com",
+      responses,
+      report: { winner: "b" },
+      expectedResponsesSha256: sourceHash,
+    }),
+  ]);
+  assert.equal([a, b].filter(Boolean).length, 1);
+  assert.equal((await storage.getAllBurnoutReports()).length, 1);
+
+  const mismatchStorage = new MemStorage();
+  const mismatchOrder = await activeOrder(mismatchStorage, {
+    peptidesResponses: responses,
+    peptidesResponsesSha256: sourceHash,
+  });
+  assert.equal(await mismatchStorage.createAndClaimPeptidesReport({
+    orderId: mismatchOrder.id,
+    email: "peptides::attacker@example.com",
+    responses,
+    report: {},
+    expectedResponsesSha256: sourceHash,
+  }), undefined);
+  assert.equal(await mismatchStorage.createAndClaimPeptidesReport({
+    orderId: mismatchOrder.id,
+    email: "peptides::client@example.com",
+    responses: { ...responses, pep_name: "Altered" },
+    report: {},
+    expectedResponsesSha256: sourceHash,
+  }), undefined);
+});
+
+test("legacy Peptides orders keep two Blood credits and paid PayPal retries repair grants", () => {
+  assert.equal(classifyPaidOrderConfirmationStatus("paid"), "ACTIVE");
+  assert.equal(classifyPaidOrderConfirmationStatus("partial_refund"), "ACTIVE");
+  assert.equal(classifyPaidOrderConfirmationStatus("pending"), "ACTIVATE_PENDING");
+  assert.equal(classifyPaidOrderConfirmationStatus("refunded"), "BLOCK_REFUNDED");
+  assert.equal(classifyPaidOrderConfirmationStatus("cancelled"), "BLOCK_STATUS");
+  assert.equal(peptidesBloodCreditsForTier(undefined), 2);
+  assert.equal(peptidesBloodCreditsForTier(null), 2);
+  assert.equal(peptidesBloodCreditsForTier("solo"), 0);
+  assert.equal(peptidesBloodCreditsForTier("coached"), 1);
+  assert.equal(peptidesBloodCreditsForTier("tracked"), 2);
+
+  const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
+  const captureStart = routes.indexOf('app.post("/api/paypal/capture-order"');
+  const captureEnd = routes.indexOf("// Mark order as paid", captureStart);
+  const alreadyPaidPath = routes.slice(captureStart, captureEnd);
+  assert.match(alreadyPaidPath, /isActivePaidOrderStatus\(existingOrder\.status\)[\s\S]*grantBloodCreditsForOrder/);
+  assert.match(alreadyPaidPath, /peptidesCreditsGranted/);
+  assert.match(routes, /async function repairMissingPaidOrderCredits/);
+  const repairStart = routes.indexOf("async function repairMissingPaidOrderCredits");
+  const repairEnd = routes.indexOf('app.post("/api/admin/paypal/reconcile-pending"', repairStart);
+  assert.match(routes.slice(repairStart, repairEnd), /\["paid", "partial_refund"\]/);
+  assert.match(routes, /await reconcileAllPendingPaypalOrders\(168\);[\s\S]*await repairMissingPaidOrderCredits\(\)/);
+  assert.match(routes, /classifyPaidOrderConfirmationStatus\(existingOrder\.status\)[\s\S]*BLOCK_REFUNDED[\s\S]*ORDER_FULLY_REFUNDED/);
+  assert.match(routes, /LEGACY_LINKED_REPORT_SOURCE_REQUIRES_MANUAL_SEAL/);
+  assert.match(routes, /Peptides automation stopped by HOLD\/manual workflow/);
+  assert.match(routes, /PEPTIDES_GENERATION_HOLD_CONFIRMATION_REQUIRED/);
+  assert.match(routes, /allOrders\.filter\(\(o: any\) => isActivePaidOrderStatus\(o\.status\)/);
+  assert.match(routes, /allPeptidesOrders\.filter\(\(o: any\) => isActivePaidOrderStatus\(o\.status\)/);
+  assert.match(routes, /confirmationDecision !== "ACTIVATE_PENDING"/);
+  assert.match(routes, /status:\s*"blocked_status"/);
+  assert.doesNotMatch(routes, /created_at < \$1 AND status NOT IN \('paid','refunded'\)/);
+  assert.match(routes, /created_at < \$1 AND status IN \('cancelled','failed'\)/);
+  const payloadStart = routes.indexOf("function getPeptidesManualMutationPayload");
+  const payloadEnd = routes.indexOf("function getPeptidesManualMutationSource", payloadStart);
+  const payloadSource = routes.slice(payloadStart, payloadEnd > payloadStart ? payloadEnd : payloadStart + 5000);
+  assert.match(payloadSource, /confirmHeldGeneration:\s*String\(source\.confirmHeldGeneration/);
+  assert.notEqual(
+    hashPeptidesManualMutationPayload({ confirmHeldGeneration: null }),
+    hashPeptidesManualMutationPayload({ confirmHeldGeneration: "GENERATE_UNDER_HOLD_NO_DELIVERY" }),
+  );
+});
+
+test("manual provider claim atomically binds HOLD mode and excludes AutoGen", async () => {
+  const storage = new MemStorage();
+  const config = getPeptidesGenerationCircuitConfig({
+    PEPTIDES_AUTOGEN_MAX_ATTEMPTS: "3",
+    PEPTIDES_AUTOGEN_ATTEMPT_BUDGET_MICRO_USD: "500",
+    PEPTIDES_AUTOGEN_MAX_BUDGET_MICRO_USD: "2000",
+    PEPTIDES_AUTOGEN_HOURLY_BUDGET_MICRO_USD: "2000",
+    PEPTIDES_AUTOGEN_DAILY_BUDGET_MICRO_USD: "2000",
+  });
+  const order = await activeOrder(storage);
+  assert.equal(await storage.claimPeptidesManualGenerationProvider(order.id, "manual-1", false, 60_000), true);
+  assert.equal(await storage.claimPeptidesManualGenerationProvider(order.id, "manual-2", false, 60_000), false);
+  assert.equal(await storage.claimPeptidesGenerationAttempt(order.id, config), null);
+  assert.equal(await storage.finalizePeptidesManualGenerationProvider(order.id, "wrong"), false);
+  assert.equal(await storage.finalizePeptidesManualGenerationProvider(order.id, "manual-1"), true);
+
+  const autoFirst = await activeOrder(storage, {}, "auto-first@example.com");
+  assert.ok(await storage.claimPeptidesGenerationAttempt(autoFirst.id, config));
+  assert.equal(await storage.claimPeptidesManualGenerationProvider(autoFirst.id, "manual-during-auto", false, 60_000), false);
+
+  await storage.setOrderMetadataKey(order.id, "peptidesEmailHold", true);
+  assert.equal(await storage.claimPeptidesManualGenerationProvider(order.id, "manual-unheld", false, 60_000), false);
+  assert.equal(await storage.claimPeptidesManualGenerationProvider(order.id, "manual-held", true, 60_000), true);
+});
+
+test("payment, Blood access and manual provider paths stay fail-closed in source", () => {
+  const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
+  const bloodRoutes = readFileSync(new URL("./blood-analysis/routes.ts", import.meta.url), "utf8");
+  assert.match(routes, /captureDecision !== "ACTIVATE_PENDING"/);
+  assert.match(routes, /captureCommerciallyValid[\s\S]*capture\.amountCurrency[\s\S]*"EUR"/);
+  assert.match(routes, /PAYPAL_RECONCILIATION_COMMERCIAL_PARITY_FAILED/);
+  assert.match(routes, /stripeSessionMatchesOrder[\s\S]*amount_total[\s\S]*finalAmountCents/);
+  assert.match(routes, /STRIPE_PAID_WITHOUT_LOCAL_ORDER/);
+  assert.match(routes, /STRIPE_ORPHAN_INCIDENT_PERSIST_FAILED/);
+  assert.match(routes, /ORDER_STATUS_CHANGED_DURING_RECONCILIATION/);
+  assert.match(routes, /ORDER_STATUS_CHANGED_DURING_CAPTURE/);
+  assert.match(routes, /WHERE id = \$1 AND status = 'pending'/);
+  assert.match(routes, /STRIPE_COMMERCIAL_PARITY_FAILED/);
+  assert.match(routes, /claimPeptidesManualGenerationProvider/);
+  assert.match(routes, /finalizePeptidesManualGenerationProvider/);
+  assert.doesNotMatch(bloodRoutes, /hasValidReportAccess/);
+  assert.match(bloodRoutes, /getReportAccessDecision\(req, "blood", String\(reportId\), ownerEmail\)/);
+});
+
+test("refunded orders keep consumed generation reservations inside active budget windows", async () => {
+  const storage = new MemStorage();
+  const config = getPeptidesGenerationCircuitConfig({
+    PEPTIDES_AUTOGEN_MAX_ATTEMPTS: "3",
+    PEPTIDES_AUTOGEN_ATTEMPT_BUDGET_MICRO_USD: "500",
+    PEPTIDES_AUTOGEN_MAX_BUDGET_MICRO_USD: "2000",
+    PEPTIDES_AUTOGEN_HOURLY_BUDGET_MICRO_USD: "500",
+    PEPTIDES_AUTOGEN_DAILY_BUDGET_MICRO_USD: "500",
+  });
+  const first = await activeOrder(storage, {}, "first@example.com");
+  assert.ok(await storage.claimPeptidesGenerationAttempt(first.id, config));
+  await storage.updateOrder(first.id, { status: "refunded" as any });
+  const second = await activeOrder(storage, {}, "second@example.com");
+  assert.equal(await storage.claimPeptidesGenerationAttempt(second.id, config), null);
+});
+
+test("partial_refund orders remain generation-eligible and reservation windows use per-attempt ledger", async () => {
+  const storage = new MemStorage();
+  const old = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString();
+  const order = await activeOrder(storage, {
+    peptidesGenerationReservationLedger: [{ startedAt: old, costMicroUsd: 900, claimId: "old" }],
+    peptidesGenerationReservedCostMicroUsd: 900,
+    peptidesGenerationAttempts: 1,
+  });
+  await storage.updateOrder(order.id, { status: "partial_refund" as any });
+  const config = getPeptidesGenerationCircuitConfig({
+    PEPTIDES_AUTOGEN_MAX_ATTEMPTS: "3",
+    PEPTIDES_AUTOGEN_MAX_BUDGET_MICRO_USD: "2000",
+    PEPTIDES_AUTOGEN_ATTEMPT_BUDGET_MICRO_USD: "500",
+    PEPTIDES_AUTOGEN_HOURLY_BUDGET_MICRO_USD: "500",
+    PEPTIDES_AUTOGEN_DAILY_BUDGET_MICRO_USD: "500",
+  });
+  const claim = await storage.claimPeptidesGenerationAttempt(order.id, config);
+  assert.ok(claim);
+  const ledger = ((await storage.getOrder(order.id))?.metadata as any)?.peptidesGenerationReservationLedger;
+  assert.equal(ledger.length, 1);
+  assert.equal(ledger[0].claimId, claim?.claimId);
+});

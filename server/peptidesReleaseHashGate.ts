@@ -70,6 +70,12 @@ export function hashPeptidesReportContent(report: unknown): string {
   return hashPeptidesReport(stableReportContent(report));
 }
 
+const APPROVED_RELEASE_VERDICTS = new Set(["PASS", "PASS_STRICT"]);
+
+export function isApprovedPeptidesReleaseVerdict(value: unknown): boolean {
+  return APPROVED_RELEASE_VERDICTS.has(String(value || "").trim().toUpperCase());
+}
+
 export function isPeptidesApprovalExpected(input: {
   approvedAt?: unknown;
   approvedBy?: unknown;
@@ -84,7 +90,8 @@ export function isPeptidesApprovalExpected(input: {
     || input.releaseAuthorizedAt
     || input.hashGateApprovalRequired === true
     || String(input.hashGateApprovalRequired).toLowerCase() === "true"
-    || /^(?:PASS\b|INVALIDATED_BY_LIVE_REFRESH$)/i.test(releaseVerdict)
+    || isApprovedPeptidesReleaseVerdict(releaseVerdict)
+    || releaseVerdict === "INVALIDATED_BY_LIVE_REFRESH"
   );
 }
 

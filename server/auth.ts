@@ -6,6 +6,10 @@ export type AuthPayload = {
   email: string;
 };
 
+type SessionPayload = AuthPayload & {
+  tokenType: "session";
+};
+
 export type ReportResource = "audit" | "blood" | "peptides";
 
 type ReportAccessPayload = {
@@ -33,12 +37,30 @@ const getAuthSecret = (): string => {
 export const signAuthToken = (payload: AuthPayload): string => {
   // Keep a trusted device signed in for a year. The emailed magic link remains
   // short-lived and one-time, so a leaked email cannot become a permanent key.
-  return jwt.sign(payload, getAuthSecret(), { expiresIn: "365d" });
+  return jwt.sign(
+    { ...payload, tokenType: "session" } satisfies SessionPayload,
+    getAuthSecret(),
+    { expiresIn: "365d", issuer: "apexlabs", audience: "session" },
+  );
 };
 
 export const verifyAuthToken = (token: string): AuthPayload | null => {
   try {
-    return jwt.verify(token, getAuthSecret()) as AuthPayload;
+    const payload = jwt.verify(token, getAuthSecret()) as Record<string, any> & Partial<SessionPayload>;
+    const isCurrentSession = payload.tokenType === "session"
+      && payload.iss === "apexlabs"
+      && (payload.aud === "session" || (Array.isArray(payload.aud) && payload.aud.includes("session")));
+    // Preserve already-issued owner sessions while rejecting every report token:
+    // legacy sessions had userId+email and no token/resource domain fields.
+    const isLegacySession = payload.tokenType == null
+      && payload.iss == null
+      && payload.aud == null
+      && payload.resource == null
+      && payload.resourceId == null;
+    if ((!isCurrentSession && !isLegacySession)
+      || typeof payload.userId !== "string" || !payload.userId
+      || typeof payload.email !== "string" || !payload.email) return null;
+    return { userId: payload.userId, email: payload.email };
   } catch {
     return null;
   }
@@ -63,7 +85,7 @@ export const signReportAccessToken = (
     ...(email ? { email: email.trim().toLowerCase() } : {}),
   } satisfies ReportAccessPayload,
   getAuthSecret(),
-  { expiresIn: "30d", issuer: "apexlabs", audience: "report-access" },
+  { issuer: "apexlabs", audience: "report-access" },
 );
 
 export const verifyReportAccessToken = (
@@ -75,6 +97,9 @@ export const verifyReportAccessToken = (
     const payload = jwt.verify(token, getAuthSecret(), {
       issuer: "apexlabs",
       audience: "report-access",
+      // Customer report links are permanent. ignoreExpiration also preserves
+      // every legacy signed link that carried the former 30-day expiry.
+      ignoreExpiration: true,
     }) as ReportAccessPayload;
     if (
       payload.tokenType !== "report_access" ||
@@ -109,7 +134,14 @@ export const getReportAccessDecision = (
   resourceId: string,
   ownerEmail: string,
 ): 200 | 401 | 403 => {
-  if (hasValidReportAccess(req, resource, resourceId)) return 200;
+  const reportToken = getReportAccessToken(req);
+  const reportPayload = reportToken
+    ? verifyReportAccessToken(reportToken, resource, resourceId)
+    : null;
+  if (
+    reportPayload?.email
+    && reportPayload.email.trim().toLowerCase() === ownerEmail.trim().toLowerCase()
+  ) return 200;
   const payload = getAuthPayload(req);
   if (!payload) return 401;
   return payload.email.trim().toLowerCase() === ownerEmail.trim().toLowerCase() ? 200 : 403;

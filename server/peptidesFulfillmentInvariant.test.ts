@@ -362,14 +362,14 @@ test("alerts again only after resolution or when the incident code changes", () 
   }, "DELIVERY_OVERDUE"), true);
 });
 
-test("the worker refreshes each paid order before evaluating fulfillment", () => {
+test("the worker refreshes each active paid or partial-refund order before evaluating fulfillment", () => {
   const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
   const loopStart = routes.indexOf("for (const snapshotOrder of peptidesOrders)");
   const invariantStart = routes.indexOf("evaluatePeptidesFulfillmentInvariant({", loopStart);
   assert.ok(loopStart >= 0 && invariantStart > loopStart, "AutoGen paid-order loop must exist");
   const preInvariant = routes.slice(loopStart, invariantStart);
   assert.match(preInvariant, /storage\.getOrder\(snapshotOrder\.id\)/);
-  assert.match(preInvariant, /if \(!order \|\| order\.productType !== "PEPTIDES_ENGINE" \|\| order\.status !== "paid" \|\| !order\.paidAt\) continue/);
+  assert.match(preInvariant, /!\["paid", "partial_refund"\]\.includes\(String\(order\.status\)\)/);
 
   const invariantCall = routes.slice(invariantStart, routes.indexOf("});", invariantStart) + 3);
   assert.match(invariantCall, /manualFulfillment:\s*meta\?\.peptidesManualFulfillment/);
@@ -406,7 +406,8 @@ test("every automatic report delivery uses a single-writer database claim", () =
 
 test("orphan Peptides reports are neither retained nor accessible", () => {
   const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
-  assert.match(routes, /deleteBurnoutReport\(saved\.id\)/);
+  assert.match(routes, /createAndClaimPeptidesReport/);
+  assert.doesNotMatch(routes, /Unclaimed report \$\{saved\.id\}/);
   assert.match(routes, /if \(activeReportIds\.size === 0\) return \[\]/);
   assert.match(routes, /A paid Peptides order proves entitlement[\s\S]*return false/);
 });

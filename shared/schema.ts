@@ -432,6 +432,7 @@ export const OrderStatus = {
   PAID: "paid",
   REFUNDED: "refunded",
   PARTIAL_REFUND: "partial_refund",
+  PAYMENT_REVIEW: "payment_review",
   FAILED: "failed",
   CANCELLED: "cancelled",
 } as const;

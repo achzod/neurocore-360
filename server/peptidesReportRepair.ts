@@ -23,8 +23,11 @@ type RepairableReport = PeptidesReport & {
     failures?: string[];
     listingSnapshots?: Array<Record<string, unknown>>;
     shippingBreakdown?: Array<{
+      supplier?: string;
       subtotalUsd?: number;
       shippingUsd?: number;
+      minimumOrderUsd?: number | null;
+      speed?: string;
     }>;
   };
 };
@@ -696,11 +699,12 @@ function cleanExpertPeptideFields(report: RepairableReport): void {
       const targetDoseMg = Math.max(...doseMatch);
       const concentration = vialMg / solventMl;
       const totalMl = targetDoseMg / concentration;
+      const totalUnits = totalMl * 100;
       const splitLine = totalMl > 1
-        ? ` Comme ca depasse 1 ml, tu fractionnes en 2 injections distinctes de ${(totalMl / 2).toFixed(2)} ml le meme jour, sur 2 sites differents.`
+        ? ` Comme cela depasse 1 ml, tu fractionnes en 2 injections distinctes de ${(totalUnits / 2).toFixed(1)} unites U-100, soit ${(totalMl / 2).toFixed(2)} ml chacune, le meme jour sur 2 sites differents.`
         : "";
       peptide.reconstitution = sanitizeClientFacingText(
-        `Vial ${vialMg}mg + ${solventMl}ml BAC water = ${concentration.toFixed(2)} mg/ml. Pour ${targetDoseMg}mg, tu tires ${totalMl.toFixed(2)} ml au total.${splitLine}`
+        `Vial ${vialMg}mg + ${solventMl}ml BAC water = ${concentration.toFixed(2)} mg/ml. Pour ${targetDoseMg}mg = ${totalUnits.toFixed(1)} unites U-100 (soit ${totalMl.toFixed(2)} ml).${splitLine}`
       );
     } else {
       peptide.reconstitution = sanitizeClientFacingText(
@@ -1191,6 +1195,49 @@ function syncLiveSnapshotAfterClamp(
     const unitPackagePrice = totalGbp / packageCount;
     snapshot.totalPriceGbp = Math.round(unitPackagePrice * nextPackageCount * 100) / 100;
   }
+
+  const supplier = String(snapshot.supplier || "");
+  if (supplier) {
+    const subtotal = (report._peptauraLiveSync?.listingSnapshots || [])
+      .filter((entry) => String(entry.supplier || "") === supplier)
+      .reduce((sum, entry) => sum + Number(entry.totalPriceUsd || 0), 0);
+    for (const line of report._peptauraLiveSync?.shippingBreakdown || []) {
+      if (String(line.supplier || "") === supplier) {
+        line.subtotalUsd = Math.round(subtotal * 100) / 100;
+      }
+    }
+  }
+}
+
+function synchronizeShoppingListAfterClamp(report: RepairableReport): void {
+  const peptides = (report.peptides || []).filter((peptide) =>
+    peptide.activationStatus !== "conditional-inactive"
+  );
+  const peptideByLabel = new Map(
+    peptides.map((peptide) => [normalizePeptideMention(peptide.name || ""), peptide]),
+  );
+  const lines = String(report.shoppingList || "").split(/\n+/).filter(Boolean).map((line) => {
+    const [label] = line.split(":");
+    const peptide = peptideByLabel.get(normalizePeptideMention(label || ""));
+    if (peptide) {
+      return [
+        `${peptide.name}: ${sanitizeClientFacingText(peptide.vialsNeeded || "")}`,
+        sanitizeClientFacingText(peptide.priceEstimate || ""),
+        sanitizeClientFacingText(peptide.purchaseUrl || ""),
+      ].filter(Boolean).join(". ");
+    }
+    const shipping = (report._peptauraLiveSync?.shippingBreakdown || []).find((entry) =>
+      normalizePeptideMention(line).includes(normalizePeptideMention(`Livraison ${entry.supplier || ""}`))
+    );
+    if (shipping) {
+      const minimum = shipping.minimumOrderUsd == null
+        ? "aucun minimum affiche"
+        : `minimum $${Number(shipping.minimumOrderUsd).toFixed(2)}`;
+      return `Livraison ${shipping.supplier}: sous-total $${Number(shipping.subtotalUsd || 0).toFixed(2)}, ${minimum}, frais $${Number(shipping.shippingUsd || 0).toFixed(2)}, ${shipping.speed || "delai live"}.`;
+    }
+    return line;
+  });
+  report.shoppingList = sanitizeClientFacingText(lines.join("\n"));
 }
 
 function clampManifestOverorders(report: RepairableReport): void {
@@ -1278,6 +1325,7 @@ function repairStandardReportContent(
   removeUnsupportedDescentNarrative(report);
   pruneUnavailableUnrequestedPeptides(report, responses);
   clampManifestOverorders(report);
+  synchronizeShoppingListAfterClamp(report);
   normalizeOperationalPlaceholders(report);
   synchronizeReconstitutionNarrative(report, firstName);
   synchronizeProtocolNarrative(report, firstName);

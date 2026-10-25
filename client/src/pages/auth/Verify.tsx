@@ -12,11 +12,18 @@ export default function Verify() {
   const search = useSearch();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [email, setEmail] = useState<string | null>(null);
+  const [retryHref, setRetryHref] = useState("/auth/login?reason=renew-access");
 
   useEffect(() => {
     const params = new URLSearchParams(search);
     const token = params.get("token");
     const emailParam = params.get("email");
+
+    const next = localStorage.getItem("apexlabs_post_login_redirect") || "";
+    const retryParams = new URLSearchParams({ reason: "renew-access" });
+    if (emailParam) retryParams.set("email", emailParam);
+    if (next) retryParams.set("next", next);
+    setRetryHref(`/auth/login?${retryParams.toString()}`);
 
     if (!token || !emailParam) {
       setStatus("error");
@@ -106,16 +113,16 @@ export default function Verify() {
                   >
                     <XCircle className="h-10 w-10 text-destructive" />
                   </motion.div>
-                  <CardTitle className="text-2xl">Lien invalide</CardTitle>
+                  <CardTitle className="text-2xl">Ton accès reste actif</CardTitle>
                   <p className="mt-2 text-muted-foreground">
-                    Ce lien a expire ou est invalide. Demande un nouveau lien.
+                    Seul ce lien sécurisé a expiré. Ton compte, tes achats et tes rapports restent accessibles à vie.
                   </p>
                 </>
               )}
             </CardHeader>
             {status === "error" && (
               <CardContent>
-                <Link href="/auth/login">
+                <Link href={retryHref}>
                   <Button className="w-full" data-testid="button-retry-login">
                     Demander un nouveau lien
                   </Button>
