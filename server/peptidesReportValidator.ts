@@ -568,7 +568,7 @@ export function findConditionalInactiveOperationalMentions(
 ): string[] {
   const issues: string[] = [];
   const operationalSignal =
-    /\b(?:dose|dosage|inject|injection|reconstit|seringue|vial|flacon|commande|commander|acheter|achat|matin|soir|coucher|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|semaine\s+\d+)\b|\b\d+(?:[.,]\d+)?\s*(?:mcg|ug|µg|mg|ml|iu|ui|unit[ée]s?)\b|(?:x|×)\s*\d+\b/i;
+    /\b(?:dose|dosage|inject\w*|administr\w*|prendre|utilis\w*|appliqu\w*|reconstit\w*|seringue|vial|flacon|commande|commander|acheter|achat|matin|soir|nuit|jour|coucher|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|semaine\s+\d+)\b|\b\d+(?:[.,]\d+)?\s*(?:mcg|ug|µg|mg|ml|iu|ui|unit[ée]s?)\b|(?:x|×)\s*\d+\b/i;
 
   for (const peptide of report.peptides || []) {
     if (!isConditionalInactivePeptide(peptide)) continue;
@@ -901,7 +901,7 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
   // through, causing Simon Leveque's Retatrutide 79mg need to be calculated
   // as 43mg (5 vials ordered, but 8 needed).
   const progressive = Array.from(
-    dose.matchAll(/(\d+(?:[.,]\d+)?)\s*(mg|mcg)\s*sem(?:aine)?s?\s*(\d+)/gi)
+    dose.matchAll(/(\d+(?:[.,]\d+)?)\s*(mg|mcg|µg|ug)\s*sem(?:aine)?s?\s*(\d+)/gi)
   );
   if (progressive.length >= 2 && weeks > 0) {
     const dosesByWeek = new Map<number, number>();
@@ -909,7 +909,7 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
       const v = parseFloat(m[1].replace(",", "."));
       const u = m[2].toLowerCase();
       const w = parseInt(m[3], 10);
-      dosesByWeek.set(w, u.startsWith("mcg") ? v / 1000 : v);
+      dosesByWeek.set(w, /^(?:mcg|µg|ug)/i.test(u) ? v / 1000 : v);
     }
     const sortedWeeks = [...dosesByWeek.keys()].sort((a, b) => a - b);
     let currentDose: number | null = null;
@@ -991,7 +991,7 @@ export function validateU100Reconstitution(value: string | undefined): string[] 
     // Validate every complete dose -> units -> ml conversion in this vial
     // context, not merely the first polished example in the text.
     const forwardConversions = [...segment.matchAll(
-      /\b(?:pour|dose(?:\s+de)?|administration(?:\s+de)?)\s+(\d+(?:\.\d+)?)\s*(mg|mcg|µg|ug)\b[\s\S]{0,180}?(?:=|→|correspond(?:ent|ance)?\s+a|soit)?\s*(\d+(?:\.\d+)?)\s*unit[ée]s?(?:\s+U-?100)?[\s\S]{0,80}?(?:\bsoit\s+|\(\s*)?(\d+(?:\.\d+)?)\s*ml\b/gi,
+      /\b(?:(?:pour|dose(?:\s+de)?|administration(?:\s+de)?|palier(?:\s+\d+)?)\s*:?[ \t]*)?(\d+(?:\.\d+)?)\s*(mg|mcg|µg|ug)\b[ \t]{0,40}(?:=|→|:|correspond(?:ent|ance)?\s+a|soit)[ \t]*(\d+(?:\.\d+)?)\s*unit[ée]s?(?:\s+U-?100)?[\s\S]{0,80}?(?:\bsoit\s+|\(\s*)?(\d+(?:\.\d+)?)\s*ml\b/gi,
     )].map((match) => ({
       dose: Number(match[1]),
       doseUnit: match[2],
@@ -1007,9 +1007,13 @@ export function validateU100Reconstitution(value: string | undefined): string[] 
       volumeMl: Number(match[2]),
     }));
     const conversions = [...forwardConversions, ...reverseConversions];
-    const declaredDoseCount = [...segment.matchAll(
-      /\b(?:pour|dose(?:\s+de)?|administration(?:\s+de)?)\s+\d+(?:\.\d+)?\s*(?:mg|mcg|µg|ug)\b/gi,
+    const explicitDoseToUnitsCount = [...segment.matchAll(
+      /\b\d+(?:\.\d+)?\s*(?:mg|mcg|µg|ug)\b[ \t]{0,40}(?:=|→|:|correspond(?:ent|ance)?\s+a|soit)[ \t]*\d+(?:\.\d+)?\s*unit[ée]s?\b/gi,
     )].length;
+    const labeledDoseCount = [...segment.matchAll(
+      /\b(?:pour|dose(?:\s+de)?|administration(?:\s+de)?|palier(?:\s+\d+)?)\s*:?[ \t]*\d+(?:\.\d+)?\s*(?:mg|mcg|µg|ug)\b/gi,
+    )].length;
+    const declaredDoseCount = Math.max(explicitDoseToUnitsCount, labeledDoseCount);
     if (declaredDoseCount > conversions.length) {
       issues.push(`conversion U-100 incomplete: ${declaredDoseCount - conversions.length} dose(s) sans triplet dose/unites/ml verifiable`);
     }
@@ -1049,23 +1053,24 @@ export function checkPeptide(p: PeptidesPeptide): string[] {
     if (!Array.isArray(p.activationRequirements) || p.activationRequirements.length < 2) {
       issues.push("phase conditionnelle sans exigences d'activation suffisantes");
     }
-    const operationalText = [
-      p.dosage,
-      p.timing,
-      p.route,
-      p.cycleDuration,
-      p.reconstitution,
-      p.vialsNeeded,
-      p.priceEstimate,
-    ].filter(Boolean).join(" ");
-    if (
-      /\b\d+(?:[.,]\d+)?\s*(?:mcg|ug|µg|mg|ml|iu|ui)\b|\b(?:inject|injection|vial|flacon|acheter|commander)\b/i.test(operationalText)
-    ) {
-      issues.push("phase conditionnelle contient des instructions operationnelles");
+    const conditionalOperationalFields = [
+      "dosage",
+      "timing",
+      "route",
+      "cycleDuration",
+      "reconstitution",
+      "vialsNeeded",
+      "priceEstimate",
+    ] as const;
+    const populatedOperationalFields = conditionalOperationalFields.filter((field) =>
+      String(p[field] || "").trim().length > 0
+    );
+    if (populatedOperationalFields.length > 0) {
+      issues.push(`phase conditionnelle contient des champs operationnels non vides: ${populatedOperationalFields.join(", ")}`);
     }
     // activationStatus is the canonical machine-readable inactive marker.
-    // Operational fields must stay empty instead of carrying prose that could
-    // accidentally be parsed as a dose or purchase instruction.
+    // Every operational field must be structurally empty, not euphemistically
+    // populated with prose such as "selon tolerance" or "chaque nuit".
     const sourceUrl = String(p.purchaseUrl || "").trim();
     if (!sourceUrl) {
       issues.push("phase conditionnelle sans acces source fournisseur");

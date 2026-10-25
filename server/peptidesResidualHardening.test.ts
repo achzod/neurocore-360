@@ -7,7 +7,10 @@ const { MemStorage } = await import("./storage");
 const { hashPeptidesReport } = await import("./peptidesReleaseHashGate");
 const { hashPeptidesManualMutationPayload } = await import("./peptidesManualMutationGuard");
 const { getPeptidesGenerationCircuitConfig } = await import("./peptidesGenerationCircuitBreaker");
-const { peptidesBloodCreditsForTier } = await import("./peptidesEntitlements");
+const {
+  classifyPaidOrderConfirmationStatus,
+  peptidesBloodCreditsForTier,
+} = await import("./peptidesEntitlements");
 
 async function activeOrder(storage: InstanceType<typeof MemStorage>, metadata: Record<string, unknown> = {}, email = "client@example.com") {
   const order = await storage.createOrder({
@@ -30,6 +33,21 @@ test("ACCEPTED delivery is terminal and cannot be downgraded", async () => {
   const current = await storage.getOrder(order.id);
   assert.equal((current?.metadata as any)?.peptidesDeliveryState, "ACCEPTED");
   assert.equal((current?.metadata as any)?.peptidesEmailHold, false);
+});
+
+test("confirmed FAILED delivery clears its attempt claim and can be retried only after HOLD release", async () => {
+  const storage = new MemStorage();
+  const order = await activeOrder(storage, { peptidesReportId: "report-retry" });
+  assert.equal(await storage.claimPeptidesDelivery(order.id, "report-retry", "claim-failed"), true);
+  assert.equal(await storage.finalizePeptidesDeliveryClaim(order.id, "report-retry", "claim-failed", "FAILED"), true);
+  const failed = await storage.getOrder(order.id);
+  assert.equal((failed?.metadata as any)?.peptidesDeliveryClaimId, "");
+  assert.equal(await storage.claimPeptidesDelivery(order.id, "report-retry", "claim-too-soon"), false);
+  await storage.setOrderMetadataIfPeptidesReportMatches(order.id, "report-retry", {
+    peptidesEmailHold: false,
+    peptidesManualFulfillment: false,
+  });
+  assert.equal(await storage.claimPeptidesDelivery(order.id, "report-retry", "claim-retry"), true);
 });
 
 test("strict HOLD release rejects a report changed after validation", async () => {
@@ -58,6 +76,19 @@ test("strict HOLD release rejects a report changed after validation", async () =
     expectedReleaseVerdict: "PASS_STRICT",
   }), false);
   assert.equal(((await storage.getOrder(order.id))?.metadata as any)?.peptidesEmailHold, true);
+
+  await storage.updateBurnoutReport(record.id, original);
+  await storage.setOrderMetadataIfPeptidesReportMatches(order.id, record.id, {
+    peptidesApprovedReportSha256: approvedHash,
+    peptidesReleaseAuditVerdict: "PASS_NOT_APPROVED",
+  });
+  assert.equal(await storage.releasePeptidesDeliveryHoldIfApproved({
+    orderId: order.id,
+    reportId: record.id,
+    expectedCurrentReportSha256: approvedHash,
+    expectedApprovedReportSha256: approvedHash,
+    expectedReleaseVerdict: "PASS_NOT_APPROVED",
+  }), false);
 });
 
 test("legacy delivery tracking backfills exact report state and blocks ambiguous recipient-only evidence", async () => {
@@ -75,6 +106,21 @@ test("legacy delivery tracking backfills exact report state and blocks ambiguous
   });
   assert.equal(await storage.backfillAcceptedPeptidesDeliveryFromTracking(first.id, "report-a"), "ACCEPTED");
   assert.equal(((await storage.getOrder(first.id))?.metadata as any)?.peptidesDeliveryState, "ACCEPTED");
+
+  const unconfirmed = new MemStorage();
+  const pending = await activeOrder(unconfirmed, { peptidesReportId: "report-pending" }, "pending@example.com");
+  (unconfirmed as any).emailTrackings.set("tracking-pending", {
+    id: "tracking-pending",
+    auditId: null,
+    emailType: "sendCTAEmail",
+    recipientEmail: "pending@example.com",
+    subject: "Ton protocole peptides personnalisé est prêt",
+    sendpulseStatus: "pending",
+    metadata: { orderId: pending.id, reportId: "report-pending" },
+    sentAt: new Date(),
+  });
+  assert.equal(await unconfirmed.backfillAcceptedPeptidesDeliveryFromTracking(pending.id, "report-pending"), "AMBIGUOUS");
+  assert.equal(((await unconfirmed.getOrder(pending.id))?.metadata as any)?.peptidesEmailHoldReason, "LEGACY_DELIVERY_EVIDENCE_NOT_POSITIVE");
 
   const unscoped = new MemStorage();
   const single = await activeOrder(unscoped, { peptidesReportId: "report-single" }, "single@example.com");
@@ -160,6 +206,11 @@ test("MemStorage report persistence is atomic and enforces PostgreSQL source par
 });
 
 test("legacy Peptides orders keep two Blood credits and paid PayPal retries repair grants", () => {
+  assert.equal(classifyPaidOrderConfirmationStatus("paid"), "ACTIVE");
+  assert.equal(classifyPaidOrderConfirmationStatus("partial_refund"), "ACTIVE");
+  assert.equal(classifyPaidOrderConfirmationStatus("pending"), "ACTIVATE_PENDING");
+  assert.equal(classifyPaidOrderConfirmationStatus("refunded"), "BLOCK_REFUNDED");
+  assert.equal(classifyPaidOrderConfirmationStatus("cancelled"), "BLOCK_STATUS");
   assert.equal(peptidesBloodCreditsForTier(undefined), 2);
   assert.equal(peptidesBloodCreditsForTier(null), 2);
   assert.equal(peptidesBloodCreditsForTier("solo"), 0);
@@ -173,7 +224,12 @@ test("legacy Peptides orders keep two Blood credits and paid PayPal retries repa
   assert.match(alreadyPaidPath, /existingOrder\.status === "paid"[\s\S]*grantBloodCreditsForOrder/);
   assert.match(alreadyPaidPath, /peptidesCreditsGranted/);
   assert.match(routes, /async function repairMissingPaidOrderCredits/);
+  const repairStart = routes.indexOf("async function repairMissingPaidOrderCredits");
+  const repairEnd = routes.indexOf('app.post("/api/admin/paypal/reconcile-pending"', repairStart);
+  assert.match(routes.slice(repairStart, repairEnd), /\["paid", "partial_refund"\]/);
   assert.match(routes, /await reconcileAllPendingPaypalOrders\(168\);[\s\S]*await repairMissingPaidOrderCredits\(\)/);
+  assert.match(routes, /classifyPaidOrderConfirmationStatus\(existingOrder\.status\)[\s\S]*BLOCK_REFUNDED[\s\S]*ORDER_FULLY_REFUNDED/);
+  assert.match(routes, /LEGACY_LINKED_REPORT_SOURCE_REQUIRES_MANUAL_SEAL/);
 });
 
 test("partial_refund orders remain generation-eligible and reservation windows use per-attempt ledger", async () => {

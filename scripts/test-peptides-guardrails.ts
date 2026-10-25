@@ -1278,13 +1278,13 @@ const conditionalCandidate = {
   evidenceSummary: "Axe documente mais suspendu tant que les marqueurs requis ne sont pas disponibles.",
   purpose: "Evaluer un axe GH pour la recuperation et le maintien de masse maigre",
   whyThisPeptide: "Objectif GH explicite, avec activation suspendue tant que les valeurs ne sont pas disponibles",
-  route: "Phase conditionnelle non active",
-  dosage: "Non active avant lecture du bilan",
-  timing: "Activation suspendue",
-  cycleDuration: "Phase conditionnelle non active",
-  reconstitution: "Aucune reconstitution tant que la phase reste inactive",
-  vialsNeeded: "Aucun achat tant que la phase reste inactive",
-  priceEstimate: "Aucun prix applique a une phase inactive",
+  route: "",
+  dosage: "",
+  timing: "",
+  cycleDuration: "",
+  reconstitution: "",
+  vialsNeeded: "",
+  priceEstimate: "",
   purchaseUrl: "https://www.peptaura.com/catalog/CJC-1295-(no-DAC)-and-Ipamorelin",
 };
 assert.deepEqual(
@@ -1297,7 +1297,7 @@ assert.match(
     ...conditionalCandidate,
     dosage: "100 mcg par injection",
   }).join("\n"),
-  /instructions operationnelles/i,
+  /champs operationnels non vides/i,
   "an inactive conditional candidate must reject actionable dosing",
 );
 

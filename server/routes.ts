@@ -79,7 +79,11 @@ import {
   buildPeptidesCoachingDeductionBlock,
 } from "./cta";
 import { BLOOD_ANALYSIS_PURCHASE_CREDITS, clarifyBloodPurchaseEmail } from "./bloodOffer";
-import { peptidesBloodCreditsForTier, resolvePeptidesTier } from "./peptidesEntitlements";
+import {
+  classifyPaidOrderConfirmationStatus,
+  peptidesBloodCreditsForTier,
+  resolvePeptidesTier,
+} from "./peptidesEntitlements";
 import { buildPaidOrderNotificationPlan } from "./paidOrderNotifications";
 import { buildPublicReviewCheckResponse, toPublicReview } from "./reviewPublicResponse";
 
@@ -124,6 +128,7 @@ import { isRetryablePeptauraSourceOutage } from "./peptidesSourcePreflight";
 import {
   evaluatePeptidesReleaseHashGate,
   hashPeptidesReport,
+  isApprovedPeptidesReleaseVerdict,
   isPeptidesApprovalExpected,
 } from "./peptidesReleaseHashGate";
 import {
@@ -5993,33 +5998,35 @@ export async function registerRoutes(
     const repaired: string[] = [];
     const errors: Array<{ orderId: string; error: string }> = [];
     const pageSize = 250;
-    let offset = 0;
-    let total = 0;
-    do {
-      const page = await storage.getAllOrders({ status: "paid", limit: pageSize, offset });
-      total = page.total;
-      for (const order of page.orders) {
-        const metadata = ((order.metadata as any) || {}) as Record<string, any>;
-        let creditCount: number | null = null;
-        let flag: "bloodCreditGranted" | "peptidesCreditsGranted" | null = null;
-        if (order.productType === "PEPTIDES_ENGINE" && metadata.peptidesCreditsGranted !== true) {
-          creditCount = peptidesBloodCreditsForTier(metadata.peptidesTier);
-          flag = "peptidesCreditsGranted";
-        } else if (order.productType === "BLOOD_ANALYSIS" && metadata.bloodCreditGranted !== true) {
-          creditCount = BLOOD_ANALYSIS_PURCHASE_CREDITS;
-          flag = "bloodCreditGranted";
+    for (const activeStatus of ["paid", "partial_refund"] as const) {
+      let offset = 0;
+      let total = 0;
+      do {
+        const page = await storage.getAllOrders({ status: activeStatus, limit: pageSize, offset });
+        total = page.total;
+        for (const order of page.orders) {
+          const metadata = ((order.metadata as any) || {}) as Record<string, any>;
+          let creditCount: number | null = null;
+          let flag: "bloodCreditGranted" | "peptidesCreditsGranted" | null = null;
+          if (order.productType === "PEPTIDES_ENGINE" && metadata.peptidesCreditsGranted !== true) {
+            creditCount = peptidesBloodCreditsForTier(metadata.peptidesTier);
+            flag = "peptidesCreditsGranted";
+          } else if (order.productType === "BLOOD_ANALYSIS" && metadata.bloodCreditGranted !== true) {
+            creditCount = BLOOD_ANALYSIS_PURCHASE_CREDITS;
+            flag = "bloodCreditGranted";
+          }
+          if (creditCount === null || !flag) continue;
+          try {
+            await grantBloodCreditsForOrder(order.id, order.email, creditCount, flag);
+            repaired.push(order.id);
+          } catch (error: any) {
+            errors.push({ orderId: order.id, error: error?.message || String(error) });
+          }
         }
-        if (creditCount === null || !flag) continue;
-        try {
-          await grantBloodCreditsForOrder(order.id, order.email, creditCount, flag);
-          repaired.push(order.id);
-        } catch (error: any) {
-          errors.push({ orderId: order.id, error: error?.message || String(error) });
-        }
-      }
-      offset += page.orders.length;
-      if (page.orders.length === 0) break;
-    } while (offset < total);
+        offset += page.orders.length;
+        if (page.orders.length === 0) break;
+      } while (offset < total);
+    }
     return { repaired, errors };
   }
 
@@ -6244,7 +6251,18 @@ export async function registerRoutes(
       // acknowledge the payment and redirect without trying to create an audit.
       if (planType === "PEPTIDES_ENGINE") {
         const existingOrder = await storage.getOrderByStripeSession(sessionId);
-        if (existingOrder && existingOrder.status !== "paid") {
+        const confirmationDecision = existingOrder
+          ? classifyPaidOrderConfirmationStatus(existingOrder.status)
+          : null;
+        if (confirmationDecision === "BLOCK_REFUNDED") {
+          res.status(409).json({ success: false, error: "ORDER_FULLY_REFUNDED", auditType: "PEPTIDES_ENGINE" });
+          return;
+        }
+        if (confirmationDecision === "BLOCK_STATUS") {
+          res.status(409).json({ success: false, error: "ORDER_STATUS_NOT_REACTIVATABLE", status: existingOrder?.status });
+          return;
+        }
+        if (existingOrder && confirmationDecision === "ACTIVATE_PENDING") {
           await storage.updateOrder(existingOrder.id, {
             status: "paid",
             paidAt: new Date(),
@@ -6277,7 +6295,18 @@ export async function registerRoutes(
         res.json({ success: true, auditId: existingOrder.auditId, auditType: planType, existing: true, purchaseTracking });
         return;
       }
-      if (existingOrder && existingOrder.status !== "paid") {
+      const confirmationDecision = existingOrder
+        ? classifyPaidOrderConfirmationStatus(existingOrder.status)
+        : null;
+      if (confirmationDecision === "BLOCK_REFUNDED") {
+        res.status(409).json({ success: false, error: "ORDER_FULLY_REFUNDED", auditType: planType });
+        return;
+      }
+      if (confirmationDecision === "BLOCK_STATUS") {
+        res.status(409).json({ success: false, error: "ORDER_STATUS_NOT_REACTIVATABLE", status: existingOrder?.status });
+        return;
+      }
+      if (existingOrder && confirmationDecision === "ACTIVATE_PENDING") {
         await storage.updateOrder(existingOrder.id, {
           status: "paid",
           paidAt: new Date(),
@@ -6288,7 +6317,6 @@ export async function registerRoutes(
 
       if (planType === "BLOOD_ANALYSIS") {
         if (existingOrder) {
-          await storage.updateOrder(existingOrder.id, { status: "paid", paidAt: new Date() });
           await grantBloodCreditsForOrder(
             existingOrder.id,
             email,
@@ -7910,7 +7938,7 @@ export async function registerRoutes(
         if (!validation.ok
           || validation.warnings.length > 0
           || approvedHash !== currentHash
-          || !/^PASS(?:_|$)/.test(releaseVerdict)) {
+          || !isApprovedPeptidesReleaseVerdict(releaseVerdict)) {
           res.status(409).json({
             success: false,
             error: "PEPTIDES_RELEASE_GATE_FAILED",
@@ -16580,6 +16608,28 @@ export async function registerRoutes(
         }
         if (peptidesEmailHeld) {
           console.log(`[AutoGen] Peptides delivery HOLD retained while missing report recovery continues for ${email} (order ${order.id})`);
+        }
+
+        // A linked legacy report is not deliverable until the paid-order source
+        // and profile are sealed. Existing accepted deliveries stay terminal,
+        // but an unsealed artifact can never enter the recovery provider path.
+        if (meta?.peptidesReportId
+          && !hasAcceptedPeptidesDeliveryForReport(order, String(meta.peptidesReportId))) {
+          const trustedLinkedSource = validateTrustedPeptidesOrderSource(order);
+          if (!trustedLinkedSource.ok || !trustedLinkedSource.responses) {
+            await persistPeptidesFulfillmentIncident(order, {
+              code: "UNVERIFIED_SOURCE_PROFILE",
+              blocksDelivery: true,
+              detail: `Rapport legacy lie a une source non scellee: ${trustedLinkedSource.errors.join(" | ")}. Recovery: /api/admin/peptides-inject-responses via preview/confirmation verrouillee.`,
+            }, {
+              peptidesEmailHold: true,
+              peptidesEmailHoldReason: "LEGACY_LINKED_REPORT_SOURCE_REQUIRES_MANUAL_SEAL",
+              peptidesManualFulfillment: true,
+              peptidesManualFulfillmentState: "SOURCE_RECONCILIATION_REQUIRED",
+            }).catch(() => false);
+            console.error(`[AutoGen] Linked legacy report source untrusted for ${email}; HOLD retained, no provider call`);
+            continue;
+          }
         }
 
         // Recovery path: report exists but email never went out (e.g. SendPulse

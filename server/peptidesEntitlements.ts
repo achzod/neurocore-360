@@ -5,6 +5,16 @@ export function resolvePeptidesTier(raw: unknown): PeptidesTier {
   return "coached";
 }
 
+export type PaidOrderConfirmationDecision = "ACTIVE" | "ACTIVATE_PENDING" | "BLOCK_REFUNDED" | "BLOCK_STATUS";
+
+export function classifyPaidOrderConfirmationStatus(status: unknown): PaidOrderConfirmationDecision {
+  const normalized = String(status || "").trim().toLowerCase();
+  if (normalized === "paid" || normalized === "partial_refund") return "ACTIVE";
+  if (normalized === "pending") return "ACTIVATE_PENDING";
+  if (normalized === "refunded") return "BLOCK_REFUNDED";
+  return "BLOCK_STATUS";
+}
+
 export function peptidesBloodCreditsForTier(raw: unknown): number {
   // Before tiered offers existed, every paid Peptides Engine order included
   // two Blood credits. All new checkout paths persist an explicit tier, so a

@@ -362,17 +362,19 @@ async function findRecentSendPulseLiveRecord(
     const records: SendPulseLiveRecord[] = Array.isArray(data) ? data : (data.data || []);
     const listMatch = chooseRecentSendPulseRecord(records, normalizedRecipient, normalizedSubject, sentStartedAt);
     if (listMatch) {
-      if (sendPulseLiveSmtpCode(listMatch) !== null) return listMatch;
-
-      // The list endpoint often omits smtp_answer_code. A matching list row is
-      // identity evidence only, never delivery evidence: enrich that exact row
-      // through /smtp/emails/info before classifying it.
+      // The list endpoint is identity evidence only, even when it exposes a
+      // summary smtp code. Strip every code alias and require /smtp/emails/info
+      // to provide the authoritative terminal value.
+      const identityOnly = { ...listMatch };
+      delete identityOnly.smtp_answer_code;
+      delete identityOnly.smtpAnswerCode;
+      delete identityOnly.smtp_code;
       const [enrichedMatch] = await fetchSendPulseLiveRecordDetails(
         token,
-        [listMatch],
+        [identityOnly],
         requestTimeoutMs,
-      ).catch(() => [listMatch]);
-      return enrichedMatch || listMatch;
+      ).catch(() => [identityOnly]);
+      return enrichedMatch || identityOnly;
     }
 
     const detailedRecords = await fetchSendPulseLiveRecordDetails(token, records, requestTimeoutMs).catch(() => records);
@@ -397,8 +399,7 @@ function smtpDeliveryCode(record: SendPulseLiveRecord | null | undefined): numbe
 }
 
 function hasPositiveSmtpDelivery(record: SendPulseLiveRecord | null | undefined): boolean {
-  const code = smtpDeliveryCode(record);
-  return code != null && code >= 200 && code < 300;
+  return smtpDeliveryCode(record) === 250;
 }
 
 export function classifySendPulseDeliveryRecord(

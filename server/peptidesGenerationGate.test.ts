@@ -69,6 +69,18 @@ test("multi-axis coverage requires distinct active and attributable molecules", 
   assert.ok(duplicateCoverage.some((issue) => issue.startsWith("AXIS_ATTRIBUTION_GATE:")));
 });
 
+test("a negated objective mention never creates attributable axis coverage", () => {
+  const policy = derivePeptidesStackPolicy({
+    pep_primary_goal: "fatloss",
+    pep_secondary_goals: ["recovery"],
+  });
+  const issues = validateGeneratedPeptideStack([
+    active("Retatrutide", "Perte de graisse et appetit"),
+    active("Semaglutide", "Ne couvre pas la recuperation; controle metabolique uniquement"),
+  ], policy);
+  assert.ok(issues.some((issue) => issue.startsWith("AXIS_ATTRIBUTION_GATE:")));
+});
+
 test("conditional cards never satisfy the active minimum", () => {
   const policy = derivePeptidesStackPolicy({
     pep_primary_goal: "fatloss",

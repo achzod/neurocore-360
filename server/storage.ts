@@ -26,7 +26,7 @@ import type {
   PeptidesGenerationCircuitConfig,
 } from "./peptidesGenerationCircuitBreaker";
 import { claimPendingGenericReportJob } from "./reportJobStorageSafety";
-import { hashPeptidesReport } from "./peptidesReleaseHashGate";
+import { hashPeptidesReport, isApprovedPeptidesReleaseVerdict } from "./peptidesReleaseHashGate";
 import { hashPeptidesManualMutationPayload } from "./peptidesManualMutationGuard";
 
 // Configuration de la connexion PostgreSQL
@@ -1338,7 +1338,7 @@ export class MemStorage implements IStorage {
       || String(meta.peptidesApprovedReportSha256 || "") !== input.expectedApprovedReportSha256
       || input.expectedApprovedReportSha256 !== input.expectedCurrentReportSha256
       || String(meta.peptidesReleaseAuditVerdict || "") !== input.expectedReleaseVerdict
-      || !/^PASS(?:_|$)/.test(input.expectedReleaseVerdict)) return false;
+      || !isApprovedPeptidesReleaseVerdict(input.expectedReleaseVerdict)) return false;
     order.metadata = {
       ...meta,
       peptidesEmailHold: false,
@@ -1366,7 +1366,6 @@ export class MemStorage implements IStorage {
       String(tracking.recipientEmail || "").trim().toLowerCase() === recipient
       && tracking.emailType === "sendCTAEmail"
       && /protocole peptides|peptides personnalis/i.test(String(tracking.subject || ""))
-      && !["failed", "auth_failed", "unsubscribed"].includes(String(tracking.sendpulseStatus || "").toLowerCase())
     ) as any[];
     const exact = deliveries.find((tracking) => {
       const trackingMeta = tracking.metadata && typeof tracking.metadata === "object" ? tracking.metadata : {};
@@ -1382,14 +1381,18 @@ export class MemStorage implements IStorage {
         && (!trackingMeta.orderId || String(trackingMeta.orderId) === orderId);
     });
     if (!exact && !legacy) return "NONE";
-    // Recipient/order-only history cannot prove which report was delivered and
-    // usually lacks SMTP 2xx evidence. Hold it for explicit reconciliation;
-    // never reinterpret it as ACCEPTED and never call the provider again.
-    if (!exact) {
+    const exactStatus = String(exact?.sendpulseStatus || "").trim().toLowerCase();
+    const exactHasPositiveEvidence = ["success", "sent", "delivered"].includes(exactStatus);
+    // Recipient/order-only history, and report-scoped rows without a positive
+    // provider status, cannot prove delivery. Hold them for reconciliation;
+    // never reinterpret proof-by-exclusion as ACCEPTED.
+    if (!exact || !exactHasPositiveEvidence) {
       order.metadata = {
         ...meta,
         peptidesEmailHold: true,
-        peptidesEmailHoldReason: "LEGACY_DELIVERY_EVIDENCE_UNSCOPED",
+        peptidesEmailHoldReason: exact
+          ? "LEGACY_DELIVERY_EVIDENCE_NOT_POSITIVE"
+          : "LEGACY_DELIVERY_EVIDENCE_UNSCOPED",
         peptidesManualFulfillment: true,
         peptidesManualFulfillmentState: "LEGACY_DELIVERY_REQUIRES_REVIEW",
       } as any;
@@ -1517,6 +1520,7 @@ export class MemStorage implements IStorage {
         peptidesEmailHoldReason: "DELIVERY_PROVIDER_RESULT_UNCERTAIN",
         peptidesFulfillmentState: "ACTION_REQUIRED",
       } : {
+        peptidesDeliveryClaimId: "",
         peptidesEmailHold: true,
         peptidesEmailHoldReason: "DELIVERY_PROVIDER_CONFIRMED_FAILED",
         peptidesFulfillmentState: "ACTION_REQUIRED",
@@ -4403,7 +4407,7 @@ export class PgStorage implements IStorage {
         || String(metadata.peptidesApprovedReportSha256 || "") !== input.expectedApprovedReportSha256
         || input.expectedApprovedReportSha256 !== input.expectedCurrentReportSha256
         || String(metadata.peptidesReleaseAuditVerdict || "") !== input.expectedReleaseVerdict
-        || !/^PASS(?:_|$)/.test(input.expectedReleaseVerdict)) {
+        || !isApprovedPeptidesReleaseVerdict(input.expectedReleaseVerdict)) {
         await client.query("ROLLBACK");
         return false;
       }
@@ -4466,14 +4470,13 @@ export class PgStorage implements IStorage {
         return "ACCEPTED";
       }
       const tracking = await client.query(
-        `SELECT id, audit_id, metadata
+        `SELECT id, audit_id, metadata, sendpulse_status
            FROM email_tracking
           WHERE LOWER(recipient_email) = LOWER($1)
             AND email_type = 'sendCTAEmail'
             AND (subject ILIKE '%protocole peptides%'
               OR subject ILIKE '%peptides personnalisé%'
               OR subject ILIKE '%peptides personnalise%')
-            AND COALESCE(sendpulse_status, '') NOT IN ('failed', 'auth_failed', 'unsubscribed')
           ORDER BY sent_at DESC`,
         [order.email],
       );
@@ -4494,7 +4497,9 @@ export class PgStorage implements IStorage {
         await client.query("COMMIT");
         return "NONE";
       }
-      if (!exact) {
+      const exactStatus = String(exact?.sendpulse_status || "").trim().toLowerCase();
+      const exactHasPositiveEvidence = ["success", "sent", "delivered"].includes(exactStatus);
+      if (!exact || !exactHasPositiveEvidence) {
         await client.query(
           `UPDATE orders
               SET metadata = COALESCE(metadata, '{}'::jsonb) || $1::jsonb,
@@ -4502,7 +4507,9 @@ export class PgStorage implements IStorage {
             WHERE id = $2`,
           [JSON.stringify({
             peptidesEmailHold: true,
-            peptidesEmailHoldReason: "LEGACY_DELIVERY_EVIDENCE_UNSCOPED",
+            peptidesEmailHoldReason: exact
+              ? "LEGACY_DELIVERY_EVIDENCE_NOT_POSITIVE"
+              : "LEGACY_DELIVERY_EVIDENCE_UNSCOPED",
             peptidesManualFulfillment: true,
             peptidesManualFulfillmentState: "LEGACY_DELIVERY_REQUIRES_REVIEW",
           }), orderId],
@@ -4667,6 +4674,7 @@ export class PgStorage implements IStorage {
           peptidesDeliveryState: state,
           peptidesDeliveryReportId: reportId,
           peptidesDeliveryFinalizedAt: finalizedAt,
+          peptidesDeliveryClaimId: "",
           peptidesEmailHold: true,
           peptidesEmailHoldReason: "DELIVERY_PROVIDER_CONFIRMED_FAILED",
           peptidesFulfillmentState: "ACTION_REQUIRED",

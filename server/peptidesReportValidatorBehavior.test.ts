@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  checkPeptide,
   estimateNeedMg,
   findConditionalInactiveOperationalMentions,
   validateU100Reconstitution,
@@ -25,6 +26,14 @@ test("U-100 validation rejects a later false conversion written with parenthetic
   assert.ok(issues.some((issue) => issue.includes("99 unites affichees vs 40.0")));
 });
 
+test("U-100 validation catches a false conversion introduced as a palier", () => {
+  const issues = validateU100Reconstitution(
+    "Vial 10mg + 2ml BAC water. Pour 1mg = 20 unites U-100 (0.20 ml). "
+      + "Palier 2mg = 99 unites U-100 (0.40 ml).",
+  );
+  assert.ok(issues.some((issue) => issue.includes("99 unites affichees vs 40.0")));
+});
+
 test("U-100 validation blocks an unpaired dose instead of silently skipping it", () => {
   const issues = validateU100Reconstitution(
     "Vial 10mg + 2ml BAC water. Pour 1mg = 20 unites U-100 (0.20 ml). Pour 2mg, voir tableau.",
@@ -38,6 +47,26 @@ test("U-100 validation keeps each conversion attached to its vial context", () =
       + "Vial 10mg + 2ml BAC water. Pour 1mg = 50 unites U-100 (soit 0.50 ml).",
   );
   assert.ok(issues.some((issue) => issue.includes("50 unites affichees vs 20.0")));
+});
+
+test("conditional inactive cards require every operational field to be structurally empty", () => {
+  const issues = checkPeptide({
+    name: "KissPeptin-10",
+    activationStatus: "conditional-inactive",
+    activationRequirements: ["Bilan recent", "Validation explicite"],
+    evidenceSummary: "Option documentee mais inactive.",
+    purpose: "Documenter l axe HPG.",
+    whyThisPeptide: "Piste conditionnelle.",
+    dosage: "Prendre selon tolerance",
+    timing: "Chaque nuit",
+    route: "Voie sous-cutanee",
+    cycleDuration: "",
+    reconstitution: "",
+    vialsNeeded: "",
+    priceEstimate: "",
+    purchaseUrl: "https://www.peptaura.com/catalog/KissPeptin-10",
+  });
+  assert.ok(issues.some((issue) => issue.includes("champs operationnels non vides")));
 });
 
 test("conditional inactive cards cannot leak into operational report surfaces", () => {
@@ -64,6 +93,21 @@ test("a purely narrative conditional mention remains allowed", () => {
     shoppingList: "BAC Water uniquement.",
     sections: [{ id: "rationale", content: "KissPeptin-10 reste une option conditionnelle non active." }],
   }), []);
+
+  const operational = findConditionalInactiveOperationalMentions({
+    peptides: [{ name: "KissPeptin-10", activationStatus: "conditional-inactive" }],
+    weeklySchedule: "LUNDI: repos.",
+    shoppingList: "BAC Water uniquement.",
+    sections: [{ id: "rationale", content: "Administre KissPeptin-10 chaque nuit selon tolerance." }],
+  });
+  assert.ok(operational.some((issue) => issue.includes("section rationale")));
+});
+
+test("progressive titration accepts microgram aliases without falling through", () => {
+  assert.equal(estimateNeedMg({
+    dosage: "100 µg semaine 1, 200 ug semaine 2, 300 mcg semaine 3, 400 µg semaine 4, chaque jour",
+    cycleDuration: "4 semaines",
+  }), 7);
 });
 
 test("reverse titration starts at its first declared week and forward-fills holes", () => {

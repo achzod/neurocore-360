@@ -44,13 +44,23 @@ const GOAL_COVERAGE_PATTERNS: Record<string, RegExp> = {
   endurance: /\b(?:endurance|cardio|aerobie|mots[ -]?c)\b/i,
 };
 
+function isNegatedCoverageStatement(text: string): boolean {
+  return /\b(?:ne|n')\s+(?:couvre|vise|soutient|traite|ameliore|concerne)[^.!?;]{0,80}\b(?:pas|aucun|aucune)\b/i.test(text)
+    || /\b(?:does\s+not|doesn't|not\s+for|no\s+benefit\s+for|sans\s+(?:effet|benefice|action)\s+(?:sur|pour)|non\s+indique\s+(?:pour|sur))\b/i.test(text);
+}
+
 function itemSupportsGoal(item: GeneratedPeptideGateItem, goal: string): boolean {
-  const text = normalizeCoverageText(
-    `${String(item.name || "")} ${String(item.purpose || "")} ${String(item.whyThisPeptide || "")}`,
-  );
   const normalizedGoal = normalizeCoverageText(goal).trim();
   const pattern = GOAL_COVERAGE_PATTERNS[normalizedGoal];
-  return pattern ? pattern.test(text) : Boolean(normalizedGoal && text.includes(normalizedGoal));
+  const fields = [item.name, item.purpose, item.whyThisPeptide]
+    .map(normalizeCoverageText)
+    .filter(Boolean);
+  if (pattern) {
+    return fields.some((field) => pattern.test(field) && !isNegatedCoverageStatement(field));
+  }
+  return Boolean(normalizedGoal && fields.some((field) =>
+    field.includes(normalizedGoal) && !isNegatedCoverageStatement(field)
+  ));
 }
 
 function maximumDistinctAxisCoverage(

@@ -151,6 +151,28 @@ test("PostgreSQL backfills exact legacy delivery and claims partial-refund gener
   assert.equal(await storage.backfillAcceptedPeptidesDeliveryFromTracking(order.id, saved!.id), "ACCEPTED");
   assert.equal(((await storage.getOrder(order.id))?.metadata as any)?.peptidesDeliveryState, "ACCEPTED");
 
+  const pendingEmail = `pending-${randomUUID()}@example.com`;
+  const pendingOrder = await createActiveOrder(storage, pendingEmail, { peptidesReportId: "report-pending" });
+  await adminPool.query(
+    `INSERT INTO email_tracking
+      (id, audit_id, email_type, recipient_email, subject, sendpulse_status, metadata, sent_at)
+     VALUES ($1, NULL, 'sendCTAEmail', $2, $3, 'pending', $4::jsonb, NOW())`,
+    [randomUUID(), pendingEmail, "Ton protocole peptides personnalisé est prêt", JSON.stringify({ orderId: pendingOrder.id, reportId: "report-pending" })],
+  );
+  assert.equal(await storage.backfillAcceptedPeptidesDeliveryFromTracking(pendingOrder.id, "report-pending"), "AMBIGUOUS");
+  assert.equal(((await storage.getOrder(pendingOrder.id))?.metadata as any)?.peptidesEmailHoldReason, "LEGACY_DELIVERY_EVIDENCE_NOT_POSITIVE");
+
+  const retryEmail = `retry-${randomUUID()}@example.com`;
+  const retryOrder = await createActiveOrder(storage, retryEmail, { peptidesReportId: "report-retry" });
+  assert.equal(await storage.claimPeptidesDelivery(retryOrder.id, "report-retry", "claim-failed"), true);
+  assert.equal(await storage.finalizePeptidesDeliveryClaim(retryOrder.id, "report-retry", "claim-failed", "FAILED"), true);
+  assert.equal(((await storage.getOrder(retryOrder.id))?.metadata as any)?.peptidesDeliveryClaimId, "");
+  await storage.setOrderMetadataIfPeptidesReportMatches(retryOrder.id, "report-retry", {
+    peptidesEmailHold: false,
+    peptidesManualFulfillment: false,
+  });
+  assert.equal(await storage.claimPeptidesDelivery(retryOrder.id, "report-retry", "claim-retry"), true);
+
   const budgetEmail = `budget-${randomUUID()}@example.com`;
   const budgetOrder = await createActiveOrder(storage, budgetEmail, {
     peptidesGenerationAttempts: 1,

@@ -18,6 +18,7 @@ test("SMTP 250 is the only successful Peptides delivery evidence", () => {
   assert.equal(classifySendPulseDeliveryRecord({ id: "task-2", smtp_answer_code: null } as any).state, "PENDING");
   assert.equal(classifySendPulseDeliveryRecord({ id: "task-3", smtp_answer_code: 421 } as any).state, "FAILED");
   assert.equal(classifySendPulseDeliveryRecord({ id: "task-4", smtp_answer_code: 550 } as any).state, "FAILED");
+  assert.equal(classifySendPulseDeliveryRecord({ id: "task-5", smtp_answer_code: 251 } as any).state, "PENDING");
 });
 
 test("missing provider record remains pending and preserves the fallback task id", () => {
@@ -84,6 +85,26 @@ test("a list match without SMTP code is enriched before a 250 delivery verdict",
   assert.equal(calls.filter(({ url }) => url.endsWith("/smtp/emails/info")).length, 1);
   assert.deepEqual(JSON.parse(calls.find(({ url }) => url.endsWith("/smtp/emails/info"))!.body!), {
     emails: ["provider-250"],
+  });
+});
+
+test("a summary-list 250 is never accepted when authoritative details are missing", async () => {
+  const evidence = await reconcileWithFetch(async (input) => {
+    const url = String(input);
+    if (url.endsWith("/smtp/emails/info")) return responseJson([]);
+    return responseJson([{
+      providerMessageId: "provider-summary-only",
+      recipient: recipientEmail,
+      subject,
+      send_date: "2026-10-25 20:00:00",
+      smtp_answer_code: 250,
+    }]);
+  });
+  assert.deepEqual(evidence, {
+    state: "PENDING",
+    taskId: "provider-summary-only",
+    smtpCode: null,
+    detail: "smtp_not_terminal",
   });
 });
 
