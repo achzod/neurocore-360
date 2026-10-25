@@ -1347,7 +1347,12 @@ export class MemStorage implements IStorage {
     const report = this.burnoutReports.get(input.reportId);
     if (!order || !report) return false;
     const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
+    const deliveryState = String(meta.peptidesDeliveryState || "");
+    const deliveryClaim = String(meta.peptidesDeliveryClaimId || "");
+    const deliveryInFlight = ["SENDING", "UNKNOWN"].includes(deliveryState)
+      || Boolean(deliveryClaim && deliveryState !== "ACCEPTED");
     if (String(meta.peptidesReportId || "") !== input.reportId
+      || deliveryInFlight
       || hashPeptidesReport(report.report) !== input.expectedCurrentReportSha256
       || String(meta.peptidesApprovedReportSha256 || "") !== input.expectedApprovedReportSha256
       || input.expectedApprovedReportSha256 !== input.expectedCurrentReportSha256
@@ -4439,8 +4444,13 @@ export class PgStorage implements IStorage {
       const report = reportResult.rows[0];
       const metadata = (order?.metadata || {}) as Record<string, any>;
       const currentHash = report ? hashPeptidesReport(report.report || {}) : "";
+      const deliveryState = String(metadata.peptidesDeliveryState || "");
+      const deliveryClaim = String(metadata.peptidesDeliveryClaimId || "");
+      const deliveryInFlight = ["SENDING", "UNKNOWN"].includes(deliveryState)
+        || Boolean(deliveryClaim && deliveryState !== "ACCEPTED");
       if (!order || !report
         || String(metadata.peptidesReportId || "") !== input.reportId
+        || deliveryInFlight
         || currentHash !== input.expectedCurrentReportSha256
         || String(metadata.peptidesApprovedReportSha256 || "") !== input.expectedApprovedReportSha256
         || input.expectedApprovedReportSha256 !== input.expectedCurrentReportSha256

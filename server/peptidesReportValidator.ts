@@ -912,8 +912,32 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
     unit: m[2],
     week: parseInt(m[3], 10),
   }));
+  const shorthandRanges = Array.from(
+    dose.matchAll(/\bS(?:EM(?:AINE)?)?\s*(\d+)\s*(?:à|a|-)\s*S?(?:EM(?:AINE)?)?\s*(\d+)\s*:?\s*(\d+(?:[.,]\d+)?)\s*(mg|mcg|µg|ug)\b/gi)
+  );
+  if (shorthandRanges.length > 0 && weeks > 0) {
+    const dosesByWeek = new Map<number, number>();
+    for (const match of shorthandRanges) {
+      const start = parseInt(match[1], 10);
+      const end = parseInt(match[2], 10);
+      const rawValue = parseFloat(match[3].replace(",", "."));
+      const valueMg = /^(?:mcg|µg|ug)/i.test(match[4]) ? rawValue / 1000 : rawValue;
+      if (start < 1 || end < start) continue;
+      for (let week = start; week <= Math.min(end, weeks); week++) {
+        dosesByWeek.set(week, valueMg);
+      }
+    }
+    let lastDose: number | null = null;
+    let totalMg = 0;
+    for (let week = 1; week <= weeks; week++) {
+      if (dosesByWeek.has(week)) lastDose = dosesByWeek.get(week)!;
+      if (lastDose != null) totalMg += lastDose;
+    }
+    totalMg *= injectionsPerWeekTit;
+    if (totalMg > 0) return totalMg;
+  }
   const shorthandProgressive = Array.from(
-    dose.matchAll(/\bS(?:EM(?:AINE)?)?\s*(\d+)\s*:?\s*(\d+(?:[.,]\d+)?)\s*(mg|mcg|µg|ug)\b/gi)
+    dose.matchAll(/(?<!-)\bS(?:EM(?:AINE)?)?\s*(\d+)(?!\s*(?:à|a|-))\s*:?\s*(\d+(?:[.,]\d+)?)\s*(mg|mcg|µg|ug)\b/gi)
   ).map((m) => ({
     value: parseFloat(m[2].replace(",", ".")),
     unit: m[3],
@@ -1008,7 +1032,7 @@ export function validateU100Reconstitution(value: string | undefined): string[] 
     // Validate every complete dose -> units -> ml conversion in this vial
     // context, not merely the first polished example in the text.
     const forwardConversions = [...segment.matchAll(
-      /\b(?:(?:pour|dose(?:\s+de)?|administration(?:\s+de)?|palier(?:\s+\d+)?)\s*:?[ \t]*)?(\d+(?:\.\d+)?)\s*(mg|mcg|µg|ug)\b[ \t]{0,40}(?:=|→|:|correspond(?:ent|ance)?\s+(?:a|à)|soit)[ \t]*(\d+(?:\.\d+)?)\s*(?:unit[ée]s?|graduations?)(?:\s+(?:sur\s+la\s+seringue\s+)?U-?100)?[\s\S]{0,80}?(?:\bsoit\s+|\(\s*)?(\d+(?:\.\d+)?)\s*ml\b/gi,
+      /\b(?:(?:pour|dose(?:\s+de)?|administration(?:\s+de)?|palier(?:\s+\d+)?)\s*:?[ \t]*)?(\d+(?:\.\d+)?)\s*(mg|mcg|µg|ug)\b[ \t]{0,40}(?:=|→|:|correspond(?:ent|ance)?\s+(?:a|à)|soit)[ \t]*(\d+(?:\.\d+)?)\s*(?:unit[ée]s?|graduations?|U(?:-?100)?)(?:\s+(?:sur\s+la\s+seringue\s+)?U-?100)?[\s\S]{0,80}?(?:\bsoit\s+|\(\s*)?(\d+(?:\.\d+)?)\s*ml\b/gi,
     )].map((match) => ({
       dose: Number(match[1]),
       doseUnit: match[2],
@@ -1016,7 +1040,7 @@ export function validateU100Reconstitution(value: string | undefined): string[] 
       volumeMl: Number(match[4]),
     }));
     const reverseConversions = [...segment.matchAll(
-      /(\d+(?:\.\d+)?)\s*(?:unit[ée]s?|graduations?)(?:\s+(?:sur\s+la\s+seringue\s+)?U-?100)?[\s\S]{0,80}?(?:\bsoit\s+|\(\s*)?(\d+(?:\.\d+)?)\s*ml\b\)?\s*pour\s+(\d+(?:\.\d+)?)\s*(mg|mcg|µg|ug)\b/gi,
+      /(\d+(?:\.\d+)?)\s*(?:unit[ée]s?|graduations?|U(?:-?100)?)(?:\s+(?:sur\s+la\s+seringue\s+)?U-?100)?[\s\S]{0,80}?(?:\bsoit\s+|\(\s*)?(\d+(?:\.\d+)?)\s*ml\b\)?\s*pour\s+(\d+(?:\.\d+)?)\s*(mg|mcg|µg|ug)\b/gi,
     )].map((match) => ({
       dose: Number(match[3]),
       doseUnit: match[4],
@@ -1025,7 +1049,7 @@ export function validateU100Reconstitution(value: string | undefined): string[] 
     }));
     const conversions = [...forwardConversions, ...reverseConversions];
     const explicitDoseToUnitsCount = [...segment.matchAll(
-      /\b\d+(?:\.\d+)?\s*(?:mg|mcg|µg|ug)\b[ \t]{0,40}(?:=|→|:|correspond(?:ent|ance)?\s+(?:a|à)|soit)[ \t]*\d+(?:\.\d+)?\s*(?:unit[ée]s?|graduations?)\b/gi,
+      /\b\d+(?:\.\d+)?\s*(?:mg|mcg|µg|ug)\b[ \t]{0,40}(?:=|→|:|correspond(?:ent|ance)?\s+(?:a|à)|soit)[ \t]*\d+(?:\.\d+)?\s*(?:unit[ée]s?|graduations?|U(?:-?100)?)\b/gi,
     )].length;
     const labeledDoseCount = [...segment.matchAll(
       /\b(?:pour|dose(?:\s+de)?|administration(?:\s+de)?|palier(?:\s+\d+)?)\s*:?[ \t]*\d+(?:\.\d+)?\s*(?:mg|mcg|µg|ug)\b/gi,

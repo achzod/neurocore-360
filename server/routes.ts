@@ -1881,6 +1881,7 @@ export async function registerRoutes(
           manualExpertDirective: String(source.manualExpertDirective || "").trim(),
           recoveryPreviousError: String(source.recoveryPreviousError || "").trim(),
           forceImmediate: source.forceImmediate === true,
+          confirmHeldGeneration: String(source.confirmHeldGeneration || "").trim() || null,
         };
       case "link-order-to-report":
         return { expectedCurrentReportId: String(source.expectedCurrentReportId || "").trim() || null };
@@ -4449,11 +4450,12 @@ export async function registerRoutes(
       const confirm = req.query.confirm === "1" || (req.body as any)?.confirm === true;
       const launch = new Date("2026-03-17T00:00:00Z");
 
-      // Count what would be deleted ,  NEVER touch paid/refunded, ever.
+      // Count only explicit terminal noise. Active, pending, partially refunded
+      // and refunded customer orders are never candidates for deletion.
       const countPreLaunch = await pool.query(
         `SELECT COUNT(*)::int AS c, COALESCE(status,'?') AS status
            FROM orders
-          WHERE created_at < $1 AND status NOT IN ('paid','refunded')
+          WHERE created_at < $1 AND status IN ('cancelled','failed')
           GROUP BY status`,
         [launch]
       );
@@ -4478,9 +4480,9 @@ export async function registerRoutes(
         return;
       }
 
-      // Execute the deletions. Paid + refunded are never touched.
+      // Execute only the same explicit terminal-noise allowlist.
       const delPre = await pool.query(
-        `DELETE FROM orders WHERE created_at < $1 AND status NOT IN ('paid','refunded') RETURNING id`,
+        `DELETE FROM orders WHERE created_at < $1 AND status IN ('cancelled','failed') RETURNING id`,
         [launch]
       );
       const delCanc = await pool.query(
@@ -5859,7 +5861,7 @@ export async function registerRoutes(
   // same downstream side effects (credits, admin notif). Returns a small
   // result object describing what happened. Idempotent.
   async function reconcilePaypalOrderById(orderId: string): Promise<{
-    status: "already_paid" | "reconciled" | "not_completed" | "not_found" | "no_paypal_id" | "error";
+    status: "already_paid" | "reconciled" | "not_completed" | "not_found" | "no_paypal_id" | "blocked_status" | "error";
     orderId: string;
     paypalOrderId?: string;
     paypalStatus?: string;
@@ -5868,7 +5870,8 @@ export async function registerRoutes(
   }> {
     const order = await storage.getOrder(orderId).catch(() => null);
     if (!order) return { status: "not_found", orderId };
-    if (order.status === "paid") {
+    const confirmationDecision = classifyPaidOrderConfirmationStatus(order.status);
+    if (confirmationDecision === "ACTIVE") {
       if (order.productType === "PEPTIDES_ENGINE") {
         await grantBloodCreditsForOrder(
           order.id,
@@ -5885,6 +5888,13 @@ export async function registerRoutes(
         );
       }
       return { status: "already_paid", orderId };
+    }
+    if (confirmationDecision !== "ACTIVATE_PENDING") {
+      return {
+        status: "blocked_status",
+        orderId,
+        error: `PayPal reconciliation refused for order status ${String(order.status || "unknown")}`,
+      };
     }
     const paypalOrderId = (order as any).paypalOrderId;
     if (!paypalOrderId) return { status: "no_paypal_id", orderId };
@@ -17027,7 +17037,7 @@ export async function registerRoutes(
 
         let clientEmailSent = false;
         let deliveryDeferred = false;
-        let deliveryHeld = peptidesEmailHeld;
+        let deliveryHeld: boolean = Boolean(peptidesEmailHeld);
         let deliveryScheduledAtIso = "";
         // Re-read after the atomic report claim so the exact +24h schedule
         // persisted by claimPeptidesReportSlot cannot be overwritten from the

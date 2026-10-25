@@ -200,6 +200,19 @@ test("PostgreSQL backfills exact legacy delivery and claims partial-refund gener
     nextReport: { ...inflightReport!.report as any, marker: "during-send" },
     mutation: "inflight-test",
   }), undefined);
+  const inflightReportHash = hashPeptidesReport(inflightReport!.report);
+  await storage.setOrderMetadataIfPeptidesReportMatches(inflightOrder.id, inflightReport!.id, {
+    peptidesApprovedReportSha256: inflightReportHash,
+    peptidesReleaseAuditVerdict: "PASS_STRICT",
+  });
+  assert.equal(await storage.releasePeptidesDeliveryHoldIfApproved({
+    orderId: inflightOrder.id,
+    reportId: inflightReport!.id,
+    expectedCurrentReportSha256: inflightReportHash,
+    expectedApprovedReportSha256: inflightReportHash,
+    expectedReleaseVerdict: "PASS_STRICT",
+  }), false);
+  assert.equal(((await storage.getOrder(inflightOrder.id))?.metadata as any)?.peptidesEmailHold, true);
 
   const releasedEmail = `released-${randomUUID()}@example.com`;
   const releasedResponses = { pep_email: releasedEmail, pep_name: "Released" };

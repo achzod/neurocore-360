@@ -43,6 +43,20 @@ test("U-100 validation catches common graduation wording", () => {
   assert.ok(issues.some((issue) => issue.includes("0.99 ml affiche vs 0.40 ml")));
 });
 
+test("U-100 validation catches compact U and U-100 notation", () => {
+  const compact = validateU100Reconstitution(
+    "Vial 10mg + 2ml BAC water. Pour 1mg = 20 U (0.20 ml). 2mg = 99 U (0.99 ml).",
+  );
+  assert.ok(compact.some((issue) => issue.includes("99 unites affichees vs 40.0")));
+  assert.ok(compact.some((issue) => issue.includes("0.99 ml affiche vs 0.40 ml")));
+
+  const labeled = validateU100Reconstitution(
+    "Vial 10mg + 2ml BAC water. Pour 1mg = 20 U-100 (0.20 ml). "
+      + "2mg correspond à 99 U-100, soit 0.99 ml.",
+  );
+  assert.ok(labeled.some((issue) => issue.includes("99 unites affichees vs 40.0")));
+});
+
 test("U-100 validation blocks an unpaired dose instead of silently skipping it", () => {
   const issues = validateU100Reconstitution(
     "Vial 10mg + 2ml BAC water. Pour 1mg = 20 unites U-100 (0.20 ml). Pour 2mg, voir tableau.",
@@ -131,6 +145,13 @@ test("progressive titration accepts microgram aliases without falling through", 
     dosage: "S1: 100 mcg, S2: 200 mcg, S3: 300 mcg, S4: 400 mcg, chaque jour",
     cycleDuration: "4 semaines",
   }), 7);
+});
+
+test("shorthand week ranges apply every plateau without treating range ends as points", () => {
+  assert.equal(estimateNeedMg({
+    dosage: "S1-S4: 100 mcg, S5-S8: 200 mcg, chaque jour",
+    cycleDuration: "8 semaines",
+  }), 8.4);
 });
 
 test("weekly ranges use the chronologically last plateau even when written out of order", () => {

@@ -148,6 +148,34 @@ test("strict HOLD release rejects a report changed after validation", async () =
   }), false);
 });
 
+test("strict HOLD release cannot clear an in-flight or UNKNOWN delivery fence", async () => {
+  const storage = new MemStorage();
+  const reportBody = { qualityVersion: "expert-standard-v1", marker: "approved" };
+  const record = await storage.createBurnoutReport({
+    email: "peptides::fenced@example.com",
+    responses: {},
+    report: reportBody,
+  });
+  const reportHash = hashPeptidesReport(reportBody);
+  const order = await activeOrder(storage, {
+    peptidesReportId: record.id,
+    peptidesEmailHold: true,
+    peptidesManualFulfillment: true,
+    peptidesApprovedReportSha256: reportHash,
+    peptidesReleaseAuditVerdict: "PASS_STRICT",
+    peptidesDeliveryClaimId: "claim-unknown",
+    peptidesDeliveryState: "UNKNOWN",
+  }, "fenced@example.com");
+  assert.equal(await storage.releasePeptidesDeliveryHoldIfApproved({
+    orderId: order.id,
+    reportId: record.id,
+    expectedCurrentReportSha256: reportHash,
+    expectedApprovedReportSha256: reportHash,
+    expectedReleaseVerdict: "PASS_STRICT",
+  }), false);
+  assert.equal(((await storage.getOrder(order.id))?.metadata as any)?.peptidesEmailHold, true);
+});
+
 test("legacy delivery tracking backfills exact report state and blocks ambiguous recipient-only evidence", async () => {
   const storage = new MemStorage();
   const first = await activeOrder(storage, { peptidesReportId: "report-a" });
@@ -291,6 +319,18 @@ test("legacy Peptides orders keep two Blood credits and paid PayPal retries repa
   assert.match(routes, /PEPTIDES_GENERATION_HOLD_CONFIRMATION_REQUIRED/);
   assert.match(routes, /allOrders\.filter\(\(o: any\) => isActivePaidOrderStatus\(o\.status\)/);
   assert.match(routes, /allPeptidesOrders\.filter\(\(o: any\) => isActivePaidOrderStatus\(o\.status\)/);
+  assert.match(routes, /confirmationDecision !== "ACTIVATE_PENDING"/);
+  assert.match(routes, /status:\s*"blocked_status"/);
+  assert.doesNotMatch(routes, /created_at < \$1 AND status NOT IN \('paid','refunded'\)/);
+  assert.match(routes, /created_at < \$1 AND status IN \('cancelled','failed'\)/);
+  const payloadStart = routes.indexOf("function getPeptidesManualMutationPayload");
+  const payloadEnd = routes.indexOf("function getPeptidesManualMutationSource", payloadStart);
+  const payloadSource = routes.slice(payloadStart, payloadEnd > payloadStart ? payloadEnd : payloadStart + 5000);
+  assert.match(payloadSource, /confirmHeldGeneration:\s*String\(source\.confirmHeldGeneration/);
+  assert.notEqual(
+    hashPeptidesManualMutationPayload({ confirmHeldGeneration: null }),
+    hashPeptidesManualMutationPayload({ confirmHeldGeneration: "GENERATE_UNDER_HOLD_NO_DELIVERY" }),
+  );
 });
 
 test("refunded orders keep consumed generation reservations inside active budget windows", async () => {

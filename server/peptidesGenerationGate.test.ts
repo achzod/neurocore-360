@@ -81,6 +81,24 @@ test("a negated objective mention never creates attributable axis coverage", () 
   assert.ok(issues.some((issue) => issue.startsWith("AXIS_ATTRIBUTION_GATE:")));
 });
 
+test("French apostrophe and aucunement negations never create axis coverage", () => {
+  const policy = derivePeptidesStackPolicy({
+    pep_primary_goal: "fatloss",
+    pep_secondary_goals: ["recovery"],
+  });
+  for (const purpose of [
+    "N’améliore pas la récupération et cible seulement le metabolisme",
+    "Ne soutient aucunement la récupération et cible seulement le metabolisme",
+    "Doesn't improve recovery and only targets metabolism",
+  ]) {
+    const issues = validateGeneratedPeptideStack([
+      active("Retatrutide", "Perte de graisse et appetit"),
+      active("Semaglutide", purpose),
+    ], policy);
+    assert.ok(issues.some((issue) => issue.startsWith("AXIS_ATTRIBUTION_GATE:")), purpose);
+  }
+});
+
 test("conditional cards never satisfy the active minimum", () => {
   const policy = derivePeptidesStackPolicy({
     pep_primary_goal: "fatloss",

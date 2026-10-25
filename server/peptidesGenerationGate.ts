@@ -46,9 +46,9 @@ const GOAL_COVERAGE_PATTERNS: Record<string, RegExp> = {
 };
 
 function isNegatedCoverageStatement(text: string): boolean {
-  return /\b(?:ne|n')\s+(?:couvre|vise|soutient|traite|ameliore|concerne)[^.!?;]{0,80}\b(?:pas|aucun|aucune)\b/i.test(text)
+  return /\b(?:ne|n)\s+(?:couvre|vise|soutient|traite|ameliore|concerne)[^.!?;]{0,80}\b(?:pas|aucun|aucune|aucunement)\b/i.test(text)
     || /\bn\s+est\s+pas\s+(?:destine|indique|adapte)\s+(?:a|pour)\b/i.test(text)
-    || /\b(?:does\s+not|doesn't|is\s+not\s+intended\s+for|not\s+for|no\s+benefit\s+for|sans\s+(?:effet|benefice|action)\s+(?:sur|pour)|non\s+indique\s+(?:pour|sur))\b/i.test(text);
+    || /\b(?:does\s+not|doesn\s+t|is\s+not\s+intended\s+for|not\s+for|no\s+benefit\s+for|sans\s+(?:effet|benefice|action)\s+(?:sur|pour)|non\s+indique\s+(?:pour|sur))\b/i.test(text);
 }
 
 function itemSupportsGoal(item: GeneratedPeptideGateItem, goal: string): boolean {
