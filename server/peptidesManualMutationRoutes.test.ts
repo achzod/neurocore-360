@@ -36,7 +36,9 @@ test("order mutation preview binds the exact paid order, recipient and client na
   for (const field of ["orderId", "email", "expectedClientName", "expectedSourceSha256", "expectedPayloadSha256", "requiredConfirmation"]) {
     assert.match(route, new RegExp(field));
   }
-  assert.match(route, /getBurnoutProgress/);
+  assert.doesNotMatch(route, /getBurnoutProgress/);
+  assert.match(route, /storedResponses/);
+  assert.match(route, /mutation === "inject-responses"/);
   assert.match(route, /getPeptidesManualMutationPayload/);
   assert.match(route, /currentSourceSha256/);
   assert.match(route, /currentPayloadSha256/);
@@ -51,7 +53,7 @@ test("every sensitive option is included in the canonical mutation payload", () 
   for (const field of [
     "skipEmail", "replaceReportId", "manualExpertDirective", "recoveryPreviousError", "forceImmediate",
     "expectedCurrentReportId", "fromEmail", "toEmail", "apply", "holdDelivery", "responses", "hold", "reason",
-    "force", "patches", "removePeptides",
+    "force", "patches", "removePeptides", "peptidesProfileConfirmation",
   ]) assert.match(helpers, new RegExp(field));
 });
 
@@ -68,7 +70,9 @@ test("in-place generation requires silent mode and an exact target lock before p
   assert.match(route, /generatedValidation/);
   assert.match(route, /generatedCommercialIncident/);
   assert.ok(route.indexOf('expectedMutation: "generate-report"') < route.indexOf("generatePeptidesProtocol(responses"));
-  assert.ok(route.indexOf('expectedMutation: "replace-report"') < route.indexOf("updateBurnoutReport(replaceReportId"));
+  assert.ok(route.indexOf('expectedMutation: "replace-report"') < route.indexOf("mutatePeptidesReportUnderHold"));
+  assert.match(route, /createAndClaimPeptidesReport/);
+  assert.match(route, /PEPTIDES_FORCE_IMMEDIATE_DISABLED/);
 });
 
 test("manual relink and email correction require an exact target lock", () => {
@@ -85,7 +89,8 @@ test("manual relink and email correction require an exact target lock", () => {
     "// Admin: inject responses manually",
   );
   assert.match(email, /expectedMutation:\s*"correct-email"/);
-  assert.ok(email.indexOf('expectedMutation: "correct-email"') < email.indexOf("updateOrder(orderId"));
+  assert.ok(email.indexOf('expectedMutation: "correct-email"') < email.indexOf('transaction.query("BEGIN")'));
+  assert.match(email, /PEPTIDES_CORRECT_EMAIL_CAS_FAILED/);
 });
 
 test("order-level recovery, hold and confirmation endpoints are target-locked", () => {
@@ -101,14 +106,17 @@ test("order-level recovery, hold and confirmation endpoints are target-locked", 
     'app.get("/api/admin/audits"',
   );
   assert.match(inject, /expectedMutation:\s*"inject-responses"/);
-  assert.ok(inject.indexOf('expectedMutation: "inject-responses"') < inject.indexOf("saveBurnoutProgress"));
+  assert.ok(inject.indexOf('expectedMutation: "inject-responses"') < inject.indexOf('client.query("BEGIN")'));
+  assert.match(inject, /peptidesResponsesSha256/);
+  assert.match(inject, /PEPTIDES_PROFILE_CONFIRMATION_REQUIRED/);
 
   const hold = routeSlice(
     'app.post("/api/admin/peptides/delivery-hold"',
     'app.post("/api/admin/peptides/test-generate"',
   );
   assert.match(hold, /expectedMutation:\s*"delivery-hold"/);
-  assert.ok(hold.indexOf('expectedMutation: "delivery-hold"') < hold.indexOf("setOrderMetadataKey"));
+  assert.ok(hold.indexOf('expectedMutation: "delivery-hold"') < hold.indexOf("setOrderMetadataIfPeptidesReportMatches"));
+  assert.match(hold, /PEPTIDES_RELEASE_GATE_FAILED/);
 
   const confirmation = routeSlice(
     'app.post("/api/admin/peptides/send-order-confirmation"',
@@ -125,7 +133,8 @@ test("vial recompute, live repair and section edits are target-locked and fail c
   );
   assert.match(recompute, /expectedMutation:\s*"recompute-vials"/);
   assert.match(recompute, /Strict validation failed, report not persisted/);
-  assert.ok(recompute.indexOf('expectedMutation: "recompute-vials"') < recompute.indexOf("updateBurnoutReport(reportId, fixed"));
+  assert.ok(recompute.indexOf('expectedMutation: "recompute-vials"') < recompute.indexOf("mutatePeptidesReportUnderHold"));
+  assert.match(recompute, /HOLD actif requis/);
 
   const repair = routeSlice(
     'app.post("/api/admin/peptides/repair-live/:reportId"',
@@ -135,7 +144,8 @@ test("vial recompute, live repair and section edits are target-locked and fail c
   assert.match(repair, /metadata\?\.peptidesReportId/);
   assert.doesNotMatch(repair, /length === 1/);
   assert.match(repair, /commercialIncident/);
-  assert.ok(repair.indexOf('expectedMutation: "repair-live"') < repair.indexOf("updateBurnoutReport(reportId, repaired"));
+  assert.ok(repair.indexOf('expectedMutation: "repair-live"') < repair.indexOf("mutatePeptidesReportUnderHold"));
+  assert.match(repair, /HOLD actif requis/);
 
   const edit = routeSlice(
     'app.post("/api/admin/peptides/edit-sections/:reportId"',
@@ -144,5 +154,6 @@ test("vial recompute, live repair and section edits are target-locked and fail c
   assert.match(edit, /expectedMutation:\s*"edit-sections"/);
   assert.match(edit, /validatePeptidesReport\(report\)/);
   assert.match(edit, /commercialIncident/);
-  assert.ok(edit.indexOf('expectedMutation: "edit-sections"') < edit.indexOf("updateBurnoutReport(reportId, report"));
+  assert.ok(edit.indexOf('expectedMutation: "edit-sections"') < edit.indexOf("mutatePeptidesReportUnderHold"));
+  assert.match(edit, /HOLD actif requis/);
 });

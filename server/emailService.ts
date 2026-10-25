@@ -366,6 +366,71 @@ async function findRecentSendPulseLiveRecord(
   return null;
 }
 
+export type SendPulseDeliveryEvidence = {
+  state: "DELIVERED" | "FAILED" | "PENDING";
+  taskId: string | null;
+  smtpCode: number | null;
+  detail: string | null;
+};
+
+function smtpDeliveryCode(record: SendPulseLiveRecord | null | undefined): number | null {
+  const code = Number(record?.smtp_answer_code);
+  return Number.isFinite(code) && code > 0 ? code : null;
+}
+
+function hasPositiveSmtpDelivery(record: SendPulseLiveRecord | null | undefined): boolean {
+  const code = smtpDeliveryCode(record);
+  return code != null && code >= 200 && code < 300;
+}
+
+export function classifySendPulseDeliveryRecord(
+  record: SendPulseLiveRecord | null | undefined,
+  fallbackTaskId: string | null = null,
+): SendPulseDeliveryEvidence {
+  if (!record) return { state: "PENDING", taskId: fallbackTaskId, smtpCode: null, detail: "record_not_found" };
+  const taskId = sendPulseRecordId(record) || extractSendPulseDeliveryId(record) || fallbackTaskId;
+  const failure = sendPulseLiveDeliveryFailure(record);
+  if (failure) {
+    return { state: "FAILED", taskId, smtpCode: smtpDeliveryCode(record), detail: JSON.stringify(failure) };
+  }
+  if (hasPositiveSmtpDelivery(record)) {
+    return { state: "DELIVERED", taskId, smtpCode: smtpDeliveryCode(record), detail: null };
+  }
+  return { state: "PENDING", taskId, smtpCode: smtpDeliveryCode(record), detail: "smtp_not_terminal" };
+}
+
+export async function reconcileSendPulseDeliveryEvidence(input: {
+  recipientEmail: string;
+  subject: string;
+  startedAt: Date;
+  taskId?: string | null;
+  requestTimeoutMs?: number;
+}): Promise<SendPulseDeliveryEvidence> {
+  const token = await getAccessToken(input.requestTimeoutMs);
+  let record: SendPulseLiveRecord | null = null;
+  if (input.taskId) {
+    const details = await fetchSendPulseLiveRecordDetails(
+      token,
+      [{ id: input.taskId }],
+      input.requestTimeoutMs,
+    );
+    record = details.find((candidate) =>
+      sendPulseRecordId(candidate) === input.taskId
+      && sendPulseLiveRecordMatches(candidate, input.recipientEmail, input.subject)
+    ) || null;
+  }
+  if (!record) {
+    record = await findRecentSendPulseLiveRecord(
+      token,
+      input.recipientEmail,
+      input.subject,
+      input.startedAt,
+      input.requestTimeoutMs,
+    );
+  }
+  return classifySendPulseDeliveryRecord(record, input.taskId || null);
+}
+
 async function sendEmailWithTracking(
   emailPayload: {
     html: string;
@@ -509,6 +574,7 @@ async function sendEmailWithTracking(
     let sendpulseTaskId = extractSendPulseDeliveryId(result);
     if (sendpulseTaskId) result.id = sendpulseTaskId;
     const liveLookupMetadata: Record<string, any> = {};
+    let liveMatchedRecord: SendPulseLiveRecord | null = null;
     const allowAcceptedWithoutLiveVerification = trackingData.emailType === "sendReportReadyEmail";
     let liveDeliveryFailure: Record<string, unknown> | null = null;
 
@@ -520,6 +586,7 @@ async function sendEmailWithTracking(
       const providerMatch = providerRecord.find((record) => sendPulseRecordId(record) === sendpulseTaskId);
 
       if (providerMatch && sendPulseLiveRecordMatches(providerMatch, trackingData.recipientEmail, emailPayload.subject)) {
+        liveMatchedRecord = providerMatch;
         liveLookupMetadata.sendpulseLiveLookup = "provider_id_verified";
         liveLookupMetadata.sendpulseSendDate = providerMatch.send_date || providerMatch.date || providerMatch.created_at || null;
         liveLookupMetadata.sendpulseSmtpAnswerCode = providerMatch.smtp_answer_code ?? null;
@@ -557,6 +624,7 @@ async function sendEmailWithTracking(
       });
 
       if (liveRecord) {
+        liveMatchedRecord = liveRecord;
         sendpulseTaskId = sendPulseRecordId(liveRecord) || extractSendPulseDeliveryId(liveRecord);
         if (sendpulseTaskId) result.id = sendpulseTaskId;
         liveLookupMetadata.sendpulseLiveLookup = "matched";
@@ -581,6 +649,18 @@ async function sendEmailWithTracking(
       result.result = false;
       result.error = liveDeliveryFailure;
       liveLookupMetadata.sendpulseLiveDeliveryFailure = liveDeliveryFailure;
+    }
+
+    const requiresSmtpDeliveryProof = trackingData.emailType === "sendCTAEmail"
+      && Boolean(trackingData.metadata?.orderId)
+      && Boolean(trackingData.metadata?.reportId)
+      && /protocole peptides/i.test(emailPayload.subject);
+    if (result.result && requiresSmtpDeliveryProof && !hasPositiveSmtpDelivery(liveMatchedRecord)) {
+      result.result = false;
+      result.error = "SendPulse accepted the message but SMTP delivery is not yet proven";
+      liveLookupMetadata.peptidesDeliveryEvidence = "pending_smtp";
+    } else if (result.result && requiresSmtpDeliveryProof) {
+      liveLookupMetadata.peptidesDeliveryEvidence = "smtp_delivered";
     }
 
     // Transactional safety net. SendPulse can reject every request when its

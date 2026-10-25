@@ -188,16 +188,27 @@ export function validatePeptidesManualOrderTargetLock(input: {
     orderResponses,
     input.responses || null,
   ].filter((value): value is Record<string, unknown> => Boolean(value));
-  const responseEmails = sources.map((value) => normalizedEmail(value.pep_email)).filter(Boolean);
+  const responseEmails = sources.map((value) => normalizedEmail(value.pep_email));
+  if (responseEmails.some((value) => !value)) {
+    errors.push("ORDER_TARGET_LOCK_RESPONSE_EMAIL_MISSING");
+  }
   if (responseEmails.some((value) => value !== target.email)) {
     errors.push("ORDER_TARGET_LOCK_RESPONSE_EMAIL_MISMATCH");
   }
   const expectedName = normalizedName(target.expectedClientName);
-  const sourceNames = sources.map((value) => normalizedName(value.pep_name)).filter(Boolean);
-  if (sourceNames.length < 1) {
+  const sourceNames = sources.map((value) => normalizedName(value.pep_name));
+  if (sourceNames.some((value) => !value)) {
     errors.push("ORDER_TARGET_LOCK_RESPONSE_NAME_MISSING");
-  } else if (!sourceNames.every((value) => value.includes(expectedName))) {
+  } else if (!sourceNames.every((value) => value === expectedName)) {
     errors.push("ORDER_TARGET_LOCK_RESPONSE_NAME_MISMATCH");
+  }
+  if (
+    input.expectedMutation !== "inject-responses"
+    && orderResponses
+    && input.responses
+    && stableJson(orderResponses) !== stableJson(input.responses)
+  ) {
+    errors.push("ORDER_TARGET_LOCK_SOURCE_RESPONSES_MISMATCH");
   }
 
   if (!/^[a-f0-9]{64}$/.test(target.expectedSourceSha256)) {
@@ -287,7 +298,10 @@ export function validatePeptidesManualTargetLock(input: {
       ? (input.order.metadata.peptidesResponses as Record<string, unknown>).pep_email
       : undefined,
     input.reportRecord.responses?.pep_email,
-  ].map(normalizedEmail).filter(Boolean);
+  ].map(normalizedEmail);
+  if (responseEmails.some((value) => !value)) {
+    errors.push("TARGET_LOCK_RESPONSE_EMAIL_MISSING");
+  }
   if (responseEmails.some((value) => value !== target.email)) {
     errors.push("TARGET_LOCK_RESPONSE_EMAIL_MISMATCH");
   }
@@ -297,12 +311,16 @@ export function validatePeptidesManualTargetLock(input: {
       ? (input.order.metadata.peptidesResponses as Record<string, unknown>).pep_name
       : undefined,
     input.reportRecord.responses?.pep_name,
-  ].map(normalizedName).filter(Boolean);
+  ].map(normalizedName);
   const expectedName = normalizedName(target.expectedClientName);
-  if (sourceNames.length < 1) {
+  if (sourceNames.some((value) => !value)) {
     errors.push("TARGET_LOCK_RESPONSE_NAME_MISSING");
-  } else if (!sourceNames.every((value) => value.includes(expectedName))) {
+  } else if (!sourceNames.every((value) => value === expectedName)) {
     errors.push("TARGET_LOCK_RESPONSE_NAME_MISMATCH");
+  }
+  if (orderResponses && input.reportRecord.responses
+    && stableJson(orderResponses) !== stableJson(input.reportRecord.responses)) {
+    errors.push("TARGET_LOCK_SOURCE_RESPONSES_MISMATCH");
   }
 
   if (!/^[a-f0-9]{64}$/.test(target.expectedCurrentReportSha256)) {

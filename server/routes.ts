@@ -36,6 +36,7 @@ import {
   sendPeptidesReviewS12Email,
   sendPeptidesCycle2ReorderEmail,
   sendPeptidesOrderConfirmationEmail,
+  reconcileSendPulseDeliveryEvidence,
   sendDiscoveryJ30NurtureEmail,
   sendReactivationCampaignEmail,
   sendFinishDiscoveryEmail,
@@ -115,11 +116,13 @@ import {
   getPeptidesGenerationRetryAt,
   getPeptidesSourceRetryAt,
   getPeptidesStoredResumeRetryAt,
+  isPeptidesAutogenEnabled,
   sanitizePeptidesGenerationError,
 } from "./peptidesGenerationCircuitBreaker";
 import { isRetryablePeptauraSourceOutage } from "./peptidesSourcePreflight";
 import {
   evaluatePeptidesReleaseHashGate,
+  hashPeptidesReport,
   isPeptidesApprovalExpected,
 } from "./peptidesReleaseHashGate";
 import {
@@ -1882,7 +1885,13 @@ export async function registerRoutes(
           holdDelivery: source.holdDelivery !== false,
         };
       case "inject-responses":
-        return { responses: source.responses && typeof source.responses === "object" ? source.responses : null };
+        return {
+          responses: source.responses && typeof source.responses === "object" ? source.responses : null,
+          peptidesProfileConfirmation: source.peptidesProfileConfirmation
+            && typeof source.peptidesProfileConfirmation === "object"
+            ? source.peptidesProfileConfirmation
+            : null,
+        };
       case "delivery-hold": {
         const hold = source.hold === true;
         return {
@@ -1960,6 +1969,11 @@ export async function registerRoutes(
       mutation: input.expectedMutation,
     });
     return false;
+  }
+
+  function hasPeptidesManualHold(order: any): boolean {
+    const metadata = ((order?.metadata as any) || {}) as Record<string, any>;
+    return metadata.peptidesEmailHold === true || metadata.peptidesEmailHold === "true";
   }
 
   // Every paid-report mutation is a two-step operation. The preview binds the
@@ -2071,14 +2085,15 @@ export async function registerRoutes(
         res.status(404).json({ success: false, error: "Commande introuvable" });
         return;
       }
-      const progress = await storage.getBurnoutProgress(`peptides::${email}`).catch(() => null);
-      const responses = (req.body?.responses && typeof req.body.responses === "object")
+      const storedResponses = (order.metadata as any)?.peptidesResponses;
+      const responses = mutation === "inject-responses"
+        && req.body?.responses
+        && typeof req.body.responses === "object"
         ? req.body.responses as Record<string, unknown>
-        : (progress?.responses && typeof progress.responses === "object")
-          ? progress.responses as Record<string, unknown>
+        : storedResponses && typeof storedResponses === "object"
+          ? storedResponses as Record<string, unknown>
           : null;
       const mutationPayload = getPeptidesManualMutationPayload(mutation, req.body);
-      const storedResponses = (order.metadata as any)?.peptidesResponses;
       const previewTarget = {
         mutation,
         orderId,
@@ -5242,6 +5257,51 @@ export async function registerRoutes(
     return "coached"; // default sweet spot if missing/invalid
   }
 
+  function peptidesBloodCreditsForTier(raw: unknown): number {
+    const tier = resolvePeptidesTier(raw);
+    return tier === "tracked" ? 2 : tier === "coached" ? 1 : 0;
+  }
+
+  function sealedPeptidesResponsesHash(responses: unknown): string {
+    return hashPeptidesManualMutationPayload(
+      responses && typeof responses === "object" && !Array.isArray(responses)
+        ? responses
+        : {},
+    );
+  }
+
+  function validateTrustedPeptidesOrderSource(order: any): {
+    ok: boolean;
+    responses: Record<string, unknown> | null;
+    errors: string[];
+  } {
+    const metadata = ((order?.metadata as any) || {}) as Record<string, any>;
+    const responses = metadata.peptidesResponses && typeof metadata.peptidesResponses === "object"
+      && !Array.isArray(metadata.peptidesResponses)
+      ? metadata.peptidesResponses as Record<string, unknown>
+      : null;
+    const errors: string[] = [];
+    const questionnaire = validatePeptidesEngineResponses(responses, String(order?.email || ""));
+    if (!questionnaire.valid) {
+      errors.push(`QUESTIONNAIRE:${questionnaire.missing.join(",")}`);
+    }
+    const profile = validatePeptidesProfileConfirmation(
+      metadata.peptidesProfileConfirmation,
+      responses,
+    );
+    if (!profile.valid) {
+      errors.push(`PROFILE_CONFIRMATION:${profile.mismatched.join(",")}`);
+    }
+    const actualHash = sealedPeptidesResponsesHash(responses);
+    const expectedHash = String(metadata.peptidesResponsesSha256 || "").trim().toLowerCase();
+    if (!/^[a-f0-9]{64}$/.test(expectedHash)) {
+      errors.push("SOURCE_HASH_MISSING");
+    } else if (expectedHash !== actualHash) {
+      errors.push("SOURCE_HASH_MISMATCH");
+    }
+    return { ok: errors.length === 0, responses, errors };
+  }
+
   app.post("/api/stripe/create-checkout-session", checkoutLimiter, async (req, res) => {
     try {
       const { priceId: clientPriceId, email, planType, responses, promoCode, referrer, fbp, fbc, userAgent, sourceUrl, peptidesEngineConsent, peptidesProfileConfirmation, peptidesTier: rawTier, healthDataConsent } = req.body;
@@ -5443,6 +5503,10 @@ export async function registerRoutes(
       if (validatedPromoCode) {
         const promoObjCheck = await storage.getPromoCode(validatedPromoCode);
         if (promoObjCheck && promoObjCheck.discountPercent >= 100) {
+          if (planType === "PEPTIDES_ENGINE") {
+            res.status(409).json({ error: "PEPTIDES_FREE_PROMO_DISABLED" });
+            return;
+          }
           const pType = (planType as ProductTypeEnum) || "PREMIUM";
           const baseCents = ProductPriceCents[pType] ?? 0;
           const discountCents = baseCents;
@@ -5663,6 +5727,10 @@ export async function registerRoutes(
             questionnaireResponses: ["PREMIUM", "ELITE", "GRATUIT"].includes(planType) ? responses : undefined,
             peptidesTier: peptidesTier || undefined,
             peptidesResponses: planType === "PEPTIDES_ENGINE" ? responses : undefined,
+            peptidesResponsesSha256: planType === "PEPTIDES_ENGINE"
+              ? sealedPeptidesResponsesHash(responses)
+              : undefined,
+            peptidesSourceSealedAt: planType === "PEPTIDES_ENGINE" ? new Date().toISOString() : undefined,
             peptidesEngineConsent: peptidesConsentRecord,
             healthDataConsent: planType === "BLOOD_ANALYSIS" ? {
               accepted: true,
@@ -5704,7 +5772,14 @@ export async function registerRoutes(
         }
       } catch (orderErr) {
         console.error("[Orders] Error creating pending order:", orderErr);
-        // Non-blocking: checkout still works even if order tracking fails
+        if (planType === "PEPTIDES_ENGINE") {
+          // Never expose a payable Stripe session without the exact durable
+          // order/questionnaire row that AutoGen and fulfillment depend on.
+          await stripe.checkout.sessions.expire(session.id).catch((expireError: unknown) => {
+            console.error("[Orders] Failed to expire untracked Peptides checkout:", expireError);
+          });
+          throw new Error("PEPTIDES_ORDER_PERSIST_FAILED");
+        }
       }
 
       if (previewLeadId) {
@@ -5751,13 +5826,15 @@ export async function registerRoutes(
       }
 
       const normalizedEmail = email.trim().toLowerCase();
-      await client.query(
-        `INSERT INTO users (id, email, credits, created_at)
-         VALUES ($1, $2, $3, NOW())
-         ON CONFLICT (email)
-         DO UPDATE SET credits = users.credits + EXCLUDED.credits`,
-        [crypto.randomUUID(), normalizedEmail, creditCount],
-      );
+      if (creditCount > 0) {
+        await client.query(
+          `INSERT INTO users (id, email, credits, created_at)
+           VALUES ($1, $2, $3, NOW())
+           ON CONFLICT (email)
+           DO UPDATE SET credits = users.credits + EXCLUDED.credits`,
+          [crypto.randomUUID(), normalizedEmail, creditCount],
+        );
+      }
       await client.query(
         `UPDATE orders SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object($1::text, true) WHERE id = $2`,
         [metadataFlag, orderId],
@@ -5837,7 +5914,12 @@ export async function registerRoutes(
           "bloodCreditGranted",
         ).catch(() => {});
       } else if (productType === "PEPTIDES_ENGINE") {
-        await grantBloodCreditsForOrder(order.id, email, 2, "peptidesCreditsGranted").catch(() => {});
+        await grantBloodCreditsForOrder(
+          order.id,
+          email,
+          peptidesBloodCreditsForTier((order.metadata as any)?.peptidesTier),
+          "peptidesCreditsGranted",
+        ).catch(() => {});
       }
 
       // Admin payment notification (mirrors capture endpoint)
@@ -6125,7 +6207,12 @@ export async function registerRoutes(
           });
         }
         if (existingOrder && email) {
-          await grantBloodCreditsForOrder(existingOrder.id, email, 2, "peptidesCreditsGranted");
+          await grantBloodCreditsForOrder(
+            existingOrder.id,
+            email,
+            peptidesBloodCreditsForTier((existingOrder.metadata as any)?.peptidesTier),
+            "peptidesCreditsGranted",
+          );
         }
         res.json({ success: true, auditId: "", auditType: "PEPTIDES_ENGINE", email, generating: true, purchaseTracking });
         return;
@@ -6356,6 +6443,10 @@ export async function registerRoutes(
 
       // 100% discount: skip PayPal entirely, create audit directly
       if (finalCents === 0) {
+        if (planType === "PEPTIDES_ENGINE") {
+          res.status(409).json({ error: "PEPTIDES_FREE_PROMO_DISABLED" });
+          return;
+        }
         const order = await storage.createOrder({
           email,
           productType: pType,
@@ -6490,6 +6581,10 @@ export async function registerRoutes(
             peptidesTier: peptidesTier || undefined,
             paymentMethod: "paypal",
             peptidesResponses: planType === "PEPTIDES_ENGINE" ? responses : undefined,
+            peptidesResponsesSha256: planType === "PEPTIDES_ENGINE"
+              ? sealedPeptidesResponsesHash(responses)
+              : undefined,
+            peptidesSourceSealedAt: planType === "PEPTIDES_ENGINE" ? new Date().toISOString() : undefined,
             peptidesEngineConsent: peptidesConsentRecord,
             peptidesProfileConfirmation: planType === "PEPTIDES_ENGINE" ? {
               accepted: true,
@@ -6525,6 +6620,11 @@ export async function registerRoutes(
         }
       } catch (orderErr) {
         console.error("[PayPal Orders] Error creating pending order:", orderErr);
+        if (planType === "PEPTIDES_ENGINE") {
+          // A CREATED PayPal order is harmless until capture, but its approval
+          // URL must never be exposed when no durable local order exists.
+          throw new Error("PEPTIDES_ORDER_PERSIST_FAILED");
+        }
       }
 
       res.json({ paypalOrderId, approvalUrl });
@@ -6584,6 +6684,13 @@ export async function registerRoutes(
             amountMismatch: true,
             capturedAmount: capture.amountValue,
             expectedAmount: expectedEur,
+            ...(existingOrder.productType === "PEPTIDES_ENGINE" ? {
+              peptidesEmailHold: true,
+              peptidesEmailHoldReason: "PAYMENT_AMOUNT_MISMATCH",
+              peptidesFulfillmentState: "ACTION_REQUIRED",
+              peptidesManualFulfillment: true,
+              peptidesManualFulfillmentState: "PAYMENT_REVIEW_REQUIRED",
+            } : {}),
           },
         });
         res.status(400).json({ error: "AMOUNT_MISMATCH", message: "Le montant capturé ne correspond pas. Contacte le support." });
@@ -6664,10 +6771,13 @@ export async function registerRoutes(
       // PEPTIDES_ENGINE: trigger background generation from saved responses
       if (planType === "PEPTIDES_ENGINE") {
         console.log(`[PayPal] Peptides Engine paid for ${email} , triggering generation`);
-        // Add +2 blood credits via idempotent helper (was a raw UPDATE that
-        // would double-grant on PayPal capture retry; the helper sets a
-        // metadata flag and skips if already granted).
-        await grantBloodCreditsForOrder(existingOrder.id, email, 2, "peptidesCreditsGranted");
+        // Grant the exact tier entitlement once (Solo 0, Coached 1, Tracked 2).
+        await grantBloodCreditsForOrder(
+          existingOrder.id,
+          email,
+          peptidesBloodCreditsForTier((existingOrder.metadata as any)?.peptidesTier),
+          "peptidesCreditsGranted",
+        );
 
         // DO NOT generate in background here , Render kills the process after HTTP response.
         // The auto-recovery cron will detect this order (paid, no reportId) and generate.
@@ -6711,6 +6821,12 @@ export async function registerRoutes(
         res.status(409).json({ success: false, error: "Un rapport est deja rattache" });
         return;
       }
+      const generationState = String((order.metadata as any)?.peptidesGenerationState || "PENDING");
+      const leaseUntil = new Date(String((order.metadata as any)?.peptidesGenerationLeaseUntil || 0)).getTime();
+      if (generationState === "GENERATING" && Number.isFinite(leaseUntil) && leaseUntil > Date.now()) {
+        res.status(409).json({ success: false, error: "GENERATION_ACTIVE_RESET_FORBIDDEN" });
+        return;
+      }
       if (!validateManualPeptidesOrderTargetOrRespond({
         req,
         res,
@@ -6742,6 +6858,13 @@ export async function registerRoutes(
     try {
       const { email, orderId, skipEmail, replaceReportId, manualExpertDirective, recoveryPreviousError } = req.body;
       if (!email || !orderId) { res.status(400).json({ error: "email et orderId requis" }); return; }
+      if (req.body?.forceImmediate === true) {
+        res.status(409).json({
+          error: "PEPTIDES_FORCE_IMMEDIATE_DISABLED",
+          message: "La livraison doit suivre le refresh live, le hash gate et l’ancre generation+24h.",
+        });
+        return;
+      }
 
       // Establish paid entitlement and acknowledge payment before touching the
       // questionnaire source. Missing/corrupt source data must not suppress the
@@ -6762,6 +6885,12 @@ export async function registerRoutes(
           return;
         }
         const currentReportId = String((pepOrder.metadata as any)?.peptidesReportId || "");
+        const holdActive = (pepOrder.metadata as any)?.peptidesEmailHold === true
+          || String((pepOrder.metadata as any)?.peptidesEmailHold).toLowerCase() === "true";
+        if (!holdActive) {
+          res.status(409).json({ error: "Toute regeneration en place exige un HOLD actif" });
+          return;
+        }
         if (currentReportId !== String(replaceReportId)) {
           res.status(409).json({ error: "replaceReportId ne correspond pas au rapport lie a la commande", currentReportId });
           return;
@@ -6798,13 +6927,18 @@ export async function registerRoutes(
         }).catch((err) => console.error("[Admin Manual Gen PreSource] Confirmation email failed:", err));
       }
 
-      // Get saved responses
-      const progress = await storage.getBurnoutProgress(`peptides::${email}`);
-      const responses = progress?.responses;
-      if (!responses || Object.keys(responses).length < 3) {
-        res.status(404).json({ error: "Aucune reponse sauvegardee pour cet email", keys: Object.keys(responses || {}).length });
+      // Generate only from the questionnaire sealed into this exact paid order.
+      // Public autosave progress is never a paid-generation source.
+      const trustedSource = validateTrustedPeptidesOrderSource(pepOrder);
+      if (!trustedSource.ok || !trustedSource.responses) {
+        res.status(409).json({
+          error: "PEPTIDES_ORDER_SOURCE_NOT_TRUSTED",
+          details: trustedSource.errors,
+          hint: "Réconcilie les réponses via la mutation inject-responses sous HOLD.",
+        });
         return;
       }
+      const responses = trustedSource.responses;
 
       console.log(`[Admin] Force generating peptides for ${email} (${Object.keys(responses).length} responses)`);
 
@@ -6858,18 +6992,6 @@ export async function registerRoutes(
         }
       }
 
-      // SAFETY: email dedup (if not explicit replace, block re-send to same client)
-      if (!replaceReportId && !skipEmail) {
-        const alreadyEmailed = await storage.hasPeptidesDeliveryEmailBeenSent(email).catch(() => false);
-        if (alreadyEmailed) {
-          res.status(409).json({
-            error: "Un email de livraison peptides a déjà été envoyé à ce client",
-            hint: "Utilise skipEmail: true pour regénérer silencieusement",
-          });
-          return;
-        }
-      }
-
       // Generate synchronously (admin endpoint = manual trigger, can wait)
       const { generatePeptidesProtocol } = await import("./peptidesEngine");
       const manualTier = ((pepOrder?.metadata as any)?.peptidesTier as "solo" | "coached" | "tracked" | undefined) ?? "coached";
@@ -6880,6 +7002,35 @@ export async function registerRoutes(
         manualExpertDirective: normalizedManualDirective || undefined,
         initialPreviousError: normalizedRecoveryPreviousError || undefined,
       });
+      // The model call can take minutes. Re-check the exact source, payload,
+      // order link and report hash immediately before any persistence.
+      const freshTargetOrder = await storage.getOrder(pepOrder.id);
+      if (!freshTargetOrder) {
+        res.status(409).json({ error: "PEPTIDES_ORDER_DISAPPEARED_DURING_GENERATION" });
+        return;
+      }
+      if (!validateManualPeptidesOrderTargetOrRespond({
+        req,
+        res,
+        expectedMutation: "generate-report",
+        order: freshTargetOrder,
+        responses: (freshTargetOrder.metadata as any)?.peptidesResponses || null,
+      })) return;
+      if (sealedPeptidesResponsesHash((freshTargetOrder.metadata as any)?.peptidesResponses)
+        !== sealedPeptidesResponsesHash(responses)) {
+        res.status(409).json({ error: "PEPTIDES_SOURCE_CHANGED_DURING_GENERATION" });
+        return;
+      }
+      if (replaceReportId) {
+        const freshTargetReport = await storage.getBurnoutReport(String(replaceReportId));
+        if (!freshTargetReport || !validateManualPeptidesTargetOrRespond({
+          req,
+          res,
+          expectedMutation: "replace-report",
+          order: freshTargetOrder,
+          reportRecord: freshTargetReport,
+        })) return;
+      }
       const { validatePeptidesReport } = await import("./peptidesReportValidator");
       const generatedValidation = validatePeptidesReport(report);
       const generatedCommercialIncident = evaluatePeptidesFulfillmentInvariant({
@@ -6891,7 +7042,7 @@ export async function registerRoutes(
         manualFulfillment: true,
         recipientUnsubscribed: false,
       });
-      if (!generatedValidation.ok || generatedCommercialIncident) {
+      if (!generatedValidation.ok || generatedValidation.warnings.length > 0 || generatedCommercialIncident) {
         res.status(422).json({
           success: false,
           error: "Rapport genere bloque avant persistance: validation commerciale incomplete",
@@ -6902,12 +7053,17 @@ export async function registerRoutes(
       }
 
       let saved;
-      let claimed = true;
       if (replaceReportId) {
         // Update existing report in-place , keeps same URL
-        const updated = await storage.updateBurnoutReport(replaceReportId, report);
+        const updated = await storage.mutatePeptidesReportUnderHold({
+          orderId: freshTargetOrder.id,
+          reportId: replaceReportId,
+          expectedSha256: String(req.body?.targetLock?.expectedCurrentReportSha256 || ""),
+          nextReport: report,
+          mutation: "replace-report",
+        });
         if (!updated) {
-          res.status(404).json({ error: `Report ${replaceReportId} not found for in-place update` });
+          res.status(409).json({ error: `Report ${replaceReportId} or its HOLD/link/hash changed during in-place update` });
           return;
         }
         saved = updated;
@@ -6917,24 +7073,21 @@ export async function registerRoutes(
           await storage.setOrderMetadataKey(pepOrder.id, "peptidesManualExpertAppliedAt", new Date().toISOString());
         }
       } else {
-        saved = await storage.createBurnoutReport({ email: `peptides::${email}`, responses: responses || {}, report });
-        console.log(`[Admin] Peptides protocol generated for ${email}: ${saved.id}`);
-
-        // Atomic CAS , if another process (autogen) already claimed, we become orphan
-        if (pepOrder) {
-          claimed = await storage.claimPeptidesReportSlot(pepOrder.id, saved.id);
-          if (!claimed) {
-            const orphanDeleted = await storage.deleteBurnoutReport(saved.id).catch(() => false);
-            console.warn(`[Admin] ⚠️ CAS lost , another process already linked a report for ${email}. Orphan ${saved.id} deleted=${orphanDeleted}; NO email sent.`);
-            res.status(409).json({
-              error: "Race condition: un autre processus a lié un rapport pendant la génération",
-              discardedReportId: saved.id,
-              discarded: orphanDeleted,
-              hint: "Vérifie l'order: peptidesReportId est déjà défini",
-            });
-            return;
-          }
+        saved = await storage.createAndClaimPeptidesReport({
+          orderId: pepOrder.id,
+          email: `peptides::${email}`,
+          responses,
+          report,
+          expectedResponsesSha256: sealedPeptidesResponsesHash(responses),
+        });
+        if (!saved) {
+          res.status(409).json({
+            error: "PEPTIDES_REPORT_CREATE_CLAIM_CAS_FAILED",
+            hint: "Le lien, le statut ou la source scellee de la commande a change; aucun rapport orphelin n'a ete cree.",
+          });
+          return;
         }
+        console.log(`[Admin] Peptides protocol generated and atomically linked for ${email}: ${saved.id}`);
       }
 
       const baseUrl = getBaseUrl();
@@ -6955,7 +7108,7 @@ export async function registerRoutes(
       //     scheduled time.
       //
       // Caller can pass forceImmediate=true to skip the gate (use sparingly).
-      const forceImmediate = !!(req.body as any)?.forceImmediate;
+      const forceImmediate = false;
       const adminNotifEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
 
       let emailSent = false;
@@ -6963,7 +7116,9 @@ export async function registerRoutes(
       let deliveryScheduledAtIso = "";
 
       if (!skipEmail) {
-        const stillNotEmailed = !(await storage.hasPeptidesDeliveryEmailBeenSent(email).catch(() => false));
+        const deliveryOrder = pepOrder ? await storage.getOrder(pepOrder.id) : null;
+        const stillNotEmailed = Boolean(deliveryOrder)
+          && !hasAcceptedPeptidesDeliveryForReport(deliveryOrder, String(saved.id));
         if (!stillNotEmailed) {
           console.warn(`[Admin] Delivery email already sent for ${email} (last-moment dedup) , skipping`);
         } else {
@@ -7157,6 +7312,10 @@ export async function registerRoutes(
         res.status(400).json({ success: false, error: "orderId, reportId, fromEmail, toEmail requis" });
         return;
       }
+      if (apply && holdDelivery === false) {
+        res.status(409).json({ success: false, error: "Une correction email exige un HOLD jusqu'a verification manuelle" });
+        return;
+      }
 
       const order = await storage.getOrder(orderId);
       if (!order) { res.status(404).json({ success: false, error: "Order introuvable" }); return; }
@@ -7214,38 +7373,98 @@ export async function registerRoutes(
       })) return;
 
       const nowIso = new Date().toISOString();
-      const nextMeta = {
-        ...meta,
-        peptidesReportId: reportId,
-        correctedEmailFrom: oldEmail,
-        correctedEmailTo: newEmail,
-        correctedEmailAt: nowIso,
-        ...(holdDelivery ? { peptidesEmailHold: true, peptidesEmailHoldReason: "email_corrected_waiting_manual_resend" } : {}),
-        peptidesResponses: {
-          ...(meta.peptidesResponses || {}),
-          pep_email: newEmail,
-        },
+      const nextResponses = {
+        ...(meta.peptidesResponses || {}),
+        pep_email: newEmail,
       };
-      await storage.updateOrder(orderId, { email: newEmail, metadata: nextMeta });
-
-      await pool.query(
-        `UPDATE burnout_reports
-            SET email = $1,
-                responses = CASE
-                  WHEN jsonb_typeof(responses) = 'object'
-                    THEN responses || jsonb_build_object('pep_email', $2::text)
-                  ELSE responses
-                END
-          WHERE id = $3`,
-        [progressNewKey, newEmail, reportId]
-      );
-
+      const transaction = await pool.connect();
       let progressAction = "not_found";
-      if (progressExists.rows.length > 0) {
-        if (progressTargetExists.rows.length > 0) {
-          progressAction = "target_exists_skip";
-        } else {
-          await pool.query(
+      try {
+        await transaction.query("BEGIN");
+        const lockedOrderResult = await transaction.query(
+          `SELECT id, email, product_type, status, metadata
+             FROM orders WHERE id = $1 FOR UPDATE`,
+          [orderId],
+        );
+        const lockedReportResult = await transaction.query(
+          `SELECT id, email, responses, report
+             FROM burnout_reports WHERE id = $1 FOR UPDATE`,
+          [reportId],
+        );
+        const lockedOrderRow = lockedOrderResult.rows[0];
+        const lockedReportRow = lockedReportResult.rows[0];
+        if (!lockedOrderRow || !lockedReportRow) throw new Error("PEPTIDES_CORRECT_EMAIL_TARGET_DISAPPEARED");
+        const freshLock = validatePeptidesManualTargetLock({
+          expectedMutation: "correct-email",
+          targetLock: req.body?.targetLock,
+          order: {
+            id: lockedOrderRow.id,
+            email: lockedOrderRow.email,
+            productType: lockedOrderRow.product_type,
+            status: lockedOrderRow.status,
+            metadata: lockedOrderRow.metadata || {},
+          },
+          reportRecord: {
+            id: lockedReportRow.id,
+            email: lockedReportRow.email,
+            responses: lockedReportRow.responses || {},
+            report: lockedReportRow.report || {},
+          },
+          mutationPayload: getPeptidesManualMutationPayload("correct-email", req.body),
+        });
+        if (!freshLock.ok) throw new Error(`PEPTIDES_CORRECT_EMAIL_LOCK_STALE:${freshLock.errors.join("|")}`);
+
+        const progressRows = await transaction.query(
+          `SELECT email FROM burnout_progress WHERE email = ANY($1::text[]) FOR UPDATE`,
+          [[progressOldKey, progressNewKey]],
+        );
+        const progressEmails = new Set(progressRows.rows.map((row: any) => String(row.email)));
+        if (progressEmails.has(progressOldKey) && progressEmails.has(progressNewKey)) {
+          throw new Error("PEPTIDES_CORRECT_EMAIL_PROGRESS_TARGET_CONFLICT");
+        }
+
+        const orderUpdate = await transaction.query(
+          `UPDATE orders
+              SET email = $1,
+                  metadata = COALESCE(metadata, '{}'::jsonb) || $2::jsonb,
+                  updated_at = NOW()
+            WHERE id = $3
+              AND LOWER(email) = LOWER($4)
+              AND COALESCE(metadata->>'peptidesReportId', '') = $5
+            RETURNING id`,
+          [newEmail, JSON.stringify({
+            peptidesReportId: reportId,
+            correctedEmailFrom: oldEmail,
+            correctedEmailTo: newEmail,
+            correctedEmailAt: nowIso,
+            peptidesEmailHold: true,
+            peptidesEmailHoldReason: "EMAIL_CORRECTED_REQUIRES_MANUAL_RELEASE",
+            peptidesManualFulfillment: true,
+            peptidesManualFulfillmentState: "EMAIL_CORRECTED_REQUIRES_MANUAL_RELEASE",
+            peptidesResponses: nextResponses,
+            peptidesResponsesSha256: sealedPeptidesResponsesHash(nextResponses),
+            peptidesSourceSealedAt: nowIso,
+          }), orderId, oldEmail, reportId],
+        );
+        const reportUpdate = await transaction.query(
+          `UPDATE burnout_reports
+              SET email = $1,
+                  responses = CASE
+                    WHEN jsonb_typeof(responses) = 'object'
+                      THEN responses || jsonb_build_object('pep_email', $2::text)
+                    ELSE responses
+                  END
+            WHERE id = $3
+              AND LOWER(regexp_replace(email, '^peptides::', '', 'i')) = LOWER($4)
+            RETURNING id`,
+          [progressNewKey, newEmail, reportId, oldEmail],
+        );
+        if (orderUpdate.rowCount !== 1 || reportUpdate.rowCount !== 1) {
+          throw new Error("PEPTIDES_CORRECT_EMAIL_CAS_FAILED");
+        }
+
+        if (progressEmails.has(progressOldKey)) {
+          const progressUpdate = await transaction.query(
             `UPDATE burnout_progress
                 SET email = $1,
                     responses = CASE
@@ -7254,11 +7473,19 @@ export async function registerRoutes(
                       ELSE responses
                     END,
                     last_activity_at = NOW()
-              WHERE email = $3`,
-            [progressNewKey, newEmail, progressOldKey]
+              WHERE email = $3
+              RETURNING id`,
+            [progressNewKey, newEmail, progressOldKey],
           );
+          if (progressUpdate.rowCount !== 1) throw new Error("PEPTIDES_CORRECT_EMAIL_PROGRESS_CAS_FAILED");
           progressAction = "moved";
         }
+        await transaction.query("COMMIT");
+      } catch (error) {
+        await transaction.query("ROLLBACK").catch(() => {});
+        throw error;
+      } finally {
+        transaction.release();
       }
 
       res.json({
@@ -7281,9 +7508,9 @@ export async function registerRoutes(
   app.post("/api/admin/peptides-inject-responses", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
-      const { orderId, email, responses } = req.body;
-      if (!orderId || !email || !responses || Object.keys(responses).length < 3) {
-        res.status(400).json({ error: "orderId, email et responses (min 3 champs) requis" });
+      const { orderId, email, responses, peptidesProfileConfirmation } = req.body;
+      if (!orderId || !email || !responses || typeof responses !== "object") {
+        res.status(400).json({ error: "orderId, email et questionnaire complet requis" });
         return;
       }
       const orders = await storage.getOrdersByEmail(email);
@@ -7296,6 +7523,16 @@ export async function registerRoutes(
         res.status(409).json({ error: "Commande Peptides payee exacte introuvable pour email + orderId" });
         return;
       }
+      const questionnaire = validatePeptidesEngineResponses(responses, email);
+      if (!questionnaire.valid) {
+        res.status(400).json({ error: "PEPTIDES_QUESTIONNAIRE_INCOMPLETE", missing: questionnaire.missing });
+        return;
+      }
+      const profile = validatePeptidesProfileConfirmation(peptidesProfileConfirmation, responses);
+      if (!profile.valid) {
+        res.status(400).json({ error: "PEPTIDES_PROFILE_CONFIRMATION_REQUIRED", mismatched: profile.mismatched });
+        return;
+      }
       if (!validateManualPeptidesOrderTargetOrRespond({
         req,
         res,
@@ -7304,16 +7541,78 @@ export async function registerRoutes(
         responses,
       })) return;
 
-      await storage.saveBurnoutProgress({
-        email: `peptides::${email}`,
-        currentSection: 6,
-        totalSections: 6,
-        responses,
-      });
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        const locked = await client.query(
+          `SELECT id, email, product_type, status, metadata
+             FROM orders
+            WHERE id = $1
+            FOR UPDATE`,
+          [pepOrder.id],
+        );
+        const lockedRow = locked.rows[0];
+        if (!lockedRow
+          || String(lockedRow.email || "").toLowerCase() !== String(email).toLowerCase()
+          || lockedRow.product_type !== "PEPTIDES_ENGINE"
+          || !["paid", "partial_refund"].includes(String(lockedRow.status))) {
+          throw new Error("PEPTIDES_INJECT_TARGET_CHANGED");
+        }
+        const lockValidation = validatePeptidesManualOrderTargetLock({
+          expectedMutation: "inject-responses",
+          targetLock: req.body?.orderTargetLock,
+          order: {
+            id: lockedRow.id,
+            email: lockedRow.email,
+            productType: lockedRow.product_type,
+            status: lockedRow.status,
+            metadata: lockedRow.metadata || {},
+          },
+          responses,
+          mutationPayload: getPeptidesManualMutationPayload("inject-responses", req.body),
+        });
+        if (!lockValidation.ok) {
+          throw new Error(`PEPTIDES_INJECT_LOCK_STALE:${lockValidation.errors.join("|")}`);
+        }
 
-      await storage.updateOrder(pepOrder.id, {
-        metadata: { ...(pepOrder.metadata as object ?? {}), peptidesResponses: responses, injectedByAdmin: true },
-      });
+        await client.query(
+          `INSERT INTO burnout_progress
+             (id, email, current_section, total_sections, percent_complete, responses, status, last_activity_at)
+           VALUES ($1, $2, '6', '6', '100', $3::jsonb, 'COMPLETED', NOW())
+           ON CONFLICT (email) DO UPDATE SET
+             current_section = EXCLUDED.current_section,
+             total_sections = EXCLUDED.total_sections,
+             percent_complete = EXCLUDED.percent_complete,
+             responses = EXCLUDED.responses,
+             status = EXCLUDED.status,
+             last_activity_at = NOW()`,
+          [crypto.randomUUID(), `peptides::${email}`, JSON.stringify(responses)],
+        );
+        await client.query(
+          `UPDATE orders
+              SET metadata = COALESCE(metadata, '{}'::jsonb) || $1::jsonb,
+                  updated_at = NOW()
+            WHERE id = $2`,
+          [JSON.stringify({
+            peptidesResponses: responses,
+            peptidesResponsesSha256: sealedPeptidesResponsesHash(responses),
+            peptidesProfileConfirmation,
+            peptidesSourceSealedAt: new Date().toISOString(),
+            peptidesSourceProvenance: "manual_locked_injection",
+            injectedByAdmin: true,
+            peptidesEmailHold: true,
+            peptidesEmailHoldReason: "RESPONSES_RECONCILED_REQUIRES_MANUAL_REVIEW",
+            peptidesManualFulfillment: true,
+            peptidesManualFulfillmentState: "RESPONSES_RECONCILED_REQUIRES_MANUAL_REVIEW",
+          }), pepOrder.id],
+        );
+        await client.query("COMMIT");
+      } catch (error) {
+        await client.query("ROLLBACK").catch(() => {});
+        throw error;
+      } finally {
+        client.release();
+      }
 
       res.json({ success: true, orderId: pepOrder.id, responseCount: Object.keys(responses).length });
     } catch (error: any) {
@@ -7528,12 +7827,50 @@ export async function registerRoutes(
         order,
         responses: (order.metadata as any)?.peptidesResponses || null,
       })) return;
-      await storage.setOrderMetadataKey(orderId, "peptidesEmailHold", hold);
-      await storage.setOrderMetadataKey(
+      const linkedReportId = String((order.metadata as any)?.peptidesReportId || "");
+      if (!hold) {
+        const linkedReport = linkedReportId
+          ? await storage.getBurnoutReport(linkedReportId)
+          : null;
+        if (!linkedReport) {
+          res.status(409).json({ success: false, error: "Rapport lie introuvable; HOLD conserve" });
+          return;
+        }
+        const { validatePeptidesReport } = await import("./peptidesReportValidator");
+        const validation = validatePeptidesReport(linkedReport.report as any);
+        const approvedHash = String((order.metadata as any)?.peptidesApprovedReportSha256 || "");
+        const currentHash = hashPeptidesReport(linkedReport.report);
+        const releaseVerdict = String((order.metadata as any)?.peptidesReleaseAuditVerdict || "");
+        if (!validation.ok
+          || validation.warnings.length > 0
+          || approvedHash !== currentHash
+          || !/^PASS(?:_|$)/.test(releaseVerdict)) {
+          res.status(409).json({
+            success: false,
+            error: "PEPTIDES_RELEASE_GATE_FAILED",
+            validation,
+            approvedHash,
+            currentHash,
+            releaseVerdict,
+          });
+          return;
+        }
+      }
+      const updated = await storage.setOrderMetadataIfPeptidesReportMatches(
         orderId,
-        "peptidesEmailHoldReason",
-        hold ? String(reason || "verification_manuelle").slice(0, 240) : ""
+        linkedReportId || null,
+        {
+          peptidesEmailHold: hold,
+          peptidesEmailHoldReason: hold ? String(reason || "verification_manuelle").slice(0, 240) : "",
+          peptidesManualFulfillment: hold,
+          peptidesManualFulfillmentState: hold ? "MANUAL_HOLD" : "RELEASED_AFTER_STRICT_GATE",
+          peptidesHoldUpdatedAt: new Date().toISOString(),
+        },
       );
+      if (!updated) {
+        res.status(409).json({ success: false, error: "ORDER_LINK_CHANGED_DURING_HOLD_MUTATION" });
+        return;
+      }
       res.json({ success: true, orderId, hold, reason: hold ? reason || "verification_manuelle" : null });
     } catch (error: any) {
       console.error("[Admin Peptides Hold] Error:", error);
@@ -7726,6 +8063,10 @@ export async function registerRoutes(
           res.status(409).json({ success: false, error: "Aucune commande payee liee exactement a ce rapport" });
           return;
         }
+        if (!hasPeptidesManualHold(order)) {
+          res.status(409).json({ success: false, error: "HOLD actif requis avant toute mutation du rapport" });
+          return;
+        }
         if (!validateManualPeptidesTargetOrRespond({
           req,
           res,
@@ -7733,11 +8074,22 @@ export async function registerRoutes(
           order,
           reportRecord: existing,
         })) return;
-        if (!validation.ok) {
+        if (!validation.ok || validation.warnings.length > 0) {
           res.status(422).json({ success: false, applied: false, validation, error: "Strict validation failed, report not persisted" });
           return;
         }
-        await storage.updateBurnoutReport(reportId, fixed);
+        const expectedHash = String(req.body?.targetLock?.expectedCurrentReportSha256 || "");
+        const persisted = await storage.mutatePeptidesReportUnderHold({
+          orderId: order.id,
+          reportId,
+          expectedSha256: expectedHash,
+          nextReport: fixed,
+          mutation: "recompute-vials",
+        });
+        if (!persisted) {
+          res.status(409).json({ success: false, error: "REPORT_ORDER_HOLD_HASH_CAS_FAILED" });
+          return;
+        }
         console.log(`[Admin Peptides Patch] Persisted recompute for ${reportId}, ${diff.length} peptides changed`);
       }
       res.json({
@@ -7779,6 +8131,10 @@ export async function registerRoutes(
         res.status(404).json({ success: false, error: "Paid Peptides Engine order linked exactly to this report not found" });
         return;
       }
+      if (apply && !hasPeptidesManualHold(order)) {
+        res.status(409).json({ success: false, error: "HOLD actif requis avant toute mutation du rapport" });
+        return;
+      }
       if (apply && !validateManualPeptidesTargetOrRespond({
         req,
         res,
@@ -7813,7 +8169,7 @@ export async function registerRoutes(
         recipientUnsubscribed: false,
       });
 
-      if (apply && (!validation.ok || commercialIncident)) {
+      if (apply && (!validation.ok || validation.warnings.length > 0 || commercialIncident)) {
         res.status(422).json({
           success: false,
           reportId,
@@ -7827,7 +8183,18 @@ export async function registerRoutes(
       }
 
       if (apply) {
-        await storage.updateBurnoutReport(reportId, repaired);
+        const expectedHash = String(req.body?.targetLock?.expectedCurrentReportSha256 || "");
+        const persisted = await storage.mutatePeptidesReportUnderHold({
+          orderId: order.id,
+          reportId,
+          expectedSha256: expectedHash,
+          nextReport: repaired,
+          mutation: "repair-live",
+        });
+        if (!persisted) {
+          res.status(409).json({ success: false, error: "REPORT_ORDER_HOLD_HASH_CAS_FAILED" });
+          return;
+        }
         await storage.setOrderMetadataKey(order.id, "peptidesReportRepairedAt", new Date().toISOString());
         console.log(`[Admin Peptides Repair] Persisted validated live repair for ${reportId}`);
       }
@@ -7890,6 +8257,10 @@ export async function registerRoutes(
         res.status(409).json({ success: false, error: "Aucune commande payee liee exactement a ce rapport" });
         return;
       }
+      if (!hasPeptidesManualHold(order)) {
+        res.status(409).json({ success: false, error: "HOLD actif requis avant toute mutation du rapport" });
+        return;
+      }
       if (!validateManualPeptidesTargetOrRespond({
         req,
         res,
@@ -7938,7 +8309,7 @@ export async function registerRoutes(
         manualFulfillment: true,
         recipientUnsubscribed: false,
       });
-      if (!validation.ok || commercialIncident) {
+      if (!validation.ok || validation.warnings.length > 0 || commercialIncident) {
         res.status(422).json({
           success: false,
           reportId,
@@ -7951,7 +8322,18 @@ export async function registerRoutes(
         });
         return;
       }
-      await storage.updateBurnoutReport(reportId, report);
+      const expectedHash = String(req.body?.targetLock?.expectedCurrentReportSha256 || "");
+      const persisted = await storage.mutatePeptidesReportUnderHold({
+        orderId: order.id,
+        reportId,
+        expectedSha256: expectedHash,
+        nextReport: report,
+        mutation: "edit-sections",
+      });
+      if (!persisted) {
+        res.status(409).json({ success: false, error: "REPORT_ORDER_HOLD_HASH_CAS_FAILED" });
+        return;
+      }
       console.log(`[Admin Peptides Edit] Patched ${updated.length} sections on ${reportId}: ${updated.join(", ")}`);
       res.json({ success: true, reportId, updated, notFound, peptidesRemoved, validation });
     } catch (error: any) {
@@ -9841,6 +10223,14 @@ export async function registerRoutes(
         res.status(400).json({ success: false, error: "Order is already paid" });
         return;
       }
+      if (order.productType === "PEPTIDES_ENGINE") {
+        res.status(409).json({
+          success: false,
+          error: "PEPTIDES_FORCE_PAID_DISABLED",
+          message: "Une commande Peptides exige une preuve Stripe/PayPal vérifiée côté serveur avant toute transition paid.",
+        });
+        return;
+      }
       const body = (req.body || {}) as {
         paidAt?: string;
         paypalCaptureId?: string;
@@ -9851,103 +10241,23 @@ export async function registerRoutes(
         res.status(400).json({ success: false, error: "paidAt must be a valid ISO date" });
         return;
       }
-
       const newMeta = { ...((order.metadata as any) || {}) };
       if (body.paypalCaptureId) newMeta.paypalCaptureId = body.paypalCaptureId;
       newMeta.forcePaidByAdmin = new Date().toISOString();
-      newMeta.forcePaidReason = "webhook missed, reconciled manually from PayPal dashboard";
-
+      newMeta.forcePaidReason = "webhook missed, reconciled manually from provider dashboard";
       await storage.updateOrder(order.id, { status: "paid", paidAt, metadata: newMeta });
 
-      let cancelledSiblings: string[] = [];
+      const cancelledSiblings: string[] = [];
       if (body.cancelSiblings !== false) {
         const { orders: allOrders } = await storage.getAllOrders({ email: order.email, limit: 50 });
-        for (const o of allOrders) {
-          if (
-            o.id !== order.id &&
-            o.productType === order.productType &&
-            o.status === "pending"
-          ) {
-            await storage.updateOrder(o.id, { status: "cancelled" }).catch(() => {});
-            cancelledSiblings.push(o.id);
+        for (const sibling of allOrders) {
+          if (sibling.id !== order.id && sibling.productType === order.productType && sibling.status === "pending") {
+            await storage.updateOrder(sibling.id, { status: "cancelled" }).catch(() => {});
+            cancelledSiblings.push(sibling.id);
           }
         }
       }
-
-      const result: any = { success: true, orderId: order.id, cancelledSiblings };
-
-      if (order.productType === "PEPTIDES_ENGINE") {
-        const meta = newMeta as any;
-        const responses = meta.peptidesResponses || {};
-
-        // The payment acknowledgement is independent from report generation.
-        // Claim and attempt it before source validation and every AI/provider
-        // call so no generation/source failure can suppress confirmation.
-        const freshPaidOrder = await storage.getOrder(order.id);
-        const firstName = responses.pep_name || responses.prenom || order.email.split("@")[0];
-        if (freshPaidOrder) {
-          const scheduledAt = await resolvePeptidesEmailScheduledAt(freshPaidOrder).catch(() => new Date());
-          result.confirmationSent = await sendPeptidesOrderConfirmationOnce(freshPaidOrder, {
-            firstName,
-            amountEur: (freshPaidOrder.finalAmountCents || 0) / 100,
-            promoCode: (freshPaidOrder as any).promoCode || null,
-            scheduledDeliveryAt: scheduledAt,
-            orderId: freshPaidOrder.id,
-          }).catch((err) => {
-            console.error("[Force-Paid PreGeneration] Confirmation email failed:", err);
-            return false;
-          });
-        }
-
-        if (!responses || Object.keys(responses).length < 3) {
-          result.warning = "peptidesResponses empty or too short; generation skipped, run /api/admin/peptides-inject-responses + /api/admin/peptides-generate manually";
-          res.json(result);
-          return;
-        }
-
-        // Run generation SYNCHRONOUSLY (admin endpoint, no anonymous user
-        // waiting). Mounir Hadir's case (2026-05-15) showed background IIFE
-        // can die silently on Render Starter timeouts. Synchronous flow
-        // returns the actual error to the caller for visibility, and goes
-        // through the same CAS-protected linking path as /api/admin/peptides-generate.
-        try {
-          const { generatePeptidesProtocol } = await import("./peptidesEngine");
-          const forcePaidTier = ((order.metadata as any)?.peptidesTier as "solo" | "coached" | "tracked" | undefined) ?? "coached";
-          const report = await generatePeptidesProtocol(responses, order.email, forcePaidTier, {
-            orderId: order.id,
-            consentAccepted: hasValidPeptidesConsent((order.metadata as any)?.peptidesEngineConsent),
-          });
-          const saved = await storage.createBurnoutReport({
-            email: `peptides::${order.email}`,
-            responses,
-            report,
-          });
-          const claimed = await storage.claimPeptidesReportSlot(order.id, saved.id);
-          if (!claimed) {
-            const discarded = await storage.deleteBurnoutReport(saved.id).catch(() => false);
-            result.warning = `Race condition: another process already linked a report to this order. Generated report ${saved.id} discarded=${discarded}.`;
-            result.discardedReportId = saved.id;
-          } else {
-            result.reportId = saved.id;
-          }
-
-          const peptidesNames = (report.peptides || []).map((p: any) => p.name).join(", ");
-          result.peptidesNames = peptidesNames;
-          result.reportLink = `${getBaseUrl()}/peptides/${saved.id}`;
-        } catch (genErr: any) {
-          const errMsg = genErr?.message || String(genErr);
-          console.error(`[Force-Paid] Generation FAILED for ${order.email}:`, errMsg);
-          result.generationError = errMsg;
-          const adminEmail = process.env.ADMIN_NOTIF_EMAIL || "coaching@achzodcoaching.com";
-          await sendCTAEmail(
-            adminEmail,
-            `[FORCE-PAID ECHEC] Peptides ${order.email}`,
-            `Le force-paid sur ${order.email} a bien marque l'order ${order.id} paid, mais la generation peptides a echoue.\n\nErreur: ${errMsg}\n\nReponses (${Object.keys(responses).length} keys): OK\n\nRelance manuellement: POST /api/admin/peptides-generate avec { "email": "${order.email}" }`
-          ).catch(() => {});
-        }
-      }
-
-      res.json(result);
+      res.json({ success: true, orderId: order.id, cancelledSiblings });
     } catch (error: any) {
       console.error("[Admin Force-Paid] Error:", error);
       res.status(500).json({ success: false, error: error?.message || "Erreur serveur" });
@@ -12384,13 +12694,25 @@ export async function registerRoutes(
               if (["ELITE", "PREMIUM", "BLOOD_ANALYSIS", "PEPTIDES_ENGINE"].includes(order.productType)) {
                 const isPeptides = order.productType === "PEPTIDES_ENGINE";
                 const isBlood = order.productType === "BLOOD_ANALYSIS";
+                if (isPeptides) {
+                  const freshPeptidesOrder = await storage.getOrder(order.id);
+                  if (!freshPeptidesOrder) return false;
+                  const scheduledAt = await resolvePeptidesEmailScheduledAt(freshPeptidesOrder);
+                  const responses = (freshPeptidesOrder.metadata as any)?.peptidesResponses || {};
+                  return sendPeptidesOrderConfirmationOnce(freshPeptidesOrder, {
+                    firstName: responses.pep_name || clientName2,
+                    amountEur: (freshPeptidesOrder.finalAmountCents || 0) / 100,
+                    promoCode: (freshPeptidesOrder as any).promoCode || null,
+                    scheduledDeliveryAt: scheduledAt,
+                    bloodCreditsCount: peptidesBloodCreditsForTier((freshPeptidesOrder.metadata as any)?.peptidesTier),
+                    orderId: freshPeptidesOrder.id,
+                  });
+                }
                 let msg: string;
                 if (isBlood) {
                   msg = `Salut ${clientName2},\n\nMerci pour ta commande Blood Analysis. Ton paiement est bien recu.\n\nVoici la liste exacte des marqueurs a demander a ton medecin ou directement au laboratoire (panel complet APEXLABS , 39 biomarqueurs) :\n\nPANEL 1 : HORMONES ANABOLIQUES\nTestosterone totale, Testosterone libre, SHBG, Cortisol (matin a jeun), DHEA-S, IGF-1, LH, FSH, Estradiol\n\nPANEL 2 : THYROIDE\nTSH, T3 libre, T4 libre, Anti-TPO\n\nPANEL 3 : METABOLISME ET LIPIDES\nGlycemie a jeun, HbA1c, Insuline a jeun, Cholesterol total, HDL, LDL, Triglycerides, ApoB, Lp(a)\n\nPANEL 4 : INFLAMMATION ET FER\nCRP ultra-sensible, Ferritine, Homocysteine, Vitesse de sedimentation\n\nPANEL 5 : VITAMINES ET MINERAUX\nVitamine D (25-OH), Vitamine B12, Magnesium, Zinc, Folates\n\nPANEL 6 : HEPATIQUE ET RENAL\nALAT, ASAT, Gamma-GT, Creatinine, DFG (eGFR), Acide urique\n\nNFS (Numeration Formule Sanguine) complete\n\nPresente-toi dans n'importe quel labo avec cette liste. La plupart acceptent sans ordonnance. Sinon, ton generaliste te fait l'ordonnance.\n\nUne fois ta prise de sang faite, uploade ton PDF sur : https://apexlabs.achzodcoaching.com/auth/login?next=%2Fblood-dashboard&email=${encodeURIComponent(clientEmail2 ?? "")}\n\nTu cliques sur le lien, tu recois un email avec un lien d'acces unique (verifie aussi tes spams), tu cliques dessus, tu arrives sur ton dashboard. La tu remplis tes infos, tu glisses ton PDF dans la zone d'upload, et tu lances l'analyse.\n\nIMPORTANT : un seul PDF par upload (10 MB max). Si tu as plusieurs fichiers a fusionner :\n- Sur iPhone (Fichiers) : mets tes PDFs dans un dossier, "Selectionner", coche-les dans l'ordre, "..." en bas, "Creer un PDF".\n- Alternative : ilovepdf.com/fr/fusionner_pdf , glisse-depose tes fichiers, telecharge le PDF unique, uploade-le.\n\n${promo2 ? `Ton code promo : ${promo2.code}\n${promo2.label}\nachzodcoaching.com/formules-coaching\n\n` : ""}Achzod`;
                 } else {
-                  const deliveryMsg = isPeptides
-                    ? "Ton protocole est en cours de generation. Tu le recevras par email dans les prochaines minutes."
-                    : "Ton rapport est en cours de generation. Tu le recevras par email d'ici 24h.";
+                  const deliveryMsg = "Ton rapport est en cours de generation. Tu le recevras par email d'ici 24h.";
                   msg = `Salut ${clientName2},\n\nMerci pour ta commande ${prodLabel2}. Ton paiement est bien recu.\n\n${deliveryMsg}\n\n${promo2 ? `Ton code promo : ${promo2.code}\n${promo2.label}\nachzodcoaching.com/formules-coaching\n\n` : ""}Si tu as des questions, reponds directement a cet email.\n\nAchzod`;
                 }
                 const sent = await sendCTAEmail(clientEmail2!, `${prodLabel2} : commande recue`, msg);
@@ -12425,9 +12747,14 @@ export async function registerRoutes(
               }
             }
 
-            // Peptides Engine: add 2 blood credits directly on payment
+            // Peptides Engine: grant the exact tier entitlement once.
             if (email && planType === "PEPTIDES_ENGINE") {
-              await grantBloodCreditsForOrder(order.id, email, 2, "peptidesCreditsGranted");
+              await grantBloodCreditsForOrder(
+                order.id,
+                email,
+                peptidesBloodCreditsForTier((order.metadata as any)?.peptidesTier),
+                "peptidesCreditsGranted",
+              );
             }
 
             // Blood Analysis: add the two credits included in the offer.
@@ -15738,85 +16065,13 @@ export async function registerRoutes(
   });
 
   // Verify responses exist server-side before allowing checkout
-  app.get("/api/peptides-engine/verify-responses", async (req, res) => {
-    try {
-      const email = req.query.email as string;
-      if (!email) { res.json({ verified: false, responseCount: 0 }); return; }
-
-      const progress = await storage.getBurnoutProgress(`peptides::${email}`);
-      if (!progress || !progress.responses || Object.keys(progress.responses).length < 3) {
-        res.json({ verified: false, responseCount: Object.keys(progress?.responses || {}).length });
-        return;
-      }
-
-      res.json({ verified: true, responseCount: Object.keys(progress.responses).length });
-    } catch (error) {
-      console.error("[PeptidesEngine] verify-responses error:", error);
-      res.json({ verified: false, responseCount: 0 });
-    }
+  app.get("/api/peptides-engine/verify-responses", (_req, res) => {
+    res.status(410).json({ verified: false, error: "ENDPOINT_RETIRED" });
   });
 
   // 2. Create order and trigger protocol generation
-  app.post("/api/peptides-engine/create", peptidesLimiter, async (req, res) => {
-    try {
-      const schema = z.object({
-        email: z.string().trim().toLowerCase().email("Email invalide. Verifie qu'il contient bien un @ et un point dans le domaine (par exemple ton@gmail.com)."),
-        responses: z.record(z.unknown()),
-        stripeSessionId: z.string().min(10),
-        skipPaymentCheck: z.boolean().optional(),
-      });
-      const { email, responses, stripeSessionId, skipPaymentCheck } = schema.parse(req.body);
-
-      if (!responses || Object.keys(responses).length < 3) {
-        res.status(400).json({ error: "Réponses insuffisantes pour générer un protocole" });
-        return;
-      }
-      if (skipPaymentCheck) {
-        res.status(403).json({ error: "Le contournement du paiement est desactive" });
-        return;
-      }
-
-      const order = await storage.getOrderByStripeSession(stripeSessionId);
-      if (!order || order.productType !== "PEPTIDES_ENGINE" || order.email.trim().toLowerCase() !== email) {
-        res.status(404).json({ error: "Commande Peptides Engine introuvable" });
-        return;
-      }
-
-      await storage.setOrderMetadataKey(order.id, "peptidesResponses", responses);
-      await storage.saveBurnoutProgress({
-        email: `peptides::${email}`,
-        currentSection: 38,
-        totalSections: 38,
-        responses,
-      }).catch(() => {});
-
-      if (order.status !== "paid") {
-        res.status(202).json({
-          success: true,
-          status: "pending_payment",
-          message: "Paiement en attente , le protocole sera généré après confirmation.",
-          orderId: order.id,
-        });
-        return;
-      }
-
-      const paidOrder = await storage.getOrder(order.id) || order;
-      const reportId = ((paidOrder.metadata as any) || {}).peptidesReportId || null;
-      res.status(reportId ? 200 : 202).json({
-        success: true,
-        status: reportId ? "report_ready" : "queued",
-        orderId: order.id,
-        reportId,
-        generation: "durable_cron",
-      });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: "Données invalides", details: error.errors });
-        return;
-      }
-      console.error("[PeptidesEngine] create error:", error);
-      res.status(500).json({ error: "Erreur serveur" });
-    }
+  app.post("/api/peptides-engine/create", peptidesLimiter, (_req, res) => {
+    res.status(410).json({ success: false, error: "PEPTIDES_CREATE_COMPATIBILITY_ENDPOINT_RETIRED" });
   });
 
   // 3. Get generated report by ID
@@ -16062,6 +16317,7 @@ export async function registerRoutes(
   let autoGenLastRun = "never";
   let autoGenLastResult = "none";
   let autoGenStartedAt = 0;
+  const peptidesAutogenEnabled = isPeptidesAutogenEnabled();
 
   // Diagnostic endpoint
   app.get("/api/admin/autogen-status", (req, res) => {
@@ -16071,6 +16327,7 @@ export async function registerRoutes(
       lastRun: autoGenLastRun,
       lastResult: autoGenLastResult,
       running: autoGenRunning,
+      enabled: peptidesAutogenEnabled,
       circuit: getPeptidesGenerationCircuitConfig(),
     });
   });
@@ -16091,13 +16348,9 @@ export async function registerRoutes(
     res.json({ total: incidents.length, incidents });
   });
 
-  console.log("[AutoGen] ✅ setInterval registered (5min cycle)");
+  console.log(`[AutoGen] ✅ setInterval registered (5min cycle, enabled=${peptidesAutogenEnabled})`);
   setInterval(async () => {
-    // Safety timeout: if running for more than 5 minutes, force reset
-    if (autoGenRunning && autoGenStartedAt > 0 && (Date.now() - autoGenStartedAt) > 5 * 60 * 1000) {
-      console.warn("[AutoGen] ⚠️ Force-resetting stuck autoGenRunning flag (>5 min)");
-      autoGenRunning = false;
-    }
+    if (!peptidesAutogenEnabled) return;
     if (autoGenRunning) {
       console.log("[AutoGen] ⏭️ Skipped , already running");
       return;
@@ -16113,13 +16366,26 @@ export async function registerRoutes(
     autoGenRunning = true;
     autoGenStartedAt = Date.now();
     try {
-      const allOrdersResult = await storage.getAllOrders({ limit: 500 });
-      const orders = allOrdersResult.orders || [];
-      const peptidesOrders = orders.filter((o: any) => o.productType === "PEPTIDES_ENGINE" && o.status === "paid" && o.paidAt);
+      const peptidesOrders: any[] = [];
+      const pageSize = 250;
+      let offset = 0;
+      let total = 0;
+      do {
+        const page = await storage.getAllOrders({
+          limit: pageSize,
+          offset,
+          productType: "PEPTIDES_ENGINE",
+          status: "paid",
+        });
+        total = page.total;
+        peptidesOrders.push(...(page.orders || []).filter((order: any) => Boolean(order.paidAt)));
+        offset += page.orders.length;
+        if (page.orders.length === 0) break;
+      } while (offset < total);
       const missing = peptidesOrders.filter((o: any) => !(o.metadata as any)?.peptidesReportId && !o.email?.includes("test") && !o.email?.includes("debug"));
       autoGenCycleCount++;
       autoGenLastRun = new Date().toISOString();
-      console.log(`[AutoGen] Cycle #${autoGenCycleCount}: ${orders.length} total orders, ${peptidesOrders.length} peptides paid, ${missing.length} missing reports`);
+      console.log(`[AutoGen] Cycle #${autoGenCycleCount}: ${peptidesOrders.length}/${total} paid Peptides orders scanned, ${missing.length} missing reports`);
       const now = new Date();
       const peptidesCircuitConfig = getPeptidesGenerationCircuitConfig();
 
@@ -16135,6 +16401,10 @@ export async function registerRoutes(
         const meta = order.metadata as any;
         const email = order.email;
         if (!email || email.includes("test") || email.includes("debug")) continue;
+        if (meta?.amountMismatch === true || meta?.peptidesManualFulfillmentState === "PAYMENT_REVIEW_REQUIRED") {
+          console.error(`[AutoGen] Payment review blocks generation and delivery for ${email} (${order.id})`);
+          continue;
+        }
 
         // Evaluate paid fulfillment before honoring a pre-existing hold: legacy
         // empty reports and unsubscribed recipients must become durable,
@@ -16148,7 +16418,9 @@ export async function registerRoutes(
             })
           : null;
         if (reportLookupFailed) continue;
-        const deliveryAccepted = await storage.hasPeptidesDeliveryEmailBeenSent(email).catch(() => false);
+        const deliveryAccepted = meta?.peptidesReportId
+          ? hasAcceptedPeptidesDeliveryForReport(order, String(meta.peptidesReportId))
+          : false;
         const [locallyUnsubscribed, providerUnsubscribeSignal] = await Promise.all([
           storage.isEmailUnsubscribed(email).catch(() => false),
           storage.hasLatestTerminalUnsubscribeSignal(email).catch(() => false),
@@ -16174,8 +16446,10 @@ export async function registerRoutes(
               ? {
                   peptidesPreviousInvalidReportId: invalidReportId,
                   peptidesReportId: "",
-                  peptidesEmailHold: false,
-                  peptidesEmailHoldReason: "",
+                  peptidesEmailHold: true,
+                  peptidesEmailHoldReason: "INVALID_REPORT_REGENERATING_REQUIRES_MANUAL_RELEASE",
+                  peptidesManualFulfillment: true,
+                  peptidesManualFulfillmentState: "AUTO_REGENERATING_REQUIRES_MANUAL_RELEASE",
                   peptidesFulfillmentState: "REGENERATING",
                 }
               : {},
@@ -16187,11 +16461,16 @@ export async function registerRoutes(
           }
           if (fulfillmentIncident.blocksDelivery) continue;
         } else if (meta?.peptidesFulfillmentState === "ACTION_REQUIRED") {
-          await storage.setOrderMetadataKey(order.id, "peptidesFulfillmentState", "RESOLVED");
-          await storage.setOrderMetadataKey(order.id, "peptidesFulfillmentResolvedAt", new Date().toISOString());
-          if (["INVALID_EMPTY_OR_MEDICAL_REVIEW_REPORT", "RECIPIENT_UNSUBSCRIBED"].includes(String(meta?.peptidesEmailHoldReason || ""))) {
-            await storage.setOrderMetadataKey(order.id, "peptidesEmailHold", false);
-            await storage.setOrderMetadataKey(order.id, "peptidesEmailHoldReason", "");
+          const deliveryState = String(meta?.peptidesDeliveryState || "");
+          const held = meta?.peptidesEmailHold === true || meta?.peptidesEmailHold === "true";
+          const manual = meta?.peptidesManualFulfillment === true || meta?.peptidesManualFulfillment === "true";
+          if (!["SENDING", "UNKNOWN"].includes(deliveryState) && !held && !manual && invariantReport?.report) {
+            const { validatePeptidesReport } = await import("./peptidesReportValidator");
+            const strict = validatePeptidesReport(invariantReport.report as any);
+            if (strict.ok && strict.warnings.length === 0) {
+              await storage.setOrderMetadataKey(order.id, "peptidesFulfillmentState", "RESOLVED");
+              await storage.setOrderMetadataKey(order.id, "peptidesFulfillmentResolvedAt", new Date().toISOString());
+            }
           }
         }
 
@@ -16211,7 +16490,7 @@ export async function registerRoutes(
         // never reach. Re-attempt delivery on every cycle until email_tracking
         // confirms a send.
         if (meta?.peptidesReportId) {
-          const alreadyEmailed = await storage.hasPeptidesDeliveryEmailBeenSent(email).catch(() => false);
+          const alreadyEmailed = hasAcceptedPeptidesDeliveryForReport(order, String(meta.peptidesReportId));
           if (alreadyEmailed) continue;
           const existing = await storage.getBurnoutReport(meta.peptidesReportId).catch(() => null);
           if (!existing) continue;
@@ -16307,10 +16586,30 @@ export async function registerRoutes(
               continue;
             }
             if (hashGate.persistRefreshed && validation.ok) {
-              await storage.updateBurnoutReport(meta.peptidesReportId, repaired).catch(() => {});
-              Object.assign(existingReport, repaired);
+              const updated = await storage.updateBurnoutReportIfHashMatches(
+                meta.peptidesReportId,
+                hashGate.currentHash,
+                repaired,
+              );
+              if (!updated) {
+                throw new Error("PEPTIDES_REFRESH_PERSIST_FAILED");
+              }
+              const persisted = await storage.getBurnoutReport(meta.peptidesReportId);
+              if (!persisted || hashPeptidesReport(persisted.report) !== hashPeptidesReport(repaired)) {
+                throw new Error("PEPTIDES_REFRESH_PERSIST_HASH_MISMATCH");
+              }
+              const persistedValidation = validatePeptidesReport(persisted.report as any);
+              if (!persistedValidation.ok || persistedValidation.warnings.length > 0) {
+                throw new Error(
+                  `PEPTIDES_REFRESH_PERSIST_VALIDATION_FAILED:${[
+                    ...persistedValidation.errors,
+                    ...persistedValidation.warnings,
+                  ].slice(0, 8).join("|")}`,
+                );
+              }
+              Object.assign(existingReport, persisted.report);
             }
-            if (!validation.ok) {
+            if (!validation.ok || validation.warnings.length > 0) {
               const lastNotifIso = (order.metadata as any)?.peptidesBloqueNotifiedAt as string | undefined;
               const sinceLastSec = lastNotifIso
                 ? (Date.now() - new Date(lastNotifIso).getTime()) / 1000
@@ -16318,12 +16617,12 @@ export async function registerRoutes(
               if (sinceLastSec > 6 * 3600) {
                 const adminEmail = process.env.ADMIN_NOTIF_EMAIL || "coaching@achzodcoaching.com";
                 console.error(
-                  `[AutoGen] 🛑 DELIVERY BLOCKED for ${email} (report ${meta.peptidesReportId}): ${validation.errors.length} validation errors`
+                  `[AutoGen] 🛑 DELIVERY BLOCKED for ${email} (report ${meta.peptidesReportId}): ${validation.errors.length} error(s), ${validation.warnings.length} warning(s)`
                 );
                 await sendCTAEmail(
                   adminEmail,
                   `[BLOQUE] Livraison peptides ${email}`,
-                  `Le rapport peptides de ${email} a echoue la validation pre-livraison.\n\nReportId: ${meta.peptidesReportId}\nOrderId: ${order.id}\n\nErreurs (${validation.errors.length}):\n${validation.errors.slice(0, 10).map(e => " - " + e).join("\n")}\n\nVerifie manuellement puis utilise /api/admin/peptides/recompute-vials/${meta.peptidesReportId} pour patcher, ou regenere le rapport.\n\nLa livraison n'aura pas lieu tant que le rapport n'est pas valide.\n\n(Prochaine alerte au plus tot dans 6h.)`
+                  `Le rapport peptides de ${email} a echoue la validation pre-livraison.\n\nReportId: ${meta.peptidesReportId}\nOrderId: ${order.id}\n\nErreurs et warnings (${validation.errors.length + validation.warnings.length}):\n${[...validation.errors, ...validation.warnings].slice(0, 10).map(e => " - " + e).join("\n")}\n\nVerifie manuellement puis utilise /api/admin/peptides/recompute-vials/${meta.peptidesReportId} pour patcher, ou regenere le rapport.\n\nLa livraison n'aura pas lieu tant que le rapport n'est pas valide sans warning.\n\n(Prochaine alerte au plus tot dans 6h.)`
                 ).catch(() => {});
                 await storage
                   .setOrderMetadataKey(order.id, "peptidesBloqueNotifiedAt", new Date().toISOString())
@@ -16416,26 +16715,25 @@ export async function registerRoutes(
 
         console.log(`[AutoGen] Generating peptides report for ${email} (paid ${Math.round(hoursSincePaid * 60)}min ago)`);
 
-        let responses: Record<string, unknown> | undefined;
-        const progress = await storage.getBurnoutProgress(`peptides::${email}`);
-        if (progress?.responses && Object.keys(progress.responses).length >= 3) {
-          responses = progress.responses as Record<string, unknown>;
-        } else if (meta?.peptidesResponses && Object.keys(meta.peptidesResponses).length >= 3) {
-          responses = meta.peptidesResponses;
-        }
-
-        if (!responses) {
-          console.error(`[AutoGen] No responses for ${email} , skipping, will retry next cycle`);
-          continue;
-        }
-
-        // SAFETY #1: Re-read order immediately to confirm reportId still missing (guards against 60s-stale snapshot)
+        // The paid order is the only source of truth. Public progress is an
+        // autosave convenience and can never feed a paid generation.
         const freshOrder = await storage.getOrder(order.id);
         const freshMeta = freshOrder?.metadata as any;
         if (freshMeta?.peptidesReportId) {
           console.log(`[AutoGen] Report already exists for ${email} (race avoided pre-gen)`);
           continue;
         }
+        const trustedSource = validateTrustedPeptidesOrderSource(freshOrder);
+        if (!trustedSource.ok || !trustedSource.responses) {
+          await persistPeptidesFulfillmentIncident(order, {
+            code: "UNVERIFIED_SOURCE_PROFILE",
+            blocksDelivery: true,
+            detail: `Source questionnaire non scellee: ${trustedSource.errors.join(" | ")}`,
+          }).catch(() => false);
+          console.error(`[AutoGen] Untrusted questionnaire source for ${email}: ${trustedSource.errors.join(" | ")}`);
+          continue;
+        }
+        const responses = trustedSource.responses;
 
         // SAFETY #1b (CROSS-ORDER): if the client has another paid Peptides order that
         // already has a reportId, skip this one entirely. Prevents duplicate generation
@@ -16443,13 +16741,6 @@ export async function registerRoutes(
         const cross = await storage.hasAnyPeptidesReportForEmail(email).catch(() => ({ exists: false } as any));
         if (cross.exists) {
           console.warn(`[AutoGen] ⏭️ Cross-order duplicate detected for ${email}: existing report ${cross.existingReportId} on order ${cross.existingOrderId}. This order (${order.id}) skipped , consider refunding.`);
-          continue;
-        }
-
-        // SAFETY #2: Email dedup , if a peptides delivery email was already sent to this recipient, skip entirely
-        const alreadyEmailed = await storage.hasPeptidesDeliveryEmailBeenSent(email).catch(() => false);
-        if (alreadyEmailed) {
-          console.log(`[AutoGen] Peptides delivery email already sent to ${email} (dedup via email_tracking)`);
           continue;
         }
 
@@ -16480,9 +16771,9 @@ export async function registerRoutes(
             costBudgetEstimatedUsd: 0.5,
             resumeResponseId: resumeResponseId || undefined,
             onResponseCreated: async (responseId: string) => {
-              const persisted = await storage.setOrderMetadataKey(
+              const persisted = await storage.setPeptidesGenerationResponseIdIfClaimMatches(
                 order.id,
-                "peptidesGenerationResponseId",
+                generationClaim.claimId,
                 responseId,
               );
               if (!persisted) throw new Error("PEPTIDES_RESPONSE_ID_PERSIST_FAILED");
@@ -16520,27 +16811,30 @@ export async function registerRoutes(
                 "generation_failed",
                 safeError,
                 nextRetryAt,
+                generationClaim.claimId,
               ).catch(() => false);
               autoGenLastResult = `RETRY_SCHEDULED: ${email} attempt ${generationClaim.attemptCount + 1} at ${nextRetryAt}`;
               console.warn(`[AutoGen] Peptides retry scheduled for ${email} at ${nextRetryAt}`);
             } else {
               const reason = resumeResponseId ? "stored_resume_exhausted" : "attempt_cap";
-              await storage.markPeptidesGenerationNeedsReview(order.id, reason, safeError).catch(() => false);
+              await storage.markPeptidesGenerationNeedsReview(order.id, reason, safeError, generationClaim.claimId).catch(() => false);
               autoGenLastResult = `NEEDS_REVIEW: ${email} (${reason})`;
               console.error(`[AutoGen] Peptides generation exhausted for ${email}; manual review required`);
             }
           }
           break;
         }
-        const saved = await storage.createBurnoutReport({ email: `peptides::${email}`, responses, report });
-
-        // SAFETY #3: Atomic CAS , "first writer wins". If another process already set peptidesReportId
-        // during our 60s+ generation, our report becomes orphan and we DO NOT send any email.
-        const claimed = await storage.claimPeptidesReportSlot(order.id, saved.id);
-        if (!claimed) {
-          const orphanDeleted = await storage.deleteBurnoutReport(saved.id).catch(() => false);
-          console.warn(`[AutoGen] ⚠️ Lost CAS race for ${email}. Unclaimed report ${saved.id} deleted=${orphanDeleted}; NO email sent.`);
-          autoGenLastResult = `RACE_LOST: ${email} → discarded report ${saved.id}`;
+        const saved = await storage.createAndClaimPeptidesReport({
+          orderId: order.id,
+          email: `peptides::${email}`,
+          responses,
+          report,
+          expectedResponsesSha256: sealedPeptidesResponsesHash(responses),
+          expectedGenerationClaimId: generationClaim.claimId,
+        });
+        if (!saved) {
+          console.warn(`[AutoGen] Atomic create+claim refused for ${email}; link, payment, generation owner or source changed. No orphan report created.`);
+          autoGenLastResult = `RACE_OR_SOURCE_CHANGED: ${email}`;
           continue;
         }
 
@@ -16568,7 +16862,7 @@ export async function registerRoutes(
         // SAFETY #4: use the fresh post-generation order state for both hold
         // and delivery dedup so an operator hold set during generation wins.
         const stillNotEmailed = !deliveryHeld
-          && !(await storage.hasPeptidesDeliveryEmailBeenSent(email).catch(() => false));
+          && !hasAcceptedPeptidesDeliveryForReport(scheduledOrder, String(saved.id));
         const { due: newReportDue, scheduledAt: newReportScheduledAt } = await isPeptidesEmailDeliveryDue(scheduledOrder);
         if (deliveryHeld) {
           console.log(`[AutoGen] Report ${saved.id} recovered under delivery HOLD for ${email}; no client email sent`);
@@ -16653,6 +16947,114 @@ export async function registerRoutes(
       autoGenRunning = false;
     }
   }, 5 * 60 * 1000).unref(); // Every 5 minutes
+
+  // Reconcile delivery claims independently from the generation worker. A
+  // provider POST can be accepted just before a process crash, or accepted
+  // while the SMTP record is still pending. Never retry blindly: prove the
+  // exact recipient/subject/task, then transition the existing claim.
+  let peptidesDeliveryReconcileRunning = false;
+  setInterval(async () => {
+    if (peptidesDeliveryReconcileRunning) return;
+    peptidesDeliveryReconcileRunning = true;
+    try {
+      const candidates = await pool.query(
+        `SELECT id, email, metadata
+           FROM orders
+          WHERE product_type = 'PEPTIDES_ENGINE'
+            AND status IN ('paid', 'partial_refund')
+            AND COALESCE(metadata->>'peptidesDeliveryState', '') IN ('SENDING', 'UNKNOWN')
+            AND COALESCE(metadata->>'peptidesDeliveryClaimId', '') <> ''
+            AND COALESCE(metadata->>'peptidesDeliveryReportId', '') <> ''
+          ORDER BY updated_at ASC
+          LIMIT 50`,
+      );
+      for (const row of candidates.rows) {
+        const metadata = (row.metadata || {}) as Record<string, any>;
+        const reportId = String(metadata.peptidesDeliveryReportId || "");
+        const claimId = String(metadata.peptidesDeliveryClaimId || "");
+        const claimedAt = new Date(String(metadata.peptidesDeliveryClaimedAt || metadata.peptidesDeliveryFinalizedAt || 0));
+        if (!reportId || !claimId || Number.isNaN(claimedAt.getTime())) continue;
+
+        const trackingResult = await pool.query(
+          `SELECT id, subject, sendpulse_task_id, sendpulse_status, metadata
+             FROM email_tracking
+            WHERE LOWER(recipient_email) = LOWER($1)
+              AND email_type = 'sendCTAEmail'
+              AND metadata->>'orderId' = $2
+              AND metadata->>'reportId' = $3
+            ORDER BY sent_at DESC
+            LIMIT 1`,
+          [row.email, row.id, reportId],
+        );
+        const tracking = trackingResult.rows[0];
+        const trackingMetadata = (tracking?.metadata || {}) as Record<string, any>;
+        const confirmedPreAcceptFailure = tracking?.sendpulse_status === "failed"
+          && trackingMetadata.sendpulseAccepted === false
+          && !tracking?.sendpulse_task_id;
+        if (confirmedPreAcceptFailure) {
+          await storage.finalizePeptidesDeliveryClaim(row.id, reportId, claimId, "FAILED");
+          continue;
+        }
+
+        const evidence = await reconcileSendPulseDeliveryEvidence({
+          recipientEmail: row.email,
+          subject: tracking?.subject || "Ton protocole peptides personnalisé est prêt",
+          startedAt: claimedAt,
+          taskId: tracking?.sendpulse_task_id || null,
+          requestTimeoutMs: 15_000,
+        }).catch((error) => ({
+          state: "PENDING" as const,
+          taskId: tracking?.sendpulse_task_id || null,
+          smtpCode: null,
+          detail: error instanceof Error ? error.message : String(error),
+        }));
+
+        if (evidence.state === "DELIVERED") {
+          const accepted = await storage.finalizePeptidesDeliveryClaim(row.id, reportId, claimId, "ACCEPTED");
+          if (accepted && tracking?.id) {
+            await pool.query(
+              `UPDATE email_tracking
+                  SET sendpulse_status = 'success',
+                      metadata = COALESCE(metadata, '{}'::jsonb) || $1::jsonb,
+                      updated_at = NOW()
+                WHERE id = $2`,
+              [JSON.stringify({
+                peptidesDeliveryReconciled: true,
+                peptidesDeliverySmtpCode: evidence.smtpCode,
+                peptidesDeliveryReconciledAt: new Date().toISOString(),
+              }), tracking.id],
+            );
+          }
+        } else if (evidence.state === "FAILED") {
+          await storage.finalizePeptidesDeliveryClaim(row.id, reportId, claimId, "FAILED");
+          if (tracking?.id) {
+            await pool.query(
+              `UPDATE email_tracking
+                  SET sendpulse_status = 'failed',
+                      sendpulse_error = $1,
+                      metadata = COALESCE(metadata, '{}'::jsonb) || $2::jsonb,
+                      updated_at = NOW()
+                WHERE id = $3`,
+              [evidence.detail || "SMTP delivery failed", JSON.stringify({
+                peptidesDeliveryReconciled: true,
+                peptidesDeliverySmtpCode: evidence.smtpCode,
+                peptidesDeliveryReconciledAt: new Date().toISOString(),
+              }), tracking.id],
+            );
+          }
+        } else if (
+          String(metadata.peptidesDeliveryState || "") === "SENDING"
+          && Date.now() - claimedAt.getTime() > 10 * 60 * 1000
+        ) {
+          await storage.finalizePeptidesDeliveryClaim(row.id, reportId, claimId, "UNKNOWN");
+        }
+      }
+    } catch (error) {
+      console.error("[Peptides Delivery Reconcile] cycle failed:", error);
+    } finally {
+      peptidesDeliveryReconcileRunning = false;
+    }
+  }, 5 * 60 * 1000).unref();
 
   // Auto-send READY/SCHEDULED reports (Discovery, Anabolic, Ultimate)
   setInterval(async () => {

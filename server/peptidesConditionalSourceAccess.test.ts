@@ -7,6 +7,7 @@ const conditionalRetatrutide = {
   name: "Retatrutide",
   activationStatus: "conditional-inactive" as const,
   activationRequirements: ["Validation du bilan", "Decision explicite apres revue"],
+  evidenceSummary: "Axe documente mais non active sans les deux confirmations requises.",
   purpose: "Documenter l axe perte de poids sans activer un protocole personnel.",
   whyThisPeptide: "Cette piste est analysee car le dossier mentionne une utilisation anterieure et un objectif de perte de poids.",
   dosage: "Aucune dose personnelle activee.",

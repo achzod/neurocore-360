@@ -406,7 +406,8 @@ test("every automatic report delivery uses a single-writer database claim", () =
 
 test("orphan Peptides reports are neither retained nor accessible", () => {
   const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
-  assert.match(routes, /deleteBurnoutReport\(saved\.id\)/);
+  assert.match(routes, /createAndClaimPeptidesReport/);
+  assert.doesNotMatch(routes, /Unclaimed report \$\{saved\.id\}/);
   assert.match(routes, /if \(activeReportIds\.size === 0\) return \[\]/);
   assert.match(routes, /A paid Peptides order proves entitlement[\s\S]*return false/);
 });

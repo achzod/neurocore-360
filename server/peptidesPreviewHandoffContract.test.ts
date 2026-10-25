@@ -33,9 +33,9 @@ test("result and follow-up emails carry signed handoff and promise no questionna
   assert.doesNotMatch(emailService, /questionnaire distinct de Peptides Engine/);
 });
 
-test("Stripe and PayPal keep server-side questionnaire, profile confirmation and email gates", () => {
-  assert.equal((routes.match(/validatePeptidesEngineResponses\(responses, email\)/g) || []).length, 2);
-  assert.equal((routes.match(/validatePeptidesProfileConfirmation\(peptidesProfileConfirmation, responses\)/g) || []).length, 2);
+test("Stripe, PayPal and locked manual recovery keep questionnaire, profile confirmation and email gates", () => {
+  assert.equal((routes.match(/validatePeptidesEngineResponses\(responses, email\)/g) || []).length, 3);
+  assert.equal((routes.match(/validatePeptidesProfileConfirmation\(peptidesProfileConfirmation, responses\)/g) || []).length, 3);
   assert.match(routes, /PEPTIDES_QUESTIONNAIRE_INCOMPLETE/);
   assert.match(routes, /PEPTIDES_PROFILE_CONFIRMATION_REQUIRED/);
   assert.match(routes, /PREVIEW_EMAIL_MISMATCH/);

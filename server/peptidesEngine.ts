@@ -15,7 +15,6 @@ import {
   calculateBacWaterNeedMl,
   isConditionalInactivePeptide,
 } from "./peptidesReportValidator";
-import { storage } from "./storage";
 import {
   collectClientFacingStrings,
   sanitizeClientFacingText,
@@ -1827,7 +1826,9 @@ function extractFirstName(responses: Record<string, unknown>, email: string): st
     (responses as any)?.firstname ??
     (responses as any)?.name;
   if (typeof raw === "string" && raw.trim()) {
-    return raw.trim().split(/\s+/)[0];
+    // Preserve the exact client-confirmed name. Guessing that the first token
+    // is canonical is unsafe for compound or inverted names.
+    return raw.trim().replace(/\s+/g, " ");
   }
   if (email.includes("@")) return email.split("@")[0];
   return "Profil";
@@ -2353,6 +2354,7 @@ RÈGLES ABSOLUES:
 2. Fais des PHRASES COMPLÈTES, jamais de listes sèches sans contexte.
 3. Ajuste les dosages au poids (${weight} kg) en mcg/kg.
 4. Construis un stack de ${stackPolicy.minimumMolecules} a ${stackPolicy.maximumMolecules} molecules pour ce profil. Les objectifs distincts detectes sont: ${stackPolicy.goals.join(", ") || "objectif unique non code"}. Sur un dossier mono-axe, vise une seule molecule par defaut; une deuxieme n'est permise que si elle couvre un besoin complementaire explicitement documente, jamais pour remplir un quota. Un dossier multi-axe ne doit jamais retomber silencieusement a deux molecules pour faciliter le stock ou la validation. Chaque molecule doit couvrir un besoin attribuable et complementaire; aucun ajout gadget, doublon mecanistique ou molecule contre-indiquee n'est autorise. Si une molecule echoue au stock live, remplace-la par une alternative compatible couvrant le meme axe au lieu de supprimer l'axe. Si aucune alternative sure et achetable n'existe, explique explicitement l'exclusion dans le rapport au lieu de promettre un resultat. Un bonus n'est autorise que s'il respecte le budget et s'il apparait partout: justification, reconstitution, calendrier, shopping list et tableau peptides.
+4B. Chaque carte porte activationStatus. Utilise "active" pour une molecule operationnelle. Utilise "conditional-inactive" uniquement pour une phase documentee mais non active; dans ce cas, fournis au moins deux activationRequirements, un evidenceSummary explicite et conserve l'acces source. Mets dosage, timing, route, cycleDuration, reconstitution, vialsNeeded et priceEstimate a la chaine vide: aucun achat, calcul ou calendrier operationnel n'est autorise pour cette carte.
 5. Utilise UNIQUEMENT le catalogue Peptaura. URLs réelles.
 6. Pour le choix du fournisseur (pays de livraison ${peptauraContext.country}, ${budgetNote}) : suis STRICTEMENT CONTEXTE PEPTAURA LIVE. Recommande un fournisseur qui livre vers ${peptauraContext.country}, evite tout fournisseur liste comme bloque, et rappelle que le client doit verifier ${peptauraContext.shippingUrl} avant de payer.
 6b. Stock live et quantite achetable: ne choisis une molecule que si le besoin total calcule peut etre couvert par les formats live avec au maximum 30% de marge quand le packaging live l'impose. Exemple: si le plus petit format live est 5 mg, le besoin total doit etre au moins 3.85 mg pour commander 1 vial; si le besoin coherent du protocole est plus bas, retire cette molecule et choisis une alternative dont le format Peptaura passe. Ne rallonge jamais une cure uniquement pour consommer un vial.
@@ -2451,6 +2453,9 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
   "peptides": [
     {
       "name": "Nom du peptide",
+      "activationStatus": "active",
+      "activationRequirements": [],
+      "evidenceSummary": "Résumé des preuves et limites propres à cet axe",
       "purpose": "Objectif spécifique pour CE profil",
       "whyThisPeptide": "Explication détaillée en 2-3 phrases",
       "dosage": "X mcg/jour (X mcg/kg pour ${weight}kg)",
@@ -2504,7 +2509,7 @@ const PEPTIDES_REPORT_JSON_SCHEMA = {
     },
     peptides: {
       type: "array",
-      minItems: 2,
+      minItems: 1,
       items: {
         type: "object",
         additionalProperties: false,
@@ -2520,6 +2525,9 @@ const PEPTIDES_REPORT_JSON_SCHEMA = {
           "vialsNeeded",
           "purchaseUrl",
           "priceEstimate",
+          "activationStatus",
+          "activationRequirements",
+          "evidenceSummary",
         ],
         properties: {
           name: { type: "string" },
@@ -2533,6 +2541,15 @@ const PEPTIDES_REPORT_JSON_SCHEMA = {
           vialsNeeded: { type: "string" },
           purchaseUrl: { type: "string" },
           priceEstimate: { type: "string" },
+          activationStatus: {
+            type: "string",
+            enum: ["active", "conditional-inactive"],
+          },
+          activationRequirements: {
+            type: "array",
+            items: { type: "string" },
+          },
+          evidenceSummary: { type: "string" },
         },
       },
     },
@@ -2978,39 +2995,14 @@ export function validateVialsMath(report: PeptidesReport): PeptidesReport {
   return report;
 }
 
-// ─── Promo code creator ───────────────────────────────────────────────────────
-
-// Blood credits granted depend on the tier:
-//   Solo    = 0 (autonome, blood en option à l'unité)
-//   Coached = 1 (baseline OU mi-cycle, au choix)
-//   Tracked = 2 (baseline + mi-cycle = track scientifique complet)
-async function addBloodAnalysisCredits(
-  email: string,
+// The generator is side-effect free. Blood credits are granted exactly once
+// by the paid-order transaction, never while a candidate report is still
+// racing for persistence/CAS.
+function bloodAnalysisCreditLabels(
   tier: "solo" | "coached" | "tracked" = "coached"
-): Promise<string[]> {
-  const TIER_CREDITS: Record<"solo" | "coached" | "tracked", number> = {
-    solo: 0,
-    coached: 1,
-    tracked: 2,
-  };
-  const credits = TIER_CREDITS[tier];
-  if (credits === 0) {
-    console.log(`[PeptidesEngine] Tier=${tier} : 0 blood credits granted for ${email}`);
-    return [];
-  }
-  try {
-    const { pool } = await import("./db");
-    let user = await storage.getUserByEmail(email);
-    if (!user) {
-      user = await storage.createUser({ email, credits });
-      console.log(`[PeptidesEngine] Created user ${email} with ${credits} blood credit(s) (tier=${tier})`);
-    } else {
-      await pool.query("UPDATE users SET credits = credits + $2 WHERE email = $1", [email, credits]);
-      console.log(`[PeptidesEngine] +${credits} blood credit(s) for ${email} (tier=${tier})`);
-    }
-  } catch (err) {
-    console.error(`[PeptidesEngine] Failed to add blood credits for ${email}:`, err);
-  }
+): string[] {
+  const credits = tier === "tracked" ? 2 : tier === "coached" ? 1 : 0;
+  if (credits === 0) return [];
   return credits === 1
     ? ["1 credit Blood Analysis ajoute a ton compte"]
     : [`${credits} credits Blood Analysis ajoutes a ton compte`];
@@ -3303,12 +3295,9 @@ export async function generatePeptidesProtocol(
       };
 
       const finalValidation = validatePeptidesReport(report as any);
-      if (!finalValidation.ok) {
-        throw new Error(`FINAL_GATE: ${finalValidation.errors.slice(0, 12).join(" | ")}`);
-      }
-      if (finalValidation.warnings.length > 0) {
-        console.warn(
-          `[PeptidesEngine] Final gate warnings for ${email}: ${finalValidation.warnings.slice(0, 3).join(" | ")}`
+      if (!finalValidation.ok || finalValidation.warnings.length > 0) {
+        throw new Error(
+          `FINAL_GATE: ${[...finalValidation.errors, ...finalValidation.warnings].slice(0, 12).join(" | ")}`,
         );
       }
 
@@ -3339,7 +3328,7 @@ export async function generatePeptidesProtocol(
     throw new Error(`[PeptidesEngine] All quality candidates failed: ${lastError}`);
   }
 
-  const promoCodes = await addBloodAnalysisCredits(email, tier);
+  const promoCodes = bloodAnalysisCreditLabels(tier);
   report.promoCodesGenerated = promoCodes;
 
   // FINAL CHECK , log everything

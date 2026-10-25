@@ -31,6 +31,7 @@ test("report reads return 403 for an authenticated non-owner", () => {
 test("signed report access is resource-bound and accepted only for its target", () => {
   const token = signReportAccessToken("audit", "audit-1", "owner@example.com");
   assert.equal(getReportAccessDecision(request({ "x-report-access": token }), "audit", "audit-1", "owner@example.com"), 200);
+  assert.equal(getReportAccessDecision(request({ "x-report-access": token }), "audit", "audit-1", "other@example.com"), 401);
   assert.equal(verifyReportAccessToken(token, "audit", "audit-2"), null);
   assert.equal(verifyReportAccessToken(token, "peptides", "audit-1"), null);
 });

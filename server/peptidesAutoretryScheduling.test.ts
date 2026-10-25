@@ -26,7 +26,7 @@ test("automatic Peptides generation claims each attempt and persists bounded ret
   assert.match(routes, /SOURCE_RETRY_SCHEDULED/);
   const sourceOutageBranch = routes.indexOf("if (retryableSourceOutage)");
   const sourceOutageBreak = routes.indexOf("break;", sourceOutageBranch);
-  const reportPersistence = routes.indexOf("storage.createBurnoutReport", sourceOutageBranch);
+  const reportPersistence = routes.indexOf("storage.createAndClaimPeptidesReport", sourceOutageBranch);
   assert.ok(sourceOutageBranch > 0 && sourceOutageBreak > sourceOutageBranch);
   assert.ok(sourceOutageBreak < reportPersistence, "source outage must exit before report persistence or any delivery email");
   assert.match(routes, /Peptides delivery HOLD retained while missing report recovery continues/);

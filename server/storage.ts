@@ -26,6 +26,8 @@ import type {
   PeptidesGenerationCircuitConfig,
 } from "./peptidesGenerationCircuitBreaker";
 import { claimPendingGenericReportJob } from "./reportJobStorageSafety";
+import { hashPeptidesReport } from "./peptidesReleaseHashGate";
+import { hashPeptidesManualMutationPayload } from "./peptidesManualMutationGuard";
 
 // Configuration de la connexion PostgreSQL
 const getDatabaseUrl = (): string => {
@@ -206,8 +208,24 @@ export interface IStorage {
   getBurnoutProgress(email: string): Promise<BurnoutProgress | undefined>;
   saveBurnoutProgress(input: SaveBurnoutProgressInput): Promise<BurnoutProgress>;
   createBurnoutReport(input: { email: string; responses: Record<string, unknown>; report: unknown }): Promise<BurnoutReportRecord>;
+  createAndClaimPeptidesReport(input: {
+    orderId: string;
+    email: string;
+    responses: Record<string, unknown>;
+    report: unknown;
+    expectedResponsesSha256: string;
+    expectedGenerationClaimId?: string;
+  }): Promise<BurnoutReportRecord | undefined>;
   getBurnoutReport(id: string): Promise<BurnoutReportRecord | undefined>;
   updateBurnoutReport(id: string, report: unknown): Promise<BurnoutReportRecord | undefined>;
+  updateBurnoutReportIfHashMatches(id: string, expectedSha256: string, report: unknown): Promise<BurnoutReportRecord | undefined>;
+  mutatePeptidesReportUnderHold(input: {
+    orderId: string;
+    reportId: string;
+    expectedSha256: string;
+    nextReport: unknown;
+    mutation: string;
+  }): Promise<BurnoutReportRecord | undefined>;
   deleteBurnoutReport(id: string): Promise<boolean>;
   getAllBurnoutReports(): Promise<BurnoutReportRecord[]>;
   getPeptidesReportsByEmail(email: string): Promise<BurnoutReportRecord[]>;
@@ -281,6 +299,7 @@ export interface IStorage {
   claimPeptidesReportSlot(orderId: string, reportId: string): Promise<boolean>;
   /** Atomic JSONB merge: set a single metadata key without stomping concurrently-set keys. */
   setOrderMetadataKey(orderId: string, key: string, value: string | number | boolean): Promise<boolean>;
+  setPeptidesGenerationResponseIdIfClaimMatches(orderId: string, claimId: string, responseId: string): Promise<boolean>;
   /** Atomic CAS merge: mutate metadata only while the linked Peptides report is still the expected one. */
   setOrderMetadataIfPeptidesReportMatches(
     orderId: string,
@@ -297,7 +316,7 @@ export interface IStorage {
     orderId: string,
     reportId: string,
     claimId: string,
-    state: "ACCEPTED" | "UNKNOWN",
+    state: "ACCEPTED" | "UNKNOWN" | "FAILED",
   ): Promise<boolean>;
   /** Claim one automated Peptides follow-up exactly once while the link is active and unheld. */
   claimPeptidesAutomation(orderId: string, reportId: string, automationKey: string, claimId: string): Promise<boolean>;
@@ -316,6 +335,7 @@ export interface IStorage {
     reason: string,
     error: string,
     nextRetryAt: string,
+    claimId?: string,
   ): Promise<boolean>;
   markPeptidesGenerationSourceRetry(
     orderId: string,
@@ -328,6 +348,7 @@ export interface IStorage {
     orderId: string,
     reason: string,
     error: string,
+    claimId?: string,
   ): Promise<boolean>;
   resetPeptidesGenerationCircuit(orderId: string): Promise<boolean>;
   /** Cross-order protection: true if ANY paid Peptides order for this email already has a reportId.
@@ -670,6 +691,59 @@ export class MemStorage implements IStorage {
     return record;
   }
 
+  async createAndClaimPeptidesReport(input: {
+    orderId: string;
+    email: string;
+    responses: Record<string, unknown>;
+    report: unknown;
+    expectedResponsesSha256: string;
+    expectedGenerationClaimId?: string;
+  }): Promise<BurnoutReportRecord | undefined> {
+    const order = this.memOrders.get(input.orderId);
+    const metadata = ((order?.metadata as any) || {}) as Record<string, any>;
+    const normalizedEmail = String(input.email || "").replace(/^peptides::/i, "").trim().toLowerCase();
+    const competingReport = Array.from(this.memOrders.values()).some((candidate) =>
+      candidate.id !== input.orderId
+      && candidate.productType === "PEPTIDES_ENGINE"
+      && ["paid", "partial_refund"].includes(String(candidate.status))
+      && String(candidate.email || "").trim().toLowerCase() === normalizedEmail
+      && Boolean((candidate.metadata as any)?.peptidesReportId)
+    );
+    if (!order
+      || competingReport
+      || order.productType !== "PEPTIDES_ENGINE"
+      || !["paid", "partial_refund"].includes(String(order.status))
+      || String(metadata.peptidesReportId || "")
+      || (input.expectedGenerationClaimId
+        && String(metadata.peptidesGenerationClaimId || "") !== input.expectedGenerationClaimId)
+      || String(metadata.peptidesResponsesSha256 || "") !== input.expectedResponsesSha256
+      || hashPeptidesManualMutationPayload(metadata.peptidesResponses || {}) !== input.expectedResponsesSha256) {
+      return undefined;
+    }
+    const record = await this.createBurnoutReport({
+      email: input.email,
+      responses: input.responses,
+      report: input.report,
+    });
+    const generatedAt = new Date();
+    this.memOrders.set(input.orderId, {
+      ...order,
+      metadata: {
+        ...metadata,
+        peptidesReportId: record.id,
+        peptidesGenerationState: "SUCCEEDED",
+        peptidesGenerationLeaseUntil: "",
+        peptidesGenerationNextRetryAt: "",
+        peptidesGenerationResponseId: "",
+        peptidesGenerationCompletedAt: generatedAt.toISOString(),
+        peptidesEmailScheduledAt: new Date(generatedAt.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+        peptidesEmailScheduleAnchor: "generation_plus_24h_v1",
+      },
+      updatedAt: generatedAt,
+    });
+    return record;
+  }
+
   async getBurnoutReport(id: string): Promise<BurnoutReportRecord | undefined> {
     return this.burnoutReports.get(id);
   }
@@ -682,6 +756,52 @@ export class MemStorage implements IStorage {
       report,
     };
     this.burnoutReports.set(id, updated);
+    return updated;
+  }
+
+  async updateBurnoutReportIfHashMatches(
+    id: string,
+    expectedSha256: string,
+    report: unknown,
+  ): Promise<BurnoutReportRecord | undefined> {
+    const existing = this.burnoutReports.get(id);
+    if (!existing || hashPeptidesReport(existing.report) !== expectedSha256) return undefined;
+    const updated: BurnoutReportRecord = { ...existing, report };
+    this.burnoutReports.set(id, updated);
+    return updated;
+  }
+
+  async mutatePeptidesReportUnderHold(input: {
+    orderId: string;
+    reportId: string;
+    expectedSha256: string;
+    nextReport: unknown;
+    mutation: string;
+  }): Promise<BurnoutReportRecord | undefined> {
+    const order = this.memOrders.get(input.orderId);
+    const current = this.burnoutReports.get(input.reportId);
+    const metadata = ((order?.metadata as any) || {}) as Record<string, any>;
+    const held = metadata.peptidesEmailHold === true || metadata.peptidesEmailHold === "true";
+    if (!order || !current || !held
+      || String(metadata.peptidesReportId || "") !== input.reportId
+      || hashPeptidesReport(current.report) !== input.expectedSha256) return undefined;
+    const updated = { ...current, report: input.nextReport };
+    this.burnoutReports.set(input.reportId, updated);
+    order.metadata = {
+      ...metadata,
+      peptidesEmailHold: true,
+      peptidesEmailHoldReason: `MANUAL_MUTATION_${input.mutation.toUpperCase()}_REQUIRES_REAPPROVAL`,
+      peptidesManualFulfillment: true,
+      peptidesManualFulfillmentState: "MUTATED_REQUIRES_REAPPROVAL",
+      peptidesReleaseAuditVerdict: "PENDING_REVALIDATION",
+      peptidesApprovedReportSha256: "",
+      peptidesHashGateApprovalRequired: true,
+      peptidesLastManualMutation: input.mutation,
+      peptidesLastManualMutationAt: new Date().toISOString(),
+      peptidesLastManualMutationPreviousSha256: input.expectedSha256,
+      peptidesLastManualMutationNextSha256: hashPeptidesReport(input.nextReport),
+    } as any;
+    order.updatedAt = new Date();
     return updated;
   }
 
@@ -1152,6 +1272,20 @@ export class MemStorage implements IStorage {
     return true;
   }
 
+  async setPeptidesGenerationResponseIdIfClaimMatches(
+    orderId: string,
+    claimId: string,
+    responseId: string,
+  ): Promise<boolean> {
+    const order = this.memOrders.get(orderId);
+    if (!order) return false;
+    const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
+    if (String(meta.peptidesGenerationClaimId || "") !== claimId || meta.peptidesReportId) return false;
+    order.metadata = { ...meta, peptidesGenerationResponseId: responseId } as any;
+    order.updatedAt = new Date();
+    return true;
+  }
+
   async setOrderMetadataIfPeptidesReportMatches(
     orderId: string,
     expectedReportId: string | null,
@@ -1245,22 +1379,35 @@ export class MemStorage implements IStorage {
     orderId: string,
     reportId: string,
     claimId: string,
-    state: "ACCEPTED" | "UNKNOWN",
+    state: "ACCEPTED" | "UNKNOWN" | "FAILED",
   ): Promise<boolean> {
     const order = this.memOrders.get(orderId);
     if (!order) return false;
     const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
     if (String(meta.peptidesReportId || "") !== reportId || meta.peptidesDeliveryClaimId !== claimId) return false;
+    const canReleaseProviderHold = state === "ACCEPTED"
+      && meta.peptidesManualFulfillment !== true
+      && meta.peptidesManualFulfillment !== "true"
+      && ["", "DELIVERY_PROVIDER_RESULT_UNCERTAIN"].includes(String(meta.peptidesEmailHoldReason || ""));
     order.metadata = {
       ...meta,
       peptidesDeliveryState: state,
       peptidesDeliveryReportId: reportId,
       peptidesDeliveryFinalizedAt: new Date().toISOString(),
-      ...(state === "UNKNOWN" ? {
+      ...(state === "ACCEPTED" ? (canReleaseProviderHold ? {
+        peptidesEmailHold: false,
+        peptidesEmailHoldReason: "",
+        peptidesFulfillmentState: "RESOLVED",
+        peptidesFulfillmentResolvedAt: new Date().toISOString(),
+      } : {}) : state === "UNKNOWN" ? {
         peptidesEmailHold: true,
         peptidesEmailHoldReason: "DELIVERY_PROVIDER_RESULT_UNCERTAIN",
         peptidesFulfillmentState: "ACTION_REQUIRED",
-      } : {}),
+      } : {
+        peptidesEmailHold: true,
+        peptidesEmailHoldReason: "DELIVERY_PROVIDER_CONFIRMED_FAILED",
+        peptidesFulfillmentState: "ACTION_REQUIRED",
+      }),
     } as any;
     order.updatedAt = new Date();
     return true;
@@ -1310,6 +1457,7 @@ export class MemStorage implements IStorage {
     if (dailyReserved + config.attemptBudgetMicroUsd > config.maxDailyBudgetMicroUsd) return null;
 
     const claim = {
+      claimId: randomUUID(),
       attemptCount: attempts + 1,
       reservedCostMicroUsd: reserved + config.attemptBudgetMicroUsd,
       leaseUntil: new Date(nowMs + config.leaseMs).toISOString(),
@@ -1317,6 +1465,7 @@ export class MemStorage implements IStorage {
     order.metadata = {
       ...meta,
       peptidesGenerationState: "GENERATING",
+      peptidesGenerationClaimId: claim.claimId,
       peptidesGenerationAttempts: claim.attemptCount,
       peptidesGenerationReservedCostMicroUsd: claim.reservedCostMicroUsd,
       peptidesGenerationLeaseUntil: claim.leaseUntil,
@@ -1339,6 +1488,7 @@ export class MemStorage implements IStorage {
     if (meta.peptidesReportId || String(meta.peptidesGenerationResponseId || "") !== responseId) return null;
     if (Number.isFinite(leaseUntilMs) && leaseUntilMs > Date.now()) return null;
     const claim = {
+      claimId: randomUUID(),
       attemptCount: Math.max(1, Number(meta.peptidesGenerationAttempts || 1)),
       reservedCostMicroUsd: Math.max(0, Number(meta.peptidesGenerationReservedCostMicroUsd || 0)),
       leaseUntil: new Date(Date.now() + leaseMs).toISOString(),
@@ -1346,6 +1496,7 @@ export class MemStorage implements IStorage {
     };
     order.metadata = {
       ...meta,
+      peptidesGenerationClaimId: claim.claimId,
       peptidesGenerationLeaseUntil: claim.leaseUntil,
       peptidesGenerationStoredResumeAttempts: claim.storedResumeAttemptCount,
     } as any;
@@ -1359,11 +1510,14 @@ export class MemStorage implements IStorage {
     reason: string,
     error: string,
     nextRetryAt: string,
+    claimId?: string,
   ): Promise<boolean> {
     const order = this.memOrders.get(orderId);
     if (!order) return false;
     const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
-    if (meta.peptidesReportId || Number(meta.peptidesGenerationAttempts || 0) !== attemptCount) return false;
+    if (meta.peptidesReportId
+      || Number(meta.peptidesGenerationAttempts || 0) !== attemptCount
+      || (claimId && String(meta.peptidesGenerationClaimId || "") !== claimId)) return false;
     order.metadata = {
       ...meta,
       peptidesGenerationState: "RETRY_SCHEDULED",
@@ -1386,7 +1540,9 @@ export class MemStorage implements IStorage {
     const order = this.memOrders.get(orderId);
     if (!order) return false;
     const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
-    if (meta.peptidesReportId || Number(meta.peptidesGenerationAttempts || 0) !== claim.attemptCount) return false;
+    if (meta.peptidesReportId
+      || Number(meta.peptidesGenerationAttempts || 0) !== claim.attemptCount
+      || String(meta.peptidesGenerationClaimId || "") !== claim.claimId) return false;
     const isResume = claim.storedResumeAttemptCount !== undefined;
     if (isResume && Number(meta.peptidesGenerationStoredResumeAttempts || 0) !== claim.storedResumeAttemptCount) return false;
     order.metadata = {
@@ -1408,11 +1564,11 @@ export class MemStorage implements IStorage {
     return true;
   }
 
-  async markPeptidesGenerationNeedsReview(orderId: string, reason: string, error: string): Promise<boolean> {
+  async markPeptidesGenerationNeedsReview(orderId: string, reason: string, error: string, claimId?: string): Promise<boolean> {
     const order = this.memOrders.get(orderId);
     if (!order) return false;
     const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
-    if (meta.peptidesReportId) return false;
+    if (meta.peptidesReportId || (claimId && String(meta.peptidesGenerationClaimId || "") !== claimId)) return false;
     order.metadata = {
       ...meta,
       peptidesGenerationState: "NEEDS_REVIEW",
@@ -1430,7 +1586,11 @@ export class MemStorage implements IStorage {
     const order = this.memOrders.get(orderId);
     if (!order) return false;
     const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
-    if (meta.peptidesReportId) return false;
+    const leaseUntil = new Date(String(meta.peptidesGenerationLeaseUntil || 0)).getTime();
+    if (meta.peptidesReportId
+      || (String(meta.peptidesGenerationState || "") === "GENERATING"
+        && Number.isFinite(leaseUntil)
+        && leaseUntil > Date.now())) return false;
     order.metadata = {
       ...meta,
       peptidesGenerationState: "PENDING",
@@ -2266,6 +2426,106 @@ export class PgStorage implements IStorage {
     };
   }
 
+  async createAndClaimPeptidesReport(input: {
+    orderId: string;
+    email: string;
+    responses: Record<string, unknown>;
+    report: unknown;
+    expectedResponsesSha256: string;
+    expectedGenerationClaimId?: string;
+  }): Promise<BurnoutReportRecord | undefined> {
+    await this.ensureBurnoutReportsTable();
+    await this.ensureOrdersTableCreated();
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const normalizedEmail = String(input.email || "").replace(/^peptides::/i, "").trim().toLowerCase();
+      await client.query(
+        "SELECT pg_advisory_xact_lock(hashtext($1))",
+        [`peptides-report-owner:${normalizedEmail}`],
+      );
+      const locked = await client.query(
+        `SELECT id, email, product_type, status, metadata
+           FROM orders
+          WHERE id = $1
+          FOR UPDATE`,
+        [input.orderId],
+      );
+      const order = locked.rows[0];
+      const metadata = (order?.metadata || {}) as Record<string, any>;
+      const competing = await client.query(
+        `SELECT 1
+           FROM orders
+          WHERE id <> $1
+            AND product_type = 'PEPTIDES_ENGINE'
+            AND status IN ('paid', 'partial_refund')
+            AND LOWER(email) = $2
+            AND COALESCE(metadata->>'peptidesReportId', '') <> ''
+          LIMIT 1`,
+        [input.orderId, normalizedEmail],
+      );
+      if (!order
+        || (competing.rowCount || 0) > 0
+        || order.product_type !== "PEPTIDES_ENGINE"
+        || !["paid", "partial_refund"].includes(String(order.status))
+        || String(order.email || "").trim().toLowerCase()
+          !== String(input.email || "").replace(/^peptides::/i, "").trim().toLowerCase()
+        || String(metadata.peptidesReportId || "")
+        || (input.expectedGenerationClaimId
+          && String(metadata.peptidesGenerationClaimId || "") !== input.expectedGenerationClaimId)
+        || String(metadata.peptidesResponsesSha256 || "") !== input.expectedResponsesSha256
+        || hashPeptidesManualMutationPayload(metadata.peptidesResponses || {}) !== input.expectedResponsesSha256
+        || hashPeptidesManualMutationPayload(input.responses) !== input.expectedResponsesSha256) {
+        await client.query("ROLLBACK");
+        return undefined;
+      }
+
+      const reportId = randomUUID();
+      const inserted = await client.query(
+        `INSERT INTO burnout_reports (id, email, responses, report)
+         VALUES ($1, $2, $3, $4)
+         RETURNING *`,
+        [reportId, input.email, JSON.stringify(input.responses), JSON.stringify(input.report)],
+      );
+      const linked = await client.query(
+        `UPDATE orders
+            SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
+                  'peptidesReportId', $1::text,
+                  'peptidesGenerationState', 'SUCCEEDED',
+                  'peptidesGenerationLeaseUntil', '',
+                  'peptidesGenerationNextRetryAt', '',
+                  'peptidesGenerationResponseId', '',
+                  'peptidesGenerationCompletedAt', NOW()::text,
+                  'peptidesEmailScheduledAt', (NOW() + INTERVAL '24 hours')::text,
+                  'peptidesEmailScheduleAnchor', 'generation_plus_24h_v1'
+                ),
+                updated_at = NOW()
+          WHERE id = $2
+            AND COALESCE(metadata->>'peptidesReportId', '') = ''
+          RETURNING id`,
+        [reportId, input.orderId],
+      );
+      if (linked.rowCount !== 1) {
+        await client.query("ROLLBACK");
+        return undefined;
+      }
+      await client.query("COMMIT");
+      const row = inserted.rows[0];
+      return {
+        id: row.id,
+        email: row.email,
+        responses: row.responses || {},
+        report: row.report || {},
+        createdAt: row.created_at,
+      };
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => {});
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   async getBurnoutReport(id: string): Promise<BurnoutReportRecord | undefined> {
     await this.ensureBurnoutReportsTable();
     const result = await pool.query("SELECT * FROM burnout_reports WHERE id = $1", [id]);
@@ -2295,6 +2555,126 @@ export class PgStorage implements IStorage {
       report: row.report || {},
       createdAt: row.created_at,
     };
+  }
+
+  async updateBurnoutReportIfHashMatches(
+    id: string,
+    expectedSha256: string,
+    report: unknown,
+  ): Promise<BurnoutReportRecord | undefined> {
+    await this.ensureBurnoutReportsTable();
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const locked = await client.query(
+        "SELECT * FROM burnout_reports WHERE id = $1 FOR UPDATE",
+        [id],
+      );
+      const current = locked.rows[0];
+      if (!current || hashPeptidesReport(current.report || {}) !== expectedSha256) {
+        await client.query("ROLLBACK");
+        return undefined;
+      }
+      const updated = await client.query(
+        "UPDATE burnout_reports SET report = $2 WHERE id = $1 RETURNING *",
+        [id, JSON.stringify(report)],
+      );
+      await client.query("COMMIT");
+      const row = updated.rows[0];
+      return row ? {
+        id: row.id,
+        email: row.email,
+        responses: row.responses || {},
+        report: row.report || {},
+        createdAt: row.created_at,
+      } : undefined;
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => {});
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async mutatePeptidesReportUnderHold(input: {
+    orderId: string;
+    reportId: string;
+    expectedSha256: string;
+    nextReport: unknown;
+    mutation: string;
+  }): Promise<BurnoutReportRecord | undefined> {
+    await this.ensureBurnoutReportsTable();
+    await this.ensureOrdersTableCreated();
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const orderResult = await client.query(
+        `SELECT id, metadata
+           FROM orders
+          WHERE id = $1
+          FOR UPDATE`,
+        [input.orderId],
+      );
+      const reportResult = await client.query(
+        `SELECT * FROM burnout_reports WHERE id = $1 FOR UPDATE`,
+        [input.reportId],
+      );
+      const order = orderResult.rows[0];
+      const current = reportResult.rows[0];
+      const metadata = (order?.metadata || {}) as Record<string, any>;
+      const held = metadata.peptidesEmailHold === true || metadata.peptidesEmailHold === "true";
+      if (!order || !current || !held
+        || String(metadata.peptidesReportId || "") !== input.reportId
+        || hashPeptidesReport(current.report || {}) !== input.expectedSha256) {
+        await client.query("ROLLBACK");
+        return undefined;
+      }
+
+      const updated = await client.query(
+        `UPDATE burnout_reports SET report = $2 WHERE id = $1 RETURNING *`,
+        [input.reportId, JSON.stringify(input.nextReport)],
+      );
+      const nextHash = hashPeptidesReport(input.nextReport);
+      const orderUpdated = await client.query(
+        `UPDATE orders
+            SET metadata = COALESCE(metadata, '{}'::jsonb) || $1::jsonb,
+                updated_at = NOW()
+          WHERE id = $2
+            AND COALESCE(metadata->>'peptidesReportId', '') = $3
+          RETURNING id`,
+        [JSON.stringify({
+          peptidesEmailHold: true,
+          peptidesEmailHoldReason: `MANUAL_MUTATION_${input.mutation.toUpperCase()}_REQUIRES_REAPPROVAL`,
+          peptidesManualFulfillment: true,
+          peptidesManualFulfillmentState: "MUTATED_REQUIRES_REAPPROVAL",
+          peptidesReleaseAuditVerdict: "PENDING_REVALIDATION",
+          peptidesApprovedReportSha256: "",
+          peptidesHashGateApprovalRequired: true,
+          peptidesLastManualMutation: input.mutation,
+          peptidesLastManualMutationAt: new Date().toISOString(),
+          peptidesLastManualMutationPreviousSha256: input.expectedSha256,
+          peptidesLastManualMutationNextSha256: nextHash,
+        }), input.orderId, input.reportId],
+      );
+      if (orderUpdated.rowCount !== 1) {
+        await client.query("ROLLBACK");
+        return undefined;
+      }
+      await client.query("COMMIT");
+      const row = updated.rows[0];
+      return {
+        id: row.id,
+        email: row.email,
+        responses: row.responses || {},
+        report: row.report || {},
+        createdAt: row.created_at,
+      };
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => {});
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async deleteBurnoutReport(id: string): Promise<boolean> {
@@ -3808,6 +4188,26 @@ export class PgStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
+  async setPeptidesGenerationResponseIdIfClaimMatches(
+    orderId: string,
+    claimId: string,
+    responseId: string,
+  ): Promise<boolean> {
+    await this.ensureOrdersTableCreated();
+    const result = await pool.query(
+      `UPDATE orders
+          SET metadata = COALESCE(metadata, '{}'::jsonb)
+            || jsonb_build_object('peptidesGenerationResponseId', $1::text),
+              updated_at = NOW()
+        WHERE id = $2
+          AND COALESCE(metadata->>'peptidesReportId', '') = ''
+          AND metadata->>'peptidesGenerationClaimId' = $3
+        RETURNING id`,
+      [responseId, orderId, claimId],
+    );
+    return (result.rowCount ?? 0) === 1;
+  }
+
   async setOrderMetadataIfPeptidesReportMatches(
     orderId: string,
     expectedReportId: string | null,
@@ -3921,14 +4321,21 @@ export class PgStorage implements IStorage {
     orderId: string,
     reportId: string,
     claimId: string,
-    state: "ACCEPTED" | "UNKNOWN",
+    state: "ACCEPTED" | "UNKNOWN" | "FAILED",
   ): Promise<boolean> {
     await this.ensureOrdersTableCreated();
-    const patch = state === "UNKNOWN"
+    const finalizedAt = new Date().toISOString();
+    const patch = state === "ACCEPTED"
       ? {
           peptidesDeliveryState: state,
           peptidesDeliveryReportId: reportId,
-          peptidesDeliveryFinalizedAt: new Date().toISOString(),
+          peptidesDeliveryFinalizedAt: finalizedAt,
+        }
+      : state === "UNKNOWN"
+      ? {
+          peptidesDeliveryState: state,
+          peptidesDeliveryReportId: reportId,
+          peptidesDeliveryFinalizedAt: finalizedAt,
           peptidesEmailHold: true,
           peptidesEmailHoldReason: "DELIVERY_PROVIDER_RESULT_UNCERTAIN",
           peptidesFulfillmentState: "ACTION_REQUIRED",
@@ -3936,17 +4343,40 @@ export class PgStorage implements IStorage {
       : {
           peptidesDeliveryState: state,
           peptidesDeliveryReportId: reportId,
-          peptidesDeliveryFinalizedAt: new Date().toISOString(),
+          peptidesDeliveryFinalizedAt: finalizedAt,
+          peptidesEmailHold: true,
+          peptidesEmailHoldReason: "DELIVERY_PROVIDER_CONFIRMED_FAILED",
+          peptidesFulfillmentState: "ACTION_REQUIRED",
         };
     const result = await pool.query(
       `UPDATE orders
-         SET metadata = COALESCE(metadata, '{}'::jsonb) || $1::jsonb,
+         SET metadata = COALESCE(metadata, '{}'::jsonb)
+               || $1::jsonb
+               || CASE
+                    WHEN $5::text = 'ACCEPTED'
+                     AND COALESCE(metadata->>'peptidesManualFulfillment', 'false') <> 'true'
+                     AND COALESCE(metadata->>'peptidesEmailHoldReason', '') IN ('', 'DELIVERY_PROVIDER_RESULT_UNCERTAIN')
+                    THEN $6::jsonb
+                    ELSE '{}'::jsonb
+                  END,
              updated_at = NOW()
        WHERE id = $2
          AND COALESCE(metadata->>'peptidesReportId', '') = $3
          AND metadata->>'peptidesDeliveryClaimId' = $4
        RETURNING id`,
-      [JSON.stringify(patch), orderId, reportId, claimId],
+      [
+        JSON.stringify(patch),
+        orderId,
+        reportId,
+        claimId,
+        state,
+        JSON.stringify({
+          peptidesEmailHold: false,
+          peptidesEmailHoldReason: "",
+          peptidesFulfillmentState: "RESOLVED",
+          peptidesFulfillmentResolvedAt: finalizedAt,
+        }),
+      ],
     );
     return (result.rowCount ?? 0) > 0;
   }
@@ -4001,10 +4431,12 @@ export class PgStorage implements IStorage {
         await client.query("ROLLBACK");
         return null;
       }
+      const claimId = randomUUID();
       const result = await client.query(
         `UPDATE orders
             SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
                   'peptidesGenerationState', 'GENERATING',
+                  'peptidesGenerationClaimId', $6::text,
                   'peptidesGenerationAttempts', COALESCE((metadata->>'peptidesGenerationAttempts')::int, 0) + 1,
                   'peptidesGenerationReservedCostMicroUsd', COALESCE((metadata->>'peptidesGenerationReservedCostMicroUsd')::bigint, 0) + $1::bigint,
                   'peptidesGenerationLeaseUntil', (NOW() + ($2::bigint * INTERVAL '1 millisecond'))::text,
@@ -4025,7 +4457,7 @@ export class PgStorage implements IStorage {
           (metadata->>'peptidesGenerationAttempts')::int AS attempt_count,
           (metadata->>'peptidesGenerationReservedCostMicroUsd')::bigint AS reserved_cost_micro_usd,
           metadata->>'peptidesGenerationLeaseUntil' AS lease_until`,
-        [config.attemptBudgetMicroUsd, config.leaseMs, orderId, config.maxAttempts, config.maxBudgetMicroUsd],
+        [config.attemptBudgetMicroUsd, config.leaseMs, orderId, config.maxAttempts, config.maxBudgetMicroUsd, claimId],
       );
       if ((result.rowCount ?? 0) !== 1) {
         await client.query("ROLLBACK");
@@ -4033,6 +4465,7 @@ export class PgStorage implements IStorage {
       }
       await client.query("COMMIT");
       return {
+        claimId,
         attemptCount: Number(result.rows[0].attempt_count),
         reservedCostMicroUsd: Number(result.rows[0].reserved_cost_micro_usd),
         leaseUntil: String(result.rows[0].lease_until),
@@ -4052,11 +4485,13 @@ export class PgStorage implements IStorage {
     leaseMs: number,
   ): Promise<PeptidesGenerationAttemptClaim | null> {
     await this.ensureOrdersTableCreated();
+    const claimId = randomUUID();
     const result = await pool.query(
       `UPDATE orders
           SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
                 'peptidesGenerationLeaseUntil', (NOW() + ($1::bigint * INTERVAL '1 millisecond'))::text,
-                'peptidesGenerationStoredResumeAttempts', COALESCE((metadata->>'peptidesGenerationStoredResumeAttempts')::int, 0) + 1
+                'peptidesGenerationStoredResumeAttempts', COALESCE((metadata->>'peptidesGenerationStoredResumeAttempts')::int, 0) + 1,
+                'peptidesGenerationClaimId', $4::text
               ),
               updated_at = NOW()
         WHERE id = $2
@@ -4070,10 +4505,11 @@ export class PgStorage implements IStorage {
         COALESCE((metadata->>'peptidesGenerationReservedCostMicroUsd')::bigint, 0) AS reserved_cost_micro_usd,
         COALESCE((metadata->>'peptidesGenerationStoredResumeAttempts')::int, 0) AS stored_resume_attempt_count,
         metadata->>'peptidesGenerationLeaseUntil' AS lease_until`,
-      [leaseMs, orderId, responseId],
+      [leaseMs, orderId, responseId, claimId],
     );
     if ((result.rowCount ?? 0) !== 1) return null;
     return {
+      claimId,
       attemptCount: Number(result.rows[0].attempt_count),
       reservedCostMicroUsd: Number(result.rows[0].reserved_cost_micro_usd),
       leaseUntil: String(result.rows[0].lease_until),
@@ -4087,6 +4523,7 @@ export class PgStorage implements IStorage {
     reason: string,
     error: string,
     nextRetryAt: string,
+    claimId?: string,
   ): Promise<boolean> {
     await this.ensureOrdersTableCreated();
     const result = await pool.query(
@@ -4102,8 +4539,9 @@ export class PgStorage implements IStorage {
         WHERE id = $4
           AND COALESCE(metadata->>'peptidesReportId', '') = ''
           AND COALESCE((metadata->>'peptidesGenerationAttempts')::int, 0) = $5::int
+          AND ($6::text = '' OR metadata->>'peptidesGenerationClaimId' = $6)
       RETURNING id`,
-      [reason.slice(0, 120), error.slice(0, 800), nextRetryAt, orderId, attemptCount],
+      [reason.slice(0, 120), error.slice(0, 800), nextRetryAt, orderId, attemptCount, claimId || ""],
     );
     return (result.rowCount ?? 0) === 1;
   }
@@ -4134,6 +4572,7 @@ export class PgStorage implements IStorage {
           AND COALESCE(metadata->>'peptidesReportId', '') = ''
           AND COALESCE((metadata->>'peptidesGenerationAttempts')::int, 0) = $7::int
           AND ($8::int < 0 OR COALESCE((metadata->>'peptidesGenerationStoredResumeAttempts')::int, 0) = $8::int)
+          AND metadata->>'peptidesGenerationClaimId' = $9
       RETURNING id`,
       [
         isResume ? 0 : 1,
@@ -4144,12 +4583,13 @@ export class PgStorage implements IStorage {
         orderId,
         claim.attemptCount,
         isResume ? claim.storedResumeAttemptCount : -1,
+        claim.claimId,
       ],
     );
     return (result.rowCount ?? 0) === 1;
   }
 
-  async markPeptidesGenerationNeedsReview(orderId: string, reason: string, error: string): Promise<boolean> {
+  async markPeptidesGenerationNeedsReview(orderId: string, reason: string, error: string, claimId?: string): Promise<boolean> {
     await this.ensureOrdersTableCreated();
     const result = await pool.query(
       `UPDATE orders
@@ -4164,8 +4604,9 @@ export class PgStorage implements IStorage {
               updated_at = NOW()
         WHERE id = $3
           AND COALESCE(metadata->>'peptidesReportId', '') = ''
+          AND ($4::text = '' OR metadata->>'peptidesGenerationClaimId' = $4)
       RETURNING id`,
-      [reason.slice(0, 120), error.slice(0, 800), orderId],
+      [reason.slice(0, 120), error.slice(0, 800), orderId, claimId || ""],
     );
     return (result.rowCount ?? 0) === 1;
   }
@@ -4188,6 +4629,10 @@ export class PgStorage implements IStorage {
               updated_at = NOW()
         WHERE id = $1
           AND COALESCE(metadata->>'peptidesReportId', '') = ''
+          AND NOT (
+            COALESCE(metadata->>'peptidesGenerationState', '') = 'GENERATING'
+            AND COALESCE(NULLIF(metadata->>'peptidesGenerationLeaseUntil', '')::timestamptz, '-infinity'::timestamptz) > NOW()
+          )
       RETURNING id`,
       [orderId],
     );

@@ -9,6 +9,9 @@ const {
   PEPTIDES_BLOOD_CREDITS,
   PEPTIDES_COACHING_DEDUCTION,
 } = await import("./cta");
+const { hashPeptidesReport } = await import("./peptidesReleaseHashGate");
+const { getPeptidesGenerationCircuitConfig } = await import("./peptidesGenerationCircuitBreaker");
+const { hashPeptidesManualMutationPayload } = await import("./peptidesManualMutationGuard");
 
 async function paidPeptidesOrder(metadata: Record<string, unknown> = {}) {
   const storage = new MemStorage();
@@ -54,6 +57,23 @@ test("report delivery claim is bound to the linked artifact and single-writer", 
   assert.equal((updated?.metadata as any)?.peptidesEmailHoldReason, "DELIVERY_PROVIDER_RESULT_UNCERTAIN");
 });
 
+test("SMTP reconciliation never clears a manual hold set after provider submission", async () => {
+  const reportId = "report-pending";
+  const { storage, order } = await paidPeptidesOrder({ peptidesReportId: reportId });
+  assert.equal(await storage.claimPeptidesDelivery(order.id, reportId, "claim-pending"), true);
+  assert.equal(await storage.finalizePeptidesDeliveryClaim(order.id, reportId, "claim-pending", "UNKNOWN"), true);
+  await storage.setOrderMetadataIfPeptidesReportMatches(order.id, reportId, {
+    peptidesEmailHold: true,
+    peptidesEmailHoldReason: "MANUAL_REVIEW",
+    peptidesManualFulfillment: true,
+  });
+  assert.equal(await storage.finalizePeptidesDeliveryClaim(order.id, reportId, "claim-pending", "ACCEPTED"), true);
+  const finalOrder = await storage.getOrder(order.id);
+  assert.equal((finalOrder?.metadata as any)?.peptidesDeliveryState, "ACCEPTED");
+  assert.equal((finalOrder?.metadata as any)?.peptidesEmailHold, true);
+  assert.equal((finalOrder?.metadata as any)?.peptidesEmailHoldReason, "MANUAL_REVIEW");
+});
+
 test("stale report mutations lose CAS and a deliberate relink resets delivery under hold", async () => {
   const { storage, order } = await paidPeptidesOrder({
     peptidesReportId: "report-a",
@@ -79,6 +99,94 @@ test("stale report mutations lose CAS and a deliberate relink resets delivery un
   assert.equal(relinked["peptidesAutomationClaim:peptidesReviewJ3"], undefined);
 });
 
+test("manual report mutation atomically requires the exact linked report, HOLD and hash", async () => {
+  const { storage, order } = await paidPeptidesOrder();
+  const original = { qualityVersion: "expert-standard-v1", marker: "before" };
+  const record = await storage.createBurnoutReport({
+    email: "peptides::client@example.com",
+    responses: {},
+    report: original,
+  });
+  await storage.updateOrder(order.id, {
+    metadata: {
+      peptidesReportId: record.id,
+      peptidesEmailHold: true,
+      peptidesApprovedReportSha256: hashPeptidesReport(original),
+      peptidesReleaseAuditVerdict: "PASS",
+    } as any,
+  });
+
+  assert.equal(await storage.mutatePeptidesReportUnderHold({
+    orderId: order.id,
+    reportId: record.id,
+    expectedSha256: "0".repeat(64),
+    nextReport: { marker: "wrong" },
+    mutation: "edit-sections",
+  }), undefined);
+
+  const next = { qualityVersion: "expert-standard-v1", marker: "after" };
+  const updated = await storage.mutatePeptidesReportUnderHold({
+    orderId: order.id,
+    reportId: record.id,
+    expectedSha256: hashPeptidesReport(original),
+    nextReport: next,
+    mutation: "edit-sections",
+  });
+  assert.deepEqual(updated?.report, next);
+  const updatedOrder = await storage.getOrder(order.id);
+  assert.equal((updatedOrder?.metadata as any)?.peptidesReleaseAuditVerdict, "PENDING_REVALIDATION");
+  assert.equal((updatedOrder?.metadata as any)?.peptidesApprovedReportSha256, "");
+  assert.equal((updatedOrder?.metadata as any)?.peptidesEmailHold, true);
+});
+
+test("expired generation workers are fenced from response, retry and report persistence", async () => {
+  const responses = { pep_email: "client@example.com", pep_name: "Client" };
+  const responsesHash = hashPeptidesManualMutationPayload(responses);
+  const { storage, order } = await paidPeptidesOrder({
+    peptidesResponses: responses,
+    peptidesResponsesSha256: responsesHash,
+  });
+  const config = getPeptidesGenerationCircuitConfig({
+    PEPTIDES_AUTOGEN_MAX_ATTEMPTS: "2",
+    PEPTIDES_AUTOGEN_LEASE_MS: "60000",
+  });
+  const first = await storage.claimPeptidesGenerationAttempt(order.id, config);
+  assert.ok(first);
+  const afterFirst = await storage.getOrder(order.id);
+  await storage.updateOrder(order.id, {
+    metadata: {
+      ...((afterFirst?.metadata as any) || {}),
+      peptidesGenerationLeaseUntil: new Date(Date.now() - 1_000).toISOString(),
+    },
+  });
+  const second = await storage.claimPeptidesGenerationAttempt(order.id, config);
+  assert.ok(second);
+  assert.notEqual(first!.claimId, second!.claimId);
+  assert.equal(
+    await storage.setPeptidesGenerationResponseIdIfClaimMatches(order.id, first!.claimId, "resp-stale"),
+    false,
+  );
+  assert.equal(
+    await storage.markPeptidesGenerationRetry(
+      order.id,
+      first!.attemptCount,
+      "stale",
+      "stale",
+      new Date(Date.now() + 60_000).toISOString(),
+      first!.claimId,
+    ),
+    false,
+  );
+  assert.equal(await storage.createAndClaimPeptidesReport({
+    orderId: order.id,
+    email: "peptides::client@example.com",
+    responses,
+    report: { marker: "stale" },
+    expectedResponsesSha256: responsesHash,
+    expectedGenerationClaimId: first!.claimId,
+  }), undefined);
+});
+
 test("production flow centralizes confirmation and claims every report delivery before provider calls", () => {
   const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
   assert.match(routes, /async function sendPeptidesOrderConfirmationOnce/);
@@ -91,17 +199,19 @@ test("production flow centralizes confirmation and claims every report delivery 
   assert.match(routes, /claimPeptidesDelivery\(order\.id, recoveryReportId, recoveryClaimId\)/);
   assert.match(routes, /claimPeptidesDelivery\(order\.id, saved\.id, deliveryClaimId\)/);
   assert.match(routes, /finalizePeptidesDeliveryClaim\([\s\S]*"UNKNOWN"/);
-  assert.match(routes, /deleteBurnoutReport\(saved\.id\)/);
+  assert.match(routes, /createAndClaimPeptidesReport/);
+  assert.doesNotMatch(routes, /Unclaimed report \$\{saved\.id\}/);
 });
 
 test("every paid admin generation path confirms before the AI provider call", () => {
   const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
+  const forcePaidStart = routes.indexOf('app.post("/api/admin/orders/:id/force-paid"');
+  const forcePaidEnd = routes.indexOf('app.post("/api/admin/orders/:id/cancel"', forcePaidStart);
+  const forcePaid = routes.slice(forcePaidStart, forcePaidEnd);
+  assert.match(forcePaid, /PEPTIDES_FORCE_PAID_DISABLED/);
+  assert.doesNotMatch(forcePaid, /generatePeptidesProtocol/);
+
   const cases = [
-    {
-      name: "force-paid",
-      start: 'app.post("/api/admin/orders/:id/force-paid"',
-      end: 'app.post("/api/admin/orders/:id/cancel"',
-    },
     {
       name: "manual peptides generation",
       start: 'app.post("/api/admin/peptides-generate"',
@@ -116,9 +226,7 @@ test("every paid admin generation path confirms before the AI provider call", ()
     const source = routes.slice(start, end);
     const confirmation = source.indexOf("sendPeptidesOrderConfirmationOnce");
     const provider = source.indexOf("generatePeptidesProtocol");
-    const sourceRead = route.name === "force-paid"
-      ? source.indexOf("Object.keys(responses).length < 3")
-      : source.indexOf("getBurnoutProgress");
+    const sourceRead = source.indexOf("validateTrustedPeptidesOrderSource");
     assert.ok(confirmation >= 0, `${route.name} must attempt confirmation`);
     assert.ok(sourceRead > confirmation, `${route.name} must confirm before source validation`);
     assert.ok(provider > confirmation, `${route.name} must confirm before generation`);
@@ -133,8 +241,8 @@ test("public compatibility endpoint cannot bypass payment or call the provider",
   const end = routes.indexOf("// 3. Get generated report by ID", start);
   assert.ok(start >= 0 && end > start, "compatibility endpoint must be present");
   const endpoint = routes.slice(start, end);
-  assert.match(endpoint, /Le contournement du paiement est desactive/);
-  assert.match(endpoint, /generation:\s*"durable_cron"/);
+  assert.match(endpoint, /PEPTIDES_CREATE_COMPATIBILITY_ENDPOINT_RETIRED/);
+  assert.match(endpoint, /status\(410\)/);
   assert.doesNotMatch(endpoint, /generatePeptidesProtocol\(/);
   assert.doesNotMatch(endpoint, /createOrder\(/);
 });

@@ -109,7 +109,14 @@ export const getReportAccessDecision = (
   resourceId: string,
   ownerEmail: string,
 ): 200 | 401 | 403 => {
-  if (hasValidReportAccess(req, resource, resourceId)) return 200;
+  const reportToken = getReportAccessToken(req);
+  const reportPayload = reportToken
+    ? verifyReportAccessToken(reportToken, resource, resourceId)
+    : null;
+  if (
+    reportPayload?.email
+    && reportPayload.email.trim().toLowerCase() === ownerEmail.trim().toLowerCase()
+  ) return 200;
   const payload = getAuthPayload(req);
   if (!payload) return 401;
   return payload.email.trim().toLowerCase() === ownerEmail.trim().toLowerCase() ? 200 : 403;

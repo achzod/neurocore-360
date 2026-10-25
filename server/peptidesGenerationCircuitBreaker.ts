@@ -47,6 +47,7 @@ export interface PeptidesGenerationEligibility {
 }
 
 export interface PeptidesGenerationAttemptClaim {
+  claimId: string;
   attemptCount: number;
   reservedCostMicroUsd: number;
   leaseUntil: string;

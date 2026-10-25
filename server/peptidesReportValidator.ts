@@ -119,6 +119,7 @@ const REQUIRED_PEPTIDE_FIELDS = [
   "cycleDuration",
   "reconstitution",
   "whyThisPeptide",
+  "evidenceSummary",
 ] as const;
 
 export function isConditionalInactivePeptide(
@@ -129,6 +130,23 @@ export function isConditionalInactivePeptide(
 
 const MIN_SECTIONS = 12;
 const MIN_SECTION_CHARS = 350;
+const REQUIRED_STANDARD_SECTION_IDS = [
+  "profil-synthese",
+  "rationale",
+  "bilan-sanguin",
+  "guide-fournisseur",
+  "reconstitution-guide",
+  "guide-injection",
+  "protocole-pratique",
+  "shopping-list",
+  "hygiene-conservation",
+  "securite-surveillance",
+  "nutrition-protocole",
+  "checklist-demarrage",
+  "effets-secondaires",
+  "faq",
+  "disclaimer-support",
+] as const;
 const ENCLOMIPHENE_SOURCE_URL = "https://receptorchem.co.uk/enclomiphene-citrate/";
 const MIN_TOTAL_CHARS = 30_000;
 const MAX_PEPTAURA_DELIVERY_AGE_MS = Number(
@@ -845,12 +863,13 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
       dosesByWeek.set(w, u.startsWith("mcg") ? v / 1000 : v);
     }
     const sortedWeeks = [...dosesByWeek.keys()].sort((a, b) => a - b);
-    const lastDefined = sortedWeeks[sortedWeeks.length - 1];
-    const lastDose = dosesByWeek.get(lastDefined)!;
+    let currentDose: number | null = null;
     let total = 0;
     for (let w = 1; w <= weeks; w++) {
-      if (dosesByWeek.has(w)) total += dosesByWeek.get(w)!;
-      else if (w > lastDefined) total += lastDose;
+      if (dosesByWeek.has(w)) currentDose = dosesByWeek.get(w)!;
+      // A point such as "0.5 mg semaine 5" starts a new plateau; it is not a
+      // dose applied only during week 5. Forward-fill until the next point.
+      if (currentDose != null) total += currentDose;
     }
     // Apply injection frequency multiplier: titration steps are per-injection,
     // so daily protocols multiply by 7.
@@ -901,11 +920,59 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
   return total >= 0.5 ? total : null;
 }
 
+export function validateU100Reconstitution(value: string | undefined): string[] {
+  const raw = String(value || "").replace(/(\d),(\d)/g, "$1.$2");
+  if (!raw || /aucune reconstitution|sans reconstitution|solution liquide/i.test(raw)) return [];
+
+  const vial = raw.match(/\bvial(?:\s+de)?\s+(\d+(?:\.\d+)?)\s*mg\b/i);
+  const solvent = raw.match(/\+\s*(\d+(?:\.\d+)?)\s*ml\b/i);
+  const dose = raw.match(/\b(?:pour|dose(?:\s+de)?|administration(?:\s+de)?)\s+(\d+(?:\.\d+)?)\s*(mg|mcg|µg|ug)\b/i);
+  const units = raw.match(/(?:=|→|correspond(?:ent|ance)?\s+a|soit)?\s*(\d+(?:\.\d+)?)\s*unit[ée]s?(?:\s+U-?100)?\b/i);
+  const statedMl = raw.match(/\bsoit\s+(\d+(?:\.\d+)?)\s*ml\b/i);
+
+  // A complete injectable card must expose all terms. Other validator rules
+  // still handle explicitly conditional calculations and non-injectables.
+  if (!vial || !solvent || !dose || !units || !statedMl) return [];
+
+  const vialMg = Number(vial[1]);
+  const solventMl = Number(solvent[1]);
+  const doseMg = Number(dose[1]) / (/^mg$/i.test(dose[2]) ? 1 : 1000);
+  const statedUnits = Number(units[1]);
+  const statedVolumeMl = Number(statedMl[1]);
+  if (![vialMg, solventMl, doseMg, statedUnits, statedVolumeMl].every(Number.isFinite)
+    || vialMg <= 0 || solventMl <= 0 || doseMg <= 0) {
+    return ["calcul U-100 illisible ou non positif"];
+  }
+
+  const expectedMl = doseMg / (vialMg / solventMl);
+  const expectedUnits = expectedMl * 100;
+  const issues: string[] = [];
+  if (solventMl > 3 + 1e-9) {
+    issues.push(`volume de solvant ${solventMl} ml superieur au maximum 3 ml`);
+  }
+  if (Math.abs(statedUnits - expectedUnits) > 1) {
+    issues.push(
+      `conversion U-100 incoherente: ${statedUnits} unites affichees vs ${expectedUnits.toFixed(1)} calculees`,
+    );
+  }
+  if (Math.abs(statedVolumeMl - expectedMl) > 0.011) {
+    issues.push(
+      `volume injecte incoherent: ${statedVolumeMl.toFixed(2)} ml affiche vs ${expectedMl.toFixed(2)} ml calcule`,
+    );
+  }
+  if (Math.abs(statedUnits / 100 - statedVolumeMl) > 0.011) {
+    issues.push(
+      `equivalence seringue incoherente: ${statedUnits} unites ne correspondent pas a ${statedVolumeMl.toFixed(2)} ml`,
+    );
+  }
+  return issues;
+}
+
 export function checkPeptide(p: PeptidesPeptide): string[] {
   const issues: string[] = [];
 
   if (isConditionalInactivePeptide(p)) {
-    for (const field of ["name", "purpose", "whyThisPeptide"] as const) {
+    for (const field of ["name", "purpose", "whyThisPeptide", "evidenceSummary"] as const) {
       if (!String(p[field] || "").trim()) issues.push(`field manquant: ${field}`);
     }
     if (!Array.isArray(p.activationRequirements) || p.activationRequirements.length < 2) {
@@ -925,9 +992,9 @@ export function checkPeptide(p: PeptidesPeptide): string[] {
     ) {
       issues.push("phase conditionnelle contient des instructions operationnelles");
     }
-    if (!/non activ|suspend|conditionnel|aucun achat/i.test(operationalText)) {
-      issues.push("phase conditionnelle non identifiee comme inactive");
-    }
+    // activationStatus is the canonical machine-readable inactive marker.
+    // Operational fields must stay empty instead of carrying prose that could
+    // accidentally be parsed as a dose or purchase instruction.
     const sourceUrl = String(p.purchaseUrl || "").trim();
     if (!sourceUrl) {
       issues.push("phase conditionnelle sans acces source fournisseur");
@@ -1034,6 +1101,17 @@ export function checkPeptide(p: PeptidesPeptide): string[] {
 
   if (p.purchaseUrl && !/^https?:\/\//.test(p.purchaseUrl)) {
     issues.push(`purchaseUrl mal formee: ${p.purchaseUrl}`);
+  }
+
+  issues.push(...validateU100Reconstitution(p.reconstitution));
+  if (/sous[- ]?cutan|intramuscul|\bSC\b|\bIM\b/i.test(String(p.route || ""))) {
+    const reconstitution = String(p.reconstitution || "").replace(/(\d),(\d)/g, "$1.$2");
+    const completeU100 = /\bvial(?:\s+de)?\s+\d+(?:\.\d+)?\s*mg\b/i.test(reconstitution)
+      && /\+\s*\d+(?:\.\d+)?\s*ml\b/i.test(reconstitution)
+      && /\b(?:pour|dose(?:\s+de)?|administration(?:\s+de)?)\s+\d+(?:\.\d+)?\s*(?:mg|mcg|µg|ug)\b/i.test(reconstitution)
+      && /\d+(?:\.\d+)?\s*unit[ée]s?(?:\s+U-?100)?\b/i.test(reconstitution)
+      && /\bsoit\s+\d+(?:\.\d+)?\s*ml\b/i.test(reconstitution);
+    if (!completeU100) issues.push("calcul complet de reconstitution U-100 absent");
   }
 
   if (/descente|diminution progressive|reduction progressive/i.test(p.cycleDuration || "")
@@ -1258,6 +1336,19 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
   }
 
   if (report.qualityVersion === "expert-standard-v1") {
+    const sectionIds = new Set(
+      sections.map((section) => String(section.id || "").trim().toLowerCase()),
+    );
+    const missingSections = REQUIRED_STANDARD_SECTION_IDS.filter((id) => !sectionIds.has(id));
+    if (missingSections.length > 0) {
+      errors.push(`sections obligatoires absentes: ${missingSections.join(", ")}`);
+    }
+    const invalidActivationStates = peptides
+      .filter((peptide) => !["active", "conditional-inactive"].includes(String(peptide.activationStatus || "")))
+      .map((peptide) => peptide.name || "?");
+    if (invalidActivationStates.length > 0) {
+      errors.push(`activationStatus explicite manquant: ${invalidActivationStates.join(", ")}`);
+    }
     const medicalMentions = (clientFacingText.match(/\b(?:m[ée]decin|pharmacien|professionnel de sant[ée])\b/gi) || []).length;
     const cautionMentions = (clientFacingText.match(/\b(?:exp[ée]rimental|non approuv[ée]|validation m[ée]dicale|avis m[ée]dical|accord m[ée]dical)\b/gi) || []).length;
     if (medicalMentions > 8 || cautionMentions > 10) {
@@ -1341,10 +1432,6 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
   if (peptides.length === 0) {
     errors.push("aucun peptide recommande");
   }
-  if (peptides.length < 2) {
-    warnings.push(`tres peu de peptides (${peptides.length})`);
-  }
-
   errors.push(...validateConfirmedLowTestosteroneProtocol(report, clientFacingText));
 
   if (sections.length < MIN_SECTIONS) {
@@ -1466,6 +1553,35 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
       && snapshot.requestedVials != null
       && snapshot.deliveredVials / snapshot.requestedVials > 1.3) {
       errors.push(`[${snapshot.peptide || "?"}] boite live impose trop de surstock: ${snapshot.deliveredVials} recus pour ${snapshot.requestedVials} demandes`);
+    }
+
+    const snapshotName = String(snapshot.peptide || "");
+    if (snapshotName && searchable(snapshotName) !== searchable("BAC Water")) {
+      const shoppingLine = findShoppingListLineForItem(report.shoppingList, snapshotName);
+      if (!shoppingLine) {
+        errors.push(`[${snapshotName}] ligne absente de la shopping list`);
+      } else {
+        const shoppingQty = extractDeclaredOrderQty(shoppingLine);
+        if (shoppingQty != null
+          && snapshot.requestedVials != null
+          && shoppingQty !== Number(snapshot.requestedVials)) {
+          errors.push(`[${snapshotName}] quantite shopping ${shoppingQty} differente du snapshot ${snapshot.requestedVials}`);
+        }
+        const shoppingPrice = extractDeclaredPriceTotal(shoppingLine, shoppingQty);
+        const expectedShoppingPrice = shoppingPrice?.currency === "£"
+          ? Number(snapshot.totalPriceGbp)
+          : Number(snapshot.totalPriceUsd);
+        if (!shoppingPrice || !Number.isFinite(expectedShoppingPrice)
+          || Math.abs(shoppingPrice.amount - expectedShoppingPrice) > 0.01) {
+          errors.push(`[${snapshotName}] prix shopping non aligne sur le snapshot live`);
+        }
+        const peptideCard = peptides.find((peptide) =>
+          searchable(String(peptide.name || "")) === searchable(snapshotName)
+        );
+        if (peptideCard?.purchaseUrl && !shoppingLine.includes(peptideCard.purchaseUrl)) {
+          errors.push(`[${snapshotName}] URL fournisseur absente de la ligne shopping`);
+        }
+      }
     }
   }
 
