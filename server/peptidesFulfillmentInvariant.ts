@@ -10,7 +10,25 @@ export interface PeptidesFulfillmentInvariantInput {
   reportId?: string | null;
   report?: {
     qualityVersion?: string | null;
-    peptides?: unknown[] | null;
+    peptides?: Array<{
+      activationStatus?: string | null;
+      purchaseUrl?: string | null;
+      reconstitution?: string | null;
+      vialsNeeded?: string | null;
+      priceEstimate?: string | null;
+      [key: string]: unknown;
+    }> | null;
+    sections?: Array<{ id?: string | null; content?: string | null }> | null;
+    weeklySchedule?: string | null;
+    shoppingList?: string | null;
+    _customerRemediation?: {
+      version?: string | null;
+      scientificSources?: boolean | null;
+      operationalProtocol?: boolean | null;
+      purchaseLinks?: boolean | null;
+      questionnaireAnswersUsed?: number | null;
+      sameReportIdRequired?: boolean | null;
+    } | null;
   } | null;
   deliveryAccepted: boolean;
   deliveryHeld?: boolean;
@@ -41,6 +59,54 @@ function dateMs(value: Date | string | null | undefined): number | null {
   return Number.isFinite(timestamp) ? timestamp : null;
 }
 
+function isCompletePaidReport(
+  report: PeptidesFulfillmentInvariantInput["report"],
+): boolean {
+  if (!report) return false;
+  const qualityVersion = String(report.qualityVersion || "").toLowerCase();
+  const peptides = Array.isArray(report.peptides) ? report.peptides : [];
+  const sections = Array.isArray(report.sections) ? report.sections : [];
+  const sectionChars = sections.reduce(
+    (total, section) => total + String(section?.content || "").trim().length,
+    0,
+  );
+  const uniqueSectionIds = new Set(
+    sections.map((section) => String(section?.id || "").trim()).filter(Boolean),
+  );
+  const sharedStructureComplete = peptides.length >= 1
+    && sections.length >= 12
+    && uniqueSectionIds.size === sections.length
+    && sectionChars >= 12_000
+    && String(report.weeklySchedule || "").trim().length >= 100;
+
+  if (!sharedStructureComplete) return false;
+
+  if (qualityVersion === "expert-standard-v1") {
+    return String(report.shoppingList || "").trim().length >= 100;
+  }
+
+  if (qualityVersion === "expert-review-v2") {
+    const remediation = report._customerRemediation;
+    const reviewPeptidesAreNonOperational = peptides.every((peptide) =>
+      String(peptide?.activationStatus || "") === "conditional-inactive"
+      && String(peptide?.purchaseUrl || "").trim() === ""
+      && String(peptide?.reconstitution || "").trim() === ""
+      && String(peptide?.vialsNeeded || "").trim() === ""
+      && String(peptide?.priceEstimate || "").trim() === ""
+    );
+    return String(remediation?.version || "").trim().length >= 3
+      && remediation?.scientificSources === true
+      && remediation?.operationalProtocol === false
+      && remediation?.purchaseLinks === false
+      && Number(remediation?.questionnaireAnswersUsed || 0) >= 1
+      && remediation?.sameReportIdRequired === true
+      && reviewPeptidesAreNonOperational
+      && String(report.shoppingList || "").trim() === "";
+  }
+
+  return false;
+}
+
 export function evaluatePeptidesFulfillmentInvariant(
   input: PeptidesFulfillmentInvariantInput,
 ): PeptidesFulfillmentIncident | null {
@@ -62,7 +128,7 @@ export function evaluatePeptidesFulfillmentInvariant(
 
   const qualityVersion = String(input.report?.qualityVersion || "").toLowerCase();
   const peptideCount = Array.isArray(input.report?.peptides) ? input.report!.peptides!.length : 0;
-  if (!input.report || qualityVersion === "medical-review-v1" || peptideCount < 2) {
+  if (!isCompletePaidReport(input.report)) {
     // A manual link under hold is allowed to preserve an incident artifact,
     // but it is never equivalent to a complete paid deliverable. Keep it
     // linked, block every automatic delivery, and surface an action-required

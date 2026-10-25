@@ -3,6 +3,17 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 import { derivePeptidesStackPolicy } from "./peptidesStackPolicy";
 
+test("one documented axis accepts one attributable molecule without filler", () => {
+  const policy = derivePeptidesStackPolicy({
+    pep_primary_goal: "fatloss",
+    pep_secondary_goals: [],
+  });
+  assert.deepEqual(policy.goals, ["fatloss"]);
+  assert.equal(policy.minimumMolecules, 1);
+  assert.equal(policy.maximumMolecules, 2);
+  assert.equal(policy.multiAxis, false);
+});
+
 test("three distinct goals require attributable coverage without gadget molecules", () => {
   assert.deepEqual(
     derivePeptidesStackPolicy({
@@ -77,4 +88,5 @@ test("final retry cannot collapse to two molecules", () => {
   assert.match(source, /CONDITIONAL_HPG_GATE/);
   assert.match(source, /SECRETAGOGUE_AXIS_GATE/);
   assert.match(source, /Enclomiphene et KissPeptin-10 doivent rester dans le stack/);
+  assert.match(source, /Sur un dossier mono-axe, vise une seule molecule par defaut/);
 });
