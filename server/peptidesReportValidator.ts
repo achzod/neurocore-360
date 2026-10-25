@@ -1312,6 +1312,9 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
   if (report.qualityVersion === "medical-review-v1") {
     errors.push("mode medical-review-v1 interdit: regenerer un rapport expert complet");
   }
+  if (report.qualityVersion === "expert-review-v2") {
+    errors.push("mode expert-review-v2 interdit pour un rapport paye: livrer le protocole operationnel complet");
+  }
   if (
     report.qualityVersion === "expert-standard-v1" &&
     report._validationContext?.consentAccepted === true &&
