@@ -8,6 +8,8 @@ export interface PeptidesManualTargetLock {
   email?: unknown;
   expectedClientName?: unknown;
   expectedCurrentReportSha256?: unknown;
+  expectedSourceSha256?: unknown;
+  expectedPayloadSha256?: unknown;
   confirmation?: unknown;
 }
 
@@ -16,6 +18,8 @@ export interface PeptidesManualOrderTargetLock {
   orderId?: unknown;
   email?: unknown;
   expectedClientName?: unknown;
+  expectedSourceSha256?: unknown;
+  expectedPayloadSha256?: unknown;
   confirmation?: unknown;
 }
 
@@ -40,6 +44,8 @@ export interface PeptidesManualTargetValidation {
   fingerprint: string;
   requiredConfirmation: string;
   currentReportSha256: string;
+  currentSourceSha256: string;
+  currentPayloadSha256: string;
   target: {
     mutation: string;
     orderId: string;
@@ -47,6 +53,8 @@ export interface PeptidesManualTargetValidation {
     email: string;
     expectedClientName: string;
     expectedCurrentReportSha256: string;
+    expectedSourceSha256: string;
+    expectedPayloadSha256: string;
   };
 }
 
@@ -55,11 +63,15 @@ export interface PeptidesManualOrderTargetValidation {
   errors: string[];
   fingerprint: string;
   requiredConfirmation: string;
+  currentSourceSha256: string;
+  currentPayloadSha256: string;
   target: {
     mutation: string;
     orderId: string;
     email: string;
     expectedClientName: string;
+    expectedSourceSha256: string;
+    expectedPayloadSha256: string;
   };
 }
 
@@ -80,8 +92,36 @@ function normalizedName(value: unknown): string {
     .toLowerCase();
 }
 
-function stableJson(value: Record<string, string>): string {
-  return JSON.stringify(Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b))));
+function canonicalize(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalize);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .filter(([, child]) => child !== undefined)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, child]) => [key, canonicalize(child)]),
+    );
+  }
+  if (typeof value === "number" && !Number.isFinite(value)) return String(value);
+  return value;
+}
+
+function stableJson(value: unknown): string {
+  return JSON.stringify(canonicalize(value));
+}
+
+export function hashPeptidesManualMutationPayload(value: unknown): string {
+  return createHash("sha256").update(stableJson(value ?? {})).digest("hex");
+}
+
+export function hashPeptidesManualSourceState(
+  orderResponses: Record<string, unknown> | null | undefined,
+  secondaryResponses: Record<string, unknown> | null | undefined,
+): string {
+  return createHash("sha256").update(stableJson({
+    orderResponses: orderResponses || null,
+    secondaryResponses: secondaryResponses || null,
+  })).digest("hex");
 }
 
 export function buildPeptidesManualTargetFingerprint(input: {
@@ -91,6 +131,8 @@ export function buildPeptidesManualTargetFingerprint(input: {
   email: string;
   expectedClientName: string;
   expectedCurrentReportSha256: string;
+  expectedSourceSha256: string;
+  expectedPayloadSha256: string;
 }): string {
   return createHash("sha256").update(stableJson(input)).digest("hex");
 }
@@ -100,6 +142,8 @@ export function buildPeptidesManualOrderTargetFingerprint(input: {
   orderId: string;
   email: string;
   expectedClientName: string;
+  expectedSourceSha256: string;
+  expectedPayloadSha256: string;
 }): string {
   return createHash("sha256").update(stableJson(input)).digest("hex");
 }
@@ -109,15 +153,24 @@ export function validatePeptidesManualOrderTargetLock(input: {
   targetLock?: PeptidesManualOrderTargetLock | null;
   order: PeptidesManualMutationOrder;
   responses?: Record<string, unknown> | null;
+  mutationPayload?: unknown;
   requireConfirmation?: boolean;
 }): PeptidesManualOrderTargetValidation {
   const lock = input.targetLock || {};
+  const storedResponses = input.order.metadata?.peptidesResponses;
+  const orderResponses = storedResponses && typeof storedResponses === "object"
+    ? storedResponses as Record<string, unknown>
+    : null;
+  const currentSourceSha256 = hashPeptidesManualSourceState(orderResponses, input.responses);
   const target = {
     mutation: text(lock.mutation),
     orderId: text(lock.orderId),
     email: normalizedEmail(lock.email),
     expectedClientName: text(lock.expectedClientName),
+    expectedSourceSha256: text(lock.expectedSourceSha256).toLowerCase(),
+    expectedPayloadSha256: text(lock.expectedPayloadSha256).toLowerCase(),
   };
+  const currentPayloadSha256 = hashPeptidesManualMutationPayload(input.mutationPayload);
   const fingerprint = buildPeptidesManualOrderTargetFingerprint(target);
   const requiredConfirmation = `CONFIRM_PEPTIDES_ORDER_TARGET:${fingerprint}`;
   const errors: string[] = [];
@@ -131,9 +184,8 @@ export function validatePeptidesManualOrderTargetLock(input: {
   if (text(input.order.productType) !== "PEPTIDES_ENGINE") errors.push("ORDER_TARGET_LOCK_PRODUCT_MISMATCH");
   if (!["paid", "partial_refund"].includes(text(input.order.status))) errors.push("ORDER_TARGET_LOCK_ORDER_NOT_PAID");
 
-  const storedResponses = input.order.metadata?.peptidesResponses;
   const sources = [
-    storedResponses && typeof storedResponses === "object" ? storedResponses as Record<string, unknown> : null,
+    orderResponses,
     input.responses || null,
   ].filter((value): value is Record<string, unknown> => Boolean(value));
   const responseEmails = sources.map((value) => normalizedEmail(value.pep_email)).filter(Boolean);
@@ -148,6 +200,18 @@ export function validatePeptidesManualOrderTargetLock(input: {
     errors.push("ORDER_TARGET_LOCK_RESPONSE_NAME_MISMATCH");
   }
 
+  if (!/^[a-f0-9]{64}$/.test(target.expectedSourceSha256)) {
+    errors.push("ORDER_TARGET_LOCK_SOURCE_HASH_INVALID");
+  } else if (target.expectedSourceSha256 !== currentSourceSha256) {
+    errors.push("ORDER_TARGET_LOCK_SOURCE_HASH_MISMATCH");
+  }
+
+  if (!/^[a-f0-9]{64}$/.test(target.expectedPayloadSha256)) {
+    errors.push("ORDER_TARGET_LOCK_PAYLOAD_HASH_INVALID");
+  } else if (target.expectedPayloadSha256 !== currentPayloadSha256) {
+    errors.push("ORDER_TARGET_LOCK_PAYLOAD_HASH_MISMATCH");
+  }
+
   if (input.requireConfirmation !== false && text(lock.confirmation) !== requiredConfirmation) {
     errors.push("ORDER_TARGET_LOCK_CONFIRMATION_MISMATCH");
   }
@@ -157,6 +221,8 @@ export function validatePeptidesManualOrderTargetLock(input: {
     errors: [...new Set(errors)],
     fingerprint,
     requiredConfirmation,
+    currentSourceSha256,
+    currentPayloadSha256,
     target,
   };
 }
@@ -166,6 +232,7 @@ export function validatePeptidesManualTargetLock(input: {
   targetLock?: PeptidesManualTargetLock | null;
   order: PeptidesManualMutationOrder;
   reportRecord: PeptidesManualMutationReportRecord;
+  mutationPayload?: unknown;
   allowUnlinkedReport?: boolean;
   requireConfirmation?: boolean;
 }): PeptidesManualTargetValidation {
@@ -177,9 +244,16 @@ export function validatePeptidesManualTargetLock(input: {
     email: normalizedEmail(lock.email),
     expectedClientName: text(lock.expectedClientName),
     expectedCurrentReportSha256: text(lock.expectedCurrentReportSha256).toLowerCase(),
+    expectedSourceSha256: text(lock.expectedSourceSha256).toLowerCase(),
+    expectedPayloadSha256: text(lock.expectedPayloadSha256).toLowerCase(),
   };
   const currentReport = input.reportRecord.report || {};
   const currentReportSha256 = hashPeptidesReport(currentReport);
+  const orderResponses = input.order.metadata?.peptidesResponses && typeof input.order.metadata.peptidesResponses === "object"
+    ? input.order.metadata.peptidesResponses as Record<string, unknown>
+    : null;
+  const currentSourceSha256 = hashPeptidesManualSourceState(orderResponses, input.reportRecord.responses);
+  const currentPayloadSha256 = hashPeptidesManualMutationPayload(input.mutationPayload);
   const fingerprint = buildPeptidesManualTargetFingerprint(target);
   const requiredConfirmation = `CONFIRM_PEPTIDES_TARGET:${fingerprint}`;
   const errors: string[] = [];
@@ -237,6 +311,18 @@ export function validatePeptidesManualTargetLock(input: {
     errors.push("TARGET_LOCK_REPORT_HASH_MISMATCH");
   }
 
+  if (!/^[a-f0-9]{64}$/.test(target.expectedSourceSha256)) {
+    errors.push("TARGET_LOCK_SOURCE_HASH_INVALID");
+  } else if (target.expectedSourceSha256 !== currentSourceSha256) {
+    errors.push("TARGET_LOCK_SOURCE_HASH_MISMATCH");
+  }
+
+  if (!/^[a-f0-9]{64}$/.test(target.expectedPayloadSha256)) {
+    errors.push("TARGET_LOCK_PAYLOAD_HASH_INVALID");
+  } else if (target.expectedPayloadSha256 !== currentPayloadSha256) {
+    errors.push("TARGET_LOCK_PAYLOAD_HASH_MISMATCH");
+  }
+
   if (input.requireConfirmation !== false && text(lock.confirmation) !== requiredConfirmation) {
     errors.push("TARGET_LOCK_CONFIRMATION_MISMATCH");
   }
@@ -247,6 +333,8 @@ export function validatePeptidesManualTargetLock(input: {
     fingerprint,
     requiredConfirmation,
     currentReportSha256,
+    currentSourceSha256,
+    currentPayloadSha256,
     target,
   };
 }

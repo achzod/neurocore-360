@@ -17,10 +17,13 @@ test("manual target preview binds order, report, email, client name and current 
     'app.post("/api/admin/peptides/manual-target-preview"',
     'app.post("/api/admin/peptides/manual-order-target-preview"',
   );
-  for (const field of ["orderId", "reportId", "email", "expectedClientName", "expectedCurrentReportSha256"]) {
+  for (const field of ["orderId", "reportId", "email", "expectedClientName", "expectedCurrentReportSha256", "expectedSourceSha256", "expectedPayloadSha256"]) {
     assert.match(route, new RegExp(field));
   }
   assert.match(route, /requiredConfirmation/);
+  assert.match(route, /getPeptidesManualMutationPayload/);
+  assert.match(route, /currentSourceSha256/);
+  assert.match(route, /currentPayloadSha256/);
   assert.match(route, /Cache-Control/);
   assert.match(route, /requireConfirmation:\s*false/);
 });
@@ -30,11 +33,26 @@ test("order mutation preview binds the exact paid order, recipient and client na
     'app.post("/api/admin/peptides/manual-order-target-preview"',
     "// Mint a fresh report-access URL",
   );
-  for (const field of ["orderId", "email", "expectedClientName", "requiredConfirmation"]) {
+  for (const field of ["orderId", "email", "expectedClientName", "expectedSourceSha256", "expectedPayloadSha256", "requiredConfirmation"]) {
     assert.match(route, new RegExp(field));
   }
   assert.match(route, /getBurnoutProgress/);
+  assert.match(route, /getPeptidesManualMutationPayload/);
+  assert.match(route, /currentSourceSha256/);
+  assert.match(route, /currentPayloadSha256/);
   assert.match(route, /requireConfirmation:\s*false/);
+});
+
+test("every sensitive option is included in the canonical mutation payload", () => {
+  const helpers = routeSlice(
+    "function getPeptidesManualMutationPayload",
+    "function validateManualPeptidesOrderTargetOrRespond",
+  );
+  for (const field of [
+    "skipEmail", "replaceReportId", "manualExpertDirective", "recoveryPreviousError", "forceImmediate",
+    "expectedCurrentReportId", "fromEmail", "toEmail", "apply", "holdDelivery", "responses", "hold", "reason",
+    "force", "patches", "removePeptides",
+  ]) assert.match(helpers, new RegExp(field));
 });
 
 test("in-place generation requires silent mode and an exact target lock before persistence", () => {
