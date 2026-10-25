@@ -852,12 +852,12 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
   // scale correctly. "150 mcg semaine 1, 200 mcg semaine 2" combined with
   // "300 mcg par injection le soir" = daily injections, scale ×7.
   const detectInjPerWeek = (txt: string): number => {
-    if (/\b1\s*(?:fois|injection)\s*(?:par|\/)\s*semaine|hebdomadaire|1x\/sem\b/i.test(txt)) return 1;
-    if (/\b(?:2|deux)\s*(?:fois|injections?|jours?)\s*(?:par|\/)\s*semaine/i.test(txt)) return 2;
-    if (/\b(?:3|trois)\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine/i.test(txt)) return 3;
-    if (/\b(?:4|quatre)\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine/i.test(txt)) return 4;
-    if (/\b(?:5|cinq)\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine/i.test(txt)) return 5;
-    if (/\b(?:6|six)\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine/i.test(txt)) return 6;
+    if (/\b1\s*(?:fois|injection)\s*(?:par|\/)\s*semaine|hebdomadaire|\b1\s*x\s*\/?\s*sem(?:aine)?\b/i.test(txt)) return 1;
+    if (/\b(?:2|deux)\s*(?:fois|injections?|jours?)\s*(?:par|\/)\s*semaine|\b2\s*x\s*\/?\s*sem(?:aine)?\b/i.test(txt)) return 2;
+    if (/\b(?:3|trois)\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine|\b3\s*x\s*\/?\s*sem(?:aine)?\b/i.test(txt)) return 3;
+    if (/\b(?:4|quatre)\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine|\b4\s*x\s*\/?\s*sem(?:aine)?\b/i.test(txt)) return 4;
+    if (/\b(?:5|cinq)\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine|\b5\s*x\s*\/?\s*sem(?:aine)?\b/i.test(txt)) return 5;
+    if (/\b(?:6|six)\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine|\b6\s*x\s*\/?\s*sem(?:aine)?\b/i.test(txt)) return 6;
     if (/chaque\s+(?:soir|matin|jour)|tous\s+les\s+(?:soirs?|jours?)|\bpar\s+(?:injection|jour|soir)\b|\ble\s+soir\b|\bavant\s+le\s+coucher\b|7\s*(?:jours?|soirs?)\s*\/?\s*7|\b1x\/jour\b/i.test(txt)) return 7;
     return 1;
   };
@@ -1140,12 +1140,9 @@ export function checkPeptide(p: PeptidesPeptide): string[] {
   const vialsQty = extractVialQty(p.vialsNeeded);
   const priceQty = extractPriceQty(p.priceEstimate);
   if (vialsQty != null && priceQty != null && vialsQty !== priceQty) {
-    const ratio = Math.max(vialsQty, priceQty) / Math.min(vialsQty, priceQty);
-    if (ratio > 1.35) {
-      issues.push(
-        `vialsNeeded qty (${vialsQty}) vs priceEstimate qty (${priceQty}) divergent (ratio ${ratio.toFixed(2)})`
-      );
-    }
+    issues.push(
+      `vialsNeeded qty (${vialsQty}) vs priceEstimate qty (${priceQty}) divergent`
+    );
   }
 
   const orderedVialMg = extractVialMg(p.vialsNeeded);

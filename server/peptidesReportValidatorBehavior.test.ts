@@ -72,6 +72,26 @@ test("U-100 validation keeps each conversion attached to its vial context", () =
   assert.ok(issues.some((issue) => issue.includes("50 unites affichees vs 20.0")));
 });
 
+test("commercial vial quantities must match exactly", () => {
+  const issues = checkPeptide({
+    name: "BPC-157",
+    activationStatus: "active",
+    activationRequirements: [],
+    evidenceSummary: "Donnees et limites documentees.",
+    purpose: "Recuperation",
+    whyThisPeptide: "Choix attribuable.",
+    dosage: "1 mg par semaine",
+    timing: "Lundi",
+    route: "Sous-cutanee",
+    cycleDuration: "4 semaines",
+    reconstitution: "Vial de 10mg + 2ml BAC; 1mg = 20 U = 0.20 ml.",
+    vialsNeeded: "4 vials de 10mg",
+    priceEstimate: "$50/vial × 5 vials = $250 total",
+    purchaseUrl: "https://www.peptaura.com/catalog/bpc-157",
+  });
+  assert.ok(issues.some((issue) => issue.includes("vialsNeeded qty (4) vs priceEstimate qty (5) divergent")));
+});
+
 test("conditional inactive cards require every operational field to be structurally empty", () => {
   const issues = checkPeptide({
     name: "KissPeptin-10",
@@ -152,6 +172,17 @@ test("shorthand week ranges apply every plateau without treating range ends as p
     dosage: "S1-S4: 100 mcg, S5-S8: 200 mcg, chaque jour",
     cycleDuration: "8 semaines",
   }), 8.4);
+});
+
+test("compact weekly frequencies scale every shorthand plateau", () => {
+  assert.equal(estimateNeedMg({
+    dosage: "S1-S4: 1 mg, S5-S8: 2 mg, 2x/semaine",
+    cycleDuration: "8 semaines",
+  }), 24);
+  assert.equal(estimateNeedMg({
+    dosage: "S1-S2: 1 mg, S3-S4: 2 mg, 3x/sem",
+    cycleDuration: "4 semaines",
+  }), 18);
 });
 
 test("weekly ranges use the chronologically last plateau even when written out of order", () => {

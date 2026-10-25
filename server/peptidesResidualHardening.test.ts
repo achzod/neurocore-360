@@ -333,6 +333,42 @@ test("legacy Peptides orders keep two Blood credits and paid PayPal retries repa
   );
 });
 
+test("manual provider claim atomically binds HOLD mode and excludes AutoGen", async () => {
+  const storage = new MemStorage();
+  const config = getPeptidesGenerationCircuitConfig({
+    PEPTIDES_AUTOGEN_MAX_ATTEMPTS: "3",
+    PEPTIDES_AUTOGEN_ATTEMPT_BUDGET_MICRO_USD: "500",
+    PEPTIDES_AUTOGEN_MAX_BUDGET_MICRO_USD: "2000",
+    PEPTIDES_AUTOGEN_HOURLY_BUDGET_MICRO_USD: "2000",
+    PEPTIDES_AUTOGEN_DAILY_BUDGET_MICRO_USD: "2000",
+  });
+  const order = await activeOrder(storage);
+  assert.equal(await storage.claimPeptidesManualGenerationProvider(order.id, "manual-1", false, 60_000), true);
+  assert.equal(await storage.claimPeptidesManualGenerationProvider(order.id, "manual-2", false, 60_000), false);
+  assert.equal(await storage.claimPeptidesGenerationAttempt(order.id, config), null);
+  assert.equal(await storage.finalizePeptidesManualGenerationProvider(order.id, "wrong"), false);
+  assert.equal(await storage.finalizePeptidesManualGenerationProvider(order.id, "manual-1"), true);
+
+  await storage.setOrderMetadataKey(order.id, "peptidesEmailHold", true);
+  assert.equal(await storage.claimPeptidesManualGenerationProvider(order.id, "manual-unheld", false, 60_000), false);
+  assert.equal(await storage.claimPeptidesManualGenerationProvider(order.id, "manual-held", true, 60_000), true);
+});
+
+test("payment, Blood access and manual provider paths stay fail-closed in source", () => {
+  const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
+  const bloodRoutes = readFileSync(new URL("./blood-analysis/routes.ts", import.meta.url), "utf8");
+  assert.match(routes, /captureDecision !== "ACTIVATE_PENDING"/);
+  assert.match(routes, /captureCommerciallyValid[\s\S]*capture\.amountCurrency[\s\S]*"EUR"/);
+  assert.match(routes, /PAYPAL_RECONCILIATION_COMMERCIAL_PARITY_FAILED/);
+  assert.match(routes, /stripeSessionMatchesOrder[\s\S]*amount_total[\s\S]*finalAmountCents/);
+  assert.match(routes, /STRIPE_PAID_WITHOUT_LOCAL_ORDER/);
+  assert.match(routes, /STRIPE_COMMERCIAL_PARITY_FAILED/);
+  assert.match(routes, /claimPeptidesManualGenerationProvider/);
+  assert.match(routes, /finalizePeptidesManualGenerationProvider/);
+  assert.doesNotMatch(bloodRoutes, /hasValidReportAccess/);
+  assert.match(bloodRoutes, /getReportAccessDecision\(req, "blood", String\(reportId\), ownerEmail\)/);
+});
+
 test("refunded orders keep consumed generation reservations inside active budget windows", async () => {
   const storage = new MemStorage();
   const config = getPeptidesGenerationCircuitConfig({

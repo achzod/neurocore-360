@@ -5909,6 +5909,37 @@ export async function registerRoutes(
 
       const capture = details?.purchase_units?.[0]?.payments?.captures?.[0];
       const captureId: string = capture?.id || "";
+      const capturedAmount = String(capture?.amount?.value || "");
+      const capturedCurrency = String(capture?.amount?.currency_code || "").toUpperCase();
+      const expectedAmount = (order.finalAmountCents / 100).toFixed(2);
+      if (!captureId || capturedAmount !== expectedAmount || capturedCurrency !== "EUR") {
+        await storage.updateOrder(order.id, {
+          status: "payment_review",
+          metadata: {
+            ...((order.metadata as any) || {}),
+            paypalCaptureId: captureId,
+            capturedAmount,
+            capturedCurrency,
+            expectedAmount,
+            expectedCurrency: "EUR",
+            paymentReviewReason: "PAYPAL_RECONCILIATION_COMMERCIAL_PARITY_FAILED",
+            ...(order.productType === "PEPTIDES_ENGINE" ? {
+              peptidesEmailHold: true,
+              peptidesEmailHoldReason: "PAYMENT_AMOUNT_MISMATCH",
+              peptidesFulfillmentState: "ACTION_REQUIRED",
+              peptidesManualFulfillment: true,
+              peptidesManualFulfillmentState: "PAYMENT_REVIEW_REQUIRED",
+            } : {}),
+          },
+        });
+        return {
+          status: "error",
+          orderId,
+          paypalOrderId,
+          paypalStatus: ppStatus,
+          error: "PAYPAL_COMMERCIAL_PARITY_FAILED",
+        };
+      }
       const payerEmail: string =
         details?.payer?.email_address ||
         details?.payment_source?.paypal?.email_address ||
@@ -6208,6 +6239,57 @@ export async function registerRoutes(
     return { success: true, auditId: audit.id, auditType: audit.type };
   }
 
+  const stripeSessionMatchesOrder = (session: any, order: any): boolean => {
+    const amount = Number(session?.amount_total);
+    return Number.isInteger(amount)
+      && amount === Number(order?.finalAmountCents)
+      && String(session?.currency || "").toLowerCase() === "eur"
+      && String(session?.metadata?.planType || "") === String(order?.productType || "")
+      && String(session?.customer_details?.email || session?.customer_email || session?.metadata?.email || "").trim().toLowerCase()
+        === String(order?.email || "").trim().toLowerCase();
+  };
+
+  const persistOrphanStripePeptidesPaymentIncident = async (session: any, email: string): Promise<string | null> => {
+    const alreadyPersisted = await storage.getOrderByStripeSession(String(session?.id || "")).catch(() => null);
+    if (alreadyPersisted) return alreadyPersisted.id;
+    try {
+      const tier = resolvePeptidesTier(session?.metadata?.peptidesTier);
+      const amountTotal = Number.isInteger(Number(session?.amount_total)) ? Number(session.amount_total) : 0;
+      const baseCents = PEPTIDES_TIER_PRICE_CENTS[tier];
+      const incidentOrder = await storage.createOrder({
+        email,
+        productType: "PEPTIDES_ENGINE",
+        amountCents: baseCents,
+        discountCents: Math.max(0, baseCents - amountTotal),
+        finalAmountCents: amountTotal,
+        stripeCheckoutSessionId: String(session?.id || ""),
+        metadata: {
+          planType: "PEPTIDES_ENGINE",
+          peptidesTier: tier,
+          peptidesEmailHold: true,
+          peptidesEmailHoldReason: "STRIPE_PAID_WITHOUT_LOCAL_ORDER",
+          peptidesFulfillmentState: "ACTION_REQUIRED",
+          peptidesManualFulfillment: true,
+          peptidesManualFulfillmentState: "PAYMENT_REVIEW_REQUIRED",
+          paymentReviewReason: "STRIPE_PAID_WITHOUT_LOCAL_ORDER",
+          stripeObservedAmountCents: amountTotal,
+          stripeObservedCurrency: String(session?.currency || "").toUpperCase(),
+          stripeIncidentAt: new Date().toISOString(),
+        },
+      });
+      await storage.updateOrder(incidentOrder.id, {
+        status: "payment_review",
+        paidAt: new Date(),
+        stripePaymentIntentId: String(session?.payment_intent || "") || null,
+        stripeCustomerId: String(session?.customer || "") || null,
+      });
+      return incidentOrder.id;
+    } catch (error) {
+      console.error("[Stripe] Failed to persist orphan Peptides payment incident:", error);
+      return null;
+    }
+  };
+
   app.post("/api/stripe/confirm-session", async (req, res) => {
     try {
       const sessionId = req.body?.sessionId || req.query?.session_id;
@@ -6262,9 +6344,37 @@ export async function registerRoutes(
       // acknowledge the payment and redirect without trying to create an audit.
       if (planType === "PEPTIDES_ENGINE") {
         const existingOrder = await storage.getOrderByStripeSession(sessionId);
-        const confirmationDecision = existingOrder
-          ? classifyPaidOrderConfirmationStatus(existingOrder.status)
-          : null;
+        if (!existingOrder) {
+          const incidentOrderId = await persistOrphanStripePeptidesPaymentIncident(session, email);
+          res.status(409).json({
+            success: false,
+            error: "STRIPE_PAID_WITHOUT_LOCAL_ORDER",
+            incidentOrderId,
+            auditType: "PEPTIDES_ENGINE",
+          });
+          return;
+        }
+        if (!stripeSessionMatchesOrder(session, existingOrder)) {
+          await storage.updateOrder(existingOrder.id, {
+            status: "payment_review",
+            paidAt: new Date(),
+            metadata: {
+              ...((existingOrder.metadata as any) || {}),
+              peptidesEmailHold: true,
+              peptidesEmailHoldReason: "STRIPE_COMMERCIAL_PARITY_FAILED",
+              peptidesFulfillmentState: "ACTION_REQUIRED",
+              peptidesManualFulfillment: true,
+              peptidesManualFulfillmentState: "PAYMENT_REVIEW_REQUIRED",
+              paymentReviewReason: "STRIPE_COMMERCIAL_PARITY_FAILED",
+              stripeObservedAmountCents: Number(session.amount_total),
+              stripeExpectedAmountCents: existingOrder.finalAmountCents,
+              stripeObservedCurrency: String(session.currency || "").toUpperCase(),
+            },
+          });
+          res.status(409).json({ success: false, error: "STRIPE_COMMERCIAL_PARITY_FAILED", auditType: "PEPTIDES_ENGINE" });
+          return;
+        }
+        const confirmationDecision = classifyPaidOrderConfirmationStatus(existingOrder.status);
         if (confirmationDecision === "BLOCK_REFUNDED") {
           res.status(409).json({ success: false, error: "ORDER_FULLY_REFUNDED", auditType: "PEPTIDES_ENGINE" });
           return;
@@ -6273,7 +6383,7 @@ export async function registerRoutes(
           res.status(409).json({ success: false, error: "ORDER_STATUS_NOT_REACTIVATABLE", status: existingOrder?.status });
           return;
         }
-        if (existingOrder && confirmationDecision === "ACTIVATE_PENDING") {
+        if (confirmationDecision === "ACTIVATE_PENDING") {
           await storage.updateOrder(existingOrder.id, {
             status: "paid",
             paidAt: new Date(),
@@ -6281,7 +6391,7 @@ export async function registerRoutes(
             stripeCustomerId: (session as any).customer || null,
           });
         }
-        if (existingOrder && email) {
+        if (email) {
           await grantBloodCreditsForOrder(
             existingOrder.id,
             email,
@@ -6764,6 +6874,15 @@ export async function registerRoutes(
         return;
       }
 
+      const captureDecision = classifyPaidOrderConfirmationStatus(existingOrder.status);
+      if (captureDecision !== "ACTIVATE_PENDING") {
+        res.status(409).json({
+          error: captureDecision === "BLOCK_REFUNDED" ? "ORDER_FULLY_REFUNDED" : "ORDER_STATUS_NOT_REACTIVATABLE",
+          status: existingOrder.status,
+        });
+        return;
+      }
+
       // Capture payment on PayPal
       const capture = await capturePayPalOrder(paypalOrderId);
       if (capture.status !== "COMPLETED") {
@@ -6773,11 +6892,13 @@ export async function registerRoutes(
 
       // Validate captured amount matches expected
       const expectedEur = (existingOrder.finalAmountCents / 100).toFixed(2);
-      if (capture.amountValue !== expectedEur) {
-        console.error(`[PayPal] Amount mismatch: captured ${capture.amountValue} ${capture.amountCurrency}, expected ${expectedEur} EUR for order ${existingOrder.id}. Payment was captured , needs manual refund.`);
-        // Still mark as paid to track the charge, but flag for review
+      const captureCommerciallyValid = Boolean(capture.captureId)
+        && capture.amountValue === expectedEur
+        && String(capture.amountCurrency || "").toUpperCase() === "EUR";
+      if (!captureCommerciallyValid) {
+        console.error(`[PayPal] Commercial mismatch: capture=${capture.captureId || "missing"} amount=${capture.amountValue} ${capture.amountCurrency}, expected ${expectedEur} EUR for order ${existingOrder.id}. Payment needs manual review.`);
         await storage.updateOrder(existingOrder.id, {
-          status: "paid",
+          status: "payment_review",
           paidAt: new Date(),
           metadata: {
             ...(existingOrder.metadata as Record<string, unknown> || {}),
@@ -6785,7 +6906,10 @@ export async function registerRoutes(
             payerEmail: capture.payerEmail,
             amountMismatch: true,
             capturedAmount: capture.amountValue,
+            capturedCurrency: capture.amountCurrency,
             expectedAmount: expectedEur,
+            expectedCurrency: "EUR",
+            paymentReviewReason: "PAYPAL_COMMERCIAL_PARITY_FAILED",
             ...(existingOrder.productType === "PEPTIDES_ENGINE" ? {
               peptidesEmailHold: true,
               peptidesEmailHoldReason: "PAYMENT_AMOUNT_MISMATCH",
@@ -7113,16 +7237,36 @@ export async function registerRoutes(
         }
       }
 
+      // Establish an atomic provider-call linearization point against the
+      // current HOLD mode. If a concurrent HOLD/manual change won before this
+      // claim, no paid provider call starts. The lease also excludes AutoGen.
+      const manualProviderClaimId = crypto.randomUUID();
+      const manualProviderClaimed = await storage.claimPeptidesManualGenerationProvider(
+        pepOrder.id,
+        manualProviderClaimId,
+        generationHeld,
+        30 * 60 * 1000,
+      );
+      if (!manualProviderClaimed) {
+        res.status(409).json({ error: "PEPTIDES_MANUAL_PROVIDER_CLAIM_CONFLICT" });
+        return;
+      }
+
       // Generate synchronously (admin endpoint = manual trigger, can wait)
       const { generatePeptidesProtocol } = await import("./peptidesEngine");
       const manualTier = ((pepOrder?.metadata as any)?.peptidesTier as "solo" | "coached" | "tracked" | undefined) ?? "coached";
-      const report = await generatePeptidesProtocol(responses, email, manualTier, {
-        orderId: pepOrder?.id,
-        consentAccepted: hasValidPeptidesConsent((pepOrder?.metadata as any)?.peptidesEngineConsent),
-        maxCandidates: normalizedManualDirective ? 2 : undefined,
-        manualExpertDirective: normalizedManualDirective || undefined,
-        initialPreviousError: normalizedRecoveryPreviousError || undefined,
-      });
+      let report: Awaited<ReturnType<typeof generatePeptidesProtocol>>;
+      try {
+        report = await generatePeptidesProtocol(responses, email, manualTier, {
+          orderId: pepOrder?.id,
+          consentAccepted: hasValidPeptidesConsent((pepOrder?.metadata as any)?.peptidesEngineConsent),
+          maxCandidates: normalizedManualDirective ? 2 : undefined,
+          manualExpertDirective: normalizedManualDirective || undefined,
+          initialPreviousError: normalizedRecoveryPreviousError || undefined,
+        });
+      } finally {
+        await storage.finalizePeptidesManualGenerationProvider(pepOrder.id, manualProviderClaimId).catch(() => false);
+      }
       // The model call can take minutes. Re-check the exact source, payload,
       // order link and report hash immediately before any persistence.
       const freshTargetOrder = await storage.getOrder(pepOrder.id);
@@ -12736,6 +12880,37 @@ export async function registerRoutes(
           // The later async success event fulfills those orders instead.
           if (!isStripeCheckoutPaid(session)) break;
           const order = await storage.getOrderByStripeSession(session.id);
+          const sessionPlanType = String(session?.metadata?.planType || "");
+          const sessionEmail = String(
+            session?.customer_details?.email || session?.customer_email || session?.metadata?.email || "",
+          ).trim().toLowerCase();
+          if (!order && sessionPlanType === "PEPTIDES_ENGINE") {
+            await persistOrphanStripePeptidesPaymentIncident(session, sessionEmail);
+            console.error(`[Webhook] Paid Peptides session ${session.id} had no durable local order; incident persisted`);
+            break;
+          }
+          if (order && !stripeSessionMatchesOrder(session, order)) {
+            await storage.updateOrder(order.id, {
+              status: "payment_review",
+              paidAt: new Date(),
+              metadata: {
+                ...((order.metadata as any) || {}),
+                ...(order.productType === "PEPTIDES_ENGINE" ? {
+                  peptidesEmailHold: true,
+                  peptidesEmailHoldReason: "STRIPE_COMMERCIAL_PARITY_FAILED",
+                  peptidesFulfillmentState: "ACTION_REQUIRED",
+                  peptidesManualFulfillment: true,
+                  peptidesManualFulfillmentState: "PAYMENT_REVIEW_REQUIRED",
+                } : {}),
+                paymentReviewReason: "STRIPE_COMMERCIAL_PARITY_FAILED",
+                stripeObservedAmountCents: Number(session.amount_total),
+                stripeExpectedAmountCents: order.finalAmountCents,
+                stripeObservedCurrency: String(session.currency || "").toUpperCase(),
+              },
+            });
+            console.error(`[Webhook] Commercial parity failed for order ${order.id}; fulfillment blocked`);
+            break;
+          }
           if (order && order.status === "pending") {
             await storage.updateOrder(order.id, {
               status: "paid",

@@ -322,6 +322,14 @@ export interface IStorage {
   /** Atomic link/relink helpers used by admin recovery; both fail closed under an explicit hold. */
   claimPeptidesReportSlotForManualReview(orderId: string, reportId: string): Promise<boolean>;
   replacePeptidesReportSlotIfMatches(orderId: string, expectedReportId: string, nextReportId: string): Promise<boolean>;
+  /** Linearization point for a manual provider call; binds the current HOLD mode and prevents duplicate providers. */
+  claimPeptidesManualGenerationProvider(
+    orderId: string,
+    claimId: string,
+    requireHeld: boolean,
+    leaseMs: number,
+  ): Promise<boolean>;
+  finalizePeptidesManualGenerationProvider(orderId: string, claimId: string): Promise<boolean>;
   /** Single-writer delivery claim. A hold/manual state or any prior claim fails closed. */
   claimPeptidesDelivery(orderId: string, reportId: string, claimId: string): Promise<boolean>;
   /** Finalize the exact delivery claim without allowing a stale sender to overwrite a newer state. */
@@ -1487,6 +1495,46 @@ export class MemStorage implements IStorage {
     return true;
   }
 
+  async claimPeptidesManualGenerationProvider(
+    orderId: string,
+    claimId: string,
+    requireHeld: boolean,
+    leaseMs: number,
+  ): Promise<boolean> {
+    const order = this.memOrders.get(orderId);
+    if (!order || order.productType !== "PEPTIDES_ENGINE" || !["paid", "partial_refund"].includes(String(order.status))) return false;
+    const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
+    const held = meta.peptidesEmailHold === true || meta.peptidesEmailHold === "true"
+      || meta.peptidesManualFulfillment === true || meta.peptidesManualFulfillment === "true";
+    if (held !== requireHeld) return false;
+    const existingLease = new Date(String(meta.peptidesManualProviderLeaseUntil || "")).getTime();
+    if (meta.peptidesManualProviderClaimId && Number.isFinite(existingLease) && existingLease > Date.now()) return false;
+    order.metadata = {
+      ...meta,
+      peptidesManualProviderClaimId: claimId,
+      peptidesManualProviderClaimedAt: new Date().toISOString(),
+      peptidesManualProviderLeaseUntil: new Date(Date.now() + Math.max(1, leaseMs)).toISOString(),
+      peptidesManualProviderHoldMode: requireHeld ? "EXPLICIT_HELD" : "UNHELD",
+    } as any;
+    order.updatedAt = new Date();
+    return true;
+  }
+
+  async finalizePeptidesManualGenerationProvider(orderId: string, claimId: string): Promise<boolean> {
+    const order = this.memOrders.get(orderId);
+    if (!order) return false;
+    const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
+    if (String(meta.peptidesManualProviderClaimId || "") !== claimId) return false;
+    order.metadata = {
+      ...meta,
+      peptidesManualProviderClaimId: "",
+      peptidesManualProviderLeaseUntil: "",
+      peptidesManualProviderFinalizedAt: new Date().toISOString(),
+    } as any;
+    order.updatedAt = new Date();
+    return true;
+  }
+
   async claimPeptidesDelivery(orderId: string, reportId: string, claimId: string): Promise<boolean> {
     const order = this.memOrders.get(orderId);
     if (!order) return false;
@@ -1570,7 +1618,10 @@ export class MemStorage implements IStorage {
     const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
     const held = meta.peptidesEmailHold === true || meta.peptidesEmailHold === "true";
     const manual = meta.peptidesManualFulfillment === true || meta.peptidesManualFulfillment === "true";
-    if (held || manual) return null;
+    const manualProviderLease = new Date(String(meta.peptidesManualProviderLeaseUntil || "")).getTime();
+    const manualProviderActive = Boolean(meta.peptidesManualProviderClaimId)
+      && Number.isFinite(manualProviderLease) && manualProviderLease > Date.now();
+    if (held || manual || manualProviderActive) return null;
     const attempts = Math.max(0, Number(meta.peptidesGenerationAttempts || 0));
     const reserved = Math.max(0, Number(meta.peptidesGenerationReservedCostMicroUsd || 0));
     const leaseUntilMs = new Date(String(meta.peptidesGenerationLeaseUntil || "")).getTime();
@@ -1647,10 +1698,13 @@ export class MemStorage implements IStorage {
     const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
     const held = meta.peptidesEmailHold === true || meta.peptidesEmailHold === "true";
     const manual = meta.peptidesManualFulfillment === true || meta.peptidesManualFulfillment === "true";
+    const manualProviderLease = new Date(String(meta.peptidesManualProviderLeaseUntil || "")).getTime();
+    const manualProviderActive = Boolean(meta.peptidesManualProviderClaimId)
+      && Number.isFinite(manualProviderLease) && manualProviderLease > Date.now();
     const leaseUntilMs = new Date(String(meta.peptidesGenerationLeaseUntil || "")).getTime();
     if (order.productType !== "PEPTIDES_ENGINE"
       || !["paid", "partial_refund"].includes(String(order.status))
-      || held || manual
+      || held || manual || manualProviderActive
       || meta.peptidesReportId
       || String(meta.peptidesGenerationResponseId || "") !== responseId) return null;
     if (Number.isFinite(leaseUntilMs) && leaseUntilMs > Date.now()) return null;
@@ -4672,6 +4726,58 @@ export class PgStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
+  async claimPeptidesManualGenerationProvider(
+    orderId: string,
+    claimId: string,
+    requireHeld: boolean,
+    leaseMs: number,
+  ): Promise<boolean> {
+    await this.ensureOrdersTableCreated();
+    const leaseUntil = new Date(Date.now() + Math.max(1, leaseMs)).toISOString();
+    const result = await pool.query(
+      `UPDATE orders
+         SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
+               'peptidesManualProviderClaimId', $1::text,
+               'peptidesManualProviderClaimedAt', NOW()::text,
+               'peptidesManualProviderLeaseUntil', $4::text,
+               'peptidesManualProviderHoldMode', CASE WHEN $3::boolean THEN 'EXPLICIT_HELD' ELSE 'UNHELD' END
+             ),
+             updated_at = NOW()
+       WHERE id = $2
+         AND product_type = 'PEPTIDES_ENGINE'
+         AND status IN ('paid', 'partial_refund')
+         AND (
+           COALESCE(metadata->>'peptidesEmailHold', 'false') = 'true'
+           OR COALESCE(metadata->>'peptidesManualFulfillment', 'false') = 'true'
+         ) = $3::boolean
+         AND (
+           COALESCE(metadata->>'peptidesManualProviderClaimId', '') = ''
+           OR COALESCE(NULLIF(metadata->>'peptidesManualProviderLeaseUntil', '')::timestamptz, '-infinity'::timestamptz) <= NOW()
+         )
+       RETURNING id`,
+      [claimId, orderId, requireHeld, leaseUntil],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async finalizePeptidesManualGenerationProvider(orderId: string, claimId: string): Promise<boolean> {
+    await this.ensureOrdersTableCreated();
+    const result = await pool.query(
+      `UPDATE orders
+          SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
+                'peptidesManualProviderClaimId', '',
+                'peptidesManualProviderLeaseUntil', '',
+                'peptidesManualProviderFinalizedAt', NOW()::text
+              ),
+              updated_at = NOW()
+        WHERE id = $1
+          AND COALESCE(metadata->>'peptidesManualProviderClaimId', '') = $2
+        RETURNING id`,
+      [orderId, claimId],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
   async claimPeptidesDelivery(orderId: string, reportId: string, claimId: string): Promise<boolean> {
     await this.ensureOrdersTableCreated();
     const result = await pool.query(
@@ -4857,6 +4963,10 @@ export class PgStorage implements IStorage {
             AND COALESCE(metadata->>'peptidesReportId', '') = ''
             AND COALESCE(metadata->>'peptidesEmailHold', 'false') <> 'true'
             AND COALESCE(metadata->>'peptidesManualFulfillment', 'false') <> 'true'
+            AND (
+              COALESCE(metadata->>'peptidesManualProviderClaimId', '') = ''
+              OR COALESCE(NULLIF(metadata->>'peptidesManualProviderLeaseUntil', '')::timestamptz, '-infinity'::timestamptz) <= NOW()
+            )
             AND COALESCE(metadata->>'peptidesGenerationState', 'PENDING') <> 'NEEDS_REVIEW'
             AND COALESCE(NULLIF(metadata->>'peptidesGenerationLeaseUntil', '')::timestamptz, '-infinity'::timestamptz) <= NOW()
             AND COALESCE(NULLIF(metadata->>'peptidesGenerationNextRetryAt', '')::timestamptz, '-infinity'::timestamptz) <= NOW()
@@ -4909,6 +5019,10 @@ export class PgStorage implements IStorage {
           AND COALESCE(metadata->>'peptidesReportId', '') = ''
           AND COALESCE(metadata->>'peptidesEmailHold', 'false') <> 'true'
           AND COALESCE(metadata->>'peptidesManualFulfillment', 'false') <> 'true'
+          AND (
+            COALESCE(metadata->>'peptidesManualProviderClaimId', '') = ''
+            OR COALESCE(NULLIF(metadata->>'peptidesManualProviderLeaseUntil', '')::timestamptz, '-infinity'::timestamptz) <= NOW()
+          )
           AND metadata->>'peptidesGenerationResponseId' = $3
           AND COALESCE(NULLIF(metadata->>'peptidesGenerationLeaseUntil', '')::timestamptz, '-infinity'::timestamptz) <= NOW()
       RETURNING

@@ -268,6 +268,14 @@ test("PostgreSQL backfills exact legacy delivery and claims partial-refund gener
   assert.equal(Array.isArray(ledger), true);
   assert.equal(ledger.at(-1).claimId, claim?.claimId);
 
+  const manualOrder = await createActiveOrder(storage, `manual-${randomUUID()}@example.com`, {});
+  assert.equal(await storage.claimPeptidesManualGenerationProvider(manualOrder.id, "manual-pg-1", false, 60_000), true);
+  assert.equal(await storage.claimPeptidesManualGenerationProvider(manualOrder.id, "manual-pg-2", false, 60_000), false);
+  assert.equal(await storage.finalizePeptidesManualGenerationProvider(manualOrder.id, "manual-pg-1"), true);
+  await storage.setOrderMetadataKey(manualOrder.id, "peptidesEmailHold", true);
+  assert.equal(await storage.claimPeptidesManualGenerationProvider(manualOrder.id, "manual-pg-unheld", false, 60_000), false);
+  assert.equal(await storage.claimPeptidesManualGenerationProvider(manualOrder.id, "manual-pg-held", true, 60_000), true);
+
   const heldOrder = await createActiveOrder(storage, `held-${randomUUID()}@example.com`, {
     peptidesEmailHold: true,
     peptidesManualFulfillment: true,

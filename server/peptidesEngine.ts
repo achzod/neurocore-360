@@ -2918,16 +2918,13 @@ export function validateVialsMath(report: PeptidesReport): PeptidesReport {
       }
     }
 
-    // If math derivation failed but vialsNeeded and priceEstimate quantities
-    // disagree by >35%, sync priceEstimate to vialsNeeded (no surcharge risk).
+    // Commercial quantities must be exactly identical everywhere. Any mismatch
+    // is synchronized to vialsNeeded, the operational source of truth.
     if (aiVialsCount != null && priceCount != null && aiVialsCount !== priceCount) {
-      const ratio = Math.max(aiVialsCount, priceCount) / Math.min(aiVialsCount, priceCount);
-      if (ratio > 1.35) {
-        syncPriceEstimate(pep, aiVialsCount);
-        console.log(
-          `[PeptidesEngine] priceEstimate desync for ${pep.name}: vialsNeeded=${aiVialsCount} vs price=${priceCount} (ratio ${ratio.toFixed(2)}) , synced to ${aiVialsCount}`
-        );
-      }
+      syncPriceEstimate(pep, aiVialsCount);
+      console.log(
+        `[PeptidesEngine] priceEstimate desync for ${pep.name}: vialsNeeded=${aiVialsCount} vs price=${priceCount} , synced exactly to ${aiVialsCount}`
+      );
     }
 
     // Surcommande clamp (akrameb 2026-06-03 Retatrutide 80mg ordered vs 12mg
