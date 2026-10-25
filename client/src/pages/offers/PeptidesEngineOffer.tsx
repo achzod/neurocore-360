@@ -341,8 +341,8 @@ const STEPS = [
 const DELIVERABLES = [
   {
     icon: Syringe,
-    title: "Protocole personnalise 2-5 peptides",
-    desc: "Dosages ajustes a ton poids en mcg/kg, timing AM/PM, duree et structure du cycle.",
+    title: "Protocole personnalise selon tes axes",
+    desc: "Uniquement les molecules justifiees par ton profil, avec dosages ajustes a ton poids, timing AM/PM, duree et structure du cycle.",
   },
   {
     icon: FlaskConical,

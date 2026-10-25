@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { checkPeptide } from "./peptidesReportValidator";
+import { shouldApplyOperationalPostProcessing } from "./peptidesGenerationGate";
 
 const conditionalRetatrutide = {
   name: "Retatrutide",
@@ -33,4 +34,16 @@ test("a conditional source must be a direct Peptaura product or catalog link", (
     purchaseUrl: "https://example.com/retatrutide",
   });
   assert.ok(issues.some((issue) => issue.includes("source fournisseur invalide")), issues.join(" | "));
+});
+
+test("vial planning never turns a conditional phase into an operational protocol", () => {
+  assert.equal(shouldApplyOperationalPostProcessing(conditionalRetatrutide), false);
+  assert.equal(
+    shouldApplyOperationalPostProcessing({
+      ...conditionalRetatrutide,
+      activationStatus: "active",
+      dosage: "250 mcg par jour",
+    }),
+    true,
+  );
 });
