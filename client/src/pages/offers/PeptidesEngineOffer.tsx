@@ -62,7 +62,7 @@ const SURFACE_3 = "#FBFBFD";       // Slightly off-white sections
 const BORDER = "#D2D2D7";          // Apple light border
 const WHATSAPP_GREEN = "#25D366";
 const WHATSAPP_TEXT = "#128C7E";
-const PEPTIDES_ENGINE_SALES_PAUSED = true;
+const PEPTIDES_ENGINE_SALES_PAUSED = false;
 
 type PeptidesTierId = "solo" | "coached" | "tracked";
 type WhatsAppPlacement =

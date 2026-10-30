@@ -5242,10 +5242,10 @@ export async function registerRoutes(
   };
 
 
-  // New Peptides Engine purchases are paused while the paid scope and the
-  // fulfillment gate are reconciled. Existing paid orders and report access
-  // keep working; only new payment sessions are blocked.
-  const PEPTIDES_ENGINE_CHECKOUT_PAUSED = true;
+  // Emergency pause switch: keep the guarded paths in place so sales can be
+  // stopped atomically if needed, but leave the validated Peptides Engine
+  // offer, previews, follow-ups and payment rails open in normal operation.
+  const PEPTIDES_ENGINE_CHECKOUT_PAUSED = false;
   const rejectPausedPeptidesCheckout = (res: any): void => {
     res.status(503).json({
       error: "PEPTIDES_ENGINE_CHECKOUT_PAUSED",
