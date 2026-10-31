@@ -73,11 +73,12 @@ function canonicalProductUrl(value: unknown): string | null {
   try {
     const url = new URL(String(value || ""));
     if (
-      url.origin !== "https://www.peptaura.com"
+      !["https://www.peptaura.com", "https://peptaura.com"].includes(url.origin)
       || url.username
       || url.password
     ) return null;
     if (!/^\/product\/\d+-[a-z0-9-]+$/i.test(url.pathname)) return null;
+    url.hostname = "www.peptaura.com";
     url.search = "";
     url.hash = "";
     return url.toString();
@@ -137,7 +138,7 @@ export function parsePeptauraProductFeed(
   if (
     document.version !== "openai-product-feed-v1"
     || merchant?.name !== "Peptaura"
-    || merchant?.base_url !== "https://www.peptaura.com"
+    || !["https://www.peptaura.com", "https://peptaura.com"].includes(String(merchant?.base_url || ""))
   ) {
     return null;
   }

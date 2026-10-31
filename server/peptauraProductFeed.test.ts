@@ -51,6 +51,9 @@ function parse(raw: string, overrides: Partial<Parameters<typeof parsePeptauraPr
 
 test("accepts only the exact Peptaura feed identity", () => {
   assert.equal(parse(feed())?.snapshots.length, 1);
+  assert.equal(parse(feed([product({ link: "https://peptaura.com/product/204-ipamorelin-5mg-test-labs" })], {
+    merchant: { name: "Peptaura", base_url: "https://peptaura.com" },
+  }))?.snapshots.length, 1);
   assert.equal(parse(feed([], { version: "other-feed-v1" })), null);
   assert.equal(parse(feed([], { merchant: { name: "Peptaura mirror", base_url: "https://www.peptaura.com" } })), null);
   assert.equal(parse(feed([], { merchant: { name: "Peptaura", base_url: "https://peptaura.example" } })), null);
@@ -80,6 +83,19 @@ test("keeps only canonical Peptaura product URLs and strips query or fragment", 
     "https://www.peptaura.com/product/204-ipamorelin-5mg-test-labs",
   );
   assert.equal(parsed.snapshots[0].url, "https://www.peptaura.com/catalog/Ipamorelin");
+});
+
+test("accepts Peptaura's apex domain and normalizes product links to www", () => {
+  const parsed = parse(feed([
+    product({ link: "https://peptaura.com/product/204-ipamorelin-5mg-test-labs?utm_source=feed" }),
+  ], {
+    merchant: { name: "Peptaura", base_url: "https://peptaura.com" },
+  }));
+  assert.ok(parsed);
+  assert.equal(
+    parsed.snapshots[0].listings[0].productUrl,
+    "https://www.peptaura.com/product/204-ipamorelin-5mg-test-labs",
+  );
 });
 
 test("retains only strictly positive USD prices", () => {
