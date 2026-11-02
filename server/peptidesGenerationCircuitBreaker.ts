@@ -131,7 +131,9 @@ export function getPeptidesGenerationCircuitConfig(
     90 * 60 * 1000,
   );
 
-  const minimumOrderBudget = attemptBudgetMicroUsd * maxAttempts;
+  // Manual paid-order recovery also exposes two quality candidates even when
+  // unattended autogen is configured to one claim attempt. Fund both paths.
+  const minimumOrderBudget = attemptBudgetMicroUsd * Math.max(2, maxAttempts);
   const maxBudgetMicroUsd = Math.max(minimumOrderBudget, requestedMaxBudget);
   const maxHourlyBudgetMicroUsd = Math.max(maxBudgetMicroUsd, requestedHourlyBudget);
   return {

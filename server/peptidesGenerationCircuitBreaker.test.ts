@@ -162,7 +162,7 @@ test("a persisted attempt or cost cap survives cycles and opens the circuit", ()
   const costOnly = {
     peptidesGenerationState: "PENDING",
     peptidesGenerationAttempts: 0,
-    peptidesGenerationReservedCostMicroUsd: 3_000_000,
+    peptidesGenerationReservedCostMicroUsd: 6_000_000,
   };
   assert.equal(evaluatePeptidesGenerationEligibility(costOnly, config).reason, "COST_CAP");
 });
