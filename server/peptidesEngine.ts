@@ -46,6 +46,7 @@ import {
   quotePeptauraShippingBasket,
   type PeptauraShippingQuote,
 } from "./peptauraShipping";
+import { canonicalizePeptauraCountry } from "./peptidesCountry";
 export {
   evaluatePeptauraGenerationPreflight,
   PeptauraSourceUnavailableError,
@@ -417,11 +418,13 @@ function normalizeDeliveryCountry(responses: Record<string, unknown>): string {
   const euOther = String(responses.pep_country_eu_other ?? "").trim();
   const worldOther = String(responses.pep_country_other ?? "").trim();
 
-  if (raw === "EU-other" && euOther) return euOther;
-  if (raw === "world" && worldOther) return worldOther;
+  if (raw === "EU-other" && euOther) return canonicalizePeptauraCountry(euOther);
+  if (raw === "world" && worldOther) return canonicalizePeptauraCountry(worldOther);
 
   if (!raw) return "France";
-  return PEPTAURA_COUNTRY_LABELS[raw] || PEPTAURA_COUNTRY_LABELS[raw.toUpperCase()] || raw;
+  return canonicalizePeptauraCountry(
+    PEPTAURA_COUNTRY_LABELS[raw] || PEPTAURA_COUNTRY_LABELS[raw.toUpperCase()] || raw,
+  );
 }
 
 function peptauraShippingUrl(country: string): string {
