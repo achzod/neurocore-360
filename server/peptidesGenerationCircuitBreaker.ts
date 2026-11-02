@@ -62,8 +62,11 @@ export function isPeptidesAutogenEnabled(
   return String(env.PEPTIDES_AUTOGEN_ENABLED || "").trim().toLowerCase() === "true";
 }
 
-const DEFAULT_ATTEMPT_BUDGET_MICRO_USD = 500_000;
-const DEFAULT_ORDER_BUDGET_MICRO_USD = 1_000_000;
+// Current expert-standard generations routinely cost about $2.2-$2.4. Reserve
+// $3 per provider call so a successful first call cannot make the configured
+// second quality-recovery attempt impossible before it starts.
+const DEFAULT_ATTEMPT_BUDGET_MICRO_USD = 3_000_000;
+const DEFAULT_ORDER_BUDGET_MICRO_USD = 6_000_000;
 const DEFAULT_HOURLY_BUDGET_MICRO_USD = 5_000_000;
 const DEFAULT_DAILY_BUDGET_MICRO_USD = 15_000_000;
 const DEFAULT_LEASE_MS = 40 * 60 * 1000;
@@ -100,7 +103,7 @@ export function getPeptidesGenerationCircuitConfig(
   const attemptBudgetMicroUsd = boundedInteger(
     env.PEPTIDES_AUTOGEN_ATTEMPT_BUDGET_MICRO_USD,
     DEFAULT_ATTEMPT_BUDGET_MICRO_USD,
-    1,
+    DEFAULT_ATTEMPT_BUDGET_MICRO_USD,
     20_000_000,
   );
   const requestedMaxBudget = boundedInteger(
@@ -128,18 +131,21 @@ export function getPeptidesGenerationCircuitConfig(
     90 * 60 * 1000,
   );
 
+  const minimumOrderBudget = attemptBudgetMicroUsd * maxAttempts;
+  const maxBudgetMicroUsd = Math.max(minimumOrderBudget, requestedMaxBudget);
+  const maxHourlyBudgetMicroUsd = Math.max(maxBudgetMicroUsd, requestedHourlyBudget);
   return {
     maxAttempts,
     maxStoredResumeAttempts,
     attemptBudgetMicroUsd,
-    // Never let an invalid configuration reserve more than the order cap.
-    maxBudgetMicroUsd: Math.max(attemptBudgetMicroUsd, requestedMaxBudget),
+    // The order cap must fund every advertised attempt, including a strict
+    // quality regeneration after a completed-but-rejected first response.
+    maxBudgetMicroUsd,
     // Window caps are reservations, not estimates made after the provider has
-    // already spent. This makes the guard useful even if telemetry is delayed.
-    maxHourlyBudgetMicroUsd: Math.max(attemptBudgetMicroUsd, requestedHourlyBudget),
+    // already spent. Keep them at least as large as one complete order budget.
+    maxHourlyBudgetMicroUsd,
     maxDailyBudgetMicroUsd: Math.max(
-      attemptBudgetMicroUsd,
-      requestedHourlyBudget,
+      maxHourlyBudgetMicroUsd,
       requestedDailyBudget,
     ),
     leaseMs,

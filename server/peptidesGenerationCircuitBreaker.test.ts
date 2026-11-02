@@ -81,12 +81,13 @@ test("Peptides autogen is fail-closed unless explicitly enabled", () => {
   assert.equal(isPeptidesAutogenEnabled({ PEPTIDES_AUTOGEN_ENABLED: "true" }), true);
 });
 
-test("autogen defaults to two bounded attempts at fifty cents each", () => {
+test("autogen reserves enough budget for two expert-standard provider calls", () => {
   const defaults = getPeptidesGenerationCircuitConfig({});
   assert.equal(defaults.maxAttempts, 2);
   assert.equal(defaults.maxStoredResumeAttempts, 3);
-  assert.equal(defaults.attemptBudgetMicroUsd, 500_000);
-  assert.equal(defaults.maxBudgetMicroUsd, 1_000_000);
+  assert.equal(defaults.attemptBudgetMicroUsd, 3_000_000);
+  assert.equal(defaults.maxBudgetMicroUsd, 6_000_000);
+  assert.equal(defaults.maxHourlyBudgetMicroUsd, 6_000_000);
 });
 
 test("retry backoff is five minutes and the second failure is terminal", () => {
@@ -132,16 +133,16 @@ test("stored responses retry post-processing without another provider budget", (
   );
 });
 
-test("window budgets cannot be configured below one reserved attempt", () => {
+test("window budgets cannot be configured below the complete two-attempt order", () => {
   const bounded = getPeptidesGenerationCircuitConfig({
     PEPTIDES_AUTOGEN_ATTEMPT_BUDGET_MICRO_USD: "3000000",
     PEPTIDES_AUTOGEN_MAX_BUDGET_MICRO_USD: "1",
     PEPTIDES_AUTOGEN_HOURLY_BUDGET_MICRO_USD: "1",
     PEPTIDES_AUTOGEN_DAILY_BUDGET_MICRO_USD: "1",
   });
-  assert.equal(bounded.maxBudgetMicroUsd, 3_000_000);
-  assert.equal(bounded.maxHourlyBudgetMicroUsd, 3_000_000);
-  assert.equal(bounded.maxDailyBudgetMicroUsd, 3_000_000);
+  assert.equal(bounded.maxBudgetMicroUsd, 6_000_000);
+  assert.equal(bounded.maxHourlyBudgetMicroUsd, 6_000_000);
+  assert.equal(bounded.maxDailyBudgetMicroUsd, 6_000_000);
 });
 
 test("all generation callers inherit one provider call unless manually overridden", () => {
@@ -280,6 +281,13 @@ test("the real engine blocks before an injected provider and defaults to one can
 
 test("persistent claims are idempotent and the hourly reservation cap blocks the next order", async () => {
   process.env.DATABASE_URL ||= "postgresql://test:test@127.0.0.1:1/test";
+  const claimConfig = getPeptidesGenerationCircuitConfig({
+    PEPTIDES_AUTOGEN_MAX_ATTEMPTS: "1",
+    PEPTIDES_AUTOGEN_ATTEMPT_BUDGET_MICRO_USD: "3000000",
+    PEPTIDES_AUTOGEN_MAX_BUDGET_MICRO_USD: "3000000",
+    PEPTIDES_AUTOGEN_HOURLY_BUDGET_MICRO_USD: "15000000",
+    PEPTIDES_AUTOGEN_DAILY_BUDGET_MICRO_USD: "30000000",
+  });
   const { MemStorage } = await import("./storage");
   const storage = new MemStorage();
   const orders = await Promise.all([1, 2, 3, 4, 5, 6].map(async (index) => {
@@ -292,15 +300,15 @@ test("persistent claims are idempotent and the hourly reservation cap blocks the
     return order;
   }));
 
-  assert.ok(await storage.claimPeptidesGenerationAttempt(orders[0].id, config));
-  assert.equal(await storage.claimPeptidesGenerationAttempt(orders[0].id, config), null);
+  assert.ok(await storage.claimPeptidesGenerationAttempt(orders[0].id, claimConfig));
+  assert.equal(await storage.claimPeptidesGenerationAttempt(orders[0].id, claimConfig), null);
   for (const order of orders.slice(1, 5)) {
-    assert.ok(await storage.claimPeptidesGenerationAttempt(order.id, config));
+    assert.ok(await storage.claimPeptidesGenerationAttempt(order.id, claimConfig));
   }
-  assert.equal(await storage.claimPeptidesGenerationAttempt(orders[5].id, config), null);
+  assert.equal(await storage.claimPeptidesGenerationAttempt(orders[5].id, claimConfig), null);
 
   await storage.markPeptidesGenerationNeedsReview(orders[1].id, "quality", "invalid");
-  assert.equal(await storage.claimPeptidesGenerationAttempt(orders[1].id, config), null);
+  assert.equal(await storage.claimPeptidesGenerationAttempt(orders[1].id, claimConfig), null);
 });
 
 test("a global source outage atomically refunds the claim and resumes with the same attempt number", async () => {
