@@ -7302,7 +7302,9 @@ export async function registerRoutes(
         report = await generatePeptidesProtocol(responses, email, manualTier, {
           orderId: pepOrder?.id,
           consentAccepted: hasValidPeptidesConsent((pepOrder?.metadata as any)?.peptidesEngineConsent),
-          maxCandidates: normalizedManualDirective || normalizedRecoveryPreviousError ? 2 : undefined,
+          // Manual held recovery may need the dedicated final stock-aware pass
+          // after the primary and strict candidates expose different live gates.
+          maxCandidates: normalizedManualDirective || normalizedRecoveryPreviousError ? 3 : undefined,
           manualExpertDirective: normalizedManualDirective || undefined,
           initialPreviousError: normalizedRecoveryPreviousError || undefined,
         });

@@ -145,6 +145,14 @@ test("window budgets cannot be configured below the complete two-attempt order",
   assert.equal(bounded.maxDailyBudgetMicroUsd, 6_000_000);
 });
 
+test("held manual recovery exposes the dedicated third stock-aware candidate", () => {
+  const routesSource = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
+  assert.match(
+    routesSource,
+    /maxCandidates:\s*normalizedManualDirective\s*\|\|\s*normalizedRecoveryPreviousError\s*\?\s*3\s*:\s*undefined/,
+  );
+});
+
 test("all generation callers inherit one provider call unless manually overridden", () => {
   const engineSource = readFileSync(new URL("./peptidesEngine.ts", import.meta.url), "utf8");
   assert.match(engineSource, /options\.providerRetries \?\? 1/);
