@@ -7302,7 +7302,7 @@ export async function registerRoutes(
         report = await generatePeptidesProtocol(responses, email, manualTier, {
           orderId: pepOrder?.id,
           consentAccepted: hasValidPeptidesConsent((pepOrder?.metadata as any)?.peptidesEngineConsent),
-          maxCandidates: normalizedManualDirective ? 2 : undefined,
+          maxCandidates: normalizedManualDirective || normalizedRecoveryPreviousError ? 2 : undefined,
           manualExpertDirective: normalizedManualDirective || undefined,
           initialPreviousError: normalizedRecoveryPreviousError || undefined,
         });

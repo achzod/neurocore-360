@@ -1,5 +1,6 @@
 export interface PeptidesStackPolicy {
   goals: string[];
+  activeGoals: string[];
   minimumMolecules: number;
   maximumMolecules: number;
   multiAxis: boolean;
@@ -38,32 +39,40 @@ export function derivePeptidesStackPolicy(
   const conditionalHpgPhase =
     testosteroneGoal && ["old", "never"].includes(testosteroneBloodworkStatus);
   const secretagogueAxisRequired = goals.includes("gh-antiaging");
+  const activeGoals = conditionalHpgPhase
+    ? goals.filter((goal) => goal !== "testo-boost")
+    : goals;
 
-  // Count attributable coverage axes instead of imposing filler products.
+  // Count attributable active axes instead of imposing filler products.
   // One molecule can legitimately support more than one goal; forcing five
   // or six molecules for three or four axes creates gadget additions and
   // makes valid live-packaging fallbacks impossible.
   // A single documented axis can legitimately need a single molecule. The
   // old floor of two forced filler products into mono-axis dossiers and also
   // made complete one-molecule reports look invalid downstream.
-  let minimumMolecules = goals.length <= 1 ? 1 : Math.min(4, goals.length);
+  let minimumMolecules = activeGoals.length <= 1 ? activeGoals.length : Math.min(4, activeGoals.length);
   const maximumMolecules = goals.length <= 1 ? 2 : goals.length >= 4 ? 6 : 5;
 
-  // A confirmed HPG axis needs its two distinct levers. When another objective
-  // is also present, reserve room for both HPG levers plus the other axes.
-  // A conditional HPG phase needs the same two explicit cards.
-  if ((confirmedLowTestosterone || conditionalHpgPhase) && goals.length >= 2) {
+  // A confirmed HPG axis needs its two distinct active levers. A conditional
+  // HPG phase keeps the same two cards, but they are inactive and therefore
+  // never count toward active-axis coverage. The GH axis still needs its two
+  // distinct active secretagogues in addition to the other active axes.
+  if (confirmedLowTestosterone && goals.length >= 2) {
     minimumMolecules = Math.max(minimumMolecules, 3);
   }
-  if ((confirmedLowTestosterone || conditionalHpgPhase) && goals.length >= 3) {
+  if (confirmedLowTestosterone && goals.length >= 3) {
     minimumMolecules = Math.max(minimumMolecules, 4);
+  }
+  if (conditionalHpgPhase && secretagogueAxisRequired) {
+    minimumMolecules = Math.min(4, minimumMolecules + 1);
   }
 
   return {
     goals,
+    activeGoals,
     minimumMolecules,
     maximumMolecules,
-    multiAxis: goals.length >= 2,
+    multiAxis: activeGoals.length >= 2,
     confirmedLowTestosterone,
     testosteroneGoal,
     testosteroneBloodworkStatus,

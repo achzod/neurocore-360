@@ -117,7 +117,7 @@ export function validateGeneratedPeptideStack(
   );
   if (!options.skipMinimumCoverage && distinctActiveNames.size < policy.minimumMolecules) {
     issues.push(
-      `AXIS_COVERAGE_GATE: ${distinctActiveNames.size} molecule(s) active(s) distincte(s) pour ${policy.goals.length} axe(s), minimum ${policy.minimumMolecules}. Les cartes conditionnelles et les doublons ne couvrent pas le minimum.`,
+      `AXIS_COVERAGE_GATE: ${distinctActiveNames.size} molecule(s) active(s) distincte(s) pour ${policy.activeGoals.length} axe(s) actif(s), minimum ${policy.minimumMolecules}. Les cartes conditionnelles et les doublons ne couvrent pas le minimum.`,
     );
   }
   if (items.length > policy.maximumMolecules) {
@@ -126,7 +126,7 @@ export function validateGeneratedPeptideStack(
     );
   }
 
-  if (activeItems.length < 1) {
+  if (policy.activeGoals.length > 0 && activeItems.length < 1) {
     issues.push(
       "ACTIVE_AXIS_GATE: aucune molecule active; une phase uniquement conditionnelle ne remplit pas un protocole paye.",
     );
@@ -138,10 +138,10 @@ export function validateGeneratedPeptideStack(
         normalizeCoverageText(candidate.name).replace(/[^a-z0-9]+/g, "") === name
       ) === index;
     });
-    const coveredAxes = maximumDistinctAxisCoverage(distinctActiveItems, policy.goals);
-    if (coveredAxes < policy.goals.length) {
+    const coveredAxes = maximumDistinctAxisCoverage(distinctActiveItems, policy.activeGoals);
+    if (coveredAxes < policy.activeGoals.length) {
       issues.push(
-        `AXIS_ATTRIBUTION_GATE: ${coveredAxes}/${policy.goals.length} axe(s) couvert(s) par des molecules actives distinctes et attribuables.`,
+        `AXIS_ATTRIBUTION_GATE: ${coveredAxes}/${policy.activeGoals.length} axe(s) actif(s) couvert(s) par des molecules actives distinctes et attribuables.`,
       );
     }
   }

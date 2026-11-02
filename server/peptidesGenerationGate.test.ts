@@ -105,6 +105,24 @@ test("French apostrophe and aucunement negations never create axis coverage", ()
   }
 });
 
+test("a conditional HPG phase is excluded from active-axis attribution", () => {
+  const policy = derivePeptidesStackPolicy({
+    pep_primary_goal: "testo-boost",
+    pep_secondary_goals: ["gh-antiaging", "fatloss", "skin-hair"],
+    pep_testo_bloodwork: "old",
+  });
+  assert.deepEqual(policy.activeGoals, ["gh-antiaging", "fatloss", "skin-hair"]);
+  assert.equal(policy.minimumMolecules, 4);
+  assert.deepEqual(validateGeneratedPeptideStack([
+    active("CJC-1295 sans DAC", "Axe GH et longevite"),
+    active("Ipamorelin", "Axe GH et hormone de croissance"),
+    active("Retatrutide", "Perte de graisse et appetit"),
+    active("GHK-Cu", "Peau et cheveux"),
+    conditional("Enclomiphene Citrate"),
+    conditional("KissPeptin-10"),
+  ], policy), []);
+});
+
 test("conditional cards never satisfy the active minimum", () => {
   const policy = derivePeptidesStackPolicy({
     pep_primary_goal: "fatloss",

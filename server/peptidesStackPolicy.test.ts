@@ -23,6 +23,7 @@ test("three distinct goals require attributable coverage without gadget molecule
     }),
     {
       goals: ["fatloss", "recovery", "skin-hair"],
+      activeGoals: ["fatloss", "recovery", "skin-hair"],
       minimumMolecules: 3,
       maximumMolecules: 5,
       multiAxis: true,
@@ -41,7 +42,8 @@ test("old testosterone bloodwork keeps KissPeptin and Enclomiphene as a conditio
     pep_secondary_goals: ["testo-boost", "gh-antiaging"],
     pep_testo_bloodwork: "old",
   });
-  assert.equal(policy.minimumMolecules, 4);
+  assert.deepEqual(policy.activeGoals, ["fatloss", "gh-antiaging"]);
+  assert.equal(policy.minimumMolecules, 3);
   assert.equal(policy.conditionalHpgPhase, true);
   assert.equal(policy.secretagogueAxisRequired, true);
 });
@@ -75,6 +77,7 @@ test("four non-HPG axes accept one attributable molecule per axis", () => {
     pep_secondary_goals: ["recovery", "skin-hair", "endurance"],
   });
   assert.deepEqual(policy.goals, ["fatloss", "recovery", "skin-hair", "endurance"]);
+  assert.deepEqual(policy.activeGoals, policy.goals);
   assert.equal(policy.minimumMolecules, 4);
   assert.equal(policy.maximumMolecules, 6);
 });
@@ -89,5 +92,5 @@ test("final retry cannot collapse to two molecules", () => {
   assert.match(engine, /CONDITIONAL_HPG_GATE/);
   assert.match(engine, /SECRETAGOGUE_AXIS_GATE/);
   assert.match(engine, /Enclomiphene et KissPeptin-10 doivent rester dans le stack/);
-  assert.match(engine, /Sur un dossier mono-axe, vise une seule molecule par defaut/);
+  assert.match(engine, /Sur un dossier mono-axe actif, vise une seule molecule par defaut/);
 });
