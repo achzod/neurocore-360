@@ -185,6 +185,24 @@ function removeSectionOperationalMentions(
   }
 }
 
+function removeConditionalOperationalMentions(report: RepairableReport): void {
+  const conditionalNames = (report.peptides || [])
+    .filter((peptide) => peptide.activationStatus === "conditional-inactive")
+    .map((peptide) => String(peptide.name || "").trim())
+    .filter(Boolean);
+  if (conditionalNames.length === 0) return;
+
+  report.weeklySchedule = removeOperationalLinesForPeptides(
+    report.weeklySchedule || "",
+    conditionalNames,
+  );
+  report.shoppingList = removeOperationalLinesForPeptides(
+    report.shoppingList || "",
+    conditionalNames,
+  );
+  removeSectionOperationalMentions(report, conditionalNames);
+}
+
 function pruneUnavailableUnrequestedPeptides(
   report: RepairableReport,
   responses: Record<string, unknown>
@@ -1334,6 +1352,9 @@ function repairStandardReportContent(
   normalizeSingleVialGrammar(report);
   upsertPersonalizedNutritionTarget(report, responses);
   upsertFinalDisclaimer(report, firstName);
+  // Keep analytical HPG context while deterministically removing every dose,
+  // purchase, reconstitution and calendar mention for inactive cards.
+  removeConditionalOperationalMentions(report);
 }
 
 function cautiousPurpose(peptide: PeptideItem): { purpose: string; rationale: string } {

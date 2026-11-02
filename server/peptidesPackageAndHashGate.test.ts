@@ -58,6 +58,17 @@ test("Lazreg: proportionate unit blend wins over disproportionate box", () => {
   assert.equal(plan?.totalPriceUsd, 129.8);
 });
 
+test("paid generation can hard-cap packaging instead of accepting a mandatory oversized box", () => {
+  const plan = selectBestPurchasePlanWithPreferredStrength(
+    [listing("Zenove", "5mg", 10, 71.5)],
+    16.8,
+    5,
+    1.3,
+    1.3,
+  );
+  assert.equal(plan, null);
+});
+
 test("mandatory box remains available when no proportionate basket exists", () => {
   const plan = selectBestPurchasePlanWithMandatoryFallback(
     [listing("Zenove", "5mg", 10, 71.5)],

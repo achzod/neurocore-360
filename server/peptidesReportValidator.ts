@@ -1113,9 +1113,14 @@ export function checkPeptide(p: PeptidesPeptide): string[] {
     // Every operational field must be structurally empty, not euphemistically
     // populated with prose such as "selon tolerance" or "chaque nuit".
     const sourceUrl = String(p.purchaseUrl || "").trim();
+    const isConditionalEnclomiphene = /\benclomiph[eè]ne(?:\s+citrate)?\b/i.test(p.name || "");
     if (!sourceUrl) {
       issues.push("phase conditionnelle sans acces source fournisseur");
-    } else if (!/^https:\/\/(?:www\.)?peptaura\.com\/(?:catalog|product)\//i.test(sourceUrl)) {
+    } else if (
+      isConditionalEnclomiphene
+        ? sourceUrl !== ENCLOMIPHENE_SOURCE_URL
+        : !/^https:\/\/(?:www\.)?peptaura\.com\/(?:catalog|product)\//i.test(sourceUrl)
+    ) {
       issues.push(`phase conditionnelle avec source fournisseur invalide: ${sourceUrl}`);
     }
     return issues;

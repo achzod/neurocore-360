@@ -29,6 +29,14 @@ test("a paid conditional review is invalid without its promised source", () => {
   assert.ok(issues.includes("phase conditionnelle sans acces source fournisseur"), issues.join(" | "));
 });
 
+test("the authenticated Enclomiphene source remains valid while the HPG card is conditional", () => {
+  assert.deepEqual(checkPeptide({
+    ...conditionalRetatrutide,
+    name: "Enclomiphene Citrate",
+    purchaseUrl: "https://receptorchem.co.uk/enclomiphene-citrate/",
+  }), []);
+});
+
 test("a conditional source must be a direct Peptaura product or catalog link", () => {
   const issues = checkPeptide({
     ...conditionalRetatrutide,

@@ -1085,6 +1085,7 @@ function selectBestLivePurchasePlan(
     needMg,
     preferredVialMg,
     PEPTAURA_MAX_PACKAGING_OVERSTOCK_RATIO,
+    PEPTAURA_MAX_PACKAGING_OVERSTOCK_RATIO,
   );
 }
 
@@ -2364,7 +2365,7 @@ RÈGLES ABSOLUES:
 6. Pour le choix du fournisseur (pays de livraison ${peptauraContext.country}, ${budgetNote}) : suis STRICTEMENT CONTEXTE PEPTAURA LIVE. Recommande un fournisseur qui livre vers ${peptauraContext.country}, evite tout fournisseur liste comme bloque, et rappelle que le client doit verifier ${peptauraContext.shippingUrl} avant de payer.
 6b. Stock live et quantite achetable: ne choisis une molecule que si le besoin total calcule peut etre couvert par les formats live avec au maximum 30% de marge quand le packaging live l'impose. Exemple: si le plus petit format live est 5 mg, le besoin total doit etre au moins 3.85 mg pour commander 1 vial; si le besoin coherent du protocole est plus bas, retire cette molecule et choisis une alternative dont le format Peptaura passe. Ne rallonge jamais une cure uniquement pour consommer un vial.
 7. Le rapport doit contenir entre 30000 et 38000 caracteres au total. Chaque section doit etre substantielle, sans repetitions ni remplissage. Ne depasse pas 38000 caracteres.
-8. Chaque entree de "peptides" doit apparaitre dans la section de justification, le guide de reconstitution, le calendrier pratique, "weeklySchedule" et la liste de courses. Si tu ne l'integres pas partout, retire-la du tableau.
+8. Chaque entree ACTIVE de "peptides" doit apparaitre dans la section de justification, le guide de reconstitution, le calendrier pratique, "weeklySchedule" et la liste de courses. Une carte conditional-inactive reste uniquement dans l'analyse de la phase conditionnelle et le suivi biologique: son nom ne doit jamais apparaitre dans le guide de reconstitution, le protocole pratique, weeklySchedule, la liste de courses, la checklist de demarrage ni une autre instruction operationnelle.
 9. Le dosage, la duree et toute phase de descente doivent etre strictement identiques dans les cartes, les sections et le calendrier. N'invente jamais une descente dans une seule section.
 10. La quantite de BAC water doit couvrir la somme reelle de tous les vials du cycle. Le serveur recalculera cette quantite.
 11. La synthese de profil doit citer au minimum le poids exact, l'objectif principal, le niveau d'experience, la contrainte d'injection, le budget ou le pays, et la timeline. Ne transforme pas les codes du questionnaire en jargon interne.
