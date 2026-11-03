@@ -1102,7 +1102,10 @@ export function validateU100Reconstitution(value: string | undefined): string[] 
   return issues;
 }
 
-export function checkPeptide(p: PeptidesPeptide): string[] {
+export function checkPeptide(
+  p: PeptidesPeptide,
+  packagingException: GhDuoPackagingOverstockException | null = null,
+): string[] {
   const issues: string[] = [];
 
   if (isConditionalInactivePeptide(p)) {
@@ -1220,7 +1223,17 @@ export function checkPeptide(p: PeptidesPeptide): string[] {
       p._vialPlanning?.operationalVials === orderedVialCount &&
       Number(p._vialPlanning?.stabilityDays || 0) > 0 &&
       String(p._vialPlanning?.stabilitySource || "").length >= 8;
-    if (overshoot > 2.5 && !isSingleVialFloor && !documentedOperationalOrder) {
+    const authorizedPackagingOverstock = Boolean(
+      packagingException
+      && isGhDuoPackagingOverstockPeptide(p.name)
+      && totalMgOrdered / reserveTargetMg <= packagingException.maxOverstockRatio + 1e-9
+    );
+    if (
+      overshoot > 2.5
+      && !isSingleVialFloor
+      && !documentedOperationalOrder
+      && !authorizedPackagingOverstock
+    ) {
       issues.push(
         `surcommande detectee: ${totalMgOrdered}mg commandes vs ${needMg.toFixed(1)}mg besoin (x${overshoot.toFixed(1)})`
       );
@@ -1605,8 +1618,10 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
     }
   }
 
+  const rawPackagingException = report._packagingOverstockException;
+  const packagingException = parseGhDuoPackagingOverstockException(rawPackagingException);
   for (const p of peptides) {
-    const issues = checkPeptide(p);
+    const issues = checkPeptide(p, packagingException);
     peptidesChecked.push({ name: p.name || "?", issues });
     for (const iss of issues) {
       errors.push(`[${p.name || "?"}] ${iss}`);
@@ -1614,8 +1629,6 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
   }
 
   const liveSync = report._peptauraLiveSync;
-  const rawPackagingException = report._packagingOverstockException;
-  const packagingException = parseGhDuoPackagingOverstockException(rawPackagingException);
   if (rawPackagingException && !packagingException) {
     errors.push("exception de surstock fournisseur invalide ou hors perimetre GH");
   }

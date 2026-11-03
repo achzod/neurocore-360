@@ -8,6 +8,7 @@ import {
 } from "./peptidesPackagingOverstockException";
 import { selectBestPurchasePlanWithPreferredStrength } from "./peptidesPurchasePlan";
 import { isAuthorizedPackagingOverstockWithinReserve } from "./peptidesReportRepair";
+import { checkPeptide } from "./peptidesReportValidator";
 
 const authorized = {
   confirmation: GH_DUO_PACKAGING_OVERSTOCK_CONFIRMATION,
@@ -73,6 +74,31 @@ test("le repair conserve la boite GH autorisee en comparant la reserve, sans ela
     activeNeedMg: 112,
     rawException: parsed,
   }), false);
+});
+
+test("le validateur carte accepte le meme surstock GH autorise sur la cible avec reserve", () => {
+  const parsed = parseGhDuoPackagingOverstockException(authorized);
+  assert.ok(parsed);
+  const issues = checkPeptide({
+    name: "CJC-1295 sans DAC",
+    activationStatus: "active",
+    activationRequirements: [],
+    evidenceSummary: "Données et limites documentées.",
+    purpose: "Axe GH",
+    whyThisPeptide: "Choix attribuable.",
+    dosage: "100 mcg une fois par jour",
+    timing: "Chaque soir",
+    route: "Sous-cutanée",
+    cycleDuration: "24 semaines actives au total. Réserve cible: 21 mg.",
+    reconstitution: "Vial 5 mg plus 2 mL de BAC water égale 2,5 mg/mL. Pour 100 mcg, prélève 4 unités U-100, soit 0,04 mL.",
+    vialsNeeded: "Achat reel 10 vials de 5 mg. Besoin actif 16.8 mg; cible avec reserve 21 mg.",
+    priceEstimate: "$10/vial × 10 vials = $100 total",
+    purchaseUrl: "https://www.peptaura.com/product/cjc",
+    expectedEffects: "Effets documentés sans garantie.",
+    contraindications: "Contre-indications documentées.",
+    monitoring: "Suivi documenté.",
+  } as any, parsed);
+  assert.equal(issues.some((issue) => issue.includes("surcommande detectee")), false);
 });
 
 test("l'exception rejette l'élargissement, l'absence d'auth admin et un plafond excessif", () => {
