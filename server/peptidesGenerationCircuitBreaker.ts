@@ -62,13 +62,13 @@ export function isPeptidesAutogenEnabled(
   return String(env.PEPTIDES_AUTOGEN_ENABLED || "").trim().toLowerCase() === "true";
 }
 
-// Current expert-standard generations routinely cost about $2.2-$2.4. Reserve
-// $3 per provider call so a successful first call cannot make the configured
-// second quality-recovery attempt impossible before it starts.
-const DEFAULT_ATTEMPT_BUDGET_MICRO_USD = 3_000_000;
-const DEFAULT_ORDER_BUDGET_MICRO_USD = 6_000_000;
-const DEFAULT_HOURLY_BUDGET_MICRO_USD = 5_000_000;
-const DEFAULT_DAILY_BUDGET_MICRO_USD = 15_000_000;
+// Current expert-standard generations cost about $2.0-$2.56. Reserve $2.75
+// for the only authorized response. Quality rejection is terminal; a manual
+// repair needs a separate one-off incident authorization and budget category.
+const DEFAULT_ATTEMPT_BUDGET_MICRO_USD = 2_750_000;
+const DEFAULT_ORDER_BUDGET_MICRO_USD = 2_750_000;
+const DEFAULT_HOURLY_BUDGET_MICRO_USD = 27_500_000;
+const DEFAULT_DAILY_BUDGET_MICRO_USD = 82_500_000;
 const DEFAULT_LEASE_MS = 40 * 60 * 1000;
 
 function boundedInteger(
@@ -85,14 +85,13 @@ function boundedInteger(
 export function getPeptidesGenerationCircuitConfig(
   env: Record<string, string | undefined> = process.env,
 ): PeptidesGenerationCircuitConfig {
-  // Two bounded attempts let one deterministic quality failure self-recover.
-  // Transport retries remain disabled in the caller, so each attempt maps to
-  // exactly one paid provider request.
+  // Exactly one automatic paid response per order. A deterministic quality
+  // failure never self-recovers through another provider call.
   const maxAttempts = boundedInteger(
     env.PEPTIDES_AUTOGEN_MAX_ATTEMPTS,
-    2,
     1,
-    2,
+    1,
+    1,
   );
   const maxStoredResumeAttempts = boundedInteger(
     env.PEPTIDES_AUTOGEN_MAX_STORED_RESUME_ATTEMPTS,
@@ -131,17 +130,14 @@ export function getPeptidesGenerationCircuitConfig(
     90 * 60 * 1000,
   );
 
-  // Manual paid-order recovery also exposes two quality candidates even when
-  // unattended autogen is configured to one claim attempt. Fund both paths.
-  const minimumOrderBudget = attemptBudgetMicroUsd * Math.max(2, maxAttempts);
+  const minimumOrderBudget = attemptBudgetMicroUsd * maxAttempts;
   const maxBudgetMicroUsd = Math.max(minimumOrderBudget, requestedMaxBudget);
   const maxHourlyBudgetMicroUsd = Math.max(maxBudgetMicroUsd, requestedHourlyBudget);
   return {
     maxAttempts,
     maxStoredResumeAttempts,
     attemptBudgetMicroUsd,
-    // The order cap must fund every advertised attempt, including a strict
-    // quality regeneration after a completed-but-rejected first response.
+    // The order cap funds exactly one automatic paid response.
     maxBudgetMicroUsd,
     // Window caps are reservations, not estimates made after the provider has
     // already spent. Keep them at least as large as one complete order budget.

@@ -139,7 +139,7 @@ test("manual report mutation atomically requires the exact linked report, HOLD a
   assert.equal((updatedOrder?.metadata as any)?.peptidesEmailHold, true);
 });
 
-test("expired generation workers are fenced from response, retry and report persistence", async () => {
+test("expired generation workers stay fenced and cannot open a second paid attempt", async () => {
   const responses = { pep_email: "client@example.com", pep_name: "Client" };
   const responsesHash = hashPeptidesManualMutationPayload(responses);
   const { storage, order } = await paidPeptidesOrder({
@@ -160,8 +160,7 @@ test("expired generation workers are fenced from response, retry and report pers
     },
   });
   const second = await storage.claimPeptidesGenerationAttempt(order.id, config);
-  assert.ok(second);
-  assert.notEqual(first!.claimId, second!.claimId);
+  assert.equal(second, null);
   assert.equal(
     await storage.setPeptidesGenerationResponseIdIfClaimMatches(order.id, first!.claimId, "resp-stale"),
     false,

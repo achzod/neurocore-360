@@ -233,6 +233,8 @@ async function ensureAIUsageTable(): Promise<void> {
           model TEXT NOT NULL,
           profile TEXT NOT NULL,
           label TEXT,
+          cost_category TEXT NOT NULL DEFAULT 'legacy',
+          order_id TEXT,
           response_id TEXT NOT NULL UNIQUE,
           status TEXT NOT NULL,
           input_tokens BIGINT NOT NULL,
@@ -244,6 +246,11 @@ async function ensureAIUsageTable(): Promise<void> {
           estimated_openai_cost_usd DOUBLE PRECISION NOT NULL,
           estimated_sonnet46_cost_usd DOUBLE PRECISION NOT NULL
         )
+      `);
+      await pool.query(`
+        ALTER TABLE ai_usage_events
+          ADD COLUMN IF NOT EXISTS cost_category TEXT NOT NULL DEFAULT 'legacy',
+          ADD COLUMN IF NOT EXISTS order_id TEXT
       `);
       await pool.query(`
         CREATE INDEX IF NOT EXISTS ai_usage_events_created_at_idx
@@ -275,6 +282,8 @@ export async function recordAIUsageEvent(params: {
   response: any;
   profile: OpenAIReportProfile;
   label?: string;
+  costCategory?: string;
+  orderId?: string;
   status: string;
 }): Promise<AIUsageTelemetry | null> {
   const telemetry = extractUsageTelemetry(params.response);
@@ -295,6 +304,8 @@ export async function recordAIUsageEvent(params: {
       model: String(params.response?.model || OPENAI_REPORT_MODEL),
       profile: params.profile,
       label: params.label || null,
+      costCategory: params.costCategory || "legacy",
+      orderId: params.orderId || null,
       responseId,
       status: params.status,
       tokens,
@@ -308,16 +319,18 @@ export async function recordAIUsageEvent(params: {
     const { pool } = await import("./db");
     await pool.query(
       `INSERT INTO ai_usage_events (
-        provider, model, profile, label, response_id, status,
+        provider, model, profile, label, cost_category, order_id, response_id, status,
         input_tokens, cached_input_tokens, cache_write_tokens,
         output_tokens, reasoning_tokens, total_tokens,
         estimated_openai_cost_usd, estimated_sonnet46_cost_usd
       ) VALUES (
-        'openai', $1, $2, $3, $4, $5,
-        $6, $7, $8, $9, $10, $11, $12, $13
+        'openai', $1, $2, $3, $4, $5, $6, $7,
+        $8, $9, $10, $11, $12, $13, $14, $15
       )
       ON CONFLICT (response_id) DO UPDATE SET
         status = EXCLUDED.status,
+        cost_category = EXCLUDED.cost_category,
+        order_id = EXCLUDED.order_id,
         input_tokens = EXCLUDED.input_tokens,
         cached_input_tokens = EXCLUDED.cached_input_tokens,
         cache_write_tokens = EXCLUDED.cache_write_tokens,
@@ -330,6 +343,8 @@ export async function recordAIUsageEvent(params: {
         String(params.response?.model || OPENAI_REPORT_MODEL),
         params.profile,
         params.label || null,
+        params.costCategory || "legacy",
+        params.orderId || null,
         responseId,
         params.status,
         tokens.inputTokens,
@@ -373,46 +388,35 @@ async function maybeSendAIUsageCostAlert(): Promise<void> {
   await ensureAIUsageTable();
   const { pool } = await import("./db");
   const spendResult = await pool.query(`
-    SELECT
-      TO_CHAR(NOW() AT TIME ZONE 'Asia/Dubai', 'YYYY-MM-DD') AS dubai_day,
-      COALESCE(SUM(estimated_openai_cost_usd), 0) AS openai_usd,
-      COALESCE(SUM(estimated_sonnet46_cost_usd), 0) AS sonnet_usd
-    FROM ai_usage_events
-    WHERE (created_at AT TIME ZONE 'Asia/Dubai')::date =
-          (NOW() AT TIME ZONE 'Asia/Dubai')::date
+    SELECT TO_CHAR(NOW() AT TIME ZONE 'Asia/Dubai','YYYY-MM-DD') AS dubai_day,
+           cost_category,
+           COALESCE(SUM(estimated_openai_cost_usd),0) AS openai_usd,
+           COALESCE(SUM(estimated_sonnet46_cost_usd),0) AS sonnet_usd
+      FROM ai_usage_events
+     WHERE (created_at AT TIME ZONE 'Asia/Dubai')::date=(NOW() AT TIME ZONE 'Asia/Dubai')::date
+     GROUP BY cost_category
   `);
-  const row = spendResult.rows[0] || {};
-  const openaiUsd = numberFromDb(row.openai_usd);
-  const sonnetUsd = numberFromDb(row.sonnet_usd);
-  const crossedLevel = [...DAILY_COST_ALERT_LEVELS_USD]
-    .reverse()
-    .find((level) => openaiUsd >= level);
-  if (!crossedLevel) return;
-
-  const alertKey = `daily:${row.dubai_day}:${crossedLevel}`;
-  const claimed = await pool.query(
-    `INSERT INTO ai_usage_cost_alerts (
-       alert_key, estimated_openai_cost_usd, estimated_sonnet46_cost_usd
-     ) VALUES ($1, $2, $3)
-     ON CONFLICT (alert_key) DO NOTHING
-     RETURNING alert_key`,
-    [alertKey, openaiUsd, sonnetUsd],
-  );
-  if ((claimed.rowCount ?? 0) === 0) return;
-
-  const alertEmail = process.env.AI_COST_ALERT_EMAIL || "achkou@gmail.com";
-  const { sendCTAEmail } = await import("./emailService");
-  const difference = openaiUsd - sonnetUsd;
-  const sent = await sendCTAEmail(
-    alertEmail,
-    `[ALERTE COUT API] ${openaiUsd.toFixed(2)} USD aujourd'hui`,
-    `Alerte automatique APEXLABS.\n\nLe cout OpenAI estime a atteint ${openaiUsd.toFixed(4)} USD aujourd'hui, heure de Dubai.\nEquivalent Sonnet 4.6 au meme volume de tokens: ${sonnetUsd.toFixed(4)} USD.\nEcart estime: ${difference.toFixed(4)} USD.\n\nSeuil franchi: ${crossedLevel} USD.\n\nDetail protege: /api/admin/ai-usage-costs?days=1`,
-  );
-  console.log(
-    `[AICost] Daily threshold ${crossedLevel} USD alert ${sent ? "sent" : "failed"} to ${alertEmail}`,
-  );
-  if (!sent) {
-    await pool.query("DELETE FROM ai_usage_cost_alerts WHERE alert_key = $1", [alertKey]);
+  for (const row of spendResult.rows) {
+    const category=String(row.cost_category||"legacy");
+    const openaiUsd=numberFromDb(row.openai_usd);
+    const sonnetUsd=numberFromDb(row.sonnet_usd);
+    const crossedLevel=[...DAILY_COST_ALERT_LEVELS_USD].reverse().find(level=>openaiUsd>=level);
+    if (!crossedLevel) continue;
+    const alertKey=`daily:${row.dubai_day}:${category}:${crossedLevel}`;
+    const claimed=await pool.query(
+      `INSERT INTO ai_usage_cost_alerts (alert_key,estimated_openai_cost_usd,estimated_sonnet46_cost_usd)
+       VALUES ($1,$2,$3) ON CONFLICT (alert_key) DO NOTHING RETURNING alert_key`,
+      [alertKey,openaiUsd,sonnetUsd],
+    );
+    if ((claimed.rowCount??0)===0) continue;
+    const alertEmail=process.env.AI_COST_ALERT_EMAIL||"achkou@gmail.com";
+    const {sendCTAEmail}=await import("./emailService");
+    const sent=await sendCTAEmail(
+      alertEmail,
+      `[ALERTE COUT API][${category}] ${openaiUsd.toFixed(2)} USD aujourd'hui`,
+      `Alerte automatique APEXLABS.\n\nCategorie: ${category}\nCout OpenAI estime: ${openaiUsd.toFixed(4)} USD aujourd'hui, heure de Dubai.\nEquivalent Sonnet 4.6: ${sonnetUsd.toFixed(4)} USD.\n\nSeuil categorie franchi: ${crossedLevel} USD.\n\nDetail protege: /api/admin/ai-usage-costs?days=1`,
+    );
+    if (!sent) await pool.query("DELETE FROM ai_usage_cost_alerts WHERE alert_key=$1",[alertKey]);
   }
 }
 
@@ -431,6 +435,7 @@ function mapUsageSummaryRow(row: any): Record<string, unknown> {
     calls: numberFromDb(row.calls),
     inputTokens: numberFromDb(row.input_tokens),
     cachedInputTokens: numberFromDb(row.cached_input_tokens),
+    cacheWriteTokens: numberFromDb(row.cache_write_tokens),
     outputTokens: numberFromDb(row.output_tokens),
     reasoningTokens: numberFromDb(row.reasoning_tokens),
     totalTokens: numberFromDb(row.total_tokens),
@@ -449,17 +454,24 @@ export async function getAIUsageCostSummary(requestedDays = 30): Promise<Record<
     COUNT(*) AS calls,
     COALESCE(SUM(input_tokens), 0) AS input_tokens,
     COALESCE(SUM(cached_input_tokens), 0) AS cached_input_tokens,
+    COALESCE(SUM(cache_write_tokens), 0) AS cache_write_tokens,
     COALESCE(SUM(output_tokens), 0) AS output_tokens,
     COALESCE(SUM(reasoning_tokens), 0) AS reasoning_tokens,
     COALESCE(SUM(total_tokens), 0) AS total_tokens,
     COALESCE(SUM(estimated_openai_cost_usd), 0) AS openai_usd,
     COALESCE(SUM(estimated_sonnet46_cost_usd), 0) AS sonnet_usd`;
-  const [totalResult, profilesResult, dailyResult, statusesResult, recentResult] = await Promise.all([
+  const [totalResult, profilesResult, categoriesResult, dailyResult, statusesResult, recentResult] = await Promise.all([
     pool.query(`SELECT ${summaryFields} FROM ai_usage_events WHERE ${periodSql}`, [days]),
     pool.query(
       `SELECT profile, ${summaryFields}
        FROM ai_usage_events WHERE ${periodSql}
        GROUP BY profile ORDER BY openai_usd DESC`,
+      [days],
+    ),
+    pool.query(
+      `SELECT cost_category, ${summaryFields}
+       FROM ai_usage_events WHERE ${periodSql}
+       GROUP BY cost_category ORDER BY openai_usd DESC`,
       [days],
     ),
     pool.query(
@@ -475,11 +487,17 @@ export async function getAIUsageCostSummary(requestedDays = 30): Promise<Record<
       [days],
     ),
     pool.query(
-      `SELECT created_at, model, profile, label, response_id, status,
-              input_tokens, cached_input_tokens, output_tokens, reasoning_tokens, total_tokens,
-              estimated_openai_cost_usd, estimated_sonnet46_cost_usd
-       FROM ai_usage_events WHERE ${periodSql}
-       ORDER BY created_at DESC LIMIT 50`,
+      `SELECT e.created_at,e.model,e.profile,e.label,e.cost_category,
+              COALESCE(e.order_id,r.order_id) AS order_id,o.email AS order_email,
+              e.response_id,e.status,r.status AS reservation_status,
+              e.input_tokens,e.cached_input_tokens,e.cache_write_tokens,e.output_tokens,
+              e.reasoning_tokens,e.total_tokens,e.estimated_openai_cost_usd,
+              e.estimated_sonnet46_cost_usd
+       FROM ai_usage_events e
+       LEFT JOIN ai_cost_budget_reservations r ON r.response_id=e.response_id
+       LEFT JOIN orders o ON o.id::text=COALESCE(e.order_id,r.order_id)
+       WHERE e.created_at >= NOW()-($1::int*INTERVAL '1 day')
+       ORDER BY e.created_at DESC LIMIT 100`,
       [days],
     ),
   ]);
@@ -489,10 +507,15 @@ export async function getAIUsageCostSummary(requestedDays = 30): Promise<Record<
     model: row.model,
     profile: row.profile,
     label: row.label,
+    costCategory: row.cost_category,
+    orderId: row.order_id,
+    orderEmail: row.order_email,
     responseId: row.response_id,
     status: row.status,
+    reservationStatus: row.reservation_status,
     inputTokens: numberFromDb(row.input_tokens),
     cachedInputTokens: numberFromDb(row.cached_input_tokens),
+    cacheWriteTokens: numberFromDb(row.cache_write_tokens),
     outputTokens: numberFromDb(row.output_tokens),
     reasoningTokens: numberFromDb(row.reasoning_tokens),
     totalTokens: numberFromDb(row.total_tokens),
@@ -511,6 +534,10 @@ export async function getAIUsageCostSummary(requestedDays = 30): Promise<Record<
     totals: mapUsageSummaryRow(totalResult.rows[0] || {}),
     byProfile: profilesResult.rows.map((row: any) => ({
       profile: row.profile,
+      ...mapUsageSummaryRow(row),
+    })),
+    byCategory: categoriesResult.rows.map((row: any) => ({
+      costCategory: row.cost_category,
       ...mapUsageSummaryRow(row),
     })),
     byDayDubai: dailyResult.rows.map((row: any) => ({
@@ -657,6 +684,9 @@ export interface OpenAITextRequest {
     | "product"
     | "orderId"
     | "estimatedCostUsd"
+    | "costCategory"
+    | "authorizationId"
+    | "incidentKey"
     | "discoveryGenerationToken"
     | "discoveryFenceToken"
     | "discoveryAllowLegacy"
@@ -689,7 +719,7 @@ export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAIT
   const profile = PROFILE_CONFIG[request.profile];
   const model = OPENAI_REPORT_MODEL;
   const background = request.background ?? Boolean(profile.mode === "pro");
-  const attempts = request.profile === "discovery"
+  const attempts = request.profile === "discovery" || request.profile === "peptides"
     ? 1
     : Math.max(1, request.retries ?? 3);
   const label = request.label ? ` ${request.label}` : "";
@@ -727,7 +757,8 @@ export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAIT
             // email in Peptides Engine, so this conservative fallback prevents
             // repeated paid calls for the same buyer.
             orderId: `unscoped:${safeIdentifier(request.safetyId || request.label || "anonymous", request.profile)}`,
-            estimatedCostUsd: 1,
+            estimatedCostUsd: 2.75,
+            costCategory: "customer_auto",
             profile: request.profile,
             label: request.label,
           }
@@ -797,6 +828,8 @@ export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAIT
                 response: cancelResult.cancelledResponse,
                 profile: request.profile,
                 label: request.label,
+                costCategory: budgetContext?.costCategory,
+                orderId: budgetContext?.orderId,
                 status: "cancelled_timeout",
               });
               await completeAICostBudgetReservation(
@@ -824,6 +857,8 @@ export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAIT
           response,
           profile: request.profile,
           label: request.label,
+          costCategory: budgetContext?.costCategory,
+          orderId: budgetContext?.orderId,
           status: String(response?.status || "incomplete"),
         });
         await completeAICostBudgetReservation(
@@ -853,6 +888,8 @@ export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAIT
         response,
         profile: request.profile,
         label: request.label,
+        costCategory: budgetContext?.costCategory,
+        orderId: budgetContext?.orderId,
         status: "completed",
       });
       await completeAICostBudgetReservation(

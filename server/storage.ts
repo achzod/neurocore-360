@@ -741,7 +741,8 @@ export class MemStorage implements IStorage {
       || !["paid", "partial_refund"].includes(String(order.status))
       || String(metadata.peptidesReportId || "")
       || (input.expectedGenerationClaimId
-        && String(metadata.peptidesGenerationClaimId || "") !== input.expectedGenerationClaimId)
+        && (String(metadata.peptidesGenerationClaimId || "") !== input.expectedGenerationClaimId
+          || Date.parse(String(metadata.peptidesGenerationLeaseUntil || "")) <= Date.now()))
       || String(metadata.peptidesResponsesSha256 || "") !== input.expectedResponsesSha256
       || hashPeptidesManualMutationPayload(metadata.peptidesResponses || {}) !== input.expectedResponsesSha256
       || hashPeptidesManualMutationPayload(input.responses || {}) !== input.expectedResponsesSha256) {
@@ -1324,7 +1325,11 @@ export class MemStorage implements IStorage {
     const order = this.memOrders.get(orderId);
     if (!order) return false;
     const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
-    if (String(meta.peptidesGenerationClaimId || "") !== claimId || meta.peptidesReportId) return false;
+    const leaseUntilMs = Date.parse(String(meta.peptidesGenerationLeaseUntil || ""));
+    if (String(meta.peptidesGenerationClaimId || "") !== claimId
+      || !Number.isFinite(leaseUntilMs)
+      || leaseUntilMs <= Date.now()
+      || meta.peptidesReportId) return false;
     order.metadata = { ...meta, peptidesGenerationResponseId: responseId } as any;
     order.updatedAt = new Date();
     return true;
@@ -1738,9 +1743,12 @@ export class MemStorage implements IStorage {
     const order = this.memOrders.get(orderId);
     if (!order) return false;
     const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
+    const leaseUntilMs = Date.parse(String(meta.peptidesGenerationLeaseUntil || ""));
     if (meta.peptidesReportId
       || Number(meta.peptidesGenerationAttempts || 0) !== attemptCount
-      || (claimId && String(meta.peptidesGenerationClaimId || "") !== claimId)) return false;
+      || (claimId && (String(meta.peptidesGenerationClaimId || "") !== claimId
+        || !Number.isFinite(leaseUntilMs)
+        || leaseUntilMs <= Date.now()))) return false;
     order.metadata = {
       ...meta,
       peptidesGenerationState: "RETRY_SCHEDULED",
@@ -2701,7 +2709,8 @@ export class PgStorage implements IStorage {
           !== String(input.email || "").replace(/^peptides::/i, "").trim().toLowerCase()
         || String(metadata.peptidesReportId || "")
         || (input.expectedGenerationClaimId
-          && String(metadata.peptidesGenerationClaimId || "") !== input.expectedGenerationClaimId)
+          && (String(metadata.peptidesGenerationClaimId || "") !== input.expectedGenerationClaimId
+            || Date.parse(String(metadata.peptidesGenerationLeaseUntil || "")) <= Date.now()))
         || String(metadata.peptidesResponsesSha256 || "") !== input.expectedResponsesSha256
         || hashPeptidesManualMutationPayload(metadata.peptidesResponses || {}) !== input.expectedResponsesSha256
         || hashPeptidesManualMutationPayload(input.responses) !== input.expectedResponsesSha256) {
@@ -4452,6 +4461,7 @@ export class PgStorage implements IStorage {
         WHERE id = $2
           AND COALESCE(metadata->>'peptidesReportId', '') = ''
           AND metadata->>'peptidesGenerationClaimId' = $3
+          AND COALESCE(NULLIF(metadata->>'peptidesGenerationLeaseUntil','')::timestamptz,'-infinity'::timestamptz) > NOW()
         RETURNING id`,
       [responseId, orderId, claimId],
     );
@@ -5070,7 +5080,10 @@ export class PgStorage implements IStorage {
         WHERE id = $4
           AND COALESCE(metadata->>'peptidesReportId', '') = ''
           AND COALESCE((metadata->>'peptidesGenerationAttempts')::int, 0) = $5::int
-          AND ($6::text = '' OR metadata->>'peptidesGenerationClaimId' = $6)
+          AND ($6::text = '' OR (
+            metadata->>'peptidesGenerationClaimId' = $6
+            AND COALESCE(NULLIF(metadata->>'peptidesGenerationLeaseUntil','')::timestamptz,'-infinity'::timestamptz) > NOW()
+          ))
       RETURNING id`,
       [reason.slice(0, 120), error.slice(0, 800), nextRetryAt, orderId, attemptCount, claimId || ""],
     );

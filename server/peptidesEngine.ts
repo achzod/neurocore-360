@@ -2617,7 +2617,10 @@ async function callOpenAIForPeptides(
   label: string,
   retries = 3,
   orderId?: string,
-  estimatedCostUsd = 1,
+  estimatedCostUsd = 2.75,
+  costCategory: "customer_auto" | "manual_repair" | "test" = "customer_auto",
+  authorizationId?: string,
+  incidentKey?: string,
   resumeResponseId?: string,
   onResponseCreated?: (responseId: string) => Promise<void>,
 ): Promise<string> {
@@ -2642,7 +2645,8 @@ async function callOpenAIForPeptides(
     resumeResponseId,
     onResponseCreated,
     ...(orderId
-      ? { costBudget: { product: "peptides", orderId, estimatedCostUsd } }
+      ? { costBudget: { product: "peptides", orderId, estimatedCostUsd,
+          costCategory, authorizationId, incidentKey } }
       : {}),
   });
 
@@ -3070,6 +3074,9 @@ export async function generatePeptidesProtocol(
     providerRetries?: number;
     orderId?: string;
     costBudgetEstimatedUsd?: number;
+    costCategory?: "customer_auto" | "manual_repair" | "test";
+    authorizationId?: string;
+    incidentKey?: string;
     initialPreviousError?: string;
     consentAccepted?: boolean;
     manualExpertDirective?: string;
@@ -3085,6 +3092,9 @@ export async function generatePeptidesProtocol(
       retries: number;
       orderId?: string;
       estimatedCostUsd?: number;
+      costCategory?: "customer_auto" | "manual_repair" | "test";
+      authorizationId?: string;
+      incidentKey?: string;
       resumeResponseId?: string;
       onResponseCreated?: (responseId: string) => Promise<void>;
     }) => Promise<string>;
@@ -3123,8 +3133,18 @@ export async function generatePeptidesProtocol(
   // Cost-safe defaults apply to every caller, including legacy/inline paths.
   // A human-only recovery may explicitly request more, but no automatic caller
   // can accidentally inherit the old 2 candidates x 3 transport attempts.
-  const providerRetries = Math.max(1, Math.min(3, options.providerRetries ?? 1));
-  const maxCandidates = Math.max(1, Math.min(3, options.maxCandidates ?? 1));
+  const providerRetries = 1;
+  const maxCandidates = 1;
+  const costCategory = options.costCategory || "customer_auto";
+  if (costCategory === "manual_repair" && (!options.authorizationId || !options.incidentKey)) {
+    throw new Error("PEPTIDES_MANUAL_REPAIR_AUTHORIZATION_AND_INCIDENT_REQUIRED");
+  }
+  if (costCategory !== "manual_repair" && (manualExpertDirective || options.initialPreviousError)) {
+    throw new Error("PEPTIDES_RECOVERY_REQUIRES_MANUAL_REPAIR_CATEGORY");
+  }
+  if (costCategory === "test" && String(process.env.NODE_ENV).toLowerCase() === "production") {
+    throw new Error("PEPTIDES_TEST_PROVIDER_DISABLED_IN_PRODUCTION");
+  }
   const generateProviderText = options.providerGenerate
     || ((params: {
       systemPrompt: string;
@@ -3134,6 +3154,9 @@ export async function generatePeptidesProtocol(
       retries: number;
       orderId?: string;
       estimatedCostUsd?: number;
+      costCategory?: "customer_auto" | "manual_repair" | "test";
+      authorizationId?: string;
+      incidentKey?: string;
       resumeResponseId?: string;
       onResponseCreated?: (responseId: string) => Promise<void>;
     }) => callOpenAIForPeptides(
@@ -3144,19 +3167,27 @@ export async function generatePeptidesProtocol(
       params.retries,
       params.orderId,
       params.estimatedCostUsd,
+      params.costCategory,
+      params.authorizationId,
+      params.incidentKey,
       params.resumeResponseId,
       params.onResponseCreated,
     ));
-  // Each candidate uses GPT-5.6 Sol. A second independent generation is used
-  // only when the first candidate fails a deterministic or client-facing gate.
+  // One provider response is authorized. Any deterministic or client-facing
+  // gate rejection is terminal for this authorization.
   let report: PeptidesReport | null = null;
   let lastError = String(options.initialPreviousError || "").trim();
   const manualErrorContext = lastError
     ? `\n\nREPRISE MANUELLE APRES ECHEC SERVEUR:\n${lastError.slice(0, 2200)}\n\nCorrige cette cause des le premier jet: si une molecule est citee dans l'echec pour stock, prix live incomplet, surstock ou whyThisPeptide, retire-la sauf couverture live deterministe avec moins de 30% de marge.`
     : "";
   const costBudgetEstimatedUsd = Number.isFinite(Number(options.costBudgetEstimatedUsd))
-    ? Math.max(0.01, Math.min(1, Number(options.costBudgetEstimatedUsd)))
-    : 1;
+    ? Math.max(0.01, Math.min(2.75, Number(options.costBudgetEstimatedUsd)))
+    : 2.75;
+  const costLabel = costCategory === "manual_repair"
+    ? "peptides-manual-repair"
+    : costCategory === "test"
+      ? "peptides-test"
+      : "peptides-customer-auto";
   const providerCandidates: Array<{
     provider: "openai";
     model: string;
@@ -3169,41 +3200,16 @@ export async function generatePeptidesProtocol(
         systemPrompt: SYSTEM_PROMPT,
         userPrompt: `${userPrompt}${manualErrorContext}`,
         email,
-        label: "peptides-primary",
+        label: costLabel,
         retries: providerRetries,
         orderId: options.orderId,
         estimatedCostUsd: costBudgetEstimatedUsd,
+        costCategory,
+        authorizationId: options.authorizationId,
+        incidentKey: options.incidentKey,
         resumeResponseId: options.resumeResponseId,
         onResponseCreated: options.onResponseCreated,
       }),
-    },
-    {
-      provider: "openai",
-      model: PEPTIDES_PRIMARY_MODEL,
-      generate: (previousError) =>
-        generateProviderText({
-          systemPrompt: SYSTEM_PROMPT,
-          userPrompt: `${userPrompt}\n\nREGENERATION QUALITE: repars de zero. Controle avant de repondre les credits du tier, la presence de chaque peptide dans toutes les sections operationnelles, l'alignement des doses et des durees, les quantites de vials, la BAC water et la liste de commande.\n\nECHEC PRECEDENT DU GATE SERVEUR:\n${previousError.slice(0, 2200)}\n\nCONSIGNE DE CORRECTION OBLIGATOIRE:\n- Si l'echec cite une molecule precise entre crochets ou avant deux-points, retire cette molecule de la nouvelle version sauf si tu peux changer le protocole de maniere coherente pour couvrir le format live avec maximum 30% de marge.\n- Si l'echec cite BPC-157 ou un besoin de 2.80 mg non couvert, ne repropose pas BPC-157 dans cette regeneration; choisis une alternative Peptaura compatible et integre-la partout.\n- Chaque whyThisPeptide doit parler directement au client avec tu/ton/ta/tes et relier au moins deux faits du questionnaire.`,
-          email,
-          label: "peptides-strict-regeneration",
-          retries: providerRetries,
-          orderId: options.orderId,
-          estimatedCostUsd: costBudgetEstimatedUsd,
-        }),
-    },
-    {
-      provider: "openai",
-      model: PEPTIDES_PRIMARY_MODEL,
-      generate: (previousError) =>
-        generateProviderText({
-          systemPrompt: SYSTEM_PROMPT,
-          userPrompt: `${userPrompt}\n\nREGENERATION FINALE STOCK-AWARE: la version precedente a encore echoue. Repars de zero sans reduire le dossier a un stack minimal. Couvre les axes ACTIFS ${stackPolicy.activeGoals.join(", ") || "aucun"} avec au moins ${stackPolicy.minimumMolecules} molecules actives distinctes, dans un stack total plafonne a ${stackPolicy.maximumMolecules} cartes.${stackPolicy.conditionalHpgPhase ? " Les deux cartes HPG conditionnelles sont obligatoires EN PLUS, restent conditional-inactive et ne comptent jamais dans le minimum actif." : ""} Si une molecule casse le stock, le prix ou le surstock, remplace uniquement cette molecule par une alternative live qui couvre le meme axe. Ne supprime jamais silencieusement un objectif valide pour passer le gate. Priorite absolue: validation Peptaura live, quantites achetables avec maximum 30% de marge, prix live pour chaque peptide, whyThisPeptide direct et personnalise.\n\nDERNIER ECHEC SERVEUR:\n${previousError.slice(0, 2600)}\n\nINTERDICTION: ne repropose pas une molecule citee dans cet echec pour offre, stock, prix live incomplet, surstock ou whyThisPeptide sans avoir resolu exactement cette cause.`,
-          email,
-          label: "peptides-final-stock-regeneration",
-          retries: providerRetries,
-          orderId: options.orderId,
-          estimatedCostUsd: costBudgetEstimatedUsd,
-        }),
     },
   ];
   const providers = providerCandidates.slice(0, maxCandidates);

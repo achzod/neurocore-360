@@ -7148,6 +7148,8 @@ export async function registerRoutes(
         manualExpertDirective,
         recoveryPreviousError,
         confirmHeldGeneration,
+        confirmManualRepairCost,
+        manualRepairAuthorizationId,
       } = req.body;
       if (!email || !orderId) { res.status(400).json({ error: "email et orderId requis" }); return; }
       if (req.body?.forceImmediate === true) {
@@ -7269,6 +7271,16 @@ export async function registerRoutes(
         });
         return;
       }
+      if (
+        confirmManualRepairCost !== "AUTHORIZE_ONE_PROVIDER_CALL"
+        || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(manualRepairAuthorizationId || ""))
+      ) {
+        res.status(409).json({
+          error: "PEPTIDES_MANUAL_REPAIR_COST_AUTHORIZATION_REQUIRED",
+          message: "Une autorisation one-off UUID est requise avant l'unique appel provider.",
+        });
+        return;
+      }
       const singleProviderPass = req.body?.singleProviderPass === true;
       if (singleProviderPass && (!normalizedRecoveryPreviousError || !generationHeld || skipEmail !== true || replaceReportId)) {
         res.status(409).json({
@@ -7324,6 +7336,20 @@ export async function registerRoutes(
         }
       }
 
+      // The incident key is server-derived, never caller-selected. The same
+      // order/source/live commit/gate family cannot spend twice; a real code
+      // fix changes the live commit and therefore opens a new explicit incident.
+      const manualGateFamily = normalizedRecoveryPreviousError.toUpperCase().match(
+        /[A-Z][A-Z0-9_]*(?:GATE|ERROR|BLOCKED|TIMEOUT)/,
+      )?.[0] || (normalizedManualDirective ? "MANUAL_DIRECTIVE" : replaceReportId ? "REPLACE_REPORT" : "CREATE_REPORT");
+      const canonicalManualIncidentKey = crypto.createHash("sha256").update([
+        pepOrder.id,
+        sealedPeptidesResponsesHash(responses),
+        String(process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || "local"),
+        String(replaceReportId || "new"),
+        manualGateFamily,
+      ].join("|")).digest("hex");
+
       // Establish an atomic provider-call linearization point against the
       // current HOLD mode. If a concurrent HOLD/manual change won before this
       // claim, no paid provider call starts. The lease also excludes AutoGen.
@@ -7347,13 +7373,15 @@ export async function registerRoutes(
         report = await generatePeptidesProtocol(responses, email, manualTier, {
           orderId: pepOrder?.id,
           consentAccepted: hasValidPeptidesConsent((pepOrder?.metadata as any)?.peptidesEngineConsent),
-          // Manual held recovery may need the dedicated final stock-aware pass
-          // after the primary and strict candidates expose different live gates.
-          maxCandidates: singleProviderPass
-            ? 1
-            : normalizedManualDirective || normalizedRecoveryPreviousError
-              ? 3
-              : undefined,
+          // Every manual repair is exactly one provider response. A rejected
+          // candidate ends the incident; another authorization cannot reuse
+          // the same incident key.
+          maxCandidates: 1,
+          providerRetries: 1,
+          costBudgetEstimatedUsd: 2.75,
+          costCategory: "manual_repair",
+          authorizationId: String(manualRepairAuthorizationId),
+          incidentKey: canonicalManualIncidentKey,
           manualExpertDirective: normalizedManualDirective || undefined,
           initialPreviousError: normalizedRecoveryPreviousError || undefined,
           packagingOverstockException: ghPackagingOverstockException || undefined,
@@ -17235,7 +17263,7 @@ export async function registerRoutes(
             maxCandidates: 1,
             providerRetries: 1,
             orderId: order.id,
-            costBudgetEstimatedUsd: 0.5,
+            costBudgetEstimatedUsd: 2.75,
             resumeResponseId: resumeResponseId || undefined,
             onResponseCreated: async (responseId: string) => {
               const persisted = await storage.setPeptidesGenerationResponseIdIfClaimMatches(
@@ -17246,11 +17274,9 @@ export async function registerRoutes(
               if (!persisted) throw new Error("PEPTIDES_RESPONSE_ID_PERSIST_FAILED");
             },
             consentAccepted: hasValidPeptidesConsent((freshMeta || meta)?.peptidesEngineConsent),
-            initialPreviousError: String(
-              freshMeta?.peptidesGenerationLastError
-              || meta?.peptidesGenerationLastError
-              || "",
-            ).trim() || undefined,
+            // Automatic calls never feed a prior quality failure into a new
+            // response. Source retries rerun deterministic preflights only;
+            // durable recovery reuses responseId and spends no generation.
           });
         } catch (generationError: any) {
           const safeError = sanitizePeptidesGenerationError(generationError);
@@ -17270,7 +17296,9 @@ export async function registerRoutes(
           } else {
             const nextRetryAt = resumeResponseId
               ? getPeptidesStoredResumeRetryAt(storedResumeAttemptCount)
-              : getPeptidesGenerationRetryAt(generationClaim.attemptCount);
+              : generationClaim.attemptCount < peptidesCircuitConfig.maxAttempts
+                ? getPeptidesGenerationRetryAt(generationClaim.attemptCount)
+                : null;
             if (nextRetryAt) {
               await storage.markPeptidesGenerationRetry(
                 order.id,

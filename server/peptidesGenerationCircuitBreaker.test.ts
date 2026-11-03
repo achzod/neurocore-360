@@ -81,16 +81,17 @@ test("Peptides autogen is fail-closed unless explicitly enabled", () => {
   assert.equal(isPeptidesAutogenEnabled({ PEPTIDES_AUTOGEN_ENABLED: "true" }), true);
 });
 
-test("autogen reserves enough budget for two expert-standard provider calls", () => {
+test("autogen reserves one realistic expert-standard provider call", () => {
   const defaults = getPeptidesGenerationCircuitConfig({});
-  assert.equal(defaults.maxAttempts, 2);
+  assert.equal(defaults.maxAttempts, 1);
   assert.equal(defaults.maxStoredResumeAttempts, 3);
-  assert.equal(defaults.attemptBudgetMicroUsd, 3_000_000);
-  assert.equal(defaults.maxBudgetMicroUsd, 6_000_000);
-  assert.equal(defaults.maxHourlyBudgetMicroUsd, 6_000_000);
+  assert.equal(defaults.attemptBudgetMicroUsd, 2_750_000);
+  assert.equal(defaults.maxBudgetMicroUsd, 2_750_000);
+  assert.equal(defaults.maxHourlyBudgetMicroUsd, 27_500_000);
+  assert.equal(defaults.maxDailyBudgetMicroUsd, 82_500_000);
 });
 
-test("retry backoff is five minutes and the second failure is terminal", () => {
+test("quality failure is terminal after the single automatic attempt", () => {
   const base = Date.parse("2026-09-26T10:00:00.000Z");
   assert.equal(getPeptidesGenerationRetryAt(1, base), "2026-09-26T10:05:00.000Z");
   assert.equal(getPeptidesGenerationRetryAt(2, base), null);
@@ -133,30 +134,29 @@ test("stored responses retry post-processing without another provider budget", (
   );
 });
 
-test("window budgets cannot be configured below the complete two-attempt order", () => {
+test("window budgets cannot be configured below the single complete order", () => {
   const bounded = getPeptidesGenerationCircuitConfig({
     PEPTIDES_AUTOGEN_ATTEMPT_BUDGET_MICRO_USD: "3000000",
     PEPTIDES_AUTOGEN_MAX_BUDGET_MICRO_USD: "1",
     PEPTIDES_AUTOGEN_HOURLY_BUDGET_MICRO_USD: "1",
     PEPTIDES_AUTOGEN_DAILY_BUDGET_MICRO_USD: "1",
   });
-  assert.equal(bounded.maxBudgetMicroUsd, 6_000_000);
-  assert.equal(bounded.maxHourlyBudgetMicroUsd, 6_000_000);
-  assert.equal(bounded.maxDailyBudgetMicroUsd, 6_000_000);
+  assert.equal(bounded.maxBudgetMicroUsd, 3_000_000);
+  assert.equal(bounded.maxHourlyBudgetMicroUsd, 3_000_000);
+  assert.equal(bounded.maxDailyBudgetMicroUsd, 3_000_000);
 });
 
-test("held manual recovery exposes the dedicated third stock-aware candidate", () => {
+test("held manual recovery is one provider response with explicit cost authorization", () => {
   const routesSource = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
-  assert.match(
-    routesSource,
-    /maxCandidates:\s*normalizedManualDirective\s*\|\|\s*normalizedRecoveryPreviousError\s*\?\s*3\s*:\s*undefined/,
-  );
+  assert.match(routesSource, /AUTHORIZE_ONE_PROVIDER_CALL/);
+  assert.match(routesSource, /maxCandidates:\s*1,[\s\S]*providerRetries:\s*1/);
+  assert.match(routesSource, /canonicalManualIncidentKey/);
 });
 
-test("all generation callers inherit one provider call unless manually overridden", () => {
+test("all Peptides generation callers are hard-capped at one response", () => {
   const engineSource = readFileSync(new URL("./peptidesEngine.ts", import.meta.url), "utf8");
-  assert.match(engineSource, /options\.providerRetries \?\? 1/);
-  assert.match(engineSource, /options\.maxCandidates \?\? 1/);
+  assert.match(engineSource, /const providerRetries = 1/);
+  assert.match(engineSource, /const maxCandidates = 1/);
 });
 
 test("a persisted attempt or cost cap survives cycles and opens the circuit", () => {
@@ -386,7 +386,7 @@ test("a source outage during durable-response resume does not consume the resume
   assert.equal(metadata.peptidesGenerationResponseId, "resp_source_resume");
 });
 
-test("failed generation persists a future retry and the next claim resumes after backoff", async () => {
+test("failed generation cannot claim a second automatic provider attempt", async () => {
   process.env.DATABASE_URL ||= "postgresql://test:***@127.0.0.1:1/test";
   const { MemStorage } = await import("./storage");
   const storage = new MemStorage();
@@ -408,7 +408,7 @@ test("failed generation persists a future retry and the next claim resumes after
   assert.equal(await storage.claimPeptidesGenerationAttempt(order.id, retryConfig), null);
   await storage.setOrderMetadataKey(order.id, "peptidesGenerationNextRetryAt", new Date(Date.now() - 1_000).toISOString());
   const second = await storage.claimPeptidesGenerationAttempt(order.id, retryConfig);
-  assert.equal(second?.attemptCount, 2);
+  assert.equal(second, null);
 });
 
 test("a durable provider response is resumed without consuming another attempt", async () => {

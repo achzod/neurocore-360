@@ -9,11 +9,16 @@ export interface AICostBudgetLimits {
   reservationTtlMinutes: number;
 }
 
+export type AICostCategory = "customer_auto" | "manual_repair" | "test" | "legacy";
+
 export interface AICostBudgetContext {
   product: string;
   orderId: string;
   profile: string;
   label?: string;
+  costCategory?: AICostCategory;
+  authorizationId?: string;
+  incidentKey?: string;
   estimatedCostUsd?: number;
   discoveryGenerationToken?: string;
   discoveryFenceToken?: string | null;
@@ -45,9 +50,23 @@ export interface AICostBudgetReservation {
 }
 
 const DEFAULT_PEPTIDES_LIMITS: AICostBudgetLimits = {
+  perOrderUsd: 2.75,
+  perHourUsd: 27.5,
+  perDayUsd: 82.5,
+  reservationTtlMinutes: 45,
+};
+
+const DEFAULT_PEPTIDES_MANUAL_LIMITS: AICostBudgetLimits = {
+  perOrderUsd: 2.75,
+  perHourUsd: 2.75,
+  perDayUsd: 5.5,
+  reservationTtlMinutes: 45,
+};
+
+const DEFAULT_PEPTIDES_TEST_LIMITS: AICostBudgetLimits = {
   perOrderUsd: 1,
-  perHourUsd: 5,
-  perDayUsd: 15,
+  perHourUsd: 2,
+  perDayUsd: 5,
   reservationTtlMinutes: 45,
 };
 
@@ -77,6 +96,13 @@ function normalizeOrderId(value: unknown): string {
   return String(value || "").trim().slice(0, 160);
 }
 
+export function normalizeAICostCategory(value: unknown): AICostCategory {
+  const normalized = String(value || "customer_auto").trim().toLowerCase();
+  return normalized === "manual_repair" || normalized === "test" || normalized === "legacy"
+    ? normalized
+    : "customer_auto";
+}
+
 export function isAICostBudgetControllerEnabled(
   env: Record<string, string | undefined> = process.env,
 ): boolean {
@@ -90,6 +116,7 @@ export function isAICostBudgetControllerEnabled(
 export function getAICostBudgetLimits(
   product: string,
   env: Record<string, string | undefined> = process.env,
+  category: AICostCategory = "customer_auto",
 ): AICostBudgetLimits {
   const normalizedProduct = normalizeProduct(product);
   if (normalizedProduct !== "peptides" && normalizedProduct !== "discovery") {
@@ -132,24 +159,34 @@ export function getAICostBudgetLimits(
     };
   }
 
+  const categoryDefaults = category === "manual_repair"
+    ? DEFAULT_PEPTIDES_MANUAL_LIMITS
+    : category === "test"
+      ? DEFAULT_PEPTIDES_TEST_LIMITS
+      : DEFAULT_PEPTIDES_LIMITS;
+  const envPrefix = category === "manual_repair"
+    ? "AI_COST_PEPTIDES_MANUAL"
+    : category === "test"
+      ? "AI_COST_PEPTIDES_TEST"
+      : "AI_COST_PEPTIDES_CUSTOMER";
   return {
     perOrderUsd: boundedNumber(
-      env.AI_COST_PEPTIDES_PER_ORDER_USD,
-      DEFAULT_PEPTIDES_LIMITS.perOrderUsd,
+      env[`${envPrefix}_PER_ORDER_USD`],
+      categoryDefaults.perOrderUsd,
       0.01,
-      100,
+      categoryDefaults.perOrderUsd,
     ),
     perHourUsd: boundedNumber(
-      env.AI_COST_PEPTIDES_PER_HOUR_USD,
-      DEFAULT_PEPTIDES_LIMITS.perHourUsd,
+      env[`${envPrefix}_PER_HOUR_USD`],
+      categoryDefaults.perHourUsd,
       0.01,
-      1_000,
+      categoryDefaults.perHourUsd,
     ),
     perDayUsd: boundedNumber(
-      env.AI_COST_PEPTIDES_PER_DAY_USD,
-      DEFAULT_PEPTIDES_LIMITS.perDayUsd,
+      env[`${envPrefix}_PER_DAY_USD`],
+      categoryDefaults.perDayUsd,
       0.01,
-      10_000,
+      categoryDefaults.perDayUsd,
     ),
     reservationTtlMinutes: boundedNumber(
       env.AI_COST_BUDGET_RESERVATION_TTL_MINUTES,
@@ -211,6 +248,9 @@ async function ensureBudgetTables(): Promise<void> {
           order_id TEXT NOT NULL,
           profile TEXT NOT NULL,
           label TEXT,
+          cost_category TEXT NOT NULL DEFAULT 'legacy',
+          authorization_id TEXT,
+          incident_key TEXT,
           status TEXT NOT NULL,
           reserved_cost_usd DOUBLE PRECISION NOT NULL,
           actual_cost_usd DOUBLE PRECISION,
@@ -223,8 +263,34 @@ async function ensureBudgetTables(): Promise<void> {
         ON ai_cost_budget_reservations (product, order_id, created_at DESC)
       `);
       await pool.query(`
+        ALTER TABLE ai_cost_budget_reservations
+          ADD COLUMN IF NOT EXISTS cost_category TEXT NOT NULL DEFAULT 'legacy',
+          ADD COLUMN IF NOT EXISTS authorization_id TEXT,
+          ADD COLUMN IF NOT EXISTS incident_key TEXT
+      `);
+      await pool.query(`
         CREATE INDEX IF NOT EXISTS ai_cost_budget_reservations_status_idx
         ON ai_cost_budget_reservations (status, created_at DESC)
+      `);
+      await pool.query(`
+        CREATE UNIQUE INDEX IF NOT EXISTS ai_cost_budget_customer_auto_once_idx
+        ON ai_cost_budget_reservations (product, order_id, cost_category)
+        WHERE product='peptides' AND cost_category='customer_auto'
+      `);
+      await pool.query(`
+        CREATE UNIQUE INDEX IF NOT EXISTS ai_cost_budget_manual_authorization_once_idx
+        ON ai_cost_budget_reservations (product, order_id, cost_category, authorization_id)
+        WHERE product='peptides' AND cost_category='manual_repair' AND authorization_id IS NOT NULL
+      `);
+      await pool.query(`
+        CREATE UNIQUE INDEX IF NOT EXISTS ai_cost_budget_manual_incident_once_idx
+        ON ai_cost_budget_reservations (product, order_id, cost_category, incident_key)
+        WHERE product='peptides' AND cost_category='manual_repair' AND incident_key IS NOT NULL
+      `);
+      await pool.query(`
+        CREATE UNIQUE INDEX IF NOT EXISTS ai_cost_budget_response_once_idx
+        ON ai_cost_budget_reservations (response_id)
+        WHERE response_id IS NOT NULL
       `);
       await pool.query(`
         CREATE TABLE IF NOT EXISTS ai_cost_budget_alerts (
@@ -234,6 +300,7 @@ async function ensureBudgetTables(): Promise<void> {
           order_id TEXT NOT NULL,
           profile TEXT NOT NULL,
           label TEXT,
+          cost_category TEXT NOT NULL DEFAULT 'legacy',
           blocked_dimension TEXT NOT NULL,
           projected_order_usd DOUBLE PRECISION NOT NULL,
           projected_hour_usd DOUBLE PRECISION NOT NULL,
@@ -241,6 +308,10 @@ async function ensureBudgetTables(): Promise<void> {
           limit_usd DOUBLE PRECISION NOT NULL,
           acknowledged_at TIMESTAMPTZ
         )
+      `);
+      await pool.query(`
+        ALTER TABLE ai_cost_budget_alerts
+          ADD COLUMN IF NOT EXISTS cost_category TEXT NOT NULL DEFAULT 'legacy'
       `);
     })().catch((error) => {
       budgetTablesPromise = null;
@@ -267,50 +338,42 @@ async function readSpendSnapshot(
   client: any,
   context: AICostBudgetContext,
 ): Promise<AICostBudgetSpendSnapshot> {
-  const effective = effectiveCostSql("r");
-  const result = await client.query(
+  // Provider-reported ai_usage_events is authoritative for completed spend.
+  // Reservations contribute only while a call is still RESERVED/UNCERTAIN;
+  // COMPLETED and EXPIRED rows can never hide or duplicate actual usage.
+  const active = await client.query(
     `SELECT
-       COALESCE(SUM(${effective}) FILTER (WHERE r.order_id = $2), 0) AS order_usd,
-       COALESCE(SUM(${effective}) FILTER (WHERE r.created_at >= NOW() - INTERVAL '1 hour'), 0) AS reservation_hour_usd,
-       COALESCE(SUM(${effective}) FILTER (
-         WHERE (r.created_at AT TIME ZONE 'Asia/Dubai')::date =
-               (NOW() AT TIME ZONE 'Asia/Dubai')::date
-       ), 0) AS reservation_day_usd
-     FROM ai_cost_budget_reservations r
-     WHERE r.product = $1`,
-    [context.product, context.orderId],
+       COALESCE(SUM(CASE WHEN status='RESERVED' THEN reserved_cost_usd
+                         ELSE GREATEST(COALESCE(actual_cost_usd,0),reserved_cost_usd) END)
+         FILTER (WHERE order_id=$2),0) AS order_usd,
+       COALESCE(SUM(CASE WHEN status='RESERVED' THEN reserved_cost_usd
+                         ELSE GREATEST(COALESCE(actual_cost_usd,0),reserved_cost_usd) END)
+         FILTER (WHERE created_at >= NOW()-INTERVAL '1 hour'),0) AS hour_usd,
+       COALESCE(SUM(CASE WHEN status='RESERVED' THEN reserved_cost_usd
+                         ELSE GREATEST(COALESCE(actual_cost_usd,0),reserved_cost_usd) END)
+         FILTER (WHERE (created_at AT TIME ZONE 'Asia/Dubai')::date=(NOW() AT TIME ZONE 'Asia/Dubai')::date),0) AS day_usd
+     FROM ai_cost_budget_reservations
+     WHERE product=$1 AND cost_category=$3 AND status IN ('RESERVED','UNCERTAIN')`,
+    [context.product, context.orderId, context.costCategory],
   );
-  const row = result.rows[0] || {};
-
-  // ai_usage_events is the authoritative historical collector. Only count
-  // events that predate this controller or are not linked to a reservation,
-  // otherwise completed calls would be counted twice.
   const usage = await client.query(
     `SELECT
-       COALESCE(SUM(estimated_openai_cost_usd) FILTER (
-         WHERE created_at >= NOW() - INTERVAL '1 hour'
-       ), 0) AS hour_usd,
-       COALESCE(SUM(estimated_openai_cost_usd) FILTER (
-         WHERE (created_at AT TIME ZONE 'Asia/Dubai')::date =
-               (NOW() AT TIME ZONE 'Asia/Dubai')::date
-       ), 0) AS day_usd
+       COALESCE(SUM(e.estimated_openai_cost_usd) FILTER (
+         WHERE COALESCE(e.order_id,r.order_id)=$2),0) AS order_usd,
+       COALESCE(SUM(e.estimated_openai_cost_usd) FILTER (
+         WHERE e.created_at >= NOW()-INTERVAL '1 hour'),0) AS hour_usd,
+       COALESCE(SUM(e.estimated_openai_cost_usd) FILTER (
+         WHERE (e.created_at AT TIME ZONE 'Asia/Dubai')::date=(NOW() AT TIME ZONE 'Asia/Dubai')::date),0) AS day_usd
      FROM ai_usage_events e
-     WHERE e.profile = $1
-       AND NOT EXISTS (
-         SELECT 1 FROM ai_cost_budget_reservations r
-         WHERE r.response_id = e.response_id
-       )`,
-    [context.profile],
+     LEFT JOIN ai_cost_budget_reservations r ON r.response_id=e.response_id
+     WHERE e.profile=$1 AND e.cost_category=$3`,
+    [context.profile, context.orderId, context.costCategory],
   );
-  const usageRow = usage.rows[0] || {};
-  const asNumber = (value: unknown) => {
-    const parsed = Number(value || 0);
-    return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
-  };
+  const number = (value: unknown) => Math.max(0, Number(value || 0) || 0);
   return {
-    orderUsd: asNumber(row.order_usd),
-    hourUsd: asNumber(row.reservation_hour_usd) + asNumber(usageRow.hour_usd),
-    dayUsd: asNumber(row.reservation_day_usd) + asNumber(usageRow.day_usd),
+    orderUsd: number(active.rows[0]?.order_usd)+number(usage.rows[0]?.order_usd),
+    hourUsd: number(active.rows[0]?.hour_usd)+number(usage.rows[0]?.hour_usd),
+    dayUsd: number(active.rows[0]?.day_usd)+number(usage.rows[0]?.day_usd),
   };
 }
 
@@ -327,6 +390,15 @@ export async function reserveAICostBudget(
     orderId: normalizeOrderId(rawContext.orderId),
     profile: String(rawContext.profile || "unknown").trim().slice(0, 80),
     label: rawContext.label ? String(rawContext.label).trim().slice(0, 160) : undefined,
+    costCategory: requestedProduct === "peptides"
+      ? normalizeAICostCategory(rawContext.costCategory)
+      : "legacy",
+    authorizationId: rawContext.authorizationId
+      ? String(rawContext.authorizationId).trim().slice(0, 160)
+      : undefined,
+    incidentKey: rawContext.incidentKey
+      ? String(rawContext.incidentKey).trim().toLowerCase().replace(/[^a-z0-9:_-]+/g, "-").slice(0, 160)
+      : undefined,
     discoveryGenerationToken: rawContext.discoveryGenerationToken,
     discoveryFenceToken: rawContext.discoveryFenceToken ?? null,
     discoveryAllowLegacy: rawContext.discoveryAllowLegacy === true,
@@ -336,11 +408,15 @@ export async function reserveAICostBudget(
   if (!context.orderId) {
     throw new Error("AI cost budget requires an orderId");
   }
-  let limits = getAICostBudgetLimits(context.product, env);
+  if (context.product === "peptides" && context.costCategory === "manual_repair"
+    && (!context.authorizationId || !context.incidentKey)) {
+    throw new Error("PEPTIDES_MANUAL_REPAIR_AUTHORIZATION_AND_INCIDENT_REQUIRED");
+  }
+  let limits = getAICostBudgetLimits(context.product, env, context.costCategory);
   if (!Number.isFinite(limits.perOrderUsd)) return null;
   const reservedUsd = context.product === "discovery"
     ? DEFAULT_DISCOVERY_LIMITS.perOrderUsd
-    : boundedNumber(context.estimatedCostUsd, 1, 0.01, limits.perOrderUsd);
+    : boundedNumber(context.estimatedCostUsd, limits.perOrderUsd, 0.01, limits.perOrderUsd);
 
   await ensureBudgetTables();
   const { pool } = await import("./db");
@@ -352,7 +428,7 @@ export async function reserveAICostBudget(
     await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
       context.product === "discovery"
         ? DISCOVERY_TRANSACTION_FENCE_KEY
-        : `ai-cost-budget:${context.product}`,
+        : `ai-cost-budget:${context.product}:${context.costCategory}`,
     ]);
     if (context.product === "discovery") {
       const hasGenericOwnership = Boolean(context.discoveryGenerationToken);
@@ -445,6 +521,26 @@ export async function reserveAICostBudget(
         throw new Error("DISCOVERY_MONO_CALL_ALREADY_RESERVED");
       }
     }
+    if (context.product === "peptides" && context.costCategory === "customer_auto") {
+      const priorAutomaticSpend = await client.query(
+        `SELECT 1
+           FROM ai_usage_events e
+           LEFT JOIN ai_cost_budget_reservations r ON r.response_id=e.response_id
+          WHERE e.profile='peptides' AND COALESCE(e.order_id,r.order_id)=$1
+          LIMIT 1`,
+        [context.orderId],
+      );
+      const priorAutomaticReservation = await client.query(
+        `SELECT 1 FROM ai_cost_budget_reservations
+          WHERE product='peptides' AND order_id=$1
+            AND cost_category='customer_auto'
+          LIMIT 1`,
+        [context.orderId],
+      );
+      if ((priorAutomaticSpend.rowCount ?? 0) > 0 || (priorAutomaticReservation.rowCount ?? 0) > 0) {
+        throw new Error("PEPTIDES_CUSTOMER_AUTO_ALREADY_SPENT");
+      }
+    }
     await client.query(
       `UPDATE ai_cost_budget_reservations
        SET status = 'EXPIRED', updated_at = NOW(), detail = 'reservation_ttl_expired'
@@ -463,13 +559,13 @@ export async function reserveAICostBudget(
           : limits.perDayUsd;
       await client.query(
         `INSERT INTO ai_cost_budget_alerts (
-           product, order_id, profile, label, blocked_dimension,
+           product, order_id, profile, label, cost_category, blocked_dimension,
            projected_order_usd, projected_hour_usd, projected_day_usd, limit_usd
          )
-         SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9
+         SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9,$10
          WHERE NOT EXISTS (
            SELECT 1 FROM ai_cost_budget_alerts
-           WHERE product = $1 AND order_id = $2 AND blocked_dimension = $5
+           WHERE product = $1 AND order_id = $2 AND cost_category = $5 AND blocked_dimension = $6
              AND created_at >= NOW() - INTERVAL '10 minutes'
          )`,
         [
@@ -477,6 +573,7 @@ export async function reserveAICostBudget(
           context.orderId,
           context.profile,
           context.label || null,
+          context.costCategory,
           decision.blockedBy,
           decision.projected.orderUsd,
           decision.projected.hourUsd,
@@ -492,9 +589,11 @@ export async function reserveAICostBudget(
     }
     await client.query(
       `INSERT INTO ai_cost_budget_reservations (
-         id, product, order_id, profile, label, status, reserved_cost_usd
-       ) VALUES ($1,$2,$3,$4,$5,'RESERVED',$6)`,
-      [id, context.product, context.orderId, context.profile, context.label || null, reservedUsd],
+         id, product, order_id, profile, label, cost_category, authorization_id, incident_key,
+         status, reserved_cost_usd
+       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'RESERVED',$9)`,
+      [id, context.product, context.orderId, context.profile, context.label || null,
+       context.costCategory, context.authorizationId || null, context.incidentKey || null, reservedUsd],
     );
     await client.query("COMMIT");
     return { id, context, reservedUsd, createdAt: new Date().toISOString() };
@@ -531,7 +630,8 @@ export async function resumeAICostBudgetReservation(
   await ensureBudgetTables();
   const { pool } = await import("./db");
   const result = await pool.query(
-    `SELECT id, product, order_id, profile, label, reserved_cost_usd, created_at
+    `SELECT id, product, order_id, profile, label, cost_category, authorization_id,
+            reserved_cost_usd, created_at
        FROM ai_cost_budget_reservations
       WHERE product = $1 AND order_id = $2 AND profile = $3 AND response_id = $4
         AND status IN ('RESERVED', 'UNCERTAIN', 'COMPLETED')
@@ -553,6 +653,8 @@ export async function resumeAICostBudgetReservation(
       orderId: String(row.order_id),
       profile: String(row.profile),
       label: row.label ? String(row.label) : undefined,
+      costCategory: normalizeAICostCategory(row.cost_category),
+      authorizationId: row.authorization_id ? String(row.authorization_id) : undefined,
     },
     reservedUsd: Number(row.reserved_cost_usd),
     createdAt: new Date(row.created_at).toISOString(),
@@ -622,7 +724,7 @@ export async function resetAICostBudgetReservations(
       WHERE product = $1
         AND order_id = $2
         AND profile = $3
-        AND status IN ('RESERVED', 'UNCERTAIN', 'COMPLETED')`,
+        AND status IN ('RESERVED', 'UNCERTAIN')`,
     [
       normalizeProduct(rawContext.product),
       normalizeOrderId(rawContext.orderId),
