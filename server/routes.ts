@@ -148,6 +148,10 @@ import {
   getAICostBudgetSummary,
   resetAICostBudgetReservations,
 } from "./aiCostBudgetController";
+import {
+  readDeliveredReportImmutability,
+  validateDeliveredReportRepairOverride,
+} from "./peptidesDeliveredReportImmutability";
 import { createRateLimiter } from "./middleware/rateLimit";
 import {
   scrapeArticleFromUrl,
@@ -1945,13 +1949,13 @@ export async function registerRoutes(
     }
   }
 
-  function validateManualPeptidesOrderTargetOrRespond(input: {
+  async function validateManualPeptidesOrderTargetOrRespond(input: {
     req: any;
     res: any;
     expectedMutation: string;
     order: any;
     responses?: Record<string, unknown> | null;
-  }): boolean {
+  }): Promise<boolean> {
     const result = validatePeptidesManualOrderTargetLock({
       expectedMutation: input.expectedMutation,
       targetLock: input.req.body?.orderTargetLock as PeptidesManualOrderTargetLock | undefined,
@@ -1959,24 +1963,43 @@ export async function registerRoutes(
       responses: input.responses,
       mutationPayload: getPeptidesManualMutationPayload(input.expectedMutation, input.req.body),
     });
-    if (result.ok) return true;
+    if (!result.ok) {
+      input.res.status(409).json({
+        success: false,
+        error: "PEPTIDES_MANUAL_ORDER_TARGET_LOCK_FAILED",
+        details: result.errors,
+        mutation: input.expectedMutation,
+      });
+      return false;
+    }
+    if (["delivery-hold", "send-order-confirmation"].includes(input.expectedMutation)) return true;
+    const snapshot = await readDeliveredReportImmutability(input.order);
+    const gate = validateDeliveredReportRepairOverride({
+      snapshot,
+      mutation: input.expectedMutation,
+      override: input.req.body?.deliveredReportRepairOverride,
+    });
+    if (gate.ok) return true;
     input.res.status(409).json({
       success: false,
-      error: "PEPTIDES_MANUAL_ORDER_TARGET_LOCK_FAILED",
-      details: result.errors,
-      mutation: input.expectedMutation,
+      error: "DELIVERED_REPORT_IMMUTABILITY_GATE",
+      details: gate.error,
+      orderId: snapshot.orderId,
+      reportId: snapshot.reportId,
+      reportSha256: snapshot.reportSha256,
+      evidence: snapshot.evidence,
     });
     return false;
   }
 
-  function validateManualPeptidesTargetOrRespond(input: {
+  async function validateManualPeptidesTargetOrRespond(input: {
     req: any;
     res: any;
     expectedMutation: string;
     order: any;
     reportRecord: any;
     allowUnlinkedReport?: boolean;
-  }): boolean {
+  }): Promise<boolean> {
     const result = validatePeptidesManualTargetLock({
       expectedMutation: input.expectedMutation,
       targetLock: input.req.body?.targetLock as PeptidesManualTargetLock | undefined,
@@ -1985,12 +2008,30 @@ export async function registerRoutes(
       mutationPayload: getPeptidesManualMutationPayload(input.expectedMutation, input.req.body),
       allowUnlinkedReport: input.allowUnlinkedReport,
     });
-    if (result.ok) return true;
+    if (!result.ok) {
+      input.res.status(409).json({
+        success: false,
+        error: "PEPTIDES_MANUAL_TARGET_LOCK_FAILED",
+        details: result.errors,
+        mutation: input.expectedMutation,
+      });
+      return false;
+    }
+    const snapshot = await readDeliveredReportImmutability(input.order, input.reportRecord);
+    const gate = validateDeliveredReportRepairOverride({
+      snapshot,
+      mutation: input.expectedMutation,
+      override: input.req.body?.deliveredReportRepairOverride,
+    });
+    if (gate.ok) return true;
     input.res.status(409).json({
       success: false,
-      error: "PEPTIDES_MANUAL_TARGET_LOCK_FAILED",
-      details: result.errors,
-      mutation: input.expectedMutation,
+      error: "DELIVERED_REPORT_IMMUTABILITY_GATE",
+      details: gate.error,
+      orderId: snapshot.orderId,
+      reportId: snapshot.reportId,
+      reportSha256: snapshot.reportSha256,
+      evidence: snapshot.evidence,
     });
     return false;
   }
@@ -7101,6 +7142,18 @@ export async function registerRoutes(
         res.status(404).json({ success: false, error: "Commande Peptides payee introuvable" });
         return;
       }
+      const deliveredImmutability = await readDeliveredReportImmutability(order);
+      if (deliveredImmutability.immutable) {
+        res.status(409).json({
+          success: false,
+          error: "DELIVERED_REPORT_IMMUTABILITY_GATE",
+          orderId: deliveredImmutability.orderId,
+          reportId: deliveredImmutability.reportId,
+          reportSha256: deliveredImmutability.reportSha256,
+          evidence: deliveredImmutability.evidence,
+        });
+        return;
+      }
       if ((order.metadata as any)?.peptidesReportId) {
         res.status(409).json({ success: false, error: "Un rapport est deja rattache" });
         return;
@@ -7111,13 +7164,13 @@ export async function registerRoutes(
         res.status(409).json({ success: false, error: "GENERATION_ACTIVE_RESET_FORBIDDEN" });
         return;
       }
-      if (!validateManualPeptidesOrderTargetOrRespond({
+      if (!(await validateManualPeptidesOrderTargetOrRespond({
         req,
         res,
         expectedMutation: "reset-generation-lock",
         order,
         responses: (order.metadata as any)?.peptidesResponses || null,
-      })) return;
+      }))) return;
       const circuitReset = await storage.resetPeptidesGenerationCircuit(order.id);
       if (!circuitReset) {
         res.status(409).json({ success: false, error: "Circuit non reinitialisable" });
@@ -7194,21 +7247,21 @@ export async function registerRoutes(
           res.status(404).json({ error: "Rapport a remplacer introuvable" });
           return;
         }
-        if (!validateManualPeptidesTargetOrRespond({
+        if (!(await validateManualPeptidesTargetOrRespond({
           req,
           res,
           expectedMutation: "replace-report",
           order: pepOrder,
           reportRecord: existingTarget,
-        })) return;
+        }))) return;
       }
-      if (!validateManualPeptidesOrderTargetOrRespond({
+      if (!(await validateManualPeptidesOrderTargetOrRespond({
         req,
         res,
         expectedMutation: "generate-report",
         order: pepOrder,
         responses: (pepOrder.metadata as any)?.peptidesResponses || null,
-      })) return;
+      }))) return;
       const confirmationOrder = await storage.getOrder(pepOrder.id);
       if (confirmationOrder && !replaceReportId) {
         const confirmationScheduledAt = await resolvePeptidesEmailScheduledAt(confirmationOrder).catch(() => new Date());
@@ -7396,13 +7449,13 @@ export async function registerRoutes(
         res.status(409).json({ error: "PEPTIDES_ORDER_DISAPPEARED_DURING_GENERATION" });
         return;
       }
-      if (!validateManualPeptidesOrderTargetOrRespond({
+      if (!(await validateManualPeptidesOrderTargetOrRespond({
         req,
         res,
         expectedMutation: "generate-report",
         order: freshTargetOrder,
         responses: (freshTargetOrder.metadata as any)?.peptidesResponses || null,
-      })) return;
+      }))) return;
       if (sealedPeptidesResponsesHash((freshTargetOrder.metadata as any)?.peptidesResponses)
         !== sealedPeptidesResponsesHash(responses)) {
         res.status(409).json({ error: "PEPTIDES_SOURCE_CHANGED_DURING_GENERATION" });
@@ -7410,13 +7463,13 @@ export async function registerRoutes(
       }
       if (replaceReportId) {
         const freshTargetReport = await storage.getBurnoutReport(String(replaceReportId));
-        if (!freshTargetReport || !validateManualPeptidesTargetOrRespond({
+        if (!freshTargetReport || !(await validateManualPeptidesTargetOrRespond({
           req,
           res,
           expectedMutation: "replace-report",
           order: freshTargetOrder,
           reportRecord: freshTargetReport,
-        })) return;
+        }))) return;
       }
       const { validatePeptidesReport } = await import("./peptidesReportValidator");
       const generatedValidation = validatePeptidesReport(report);
@@ -7448,6 +7501,7 @@ export async function registerRoutes(
           expectedSha256: String(req.body?.targetLock?.expectedCurrentReportSha256 || ""),
           nextReport: report,
           mutation: "replace-report",
+          deliveredReportRepairOverride: req.body?.deliveredReportRepairOverride,
         });
         if (!updated) {
           res.status(409).json({ error: `Report ${replaceReportId} or its HOLD/link/hash changed during in-place update` });
@@ -7623,14 +7677,14 @@ export async function registerRoutes(
       }
       const report = await storage.getBurnoutReport(reportId);
       if (!report) { res.status(404).json({ error: "Report introuvable" }); return; }
-      if (!validateManualPeptidesTargetOrRespond({
+      if (!(await validateManualPeptidesTargetOrRespond({
         req,
         res,
         expectedMutation: "link-order-to-report",
         order,
         reportRecord: report,
         allowUnlinkedReport: true,
-      })) return;
+      }))) return;
       // Sanity: report email matches order email (peptides::email convention)
       const reportEmail = String(report.email || "").replace(/^peptides::/i, "").toLowerCase();
       if (reportEmail !== String(order.email || "").toLowerCase()) {
@@ -7751,13 +7805,13 @@ export async function registerRoutes(
         return;
       }
 
-      if (!validateManualPeptidesTargetOrRespond({
+      if (!(await validateManualPeptidesTargetOrRespond({
         req,
         res,
         expectedMutation: "correct-email",
         order,
         reportRecord: report,
-      })) return;
+      }))) return;
 
       const nowIso = new Date().toISOString();
       const nextResponses = {
@@ -7920,13 +7974,13 @@ export async function registerRoutes(
         res.status(400).json({ error: "PEPTIDES_PROFILE_CONFIRMATION_REQUIRED", mismatched: profile.mismatched });
         return;
       }
-      if (!validateManualPeptidesOrderTargetOrRespond({
+      if (!(await validateManualPeptidesOrderTargetOrRespond({
         req,
         res,
         expectedMutation: "inject-responses",
         order: pepOrder,
         responses,
-      })) return;
+      }))) return;
 
       const client = await pool.connect();
       try {
@@ -8207,13 +8261,13 @@ export async function registerRoutes(
         res.status(404).json({ success: false, error: "Commande Peptides Engine introuvable" });
         return;
       }
-      if (!validateManualPeptidesOrderTargetOrRespond({
+      if (!(await validateManualPeptidesOrderTargetOrRespond({
         req,
         res,
         expectedMutation: "delivery-hold",
         order,
         responses: (order.metadata as any)?.peptidesResponses || null,
-      })) return;
+      }))) return;
       const linkedReportId = String((order.metadata as any)?.peptidesReportId || "");
       let approvedHash = "";
       let currentHash = "";
@@ -8285,6 +8339,14 @@ export async function registerRoutes(
         return;
       }
       const testEmail = email || "test+iter@achzodcoaching.com";
+      if (!/(^test[+@]|[+._-](?:test|debug)[+._@-]|@example\.test$)/i.test(testEmail)) {
+        res.status(409).json({
+          success: false,
+          error: "DELIVERED_REPORT_IMMUTABILITY_GATE",
+          details: "peptides/test-generate is restricted to synthetic QA identities and cannot target a client email",
+        });
+        return;
+      }
       const jobTag = `peptides::test::${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const startedAt = Date.now();
 
@@ -8299,7 +8361,13 @@ export async function registerRoutes(
       (async () => {
         try {
           const { generatePeptidesProtocol } = await import("./peptidesEngine");
-          const report = await generatePeptidesProtocol(responses as any, testEmail);
+          const report = await generatePeptidesProtocol(responses as any, testEmail, "coached", {
+            orderId: jobTag,
+            maxCandidates: 1,
+            providerRetries: 1,
+            costBudgetEstimatedUsd: 2.75,
+            costCategory: "test",
+          });
           const rows = await storage.getAllBurnoutReports();
           const row = rows.find((r: any) => r.email === jobTag);
           if (row) {
@@ -8366,13 +8434,13 @@ export async function registerRoutes(
         res.status(400).json({ success: false, error: "order has no email" });
         return;
       }
-      if (!validateManualPeptidesOrderTargetOrRespond({
+      if (!(await validateManualPeptidesOrderTargetOrRespond({
         req,
         res,
         expectedMutation: "send-order-confirmation",
         order,
         responses: (order.metadata as any)?.peptidesResponses || null,
-      })) return;
+      }))) return;
       if (!force) {
         const alreadyConfirmed = await storage.hasPeptidesOrderConfirmationBeenSent(email).catch(() => false);
         if (alreadyConfirmed) {
@@ -8465,13 +8533,13 @@ export async function registerRoutes(
           res.status(409).json({ success: false, error: "HOLD actif requis avant toute mutation du rapport" });
           return;
         }
-        if (!validateManualPeptidesTargetOrRespond({
+        if (!(await validateManualPeptidesTargetOrRespond({
           req,
           res,
           expectedMutation: "recompute-vials",
           order,
           reportRecord: existing,
-        })) return;
+        }))) return;
         if (!validation.ok || validation.warnings.length > 0) {
           res.status(422).json({ success: false, applied: false, validation, error: "Strict validation failed, report not persisted" });
           return;
@@ -8483,6 +8551,7 @@ export async function registerRoutes(
           expectedSha256: expectedHash,
           nextReport: fixed,
           mutation: "recompute-vials",
+          deliveredReportRepairOverride: req.body?.deliveredReportRepairOverride,
         });
         if (!persisted) {
           res.status(409).json({ success: false, error: "REPORT_ORDER_HOLD_HASH_CAS_FAILED" });
@@ -8533,13 +8602,13 @@ export async function registerRoutes(
         res.status(409).json({ success: false, error: "HOLD actif requis avant toute mutation du rapport" });
         return;
       }
-      if (apply && !validateManualPeptidesTargetOrRespond({
+      if (apply && !(await validateManualPeptidesTargetOrRespond({
         req,
         res,
         expectedMutation: "repair-live",
         order,
         reportRecord: existing,
-      })) return;
+      }))) return;
 
       const responses = (
         (existing as any).responses
@@ -8588,6 +8657,7 @@ export async function registerRoutes(
           expectedSha256: expectedHash,
           nextReport: repaired,
           mutation: "repair-live",
+          deliveredReportRepairOverride: req.body?.deliveredReportRepairOverride,
         });
         if (!persisted) {
           res.status(409).json({ success: false, error: "REPORT_ORDER_HOLD_HASH_CAS_FAILED" });
@@ -8659,13 +8729,13 @@ export async function registerRoutes(
         res.status(409).json({ success: false, error: "HOLD actif requis avant toute mutation du rapport" });
         return;
       }
-      if (!validateManualPeptidesTargetOrRespond({
+      if (!(await validateManualPeptidesTargetOrRespond({
         req,
         res,
         expectedMutation: "edit-sections",
         order,
         reportRecord: existing,
-      })) return;
+      }))) return;
 
       const report = JSON.parse(JSON.stringify(existing.report)) as any;
       const sections = Array.isArray(report.sections) ? report.sections : [];
@@ -8727,6 +8797,7 @@ export async function registerRoutes(
         expectedSha256: expectedHash,
         nextReport: report,
         mutation: "edit-sections",
+        deliveredReportRepairOverride: req.body?.deliveredReportRepairOverride,
       });
       if (!persisted) {
         res.status(409).json({ success: false, error: "REPORT_ORDER_HOLD_HASH_CAS_FAILED" });
@@ -16848,6 +16919,22 @@ export async function registerRoutes(
         if (!email || email.includes("test") || email.includes("debug")) continue;
         if (meta?.amountMismatch === true || meta?.peptidesManualFulfillmentState === "PAYMENT_REVIEW_REQUIRED") {
           console.error(`[AutoGen] Payment review blocks generation and delivery for ${email} (${order.id})`);
+          continue;
+        }
+
+        // A delivered/used report is terminal. Review, reorder, report-scoped
+        // delivery or owner-audited Gmail evidence wins over legacy fulfillment
+        // heuristics: AutoGen must not clear the reportId, reset its circuit or
+        // reach a provider because an old row looks incomplete.
+        const deliveredImmutability = await readDeliveredReportImmutability(order).catch((error) => {
+          console.error(`[AutoGen] Delivered immutability lookup failed for ${email}:`, error);
+          return null;
+        });
+        if (!deliveredImmutability) continue; // fail closed on evidence lookup failure
+        if (deliveredImmutability.immutable) {
+          console.log(
+            `[AutoGen] DELIVERED_REPORT_IMMUTABILITY_GATE retained ${deliveredImmutability.reportId} for ${email}; no reset, rebuild or provider call`,
+          );
           continue;
         }
 

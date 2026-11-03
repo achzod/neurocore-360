@@ -28,6 +28,12 @@ import type {
 import { claimPendingGenericReportJob } from "./reportJobStorageSafety";
 import { hashPeptidesReport, isApprovedPeptidesReleaseVerdict } from "./peptidesReleaseHashGate";
 import { hashPeptidesManualMutationPayload } from "./peptidesManualMutationGuard";
+import {
+  classifyDeliveredReportImmutability,
+  deliveredUsageTrackingKind,
+  validateDeliveredReportRepairOverride,
+  type DeliveredReportRepairOverride,
+} from "./peptidesDeliveredReportImmutability";
 
 // Configuration de la connexion PostgreSQL
 const getDatabaseUrl = (): string => {
@@ -225,6 +231,7 @@ export interface IStorage {
     expectedSha256: string;
     nextReport: unknown;
     mutation: string;
+    deliveredReportRepairOverride?: DeliveredReportRepairOverride | null;
   }): Promise<BurnoutReportRecord | undefined>;
   deleteBurnoutReport(id: string): Promise<boolean>;
   getAllBurnoutReports(): Promise<BurnoutReportRecord[]>;
@@ -820,6 +827,7 @@ export class MemStorage implements IStorage {
     expectedSha256: string;
     nextReport: unknown;
     mutation: string;
+    deliveredReportRepairOverride?: DeliveredReportRepairOverride | null;
   }): Promise<BurnoutReportRecord | undefined> {
     const order = this.memOrders.get(input.orderId);
     const current = this.burnoutReports.get(input.reportId);
@@ -830,6 +838,17 @@ export class MemStorage implements IStorage {
     if (!order || !current || !held || deliveryInFlight
       || String(metadata.peptidesReportId || "") !== input.reportId
       || hashPeptidesReport(current.report) !== input.expectedSha256) return undefined;
+    const immutableSnapshot = classifyDeliveredReportImmutability({
+      orderId: input.orderId,
+      reportId: input.reportId,
+      reportSha256: input.expectedSha256,
+      metadata,
+    });
+    if (!validateDeliveredReportRepairOverride({
+      snapshot: immutableSnapshot,
+      mutation: input.mutation,
+      override: input.deliveredReportRepairOverride,
+    }).ok) return undefined;
     const updated = { ...current, report: input.nextReport };
     this.burnoutReports.set(input.reportId, updated);
     order.metadata = {
@@ -2854,6 +2873,7 @@ export class PgStorage implements IStorage {
     expectedSha256: string;
     nextReport: unknown;
     mutation: string;
+    deliveredReportRepairOverride?: DeliveredReportRepairOverride | null;
   }): Promise<BurnoutReportRecord | undefined> {
     await this.ensureBurnoutReportsTable();
     await this.ensureOrdersTableCreated();
@@ -2861,7 +2881,7 @@ export class PgStorage implements IStorage {
     try {
       await client.query("BEGIN");
       const orderResult = await client.query(
-        `SELECT id, metadata
+        `SELECT id, email, metadata
            FROM orders
           WHERE id = $1
           FOR UPDATE`,
@@ -2880,6 +2900,62 @@ export class PgStorage implements IStorage {
       if (!order || !current || !held || deliveryInFlight
         || String(metadata.peptidesReportId || "") !== input.reportId
         || hashPeptidesReport(current.report || {}) !== input.expectedSha256) {
+        await client.query("ROLLBACK");
+        return undefined;
+      }
+      const [trackingEvidence, reviewEvidence, migratedEvidence] = await Promise.all([
+        client.query(
+          `SELECT id, COALESCE(sent_at,created_at)::text AS at, email_type, subject
+             FROM email_tracking
+            WHERE lower(recipient_email)=lower($1)
+              AND (audit_id=$2 OR audit_id=$3 OR metadata->>'orderId'=$2 OR metadata->>'reportId'=$3)
+              AND sendpulse_error IS NULL
+              AND (COALESCE(sent_at,created_at) IS NOT NULL OR lower(COALESCE(sendpulse_status,'')) IN ('success','sent','delivered','accepted'))`,
+          [order.email, input.orderId, input.reportId],
+        ).catch(() => ({ rows: [] as any[] })),
+        client.query(
+          `SELECT id, created_at::text AS at FROM reviews
+            WHERE (audit_id=$1 OR audit_id=$2)
+              AND lower(email)=lower($3)
+              AND upper(COALESCE(audit_type,''))='PEPTIDES_ENGINE'`,
+          [input.orderId, input.reportId, order.email],
+        ).catch(() => ({ rows: [] as any[] })),
+        client.query(
+          `SELECT evidence_type, evidence_id, observed_at::text AS at
+             FROM peptides_delivered_report_evidence
+            WHERE order_id=$1 AND report_id=$2 AND report_sha256=$3`,
+          [input.orderId, input.reportId, input.expectedSha256],
+        ).catch(() => ({ rows: [] as any[] })),
+      ]);
+      const externalEvidence = [
+        ...trackingEvidence.rows.flatMap((row: any) => {
+          const kind = deliveredUsageTrackingKind(row);
+          return kind ? [{ kind, id: String(row.id), at: row.at || null }] : [];
+        }),
+        ...reviewEvidence.rows.map((row: any) => ({
+          kind: "review_or_reorder" as const,
+          id: String(row.id),
+          at: row.at || null,
+        })),
+        ...migratedEvidence.rows.flatMap((row: any) => {
+          const kind = String(row.evidence_type || "");
+          return ["delivery_metadata", "delivery_tracking", "review_or_reorder", "gmail_owner_evidence"].includes(kind)
+            ? [{ kind: kind as any, id: String(row.evidence_id), at: row.at || null }]
+            : [];
+        }),
+      ];
+      const immutableSnapshot = classifyDeliveredReportImmutability({
+        orderId: input.orderId,
+        reportId: input.reportId,
+        reportSha256: input.expectedSha256,
+        metadata,
+        externalEvidence,
+      });
+      if (!validateDeliveredReportRepairOverride({
+        snapshot: immutableSnapshot,
+        mutation: input.mutation,
+        override: input.deliveredReportRepairOverride,
+      }).ok) {
         await client.query("ROLLBACK");
         return undefined;
       }
