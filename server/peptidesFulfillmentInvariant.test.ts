@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
+  buildPeptidesFulfillmentIncidentPatch,
   evaluatePeptidesFulfillmentInvariant,
   shouldAlertPeptidesFulfillmentIncident,
 } from "./peptidesFulfillmentInvariant";
@@ -347,6 +348,25 @@ test("alerts once while the same fulfillment incident remains unresolved", () =>
     peptidesFulfillmentIncidentCode: "RECIPIENT_UNSUBSCRIBED",
     peptidesFulfillmentIncidentAlertedAt: "2026-10-04T15:37:00.674Z",
   }, "RECIPIENT_UNSUBSCRIBED"), false);
+});
+
+test("repeated identical incidents preserve their timestamps and become metadata no-ops", () => {
+  const metadata = {
+    peptidesFulfillmentState: "ACTION_REQUIRED",
+    peptidesFulfillmentIncidentCode: "DELIVERY_OVERDUE",
+    peptidesFulfillmentIncidentDetail: "same detail",
+    peptidesFulfillmentIncidentAt: "2026-10-01T19:00:00.000Z",
+    peptidesFulfillmentIncidentAlertedAt: "2026-10-01T19:00:01.000Z",
+  };
+  const patch = buildPeptidesFulfillmentIncidentPatch(
+    metadata,
+    { code: "DELIVERY_OVERDUE", blocksDelivery: false, detail: "same detail" },
+    {},
+    "2026-10-01T20:00:00.000Z",
+  );
+  assert.equal(patch.peptidesFulfillmentIncidentAt, metadata.peptidesFulfillmentIncidentAt);
+  assert.equal(patch.peptidesFulfillmentIncidentAlertedAt, undefined);
+  for (const [key, value] of Object.entries(patch)) assert.equal(metadata[key as keyof typeof metadata], value);
 });
 
 test("alerts again only after resolution or when the incident code changes", () => {

@@ -70,6 +70,34 @@ export function shouldAlertPeptidesFulfillmentIncident(
     || !metadata.peptidesFulfillmentIncidentAlertedAt;
 }
 
+export function buildPeptidesFulfillmentIncidentPatch(
+  metadata: Record<string, unknown>,
+  incident: { code: string; blocksDelivery: boolean; detail: string },
+  additionalPatch: Record<string, string | number | boolean> = {},
+  nowIso = new Date().toISOString(),
+): Record<string, string | number | boolean> {
+  const shouldAlert = shouldAlertPeptidesFulfillmentIncident(metadata, incident.code);
+  const sameIncident = metadata.peptidesFulfillmentState === "ACTION_REQUIRED"
+    && metadata.peptidesFulfillmentIncidentCode === incident.code
+    && metadata.peptidesFulfillmentIncidentDetail === incident.detail;
+  const incidentAt = sameIncident && typeof metadata.peptidesFulfillmentIncidentAt === "string"
+    && metadata.peptidesFulfillmentIncidentAt
+    ? metadata.peptidesFulfillmentIncidentAt
+    : nowIso;
+  return {
+    peptidesFulfillmentIncidentCode: incident.code,
+    peptidesFulfillmentIncidentDetail: incident.detail,
+    peptidesFulfillmentIncidentAt: incidentAt,
+    peptidesFulfillmentState: "ACTION_REQUIRED",
+    ...(incident.blocksDelivery ? {
+      peptidesEmailHold: true,
+      peptidesEmailHoldReason: incident.code,
+    } : {}),
+    ...(shouldAlert ? { peptidesFulfillmentIncidentAlertedAt: nowIso } : {}),
+    ...additionalPatch,
+  };
+}
+
 function dateMs(value: Date | string | null | undefined): number | null {
   if (!value) return null;
   const timestamp = value instanceof Date ? value.getTime() : new Date(value).getTime();

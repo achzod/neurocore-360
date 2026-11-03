@@ -65,6 +65,57 @@ pool.on("error", (err) => {
 
 const DEFAULT_USER_CREDITS = Number(process.env.DEFAULT_BLOOD_CREDITS ?? "0");
 
+export function orderMetadataPatchChanges(
+  metadata: Record<string, unknown> | null | undefined,
+  patch: Record<string, string | number | boolean>,
+): boolean {
+  const current = metadata || {};
+  return Object.entries(patch).some(([key, value]) => !Object.is(current[key], value));
+}
+
+async function setOrderMetadataPatchCompareAndSkip(input: {
+  orderId: string;
+  patch: Record<string, string | number | boolean>;
+  expectedReportId?: string | null;
+}): Promise<boolean> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const enforceReportMatch = Object.prototype.hasOwnProperty.call(input, "expectedReportId");
+    const selected = await client.query(
+      `SELECT metadata
+         FROM orders
+        WHERE id = $1
+          AND ($2::boolean = false OR COALESCE(metadata->>'peptidesReportId', '') = $3)
+        FOR UPDATE`,
+      [input.orderId, enforceReportMatch, input.expectedReportId || ""],
+    );
+    if (selected.rowCount !== 1) {
+      await client.query("ROLLBACK");
+      return false;
+    }
+    if (!orderMetadataPatchChanges(selected.rows[0]?.metadata, input.patch)) {
+      await client.query("COMMIT");
+      return true;
+    }
+    const updated = await client.query(
+      `UPDATE orders
+          SET metadata = COALESCE(metadata, '{}'::jsonb) || $1::jsonb,
+              updated_at = NOW()
+        WHERE id = $2
+        RETURNING id`,
+      [JSON.stringify(input.patch), input.orderId],
+    );
+    await client.query("COMMIT");
+    return updated.rowCount === 1;
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => {});
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 export interface MagicToken {
   token: string;
   email: string;
@@ -1331,6 +1382,7 @@ export class MemStorage implements IStorage {
     const order = this.memOrders.get(orderId);
     if (!order) return false;
     const meta = (order.metadata as any) ?? {};
+    if (!orderMetadataPatchChanges(meta, { [key]: value })) return true;
     order.metadata = { ...meta, [key]: value } as any;
     order.updatedAt = new Date();
     return true;
@@ -1363,6 +1415,7 @@ export class MemStorage implements IStorage {
     if (!order) return false;
     const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
     if (String(meta.peptidesReportId || "") !== String(expectedReportId || "")) return false;
+    if (!orderMetadataPatchChanges(meta, values)) return true;
     order.metadata = { ...meta, ...values } as any;
     order.updatedAt = new Date();
     return true;
@@ -1438,16 +1491,18 @@ export class MemStorage implements IStorage {
     // provider status, cannot prove delivery. Hold them for reconciliation;
     // never reinterpret proof-by-exclusion as ACCEPTED.
     if (!exact || !exactHasPositiveEvidence) {
-      order.metadata = {
-        ...meta,
+      const patch = {
         peptidesEmailHold: true,
         peptidesEmailHoldReason: exact
           ? "LEGACY_DELIVERY_EVIDENCE_NOT_POSITIVE"
           : "LEGACY_DELIVERY_EVIDENCE_UNSCOPED",
         peptidesManualFulfillment: true,
         peptidesManualFulfillmentState: "LEGACY_DELIVERY_REQUIRES_REVIEW",
-      } as any;
-      order.updatedAt = new Date();
+      } as const;
+      if (orderMetadataPatchChanges(meta, patch)) {
+        order.metadata = { ...meta, ...patch } as any;
+        order.updatedAt = new Date();
+      }
       return "AMBIGUOUS";
     }
     order.metadata = {
@@ -4511,16 +4566,10 @@ export class PgStorage implements IStorage {
   // the read-modify-write stomp pattern that wipes concurrently-set siblings.
   async setOrderMetadataKey(orderId: string, key: string, value: string | number | boolean): Promise<boolean> {
     await this.ensureOrdersTableCreated();
-    const jsonValue = JSON.stringify(value);
-    const result = await pool.query(
-      `UPDATE orders
-         SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object($1::text, $2::jsonb),
-             updated_at = NOW()
-       WHERE id = $3
-       RETURNING id`,
-      [key, jsonValue, orderId]
-    );
-    return (result.rowCount ?? 0) > 0;
+    return setOrderMetadataPatchCompareAndSkip({
+      orderId,
+      patch: { [key]: value },
+    });
   }
 
   async setPeptidesGenerationResponseIdIfClaimMatches(
@@ -4550,16 +4599,11 @@ export class PgStorage implements IStorage {
     values: Record<string, string | number | boolean>,
   ): Promise<boolean> {
     await this.ensureOrdersTableCreated();
-    const result = await pool.query(
-      `UPDATE orders
-         SET metadata = COALESCE(metadata, '{}'::jsonb) || $1::jsonb,
-             updated_at = NOW()
-       WHERE id = $2
-         AND COALESCE(metadata->>'peptidesReportId', '') = $3
-       RETURNING id`,
-      [JSON.stringify(values), orderId, expectedReportId || ""],
-    );
-    return (result.rowCount ?? 0) > 0;
+    return setOrderMetadataPatchCompareAndSkip({
+      orderId,
+      expectedReportId,
+      patch: values,
+    });
   }
 
   async releasePeptidesDeliveryHoldIfApproved(input: {
@@ -4690,19 +4734,21 @@ export class PgStorage implements IStorage {
       const exactStatus = String(exact?.sendpulse_status || "").trim().toLowerCase();
       const exactHasPositiveEvidence = ["success", "sent", "delivered"].includes(exactStatus);
       if (!exact || !exactHasPositiveEvidence) {
+        const patch = JSON.stringify({
+          peptidesEmailHold: true,
+          peptidesEmailHoldReason: exact
+            ? "LEGACY_DELIVERY_EVIDENCE_NOT_POSITIVE"
+            : "LEGACY_DELIVERY_EVIDENCE_UNSCOPED",
+          peptidesManualFulfillment: true,
+          peptidesManualFulfillmentState: "LEGACY_DELIVERY_REQUIRES_REVIEW",
+        });
         await client.query(
           `UPDATE orders
               SET metadata = COALESCE(metadata, '{}'::jsonb) || $1::jsonb,
                   updated_at = NOW()
-            WHERE id = $2`,
-          [JSON.stringify({
-            peptidesEmailHold: true,
-            peptidesEmailHoldReason: exact
-              ? "LEGACY_DELIVERY_EVIDENCE_NOT_POSITIVE"
-              : "LEGACY_DELIVERY_EVIDENCE_UNSCOPED",
-            peptidesManualFulfillment: true,
-            peptidesManualFulfillmentState: "LEGACY_DELIVERY_REQUIRES_REVIEW",
-          }), orderId],
+            WHERE id = $2
+              AND NOT (COALESCE(metadata, '{}'::jsonb) @> $1::jsonb)`,
+          [patch, orderId],
         );
         await client.query("COMMIT");
         return "AMBIGUOUS";
@@ -4732,7 +4778,8 @@ export class PgStorage implements IStorage {
             SET metadata = COALESCE(metadata, '{}'::jsonb) || $1::jsonb,
                 updated_at = NOW()
           WHERE id = $2
-            AND COALESCE(metadata->>'peptidesReportId', '') = $3`,
+            AND COALESCE(metadata->>'peptidesReportId', '') = $3
+            AND NOT (COALESCE(metadata, '{}'::jsonb) @> $1::jsonb)`,
         [JSON.stringify({
           peptidesEmailHold: true,
           peptidesEmailHoldReason: "LEGACY_DELIVERY_EVIDENCE_LOOKUP_FAILED",

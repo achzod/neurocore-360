@@ -113,9 +113,14 @@ import {
   refreshPeptauraPricingForDelivery,
 } from "./peptidesEngine";
 import {
+  buildPeptidesFulfillmentIncidentPatch,
   evaluatePeptidesFulfillmentInvariant,
   shouldAlertPeptidesFulfillmentIncident,
 } from "./peptidesFulfillmentInvariant";
+import {
+  hasAcceptedPeptidesDeliveryForLinkedReport,
+  reconcilePeptidesAutogenLegacyDelivery,
+} from "./peptidesAutogenLegacyDelivery";
 import {
   evaluatePeptidesGenerationEligibility,
   getPeptidesGenerationCircuitConfig,
@@ -2247,13 +2252,8 @@ export async function registerRoutes(
     order?.productType === "PEPTIDES_ENGINE" &&
     (order?.status === "paid" || order?.status === "partial_refund");
 
-  const hasAcceptedPeptidesDeliveryForReport = (order: any, reportId: string): boolean => {
-    if (!isActivePeptidesOrder(order)) return false;
-    const metadata = ((order?.metadata as any) || {}) as Record<string, any>;
-    return String(metadata.peptidesReportId || "") === String(reportId)
-      && String(metadata.peptidesDeliveryReportId || "") === String(reportId)
-      && metadata.peptidesDeliveryState === "ACCEPTED";
-  };
+  const hasAcceptedPeptidesDeliveryForReport = (order: any, reportId: string): boolean =>
+    hasAcceptedPeptidesDeliveryForLinkedReport(order, String(reportId));
 
   const getPeptidesReportIdsFromOrder = (order: any): string[] => {
     if (!order || order.productType !== "PEPTIDES_ENGINE") return [];
@@ -16787,19 +16787,7 @@ export async function registerRoutes(
   ): Promise<boolean> {
     const metadata = (order?.metadata as any) || {};
     const shouldAlert = shouldAlertPeptidesFulfillmentIncident(metadata, incident.code);
-    const incidentAt = new Date().toISOString();
-    const patch: Record<string, string | number | boolean> = {
-      peptidesFulfillmentIncidentCode: incident.code,
-      peptidesFulfillmentIncidentDetail: incident.detail,
-      peptidesFulfillmentIncidentAt: incidentAt,
-      peptidesFulfillmentState: "ACTION_REQUIRED",
-      ...(incident.blocksDelivery ? {
-        peptidesEmailHold: true,
-        peptidesEmailHoldReason: incident.code,
-      } : {}),
-      ...(shouldAlert ? { peptidesFulfillmentIncidentAlertedAt: incidentAt } : {}),
-      ...additionalPatch,
-    };
+    const patch = buildPeptidesFulfillmentIncidentPatch(metadata, incident, additionalPatch);
     const expectedReportId = String(metadata.peptidesReportId || "").trim() || null;
     const persisted = await storage.setOrderMetadataIfPeptidesReportMatches(
       order.id,
@@ -16942,17 +16930,10 @@ export async function registerRoutes(
         // email_tracking evidence into the new report-scoped terminal state.
         // Ambiguous recipient-only evidence is held for review, never resent.
         if (meta?.peptidesReportId && !hasAcceptedPeptidesDeliveryForReport(order, String(meta.peptidesReportId))) {
-          const legacyDelivery = await storage.backfillAcceptedPeptidesDeliveryFromTracking(
-            order.id,
-            String(meta.peptidesReportId),
-          );
-          if (legacyDelivery !== "NONE") {
-            const refreshedAfterBackfill = await storage.getOrder(order.id);
-            if (!refreshedAfterBackfill) continue;
-            order = refreshedAfterBackfill;
-            meta = order.metadata as any;
-          }
-          if (legacyDelivery === "AMBIGUOUS") {
+          const legacyDelivery = await reconcilePeptidesAutogenLegacyDelivery(storage, order);
+          order = legacyDelivery.order;
+          meta = order.metadata as any;
+          if (legacyDelivery.status === "AMBIGUOUS") {
             console.error(`[AutoGen] Legacy delivery evidence ambiguous for ${email}; HOLD retained, no provider call`);
             continue;
           }
