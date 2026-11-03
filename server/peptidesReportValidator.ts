@@ -1244,7 +1244,7 @@ export function checkPeptide(p: PeptidesPeptide): string[] {
   if (/sous[- ]?cutan|intramuscul|\bSC\b|\bIM\b/i.test(String(p.route || ""))) {
     const reconstitution = String(p.reconstitution || "").replace(/(\d),(\d)/g, "$1.$2");
     const completeU100 = /\bvial(?:\s+de)?\s+\d+(?:\.\d+)?\s*mg\b/i.test(reconstitution)
-      && /\+\s*\d+(?:\.\d+)?\s*ml\b/i.test(reconstitution)
+      && /(?:\+|\bplus\b)\s*\d+(?:\.\d+)?\s*ml\b/i.test(reconstitution)
       && /\b(?:pour|dose(?:\s+de)?|administration(?:\s+de)?)\s+\d+(?:\.\d+)?\s*(?:mg|mcg|µg|ug)\b/i.test(reconstitution)
       && /\d+(?:\.\d+)?\s*unit[ée]s?(?:\s+U-?100)?\b/i.test(reconstitution)
       && /\bsoit\s+\d+(?:\.\d+)?\s*ml\b/i.test(reconstitution);

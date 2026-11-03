@@ -11,6 +11,11 @@ import {
   sanitizeClientFacingText,
 } from "./clientFacingQuality";
 import { withoutOperationalVialPolicySummary } from "./peptidesVialPlanning";
+import { calculateReserveTargetMg } from "./peptidesReservePlanning";
+import {
+  packagingOverstockLimitForPeptide,
+  parseGhDuoPackagingOverstockException,
+} from "./peptidesPackagingOverstockException";
 
 type RepairableReport = PeptidesReport & {
   _peptauraLiveSync?: {
@@ -1274,7 +1279,29 @@ function synchronizeShoppingListAfterClamp(report: RepairableReport): void {
   report.shoppingList = sanitizeClientFacingText(lines.join("\n"));
 }
 
+export function isAuthorizedPackagingOverstockWithinReserve(input: {
+  peptide: PeptideItem;
+  orderedMg: number;
+  activeNeedMg: number;
+  rawException: unknown;
+}): boolean {
+  const packagingException = parseGhDuoPackagingOverstockException(input.rawException);
+  const exceptionLimit = packagingOverstockLimitForPeptide(
+    input.peptide.name || "",
+    packagingException,
+    1.3,
+  );
+  if (exceptionLimit <= 1.3) return false;
+  const reserveTargetMg = calculateReserveTargetMg(input.peptide, input.activeNeedMg);
+  const packagingRatio = input.orderedMg / reserveTargetMg;
+  return Number.isFinite(packagingRatio)
+    && packagingRatio <= exceptionLimit + 1e-9;
+}
+
 function clampManifestOverorders(report: RepairableReport): void {
+  const rawPackagingException = (
+    report as PeptidesReport & { _packagingOverstockException?: unknown }
+  )._packagingOverstockException;
   for (const peptide of report.peptides || []) {
     const orderedMg = extractTotalMgFromVials(peptide.vialsNeeded);
     const needMg = estimateNeedMg(peptide);
@@ -1299,6 +1326,14 @@ function clampManifestOverorders(report: RepairableReport): void {
     }
 
     const overshoot = orderedMg / needMg;
+    if (isAuthorizedPackagingOverstockWithinReserve({
+      peptide,
+      orderedMg,
+      activeNeedMg: needMg,
+      rawException: rawPackagingException,
+    })) {
+      continue;
+    }
     if (overshoot <= 2.5) continue;
 
     const clampedCount = Math.max(1, Math.ceil((needMg * 1.2) / vialMg));

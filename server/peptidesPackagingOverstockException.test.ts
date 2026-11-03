@@ -7,6 +7,7 @@ import {
   parseGhDuoPackagingOverstockException,
 } from "./peptidesPackagingOverstockException";
 import { selectBestPurchasePlanWithPreferredStrength } from "./peptidesPurchasePlan";
+import { isAuthorizedPackagingOverstockWithinReserve } from "./peptidesReportRepair";
 
 const authorized = {
   confirmation: GH_DUO_PACKAGING_OVERSTOCK_CONFIRMATION,
@@ -47,6 +48,31 @@ test("le conditionnement GH x2.38 passe sans inflation de besoin, GHK-Cu x3.57 r
     packagingOverstockLimitForPeptide("GHK-Cu", parsed),
   );
   assert.equal(ghkPlan, null);
+});
+
+test("le repair conserve la boite GH autorisee en comparant la reserve, sans elargir aux autres molecules", () => {
+  const parsed = parseGhDuoPackagingOverstockException(authorized);
+  assert.ok(parsed);
+  assert.equal(isAuthorizedPackagingOverstockWithinReserve({
+    peptide: {
+      name: "CJC-1295 sans DAC",
+      dosage: "100 mcg une fois par jour",
+      cycleDuration: "24 semaines actives au total. Réserve cible: 21 mg.",
+    } as any,
+    orderedMg: 50,
+    activeNeedMg: 16.8,
+    rawException: parsed,
+  }), true);
+  assert.equal(isAuthorizedPackagingOverstockWithinReserve({
+    peptide: {
+      name: "GHK-Cu",
+      dosage: "2 mg par jour",
+      cycleDuration: "8 semaines",
+    } as any,
+    orderedMg: 500,
+    activeNeedMg: 112,
+    rawException: parsed,
+  }), false);
 });
 
 test("l'exception rejette l'élargissement, l'absence d'auth admin et un plafond excessif", () => {

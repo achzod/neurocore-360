@@ -85,6 +85,29 @@ test("U-100 validation accepts complete natural French plus and preleve wording"
   ), []);
 });
 
+test("an injectable card accepts the same complete natural French U-100 wording", () => {
+  const issues = checkPeptide({
+    name: "Epitalon",
+    activationStatus: "active",
+    activationRequirements: [],
+    evidenceSummary: "Données et limites documentées.",
+    purpose: "Phase courte",
+    whyThisPeptide: "Choix attribuable.",
+    dosage: "10 mg par jour pendant 20 jours consécutifs",
+    timing: "Le matin",
+    route: "Sous-cutanée",
+    cycleDuration: "20 jours consécutifs",
+    reconstitution: "Vial 10 mg plus 1 mL de BAC water égale 10 mg/mL. Pour 10 mg, prélève 100 unités U-100, soit 1 mL.",
+    vialsNeeded: "20 vials de 10 mg",
+    priceEstimate: "$7/vial × 20 vials = $140 total",
+    purchaseUrl: "https://www.peptaura.com/product/epitalon",
+    expectedEffects: "Effets documentés sans garantie.",
+    contraindications: "Contre-indications documentées.",
+    monitoring: "Suivi documenté.",
+  });
+  assert.equal(issues.includes("calcul complet de reconstitution U-100 absent"), false);
+});
+
 test("commercial vial quantities must match exactly", () => {
   const issues = checkPeptide({
     name: "BPC-157",
