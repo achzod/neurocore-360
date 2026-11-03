@@ -127,6 +127,10 @@ import {
 } from "./peptidesGenerationCircuitBreaker";
 import { isRetryablePeptauraSourceOutage } from "./peptidesSourcePreflight";
 import {
+  parseGhDuoPackagingOverstockException,
+  type GhDuoPackagingOverstockException,
+} from "./peptidesPackagingOverstockException";
+import {
   evaluatePeptidesReleaseHashGate,
   hashPeptidesReport,
   isApprovedPeptidesReleaseVerdict,
@@ -1882,6 +1886,18 @@ export async function registerRoutes(
           recoveryPreviousError: String(source.recoveryPreviousError || "").trim(),
           forceImmediate: source.forceImmediate === true,
           confirmHeldGeneration: String(source.confirmHeldGeneration || "").trim() || null,
+          singleProviderPass: source.singleProviderPass === true,
+          ghPackagingOverstockException: source.ghPackagingOverstockException
+            && typeof source.ghPackagingOverstockException === "object"
+            ? {
+                confirmation: String(source.ghPackagingOverstockException.confirmation || "").trim(),
+                peptides: Array.isArray(source.ghPackagingOverstockException.peptides)
+                  ? source.ghPackagingOverstockException.peptides.map(String)
+                  : [],
+                maxOverstockRatio: Number(source.ghPackagingOverstockException.maxOverstockRatio),
+                reason: String(source.ghPackagingOverstockException.reason || "").trim(),
+              }
+            : null,
         };
       case "link-order-to-report":
         return { expectedCurrentReportId: String(source.expectedCurrentReportId || "").trim() || null };
@@ -7224,10 +7240,39 @@ export async function registerRoutes(
         || String((pepOrder.metadata as any)?.peptidesEmailHold).toLowerCase() === "true"
         || (pepOrder.metadata as any)?.peptidesManualFulfillment === true
         || String((pepOrder.metadata as any)?.peptidesManualFulfillment).toLowerCase() === "true";
+      let ghPackagingOverstockException: GhDuoPackagingOverstockException | null = null;
+      if (req.body?.ghPackagingOverstockException != null) {
+        if (!generationHeld || skipEmail !== true) {
+          res.status(409).json({
+            error: "GH_PACKAGING_OVERSTOCK_EXCEPTION_REQUIRES_HOLD_AND_SKIP_EMAIL",
+          });
+          return;
+        }
+        ghPackagingOverstockException = parseGhDuoPackagingOverstockException({
+          ...req.body.ghPackagingOverstockException,
+          authenticatedAdmin: true,
+          holdRequired: true,
+          skipEmailRequired: true,
+        });
+        if (!ghPackagingOverstockException) {
+          res.status(400).json({
+            error: "GH_PACKAGING_OVERSTOCK_EXCEPTION_INVALID",
+            message: "L'exception doit viser exactement CJC-1295 sans DAC + Ipamorelin, avec confirmation explicite et un plafond >1.30 et <=2.50.",
+          });
+          return;
+        }
+      }
       if (generationHeld && confirmHeldGeneration !== "GENERATE_UNDER_HOLD_NO_DELIVERY") {
         res.status(409).json({
           error: "PEPTIDES_GENERATION_HOLD_CONFIRMATION_REQUIRED",
           message: "Le HOLD bloque tout provider. Confirme explicitement une regeneration locale sans livraison.",
+        });
+        return;
+      }
+      const singleProviderPass = req.body?.singleProviderPass === true;
+      if (singleProviderPass && (!normalizedRecoveryPreviousError || !generationHeld || skipEmail !== true || replaceReportId)) {
+        res.status(409).json({
+          error: "PEPTIDES_SINGLE_PROVIDER_PASS_REQUIRES_HELD_SILENT_RECOVERY",
         });
         return;
       }
@@ -7304,9 +7349,14 @@ export async function registerRoutes(
           consentAccepted: hasValidPeptidesConsent((pepOrder?.metadata as any)?.peptidesEngineConsent),
           // Manual held recovery may need the dedicated final stock-aware pass
           // after the primary and strict candidates expose different live gates.
-          maxCandidates: normalizedManualDirective || normalizedRecoveryPreviousError ? 3 : undefined,
+          maxCandidates: singleProviderPass
+            ? 1
+            : normalizedManualDirective || normalizedRecoveryPreviousError
+              ? 3
+              : undefined,
           manualExpertDirective: normalizedManualDirective || undefined,
           initialPreviousError: normalizedRecoveryPreviousError || undefined,
+          packagingOverstockException: ghPackagingOverstockException || undefined,
         });
       } finally {
         await storage.finalizePeptidesManualGenerationProvider(pepOrder.id, manualProviderClaimId).catch(() => false);

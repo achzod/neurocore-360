@@ -14,6 +14,11 @@ import {
   collectClientFacingStrings,
 } from "./clientFacingQuality";
 import { calculateReserveTargetMg } from "./peptidesReservePlanning";
+import {
+  isGhDuoPackagingOverstockPeptide,
+  parseGhDuoPackagingOverstockException,
+  type GhDuoPackagingOverstockException,
+} from "./peptidesPackagingOverstockException";
 
 export interface PeptidesPeptide {
   name?: string;
@@ -72,6 +77,7 @@ export interface PeptidesReport {
     format?: string;
     priceGbp?: number;
   };
+  _packagingOverstockException?: GhDuoPackagingOverstockException;
   _peptauraLiveSync?: {
     syncedAt?: string;
     catalogRefreshedAt?: string;
@@ -1596,6 +1602,11 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
   }
 
   const liveSync = report._peptauraLiveSync;
+  const rawPackagingException = report._packagingOverstockException;
+  const packagingException = parseGhDuoPackagingOverstockException(rawPackagingException);
+  if (rawPackagingException && !packagingException) {
+    errors.push("exception de surstock fournisseur invalide ou hors perimetre GH");
+  }
   if (!liveSync?.syncedAt) {
     errors.push("preuve de synchronisation Peptaura manquante");
   } else {
@@ -1672,10 +1683,20 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
     if (Number.isFinite(needMg) && Number.isFinite(deliveredMg) && deliveredMg + 1e-9 < needMg) {
       errors.push(`[${snapshot.peptide || "?"}] quantite livree ${deliveredMg} mg inferieure au besoin ${needMg} mg`);
     }
-    if (snapshot.deliveredVials != null
-      && snapshot.requestedVials != null
-      && snapshot.deliveredVials / snapshot.requestedVials > 1.3) {
-      errors.push(`[${snapshot.peptide || "?"}] boite live impose trop de surstock: ${snapshot.deliveredVials} recus pour ${snapshot.requestedVials} demandes`);
+    const packagingRatio = Number.isFinite(needMg) && needMg > 0 && Number.isFinite(deliveredMg)
+      ? deliveredMg / needMg
+      : snapshot.deliveredVials != null && snapshot.requestedVials != null
+        ? snapshot.deliveredVials / snapshot.requestedVials
+        : null;
+    if (packagingRatio != null && packagingRatio > 1.3 + 1e-9) {
+      const exceptionApplies = Boolean(
+        packagingException
+        && isGhDuoPackagingOverstockPeptide(snapshot.peptide)
+        && packagingRatio <= packagingException.maxOverstockRatio + 1e-9
+      );
+      if (!exceptionApplies) {
+        errors.push(`[${snapshot.peptide || "?"}] boite live impose trop de surstock: ratio x${packagingRatio.toFixed(2)} > x1.30`);
+      }
     }
 
     const snapshotName = String(snapshot.peptide || "");

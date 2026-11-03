@@ -60,6 +60,11 @@ import {
 import { derivePeptidesStackPolicy } from "./peptidesStackPolicy";
 import { calculateReserveTargetMg } from "./peptidesReservePlanning";
 import {
+  packagingOverstockLimitForPeptide,
+  parseGhDuoPackagingOverstockException,
+  type GhDuoPackagingOverstockException,
+} from "./peptidesPackagingOverstockException";
+import {
   findMissingActiveLivePricing,
   shouldApplyOperationalPostProcessing,
   validateGeneratedPeptideStack,
@@ -1094,6 +1099,7 @@ function formatLiveStockCoverageFailure(
   snapshot: PeptauraLiveProductSnapshot,
   shipping: PeptauraShippingAvailability,
   needMg: number,
+  maxOverstockRatio = PEPTAURA_MAX_PACKAGING_OVERSTOCK_RATIO,
 ): string {
   const minimumDeliverableMg = eligibleLiveListings(snapshot, shipping)
     .map((listing) => {
@@ -1107,7 +1113,7 @@ function formatLiveStockCoverageFailure(
     return `${peptideName}: aucune offre en stock compatible avec le pays, le dosage et la quantite`;
   }
   const ratio = minimumDeliverableMg / needMg;
-  return `${peptideName}: offre live impossible, besoin ${needMg.toFixed(2)} mg, minimum livrable ${minimumDeliverableMg.toFixed(2)} mg, surstock x${ratio.toFixed(2)} > x${PEPTAURA_MAX_PACKAGING_OVERSTOCK_RATIO.toFixed(2)}`;
+  return `${peptideName}: offre live impossible, besoin ${needMg.toFixed(2)} mg, minimum livrable ${minimumDeliverableMg.toFixed(2)} mg, surstock x${ratio.toFixed(2)} > x${maxOverstockRatio.toFixed(2)}`;
 }
 
 /**
@@ -1216,7 +1222,8 @@ function parseListingMl(value: string): number | null {
 async function applyLivePeptauraPricing(
   report: PeptidesReport,
   context: PeptauraPromptContext,
-  forceFresh = true
+  forceFresh = true,
+  packagingOverstockException?: GhDuoPackagingOverstockException | null,
 ): Promise<PeptidesReport> {
   const liveNotes: string[] = [];
   const failures: string[] = [];
@@ -1320,9 +1327,27 @@ async function applyLivePeptauraPricing(
     const preferredVialMg = preferredStagedVialMgForCycle(pep)
       || extractVialMg(pep.vialsNeeded)
       || extractVialMg(pep.reconstitution);
-    const purchasePlan = selectBestLivePurchasePlan(snapshot, context.shippingAvailability, targetNeedMg, preferredVialMg);
+    const maxPackagingOverstockRatio = packagingOverstockLimitForPeptide(
+      pep.name,
+      packagingOverstockException,
+      PEPTAURA_MAX_PACKAGING_OVERSTOCK_RATIO,
+    );
+    const eligible = eligibleLiveListings(snapshot, context.shippingAvailability);
+    const purchasePlan = selectBestPurchasePlanWithPreferredStrength(
+      eligible,
+      targetNeedMg,
+      preferredVialMg,
+      maxPackagingOverstockRatio,
+      maxPackagingOverstockRatio,
+    );
     if (!purchasePlan) {
-      failures.push(formatLiveStockCoverageFailure(pep.name, snapshot, context.shippingAvailability, targetNeedMg));
+      failures.push(formatLiveStockCoverageFailure(
+        pep.name,
+        snapshot,
+        context.shippingAvailability,
+        targetNeedMg,
+        maxPackagingOverstockRatio,
+      ));
       continue;
     }
     const best = purchasePlan.listing;
@@ -1525,6 +1550,9 @@ async function applyLivePeptauraPricing(
   const shippingBreakdown = basketShipping.breakdown;
   failures.push(...basketShipping.failures);
 
+  (report as any)._packagingOverstockException = packagingOverstockException
+    ? { ...packagingOverstockException }
+    : undefined;
   (report as any)._peptauraLiveSync = {
     country: context.country,
     shippingUrl: context.shippingUrl,
@@ -1701,7 +1729,8 @@ export async function refreshPeptauraPricingForDelivery(
   sourceReport: PeptidesReport,
   responses: Record<string, unknown>,
   tier: string | null | undefined,
-  consentAccepted: boolean
+  consentAccepted: boolean,
+  packagingOverstockException?: GhDuoPackagingOverstockException | null,
 ): Promise<PeptidesReport> {
   // Once a report already carries a live-pricing snapshot, its narrative has
   // passed the delivery validator. A later catalogue refresh may update
@@ -1720,7 +1749,9 @@ export async function refreshPeptauraPricingForDelivery(
     context.country,
     consentAccepted
   );
-  await applyLivePeptauraPricing(report, context, true);
+  const effectivePackagingOverstockException = packagingOverstockException
+    || parseGhDuoPackagingOverstockException((sourceReport as any)._packagingOverstockException);
+  await applyLivePeptauraPricing(report, context, true, effectivePackagingOverstockException);
   const repaired = repairPeptidesReportContent(report, responses, tier);
   if (preserveValidatedSections) repaired.sections = preserveValidatedSections;
   return cleanReportContent(repaired, repaired.clientName || extractFirstName(responses, ""));
@@ -3028,6 +3059,7 @@ export async function generatePeptidesProtocol(
     resumeResponseId?: string;
     onResponseCreated?: (responseId: string) => Promise<void>;
     peptauraContext?: PeptauraPromptContext;
+    packagingOverstockException?: GhDuoPackagingOverstockException;
     providerGenerate?: (params: {
       systemPrompt: string;
       userPrompt: string;
@@ -3262,7 +3294,12 @@ export async function generatePeptidesProtocol(
       }
       report = validateAndFixPeptauraUrls(report);
       report = validateVialsMath(report);
-      report = await applyLivePeptauraPricing(report, peptauraContext);
+      report = await applyLivePeptauraPricing(
+        report,
+        peptauraContext,
+        true,
+        options.packagingOverstockException,
+      );
       const liveSync = (report as any)._peptauraLiveSync;
       const missingLivePricing = findMissingActiveLivePricing(
         report.peptides,
