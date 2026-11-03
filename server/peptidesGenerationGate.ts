@@ -2,6 +2,7 @@ import type { PeptidesStackPolicy } from "./peptidesStackPolicy";
 
 export interface GeneratedPeptideGateItem {
   name?: unknown;
+  coveredAxes?: unknown;
   dosage?: unknown;
   route?: unknown;
   purpose?: unknown;
@@ -58,8 +59,25 @@ function isNegatedCoverageStatement(text: string): boolean {
     || /\b(?:is\s+not\s+intended\s+for|not\s+for|no\s+benefit\s+for|sans\s+(?:effet|benefice|action)\s+(?:sur|pour)|non\s+indique\s+(?:pour|sur))\b/i.test(text);
 }
 
-function itemSupportsGoal(item: GeneratedPeptideGateItem, goal: string): boolean {
+function explicitCoveredAxes(item: GeneratedPeptideGateItem): string[] {
+  if (!Array.isArray(item.coveredAxes)) return [];
+  return [...new Set(
+    item.coveredAxes
+      .map(normalizeCoverageText)
+      .map((axis) => axis.trim())
+      .filter(Boolean),
+  )];
+}
+
+function itemSupportsGoal(
+  item: GeneratedPeptideGateItem,
+  goal: string,
+  requireExplicitAxisCoverage = false,
+): boolean {
   const normalizedGoal = normalizeCoverageText(goal).trim();
+  if (requireExplicitAxisCoverage) {
+    return explicitCoveredAxes(item).includes(normalizedGoal);
+  }
   const pattern = GOAL_COVERAGE_PATTERNS[normalizedGoal];
   const fields = [item.name, item.purpose, item.whyThisPeptide]
     .map(normalizeCoverageText)
@@ -75,11 +93,15 @@ function itemSupportsGoal(item: GeneratedPeptideGateItem, goal: string): boolean
 function maximumDistinctAxisCoverage(
   items: GeneratedPeptideGateItem[],
   goals: string[],
+  requireExplicitAxisCoverage = false,
 ): number {
   const assignedGoalByItem = new Map<number, number>();
   const tryAssign = (goalIndex: number, visited: Set<number>): boolean => {
     for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
-      if (visited.has(itemIndex) || !itemSupportsGoal(items[itemIndex], goals[goalIndex])) continue;
+      if (
+        visited.has(itemIndex)
+        || !itemSupportsGoal(items[itemIndex], goals[goalIndex], requireExplicitAxisCoverage)
+      ) continue;
       visited.add(itemIndex);
       const previousGoal = assignedGoalByItem.get(itemIndex);
       if (previousGoal === undefined || tryAssign(previousGoal, visited)) {
@@ -100,7 +122,10 @@ function maximumDistinctAxisCoverage(
 export function validateGeneratedPeptideStack(
   peptides: GeneratedPeptideGateItem[] | null | undefined,
   policy: PeptidesStackPolicy,
-  options: { skipMinimumCoverage?: boolean } = {},
+  options: {
+    skipMinimumCoverage?: boolean;
+    requireExplicitAxisCoverage?: boolean;
+  } = {},
 ): string[] {
   const items = Array.isArray(peptides) ? peptides : [];
   const issues: string[] = [];
@@ -138,10 +163,20 @@ export function validateGeneratedPeptideStack(
         normalizeCoverageText(candidate.name).replace(/[^a-z0-9]+/g, "") === name
       ) === index;
     });
-    const coveredAxes = maximumDistinctAxisCoverage(distinctActiveItems, policy.activeGoals);
+    const requireExplicitAxisCoverage = options.requireExplicitAxisCoverage === true;
+    const coveredAxes = maximumDistinctAxisCoverage(
+      distinctActiveItems,
+      policy.activeGoals,
+      requireExplicitAxisCoverage,
+    );
     if (coveredAxes < policy.activeGoals.length) {
+      const missingAxes = policy.activeGoals.filter((goal) =>
+        !distinctActiveItems.some((item) =>
+          itemSupportsGoal(item, goal, requireExplicitAxisCoverage)
+        )
+      );
       issues.push(
-        `AXIS_ATTRIBUTION_GATE: ${coveredAxes}/${policy.activeGoals.length} axe(s) actif(s) couvert(s) par des molecules actives distinctes et attribuables.`,
+        `AXIS_ATTRIBUTION_GATE: ${coveredAxes}/${policy.activeGoals.length} axe(s) actif(s) couvert(s) par des molecules actives distinctes et attribuables.${missingAxes.length > 0 ? ` Axes absents: ${missingAxes.join(", ")}.` : " Une meme molecule ne peut pas couvrir plusieurs axes pour satisfaire le minimum."}${requireExplicitAxisCoverage ? " Chaque carte active doit declarer coveredAxes avec les codes exacts du questionnaire." : ""}`,
       );
     }
   }

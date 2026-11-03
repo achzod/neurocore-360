@@ -39,7 +39,13 @@ export function derivePeptidesStackPolicy(
   const conditionalHpgPhase =
     testosteroneGoal && ["old", "never"].includes(testosteroneBloodworkStatus);
   const secretagogueAxisRequired = goals.includes("gh-antiaging");
-  const activeGoals = conditionalHpgPhase
+  // The HPG axis is operational only when a recent panel confirms low
+  // testosterone. Old/missing panels keep the documented conditional phase;
+  // a recent-normal panel explicitly excludes a pharmacological HPG phase.
+  // Treating recent-normal as active contradicts the generation prompt and
+  // creates an impossible attribution gate (the model is correctly told not
+  // to add an HPG molecule, then rejected for not adding one).
+  const activeGoals = testosteroneGoal && !confirmedLowTestosterone
     ? goals.filter((goal) => goal !== "testo-boost")
     : goals;
 

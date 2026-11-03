@@ -7,8 +7,13 @@ import {
 } from "./peptidesGenerationGate";
 import { derivePeptidesStackPolicy } from "./peptidesStackPolicy";
 
-const active = (name = "BPC-157", purpose = "Recuperation tendineuse") => ({
+const active = (
+  name = "BPC-157",
+  purpose = "Recuperation tendineuse",
+  coveredAxes?: string[],
+) => ({
   name,
+  ...(coveredAxes ? { coveredAxes } : {}),
   dosage: "250 mcg par jour",
   route: "Sous-cutanee",
   purpose,
@@ -123,6 +128,59 @@ test("a conditional HPG phase is excluded from active-axis attribution", () => {
   ], policy), []);
 });
 
+test("Esteban recent-normal HPG is excluded and explicit active-axis coverage is enforced", () => {
+  const policy = derivePeptidesStackPolicy({
+    pep_primary_goal: "recovery",
+    pep_secondary_goals: ["gh-antiaging", "testo-boost"],
+    pep_testo_bloodwork: "recent-normal",
+  });
+  assert.deepEqual(policy.activeGoals, ["recovery", "gh-antiaging"]);
+  assert.equal(policy.minimumMolecules, 2);
+
+  const rejectedCandidate = [
+    active("BPC-157", "Recuperation des epaules"),
+    active("TB-500", "Recuperation musculosquelettique"),
+    active("CJC-1295 avec DAC", "Axe GH et anti-age"),
+  ];
+  const issues = validateGeneratedPeptideStack(rejectedCandidate, policy, {
+    requireExplicitAxisCoverage: true,
+  });
+  assert.ok(issues.some((issue) =>
+    issue.includes("Axes absents: recovery, gh-antiaging")
+    && issue.includes("coveredAxes")
+  ));
+
+  assert.deepEqual(validateGeneratedPeptideStack([
+    active("BPC-157", "Recuperation des epaules", ["recovery"]),
+    active("CJC-1295 sans DAC", "Axe GH", ["gh-antiaging"]),
+    active("Ipamorelin", "Secretagogue GH complementaire", ["gh-antiaging"]),
+  ], policy, { requireExplicitAxisCoverage: true }), []);
+});
+
+test("Jihed requires three explicit and distinct active-axis attributions", () => {
+  const policy = derivePeptidesStackPolicy({
+    pep_primary_goal: "fatloss",
+    pep_secondary_goals: ["recovery", "fatloss", "endurance"],
+  });
+  assert.deepEqual(policy.activeGoals, ["fatloss", "recovery", "endurance"]);
+  assert.equal(policy.minimumMolecules, 3);
+
+  assert.deepEqual(validateGeneratedPeptideStack([
+    active("Retatrutide", "Perte de graisse", ["fatloss"]),
+    active("BPC-157", "Recuperation", ["recovery"]),
+    active("MOTS-c", "Endurance", ["endurance"]),
+  ], policy, { requireExplicitAxisCoverage: true }), []);
+
+  const sharedCard = validateGeneratedPeptideStack([
+    active("Retatrutide", "Perte de graisse", ["fatloss"]),
+    active("BPC-157", "Recuperation et endurance", ["recovery", "endurance"]),
+    active("GHK-Cu", "Bonus", []),
+  ], policy, { requireExplicitAxisCoverage: true });
+  assert.ok(sharedCard.some((issue) =>
+    issue.includes("Une meme molecule ne peut pas couvrir plusieurs axes")
+  ));
+});
+
 test("conditional cards never satisfy the active minimum", () => {
   const policy = derivePeptidesStackPolicy({
     pep_primary_goal: "fatloss",
@@ -153,4 +211,6 @@ test("the engine applies the same gate before and after deterministic pruning", 
   assert.equal((source.match(/validateGeneratedPeptideStack\(/g) || []).length, 2);
   assert.doesNotMatch(source, /report\.peptides\.length < 2/);
   assert.match(source, /findMissingActiveLivePricing\(/);
+  assert.equal((source.match(/requireExplicitAxisCoverage: true/g) || []).length, 2);
+  assert.match(source, /"coveredAxes"/);
 });

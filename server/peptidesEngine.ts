@@ -74,6 +74,7 @@ import {
 
 export interface PeptideItem {
   name: string;
+  coveredAxes?: string[];
   activationStatus?: "active" | "conditional-inactive";
   activationRequirements?: string[];
   evidenceSummary?: string;
@@ -2391,7 +2392,7 @@ RÈGLES ABSOLUES:
 2. Fais des PHRASES COMPLÈTES, jamais de listes sèches sans contexte.
 3. Ajuste les dosages au poids (${weight} kg) en mcg/kg.
 4. Construis un stack total de ${minimumStackCards} a ${stackPolicy.maximumMolecules} cartes pour ce profil, avec au moins ${stackPolicy.minimumMolecules} molecules ACTIVES distinctes couvrant les axes actifs suivants: ${stackPolicy.activeGoals.join(", ") || "aucun axe actif"}. Les objectifs distincts detectes sont: ${stackPolicy.goals.join(", ") || "objectif unique non code"}.${stackPolicy.conditionalHpgPhase ? " Ajoute EN PLUS exactement deux cartes HPG conditional-inactive, Enclomiphene Citrate et KissPeptin-10: elles ne comptent jamais parmi les molecules actives ni dans la couverture des axes actifs." : ""} Sur un dossier mono-axe actif, vise une seule molecule par defaut; une deuxieme n'est permise que si elle couvre un besoin complementaire explicitement documente, jamais pour remplir un quota. Un dossier multi-axe actif ne doit jamais retomber silencieusement a deux molecules pour faciliter le stock ou la validation. Chaque molecule active doit couvrir un besoin attribuable et complementaire; aucun ajout gadget, doublon mecanistique ou molecule contre-indiquee n'est autorise. Si une molecule echoue au stock live, remplace-la par une alternative compatible couvrant le meme axe au lieu de supprimer l'axe. Si aucune alternative sure et achetable n'existe, explique explicitement l'exclusion dans le rapport au lieu de promettre un resultat. Un bonus n'est autorise que s'il respecte le budget et s'il apparait partout: justification, reconstitution, calendrier, shopping list et tableau peptides.
-4B. Chaque carte porte activationStatus. Utilise "active" pour une molecule operationnelle. Utilise "conditional-inactive" uniquement pour une phase documentee mais non active; dans ce cas, fournis au moins deux activationRequirements, un evidenceSummary explicite et conserve l'acces source. Mets dosage, timing, route, cycleDuration, reconstitution, vialsNeeded et priceEstimate a la chaine vide: aucun achat, calcul ou calendrier operationnel n'est autorise pour cette carte.
+4B. Chaque carte porte activationStatus et coveredAxes. Pour une molecule active, coveredAxes contient uniquement les codes exacts qu'elle couvre parmi: ${stackPolicy.activeGoals.join(", ") || "aucun"}. Chaque axe actif doit apparaitre dans coveredAxes d'au moins une molecule active distincte; une meme molecule ne peut pas satisfaire deux axes pour le minimum. N'attribue jamais un axe par simple mention narrative. Utilise "conditional-inactive" uniquement pour une phase documentee mais non active; coveredAxes vaut alors [], fournis au moins deux activationRequirements, un evidenceSummary explicite et conserve l'acces source. Mets dosage, timing, route, cycleDuration, reconstitution, vialsNeeded et priceEstimate a la chaine vide: aucun achat, calcul ou calendrier operationnel n'est autorise pour cette carte.
 5. Utilise UNIQUEMENT le catalogue Peptaura. URLs réelles.
 6. Pour le choix du fournisseur (pays de livraison ${peptauraContext.country}, ${budgetNote}) : suis STRICTEMENT CONTEXTE PEPTAURA LIVE. Recommande un fournisseur qui livre vers ${peptauraContext.country}, evite tout fournisseur liste comme bloque, et rappelle que le client doit verifier ${peptauraContext.shippingUrl} avant de payer.
 6b. Stock live et quantite achetable: ne choisis une molecule que si le besoin total calcule peut etre couvert par les formats live avec au maximum 30% de marge quand le packaging live l'impose. Exemple: si le plus petit format live est 5 mg, le besoin total doit etre au moins 3.85 mg pour commander 1 vial; si le besoin coherent du protocole est plus bas, retire cette molecule et choisis une alternative dont le format Peptaura passe. Ne rallonge jamais une cure uniquement pour consommer un vial.
@@ -2490,6 +2491,7 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte avant ou après):
   "peptides": [
     {
       "name": "Nom du peptide",
+      "coveredAxes": ["${stackPolicy.activeGoals[0] || "axe-actif"}"],
       "activationStatus": "active",
       "activationRequirements": [],
       "evidenceSummary": "Résumé des preuves et limites propres à cet axe",
@@ -2552,6 +2554,7 @@ const PEPTIDES_REPORT_JSON_SCHEMA = {
         additionalProperties: false,
         required: [
           "name",
+          "coveredAxes",
           "purpose",
           "whyThisPeptide",
           "dosage",
@@ -2568,6 +2571,10 @@ const PEPTIDES_REPORT_JSON_SCHEMA = {
         ],
         properties: {
           name: { type: "string" },
+          coveredAxes: {
+            type: "array",
+            items: { type: "string" },
+          },
           purpose: { type: "string" },
           whyThisPeptide: { type: "string" },
           dosage: { type: "string" },
@@ -3229,7 +3236,10 @@ export async function generatePeptidesProtocol(
       const initialStackIssues = validateGeneratedPeptideStack(
         report.peptides,
         stackPolicy,
-        { skipMinimumCoverage: hasPeptidesHardRedFlag(responses) },
+        {
+          skipMinimumCoverage: hasPeptidesHardRedFlag(responses),
+          requireExplicitAxisCoverage: true,
+        },
       );
       if (initialStackIssues.length > 0) {
         throw new Error(initialStackIssues[0]);
@@ -3297,7 +3307,10 @@ export async function generatePeptidesProtocol(
       const prunedStackIssues = validateGeneratedPeptideStack(
         report.peptides,
         stackPolicy,
-        { skipMinimumCoverage: hasPeptidesHardRedFlag(responses) },
+        {
+          skipMinimumCoverage: hasPeptidesHardRedFlag(responses),
+          requireExplicitAxisCoverage: true,
+        },
       );
       if (prunedStackIssues.length > 0) {
         throw new Error(`POST_PRUNING_${prunedStackIssues[0]}`);

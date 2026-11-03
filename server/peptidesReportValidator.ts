@@ -14,6 +14,8 @@ import {
   collectClientFacingStrings,
 } from "./clientFacingQuality";
 import { calculateReserveTargetMg } from "./peptidesReservePlanning";
+import { validateGeneratedPeptideStack } from "./peptidesGenerationGate";
+import { derivePeptidesStackPolicy } from "./peptidesStackPolicy";
 import {
   isGhDuoPackagingOverstockPeptide,
   parseGhDuoPackagingOverstockException,
@@ -22,6 +24,7 @@ import {
 
 export interface PeptidesPeptide {
   name?: string;
+  coveredAxes?: string[];
   activationStatus?: "active" | "conditional-inactive";
   activationRequirements?: string[];
   evidenceSummary?: string;
@@ -1502,6 +1505,24 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
       .map((peptide) => peptide.name || "?");
     if (invalidActivationStates.length > 0) {
       errors.push(`activationStatus explicite manquant: ${invalidActivationStates.join(", ")}`);
+    }
+    const validationProfile = report._validationContext?.profile;
+    if (validationProfile?.primaryGoal) {
+      const stackPolicy = derivePeptidesStackPolicy({
+        pep_primary_goal: validationProfile.primaryGoal,
+        pep_secondary_goals: validationProfile.secondaryGoals || [],
+        pep_testo_bloodwork: report._validationContext?.confirmedLowTestosterone === true
+          ? "recent-low"
+          : "recent-normal",
+      });
+      const axisIssues = validateGeneratedPeptideStack(peptides, stackPolicy, {
+        requireExplicitAxisCoverage: true,
+      }).filter((issue) =>
+        issue.startsWith("AXIS_COVERAGE_GATE:")
+        || issue.startsWith("AXIS_ATTRIBUTION_GATE:")
+        || issue.startsWith("ACTIVE_AXIS_GATE:")
+      );
+      errors.push(...axisIssues);
     }
     const medicalMentions = (clientFacingText.match(/\b(?:m[ée]decin|pharmacien|professionnel de sant[ée])\b/gi) || []).length;
     const cautionMentions = (clientFacingText.match(/\b(?:exp[ée]rimental|non approuv[ée]|validation m[ée]dicale|avis m[ée]dical|accord m[ée]dical)\b/gi) || []).length;

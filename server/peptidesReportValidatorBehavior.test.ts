@@ -5,8 +5,64 @@ import {
   checkPeptide,
   estimateNeedMg,
   findConditionalInactiveOperationalMentions,
+  validatePeptidesReport,
   validateU100Reconstitution,
 } from "./peptidesReportValidator";
+
+test("strict validator enforces explicit Esteban and Jihed active-axis contracts", () => {
+  const strict = (profile: { primaryGoal: string; secondaryGoals: string[] }, peptides: any[]) =>
+    validatePeptidesReport({
+      qualityVersion: "expert-standard-v1",
+      tier: "coached",
+      clientName: "Axis fixture",
+      peptides,
+      sections: [],
+      weeklySchedule: "",
+      shoppingList: "",
+      bloodMarkers: [],
+      _validationContext: {
+        confirmedLowTestosterone: false,
+        profile,
+      },
+    }).errors.filter((issue) => issue.startsWith("AXIS_") || issue.startsWith("ACTIVE_AXIS_"));
+
+  const card = (name: string, coveredAxes?: string[]) => ({
+    name,
+    coveredAxes,
+    activationStatus: "active" as const,
+    dosage: "1 mg par semaine",
+    route: "Sous-cutanee",
+    purpose: coveredAxes?.join(", ") || "objectif",
+  });
+
+  assert.deepEqual(strict({
+    primaryGoal: "recovery",
+    secondaryGoals: ["gh-antiaging", "testo-boost"],
+  }, [
+    card("BPC-157", ["recovery"]),
+    card("CJC-1295 sans DAC", ["gh-antiaging"]),
+    card("Ipamorelin", ["gh-antiaging"]),
+  ]), []);
+
+  assert.deepEqual(strict({
+    primaryGoal: "fatloss",
+    secondaryGoals: ["recovery", "fatloss", "endurance"],
+  }, [
+    card("Retatrutide", ["fatloss"]),
+    card("BPC-157", ["recovery"]),
+    card("MOTS-c", ["endurance"]),
+  ]), []);
+
+  const missingEndurance = strict({
+    primaryGoal: "fatloss",
+    secondaryGoals: ["recovery", "endurance"],
+  }, [
+    card("Retatrutide", ["fatloss"]),
+    card("BPC-157", ["recovery"]),
+    card("GHK-Cu", []),
+  ]);
+  assert.ok(missingEndurance.some((issue) => issue.includes("Axes absents: endurance")));
+});
 
 test("U-100 validation checks every conversion in one text", () => {
   const issues = validateU100Reconstitution(
