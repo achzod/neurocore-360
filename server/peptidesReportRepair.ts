@@ -96,7 +96,7 @@ export function pruneUnintegratedBonusPeptides(
   sourceReport: PeptidesReport
 ): PeptidesReport {
   const report = sourceReport as RepairableReport;
-  const protocolText = [
+  const coreProtocolSurfaces = [
     report.weeklySchedule || "",
     ...(report.sections || [])
       .filter((section) =>
@@ -105,13 +105,29 @@ export function pruneUnintegratedBonusPeptides(
         )
       )
       .map((section) => section.content || ""),
-  ].join("\n");
+  ].filter(Boolean);
+  const operationalSurfaces = [
+    ...coreProtocolSurfaces,
+    report.shoppingList || "",
+    ...(report.sections || [])
+      .filter((section) =>
+        /reconstitution|liste de courses|shopping/i.test(
+          `${section.id || ""} ${section.title || ""}`
+        )
+      )
+      .map((section) => section.content || ""),
+  ].filter(Boolean);
+  const protocolText = coreProtocolSurfaces.join("\n");
 
   report.peptides = (report.peptides || []).filter((peptide) => {
     const isBonus = /\bbonus\b/i.test(
       `${peptide.purpose || ""} ${peptide.whyThisPeptide || ""}`
     );
-    return !isBonus || mentionsPeptide(protocolText, peptide.name || "");
+    if (!isBonus) return true;
+    if (mentionsPeptide(protocolText, peptide.name || "")) return true;
+    return operationalSurfaces.filter((surface) =>
+      mentionsPeptide(surface, peptide.name || "")
+    ).length >= 2;
   });
   return report;
 }

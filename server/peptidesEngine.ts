@@ -2749,8 +2749,18 @@ function deriveVialsForPeptide(pep: PeptideItem): VialsDerivation | null {
   const allText = `${dosage} ${cycle}`;
 
   // Extract cycle weeks (default 12 if not parseable)
+  const explicitActiveTotal = cycle.match(/(\d+)\s*semaines?\s+actives?\s+au\s+total\b/i);
+  const activeWeekSegments = Array.from(
+    cycle.matchAll(/(\d+)\s*semaines?\s+actives?\b/gi),
+  ).map((match) => parseInt(match[1], 10));
   const weeksMatch = cycle.match(/(\d+)\s*semaines?/i);
-  const weeks = weeksMatch ? parseInt(weeksMatch[1], 10) : 12;
+  const weeks = explicitActiveTotal
+    ? parseInt(explicitActiveTotal[1], 10)
+    : activeWeekSegments.length >= 2
+      ? activeWeekSegments.reduce((sum, value) => sum + value, 0)
+      : weeksMatch
+        ? parseInt(weeksMatch[1], 10)
+        : 12;
   if (weeks <= 0 || weeks > 52) return null;
 
   // Extract vial size from reconstitution (e.g. "Vial 10mg + 2ml")

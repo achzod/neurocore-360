@@ -3,12 +3,30 @@ import test from "node:test";
 import {
   STORED_PEPTIDES_RECOVERY_CONFIRMATION,
   dedupeStoredRecoverySectionSentences,
+  auditStoredRecoverySafety,
   parseStoredPeptidesResponse,
   persistStoredPeptidesRecoveryUnderHold,
   removeObsoleteMissingLiveFormatSentence,
   type RecoverySqlClient,
   type StoredPeptidesRecoveryCandidate,
 } from "./peptidesStoredRecovery";
+
+test("stored recovery recognizes explicit postoperative surgeon restrictions", () => {
+  const report = {
+    clientName: "Laurent",
+    peptides: [],
+    weeklySchedule: "Pause complète autour de toute intervention.",
+    shoppingList: "",
+    sections: [{
+      id: "profil-synthese",
+      title: "Synthèse",
+      content: "Produit expérimental non approuvé. La date exacte de reprise autorisée, l'état de la cicatrice et les restrictions données par le chirurgien manquent au dossier. Tant que ces points ne sont pas clairs, toute injection proche de la prothèse reste hors programme.",
+    }],
+  } as any;
+  assert.deepEqual(auditStoredRecoverySafety(report, {
+    pep_questions: "Opération avec prothèse récente.",
+  }), []);
+});
 
 test("parseStoredPeptidesResponse repairs fenced JSON without provider generation", () => {
   const parsed = parseStoredPeptidesResponse('```json\n{"clientName":"Clement",}\n```');

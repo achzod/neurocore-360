@@ -783,7 +783,7 @@ export function calculateBacWaterNeedMl(
     if (isConditionalInactivePeptide(peptide)) return totalMl;
     const solventMatch = String(peptide.reconstitution || "")
       .replace(/(\d),(\d)/g, "$1.$2")
-      .match(/\+\s*(\d+(?:\.\d+)?)\s*ml\b/i);
+      .match(/(?:\+|\bplus\b)\s*(\d+(?:\.\d+)?)\s*ml\b/i);
     const solventPerVialMl = solventMatch ? Number(solventMatch[1]) : 0;
     const vialQty = extractVialQty(peptide.vialsNeeded) || 0;
     if (
@@ -833,8 +833,18 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
 
   let weeks = 0;
   let days = 0;
+  const explicitActiveTotal = cycle.match(/(\d+)\s*semaines?\s+actives?\s+au\s+total\b/i);
+  const activeWeekSegments = Array.from(
+    cycle.matchAll(/(\d+)\s*semaines?\s+actives?\b/gi),
+  ).map((match) => parseInt(match[1], 10));
   const wkMatch = cycle.match(/(\d+)\s*semaines?\b/i);
-  if (wkMatch) weeks = parseInt(wkMatch[1], 10);
+  if (explicitActiveTotal) {
+    weeks = parseInt(explicitActiveTotal[1], 10);
+  } else if (activeWeekSegments.length >= 2) {
+    weeks = activeWeekSegments.reduce((sum, value) => sum + value, 0);
+  } else if (wkMatch) {
+    weeks = parseInt(wkMatch[1], 10);
+  }
   const dyMatch = cycle.match(/(\d+)\s*jours?\b/i);
   if (dyMatch) days = parseInt(dyMatch[1], 10);
 
@@ -993,7 +1003,8 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
   const fourPerWeek = /\b(?:4|quatre)\s*(?:soirs?|jours?|fois)\s*(?:par|\/)\s*semaine/i.test(dose);
   const threePerWeek = /\b(?:3|trois)\s*(?:fois|soirs?|jours?|injections?)\s*(?:par|\/)\s*semaine/i.test(dose);
   const twoPerWeek = /\b(?:2|deux)\s*(?:fois|soirs?|jours?|injections?)\s*(?:par|\/)\s*semaine/i.test(dose);
-  const oncePerWeek = /(?:\b1\s*|\bune\s+)(?:fois|injection)\s*(?:par|\/)\s*semaine|hebdomadaire|chaque\s+semaine|1x\/sem/i.test(dose);
+  const explicitOncePerWeek = /(?:\b1\s*|\bune\s+)(?:fois|injection)\s*(?:par|\/)\s*semaine|hebdomadaire|1x\/sem/i.test(dose);
+  const genericEachWeek = /chaque\s+semaine/i.test(dose);
   const barePerWeek = /\bpar\s+semaine\b/i.test(dose);
 
   if (twiceDaily) perWeek = 14;
@@ -1001,8 +1012,9 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
   else if (fourPerWeek) perWeek = 4;
   else if (threePerWeek) perWeek = 3;
   else if (twoPerWeek) perWeek = 2;
-  else if (oncePerWeek) perWeek = 1;
+  else if (explicitOncePerWeek) perWeek = 1;
   else if (everyDay) perWeek = 7;
+  else if (genericEachWeek) perWeek = 1;
   else if (barePerWeek) perWeek = 1;
   else return null;
 
@@ -1026,7 +1038,7 @@ export function validateU100Reconstitution(value: string | undefined): string[] 
     const vial = vialMatches[vialIndex];
     const segmentEnd = vialMatches[vialIndex + 1]?.index ?? raw.length;
     const segment = raw.slice(vial.index!, segmentEnd);
-    const solvent = segment.match(/\+\s*(\d+(?:\.\d+)?)\s*ml\b/i);
+    const solvent = segment.match(/(?:\+|\bplus\b)\s*(\d+(?:\.\d+)?)\s*ml\b/i);
     if (!solvent) continue;
 
     const vialMg = Number(vial[1]);
@@ -1038,7 +1050,7 @@ export function validateU100Reconstitution(value: string | undefined): string[] 
     // Validate every complete dose -> units -> ml conversion in this vial
     // context, not merely the first polished example in the text.
     const forwardConversions = [...segment.matchAll(
-      /\b(?:(?:pour|dose(?:\s+de)?|administration(?:\s+de)?|palier(?:\s+\d+)?)\s*:?[ \t]*)?(\d+(?:\.\d+)?)\s*(mg|mcg|µg|ug)\b[ \t]{0,40}(?:=|→|:|correspond(?:ent|ance)?\s+(?:a|à)|soit)[ \t]*(\d+(?:\.\d+)?)\s*(?:unit[ée]s?|graduations?|U(?:-?100)?)(?:\s+(?:sur\s+la\s+seringue\s+)?U-?100)?[\s\S]{0,80}?(?:\bsoit\s+|\(\s*)?(\d+(?:\.\d+)?)\s*ml\b/gi,
+      /\b(?:(?:pour|dose(?:\s+de)?|administration(?:\s+de)?|palier(?:\s+\d+)?)\s*:?[ \t]*)?(\d+(?:\.\d+)?)\s*(mg|mcg|µg|ug)\b[ \t,]{0,40}(?:=|→|:|correspond(?:ent|ance)?\s+(?:a|à)|soit|pr[ée]l[eè]ve)[ \t]*(\d+(?:\.\d+)?)\s*(?:unit[ée]s?|graduations?|U(?:-?100)?)(?:\s+(?:sur\s+la\s+seringue\s+)?U-?100)?[\s\S]{0,80}?(?:\bsoit\s+|\(\s*)?(\d+(?:\.\d+)?)\s*ml\b/gi,
     )].map((match) => ({
       dose: Number(match[1]),
       doseUnit: match[2],
@@ -1055,7 +1067,7 @@ export function validateU100Reconstitution(value: string | undefined): string[] 
     }));
     const conversions = [...forwardConversions, ...reverseConversions];
     const explicitDoseToUnitsCount = [...segment.matchAll(
-      /\b\d+(?:\.\d+)?\s*(?:mg|mcg|µg|ug)\b[ \t]{0,40}(?:=|→|:|correspond(?:ent|ance)?\s+(?:a|à)|soit)[ \t]*\d+(?:\.\d+)?\s*(?:unit[ée]s?|graduations?|U(?:-?100)?)\b/gi,
+      /\b\d+(?:\.\d+)?\s*(?:mg|mcg|µg|ug)\b[ \t,]{0,40}(?:=|→|:|correspond(?:ent|ance)?\s+(?:a|à)|soit|pr[ée]l[eè]ve)[ \t]*\d+(?:\.\d+)?\s*(?:unit[ée]s?|graduations?|U(?:-?100)?)\b/gi,
     )].length;
     const labeledDoseCount = [...segment.matchAll(
       /\b(?:pour|dose(?:\s+de)?|administration(?:\s+de)?|palier(?:\s+\d+)?)\s*:?[ \t]*\d+(?:\.\d+)?\s*(?:mg|mcg|µg|ug)\b/gi,

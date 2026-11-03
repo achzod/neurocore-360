@@ -194,7 +194,7 @@ export function auditStoredRecoverySafety(
   const surgeryDeclared = /op[ée]ration|chirurg|varices?/i.test(freeText);
   if (surgeryDeclared) {
     if (!/op[ée]ration|chirurg|varices?/i.test(text)) errors.push("RECOVERY_SURGERY_CONTEXT_MISSING");
-    if (!/(?:chirurgien|m[ée]decin|[ée]quipe de chirurgie)[\s\S]{0,280}(?:accord|validation|avis|confirm|consigne|calendrier d'arr[êe]t)|(?:accord|validation|avis|confirm|consigne|calendrier d'arr[êe]t)[\s\S]{0,280}(?:chirurgien|m[ée]decin|[ée]quipe de chirurgie)/i.test(text)) {
+    if (!/(?:chirurgien|m[ée]decin|[ée]quipe de chirurgie)[\s\S]{0,280}(?:accord|validation|avis|confirm|consigne|restriction|autoris)|(?:accord|validation|avis|confirm|consigne|restriction|autoris)[\s\S]{0,280}(?:chirurgien|m[ée]decin|[ée]quipe de chirurgie)/i.test(text)) {
       errors.push("RECOVERY_SURGICAL_CLEARANCE_MISSING");
     }
     if (!/(?:pause|arr[êe]t|suspend|ne commence pas|reprendre)[\s\S]{0,280}(?:op[ée]ration|chirurg|intervention)|(?:op[ée]ration|chirurg|intervention)[\s\S]{0,280}(?:pause|arr[êe]t|suspend|ne commence pas|reprendre)/i.test(text)) {

@@ -72,6 +72,19 @@ test("U-100 validation keeps each conversion attached to its vial context", () =
   assert.ok(issues.some((issue) => issue.includes("50 unites affichees vs 20.0")));
 });
 
+test("U-100 validation accepts complete natural French plus and preleve wording", () => {
+  assert.deepEqual(validateU100Reconstitution(
+    "Vial 10 mg plus 2 mL de BAC water égale 5 mg/mL. "
+      + "Pour 2 mg, prélève 40 unités, soit 0,40 mL. "
+      + "Pour 4 mg, prélève 80 unités, soit 0,80 mL. "
+      + "Pour 1 mg, prélève 20 unités, soit 0,20 mL.",
+  ), []);
+  assert.deepEqual(validateU100Reconstitution(
+    "Vial 10 mg plus 1 mL de BAC water égale 10 mg/mL. "
+      + "Pour 10 mg, prélève 100 unités U-100, soit 1 mL.",
+  ), []);
+});
+
 test("commercial vial quantities must match exactly", () => {
   const issues = checkPeptide({
     name: "BPC-157",

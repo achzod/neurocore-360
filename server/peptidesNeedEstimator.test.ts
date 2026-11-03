@@ -32,6 +32,21 @@ test("daily wording wins over a later explanatory weekly phrase", () => {
     dosage: "2 mg chaque jour, sept administrations par semaine.",
     cycleDuration: "5 semaines actives, soit 35 jours.",
   }), 70);
+  assert.equal(estimateNeedMg({
+    dosage: "100 mcg une fois par jour, soit 1,33 mcg/kg pour 75 kg, pendant chaque semaine active.",
+    cycleDuration: "12 semaines actives, 4 semaines de pause, puis 12 semaines actives. Besoin actif: 0,1 mg x 7 x 24 égale 16,8 mg.",
+  }), 16.8);
+});
+
+test("a split active cycle sums active windows but excludes the pause", () => {
+  assert.equal(estimateNeedMg({
+    dosage: "100 mcg une fois par jour pendant chaque semaine active.",
+    cycleDuration: "12 semaines actives, 4 semaines de pause, puis 12 semaines actives.",
+  }), 16.8);
+  assert.equal(estimateNeedMg({
+    dosage: "100 mcg une fois par jour pendant chaque semaine active.",
+    cycleDuration: "24 semaines actives au total, réparties en 12 semaines actives, 4 semaines de pause, puis 12 semaines actives.",
+  }), 16.8);
 });
 
 test("French worded twice-weekly frequency is not collapsed to once weekly", () => {
