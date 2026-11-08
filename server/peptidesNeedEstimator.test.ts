@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { preferredStagedVialMgForCycle } from "./peptidesEngine";
+import { preferredStagedVialMgForCycle, validateVialsMath } from "./peptidesEngine";
 import { estimateNeedMg } from "./peptidesReportValidator";
 
 test("French une fois par semaine is multiplied across the full cycle", () => {
@@ -61,6 +61,35 @@ test("multi-phase weekly titration sums every declared range", () => {
     dosage: "0,5 mg par semaine (semaines 1 à 4), puis 1 mg par semaine (semaines 5 à 8), puis 1,625 mg par semaine (semaines 9 à 12)",
     cycleDuration: "12 semaines",
   }), 12.5);
+});
+
+test("French et ranges preserve late taper weeks in a staged weekly cycle", () => {
+  const dosage = "Semaines 1 à 4: 2,5 mg une fois par semaine. Semaines 5 à 14: 5 mg une fois par semaine. Semaines 15 et 16: 2,5 mg une fois par semaine. Semaines 17 et 18: 1,25 mg une fois par semaine, puis arrêt.";
+  assert.equal(estimateNeedMg({ dosage, cycleDuration: "18 semaines au total" }), 67.5);
+
+  const report = validateVialsMath({
+    clientName: "Sacha",
+    tier: "tracked",
+    sections: [],
+    peptides: [{
+      name: "Tirzepatide",
+      purpose: "fatloss",
+      dosage,
+      timing: "Chaque lundi",
+      route: "SC",
+      cycleDuration: "18 semaines au total",
+      purchaseUrl: "https://www.peptaura.com/catalog/Tirzepatide",
+      priceEstimate: "$10/vial × 10 vials = $100 total",
+      vialsNeeded: "10 vials de 10mg",
+      reconstitution: "Vial de 10 mg + 1 ml de BAC water",
+    }],
+    bloodMarkers: [],
+    weeklySchedule: "",
+    shoppingList: "",
+    promoCodesGenerated: [],
+  });
+  assert.equal(report.peptides[0]._vialPlanning?.pharmacologicalNeedMg, 67.5);
+  assert.equal(report.peptides[0]._vialPlanning?.mathematicalMinimumVials, 7);
 });
 
 test("per administration wins over a later per-kg explanatory value", () => {
