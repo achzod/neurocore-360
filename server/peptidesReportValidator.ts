@@ -14,6 +14,7 @@ import {
   collectClientFacingStrings,
 } from "./clientFacingQuality";
 import { calculateReserveTargetMg } from "./peptidesReservePlanning";
+import { parsePeptideCadence } from "./peptidesVialPlanning";
 import { validateGeneratedPeptideStack } from "./peptidesGenerationGate";
 import { derivePeptidesStackPolicy } from "./peptidesStackPolicy";
 import {
@@ -47,6 +48,21 @@ export interface PeptidesPeptide {
     stabilityDays?: number | null;
     stabilitySource?: string | null;
   };
+}
+
+export interface PeptauraLiveListingSnapshot {
+  peptide?: string;
+  fetchedAt?: string;
+  supplier?: string;
+  dosage?: string;
+  requestedVials?: number;
+  deliveredVials?: number;
+  packageCount?: number;
+  boxSize?: number;
+  totalPriceUsd?: number;
+  totalPriceGbp?: number;
+  needMg?: number;
+  deliveredMg?: number;
 }
 
 export interface PeptidesReport {
@@ -87,20 +103,7 @@ export interface PeptidesReport {
     shippingLive?: boolean;
     applied?: string[];
     failures?: string[];
-    listingSnapshots?: Array<{
-      peptide?: string;
-      fetchedAt?: string;
-      supplier?: string;
-      dosage?: string;
-      requestedVials?: number;
-      deliveredVials?: number;
-      packageCount?: number;
-      boxSize?: number;
-      totalPriceUsd?: number;
-      totalPriceGbp?: number;
-      needMg?: number;
-      deliveredMg?: number;
-    }>;
+    listingSnapshots?: PeptauraLiveListingSnapshot[];
   };
 }
 
@@ -1031,6 +1034,320 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
   return total >= 0.5 ? total : null;
 }
 
+export interface DocumentedSingleUseOverstockDecision {
+  allowed: boolean;
+  reason:
+    | "DOCUMENTED_SINGLE_USE_PLAN"
+    | "PEPTIDE_SNAPSHOT_MISMATCH"
+    | "PLAN_NOT_DOCUMENTED"
+    | "INVALID_VIAL_COUNTS"
+    | "OPERATIONAL_VIALS_MISMATCH"
+    | "PACKAGE_COUNT_MISMATCH"
+    | "UNSUPPORTED_BOX_SIZE"
+    | "DECLARED_PACKAGE_MISMATCH"
+    | "INVALID_STABILITY_WINDOW"
+    | "SINGLE_USE_EVIDENCE_MISSING"
+    | "INVALID_RESERVE_VIALS"
+    | "PHARMACOLOGICAL_NEED_MISMATCH"
+    | "MATHEMATICAL_MINIMUM_MISMATCH"
+    | "DECLARED_ADMINISTRATION_MISMATCH"
+    | "SINGLE_USE_RESERVE_MISMATCH"
+    | "NON_MINIMAL_PACKAGE_COUNT"
+    | "RESERVE_TARGET_NOT_COVERED"
+    | "DELIVERED_CAPACITY_MISMATCH";
+  reserveTargetMg?: number;
+}
+
+function isPositiveInteger(value: unknown): boolean {
+  const numeric = Number(value);
+  return Number.isInteger(numeric) && numeric > 0;
+}
+
+function isCloseEnough(actual: number, expected: number): boolean {
+  return Math.abs(actual - expected) <= Math.max(0.001, Math.abs(expected) * 0.001);
+}
+
+/**
+ * A large live package is acceptable only when it is the exact purchase
+ * represented by a documented immediate-use/single-use vial plan. This is a
+ * narrow exception to the x1.30 packaging ceiling, not a generic large-box
+ * waiver: every count, reserve quantity and delivered capacity must reconcile.
+ */
+export function evaluateDocumentedSingleUsePackagingOverstock(
+  peptide: PeptidesPeptide,
+  snapshot: PeptauraLiveListingSnapshot,
+): DocumentedSingleUseOverstockDecision {
+  if (
+    searchable(String(peptide.name || ""))
+    !== searchable(String(snapshot.peptide || ""))
+  ) {
+    return { allowed: false, reason: "PEPTIDE_SNAPSHOT_MISMATCH" };
+  }
+
+  const plan = peptide._vialPlanning;
+  if (!plan || plan.status !== "documented") {
+    return { allowed: false, reason: "PLAN_NOT_DOCUMENTED" };
+  }
+
+  const operationalVials = Number(plan.operationalVials);
+  const requestedVials = Number(snapshot.requestedVials);
+  const deliveredVials = Number(snapshot.deliveredVials);
+  if (
+    !isPositiveInteger(operationalVials)
+    || !isPositiveInteger(requestedVials)
+    || !isPositiveInteger(deliveredVials)
+  ) {
+    return { allowed: false, reason: "INVALID_VIAL_COUNTS" };
+  }
+  if (
+    operationalVials !== requestedVials
+    || operationalVials !== deliveredVials
+  ) {
+    return { allowed: false, reason: "OPERATIONAL_VIALS_MISMATCH" };
+  }
+
+  const packageCount = Number(snapshot.packageCount);
+  const boxSize = Number(snapshot.boxSize);
+  if (
+    !isPositiveInteger(packageCount)
+    || !isPositiveInteger(boxSize)
+    || packageCount * boxSize !== deliveredVials
+  ) {
+    return { allowed: false, reason: "PACKAGE_COUNT_MISMATCH" };
+  }
+  // The sealed Peptaura feed audited for this gate exposes exactly boxes of
+  // 1, 5 or 10 vials. Fail closed for every other value until the source and
+  // this gate are reviewed together.
+  if (![1, 5, 10].includes(boxSize)) {
+    return { allowed: false, reason: "UNSUPPORTED_BOX_SIZE" };
+  }
+  const packagingText = normalizeOperationalText(
+    `${peptide.vialsNeeded || ""} ${peptide.priceEstimate || ""}`,
+  );
+  const declaredPackages = Array.from(
+    packagingText.matchAll(/\b(\d+)\s*boites?\s*(?:de|x)\s*(\d+)\b/g),
+  );
+  if (
+    declaredPackages.length === 0
+    || !declaredPackages.some((match) =>
+      Number(match[1]) === packageCount && Number(match[2]) === boxSize
+    )
+  ) {
+    return { allowed: false, reason: "DECLARED_PACKAGE_MISMATCH" };
+  }
+
+  const stabilityDays = Number(plan.stabilityDays);
+  const stabilitySource = String(plan.stabilitySource || "").trim();
+  if (
+    stabilityDays !== 1
+    || stabilitySource.length < 12
+  ) {
+    return { allowed: false, reason: "INVALID_STABILITY_WINDOW" };
+  }
+
+  const singleUsePattern = /\b(?:single use|unidose|(?:usage|utilisation) immediate|utilis(?:er|e|ee) immediatement)\b/i;
+  const discardPattern = /\b(?:jeter|jete|jetee|eliminer|aucun report du reliquat)\b/i;
+  const singleUseNegationPattern = /\b(?:pas d utilisation immediate|sans (?:usage|utilisation) immediate|ne (?:pas|jamais) utilis(?:er|e|ee) immediatement|(?:pas|non) (?:a )?(?:usage unique|single use|unidose|utilisation immediate)|(?:usage unique|single use|unidose|utilisation immediate|utilis(?:er|e|ee) immediatement)\b[^.]{0,48}\b(?:interdit|interdite|impossible|non recommande|non recommandee|pas recommande|pas recommandee|deconseille|deconseillee|a proscrire|a eviter|faux|fausse)|(?:interdit|interdite|impossible|deconseille|deconseillee|a proscrire|a eviter|faux|fausse)\b[^.]{0,48}\b(?:usage unique|single use|unidose|utilisation immediate|utilis(?:er|e|ee) immediatement)|conservation multi dose|multi dose|multidose|multi usage)\b/i;
+  const discardNegationPattern = /\b(?:ne (?:pas|jamais) (?:jeter|eliminer)|(?:conserv(?:er|e|ee|ation)|garder|reutilis(?:er|able|ation))\b[^.]{0,80}\b(?:reliquat|reste|solution|vial|produit|dose)|(?:reliquat|reste|solution|vial|produit|dose)\b[^.]{0,80}\b(?:conserv(?:er|e|ee|ation)|garder|reutilis(?:er|able|ation)))\b/i;
+  const normalizedSource = normalizeOperationalText(stabilitySource);
+  const normalizedReconstitution = normalizeOperationalText(peptide.reconstitution);
+  if (
+    !singleUsePattern.test(normalizedSource)
+    || !singleUsePattern.test(normalizedReconstitution)
+    || !discardPattern.test(normalizedReconstitution)
+    || singleUseNegationPattern.test(normalizedSource)
+    || singleUseNegationPattern.test(normalizedReconstitution)
+    || discardNegationPattern.test(normalizedReconstitution)
+  ) {
+    return { allowed: false, reason: "SINGLE_USE_EVIDENCE_MISSING" };
+  }
+
+  const estimatedNeedMg = estimateNeedMg(peptide);
+  const plannedNeedMg = Number(plan.pharmacologicalNeedMg);
+  if (
+    estimatedNeedMg == null
+    || !Number.isFinite(plannedNeedMg)
+    || plannedNeedMg <= 0
+    || !isCloseEnough(plannedNeedMg, estimatedNeedMg)
+  ) {
+    return { allowed: false, reason: "PHARMACOLOGICAL_NEED_MISMATCH" };
+  }
+
+  const vialSizeMg = extractVialMg(peptide.vialsNeeded);
+  if (vialSizeMg == null) {
+    return { allowed: false, reason: "DELIVERED_CAPACITY_MISMATCH" };
+  }
+
+  const mathematicalMinimumVials = Number(plan.mathematicalMinimumVials);
+  const expectedMathematicalMinimumVials = Math.ceil(estimatedNeedMg / vialSizeMg - 1e-9);
+  if (
+    !isPositiveInteger(mathematicalMinimumVials)
+    || mathematicalMinimumVials !== expectedMathematicalMinimumVials
+  ) {
+    return { allowed: false, reason: "MATHEMATICAL_MINIMUM_MISMATCH" };
+  }
+
+  const cadence = parsePeptideCadence(peptide);
+  if (!cadence) {
+    return { allowed: false, reason: "SINGLE_USE_RESERVE_MISMATCH" };
+  }
+  const administrationCount = Math.max(
+    1,
+    Math.ceil((cadence.cycleDays / 7) * cadence.administrationsPerWeek - 1e-9),
+  );
+  const declaredAdministrationCounts = Array.from(
+    normalizeOperationalText(`${peptide.dosage || ""} ${peptide.vialsNeeded || ""}`)
+      .matchAll(/\b(\d+)\s*administrations?\b/g),
+  ).map((match) => Number(match[1]));
+  if (
+    declaredAdministrationCounts.length === 0
+    || declaredAdministrationCounts.some((count) => count !== administrationCount)
+  ) {
+    return { allowed: false, reason: "DECLARED_ADMINISTRATION_MISMATCH" };
+  }
+  const reserveTargetMg = calculateReserveTargetMg(peptide, estimatedNeedMg);
+  const singleUseMinimumVials = Math.max(
+    expectedMathematicalMinimumVials,
+    administrationCount,
+  );
+  const expectedReserveVials = Math.ceil(
+    singleUseMinimumVials * (reserveTargetMg / estimatedNeedMg) - 1e-9,
+  );
+  const reserveVials = Number(plan.optionalSealedReserveVials);
+  if (!isPositiveInteger(reserveVials)) {
+    return { allowed: false, reason: "INVALID_RESERVE_VIALS" };
+  }
+  if (reserveVials !== expectedReserveVials) {
+    return { allowed: false, reason: "SINGLE_USE_RESERVE_MISMATCH" };
+  }
+
+  const expectedPackageCount = Math.ceil(expectedReserveVials / boxSize);
+  if (
+    packageCount !== expectedPackageCount
+    || operationalVials !== expectedPackageCount * boxSize
+  ) {
+    return { allowed: false, reason: "NON_MINIMAL_PACKAGE_COUNT" };
+  }
+
+  const snapshotNeedMg = Number(snapshot.needMg);
+  const deliveredMg = Number(snapshot.deliveredMg);
+  if (
+    !Number.isFinite(snapshotNeedMg)
+    || snapshotNeedMg <= 0
+    || !isCloseEnough(snapshotNeedMg, reserveTargetMg)
+    || !Number.isFinite(deliveredMg)
+    || deliveredMg + Math.max(0.001, reserveTargetMg * 0.001)
+      < Math.max(snapshotNeedMg, reserveTargetMg)
+  ) {
+    return {
+      allowed: false,
+      reason: "RESERVE_TARGET_NOT_COVERED",
+      reserveTargetMg,
+    };
+  }
+
+  if (
+    !isCloseEnough(deliveredVials * vialSizeMg, deliveredMg)
+  ) {
+    return {
+      allowed: false,
+      reason: "DELIVERED_CAPACITY_MISMATCH",
+      reserveTargetMg,
+    };
+  }
+
+  return {
+    allowed: true,
+    reason: "DOCUMENTED_SINGLE_USE_PLAN",
+    reserveTargetMg,
+  };
+}
+
+export function validateLivePackagingOverstock(
+  peptide: PeptidesPeptide | undefined,
+  snapshot: PeptauraLiveListingSnapshot,
+  packagingException: GhDuoPackagingOverstockException | null = null,
+): string | null {
+  const snapshotName = String(snapshot.peptide || "");
+  if (/^bac\s*water$/i.test(snapshotName) || /\benclomiph[eè]ne\b/i.test(snapshotName)) {
+    return null;
+  }
+  if (!peptide) {
+    return `[${snapshotName || "?"}] controle surstock live impossible: fiche peptide introuvable`;
+  }
+
+  const estimatedNeedMg = estimateNeedMg(peptide);
+  if (estimatedNeedMg == null || estimatedNeedMg <= 0) {
+    return `[${snapshotName || "?"}] controle surstock live impossible: besoin pharmacologique incalculable`;
+  }
+  const reserveTargetMg = calculateReserveTargetMg(peptide, estimatedNeedMg);
+
+  const requestedVials = Number(snapshot.requestedVials);
+  const deliveredVials = Number(snapshot.deliveredVials);
+  const packageCount = Number(snapshot.packageCount);
+  const boxSize = Number(snapshot.boxSize);
+  if (
+    !isPositiveInteger(requestedVials)
+    || !isPositiveInteger(deliveredVials)
+    || !isPositiveInteger(packageCount)
+    || !isPositiveInteger(boxSize)
+    || packageCount * boxSize !== deliveredVials
+  ) {
+    return `[${snapshotName || "?"}] controle surstock live impossible: quantites de conditionnement invalides`;
+  }
+
+  const declaredVialMg = extractVialMg(peptide.vialsNeeded);
+  const snapshotVialMg = extractVialMg(`1 vial de ${snapshot.dosage || ""}`);
+  if (
+    declaredVialMg == null
+    || snapshotVialMg == null
+    || !isCloseEnough(declaredVialMg, snapshotVialMg)
+  ) {
+    return `[${snapshotName || "?"}] controle surstock live impossible: format de vial incoherent`;
+  }
+
+  const derivedDeliveredMg = deliveredVials * snapshotVialMg;
+  if (
+    snapshot.needMg != null
+    && (
+      !Number.isFinite(Number(snapshot.needMg))
+      || Number(snapshot.needMg) <= 0
+      || !isCloseEnough(Number(snapshot.needMg), reserveTargetMg)
+    )
+  ) {
+    return `[${snapshotName || "?"}] cible reserve live incoherente: ${snapshot.needMg} mg vs ${reserveTargetMg.toFixed(3)} mg calculee`;
+  }
+  if (
+    snapshot.deliveredMg != null
+    && (
+      !Number.isFinite(Number(snapshot.deliveredMg))
+      || Number(snapshot.deliveredMg) <= 0
+      || !isCloseEnough(Number(snapshot.deliveredMg), derivedDeliveredMg)
+    )
+  ) {
+    return `[${snapshotName || "?"}] capacite livree live incoherente: ${snapshot.deliveredMg} mg vs ${derivedDeliveredMg.toFixed(3)} mg calculee`;
+  }
+
+  // Compute from the protocol and package counts, never from caller-provided
+  // needMg/deliveredMg alone. Missing or inflated snapshot values therefore
+  // cannot hide an oversized package behind an artificial ratio <= x1.30.
+  const packagingRatio = derivedDeliveredMg / reserveTargetMg;
+  if (packagingRatio <= 1.3 + 1e-9) return null;
+
+  const explicitGhRecoveryException = Boolean(
+    packagingException
+    && isGhDuoPackagingOverstockPeptide(snapshotName)
+    && packagingRatio <= packagingException.maxOverstockRatio + 1e-9
+  );
+  const documentedSingleUsePlan = Boolean(
+    peptide
+    && evaluateDocumentedSingleUsePackagingOverstock(peptide, snapshot).allowed
+  );
+  if (explicitGhRecoveryException || documentedSingleUsePlan) return null;
+
+  return `[${snapshotName || "?"}] boite live impose trop de surstock: ratio x${packagingRatio.toFixed(2)} > x1.30`;
+}
+
 export function validateU100Reconstitution(value: string | undefined): string[] {
   const raw = String(value || "").replace(/(\d),(\d)/g, "$1.$2");
   if (!raw || /aucune reconstitution|sans reconstitution|solution liquide/i.test(raw)) return [];
@@ -1729,21 +2046,15 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
     if (Number.isFinite(needMg) && Number.isFinite(deliveredMg) && deliveredMg + 1e-9 < needMg) {
       errors.push(`[${snapshot.peptide || "?"}] quantite livree ${deliveredMg} mg inferieure au besoin ${needMg} mg`);
     }
-    const packagingRatio = Number.isFinite(needMg) && needMg > 0 && Number.isFinite(deliveredMg)
-      ? deliveredMg / needMg
-      : snapshot.deliveredVials != null && snapshot.requestedVials != null
-        ? snapshot.deliveredVials / snapshot.requestedVials
-        : null;
-    if (packagingRatio != null && packagingRatio > 1.3 + 1e-9) {
-      const exceptionApplies = Boolean(
-        packagingException
-        && isGhDuoPackagingOverstockPeptide(snapshot.peptide)
-        && packagingRatio <= packagingException.maxOverstockRatio + 1e-9
-      );
-      if (!exceptionApplies) {
-        errors.push(`[${snapshot.peptide || "?"}] boite live impose trop de surstock: ratio x${packagingRatio.toFixed(2)} > x1.30`);
-      }
-    }
+    const snapshotPeptide = peptides.find((peptide) =>
+      searchable(String(peptide.name || "")) === searchable(String(snapshot.peptide || ""))
+    );
+    const packagingIssue = validateLivePackagingOverstock(
+      snapshotPeptide,
+      snapshot,
+      packagingException,
+    );
+    if (packagingIssue) errors.push(packagingIssue);
 
     const snapshotName = String(snapshot.peptide || "");
     if (snapshotName && searchable(snapshotName) !== searchable("BAC Water")) {
@@ -1765,10 +2076,7 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
           || Math.abs(shoppingPrice.amount - expectedShoppingPrice) > 0.01) {
           errors.push(`[${snapshotName}] prix shopping non aligne sur le snapshot live`);
         }
-        const peptideCard = peptides.find((peptide) =>
-          searchable(String(peptide.name || "")) === searchable(snapshotName)
-        );
-        if (peptideCard?.purchaseUrl && !shoppingLine.includes(peptideCard.purchaseUrl)) {
+        if (snapshotPeptide?.purchaseUrl && !shoppingLine.includes(snapshotPeptide.purchaseUrl)) {
           errors.push(`[${snapshotName}] URL fournisseur absente de la ligne shopping`);
         }
       }
