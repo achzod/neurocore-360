@@ -1225,11 +1225,15 @@ async function applyLivePeptauraPricing(
   context: PeptauraPromptContext,
   forceFresh = true,
   packagingOverstockException?: GhDuoPackagingOverstockException | null,
+  preserveValidatedDocumentedSingleUsePlans = false,
 ): Promise<PeptidesReport> {
   const liveNotes: string[] = [];
   const failures: string[] = [];
   const warnings: string[] = [];
   const listingSnapshots: Array<Record<string, unknown>> = [];
+  const priorListingSnapshots = Array.isArray((report as any)._peptauraLiveSync?.listingSnapshots)
+    ? structuredClone((report as any)._peptauraLiveSync.listingSnapshots)
+    : [];
   let targetedProductFeedSnapshotsPromise: Promise<PeptauraLiveProductSnapshot[] | null> | null = null;
 
   for (const pep of report.peptides) {
@@ -1334,7 +1338,65 @@ async function applyLivePeptauraPricing(
       PEPTAURA_MAX_PACKAGING_OVERSTOCK_RATIO,
     );
     const eligible = eligibleLiveListings(snapshot, context.shippingAvailability);
-    const purchasePlan = selectBestPurchasePlanWithPreferredStrength(
+    const priorSnapshot = priorListingSnapshots.find((entry: any) =>
+      normalizePeptauraKey(String(entry?.peptide || "")) === normalizePeptauraKey(String(pep.name || ""))
+    );
+    const documentedSingleUsePlan = preserveValidatedDocumentedSingleUsePlans
+      && pep._vialPlanning?.status === "documented"
+      && Number(pep._vialPlanning?.stabilityDays) === 1
+      && Number.isInteger(Number(pep._vialPlanning?.operationalVials))
+      && Number(pep._vialPlanning?.operationalVials) > 0
+      && priorSnapshot;
+    const normalizeProductUrl = (value: unknown) => String(value || "")
+      .replace(/^https?:\/\/(?:www\.)?/i, "")
+      .replace(/[?#].*$/, "")
+      .replace(/\/$/, "")
+      .toLowerCase();
+    const priorProductUrl = String(priorSnapshot?.url || pep.purchaseUrl || "");
+    const priorHasExactProductUrl = /\/product\//i.test(priorProductUrl);
+    const preservedListing = documentedSingleUsePlan
+      ? eligible.find((listing) =>
+          (!priorHasExactProductUrl || normalizeProductUrl(listing.productUrl) === normalizeProductUrl(priorProductUrl))
+          && normalizePeptauraKey(listing.supplierDisplayName || listing.supplier) === normalizePeptauraKey(String(priorSnapshot.supplier || ""))
+          && normalizePeptauraKey(listing.dosage) === normalizePeptauraKey(String(priorSnapshot.dosage || ""))
+          && Number(listing.boxSize) === Number(priorSnapshot.boxSize)
+        )
+      : undefined;
+    let purchasePlan: PeptidePurchasePlan<PeptauraLiveListing> | null = null;
+    if (preservedListing && documentedSingleUsePlan) {
+      const vialMg = parseListingMg(preservedListing.dosage);
+      const requestedVials = Number(pep._vialPlanning!.operationalVials);
+      const packageCount = packageCountForVials(preservedListing, requestedVials);
+      const deliveredVials = packageCount * preservedListing.boxSize;
+      const deliveredMg = vialMg == null ? Number.NaN : deliveredVials * vialMg;
+      const packagePriceUsd = effectivePackagePrice(preservedListing, requestedVials);
+      const totalPriceUsd = offerTotalPrice(preservedListing, requestedVials);
+      if (
+        vialMg != null
+        && requestedVials === Number(priorSnapshot.requestedVials)
+        && deliveredVials === Number(priorSnapshot.deliveredVials)
+        && packageCount === Number(priorSnapshot.packageCount)
+        && Number.isFinite(packagePriceUsd)
+        && packagePriceUsd > 0
+        && Number.isFinite(totalPriceUsd)
+        && totalPriceUsd > 0
+      ) {
+        purchasePlan = {
+          listing: preservedListing,
+          needMg: targetNeedMg,
+          vialMg,
+          requestedVials,
+          packageCount,
+          deliveredVials,
+          deliveredMg,
+          packagePriceUsd,
+          totalPriceUsd,
+          overstockRatio: deliveredMg / targetNeedMg,
+          forcedPackaging: true,
+        };
+      }
+    }
+    purchasePlan ||= selectBestPurchasePlanWithPreferredStrength(
       eligible,
       targetNeedMg,
       preferredVialMg,
@@ -1352,11 +1414,16 @@ async function applyLivePeptauraPricing(
       continue;
     }
     const best = purchasePlan.listing;
+    const preservedVialsNeeded = documentedSingleUsePlan && preservedListing
+      ? String(pep.vialsNeeded || "")
+      : null;
     let qty = purchasePlan.requestedVials;
     const bestMg = purchasePlan.vialMg;
     const naturalDurationLabel = peptidesCycleDurationLabel(pep.cycleDuration);
     const needSourceLabel = estimatedNeedMg != null ? "cible avec reserve calculee" : "cible avec reserve reconstruite depuis la quantite initiale";
-    pep.vialsNeeded = `${purchasePlan.deliveredVials} vial${purchasePlan.deliveredVials > 1 ? "s" : ""} de ${bestMg} mg pour ${naturalDurationLabel} (${needSourceLabel} ~${targetNeedMg.toFixed(2)} mg, dont ${activeNeedMg.toFixed(2)} mg actifs; capacite livree ${purchasePlan.deliveredMg.toFixed(2)} mg${purchasePlan.forcedPackaging ? ", conditionnement fournisseur impose" : ""})`;
+    if (preservedVialsNeeded == null) {
+      pep.vialsNeeded = `${purchasePlan.deliveredVials} vial${purchasePlan.deliveredVials > 1 ? "s" : ""} de ${bestMg} mg pour ${naturalDurationLabel} (${needSourceLabel} ~${targetNeedMg.toFixed(2)} mg, dont ${activeNeedMg.toFixed(2)} mg actifs; capacite livree ${purchasePlan.deliveredMg.toFixed(2)} mg${purchasePlan.forcedPackaging ? ", conditionnement fournisseur impose" : ""})`;
+    }
     if (/aucune offre live exploitable|format de vial.*(?:manque|indisponible)|(?:reconstitution.{0,80})?unit[ée]s?.{0,40}suspendues|feed officiel ne fournit pas le volume/i.test(pep.reconstitution || "")) {
       const conditional = buildConditionalReconstitutionText(pep.dosage, bestMg);
       if (!conditional) {
@@ -1366,15 +1433,17 @@ async function applyLivePeptauraPricing(
       pep.reconstitution = conditional;
     }
 
-    const livePlan = planOperationalVials(
-      {
-        ...pep,
-        pharmacologicalNeedMg: activeNeedMg,
-        reconstitution: `Vial ${bestMg}mg. ${pep.reconstitution || ""}`,
-        vialsNeeded: `${qty} vials de ${bestMg}mg`,
-      },
-      parseDocumentedStabilityConfig()
-    );
+    const livePlan = documentedSingleUsePlan && preservedListing
+      ? structuredClone(pep._vialPlanning!)
+      : planOperationalVials(
+          {
+            ...pep,
+            pharmacologicalNeedMg: activeNeedMg,
+            reconstitution: `Vial ${bestMg}mg. ${pep.reconstitution || ""}`,
+            vialsNeeded: `${qty} vials de ${bestMg}mg`,
+          },
+          parseDocumentedStabilityConfig()
+        );
     const reserveMinimumVials = Math.ceil(targetNeedMg / bestMg);
     const operationalQty = Math.max(
       reserveMinimumVials,
@@ -1382,13 +1451,15 @@ async function applyLivePeptauraPricing(
         ? livePlan.operationalVials
         : livePlan.mathematicalMinimumVials || qty,
     );
-    pep._vialPlanning = {
-      ...livePlan,
-      optionalSealedReserveVials: Math.max(
-        Number(livePlan.optionalSealedReserveVials || 0),
-        operationalQty,
-      ),
-    };
+    pep._vialPlanning = documentedSingleUsePlan && preservedListing
+      ? livePlan
+      : {
+          ...livePlan,
+          optionalSealedReserveVials: Math.max(
+            Number(livePlan.optionalSealedReserveVials || 0),
+            operationalQty,
+          ),
+        };
     const purchasedPackageCount = packageCountForVials(best, operationalQty);
     qty = purchasedPackageCount * Math.max(1, best.boxSize);
     const activeNeedRounded = Number(activeNeedMg.toFixed(3));
@@ -1399,7 +1470,9 @@ async function applyLivePeptauraPricing(
     const forcedPackagingNote = qty > operationalQty
       ? ` Conditionnement fournisseur impose: ${purchasedPackageCount} boite${purchasedPackageCount > 1 ? "s" : ""} de ${best.boxSize} vials.`
       : "";
-    pep.vialsNeeded = `Achat reel ${qty} vial${qty > 1 ? "s" : ""} de ${bestMg} mg pour ${naturalDurationLabel}. Besoin actif ${activeNeedRounded} mg; cible avec reserve ${targetNeedRounded} mg. ${operationalNote}${forcedPackagingNote}`;
+    pep.vialsNeeded = preservedVialsNeeded == null
+      ? `Achat reel ${qty} vial${qty > 1 ? "s" : ""} de ${bestMg} mg pour ${naturalDurationLabel}. Besoin actif ${activeNeedRounded} mg; cible avec reserve ${targetNeedRounded} mg. ${operationalNote}${forcedPackagingNote}`
+      : preservedVialsNeeded;
 
     // The official feed exposes the exact listing URL. Never synthesize a
     // vendor URL; use it only after the listing passed country/stock/price
@@ -1748,7 +1821,14 @@ export async function refreshPeptauraPricingForDelivery(
   const preserveValidatedSections = Boolean((sourceReport as any)._peptauraLiveSync)
     ? JSON.parse(JSON.stringify(sourceReport.sections || []))
     : null;
-  const report = validateVialsMath(JSON.parse(JSON.stringify(sourceReport)));
+  const sourceValidation = validatePeptidesReport(sourceReport);
+  const preserveValidatedDocumentedSingleUsePlans = Boolean((sourceReport as any)._peptauraLiveSync)
+    && sourceValidation.ok
+    && sourceValidation.warnings.length === 0;
+  const report = validateVialsMath(
+    JSON.parse(JSON.stringify(sourceReport)),
+    { preserveValidatedDocumentedSingleUsePlans },
+  );
   // Delivery refresh never promotes a paid report into a global medical hold.
   // Concrete incompatibilities remain molecule-scoped in the report content.
   report.qualityVersion = "expert-standard-v1";
@@ -1760,7 +1840,13 @@ export async function refreshPeptauraPricingForDelivery(
   );
   const effectivePackagingOverstockException = packagingOverstockException
     || parseGhDuoPackagingOverstockException((sourceReport as any)._packagingOverstockException);
-  await applyLivePeptauraPricing(report, context, true, effectivePackagingOverstockException);
+  await applyLivePeptauraPricing(
+    report,
+    context,
+    true,
+    effectivePackagingOverstockException,
+    preserveValidatedDocumentedSingleUsePlans,
+  );
   const repaired = repairPeptidesReportContent(report, responses, tier);
   if (preserveValidatedSections) repaired.sections = preserveValidatedSections;
   return cleanReportContent(repaired, repaired.clientName || extractFirstName(responses, ""));
@@ -2953,9 +3039,19 @@ function syncPriceEstimate(pep: PeptideItem, newQty: number): void {
   pep.priceEstimate = `~$${unit.toFixed(2)}/vial × ${newQty} vial${newQty > 1 ? "s" : ""} = $${total.toFixed(2)} total (~${eur}€)`;
 }
 
-export function validateVialsMath(report: PeptidesReport): PeptidesReport {
+export function validateVialsMath(
+  report: PeptidesReport,
+  options: { preserveValidatedDocumentedSingleUsePlans?: boolean } = {},
+): PeptidesReport {
   for (const pep of report.peptides) {
     if (!shouldApplyOperationalPostProcessing(pep)) continue;
+    if (
+      options.preserveValidatedDocumentedSingleUsePlans
+      && pep._vialPlanning?.status === "documented"
+      && Number(pep._vialPlanning?.stabilityDays) === 1
+      && Number.isInteger(Number(pep._vialPlanning?.operationalVials))
+      && Number(pep._vialPlanning?.operationalVials) > 0
+    ) continue;
     const derived = deriveVialsForPeptide(pep);
 
     // STRICT alignment: extract qty from BOTH vialsNeeded AND priceEstimate.
@@ -3044,6 +3140,13 @@ export function validateVialsMath(report: PeptidesReport): PeptidesReport {
   for (const pep of report.peptides) {
     if (!shouldApplyOperationalPostProcessing(pep)) continue;
     if (isEnclomipheneName(pep.name)) continue;
+    if (
+      options.preserveValidatedDocumentedSingleUsePlans
+      && pep._vialPlanning?.status === "documented"
+      && Number(pep._vialPlanning?.stabilityDays) === 1
+      && Number.isInteger(Number(pep._vialPlanning?.operationalVials))
+      && Number(pep._vialPlanning?.operationalVials) > 0
+    ) continue;
     const plan = planOperationalVials(
       { ...pep, pharmacologicalNeedMg: estimateNeedMg(pep) },
       documentedStability
