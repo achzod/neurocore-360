@@ -2848,7 +2848,7 @@ function deriveVialsForPeptide(pep: PeptideItem): VialsDerivation | null {
   const injectionsPerWeek = detectInjectionsPerWeek(dosage);
 
   const reverseProgressive = Array.from(
-    dosage.matchAll(/semaines?\s*(\d+)(?:\s*(?:à|a|-)\s*(\d+))?\s*(?:à|a|:)\s*(\d+(?:[.,]\d+)?)\s*(mg|mcg|µg|ug)\b/gi)
+    dosage.matchAll(/semaines?\s*(\d+)(?:\s*(?:à|a|-|et)\s*(\d+))?\s*(?:à|a|:)\s*(\d+(?:[.,]\d+)?)\s*(mg|mcg|µg|ug)\b/gi)
   );
   if (reverseProgressive.length >= 2) {
     const dosesByWeek = new Map<number, number>();
