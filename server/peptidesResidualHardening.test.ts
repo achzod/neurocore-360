@@ -13,11 +13,20 @@ const {
 } = await import("./peptidesEntitlements");
 
 async function activeOrder(storage: InstanceType<typeof MemStorage>, metadata: Record<string, unknown> = {}, email = "client@example.com") {
+  const sourceHash = String(metadata.peptidesResponsesSha256 || "test-source-hash");
   const order = await storage.createOrder({
     email,
     productType: "PEPTIDES_ENGINE",
     amountCents: 29900,
-    metadata,
+    metadata: {
+      peptidesResponsesSha256: sourceHash,
+      peptidesSourceState: "READY",
+      peptidesSourceProviderHold: false,
+      peptidesSourceResponsesSha256: sourceHash,
+      peptidesSourceOwnerEmail: email.toLowerCase(),
+      peptidesSourceContextExpiresAt: new Date(Date.now() + 60_000).toISOString(),
+      ...metadata,
+    },
   });
   await storage.updateOrder(order.id, { status: "paid", paidAt: new Date() });
   return (await storage.getOrder(order.id))!;
@@ -398,8 +407,8 @@ test("partial_refund orders remain generation-eligible and reservation windows u
   const old = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString();
   const order = await activeOrder(storage, {
     peptidesGenerationReservationLedger: [{ startedAt: old, costMicroUsd: 900, claimId: "old" }],
-    peptidesGenerationReservedCostMicroUsd: 900,
-    peptidesGenerationAttempts: 1,
+    peptidesGenerationReservedCostMicroUsd: 0,
+    peptidesGenerationAttempts: 0,
   });
   await storage.updateOrder(order.id, { status: "partial_refund" as any });
   const config = getPeptidesGenerationCircuitConfig({

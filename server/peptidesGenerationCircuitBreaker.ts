@@ -54,6 +54,16 @@ export interface PeptidesGenerationAttemptClaim {
   storedResumeAttemptCount?: number;
 }
 
+export interface PeptidesSourceCheckClaim {
+  claimId: string;
+  attemptCount: number;
+  phaseStartedAt: string;
+  leaseUntil: string;
+}
+
+export const PEPTIDES_SOURCE_MAX_ATTEMPTS = 3;
+export const PEPTIDES_SOURCE_CONTEXT_TTL_MS = 15 * 60 * 1000;
+
 export function isPeptidesAutogenEnabled(
   env: Record<string, string | undefined> = process.env,
 ): boolean {
@@ -251,8 +261,17 @@ export function getPeptidesGenerationRetryAt(
   return delayMs ? new Date(nowMs + delayMs).toISOString() : null;
 }
 
-export function getPeptidesSourceRetryAt(nowMs = Date.now()): string {
-  return new Date(nowMs + 5 * 60 * 1000).toISOString();
+export function getPeptidesSourceRetryAt(
+  attemptCount: number,
+  phaseStartedAt: string,
+): string | null {
+  // T0 / T0+5 / T0+20, anchored to the first source-only claim.
+  const offsetsMs = [5 * 60_000, 20 * 60_000];
+  const offsetMs = offsetsMs[Math.max(0, Math.floor(attemptCount) - 1)];
+  const startedAtMs = Date.parse(phaseStartedAt);
+  return offsetMs !== undefined && Number.isFinite(startedAtMs)
+    ? new Date(startedAtMs + offsetMs).toISOString()
+    : null;
 }
 
 export function getPeptidesStoredResumeRetryAt(

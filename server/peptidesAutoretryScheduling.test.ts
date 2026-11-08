@@ -11,7 +11,7 @@ test("automatic Peptides generation claims each attempt and persists bounded ret
   assert.match(routes, /claimPeptidesGenerationAttempt\(\s*order\.id,\s*peptidesCircuitConfig/);
   assert.match(routes, /maxCandidates:\s*1/);
   assert.match(routes, /providerRetries:\s*1/);
-  assert.match(routes, /costBudgetEstimatedUsd:\s*0\.5/);
+  assert.match(routes, /costBudgetEstimatedUsd:\s*2\.75/);
   assert.match(routes, /markPeptidesGenerationRetry\(/);
   assert.match(routes, /getPeptidesGenerationRetryAt\(generationClaim\.attemptCount\)/);
   assert.match(routes, /markPeptidesGenerationNeedsReview\(/);
@@ -21,33 +21,45 @@ test("automatic Peptides generation claims each attempt and persists bounded ret
   assert.match(routes, /peptidesGenerationResponseId/);
   assert.match(routes, /resumeResponseId:\s*resumeResponseId \|\| undefined/);
   assert.match(routes, /getPeptidesStoredResumeRetryAt\(storedResumeAttemptCount\)/);
-  assert.match(routes, /isRetryablePeptauraSourceOutage\(generationError\)/);
-  assert.match(routes, /markPeptidesGenerationSourceRetry\([\s\S]{0,240}peptidesCircuitConfig\.attemptBudgetMicroUsd/);
-  assert.match(routes, /SOURCE_RETRY_SCHEDULED/);
-  const sourceOutageBranch = routes.indexOf("if (retryableSourceOutage)");
-  const sourceOutageBreak = routes.indexOf("break;", sourceOutageBranch);
-  const reportPersistence = routes.indexOf("storage.createAndClaimPeptidesReport", sourceOutageBranch);
-  assert.ok(sourceOutageBranch > 0 && sourceOutageBreak > sourceOutageBranch);
-  assert.ok(sourceOutageBreak < reportPersistence, "source outage must exit before report persistence or any delivery email");
+  assert.match(routes, /claimPeptidesSourceCheck\([\s\S]{0,180}peptidesCircuitConfig\.leaseMs/);
+  assert.match(routes, /preparePeptauraGenerationSource\(responses\)/);
+  assert.match(routes, /getPeptidesSourceRetryAt\(sourceClaim\.attemptCount, sourceClaim\.phaseStartedAt\)/);
+  assert.match(routes, /finalizePeptidesSourceCheck\([\s\S]{0,260}"READY"/);
+  assert.match(routes, /finalizePeptidesSourceCheck\([\s\S]{0,300}outcome/);
+  assert.match(routes, /peptidesSourceContext/);
+  assert.match(routes, /source_questionnaire_hash_changed/);
+  assert.match(routes, /source_owner_changed/);
+  assert.match(routes, /source_context_expired/);
+  const sourcePhase = routes.indexOf('if (sourceState !== "READY")');
+  const sourceCycleExit = routes.indexOf("continue;", routes.indexOf("try {", sourcePhase));
+  const providerClaim = routes.indexOf("claimPeptidesGenerationAttempt", sourcePhase);
+  const confirmationDelivery = routes.indexOf("sendPeptidesOrderConfirmationOnce(order", sourcePhase);
+  assert.ok(sourcePhase > 0 && sourceCycleExit > sourcePhase
+    && sourceCycleExit < providerClaim && sourceCycleExit < confirmationDelivery,
+    "every source-only cycle must exit before provider claim/report/delivery");
   assert.match(routes, /Peptides automation stopped by HOLD\/manual workflow/);
   assert.match(routes, /deliveryHeld = scheduledMeta\.peptidesEmailHold[\s\S]{0,260}const stillNotEmailed = !deliveryHeld/);
   const retryMethod = storage.slice(
     storage.lastIndexOf("async markPeptidesGenerationRetry"),
     storage.lastIndexOf("async markPeptidesGenerationNeedsReview"),
   );
-  const sourceRetryMethod = storage.slice(
-    storage.lastIndexOf("async markPeptidesGenerationSourceRetry"),
-    storage.lastIndexOf("async markPeptidesGenerationNeedsReview"),
+  const sourceClaimMethod = storage.slice(
+    storage.lastIndexOf("async claimPeptidesSourceCheck"),
+    storage.lastIndexOf("async claimPeptidesGenerationAttempt"),
   );
   const reviewMethod = storage.slice(
     storage.lastIndexOf("async markPeptidesGenerationNeedsReview"),
     storage.lastIndexOf("async resetPeptidesGenerationCircuit"),
   );
   assert.doesNotMatch(retryMethod, /peptidesGenerationResponseId/);
-  assert.match(sourceRetryMethod, /'peptidesGenerationState', 'RETRY_SCHEDULED'/);
-  assert.match(sourceRetryMethod, /'peptidesGenerationAttempts', GREATEST/);
-  assert.match(sourceRetryMethod, /'peptidesGenerationReservedCostMicroUsd', GREATEST/);
-  assert.match(sourceRetryMethod, /'peptidesGenerationStoredResumeAttempts', GREATEST/);
+  assert.match(sourceClaimMethod, /'peptidesSourceAttempts'/);
+  assert.match(sourceClaimMethod, /'peptidesSourceProviderHold', true/);
+  assert.match(sourceClaimMethod, /'peptidesSourceDeliveryHold', true/);
+  assert.match(sourceClaimMethod, /'source_retry_exhausted'/);
+  assert.doesNotMatch(sourceClaimMethod, /peptidesGenerationReservedCostMicroUsd|attemptBudgetMicroUsd/);
+  assert.match(sourceClaimMethod, /peptidesSourceResponsesSha256/);
+  assert.match(sourceClaimMethod, /peptidesSourceOwnerEmail/);
+  assert.match(storage, /peptidesSourceContextExpiresAt/);
   assert.doesNotMatch(reviewMethod, /peptidesGenerationResponseId/);
 });
 

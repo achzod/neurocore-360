@@ -107,6 +107,7 @@ import { isDiscoveryTransactionalAutomationEligible } from "./discoveryAutomatio
 import { isDiscoverySupersededTerminal } from "./discoverySupersededPolicy";
 import {
   generatePeptidesProtocol,
+  preparePeptauraGenerationSource,
   fetchEnclomipheneSourceSnapshot,
   getPeptauraCatalogHealth,
   refreshPeptauraCatalog,
@@ -128,6 +129,7 @@ import {
   getPeptidesSourceRetryAt,
   getPeptidesStoredResumeRetryAt,
   isPeptidesAutogenEnabled,
+  PEPTIDES_SOURCE_MAX_ATTEMPTS,
   sanitizePeptidesGenerationError,
 } from "./peptidesGenerationCircuitBreaker";
 import { isRetryablePeptauraSourceOutage } from "./peptidesSourcePreflight";
@@ -17253,21 +17255,7 @@ export async function registerRoutes(
         // time to finish first. Prevents double report generation (race condition).
         if (hoursSincePaid < 0.17 || hoursSincePaid > 168) continue;
 
-        // Confirm the captured payment before any AI/provider generation call.
-        // The atomic confirmation claim is terminal, so an ambiguous provider
-        // response cannot fan out to another provider or duplicate on retry.
-        const confirmationScheduledAt = await resolvePeptidesEmailScheduledAt(order);
-        await sendPeptidesOrderConfirmationOnce(order, {
-          firstName: (meta?.peptidesResponses as any)?.prenom
-            || (meta?.peptidesResponses as any)?.pep_name
-            || (order.email ? order.email.split("@")[0] : undefined),
-          amountEur: ((order as any).finalAmountCents || 0) / 100,
-          promoCode: (order as any).promoCode || null,
-          scheduledDeliveryAt: confirmationScheduledAt,
-          orderId: order.id,
-        }).catch((err) => console.error("[AutoGen PreGeneration] Confirmation email failed:", err));
 
-        console.log(`[AutoGen] Generating peptides report for ${email} (paid ${Math.round(hoursSincePaid * 60)}min ago)`);
 
         // The paid order is the only source of truth. Public progress is an
         // autosave convenience and can never feed a paid generation.
@@ -17297,6 +17285,93 @@ export async function registerRoutes(
           continue;
         }
         const responses = trustedSource.responses;
+
+        // Supplier availability owns an independent, zero-provider budget.
+        // Its three probes run source-only at T0 / +5 / +20. Even a successful
+        // probe exits this order's cycle: provider generation can only consume
+        // the persisted validated context on a later automation cycle.
+        const sourceState = String(freshMeta?.peptidesSourceState || "PENDING").toUpperCase();
+        if (sourceState !== "READY") {
+          const sourceClaim = await storage.claimPeptidesSourceCheck(
+            order.id,
+            peptidesCircuitConfig.leaseMs,
+          );
+          if (!sourceClaim) {
+            console.warn(`[AutoGen] Peptaura source phase not claimable for ${email}; provider/report/delivery remain held`);
+            continue;
+          }
+          try {
+            const sourceContext = await preparePeptauraGenerationSource(responses);
+            const finalized = await storage.finalizePeptidesSourceCheck(
+              order.id,
+              sourceClaim,
+              "READY",
+              "",
+              "",
+              sourceContext,
+            );
+            if (!finalized) console.warn(`[AutoGen] Peptaura source READY CAS lost for ${email}`);
+            autoGenLastResult = `SOURCE_READY: ${email}`;
+          } catch (sourceError) {
+            const safeSourceError = sanitizePeptidesGenerationError(sourceError);
+            const retryAt = isRetryablePeptauraSourceOutage(sourceError)
+              ? getPeptidesSourceRetryAt(sourceClaim.attemptCount, sourceClaim.phaseStartedAt)
+              : null;
+            const outcome = retryAt && sourceClaim.attemptCount < PEPTIDES_SOURCE_MAX_ATTEMPTS
+              ? "RETRY_SCHEDULED" as const
+              : "EXHAUSTED" as const;
+            await storage.finalizePeptidesSourceCheck(
+              order.id,
+              sourceClaim,
+              outcome,
+              safeSourceError,
+              retryAt || "",
+            ).catch(() => false);
+            autoGenLastResult = outcome === "EXHAUSTED"
+              ? `NEEDS_REVIEW: ${email} (source_retry_exhausted)`
+              : `SOURCE_RETRY_SCHEDULED: ${email} at ${retryAt}`;
+            console.warn(`[AutoGen] Peptaura source ${outcome.toLowerCase()} for ${email}`);
+          }
+          continue;
+        }
+
+        const peptauraContext = freshMeta?.peptidesSourceContext;
+        const sourceExpiresAtMs = Date.parse(String(freshMeta?.peptidesSourceContextExpiresAt || ""));
+        const currentResponsesHash = sealedPeptidesResponsesHash(responses);
+        const sourceGuardError = !peptauraContext || typeof peptauraContext !== "object"
+          ? "source_context_missing"
+          : String(freshMeta?.peptidesSourceResponsesSha256 || "") !== currentResponsesHash
+            ? "source_questionnaire_hash_changed"
+            : String(freshMeta?.peptidesSourceOwnerEmail || "") !== email.trim().toLowerCase()
+              ? "source_owner_changed"
+              : !Number.isFinite(sourceExpiresAtMs) || sourceExpiresAtMs <= Date.now()
+                ? "source_context_expired"
+                : "";
+        if (sourceGuardError) {
+          await storage.markPeptidesSourceNeedsReview(
+            order.id,
+            sourceGuardError,
+            `Validated Peptaura source guard failed: ${sourceGuardError}; provider call refused`,
+          ).catch(() => false);
+          console.error(`[AutoGen] Peptaura source guard ${sourceGuardError} for ${email}; no provider call`);
+          continue;
+        }
+
+        // Confirm the captured payment before any AI/provider generation call.
+        // The atomic confirmation claim is terminal, so an ambiguous provider
+        // response cannot fan out to another provider or duplicate on retry.
+        const confirmationScheduledAt = await resolvePeptidesEmailScheduledAt(order);
+        await sendPeptidesOrderConfirmationOnce(order, {
+          firstName: (meta?.peptidesResponses as any)?.prenom
+            || (meta?.peptidesResponses as any)?.pep_name
+            || (order.email ? order.email.split("@")[0] : undefined),
+          amountEur: ((order as any).finalAmountCents || 0) / 100,
+          promoCode: (order as any).promoCode || null,
+          scheduledDeliveryAt: confirmationScheduledAt,
+          orderId: order.id,
+        }).catch((err) => console.error("[AutoGen PreGeneration] Confirmation email failed:", err));
+
+        console.log(`[AutoGen] Generating peptides report for ${email} (paid ${Math.round(hoursSincePaid * 60)}min ago)`);
 
         // SAFETY #1b (CROSS-ORDER): if the client has another paid Peptides order that
         // already has a reportId, skip this one entirely. Prevents duplicate generation
@@ -17342,6 +17417,7 @@ export async function registerRoutes(
               if (!persisted) throw new Error("PEPTIDES_RESPONSE_ID_PERSIST_FAILED");
             },
             consentAccepted: hasValidPeptidesConsent((freshMeta || meta)?.peptidesEngineConsent),
+            peptauraContext,
             // Automatic calls never feed a prior quality failure into a new
             // response. Source retries rerun deterministic preflights only;
             // durable recovery reuses responseId and spends no generation.
@@ -17351,16 +17427,16 @@ export async function registerRoutes(
           const retryableSourceOutage = isRetryablePeptauraSourceOutage(generationError);
           const storedResumeAttemptCount = generationClaim.storedResumeAttemptCount || 0;
           if (retryableSourceOutage) {
-            const nextRetryAt = getPeptidesSourceRetryAt();
-            await storage.markPeptidesGenerationSourceRetry(
+            // A validated persisted source context was supplied, so reaching
+            // this branch is a contract violation, never permission to refund
+            // a provider claim and loop back into a permissive retry.
+            await storage.markPeptidesGenerationNeedsReview(
               order.id,
-              generationClaim,
-              peptidesCircuitConfig.attemptBudgetMicroUsd,
+              "source_contract_violation",
               safeError,
-              nextRetryAt,
+              generationClaim.claimId,
             ).catch(() => false);
-            autoGenLastResult = `SOURCE_RETRY_SCHEDULED: ${email} at ${nextRetryAt}`;
-            console.warn(`[AutoGen] Peptaura source unavailable for ${email}; retry scheduled at ${nextRetryAt}`);
+            autoGenLastResult = `NEEDS_REVIEW: ${email} (source_contract_violation)`;
           } else {
             const nextRetryAt = resumeResponseId
               ? getPeptidesStoredResumeRetryAt(storedResumeAttemptCount)

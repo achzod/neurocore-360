@@ -43,8 +43,13 @@ export class PeptauraSourceUnavailableError extends Error {
 export function isRetryablePeptauraSourceOutage(error: unknown): boolean {
   if (!(error instanceof PeptauraSourceUnavailableError)) return false;
   const errors = error.preflight.errors;
-  return errors.includes("catalogue_live_indisponible")
-    && errors.some((entry) => entry.startsWith("shipping_live_indisponible:"));
+  if (errors.length === 0) return false;
+  // Retry only transport/catalogue infrastructure failures. Product-specific
+  // stock gaps and enclomiphene-source gaps require review, never blind probes.
+  return errors.every((entry) =>
+    entry === "catalogue_live_indisponible"
+    || entry.startsWith("shipping_live_indisponible:"),
+  );
 }
 
 const LIKELY_PRODUCTS_BY_GOAL: Record<string, string[]> = {

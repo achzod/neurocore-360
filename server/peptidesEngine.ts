@@ -315,7 +315,7 @@ interface PeptauraShippingAvailability {
   source: "flight" | "legacy_dom" | "unavailable";
 }
 
-interface PeptauraPromptContext {
+export interface PeptauraPromptContext {
   country: string;
   shippingUrl: string;
   shippingAvailability: PeptauraShippingAvailability;
@@ -1723,6 +1723,15 @@ async function buildPeptauraPromptContext(
     promptBlock: "",
   };
   context.promptBlock = buildCatalogForPrompt(context);
+  return context;
+}
+
+/** Source-only preparation: no AI/provider call, report persistence or delivery. */
+export async function preparePeptauraGenerationSource(
+  responses: Record<string, unknown>,
+): Promise<PeptauraPromptContext> {
+  const context = await buildPeptauraPromptContext(responses);
+  assertPeptauraGenerationPreflight(responses, context);
   return context;
 }
 
