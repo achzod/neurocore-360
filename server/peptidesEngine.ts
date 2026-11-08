@@ -1354,8 +1354,7 @@ async function applyLivePeptauraPricing(
     const best = purchasePlan.listing;
     let qty = purchasePlan.requestedVials;
     const bestMg = purchasePlan.vialMg;
-    const durationLabel = String(pep.cycleDuration || "le cycle").split(/[,.]/)[0].trim();
-    const naturalDurationLabel = durationLabel.charAt(0).toLowerCase() + durationLabel.slice(1);
+    const naturalDurationLabel = peptidesCycleDurationLabel(pep.cycleDuration);
     const needSourceLabel = estimatedNeedMg != null ? "cible avec reserve calculee" : "cible avec reserve reconstruite depuis la quantite initiale";
     pep.vialsNeeded = `${purchasePlan.deliveredVials} vial${purchasePlan.deliveredVials > 1 ? "s" : ""} de ${bestMg} mg pour ${naturalDurationLabel} (${needSourceLabel} ~${targetNeedMg.toFixed(2)} mg, dont ${activeNeedMg.toFixed(2)} mg actifs; capacite livree ${purchasePlan.deliveredMg.toFixed(2)} mg${purchasePlan.forcedPackaging ? ", conditionnement fournisseur impose" : ""})`;
     if (/aucune offre live exploitable|format de vial.*(?:manque|indisponible)|(?:reconstitution.{0,80})?unit[ée]s?.{0,40}suspendues|feed officiel ne fournit pas le volume/i.test(pep.reconstitution || "")) {
@@ -2710,6 +2709,12 @@ async function extractJsonFromResponse(raw: string): Promise<PeptidesReport> {
 }
 
 // ─── Post-process: validate Peptaura URLs ─────────────────────────────────────
+
+export function peptidesCycleDurationLabel(value: unknown): string {
+  const duration = String(value || "le cycle").trim();
+  const firstSentence = duration.split(/\.\s+/)[0].replace(/\.$/, "").trim() || "le cycle";
+  return firstSentence.charAt(0).toLowerCase() + firstSentence.slice(1);
+}
 
 export function validateAndFixPeptauraUrls(report: PeptidesReport): PeptidesReport {
   const slugMap = new Map(getPeptauraCatalogProducts().map(p => [p.name.toLowerCase(), p]));

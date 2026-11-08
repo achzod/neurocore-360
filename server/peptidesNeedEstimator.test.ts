@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { preferredStagedVialMgForCycle, validateVialsMath } from "./peptidesEngine";
+import { peptidesCycleDurationLabel, preferredStagedVialMgForCycle, validateVialsMath } from "./peptidesEngine";
 import { estimateNeedMg } from "./peptidesReportValidator";
 
 test("French une fois par semaine is multiplied across the full cycle", () => {
@@ -61,6 +61,13 @@ test("multi-phase weekly titration sums every declared range", () => {
     dosage: "0,5 mg par semaine (semaines 1 à 4), puis 1 mg par semaine (semaines 5 à 8), puis 1,625 mg par semaine (semaines 9 à 12)",
     cycleDuration: "12 semaines",
   }), 12.5);
+});
+
+test("French decimal commas never truncate the live-pricing duration label", () => {
+  assert.equal(
+    peptidesCycleDurationLabel("18 semaines au total: 4 semaines à 2,5 mg, 10 semaines à 5 mg, 2 semaines à 2,5 mg, puis 2 semaines à 1,25 mg avant l'arrêt."),
+    "18 semaines au total: 4 semaines à 2,5 mg, 10 semaines à 5 mg, 2 semaines à 2,5 mg, puis 2 semaines à 1,25 mg avant l'arrêt",
+  );
 });
 
 test("French et ranges preserve late taper weeks in a staged weekly cycle", () => {
